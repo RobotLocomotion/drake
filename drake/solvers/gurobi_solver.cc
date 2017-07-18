@@ -39,9 +39,15 @@ namespace {
 struct GurobiCallbackInformation {
   MathematicalProgram * prog;
   std::vector<bool> is_new_variable;
+  // Used in callbacks to store raw Gurobi variable values.
+  std::vector<double> solver_sol_vector;
+  // Used in callbacks to store variable values that appear
+  // in the MathematicalProgram (which are a subset of the
+  // Gurobi variable values).
+  Eigen::VectorXd prog_sol_vector;
   GurobiSolver::MipNodeCallbackFunction mip_node_callback;
-  GurobiSolver::MipSolCallbackFunction mip_sol_callback;
-};
+  GurobiSolver::MipSolCallbackFunction mip_sol_callback
+;};
 
 static int
 gurobi_callback(GRBmodel *model, void *cbdata, int where, void *usrdata) {
@@ -57,23 +63,23 @@ gurobi_callback(GRBmodel *model, void *cbdata, int where, void *usrdata) {
     // Extract variable values from Gurobi, and set the current
     // solution of the MathematicalProgram to these values.
     int num_total_variables = callbackInfo->is_new_variable.size();
-    std::vector<double> solver_sol_vector(num_total_variables);
     auto error = GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOL,
-      solver_sol_vector.data());
+      callbackInfo->solver_sol_vector.data());
     if (error) {
       printf("GRB error %d in MIPSol callback cbget: %s\n", error,
         GRBgeterrormsg(GRBgetenv(model)));
       return 0;
     }
-    Eigen::VectorXd prog_sol_vector(callbackInfo->prog->num_vars());
     int k = 0;
     for (int i = 0; i < num_total_variables; ++i) {
       if (callbackInfo->is_new_variable[i]) {
-        prog_sol_vector(k) = solver_sol_vector[i];
+        callbackInfo->prog_sol_vector(k) =
+          callbackInfo->solver_sol_vector[i];
         k++;
       }
     }
-    callbackInfo->prog->SetDecisionVariableValues(prog_sol_vector);
+    callbackInfo->prog->SetDecisionVariableValues(
+      callbackInfo->prog_sol_vector);
 
     GurobiSolver::SolveStatusInfo solve_status;
     GRBcbget(cbdata, where, GRB_CB_RUNTIME,
@@ -104,23 +110,23 @@ gurobi_callback(GRBmodel *model, void *cbdata, int where, void *usrdata) {
       // Extract variable values from Gurobi, and set the current
       // solution of the MathematicalProgram to these values.
       int num_total_variables = callbackInfo->is_new_variable.size();
-      std::vector<double> solver_sol_vector(num_total_variables);
       auto error = GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOL,
-        solver_sol_vector.data());
+        callbackInfo->solver_sol_vector.data());
       if (error) {
         printf("GRB error %d in MIPSol callback cbget: %s\n", error,
           GRBgeterrormsg(GRBgetenv(model)));
         return 0;
       }
-      Eigen::VectorXd prog_sol_vector(callbackInfo->prog->num_vars());
       int k = 0;
       for (int i = 0; i < num_total_variables; ++i) {
         if (callbackInfo->is_new_variable[i]) {
-          prog_sol_vector(k) = solver_sol_vector[i];
+          callbackInfo->prog_sol_vector(k) =
+            callbackInfo->solver_sol_vector[i];
           k++;
         }
       }
-      callbackInfo->prog->SetDecisionVariableValues(prog_sol_vector);
+      callbackInfo->prog->SetDecisionVariableValues(
+        callbackInfo->prog_sol_vector);
 
       GurobiSolver::SolveStatusInfo solve_status;
       GRBcbget(cbdata, where, GRB_CB_RUNTIME,
@@ -745,6 +751,8 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   if (mip_node_callback_ != nullptr || mip_sol_callback_ != nullptr) {
     callbackInfo.prog = &prog;
     callbackInfo.is_new_variable = is_new_variable;
+    callbackInfo.solver_sol_vector.resize(is_new_variable.size());
+    callbackInfo.prog_sol_vector.resize(num_prog_vars);
     callbackInfo.mip_node_callback = mip_node_callback_;
     callbackInfo.mip_sol_callback = mip_sol_callback_;
     GRBsetcallbackfunc(model, &gurobi_callback, &callbackInfo);
