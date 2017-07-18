@@ -22,6 +22,7 @@ drake_cc_library(
         "type_specific_identifier.h",
     ],
     deps = [
+        "//drake/common:autodiff",
         "//drake/common:essential",
         "//drake/math:geometric_transform",
     ],
