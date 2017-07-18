@@ -172,11 +172,19 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeForwardDiffJacobian(
   // Compute the Jacobian.
   VectorX<T> xtplus_prime = xtplus;
   for (int i = 0; i < n; ++i) {
-    // Compute a good increment to the dimension.
+    // Compute a good increment to the dimension using approximately 1/eps
+    // digits of precision. Note that if |xtplus| is large, the increment will
+    // be large as well. If |xtplus| is small, the increment will be no smaller
+    // than eps.
     const T abs_xi = abs(xtplus(i));
-    T dxi(eps * abs_xi);
-    if (abs_xi <= 0)
+    T dxi(abs_xi);
+    if (dxi <= 1) {
+      // When |xtplus[i]| is small, increment will be eps.
       dxi = eps;
+    } else {
+      // |xtplus[i]| not small; make increment a fraction of |xtplus[i]|.
+      dxi = eps * abs_xi;
+    }
 
     // Update xtplus', minimizing the effect of roundoff error by ensuring that
     // x and dx differ by an exactly representable number. See p. 192 of
@@ -232,11 +240,19 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeCentralDiffJacobian(
   // Compute the Jacobian.
   VectorX<T> xtplus_prime = xtplus;
   for (int i = 0; i < n; ++i) {
-    // Compute a good increment to the dimension.
+    // Compute a good increment to the dimension using approximately 1/eps
+    // digits of precision. Note that if |xtplus| is large, the increment will
+    // be large as well. If |xtplus| is small, the increment will be no smaller
+    // than eps.
     const T abs_xi = abs(xtplus(i));
-    T dxi(eps * abs_xi);
-    if (abs_xi <= 0)
+    T dxi(abs_xi);
+    if (dxi <= 1) {
+      // When |xtplus[i]| is small, increment will be eps.
       dxi = eps;
+    } else {
+      // |xtplus[i]| not small; make increment a fraction of |xtplus[i]|.
+      dxi = eps * abs_xi;
+    }
 
     // Update xtplus', minimizing the effect of roundoff error, by ensuring that
     // x and dx differ by an exactly representable number. See p. 192 of
