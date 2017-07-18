@@ -1,11 +1,15 @@
 #include "drake/automotive/maliput/dragway/lane.h"
 
+#include <algorithm>
 #include <cmath>
+#include <limits>
 #include <memory>
 
 #include "drake/automotive/maliput/dragway/branch_point.h"
 #include "drake/automotive/maliput/dragway/road_geometry.h"
 #include "drake/automotive/maliput/dragway/segment.h"
+#include "drake/common/autodiff_overloads.h"
+#include "drake/common/cond.h"
 #include "drake/common/drake_assert.h"
 #include "drake/math/saturate.h"
 
@@ -101,29 +105,59 @@ api::LanePosition Lane::DoToLanePosition(
     const api::GeoPosition& geo_pos,
     api::GeoPosition* nearest_point,
     double* distance) const {
+  auto result = ImplDoToLanePositionT<double>(geo_pos, nearest_point, distance);
+  return {result.s(), result.r(), result.h()};
+}
 
-  const double min_x = 0;
-  const double max_x = length_;
-  const double min_y = driveable_bounds_.min() + y_offset_;
-  const double max_y = driveable_bounds_.max() + y_offset_;
-  const double min_z = elevation_bounds_.min();
-  const double max_z = elevation_bounds_.max();
+api::LanePositionT<double> Lane::DoToLanePositionT(
+    const api::GeoPositionT<double>& geo_pos,
+    api::GeoPositionT<double>* nearest_point,
+    double* distance) const {
+  return ImplDoToLanePositionT<double>(geo_pos, nearest_point, distance);
+}
 
-  const api::GeoPosition closest_point{
-    math::saturate(geo_pos.x(), min_x, max_x),
-    math::saturate(geo_pos.y(), min_y, max_y),
-    math::saturate(geo_pos.z(), min_z, max_z)};
+api::LanePositionT<AutoDiffXd> Lane::DoToLanePositionT(
+    const api::GeoPositionT<AutoDiffXd>& geo_pos,
+    api::GeoPositionT<AutoDiffXd>* nearest_point,
+    AutoDiffXd* distance) const {
+  return ImplDoToLanePositionT<AutoDiffXd>(geo_pos, nearest_point, distance);
+}
+
+template <typename T>
+api::LanePositionT<T> Lane::ImplDoToLanePositionT(
+    const api::GeoPositionT<T>& geo_pos,
+    api::GeoPositionT<T>* nearest_point,
+    T* distance) const {
+  using math::saturate;
+  using std::max;
+
+  const double min_x{0.};
+  const double max_x{length_};
+  const double min_y{driveable_bounds_.min() + y_offset_};
+  const double max_y{driveable_bounds_.max() + y_offset_};
+  const double min_z{elevation_bounds_.min()};
+  const double max_z{elevation_bounds_.max()};
+
+  api::GeoPositionT<T> closest_point{};
+  closest_point.set_x(saturate(geo_pos.x(), min_x, max_x));
+  closest_point.set_y(saturate(geo_pos.y(), min_y, max_y));
+  closest_point.set_z(saturate(geo_pos.z(), min_z, max_z));
   if (nearest_point != nullptr) {
     *nearest_point = closest_point;
   }
 
   if (distance != nullptr) {
-    *distance = (geo_pos.xyz() - closest_point.xyz()).norm();
+    *distance = saturate((geo_pos.xyz() - closest_point.xyz()).norm(), 0.,
+                         std::numeric_limits<double>::infinity());
+    //    *distance = max((geo_pos.xyz() - closest_point.xyz()).norm(),
+    //                std::numeric_limits<double>::epsilon());
   }
 
-  return api::LanePosition(closest_point.x()              /* s */,
-                           closest_point.y() - y_offset_  /* r */,
-                           closest_point.z()              /* h */);
+  api::LanePositionT<T> result{};
+  result.set_s(closest_point.x());
+  result.set_r(closest_point.y() - T(y_offset_));
+  result.set_h(closest_point.z());
+  return result;
 }
 
 }  // namespace dragway

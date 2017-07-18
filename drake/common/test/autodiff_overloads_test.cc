@@ -363,6 +363,31 @@ GTEST_TEST(AutodiffOverloadsTest, DummyValue2) {
   EXPECT_TRUE(std::isnan(derivatives(1)));
 }
 
+GTEST_TEST(AutodiffOverloadsTest, Saturate) {
+  using T = Eigen::AutoDiffScalar<Vector1<double>>;
+  const T x{4., Vector1<double>{3.}};
+
+  // Verifies the value() and derivative() fields in the un-saturated case.
+  const T y_unsat = math::saturate(x, -10., 10.);
+  EXPECT_EQ(y_unsat.value(), x.value());
+  EXPECT_EQ(y_unsat.derivatives()(0), x.derivatives()(0));
+  EXPECT_EQ(y_unsat.derivatives().rows(), 1);
+
+  // Verifies the value() and derivative() fields when the lower bound is
+  // returned.
+  const T y_low = math::saturate(x, 5., 10.);
+  EXPECT_EQ(y_low.value(), 5.);
+  EXPECT_EQ(y_low.derivatives()(0), 0.);
+  EXPECT_EQ(y_low.derivatives().rows(), 1);
+
+  // Verifies the value() and derivative() fields when the upper bound is
+  // returned.
+  const T y_high = math::saturate(x, -10., 2.);
+  EXPECT_EQ(y_high.value(), 2.);
+  EXPECT_EQ(y_high.derivatives()(0), 0.);
+  EXPECT_EQ(y_high.derivatives().rows(), 1);
+}
+
 }  // namespace
 }  // namespace common
 }  // namespace drake

@@ -131,8 +131,9 @@ void MobilPlanner<T>::ImplCalcLaneDirection(
   DRAKE_DEMAND(mobil_params.IsValid());
 
   const RoadPosition ego_position =
-      road_.ToRoadPosition(GeoPosition(ego_pose.get_isometry().translation()),
-                           nullptr, nullptr, nullptr);
+      road_.ToRoadPosition(
+          GeoPosition::FromXyz(ego_pose.get_isometry().translation()),
+          nullptr, nullptr, nullptr);
   // Prepare a list of (possibly nullptr) Lanes to evaluate.
   std::pair<const Lane*, const Lane*> lanes = std::make_pair(
       ego_position.lane->to_left(), ego_position.lane->to_right());
@@ -167,8 +168,9 @@ const std::pair<T, T> MobilPlanner<T>::ComputeIncentives(
   std::pair<T, T> incentives(-kDefaultLargeAccel, -kDefaultLargeAccel);
 
   const RoadPosition ego_position =
-      road_.ToRoadPosition(GeoPosition(ego_pose.get_isometry().translation()),
-                           nullptr, nullptr, nullptr);
+      road_.ToRoadPosition(
+          GeoPosition::FromXyz(ego_pose.get_isometry().translation()),
+          nullptr, nullptr, nullptr);
   DRAKE_DEMAND(ego_position.lane != nullptr);
   const ClosestPoses current_closest_poses = PoseSelector<T>::FindClosestPair(
       ego_position.lane, ego_pose, traffic_poses,

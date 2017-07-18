@@ -80,6 +80,7 @@ drake_cc_library(
         ":cond",
         ":dummy_value",
         ":eigen_autodiff_limits",
+#        "//drake/math:saturate",
     ],
 )
 

@@ -221,6 +221,12 @@ class MaliputDragwayLaneTest : public ::testing::Test {
     }
   }
 
+  bool is_on_s_boundary(const api::GeoPositionT<AutoDiffXd>& geo_position,
+                        const api::Lane* lane) {
+    const double x = geo_position.x().value();
+    return (x == 0. || x == length_);
+  }
+
   const double length_{};
   const double lane_width_{};
   const double shoulder_width_{};
@@ -540,7 +546,7 @@ TEST_F(MaliputDragwayLaneTest, TestToLanePosition) {
   /*
     A figure of the one-lane dragway is shown below. The minimum and maximum
     values of the dragway's driveable region are demarcated.
- 
+
                         X
               Y = max_y ^  Y = min_y
                         :
@@ -584,40 +590,108 @@ TEST_F(MaliputDragwayLaneTest, TestToLanePosition) {
   for (const auto x : x_test_cases) {
     for (const auto y : y_test_cases) {
       for (const double z : z_test_cases) {
-        api::GeoPosition nearest_position;
-        double distance;
-        const api::LanePosition lane_position = lane->ToLanePosition(
-            api::GeoPosition(x, y, z), &nearest_position, &distance);
-        api::GeoPosition expected_nearest_position(x, y, z);
-        if (x < min_x) {
-          expected_nearest_position.set_x(min_x);
+        {
+          api::GeoPosition nearest_position;
+          double distance;
+          const api::LanePosition lane_position = lane->ToLanePosition(
+              api::GeoPosition(x, y, z), &nearest_position, &distance);
+          api::GeoPosition expected_nearest_position(x, y, z);
+          if (x < min_x) {
+            expected_nearest_position.set_x(min_x);
+          }
+          if (x > max_x) {
+            expected_nearest_position.set_x(max_x);
+          }
+          if (y < min_y) {
+            expected_nearest_position.set_y(min_y);
+          }
+          if (y > max_y) {
+            expected_nearest_position.set_y(max_y);
+          }
+          if (z < min_z) {
+            expected_nearest_position.set_z(min_z);
+          }
+          if (z > max_z) {
+            expected_nearest_position.set_z(max_z);
+          }
+
+          EXPECT_TRUE(api::test::IsGeoPositionClose(
+              nearest_position, expected_nearest_position,
+              kLinearTolerance));
+          // TODO(maddog@tri.global)  Should test for explicit correct distance.
+          EXPECT_GE(distance, 0);
+          EXPECT_TRUE(api::test::IsLanePositionClose(
+              lane_position,
+              api::LanePosition(
+                  expected_nearest_position.x(),
+                  expected_nearest_position.y() - lane->y_offset(),
+                  expected_nearest_position.z()),
+              kLinearTolerance));
         }
-        if (x > max_x) {
-          expected_nearest_position.set_x(max_x);
+
+        // Tests that AutoDiffXd returns the same results and preserves any
+        // partial derivatives given to it.
+        {
+          AutoDiffXd zero_value{0., Eigen::VectorXd::Zero(1)};
+          AutoDiffXd distance(zero_value);
+          api::GeoPositionT<AutoDiffXd> nearest_position;
+          nearest_position.set_xyz({zero_value, zero_value, zero_value});
+
+          // Define the partial derivatives with respect to geo_position's
+          // x-axis.  That is, seed geo_position with the partial derivatives
+          // ∂x/∂x = 1, ∂y/∂x = 0., ∂z/∂x = 0.
+          AutoDiffXd x_autodiff{x, Eigen::VectorXd::Unit(1, 0)};
+          AutoDiffXd y_autodiff{y, Eigen::VectorXd::Zero(1)};
+          AutoDiffXd z_autodiff{z, Eigen::VectorXd::Zero(1)};
+
+          api::GeoPositionT<AutoDiffXd> geo_position{};
+          geo_position.set_xyz({x_autodiff, y_autodiff, z_autodiff});
+
+          const api::LanePositionT<AutoDiffXd> lane_position =
+              lane->ToLanePositionT<AutoDiffXd>(geo_position, &nearest_position,
+                                                &distance);
+
+          // Tests the derivatives.
+          if (distance == 0.) {
+            // `geo_position` is within the interior or on the boundary.  Expect
+            // the following derivatives for lane_position: ∂s/∂x = 1, ∂r/∂x =
+            // 0., ∂h/∂x = 0. This occurs in Dragway because its s-r-h axis has
+            // the same orientation as the x-y-z axis.  Verify that the
+            // derivatives of nearest position are the same as for geo_position.
+            EXPECT_EQ(1., lane_position.s().derivatives()(0));
+            EXPECT_EQ(1., nearest_position.x().derivatives()(0));
+            if (is_on_s_boundary(geo_position, lane)) {
+              // geo_position is sitting on one of the lane ends.  Expect
+              // ∂/∂x(distance) = NaN.
+              EXPECT_TRUE(std::isnan(distance.derivatives()(0)));
+            } else {
+              // geo_position is within the lane.  Expect ∂/∂x(distance) = 0.
+              EXPECT_EQ(0., distance.derivatives()(0));
+            }
+          } else {
+            // `geo_position` is outside of the lane.  Expect the derivatives of
+            // lane_position and nearest position to all be zero.
+            if (is_on_s_boundary(geo_position, lane)) {
+              // Expect ∂/∂x(distance) = 0 at the `s` limits, since any
+              // incremental x-direction motion does not affect the distance to
+              // the lane.
+              EXPECT_EQ(0., distance.derivatives()(0));
+              EXPECT_EQ(1., lane_position.s().derivatives()(0));
+              EXPECT_EQ(1., nearest_position.x().derivatives()(0));
+            } else {
+              // Expect ∂/∂x(distance) != 0 outside of the `s` limits, since
+              // incremental movement in the x-direction takes us closer/further
+              // from the lane.
+              EXPECT_NE(0., distance.derivatives()(0));
+              EXPECT_EQ(0., lane_position.s().derivatives()(0));
+              EXPECT_EQ(0., nearest_position.x().derivatives()(0));
+            }
+          }
+          EXPECT_EQ(0., lane_position.r().derivatives()(0));
+          EXPECT_EQ(0., lane_position.h().derivatives()(0));
+          EXPECT_EQ(0., nearest_position.y().derivatives()(0));
+          EXPECT_EQ(0., nearest_position.z().derivatives()(0));
         }
-        if (y < min_y) {
-          expected_nearest_position.set_y(min_y);
-        }
-        if (y > max_y) {
-          expected_nearest_position.set_y(max_y);
-        }
-        if (z < min_z) {
-          expected_nearest_position.set_z(min_z);
-        }
-        if (z > max_z) {
-          expected_nearest_position.set_z(max_z);
-        }
-        EXPECT_TRUE(api::test::IsGeoPositionClose(
-            nearest_position, expected_nearest_position,
-            kLinearTolerance));
-        // TODO(maddog@tri.global)  Should test for explicit correct distance.
-        EXPECT_GE(distance, 0);
-        EXPECT_TRUE(api::test::IsLanePositionClose(
-            lane_position,
-            api::LanePosition(expected_nearest_position.x(),
-                              expected_nearest_position.y() - lane->y_offset(),
-                              expected_nearest_position.z()),
-            kLinearTolerance));
       }
     }
   }

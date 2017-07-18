@@ -10,41 +10,61 @@ namespace maliput {
 namespace api {
 namespace {
 
-#define CHECK_ALL_LANE_POSITION_ACCESSORS(dut, _s, _r, _h)       \
-  do {                                                           \
-    EXPECT_EQ(dut.s(), _s);                                      \
-    EXPECT_EQ(dut.r(), _r);                                      \
-    EXPECT_EQ(dut.h(), _h);                                      \
-    EXPECT_TRUE(CompareMatrices(dut.srh(), Vector3<double>(_s, _r, _h))); \
-  } while (0)
+static constexpr double kX0 = 23.;
+static constexpr double kX1 = 75.;
+static constexpr double kX2 = 0.567;
 
+#define CHECK_ALL_LANE_POSITION_ACCESSORS(dut, _s, _r, _h)              \
+  do {                                                                  \
+    EXPECT_EQ(dut.s(), _s);                                             \
+    EXPECT_EQ(dut.r(), _r);                                             \
+    EXPECT_EQ(dut.h(), _h);                                             \
+    EXPECT_EQ(dut.srh().x(), _s);                                       \
+    EXPECT_EQ(dut.srh().y(), _r);                                       \
+    EXPECT_EQ(dut.srh().z(), _h);                                       \
+  } while (0)
 
 GTEST_TEST(LanePositionTest, DefaultConstructor) {
   // Check that default constructor obeys its contract.
-  LanePosition dut;
+  const LanePosition dut;
   CHECK_ALL_LANE_POSITION_ACCESSORS(dut, 0., 0., 0.);
+  EXPECT_NO_THROW(LanePositionT<double> dut_double);
+  EXPECT_NO_THROW(LanePositionT<AutoDiffXd> dut_autodiff);
 }
 
 
 GTEST_TEST(LanePositionTest, ParameterizedConstructor) {
   // Check the fully-parameterized constructor.
-  LanePosition dut(23., 75., 0.567);
-  CHECK_ALL_LANE_POSITION_ACCESSORS(dut, 23., 75., 0.567);
+  const LanePosition dut(kX0, kX1, kX2);
+  CHECK_ALL_LANE_POSITION_ACCESSORS(dut, kX0, kX1, kX2);
+  EXPECT_NO_THROW(LanePositionT<double> dut_double(kX0, kX1, kX2));
+  EXPECT_NO_THROW(LanePositionT<AutoDiffXd> dut_autodiff(kX0, kX1, kX2));
 }
 
 
 GTEST_TEST(LanePositionTest, ConstructionFromVector) {
   // Check the conversion-construction from a 3-vector.
-  LanePosition dut = LanePosition::FromSrh(Vector3<double>(23., 75., 0.567));
-  CHECK_ALL_LANE_POSITION_ACCESSORS(dut, 23., 75., 0.567);
+  const LanePosition dut =
+      LanePosition::FromSrh(Vector3<double>(kX0, kX1, kX2));
+  CHECK_ALL_LANE_POSITION_ACCESSORS(dut, kX0, kX1, kX2);
+  EXPECT_NO_THROW(LanePositionT<double>::FromSrh({kX0, kX1, kX2}));
+  EXPECT_NO_THROW(LanePositionT<AutoDiffXd>::FromSrh({kX0, kX1, kX2}));
 }
 
 
 GTEST_TEST(LanePositionTest, VectorSetter) {
   // Check the vector-based setter.
-  LanePosition dut(23., 75., 0.567);
-  dut.set_srh(Vector3<double>(9., 7., 8.));
-  CHECK_ALL_LANE_POSITION_ACCESSORS(dut, 9., 7., 8.);
+  LanePosition dut(kX0, kX1, kX2);
+  const Vector3<double> srh(9., 7., 8.);
+  dut.set_srh(srh);
+  CHECK_ALL_LANE_POSITION_ACCESSORS(dut, srh.x(), srh.y(), srh.z());
+
+  // Check the vector-based setter when using AutoDiffXd variables.
+  LanePositionT<AutoDiffXd> dut_autodiff(kX0, kX1, kX2);
+  const Vector3<AutoDiffXd> srh_autodiff(srh.x(), srh.y(), srh.z());
+  dut_autodiff.set_srh(srh_autodiff);
+  CHECK_ALL_LANE_POSITION_ACCESSORS(
+      dut_autodiff, srh_autodiff.x(), srh_autodiff.y(), srh_autodiff.z());
 }
 
 
@@ -60,6 +80,21 @@ GTEST_TEST(LanePositionTest, ComponentSetters) {
 
   dut.set_h(42.);
   CHECK_ALL_LANE_POSITION_ACCESSORS(dut, 99., 2.3, 42.);
+
+  // Check the individual component setters when using AutoDiffXd variables.
+  LanePositionT<AutoDiffXd> dut_autodiff(0.1, 0.2, 0.3);
+
+  dut_autodiff.set_s(AutoDiffXd(99.));
+  CHECK_ALL_LANE_POSITION_ACCESSORS(
+      dut_autodiff, AutoDiffXd(99.), AutoDiffXd(0.2), AutoDiffXd(0.3));
+
+  dut_autodiff.set_r(AutoDiffXd(2.3));
+  CHECK_ALL_LANE_POSITION_ACCESSORS(
+      dut_autodiff, AutoDiffXd(99.), AutoDiffXd(2.3), AutoDiffXd(0.3));
+
+  dut_autodiff.set_h(AutoDiffXd(42.));
+  CHECK_ALL_LANE_POSITION_ACCESSORS(
+      dut_autodiff, AutoDiffXd(99.), AutoDiffXd(2.3), AutoDiffXd(42.));
 }
 
 #undef CHECK_ALL_LANE_POSITION_ACCESSORS
@@ -70,36 +105,53 @@ GTEST_TEST(LanePositionTest, ComponentSetters) {
     EXPECT_EQ(dut.x(), _x);                                             \
     EXPECT_EQ(dut.y(), _y);                                             \
     EXPECT_EQ(dut.z(), _z);                                             \
-    EXPECT_TRUE(CompareMatrices(dut.xyz(), Vector3<double>(_x, _y, _z))); \
+    EXPECT_EQ(dut.xyz().x(), _x);                                       \
+    EXPECT_EQ(dut.xyz().y(), _y);                                       \
+    EXPECT_EQ(dut.xyz().z(), _z);                                       \
   } while (0)
 
 
 GTEST_TEST(GeoPositionTest, DefaultConstructor) {
   // Check that default constructor obeys its contract.
-  GeoPosition dut;
+  const GeoPosition dut;
   CHECK_ALL_GEO_POSITION_ACCESSORS(dut, 0., 0., 0.);
+  EXPECT_NO_THROW(GeoPositionT<double> dut_double);
+  EXPECT_NO_THROW(GeoPositionT<AutoDiffXd> dut_autodiff);
 }
 
 
 GTEST_TEST(GeoPositionTest, ParameterizedConstructor) {
   // Check the fully-parameterized constructor.
-  GeoPosition dut(23., 75., 0.567);
-  CHECK_ALL_GEO_POSITION_ACCESSORS(dut, 23., 75., 0.567);
+  const GeoPosition dut(kX0, kX1, kX2);
+  CHECK_ALL_GEO_POSITION_ACCESSORS(dut, kX0, kX1, kX2);
+  EXPECT_NO_THROW(GeoPositionT<double> dut_double(kX0, kX1, kX2));
+  EXPECT_NO_THROW(GeoPositionT<AutoDiffXd> dut_autodiff(kX0, kX1, kX2));
 }
 
 
 GTEST_TEST(GeoPositionTest, ConstructionFromVector) {
   // Check the conversion-construction from a 3-vector.
-  GeoPosition dut = GeoPosition::FromXyz(Vector3<double>(23., 75., 0.567));
-  CHECK_ALL_GEO_POSITION_ACCESSORS(dut, 23., 75., 0.567);
+  const GeoPosition dut =
+      GeoPosition::FromXyz(Vector3<double>(kX0, kX1, kX2));
+  CHECK_ALL_GEO_POSITION_ACCESSORS(dut, kX0, kX1, kX2);
+  EXPECT_NO_THROW(GeoPositionT<double>::FromXyz({kX0, kX1, kX2}));
+  EXPECT_NO_THROW(GeoPositionT<AutoDiffXd>::FromXyz({kX0, kX1, kX2}));
 }
 
 
 GTEST_TEST(GeoPositionTest, VectorSetter) {
   // Check the vector-based setter.
-  GeoPosition dut(23., 75., 0.567);
-  dut.set_xyz(Vector3<double>(9., 7., 8.));
-  CHECK_ALL_GEO_POSITION_ACCESSORS(dut, 9., 7., 8.);
+  GeoPosition dut(kX0, kX1, kX2);
+  const Vector3<double> xyz(9., 7., 8.);
+  dut.set_xyz(xyz);
+  CHECK_ALL_GEO_POSITION_ACCESSORS(dut, xyz.x(), xyz.y(), xyz.z());
+
+  // Check the vector-based setter when using AutoDiffXd variables.
+  GeoPositionT<AutoDiffXd> dut_autodiff(kX0, kX1, kX2);
+  const Vector3<AutoDiffXd> xyz_autodiff(xyz.x(), xyz.y(), xyz.z());
+  dut_autodiff.set_xyz(xyz_autodiff);
+  CHECK_ALL_GEO_POSITION_ACCESSORS(
+      dut_autodiff, xyz_autodiff.x(), xyz_autodiff.y(), xyz_autodiff.z());
 }
 
 
@@ -115,6 +167,21 @@ GTEST_TEST(GeoPositionTest, ComponentSetters) {
 
   dut.set_z(42.);
   CHECK_ALL_GEO_POSITION_ACCESSORS(dut, 99., 2.3, 42.);
+
+  // Check the individual component setters when using AutoDiffXd variables.
+  GeoPositionT<AutoDiffXd> dut_autodiff(0.1, 0.2, 0.3);
+
+  dut_autodiff.set_x(AutoDiffXd(99.));
+  CHECK_ALL_GEO_POSITION_ACCESSORS(
+      dut_autodiff, AutoDiffXd(99.), AutoDiffXd(0.2), AutoDiffXd(0.3));
+
+  dut_autodiff.set_y(AutoDiffXd(2.3));
+  CHECK_ALL_GEO_POSITION_ACCESSORS(
+      dut_autodiff, AutoDiffXd(99.), AutoDiffXd(2.3), AutoDiffXd(0.3));
+
+  dut_autodiff.set_z(AutoDiffXd(42.));
+  CHECK_ALL_GEO_POSITION_ACCESSORS(
+      dut_autodiff, AutoDiffXd(99.), AutoDiffXd(2.3), AutoDiffXd(42.));
 }
 
 GTEST_TEST(GeoPositionTest, EqualityInequalityOperators) {
