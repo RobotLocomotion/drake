@@ -86,6 +86,25 @@ drake_cc_library(
     ],
 )
 
+drake_cc_binary(
+    name = "humanoid_manipulation_demo",
+    srcs = [
+        "dev/humanoid_manipulation_demo.cc",
+    ],
+    data = [
+        "//drake/examples/Valkyrie:models",
+    ],
+    deps = [
+        "//drake/common:find_resource",
+        "//drake/examples/Valkyrie:valkyrie_constants",
+        "//drake/manipulation/util:robot_state_msg_translator",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/multibody/parsers",
+        "@lcmtypes_bot2_core",
+        "@lcmtypes_robotlocomotion",
+    ],
+)
+
 # === test/ ===
 drake_cc_googletest(
     name = "generic_plan_test",

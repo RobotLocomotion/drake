@@ -83,52 +83,74 @@ void HumanoidManipulationPlan<T>::HandlePlanMessageGenericPlanDerived(
   int consumed = msg.decode(message_bytes, 0, message_length);
   DRAKE_DEMAND(consumed == message_length);
 
-  const RigidBodyTree<T>& robot = robot_status.robot();
-  KinematicsCache<T> cache = robot.CreateKinematicsCache();
+  if (msg.utime == last_handle_plan_time_) return;
 
-  VectorX<T> q(robot.get_num_positions());
-  VectorX<T> v(robot.get_num_velocities());
+  // Saves the time stamp.
+  last_handle_plan_time_ = msg.utime;
 
   // knots for setting up the splines.
   int length = static_cast<int>(msg.plan.size());
-  std::vector<T> times(length);
-  std::vector<MatrixX<T>> dof_knots(length);
-  std::vector<MatrixX<T>> com_knots(length);
+  if (length < 1) {
+    drake::log()->warn(
+        "HumanoidManipulationPlan::HandlePlanMessageGenericPlanDerived: "
+        "received message has less than 1 knots.");
+    return;
+  }
 
+  const RigidBodyTree<T>& robot = robot_status.robot();
+  KinematicsCache<T> cache = robot.CreateKinematicsCache();
+
+  const double time_now = robot_status.time();
+  VectorX<T> q = this->get_dof_trajectory().get_position(time_now);
+  VectorX<T> v = VectorX<T>::Zero(robot.get_num_velocities());
+
+  // Set the first knot points to the current desired values.
+  std::vector<T> times(1, time_now);
+  std::vector<MatrixX<T>> dof_knots(1, q);
   std::unordered_map<const RigidBody<T>*, std::vector<Isometry3<T>>> body_knots;
-  body_knots[alias_groups.get_body("pelvis")] =
-      std::vector<Isometry3<T>>(length);
-  body_knots[alias_groups.get_body("torso")] =
-      std::vector<Isometry3<T>>(length);
+  std::vector<const RigidBody<T>*> tracked_bodies = {
+      alias_groups.get_body("pelvis"), alias_groups.get_body("torso")};
+  for (const RigidBody<T>* body : tracked_bodies) {
+    body_knots[body] = std::vector<Isometry3<T>>(
+        1, this->get_body_trajectory(body).get_pose(time_now));
+  }
+  std::vector<T> com_times(1, time_now);
+  std::vector<MatrixX<T>> com_knots(1, zmp_planner_.get_nominal_com(time_now));
 
   const manipulation::RobotStateLcmMessageTranslator translator(
       robot_status.robot());
-  for (size_t f = 0; f < msg.plan.size(); ++f) {
-    const bot_core::robot_state_t& keyframe = msg.plan[f];
+
+  for (const bot_core::robot_state_t& keyframe : msg.plan) {
     translator.DecodeMessageKinematics(keyframe, q, v);
-    const double time = static_cast<double>(msg.utime) / 1e6;
+    const double time = static_cast<double>(keyframe.utime) / 1e6;
 
     cache.initialize(q);
     robot.doKinematics(cache, false);
 
-    times[f] = robot_status.time() + time;
-    dof_knots[f] = q;
+    times.push_back(time_now + time);
+    com_times.push_back(time_now + time);
+    dof_knots.push_back(q);
 
     for (auto& body_knots_pair : body_knots) {
       const RigidBody<T>* body = body_knots_pair.first;
       std::vector<Isometry3<T>>& body_knots = body_knots_pair.second;
-      body_knots[f] = robot.CalcBodyPoseInWorldFrame(cache, *body);
+      body_knots.push_back(robot.CalcBodyPoseInWorldFrame(cache, *body));
     }
 
     // Computes com.
-    com_knots[f] = robot.centerOfMass(cache).template head<2>();
-    std::cout << com_knots[f].transpose() << std::endl;
+    com_knots.push_back(robot.centerOfMass(cache).template head<2>());
   }
 
   // Generates the zmp trajectory.
   {
+    // CoM has 1 more knot point to ensure the trajectory ends at zero velocity.
+    // TODO(siyuan): have the zmp planner deal with this.
+    // Repeats the last desired CoM position to ensure CoM trajector ends in
+    // zero velocity.
+    com_times.push_back(com_times.back() + 0.1);
+    com_knots.push_back(com_knots.back());
     PiecewisePolynomial<T> zmp_poly =
-        PiecewisePolynomial<T>::Pchip(times, com_knots, true);
+        PiecewisePolynomial<T>::Pchip(com_times, com_knots, true);
     Vector4<T> x_com0;
     x_com0 << robot_status.com().head<2>(), robot_status.comd().head<2>();
     zmp_planner_.Plan(zmp_poly, x_com0, zmp_height_);
@@ -136,7 +158,7 @@ void HumanoidManipulationPlan<T>::HandlePlanMessageGenericPlanDerived(
 
   // Generates dof trajectories.
   {
-    MatrixX<T> zeros(robot.get_num_positions(), 1);
+    MatrixX<T> zeros = MatrixX<T>::Zero(robot.get_num_positions(), 1);
     this->set_dof_trajectory(manipulation::PiecewiseCubicTrajectory<T>(
         PiecewisePolynomial<T>::Cubic(times, dof_knots, zeros, zeros)));
   }

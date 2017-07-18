@@ -12,6 +12,7 @@
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_value_source.h"
+#include "robotlocomotion/robot_plan_t.hpp"
 
 namespace drake {
 namespace examples {
@@ -69,12 +70,20 @@ class HumanoidPlanEvalAndQpInverseDynamicsTest : public ::testing::Test {
     auto state_source = builder.AddSystem<systems::ConstantValueSource<double>>(
         systems::AbstractValue::Make<HumanoidStatus>(robot_status));
 
+    // Adds a dummy plan message.
+    robotlocomotion::robot_plan_t msg{};
+    auto plan_source = builder.AddSystem<systems::ConstantValueSource<double>>(
+        systems::AbstractValue::Make<robotlocomotion::robot_plan_t>(msg));
+
     // State -> qp inverse dynamics.
     builder.Connect(state_source->get_output_port(0),
                     controller->get_input_port_humanoid_status());
     // State -> plan eval.
     builder.Connect(state_source->get_output_port(0),
                     plan_eval->get_input_port_humanoid_status());
+    // Plan source -> plan eval.
+    builder.Connect(plan_source->get_output_port(0),
+                    plan_eval->get_input_port_plan_msg());
     // plan eval -> qp inverse dynamics.
     builder.Connect(plan_eval->get_output_port_qp_input(),
                     controller->get_input_port_qp_input());

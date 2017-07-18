@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "drake/examples/QPInverseDynamicsForHumanoids/plan_eval/dev/humanoid_manipulation_plan.h"
+#include "robotlocomotion/robot_plan_t.hpp"
 
 namespace drake {
 namespace examples {
@@ -17,6 +18,8 @@ HumanoidPlanEvalSystem::HumanoidPlanEvalSystem(
     const std::string& param_file_name, double dt)
     : PlanEvalBaseSystem(robot, alias_groups_file_name, param_file_name, dt) {
   set_name("HumanoidPlanEval");
+
+  input_port_index_plan_msg_ = DeclareAbstractInputPort().get_index();
 
   auto plan_as_value = systems::AbstractValue::Make<GenericPlan<double>>(
       HumanoidManipulationPlan<double>());
@@ -33,6 +36,18 @@ void HumanoidPlanEvalSystem::DoExtendedCalcUnrestrictedUpdate(
   // Gets the robot state from input.
   const HumanoidStatus* robot_status = EvalInputValue<HumanoidStatus>(
       context, get_input_port_humanoid_status().get_index());
+
+  // Gets the plan message fron input.
+  const robotlocomotion::robot_plan_t* msg =
+      EvalInputValue<robotlocomotion::robot_plan_t>(
+          context, input_port_index_plan_msg_);
+
+  // Handles the plan.
+  std::vector<uint8_t> raw_msg_bytes;
+  raw_msg_bytes.resize(msg->getEncodedSize());
+  msg->encode(raw_msg_bytes.data(), 0, raw_msg_bytes.size());
+  plan.HandlePlanMessage(*robot_status, get_paramset(),
+      get_alias_groups(), raw_msg_bytes.data(), raw_msg_bytes.size());
 
   // Runs the controller.
   plan.ModifyPlan(*robot_status, get_paramset(), get_alias_groups());

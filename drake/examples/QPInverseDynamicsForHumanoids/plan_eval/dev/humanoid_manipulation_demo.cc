@@ -1,0 +1,58 @@
+#include <lcm/lcm-cpp.hpp>
+
+#include "drake/examples/Valkyrie/valkyrie_constants.h"
+#include "drake/manipulation/util/robot_state_msg_translator.h"
+#include "drake/multibody/joints/floating_base_types.h"
+#include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/rigid_body_tree.h"
+
+#include "robotlocomotion/robot_plan_t.hpp"
+
+using namespace drake;
+
+int main() {
+  RigidBodyTree<double> robot;
+  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+      "drake/examples/Valkyrie/urdf/urdf/"
+      "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf",
+      multibody::joints::kRollPitchYaw, &robot);
+
+  DRAKE_DEMAND(examples::valkyrie::kRPYValkyrieDof ==
+               robot.get_num_positions());
+  VectorX<double> q = examples::valkyrie::RPYValkyrieFixedPointState().head(
+      examples::valkyrie::kRPYValkyrieDof);
+  VectorX<double> v = VectorX<double>::Zero(robot.get_num_velocities());
+
+  const manipulation::RobotStateLcmMessageTranslator translator(robot);
+
+  // There needs to be at least 1 knot point, the controller is going to
+  // automatically append its current desired q to the beginning to make
+  // the desired trajectories.
+  //
+  // A couple things:
+  // 1. The first timestamp needs to be bigger than 0.
+  // 2. msg.utime needs to be different for different messages. The controller
+  // ignores messages with the same utime.
+  // 3. Assumes the message is packaged with a RPY floating joint.
+  // 4. Assumes that the given knot points are stable given the current actual
+  // contact points.
+  // 5. Pelvis z and orientation + torso orientation are tracked in Cartesian
+  // mode. CoM in controlled by a LQR like controller, where the desired is
+  // given by the knot points specified here.
+  robotlocomotion::robot_plan_t msg{};
+  srand(time(NULL));
+  msg.utime = rand();
+  msg.num_states = 1;
+  msg.plan.resize(msg.num_states);
+  msg.plan_info.resize(msg.num_states, 1);
+
+  q[10] += 0.5;  // right shoulder pitch
+  translator.InitializeMessage(&(msg.plan[0]));
+  translator.EncodeMessageKinematics(q, v, &(msg.plan[0]));
+  msg.plan[0].utime = 1e6;
+
+  lcm::LCM lcm;
+  lcm.publish("VALKYRIE_MANIP_PLAN", &msg);
+
+  sleep(1);
+}
