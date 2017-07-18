@@ -6,6 +6,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/quaternion.h"
 #include "drake/math/roll_pitch_yaw.h"
@@ -125,49 +126,60 @@ std::ostream& operator<<(std::ostream& out, const Rotation& rotation);
 
 /// A position in 3-dimensional geographical Cartesian space, i.e.,
 /// in the world frame, consisting of three components x, y, and z.
-class GeoPosition {
+///
+/// Instantiated templates for the following kinds of T's are provided:
+/// - double
+/// - drake::AutoDiffXd
+///
+/// They are already available to link against in the containing library.
+template <typename T>
+class GeoPositionT {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeoPosition)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeoPositionT)
 
   /// Default constructor, initializing all components to zero.
-  GeoPosition() : xyz_(0., 0., 0.) {}
+  GeoPositionT() : xyz_(0., 0., 0.) {}
 
   /// Fully parameterized constructor.
-  GeoPosition(double x, double y, double z) : xyz_(x, y, z) {}
+  GeoPositionT(const double x, const double y, const double z)
+      : xyz_(T(x), T(y), T(z)) {}
 
-  /// Fully parameterized constructor from a 3-vector @p xyz of the form
+  /// Constructs a GeoPosition from a 3-vector @p xyz of the form
   /// `[x, y, z]`.
-  explicit GeoPosition(const Vector3<double>& xyz) : xyz_(xyz) {}
-
-  /// Constructs a GeoPosition from a 3-vector @p xyz of the form `[x, y, z]`.
-  static GeoPosition FromXyz(const Vector3<double>& xyz) {
-    return GeoPosition(xyz);
+  static GeoPositionT<T> FromXyz(const Vector3<double>& xyz) {
+    return GeoPositionT<T>(xyz);
   }
 
   /// Returns all components as 3-vector `[x, y, z]`.
-  const Vector3<double>& xyz() const { return xyz_; }
+  const Vector3<T>& xyz() const { return xyz_; }
   /// Sets all components from 3-vector `[x, y, z]`.
-  void set_xyz(const Vector3<double>& xyz) { xyz_ = xyz; }
+  void set_xyz(const Vector3<T>& xyz) { xyz_ = xyz; }
 
   /// @name Getters and Setters
   //@{
   /// Gets `x` value.
-  double x() const { return xyz_.x(); }
+  T x() const { return xyz_.x(); }
   /// Sets `x` value.
-  void set_x(double x) { xyz_.x() = x; }
+  void set_x(const T& x) { xyz_.x() = x; }
   /// Gets `y` value.
-  double y() const { return xyz_.y(); }
+  T y() const { return xyz_.y(); }
   /// Sets `y` value.
-  void set_y(double y) { xyz_.y() = y; }
-  /// Gets `z` vaue.
-  double z() const { return xyz_.z(); }
+  void set_y(const T& y) { xyz_.y() = y; }
+  /// Gets `z` value.
+  T z() const { return xyz_.z(); }
   /// Sets `z` value.
-  void set_z(double z) { xyz_.z() = z; }
+  void set_z(const T& z) { xyz_.z() = z; }
   //@}
 
+ protected:
+  explicit GeoPositionT(const Vector3<double>& xyz) : xyz_(xyz) {}
+
  private:
-  Vector3<double> xyz_;
+  Vector3<T> xyz_;
 };
+
+// Alias for the double scalar type.
+typedef GeoPositionT<double> GeoPosition;
 
 /// Streams a string representation of @p geo_position into @p out. Returns
 /// @p out. This method is provided for the purposes of debugging or
@@ -184,47 +196,60 @@ bool operator!=(const GeoPosition& lhs, const GeoPosition& rhs);
 ///  * s is longitudinal position, as arc-length along a Lane's reference line.
 ///  * r is lateral position, perpendicular to the reference line at s.
 ///  * h is height above the road surface.
-class LanePosition {
+///
+/// Instantiated templates for the following kinds of T's are provided:
+/// - double
+/// - drake::AutoDiffXd
+///
+/// They are already available to link against in the containing library.
+template <typename T>
+class LanePositionT {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LanePosition)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LanePositionT)
 
   /// Default constructor, initializing all components to zero.
-  LanePosition() : srh_(0., 0., 0.) {}
+  LanePositionT() : srh_(0., 0., 0.) {}
 
   /// Fully parameterized constructor.
-  LanePosition(double s, double r, double h) : srh_(s, r, h) {}
+  LanePositionT(const double& s, const double& r, const double& h)
+      : srh_(s, r, h) {}
 
-  /// Constructs a LanePosition from a 3-vector @p srh of the form `[s, r, h]`.
-  static LanePosition FromSrh(const Vector3<double>& srh) {
-    return LanePosition(srh);
+  /// Constructs a templated LanePosition from a 3-vector @p srh of the form
+  /// `[s, r, h]`.
+  static LanePositionT<T> FromSrh(const Vector3<double>& srh) {
+    return LanePositionT<T>(srh);
   }
 
   /// Returns all components as 3-vector `[s, r, h]`.
-  const Vector3<double>& srh() const { return srh_; }
+  const Vector3<T>& srh() const { return srh_; }
   /// Sets all components from 3-vector `[s, r, h]`.
-  void set_srh(const Vector3<double>& srh) { srh_ = srh; }
+  void set_srh(const Vector3<T>& srh) { srh_ = srh; }
 
   /// @name Getters and Setters
   //@{
   /// Gets `s` value.
-  double s() const { return srh_.x(); }
+  T s() const { return srh_.x(); }
   /// Sets `s` value.
-  void set_s(double s) { srh_.x() = s; }
+  void set_s(const T& s) { srh_.x() = s; }
   /// Gets `r` value.
-  double r() const { return srh_.y(); }
+  T r() const { return srh_.y(); }
   /// Sets `r` value.
-  void set_r(double r) { srh_.y() = r; }
+  void set_r(const T& r) { srh_.y() = r; }
   /// Gets `h` value.
-  double h() const { return srh_.z(); }
+  T h() const { return srh_.z(); }
   /// Sets `h` value.
-  void set_h(double h) { srh_.z() = h; }
+  void set_h(const T& h) { srh_.z() = h; }
   //@}
 
- private:
-  Vector3<double> srh_;
+ protected:
+  explicit LanePositionT(const Vector3<double>& srh) : srh_(srh) {}
 
-  explicit LanePosition(const Vector3<double>& srh) : srh_(srh) {}
+ private:
+  Vector3<T> srh_;
 };
+
+// Alias for the double scalar type.
+typedef LanePositionT<double> LanePosition;
 
 /// Streams a string representation of @p lane_position into @p out. Returns
 /// @p out. This method is provided for the purposes of debugging or
@@ -271,10 +296,7 @@ struct RoadPosition {
 /// Bounds in the lateral dimension (r component) of a `Lane`-frame, consisting
 /// of a pair of minimum and maximum r value.  The bounds must straddle r = 0,
 /// i.e., the minimum must be <= 0 and the maximum must be >= 0.
-class RBounds {
- public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RBounds)
-
+struct RBounds {
   /// Default constructor.
   RBounds() = default;
 

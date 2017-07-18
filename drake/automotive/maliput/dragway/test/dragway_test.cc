@@ -22,8 +22,7 @@ class MaliputDragwayLaneTest : public ::testing::Test {
       : length_(100.0),
         lane_width_(6.0),
         shoulder_width_(0.5),
-        maximum_height_(5.0) {
-  }
+        maximum_height_(5.0) {}
 
   // Contains expected driveable r_min, driveable r_max, and y_offset parameters
   // of a Dragway Lane.
@@ -35,8 +34,8 @@ class MaliputDragwayLaneTest : public ::testing::Test {
     double elevation_max{};
   };
 
-  ExpectedLaneParameters GetExpectedLaneParameters(
-      int num_lanes, int lane_index) const {
+  ExpectedLaneParameters GetExpectedLaneParameters(int num_lanes,
+                                                   int lane_index) const {
     ExpectedLaneParameters result{};
     if (num_lanes == 1) {
       result.y_offset = 0.0;
@@ -64,7 +63,7 @@ class MaliputDragwayLaneTest : public ::testing::Test {
         GetExpectedLaneParameters(num_lanes, lane->index());
 
     // Tests Lane::lane_bounds().
-    for (double s = 0 ; s < length_; s += length_ / 100) {
+    for (double s = 0; s < length_; s += length_ / 100) {
       const api::RBounds lane_bounds = lane->lane_bounds(s);
       EXPECT_TRUE(api::test::IsRBoundsClose(
           lane_bounds, api::RBounds(-lane_width_ / 2, lane_width_ / 2),
@@ -74,7 +73,7 @@ class MaliputDragwayLaneTest : public ::testing::Test {
     EXPECT_EQ(lane->length(), length_);
 
     // Tests Lane::driveable_bounds().
-    for (double s = 0 ; s < length_; s += length_ / 100) {
+    for (double s = 0; s < length_; s += length_ / 100) {
       const api::RBounds driveable_bounds = lane->driveable_bounds(s);
       EXPECT_TRUE(api::test::IsRBoundsClose(
           driveable_bounds,
@@ -83,7 +82,7 @@ class MaliputDragwayLaneTest : public ::testing::Test {
     }
 
     // Tests Lane::elevation_bounds().
-    for (double s = 0 ; s < length_; s += length_ / 10) {
+    for (double s = 0; s < length_; s += length_ / 10) {
       const api::RBounds driveable_bounds = lane->driveable_bounds(s);
       const api::HBounds elevation_bounds0 =
           lane->elevation_bounds(s, driveable_bounds.min());
@@ -107,12 +106,11 @@ class MaliputDragwayLaneTest : public ::testing::Test {
     // state space and only check those points in the hopes that they are
     // representative of the entire state space.
     const double driveable_width =
-      expected.driveable_r_max - expected.driveable_r_min;
+        expected.driveable_r_max - expected.driveable_r_min;
     for (double s = 0; s < length_; s += length_ / 100) {
       for (double r = expected.driveable_r_min; r <= expected.driveable_r_max;
-          r += driveable_width / 100) {
-        for (double h = expected.elevation_min;
-             h < expected.elevation_max;
+           r += driveable_width / 100) {
+        for (double h = expected.elevation_min; h < expected.elevation_max;
              h += (expected.elevation_max - expected.elevation_min) * 0.1) {
           const api::LanePosition lane_position(s, r, h);
 
@@ -122,13 +120,12 @@ class MaliputDragwayLaneTest : public ::testing::Test {
           const double linear_tolerance =
               lane->segment()->junction()->road_geometry()->linear_tolerance();
           EXPECT_DOUBLE_EQ(geo_position.x(), s);
-          EXPECT_NEAR(geo_position.y(),
-                      expected.y_offset + r, linear_tolerance);
+          EXPECT_NEAR(geo_position.y(), expected.y_offset + r,
+                      linear_tolerance);
           EXPECT_DOUBLE_EQ(geo_position.z(), h);
 
           // Tests Lane::GetOrientation().
-          const api::Rotation rotation =
-              lane->GetOrientation(lane_position);
+          const api::Rotation rotation = lane->GetOrientation(lane_position);
           EXPECT_TRUE(api::test::IsRotationClose(
               rotation, api::Rotation::FromRpy(0.0, 0.0, 0.0),
               kAngularTolerance));
@@ -143,7 +140,8 @@ class MaliputDragwayLaneTest : public ::testing::Test {
           const double kEta_v = 3.3;
 
           const api::LanePosition motion_derivatives =
-              lane->EvalMotionDerivatives(lane_position,
+              lane->EvalMotionDerivatives(
+                  lane_position,
                   api::IsoLaneVelocity(kSigma_v, kRho_v, kEta_v));
           EXPECT_TRUE(api::test::IsLanePositionClose(
               motion_derivatives, api::LanePosition(kSigma_v, kRho_v, kEta_v),
@@ -156,7 +154,7 @@ class MaliputDragwayLaneTest : public ::testing::Test {
   // Verifies that the branches within the provided `lane` are correct. The
   // provided `lane` must be in the provided `road_geometry`.
   void VerifyBranches(const api::Lane* lane,
-      const RoadGeometry* road_geometry) const {
+                      const RoadGeometry* road_geometry) const {
     // Verifies that the same BranchPoint covers both ends of the dragway lane.
     EXPECT_EQ(lane->GetBranchPoint(api::LaneEnd::kStart),
               lane->GetBranchPoint(api::LaneEnd::kFinish));
@@ -196,11 +194,11 @@ class MaliputDragwayLaneTest : public ::testing::Test {
       EXPECT_EQ(lane_end_set_finish->size(), 1);
 
       const api::LaneEnd& lane_end_start =
-        lane->GetOngoingBranches(api::LaneEnd::kStart)->get(0);
+          lane->GetOngoingBranches(api::LaneEnd::kStart)->get(0);
       EXPECT_EQ(lane_end_start.lane, lane);
       EXPECT_EQ(lane_end_start.end, api::LaneEnd::kFinish);
       const api::LaneEnd& lane_end_finish =
-        lane->GetOngoingBranches(api::LaneEnd::kFinish)->get(0);
+          lane->GetOngoingBranches(api::LaneEnd::kFinish)->get(0);
       EXPECT_EQ(lane_end_finish.lane, lane);
       EXPECT_EQ(lane_end_finish.end, api::LaneEnd::kStart);
     }
@@ -256,8 +254,8 @@ TEST_F(MaliputDragwayLaneTest, SingleLane) {
   const int kNumLanes = 1;
 
   RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_, lane_width_,
-                             shoulder_width_, maximum_height_,
-                             kLinearTolerance, kAngularTolerance);
+                             shoulder_width_, maximum_height_, kLinearTolerance,
+                             kAngularTolerance);
 
   const api::Junction* junction = road_geometry.junction(0);
   ASSERT_NE(junction, nullptr);
@@ -275,7 +273,6 @@ TEST_F(MaliputDragwayLaneTest, SingleLane) {
   VerifyLaneCorrectness(lane, kNumLanes);
   VerifyBranches(lane, &road_geometry);
 }
-
 
 /*
  Tests a dragway containing two lanes. The two lanes are arranged as shown below
@@ -300,9 +297,9 @@ TEST_F(MaliputDragwayLaneTest, TwoLaneDragway) {
   const api::RoadGeometryId road_geometry_id({"TwoLaneDragwayRoadGeometry"});
   const int kNumLanes = 2;
 
-  RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_,
-                             lane_width_, shoulder_width_, maximum_height_,
-                             kLinearTolerance, kAngularTolerance);
+  RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_, lane_width_,
+                             shoulder_width_, maximum_height_, kLinearTolerance,
+                             kAngularTolerance);
 
   const api::Junction* junction = road_geometry.junction(0);
   ASSERT_NE(junction, nullptr);
@@ -331,15 +328,15 @@ TEST_F(MaliputDragwayLaneTest, TestToRoadPositionOnRoad) {
   const api::RoadGeometryId road_geometry_id({"TwoLaneDragwayRoadGeometry"});
   const int kNumLanes = 2;
 
-  RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_,
-                             lane_width_, shoulder_width_, maximum_height_,
-                             kLinearTolerance, kAngularTolerance);
+  RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_, lane_width_,
+                             shoulder_width_, maximum_height_, kLinearTolerance,
+                             kAngularTolerance);
 
   // Spot checks geographic positions on lane 0 and the right shoulder with a
   // focus on edge cases.
   for (double x = 0; x <= length_; x += length_ / 2) {
     for (double y = -lane_width_ - shoulder_width_; y <= 0;
-        y += (lane_width_ + shoulder_width_) / 2) {
+         y += (lane_width_ + shoulder_width_) / 2) {
       for (double z = 0; z <= maximum_height_; z += maximum_height_ / 2.) {
         api::GeoPosition nearest_position;
         double distance;
@@ -349,8 +346,7 @@ TEST_F(MaliputDragwayLaneTest, TestToRoadPositionOnRoad) {
         const api::Lane* expected_lane =
             road_geometry.junction(0)->segment(0)->lane(0);
         EXPECT_TRUE(api::test::IsGeoPositionClose(
-            nearest_position, api::GeoPosition(x, y, z),
-            kLinearTolerance));
+            nearest_position, api::GeoPosition(x, y, z), kLinearTolerance));
         EXPECT_DOUBLE_EQ(distance, 0);
         EXPECT_EQ(road_position.lane, expected_lane);
         EXPECT_TRUE(api::test::IsLanePositionClose(
@@ -364,7 +360,7 @@ TEST_F(MaliputDragwayLaneTest, TestToRoadPositionOnRoad) {
   // focus on edge cases.
   for (double x = 0; x <= length_; x += length_ / 2) {
     for (double y = 0; y <= lane_width_ + shoulder_width_;
-        y += (lane_width_ + shoulder_width_) / 2) {
+         y += (lane_width_ + shoulder_width_) / 2) {
       for (double z = 0; z <= maximum_height_; z += maximum_height_ / 2.) {
         api::GeoPosition nearest_position;
         double distance;
@@ -375,19 +371,16 @@ TEST_F(MaliputDragwayLaneTest, TestToRoadPositionOnRoad) {
         const api::Lane* expected_lane =
             road_geometry.junction(0)->segment(0)->lane(lane_index);
         EXPECT_TRUE(api::test::IsGeoPositionClose(
-            nearest_position, api::GeoPosition(x, y, z),
-            kLinearTolerance));
+            nearest_position, api::GeoPosition(x, y, z), kLinearTolerance));
         EXPECT_DOUBLE_EQ(distance, 0);
         EXPECT_EQ(road_position.lane, expected_lane);
         if (y == 0) {
           EXPECT_TRUE(api::test::IsLanePositionClose(
-              road_position.pos,
-              api::LanePosition(x, y + lane_width_ / 2, z),
+              road_position.pos, api::LanePosition(x, y + lane_width_ / 2, z),
               kLinearTolerance));
         } else {
           EXPECT_TRUE(api::test::IsLanePositionClose(
-              road_position.pos,
-              api::LanePosition(x, y - lane_width_ / 2, z),
+              road_position.pos, api::LanePosition(x, y - lane_width_ / 2, z),
               kLinearTolerance));
         }
       }
@@ -404,9 +397,9 @@ TEST_F(MaliputDragwayLaneTest, TestToRoadPositionOffRoad) {
   const api::RoadGeometryId road_geometry_id({"TwoLaneDragwayRoadGeometry"});
   const int kNumLanes = 2;
 
-  RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_,
-                             lane_width_, shoulder_width_, maximum_height_,
-                             kLinearTolerance, kAngularTolerance);
+  RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_, lane_width_,
+                             shoulder_width_, maximum_height_, kLinearTolerance,
+                             kAngularTolerance);
 
   // Computes the bounds of the road's driveable region.
   const double x_max = length_;
@@ -427,12 +420,12 @@ TEST_F(MaliputDragwayLaneTest, TestToRoadPositionOffRoad) {
 
   // Defines the test case values for x and y. Points both far away and close to
   // the driveable area are evaluated.
-  const std::vector<double> x_test_cases{
-    test_x_min, x_min - 1e-10, x_max + 1e-10, test_x_max};
-  const std::vector<double> y_test_cases{
-    test_y_min, y_min - 1e-10, y_max + 1e-10, test_y_max};
-  const std::vector<double> z_test_cases{
-    test_z_min, z_min - 1e-10, z_max + 1e-10, test_z_max};
+  const std::vector<double> x_test_cases{test_x_min, x_min - 1e-10,
+                                         x_max + 1e-10, test_x_max};
+  const std::vector<double> y_test_cases{test_y_min, y_min - 1e-10,
+                                         y_max + 1e-10, test_y_max};
+  const std::vector<double> z_test_cases{test_z_min, z_min - 1e-10,
+                                         z_max + 1e-10, test_z_max};
   // TODO(maddog@tri.global)  Needs test cases where *one* coordinate is
   //                          out-of-bounds.  (Currently, only tests when
   //                          *all* coordinates are out-of-bounds.)
@@ -500,23 +493,21 @@ TEST_F(MaliputDragwayLaneTest, TestToRoadPositionNullptr) {
   const api::RoadGeometryId road_geometry_id({"TwoLaneDragwayRoadGeometry"});
   const int kNumLanes = 2;
 
-  RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_,
-                             lane_width_, shoulder_width_, maximum_height_,
-                             kLinearTolerance, kAngularTolerance);
+  RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_, lane_width_,
+                             shoulder_width_, maximum_height_, kLinearTolerance,
+                             kAngularTolerance);
 
   // Case 1: The provided geo_pos is in the driveable region.
   EXPECT_NO_THROW(road_geometry.ToRoadPosition(
-            api::GeoPosition(length_ / 2 /* x */, 0 /* y */, 0 /* z */),
-            nullptr /* hint */,
-            nullptr /* nearest_position */,
-            nullptr /* distance */));
+      api::GeoPosition(length_ / 2 /* x */, 0 /* y */, 0 /* z */),
+      nullptr /* hint */, nullptr /* nearest_position */,
+      nullptr /* distance */));
 
   // Case 2: The provided geo_pos is beyond the driveable region.
   EXPECT_NO_THROW(road_geometry.ToRoadPosition(
-            api::GeoPosition(length_ + 1e-10 /* x */, 0 /* y */, 0 /* z */),
-            nullptr /* hint */,
-            nullptr /* nearest_position */,
-            nullptr /* distance */));
+      api::GeoPosition(length_ + 1e-10 /* x */, 0 /* y */, 0 /* z */),
+      nullptr /* hint */, nullptr /* nearest_position */,
+      nullptr /* distance */));
 }
 
 // Tests dragway::Lane::ToLanePosition() using geographic positions whose
@@ -525,9 +516,9 @@ TEST_F(MaliputDragwayLaneTest, TestToLanePosition) {
   const api::RoadGeometryId road_geometry_id({"OneLaneDragwayRoadGeometry"});
   const int kNumLanes = 1;
 
-  RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_,
-                             lane_width_, shoulder_width_, maximum_height_,
-                             kLinearTolerance, kAngularTolerance);
+  RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_, lane_width_,
+                             shoulder_width_, maximum_height_, kLinearTolerance,
+                             kAngularTolerance);
 
   const api::Junction* junction = road_geometry.junction(0);
   ASSERT_NE(junction, nullptr);
@@ -572,52 +563,108 @@ TEST_F(MaliputDragwayLaneTest, TestToLanePosition) {
 
   // Defines the test case values for x and y. Points both far away and close to
   // the driveable area are evaluated.
-  const std::vector<double> x_test_cases{
-    min_x - 10, min_x - 1e-10, min_x, max_x, max_x + 1e-10, max_x + 10};
-  const std::vector<double> y_test_cases{
-    min_y - 10, min_y - 1e-10, min_y, max_y, max_y + 1e-10, max_y + 10};
-  const std::vector<double> z_test_cases{
-    min_z - 10, min_z - 1e-10, min_z, max_z, max_z + 1e-10, max_z + 10};
+  const std::vector<double> x_test_cases{min_x - 10, min_x - 1e-10, min_x,
+                                         max_x,      max_x + 1e-10, max_x + 10};
+  const std::vector<double> y_test_cases{min_y - 10, min_y - 1e-10, min_y,
+                                         max_y,      max_y + 1e-10, max_y + 10};
+  const std::vector<double> z_test_cases{min_z - 10, min_z - 1e-10, min_z,
+                                         max_z,      max_z + 1e-10, max_z + 10};
 
   // Spot checks geographic positions on and beyond the lane's driveable region
   // with a focus on edge cases.
   for (const auto x : x_test_cases) {
     for (const auto y : y_test_cases) {
       for (const double z : z_test_cases) {
-        api::GeoPosition nearest_position;
-        double distance;
-        const api::LanePosition lane_position = lane->ToLanePosition(
-            api::GeoPosition(x, y, z), &nearest_position, &distance);
-        api::GeoPosition expected_nearest_position(x, y, z);
-        if (x < min_x) {
-          expected_nearest_position.set_x(min_x);
+        {
+          api::GeoPosition nearest_position;
+          double distance;
+          const api::LanePosition lane_position = lane->ToLanePosition(
+              api::GeoPosition(x, y, z), &nearest_position, &distance);
+          api::GeoPosition expected_nearest_position(x, y, z);
+          if (x < min_x) {
+            expected_nearest_position.set_x(min_x);
+          }
+          if (x > max_x) {
+            expected_nearest_position.set_x(max_x);
+          }
+          if (y < min_y) {
+            expected_nearest_position.set_y(min_y);
+          }
+          if (y > max_y) {
+            expected_nearest_position.set_y(max_y);
+          }
+          if (z < min_z) {
+            expected_nearest_position.set_z(min_z);
+          }
+          if (z > max_z) {
+            expected_nearest_position.set_z(max_z);
+          }
+          EXPECT_TRUE(api::test::IsGeoPositionClose(
+              nearest_position, expected_nearest_position, kLinearTolerance));
+          // TODO(maddog@tri.global)  Should test for explicit correct distance.
+          EXPECT_GE(distance, 0);
+          EXPECT_TRUE(api::test::IsLanePositionClose(
+              lane_position,
+              api::LanePosition(
+                  expected_nearest_position.x(),
+                  expected_nearest_position.y() - lane->y_offset(),
+                  expected_nearest_position.z()),
+              kLinearTolerance));
         }
-        if (x > max_x) {
-          expected_nearest_position.set_x(max_x);
+
+        // Test that AutoDiffXd returns the same results and preserves any
+        // partial derivatives given to it.
+        {
+          AutoDiffXd zero_value{0.};
+          zero_value.derivatives().resize(1 /* number of partial derivs */);
+          zero_value.derivatives().setZero();
+          api::GeoPositionT<AutoDiffXd> nearest_position;
+          nearest_position.set_xyz({zero_value, zero_value, zero_value});
+          AutoDiffXd distance(zero_value);
+          api::GeoPositionT<AutoDiffXd> geo_position(x, y, z);
+
+          // Set the partials of all `geo_position` variables to zero except for
+          // `x`, which we set to one.
+          AutoDiffXd x_autodiff{x};
+          x_autodiff.derivatives().resize(1 /* number of partial derivs */);
+          x_autodiff.derivatives()(0) = 1.;
+          AutoDiffXd y_autodiff{y};
+          y_autodiff.derivatives().resize(1 /* number of partial derivs */);
+          y_autodiff.derivatives().setZero();
+          AutoDiffXd z_autodiff{z};
+          z_autodiff.derivatives().resize(1 /* number of partial derivs */);
+          z_autodiff.derivatives().setZero();
+          geo_position.set_xyz({x_autodiff, y_autodiff, z_autodiff});
+
+          const api::LanePositionT<AutoDiffXd> lane_position =
+              lane->ToLanePositionT<AutoDiffXd>(geo_position, &nearest_position,
+                                                &distance);
+
+          // Check that the result's `s` variable has non-NaN derivatives that
+          // are the same as `geo_position.x()` when in the lane, and zero
+          // everywhere else.
+          if (distance == 0.) {
+            EXPECT_EQ(1., lane_position.s().derivatives()(0));
+          } else {
+            EXPECT_FALSE(std::isnan(lane_position.s().derivatives()(0)));
+          }
+          EXPECT_EQ(0., lane_position.r().derivatives()(0));
+          EXPECT_EQ(0., lane_position.h().derivatives()(0));
+
+          // Check that `nearest position` contains elements whose derivatives
+          // are the same as `geo_position.x()` when in the lane, and zero
+          // everywhere else.
+          if (distance == 0.) {
+            EXPECT_EQ(1., nearest_position.x().derivatives()(0));
+          } else {
+            EXPECT_FALSE(std::isnan(nearest_position.x().derivatives()(0)));
+          }
+          EXPECT_EQ(0., nearest_position.y().derivatives()(0));
+          EXPECT_EQ(0., nearest_position.z().derivatives()(0));
+
+          // Ensure that `distance` derivative is non-NaN.
+          EXPECT_FALSE(std::isnan(distance.derivatives()(0)));
         }
-        if (y < min_y) {
-          expected_nearest_position.set_y(min_y);
-        }
-        if (y > max_y) {
-          expected_nearest_position.set_y(max_y);
-        }
-        if (z < min_z) {
-          expected_nearest_position.set_z(min_z);
-        }
-        if (z > max_z) {
-          expected_nearest_position.set_z(max_z);
-        }
-        EXPECT_TRUE(api::test::IsGeoPositionClose(
-            nearest_position, expected_nearest_position,
-            kLinearTolerance));
-        // TODO(maddog@tri.global)  Should test for explicit correct distance.
-        EXPECT_GE(distance, 0);
-        EXPECT_TRUE(api::test::IsLanePositionClose(
-            lane_position,
-            api::LanePosition(expected_nearest_position.x(),
-                              expected_nearest_position.y() - lane->y_offset(),
-                              expected_nearest_position.z()),
-            kLinearTolerance));
       }
     }
   }

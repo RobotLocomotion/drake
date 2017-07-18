@@ -1,11 +1,13 @@
 #include "drake/automotive/maliput/dragway/lane.h"
 
+#include <algorithm>
 #include <cmath>
 #include <memory>
 
 #include "drake/automotive/maliput/dragway/branch_point.h"
 #include "drake/automotive/maliput/dragway/road_geometry.h"
 #include "drake/automotive/maliput/dragway/segment.h"
+#include "drake/common/cond.h"
 #include "drake/common/drake_assert.h"
 #include "drake/math/saturate.h"
 
@@ -14,6 +16,21 @@ using std::make_unique;
 namespace drake {
 namespace maliput {
 namespace dragway {
+
+// Pad the partial derivatives of an AutoDiffXd variable `x` with a zero vector
+// of the same dimension as `model_value`.  The `result` has the same value as
+// `x`.
+static AutoDiffXd PadZeroPartials(const AutoDiffXd& x,
+                                  const AutoDiffXd& model_value) {
+  DRAKE_DEMAND(x.derivatives().size() == 0);
+  AutoDiffXd result(x);
+  result.derivatives().resize(model_value.derivatives().size());
+  result.derivatives().setZero();
+  return result;
+}
+
+// No-op overload of SetZeroPartials when the arguments are of type double.
+static double PadZeroPartials(const double& x, const double&) { return x; }
 
 Lane::Lane(const Segment* segment, const api::LaneId& id,  int index,
     double length, double y_offset, const api::RBounds& lane_bounds,
@@ -101,29 +118,64 @@ api::LanePosition Lane::DoToLanePosition(
     const api::GeoPosition& geo_pos,
     api::GeoPosition* nearest_point,
     double* distance) const {
+  auto geo_pos_double =
+      dynamic_cast<const api::GeoPositionT<double>&>(geo_pos);
+  auto nearest_point_double =
+      dynamic_cast<api::GeoPositionT<double>*>(nearest_point);
+  auto result = ImplDoToLanePositionT<double>(geo_pos_double,
+                                              nearest_point_double, distance);
+  return api::LanePosition::FromSrh({result.s(), result.r(), result.h()});
+}
 
-  const double min_x = 0;
-  const double max_x = length_;
-  const double min_y = driveable_bounds_.min() + y_offset_;
-  const double max_y = driveable_bounds_.max() + y_offset_;
-  const double min_z = elevation_bounds_.min();
-  const double max_z = elevation_bounds_.max();
+api::LanePositionT<double> Lane::DoToLanePositionT(
+    const api::GeoPositionT<double>& geo_pos,
+    api::GeoPositionT<double>* nearest_point,
+    double* distance) const {
+  return ImplDoToLanePositionT<double>(geo_pos, nearest_point, distance);
+}
 
-  const api::GeoPosition closest_point{
-    math::saturate(geo_pos.x(), min_x, max_x),
-    math::saturate(geo_pos.y(), min_y, max_y),
-    math::saturate(geo_pos.z(), min_z, max_z)};
+api::LanePositionT<AutoDiffXd> Lane::DoToLanePositionT(
+    const api::GeoPositionT<AutoDiffXd>& geo_pos,
+    api::GeoPositionT<AutoDiffXd>* nearest_point,
+    AutoDiffXd* distance) const {
+  return ImplDoToLanePositionT<AutoDiffXd>(geo_pos, nearest_point, distance);
+}
+
+template <typename T>
+api::LanePositionT<T> Lane::ImplDoToLanePositionT(
+    const api::GeoPositionT<T>& geo_pos,
+    api::GeoPositionT<T>* nearest_point,
+    T* distance) const {
+  using std::max;
+
+  const T min_x = PadZeroPartials(T(0.), geo_pos.x());
+  const T max_x = PadZeroPartials(T(length_), geo_pos.x());
+  const T min_y =
+      PadZeroPartials(T(driveable_bounds_.min() + y_offset_), geo_pos.y());
+  const T max_y =
+      PadZeroPartials(T(driveable_bounds_.max() + y_offset_), geo_pos.y());
+  const T min_z = PadZeroPartials(T(elevation_bounds_.min()), geo_pos.z());
+  const T max_z = PadZeroPartials(T(elevation_bounds_.max()), geo_pos.z());
+
+  api::GeoPositionT<T> closest_point{};
+  closest_point.set_x(math::saturate(geo_pos.x(), min_x, max_x));
+  closest_point.set_y(math::saturate(geo_pos.y(), min_y, max_y));
+  closest_point.set_z(math::saturate(geo_pos.z(), min_z, max_z));
   if (nearest_point != nullptr) {
     *nearest_point = closest_point;
   }
 
   if (distance != nullptr) {
-    *distance = (geo_pos.xyz() - closest_point.xyz()).norm();
+    T temp_distance = (geo_pos.xyz() - closest_point.xyz()).norm();
+    *distance = cond(temp_distance == 0., PadZeroPartials(T(0.), *distance),
+                     temp_distance);
   }
 
-  return api::LanePosition(closest_point.x()              /* s */,
-                           closest_point.y() - y_offset_  /* r */,
-                           closest_point.z()              /* h */);
+  api::LanePositionT<T> result{};
+  result.set_s(closest_point.x());
+  result.set_r(closest_point.y() - T(y_offset_));
+  result.set_h(closest_point.z());
+  return result;
 }
 
 }  // namespace dragway

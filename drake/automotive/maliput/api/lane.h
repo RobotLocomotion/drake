@@ -118,6 +118,22 @@ class Lane {
     return DoToLanePosition(geo_position, nearest_point, distance);
   }
 
+  /// Generalization of ToLanePosition to arbitrary scalar types, where the
+  /// structures `LanePositionT<T>` and `GeoPositionT<T>` are used in place of
+  /// `LanePosition` and `GeoPosition`, respectively.
+  ///
+  /// Instantiated templates for the following kinds of T's are provided:
+  /// - double
+  /// - drake::AutoDiffXd
+  ///
+  /// They are already available to link against in the containing library.
+  template <typename T>
+  LanePositionT<T> ToLanePositionT(const GeoPositionT<T>& geo_position,
+                                   GeoPositionT<T>* nearest_point,
+                                   T* distance) const {
+    return DoToLanePositionT(geo_position, nearest_point, distance);
+  }
+
   // TODO(maddog@tri.global) Method to convert LanePosition to that of
   //                         another Lane.  (Should assert that both
   //                         lanes belong to same Segment.)  It should look
@@ -225,6 +241,24 @@ class Lane {
 
   virtual std::unique_ptr<LaneEnd> DoGetDefaultBranch(
       const LaneEnd::Which which_end) const = 0;
+
+  // Note that the `double` type must be in agreement with the explicit
+  // instantiations for `ToLanePosition()` listed in lane.cc.
+  virtual LanePositionT<double>
+  DoToLanePositionT(const GeoPositionT<double>&,
+                    GeoPositionT<double>*,
+                    double*) const {
+    DRAKE_ABORT();
+  }
+
+  // Note that the `AutoDiffXd` type must be in agreement with the explicit
+  // instantiations for `ToLanePosition()` listed in lane.cc.
+  virtual LanePositionT<AutoDiffXd>
+  DoToLanePositionT(const GeoPositionT<AutoDiffXd>&,
+                    GeoPositionT<AutoDiffXd>*,
+                    AutoDiffXd*) const {
+    DRAKE_ABORT();
+  }
   ///@}
 };
 
