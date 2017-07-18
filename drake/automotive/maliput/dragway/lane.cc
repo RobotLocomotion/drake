@@ -1,12 +1,16 @@
 #include "drake/automotive/maliput/dragway/lane.h"
 
+#include <algorithm>
 #include <cmath>
+#include <limits>
 #include <memory>
 #include <string>
 
 #include "drake/automotive/maliput/dragway/branch_point.h"
 #include "drake/automotive/maliput/dragway/road_geometry.h"
 #include "drake/automotive/maliput/dragway/segment.h"
+#include "drake/common/autodiff_overloads.h"
+#include "drake/common/cond.h"
 #include "drake/common/drake_assert.h"
 #include "drake/math/saturate.h"
 
@@ -15,6 +19,42 @@ using std::make_unique;
 namespace drake {
 namespace maliput {
 namespace dragway {
+namespace {
+
+// Returns an AutoDiffXd scalar containing a zero vector of partial derivatives
+// of the same dimension as `model_scalar` and having the same value as `x`.
+// TODO(jadecastro) Move to a more commonly-accessible location.
+static AutoDiffXd PadScalarWithZeroedPartials(const AutoDiffXd& x,
+                                              const AutoDiffXd& model_scalar) {
+  DRAKE_DEMAND(x.derivatives().size() == 0);
+  AutoDiffXd result(x);
+  result.derivatives().resize(model_scalar.derivatives().size());
+  result.derivatives().setZero();
+  return result;
+}
+
+// No-op overload of MakeScalarWithZeroedPartials() when the arguments are of
+// type double.
+// TODO(jadecastro) Move to a more commonly-accessible location.
+static double PadScalarWithZeroedPartials(const double& x, const double&) {
+  return x;
+}
+
+
+// Helper function that throws a runtime error if the AutoDiffXd specialization
+// of a three-dimensional vector contains derivatives of inconsistent sizes.
+static void ThrowIfDerivativesAreInconsistent(
+    const Vector3<AutoDiffXd>& vector) {
+  DRAKE_THROW_UNLESS(
+      vector.x().derivatives().size() == vector.y().derivatives().size());
+  DRAKE_THROW_UNLESS(
+      vector.x().derivatives().size() == vector.z().derivatives().size());
+}
+
+// No-op overload for arguments of type double.
+static void ThrowIfDerivativesAreInconsistent(const Vector3<double>&) {}
+
+}  // namespace
 
 Lane::Lane(const Segment* segment, const api::LaneId& id,  int index,
     double length, double y_offset, const api::RBounds& lane_bounds,
@@ -102,29 +142,87 @@ api::LanePosition Lane::DoToLanePosition(
     const api::GeoPosition& geo_pos,
     api::GeoPosition* nearest_point,
     double* distance) const {
+  return ImplDoToLanePositionT<double>(geo_pos, nearest_point, distance);
+}
 
-  const double min_x = 0;
-  const double max_x = length_;
-  const double min_y = driveable_bounds_.min() + y_offset_;
-  const double max_y = driveable_bounds_.max() + y_offset_;
-  const double min_z = elevation_bounds_.min();
-  const double max_z = elevation_bounds_.max();
+api::LanePositionT<double> Lane::DoToLanePositionT(
+    const api::GeoPositionT<double>& geo_pos,
+    api::GeoPositionT<double>* nearest_point,
+    double* distance) const {
+  return ImplDoToLanePositionT<double>(geo_pos, nearest_point, distance);
+}
 
-  const api::GeoPosition closest_point{
-    math::saturate(geo_pos.x(), min_x, max_x),
-    math::saturate(geo_pos.y(), min_y, max_y),
-    math::saturate(geo_pos.z(), min_z, max_z)};
+api::LanePositionT<AutoDiffXd> Lane::DoToLanePositionT(
+    const api::GeoPositionT<AutoDiffXd>& geo_pos,
+    api::GeoPositionT<AutoDiffXd>* nearest_point,
+    AutoDiffXd* distance) const {
+  return ImplDoToLanePositionT<AutoDiffXd>(geo_pos, nearest_point, distance);
+}
+
+template <typename T>
+api::LanePositionT<T> Lane::ImplDoToLanePositionT(
+    const api::GeoPositionT<T>& geo_pos,
+    api::GeoPositionT<T>* nearest_point,
+    T* distance) const {
+  using math::saturate;
+  using std::max;
+
+  ThrowIfDerivativesAreInconsistent(geo_pos.xyz());
+
+  const T min_x{0.};
+  const T max_x{length_};
+  const T min_y{driveable_bounds_.min() + y_offset_};
+  const T max_y{driveable_bounds_.max() + y_offset_};
+  const T min_z{elevation_bounds_.min()};
+  const T max_z{elevation_bounds_.max()};
+
+  const T x = geo_pos.x();
+  const T y = geo_pos.y();
+  const T z = geo_pos.z();
+
+  api::GeoPositionT<T> closest_point{
+    saturate(x, PadScalarWithZeroedPartials(min_x, x),
+             PadScalarWithZeroedPartials(max_x, x)),
+    saturate(y, PadScalarWithZeroedPartials(min_y, y),
+             PadScalarWithZeroedPartials(max_y, y)),
+    saturate(z, PadScalarWithZeroedPartials(min_z, z),
+             PadScalarWithZeroedPartials(max_z, z))};
   if (nearest_point != nullptr) {
     *nearest_point = closest_point;
   }
 
   if (distance != nullptr) {
-    *distance = (geo_pos.xyz() - closest_point.xyz()).norm();
+    const T distance_unsat = (geo_pos.xyz() - closest_point.xyz()).norm();
+
+    // N.B. Under AutoDiff, the partial derivative of the distance with respect
+    // to position is undefined (i.e. NaN) when distance.value() = 0.  This
+    // implementation replaces those NaN values with numbers that are consistent
+    // with the geometry such that the following hold:
+    //
+    // Let v be any coordinate x, y, or z.
+    //
+    // 1) Within the interior of the lane volume, ∂/∂v(distance) = 0, since
+    // distance is invariant to perturbations in v.
+    //
+    // 2) On the exterior of the lane, ∂/∂v(distance) is identical to
+    // ∂/∂v(distance_unsat).
+    //
+    // 3) On the boundary, ∂/∂v(distance) has two solutions: zero or
+    // ∂/∂v(distance_unsat), depending on whether the derivative at the boundary
+    // is evaluated when approached from the exterior or interior.  This
+    // implementation chooses the derivatives taken from within the interior
+    // (zero) in order to remain consistent with the derivatives of
+    // nearest_point and the returned LanePositionT.  (Note that this is due to
+    // the fact that math::saturate(a, b, c) always returns the value and
+    // derivatives of its first argument, a, when a.value() == b.value() or
+    // a.value() == c.value().)
+    *distance = max(PadScalarWithZeroedPartials(T(0.), distance_unsat),
+                    distance_unsat);  // ∂/∂x(distance) = 0 when distance = 0.
   }
 
-  return api::LanePosition(closest_point.x()              /* s */,
-                           closest_point.y() - y_offset_  /* r */,
-                           closest_point.z()              /* h */);
+  return {closest_point.x(),
+          closest_point.y() - T(y_offset_),
+          closest_point.z()};
 }
 
 }  // namespace dragway

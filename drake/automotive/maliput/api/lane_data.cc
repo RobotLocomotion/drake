@@ -21,18 +21,17 @@ std::ostream& operator<<(std::ostream& out, const GeoPosition& geo_position) {
       << ", z = " << geo_position.z() << ")";
 }
 
-bool operator==(const GeoPosition& lhs, const GeoPosition& rhs) {
-  return (lhs.xyz() == rhs.xyz());
-}
-
-bool operator!=(const GeoPosition& lhs, const GeoPosition& rhs) {
-  return (lhs.xyz() != rhs.xyz());
-}
-
 std::ostream& operator<<(std::ostream& out, const LanePosition& lane_position) {
   return out << "(s = " << lane_position.s() << ", r = " << lane_position.r()
       << ", h = " << lane_position.h() << ")";
 }
+
+// These instantiations must match the API documentation in lane_data.h.
+template class GeoPositionT<double>;
+template class GeoPositionT<AutoDiffXd>;
+
+template class LanePositionT<double>;
+template class LanePositionT<AutoDiffXd>;
 
 }  // namespace api
 }  // namespace maliput

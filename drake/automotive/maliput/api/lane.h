@@ -91,6 +91,9 @@ class Lane {
   /// @pre The s component of @p lane_pos must be in domain [0, Lane::length()].
   /// @pre The r component of @p lane_pos must be in domain [Rmin, Rmax]
   ///      derived from Lane::driveable_bounds().
+  //
+  // TODO(jadecastro): Generalize `Lane::ToGeoPosition` (and possibly others)
+  // with another member function `Lane::ToGeoPositionT<T>()`.
   GeoPosition ToGeoPosition(const LanePosition& lane_pos) const {
     return DoToGeoPosition(lane_pos);
   }
@@ -111,6 +114,28 @@ class Lane {
                               GeoPosition* nearest_point,
                               double* distance) const {
     return DoToLanePosition(geo_position, nearest_point, distance);
+  }
+
+  /// Generalization of ToLanePosition to arbitrary scalar types, where the
+  /// structures `LanePositionT<T>` and `GeoPositionT<T>` are used in place of
+  /// `LanePosition` and `GeoPosition`, respectively.
+  ///
+  /// Instantiated templates for the following kinds of T's are provided:
+  /// - double
+  /// - drake::AutoDiffXd
+  ///
+  /// They are already available to link against in the containing library.
+  ///
+  /// Note: This is an experimental API that is not necessarily implemented in
+  /// all back-end implementations.
+  //
+  // TODO(jadecastro): Apply this implementation in all the subclasses of
+  // `api::Lane`.
+  template <typename T>
+  LanePositionT<T> ToLanePositionT(const GeoPositionT<T>& geo_position,
+                                   GeoPositionT<T>* nearest_point,
+                                   T* distance) const {
+    return DoToLanePositionT(geo_position, nearest_point, distance);
   }
 
   // TODO(maddog@tri.global) Method to convert LanePosition to that of
@@ -220,6 +245,34 @@ class Lane {
 
   virtual std::unique_ptr<LaneEnd> DoGetDefaultBranch(
       const LaneEnd::Which which_end) const = 0;
+
+  // Note that the `double` type must be in agreement with the explicit
+  // instantiations for `ToLanePosition()` listed in lane.cc.
+  virtual LanePositionT<double>
+  DoToLanePositionT(const GeoPositionT<double>&,
+                    GeoPositionT<double>*,
+                    double*) const {
+    DRAKE_ABORT();
+  }
+
+  // AutoDiffXd overload of DoToLanePositionT().
+  //
+  // The return value is a LanePositionT<AutoDiffXd> containing the same partial
+  // derivatives as those appearing in geo_position.  The provided geo_position
+  // must contain x, y, and z values whose derivative must be of the same size.
+  // If either @p nearest_point or @p distance are non-null, they will also
+  // contain geo_position's partial derivatives.
+  //
+  // Note that the `AutoDiffXd` type must be in agreement with the explicit
+  // instantiations for `ToLanePosition()` listed in lane.cc.
+  virtual LanePositionT<AutoDiffXd>
+  DoToLanePositionT(const GeoPositionT<AutoDiffXd>&,
+                    GeoPositionT<AutoDiffXd>*,
+                    AutoDiffXd*) const {
+    DRAKE_ABORT();
+  }
+  // TODO(jadecastro): Template the entire `api::Lane` class to prevent explicit
+  // declarations for each member function.
   ///@}
 };
 
