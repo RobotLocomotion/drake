@@ -160,7 +160,7 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
   // generalized position and velocity.
   EXPECT_TRUE(robot_status.foot(Side::LEFT).velocity().norm() < 1e-6);
   EXPECT_TRUE(robot_status.foot(Side::RIGHT).velocity().norm() < 1e-6);
-  EXPECT_TRUE(drake::CompareMatrices(q, q_ini, 1e-4,
+  EXPECT_TRUE(drake::CompareMatrices(q, q_ini, 1e-3,
                                      drake::MatrixCompareType::absolute));
   EXPECT_TRUE(drake::CompareMatrices(
       v, VectorX<double>::Zero(robot->get_num_velocities()), 1e-4,

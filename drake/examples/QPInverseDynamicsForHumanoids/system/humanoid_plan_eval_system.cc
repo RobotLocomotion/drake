@@ -39,8 +39,6 @@ void HumanoidPlanEvalSystem::DoExtendedCalcUnrestrictedUpdate(
 
   // Updates the QpInput in AbstractState.
   QpInput& qp_input = get_mutable_qp_input(state);
-
-  // TODO
   plan.UpdateQpInput(*robot_status, get_paramset(), get_alias_groups(),
                      &qp_input);
 }
