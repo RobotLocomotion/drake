@@ -1,4 +1,4 @@
-#include "drake/common/monomial.h"
+#include "drake/common/symbolic_monomial.h"
 
 #include <sstream>
 #include <stdexcept>
@@ -10,9 +10,9 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/hash.h"
-#include "drake/common/monomial_util.h"
 #include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_expression.h"
+#include "drake/common/symbolic_monomial_util.h"
 #include "drake/common/symbolic_variable.h"
 #include "drake/common/test/symbolic_test_util.h"
 
