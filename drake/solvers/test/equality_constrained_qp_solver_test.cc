@@ -143,6 +143,11 @@ GTEST_TEST(testMathematicalProgram, testNotStrictlyPositiveDefiniteHessianQP) {
   EqualityConstrainedQPSolver equality_qp_solver;
   auto result = equality_qp_solver.Solve(prog);
   EXPECT_EQ(result, SolutionResult::kInvalidInput);
+
+  // cost is x(0)² - x(1)²
+  prog.AddCost(-x(1) * x(1));
+  result = equality_qp_solver.Solve(prog);
+  EXPECT_EQ(result, SolutionResult::kInvalidInput);
 }
 }  // namespace test
 }  // namespace solvers
