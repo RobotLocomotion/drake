@@ -26,7 +26,9 @@
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_formula.h"
+#include "drake/common/symbolic_polynomial.h"
 #include "drake/common/symbolic_variable.h"
+#include "drake/common/symbolic_variables.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/cost.h"
@@ -496,6 +498,28 @@ class MathematicalProgram {
     }
     return NewSymmetricVariables<rows>(VarType::CONTINUOUS, names);
   }
+
+  /**
+   * Returns a free polynomial in a monomial basis over @p indeterminates of a
+   * given @p degree. It uses @p coeff_name to make new decision variables and
+   * use them as coefficients. For example, `NewFreePolynomial({x₀, x₁}, 2)`
+   * returns a₀x₁² + a₁x₀x₁ + a₂x₀² + a₃x₁ + a₄x₀ + a₅.
+   */
+  symbolic::Polynomial NewFreePolynomial(
+      const symbolic::Variables& indeterminates, int degree,
+      const std::string& coeff_name = "a");
+
+  /** Returns a pair of a SOS polynomial p = xᵀQx of degree @p degree and a PSD
+   * constraint for the coefficients matrix Q, where x is a monomial basis over
+   * @p indeterminates of degree `@p degree / 2`. For example,
+   * `NewSosPolynomial({x}, 4)` returns a pair of a polynomial p = Q₍₀,₀₎x⁴ +
+   * 2Q₍₁,₀₎ x³ + (2Q₍₂,₀₎ + Q₍₁,₁₎)x² + 2Q₍₂,₁₎x + Q₍₂,₂₎ and a PSD constraint
+   * over Q.
+   *
+   * @throws std::runtime_error if @p degree is not a positive even integer.
+   */
+  std::pair<symbolic::Polynomial, Binding<PositiveSemidefiniteConstraint>>
+  NewSosPolynomial(const symbolic::Variables& indeterminates, int degree);
 
   /**
    * Adds indeterminates, appending them to an internal vector of any
@@ -1747,6 +1771,30 @@ class MathematicalProgram {
   Binding<LinearMatrixInequalityConstraint> AddLinearMatrixInequalityConstraint(
       const std::vector<Eigen::Ref<const Eigen::MatrixXd>>& F,
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
+
+  /**
+   * Adds constraints that a given polynomial @p p is a sums-of-squares (SOS),
+   * that is, @p p can be decomposed into `xᵀQx`. It returns a pair of
+   * constraint bindings expressing:
+   *  - The coefficients matrix Q is PSD (positive semidefinite).
+   *  - The coefficients matching conditions in linear equality constraint.
+   */
+  std::pair<Binding<PositiveSemidefiniteConstraint>,
+            Binding<LinearEqualityConstraint>>
+  AddSosConstraint(const symbolic::Polynomial& p);
+
+  /**
+   * Adds constraints that a given symbolic expression @p e is a sums-of-squares
+   * (SOS), that is, @p e can be decomposed into `xTQx`. Note that it decomposes
+   * @p e into a polynomial with respect to `indeterminates()` in this
+   * mathematical program. It returns a pair of
+   * constraint bindings expressing:
+   *  - The coefficients matrix Q is PSD (positive semidefinite).
+   *  - The coefficients matching conditions in linear equality constraint.
+   */
+  std::pair<Binding<PositiveSemidefiniteConstraint>,
+            Binding<LinearEqualityConstraint>>
+  AddSosConstraint(const symbolic::Expression& e);
 
   // template <typename FunctionType>
   // void AddCost(std::function..);
