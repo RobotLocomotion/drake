@@ -58,6 +58,7 @@ drake_cc_googletest(
     deps = [
         ":dragway",
         "//drake/automotive/maliput/api/test_utilities",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
