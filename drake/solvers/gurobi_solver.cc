@@ -49,6 +49,45 @@ struct GurobiCallbackInformation {
   GurobiSolver::MipSolCallbackFunction mip_sol_callback
 ;};
 
+// Utility that, given a raw Gurobi solution vector, a container
+// in which to populate the Mathematical Program solution vector,
+// and a mapping of which elements should be accepted from the Gurobi
+// solution vector, sets a MathematicalProgram's solution to the
+// Gurobi solution.
+void SetProgramSolutionVector(
+  const std::vector<bool>& is_new_variable,
+  const std::vector<double>& solver_sol_vector,
+  Eigen::VectorXd *prog_sol_vector,
+  MathematicalProgram *prog) {
+  size_t k = 0;
+  for (size_t i = 0; i < is_new_variable.size(); ++i) {
+    if (!is_new_variable[i]) {
+      (*prog_sol_vector)(k) = solver_sol_vector[i];
+      k++;
+    }
+  }
+  prog->SetDecisionVariableValues(*prog_sol_vector);
+}
+
+// Utility to extract Gurobi solve status information into
+// a struct to communicate to user callbacks.
+GurobiSolver::SolveStatusInfo GetGurobiSolveStatus(void *cbdata, int where) {
+  GurobiSolver::SolveStatusInfo solve_status;
+  GRBcbget(cbdata, where, GRB_CB_RUNTIME,
+    &(solve_status.reported_runtime));
+  solve_status.current_objective = -1.0;
+  GRBcbget(cbdata, where, GRB_CB_MIPNODE_OBJBST,
+    &(solve_status.best_objective));
+  GRBcbget(cbdata, where, GRB_CB_MIPNODE_OBJBND,
+    &(solve_status.best_bound));
+  GRBcbget(cbdata, where, GRB_CB_MIPNODE_SOLCNT,
+    &(solve_status.feasible_solutions_count));
+  double explored_node_count_dbl;
+  GRBcbget(cbdata, where, GRB_CB_MIPNODE_NODCNT, &explored_node_count_dbl);
+  solve_status.explored_node_count = explored_node_count_dbl;
+  return solve_status;
+}
+
 static int
 gurobi_callback(GRBmodel *model, void *cbdata, int where, void *usrdata) {
   GurobiCallbackInformation * callbackInfo =
@@ -62,7 +101,6 @@ gurobi_callback(GRBmodel *model, void *cbdata, int where, void *usrdata) {
       callbackInfo->mip_sol_callback != nullptr) {
     // Extract variable values from Gurobi, and set the current
     // solution of the MathematicalProgram to these values.
-    int num_total_variables = callbackInfo->is_new_variable.size();
     auto error = GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOL,
       callbackInfo->solver_sol_vector.data());
     if (error) {
@@ -70,31 +108,12 @@ gurobi_callback(GRBmodel *model, void *cbdata, int where, void *usrdata) {
         GRBgeterrormsg(GRBgetenv(model)));
       return 0;
     }
-    int k = 0;
-    for (int i = 0; i < num_total_variables; ++i) {
-      if (callbackInfo->is_new_variable[i]) {
-        callbackInfo->prog_sol_vector(k) =
-          callbackInfo->solver_sol_vector[i];
-        k++;
-      }
-    }
-    callbackInfo->prog->SetDecisionVariableValues(
-      callbackInfo->prog_sol_vector);
+    SetProgramSolutionVector(callbackInfo->is_new_variable,
+      callbackInfo->solver_sol_vector,
+      &(callbackInfo->prog_sol_vector),
+      callbackInfo->prog);
 
-    GurobiSolver::SolveStatusInfo solve_status;
-    GRBcbget(cbdata, where, GRB_CB_RUNTIME,
-      &(solve_status.reported_runtime));
-    GRBcbget(cbdata, where, GRB_CB_MIPSOL_OBJ,
-      &(solve_status.current_objective));
-    GRBcbget(cbdata, where, GRB_CB_MIPSOL_OBJBST,
-      &(solve_status.best_objective));
-    GRBcbget(cbdata, where, GRB_CB_MIPSOL_OBJBND,
-      &(solve_status.best_bound));
-    GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOLCNT,
-      &(solve_status.feasible_solutions_count));
-    double explored_node_count_dbl;
-    GRBcbget(cbdata, where, GRB_CB_MIPSOL_NODCNT, &explored_node_count_dbl);
-    solve_status.explored_node_count = explored_node_count_dbl;
+    auto solve_status = GetGurobiSolveStatus(cbdata, where);
 
     callbackInfo->mip_sol_callback(*(callbackInfo->prog), solve_status);
 
@@ -109,7 +128,6 @@ gurobi_callback(GRBmodel *model, void *cbdata, int where, void *usrdata) {
     } else if (sol_status == GRB_OPTIMAL) {
       // Extract variable values from Gurobi, and set the current
       // solution of the MathematicalProgram to these values.
-      int num_total_variables = callbackInfo->is_new_variable.size();
       auto error = GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOL,
         callbackInfo->solver_sol_vector.data());
       if (error) {
@@ -117,30 +135,12 @@ gurobi_callback(GRBmodel *model, void *cbdata, int where, void *usrdata) {
           GRBgeterrormsg(GRBgetenv(model)));
         return 0;
       }
-      int k = 0;
-      for (int i = 0; i < num_total_variables; ++i) {
-        if (callbackInfo->is_new_variable[i]) {
-          callbackInfo->prog_sol_vector(k) =
-            callbackInfo->solver_sol_vector[i];
-          k++;
-        }
-      }
-      callbackInfo->prog->SetDecisionVariableValues(
-        callbackInfo->prog_sol_vector);
+      SetProgramSolutionVector(callbackInfo->is_new_variable,
+        callbackInfo->solver_sol_vector,
+        &(callbackInfo->prog_sol_vector),
+        callbackInfo->prog);
 
-      GurobiSolver::SolveStatusInfo solve_status;
-      GRBcbget(cbdata, where, GRB_CB_RUNTIME,
-        &(solve_status.reported_runtime));
-      solve_status.current_objective = -1.0;
-      GRBcbget(cbdata, where, GRB_CB_MIPNODE_OBJBST,
-        &(solve_status.best_objective));
-      GRBcbget(cbdata, where, GRB_CB_MIPNODE_OBJBND,
-        &(solve_status.best_bound));
-      GRBcbget(cbdata, where, GRB_CB_MIPNODE_SOLCNT,
-        &(solve_status.feasible_solutions_count));
-      double explored_node_count_dbl;
-      GRBcbget(cbdata, where, GRB_CB_MIPNODE_NODCNT, &explored_node_count_dbl);
-      solve_status.explored_node_count = explored_node_count_dbl;
+      auto solve_status = GetGurobiSolveStatus(cbdata, where);
 
       Eigen::VectorXd vals;
       VectorXDecisionVariable vars;
@@ -805,14 +805,10 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
       GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, num_total_variables,
                          solver_sol_vector.data());
       Eigen::VectorXd prog_sol_vector(num_prog_vars);
-      int prog_var_count = 0;
-      for (int i = 0; i < num_total_variables; ++i) {
-        if (!is_new_variable[i]) {
-          prog_sol_vector(prog_var_count) = solver_sol_vector[i];
-          ++prog_var_count;
-        }
-      }
-      prog.SetDecisionVariableValues(prog_sol_vector);
+      SetProgramSolutionVector(is_new_variable,
+        solver_sol_vector,
+        &prog_sol_vector,
+        &prog);
 
       // Obtain optimal cost.
       double optimal_cost = std::numeric_limits<double>::quiet_NaN();
