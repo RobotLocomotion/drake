@@ -94,7 +94,7 @@ class HumanoidPlanEvalAndQpInverseDynamicsTest : public ::testing::Test {
     // Initializes.
     auto& plan_eval_context =
         diagram_->GetMutableSubsystemContext(*plan_eval, context_.get());
-    plan_eval->Initialize(q, plan_eval_context.get_mutable_state());
+    plan_eval->Initialize(robot_status, plan_eval_context.get_mutable_state());
 
     // Computes results.
     auto events = diagram_->AllocateCompositeEventCollection();

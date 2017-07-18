@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/plan_eval_base_system.h"
 
 namespace drake {
@@ -35,12 +36,13 @@ class HumanoidPlanEvalSystem : public PlanEvalBaseSystem {
                          const std::string& param_file_name, double dt);
 
   /**
-   * Initializes the plan in @p state to track the desired
-   * configuration @p q.
-   * @param q_d Desired generalized position.
+   * Initializes the plan in @p state to maintain the current state in
+   * @p current_status.
+   * @param current_status Current robot status.
    * @param state State
    */
-  void Initialize(const VectorX<double>& q, systems::State<double>* state);
+  void Initialize(const HumanoidStatus& current_status,
+                  systems::State<double>* state) const;
 
  private:
   int get_num_extended_abstract_states() const override { return 1; }
