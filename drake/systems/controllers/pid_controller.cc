@@ -2,6 +2,10 @@
 
 #include <string>
 
+#include "drake/common/autodiff_overloads.h"
+#include "drake/common/symbolic_expression.h"
+#include "drake/common/symbolic_formula.h"
+
 namespace drake {
 namespace systems {
 
@@ -27,6 +31,8 @@ PidController<T>::PidController(const MatrixX<double>& state_selector,
   DRAKE_DEMAND(kd_.size() == ki_.size());
   DRAKE_DEMAND(state_selector_.rows() == 2 * num_controlled_q_);
 
+  this->template SetConcreteSubclass<systems::PidController>();
+
   this->DeclareContinuousState(num_controlled_q_);
 
   output_index_control_ =
@@ -40,6 +46,16 @@ PidController<T>::PidController(const MatrixX<double>& state_selector,
   input_index_desired_state_ =
       this->DeclareInputPort(kVectorValued, 2 * num_controlled_q_).get_index();
 }
+
+template <typename T>
+template <typename U>
+PidController<T>::PidController(
+    const TransmogrifierTag&, const PidController<U>& other)
+    : PidController(
+          other.get_state_selector(),
+          other.get_Kp_vector(),
+          other.get_Ki_vector(),
+          other.get_Kd_vector()) {}
 
 template <typename T>
 void PidController<T>::DoCalcTimeDerivatives(
@@ -81,12 +97,6 @@ void PidController<T>::CalcControl(const Context<T>& context,
       (kd_.array() * controlled_state_diff.tail(num_controlled_q_).array())
           .matrix() +
       (ki_.array() * state_block.array()).matrix());
-}
-
-template <typename T>
-PidController<symbolic::Expression>* PidController<T>::DoToSymbolic() const {
-  return new PidController<symbolic::Expression>(state_selector_, kp_, ki_,
-                                                 kd_);
 }
 
 // Adds a simple record-based representation of the PID controller to @p dot.
