@@ -15,6 +15,56 @@ namespace {
 using implicit_integrator_test::SpringMassDamperSystem;
 using implicit_integrator_test::DiscontinuousSpringMassDamperSystem;
 
+/// System with no state evolution for testing numerical differentiation.
+template <class T>
+class StationarySystem : public LeafSystem<T> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StationarySystem)
+  StationarySystem() {
+    this->DeclareContinuousState(1 /* num q */, 1 /* num v */, 0 /* num z */);
+  }
+
+ protected:
+  void DoCalcTimeDerivatives(const Context<T>& context,
+                             ContinuousState<T>* derivatives) const override {
+    // State does not evolve.
+    derivatives->get_mutable_vector()->SetAtIndex(0, 0.0);
+    derivatives->get_mutable_vector()->SetAtIndex(1, 0.0);
+  }
+
+  System<AutoDiffXd>* DoToAutoDiffXd() const override {
+    return new StationarySystem<AutoDiffXd>();
+  }
+};
+
+// Tests the implicit integrator on a stationary system problem, which
+// stresses numerical differentiation (since the state does not change).
+GTEST_TEST(ImplicitEulerIntegratorTest, Stationary) {
+  std::unique_ptr<StationarySystem<double>> stationary =
+    std::make_unique<StationarySystem<double>>();
+  std::unique_ptr<Context<double>> context = stationary->CreateDefaultContext();
+
+  // Set the initial condition for the stationary system.
+  VectorBase<double>* state = context->get_mutable_continuous_state()->
+      get_mutable_vector();
+  state->SetAtIndex(0, 0.0);
+  state->SetAtIndex(1, 0.0);
+
+  // Create the integrator.
+  ImplicitEulerIntegrator<double> integrator(*stationary, context.get());
+  integrator.set_maximum_step_size(1.0);
+  integrator.set_target_accuracy(1e-3);
+  integrator.request_initial_step_size_target(1e-4);
+
+  // Integrate the system
+  integrator.Initialize();
+  integrator.IntegrateWithMultipleSteps(1.0);
+
+  // Verify the solution.
+  EXPECT_NEAR(state->GetAtIndex(0), 0, std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(state->GetAtIndex(1), 0, std::numeric_limits<double>::epsilon());
+}
+
 // Tests the implicit integrator on Robertson's stiff chemical reaction
 // problem, which has been used to benchmark various implicit integrators.
 // This problem is particularly good at testing large step sizes (since the

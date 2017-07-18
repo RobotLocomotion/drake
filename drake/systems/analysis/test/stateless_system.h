@@ -47,7 +47,7 @@ class ClockWitness : public WitnessFunction<T> {
   T trigger_time_{0};
 };
 
-/// System with no state evolution for testing a simplistic witness function.
+/// System with no state for testing a simplistic witness function.
 template <class T>
 class StatelessSystem : public LeafSystem<T> {
  public:
