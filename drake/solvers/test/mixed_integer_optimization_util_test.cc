@@ -20,6 +20,20 @@ GTEST_TEST(TestMixedIntegerUtil, TestCeilLog2) {
   }
 }
 
+GTEST_TEST(TestLogarithmicSOS2, TestAddSOS2) {
+  MathematicalProgram prog;
+  auto lambda1 = prog.NewContinuousVariables(3, "lambda1");
+  auto y1 =
+      AddLogarithmicSOS2Constraint(&prog, lambda1.cast<symbolic::Expression>());
+  static_assert(std::is_same<decltype(y1), VectorXDecisionVariable>::value,
+                "y1 should be a dynamic-sized vector.");
+  auto lambda2 = prog.NewContinuousVariables<3>("lambda2");
+  auto y2 =
+      AddLogarithmicSOS2Constraint(&prog, lambda2.cast<symbolic::Expression>());
+  static_assert(std::is_same<decltype(y2), VectorDecisionVariable<1>>::value,
+                "y2 should be a static-sized vector.");
+}
+
 void LogarithmicSOS2Test(int num_lambda) {
   // Solve the program
   // min λᵀ * λ

@@ -25,16 +25,16 @@ constexpr int CeilLog2(int n) { return n == 1 ? 0 : 1 + CeilLog2((n + 1) / 2); }
  * @tparam NumLambda The length of the lambda vector. NumLambda = n + 1.
  */
 template<int NumLambda>
-typename std::enable_if<NumLambda >= 1, int>::type
-LogarithmicSOS2NewBinaryVariablesSize() {
-  return CeilLog2(NumLambda - 1);
-}
+struct LogarithmicSOS2NewBinaryVariables {
+  typedef VectorDecisionVariable<CeilLog2(NumLambda - 1)> type;
+  static const int Rows = CeilLog2(NumLambda - 1);
+};
 
-template<int NumLambda>
-typename std::enable_if<NumLambda == Eigen::Dynamic, int>::type
-LogarithmicSOS2NewBinaryVariablesSize() {
-  return Eigen::Dynamic;
-}
+template<>
+struct LogarithmicSOS2NewBinaryVariables<Eigen::Dynamic> {
+  typedef VectorXDecisionVariable type;
+  static const int Rows = Eigen::Dynamic;
+};
 
 /**
  * Adds the special ordered set 2 (sos2) constraint,
@@ -66,11 +66,14 @@ template <typename Derived>
 typename std::enable_if<
     std::is_base_of<Eigen::MatrixBase<Derived>, Derived>::value &&
         std::is_same<typename Derived::Scalar, symbolic::Expression>::value,
-    VectorDecisionVariable<LogarithmicSOS2NewBinaryVariablesSize<Derived::RowsAtCompileTime>()>>::type
+    typename LogarithmicSOS2NewBinaryVariables<
+        Derived::RowsAtCompileTime>::type>::type
 AddLogarithmicSOS2Constraint(MathematicalProgram* prog, const Derived& lambda,
                              const std::string& binary_variable_name = "y") {
   int binary_variable_size = CeilLog2(lambda.rows() - 1);
-  auto y = prog->NewBinaryVariables<LogarithmicSOS2NewBinaryVariablesSize<Derived::RowsAtCompileTime>(), 1>(binary_variable_size, 1, binary_variable_name);
+  auto y = prog->NewBinaryVariables<
+      LogarithmicSOS2NewBinaryVariables<Derived::RowsAtCompileTime>::Rows, 1>(
+      binary_variable_size, 1, binary_variable_name);
   AddLogarithmicSOS2Constraint(prog, lambda, y);
   return y;
 }
