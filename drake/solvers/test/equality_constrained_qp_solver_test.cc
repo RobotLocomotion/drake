@@ -135,6 +135,15 @@ GTEST_TEST(testMathematicalProgram, testLinearlyConstrainedQPDispatch) {
             << "\tActual: " << actual_answer.transpose();
   EXPECT_NEAR(-0.25, prog.GetOptimalCost(), 1e-10);
 }
+
+GTEST_TEST(testMathematicalProgram, testNotStrictlyPositiveDefiniteHessianQP) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>("x");
+  prog.AddCost(x(0) * x(0));
+  EqualityConstrainedQPSolver equality_qp_solver;
+  auto result = equality_qp_solver.Solve(prog);
+  EXPECT_EQ(result, SolutionResult::kInvalidInput);
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

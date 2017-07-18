@@ -76,79 +76,93 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
     }
   }
 
-  // Setup the linear constraints.
-  Eigen::MatrixXd A = Eigen::MatrixXd::Zero(num_constraints, prog.num_vars());
-  Eigen::VectorXd b = Eigen::VectorXd::Zero(num_constraints);
-  int constraint_index = 0;
-  for (auto const& binding : prog.linear_equality_constraints()) {
-    auto const& bc = binding.constraint();
-    size_t n = bc->A().rows();
+  Eigen::VectorXd x{};
 
-    int num_v_variables = binding.variables().rows();
-    for (int i = 0; i < num_v_variables; ++i) {
-      A.block(constraint_index,
-              prog.FindDecisionVariableIndex(binding.variables()(i)), n, 1) =
-          bc->A().col(i);
+  if (num_constraints > 0) {
+    // Setup the linear constraints.
+    Eigen::MatrixXd A = Eigen::MatrixXd::Zero(num_constraints, prog.num_vars());
+    Eigen::VectorXd b = Eigen::VectorXd::Zero(num_constraints);
+    int constraint_index = 0;
+    for (auto const &binding : prog.linear_equality_constraints()) {
+      auto const &bc = binding.constraint();
+      size_t n = bc->A().rows();
+
+      int num_v_variables = binding.variables().rows();
+      for (int i = 0; i < num_v_variables; ++i) {
+        A.block(constraint_index,
+                prog.FindDecisionVariableIndex(binding.variables()(i)), n, 1) =
+            bc->A().col(i);
+      }
+
+      b.segment(constraint_index, n) =
+          bc->lower_bound().segment(0, n);  // = c->upper_bound() since it's
+      //  an equality constraint
+      constraint_index += n;
     }
 
-    b.segment(constraint_index, n) =
-        bc->lower_bound().segment(0, n);  // = c->upper_bound() since it's
-    //  an equality constraint
-    constraint_index += n;
+    // Check for positive definite Hessian matrix.
+    Eigen::LLT<Eigen::MatrixXd> llt(G);
+    if (llt.info() == Eigen::Success) {
+      // Matrix is positive definite. (inv(G)*A')' = A*inv(G) because G is
+      // symmetric.
+      Eigen::MatrixXd AiG_T = llt.solve(A.transpose());
+
+      // Compute a full pivoting, QR factorization.
+      Eigen::FullPivHouseholderQR<Eigen::MatrixXd> qr(A * AiG_T);
+
+      // Solve using least-squares A*inv(G)*A'y = A*inv(W)*c + b for `y`.
+      Eigen::VectorXd lambda = qr.solve(AiG_T.transpose() * c + b);
+
+      // Solve G*x = A'y - c
+      x = llt.solve(A.transpose() * lambda - c);
+    }
+
+    // The following code assumes that the Hessian is not positive definite.
+    // It uses the singular value decomposition, which is generally overkill but
+    // does provide a useful fallback in the case that the range space approach
+    // above fails.
+
+    // The expanded problem introduces a Lagrangian multiplier for each
+    // linear equality constraint.
+    size_t num_full_vars = prog.num_vars() + num_constraints;
+    Eigen::MatrixXd A_full(num_full_vars, num_full_vars);
+    Eigen::VectorXd b_full(num_full_vars);
+
+    // Set up the big matrix.
+    A_full.block(0, 0, G.rows(), G.cols()) = G;
+    A_full.block(0, G.cols(), A.cols(), A.rows()) = -A.transpose();
+    A_full.block(G.rows(), 0, A.rows(), A.cols()) = A;
+    A_full.block(G.rows(), G.cols(), A.rows(), A.rows()).setZero();
+
+    // Set up the right hand side vector.
+    b_full.segment(0, G.rows()) = -c;
+    b_full.segment(G.rows(), A.rows()) = b;
+
+    // Compute the least-squares solution.
+    Eigen::VectorXd sol =
+        A_full.jacobiSvd(
+            Eigen::ComputeThinU | Eigen::ComputeThinV).solve(b_full);
+    x = sol.segment(0, prog.num_vars());
+  } else {
+    // num_constraints = 0
+    // Check for positive definite Hessian matrix.
+    Eigen::LLT<Eigen::MatrixXd> llt(G);
+    if (llt.info() == Eigen::Success) {
+      // G is positive definite.
+      x = llt.solve(-c);
+    } else {
+      // G is not strictly positive definite.
+      x = Eigen::VectorXd::Constant(prog.num_vars(), NAN);
+      prog.SetDecisionVariableValues(x);
+      prog.SetOptimalCost(NAN);
+      prog.SetSolverId(id());
+      return SolutionResult::kInvalidInput;
+    }
   }
 
-  // Check for positive definite Hessian matrix.
-  Eigen::LLT<Eigen::MatrixXd> llt(G);
-  if (llt.info() == Eigen::Success) {
-    // Matrix is positive definite. (inv(G)*A')' = A*inv(G) because G is
-    // symmetric.
-    Eigen::MatrixXd AiG_T = llt.solve(A.transpose());
-
-    // Compute a full pivoting, QR factorization.
-    Eigen::FullPivHouseholderQR<Eigen::MatrixXd> qr(A * AiG_T);
-
-    // Solve using least-squares A*inv(G)*A'y = A*inv(W)*c + b for `y`.
-    Eigen::VectorXd lambda = qr.solve(AiG_T.transpose() * c + b);
-
-    // Solve G*x = A'y - c
-    const Eigen::VectorXd x = llt.solve(A.transpose() * lambda - c);
-    prog.SetDecisionVariableValues(x);
-    const double optimal_cost = 0.5 * x.dot(G * x + c);
-    prog.SetOptimalCost(optimal_cost);
-    prog.SetSolverId(id());
-    return SolutionResult::kSolutionFound;
-  }
-
-  // The following code assumes that the Hessian is not positive definite.
-  // It uses the singular value decomposition, which is generally overkill but
-  // does provide a useful fallback in the case that the range space approach
-  // above fails.
-
-  // The expanded problem introduces a Lagrangian multiplier for each
-  // linear equality constraint.
-  size_t num_full_vars = prog.num_vars() + num_constraints;
-  Eigen::MatrixXd A_full(num_full_vars, num_full_vars);
-  Eigen::VectorXd b_full(num_full_vars);
-
-  // Set up the big matrix.
-  A_full.block(0, 0, G.rows(), G.cols()) = G;
-  A_full.block(0, G.cols(), A.cols(), A.rows()) = -A.transpose();
-  A_full.block(G.rows(), 0, A.rows(), A.cols()) = A;
-  A_full.block(G.rows(), G.cols(), A.rows(), A.rows()).setZero();
-
-  // Set up the right hand side vector.
-  b_full.segment(0, G.rows()) = -c;
-  b_full.segment(G.rows(), A.rows()) = b;
-
-  // Compute the least-squares solution.
-  Eigen::VectorXd sol =
-      A_full.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(b_full);
-  const Eigen::VectorXd x = sol.segment(0, prog.num_vars());
   prog.SetDecisionVariableValues(x);
-
   const double optimal_cost = 0.5 * x.dot(G * x + c);
   prog.SetOptimalCost(optimal_cost);
-
   prog.SetSolverId(id());
   return SolutionResult::kSolutionFound;
 }
