@@ -16,31 +16,31 @@ constexpr int CeilLog2(int n) { return n == 1 ? 0 : 1 + CeilLog2((n + 1) / 2); }
 
 /**
  * The size of the new binary variables in the compile time, for Special Ordered
- * Set of type 2 (sos2) constraint. The sos2 constraint says that
+ * Set of type 2 (SOS2) constraint. The SOS2 constraint says that
  * <pre>
  *   λ(0) + ... + λ(n) = 1
- *   λ(i) ≥ 0 ∀i
+ *   ∀i. λ(i) ≥ 0
  *   ∃ j ∈ {0, 1, ..., n-1}, s.t λ(j) + λ(j + 1) = 1
  * </pre>
  * @tparam NumLambda The length of the lambda vector. NumLambda = n + 1.
  */
-template<int NumLambda>
-struct LogarithmicSOS2NewBinaryVariables {
-  typedef VectorDecisionVariable<CeilLog2(NumLambda - 1)> type;
-  static const int Rows = CeilLog2(NumLambda - 1);
+template <int NumLambda>
+struct LogarithmicSos2NewBinaryVariables {
+  static constexpr int Rows = CeilLog2(NumLambda - 1);
+  typedef VectorDecisionVariable<Rows> type;
 };
 
 template<>
-struct LogarithmicSOS2NewBinaryVariables<Eigen::Dynamic> {
+struct LogarithmicSos2NewBinaryVariables<Eigen::Dynamic> {
   typedef VectorXDecisionVariable type;
   static const int Rows = Eigen::Dynamic;
 };
 
 /**
- * Adds the special ordered set 2 (sos2) constraint,
+ * Adds the special ordered set 2 (SOS2) constraint,
  * <pre>
  *   λ(0) + ... + λ(n) = 1
- *   λ(i) ≥ 0 ∀i
+ *   ∀i. λ(i) ≥ 0
  *   ∃ j ∈ {0, 1, ..., n-1}, s.t λ(j) + λ(j + 1) = 1
  * </pre>
  * Namely at most two entries in λ can be strictly positive, and these two
@@ -52,7 +52,7 @@ struct LogarithmicSOS2NewBinaryVariables<Eigen::Dynamic> {
  *   Modeling Disjunctive Constraints with a Logarithmic Number of Binary
  *   Variables and Constraints
  *   by J. Vielma and G. Nemhauser, 2011.
- * @param prog Add the sos2 constraint to this mathematical program.
+ * @param prog Add the SOS2 constraint to this mathematical program.
  * @param lambda At most two entries in λ can be strictly positive, and these
  * two entries have to be adjacent. All other entries are zero.
  * @return y The newly added binary variables. The assignment of the binary
@@ -65,29 +65,30 @@ struct LogarithmicSOS2NewBinaryVariables<Eigen::Dynamic> {
 template <typename Derived>
 typename std::enable_if<
     std::is_base_of<Eigen::MatrixBase<Derived>, Derived>::value &&
-        std::is_same<typename Derived::Scalar, symbolic::Expression>::value,
-    typename LogarithmicSOS2NewBinaryVariables<
+        std::is_same<typename Derived::Scalar, symbolic::Expression>::value &&
+        Derived::ColsAtCompileTime == 1,
+    typename LogarithmicSos2NewBinaryVariables<
         Derived::RowsAtCompileTime>::type>::type
-AddLogarithmicSOS2Constraint(MathematicalProgram* prog, const Derived& lambda,
+AddLogarithmicSos2Constraint(MathematicalProgram* prog, const Derived& lambda,
                              const std::string& binary_variable_name = "y") {
-  int binary_variable_size = CeilLog2(lambda.rows() - 1);
-  auto y = prog->NewBinaryVariables<
-      LogarithmicSOS2NewBinaryVariables<Derived::RowsAtCompileTime>::Rows, 1>(
+  const int binary_variable_size = CeilLog2(lambda.rows() - 1);
+  const auto y = prog->NewBinaryVariables<
+      LogarithmicSos2NewBinaryVariables<Derived::RowsAtCompileTime>::Rows, 1>(
       binary_variable_size, 1, binary_variable_name);
-  AddLogarithmicSOS2Constraint(prog, lambda, y);
+  AddLogarithmicSos2Constraint(prog, lambda, y);
   return y;
 }
 
-/** Adds the special ordered set 2 (sos2) constraint,
- * @see AddLogarithmicSOS2Constraint.
+/** Adds the special ordered set 2 (SOS2) constraint,
+ * @see AddLogarithmicSos2Constraint.
  */
-void AddLogarithmicSOS2Constraint(
-    MathematicalProgram* prog,
-    const Eigen::Ref<const VectorX<symbolic::Expression>>& lambda,
-    const Eigen::Ref<const VectorXDecisionVariable>& y);
+void AddLogarithmicSos2Constraint(
+    MathematicalProgram *prog,
+    const Eigen::Ref<const VectorX<symbolic::Expression>> &lambda,
+    const Eigen::Ref<const VectorXDecisionVariable> &y);
 
 /**
- * Adds the special ordered set of type 1 (sos1) constraint. Namely
+ * Adds the special ordered set of type 1 (SOS1) constraint. Namely
  * <pre>
  *   λ(0) + ... + λ(n-1) = 1
  *   λ(i) ≥ 0 ∀i
@@ -99,8 +100,8 @@ void AddLogarithmicSOS2Constraint(
  *   Modeling Disjunctive Constraints with a Logarithmic Number of Binary
  *   Variables and Constraints
  *   by J. Vielma and G. Nemhauser, 2011.
- * @param prog The program to which the sos1 constraint is added.
- * @param lambda lambda is in sos1.
+ * @param prog The program to which the SOS1 constraint is added.
+ * @param lambda lambda is in SOS1.
  * @param y The binary variables indicating which λ is positive. For a given
  * assignment on the binary variable `y`, if (y(0), ..., y(⌈log₂(n)⌉) represents
  * integer M in `codes`, then only λ(M) is positive. Namely, if
@@ -109,11 +110,11 @@ void AddLogarithmicSOS2Constraint(
  * No two rows of `codes` can be the same. @throws std::runtime_error if
  * @p codes has a non-binary entry (0, 1).
  */
-void AddLogarithmicSOS1Constraint(
-    MathematicalProgram* prog,
-    const Eigen::Ref<const VectorX<symbolic::Expression>>& lambda,
-    const Eigen::Ref<const VectorXDecisionVariable>& y,
-    const Eigen::Ref<const Eigen::MatrixXi>& codes);
+void AddLogarithmicSos1Constraint(
+    MathematicalProgram *prog,
+    const Eigen::Ref<const VectorX<symbolic::Expression>> &lambda,
+    const Eigen::Ref<const VectorXDecisionVariable> &y,
+    const Eigen::Ref<const Eigen::MatrixXi> &codes);
 
 /**
  * Constrain `w` to approximate the bilinear product x * y. We know
@@ -136,14 +137,14 @@ void AddLogarithmicSOS1Constraint(
  * If Bx represents integer M in Gray code, then `y` is in the interval
  * [φy(M), φy(M+1)].
  */
-void AddBilinearProductMcCormickEnvelopeSOS2(
-    MathematicalProgram* prog,
-    const symbolic::Variable& x,
-    const symbolic::Variable& y,
-    const symbolic::Expression& w,
-    const Eigen::Ref<const Eigen::VectorXd>& phi_x,
-    const Eigen::Ref<const Eigen::VectorXd>& phi_y,
-    const Eigen::Ref<const VectorXDecisionVariable>& Bx,
-    const Eigen::Ref<const VectorXDecisionVariable>& By);
+void AddBilinearProductMcCormickEnvelopeSos2(
+    MathematicalProgram *prog,
+    const symbolic::Variable &x,
+    const symbolic::Variable &y,
+    const symbolic::Expression &w,
+    const Eigen::Ref<const Eigen::VectorXd> &phi_x,
+    const Eigen::Ref<const Eigen::VectorXd> &phi_y,
+    const Eigen::Ref<const VectorXDecisionVariable> &Bx,
+    const Eigen::Ref<const VectorXDecisionVariable> &By);
 }  // namespace solvers
 }  // namespace drake
