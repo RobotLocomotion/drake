@@ -130,37 +130,7 @@ Variables Monomial::GetVariables() const {
 }
 
 bool Monomial::operator==(const Monomial& m) const {
-  // TODO(soonho-tri): simplify this function to `return powers_ == m.powers_`.
-  //
-  // For now, the above one-liner doesn't work. std::map<Variable,
-  // int>::operator== uses Variable::operator== to compare two keys (two
-  // Variables) instead of std::equal_to<Variable>. The consequence is that we
-  // end up with var_1 == var_2, which turns to a symbolic::Formula and calls
-  // symbolic::Formula::Evaluate with an empty
-  // environment. symbolic::Formula::Evaluate function will throw a
-  // runtime_error because it cannot find an entry for `var_1` (nor `var_2`) in
-  // an empty environment.
-  //
-  // I think the right approach is to refactor symbolic::Formula::Evaluate to
-  // use structural equality when it handles equality (==) and inequality (!=)
-  // after partially evaluating/substituting with a given environment. When this
-  // fix is landed, I'll simplify this function.
-  if (powers_.size() != m.powers_.size()) {
-    return false;
-  }
-  for (const pair<Variable, int> p : powers_) {
-    const Variable& var{p.first};
-    const int exponent{p.second};
-    const auto it = m.powers_.find(var);
-    if (it == m.powers_.end()) {
-      // Key var is not found in m.powers.
-      return false;
-    }
-    if (exponent != it->second) {
-      return false;
-    }
-  }
-  return true;
+  return powers_ == m.powers_;
 }
 
 bool Monomial::operator!=(const Monomial& m) const { return !(*this == m); }
