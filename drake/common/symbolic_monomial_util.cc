@@ -1,4 +1,4 @@
-#include "drake/common/monomial_util.h"
+#include "drake/common/symbolic_monomial_util.h"
 
 #include "drake/common/drake_assert.h"
 

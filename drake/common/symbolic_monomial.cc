@@ -1,4 +1,4 @@
-#include "drake/common/monomial.h"
+#include "drake/common/symbolic_monomial.h"
 
 #include <map>
 #include <numeric>

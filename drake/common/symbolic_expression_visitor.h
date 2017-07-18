@@ -17,7 +17,7 @@ namespace symbolic {
 /// @throws std::runtime_error if NaN is detected during a visit.
 ///
 /// See the implementation of @c DegreeVisitor class and @c Degree function in
-/// drake/common/monomial.cc as an example usage.
+/// drake/common/symbolic_monomial.cc as an example usage.
 ///
 /// @pre e.is_polynomial() is true.
 template <typename Result, typename Visitor, typename... Args>

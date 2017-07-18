@@ -234,14 +234,14 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "monomial",
+    name = "symbolic_monomial",
     srcs = [
-        "monomial.cc",
-        "monomial_util.cc",
+        "symbolic_monomial.cc",
+        "symbolic_monomial_util.cc",
     ],
     hdrs = [
-        "monomial.h",
-        "monomial_util.h",
+        "symbolic_monomial.h",
+        "symbolic_monomial_util.h",
     ],
     deps = [
         ":common",
@@ -259,8 +259,8 @@ drake_cc_library(
     ],
     deps = [
         ":common",
-        ":monomial",
         ":symbolic",
+        ":symbolic_monomial",
     ],
 )
 
@@ -573,11 +573,11 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "monomial_test",
+    name = "symbolic_monomial_test",
     deps = [
         ":common",
-        ":monomial",
         ":symbolic",
+        ":symbolic_monomial",
         ":symbolic_test_util",
     ],
 )
