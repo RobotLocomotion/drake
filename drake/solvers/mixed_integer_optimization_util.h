@@ -15,6 +15,28 @@ namespace solvers {
 constexpr int CeilLog2(int n) { return n == 1 ? 0 : 1 + CeilLog2((n + 1) / 2); }
 
 /**
+ * The size of the new binary variables in the compile time, for Special Ordered
+ * Set of type 2 (sos2) constraint. The sos2 constraint says that
+ * <pre>
+ *   λ(0) + ... + λ(n) = 1
+ *   λ(i) ≥ 0 ∀i
+ *   ∃ j ∈ {0, 1, ..., n-1}, s.t λ(j) + λ(j + 1) = 1
+ * </pre>
+ * @tparam NumLambda The length of the lambda vector. NumLambda = n + 1.
+ */
+template<int NumLambda>
+typename std::enable_if<NumLambda >= 1, int>::type
+LogarithmicSOS2NewBinaryVariablesSize() {
+  return CeilLog2(NumLambda - 1);
+}
+
+template<int NumLambda>
+typename std::enable_if<NumLambda == Eigen::Dynamic, int>::type
+LogarithmicSOS2NewBinaryVariablesSize() {
+  return Eigen::Dynamic;
+}
+
+/**
  * Adds the special ordered set 2 (sos2) constraint,
  * <pre>
  *   λ(0) + ... + λ(n) = 1
@@ -40,10 +62,18 @@ constexpr int CeilLog2(int n) { return n == 1 ? 0 : 1 + CeilLog2((n + 1) / 2); }
  * can be non-zero. For example, if the assignment of y = (1, 1), in Gray code,
  * (1, 1) represents integer 2, so only λ(2) and λ(3) can be strictly positive.
  */
-VectorXDecisionVariable AddLogarithmicSOS2Constraint(
-    MathematicalProgram* prog,
-    const Eigen::Ref<const VectorX<symbolic::Expression>>& lambda,
-    const std::string& binary_variable_name = "y");
+template <typename Derived>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<Derived>, Derived>::value &&
+        std::is_same<typename Derived::Scalar, symbolic::Expression>::value,
+    VectorDecisionVariable<LogarithmicSOS2NewBinaryVariablesSize<typename Derived::RowsAtCompileTime>()>>::type
+AddLogarithmicSOS2Constraint(MathematicalProgram* prog, const Derived& lambda,
+                             const std::string& binary_variable_name = "y") {
+  int binary_variable_size = CeilLog2(lambda.rows() - 1);
+  auto y = prog->NewBinaryVariables<LogarithmicSOS2NewBinaryVariablesSize<typename Derived::RowsAtCompileTime>(), 1>(binary_variable_size, 1, binary_variable_name);
+  AddLogarithmicSOS2Constraint(prog, lambda, y);
+  return y;
+}
 
 /** Adds the special ordered set 2 (sos2) constraint,
  * @see AddLogarithmicSOS2Constraint.
