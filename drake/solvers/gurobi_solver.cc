@@ -157,8 +157,8 @@ gurobi_callback(GRBmodel *model, void *cbdata, int where, void *usrdata) {
           int k = callbackInfo->prog->FindDecisionVariableIndex(vars[i]);
           new_sol[k] = val;
         }
-        double err;
-        error = GRBcbsolution(cbdata, new_sol.data(), &err);
+        double objective_solution;
+        error = GRBcbsolution(cbdata, new_sol.data(), &objective_solution);
         if (error) {
           printf("GRB error %d in injection: %s\n", error,
             GRBgeterrormsg(GRBgetenv(model)));
