@@ -1,5 +1,9 @@
 #include "drake/examples/QPInverseDynamicsForHumanoids/plan_eval/dev/humanoid_manipulation_plan.h"
 
+#include <string>
+#include <unordered_map>
+#include <vector>
+
 #include "robotlocomotion/robot_plan_t.hpp"
 #include "drake/examples/QPInverseDynamicsForHumanoids/control_utils.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/lcm_utils.h"
@@ -33,17 +37,18 @@ void HumanoidManipulationPlan<T>::InitializeGenericPlanDerived(
 
   // Sets body tracking trajectories for pelvis and torso.
   const std::vector<std::string> tracked_body_names = {"pelvis", "torso"};
+  MatrixX<T> position;
   for (const auto& name : tracked_body_names) {
     const RigidBody<T>* body = alias_groups.get_body(name);
     Isometry3<T> body_pose = robot_status.robot().CalcBodyPoseInWorldFrame(
         robot_status.cache(), *body);
+    position = body_pose.translation();
+    PiecewisePolynomial<T> pos_traj =
+        PiecewisePolynomial<T>::ZeroOrderHold(times, {position, position});
+    PiecewiseQuaternionSlerp<T> rot_traj(
+        times, {body_pose.linear(), body_pose.linear()});
 
-    manipulation::PiecewiseCartesianTrajectory<T> body_traj =
-        manipulation::PiecewiseCartesianTrajectory<
-            T>::MakeCubicLinearWithEndLinearVelocity(times,
-                                                     {body_pose, body_pose},
-                                                     Vector3<T>::Zero(),
-                                                     Vector3<T>::Zero());
+    manipulation::PiecewiseCartesianTrajectory<T> body_traj(pos_traj, rot_traj);
     this->set_body_trajectory(body, body_traj);
   }
 }
@@ -60,7 +65,9 @@ void HumanoidManipulationPlan<T>::UpdateQpInputGenericPlanDerived(
       zmp_planner_.ComputeOptimalCoMdd(robot_status.time(), xcom);
 
   // Zeros linear and angular momentum change.
-  qp_input->mutable_desired_centroidal_momentum_dot().mutable_values().setZero();
+  qp_input->mutable_desired_centroidal_momentum_dot()
+      .mutable_values()
+      .setZero();
   // Only sets the xy dimensions of the linear momentum change.
   qp_input->mutable_desired_centroidal_momentum_dot()
       .mutable_values()
@@ -106,12 +113,7 @@ void HumanoidManipulationPlan<T>::HandlePlanMessageGenericPlanDerived(
 
     times[f] = robot_status.time() + time;
     dof_knots[f] = q;
-    dof_knots[f]
-        .template block<6, 1>(0, 0)
-        .setZero();  // don't interp the floating base in joint space.
 
-    // TODO, list of tracked bodies. this should be contained in the msg.
-    // but it's not now. so just assume we track pelvis and torso.
     for (auto& body_knots_pair : body_knots) {
       const RigidBody<T>* body = body_knots_pair.first;
       std::vector<Isometry3<T>>& body_knots = body_knots_pair.second;
@@ -134,7 +136,7 @@ void HumanoidManipulationPlan<T>::HandlePlanMessageGenericPlanDerived(
 
   // Generates dof trajectories.
   {
-    MatrixX<T> zeros = VectorX<T>::Zero(robot.get_num_positions());
+    MatrixX<T> zeros(robot.get_num_positions(), 1);
     this->set_dof_trajectory(manipulation::PiecewiseCubicTrajectory<T>(
         PiecewisePolynomial<T>::Cubic(times, dof_knots, zeros, zeros)));
   }

@@ -149,7 +149,7 @@ TEST_F(HumanoidPlanEvalAndQpInverseDynamicsTest, DofAcceleration) {
 
       case ConstraintType::Soft:
         EXPECT_NEAR(qp_input.desired_dof_motions().value(i), qp_output.vd()[i],
-                    5e-4);
+                    1e-2);
         break;
 
       default:
@@ -165,7 +165,7 @@ TEST_F(HumanoidPlanEvalAndQpInverseDynamicsTest, ContactAcceleration) {
 
   for (const auto& contact_pair : qp_output.resolved_contacts()) {
     EXPECT_TRUE(drake::CompareMatrices(contact_pair.second.body_acceleration(),
-                                       Vector6<double>::Zero(), 1e-8,
+                                       Vector6<double>::Zero(), 1e-7,
                                        drake::MatrixCompareType::absolute));
   }
 }
@@ -181,7 +181,7 @@ TEST_F(HumanoidPlanEvalAndQpInverseDynamicsTest, BodyAcceleration) {
     EXPECT_TRUE(drake::CompareMatrices(
         body_motion_pair.second.accelerations(),
         qp_input.desired_body_motions().at(body_motion_pair.first).values(),
-        5e-4, drake::MatrixCompareType::absolute));
+        1e-3, drake::MatrixCompareType::absolute));
   }
 }
 
