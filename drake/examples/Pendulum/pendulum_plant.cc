@@ -9,6 +9,8 @@ namespace pendulum {
 
 template <typename T>
 PendulumPlant<T>::PendulumPlant() {
+  this->template SetConcreteSubclass<pendulum::PendulumPlant>();
+
   this->DeclareInputPort(systems::kVectorValued, 1);
   this->DeclareVectorOutputPort(PendulumStateVector<T>(),
                                 &PendulumPlant::CopyStateOut);
@@ -17,6 +19,12 @@ PendulumPlant<T>::PendulumPlant() {
       1 /* num_q */, 1 /* num_v */, 0 /* num_z */);
   static_assert(PendulumStateVectorIndices::kNumCoordinates == 1 + 1, "");
 }
+
+template <typename T>
+template <typename U>
+PendulumPlant<T>::PendulumPlant(
+    const systems::TransmogrifierTag&, const PendulumPlant<U>& other)
+    : PendulumPlant() {}
 
 template <typename T>
 PendulumPlant<T>::~PendulumPlant() {}
@@ -56,17 +64,6 @@ void PendulumPlant<T>::DoCalcTimeDerivatives(
   derivative_vector->set_thetadot(
       (get_tau(context) - m_ * g_ * lc_ * sin(state.theta()) -
        b_ * state.thetadot()) / I_);
-}
-
-// PendulumPlant has no constructor arguments, so there's no work to do here.
-template <typename T>
-PendulumPlant<AutoDiffXd>* PendulumPlant<T>::DoToAutoDiffXd() const {
-  return new PendulumPlant<AutoDiffXd>();
-}
-
-template <typename T>
-PendulumPlant<symbolic::Expression>* PendulumPlant<T>::DoToSymbolic() const {
-  return new PendulumPlant<symbolic::Expression>();
 }
 
 template class PendulumPlant<double>;

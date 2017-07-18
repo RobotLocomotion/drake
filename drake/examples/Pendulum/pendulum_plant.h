@@ -24,6 +24,11 @@ template <typename T>
 class PendulumPlant : public systems::LeafSystem<T> {
  public:
   PendulumPlant();
+
+  /// Transmogrification constructor.
+  template <typename U>
+  PendulumPlant(const systems::TransmogrifierTag&, const PendulumPlant<U>&);
+
   ~PendulumPlant() override;
 
   using MyContext = systems::Context<T>;
@@ -57,11 +62,6 @@ class PendulumPlant : public systems::LeafSystem<T> {
   PendulumPlant& operator=(const PendulumPlant& other) = delete;
   explicit PendulumPlant(PendulumPlant&& other) = delete;
   PendulumPlant& operator=(PendulumPlant&& other) = delete;
-
- protected:
-  // System<T> override.
-  PendulumPlant<AutoDiffXd>* DoToAutoDiffXd() const override;
-  PendulumPlant<symbolic::Expression>* DoToSymbolic() const override;
 
  private:
   // This is the calculator method for the state output port.
