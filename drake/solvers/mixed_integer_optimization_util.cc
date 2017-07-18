@@ -4,18 +4,6 @@
 
 namespace drake {
 namespace solvers {
-VectorXDecisionVariable AddLogarithmicSOS2Constraint(
-    MathematicalProgram* prog,
-    const Eigen::Ref<const VectorX<symbolic::Expression>>& lambda,
-    const std::string& binary_variable_name) {
-  const int num_lambda = lambda.rows();
-  const int num_interval = num_lambda - 1;
-  const int num_binary_vars = CeilLog2(num_interval);
-  auto y = prog->NewBinaryVariables(num_binary_vars, binary_variable_name);
-  AddLogarithmicSOS2Constraint(prog, lambda, y);
-  return y;
-}
-
 void AddLogarithmicSOS2Constraint(
     MathematicalProgram* prog,
     const Eigen::Ref<const VectorX<symbolic::Expression>>& lambda,
