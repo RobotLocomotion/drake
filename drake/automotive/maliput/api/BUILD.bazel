@@ -9,6 +9,7 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_library(
     name = "api",
     srcs = [
+        "lane.cc",
         "lane_data.cc",
         "road_geometry.cc",
     ],
@@ -22,6 +23,7 @@ drake_cc_library(
         "type_specific_identifier.h",
     ],
     deps = [
+        "//drake/common:default_scalars",
         "//drake/common:essential",
         "//drake/math:geometric_transform",
     ],
