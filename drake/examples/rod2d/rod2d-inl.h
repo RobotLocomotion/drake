@@ -461,6 +461,24 @@ Vector3<T> Rod2D<T>::GetJacobianDotRow(const systems::Context<T>& context,
 }
 
 template <class T>
+Matrix2<T> Rod2D<T>::GetSlidingContactFrame(const T& xaxis_velocity) const {
+  // Note: normal for the rod is always +y; sliding tangent vector is
+  // either +/-x.
+  Matrix2<T> F;
+  F << 0, 1, ((xaxis_velocity > 0) ? 1 : -1), 0;
+  return F;
+}
+
+template <class T>
+Matrix2<T> Rod2D<T>::GetNonSlidingContactFrame() const {
+  // Note: normal for the rod is always +y; non-sliding tangent vector is
+  // always +x.
+  Matrix2<T> F;
+  F << 0, 1, 1, 0;
+  return F;
+}
+
+template <class T>
 void Rod2D<T>::CalcRigidContactProblemData(
     const systems::Context<T>& context,
     const std::vector<Vector2<T>>& points,
@@ -475,8 +493,9 @@ void Rod2D<T>::CalcRigidContactProblemData(
                                   std::placeholders::_1);
 
   // The normal and tangent spanning direction are unique.
-  const Vector2<T> contact_normal(0, 1);
-  const Vector2<T> contact_tan(1, 0);
+  const Matrix2<T> non_sliding_contact_frame = GetNonSlidingContactFrame();
+  const auto& contact_normal = non_sliding_contact_frame.col(0);
+  const auto& contact_tan = non_sliding_contact_frame.col(1);
 
   // Get the set of contact points.
   const int nc = points.size();
@@ -543,11 +562,8 @@ void Rod2D<T>::CalcRigidContactProblemData(
     if (std::binary_search(data->non_sliding_contacts.begin(),
                            data->non_sliding_contacts.end(), i))
       continue;
-    if (tangent_vels[i] > 0) {
-      Qrow = GetJacobianRow(context, points[i], contact_tan);
-    } else {
-      Qrow = GetJacobianRow(context, points[i], -contact_tan);
-    }
+    Qrow = GetJacobianRow(context, points[i],
+                          GetSlidingContactFrame(tangent_vels[i]).col(1));
     data->N_minus_mu_Q.row(i) -= data->mu_sliding[j] * Qrow;
     ++j;
   }
@@ -555,7 +571,6 @@ void Rod2D<T>::CalcRigidContactProblemData(
   // Set external force vector.
   data->f = ComputeExternalForces(context);
 }
-
 
 template <typename T>
 void Rod2D<T>::CopyStateOut(const systems::Context<T>& context,

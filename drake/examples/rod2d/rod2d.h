@@ -348,6 +348,15 @@ class Rod2D : public systems::LeafSystem<T> {
     v_stick_tol_ = v_stick_tol;
   }
 
+  /// Gets the frame for a sliding contact.
+  /// @param xaxis_velocity The velocity of the rod at the point of contact,
+  ///        projected along the +x-axis.
+  Matrix2<T> GetSlidingContactFrame(const T& xaxis_velocity) const;
+
+  /// Gets the frame for a non-sliding contact. Note: all such frames are
+  /// identical.
+  Matrix2<T> GetNonSlidingContactFrame() const;
+
   /// Checks whether the system is in an impacting state, meaning that the
   /// relative velocity along the contact normal between the rod and the
   /// halfspace is such that the rod will begin interpenetrating the halfspace

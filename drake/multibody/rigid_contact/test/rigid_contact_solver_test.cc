@@ -49,20 +49,12 @@ class RigidContact2DSolverTest : public ::testing::Test {
 
   // Gets the frame for a sliding contact.
   Matrix2<double> GetSlidingContactFrame(double xaxis_velocity) const {
-    // Note: normal for the rod is always +y; sliding tangent vector is
-    // either +/-x.
-    Matrix2<double> F;
-    F << 0, 1, ((xaxis_velocity > 0) ? 1 : -1), 0;
-    return F;
+    return rod_->GetSlidingContactFrame(xaxis_velocity);
   }
 
   // Gets the frame for a non-sliding contact.
   Matrix2<double> GetNonSlidingContactFrame() const {
-    // Note: normal for the rod is always +y; non-sliding tangent vector is
-    // always +x.
-    Matrix2<double> F;
-    F << 0, 1, 1, 0;
-    return F;
+    return rod_->GetNonSlidingContactFrame();
   }
 
   // Sets the rod to a resting horizontal configuration without modifying the
