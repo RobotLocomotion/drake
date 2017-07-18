@@ -66,11 +66,11 @@ template <typename Derived>
 typename std::enable_if<
     std::is_base_of<Eigen::MatrixBase<Derived>, Derived>::value &&
         std::is_same<typename Derived::Scalar, symbolic::Expression>::value,
-    VectorDecisionVariable<LogarithmicSOS2NewBinaryVariablesSize<typename Derived::RowsAtCompileTime>()>>::type
+    VectorDecisionVariable<LogarithmicSOS2NewBinaryVariablesSize<Derived::RowsAtCompileTime>()>>::type
 AddLogarithmicSOS2Constraint(MathematicalProgram* prog, const Derived& lambda,
                              const std::string& binary_variable_name = "y") {
   int binary_variable_size = CeilLog2(lambda.rows() - 1);
-  auto y = prog->NewBinaryVariables<LogarithmicSOS2NewBinaryVariablesSize<typename Derived::RowsAtCompileTime>(), 1>(binary_variable_size, 1, binary_variable_name);
+  auto y = prog->NewBinaryVariables<LogarithmicSOS2NewBinaryVariablesSize<Derived::RowsAtCompileTime>(), 1>(binary_variable_size, 1, binary_variable_name);
   AddLogarithmicSOS2Constraint(prog, lambda, y);
   return y;
 }
