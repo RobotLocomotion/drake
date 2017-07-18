@@ -6,6 +6,7 @@
 #include "drake/automotive/maliput/api/lane_data.h"
 #include "drake/automotive/maliput/api/type_specific_identifier.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/eigen_autodiff_types.h"
 
 namespace drake {
 namespace maliput {
@@ -72,6 +73,7 @@ class Lane {
   /// "staying in the lane".
   RBounds lane_bounds(double s) const { return do_lane_bounds(s); }
 
+
   /// Returns the driveable lateral (r) bounds of the lane as a function of s.
   ///
   /// These are the lateral bounds for a position that is considered to be
@@ -91,27 +93,50 @@ class Lane {
   /// @pre The s component of @p lane_pos must be in domain [0, Lane::length()].
   /// @pre The r component of @p lane_pos must be in domain [Rmin, Rmax]
   ///      derived from Lane::driveable_bounds().
+  //
+  // TODO(jadecastro): Generalize `Lane::ToGeoPosition` (and possibly others)
+  // with another member function `Lane::ToGeoPositionT<T>()`.
   GeoPosition ToGeoPosition(const LanePosition& lane_pos) const {
     return DoToGeoPosition(lane_pos);
   }
 
-  /// Determines the LanePosition corresponding to GeoPosition @p geo_position.
+  /// Determines the LanePosition corresponding to GeoPosition @p geo_pos.
   ///
   /// The return value is the LanePosition of the point within the Lane's
-  /// driveable-bounds which is closest to @p geo_position (as measured by
-  /// the Cartesian metric in the world frame).  If @p nearest_point is
-  /// non-null, then it will be populated with the GeoPosition of that
-  /// nearest point.  If @p distance is non-null, then it will be populated
-  /// with the Cartesian distance from @p geo_position to that nearest point.
+  /// driveable-bounds which is closest to @p geo_pos (as measured by the
+  /// Cartesian metric in the world frame).  If @p nearest_point is non-null,
+  /// then it will be populated with the GeoPosition of that nearest point.  If
+  /// @p distance is non-null, then it will be populated with the Cartesian
+  /// distance from @p geo_pos to that nearest point.
   ///
   /// This method guarantees that its result satisfies the condition that
   /// `ToGeoPosition(result)` is within `linear_tolerance()` of
   /// `*nearest_position`.
-  LanePosition ToLanePosition(const GeoPosition& geo_position,
+  LanePosition ToLanePosition(const GeoPosition& geo_pos,
                               GeoPosition* nearest_point,
                               double* distance) const {
-    return DoToLanePosition(geo_position, nearest_point, distance);
+    return DoToLanePosition(geo_pos, nearest_point, distance);
   }
+
+  /// Generalization of ToLanePosition to arbitrary scalar types, where the
+  /// structures `LanePositionT<T>` and `GeoPositionT<T>` are used in place of
+  /// `LanePosition` and `GeoPosition`, respectively.
+  ///
+  /// Instantiated templates for the following kinds of T's are provided:
+  /// - double
+  /// - drake::AutoDiffXd
+  ///
+  /// They are already available to link against in the containing library.
+  ///
+  /// Note: This is an experimental API that is not necessarily implemented in
+  /// all back-end implementations.
+  //
+  // TODO(jadecastro): Apply this implementation in all the subclasses of
+  // `api::Lane`.
+  template <typename T>
+  LanePositionT<T> ToLanePositionT(const GeoPositionT<T>& geo_pos,
+                                   GeoPositionT<T>* nearest_point,
+                                   T* distance) const;
 
   // TODO(maddog@tri.global) Method to convert LanePosition to that of
   //                         another Lane.  (Should assert that both
@@ -200,7 +225,7 @@ class Lane {
 
   virtual GeoPosition DoToGeoPosition(const LanePosition& lane_pos) const = 0;
 
-  virtual LanePosition DoToLanePosition(const GeoPosition& geo_position,
+  virtual LanePosition DoToLanePosition(const GeoPosition& geo_pos,
                                         GeoPosition* nearest_point,
                                         double* distance) const = 0;
 
@@ -220,6 +245,24 @@ class Lane {
 
   virtual std::unique_ptr<LaneEnd> DoGetDefaultBranch(
       const LaneEnd::Which which_end) const = 0;
+
+  // AutoDiffXd overload of DoToLanePosition().
+  //
+  // The return value is a LanePositionT<AutoDiffXd> containing the same partial
+  // derivatives as those appearing in geo_pos.  The provided geo_pos must
+  // contain x, y, and z values whose derivative must be of the same size.  If
+  // either @p nearest_point or @p distance are non-null, they will also contain
+  // @p geo_pos's partial derivatives.
+  virtual LanePositionT<AutoDiffXd>
+  DoToLanePosition(const GeoPositionT<AutoDiffXd>& geo_pos,
+                    GeoPositionT<AutoDiffXd>* nearest_point,
+                    AutoDiffXd* distance) const {
+    throw std::runtime_error(
+        "DoToLanePosition has been instantiated with AutoDiffXd arguments, "
+        "but a Lane back-end has not overrided its AutoDiffXd specialization.");
+  }
+  // TODO(jadecastro): Template the entire `api::Lane` class to prevent explicit
+  // virtual functions for each member function.
   ///@}
 };
 

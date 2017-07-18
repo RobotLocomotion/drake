@@ -123,7 +123,9 @@ TEST_P(MultilaneLanesParamTest, FlatLineLane) {
   // At the very end of the lane.
   EXPECT_TRUE(api::test::IsGeoPositionClose(
       l1->ToGeoPosition({l1->length(), 0., 0.}),
-      api::GeoPosition(Vector3<double>(200., -25., 0.) + r_offset_vector),
+      api::GeoPosition(200. + r_offset_vector.x(),
+                       -25. + r_offset_vector.y(),
+                       0. + r_offset_vector.z()),
       kLinearTolerance));
   // Case 1: Tests LineLane::ToLanePosition() with a closest point that lies
   // within the lane bounds.
