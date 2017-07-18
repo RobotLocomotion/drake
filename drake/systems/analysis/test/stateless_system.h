@@ -21,7 +21,7 @@ template <class T>
 class ClockWitness : public WitnessFunction<T> {
  public:
   explicit ClockWitness(
-      const T& trigger_time,
+      double trigger_time,
       const System<T>& system,
       const WitnessFunctionDirection& dir_type) :
         WitnessFunction<T>(system, dir_type),
@@ -29,7 +29,7 @@ class ClockWitness : public WitnessFunction<T> {
   }
 
   /// Get the time at which this witness triggers.
-  T get_trigger_time() const { return trigger_time_; }
+  double get_trigger_time() const { return trigger_time_; }
 
  protected:
   // The witness function is the time value itself plus the offset value.
@@ -44,7 +44,7 @@ class ClockWitness : public WitnessFunction<T> {
 
  private:
   // The time at which the witness function is to trigger.
-  T trigger_time_{0};
+  double trigger_time_{0};
 };
 
 /// System with no state evolution for testing a simplistic witness function.
@@ -53,26 +53,29 @@ class StatelessSystem : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StatelessSystem)
 
-  explicit StatelessSystem(const T& offset,
+  explicit StatelessSystem(double offset,
       const WitnessFunctionDirection& dir_type) {
+    this->template SetConcreteSubclass<analysis_test::StatelessSystem>();
     witness_ = std::make_unique<ClockWitness<T>>(offset, *this, dir_type);
   }
+
+  /// Transmogrification constructor.
+  /// @note this function does not transmogrify the publish callback because
+  ///       this is test code for which it is expected that no one will care
+  ///       whether the publish callback survives transmogrification.
+  template <typename U>
+  StatelessSystem(const TransmogrifierTag&, const StatelessSystem<U>& other)
+      : StatelessSystem<T>(other.witness().get_trigger_time(),
+                           other.witness().get_dir_type()) {}
 
   void set_publish_callback(
       std::function<void(const Context<T>&)> callback) {
     publish_callback_ = callback;
   }
 
- protected:
-  /// @note this function does not transmogrify the publish callback because
-  ///       this is test code for which it is expected that no one will care
-  ///       whether the publish callback survives transmogrification.
-  System<AutoDiffXd>* DoToAutoDiffXd() const override {
-    AutoDiffXd trigger_time(witness_->get_trigger_time());
-    return new StatelessSystem<AutoDiffXd>(trigger_time,
-        witness_->get_dir_type());
-  }
+  const ClockWitness<T>& witness() const { return *witness_; }
 
+ protected:
   void DoGetWitnessFunctions(
       const Context<T>&,
       std::vector<const WitnessFunction<T>*>* w) const override {

@@ -32,20 +32,25 @@ class DiscontinuousSpringMassDamperSystem : public SpringMassDamperSystem<T> {
                                 mass_kg),
       constant_force_(constant_force) {
     DRAKE_ASSERT(constant_force >= 0.0);
+    this->template SetConcreteSubclass<
+      implicit_integrator_test::DiscontinuousSpringMassDamperSystem>();
   }
+
+  /// Transmogrification constructor.
+  template <typename U>
+  DiscontinuousSpringMassDamperSystem(
+      const TransmogrifierTag&,
+      const DiscontinuousSpringMassDamperSystem<U>& other)
+      : DiscontinuousSpringMassDamperSystem<T>(
+            other.get_spring_constant(),
+            other.get_damping_constant(),
+            other.get_mass(),
+            other.get_constant_force()) {}
 
   /// Gets the magnitude of the constant force acting on the system.
   double get_constant_force() const { return constant_force_; }
 
  protected:
-  System <AutoDiffXd>* DoToAutoDiffXd() const override {
-    return new DiscontinuousSpringMassDamperSystem<AutoDiffXd>(
-        this->get_spring_constant(),
-        this->get_damping_constant(),
-        this->get_mass(),
-        get_constant_force());
-  }
-
   void DoCalcTimeDerivatives(const Context <T>& context,
                              ContinuousState <T>* derivatives) const override {
     // Get the current state of the spring.

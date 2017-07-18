@@ -26,7 +26,18 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
                          double mass_kg) :
       SpringMassSystem<T>(spring_constant_N_per_m, mass_kg,
                           false /* unforced */),
-      damping_constant_Ns_per_m_(damping_constant_Ns_per_m) {}
+      damping_constant_Ns_per_m_(damping_constant_Ns_per_m) {
+    this->template SetConcreteSubclass<
+      implicit_integrator_test::SpringMassDamperSystem>();
+  }
+
+  /// Transmogrification constructor.
+  template <typename U>
+  SpringMassDamperSystem(
+      const TransmogrifierTag&, const SpringMassDamperSystem<U>& other)
+      : SpringMassDamperSystem<T>(other.get_spring_constant(),
+                                  other.get_damping_constant(),
+                                  other.get_mass()) {}
 
   /// Returns the damping constant that was provided at construction in Ns/m
   double get_damping_constant() const { return damping_constant_Ns_per_m_; }
@@ -92,12 +103,6 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
   }
 
  protected:
-  System <AutoDiffXd>* DoToAutoDiffXd() const override {
-    return new SpringMassDamperSystem<AutoDiffXd>(this->get_spring_constant(),
-                                                  get_damping_constant(),
-                                                  this->get_mass());
-  }
-
   void DoCalcTimeDerivatives(const Context <T>& context,
                              ContinuousState <T>* derivatives) const override {
     // Get the current state of the spring.
