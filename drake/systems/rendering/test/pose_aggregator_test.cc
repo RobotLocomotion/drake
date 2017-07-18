@@ -52,6 +52,25 @@ class PoseAggregatorTest : public ::testing::Test {
   std::unique_ptr<SystemOutput<double>> output_;
 };
 
+namespace {
+PoseBundle<AutoDiffXd> ToAutoDiffXd(const PoseBundle<double>& original) {
+  // TODO(sherm1): Consider moving value transmogrification into AbstractValue,
+  // as discussed in https://github.com/RobotLocomotion/drake/issues/5454
+  PoseBundle<AutoDiffXd> result(original.get_num_poses());
+  for (int i = 0; i < original.get_num_poses(); i++) {
+    Isometry3<AutoDiffXd> pose(original.get_pose(i));
+    result.set_pose(i, pose);
+    FrameVelocity<AutoDiffXd> velocity;
+    velocity.set_velocity(multibody::SpatialVelocity<AutoDiffXd>(
+        original.get_velocity(i).get_velocity().get_coeffs()));
+    result.set_velocity(i, velocity);
+    result.set_name(i, original.get_name(i));
+    result.set_model_instance_id(i, original.get_model_instance_id(i));
+  }
+  return result;
+}
+}  // namespace
+
 // Tests that PoseAggregator aggregates poses fromtwo PoseVector inputs (one
 // with velocity and one without), and a PoseBundle input.
 TEST_F(PoseAggregatorTest, CompositeAggregation) {
@@ -149,7 +168,7 @@ TEST_F(PoseAggregatorTest, CompositeAggregation) {
   autodiff_context->SetTimeStateAndParametersFrom(*context_);
 
   autodiff_context->FixInputPort(
-      0, AbstractValue::Make(*generic_input.ToAutoDiffXd()));
+      0, AbstractValue::Make(ToAutoDiffXd(generic_input)));
   autodiff_context->FixInputPort(1, std::move(autodiff_pose_vec1));
   autodiff_context->FixInputPort(2, std::move(autodiff_frame_vel1));
   autodiff_context->FixInputPort(3, std::move(autodiff_pose_vec2));
@@ -183,6 +202,15 @@ TEST_F(PoseAggregatorTest, AddSinglePoseAndVelocityPorts) {
   const InputPortDescriptor<double>& velocity_port = ports.second;
   EXPECT_EQ(PoseVector<double>::kSize, pose_port.size());
   EXPECT_EQ(FrameVelocity<double>::kSize, velocity_port.size());
+}
+
+// Tests that PoseBundle supports Symbolic form.
+GTEST_TEST(PoseBundleTest, Symbolic) {
+  PoseBundle<symbolic::Expression> dut{1};
+
+  // Just sanity check that some element got zero-initialized.
+  const symbolic::Expression& x = dut.get_velocity(0).get_velocity()[0];
+  EXPECT_TRUE(x.EqualTo(0.0));
 }
 
 }  // namespace

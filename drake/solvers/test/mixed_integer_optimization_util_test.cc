@@ -20,6 +20,20 @@ GTEST_TEST(TestMixedIntegerUtil, TestCeilLog2) {
   }
 }
 
+GTEST_TEST(TestLogarithmicSOS2, TestAddSOS2) {
+  MathematicalProgram prog;
+  auto lambda1 = prog.NewContinuousVariables(3, "lambda1");
+  auto y1 =
+      AddLogarithmicSos2Constraint(&prog, lambda1.cast<symbolic::Expression>());
+  static_assert(std::is_same<decltype(y1), VectorXDecisionVariable>::value,
+                "y1 should be a dynamic-sized vector.");
+  auto lambda2 = prog.NewContinuousVariables<3>("lambda2");
+  auto y2 =
+      AddLogarithmicSos2Constraint(&prog, lambda2.cast<symbolic::Expression>());
+  static_assert(std::is_same<decltype(y2), VectorDecisionVariable<1>>::value,
+                "y2 should be a static-sized vector.");
+}
+
 void LogarithmicSOS2Test(int num_lambda) {
   // Solve the program
   // min λᵀ * λ
@@ -31,7 +45,7 @@ void LogarithmicSOS2Test(int num_lambda) {
   auto lambda = prog.NewContinuousVariables(num_lambda, "lambda");
   prog.AddCost(lambda.cast<symbolic::Expression>().dot(lambda));
   auto y =
-      AddLogarithmicSOS2Constraint(&prog, lambda.cast<symbolic::Expression>());
+      AddLogarithmicSos2Constraint(&prog, lambda.cast<symbolic::Expression>());
   int num_binary_vars = y.rows();
   int num_intervals = num_lambda - 1;
   auto y_assignment = prog.AddBoundingBoxConstraint(0, 1, y);
@@ -91,7 +105,7 @@ void LogarithmicSOS1Test(int num_lambda,
   auto lambda = prog.NewContinuousVariables(num_lambda);
   int num_digits = CeilLog2(num_lambda);
   auto y = prog.NewBinaryVariables(num_digits);
-  AddLogarithmicSOS1Constraint(&prog, lambda.cast<symbolic::Expression>(), y,
+  AddLogarithmicSos1Constraint(&prog, lambda.cast<symbolic::Expression>(), y,
                                codes);
   auto binary_assignment = prog.AddBoundingBoxConstraint(0, 0, y);
   for (int i = 0; i < num_lambda; ++i) {
@@ -177,7 +191,7 @@ class BilinearProductMcCormickEnvelopeSOS2Test
         phi_y_{Eigen::VectorXd::LinSpaced(num_interval_y_ + 1, 0, 1)},
         Bx_{prog_.NewBinaryVariables(CeilLog2(num_interval_x_))},
         By_{prog_.NewBinaryVariables(CeilLog2(num_interval_y_))} {
-    AddBilinearProductMcCormickEnvelopeSOS2(&prog_, x_, y_, w_, phi_x_, phi_y_,
+    AddBilinearProductMcCormickEnvelopeSos2(&prog_, x_, y_, w_, phi_x_, phi_y_,
                                             Bx_, By_);
   }
 

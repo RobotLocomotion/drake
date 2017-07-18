@@ -134,5 +134,15 @@ struct NumTraits<drake::symbolic::Monomial>
     : GenericNumTraits<drake::symbolic::Monomial> {
   static inline int digits10() { return 0; }
 };
+
+namespace internal {
+// Informs Eigen how to cast drake::symbolic::Monomial to
+// drake::symbolic::Expression.
+template <>
+EIGEN_DEVICE_FUNC inline drake::symbolic::Expression cast(
+    const drake::symbolic::Monomial& m) {
+  return m.ToExpression();
+}
+}  // namespace internal
 }  // namespace Eigen
 #endif  // !defined(DRAKE_DOXYGEN_CXX)

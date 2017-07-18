@@ -196,8 +196,8 @@ github_archive(
 github_archive(
     name = "nlopt",
     repository = "stevengj/nlopt",
-    commit = "516aca7e96405939726648e00faeb26bd2c9b29f",
-    sha256 = "6041ca30072b354ed3c235743779bf17dacf6199b2b30746c499f65082665d5f",  # noqa
+    commit = "45553da97c890ef58f95e7ef73c5409d2169e824",
+    sha256 = "931fd125c50acf7cd7e709887ab4923af42a8a07be139572bf8b76bccca76450",  # noqa
     build_file = "tools/nlopt.BUILD",
 )
 
@@ -371,6 +371,12 @@ bitbucket_archive(
     sha256 = "fa1033be146ff51f3b2c679ff160838c1e3ca736c565b19510a5c9b6d352fbaf",  # noqa
     strip_prefix = "ignitionrobotics-ign-rndf-214a333fbdcb",
     build_file = "tools/ignition_rndf.BUILD",
+)
+
+load("//tools:boost.bzl", "boost_repository")
+
+boost_repository(
+    name = "boost",
 )
 
 bitbucket_archive(
