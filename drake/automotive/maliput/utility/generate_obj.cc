@@ -313,9 +313,9 @@ void CoverLaneWithQuads(
     {
       double r00 = 0.;
       double r10 = 0.;
-      while ((r00 < rb0.r_max) && (r10 < rb1.r_max)) {
-        const double r01 = std::min(r00 + grid_unit, rb0.r_max);
-        const double r11 = std::min(r10 + grid_unit, rb1.r_max);
+      while ((r00 < rb0.max()) && (r10 < rb1.max())) {
+        const double r01 = std::min(r00 + grid_unit, rb0.max());
+        const double r11 = std::min(r10 + grid_unit, rb1.max());
         //
         // (s1,r11) o <-- o (s1,r10)       ^ +s
         //          |     ^                |
@@ -337,9 +337,9 @@ void CoverLaneWithQuads(
     {
       double r00 = 0.;
       double r10 = 0.;
-      while ((r00 > rb0.r_min) && (r10 > rb1.r_min)) {
-        const double r01 = std::max(r00 - grid_unit, rb0.r_min);
-        const double r11 = std::max(r10 - grid_unit, rb1.r_min);
+      while ((r00 > rb0.min()) && (r10 > rb1.min())) {
+        const double r01 = std::max(r00 - grid_unit, rb0.min());
+        const double r11 = std::max(r10 - grid_unit, rb1.min());
         //
         // (s1,r10) o <-- o (s1,r11)  ^ +s
         //          |     ^           |
@@ -385,19 +385,19 @@ void StripeLaneBounds(GeoMesh* mesh, const api::Lane* lane,
     // Left side of lane.
     {
       SrhFace srh_face({
-          {s0, rb0.r_max - half_stripe, h_offset},
-          {s1, rb1.r_max - half_stripe, h_offset},
-          {s1, rb1.r_max + half_stripe, h_offset},
-          {s0, rb0.r_max + half_stripe, h_offset}}, {0., 0., 1.});
+          {s0, rb0.max() - half_stripe, h_offset},
+          {s1, rb1.max() - half_stripe, h_offset},
+          {s1, rb1.max() + half_stripe, h_offset},
+          {s0, rb0.max() + half_stripe, h_offset}}, {0., 0., 1.});
       mesh->PushFace(srh_face.ToGeoFace(lane));
     }
     // Right side of lane.
     {
       SrhFace srh_face({
-          {s0, rb0.r_min - half_stripe, h_offset},
-          {s1, rb1.r_min - half_stripe, h_offset},
-          {s1, rb1.r_min + half_stripe, h_offset},
-          {s0, rb0.r_min + half_stripe, h_offset}}, {0., 0., 1.});
+          {s0, rb0.min() - half_stripe, h_offset},
+          {s1, rb1.min() - half_stripe, h_offset},
+          {s1, rb1.min() + half_stripe, h_offset},
+          {s0, rb0.min() + half_stripe, h_offset}}, {0., 0., 1.});
       mesh->PushFace(srh_face.ToGeoFace(lane));
     }
   }
@@ -425,8 +425,8 @@ void DrawLaneArrow(GeoMesh* mesh, const api::Lane* lane, double grid_unit,
 
   const int max_num_s_units = static_cast<int>(std::ceil(s_size / grid_unit));
 
-  const double rl_size = rb0.r_max * kRelativeWidth;
-  const double rr_size = -rb0.r_min * kRelativeWidth;
+  const double rl_size = rb0.max() * kRelativeWidth;
+  const double rr_size = -rb0.min() * kRelativeWidth;
   const int max_num_rl_units = static_cast<int>(std::ceil(rl_size / grid_unit));
   const int max_num_rr_units = static_cast<int>(std::ceil(rr_size / grid_unit));
 
@@ -534,11 +534,11 @@ void MarkLaneEnds(GeoMesh* mesh, const api::Lane* lane, double grid_unit,
   // Arrows are sized relative to their respective ends.
   const api::RBounds start_rb = lane->lane_bounds(0.);
   const double start_s_size = std::min(max_length,
-                                       (start_rb.r_max - start_rb.r_min));
+                                       (start_rb.max() - start_rb.min()));
 
   const api::RBounds finish_rb = lane->lane_bounds(lane->length());
   const double finish_s_size = std::min(max_length,
-                                        (finish_rb.r_max - finish_rb.r_min));
+                                        (finish_rb.max() - finish_rb.min()));
 
   DrawLaneArrow(mesh, lane, grid_unit,
                 0. + nudge, start_s_size, h_offset);
@@ -554,8 +554,8 @@ double PickGridUnit(const api::Lane* lane,
   double result = max_size;
   const api::RBounds rb0 = lane->lane_bounds(0.);
   const api::RBounds rb1 = lane->lane_bounds(lane->length());
-  result = std::min(result, (rb0.r_max - rb0.r_min) / min_resolution);
-  result = std::min(result, (rb1.r_max - rb1.r_min) / min_resolution);
+  result = std::min(result, (rb0.max() - rb0.min()) / min_resolution);
+  result = std::min(result, (rb1.max() - rb1.min()) / min_resolution);
   result = std::min(result, lane->length() / min_resolution);
   return result;
 }
@@ -593,7 +593,7 @@ void RenderBranchPoint(
       reference_end.lane->length();
   const api::RBounds reference_bounds =
       reference_end.lane->lane_bounds(reference_end_s);
-  const double sr_margin = reference_bounds.r_max - reference_bounds.r_min;
+  const double sr_margin = reference_bounds.max() - reference_bounds.min();
   const double h_margin = height;
 
   // Choose an elevation that keeps this BranchPoint out of the way
@@ -652,10 +652,10 @@ void RenderBranchPoint(
     const api::RBounds r_bounds = lane_end.lane->lane_bounds(end_s);
 
     const double half_width =
-      (r_bounds.r_max - r_bounds.r_min) * kWidthFactor * 0.5;
+      (r_bounds.max() - r_bounds.min()) * kWidthFactor * 0.5;
     const double length =
       std::min(kMaxLengthFraction * lane_end.lane->length(),
-               kLengthFactor * (r_bounds.r_max - r_bounds.r_min)) *
+               kLengthFactor * (r_bounds.max() - r_bounds.min())) *
       ((lane_end.end == api::LaneEnd::kStart) ? 1. : -1);
 
     const double left_r =

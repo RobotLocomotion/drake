@@ -196,8 +196,8 @@ github_archive(
 github_archive(
     name = "nlopt",
     repository = "stevengj/nlopt",
-    commit = "516aca7e96405939726648e00faeb26bd2c9b29f",
-    sha256 = "6041ca30072b354ed3c235743779bf17dacf6199b2b30746c499f65082665d5f",  # noqa
+    commit = "45553da97c890ef58f95e7ef73c5409d2169e824",
+    sha256 = "931fd125c50acf7cd7e709887ab4923af42a8a07be139572bf8b76bccca76450",  # noqa
     build_file = "tools/nlopt.BUILD",
 )
 
@@ -373,12 +373,18 @@ bitbucket_archive(
     build_file = "tools/ignition_rndf.BUILD",
 )
 
+load("//tools:boost.bzl", "boost_repository")
+
+boost_repository(
+    name = "boost",
+)
+
 bitbucket_archive(
     name = "sdformat",
     repository = "osrf/sdformat",
-    commit = "deca28cd6cd5",
-    sha256 = "d89a03178ef71d0a222247bf3fc4ccb8c490aebe83516f7290181d64e5da8dac",  # noqa
-    strip_prefix = "osrf-sdformat-deca28cd6cd5",
+    commit = "bac3dfb42cc7",
+    sha256 = "b10a3ac68ed46f8d5780ddc687e6c89c71cb4c1e4e65449197f8aac76be903d8",  # noqa
+    strip_prefix = "osrf-sdformat-bac3dfb42cc7",
     build_file = "tools/sdformat.BUILD",
 )
 
@@ -391,6 +397,11 @@ vtk_repository(
 pkg_config_package(
     name = "libpng",
     modname = "libpng",
+)
+
+pkg_config_package(
+    name = "tinyxml",
+    modname = "tinyxml",
 )
 
 pkg_config_package(

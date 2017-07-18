@@ -191,12 +191,12 @@ drake_cc_library(
     data = [
         DRAKE_RESOURCE_SENTINEL,
     ],
+    visibility = ["//drake:__pkg__"],
     deps = [
         ":common",
         ":find_resource",
         "//drake/thirdParty:spruce",
     ],
-    visibility = ["//drake:__pkg__"],
 )
 
 # TODO(jwnimmer-tri) Move this header file into test/ subdirectory (and this
@@ -401,16 +401,6 @@ drake_cc_googletest(
     name = "cond_test",
     deps = [
         ":cond",
-    ],
-)
-
-drake_cc_googletest(
-    name = "decompose_polynomial_test",
-    deps = [
-        ":common",
-        ":monomial",
-        ":symbolic",
-        ":symbolic_test_util",
     ],
 )
 
@@ -711,7 +701,18 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "symbolic_polynomial_test",
+    # Test size increased to not timeout when run with Valgrind.
+    size = "medium",
     deps = [
+        ":symbolic_polynomial",
+        ":symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "symbolic_polynomial_matrix_test",
+    deps = [
+        ":common",
         ":symbolic_polynomial",
         ":symbolic_test_util",
     ],

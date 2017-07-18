@@ -16,6 +16,7 @@
 #include "drake/lcmt_contact_results_for_viz.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
 #include "drake/lcmtypes/drake/lcmt_schunk_wsg_command.hpp"
+#include "drake/manipulation/schunk_wsg/schunk_wsg_controller.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -38,7 +39,7 @@ DEFINE_double(realtime_rate, 0.0,
 using robotlocomotion::robot_plan_t;
 
 namespace drake {
-using manipulation::schunk_wsg::SchunkWsgTrajectoryGenerator;
+using manipulation::schunk_wsg::SchunkWsgController;
 using manipulation::schunk_wsg::SchunkWsgStatusSender;
 using systems::RigidBodyPlant;
 using systems::Simulator;
@@ -251,12 +252,10 @@ int DoMain(void) {
       iiwa_trajectory_generator->get_acceleration_output_port(),
       plant->get_input_port_iiwa_acceleration_command());
 
-  auto wsg_trajectory_generator =
-      builder.AddSystem<SchunkWsgTrajectoryGenerator>(
-          plant->get_output_port_wsg_state().size(), 0);
+  auto wsg_controller = builder.AddSystem<SchunkWsgController>();
   builder.Connect(plant->get_output_port_wsg_state(),
-                  wsg_trajectory_generator->get_state_input_port());
-  builder.Connect(wsg_trajectory_generator->get_output_port(0),
+                  wsg_controller->get_state_input_port());
+  builder.Connect(wsg_controller->get_output_port(0),
                   plant->get_input_port_wsg_command());
 
   auto wsg_status_sender = builder.AddSystem<SchunkWsgStatusSender>(
@@ -289,7 +288,7 @@ int DoMain(void) {
   builder.Connect(plant->get_output_port_iiwa_robot_state_msg(),
                   state_machine->get_input_port_iiwa_state());
   builder.Connect(state_machine->get_output_port_wsg_command(),
-                  wsg_trajectory_generator->get_command_input_port());
+                  wsg_controller->get_command_input_port());
   builder.Connect(state_machine->get_output_port_iiwa_plan(),
                   iiwa_trajectory_generator->get_plan_input_port());
 
@@ -309,13 +308,17 @@ int DoMain(void) {
   // to see if the state machine thinks we're done, and if so that the
   // object is near the target.
   const double simulation_step = 1.;
-  while (state_machine->state(simulator.get_context())
+  while (state_machine->state(
+             sys->GetSubsystemContext(*state_machine,
+                                      simulator.get_context()))
          != pick_and_place::kDone) {
     simulator.StepTo(simulator.get_context().get_time() + simulation_step);
   }
 
   const pick_and_place::WorldState& world_state =
-      state_machine->world_state(simulator.get_context());
+      state_machine->world_state(
+          sys->GetSubsystemContext(*state_machine,
+                                   simulator.get_context()));
   const Isometry3<double>& object_pose = world_state.get_object_pose();
   const Vector6<double>& object_velocity = world_state.get_object_velocity();
   Isometry3<double> goal = place_locations.back();

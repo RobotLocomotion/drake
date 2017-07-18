@@ -172,12 +172,12 @@ py_test(
     name = "pydrake_mathematical_program_ipopt_solver_test",
     size = "small",
     srcs = ["python/pydrake/test/test_ipopt_solver.py"],
-    main = "python/pydrake/test/test_ipopt_solver.py",
-    deps = [":pydrake"],
     args = select({
         "//tools:no_ipopt": ["TestIpoptSolver.unavailable"],
-        "//conditions:default": []
+        "//conditions:default": [],
     }),
+    main = "python/pydrake/test/test_ipopt_solver.py",
+    deps = [":pydrake"],
 )
 
 py_test(

@@ -37,8 +37,8 @@ api::LanePosition LineLane::DoToLanePosition(
   const double s_unsaturated = lane_origin_to_p.dot(s_unit_vector);
   const double s = math::saturate(s_unsaturated, 0., length);
   const double r_unsaturated = lane_origin_to_p.dot(r_unit_vector);
-  const double r = math::saturate(r_unsaturated, driveable_bounds(s).r_min,
-                                  driveable_bounds(s).r_max);
+  const double r = math::saturate(r_unsaturated, driveable_bounds(s).min(),
+                                  driveable_bounds(s).max());
   // N.B. h is the geo z-coordinate referenced against the lane elevation (whose
   // `a` coefficient is normalized by lane length).
   const double h_unsaturated = geo_position.z() - elevation().a() * length;

@@ -19,6 +19,9 @@ load(":common.bzl", "error", "success", "write_build")
 load(":wrapped_ctx.bzl", "unwrap")
 
 def _write_build(repo_ctx, cflags, linkopts):
+  # Silence a warning about unknown cflags.
+  if "-pthread" in cflags and "-pthread" in linkopts:
+    cflags.remove("-pthread")
   includes, defines = _parse_cflags(repo_ctx, cflags)
   write_build(repo_ctx, includes, defines, linkopts)
 

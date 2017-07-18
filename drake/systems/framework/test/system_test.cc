@@ -74,12 +74,15 @@ class TestSystem : public System<double> {
     return *port_ptr;
   }
 
-  bool HasAnyDirectFeedthrough() const override { return true; }
-
-  bool HasDirectFeedthrough(int output_port) const override { return true; }
-
-  bool HasDirectFeedthrough(int input_port, int output_port) const override {
-    return true;
+  std::multimap<int, int> GetDirectFeedthroughs() const override {
+    std::multimap<int, int> pairs;
+    // Report *everything* as having direct feedthrough.
+    for (int i = 0; i < get_num_input_ports(); ++i) {
+      for (int o = 0; o < get_num_output_ports(); ++o) {
+        pairs.emplace(i, o);
+      }
+    }
+    return pairs;
   }
 
   int get_publish_count() const { return publish_count_; }
@@ -411,12 +414,15 @@ class ValueIOTestSystem : public System<T> {
 
   void SetDefaults(Context<T>* context) const override {}
 
-  bool HasAnyDirectFeedthrough() const override { return true; }
-
-  bool HasDirectFeedthrough(int output_port) const override { return true; }
-
-  bool HasDirectFeedthrough(int input_port, int output_port) const override {
-    return true;
+  std::multimap<int, int> GetDirectFeedthroughs() const override {
+    std::multimap<int, int> pairs;
+    // Report *everything* as having direct feedthrough.
+    for (int i = 0; i < this->get_num_input_ports(); ++i) {
+      for (int o = 0; o < this->get_num_output_ports(); ++o) {
+        pairs.emplace(i, o);
+      }
+    }
+    return pairs;
   }
 
   // Appends "output" to input(0) for output(0).

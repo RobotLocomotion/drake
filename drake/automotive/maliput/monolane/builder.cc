@@ -24,8 +24,8 @@ Builder::Builder(const api::RBounds& lane_bounds,
       elevation_bounds_(elevation_bounds),
       linear_tolerance_(linear_tolerance),
       angular_tolerance_(angular_tolerance) {
-  DRAKE_DEMAND(lane_bounds_.r_min >= driveable_bounds_.r_min);
-  DRAKE_DEMAND(lane_bounds_.r_max <= driveable_bounds_.r_max);
+  DRAKE_DEMAND(lane_bounds_.min() >= driveable_bounds_.min());
+  DRAKE_DEMAND(lane_bounds_.max() <= driveable_bounds_.max());
 }
 
 

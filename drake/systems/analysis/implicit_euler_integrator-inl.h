@@ -383,6 +383,20 @@ bool ImplicitEulerIntegrator<T>::CalcMatrices(const T& tf, const T& dt,
   }
 }
 
+// Helper method to keep UBSan happy when a division by zero is not
+// unexpected.
+template <typename T>
+#ifdef __clang__
+__attribute__((no_sanitize("float-divide-by-zero")))
+#elif defined(__GNUC__)
+// https://gcc.gnu.org/bugzilla/show_bug.cgi?id=78204
+__attribute__((no_sanitize_undefined))
+#endif
+T divide_allowing_by_zero(const T& n, const T& d) {
+  DRAKE_ASSERT(!(d == T{0.0} && n == T{0.0}));
+  return n / d;
+}
+
 // Performs the bulk of the stepping computation for both implicit Euler and
 // implicit trapezoid method; all those methods need to do is provide a
 // residual function (@p g) and a scale factor (@p scale) specific to the
@@ -491,7 +505,8 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
     // applied after *at least* two iterations (p. 121).
     if (i >= 1) {
       const T theta = dx_norm / last_dx_norm;
-      const T eta = theta / (1 - theta);
+      // theta could become 1.
+      const T eta = divide_allowing_by_zero<T>(theta, 1 - theta);
       SPDLOG_DEBUG(drake::log(), "Newton-Raphson loop {} theta: {}, eta: {}",
                    i, theta, eta);
 

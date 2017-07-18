@@ -1,7 +1,9 @@
 #include <cmath>
+#include <limits>
 
 #include <gtest/gtest.h>
 
+#include "drake/automotive/maliput/api/test/maliput_types_compare.h"
 #include "drake/automotive/maliput/dragway/branch_point.h"
 #include "drake/automotive/maliput/dragway/junction.h"
 #include "drake/automotive/maliput/dragway/lane.h"
@@ -64,8 +66,9 @@ class MaliputDragwayLaneTest : public ::testing::Test {
     // Tests Lane::lane_bounds().
     for (double s = 0 ; s < length_; s += length_ / 100) {
       const api::RBounds lane_bounds = lane->lane_bounds(s);
-      EXPECT_EQ(lane_bounds.r_min, -lane_width_ / 2);
-      EXPECT_EQ(lane_bounds.r_max, lane_width_ / 2);
+      EXPECT_TRUE(api::test::IsRBoundsClose(
+          lane_bounds, api::RBounds(-lane_width_ / 2, lane_width_ / 2),
+          kLinearTolerance));
     }
 
     EXPECT_EQ(lane->length(), length_);
@@ -73,21 +76,27 @@ class MaliputDragwayLaneTest : public ::testing::Test {
     // Tests Lane::driveable_bounds().
     for (double s = 0 ; s < length_; s += length_ / 100) {
       const api::RBounds driveable_bounds = lane->driveable_bounds(s);
-      EXPECT_EQ(driveable_bounds.r_min, expected.driveable_r_min);
-      EXPECT_EQ(driveable_bounds.r_max, expected.driveable_r_max);
+      EXPECT_TRUE(api::test::IsRBoundsClose(
+          driveable_bounds,
+          api::RBounds(expected.driveable_r_min, expected.driveable_r_max),
+          kLinearTolerance));
     }
 
     // Tests Lane::elevation_bounds().
     for (double s = 0 ; s < length_; s += length_ / 10) {
       const api::RBounds driveable_bounds = lane->driveable_bounds(s);
       const api::HBounds elevation_bounds0 =
-          lane->elevation_bounds(s, driveable_bounds.r_min);
+          lane->elevation_bounds(s, driveable_bounds.min());
       const api::HBounds elevation_bounds1 =
-          lane->elevation_bounds(s, driveable_bounds.r_max);
-      EXPECT_EQ(elevation_bounds0.min(), expected.elevation_min);
-      EXPECT_EQ(elevation_bounds0.max(), expected.elevation_max);
-      EXPECT_EQ(elevation_bounds1.min(), expected.elevation_min);
-      EXPECT_EQ(elevation_bounds1.max(), expected.elevation_max);
+          lane->elevation_bounds(s, driveable_bounds.max());
+      EXPECT_TRUE(api::test::IsHBoundsClose(
+          elevation_bounds0,
+          api::HBounds(expected.elevation_min, expected.elevation_max),
+          kLinearTolerance));
+      EXPECT_TRUE(api::test::IsHBoundsClose(
+          elevation_bounds1,
+          api::HBounds(expected.elevation_min, expected.elevation_max),
+          kLinearTolerance));
     }
 
     // The following block of test code evaluates methods that take as input a
@@ -120,9 +129,9 @@ class MaliputDragwayLaneTest : public ::testing::Test {
           // Tests Lane::GetOrientation().
           const api::Rotation rotation =
               lane->GetOrientation(lane_position);
-          EXPECT_DOUBLE_EQ(rotation.roll(), 0);
-          EXPECT_DOUBLE_EQ(rotation.pitch(), 0);
-          EXPECT_DOUBLE_EQ(rotation.yaw(), 0);
+          EXPECT_TRUE(api::test::IsRotationClose(
+              rotation, api::Rotation::FromRpy(0.0, 0.0, 0.0),
+              kAngularTolerance));
 
           // Tests Lane::EvalMotionDerivatives().
           //
@@ -136,9 +145,9 @@ class MaliputDragwayLaneTest : public ::testing::Test {
           const api::LanePosition motion_derivatives =
               lane->EvalMotionDerivatives(lane_position,
                   api::IsoLaneVelocity(kSigma_v, kRho_v, kEta_v));
-          EXPECT_DOUBLE_EQ(motion_derivatives.s(), kSigma_v);
-          EXPECT_DOUBLE_EQ(motion_derivatives.r(), kRho_v);
-          EXPECT_DOUBLE_EQ(motion_derivatives.h(), kEta_v);
+          EXPECT_TRUE(api::test::IsLanePositionClose(
+              motion_derivatives, api::LanePosition(kSigma_v, kRho_v, kEta_v),
+              kLinearTolerance));
         }
       }
     }
@@ -168,11 +177,11 @@ class MaliputDragwayLaneTest : public ::testing::Test {
       EXPECT_EQ(lane_end_set_finish->size(), 1);
 
       const api::LaneEnd& lane_end_start =
-        lane->GetConfluentBranches(api::LaneEnd::kStart)->get(0);
+          lane->GetConfluentBranches(api::LaneEnd::kStart)->get(0);
       EXPECT_EQ(lane_end_start.lane, lane);
       EXPECT_EQ(lane_end_start.end, api::LaneEnd::kStart);
       const api::LaneEnd& lane_end_finish =
-        lane->GetConfluentBranches(api::LaneEnd::kFinish)->get(0);
+          lane->GetConfluentBranches(api::LaneEnd::kFinish)->get(0);
       EXPECT_EQ(lane_end_finish.lane, lane);
       EXPECT_EQ(lane_end_finish.end, api::LaneEnd::kFinish);
     }
@@ -339,14 +348,14 @@ TEST_F(MaliputDragwayLaneTest, TestToRoadPositionOnRoad) {
             &distance);
         const api::Lane* expected_lane =
             road_geometry.junction(0)->segment(0)->lane(0);
-        EXPECT_DOUBLE_EQ(nearest_position.x(), x);
-        EXPECT_DOUBLE_EQ(nearest_position.y(), y);
-        EXPECT_DOUBLE_EQ(nearest_position.z(), z);
+        EXPECT_TRUE(api::test::IsGeoPositionClose(
+            nearest_position, api::GeoPosition(x, y, z),
+            kLinearTolerance));
         EXPECT_DOUBLE_EQ(distance, 0);
         EXPECT_EQ(road_position.lane, expected_lane);
-        EXPECT_EQ(road_position.pos.s(), x);
-        EXPECT_EQ(road_position.pos.r(), y + lane_width_ / 2);
-        EXPECT_EQ(road_position.pos.h(), z);
+        EXPECT_TRUE(api::test::IsLanePositionClose(
+            road_position.pos, api::LanePosition(x, y + lane_width_ / 2, z),
+            kLinearTolerance));
       }
     }
   }
@@ -365,18 +374,22 @@ TEST_F(MaliputDragwayLaneTest, TestToRoadPositionOnRoad) {
         const int lane_index = (y == 0 ? 0 : 1);
         const api::Lane* expected_lane =
             road_geometry.junction(0)->segment(0)->lane(lane_index);
-        EXPECT_DOUBLE_EQ(nearest_position.x(), x);
-        EXPECT_DOUBLE_EQ(nearest_position.y(), y);
-        EXPECT_DOUBLE_EQ(nearest_position.z(), z);
+        EXPECT_TRUE(api::test::IsGeoPositionClose(
+            nearest_position, api::GeoPosition(x, y, z),
+            kLinearTolerance));
         EXPECT_DOUBLE_EQ(distance, 0);
         EXPECT_EQ(road_position.lane, expected_lane);
-        EXPECT_EQ(road_position.pos.s(), x);
         if (y == 0) {
-          EXPECT_EQ(road_position.pos.r(), y + lane_width_ / 2);
+          EXPECT_TRUE(api::test::IsLanePositionClose(
+              road_position.pos,
+              api::LanePosition(x, y + lane_width_ / 2, z),
+              kLinearTolerance));
         } else {
-          EXPECT_EQ(road_position.pos.r(), y - lane_width_ / 2);
+          EXPECT_TRUE(api::test::IsLanePositionClose(
+              road_position.pos,
+              api::LanePosition(x, y - lane_width_ / 2, z),
+              kLinearTolerance));
         }
-        EXPECT_EQ(road_position.pos.h(), z);
       }
     }
   }
@@ -461,19 +474,21 @@ TEST_F(MaliputDragwayLaneTest, TestToRoadPositionOffRoad) {
           expected_nearest_position.set_z(z_max);
         }
 
-        EXPECT_DOUBLE_EQ(nearest_position.x(), expected_nearest_position.x());
-        EXPECT_DOUBLE_EQ(nearest_position.y(), expected_nearest_position.y());
-        EXPECT_DOUBLE_EQ(nearest_position.z(), expected_nearest_position.z());
+        EXPECT_TRUE(api::test::IsGeoPositionClose(
+            nearest_position, expected_nearest_position, kLinearTolerance));
         // TODO(maddog@tri.global)  Should test for explicit correct distance.
         EXPECT_LT(0, distance);
         const int expected_lane_index = (y > 0 ? 1 : 0);
         const Lane* expected_lane = dynamic_cast<const Lane*>(
             road_geometry.junction(0)->segment(0)->lane(expected_lane_index));
         EXPECT_EQ(road_position.lane, expected_lane);
-        EXPECT_EQ(road_position.pos.s(), expected_nearest_position.x());
-        EXPECT_EQ(road_position.pos.r(),
-                  expected_nearest_position.y() - expected_lane->y_offset());
-        EXPECT_EQ(road_position.pos.h(), expected_nearest_position.z());
+        EXPECT_TRUE(api::test::IsLanePositionClose(
+            road_position.pos,
+            api::LanePosition(
+                expected_nearest_position.x(),
+                expected_nearest_position.y() - expected_lane->y_offset(),
+                expected_nearest_position.z()),
+            kLinearTolerance));
       }
     }
   }
@@ -592,15 +607,17 @@ TEST_F(MaliputDragwayLaneTest, TestToLanePosition) {
         if (z > max_z) {
           expected_nearest_position.set_z(max_z);
         }
-        EXPECT_DOUBLE_EQ(nearest_position.x(), expected_nearest_position.x());
-        EXPECT_DOUBLE_EQ(nearest_position.y(), expected_nearest_position.y());
-        EXPECT_DOUBLE_EQ(nearest_position.z(), expected_nearest_position.z());
+        EXPECT_TRUE(api::test::IsGeoPositionClose(
+            nearest_position, expected_nearest_position,
+            kLinearTolerance));
         // TODO(maddog@tri.global)  Should test for explicit correct distance.
         EXPECT_GE(distance, 0);
-        EXPECT_EQ(lane_position.s(), expected_nearest_position.x());
-        EXPECT_EQ(lane_position.r(),
-                  expected_nearest_position.y() - lane->y_offset());
-        EXPECT_EQ(lane_position.h(), expected_nearest_position.z());
+        EXPECT_TRUE(api::test::IsLanePositionClose(
+            lane_position,
+            api::LanePosition(expected_nearest_position.x(),
+                              expected_nearest_position.y() - lane->y_offset(),
+                              expected_nearest_position.z()),
+            kLinearTolerance));
       }
     }
   }

@@ -34,7 +34,7 @@ class SymbolicPolynomialTest : public ::testing::Test {
   const drake::VectorX<symbolic::Monomial> monomials_{
       MonomialBasis(var_xyz_, 3)};
 
-  const vector<double> doubles{-9999.0, -5.0, -1.0, 0.0, 1.0, 5.0, 9999.0};
+  const vector<double> doubles_{-9999.0, -5.0, -1.0, 0.0, 1.0, 5.0, 9999.0};
 
   const Expression x_{var_x_};
   const Expression y_{var_y_};
@@ -229,7 +229,7 @@ TEST_F(SymbolicPolynomialTest, AdditionPolynomialDouble) {
   //   (Polynomial(e) + c).ToExpression() = (e + c).Expand()
   //   (c + Polynomial(e)).ToExpression() = (c + e).Expand()
   for (const Expression& e : exprs_) {
-    for (const double c : doubles) {
+    for (const double c : doubles_) {
       EXPECT_PRED2(ExprEqual, (Polynomial(e) + c).ToExpression(),
                    (e + c).Expand());
       EXPECT_PRED2(ExprEqual, (c + Polynomial(e)).ToExpression(),
@@ -238,10 +238,34 @@ TEST_F(SymbolicPolynomialTest, AdditionPolynomialDouble) {
   }
   // Test Polynomial& operator+=(double c).
   for (const Expression& e : exprs_) {
-    for (const double c : doubles) {
+    for (const double c : doubles_) {
       Polynomial p{e};
       p += c;
       EXPECT_PRED2(ExprEqual, p.ToExpression(), (e + c).Expand());
+    }
+  }
+}
+
+TEST_F(SymbolicPolynomialTest, AdditionMonomialMonomial) {
+  // (m1 + m2).ToExpression() = m1.ToExpression() + m2.ToExpression()
+  for (int i = 0; i < monomials_.size(); ++i) {
+    const Monomial& m_i{monomials_[i]};
+    for (int j = 0; j < monomials_.size(); ++j) {
+      const Monomial& m_j{monomials_[j]};
+      EXPECT_PRED2(ExprEqual, (m_i + m_j).ToExpression(),
+                   m_i.ToExpression() + m_j.ToExpression());
+    }
+  }
+}
+
+TEST_F(SymbolicPolynomialTest, AdditionMonomialDouble) {
+  // (m + c).ToExpression() = m.ToExpression() + c
+  // (c + m).ToExpression() = c + m.ToExpression()
+  for (int i = 0; i < monomials_.size(); ++i) {
+    const Monomial& m{monomials_[i]};
+    for (const double c : doubles_) {
+      EXPECT_PRED2(ExprEqual, (m + c).ToExpression(), m.ToExpression() + c);
+      EXPECT_PRED2(ExprEqual, (c + m).ToExpression(), c + m.ToExpression());
     }
   }
 }
@@ -292,7 +316,7 @@ TEST_F(SymbolicPolynomialTest, SubtractionPolynomialDouble) {
   // (Polynomial(e) - c).ToExpression() = (e - c).Expand()
   // (c - Polynomial(e)).ToExpression() = (c - e).Expand()
   for (const Expression& e : exprs_) {
-    for (const double c : doubles) {
+    for (const double c : doubles_) {
       EXPECT_PRED2(ExprEqual, (Polynomial(e) - c).ToExpression(),
                    (e - c).Expand());
       EXPECT_PRED2(ExprEqual, (c - Polynomial(e)).ToExpression(),
@@ -301,10 +325,34 @@ TEST_F(SymbolicPolynomialTest, SubtractionPolynomialDouble) {
   }
   // Test Polynomial& operator-=(double c).
   for (const Expression& e : exprs_) {
-    for (const double c : doubles) {
+    for (const double c : doubles_) {
       Polynomial p{e};
       p -= c;
       EXPECT_PRED2(ExprEqual, p.ToExpression(), (e - c).Expand());
+    }
+  }
+}
+
+TEST_F(SymbolicPolynomialTest, SubtractionMonomialMonomial) {
+  // (m1 - m2).ToExpression() = m1.ToExpression() - m2.ToExpression()
+  for (int i = 0; i < monomials_.size(); ++i) {
+    const Monomial& m_i{monomials_[i]};
+    for (int j = 0; j < monomials_.size(); ++j) {
+      const Monomial& m_j{monomials_[j]};
+      EXPECT_PRED2(ExprEqual, (m_i - m_j).ToExpression(),
+                   m_i.ToExpression() - m_j.ToExpression());
+    }
+  }
+}
+
+TEST_F(SymbolicPolynomialTest, SubtractionMonomialDouble) {
+  // (m - c).ToExpression() = m.ToExpression() - c
+  // (c - m).ToExpression() = c - m.ToExpression()
+  for (int i = 0; i < monomials_.size(); ++i) {
+    const Monomial& m{monomials_[i]};
+    for (const double c : doubles_) {
+      EXPECT_PRED2(ExprEqual, (m - c).ToExpression(), m.ToExpression() - c);
+      EXPECT_PRED2(ExprEqual, (c - m).ToExpression(), c - m.ToExpression());
     }
   }
 }
@@ -363,7 +411,7 @@ TEST_F(SymbolicPolynomialTest, MultiplicationPolynomialDouble) {
   // (Polynomial(e) * c).ToExpression() = (e * c).Expand()
   // (c * Polynomial(e)).ToExpression() = (c * e).Expand()
   for (const Expression& e : exprs_) {
-    for (const double c : doubles) {
+    for (const double c : doubles_) {
       EXPECT_PRED2(ExprEqual, (Polynomial(e) * c).ToExpression(),
                    (e * c).Expand());
       EXPECT_PRED2(ExprEqual, (c * Polynomial(e)).ToExpression(),
@@ -372,10 +420,24 @@ TEST_F(SymbolicPolynomialTest, MultiplicationPolynomialDouble) {
   }
   // Test Polynomial& operator*=(double c).
   for (const Expression& e : exprs_) {
-    for (const double c : doubles) {
+    for (const double c : doubles_) {
       Polynomial p{e};
       p *= c;
       EXPECT_PRED2(ExprEqual, p.ToExpression(), (e * c).Expand());
+    }
+  }
+}
+
+TEST_F(SymbolicPolynomialTest, MultiplicationMonomialDouble) {
+  // (m * c).ToExpression() = (m.ToExpression() * c).Expand()
+  // (c * m).ToExpression() = (c * m.ToExpression()).Expand()
+  for (int i = 0; i < monomials_.size(); ++i) {
+    const Monomial& m{monomials_[i]};
+    for (const double c : doubles_) {
+      EXPECT_PRED2(ExprEqual, (m * c).ToExpression(),
+                   (m.ToExpression() * c).Expand());
+      EXPECT_PRED2(ExprEqual, (c * m).ToExpression(),
+                   (c * m.ToExpression()).Expand());
     }
   }
 }

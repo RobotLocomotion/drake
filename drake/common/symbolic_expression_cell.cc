@@ -1091,6 +1091,12 @@ class DivExpandVisitor {
   Expression VisitMax(const Expression& e, const double n) const {
     return (1.0 / n) * e;
   }
+  Expression VisitCeil(const Expression& e, const double n) const {
+    return (1.0 / n) * e;
+  }
+  Expression VisitFloor(const Expression& e, const double n) const {
+    return (1.0 / n) * e;
+  }
   Expression VisitIfThenElse(const Expression& e, const double n) const {
     return (1.0 / n) * e;
   }
@@ -1202,7 +1208,7 @@ Expression ExpressionAbs::Substitute(const Substitution& s) const {
 Expression ExpressionAbs::Differentiate(const Variable& x) const {
   if (GetVariables().include(x)) {
     ostringstream oss;
-    Display(oss) << "is not differentiable with respect to " << x << ".";
+    Display(oss) << " is not differentiable with respect to " << x << ".";
     throw runtime_error(oss.str());
   } else {
     return Expression::Zero();
@@ -1646,7 +1652,7 @@ Expression ExpressionMin::Substitute(const Substitution& s) const {
 Expression ExpressionMin::Differentiate(const Variable& x) const {
   if (GetVariables().include(x)) {
     ostringstream oss;
-    Display(oss) << "is not differentiable with respect to " << x << ".";
+    Display(oss) << " is not differentiable with respect to " << x << ".";
     throw runtime_error(oss.str());
   } else {
     return Expression::Zero();
@@ -1681,7 +1687,7 @@ Expression ExpressionMax::Substitute(const Substitution& s) const {
 Expression ExpressionMax::Differentiate(const Variable& x) const {
   if (GetVariables().include(x)) {
     ostringstream oss;
-    Display(oss) << "is not differentiable with respect to " << x << ".";
+    Display(oss) << " is not differentiable with respect to " << x << ".";
     throw runtime_error(oss.str());
   } else {
     return Expression::Zero();
@@ -1695,6 +1701,72 @@ ostream& ExpressionMax::Display(ostream& os) const {
 
 double ExpressionMax::DoEvaluate(const double v1, const double v2) const {
   return std::max(v1, v2);
+}
+
+ExpressionCeiling::ExpressionCeiling(const Expression& e)
+    : UnaryExpressionCell{ExpressionKind::Ceil, e, false} {}
+
+Polynomial<double> ExpressionCeiling::ToPolynomial() const {
+  throw runtime_error("Ceil expression is not polynomial-convertible.");
+}
+
+Expression ExpressionCeiling::Expand() const {
+  return ceil(get_argument().Expand());
+}
+
+Expression ExpressionCeiling::Substitute(const Substitution& s) const {
+  return ceil(get_argument().Substitute(s));
+}
+
+Expression ExpressionCeiling::Differentiate(const Variable& x) const {
+  if (GetVariables().include(x)) {
+    ostringstream oss;
+    Display(oss) << " is not differentiable with respect to " << x << ".";
+    throw runtime_error(oss.str());
+  } else {
+    return Expression::Zero();
+  }
+}
+
+ostream& ExpressionCeiling::Display(ostream& os) const {
+  return os << "ceil(" << get_argument() << ")";
+}
+
+double ExpressionCeiling::DoEvaluate(const double v) const {
+  return std::ceil(v);
+}
+
+ExpressionFloor::ExpressionFloor(const Expression& e)
+    : UnaryExpressionCell{ExpressionKind::Floor, e, false} {}
+
+Polynomial<double> ExpressionFloor::ToPolynomial() const {
+  throw runtime_error("Floor expression is not polynomial-convertible.");
+}
+
+Expression ExpressionFloor::Expand() const {
+  return floor(get_argument().Expand());
+}
+
+Expression ExpressionFloor::Substitute(const Substitution& s) const {
+  return floor(get_argument().Substitute(s));
+}
+
+Expression ExpressionFloor::Differentiate(const Variable& x) const {
+  if (GetVariables().include(x)) {
+    ostringstream oss;
+    Display(oss) << " is not differentiable with respect to " << x << ".";
+    throw runtime_error(oss.str());
+  } else {
+    return Expression::Zero();
+  }
+}
+
+ostream& ExpressionFloor::Display(ostream& os) const {
+  return os << "floor(" << get_argument() << ")";
+}
+
+double ExpressionFloor::DoEvaluate(const double v) const {
+  return std::floor(v);
 }
 
 // ExpressionIfThenElse
@@ -1771,7 +1843,7 @@ Expression ExpressionIfThenElse::Substitute(const Substitution& s) const {
 Expression ExpressionIfThenElse::Differentiate(const Variable& x) const {
   if (GetVariables().include(x)) {
     ostringstream oss;
-    Display(oss) << "is not differentiable with respect to " << x << ".";
+    Display(oss) << " is not differentiable with respect to " << x << ".";
     throw runtime_error(oss.str());
   } else {
     return Expression::Zero();
@@ -1936,6 +2008,12 @@ bool is_min(const ExpressionCell& c) {
 bool is_max(const ExpressionCell& c) {
   return c.get_kind() == ExpressionKind::Max;
 }
+bool is_ceil(const ExpressionCell& c) {
+  return c.get_kind() == ExpressionKind::Ceil;
+}
+bool is_floor(const ExpressionCell& c) {
+  return c.get_kind() == ExpressionKind::Floor;
+}
 bool is_if_then_else(const ExpressionCell& c) {
   return c.get_kind() == ExpressionKind::IfThenElse;
 }
@@ -1967,7 +2045,7 @@ shared_ptr<UnaryExpressionCell> to_unary(
                is_sqrt(*expr_ptr) || is_sin(*expr_ptr) || is_cos(*expr_ptr) ||
                is_tan(*expr_ptr) || is_asin(*expr_ptr) || is_acos(*expr_ptr) ||
                is_atan(*expr_ptr) || is_sinh(*expr_ptr) || is_cosh(*expr_ptr) ||
-               is_tanh(*expr_ptr));
+               is_tanh(*expr_ptr) || is_ceil(*expr_ptr) || is_floor(*expr_ptr));
   return static_pointer_cast<UnaryExpressionCell>(expr_ptr);
 }
 shared_ptr<UnaryExpressionCell> to_unary(const Expression& e) {
@@ -2128,6 +2206,24 @@ shared_ptr<ExpressionMax> to_max(const shared_ptr<ExpressionCell>& expr_ptr) {
   return static_pointer_cast<ExpressionMax>(expr_ptr);
 }
 shared_ptr<ExpressionMax> to_max(const Expression& e) { return to_max(e.ptr_); }
+
+shared_ptr<ExpressionCeiling> to_ceil(
+    const shared_ptr<ExpressionCell>& expr_ptr) {
+  DRAKE_ASSERT(is_ceil(*expr_ptr));
+  return static_pointer_cast<ExpressionCeiling>(expr_ptr);
+}
+shared_ptr<ExpressionCeiling> to_ceil(const Expression& e) {
+  return to_ceil(e.ptr_);
+}
+
+shared_ptr<ExpressionFloor> to_floor(
+    const shared_ptr<ExpressionCell>& expr_ptr) {
+  DRAKE_ASSERT(is_floor(*expr_ptr));
+  return static_pointer_cast<ExpressionFloor>(expr_ptr);
+}
+shared_ptr<ExpressionFloor> to_floor(const Expression& e) {
+  return to_floor(e.ptr_);
+}
 
 shared_ptr<ExpressionIfThenElse> to_if_then_else(
     const shared_ptr<ExpressionCell>& expr_ptr) {

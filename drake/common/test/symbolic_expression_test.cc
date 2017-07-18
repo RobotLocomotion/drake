@@ -101,9 +101,9 @@ class SymbolicExpressionTest : public ::testing::Test {
   const Expression one_{1.0};
   const Expression two_{2.0};
   const Expression neg_one_{-1.0};
-  const Expression pi_{3.141592};
-  const Expression neg_pi_{-3.141592};
-  const Expression e_{2.718};
+  const Expression pi_{M_PI};
+  const Expression neg_pi_{-M_PI};
+  const Expression e_{M_E};
 
   const Expression c1_{-10.0};
   const Expression c2_{1.0};
@@ -133,6 +133,8 @@ class SymbolicExpressionTest : public ::testing::Test {
   const Expression e_tanh_{tanh(x_)};
   const Expression e_min_{min(x_, y_)};
   const Expression e_max_{max(x_, y_)};
+  const Expression e_ceil_{ceil(x_)};
+  const Expression e_floor_{floor(x_)};
   const Expression e_ite_{if_then_else(x_ < y_, x_, y_)};
   const Expression e_nan_{Expression::NaN()};
   const Expression e_uf_{uninterpreted_function("uf", {var_x_, var_y_})};
@@ -141,7 +143,7 @@ class SymbolicExpressionTest : public ::testing::Test {
       e_constant_, e_var_,  e_add_,  e_neg_,   e_mul_,  e_div_,  e_log_,
       e_abs_,      e_exp_,  e_sqrt_, e_pow_,   e_sin_,  e_cos_,  e_tan_,
       e_asin_,     e_acos_, e_atan_, e_atan2_, e_sinh_, e_cosh_, e_tanh_,
-      e_min_,      e_max_,  e_ite_,  e_nan_,   e_uf_};
+      e_min_,      e_max_,  e_ceil_, e_floor_, e_ite_,  e_nan_,  e_uf_};
 };
 
 TEST_F(SymbolicExpressionTest, Dummy) {
@@ -352,6 +354,22 @@ TEST_F(SymbolicExpressionTest, IsMax) {
   EXPECT_EQ(cnt, 1);
 }
 
+TEST_F(SymbolicExpressionTest, IsCeil) {
+  EXPECT_TRUE(is_ceil(e_ceil_));
+  const vector<Expression>::difference_type cnt{
+      count_if(collection_.begin(), collection_.end(),
+               [](const Expression& e) { return is_ceil(e); })};
+  EXPECT_EQ(cnt, 1);
+}
+
+TEST_F(SymbolicExpressionTest, IsFloor) {
+  EXPECT_TRUE(is_floor(e_floor_));
+  const vector<Expression>::difference_type cnt{
+      count_if(collection_.begin(), collection_.end(),
+               [](const Expression& e) { return is_floor(e); })};
+  EXPECT_EQ(cnt, 1);
+}
+
 TEST_F(SymbolicExpressionTest, IsIfThenElse) {
   EXPECT_TRUE(is_if_then_else(e_ite_));
   const vector<Expression>::difference_type cnt{
@@ -403,6 +421,8 @@ TEST_F(SymbolicExpressionTest, GetArgument) {
   EXPECT_PRED2(ExprEqual, get_argument(e_sinh_), x_);
   EXPECT_PRED2(ExprEqual, get_argument(e_cosh_), x_);
   EXPECT_PRED2(ExprEqual, get_argument(e_tanh_), x_);
+  EXPECT_PRED2(ExprEqual, get_argument(e_ceil_), x_);
+  EXPECT_PRED2(ExprEqual, get_argument(e_floor_), x_);
 }
 
 TEST_F(SymbolicExpressionTest, GetFirstArgument) {
@@ -461,8 +481,9 @@ TEST_F(SymbolicExpressionTest, IsPolynomial) {
       {e_cos_, false},     {e_tan_, false},  {e_asin_, false},
       {e_acos_, false},    {e_atan_, false}, {e_atan2_, false},
       {e_sinh_, false},    {e_cosh_, false}, {e_tanh_, false},
-      {e_min_, false},     {e_max_, false},  {e_ite_, false},
-      {e_nan_, false},     {e_uf_, false}};
+      {e_min_, false},     {e_max_, false},  {e_ceil_, false},
+      {e_floor_, false},   {e_ite_, false},  {e_nan_, false},
+      {e_uf_, false}};
   for (const pair<Expression, bool>& p : test_vec) {
     EXPECT_EQ(p.first.is_polynomial(), p.second);
   }
@@ -545,9 +566,11 @@ TEST_F(SymbolicExpressionTest, ToPolynomial1) {
 
 TEST_F(SymbolicExpressionTest, ToPolynomial2) {
   const vector<Expression> test_vec{
-      e_log_,  e_abs_,  e_exp_,  e_sqrt_,           e_sin_,  e_cos_,  e_tan_,
-      e_asin_, e_acos_, e_atan_, e_atan2_,          e_sinh_, e_cosh_, e_tanh_,
-      e_min_,  e_max_,  e_ite_,  Expression::NaN(), e_uf_};
+      e_log_,   e_abs_,  e_exp_,   e_sqrt_, e_sin_,
+      e_cos_,   e_tan_,  e_asin_,  e_acos_, e_atan_,
+      e_atan2_, e_sinh_, e_cosh_,  e_tanh_, e_min_,
+      e_max_,   e_ceil_, e_floor_, e_ite_,  Expression::NaN(),
+      e_uf_};
   for (const Expression& e : test_vec) {
     EXPECT_FALSE(e.is_polynomial());
     EXPECT_THROW(e.ToPolynomial(), runtime_error);
@@ -558,8 +581,8 @@ TEST_F(SymbolicExpressionTest, LessKind) {
   CheckOrdering({e_constant_, e_var_,  e_add_,  e_neg_,  e_mul_,  e_div_,
                  e_log_,      e_abs_,  e_exp_,  e_sqrt_, e_pow_,  e_sin_,
                  e_cos_,      e_tan_,  e_asin_, e_acos_, e_atan_, e_atan2_,
-                 e_sinh_,     e_cosh_, e_tanh_, e_min_,  e_max_,  e_ite_,
-                 e_nan_,      e_uf_});
+                 e_sinh_,     e_cosh_, e_tanh_, e_min_,  e_max_,  e_ceil_,
+                 e_floor_,    e_ite_,  e_nan_,  e_uf_});
 }
 
 TEST_F(SymbolicExpressionTest, LessConstant) { CheckOrdering({c1_, c2_, c3_}); }
@@ -742,6 +765,22 @@ TEST_F(SymbolicExpressionTest, LessMax) {
   CheckOrdering({max1, max2, max3});
 }
 
+TEST_F(SymbolicExpressionTest, LessCeil) {
+  const Expression ceil1{ceil(x_)};
+  const Expression ceil2{ceil(y_)};
+  const Expression ceil3{ceil(x_plus_y_)};
+  const Expression ceil4{ceil(x_plus_z_)};
+  CheckOrdering({ceil1, ceil2, ceil3, ceil4});
+}
+
+TEST_F(SymbolicExpressionTest, LessFloor) {
+  const Expression floor1{floor(x_)};
+  const Expression floor2{floor(y_)};
+  const Expression floor3{floor(x_plus_y_)};
+  const Expression floor4{floor(x_plus_z_)};
+  CheckOrdering({floor1, floor2, floor3, floor4});
+}
+
 TEST_F(SymbolicExpressionTest, LessIfThenElse) {
   const Formula f1{x_ < y_};
   const Formula f2{y_ < z_};
@@ -791,8 +830,8 @@ TEST_F(SymbolicExpressionTest, Constant) {
 TEST_F(SymbolicExpressionTest, StaticConstant) {
   EXPECT_DOUBLE_EQ(Expression::Zero().Evaluate(), 0.0);
   EXPECT_DOUBLE_EQ(Expression::One().Evaluate(), 1.0);
-  EXPECT_NEAR(Expression::Pi().Evaluate(), 3.141592, 0.000001);
-  EXPECT_NEAR(Expression::E().Evaluate(), 2.718281828, 0.000000001);
+  EXPECT_NEAR(Expression::Pi().Evaluate(), M_PI, 0.000001);
+  EXPECT_NEAR(Expression::E().Evaluate(), M_E, 0.000000001);
 }
 
 TEST_F(SymbolicExpressionTest, Hash) {
@@ -837,12 +876,14 @@ TEST_F(SymbolicExpressionTest, HashUnary) {
   const Expression e10{sinh(x_plus_y_)};
   const Expression e11{cosh(x_plus_y_)};
   const Expression e12{tanh(x_plus_y_)};
+  const Expression e13{ceil(x_plus_y_)};
+  const Expression e14{floor(x_plus_y_)};
 
-  // e0, ..., e12 share the same sub-expression, but their hash values should be
+  // e0, ..., e14 share the same sub-expression, but their hash values should be
   // distinct.
   unordered_set<size_t> hash_set;
-  const vector<Expression> exprs{e0, e1, e2, e3,  e4,  e5, e6,
-                                 e7, e8, e9, e10, e11, e12};
+  const vector<Expression> exprs{e0, e1, e2,  e3,  e4,  e5,  e6, e7,
+                                 e8, e9, e10, e11, e12, e13, e14};
   for (auto const& e : exprs) {
     hash_set.insert(e.get_hash());
   }
@@ -1204,7 +1245,7 @@ GTEST_TEST(ExpressionTest, NoThrowMoveConstructible) {
 }
 
 TEST_F(SymbolicExpressionTest, Log) {
-  EXPECT_DOUBLE_EQ(log(pi_).Evaluate(), std::log(3.141592));
+  EXPECT_DOUBLE_EQ(log(pi_).Evaluate(), std::log(M_PI));
   EXPECT_DOUBLE_EQ(log(one_).Evaluate(), std::log(1.0));
   EXPECT_DOUBLE_EQ(log(zero_).Evaluate(), std::log(0.0));
   EXPECT_THROW(log(neg_one_).Evaluate(), domain_error);
@@ -1212,34 +1253,34 @@ TEST_F(SymbolicExpressionTest, Log) {
   const Expression e{log(x_ * y_ * pi_) + log(x_) + log(y_)};
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env),
-                   std::log(2 * 3.2 * 3.141592) + std::log(2) + std::log(3.2));
+                   std::log(2 * 3.2 * M_PI) + std::log(2) + std::log(3.2));
   EXPECT_EQ((log(x_)).to_string(), "log(x)");
 }
 
 TEST_F(SymbolicExpressionTest, Abs) {
-  EXPECT_DOUBLE_EQ(abs(pi_).Evaluate(), std::fabs(3.141592));
+  EXPECT_DOUBLE_EQ(abs(pi_).Evaluate(), std::fabs(M_PI));
   EXPECT_DOUBLE_EQ(abs(one_).Evaluate(), std::fabs(1.0));
   EXPECT_DOUBLE_EQ(abs(zero_).Evaluate(), std::fabs(0.0));
   EXPECT_DOUBLE_EQ(abs(neg_one_).Evaluate(), std::fabs(-1.0));
-  EXPECT_DOUBLE_EQ(abs(neg_pi_).Evaluate(), std::fabs(-3.141592));
+  EXPECT_DOUBLE_EQ(abs(neg_pi_).Evaluate(), std::fabs(-M_PI));
   const Expression e{abs(x_ * y_ * pi_) + abs(x_) + abs(y_)};
   const Environment env{{var_x_, -2}, {var_y_, 3.2}};
-  EXPECT_DOUBLE_EQ(e.Evaluate(env), std::fabs(-2 * 3.2 * 3.141592) +
+  EXPECT_DOUBLE_EQ(e.Evaluate(env), std::fabs(-2 * 3.2 * M_PI) +
                                         std::fabs(-2.0) + std::fabs(3.2));
   EXPECT_EQ((abs(x_)).to_string(), "abs(x)");
 }
 
 TEST_F(SymbolicExpressionTest, Exp) {
-  EXPECT_DOUBLE_EQ(exp(pi_).Evaluate(), std::exp(3.141592));
+  EXPECT_DOUBLE_EQ(exp(pi_).Evaluate(), std::exp(M_PI));
   EXPECT_DOUBLE_EQ(exp(one_).Evaluate(), std::exp(1));
   EXPECT_DOUBLE_EQ(exp(zero_).Evaluate(), std::exp(0));
   EXPECT_DOUBLE_EQ(exp(neg_one_).Evaluate(), std::exp(-1));
-  EXPECT_DOUBLE_EQ(exp(neg_pi_).Evaluate(), std::exp(-3.141592));
+  EXPECT_DOUBLE_EQ(exp(neg_pi_).Evaluate(), std::exp(-M_PI));
 
   const Expression e{exp(x_ * y_ * pi_) + exp(x_) + exp(y_)};
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
-  EXPECT_DOUBLE_EQ(e.Evaluate(env), std::exp(2 * 3.2 * 3.141592) +
-                                        std::exp(2.0) + std::exp(3.2));
+  EXPECT_DOUBLE_EQ(e.Evaluate(env),
+                   std::exp(2 * 3.2 * M_PI) + std::exp(2.0) + std::exp(3.2));
   EXPECT_EQ((exp(x_)).to_string(), "exp(x)");
 }
 
@@ -1249,7 +1290,7 @@ TEST_F(SymbolicExpressionTest, Sqrt1) {
 }
 
 TEST_F(SymbolicExpressionTest, Sqrt2) {
-  EXPECT_DOUBLE_EQ(sqrt(pi_).Evaluate(), std::sqrt(3.141592));
+  EXPECT_DOUBLE_EQ(sqrt(pi_).Evaluate(), std::sqrt(M_PI));
   EXPECT_DOUBLE_EQ(sqrt(one_).Evaluate(), std::sqrt(1.0));
   EXPECT_DOUBLE_EQ(sqrt(zero_).Evaluate(), std::sqrt(0.0));
   EXPECT_THROW(sqrt(neg_one_).Evaluate(), domain_error);
@@ -1257,8 +1298,8 @@ TEST_F(SymbolicExpressionTest, Sqrt2) {
 
   const Expression e{sqrt(x_ * y_ * pi_) + sqrt(x_) + sqrt(y_)};
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
-  EXPECT_DOUBLE_EQ(e.Evaluate(env), std::sqrt(2 * 3.2 * 3.141592) +
-                                        std::sqrt(2.0) + std::sqrt(3.2));
+  EXPECT_DOUBLE_EQ(e.Evaluate(env),
+                   std::sqrt(2 * 3.2 * M_PI) + std::sqrt(2.0) + std::sqrt(3.2));
   EXPECT_EQ((sqrt(x_)).to_string(), "sqrt(x)");
 }
 
@@ -1275,33 +1316,33 @@ TEST_F(SymbolicExpressionTest, Pow1) {
 }
 
 TEST_F(SymbolicExpressionTest, Pow2) {
-  EXPECT_DOUBLE_EQ(pow(pi_, pi_).Evaluate(), std::pow(3.141592, 3.141592));
-  EXPECT_DOUBLE_EQ(pow(pi_, one_).Evaluate(), std::pow(3.141592, 1));
-  EXPECT_DOUBLE_EQ(pow(pi_, two_).Evaluate(), std::pow(3.141592, 2));
-  EXPECT_DOUBLE_EQ(pow(pi_, zero_).Evaluate(), std::pow(3.141592, 0));
-  EXPECT_DOUBLE_EQ(pow(pi_, neg_one_).Evaluate(), std::pow(3.141592, -1));
-  EXPECT_DOUBLE_EQ(pow(pi_, neg_pi_).Evaluate(), std::pow(3.141592, -3.141592));
+  EXPECT_DOUBLE_EQ(pow(pi_, pi_).Evaluate(), std::pow(M_PI, M_PI));
+  EXPECT_DOUBLE_EQ(pow(pi_, one_).Evaluate(), std::pow(M_PI, 1));
+  EXPECT_DOUBLE_EQ(pow(pi_, two_).Evaluate(), std::pow(M_PI, 2));
+  EXPECT_DOUBLE_EQ(pow(pi_, zero_).Evaluate(), std::pow(M_PI, 0));
+  EXPECT_DOUBLE_EQ(pow(pi_, neg_one_).Evaluate(), std::pow(M_PI, -1));
+  EXPECT_DOUBLE_EQ(pow(pi_, neg_pi_).Evaluate(), std::pow(M_PI, -M_PI));
 
-  EXPECT_DOUBLE_EQ(pow(one_, pi_).Evaluate(), std::pow(1, 3.141592));
+  EXPECT_DOUBLE_EQ(pow(one_, pi_).Evaluate(), std::pow(1, M_PI));
   EXPECT_DOUBLE_EQ(pow(one_, one_).Evaluate(), std::pow(1, 1));
   EXPECT_DOUBLE_EQ(pow(one_, two_).Evaluate(), std::pow(1, 2));
   EXPECT_DOUBLE_EQ(pow(one_, zero_).Evaluate(), std::pow(1, 0));
   EXPECT_DOUBLE_EQ(pow(one_, neg_one_).Evaluate(), std::pow(1, -1));
-  EXPECT_DOUBLE_EQ(pow(one_, neg_pi_).Evaluate(), std::pow(1, -3.141592));
+  EXPECT_DOUBLE_EQ(pow(one_, neg_pi_).Evaluate(), std::pow(1, -M_PI));
 
-  EXPECT_DOUBLE_EQ(pow(two_, pi_).Evaluate(), std::pow(2, 3.141592));
+  EXPECT_DOUBLE_EQ(pow(two_, pi_).Evaluate(), std::pow(2, M_PI));
   EXPECT_DOUBLE_EQ(pow(two_, one_).Evaluate(), std::pow(2, 1));
   EXPECT_DOUBLE_EQ(pow(two_, two_).Evaluate(), std::pow(2, 2));
   EXPECT_DOUBLE_EQ(pow(two_, zero_).Evaluate(), std::pow(2, 0));
   EXPECT_DOUBLE_EQ(pow(two_, neg_one_).Evaluate(), std::pow(2, -1));
-  EXPECT_DOUBLE_EQ(pow(two_, neg_pi_).Evaluate(), std::pow(2, -3.141592));
+  EXPECT_DOUBLE_EQ(pow(two_, neg_pi_).Evaluate(), std::pow(2, -M_PI));
 
-  EXPECT_DOUBLE_EQ(pow(zero_, pi_).Evaluate(), std::pow(0, 3.141592));
+  EXPECT_DOUBLE_EQ(pow(zero_, pi_).Evaluate(), std::pow(0, M_PI));
   EXPECT_DOUBLE_EQ(pow(zero_, one_).Evaluate(), std::pow(0, 1));
   EXPECT_DOUBLE_EQ(pow(zero_, two_).Evaluate(), std::pow(0, 2));
   EXPECT_DOUBLE_EQ(pow(zero_, zero_).Evaluate(), std::pow(0, 0));
   EXPECT_DOUBLE_EQ(pow(zero_, neg_one_).Evaluate(), std::pow(0, -1));
-  EXPECT_DOUBLE_EQ(pow(zero_, neg_pi_).Evaluate(), std::pow(0, -3.141592));
+  EXPECT_DOUBLE_EQ(pow(zero_, neg_pi_).Evaluate(), std::pow(0, -M_PI));
 
   EXPECT_THROW(pow(neg_one_, pi_).Evaluate(), domain_error);
   EXPECT_DOUBLE_EQ(pow(neg_one_, one_).Evaluate(), std::pow(-1, 1));
@@ -1311,62 +1352,61 @@ TEST_F(SymbolicExpressionTest, Pow2) {
   EXPECT_THROW(pow(neg_one_, neg_pi_).Evaluate(), domain_error);
 
   EXPECT_THROW(pow(neg_pi_, pi_).Evaluate(), domain_error);
-  EXPECT_DOUBLE_EQ(pow(neg_pi_, one_).Evaluate(), std::pow(-3.141592, 1));
-  EXPECT_DOUBLE_EQ(pow(neg_pi_, two_).Evaluate(), std::pow(-3.141592, 2));
-  EXPECT_DOUBLE_EQ(pow(neg_pi_, zero_).Evaluate(), std::pow(-3.141592, 0));
-  EXPECT_DOUBLE_EQ(pow(neg_pi_, neg_one_).Evaluate(), std::pow(-3.141592, -1));
+  EXPECT_DOUBLE_EQ(pow(neg_pi_, one_).Evaluate(), std::pow(-M_PI, 1));
+  EXPECT_DOUBLE_EQ(pow(neg_pi_, two_).Evaluate(), std::pow(-M_PI, 2));
+  EXPECT_DOUBLE_EQ(pow(neg_pi_, zero_).Evaluate(), std::pow(-M_PI, 0));
+  EXPECT_DOUBLE_EQ(pow(neg_pi_, neg_one_).Evaluate(), std::pow(-M_PI, -1));
   EXPECT_THROW(pow(neg_pi_, neg_pi_).Evaluate(), domain_error);
 
   const Expression e1{pow(x_ * y_ * pi_, x_ + y_ + pi_)};
   const Expression e2{(pow(x_, 2) * pow(y_, 2) * pow(x_, y_))};
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
-  EXPECT_DOUBLE_EQ(e1.Evaluate(env),
-                   std::pow(2 * 3.2 * 3.141592, 2 + 3.2 + 3.141592));
+  EXPECT_DOUBLE_EQ(e1.Evaluate(env), std::pow(2 * 3.2 * M_PI, 2 + 3.2 + M_PI));
   EXPECT_DOUBLE_EQ(e2.Evaluate(env),
                    std::pow(2, 2) * std::pow(3.2, 2) * std::pow(2, 3.2));
 }
 
 TEST_F(SymbolicExpressionTest, Sin) {
-  EXPECT_DOUBLE_EQ(sin(pi_).Evaluate(), std::sin(3.141592));
+  EXPECT_DOUBLE_EQ(sin(pi_).Evaluate(), std::sin(M_PI));
   EXPECT_DOUBLE_EQ(sin(one_).Evaluate(), std::sin(1));
   EXPECT_DOUBLE_EQ(sin(two_).Evaluate(), std::sin(2));
   EXPECT_DOUBLE_EQ(sin(zero_).Evaluate(), std::sin(0));
   EXPECT_DOUBLE_EQ(sin(neg_one_).Evaluate(), std::sin(-1));
-  EXPECT_DOUBLE_EQ(sin(neg_pi_).Evaluate(), std::sin(-3.141592));
+  EXPECT_DOUBLE_EQ(sin(neg_pi_).Evaluate(), std::sin(-M_PI));
 
   const Expression e{sin(x_ * y_ * pi_) + sin(x_) + sin(y_)};
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env),
-                   std::sin(2 * 3.2 * 3.141592) + std::sin(2) + std::sin(3.2));
+                   std::sin(2 * 3.2 * M_PI) + std::sin(2) + std::sin(3.2));
   EXPECT_EQ((sin(x_)).to_string(), "sin(x)");
 }
 
 TEST_F(SymbolicExpressionTest, Cos) {
-  EXPECT_DOUBLE_EQ(cos(pi_).Evaluate(), std::cos(3.141592));
+  EXPECT_DOUBLE_EQ(cos(pi_).Evaluate(), std::cos(M_PI));
   EXPECT_DOUBLE_EQ(cos(one_).Evaluate(), std::cos(1));
   EXPECT_DOUBLE_EQ(cos(two_).Evaluate(), std::cos(2));
   EXPECT_DOUBLE_EQ(cos(zero_).Evaluate(), std::cos(0));
   EXPECT_DOUBLE_EQ(cos(neg_one_).Evaluate(), std::cos(-1));
-  EXPECT_DOUBLE_EQ(cos(neg_pi_).Evaluate(), std::cos(-3.141592));
+  EXPECT_DOUBLE_EQ(cos(neg_pi_).Evaluate(), std::cos(-M_PI));
   const Expression e{cos(x_ * y_ * pi_) + cos(x_) + cos(y_)};
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env),
-                   std::cos(2 * 3.2 * 3.141592) + std::cos(2) + std::cos(3.2));
+                   std::cos(2 * 3.2 * M_PI) + std::cos(2) + std::cos(3.2));
   EXPECT_EQ((cos(x_)).to_string(), "cos(x)");
 }
 
 TEST_F(SymbolicExpressionTest, Tan) {
-  EXPECT_DOUBLE_EQ(tan(pi_).Evaluate(), std::tan(3.141592));
+  EXPECT_DOUBLE_EQ(tan(pi_).Evaluate(), std::tan(M_PI));
   EXPECT_DOUBLE_EQ(tan(one_).Evaluate(), std::tan(1));
   EXPECT_DOUBLE_EQ(tan(two_).Evaluate(), std::tan(2));
   EXPECT_DOUBLE_EQ(tan(zero_).Evaluate(), std::tan(0));
   EXPECT_DOUBLE_EQ(tan(neg_one_).Evaluate(), std::tan(-1));
-  EXPECT_DOUBLE_EQ(tan(neg_pi_).Evaluate(), std::tan(-3.141592));
+  EXPECT_DOUBLE_EQ(tan(neg_pi_).Evaluate(), std::tan(-M_PI));
 
   const Expression e{tan(x_ * y_ * pi_) + tan(x_) + tan(y_)};
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env),
-                   std::tan(2 * 3.2 * 3.141592) + std::tan(2) + std::tan(3.2));
+                   std::tan(2 * 3.2 * M_PI) + std::tan(2) + std::tan(3.2));
   EXPECT_EQ((tan(x_)).to_string(), "tan(x)");
 }
 
@@ -1380,7 +1420,7 @@ TEST_F(SymbolicExpressionTest, Asin) {
 
   const Expression e{asin(x_ * y_ * pi_) + asin(x_) + asin(y_)};
   const Environment env{{var_x_, 0.2}, {var_y_, 0.3}};
-  EXPECT_DOUBLE_EQ(e.Evaluate(env), std::asin(0.2 * 0.3 * 3.141592) +
+  EXPECT_DOUBLE_EQ(e.Evaluate(env), std::asin(0.2 * 0.3 * M_PI) +
                                         std::asin(0.2) + std::asin(0.3));
   EXPECT_EQ((asin(x_)).to_string(), "asin(x)");
 }
@@ -1395,123 +1435,119 @@ TEST_F(SymbolicExpressionTest, Acos) {
 
   const Expression e{acos(x_ * y_ * pi_) + acos(x_) + acos(y_)};
   const Environment env{{var_x_, 0.2}, {var_y_, 0.3}};
-  EXPECT_DOUBLE_EQ(e.Evaluate(env), std::acos(0.2 * 0.3 * 3.141592) +
+  EXPECT_DOUBLE_EQ(e.Evaluate(env), std::acos(0.2 * 0.3 * M_PI) +
                                         std::acos(0.2) + std::acos(0.3));
   EXPECT_EQ((acos(x_)).to_string(), "acos(x)");
 }
 
 TEST_F(SymbolicExpressionTest, Atan) {
-  EXPECT_DOUBLE_EQ(atan(pi_).Evaluate(), std::atan(3.141592));
+  EXPECT_DOUBLE_EQ(atan(pi_).Evaluate(), std::atan(M_PI));
   EXPECT_DOUBLE_EQ(atan(one_).Evaluate(), std::atan(1));
   EXPECT_DOUBLE_EQ(atan(two_).Evaluate(), std::atan(2));
   EXPECT_DOUBLE_EQ(atan(zero_).Evaluate(), std::atan(0));
   EXPECT_DOUBLE_EQ(atan(neg_one_).Evaluate(), std::atan(-1));
-  EXPECT_DOUBLE_EQ(atan(neg_pi_).Evaluate(), std::atan(-3.141592));
+  EXPECT_DOUBLE_EQ(atan(neg_pi_).Evaluate(), std::atan(-M_PI));
 
   const Expression e{atan(x_ * y_ * pi_) + atan(x_) + atan(y_)};
   const Environment env{{var_x_, 0.2}, {var_y_, 0.3}};
-  EXPECT_DOUBLE_EQ(e.Evaluate(env), std::atan(0.2 * 0.3 * 3.141592) +
+  EXPECT_DOUBLE_EQ(e.Evaluate(env), std::atan(0.2 * 0.3 * M_PI) +
                                         std::atan(0.2) + std::atan(0.3));
   EXPECT_EQ((atan(x_)).to_string(), "atan(x)");
 }
 
 TEST_F(SymbolicExpressionTest, Atan2) {
-  EXPECT_DOUBLE_EQ(atan2(pi_, pi_).Evaluate(), std::atan2(3.141592, 3.141592));
-  EXPECT_DOUBLE_EQ(atan2(pi_, one_).Evaluate(), std::atan2(3.141592, 1));
-  EXPECT_DOUBLE_EQ(atan2(pi_, two_).Evaluate(), std::atan2(3.141592, 2));
-  EXPECT_DOUBLE_EQ(atan2(pi_, zero_).Evaluate(), std::atan2(3.141592, 0));
-  EXPECT_DOUBLE_EQ(atan2(pi_, neg_one_).Evaluate(), std::atan2(3.141592, -1));
-  EXPECT_DOUBLE_EQ(atan2(pi_, neg_pi_).Evaluate(),
-                   std::atan2(3.141592, -3.141592));
+  EXPECT_DOUBLE_EQ(atan2(pi_, pi_).Evaluate(), std::atan2(M_PI, M_PI));
+  EXPECT_DOUBLE_EQ(atan2(pi_, one_).Evaluate(), std::atan2(M_PI, 1));
+  EXPECT_DOUBLE_EQ(atan2(pi_, two_).Evaluate(), std::atan2(M_PI, 2));
+  EXPECT_DOUBLE_EQ(atan2(pi_, zero_).Evaluate(), std::atan2(M_PI, 0));
+  EXPECT_DOUBLE_EQ(atan2(pi_, neg_one_).Evaluate(), std::atan2(M_PI, -1));
+  EXPECT_DOUBLE_EQ(atan2(pi_, neg_pi_).Evaluate(), std::atan2(M_PI, -M_PI));
 
-  EXPECT_DOUBLE_EQ(atan2(one_, pi_).Evaluate(), std::atan2(1, 3.141592));
+  EXPECT_DOUBLE_EQ(atan2(one_, pi_).Evaluate(), std::atan2(1, M_PI));
   EXPECT_DOUBLE_EQ(atan2(one_, one_).Evaluate(), std::atan2(1, 1));
   EXPECT_DOUBLE_EQ(atan2(one_, two_).Evaluate(), std::atan2(1, 2));
   EXPECT_DOUBLE_EQ(atan2(one_, zero_).Evaluate(), std::atan2(1, 0));
   EXPECT_DOUBLE_EQ(atan2(one_, neg_one_).Evaluate(), std::atan2(1, -1));
-  EXPECT_DOUBLE_EQ(atan2(one_, neg_pi_).Evaluate(), std::atan2(1, -3.141592));
+  EXPECT_DOUBLE_EQ(atan2(one_, neg_pi_).Evaluate(), std::atan2(1, -M_PI));
 
-  EXPECT_DOUBLE_EQ(atan2(two_, pi_).Evaluate(), std::atan2(2, 3.141592));
+  EXPECT_DOUBLE_EQ(atan2(two_, pi_).Evaluate(), std::atan2(2, M_PI));
   EXPECT_DOUBLE_EQ(atan2(two_, one_).Evaluate(), std::atan2(2, 1));
   EXPECT_DOUBLE_EQ(atan2(two_, two_).Evaluate(), std::atan2(2, 2));
   EXPECT_DOUBLE_EQ(atan2(two_, zero_).Evaluate(), std::atan2(2, 0));
   EXPECT_DOUBLE_EQ(atan2(two_, neg_one_).Evaluate(), std::atan2(2, -1));
-  EXPECT_DOUBLE_EQ(atan2(two_, neg_pi_).Evaluate(), std::atan2(2, -3.141592));
+  EXPECT_DOUBLE_EQ(atan2(two_, neg_pi_).Evaluate(), std::atan2(2, -M_PI));
 
-  EXPECT_DOUBLE_EQ(atan2(zero_, pi_).Evaluate(), std::atan2(0, 3.141592));
+  EXPECT_DOUBLE_EQ(atan2(zero_, pi_).Evaluate(), std::atan2(0, M_PI));
   EXPECT_DOUBLE_EQ(atan2(zero_, one_).Evaluate(), std::atan2(0, 1));
   EXPECT_DOUBLE_EQ(atan2(zero_, two_).Evaluate(), std::atan2(0, 2));
   EXPECT_DOUBLE_EQ(atan2(zero_, zero_).Evaluate(), std::atan2(0, 0));
   EXPECT_DOUBLE_EQ(atan2(zero_, neg_one_).Evaluate(), std::atan2(0, -1));
-  EXPECT_DOUBLE_EQ(atan2(zero_, neg_pi_).Evaluate(), std::atan2(0, -3.141592));
+  EXPECT_DOUBLE_EQ(atan2(zero_, neg_pi_).Evaluate(), std::atan2(0, -M_PI));
 
-  EXPECT_DOUBLE_EQ(atan2(neg_one_, pi_).Evaluate(), std::atan2(-1, 3.141592));
+  EXPECT_DOUBLE_EQ(atan2(neg_one_, pi_).Evaluate(), std::atan2(-1, M_PI));
   EXPECT_DOUBLE_EQ(atan2(neg_one_, one_).Evaluate(), std::atan2(-1, 1));
   EXPECT_DOUBLE_EQ(atan2(neg_one_, two_).Evaluate(), std::atan2(-1, 2));
   EXPECT_DOUBLE_EQ(atan2(neg_one_, zero_).Evaluate(), std::atan2(-1, 0));
   EXPECT_DOUBLE_EQ(atan2(neg_one_, neg_one_).Evaluate(), std::atan2(-1, -1));
-  EXPECT_DOUBLE_EQ(atan2(neg_one_, neg_pi_).Evaluate(),
-                   std::atan2(-1, -3.141592));
+  EXPECT_DOUBLE_EQ(atan2(neg_one_, neg_pi_).Evaluate(), std::atan2(-1, -M_PI));
 
-  EXPECT_DOUBLE_EQ(atan2(neg_pi_, pi_).Evaluate(),
-                   std::atan2(-3.141592, 3.141592));
-  EXPECT_DOUBLE_EQ(atan2(neg_pi_, one_).Evaluate(), std::atan2(-3.141592, 1));
-  EXPECT_DOUBLE_EQ(atan2(neg_pi_, two_).Evaluate(), std::atan2(-3.141592, 2));
-  EXPECT_DOUBLE_EQ(atan2(neg_pi_, zero_).Evaluate(), std::atan2(-3.141592, 0));
-  EXPECT_DOUBLE_EQ(atan2(neg_pi_, neg_one_).Evaluate(),
-                   std::atan2(-3.141592, -1));
+  EXPECT_DOUBLE_EQ(atan2(neg_pi_, pi_).Evaluate(), std::atan2(-M_PI, M_PI));
+  EXPECT_DOUBLE_EQ(atan2(neg_pi_, one_).Evaluate(), std::atan2(-M_PI, 1));
+  EXPECT_DOUBLE_EQ(atan2(neg_pi_, two_).Evaluate(), std::atan2(-M_PI, 2));
+  EXPECT_DOUBLE_EQ(atan2(neg_pi_, zero_).Evaluate(), std::atan2(-M_PI, 0));
+  EXPECT_DOUBLE_EQ(atan2(neg_pi_, neg_one_).Evaluate(), std::atan2(-M_PI, -1));
   EXPECT_DOUBLE_EQ(atan2(neg_pi_, neg_pi_).Evaluate(),
-                   std::atan2(-3.141592, -3.141592));
+                   std::atan2(-M_PI, -M_PI));
 
   const Expression e{atan2(x_ * y_ * pi_, sin(x_) + sin(y_))};
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env),
-                   std::atan2(2 * 3.2 * 3.141592, std::sin(2) + std::sin(3.2)));
+                   std::atan2(2 * 3.2 * M_PI, std::sin(2) + std::sin(3.2)));
   EXPECT_EQ((atan2(x_, y_)).to_string(), "atan2(x, y)");
 }
 
 TEST_F(SymbolicExpressionTest, Sinh) {
-  EXPECT_DOUBLE_EQ(sinh(pi_).Evaluate(), std::sinh(3.141592));
+  EXPECT_DOUBLE_EQ(sinh(pi_).Evaluate(), std::sinh(M_PI));
   EXPECT_DOUBLE_EQ(sinh(one_).Evaluate(), std::sinh(1));
   EXPECT_DOUBLE_EQ(sinh(two_).Evaluate(), std::sinh(2));
   EXPECT_DOUBLE_EQ(sinh(zero_).Evaluate(), std::sinh(0));
   EXPECT_DOUBLE_EQ(sinh(neg_one_).Evaluate(), std::sinh(-1));
-  EXPECT_DOUBLE_EQ(sinh(neg_pi_).Evaluate(), std::sinh(-3.141592));
+  EXPECT_DOUBLE_EQ(sinh(neg_pi_).Evaluate(), std::sinh(-M_PI));
 
   const Expression e{sinh(x_ * y_ * pi_) + sinh(x_) + sinh(y_)};
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
-  EXPECT_DOUBLE_EQ(e.Evaluate(env), std::sinh(2 * 3.2 * 3.141592) +
-                                        std::sinh(2) + std::sinh(3.2));
+  EXPECT_DOUBLE_EQ(e.Evaluate(env),
+                   std::sinh(2 * 3.2 * M_PI) + std::sinh(2) + std::sinh(3.2));
   EXPECT_EQ((sinh(x_)).to_string(), "sinh(x)");
 }
 
 TEST_F(SymbolicExpressionTest, Cosh) {
-  EXPECT_DOUBLE_EQ(cosh(pi_).Evaluate(), std::cosh(3.141592));
+  EXPECT_DOUBLE_EQ(cosh(pi_).Evaluate(), std::cosh(M_PI));
   EXPECT_DOUBLE_EQ(cosh(one_).Evaluate(), std::cosh(1));
   EXPECT_DOUBLE_EQ(cosh(two_).Evaluate(), std::cosh(2));
   EXPECT_DOUBLE_EQ(cosh(zero_).Evaluate(), std::cosh(0));
   EXPECT_DOUBLE_EQ(cosh(neg_one_).Evaluate(), std::cosh(-1));
-  EXPECT_DOUBLE_EQ(cosh(neg_pi_).Evaluate(), std::cosh(-3.141592));
+  EXPECT_DOUBLE_EQ(cosh(neg_pi_).Evaluate(), std::cosh(-M_PI));
 
   const Expression e{cosh(x_ * y_ * pi_) + cosh(x_) + cosh(y_)};
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
-  EXPECT_DOUBLE_EQ(e.Evaluate(env), std::cosh(2 * 3.2 * 3.141592) +
-                                        std::cosh(2) + std::cosh(3.2));
+  EXPECT_DOUBLE_EQ(e.Evaluate(env),
+                   std::cosh(2 * 3.2 * M_PI) + std::cosh(2) + std::cosh(3.2));
   EXPECT_EQ((cosh(x_)).to_string(), "cosh(x)");
 }
 
 TEST_F(SymbolicExpressionTest, Tanh) {
-  EXPECT_DOUBLE_EQ(tanh(pi_).Evaluate(), std::tanh(3.141592));
+  EXPECT_DOUBLE_EQ(tanh(pi_).Evaluate(), std::tanh(M_PI));
   EXPECT_DOUBLE_EQ(tanh(one_).Evaluate(), std::tanh(1));
   EXPECT_DOUBLE_EQ(tanh(two_).Evaluate(), std::tanh(2));
   EXPECT_DOUBLE_EQ(tanh(zero_).Evaluate(), std::tanh(0));
   EXPECT_DOUBLE_EQ(tanh(neg_one_).Evaluate(), std::tanh(-1));
-  EXPECT_DOUBLE_EQ(tanh(neg_pi_).Evaluate(), std::tanh(-3.141592));
+  EXPECT_DOUBLE_EQ(tanh(neg_pi_).Evaluate(), std::tanh(-M_PI));
 
   const Expression e{tanh(x_ * y_ * pi_) + tanh(x_) + tanh(y_)};
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
-  EXPECT_DOUBLE_EQ(e.Evaluate(env), std::tanh(2 * 3.2 * 3.141592) +
-                                        std::tanh(2) + std::tanh(3.2));
+  EXPECT_DOUBLE_EQ(e.Evaluate(env),
+                   std::tanh(2 * 3.2 * M_PI) + std::tanh(2) + std::tanh(3.2));
   EXPECT_EQ((tanh(x_)).to_string(), "tanh(x)");
 }
 
@@ -1521,55 +1557,52 @@ TEST_F(SymbolicExpressionTest, Min1) {
 }
 
 TEST_F(SymbolicExpressionTest, Min2) {
-  EXPECT_DOUBLE_EQ(min(pi_, pi_).Evaluate(), std::min(3.141592, 3.141592));
-  EXPECT_DOUBLE_EQ(min(pi_, one_).Evaluate(), std::min(3.141592, 1.0));
-  EXPECT_DOUBLE_EQ(min(pi_, two_).Evaluate(), std::min(3.141592, 2.0));
-  EXPECT_DOUBLE_EQ(min(pi_, zero_).Evaluate(), std::min(3.141592, 0.0));
-  EXPECT_DOUBLE_EQ(min(pi_, neg_one_).Evaluate(), std::min(3.141592, -1.0));
-  EXPECT_DOUBLE_EQ(min(pi_, neg_pi_).Evaluate(), std::min(3.141592, -3.141592));
+  EXPECT_DOUBLE_EQ(min(pi_, pi_).Evaluate(), std::min(M_PI, M_PI));
+  EXPECT_DOUBLE_EQ(min(pi_, one_).Evaluate(), std::min(M_PI, 1.0));
+  EXPECT_DOUBLE_EQ(min(pi_, two_).Evaluate(), std::min(M_PI, 2.0));
+  EXPECT_DOUBLE_EQ(min(pi_, zero_).Evaluate(), std::min(M_PI, 0.0));
+  EXPECT_DOUBLE_EQ(min(pi_, neg_one_).Evaluate(), std::min(M_PI, -1.0));
+  EXPECT_DOUBLE_EQ(min(pi_, neg_pi_).Evaluate(), std::min(M_PI, -M_PI));
 
-  EXPECT_DOUBLE_EQ(min(one_, pi_).Evaluate(), std::min(1.0, 3.141592));
+  EXPECT_DOUBLE_EQ(min(one_, pi_).Evaluate(), std::min(1.0, M_PI));
   EXPECT_DOUBLE_EQ(min(one_, one_).Evaluate(), std::min(1.0, 1.0));
   EXPECT_DOUBLE_EQ(min(one_, two_).Evaluate(), std::min(1.0, 2.0));
   EXPECT_DOUBLE_EQ(min(one_, zero_).Evaluate(), std::min(1.0, 0.0));
   EXPECT_DOUBLE_EQ(min(one_, neg_one_).Evaluate(), std::min(1.0, -1.0));
-  EXPECT_DOUBLE_EQ(min(one_, neg_pi_).Evaluate(), std::min(1.0, -3.141592));
+  EXPECT_DOUBLE_EQ(min(one_, neg_pi_).Evaluate(), std::min(1.0, -M_PI));
 
-  EXPECT_DOUBLE_EQ(min(two_, pi_).Evaluate(), std::min(2.0, 3.141592));
+  EXPECT_DOUBLE_EQ(min(two_, pi_).Evaluate(), std::min(2.0, M_PI));
   EXPECT_DOUBLE_EQ(min(two_, one_).Evaluate(), std::min(2.0, 1.0));
   EXPECT_DOUBLE_EQ(min(two_, two_).Evaluate(), std::min(2.0, 2.0));
   EXPECT_DOUBLE_EQ(min(two_, zero_).Evaluate(), std::min(2.0, 0.0));
   EXPECT_DOUBLE_EQ(min(two_, neg_one_).Evaluate(), std::min(2.0, -1.0));
-  EXPECT_DOUBLE_EQ(min(two_, neg_pi_).Evaluate(), std::min(2.0, -3.141592));
+  EXPECT_DOUBLE_EQ(min(two_, neg_pi_).Evaluate(), std::min(2.0, -M_PI));
 
-  EXPECT_DOUBLE_EQ(min(zero_, pi_).Evaluate(), std::min(0.0, 3.141592));
+  EXPECT_DOUBLE_EQ(min(zero_, pi_).Evaluate(), std::min(0.0, M_PI));
   EXPECT_DOUBLE_EQ(min(zero_, one_).Evaluate(), std::min(0.0, 1.0));
   EXPECT_DOUBLE_EQ(min(zero_, two_).Evaluate(), std::min(0.0, 2.0));
   EXPECT_DOUBLE_EQ(min(zero_, zero_).Evaluate(), std::min(0.0, 0.0));
   EXPECT_DOUBLE_EQ(min(zero_, neg_one_).Evaluate(), std::min(0.0, -1.0));
-  EXPECT_DOUBLE_EQ(min(zero_, neg_pi_).Evaluate(), std::min(0.0, -3.141592));
+  EXPECT_DOUBLE_EQ(min(zero_, neg_pi_).Evaluate(), std::min(0.0, -M_PI));
 
-  EXPECT_DOUBLE_EQ(min(neg_one_, pi_).Evaluate(), std::min(-1.0, 3.141592));
+  EXPECT_DOUBLE_EQ(min(neg_one_, pi_).Evaluate(), std::min(-1.0, M_PI));
   EXPECT_DOUBLE_EQ(min(neg_one_, one_).Evaluate(), std::min(-1.0, 1.0));
   EXPECT_DOUBLE_EQ(min(neg_one_, two_).Evaluate(), std::min(-1.0, 2.0));
   EXPECT_DOUBLE_EQ(min(neg_one_, zero_).Evaluate(), std::min(-1.0, 0.0));
   EXPECT_DOUBLE_EQ(min(neg_one_, neg_one_).Evaluate(), std::min(-1.0, -1.0));
-  EXPECT_DOUBLE_EQ(min(neg_one_, neg_pi_).Evaluate(),
-                   std::min(-1.0, -3.141592));
+  EXPECT_DOUBLE_EQ(min(neg_one_, neg_pi_).Evaluate(), std::min(-1.0, -M_PI));
 
-  EXPECT_DOUBLE_EQ(min(neg_pi_, pi_).Evaluate(), std::min(-3.141592, 3.141592));
-  EXPECT_DOUBLE_EQ(min(neg_pi_, one_).Evaluate(), std::min(-3.141592, 1.0));
-  EXPECT_DOUBLE_EQ(min(neg_pi_, two_).Evaluate(), std::min(-3.141592, 2.0));
-  EXPECT_DOUBLE_EQ(min(neg_pi_, zero_).Evaluate(), std::min(-3.141592, 0.0));
-  EXPECT_DOUBLE_EQ(min(neg_pi_, neg_one_).Evaluate(),
-                   std::min(-3.141592, -1.0));
-  EXPECT_DOUBLE_EQ(min(neg_pi_, neg_pi_).Evaluate(),
-                   std::min(-3.141592, -3.141592));
+  EXPECT_DOUBLE_EQ(min(neg_pi_, pi_).Evaluate(), std::min(-M_PI, M_PI));
+  EXPECT_DOUBLE_EQ(min(neg_pi_, one_).Evaluate(), std::min(-M_PI, 1.0));
+  EXPECT_DOUBLE_EQ(min(neg_pi_, two_).Evaluate(), std::min(-M_PI, 2.0));
+  EXPECT_DOUBLE_EQ(min(neg_pi_, zero_).Evaluate(), std::min(-M_PI, 0.0));
+  EXPECT_DOUBLE_EQ(min(neg_pi_, neg_one_).Evaluate(), std::min(-M_PI, -1.0));
+  EXPECT_DOUBLE_EQ(min(neg_pi_, neg_pi_).Evaluate(), std::min(-M_PI, -M_PI));
 
   const Expression e{min(x_ * y_ * pi_, sin(x_) + sin(y_))};
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env),
-                   std::min(2 * 3.2 * 3.141592, std::sin(2) + std::sin(3.2)));
+                   std::min(2 * 3.2 * M_PI, std::sin(2) + std::sin(3.2)));
   EXPECT_EQ((min(x_, y_)).to_string(), "min(x, y)");
 }
 
@@ -1579,56 +1612,83 @@ TEST_F(SymbolicExpressionTest, Max1) {
 }
 
 TEST_F(SymbolicExpressionTest, Max2) {
-  EXPECT_DOUBLE_EQ(max(pi_, pi_).Evaluate(), std::max(3.141592, 3.141592));
-  EXPECT_DOUBLE_EQ(max(pi_, one_).Evaluate(), std::max(3.141592, 1.0));
-  EXPECT_DOUBLE_EQ(max(pi_, two_).Evaluate(), std::max(3.141592, 2.0));
-  EXPECT_DOUBLE_EQ(max(pi_, zero_).Evaluate(), std::max(3.141592, 0.0));
-  EXPECT_DOUBLE_EQ(max(pi_, neg_one_).Evaluate(), std::max(3.141592, -1.0));
-  EXPECT_DOUBLE_EQ(max(pi_, neg_pi_).Evaluate(), std::max(3.141592, -3.141592));
+  EXPECT_DOUBLE_EQ(max(pi_, pi_).Evaluate(), std::max(M_PI, M_PI));
+  EXPECT_DOUBLE_EQ(max(pi_, one_).Evaluate(), std::max(M_PI, 1.0));
+  EXPECT_DOUBLE_EQ(max(pi_, two_).Evaluate(), std::max(M_PI, 2.0));
+  EXPECT_DOUBLE_EQ(max(pi_, zero_).Evaluate(), std::max(M_PI, 0.0));
+  EXPECT_DOUBLE_EQ(max(pi_, neg_one_).Evaluate(), std::max(M_PI, -1.0));
+  EXPECT_DOUBLE_EQ(max(pi_, neg_pi_).Evaluate(), std::max(M_PI, -M_PI));
 
-  EXPECT_DOUBLE_EQ(max(one_, pi_).Evaluate(), std::max(1.0, 3.141592));
+  EXPECT_DOUBLE_EQ(max(one_, pi_).Evaluate(), std::max(1.0, M_PI));
   EXPECT_DOUBLE_EQ(max(one_, one_).Evaluate(), std::max(1.0, 1.0));
   EXPECT_DOUBLE_EQ(max(one_, two_).Evaluate(), std::max(1.0, 2.0));
   EXPECT_DOUBLE_EQ(max(one_, zero_).Evaluate(), std::max(1.0, 0.0));
   EXPECT_DOUBLE_EQ(max(one_, neg_one_).Evaluate(), std::max(1.0, -1.0));
-  EXPECT_DOUBLE_EQ(max(one_, neg_pi_).Evaluate(), std::max(1.0, -3.141592));
+  EXPECT_DOUBLE_EQ(max(one_, neg_pi_).Evaluate(), std::max(1.0, -M_PI));
 
-  EXPECT_DOUBLE_EQ(max(two_, pi_).Evaluate(), std::max(2.0, 3.141592));
+  EXPECT_DOUBLE_EQ(max(two_, pi_).Evaluate(), std::max(2.0, M_PI));
   EXPECT_DOUBLE_EQ(max(two_, one_).Evaluate(), std::max(2.0, 1.0));
   EXPECT_DOUBLE_EQ(max(two_, two_).Evaluate(), std::max(2.0, 2.0));
   EXPECT_DOUBLE_EQ(max(two_, zero_).Evaluate(), std::max(2.0, 0.0));
   EXPECT_DOUBLE_EQ(max(two_, neg_one_).Evaluate(), std::max(2.0, -1.0));
-  EXPECT_DOUBLE_EQ(max(two_, neg_pi_).Evaluate(), std::max(2.0, -3.141592));
+  EXPECT_DOUBLE_EQ(max(two_, neg_pi_).Evaluate(), std::max(2.0, -M_PI));
 
-  EXPECT_DOUBLE_EQ(max(zero_, pi_).Evaluate(), std::max(0.0, 3.141592));
+  EXPECT_DOUBLE_EQ(max(zero_, pi_).Evaluate(), std::max(0.0, M_PI));
   EXPECT_DOUBLE_EQ(max(zero_, one_).Evaluate(), std::max(0.0, 1.0));
   EXPECT_DOUBLE_EQ(max(zero_, two_).Evaluate(), std::max(0.0, 2.0));
   EXPECT_DOUBLE_EQ(max(zero_, zero_).Evaluate(), std::max(0.0, 0.0));
   EXPECT_DOUBLE_EQ(max(zero_, neg_one_).Evaluate(), std::max(0.0, -1.0));
-  EXPECT_DOUBLE_EQ(max(zero_, neg_pi_).Evaluate(), std::max(0.0, -3.141592));
+  EXPECT_DOUBLE_EQ(max(zero_, neg_pi_).Evaluate(), std::max(0.0, -M_PI));
 
-  EXPECT_DOUBLE_EQ(max(neg_one_, pi_).Evaluate(), std::max(-1.0, 3.141592));
+  EXPECT_DOUBLE_EQ(max(neg_one_, pi_).Evaluate(), std::max(-1.0, M_PI));
   EXPECT_DOUBLE_EQ(max(neg_one_, one_).Evaluate(), std::max(-1.0, 1.0));
   EXPECT_DOUBLE_EQ(max(neg_one_, two_).Evaluate(), std::max(-1.0, 2.0));
   EXPECT_DOUBLE_EQ(max(neg_one_, zero_).Evaluate(), std::max(-1.0, 0.0));
   EXPECT_DOUBLE_EQ(max(neg_one_, neg_one_).Evaluate(), std::max(-1.0, -1.0));
-  EXPECT_DOUBLE_EQ(max(neg_one_, neg_pi_).Evaluate(),
-                   std::max(-1.0, -3.141592));
+  EXPECT_DOUBLE_EQ(max(neg_one_, neg_pi_).Evaluate(), std::max(-1.0, -M_PI));
 
-  EXPECT_DOUBLE_EQ(max(neg_pi_, pi_).Evaluate(), std::max(-3.141592, 3.141592));
-  EXPECT_DOUBLE_EQ(max(neg_pi_, one_).Evaluate(), std::max(-3.141592, 1.0));
-  EXPECT_DOUBLE_EQ(max(neg_pi_, two_).Evaluate(), std::max(-3.141592, 2.0));
-  EXPECT_DOUBLE_EQ(max(neg_pi_, zero_).Evaluate(), std::max(-3.141592, 0.0));
-  EXPECT_DOUBLE_EQ(max(neg_pi_, neg_one_).Evaluate(),
-                   std::max(-3.141592, -1.0));
-  EXPECT_DOUBLE_EQ(max(neg_pi_, neg_pi_).Evaluate(),
-                   std::max(-3.141592, -3.141592));
+  EXPECT_DOUBLE_EQ(max(neg_pi_, pi_).Evaluate(), std::max(-M_PI, M_PI));
+  EXPECT_DOUBLE_EQ(max(neg_pi_, one_).Evaluate(), std::max(-M_PI, 1.0));
+  EXPECT_DOUBLE_EQ(max(neg_pi_, two_).Evaluate(), std::max(-M_PI, 2.0));
+  EXPECT_DOUBLE_EQ(max(neg_pi_, zero_).Evaluate(), std::max(-M_PI, 0.0));
+  EXPECT_DOUBLE_EQ(max(neg_pi_, neg_one_).Evaluate(), std::max(-M_PI, -1.0));
+  EXPECT_DOUBLE_EQ(max(neg_pi_, neg_pi_).Evaluate(), std::max(-M_PI, -M_PI));
 
   const Expression e{max(x_ * y_ * pi_, sin(x_) + sin(y_))};
   const Environment env{{var_x_, 2}, {var_y_, 3.2}};
   EXPECT_DOUBLE_EQ(e.Evaluate(env),
-                   std::max(2 * 3.2 * 3.141592, std::sin(2) + std::sin(3.2)));
+                   std::max(2 * 3.2 * M_PI, std::sin(2) + std::sin(3.2)));
   EXPECT_EQ((max(x_, y_)).to_string(), "max(x, y)");
+}
+
+TEST_F(SymbolicExpressionTest, Ceil) {
+  EXPECT_DOUBLE_EQ(ceil(pi_).Evaluate(), std::ceil(M_PI));
+  EXPECT_DOUBLE_EQ(ceil(one_).Evaluate(), std::ceil(1));
+  EXPECT_DOUBLE_EQ(ceil(two_).Evaluate(), std::ceil(2));
+  EXPECT_DOUBLE_EQ(ceil(zero_).Evaluate(), std::ceil(0));
+  EXPECT_DOUBLE_EQ(ceil(neg_one_).Evaluate(), std::ceil(-1));
+  EXPECT_DOUBLE_EQ(ceil(neg_pi_).Evaluate(), std::ceil(-M_PI));
+
+  const Expression e{ceil(x_ * y_ * pi_) + ceil(x_) + ceil(y_)};
+  const Environment env{{var_x_, 2}, {var_y_, 3.2}};
+  EXPECT_DOUBLE_EQ(e.Evaluate(env),
+                   std::ceil(2 * 3.2 * M_PI) + std::ceil(2) + std::ceil(3.2));
+  EXPECT_EQ((ceil(x_)).to_string(), "ceil(x)");
+}
+
+TEST_F(SymbolicExpressionTest, Floor) {
+  EXPECT_DOUBLE_EQ(floor(pi_).Evaluate(), std::floor(M_PI));
+  EXPECT_DOUBLE_EQ(floor(one_).Evaluate(), std::floor(1));
+  EXPECT_DOUBLE_EQ(floor(two_).Evaluate(), std::floor(2));
+  EXPECT_DOUBLE_EQ(floor(zero_).Evaluate(), std::floor(0));
+  EXPECT_DOUBLE_EQ(floor(neg_one_).Evaluate(), std::floor(-1));
+  EXPECT_DOUBLE_EQ(floor(neg_pi_).Evaluate(), std::floor(-M_PI));
+
+  const Expression e{floor(x_ * y_ * pi_) + floor(x_) + floor(y_)};
+  const Environment env{{var_x_, 2}, {var_y_, 3.2}};
+  EXPECT_DOUBLE_EQ(e.Evaluate(env), std::floor(2 * 3.2 * M_PI) + std::floor(2) +
+                                        std::floor(3.2));
+  EXPECT_EQ((floor(x_)).to_string(), "floor(x)");
 }
 
 TEST_F(SymbolicExpressionTest, IfThenElse1) {

@@ -47,4 +47,17 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_library(
+    name = "maliput_types_compare",
+    testonly = 1,
+    srcs = ["test/maliput_types_compare.cc"],
+    hdrs = ["test/maliput_types_compare.h"],
+    deps = [
+        ":api",
+        "//drake/common",
+        "//drake/math:geometric_transform",
+        "@gtest//:without_main",
+    ],
+)
+
 cpplint()
