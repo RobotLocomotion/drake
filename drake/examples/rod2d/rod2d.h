@@ -504,6 +504,14 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
                                    const std::vector<T>& tangent_vels,
     multibody::rigid_contact::RigidContactAccelProblemData<T>* data) const;
 
+  /// Initializes the impacting contact data for the rod, given a set of contact
+  /// points. Aborts if data is null.
+  /// @param points a vector of contact points, expressed in the world frame.
+  /// @param[out] data the rigid impact problem data.
+  void CalcRigidImpactProblemData(const systems::Context<T>& context,
+                                  const std::vector<Vector2<T>>& points,
+      multibody::rigid_contact::RigidContactVelProblemData<T>* data) const;
+
  private:
   friend class Rod2DDAETest;
   friend class Rod2DDAETest_RigidContactProblemDataBallistic_Test;

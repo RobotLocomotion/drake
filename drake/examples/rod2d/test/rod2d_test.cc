@@ -6,9 +6,11 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/multibody/rigid_contact/rigid_contact_problem_data.h"
+#include "drake/multibody/rigid_contact/rigid_contact_solver.h"
 #include "drake/systems/analysis/simulator.h"
 
 using drake::multibody::rigid_contact::RigidContactAccelProblemData;
+using drake::multibody::rigid_contact::RigidContactVelProblemData;
 using drake::systems::VectorBase;
 using drake::systems::BasicVector;
 using drake::systems::ContinuousState;
@@ -171,6 +173,16 @@ class Rod2DDAETest : public ::testing::Test {
     abs_state->get_mutable_value(1).template GetMutableValue<int>() = k;
   }
 
+  // Computes rigid impact data.
+  void CalcRigidImpactVelProblemData(RigidContactVelProblemData<double>* data) {
+    // Get the points of contact.
+    std::vector<Vector2d> contacts;
+    dut_->GetContactPoints(*context_, &contacts);
+
+    // Compute the problem data.
+    dut_->CalcRigidImpactProblemData(*context_, contacts, data);
+  }
+
   // Computes rigid contact data.
   void CalcRigidContactAccelProblemData(
       RigidContactAccelProblemData<double>* data) {
@@ -203,10 +215,22 @@ class Rod2DDAETest : public ::testing::Test {
     EXPECT_EQ(data.F.rows(), data.non_sliding_contacts.size());
   }
 
+  // Checks consistency of rigid impact problem data.
+  void CheckProblemConsistency(const RigidContactVelProblemData<double>& data,
+                               int num_contacts) {
+    EXPECT_EQ(num_contacts, data.mu.size());
+    EXPECT_EQ(num_contacts, data.r.size());
+    EXPECT_EQ(data.N.rows(), num_contacts);
+    EXPECT_EQ(data.v.size(), data.N.cols());
+    EXPECT_TRUE(data.solve_inertia);
+    EXPECT_EQ(data.F.rows(), num_contacts);
+  }
+
   std::unique_ptr<Rod2D<double>> dut_;  //< The device under test.
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<ContinuousState<double>> derivatives_;
+  drake::multibody::rigid_contact::RigidContactSolver<double> contact_solver_;
 };
 
 // Checks that the output port represents the state.
@@ -224,6 +248,8 @@ TEST_F(Rod2DDAETest, Output) {
 TEST_F(Rod2DDAETest, ImpactingState) {
   SetImpactingState();
   EXPECT_TRUE(dut_->IsImpacting(*context_));
+  RigidContactVelProblemData<double> data;
+  CalcRigidImpactVelProblemData(&data);
 }
 
 // Tests parameter getting and setting.
@@ -274,6 +300,11 @@ TEST_F(Rod2DDAETest, ImpactWorks) {
   EXPECT_TRUE(dut_->IsImpacting(*context_));
 
   // Handle the impact.
+  RigidContactVelProblemData<double> data;
+  CalcRigidImpactVelProblemData(&data);
+  VectorX<double> cf;
+  contact_solver_.SolveImpactProblem(dut_->get_cfm(), data, &cf);
+
   dut_->HandleImpact(*context_, new_state.get());
   context_->get_mutable_state()->SetFrom(*new_state);
 

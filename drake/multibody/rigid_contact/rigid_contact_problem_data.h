@@ -93,6 +93,50 @@ struct RigidContactAccelProblemData {
   std::function<MatrixX<T>(const MatrixX<T>&)> solve_inertia;
 };
 
+/// Structure for holding rigid contact data for computing rigid contact
+/// problems at the velocity-level (i.e., impact problems).
+template <class T>
+struct RigidContactVelProblemData {
+  /// The number of spanning vectors in the contact tangents (used to linearize
+  /// the friction cone) at the n contact points. For contact
+  /// problems in two dimensions, each element of r will be one. For contact
+  /// problems in three dimensions, a friction pyramid (for example), for a
+  /// contact point i will have rᵢ = 2. [Anitescu 1997] define k such vectors
+  /// and require that, for each vector w in the spanning set, -w also exists
+  /// in the spanning set. The RigidContactVelProblemData structure expects
+  /// that the contact solving mechanism negates the spanning vectors so `r` =
+  /// k/2 spanning vectors will correspond to a k-edge polygon friction cone
+  /// approximation.
+  std::vector<int> r;
+
+  /// Coefficients of friction for the n contacts. This problem specification
+  /// does not distinguish between static and dynamic friction coefficients.
+  VectorX<T> mu;
+
+  /// The ℝⁿˣᵐ Jacobian matrix that transforms generalized velocities (m is the
+  /// dimension of generalized velocity) into velocities projected along the
+  /// contact normals at the n contact points.
+  MatrixX<T> N;
+
+  /// The ℝⁿʳˣᵐ Jacobian matrix that transforms generalized velocities (m is the
+  /// dimension of generalized velocity) into velocities projected along
+  /// k vectors that span the contact tangents (used to linearize the friction
+  /// cone) at the n contact points. For contact problems in two
+  /// dimensions, r will be one. For a friction pyramid in three dimensions, r
+  /// would be two. While the definition of the dimension of the Jacobian matrix
+  /// above indicates that every one of the y non-sliding contacts uses the
+  /// same "r", the code imposes no such requirement.
+  MatrixX<T> F;
+
+  /// The ℝᵐ vector v, the generalized velocity immediately before any impulsive
+  /// forces (from impact) are applied.
+  VectorX<T> v;
+
+  /// A function for solving the equation MX = B for matrix X, given input
+  /// matrix B, where M is the generalized inertia matrix for the rigid body
+  /// system.
+  std::function<MatrixX<T>(const MatrixX<T>&)> solve_inertia;
+};
 
 }  // namespace rigid_contact
 }  // namespace multibody
