@@ -75,13 +75,11 @@ void HumanoidManipulationPlan<T>::UpdateQpInputGenericPlanDerived(
 }
 
 template <typename T>
-void HumanoidManipulationPlan<T>::HandlePlanMessageGenericPlanDerived(
+void HumanoidManipulationPlan<T>::HandlePlanGenericPlanDerived(
     const HumanoidStatus& robot_status, const param_parsers::ParamSet& paramset,
     const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,
-    const void* message_bytes, int message_length) {
-  robotlocomotion::robot_plan_t msg;
-  int consumed = msg.decode(message_bytes, 0, message_length);
-  DRAKE_DEMAND(consumed == message_length);
+    const systems::AbstractValue& plan) {
+  const auto& msg = plan.GetValue<robotlocomotion::robot_plan_t>();
 
   if (msg.utime == last_handle_plan_time_) return;
 
@@ -92,8 +90,8 @@ void HumanoidManipulationPlan<T>::HandlePlanMessageGenericPlanDerived(
   int length = static_cast<int>(msg.plan.size());
   if (length < 1) {
     drake::log()->warn(
-        "HumanoidManipulationPlan::HandlePlanMessageGenericPlanDerived: "
-        "received message has less than 1 knots.");
+        "HumanoidManipulationPlan::HandlePlanGenericPlanDerived: "
+        "received plan has less than 1 knots.");
     return;
   }
 

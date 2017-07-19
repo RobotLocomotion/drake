@@ -37,24 +37,6 @@ void GenericPlan<T>::Initialize(
 }
 
 template <typename T>
-void GenericPlan<T>::HandlePlanMessage(
-    const HumanoidStatus& robot_status, const param_parsers::ParamSet& paramset,
-    const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,
-    const void* message_bytes, int message_length) {
-  // Calls custom handler.
-  HandlePlanMessageGenericPlanDerived(robot_status, paramset, alias_groups,
-                                      message_bytes, message_length);
-}
-
-template <typename T>
-void GenericPlan<T>::ModifyPlan(
-    const HumanoidStatus& robot_status, const param_parsers::ParamSet& paramset,
-    const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) {
-  // Runs derived class' plan.
-  ModifyPlanGenericPlanDerived(robot_status, paramset, alias_groups);
-}
-
-template <typename T>
 void GenericPlan<T>::UpdateQpInput(
     const HumanoidStatus& robot_status, const param_parsers::ParamSet& paramset,
     const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,

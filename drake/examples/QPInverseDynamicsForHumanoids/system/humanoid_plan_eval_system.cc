@@ -38,16 +38,13 @@ void HumanoidPlanEvalSystem::DoExtendedCalcUnrestrictedUpdate(
       context, get_input_port_humanoid_status().get_index());
 
   // Gets the plan message fron input.
-  const robotlocomotion::robot_plan_t* msg =
-      EvalInputValue<robotlocomotion::robot_plan_t>(
-          context, input_port_index_plan_msg_);
+  const systems::AbstractValue* msg_as_value =
+      EvalAbstractInput(context, input_port_index_plan_msg_);
+  DRAKE_DEMAND(msg_as_value != nullptr);
 
   // Handles the plan.
-  std::vector<uint8_t> raw_msg_bytes;
-  raw_msg_bytes.resize(msg->getEncodedSize());
-  msg->encode(raw_msg_bytes.data(), 0, raw_msg_bytes.size());
-  plan.HandlePlanMessage(*robot_status, get_paramset(),
-      get_alias_groups(), raw_msg_bytes.data(), raw_msg_bytes.size());
+  plan.HandlePlan(*robot_status, get_paramset(),
+      get_alias_groups(), *msg_as_value);
 
   // Runs the controller.
   plan.ModifyPlan(*robot_status, get_paramset(), get_alias_groups());

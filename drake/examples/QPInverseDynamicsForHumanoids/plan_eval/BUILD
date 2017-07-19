@@ -31,6 +31,7 @@ drake_cc_library(
         "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
         "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:rigid_body_tree_alias_groups",
         "//drake/manipulation/util:trajectory_utils",
+        "//drake/systems/framework:value",
     ],
 )
 

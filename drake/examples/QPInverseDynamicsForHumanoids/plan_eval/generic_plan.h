@@ -12,6 +12,7 @@
 #include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/rigid_body_tree_alias_groups.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller_common.h"
 #include "drake/manipulation/util/trajectory_utils.h"
+#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace examples {
@@ -43,10 +44,9 @@ typedef std::unordered_set<const RigidBody<double>*> ContactState;
  * points are interpolated and sent to the PID controller at high rate.
  *
  * For this class, the low level controller of choice is QPController. So the
- * output of this class is an QpInput. The behavioral level inputs are assumed
- * to be passed as Lcm messages. Because there is no common base class for Lcm
- * messages, raw bytes are passed in instead. Derived classes are responsible
- * for decoding those into proper messages types.
+ * output of this class is an QpInput. The behavioral level inputs are type
+ * erased and stored in systems::AbstractValue. Derived classes are responsible
+ * for recovering the proper plan type.
  */
 template <typename T>
 class GenericPlan {
@@ -87,27 +87,29 @@ class GenericPlan {
    * @param alias_groups Topological information of the robot.
    */
   void ModifyPlan(
-      const HumanoidStatus& robot_stauts,
+      const HumanoidStatus& robot_status,
       const param_parsers::ParamSet& paramset,
-      const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups);
+      const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) {
+    ModifyPlanGenericPlanDerived(robot_status, paramset, alias_groups);
+  }
 
   /**
-   * Handles a discrete command in the form of a Lcm message (e.g. footstep
-   * plan for a walking controller or a sequence of joint angles for a
-   * manipulator). Derived classes need to implement custom behaviors in
-   * HandlePlanMessageGenericPlanDerived().
+   * Handles a discrete plan (e.g. footstep plan for a walking controller or
+   * a sequence of joint angles for a manipulator). Derived classes need to
+   * implement custom behaviors in HandlePlanGenericPlanDerived().
    * @param robot_status Current status of the robot.
    * @param paramset Parameters.
    * @param alias_groups Topological information of the robot.
-   * @param message_bytes Pointer to the raw message message. Derived classes
-   * need to decode this explicitly.
-   * @param message_length Number of bytes in the message.
+   * @param plan AbstractValue that contains the plan.
    */
-  void HandlePlanMessage(
-      const HumanoidStatus& robot_stauts,
+  void HandlePlan(
+      const HumanoidStatus& robot_status,
       const param_parsers::ParamSet& paramset,
       const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,
-      const void* message_bytes, int message_length);
+      const systems::AbstractValue& plan) {
+    HandlePlanGenericPlanDerived(robot_status, paramset, alias_groups,
+                                        plan);
+  }
 
   /**
    * Updates @p qp_input given the current state of the plan and measured robot
@@ -202,18 +204,18 @@ class GenericPlan {
    * Custom state mutation can be implemented here.
    */
   virtual void ModifyPlanGenericPlanDerived(
-      const HumanoidStatus& robot_stauts,
+      const HumanoidStatus& robot_status,
       const param_parsers::ParamSet& paramset,
       const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) = 0;
 
   /**
-   * Custom message handling can be implemented here.
+   * Custom plan handling can be implemented here.
    */
-  virtual void HandlePlanMessageGenericPlanDerived(
-      const HumanoidStatus& robot_stauts,
+  virtual void HandlePlanGenericPlanDerived(
+      const HumanoidStatus& robot_status,
       const param_parsers::ParamSet& paramset,
       const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,
-      const void* message_bytes, int message_length) = 0;
+      const systems::AbstractValue& plan) = 0;
 
   /**
    * Custom QpInput updates can be implemented here.

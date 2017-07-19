@@ -34,11 +34,11 @@ class DummyPlan : public GenericPlan<T> {
       const param_parsers::ParamSet& paramset,
       const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) {}
 
-  void HandlePlanMessageGenericPlanDerived(
+  void HandlePlanGenericPlanDerived(
       const HumanoidStatus& robot_stauts,
       const param_parsers::ParamSet& paramset,
       const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,
-      const void* message_bytes, int message_length) {}
+      const systems::AbstractValue& plan) {}
 
   void UpdateQpInputGenericPlanDerived(
       const HumanoidStatus& robot_status,

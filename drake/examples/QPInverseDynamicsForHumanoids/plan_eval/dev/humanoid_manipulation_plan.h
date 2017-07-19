@@ -28,17 +28,17 @@ class HumanoidManipulationPlan : public GenericPlan<T> {
 
   // All the new desired trajectories will start with the current desired
   // states (dof, com, tracked body pose, etc). It is assumed that received
-  // message's keyframe time is specified in relative time to whenever the
-  // message is processed. Also the first timestamp needs to be bigger than
+  // plan's keyframe time is specified in relative time to whenever the
+  // plan is processed. Also the first timestamp needs to be bigger than
   // zero, and all subsequent timestamps need to be strictly increasing.
   // There must be at least 1 knots.
   // E.g. times = [0.1, 0.5, 0.6] is valid.
   // times = [0. 0.5] is not.
-  void HandlePlanMessageGenericPlanDerived(
+  void HandlePlanGenericPlanDerived(
       const HumanoidStatus& robot_status,
       const param_parsers::ParamSet& paramset,
       const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,
-      const void* message_bytes, int message_length) override;
+      const systems::AbstractValue& plan) override;
 
   void UpdateQpInputGenericPlanDerived(
       const HumanoidStatus& robot_status,
