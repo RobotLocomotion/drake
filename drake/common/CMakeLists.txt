@@ -16,8 +16,6 @@ set(sources
   drake_path_cmake.cc
   find_resource.cc
   functional_form.cc
-  monomial.cc
-  monomial_util.cc
   nice_type_name.cc
   polynomial.cc
   symbolic_environment.cc
@@ -27,6 +25,8 @@ set(sources
   symbolic_formula.cc
   symbolic_formula_cell.cc
   symbolic_formula_cell.h
+  symbolic_monomial.cc
+  symbolic_monomial_util.cc
   symbolic_polynomial.cc
   symbolic_variable.cc
   symbolic_variables.cc
@@ -61,8 +61,6 @@ set(installed_headers
   hash.h
   is_approx_equal_abstol.h
   is_cloneable.h
-  monomial.h
-  monomial_util.h
   never_destroyed.h
   nice_type_name.h
   number_traits.h
@@ -74,6 +72,8 @@ set(installed_headers
   symbolic_expression_visitor.h
   symbolic_formula.h
   symbolic_formula_visitor.h
+  symbolic_monomial.h
+  symbolic_monomial_util.h
   symbolic_polynomial.h
   symbolic_variable.h
   symbolic_variables.h

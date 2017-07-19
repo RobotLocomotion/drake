@@ -59,7 +59,6 @@ _LIBDRAKE_COMPONENTS = [
     "//drake/common:functional_form",
     "//drake/common:is_approx_equal_abstol",
     "//drake/common:is_cloneable",
-    "//drake/common:monomial",
     "//drake/common:nice_type_name",
     "//drake/common:number_traits",
     "//drake/common:polynomial",
@@ -67,6 +66,7 @@ _LIBDRAKE_COMPONENTS = [
     "//drake/common:scoped_singleton",
     "//drake/common:sorted_vectors_have_intersection",
     "//drake/common:symbolic",
+    "//drake/common:symbolic_monomial",
     "//drake/common:text_logging_gflags",
     "//drake/common/proto:protobuf",
     "//drake/common/trajectories:piecewise_function",
@@ -297,9 +297,9 @@ cc_binary(
 # (i.e. in Drake itself; not externals).
 install(
     name = "install",
-    targets = ["libdrake.so"],
-    hdr_dest = "include/drake",
     guess_hdrs = "WORKSPACE",
+    hdr_dest = "include/drake",
+    targets = ["libdrake.so"],
     deps = ["//drake/bindings:install"],
 )
 

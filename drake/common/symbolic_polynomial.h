@@ -7,9 +7,9 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/hash.h"
-#include "drake/common/monomial.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_formula.h"
+#include "drake/common/symbolic_monomial.h"
 #include "drake/common/symbolic_variables.h"
 
 namespace drake {
@@ -126,7 +126,8 @@ Polynomial operator*(Polynomial p1, const Polynomial& p2);
 Polynomial operator*(Polynomial p, const Monomial& m);
 Polynomial operator*(Polynomial p, double c);
 Polynomial operator*(const Monomial& m, Polynomial p);
-// Note that `Monomial * Monomial -> Monomial` is provided in Monomial.h file.
+// Note that `Monomial * Monomial -> Monomial` is provided in
+// symbolic_monomial.h file.
 Polynomial operator*(const Monomial& m, double c);
 Polynomial operator*(double c, Polynomial p);
 Polynomial operator*(double c, const Monomial& m);

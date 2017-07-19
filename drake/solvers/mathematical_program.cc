@@ -14,9 +14,9 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
-#include "drake/common/monomial.h"
-#include "drake/common/monomial_util.h"
 #include "drake/common/symbolic_expression.h"
+#include "drake/common/symbolic_monomial.h"
+#include "drake/common/symbolic_monomial_util.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/equality_constrained_qp_solver.h"
 #include "drake/solvers/gurobi_solver.h"
