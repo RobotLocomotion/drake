@@ -27,18 +27,18 @@ class GurobiSolver : public MathematicalProgramSolverInterface {
   /// @see MipNodeCallbackFunction
   /// @see MipSolCallbackFunction
   struct SolveStatusInfo {
-      /// Runtime as of this callback.
-      double reported_runtime;
-      /// Objective of current solution.
-      double current_objective;
-      /// Objective of best solution yet.
-      double best_objective;
-      /// Best known objective lower bound.
-      double best_bound;
-      /// Number of nodes explored so far.
-      int explored_node_count;
-      /// Number of feasible sols found so far.
-      int feasible_solutions_count;
+    /// Runtime as of this callback.
+    double reported_runtime{};
+    /// Objective of current solution.
+    double current_objective{};
+    /// Objective of best solution yet.
+    double best_objective{};
+    /// Best known objective lower bound.
+    double best_bound{};
+    /// Number of nodes explored so far.
+    int explored_node_count{};
+    /// Number of feasible sols found so far.
+    int feasible_solutions_count{};
   };
 
   /// Users can supply a callback to be called when the Gurobi solver
@@ -63,8 +63,9 @@ class GurobiSolver : public MathematicalProgramSolverInterface {
   /// variables being assigned. Must have the same number of elements as
   /// the VectorXd assignment.
   typedef std::function<void(const MathematicalProgram&,
-    const SolveStatusInfo& callback_info, Eigen::VectorXd*,
-    VectorXDecisionVariable*)> MipNodeCallbackFunction;
+                             const SolveStatusInfo& callback_info,
+                             Eigen::VectorXd*, VectorXDecisionVariable*)>
+      MipNodeCallbackFunction;
 
   /// Registers a callback to be called at intermediate solutions
   /// during the solve.
@@ -90,15 +91,16 @@ class GurobiSolver : public MathematicalProgramSolverInterface {
   /// queried from Gurobi.
   /// @param void* Arbitrary data supplied during callback registration.
   typedef std::function<void(const MathematicalProgram&,
-    const SolveStatusInfo& callback_info)> MipSolCallbackFunction;
+                             const SolveStatusInfo& callback_info)>
+      MipSolCallbackFunction;
 
   /// Registers a callback to be called at feasible solutions
   /// during the solve.
-  /// @param fnc User callback function.
+  /// @param callback User callback function.
   /// @param usrdata Arbitrary data that will be passed to the user
   /// callback function.
-  void AddMipSolCallback(const MipSolCallbackFunction& fnc) {
-    mip_sol_callback_ = fnc;
+  void AddMipSolCallback(const MipSolCallbackFunction& callback) {
+    mip_sol_callback_ = callback;
   }
 
   SolutionResult Solve(MathematicalProgram& prog) const override;

@@ -108,20 +108,21 @@ namespace TestCallbacks {
 struct TestCallbackInfo {
   Eigen::VectorXd x_vals;
   VectorXDecisionVariable x_vars;
-  bool mipSolCallbackCalled = false;
-  bool mipNodeCallbackCalled = false;
+  bool mip_sol_callback_called = false;
+  bool mip_node_callback_called = false;
 };
 
-static void MipSolCallbackFunctionTest(const MathematicalProgram& prog,
-  const drake::solvers::GurobiSolver::SolveStatusInfo& solve_info,
-  TestCallbackInfo * cb_info) {
-  cb_info->mipSolCallbackCalled = true;
+static void MipSolCallbackFunctionTest(
+    const MathematicalProgram& prog,
+    const drake::solvers::GurobiSolver::SolveStatusInfo& solve_info,
+    TestCallbackInfo* cb_info) {
+  cb_info->mip_sol_callback_called = true;
 }
-static void MipNodeCallbackFunctionTest(const MathematicalProgram& prog,
-  const GurobiSolver::SolveStatusInfo& solve_info,
-  Eigen::VectorXd * vals, VectorXDecisionVariable * vars,
-  TestCallbackInfo * cb_info) {
-  cb_info->mipNodeCallbackCalled = true;
+static void MipNodeCallbackFunctionTest(
+    const MathematicalProgram& prog,
+    const GurobiSolver::SolveStatusInfo& solve_info, Eigen::VectorXd* vals,
+    VectorXDecisionVariable* vars, TestCallbackInfo* cb_info) {
+  cb_info->mip_node_callback_called = true;
   *vals = cb_info->x_vals;
   *vars = cb_info->x_vars;
 }
@@ -138,8 +139,8 @@ GTEST_TEST(GurobiTest, TestCallbacks) {
     // Constraint such that x_0 and x_1 can't both be
     // 1, but leave a feasible vertex at (2/3, 2/3)
     // that is optimal in the continuous relaxation.
-    prog.AddLinearConstraint(x[0] <= 1. - 0.5*x[1]);
-    prog.AddLinearConstraint(x[1] <= 1. - 0.5*x[0]);
+    prog.AddLinearConstraint(x[0] <= 1. - 0.5 * x[1]);
+    prog.AddLinearConstraint(x[1] <= 1. - 0.5 * x[0]);
     prog.AddLinearCost(-x[0] - x[1]);
 
     // Each of these options would short-circuit the solver
@@ -176,20 +177,16 @@ GTEST_TEST(GurobiTest, TestCallbacks) {
       TestCallbackInfo cb_info;
       cb_info.x_vals = x_expected;
       cb_info.x_vars = x;
-      GurobiSolver::MipNodeCallbackFunction MipNodeCallbackFunctionWrapper =
-        std::bind(MipNodeCallbackFunctionTest,
-          std::placeholders::_1,
-          std::placeholders::_2,
-          std::placeholders::_3,
-          std::placeholders::_4,
-          &cb_info);
-      GurobiSolver::MipSolCallbackFunction MipSolCallbackFunctionWrapper =
-        std::bind(MipSolCallbackFunctionTest,
-          std::placeholders::_1,
-          std::placeholders::_2,
-          &cb_info);
-      solver.AddMipNodeCallback(MipNodeCallbackFunctionWrapper);
-      solver.AddMipSolCallback(MipSolCallbackFunctionWrapper);
+
+      GurobiSolver::MipNodeCallbackFunction mip_node_callback_function_wrapper =
+          std::bind(MipNodeCallbackFunctionTest, std::placeholders::_1,
+                    std::placeholders::_2, std::placeholders::_3,
+                    std::placeholders::_4, &cb_info);
+      GurobiSolver::MipSolCallbackFunction mip_sol_callback_function_wrappre =
+          std::bind(MipSolCallbackFunctionTest, std::placeholders::_1,
+                    std::placeholders::_2, &cb_info);
+      solver.AddMipNodeCallback(mip_node_callback_function_wrapper);
+      solver.AddMipSolCallback(mip_sol_callback_function_wrappre);
 
       SolutionResult result = solver.Solve(prog);
       EXPECT_EQ(result, SolutionResult::kSolutionFound);
@@ -197,8 +194,8 @@ GTEST_TEST(GurobiTest, TestCallbacks) {
       EXPECT_TRUE(CompareMatrices(x_value, x_expected, 1E-6,
                                   MatrixCompareType::absolute));
       ExpectSolutionCostAccurate(prog, 1E-6);
-      EXPECT_TRUE(cb_info.mipSolCallbackCalled);
-      EXPECT_TRUE(cb_info.mipNodeCallbackCalled);
+      EXPECT_TRUE(cb_info.mip_sol_callback_called);
+      EXPECT_TRUE(cb_info.mip_node_callback_called);
     }
   }
 }
