@@ -48,9 +48,6 @@ target_link_libraries(is_cloneable_test drakeCommon)
 drake_add_cc_test(never_destroyed_test)
 target_link_libraries(never_destroyed_test drakeCommon)
 
-drake_add_cc_test(monomial_test)
-target_link_libraries(monomial_test drakeCommon)
-
 drake_add_cc_test(is_dynamic_castable_test)
 target_link_libraries(is_dynamic_castable_test drakeCommon)
 
@@ -80,6 +77,9 @@ target_link_libraries(symbolic_expression_array_test drakeCommon)
 
 drake_add_cc_test(symbolic_expression_matrix_test)
 target_link_libraries(symbolic_expression_matrix_test drakeCommon)
+
+drake_add_cc_test(symbolic_monomial_test)
+target_link_libraries(symbolic_monomial_test drakeCommon)
 
 drake_add_cc_test(symbolic_substitution_test)
 target_link_libraries(symbolic_substitution_test drakeCommon)

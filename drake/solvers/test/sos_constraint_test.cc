@@ -2,9 +2,9 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/monomial_util.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_formula.h"
+#include "drake/common/symbolic_monomial_util.h"
 #include "drake/common/symbolic_polynomial.h"
 #include "drake/common/symbolic_variable.h"
 #include "drake/common/symbolic_variables.h"
@@ -187,7 +187,7 @@ TEST_F(SosConstraintTest, AddSosConstraintUnivariate2) {
   const auto result = prog_.Solve();
   ASSERT_EQ(result, SolutionResult::kSolutionFound);
   EXPECT_LE(prog_.GetSolution(c), 1E-4);
-  CheckPsdBinding(binding_pair.first);
+  CheckPsdBinding(binding_pair.first, 1E-6 /* eps */);
 }
 
 // Shows that f(x₀, x₁) = 2x₀⁴ + 2x₀³x₁ - x₀²x₁² + 5x₁⁴ is SOS.

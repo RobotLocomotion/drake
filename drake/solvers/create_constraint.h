@@ -8,9 +8,9 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/monomial.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_formula.h"
+#include "drake/common/symbolic_monomial.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/constraint.h"
 
