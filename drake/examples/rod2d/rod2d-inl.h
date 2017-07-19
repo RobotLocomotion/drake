@@ -463,7 +463,13 @@ Vector3<T> Rod2D<T>::GetJacobianDotRow(const systems::Context<T>& context,
 template <class T>
 Matrix2<T> Rod2D<T>::GetSlidingContactFrame(const T& xaxis_velocity) const {
   // Note: normal for the rod is always +y; sliding tangent vector is
-  // either +/-x.
+  // either +/-x. << operator populates the matrix row by row, so
+  // F = | 0  1 |
+  //     | ±1 0 |
+  // indicating that the contact normal direction is +y ([0 1]) and the contact
+  // tangent direction (more precisely, the direction of sliding) is
+  // ±x (±[1 0]).
+  DRAKE_DEMAND(xaxis_velocity != 0);
   Matrix2<T> F;
   F << 0, 1, ((xaxis_velocity > 0) ? 1 : -1), 0;
   return F;
@@ -472,7 +478,11 @@ Matrix2<T> Rod2D<T>::GetSlidingContactFrame(const T& xaxis_velocity) const {
 template <class T>
 Matrix2<T> Rod2D<T>::GetNonSlidingContactFrame() const {
   // Note: normal for the rod is always +y; non-sliding tangent vector is
-  // always +x.
+  // always +x. << operator populates the matrix row by row, so
+  // F = | 0 1 |
+  //     | 1 0 |
+  // indicating that the contact normal direction is +y ([0 1]) and the contact
+  // tangent direction is +x ([1 0]).
   Matrix2<T> F;
   F << 0, 1, 1, 0;
   return F;
@@ -495,7 +505,13 @@ void Rod2D<T>::CalcRigidContactProblemData(
   // The normal and tangent spanning direction are unique.
   const Matrix2<T> non_sliding_contact_frame = GetNonSlidingContactFrame();
   const auto& contact_normal = non_sliding_contact_frame.col(0);
-  const auto& contact_tan = non_sliding_contact_frame.col(1);
+  const auto& contact_tangent = non_sliding_contact_frame.col(1);
+
+  // Verify contact normal and tangent directions are as we expect.
+  DRAKE_ASSERT(abs(contact_normal.dot(Vector2(0, 1)) - 1) <
+      std::numeric_limits<double>::epsilon());
+  DRAKE_ASSERT(abs(contact_normal.dot(Vector2(1, 0)) - 1) <
+      std::numeric_limits<double>::epsilon());
 
   // Get the set of contact points.
   const int nc = points.size();
@@ -549,8 +565,8 @@ void Rod2D<T>::CalcRigidContactProblemData(
     if (std::binary_search(data->sliding_contacts.begin(),
                            data->sliding_contacts.end(), i))
       continue;
-    data->F.row(j) = GetJacobianRow(context, points[i], contact_tan);
-    Fdot.row(j) = GetJacobianDotRow(context, points[i], contact_tan);
+    data->F.row(j) = GetJacobianRow(context, points[i], contact_tangent);
+    Fdot.row(j) = GetJacobianDotRow(context, points[i], contact_tangent);
     ++j;
   }
   data->Fdot_x_v = Fdot * v;
@@ -562,8 +578,8 @@ void Rod2D<T>::CalcRigidContactProblemData(
     if (std::binary_search(data->non_sliding_contacts.begin(),
                            data->non_sliding_contacts.end(), i))
       continue;
-    Qrow = GetJacobianRow(context, points[i],
-                          GetSlidingContactFrame(tangent_vels[i]).col(1));
+    const auto& sliding_dir = GetSlidingContactFrame(tangent_vels[i]).col(1);
+    Qrow = GetJacobianRow(context, points[i], sliding_dir);
     data->N_minus_mu_Q.row(i) -= data->mu_sliding[j] * Qrow;
     ++j;
   }
