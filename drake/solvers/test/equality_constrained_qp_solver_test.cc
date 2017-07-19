@@ -122,6 +122,10 @@ GTEST_TEST(testMathematicalProgram, testLinearlyConstrainedQPDispatch) {
 }
 
 GTEST_TEST(testMathematicalProgram, testNotStrictlyPositiveDefiniteHessianQP) {
+  // Cost is x(0)² - x(0). The Hessian is positive semidefinite, but not
+  // strictly positive definite, as it has an eigen value equal to 0.
+  // The problem has infinitely many optimal solutions, as (0.5, ANYTHING), and
+  // a unique optimal cost -0.25.
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
   prog.AddCost((x(0) - 1) * x(0));
@@ -133,7 +137,8 @@ GTEST_TEST(testMathematicalProgram, testNotStrictlyPositiveDefiniteHessianQP) {
 }
 
 GTEST_TEST(testMathematicalProgram, testNonPositiveSemidefiniteHessianQP) {
-  // cost is x(0)² - x(1)²
+  // Cost is x(0)² - x(1)². The Hessian has a negative eigen value, the problem
+  // is unbounded.
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
   prog.AddCost(x(0) * x(0) -x(1) * x(1));
@@ -143,7 +148,9 @@ GTEST_TEST(testMathematicalProgram, testNonPositiveSemidefiniteHessianQP) {
 }
 
 GTEST_TEST(testMathematicalProgram, testUnboundedQP) {
-  // cost is x(0)² - 2 * x(1)
+  // Cost is x(0)² - 2 * x(1). The Hessian is positive semidefinite, but not
+  // strictly positive definite, as it has an eigen value equal to 0.
+  // The problem is unbounded, since x(1) can be as large as possible.
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
   prog.AddCost(x(0) * x(0) - 2 * x(1));
@@ -153,7 +160,8 @@ GTEST_TEST(testMathematicalProgram, testUnboundedQP) {
 }
 
 GTEST_TEST(testMathematicalProgram, testNegativeDefiniteHessianQP) {
-  // cost is -x(0)² - 2 * x(1)
+  // Cost is -x(0)² - 2 * x(1). The Hessian is negative semidefinite.
+  // The problem is unbounded.
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
   prog.AddCost(-x(0) * x(0) - 2 * x(1));
