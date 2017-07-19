@@ -46,9 +46,6 @@ GTEST_TEST(testMathematicalProgram, testUnconstrainedQPDispatch) {
 
   // Add one more variable and constrain a view into them.
   auto y = prog.NewContinuousVariables<1>("y");
-  VariableRefList vars;
-  vars.push_back(x.segment<1>(1));
-  vars.push_back(y);
 
   prog.AddCost(pow(x(1) - 3, 2) + pow(2 * y(0) - 4, 2));
   prog.SetInitialGuessForAllVariables(Eigen::Vector3d::Zero());
