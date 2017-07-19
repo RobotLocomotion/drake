@@ -105,8 +105,6 @@ GTEST_TEST(GurobiTest, TestInitialGuess) {
 
 namespace TestCallbacks {
 
-using namespace std::placeholders;
-
 struct TestCallbackInfo {
   Eigen::VectorXd x_vals;
   VectorXDecisionVariable x_vars;
@@ -179,9 +177,17 @@ GTEST_TEST(GurobiTest, TestCallbacks) {
       cb_info.x_vals = x_expected;
       cb_info.x_vars = x;
       GurobiSolver::MipNodeCallbackFunction MipNodeCallbackFunctionWrapper =
-        std::bind(MipNodeCallbackFunctionTest, _1, _2, _3, _4, &cb_info);
+        std::bind(MipNodeCallbackFunctionTest,
+          std::placeholders::_1,
+          std::placeholders::_2,
+          std::placeholders::_3,
+          std::placeholders::_4,
+          &cb_info);
       GurobiSolver::MipSolCallbackFunction MipSolCallbackFunctionWrapper =
-        std::bind(MipSolCallbackFunctionTest, _1, _2, &cb_info);
+        std::bind(MipSolCallbackFunctionTest,
+          std::placeholders::_1,
+          std::placeholders::_2,
+          &cb_info);
       solver.AddMipNodeCallback(MipNodeCallbackFunctionWrapper);
       solver.AddMipSolCallback(MipSolCallbackFunctionWrapper);
 
