@@ -46,11 +46,10 @@ Expression ReplaceBilinearTerms(
   const MapVarToIndex y_to_index_map = ConstructVarToIndexMap(y);
 
   // p_bilinear is a polynomial with x and y as indeterminates.
-  const symbolic::Polynomial p_bilinear{e, Variables{x} + Variables{y}};
-
+  const Variables variables_in_x_y{Variables{x} + Variables{y}};
+  const symbolic::Polynomial p_bilinear{e, variables_in_x_y};
   const auto& map_bilinear = p_bilinear.monomial_to_coefficient_map();
-  symbolic::Polynomial::MapType map_replaced;
-  map_replaced.reserve(map_bilinear.size());
+  symbolic::Polynomial poly;
   for (const auto& p : map_bilinear) {
     MapVarToIndex monomial_map;
     const int monomial_degree = p.first.total_degree();
@@ -64,12 +63,7 @@ Expression ReplaceBilinearTerms(
       throw runtime_error(oss.str());
     } else if (monomial_degree < 2) {
       // Only linear or constant terms, do not need to replace the variables.
-      const auto it = map_replaced.find(p.first);
-      if (it != map_replaced.end()) {
-        it->second += p.second;
-      } else {
-        map_replaced.emplace_hint(it, p.first, p.second);
-      }
+      poly.AddProduct(p.second, p.first);
     } else {
       // This monomial contains bilinear term in x and y.
       MapVarToIndex::const_iterator it_x_idx;
@@ -107,16 +101,16 @@ Expression ReplaceBilinearTerms(
       }
       // w_xy is the symbolic variable representing the bilinear term x * y.
       const Variable& w_xy{W(it_x_idx->second, it_y_idx->second)};
-      // TODO(soonho.kong): will improve the code below, such that we do not add
-      // the monomial `w_xy`.
-      map_replaced.emplace(Monomial{w_xy}, p.second);
+      if (variables_in_x_y.include(w_xy)) {
+        // Case: w_xy is an indeterminate.
+        poly.AddProduct(p.second, symbolic::Monomial{w_xy});
+      } else {
+        // Case: w_xy is a decision variable.
+        poly.AddProduct(w_xy * p.second, symbolic::Monomial{});
+      }
     }
   }
-  Expression e_replaced{0};
-  for (const auto& p_replaced : map_replaced) {
-    e_replaced += p_replaced.first.ToExpression() * p_replaced.second;
-  }
-  return e_replaced;
+  return poly.ToExpression();
 }
 }  // namespace solvers
 }  // namespace drake

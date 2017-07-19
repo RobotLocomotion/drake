@@ -164,6 +164,15 @@ TEST_F(BilinearProductTest, HigherOrderTest) {
                std::runtime_error);
 }
 
+TEST_F(BilinearProductTest, WIncludesXY) {
+  const VectorDecisionVariable<2> x{x_(0), x_(1)};
+  const VectorDecisionVariable<2> y{y_(0), y_(1)};
+  MatrixDecisionVariable<2, 2> W;
+  W << x(0), x(1), y(0), y(1);  // W contains entries in x or y.
+  const symbolic::Expression e{x(0) * y(0) + W(0, 0)};
+  EXPECT_PRED2(ExprEqual, ReplaceBilinearTerms(e, x, y, W), 2 * x(0));
+}
+
 TEST_F(BilinearProductTest, DuplicateEntry) {
   // x_duplicate contains duplicate entries.
   VectorDecisionVariable<2> x_duplicate(x_(0), x_(0));
