@@ -78,6 +78,9 @@ target_link_libraries(symbolic_expression_array_test drakeCommon)
 drake_add_cc_test(symbolic_expression_matrix_test)
 target_link_libraries(symbolic_expression_matrix_test drakeCommon)
 
+drake_add_cc_test(symbolic_expression_transform_test)
+target_link_libraries(symbolic_expression_transform_test drakeCommon)
+
 drake_add_cc_test(symbolic_monomial_test)
 target_link_libraries(symbolic_monomial_test drakeCommon)
 
