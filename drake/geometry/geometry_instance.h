@@ -11,7 +11,12 @@ namespace geometry {
  opaque collection of metadata.
 
  @tparam T  The underlying scalar type. Must be a valid Eigen scalar.
-            Only double is supported. */
+
+ Instantiated templates for the following kinds of T's are provided:
+    - double
+
+ They are already available to link against in the containing library.
+ No other values for T are currently supported. */
 // TODO(SeanCurtis-TRI): Add support for AutoDiffXd.
 template <typename T>
 class GeometryInstance {
