@@ -351,10 +351,17 @@ class Rod2D : public systems::LeafSystem<T> {
   /// Gets the frame for a sliding contact.
   /// @param xaxis_velocity The velocity of the rod at the point of contact,
   ///        projected along the +x-axis.
+  /// @returns a 2x2 orthogonal matrix with first column set to the contact
+  ///          normal, which is +y ([0 1]) and second column set to the
+  ///          direction of sliding motion, ±x (±[1 0]).
+  /// @note Aborts if @p xaxis_velocity is zero.
   Matrix2<T> GetSlidingContactFrame(const T& xaxis_velocity) const;
 
   /// Gets the frame for a non-sliding contact. Note: all such frames are
-  /// identical.
+  /// identical for this example.
+  /// @returns a 2x2 orthogonal matrix with first column set to the contact
+  ///          normal, which is +y ([0 1]) and second column set to the
+  ///          contact tangent +x ([1 0]).
   Matrix2<T> GetNonSlidingContactFrame() const;
 
   /// Checks whether the system is in an impacting state, meaning that the
