@@ -108,11 +108,12 @@ class AcrobotPlant : public systems::LeafSystem<T> {
   AcrobotPlant<symbolic::Expression>* DoToSymbolic() const override;
 
   // TODO(russt): Declare these as parameters in the context.
-
   const double m1_, m2_, l1_, l2_, lc1_, lc2_, Ic1_, Ic2_, b1_, b2_, g_;
+
+  // Quantities that occur often.
   const double I1_ = Ic1_ + m1_ * lc1_ * lc1_;
   const double I2_ = Ic2_ + m2_ * lc2_ * lc2_;
-  const double m2l1lc2_ = m2_ * l1_ * lc2_;  // Quantities that occur often.
+  const double m2l1lc2_ = m2_ * l1_ * lc2_;
 };
 
 /// Constructs the Acrobot with (only) encoder outputs.
