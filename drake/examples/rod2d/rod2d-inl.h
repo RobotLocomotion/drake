@@ -510,7 +510,7 @@ void Rod2D<T>::CalcRigidContactProblemData(
   // Verify contact normal and tangent directions are as we expect.
   DRAKE_ASSERT(abs(contact_normal.dot(Vector2<T>(0, 1)) - 1) <
       std::numeric_limits<double>::epsilon());
-  DRAKE_ASSERT(abs(contact_normal.dot(Vector2<T>(1, 0)) - 1) <
+  DRAKE_ASSERT(abs(contact_tangent.dot(Vector2<T>(1, 0)) - 1) <
       std::numeric_limits<double>::epsilon());
 
   // Get the set of contact points.
