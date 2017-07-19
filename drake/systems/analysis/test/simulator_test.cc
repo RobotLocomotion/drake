@@ -97,15 +97,13 @@ GTEST_TEST(SimulatorTest, NoContinuousStateYieldsSingleStep) {
      final_time + 1, /* publish time *after* final time */
      WitnessFunctionDirection::kCrossesZero);
 
-  // Construct the simulation without any publishing and using the RK2
-  // (fixed step) integrator with a small time step.
+  // Construct the simulation using the RK2 (fixed step) integrator with a small
+  // time step.
   const double dt = 1e-3;
   Simulator<double> simulator(system);
-  simulator.set_publish_at_initialization(false);
   Context<double>* context = simulator.get_mutable_context();
   simulator.reset_integrator<RungeKutta2Integrator<double>>(system, dt,
       context);
-  simulator.set_publish_every_time_step(false);
   simulator.StepTo(final_time);
 
   EXPECT_EQ(simulator.get_num_steps_taken(), 1);
