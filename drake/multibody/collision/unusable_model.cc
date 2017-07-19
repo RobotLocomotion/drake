@@ -4,20 +4,20 @@
 
 namespace DrakeCollision {
 
-void UnusableModel::updateModel() {
+void UnusableModel::UpdateModel() {
   DRAKE_ABORT_MSG(
       "Compile Drake with a collision library backend for collision support!");
   return;
 }
 
-bool UnusableModel::updateElementWorldTransform(
+bool UnusableModel::UpdateElementWorldTransform(
     ElementId, const Eigen::Isometry3d&) {
   DRAKE_ABORT_MSG(
       "Compile Drake with a collision library backend for collision support!");
   return false;
 }
 
-bool UnusableModel::closestPointsAllToAll(
+bool UnusableModel::ClosestPointsAllToAll(
     const std::vector<ElementId>&, bool, std::vector<PointPair>&) {
   DRAKE_ABORT_MSG(
       "Compile Drake with a collision library backend for collision support!");
@@ -31,14 +31,14 @@ bool UnusableModel::ComputeMaximumDepthCollisionPoints(
   return false;
 }
 
-bool UnusableModel::closestPointsPairwise(
+bool UnusableModel::ClosestPointsPairwise(
     const std::vector<ElementIdPair>&, bool, std::vector<PointPair>&) {
   DRAKE_ABORT_MSG(
       "Compile Drake with a collision library backend for collision support!");
   return false;
 }
 
-void UnusableModel::collisionDetectFromPoints(
+void UnusableModel::CollisionDetectFromPoints(
     const Eigen::Matrix3Xd&, bool, std::vector<PointPair>&) {
   DRAKE_ABORT_MSG(
       "Compile Drake with a collision library backend for collision support!");
@@ -51,7 +51,7 @@ void UnusableModel::ClearCachedResults(bool) {
   return;
 }
 
-bool UnusableModel::collisionRaycast(const Eigen::Matrix3Xd&,
+bool UnusableModel::CollisionRaycast(const Eigen::Matrix3Xd&,
                                      const Eigen::Matrix3Xd&,
                                      bool,
                                      Eigen::VectorXd&,
@@ -61,14 +61,14 @@ bool UnusableModel::collisionRaycast(const Eigen::Matrix3Xd&,
   return false;
 }
 
-bool UnusableModel::collidingPointsCheckOnly(
+bool UnusableModel::CollidingPointsCheckOnly(
     const std::vector<Eigen::Vector3d>&, double) {
   DRAKE_ABORT_MSG(
       "Compile Drake with a collision library backend for collision support!");
   return false;
 }
 
-std::vector<size_t> UnusableModel::collidingPoints(
+std::vector<size_t> UnusableModel::CollidingPoints(
     const std::vector<Eigen::Vector3d>&, double) {
   DRAKE_ABORT_MSG(
       "Compile Drake with a collision library backend for collision support!");

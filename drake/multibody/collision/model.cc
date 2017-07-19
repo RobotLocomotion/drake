@@ -24,7 +24,7 @@ Element* Model::AddElement(std::unique_ptr<Element> element) {
       std::to_string(id));
 }
 
-bool Model::removeElement(ElementId id) {
+bool Model::RemoveElement(ElementId id) {
   return elements.erase(id) > 0;
 }
 
@@ -46,7 +46,7 @@ Element* Model::FindMutableElement(ElementId id) {
   }
 }
 
-void Model::getTerrainContactPoints(ElementId id0,
+void Model::GetTerrainContactPoints(ElementId id0,
                                     Eigen::Matrix3Xd& terrain_points) {
   auto element_iter = elements.find(id0);
   if (element_iter != elements.end()) {
@@ -56,7 +56,7 @@ void Model::getTerrainContactPoints(ElementId id0,
   }
 }
 
-bool Model::updateElementWorldTransform(ElementId id,
+bool Model::UpdateElementWorldTransform(ElementId id,
                                         const Isometry3d& X_WL) {
   auto elem_itr = elements.find(id);
   if (elem_itr != elements.end()) {
@@ -67,7 +67,7 @@ bool Model::updateElementWorldTransform(ElementId id,
   }
 }
 
-bool Model::transformCollisionFrame(
+bool Model::TransformCollisionFrame(
     const DrakeCollision::ElementId& eid,
     const Eigen::Isometry3d& transform_body_to_joint) {
   auto element = elements.find(eid);

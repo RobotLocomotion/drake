@@ -389,7 +389,7 @@ void BulletModel::DoAddElement(const Element& element) {
   }
 }
 
-bool BulletModel::collidingPointsCheckOnly(
+bool BulletModel::CollidingPointsCheckOnly(
     const std::vector<Vector3d>& input_points, double collision_threshold) {
   // Create sphere geometry
   btSphereShape bt_shape(collision_threshold);
@@ -421,7 +421,7 @@ bool BulletModel::collidingPointsCheckOnly(
   return false;
 }
 
-std::vector<size_t> BulletModel::collidingPoints(
+std::vector<size_t> BulletModel::CollidingPoints(
     const std::vector<Vector3d>& input_points, double collision_threshold) {
   // Create sphere geometry
   btSphereShape bt_shape(collision_threshold);
@@ -454,10 +454,10 @@ std::vector<size_t> BulletModel::collidingPoints(
   return in_collision_indices;
 }
 
-bool BulletModel::updateElementWorldTransform(
+bool BulletModel::UpdateElementWorldTransform(
     ElementId id, const Isometry3d& T_local_to_world) {
   const bool element_exists(
-      Model::updateElementWorldTransform(id, T_local_to_world));
+      Model::UpdateElementWorldTransform(id, T_local_to_world));
   if (element_exists) {
     btTransform btT = convert(elements[id]->getWorldTransform());
 
@@ -477,7 +477,7 @@ bool BulletModel::updateElementWorldTransform(
   return element_exists;
 }
 
-void BulletModel::updateModel() {
+void BulletModel::UpdateModel() {
   bullet_world_.bt_collision_world->updateAabbs();
   bullet_world_no_margin_.bt_collision_world->updateAabbs();
 }
@@ -598,7 +598,7 @@ PointPair BulletModel::findClosestPointsBetweenElements(
   }
 }
 
-void BulletModel::collisionDetectFromPoints(
+void BulletModel::CollisionDetectFromPoints(
     const Matrix3Xd& points, bool use_margins,
     std::vector<PointPair>& closest_points) {
   closest_points.resize(points.cols());
@@ -681,7 +681,7 @@ void BulletModel::collisionDetectFromPoints(
   }
 }
 
-bool BulletModel::collisionRaycast(const Matrix3Xd& origins,
+bool BulletModel::CollisionRaycast(const Matrix3Xd& origins,
                                    const Matrix3Xd& ray_endpoints,
                                    bool use_margins, VectorXd& distances,
                                    Matrix3Xd& normals) {
@@ -762,7 +762,7 @@ bool BulletModel::collisionRaycast(const Matrix3Xd& origins,
   return true;
 }
 
-bool BulletModel::closestPointsAllToAll(
+bool BulletModel::ClosestPointsAllToAll(
     const std::vector<ElementId>& ids_to_check, bool use_margins,
     std::vector<PointPair>& closest_points) {
   if (dispatch_method_in_use_ == kNotYetDecided)
@@ -782,10 +782,10 @@ bool BulletModel::closestPointsAllToAll(
       }
     }
   }
-  return closestPointsPairwise(id_pairs, use_margins, closest_points);
+  return ClosestPointsPairwise(id_pairs, use_margins, closest_points);
 }
 
-bool BulletModel::closestPointsPairwise(
+bool BulletModel::ClosestPointsPairwise(
     const std::vector<ElementIdPair>& id_pairs, bool use_margins,
     std::vector<PointPair>& closest_points) {
   closest_points.clear();

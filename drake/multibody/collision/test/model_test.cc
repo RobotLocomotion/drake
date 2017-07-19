@@ -56,7 +56,7 @@ typedef std::unordered_map<const DrakeCollision::Element*, SurfacePoint>
 // A series of canonical tests are performed. These are Box_vs_Sphere,
 // SmallBoxSittingOnLargeBox and NonAlignedBoxes.
 // These tests are performed using the following algorithms:
-// - closestPointsAllToAll: O(N^2) checking all pairs of collision elements.
+// - ClosestPointsAllToAll: O(N^2) checking all pairs of collision elements.
 //   Results are in bodies' frames.
 // - ComputeMaximumDepthCollisionPoints: Uses collision library dispatching.
 //   Results are in world frame.
@@ -89,7 +89,7 @@ typedef std::unordered_map<const DrakeCollision::Element*, SurfacePoint>
  *          |                    |
  *
  */
-GTEST_TEST(ModelTest, closestPointsAllToAll) {
+GTEST_TEST(ModelTest, ClosestPointsAllToAll) {
   // Set up the geometry.
   Isometry3d T_body1_to_world, T_body2_to_world, T_body3_to_world,
       T_elem2_to_body;
@@ -122,14 +122,14 @@ GTEST_TEST(ModelTest, closestPointsAllToAll) {
   ElementId id1 = element_1->getId();
   ElementId id2 = element_2->getId();
   ElementId id3 = element_3->getId();
-  model->updateElementWorldTransform(id1, T_body1_to_world);
-  model->updateElementWorldTransform(id2, T_body2_to_world);
-  model->updateElementWorldTransform(id3, T_body3_to_world);
+  model->UpdateElementWorldTransform(id1, T_body1_to_world);
+  model->UpdateElementWorldTransform(id2, T_body2_to_world);
+  model->UpdateElementWorldTransform(id3, T_body3_to_world);
 
   // Compute the closest points.
   const std::vector<ElementId> ids_to_check = {id1, id2, id3};
   std::vector<PointPair> points;
-  model->closestPointsAllToAll(ids_to_check, true, points);
+  model->ClosestPointsAllToAll(ids_to_check, true, points);
   ASSERT_EQ(3u, points.size());
 
   // Check the closest point between object 1 and object 2.
@@ -264,13 +264,13 @@ class BoxVsSphereTest : public ::testing::Test {
     Isometry3d box_pose;
     box_pose.setIdentity();
     box_pose.translation() = Vector3d(0.0, 0.5, 0.0);
-    model_->updateElementWorldTransform(box_->getId(), box_pose);
+    model_->UpdateElementWorldTransform(box_->getId(), box_pose);
 
     // Body 2 pose
     Isometry3d sphere_pose;
     sphere_pose.setIdentity();
     sphere_pose.translation() = Vector3d(0.0, 1.25, 0.0);
-    model_->updateElementWorldTransform(sphere_->getId(), sphere_pose);
+    model_->UpdateElementWorldTransform(sphere_->getId(), sphere_pose);
   }
 
  protected:
@@ -289,9 +289,9 @@ TEST_F(BoxVsSphereTest, SingleContact) {
   // List of collision points.
   std::vector<PointPair> points;
 
-  // Collision test performed with Model::closestPointsAllToAll.
+  // Collision test performed with Model::ClosestPointsAllToAll.
   const std::vector<ElementId> ids_to_check = {box_->getId(), sphere_->getId()};
-  model_->closestPointsAllToAll(ids_to_check, true, points);
+  model_->ClosestPointsAllToAll(ids_to_check, true, points);
   ASSERT_EQ(1u, points.size());
   EXPECT_NEAR(-0.25, points[0].distance, tolerance_);
   // Points are in the bodies' frame on the surface of the corresponding body.
@@ -311,7 +311,7 @@ TEST_F(BoxVsSphereTest, SingleContact) {
   // That is why ptA is generally different from ptB, unless there is
   // an exact non-penetrating collision.
   // WARNING:
-  // This convention is different from the one used by closestPointsAllToAll
+  // This convention is different from the one used by ClosestPointsAllToAll
   // which computes points in the local frame of the body.
   // TODO(amcastro-tri): make these two conventions match? does this interfere
   // with any Matlab functionality?
@@ -331,7 +331,7 @@ TEST_F(BoxVsSphereTest, SingleContact) {
   // That is why ptA is generally different from ptB, unless there is
   // an exact non-penetrating collision.
   // WARNING:
-  // This convention is different from the one used by closestPointsAllToAll
+  // This convention is different from the one used by ClosestPointsAllToAll
   // which computes points in the local frame of the body.
   // TODO(amcastro-tri): make these two conventions match? does this interfere
   // with any Matlab functionality?
@@ -377,13 +377,13 @@ class SmallBoxSittingOnLargeBox: public ::testing::Test {
     Isometry3d large_box_pose;
     large_box_pose.setIdentity();
     large_box_pose.translation() = Vector3d(0.0, 2.5, 0.0);
-    model_->updateElementWorldTransform(large_box_->getId(), large_box_pose);
+    model_->UpdateElementWorldTransform(large_box_->getId(), large_box_pose);
 
     // Small body pose
     Isometry3d small_box_pose;
     small_box_pose.setIdentity();
     small_box_pose.translation() = Vector3d(0.0, 5.4, 0.0);
-    model_->updateElementWorldTransform(small_box_->getId(), small_box_pose);
+    model_->UpdateElementWorldTransform(small_box_->getId(), small_box_pose);
   }
 
  protected:
@@ -412,10 +412,10 @@ TEST_F(SmallBoxSittingOnLargeBox, SingleContact) {
   // 2. The vertical position of the collision point (since for any of the four
   //    corners of the small box is the same.
 
-  // Collision test performed with Model::closestPointsAllToAll.
+  // Collision test performed with Model::ClosestPointsAllToAll.
   const std::vector<ElementId> ids_to_check = {large_box_->getId(),
                                                small_box_->getId()};
-  model_->closestPointsAllToAll(ids_to_check, true, points);
+  model_->ClosestPointsAllToAll(ids_to_check, true, points);
   ASSERT_EQ(1u, points.size());
   EXPECT_NEAR(-0.1, points[0].distance, tolerance_);
   EXPECT_TRUE(points[0].normal.isApprox(Vector3d(0.0, -1.0, 0.0)));
@@ -491,7 +491,7 @@ class NonAlignedBoxes: public ::testing::Test {
     Isometry3d box1_pose;
     box1_pose.setIdentity();
     box1_pose.translation() = Vector3d(0.0, 0.5, 0.0);
-    model_->updateElementWorldTransform(box1_->getId(), box1_pose);
+    model_->UpdateElementWorldTransform(box1_->getId(), box1_pose);
 
     // Box 2 pose.
     // Rotate box 2 45 degrees around the y axis so that it does not alight with
@@ -501,7 +501,7 @@ class NonAlignedBoxes: public ::testing::Test {
     box2_pose.translation() = Vector3d(0.0, 1.4, 0.0);
     box2_pose.linear() =
         AngleAxisd(M_PI_4, Vector3d::UnitY()).toRotationMatrix();
-    model_->updateElementWorldTransform(box2_->getId(), box2_pose);
+    model_->UpdateElementWorldTransform(box2_->getId(), box2_pose);
   }
 
  protected:
@@ -529,9 +529,9 @@ TEST_F(NonAlignedBoxes, SingleContact) {
   // 1. The penetration depth.
   // 2. The vertical position of the collision point (since for any of the four
   //    corners of the small box is the same.
-  // Collision test performed with Model::closestPointsAllToAll.
+  // Collision test performed with Model::ClosestPointsAllToAll.
   const std::vector<ElementId> ids_to_check = {box1_->getId(), box2_->getId()};
-  model_->closestPointsAllToAll(ids_to_check, true, points);
+  model_->ClosestPointsAllToAll(ids_to_check, true, points);
   ASSERT_EQ(1u, points.size());
   EXPECT_NEAR(-0.1, points[0].distance, tolerance_);
   EXPECT_TRUE(points[0].normal.isApprox(Vector3d(0.0, -1.0, 0.0)));
@@ -573,13 +573,13 @@ TEST_F(SmallBoxSittingOnLargeBox, ClearCachedResults) {
   Isometry3d large_box_pose;
   large_box_pose.setIdentity();
   large_box_pose.translation() = Vector3d(0.0, 2.5, 0.0);
-  model_->updateElementWorldTransform(large_box_->getId(), large_box_pose);
+  model_->UpdateElementWorldTransform(large_box_->getId(), large_box_pose);
 
   // Small body pose
   Isometry3d small_box_pose;
   small_box_pose.setIdentity();
   small_box_pose.translation() = Vector3d(0.0, 5.4, 0.0);
-  model_->updateElementWorldTransform(small_box_->getId(), small_box_pose);
+  model_->UpdateElementWorldTransform(small_box_->getId(), small_box_pose);
 
   // List of collision points.
   std::vector<PointPair> points;
@@ -592,7 +592,7 @@ TEST_F(SmallBoxSittingOnLargeBox, ClearCachedResults) {
     if (i == 1) small_box_pose.translation() = Vector3d(1.0e-3, 5.4,    0.0);
     if (i == 2) small_box_pose.translation() = Vector3d(   0.0, 5.4, 1.0e-3);
     if (i == 3) small_box_pose.translation() = Vector3d(1.0e-3, 5.4, 1.0e-3);
-    model_->updateElementWorldTransform(small_box_->getId(), small_box_pose);
+    model_->UpdateElementWorldTransform(small_box_->getId(), small_box_pose);
 
     // Notice that the results vector is cleared every time so that results
     // do not accumulate.
@@ -726,10 +726,10 @@ GTEST_TEST(ModelTest, AnchoredMeshes) {
 
   // Sets the collision elements' pose.
   pose.translation() = Vector3d(0.0, 0.0, 0.59);
-  model->updateElementWorldTransform(sphere->getId(), pose);
+  model->UpdateElementWorldTransform(sphere->getId(), pose);
 
   pose.translation() = Vector3d(0.0, 0.0, 0.0);
-  model->updateElementWorldTransform(cap->getId(), pose);
+  model->UpdateElementWorldTransform(cap->getId(), pose);
 
   // List of collision points.
   std::vector<PointPair> points;
@@ -780,7 +780,7 @@ GTEST_TEST(ModelTest, PointDistanceToNonConvex) {
   points << cx, cy, cz;
 
   std::vector<PointPair> results;
-  model->collisionDetectFromPoints(points, false, results);
+  model->CollisionDetectFromPoints(points, false, results);
 
   ASSERT_EQ(results.size(), 4u);
   const double inf = std::numeric_limits<double>::infinity();
@@ -811,7 +811,7 @@ GTEST_TEST(ModelTest, PointDistanceToEmptyWorld) {
   points << cx, cy, cz;
 
   std::vector<PointPair> results;
-  model->collisionDetectFromPoints(points, false, results);
+  model->CollisionDetectFromPoints(points, false, results);
 
   ASSERT_EQ(results.size(), 4u);
   const double inf = std::numeric_limits<double>::infinity();
@@ -851,15 +851,15 @@ GTEST_TEST(ModelTest, DistanceToNonConvex) {
 
   // Sets the collision elements' pose.
   pose.translation() = Vector3d(0.0, 0.0, 0.7);
-  model->updateElementWorldTransform(sphere->getId(), pose);
+  model->UpdateElementWorldTransform(sphere->getId(), pose);
 
   pose.translation() = Vector3d(0.0, 0.0, 0.0);
-  model->updateElementWorldTransform(cap->getId(), pose);
+  model->UpdateElementWorldTransform(cap->getId(), pose);
 
   std::vector<PointPair> results;
   std::vector<ElementIdPair> pairs;
   pairs.emplace_back(sphere->getId(), cap->getId());
-  model->closestPointsPairwise(pairs, true, results);
+  model->ClosestPointsPairwise(pairs, true, results);
   EXPECT_EQ(results.size(), 0u);
 }
 

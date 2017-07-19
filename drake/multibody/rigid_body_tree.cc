@@ -237,7 +237,7 @@ bool RigidBodyTree<T>::transformCollisionFrame(
   for (auto body_itr = body->collision_elements_begin();
        body_itr != body->collision_elements_end(); ++body_itr) {
     DrakeCollision::Element* element = *body_itr;
-    if (!collision_model_->transformCollisionFrame(element->getId(),
+    if (!collision_model_->TransformCollisionFrame(element->getId(),
                                                    displace_transform)) {
       return false;
     }
@@ -726,7 +726,7 @@ void RigidBodyTree<T>::updateCollisionElements(
     const Eigen::Transform<double, 3, Eigen::Isometry>& transform_to_world) {
   for (auto id_iter = body.get_collision_element_ids().begin();
        id_iter != body.get_collision_element_ids().end(); ++id_iter) {
-    collision_model_->updateElementWorldTransform(*id_iter, transform_to_world);
+    collision_model_->UpdateElementWorldTransform(*id_iter, transform_to_world);
   }
 }
 
@@ -743,7 +743,7 @@ void RigidBodyTree<T>::updateDynamicCollisionElements(
           body, cache.get_element(body.get_body_index()).transform_to_world);
     }
   }
-  collision_model_->updateModel();
+  collision_model_->UpdateModel();
 }
 
 template <typename T>
@@ -784,7 +784,7 @@ void RigidBodyTree<T>::getTerrainContactPoints(
   for (auto id_iter = element_ids.begin();
        id_iter != element_ids.end(); ++id_iter) {
     Matrix3Xd element_points;
-    collision_model_->getTerrainContactPoints(*id_iter, element_points);
+    collision_model_->GetTerrainContactPoints(*id_iter, element_points);
     terrain_points->conservativeResize(
         Eigen::NoChange, terrain_points->cols() + element_points.cols());
     terrain_points->block(0, num_points, terrain_points->rows(),
@@ -804,7 +804,7 @@ void RigidBodyTree<T>::collisionDetectFromPoints(
 
   vector<DrakeCollision::PointPair> closest_points;
 
-  collision_model_->collisionDetectFromPoints(points, use_margins,
+  collision_model_->CollisionDetectFromPoints(points, use_margins,
                                               closest_points);
   x.resize(3, closest_points.size());
   body_x.resize(3, closest_points.size());
@@ -836,7 +836,7 @@ bool RigidBodyTree<T>::collisionRaycast(
     VectorXd& distances, bool use_margins) {
   Matrix3Xd normals;
   updateDynamicCollisionElements(cache);
-  return collision_model_->collisionRaycast(origins, ray_endpoints, use_margins,
+  return collision_model_->CollisionRaycast(origins, ray_endpoints, use_margins,
                                             distances, normals);
 }
 
@@ -849,7 +849,7 @@ bool RigidBodyTree<T>::collisionRaycast(
     VectorXd& distances, Matrix3Xd& normals,
     bool use_margins) {
   updateDynamicCollisionElements(cache);
-  return collision_model_->collisionRaycast(origins, ray_endpoints, use_margins,
+  return collision_model_->CollisionRaycast(origins, ray_endpoints, use_margins,
                                             distances, normals);
 }
 
@@ -866,7 +866,7 @@ bool RigidBodyTree<T>::collisionDetect(
 
   vector<DrakeCollision::PointPair> points;
   bool points_found =
-      collision_model_->closestPointsAllToAll(ids_to_check, use_margins,
+      collision_model_->ClosestPointsAllToAll(ids_to_check, use_margins,
                                               points);
 
   xA = MatrixXd::Zero(3, points.size());
@@ -1014,7 +1014,7 @@ bool RigidBodyTree<T>::collidingPointsCheckOnly(
     const KinematicsCache<double>& cache, const vector<Vector3d>& points,
     double collision_threshold) {
   updateDynamicCollisionElements(cache);
-  return collision_model_->collidingPointsCheckOnly(points,
+  return collision_model_->CollidingPointsCheckOnly(points,
                                                     collision_threshold);
 }
 
@@ -1023,7 +1023,7 @@ vector<size_t> RigidBodyTree<T>::collidingPoints(
     const KinematicsCache<double>& cache, const vector<Vector3d>& points,
     double collision_threshold) {
   updateDynamicCollisionElements(cache);
-  return collision_model_->collidingPoints(points, collision_threshold);
+  return collision_model_->CollidingPoints(points, collision_threshold);
 }
 
 template <typename T>
