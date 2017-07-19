@@ -605,8 +605,8 @@ void GlobalInverseKinematics::AddJointLimitConstraint(
       default: throw std::runtime_error("Unsupported joint type.");
     }
   } else {
-    throw std::runtime_error("The body" + body.get_name() +
-                             "does not have a joint.");
+    throw std::runtime_error("The body " + body.get_name() +
+                             " does not have a joint.");
   }
 }
 }  // namespace multibody
