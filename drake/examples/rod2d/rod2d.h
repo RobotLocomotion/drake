@@ -221,12 +221,11 @@ class Rod2D : public systems::LeafSystem<T> {
   /// Sets the constraint force mixing parameter (CFM, used for time stepping
   /// systems only). The default CFM value is 1e-8.
   /// @param cfm a floating point value in the range [0, infinity].
-  /// @throws std::logic_error if this is not a time stepping system or if
+  /// @throws std::logic_error if contact is modeled as compliant or if
   ///         cfm is set to a negative value.
   void set_cfm(double cfm) {
-    if (simulation_type_ != SimulationType::kTimeStepping)
-      throw std::logic_error("Attempt to set CFM for non-time stepping "
-                             "system.");
+    if (simulation_type_ == SimulationType::kCompliant)
+      throw std::logic_error("Attempt to set CFM for compliant contact model.");
     if (cfm < 0)
       throw std::logic_error("Negative CFM value specified.");
     cfm_ = cfm;

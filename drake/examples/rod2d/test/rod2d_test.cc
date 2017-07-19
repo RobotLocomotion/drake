@@ -44,6 +44,9 @@ class Rod2DDAETest : public ::testing::Test {
     // Use a non-unit mass.
     dut_->set_rod_mass(2.0);
 
+    // Set cfm to be very small.
+    dut_->set_cfm(100 * std::numeric_limits<double>::epsilon());
+
     // Set a zero input force (this is the default).
     std::unique_ptr<BasicVector<double>> ext_input =
         std::make_unique<BasicVector<double>>(3);
@@ -299,18 +302,32 @@ TEST_F(Rod2DDAETest, ImpactWorks) {
   // Rod should not be impacting.
   EXPECT_TRUE(dut_->IsImpacting(*context_));
 
-  // Handle the impact.
+  // Model the impact (as fully inelastic).
   RigidContactVelProblemData<double> data;
   CalcRigidImpactVelProblemData(&data);
   VectorX<double> cf;
   contact_solver_.SolveImpactProblem(dut_->get_cfm(), data, &cf);
 
-  dut_->HandleImpact(*context_, new_state.get());
+  // Get the update to the generalized velocity.
+  VectorX<double> delta_v;
+  contact_solver_.ComputeGeneralizedVelocityChange(data, cf, &delta_v);
+
+  // Manually update the generalized positions aspect of the state.
+  const VectorBase<double>& q = context_->get_continuous_state()->
+      get_generalized_position();
+  new_state->get_mutable_continuous_state()->
+      get_mutable_generalized_position()->SetFrom(q);
+
+  // Update the velocity part of the state.
+  new_state->get_mutable_continuous_state()->
+      get_mutable_generalized_velocity()->SetFromVector(data.v + delta_v);
+
+  // Set the existing state from the new state.
   context_->get_mutable_state()->SetFrom(*new_state);
 
   // Verify that the state has been modified such that the body is no longer
   // in an impacting state and the configuration has not been modified.
-  const double tol = std::numeric_limits<double>::epsilon();
+  const double tol = 10 * dut_->get_cfm();
   EXPECT_NEAR(xc[0], 0.0, tol);
   EXPECT_NEAR(xc[1], half_len, tol);
   EXPECT_NEAR(xc[2], M_PI_2, tol);
@@ -664,7 +681,7 @@ TEST_F(Rod2DDAETest, MultiPoint) {
   // TODO(edrumwri): Check derivatives now.
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_NEAR((*derivatives_)[3], -large *
-      std::abs(dut_->get_gravitational_acceleration()), eps);
+      std::abs(dut_->get_gravitational_acceleration()), eps * large);
   EXPECT_NEAR((*derivatives_)[4], 0, eps);
   EXPECT_NEAR((*derivatives_)[5], 0, eps);
 
