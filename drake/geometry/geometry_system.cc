@@ -26,7 +26,7 @@ GeometrySystem<T>::~GeometrySystem() {}
 template <typename T>
 SourceId GeometrySystem<T>::RegisterSource(const std::string &name) {
   unused(name);
-  ThrowIfContextAllocated(__FUNCTION__);
+  THROW_IF_CONTEXT_ALLOCATED
   // TODO(SeanCurtis-TRI): Replace dummy source id with actual id.
   return SourceId::get_new_id();
 }

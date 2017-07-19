@@ -23,7 +23,6 @@ namespace drake {
 namespace geometry {
 
 using systems::Context;
-using GSystem = GeometrySystem<double>;
 using std::make_unique;
 using std::unique_ptr;
 
@@ -55,7 +54,7 @@ class GeometrySystemTest : public ::testing::Test {
     return make_unique<GeometryInstance<double>>();
   }
 
-  GSystem system_;
+  GeometrySystem<double> system_;
   // Ownership of context.
   unique_ptr<Context<double>> context_;
 };

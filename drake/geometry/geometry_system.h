@@ -125,8 +125,8 @@ class GeometrySystem : public systems::LeafSystem<T> {
    @param name          The optional name of the source. If none is provided
                         (or the empty string) a unique name will be defined by
                         GeometrySystem's logic.
-   @throws  std::logic_error if a context has already been allocated for this
-                             %GeometrySystem.
+   @throws std::logic_error if a context has already been allocated for this
+                            %GeometrySystem.
    @see GeometryState::RegisterNewSource() */
   SourceId RegisterSource(const std::string &name = "");
 
