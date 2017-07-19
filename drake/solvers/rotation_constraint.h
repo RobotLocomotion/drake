@@ -9,6 +9,7 @@
 #include "drake/common/symbolic.h"
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/mixed_integer_optimization_util.h"
 
 /// @file Functions for reasoning about 3D rotations in a @MathematicalProgram.
 ///
@@ -149,5 +150,19 @@ AddRotationMatrixMcCormickEnvelopeMilpConstraints(
     int num_binary_vars_per_half_axis = 2,
     RollPitchYawLimits limits = kNoLimits);
 
+template<int NumIntervalsPerHalfAxis>
+struct AddRotationMatrixBilinearTermMcCormickEnvelopeMilpConstraintsReturn {
+  typedef std::array<std::array<VectorDecisionVariable<NumIntervalsPerHalfAxis>, 3>, 3> BinaryVarType;
+  typedef Eigen::Matrix<double, NumIntervalsPerHalfAxis == Eigen::Dynamic ? Eigen::Dynamic : 1 + CeilLog2(NumIntervalsPerHalfAxis), 1> PhiType;
+  typedef std::pair<BinaryVarType, PhiType> type;
+};
+
+template<int NumIntervalsPerHalfAxis = Eigen::Dynamic>
+typename std::enable_if<NumIntervalsPerHalfAxis == Eigen::Dynamic || NumIntervalsPerHalfAxis >= 1,
+                        AddRotationMatrixBilinearTermMcCormickEnvelopeMilpConstraintsReturn<NumIntervalsPerHalfAxis>>::type
+AddRotationMatrixBilinearTermMcCormickEnvelopeMilpConstraints(
+    MathematicalProgram* prog,
+    const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
+    int num_intervlas_per_half_axis = NumIntervalsPerHalfAxis);
 }  // namespace solvers
 }  // namespace drake

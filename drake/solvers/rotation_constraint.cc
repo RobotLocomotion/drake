@@ -1010,5 +1010,33 @@ AddRotationMatrixMcCormickEnvelopeMilpConstraints(
   return make_tuple(CRpos, CRneg, BRpos, BRneg);
 }
 
+template<int NumIntervalsPerHalfAxis = Eigen::Dynamic>
+typename std::enable_if<NumIntervalsPerHalfAxis == Eigen::Dynamic || NumIntervalsPerHalfAxis >= 1,
+                        AddRotationMatrixBilinearTermMcCormickEnvelopeMilpConstraintsReturn<NumIntervalsPerHalfAxis>>::type
+AddRotationMatrixBilinearTermMcCormickEnvelopeMilpConstraints(
+    MathematicalProgram* prog,
+    const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
+    int num_intervlas_per_half_axis) {
+  DRAKE_DEMAND(num_intervlas_per_half_axis >= 1);
+  const auto phi = typename AddRotationMatrixBilinearTermMcCormickEnvelopeMilpConstraintsReturn<NumIntervalsPerHalfAxis>::PhiType::LinSpaced(2 * num_intervlas_per_half_axis + 1, -1, 1);
+
+  // Add the binary variables to determine in which interval R(i, j) lies.
+  // B[i][j] is a vector of binary variables. If these binary variables
+  // represent integer M in the reflected Gray code, then R(i, j) is within the
+  // interval [φ(M), φ(M + 1)]. Refer to AddLogarithmicSos2Constraint for more
+  // details. 
+};
+
+template AddRotationMatrixBilinearTermMcCormickEnvelopeMilpConstraintsReturn<Eigen::Dynamic>
+AddRotationMatrixBilinearTermMcCormickEnvelopeMilpConstraints<Eigen::Dynamic>(MathematicalProgram* prog, const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R, int num_intervlas_per_half_axis);
+
+template AddRotationMatrixBilinearTermMcCormickEnvelopeMilpConstraintsReturn<1>
+AddRotationMatrixBilinearTermMcCormickEnvelopeMilpConstraints<1>(MathematicalProgram* prog, const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R, int num_intervlas_per_half_axis);
+
+template AddRotationMatrixBilinearTermMcCormickEnvelopeMilpConstraintsReturn<2>
+AddRotationMatrixBilinearTermMcCormickEnvelopeMilpConstraints<2>(MathematicalProgram* prog, const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R, int num_intervlas_per_half_axis);
+
+template AddRotationMatrixBilinearTermMcCormickEnvelopeMilpConstraintsReturn<3>
+AddRotationMatrixBilinearTermMcCormickEnvelopeMilpConstraints<3>(MathematicalProgram* prog, const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R, int num_intervlas_per_half_axis);
 }  // namespace solvers
 }  // namespace drake
