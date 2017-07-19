@@ -17,6 +17,7 @@
 #include "gurobi_c++.h"
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/text_logging.h"
 #include "drake/math/eigen_sparse_triplet.h"
 #include "drake/solvers/mathematical_program.h"
 
@@ -100,8 +101,8 @@ int gurobi_callback(GRBmodel* model, void* cbdata, int where, void* usrdata) {
     auto error = GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOL,
                           callback_info->solver_sol_vector.data());
     if (error) {
-      printf("GRB error %d in MIPSol callback cbget: %s\n", error,
-             GRBgeterrormsg(GRBgetenv(model)));
+      drake::log()->error("GRB error %d in MIPSol callback cbget: %s\n", error,
+                          GRBgeterrormsg(GRBgetenv(model)));
       return 0;
     }
     SetProgramSolutionVector(
@@ -117,8 +118,9 @@ int gurobi_callback(GRBmodel* model, void* cbdata, int where, void* usrdata) {
     int sol_status;
     auto error = GRBcbget(cbdata, where, GRB_CB_MIPNODE_STATUS, &sol_status);
     if (error) {
-      printf("GRB error %d in MIPNode callback getting sol status: %s\n", error,
-             GRBgeterrormsg(GRBgetenv(model)));
+      drake::log()->error(
+          "GRB error %d in MIPNode callback getting sol status: %s\n", error,
+          GRBgeterrormsg(GRBgetenv(model)));
       return 0;
     } else if (sol_status == GRB_OPTIMAL) {
       // Extract variable values from Gurobi, and set the current
@@ -126,8 +128,8 @@ int gurobi_callback(GRBmodel* model, void* cbdata, int where, void* usrdata) {
       auto error = GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOL,
                             callback_info->solver_sol_vector.data());
       if (error) {
-        printf("GRB error %d in MIPSol callback cbget: %s\n", error,
-               GRBgeterrormsg(GRBgetenv(model)));
+        drake::log()->error("GRB error %d in MIPSol callback cbget: %s\n",
+                            error, GRBgeterrormsg(GRBgetenv(model)));
         return 0;
       }
       SetProgramSolutionVector(
@@ -154,8 +156,8 @@ int gurobi_callback(GRBmodel* model, void* cbdata, int where, void* usrdata) {
         double objective_solution;
         error = GRBcbsolution(cbdata, new_sol.data(), &objective_solution);
         if (error) {
-          printf("GRB error %d in injection: %s\n", error,
-                 GRBgeterrormsg(GRBgetenv(model)));
+          drake::log()->error("GRB error %d in injection: %s\n", error,
+                              GRBgeterrormsg(GRBgetenv(model)));
         }
       }
     }
@@ -811,8 +813,8 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
       double lower_bound;
       auto error = GRBgetdblattr(model, GRB_DBL_ATTR_OBJBOUND, &lower_bound);
       if (error) {
-        printf("GRB error %d getting lower bound: %s\n", error,
-               GRBgeterrormsg(GRBgetenv(model)));
+        drake::log()->error("GRB error %d getting lower bound: %s\n", error,
+                            GRBgeterrormsg(GRBgetenv(model)));
       } else {
         prog.SetLowerBoundCost(lower_bound);
       }
