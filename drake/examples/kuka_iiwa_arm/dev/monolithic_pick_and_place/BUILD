@@ -7,6 +7,7 @@ load(
     "drake_cc_binary",
     "drake_cc_library",
 )
+load(":pick_and_place_test.bzl", "pick_and_place_test")
 
 drake_cc_library(
     name = "kuka_pick_and_place_monolithic",
@@ -51,5 +52,84 @@ drake_cc_binary(
         "@lcmtypes_bot2_core",
     ],
 )
+
+pick_and_place_test(
+    name = "pick_and_place_scenario_1",
+    # TODO(sam.creasey) IPOPT doesn't find a reasonable solution for
+    # one of the steps in this demo.  We should see if this improves
+    # when #3128 is fixed.
+    tags = ["snopt"],
+    # TODO(sam.creasey) This should be target 1, but that requries
+    # offsetting the gripper location to deal with the larger box,
+    # which isn't currently supported.
+    args = ["--target=2",
+            "--orientation=1.57",
+            "--start-position=0",
+            "--end-position=2"]
+)
+
+pick_and_place_test(
+    name = "pick_and_place_scenario_2",
+    # TODO(sam.creasey) IPOPT doesn't find a reasonable solution for
+    # one of the steps in this demo.  We should see if this improves
+    # when #3128 is fixed.
+    tags = ["snopt"],
+    args = ["--target=2",
+            "--orientation=-1.57",
+            "--start-position=4",
+            "--end-position=2",
+            # The smaller timestep is necessary to keep the box from
+            # sliding out of the target region when bumped by the
+            # gripper after being placed.
+            "--dt 5e-4"]
+)
+
+pick_and_place_test(
+    name = "pick_and_place_scenario_3",
+    # TODO(sam.creasey) IPOPT doesn't find a reasonable solution for
+    # one of the steps in this demo.  We should see if this improves
+    # when #3128 is fixed.
+    tags = ["snopt"],
+    args = ["--target=2",
+            "--orientation=-1.57",
+            "--start-position=4",
+            "--end-position=1",
+            # The smaller timestep is necessary to keep
+            # the box from bouncing out of the target
+            # region when placed.
+            "--dt 5e-4"]
+)
+
+pick_and_place_test(
+    name = "pick_and_place_scenario_4",
+    # TODO(sam.creasey) This should be a smaller rectangular target.
+    args = ["--target=2",
+            "--start-position=1",
+            "--end-position=3",
+            # The smaller timestep is necessary to keep
+            # the box from bouncing out of the target
+            # region when placed.
+            "--dt 5e-4"]
+)
+
+pick_and_place_test(
+    name = "pick_and_place_scenario_5",
+    # TODO(sam.creasey) This should be a smaller cylindrical target,
+    # but we don't currently have a cylinder with good collision
+    # geometry.
+    args = ["--target=0",
+            "--start-position=2",
+            "--end-position=0",
+            # TODO(sam.creasey) This is an artisanally crafted
+            # timestep intended to dodge sensitive dependence on
+            # initial conditions in the IK planner.  If the block
+            # slips in the gripper in just the wrong way (which only
+            # happens on some dt values) then the arm tries to move
+            # into a radically different configuration in the process
+            # of placing the block at the target.
+            "--dt 6e-4"]
+
+)
+
 
 cpplint()
