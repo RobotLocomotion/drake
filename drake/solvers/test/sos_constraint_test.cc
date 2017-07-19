@@ -187,7 +187,7 @@ TEST_F(SosConstraintTest, AddSosConstraintUnivariate2) {
   const auto result = prog_.Solve();
   ASSERT_EQ(result, SolutionResult::kSolutionFound);
   EXPECT_LE(prog_.GetSolution(c), 1E-4);
-  CheckPsdBinding(binding_pair.first);
+  CheckPsdBinding(binding_pair.first, 1E-6 /* eps */);
 }
 
 // Shows that f(x₀, x₁) = 2x₀⁴ + 2x₀³x₁ - x₀²x₁² + 5x₁⁴ is SOS.
