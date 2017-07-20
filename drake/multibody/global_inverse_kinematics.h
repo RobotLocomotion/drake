@@ -258,8 +258,8 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
   // robot_->get_num_positions() x 1.
   // joint_lower_bounds_(i) is the lower bound of the i'th joint.
   // joint_upper_bounds_(i) is the upper bound of the i'th joint.
-  // These joint bounds included those specified in the robot (like in the URDF
-  // file), and the bounds imposed by the user, through AddJointLimitConstraint
+  // These joint bounds include those specified in the robot (like in the URDF
+  // file), and the bounds imposed by the user, through AddJointLimitConstraint.
   Eigen::VectorXd joint_lower_bounds_;
   Eigen::VectorXd joint_upper_bounds_;
 

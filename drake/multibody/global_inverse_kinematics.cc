@@ -131,8 +131,8 @@ GlobalInverseKinematics::GlobalInverseKinematics(
                   Vector3d::Zero());
 
               // Now we process the joint limits constraint.
-              double joint_lb = joint->getJointLimitMin()(0);
-              double joint_ub = joint->getJointLimitMax()(0);
+              const double joint_lb = joint->getJointLimitMin()(0);
+              const double joint_ub = joint->getJointLimitMax()(0);
               AddJointLimitConstraint(body_idx, joint_lb, joint_ub);
             } else {
               // TODO(hongkai.dai): Add prismatic and helical joint.
@@ -204,31 +204,29 @@ void GlobalInverseKinematics::ReconstructGeneralizedPositionSolutionForBody(
       }
       reconstruct_R_WB->at(body_idx) = normalized_rotmat;
     } else if (num_positions == 1) {
-      int joint_idx = body.get_position_start_index();
+      const int joint_idx = body.get_position_start_index();
       const double joint_lb = joint_lower_bounds_(joint_idx);
       const double joint_ub = joint_upper_bounds_(joint_idx);
       // Should NOT do this evil dynamic cast here, but currently we do
       // not have a method to tell if a joint is revolute or not.
-      if (dynamic_cast<const RevoluteJoint *>(joint) != nullptr) {
-        const RevoluteJoint *revolute_joint =
-            dynamic_cast<const RevoluteJoint *>(joint);
+      if (dynamic_cast<const RevoluteJoint*>(joint) != nullptr) {
+        const RevoluteJoint* revolute_joint =
+            dynamic_cast<const RevoluteJoint*>(joint);
         const Matrix3d joint_rotmat =
-            X_PF.linear().transpose() *
-                R_WP.transpose() * R_WC;
+            X_PF.linear().transpose() * R_WP.transpose() * R_WC;
         // The joint_rotmat is very likely not on SO(3). The reason is
         // that we use a relaxation of the rotation matrix, and thus
         // R_WC might not lie on SO(3) exactly. Here we need to project
         // joint_rotmat to SO(3), with joint axis as the rotation axis, and
         // joint limits as the lower and upper bound on the rotation angle.
         const Vector3d rotate_axis = revolute_joint->joint_axis().head<3>();
-        const double
-            revolute_joint_angle = math::ProjectMatToRotMatWithAxis(
+        const double revolute_joint_angle = math::ProjectMatToRotMatWithAxis(
             joint_rotmat, rotate_axis, joint_lb, joint_ub);
         q(body.get_position_start_index()) = revolute_joint_angle;
         reconstruct_R_WB->at(body_idx) =
             R_WP * X_PF.linear() *
-                Eigen::AngleAxisd(revolute_joint_angle, rotate_axis)
-                    .toRotationMatrix();
+            Eigen::AngleAxisd(revolute_joint_angle, rotate_axis)
+                .toRotationMatrix();
       } else {
         // TODO(hongkai.dai): add prismatic and helical joints.
         throw std::runtime_error("Unsupported joint type.");

@@ -6,8 +6,8 @@ namespace multibody {
 TEST_F(KukaTest, FeasiblePostureTest) {
   // For feasible postures, check if global IK also thinks it is a feasible
   // solution. For each posture q, we compute the forward kinematics, and
-  // constraint the body pose in global IK, to the pose from the forward
-  // kinematics. global IK should always think the problem is feasible.
+  // constrain the body pose in global IK, to the pose from the forward
+  // kinematics. Global IK should always think the problem is feasible.
 
   // First sample some postures, within the joint limits.
   const int kNumSamplePerJoint = 3;
@@ -27,12 +27,14 @@ TEST_F(KukaTest, FeasiblePostureTest) {
   std::vector<solvers::Binding<solvers::BoundingBoxConstraint>>
       body_orientation_constraint;
   for (int body = 1; body < rigid_body_tree_->get_num_bodies(); ++body) {
+    // body = 0 is the WORLD link, we should not constrain the pose of the
+    // WORLD.
     body_position_constraint.push_back(global_ik_.AddBoundingBoxConstraint(
         0, 0, global_ik_.body_position(body)));
-    const auto &body_rotmat = global_ik_.body_rotation_matrix(body);
+    const auto& body_rotmat = global_ik_.body_rotation_matrix(body);
     Eigen::Matrix<symbolic::Variable, 9, 1> body_rotmat_flat;
-    body_rotmat_flat << body_rotmat.col(0), body_rotmat.col(1), body_rotmat.col(
-        2);
+    body_rotmat_flat << body_rotmat.col(0), body_rotmat.col(1),
+        body_rotmat.col(2);
     body_orientation_constraint.push_back(
         global_ik_.AddBoundingBoxConstraint(0, 0, body_rotmat_flat));
   }
@@ -49,12 +51,16 @@ TEST_F(KukaTest, FeasiblePostureTest) {
       q(joint) = q_grid(joint, joint_grid_idx(joint));
     }
     // Now increment joint_grid_idx;
-    for (int joint = 0; joint < 7; ++joint) {
-      ++joint_grid_idx(joint);
+    // joint_grid_idx is a 7-digit number, each digit can have value
+    // {0, 1, ..., kNumSamplePerJoint - 1}. We increment the last digit by 1.
+    // If that digit is larger than kNumSamplePerJoint - 1, we set that digit
+    // to 0, and add the carry bit to the next digit.
+    ++joint_grid_idx(6);
+    for (int joint = 6; joint >= 0; --joint) {
       if (joint_grid_idx(joint) >= kNumSamplePerJoint) {
-        joint_grid_idx(joint) -= kNumSamplePerJoint;
-        if (joint < 6) {
-          ++joint_grid_idx(joint + 1);
+        joint_grid_idx(joint) = 0;
+        if (joint > 0) {
+          ++joint_grid_idx(joint - 1);
         }
       }
     }
@@ -76,13 +82,9 @@ TEST_F(KukaTest, FeasiblePostureTest) {
       body_position_constraint[body - 1].constraint()->UpdateUpperBound(pos_ub);
       Eigen::Matrix<double, 9, 1> rotmat_lb_flat;
       Eigen::Matrix<double, 9, 1> rotmat_ub_flat;
-      rotmat_lb_flat
-          << body_pose.linear().col(0),
-          body_pose.linear().col(1),
+      rotmat_lb_flat << body_pose.linear().col(0), body_pose.linear().col(1),
           body_pose.linear().col(2);
-      rotmat_ub_flat
-          << body_pose.linear().col(0),
-          body_pose.linear().col(1),
+      rotmat_ub_flat << body_pose.linear().col(0), body_pose.linear().col(1),
           body_pose.linear().col(2);
       body_orientation_constraint[body - 1].constraint()->UpdateLowerBound(
           rotmat_lb_flat);
