@@ -1,4 +1,5 @@
-#include "drake/common/symbolic_monomial_util.h"
+// NOLINTNEXTLINE(build/include): Included by drake/common/symbolic.h.
+#include "drake/common/symbolic.h"
 
 #include "drake/common/drake_assert.h"
 

@@ -3,7 +3,7 @@
 #include <limits>
 #include <stdexcept>
 
-#include "drake/common/symbolic_expression.h"
+#include "drake/common/symbolic.h"
 #include "drake/solvers/ipopt_solver.h"
 
 using Eigen::MatrixXd;

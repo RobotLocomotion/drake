@@ -4,8 +4,7 @@
 #include <type_traits>
 #include <utility>
 
-#include "drake/common/symbolic_expression.h"
-#include "drake/common/symbolic_monomial.h"
+#include "drake/common/symbolic.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/cost.h"
 #include "drake/solvers/function.h"

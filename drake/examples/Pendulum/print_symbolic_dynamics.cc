@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "drake/common/symbolic_expression.h"
+#include "drake/common/symbolic.h"
 #include "drake/examples/Pendulum/pendulum_plant.h"
 
 // A simple example of extracting the symbolic dynamics of the pendulum system,

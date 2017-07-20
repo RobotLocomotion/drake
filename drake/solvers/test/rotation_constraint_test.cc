@@ -8,7 +8,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/common/symbolic_expression.h"
+#include "drake/common/symbolic.h"
 #include "drake/math/random_rotation.h"
 #include "drake/math/roll_pitch_yaw_not_using_quaternion.h"
 #include "drake/math/rotation_matrix.h"

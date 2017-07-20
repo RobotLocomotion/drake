@@ -4,7 +4,7 @@
 #include <string>
 #include <utility>
 
-#include "drake/common/symbolic_formula.h"
+#include "drake/common/symbolic.h"
 #include "drake/systems/framework/event_collection.h"
 
 namespace drake {

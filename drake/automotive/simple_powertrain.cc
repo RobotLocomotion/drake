@@ -1,6 +1,6 @@
 #include "drake/automotive/simple_powertrain.h"
 
-#include "drake/common/symbolic_formula.h"
+#include "drake/common/symbolic.h"
 
 namespace drake {
 namespace automotive {

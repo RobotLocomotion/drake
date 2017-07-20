@@ -1,4 +1,5 @@
-#include "drake/common/symbolic_monomial.h"
+// NOLINTNEXTLINE(build/include): Included by drake/common/symbolic.h.
+#include "drake/common/symbolic.h"
 
 #include <map>
 #include <numeric>
@@ -6,7 +7,9 @@
 #include <utility>
 
 #include "drake/common/drake_assert.h"
+#define DRAKE_COMMON_SYMBOLIC_DETAIL_HEADER
 #include "drake/common/symbolic_expression_cell.h"
+#undef DRAKE_COMMON_SYMBOLIC_DETAIL_HEADER
 
 namespace drake {
 namespace symbolic {

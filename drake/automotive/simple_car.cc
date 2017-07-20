@@ -12,8 +12,7 @@
 #include "drake/common/double_overloads.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
-#include "drake/common/symbolic_expression.h"
-#include "drake/common/symbolic_formula.h"
+#include "drake/common/symbolic.h"
 #include "drake/math/saturate.h"
 #include "drake/systems/framework/vector_base.h"
 

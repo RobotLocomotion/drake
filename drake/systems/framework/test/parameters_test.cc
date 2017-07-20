@@ -4,7 +4,7 @@
 
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/eigen_autodiff_types.h"
-#include "drake/common/symbolic_expression.h"
+#include "drake/common/symbolic.h"
 #include "drake/systems/framework/test_utilities/pack_value.h"
 
 namespace drake {

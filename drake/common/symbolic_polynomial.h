@@ -1,3 +1,7 @@
+#ifndef DRAKE_COMMON_SYMBOLIC_HEADER
+#error Do not directly include this file. Include "drake/common/symbolic.h".
+#endif
+
 #pragma once
 
 #include <ostream>
@@ -7,10 +11,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/hash.h"
-#include "drake/common/symbolic_expression.h"
-#include "drake/common/symbolic_formula.h"
-#include "drake/common/symbolic_monomial.h"
-#include "drake/common/symbolic_variables.h"
+#include "drake/common/symbolic.h"
 
 namespace drake {
 namespace symbolic {

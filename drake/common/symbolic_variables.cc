@@ -1,4 +1,5 @@
-#include "drake/common/symbolic_variables.h"
+// NOLINTNEXTLINE(build/include): Included by drake/common/symbolic.h.
+#include "drake/common/symbolic.h"
 
 #include <algorithm>
 #include <functional>

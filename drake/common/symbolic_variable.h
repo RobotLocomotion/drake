@@ -1,3 +1,7 @@
+#ifndef DRAKE_COMMON_SYMBOLIC_HEADER
+#error Do not directly include this file. Include "drake/common/symbolic.h".
+#endif
+
 #pragma once
 
 #include <cstddef>
