@@ -99,6 +99,9 @@ target_link_libraries(solver_id_test drakeOptimization)
 drake_add_cc_test(solver_type_converter_test)
 target_link_libraries(solver_type_converter_test drakeOptimization)
 
+drake_add_cc_test(sos_util_test)
+target_link_libraries(sos_util_test drakeCommon drakeOptimization)
+
 if (lcm_FOUND)
   add_executable(plot_feasible_rotation_matrices plot_feasible_rotation_matrices.cc)
   target_link_libraries(plot_feasible_rotation_matrices

@@ -82,90 +82,91 @@ class SosConstraintTest : public ::testing::Test {
 };
 
 TEST_F(SosConstraintTest, NewFreePolynomialUnivariateDegree1) {
-  const auto& x = x_(0);
-  const Variables indeterminates{x};
-  const int degree{1};
-  const symbolic::Polynomial poly{
-      prog_.NewFreePolynomial(indeterminates, degree)};
-  CheckNewFreePolynomial(poly, indeterminates, degree);
+const auto& x = x_(0);
+const Variables indeterminates{x};
+const int degree{1};
+const symbolic::Polynomial poly{
+    prog_.NewFreePolynomial(indeterminates, degree)};
+CheckNewFreePolynomial(poly, indeterminates, degree);
 }
 
 TEST_F(SosConstraintTest, NewFreePolynomialUnivariateDegree2) {
-  const auto& x = x_(0);
-  const Variables indeterminates{x};
-  const int degree{2};
-  const symbolic::Polynomial poly{
-      prog_.NewFreePolynomial(indeterminates, degree)};
-  CheckNewFreePolynomial(poly, indeterminates, degree);
+const auto& x = x_(0);
+const Variables indeterminates{x};
+const int degree{2};
+const symbolic::Polynomial poly{
+    prog_.NewFreePolynomial(indeterminates, degree)};
+CheckNewFreePolynomial(poly, indeterminates, degree);
 }
 
 TEST_F(SosConstraintTest, NewFreePolynomialMultivariateDegree1) {
-  const auto& x0 = x_(0);
-  const auto& x1 = x_(1);
-  const Variables indeterminates{x0, x1};
-  const int degree{1};
-  const symbolic::Polynomial poly{
-      prog_.NewFreePolynomial(indeterminates, degree)};
-  CheckNewFreePolynomial(poly, indeterminates, degree);
+const auto& x0 = x_(0);
+const auto& x1 = x_(1);
+const Variables indeterminates{x0, x1};
+const int degree{1};
+const symbolic::Polynomial poly{
+    prog_.NewFreePolynomial(indeterminates, degree)};
+CheckNewFreePolynomial(poly, indeterminates, degree);
 }
 
 TEST_F(SosConstraintTest, NewFreePolynomialMultivariateDegree2) {
-  const auto& x0 = x_(0);
-  const auto& x1 = x_(1);
-  const Variables indeterminates{x0, x1};
-  const int degree{2};
-  const symbolic::Polynomial poly{
-      prog_.NewFreePolynomial(indeterminates, degree)};
-  CheckNewFreePolynomial(poly, indeterminates, degree);
+const auto& x0 = x_(0);
+const auto& x1 = x_(1);
+const Variables indeterminates{x0, x1};
+const int degree{2};
+const symbolic::Polynomial poly{
+    prog_.NewFreePolynomial(indeterminates, degree)};
+CheckNewFreePolynomial(poly, indeterminates, degree);
 }
 
 TEST_F(SosConstraintTest, NewSosPolynomialUnivariate1) {
-  const auto& x = x_(0);
-  const Variables indeterminates{x};
-  const int degree{2};
-  const auto p = prog_.NewSosPolynomial(indeterminates, degree);
-  const symbolic::Polynomial& poly{p.first};
-  const Binding<PositiveSemidefiniteConstraint>& psd_binding{p.second};
-  CheckNewSosPolynomial(poly, psd_binding, indeterminates, degree);
+const auto& x = x_(0);
+const Variables indeterminates{x};
+const int degree{2};
+const auto p = prog_.NewSosPolynomial(indeterminates, degree);
+const symbolic::Polynomial& poly{p.first};
+const Binding<PositiveSemidefiniteConstraint>& psd_binding{p.second};
+CheckNewSosPolynomial(poly, psd_binding, indeterminates, degree);
 }
 
 TEST_F(SosConstraintTest, NewSosPolynomialUnivariate2) {
-  const auto& x = x_(0);
-  const Variables indeterminates{x};
-  const int degree{4};
-  const auto p = prog_.NewSosPolynomial(indeterminates, degree);
-  const symbolic::Polynomial& poly{p.first};
-  const Binding<PositiveSemidefiniteConstraint>& psd_binding{p.second};
-  CheckNewSosPolynomial(poly, psd_binding, indeterminates, degree);
+const auto& x = x_(0);
+const Variables indeterminates{x};
+const int degree{4};
+const auto p = prog_.NewSosPolynomial(indeterminates, degree);
+const symbolic::Polynomial& poly{p.first};
+const Binding<PositiveSemidefiniteConstraint>& psd_binding{p.second};
+CheckNewSosPolynomial(poly, psd_binding, indeterminates, degree);
 }
 
 TEST_F(SosConstraintTest, NewSosPolynomialMultivariate1) {
-  const auto& x0 = x_(0);
-  const auto& x1 = x_(1);
-  const Variables indeterminates{x0, x1};
-  const int degree{2};
-  const auto p = prog_.NewSosPolynomial(indeterminates, degree);
-  const symbolic::Polynomial& poly{p.first};
-  const Binding<PositiveSemidefiniteConstraint>& psd_binding{p.second};
-  CheckNewSosPolynomial(poly, psd_binding, indeterminates, degree);
+const auto& x0 = x_(0);
+const auto& x1 = x_(1);
+const Variables indeterminates{x0, x1};
+const int degree{2};
+const auto p = prog_.NewSosPolynomial(indeterminates, degree);
+const symbolic::Polynomial& poly{p.first};
+const Binding<PositiveSemidefiniteConstraint>& psd_binding{p.second};
+CheckNewSosPolynomial(poly, psd_binding, indeterminates, degree);
 }
 
 TEST_F(SosConstraintTest, NewSosPolynomialMultivariate2) {
-  const auto& x0 = x_(0);
-  const auto& x1 = x_(1);
-  const auto& x2 = x_(2);
-  const Variables indeterminates{x0, x1, x2};
-  const int degree{4};
-  const auto p = prog_.NewSosPolynomial(indeterminates, degree);
-  const symbolic::Polynomial& poly{p.first};
-  const Binding<PositiveSemidefiniteConstraint>& psd_binding{p.second};
-  CheckNewSosPolynomial(poly, psd_binding, indeterminates, degree);
+const auto& x0 = x_(0);
+const auto& x1 = x_(1);
+const auto& x2 = x_(2);
+const Variables indeterminates{x0, x1, x2};
+const int degree{4};
+const auto p = prog_.NewSosPolynomial(indeterminates, degree);
+const symbolic::Polynomial& poly{p.first};
+const Binding<PositiveSemidefiniteConstraint>& psd_binding{p.second};
+CheckNewSosPolynomial(poly, psd_binding, indeterminates, degree);
 }
 
 // Shows that f(x) = x² + 2x + 1 is SOS.
 TEST_F(SosConstraintTest, AddSosConstraintUnivariate1) {
   const auto& x = x_(0);
-  const auto binding_pair = prog_.AddSosConstraint(2 * pow(x, 2) + 2 * x + 1);
+  const symbolic::Polynomial p{2 * pow(x, 2) + 2 * x + 1};
+  const auto binding_pair = prog_.AddSosConstraint(p);
   const auto result = prog_.Solve();
   EXPECT_EQ(result, SolutionResult::kSolutionFound);
   CheckPsdBinding(binding_pair.first);
@@ -176,11 +177,14 @@ TEST_F(SosConstraintTest, AddSosConstraintUnivariate1) {
 // http://www.mit.edu/~parrilo/cdc03_workshop/08_sum_of_squares_2003_12_07_07_screen.pdf.
 TEST_F(SosConstraintTest, AddSosConstraintUnivariate2) {
   const auto& x = x_(0);
+  const symbolic::Variables indets_{x_(0)};
   const auto& c = c_(0);
+  const symbolic::Polynomial p{pow(x, 6) - 10 * pow(x, 5) + 51 * pow(x, 4) -
+                                   166 * pow(x, 3) + 342 * pow(x, 2) - 400 * x +
+                                   200 - c,
+                               indets_};
   prog_.AddCost(-c);
-  const auto binding_pair = prog_.AddSosConstraint(
-      pow(x, 6) - 10 * pow(x, 5) + 51 * pow(x, 4) - 166 * pow(x, 3) +
-      342 * pow(x, 2) - 400 * x + 200 - c);
+  const auto binding_pair = prog_.AddSosConstraint(p);
   const auto result = prog_.Solve();
   ASSERT_EQ(result, SolutionResult::kSolutionFound);
   EXPECT_LE(prog_.GetSolution(c), 1E-4);
@@ -191,9 +195,9 @@ TEST_F(SosConstraintTest, AddSosConstraintUnivariate2) {
 TEST_F(SosConstraintTest, AddSosConstraintMultivariate1) {
   const auto& x0 = x_(0);
   const auto& x1 = x_(1);
-  const auto binding_pair =
-      prog_.AddSosConstraint(2 * pow(x0, 4) + 2 * pow(x0, 3) * x1 -
-                             pow(x0, 2) * pow(x1, 2) + 5 * pow(x1, 4));
+  const symbolic::Polynomial p{2 * pow(x0, 4) + 2 * pow(x0, 3) * x1 -
+                               pow(x0, 2) * pow(x1, 2) + 5 * pow(x1, 4)};
+  const auto binding_pair = prog_.AddSosConstraint(p);
   const auto result = prog_.Solve();
   EXPECT_EQ(result, SolutionResult::kSolutionFound);
   CheckPsdBinding(binding_pair.first);
@@ -207,12 +211,14 @@ TEST_F(SosConstraintTest, AddSosConstraintMultivariate1) {
 TEST_F(SosConstraintTest, AddSosConstraintMultivariate2) {
   const auto& x0 = x_(0);
   const auto& x1 = x_(1);
+  const symbolic::Variables indets_{x_(0), x_(1)};
   const auto& c = c_(0);
+  const symbolic::Polynomial p{4 * pow(x0, 2) - 2.1 * pow(x0, 4) +
+                                   1.0 / 3.0 * pow(x0, 6) + x0 * x1 -
+                                   4 * x1 * x1 + 4 * pow(x1, 4) - c,
+                               indets_};
   prog_.AddCost(-c);
-  const auto binding_pair = prog_.AddSosConstraint(
-      4 * pow(x0, 2) - 2.1 * pow(x0, 4) + 1.0 / 3.0 * pow(x0, 6) + x0 * x1 -
-      4 * x1 * x1 + 4 * pow(x1, 4) - c);
-
+  const auto binding_pair = prog_.AddSosConstraint(p);
   const auto result = prog_.Solve();
   ASSERT_EQ(result, SolutionResult::kSolutionFound);
   EXPECT_NEAR(prog_.GetSolution(c), -1.0316, 1E-4);
