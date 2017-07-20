@@ -222,11 +222,10 @@ void ParseLink(sdf::ElementPtr sdf_link_element,
 std::unique_ptr<DrakeJoint>
 ParseJointType(sdf::ElementPtr sdf_joint_element,
                const ModelInstance& instance,
-               const RigidBody<double>* parent_body,
+               const RigidBody<double>& parent_body,
                const FrameCache<double>& frame_cache) {
   DRAKE_DEMAND(sdf_joint_element != nullptr);
   DRAKE_DEMAND(sdf_joint_element->GetName() == "joint");
-  DRAKE_DEMAND(parent_body != nullptr);
   const auto joint_name = sdf_joint_element->Get<std::string>("name");
   const auto joint_type = sdf_joint_element->Get<std::string>("type");
   if (joint_type == "revolute") {
@@ -254,7 +253,7 @@ ParseJointType(sdf::ElementPtr sdf_joint_element,
     // the parent body frame. That is, the joint frame's (F) pose in the parent
     // body frame (P).
     const Isometry3<double> X_PF =
-        frame_cache.Transform(parent_body->get_name(), joint_name);
+        frame_cache.Transform(parent_body.get_name(), joint_name);
     auto joint = std::make_unique<RevoluteJoint>(
         joint_name, X_PF, axis_of_rotation);
     return std::move(joint);
@@ -308,7 +307,7 @@ void ParseJoint(sdf::ElementPtr sdf_joint_element,
 
   // Update child link's parent and joint.
   child_body->setJoint(ParseJointType(
-      sdf_joint_element, instance, parent_body, *frame_cache));
+      sdf_joint_element, instance, *parent_body, *frame_cache));
   child_body->set_parent(parent_body);
 }
 
