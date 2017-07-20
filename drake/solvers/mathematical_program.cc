@@ -24,6 +24,7 @@
 #include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/nlopt_solver.h"
 #include "drake/solvers/snopt_solver.h"
+#include "drake/solvers/sos_util.h"
 #include "drake/solvers/symbolic_extraction.h"
 
 // Note that the file mathematical_program_api.cc also contains some of the
@@ -590,15 +591,20 @@ MathematicalProgram::AddLinearMatrixInequalityConstraint(
 // Note that FindDecisionVariableIndex is implemented in
 // mathematical_program_api.cc instead of this file.
 
-// Note that FindIndeterminateIndex is implemented in
-// mathematical_program_api.cc instead of this file.
-
 pair<Binding<PositiveSemidefiniteConstraint>, Binding<LinearEqualityConstraint>>
 MathematicalProgram::AddSosConstraint(const symbolic::Polynomial& p) {
-  const symbolic::Variables indeterminates{p.indeterminates()};
-  const auto pair = NewSosPolynomial(indeterminates, p.TotalDegree());
-  const symbolic::Polynomial& sos_poly{pair.first};
-  const Binding<PositiveSemidefiniteConstraint>& psd_binding{pair.second};
+  const drake::VectorX<symbolic::Monomial> x{ConstructGramBasis(p)};
+  const MatrixXDecisionVariable Q{NewSymmetricContinuousVariables(x.size())};
+  const auto psd_binding = AddPositiveSemidefiniteConstraint(Q);
+  // Constructs a coefficient matrix of Polynomials Q_poly from Q. In the
+  // process, we make sure that each Q_poly(i, j) is treated as a decision
+  // variable, not an indeterminate.
+  const drake::MatrixX<symbolic::Polynomial> Q_poly{
+      Q.unaryExpr([](const Variable& q_i_j) {
+        return symbolic::Polynomial{q_i_j /* coeff */, {} /* Monomial */};
+      })};
+  const symbolic::Polynomial sos_poly{
+      x.dot(Q_poly * x)};  // p = xᵀ * Q_poly * x.
   const auto leq_binding = AddLinearEqualityConstraint(sos_poly == p);
   return make_pair(psd_binding, leq_binding);
 }
