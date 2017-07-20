@@ -51,13 +51,25 @@ GTEST_TEST(FrameCacheTest, TransformTest) {
   EXPECT_TRUE(frame_cache.Transform("world", "arm").isApprox(X_WB2 * X_BA));
 
   // Check that any attempt to introduce a frame cycle into the cache
-  // results in an exception.
+  // results in an exception being thrown.
   ASSERT_THROW({
       frame_cache.Update("arm", "body", Isometry3<double>::Identity());
     }, std::runtime_error);
 
   ASSERT_THROW({
       frame_cache.Update("arm", "world", Isometry3<double>::Identity());
+    }, std::runtime_error);
+
+  // Check that any attempt to update a frame's pose in itself
+  // results in an exception being thrown, except when the identity
+  // transform is given.
+  ASSERT_NO_THROW({
+      frame_cache.Update("arm", "arm", Isometry3<double>::Identity());
+    });
+
+  ASSERT_THROW({
+      frame_cache.Update("arm", "arm", Isometry3<double>(
+          AngleAxis<double>(M_PI, Vector3<double>::UnitZ())));
     }, std::runtime_error);
 }
 

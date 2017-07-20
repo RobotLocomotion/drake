@@ -5,8 +5,8 @@
 #include <limits>
 #include <memory>
 
-#include "drake/common/text_logging_gflags.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/text_logging_gflags.h"
 #include "drake/examples/double_pendulum/sdf_helpers.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
@@ -25,13 +25,13 @@ namespace examples {
 namespace double_pendulum {
 namespace {
 
-/// Fixed path to double pendulum SDF model.
+// Fixed path to double pendulum SDF model.
 static const char* const kDoublePendulumSdfPath =
   "drake/examples/double_pendulum/models/double_pendulum.sdf";
 
-///
-/// Main function for demo.
-///
+//
+// Main function for demo.
+//
 int main(int argc, char* argv[]) {
   gflags::SetUsageMessage("Simple sdformat usage example, just"
                           "make sure drake-visualizer is running!");
