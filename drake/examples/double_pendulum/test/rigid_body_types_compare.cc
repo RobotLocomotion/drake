@@ -79,28 +79,26 @@ namespace test {
       << "Elements elem1 and elem2 are equivalent.";
 }
 
-// Cannot use const ref due to RigidBody<T>::collision_elements_begin() and
-// RigidBody<T>::collision_elements_end() non-constness.
-::testing::AssertionResult AreBodiesEquivalent(RigidBody<double>* body1,
-                                               RigidBody<double>* body2) {
-  if (body1->get_mass() != body2->get_mass()) {
+::testing::AssertionResult AreBodiesEquivalent(const RigidBody<double>& body1,
+                                               const RigidBody<double>& body2) {
+  if (body1.get_mass() != body2.get_mass()) {
     return ::testing::AssertionFailure()
-        << "Body masses differ: body1 mass = " << body1->get_mass()
-        << ", body2 mass = " << body2->get_mass() << ".";
+        << "Body masses differ: body1 mass = " << body1.get_mass()
+        << ", body2 mass = " << body2.get_mass() << ".";
   }
-  if (!body1->get_center_of_mass().isApprox(body2->get_center_of_mass())) {
+  if (!body1.get_center_of_mass().isApprox(body2.get_center_of_mass())) {
     Eigen::IOFormat fmt(Eigen::StreamPrecision,
                         Eigen::DontAlignCols,
                         ", ", ", ", "", "", "[", "]");
     return ::testing::AssertionFailure()
         << "Body COM differ:"
-        << " body1 COM = " << body1->get_center_of_mass().format(fmt) << ","
-        << " body2 COM = " << body2->get_center_of_mass().format(fmt) << ".";
+        << " body1 COM = " << body1.get_center_of_mass().format(fmt) << ","
+        << " body2 COM = " << body2.get_center_of_mass().format(fmt) << ".";
   }
   const DrakeShapes::VectorOfVisualElements& body1_visuals =
-      body1->get_visual_elements();
+      body1.get_visual_elements();
   const DrakeShapes::VectorOfVisualElements& body2_visuals =
-      body2->get_visual_elements();
+      body2.get_visual_elements();
   if (body1_visuals.size() != body2_visuals.size()) {
     return ::testing::AssertionFailure()
         << "Body visual elements differ: body1 has "
@@ -119,19 +117,24 @@ namespace test {
           << result.failure_message();
     }
   }
-  if (body1->get_num_collision_elements() !=
-      body2->get_num_collision_elements()) {
+  if (body1.get_num_collision_elements() !=
+      body2.get_num_collision_elements()) {
     return ::testing::AssertionFailure()
         << "Body collision elements differ: body1 has "
-        << body1->get_num_collision_elements()
+        << body1.get_num_collision_elements()
         << " collision elements, body2 has "
-        << body2->get_num_collision_elements()
+        << body2.get_num_collision_elements()
         << " collision elements.";
   }
+
+  // Apply const_cast to call RigidBody::collision_elements_begin() and
+  // RigidBody::collision_elements_end() on an initially const ref.
+  RigidBody<double>& non_const_body1 = const_cast<RigidBody<double>&>(body1);
+  RigidBody<double>& non_const_body2 = const_cast<RigidBody<double>&>(body2);
   // TODO(hidmic): Do not require bodies to be built in the exact same order.
-  for (auto it1 = body1->collision_elements_begin(),
-            it2 = body2->collision_elements_begin(),
-            ed1 = body1->collision_elements_end();
+  for (auto it1 = non_const_body1.collision_elements_begin(),
+            it2 = non_const_body2.collision_elements_begin(),
+            ed1 = non_const_body1.collision_elements_end();
        it1 != ed1 ; ++it1, ++it2) {
     const DrakeCollision::Element* body1_collision = *it1;
     const DrakeCollision::Element* body2_collision = *it2;

@@ -223,11 +223,10 @@ std::unique_ptr<DrakeJoint>
 ParseJointType(sdf::ElementPtr sdf_joint_element,
                const ModelInstance& instance,
                const RigidBody<double>* parent_body,
-               const FrameCache<double>* frame_cache) {
+               const FrameCache<double>& frame_cache) {
   DRAKE_DEMAND(sdf_joint_element != nullptr);
   DRAKE_DEMAND(sdf_joint_element->GetName() == "joint");
   DRAKE_DEMAND(parent_body != nullptr);
-  DRAKE_DEMAND(frame_cache != nullptr);
   const auto joint_name = sdf_joint_element->Get<std::string>("name");
   const auto joint_type = sdf_joint_element->Get<std::string>("type");
   if (joint_type == "revolute") {
@@ -243,7 +242,7 @@ ParseJointType(sdf::ElementPtr sdf_joint_element,
 
         // Joint frame's (M) pose in model frame (D).
         const Isometry3<double> X_DM =
-            frame_cache->Transform(instance.name, joint_name);
+            frame_cache.Transform(instance.name, joint_name);
         // Axis of rotation must be rotated back to the joint
         // frame (M), so the inverse of the rotational part of the
         // pose of the joint frame (M) in the model frame (D)
@@ -255,7 +254,7 @@ ParseJointType(sdf::ElementPtr sdf_joint_element,
     // the parent body frame. That is, the joint frame's (F) pose in the parent
     // body frame (P).
     const Isometry3<double> X_PF =
-        frame_cache->Transform(parent_body->get_name(), joint_name);
+        frame_cache.Transform(parent_body->get_name(), joint_name);
     auto joint = std::make_unique<RevoluteJoint>(
         joint_name, X_PF, axis_of_rotation);
     return std::move(joint);
@@ -295,8 +294,8 @@ void ParseJoint(sdf::ElementPtr sdf_joint_element,
   auto X_BM = Isometry3<double>::Identity();
   if (sdf_joint_element->HasElement("pose")) {
     sdf::ElementPtr sdf_pose_element = sdf_joint_element->GetElement("pose");
-    // Joint poses specified in SDF files are, by default,
-    // in the child body frame (B).
+    // Joint poses specified in SDF files are, by default, in the child body
+    // frame (B). See http://sdformat.org/spec?ver=1.4&elem=joint for details.
     X_BM = ParsePose(sdf_pose_element);
   }
   frame_cache->Update(child_link_name, joint_name, X_BM);
@@ -309,7 +308,7 @@ void ParseJoint(sdf::ElementPtr sdf_joint_element,
 
   // Update child link's parent and joint.
   child_body->setJoint(ParseJointType(
-      sdf_joint_element, instance, parent_body, frame_cache));
+      sdf_joint_element, instance, parent_body, *frame_cache));
   child_body->set_parent(parent_body);
 }
 

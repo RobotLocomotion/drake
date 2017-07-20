@@ -68,15 +68,17 @@ GTEST_TEST(SDFHelpersTest, ParsingTest) {
 
   // Check parsed tree bodies and joints.
   RigidBody<double>* body = parsed_tree.FindBody("body");
+  ASSERT_TRUE(body != nullptr);
   EXPECT_TRUE(body->has_as_parent(parsed_tree.world()));
-  EXPECT_TRUE(test::AreBodiesEquivalent(body, &body_ref));
+  EXPECT_TRUE(test::AreBodiesEquivalent(*body, body_ref));
 
   const DrakeJoint& world_to_body_joint = body->getJoint();
   EXPECT_TRUE(world_to_body_joint.is_fixed());
 
   RigidBody<double>* arm = parsed_tree.FindBody("arm");
+  ASSERT_TRUE(arm != nullptr);
   EXPECT_TRUE(arm->has_as_parent(*body));
-  EXPECT_TRUE(test::AreBodiesEquivalent(arm, &arm_ref));
+  EXPECT_TRUE(test::AreBodiesEquivalent(*arm, arm_ref));
 
   const DrakeJoint& body_to_arm_joint = arm->getJoint();
   EXPECT_EQ(body_to_arm_joint.get_name(), "shoulder");

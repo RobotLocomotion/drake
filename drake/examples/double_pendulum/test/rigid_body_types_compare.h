@@ -25,8 +25,8 @@ namespace test {
 /// @return ::testing::AssertionSuccess if bodies are
 /// equivalent,  otherwise ::testing::AssertionFailure.
 ::testing::AssertionResult AreBodiesEquivalent(
-     RigidBody<double>* body1,
-     RigidBody<double>* body2);
+     const RigidBody<double>& body1,
+     const RigidBody<double>& body2);
 
 }  // namespace test
 }  // namespace double_pendulum
