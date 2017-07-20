@@ -175,6 +175,46 @@ GTEST_TEST(TestLogarithmicSOS1, Test5Lambda) {
   LogarithmicSOS1Test(5, codes.topRows<5>());
 }
 
+GTEST_TEST(TestBilinearProductMcCormickEnvelopeSOS2, AddConstraint) {
+  // Test if the return argument from AddBilinearProductMcCormickEnvelopeSos2
+  // has the right type
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<1>()(0);
+  auto y = prog.NewContinuousVariables<1>()(0);
+  auto w = prog.NewContinuousVariables<1>()(0);
+
+  const Eigen::Vector3d phi_x_static(0, 1, 2);
+  Eigen::VectorXd phi_x_dynamic = Eigen::VectorXd::LinSpaced(3, 0, 2);
+  const Eigen::Vector4d phi_y_static = Eigen::Vector4d::LinSpaced(0, 3);
+  Eigen::VectorXd phi_y_dynamic = Eigen::VectorXd::LinSpaced(4, 0, 3);
+  auto Bx = prog.NewBinaryVariables<1>();
+  auto By = prog.NewBinaryVariables<2>();
+  auto lambda1 = AddBilinearProductMcCormickEnvelopeSos2(
+      &prog, x, y, w, phi_x_static, phi_y_static, Bx, By);
+  static_assert(
+      std::is_same<decltype(lambda1), MatrixDecisionVariable<3, 4>>::value,
+      "lambda should be a static matrix");
+
+  auto lambda2 = AddBilinearProductMcCormickEnvelopeSos2(
+      &prog, x, y, w, phi_x_dynamic, phi_y_static, Bx, By);
+  static_assert(std::is_same<decltype(lambda2),
+                             MatrixDecisionVariable<Eigen::Dynamic, 4>>::value,
+                "lambda's type is incorrect");
+
+  auto lambda3 = AddBilinearProductMcCormickEnvelopeSos2(
+      &prog, x, y, w, phi_x_static, phi_y_dynamic, Bx, By);
+  static_assert(std::is_same<decltype(lambda3),
+                             MatrixDecisionVariable<3, Eigen::Dynamic>>::value,
+                "lambda's type is incorrect");
+
+  auto lambda4 = AddBilinearProductMcCormickEnvelopeSos2(
+      &prog, x, y, w, phi_x_dynamic, phi_y_dynamic, Bx, By);
+  static_assert(
+      std::is_same<
+          decltype(lambda4),
+          MatrixDecisionVariable<Eigen::Dynamic, Eigen::Dynamic>>::value,
+      "lambda's type is incorrect");
+}
 class BilinearProductMcCormickEnvelopeSOS2Test
     : public ::testing::TestWithParam<std::tuple<int, int>> {
  public:
@@ -191,8 +231,6 @@ class BilinearProductMcCormickEnvelopeSOS2Test
         phi_y_{Eigen::VectorXd::LinSpaced(num_interval_y_ + 1, 0, 1)},
         Bx_{prog_.NewBinaryVariables(CeilLog2(num_interval_x_))},
         By_{prog_.NewBinaryVariables(CeilLog2(num_interval_y_))} {
-    AddBilinearProductMcCormickEnvelopeSos2(&prog_, x_, y_, w_, phi_x_, phi_y_,
-                                            Bx_, By_);
   }
 
  protected:
@@ -213,6 +251,10 @@ TEST_P(BilinearProductMcCormickEnvelopeSOS2Test, LinearObjectiveTest) {
   // s.t (x, y, w) is in the convex hull of the (x, y, x*y).
   // We fix x and y to each intervals.
   // We expect the optimum obtained at one of the vertices of the tetrahedron.
+  auto lambda = AddBilinearProductMcCormickEnvelopeSos2(
+      &prog_, x_, y_, w_, phi_x_, phi_y_, Bx_, By_);
+  static_assert(std::is_same<decltype(lambda), MatrixXDecisionVariable>::value,
+  "lambda should be dynamic sized.");
   Eigen::MatrixXi gray_codes_x = math::CalculateReflectedGrayCodes(Bx_.rows());
   Eigen::MatrixXi gray_codes_y = math::CalculateReflectedGrayCodes(By_.rows());
   // We will assign the binary variables Bx_ and By_ to a value in the gray
@@ -258,6 +300,16 @@ TEST_P(BilinearProductMcCormickEnvelopeSOS2Test, LinearObjectiveTest) {
               a.col(k).transpose() * vertices;
           EXPECT_NEAR(prog_.GetOptimalCost(), cost_at_vertices.minCoeff(),
                       1E-4);
+          // Check that λ has the correct value, execpt λ(i, j), λ(i, j+1),
+          // λ(i+1, j) and λ(i+1, j+1), all other entries in λ are zero.
+          for (int m = 0; m < num_interval_x_; ++m) {
+            for (int n = 0; n < num_interval_y_; ++n) {
+              if (!((m == i && n == j) || (m == i && n == j + 1) ||
+                    (m == i + 1 && n == j) || (m == i + 1 && n == j + 1))) {
+                EXPECT_NEAR(prog_.GetSolution(lambda(m, n)), 0, 1E-5);
+              }
+            }
+          }
         }
       }
     }
