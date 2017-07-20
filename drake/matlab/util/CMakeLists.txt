@@ -29,23 +29,10 @@ if(Matlab_FOUND)
     LIBS -ldrakeMexUtil
     REQUIRES drake-common)
 
-  drake_add_mex(barycentricInterpolation barycentricInterpolation.cpp)
-
-  if(Matlab_SIMULINK_FOUND)
-    drake_add_mex(realtime realtime.cpp)
-  endif()
-
   if(lcm_FOUND)
-    if(Matlab_SIMULINK_FOUND)
-      drake_add_mex(lcmLogger lcmLogger.cpp)
-      target_link_libraries(lcmLogger lcm)
-    endif()
-
-    drake_add_mex(publishLCMLog publishLCMLog.cpp)
-    target_link_libraries(publishLCMLog lcm)
-
-    include_directories(${PROJECT_BINARY_DIR}/..) # to find protobuf generated headers
     drake_add_mex(call_matlab_client call_matlab_client.cc)
+    target_include_directories(call_matlab_client PRIVATE
+      ${PROJECT_BINARY_DIR}/..) # to find protobuf generated headers
     target_link_libraries(call_matlab_client
         drakeCommon
         drakeCommonProto
