@@ -146,15 +146,36 @@ T AcrobotPlant<T>::DoCalcPotentialEnergy(
   return -m1_ * g_ * lc1_ * c1 - m2_ * g_ * (l1_ * c1 + lc2_ * c12);
 }
 
-// AcrobotPlant has no constructor arguments, so there's no work to do here.
 template <typename T>
 AcrobotPlant<AutoDiffXd>* AcrobotPlant<T>::DoToAutoDiffXd() const {
-  return new AcrobotPlant<AutoDiffXd>();
+  return new AcrobotPlant<AutoDiffXd>(
+      m1_,
+      m2_,
+      l1_,
+      l2_,
+      lc1_,
+      lc2_,
+      Ic1_,
+      Ic2_,
+      b1_,
+      b2_,
+      g_);
 }
 
 template <typename T>
 AcrobotPlant<symbolic::Expression>* AcrobotPlant<T>::DoToSymbolic() const {
-  return new AcrobotPlant<symbolic::Expression>();
+  return new AcrobotPlant<symbolic::Expression>(
+      m1_,
+      m2_,
+      l1_,
+      l2_,
+      lc1_,
+      lc2_,
+      Ic1_,
+      Ic2_,
+      b1_,
+      b2_,
+      g_);
 }
 
 template class AcrobotPlant<double>;
