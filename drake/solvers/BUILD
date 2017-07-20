@@ -229,7 +229,9 @@ drake_cc_library(
         "rotation_constraint_internal.h",
     ],
     deps = [
+        ":bilinear_product_util",
         ":mathematical_program",
+        ":mixed_integer_optimization_util",
         "//drake/math:gradient",
     ],
 )
@@ -284,8 +286,8 @@ drake_cc_library(
     srcs = ["test/mathematical_program_test_util.cc"],
     hdrs = ["test/mathematical_program_test_util.h"],
     deps = [
-        ":mathematical_program",
         "@gtest//:without_main",
+        ":mathematical_program",
     ],
 )
 
@@ -295,11 +297,11 @@ drake_cc_library(
     srcs = ["test/optimization_examples.cc"],
     hdrs = ["test/optimization_examples.h"],
     deps = [
+        "@gtest//:without_main",
         ":mathematical_program",
         ":mathematical_program_test_util",
         ":solver_type_converter",
         "//drake/common:eigen_matrix_compare",
-        "@gtest//:without_main",
     ],
 )
 

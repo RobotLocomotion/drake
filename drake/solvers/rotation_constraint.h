@@ -153,13 +153,14 @@ AddRotationMatrixMcCormickEnvelopeMilpConstraints(
 template<int NumIntervalsPerHalfAxis>
 struct AddRotationMatrixBilinearTermMcCormickEnvelopeMilpConstraintsReturn {
   typedef std::array<std::array<VectorDecisionVariable<NumIntervalsPerHalfAxis>, 3>, 3> BinaryVarType;
-  typedef Eigen::Matrix<double, NumIntervalsPerHalfAxis == Eigen::Dynamic ? Eigen::Dynamic : 1 + CeilLog2(NumIntervalsPerHalfAxis), 1> PhiType;
+  static constexpr int PhiRows = NumIntervalsPerHalfAxis == Eigen::Dynamic ? Eigen::Dynamic : 1 + 2 * NumIntervalsPerHalfAxis;
+  typedef Eigen::Matrix<double, PhiRows, 1> PhiType;
   typedef std::pair<BinaryVarType, PhiType> type;
 };
 
 template<int NumIntervalsPerHalfAxis = Eigen::Dynamic>
 typename std::enable_if<NumIntervalsPerHalfAxis == Eigen::Dynamic || NumIntervalsPerHalfAxis >= 1,
-                        AddRotationMatrixBilinearTermMcCormickEnvelopeMilpConstraintsReturn<NumIntervalsPerHalfAxis>>::type
+                        typename AddRotationMatrixBilinearTermMcCormickEnvelopeMilpConstraintsReturn<NumIntervalsPerHalfAxis>::type>::type
 AddRotationMatrixBilinearTermMcCormickEnvelopeMilpConstraints(
     MathematicalProgram* prog,
     const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
