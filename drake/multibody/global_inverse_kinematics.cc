@@ -424,10 +424,10 @@ void GlobalInverseKinematics::AddJointLimitConstraint(
   }
   const RigidBody<double> &body = robot_->get_body(body_index);
   if (body.has_parent_body()) {
-    const RigidBody<double> *parent_body = body.get_parent();
+    const RigidBody<double>* parent_body = body.get_parent();
     const int parent_idx = parent_body->get_body_index();
-    const DrakeJoint *joint = &(body.getJoint());
-    const auto &X_PF = joint->get_transform_to_parent_body();
+    const DrakeJoint* joint = &(body.getJoint());
+    const auto& X_PF = joint->get_transform_to_parent_body();
     switch (joint->get_num_velocities()) {
       case 0 : {
         // Fixed to the parent body.
