@@ -30,10 +30,22 @@ GTEST_TEST(AutodiffOverloadsTest, ExtractDouble) {
   EXPECT_EQ(ExtractDoubleOrThrow(y), 1.0);
 }
 
+// Helper method to keep UBSan happy when a division by zero is not
+// unexpected.
+#ifdef __clang__
+__attribute__((no_sanitize("float-divide-by-zero")))
+#elif defined(__GNUC__)
+// https://gcc.gnu.org/bugzilla/show_bug.cgi?id=78204
+__attribute__((no_sanitize_undefined))
+#endif
+double divide_allowing_by_zero(const double& n, const double& d) {
+  return n / d;
+}
+
 // Tests correctness of isinf.
 GTEST_TEST(AutodiffOverloadsTest, IsInf) {
   Eigen::AutoDiffScalar<Eigen::Vector2d> x;
-  x.value() = 1.0 / 0.0;
+  x.value() = divide_allowing_by_zero(1.0, 0.0);
   EXPECT_EQ(isinf(x), true);
   x.value() = 0.0;
   EXPECT_EQ(isinf(x), false);
@@ -42,7 +54,7 @@ GTEST_TEST(AutodiffOverloadsTest, IsInf) {
 // Tests correctness of isnan.
 GTEST_TEST(AutodiffOverloadsTest, IsNaN) {
   Eigen::AutoDiffScalar<Eigen::Vector2d> x;
-  x.value() = 0.0 / 0.0;
+  x.value() = divide_allowing_by_zero(0.0, 0.0);
   EXPECT_EQ(isnan(x), true);
   x.value() = 0.0;
   EXPECT_EQ(isnan(x), false);
