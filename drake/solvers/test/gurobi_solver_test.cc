@@ -102,6 +102,104 @@ GTEST_TEST(GurobiTest, TestInitialGuess) {
     }
   }
 }
+
+namespace TestCallbacks {
+
+struct TestCallbackInfo {
+  Eigen::VectorXd x_vals;
+  VectorXDecisionVariable x_vars;
+  bool mip_sol_callback_called = false;
+  bool mip_node_callback_called = false;
+};
+
+static void MipSolCallbackFunctionTest(
+    const MathematicalProgram& prog,
+    const drake::solvers::GurobiSolver::SolveStatusInfo& solve_info,
+    TestCallbackInfo* cb_info) {
+  cb_info->mip_sol_callback_called = true;
+}
+static void MipNodeCallbackFunctionTest(
+    const MathematicalProgram& prog,
+    const GurobiSolver::SolveStatusInfo& solve_info, Eigen::VectorXd* vals,
+    VectorXDecisionVariable* vars, TestCallbackInfo* cb_info) {
+  cb_info->mip_node_callback_called = true;
+  *vals = cb_info->x_vals;
+  *vars = cb_info->x_vars;
+}
+
+GTEST_TEST(GurobiTest, TestCallbacks) {
+  GurobiSolver solver;
+
+  if (solver.available()) {
+    // Formulate a problem with multiple feasible
+    // solutions and multiple clear optimal solutions.
+    MathematicalProgram prog;
+    auto x = prog.NewBinaryVariables<4>("x");
+
+    // Constraint such that x_0 and x_1 can't both be
+    // 1, but leave a feasible vertex at (2/3, 2/3)
+    // that is optimal in the continuous relaxation.
+    prog.AddLinearConstraint(x[0] <= 1. - 0.5 * x[1]);
+    prog.AddLinearConstraint(x[1] <= 1. - 0.5 * x[0]);
+    prog.AddLinearCost(-x[0] - x[1]);
+
+    // Each of these options would short-circuit the solver
+    // from entering a full solve and generating both
+    // feasible solution callbacks (mipSol) and intermediate
+    // node callbacks (mipNode).
+    // Prevents the problem from being simplified, making the
+    // solution potentially trivial:
+    prog.SetSolverOption(GurobiSolver::id(), "Presolve", 0);
+    // Prevents the optimal solution from being generated without
+    // doing a full solve:
+    prog.SetSolverOption(GurobiSolver::id(), "Heuristics", 0.0);
+    // Similarly, prevents trivialization of the problem via
+    // clever new cuts:
+    prog.SetSolverOption(GurobiSolver::id(), "Cuts", 0);
+    // Prevents the root node from finding the optimal feasible
+    // solution via simplex, by switching to a barrier method:
+    prog.SetSolverOption(GurobiSolver::id(), "NodeMethod", 2);
+
+    // Force us to start at a known-suboptimal sol.
+    Eigen::VectorXd x_init(4);
+    x_init << 0.0, 0.0, 0.0, 0.0;
+    prog.SetInitialGuess(x, x_init);
+
+    // Enumerate a few different optimal solutions and try
+    // injecting each of them to make sure the solver
+    // is receiving these injections and listening to them.
+    std::vector<Eigen::VectorXd> optimal_sols(3, Eigen::VectorXd(4));
+    optimal_sols[0] << 1.0, 0.0, 0.0, 1.0;
+    optimal_sols[1] << 1.0, 0.0, 1.0, 0.0;
+    optimal_sols[2] << 0.0, 1.0, 1.0, 1.0;
+
+    for (const auto& x_expected : optimal_sols) {
+      TestCallbackInfo cb_info;
+      cb_info.x_vals = x_expected;
+      cb_info.x_vars = x;
+
+      GurobiSolver::MipNodeCallbackFunction mip_node_callback_function_wrapper =
+          std::bind(MipNodeCallbackFunctionTest, std::placeholders::_1,
+                    std::placeholders::_2, std::placeholders::_3,
+                    std::placeholders::_4, &cb_info);
+      GurobiSolver::MipSolCallbackFunction mip_sol_callback_function_wrappre =
+          std::bind(MipSolCallbackFunctionTest, std::placeholders::_1,
+                    std::placeholders::_2, &cb_info);
+      solver.AddMipNodeCallback(mip_node_callback_function_wrapper);
+      solver.AddMipSolCallback(mip_sol_callback_function_wrappre);
+
+      SolutionResult result = solver.Solve(prog);
+      EXPECT_EQ(result, SolutionResult::kSolutionFound);
+      const auto& x_value = prog.GetSolution(x);
+      EXPECT_TRUE(CompareMatrices(x_value, x_expected, 1E-6,
+                                  MatrixCompareType::absolute));
+      ExpectSolutionCostAccurate(prog, 1E-6);
+      EXPECT_TRUE(cb_info.mip_sol_callback_called);
+      EXPECT_TRUE(cb_info.mip_node_callback_called);
+    }
+  }
+}
+}  // namespace TestCallbacks
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
