@@ -268,6 +268,12 @@ void RigidContactSolver<T>::SolveImpactProblem(
     return;
   }
 
+  // If no impact, do not apply the impact model.
+  if ((problem_data.N * problem_data.v).minCoeff() >= 0) {
+    cf->setZero(num_contacts + num_spanning_vectors);
+    return;
+  }
+
   // Initialize contact force vector.
   cf->resize(num_contacts + num_spanning_vectors);
 
