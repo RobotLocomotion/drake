@@ -43,4 +43,4 @@ zlib
 EOF
 )
 
-pip install --upgrade Sphinx
+pip2 install --upgrade Sphinx
