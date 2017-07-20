@@ -692,6 +692,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "symbolic_expression_transform_test",
+    deps = [
+        ":common",
+        ":symbolic",
+        "//drake/math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
     name = "symbolic_mixing_scalar_types_test",
     deps = [
         ":common",
