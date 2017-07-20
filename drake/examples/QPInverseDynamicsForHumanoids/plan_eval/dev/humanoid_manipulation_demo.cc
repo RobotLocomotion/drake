@@ -1,5 +1,3 @@
-#include <lcm/lcm-cpp.hpp>
-
 #include "drake/examples/Valkyrie/valkyrie_constants.h"
 #include "drake/manipulation/util/robot_state_msg_translator.h"
 #include "drake/multibody/joints/floating_base_types.h"
@@ -7,12 +5,16 @@
 #include "drake/multibody/rigid_body_tree.h"
 
 #include "robotlocomotion/robot_plan_t.hpp"
+#include "lcm/lcm-cpp.hpp"
 
-using namespace drake;
+using std::default_random_engine;
 
-int main() {
+namespace drake {
+namespace {
+
+void send_manip_message() {
   RigidBodyTree<double> robot;
-  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+  drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       "drake/examples/Valkyrie/urdf/urdf/"
       "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf",
       multibody::joints::kRollPitchYaw, &robot);
@@ -40,8 +42,7 @@ int main() {
   // mode. CoM in controlled by a LQR like controller, where the desired is
   // given by the knot points specified here.
   robotlocomotion::robot_plan_t msg{};
-  srand(time(NULL));
-  msg.utime = rand();
+  msg.utime = time(NULL);
   msg.num_states = 1;
   msg.plan.resize(msg.num_states);
   msg.plan_info.resize(msg.num_states, 1);
@@ -55,4 +56,12 @@ int main() {
   lcm.publish("VALKYRIE_MANIP_PLAN", &msg);
 
   sleep(1);
+}
+
+}  // namespace
+}  // namespace drake
+
+int main() {
+  drake::send_manip_message();
+  return 0;
 }

@@ -83,7 +83,7 @@ class HumanoidPlanEvalAndQpInverseDynamicsTest : public ::testing::Test {
                     plan_eval->get_input_port_humanoid_status());
     // Plan source -> plan eval.
     builder.Connect(plan_source->get_output_port(0),
-                    plan_eval->get_input_port_plan_msg());
+                    plan_eval->get_input_port_manip_plan_msg());
     // plan eval -> qp inverse dynamics.
     builder.Connect(plan_eval->get_output_port_qp_input(),
                     controller->get_input_port_qp_input());

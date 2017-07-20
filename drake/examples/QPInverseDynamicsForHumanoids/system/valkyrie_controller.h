@@ -79,7 +79,7 @@ class ValkyrieController : public systems::Diagram<double> {
     builder.Connect(msg_to_humanoid_status->get_output_port_humanoid_status(),
                     plan_eval_->get_input_port_humanoid_status());
     builder.Connect(plan_subscriber->get_output_port(0),
-                    plan_eval_->get_input_port_plan_msg());
+                    plan_eval_->get_input_port_manip_plan_msg());
     // rs + qp_input -> qp_output
     builder.Connect(msg_to_humanoid_status->get_output_port_humanoid_status(),
                     qp_con->get_input_port_humanoid_status());

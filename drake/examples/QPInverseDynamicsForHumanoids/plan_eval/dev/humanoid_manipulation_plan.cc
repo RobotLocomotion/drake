@@ -178,11 +178,6 @@ void HumanoidManipulationPlan<T>::HandlePlanGenericPlanDerived(
   }
 }
 
-template <typename T>
-GenericPlan<T>* HumanoidManipulationPlan<T>::CloneGenericPlanDerived() const {
-  return new HumanoidManipulationPlan<T>(*this);
-}
-
 template class HumanoidManipulationPlan<double>;
 
 }  // namespace qp_inverse_dynamics

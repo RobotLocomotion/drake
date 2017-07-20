@@ -6,45 +6,104 @@ namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
+/**
+ * A baseline manipulation plan interpretor for a humanoid robot. The plan
+ * essentially consists of a sequence of time and generalized positions,
+ * which are used to generate splines, which are then used as desired
+ * trajectories to populate QpInput for the QPController.
+ *
+ * @see HandlePlanGenericPlanDerived for more details about the behavior.
+ */
 template <typename T>
 class HumanoidManipulationPlan : public GenericPlan<T> {
  protected:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HumanoidManipulationPlan)
 
  public:
-  HumanoidManipulationPlan() : zmp_height_(1) {}
+  HumanoidManipulationPlan() {}
 
+  /**
+   * Returns the center of mass height used in the ZMP planner.
+   * @see ZMPPlanner::Plan for more details.
+   */
   double get_zmp_height() const { return zmp_height_; }
 
+  /**
+   * Sets the center of mass height used in the ZMP planner to @p z.
+   * @see ZMPPlanner::Plan for more details.
+   */
   void set_zmp_height(double z) { zmp_height_ = z; }
 
- private:
-  GenericPlan<T>* CloneGenericPlanDerived() const override;
-
+ protected:
+  /**
+   * Assuming both feet are in contact, initializes a plan that holds the
+   * current configuration in @p robot_status.
+   */
   void InitializeGenericPlanDerived(
       const HumanoidStatus& robot_status,
       const param_parsers::ParamSet& paramset,
       const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) override;
 
-  // All the new desired trajectories will start with the current desired
-  // states (dof, com, tracked body pose, etc). It is assumed that received
-  // plan's keyframe time is specified in relative time to whenever the
-  // plan is processed. Also the first timestamp needs to be bigger than
-  // zero, and all subsequent timestamps need to be strictly increasing.
-  // There must be at least 1 knots.
-  // E.g. times = [0.1, 0.5, 0.6] is valid.
-  // times = [0. 0.5] is not.
+  /**
+   * This function generates various trajectories from the given plan in
+   * @p plan. Let `T_plan` be the timing information and `Q_plan` be the
+   * generalized positions contained in @p plan, and `t` and `q` be the current
+   * time and estimated generalized position represented by @p robot_status,
+   * we define `Ts = {t, T_plan + t}` and `Qs = {q, Q_plan}`.
+   * Given timing `Ts` and knot points for the generalized positions `Qs`, the
+   * following trajectories are generated:
+   * <pre>
+   * 1. Cubic splines for all degrees of freedom. The splines are generated from
+   *    `Ts` and `Qs` assuming zero end point velocities and continuous position,
+   *    velocity and acceleration at all intermediate knot points.
+   * 2. Cartesian trajectories are made for the pelvis and torso link. The knot
+   *    poses are computed by forward kinematics at each `Qs`. The linear part of
+   *    the Cartesian trajectory is constructed similarly as above, and the
+   *    rotation part is based on Slerp (linear interpolation between quaternion).
+   *    Timing is given by `Ts`.
+   * 3. A desired ZMP trajectory is generated using Pchip from the center of mass
+   *    XY positions computed by forward kinematics at each `Qs` and timing given
+   *    by `Ts`. A nominal center of mass trajectory and its associated optimal
+   *    linear policy is then planned using systems::ZMPPlanner.
+   * </pre>
+   * Note that these trajectories are arbitrarily designed, without considering
+   * position, velocity or acceleration consistency. The QpController will trade
+   * off tracking errors based on weights specified in the parameters. The
+   *
+   * This function also assumes that both feet are in contact with the ground,
+   * and every configuration in `Q_plan` is statically stable given the support
+   * region defined by the current foot poses. `T_plan` has to be strictly
+   * increasing, and `T_plan[0]` is bigger than 0.
+   *
+   * This function returns without changing the current trajectories if the
+   * time stamp in @p plan has not changed from when the current trajectories
+   * were last generated or the number of knots in @p plan is smaller than 1.
+   *
+   * Aborts if @p plan is not of type robotlocomotion::robot_plan_t or
+   * assumptions about `T_plan` is not valid.
+   */
   void HandlePlanGenericPlanDerived(
       const HumanoidStatus& robot_status,
       const param_parsers::ParamSet& paramset,
       const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,
       const systems::AbstractValue& plan) override;
 
+  /**
+   * Updates the X and Y dimension of the desired linear momentum change in
+   * @p qp_input based on the center of mass acceleration computed using the
+   * ZMP planner's policy. Sets the other dimensions of desired centroidal
+   * momentum change to zero.
+   */
   void UpdateQpInputGenericPlanDerived(
       const HumanoidStatus& robot_status,
       const param_parsers::ParamSet& paramset,
       const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,
       QpInput* qp_input) const override;
+
+ private:
+  GenericPlan<T>* CloneGenericPlanDerived() const override {
+    return new HumanoidManipulationPlan<T>(*this);
+  }
 
   void ModifyPlanGenericPlanDerived(
       const HumanoidStatus& robot_stauts,
@@ -53,7 +112,7 @@ class HumanoidManipulationPlan : public GenericPlan<T> {
   }
 
   systems::ZMPPlanner zmp_planner_;
-  double zmp_height_;
+  double zmp_height_{1.0};
   int64_t last_handle_plan_time_{-1};
 };
 
