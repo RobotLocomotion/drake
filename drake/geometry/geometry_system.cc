@@ -231,6 +231,11 @@ GeometrySystem<T>::get_port_for_source_id(
     case POSE: {
       return get_port(&source_ports->pose_port);
     }
+    default:
+      // This is here because gcc fails to recognize that all enumerations have
+      // been covered.
+      throw std::runtime_error(
+          "All enum values have been listed; this should not be reached!");
   }
 }
 
