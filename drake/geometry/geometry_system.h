@@ -59,11 +59,13 @@ template <typename T> class GeometryInstance;
  __identifier port__: An abstract-valued port containing an instance of
  FrameIdVector. It should contain the FrameId of each frame registered by the
  upstream source exactly once. The _order_ of the ids is how the values in the
- pose port will be interpreted.
+ pose port will be interpreted. Use get_source_frame_id_port() to acquire the
+ port for a given source.
 
  __pose port__: An abstract-valued port containing an instance of FramePoseSet.
  There should be one pose value for each id in the the identifier port value.
- The iᵗʰ pose belongs to the iᵗʰ id.
+ The iᵗʰ pose belongs to the iᵗʰ id. Use get_source_pose_port to acquire the
+ port for a given source.
 
  @section geom_sys_outputs Outputs
 
@@ -74,8 +76,9 @@ template <typename T> class GeometryInstance;
  queries on the %GeometrySystem. To perform geometric queries, downstream
  LeafSystem instances acquire the QueryHandle from %GeometrySystem's output port
  and provide it as a parameter to one of %GeometrySystem's query methods (e.g.,
- GeometrySystem::ComputeContact). This assumes that the querying system has
- access to a const pointer to the connected %GeometrySystem instance.
+ GeometrySystem::ComputeContact()). This assumes that the querying system has
+ access to a const pointer to the connected %GeometrySystem instance. Use
+ get_query_output_port to acquire the output port for the query handle.
 
  @section geom_sys_workflow Working with GeometrySystem
 
@@ -155,8 +158,10 @@ template <typename T> class GeometryInstance;
    the "pose" port.
    - The id port must contain _all_ the frame ids returned as a result of frame
    registration.
-   - The pose port must contain one pose per registered frame; the pose is
-   expressed relative to the registered frame's _parent_ frame.
+   - The pose port must contain one pose per registered frame; the pose value is
+   expressed relative to the registered frame's _parent_ frame. As mentioned
+   above, the iᵗʰ pose value should describe the frame indicated by the iᵗʰ id
+   in the id output port.
 
  Failure to meet these requirements will lead to a run-time error.
 
@@ -210,15 +215,13 @@ class GeometrySystem : public systems::LeafSystem<T> {
    with that `id`. This port's value is an ordered list of frame ids; it
    is used to provide an interpretation on the pose values provided on the
    pose port.
-   @throws  std::logic_error if the source_id is _not_ recognized, or if the
-   context has already been allocated. */
+   @throws  std::logic_error if the source_id is _not_ recognized. */
   const systems::InputPortDescriptor<T>& get_source_frame_id_port(SourceId id);
 
-  /** Given a valid source `id`, returns an _pose_ input port associated
+  /** Given a valid source `id`, returns a _pose_ input port associated
    with that `id`. This port is used to communicate _pose_ data for registered
    frames.
-   @throws  std::logic_error if the source_id is _not_ recognized, or if the
-   context has already been allocated. */
+   @throws  std::logic_error if the source_id is _not_ recognized. */
   const systems::InputPortDescriptor<T>& get_source_pose_port(SourceId id);
 
   /** Returns the output port which produces the QueryHandle for performing
