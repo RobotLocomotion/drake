@@ -46,31 +46,28 @@ GlobalInverseKinematics::GlobalInverseKinematics(
       // TODO(hongkai.dai): clean up this for loop using elementwise matrix
       // constraint when it is ready.
       for (int i = 0; i < 3; ++i) {
-        AddBoundingBoxConstraint(X_WB.linear().col(i),
-                                 X_WB.linear().col(i),
+        AddBoundingBoxConstraint(X_WB.linear().col(i), X_WB.linear().col(i),
                                  R_WB_[body_idx].col(i));
       }
-      AddBoundingBoxConstraint(X_WB.translation(),
-                               X_WB.translation(),
+      AddBoundingBoxConstraint(X_WB.translation(), X_WB.translation(),
                                p_WBo_[body_idx]);
     } else {
-      R_WB_[body_idx] =
-          solvers::NewRotationMatrixVars(this, body_R_name);
+      R_WB_[body_idx] = solvers::NewRotationMatrixVars(this, body_R_name);
 
-      solvers::AddRotationMatrixOrthonormalSocpConstraint(
-          this, R_WB_[body_idx]);
+      solvers::AddRotationMatrixOrthonormalSocpConstraint(this,
+                                                          R_WB_[body_idx]);
 
       // If the body has a parent, then add the constraint to connect the
       // parent body with this body through a joint.
       if (body.has_parent_body()) {
-        const RigidBody<double> *parent_body = body.get_parent();
+        const RigidBody<double>* parent_body = body.get_parent();
         const int parent_idx = parent_body->get_body_index();
         const DrakeJoint* joint = &(body.getJoint());
         // Frame `F` is the inboard frame of the joint, rigidly attached to the
         // parent link.
-        const auto &X_PF = joint->get_transform_to_parent_body();
+        const auto& X_PF = joint->get_transform_to_parent_body();
         switch (joint->get_num_velocities()) {
-          case 0 : {
+          case 0: {
             // Fixed to the parent body.
 
             // The position can be computed from the parent body pose.
@@ -79,24 +76,21 @@ GlobalInverseKinematics::GlobalInverseKinematics(
             //       Bp is the parent body frame.
             //       W is the world frame.
             AddLinearEqualityConstraint(
-                p_WBo_[parent_idx] +
-                    R_WB_[parent_idx] *
-                        X_PF.translation() -
+                p_WBo_[parent_idx] + R_WB_[parent_idx] * X_PF.translation() -
                     p_WBo_[body_idx],
                 Vector3d::Zero());
 
             // The orientation can be computed from the parent body orientation.
             // R_WBp * R_BpBc = R_WBc
             Matrix3<Expression> orient_invariance =
-                R_WB_[parent_idx] * X_PF.linear() -
-                    R_WB_[body_idx];
+                R_WB_[parent_idx] * X_PF.linear() - R_WB_[body_idx];
             for (int i = 0; i < 3; ++i) {
               AddLinearEqualityConstraint(orient_invariance.col(i),
                                           Vector3d::Zero());
             }
             break;
           }
-          case 1 : {
+          case 1: {
             // Should NOT do this evil dynamic cast here, but currently we do
             // not have a method to tell if a joint is revolute or not.
             if (dynamic_cast<const RevoluteJoint*>(joint) != nullptr) {
@@ -105,28 +99,24 @@ GlobalInverseKinematics::GlobalInverseKinematics(
               solvers::AddRotationMatrixMcCormickEnvelopeMilpConstraints(
                   this, R_WB_[body_idx], num_binary_vars_per_half_axis);
 
-              const RevoluteJoint
-                  *revolute_joint = dynamic_cast<const RevoluteJoint*>(joint);
+              const RevoluteJoint* revolute_joint =
+                  dynamic_cast<const RevoluteJoint*>(joint);
               // axis_F is the vector of the rotation axis in the joint
               // inboard/outboard frame.
-              const Vector3d axis_F =
-                  revolute_joint->joint_axis().head<3>();
+              const Vector3d axis_F = revolute_joint->joint_axis().head<3>();
 
               // Add the constraint R_WB * axis_B = R_WP * R_PF * axis_F, where
               // axis_B = axis_F since the rotation axis is invaraiant in the
               // inboard frame F and the outboard frame B.
               AddLinearEqualityConstraint(
                   R_WB_[body_idx] * axis_F -
-                      R_WB_[parent_idx] *
-                          X_PF.linear() * axis_F,
+                      R_WB_[parent_idx] * X_PF.linear() * axis_F,
                   Vector3d::Zero());
 
               // The position of the rotation axis is the same on both child and
               // parent bodies.
               AddLinearEqualityConstraint(
-                  p_WBo_[parent_idx] +
-                      R_WB_[parent_idx] *
-                          X_PF.translation() -
+                  p_WBo_[parent_idx] + R_WB_[parent_idx] * X_PF.translation() -
                       p_WBo_[body_idx],
                   Vector3d::Zero());
 
@@ -140,14 +130,15 @@ GlobalInverseKinematics::GlobalInverseKinematics(
             }
             break;
           }
-          case 6 : {
+          case 6: {
             // This is the floating base case, just add the rotation matrix
             // constraint.
             solvers::AddRotationMatrixMcCormickEnvelopeMilpConstraints(
                 this, R_WB_[body_idx], num_binary_vars_per_half_axis);
             break;
           }
-          default : throw std::runtime_error("Unsupported joint type.");
+          default:
+            throw std::runtime_error("Unsupported joint type.");
         }
       }
     }
@@ -171,17 +162,16 @@ GlobalInverseKinematics::body_position(int body_index) const {
 }
 
 void GlobalInverseKinematics::ReconstructGeneralizedPositionSolutionForBody(
-    int body_idx,
-    Eigen::Ref<Eigen::VectorXd> q,
+    int body_idx, Eigen::Ref<Eigen::VectorXd> q,
     std::vector<Eigen::Matrix3d>* reconstruct_R_WB) const {
-  const RigidBody<double> &body = robot_->get_body(body_idx);
-  const RigidBody<double> *parent = body.get_parent();
+  const RigidBody<double>& body = robot_->get_body(body_idx);
+  const RigidBody<double>* parent = body.get_parent();
   if (!body.IsRigidlyFixedToWorld()) {
     const Matrix3d R_WC = GetSolution(R_WB_[body_idx]);
     // R_WP is the rotation matrix of parent frame to the world frame.
     const Matrix3d& R_WP = reconstruct_R_WB->at(parent->get_body_index());
-    const DrakeJoint *joint = &(body.getJoint());
-    const auto &X_PF = joint->get_transform_to_parent_body();
+    const DrakeJoint* joint = &(body.getJoint());
+    const auto& X_PF = joint->get_transform_to_parent_body();
 
     int num_positions = joint->get_num_positions();
     // For each different type of joints, use a separate branch to compute
@@ -290,11 +280,9 @@ solvers::Binding<solvers::LinearConstraint>
 GlobalInverseKinematics::AddWorldPositionConstraint(
     int body_idx, const Eigen::Vector3d& p_BQ, const Eigen::Vector3d& box_lb_F,
     const Eigen::Vector3d& box_ub_F, const Isometry3d& X_WF) {
-  Vector3<Expression> body_pt_pos =
-      p_WBo_[body_idx] + R_WB_[body_idx] * p_BQ;
+  Vector3<Expression> body_pt_pos = p_WBo_[body_idx] + R_WB_[body_idx] * p_BQ;
   Vector3<Expression> body_pt_in_measured_frame =
-      X_WF.linear().transpose() *
-      (body_pt_pos - X_WF.translation());
+      X_WF.linear().transpose() * (body_pt_pos - X_WF.translation());
   return AddLinearConstraint(body_pt_in_measured_frame, box_lb_F, box_ub_F);
 }
 
@@ -307,7 +295,7 @@ GlobalInverseKinematics::AddWorldOrientationConstraint(
   // desired orientation and the current orientation. Thus the constraint is
   // 2 * cos(angle_tol) + 1 <= trace(R_e) <= 3
   Matrix3<Expression> rotation_matrix_err =
-  desired_orientation.toRotationMatrix() * R_WB_[body_idx].transpose();
+      desired_orientation.toRotationMatrix() * R_WB_[body_idx].transpose();
   double lb = angle_tol < M_PI ? 2 * cos(angle_tol) + 1 : -1;
   return AddLinearConstraint(rotation_matrix_err.trace(), lb, 3);
 }
@@ -422,19 +410,19 @@ void GlobalInverseKinematics::AddJointLimitConstraint(
     throw std::runtime_error(
         "The joint lower bound should be no larger than the upper bound.");
   }
-  const RigidBody<double> &body = robot_->get_body(body_index);
+  const RigidBody<double>& body = robot_->get_body(body_index);
   if (body.has_parent_body()) {
     const RigidBody<double>* parent_body = body.get_parent();
     const int parent_idx = parent_body->get_body_index();
     const DrakeJoint* joint = &(body.getJoint());
     const auto& X_PF = joint->get_transform_to_parent_body();
     switch (joint->get_num_velocities()) {
-      case 0 : {
+      case 0: {
         // Fixed to the parent body.
         throw std::runtime_error(
             "Cannot impose joint limits for a fixed joint.");
       }
-      case 1 : {
+      case 1: {
         // If the new bound [joint_lower_bound joint_upper_bound] is not tighter
         // than the existing bound, then we ignore it, without adding new
         // constraints.
@@ -451,17 +439,17 @@ void GlobalInverseKinematics::AddJointLimitConstraint(
         if (is_limits_tightened) {
           // Should NOT do this evil dynamic cast here, but currently we do
           // not have a method to tell if a joint is revolute or not.
-          if (dynamic_cast<const RevoluteJoint *>(joint) != nullptr) {
-            const RevoluteJoint
-                *revolute_joint = dynamic_cast<const RevoluteJoint *>(joint);
+          if (dynamic_cast<const RevoluteJoint*>(joint) != nullptr) {
+            const RevoluteJoint* revolute_joint =
+                dynamic_cast<const RevoluteJoint*>(joint);
             // axis_F is the vector of the rotation axis in the joint
             // inboard/outboard frame.
-            const Vector3d axis_F =
-                revolute_joint->joint_axis().head<3>();
+            const Vector3d axis_F = revolute_joint->joint_axis().head<3>();
 
             // Now we process the joint limits constraint.
-            double joint_bound = (joint_upper_bounds_[joint_idx]
-                - joint_lower_bounds_[joint_idx]) / 2;
+            double joint_bound = (joint_upper_bounds_[joint_idx] -
+                                  joint_lower_bounds_[joint_idx]) /
+                                 2;
 
             if (joint_bound < M_PI) {
               // We use the fact that if the angle between two unit length
@@ -516,8 +504,8 @@ void GlobalInverseKinematics::AddJointLimitConstraint(
               // relaxation, we just use four vectors in `v`. Notice that
               // v_basis contains the orthonormal basis of the null space
               // null(axis_F).
-              std::array<Eigen::Vector3d, 2>
-                  v_basis = {{v_C, axis_F.cross(v_C)}};
+              std::array<Eigen::Vector3d, 2> v_basis = {
+                  {v_C, axis_F.cross(v_C)}};
               v_basis[1] /= v_basis[1].norm();
 
               std::array<Eigen::Vector3d, 4> v_samples;
@@ -530,20 +518,21 @@ void GlobalInverseKinematics::AddJointLimitConstraint(
 
               // rotmat_joint_offset is R(k, (a+b)/2) explained above.
               const Matrix3d rotmat_joint_offset =
-                  Eigen::AngleAxisd((joint_lower_bounds_[joint_idx]
-                                        + joint_upper_bounds_[joint_idx]) / 2,
+                  Eigen::AngleAxisd((joint_lower_bounds_[joint_idx] +
+                                     joint_upper_bounds_[joint_idx]) /
+                                        2,
                                     axis_F)
                       .toRotationMatrix();
 
               // joint_limit_expr is going to be within the Lorentz cone.
               Eigen::Matrix<Expression, 4, 1> joint_limit_expr;
               joint_limit_expr(0) = 2 * sin(joint_bound / 2);
-              for (const auto &v : v_samples) {
+              for (const auto& v : v_samples) {
                 // joint_limit_expr.tail<3> is
                 // R_WC * v - R_WP * R_PF * R(k,(a+b)/2) * v mentioned above.
-                joint_limit_expr.tail<3>() = R_WB_[body_index] * v -
-                    R_WB_[parent_idx] * X_PF.linear() *
-                        rotmat_joint_offset * v;
+                joint_limit_expr.tail<3>() =
+                    R_WB_[body_index] * v -
+                    R_WB_[parent_idx] * X_PF.linear() * rotmat_joint_offset * v;
                 AddLorentzConeConstraint(joint_limit_expr);
               }
               if (robot_->get_body(parent_idx).IsRigidlyFixedToWorld()) {
@@ -578,14 +567,14 @@ void GlobalInverseKinematics::AddJointLimitConstraint(
                 // R_joint_beta is R(k, β) in the documentation.
                 Eigen::Matrix<symbolic::Expression, 3, 3> R_joint_beta =
                     (X_WP.linear() * X_PF.linear() * rotmat_joint_offset)
-                        .transpose() * R_WB_[body_index];
+                        .transpose() *
+                    R_WB_[body_index];
                 Eigen::Matrix<double, 3, 2> V;
                 V << v_basis[0], v_basis[1];
                 const Eigen::Matrix<symbolic::Expression, 2, 2> M =
-                    V.transpose() * (R_joint_beta + R_joint_beta.transpose())
-                        / 2
-                        * V
-                        - std::cos(joint_bound) * Eigen::Matrix2d::Identity();
+                    V.transpose() * (R_joint_beta + R_joint_beta.transpose()) /
+                        2 * V -
+                    std::cos(joint_bound) * Eigen::Matrix2d::Identity();
                 AddRotatedLorentzConeConstraint(
                     Vector3<symbolic::Expression>(M(0, 0), M(1, 1), M(1, 0)));
               }
@@ -600,7 +589,8 @@ void GlobalInverseKinematics::AddJointLimitConstraint(
       case 6: {
         break;
       }
-      default: throw std::runtime_error("Unsupported joint type.");
+      default:
+        throw std::runtime_error("Unsupported joint type.");
     }
   } else {
     throw std::runtime_error("The body " + body.get_name() +
