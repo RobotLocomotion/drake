@@ -14,10 +14,11 @@ namespace rigid_contact {
 /// the distance from it to the second rigid body were zero; floating point
 /// truncation and rounding errors imply that such distances are unlikely to
 /// ever actually be zero. Instead, we track the point of contact over time and
-/// use ancillary information (e.g., are Lagrangle Multipliers zero?) and
+/// use ancillary information (e.g., are Lagrange Multipliers zero?) and
 /// store the contact state (sliding, not sliding) to compose necessary
 /// constraint equations.
-struct RigidContactContact {
+template <class T>
+struct RigidContactPoint {
   enum class ContactSlidingState {
     /// The bodies are to be considered as sliding at this point of contact.
     kSliding,
@@ -31,7 +32,7 @@ struct RigidContactContact {
 
   /// The vector from the center-of-mass of the rigid body to the point of
   /// contact, expressed in the body frame of one of the rigid bodies.
-  Eigen::Vector3d u;
+  Vector3<T> u;
 };
 
 }  // namespace rigid_contact
