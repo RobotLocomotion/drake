@@ -9,16 +9,17 @@
 namespace drake {
 namespace multibody {
 namespace benchmarks {
+namespace MG_kuka_iiwa_robot {
 
-using Eigen::Matrix3d;
 using Eigen::Vector3d;
+using Eigen::Matrix3d;
 
 /// This class is Drake's interface to the MotionGenesis solution for a
 /// 7-DOF KUKA LBR iiwa robot (14 kg payload) which is described at:
 /// https://www.kuka.com/en-de/products/robot-systems/industrial-robots/lbr-iiwa
 /// Geometry, joint-types, and mass/inertia properties are contained in:
 /// drake/multibody/benchmarks/kuka_iiwa_robot/kuka_iiwa_robot.urdf
-template <typename T>
+template<typename T>
 class MGKukaIIwaRobotGlue {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MGKukaIIwaRobotGlue);
@@ -36,8 +37,8 @@ class MGKukaIIwaRobotGlue {
   /// The origin Go of end-effector G is located at G's inboard revolute joint.
   ///
   /// @param[in] q robot's joint angles (generalized coordinates).
-  /// @param[in] qDt 1st time-derivatives of q (generalized speeds).
-  /// @param[in] qDDt 2nd time-derivatives of q.
+  /// @param[in] v 1st-time-derivatives of q (q̇).
+  /// @param[in] a 2nd-time-derivatives of q (q̈).
   ///
   /// @returns Machine-precision values as defined below.
   ///
@@ -50,11 +51,12 @@ class MGKukaIIwaRobotGlue {
   /// alpha_NG_N | G's angular acceleration in N, expressed in N.
   /// a_NGo_N    | Go's acceleration in N, expressed in N.
   std::tuple<Matrix3d, Vector3d, Vector3d, Vector3d, Vector3d, Vector3d>
-  CalcEndEffectorKinematics(const Eigen::Ref<const VectorX<T>>& q,
-                            const Eigen::Ref<const VectorX<T>>& qDt,
-                            const Eigen::Ref<const VectorX<T>>& qDDt) const;
+  CalcEndEffectorKinematics(const Eigen::Ref<const VectorX<T>> &q,
+                            const Eigen::Ref<const VectorX<T>> &v,
+                            const Eigen::Ref<const VectorX<T>> &a) const;
 };
 
+}  // namespace MG_kuka_iiwa_robot
 }  // namespace benchmarks
 }  // namespace multibody
 }  // namespace drake

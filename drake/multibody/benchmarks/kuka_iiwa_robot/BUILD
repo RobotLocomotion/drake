@@ -13,7 +13,7 @@ drake_cc_library(
         "test/MG_kuka_iiwa_robot_glue.cc",
     ],
     hdrs = [
-        "kuka_iiwa_robot_model.h",
+        "drake_kuka_iiwa_robot.h",
         "test/MG_kuka_iiwa_robot_auto_generated.h",
         "test/MG_kuka_iiwa_robot_glue.h",
     ],

@@ -9,6 +9,7 @@
 namespace drake {
 namespace multibody {
 namespace benchmarks {
+namespace MG_kuka_iiwa_robot {
 namespace {
 
 // Function to compare Kuka iiwa robot arm end-effector (frame G)'s orientation
@@ -22,15 +23,15 @@ namespace {
 // w_NG_N_expected    |  G's angular velocity in N, expressed in N.
 // v_NGo_N_expected   |  Go's velocity in N, expressed in N.
 void CompareEndEffectorPositionVelocityVsExpectedSolution(
-  const Eigen::Matrix<double, 7, 1>& q,
-  const Eigen::Matrix<double, 7, 1>& qDt,
-  const Eigen::Matrix<double, 7, 1>& qDDt,
-  const Eigen::Matrix3d& R_NG_expected,
-  const Eigen::Vector3d& p_No_Go_N_expected,
-  const Eigen::Vector3d& w_NG_N_expected,
-  const Eigen::Vector3d& v_NGo_N_expected,
-  const Eigen::Vector3d& alpha_NG_N_expected,
-  const Eigen::Vector3d& a_NGo_N_expected) {
+    const Eigen::Matrix<double, 7, 1> &q,
+    const Eigen::Matrix<double, 7, 1> &qDt,
+    const Eigen::Matrix<double, 7, 1> &qDDt,
+    const Eigen::Matrix3d &R_NG_expected,
+    const Eigen::Vector3d &p_No_Go_N_expected,
+    const Eigen::Vector3d &w_NG_N_expected,
+    const Eigen::Vector3d &v_NGo_N_expected,
+    const Eigen::Vector3d &alpha_NG_N_expected,
+    const Eigen::Vector3d &a_NGo_N_expected) {
   MGKukaIIwaRobotGlue<double> MG_kuka_robot;
   // R_NG       | Rotation matrix relating Nx, Ny, Nz to Gx, Gy, Gz.
   // p_NoGo_N   | Go's position from No, expressed in N.
@@ -78,7 +79,7 @@ GTEST_TEST(KukaIIwaRobot, ForwardKinematicsA) {
   Eigen::Matrix3d R_NG_expected;
   Eigen::Vector3d p_No_Go_N_expected, w_NG_N_expected, v_NGo_N_expected;
   Eigen::Vector3d alpha_NG_N_expected, a_NGo_N_expected;
-  R_NG_expected << 1, 0, 0,  0, 1, 0,  0, 0, 1;
+  R_NG_expected << 1, 0, 0, 0, 1, 0, 0, 0, 1;
   p_No_Go_N_expected << 0, 0, 1.261;
   w_NG_N_expected << 0, 0, 0;
   v_NGo_N_expected << 0, 0, 0;
@@ -137,8 +138,8 @@ GTEST_TEST(KukaIIwaRobot, ForwardKinematicsB) {
                                                        a_NGo_N_expected);
 }
 
-
 }  // namespace
+}  // namespace MG_kuka_iiwa_robot
 }  // namespace benchmarks
 }  // namespace multibody
 }  // namespace drake
