@@ -1,3 +1,8 @@
+#ifndef DRAKE_COMMON_SYMBOLIC_HEADER
+// TODO(soonho-tri): Change to #error.
+#warning Do not directly include this file. Include "drake/common/symbolic.h".
+#endif
+
 #pragma once
 
 #include <cstddef>

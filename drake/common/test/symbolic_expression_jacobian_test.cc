@@ -1,8 +1,7 @@
-#include "drake/common/symbolic_expression.h"
-
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/symbolic.h"
 
 namespace drake {
 namespace symbolic {

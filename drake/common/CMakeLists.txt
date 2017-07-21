@@ -67,6 +67,7 @@ set(installed_headers
   polynomial.h
   scoped_singleton.h
   sorted_vectors_have_intersection.h
+  symbolic.h
   symbolic_environment.h
   symbolic_expression.h
   symbolic_expression_visitor.h
