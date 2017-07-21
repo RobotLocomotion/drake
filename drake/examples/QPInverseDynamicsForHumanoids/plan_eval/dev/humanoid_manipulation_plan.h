@@ -106,10 +106,9 @@ class HumanoidManipulationPlan : public GenericPlan<T> {
   }
 
   void ModifyPlanGenericPlanDerived(
-      const HumanoidStatus& robot_stauts,
-      const param_parsers::ParamSet& paramset,
-      const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) override {
-  }
+      const HumanoidStatus&,
+      const param_parsers::ParamSet&,
+      const param_parsers::RigidBodyTreeAliasGroups<T>&) override {}
 
   systems::ZMPPlanner zmp_planner_;
   double zmp_height_{1.0};

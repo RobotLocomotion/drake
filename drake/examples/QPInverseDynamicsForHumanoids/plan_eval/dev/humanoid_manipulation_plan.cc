@@ -16,6 +16,8 @@ template <typename T>
 void HumanoidManipulationPlan<T>::InitializeGenericPlanDerived(
     const HumanoidStatus& robot_status, const param_parsers::ParamSet& paramset,
     const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) {
+  unused(paramset);
+
   // Knots are constant, the second time doesn't matter as long as it's larger.
   const std::vector<T> times = {robot_status.time(), robot_status.time() + 1};
 
@@ -58,6 +60,8 @@ void HumanoidManipulationPlan<T>::UpdateQpInputGenericPlanDerived(
     const HumanoidStatus& robot_status, const param_parsers::ParamSet& paramset,
     const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,
     QpInput* qp_input) const {
+  unused(paramset, alias_groups);
+
   // Generates CoM acceleration.
   Vector4<T> xcom;
   xcom << robot_status.com().head<2>(), robot_status.comd().head<2>();
@@ -79,6 +83,8 @@ void HumanoidManipulationPlan<T>::HandlePlanGenericPlanDerived(
     const HumanoidStatus& robot_status, const param_parsers::ParamSet& paramset,
     const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,
     const systems::AbstractValue& plan) {
+  unused(paramset);
+
   const auto& msg = plan.GetValue<robotlocomotion::robot_plan_t>();
 
   if (msg.utime == last_handle_plan_time_) return;
