@@ -920,7 +920,10 @@ void AddUnitLengthConstraintWithLogarithmicSos2(
       const symbolic::Expression x1_square_lb{2 * phi(phi1_idx) * x1 - pow(phi(phi1_idx), 2)};
       for (int phi2_idx = 0; phi2_idx < num_phi; phi2_idx++) {
         const symbolic::Expression x2_square_lb{2 * phi(phi2_idx) * x2 - pow(phi(phi2_idx), 2)};
-        prog->AddLinearConstraint(x0_square_lb + x1_square_lb + x2_square_lb <= 1);
+        symbolic::Expression x_sum_of_squares_lb{x0_square_lb + x1_square_lb + x2_square_lb};
+        if (!is_constant(x_sum_of_squares_lb)) {
+          prog->AddLinearConstraint(x_sum_of_squares_lb <= 1);
+        }
       }
     }
   }

@@ -189,6 +189,84 @@ bool IsFeasibleCheck(
   return (prog->Solve() == kSolutionFound);
 }
 
+class TestMcCormick : public ::testing::TestWithParam<std::tuple<bool, int>> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestMcCormick)
+
+  TestMcCormick()
+      : prog_(),
+        R_(NewRotationMatrixVars(&prog_)),
+        replace_bilinear_product_(std::get<0>(GetParam())),
+        num_intervals_per_half_axis_(std::get<1>(GetParam())),
+  feasibility_constraint_{prog_.AddLinearEqualityConstraint(
+      Eigen::Matrix<double, 9, 9>::Identity(),
+      Eigen::Matrix<double, 9, 1>::Zero(),
+      {R_.col(0), R_.col(1), R_.col(2)}).constraint()} {
+    if (replace_bilinear_product_) {
+      AddRotationMatrixBilinearTermMcCormickEnvelopeMilpConstraints(&prog_, R_, num_intervals_per_half_axis_);
+    } else {
+      AddRotationMatrixMcCormickEnvelopeMilpConstraints(&prog_, R_, num_intervals_per_half_axis_);
+    }
+  }
+
+  bool IsFeasible(const Eigen::Ref<const Eigen::Matrix3d>& R_to_check) {
+    return IsFeasibleCheck(&prog_, feasibility_constraint_, R_to_check);
+  }
+
+  ~TestMcCormick() override {};
+
+ protected:
+  MathematicalProgram prog_;
+  MatrixDecisionVariable<3, 3> R_;
+  bool replace_bilinear_product_;
+  int num_intervals_per_half_axis_;
+  std::shared_ptr<LinearEqualityConstraint> feasibility_constraint_;
+};
+
+TEST_P(TestMcCormick, TestFeasibleRotation) {
+  std::mt19937 generator(41);
+  std::normal_distribution<double> randn;
+  std::uniform_int_distribution<> rand(0, 1 << 6);
+  // Test a few valid rotation matrices.
+  Matrix3d R_test = Matrix3d::Identity();
+  EXPECT_TRUE(IsFeasible(R_test));
+
+  R_test = math::ZRotation(M_PI_4) * R_test;
+  EXPECT_TRUE(IsFeasible(R_test));
+
+  R_test = math::YRotation(M_PI_4) * R_test;
+  EXPECT_TRUE(IsFeasible(R_test));
+
+  R_test = math::ZRotation(M_PI_2);
+  EXPECT_TRUE(IsFeasible(R_test));
+
+  R_test = math::ZRotation(-M_PI_2);
+  EXPECT_TRUE(IsFeasible(R_test));
+
+  R_test = math::YRotation(M_PI_2);
+  EXPECT_TRUE(IsFeasible(R_test));
+
+  R_test = math::YRotation(-M_PI_2);
+  EXPECT_TRUE(IsFeasible(R_test));
+
+  // This one caught a bug (in the loop finding the most conservative linear
+  // constraint for a given region) during random testing.
+  R_test << 0.17082017792981191, 0.65144498431260445, -0.73921573253413542,
+      -0.82327804434149443, -0.31781600529013027, -0.47032568342231595,
+      -0.54132589862048197, 0.68892119955432829, 0.48203096610835455;
+  EXPECT_TRUE(IsFeasible(R_test));
+
+  for (int i = 0; i < 40; i++) {
+    R_test = math::UniformlyRandomRotmat(generator);
+    EXPECT_TRUE(IsFeasible(R_test));
+  }
+}
+
+INSTANTIATE_TEST_CASE_P(
+    RotationTest, TestMcCormick,
+    ::testing::Combine(::testing::ValuesIn<std::vector<bool>>({false, true}),
+                       ::testing::ValuesIn<std::vector<int>>({1, 2})));
+/*
 // Tests that a number of feasible rotation matrices are indeed feasible for
 // McCormick envelopes with 1 or 2 bins per axis.  Also checks that some
 // specific matrices that should be ruled out by the orthogonality and cross-
@@ -291,7 +369,7 @@ GTEST_TEST(RotationTest, TestMcCormick) {
     else
       EXPECT_FALSE(IsFeasible(R_test));
   }
-}
+}*/
 
 // Test some corner cases of McCormick envelope.
 // The corner cases happens when either the innermost or the outermost corner
