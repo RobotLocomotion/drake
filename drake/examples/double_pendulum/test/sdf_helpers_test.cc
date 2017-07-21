@@ -36,7 +36,8 @@ GTEST_TEST(SDFHelpersTest, ParsingTest) {
   const Isometry3<double> body_element_transform =
       body_element_translation * body_element_rotation;
   DrakeShapes::Box body_geometry(Vector3<double>(0.2, 0.2, 1.8));
-  DrakeCollision::Element body_collision(body_geometry, body_element_transform);
+  drake::multibody::collision::Element body_collision(body_geometry,
+                                                      body_element_transform);
   body_ref.AddCollisionElement("", &body_collision);
   DrakeShapes::VisualElement body_visual(body_element_transform);
   body_visual.setGeometry(body_geometry);
@@ -60,7 +61,8 @@ GTEST_TEST(SDFHelpersTest, ParsingTest) {
       arm_element_translation * arm_element_rotation;
 
   DrakeShapes::Cylinder arm_geometry(0.05, 0.4);
-  DrakeCollision::Element arm_collision(arm_geometry, arm_element_transform);
+  drake::multibody::collision::Element arm_collision(arm_geometry,
+                                                     arm_element_transform);
   arm_ref.AddCollisionElement("", &arm_collision);
   DrakeShapes::VisualElement arm_visual(arm_element_transform);
   arm_visual.setGeometry(arm_geometry);

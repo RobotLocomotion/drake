@@ -4,6 +4,10 @@
 
 #include "drake/multibody/collision/model.h"
 
-namespace DrakeCollision {
+namespace drake {
+namespace multibody {
+namespace collision {
 std::unique_ptr<Model> newModel();
-}  // namespace DrakeCollision
+}  // namespace collision
+}  // namespace multibody
+}  // namespace drake

@@ -10,7 +10,9 @@
 
 using std::unique_ptr;
 
-namespace DrakeCollision {
+namespace drake {
+namespace multibody {
+namespace collision {
 
 unique_ptr<Model> newModel() {
 #ifdef BULLET_COLLISION
@@ -20,4 +22,6 @@ unique_ptr<Model> newModel() {
 #endif
 }
 
-}  // namespace DrakeCollision
+}  // namespace collision
+}  // namespace multibody
+}  // namespace drake

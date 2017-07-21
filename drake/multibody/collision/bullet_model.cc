@@ -19,7 +19,9 @@ using Eigen::VectorXd;
 using Eigen::Vector3i;
 using Eigen::Matrix3Xi;
 
-namespace DrakeCollision {
+namespace drake {
+namespace multibody {
+namespace collision {
 
 // Helper method to convert a btVector3 to an Eigen vector representation.
 // Using Eigen::Map avoids unnecessary (expensive) copies.
@@ -389,7 +391,7 @@ void BulletModel::DoAddElement(const Element& element) {
   }
 }
 
-bool BulletModel::collidingPointsCheckOnly(
+bool BulletModel::CollidingPointsCheckOnly(
     const std::vector<Vector3d>& input_points, double collision_threshold) {
   // Create sphere geometry
   btSphereShape bt_shape(collision_threshold);
@@ -421,7 +423,7 @@ bool BulletModel::collidingPointsCheckOnly(
   return false;
 }
 
-std::vector<size_t> BulletModel::collidingPoints(
+std::vector<size_t> BulletModel::CollidingPoints(
     const std::vector<Vector3d>& input_points, double collision_threshold) {
   // Create sphere geometry
   btSphereShape bt_shape(collision_threshold);
@@ -454,10 +456,10 @@ std::vector<size_t> BulletModel::collidingPoints(
   return in_collision_indices;
 }
 
-bool BulletModel::updateElementWorldTransform(
+bool BulletModel::UpdateElementWorldTransform(
     ElementId id, const Isometry3d& T_local_to_world) {
   const bool element_exists(
-      Model::updateElementWorldTransform(id, T_local_to_world));
+      Model::UpdateElementWorldTransform(id, T_local_to_world));
   if (element_exists) {
     btTransform btT = convert(elements[id]->getWorldTransform());
 
@@ -477,7 +479,7 @@ bool BulletModel::updateElementWorldTransform(
   return element_exists;
 }
 
-void BulletModel::updateModel() {
+void BulletModel::UpdateModel() {
   bullet_world_.bt_collision_world->updateAabbs();
   bullet_world_no_margin_.bt_collision_world->updateAabbs();
 }
@@ -598,10 +600,11 @@ PointPair BulletModel::findClosestPointsBetweenElements(
   }
 }
 
-void BulletModel::collisionDetectFromPoints(
+void BulletModel::CollisionDetectFromPoints(
     const Matrix3Xd& points, bool use_margins,
-    std::vector<PointPair>& closest_points) {
-  closest_points.resize(points.cols());
+    std::vector<PointPair>* closest_points) {
+  DRAKE_DEMAND(closest_points != nullptr);
+  closest_points->resize(points.cols());
   VectorXd phi(points.cols());
 
   btSphereShape shapeA(0.0);
@@ -656,7 +659,7 @@ void BulletModel::collisionDetectFromPoints(
           got_one = true;
           Element *collision_element =
               static_cast<Element *>(bt_objB->getUserPointer());
-          closest_points[i] =
+          closest_points->at(i) =
               PointPair(collision_element, collision_element,
                         toVector3d(pointOnElemB), toVector3d(pointOnBinWorld),
                         toVector3d(gjkOutput.m_normalOnBInWorld), distance);
@@ -672,21 +675,23 @@ void BulletModel::collisionDetectFromPoints(
       // In case there are no other objects found, we report a null object
       // infinitely far away.
       phi[i] = inf;
-      closest_points[i] = PointPair();
-      closest_points[i].distance = inf;
-      closest_points[i].normal = default_norm;
-      closest_points[i].ptA = inf_vector;
-      closest_points[i].ptB = inf_vector;
+      closest_points->at(i) = PointPair();
+      closest_points->at(i).distance = inf;
+      closest_points->at(i).normal = default_norm;
+      closest_points->at(i).ptA = inf_vector;
+      closest_points->at(i).ptB = inf_vector;
     }
   }
 }
 
-bool BulletModel::collisionRaycast(const Matrix3Xd& origins,
+bool BulletModel::CollisionRaycast(const Matrix3Xd& origins,
                                    const Matrix3Xd& ray_endpoints,
-                                   bool use_margins, VectorXd& distances,
-                                   Matrix3Xd& normals) {
-  distances.resize(ray_endpoints.cols());
-  normals.resize(3, ray_endpoints.cols());
+                                   bool use_margins, VectorXd* distances,
+                                   Matrix3Xd* normals) {
+  DRAKE_DEMAND(distances != nullptr);
+  DRAKE_DEMAND(normals != nullptr);
+  distances->resize(ray_endpoints.cols());
+  normals->resize(3, ray_endpoints.cols());
 
   BulletCollisionWorldWrapper& bt_world = getBulletWorld(use_margins);
 
@@ -745,26 +750,27 @@ bool BulletModel::collisionRaycast(const Matrix3Xd& origins,
 
       Vector3d end_eigen(end.getX(), end.getY(), end.getZ());
 
-      distances(i) = (end_eigen - origins.col(origin_col)).norm();
+      (*distances)(i) = (end_eigen - origins.col(origin_col)).norm();
 
       btVector3 normal = ray_callback.m_hitNormalWorld;
-      normals(0, i) = normal.getX();
-      normals(1, i) = normal.getY();
-      normals(2, i) = normal.getZ();
+      (*normals)(0, i) = normal.getX();
+      (*normals)(1, i) = normal.getY();
+      (*normals)(2, i) = normal.getZ();
     } else {
-      distances(i) = -1.;
-      normals(0, i) = 0.;
-      normals(1, i) = 0.;
-      normals(2, i) = 0.;
+      (*distances)(i) = -1.;
+      (*normals)(0, i) = 0.;
+      (*normals)(1, i) = 0.;
+      (*normals)(2, i) = 0.;
     }
   }
 
   return true;
 }
 
-bool BulletModel::closestPointsAllToAll(
+bool BulletModel::ClosestPointsAllToAll(
     const std::vector<ElementId>& ids_to_check, bool use_margins,
-    std::vector<PointPair>& closest_points) {
+    std::vector<PointPair>* closest_points) {
+  DRAKE_DEMAND(closest_points != nullptr);
   if (dispatch_method_in_use_ == kNotYetDecided)
     dispatch_method_in_use_ = kClosestPointsAllToAll;
 
@@ -782,30 +788,32 @@ bool BulletModel::closestPointsAllToAll(
       }
     }
   }
-  return closestPointsPairwise(id_pairs, use_margins, closest_points);
+  return ClosestPointsPairwise(id_pairs, use_margins, closest_points);
 }
 
-bool BulletModel::closestPointsPairwise(
+bool BulletModel::ClosestPointsPairwise(
     const std::vector<ElementIdPair>& id_pairs, bool use_margins,
-    std::vector<PointPair>& closest_points) {
-  closest_points.clear();
+    std::vector<PointPair>* closest_points) {
+  DRAKE_DEMAND(closest_points != nullptr);
+  closest_points->clear();
   for (const ElementIdPair& pair : id_pairs) {
     try {
-      closest_points.push_back(findClosestPointsBetweenElements(
+      closest_points->push_back(findClosestPointsBetweenElements(
           pair.first, pair.second, use_margins));
     } catch (std::logic_error& e) {
       drake::log()->warn(e.what());
     }
   }
-  return closest_points.size() > 0;
+  return closest_points->size() > 0;
 }
 
 bool BulletModel::ComputeMaximumDepthCollisionPoints(
-    bool use_margins, std::vector<PointPair> &collision_points) {
+    bool use_margins, std::vector<PointPair>* collision_points) {
+  DRAKE_DEMAND(collision_points != nullptr);
   if (dispatch_method_in_use_ == kNotYetDecided)
     dispatch_method_in_use_ = kCollisionPointsAllToAll;
 
-  collision_points.clear();
+  collision_points->clear();
   MatrixXd normals;
   std::vector<double> distance;
   BulletCollisionWorldWrapper& bt_world = getBulletWorld(use_margins);
@@ -848,14 +856,14 @@ bool BulletModel::ComputeMaximumDepthCollisionPoints(
         const btVector3& ptA = pt.getPositionWorldOnA() + normalOnB * marginA;
         const btVector3& ptB = pt.getPositionWorldOnB() - normalOnB * marginB;
 
-        collision_points.emplace_back(
+        collision_points->emplace_back(
             elementA, elementB,
             toVector3d(ptA), toVector3d(ptB), toVector3d(normalOnB),
             static_cast<double>(pt.getDistance() + marginA + marginB));
       }
     }
   }
-  return collision_points.size() > 0;
+  return collision_points->size() > 0;
 }
 
 void BulletModel::ClearCachedResults(bool use_margins) {
@@ -893,4 +901,6 @@ const char* UnknownShapeException::what() const throw() {
       .c_str();
 }
 
-}  // namespace DrakeCollision
+}  // namespace collision
+}  // namespace multibody
+}  // namespace drake

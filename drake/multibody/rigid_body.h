@@ -222,36 +222,38 @@ class RigidBody {
    * @param[in] element The element to associate with the rigid body.
    */
   void AddCollisionElement(const std::string& group_name,
-                           DrakeCollision::Element* element);
+                           drake::multibody::collision::Element* element);
 
   /**
    * @returns A reference to an `std::vector` of collision elements that
    * represent the collision geometry of this rigid body.
    */
-  const std::vector<DrakeCollision::ElementId>& get_collision_element_ids()
-      const;
+  const std::vector<drake::multibody::collision::ElementId>&
+  get_collision_element_ids() const;
 
   /**
    * Returns a reference to an `std::vector` of collision elements that
    * represent the collision geometry of this rigid body.
    */
-  std::vector<DrakeCollision::ElementId>& get_mutable_collision_element_ids();
+  std::vector<drake::multibody::collision::ElementId>&
+  get_mutable_collision_element_ids();
 
   /**
    * Returns a map of collision element group names to vectors of collision
    * element IDs. These are the collision element groups created through calls
    * to RigidBody::AddCollisionElementToGroup().
    */
-  const std::map<std::string, std::vector<DrakeCollision::ElementId>>&
-      get_group_to_collision_ids_map() const;
+  const std::map<std::string,
+                 std::vector<drake::multibody::collision::ElementId>>&
+  get_group_to_collision_ids_map() const;
 
   /**
    * Returns a map of collision element group names to vectors of collision
    * element IDs. These are the collision element groups created through calls
    * to RigidBody::AddCollisionElementToGroup().
    */
-  std::map<std::string, std::vector<DrakeCollision::ElementId>>&
-    get_mutable_group_to_collision_ids_map();
+  std::map<std::string, std::vector<drake::multibody::collision::ElementId>>&
+  get_mutable_group_to_collision_ids_map();
 
   /**
    * Reports if there is a path in this tree from this body to the world where
@@ -323,11 +325,11 @@ class RigidBody {
   bool appendCollisionElementIdsFromThisBody(
       const std::string& group_name,
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      std::vector<DrakeCollision::ElementId>& ids) const;
+      std::vector<drake::multibody::collision::ElementId>& ids) const;
 
   bool appendCollisionElementIdsFromThisBody(
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      std::vector<DrakeCollision::ElementId>& ids) const;
+      std::vector<drake::multibody::collision::ElementId>& ids) const;
 
   /**
    * Returns the points on this rigid body that should be checked for collision
@@ -397,7 +399,8 @@ class RigidBody {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  typedef std::vector<DrakeCollision::Element*> CollisionElementsVector;
+  typedef std::vector<drake::multibody::collision::Element*>
+      CollisionElementsVector;
   typedef typename CollisionElementsVector::iterator CollisionElementsIterator;
 
   CollisionElementsIterator collision_elements_begin() {
@@ -455,12 +458,12 @@ class RigidBody {
 
   // A list of collision element IDs of collision elements that represent the
   // geometry of this rigid body.
-  std::vector<DrakeCollision::ElementId> collision_element_ids_;
+  std::vector<drake::multibody::collision::ElementId> collision_element_ids_;
 
   // A map of groups of collision element IDs. This is just for conveniently
   // accessing particular groups of collision elements. The groups do not imply
   // anything in terms of how the collision elements relate to each other.
-  std::map<std::string, std::vector<DrakeCollision::ElementId>>
+  std::map<std::string, std::vector<drake::multibody::collision::ElementId>>
       collision_element_groups_;
 
   // The contact points this rigid body has with its environment.

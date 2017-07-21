@@ -63,8 +63,8 @@ void AssertValidCopy(const ContactInfo<T>& test_value,
 // through the copy constructor as well as the assignment operator.
 GTEST_TEST(ContactInfoTests, CloneDetails) {
   // First, construct a ContactInfo reference.
-  DrakeCollision::ElementId element_a = 10;
-  DrakeCollision::ElementId element_b = 20;
+  drake::multibody::collision::ElementId element_a = 10;
+  drake::multibody::collision::ElementId element_b = 20;
   ContactInfo<double> contact_info(element_a, element_b);
   std::vector<unique_ptr<ContactDetail<double>>> details;
 
@@ -87,8 +87,8 @@ GTEST_TEST(ContactInfoTests, CloneDetails) {
 template <template <class> class Pointer>
 void TestSetDetails() {
   // Set up initial conditions.
-  DrakeCollision::ElementId element_a = 10;
-  DrakeCollision::ElementId element_b = 20;
+  drake::multibody::collision::ElementId element_a = 10;
+  drake::multibody::collision::ElementId element_b = 20;
   ContactInfo<double> contact_info(element_a, element_b);
 
   std::vector<Pointer<ContactDetail<double>>> details;

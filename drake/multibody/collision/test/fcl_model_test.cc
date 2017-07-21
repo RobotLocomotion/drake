@@ -3,7 +3,9 @@
 #include <fcl/fcl.h>
 #include <gtest/gtest.h>
 
-namespace DrakeCollision {
+namespace drake {
+namespace multibody {
+namespace collision {
 namespace {
 
 // TODO(jamiesnape): Test the model.
@@ -38,4 +40,6 @@ GTEST_TEST(FCLModelTest, SphereSphereDistance) {
 }
 
 }  // namespace
-}  // namespace DrakeCollision
+}  // namespace collision
+}  // namespace multibody
+}  // namespace drake
