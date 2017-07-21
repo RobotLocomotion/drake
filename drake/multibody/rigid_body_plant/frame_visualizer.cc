@@ -4,8 +4,8 @@ namespace drake {
 namespace systems {
 
 FrameVisualizer::FrameVisualizer(const RigidBodyTree<double>& tree,
-                                 const std::vector<FrameData>& local_transforms,
-                                 drake::lcm::DrakeLcmInterface* lcm)
+    const std::vector<RigidBodyFrame<double>>& local_transforms,
+    drake::lcm::DrakeLcmInterface* lcm)
     : tree_(tree), lcm_(lcm), local_transforms_(local_transforms) {
   DeclareInputPort(kVectorValued,
                    tree.get_num_positions() + tree.get_num_velocities());
@@ -13,14 +13,14 @@ FrameVisualizer::FrameVisualizer(const RigidBodyTree<double>& tree,
 
   default_msg_.num_links = static_cast<int>(local_transforms_.size());
   default_msg_.link_name.resize(default_msg_.num_links);
-  default_msg_.robot_num.resize(default_msg_.num_links);
+  // The robot num is not relavent here.
+  default_msg_.robot_num.resize(default_msg_.num_links, 0);
   std::vector<float> pos = {0, 0, 0};
   std::vector<float> quaternion = {1, 0, 0, 0};
   default_msg_.position.resize(default_msg_.num_links, pos);
   default_msg_.quaternion.resize(default_msg_.num_links, quaternion);
   for (size_t i = 0; i < local_transforms_.size(); ++i) {
-    default_msg_.link_name[i] = local_transforms_[i].name;
-    DRAKE_DEMAND(local_transforms_[i].body != nullptr);
+    default_msg_.link_name[i] = local_transforms_[i].get_name();
   }
 }
 
@@ -39,9 +39,7 @@ void FrameVisualizer::DoPublish(
 
   Isometry3<double> X_WF;
   for (size_t i = 0; i < local_transforms_.size(); ++i) {
-    const FrameData& data = local_transforms_[i];
-    X_WF = tree_.CalcFramePoseInWorldFrame(cache, *data.body, data.X_BF);
-    msg.link_name[i] = data.name;
+    X_WF = tree_.CalcFramePoseInWorldFrame(cache, local_transforms_[i]);
 
     for (int j = 0; j < 3; j++)
       msg.position[i][j] = static_cast<float>(X_WF.translation()[j]);

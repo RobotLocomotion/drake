@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
@@ -23,22 +24,7 @@ class FrameVisualizer : public LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FrameVisualizer)
 
   /**
-   * A POD type that represents a frame to be visualized, which consists of a
-   * RigidBody that the frame is attached to, a transform in the body frame
-   * and a string name.
-   */
-  struct FrameData {
-    /// The body that this frame is attached to.
-    const RigidBody<double>* body{nullptr};
-    /// Frame name.
-    std::string name;
-    /// Transformation to the body frame.
-    Isometry3<double> X_BF{Isometry3<double>::Identity()};
-  };
-
-  /**
-   * Constructor. Aborts if any element in local_transforms has a nullptr for
-   * its `body` field.
+   * Constructor.
    * @param tree A reference to the RigidBodyTree used for doing kinematics.
    *        Its life span must be longer than this.
    * @param local_transforms A vector of frames to be visualized.
@@ -47,7 +33,7 @@ class FrameVisualizer : public LeafSystem<double> {
    *        object.
    */
   FrameVisualizer(const RigidBodyTree<double>& tree,
-                  const std::vector<FrameData>& local_transforms,
+                  const std::vector<RigidBodyFrame<double>>& local_transforms,
                   drake::lcm::DrakeLcmInterface* lcm);
 
   /**
@@ -66,7 +52,7 @@ class FrameVisualizer : public LeafSystem<double> {
 
   const RigidBodyTree<double>& tree_;
   drake::lcm::DrakeLcmInterface* const lcm_;
-  const std::vector<FrameData> local_transforms_;
+  const std::vector<RigidBodyFrame<double>> local_transforms_;
 
   drake::lcmt_viewer_draw default_msg_{};
 };

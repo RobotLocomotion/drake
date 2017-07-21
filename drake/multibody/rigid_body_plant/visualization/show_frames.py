@@ -14,16 +14,16 @@ class FramesVisualizer(object):
         self._subscriber = None
         self.set_enabled(True)
 
-    def add_subscriber(self):
+    def _add_subscriber(self):
         if (self._subscriber is not None):
             return
 
         self._subscriber = lcmUtils.addSubscriber(
             'DRAKE_DRAW_FRAMES',
             messageClass = lcmrobotlocomotion.viewer_draw_t,
-            callback = self.handle_message)
+            callback = self._handle_message)
 
-    def remove_subscriber(self):
+    def _remove_subscriber(self):
         if (self._subscriber is None):
             return
 
@@ -36,12 +36,15 @@ class FramesVisualizer(object):
 
     def set_enabled(self, enable):
         if enable:
-            self.add_subscriber()
+            self._add_subscriber()
         else:
-            self.remove_subscriber()
+            self._remove_subscriber()
 
-    def handle_message(self, msg):
-        # Removes the folder completely.
+    def _handle_message(self, msg):
+        # Removes the folder completely. This is the clearest and easiest way
+        # of doing update. Otherwise we need to store the FrameItem returned
+        # by vis.showFrame, and update its transform. Also need to handle
+        # enable / disable.
         om.removeFromObjectModel(om.findObjectByName(self._folder_name))
 
         # Recreates folder.
@@ -49,9 +52,8 @@ class FramesVisualizer(object):
 
         for i in range(0, msg.num_links):
             name = msg.link_name[i]
-            pos = [msg.position[i][0], msg.position[i][1], msg.position[i][2]]
-            quat = [msg.quaternion[i][0], msg.quaternion[i][1], msg.quaternion[i][2], msg.quaternion[i][3]]
-            transform = transformUtils.transformFromPose(pos, quat);
+            transform = transformUtils.transformFromPose(
+                msg.position[i], msg.quaternion[i])
             vis.showFrame(transform, name, parent=folder, scale=0.1);
 
 def init_visualizer():
