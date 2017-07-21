@@ -9,6 +9,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/symbolic_expression.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/rendering/pose_bundle.h"
 
@@ -76,6 +77,11 @@ class PoseAggregator : public LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PoseAggregator)
 
   PoseAggregator();
+
+  /// Transmogrification constructor.
+  template <typename U>
+  PoseAggregator(const TransmogrifierTag&, const PoseAggregator<U>&);
+
   ~PoseAggregator() override;
 
   /// Adds an input for a PoseVector. @p name must be unique for all inputs with
@@ -113,6 +119,7 @@ class PoseAggregator : public LeafSystem<T> {
   // Allow different specializations to access each other's private data.
   friend class PoseAggregator<double>;
   friend class PoseAggregator<AutoDiffXd>;
+  friend class PoseAggregator<symbolic::Expression>;
 
   // Returns an InputRecord for a generic single pose input.
   static InputRecord MakeSinglePoseInputRecord(const std::string& name,
@@ -131,9 +138,6 @@ class PoseAggregator : public LeafSystem<T> {
 
   // Returns the total number of poses from all inputs.
   int CountNumPoses() const;
-
-  // System<T> override.
-  PoseAggregator<AutoDiffXd>* DoToAutoDiffXd() const override;
 
   // The type, size, and source of each input port.
   std::vector<InputRecord> input_records_;
