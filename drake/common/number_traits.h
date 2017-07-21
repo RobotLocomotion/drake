@@ -25,8 +25,8 @@ namespace drake {
 ///
 /// is_numeric should be true for types like double, int, and AutoDiffScalar.
 ///
-/// is_numeric should be false for types like std::complex, Polynomial, and
-/// FunctionalForm.
+/// is_numeric should be false for types like std::complex, Polynomial,
+/// symbolic::Expression.
 template <typename T>
 struct is_numeric {
   static constexpr bool value = true;
