@@ -158,6 +158,31 @@ struct AddRotationMatrixBilinearTermMcCormickEnvelopeMilpConstraintsReturn {
   typedef std::pair<BinaryVarType, PhiType> type;
 };
 
+/**
+ * Relax the SO(3) constraint on a rotation matrix R = [R₀ R₁ R₂]
+ * <pre>
+ * Rᵢᵀ * Rᵢ = 1
+ * Rᵢᵀ * Rⱼ = 0
+ * Rᵢ x Rⱼ = Rₖ
+ * </pre>
+ * to a set of mixed-integer linear constraints. This is achieved by replacing
+ * the bilinear product terms in the SO(3) constraint, with a new auxiliary
+ * variable in the McCormick envelope of bilinear product. For more details,
+ * please refer to
+ * Global Inverse Kinematics via Mixed-Integer Convex Optimization
+ * by Hongkai Dai, Gregory Izatt and Russ Tedrake, 2017.
+ * @tparam NumIntervalsPerHalfAxis We cut the interval [-1, 1] evenly into
+ * NumIntervalsPerHalfAxis * 2 intervals. Then depending on in which interval
+ * R(i, j) is, we impose corresponding linear constraints.
+ * @param prog The optimization program to which the SO(3) relaxation is added.
+ * @param R The rotation matrix.
+ * @param num_intervlas_per_half_axis Same as NumIntervalsPerHalfAxis, use this
+ * variable when NumIntervalsPerHalfAxis is dynamic.
+ * @return pair. pair = (B, φ). B[i][j] is a column vector. If B[i][j]
+ * represents integer M in the reflected Gray code, then R(i, j) is in the
+ * interval [φ(M), φ(M+1)]. φ contains the end points of the all the intervals,
+ * namely φ(i) = -1 + 1 / num_intervals_per_half_axis * i.
+ */
 template<int NumIntervalsPerHalfAxis = Eigen::Dynamic>
 typename std::enable_if<NumIntervalsPerHalfAxis == Eigen::Dynamic || NumIntervalsPerHalfAxis >= 1,
                         typename AddRotationMatrixBilinearTermMcCormickEnvelopeMilpConstraintsReturn<NumIntervalsPerHalfAxis>::type>::type
