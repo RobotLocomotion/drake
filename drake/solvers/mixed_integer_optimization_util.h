@@ -136,7 +136,7 @@ void AddLogarithmicSos1Constraint(
  * @param By The binary variable, to determine in which interval `y` stays.
  * If Bx represents integer M in Gray code, then `y` is in the interval
  * [φy(M), φy(M+1)].
- * @return lambda The auxiliary binary variables.
+ * @return lambda The auxiliary continuous variables.
  * x = φxᵀ * (λ.rowwise().sum())
  * y = φyᵀ * (λ.cowwise().sum())
  * w = sum_{i, j} φx(i) * φy(j) * λ(i, j)
