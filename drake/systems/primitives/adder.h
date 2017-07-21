@@ -34,15 +34,14 @@ class Adder : public LeafSystem<T> {
   /// @param size number of elements in each input and output signal.
   Adder(int num_inputs, int size);
 
+  /// Transmogrification constructor.
+  template <typename U>
+  Adder(const TransmogrifierTag&, const Adder<U>&);
+
   /// Returns the output port on which the sum is presented.
   const OutputPort<T>& get_output_port() const {
     DRAKE_ASSERT(output_port_ != nullptr);
     return *output_port_;
-  }
-
-  /// Returns an Adder<AutoDiffXd> with the same dimensions as this Adder.
-  std::unique_ptr<Adder<AutoDiffXd>> ToAutoDiffXd() const {
-    return std::unique_ptr<Adder<AutoDiffXd>>(DoToAutoDiffXd());
   }
 
  private:
@@ -50,14 +49,6 @@ class Adder : public LeafSystem<T> {
   // input ports are not the appropriate count or size, std::runtime_error will
   // be thrown.
   void CalcSum(const Context<T>& context, BasicVector<T>* sum) const;
-
-  // System<T> override. Returns an Adder<AutoDiffXd> with the same dimensions
-  // as this Adder.
-  Adder<AutoDiffXd>* DoToAutoDiffXd() const override;
-
-  // System<T> override. Returns an Adder<symbolic::Expression> with the same
-  // dimensions as this Adder.
-  Adder<symbolic::Expression>* DoToSymbolic() const override;
 
   // This is set in the constructor and can't be nullptr.
   const OutputPort<T>* output_port_;
