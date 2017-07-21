@@ -9,8 +9,9 @@
 namespace drake {
 namespace systems {
 
-/// This system splits a vector valued signal in its inputs of size `size`
-/// into `size` output scalar valued signals.
+/// This system splits a vector valued signal on its input into multiple
+/// outputs.
+///
 /// The input to this system directly feeds through to its output.
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
@@ -18,6 +19,7 @@ namespace systems {
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
 /// - AutoDiffXd
+/// - symbolic::Expression
 ///
 /// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
@@ -40,15 +42,15 @@ class Demultiplexer : public LeafSystem<T> {
   /// a multiple of @p output_ports_sizes.
   explicit Demultiplexer(int size, int output_ports_sizes = 1);
 
+  /// Transmogrification constructor.
+  template <typename U>
+  Demultiplexer(const TransmogrifierTag&, const Demultiplexer<U>&);
+
  private:
   // Sets the i-th output port to the value of the i-th component of the input
   // port.
   void CopyToOutput(const Context<T>& context, OutputPortIndex port_index,
                     BasicVector<T>* output) const;
-
-  // Returns a Demultiplexer<symbolic::Expression> with the same dimensions as
-  // this Demultiplexer.
-  Demultiplexer<symbolic::Expression>* DoToSymbolic() const override;
 };
 
 }  // namespace systems

@@ -45,6 +45,10 @@ class Gain : public SisoVectorSystem<T> {
   /// subscript `i` indicates the i-th element of the vector.
   explicit Gain(const Eigen::VectorXd& k);
 
+  /// Transmogrification constructor.
+  template <typename U>
+  Gain(const TransmogrifierTag&, const Gain<U>&);
+
   /// Returns the gain constant. This method should only be called if the gain
   /// can be represented as a scalar value, i.e., every element in the gain
   /// vector is the same. It will abort if the gain cannot be represented as a
@@ -60,10 +64,6 @@ class Gain : public SisoVectorSystem<T> {
       const Eigen::VectorBlock<const VectorX<T>>& input,
       const Eigen::VectorBlock<const VectorX<T>>& state,
       Eigen::VectorBlock<VectorX<T>>* output) const override;
-
-  // System<T> override.  Returns a Gain<symbolic::Expression> with the
-  // same dimensions as this Gain.
-  Gain<symbolic::Expression>* DoToSymbolic() const override;
 
   const Eigen::VectorXd k_;
 };
