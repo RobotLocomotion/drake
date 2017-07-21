@@ -2,7 +2,9 @@
 
 #include "drake/common/drake_assert.h"
 
-namespace DrakeCollision {
+namespace drake {
+namespace multibody {
+namespace collision {
 
 void UnusableModel::UpdateModel() {
   DRAKE_ABORT_MSG(
@@ -75,4 +77,6 @@ std::vector<size_t> UnusableModel::CollidingPoints(
   return std::vector<size_t>();
 }
 
-}  // namespace DrakeCollision
+}  // namespace collision
+}  // namespace multibody
+}  // namespace drake

@@ -136,8 +136,8 @@ namespace test {
             it2 = non_const_body2.collision_elements_begin(),
             ed1 = non_const_body1.collision_elements_end();
        it1 != ed1 ; ++it1, ++it2) {
-    const DrakeCollision::Element* body1_collision = *it1;
-    const DrakeCollision::Element* body2_collision = *it2;
+    const drake::multibody::collision::Element* body1_collision = *it1;
+    const drake::multibody::collision::Element* body2_collision = *it2;
     ::testing::AssertionResult result =
         AreElementsEquivalent(*body1_collision, *body2_collision);
     if (!result) {

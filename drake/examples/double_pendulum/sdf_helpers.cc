@@ -106,7 +106,8 @@ void ParseVisual(sdf::ElementPtr sdf_visual_element, RigidBody<double>* body) {
 }
 
 // Parses a collision geometry from the given SDF element and adds a
-// DrakeCollision::Element instance to the given body through the given tree.
+// drake::multibody::collision::Element instance to the given body through the
+// given tree.
 void ParseCollision(sdf::ElementPtr sdf_collision_element,
                     RigidBody<double>* body,
                     RigidBodyTree<double>* tree) {
@@ -124,7 +125,7 @@ void ParseCollision(sdf::ElementPtr sdf_collision_element,
     X_BE = ParsePose(sdf_pose_element);
   }
 
-  DrakeCollision::Element element(X_BE, body);
+  drake::multibody::collision::Element element(X_BE, body);
   sdf::ElementPtr sdf_geometry_element =
       sdf_collision_element->GetElement("geometry");
   ParseGeometry(sdf_geometry_element, &element);

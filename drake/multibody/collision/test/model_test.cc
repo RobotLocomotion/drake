@@ -19,7 +19,9 @@ using std::make_unique;
 using std::move;
 using std::unique_ptr;
 
-namespace DrakeCollision {
+namespace drake {
+namespace multibody {
+namespace collision {
 namespace {
 
 // Structure used to hold the analytical solution of the tests.
@@ -34,8 +36,9 @@ struct SurfacePoint {
 };
 
 // Solutions are accessed by collision element id using an std::unordered_set.
-// DrakeCollision::Model returns the collision detection results as a vector of
-// DrakeCollision::PointPair entries. Each entry holds a reference to the pair
+// drake::multibody::collision::Model returns the collision detection results
+// as a vector of drake::multibody::collision::PointPair entries. Each entry
+// holds a reference to the pair
 // of collision elements taking part in the collision. Collision elements are
 // referenced by their id.
 // The order in which the pair of elements is stored in a PointPair cannot
@@ -49,7 +52,8 @@ struct SurfacePoint {
 // contact point on a specific element here we use an `std::unordered_set` to
 // map id's to a `SurfacePoint` structure holding the analytical solution on
 // both body and world frames.
-typedef std::unordered_map<const DrakeCollision::Element*, SurfacePoint>
+typedef std::unordered_map<const drake::multibody::collision::Element*,
+                           SurfacePoint>
     ElementToSurfacePointMap;
 
 // GENERAL REMARKS ON THE TESTS PERFORMED
@@ -342,17 +346,17 @@ TEST_F(BoxVsSphereTest, SingleContact) {
       points[0].ptB.isApprox(solution_[points[0].elementB].world_frame));
 }
 
-// This test seeks to find out whether DrakeCollision::Model can report
-// collision manifolds. To this end, a small cube with unit length sides is
-// placed on top of a large cube with sides of length 5.0. The smaller cube is
-// placed such that it intersects the large box. Therefore the intersection
+// This test seeks to find out whether drake::multibody::collision::Model can
+// report collision manifolds. To this end, a small cube with unit length sides
+// is placed on top of a large cube with sides of length 5.0. The smaller cube
+// is placed such that it intersects the large box. Therefore the intersection
 // between the two boxes is not just a single point but the (squared) perimeter
 // all around the smaller box (the manifold).
 //
-// Unfortunately these tests show that DrakeCollision::Model only reports a
-// single (randomly chosen) point at one of the smaller box corners. In previous
-// runs this was the corner at (0.5, 0.5, z) where z = 5.0 for the top of the
-// large box and z = 4.9 for the bottom of the smaller box.
+// Unfortunately these tests show that drake::multibody::collision::Model only
+// reports a single (randomly chosen) point at one of the smaller box corners.
+// In previous runs this was the corner at (0.5, 0.5, z) where z = 5.0 for the
+// top of the large box and z = 4.9 for the bottom of the smaller box.
 class SmallBoxSittingOnLargeBox: public ::testing::Test {
  public:
   void SetUp() override {
@@ -402,9 +406,9 @@ TEST_F(SmallBoxSittingOnLargeBox, SingleContact) {
   // List of collision points.
   std::vector<PointPair> points;
 
-  // Unfortunately DrakeCollision::Model is randomly selecting one of the small
-  // box's corners instead of reporting a manifold describing the perimeter of
-  // the square where both boxes intersect.
+  // Unfortunately drake::multibody::collision::Model is randomly selecting one
+  // of the small box's corners instead of reporting a manifold describing the
+  // perimeter of the square where both boxes intersect.
   // Therefore it is impossible to assert if that choice would change with
   // future releases (say just because tolerances changed).
   // What we can test for sure is:
@@ -431,10 +435,10 @@ TEST_F(SmallBoxSittingOnLargeBox, SingleContact) {
   points.clear();
   model_->ComputeMaximumDepthCollisionPoints(false, &points);
 
-  // Unfortunately DrakeCollision::Model's manifold has one point for this case.
-  // Best for physics simulations would be DrakeCollision::Model to return at
-  // least the four corners of the smaller box. However it randomly picks one
-  // corner.
+  // Unfortunately drake::multibody::collision::Model's manifold has one point
+  // for this case.  Best for physics simulations would be
+  // drake::multibody::collision::Model to return at least the four corners of
+  // the smaller box. However it randomly picks one corner.
   ASSERT_EQ(1u, points.size());
   EXPECT_NEAR(-0.1, points[0].distance, tolerance_);
   // Collision points are reported in the world's frame.
@@ -459,14 +463,15 @@ TEST_F(SmallBoxSittingOnLargeBox, SingleContact) {
               solution_[points[0].elementB].world_frame.y(), tolerance_);
 }
 
-// This test seeks to find out whether DrakeCollision::Model can report
-// collision manifolds. To this end two unit length boxes are placed on top of
-// one another. The box sitting on top is rotated by 45 degrees so that the
-// contact area would consist of an octagon. If DrakeCollision::Model can report
-// manifolds, the manifold would consist of the perimeter of this octagon.
+// This test seeks to find out whether drake::multibody::collision::Model can
+// report collision manifolds. To this end two unit length boxes are placed on
+// top of one another. The box sitting on top is rotated by 45 degrees so that
+// the contact area would consist of an octagon. If
+// drake::multibody::collision::Model can report manifolds, the manifold would
+// consist of the perimeter of this octagon.
 
-// Unfortunately these tests show that DrakeCollision::Model only reports a
-// single (randomly chosen) point within this octagonal contact area.
+// Unfortunately these tests show that drake::multibody::collision::Model only
+// reports a single (randomly chosen) point within this octagonal contact area.
 class NonAlignedBoxes: public ::testing::Test {
  public:
   void SetUp() override {
@@ -520,9 +525,9 @@ TEST_F(NonAlignedBoxes, SingleContact) {
   // List of collision points.
   std::vector<PointPair> points;
 
-  // Unfortunately DrakeCollision::Model is randomly selecting one of the small
-  // box's corners instead of reporting a manifold describing the perimeter of
-  // the square where both boxes intersect.
+  // Unfortunately drake::multibody::collision::Model is randomly selecting one
+  // of the small box's corners instead of reporting a manifold describing the
+  // perimeter of the square where both boxes intersect.
   // Therefore it is impossible to assert if that choice would change with
   // future releases (say just because tolerances changed).
   // What we can test for sure is:
@@ -545,10 +550,10 @@ TEST_F(NonAlignedBoxes, SingleContact) {
   // Collision test performed with Model::ComputeMaximumDepthCollisionPoints.
   points.clear();
   model_->ComputeMaximumDepthCollisionPoints(false, &points);
-  // Unfortunately DrakeCollision::Model's manifold has one point for this case.
-  // Best for physics simulations would be DrakeCollision::Model to return at
-  // least the four corners of the smaller box. However it randomly picks one
-  // corner.
+  // Unfortunately drake::multibody::collision::Model's manifold has one point
+  // for this case.  Best for physics simulations would be
+  // drake::multibody::collision::Model to return at least the four corners of
+  // the smaller box. However it randomly picks one corner.
   ASSERT_EQ(1u, points.size());
   EXPECT_NEAR(-0.1, points[0].distance, tolerance_);
   EXPECT_TRUE(points[0].normal.isApprox(Vector3d(0.0, -1.0, 0.0)));
@@ -864,4 +869,6 @@ GTEST_TEST(ModelTest, DistanceToNonConvex) {
 }
 
 }  // namespace
-}  // namespace DrakeCollision
+}  // namespace collision
+}  // namespace multibody
+}  // namespace drake

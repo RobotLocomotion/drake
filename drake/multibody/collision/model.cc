@@ -9,7 +9,9 @@ using std::move;
 using std::unique_ptr;
 using std::vector;
 
-namespace DrakeCollision {
+namespace drake {
+namespace multibody {
+namespace collision {
 
 Element* Model::AddElement(std::unique_ptr<Element> element) {
   ElementId id = element->getId();
@@ -71,7 +73,7 @@ bool Model::UpdateElementWorldTransform(ElementId id,
 }
 
 bool Model::TransformCollisionFrame(
-    const DrakeCollision::ElementId& eid,
+    const drake::multibody::collision::ElementId& eid,
     const Eigen::Isometry3d& transform_body_to_joint) {
   auto element = elements.find(eid);
   if (element != elements.end()) {
@@ -104,4 +106,6 @@ std::ostream& operator<<(std::ostream& os, const Model& model) {
   return os;
 }
 
-}  // namespace DrakeCollision
+}  // namespace collision
+}  // namespace multibody
+}  // namespace drake

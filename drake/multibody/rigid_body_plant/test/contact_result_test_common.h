@@ -75,7 +75,7 @@ class ContactResultTestCommon : public ::testing::Test {
     body->add_joint(&tree->world(),
                     std::make_unique<QuaternionFloatingJoint>("base", pose));
     DrakeShapes::Sphere sphere(kRadius);
-    DrakeCollision::Element collision_element(sphere);
+    drake::multibody::collision::Element collision_element(sphere);
     collision_element.set_body(body);
     tree->addCollisionElement(collision_element, *body, "group1");
     return body;

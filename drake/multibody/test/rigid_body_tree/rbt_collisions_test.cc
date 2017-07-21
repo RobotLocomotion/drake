@@ -33,9 +33,10 @@ struct SurfacePoint {
 };
 
 // Solutions are accessed by rigid body pointer using an std::unordered_map.
-// DrakeCollision::Model returns the collision detection results as a vector of
-// DrakeCollision::PointPair entries. Each entry holds a reference to the pair
-// of collision elements taking part in the collision.
+// drake::multibody::collision::Model returns the collision detection results
+// as a vector of drake::multibody::collision::PointPair entries. Each entry
+// holds a reference to the pair of collision elements taking part in the
+// collision.
 // To provide a simple access to the appropriate solution for the collision
 // point on each body, a map is used to allow referencing the corresponding
 // solution by body pointer.
@@ -93,9 +94,8 @@ TEST_F(RBTCollisionTest, FindAndComputeContactPoints) {
 
   KinematicsCache<double> kinsol = tree_.doKinematics(q, v);
 
-  std::vector<DrakeCollision::PointPair> collision_pairs =
-      tree_.ComputeMaximumDepthCollisionPoints(
-      kinsol, false);
+  std::vector<drake::multibody::collision::PointPair> collision_pairs =
+      tree_.ComputeMaximumDepthCollisionPoints(kinsol, false);
 
   // RigidBodyTree::ComputeMaximumDepthCollisionPoints returns only one point,
   // the maximum depth collision point.
@@ -186,9 +186,8 @@ TEST_F(RBTCollisionCliqueTest, ComputeContactPointsWithCliques) {
 
   KinematicsCache<double> kinsol = tree_.doKinematics(q, v);
 
-  std::vector<DrakeCollision::PointPair> collision_pairs =
-      tree_.ComputeMaximumDepthCollisionPoints(
-          kinsol, false);
+  std::vector<drake::multibody::collision::PointPair> collision_pairs =
+      tree_.ComputeMaximumDepthCollisionPoints(kinsol, false);
 
   // RigidBodyTree::ComputeMaximumDepthCollisionPoints returns only one point,
   // the maximum depth collision point. The overlapping spheres should be

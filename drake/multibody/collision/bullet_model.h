@@ -14,7 +14,9 @@
 #include "drake/multibody/collision/element.h"
 #include "drake/multibody/collision/model.h"
 
-namespace DrakeCollision {
+namespace drake {
+namespace multibody {
+namespace collision {
 
 class BulletModel;  // forward declaration
 
@@ -183,4 +185,6 @@ class BulletModel : public Model {
   DispatchMethod dispatch_method_in_use_{kNotYetDecided};
 };
 
-}  // namespace DrakeCollision
+}  // namespace collision
+}  // namespace multibody
+}  // namespace drake

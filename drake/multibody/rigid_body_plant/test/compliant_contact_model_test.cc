@@ -99,8 +99,8 @@ TEST_F(CompliantContactModelTest, ModelSingleCollision) {
   const auto info = contact_results.get_contact_info(0);
 
   // Confirms that the proper bodies are in contact.
-  DrakeCollision::ElementId e1 = info.get_element_id_1();
-  DrakeCollision::ElementId e2 = info.get_element_id_2();
+  drake::multibody::collision::ElementId e1 = info.get_element_id_1();
+  drake::multibody::collision::ElementId e2 = info.get_element_id_2();
   const RigidBody<double>* b1 = unique_tree_->FindBody(e1);
   const RigidBody<double>* b2 = unique_tree_->FindBody(e2);
   ASSERT_NE(e1, e2);

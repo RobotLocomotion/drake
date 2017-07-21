@@ -25,7 +25,9 @@
 //    Value: 0b10011
 //    Group:   43210,
 // where groups are enumerated from *right* to *left*.
-namespace DrakeCollision {
+namespace drake {
+namespace multibody {
+namespace collision {
 namespace test {
 namespace {
 
@@ -317,12 +319,13 @@ GTEST_TEST(CollisionFilterGroupCompile, ClearFlushesData) {
 
 //---------------------------------------------------------------------------
 
-// This tests the functionality of the DrakeCollision::Element::CanCollideWith
-// method.  Assuming the bit masks have been set properly, this confirms they
-// are interpreted properly.
+// This tests the functionality of the
+// drake::multibody::collision::Element::CanCollideWith method.  Assuming the
+// bit masks have been set properly, this confirms they are interpreted
+// properly.
 GTEST_TEST(CollisionFilterGroupElement, ElementCanCollideWithTest) {
-  DrakeCollision::Element e1;
-  DrakeCollision::Element e2;
+  drake::multibody::collision::Element e1;
+  drake::multibody::collision::Element e2;
 
   // Case 1: By default, elements belong to no group and ignore nothing.
   EXPECT_EQ(e1.get_collision_filter_group(), kDefaultGroup);
@@ -498,4 +501,6 @@ GTEST_TEST(CollisionFilterGroupURDF, ParseMultiIgnoreTest) {
 }
 }  // namespace
 }  // namespace test
-}  // namespace DrakeCollision
+}  // namespace collision
+}  // namespace multibody
+}  // namespace drake

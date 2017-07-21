@@ -11,7 +11,9 @@
 #include "drake/multibody/collision/element.h"
 #include "drake/multibody/collision/point_pair.h"
 
-namespace DrakeCollision {
+namespace drake {
+namespace multibody {
+namespace collision {
 typedef std::pair<ElementId, ElementId> ElementIdPair;
 
 /** Model is an abstract base class of a collision model. Child classes of Model
@@ -28,9 +30,10 @@ class Model {
 
    This operation is frequently referred to as "registering" the collision
    element.  This is the process by which a fully-realized Drake collision
-   element is fed to a specific DrakeCollision::Model implementation.  Prior
-   to this *registration*, the collision model knows nothing about the collision
-   element.  After registration, it owns the collision element.
+   element is fed to a specific drake::multibody::collision::Model
+   implementation.  Prior to this *registration*, the collision model knows
+   nothing about the collision element.  After registration, it owns the
+   collision element.
 
    @param element The element to add.
 
@@ -239,7 +242,7 @@ class Model {
 
    @return Whether the collision element was successfully updated. **/
   virtual bool TransformCollisionFrame(
-      const DrakeCollision::ElementId& eid,
+      const drake::multibody::collision::ElementId& eid,
       const Eigen::Isometry3d& transform_body_to_joint);
 
   /** A toString method for this class. */
@@ -260,4 +263,6 @@ class Model {
   std::unordered_map<ElementId, std::unique_ptr<Element>> elements;
 };
 
-}  // namespace DrakeCollision
+}  // namespace collision
+}  // namespace multibody
+}  // namespace drake

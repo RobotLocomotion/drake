@@ -7,7 +7,9 @@
 #include "drake/multibody/collision/element.h"
 #include "drake/multibody/collision/model.h"
 
-namespace DrakeCollision {
+namespace drake {
+namespace multibody {
+namespace collision {
 
 /// An unusable model, used when no collision detection backend is available.
 class UnusableModel : public Model {
@@ -54,4 +56,6 @@ class UnusableModel : public Model {
       double collision_threshold) override;
 };
 
-}  // namespace DrakeCollision
+}  // namespace collision
+}  // namespace multibody
+}  // namespace drake

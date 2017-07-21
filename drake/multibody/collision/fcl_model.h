@@ -9,7 +9,9 @@
 #include "drake/multibody/collision/model.h"
 #include "drake/multibody/collision/point_pair.h"
 
-namespace DrakeCollision {
+namespace drake {
+namespace multibody {
+namespace collision {
 
 class FclModel : public Model {
  public:
@@ -44,4 +46,6 @@ class FclModel : public Model {
   void UpdateModel() override;
 };
 
-}  // namespace DrakeCollision
+}  // namespace collision
+}  // namespace multibody
+}  // namespace drake

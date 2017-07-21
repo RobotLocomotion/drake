@@ -18,8 +18,8 @@ void AddFlatTerrainToWorld(RigidBodyTreed* tree, double box_size,
   world.AddVisualElement(
       DrakeShapes::VisualElement(geom, T_element_to_link, color));
   tree->addCollisionElement(
-      DrakeCollision::Element(geom, T_element_to_link, &world), world,
-      "terrain");
+      drake::multibody::collision::Element(geom, T_element_to_link, &world),
+      world, "terrain");
   tree->compile();
 }
 

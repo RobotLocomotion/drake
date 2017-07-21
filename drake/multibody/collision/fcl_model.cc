@@ -5,7 +5,9 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/unused.h"
 
-namespace DrakeCollision {
+namespace drake {
+namespace multibody {
+namespace collision {
 
 // TODO(jamiesnape): Implement the model.
 
@@ -78,4 +80,6 @@ std::vector<size_t> FclModel::CollidingPoints(
   return std::vector<size_t>();
 }
 
-}  // namespace DrakeCollision
+}  // namespace collision
+}  // namespace multibody
+}  // namespace drake

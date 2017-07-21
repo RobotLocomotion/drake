@@ -61,7 +61,7 @@ using drake::math::gradientMatrixToAutoDiff;
 using drake::math::Gradient;
 using drake::multibody::joints::FloatingBaseType;
 
-using DrakeCollision::CollisionFilterGroup;
+using drake::multibody::collision::CollisionFilterGroup;
 
 using std::allocator;
 using std::cerr;
@@ -107,7 +107,7 @@ std::ostream& operator<<(std::ostream& os, const RigidBodyTree<double>& tree) {
 
 template <typename T>
 RigidBodyTree<T>::RigidBodyTree()
-    : collision_model_(DrakeCollision::newModel()) {
+    : collision_model_(drake::multibody::collision::newModel()) {
   // Sets the gravity vector.
   a_grav << 0, 0, 0, 0, 0, -9.81;
 
@@ -236,7 +236,7 @@ bool RigidBodyTree<T>::transformCollisionFrame(
   // to be officially decided.
   for (auto body_itr = body->collision_elements_begin();
        body_itr != body->collision_elements_end(); ++body_itr) {
-    DrakeCollision::Element* element = *body_itr;
+    drake::multibody::collision::Element* element = *body_itr;
     if (!collision_model_->TransformCollisionFrame(element->getId(),
                                                    displace_transform)) {
       return false;
@@ -322,8 +322,8 @@ void RigidBodyTree<T>::AddCollisionFilterIgnoreTarget(
 
 template <typename T>
 void RigidBodyTree<T>::SetBodyCollisionFilters(
-    const RigidBody<T>& body, const DrakeCollision::bitmask& group,
-    const DrakeCollision::bitmask& ignores) {
+    const RigidBody<T>& body, const drake::multibody::collision::bitmask& group,
+    const drake::multibody::collision::bitmask& ignores) {
   collision_group_manager_.SetBodyCollisionFilters(body, group, ignores);
 }
 
@@ -453,9 +453,9 @@ void RigidBodyTree<T>::CompileCollisionState() {
   // an exception.
   for (auto& pair : body_collision_map_) {
     RigidBody<T>* body = pair.first;
-    DrakeCollision::bitmask group =
+    drake::multibody::collision::bitmask group =
         collision_group_manager_.get_group_mask(*body);
-    DrakeCollision::bitmask ignore =
+    drake::multibody::collision::bitmask ignore =
         collision_group_manager_.get_ignore_mask(*body);
     BodyCollisions& elements = pair.second;
     for (const auto& collision_item : elements) {
@@ -696,7 +696,7 @@ map<string, int> RigidBodyTree<T>::computePositionNameToIndexMap() const {
 template <typename T>
 void RigidBodyTree<T>::addCollisionElement(
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-    const DrakeCollision::Element& element, RigidBody<T>& body,
+    const drake::multibody::collision::Element& element, RigidBody<T>& body,
     const string& group_name) {
   auto itr = body_collision_map_.find(&body);
   if (itr == body_collision_map_.end()) {
@@ -716,7 +716,7 @@ void RigidBodyTree<T>::addCollisionElement(
   BodyCollisions& body_collisions = itr->second;
   size_t id = element_order_.size();
   element_order_.emplace_back(
-      std::unique_ptr<DrakeCollision::Element>(element.clone()));
+      std::unique_ptr<drake::multibody::collision::Element>(element.clone()));
   body_collisions.emplace_back(group_name, id);
 }
 
@@ -758,7 +758,7 @@ void RigidBodyTree<T>::getTerrainContactPoints(
   size_t num_points = 0;
   terrain_points->resize(Eigen::NoChange, 0);
 
-  vector<DrakeCollision::ElementId> element_ids;
+  vector<drake::multibody::collision::ElementId> element_ids;
 
   // If a group name was given, use it to look up the subset of collision
   // elements that belong to that group.  Otherwise, use the full set of
@@ -802,7 +802,7 @@ void RigidBodyTree<T>::collisionDetectFromPoints(
     vector<int>& body_idx, bool use_margins) {
   updateDynamicCollisionElements(cache);
 
-  vector<DrakeCollision::PointPair> closest_points;
+  vector<drake::multibody::collision::PointPair> closest_points;
 
   collision_model_->CollisionDetectFromPoints(points, use_margins,
                                               &closest_points);
@@ -816,7 +816,8 @@ void RigidBodyTree<T>::collisionDetectFromPoints(
     body_x.col(i) = closest_points[i].ptA;
     normal.col(i) = closest_points[i].normal;
     phi[i] = closest_points[i].distance;
-    const DrakeCollision::Element* elementB = closest_points[i].elementB;
+    const drake::multibody::collision::Element* elementB =
+        closest_points[i].elementB;
     // In the case that no closest point was found, elementB will come back
     // as a null pointer which we should not attempt to access.
     if (elementB) {
@@ -861,10 +862,11 @@ bool RigidBodyTree<T>::collisionDetect(
     Matrix3Xd& xA, Matrix3Xd& xB, vector<int>& bodyA_idx,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     vector<int>& bodyB_idx,
-    const vector<DrakeCollision::ElementId>& ids_to_check, bool use_margins) {
+    const vector<drake::multibody::collision::ElementId>& ids_to_check,
+    bool use_margins) {
   updateDynamicCollisionElements(cache);
 
-  vector<DrakeCollision::PointPair> points;
+  vector<drake::multibody::collision::PointPair> points;
   bool points_found =
       collision_model_->ClosestPointsAllToAll(ids_to_check, use_margins,
                                               &points);
@@ -879,9 +881,9 @@ bool RigidBodyTree<T>::collisionDetect(
     xB.col(i) = points[i].ptB;
     normal.col(i) = points[i].normal;
     phi[i] = points[i].distance;
-    const DrakeCollision::Element* elementA = points[i].elementA;
+    const drake::multibody::collision::Element* elementA = points[i].elementA;
     bodyA_idx.push_back(elementA->get_body()->get_body_index());
-    const DrakeCollision::Element* elementB = points[i].elementB;
+    const drake::multibody::collision::Element* elementB = points[i].elementB;
     bodyB_idx.push_back(elementB->get_body()->get_body_index());
   }
   return points_found;
@@ -897,7 +899,7 @@ bool RigidBodyTree<T>::collisionDetect(
     vector<int>& bodyB_idx, const vector<int>& bodies_idx,
     const set<string>& active_element_groups, bool use_margins) {
   CheckCacheValidity(cache);
-  vector<DrakeCollision::ElementId> ids_to_check;
+  vector<drake::multibody::collision::ElementId> ids_to_check;
   for (const int& body_idx : bodies_idx) {
     if (body_idx >= 0 && body_idx < static_cast<int>(bodies.size())) {
       for (const string& group : active_element_groups) {
@@ -919,7 +921,7 @@ bool RigidBodyTree<T>::collisionDetect(
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     vector<int>& bodyB_idx, const vector<int>& bodies_idx, bool use_margins) {
   CheckCacheValidity(cache);
-  vector<DrakeCollision::ElementId> ids_to_check;
+  vector<drake::multibody::collision::ElementId> ids_to_check;
   for (const int& body_idx : bodies_idx) {
     if (body_idx >= 0 && body_idx < static_cast<int>(bodies.size())) {
       bodies[body_idx]->appendCollisionElementIdsFromThisBody(ids_to_check);
@@ -943,7 +945,7 @@ bool RigidBodyTree<T>::collisionDetect(
     const set<string>& active_element_groups,
     bool use_margins) {
   CheckCacheValidity(cache);
-  vector<DrakeCollision::ElementId> ids_to_check;
+  vector<drake::multibody::collision::ElementId> ids_to_check;
   for (auto body_iter = bodies.begin(); body_iter != bodies.end();
        ++body_iter) {
     for (auto group_iter = active_element_groups.begin();
@@ -968,7 +970,7 @@ bool RigidBodyTree<T>::collisionDetect(
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     vector<int>& bodyB_idx, bool use_margins) {
   CheckCacheValidity(cache);
-  vector<DrakeCollision::ElementId> ids_to_check;
+  vector<drake::multibody::collision::ElementId> ids_to_check;
   for (auto body_iter = bodies.begin(); body_iter != bodies.end();
        ++body_iter) {
     (*body_iter)->appendCollisionElementIdsFromThisBody(ids_to_check);
@@ -978,11 +980,11 @@ bool RigidBodyTree<T>::collisionDetect(
 }
 
 template <typename T>
-std::vector<DrakeCollision::PointPair>
+std::vector<drake::multibody::collision::PointPair>
 RigidBodyTree<T>::ComputeMaximumDepthCollisionPoints(
     const KinematicsCache<double>& cache, bool use_margins) {
   updateDynamicCollisionElements(cache);
-  vector<DrakeCollision::PointPair> contact_points;
+  vector<drake::multibody::collision::PointPair> contact_points;
   collision_model_->ComputeMaximumDepthCollisionPoints(use_margins,
                                                        &contact_points);
   // For each contact pair, map contact point from world frame to each body's
@@ -1039,7 +1041,7 @@ bool RigidBodyTree<T>::allCollisions(
     Matrix3Xd& xB_in_world, bool use_margins) {
   updateDynamicCollisionElements(cache);
 
-  vector<DrakeCollision::PointPair> points;
+  vector<drake::multibody::collision::PointPair> points;
   bool points_found = collision_model_->ComputeMaximumDepthCollisionPoints(
       use_margins, &points);
 
@@ -1050,9 +1052,9 @@ bool RigidBodyTree<T>::allCollisions(
     xA_in_world.col(i) = points[i].ptA;
     xB_in_world.col(i) = points[i].ptB;
 
-    const DrakeCollision::Element* elementA = points[i].elementA;
+    const drake::multibody::collision::Element* elementA = points[i].elementA;
     bodyA_idx.push_back(elementA->get_body()->get_body_index());
-    const DrakeCollision::Element* elementB = points[i].elementB;
+    const drake::multibody::collision::Element* elementB = points[i].elementB;
     bodyB_idx.push_back(elementB->get_body()->get_body_index());
   }
   return points_found;
@@ -2614,7 +2616,7 @@ RigidBody<T>* RigidBodyTree<T>::FindBody(const std::string& body_name,
 
 template <typename T>
 const RigidBody<double>* RigidBodyTree<T>::FindBody(
-    DrakeCollision::ElementId element_id) const {
+    drake::multibody::collision::ElementId element_id) const {
   auto element = collision_model_->FindElement(element_id);
   if (element != nullptr) {
     return element->get_body();

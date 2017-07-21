@@ -19,7 +19,9 @@ using Eigen::VectorXd;
 using Eigen::Vector3i;
 using Eigen::Matrix3Xi;
 
-namespace DrakeCollision {
+namespace drake {
+namespace multibody {
+namespace collision {
 
 // Helper method to convert a btVector3 to an Eigen vector representation.
 // Using Eigen::Map avoids unnecessary (expensive) copies.
@@ -899,4 +901,6 @@ const char* UnknownShapeException::what() const throw() {
       .c_str();
 }
 
-}  // namespace DrakeCollision
+}  // namespace collision
+}  // namespace multibody
+}  // namespace drake
