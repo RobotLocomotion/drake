@@ -20,14 +20,14 @@ void FclModel::UpdateModel() {
 
 bool FclModel::ClosestPointsAllToAll(const std::vector<ElementId>& ids_to_check,
                                      bool use_margins,
-                                     std::vector<PointPair>& closest_points) {
+                                     std::vector<PointPair>* closest_points) {
   drake::unused(ids_to_check, use_margins, closest_points);
   DRAKE_ABORT_MSG("Not implemented.");
   return false;
 }
 
 bool FclModel::ComputeMaximumDepthCollisionPoints(
-    bool use_margins, std::vector<PointPair>& points) {
+    bool use_margins, std::vector<PointPair>* points) {
   drake::unused(use_margins, points);
   DRAKE_ABORT_MSG("Not implemented.");
   return false;
@@ -35,7 +35,7 @@ bool FclModel::ComputeMaximumDepthCollisionPoints(
 
 bool FclModel::ClosestPointsPairwise(const std::vector<ElementIdPair>& id_pairs,
                                      bool use_margins,
-                                     std::vector<PointPair>& closest_points) {
+                                     std::vector<PointPair>* closest_points) {
   drake::unused(id_pairs, use_margins, closest_points);
   DRAKE_ABORT_MSG("Not implemented.");
   return false;
@@ -43,7 +43,7 @@ bool FclModel::ClosestPointsPairwise(const std::vector<ElementIdPair>& id_pairs,
 
 void FclModel::CollisionDetectFromPoints(
     const Eigen::Matrix3Xd& points, bool use_margins,
-    std::vector<PointPair>& closest_points) {
+    std::vector<PointPair>* closest_points) {
   drake::unused(points, use_margins, closest_points);
   DRAKE_ABORT_MSG("Not implemented.");
 }
@@ -55,8 +55,8 @@ void FclModel::ClearCachedResults(bool use_margins) {
 
 bool FclModel::CollisionRaycast(const Eigen::Matrix3Xd& origins,
                                 const Eigen::Matrix3Xd& ray_endpoints,
-                                bool use_margins, Eigen::VectorXd& distances,
-                                Eigen::Matrix3Xd& normals) {
+                                bool use_margins, Eigen::VectorXd* distances,
+                                Eigen::Matrix3Xd* normals) {
   drake::unused(origins, ray_endpoints, use_margins, distances, normals);
   DRAKE_ABORT_MSG("Not implemented.");
   return false;

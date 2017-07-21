@@ -129,7 +129,7 @@ GTEST_TEST(ModelTest, ClosestPointsAllToAll) {
   // Compute the closest points.
   const std::vector<ElementId> ids_to_check = {id1, id2, id3};
   std::vector<PointPair> points;
-  model->ClosestPointsAllToAll(ids_to_check, true, points);
+  model->ClosestPointsAllToAll(ids_to_check, true, &points);
   ASSERT_EQ(3u, points.size());
 
   // Check the closest point between object 1 and object 2.
@@ -291,7 +291,7 @@ TEST_F(BoxVsSphereTest, SingleContact) {
 
   // Collision test performed with Model::ClosestPointsAllToAll.
   const std::vector<ElementId> ids_to_check = {box_->getId(), sphere_->getId()};
-  model_->ClosestPointsAllToAll(ids_to_check, true, points);
+  model_->ClosestPointsAllToAll(ids_to_check, true, &points);
   ASSERT_EQ(1u, points.size());
   EXPECT_NEAR(-0.25, points[0].distance, tolerance_);
   // Points are in the bodies' frame on the surface of the corresponding body.
@@ -304,7 +304,7 @@ TEST_F(BoxVsSphereTest, SingleContact) {
   // Collision test performed with Model::ComputeMaximumDepthCollisionPoints.
   // Not using margins.
   points.clear();
-  model_->ComputeMaximumDepthCollisionPoints(false, points);
+  model_->ComputeMaximumDepthCollisionPoints(false, &points);
   ASSERT_EQ(1u, points.size());
   EXPECT_NEAR(-0.25, points[0].distance, tolerance_);
   // Points are in the world frame on the surface of the corresponding body.
@@ -324,7 +324,7 @@ TEST_F(BoxVsSphereTest, SingleContact) {
   // Collision test performed with Model::ComputeMaximumDepthCollisionPoints.
   // Using margins.
   points.clear();
-  model_->ComputeMaximumDepthCollisionPoints(true, points);
+  model_->ComputeMaximumDepthCollisionPoints(true, &points);
   ASSERT_EQ(1u, points.size());
   EXPECT_NEAR(-0.25, points[0].distance, tolerance_);
   // Points are in the world frame on the surface of the corresponding body.
@@ -415,7 +415,7 @@ TEST_F(SmallBoxSittingOnLargeBox, SingleContact) {
   // Collision test performed with Model::ClosestPointsAllToAll.
   const std::vector<ElementId> ids_to_check = {large_box_->getId(),
                                                small_box_->getId()};
-  model_->ClosestPointsAllToAll(ids_to_check, true, points);
+  model_->ClosestPointsAllToAll(ids_to_check, true, &points);
   ASSERT_EQ(1u, points.size());
   EXPECT_NEAR(-0.1, points[0].distance, tolerance_);
   EXPECT_TRUE(points[0].normal.isApprox(Vector3d(0.0, -1.0, 0.0)));
@@ -429,7 +429,7 @@ TEST_F(SmallBoxSittingOnLargeBox, SingleContact) {
   // Collision test performed with Model::ComputeMaximumDepthCollisionPoints.
   // Not using margins.
   points.clear();
-  model_->ComputeMaximumDepthCollisionPoints(false, points);
+  model_->ComputeMaximumDepthCollisionPoints(false, &points);
 
   // Unfortunately DrakeCollision::Model's manifold has one point for this case.
   // Best for physics simulations would be DrakeCollision::Model to return at
@@ -447,7 +447,7 @@ TEST_F(SmallBoxSittingOnLargeBox, SingleContact) {
   // Collision test performed with Model::ComputeMaximumDepthCollisionPoints.
   // Using margins.
   points.clear();
-  model_->ComputeMaximumDepthCollisionPoints(true, points);
+  model_->ComputeMaximumDepthCollisionPoints(true, &points);
 
   ASSERT_EQ(1u, points.size());
   EXPECT_NEAR(-0.1, points[0].distance, tolerance_);
@@ -531,7 +531,7 @@ TEST_F(NonAlignedBoxes, SingleContact) {
   //    corners of the small box is the same.
   // Collision test performed with Model::ClosestPointsAllToAll.
   const std::vector<ElementId> ids_to_check = {box1_->getId(), box2_->getId()};
-  model_->ClosestPointsAllToAll(ids_to_check, true, points);
+  model_->ClosestPointsAllToAll(ids_to_check, true, &points);
   ASSERT_EQ(1u, points.size());
   EXPECT_NEAR(-0.1, points[0].distance, tolerance_);
   EXPECT_TRUE(points[0].normal.isApprox(Vector3d(0.0, -1.0, 0.0)));
@@ -544,7 +544,7 @@ TEST_F(NonAlignedBoxes, SingleContact) {
 
   // Collision test performed with Model::ComputeMaximumDepthCollisionPoints.
   points.clear();
-  model_->ComputeMaximumDepthCollisionPoints(false, points);
+  model_->ComputeMaximumDepthCollisionPoints(false, &points);
   // Unfortunately DrakeCollision::Model's manifold has one point for this case.
   // Best for physics simulations would be DrakeCollision::Model to return at
   // least the four corners of the smaller box. However it randomly picks one
@@ -598,7 +598,7 @@ TEST_F(SmallBoxSittingOnLargeBox, ClearCachedResults) {
     // do not accumulate.
     points.clear();
 
-    model_->ComputeMaximumDepthCollisionPoints(false, points);
+    model_->ComputeMaximumDepthCollisionPoints(false, &points);
   }
 
   // Check that the model is not caching results even after four queries.
@@ -666,7 +666,7 @@ GTEST_TEST(ModelTest, AnchoredElements) {
   std::vector<PointPair> points;
 
   // Compute all points of contact.
-  model->ComputeMaximumDepthCollisionPoints(false, points);
+  model->ComputeMaximumDepthCollisionPoints(false, &points);
 
   // Only three points are expected (instead of four) since ball1 and ball4 are
   // flagged as anchored.
@@ -735,7 +735,7 @@ GTEST_TEST(ModelTest, AnchoredMeshes) {
   std::vector<PointPair> points;
 
   // Computes all points of contact.
-  model->ComputeMaximumDepthCollisionPoints(false, points);
+  model->ComputeMaximumDepthCollisionPoints(false, &points);
 
   // Expects one collision point for this test.
   ASSERT_EQ(1u, points.size());
@@ -780,7 +780,7 @@ GTEST_TEST(ModelTest, PointDistanceToNonConvex) {
   points << cx, cy, cz;
 
   std::vector<PointPair> results;
-  model->CollisionDetectFromPoints(points, false, results);
+  model->CollisionDetectFromPoints(points, false, &results);
 
   ASSERT_EQ(results.size(), 4u);
   const double inf = std::numeric_limits<double>::infinity();
@@ -811,7 +811,7 @@ GTEST_TEST(ModelTest, PointDistanceToEmptyWorld) {
   points << cx, cy, cz;
 
   std::vector<PointPair> results;
-  model->CollisionDetectFromPoints(points, false, results);
+  model->CollisionDetectFromPoints(points, false, &results);
 
   ASSERT_EQ(results.size(), 4u);
   const double inf = std::numeric_limits<double>::infinity();
@@ -859,7 +859,7 @@ GTEST_TEST(ModelTest, DistanceToNonConvex) {
   std::vector<PointPair> results;
   std::vector<ElementIdPair> pairs;
   pairs.emplace_back(sphere->getId(), cap->getId());
-  model->ClosestPointsPairwise(pairs, true, results);
+  model->ClosestPointsPairwise(pairs, true, &results);
   EXPECT_EQ(results.size(), 0u);
 }
 

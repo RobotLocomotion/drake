@@ -784,7 +784,7 @@ void RigidBodyTree<T>::getTerrainContactPoints(
   for (auto id_iter = element_ids.begin();
        id_iter != element_ids.end(); ++id_iter) {
     Matrix3Xd element_points;
-    collision_model_->GetTerrainContactPoints(*id_iter, element_points);
+    collision_model_->GetTerrainContactPoints(*id_iter, &element_points);
     terrain_points->conservativeResize(
         Eigen::NoChange, terrain_points->cols() + element_points.cols());
     terrain_points->block(0, num_points, terrain_points->rows(),
@@ -805,7 +805,7 @@ void RigidBodyTree<T>::collisionDetectFromPoints(
   vector<DrakeCollision::PointPair> closest_points;
 
   collision_model_->CollisionDetectFromPoints(points, use_margins,
-                                              closest_points);
+                                              &closest_points);
   x.resize(3, closest_points.size());
   body_x.resize(3, closest_points.size());
   normal.resize(3, closest_points.size());
@@ -837,7 +837,7 @@ bool RigidBodyTree<T>::collisionRaycast(
   Matrix3Xd normals;
   updateDynamicCollisionElements(cache);
   return collision_model_->CollisionRaycast(origins, ray_endpoints, use_margins,
-                                            distances, normals);
+                                            &distances, &normals);
 }
 
 template <typename T>
@@ -850,7 +850,7 @@ bool RigidBodyTree<T>::collisionRaycast(
     bool use_margins) {
   updateDynamicCollisionElements(cache);
   return collision_model_->CollisionRaycast(origins, ray_endpoints, use_margins,
-                                            distances, normals);
+                                            &distances, &normals);
 }
 
 template <typename T>
@@ -867,7 +867,7 @@ bool RigidBodyTree<T>::collisionDetect(
   vector<DrakeCollision::PointPair> points;
   bool points_found =
       collision_model_->ClosestPointsAllToAll(ids_to_check, use_margins,
-                                              points);
+                                              &points);
 
   xA = MatrixXd::Zero(3, points.size());
   xB = MatrixXd::Zero(3, points.size());
@@ -984,7 +984,7 @@ RigidBodyTree<T>::ComputeMaximumDepthCollisionPoints(
   updateDynamicCollisionElements(cache);
   vector<DrakeCollision::PointPair> contact_points;
   collision_model_->ComputeMaximumDepthCollisionPoints(use_margins,
-                                                       contact_points);
+                                                       &contact_points);
   // For each contact pair, map contact point from world frame to each body's
   // frame.
   for (size_t i = 0; i < contact_points.size(); ++i) {
@@ -1040,8 +1040,8 @@ bool RigidBodyTree<T>::allCollisions(
   updateDynamicCollisionElements(cache);
 
   vector<DrakeCollision::PointPair> points;
-  bool points_found =
-      collision_model_->ComputeMaximumDepthCollisionPoints(use_margins, points);
+  bool points_found = collision_model_->ComputeMaximumDepthCollisionPoints(
+      use_margins, &points);
 
   xA_in_world = Matrix3Xd::Zero(3, points.size());
   xB_in_world = Matrix3Xd::Zero(3, points.size());

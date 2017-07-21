@@ -61,10 +61,7 @@ class Model {
    model. **/
   virtual Element* FindMutableElement(ElementId id);
 
-  void GetTerrainContactPoints(
-      ElementId id0,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      Eigen::Matrix3Xd& terrain_points);
+  void GetTerrainContactPoints(ElementId id0, Eigen::Matrix3Xd* terrain_points);
 
   /** Updates the collision model. This method is typically called after changes
    are made to its collision elements. **/
@@ -97,10 +94,9 @@ class Model {
    contains the closest point information after this method is called
 
    @return Whether this method successfully ran. **/
-  virtual bool ClosestPointsAllToAll(const std::vector<ElementId>& ids_to_check,
-                                     bool use_margins,
-                                     std::vector<PointPair>&
-                                     closest_points) = 0;
+  virtual bool ClosestPointsAllToAll(
+      const std::vector<ElementId>& ids_to_check, bool use_margins,
+      std::vector<PointPair>* closest_points) = 0;
 
   /** Computes the point of closest approach between collision elements that
    are in contact.
@@ -113,9 +109,7 @@ class Model {
 
    @returns Whether this method successfully ran. **/
   virtual bool ComputeMaximumDepthCollisionPoints(
-      bool use_margins,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      std::vector<PointPair>& closest_points) = 0;
+      bool use_margins, std::vector<PointPair>* closest_points) = 0;
 
   /** Computes the points of closest approach between specified pairs of
    collision elements.
@@ -131,10 +125,9 @@ class Model {
    called
 
    @return Whether this method successfully ran. **/
-  virtual bool ClosestPointsPairwise(const std::vector<ElementIdPair>& id_pairs,
-                                     bool use_margins,
-                                     std::vector<PointPair>&
-                                     closest_points) = 0;
+  virtual bool ClosestPointsPairwise(
+      const std::vector<ElementIdPair>& id_pairs, bool use_margins,
+      std::vector<PointPair>* closest_points) = 0;
 
   /** Clears possibly cached results so that a fresh computation can be
   performed.
@@ -165,8 +158,7 @@ class Model {
    i'th instance reports the query result for the i'th input point. **/
   virtual void CollisionDetectFromPoints(
       const Eigen::Matrix3Xd& points, bool use_margins,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      std::vector<PointPair>& closest_points) = 0;
+      std::vector<PointPair>* closest_points) = 0;
 
   // TODO(SeanCurtis-TRI): Add a C++ version of "collidingPointsTest.m". Once
   // such a test exists, update the @see reference to it below.
@@ -231,14 +223,10 @@ class Model {
    collision occurs.
 
    @return Whether this method successfully ran. **/
-  virtual bool CollisionRaycast(
-      const Eigen::Matrix3Xd& origin,
-      const Eigen::Matrix3Xd& ray_endpoint,
-      bool use_margins,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      Eigen::VectorXd& distances,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      Eigen::Matrix3Xd& normals) = 0;
+  virtual bool CollisionRaycast(const Eigen::Matrix3Xd& origin,
+                                const Eigen::Matrix3Xd& ray_endpoint,
+                                bool use_margins, Eigen::VectorXd* distances,
+                                Eigen::Matrix3Xd* normals) = 0;
 
   /** Modifies a collision element's local transform to be relative to a joint's
    frame rather than a link's frame. This is necessary because Drake requires

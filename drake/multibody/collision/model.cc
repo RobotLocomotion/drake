@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+#include "drake/common/drake_assert.h"
+
 using Eigen::Isometry3d;
 using std::move;
 using std::unique_ptr;
@@ -47,12 +49,13 @@ Element* Model::FindMutableElement(ElementId id) {
 }
 
 void Model::GetTerrainContactPoints(ElementId id0,
-                                    Eigen::Matrix3Xd& terrain_points) {
+                                    Eigen::Matrix3Xd* terrain_points) {
+  DRAKE_DEMAND(terrain_points != nullptr);
   auto element_iter = elements.find(id0);
   if (element_iter != elements.end()) {
-    element_iter->second->getTerrainContactPoints(terrain_points);
+    element_iter->second->getTerrainContactPoints(*terrain_points);
   } else {
-    terrain_points = Eigen::Matrix3Xd();
+    *terrain_points = Eigen::Matrix3Xd();
   }
 }
 

@@ -17,29 +17,29 @@ bool UnusableModel::UpdateElementWorldTransform(
   return false;
 }
 
-bool UnusableModel::ClosestPointsAllToAll(
-    const std::vector<ElementId>&, bool, std::vector<PointPair>&) {
+bool UnusableModel::ClosestPointsAllToAll(const std::vector<ElementId>&, bool,
+                                          std::vector<PointPair>*) {
   DRAKE_ABORT_MSG(
       "Compile Drake with a collision library backend for collision support!");
   return false;
 }
 
 bool UnusableModel::ComputeMaximumDepthCollisionPoints(
-    bool, std::vector<PointPair>&) {
+    bool, std::vector<PointPair>*) {
   DRAKE_ABORT_MSG(
       "Compile Drake with a collision library backend for collision support!");
   return false;
 }
 
 bool UnusableModel::ClosestPointsPairwise(
-    const std::vector<ElementIdPair>&, bool, std::vector<PointPair>&) {
+    const std::vector<ElementIdPair>&, bool, std::vector<PointPair>*) {
   DRAKE_ABORT_MSG(
       "Compile Drake with a collision library backend for collision support!");
   return false;
 }
 
 void UnusableModel::CollisionDetectFromPoints(
-    const Eigen::Matrix3Xd&, bool, std::vector<PointPair>&) {
+    const Eigen::Matrix3Xd&, bool, std::vector<PointPair>*) {
   DRAKE_ABORT_MSG(
       "Compile Drake with a collision library backend for collision support!");
   return;
@@ -54,8 +54,8 @@ void UnusableModel::ClearCachedResults(bool) {
 bool UnusableModel::CollisionRaycast(const Eigen::Matrix3Xd&,
                                      const Eigen::Matrix3Xd&,
                                      bool,
-                                     Eigen::VectorXd&,
-                                     Eigen::Matrix3Xd&) {
+                                     Eigen::VectorXd*,
+                                     Eigen::Matrix3Xd*) {
   DRAKE_ABORT_MSG(
       "Compile Drake with a collision library backend for collision support!");
   return false;

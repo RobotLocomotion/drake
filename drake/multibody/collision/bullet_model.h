@@ -74,10 +74,10 @@ class BulletModel : public Model {
    */
   bool ClosestPointsAllToAll(const std::vector<ElementId>& ids_to_check,
                              bool use_margins,
-                             std::vector<PointPair>& closest_points) override;
+                             std::vector<PointPair>* closest_points) override;
 
   bool ComputeMaximumDepthCollisionPoints(
-      bool use_margins, std::vector<PointPair>& points) override;
+      bool use_margins, std::vector<PointPair>* points) override;
 
   /**
    * Finds the points where each pair of elements in id_pairs are
@@ -87,7 +87,7 @@ class BulletModel : public Model {
    */
   bool ClosestPointsPairwise(const std::vector<ElementIdPair>& id_pairs,
                              bool use_margins,
-                             std::vector<PointPair>& closest_points) override;
+                             std::vector<PointPair>* closest_points) override;
 
   /**
    * Computes the closest point in the collision world to each of a set of
@@ -120,14 +120,14 @@ class BulletModel : public Model {
    */
   void CollisionDetectFromPoints(
       const Eigen::Matrix3Xd& points, bool use_margins,
-      std::vector<PointPair>& closest_points) override;
+      std::vector<PointPair>* closest_points) override;
 
   void ClearCachedResults(bool use_margins) override;
 
   bool CollisionRaycast(const Eigen::Matrix3Xd& origins,
                         const Eigen::Matrix3Xd& ray_endpoints, bool use_margins,
-                        Eigen::VectorXd& distances,
-                        Eigen::Matrix3Xd& normals) override;
+                        Eigen::VectorXd* distances,
+                        Eigen::Matrix3Xd* normals) override;
 
   bool CollidingPointsCheckOnly(
       const std::vector<Eigen::Vector3d>& input_points,
