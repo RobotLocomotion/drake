@@ -1,62 +1,56 @@
 #include "drake/systems/framework/system_transmogrifier.h"
 
+#include <map>
+#include <typeindex>
+#include <utility>
+
+#include "drake/common/never_destroyed.h"
+
+using std::type_index;
+using std::type_info;
+
 namespace drake {
 namespace systems {
 
-using Expression = symbolic::Expression;
+struct SystemTransmogrifier::Impl {
+  std::map<std::pair<type_index, type_index>, Func> converter_functions;
+};
 
-template <> std::unique_ptr<System<double>>
-SystemTransmogrifier::Convert(const System<double>& other) const {
-  if (!c00_) { return nullptr; }
-  return c00_(other);
+SystemTransmogrifier::SystemTransmogrifier()
+    : impl_(std::make_unique<Impl>()) {}
+
+SystemTransmogrifier::SystemTransmogrifier(const SystemTransmogrifier& other)
+    : impl_(std::make_unique<Impl>(*other.impl_)) {}
+
+SystemTransmogrifier&
+SystemTransmogrifier::operator=(const SystemTransmogrifier& other) {
+  impl_ = std::make_unique<Impl>(*other.impl_);
+  return *this;
 }
 
-template <> std::unique_ptr<System<AutoDiffXd>>
-SystemTransmogrifier::Convert(const System<double>& other) const {
-  if (!c10_) { return nullptr; }
-  return c10_(other);
+SystemTransmogrifier::~SystemTransmogrifier() {}
+
+void SystemTransmogrifier::Insert(
+    const type_info& t_info, const type_info& u_info,
+    const Func& converter) const {
+  const auto& key = std::make_pair(type_index(t_info), type_index(u_info));
+  const auto& insert_result =
+      impl_->converter_functions.insert({key, converter});
+  DRAKE_ASSERT(insert_result.second);
 }
 
-template <> std::unique_ptr<System<Expression>>
-SystemTransmogrifier::Convert(const System<double>& other) const {
-  if (!c20_) { return nullptr; }
-  return c20_(other);
-}
-
-template <> std::unique_ptr<System<double>>
-SystemTransmogrifier::Convert(const System<AutoDiffXd>& other) const {
-  if (!c01_) { return nullptr; }
-  return c01_(other);
-}
-
-template <> std::unique_ptr<System<AutoDiffXd>>
-SystemTransmogrifier::Convert(const System<AutoDiffXd>& other) const {
-  if (!c11_) { return nullptr; }
-  return c11_(other);
-}
-
-template <> std::unique_ptr<System<Expression>>
-SystemTransmogrifier::Convert(const System<AutoDiffXd>& other) const {
-  if (!c21_) { return nullptr; }
-  return c21_(other);
-}
-
-template <> std::unique_ptr<System<double>>
-SystemTransmogrifier::Convert(const System<Expression>& other) const {
-  if (!c02_) { return nullptr; }
-  return c02_(other);
-}
-
-template <> std::unique_ptr<System<AutoDiffXd>>
-SystemTransmogrifier::Convert(const System<Expression>& other) const {
-  if (!c12_) { return nullptr; }
-  return c12_(other);
-}
-
-template <> std::unique_ptr<System<Expression>>
-SystemTransmogrifier::Convert(const System<Expression>& other) const {
-  if (!c22_) { return nullptr; }
-  return c22_(other);
+const SystemTransmogrifier::Func& SystemTransmogrifier::Find(
+    const type_info& t_info, const type_info& u_info) const {
+  const auto& key = std::make_pair(type_index(t_info), type_index(u_info));
+  auto iter = impl_->converter_functions.find(key);
+  if (iter != impl_->converter_functions.end()) {
+    return iter->second;
+  } else {
+    static const never_destroyed<Func> empty{
+      [](const void*) { return nullptr; }
+    };
+    return empty.access();
+  }
 }
 
 }  // namespace systems
