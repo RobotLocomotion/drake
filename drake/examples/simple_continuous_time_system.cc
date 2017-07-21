@@ -14,8 +14,8 @@
 class SimpleContinuousTimeSystem : public drake::systems::VectorSystem<double> {
  public:
   SimpleContinuousTimeSystem()
-      : drake::systems::VectorSystem<double>(0,
-                                             1) {  // Zero inputs, one output.
+      : drake::systems::VectorSystem<double>(0,    // Zero inputs.
+                                             1) {  // One output.
     this->DeclareContinuousState(1);               // One state variable.
   }
 
@@ -23,19 +23,19 @@ class SimpleContinuousTimeSystem : public drake::systems::VectorSystem<double> {
   // xdot = -x + x^3
   virtual void DoCalcVectorTimeDerivatives(
       const drake::systems::Context<double>& context,
-      const Eigen::VectorBlock<const Eigen::VectorXd>& u,
-      const Eigen::VectorBlock<const Eigen::VectorXd>& x,
-      Eigen::VectorBlock<Eigen::VectorXd>* xdot) const {
-    (*xdot)(0) = -x(0) + std::pow(x(0), 3.0);
+      const Eigen::VectorBlock<const Eigen::VectorXd>& input,
+      const Eigen::VectorBlock<const Eigen::VectorXd>& state,
+      Eigen::VectorBlock<Eigen::VectorXd>* derivatives) const {
+    (*derivatives)(0) = -state(0) + std::pow(state(0), 3.0);
   }
 
   // y = x
   virtual void DoCalcVectorOutput(
       const drake::systems::Context<double>& context,
-      const Eigen::VectorBlock<const Eigen::VectorXd>& u,
-      const Eigen::VectorBlock<const Eigen::VectorXd>& x,
-      Eigen::VectorBlock<Eigen::VectorXd>* y) const {
-    *y = x;
+      const Eigen::VectorBlock<const Eigen::VectorXd>& input,
+      const Eigen::VectorBlock<const Eigen::VectorXd>& state,
+      Eigen::VectorBlock<Eigen::VectorXd>* output) const {
+    *output = state;
   }
 };
 
@@ -47,15 +47,15 @@ int main() {
   drake::systems::Simulator<double> simulator(system);
 
   // Set the initial conditions x(0).
-  drake::systems::ContinuousState<double>& xc =
+  drake::systems::ContinuousState<double>& state =
       *simulator.get_mutable_context()->get_mutable_continuous_state();
-  xc[0] = 0.9;
+  state[0] = 0.9;
 
   // Simulate for 10 seconds.
   simulator.StepTo(10);
 
   // Make sure the simulation converges to the stable fixed point at x=0.
-  DRAKE_DEMAND(xc[0] < 1.0e-4);
+  DRAKE_DEMAND(state[0] < 1.0e-4);
 
   // TODO(russt): make a plot of the resulting trajectory.
 

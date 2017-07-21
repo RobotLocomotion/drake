@@ -23,19 +23,19 @@ class SimpleDiscreteTimeSystem : public drake::systems::VectorSystem<double> {
   // x[n+1] = x[n]^3
   virtual void DoCalcVectorDiscreteVariableUpdates(
       const drake::systems::Context<double>& context,
-      const Eigen::VectorBlock<const Eigen::VectorXd>& u,
-      const Eigen::VectorBlock<const Eigen::VectorXd>& x,
-      Eigen::VectorBlock<Eigen::VectorXd>* xn) const {
-    (*xn)[0] = std::pow(x[0], 3.0);
+      const Eigen::VectorBlock<const Eigen::VectorXd>& input,
+      const Eigen::VectorBlock<const Eigen::VectorXd>& state,
+      Eigen::VectorBlock<Eigen::VectorXd>* next_state) const {
+    (*next_state)[0] = std::pow(state[0], 3.0);
   }
 
   // y = x
   virtual void DoCalcVectorOutput(
       const drake::systems::Context<double>& context,
-      const Eigen::VectorBlock<const Eigen::VectorXd>& u,
-      const Eigen::VectorBlock<const Eigen::VectorXd>& x,
-      Eigen::VectorBlock<Eigen::VectorXd>* y) const {
-    *y = x;
+      const Eigen::VectorBlock<const Eigen::VectorXd>& input,
+      const Eigen::VectorBlock<const Eigen::VectorXd>& state,
+      Eigen::VectorBlock<Eigen::VectorXd>* output) const {
+    *output = state;
   }
 };
 
@@ -47,15 +47,15 @@ int main() {
   drake::systems::Simulator<double> simulator(system);
 
   // Set the initial conditions x(0).
-  drake::systems::DiscreteValues<double>& xd =
+  drake::systems::DiscreteValues<double>& state =
       *simulator.get_mutable_context()->get_mutable_discrete_state();
-  xd[0] = 0.99;
+  state[0] = 0.99;
 
   // Simulate for 10 seconds.
   simulator.StepTo(10);
 
   // Make sure the simulation converges to the stable fixed point at x=0.
-  DRAKE_DEMAND(xd[0] < 1.0e-4);
+  DRAKE_DEMAND(state[0] < 1.0e-4);
 
   // TODO(russt): make a plot of the resulting trajectory.
 
