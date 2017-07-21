@@ -14,34 +14,58 @@
 namespace drake {
 namespace systems {
 
+// TODO(david-german-tri): remove the size parameter from the constructor once
+// #3109 supporting automatic sizes is resolved.
 template <typename T>
 ZeroOrderHold<T>::ZeroOrderHold(double period_sec, int size)
-    : period_sec_(period_sec) {
-  // TODO(david-german-tri): remove the size parameter from the constructor
-  // once #3109 supporting automatic sizes is resolved.
-  BasicVector<T> dummy_value(size);
-  this->DeclareVectorInputPort(dummy_value);
-  this->DeclareVectorOutputPort(
-      dummy_value, &ZeroOrderHold::DoCalcVectorOutput);
-  this->DeclareDiscreteState(size);
-  this->DeclarePeriodicDiscreteUpdate(period_sec);
-}
+    : ZeroOrderHold<T>(period_sec, size, nullptr) {}
+
+// TODO(eric.cousineau): Remove value parameter from the constructor once the
+// equivalent of #3109 for abstract values is also resolved.
+template <typename T>
+ZeroOrderHold<T>::ZeroOrderHold(
+    double period_sec, const AbstractValue& model_value)
+    : ZeroOrderHold<T>(period_sec, -1, &model_value) {}
 
 template <typename T>
-ZeroOrderHold<T>::ZeroOrderHold(double period_sec,
-                                const AbstractValue& model_value)
-    : period_sec_(period_sec), abstract_model_value_(model_value.Clone()) {
-  // TODO(eric.cousineau): Remove value parameter from the constructor once
-  // the equivalent of #3109 for abstract values is also resolved.
-  this->DeclareAbstractInputPort(model_value);
-  // Use the std::function<> overloads to work with `AbstractValue` type
-  // directly and maintain type erasure.
-  namespace sp = std::placeholders;
-  this->DeclareAbstractOutputPort(
-      std::bind(&ZeroOrderHold::AllocateAbstractValue, this, sp::_1),
-      std::bind(&ZeroOrderHold::DoCalcAbstractOutput, this, sp::_1, sp::_2));
-  this->DeclareAbstractState(model_value.Clone());
-  this->DeclarePeriodicUnrestrictedUpdate(period_sec, 0.);
+template <typename U>
+ZeroOrderHold<T>::ZeroOrderHold(
+    const TransmogrifierTag&, const ZeroOrderHold<U>& other)
+    : ZeroOrderHold(
+          other.period_sec_,
+          other.is_abstract() ? -1 : other.get_input_port().size(),
+          other.is_abstract() ? other.abstract_model_value_.get() : nullptr) {}
+
+// All other constructors delegate to this constructor.
+// For BasicVector mode we have model_value == nullptr && size >= 0.
+// For AbstractValue mode we have model_value != nullptr && size == -1.
+template <typename T>
+ZeroOrderHold<T>::ZeroOrderHold(
+    double period_sec, int size, const AbstractValue* model_value)
+    : period_sec_(period_sec),
+      abstract_model_value_(model_value ? model_value->Clone() : nullptr) {
+  DRAKE_DEMAND(
+      ((size == -1) && (model_value != nullptr)) ||
+      ((size >=  0) && (model_value == nullptr)));
+  this->template SetConcreteSubclass<systems::ZeroOrderHold>();
+  if (is_abstract()) {
+    this->DeclareAbstractInputPort(*model_value);
+    // Use the std::function<> overloads to work with `AbstractValue` type
+    // directly and maintain type erasure.
+    namespace sp = std::placeholders;
+    this->DeclareAbstractOutputPort(
+        std::bind(&ZeroOrderHold::AllocateAbstractValue, this, sp::_1),
+        std::bind(&ZeroOrderHold::DoCalcAbstractOutput, this, sp::_1, sp::_2));
+    this->DeclareAbstractState(model_value->Clone());
+    this->DeclarePeriodicUnrestrictedUpdate(period_sec, 0.);
+  } else {
+    const BasicVector<T> dummy_value(size);
+    this->DeclareVectorInputPort(dummy_value);
+    this->DeclareVectorOutputPort(
+        dummy_value, &ZeroOrderHold::DoCalcVectorOutput);
+    this->DeclareDiscreteState(size);
+    this->DeclarePeriodicDiscreteUpdate(period_sec);
+  }
 }
 
 template <typename T>
@@ -103,18 +127,6 @@ bool ZeroOrderHold<T>::DoHasDirectFeedthrough(
   // By definition, a zero-order hold will not have direct feedthrough, as the
   // output only depends on the state, not the input.
   return false;
-}
-
-template <typename T>
-ZeroOrderHold<symbolic::Expression>* ZeroOrderHold<T>::DoToSymbolic() const {
-  if (!is_abstract()) {
-    return new ZeroOrderHold<symbolic::Expression>(
-        period_sec_, this->get_input_port().size());
-  } else {
-    // Return `nullptr` to enable control to reach `DoHasDirectFeedthrough`.
-    // See Doxygen comments regarding transmogrification.
-    return nullptr;
-  }
 }
 
 }  // namespace systems

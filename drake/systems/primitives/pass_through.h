@@ -44,6 +44,10 @@ class PassThrough : public SisoVectorSystem<T> {
   /// @param size number of elements in the signal to be processed.
   explicit PassThrough(int size);
 
+  /// Transmogrification constructor.
+  template <typename U>
+  PassThrough(const TransmogrifierTag&, const PassThrough<U>&);
+
   // TODO(eric.cousineau): Ensure that this system can also handle
   // AbstractValue's akin to ZeroOrderHold (#6491).
 
@@ -54,10 +58,6 @@ class PassThrough : public SisoVectorSystem<T> {
       const Eigen::VectorBlock<const VectorX<T>>& input,
       const Eigen::VectorBlock<const VectorX<T>>& state,
       Eigen::VectorBlock<VectorX<T>>* output) const override;
-
-  /// Returns an PassThrough<symbolic::Expression> with the same dimensions as
-  /// this PassThrough.
-  PassThrough<symbolic::Expression>* DoToSymbolic() const override;
 };
 
 }  // namespace systems

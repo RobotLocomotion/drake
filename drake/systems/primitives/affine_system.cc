@@ -175,20 +175,16 @@ AffineSystem<T>::AffineSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
   DRAKE_DEMAND(this->num_inputs() == D.cols());
   DRAKE_DEMAND(this->num_outputs() == C.rows());
   DRAKE_DEMAND(this->num_outputs() == D.rows());
-}
 
-// Setup equivalent system with a different scalar type.
-template <typename T>
-AffineSystem<AutoDiffXd>* AffineSystem<T>::DoToAutoDiffXd() const {
-  return new AffineSystem<AutoDiffXd>(A_, B_, f0_, C_, D_, y0_,
-                                      this->time_period());
+  this->template SetConcreteSubclass<systems::AffineSystem>();
 }
 
 template <typename T>
-AffineSystem<symbolic::Expression>* AffineSystem<T>::DoToSymbolic() const {
-  return new AffineSystem<symbolic::Expression>(A_, B_, f0_, C_, D_, y0_,
-                                                this->time_period());
-}
+template <typename U>
+AffineSystem<T>::AffineSystem(const TransmogrifierTag&,
+                              const AffineSystem<U>& other)
+    : AffineSystem(other.A(), other.B(), other.f0(), other.C(), other.D(),
+                   other.y0(), other.time_period()) {}
 
 template <typename T>
 void AffineSystem<T>::CalcOutputY(const Context<T>& context,
