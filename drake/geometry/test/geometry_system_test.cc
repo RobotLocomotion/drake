@@ -27,7 +27,7 @@ using systems::Context;
 using std::make_unique;
 using std::unique_ptr;
 
-// Friend class for working with QueryHandles in a text context.
+// Friend class for working with QueryHandles in a test context.
 class QueryHandleTester {
  public:
   static QueryHandle<double> MakeNullQueryHandle() {
@@ -148,11 +148,11 @@ TEST_F(GeometrySystemTest, InputPortsForInvalidSource) {
   EXPECT_ERROR_MESSAGE(
       system_.get_source_frame_id_port(fake_source),
       std::logic_error,
-      "Can't acquire input port for unknown source id: \\d+.");
+      "Can't acquire id port for unknown source id: \\d+.");
   EXPECT_ERROR_MESSAGE(
       system_.get_source_pose_port(fake_source),
       std::logic_error,
-      "Can't acquire input port for unknown source id: \\d+.");
+      "Can't acquire pose port for unknown source id: \\d+.");
 }
 
 // Confirms that attempting to acquire input ports for valid sources for the

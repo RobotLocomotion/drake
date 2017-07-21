@@ -64,7 +64,7 @@ template <typename T> class GeometryInstance;
 
  __pose port__: An abstract-valued port containing an instance of FramePoseSet.
  There should be one pose value for each id in the the identifier port value.
- The iᵗʰ pose belongs to the iᵗʰ id. Use get_source_pose_port to acquire the
+ The iᵗʰ pose belongs to the iᵗʰ id. Use get_source_pose_port() to acquire the
  port for a given source.
 
  @section geom_sys_outputs Outputs
@@ -78,7 +78,7 @@ template <typename T> class GeometryInstance;
  and provide it as a parameter to one of %GeometrySystem's query methods (e.g.,
  GeometrySystem::ComputeContact()). This assumes that the querying system has
  access to a const pointer to the connected %GeometrySystem instance. Use
- get_query_output_port to acquire the output port for the query handle.
+ get_query_output_port() to acquire the output port for the query handle.
 
  @section geom_sys_workflow Working with GeometrySystem
 
@@ -185,9 +185,7 @@ class GeometrySystem : public systems::LeafSystem<T> {
    registration of geometry sources because the input ports are mapped to
    registered geometry sources.
 
-   Registration of a source doesn't automatically create all of the input ports
-   for the source. Input ports are allocated on a per-request basis. However,
-   a source that registers frames and geometries _must_ connect outputs to
+   A source that registers frames and geometries _must_ connect outputs to
    the inputs associated with that source. Failure to do so will be treated as
    a runtime error during the evaluation of %GeometrySystem. %GeometrySystem
    will detect that frames have been registered but no values have been
@@ -405,14 +403,14 @@ class GeometrySystem : public systems::LeafSystem<T> {
    @param contacts A vector to be populated with computed contact info. The size
                    of `contacts` remains unchanged if no contacts were found. */
   bool ComputeContact(const QueryHandle<T>& handle,
-                      std::vector<Contact<T>>* contacts) const;
+                      std::vector<PenetrationAsPointPair<T>>* contacts) const;
 
   // TODO(SeanCurtis-TRI): Flesh this out with the full set of queries.
 
   //@}
 
  protected:
-  /** GeometrySystem *has* no direct feedthrough. The query output port can be
+  /** GeometrySystem has _no_ direct feedthrough. The query output port can be
    evaluated without pulling on any inputs. This implementation encodes that
    relationship in reporting direct feedthrough. */
   bool DoHasDirectFeedthrough(const systems::SparsityMatrix* sparsity,
@@ -445,16 +443,9 @@ class GeometrySystem : public systems::LeafSystem<T> {
 
   mutable bool context_allocated_{false};
 
-  // Enumeration of the type of port to extract.
-  enum PortType {
-    ID,
-    POSE,
-  };
-
-  // For the given source id, returns the input port of port_type (creating it
-  // as necessary).
-  const systems::InputPortDescriptor<T>& get_port_for_source_id(
-      SourceId id, PortType port_type);
+  // Throws an exception whose message is the given message with the source_id
+  // appended.
+  void throw_if_unregistered(SourceId source_id, const char* message) const;
 
   // A struct that stores the port indices for a given source.
   // TODO(SeanCurtis-TRI): Consider making these TypeSafeIndex values.

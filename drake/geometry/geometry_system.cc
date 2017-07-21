@@ -38,22 +38,29 @@ SourceId GeometrySystem<T>::RegisterSource(const std::string &name) {
   THROW_IF_CONTEXT_ALLOCATED
   // TODO(SeanCurtis-TRI): Replace dummy source id with actual id.
   SourceId source_id = SourceId::get_new_id();
-  // Instantiates a default-initialized SourcePorts instance for the new
-  // source id.
+  // Create and store the input ports for this source id.
   input_source_ids_[source_id];
+  input_source_ids_[source_id].id_port =
+      this->DeclareAbstractInputPort().get_index();
+  input_source_ids_[source_id].pose_port =
+      this->DeclareAbstractInputPort().get_index();
   return source_id;
 }
 
 template <typename T>
 const systems::InputPortDescriptor<T>&
 GeometrySystem<T>::get_source_frame_id_port(SourceId id) {
-  return get_port_for_source_id(id, ID);
+  throw_if_unregistered(
+      id, "Can't acquire id port for unknown source id: ");
+  return this->get_input_port(input_source_ids_[id].id_port);
 }
 
 template <typename T>
 const systems::InputPortDescriptor<T>&
 GeometrySystem<T>::get_source_pose_port(SourceId id) {
-  return get_port_for_source_id(id, POSE);
+  throw_if_unregistered(
+      id, "Can't acquire pose port for unknown source id: ");
+  return this->get_input_port(input_source_ids_[id].pose_port);
 }
 
 template <typename T>
@@ -151,8 +158,9 @@ FrameId GeometrySystem<T>::GetFrameId(
 }
 
 template <typename T>
-bool GeometrySystem<T>::ComputeContact(const QueryHandle<T>& handle,
-                                       vector<Contact<T>>* contacts) const {
+bool GeometrySystem<T>::ComputeContact(
+    const QueryHandle<T>& handle,
+    vector<PenetrationAsPointPair<T>>* contacts) const {
   unused(handle, contacts);
   throw std::runtime_error("Not implemented yet.");
 }
@@ -196,46 +204,11 @@ void GeometrySystem<T>::ThrowIfContextAllocated(
 }
 
 template <typename T>
-const InputPortDescriptor<T>&
-GeometrySystem<T>::get_port_for_source_id(
-    SourceId id, GeometrySystem<T>::PortType port_type) {
+void GeometrySystem<T>::throw_if_unregistered(SourceId source_id,
+                                              const char *message) const {
   using std::to_string;
-  SourcePorts* source_ports;
-
-  // Access port data based on the source id -- catching the possibility of an
-  // invalid id.
-  auto itr = input_source_ids_.find(id);
-  if (itr != input_source_ids_.end()) {
-    source_ports = &(itr->second);
-  } else {
-    throw std::logic_error("Can't acquire input port for unknown source id: "
-                               + to_string(id) + ".");
-  }
-
-  // Helper method to return the input port (creating it as necessary).
-  auto get_port = [this](int* port_id) -> const InputPortDescriptor<T>& {
-    if (*port_id != -1) {
-      return this->get_input_port(*port_id);
-    } else {
-      const auto &input_port = this->DeclareAbstractInputPort();
-      *port_id = input_port.get_index();
-      return input_port;
-    }
-  };
-
-  // Get the port based on requested type.
-  switch (port_type) {
-    case ID: {
-      return get_port(&source_ports->id_port);
-    }
-    case POSE: {
-      return get_port(&source_ports->pose_port);
-    }
-    default:
-      // This is here because gcc fails to recognize that all enumerations have
-      // been covered.
-      throw std::runtime_error(
-          "All enum values have been listed; this should not be reached!");
+  if (input_source_ids_.find(source_id) == input_source_ids_.end()) {
+    throw std::logic_error(message + to_string(source_id) + ".");
   }
 }
 
