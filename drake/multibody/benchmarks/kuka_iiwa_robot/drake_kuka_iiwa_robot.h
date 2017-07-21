@@ -21,10 +21,10 @@ namespace kuka_iiwa_robot {
 
 using Eigen::Vector3d;
 
-// Utility method for creating a transform from frame A to frame B.
-// @param[in] R_AB Rotation matrix relating Ax, Ay, Az to Bx, By, Bz.
-// @param[in] p_AoBo_A Position vector from Ao to Bo, expressed in A.
-// @return Transform relating frame A to frame B.
+/// Utility method for creating a transform from frame A to frame B.
+/// @param[in] R_AB Rotation matrix relating Ax, Ay, Az to Bx, By, Bz.
+/// @param[in] p_AoBo_A Position vector from Ao to Bo, expressed in A.
+/// @return Transform relating frame A to frame B.
 Eigen::Isometry3d MakeIsometry3d(const Eigen::Matrix3d& R_AB,
                                  const Eigen::Vector3d& p_AoBo_A) {
   // Initialize all of X_AB (may be more than just linear and translation).
@@ -37,14 +37,14 @@ Eigen::Isometry3d MakeIsometry3d(const Eigen::Matrix3d& R_AB,
   return X_AB;
 }
 
-// This class is a MultibodyTree model for a 7-DOF Kuka iiwa robot arm.
-// It is used to compare Drake results for the robot end-effector (rigid linkG)
-// relative to world (Newtonian frame linkN) versus MotionGenesis solution.
-// This class takes input values for each of the 7 joint angles as well as their
-// 1st and 2nd time derivatives (e.g., q, q̇, q̈) and calculates the end-effector
-// rotation matrix (relative to world), position (from world origin) angular
-// velocity, velocity, angular acceleration, and acceleration.
-// Geometrical and connectivity data is in file kuka_iiwa_robot.urdf.
+/// This class is a MultibodyTree model for a 7-DOF Kuka iiwa robot arm.
+/// It is used to compare Drake results for the robot end-effector (rigid linkG)
+/// relative to world (Newtonian frame linkN) versus MotionGenesis solution.
+/// This class takes input values for each of the 7 joint angles (q) as well as
+/// their 1st and 2nd time derivatives (q̇, q̈) and calculates the end-effector
+/// rotation matrix (relative to world), position (from world origin) angular
+/// velocity, velocity, angular acceleration, and acceleration.
+/// Geometrical and connectivity data is in file kuka_iiwa_robot.urdf.
 class DrakeKukaIIwaRobot {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrakeKukaIIwaRobot)
@@ -118,50 +118,26 @@ class DrakeKukaIIwaRobot {
     context_ = model_->CreateDefaultContext();
   }
 
-  // This method sets the Kuka's joint angles and their 1st and 2nd derivatives.
-  // @param[in] q robot's joint angles (generalized coordinates).
-  // @param[in] qDt 1st-time-derivative of q (q̇).
-  void SetJointAnglesAnd1stDerivatives(const double q[7],
-                                       const double qDt[7]) {
-    systems::Context<double> *context = context_.get();
-
-    NA_mobilizer_->set_angle(context, q[0]);
-    AB_mobilizer_->set_angle(context, q[1]);
-    BC_mobilizer_->set_angle(context, q[2]);
-    CD_mobilizer_->set_angle(context, q[3]);
-    DE_mobilizer_->set_angle(context, q[4]);
-    EF_mobilizer_->set_angle(context, q[5]);
-    FG_mobilizer_->set_angle(context, q[6]);
-
-    NA_mobilizer_->set_angular_rate(context, qDt[0]);
-    AB_mobilizer_->set_angular_rate(context, qDt[1]);
-    BC_mobilizer_->set_angular_rate(context, qDt[2]);
-    CD_mobilizer_->set_angular_rate(context, qDt[3]);
-    DE_mobilizer_->set_angular_rate(context, qDt[4]);
-    EF_mobilizer_->set_angular_rate(context, qDt[5]);
-    FG_mobilizer_->set_angular_rate(context, qDt[6]);
-  }
-
-  // This method calculates kinematic properties of the end-effector (herein
-  // denoted as rigid body G) of a 7-DOF KUKA LBR iiwa robot (14 kg payload).
-  // Right-handed orthogonal unit vectors Nx, Ny, Nz are fixed in N (Earth)
-  // with Nz vertically upward and right-handed orthogonal unit vectors
-  // Gx, Gy, Gz are fixed in G.  The origin of frame N (Earth) is denoted No.
-  // The origin Go of end-effector G is located at G's inboard revolute joint.
-  //
-  // @param[in] q robot's joint angles (generalized coordinates).
-  // @param[in] qDt 1st-time-derivative of q (q̇).
-  //
-  // @returns values defined below.
-  //
-  // std::tuple | Description
-  // -----------|-------------------------------------------------
-  // R_NG       | Rotation matrix relating Nx, Ny, Nz to Gx, Gy, Gz.
-  // p_NoGo_N   | Go's position from No, expressed in N.
-  // w_NG_N     | G's angular velocity in N, expressed in N.
-  // v_NGo_N    | Go's velocity in N, expressed in N.
-  // alpha_NG_N | G's angular acceleration in N, expressed in N.
-  // a_NGo_N    | Go's acceleration in N, expressed in N.
+  /// This method calculates kinematic properties of the end-effector (herein
+  /// denoted as rigid body G) of a 7-DOF KUKA LBR iiwa robot (14 kg payload).
+  /// Right-handed orthogonal unit vectors Nx, Ny, Nz are fixed in N (Earth)
+  /// with Nz vertically upward and right-handed orthogonal unit vectors
+  /// Gx, Gy, Gz are fixed in G.  The origin of frame N (Earth) is denoted No.
+  /// The origin Go of end-effector G is located at G's inboard revolute joint.
+  ///
+  /// @param[in] q robot's joint angles (generalized coordinates).
+  /// @param[in] qDt 1st-time-derivative of q (q̇).
+  ///
+  /// @returns values defined below.
+  ///
+  /// std::tuple | Description
+  /// -----------|-------------------------------------------------
+  /// R_NG       | Rotation matrix relating Nx, Ny, Nz to Gx, Gy, Gz.
+  /// p_NoGo_N   | Go's position from No, expressed in N.
+  /// w_NG_N     | G's angular velocity in N, expressed in N.
+  /// v_NGo_N    | Go's velocity in N, expressed in N.
+  /// alpha_NG_N | G's angular acceleration in N, expressed in N.
+  /// a_NGo_N    | Go's acceleration in N, expressed in N.
   std::tuple<Eigen::Matrix3d, Vector3d, Vector3d, Vector3d, Vector3d, Vector3d>
   CalcEndEffectorKinematics(const Eigen::Ref<const VectorX<double>>& q,
                             const Eigen::Ref<const VectorX<double>>& qDt,
@@ -198,51 +174,18 @@ class DrakeKukaIIwaRobot {
     return std::make_tuple(R_NG, p_NoGo_N, w_NG_N, v_NGo_N, alpha_NG_N, a_NG_N);
   }
 
-  // Helper method to extract a pose from the position kinematics.
-  // TODO(amcastro-tri): When cache entries can be placed in the context,
-  // replace by method Body<T>::get_pose_in_world(const systems::Context<T>&).
-  const Eigen::Isometry3d& get_body_pose_in_world(
-      const PositionKinematicsCache<double>& pc,
-      const Body<double>& body) const {
-    const MultibodyTreeTopology& topology = model_->get_topology();
-    // Cache entries are accessed by BodyNodeIndex for fast traversals.
-    return pc.get_X_WB(topology.get_body(body.get_index()).body_node);
-  }
-
-  // Helper method to extract a SpatialVelocity from the velocity kinematics.
-  // TODO(amcastro-tri): When cache entries can be placed in context, replace by
-  // method Body<T>::get_spatial_velocity_in_world(const systems::Context<T>&).
-  const SpatialVelocity<double>& get_body_spatial_velocity_in_world(
-      const VelocityKinematicsCache<double>& vc,
-      const Body<double>& body) const {
-    const MultibodyTreeTopology& topology = model_->get_topology();
-    // Cache entries are accessed by BodyNodeIndex for fast traversals.
-    return vc.get_V_WB(topology.get_body(body.get_index()).body_node);
-  }
-
-  // Helper method to extract SpatialAcceleration from acceleration kinematics.
-  // TODO(amcastro-tri): When cache entries can be placed in context, replace by
-  // method Body<T>::get_spatial_acceleration_in_world(const Context<T>&).
-  const SpatialAcceleration<double>& get_body_spatial_acceleration_in_world(
-      const AccelerationKinematicsCache<double>& ac,
-      const Body<double>& body) const {
-    const MultibodyTreeTopology& topology = model_->get_topology();
-    // Cache entries are accessed by BodyNodeIndex for fast traversals.
-    return ac.get_A_WB(topology.get_body(body.get_index()).body_node);
-  }
-
  protected:
-  // Method to add revolute joint (mobilizer) from Body A to Body B.
-  // @param[in] A     Mobilizer's inboard  body (frame AB will be welded to A).
-  // @param[in] X_AAB Transform relating body A to frame AB.
-  // @param[in] B     Mobilizer's outboard body (frame BA will be welded to B).
-  // @param[in] X_BBA Transform relating body B to frame BBA.
-  // @param[in] revolute_unit_vector  Unit vector orienting the revolute joint.
-  // @return RevoluteMobilizer from frame AB on Body A to frame BA on Body B.
+  /// Method to add revolute joint (mobilizer) from Body A to Body B.
+  /// @param[in] A     Mobilizer's inboard  body (frame AB will be welded to A).
+  /// @param[in] X_AAB Transform relating body A to frame AB.
+  /// @param[in] B     Mobilizer's outboard body (frame BA will be welded to B).
+  /// @param[in] X_BBA Transform relating body B to frame BA.
+  /// @param[in] revolute_unit_vector  Unit vector orienting the revolute joint.
+  /// @return RevoluteMobilizer from frame AB on Body A to frame BA on Body B.
   const RevoluteMobilizer<double>& AddRevoluteMobilizer(
       const Body<double>& A, const Eigen::Isometry3d& X_AAB,
       const Body<double>& B, const Eigen::Isometry3d& X_BBA,
-      const Eigen::Vector3d &revolute_unit_vector) {
+      const Eigen::Vector3d& revolute_unit_vector) {
     // Add a FixedOffsetFrame AB to Body A (AB is mobilizer's inboard frame).
     const FixedOffsetFrame<double>& AB =
         model_->AddFrame<FixedOffsetFrame>(A, X_AAB);
@@ -256,14 +199,17 @@ class DrakeKukaIIwaRobot {
                                                    revolute_unit_vector);
   }
 
-  // Method to add revolute joint (mobilizer) from Body A to Body B.
-  // @param[in] A     Mobilizer's inboard  body (frame AB will be welded to A).
-  // @param[in] q123A SpaceXYZ angles describing the rotation matrix relating
-  //                  unit vectors Ax, Ay, Az to soon-to-be created frame AB.
-  // @param[in] xyzA  Ax, Ay, Az measures of the position from Ao to ABo.
-  // @param[in] B     Mobilizer's outboard body (frame BA will be welded to B).
-  // @param[in] revolute_unit_vector  Unit vector orienting the revolute joint.
-  // @return RevoluteMobilizer from frame AB on Body A to frame BA on Body B.
+  /// Method to add revolute joint (mobilizer) from Body A to Body B.
+  /// @param[in] A     Mobilizer's inboard  body (frame AB will be welded to A).
+  /// @param[in] q123A SpaceXYZ angles describing the rotation matrix relating
+  ///                  unit vectors Ax, Ay, Az to soon-to-be created frame AB.
+  /// @param[in] xyzA  Ax, Ay, Az measures of the position from Ao to ABo.
+  /// @param[in] B     Mobilizer's outboard body (frame BA will be welded to B
+  ///                  so it is coincident with body B's frame). In other words,
+  ///                  mobilizer's outboard frame BA will be coincident with
+  ///                  the outboard body B.
+  /// @param[in] revolute_unit_vector  Unit vector orienting the revolute joint.
+  /// @return RevoluteMobilizer from frame AB on Body A to frame BA on Body B.
   const RevoluteMobilizer<double> &AddRevoluteMobilizerFromSpaceXYZAnglesAndXYZ(
       const Body<double>& A, const Vector3d& q123A, const Vector3d& xyzA,
       const Body<double>& B, const Vector3d& revolute_unit_vector) {
@@ -276,6 +222,64 @@ class DrakeKukaIIwaRobot {
                                                    Vector3d(0, 0, 0));
 
     return AddRevoluteMobilizer(A, X_AAB, B, X_BBA, revolute_unit_vector);
+  }
+
+ private:
+  // Helper method to extract a pose from the position kinematics.
+  // TODO(amcastro-tri): When cache entries are placed in the context, replace
+  // by method Body<T>::get_pose_in_world(const systems::Context<T>&).
+  const Eigen::Isometry3d& get_body_pose_in_world(
+      const PositionKinematicsCache<double>& pc,
+      const Body<double>& body) const {
+    const MultibodyTreeTopology& topology = model_->get_topology();
+    // Cache entries are accessed by BodyNodeIndex for fast traversals.
+    return pc.get_X_WB(topology.get_body(body.get_index()).body_node);
+  }
+
+  // Helper method to extract a SpatialVelocity from the velocity kinematics.
+  // TODO(amcastro-tri): When cache entries are placed in context, replace by
+  // method Body<T>::get_spatial_velocity_in_world(const systems::Context<T>&).
+  const SpatialVelocity<double>& get_body_spatial_velocity_in_world(
+      const VelocityKinematicsCache<double>& vc,
+      const Body<double>& body) const {
+    const MultibodyTreeTopology& topology = model_->get_topology();
+    // Cache entries are accessed by BodyNodeIndex for fast traversals.
+    return vc.get_V_WB(topology.get_body(body.get_index()).body_node);
+  }
+
+  // Helper method to extract SpatialAcceleration from acceleration kinematics.
+  // TODO(amcastro-tri): When cache entries are placed in context, replace by
+  // method Body<T>::get_spatial_acceleration_in_world(const Context<T>&).
+  const SpatialAcceleration<double>& get_body_spatial_acceleration_in_world(
+      const AccelerationKinematicsCache<double>& ac,
+      const Body<double>& body) const {
+    const MultibodyTreeTopology& topology = model_->get_topology();
+    // Cache entries are accessed by BodyNodeIndex for fast traversals.
+    return ac.get_A_WB(topology.get_body(body.get_index()).body_node);
+  }
+
+  // This method sets the Kuka joint angles and their 1st and 2nd derivatives.
+  // @param[in] q robot's joint angles (generalized coordinates).
+  // @param[in] qDt 1st-time-derivative of q (q̇).
+  void SetJointAnglesAnd1stDerivatives(const double q[7],
+                                       const double qDt[7]) {
+    systems::Context<double> *context = context_.get();
+
+    NA_mobilizer_->set_angle(context, q[0]);
+    AB_mobilizer_->set_angle(context, q[1]);
+    BC_mobilizer_->set_angle(context, q[2]);
+    CD_mobilizer_->set_angle(context, q[3]);
+    DE_mobilizer_->set_angle(context, q[4]);
+    EF_mobilizer_->set_angle(context, q[5]);
+    FG_mobilizer_->set_angle(context, q[6]);
+
+    NA_mobilizer_->set_angular_rate(context, qDt[0]);
+    AB_mobilizer_->set_angular_rate(context, qDt[1]);
+    BC_mobilizer_->set_angular_rate(context, qDt[2]);
+    CD_mobilizer_->set_angular_rate(context, qDt[3]);
+    DE_mobilizer_->set_angular_rate(context, qDt[4]);
+    EF_mobilizer_->set_angular_rate(context, qDt[5]);
+    FG_mobilizer_->set_angular_rate(context, qDt[6]);
   }
 
   // This model's MultibodyTree always has a built-in "world" body.

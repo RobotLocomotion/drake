@@ -9,7 +9,7 @@ namespace benchmarks {
 namespace {
 
 using Eigen::Vector3d;
-using Eigen::Matrix3d;;
+using Eigen::Matrix3d;
 
 // Compare Drake's MultibodyTree kinematics with MotionGenesis solution.
 void TestEndEffectorKinematics(const Eigen::Ref<const VectorX<double>>& q,
