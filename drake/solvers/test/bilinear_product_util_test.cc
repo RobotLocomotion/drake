@@ -1,6 +1,7 @@
 #include "drake/solvers/bilinear_product_util.h"
 
 #include <gtest/gtest.h>
+
 #include "drake/common/test/symbolic_test_util.h"
 
 using drake::symbolic::Variable;
