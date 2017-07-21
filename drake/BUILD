@@ -56,7 +56,6 @@ _LIBDRAKE_COMPONENTS = [
     "//drake/common:eigen_autodiff_limits",
     "//drake/common:extract_double",
     "//drake/common:find_resource",
-    "//drake/common:functional_form",
     "//drake/common:is_approx_equal_abstol",
     "//drake/common:is_cloneable",
     "//drake/common:nice_type_name",

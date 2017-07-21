@@ -134,11 +134,11 @@ This works for all of the supported types listed in the `my_class.h` header.
 
 Unusual calling code uses the `*-inl.h` header, not the `*.h` header::
 
-  #include "functional_form.h"
+  #include "symbolic.h"
   #include "my_class-inl.h"
 
   int main() {
-    MyClass<FunctionalForm> dice;
+    MyClass<Expression> dice;
     std::cerr << dice.get_random_number() << std::endl;
   }
 
