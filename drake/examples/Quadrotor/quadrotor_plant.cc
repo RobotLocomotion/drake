@@ -100,6 +100,12 @@ void QuadrotorPlant<T>::DoCalcTimeDerivatives(
   derivatives->SetFromVector(xdot);
 }
 
+// Declare storage for our constants.
+template <typename T>
+constexpr int QuadrotorPlant<T>::kStateDimension;
+template <typename T>
+constexpr int QuadrotorPlant<T>::kInputDimension;
+
 template class QuadrotorPlant<double>;
 template class QuadrotorPlant<AutoDiffXd>;
 
