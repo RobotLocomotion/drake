@@ -41,6 +41,10 @@ class RotaryEncoders : public SisoVectorSystem<T> {
                  const std::vector<int>& input_vector_indices,
                  const std::vector<int>& ticks_per_revolution);
 
+  /// Transmogrification constructor.
+  template <typename U>
+  RotaryEncoders(const TransmogrifierTag&, const RotaryEncoders<U>&);
+
   /// Calibration offsets are defined as parameters.
   std::unique_ptr<Parameters<T>> AllocateParameters() const override;
 
@@ -53,6 +57,16 @@ class RotaryEncoders : public SisoVectorSystem<T> {
   Eigen::VectorBlock<const VectorX<T>> get_calibration_offsets(
       const Context<T>& context) const;
 
+  /// Returns the selection list.  For return_value[i] == j, the output port's
+  /// i'th element comes from the input port's j'th element.  This value will
+  /// be non-empty even if a quantization-only constructor was used (in which
+  /// case it would be an identity vector with return_value[i] == i).
+  const std::vector<int>& input_vector_indices() const;
+
+  /// Returns the quantization configuration for all of the input port's
+  /// indices, or else an empty vector if quantization is disabled.
+  const std::vector<int>& ticks_per_revolution() const;
+
  private:
   // Outputs the transformed signal.
   void DoCalcVectorOutput(
@@ -63,9 +77,6 @@ class RotaryEncoders : public SisoVectorSystem<T> {
 
   void SetDefaultParameters(const LeafContext<T>& context,
                             Parameters<T>* params) const override;
-
-  // System<T> override.
-  RotaryEncoders<AutoDiffXd>* DoToAutoDiffXd() const override;
 
   const int num_encoders_{0};       // Dimension of the output port.
   const std::vector<int> indices_;  // Selects from the input port.
