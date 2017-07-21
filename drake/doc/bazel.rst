@@ -136,6 +136,7 @@ Proprietary Solvers
 The Drake Bazel build currently supports the following proprietary solvers:
 
  * Gurobi
+ * MOSEK
  * SNOPT
 
 Gurobi
@@ -162,6 +163,22 @@ To confirm that your setup was successful, run the tests that require Gurobi.
 
 The default value of ``--test_tag_filters`` in Drake's ``bazel.rc`` excludes
 these tests. If you will be developing with Gurobi regularly, you may wish
+to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
+See https://bazel.build/versions/master/docs/bazel-user-manual.html#bazelrc.
+
+MOSEK
+------
+
+The Drake Bazel build system downloads MOSEK 7.1 automatically. No manual
+installation is required. Please obtain and save a license file at
+``~/mosek/mosek.lic``.
+
+To confirm that your setup was successful, run the tests that require MOSEK.
+
+  ``bazel test --config mosek --test_tag_filters=mosek ...``
+
+The default value of ``--test_tag_filters`` in Drake's ``bazel.rc`` excludes
+these tests. If you will be developing with MOSEK regularly, you may wish
 to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
 See https://bazel.build/versions/master/docs/bazel-user-manual.html#bazelrc.
 
