@@ -40,32 +40,40 @@ GTEST_TEST(RotationTest, TestAreAllVerticesCoPlanar) {
   Eigen::Vector3d n;
   double d;
 
-  // 4 co-planar vertices. Due to symmetry, we only test one out of the three
-  // regions.
-  Eigen::Vector3d bmin(0.5, 0.5, 0);
-  Eigen::Vector3d bmax(1, 1, 0.5);
-  std::vector<Eigen::Vector3d> pts =
-      internal::ComputeBoxEdgesAndSphereIntersection(bmin, bmax);
-  EXPECT_TRUE(internal::AreAllVerticesCoPlanar(pts, &n, &d));
-  for (int i = 0; i < 4; ++i) {
-    EXPECT_NEAR(n.norm(), 1, 1E-10);
-    EXPECT_NEAR(n.dot(pts[i]), d, 1E-10);
-    EXPECT_TRUE((n.array() > 0).all());
+  // 4 co-planar vertices.
+  std::array<std::pair<Eigen::Vector3d, Eigen::Vector3d>, 3> bmin_bmax_coplanar{
+      {{Eigen::Vector3d(0.5, 0.5, 0), Eigen::Vector3d(1, 1, 0.5)},
+       {Eigen::Vector3d(0.5, 0, 0.5), Eigen::Vector3d(1, 0.5, 1)},
+       {Eigen::Vector3d(0, 0.5, 0.5), Eigen::Vector3d(0.5, 1, 1)}}};
+  for (const auto& bmin_bmax : bmin_bmax_coplanar) {
+    auto pts = internal::ComputeBoxEdgesAndSphereIntersection(bmin_bmax.first,
+                                                              bmin_bmax.second);
+    EXPECT_TRUE(internal::AreAllVerticesCoPlanar(pts, &n, &d));
+    for (int i = 0; i < 4; ++i) {
+      EXPECT_NEAR(n.norm(), 1, 1E-10);
+      EXPECT_NEAR(n.dot(pts[i]), d, 1E-10);
+      EXPECT_TRUE((n.array() > 0).all());
+    }
   }
 
-  // 4 non co-planar vertices. Due to symmetry, we only test one out of the
-  // three regions.
-  bmin << 0.5, 0, 0;
-  bmax << 1, 0.5, 0.5;
-  pts = internal::ComputeBoxEdgesAndSphereIntersection(bmin, bmax);
-  EXPECT_FALSE(internal::AreAllVerticesCoPlanar(pts, &n, &d));
-  EXPECT_TRUE(CompareMatrices(n, Eigen::Vector3d::Zero()));
-  EXPECT_EQ(d, 0);
+  // 4 non co-planar vertices.
+  std::array<std::pair<Eigen::Vector3d, Eigen::Vector3d>, 3>
+      bmin_bmax_non_coplanar{
+          {{Eigen::Vector3d(0.5, 0, 0), Eigen::Vector3d(1, 0.5, 0.5)},
+           {Eigen::Vector3d(0, 0.5, 0), Eigen::Vector3d(0.5, 1, 0.5)},
+           {Eigen::Vector3d(0, 0, 0.5), Eigen::Vector3d(0.5, 0.5, 1)}}};
+  for (const auto& bmin_bmax : bmin_bmax_non_coplanar) {
+    auto pts = internal::ComputeBoxEdgesAndSphereIntersection(bmin_bmax.first,
+                                                              bmin_bmax.second);
+    EXPECT_FALSE(internal::AreAllVerticesCoPlanar(pts, &n, &d));
+    EXPECT_TRUE(CompareMatrices(n, Eigen::Vector3d::Zero()));
+    EXPECT_EQ(d, 0);
+  }
 
   // 3 vertices
-  bmin << 0.5, 0.5, 0.5;
-  bmax << 1, 1, 1;
-  pts = internal::ComputeBoxEdgesAndSphereIntersection(bmin, bmax);
+  Eigen::Vector3d bmin(0.5, 0.5, 0.5);
+  Eigen::Vector3d bmax(1, 1, 1);
+  auto pts = internal::ComputeBoxEdgesAndSphereIntersection(bmin, bmax);
   EXPECT_TRUE(internal::AreAllVerticesCoPlanar(pts, &n, &d));
   EXPECT_TRUE(CompareMatrices(n, Eigen::Vector3d::Constant(1.0 / std::sqrt(3)),
                               1E-10, MatrixCompareType::absolute));
@@ -101,8 +109,8 @@ void CompareHalfspaceRelaxation(const std::vector<Vector3d> &pts) {
   // Computes a possibly less tight n and d analytically. For each triangle with
   // vertices pts[i], pts[j] and pts[k], determine if the halfspace coinciding
   // with the triangle is a cutting plane (namely all vertices in pts are on one
-  // side of the halfspace). Pick the cutting plane halfspace that is farthest
-  // away from the origin.
+  // side of the halfspace). Compute the farthest distance from the cutting
+  // planes to the origin.
   DRAKE_DEMAND(pts.size() >= 3);
 
   double d = -1;
@@ -163,7 +171,8 @@ GTEST_TEST(RotationTest, TestHalfSpaceRelaxation) {
   EXPECT_NEAR(d, std::sqrt(3) * 5 / 9, 1E-10);
 
   // Four points, symmetric about the plane x = y. The tightest half space
-  // relaxation is not the plane coinciding with three of the points.
+  // relaxation is not the plane coinciding with any three of the points, but
+  // just coinciding with two of the points.
   pts.clear();
   // The first two points are on the x = y plane.
   pts.emplace_back(1.0 / 3.0, 1.0 / 3.0, std::sqrt(7) / 3.0);
