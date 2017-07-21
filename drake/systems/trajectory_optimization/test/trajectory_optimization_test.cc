@@ -204,15 +204,18 @@ class DoubleIntegrator : public SisoVectorSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DoubleIntegrator);
 
   DoubleIntegrator() : SisoVectorSystem<T>(1, 1) {
+    this->template SetConcreteSubclass<systems::DoubleIntegrator>();
     this->DeclareContinuousState(1, 1, 0);
   }
-  ~DoubleIntegrator() override{};
+
+  /// Transmogrification constructor.
+  template <typename U>
+  DoubleIntegrator(const TransmogrifierTag&, const DoubleIntegrator<U>&)
+      : DoubleIntegrator<T>() {}
+
+  ~DoubleIntegrator() override {}
 
  protected:
-  DoubleIntegrator<AutoDiffXd>* DoToAutoDiffXd() const override {
-    return new DoubleIntegrator<AutoDiffXd>();
-  }
-
   void DoCalcVectorOutput(
       const Context<T>& context,
       const Eigen::VectorBlock<const VectorX<T>>& input,
