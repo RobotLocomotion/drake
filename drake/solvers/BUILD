@@ -811,6 +811,17 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "rotation_constraint_internal_test",
+    tags = mosek_test_tags() + gurobi_test_tags() + ["no_tsan"],
+    deps = [
+        ":mathematical_program",
+        ":rotation_constraint",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/math:geometric_transform",
+    ],
+)
+
 drake_cc_binary(
     name = "plot_feasible_rotation_matrices",
     testonly = 1,
