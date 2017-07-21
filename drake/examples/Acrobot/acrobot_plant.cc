@@ -36,6 +36,7 @@ AcrobotPlant<T>::AcrobotPlant(double m1, double m2, double l1, double l2,
       b1_(b1),
       b2_(b2),
       g_(g) {
+  this->template SetConcreteSubclass<acrobot::AcrobotPlant>();
   this->DeclareInputPort(systems::kVectorValued, 1);
   this->DeclareVectorOutputPort(&AcrobotPlant::OutputState);
   static_assert(AcrobotStateVectorIndices::kNumCoordinates == kNumDOF * 2, "");
@@ -45,6 +46,23 @@ AcrobotPlant<T>::AcrobotPlant(double m1, double m2, double l1, double l2,
       kNumDOF /* num_v */,
       0 /* num_z */);
 }
+
+template <typename T>
+template <typename U>
+AcrobotPlant<T>::AcrobotPlant(
+    const systems::TransmogrifierTag&, const AcrobotPlant<U>& other)
+    : AcrobotPlant<T>(
+          other.m1(),
+          other.m2(),
+          other.l1(),
+          other.l2(),
+          other.lc1(),
+          other.lc2(),
+          other.Ic1(),
+          other.Ic2(),
+          other.b1(),
+          other.b2(),
+          other.g()) {}
 
 template <typename T>
 std::unique_ptr<AcrobotPlant<T>> AcrobotPlant<T>::CreateAcrobotMIT() {
@@ -144,38 +162,6 @@ T AcrobotPlant<T>::DoCalcPotentialEnergy(
   const T c12 = cos(x.theta1() + x.theta2());
 
   return -m1_ * g_ * lc1_ * c1 - m2_ * g_ * (l1_ * c1 + lc2_ * c12);
-}
-
-template <typename T>
-AcrobotPlant<AutoDiffXd>* AcrobotPlant<T>::DoToAutoDiffXd() const {
-  return new AcrobotPlant<AutoDiffXd>(
-      m1_,
-      m2_,
-      l1_,
-      l2_,
-      lc1_,
-      lc2_,
-      Ic1_,
-      Ic2_,
-      b1_,
-      b2_,
-      g_);
-}
-
-template <typename T>
-AcrobotPlant<symbolic::Expression>* AcrobotPlant<T>::DoToSymbolic() const {
-  return new AcrobotPlant<symbolic::Expression>(
-      m1_,
-      m2_,
-      l1_,
-      l2_,
-      lc1_,
-      lc2_,
-      Ic1_,
-      Ic2_,
-      b1_,
-      b2_,
-      g_);
 }
 
 template class AcrobotPlant<double>;
