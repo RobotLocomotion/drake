@@ -116,6 +116,17 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "frame_visualizer",
+    srcs = ["frame_visualizer.cc"],
+    hdrs = ["frame_visualizer.h"],
+    deps = [
+        "//drake/lcmtypes:viewer",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/systems/lcm",
+    ],
+)
+
 drake_cc_googletest(
     name = "contact_detail_test",
     deps = [
@@ -189,6 +200,19 @@ drake_cc_googletest(
         "//drake/common:find_resource",
         "//drake/lcm:mock",
         "//drake/systems/analysis",
+    ],
+)
+
+drake_cc_googletest(
+    name = "frame_visualizer_test",
+    data = [
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":frame_visualizer",
+        "//drake/common:find_resource",
+        "//drake/lcm:mock",
+        "//drake/multibody/parsers",
     ],
 )
 

@@ -57,6 +57,13 @@ if(Bullet_FOUND)
   endif()
 endif()
 
+if (lcm_FOUND)
+  drake_add_cc_test(frame_visualizer_test)
+  target_link_libraries(frame_visualizer_test
+      drakeMultibodyParsers
+      drakeRigidBodyPlant)
+endif()
+
 drake_add_cc_test(contact_force_test)
 target_link_libraries(contact_force_test drakeRigidBodyPlant)
 
