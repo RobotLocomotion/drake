@@ -29,6 +29,7 @@ set(sources
   subvector.cc
   supervector.cc
   system.cc
+  system_transmogrifier.cc
   value.cc
   vector_base.cc
   witness_function.cc
@@ -75,6 +76,7 @@ set(installed_headers
   supervector.h
   system.h
   system_common.h
+  system_transmogrifier.h
   value.h
   value_checker.h
   vector_base.h

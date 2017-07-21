@@ -307,6 +307,22 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "system_transmogrifier",
+    srcs = [
+        "system_transmogrifier.cc",
+    ],
+    hdrs = [
+        "system_transmogrifier.h",
+        "system_transmogrifier_traits.h",
+        "transmogrifier_tag.h",
+    ],
+    deps = [
+        ":system",
+        "//drake/common",
+    ],
+)
+
+drake_cc_library(
     name = "leaf_system",
     srcs = ["leaf_system.cc"],
     hdrs = ["leaf_system.h"],
@@ -316,6 +332,7 @@ drake_cc_library(
         ":model_values",
         ":sparsity_matrix",
         ":system",
+        ":system_transmogrifier",
         ":value_checker",
         "//drake/common",
         "//drake/common:number_traits",
@@ -617,6 +634,14 @@ drake_cc_googletest(
     name = "siso_vector_system_test",
     deps = [
         ":siso_vector_system",
+    ],
+)
+
+drake_cc_googletest(
+    name = "system_transmogrifier_test",
+    deps = [
+        ":leaf_system",
+        ":system_transmogrifier",
     ],
 )
 

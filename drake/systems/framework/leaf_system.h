@@ -27,6 +27,7 @@
 #include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/sparsity_matrix.h"
 #include "drake/systems/framework/system.h"
+#include "drake/systems/framework/system_transmogrifier.h"
 #include "drake/systems/framework/value.h"
 #include "drake/systems/framework/value_checker.h"
 
@@ -220,6 +221,21 @@ class LeafSystem : public System<T> {
     this->set_forced_unrestricted_update_events(
         LeafEventCollection<
             UnrestrictedUpdateEvent<T>>::MakeForcedEventCollection());
+  }
+
+  // XXX
+  template <template <typename> class S>
+  void SetConcreteSubclass() {
+    default_transmogrifier_ = MakeDefaultSystemTransmogrifier<S>();
+  }
+
+  System<AutoDiffXd>* DoToAutoDiffXd() const override {
+    return default_transmogrifier_.Convert<AutoDiffXd, T>(*this).release();
+  }
+
+  System<symbolic::Expression>* DoToSymbolic() const override {
+    return default_transmogrifier_.Convert<symbolic::Expression, T>(*this).
+        release();
   }
 
   /// Provides a new instance of the leaf context for this system. Derived
@@ -1235,6 +1251,8 @@ class LeafSystem : public System<T> {
 
   // Model outputs to be used in AllocateParameters.
   detail::ModelValues model_numeric_parameters_;
+
+  SystemTransmogrifier default_transmogrifier_;
 };
 
 }  // namespace systems
