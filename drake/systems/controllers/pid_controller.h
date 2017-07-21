@@ -74,6 +74,16 @@ class PidController : public StateFeedbackControllerInterface<T>,
                 const Eigen::VectorXd& kp, const Eigen::VectorXd& ki,
                 const Eigen::VectorXd& kd);
 
+  /** Transmogrification constructor. */
+  template <typename U>
+  PidController(const TransmogrifierTag&, const PidController<U>&);
+
+  /**
+   * Returns the state selector matrix passed to the constructor, or an
+   * Identity matrix in the case where no state_selector was specified.
+   */
+  const MatrixX<double>& get_state_selector() const { return state_selector_; }
+
   /**
    * Returns the proportional gain constant. This method should only be called
    * if the proportional gain can be represented as a scalar value, i.e., every
@@ -155,8 +165,6 @@ class PidController : public StateFeedbackControllerInterface<T>,
    * viewers to parse.
    */
   void GetGraphvizFragment(std::stringstream* dot) const override;
-
-  PidController<symbolic::Expression>* DoToSymbolic() const override;
 
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* derivatives) const override;
