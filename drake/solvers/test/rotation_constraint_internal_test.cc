@@ -12,8 +12,8 @@ using Eigen::Vector3d;
 namespace drake {
 namespace solvers {
 namespace {
-void CompareIntersectionResults(std::vector<Vector3d> desired,
-                                std::vector<Vector3d> actual) {
+void CompareIntersectionResults(const std::vector<Vector3d>& desired,
+                                const std::vector<Vector3d>& actual) {
   EXPECT_EQ(desired.size(), actual.size());
   Eigen::Matrix<bool, Eigen::Dynamic, 1> used =
       Eigen::Matrix<bool, Eigen::Dynamic, 1>::Constant(desired.size(), false);
