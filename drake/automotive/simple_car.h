@@ -55,6 +55,10 @@ class SimpleCar : public systems::LeafSystem<T> {
 
   SimpleCar();
 
+  /// Transmogrification constructor.
+  template <typename U>
+  SimpleCar(const systems::TransmogrifierTag&, const SimpleCar<U>&);
+
   // System<T> overrides
   void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
@@ -63,11 +67,6 @@ class SimpleCar : public systems::LeafSystem<T> {
   const systems::OutputPort<T>& state_output() const;
   const systems::OutputPort<T>& pose_output() const;
   const systems::OutputPort<T>& velocity_output() const;
-
- protected:
-  // System<T> overrides
-  systems::System<AutoDiffXd>* DoToAutoDiffXd() const override;
-  systems::System<symbolic::Expression>* DoToSymbolic() const override;
 
  private:
   void CalcStateOutput(const systems::Context<T>&, SimpleCarState<T>*) const;

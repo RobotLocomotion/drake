@@ -18,11 +18,20 @@ class SimpleCarToEulerFloatingJoint : public systems::LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleCarToEulerFloatingJoint)
 
   SimpleCarToEulerFloatingJoint() {
+    this->template SetConcreteSubclass<
+      automotive::SimpleCarToEulerFloatingJoint>();
     this->set_name("SimpleCarToEulerFloatingJoint");
     this->DeclareVectorInputPort(SimpleCarState<T>());
     this->DeclareVectorOutputPort(
         &SimpleCarToEulerFloatingJoint::ConvertStateTo3dPose);
   }
+
+  /// Transmogrification constructor.
+  template <typename U>
+  SimpleCarToEulerFloatingJoint(
+      const systems::TransmogrifierTag&,
+      const SimpleCarToEulerFloatingJoint<U>&)
+      : SimpleCarToEulerFloatingJoint<T>() {}
 
  private:
   // Converts the x,y,heading input state to a full 3D pose.
@@ -49,10 +58,6 @@ class SimpleCarToEulerFloatingJoint : public systems::LeafSystem<T> {
     output_data->set_roll(T(0.0));
     output_data->set_pitch(T(0.0));
     output_data->set_yaw(heading);
-  }
-
-  SimpleCarToEulerFloatingJoint<AutoDiffXd>* DoToAutoDiffXd() const override {
-    return new SimpleCarToEulerFloatingJoint<AutoDiffXd>();
   }
 };
 

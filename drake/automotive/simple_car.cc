@@ -41,6 +41,7 @@ const SimpleCarState<T>& get_state(const systems::Context<T>& context) {
 
 template <typename T>
 SimpleCar<T>::SimpleCar() {
+  this->template SetConcreteSubclass<automotive::SimpleCar>();
   this->DeclareVectorInputPort(DrivingCommand<T>());
   this->DeclareVectorOutputPort(&SimpleCar::CalcStateOutput);
   this->DeclareVectorOutputPort(&SimpleCar::CalcPose);
@@ -48,6 +49,12 @@ SimpleCar<T>::SimpleCar() {
   this->DeclareContinuousState(SimpleCarState<T>());
   this->DeclareNumericParameter(SimpleCarParams<T>());
 }
+
+template <typename T>
+template <typename U>
+SimpleCar<T>::SimpleCar(
+    const systems::TransmogrifierTag&, const SimpleCar<U>&)
+    : SimpleCar() {}
 
 template <typename T>
 const systems::OutputPort<T>& SimpleCar<T>::state_output() const {
@@ -171,16 +178,6 @@ void SimpleCar<T>::ImplCalcTimeDerivatives(const SimpleCarParams<T>& params,
   rates->set_y(nonneg_velocity * sin(state.heading()));
   rates->set_heading(curvature * nonneg_velocity);
   rates->set_velocity(smooth_acceleration);
-}
-
-template <typename T>
-systems::System<AutoDiffXd>* SimpleCar<T>::DoToAutoDiffXd() const {
-  return new SimpleCar<AutoDiffXd>;
-}
-
-template <typename T>
-systems::System<symbolic::Expression>* SimpleCar<T>::DoToSymbolic() const {
-  return new SimpleCar<symbolic::Expression>;
 }
 
 // These instantiations must match the API documentation in simple_car.h.
