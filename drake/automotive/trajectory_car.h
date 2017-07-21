@@ -70,6 +70,7 @@ class TrajectoryCar : public systems::LeafSystem<T> {
   /// curve.  Throws an error if the curve is empty (has a zero @p path_length).
   explicit TrajectoryCar(Curve2<double> curve)
       : curve_(std::move(curve)) {
+    this->template SetConcreteSubclass<automotive::TrajectoryCar>();
     if (curve_.path_length() == 0.0) {
       throw std::invalid_argument{"empty curve"};
     }
@@ -80,6 +81,12 @@ class TrajectoryCar : public systems::LeafSystem<T> {
     this->DeclareContinuousState(TrajectoryCarState<T>());
     this->DeclareNumericParameter(TrajectoryCarParams<T>());
   }
+
+  /// Transmogrification constructor.
+  template <typename U>
+  TrajectoryCar(
+      const systems::TransmogrifierTag&, const TrajectoryCar<U>& other)
+      : TrajectoryCar<T>(other.get_curve()) {}
 
   /// The command input port (optional).
   const systems::InputPortDescriptor<T>& command_input() const {
@@ -97,6 +104,8 @@ class TrajectoryCar : public systems::LeafSystem<T> {
     return this->get_output_port(2);
   }
   /// @}
+
+  const Curve2<double>& get_curve() const { return curve_; }
 
  protected:
   /// Data structure returned by CalcRawPose containing raw pose information.
@@ -254,12 +263,17 @@ class TrajectoryCar : public systems::LeafSystem<T> {
     return result;
   }
 
-  TrajectoryCar<AutoDiffXd>* DoToAutoDiffXd() const override {
-    return new TrajectoryCar<AutoDiffXd>(curve_);
-  }
-
   const Curve2<double> curve_;
 };
 
 }  // namespace automotive
+
+namespace systems {
+namespace system_transmogrifier {
+// Disable symbolic support, because we use ExtractDoubleOrThrow.
+template <>
+struct Traits<automotive::TrajectoryCar> : public NonSymbolicTraits {};
+}  // namespace system_transmogrifier
+}  // namespace systems
+
 }  // namespace drake
