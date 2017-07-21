@@ -209,10 +209,14 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "frame_visualizer_test",
+    data = [
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
     deps = [
         ":frame_visualizer",
         "//drake/common:find_resource",
         "//drake/lcm:mock",
+        "//drake/multibody/parsers",
     ],
 )
 

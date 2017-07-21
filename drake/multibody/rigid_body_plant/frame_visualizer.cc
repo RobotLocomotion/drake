@@ -13,7 +13,8 @@ FrameVisualizer::FrameVisualizer(const RigidBodyTree<double>& tree,
 
   default_msg_.num_links = static_cast<int>(local_transforms_.size());
   default_msg_.link_name.resize(default_msg_.num_links);
-  default_msg_.robot_num.resize(default_msg_.num_links);
+  // The robot num is not relavent here.
+  default_msg_.robot_num.resize(default_msg_.num_links, 0);
   std::vector<float> pos = {0, 0, 0};
   std::vector<float> quaternion = {1, 0, 0, 0};
   default_msg_.position.resize(default_msg_.num_links, pos);

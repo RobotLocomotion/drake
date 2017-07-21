@@ -54,11 +54,10 @@ int DoMain() {
 
   // Adds a plant.
   RigidBodyPlant<double>* plant = nullptr;
-  const char* kModelPath =
-      "drake/manipulation/models/iiwa_description/"
+  const char* kModelPath = "drake/manipulation/models/iiwa_description/"
       "urdf/iiwa14_polytope_collision.urdf";
-  const std::string urdf =
-      (!FLAGS_urdf.empty() ? FLAGS_urdf : FindResourceOrThrow(kModelPath));
+  const std::string urdf = (!FLAGS_urdf.empty() ? FLAGS_urdf :
+                            FindResourceOrThrow(kModelPath));
   {
     auto tree = std::make_unique<RigidBodyTree<double>>();
     parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
@@ -93,37 +92,37 @@ int DoMain() {
 
   auto controller =
       builder.AddController<systems::InverseDynamicsController<double>>(
-          RigidBodyTreeConstants::kFirstNonWorldModelInstanceId, tree.Clone(),
-          iiwa_kp, iiwa_ki, iiwa_kd,
+          RigidBodyTreeConstants::kFirstNonWorldModelInstanceId,
+          tree.Clone(), iiwa_kp, iiwa_ki, iiwa_kd,
           false /* without feedforward acceleration */);
 
   // Create the command subscriber and status publisher.
   systems::DiagramBuilder<double>* base_builder = builder.get_mutable_builder();
   auto command_sub = base_builder->AddSystem(
-      systems::lcm::LcmSubscriberSystem::Make<lcmt_iiwa_command>("IIWA_COMMAND",
-                                                                 &lcm));
+      systems::lcm::LcmSubscriberSystem::Make<lcmt_iiwa_command>(
+          "IIWA_COMMAND", &lcm));
   command_sub->set_name("command_subscriber");
   auto command_receiver =
       base_builder->AddSystem<IiwaCommandReceiver>(num_joints);
   command_receiver->set_name("command_receiver");
   auto status_pub = base_builder->AddSystem(
-      systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>("IIWA_STATUS",
-                                                               &lcm));
+      systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>(
+          "IIWA_STATUS", &lcm));
   status_pub->set_name("status_publisher");
   status_pub->set_publish_period(kIiwaLcmStatusPeriod);
   auto status_sender = base_builder->AddSystem<IiwaStatusSender>(num_joints);
   status_sender->set_name("status_sender");
 
   base_builder->Connect(command_sub->get_output_port(0),
-                        command_receiver->get_input_port(0));
+                  command_receiver->get_input_port(0));
   base_builder->Connect(command_receiver->get_output_port(0),
-                        controller->get_input_port_desired_state());
+                  controller->get_input_port_desired_state());
   base_builder->Connect(plant->get_output_port(0),
-                        status_sender->get_state_input_port());
+                  status_sender->get_state_input_port());
   base_builder->Connect(command_receiver->get_output_port(0),
-                        status_sender->get_command_input_port());
+                  status_sender->get_command_input_port());
   base_builder->Connect(status_sender->get_output_port(0),
-                        status_pub->get_input_port(0));
+                  status_pub->get_input_port(0));
 
   // Visualize the end effector frame and 7th body' frame.
   std::vector<FrameVisualizer::FrameData> local_transforms(2);
@@ -149,6 +148,7 @@ int DoMain() {
       &sys->GetMutableSubsystemContext(*command_receiver,
                                        simulator.get_mutable_context()),
       VectorX<double>::Zero(tree.get_num_positions()));
+
 
   // Simulate for a very long time.
   simulator.StepTo(FLAGS_simulation_sec);
