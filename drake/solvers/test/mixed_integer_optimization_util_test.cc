@@ -300,16 +300,28 @@ TEST_P(BilinearProductMcCormickEnvelopeSOS2Test, LinearObjectiveTest) {
               a.col(k).transpose() * vertices;
           EXPECT_NEAR(prog_.GetOptimalCost(), cost_at_vertices.minCoeff(),
                       1E-4);
-          // Check that λ has the correct value, execpt λ(i, j), λ(i, j+1),
+          // Check that λ has the correct value, except λ(i, j), λ(i, j+1),
           // λ(i+1, j) and λ(i+1, j+1), all other entries in λ are zero.
-          for (int m = 0; m < num_interval_x_; ++m) {
-            for (int n = 0; n < num_interval_y_; ++n) {
-              if (!((m == i && n == j) || (m == i && n == j + 1) ||
-                    (m == i + 1 && n == j) || (m == i + 1 && n == j + 1))) {
+          double w{0};
+          double x{0};
+          double y{0};
+          for (int m = 0; m <= num_interval_x_; ++m) {
+            for (int n = 0; n <= num_interval_y_; ++n) {
+              if (!((m == i && n == j) || (m == i && n == (j + 1)) ||
+                    (m == (i + 1) && n == j) ||
+                    (m == (i + 1) && n == (j + 1)))) {
                 EXPECT_NEAR(prog_.GetSolution(lambda(m, n)), 0, 1E-5);
+              } else {
+                double lambda_mn{prog_.GetSolution(lambda(m, n))};
+                x += lambda_mn * phi_x_(m);
+                y += lambda_mn * phi_y_(n);
+                w += lambda_mn * phi_x_(m) * phi_y_(n);
               }
             }
           }
+          EXPECT_NEAR(prog_.GetSolution(x_), x, 1E-4);
+          EXPECT_NEAR(prog_.GetSolution(y_), y, 1E-4);
+          EXPECT_NEAR(prog_.GetSolution(w_), w, 1E-4);
         }
       }
     }
