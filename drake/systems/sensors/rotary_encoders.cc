@@ -8,6 +8,8 @@
 
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/symbolic_expression.h"
+#include "drake/common/symbolic_formula.h"
 #include "drake/common/unused.h"
 #include "drake/systems/framework/basic_vector.h"
 
@@ -56,7 +58,17 @@ RotaryEncoders<T>::RotaryEncoders(int input_port_size,
   DRAKE_ASSERT(ticks_per_revolution_.empty() ||
                *std::min_element(ticks_per_revolution_.begin(),
                                  ticks_per_revolution_.end()) >= 0);
+  this->template SetConcreteSubclass<sensors::RotaryEncoders>();
 }
+
+template <typename T>
+template <typename U>
+RotaryEncoders<T>::RotaryEncoders(
+    const TransmogrifierTag&, const RotaryEncoders<U>& other)
+    // XXX This has no unit testing.
+    : RotaryEncoders(other.get_input_port().size(),
+                     other.input_vector_indices(),
+                     other.ticks_per_revolution()) {}
 
 template <typename T>
 void RotaryEncoders<T>::DoCalcVectorOutput(
@@ -119,13 +131,18 @@ Eigen::VectorBlock<const VectorX<T>> RotaryEncoders<T>::get_calibration_offsets(
 }
 
 template <typename T>
-RotaryEncoders<AutoDiffXd>* RotaryEncoders<T>::DoToAutoDiffXd() const {
-  return new RotaryEncoders<AutoDiffXd>(this->get_input_port().size(),
-                                        indices_, ticks_per_revolution_);
+const std::vector<int>& RotaryEncoders<T>::input_vector_indices() const {
+  return indices_;
+}
+
+template <typename T>
+const std::vector<int>& RotaryEncoders<T>::ticks_per_revolution() const {
+  return ticks_per_revolution_;
 }
 
 template class RotaryEncoders<double>;
 template class RotaryEncoders<AutoDiffXd>;
+template class RotaryEncoders<symbolic::Expression>;
 
 }  // namespace sensors
 }  // namespace systems
