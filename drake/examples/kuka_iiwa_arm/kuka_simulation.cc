@@ -18,7 +18,7 @@
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
 #include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
+#include "drake/multibody/rigid_body_plant/frame_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/analysis/simulator.h"
@@ -43,7 +43,7 @@ using systems::ConstantVectorSource;
 using systems::Context;
 using systems::Diagram;
 using systems::DiagramBuilder;
-using systems::DrakeVisualizer;
+using systems::FrameVisualizer;
 using systems::RigidBodyPlant;
 using systems::Simulator;
 
@@ -122,6 +122,21 @@ int DoMain() {
                   status_sender->get_command_input_port());
   base_builder->Connect(status_sender->get_output_port(0),
                   status_pub->get_input_port(0));
+
+  // Visualizes the end effector frame and 7th body's frame.
+  std::vector<RigidBodyFrame<double>> local_transforms;
+  local_transforms.push_back(
+      RigidBodyFrame<double>("iiwa_link_ee", tree.FindBody("iiwa_link_ee"),
+                             Isometry3<double>::Identity()));
+  local_transforms.push_back(
+      RigidBodyFrame<double>("iiwa_link_7", tree.FindBody("iiwa_link_7"),
+                             Isometry3<double>::Identity()));
+  auto frame_viz = base_builder->AddSystem<systems::FrameVisualizer>(
+      &tree, local_transforms, &lcm);
+  base_builder->Connect(plant->get_output_port(0),
+                        frame_viz->get_input_port(0));
+  frame_viz->set_publish_period(kIiwaLcmStatusPeriod);
+
   auto sys = builder.Build();
 
   Simulator<double> simulator(*sys);
