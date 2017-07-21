@@ -116,21 +116,6 @@ void AddLogarithmicSos1Constraint(
     const Eigen::Ref<const VectorXDecisionVariable> &y,
     const Eigen::Ref<const Eigen::MatrixXi> &codes);
 
-template <typename Derived>
-struct IsPhiValid {
-  static constexpr bool value =
-      std::is_base_of<Eigen::MatrixBase<Derived>, Derived>::value &&
-      std::is_same<typename Derived::Scalar, double>::value &&
-      Derived::ColsAtCompileTime == 1;
-};
-
-template <typename Derived>
-struct IsLogarithmicSos2BinaryValid {
-  static constexpr bool value =
-      std::is_base_of<Eigen::MatrixBase<Derived>, Derived>::value &&
-      std::is_same<typename Derived::Scalar, symbolic::Variable>::value &&
-      Derived::ColsAtCompileTime == 1;
-};
 /**
  * Constrain `w` to approximate the bilinear product x * y. We know
  * that x is in one of the intervals [φx(i), φx(i+1)], y is in one of the
@@ -163,9 +148,10 @@ struct IsLogarithmicSos2BinaryValid {
 template <typename DerivedPhiX, typename DerivedPhiY, typename DerivedBx,
           typename DerivedBy>
 typename std::enable_if<
-    IsPhiValid<DerivedPhiX>::value && IsPhiValid<DerivedPhiY>::value &&
-        IsLogarithmicSos2BinaryValid<DerivedBx>::value &&
-        IsLogarithmicSos2BinaryValid<DerivedBy>::value,
+    detail::is_eigen_vector_of<DerivedPhiX, double>::value &&
+        detail::is_eigen_vector_of<DerivedPhiY, double>::value &&
+        detail::is_eigen_vector_of<DerivedBx, symbolic::Variable>::value &&
+        detail::is_eigen_vector_of<DerivedBy, symbolic::Variable>::value,
     MatrixDecisionVariable<DerivedPhiX::RowsAtCompileTime,
                            DerivedPhiY::RowsAtCompileTime>>::type
 AddBilinearProductMcCormickEnvelopeSos2(
