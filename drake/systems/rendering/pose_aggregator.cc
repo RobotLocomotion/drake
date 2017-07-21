@@ -15,11 +15,23 @@ namespace rendering {
 
 template <typename T>
 PoseAggregator<T>::PoseAggregator() {
+  this->template SetConcreteSubclass<rendering::PoseAggregator>();
+
   // Declare the output port and provide an allocator for a PoseBundle of length
   // equal to the concatenation of all inputs. This can't be done with a model
   // value because we don't know at construction how big the output will be.
   this->DeclareAbstractOutputPort(&PoseAggregator::MakePoseBundle,
                                   &PoseAggregator::CalcPoseBundle);
+}
+
+template <typename T>
+template <typename U>
+PoseAggregator<T>::PoseAggregator(
+    const TransmogrifierTag&, const PoseAggregator<U>& other)
+    : PoseAggregator() {
+  for (const auto& record : other.input_records_) {
+    this->DeclareInput(record);
+  }
 }
 
 template <typename T>
@@ -134,15 +146,6 @@ int PoseAggregator<T>::CountNumPoses() const {
 }
 
 template <typename T>
-PoseAggregator<AutoDiffXd>* PoseAggregator<T>::DoToAutoDiffXd() const {
-  auto result = new PoseAggregator<AutoDiffXd>;
-  for (const auto& record : input_records_) {
-    result->DeclareInput(record);
-  }
-  return result;
-}
-
-template <typename T>
 typename PoseAggregator<T>::InputRecord
 PoseAggregator<T>::MakeSinglePoseInputRecord(const std::string& name,
                                              int model_instance_id) {
@@ -196,6 +199,7 @@ PoseAggregator<T>::DeclareInput(const InputRecord& record) {
 
 template class PoseAggregator<double>;
 template class PoseAggregator<AutoDiffXd>;
+template class PoseAggregator<symbolic::Expression>;
 
 }  // namespace rendering
 }  // namespace systems
