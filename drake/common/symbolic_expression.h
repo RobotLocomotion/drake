@@ -495,9 +495,6 @@ Expression if_then_else(const Formula& f_cond, const Expression& e_then,
  * than its name and a set of its arguments. This is useful to applications
  * where it is good enough to provide abstract information of a function without
  * exposing full details. Declaring sparsity of a system is a typical example.
- *
- * See also `FunctionalForm::Arbitrary(Variables v)` which shares the same
- * motivation.
  */
 Expression uninterpreted_function(const std::string& name,
                                   const Variables& vars);

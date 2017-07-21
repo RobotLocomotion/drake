@@ -99,16 +99,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "functional_form",
-    srcs = ["functional_form.cc"],
-    hdrs = ["functional_form.h"],
-    deps = [
-        ":common",
-        ":dummy_value",
-    ],
-)
-
-drake_cc_library(
     name = "hash",
     hdrs = ["hash.h"],
     deps = [
@@ -538,14 +528,6 @@ drake_cc_googletest(
     ],
     deps = [
         ":find_resource",
-    ],
-)
-
-drake_cc_googletest(
-    name = "functional_form_test",
-    deps = [
-        ":common",
-        ":functional_form",
     ],
 )
 
