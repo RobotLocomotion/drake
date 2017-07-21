@@ -9,7 +9,7 @@
 namespace drake {
 namespace multibody {
 namespace benchmarks {
-namespace MG_kuka_iiwa_robot {
+namespace kuka_iiwa_robot {
 namespace {
 
 // Function to compare Kuka iiwa robot arm end-effector (frame G)'s orientation
@@ -139,7 +139,7 @@ GTEST_TEST(KukaIIwaRobot, ForwardKinematicsB) {
 }
 
 }  // namespace
-}  // namespace MG_kuka_iiwa_robot
+}  // namespace kuka_iiwa_robot
 }  // namespace benchmarks
 }  // namespace multibody
 }  // namespace drake

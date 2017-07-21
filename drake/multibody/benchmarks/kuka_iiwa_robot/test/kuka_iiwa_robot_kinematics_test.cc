@@ -22,14 +22,14 @@ void TestEndEffectorKinematics(const Eigen::Ref<const VectorX<double>>& q,
   // v_NGo_N    | Go's velocity in N, expressed in N.
   // alpha_NG_N | G's angular acceleration in N, expressed in N.
   // a_NGo_N    | Go's acceleration in N, expressed in N.
-  drake_kuka_iiwa_robot::DrakeKukaIIwaRobot drake_kuka_robot;
+  kuka_iiwa_robot::DrakeKukaIIwaRobot drake_kuka_robot;
   Matrix3d R_NG;
   Vector3d p_NoGo_N, w_NG_N, v_NGo_N, alpha_NG_N, a_NGo_N;
   std::tie(R_NG, p_NoGo_N, w_NG_N, v_NGo_N, alpha_NG_N, a_NGo_N) =
       drake_kuka_robot.CalcEndEffectorKinematics(q, qDt, qDDt);
 
   // Get corresponding MotionGenesis information.
-  MG_kuka_iiwa_robot::MGKukaIIwaRobotGlue<double> MG_kuka_robot;
+  kuka_iiwa_robot::MGKukaIIwaRobotGlue<double> MG_kuka_robot;
   Matrix3d R_NG_true;
   Vector3d p_NoGo_N_true, w_NG_N_true, v_NGo_N_true;
   Vector3d alpha_NG_N_true, a_NGo_N_true;
@@ -38,14 +38,13 @@ void TestEndEffectorKinematics(const Eigen::Ref<const VectorX<double>>& q,
       MG_kuka_robot.CalcEndEffectorKinematics(q, qDt, qDDt);
 
   // Compare actual results with expected (true) results.
-// TODO(mitiguy): Add tests for acceleration when MultiBodyTree is ready.
   constexpr double kEpsilon = 10 * std::numeric_limits<double>::epsilon();
   EXPECT_TRUE(R_NG.isApprox(R_NG_true, kEpsilon));
   EXPECT_TRUE(p_NoGo_N.isApprox(p_NoGo_N_true, kEpsilon));
   EXPECT_TRUE(w_NG_N.isApprox(w_NG_N_true, kEpsilon));
   EXPECT_TRUE(v_NGo_N.isApprox(v_NGo_N_true, kEpsilon));
-  // EXPECT_TRUE(alpha_NG_N.isApprox(alpha_NG_N_true, kEpsilon));
-  // EXPECT_TRUE(a_NGo_N.isApprox(a_NGo_N_true, kEpsilon));
+  EXPECT_TRUE(alpha_NG_N.isApprox(alpha_NG_N_true, kEpsilon));
+  EXPECT_TRUE(a_NGo_N.isApprox(a_NGo_N_true, kEpsilon));
 }
 
 // Verify methods for MultibodyTree::CalcPositionKinematicsCache(), comparing

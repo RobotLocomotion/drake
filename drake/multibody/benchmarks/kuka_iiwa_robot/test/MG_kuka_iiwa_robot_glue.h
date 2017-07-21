@@ -9,7 +9,7 @@
 namespace drake {
 namespace multibody {
 namespace benchmarks {
-namespace MG_kuka_iiwa_robot {
+namespace kuka_iiwa_robot {
 
 using Eigen::Vector3d;
 using Eigen::Matrix3d;
@@ -37,8 +37,8 @@ class MGKukaIIwaRobotGlue {
   /// The origin Go of end-effector G is located at G's inboard revolute joint.
   ///
   /// @param[in] q robot's joint angles (generalized coordinates).
-  /// @param[in] v 1st-time-derivatives of q (q̇).
-  /// @param[in] a 2nd-time-derivatives of q (q̈).
+  /// @param[in] qDt 1st-time-derivatives of q (q̇).
+  /// @param[in] qDDt 2nd-time-derivatives of q (q̈).
   ///
   /// @returns Machine-precision values as defined below.
   ///
@@ -52,11 +52,11 @@ class MGKukaIIwaRobotGlue {
   /// a_NGo_N    | Go's acceleration in N, expressed in N.
   std::tuple<Matrix3d, Vector3d, Vector3d, Vector3d, Vector3d, Vector3d>
   CalcEndEffectorKinematics(const Eigen::Ref<const VectorX<T>> &q,
-                            const Eigen::Ref<const VectorX<T>> &v,
-                            const Eigen::Ref<const VectorX<T>> &a) const;
+                            const Eigen::Ref<const VectorX<T>> &qDt,
+                            const Eigen::Ref<const VectorX<T>> &qDDt) const;
 };
 
-}  // namespace MG_kuka_iiwa_robot
+}  // namespace kuka_iiwa_robot
 }  // namespace benchmarks
 }  // namespace multibody
 }  // namespace drake
