@@ -1,11 +1,12 @@
-#include "drake/common/symbolic_environment.h"
-
+// NOLINTNEXTLINE(build/include): Its header file is included in symbolic.h.
 #include <cmath>
 #include <initializer_list>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+
+#include "drake/common/symbolic.h"
 
 namespace drake {
 namespace symbolic {

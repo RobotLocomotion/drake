@@ -1,12 +1,9 @@
-#include "drake/common/symbolic_polynomial.h"
-
 #include <string>
 #include <vector>
 
 #include <gtest/gtest.h>
 
-#include "drake/common/symbolic_monomial.h"
-#include "drake/common/symbolic_monomial_util.h"
+#include "drake/common/symbolic.h"
 #include "drake/common/test/symbolic_test_util.h"
 
 namespace drake {
