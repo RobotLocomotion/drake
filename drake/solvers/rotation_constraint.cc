@@ -10,6 +10,7 @@
 
 #include "drake/math/cross_product.h"
 #include "drake/solvers/bilinear_product_util.h"
+#include "drake/solvers/mixed_integer_optimization_util.h"
 
 using std::numeric_limits;
 using drake::symbolic::Expression;

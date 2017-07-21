@@ -9,7 +9,6 @@
 #include "drake/common/symbolic.h"
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/mathematical_program.h"
-#include "drake/solvers/mixed_integer_optimization_util.h"
 
 /// @file Functions for reasoning about 3D rotations in a @MathematicalProgram.
 ///
