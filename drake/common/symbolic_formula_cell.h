@@ -1,4 +1,14 @@
 #pragma once
+/// @file Provides implementation-details of symbolic formulas.
+///
+/// It is strongly discouraged to include and use this header file outside of
+/// drake/common/symbolic_* files. To include this file, you need to define
+/// `DRAKE_COMMON_SYMBOLIC_DETAIL_HEADER` before. Without it, you have
+/// compile-time errors.
+#ifndef DRAKE_COMMON_SYMBOLIC_DETAIL_HEADER
+// TODO(soonho-tri): Change to #error, when #6613 merged.
+#warning Do not include this file unless you implement symbolic libraries.
+#endif
 
 #include <functional>
 #include <memory>
@@ -9,11 +19,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/hash.h"
-#include "drake/common/symbolic_environment.h"
-#include "drake/common/symbolic_expression.h"
-#include "drake/common/symbolic_formula.h"
-#include "drake/common/symbolic_variable.h"
-#include "drake/common/symbolic_variables.h"
+#include "drake/common/symbolic.h"
 
 namespace drake {
 namespace symbolic {

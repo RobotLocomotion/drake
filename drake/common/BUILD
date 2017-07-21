@@ -109,6 +109,14 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "hash",
+    hdrs = ["hash.h"],
+    deps = [
+        ":common",
+    ],
+)
+
+drake_cc_library(
     name = "polynomial",
     srcs = ["polynomial.cc"],
     hdrs = [
@@ -123,33 +131,41 @@ drake_cc_library(
 
 drake_cc_library(
     name = "symbolic",
+    # We only expose `symbolic.h` to the users of symbolic target and hide the
+    # rest of the header files by adding them in `srcs` section.
     srcs = [
+        "symbolic.cc",
         "symbolic_environment.cc",
+        "symbolic_environment.h",
         "symbolic_expression.cc",
+        "symbolic_expression.h",
         "symbolic_expression_cell.cc",
         "symbolic_expression_cell.h",
-        "symbolic_expression_visitor.cc",
+        "symbolic_expression_visitor.h",
         "symbolic_formula.cc",
+        "symbolic_formula.h",
         "symbolic_formula_cell.cc",
         "symbolic_formula_cell.h",
-        "symbolic_formula_visitor.cc",
+        "symbolic_formula_visitor.h",
+        "symbolic_monomial.cc",
+        "symbolic_monomial.h",
+        "symbolic_monomial_util.cc",
+        "symbolic_monomial_util.h",
+        "symbolic_polynomial.cc",
+        "symbolic_polynomial.h",
         "symbolic_variable.cc",
+        "symbolic_variable.h",
         "symbolic_variables.cc",
+        "symbolic_variables.h",
     ],
     hdrs = [
-        "hash.h",
-        "symbolic_environment.h",
-        "symbolic_expression.h",
-        "symbolic_expression_visitor.h",
-        "symbolic_formula.h",
-        "symbolic_formula_visitor.h",
-        "symbolic_variable.h",
-        "symbolic_variables.h",
+        "symbolic.h",
     ],
     deps = [
         ":common",
         ":cond",
         ":dummy_value",
+        ":hash",
         ":number_traits",
         ":polynomial",
         "//drake/math:matrix_util",
@@ -231,37 +247,6 @@ drake_cc_library(
     name = "is_memcpy_movable",
     testonly = 1,
     hdrs = ["test/is_memcpy_movable.h"],
-)
-
-drake_cc_library(
-    name = "symbolic_monomial",
-    srcs = [
-        "symbolic_monomial.cc",
-        "symbolic_monomial_util.cc",
-    ],
-    hdrs = [
-        "symbolic_monomial.h",
-        "symbolic_monomial_util.h",
-    ],
-    deps = [
-        ":common",
-        ":symbolic",
-    ],
-)
-
-drake_cc_library(
-    name = "symbolic_polynomial",
-    srcs = [
-        "symbolic_polynomial.cc",
-    ],
-    hdrs = [
-        "symbolic_polynomial.h",
-    ],
-    deps = [
-        ":common",
-        ":symbolic",
-        ":symbolic_monomial",
-    ],
 )
 
 drake_cc_library(
@@ -577,7 +562,6 @@ drake_cc_googletest(
     deps = [
         ":common",
         ":symbolic",
-        ":symbolic_monomial",
         ":symbolic_test_util",
     ],
 )
@@ -713,7 +697,7 @@ drake_cc_googletest(
     # Test size increased to not timeout when run with Valgrind.
     size = "medium",
     deps = [
-        ":symbolic_polynomial",
+        ":symbolic",
         ":symbolic_test_util",
     ],
 )
@@ -722,7 +706,7 @@ drake_cc_googletest(
     name = "symbolic_polynomial_matrix_test",
     deps = [
         ":common",
-        ":symbolic_polynomial",
+        ":symbolic",
         ":symbolic_test_util",
     ],
 )

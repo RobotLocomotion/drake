@@ -4,7 +4,7 @@
 
 #include <Eigen/Core>
 
-#include "drake/common/symbolic_variable.h"
+#include "drake/common/symbolic.h"
 
 namespace drake {
 namespace solvers {

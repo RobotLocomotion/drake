@@ -6,9 +6,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/symbolic_environment.h"
-#include "drake/common/symbolic_expression.h"
-#include "drake/common/symbolic_variable.h"
+#include "drake/common/symbolic.h"
 #include "drake/common/test/symbolic_test_util.h"
 
 using std::function;

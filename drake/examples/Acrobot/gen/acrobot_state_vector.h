@@ -11,10 +11,6 @@
 #include <Eigen/Core>
 
 #include "drake/common/never_destroyed.h"
-// The following include was manually added. It was not added to the code
-// generator because the vast majority of the uses cases of the generated
-// classes do not require it. For more detail, see #5912 and #5737.
-#include "drake/common/symbolic_formula.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {

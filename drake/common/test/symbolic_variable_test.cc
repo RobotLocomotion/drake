@@ -1,5 +1,3 @@
-#include "drake/common/symbolic_variable.h"
-
 #include <map>
 #include <sstream>
 #include <unordered_map>
@@ -10,6 +8,7 @@
 #include <Eigen/Core>
 #include <gtest/gtest.h>
 
+#include "drake/common/symbolic.h"
 #include "drake/common/test/is_memcpy_movable.h"
 #include "drake/common/test/symbolic_test_util.h"
 

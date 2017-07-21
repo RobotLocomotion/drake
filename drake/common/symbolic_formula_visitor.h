@@ -1,9 +1,14 @@
 #pragma once
 
+#ifndef DRAKE_COMMON_SYMBOLIC_HEADER
+// TODO(soonho-tri): Change to #error, when #6613 merged.
+#warning Do not directly include this file. Include "drake/common/symbolic.h".
+#endif
+
 #include <utility>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/symbolic_formula.h"
+#include "drake/common/symbolic.h"
 
 namespace drake {
 namespace symbolic {

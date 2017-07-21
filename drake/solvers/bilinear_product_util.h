@@ -1,7 +1,6 @@
 #pragma once
 
-#include "drake/common/symbolic_expression.h"
-#include "drake/common/symbolic_polynomial.h"
+#include "drake/common/symbolic.h"
 #include "drake/solvers/decision_variable.h"
 
 namespace drake {

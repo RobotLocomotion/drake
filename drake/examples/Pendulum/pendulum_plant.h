@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "drake/common/symbolic_formula.h"
+#include "drake/common/symbolic.h"
 #include "drake/examples/Pendulum/gen/pendulum_state_vector.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_system.h"

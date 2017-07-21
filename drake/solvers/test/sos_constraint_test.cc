@@ -2,12 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/symbolic_expression.h"
-#include "drake/common/symbolic_formula.h"
-#include "drake/common/symbolic_monomial_util.h"
-#include "drake/common/symbolic_polynomial.h"
-#include "drake/common/symbolic_variable.h"
-#include "drake/common/symbolic_variables.h"
+#include "drake/common/symbolic.h"
 
 namespace drake {
 namespace solvers {

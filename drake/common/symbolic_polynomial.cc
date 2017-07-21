@@ -1,11 +1,10 @@
-#include "drake/common/symbolic_polynomial.h"
-
+// NOLINTNEXTLINE(build/include): Its header file is included in symbolic.h.
 #include <algorithm>
 #include <sstream>
 #include <stdexcept>
 #include <utility>
 
-#include "drake/common/symbolic_expression_visitor.h"
+#include "drake/common/symbolic.h"
 
 using std::ostream;
 using std::ostringstream;
