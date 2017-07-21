@@ -314,6 +314,7 @@ drake_cc_library(
     hdrs = [
         "system_transmogrifier.h",
         "system_transmogrifier_traits.h",
+        "system_type_tag.h",
         "transmogrifier_tag.h",
     ],
     deps = [

@@ -1,12 +1,17 @@
 #pragma once
 
+#include <map>
 #include <memory>
+#include <typeindex>
+#include <utility>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_transmogrifier_traits.h"
+#include "drake/systems/framework/system_type_tag.h"
 #include "drake/systems/framework/transmogrifier_tag.h"
 
 namespace drake {
@@ -18,148 +23,134 @@ namespace systems {
 /// Because it is not templated on any a System subclass, this class it can be
 /// used by LeafSystem without any direct knowledge of what subtypes being
 /// converted.  In other words, it enables a runtime flavor of the CRTP.
-///
-/// Only scalar types drawn from the following list are supported:
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
-///
 class SystemTransmogrifier {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SystemTransmogrifier)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SystemTransmogrifier);
 
-  /// A default-constructed object is a no-op object that returns nullptr for
-  /// all Convert() requests.  The MakeDefaultTransmogrifier() function is the
-  /// typical way to create a useful instance of this type.
-  SystemTransmogrifier() = default;
+  /// Creates an object that returns nullptr for all Convert() requests.  The
+  /// single-argument constructor below is the typical way to create a useful
+  /// instance of this type.
+  SystemTransmogrifier();
+
+  /// Creates an object that uses S's transmogrification copy constructor,
+  /// i.e., S<T>::S(const TransmogrifierTag&, const S<U>&).
+  ///
+  /// At most, only scalar types drawn from the following list are supported:
+  /// - double
+  /// - AutoDiffXd
+  /// - symbolic::Expression
+  ///
+  /// By default, all pairs drawn from the list can be used for T and U.
+  /// Systems may specialize transmogrifier::Traits to support fewer types,
+  /// or call Add<T, U>() on the returned object to support custom types.
+  ///
+  /// @tparam S is the System type to transmogrify
+  template <template <typename> class S>
+  explicit SystemTransmogrifier(SystemTypeTag<S>) : SystemTransmogrifier() {
+    using Expression = symbolic::Expression;
+    AddIfSupported<S, double,     double>();
+    AddIfSupported<S, AutoDiffXd, double>();
+    AddIfSupported<S, Expression, double>();
+    AddIfSupported<S, double,     AutoDiffXd>();
+    AddIfSupported<S, AutoDiffXd, AutoDiffXd>();
+    AddIfSupported<S, Expression, AutoDiffXd>();
+    AddIfSupported<S, double,     Expression>();
+    AddIfSupported<S, AutoDiffXd, Expression>();
+    AddIfSupported<S, Expression, Expression>();
+  }
+
+  /// Destructor.
+  ~SystemTransmogrifier();
+
+  /// A std::function used to transmogrify a System<U> into a System<T>.
+  template <typename T, typename U>
+  using TransmogrifierFunction =
+      std::function<std::unique_ptr<System<T>>(const System<U>&)>;
+
+  /// Registers the std::function to be used to transmogrify a System<U> into a
+  /// System<T>.  Any given pair of types can be added at most once.
+  template <typename T, typename U>
+  void Add(const TransmogrifierFunction<T, U>&);
 
   /// Transmogrifies a System<U> into a System<T>.  This is the API that
   /// LeafSystem uses to provide a default implementation of transmogrify.
-  /// The class overview explains the supported values of U and T.
-  //
+  ///
   /// @tparam U is the donor scalar type (to transmogrify from)
   /// @tparam T is the resulting scalar type (to transmogrify into)
   template <typename T, typename U>
-  std::unique_ptr<System<T>> Convert(const System<U>&) const {
-    // When we don't know a U -> T conversion, return nullptr.  We have member
-    // function template specializations below for the supported U x T matrix.
-    return nullptr;
-  }
+  std::unique_ptr<System<T>> Convert(const System<U>& other) const;
 
  private:
-  using Expression = symbolic::Expression;
+  using Func = std::function<void*(const void*)>;
+  void Insert(const std::type_info&, const std::type_info&, const Func&);
+  const Func& Find(const std::type_info&, const std::type_info&) const;
+  template <template <typename> class S, typename T, typename U>
+  void AddIfSupported();
 
-  // A std::function that transmogrifies System<U> to System<T>.
-  template <typename T, typename U>
-  using ConvertFunction =
-      std::function<std::unique_ptr<System<T>>(const System<U>&)>;
-
-  // Only allow MakeDefaultSystemTransmogrifier to call our Make().
-  template <template <typename> class S>
-  friend SystemTransmogrifier MakeDefaultSystemTransmogrifier();
-
-  // Factory method that takes a Converter struct template argument that
-  // provides a static template method Converter::Convert<T, U>.
-  template <typename Converter>
-  static SystemTransmogrifier Make() {
-    SystemTransmogrifier result;
-    // clang-format off
-    result.c00_ = &(Converter::template Convert<double,     double>);
-    result.c10_ = &(Converter::template Convert<AutoDiffXd, double>);
-    result.c20_ = &(Converter::template Convert<Expression, double>);
-    result.c01_ = &(Converter::template Convert<double,     AutoDiffXd>);
-    result.c11_ = &(Converter::template Convert<AutoDiffXd, AutoDiffXd>);
-    result.c21_ = &(Converter::template Convert<Expression, AutoDiffXd>);
-    result.c02_ = &(Converter::template Convert<double,     Expression>);
-    result.c12_ = &(Converter::template Convert<AutoDiffXd, Expression>);
-    result.c22_ = &(Converter::template Convert<Expression, Expression>);
-    // clang-format on
-    return result;
-  }
-
-  // The matrix of conversion functions.  Any or all may be null.
-  // clang-format off
-  ConvertFunction<double,     double>     c00_;
-  ConvertFunction<AutoDiffXd, double>     c10_;
-  ConvertFunction<Expression, double>     c20_;
-  ConvertFunction<double,     AutoDiffXd> c01_;
-  ConvertFunction<AutoDiffXd, AutoDiffXd> c11_;
-  ConvertFunction<Expression, AutoDiffXd> c21_;
-  ConvertFunction<double,     Expression> c02_;
-  ConvertFunction<AutoDiffXd, Expression> c12_;
-  ConvertFunction<Expression, Expression> c22_;
-  // clang-format on
+  // This maps from {T, U} pair to the Func that transmogrifies from U into T.
+  std::map<std::pair<std::type_index, std::type_index>, Func> funcs_;
 };
 
 #if !defined(DRAKE_DOXYGEN_CXX)
 
-// Declare the member function specializations that exist in our cc file.
-// These are the transmogrifications known to (and used by) the framework.
-template <> std::unique_ptr<System<double>>
-SystemTransmogrifier::Convert(const System<double>&) const;
-template <> std::unique_ptr<System<AutoDiffXd>>
-SystemTransmogrifier::Convert(const System<double>&) const;
-template <> std::unique_ptr<System<symbolic::Expression>>
-SystemTransmogrifier::Convert(const System<double>&) const;
-template <> std::unique_ptr<System<double>>
-SystemTransmogrifier::Convert(const System<AutoDiffXd>&) const;
-template <> std::unique_ptr<System<AutoDiffXd>>
-SystemTransmogrifier::Convert(const System<AutoDiffXd>&) const;
-template <> std::unique_ptr<System<symbolic::Expression>>
-SystemTransmogrifier::Convert(const System<AutoDiffXd>&) const;
-template <> std::unique_ptr<System<double>>
-SystemTransmogrifier::Convert(const System<symbolic::Expression>&) const;
-template <> std::unique_ptr<System<AutoDiffXd>>
-SystemTransmogrifier::Convert(const System<symbolic::Expression>&) const;
-template <> std::unique_ptr<System<symbolic::Expression>>
-SystemTransmogrifier::Convert(const System<symbolic::Expression>&) const;
-
-namespace detail {
-// Provide a Converter template argument for SystemTransmogrifier::Make().
-template <template <typename> class S>
-struct TransmogrifierTagConverter {
-  // Disable construction; only use static methods.
-  TransmogrifierTagConverter() = delete;
-
-  // Transmogrify an S<U> into an S<T> using the TransmogrifierTag constructor,
-  // i.e., S<T>::S(const TransmogrifierTag&, const S<U>&).  Throws an exception
-  // if the @p other object is not a System subclass of type S.
-  template <typename T, typename U>
-  static std::unique_ptr<System<T>> Convert(const System<U>& other) {
-    // Dispatch to an overload based on whether S<U> --> S<T> is supported.
-    auto supported =
-        typename transmogrifier::Traits<S>::template supported<T, U>{};
-    return TransmogrifierTagConverter::ConvertImpl<T, U>(other, supported);
-  }
-
- private:
-  // When Traits says that transmogrification is supported.
-  template <typename T, typename U>
-  static std::unique_ptr<System<T>> ConvertImpl(
-      const System<U>& other, std::true_type) {
-    const auto& my_other = dynamic_cast<const S<U>&>(other);
-    return std::make_unique<S<T>>(TransmogrifierTag{}, my_other);
-  }
-
-  // When Traits says not to transmogrify.
-  template <typename T, typename U>
-  static std::unique_ptr<System<T>> ConvertImpl(
-      const System<U>& other, std::false_type) {
-    return nullptr;
-  }
-};
-}  // namespace detail
-
-#endif  // !defined(DRAKE_DOXYGEN_CXX)
-
-/// Factory method that creates a transmogrifier using the transmogrification
-/// copy constructor, i.e., S<T>::S(const TransmogrifierTag&, const S<U>&).
-///
-/// @tparam S is the System type to transmogrify
-template <template <typename> class S>
-SystemTransmogrifier MakeDefaultSystemTransmogrifier() {
-  return SystemTransmogrifier::Make<detail::TransmogrifierTagConverter<S>>();
+template <typename T, typename U>
+void SystemTransmogrifier::Add(const TransmogrifierFunction<T, U>& func) {
+  // Make sure func contains a target (i.e., is not null-ish).
+  DRAKE_ASSERT(static_cast<bool>(func));
+  // Copy func into a lambda that ends up copied into our Impl, keyed on the
+  // typeid's of T and U..  The lambda casts between T*,U* and void*,void* in
+  // order to have a non-templated signature and thus fit into a homogeneously-
+  // typed std::map.
+  Insert(typeid(T), typeid(U), [func](const void* bare_u) {
+    DRAKE_ASSERT(bare_u);
+    const System<U>& other = *static_cast<const System<U>*>(bare_u);
+    return func(other).release();
+  });
 }
+
+template <typename T, typename U>
+std::unique_ptr<System<T>> SystemTransmogrifier::Convert(
+    const System<U>& other) const {
+  // Lookup the lambda that Add() stored and call it.  If Find() does not see a
+  // match, it will return a Func that yields null, _not_ a null-ish Func.
+  const Func& converter = Find(typeid(T), typeid(U));
+  System<T>* const result = static_cast<System<T>*>(converter(&other));
+  return std::unique_ptr<System<T>>(result);
+}
+
+namespace system_transmogrifier_detail {
+// When Traits says that transmogrification is supported.
+template <template <typename> class S, typename T, typename U>
+static std::unique_ptr<System<T>> Make(
+    const System<U>& other, std::true_type) {
+  const auto& my_other = dynamic_cast<const S<U>&>(other);
+  return std::make_unique<S<T>>(TransmogrifierTag{}, my_other);
+}
+// When Traits says not to transmogrify.
+template <template <typename> class S, typename T, typename U>
+static std::unique_ptr<System<T>> Make(
+    const System<U>&, std::false_type) {
+  // AddIfSupported is guaranteed not to call us, but we *will* be compiled,
+  // so we have to have some kind of function body.
+  DRAKE_ABORT();
+}
+}  // namespace system_transmogrifier_detail
+
+// Add transmogrifier for S<U> into an S<T>, iff Traits says its supported.
+template <template <typename> class S, typename T, typename U>
+void SystemTransmogrifier::AddIfSupported() {
+  using supported =
+      typename transmogrifier::Traits<S>::template supported<T, U>;
+  if (supported::value) {
+    const TransmogrifierFunction<T, U> func = [](const System<U>& other) {
+      // Dispatch to an overload based on whether S<U> ==> S<T> is supported.
+      return system_transmogrifier_detail::Make<S, T, U>(other, supported{});
+    };
+    Add(func);
+  }
+}
+
+#endif  // DRAKE_DOXYGEN_CXX
 
 }  // namespace systems
 }  // namespace drake

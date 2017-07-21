@@ -226,7 +226,7 @@ class LeafSystem : public System<T> {
   // XXX
   template <template <typename> class S>
   void SetConcreteSubclass() {
-    default_transmogrifier_ = MakeDefaultSystemTransmogrifier<S>();
+    default_transmogrifier_ = SystemTransmogrifier(SystemTypeTag<S>{});
   }
 
   System<AutoDiffXd>* DoToAutoDiffXd() const override {

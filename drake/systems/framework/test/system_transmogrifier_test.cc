@@ -109,7 +109,7 @@ namespace {
 
 GTEST_TEST(SystemTransmogrifierTest, TestSystemA) {
   const SystemA<double> system_a_double{22};
-  const SystemTransmogrifier dut = MakeDefaultSystemTransmogrifier<SystemA>();
+  const SystemTransmogrifier dut(SystemTypeTag<SystemA>{});
 
   // Transmogrify to AutoDiffXd.
   const std::unique_ptr<System<AutoDiffXd>> system_autodiffxd =
@@ -140,7 +140,7 @@ GTEST_TEST(SystemTransmogrifierTest, TestSystemA) {
 
 GTEST_TEST(SystemTransmogrifierTest, TestSystemB) {
   const SystemB<double> system_b_double{22};
-  const SystemTransmogrifier dut = MakeDefaultSystemTransmogrifier<SystemB>();
+  const SystemTransmogrifier dut(SystemTypeTag<SystemB>{});
 
   // Transmogrify to AutoDiffXd.
   const std::unique_ptr<System<AutoDiffXd>> system_autodiffxd =
@@ -163,7 +163,7 @@ GTEST_TEST(SystemTransmogrifierTest, TestSystemB) {
 
 GTEST_TEST(SystemTransmogrifierTest, TestSystemC) {
   const SystemC<double> system_c_double{22};
-  const SystemTransmogrifier dut = MakeDefaultSystemTransmogrifier<SystemC>();
+  const SystemTransmogrifier dut(SystemTypeTag<SystemC>{});
 
   // Transmogrify to AutoDiffXd.
   const std::unique_ptr<System<AutoDiffXd>> system_autodiffxd =
