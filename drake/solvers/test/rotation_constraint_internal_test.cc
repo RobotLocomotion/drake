@@ -26,7 +26,7 @@ void CompareIntersectionResults(std::vector<Vector3d> desired,
       if ((desired[i] - actual[j]).lpNorm<2>() < tol) {
         used(j) = true;
         found_match = true;
-        continue;
+        break;
       }
     }
     EXPECT_TRUE(found_match);
