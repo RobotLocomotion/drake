@@ -175,13 +175,13 @@ class DrakeKukaIIwaRobot {
   }
 
  private:
-  /// Method to add revolute joint (mobilizer) from Body A to Body B.
-  /// @param[in] A     Mobilizer's inboard  body (frame AB will be welded to A).
-  /// @param[in] X_AAB Transform relating body A to frame AB.
-  /// @param[in] B     Mobilizer's outboard body (frame BA will be welded to B).
-  /// @param[in] X_BBA Transform relating body B to frame BA.
-  /// @param[in] revolute_unit_vector  Unit vector orienting the revolute joint.
-  /// @return RevoluteMobilizer from frame AB on Body A to frame BA on Body B.
+  // Method to add revolute joint (mobilizer) from Body A to Body B.
+  // @param[in] A     Mobilizer's inboard  body (frame AB will be welded to A).
+  // @param[in] X_AAB Transform relating body A to frame AB.
+  // @param[in] B     Mobilizer's outboard body (frame BA will be welded to B).
+  // @param[in] X_BBA Transform relating body B to frame BA.
+  // @param[in] revolute_unit_vector  Unit vector orienting the revolute joint.
+  // @return RevoluteMobilizer from frame AB on Body A to frame BA on Body B.
   const RevoluteMobilizer<double>& AddRevoluteMobilizer(
       const Body<double>& A, const Eigen::Isometry3d& X_AAB,
       const Body<double>& B, const Eigen::Isometry3d& X_BBA,
@@ -199,17 +199,17 @@ class DrakeKukaIIwaRobot {
                                                    revolute_unit_vector);
   }
 
-  /// Method to add revolute joint (mobilizer) from Body A to Body B.
-  /// @param[in] A     Mobilizer's inboard  body (frame AB will be welded to A).
-  /// @param[in] q123A SpaceXYZ angles describing the rotation matrix relating
-  ///                  unit vectors Ax, Ay, Az to soon-to-be created frame AB.
-  /// @param[in] xyzA  Ax, Ay, Az measures of the position from Ao to ABo.
-  /// @param[in] B     Mobilizer's outboard body (frame BA will be welded to B
-  ///                  so it is coincident with body B's frame). In other words,
-  ///                  mobilizer's outboard frame BA will be coincident with
-  ///                  the outboard body B.
-  /// @param[in] revolute_unit_vector  Unit vector orienting the revolute joint.
-  /// @return RevoluteMobilizer from frame AB on Body A to frame BA on Body B.
+  // Method to add revolute joint (mobilizer) from Body A to Body B.
+  // @param[in] A     Mobilizer's inboard  body (frame AB will be welded to A).
+  // @param[in] q123A SpaceXYZ angles describing the rotation matrix relating
+  //                  unit vectors Ax, Ay, Az to soon-to-be created frame AB.
+  // @param[in] xyzA  Ax, Ay, Az measures of the position from Ao to ABo.
+  // @param[in] B     Mobilizer's outboard body (frame BA will be welded to B
+  //                  so it is coincident with body B's frame). In other words,
+  //                  mobilizer's outboard frame BA will be coincident with
+  //                  the outboard body B.
+  // @param[in] revolute_unit_vector  Unit vector orienting the revolute joint.
+  // @return RevoluteMobilizer from frame AB on Body A to frame BA on Body B.
   const RevoluteMobilizer<double> &AddRevoluteMobilizerFromSpaceXYZAnglesAndXYZ(
       const Body<double>& A, const Vector3d& q123A, const Vector3d& xyzA,
       const Body<double>& B, const Vector3d& revolute_unit_vector) {
