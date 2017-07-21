@@ -15,7 +15,6 @@ set(sources
   drake_assert_and_throw.cc
   drake_path_cmake.cc
   find_resource.cc
-  functional_form.cc
   nice_type_name.cc
   polynomial.cc
   symbolic_environment.cc
@@ -57,7 +56,6 @@ set(installed_headers
   eigen_types.h
   extract_double.h
   find_resource.h
-  functional_form.h
   hash.h
   is_approx_equal_abstol.h
   is_cloneable.h
@@ -67,6 +65,7 @@ set(installed_headers
   polynomial.h
   scoped_singleton.h
   sorted_vectors_have_intersection.h
+  symbolic.h
   symbolic_environment.h
   symbolic_expression.h
   symbolic_expression_visitor.h

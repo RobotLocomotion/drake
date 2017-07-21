@@ -1,5 +1,10 @@
 #pragma once
 
+#ifndef DRAKE_COMMON_SYMBOLIC_HEADER
+// TODO(soonho-tri): Change to #error, when #6613 merged.
+#warning Do not directly include this file. Include "drake/common/symbolic.h".
+#endif
+
 #include <algorithm>  // for cpplint only
 #include <cstddef>
 #include <functional>
@@ -21,9 +26,7 @@
 #include "drake/common/hash.h"
 #include "drake/common/number_traits.h"
 #include "drake/common/polynomial.h"
-#include "drake/common/symbolic_environment.h"
-#include "drake/common/symbolic_variable.h"
-#include "drake/common/symbolic_variables.h"
+#include "drake/common/symbolic.h"
 
 namespace drake {
 
@@ -228,7 +231,7 @@ class Expression {
    *  Note that the ID of a variable is preserved in this translation.
    *  \pre{is_polynomial() is true.}
    */
-  Polynomial<double> ToPolynomial() const;
+  Polynomiald ToPolynomial() const;
 
   /** Evaluates under a given environment (by default, an empty environment).
    *  @throws std::runtime_error if NaN is detected during evaluation.
@@ -492,9 +495,6 @@ Expression if_then_else(const Formula& f_cond, const Expression& e_then,
  * than its name and a set of its arguments. This is useful to applications
  * where it is good enough to provide abstract information of a function without
  * exposing full details. Declaring sparsity of a system is a typical example.
- *
- * See also `FunctionalForm::Arbitrary(Variables v)` which shares the same
- * motivation.
  */
 Expression uninterpreted_function(const std::string& name,
                                   const Variables& vars);

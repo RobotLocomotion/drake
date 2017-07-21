@@ -26,8 +26,8 @@ void ContactResults<T>::Clear() {
 
 template <typename T>
 ContactInfo<T>& ContactResults<T>::AddContact(
-    DrakeCollision::ElementId element_a,
-    DrakeCollision::ElementId element_b) {
+    drake::multibody::collision::ElementId element_a,
+    drake::multibody::collision::ElementId element_b) {
   contacts_.emplace_back(element_a, element_b);
   return contacts_.back();
 }

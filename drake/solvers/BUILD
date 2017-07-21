@@ -56,8 +56,6 @@ drake_cc_library(
         "//drake/common:number_traits",
         "//drake/common:polynomial",
         "//drake/common:symbolic",
-        "//drake/common:symbolic_monomial",
-        "//drake/common:symbolic_polynomial",
     ],
 )
 
@@ -72,7 +70,6 @@ drake_cc_library(
         "//drake/common",
         "//drake/common:polynomial",
         "//drake/common:symbolic",
-        "//drake/common:symbolic_monomial",
     ],
 )
 
@@ -87,8 +84,6 @@ drake_cc_library(
         "//drake/common",
         "//drake/common:polynomial",
         "//drake/common:symbolic",
-        "//drake/common:symbolic_monomial",
-        "//drake/common:symbolic_polynomial",
         "//drake/common:unused",
     ],
 )
@@ -199,8 +194,6 @@ drake_cc_library(
         "//drake/common:number_traits",
         "//drake/common:polynomial",
         "//drake/common:symbolic",
-        "//drake/common:symbolic_monomial",
-        "//drake/common:symbolic_polynomial",
     ],
 )
 
@@ -211,7 +204,6 @@ drake_cc_library(
     deps = [
         ":decision_variable",
         "//drake/common:symbolic",
-        "//drake/common:symbolic_polynomial",
     ],
 )
 
@@ -746,7 +738,7 @@ drake_cc_googletest(
         ":mathematical_program_test_util",
         "//drake/common:eigen_matrix_compare",
         "//drake/common:is_dynamic_castable",
-        "//drake/common:symbolic_polynomial",
+        "//drake/common:symbolic",
         "//drake/common:symbolic_test_util",
     ],
 )
@@ -812,6 +804,17 @@ drake_cc_googletest(
     tags = gurobi_test_tags() + mosek_test_tags() + ["no_tsan"],
     deps = [
         ":gurobi_solver",
+        ":mathematical_program",
+        ":rotation_constraint",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rotation_constraint_internal_test",
+    tags = mosek_test_tags() + gurobi_test_tags() + ["no_tsan"],
+    deps = [
         ":mathematical_program",
         ":rotation_constraint",
         "//drake/common:eigen_matrix_compare",

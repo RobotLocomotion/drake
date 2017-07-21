@@ -36,9 +36,6 @@ target_link_libraries(extract_double_test drakeCommon)
 add_executable(find_resource_test find_resource_test.cc)
 target_link_libraries(find_resource_test drakeCommon GTest::GTest GTest::Main)
 
-drake_add_cc_test(functional_form_test)
-target_link_libraries(functional_form_test drakeCommon)
-
 drake_add_cc_test(is_approx_equal_abstol_test)
 target_link_libraries(is_approx_equal_abstol_test drakeCommon)
 

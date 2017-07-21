@@ -19,7 +19,7 @@ using std::string;
 using std::unique_ptr;
 using std::vector;
 
-using DrakeCollision::ElementId;
+using drake::multibody::collision::ElementId;
 
 namespace drake {
 namespace systems {

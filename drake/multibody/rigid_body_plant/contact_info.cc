@@ -6,8 +6,8 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-ContactInfo<T>::ContactInfo(DrakeCollision::ElementId element1,
-                            DrakeCollision::ElementId element2)
+ContactInfo<T>::ContactInfo(drake::multibody::collision::ElementId element1,
+                            drake::multibody::collision::ElementId element2)
     : element1_(element1),
       element2_(element2),
       resultant_force_(),

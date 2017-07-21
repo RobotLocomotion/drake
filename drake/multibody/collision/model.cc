@@ -2,12 +2,16 @@
 
 #include <iostream>
 
+#include "drake/common/drake_assert.h"
+
 using Eigen::Isometry3d;
 using std::move;
 using std::unique_ptr;
 using std::vector;
 
-namespace DrakeCollision {
+namespace drake {
+namespace multibody {
+namespace collision {
 
 Element* Model::AddElement(std::unique_ptr<Element> element) {
   ElementId id = element->getId();
@@ -24,7 +28,7 @@ Element* Model::AddElement(std::unique_ptr<Element> element) {
       std::to_string(id));
 }
 
-bool Model::removeElement(ElementId id) {
+bool Model::RemoveElement(ElementId id) {
   return elements.erase(id) > 0;
 }
 
@@ -46,17 +50,18 @@ Element* Model::FindMutableElement(ElementId id) {
   }
 }
 
-void Model::getTerrainContactPoints(ElementId id0,
-                                    Eigen::Matrix3Xd& terrain_points) {
+void Model::GetTerrainContactPoints(ElementId id0,
+                                    Eigen::Matrix3Xd* terrain_points) {
+  DRAKE_DEMAND(terrain_points != nullptr);
   auto element_iter = elements.find(id0);
   if (element_iter != elements.end()) {
-    element_iter->second->getTerrainContactPoints(terrain_points);
+    element_iter->second->getTerrainContactPoints(*terrain_points);
   } else {
-    terrain_points = Eigen::Matrix3Xd();
+    *terrain_points = Eigen::Matrix3Xd();
   }
 }
 
-bool Model::updateElementWorldTransform(ElementId id,
+bool Model::UpdateElementWorldTransform(ElementId id,
                                         const Isometry3d& X_WL) {
   auto elem_itr = elements.find(id);
   if (elem_itr != elements.end()) {
@@ -67,8 +72,8 @@ bool Model::updateElementWorldTransform(ElementId id,
   }
 }
 
-bool Model::transformCollisionFrame(
-    const DrakeCollision::ElementId& eid,
+bool Model::TransformCollisionFrame(
+    const drake::multibody::collision::ElementId& eid,
     const Eigen::Isometry3d& transform_body_to_joint) {
   auto element = elements.find(eid);
   if (element != elements.end()) {
@@ -101,4 +106,6 @@ std::ostream& operator<<(std::ostream& os, const Model& model) {
   return os;
 }
 
-}  // namespace DrakeCollision
+}  // namespace collision
+}  // namespace multibody
+}  // namespace drake

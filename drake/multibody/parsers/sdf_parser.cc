@@ -266,7 +266,7 @@ void ParseSdfCollision(RigidBody<double>* body, XMLElement* node,
                         " has a collision element without a geometry.");
   }
 
-  DrakeCollision::Element element(
+  drake::multibody::collision::Element element(
       transform_parent_to_model.inverse() * transform_to_model, body);
 
   if (!ParseSdfGeometry(geometry_node, package_map, root_dir, element)) {

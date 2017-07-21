@@ -53,11 +53,15 @@ class ContactInfo {
    @param element1      The identifier for the first collision element.
    @param element2      The identifier for the second collision element.
    */
-  ContactInfo(DrakeCollision::ElementId element1,
-              DrakeCollision::ElementId element2);
+  ContactInfo(drake::multibody::collision::ElementId element1,
+              drake::multibody::collision::ElementId element2);
 
-  DrakeCollision::ElementId get_element_id_1() const { return element1_; }
-  DrakeCollision::ElementId get_element_id_2() const { return element2_; }
+  drake::multibody::collision::ElementId get_element_id_1() const {
+    return element1_;
+  }
+  drake::multibody::collision::ElementId get_element_id_2() const {
+    return element2_;
+  }
 
   void set_resultant_force(const ContactForce<T> force) {
     resultant_force_ = force;
@@ -87,8 +91,8 @@ class ContactInfo {
   }
 
  private:
-  DrakeCollision::ElementId element1_{};
-  DrakeCollision::ElementId element2_{};
+  drake::multibody::collision::ElementId element1_{};
+  drake::multibody::collision::ElementId element2_{};
   ContactForce<T> resultant_force_;
   std::vector<copyable_unique_ptr<ContactDetail<T>>> contact_details_;
 };

@@ -38,12 +38,10 @@ drake_cc_binary(
     srcs = [
         "double_pendulum_demo.cc",
     ],
-    add_test_rule = 1,
     data = [
         ":models",
         "//tools:drake_visualizer",
     ],
-    test_rule_args = [" --simulation_time=0.01"],
     deps = [
         ":sdf_helpers",
         "//drake/common",

@@ -160,7 +160,8 @@ GTEST_TEST(ByHandAnchoredGeometry, WorldCollisionElementIsAnchored) {
   RigidBodyTree<double> tree;
   RigidBody<double>& world = tree.world();
   DrakeShapes::Box geom(Vector3d(1.0, 1.0, 1.0));
-  DrakeCollision::Element element(geom, Isometry3d::Identity(), &world);
+  drake::multibody::collision::Element element(geom, Isometry3d::Identity(),
+                                               &world);
   tree.addCollisionElement(element, world, "rigid_body");
   tree.compile();
 

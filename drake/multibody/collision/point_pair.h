@@ -4,7 +4,9 @@
 
 #include "drake/multibody/collision/element.h"
 
-namespace DrakeCollision {
+namespace drake {
+namespace multibody {
+namespace collision {
 
 /** Structure containing the results of a collision query. **/
 struct PointPair {
@@ -45,4 +47,6 @@ struct PointPair {
   double distance{};
 };
 
-}  // namespace DrakeCollision
+}  // namespace collision
+}  // namespace multibody
+}  // namespace drake

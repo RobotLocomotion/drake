@@ -8,7 +8,9 @@ using Eigen::Isometry3d;
 using drake::SortedVectorsHaveIntersection;
 using std::ostream;
 
-namespace DrakeCollision {
+namespace drake {
+namespace multibody {
+namespace collision {
 
 Element::Element()
     : DrakeShapes::Element(Eigen::Isometry3d::Identity()), body_(nullptr) {
@@ -81,14 +83,15 @@ const std::vector<int>& Element::collision_cliques() const {
   return collision_cliques_;
 }
 
-void Element::set_collision_filter(const DrakeCollision::bitmask &group,
-                                   const DrakeCollision::bitmask &ignores) {
+void Element::set_collision_filter(
+    const drake::multibody::collision::bitmask& group,
+    const drake::multibody::collision::bitmask& ignores) {
   collision_filter_group_ = group;
   collision_filter_ignores_ = ignores;
 }
 
 ostream& operator<<(ostream& out, const Element& ee) {
-  out << "DrakeCollision::Element:\n"
+  out << "drake::multibody::collision::Element:\n"
       << "  - id = " << ee.getId() << "\n"
       << "  - T_element_to_world =\n"
       << ee.T_element_to_world.matrix() << "\n"
@@ -98,4 +101,6 @@ ostream& operator<<(ostream& out, const Element& ee) {
   return out;
 }
 
-}  // namespace DrakeCollision
+}  // namespace collision
+}  // namespace multibody
+}  // namespace drake
