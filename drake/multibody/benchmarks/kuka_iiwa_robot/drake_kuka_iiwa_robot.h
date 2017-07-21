@@ -174,7 +174,7 @@ class DrakeKukaIIwaRobot {
     return std::make_tuple(R_NG, p_NoGo_N, w_NG_N, v_NGo_N, alpha_NG_N, a_NG_N);
   }
 
- protected:
+ private:
   /// Method to add revolute joint (mobilizer) from Body A to Body B.
   /// @param[in] A     Mobilizer's inboard  body (frame AB will be welded to A).
   /// @param[in] X_AAB Transform relating body A to frame AB.
@@ -224,7 +224,6 @@ class DrakeKukaIIwaRobot {
     return AddRevoluteMobilizer(A, X_AAB, B, X_BBA, revolute_unit_vector);
   }
 
- private:
   // Helper method to extract a pose from the position kinematics.
   // TODO(amcastro-tri): When cache entries are placed in the context, replace
   // by method Body<T>::get_pose_in_world(const systems::Context<T>&).
