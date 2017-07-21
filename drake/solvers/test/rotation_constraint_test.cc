@@ -203,7 +203,7 @@ class TestMcCormick : public ::testing::TestWithParam<std::tuple<bool, int>> {
       Eigen::Matrix<double, 9, 1>::Zero(),
       {R_.col(0), R_.col(1), R_.col(2)}).constraint()} {
     if (replace_bilinear_product_) {
-      AddRotationMatrixBilinearTermMcCormickEnvelopeMilpConstraints(
+      AddRotationMatrixBilinearMcCormickMilpConstraints(
           &prog_, R_, num_intervals_per_half_axis_);
     } else {
       AddRotationMatrixMcCormickEnvelopeMilpConstraints(
@@ -220,10 +220,9 @@ class TestMcCormick : public ::testing::TestWithParam<std::tuple<bool, int>> {
  protected:
   MathematicalProgram prog_;
   MatrixDecisionVariable<3, 3> R_;
-  bool replace_bilinear_product_; // If true, replace the bilinear product with
-                                  // another varaible in the McCormick envelope.
-                                  // Otherwise, relax the surface of the unit
-                                  // sphere to its convex hull.
+  bool replace_bilinear_product_;  // If true, replace the bilinear product with
+  // another varaible in the McCormick envelope. Otherwise, relax the surface of
+  // the unit sphere to its convex hull.
   int num_intervals_per_half_axis_;
   std::shared_ptr<LinearEqualityConstraint> feasibility_constraint_;
 };

@@ -150,10 +150,14 @@ AddRotationMatrixMcCormickEnvelopeMilpConstraints(
     int num_binary_vars_per_half_axis = 2,
     RollPitchYawLimits limits = kNoLimits);
 
-template<int NumIntervalsPerHalfAxis>
-struct AddRotationMatrixBilinearTermMcCormickEnvelopeMilpConstraintsReturn {
-  typedef std::array<std::array<VectorDecisionVariable<NumIntervalsPerHalfAxis>, 3>, 3> BinaryVarType;
-  static constexpr int PhiRows = NumIntervalsPerHalfAxis == Eigen::Dynamic ? Eigen::Dynamic : 1 + 2 * NumIntervalsPerHalfAxis;
+template <int NumIntervalsPerHalfAxis>
+struct AddRotationMatrixBilinearMcCormickMilpConstraintsReturn {
+  typedef std::array<
+      std::array<VectorDecisionVariable<NumIntervalsPerHalfAxis>, 3>, 3>
+      BinaryVarType;
+  static constexpr int PhiRows = NumIntervalsPerHalfAxis == Eigen::Dynamic
+                                     ? Eigen::Dynamic
+                                     : 1 + 2 * NumIntervalsPerHalfAxis;
   typedef Eigen::Matrix<double, PhiRows, 1> PhiType;
   typedef std::pair<BinaryVarType, PhiType> type;
 };
@@ -183,12 +187,14 @@ struct AddRotationMatrixBilinearTermMcCormickEnvelopeMilpConstraintsReturn {
  * interval [φ(M), φ(M+1)]. φ contains the end points of the all the intervals,
  * namely φ(i) = -1 + 1 / num_intervals_per_half_axis * i.
  */
-template<int NumIntervalsPerHalfAxis = Eigen::Dynamic>
-typename std::enable_if<NumIntervalsPerHalfAxis == Eigen::Dynamic || NumIntervalsPerHalfAxis >= 1,
-                        typename AddRotationMatrixBilinearTermMcCormickEnvelopeMilpConstraintsReturn<NumIntervalsPerHalfAxis>::type>::type
-AddRotationMatrixBilinearTermMcCormickEnvelopeMilpConstraints(
-    MathematicalProgram* prog,
-    const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
+template <int NumIntervalsPerHalfAxis = Eigen::Dynamic>
+typename std::enable_if<
+    NumIntervalsPerHalfAxis == Eigen::Dynamic || NumIntervalsPerHalfAxis >= 1,
+    typename AddRotationMatrixBilinearMcCormickMilpConstraintsReturn<
+        NumIntervalsPerHalfAxis>::type>::type
+AddRotationMatrixBilinearMcCormickMilpConstraints(
+    MathematicalProgram *prog,
+    const Eigen::Ref<const MatrixDecisionVariable<3, 3>> &R,
     int num_intervlas_per_half_axis = NumIntervalsPerHalfAxis);
 }  // namespace solvers
 }  // namespace drake
