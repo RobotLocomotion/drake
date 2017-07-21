@@ -34,8 +34,8 @@ class QuadrotorPlant : public systems::LeafSystem<T> {
     context->get_mutable_continuous_state_vector()->SetFromVector(x);
   }
 
-  T  m() const { return m_; }
-  T  g() const { return g_; }
+  double m() const { return m_; }
+  double g() const { return g_; }
 
  protected:
   void CopyStateOut(const systems::Context<T> &context,
@@ -57,14 +57,16 @@ class QuadrotorPlant : public systems::LeafSystem<T> {
     return false;
   }
 
-  // TODO(naveenoid): Declare these as parameters in the context.
  private:
-  const double g_{9.81},  // Gravitational acceleration (m/s^2).
-      m_{0.5},            // Mass of the robot (kg).
-      L_{0.175},          // Length of the arms (m).
-      kF_{1.0},           // Force input constant.
-      kM_{0.0245};        // Moment input constant.
-  int kStateDimension{12}, kInputDimension{4};
+  static constexpr int kStateDimension{12};
+  static constexpr int kInputDimension{4};
+
+  // TODO(naveenoid): Declare these as parameters in the context.
+  const double g_{9.81};     // Gravitational acceleration (m/s^2).
+  const double m_{0.5};      // Mass of the robot (kg).
+  const double L_{0.175};    // Length of the arms (m).
+  const double kF_{1.0};     // Force input constant.
+  const double kM_{0.0245};  // Moment input constant.
   const Matrix3<T> I_{
       ((Eigen::Matrix3d() << 0.0023, 0, 0, 0, 0.0023, 0, 0, 0, 0.0040)
            .finished())};  // Moment of Inertia about the Center of Mass
