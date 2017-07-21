@@ -70,23 +70,7 @@ Step 4: Install Drake's Dependencies
 ====================================
 
 Drake includes a convenient Ubuntu 16.04 shell script that installs all of
-its dependencies. This script is located in
-``~/dev/drake_catkin_workspace/src/drake/setup/ubuntu/16.04/install_prereqs.sh``.
-
-There is currently a conflict between Drake's need for ``libvtk5-dev`` and
-ROS Kinetic's need for ``libvtk6-dev``. To resolve this issue, we do the
-following:
-
-Open
-``~/dev/drake_catkin_workspace/src/drake/setup/ubuntu/16.04/install_prereqs.sh``
-and delete the following lines::
-
-    libvtk-java
-    libvtk5-dev
-    libvtk5-qt4-dev
-    python-vtk
-
-Then execute the script::
+its dependencies::
 
     cd ~/dev/drake_catkin_workspace/src/drake/setup/ubuntu/16.04
     sudo ./install_prereqs.sh

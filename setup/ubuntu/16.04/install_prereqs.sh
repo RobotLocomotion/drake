@@ -89,9 +89,9 @@ libqt5x11extras5
 libqwt-dev
 libtinyxml-dev
 libtool
-libvtk-java
-libvtk5-dev
-libvtk5-qt4-dev
+libvtk6-java
+libvtk6-dev
+libvtk6-qt4-dev
 libxmu-dev
 make
 ninja-build
