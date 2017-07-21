@@ -961,12 +961,12 @@ void AddOrthogonalAndCrossProductConstraintRelaxationReplacingBilinearProduct(
         NumIntervalsPerHalfAxis>::PhiType& phi,
     const typename AddRotationMatrixBilinearMcCormickMilpConstraintsReturn<
         NumIntervalsPerHalfAxis>::BinaryVarType& B,
-    const std::array<std::array<VectorDecisionVariable<
-                                    NumIntervalsPerHalfAxis == Eigen::Dynamic
-                                        ? Eigen::Dynamic
-                                        : 2 * NumIntervalsPerHalfAxis + 1>,
-                                3>,
-                     3>& lambda) {
+    const std::array<
+        std::array<VectorDecisionVariable<
+                       AddRotationMatrixBilinearMcCormickMilpConstraintsReturn<
+                           NumIntervalsPerHalfAxis>::PhiRows>,
+                   3>,
+        3>& lambda) {
   VectorDecisionVariable<9> R_flat;
   R_flat << R.col(0), R.col(1), R.col(2);
   MatrixDecisionVariable<9, 9> W;
