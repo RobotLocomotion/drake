@@ -1,12 +1,14 @@
-#include "drake/common/symbolic_monomial.h"
-
+// NOLINTNEXTLINE(build/include): Its header file is included in symbolic.h.
 #include <map>
 #include <numeric>
 #include <stdexcept>
 #include <utility>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/symbolic.h"
+#define DRAKE_COMMON_SYMBOLIC_DETAIL_HEADER
 #include "drake/common/symbolic_expression_cell.h"
+#undef DRAKE_COMMON_SYMBOLIC_DETAIL_HEADER
 
 namespace drake {
 namespace symbolic {

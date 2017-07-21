@@ -1,9 +1,7 @@
-#include "drake/common/symbolic_expression.h"
-
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
-#include "drake/common/symbolic_formula.h"
+#include "drake/common/symbolic.h"
 #include "drake/math/rotation_matrix.h"
 
 namespace drake {

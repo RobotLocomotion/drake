@@ -8,9 +8,7 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/symbolic_expression.h"
-#include "drake/common/symbolic_formula.h"
-#include "drake/common/symbolic_monomial.h"
+#include "drake/common/symbolic.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/constraint.h"
 
@@ -23,8 +21,7 @@ namespace detail {
  * Determine if an EigenBase<> has a specific scalar type.
  */
 template <typename Derived, typename Scalar>
-struct is_eigen_scalar_same
-    : std::is_same<typename Derived::Scalar, Scalar> {};
+struct is_eigen_scalar_same : std::is_same<typename Derived::Scalar, Scalar> {};
 
 /*
  * Determine if an EigenBase<> type is a (column) vector.
@@ -39,8 +36,8 @@ struct is_eigen_vector
 template <typename Derived, typename Scalar>
 struct is_eigen_vector_of
     : std::integral_constant<
-        bool, detail::is_eigen_scalar_same<Derived, Scalar>::value &&
-            detail::is_eigen_vector<Derived>::value> {};
+          bool, detail::is_eigen_scalar_same<Derived, Scalar>::value &&
+                    detail::is_eigen_vector<Derived>::value> {};
 
 /*
  * Determine if a EigenBase<> type is a matrix (non-column-vector) of a scalar

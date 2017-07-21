@@ -1,5 +1,4 @@
-#include "drake/common/symbolic_expression.h"
-
+// NOLINTNEXTLINE(build/include): Its header file is included in symbolic.h.
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
@@ -13,11 +12,10 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/never_destroyed.h"
-#include "drake/common/symbolic_environment.h"
+#include "drake/common/symbolic.h"
+#define DRAKE_COMMON_SYMBOLIC_DETAIL_HEADER
 #include "drake/common/symbolic_expression_cell.h"
-#include "drake/common/symbolic_formula.h"
-#include "drake/common/symbolic_variable.h"
-#include "drake/common/symbolic_variables.h"
+#undef DRAKE_COMMON_SYMBOLIC_DETAIL_HEADER
 
 namespace drake {
 namespace symbolic {
@@ -150,7 +148,7 @@ bool Expression::is_polynomial() const {
   return ptr_->is_polynomial();
 }
 
-Polynomial<double> Expression::ToPolynomial() const {
+Polynomiald Expression::ToPolynomial() const {
   DRAKE_ASSERT(ptr_ != nullptr);
   return ptr_->ToPolynomial();
 }

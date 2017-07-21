@@ -1,5 +1,3 @@
-#include "drake/common/symbolic_formula.h"
-
 #include <algorithm>
 #include <cmath>
 #include <exception>
@@ -15,10 +13,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
-#include "drake/common/symbolic_environment.h"
-#include "drake/common/symbolic_expression.h"
-#include "drake/common/symbolic_variable.h"
-#include "drake/common/symbolic_variables.h"
+#include "drake/common/symbolic.h"
 #include "drake/common/test/is_memcpy_movable.h"
 #include "drake/common/test/symbolic_test_util.h"
 

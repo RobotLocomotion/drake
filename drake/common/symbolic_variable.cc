@@ -1,5 +1,4 @@
-#include "drake/common/symbolic_variable.h"
-
+// NOLINTNEXTLINE(build/include): Its header file is included in symbolic.h.
 #include <atomic>
 #include <iostream>
 #include <memory>
@@ -9,6 +8,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/never_destroyed.h"
+#include "drake/common/symbolic.h"
 
 using std::atomic;
 using std::make_shared;

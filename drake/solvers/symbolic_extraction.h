@@ -6,9 +6,7 @@
 #include <utility>
 
 #include "drake/common/eigen_types.h"
-#include "drake/common/symbolic_expression.h"
-#include "drake/common/symbolic_monomial.h"
-#include "drake/common/symbolic_polynomial.h"
+#include "drake/common/symbolic.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/decision_variable.h"
 

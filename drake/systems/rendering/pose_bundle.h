@@ -9,7 +9,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/symbolic_expression.h"
+#include "drake/common/symbolic.h"
 #include "drake/systems/rendering/frame_velocity.h"
 
 namespace drake {

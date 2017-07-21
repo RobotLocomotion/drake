@@ -1,5 +1,3 @@
-#include "drake/common/symbolic_expression.h"
-
 #include <algorithm>
 #include <cmath>
 #include <functional>
@@ -17,10 +15,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/hash.h"
-#include "drake/common/symbolic_environment.h"
-#include "drake/common/symbolic_formula.h"
-#include "drake/common/symbolic_variable.h"
-#include "drake/common/symbolic_variables.h"
+#include "drake/common/symbolic.h"
 #include "drake/common/test/is_memcpy_movable.h"
 #include "drake/common/test/symbolic_test_util.h"
 
@@ -529,7 +524,7 @@ TEST_F(SymbolicExpressionTest, IsPolynomial) {
 
 TEST_F(SymbolicExpressionTest, ToPolynomial1) {
   Environment env{{var_x_, 1.0}, {var_y_, 2.0}, {var_z_, 3.0}};
-  const map<Polynomial<double>::VarType, double> eval_point{
+  const map<Polynomiald::VarType, double> eval_point{
       {var_x_.get_id(), env[var_x_]},
       {var_y_.get_id(), env[var_y_]},
       {var_z_.get_id(), env[var_z_]}};

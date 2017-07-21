@@ -1,4 +1,6 @@
+#define DRAKE_COMMON_SYMBOLIC_DETAIL_HEADER
 #include "drake/common/symbolic_formula_cell.h"
+#undef DRAKE_COMMON_SYMBOLIC_DETAIL_HEADER
 
 #include <algorithm>
 #include <iostream>
@@ -10,11 +12,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_compat.h"
 #include "drake/common/hash.h"
-#include "drake/common/symbolic_environment.h"
-#include "drake/common/symbolic_expression.h"
-#include "drake/common/symbolic_formula.h"
-#include "drake/common/symbolic_variable.h"
-#include "drake/common/symbolic_variables.h"
+#include "drake/common/symbolic.h"
 #include "drake/math/matrix_util.h"
 
 namespace drake {
