@@ -114,6 +114,12 @@ target_link_libraries(drakeMixedIntegerOptimizationUtil
 drake_install_headers(
         mixed_integer_optimization_util.h
 )
+drake_install_pkg_config_file(drake-mixed-integer-optimization-util
+        TARGET drakeMixedIntegerOptimizationUtil
+        LIBS -ldrakeMixedIntegerOptimizationUtil
+        REQUIRES
+        drake-math
+        drake-optimization)
 
 add_library_with_exports(LIB_NAME drakeBilinearProductUtil SOURCE_FILES bilinear_product_util.cc)
 target_link_libraries(drakeBilinearProductUtil
@@ -121,6 +127,11 @@ target_link_libraries(drakeBilinearProductUtil
 drake_install_headers(
         bilinear_product_util.h
 )
+drake_install_pkg_config_file(drake-bilinear-product-util
+        TARGET drakeBilinearProductUtil
+        LIBS -ldrakeBilinearProductUtil
+        REQUIRES
+        drake-common)
 
 add_library_with_exports(LIB_NAME drakeRotationConstraint SOURCE_FILES rotation_constraint.cc)
 target_link_libraries(drakeRotationConstraint
@@ -134,7 +145,9 @@ drake_install_pkg_config_file(drake-rotation-constraint
         TARGET drakeRotationConstraint
         LIBS -ldrakeRotationConstraint
         REQUIRES
+        drake-bilinear-product-util
         drake-common
+        drake-mixed-integer-optimization-util
         drake-optimization)
 
 drake_install_libraries(drakeRotationConstraint)
