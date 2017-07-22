@@ -111,6 +111,7 @@ add_library_with_exports(LIB_NAME drakeMixedIntegerOptimizationUtil SOURCE_FILES
 target_link_libraries(drakeMixedIntegerOptimizationUtil
         drakeMath
         drakeOptimization)
+drake_install_libraries(drakeMixedIntegerOptimizationUtil)
 drake_install_headers(
         mixed_integer_optimization_util.h
 )
@@ -124,6 +125,7 @@ drake_install_pkg_config_file(drake-mixed-integer-optimization-util
 add_library_with_exports(LIB_NAME drakeBilinearProductUtil SOURCE_FILES bilinear_product_util.cc)
 target_link_libraries(drakeBilinearProductUtil
         drakeCommon)
+drake_install_libraries(drakeBilinearProductUtil)
 drake_install_headers(
         bilinear_product_util.h
 )
