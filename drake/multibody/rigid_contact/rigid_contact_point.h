@@ -2,6 +2,7 @@
 
 #include <Eigen/Core>
 
+#include "drake/systems/framework/value.h"
 #include "drake/common/eigen_types.h"
 
 namespace drake {
@@ -17,7 +18,6 @@ namespace rigid_contact {
 /// use ancillary information (e.g., are Lagrange Multipliers zero?) and
 /// store the contact state (sliding, not sliding) to compose necessary
 /// constraint equations.
-template <class T>
 struct RigidContactPoint {
   enum class ContactSlidingState {
     /// The bodies are to be considered as sliding at this point of contact.
@@ -30,9 +30,9 @@ struct RigidContactPoint {
   /// Whether the contact is to be treated as sliding or not sliding.
   ContactSlidingState sliding_state;
 
-  /// The vector from the center-of-mass of the rigid body to the point of
-  /// contact, expressed in the body frame of one of the rigid bodies.
-  Vector3<T> u;
+  /// Abstract data sufficient to uniquely determine a point of contact between
+  /// two rigid bodies.
+  AbstractValue contact_point_key;
 };
 
 }  // namespace rigid_contact
