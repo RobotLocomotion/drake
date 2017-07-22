@@ -189,6 +189,42 @@ bool IsFeasibleCheck(
   return (prog->Solve() == kSolutionFound);
 }
 
+GTEST_TEST(RotationConstraint, TestAddStaticSizeNumIntervalsPerHalfAxis) {
+  MathematicalProgram prog;
+  auto R = NewRotationMatrixVars(&prog);
+  auto ret1 = AddRotationMatrixBilinearMcCormickMilpConstraints<1>(&prog, R);
+  static_assert(
+      std::is_same<
+          decltype(ret1),
+          std::pair<std::array<std::array<VectorDecisionVariable<1>, 3>, 3>,
+                    Eigen::Matrix<double, 3, 1>>>::value,
+      "Incorrect type.");
+
+  auto ret2 = AddRotationMatrixBilinearMcCormickMilpConstraints<2>(&prog, R);
+  static_assert(
+      std::is_same<
+          decltype(ret2),
+          std::pair<std::array<std::array<VectorDecisionVariable<2>, 3>, 3>,
+                    Eigen::Matrix<double, 5, 1>>>::value,
+      "Incorrect type.");
+
+  auto ret3 = AddRotationMatrixBilinearMcCormickMilpConstraints<3>(&prog, R);
+  static_assert(
+      std::is_same<
+          decltype(ret3),
+          std::pair<std::array<std::array<VectorDecisionVariable<3>, 3>, 3>,
+                    Eigen::Matrix<double, 7, 1>>>::value,
+      "Incorrect type.");
+
+  auto ret4 = AddRotationMatrixBilinearMcCormickMilpConstraints<4>(&prog, R);
+  static_assert(
+      std::is_same<
+          decltype(ret4),
+          std::pair<std::array<std::array<VectorDecisionVariable<3>, 3>, 3>,
+                    Eigen::Matrix<double, 9, 1>>>::value,
+      "Incorrect type.");
+}
+
 class TestMcCormick : public ::testing::TestWithParam<std::tuple<bool, int>> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestMcCormick)

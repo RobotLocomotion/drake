@@ -10,7 +10,6 @@
 
 #include "drake/math/cross_product.h"
 #include "drake/solvers/bilinear_product_util.h"
-#include "drake/solvers/mixed_integer_optimization_util.h"
 
 using std::numeric_limits;
 using drake::symbolic::Expression;
@@ -1234,6 +1233,12 @@ template AddRotationMatrixBilinearMcCormickMilpConstraintsReturn<
 AddRotationMatrixBilinearMcCormickMilpConstraints<3>(
     MathematicalProgram *prog,
     const Eigen::Ref<const MatrixDecisionVariable<3, 3>> &R,
+    int num_intervlas_per_half_axis);
+
+template AddRotationMatrixBilinearMcCormickMilpConstraintsReturn<4>::type
+AddRotationMatrixBilinearMcCormickMilpConstraints<4>(
+    MathematicalProgram* prog,
+    const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
     int num_intervlas_per_half_axis);
 }  // namespace solvers
 }  // namespace drake

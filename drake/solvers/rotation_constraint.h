@@ -9,6 +9,7 @@
 #include "drake/common/symbolic.h"
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/mixed_integer_optimization_util.h"
 
 /// @file Functions for reasoning about 3D rotations in a @MathematicalProgram.
 ///
@@ -151,12 +152,13 @@ AddRotationMatrixMcCormickEnvelopeMilpConstraints(
 
 template <int NumIntervalsPerHalfAxis>
 struct AddRotationMatrixBilinearMcCormickMilpConstraintsReturn {
-  typedef std::array<
-      std::array<VectorDecisionVariable<NumIntervalsPerHalfAxis>, 3>, 3>
-      BinaryVarType;
   static constexpr int PhiRows = NumIntervalsPerHalfAxis == Eigen::Dynamic
                                      ? Eigen::Dynamic
                                      : 1 + 2 * NumIntervalsPerHalfAxis;
+  static constexpr int NumBinaryVars =
+      PhiRows == Eigen::Dynamic ? Eigen::Dynamic : CeilLog2(PhiRows - 1);
+  typedef std::array<std::array<VectorDecisionVariable<NumBinaryVars>, 3>, 3>
+      BinaryVarType;
   typedef Eigen::Matrix<double, PhiRows, 1> PhiType;
   typedef std::pair<BinaryVarType, PhiType> type;
 };
