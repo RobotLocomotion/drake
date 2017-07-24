@@ -43,11 +43,11 @@ class Quadrotor : public systems::Diagram<T> {
 
     auto tree = std::make_unique<RigidBodyTree<T>>();
     ModelInstanceIdTable model_id_table = AddModelInstanceFromUrdfFileToWorld(
-        FindResourceOrThrow("drake/examples/Quadrotor/quadrotor.urdf"),
+        FindResourceOrThrow("drake/examples/quadrotor/quadrotor.urdf"),
         kRollPitchYaw, tree.get());
     const int quadrotor_id = model_id_table.at("quadrotor");
     AddModelInstancesFromSdfFile(
-        FindResourceOrThrow("drake/examples/Quadrotor/warehouse.sdf"),
+        FindResourceOrThrow("drake/examples/quadrotor/warehouse.sdf"),
         kFixed, nullptr /* weld to frame */, tree.get());
     drake::multibody::AddFlatTerrainToWorld(tree.get());
 
