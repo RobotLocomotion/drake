@@ -90,6 +90,11 @@ class AllModelTypesTests : public ModelTestBase,
 
 TEST_P(AllModelTypesTests, NewModel) { EXPECT_FALSE(model_ == nullptr); }
 
+TEST_P(AllModelTypesTests, AddElement) {
+  Element* elem = AddSphere();
+  EXPECT_EQ(elem->getShape(), DrakeShapes::SPHERE);
+}
+
 #ifdef BULLET_COLLISION
 
 #ifndef DRAKE_DISABLE_FCL
@@ -152,11 +157,6 @@ class FclModelDeathTests : public ModelTestBase,
     model_->AddElement(make_unique<Element>(geom));
   }
 
-  void CallAddSphere() {
-    const DrakeShapes::Sphere geom{1};
-    model_->AddElement(make_unique<Element>(geom));
-  }
-
   void CallAddCylinder() {
     const DrakeShapes::Cylinder geom{1, 1};
     model_->AddElement(make_unique<Element>(geom));
@@ -216,8 +216,7 @@ TEST_P(FclModelDeathTests, NotImplemented) {
 INSTANTIATE_TEST_CASE_P(
     NotImplementedTest, FclModelDeathTests,
     ::testing::Values(
-        &FclModelDeathTests::CallAddBox, &FclModelDeathTests::CallAddSphere,
-        &FclModelDeathTests::CallAddCylinder,
+        &FclModelDeathTests::CallAddBox, &FclModelDeathTests::CallAddCylinder,
         &FclModelDeathTests::CallAddCapsule, &FclModelDeathTests::CallAddMesh,
         &FclModelDeathTests::CallUpdateModel,
         &FclModelDeathTests::CallClosestPointsAllToAll,
