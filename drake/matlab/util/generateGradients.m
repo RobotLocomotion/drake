@@ -20,7 +20,7 @@ function generateGradients(fun,order,fname,varargin)
 %   @option bSimplify - boolean (default: true)
 %
 %   Example:
-%     cd examples/Pendulum
+%     cd examples/pendulum
 %     p=PendulumPlant();
 %     generateGradients('dynamics',3,'dynamicsGradients',p,0,randn(2,1),0);
 

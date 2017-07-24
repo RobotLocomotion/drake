@@ -143,7 +143,7 @@ class TestRbtCloneDiagram : public Diagram<double> {
 // identically.
 TEST_F(RigidBodyTreeCloneTest, PendulumDynamicsTest) {
   const std::string model_file_name =
-      FindResourceOrThrow("drake/examples/Pendulum/Pendulum.urdf");
+      FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf");
   const std::string model_name = "Pendulum";
   auto tree = std::make_unique<RigidBodyTree<double>>();
   AddModelInstanceFromUrdfFileToWorld(

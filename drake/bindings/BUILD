@@ -212,7 +212,7 @@ py_test(
     name = "pydrake_rbm_forward_kin_test",
     size = "small",
     srcs = ["python/pydrake/test/testRBTTransformPoints.py"],
-    data = ["//drake/examples/Pendulum:models"],
+    data = ["//drake/examples/pendulum:models"],
     main = "python/pydrake/test/testRBTTransformPoints.py",
     deps = [":pydrake"],
 )
@@ -221,7 +221,7 @@ py_test(
     name = "pydrake_rbt_com_test",
     size = "small",
     srcs = ["python/pydrake/test/testRBTCoM.py"],
-    data = ["//drake/examples/Pendulum:models"],
+    data = ["//drake/examples/pendulum:models"],
     main = "python/pydrake/test/testRBTCoM.py",
     deps = [":pydrake"],
 )
@@ -230,7 +230,7 @@ py_test(
     name = "pydrake_rbtik_test",
     size = "small",
     srcs = ["python/pydrake/test/testRBTIK.py"],
-    data = ["//drake/examples/Pendulum:models"],
+    data = ["//drake/examples/pendulum:models"],
     main = "python/pydrake/test/testRBTIK.py",
     tags = ["snopt"],
     deps = [":pydrake"],

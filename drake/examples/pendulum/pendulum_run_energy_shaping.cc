@@ -3,7 +3,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
-#include "drake/examples/Pendulum/pendulum_plant.h"
+#include "drake/examples/pendulum/pendulum_plant.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -61,7 +61,7 @@ int do_main() {
   lcm::DrakeLcm lcm;
   auto tree = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      FindResourceOrThrow("drake/examples/Pendulum/Pendulum.urdf"),
+      FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"),
       multibody::joints::kFixed, tree.get());
 
   systems::DiagramBuilder<double> builder;
