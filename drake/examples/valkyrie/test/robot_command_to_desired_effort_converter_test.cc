@@ -1,4 +1,4 @@
-#include "drake/examples/Valkyrie/robot_command_to_desired_effort_converter.h"
+#include "drake/examples/valkyrie/robot_command_to_desired_effort_converter.h"
 
 #include <gtest/gtest.h>
 #include "lcmtypes/bot_core/atlas_command_t.hpp"
@@ -18,7 +18,7 @@ using std::move;
 
 using multibody::joints::FloatingBaseType;
 
-const char* kValkyrieUrdf = "drake/examples/Valkyrie/urdf/urdf/"
+const char* kValkyrieUrdf = "drake/examples/valkyrie/urdf/urdf/"
     "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf";
 
 void TestCommandToDesiredEffortConverter(

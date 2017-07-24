@@ -16,11 +16,11 @@ To run the visualizer:
 
 To run the pd + feedforward controller:
   $ cd drake-distro
-  $ ./build/drake/examples/Valkyrie/valkyrie_pd_ff_controller
+  $ ./build/drake/examples/valkyrie/valkyrie_pd_ff_controller
 
 To run the simulation:
   $ cd drake-distro
-  $ ./build/drake/examples/Valkyrie/valkyrie_simulation
+  $ ./build/drake/examples/valkyrie/valkyrie_simulation
 
 The visualizer needs to be started before the simulator.
 The controller and simulator are not synchronized in any way, and they both
