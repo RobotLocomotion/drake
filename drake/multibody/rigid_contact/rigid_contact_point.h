@@ -17,6 +17,7 @@ namespace rigid_contact {
 /// state- sliding or not sliding) into a System's abstract state and using
 /// ancillary information (e.g., zero Lagrange Multipliers) allows avoiding
 /// these floating point issues.
+template <class T>
 struct RigidContactPoint {
   enum class ContactSlidingState {
     /// The bodies are to be considered as sliding at this point of contact.
@@ -32,7 +33,7 @@ struct RigidContactPoint {
   /// Abstract data sufficient (in combination with other continuous and/or
   /// discrete state variables) to uniquely determine a point of contact between
   /// two rigid bodies.
-  AbstractValue contact_point_key;
+  systems::Value<T> contact_point_key;
 };
 
 }  // namespace rigid_contact
