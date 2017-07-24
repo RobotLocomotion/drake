@@ -1,4 +1,4 @@
-#include "drake/examples/Quadrotor/quadrotor_plant.h"
+#include "drake/examples/quadrotor/quadrotor_plant.h"
 
 #include <memory>
 

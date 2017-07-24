@@ -4,7 +4,7 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/find_resource.h"
-#include "drake/examples/Quadrotor/quadrotor_plant.h"
+#include "drake/examples/quadrotor/quadrotor_plant.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
@@ -76,7 +76,7 @@ class RigidBodyQuadrotor: public systems::Diagram<T> {
     auto tree = std::make_unique<RigidBodyTree<T>>();
 
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        FindResourceOrThrow("drake/examples/Quadrotor/quadrotor.urdf"),
+        FindResourceOrThrow("drake/examples/quadrotor/quadrotor.urdf"),
         multibody::joints::kRollPitchYaw, nullptr, tree.get());
 
     systems::DiagramBuilder<T> builder;
