@@ -73,7 +73,7 @@ drake_cc_googletest(
     srcs = ["test/urdf_parser_test/urdf_parser_test.cc"],
     data = [
         ":test_models",
-        "//drake/examples/Atlas:models",
+        "//drake/examples/atlas:models",
     ],
     deps = [
         ":parsers",

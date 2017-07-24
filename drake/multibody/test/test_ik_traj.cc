@@ -24,7 +24,7 @@ GTEST_TEST(testIKtraj, testIKtraj) {
   auto model = std::make_unique<RigidBodyTree<double>>();
   drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       FindResourceOrThrow(
-          "drake/examples/Atlas/urdf/atlas_minimal_contact.urdf"),
+          "drake/examples/atlas/urdf/atlas_minimal_contact.urdf"),
       drake::multibody::joints::kRollPitchYaw, model.get());
 
   int r_hand{};

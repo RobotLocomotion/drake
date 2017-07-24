@@ -138,7 +138,7 @@ py_test(
     name = "pydrake_atlas_constructor_test",
     size = "small",
     srcs = ["python/pydrake/test/testAtlasConstructor.py"],
-    data = ["//drake/examples/Atlas:models"],
+    data = ["//drake/examples/atlas:models"],
     main = "python/pydrake/test/testAtlasConstructor.py",
     deps = [":pydrake"],
 )

@@ -376,7 +376,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "rigid_body_constraint_test",
     srcs = ["constraint/test/rigid_body_constraint_test.cc"],
-    data = ["//drake/examples/Atlas:models"],
+    data = ["//drake/examples/atlas:models"],
     deps = [
         ":rigid_body_constraint",
         "//drake/common:find_resource",
@@ -403,7 +403,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "rigid_body_tree_dynamics_test",
     srcs = ["test/rigid_body_tree/rigid_body_tree_dynamics_test.cc"],
-    data = ["//drake/examples/Atlas:models"],
+    data = ["//drake/examples/atlas:models"],
     deps = [
         ":rigid_body_tree",
         "//drake/common:eigen_matrix_compare",
@@ -419,7 +419,7 @@ drake_cc_googletest(
     data = [
         ":test_models",
         "//drake/automotive:models",
-        "//drake/examples/Atlas:models",
+        "//drake/examples/atlas:models",
         "//drake/examples/Pendulum:models",
         "//drake/examples/Valkyrie:models",
     ],
@@ -469,7 +469,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "test_kinematics_cache_checks",
-    data = ["//drake/examples/Atlas:models"],
+    data = ["//drake/examples/atlas:models"],
     deps = [
         ":rigid_body_tree",
         "//drake/common:find_resource",
@@ -480,7 +480,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "test_ik",
     data = [
-        "//drake/examples/Atlas:models",
+        "//drake/examples/atlas:models",
         "//drake/manipulation/models/iiwa_description:models",
     ],
     deps = [
@@ -493,7 +493,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "test_ik_pointwise",
-    data = ["//drake/examples/Atlas:models"],
+    data = ["//drake/examples/atlas:models"],
     deps = [
         ":inverse_kinematics",
         "//drake/common:eigen_matrix_compare",
@@ -504,7 +504,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "test_ik_more_constraints",
-    data = ["//drake/examples/Atlas:models"],
+    data = ["//drake/examples/atlas:models"],
     tags = ["snopt"],
     deps = [
         ":inverse_kinematics",
@@ -516,7 +516,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "test_ik_traj",
-    data = ["//drake/examples/Atlas:models"],
+    data = ["//drake/examples/atlas:models"],
     tags = ["snopt"],
     deps = [
         ":inverse_kinematics",
@@ -551,7 +551,7 @@ drake_cc_test(
         ],
         "//conditions:default": [],
     }),
-    data = ["//drake/examples/Atlas:models"],
+    data = ["//drake/examples/atlas:models"],
     deps = select({
         "//tools:with_gurobi": [
             ":inverse_kinematics",

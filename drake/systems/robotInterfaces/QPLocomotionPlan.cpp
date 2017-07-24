@@ -10,7 +10,7 @@
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/constants.h"
 #include "drake/common/trajectories/qp_spline/spline_generation.h"
-#include "drake/examples/Atlas/atlasUtil.h"
+#include "drake/examples/atlas/atlasUtil.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/expmap.h"

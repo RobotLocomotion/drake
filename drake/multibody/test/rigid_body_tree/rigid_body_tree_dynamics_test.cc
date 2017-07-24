@@ -39,7 +39,7 @@ class RigidBodyTreeInverseDynamicsTest : public ::testing::Test {
     trees_.clear();
 
     const std::string kAtlasUrdf = FindResourceOrThrow(
-        "drake/examples/Atlas/urdf/atlas_convex_hull.urdf");
+        "drake/examples/atlas/urdf/atlas_convex_hull.urdf");
     tree_rpy_ = std::make_unique<RigidBodyTree<double>>();
     drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
         kAtlasUrdf, kRollPitchYaw, tree_rpy_.get());
