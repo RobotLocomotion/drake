@@ -1,4 +1,4 @@
-#include "drake/examples/Valkyrie/valkyrie_constants.h"
+#include "drake/examples/valkyrie/valkyrie_constants.h"
 
 namespace drake {
 namespace examples {

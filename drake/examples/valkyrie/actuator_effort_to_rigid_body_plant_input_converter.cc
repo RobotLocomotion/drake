@@ -1,4 +1,4 @@
-#include "drake/examples/Valkyrie/actuator_effort_to_rigid_body_plant_input_converter.h"
+#include "drake/examples/valkyrie/actuator_effort_to_rigid_body_plant_input_converter.h"
 
 namespace drake {
 namespace systems {

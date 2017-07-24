@@ -1,4 +1,4 @@
-#include "drake/examples/Valkyrie/robot_command_to_desired_effort_converter.h"
+#include "drake/examples/valkyrie/robot_command_to_desired_effort_converter.h"
 
 #include <algorithm>
 

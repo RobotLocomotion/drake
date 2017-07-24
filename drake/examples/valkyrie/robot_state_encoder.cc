@@ -1,4 +1,4 @@
-#include "drake/examples/Valkyrie/robot_state_encoder.h"
+#include "drake/examples/valkyrie/robot_state_encoder.h"
 
 #include <list>
 

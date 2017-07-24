@@ -6,7 +6,7 @@
 #include "drake/examples/QPInverseDynamicsForHumanoids/control_utils.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/param_parser.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"
-#include "drake/examples/Valkyrie/valkyrie_constants.h"
+#include "drake/examples/valkyrie/valkyrie_constants.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 
@@ -26,7 +26,7 @@ namespace qp_inverse_dynamics {
 GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
   // Loads model.
   std::string urdf = FindResourceOrThrow(
-      "drake/examples/Valkyrie/urdf/urdf/"
+      "drake/examples/valkyrie/urdf/urdf/"
       "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
   std::string alias_groups_config = FindResourceOrThrow(
       "drake/examples/QPInverseDynamicsForHumanoids/"
