@@ -19,21 +19,21 @@ centroidal_momentum {
     kp: 0
     kp: 40
     kp: 40
-    kp: 40
+    kp: 0
 
     kd: 4
     kd: 4
     kd: 4
     kd: 12
     kd: 12
-    kd: 12
+    kd: 0
 
     weight: 0
     weight: 0
     weight: 0
     weight: 10
     weight: 10
-    weight: 10
+    weight: 0
 }
 
 default_body_motion {
@@ -57,21 +57,21 @@ body_motion {
     kp: 20
     kp: 0
     kp: 0
-    kp: 0
+    kp: 20
 
     kd: 8
     kd: 8
     kd: 8
     kd: 0
     kd: 0
-    kd: 0
+    kd: 8
 
     weight: 1
     weight: 1
     weight: 1
     weight: 0
     weight: 0
-    weight: 0
+    weight: 10
 }
 
 body_motion {
