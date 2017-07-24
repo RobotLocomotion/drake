@@ -202,7 +202,7 @@ py_test(
     name = "pydrake_pr2ik_test",
     size = "small",
     srcs = ["python/pydrake/test/testPR2IK.py"],
-    data = ["//drake/examples/PR2:models"],
+    data = ["//drake/examples/pr2:models"],
     main = "python/pydrake/test/testPR2IK.py",
     tags = ["snopt"],
     deps = [":pydrake"],
@@ -248,7 +248,7 @@ py_test(
     name = "pydrake_urdf_parser_test",
     size = "small",
     srcs = ["python/pydrake/test/test_urdf_parser.py"],
-    data = ["//drake/examples/PR2:models"],
+    data = ["//drake/examples/pr2:models"],
     main = "python/pydrake/test/test_urdf_parser.py",
     deps = [":pydrake"],
 )
