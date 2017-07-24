@@ -941,6 +941,7 @@ void AddUnitLengthConstraintWithSos2Lambda(
 }
 
 std::pair<int, int> Index2Subscripts(int index, int num_rows, int num_cols) {
+  DRAKE_ASSERT(index >= 0 && index < num_rows * num_cols);
   int col_idx = index / num_rows;
   int row_idx = index - col_idx * num_rows;
   return std::make_pair(row_idx, col_idx);
