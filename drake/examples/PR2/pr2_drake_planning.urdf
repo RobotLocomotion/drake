@@ -179,524 +179,7 @@
       </controller:gazebo_ros_laser>
     </sensor:ray>
   </gazebo>
-  <joint name="fl_caster_rotation_joint" type="continuous">
-    <axis xyz="0 0 1"/>
-    <limit effort="100" velocity="100"/>
-    <!-- alpha tested velocity and effort limits -->
-    <safety_controller k_velocity="10"/>
-    <calibration reference_position="-0.785398163397" rising="-0.785398163397"/>
-    <!-- hold both reference_position and upper/lower for tick-tock, remove reference_positiion after verifying upper/lower works with calibration controllers.  if search velocity in pr2_calibration_controllers.yaml is +, the reference_position is rising, if - then it is falling -->
-    <dynamics damping="0.0" friction="0.0"/>
-    <origin rpy="0 0 0" xyz="0.2246 0.2246 0.0282"/>
-    <parent link="base_link"/>
-    <child link="fl_caster_rotation_link"/>
-  </joint>
-  <link name="fl_caster_rotation_link">
-    <inertial>
-      <mass value="3.473082"/>
-      <origin xyz="0 0 0.07"/>
-      <inertia ixx="0.012411765597" ixy="-0.000711733678" ixz="0.00050272983" iyy="0.015218160428" iyz="-0.000004273467" izz="0.011763977943"/>
-    </inertial>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="pr2_description/meshes/base_v0/caster.obj"/>
-      </geometry>
-      <material name="Caster"/>
-    </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="pr2_description/meshes/base_v0/caster_L.obj"/>
-      </geometry>
-    </collision>
-  </link>
-  <transmission name="fl_caster_rotation_trans" type="SimpleTransmission">
-    <actuator name="fl_caster_rotation_motor"/>
-    <joint name="fl_caster_rotation_joint"/>
-    <mechanicalReduction>-79.2380952381</mechanicalReduction>
-  </transmission>
-  <joint name="fl_caster_l_wheel_joint" type="continuous">
-    <axis xyz="0 1 0"/>
-    <limit effort="100" velocity="100"/>
-    <!-- alpha tested effort and velocity limits -->
-    <safety_controller k_velocity="10"/>
-    <dynamics damping="0.0" friction="0.0"/>
-    <origin rpy="0 0 0" xyz="0 0.049 0"/>
-    <parent link="fl_caster_rotation_link"/>
-    <child link="fl_caster_l_wheel_link"/>
-  </joint>
-  <link name="fl_caster_l_wheel_link">
-    <inertial>
-      <mass value="0.44036"/>
-      <origin xyz="0 0 0"/>
-      <inertia ixx="0.012411765597" ixy="-0.000711733678" ixz="0.00050272983" iyy="0.015218160428" iyz="-0.000004273467" izz="0.011763977943"/>
-    </inertial>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="pr2_description/meshes/base_v0/wheel.obj"/>
-      </geometry>
-      <material name="Wheel_l"/>
-    </visual>
-    <collision>
-      <origin rpy="1.57079632679 0 0" xyz="0 0 0"/>
-      <!-- rotation because cyl. geom primitive has symmetry axis in +x direction -->
-      <geometry>
-        <cylinder length="0.034" radius="0.074792"/>
-      </geometry>
-    </collision>
-  </link>
-  <gazebo reference="fl_caster_l_wheel_link">
-    <mu1 value="100.0"/>
-    <mu2 value="100.0"/>
-    <kp value="1000000.0"/>
-    <kd value="1.0"/>
-    <material value="PR2/wheel_l"/>
-  </gazebo>
-  <transmission name="fl_caster_l_wheel_trans" type="SimpleTransmission">
-    <actuator name="fl_caster_l_wheel_motor"/>
-    <joint name="fl_caster_l_wheel_joint"/>
-    <mechanicalReduction>79.2380952381</mechanicalReduction>
-  </transmission>
-  <joint name="fl_caster_r_wheel_joint" type="continuous">
-    <axis xyz="0 1 0"/>
-    <limit effort="100" velocity="100"/>
-    <!-- alpha tested effort and velocity limits -->
-    <safety_controller k_velocity="10"/>
-    <dynamics damping="0.0" friction="0.0"/>
-    <origin rpy="0 0 0" xyz="0 -0.049 0"/>
-    <parent link="fl_caster_rotation_link"/>
-    <child link="fl_caster_r_wheel_link"/>
-  </joint>
-  <link name="fl_caster_r_wheel_link">
-    <inertial>
-      <mass value="0.44036"/>
-      <origin xyz="0 0 0"/>
-      <inertia ixx="0.012411765597" ixy="-0.000711733678" ixz="0.00050272983" iyy="0.015218160428" iyz="-0.000004273467" izz="0.011763977943"/>
-    </inertial>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="pr2_description/meshes/base_v0/wheel.obj"/>
-      </geometry>
-      <material name="Wheel_r"/>
-    </visual>
-    <collision>
-      <origin rpy="1.57079632679 0 0" xyz="0 0 0"/>
-      <!-- rotation because cyl. geom primitive has symmetry axis in +x direction -->
-      <geometry>
-        <cylinder length="0.034" radius="0.074792"/>
-      </geometry>
-    </collision>
-  </link>
-  <gazebo reference="fl_caster_r_wheel_link">
-    <mu1 value="100.0"/>
-    <mu2 value="100.0"/>
-    <kp value="1000000.0"/>
-    <kd value="1.0"/>
-    <material value="PR2/wheel_r"/>
-  </gazebo>
-  <transmission name="fl_caster_r_wheel_trans" type="SimpleTransmission">
-    <actuator name="fl_caster_r_wheel_motor"/>
-    <joint name="fl_caster_r_wheel_joint"/>
-    <mechanicalReduction>-79.2380952381</mechanicalReduction>
-  </transmission>
-  <gazebo reference="fl_caster_rotation_link">
-    <material value="PR2/caster_texture"/>
-  </gazebo>
-  <joint name="fr_caster_rotation_joint" type="continuous">
-    <axis xyz="0 0 1"/>
-    <limit effort="100" velocity="100"/>
-    <!-- alpha tested velocity and effort limits -->
-    <safety_controller k_velocity="10"/>
-    <calibration reference_position="-0.785398163397" rising="-0.785398163397"/>
-    <!-- hold both reference_position and upper/lower for tick-tock, remove reference_positiion after verifying upper/lower works with calibration controllers.  if search velocity in pr2_calibration_controllers.yaml is +, the reference_position is rising, if - then it is falling -->
-    <dynamics damping="0.0" friction="0.0"/>
-    <origin rpy="0 0 0" xyz="0.2246 -0.2246 0.0282"/>
-    <parent link="base_link"/>
-    <child link="fr_caster_rotation_link"/>
-  </joint>
-  <link name="fr_caster_rotation_link">
-    <inertial>
-      <mass value="3.473082"/>
-      <origin xyz="0 0 0.07"/>
-      <inertia ixx="0.012411765597" ixy="-0.000711733678" ixz="0.00050272983" iyy="0.015218160428" iyz="-0.000004273467" izz="0.011763977943"/>
-    </inertial>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="pr2_description/meshes/base_v0/caster.obj"/>
-      </geometry>
-      <material name="Caster"/>
-    </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="pr2_description/meshes/base_v0/caster_L.obj"/>
-      </geometry>
-    </collision>
-  </link>
-  <transmission name="fr_caster_rotation_trans" type="SimpleTransmission">
-    <actuator name="fr_caster_rotation_motor"/>
-    <joint name="fr_caster_rotation_joint"/>
-    <mechanicalReduction>-79.2380952381</mechanicalReduction>
-  </transmission>
-  <joint name="fr_caster_l_wheel_joint" type="continuous">
-    <axis xyz="0 1 0"/>
-    <limit effort="100" velocity="100"/>
-    <!-- alpha tested effort and velocity limits -->
-    <safety_controller k_velocity="10"/>
-    <dynamics damping="0.0" friction="0.0"/>
-    <origin rpy="0 0 0" xyz="0 0.049 0"/>
-    <parent link="fr_caster_rotation_link"/>
-    <child link="fr_caster_l_wheel_link"/>
-  </joint>
-  <link name="fr_caster_l_wheel_link">
-    <inertial>
-      <mass value="0.44036"/>
-      <origin xyz="0 0 0"/>
-      <inertia ixx="0.012411765597" ixy="-0.000711733678" ixz="0.00050272983" iyy="0.015218160428" iyz="-0.000004273467" izz="0.011763977943"/>
-    </inertial>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="pr2_description/meshes/base_v0/wheel.obj"/>
-      </geometry>
-      <material name="Wheel_l"/>
-    </visual>
-    <collision>
-      <origin rpy="1.57079632679 0 0" xyz="0 0 0"/>
-      <!-- rotation because cyl. geom primitive has symmetry axis in +x direction -->
-      <geometry>
-        <cylinder length="0.034" radius="0.074792"/>
-      </geometry>
-    </collision>
-  </link>
-  <gazebo reference="fr_caster_l_wheel_link">
-    <mu1 value="100.0"/>
-    <mu2 value="100.0"/>
-    <kp value="1000000.0"/>
-    <kd value="1.0"/>
-    <material value="PR2/wheel_l"/>
-  </gazebo>
-  <transmission name="fr_caster_l_wheel_trans" type="SimpleTransmission">
-    <actuator name="fr_caster_l_wheel_motor"/>
-    <joint name="fr_caster_l_wheel_joint"/>
-    <mechanicalReduction>79.2380952381</mechanicalReduction>
-  </transmission>
-  <joint name="fr_caster_r_wheel_joint" type="continuous">
-    <axis xyz="0 1 0"/>
-    <limit effort="100" velocity="100"/>
-    <!-- alpha tested effort and velocity limits -->
-    <safety_controller k_velocity="10"/>
-    <dynamics damping="0.0" friction="0.0"/>
-    <origin rpy="0 0 0" xyz="0 -0.049 0"/>
-    <parent link="fr_caster_rotation_link"/>
-    <child link="fr_caster_r_wheel_link"/>
-  </joint>
-  <link name="fr_caster_r_wheel_link">
-    <inertial>
-      <mass value="0.44036"/>
-      <origin xyz="0 0 0"/>
-      <inertia ixx="0.012411765597" ixy="-0.000711733678" ixz="0.00050272983" iyy="0.015218160428" iyz="-0.000004273467" izz="0.011763977943"/>
-    </inertial>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="pr2_description/meshes/base_v0/wheel.obj"/>
-      </geometry>
-      <material name="Wheel_r"/>
-    </visual>
-    <collision>
-      <origin rpy="1.57079632679 0 0" xyz="0 0 0"/>
-      <!-- rotation because cyl. geom primitive has symmetry axis in +x direction -->
-      <geometry>
-        <cylinder length="0.034" radius="0.074792"/>
-      </geometry>
-    </collision>
-  </link>
-  <gazebo reference="fr_caster_r_wheel_link">
-    <mu1 value="100.0"/>
-    <mu2 value="100.0"/>
-    <kp value="1000000.0"/>
-    <kd value="1.0"/>
-    <material value="PR2/wheel_r"/>
-  </gazebo>
-  <transmission name="fr_caster_r_wheel_trans" type="SimpleTransmission">
-    <actuator name="fr_caster_r_wheel_motor"/>
-    <joint name="fr_caster_r_wheel_joint"/>
-    <mechanicalReduction>-79.2380952381</mechanicalReduction>
-  </transmission>
-  <gazebo reference="fr_caster_rotation_link">
-    <material value="PR2/caster_texture"/>
-  </gazebo>
-  <joint name="bl_caster_rotation_joint" type="continuous">
-    <axis xyz="0 0 1"/>
-    <limit effort="100" velocity="100"/>
-    <!-- alpha tested velocity and effort limits -->
-    <safety_controller k_velocity="10"/>
-    <calibration reference_position="2.35619449019" rising="2.35619449019"/>
-    <!-- hold both reference_position and upper/lower for tick-tock, remove reference_positiion after verifying upper/lower works with calibration controllers.  if search velocity in pr2_calibration_controllers.yaml is +, the reference_position is rising, if - then it is falling -->
-    <dynamics damping="0.0" friction="0.0"/>
-    <origin rpy="0 0 0" xyz="-0.2246 0.2246 0.0282"/>
-    <parent link="base_link"/>
-    <child link="bl_caster_rotation_link"/>
-  </joint>
-  <link name="bl_caster_rotation_link">
-    <inertial>
-      <mass value="3.473082"/>
-      <origin xyz="0 0 0.07"/>
-      <inertia ixx="0.012411765597" ixy="-0.000711733678" ixz="0.00050272983" iyy="0.015218160428" iyz="-0.000004273467" izz="0.011763977943"/>
-    </inertial>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="pr2_description/meshes/base_v0/caster.obj"/>
-      </geometry>
-      <material name="Caster"/>
-    </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="pr2_description/meshes/base_v0/caster_L.obj"/>
-      </geometry>
-    </collision>
-  </link>
-  <transmission name="bl_caster_rotation_trans" type="SimpleTransmission">
-    <actuator name="bl_caster_rotation_motor"/>
-    <joint name="bl_caster_rotation_joint"/>
-    <mechanicalReduction>-79.2380952381</mechanicalReduction>
-  </transmission>
-  <joint name="bl_caster_l_wheel_joint" type="continuous">
-    <axis xyz="0 1 0"/>
-    <limit effort="100" velocity="100"/>
-    <!-- alpha tested effort and velocity limits -->
-    <safety_controller k_velocity="10"/>
-    <dynamics damping="0.0" friction="0.0"/>
-    <origin rpy="0 0 0" xyz="0 0.049 0"/>
-    <parent link="bl_caster_rotation_link"/>
-    <child link="bl_caster_l_wheel_link"/>
-  </joint>
-  <link name="bl_caster_l_wheel_link">
-    <inertial>
-      <mass value="0.44036"/>
-      <origin xyz="0 0 0"/>
-      <inertia ixx="0.012411765597" ixy="-0.000711733678" ixz="0.00050272983" iyy="0.015218160428" iyz="-0.000004273467" izz="0.011763977943"/>
-    </inertial>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="pr2_description/meshes/base_v0/wheel.obj"/>
-      </geometry>
-      <material name="Wheel_l"/>
-    </visual>
-    <collision>
-      <origin rpy="1.57079632679 0 0" xyz="0 0 0"/>
-      <!-- rotation because cyl. geom primitive has symmetry axis in +x direction -->
-      <geometry>
-        <cylinder length="0.034" radius="0.074792"/>
-      </geometry>
-    </collision>
-  </link>
-  <gazebo reference="bl_caster_l_wheel_link">
-    <mu1 value="100.0"/>
-    <mu2 value="100.0"/>
-    <kp value="1000000.0"/>
-    <kd value="1.0"/>
-    <material value="PR2/wheel_l"/>
-  </gazebo>
-  <transmission name="bl_caster_l_wheel_trans" type="SimpleTransmission">
-    <actuator name="bl_caster_l_wheel_motor"/>
-    <joint name="bl_caster_l_wheel_joint"/>
-    <mechanicalReduction>79.2380952381</mechanicalReduction>
-  </transmission>
-  <joint name="bl_caster_r_wheel_joint" type="continuous">
-    <axis xyz="0 1 0"/>
-    <limit effort="100" velocity="100"/>
-    <!-- alpha tested effort and velocity limits -->
-    <safety_controller k_velocity="10"/>
-    <dynamics damping="0.0" friction="0.0"/>
-    <origin rpy="0 0 0" xyz="0 -0.049 0"/>
-    <parent link="bl_caster_rotation_link"/>
-    <child link="bl_caster_r_wheel_link"/>
-  </joint>
-  <link name="bl_caster_r_wheel_link">
-    <inertial>
-      <mass value="0.44036"/>
-      <origin xyz="0 0 0"/>
-      <inertia ixx="0.012411765597" ixy="-0.000711733678" ixz="0.00050272983" iyy="0.015218160428" iyz="-0.000004273467" izz="0.011763977943"/>
-    </inertial>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="pr2_description/meshes/base_v0/wheel.obj"/>
-      </geometry>
-      <material name="Wheel_r"/>
-    </visual>
-    <collision>
-      <origin rpy="1.57079632679 0 0" xyz="0 0 0"/>
-      <!-- rotation because cyl. geom primitive has symmetry axis in +x direction -->
-      <geometry>
-        <cylinder length="0.034" radius="0.074792"/>
-      </geometry>
-    </collision>
-  </link>
-  <gazebo reference="bl_caster_r_wheel_link">
-    <mu1 value="100.0"/>
-    <mu2 value="100.0"/>
-    <kp value="1000000.0"/>
-    <kd value="1.0"/>
-    <material value="PR2/wheel_r"/>
-  </gazebo>
-  <transmission name="bl_caster_r_wheel_trans" type="SimpleTransmission">
-    <actuator name="bl_caster_r_wheel_motor"/>
-    <joint name="bl_caster_r_wheel_joint"/>
-    <mechanicalReduction>-79.2380952381</mechanicalReduction>
-  </transmission>
-  <gazebo reference="bl_caster_rotation_link">
-    <material value="PR2/caster_texture"/>
-  </gazebo>
-  <joint name="br_caster_rotation_joint" type="continuous">
-    <axis xyz="0 0 1"/>
-    <limit effort="100" velocity="100"/>
-    <!-- alpha tested velocity and effort limits -->
-    <safety_controller k_velocity="10"/>
-    <calibration reference_position="2.35619449019" rising="2.35619449019"/>
-    <!-- hold both reference_position and upper/lower for tick-tock, remove reference_positiion after verifying upper/lower works with calibration controllers.  if search velocity in pr2_calibration_controllers.yaml is +, the reference_position is rising, if - then it is falling -->
-    <dynamics damping="0.0" friction="0.0"/>
-    <origin rpy="0 0 0" xyz="-0.2246 -0.2246 0.0282"/>
-    <parent link="base_link"/>
-    <child link="br_caster_rotation_link"/>
-  </joint>
-  <link name="br_caster_rotation_link">
-    <inertial>
-      <mass value="3.473082"/>
-      <origin xyz="0 0 0.07"/>
-      <inertia ixx="0.012411765597" ixy="-0.000711733678" ixz="0.00050272983" iyy="0.015218160428" iyz="-0.000004273467" izz="0.011763977943"/>
-    </inertial>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="pr2_description/meshes/base_v0/caster.obj"/>
-      </geometry>
-      <material name="Caster"/>
-    </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="pr2_description/meshes/base_v0/caster_L.obj"/>
-      </geometry>
-    </collision>
-  </link>
-  <transmission name="br_caster_rotation_trans" type="SimpleTransmission">
-    <actuator name="br_caster_rotation_motor"/>
-    <joint name="br_caster_rotation_joint"/>
-    <mechanicalReduction>-79.2380952381</mechanicalReduction>
-  </transmission>
-  <joint name="br_caster_l_wheel_joint" type="continuous">
-    <axis xyz="0 1 0"/>
-    <limit effort="100" velocity="100"/>
-    <!-- alpha tested effort and velocity limits -->
-    <safety_controller k_velocity="10"/>
-    <dynamics damping="0.0" friction="0.0"/>
-    <origin rpy="0 0 0" xyz="0 0.049 0"/>
-    <parent link="br_caster_rotation_link"/>
-    <child link="br_caster_l_wheel_link"/>
-  </joint>
-  <link name="br_caster_l_wheel_link">
-    <inertial>
-      <mass value="0.44036"/>
-      <origin xyz="0 0 0"/>
-      <inertia ixx="0.012411765597" ixy="-0.000711733678" ixz="0.00050272983" iyy="0.015218160428" iyz="-0.000004273467" izz="0.011763977943"/>
-    </inertial>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="pr2_description/meshes/base_v0/wheel.obj"/>
-      </geometry>
-      <material name="Wheel_l"/>
-    </visual>
-    <collision>
-      <origin rpy="1.57079632679 0 0" xyz="0 0 0"/>
-      <!-- rotation because cyl. geom primitive has symmetry axis in +x direction -->
-      <geometry>
-        <cylinder length="0.034" radius="0.074792"/>
-      </geometry>
-    </collision>
-  </link>
-  <gazebo reference="br_caster_l_wheel_link">
-    <mu1 value="100.0"/>
-    <mu2 value="100.0"/>
-    <kp value="1000000.0"/>
-    <kd value="1.0"/>
-    <material value="PR2/wheel_l"/>
-  </gazebo>
-  <transmission name="br_caster_l_wheel_trans" type="SimpleTransmission">
-    <actuator name="br_caster_l_wheel_motor"/>
-    <joint name="br_caster_l_wheel_joint"/>
-    <mechanicalReduction>79.2380952381</mechanicalReduction>
-  </transmission>
-  <joint name="br_caster_r_wheel_joint" type="continuous">
-    <axis xyz="0 1 0"/>
-    <limit effort="100" velocity="100"/>
-    <!-- alpha tested effort and velocity limits -->
-    <safety_controller k_velocity="10"/>
-    <dynamics damping="0.0" friction="0.0"/>
-    <origin rpy="0 0 0" xyz="0 -0.049 0"/>
-    <parent link="br_caster_rotation_link"/>
-    <child link="br_caster_r_wheel_link"/>
-  </joint>
-  <link name="br_caster_r_wheel_link">
-    <inertial>
-      <mass value="0.44036"/>
-      <origin xyz="0 0 0"/>
-      <inertia ixx="0.012411765597" ixy="-0.000711733678" ixz="0.00050272983" iyy="0.015218160428" iyz="-0.000004273467" izz="0.011763977943"/>
-    </inertial>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="pr2_description/meshes/base_v0/wheel.obj"/>
-      </geometry>
-      <material name="Wheel_r"/>
-    </visual>
-    <collision>
-      <origin rpy="1.57079632679 0 0" xyz="0 0 0"/>
-      <!-- rotation because cyl. geom primitive has symmetry axis in +x direction -->
-      <geometry>
-        <cylinder length="0.034" radius="0.074792"/>
-      </geometry>
-    </collision>
-  </link>
-  <gazebo reference="br_caster_r_wheel_link">
-    <mu1 value="100.0"/>
-    <mu2 value="100.0"/>
-    <kp value="1000000.0"/>
-    <kd value="1.0"/>
-    <material value="PR2/wheel_r"/>
-  </gazebo>
-  <transmission name="br_caster_r_wheel_trans" type="SimpleTransmission">
-    <actuator name="br_caster_r_wheel_motor"/>
-    <joint name="br_caster_r_wheel_joint"/>
-    <mechanicalReduction>-79.2380952381</mechanicalReduction>
-  </transmission>
-  <gazebo reference="br_caster_rotation_link">
-    <material value="PR2/caster_texture"/>
-  </gazebo>
-  <gazebo reference="base_link">
-    <selfCollide>true</selfCollide>
-    <sensor:contact name="base_contact_sensor">
-      <geom>base_link_geom</geom>
-      <updateRate>100.0</updateRate>
-      <controller:gazebo_ros_bumper name="base_gazebo_ros_bumper_controller" plugin="libgazebo_ros_bumper.so">
-        <alwaysOn>true</alwaysOn>
-        <updateRate>100.0</updateRate>
-        <bumperTopicName>base_bumper</bumperTopicName>
-        <interface:bumper name="base_bumper_iface"/>
-      </controller:gazebo_ros_bumper>
-    </sensor:contact>
-    <material value="PR2/caster_texture"/>
-  </gazebo>
+
   <gazebo>
     <controller:gazebo_ros_p3d name="p3d_base_controller" plugin="libgazebo_ros_p3d.so">
       <alwaysOn>true</alwaysOn>
@@ -712,7 +195,7 @@
     </controller:gazebo_ros_p3d>
     <canonicalBody>base_footprint</canonicalBody>
   </gazebo>
-  <joint name="torso_lift_joint" type="prismatic">
+  <joint name="torso_lift_joint" type="fixed"> <!--prismatic-->
     <axis xyz="0 0 1"/>
     <limit effort="10000" lower="0.0" upper="0.31" velocity="0.013"/>
     <!-- alpha tested velocity and effort limits -->
@@ -803,7 +286,7 @@
   </gazebo>
   <!-- The xacro preprocesser will replace the parameters below, such as ${cal_head_x}, with
        numerical values that were specified in common.xacro which was included above -->
-  <joint name="head_pan_joint" type="revolute">
+  <joint name="head_pan_joint" type="fixed"> <!--revolute-->
     <axis xyz="0 0 1"/>
     <limit effort="2.645" lower="-3.007" upper="3.007" velocity="6"/>
     <!-- alpha tested velocity and effort limits -->
@@ -843,7 +326,7 @@
     <joint name="head_pan_joint"/>
     <mechanicalReduction>6.0</mechanicalReduction>
   </transmission>
-  <joint name="head_tilt_joint" type="revolute">
+  <joint name="head_tilt_joint" type="fixed"> <!--revolute-->
     <axis xyz="0 1 0"/>
     <limit effort="15" lower="-0.471238" upper="1.39626" velocity="5"/>
     <!-- alpha tested velocity and effort limits -->
@@ -1378,7 +861,7 @@
     <material value="Gazebo/White"/>
     <turnGravityOff value="true"/>
   </gazebo>
-  <joint name="laser_tilt_mount_joint" type="revolute">
+  <joint name="laser_tilt_mount_joint" type="fixed"> <!--revolute-->
     <axis xyz="0 1 0"/>
     <limit effort="0.65" lower="-0.7854" upper="1.48353" velocity="10.0"/>
     <!-- alpha tested velocity and effort limits -->
@@ -1468,7 +951,7 @@
     <mechanicalReduction>-6.05</mechanicalReduction>
   </transmission>
   <!-- This is a common convention, to use a reflect parameter that equals +-1 to distinguish left from right -->
-  <joint name="r_shoulder_pan_joint" type="revolute">
+  <joint name="r_shoulder_pan_joint" type="fixed"> <!--revolute-->
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.0 -0.188 0.0"/>
     <!-- transform from parent link to this joint frame -->
@@ -1502,7 +985,7 @@
       </geometry>
     </collision>
   </link>
-  <joint name="r_shoulder_lift_joint" type="revolute">
+  <joint name="r_shoulder_lift_joint" type="fixed"> <!--revolute-->
     <axis xyz="0 1 0"/>
     <!-- Limits updated from Function's CAD values as of 2009_02_24 (link_data.xls) -->
     <limit effort="30" lower="-0.5236" upper="1.3963" velocity="2.082"/>
@@ -1535,7 +1018,7 @@
       </geometry>
     </collision>
   </link>
-  <joint name="r_upper_arm_roll_joint" type="revolute">
+  <joint name="r_upper_arm_roll_joint" type="fixed"> <!--revolute-->
     <axis xyz="1 0 0"/>
     <origin rpy="0 0 0" xyz="0 0 0"/>
     <parent link="r_shoulder_lift_link"/>
@@ -1668,7 +1151,7 @@
     </sensor:contact>
     <turnGravityOff>true</turnGravityOff>
   </gazebo>
-  <joint name="r_forearm_roll_joint" type="continuous">
+  <joint name="r_forearm_roll_joint" type="fixed"> <!--continuous-->
     <axis xyz="1 0 0"/>
     <limit effort="30" velocity="3.6"/>
     <!-- alpha tested velocity and effort limits -->
@@ -1714,7 +1197,7 @@
     <joint name="r_forearm_roll_joint"/>
     <mechanicalReduction>-90.5142857143</mechanicalReduction>
   </transmission>
-  <joint name="r_elbow_flex_joint" type="revolute">
+  <joint name="r_elbow_flex_joint" type="fixed"> <!--revolute-->
     <axis xyz="0 1 0"/>
     <!-- Note: Overtravel limits are 140, -7 degrees instead of 133, 0 -->
     <limit effort="30" lower="-2.3213" upper="0.00" velocity="3.3"/>
@@ -1799,7 +1282,7 @@
       </geometry>
     </collision>
   </link>
-  <joint name="r_wrist_flex_joint" type="revolute">
+  <joint name="r_wrist_flex_joint" type="fixed"> <!-- revolute -->
     <axis xyz="0 1 0"/>
     <limit effort="10" lower="-2.094" upper="0.0" velocity="3.078"/>
     <!-- alpha tested velocity and effort limits -->
@@ -1831,7 +1314,7 @@
       </geometry>
     </collision>
   </link>
-  <joint name="r_wrist_roll_joint" type="continuous">
+  <joint name="r_wrist_roll_joint" type="fixed"> <!-- continuous -->
     <axis xyz="1 0 0"/>
     <limit effort="10" velocity="3.6"/>
     <!-- alpha tested velocity and effort limits -->
@@ -1913,7 +1396,7 @@
   <gazebo reference="r_wrist_roll_joint">
     <fudgeFactor value="0.5"/>
   </gazebo>
-  <!--
+  <!-- Drake only supports SimpleTransmissions, so I commented this out
   <transmission name="r_wrist_trans" type="WristTransmission">
     <rightActuator mechanicalReduction="60.1714285714" name="r_wrist_r_motor"/>
     <leftActuator mechanicalReduction="60.1714285714" name="r_wrist_l_motor"/>
@@ -1921,451 +1404,7 @@
     <rollJoint mechanicalReduction="1.0" name="r_wrist_roll_joint"/>
   </transmission>
   -->
-  <joint name="r_gripper_palm_joint" type="fixed">
-    <origin rpy="0 0 0" xyz="0 0 0"/>
-    <parent link="r_wrist_roll_link"/>
-    <child link="r_gripper_palm_link"/>
-  </joint>
-  <link name="r_gripper_palm_link">
-    <inertial>
-      <mass value="0.58007"/>
-      <origin rpy="0 0 0" xyz="0.06623 0.00053 -0.00119"/>
-      <inertia ixx="0.00035223921" ixy="-0.00001580476" ixz="-0.00000091750" iyy="0.00067741312" iyz="-0.00000059554" izz="0.00086563316"/>
-    </inertial>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/gripper_palm.obj"/>
-      </geometry>
-      <material name="Red"/>
-    </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/gripper_palm.obj"/>
-      </geometry>
-      <verbose value="Yes"/>
-    </collision>
-  </link>
-  <joint name="r_gripper_led_joint" type="fixed">
-    <!--  Need to check if we need a positive or negative Z term -->
-    <origin xyz="0.0513 0.0 .0244"/>
-    <parent link="r_gripper_palm_link"/>
-    <child link="r_gripper_led_frame"/>
-  </joint>
-  <link name="r_gripper_led_frame"/>
-  <joint name="r_gripper_motor_accelerometer_joint" type="fixed">
-    <origin rpy="0 0 0" xyz="0 0 0"/>
-    <parent link="r_gripper_palm_link"/>
-    <child link="r_gripper_motor_accelerometer_link"/>
-  </joint>
-  <link name="r_gripper_motor_accelerometer_link">
-    <inertial>
-      <mass value="0.001"/>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
-    </inertial>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <box size="0.001 0.001 0.001"/>
-      </geometry>
-    </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <box size="0.001 0.001 0.001"/>
-      </geometry>
-    </collision>
-  </link>
-  <joint name="r_gripper_tool_joint" type="fixed">
-    <origin rpy="0 0 0" xyz="0.18 0 0"/>
-    <parent link="r_gripper_palm_link"/>
-    <child link="r_gripper_tool_frame"/>
-  </joint>
-  <link name="r_gripper_tool_frame"/>
-  <joint name="r_gripper_l_finger_joint" type="revolute">
-    <axis xyz="0 0 1"/>
-    <limit effort="1000.0" lower="0.0" upper="0.548" velocity="0.5"/>
-    <dynamics damping="0.2"/>
-    <origin rpy="0 0 0" xyz="0.07691 0.01 0"/>
-    <parent link="r_gripper_palm_link"/>
-    <child link="r_gripper_l_finger_link"/>
-  </joint>
-  <link name="r_gripper_l_finger_link">
-    <inertial>
-      <mass value="0.17126"/>
-      <origin rpy="0 0 0" xyz="0.03598 0.01730 -0.00164"/>
-      <inertia ixx="0.00007756198" ixy="0.00000149095" ixz="-0.00000983385" iyy="0.00019708305" iyz="-0.00000306125" izz="0.00018105446"/>
-    </inertial>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/l_finger.obj"/>
-      </geometry>
-      <material name="Grey"/>
-    </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/l_finger.obj"/>
-      </geometry>
-      <verbose value="Yes"/>
-    </collision>
-  </link>
-  <joint name="r_gripper_r_finger_joint" type="revolute">
-    <axis xyz="0 0 -1"/>
-    <origin rpy="0 0 0" xyz="0.07691 -0.01 0"/>
-    <limit effort="1000.0" lower="0.0" upper="0.548" velocity="0.5"/>
-    <dynamics damping="0.2"/>
-    <mimic joint="r_gripper_l_finger_joint" multiplier="1" offset="0"/>
-    <parent link="r_gripper_palm_link"/>
-    <child link="r_gripper_r_finger_link"/>
-  </joint>
-  <link name="r_gripper_r_finger_link">
-    <inertial>
-      <mass value="0.17389"/>
-      <origin rpy="0 0 0" xyz="0.03576 -0.01736 -0.00095"/>
-      <inertia ixx="0.00007738410" ixy="-0.00000209309" ixz="-0.00000836228" iyy="0.00019847383" iyz="0.00000246110" izz="0.00018106988"/>
-    </inertial>
-    <visual>
-      <origin rpy="3.14159265359 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/l_finger.obj"/>
-      </geometry>
-      <material name="Grey"/>
-    </visual>
-    <collision>
-      <origin rpy="3.14159265359 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/l_finger.obj"/>
-      </geometry>
-      <verbose value="Yes"/>
-    </collision>
-  </link>
-  <joint name="r_gripper_l_parallel_root_joint" type="revolute">
-    <axis xyz="0 0 1"/>
-    <origin rpy="0 0 0" xyz="0.05891 0.031 0"/>
-    <dynamics damping="0.2"/>
-    <mimic joint="r_gripper_l_finger_joint" multiplier="1" offset="0"/>
-    <parent link="r_gripper_palm_link"/>
-    <child link="r_gripper_l_parallel_link"/>
-    <limit effort="1000.0" lower="0.0" upper="0.548" velocity="0.5"/>
-  </joint>
-  <joint name="r_gripper_r_parallel_root_joint" type="revolute">
-    <axis xyz="0 0 -1"/>
-    <origin rpy="0 0 0" xyz="0.05891 -0.031 0"/>
-    <dynamics damping="0.2"/>
-    <mimic joint="r_gripper_l_finger_joint" multiplier="-1" offset="0"/>
-    <parent link="r_gripper_palm_link"/>
-    <child link="r_gripper_r_parallel_link"/>
-    <limit effort="1000.0" lower="0.0" upper="0.548" velocity="0.5"/>
-  </joint>
-  <link name="r_gripper_l_parallel_link">
-    <inertial>
-      <mass value="0.17126"/>
-      <origin rpy="0 0 0" xyz="0.03598 0.01730 -0.00164"/>
-      <inertia ixx="0.00007756198" ixy="0.00000149095" ixz="-0.00000983385" iyy="0.00019708305" iyz="-0.00000306125" izz="0.00018105446"/>
-    </inertial>
-    <!--
-      <visual>
-        <origin xyz="${0.0914942479/2.0} 0 0" rpy="0 0 0.0541224233" />
-        <geometry>
-          <box size="${0.0914942479} 0.005 0.005" />
-        </geometry>
-        <material name="Green" />
-      </visual>
--->
-    <collision>
-      <origin rpy="0 0 0.0541224233" xyz="0.04574712395 0 0"/>
-      <geometry>
-        <box size="0.0914942479 0.005 0.005"/>
-      </geometry>
-      <verbose value="Yes"/>
-    </collision>
-  </link>
-  <link name="r_gripper_r_parallel_link">
-    <inertial>
-      <mass value="0.17389"/>
-      <origin rpy="0 0 0" xyz="0.03576 -0.01736 -0.00095"/>
-      <inertia ixx="0.00007738410" ixy="-0.00000209309" ixz="-0.00000836228" iyy="0.00019847383" iyz="0.00000246110" izz="0.00018106988"/>
-    </inertial>
-    <!--
-      <visual>
-        <origin xyz="${0.0914942479/2.0} 0 0" rpy="0 0 -0.0541224233" />
-        <geometry>
-          <box size="${0.0914942479} 0.005 0.005" />
-        </geometry>
-        <material name="Green" />
-      </visual>
--->
-    <collision>
-      <origin rpy="0 0 -0.0541224233" xyz="0.04574712395 0 0"/>
-      <geometry>
-        <box size="0.0914942479 0.005 0.005"/>
-      </geometry>
-      <verbose value="Yes"/>
-    </collision>
-  </link>
-  <joint name="r_gripper_l_finger_tip_joint" type="fixed"> <!--revolute-->
-    <axis xyz="0 0 -1"/>
-    <origin rpy="0 0 0" xyz="0.09137 0.00495 0"/>
-    <limit effort="1000.0" lower="0.0" upper="0.548" velocity="0.5"/>
-    <dynamics damping="0.01"/>
-    <mimic joint="r_gripper_l_finger_joint" multiplier="1" offset="0"/>
-    <parent link="r_gripper_l_finger_link"/>
-    <child link="r_gripper_l_finger_tip_link"/>
-  </joint>
-  <link name="r_gripper_l_finger_tip_link">
-    <inertial>
-      <mass value="0.04419"/>
-      <origin rpy="0 0 0" xyz="0.00423 0.00284 0.0"/>
-      <inertia ixx="0.00000837047" ixy="0.00000583632" ixz="0.0" iyy="0.00000987067" iyz="0.0" izz="0.00001541768"/>
-    </inertial>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/l_finger_tip.obj"/>
-      </geometry>
-      <material name="Green"/>
-    </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/l_finger_tip.obj"/>
-      </geometry>
-      <verbose value="Yes"/>
-    </collision>
-  </link>
-  <joint name="r_gripper_r_finger_tip_joint" type="fixed"> <!--revolute-->
-    <axis xyz="0 0 1"/>
-    <origin rpy="0 0 0" xyz="0.09137 -0.00495 0"/>
-    <limit effort="1000.0" lower="0.0" upper="0.548" velocity="0.5"/>
-    <dynamics damping="0.01"/>
-    <mimic joint="r_gripper_l_finger_joint" multiplier="1" offset="0"/>
-    <parent link="r_gripper_r_finger_link"/>
-    <child link="r_gripper_r_finger_tip_link"/>
-  </joint>
-  <link name="r_gripper_r_finger_tip_link">
-    <inertial>
-      <mass value="0.04419"/>
-      <origin rpy="0 0 0" xyz="0.00423 -0.00284 0.0"/>
-      <inertia ixx="0.00000837047" ixy="-0.00000583632" ixz="0.0" iyy="0.00000987067" iyz="0.0" izz="0.00001541768"/>
-    </inertial>
-    <visual>
-      <origin rpy="3.14159265359 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/l_finger_tip.obj"/>
-      </geometry>
-      <material name="Green"/>
-    </visual>
-    <collision>
-      <origin rpy="3.14159265359 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/l_finger_tip.obj"/>
-      </geometry>
-      <verbose value="Yes"/>
-    </collision>
-  </link>
-  <gazebo reference="r_gripper_l_finger_link">
-    <turnGravityOff>true</turnGravityOff>
-    <sensor:contact name="r_gripper_l_finger_contact_sensor">
-      <geom>r_gripper_l_finger_link_geom</geom>
-      <updateRate>100.0</updateRate>
-      <controller:gazebo_ros_bumper name="r_gripper_l_finger_gazebo_ros_bumper_controller" plugin="libgazebo_ros_bumper.so">
-        <alwaysOn>true</alwaysOn>
-        <updateRate>100.0</updateRate>
-        <bumperTopicName>r_gripper_l_finger_bumper</bumperTopicName>
-        <interface:bumper name="r_gripper_l_finger_gazebo_ros_bumper_iface"/>
-      </controller:gazebo_ros_bumper>
-    </sensor:contact>
-    <mu1 value="500.0"/>
-    <mu2 value="500.0"/>
-    <kp value="1000000.0"/>
-    <kd value="1.0"/>
-    <material value="PR2/Grey"/>
-    <!-- for "${prefix}_l_finger_joint"-->
-  </gazebo>
-  <gazebo reference="r_gripper_l_finger_joint">
-    <stopKd value="1.0"/>
-    <stopKp value="10000000.0"/>
-    <fudgeFactor value="1.0"/>
-    <provideFeedback value="true"/>
-  </gazebo>
-  <gazebo reference="r_gripper_r_finger_link">
-    <turnGravityOff>true</turnGravityOff>
-    <sensor:contact name="r_gripper_r_finger_contact_sensor">
-      <geom>r_gripper_r_finger_link_geom</geom>
-      <updateRate>100.0</updateRate>
-      <controller:gazebo_ros_bumper name="r_gripper_r_finger_gazebo_ros_bumper_controller" plugin="libgazebo_ros_bumper.so">
-        <alwaysOn>true</alwaysOn>
-        <updateRate>100.0</updateRate>
-        <bumperTopicName>r_gripper_r_finger_bumper</bumperTopicName>
-        <interface:bumper name="r_gripper_r_finger_gazebo_ros_bumper_iface"/>
-      </controller:gazebo_ros_bumper>
-    </sensor:contact>
-    <mu1 value="500.0"/>
-    <mu2 value="500.0"/>
-    <kp value="1000000.0"/>
-    <kd value="1.0"/>
-    <material value="PR2/Grey"/>
-  </gazebo>
-  <gazebo reference="r_gripper_r_finger_joint">
-    <stopKd value="1.0"/>
-    <stopKp value="10000000.0"/>
-    <fudgeFactor value="1.0"/>
-    <provideFeedback value="true"/>
-  </gazebo>
-  <gazebo reference="r_gripper_l_finger_tip_link">
-    <turnGravityOff>true</turnGravityOff>
-    <selfCollide>false</selfCollide>
-    <sensor:contact name="r_gripper_l_finger_tip_contact_sensor">
-      <geom>r_gripper_l_finger_tip_link_geom</geom>
-      <updateRate>100.0</updateRate>
-      <controller:gazebo_ros_bumper name="r_gripper_l_finger_tip_gazebo_ros_bumper_controller" plugin="libgazebo_ros_bumper.so">
-        <alwaysOn>true</alwaysOn>
-        <updateRate>100.0</updateRate>
-        <bumperTopicName>r_gripper_l_finger_tip_bumper</bumperTopicName>
-        <interface:bumper name="r_gripper_l_finger_tip_gazebo_ros_bumper_iface"/>
-      </controller:gazebo_ros_bumper>
-    </sensor:contact>
-    <mu1 value="500.0"/>
-    <mu2 value="500.0"/>
-    <kp value="10000000.0"/>
-    <kd value="1.0"/>
-    <material value="PR2/Grey"/>
-  </gazebo>
-  <gazebo reference="r_gripper_l_finger_tip_joint">
-    <stopKd value="1.0"/>
-    <stopKp value="10000000.0"/>
-    <fudgeFactor value="1.0"/>
-    <provideFeedback value="true"/>
-  </gazebo>
-  <gazebo reference="r_gripper_r_finger_tip_link">
-    <turnGravityOff>true</turnGravityOff>
-    <selfCollide>false</selfCollide>
-    <sensor:contact name="r_gripper_r_finger_tip_contact_sensor">
-      <geom>r_gripper_r_finger_tip_link_geom</geom>
-      <updateRate>100.0</updateRate>
-      <controller:gazebo_ros_bumper name="r_gripper_r_finger_tip_gazebo_ros_bumper_controller" plugin="libgazebo_ros_bumper.so">
-        <alwaysOn>true</alwaysOn>
-        <updateRate>100.0</updateRate>
-        <bumperTopicName>r_gripper_r_finger_tip_bumper</bumperTopicName>
-        <interface:bumper name="r_gripper_r_finger_tip_gazebo_ros_bumper_iface"/>
-      </controller:gazebo_ros_bumper>
-    </sensor:contact>
-    <mu1 value="500.0"/>
-    <mu2 value="500.0"/>
-    <kp value="10000000.0"/>
-    <kd value="1.0"/>
-    <material value="PR2/Grey"/>
-  </gazebo>
-  <gazebo>
-    <controller:gazebo_ros_p3d name="p3d_r_gripper_l_finger_controller" plugin="libgazebo_ros_p3d.so">
-      <alwaysOn>true</alwaysOn>
-      <updateRate>100.0</updateRate>
-      <bodyName>r_gripper_l_finger_link</bodyName>
-      <topicName>r_gripper_l_finger_pose_ground_truth</topicName>
-      <gaussianNoise>0.0</gaussianNoise>
-      <frameName>base_link</frameName>
-      <interface:position name="p3d_r_gripper_l_finger_position_iface"/>
-    </controller:gazebo_ros_p3d>
-    <controller:gazebo_ros_f3d name="f3d_r_gripper_l_finger_controller" plugin="libgazebo_ros_f3d.so">
-      <alwaysOn>true</alwaysOn>
-      <updateRate>100.0</updateRate>
-      <bodyName>r_gripper_l_finger_link</bodyName>
-      <topicName>r_gripper_l_finger_force_ground_truth</topicName>
-      <frameName>r_gripper_l_finger_link</frameName>
-      <interface:position name="f3d_r_gripper_l_finger_force_iface"/>
-    </controller:gazebo_ros_f3d>
-  </gazebo>
-  <gazebo reference="r_gripper_r_finger_tip_joint">
-    <stopKd value="1.0"/>
-    <stopKp value="10000000.0"/>
-    <fudgeFactor value="1.0"/>
-    <provideFeedback value="true"/>
-  </gazebo>
-  <gazebo>
-    <joint:hinge name="r_gripper_r_parallel_tip_joint">
-      <body1>r_gripper_r_parallel_link</body1>
-      <body2>r_gripper_r_finger_tip_link</body2>
-      <anchor>r_gripper_r_finger_tip_link</anchor>
-      <axis>0 0 1</axis>
-      <anchorOffset>-0.018 -0.021 0</anchorOffset>
-    </joint:hinge>
-    <joint:hinge name="r_gripper_l_parallel_tip_joint">
-      <body1>r_gripper_l_parallel_link</body1>
-      <body2>r_gripper_l_finger_tip_link</body2>
-      <anchor>r_gripper_l_finger_tip_link</anchor>
-      <axis>0 0 1</axis>
-      <anchorOffset>-0.018 0.021 0</anchorOffset>
-    </joint:hinge>
-    <joint:slider name="r_gripper_joint">
-      <body1>r_gripper_l_finger_tip_link</body1>
-      <body2>r_gripper_r_finger_tip_link</body2>
-      <anchor>r_gripper_r_finger_tip_link</anchor>
-      <axis>0 1 0</axis>
-    </joint:slider>
-  </gazebo>
-  <gazebo reference="r_gripper_l_parallel_link">
-    <turnGravityOff>true</turnGravityOff>
-    <material value="PR2/Red"/>
-  </gazebo>
-  <gazebo reference="r_gripper_r_parallel_link">
-    <turnGravityOff>true</turnGravityOff>
-    <material value="PR2/Red"/>
-  </gazebo>
-  <joint name="r_gripper_joint" type="prismatic">
-    <parent link="r_gripper_r_finger_tip_link"/>
-    <child link="r_gripper_l_finger_tip_frame"/>
-    <axis xyz="0 1 0"/>
-    <dynamics damping="100.0"/>
-    <limit effort="1000.0" lower="0.0" upper="0.09" velocity="0.2"/>
-    <safety_controller k_position="20.0" k_velocity="5000.0" soft_lower_limit="-0.01" soft_upper_limit="0.088"/>
-  </joint>
-  <link name="r_gripper_l_finger_tip_frame"/>
-  <gazebo reference="r_gripper_palm_link">
-    <turnGravityOff>true</turnGravityOff>
-    <sensor:contact name="r_gripper_palm_contact_sensor">
-      <geom>r_gripper_palm_link_geom</geom>
-      <updateRate>100.0</updateRate>
-      <controller:gazebo_ros_bumper name="r_gripper_palm_gazebo_ros_bumper_controller" plugin="libgazebo_ros_bumper.so">
-        <alwaysOn>true</alwaysOn>
-        <updateRate>100.0</updateRate>
-        <bumperTopicName>r_gripper_palm_bumper</bumperTopicName>
-        <interface:bumper name="r_gripper_palm_gazebo_ros_bumper_iface"/>
-      </controller:gazebo_ros_bumper>
-    </sensor:contact>
-    <material value="PR2/Grey"/>
-  </gazebo>
-  <gazebo>
-    <controller:gazebo_ros_p3d name="p3d_r_gripper_palm_controller" plugin="libgazebo_ros_p3d.so">
-      <alwaysOn>true</alwaysOn>
-      <updateRate>100.0</updateRate>
-      <bodyName>r_gripper_palm_link</bodyName>
-      <topicName>r_gripper_palm_pose_ground_truth</topicName>
-      <xyzOffsets>0 0 0</xyzOffsets>
-      <rpyOffsets>0 0 0</rpyOffsets>
-      <gaussianNoise>0.0</gaussianNoise>
-      <frameName>map</frameName>
-      <interface:position name="p3d_r_gripper_palm_position_iface"/>
-    </controller:gazebo_ros_p3d>
-  </gazebo>
-  <transmission name="r_gripper_trans" type="SimpleTransmission"> <!-- GripperTransmission -->
-    <actuator name="r_gripper_motor"/>
-    <gap_joint L0="0.0375528" a="0.0683698" b="0.0433849" gear_ratio="40.095" h="0.0" mechanical_reduction="1.0" name="r_gripper_joint" phi0="0.518518122146" r="0.0915" screw_reduction="0.004" t0="-0.0001914" theta0="0.0628824676201"/>
-    <!-- if a gazebo joint exists as [l|r]_gripper_joint, use this tag to have
-           gripper transmission apply torque directly to prismatic joint -->
-    <use_simulated_gripper_joint/>
-    <passive_joint name="r_gripper_l_finger_joint"/>
-    <passive_joint name="r_gripper_r_finger_joint"/>
-    <passive_joint name="r_gripper_r_finger_tip_joint"/>
-    <passive_joint name="r_gripper_l_finger_tip_joint"/>
-    <passive_joint name="r_gripper_r_parallel_root_joint"/>
-    <passive_joint name="r_gripper_l_parallel_root_joint"/>
-    <joint name="r_gripper_joint"/>
-  </transmission>
-  <joint name="l_shoulder_pan_joint" type="revolute">
+  <joint name="l_shoulder_pan_joint" type="revolute"> <!--revolute-->
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.0 0.188 0.0"/>
     <!-- transform from parent link to this joint frame -->
@@ -2399,7 +1438,7 @@
       </geometry>
     </collision>
   </link>
-  <joint name="l_shoulder_lift_joint" type="revolute">
+  <joint name="l_shoulder_lift_joint" type="revolute"> <!--revolute-->
     <axis xyz="0 1 0"/>
     <!-- Limits updated from Function's CAD values as of 2009_02_24 (link_data.xls) -->
     <limit effort="30" lower="-0.5236" upper="1.3963" velocity="2.082"/>
@@ -2432,7 +1471,7 @@
       </geometry>
     </collision>
   </link>
-  <joint name="l_upper_arm_roll_joint" type="revolute">
+  <joint name="l_upper_arm_roll_joint" type="revolute"> <!--revolute-->
     <axis xyz="1 0 0"/>
     <origin rpy="0 0 0" xyz="0 0 0"/>
     <parent link="l_shoulder_lift_link"/>
@@ -2565,7 +1604,7 @@
     </sensor:contact>
     <turnGravityOff>true</turnGravityOff>
   </gazebo>
-  <joint name="l_forearm_roll_joint" type="continuous">
+  <joint name="l_forearm_roll_joint" type="continuous"> <!--continuous-->
     <axis xyz="1 0 0"/>
     <limit effort="30" velocity="3.6"/>
     <!-- alpha tested velocity and effort limits -->
@@ -2611,7 +1650,7 @@
     <joint name="l_forearm_roll_joint"/>
     <mechanicalReduction>-90.5142857143</mechanicalReduction>
   </transmission>
-  <joint name="l_elbow_flex_joint" type="revolute">
+  <joint name="l_elbow_flex_joint" type="revolute"> <!--revolute-->
     <axis xyz="0 1 0"/>
     <!-- Note: Overtravel limits are 140, -7 degrees instead of 133, 0 -->
     <limit effort="30" lower="-2.3213" upper="0.00" velocity="3.3"/>
@@ -2696,7 +1735,7 @@
       </geometry>
     </collision>
   </link>
-  <joint name="l_wrist_flex_joint" type="revolute">
+  <joint name="l_wrist_flex_joint" type="fixed"> <!-- revolute -->
     <axis xyz="0 1 0"/>
     <limit effort="10" lower="-2.094" upper="0.0" velocity="3.078"/>
     <!-- alpha tested velocity and effort limits -->
@@ -2728,7 +1767,7 @@
       </geometry>
     </collision>
   </link>
-  <joint name="l_wrist_roll_joint" type="continuous">
+  <joint name="l_wrist_roll_joint" type="fixed"> <!-- continuous -->
     <axis xyz="1 0 0"/>
     <limit effort="10" velocity="3.6"/>
     <!-- alpha tested velocity and effort limits -->
@@ -2810,7 +1849,7 @@
   <gazebo reference="l_wrist_roll_joint">
     <fudgeFactor value="0.5"/>
   </gazebo>
-  <!--
+  <!-- Drake only supports SimpleTransmissions, so I commented this out
   <transmission name="l_wrist_trans" type="WristTransmission">
     <rightActuator mechanicalReduction="60.1714285714" name="l_wrist_r_motor"/>
     <leftActuator mechanicalReduction="60.1714285714" name="l_wrist_l_motor"/>
@@ -2818,450 +1857,6 @@
     <rollJoint mechanicalReduction="1.0" name="l_wrist_roll_joint"/>
   </transmission>
   -->
-  <joint name="l_gripper_palm_joint" type="fixed">
-    <origin rpy="0 0 0" xyz="0 0 0"/>
-    <parent link="l_wrist_roll_link"/>
-    <child link="l_gripper_palm_link"/>
-  </joint>
-  <link name="l_gripper_palm_link">
-    <inertial>
-      <mass value="0.58007"/>
-      <origin rpy="0 0 0" xyz="0.06623 0.00053 -0.00119"/>
-      <inertia ixx="0.00035223921" ixy="-0.00001580476" ixz="-0.00000091750" iyy="0.00067741312" iyz="-0.00000059554" izz="0.00086563316"/>
-    </inertial>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/gripper_palm.obj"/>
-      </geometry>
-      <material name="Red"/>
-    </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/gripper_palm.obj"/>
-      </geometry>
-      <verbose value="Yes"/>
-    </collision>
-  </link>
-  <joint name="l_gripper_led_joint" type="fixed">
-    <!--  Need to check if we need a positive or negative Z term -->
-    <origin xyz="0.0513 0.0 .0244"/>
-    <parent link="l_gripper_palm_link"/>
-    <child link="l_gripper_led_frame"/>
-  </joint>
-  <link name="l_gripper_led_frame"/>
-  <joint name="l_gripper_motor_accelerometer_joint" type="fixed">
-    <origin rpy="0 0 0" xyz="0 0 0"/>
-    <parent link="l_gripper_palm_link"/>
-    <child link="l_gripper_motor_accelerometer_link"/>
-  </joint>
-  <link name="l_gripper_motor_accelerometer_link">
-    <inertial>
-      <mass value="0.001"/>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
-    </inertial>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <box size="0.001 0.001 0.001"/>
-      </geometry>
-    </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <box size="0.001 0.001 0.001"/>
-      </geometry>
-    </collision>
-  </link>
-  <joint name="l_gripper_tool_joint" type="fixed">
-    <origin rpy="0 0 0" xyz="0.18 0 0"/>
-    <parent link="l_gripper_palm_link"/>
-    <child link="l_gripper_tool_frame"/>
-  </joint>
-  <link name="l_gripper_tool_frame"/>
-  <joint name="l_gripper_l_finger_joint" type="revolute">
-    <axis xyz="0 0 1"/>
-    <limit effort="1000.0" lower="0.0" upper="0.548" velocity="0.5"/>
-    <dynamics damping="0.2"/>
-    <origin rpy="0 0 0" xyz="0.07691 0.01 0"/>
-    <parent link="l_gripper_palm_link"/>
-    <child link="l_gripper_l_finger_link"/>
-  </joint>
-  <link name="l_gripper_l_finger_link">
-    <inertial>
-      <mass value="0.17126"/>
-      <origin rpy="0 0 0" xyz="0.03598 0.01730 -0.00164"/>
-      <inertia ixx="0.00007756198" ixy="0.00000149095" ixz="-0.00000983385" iyy="0.00019708305" iyz="-0.00000306125" izz="0.00018105446"/>
-    </inertial>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/l_finger.obj"/>
-      </geometry>
-      <material name="Grey"/>
-    </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/l_finger.obj"/>
-      </geometry>
-      <verbose value="Yes"/>
-    </collision>
-  </link>
-  <joint name="l_gripper_r_finger_joint" type="revolute">
-    <axis xyz="0 0 -1"/>
-    <origin rpy="0 0 0" xyz="0.07691 -0.01 0"/>
-    <limit effort="1000.0" lower="0.0" upper="0.548" velocity="0.5"/>
-    <dynamics damping="0.2"/>
-    <mimic joint="l_gripper_l_finger_joint" multiplier="1" offset="0"/>
-    <parent link="l_gripper_palm_link"/>
-    <child link="l_gripper_r_finger_link"/>
-  </joint>
-  <link name="l_gripper_r_finger_link">
-    <inertial>
-      <mass value="0.17389"/>
-      <origin rpy="0 0 0" xyz="0.03576 -0.01736 -0.00095"/>
-      <inertia ixx="0.00007738410" ixy="-0.00000209309" ixz="-0.00000836228" iyy="0.00019847383" iyz="0.00000246110" izz="0.00018106988"/>
-    </inertial>
-    <visual>
-      <origin rpy="3.14159265359 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/l_finger.obj"/>
-      </geometry>
-      <material name="Grey"/>
-    </visual>
-    <collision>
-      <origin rpy="3.14159265359 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/l_finger.obj"/>
-      </geometry>
-      <verbose value="Yes"/>
-    </collision>
-  </link>
-  <joint name="l_gripper_l_parallel_root_joint" type="revolute">
-    <axis xyz="0 0 1"/>
-    <origin rpy="0 0 0" xyz="0.05891 0.031 0"/>
-    <dynamics damping="0.2"/>
-    <mimic joint="l_gripper_l_finger_joint" multiplier="1" offset="0"/>
-    <parent link="l_gripper_palm_link"/>
-    <child link="l_gripper_l_parallel_link"/>
-    <limit effort="1000.0" lower="0.0" upper="0.548" velocity="0.5"/>
-  </joint>
-  <joint name="l_gripper_r_parallel_root_joint" type="revolute">
-    <axis xyz="0 0 -1"/>
-    <origin rpy="0 0 0" xyz="0.05891 -0.031 0"/>
-    <dynamics damping="0.2"/>
-    <mimic joint="l_gripper_l_finger_joint" multiplier="-1" offset="0"/>
-    <parent link="l_gripper_palm_link"/>
-    <child link="l_gripper_r_parallel_link"/>
-    <limit effort="1000.0" lower="0.0" upper="0.548" velocity="0.5"/>
-  </joint>
-  <link name="l_gripper_l_parallel_link">
-    <inertial>
-      <mass value="0.17126"/>
-      <origin rpy="0 0 0" xyz="0.03598 0.01730 -0.00164"/>
-      <inertia ixx="0.00007756198" ixy="0.00000149095" ixz="-0.00000983385" iyy="0.00019708305" iyz="-0.00000306125" izz="0.00018105446"/>
-    </inertial>
-    <!--
-      <visual>
-        <origin xyz="${0.0914942479/2.0} 0 0" rpy="0 0 0.0541224233" />
-        <geometry>
-          <box size="${0.0914942479} 0.005 0.005" />
-        </geometry>
-        <material name="Green" />
-      </visual>
--->
-    <collision>
-      <origin rpy="0 0 0.0541224233" xyz="0.04574712395 0 0"/>
-      <geometry>
-        <box size="0.0914942479 0.005 0.005"/>
-      </geometry>
-      <verbose value="Yes"/>
-    </collision>
-  </link>
-  <link name="l_gripper_r_parallel_link">
-    <inertial>
-      <mass value="0.17389"/>
-      <origin rpy="0 0 0" xyz="0.03576 -0.01736 -0.00095"/>
-      <inertia ixx="0.00007738410" ixy="-0.00000209309" ixz="-0.00000836228" iyy="0.00019847383" iyz="0.00000246110" izz="0.00018106988"/>
-    </inertial>
-    <!--
-      <visual>
-        <origin xyz="${0.0914942479/2.0} 0 0" rpy="0 0 -0.0541224233" />
-        <geometry>
-          <box size="${0.0914942479} 0.005 0.005" />
-        </geometry>
-        <material name="Green" />
-      </visual>
--->
-    <collision>
-      <origin rpy="0 0 -0.0541224233" xyz="0.04574712395 0 0"/>
-      <geometry>
-        <box size="0.0914942479 0.005 0.005"/>
-      </geometry>
-      <verbose value="Yes"/>
-    </collision>
-  </link>
-  <joint name="l_gripper_l_finger_tip_joint" type="fixed"> <!--revolute-->
-    <axis xyz="0 0 -1"/>
-    <origin rpy="0 0 0" xyz="0.09137 0.00495 0"/>
-    <limit effort="1000.0" lower="0.0" upper="0.548" velocity="0.5"/>
-    <dynamics damping="0.01"/>
-    <mimic joint="l_gripper_l_finger_joint" multiplier="1" offset="0"/>
-    <parent link="l_gripper_l_finger_link"/>
-    <child link="l_gripper_l_finger_tip_link"/>
-  </joint>
-  <link name="l_gripper_l_finger_tip_link">
-    <inertial>
-      <mass value="0.04419"/>
-      <origin rpy="0 0 0" xyz="0.00423 0.00284 0.0"/>
-      <inertia ixx="0.00000837047" ixy="0.00000583632" ixz="0.0" iyy="0.00000987067" iyz="0.0" izz="0.00001541768"/>
-    </inertial>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/l_finger_tip.obj"/>
-      </geometry>
-      <material name="Green"/>
-    </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/l_finger_tip.obj"/>
-      </geometry>
-      <verbose value="Yes"/>
-    </collision>
-  </link>
-  <joint name="l_gripper_r_finger_tip_joint" type="fixed"> <!--revolute-->
-    <axis xyz="0 0 1"/>
-    <origin rpy="0 0 0" xyz="0.09137 -0.00495 0"/>
-    <limit effort="1000.0" lower="0.0" upper="0.548" velocity="0.5"/>
-    <dynamics damping="0.01"/>
-    <mimic joint="l_gripper_l_finger_joint" multiplier="1" offset="0"/>
-    <parent link="l_gripper_r_finger_link"/>
-    <child link="l_gripper_r_finger_tip_link"/>
-  </joint>
-  <link name="l_gripper_r_finger_tip_link">
-    <inertial>
-      <mass value="0.04419"/>
-      <origin rpy="0 0 0" xyz="0.00423 -0.00284 0.0"/>
-      <inertia ixx="0.00000837047" ixy="-0.00000583632" ixz="0.0" iyy="0.00000987067" iyz="0.0" izz="0.00001541768"/>
-    </inertial>
-    <visual>
-      <origin rpy="3.14159265359 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/l_finger_tip.obj"/>
-      </geometry>
-      <material name="Green"/>
-    </visual>
-    <collision>
-      <origin rpy="3.14159265359 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/l_finger_tip.obj"/>
-      </geometry>
-      <verbose value="Yes"/>
-    </collision>
-  </link>
-  <gazebo reference="l_gripper_l_finger_link">
-    <turnGravityOff>true</turnGravityOff>
-    <sensor:contact name="l_gripper_l_finger_contact_sensor">
-      <geom>l_gripper_l_finger_link_geom</geom>
-      <updateRate>100.0</updateRate>
-      <controller:gazebo_ros_bumper name="l_gripper_l_finger_gazebo_ros_bumper_controller" plugin="libgazebo_ros_bumper.so">
-        <alwaysOn>true</alwaysOn>
-        <updateRate>100.0</updateRate>
-        <bumperTopicName>l_gripper_l_finger_bumper</bumperTopicName>
-        <interface:bumper name="l_gripper_l_finger_gazebo_ros_bumper_iface"/>
-      </controller:gazebo_ros_bumper>
-    </sensor:contact>
-    <mu1 value="500.0"/>
-    <mu2 value="500.0"/>
-    <kp value="1000000.0"/>
-    <kd value="1.0"/>
-    <material value="PR2/Grey"/>
-    <!-- for "${prefix}_l_finger_joint"-->
-  </gazebo>
-  <gazebo reference="l_gripper_l_finger_joint">
-    <stopKd value="1.0"/>
-    <stopKp value="10000000.0"/>
-    <fudgeFactor value="1.0"/>
-    <provideFeedback value="true"/>
-  </gazebo>
-  <gazebo reference="l_gripper_r_finger_link">
-    <turnGravityOff>true</turnGravityOff>
-    <sensor:contact name="l_gripper_r_finger_contact_sensor">
-      <geom>l_gripper_r_finger_link_geom</geom>
-      <updateRate>100.0</updateRate>
-      <controller:gazebo_ros_bumper name="l_gripper_r_finger_gazebo_ros_bumper_controller" plugin="libgazebo_ros_bumper.so">
-        <alwaysOn>true</alwaysOn>
-        <updateRate>100.0</updateRate>
-        <bumperTopicName>l_gripper_r_finger_bumper</bumperTopicName>
-        <interface:bumper name="l_gripper_r_finger_gazebo_ros_bumper_iface"/>
-      </controller:gazebo_ros_bumper>
-    </sensor:contact>
-    <mu1 value="500.0"/>
-    <mu2 value="500.0"/>
-    <kp value="1000000.0"/>
-    <kd value="1.0"/>
-    <material value="PR2/Grey"/>
-  </gazebo>
-  <gazebo reference="l_gripper_r_finger_joint">
-    <stopKd value="1.0"/>
-    <stopKp value="10000000.0"/>
-    <fudgeFactor value="1.0"/>
-    <provideFeedback value="true"/>
-  </gazebo>
-  <gazebo reference="l_gripper_l_finger_tip_link">
-    <turnGravityOff>true</turnGravityOff>
-    <selfCollide>false</selfCollide>
-    <sensor:contact name="l_gripper_l_finger_tip_contact_sensor">
-      <geom>l_gripper_l_finger_tip_link_geom</geom>
-      <updateRate>100.0</updateRate>
-      <controller:gazebo_ros_bumper name="l_gripper_l_finger_tip_gazebo_ros_bumper_controller" plugin="libgazebo_ros_bumper.so">
-        <alwaysOn>true</alwaysOn>
-        <updateRate>100.0</updateRate>
-        <bumperTopicName>l_gripper_l_finger_tip_bumper</bumperTopicName>
-        <interface:bumper name="l_gripper_l_finger_tip_gazebo_ros_bumper_iface"/>
-      </controller:gazebo_ros_bumper>
-    </sensor:contact>
-    <mu1 value="500.0"/>
-    <mu2 value="500.0"/>
-    <kp value="10000000.0"/>
-    <kd value="1.0"/>
-    <material value="PR2/Grey"/>
-  </gazebo>
-  <gazebo reference="l_gripper_l_finger_tip_joint">
-    <stopKd value="1.0"/>
-    <stopKp value="10000000.0"/>
-    <fudgeFactor value="1.0"/>
-    <provideFeedback value="true"/>
-  </gazebo>
-  <gazebo reference="l_gripper_r_finger_tip_link">
-    <turnGravityOff>true</turnGravityOff>
-    <selfCollide>false</selfCollide>
-    <sensor:contact name="l_gripper_r_finger_tip_contact_sensor">
-      <geom>l_gripper_r_finger_tip_link_geom</geom>
-      <updateRate>100.0</updateRate>
-      <controller:gazebo_ros_bumper name="l_gripper_r_finger_tip_gazebo_ros_bumper_controller" plugin="libgazebo_ros_bumper.so">
-        <alwaysOn>true</alwaysOn>
-        <updateRate>100.0</updateRate>
-        <bumperTopicName>l_gripper_r_finger_tip_bumper</bumperTopicName>
-        <interface:bumper name="l_gripper_r_finger_tip_gazebo_ros_bumper_iface"/>
-      </controller:gazebo_ros_bumper>
-    </sensor:contact>
-    <mu1 value="500.0"/>
-    <mu2 value="500.0"/>
-    <kp value="10000000.0"/>
-    <kd value="1.0"/>
-    <material value="PR2/Grey"/>
-  </gazebo>
-  <gazebo>
-    <controller:gazebo_ros_p3d name="p3d_l_gripper_l_finger_controller" plugin="libgazebo_ros_p3d.so">
-      <alwaysOn>true</alwaysOn>
-      <updateRate>100.0</updateRate>
-      <bodyName>l_gripper_l_finger_link</bodyName>
-      <topicName>l_gripper_l_finger_pose_ground_truth</topicName>
-      <gaussianNoise>0.0</gaussianNoise>
-      <frameName>base_link</frameName>
-      <interface:position name="p3d_l_gripper_l_finger_position_iface"/>
-    </controller:gazebo_ros_p3d>
-    <controller:gazebo_ros_f3d name="f3d_l_gripper_l_finger_controller" plugin="libgazebo_ros_f3d.so">
-      <alwaysOn>true</alwaysOn>
-      <updateRate>100.0</updateRate>
-      <bodyName>l_gripper_l_finger_link</bodyName>
-      <topicName>l_gripper_l_finger_force_ground_truth</topicName>
-      <frameName>l_gripper_l_finger_link</frameName>
-      <interface:position name="f3d_l_gripper_l_finger_force_iface"/>
-    </controller:gazebo_ros_f3d>
-  </gazebo>
-  <gazebo reference="l_gripper_r_finger_tip_joint">
-    <stopKd value="1.0"/>
-    <stopKp value="10000000.0"/>
-    <fudgeFactor value="1.0"/>
-    <provideFeedback value="true"/>
-  </gazebo>
-  <gazebo>
-    <joint:hinge name="l_gripper_r_parallel_tip_joint">
-      <body1>l_gripper_r_parallel_link</body1>
-      <body2>l_gripper_r_finger_tip_link</body2>
-      <anchor>l_gripper_r_finger_tip_link</anchor>
-      <axis>0 0 1</axis>
-      <anchorOffset>-0.018 -0.021 0</anchorOffset>
-    </joint:hinge>
-    <joint:hinge name="l_gripper_l_parallel_tip_joint">
-      <body1>l_gripper_l_parallel_link</body1>
-      <body2>l_gripper_l_finger_tip_link</body2>
-      <anchor>l_gripper_l_finger_tip_link</anchor>
-      <axis>0 0 1</axis>
-      <anchorOffset>-0.018 0.021 0</anchorOffset>
-    </joint:hinge>
-    <joint:slider name="l_gripper_joint">
-      <body1>l_gripper_l_finger_tip_link</body1>
-      <body2>l_gripper_r_finger_tip_link</body2>
-      <anchor>l_gripper_r_finger_tip_link</anchor>
-      <axis>0 1 0</axis>
-    </joint:slider>
-  </gazebo>
-  <gazebo reference="l_gripper_l_parallel_link">
-    <turnGravityOff>true</turnGravityOff>
-    <material value="PR2/Red"/>
-  </gazebo>
-  <gazebo reference="l_gripper_r_parallel_link">
-    <turnGravityOff>true</turnGravityOff>
-    <material value="PR2/Red"/>
-  </gazebo>
-  <joint name="l_gripper_joint" type="prismatic">
-    <parent link="l_gripper_r_finger_tip_link"/>
-    <child link="l_gripper_l_finger_tip_frame"/>
-    <axis xyz="0 1 0"/>
-    <dynamics damping="100.0"/>
-    <limit effort="1000.0" lower="0.0" upper="0.09" velocity="0.2"/>
-    <safety_controller k_position="20.0" k_velocity="5000.0" soft_lower_limit="-0.01" soft_upper_limit="0.088"/>
-  </joint>
-  <link name="l_gripper_l_finger_tip_frame"/>
-  <gazebo reference="l_gripper_palm_link">
-    <turnGravityOff>true</turnGravityOff>
-    <sensor:contact name="l_gripper_palm_contact_sensor">
-      <geom>l_gripper_palm_link_geom</geom>
-      <updateRate>100.0</updateRate>
-      <controller:gazebo_ros_bumper name="l_gripper_palm_gazebo_ros_bumper_controller" plugin="libgazebo_ros_bumper.so">
-        <alwaysOn>true</alwaysOn>
-        <updateRate>100.0</updateRate>
-        <bumperTopicName>l_gripper_palm_bumper</bumperTopicName>
-        <interface:bumper name="l_gripper_palm_gazebo_ros_bumper_iface"/>
-      </controller:gazebo_ros_bumper>
-    </sensor:contact>
-    <material value="PR2/Grey"/>
-  </gazebo>
-  <gazebo>
-    <controller:gazebo_ros_p3d name="p3d_l_gripper_palm_controller" plugin="libgazebo_ros_p3d.so">
-      <alwaysOn>true</alwaysOn>
-      <updateRate>100.0</updateRate>
-      <bodyName>l_gripper_palm_link</bodyName>
-      <topicName>l_gripper_palm_pose_ground_truth</topicName>
-      <xyzOffsets>0 0 0</xyzOffsets>
-      <rpyOffsets>0 0 0</rpyOffsets>
-      <gaussianNoise>0.0</gaussianNoise>
-      <frameName>map</frameName>
-      <interface:position name="p3d_l_gripper_palm_position_iface"/>
-    </controller:gazebo_ros_p3d>
-  </gazebo>
-  <transmission name="l_gripper_trans" type="SimpleTransmission"> <!-- GripperTransmission -->
-    <actuator name="l_gripper_motor"/>
-    <gap_joint L0="0.0375528" a="0.0683698" b="0.0433849" gear_ratio="40.095" h="0.0" mechanical_reduction="1.0" name="l_gripper_joint" phi0="0.518518122146" r="0.0915" screw_reduction="0.004" t0="-0.0001914" theta0="0.0628824676201"/>
-    <!-- if a gazebo joint exists as [l|r]_gripper_joint, use this tag to have
-           gripper transmission apply torque directly to prismatic joint -->
-    <use_simulated_gripper_joint/>
-    <passive_joint name="l_gripper_l_finger_joint"/>
-    <passive_joint name="l_gripper_r_finger_joint"/>
-    <passive_joint name="l_gripper_r_finger_tip_joint"/>
-    <passive_joint name="l_gripper_l_finger_tip_joint"/>
-    <passive_joint name="l_gripper_r_parallel_root_joint"/>
-    <passive_joint name="l_gripper_l_parallel_root_joint"/>
-    <joint name="l_gripper_joint"/>
-  </transmission>
   <!-- Forearm cam Position is a guess, based on full robot calibration -->
   <!-- Forearm cam Orientation is from Function -->
   <joint name="l_forearm_cam_frame_joint" type="fixed">
