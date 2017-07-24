@@ -17,6 +17,9 @@ template <typename T>
 void GenericPlan<T>::Initialize(
     const HumanoidStatus& robot_status, const param_parsers::ParamSet& paramset,
     const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) {
+  // Checks parameters and throw if they are incompatible.
+  CheckCompatibilityAndThrow(robot_status.robot(), paramset, alias_groups);
+
   // Sets contact states sequence to empty from t = 0 to forever.
   ContactState empty;
   UpdateContactState(empty);
@@ -37,28 +40,13 @@ void GenericPlan<T>::Initialize(
 }
 
 template <typename T>
-void GenericPlan<T>::HandlePlanMessage(
-    const HumanoidStatus& robot_status, const param_parsers::ParamSet& paramset,
-    const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,
-    const void* message_bytes, int message_length) {
-  // Calls custom handler.
-  HandlePlanMessageGenericPlanDerived(robot_status, paramset, alias_groups,
-                                      message_bytes, message_length);
-}
-
-template <typename T>
-void GenericPlan<T>::ModifyPlan(
-    const HumanoidStatus& robot_status, const param_parsers::ParamSet& paramset,
-    const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) {
-  // Runs derived class' plan.
-  ModifyPlanGenericPlanDerived(robot_status, paramset, alias_groups);
-}
-
-template <typename T>
 void GenericPlan<T>::UpdateQpInput(
     const HumanoidStatus& robot_status, const param_parsers::ParamSet& paramset,
     const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,
     QpInput* qp_input) const {
+  // Checks parameters and throw if they are incompatible.
+  CheckCompatibilityAndThrow(robot_status.robot(), paramset, alias_groups);
+
   // Gets all bodies that are in contact.
   const ContactState& contact_state = get_planned_contact_state();
   const std::vector<const RigidBody<T>*> contact_bodies(contact_state.begin(),

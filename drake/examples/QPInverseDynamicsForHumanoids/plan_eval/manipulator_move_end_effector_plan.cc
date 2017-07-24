@@ -32,18 +32,16 @@ void ManipulatorMoveEndEffectorPlan<T>::InitializeGenericPlanDerived(
 }
 
 template <typename T>
-void ManipulatorMoveEndEffectorPlan<T>::HandlePlanMessageGenericPlanDerived(
+void ManipulatorMoveEndEffectorPlan<T>::HandlePlanGenericPlanDerived(
     const HumanoidStatus& robot_status, const param_parsers::ParamSet& paramset,
     const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,
-    const void* message_bytes, int message_length) {
+    const systems::AbstractValue& plan) {
   unused(paramset);  // TODO(jwnimmer-tri) This seems bad.
 
-  // Tries to decode as a lcmt_manipulator_plan_move_end_effector message.
-  lcmt_manipulator_plan_move_end_effector msg;
-  int consumed = msg.decode(message_bytes, 0, message_length);
-  DRAKE_DEMAND(consumed == message_length);
+  const auto& msg =
+      plan.GetValueOrThrow<lcmt_manipulator_plan_move_end_effector>();
 
-  // TODO(siyuan): should do better error handling wrt bad plan message.
+  // TODO(siyuan): should do better error handling wrt bad plan plan.
   DRAKE_DEMAND(static_cast<size_t>(msg.num_steps) == msg.utimes.size() &&
                static_cast<size_t>(msg.num_steps) == msg.poses.size());
   DRAKE_DEMAND(msg.num_steps >= 0);

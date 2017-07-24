@@ -2,7 +2,6 @@
 
 #include <functional>
 #include <ostream>
-#include <functional>
 #include <string>
 
 #include "drake/common/drake_copyable.h"

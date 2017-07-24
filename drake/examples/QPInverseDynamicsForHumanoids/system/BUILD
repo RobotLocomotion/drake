@@ -63,6 +63,7 @@ drake_cc_library(
     hdrs = ["humanoid_plan_eval_system.h"],
     deps = [
         ":plan_eval_base_system",
+        "//drake/examples/QPInverseDynamicsForHumanoids/plan_eval:humanoid_manipulation_plan",
     ],
 )
 

@@ -12,6 +12,7 @@
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_value_source.h"
+#include "robotlocomotion/robot_plan_t.hpp"
 
 namespace drake {
 namespace examples {
@@ -69,12 +70,20 @@ class HumanoidPlanEvalAndQpInverseDynamicsTest : public ::testing::Test {
     auto state_source = builder.AddSystem<systems::ConstantValueSource<double>>(
         systems::AbstractValue::Make<HumanoidStatus>(robot_status));
 
+    // Adds a dummy plan message.
+    robotlocomotion::robot_plan_t msg{};
+    auto plan_source = builder.AddSystem<systems::ConstantValueSource<double>>(
+        systems::AbstractValue::Make<robotlocomotion::robot_plan_t>(msg));
+
     // State -> qp inverse dynamics.
     builder.Connect(state_source->get_output_port(0),
                     controller->get_input_port_humanoid_status());
     // State -> plan eval.
     builder.Connect(state_source->get_output_port(0),
                     plan_eval->get_input_port_humanoid_status());
+    // Plan source -> plan eval.
+    builder.Connect(plan_source->get_output_port(0),
+                    plan_eval->get_input_port_manip_plan_msg());
     // plan eval -> qp inverse dynamics.
     builder.Connect(plan_eval->get_output_port_qp_input(),
                     controller->get_input_port_qp_input());
@@ -94,7 +103,7 @@ class HumanoidPlanEvalAndQpInverseDynamicsTest : public ::testing::Test {
     // Initializes.
     auto& plan_eval_context =
         diagram_->GetMutableSubsystemContext(*plan_eval, context_.get());
-    plan_eval->Initialize(q, plan_eval_context.get_mutable_state());
+    plan_eval->Initialize(robot_status, plan_eval_context.get_mutable_state());
 
     // Computes results.
     auto events = diagram_->AllocateCompositeEventCollection();
@@ -149,7 +158,7 @@ TEST_F(HumanoidPlanEvalAndQpInverseDynamicsTest, DofAcceleration) {
 
       case ConstraintType::Soft:
         EXPECT_NEAR(qp_input.desired_dof_motions().value(i), qp_output.vd()[i],
-                    5e-4);
+                    1e-2);
         break;
 
       default:
@@ -165,7 +174,7 @@ TEST_F(HumanoidPlanEvalAndQpInverseDynamicsTest, ContactAcceleration) {
 
   for (const auto& contact_pair : qp_output.resolved_contacts()) {
     EXPECT_TRUE(drake::CompareMatrices(contact_pair.second.body_acceleration(),
-                                       Vector6<double>::Zero(), 1e-8,
+                                       Vector6<double>::Zero(), 1e-7,
                                        drake::MatrixCompareType::absolute));
   }
 }
@@ -181,7 +190,7 @@ TEST_F(HumanoidPlanEvalAndQpInverseDynamicsTest, BodyAcceleration) {
     EXPECT_TRUE(drake::CompareMatrices(
         body_motion_pair.second.accelerations(),
         qp_input.desired_body_motions().at(body_motion_pair.first).values(),
-        5e-4, drake::MatrixCompareType::absolute));
+        1e-3, drake::MatrixCompareType::absolute));
   }
 }
 

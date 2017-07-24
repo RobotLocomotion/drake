@@ -31,6 +31,7 @@ drake_cc_library(
         "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
         "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:rigid_body_tree_alias_groups",
         "//drake/manipulation/util:trajectory_utils",
+        "//drake/systems/framework:value",
     ],
 )
 
@@ -64,6 +65,44 @@ drake_cc_googletest(
         "//drake/common:find_resource",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
+    ],
+)
+
+drake_cc_library(
+    name = "humanoid_manipulation_plan",
+    srcs = [
+        "dev/humanoid_manipulation_plan.cc",
+    ],
+    hdrs = [
+        "dev/humanoid_manipulation_plan.h",
+    ],
+    deps = [
+        ":generic_plan",
+        "//drake/examples/QPInverseDynamicsForHumanoids:lcm_utils",
+        "//drake/manipulation/util:robot_state_msg_translator",
+        "//drake/systems/controllers:zmp_planner",
+        "//drake/util:util",
+        "@lcmtypes_bot2_core",
+        "@lcmtypes_robotlocomotion",
+    ],
+)
+
+drake_cc_binary(
+    name = "humanoid_manipulation_demo",
+    srcs = [
+        "dev/humanoid_manipulation_demo.cc",
+    ],
+    data = [
+        "//drake/examples/Valkyrie:models",
+    ],
+    deps = [
+        "//drake/common:find_resource",
+        "//drake/examples/Valkyrie:valkyrie_constants",
+        "//drake/manipulation/util:robot_state_msg_translator",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/multibody/parsers",
+        "@lcmtypes_bot2_core",
+        "@lcmtypes_robotlocomotion",
     ],
 )
 
