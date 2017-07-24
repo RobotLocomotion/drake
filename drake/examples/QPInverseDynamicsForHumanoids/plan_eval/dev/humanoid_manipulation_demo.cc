@@ -1,11 +1,17 @@
+/**
+ * @brief This is a demo program that sends a full body manipulation plan
+ * encoded as a robotlocomotion::robot_plan_t to ValkyrieController. Upon
+ * receiving the plan, the Valkyrie robot should return to the nominal
+ * configuration except the right shoulder pitch joint.
+ */
 #include "drake/examples/Valkyrie/valkyrie_constants.h"
 #include "drake/manipulation/util/robot_state_msg_translator.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
 
-#include "robotlocomotion/robot_plan_t.hpp"
 #include "lcm/lcm-cpp.hpp"
+#include "robotlocomotion/robot_plan_t.hpp"
 
 using std::default_random_engine;
 
@@ -27,11 +33,10 @@ void send_manip_message() {
 
   const manipulation::RobotStateLcmMessageTranslator translator(robot);
 
-  // There needs to be at least 1 knot point, the controller is going to
-  // automatically append its current desired q to the beginning to make
-  // the desired trajectories.
+  // There needs to be at least 1 knot point, the controller will insert its
+  // current desired q to the beginning to make the desired trajectories.
   //
-  // A couple things:
+  // Some notes about the message:
   // 1. The first timestamp needs to be bigger than 0.
   // 2. msg.utime needs to be different for different messages. The controller
   // ignores messages with the same utime.
@@ -39,8 +44,9 @@ void send_manip_message() {
   // 4. Assumes that the given knot points are stable given the current actual
   // contact points.
   // 5. Pelvis z and orientation + torso orientation are tracked in Cartesian
-  // mode. CoM in controlled by a LQR like controller, where the desired is
-  // given by the knot points specified here.
+  // mode (These can be changed by the gains in the configuration file). CoM
+  // in controlled by a LQR like controller, where the desired is given by the
+  // knot points specified here.
   robotlocomotion::robot_plan_t msg{};
   msg.utime = time(NULL);
   msg.num_states = 1;

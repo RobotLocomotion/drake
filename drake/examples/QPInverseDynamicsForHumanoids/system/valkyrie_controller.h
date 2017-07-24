@@ -27,7 +27,8 @@ namespace qp_inverse_dynamics {
 /**
  * A controller for humanoid balancing built on top of HumanoidPlanEvalSystem
  * and QpControllerSystem. This diagram does not have any input or output ports.
- * The state inputs and control outputs are sent through LCM messages directly.
+ * The state and plan inputs and control outputs are sent through LCM messages
+ * directly.
  */
 class ValkyrieController : public systems::Diagram<double> {
  public:

@@ -70,6 +70,9 @@ class GenericPlan {
    * @param robot_status Current status of the robot.
    * @param paramset Parameters.
    * @param alias_groups Topological information of the robot.
+   *
+   * @throws std::logic_error if the RigidBodyTree reference in @p robot_status
+   * or @p paramset or @p alias_groups is incompatible.
    */
   void Initialize(
       const HumanoidStatus& robot_status,
@@ -85,11 +88,16 @@ class GenericPlan {
    * @param robot_status Current status of the robot.
    * @param paramset Parameters.
    * @param alias_groups Topological information of the robot.
+   *
+   * @throws std::logic_error if the RigidBodyTree reference in @p robot_status
+   * or @p paramset or @p alias_groups is incompatible.
    */
   void ModifyPlan(
       const HumanoidStatus& robot_status,
       const param_parsers::ParamSet& paramset,
       const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) {
+    // Checks parameters and throw if they are incompatible.
+    CheckCompatibilityAndThrow(robot_status.robot(), paramset, alias_groups);
     ModifyPlanGenericPlanDerived(robot_status, paramset, alias_groups);
   }
 
@@ -101,14 +109,18 @@ class GenericPlan {
    * @param paramset Parameters.
    * @param alias_groups Topological information of the robot.
    * @param plan AbstractValue that contains the plan.
+   *
+   * @throws std::logic_error if the RigidBodyTree reference in @p robot_status
+   * or @p paramset or @p alias_groups is incompatible.
    */
   void HandlePlan(
       const HumanoidStatus& robot_status,
       const param_parsers::ParamSet& paramset,
       const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,
       const systems::AbstractValue& plan) {
-    HandlePlanGenericPlanDerived(robot_status, paramset, alias_groups,
-                                        plan);
+    // Checks parameters and throw if they are incompatible.
+    CheckCompatibilityAndThrow(robot_status.robot(), paramset, alias_groups);
+    HandlePlanGenericPlanDerived(robot_status, paramset, alias_groups, plan);
   }
 
   /**
@@ -134,6 +146,9 @@ class GenericPlan {
    * @param paramset Parameters.
    * @param alias_groups Topological information of the robot.
    * @param[out] qp_input Output for QpInput.
+   *
+   * @throws std::logic_error if the RigidBodyTree reference in @p robot_status
+   * or @p paramset or @p alias_groups is incompatible.
    */
   void UpdateQpInput(
       const HumanoidStatus& robot_status,
@@ -177,6 +192,38 @@ class GenericPlan {
    */
   bool has_body_trajectory(const RigidBody<T>* body) const {
     return body_trajectories_.find(body) != body_trajectories_.end();
+  }
+
+  /**
+   * Returns true if @p robot is compatible. The default implementation always
+   * returns true. Derived class must override to implement meaningful checks.
+   */
+  virtual bool IsRigidBodyTreeAliasGroupsCompatible(
+      const RigidBodyTree<T>& robot) const {
+    unused(robot);
+    return true;
+  }
+
+  /**
+   * Returns true if @p alias_groups is compatible. The default implementation
+   * always returns true. Derived class must override to implement meaningful
+   * checks.
+   */
+  virtual bool IsRigidBodyTreeAliasGroupsCompatible(
+      const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) const {
+    unused(alias_groups);
+    return true;
+  }
+
+  /**
+   * Returns true if @p paramset is compatible. The default implementation
+   * always returns true. Derived class must override to implement meaningful
+   * checks.
+   */
+  virtual bool IsParamSetCompatible(
+      const param_parsers::ParamSet& paramset) const {
+    unused(paramset);
+    return true;
   }
 
  protected:
@@ -260,6 +307,24 @@ class GenericPlan {
   void set_dof_trajectory(
       const manipulation::PiecewiseCubicTrajectory<T>& traj) {
     dof_trajectory_ = traj;
+  }
+
+  /**
+   * Checks @p robot, @p paramset and @p alias_groups's compatibility, throws
+   * std::logic_error if any is incompatible.
+   */
+  void CheckCompatibilityAndThrow(
+      const RigidBodyTree<T>& robot, const param_parsers::ParamSet& paramset,
+      const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) const {
+    if (!IsRigidBodyTreeAliasGroupsCompatible(robot)) {
+      throw std::logic_error("Robot model is incompatible with the plan.");
+    }
+    if (!IsRigidBodyTreeAliasGroupsCompatible(alias_groups)) {
+      throw std::logic_error("Alias_groups is incompatible with the plan.");
+    }
+    if (!IsParamSetCompatible(paramset)) {
+      throw std::logic_error("ParamSet is incompatible with the plan.");
+    }
   }
 
  private:

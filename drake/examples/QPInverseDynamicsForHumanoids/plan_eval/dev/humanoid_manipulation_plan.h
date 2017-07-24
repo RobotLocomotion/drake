@@ -14,6 +14,7 @@ namespace qp_inverse_dynamics {
  *
  * @see HandlePlanGenericPlanDerived for more details about the behavior.
  */
+// TODO(siyuan): make quaternion floating joint work.
 template <typename T>
 class HumanoidManipulationPlan : public GenericPlan<T> {
  protected:
@@ -33,6 +34,24 @@ class HumanoidManipulationPlan : public GenericPlan<T> {
    * @see ZMPPlanner::Plan for more details.
    */
   void set_zmp_height(double z) { zmp_height_ = z; }
+
+  /**
+   * Returns true if @p robot has at least 2 rigid bodies; the first rigid body
+   * has a RPY parametrized floating joint, and it has the same number of
+   * generalized positions and velocities.
+   */
+  bool IsRigidBodyTreeAliasGroupsCompatible(
+      const RigidBodyTree<T>& robot) const override;
+
+  /**
+   * Returns true if @p alias_groups has singleton body groups: "pelvis",
+   * "torso", "left_foot" and "right_foot".
+   */
+  bool IsRigidBodyTreeAliasGroupsCompatible(
+      const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups)
+      const override;
+
+  // TODO(siyuan): override IsParamSetCompatible as well.
 
  protected:
   /**
@@ -54,26 +73,33 @@ class HumanoidManipulationPlan : public GenericPlan<T> {
    * following trajectories are generated:
    * <pre>
    * 1. Cubic splines for all degrees of freedom. The splines are generated from
-   *    `Ts` and `Qs` assuming zero end point velocities and continuous position,
+   *    `Ts` and `Qs` assuming zero end point velocities and continuous
+   * position,
    *    velocity and acceleration at all intermediate knot points.
    * 2. Cartesian trajectories are made for the pelvis and torso link. The knot
-   *    poses are computed by forward kinematics at each `Qs`. The linear part of
+   *    poses are computed by forward kinematics at each `Qs`. The linear part
+   * of
    *    the Cartesian trajectory is constructed similarly as above, and the
-   *    rotation part is based on Slerp (linear interpolation between quaternion).
+   *    rotation part is based on Slerp (linear interpolation between
+   * quaternion).
    *    Timing is given by `Ts`.
-   * 3. A desired ZMP trajectory is generated using Pchip from the center of mass
-   *    XY positions computed by forward kinematics at each `Qs` and timing given
+   * 3. A desired ZMP trajectory is generated using Pchip from the center of
+   * mass
+   *    XY positions computed by forward kinematics at each `Qs` and timing
+   * given
    *    by `Ts`. A nominal center of mass trajectory and its associated optimal
    *    linear policy is then planned using systems::ZMPPlanner.
    * </pre>
    * Note that these trajectories are arbitrarily designed, without considering
    * position, velocity or acceleration consistency. The QpController will trade
-   * off tracking errors based on weights specified in the parameters. The
+   * off tracking errors based on weights specified in the parameters.
    *
    * This function also assumes that both feet are in contact with the ground,
    * and every configuration in `Q_plan` is statically stable given the support
    * region defined by the current foot poses. `T_plan` has to be strictly
-   * increasing, and `T_plan[0]` is bigger than 0.
+   * increasing, and `T_plan[0]` is bigger than 0. The current implementation
+   * assumes that the message is encoded with a RPY parametrized floating base
+   * model as opposed to a quaternion floating joint.
    *
    * This function returns without changing the current trajectories if the
    * time stamp in @p plan has not changed from when the current trajectories
@@ -101,13 +127,25 @@ class HumanoidManipulationPlan : public GenericPlan<T> {
       QpInput* qp_input) const override;
 
  private:
+  // Returns true if @p alias_groups has a singleton body group whose name is
+  // @p body_alias_name.
+  bool VerifyRigidBodyTreeAliasGroups(
+      const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,
+      const std::string& body_alias_name) const {
+    if (alias_groups.has_body_group(body_alias_name) &&
+        alias_groups.get_body_group(body_alias_name).size() == 1) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
   GenericPlan<T>* CloneGenericPlanDerived() const override {
     return new HumanoidManipulationPlan<T>(*this);
   }
 
   void ModifyPlanGenericPlanDerived(
-      const HumanoidStatus&,
-      const param_parsers::ParamSet&,
+      const HumanoidStatus&, const param_parsers::ParamSet&,
       const param_parsers::RigidBodyTreeAliasGroups<T>&) override {}
 
   systems::ZMPPlanner zmp_planner_;

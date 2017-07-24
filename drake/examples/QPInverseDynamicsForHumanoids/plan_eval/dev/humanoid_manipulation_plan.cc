@@ -184,6 +184,35 @@ void HumanoidManipulationPlan<T>::HandlePlanGenericPlanDerived(
   }
 }
 
+template <typename T>
+bool HumanoidManipulationPlan<T>::IsRigidBodyTreeAliasGroupsCompatible(
+    const RigidBodyTree<T>& robot) const {
+  if (robot.get_num_bodies() < 2) return false;
+
+  const RigidBody<T>& root_body = robot.get_body(1);
+  const DrakeJoint& root_joint = root_body.getJoint();
+  if (!root_joint.is_floating()) return false;
+
+  if (root_joint.get_num_positions() != root_joint.get_num_velocities())
+    return false;
+
+  if (robot.get_num_positions() != robot.get_num_velocities()) return false;
+
+  return true;
+}
+
+template <typename T>
+bool HumanoidManipulationPlan<T>::IsRigidBodyTreeAliasGroupsCompatible(
+    const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) const {
+  if (VerifyRigidBodyTreeAliasGroups(alias_groups, "pelvis") &&
+      VerifyRigidBodyTreeAliasGroups(alias_groups, "torso") &&
+      VerifyRigidBodyTreeAliasGroups(alias_groups, "left_foot") &&
+      VerifyRigidBodyTreeAliasGroups(alias_groups, "right_foot")) {
+    return true;
+  }
+  { return false; }
+}
+
 template class HumanoidManipulationPlan<double>;
 
 }  // namespace qp_inverse_dynamics
