@@ -55,7 +55,8 @@ as follows::
     brew tap cartr/qt4
     brew tap homebrew/science
     brew tap robotlocomotion/director
-    brew install qt@4 vtk5
+    brew install libyaml qt@4 scipy vtk5
+    pip2 install --upgrade lxml PyYAML
 
 When you are done with these platform-specific steps, return to
 :doc:`from_source` to complete and test your installation.
