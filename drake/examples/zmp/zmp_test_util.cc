@@ -1,4 +1,4 @@
-#include "drake/examples/ZMP/zmp_test_util.h"
+#include "drake/examples/zmp/zmp_test_util.h"
 
 #include "drake/common/drake_assert.h"
 
