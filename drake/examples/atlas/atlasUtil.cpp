@@ -5,7 +5,7 @@
 using Eigen::Matrix;
 using Eigen::Vector2d;
 
-namespace Atlas {
+namespace atlas {
 
 bool ankleCloseToLimits(double akx, double aky, double tol) {
   if (tol < 0) {
@@ -21,4 +21,4 @@ bool ankleCloseToLimits(double akx, double aky, double tol) {
   ankle << akx, aky;
   return ((A * ankle - b).array() > -tol).any();
 }
-}  // namespace Atlas
+}  // namespace atlas
