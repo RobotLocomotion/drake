@@ -74,7 +74,7 @@ TEST_F(RigidBodyTreeCloneTest, ClonePrius) {
 // Tests RigidBodyTree::Clone() using Valkyrie.
 TEST_F(RigidBodyTreeCloneTest, CloneValkyrie) {
   const std::string filename = FindResourceOrThrow(
-      "drake/examples/Valkyrie/urdf/urdf/"
+      "drake/examples/valkyrie/urdf/urdf/"
       "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
   // While it may seem odd to use a fixed floating joint with Valkyrie, it is
   // used in this case just to confirm that RigidBodyTree::Clone() works with

@@ -421,7 +421,7 @@ drake_cc_googletest(
         "//drake/automotive:models",
         "//drake/examples/atlas:models",
         "//drake/examples/pendulum:models",
-        "//drake/examples/Valkyrie:models",
+        "//drake/examples/valkyrie:models",
     ],
     deps = [
         ":rigid_body_tree_compare_to_clone",

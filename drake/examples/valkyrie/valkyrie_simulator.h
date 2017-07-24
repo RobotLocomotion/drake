@@ -10,10 +10,10 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/text_logging.h"
-#include "drake/examples/Valkyrie/actuator_effort_to_rigid_body_plant_input_converter.h"
-#include "drake/examples/Valkyrie/robot_command_to_desired_effort_converter.h"
-#include "drake/examples/Valkyrie/robot_state_encoder.h"
-#include "drake/examples/Valkyrie/valkyrie_constants.h"
+#include "drake/examples/valkyrie/actuator_effort_to_rigid_body_plant_input_converter.h"
+#include "drake/examples/valkyrie/robot_command_to_desired_effort_converter.h"
+#include "drake/examples/valkyrie/robot_state_encoder.h"
+#include "drake/examples/valkyrie/valkyrie_constants.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_contact_results_for_viz.hpp"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -43,7 +43,7 @@ class ValkyrieSimulationDiagram : public systems::Diagram<double> {
     auto tree_ptr = std::make_unique<RigidBodyTree<double>>();
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
         FindResourceOrThrow(
-            "drake/examples/Valkyrie/urdf/urdf/"
+            "drake/examples/valkyrie/urdf/urdf/"
             "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf"),
         multibody::joints::kRollPitchYaw, nullptr /* weld to frame */,
         tree_ptr.get());

@@ -1,6 +1,6 @@
 /* clang-format off */
-#include "drake/examples/Valkyrie/robot_state_encoder.h"
-#include "drake/examples/Valkyrie/robot_state_decoder.h"
+#include "drake/examples/valkyrie/robot_state_encoder.h"
+#include "drake/examples/valkyrie/robot_state_decoder.h"
 /* clang-format on */
 
 #include <gtest/gtest.h>
@@ -60,7 +60,7 @@ void TestEncodeThenDecode(FloatingBaseType floating_base_type) {
   RigidBodyTree<double> tree;
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
       FindResourceOrThrow(
-          "drake/examples/Valkyrie/urdf/urdf/"
+          "drake/examples/valkyrie/urdf/urdf/"
           "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf"),
       floating_base_type, nullptr /* weld to frame */, &tree);
   // Add a collision geom for the world.
