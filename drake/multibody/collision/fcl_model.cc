@@ -1,5 +1,7 @@
 #include "drake/multibody/collision/fcl_model.h"
 
+#include <utility>
+
 #include <fcl/fcl.h>
 
 #include "drake/common/drake_assert.h"
@@ -12,8 +14,43 @@ namespace collision {
 // TODO(jamiesnape): Implement the model.
 
 void FclModel::DoAddElement(const Element& element) {
-  drake::unused(element);
-  DRAKE_ABORT_MSG("Not implemented.");
+  ElementId id = element.getId();
+
+  // Create the fcl::CollisionObject. Store it as a shared_ptr for use with the
+  // fcl::CollisionObject constructor below.
+  std::shared_ptr<fcl::CollisionGeometryd> fcl_geometry;
+
+  switch (element.getShape()) {
+    case DrakeShapes::SPHERE: {
+      const auto sphere =
+          static_cast<const DrakeShapes::Sphere&>(element.getGeometry());
+      fcl_geometry = std::make_shared<fcl::Sphered>(sphere.radius);
+    } break;
+    default:
+      DRAKE_ABORT_MSG("Not implemented.");
+      break;
+  }
+
+  auto fcl_object = std::make_unique<fcl::CollisionObjectd>(fcl_geometry);
+
+  // Store a pointer to the Element in the fcl collision object. This will be
+  // used for collision filtering inside callback functions.
+  // NOTE: setUserData requires a mutable pointer as input. However, the user
+  // data is only used by the user-provided callback functions, and our
+  // callbacks cast the user data back to a const Element*.
+  fcl_object->setUserData(const_cast<Element*>(&element));
+
+  // NOTE: This will be the *only* time that anchored collision objects
+  // will have their world transform set.  This code assumes that the world
+  // transform on the corresponding input Drake element has already been
+  // properly set. (See RigidBodyTree::CompileCollisionState.)
+  fcl_object->setTransform(element.getWorldTransform());
+
+  // Register the object with the broadphase collision manager.
+  broadphase_manager_.registerObject(fcl_object.get());
+  // Take ownership of FCL collision object, as its lifetime must extend to at
+  // least that of the broadphase manager.
+  fcl_collision_objects_.insert(std::make_pair(id, move(fcl_object)));
 }
 
 void FclModel::UpdateModel() {
