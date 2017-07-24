@@ -212,7 +212,7 @@ _LIBDRAKE_COMPONENTS = [
     "//drake/systems/framework:output_port_value",
     "//drake/systems/framework:parameters",
     "//drake/systems/framework:single_output_vector_source",
-    "//drake/systems/framework:siso_vector_system",
+    "//drake/systems/framework:vector_system",
     "//drake/systems/framework:sparsity_matrix",
     "//drake/systems/framework:state",
     "//drake/systems/framework:system",
