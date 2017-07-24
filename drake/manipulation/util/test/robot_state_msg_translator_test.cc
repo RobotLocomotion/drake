@@ -171,7 +171,7 @@ TEST_F(RobotStateLcmMessageTranslatorTest, TestEncodeDecode) {
           "drake/manipulation/models/iiwa_description/urdf/"
           "iiwa14_polytope_collision.urdf"),
       FindResourceOrThrow(
-          "drake/examples/Valkyrie/urdf/urdf/"
+          "drake/examples/valkyrie/urdf/urdf/"
           "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf")};
 
   std::vector<multibody::joints::FloatingBaseType> floating_types = {

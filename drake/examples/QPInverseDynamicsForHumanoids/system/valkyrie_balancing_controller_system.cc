@@ -1,6 +1,6 @@
 #include "drake/common/find_resource.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/valkyrie_controller.h"
-#include "drake/examples/Valkyrie/valkyrie_constants.h"
+#include "drake/examples/valkyrie/valkyrie_constants.h"
 #include "drake/manipulation/util/robot_state_msg_translator.h"
 #include "drake/systems/lcm/lcm_driven_loop.h"
 
@@ -15,7 +15,7 @@ namespace qp_inverse_dynamics {
 // bot_core::robot_state_t and bot_core::atlas_command_t.
 void controller_loop() {
   const std::string kModelFileName = FindResourceOrThrow(
-      "drake/examples/Valkyrie/urdf/urdf/"
+      "drake/examples/valkyrie/urdf/urdf/"
       "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
   const std::string kAliasGroupPath = FindResourceOrThrow(
       "drake/examples/QPInverseDynamicsForHumanoids/"
