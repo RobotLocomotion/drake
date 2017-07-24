@@ -3,7 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/examples/ZMP/zmp_test_util.h"
+#include "drake/examples/zmp/zmp_test_util.h"
 
 namespace drake {
 namespace examples {
