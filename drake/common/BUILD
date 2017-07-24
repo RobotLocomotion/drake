@@ -789,7 +789,7 @@ py_test(
     data = [
         "test/resource_tool_test_data.txt",
         ":resource_tool",
-        "//drake/examples/Pendulum:models",
+        "//drake/examples/pendulum:models",
     ],
 )
 

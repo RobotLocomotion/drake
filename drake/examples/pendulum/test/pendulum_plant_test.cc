@@ -1,4 +1,4 @@
-#include "drake/examples/Pendulum/pendulum_plant.h"
+#include "drake/examples/pendulum/pendulum_plant.h"
 
 #include <gtest/gtest.h>
 

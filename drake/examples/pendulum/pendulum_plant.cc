@@ -1,4 +1,4 @@
-#include "drake/examples/Pendulum/pendulum_plant.h"
+#include "drake/examples/pendulum/pendulum_plant.h"
 
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_autodiff_types.h"

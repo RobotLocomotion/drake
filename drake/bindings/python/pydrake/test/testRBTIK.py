@@ -11,7 +11,7 @@ class TestRBTIK(unittest.TestCase):
     def testPostureConstraint(self):
         r = pydrake.rbtree.RigidBodyTree(
             os.path.join(pydrake.getDrakePath(),
-                         "examples/Pendulum/Pendulum.urdf"))
+                         "examples/pendulum/Pendulum.urdf"))
         q = -0.9
         posture_constraint = ik.PostureConstraint(r)
         posture_constraint.setJointLimits(np.array([[6]], dtype=np.int32),

@@ -4,7 +4,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/examples/Pendulum/pendulum_plant.h"
+#include "drake/examples/pendulum/pendulum_plant.h"
 #include "drake/math/autodiff.h"
 #include "drake/systems/trajectory_optimization/direct_collocation_constraint.h"
 

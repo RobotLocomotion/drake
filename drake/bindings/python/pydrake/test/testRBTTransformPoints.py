@@ -10,7 +10,7 @@ import os.path
 class TestRBMForwardKin(unittest.TestCase):
     def test_value(self):
         r = pydrake.rbtree.RigidBodyTree(os.path.join(pydrake.getDrakePath(),
-                                         "examples/Pendulum/Pendulum.urdf"))
+                                         "examples/pendulum/Pendulum.urdf"))
         self.assertEqual(r.number_of_positions(), 7)
         self.assertEqual(r.number_of_velocities(), 7)
 
@@ -22,7 +22,7 @@ class TestRBMForwardKin(unittest.TestCase):
     def test_gradient(self):
         r = pydrake.rbtree.RigidBodyTree(
             os.path.join(pydrake.getDrakePath(),
-                         "examples/Pendulum/Pendulum.urdf"),
+                         "examples/pendulum/Pendulum.urdf"),
             pydrake.rbtree.FloatingBaseType.kRollPitchYaw)
 
         def do_transform(q):
@@ -43,7 +43,7 @@ class TestRBMForwardKin(unittest.TestCase):
 
     def test_relative_transform(self):
         r = pydrake.rbtree.RigidBodyTree(os.path.join(pydrake.getDrakePath(),
-                                         "examples/Pendulum/Pendulum.urdf"))
+                                         "examples/pendulum/Pendulum.urdf"))
 
         q = np.zeros(7)
         q[6] = np.pi / 2

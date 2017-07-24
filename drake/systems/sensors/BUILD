@@ -218,7 +218,7 @@ drake_cc_library(
         "test/accelerometer_test/accelerometer_xdot_hack.h",
     ],
     data = [
-        "//drake/examples/Pendulum:models",
+        "//drake/examples/pendulum:models",
     ],
     deps = [
         ":accelerometer",

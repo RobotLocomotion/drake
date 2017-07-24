@@ -55,7 +55,7 @@ namespace sensors {
 /// commands the model's actuators to remain passive.
 ///
 /// The RigidBodyPlantThatPublishesXdot contains a model of a pendulum, see
-/// drake/examples/Pendulum/Pendulum.urdf.
+/// drake/examples/pendulum/Pendulum.urdf.
 ///
 /// The Accelerometer is attached to the pendulum's swing arm at (0, 0, -0.5)
 /// in the pendlum swing arm's frame.

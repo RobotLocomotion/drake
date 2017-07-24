@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include "drake/common/symbolic.h"
-#include "drake/examples/Pendulum/pendulum_plant.h"
+#include "drake/examples/pendulum/pendulum_plant.h"
 
 // A simple example of extracting the symbolic dynamics of the pendulum system,
 // and printing them to std::out.
