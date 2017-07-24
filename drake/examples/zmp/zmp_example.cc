@@ -2,7 +2,7 @@
 #include <thread>
 
 #include "drake/common/proto/call_matlab.h"
-#include "drake/examples/ZMP/zmp_test_util.h"
+#include "drake/examples/zmp/zmp_test_util.h"
 
 void PlotResults(const drake::examples::zmp::ZMPTestTraj& traj) {
   using drake::common::CallMatlab;
