@@ -1,0 +1,49 @@
+# -*- yaml -*-
+---
+# distances are meters; angles are degrees.
+maliput_multilane_builder:
+  id: fig8
+  lane_bounds: [-2, 2]
+  driveable_bounds: [-4, 4]
+  elevation_bounds: [0, 5]
+  position_precision: .01
+  orientation_precision: 0.5
+  points:
+    start:
+      xypoint: [0, 0, 45]  # x,y, heading
+      zpoint: [0, 0, 0, 0]  # z, zdot, theta (superelevation), thetadot
+  connections:
+    r0:
+      start: "points.start"
+      arc: [50, -45]
+      z_end: [0, 0, 0, 0]
+    r1:
+      start: "connections.r0.end"
+      arc: [50, -135]
+      z_end: [3, 0, -22.9, 0]
+    r2:
+      start: "connections.r1.end"
+      arc: [50, -135]
+      z_end: [0, 0, 0, 0]
+    r3:
+      start: "connections.r2.end"
+      arc: [50, -45]
+      z_end: [0, 0, 0, 0]
+
+    l0:
+      start: "connections.r3.end"
+      arc: [50, 45]
+      z_end: [0, 0, 0, 0]
+    l1:
+      start: "connections.l0.end"
+      arc: [50, 135]
+      z_end: [0, 0, 22.9, 0]
+    l2:
+      start: "connections.l1.end"
+      arc: [50, 135]
+      z_end: [0, 0, 0, 0]
+    l3:
+      start: "connections.l2.end"
+      arc: [50, 45]
+      z_end: [0, 0, 0, 0]
+      forced_end: "points.start"
