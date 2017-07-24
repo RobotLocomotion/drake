@@ -13,6 +13,7 @@ drake_cc_library(
     deps = [
         ":explicit_euler_integrator",
         ":implicit_euler_integrator",
+        ":runge_kutta_merson_integrator",
         ":runge_kutta2_integrator",
         ":runge_kutta3_integrator",
         ":semi_explicit_euler_integrator",
@@ -57,6 +58,19 @@ drake_cc_library(
     deps = [
         ":integrator_base",
         "//drake/math:gradient",
+    ],
+)
+
+drake_cc_library(
+    name = "runge_kutta_merson_integrator",
+    srcs = ["runge_kutta_merson_integrator.cc"],
+    hdrs = [
+        "runge_kutta_merson_integrator.h",
+        "runge_kutta_merson_integrator-inl.h",
+    ],
+    deps = [
+        ":integrator_base",
+        ":runge_kutta2_integrator",
     ],
 )
 

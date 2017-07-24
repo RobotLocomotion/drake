@@ -13,7 +13,7 @@
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/analysis/integrator_base.h"
-#include "drake/systems/analysis/runge_kutta2_integrator.h"
+#include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/witness_function.h"
@@ -390,15 +390,18 @@ Simulator<T>::Simulator(const System<T>& system,
                         std::unique_ptr<Context<T>> context)
     : system_(system), context_(std::move(context)) {
   // Setup defaults that should be generally reasonable.
-  const double dt = 1e-3;
+  const double max_step_size = 0.1;
+  const double initial_step_size = 1e-3;
 
   // Create a context if necessary.
   if (!context_) context_ = system_.CreateDefaultContext();
 
-  // @TODO(edrumwri): Make variable step integrator default.
   // Create a default integrator and initialize it.
   integrator_ = std::unique_ptr<IntegratorBase<T>>(
-      new RungeKutta2Integrator<T>(system_, dt, context_.get()));
+      new RungeKutta3Integrator<T>(system_, context_.get()));
+  ((RungeKutta3Integrator<T>*) integrator_.get())->
+      request_initial_step_size_target(initial_step_size);
+  integrator_->set_maximum_step_size(max_step_size);
   integrator_->Initialize();
 
   // Allocate the necessary temporaries for storing state in update calls

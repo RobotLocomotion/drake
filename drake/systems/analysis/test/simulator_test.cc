@@ -771,6 +771,7 @@ GTEST_TEST(SimulatorTest, RealtimeRate) {
   Simulator<double> simulator(spring_mass);  // Use default Context.
 
   simulator.set_target_realtime_rate(1.);  // No faster than 1X real time.
+  simulator.get_mutable_integrator()->set_maximum_step_size(0.001);
   simulator.get_mutable_context()->set_time(0.);
   simulator.Initialize();
   simulator.StepTo(1.);  // Simulate for 1 simulated second.
@@ -957,6 +958,11 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
   PidControlledSpringMassSystem<double> spring_mass(kSpring, kMass, kp, ki, kd,
                                                     x_target);
   Simulator<double> simulator(spring_mass);  // Use default Context.
+
+  // Forces simulator to use fixed-step integration at 1ms (to keep assumptions
+  // below accurate).
+  simulator.get_mutable_integrator()->set_fixed_step_mode(true);
+  simulator.get_mutable_integrator()->set_maximum_step_size(0.001);
 
   // Sets initial condition using the Simulator's internal Context.
   spring_mass.set_position(simulator.get_mutable_context(), x0);
@@ -1246,6 +1252,10 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
   sys.AddPerStepUnrestrictedUpdateEvent();
   sys.AddPerStepDiscreteUpdateEvent();
   Simulator<double> sim(sys);
+
+  // Forces simulator to use fixed-step integration.
+  sim.get_mutable_integrator()->set_fixed_step_mode(true);
+  sim.get_mutable_integrator()->set_maximum_step_size(0.001);
 
   // Disables all simulator induced publish events, so that all publish calls
   // are intiated by sys.

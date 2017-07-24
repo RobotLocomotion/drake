@@ -1399,12 +1399,13 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
 
     //--------------------------------------------------------------------
     T err_norm = CalcStateChangeNorm(*get_error_estimate());
-    std::tie(step_succeeded, current_step_size) = CalcAdjustedStepSize(
+    T next_step_size;
+    std::tie(step_succeeded, next_step_size) = CalcAdjustedStepSize(
         err_norm, dt_was_artificially_limited, current_step_size);
-    SPDLOG_DEBUG(drake::log(), "Adjusted step size: {}", current_step_size);
+    SPDLOG_DEBUG(drake::log(), "Adjusted step size: {}", next_step_size);
 
     if (step_succeeded) {
-      ideal_next_step_size_ = current_step_size;
+      ideal_next_step_size_ = next_step_size;
       if (isnan(get_actual_initial_step_size_taken()))
         set_actual_initial_step_size_taken(current_step_size);
 
@@ -1565,6 +1566,8 @@ std::pair<bool, T> IntegratorBase<T>::CalcAdjustedStepSize(
 template <class T>
 typename IntegratorBase<T>::StepResult IntegratorBase<T>::IntegrateAtMost(
     const T& publish_dt, const T& update_dt, const T& boundary_dt) {
+  const T t0 = context_->get_time();
+
   if (!IntegratorBase<T>::is_initialized())
     throw std::logic_error("Integrator not initialized.");
 
@@ -1677,7 +1680,8 @@ typename IntegratorBase<T>::StepResult IntegratorBase<T>::IntegrateAtMost(
   }
 
   // Update generic statistics.
-  UpdateStepStatistics(dt);
+  const T actual_dt = context_->get_time() - t0; 
+  UpdateStepStatistics(actual_dt);
 
   if (full_step) {
     // If the integrator took the entire maximum step size we allowed above,
