@@ -42,16 +42,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "acrobot_lcm_msg_handler",
-    srcs = [],
-    hdrs = ["acrobot_lcm_msg_handler.h"],
-    deps = [
-        "//drake/lcm",
-        "//drake/lcmtypes:acrobot",
-    ],
-)
-
-drake_cc_library(
     name = "acrobot_swing_up",
     srcs = ["acrobot_swing_up.cc"],
     hdrs = ["acrobot_swing_up.h"],
@@ -73,11 +63,14 @@ drake_cc_library(
     ],
 )
 
+# Note: This is a development tool for testing LCM communication
+# but does not actually provide test coverage as a stand-alone
+# executable.
 drake_cc_binary(
     name = "acrobot_lcm_msg_generator",
-    srcs = ["acrobot_lcm_msg_generator.cpp"],
+    testonly = 1,
+    srcs = ["test/acrobot_lcm_msg_generator.cc"],
     deps = [
-        ":acrobot_lcm_msg_handler",
         "//drake/lcm",
         "//drake/lcmtypes:acrobot",
         "//drake/systems/analysis:simulator",
