@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Atlas {
+namespace atlas {
 /*
  * The ankle limits is specified by a set of halfspace constraint
  * A*[akx;aky]<=b
@@ -9,4 +9,4 @@ namespace Atlas {
  */
 bool ankleCloseToLimits(double akx, double aky, double tol);
 
-}  // namespace Atlas
+}  // namespace atlas

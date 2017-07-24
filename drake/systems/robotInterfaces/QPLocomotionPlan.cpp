@@ -220,7 +220,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
           q[knee_index] < settings_.knee_settings.min_knee_angle;
       if (!toe_off_active_[side]) {
         bool is_support_foot = isSupportingBody(body_id, support_state);
-        bool ankle_close_to_limit = Atlas::ankleCloseToLimits(
+        bool ankle_close_to_limit = atlas::ankleCloseToLimits(
             q[akx_index], q[aky_index], settings_.ankle_limits_tolerance);
         Matrix<double, 2, Dynamic> reduced_support_pts(2, 0);
         for (RigidBodySupportStateElement& support_state_element :
