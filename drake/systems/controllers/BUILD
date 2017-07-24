@@ -159,7 +159,7 @@ drake_cc_library(
 drake_cc_googletest(
     name = "inverse_dynamics_test",
     data = [
-        "//drake/examples/SimpleFourBar:models",
+        "//drake/examples/simple_four_bar:models",
         "//drake/manipulation/models/iiwa_description:models",
     ],
     deps = [
