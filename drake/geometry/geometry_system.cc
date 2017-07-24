@@ -50,7 +50,7 @@ SourceId GeometrySystem<T>::RegisterSource(const std::string &name) {
 template <typename T>
 const systems::InputPortDescriptor<T>&
 GeometrySystem<T>::get_source_frame_id_port(SourceId id) {
-  throw_if_unregistered(
+  IsRegisteredOrThrow(
       id, "Can't acquire id port for unknown source id: ");
   return this->get_input_port(input_source_ids_[id].id_port);
 }
@@ -58,7 +58,7 @@ GeometrySystem<T>::get_source_frame_id_port(SourceId id) {
 template <typename T>
 const systems::InputPortDescriptor<T>&
 GeometrySystem<T>::get_source_pose_port(SourceId id) {
-  throw_if_unregistered(
+  IsRegisteredOrThrow(
       id, "Can't acquire pose port for unknown source id: ");
   return this->get_input_port(input_source_ids_[id].pose_port);
 }
@@ -204,8 +204,8 @@ void GeometrySystem<T>::ThrowIfContextAllocated(
 }
 
 template <typename T>
-void GeometrySystem<T>::throw_if_unregistered(SourceId source_id,
-                                              const char *message) const {
+void GeometrySystem<T>::IsRegisteredOrThrow(SourceId source_id,
+                                            const char *message) const {
   using std::to_string;
   if (input_source_ids_.find(source_id) == input_source_ids_.end()) {
     throw std::logic_error(message + to_string(source_id) + ".");

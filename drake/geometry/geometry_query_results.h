@@ -12,7 +12,7 @@ namespace geometry {
  geometry (in the normal direction). For convenience, the penetration depth
  is provided and is equal to:
 
- `depth = || (p_WCa - p_WCb) ⋅ nhat_AB_W ||₂`.
+ `depth = ‖ (p_WCa - p_WCb) ⋅ nhat_AB_W ‖₂`.
  @tparam T The underlying scalar type. Must be a valid Eigen scalar. */
 template <typename T>
 struct PenetrationAsPointPair {

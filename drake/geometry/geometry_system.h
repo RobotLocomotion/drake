@@ -443,9 +443,9 @@ class GeometrySystem : public systems::LeafSystem<T> {
 
   mutable bool context_allocated_{false};
 
-  // Throws an exception whose message is the given message with the source_id
-  // appended.
-  void throw_if_unregistered(SourceId source_id, const char* message) const;
+  // Asserts the given source_id is registered, throwing an exception whose
+  // message is the given message with the source_id appended if not.
+  void IsRegisteredOrThrow(SourceId source_id, const char *message) const;
 
   // A struct that stores the port indices for a given source.
   // TODO(SeanCurtis-TRI): Consider making these TypeSafeIndex values.
