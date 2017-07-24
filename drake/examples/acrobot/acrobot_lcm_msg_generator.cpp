@@ -6,7 +6,7 @@
 
 #include "drake/lcmt_acrobot_u.hpp"
 #include "drake/lcmt_acrobot_x.hpp"
-#include "drake/examples/Acrobot/acrobot_lcm_msg_handler.h"
+#include "drake/examples/acrobot/acrobot_lcm_msg_handler.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 

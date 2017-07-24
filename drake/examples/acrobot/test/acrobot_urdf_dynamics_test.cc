@@ -4,7 +4,7 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/find_resource.h"
-#include "drake/examples/Acrobot/acrobot_plant.h"
+#include "drake/examples/acrobot/acrobot_plant.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
@@ -19,7 +19,7 @@ namespace {
 GTEST_TEST(UrdfDynamicsTest, AllTests) {
   auto tree = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-    FindResourceOrThrow("drake/examples/Acrobot/Acrobot.urdf"),
+    FindResourceOrThrow("drake/examples/acrobot/Acrobot.urdf"),
     multibody::joints::kFixed, tree.get());
 
   systems::RigidBodyPlant<double> rbp(std::move(tree));

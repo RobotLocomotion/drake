@@ -6,7 +6,7 @@
 
 #include <memory>
 
-#include "drake/examples/Acrobot/gen/acrobot_state_vector.h"
+#include "drake/examples/acrobot/gen/acrobot_state_vector.h"
 #include "drake/lcmt_acrobot_u.hpp"
 #include "drake/lcmt_acrobot_x.hpp"
 #include "drake/systems/framework/basic_vector.h"

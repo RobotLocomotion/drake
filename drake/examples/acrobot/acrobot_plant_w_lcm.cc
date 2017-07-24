@@ -9,14 +9,14 @@
  * LcmPublisherSystem
  *
  */
-#include "drake/examples/Acrobot/acrobot_plant.h"
+#include "drake/examples/acrobot/acrobot_plant.h"
 
 #include <memory>
 
 #include <gflags/gflags.h>
 
 #include "drake/common/find_resource.h"
-#include "drake/examples/Acrobot/acrobot_lcm.h"
+#include "drake/examples/acrobot/acrobot_lcm.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_acrobot_u.hpp"
 #include "drake/lcmt_acrobot_x.hpp"
@@ -52,7 +52,7 @@ int DoMain() {
   lcm::DrakeLcm lcm;
   auto tree = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      FindResourceOrThrow("drake/examples/Acrobot/Acrobot.urdf"),
+      FindResourceOrThrow("drake/examples/acrobot/Acrobot.urdf"),
       multibody::joints::kFixed, tree.get());
   auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
   auto acrobot = builder.AddSystem<AcrobotPlant>();
