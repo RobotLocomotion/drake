@@ -181,7 +181,7 @@ struct AddRotationMatrixBilinearMcCormickMilpConstraintsReturn {
  * R(i, j) is, we impose corresponding linear constraints.
  * @param prog The optimization program to which the SO(3) relaxation is added.
  * @param R The rotation matrix.
- * @param num_intervlas_per_half_axis Same as NumIntervalsPerHalfAxis, use this
+ * @param num_intervals_per_half_axis Same as NumIntervalsPerHalfAxis, use this
  * variable when NumIntervalsPerHalfAxis is dynamic.
  * @return pair. pair = (B, φ). B[i][j] is a column vector. If B[i][j]
  * represents integer M in the reflected Gray code, then R(i, j) is in the
@@ -196,6 +196,6 @@ typename std::enable_if<
 AddRotationMatrixBilinearMcCormickMilpConstraints(
     MathematicalProgram *prog,
     const Eigen::Ref<const MatrixDecisionVariable<3, 3>> &R,
-    int num_intervlas_per_half_axis = NumIntervalsPerHalfAxis);
+    int num_intervals_per_half_axis = NumIntervalsPerHalfAxis);
 }  // namespace solvers
 }  // namespace drake

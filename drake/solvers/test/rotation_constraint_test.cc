@@ -264,7 +264,7 @@ class TestMcCormick : public ::testing::TestWithParam<std::tuple<bool, int>> {
 };
 
 TEST_P(TestMcCormick, TestExactRotationMatrix) {
-  // Test if R is exactly on SO(3), whether it also satisfies our relaxation.
+  // If R is exactly on SO(3), test whether it also satisfies our relaxation.
   std::mt19937 generator(41);
   std::normal_distribution<double> randn;
   std::uniform_int_distribution<> rand(0, 1 << 6);
