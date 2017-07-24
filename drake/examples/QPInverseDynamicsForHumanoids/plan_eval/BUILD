@@ -93,11 +93,11 @@ drake_cc_binary(
         "dev/humanoid_manipulation_demo.cc",
     ],
     data = [
-        "//drake/examples/Valkyrie:models",
+        "//drake/examples/valkyrie:models",
     ],
     deps = [
         "//drake/common:find_resource",
-        "//drake/examples/Valkyrie:valkyrie_constants",
+        "//drake/examples/valkyrie:valkyrie_constants",
         "//drake/manipulation/util:robot_state_msg_translator",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",

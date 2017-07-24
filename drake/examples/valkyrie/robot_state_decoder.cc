@@ -1,4 +1,4 @@
-#include "drake/examples/Valkyrie/robot_state_decoder.h"
+#include "drake/examples/valkyrie/robot_state_decoder.h"
 
 #include <utility>
 

@@ -78,7 +78,7 @@ drake_cc_googletest(
     # TODO(siyuan): we should eventually move the models for test outside of
     # /examples.
     data = [
-        "//drake/examples/Valkyrie:models",
+        "//drake/examples/valkyrie:models",
         "//drake/manipulation/models/iiwa_description:models",
         "//drake/manipulation/models/wsg_50_description:models",
     ],
