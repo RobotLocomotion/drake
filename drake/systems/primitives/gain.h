@@ -4,7 +4,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/systems/framework/siso_vector_system.h"
+#include "drake/systems/framework/vector_system.h"
 
 namespace drake {
 namespace systems {
@@ -27,7 +27,7 @@ namespace systems {
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 /// @ingroup primitive_systems
 template <typename T>
-class Gain : public SisoVectorSystem<T> {
+class Gain : public VectorSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Gain)
 
