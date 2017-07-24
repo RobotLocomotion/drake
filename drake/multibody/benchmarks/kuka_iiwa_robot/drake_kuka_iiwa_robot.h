@@ -24,7 +24,7 @@ using Eigen::Vector3d;
 /// Utility method for creating a transform from frame A to frame B.
 /// @param[in] R_AB Rotation matrix relating Ax, Ay, Az to Bx, By, Bz.
 /// @param[in] p_AoBo_A Position vector from Ao to Bo, expressed in A.
-/// @return Transform relating frame A to frame B.
+/// @retval X_AB Tranform relating frame A to frame B.
 Eigen::Isometry3d MakeIsometry3d(const Eigen::Matrix3d& R_AB,
                                  const Eigen::Vector3d& p_AoBo_A) {
   // Initialize all of X_AB (may be more than just linear and translation).
@@ -49,7 +49,8 @@ class DrakeKukaIIwaRobot {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrakeKukaIIwaRobot)
 
-  // Construct a 7-DOF Kuka iiwa robot arm (from file kuka_iiwa_robot.urdf).
+  /// Construct a 7-DOF Kuka iiwa robot arm (from file kuka_iiwa_robot.urdf).
+  /// The robot is constructed with 7 revolute joints.
   DrakeKukaIIwaRobot() {
     // Create a mostly empty MultibodyTree (it has a built-in "world" body).
     // Newtonian reference frame (linkN) is the world body.
@@ -72,11 +73,11 @@ class DrakeKukaIIwaRobot {
     linkG_ = &(model_->AddBody<RigidBody>(M_Bo_B));
 
     // Create a revolute joint between linkN (Newtonian frame/world) and linkA
-    // using two joint-frames, namely "NA" and "AN".  The "inboard frame" NA is
-    // welded to linkN and the "outboard frame" AN is welded to linkA.
-    // The orientation and position of NA relative to linkN are specified by the
+    // using two joint-frames, namely "Na" and "An".  The "inboard frame" Na is
+    // welded to linkN and the "outboard frame" An is welded to linkA.
+    // The orientation and position of Na relative to linkN are specified by the
     // second and third arguments in the following method, namely with SpaceXYZ
-    // angles and a position vector. Alternately, frame AN is regarded as
+    // angles and a position vector. Alternately, frame An is regarded as
     // coincident with linkA.
     NA_mobilizer_ = &AddRevoluteMobilizerFromSpaceXYZAnglesAndXYZ(
         *linkN_, Vector3d(0, 0, 0), Vector3d(0, 0, 0.1575),
@@ -176,52 +177,54 @@ class DrakeKukaIIwaRobot {
 
  private:
   // Method to add revolute joint (mobilizer) from Body A to Body B.
-  // @param[in] A     Mobilizer's inboard  body (frame AB will be welded to A).
-  // @param[in] X_AAB Transform relating body A to frame AB.
-  // @param[in] B     Mobilizer's outboard body (frame BA will be welded to B).
-  // @param[in] X_BBA Transform relating body B to frame BA.
-  // @param[in] revolute_unit_vector  Unit vector orienting the revolute joint.
-  // @return RevoluteMobilizer from frame AB on Body A to frame BA on Body B.
+  // @param[in] A     Mobilizer's inboard  body (frame Ab will be welded to A).
+  // @param[in] X_AAb Transform relating body A to frame Ab.
+  // @param[in] B     Mobilizer's outboard body (frame Ba will be welded to B).
+  // @param[in] X_BBa Transform relating body B to frame Ba.
+  // @param[in] revolute_unit_vector  Unit vector expressed in frame Ab that
+  //         characterizes a positive rotation of Ba from Ab (right-hand-rule).
+  // @return RevoluteMobilizer from frame Ab on Body A to frame Ba on Body B.
   const RevoluteMobilizer<double>& AddRevoluteMobilizer(
-      const Body<double>& A, const Eigen::Isometry3d& X_AAB,
-      const Body<double>& B, const Eigen::Isometry3d& X_BBA,
+      const Body<double>& A, const Eigen::Isometry3d& X_AAb,
+      const Body<double>& B, const Eigen::Isometry3d& X_BBa,
       const Eigen::Vector3d& revolute_unit_vector) {
-    // Add a FixedOffsetFrame AB to Body A (AB is mobilizer's inboard frame).
-    const FixedOffsetFrame<double>& AB =
-        model_->AddFrame<FixedOffsetFrame>(A, X_AAB);
+    // Add a FixedOffsetFrame Ab to Body A (Ab is mobilizer's inboard frame).
+    const FixedOffsetFrame<double>& Ab =
+        model_->AddFrame<FixedOffsetFrame>(A, X_AAb);
 
-    // Add a FixedOffsetFrame BA to Body B (BA is mobilizer's outboard frame).
-    const FixedOffsetFrame<double>& BA =
-        model_->AddFrame<FixedOffsetFrame>(B, X_BBA);
+    // Add a FixedOffsetFrame Ba to Body B (Ba is mobilizer's outboard frame).
+    const FixedOffsetFrame<double>& Ba =
+        model_->AddFrame<FixedOffsetFrame>(B, X_BBa);
 
     // Return a new RevoluteMobilizer between inboard frame and outboard frame.
-    return model_->AddMobilizer<RevoluteMobilizer>(AB, BA,
+    return model_->AddMobilizer<RevoluteMobilizer>(Ab, Ba,
                                                    revolute_unit_vector);
   }
 
   // Method to add revolute joint (mobilizer) from Body A to Body B.
-  // @param[in] A     Mobilizer's inboard  body (frame AB will be welded to A).
+  // @param[in] A     Mobilizer's inboard  body (frame Ab will be welded to A).
   // @param[in] q123A SpaceXYZ angles describing the rotation matrix relating
-  //                  unit vectors Ax, Ay, Az to soon-to-be created frame AB.
-  // @param[in] xyzA  Ax, Ay, Az measures of the position from Ao to ABo.
-  // @param[in] B     Mobilizer's outboard body (frame BA will be welded to B
+  //                  unit vectors Ax, Ay, Az to soon-to-be created frame Ab.
+  // @param[in] xyzA  Ax, Ay, Az measures of the position from Ao to Abo.
+  // @param[in] B     Mobilizer's outboard body (frame Ba will be welded to B
   //                  so it is coincident with body B's frame). In other words,
-  //                  mobilizer's outboard frame BA will be coincident with
+  //                  mobilizer's outboard frame Ba will be coincident with
   //                  the outboard body B.
-  // @param[in] revolute_unit_vector  Unit vector orienting the revolute joint.
-  // @return RevoluteMobilizer from frame AB on Body A to frame BA on Body B.
-  const RevoluteMobilizer<double> &AddRevoluteMobilizerFromSpaceXYZAnglesAndXYZ(
+  // @param[in] revolute_unit_vector  Unit vector expressed in frame Ab that
+  //         characterizes a positive rotation of Ba from Ab (right-hand-rule).
+  // @return RevoluteMobilizer from frame Ab on Body A to frame Ba on Body B.
+  const RevoluteMobilizer<double>& AddRevoluteMobilizerFromSpaceXYZAnglesAndXYZ(
       const Body<double>& A, const Vector3d& q123A, const Vector3d& xyzA,
       const Body<double>& B, const Vector3d& revolute_unit_vector) {
-    // Create transform from inboard body A to mobilizer inboard frame AB.
-    const Eigen::Isometry3d X_AAB = MakeIsometry3d(math::rpy2rotmat(q123A),
+    // Create transform from inboard body A to mobilizer inboard frame Ab.
+    const Eigen::Isometry3d X_AAb = MakeIsometry3d(math::rpy2rotmat(q123A),
                                                    xyzA);
 
-    // Create transform from outboard body B to mobilizer outboard frame BA.
-    const Eigen::Isometry3d X_BBA = MakeIsometry3d(Eigen::Matrix3d::Identity(),
+    // Create transform from outboard body B to mobilizer outboard frame Ba.
+    const Eigen::Isometry3d X_BBa = MakeIsometry3d(Eigen::Matrix3d::Identity(),
                                                    Vector3d(0, 0, 0));
 
-    return AddRevoluteMobilizer(A, X_AAB, B, X_BBA, revolute_unit_vector);
+    return AddRevoluteMobilizer(A, X_AAb, B, X_BBa, revolute_unit_vector);
   }
 
   // Helper method to extract a pose from the position kinematics.

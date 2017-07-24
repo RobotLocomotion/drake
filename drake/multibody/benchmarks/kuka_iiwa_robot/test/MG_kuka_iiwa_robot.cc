@@ -1,4 +1,4 @@
-#include "drake/multibody/benchmarks/kuka_iiwa_robot/test/MG_kuka_iiwa_robot_glue.h"
+#include "drake/multibody/benchmarks/kuka_iiwa_robot/test/MG_kuka_iiwa_robot.h"
 
 #include "drake/common/extract_double.h"
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/test/MG_kuka_iiwa_robot_auto_generated.h"
@@ -13,7 +13,7 @@ using Eigen::Matrix;
 
 template <typename T>
 std::tuple<Matrix3d, Vector3d, Vector3d, Vector3d, Vector3d, Vector3d>
-MGKukaIIwaRobotGlue<T>::CalcEndEffectorKinematics(
+MGKukaIIwaRobot<T>::CalcEndEffectorKinematics(
     const Eigen::Ref<const VectorX<T>>& q,
     const Eigen::Ref<const VectorX<T>>& qDt,
     const Eigen::Ref<const VectorX<T>>& qDDt) const {
@@ -51,7 +51,7 @@ MGKukaIIwaRobotGlue<T>::CalcEndEffectorKinematics(
 }
 
 // Explicitly instantiates on the most common scalar types.
-template class MGKukaIIwaRobotGlue<double>;
+template class MGKukaIIwaRobot<double>;
 
 }  // namespace kuka_iiwa_robot
 }  // namespace benchmarks

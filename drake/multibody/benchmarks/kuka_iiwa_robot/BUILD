@@ -8,14 +8,15 @@ package(default_visibility = [":__subpackages__"])
 
 drake_cc_library(
     name = "kuka_iiwa_robot_library",
+    testonly = 1,
     srcs = [
+        "test/MG_kuka_iiwa_robot.cc",
         "test/MG_kuka_iiwa_robot_auto_generated.cc",
-        "test/MG_kuka_iiwa_robot_glue.cc",
     ],
     hdrs = [
         "drake_kuka_iiwa_robot.h",
+        "test/MG_kuka_iiwa_robot.h",
         "test/MG_kuka_iiwa_robot_auto_generated.h",
-        "test/MG_kuka_iiwa_robot_glue.h",
     ],
     deps = [
         "//drake/common:autodiff",

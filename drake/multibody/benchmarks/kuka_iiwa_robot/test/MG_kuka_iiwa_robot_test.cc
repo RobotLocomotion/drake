@@ -1,6 +1,7 @@
-#include "drake/multibody/benchmarks/kuka_iiwa_robot/test/MG_kuka_iiwa_robot_glue.h"
+#include "drake/multibody/benchmarks/kuka_iiwa_robot/test/MG_kuka_iiwa_robot.h"
 
 #include <cmath>
+#include <limits>
 
 #include <gtest/gtest.h>
 
@@ -23,16 +24,16 @@ namespace {
 // w_NG_N_expected    |  G's angular velocity in N, expressed in N.
 // v_NGo_N_expected   |  Go's velocity in N, expressed in N.
 void CompareEndEffectorPositionVelocityVsExpectedSolution(
-    const Eigen::Matrix<double, 7, 1> &q,
-    const Eigen::Matrix<double, 7, 1> &qDt,
-    const Eigen::Matrix<double, 7, 1> &qDDt,
-    const Eigen::Matrix3d &R_NG_expected,
-    const Eigen::Vector3d &p_No_Go_N_expected,
-    const Eigen::Vector3d &w_NG_N_expected,
-    const Eigen::Vector3d &v_NGo_N_expected,
-    const Eigen::Vector3d &alpha_NG_N_expected,
-    const Eigen::Vector3d &a_NGo_N_expected) {
-  MGKukaIIwaRobotGlue<double> MG_kuka_robot;
+    const Eigen::Matrix<double, 7, 1>& q,
+    const Eigen::Matrix<double, 7, 1>& qDt,
+    const Eigen::Matrix<double, 7, 1>& qDDt,
+    const Eigen::Matrix3d& R_NG_expected,
+    const Eigen::Vector3d& p_No_Go_N_expected,
+    const Eigen::Vector3d& w_NG_N_expected,
+    const Eigen::Vector3d& v_NGo_N_expected,
+    const Eigen::Vector3d& alpha_NG_N_expected,
+    const Eigen::Vector3d& a_NGo_N_expected) {
+  MGKukaIIwaRobot<double> MG_kuka_robot;
   // R_NG       | Rotation matrix relating Nx, Ny, Nz to Gx, Gy, Gz.
   // p_NoGo_N   | Go's position from No, expressed in N.
   // w_NG_N     | G's angular velocity in N, expressed in N.
@@ -45,8 +46,8 @@ void CompareEndEffectorPositionVelocityVsExpectedSolution(
       MG_kuka_robot.CalcEndEffectorKinematics(q, qDt, qDDt);
 
   // Compare actual results with expected results.
-  constexpr double epsilon = std::numeric_limits<double>::epsilon();
-  const double tolerance = 10 * epsilon;
+  constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
+  const double tolerance = 10 * kEpsilon;
   EXPECT_TRUE(R_NG.isApprox(R_NG_expected, tolerance));
   EXPECT_TRUE(p_No_Go_N.isApprox(p_No_Go_N_expected, tolerance));
   EXPECT_TRUE(w_NG_N.isApprox(w_NG_N_expected, tolerance));
