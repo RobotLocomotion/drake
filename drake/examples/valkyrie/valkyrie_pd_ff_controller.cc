@@ -1,4 +1,4 @@
-#include "drake/examples/Valkyrie/valkyrie_pd_ff_controller.h"
+#include "drake/examples/valkyrie/valkyrie_pd_ff_controller.h"
 
 #include <cmath>
 #include <iostream>
@@ -9,8 +9,8 @@
 #include "lcmtypes/bot_core/robot_state_t.hpp"
 
 #include "drake/common/find_resource.h"
-#include "drake/examples/Valkyrie/robot_state_decoder.h"
-#include "drake/examples/Valkyrie/valkyrie_constants.h"
+#include "drake/examples/valkyrie/robot_state_decoder.h"
+#include "drake/examples/valkyrie/valkyrie_constants.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/kinematics_cache.h"
@@ -127,7 +127,7 @@ void ValkyriePDAndFeedForwardController::OutputCommand(
 
 void run_valkyrie_pd_ff_controller() {
   std::string urdf = FindResourceOrThrow(
-          "drake/examples/Valkyrie/urdf/urdf/"
+          "drake/examples/valkyrie/urdf/urdf/"
           "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
   auto robot = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
