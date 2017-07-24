@@ -136,15 +136,59 @@ void AddLogarithmicSos1Constraint(
  * @param By The binary variable, to determine in which interval `y` stays.
  * If Bx represents integer M in Gray code, then `y` is in the interval
  * [φy(M), φy(M+1)].
+ * @return lambda The auxiliary continuous variables.
+ * x = φxᵀ * (λ.rowwise().sum())
+ * y = φyᵀ * (λ.cowwise().sum())
+ * w = sum_{i, j} φx(i) * φy(j) * λ(i, j)
+ * Both λ.rowwise().sum() and λ.colwise().sum() satisfy SOS2 constraint.
+ * If x ∈ [φx(M), φx(M+1)] and y ∈ [φy(N), φy(N+1)], then only λ(M, N),
+ * λ(M + 1, N), λ(M, N + 1) and λ(M+1, N+1) can be strictly positive, all other
+ * λ(i, j) are zero.
  */
-void AddBilinearProductMcCormickEnvelopeSos2(
-    MathematicalProgram *prog,
-    const symbolic::Variable &x,
-    const symbolic::Variable &y,
-    const symbolic::Expression &w,
-    const Eigen::Ref<const Eigen::VectorXd> &phi_x,
-    const Eigen::Ref<const Eigen::VectorXd> &phi_y,
-    const Eigen::Ref<const VectorXDecisionVariable> &Bx,
-    const Eigen::Ref<const VectorXDecisionVariable> &By);
+template <typename DerivedPhiX, typename DerivedPhiY, typename DerivedBx,
+          typename DerivedBy>
+typename std::enable_if<
+    detail::is_eigen_vector_of<DerivedPhiX, double>::value &&
+        detail::is_eigen_vector_of<DerivedPhiY, double>::value &&
+        detail::is_eigen_vector_of<DerivedBx, symbolic::Variable>::value &&
+        detail::is_eigen_vector_of<DerivedBy, symbolic::Variable>::value,
+    MatrixDecisionVariable<DerivedPhiX::RowsAtCompileTime,
+                           DerivedPhiY::RowsAtCompileTime>>::type
+AddBilinearProductMcCormickEnvelopeSos2(
+    MathematicalProgram* prog, const symbolic::Variable& x,
+    const symbolic::Variable& y, const symbolic::Expression& w,
+    const DerivedPhiX& phi_x, const DerivedPhiY& phi_y, const DerivedBx& Bx,
+    const DerivedBy& By) {
+  DRAKE_ASSERT(Bx.rows() == CeilLog2(phi_x.rows() - 1));
+  DRAKE_ASSERT(By.rows() == CeilLog2(phi_y.rows() - 1));
+  const int num_phi_x = phi_x.rows();
+  const int num_phi_y = phi_y.rows();
+  auto lambda = prog->NewContinuousVariables<DerivedPhiX::RowsAtCompileTime,
+                                             DerivedPhiY::RowsAtCompileTime>(
+      num_phi_x, num_phi_y, "lambda");
+  prog->AddBoundingBoxConstraint(0, 1, lambda);
+
+  symbolic::Expression x_convex_combination{0};
+  symbolic::Expression y_convex_combination{0};
+  symbolic::Expression w_convex_combination{0};
+  for (int i = 0; i < num_phi_x; ++i) {
+    for (int j = 0; j < num_phi_y; ++j) {
+      x_convex_combination += lambda(i, j) * phi_x(i);
+      y_convex_combination += lambda(i, j) * phi_y(j);
+      w_convex_combination += lambda(i, j) * phi_x(i) * phi_y(j);
+    }
+  }
+  prog->AddLinearConstraint(x == x_convex_combination);
+  prog->AddLinearConstraint(y == y_convex_combination);
+  prog->AddLinearConstraint(w == w_convex_combination);
+
+  AddLogarithmicSos2Constraint(
+      prog, lambda.template cast<symbolic::Expression>().rowwise().sum(), Bx);
+  AddLogarithmicSos2Constraint(
+      prog,
+      lambda.template cast<symbolic::Expression>().colwise().sum().transpose(),
+      By);
+  return lambda;
+}
 }  // namespace solvers
 }  // namespace drake

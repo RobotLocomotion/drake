@@ -16,35 +16,71 @@ class DummyPlan : public GenericPlan<T> {
  public:
   DummyPlan() {}
 
+  void set_all_to_compatible() {
+    set_model_compatible(true);
+    set_param_compatible(true);
+    set_alias_compatible(true);
+  }
+
+  void set_model_compatible(bool model_compatible) {
+    is_model_compatible_ = model_compatible;
+  }
+
+  void set_param_compatible(bool param_compatible) {
+    is_param_compatible_ = param_compatible;
+  }
+
+  void set_alias_compatible(bool alias_compatible) {
+    is_alias_compatible_ = alias_compatible;
+  }
+
+  bool IsRigidBodyTreeCompatible(const RigidBodyTree<T>&) const override {
+    return is_model_compatible_;
+  }
+
+  bool IsRigidBodyTreeAliasGroupsCompatible(
+      const param_parsers::RigidBodyTreeAliasGroups<T>&) const override {
+    return is_alias_compatible_;
+  }
+
+  bool IsParamSetCompatible(const param_parsers::ParamSet&) const override {
+    return is_param_compatible_;
+  }
+
  private:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DummyPlan)
 
-  GenericPlan<T>* CloneGenericPlanDerived() const {
-    DummyPlan<T>* clone = new DummyPlan<T>(*this);
-    return clone;
+  GenericPlan<T>* CloneGenericPlanDerived() const override {
+    return new DummyPlan<T>(*this);
   }
 
   void InitializeGenericPlanDerived(
       const HumanoidStatus& robot_status,
       const param_parsers::ParamSet& paramset,
-      const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) {}
+      const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) override {
+  }
 
   void ModifyPlanGenericPlanDerived(
       const HumanoidStatus& robot_stauts,
       const param_parsers::ParamSet& paramset,
-      const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) {}
+      const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) override {
+  }
 
-  void HandlePlanMessageGenericPlanDerived(
+  void HandlePlanGenericPlanDerived(
       const HumanoidStatus& robot_stauts,
       const param_parsers::ParamSet& paramset,
       const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,
-      const void* message_bytes, int message_length) {}
+      const systems::AbstractValue& plan) override {}
 
   void UpdateQpInputGenericPlanDerived(
       const HumanoidStatus& robot_status,
       const param_parsers::ParamSet& paramset,
       const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,
-      QpInput* qp_input) const {}
+      QpInput* qp_input) const override {}
+
+  bool is_model_compatible_{true};
+  bool is_param_compatible_{true};
+  bool is_alias_compatible_{true};
 };
 
 class DummyPlanTest : public GenericPlanTest {
@@ -66,7 +102,20 @@ class DummyPlanTest : public GenericPlanTest {
     AllocateResources(kModelPath, kAliasGroupsPath, kControlConfigPath);
     SetRandomConfiguration(&generator);
     dut_ = std::unique_ptr<GenericPlan<double>>(new DummyPlan<double>());
-    dut_->Initialize(*robot_status_, *params_, *alias_groups_);
+  }
+
+  void CheckIncompatibleAndThrow() {
+    EXPECT_THROW(dut_->Initialize(*robot_status_, *params_, *alias_groups_),
+                 std::logic_error);
+    EXPECT_THROW(dut_->ModifyPlan(*robot_status_, *params_, *alias_groups_),
+                 std::logic_error);
+    EXPECT_THROW(dut_->HandlePlan(*robot_status_, *params_, *alias_groups_,
+                                  systems::Value<int>(10)),
+                 std::logic_error);
+    QpInput qp_input;
+    EXPECT_THROW(dut_->UpdateQpInput(*robot_status_, *params_, *alias_groups_,
+                                     &qp_input),
+                 std::logic_error);
   }
 };
 
@@ -74,6 +123,8 @@ class DummyPlanTest : public GenericPlanTest {
 // contacts, no tracked bodies, and holds all dof at where the plan was
 // initialized.
 TEST_F(DummyPlanTest, TestInitialize) {
+  dut_->Initialize(*robot_status_, *params_, *alias_groups_);
+
   EXPECT_TRUE(dut_->get_planned_contact_state().empty());
   EXPECT_TRUE(dut_->get_body_trajectories().empty());
 
@@ -103,10 +154,15 @@ TEST_F(DummyPlanTest, TestInitialize) {
 }
 
 // Tests if the cloned fields are the same as the original.
-TEST_F(DummyPlanTest, TestClone) { TestGenericClone(); }
+TEST_F(DummyPlanTest, TestClone) {
+  dut_->Initialize(*robot_status_, *params_, *alias_groups_);
+  TestGenericClone();
+}
 
 // Checks the generated QpInput vs expected.
 TEST_F(DummyPlanTest, TestUpdateQpInput) {
+  dut_->Initialize(*robot_status_, *params_, *alias_groups_);
+
   QpInput qp_input;
 
   // Desired joint position and velocity.
@@ -158,6 +214,41 @@ TEST_F(DummyPlanTest, TestUpdateQpInput) {
     EXPECT_EQ(qp_input.desired_centroidal_momentum_dot().constraint_type(i),
               ConstraintType::Skip);
   }
+}
+
+TEST_F(DummyPlanTest, TestIncompatbileAndThrow) {
+  DummyPlan<double>* dummy_plan = dynamic_cast<DummyPlan<double>*>(dut_.get());
+  dummy_plan->set_all_to_compatible();
+  dummy_plan->set_model_compatible(false);
+  CheckIncompatibleAndThrow();
+
+  dummy_plan->set_all_to_compatible();
+  dummy_plan->set_param_compatible(false);
+  CheckIncompatibleAndThrow();
+
+  dummy_plan->set_all_to_compatible();
+  dummy_plan->set_alias_compatible(false);
+  CheckIncompatibleAndThrow();
+
+  dummy_plan->set_all_to_compatible();
+  dummy_plan->set_model_compatible(false);
+  dummy_plan->set_param_compatible(false);
+  CheckIncompatibleAndThrow();
+
+  dummy_plan->set_all_to_compatible();
+  dummy_plan->set_model_compatible(false);
+  dummy_plan->set_alias_compatible(false);
+  CheckIncompatibleAndThrow();
+
+  dummy_plan->set_all_to_compatible();
+  dummy_plan->set_alias_compatible(false);
+  dummy_plan->set_param_compatible(false);
+  CheckIncompatibleAndThrow();
+
+  dummy_plan->set_model_compatible(false);
+  dummy_plan->set_alias_compatible(false);
+  dummy_plan->set_param_compatible(false);
+  CheckIncompatibleAndThrow();
 }
 
 }  // namespace qp_inverse_dynamics
