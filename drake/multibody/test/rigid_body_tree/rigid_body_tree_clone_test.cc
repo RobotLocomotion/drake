@@ -56,7 +56,7 @@ TEST_F(RigidBodyTreeCloneTest, CloneTwoDofRobot) {
 // Tests RigidBodyTree::Clone() using Atlas.
 TEST_F(RigidBodyTreeCloneTest, CloneAtlas) {
   const std::string filename = FindResourceOrThrow(
-      "drake/examples/Atlas/urdf/atlas_convex_hull.urdf");
+      "drake/examples/atlas/urdf/atlas_convex_hull.urdf");
   AddModelInstanceFromUrdfFileToWorld(filename, multibody::joints::kQuaternion,
       tree_.get());
   EXPECT_TRUE(CompareToClone(*tree_));

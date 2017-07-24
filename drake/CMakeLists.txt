@@ -128,7 +128,7 @@ if(Matlab_FOUND)
   add_subdirectory(matlab)
 endif()
 
-add_subdirectory(examples/Atlas)
+add_subdirectory(examples/atlas)
 add_subdirectory(examples/kuka_iiwa_arm)
 
 option(ENABLE_DOCUMENTATION "Enable build target for Doxygen and Sphinx documentation." ON)
