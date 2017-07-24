@@ -30,6 +30,7 @@ GTEST_TEST(FrameVisualizerTests, TestMessageGeneration) {
   X_BF.linear() =
       AngleAxis<double>(0.3, Vector3<double>::UnitZ()).toRotationMatrix();
   X_BF.translation() = Vector3<double>(1, 2, 3);
+
   local_transforms.push_back(
       RigidBodyFrame<double>("iiwa_link_ee",
           tree.FindBody("iiwa_link_ee"), X_BF));
@@ -43,9 +44,7 @@ GTEST_TEST(FrameVisualizerTests, TestMessageGeneration) {
   // Initializes the system's input vector to contain all zeros.
   const int vector_size = tree.get_num_positions() + tree.get_num_velocities();
   auto input_data = std::make_unique<systems::BasicVector<double>>(vector_size);
-  VectorX<double> x(vector_size);
-  auto q = x.head(tree.get_num_positions());
-  auto v = x.head(tree.get_num_velocities());
+  VectorX<double> x = VectorX<double>::Zero(vector_size);
   input_data->set_value(x);
   context->SetInputPortValue(
       0, std::make_unique<systems::FreestandingInputPortValue>(
@@ -53,6 +52,8 @@ GTEST_TEST(FrameVisualizerTests, TestMessageGeneration) {
   dut.Publish(*context);
 
   KinematicsCache<double> cache = tree.CreateKinematicsCache();
+  auto q = x.head(tree.get_num_positions());
+  auto v = x.head(tree.get_num_velocities());
   cache.initialize(q, v);
   tree.doKinematics(cache);
   const Isometry3<double> X_WF = tree.CalcFramePoseInWorldFrame(
