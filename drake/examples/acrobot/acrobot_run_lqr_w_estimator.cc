@@ -5,8 +5,8 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/proto/call_matlab.h"
-#include "drake/examples/Acrobot/acrobot_plant.h"
-#include "drake/examples/Acrobot/gen/acrobot_state_vector.h"
+#include "drake/examples/acrobot/acrobot_plant.h"
+#include "drake/examples/acrobot/gen/acrobot_state_vector.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -49,7 +49,7 @@ int do_main(int argc, char* argv[]) {
   lcm::DrakeLcm lcm;
   auto tree = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      FindResourceOrThrow("drake/examples/Acrobot/Acrobot.urdf"),
+      FindResourceOrThrow("drake/examples/acrobot/Acrobot.urdf"),
       multibody::joints::kFixed, tree.get());
   auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
   publisher->set_name("publisher");

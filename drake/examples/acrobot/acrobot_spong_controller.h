@@ -8,7 +8,7 @@
 
 #include <memory>
 
-#include "drake/examples/Acrobot/acrobot_plant.h"
+#include "drake/examples/acrobot/acrobot_plant.h"
 #include "drake/systems/controllers/linear_quadratic_regulator.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/primitives/linear_system.h"

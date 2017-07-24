@@ -1,4 +1,4 @@
-#include "drake/examples/Acrobot/gen/acrobot_state_vector.h"
+#include "drake/examples/acrobot/gen/acrobot_state_vector.h"
 
 // GENERATED FILE DO NOT EDIT
 // See drake/tools/lcm_vector_gen.py.

@@ -1,4 +1,4 @@
-#include "drake/examples/Acrobot/acrobot_plant.h"
+#include "drake/examples/acrobot/acrobot_plant.h"
 
 #include <cmath>
 #include <vector>
