@@ -29,7 +29,7 @@ Clang 3.9::
     sudo add-apt-repository -y "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-3.9 main"
     sudo apt-get update
     sudo apt-get upgrade
-    sudo apt-get install clang-3.9 gfortran
+    sudo apt-get install clang-3.9 clang-format-3.9 gfortran
 
 .. _cmake:
 
