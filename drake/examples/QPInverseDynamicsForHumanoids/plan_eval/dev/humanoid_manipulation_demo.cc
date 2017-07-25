@@ -4,14 +4,14 @@
  * receiving the plan, the Valkyrie robot should return to the nominal
  * configuration except the right shoulder pitch joint.
  */
+#include "lcm/lcm-cpp.hpp"
+#include "robotlocomotion/robot_plan_t.hpp"
+
 #include "drake/examples/valkyrie/valkyrie_constants.h"
 #include "drake/manipulation/util/robot_state_msg_translator.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
-
-#include "lcm/lcm-cpp.hpp"
-#include "robotlocomotion/robot_plan_t.hpp"
 
 using std::default_random_engine;
 

@@ -1,4 +1,6 @@
+/* clang-format off */
 #include "drake/common/trajectories/piecewise_polynomial.h"
+/* clang-format on */
 
 #include <iostream>
 #include <random>

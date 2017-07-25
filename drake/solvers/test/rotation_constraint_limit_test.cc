@@ -1,4 +1,6 @@
+/* clang-format off */
 #include "drake/solvers/rotation_constraint.h"
+/* clang-format on */
 
 #include <gtest/gtest.h>
 

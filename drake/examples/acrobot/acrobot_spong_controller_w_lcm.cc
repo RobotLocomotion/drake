@@ -9,11 +9,10 @@
  * LcmPublisherSystem
  *
  */
-#include "drake/examples/acrobot/acrobot_spong_controller.h"
-
 #include <memory>
 
 #include "drake/examples/acrobot/acrobot_lcm.h"
+#include "drake/examples/acrobot/acrobot_spong_controller.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_acrobot_u.hpp"
 #include "drake/lcmt_acrobot_x.hpp"

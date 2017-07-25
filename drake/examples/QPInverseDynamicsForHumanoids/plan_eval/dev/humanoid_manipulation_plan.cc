@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "robotlocomotion/robot_plan_t.hpp"
+
 #include "drake/examples/QPInverseDynamicsForHumanoids/control_utils.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/lcm_utils.h"
 

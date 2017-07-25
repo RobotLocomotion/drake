@@ -1,7 +1,6 @@
-#include "drake/examples/QPInverseDynamicsForHumanoids/plan_eval/generic_plan.h"
-
 #include <string>
 
+#include "drake/examples/QPInverseDynamicsForHumanoids/plan_eval/generic_plan.h"
 #include "drake/manipulation/util/robot_state_msg_translator.h"
 #include "drake/systems/controllers/zmp_planner.h"
 

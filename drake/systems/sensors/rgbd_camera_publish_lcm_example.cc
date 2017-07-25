@@ -1,5 +1,3 @@
-#include "drake/systems/sensors/image_to_lcm_image_array_t.h"
-
 #include <string>
 
 #include <gflags/gflags.h>
@@ -15,6 +13,7 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/rendering/pose_stamped_t_pose_vector_translator.h"
+#include "drake/systems/sensors/image_to_lcm_image_array_t.h"
 #include "drake/systems/sensors/rgbd_camera.h"
 
 using std::cout;

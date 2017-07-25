@@ -1,4 +1,6 @@
+// clang-format off
 #include "drake/solvers/ipopt_solver.h"
+// clang-format on
 
 #include "drake/common/never_destroyed.h"
 

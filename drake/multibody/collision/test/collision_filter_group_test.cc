@@ -1,4 +1,6 @@
+/* clang-format off */
 #include "drake/multibody/collision/collision_filter.h"
+/* clang-format on */
 
 #include <memory>
 
