@@ -1,2 +1,2 @@
-drake_add_cc_test(spatial_algebra_tests)
-target_link_libraries(spatial_algebra_tests Eigen3::Eigen drakeCommon)
+drake_add_cc_test(spatial_algebra_test)
+target_link_libraries(spatial_algebra_test Eigen3::Eigen drakeCommon)
