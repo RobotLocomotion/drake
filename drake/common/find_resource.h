@@ -73,7 +73,7 @@ class FindResourceResult {
 
 /// Attempts to locate a Drake resource named by the given @p resource_path.
 /// The @p resource_path refers to the relative path within the Drake
-/// repository, e.g., `drake/examples/Pendulum/Pendulum.urdf`.
+/// repository, e.g., `drake/examples/pendulum/Pendulum.urdf`.
 ///
 /// When called from within a source code workspace (i.e., what a Drake
 /// developer would use), this finds the resource within the current workspace.

@@ -26,7 +26,7 @@ drake_cc_library(
         "//drake/common:unused",
         "//drake/common/trajectories:piecewise_polynomial",
         "//drake/common/trajectories/qp_spline:spline_generation",
-        "//drake/examples/Atlas:atlas_util",
+        "//drake/examples/atlas:atlas_util",
         "//drake/lcmtypes:qp_controller_input",
         "//drake/math:autodiff",
         "//drake/math:expmap",

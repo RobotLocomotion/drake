@@ -1,0 +1,10 @@
+collision_groups_to_keep:
+  - heel
+  - toe
+
+attachments:
+  - frame: r_hand_mount
+    urdf: examples/atlas/urdf/robotiq.urdf
+  - frame: l_hand_mount
+    urdf: examples/atlas/urdf/robotiq.urdf
+

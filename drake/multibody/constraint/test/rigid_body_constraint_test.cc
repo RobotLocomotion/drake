@@ -21,7 +21,7 @@ GTEST_TEST(RigidBodyConstraintTest, TestWorldComConstraint) {
   auto tree = make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       FindResourceOrThrow(
-          "drake/examples/Atlas/urdf/atlas_minimal_contact.urdf"),
+          "drake/examples/atlas/urdf/atlas_minimal_contact.urdf"),
       multibody::joints::kRollPitchYaw, tree.get());
 
   ASSERT_NE(tree, nullptr);

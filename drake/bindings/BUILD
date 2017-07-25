@@ -138,7 +138,7 @@ py_test(
     name = "pydrake_atlas_constructor_test",
     size = "small",
     srcs = ["python/pydrake/test/testAtlasConstructor.py"],
-    data = ["//drake/examples/Atlas:models"],
+    data = ["//drake/examples/atlas:models"],
     main = "python/pydrake/test/testAtlasConstructor.py",
     deps = [":pydrake"],
 )
@@ -202,7 +202,7 @@ py_test(
     name = "pydrake_pr2ik_test",
     size = "small",
     srcs = ["python/pydrake/test/testPR2IK.py"],
-    data = ["//drake/examples/PR2:models"],
+    data = ["//drake/examples/pr2:models"],
     main = "python/pydrake/test/testPR2IK.py",
     tags = ["snopt"],
     deps = [":pydrake"],
@@ -212,7 +212,7 @@ py_test(
     name = "pydrake_rbm_forward_kin_test",
     size = "small",
     srcs = ["python/pydrake/test/testRBTTransformPoints.py"],
-    data = ["//drake/examples/Pendulum:models"],
+    data = ["//drake/examples/pendulum:models"],
     main = "python/pydrake/test/testRBTTransformPoints.py",
     deps = [":pydrake"],
 )
@@ -221,7 +221,7 @@ py_test(
     name = "pydrake_rbt_com_test",
     size = "small",
     srcs = ["python/pydrake/test/testRBTCoM.py"],
-    data = ["//drake/examples/Pendulum:models"],
+    data = ["//drake/examples/pendulum:models"],
     main = "python/pydrake/test/testRBTCoM.py",
     deps = [":pydrake"],
 )
@@ -230,7 +230,7 @@ py_test(
     name = "pydrake_rbtik_test",
     size = "small",
     srcs = ["python/pydrake/test/testRBTIK.py"],
-    data = ["//drake/examples/Pendulum:models"],
+    data = ["//drake/examples/pendulum:models"],
     main = "python/pydrake/test/testRBTIK.py",
     tags = ["snopt"],
     deps = [":pydrake"],
@@ -248,7 +248,7 @@ py_test(
     name = "pydrake_urdf_parser_test",
     size = "small",
     srcs = ["python/pydrake/test/test_urdf_parser.py"],
-    data = ["//drake/examples/PR2:models"],
+    data = ["//drake/examples/pr2:models"],
     main = "python/pydrake/test/test_urdf_parser.py",
     deps = [":pydrake"],
 )

@@ -19,7 +19,7 @@ class ParamParserTests : public ::testing::Test {
  protected:
   virtual void SetUp() {
     const std::string urdf_name = FindResourceOrThrow(
-        "drake/examples/Valkyrie/urdf/urdf/"
+        "drake/examples/valkyrie/urdf/urdf/"
         "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
     const std::string alias_groups_config_name = FindResourceOrThrow(
         "drake/examples/QPInverseDynamicsForHumanoids/"

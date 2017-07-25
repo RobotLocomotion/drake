@@ -26,11 +26,11 @@ if isempty(packages)  % cache packages
     [~,packages{i}]=fileparts(package_paths{i});
   end
   packages{end+1} = 'Atlas';
-  package_paths{end+1} = [getDrakePath,'/examples/Atlas'];
+  package_paths{end+1} = [getDrakePath,'/examples/atlas'];
   packages{end+1} = 'Valkyrie';
-  package_paths{end+1} = [getDrakePath,'/examples/Valkyrie'];
+  package_paths{end+1} = [getDrakePath,'/examples/valkyrie'];
   packages{end+1} = 'IRB140';
-  package_paths{end+1} = [getDrakePath,'/examples/IRB140'];
+  package_paths{end+1} = [getDrakePath,'/examples/irb140'];
 end
 
 if strcmp(package,'-list')
