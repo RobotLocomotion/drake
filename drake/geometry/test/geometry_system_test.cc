@@ -30,6 +30,7 @@ using std::unique_ptr;
 // Friend class for working with QueryHandles in a test context.
 class QueryHandleTester {
  public:
+  QueryHandleTester() = delete;
   static QueryHandle<double> MakeNullQueryHandle() {
     return QueryHandle<double>(nullptr);
   }

@@ -38,19 +38,19 @@ SourceId GeometrySystem<T>::RegisterSource(const std::string &name) {
   THROW_IF_CONTEXT_ALLOCATED
   // TODO(SeanCurtis-TRI): Replace dummy source id with actual id.
   SourceId source_id = SourceId::get_new_id();
+  // This will fail only if the source generator starts recycling source ids.
+  DRAKE_ASSERT(input_source_ids_.count(source_id) == 0);
   // Create and store the input ports for this source id.
-  input_source_ids_[source_id];
-  input_source_ids_[source_id].id_port =
-      this->DeclareAbstractInputPort().get_index();
-  input_source_ids_[source_id].pose_port =
-      this->DeclareAbstractInputPort().get_index();
+  SourcePorts& source_ports = input_source_ids_[source_id];
+  source_ports.id_port = this->DeclareAbstractInputPort().get_index();
+  source_ports.pose_port = this->DeclareAbstractInputPort().get_index();
   return source_id;
 }
 
 template <typename T>
 const systems::InputPortDescriptor<T>&
 GeometrySystem<T>::get_source_frame_id_port(SourceId id) {
-  IsRegisteredOrThrow(
+  ThrowUnlessRegistered(
       id, "Can't acquire id port for unknown source id: ");
   return this->get_input_port(input_source_ids_[id].id_port);
 }
@@ -58,7 +58,7 @@ GeometrySystem<T>::get_source_frame_id_port(SourceId id) {
 template <typename T>
 const systems::InputPortDescriptor<T>&
 GeometrySystem<T>::get_source_pose_port(SourceId id) {
-  IsRegisteredOrThrow(
+  ThrowUnlessRegistered(
       id, "Can't acquire pose port for unknown source id: ");
   return this->get_input_port(input_source_ids_[id].pose_port);
 }
@@ -158,10 +158,9 @@ FrameId GeometrySystem<T>::GetFrameId(
 }
 
 template <typename T>
-bool GeometrySystem<T>::ComputeContact(
-    const QueryHandle<T>& handle,
-    vector<PenetrationAsPointPair<T>>* contacts) const {
-  unused(handle, contacts);
+std::vector<PenetrationAsPointPair<T>> GeometrySystem<T>::ComputePenetration(
+    const QueryHandle<T>& handle) const {
+  unused(handle);
   throw std::runtime_error("Not implemented yet.");
 }
 
@@ -197,15 +196,16 @@ std::unique_ptr<LeafContext<T>> GeometrySystem<T>::DoMakeContext() const {
 template <typename T>
 void GeometrySystem<T>::ThrowIfContextAllocated(
     const char* source_method) const {
-  if (context_allocated_)
+  if (context_allocated_) {
     throw std::logic_error(
         "The call to " + std::string(source_method) + " is invalid; a "
         "context has already been allocated.");
+  }
 }
 
 template <typename T>
-void GeometrySystem<T>::IsRegisteredOrThrow(SourceId source_id,
-                                            const char *message) const {
+void GeometrySystem<T>::ThrowUnlessRegistered(SourceId source_id,
+                                              const char* message) const {
   using std::to_string;
   if (input_source_ids_.find(source_id) == input_source_ids_.end()) {
     throw std::logic_error(message + to_string(source_id) + ".");
