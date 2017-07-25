@@ -204,6 +204,7 @@ drake_cc_googletest(
     name = "unit_inertia_test",
     deps = [
         ":unit_inertia",
+        "//drake/math:gradient",
     ],
 )
 
