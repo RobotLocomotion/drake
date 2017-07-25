@@ -10,6 +10,7 @@ namespace drake {
 namespace systems {
 namespace analysis_test {
 
+// T is the integrator type (e.g., RungeKutta3Integrator<double>).
 template <class T>
 class ExplicitErrorControlledIntegratorTest : public ::testing::Test {
  public:
@@ -34,10 +35,9 @@ class ExplicitErrorControlledIntegratorTest : public ::testing::Test {
 
 TYPED_TEST_CASE_P(ExplicitErrorControlledIntegratorTest);
 
-TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ReqAccuracy) {
-  // Set the accuracy.
+TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ReqInitialStepTarget) {
+  // Set the requested initial step size.
   this->integrator_->request_initial_step_size_target(this->dt_);
-
   EXPECT_EQ(this->integrator_->get_initial_step_size_target(), this->dt_);
 }
 
@@ -45,12 +45,9 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ContextAccess) {
   this->integrator_->get_mutable_context()->set_time(3.);
   EXPECT_EQ(this->integrator_->get_context().get_time(), 3.);
   EXPECT_EQ(this->context_->get_time(), 3.);
-
-  // Reset the context time.
-  this->integrator_->get_mutable_context()->set_time(0.);
 }
 
-/// Verifies error estimation is supported.
+// Verifies error estimation is supported.
 TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ErrorEstSupport) {
   EXPECT_GE(this->integrator_->get_error_estimate_order(), 1);
   EXPECT_EQ(this->integrator_->supports_error_estimation(), true);
@@ -105,7 +102,7 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, BulletProofSetup) {
   const double initial_velocity = 0.01;
   const double omega = std::sqrt(this->spring_k_ / this->mass_);
 
-  // Set initial condition using the Simulator's internal Context.
+  // Set the initial conditions.
   this->spring_mass_->set_position(this->integrator_->get_mutable_context(),
                              initial_position);
   this->spring_mass_->set_velocity(this->integrator_->get_mutable_context(),
@@ -169,7 +166,7 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ErrEst) {
   const double initial_velocity = 0.01;
   const double omega = std::sqrt(this->spring_k_ / this->mass_);
 
-  // Set initial condition using the Simulator's internal Context.
+  // Set initial conditions.
   this->spring_mass_->set_position(this->integrator_->get_mutable_context(),
                              initial_position);
   this->spring_mass_->set_velocity(this->integrator_->get_mutable_context(),
@@ -208,9 +205,7 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ErrEst) {
 
   // Verify that difference between integration result and true result is
   // captured by the error estimate. The 0.2 below indicates that the error
-  // estimate is quite conservative. (That's because we estimate the error in
-  // the 2nd order integral but propagate the 3rd order integral which is
-  // generally more accurate.)
+  // estimate is quite conservative.
   EXPECT_NEAR(kXApprox, x_true, err_est * 0.2);
 }
 
@@ -233,7 +228,7 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, SpringMassStepEC) {
   const double initial_velocity = 0.01;
   const double omega = std::sqrt(this->spring_k_ / this->mass_);
 
-  // Set initial condition using the Simulator's internal Context.
+  // Set initial conditions.
   this->spring_mass_->set_position(this->integrator_->get_mutable_context(),
                              initial_position);
   this->spring_mass_->set_velocity(this->integrator_->get_mutable_context(),
@@ -270,7 +265,7 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, SpringMassStepEC) {
   // Re-initialize the integrator.
   this->integrator_->Initialize();
 
-  // Set initial condition using the Simulator's internal Context.
+  // Set initial conditions.
   this->integrator_->get_mutable_context()->set_time(0.);
   this->spring_mass_->set_position(this->integrator_->get_mutable_context(),
                              initial_position);
@@ -358,7 +353,7 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, MinTimeThrows) {
   const double initial_position = 0.1;
   const double initial_velocity = 0.01;
 
-  // Set initial condition using the Simulator's internal Context.
+  // Set initial conditions.
   this->spring_mass_->set_position(this->integrator_->get_mutable_context(),
                              initial_position);
   this->spring_mass_->set_velocity(this->integrator_->get_mutable_context(),
@@ -422,7 +417,7 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, CheckStat) {
   const double initial_position = 0.1;
   const double initial_velocity = 0.01;
 
-  // Set initial condition using the Simulator's internal Context.
+  // Set initial conditions.
   this->spring_mass_->set_position(this->integrator_->get_mutable_context(),
                              initial_position);
   this->spring_mass_->set_velocity(this->integrator_->get_mutable_context(),
@@ -439,10 +434,10 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, CheckStat) {
             this->dt_);
 }
 
-REGISTER_TYPED_TEST_CASE_P(ExplicitErrorControlledIntegratorTest, ReqAccuracy,
-    ContextAccess, ErrorEstSupport, MagDisparity, Scaling, BulletProofSetup,
-    ErrEst, SpringMassStepEC, MaxStepSizeRespected, MinTimeThrows,
-    IllegalFixedStep, CheckStat);
+REGISTER_TYPED_TEST_CASE_P(ExplicitErrorControlledIntegratorTest,
+    ReqInitialStepTarget, ContextAccess, ErrorEstSupport, MagDisparity, Scaling,
+    BulletProofSetup, ErrEst, SpringMassStepEC, MaxStepSizeRespected,
+    MinTimeThrows, IllegalFixedStep, CheckStat);
 
 }  // namespace analysis_test
 }  // namespace systems
