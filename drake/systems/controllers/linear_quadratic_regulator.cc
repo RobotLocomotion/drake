@@ -7,6 +7,7 @@
 
 namespace drake {
 namespace systems {
+namespace controllers {
 
 LinearQuadraticRegulatorResult LinearQuadraticRegulator(
     const Eigen::Ref<const Eigen::MatrixXd>& A,
@@ -99,5 +100,6 @@ std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
       u0 + lqr_result.K * x0);               // y0
 }
 
+}  // namespace controllers
 }  // namespace systems
 }  // namespace drake

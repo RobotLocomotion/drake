@@ -90,9 +90,8 @@ std::unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
   // below is a collection of offsets into the state vector referring to the
   // positions of the joints to be constrained.
   Vector1<int> joint_position_start_idx;
-  joint_position_start_idx(0) =
-      tree->FindChildBodyOfJoint("j2n6s300_joint_1")
-      ->get_position_start_index();
+  joint_position_start_idx(0) = tree->FindChildBodyOfJoint("j2n6s300_joint_1")
+                                    ->get_position_start_index();
   Vector2d pc3_tspan = Vector2d(6, 12);
   PostureConstraint pc3(tree.get(), pc3_tspan);
   pc3.setJointLimits(joint_position_start_idx, Vector1d(-0.5), Vector1d(0.5));
@@ -178,12 +177,14 @@ int DoMain() {
   // Adds a controller
   VectorX<double> jaco_kp, jaco_kd, jaco_ki;
   SetPositionControlledJacoGains(&jaco_kp, &jaco_ki, &jaco_kd);
-  auto control_sys = make_unique<systems::InverseDynamicsController<double>>(
-      plant->get_rigid_body_tree().Clone(), jaco_kp, jaco_ki, jaco_kd,
-      false /* no feedforward acceleration */);
+  auto control_sys =
+      make_unique<systems::controllers::InverseDynamicsController<double>>(
+          plant->get_rigid_body_tree().Clone(), jaco_kp, jaco_ki, jaco_kd,
+          false /* no feedforward acceleration */);
   auto controller =
-      builder.AddSystem<systems::InverseDynamicsController<double>>(
-          std::move(control_sys));
+      builder
+          .AddSystem<systems::controllers::InverseDynamicsController<double>>(
+              std::move(control_sys));
 
   // Adds a trajectory source for desired state.
   auto traj_src = builder.AddSystem<systems::TrajectorySource<double>>(
@@ -194,8 +195,7 @@ int DoMain() {
                   controller->get_input_port_desired_state());
 
   // Connects the state port to the controller.
-  const int kInstanceId =
-      RigidBodyTreeConstants::kFirstNonWorldModelInstanceId;
+  const int kInstanceId = RigidBodyTreeConstants::kFirstNonWorldModelInstanceId;
   const auto& state_out_port =
       plant->model_instance_state_output_port(kInstanceId);
   builder.Connect(state_out_port, controller->get_input_port_estimated_state());

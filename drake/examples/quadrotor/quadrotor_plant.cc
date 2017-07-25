@@ -131,8 +131,8 @@ std::unique_ptr<systems::AffineSystem<double>> StabilizingLQRController(
 
   Eigen::Matrix4d R = Eigen::Matrix4d::Identity();
 
-  return systems::LinearQuadraticRegulator(*quadrotor_plant,
-                                           *quad_context_goal, Q, R);
+  return systems::controllers::LinearQuadraticRegulator(
+      *quadrotor_plant, *quad_context_goal, Q, R);
 }
 
 }  // namespace quadrotor

@@ -7,6 +7,7 @@
 
 namespace drake {
 namespace systems {
+namespace controllers {
 
 template <typename T>
 PidControlledSystem<T>::PidControlledSystem(std::unique_ptr<System<T>> plant,
@@ -158,5 +159,6 @@ PidControlledSystem<T>::~PidControlledSystem() {}
 template class PidControlledSystem<double>;
 template class PidControlledSystem<AutoDiffXd>;
 
+}  // namespace controllers
 }  // namespace systems
 }  // namespace drake

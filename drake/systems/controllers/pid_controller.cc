@@ -4,6 +4,7 @@
 
 namespace drake {
 namespace systems {
+namespace controllers {
 
 template <typename T>
 PidController<T>::PidController(const Eigen::VectorXd& kp,
@@ -105,5 +106,6 @@ template class PidController<double>;
 template class PidController<AutoDiffXd>;
 template class PidController<symbolic::Expression>;
 
+}  // namespace controllers
 }  // namespace systems
 }  // namespace drake

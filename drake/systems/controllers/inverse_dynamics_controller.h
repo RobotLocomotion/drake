@@ -11,6 +11,7 @@
 
 namespace drake {
 namespace systems {
+namespace controllers {
 
 /**
  * A state feedback controller that uses a PidController to generate desired
@@ -121,5 +122,6 @@ class InverseDynamicsController : public StateFeedbackControllerInterface<T>,
   int output_port_index_control_{-1};
 };
 
+}  // namespace controllers
 }  // namespace systems
 }  // namespace drake

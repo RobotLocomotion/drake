@@ -33,7 +33,7 @@ int do_main() {
   systems::DiagramBuilder<double> builder;
 
   PendulumPlant<double>* pendulum{nullptr};
-  systems::PidControlledSystem<double>* controller{nullptr};
+  systems::controllers::PidControlledSystem<double>* controller{nullptr};
 
   {
     auto pendulum_ptr = std::make_unique<PendulumPlant<double>>();
@@ -42,8 +42,9 @@ int do_main() {
 
     // The choices of PidController constants here are fairly arbitrary,
     // but seem to effectively swing up the pendulum and hold it.
-    controller = builder.AddSystem<systems::PidControlledSystem<double>>(
-        std::move(pendulum_ptr), 10., 0., 1.);
+    controller =
+        builder.AddSystem<systems::controllers::PidControlledSystem<double>>(
+            std::move(pendulum_ptr), 10., 0., 1.);
     controller->set_name("controller");
   }
   DRAKE_DEMAND(pendulum != nullptr);

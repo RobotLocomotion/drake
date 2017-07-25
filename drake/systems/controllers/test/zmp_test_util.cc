@@ -1,12 +1,12 @@
-#include "drake/examples/zmp/zmp_test_util.h"
+#include "drake/systems/controllers/test/zmp_test_util.h"
 
 #include "drake/common/drake_assert.h"
 
 namespace drake {
-namespace examples {
-namespace zmp {
+namespace systems {
+namespace controllers {
 
-ZMPTestTraj SimulateZMPPolicy(const drake::systems::ZMPPlanner& zmp_planner,
+ZMPTestTraj SimulateZMPPolicy(const ZMPPlanner& zmp_planner,
                               const Eigen::Vector4d& x0, double dt,
                               double extra_time_at_the_end) {
   const PiecewisePolynomial<double>& zmp_d = zmp_planner.get_desired_zmp();
@@ -81,6 +81,6 @@ std::vector<PiecewisePolynomial<double>> GenerateDesiredZMPTrajs(
   return zmp_trajs;
 }
 
-}  // namespace zmp
-}  // namespace examples
+}  // namespace controllers
+}  // namespace systems
 }  // namespace drake

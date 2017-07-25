@@ -19,6 +19,7 @@
 
 namespace drake {
 namespace systems {
+namespace controllers {
 namespace {
 
 VectorX<double> ComputeTorque(const RigidBodyTree<double>& tree,
@@ -109,5 +110,6 @@ GTEST_TEST(InverseDynamicsControllerTest, TestTorque) {
 }
 
 }  // namespace
+}  // namespace controllers
 }  // namespace systems
 }  // namespace drake

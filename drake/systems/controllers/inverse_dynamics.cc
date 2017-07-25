@@ -4,6 +4,7 @@
 
 namespace drake {
 namespace systems {
+namespace controllers {
 
 template <typename T>
 InverseDynamics<T>::InverseDynamics(const RigidBodyTree<T>& tree,
@@ -74,5 +75,6 @@ template class InverseDynamics<double>;
 // TODO(siyuan) template on autodiff.
 // template class InverseDynamics<AutoDiffXd>;
 
+}  // namespace controllers
 }  // namespace systems
 }  // namespace drake

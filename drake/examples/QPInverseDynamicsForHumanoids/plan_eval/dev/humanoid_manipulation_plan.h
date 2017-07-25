@@ -151,7 +151,7 @@ class HumanoidManipulationPlan : public GenericPlan<T> {
       const HumanoidStatus&, const param_parsers::ParamSet&,
       const param_parsers::RigidBodyTreeAliasGroups<T>&) override {}
 
-  systems::ZMPPlanner zmp_planner_;
+  systems::controllers::ZMPPlanner zmp_planner_;
   double zmp_height_{1.0};
   int64_t last_handle_plan_time_{-1};
 };
