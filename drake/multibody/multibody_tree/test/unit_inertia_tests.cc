@@ -6,6 +6,8 @@
 
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
+#include "drake/math/autodiff.h"
+#include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/multibody_tree/rotational_inertia.h"
 
 namespace drake {
@@ -15,10 +17,11 @@ namespace {
 
 using Eigen::AngleAxisd;
 using Eigen::Matrix3d;
+using Eigen::MatrixXd;
 using Eigen::NumTraits;
 using Eigen::Vector3d;
 
-constexpr double epsilon = std::numeric_limits<double>::epsilon();
+constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
 // Test default constructor which leaves entries initialized to NaN for a
 // quick detection of un-initialized values.
@@ -104,10 +107,10 @@ GTEST_TEST(UnitInertia, ReExpressInAnotherFrame) {
   const UnitInertia<double> G_Ro_F = G_Ro_R.ReExpress(R_FR);
 
   // Verify that now R's z-axis is oriented along F's y-axis.
-  EXPECT_NEAR(G_Ro_F(0, 0), Iperp, epsilon);
-  EXPECT_NEAR(G_Ro_F(1, 1), Irr, epsilon);
-  EXPECT_NEAR(G_Ro_F(2, 2), Iperp, epsilon);
-  EXPECT_TRUE(G_Ro_F.get_products().isZero(epsilon));
+  EXPECT_NEAR(G_Ro_F(0, 0), Iperp, kEpsilon);
+  EXPECT_NEAR(G_Ro_F(1, 1), Irr, kEpsilon);
+  EXPECT_NEAR(G_Ro_F(2, 2), Iperp, kEpsilon);
+  EXPECT_TRUE(G_Ro_F.get_products().isZero(kEpsilon));
 
   // While at it, check if after transformation this still is a physically
   // valid inertia.
@@ -124,7 +127,7 @@ GTEST_TEST(UnitInertia, PointMass) {
   UnitInertia<double> G = UnitInertia<double>::PointMass(u);
 
   // Verify that G(u) * v = -u x (u x v).
-  EXPECT_TRUE(uxuxv.isApprox(G * v, epsilon));
+  EXPECT_TRUE(uxuxv.isApprox(G * v, kEpsilon));
 }
 
 // Tests the static method to obtain the unit inertia of a solid sphere.
@@ -161,7 +164,7 @@ GTEST_TEST(UnitInertia, SolidBox) {
   const UnitInertia<double> G_expected(Ixx, Iyy, Izz);
   UnitInertia<double> G = UnitInertia<double>::SolidBox(Lx, Ly, Lz);
   EXPECT_TRUE(G.CopyToFullMatrix3().isApprox(
-      G_expected.CopyToFullMatrix3(), epsilon));
+      G_expected.CopyToFullMatrix3(), kEpsilon));
 }
 
 // Tests the static method to obtain the unit inertia of a solid cube.
@@ -172,7 +175,7 @@ GTEST_TEST(UnitInertia, SolidCube) {
                                          TriaxiallySymmetric(I);
     UnitInertia<double> G = UnitInertia<double>::SolidCube(L);
   EXPECT_TRUE(G.CopyToFullMatrix3().isApprox(
-      G_expected.CopyToFullMatrix3(), epsilon));
+      G_expected.CopyToFullMatrix3(), kEpsilon));
 }
 
 // Tests the static method to obtain the unit inertia of a solid cylinder.
@@ -184,7 +187,7 @@ GTEST_TEST(UnitInertia, SolidCylinder) {
   const UnitInertia<double> G_expected(I_perp, I_perp, I_axial);
   UnitInertia<double> G = UnitInertia<double>::SolidCylinder(r, L);
   EXPECT_TRUE(G.CopyToFullMatrix3().isApprox(
-      G_expected.CopyToFullMatrix3(), epsilon));
+      G_expected.CopyToFullMatrix3(), kEpsilon));
 }
 
 // Tests the static method to obtain the unit inertia of a solid cylinder
@@ -197,7 +200,7 @@ GTEST_TEST(UnitInertia, SolidCylinderAboutEnd) {
   const UnitInertia<double> G_expected(I_perp, I_perp, I_axial);
   UnitInertia<double> G = UnitInertia<double>::SolidCylinderAboutEnd(r, L);
   EXPECT_TRUE(G.CopyToFullMatrix3().isApprox(
-      G_expected.CopyToFullMatrix3(), epsilon));
+      G_expected.CopyToFullMatrix3(), kEpsilon));
 }
 
 // Tests the methods:
@@ -212,10 +215,10 @@ GTEST_TEST(UnitInertia, ShiftFromCenterOfMassInPlace) {
       UnitInertia<double>::SolidCylinderAboutEnd(r, L);
   UnitInertia<double> G = UnitInertia<double>::SolidCylinder(r, L);
   EXPECT_FALSE(G.CopyToFullMatrix3().isApprox(
-      G_expected.CopyToFullMatrix3(), epsilon));  // Not equal yet.
+      G_expected.CopyToFullMatrix3(), kEpsilon));  // Not equal yet.
   G.ShiftFromCenterOfMassInPlace({0.0, 0.0, L / 2.0});
   EXPECT_TRUE(G.CopyToFullMatrix3().isApprox(
-      G_expected.CopyToFullMatrix3(), epsilon));  // Equal after shifting.
+      G_expected.CopyToFullMatrix3(), kEpsilon));  // Equal after shifting.
   EXPECT_TRUE(G.CouldBePhysicallyValid());
 
   // Now test that we can perform the inverse operation and obtain the original
@@ -225,17 +228,54 @@ GTEST_TEST(UnitInertia, ShiftFromCenterOfMassInPlace) {
   // As a shift in place:
   G.ShiftToCenterOfMassInPlace({0.0, 0.0, -L / 2.0});
   EXPECT_TRUE(G.CopyToFullMatrix3().isApprox(
-      UnitInertia<double>::SolidCylinder(r, L).CopyToFullMatrix3(), epsilon));
+      UnitInertia<double>::SolidCylinder(r, L).CopyToFullMatrix3(), kEpsilon));
   EXPECT_TRUE(G2.CopyToFullMatrix3().isApprox(
-      UnitInertia<double>::SolidCylinder(r, L).CopyToFullMatrix3(), epsilon));
+      UnitInertia<double>::SolidCylinder(r, L).CopyToFullMatrix3(), kEpsilon));
 
   // Create a new object.
   UnitInertia<double> G3 =
       UnitInertia<double>::
       SolidCylinder(r, L).ShiftFromCenterOfMass({0.0, 0.0, L / 2.0});
   EXPECT_TRUE(G3.CopyToFullMatrix3().isApprox(
-      G_expected.CopyToFullMatrix3(), epsilon));
+      G_expected.CopyToFullMatrix3(), kEpsilon));
   EXPECT_TRUE(G3.CouldBePhysicallyValid());
+}
+
+// Tests that we can cast a RotationalInertia<double> to a RotationalInertia
+// templated on an AutoDiffScalar type.
+GTEST_TEST(UnitInertia, CastToAutoDiff) {
+  typedef Eigen::AutoDiffScalar<Vector1<double>> ADScalar;
+  const UnitInertia<double> I_double(1, 2.718, 3.14);
+  const UnitInertia<ADScalar> I_autodiff(1, 2.718, 3.14);
+
+  // Verify derivatives are zero.
+  const auto& m_gradients =
+      drake::math::autoDiffToGradientMatrix(I_autodiff.get_moments());
+  EXPECT_TRUE(m_gradients.isZero(kEpsilon));
+  const auto& p_gradients =
+      drake::math::autoDiffToGradientMatrix(I_autodiff.get_products());
+  EXPECT_TRUE(p_gradients.isZero(kEpsilon));
+
+  // Cast from double to AutoDiffScalar.
+  const UnitInertia<ADScalar> I_cast = I_double.cast<ADScalar>();
+  EXPECT_TRUE(I_autodiff.IsNearlyEqualTo(I_cast, kEpsilon));
+
+  const Matrix3<ADScalar> I_autodiff_matrix = I_cast.CopyToFullMatrix3();
+  auto I_value = drake::math::autoDiffToValueMatrix(I_autodiff_matrix);
+  I_value.resize(3, 3);
+  EXPECT_TRUE(I_value.isApprox(I_double.CopyToFullMatrix3(), kEpsilon));
+
+  MatrixXd I_gradient =
+      drake::math::autoDiffToGradientMatrix(I_autodiff_matrix);
+  ASSERT_EQ(I_gradient.rows(), 9);
+  ASSERT_EQ(I_gradient.cols(), 1);
+  I_gradient.resize(3, 3);
+  ASSERT_EQ(I_gradient.rows(), 3);
+  ASSERT_EQ(I_gradient.cols(), 3);
+
+  // Since the cast is performed from a RotationalInertia<double>, derivatives
+  // must be zero by default (no independent variables).
+  EXPECT_TRUE(I_gradient.isZero(kEpsilon));
 }
 
 // Tests that we can instantiate a unit inertia with AutoDiffScalar and
@@ -289,7 +329,7 @@ GTEST_TEST(UnitInertia, AutoDiff) {
                       wz,  0.0, 0.0,
                      0.0,  0.0, 0.0;
   EXPECT_TRUE(wcross.isApprox(
-      wcross_expected, epsilon));
+      wcross_expected, kEpsilon));
 
   // Re-express inertia into another frame.
   const UnitInertia<ADScalar> I_W = G_B.ReExpress(R_WB);
@@ -317,7 +357,7 @@ GTEST_TEST(UnitInertia, AutoDiff) {
   const Matrix3d Idot_W_expected = Ix * Rdot_x + Iy * Rdot_y + Iz * Rdot_z;
 
   EXPECT_TRUE(Idot_W.isApprox(
-      Idot_W_expected, epsilon));
+      Idot_W_expected, kEpsilon));
 }
 
 // The code below is in support of the goal to use a unit-test to confirm that
