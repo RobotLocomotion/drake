@@ -364,7 +364,7 @@ vector @f$ v @f$ is @f$ \frac{^Gd}{dt}\,v @f$ and its monogram notation is
 `DtG_v`.  Since the derivative of a vector is a vector, we need to specify an
 expressed-in frame E. The typeset notation is @f$ [\frac{^Gd}{dt}\,v]_E @f$
 whereas the monogram notation is `DtG_v_E`. In unicode comments (e.g., in a
-header or source file), use `[ᴳd/dt v]_E` or `DtG(v)_E` (see below)†.
+header or source file), use `[ᴳd/dt v]_E` or `DtG(v)_E` (see below).†
 
 Important note: The derivative operator applies to the vector, _not_ the
 computational representation of the vector. It is misleading to include
