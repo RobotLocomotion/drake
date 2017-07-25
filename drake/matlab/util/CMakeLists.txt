@@ -19,15 +19,15 @@ if(Matlab_FOUND)
     endif()
   endif()
 
-  drake_add_mex(drakeMexUtil SHARED drakeMexUtil.cpp MexWrapper.cpp)
+  drake_add_mex(drakeMexUtil SHARED
+    mex_util.cc
+    mex_util.h
+    mex_wrapper.cc
+    mex_wrapper.h)
   target_link_libraries(drakeMexUtil Eigen3::Eigen)
 
-  drake_install_headers(drakeMexUtil.h MexWrapper.h)
+  drake_install_headers(mex_util.h mex_wrapper.h)
   drake_install_libraries(drakeMexUtil)
-  drake_install_pkg_config_file(drake-mex-util
-    TARGET drakeMexUtil
-    LIBS -ldrakeMexUtil
-    REQUIRES drake-common)
 
   if(lcm_FOUND)
     drake_add_mex(call_matlab_client call_matlab_client.cc)
@@ -40,8 +40,7 @@ if(Matlab_FOUND)
   endif()
 endif()
 
-add_subdirectory(geometry/test)
-
 if(BUILD_TESTING)
+  add_subdirectory(geometry/test)
   add_subdirectory(test)
 endif()
