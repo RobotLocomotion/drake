@@ -1417,6 +1417,9 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
     } else {
       ++num_shrinkages_from_error_control_;
 
+      // Set the next "current" step size.
+      current_step_size = next_step_size;
+
       // Reset the time, state, and time derivative at t0.
       get_mutable_context()->set_time(current_time);
       xc->SetFromVector(xc0_save_);

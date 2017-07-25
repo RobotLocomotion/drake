@@ -44,9 +44,8 @@ void RungeKuttaMersonIntegrator<T>::DoInitialize() {
 
 template <class T>
 bool RungeKuttaMersonIntegrator<T>::DoStep(const T& dt) {
-  auto& system = IntegratorBase<T>::get_system();
   auto context = IntegratorBase<T>::get_mutable_context();
-  system.CalcTimeDerivatives(*context, derivs0_.get());
+  this->CalcTimeDerivatives(*context, derivs0_.get());
 
   // Setup constants for the tableaux.
   const double C21 = double(1.0 / 3.0);
@@ -102,14 +101,14 @@ bool RungeKuttaMersonIntegrator<T>::DoStep(const T& dt) {
   // Compute the first intermediate state and derivative (at t=1/4, x(1/4)).
   context->set_time(ta + dt * C21);
   xc->PlusEqScaled({{dt * C22, xcdot0}});
-  system.CalcTimeDerivatives(*context, derivs1_.get());
+  this->CalcTimeDerivatives(*context, derivs1_.get());
   const auto& xcdot1 = derivs1_->get_vector();
 
   // Compute the second intermediate state and derivative (at t=3/8, x(3/8)).
   context->set_time(ta + dt * C31);
   xc->SetFromVector(xt0);
   xc->PlusEqScaled({{dt * C32, xcdot0}, {dt * C33, xcdot1}});
-  system.CalcTimeDerivatives(*context, derivs2_.get());
+  this->CalcTimeDerivatives(*context, derivs2_.get());
   const auto& xcdot2 = derivs2_->get_vector();
 
   // Compute the third intermediate state and derivative.
@@ -117,7 +116,7 @@ bool RungeKuttaMersonIntegrator<T>::DoStep(const T& dt) {
   xc->SetFromVector(xt0);
   xc->PlusEqScaled({{dt * C42, xcdot0}, {dt * C43, xcdot1},
                     {dt * C44, xcdot2}});
-  system.CalcTimeDerivatives(*context, derivs3_.get());
+  this->CalcTimeDerivatives(*context, derivs3_.get());
   const auto& xcdot3 = derivs3_->get_vector();
 
   // Compute the fourth intermediate state and derivative.
@@ -125,7 +124,7 @@ bool RungeKuttaMersonIntegrator<T>::DoStep(const T& dt) {
   xc->SetFromVector(xt0);
   xc->PlusEqScaled({{dt * C52, xcdot0}, {dt * C53, xcdot1}, {dt * C54, xcdot2},
                     {dt * C55, xcdot3}});
-  system.CalcTimeDerivatives(*context, derivs4_.get());
+  this->CalcTimeDerivatives(*context, derivs4_.get());
   const auto& xcdot4 = derivs4_->get_vector();
 
   // Compute the fifth intermediate state and derivative.
@@ -133,7 +132,7 @@ bool RungeKuttaMersonIntegrator<T>::DoStep(const T& dt) {
   xc->SetFromVector(xt0);
   xc->PlusEqScaled({{dt * C62, xcdot0}, {dt * C63, xcdot1}, {dt * C64, xcdot2},
                     {dt * C65, xcdot3}, {dt * C66, xcdot4}});
-  system.CalcTimeDerivatives(*context, derivs5_.get());
+  this->CalcTimeDerivatives(*context, derivs5_.get());
   const auto& xcdot5 = derivs5_->get_vector();
 
   // Calculate the state at dt.
