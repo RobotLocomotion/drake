@@ -301,7 +301,7 @@ different expressed-in frame, say W, typeset with the bracket notation:
 
 The typeset symbol @f$^Fv^P@f$ is translated to monogram notation as `v_FP`.
 The quantity type always comes first, then an underscore, then left and right
-superscripts.  The symbol v_FP implies the vector is expressed in frame F.
+superscripts.  The symbol `v_FP` implies the vector is expressed in frame F.
 Alternately, to express in frame W, we typeset as @f$[^Fv^P]_W@f$ and use the
 monogram notation `v_FP_W` (adding a final underscore and expressed-in frame W).
 We adhere to this pattern for all quantities and it is quite useful once you get
@@ -330,18 +330,19 @@ Spatial velocity    |  V   |@f$^BV^C@f$     |`V_BC`    |Frame C's spatial veloci
 Angular acceleration|alpha |@f$^B\alpha^C@f$|`alpha_BC`|Frame C's angular acceleration in B
 Acceleration        |  a   |@f$^Ba^Q@f$     |`a_BQ`    |%Point Q's acceleration in B
 Spatial acceleration|  A   |@f$^BA^C@f$     |`A_BC`    |Frame C's spatial acceleration in B
-Torque              |  t   |@f$\tau^S@f$    |`t_S`     |Torque from a set S of forces
-Force               |  f   |@f$f^{So}@f$    |`f_So`    |Force on a point So
-Spatial force       |  F   |@f$F^{So}@f$    |`F_So`    |Torque/force for a set S of forces ††
+Torque              |  t   |@f$\tau^S@f$    |`t`       |Torque
+Force               |  f   |@f$f^{P}@f$     |`f_P`     |Force on a point P
+Spatial force       |  F   |@f$F^{P}@f$     |`F_P`     |Spatial force (torque/force) ††
 
 † In code, a vector has an expressed-in-frame which appears after the quantity.
-<br>Example: w_BC_E is C's angular velocity in B, expressed in frame E, typeset
+<br>Example: `w_BC_E` is C's angular velocity in B, expressed in frame E, typeset
 as @f$[^B\omega^C]_E @f$.
 
-†† A set S of forces can be <b>replaced</b> by an equivalent set consisting of
-the set's resultant force Fˢᵒ placed at an arbitrary point So together with a
-torque Tˢ whose moment is equal to moment of S about So.  Replacement by
-equivalent sets is useful in simulation/analyses of <b>rigid</b> bodies.
+†† In mechanical systems, it is often useful to <b>replace</b> a set of forces
+by an equivalent set with a force fᴾ placed at an arbitrary point P (fᴾ is equal
+to the set's resultant), together with a torque `t` equal to the moment of the
+set about P.  A spatial force Fᴾ containing `t` and fᴾ can be useful for
+representing this replacement.
 
 Next topic: @ref Dt_multibody_quantities
 **/
@@ -363,7 +364,7 @@ vector @f$ v @f$ is @f$ \frac{^Gd}{dt}\,v @f$ and its monogram notation is
 `DtG_v`.  Since the derivative of a vector is a vector, we need to specify an
 expressed-in frame E. The typeset notation is @f$ [\frac{^Gd}{dt}\,v]_E @f$
 whereas the monogram notation is `DtG_v_E`. In unicode comments (e.g., in a
-header or source file), use `[ᴳd/dt v]_E` or `DtG(v)_E` (see below).
+header or source file), use `[ᴳd/dt v]_E` or `DtG(v)_E` (see below)†.
 
 Important note: The derivative operator applies to the vector, _not_ the
 computational representation of the vector. It is misleading to include
@@ -371,13 +372,13 @@ an expressed-in frame in the symbol name for the vector v.  The expressed-in
 frame applies only to the final derived quantity. For example, consider
 `V_BC`, frame C's spatial velocity in frame B (a spatial velocity contains
 two vectors, namely angular velocity and velocity).  In code, you may express
-V_BC in frame E as `V_BC_E`. The definition of the spatial acceleration A_BC is
-the derivative in frame B of V_BC (the derivative <b>must</b> be taken in B).
+`V_BC` in frame E as `V_BC_E`. The definition of the spatial acceleration `A_BC`
+is the derivative in frame B of `V_BC` (the derivative <b>must</b> be in B).
 However, the resulting expressed-in frame is arbitrary, e.g., a frame F.
 The expressed-in frame E for `V_BC` does not impact the final result. The
 monogram notation for this derivative is `DtB_V_BC_F` which is interpreted as
-`DtB(V_BC)_F` or @f$ [\frac{^Bd}{dt}\,^BV^C]_F @f$; the `_F` goes with the
-result, not the quantity being differentiated. The resulting vector happens to
+@f$ [\frac{^Bd}{dt}\,^BV^C]_F @f$; the `_F` goes with the result,
+not the quantity being differentiated. The resulting vector happens to
 be `A_BC_F`, but that is only because the derivative was taken in frame B.
 If the derivative was taken in F (or C or E or any frame other than B), there
 is <b>no</b> conventional spatial acceleration name or notation for the result
@@ -389,10 +390,10 @@ expressed-in frame specified for the quantity being differentiated. For
 example, given a vector v, the expression `DtG(v_E)_F` is misleading.
 Instead, use `DtG(v)_F`.
 
-In a Unicode comment for the derivative in frame A of a vector v, use `ᴬd/dt v`
+† In unicode comments for the derivative in frame A of a vector v, use `ᴬd/dt v`
 (preferred if available) or `DtA(v)`.  Although the former is preferred, not all
-uppercase letters are available as superscripts in Unicode.  Consider choosing
-frame names to accommodate this strange quirk in Unicode.
+uppercase letters are available as superscripts in unicode.  Consider choosing
+frame names to accommodate this strange quirk in unicode.
 
 Next topic: @ref multibody_spatial_algebra
 **/
