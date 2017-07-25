@@ -17,7 +17,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/proto/matlab_rpc.pb.h"
-#include "drake/matlab/util/drakeMexUtil.h"
+#include "drake/matlab/util/mex_util.h"
 
 // Mex client for matlab remote procedure calls (RPCs).
 
@@ -60,7 +60,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     input.PopLimit(limit);
 
     int i;
-    std::vector<mxArray *> lhs(message.lhs_size()), rhs(message.rhs_size());
+    std::vector<mxArray*> lhs(message.lhs_size()), rhs(message.rhs_size());
 
     // Create the input arguments
     for (i = 0; i < message.rhs_size(); i++) {
@@ -95,7 +95,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
           dims[0] = message.rhs(i).rows();
           dims[1] = message.rhs(i).cols();
           rhs[i] = mxCreateCharArray(2, dims);
-          mxChar* char_data = static_cast<mxChar*>(mxGetData(rhs[i]));
+          auto* char_data = static_cast<mxChar*>(mxGetData(rhs[i]));
           DRAKE_DEMAND(message.rhs(i).rows() * message.rhs(i).cols() ==
                        num_bytes);
           const std::string& str = message.rhs(i).data();
@@ -109,7 +109,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
                                          message.rhs(i).cols());
           DRAKE_DEMAND(message.rhs(i).rows() * message.rhs(i).cols() ==
                        num_bytes);
-          mxLogical* logical_data = static_cast<mxLogical*>(mxGetData(rhs[i]));
+          auto* logical_data = static_cast<mxLogical*>(mxGetData(rhs[i]));
           const std::string& str = message.rhs(i).data();
           for (int j = 0; j < num_bytes; j++) {
             logical_data[j] = static_cast<mxLogical>(str[j]);
@@ -134,8 +134,9 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       // Assign any local variables that were returned by this call.
       for (i = 0; i < message.lhs_size(); i++) {
         // Zap any old variables that will be overwritten by this call.
-        if (client_vars_.find(message.lhs(i)) != client_vars_.end())
+        if (client_vars_.find(message.lhs(i)) != client_vars_.end()) {
           mxDestroyArray(client_vars_[message.lhs(i)]);
+        }
         client_vars_[message.lhs(i)] = lhs[i];
       }
     }
@@ -144,8 +145,9 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     for (i = 0; i < static_cast<int>(rhs.size()); i++) {
       // Make sure it's not a client var.
       if (message.rhs(i).type() !=
-          drake::common::MatlabArray::REMOTE_VARIABLE_REFERENCE)
+          drake::common::MatlabArray::REMOTE_VARIABLE_REFERENCE) {
         mxDestroyArray(rhs[i]);
+      }
     }
 
     if (trapped_error) {
