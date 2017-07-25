@@ -67,6 +67,17 @@ template <typename T> class GeometryInstance;
  The iᵗʰ pose belongs to the iᵗʰ id. Use get_source_pose_port() to acquire the
  port for a given source.
 
+ For source systems, there are some implicit assumptions regarding these input
+ ports. Generally, we assume that the source system already has some logic for
+ computing kinematics of the frames they've registered and an ordered data
+ structure for organizing that data. These input ports rely on that. It is
+ expected that the geometry source will define the frame identifiers in an order
+ which matches the source's internal ordering (and never need to change that
+ output value unless the topology changes). The values of the pose port can
+ then simply be written by copying the ordered data from the internal ordering
+ to the output ordering. This should facilitate translation from internal
+ representation to GeometrySystem representation.
+
  @section geom_sys_outputs Outputs
 
  %GeometrySystem has a single output port.

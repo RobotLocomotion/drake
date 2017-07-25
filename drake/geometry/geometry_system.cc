@@ -177,7 +177,7 @@ bool GeometrySystem<T>::DoHasDirectFeedthrough(const SparsityMatrix*,
 template <typename T>
 QueryHandle<T> GeometrySystem<T>::MakeQueryHandle(
     const systems::Context<T>& context) const {
-  return QueryHandle<T>(&context);
+  return QueryHandle<T>(nullptr);
 }
 
 template <typename T>
