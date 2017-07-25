@@ -189,109 +189,171 @@ bool IsFeasibleCheck(
   return (prog->Solve() == kSolutionFound);
 }
 
-// Tests that a number of feasible rotation matrices are indeed feasible for
-// McCormick envelopes with 1 or 2 bins per axis.  Also checks that some
-// specific matrices that should be ruled out by the orthogonality and cross-
-// product constraints are indeed infeasible.  Finally, checks a few points
-// that we expect to be reported as feasible for the loose envelope, but are
-// then correctly reported as infeasible given the tighter envelope.
-GTEST_TEST(RotationTest, TestMcCormick) {
-  std::mt19937 generator(41);
-  std::normal_distribution<double> randn;
-  std::uniform_int_distribution<> rand(0, 1 << 6);
+GTEST_TEST(RotationConstraint, TestAddStaticSizeNumIntervalsPerHalfAxis) {
+  MathematicalProgram prog;
+  auto R = NewRotationMatrixVars(&prog);
+  auto ret1 = AddRotationMatrixBilinearMcCormickMilpConstraints<1>(&prog, R);
+  static_assert(
+      std::is_same<
+          decltype(ret1),
+          std::pair<std::array<std::array<VectorDecisionVariable<1>, 3>, 3>,
+                    Eigen::Matrix<double, 3, 1>>>::value,
+      "Incorrect type.");
 
-  for (int num_bins = 1; num_bins < 3; num_bins++) {
-    MathematicalProgram prog;
-    MatrixDecisionVariable<3, 3> R = NewRotationMatrixVars(&prog);
+  auto ret2 = AddRotationMatrixBilinearMcCormickMilpConstraints<2>(&prog, R);
+  static_assert(
+      std::is_same<
+          decltype(ret2),
+          std::pair<std::array<std::array<VectorDecisionVariable<2>, 3>, 3>,
+                    Eigen::Matrix<double, 5, 1>>>::value,
+      "Incorrect type.");
 
-    AddRotationMatrixMcCormickEnvelopeMilpConstraints(&prog, R, num_bins);
+  auto ret3 = AddRotationMatrixBilinearMcCormickMilpConstraints<3>(&prog, R);
+  static_assert(
+      std::is_same<
+          decltype(ret3),
+          std::pair<std::array<std::array<VectorDecisionVariable<3>, 3>, 3>,
+                    Eigen::Matrix<double, 7, 1>>>::value,
+      "Incorrect type.");
 
-    // Feasibility constraint
-    std::shared_ptr<LinearEqualityConstraint> feasibility_constraint =
-        prog.AddLinearEqualityConstraint(
-            Eigen::Matrix<double, 9, 9>::Identity(),
-            Eigen::Matrix<double, 9, 1>::Zero(),
-            {R.col(0), R.col(1), R.col(2)}).constraint();
+  auto ret4 = AddRotationMatrixBilinearMcCormickMilpConstraints<4>(&prog, R);
+  static_assert(
+      std::is_same<
+          decltype(ret4),
+          std::pair<std::array<std::array<VectorDecisionVariable<3>, 3>, 3>,
+                    Eigen::Matrix<double, 9, 1>>>::value,
+      "Incorrect type.");
+}
 
-    // Use a simple lambda to make the tests more readable below.
-    auto IsFeasible = [&](Matrix3d R_to_check) -> bool {
-      return IsFeasibleCheck(&prog, feasibility_constraint, R_to_check);
-    };
+class TestMcCormick : public ::testing::TestWithParam<std::tuple<bool, int>> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestMcCormick)
 
-    // Test a few valid rotation matrices.
-    Matrix3d R_test = Matrix3d::Identity();
-    EXPECT_TRUE(IsFeasible(R_test));
-
-    R_test = math::ZRotation(M_PI_4) * R_test;
-    EXPECT_TRUE(IsFeasible(R_test));
-
-    R_test = math::YRotation(M_PI_4) * R_test;
-    EXPECT_TRUE(IsFeasible(R_test));
-
-    R_test = math::ZRotation(M_PI_2);
-    EXPECT_TRUE(IsFeasible(R_test));
-
-    R_test = math::ZRotation(-M_PI_2);
-    EXPECT_TRUE(IsFeasible(R_test));
-
-    R_test = math::YRotation(M_PI_2);
-    EXPECT_TRUE(IsFeasible(R_test));
-
-    R_test = math::YRotation(-M_PI_2);
-    EXPECT_TRUE(IsFeasible(R_test));
-
-    // This one caught a bug (in the loop finding the most conservative linear
-    // constraint for a given region) during random testing.
-    R_test << 0.17082017792981191, 0.65144498431260445, -0.73921573253413542,
-        -0.82327804434149443, -0.31781600529013027, -0.47032568342231595,
-        -0.54132589862048197, 0.68892119955432829, 0.48203096610835455;
-    EXPECT_TRUE(IsFeasible(R_test));
-
-    for (int i = 0; i < 40; i++) {
-      R_test = math::UniformlyRandomRotmat(generator);
-      EXPECT_TRUE(IsFeasible(R_test));
+  TestMcCormick()
+      : prog_(),
+        R_(NewRotationMatrixVars(&prog_)),
+        replace_bilinear_product_(std::get<0>(GetParam())),
+        num_intervals_per_half_axis_(std::get<1>(GetParam())),
+  feasibility_constraint_{prog_.AddLinearEqualityConstraint(
+      Eigen::Matrix<double, 9, 9>::Identity(),
+      Eigen::Matrix<double, 9, 1>::Zero(),
+      {R_.col(0), R_.col(1), R_.col(2)}).constraint()} {
+    if (replace_bilinear_product_) {
+      AddRotationMatrixBilinearMcCormickMilpConstraints(
+          &prog_, R_, num_intervals_per_half_axis_);
+    } else {
+      AddRotationMatrixMcCormickEnvelopeMilpConstraints(
+          &prog_, R_, num_intervals_per_half_axis_);
     }
+  }
 
-    // Checks the dot product constraints.
-    R_test = Matrix3d::Constant(1.0 / sqrt(3.0));  // All rows and columns are
-    // on the unit sphere.
-    EXPECT_FALSE(IsFeasible(R_test));
-    // All in different octants, all unit length, but not orthogonal.
-    // R.col(0).dot(R.col(1)) = 1/3;
-    R_test(0, 1) *= -1.0;
-    R_test(2, 1) *= -1.0;
-    R_test(0, 2) *= -1.0;
-    R_test(1, 2) *= -1.0;
-    // Requires 2 bins to catch.
-    if (num_bins == 1)
-      EXPECT_TRUE(IsFeasible(R_test));
-    else
-      EXPECT_FALSE(IsFeasible(R_test));
+  bool IsFeasible(const Eigen::Ref<const Eigen::Matrix3d>& R_to_check) {
+    return IsFeasibleCheck(&prog_, feasibility_constraint_, R_to_check);
+  }
 
-    // Checks the det(R)=-1 case.
-    // (only ruled out by the cross-product constraint).
-    R_test = Matrix3d::Identity();
-    R_test(2, 2) = -1;
-    EXPECT_FALSE(IsFeasible(R_test));
+  ~TestMcCormick() override {};
 
-    R_test = math::ZRotation(M_PI_4) * R_test;
-    EXPECT_FALSE(IsFeasible(R_test));
+ protected:
+  MathematicalProgram prog_;
+  MatrixDecisionVariable<3, 3> R_;
+  bool replace_bilinear_product_{};  // If true, replace the bilinear product
+  // with another varaible in the McCormick envelope. Otherwise, relax the
+  // surface ofthe unit sphere to its convex hull.
+  int num_intervals_per_half_axis_{};
+  std::shared_ptr<LinearEqualityConstraint> feasibility_constraint_;
+};
 
-    R_test = math::YRotation(M_PI_4) * R_test;
-    EXPECT_FALSE(IsFeasible(R_test));
+TEST_P(TestMcCormick, TestExactRotationMatrix) {
+  // If R is exactly on SO(3), test whether it also satisfies our relaxation.
 
-    // Checks a few cases just outside the L1 ball.  Should be feasible for
-    // num_bins=1, but infeasible for num_bins>1.
-    R_test = math::YRotation(M_PI_4);
-    R_test(2, 0) -= 0.1;
-    EXPECT_GT(R_test.col(0).lpNorm<1>(), 1.0);
-    EXPECT_GT(R_test.row(2).lpNorm<1>(), 1.0);
-    if (num_bins == 1)
-      EXPECT_TRUE(IsFeasible(R_test));
-    else
-      EXPECT_FALSE(IsFeasible(R_test));
+  // Test a few valid rotation matrices.
+  Matrix3d R_test = Matrix3d::Identity();
+  EXPECT_TRUE(IsFeasible(R_test));
+
+  R_test = math::ZRotation(M_PI_4) * R_test;
+  EXPECT_TRUE(IsFeasible(R_test));
+
+  R_test = math::YRotation(M_PI_4) * R_test;
+  EXPECT_TRUE(IsFeasible(R_test));
+
+  R_test = math::ZRotation(M_PI_2);
+  EXPECT_TRUE(IsFeasible(R_test));
+
+  R_test = math::ZRotation(-M_PI_2);
+  EXPECT_TRUE(IsFeasible(R_test));
+
+  R_test = math::YRotation(M_PI_2);
+  EXPECT_TRUE(IsFeasible(R_test));
+
+  R_test = math::YRotation(-M_PI_2);
+  EXPECT_TRUE(IsFeasible(R_test));
+
+  // This one caught a bug (in the loop finding the most conservative linear
+  // constraint for a given region) during random testing.
+  R_test << 0.17082017792981191, 0.65144498431260445, -0.73921573253413542,
+      -0.82327804434149443, -0.31781600529013027, -0.47032568342231595,
+      -0.54132589862048197, 0.68892119955432829, 0.48203096610835455;
+  EXPECT_TRUE(IsFeasible(R_test));
+
+  std::mt19937 generator(41);
+  for (int i = 0; i < 40; i++) {
+    R_test = math::UniformlyRandomRotmat(generator);
+    EXPECT_TRUE(IsFeasible(R_test));
   }
 }
+
+TEST_P(TestMcCormick, TestInexactRotationMatrix) {
+  // If R is not exactly on SO(3), test whether it is infeasible for our SO(3)
+  // relaxation.
+
+  // Checks the dot product constraints.
+  Eigen::Matrix3d R_test =
+      Matrix3d::Constant(1.0 / sqrt(3.0));  // All rows and columns are
+  // on the unit sphere.
+  EXPECT_FALSE(IsFeasible(R_test));
+  // All in different octants, all unit length, but not orthogonal.
+  // R.col(0).dot(R.col(1)) = 1/3;
+  R_test(0, 1) *= -1.0;
+  R_test(2, 1) *= -1.0;
+  R_test(0, 2) *= -1.0;
+  R_test(1, 2) *= -1.0;
+  // Requires 2 intervals per half axis to catch.
+  if (num_intervals_per_half_axis_ == 1 && !replace_bilinear_product_)
+    EXPECT_TRUE(IsFeasible(R_test));
+  else
+    EXPECT_FALSE(IsFeasible(R_test));
+
+  // Checks the det(R)=-1 case.
+  // (only ruled out by the cross-product constraint).
+  R_test = Matrix3d::Identity();
+  R_test(2, 2) = -1;
+  EXPECT_FALSE(IsFeasible(R_test));
+
+  R_test = math::ZRotation(M_PI_4) * R_test;
+  EXPECT_FALSE(IsFeasible(R_test));
+
+  R_test = math::YRotation(M_PI_4) * R_test;
+  EXPECT_FALSE(IsFeasible(R_test));
+
+  // Checks a few cases just outside the L1 ball. If we use the formulation that
+  // replaces the bilinear term with another variable in the McCormick envelope,
+  // then it should always be infeasible. Otherwise should be feasible for
+  // num_intervals_per_half_axis_=1, but infeasible for
+  // num_intervals_per_half_axis_>1.
+  R_test = math::YRotation(M_PI_4);
+  R_test(2, 0) -= 0.1;
+  EXPECT_GT(R_test.col(0).lpNorm<1>(), 1.0);
+  EXPECT_GT(R_test.row(2).lpNorm<1>(), 1.0);
+  if (num_intervals_per_half_axis_ == 1 && !replace_bilinear_product_)
+    EXPECT_TRUE(IsFeasible(R_test));
+  else
+    EXPECT_FALSE(IsFeasible(R_test));
+}
+
+INSTANTIATE_TEST_CASE_P(
+    RotationTest, TestMcCormick,
+    ::testing::Combine(::testing::ValuesIn<std::vector<bool>>({false, true}),
+                       ::testing::ValuesIn<std::vector<int>>({1, 2})));
 
 // Test some corner cases of McCormick envelope.
 // The corner cases happens when either the innermost or the outermost corner
