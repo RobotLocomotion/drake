@@ -53,8 +53,7 @@ macro(drake_setup_matlab)
         COMPONENTS
           MAIN_PROGRAM
           MEX_COMPILER
-          MX_LIBRARY
-          SIMULINK)
+          MX_LIBRARY)
     else()
       set(Matlab_FOUND OFF)
       message(STATUS "MATLAB was not found.")
