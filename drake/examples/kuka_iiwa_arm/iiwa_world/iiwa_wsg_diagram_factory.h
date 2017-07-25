@@ -98,8 +98,8 @@ class IiwaAndWsgPlantWithStateEstimator : public systems::Diagram<T> {
   OracularStateEstimation<T>* iiwa_state_est_{nullptr};
   OracularStateEstimation<T>* box_state_est_{nullptr};
   std::unique_ptr<RigidBodyTree<T>> object_{nullptr};
-  systems::InverseDynamicsController<T>* iiwa_controller_{nullptr};
-  systems::PidController<T>* wsg_controller_{nullptr};
+  systems::controllers::InverseDynamicsController<T>* iiwa_controller_{nullptr};
+  systems::controllers::PidController<T>* wsg_controller_{nullptr};
   systems::RigidBodyPlant<T>* plant_{nullptr};
 
   int input_port_iiwa_state_command_{-1};

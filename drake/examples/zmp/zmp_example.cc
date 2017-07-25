@@ -2,9 +2,14 @@
 #include <thread>
 
 #include "drake/common/proto/call_matlab.h"
-#include "drake/examples/zmp/zmp_test_util.h"
+#include "drake/systems/controllers/test/zmp_test_util.h"
 
-void PlotResults(const drake::examples::zmp::ZMPTestTraj& traj) {
+namespace drake {
+namespace examples {
+namespace zmp {
+namespace {
+
+void PlotResults(const systems::controllers::ZMPTestTraj& traj) {
   using drake::common::CallMatlab;
 
   CallMatlab("figure", 1);
@@ -74,29 +79,39 @@ void PlotResults(const drake::examples::zmp::ZMPTestTraj& traj) {
   std::this_thread::sleep_for(std::chrono::seconds(1));
 }
 
-int main() {
+void do_main() {
   std::vector<Eigen::Vector2d> footsteps = {
       Eigen::Vector2d(0, 0),    Eigen::Vector2d(0.5, 0.1),
       Eigen::Vector2d(1, -0.1), Eigen::Vector2d(1.5, 0.1),
       Eigen::Vector2d(2, -0.1), Eigen::Vector2d(2.5, 0)};
 
   std::vector<PiecewisePolynomial<double>> zmp_trajs =
-      drake::examples::zmp::GenerateDesiredZMPTrajs(footsteps, 0.5, 1);
+      systems::controllers::GenerateDesiredZMPTrajs(footsteps, 0.5, 1);
 
   Eigen::Vector4d x0(0, 0, 0, 0);
   double z = 1;
 
-  drake::systems::ZMPPlanner zmp_planner;
+  systems::controllers::ZMPPlanner zmp_planner;
   zmp_planner.Plan(zmp_trajs[0], x0, z);
 
   double sample_dt = 0.01;
 
   // Perturb the initial state a bit.
   x0 << 0, 0, 0.2, -0.1;
-  drake::examples::zmp::ZMPTestTraj result =
-      drake::examples::zmp::SimulateZMPPolicy(zmp_planner, x0, sample_dt, 2);
+  systems::controllers::ZMPTestTraj result =
+      systems::controllers::SimulateZMPPolicy(zmp_planner, x0, sample_dt, 2);
 
   PlotResults(result);
+}
 
+}  // namespace
+}  // namespace zmp
+}  // namespace examples
+}  // namespace drake
+
+int main() {
+  drake::examples::zmp::do_main();
   return 0;
 }
+
+

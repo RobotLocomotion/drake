@@ -237,7 +237,8 @@ std::unique_ptr<systems::AffineSystem<double>> BalancingLQRController(
   Q(1, 1) = 10;
   Vector1d R = Vector1d::Constant(1);
 
-  return systems::LinearQuadraticRegulator(acrobot, *context, Q, R);
+  return systems::controllers::LinearQuadraticRegulator(
+      acrobot, *context, Q, R);
 }
 
 }  // namespace acrobot

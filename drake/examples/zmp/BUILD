@@ -9,34 +9,17 @@ load(
     "drake_cc_library",
 )
 
-drake_cc_library(
-    name = "zmp_test_util",
-    testonly = 1,
-    srcs = ["zmp_test_util.cc"],
-    hdrs = ["zmp_test_util.h"],
-    deps = [
-        "//drake/systems/controllers:zmp_planner",
-    ],
-)
 
 drake_cc_binary(
     name = "zmp_example",
     testonly = 1,
     srcs = ["zmp_example.cc"],
     deps = [
-        ":zmp_test_util",
+        "//drake/systems/controllers:zmp_test_util",
         "//drake/common/proto:call_matlab",
     ],
 )
 
 # === test/ ===
-
-drake_cc_googletest(
-    name = "zmp_planner_test",
-    deps = [
-        ":zmp_test_util",
-        "//drake/common:eigen_matrix_compare",
-    ],
-)
 
 cpplint()

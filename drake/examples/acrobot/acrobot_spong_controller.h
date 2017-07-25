@@ -57,9 +57,10 @@ class AcrobotSpongController : public systems::LeafSystem<T> {
     Q(1, 1) = 10;
     Vector1d R(1);
 
-    systems::LinearQuadraticRegulatorResult lqr_result =
-        systems::LinearQuadraticRegulator(linear_system->A(),
-                                          linear_system->B(), Q, R);
+    systems::controllers::LinearQuadraticRegulatorResult lqr_result =
+        systems::controllers::LinearQuadraticRegulator(linear_system->A(),
+                                                       linear_system->B(),
+                                                       Q, R);
     S_ = lqr_result.S;
     K_ = lqr_result.K;
   }

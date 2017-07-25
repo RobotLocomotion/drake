@@ -154,6 +154,16 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "zmp_test_util",
+    testonly = 1,
+    srcs = ["test/zmp_test_util.cc"],
+    hdrs = ["test/zmp_test_util.h"],
+    deps = [
+        ":zmp_planner",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -203,6 +213,14 @@ drake_cc_googletest(
     name = "pid_controller_test",
     deps = [
         ":pid_controller",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "zmp_planner_test",
+    deps = [
+        ":zmp_test_util",
         "//drake/common:eigen_matrix_compare",
     ],
 )

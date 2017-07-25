@@ -25,10 +25,9 @@ std::unique_ptr<RigidBodyTree<double>> build_tree(
 
   // Adds models to the simulation builder. Instances of these models can be
   // subsequently added to the world.
-  tree_builder->StoreModel(
-      "iiwa",
-      "drake/manipulation/models/iiwa_description/urdf/"
-      "iiwa14_polytope_collision.urdf");
+  tree_builder->StoreModel("iiwa",
+                           "drake/manipulation/models/iiwa_description/urdf/"
+                           "iiwa14_polytope_collision.urdf");
   tree_builder->StoreModel(
       "wsg",
       "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
@@ -41,8 +40,8 @@ std::unique_ptr<RigidBodyTree<double>> build_tree(
 
   for (int i = 0; i < num_iiwa; ++i) {
     // Adds an iiwa arm
-    int id = tree_builder->AddFixedModelInstance(
-        "iiwa", Vector3<double>(i, 0, 0));
+    int id =
+        tree_builder->AddFixedModelInstance("iiwa", Vector3<double>(i, 0, 0));
     iiwa->push_back(tree_builder->get_model_info_for_instance(id));
   }
 
@@ -94,11 +93,10 @@ GTEST_TEST(SimDiagramBuilderTest, TestSimulation) {
         info.model_path, multibody::joints::kFixed, info.world_offset,
         single_arm.get());
 
-    auto controller =
-        builder
-            .template AddController<systems::InverseDynamicsController<double>>(
-                info.instance_id, std::move(single_arm), iiwa_kp,
-                iiwa_ki, iiwa_kd, false /* no feedforward acceleration */);
+    auto controller = builder.template AddController<
+        systems::controllers::InverseDynamicsController<double>>(
+        info.instance_id, std::move(single_arm), iiwa_kp, iiwa_ki, iiwa_kd,
+        false /* no feedforward acceleration */);
     controller->set_name("controller_" + std::to_string(info.instance_id));
 
     base_builder->Connect(state_d_source->get_output_port(),
@@ -161,14 +159,16 @@ GTEST_TEST(SimDiagramBuilderTest, TestMultiAddPlant) {
 // crashes.
 GTEST_TEST(SimDiagramBuilderTest, TestMultiAddController) {
   SimDiagramBuilder<double> builder;
-  builder.template AddController<systems::PidController<double>>(
+  builder.template AddController<systems::controllers::PidController<double>>(
       0, VectorX<double>::Zero(1), VectorX<double>::Zero(1),
       VectorX<double>::Zero(1));
 
-  EXPECT_DEATH(builder.template AddController<systems::PidController<double>>(
-                   0, VectorX<double>::Zero(1), VectorX<double>::Zero(1),
-                   VectorX<double>::Zero(1)),
-               ".*");
+  EXPECT_DEATH(
+      builder
+          .template AddController<systems::controllers::PidController<double>>(
+              0, VectorX<double>::Zero(1), VectorX<double>::Zero(1),
+              VectorX<double>::Zero(1)),
+      ".*");
 }
 
 // Tests that multiple calls to AddVisualizer() crashes.

@@ -7,6 +7,7 @@
 
 namespace drake {
 namespace systems {
+namespace controllers {
 
 /**
  * Given a desired two dimensional (X and Y) zero-moment point (ZMP) trajectory
@@ -328,5 +329,6 @@ class ZMPPlanner {
   bool planned_ {false};
 };
 
+}  // namespace controllers
 }  // namespace systems
 }  // namespace drake

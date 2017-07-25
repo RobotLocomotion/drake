@@ -11,6 +11,7 @@
 
 namespace drake {
 namespace systems {
+namespace controllers {
 
 // TODO(siyuanfeng): Lift the assumption that q and v have the same dimension.
 // TODO(siyuanfeng): Generalize "q_d - q", e.g. for rotation.
@@ -188,5 +189,6 @@ class PidController : public StateFeedbackControllerInterface<T>,
   int output_index_control_{-1};
 };
 
+}  // namespace controllers
 }  // namespace systems
 }  // namespace drake

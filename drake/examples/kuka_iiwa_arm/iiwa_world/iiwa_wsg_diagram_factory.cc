@@ -61,10 +61,10 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
       iiwa_info.model_path, multibody::joints::kFixed, iiwa_info.world_offset,
       single_arm.get());
 
-  iiwa_controller_ =
-      builder.template AddController<systems::InverseDynamicsController<T>>(
-          iiwa_info.instance_id, std::move(single_arm),
-          iiwa_kp, iiwa_ki, iiwa_kd, true /* with feedforward acceleration */);
+  iiwa_controller_ = builder.template AddController<
+      systems::controllers::InverseDynamicsController<T>>(
+      iiwa_info.instance_id, std::move(single_arm), iiwa_kp, iiwa_ki, iiwa_kd,
+      true /* with feedforward acceleration */);
   iiwa_controller_->set_name("IIWAInverseDynamicsController");
 
   // Updates the controller's model's end effector's inertia to include
@@ -116,8 +116,8 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
   parsers::urdf::AddModelInstanceFromUrdfFile(
       box_info.model_path, multibody::joints::kQuaternion,
       box_info.world_offset, object_.get());
-  box_state_est_ = base_builder->template AddSystem<OracularStateEstimation<T>>(
-      *object_);
+  box_state_est_ =
+      base_builder->template AddSystem<OracularStateEstimation<T>>(*object_);
   box_state_est_->set_name("OracularStateEstimationBoxState");
   base_builder->Connect(
       plant_->model_instance_state_output_port(box_info.instance_id),
