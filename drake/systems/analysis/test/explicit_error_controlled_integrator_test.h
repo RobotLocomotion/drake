@@ -1,4 +1,6 @@
 #include <cmath>
+#include <limits>
+#include <memory>
 
 #include <gtest/gtest.h>
 
@@ -162,6 +164,7 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, BulletProofSetup) {
 // Tests the error estimation capabilities.
 TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ErrEst) {
   // Setup the initial position and initial velocity
+
   const double initial_position = 0.1;
   const double initial_velocity = 0.01;
   const double omega = std::sqrt(this->spring_k_ / this->mass_);
@@ -192,8 +195,8 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ErrEst) {
               std::numeric_limits<double>::epsilon());
 
   // Get the true solution
-  const double x_true =
-      c1 * std::cos(omega * this->big_dt_) + c2 * std::sin(omega * this->big_dt_);
+  const double x_true = c1 * std::cos(omega * this->big_dt_) +
+      c2 * std::sin(omega * this->big_dt_);
 
   // Get the integrator's solution
   const double kXApprox = this->context_->get_continuous_state_vector().

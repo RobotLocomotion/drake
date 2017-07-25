@@ -20,8 +20,8 @@ namespace drake {
 namespace systems {
 namespace analysis_test {
 
-typedef ::testing::Types<RungeKutta3Integrator<double>> MyTypes;
-INSTANTIATE_TYPED_TEST_CASE_P(My, ExplicitErrorControlledIntegratorTest, MyTypes);
+typedef ::testing::Types<RungeKutta3Integrator<double>> Types;
+INSTANTIATE_TYPED_TEST_CASE_P(My, ExplicitErrorControlledIntegratorTest, Types);
 
 // Tests accuracy when generalized velocity is not the time derivative of
 // generalized configuration (using a rigid body).
