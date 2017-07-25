@@ -1,10 +1,6 @@
-#include <cassert>
-#include <stdexcept>
+#include "drake/matlab/util/mex_util.h"
 
-#include "drake/matlab/util/drakeMexUtil.h"
-
-using namespace std;
-using namespace Eigen;
+#include <limits>
 
 // mxIsClass seems to not be able to handle derived classes. so i'll implement
 // what I need by calling back to matlab
@@ -22,15 +18,19 @@ bool isa(const mxArray* mxa, const char* class_str) {
 
 bool mexCallMATLABsafe(int nlhs, mxArray* plhs[], int nrhs, mxArray* prhs[],
                        const char* filename) {
-  int i;
   mxArray* ex = mexCallMATLABWithTrap(nlhs, plhs, nrhs, prhs, filename);
-  if (ex) {
+
+  if (ex != nullptr) {
     mexPrintf(
         "DrakeSystem mexCallMATLABsafe: error when calling ''%s'' with the "
         "following "
         "arguments:\n",
         filename);
-    for (i = 0; i < nrhs; i++) mexCallMATLAB(0, NULL, 1, &prhs[i], "disp");
+
+    for (int i = 0; i < nrhs; i++) {
+      mexCallMATLAB(0, nullptr, 1, &prhs[i], "disp");
+    }
+
     mxArray* report;
     mexCallMATLAB(1, &report, 1, &ex, "getReport");
     char* errmsg = mxArrayToString(report);
@@ -40,19 +40,25 @@ bool mexCallMATLABsafe(int nlhs, mxArray* plhs[], int nrhs, mxArray* prhs[],
     mxDestroyArray(ex);
     return true;
   }
-  for (i = 0; i < nlhs; i++)
-    if (!plhs[i]) {
+
+  for (int i = 0; i < nlhs; i++) {
+    if (plhs[i] == nullptr) {
       mexPrintf(
           "Drake mexCallMATLABsafe: error when calling ''%s'' with the "
           "following arguments:\n",
           filename);
-      for (i = 0; i < nrhs; i++) mexCallMATLAB(0, NULL, 1, &prhs[i], "disp");
+
+      for (i = 0; i < nrhs; i++) {
+        mexCallMATLAB(0, nullptr, 1, &prhs[i], "disp");
+      }
+
       mexPrintf(
           "Not Enough Outputs: Asked for %d outputs, but function only "
           "returned %d\n",
           nrhs, i);
       return true;
     }
+  }
   return false;
 }
 
@@ -70,21 +76,23 @@ mxArray* createDrakeMexPointer(void* ptr, const std::string& name, int type_id,
                                const std::string& subclass_name,
                                const std::string& mex_function_name_prefix) {
   mxClassID cid;
-  if (sizeof(ptr) == 4)
+
+  if (sizeof(ptr) == 4) {
     cid = mxUINT32_CLASS;
-  else if (sizeof(ptr) == 8)
+  } else if (sizeof(ptr) == 8) {
     cid = mxUINT64_CLASS;
-  else
+  } else {
     mexErrMsgIdAndTxt("Drake:constructDrakeMexPointer:PointerSize",
                       "Are you on a 32-bit machine or 64-bit machine??");
+  }
 
-  int nrhs = 4 + num_additional_inputs;
+  const int nrhs = 4 + num_additional_inputs;
   mxArray* plhs[1];
   mxArray** prhs;
   prhs = new mxArray*[nrhs];
 
   prhs[0] = mxCreateNumericMatrix(1, 1, cid, mxREAL);
-  memcpy(mxGetData(prhs[0]), &ptr, sizeof(ptr));
+  std::memcpy(mxGetData(prhs[0]), &ptr, sizeof(ptr));
 
   prhs[1] =
       mxCreateString((mex_function_name_prefix + mexFunctionName()).c_str());
@@ -92,16 +100,16 @@ mxArray* createDrakeMexPointer(void* ptr, const std::string& name, int type_id,
   prhs[2] = mxCreateString(name.c_str());
 
   prhs[3] = mxCreateNumericMatrix(1, 1, cid, mxREAL);
-  memcpy(mxGetData(prhs[3]), &type_id, sizeof(type_id));
+  std::memcpy(mxGetData(prhs[3]), &type_id, sizeof(type_id));
 
-  for (int i = 0; i < num_additional_inputs; i++)
+  for (int i = 0; i < num_additional_inputs; i++) {
     prhs[4 + i] = delete_fcn_additional_inputs[i];
-
-  //  mexPrintf("deleteMethod = %s\n name =%s\n", deleteMethod, name);
+  }
 
   // call matlab to construct mex pointer object
   if (!subclass_name.empty()) {
     mexCallMATLABsafe(1, plhs, nrhs, prhs, subclass_name.c_str());
+
     if (!isa(plhs[0], "DrakeMexPointer")) {
       mxDestroyArray(plhs[0]);
       mexErrMsgIdAndTxt(
@@ -119,32 +127,36 @@ mxArray* createDrakeMexPointer(void* ptr, const std::string& name, int type_id,
 }
 
 void* getDrakeMexPointer(const mxArray* mx) {
-  if (!mx)
+  if (mx == nullptr) {
     mexErrMsgIdAndTxt("Drake:getDrakeMexPointer:BadInputs", "null mxArray");
+  }
 
-  void* ptr = NULL;
+  void* ptr = nullptr;
 
   // todo: optimize this by caching the pointer values, as described in
   // http://groups.csail.mit.edu/locomotion/bugs/show_bug.cgi?id=1590
-  mxArray* ptrArray = mxGetProperty(mx, 0, "ptr");
+  mxArray* ptr_array = mxGetProperty(mx, 0, "ptr");
 
-  if (!ptrArray)
+  if (ptr_array == nullptr) {
     mexErrMsgIdAndTxt("Drake:getDrakeMexPointer:BadInputs",
                       "cannot retrieve 'ptr' field from this mxArray.  are you "
                       "sure it's a valid DrakeMexPointer object?");
+  }
 
   switch (sizeof(void*)) {
     case 4:
-      if (!mxIsUint32(ptrArray))
+      if (!mxIsUint32(ptr_array)) {
         mexErrMsgIdAndTxt("Drake:getDrakeMexPointer:BadPointerSize",
                           "DrakeMexPointer expected a 32-bit ptr field but got "
                           "something else");
+      }
       break;
     case 8:
-      if (!mxIsUint64(ptrArray))
+      if (!mxIsUint64(ptr_array)) {
         mexErrMsgIdAndTxt("Drake:getDrakeMexPointer:BadPointerSize",
                           "DrakeMexPointer expected a 64-bit ptr field but got "
                           "something else");
+      }
       break;
     default:
       mexErrMsgIdAndTxt(
@@ -152,19 +164,19 @@ void* getDrakeMexPointer(const mxArray* mx) {
           "DrakeMexPointer got a pointer that was neither 32-bit nor 64-bit.");
   }
 
-  if (!mxIsNumeric(ptrArray) || mxGetNumberOfElements(ptrArray) != 1)
+  if (!mxIsNumeric(ptr_array) || mxGetNumberOfElements(ptr_array) != 1) {
     mexErrMsgIdAndTxt("Drake:getDrakeMexPointer:BadInputs",
                       "the ptr property of this DrakeMexPointer does not "
                       "appear to contain a valid pointer");
-  memcpy(&ptr, mxGetData(ptrArray),
-         sizeof(ptr));  // note: could use a reinterpret_cast here instead
+  }
+
+  std::memcpy(&ptr, mxGetData(ptr_array),
+              sizeof(ptr));  // note: could use a reinterpret_cast here instead
 
   return ptr;
 }
 
 Eigen::SparseMatrix<double> matlabToEigenSparse(const mxArray* mex) {
-  using namespace Eigen;
-
   auto ir = mxGetIr(mex);
   auto jc = mxGetJc(mex);
   auto pr = mxGetPr(mex);
@@ -174,49 +186,55 @@ Eigen::SparseMatrix<double> matlabToEigenSparse(const mxArray* mex) {
   //  auto num_non_zero_max = mxGetNzmax(mex);
   auto num_non_zero = jc[cols];  // from mxgetnzmax.c example
 
-  SparseMatrix<double> ret(rows, cols);
-  std::vector<Triplet<double>> triplets;
+  Eigen::SparseMatrix<double> ret(rows, cols);
+  std::vector<Eigen::Triplet<double>> triplets;
   triplets.reserve(num_non_zero);
 
   for (mwSize col = 0; col < cols; col++) {
     const auto& val_index_start = jc[col];
     const auto& val_index_end = jc[col + 1];
+
     for (auto val_index = val_index_start; val_index < val_index_end;
          val_index++) {
       const double& val = pr[val_index];
       const auto& row = ir[val_index];
-      triplets.push_back(Triplet<double>(row, col, val));
+      triplets.emplace_back(row, col, val);
     }
   }
+
   ret.setFromTriplets(triplets.begin(), triplets.end());
   return ret;
 }
 
 std::string mxGetStdString(const mxArray* array) {
   mwSize buffer_length = mxGetNumberOfElements(array) + 1;
-  char* buffer = new char[buffer_length];
-  int status = mxGetString(array, buffer, buffer_length);
+  auto* buffer = new char[buffer_length];
+  const int status = mxGetString(array, buffer, buffer_length);
 
   if (status != 0) {
     delete[] buffer;
-    throw runtime_error(
+    throw std::runtime_error(
         "mxGetStdString failed. Possible cause: mxArray is not a string "
         "array.");
   } else {
-    string ret(buffer);
+    std::string ret(buffer);
     delete[] buffer;
     return ret;
   }
 }
 
 std::vector<std::string> mxGetVectorOfStdStrings(const mxArray* array) {
-  if (!mxIsCell(array)) throw runtime_error("the input is not a cell array");
+  if (!mxIsCell(array)) {
+    throw std::runtime_error("the input is not a cell array");
+  }
 
   std::vector<std::string> strings;
   size_t numel = mxGetNumberOfElements(array);
+
   for (size_t i = 0; i < numel; i++) {
     strings.push_back(mxGetStdString(mxGetCell(array, i)));
   }
+
   return strings;
 }
 
@@ -226,17 +244,21 @@ mxArray* stdStringToMatlab(const std::string& str) {
 
 mxArray* vectorOfStdStringsToMatlab(const std::vector<std::string>& strs) {
   mxArray* cell = mxCreateCellMatrix(strs.size(), 1);
+
   for (size_t i = 0; i < strs.size(); i++) {
     mxSetCell(cell, i, mxCreateString(strs[i].c_str()));
   }
+
   return cell;
 }
 
 double* mxGetPrSafe(const mxArray* pobj) {
-  if (!mxIsDouble(pobj))
+  if (!mxIsDouble(pobj)) {
     mexErrMsgIdAndTxt("Drake:mxGetPrSafe:BadInputs",
                       "mxGetPr can only be called on arguments which "
                       "correspond to Matlab doubles");
+  }
+
   return mxGetPr(pobj);
 }
 
@@ -248,10 +270,12 @@ mxArray* mxGetPropertySafe(const mxArray* array,
 mxArray* mxGetPropertySafe(const mxArray* array, size_t index,
                            std::string const& field_name) {
   mxArray* ret = mxGetProperty(array, index, field_name.c_str());
-  if (!ret) {
+
+  if (ret == nullptr) {
     mexErrMsgIdAndTxt("Drake:mxGetPropertySafe",
                       ("Property not found: " + field_name).c_str());
   }
+
   return ret;
 }
 
@@ -262,20 +286,23 @@ mxArray* mxGetFieldSafe(const mxArray* array, std::string const& field_name) {
 mxArray* mxGetFieldSafe(const mxArray* array, size_t index,
                         std::string const& field_name) {
   mxArray* ret = mxGetField(array, index, field_name.c_str());
-  if (!ret) {
+
+  if (ret == nullptr) {
     mexErrMsgIdAndTxt("Drake:mxGetFieldSafe",
                       ("Field not found: " + field_name).c_str());
   }
+
   return ret;
 }
 
 void mxSetFieldSafe(mxArray* array, size_t index, std::string const& fieldname,
                     mxArray* data) {
-  int fieldnum;
-  fieldnum = mxGetFieldNumber(array, fieldname.c_str());
+  int fieldnum = mxGetFieldNumber(array, fieldname.c_str());
+
   if (fieldnum < 0) {
     fieldnum = mxAddField(array, fieldname.c_str());
   }
+
   mxSetFieldByNumber(array, index, fieldnum, data);
 }
 
@@ -287,9 +314,11 @@ mxArray* mxGetFieldOrPropertySafe(const mxArray* array,
 mxArray* mxGetFieldOrPropertySafe(const mxArray* array, size_t index,
                                   std::string const& field_name) {
   mxArray* field_or_property = mxGetField(array, index, field_name.c_str());
+
   if (field_or_property == nullptr) {
     field_or_property = mxGetPropertySafe(array, index, field_name);
   }
+
   return field_or_property;
 }
 
@@ -297,24 +326,31 @@ template <typename T>
 const std::vector<T> matlabToStdVector(const mxArray* in) {
   // works for both row vectors and column vectors
 
-  if (mxGetNumberOfElements(in) ==
-      0)  // if input is empty, output is an empty vector
+  if (mxGetNumberOfElements(in) == 0) {
+    // if input is empty, output is an empty vector
     return std::vector<T>();
+  }
 
-  if (mxGetM(in) != 1 && mxGetN(in) != 1)
+  if (mxGetM(in) != 1 && mxGetN(in) != 1) {
     throw std::runtime_error("Not a vector");
+  }
+
   std::vector<T> ret;
+
   if (mxIsLogical(in)) {
     mxLogical* data = mxGetLogicals(in);
+
     for (size_t i = 0; i < mxGetNumberOfElements(in); i++) {
       ret.push_back(static_cast<T>(data[i]));
     }
   } else {
     double* data = mxGetPrSafe(in);
+
     for (size_t i = 0; i < mxGetNumberOfElements(in); i++) {
       ret.push_back(static_cast<T>(data[i]));
     }
   }
+
   return ret;
 }
 
@@ -322,8 +358,10 @@ template <>
 DLL_EXPORT_SYM const std::vector<double> matlabToStdVector<double>(
     const mxArray* in) {
   // works for both row vectors and column vectors
-  if (mxGetM(in) != 1 && mxGetN(in) != 1)
+  if (mxGetM(in) != 1 && mxGetN(in) != 1) {
     throw std::runtime_error("Not a vector");
+  }
+
   double* data = mxGetPrSafe(in);
   return std::vector<double>(data, data + mxGetNumberOfElements(in));
 }
@@ -331,10 +369,12 @@ DLL_EXPORT_SYM const std::vector<double> matlabToStdVector<double>(
 mwSize sub2ind(mwSize ndims, const mwSize* dims, const mwSize* sub) {
   mwSize stride = 1;
   mwSize ret = 0;
+
   for (mwSize i = 0; i < ndims; i++) {
     ret += sub[i] * stride;
     stride *= dims[i];
   }
+
   return ret;
 }
 
@@ -344,31 +384,33 @@ void sizecheck(const mxArray* mat, mwSize M, mwSize N) {
                       "wrong number of rows. Expected: %d but got: %d", M,
                       mxGetM(mat));
   }
+
   if (mxGetN(mat) != N) {
     mexErrMsgIdAndTxt("Drake:WrongSize",
                       "wrong number of columns. Expected: %d but got: %d", N,
                       mxGetN(mat));
   }
-  return;
 }
 
 // builds a matlab sparse matrix in mex from a given eigen matrix
 // the caller is responsible for destroying the resulting array
 template <typename Derived>
-mxArray* eigenToMatlabSparse(MatrixBase<Derived> const& M, int& num_non_zero) {
+mxArray* eigenToMatlabSparse(Eigen::MatrixBase<Derived> const& M,
+                             int* num_non_zero) {
   const mwSize rows = M.rows();
   const mwSize cols = M.cols();
 
-  vector<mwIndex> ir;
-  vector<mwIndex> jc;
-  vector<double> pr;
+  std::vector<mwIndex> ir;
+  std::vector<mwIndex> jc;
+  std::vector<double> pr;
 
   int cumulative_nonzero = 0;
   jc.push_back(cumulative_nonzero);
-  double eps = std::numeric_limits<double>::epsilon();
+  const double eps = std::numeric_limits<double>::epsilon();
+
   for (mwIndex j = 0; j < cols; j++) {
     for (mwIndex i = 0; i < rows; i++) {
-      double value = M(i, j);
+      const double value = M(i, j);
 
       if (value > eps || value < -eps) {
         ir.push_back(i);
@@ -376,30 +418,37 @@ mxArray* eigenToMatlabSparse(MatrixBase<Derived> const& M, int& num_non_zero) {
         cumulative_nonzero++;
       }
     }
+
     jc.push_back(cumulative_nonzero);
   }
 
   mxArray* sparse_mex = mxCreateSparse(rows, cols, cumulative_nonzero, mxREAL);
 
-  memcpy((double*)mxGetPr(sparse_mex), pr.data(),
-         cumulative_nonzero * sizeof(double));
-  memcpy((int*)mxGetIr(sparse_mex), ir.data(),
-         cumulative_nonzero * sizeof(mwIndex));
-  memcpy((int*)mxGetJc(sparse_mex), jc.data(), (cols + 1) * sizeof(mwIndex));
+  std::memcpy(mxGetPr(sparse_mex), pr.data(),
+              cumulative_nonzero * sizeof(double));
+  std::memcpy(reinterpret_cast<int*>(mxGetIr(sparse_mex)), ir.data(),
+              cumulative_nonzero * sizeof(mwIndex));
+  std::memcpy(reinterpret_cast<int*>(mxGetJc(sparse_mex)), jc.data(),
+              (cols + 1) * sizeof(mwIndex));
 
-  num_non_zero = cumulative_nonzero;
+  *num_non_zero = cumulative_nonzero;
   return sparse_mex;
 }
 
 template DLL_EXPORT_SYM mxArray* eigenToMatlabSparse(
-    MatrixBase<MatrixXd> const&, int&);
+    Eigen::MatrixBase<Eigen::MatrixXd> const&, int*);
+
 template DLL_EXPORT_SYM mxArray* eigenToMatlabSparse(
-    MatrixBase<Map<MatrixXd>> const&, int&);
+    Eigen::MatrixBase<Eigen::Map<Eigen::MatrixXd>> const&, int*);
+
 // template DLL_EXPORT_SYM const std::vector<double> matlabToStdVector<double>(
 //     const mxArray* in); already explicitly specialized
+
 template DLL_EXPORT_SYM const std::vector<int> matlabToStdVector<int>(
     const mxArray* in);
+
 template DLL_EXPORT_SYM const std::vector<Eigen::Index>
 matlabToStdVector<Eigen::Index>(const mxArray* in);
+
 template DLL_EXPORT_SYM const std::vector<bool> matlabToStdVector<bool>(
     const mxArray* in);
