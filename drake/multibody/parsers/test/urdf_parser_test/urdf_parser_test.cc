@@ -175,7 +175,7 @@ GTEST_TEST(URDFParserTest, TestAddWithQuaternionFloatingDof) {
 // Tests that AddModelInstanceFromUrdfFile works.
 GTEST_TEST(URDFParserTest, TestAddModelInstanceFromUrdfFile) {
   const string model_file = FindResourceOrThrow(
-      "drake/examples/Atlas/urdf/atlas_minimal_contact.urdf");
+      "drake/examples/atlas/urdf/atlas_minimal_contact.urdf");
 
   auto tree = make_unique<RigidBodyTree<double>>();
   ASSERT_NO_THROW(AddModelInstanceFromUrdfFile(
@@ -189,10 +189,10 @@ GTEST_TEST(URDFParserTest, TestAddModelInstanceFromUrdfFile) {
 GTEST_TEST(URDFParserTest,
     TestAddModelInstanceFromUrdfFileSearchingInRosPackages) {
   const string model_file = FindResourceOrThrow(
-      "drake/examples/Atlas/urdf/atlas_minimal_contact.urdf");
+      "drake/examples/atlas/urdf/atlas_minimal_contact.urdf");
 
   PackageMap package_map;
-  package_map.Add("Atlas", FindResourceOrThrow("drake/examples/Atlas"));
+  package_map.Add("Atlas", FindResourceOrThrow("drake/examples/atlas"));
 
   auto tree = make_unique<RigidBodyTree<double>>();
   ASSERT_NO_THROW(AddModelInstanceFromUrdfFileSearchingInRosPackages(

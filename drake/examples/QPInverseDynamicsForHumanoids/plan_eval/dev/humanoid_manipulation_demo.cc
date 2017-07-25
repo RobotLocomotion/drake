@@ -4,7 +4,7 @@
  * receiving the plan, the Valkyrie robot should return to the nominal
  * configuration except the right shoulder pitch joint.
  */
-#include "drake/examples/Valkyrie/valkyrie_constants.h"
+#include "drake/examples/valkyrie/valkyrie_constants.h"
 #include "drake/manipulation/util/robot_state_msg_translator.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -21,7 +21,7 @@ namespace {
 void send_manip_message() {
   RigidBodyTree<double> robot;
   drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      "drake/examples/Valkyrie/urdf/urdf/"
+      "drake/examples/valkyrie/urdf/urdf/"
       "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf",
       multibody::joints::kRollPitchYaw, &robot);
 

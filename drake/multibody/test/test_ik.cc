@@ -26,7 +26,7 @@ GTEST_TEST(testIK, atlasIK) {
   auto model = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       drake::FindResourceOrThrow(
-          "drake/examples/Atlas/urdf/atlas_minimal_contact.urdf"),
+          "drake/examples/atlas/urdf/atlas_minimal_contact.urdf"),
       drake::multibody::joints::kRollPitchYaw, model.get());
 
   const Vector2d tspan(0, 1);
