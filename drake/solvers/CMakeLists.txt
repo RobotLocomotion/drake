@@ -133,7 +133,8 @@ drake_install_pkg_config_file(drake-bilinear-product-util
         TARGET drakeBilinearProductUtil
         LIBS -ldrakeBilinearProductUtil
         REQUIRES
-        drake-common)
+        drake-common
+        drake-optimization)
 
 add_library_with_exports(LIB_NAME drakeRotationConstraint SOURCE_FILES rotation_constraint.cc)
 target_link_libraries(drakeRotationConstraint

@@ -905,10 +905,10 @@ void AddNotInSameOrOppositeOrthantConstraint(
 // So we have the constraint
 // 1 ≤ sum_i sum_j φ(j)² * λᵢ(j)
 void AddUnitLengthConstraintWithSos2Lambda(
-    MathematicalProgram *prog, const Eigen::Ref<const Eigen::VectorXd> &phi,
-    const Eigen::Ref<const VectorXDecisionVariable> &lambda0,
-    const Eigen::Ref<const VectorXDecisionVariable> &lambda1,
-    const Eigen::Ref<const VectorXDecisionVariable> &lambda2) {
+    MathematicalProgram* prog, const Eigen::Ref<const Eigen::VectorXd>& phi,
+    const Eigen::Ref<const VectorXDecisionVariable>& lambda0,
+    const Eigen::Ref<const VectorXDecisionVariable>& lambda1,
+    const Eigen::Ref<const VectorXDecisionVariable>& lambda2) {
   const int num_phi = phi.rows();
   DRAKE_ASSERT(num_phi == lambda0.rows());
   DRAKE_ASSERT(num_phi == lambda1.rows());
@@ -942,9 +942,9 @@ void AddUnitLengthConstraintWithSos2Lambda(
 
 std::pair<int, int> Index2Subscripts(int index, int num_rows, int num_cols) {
   DRAKE_ASSERT(index >= 0 && index < num_rows * num_cols);
-  int col_idx = index / num_rows;
-  int row_idx = index - col_idx * num_rows;
-  return std::make_pair(row_idx, col_idx);
+  int column_index = index / num_rows;
+  int row_index = index - column_index * num_rows;
+  return std::make_pair(row_index, column_index);
 }
 
 // Relax the orthogonal constraint
@@ -957,18 +957,18 @@ std::pair<int, int> Index2Subscripts(int index, int num_rows, int num_cols) {
 // in the form x * y, we relax (x, y, w) to be in the convex hull of the
 // curve w = x * y, and replace all the bilinear term x * y with w. For more
 // details, @see AddBilinearProductMcCormickEnvelopeSos2.
-template <int NumIntervalsPerHalfAxis>
+template <int kNumIntervalsPerHalfAxis>
 void AddOrthogonalAndCrossProductConstraintRelaxationReplacingBilinearProduct(
     MathematicalProgram* prog,
     const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
     const typename AddRotationMatrixBilinearMcCormickMilpConstraintsReturn<
-        NumIntervalsPerHalfAxis>::PhiType& phi,
+        kNumIntervalsPerHalfAxis>::PhiType& phi,
     const typename AddRotationMatrixBilinearMcCormickMilpConstraintsReturn<
-        NumIntervalsPerHalfAxis>::BinaryVarType& B,
+        kNumIntervalsPerHalfAxis>::BinaryVarType& B,
     const std::array<
         std::array<VectorDecisionVariable<
                        AddRotationMatrixBilinearMcCormickMilpConstraintsReturn<
-                           NumIntervalsPerHalfAxis>::PhiRows>,
+                           kNumIntervalsPerHalfAxis>::kPhiRows>,
                    3>,
         3>& lambda) {
   VectorDecisionVariable<9> R_flat;
@@ -1167,25 +1167,26 @@ AddRotationMatrixMcCormickEnvelopeMilpConstraints(
   return make_tuple(CRpos, CRneg, BRpos, BRneg);
 }
 
-template <int NumIntervalsPerHalfAxis>
+template <int kNumIntervalsPerHalfAxis>
 typename std::enable_if<
-    NumIntervalsPerHalfAxis == Eigen::Dynamic || NumIntervalsPerHalfAxis >= 1,
+    kNumIntervalsPerHalfAxis == Eigen::Dynamic ||
+        (kNumIntervalsPerHalfAxis >= 1 && kNumIntervalsPerHalfAxis <= 4),
     typename AddRotationMatrixBilinearMcCormickMilpConstraintsReturn<
-        NumIntervalsPerHalfAxis>::type>::type
+        kNumIntervalsPerHalfAxis>::type>::type
 AddRotationMatrixBilinearMcCormickMilpConstraints(
-    MathematicalProgram *prog,
-    const Eigen::Ref<const MatrixDecisionVariable<3, 3>> &R,
+    MathematicalProgram* prog,
+    const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
     int num_intervals_per_half_axis) {
-  typedef
-      typename AddRotationMatrixBilinearMcCormickMilpConstraintsReturn<
-          NumIntervalsPerHalfAxis>::BinaryVarType Btype;
-  typedef
-      typename AddRotationMatrixBilinearMcCormickMilpConstraintsReturn<
-          NumIntervalsPerHalfAxis>::PhiType PhiType;
+  typedef typename AddRotationMatrixBilinearMcCormickMilpConstraintsReturn<
+      kNumIntervalsPerHalfAxis>::BinaryVarType Btype;
+  typedef typename AddRotationMatrixBilinearMcCormickMilpConstraintsReturn<
+      kNumIntervalsPerHalfAxis>::PhiType PhiType;
+  DRAKE_DEMAND(num_intervals_per_half_axis == kNumIntervalsPerHalfAxis ||
+               kNumIntervalsPerHalfAxis == Eigen::Dynamic);
   DRAKE_DEMAND(num_intervals_per_half_axis >= 1);
   constexpr int kLambdaRows =
       AddRotationMatrixBilinearMcCormickMilpConstraintsReturn<
-          NumIntervalsPerHalfAxis>::PhiRows;
+          kNumIntervalsPerHalfAxis>::kPhiRows;
   PhiType phi =
       Eigen::VectorXd::LinSpaced(2 * num_intervals_per_half_axis + 1, -1, 1);
   phi(num_intervals_per_half_axis) = 0;
@@ -1223,7 +1224,7 @@ AddRotationMatrixBilinearMcCormickMilpConstraints(
                                           lambda[1][col], lambda[2][col]);
   }
   AddOrthogonalAndCrossProductConstraintRelaxationReplacingBilinearProduct<
-      NumIntervalsPerHalfAxis>(prog, R, phi, B, lambda);
+      kNumIntervalsPerHalfAxis>(prog, R, phi, B, lambda);
 
   return std::make_pair(B, phi);
 }

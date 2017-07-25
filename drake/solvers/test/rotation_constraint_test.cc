@@ -256,18 +256,16 @@ class TestMcCormick : public ::testing::TestWithParam<std::tuple<bool, int>> {
  protected:
   MathematicalProgram prog_;
   MatrixDecisionVariable<3, 3> R_;
-  bool replace_bilinear_product_;  // If true, replace the bilinear product with
-  // another varaible in the McCormick envelope. Otherwise, relax the surface of
-  // the unit sphere to its convex hull.
-  int num_intervals_per_half_axis_;
+  bool replace_bilinear_product_{};  // If true, replace the bilinear product
+  // with another varaible in the McCormick envelope. Otherwise, relax the
+  // surface ofthe unit sphere to its convex hull.
+  int num_intervals_per_half_axis_{};
   std::shared_ptr<LinearEqualityConstraint> feasibility_constraint_;
 };
 
 TEST_P(TestMcCormick, TestExactRotationMatrix) {
   // If R is exactly on SO(3), test whether it also satisfies our relaxation.
-  std::mt19937 generator(41);
-  std::normal_distribution<double> randn;
-  std::uniform_int_distribution<> rand(0, 1 << 6);
+
   // Test a few valid rotation matrices.
   Matrix3d R_test = Matrix3d::Identity();
   EXPECT_TRUE(IsFeasible(R_test));
@@ -297,6 +295,7 @@ TEST_P(TestMcCormick, TestExactRotationMatrix) {
       -0.54132589862048197, 0.68892119955432829, 0.48203096610835455;
   EXPECT_TRUE(IsFeasible(R_test));
 
+  std::mt19937 generator(41);
   for (int i = 0; i < 40; i++) {
     R_test = math::UniformlyRandomRotmat(generator);
     EXPECT_TRUE(IsFeasible(R_test));
