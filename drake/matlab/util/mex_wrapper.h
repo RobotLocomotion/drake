@@ -1,15 +1,17 @@
 #pragma once
 
-#include <mex.h>
-
 #include <string>
+
+#include <mex.h>
 
 class DLL_EXPORT_SYM MexWrapper {
  public:
-  explicit MexWrapper(std::string const& filename);
+  explicit MexWrapper(std::string filename);
   ~MexWrapper();
+
   void mexFunction(int nlhs, mxArray* plhs[], int nrhs,
                    const mxArray* prhs[]) const;
+
   std::string getMexFile() const;
 
  private:
