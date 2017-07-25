@@ -111,6 +111,6 @@ GTEST_TEST(RK3RK2IntegratorTest, RigidBody) {
     EXPECT_NEAR(x_final_rk2[i], x_final_rk3[i], close_tol);
 }
 
-}  // namespace
+}  // namespace analysis_test
 }  // namespace systems
 }  // namespace drake
