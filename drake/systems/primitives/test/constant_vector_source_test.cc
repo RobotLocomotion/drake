@@ -51,6 +51,19 @@ TEST_F(ConstantVectorSourceTest, EigenModel) {
   const auto& output_basic = output_->GetValueOrThrow<BasicVector<double>>();
   EXPECT_TRUE(kConstantVectorSource.isApprox(
       output_basic.get_value(), Eigen::NumTraits<double>::epsilon()));
+
+  // Tests that the output reflects changes to the parameter value in the
+  // context.
+  BasicVector<double>* source_value =
+      static_cast<ConstantVectorSource<double>*>(source_.get())
+          ->get_mutable_source_value(context_.get());
+  source_value->SetFromVector(2.0 * source_value->get_value());
+
+  source_->get_output_port(0).Calc(*context_, output_.get());
+
+  const auto& output_basic_2 = output_->GetValueOrThrow<BasicVector<double>>();
+  EXPECT_TRUE(kConstantVectorSource.isApprox(
+      0.5 * output_basic_2.get_value(), Eigen::NumTraits<double>::epsilon()));
 }
 
 // Tests that the output of the ConstantVectorSource is correct with a
@@ -63,10 +76,24 @@ TEST_F(ConstantVectorSourceTest, BasicVectorModel) {
   source_->get_output_port(0).Calc(*context_, output_.get());
   const auto& output_basic = output_->GetValueOrThrow<BasicVector<double>>();
 
-  auto output_vector =
-      dynamic_cast<const MyVector<3, double>*>(&output_basic);
+  auto output_vector = dynamic_cast<const MyVector<3, double>*>(&output_basic);
   ASSERT_NE(nullptr, output_vector);
   EXPECT_EQ(43.0, output_vector->GetAtIndex(1));
+
+  // Tests that the output reflects changes to the parameter value in the
+  // context.
+  BasicVector<double>* source_value =
+      static_cast<ConstantVectorSource<double>*>(source_.get())
+          ->get_mutable_source_value(context_.get());
+  source_value->SetFromVector(2.0 * source_value->get_value());
+
+  source_->get_output_port(0).Calc(*context_, output_.get());
+
+  const auto& output_basic_2 = output_->GetValueOrThrow<BasicVector<double>>();
+  auto output_vector_2 =
+      dynamic_cast<const MyVector<3, double>*>(&output_basic_2);
+  ASSERT_NE(nullptr, output_vector_2);
+  EXPECT_EQ(43.0, 0.5 * output_vector_2->GetAtIndex(1));
 }
 
 // Tests that ConstantVectorSource allocates no state variables in its context.
