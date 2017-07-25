@@ -130,7 +130,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "rotational_inertia",
-    srcs = [],
+    srcs = ["rotational_inertia.cc"],
     hdrs = ["rotational_inertia.h"],
     deps = [
         "//drake/common",
@@ -141,7 +141,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "spatial_inertia",
-    srcs = [],
+    srcs = ["spatial_inertia.cc"],
     hdrs = ["spatial_inertia.h"],
     deps = [
         ":unit_inertia",
@@ -152,7 +152,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "unit_inertia",
-    srcs = [],
+    srcs = ["unit_inertia.cc"],
     hdrs = ["unit_inertia.h"],
     deps = [
         ":rotational_inertia",
@@ -189,6 +189,7 @@ drake_cc_googletest(
     deps = [
         ":rotational_inertia",
         "//drake/common:autodiff",
+        "//drake/math:gradient",
     ],
 )
 

@@ -31,6 +31,12 @@ namespace multibody {
 /// of _some_ body, perhaps with scaled geometry from the user's intention.
 ///
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
+///
+/// Instantiated templates for the following kinds of T's are provided:
+/// - double
+/// - AutoDiffXd
+///
+/// They are already available to link against in the containing library.
 template <typename T>
 class UnitInertia : public RotationalInertia<T> {
  public:
@@ -63,6 +69,21 @@ class UnitInertia : public RotationalInertia<T> {
   /// It is the responsibility of the user to pass a valid unit inertia.
   explicit UnitInertia(const RotationalInertia<T>& I)
       : RotationalInertia<T>(I) {}
+
+  /// Returns a new %UnitInertia object templated on `Scalar` initialized
+  /// from the value of `this` unit inertia.
+  ///
+  /// @tparam Scalar The scalar type on which the new unit inertia will
+  /// be templated.
+  ///
+  /// @note The cast is only valid when `Scalar` has a valid constructor from
+  /// the scalar type `T` on which `this` object is templated.
+  /// For instance, UnitInertia<double>::cast<AutoDiffXd>() is valid.
+  /// However, UnitInertia<AutoDiffXd>::cast<double>() is not.
+  template <typename Scalar>
+  UnitInertia<Scalar> cast() const {
+    return UnitInertia<Scalar>(RotationalInertia<T>::template cast<Scalar>());
+  }
 
   /// Sets `this` unit inertia from a generally non-unit inertia I corresponding
   /// to a body with a given `mass`.

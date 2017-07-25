@@ -5,7 +5,10 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
+#include "drake/math/autodiff.h"
+#include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/multibody_tree/rotational_inertia.h"
 #include "drake/multibody/multibody_tree/unit_inertia.h"
 
@@ -16,10 +19,11 @@ namespace {
 using drake::math::VectorToSkewSymmetric;
 using Eigen::AngleAxisd;
 using Eigen::Matrix3d;
+using Eigen::MatrixXd;
 using Eigen::Vector3d;
 using std::numeric_limits;
 
-constexpr double epsilon = std::numeric_limits<double>::epsilon();
+constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
 // Test default constructor which leaves entries initialized to NaN for a
 // quick detection of uninitialized values.
@@ -47,7 +51,7 @@ GTEST_TEST(SpatialInertia, ConstructionFromMasComAndUnitInertia) {
   ASSERT_EQ(M.get_com(), com);
   // Asserts we can retrieve the original unit inertia.
   ASSERT_TRUE(M.get_unit_inertia().CopyToFullMatrix3().isApprox(
-      G.CopyToFullMatrix3(), epsilon));
+      G.CopyToFullMatrix3(), kEpsilon));
 
   Matrix6<double> Mmatrix = M.CopyToFullMatrix6();
   Matrix6<double> expected_matrix;
@@ -57,11 +61,55 @@ GTEST_TEST(SpatialInertia, ConstructionFromMasComAndUnitInertia) {
   expected_matrix.block<3, 3>(3, 0) =
       expected_matrix.block<3, 3>(0, 3).transpose();
 
-  EXPECT_TRUE(Mmatrix.isApprox(expected_matrix, epsilon));
+  EXPECT_TRUE(Mmatrix.isApprox(expected_matrix, kEpsilon));
 
   EXPECT_FALSE(M.IsNaN());
   M.SetNaN();
   EXPECT_TRUE(M.IsNaN());
+}
+
+// Tests that we can cast a SpatialInertia<double> to a SpatialInertia
+// templated on an AutoDiffScalar type.
+GTEST_TEST(SpatialInertia, CastToAutoDiff) {
+  const double mass_double = 2.5;
+  const Vector3d com_double(0.1, -0.2, 0.3);
+  const Vector3d m_double(2.0,  2.3, 2.4);  // m for moments.
+  const Vector3d p_double(0.1, -0.1, 0.2);  // p for products.
+  const UnitInertia<double> G_double(
+      m_double(0), m_double(1), m_double(2), /* moments of inertia */
+      p_double(0), p_double(1), p_double(2));/* products of inertia */
+  const SpatialInertia<double> M_double(mass_double, com_double, G_double);
+  ASSERT_TRUE(M_double.IsPhysicallyValid());
+
+  // Cast from double to AutoDiffXd.
+  SpatialInertia<AutoDiffXd> M_autodiff = M_double.cast<AutoDiffXd>();
+
+  // Verify values and gradients of M_autodiff.
+  // Since there are no independent variables in this case the size of all
+  // gradients must be zero.
+
+  // Value and gradient of the mass.
+  const auto& mass_autodiff = M_autodiff.get_mass();
+  const double mass_value = mass_autodiff.value();
+  EXPECT_NEAR(mass_value, mass_double, kEpsilon);
+  const auto& mass_gradient = mass_autodiff.derivatives();
+  ASSERT_EQ(mass_gradient.size(), 0);
+
+  // Values and gradients of the com vector.
+  const auto& G_autodiff = M_autodiff.get_unit_inertia();
+  const Matrix3<AutoDiffXd> G_autodiff_matrix = G_autodiff.CopyToFullMatrix3();
+  auto G_value = math::autoDiffToValueMatrix(G_autodiff_matrix);
+  G_value.resize(3, 3);
+  EXPECT_TRUE(G_value.isApprox(G_double.CopyToFullMatrix3(), kEpsilon));
+  MatrixXd G_gradient = math::autoDiffToGradientMatrix(G_autodiff_matrix);
+  ASSERT_EQ(G_gradient.size(), 0);
+
+  // Values and gradients of the unit inertia.
+  const auto& com_autodiff = M_autodiff.get_com();
+  const Vector3d com_value = math::autoDiffToValueMatrix(com_autodiff);
+  EXPECT_TRUE(com_value.isApprox(com_double, kEpsilon));
+  MatrixXd com_gradient = math::autoDiffToGradientMatrix(com_autodiff);
+  ASSERT_EQ(com_gradient.size(), 0);
 }
 
 // Test the shift operator to write into a stream.
@@ -143,7 +191,7 @@ GTEST_TEST(SpatialInertia, PlusEqualOperator) {
       com,
       UnitInertia<double>::SolidBox(2 * L, L, L));
   EXPECT_TRUE(MBox_Wo_W.CopyToFullMatrix6().isApprox(
-      MExpected_Wo_W.CopyToFullMatrix6(), epsilon));
+      MExpected_Wo_W.CopyToFullMatrix6(), kEpsilon));
 }
 
 // Tests the method SpatialInertia::ReExpress().
@@ -172,18 +220,18 @@ GTEST_TEST(SpatialInertia, ReExpress) {
 
   // The vector p_PCcm changes when re-expressed in another frame from
   // p_PCcm_E = [0, -1, 0] to p_PCcm_W = [0, 0, -1]
-  EXPECT_TRUE(M_CP_W.get_com().isApprox(-Vector3d::UnitZ(), epsilon));
+  EXPECT_TRUE(M_CP_W.get_com().isApprox(-Vector3d::UnitZ(), kEpsilon));
 
   Vector3d moments_E = M_CP_E.get_unit_inertia().get_moments();
   Vector3d moments_W = M_CP_W.get_unit_inertia().get_moments();
   // Since rotation is along the x-axis the first moment about x does
   // not change.
-  EXPECT_NEAR(moments_W(0), moments_E(0), epsilon);
+  EXPECT_NEAR(moments_W(0), moments_E(0), kEpsilon);
 
   // The y and z moments swap places after the rotation of 90 degrees about the
   // x axis.
-  EXPECT_NEAR(moments_W(1), moments_E(2), epsilon);
-  EXPECT_NEAR(moments_W(2), moments_E(1), epsilon);
+  EXPECT_NEAR(moments_W(1), moments_E(2), kEpsilon);
+  EXPECT_NEAR(moments_W(2), moments_E(1), kEpsilon);
 }
 
 // Unit tests the parallel axis theorem shift. The test computes the moment of
@@ -227,14 +275,14 @@ GTEST_TEST(SpatialInertia, Shift) {
       mass * (3 * radius * radius + length * length) / 12  /*About centroid.*/
       + mass * length * length / 4;  /*Parallel axis theorem shift.*/
   const auto I_Xo_W = M_BBtop_W.CalcRotationalInertia();
-  EXPECT_NEAR(I_Xo_W(0, 0), I_end, epsilon);
-  EXPECT_NEAR(I_Xo_W(2, 2), I_end, epsilon);
+  EXPECT_NEAR(I_Xo_W(0, 0), I_end, kEpsilon);
+  EXPECT_NEAR(I_Xo_W(2, 2), I_end, kEpsilon);
 
   // Now check that shifting back to the COM results in the same spatial
   // inertia.
   SpatialInertia<double> M_BBcm_W_back = M_BBtop_W.Shift(-p_BcmBtop_W);
   EXPECT_TRUE(M_BBcm_W_back.CopyToFullMatrix6().isApprox(
-      M_BBcm_W.CopyToFullMatrix6(), epsilon));
+      M_BBcm_W.CopyToFullMatrix6(), kEpsilon));
 }
 
 // Tests that it is not possible to create a spatial inertia with negative mass

@@ -7,6 +7,8 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_autodiff_types.h"
+#include "drake/math/autodiff.h"
+#include "drake/math/autodiff_gradient.h"
 
 namespace drake {
 namespace multibody {
@@ -15,6 +17,7 @@ namespace {
 
 using Eigen::AngleAxisd;
 using Eigen::Matrix3d;
+using Eigen::MatrixXd;
 using Eigen::NumTraits;
 using Eigen::Vector3d;
 using std::sort;
@@ -514,6 +517,43 @@ GTEST_TEST(RotationalInertia, ShiftOperator) {
                   "[0.0000, 2.7180, 0.0000]\n"
                   "[0.0000, 0.0000, 3.1400]\n";
   EXPECT_EQ(expected_string, stream.str());
+}
+
+// Tests that we can cast a RotationalInertia<double> to a RotationalInertia
+// templated on an AutoDiffScalar type.
+GTEST_TEST(RotationalInertia, CastToAutoDiff) {
+  typedef Eigen::AutoDiffScalar<Vector1<double>> ADScalar;
+  const RotationalInertia<double> I_double(1, 2.718, 3.14);
+  const RotationalInertia<ADScalar> I_autodiff(1, 2.718, 3.14);
+
+  // Verify derivatives are zero.
+  const auto& m_gradients =
+      drake::math::autoDiffToGradientMatrix(I_autodiff.get_moments());
+  EXPECT_TRUE(m_gradients.isZero(kEpsilon));
+  const auto& p_gradients =
+      drake::math::autoDiffToGradientMatrix(I_autodiff.get_products());
+  EXPECT_TRUE(p_gradients.isZero(kEpsilon));
+
+  // Cast from double to AutoDiffScalar.
+  const RotationalInertia<ADScalar> I_cast = I_double.cast<ADScalar>();
+  EXPECT_TRUE(I_autodiff.IsNearlyEqualTo(I_cast, kEpsilon));
+
+  const Matrix3<ADScalar> I_autodiff_matrix = I_cast.CopyToFullMatrix3();
+  auto I_value = drake::math::autoDiffToValueMatrix(I_autodiff_matrix);
+  I_value.resize(3, 3);
+  EXPECT_TRUE(I_value.isApprox(I_double.CopyToFullMatrix3(), kEpsilon));
+
+  MatrixXd I_gradient =
+      drake::math::autoDiffToGradientMatrix(I_autodiff_matrix);
+  ASSERT_EQ(I_gradient.rows(), 9);
+  ASSERT_EQ(I_gradient.cols(), 1);
+  I_gradient.resize(3, 3);
+  ASSERT_EQ(I_gradient.rows(), 3);
+  ASSERT_EQ(I_gradient.cols(), 3);
+
+  // Since the cast is performed from a RotationalInertia<double>, derivatives
+  // must be zero by default (no independent variables).
+  EXPECT_TRUE(I_gradient.isZero(kEpsilon));
 }
 
 // Tests that we can instantiate a rotational inertia with AutoDiffScalar and
