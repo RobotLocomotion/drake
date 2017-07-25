@@ -330,7 +330,7 @@ Spatial velocity    |  V   |@f$^BV^C@f$     |`V_BC`    |Frame C's spatial veloci
 Angular acceleration|alpha |@f$^B\alpha^C@f$|`alpha_BC`|Frame C's angular acceleration in B
 Acceleration        |  a   |@f$^Ba^Q@f$     |`a_BQ`    |%Point Q's acceleration in B
 Spatial acceleration|  A   |@f$^BA^C@f$     |`A_BC`    |Frame C's spatial acceleration in B
-Torque              |  t   |@f$\tau^S@f$    |`t`       |Torque
+Torque              |  t   |@f$\tau@f$      |`t`       |Torque
 Force               |  f   |@f$f^{P}@f$     |`f_P`     |Force on a point P
 Spatial force       |  F   |@f$F^{P}@f$     |`F_P`     |Spatial force (torque/force) ††
 
