@@ -8,6 +8,7 @@
 #include "drake/multibody/multibody_tree/multibody_tree_element.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
+#include "drake/multibody/multibody_tree/spatial_inertia.h"
 
 namespace drake {
 namespace multibody {
@@ -138,6 +139,9 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   const BodyFrame<T>& get_body_frame() const {
     return body_frame_;
   }
+
+  virtual SpatialInertia<T> CalcSpatialInertiaInBodyFrame(
+      const MultibodyTreeContext<T>& context) const = 0;
 
  private:
   // Only friends of BodyAttorney (i.e. MultibodyTree) have access to a selected

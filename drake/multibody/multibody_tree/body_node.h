@@ -13,6 +13,7 @@
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
 #include "drake/multibody/multibody_tree/position_kinematics_cache.h"
+#include "drake/multibody/multibody_tree/spatial_inertia.h"
 #include "drake/multibody/multibody_tree/velocity_kinematics_cache.h"
 
 namespace drake {
@@ -733,6 +734,27 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     DRAKE_ASSERT(pc != nullptr);
     Isometry3<T>& X_FM = get_mutable_X_FM(pc);
     X_FM = get_mobilizer().CalcAcrossMobilizerTransform(context);
+  }
+
+  // TODO(amcastro-tri): add argument for flexible body generalized
+  // accelerations.
+  SpatialForce<T> CalcBodyInverseDynamics(
+      const MultibodyTreeContext<T>& context,
+      const SpatialAcceleration<T>& A_GB) const {
+    // Body for this node.
+    const Body<T>& body_B = get_body();
+
+    // Spatial inertia of body B about Bo and expressed in the body frame B.
+    SpatialInertia<T> M_B = body_B.CalcSpatialInertiaInBodyFrame(context);
+
+
+    // Gyroscopic spatial force.
+    // Eq. 2.26, p. 27.
+#if 0
+    const SpatialVec b  = getMass() *                       // 6 flops
+        SpatialVec(w_GB % (getUnitInertia_OB_G(pc)*w_GB),   // moment (24 flops)
+                   w_GB % (w_GB % getCB_G(pc)));            // force  (18 flops)
+#endif
   }
 
   // Implementation for MultibodyTreeElement::DoSetTopology().
