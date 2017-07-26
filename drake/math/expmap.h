@@ -85,7 +85,7 @@ Eigen::Matrix<typename DerivedQ::Scalar, 3, 1> quat2expmap(
   Scalar s(2);
   if (!is_degenerate) {
     Scalar t = sqrt(t_squared);
-	  s *= acos(q(0)) / t;
+    s *= acos(q(0)) / t;
   }
   return s * q.template tail<3>();
 }
