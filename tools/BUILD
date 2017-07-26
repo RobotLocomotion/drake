@@ -29,7 +29,10 @@ sh_binary(
         "//tools:apple": ["drake_visualizer_apple.sh"],
         "//conditions:default": ["drake_visualizer_linux.sh"],
     }),
-    data = ["@director"],
+    data = [
+        "@director",
+        "//drake/bindings:pydrake"
+    ],
 )
 
 sh_binary(
