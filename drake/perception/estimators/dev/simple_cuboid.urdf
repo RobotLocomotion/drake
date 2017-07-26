@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<robot name="simple_cuboid">
+  <link name="base_link">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.1" />
+      <inertia ixx="0.000363" ixy="0" ixz="0" iyy="0.000363" iyz="0"
+          izz="0.00006" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <box size="0.06 0.06 0.2" />
+      </geometry>
+      <material name="red">
+        <color rgba="0.8 0.1 0.1 1" />
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.06 0.06 0.2" />
+      </geometry>
+    </collision>
+   </link>
+</robot>
