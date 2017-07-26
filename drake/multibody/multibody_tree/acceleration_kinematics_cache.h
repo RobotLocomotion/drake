@@ -70,6 +70,14 @@ class AccelerationKinematicsCache {
     return A_WB_pool_[body_node_index];
   }
 
+  const std::vector<SpatialAcceleration<T>>& get_A_WB_pool() const {
+    return A_WB_pool_;
+  }
+
+  std::vector<SpatialAcceleration<T>>& get_mutable_A_WB_pool() {
+    return A_WB_pool_;
+  }
+
  private:
   // Pools store entries in the same order that multibody tree nodes are
   // ordered in the tree, i.e. in BFT (Breadth-First Traversal) order. Therefore

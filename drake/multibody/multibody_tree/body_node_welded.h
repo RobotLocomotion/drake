@@ -15,7 +15,8 @@ namespace internal {
 template <typename T>
 class BodyNodeWelded : public BodyNode<T> {
  public:
-  explicit BodyNodeWelded(const Body<T>& body) : BodyNode<T>(body, nullptr) {}
+  explicit BodyNodeWelded(const Body<T>& body) :
+      BodyNode<T>(nullptr, body, nullptr) {}
 };
 
 }  // namespace internal

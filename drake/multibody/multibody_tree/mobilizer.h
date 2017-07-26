@@ -8,6 +8,7 @@
 #include "drake/multibody/multibody_tree/frame.h"
 #include "drake/multibody/multibody_tree/math/spatial_acceleration.h"
 #include "drake/multibody/multibody_tree/math/spatial_velocity.h"
+#include "drake/multibody/multibody_tree/math/spatial_force.h"
 #include "drake/multibody/multibody_tree/multibody_tree_context.h"
 #include "drake/multibody/multibody_tree/multibody_tree_element.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
@@ -296,6 +297,11 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
       const MultibodyTreeContext<T>& context,
       const Eigen::Ref<const VectorX<T>>& v) const = 0;
 
+  virtual void ProjectSpatialForce(
+      const MultibodyTreeContext<T>& context,
+      const SpatialForce<T>& F_Mo,
+      Eigen::Ref<VectorX<T>> tau) const = 0;
+
   /// Computes the across-mobilizer spatial accelerations `A_FM(q, v, v̇)` of the
   /// outboard frame M in the inboard frame F.
   /// This method can be thought of as the application of the operation
@@ -326,6 +332,7 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
 
   /// For MultibodyTree internal use only.
   virtual std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
+      const internal::BodyNode<T>* parent_node,
       const Body<T>& body, const Mobilizer<T>* mobilizer) const = 0;
 
  private:

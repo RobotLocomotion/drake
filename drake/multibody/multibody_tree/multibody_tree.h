@@ -395,6 +395,11 @@ class MultibodyTree {
     return static_cast<int>(owned_mobilizers_.size());
   }
 
+  /// Returns the number of generalized velocities of the model.
+  int get_num_velocities() const {
+    return topology_.get_num_velocities();
+  }
+
   /// Returns the height of the tree data structure of `this` %MultibodyTree.
   /// That is, the number of bodies in the longest kinematic path between the
   /// world and any other leaf body. For a model that only contains the _world_
@@ -525,7 +530,7 @@ class MultibodyTree {
   /// @param[in] vc
   ///   A velocity kinematics cache object already updated to be in sync with
   ///   `context`.
-  /// @param[in] mbt_vdot
+  /// @param[in] known_vdot
   ///   A vector with the generalized accelerations for the full %MultibodyTree
   ///   model.
   /// @param[out] ac
@@ -542,8 +547,31 @@ class MultibodyTree {
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
       const VelocityKinematicsCache<T>& vc,
-      const VectorX<T>& mbt_vdot,
+      const VectorX<T>& known_vdot,
       AccelerationKinematicsCache<T>* ac) const;
+
+  void CalcSpatialAccelerationsFromVdot(
+      const systems::Context<T>& context,
+      const PositionKinematicsCache<T>& pc,
+      const VelocityKinematicsCache<T>& vc,
+      const VectorX<T>& known_vdot,
+      std::vector<SpatialAcceleration<T>>* A_WB_array) const;
+
+  /// @param[in] known_vdot
+  ///   Known generalized accelerations. Entries in this vector are in the order
+  ///   described in @ref mbt_generalized_velocities_vectors.
+  /// @param[out] A_WB_array
+  ///   Acceleration of body B in the world frame W, corresponding to the state
+  ///   in `context` and the known generalized accelerations `known_vdot`.
+  ///   Entries in this vector can be accessed by ...
+  void CalcInverseDynamics(
+      const systems::Context<T>& context,
+      const PositionKinematicsCache<T>& pc,
+      const VelocityKinematicsCache<T>& vc,
+      const VectorX<T>& known_vdot,
+      std::vector<SpatialAcceleration<T>>* A_WB_array,
+      std::vector<SpatialForce<T>>* F_BMo_W_array,
+      VectorX<T>* tau_array) const;
 
  private:
   void CreateBodyNode(BodyNodeIndex body_node_index);

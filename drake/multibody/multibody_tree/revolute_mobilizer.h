@@ -128,6 +128,11 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
       const MultibodyTreeContext<T>& context,
       const Eigen::Ref<const VectorX<T>>& v) const final;
 
+  void ProjectSpatialForce(
+      const MultibodyTreeContext<T>& context,
+      const SpatialForce<T>& F_Mo,
+      Eigen::Ref<VectorX<T>> tau) const final;
+
   /// Computes the across-mobilizer acceleration `A_FM(q, v, v̇)` of the
   /// outboard frame M in the inboard frame F.
   /// By definition `A_FM = d_F(V_FM)/dt = H_FM(q) * v̇ + Ḣ_FM * v`.

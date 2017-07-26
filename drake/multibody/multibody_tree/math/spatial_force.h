@@ -120,10 +120,27 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
   ///   The equivalent shifted spatial force, now applied at point Q
   ///   rather than P.
   ///
+  /// @note
+  ///   TODO: WRITE THIS IN TERMS OF THE LINEAR OPERATOR PHI.
+  ///         CITE A. JAIN: SECTION 1.4, P. 11
+  ///   A useful property of this operation when dealing with
+  ///   action/reaction pairs is that: <pre>
+  ///     -F_Bp.Shift(p_BpBq) = (-F_Bp).Shift(p_BpBq)
+  ///   </pre>
+  ///   that is, the negating the result of the shift equals the result from
+  ///   negating the spatial force first and then applying the shift. This is a
+  ///   direct consequence of the shift operation being a linear operation on a
+  ///   spatial force.
+  ///
   /// @see ShiftInPlace() to compute the shifted spatial force in-place
   ///                     modifying the original object.
   SpatialForce<T> Shift(const Vector3<T>& p_BpBq_E) const {
     return SpatialForce<T>(*this).ShiftInPlace(p_BpBq_E);
+  }
+
+  SpatialForce<T>& operator+=(const SpatialForce<T>& F_P) {
+    this->get_coeffs() += F_P.get_coeffs();
+    return *this;
   }
 
   /// Given `this` spatial force `F_Bp_E` applied at point P of body B and
@@ -140,6 +157,12 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
   ///          the spatial velocity is measured in an inertial frame I.
   T dot(const SpatialVelocity<T>& V_IBp_E) const;
 };
+
+template <typename T>
+inline SpatialForce<T> operator+(
+    const SpatialForce<T>& F1_Sp, const SpatialForce<T>& F2_Sp) {
+  return SpatialForce<T>(F1_Sp.get_coeffs() + F2_Sp.get_coeffs());
+}
 
 }  // namespace multibody
 }  // namespace drake
