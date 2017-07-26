@@ -1,6 +1,7 @@
 #pragma once
 
-#include "drake/solvers/create_constraint.h"
+#include "drake/solvers/binding.h"
+#include "drake/solvers/constraint.h"
 
 namespace drake {
 namespace solvers {
@@ -44,7 +45,9 @@ Binding<LinearConstraint> CreateLogicalAndConstraint(
  * the constraints, it is guaranteed that b1_or_b2 = b1 ∨ b2.
  * @pre b1, b2, b1_or_b2 are all linear expressions.
  */
-Binding<LinearConstraint> CreateLogicalOrConstraint(const symbolic::Expression& b1, const symbolic::Expression& b2, const symbolic::Expression& b1_or_b2);
+Binding<LinearConstraint> CreateLogicalOrConstraint(
+    const symbolic::Expression& b1, const symbolic::Expression& b2,
+    const symbolic::Expression& b1_or_b2);
 
 /**
  * For two binary expressions b1 and b2, each can only take value 0 or 1,

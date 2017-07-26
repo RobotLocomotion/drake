@@ -208,6 +208,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "integer_optimization_util",
+    srcs = ["integer_optimization_util.cc"],
+    hdrs = ["integer_optimization_util.h"],
+    deps = [
+        ":create_constraint",
+    ],
+)
+
+drake_cc_library(
     name = "system_identification",
     srcs = ["system_identification.cc"],
     hdrs = ["system_identification.h"],
@@ -286,8 +295,8 @@ drake_cc_library(
     srcs = ["test/mathematical_program_test_util.cc"],
     hdrs = ["test/mathematical_program_test_util.h"],
     deps = [
-        ":mathematical_program",
         "@gtest//:without_main",
+        ":mathematical_program",
     ],
 )
 
@@ -297,11 +306,11 @@ drake_cc_library(
     srcs = ["test/optimization_examples.cc"],
     hdrs = ["test/optimization_examples.h"],
     deps = [
+        "@gtest//:without_main",
         ":mathematical_program",
         ":mathematical_program_test_util",
         ":solver_type_converter",
         "//drake/common:eigen_matrix_compare",
-        "@gtest//:without_main",
     ],
 )
 
@@ -687,6 +696,14 @@ drake_cc_googletest(
         ":mathematical_program_test_util",
         ":quadratic_program_examples",
         "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "integer_optimization_util_test",
+    deps = [
+        ":integer_optimization_util",
+        ":mathematical_program",
     ],
 )
 
