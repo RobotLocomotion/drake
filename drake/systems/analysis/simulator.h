@@ -391,7 +391,8 @@ Simulator<T>::Simulator(const System<T>& system,
     : system_(system), context_(std::move(context)) {
   // Setup defaults that should be generally reasonable.
   const double max_step_size = 0.1;
-  const double initial_step_size = 1e-3;
+  const double initial_step_size = 1e-4;
+  const double default_accuracy = 1e-4;
 
   // Create a context if necessary.
   if (!context_) context_ = system_.CreateDefaultContext();
@@ -402,6 +403,7 @@ Simulator<T>::Simulator(const System<T>& system,
   ((RungeKutta3Integrator<T>*) integrator_.get())->
       request_initial_step_size_target(initial_step_size);
   integrator_->set_maximum_step_size(max_step_size);
+  integrator_->set_default_accuracy(default_accuracy);
   integrator_->Initialize();
 
   // Allocate the necessary temporaries for storing state in update calls

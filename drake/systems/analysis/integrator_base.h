@@ -1700,7 +1700,7 @@ typename IntegratorBase<T>::StepResult IntegratorBase<T>::IntegrateAtMost(
   }
 
   // Update generic statistics.
-  const T actual_dt = context_->get_time() - t0; 
+  const T actual_dt = context_->get_time() - t0;
   UpdateStepStatistics(actual_dt);
 
   if (full_step) {

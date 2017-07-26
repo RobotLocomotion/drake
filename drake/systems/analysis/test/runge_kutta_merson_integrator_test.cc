@@ -12,8 +12,8 @@ namespace drake {
 namespace systems {
 namespace analysis_test {
 
-typedef ::testing::Types<RungeKuttaMersonIntegrator<double>> MyTypes;
-INSTANTIATE_TYPED_TEST_CASE_P(My, ExplicitErrorControlledIntegratorTest, MyTypes);
+typedef ::testing::Types<RungeKuttaMersonIntegrator<double>> Types;
+INSTANTIATE_TYPED_TEST_CASE_P(My, ExplicitErrorControlledIntegratorTest, Types);
 
 }  // namespace analysis_test
 }  // namespace systems
