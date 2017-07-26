@@ -41,6 +41,14 @@ inline bool ExprNotLess(const Expression& e1, const Expression& e2) {
   return !ExprLess(e1, e2);
 }
 
+inline bool PolyEqual(const Polynomial& p1, const Polynomial& p2) {
+  return p1.EqualTo(p2);
+}
+
+inline bool PolyNotEqual(const Polynomial& p1, const Polynomial& p2) {
+  return !PolyEqual(p1, p2);
+}
+
 template <typename F>
 bool all_of(const std::vector<Formula>& formulas, const F& f) {
   return std::all_of(formulas.begin(), formulas.end(), f);
