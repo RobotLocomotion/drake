@@ -14,8 +14,7 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
-#include "drake/common/monomial.h"
-#include "drake/common/symbolic_expression.h"
+#include "drake/common/symbolic.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/equality_constrained_qp_solver.h"
 #include "drake/solvers/gurobi_solver.h"
@@ -54,6 +53,7 @@ using std::vector;
 using symbolic::Expression;
 using symbolic::Formula;
 using symbolic::Variable;
+using symbolic::Variables;
 
 using internal::CreateBinding;
 using internal::DecomposeLinearExpression;
@@ -105,6 +105,7 @@ MathematicalProgram::MathematicalProgram()
     : x_initial_guess_(
           static_cast<Eigen::Index>(INITIAL_VARIABLE_ALLOCATION_NUM)),
       optimal_cost_(numeric_limits<double>::quiet_NaN()),
+      lower_bound_cost_(-numeric_limits<double>::infinity()),
       required_capabilities_(kNoCapabilities),
       ipopt_solver_(new IpoptSolver()),
       nlopt_solver_(new NloptSolver()),
@@ -134,6 +135,39 @@ MatrixXDecisionVariable MathematicalProgram::NewSymmetricContinuousVariables(
     }
   }
   return NewVariables(VarType::CONTINUOUS, rows, rows, true, names);
+}
+
+symbolic::Polynomial MathematicalProgram::NewFreePolynomial(
+    const Variables& indeterminates, const int degree,
+    const string& coeff_name) {
+  const drake::VectorX<symbolic::Monomial> m{
+      MonomialBasis(indeterminates, degree)};
+  const VectorXDecisionVariable coeffs{
+      NewContinuousVariables(m.size(), coeff_name)};
+  symbolic::Polynomial p;
+  for (int i = 0; i < m.size(); ++i) {
+    p.AddProduct(coeffs(i), m(i));  // p += coeffs(i) * m(i);
+  }
+  return p;
+}
+
+pair<symbolic::Polynomial, Binding<PositiveSemidefiniteConstraint>>
+MathematicalProgram::NewSosPolynomial(const Variables& indeterminates,
+                                      const int degree) {
+  DRAKE_DEMAND(degree > 0 && degree % 2 == 0);
+  const drake::VectorX<symbolic::Monomial> x{
+      MonomialBasis(indeterminates, degree / 2)};
+  const MatrixXDecisionVariable Q{NewSymmetricContinuousVariables(x.size())};
+  const auto psd_binding = AddPositiveSemidefiniteConstraint(Q);
+  // Constructs a coefficient matrix of Polynomials Q_poly from Q. In the
+  // process, we make sure that each Q_poly(i, j) is treated as a decision
+  // variable, not an indeterminate.
+  const drake::MatrixX<symbolic::Polynomial> Q_poly{
+      Q.unaryExpr([](const Variable& q_i_j) {
+        return symbolic::Polynomial{q_i_j /* coeff */, {} /* Monomial */};
+      })};
+  const symbolic::Polynomial p{x.dot(Q_poly * x)};  // p = xᵀ * Q_poly * x.
+  return make_pair(p, psd_binding);
 }
 
 MatrixXIndeterminate MathematicalProgram::NewIndeterminates(
@@ -558,6 +592,22 @@ MathematicalProgram::AddLinearMatrixInequalityConstraint(
 
 // Note that FindIndeterminateIndex is implemented in
 // mathematical_program_api.cc instead of this file.
+
+pair<Binding<PositiveSemidefiniteConstraint>, Binding<LinearEqualityConstraint>>
+MathematicalProgram::AddSosConstraint(const symbolic::Polynomial& p) {
+  const symbolic::Variables indeterminates{p.indeterminates()};
+  const auto pair = NewSosPolynomial(indeterminates, p.TotalDegree());
+  const symbolic::Polynomial& sos_poly{pair.first};
+  const Binding<PositiveSemidefiniteConstraint>& psd_binding{pair.second};
+  const auto leq_binding = AddLinearEqualityConstraint(sos_poly == p);
+  return make_pair(psd_binding, leq_binding);
+}
+
+pair<Binding<PositiveSemidefiniteConstraint>, Binding<LinearEqualityConstraint>>
+MathematicalProgram::AddSosConstraint(const symbolic::Expression& e) {
+  return AddSosConstraint(
+      symbolic::Polynomial{e, symbolic::Variables{indeterminates_}});
+}
 
 double MathematicalProgram::GetSolution(const Variable& var) const {
   return x_values_[FindDecisionVariableIndex(var)];

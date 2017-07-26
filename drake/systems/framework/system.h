@@ -16,7 +16,7 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/nice_type_name.h"
-#include "drake/common/symbolic_expression.h"
+#include "drake/common/symbolic.h"
 #include "drake/common/unused.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/context.h"

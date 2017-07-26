@@ -160,7 +160,7 @@ TEST_F(InverseDynamicsTest, InverseDynamicsTest) {
 TEST_F(InverseDynamicsTest, UnderactuatedModelTest) {
   auto tree = std::make_unique<RigidBodyTree<double>>();
   drake::parsers::sdf::AddModelInstancesFromSdfFile(
-      drake::FindResourceOrThrow("drake/examples/SimpleFourBar/FourBar.sdf"),
+      drake::FindResourceOrThrow("drake/examples/simple_four_bar/FourBar.sdf"),
       drake::multibody::joints::kFixed, nullptr /* weld to frame */,
       tree.get());
   EXPECT_THROW(Init(std::move(tree), true), std::runtime_error);

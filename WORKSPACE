@@ -196,8 +196,8 @@ github_archive(
 github_archive(
     name = "nlopt",
     repository = "stevengj/nlopt",
-    commit = "516aca7e96405939726648e00faeb26bd2c9b29f",
-    sha256 = "6041ca30072b354ed3c235743779bf17dacf6199b2b30746c499f65082665d5f",  # noqa
+    commit = "45553da97c890ef58f95e7ef73c5409d2169e824",
+    sha256 = "931fd125c50acf7cd7e709887ab4923af42a8a07be139572bf8b76bccca76450",  # noqa
     build_file = "tools/nlopt.BUILD",
 )
 
@@ -338,8 +338,8 @@ pypi_archive(
 github_archive(
     name = "pycps",
     repository = "mwoehlke/pycps",
-    commit = "adff2def458928902ad482337330676beeeedb93",
-    sha256 = "61fd6f1810724c50784da97ef666c4b5b9110a8ce57f79b4c5510d6f8bb7c75e",  # noqa
+    commit = "a6110cf2e769e9ff262a98ed18506ad565a14e89",
+    sha256 = "62b5054705152ba971a6e9a358bfcc1359eca6f3ba8e5788befd82d606933d98",  # noqa
     build_file = "tools/pycps.BUILD",
 )
 
@@ -371,6 +371,12 @@ bitbucket_archive(
     sha256 = "fa1033be146ff51f3b2c679ff160838c1e3ca736c565b19510a5c9b6d352fbaf",  # noqa
     strip_prefix = "ignitionrobotics-ign-rndf-214a333fbdcb",
     build_file = "tools/ignition_rndf.BUILD",
+)
+
+load("//tools:boost.bzl", "boost_repository")
+
+boost_repository(
+    name = "boost",
 )
 
 bitbucket_archive(

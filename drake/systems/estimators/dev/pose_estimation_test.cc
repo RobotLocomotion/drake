@@ -30,7 +30,7 @@ Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
   const auto& collision_element_ids =
       tree.get_body(1).get_collision_element_ids();
   DRAKE_DEMAND(collision_element_ids.size() == 1);
-  const DrakeCollision::Element* collision_element =
+  const drake::multibody::collision::Element* collision_element =
       tree.FindCollisionElement(collision_element_ids[0]);
   DRAKE_DEMAND(collision_element->getShape() == DrakeShapes::BOX);
 

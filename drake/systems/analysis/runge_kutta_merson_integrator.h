@@ -60,7 +60,6 @@ class RungeKuttaMersonIntegrator final : public IntegratorBase<T> {
     derivs2_ = system.AllocateTimeDerivatives();
     derivs3_ = system.AllocateTimeDerivatives();
     derivs4_ = system.AllocateTimeDerivatives();
-    derivs5_ = system.AllocateTimeDerivatives();
   }
 
   /**

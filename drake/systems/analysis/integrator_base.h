@@ -1649,6 +1649,14 @@ typename IntegratorBase<T>::StepResult IntegratorBase<T>::IntegrateAtMost(
     dt = boundary_dt;
   }
 
+  // If there is no continuous state, there will be no need to limit the
+  // integration step size.
+  if (get_context().get_continuous_state()->size() == 0) {
+    Context<T>* context = get_mutable_context();
+    context->set_time(context->get_time() + dt);
+    return candidate_result;
+  }
+
   // If all events are farther into the future than the maximum step
   // size times a stretch factor of 1.01, the maximum step size becomes the
   // candidate dt. Put another way, if the maximum step occurs right before

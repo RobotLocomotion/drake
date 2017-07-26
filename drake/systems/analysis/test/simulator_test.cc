@@ -88,6 +88,27 @@ class ExampleDiagram : public Diagram<double> {
   StatelessDiagram* stateless_diag_ = nullptr;
 };
 
+// Tests that simulation only takes a single step when there is no continuous
+// state, regardless of the integrator maximum step size (and no discrete state
+// or events).
+GTEST_TEST(SimulatorTest, NoContinuousStateYieldsSingleStep) {
+  const double final_time = 1.0;
+  StatelessSystem system(
+     final_time + 1, /* publish time *after* final time */
+     WitnessFunctionDirection::kCrossesZero);
+
+  // Construct the simulation using the RK2 (fixed step) integrator with a small
+  // time step.
+  const double dt = 1e-3;
+  Simulator<double> simulator(system);
+  Context<double>* context = simulator.get_mutable_context();
+  simulator.reset_integrator<RungeKutta2Integrator<double>>(system, dt,
+      context);
+  simulator.StepTo(final_time);
+
+  EXPECT_EQ(simulator.get_num_steps_taken(), 1);
+}
+
 // Tests ability of simulation to identify the proper number of witness function
 // triggerings going from negative to non-negative witness function evaluation
 // using a Diagram. This particular example uses an empty system and a clock as
@@ -1175,7 +1196,11 @@ GTEST_TEST(SimulatorTest, AutodiffBasic) {
 GTEST_TEST(SimulatorTest, PerStepAction) {
   class PerStepActionTestSystem : public LeafSystem<double> {
    public:
-    PerStepActionTestSystem() {}
+    PerStepActionTestSystem() {
+      // We need some continuous state (which will be unused) so that the
+      // continuous state integration will not be bypassed.
+      this->DeclareContinuousState(1);
+    }
 
     void AddPerStepPublishEvent() {
       PublishEvent<double> event(Event<double>::TriggerType::kPerStep);
@@ -1206,6 +1231,13 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
     }
 
    private:
+    void DoCalcTimeDerivatives(
+        const Context<double>& context,
+        ContinuousState<double>* derivatives) const override {
+      // Derivative will always be zero, making the system stationary.
+      derivatives->get_mutable_vector()->SetAtIndex(0, 0.0);
+    }
+
     void DoCalcDiscreteVariableUpdates(
         const Context<double>& context,
         const std::vector<const DiscreteUpdateEvent<double>*>& events,

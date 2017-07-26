@@ -15,7 +15,7 @@ namespace systems {
 namespace plants {
 namespace {
 
-using DrakeCollision::Element;
+using drake::multibody::collision::Element;
 using Eigen::Isometry3d;
 using Eigen::Matrix3d;
 using std::make_unique;
@@ -38,8 +38,8 @@ class RigidBodyTreeCollisionCliqueTest : public ::testing::Test {
     I.block(3, 3, 3, 3) << Matrix3d::Identity();
 
     // This element is cloned each time it is added to the tree.
-    DrakeCollision::Element element(DrakeShapes::Sphere(1.0),
-                                    Eigen::Isometry3d::Identity());
+    drake::multibody::collision::Element element(DrakeShapes::Sphere(1.0),
+                                                 Eigen::Isometry3d::Identity());
 
     // This body requires a self-collision clique
     body1_ = tree_->add_rigid_body(make_unique<RigidBody<double>>());

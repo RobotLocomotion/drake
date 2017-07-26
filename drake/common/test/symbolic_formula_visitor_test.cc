@@ -1,5 +1,3 @@
-#include "drake/common/symbolic_formula_visitor.h"
-
 #include <algorithm>
 #include <functional>
 #include <iterator>
@@ -8,8 +6,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/symbolic_formula.h"
-#include "drake/common/symbolic_variable.h"
+#include "drake/common/symbolic.h"
 #include "drake/common/test/symbolic_test_util.h"
 
 namespace drake {

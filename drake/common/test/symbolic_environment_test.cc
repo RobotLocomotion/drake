@@ -1,12 +1,10 @@
-#include "drake/common/symbolic_environment.h"
-
 #include <cmath>
 #include <stdexcept>
 #include <string>
 
 #include <gtest/gtest.h>
 
-#include "drake/common/symbolic_variable.h"
+#include "drake/common/symbolic.h"
 
 namespace drake {
 namespace symbolic {

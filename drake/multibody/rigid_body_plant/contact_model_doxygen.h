@@ -26,8 +26,9 @@
  First, contact _conceptually_ occurs between two _surfaces_, one on each of
  two independently moving _bodies_. The contact produces _forces_ on those two
  surfaces, which can then affect the motion of the bodies. In practice, surfaces
- are represented by one or more DrakeCollision::Element objects -- geometric
- shapes rigidly affixed to a body, whose surfaces can engage in contact.
+ are represented by one or more drake::multibody::collision::Element objects --
+ geometric shapes rigidly affixed to a body, whose surfaces can engage in
+ contact.
 
  This document discusses a _compliant_ contact model. In compliant models, the
  bodies are considered deformable. The
@@ -47,8 +48,8 @@
  Contacts are defined in terms of these collision Element instances and _not_
  RigidBody instances. For Drake's purposes, a "contact":
 
- - describes a relationship between two DrakeCollision::Element instances,
-   denoted elements `A` and `B`,
+ - describes a relationship between two drake::multibody::collision::Element
+   instances, denoted elements `A` and `B`,
  - only exists if the Element instances overlap,
  - quantifies the degree that the two Element instances are overlapping,
  - is characterized by a single contact point and a normal direction that are

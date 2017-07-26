@@ -174,16 +174,15 @@ TEST_F(ManipPlanTest, MoveEndEffectorHandleMessageTest) {
   std::vector<Isometry3<double>> plan_poses(plan_times.size(),
                                             Isometry3<double>::Identity());
 
-  std::vector<uint8_t> bytes;
   lcmt_manipulator_plan_move_end_effector msg =
       make_move_end_effector_message(plan_times, plan_poses);
-  bytes.resize(msg.getEncodedSize());
-  msg.encode(bytes.data(), 0, msg.getEncodedSize());
 
   // Handles the new plan.
-  dut_->HandlePlanMessage(*robot_status_, *params_, *alias_groups_,
-                          bytes.data(), bytes.size());
   {
+    systems::Value<lcmt_manipulator_plan_move_end_effector> msg_as_value(msg);
+    dut_->HandlePlan(*robot_status_, *params_, *alias_groups_,
+                            msg_as_value);
+
     const manipulation::PiecewiseCartesianTrajectory<double>& body_traj =
         dut_->get_body_trajectory(ee_body_);
     // The new body trajectory should run from cur_time, to cur_time +
@@ -223,11 +222,9 @@ TEST_F(ManipPlanTest, MoveEndEffectorHandleMessageTest) {
   // Makes a different plan that starts with a non zero first time stamp. The
   // resulting trajectory should ramp from the pose and velocity interpolated
   // from the current desired trajectory at t0 to the first pose in the
-  // message, where t0 is the time when HandlePlanMessage() is called.
+  // message, where t0 is the time when HandlePlan() is called.
   plan_times[0] = 0.8;
   msg = make_move_end_effector_message(plan_times, plan_poses);
-  bytes.resize(msg.getEncodedSize());
-  msg.encode(bytes.data(), 0, msg.getEncodedSize());
 
   // Moves the clock forward in time.
   robot_status_->UpdateKinematics(robot_status_->time() + 1,
@@ -242,9 +239,11 @@ TEST_F(ManipPlanTest, MoveEndEffectorHandleMessageTest) {
       dut_->get_body_trajectory(ee_body_).get_velocity(robot_status_->time());
 
   // Handles the new plan.
-  dut_->HandlePlanMessage(*robot_status_, *params_, *alias_groups_,
-                          bytes.data(), bytes.size());
   {
+    systems::Value<lcmt_manipulator_plan_move_end_effector> msg_as_value(msg);
+    dut_->HandlePlan(*robot_status_, *params_, *alias_groups_,
+                            msg_as_value);
+
     const manipulation::PiecewiseCartesianTrajectory<double>& body_traj =
         dut_->get_body_trajectory(ee_body_);
 

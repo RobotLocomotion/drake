@@ -10,7 +10,7 @@ from pydrake import getDrakePath
 class TestAtlasConstructor(unittest.TestCase):
     def test_constructor(self):
         pm = PackageMap()
-        model = os.path.join(getDrakePath(), "examples", "Atlas", "urdf",
+        model = os.path.join(getDrakePath(), "examples", "atlas", "urdf",
                              "atlas_minimal_contact.urdf")
         pm.PopulateUpstreamToDrake(model)
         robot = rbtree.RigidBodyTree(

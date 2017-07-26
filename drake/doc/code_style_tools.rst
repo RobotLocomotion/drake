@@ -45,22 +45,13 @@ Clang-Format
 Installation
 ^^^^^^^^^^^^
 
-On Ubuntu, first determine which versions are available::
+Follow the
+:ref:`Mandatory platform specific instructions <platform_specific_setup>`.
 
-    apt-cache search clang-format
+On Ubuntu, you may also wish to create an alias (assuming ``$HOME/bin`` is
+already on your ``$PATH``)::
 
-Then install the version you prefer::
-
-    sudo apt-get install clang-format-[version]
-
-Once installed, create a symbolic link so you don't need to type the version
-number every time you execute it::
-
-    sudo ln -s /usr/bin/clang-format-[version] /usr/local/bin/clang-format
-
-On OSX::
-
-    brew install clang-format
+    ln -s /usr/bin/clang-format-3.9 $HOME/bin/clang-format
 
 You can check whether you've installed it correctly by executing::
 

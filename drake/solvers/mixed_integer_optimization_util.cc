@@ -4,22 +4,10 @@
 
 namespace drake {
 namespace solvers {
-VectorXDecisionVariable AddLogarithmicSOS2Constraint(
-    MathematicalProgram* prog,
-    const Eigen::Ref<const VectorX<symbolic::Expression>>& lambda,
-    const std::string& binary_variable_name) {
-  const int num_lambda = lambda.rows();
-  const int num_interval = num_lambda - 1;
-  const int num_binary_vars = CeilLog2(num_interval);
-  auto y = prog->NewBinaryVariables(num_binary_vars, binary_variable_name);
-  AddLogarithmicSOS2Constraint(prog, lambda, y);
-  return y;
-}
-
-void AddLogarithmicSOS2Constraint(
-    MathematicalProgram* prog,
-    const Eigen::Ref<const VectorX<symbolic::Expression>>& lambda,
-    const Eigen::Ref<const VectorXDecisionVariable>& y) {
+void AddLogarithmicSos2Constraint(
+    MathematicalProgram *prog,
+    const Eigen::Ref<const VectorX<symbolic::Expression>> &lambda,
+    const Eigen::Ref<const VectorXDecisionVariable> &y) {
   const int num_lambda = lambda.rows();
   for (int i = 0; i < num_lambda; ++i) {
     prog->AddLinearConstraint(lambda(i) >= 0);
@@ -53,11 +41,11 @@ void AddLogarithmicSOS2Constraint(
   }
 }
 
-void AddLogarithmicSOS1Constraint(
-    MathematicalProgram* prog,
-    const Eigen::Ref<const VectorX<symbolic::Expression>>& lambda,
-    const Eigen::Ref<const VectorXDecisionVariable>& y,
-    const Eigen::Ref<const Eigen::MatrixXi>& codes) {
+void AddLogarithmicSos1Constraint(
+    MathematicalProgram *prog,
+    const Eigen::Ref<const VectorX<symbolic::Expression>> &lambda,
+    const Eigen::Ref<const VectorXDecisionVariable> &y,
+    const Eigen::Ref<const Eigen::MatrixXi> &codes) {
   const int num_lambda = lambda.rows();
   const int num_digits = CeilLog2(num_lambda);
   DRAKE_DEMAND(codes.rows() == num_lambda && codes.cols() == num_digits);
@@ -84,43 +72,6 @@ void AddLogarithmicSOS1Constraint(
     prog->AddLinearConstraint(lambda_sum1 <= y(j));
     prog->AddLinearConstraint(lambda_sum2 <= 1 - y(j));
   }
-}
-
-void AddBilinearProductMcCormickEnvelopeSOS2(
-    MathematicalProgram* prog,
-    const symbolic::Variable& x,
-    const symbolic::Variable& y,
-    const symbolic::Expression& w,
-    const Eigen::Ref<const Eigen::VectorXd>& phi_x,
-    const Eigen::Ref<const Eigen::VectorXd>& phi_y,
-    const Eigen::Ref<const VectorXDecisionVariable>& Bx,
-    const Eigen::Ref<const VectorXDecisionVariable>& By) {
-  DRAKE_ASSERT(Bx.rows() == CeilLog2(phi_x.rows() - 1));
-  DRAKE_ASSERT(By.rows() == CeilLog2(phi_y.rows() - 1));
-  const int num_phi_x = phi_x.rows();
-  const int num_phi_y = phi_y.rows();
-  auto lambda = prog->NewContinuousVariables(num_phi_x, num_phi_y, "lambda");
-  prog->AddBoundingBoxConstraint(0, 1, lambda);
-
-  symbolic::Expression x_convex_combination{0};
-  symbolic::Expression y_convex_combination{0};
-  symbolic::Expression w_convex_combination{0};
-  for (int i = 0; i < num_phi_x; ++i) {
-    for (int j = 0; j < num_phi_y; ++j) {
-      x_convex_combination += lambda(i, j) * phi_x(i);
-      y_convex_combination += lambda(i, j) * phi_y(j);
-      w_convex_combination += lambda(i, j) * phi_x(i) * phi_y(j);
-    }
-  }
-  prog->AddLinearConstraint(x == x_convex_combination);
-  prog->AddLinearConstraint(y == y_convex_combination);
-  prog->AddLinearConstraint(w == w_convex_combination);
-
-  AddLogarithmicSOS2Constraint(
-      prog, lambda.cast<symbolic::Expression>().rowwise().sum(), Bx);
-  AddLogarithmicSOS2Constraint(
-      prog, lambda.cast<symbolic::Expression>().colwise().sum().transpose(),
-      By);
 }
 }  // namespace solvers
 }  // namespace drake

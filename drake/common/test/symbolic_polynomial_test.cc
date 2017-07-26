@@ -1,12 +1,9 @@
-#include "drake/common/symbolic_polynomial.h"
-
 #include <string>
 #include <vector>
 
 #include <gtest/gtest.h>
 
-#include "drake/common/monomial.h"
-#include "drake/common/monomial_util.h"
+#include "drake/common/symbolic.h"
 #include "drake/common/test/symbolic_test_util.h"
 
 namespace drake {
@@ -246,6 +243,30 @@ TEST_F(SymbolicPolynomialTest, AdditionPolynomialDouble) {
   }
 }
 
+TEST_F(SymbolicPolynomialTest, AdditionMonomialMonomial) {
+  // (m1 + m2).ToExpression() = m1.ToExpression() + m2.ToExpression()
+  for (int i = 0; i < monomials_.size(); ++i) {
+    const Monomial& m_i{monomials_[i]};
+    for (int j = 0; j < monomials_.size(); ++j) {
+      const Monomial& m_j{monomials_[j]};
+      EXPECT_PRED2(ExprEqual, (m_i + m_j).ToExpression(),
+                   m_i.ToExpression() + m_j.ToExpression());
+    }
+  }
+}
+
+TEST_F(SymbolicPolynomialTest, AdditionMonomialDouble) {
+  // (m + c).ToExpression() = m.ToExpression() + c
+  // (c + m).ToExpression() = c + m.ToExpression()
+  for (int i = 0; i < monomials_.size(); ++i) {
+    const Monomial& m{monomials_[i]};
+    for (const double c : doubles_) {
+      EXPECT_PRED2(ExprEqual, (m + c).ToExpression(), m.ToExpression() + c);
+      EXPECT_PRED2(ExprEqual, (c + m).ToExpression(), c + m.ToExpression());
+    }
+  }
+}
+
 TEST_F(SymbolicPolynomialTest, SubtractionPolynomialPolynomial) {
   // (Polynomial(e₁) - Polynomial(e₂)).ToExpression() = (e₁ - e₂).Expand()
   for (const Expression& e1 : exprs_) {
@@ -305,6 +326,30 @@ TEST_F(SymbolicPolynomialTest, SubtractionPolynomialDouble) {
       Polynomial p{e};
       p -= c;
       EXPECT_PRED2(ExprEqual, p.ToExpression(), (e - c).Expand());
+    }
+  }
+}
+
+TEST_F(SymbolicPolynomialTest, SubtractionMonomialMonomial) {
+  // (m1 - m2).ToExpression() = m1.ToExpression() - m2.ToExpression()
+  for (int i = 0; i < monomials_.size(); ++i) {
+    const Monomial& m_i{monomials_[i]};
+    for (int j = 0; j < monomials_.size(); ++j) {
+      const Monomial& m_j{monomials_[j]};
+      EXPECT_PRED2(ExprEqual, (m_i - m_j).ToExpression(),
+                   m_i.ToExpression() - m_j.ToExpression());
+    }
+  }
+}
+
+TEST_F(SymbolicPolynomialTest, SubtractionMonomialDouble) {
+  // (m - c).ToExpression() = m.ToExpression() - c
+  // (c - m).ToExpression() = c - m.ToExpression()
+  for (int i = 0; i < monomials_.size(); ++i) {
+    const Monomial& m{monomials_[i]};
+    for (const double c : doubles_) {
+      EXPECT_PRED2(ExprEqual, (m - c).ToExpression(), m.ToExpression() - c);
+      EXPECT_PRED2(ExprEqual, (c - m).ToExpression(), c - m.ToExpression());
     }
   }
 }

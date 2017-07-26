@@ -233,6 +233,16 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
       int body_index, const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
       const std::vector<Eigen::Matrix3Xd>& region_vertices);
 
+  /**
+   * Adds joint limits on a specified joint.
+   * @param body_index The joint connecting the parent link to this body will be
+   * constrained.
+   * @param joint_lower_bound The lower bound for the joint.
+   * @param joint_upper_bound The upper bound for the joint.
+   */
+  void AddJointLimitConstraint(int body_index, double joint_lower_bound,
+                               double joint_upper_bound);
+
  private:
   // This is an utility function for `ReconstructGeneralizedPositionSolution`.
   // This function computes the joint generalized position on the body with
@@ -243,6 +253,15 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
       std::vector<Eigen::Matrix3d>* reconstruct_R_WB) const;
 
   const RigidBodyTree<double>* robot_;
+
+  // joint_lower_bounds_ and joint_upper_bounds_ are column vectors of size
+  // robot_->get_num_positions() x 1.
+  // joint_lower_bounds_(i) is the lower bound of the i'th joint.
+  // joint_upper_bounds_(i) is the upper bound of the i'th joint.
+  // These joint bounds include those specified in the robot (like in the URDF
+  // file), and the bounds imposed by the user, through AddJointLimitConstraint.
+  Eigen::VectorXd joint_lower_bounds_;
+  Eigen::VectorXd joint_upper_bounds_;
 
   // R_WB_[i] is the orientation of body i in the world reference frame,
   // it is expressed in the world frame.

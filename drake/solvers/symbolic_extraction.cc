@@ -8,8 +8,7 @@
 #include <utility>
 
 #include "drake/common/eigen_types.h"
-#include "drake/common/monomial.h"
-#include "drake/common/symbolic_expression.h"
+#include "drake/common/symbolic.h"
 #include "drake/math/matrix_util.h"
 
 namespace drake {

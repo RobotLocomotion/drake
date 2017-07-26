@@ -4,9 +4,9 @@
 #include <memory>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/symbolic_expression.h"
+#include "drake/common/symbolic.h"
 #include "drake/systems/framework/context.h"
-#include "drake/systems/framework/siso_vector_system.h"
+#include "drake/systems/framework/vector_system.h"
 
 namespace drake {
 namespace systems {
@@ -23,7 +23,7 @@ namespace systems {
 /// No other values for T are currently supported.
 /// @ingroup primitive_systems
 template <typename T>
-class Integrator : public SisoVectorSystem<T> {
+class Integrator : public VectorSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Integrator)
 
@@ -52,14 +52,14 @@ class Integrator : public SisoVectorSystem<T> {
   // same dimensions as this Integrator.
   Integrator<symbolic::Expression>* DoToSymbolic() const override;
 
-  // SisoVectorSystem<T> override.
+  // VectorSystem<T> override.
   void DoCalcVectorOutput(
       const Context<T>& context,
       const Eigen::VectorBlock<const VectorX<T>>& input,
       const Eigen::VectorBlock<const VectorX<T>>& state,
       Eigen::VectorBlock<VectorX<T>>* output) const override;
 
-  // SisoVectorSystem<T> override.
+  // VectorSystem<T> override.
   void DoCalcVectorTimeDerivatives(
       const Context<T>& context,
       const Eigen::VectorBlock<const VectorX<T>>& input,

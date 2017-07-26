@@ -63,6 +63,7 @@ drake_cc_library(
     hdrs = ["humanoid_plan_eval_system.h"],
     deps = [
         ":plan_eval_base_system",
+        "//drake/examples/QPInverseDynamicsForHumanoids/plan_eval:humanoid_manipulation_plan",
     ],
 )
 
@@ -127,13 +128,13 @@ drake_cc_binary(
     data = [
         "//drake/examples/QPInverseDynamicsForHumanoids:config/valkyrie.alias_groups",
         "//drake/examples/QPInverseDynamicsForHumanoids:config/valkyrie.id_controller_config",
-        "//drake/examples/Valkyrie:models",
+        "//drake/examples/valkyrie:models",
     ],
     tags = gurobi_test_tags(),
     deps = [
         ":valkyrie_controller",
         "//drake/common:find_resource",
-        "//drake/examples/Valkyrie:valkyrie_constants",
+        "//drake/examples/valkyrie:valkyrie_constants",
         "//drake/systems/lcm:lcm_driven_loop",
     ],
 )
@@ -144,7 +145,7 @@ drake_cc_googletest(
     data = [
         "//drake/examples/QPInverseDynamicsForHumanoids:config/valkyrie.alias_groups",
         "//drake/examples/QPInverseDynamicsForHumanoids:config/valkyrie.id_controller_config",
-        "//drake/examples/Valkyrie:models",
+        "//drake/examples/valkyrie:models",
     ],
     tags = gurobi_test_tags(),
     deps = [
@@ -155,7 +156,7 @@ drake_cc_googletest(
         "//drake/examples/QPInverseDynamicsForHumanoids:control_utils",
         "//drake/examples/QPInverseDynamicsForHumanoids:qp_controller",
         "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
-        "//drake/examples/Valkyrie:valkyrie_constants",
+        "//drake/examples/valkyrie:valkyrie_constants",
         "//drake/multibody/parsers",
         "//drake/systems/analysis:simulator",
         "//drake/systems/framework",
@@ -210,7 +211,7 @@ drake_cc_googletest(
     name = "joint_level_controller_system_test",
     srcs = ["test/joint_level_controller_system_test.cc"],
     data = [
-        "//drake/examples/Valkyrie:models",
+        "//drake/examples/valkyrie:models",
     ],
     deps = [
         ":atlas_joint_level_controller_system",

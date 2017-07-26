@@ -12,7 +12,9 @@
 template <typename U>
 class RigidBody;
 
-namespace DrakeCollision {
+namespace drake {
+namespace multibody {
+namespace collision {
 /** The maximum width of the collision filter group bitmasks. */
 constexpr int kMaxNumCollisionFilterGroups = 128;
 
@@ -253,7 +255,8 @@ class CollisionFilterGroupManager {
   int next_id_{1};
 
   // Map between group names and its collision filter group specification.
-  std::unordered_map<std::string, DrakeCollision::CollisionFilterGroup<T>>
+  std::unordered_map<std::string,
+                     drake::multibody::collision::CollisionFilterGroup<T>>
       collision_filter_groups_{};
 
   // Mappings between a RigidBody and the bitmasks that define its group
@@ -262,4 +265,6 @@ class CollisionFilterGroupManager {
   std::unordered_map<const RigidBody<T>*, std::pair<bitmask, bitmask>>
       body_groups_;
 };
-}  // namespace DrakeCollision
+}  // namespace collision
+}  // namespace multibody
+}  // namespace drake

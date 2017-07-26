@@ -1,10 +1,15 @@
 #pragma once
 
+#ifndef DRAKE_COMMON_SYMBOLIC_HEADER
+// TODO(soonho-tri): Change to #error, when #6613 merged.
+#warning Do not directly include this file. Include "drake/common/symbolic.h".
+#endif
+
 #include <stdexcept>
 #include <utility>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/symbolic_expression.h"
+#include "drake/common/symbolic.h"
 
 namespace drake {
 namespace symbolic {
@@ -17,7 +22,7 @@ namespace symbolic {
 /// @throws std::runtime_error if NaN is detected during a visit.
 ///
 /// See the implementation of @c DegreeVisitor class and @c Degree function in
-/// drake/common/monomial.cc as an example usage.
+/// drake/common/symbolic_monomial.cc as an example usage.
 ///
 /// @pre e.is_polynomial() is true.
 template <typename Result, typename Visitor, typename... Args>

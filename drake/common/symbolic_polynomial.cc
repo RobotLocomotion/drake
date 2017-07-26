@@ -1,11 +1,10 @@
-#include "drake/common/symbolic_polynomial.h"
-
+// NOLINTNEXTLINE(build/include): Its header file is included in symbolic.h.
 #include <algorithm>
 #include <sstream>
 #include <stdexcept>
 #include <utility>
 
-#include "drake/common/symbolic_expression_visitor.h"
+#include "drake/common/symbolic.h"
 
 using std::ostream;
 using std::ostringstream;
@@ -16,10 +15,11 @@ namespace drake {
 namespace symbolic {
 
 namespace {
-// Helper function to add coeff * m to map (Monomial → Expression).
-// Used in DecomposePolynomialVisitor::VisitAddition and Polynomial::Add.
-void DoAdd(const Expression& coeff, const Monomial& m,
-           Polynomial::MapType* const map) {
+// Helper function to add coeff * m to a map (Monomial → Expression).
+// Used to implement DecomposePolynomialVisitor::VisitAddition and
+// Polynomial::Add.
+void DoAddProduct(const Expression& coeff, const Monomial& m,
+                  Polynomial::MapType* const map) {
   auto it = map->find(m);
   if (it != map->end()) {
     // m ∈ dom(map)
@@ -100,7 +100,7 @@ class DecomposePolynomialVisitor {
         const Monomial& m_j{term.first};
         const Expression& c_j{term.second};
         // Add (cᵢ * cⱼ) * mⱼ.
-        DoAdd(c_i * c_j, m_j, &new_map);
+        DoAddProduct(c_i * c_j, m_j, &new_map);
       }
     }
     return new_map;
@@ -271,7 +271,7 @@ Polynomial& Polynomial::operator+=(const Polynomial& p) {
        p.monomial_to_coefficient_map_) {
     const Monomial& m{item.first};
     const Expression& coeff{item.second};
-    DoAdd(coeff, m, &monomial_to_coefficient_map_);
+    DoAddProduct(coeff, m, &monomial_to_coefficient_map_);
   }
   CheckInvariant();
   return *this;
@@ -279,12 +279,12 @@ Polynomial& Polynomial::operator+=(const Polynomial& p) {
 
 Polynomial& Polynomial::operator+=(const Monomial& m) {
   // No need to call CheckInvariant() since it's called inside of Add.
-  return Add(1.0, m);
+  return AddProduct(1.0, m);
 }
 
 Polynomial& Polynomial::operator+=(const double c) {
   // No need to call CheckInvariant() since it's called inside of Add.
-  return Add(c, Monomial{});
+  return AddProduct(c, Monomial{});
 }
 
 Polynomial& Polynomial::operator-=(const Polynomial& p) {
@@ -294,12 +294,12 @@ Polynomial& Polynomial::operator-=(const Polynomial& p) {
 
 Polynomial& Polynomial::operator-=(const Monomial& m) {
   // No need to call CheckInvariant() since it's called inside of Add.
-  return Add(-1.0, m);
+  return AddProduct(-1.0, m);
 }
 
 Polynomial& Polynomial::operator-=(const double c) {
   // No need to call CheckInvariant() since it's called inside of Add.
-  return Add(-c, Monomial{});
+  return AddProduct(-c, Monomial{});
 }
 
 Polynomial& Polynomial::operator*=(const Polynomial& p) {
@@ -311,7 +311,7 @@ Polynomial& Polynomial::operator*=(const Polynomial& p) {
     for (const auto& p2 : p.monomial_to_coefficient_map()) {
       const Monomial new_monomial{p1.first * p2.first};
       const Expression new_coeff{p1.second * p2.second};
-      DoAdd(new_coeff, new_monomial, &new_map);
+      DoAddProduct(new_coeff, new_monomial, &new_map);
     }
   }
   monomial_to_coefficient_map_ = std::move(new_map);
@@ -357,8 +357,8 @@ Formula Polynomial::operator==(Polynomial p) const {
   return ret;
 }
 
-Polynomial& Polynomial::Add(const Expression& coeff, const Monomial& m) {
-  DoAdd(coeff, m, &monomial_to_coefficient_map_);
+Polynomial& Polynomial::AddProduct(const Expression& coeff, const Monomial& m) {
+  DoAddProduct(coeff, m, &monomial_to_coefficient_map_);
   CheckInvariant();
   return *this;
 }
@@ -385,6 +385,13 @@ Polynomial operator+(const Monomial& m1, const Monomial& m2) {
 }
 Polynomial operator+(Polynomial p, const double c) { return p += c; }
 Polynomial operator+(const double c, Polynomial p) { return p += c; }
+Polynomial operator+(const Monomial& m, const double c) {
+  return Polynomial(m) + c;
+}
+Polynomial operator+(const double c, const Monomial& m) {
+  return c + Polynomial(m);
+}
+
 Polynomial operator-(Polynomial p1, const Polynomial& p2) { return p1 -= p2; }
 Polynomial operator-(Polynomial p, const Monomial& m) { return p -= m; }
 Polynomial operator-(const Monomial& m, Polynomial p) {
@@ -395,6 +402,13 @@ Polynomial operator-(const Monomial& m1, const Monomial& m2) {
 }
 Polynomial operator-(Polynomial p, const double c) { return p -= c; }
 Polynomial operator-(const double c, Polynomial p) { return p = -p + c; }
+Polynomial operator-(const Monomial& m, const double c) {
+  return Polynomial(m) - c;
+}
+Polynomial operator-(const double c, const Monomial& m) {
+  return c - Polynomial(m);
+}
+
 Polynomial operator*(Polynomial p1, const Polynomial& p2) { return p1 *= p2; }
 Polynomial operator*(Polynomial p, const Monomial& m) { return p *= m; }
 Polynomial operator*(const Monomial& m, Polynomial p) { return p *= m; }
