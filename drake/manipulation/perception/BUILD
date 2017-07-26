@@ -12,7 +12,6 @@ drake_cc_library(
     name = "optitrack_pose_extractor",
     srcs = ["optitrack_pose_extractor.cc"],
     hdrs = ["optitrack_pose_extractor.h"],
-    visibility = ["//drake/examples/kuka_iiwa_arm:__subpackages__"],
     deps = [
         "//drake/math:geometric_transform",
         "//drake/systems/framework",
@@ -28,3 +27,5 @@ drake_cc_googletest(
         "//drake/systems/framework",
     ],
 )
+
+cpplint()

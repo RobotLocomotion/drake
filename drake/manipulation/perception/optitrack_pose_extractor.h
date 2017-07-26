@@ -1,18 +1,20 @@
-# pragma once
+#pragma once
 
 #include <memory>
+#include <vector>
 
-#include "drake/systems/framework/leaf_system.h"
 #include "drake/common/eigen_types.h"
+#include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 namespace manipulation {
 namespace perception {
 
 /**
- * Extracts and provides an output of the pose of a desired object (orientation
- * in quaternions) from an Optitrack LCM OPTITRACK_FRAME_T message, transformed
- * to a desired coordinate frame.
+ * Extracts and provides an output of the pose of a desired object (A vector of
+ * dimension 7 - Cartesian position as the first 3 and the orientation
+ * in quaternions as the next 4) from an Optitrack LCM OPTITRACK_FRAME_T
+ * message, transformed to a desired coordinate frame.
  */
 class OptitrackPoseExtractor : public systems::LeafSystem<double> {
  public:
@@ -30,16 +32,15 @@ class OptitrackPoseExtractor : public systems::LeafSystem<double> {
    */
   OptitrackPoseExtractor(unsigned int object_id,
                          const Isometry3<double>& world_X_optitrack,
-  double optitrack_lcm_status_period);
+                         double optitrack_lcm_status_period);
 
-  const systems::OutputPort<double>&
-  get_measured_pose_output_port() const {
+  const systems::OutputPort<double>& get_measured_pose_output_port() const {
     return this->get_output_port(measured_pose_output_port_);
   }
 
  protected:
   void OutputMeasuredPose(const systems::Context<double>& context,
-                              systems::BasicVector<double>* output) const;
+                          systems::BasicVector<double>* output) const;
 
   void DoCalcDiscreteVariableUpdates(
       const systems::Context<double>& context,
@@ -53,6 +54,6 @@ class OptitrackPoseExtractor : public systems::LeafSystem<double> {
   const Isometry3<double> X_WOp_;
 };
 
-} // perception
-} // manipulation
-} // drake
+}  // namespace perception
+}  // namespace manipulation
+}  // namespace drake
