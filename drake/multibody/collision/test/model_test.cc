@@ -1,6 +1,7 @@
 #include "drake/multibody/collision/model.h"
 
 #include <cmath>
+#include <functional>
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -84,87 +85,98 @@ INSTANTIATE_TEST_CASE_P(NewModelTest, ModelTest, ::testing::Values(
                                                      kUnusable));
 
 #ifndef DRAKE_DISABLE_FCL
-// Fixture for tests that should be applied to FCL models only
-class FclModelTest : public ModelTestBase {
+// Fixture for locking down FclModel's not-yet-implemented functions
+class FclModelDeathTests : public ModelTestBase,
+                           public ::testing::WithParamInterface<
+                               std::function<void(FclModelDeathTests*)>> {
  public:
-  FclModelTest() { model_ = drake::multibody::collision::newModel(kFcl); }
+  FclModelDeathTests() { model_ = drake::multibody::collision::newModel(kFcl); }
 
- protected:
-  const std::string kAbortMsg_{"Not implemented."};
+  void CallAddBox() {
+    const DrakeShapes::Box geom{Vector3d::Ones()};
+    model_->AddElement(make_unique<Element>(geom));
+  }
+
+  void CallAddSphere() {
+    const DrakeShapes::Sphere geom{1};
+    model_->AddElement(make_unique<Element>(geom));
+  }
+
+  void CallAddCylinder() {
+    const DrakeShapes::Cylinder geom{1, 1};
+    model_->AddElement(make_unique<Element>(geom));
+  }
+
+  void CallAddMesh() {
+    std::string file_name = drake::FindResourceOrThrow(
+        "drake/multibody/collision/test/ripple_cap.obj");
+    const DrakeShapes::Mesh geom{file_name, file_name};
+    model_->AddElement(make_unique<Element>(geom));
+  }
+
+  void CallAddCapsule() {
+    const DrakeShapes::Capsule geom{1, 1};
+    model_->AddElement(make_unique<Element>(geom));
+  }
+
+  void CallUpdateModel() { model_->UpdateModel(); }
+
+  void CallClosestPointsAllToAll() {
+    std::vector<ElementId> ids;
+    std::vector<PointPair> pairs;
+    model_->ClosestPointsAllToAll(ids, true, &pairs);
+  }
+
+  void CallComputeMaximumDepthCollisionPoints() {
+    std::vector<PointPair> pairs;
+    model_->ComputeMaximumDepthCollisionPoints(true, &pairs);
+  }
+
+  void CallCollisionDetectFromPoints() {
+    Eigen::Matrix3Xd points;
+    std::vector<PointPair> closest_points;
+    model_->CollisionDetectFromPoints(points, false, &closest_points);
+  }
+
+  void CallClearCachedResults() { model_->ClearCachedResults(false); }
+
+  void CallCollisionRaycast() {
+    Eigen::Matrix3Xd origins, ray_endpoints, normals;
+    Eigen::VectorXd distances;
+    model_->CollisionRaycast(origins, ray_endpoints, false, &distances,
+                             &normals);
+  }
+
+  void CallCollidingPointsCheckOnly() {
+    std::vector<Eigen::Vector3d> input_points;
+    model_->CollidingPointsCheckOnly(input_points, 0);
+  }
+
+  void CallCollidingPoints() {
+    std::vector<Eigen::Vector3d> input_points;
+    model_->CollidingPoints(input_points, 0);
+  }
 };
 
-TEST_F(FclModelTest, AddBox) {
-  const DrakeShapes::Box geom{Vector3d::Ones()};
-  EXPECT_DEATH(model_->AddElement(make_unique<Element>(geom)), kAbortMsg_);
+TEST_P(FclModelDeathTests, NotImplemented) {
+  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+  EXPECT_DEATH(GetParam()(this), "Not implemented.");
 }
 
-TEST_F(FclModelTest, AddSphere) {
-  const DrakeShapes::Sphere geom{1};
-  EXPECT_DEATH(model_->AddElement(make_unique<Element>(geom)), kAbortMsg_);
-}
-
-TEST_F(FclModelTest, AddCylinder) {
-  const DrakeShapes::Cylinder geom{1, 1};
-  EXPECT_DEATH(model_->AddElement(make_unique<Element>(geom)), kAbortMsg_);
-}
-
-TEST_F(FclModelTest, AddMesh) {
-  std::string file_name = drake::FindResourceOrThrow(
-      "drake/multibody/collision/test/ripple_cap.obj");
-  const DrakeShapes::Mesh geom{file_name, file_name};
-  EXPECT_DEATH(model_->AddElement(make_unique<Element>(geom)), kAbortMsg_);
-}
-
-TEST_F(FclModelTest, AddCapsule) {
-  const DrakeShapes::Capsule geom{1, 1};
-  EXPECT_DEATH(model_->AddElement(make_unique<Element>(geom)), kAbortMsg_);
-}
-
-TEST_F(FclModelTest, UpdateModelTest) {
-  EXPECT_DEATH(model_->UpdateModel(), kAbortMsg_);
-}
-
-TEST_F(FclModelTest, ClosestPointsAllToAllTest) {
-  std::vector<ElementId> ids;
-  std::vector<PointPair> pairs;
-  EXPECT_DEATH(model_->ClosestPointsAllToAll(ids, true, &pairs), kAbortMsg_);
-}
-
-TEST_F(FclModelTest, ComputeMaximumDepthCollisionPoints) {
-  std::vector<PointPair> pairs;
-  EXPECT_DEATH(model_->ComputeMaximumDepthCollisionPoints(true, &pairs),
-               kAbortMsg_);
-}
-
-TEST_F(FclModelTest, CollisionDetectFromPointsTest) {
-  Eigen::Matrix3Xd points;
-  std::vector<PointPair> closest_points;
-  EXPECT_DEATH(
-      model_->CollisionDetectFromPoints(points, false, &closest_points),
-      kAbortMsg_);
-}
-
-TEST_F(FclModelTest, ClearCachedResultsTest) {
-  EXPECT_DEATH(model_->ClearCachedResults(false), kAbortMsg_);
-}
-
-TEST_F(FclModelTest, CollisionRaycastTest) {
-  Eigen::Matrix3Xd origins, ray_endpoints, normals;
-  Eigen::VectorXd distances;
-  EXPECT_DEATH(model_->CollisionRaycast(origins, ray_endpoints, false,
-                                        &distances, &normals),
-               kAbortMsg_);
-}
-
-TEST_F(FclModelTest, CollidingPointsCheckOnlyTest) {
-  std::vector<Eigen::Vector3d> input_points;
-  EXPECT_DEATH(model_->CollidingPointsCheckOnly(input_points, 0), kAbortMsg_);
-}
-
-TEST_F(FclModelTest, CollidingPointsTest) {
-  std::vector<Eigen::Vector3d> input_points;
-  EXPECT_DEATH(model_->CollidingPoints(input_points, 0), kAbortMsg_);
-}
+INSTANTIATE_TEST_CASE_P(
+    NotImplementedTest, FclModelDeathTests,
+    ::testing::Values(
+        &FclModelDeathTests::CallAddBox, &FclModelDeathTests::CallAddSphere,
+        &FclModelDeathTests::CallAddCylinder,
+        &FclModelDeathTests::CallAddCapsule, &FclModelDeathTests::CallAddMesh,
+        &FclModelDeathTests::CallUpdateModel,
+        &FclModelDeathTests::CallClosestPointsAllToAll,
+        &FclModelDeathTests::CallComputeMaximumDepthCollisionPoints,
+        &FclModelDeathTests::CallCollisionDetectFromPoints,
+        &FclModelDeathTests::CallClearCachedResults,
+        &FclModelDeathTests::CallCollisionRaycast,
+        &FclModelDeathTests::CallCollidingPointsCheckOnly,
+        &FclModelDeathTests::CallCollidingPoints));
 #endif
 
 // GENERAL REMARKS ON THE TESTS PERFORMED
