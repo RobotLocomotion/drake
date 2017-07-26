@@ -122,10 +122,12 @@ class SpatialInertia {
   /// @tparam Scalar The scalar type on which the new spatial inertia will
   /// be templated.
   ///
-  /// @note The cast is only valid when `Scalar` has a valid constructor from
-  /// the scalar type `T` on which `this` object is templated.
-  /// For instance, SpatialInertia<double>::cast<AutoDiffXd>() is valid.
-  /// However, SpatialInertia<AutoDiffXd>::cast<double>() is not.
+  /// @note `SpatialInertia<From>::cast<To>()` creates a new
+  /// `SpatialInertia<To>` from a `SpatialInertia<From>` but only if
+  /// type `To` is constructible from type `From`. As an example of this,
+  /// `SpatialInertia<double>::cast<AutoDiffXd>()` is valid since
+  /// `AutoDiffXd a(1.0)` is valid. However,
+  /// `SpatialInertia<AutoDiffXd>::cast<double>()` is not.
   template <typename Scalar>
   SpatialInertia<Scalar> cast() const {
     return SpatialInertia<Scalar>(
@@ -314,6 +316,28 @@ class SpatialInertia {
   ///                  but computed about about a new point Q.
   SpatialInertia Shift(const Vector3<T>& p_PQ_E) const {
     return SpatialInertia(*this).ShiftInPlace(p_PQ_E);
+  }
+
+  /// Multiplies `this` spatial inertia `M_Bo_E` of a body B about it's frame
+  /// origin `Bo` by the spatial acceleration of the body frame B in a frame W.
+  /// Mathematically: <pre>
+  ///   F_Bo_E = M_Bo_E * A_WB_E
+  /// </pre>
+  /// or, in terms of its rotational and translational components: <pre>
+  ///   t_Bo = I_Bo * alpha_WB + m * p_BoBcm x a_WBo
+  ///   f_Bo = -m * p_BoBcm x alpha_WB + m * a_WBo
+  /// </pre>
+  /// where `alpha_WB` and `a_WBo` are the rotational and translational
+  /// components of the spatial acceleration `A_WB`, respectively.
+  SpatialForce<T> operator*(const SpatialAcceleration<T>& A_WB_E) const {
+    const Vector3<T>& alpha_WB_E = A_WB_E.rotational();
+    const Vector3<T>& a_WBo_E = A_WB_E.translational();
+    const Vector3<T>& mp_BoBcm_E = CalcComMoment();
+    return SpatialForce<T>(
+        /* rotational */
+        CalcRotationalInertia() * alpha_WB_E + mp_BoBcm_E.cross(a_WBo_E),
+        /* translational */
+        alpha_WB_E.cross(mp_BoBcm_E) + get_mass() * a_WBo_E);
   }
 
  private:

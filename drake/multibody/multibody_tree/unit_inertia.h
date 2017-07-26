@@ -76,10 +76,12 @@ class UnitInertia : public RotationalInertia<T> {
   /// @tparam Scalar The scalar type on which the new unit inertia will
   /// be templated.
   ///
-  /// @note The cast is only valid when `Scalar` has a valid constructor from
-  /// the scalar type `T` on which `this` object is templated.
-  /// For instance, UnitInertia<double>::cast<AutoDiffXd>() is valid.
-  /// However, UnitInertia<AutoDiffXd>::cast<double>() is not.
+  /// @note `UnitInertia<From>::cast<To>()` creates a new
+  /// `UnitInertia<To>` from a `UnitInertia<From>` but only if
+  /// type `To` is constructible from type `From`. As an example of this,
+  /// `UnitInertia<double>::cast<AutoDiffXd>()` is valid since
+  /// `AutoDiffXd a(1.0)` is valid. However,
+  /// `UnitInertia<AutoDiffXd>::cast<double>()` is not.
   template <typename Scalar>
   UnitInertia<Scalar> cast() const {
     return UnitInertia<Scalar>(RotationalInertia<T>::template cast<Scalar>());

@@ -395,10 +395,12 @@ class RotationalInertia {
   /// @tparam Scalar The scalar type on which the new rotational inertia will
   /// be templated.
   ///
-  /// @note The cast is only valid when `Scalar` has a valid constructor from
-  /// the scalar type `T` on which `this` object is templated.
-  /// For instance, RotationalInertia<double>::cast<AutoDiffXd>() is valid.
-  /// However, RotationalInertia<AutoDiffXd>::cast<double>() is not.
+  /// @note `RotationalInertia<From>::cast<To>()` creates a new
+  /// `RotationalInertia<To>` from a `RotationalInertia<From>` but only if
+  /// type `To` is constructible from type `From`. As an example of this,
+  /// `RotationalInertia<double>::cast<AutoDiffXd>()` is valid since
+  /// `AutoDiffXd a(1.0)` is valid. However,
+  /// `RotationalInertia<AutoDiffXd>::cast<double>()` is not.
   template <typename Scalar>
   RotationalInertia<Scalar> cast() const {
     return RotationalInertia<Scalar>(I_SP_E_.template cast<Scalar>());
@@ -741,15 +743,15 @@ class RotationalInertia {
 
   // Constructor from an Eigen expression that represents a matrix in ℝ³ˣ³ with
   // entries corresponding to inertia moments and products as described in this
-  // class' documentation. This constructor will assert that I is a 3x3 matrix.
+  // class's documentation. This constructor will assert that I is a 3x3 matrix.
   // For internal use only.
   template <typename I_Type>
   explicit RotationalInertia(const Eigen::MatrixBase<I_Type>& I) {
     EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<I_Type>, 3, 3);
     // Input matrix must be templated on the same scalar type as this inertia.
     static_assert(std::is_same<typename I_Type::Scalar, T>::value,
-                  "I must be templated on the same scalar type as this"
-                  "rotational inertia");
+                  "Input argument I must be templated on the same scalar type "
+                  "as this rotational inertia");
     I_SP_E_ = I;
     DRAKE_ASSERT_VOID(ThrowIfNotPhysicallyValid());
   }
