@@ -139,6 +139,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "explicit_error_controlled_integrator_tester",
+    testonly = 1,
+    hdrs = ["test/explicit_error_controlled_integrator_test.h"],
+    deps = [
+        ":my_spring_mass_system",
+    ],
+)
+
+
+drake_cc_library(
     name = "logistic_system",
     testonly = 1,
     hdrs = ["test/logistic_system.h"],
@@ -208,6 +218,7 @@ drake_cc_googletest(
     deps = [
         ":my_spring_mass_system",
         ":runge_kutta3_integrator",
+        ":explicit_error_controlled_integrator_tester",
         "//drake/math:geometric_transform",
         "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant",
