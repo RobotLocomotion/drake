@@ -80,10 +80,13 @@ Eigen::Matrix<typename DerivedQ::Scalar, 3, 1> quat2expmap(
       DerivedQ::RowsAtCompileTime == 4 && DerivedQ::ColsAtCompileTime == 1,
       "Wrong size.");
 
-  Scalar t = sqrt(Scalar(1) - q(0) * q(0));
-  bool is_degenerate = (t * t < Eigen::NumTraits<Scalar>::epsilon());
+  Scalar t_squared = Scalar(1) - q(0) * q(0);
+  bool is_degenerate = (t_squared < Eigen::NumTraits<Scalar>::epsilon());
   Scalar s(2);
-  if (!is_degenerate) s *= acos(q(0)) / t;
+  if (!is_degenerate) {
+    Scalar t = sqrt(t_squared);
+    s *= acos(q(0)) / t;
+  }
   return s * q.template tail<3>();
 }
 
