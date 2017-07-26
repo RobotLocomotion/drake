@@ -1,4 +1,6 @@
+/* clang-format off to disable clang-format-includes */
 #include "drake/solvers/snopt_solver.h"
+/* clang-format on */
 
 #include "drake/common/never_destroyed.h"
 

@@ -6,6 +6,7 @@
 
 #include "bot_core/atlas_command_t.hpp"
 #include "bot_core/robot_state_t.hpp"
+#include "robotlocomotion/robot_plan_t.hpp"
 
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/atlas_joint_level_controller_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/humanoid_plan_eval_system.h"
@@ -18,7 +19,6 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
-#include "robotlocomotion/robot_plan_t.hpp"
 
 namespace drake {
 namespace examples {

@@ -1,8 +1,6 @@
 /**
  * @file test demo to visualize a given tree in a random set of configurations.
  */
-#include "drake/manipulation/util/simple_tree_visualizer.h"
-
 #include <chrono>
 #include <thread>
 
@@ -11,6 +9,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/manipulation/util/simple_tree_visualizer.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
 
