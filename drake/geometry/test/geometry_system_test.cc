@@ -32,11 +32,13 @@ class QueryHandleTester {
  public:
   QueryHandleTester() = delete;
   static QueryHandle<double> MakeNullQueryHandle() {
-    return QueryHandle<double>(nullptr);
+    return QueryHandle<double>(nullptr, 0);
   }
   static void set_context(QueryHandle<double>* handle,
                           const Context<double>* context) {
     handle->context_ = context;
+    // NOTE: This does not set the hash because these tests do not depend on it
+    // yet.
   }
 };
 

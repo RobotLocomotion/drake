@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstddef>
+
 #include "drake/common/drake_copyable.h"
 
 namespace drake {
@@ -48,11 +50,15 @@ class QueryHandle {
   friend class QueryHandleTester;
 
   // Only the GeometrySystem<T> can create this class.
-  explicit QueryHandle(const systems::Context<T>* context)
-      : context_(context) {}
+  QueryHandle(const systems::Context<T>* context, size_t guard)
+      : context_(context), guard_(guard) {}
 
   // The context associated with the current handle.
   const systems::Context<T>* context_;
+  // Serves as a hash of the state in which this QueryHandle was constructed.
+  // Serves to catch usage of a QueryHandle beyond its lifespan. The member is
+  // a size_t because std::hash returns a size_t.
+  size_t guard_;
 };
 
 }  // namespace geometry
