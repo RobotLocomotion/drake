@@ -13,6 +13,7 @@ using std::make_unique;
 
 namespace drake {
 namespace systems {
+namespace controllers {
 namespace {
 
 typedef Eigen::Matrix<double, 3, 1, Eigen::DontAlign> Vector3d;
@@ -157,5 +158,6 @@ TEST_F(PidControllerTest, DirectFeedthrough) {
 }
 
 }  // namespace
+}  // namespace controllers
 }  // namespace systems
 }  // namespace drake

@@ -65,14 +65,6 @@ they will get in sync soon, but for now I've decided the best fix is to edit the
 	/*typedef char16_t CHAR16_T;*/
 	typedef UINT16_T CHAR16_T;
 
-
-.. _faq_simulink_not_found:
-
-Drake tells me I don't have Simulink 3D Animation Toolbox, but I'm sure that I do!
-==================================================================================
-
-You might have to actually tell MATLAB to install the tool, running ``vrinstall`` in MATLAB.
-
 .. _faq_undefined_symbol-sincos_stret:
 
 Undefined symbol "___sincos_stret" on Mac.

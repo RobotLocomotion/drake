@@ -3,11 +3,12 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/examples/zmp/zmp_test_util.h"
+#include "drake/systems/controllers/test/zmp_test_util.h"
 
 namespace drake {
-namespace examples {
-namespace zmp {
+namespace systems {
+namespace controllers {
+namespace {
 
 class ZMPPlannerTest : public ::testing::Test {
  protected:
@@ -125,7 +126,7 @@ class ZMPPlannerTest : public ::testing::Test {
     return u;
   }
 
-  drake::systems::ZMPPlanner zmp_planner_;
+  ZMPPlanner zmp_planner_;
 
   Eigen::Matrix<double, 4, 4> A_;
   Eigen::Matrix<double, 4, 2> B_;
@@ -218,7 +219,7 @@ TEST_F(ZMPPlannerTest, TestOptimalControl) {
       Eigen::Vector2d(2, -0.1), Eigen::Vector2d(2.5, 0)};
 
   std::vector<PiecewisePolynomial<double>> zmp_trajs =
-      drake::examples::zmp::GenerateDesiredZMPTrajs(footsteps, 0.5, 1);
+      GenerateDesiredZMPTrajs(footsteps, 0.5, 1);
 
   double z = 1;
 
@@ -248,6 +249,7 @@ TEST_F(ZMPPlannerTest, TestOptimalControl) {
   }
 }
 
-}  // namespace zmp
-}  // namespace examples
+}  // namespace
+}  // namespace controllers
+}  // namespace systems
 }  // namespace drake

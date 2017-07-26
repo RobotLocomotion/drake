@@ -9,24 +9,25 @@
 namespace drake {
 namespace multibody {
 namespace benchmarks {
+namespace kuka_iiwa_robot {
 
-using Eigen::Matrix3d;
 using Eigen::Vector3d;
+using Eigen::Matrix3d;
 
 /// This class is Drake's interface to the MotionGenesis solution for a
 /// 7-DOF KUKA LBR iiwa robot (14 kg payload) which is described at:
 /// https://www.kuka.com/en-de/products/robot-systems/industrial-robots/lbr-iiwa
 /// Geometry, joint-types, and mass/inertia properties are contained in:
 /// drake/multibody/benchmarks/kuka_iiwa_robot/kuka_iiwa_robot.urdf
-template <typename T>
-class KukaIIwaRobot {
+template<typename T>
+class MGKukaIIwaRobot {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(KukaIIwaRobot);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MGKukaIIwaRobot);
 
   /// Constructs an object that serves as Drake's interface to a Motion Genesis
   /// model of the aforementioned KUKA robot.  All model parameters are from:
   /// drake/multibody/benchmarks/kuka_iiwa_robot/kuka_iiwa_robot.urdf
-  KukaIIwaRobot() {}
+  MGKukaIIwaRobot() {}
 
   /// This method calculates kinematic properties of the end-effector (herein
   /// denoted as rigid body G) of a 7-DOF KUKA LBR iiwa robot (14 kg payload).
@@ -36,7 +37,8 @@ class KukaIIwaRobot {
   /// The origin Go of end-effector G is located at G's inboard revolute joint.
   ///
   /// @param[in] q robot's joint angles (generalized coordinates).
-  /// @param[in] v time-derivatives of q (generalized speeds).
+  /// @param[in] qDt 1st-time-derivatives of q (q̇).
+  /// @param[in] qDDt 2nd-time-derivatives of q (q̈).
   ///
   /// @returns Machine-precision values as defined below.
   ///
@@ -46,11 +48,15 @@ class KukaIIwaRobot {
   /// p_NoGo_N   | Go's position from No, expressed in N.
   /// w_NG_N     | G's angular velocity in N, expressed in N.
   /// v_NGo_N    | Go's velocity in N, expressed in N.
-  std::tuple<Matrix3d, Vector3d, Vector3d, Vector3d>
-  CalcForwardKinematicsEndEffector(const Eigen::Ref<const VectorX<T>>& q,
-                                   const Eigen::Ref<const VectorX<T>>& v) const;
+  /// alpha_NG_N | G's angular acceleration in N, expressed in N.
+  /// a_NGo_N    | Go's acceleration in N, expressed in N.
+  std::tuple<Matrix3d, Vector3d, Vector3d, Vector3d, Vector3d, Vector3d>
+  CalcEndEffectorKinematics(const Eigen::Ref<const VectorX<T>>& q,
+                            const Eigen::Ref<const VectorX<T>>& qDt,
+                            const Eigen::Ref<const VectorX<T>>& qDDt) const;
 };
 
+}  // namespace kuka_iiwa_robot
 }  // namespace benchmarks
 }  // namespace multibody
 }  // namespace drake

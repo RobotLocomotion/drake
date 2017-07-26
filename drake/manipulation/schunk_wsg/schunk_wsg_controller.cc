@@ -39,9 +39,10 @@ SchunkWsgController::SchunkWsgController() {
   const Eigen::VectorXd wsg_ki = Eigen::VectorXd::Constant(kWsgActDim, 0.0);
   const Eigen::VectorXd wsg_kd = Eigen::VectorXd::Constant(kWsgActDim, 5.0);
 
-  auto wsg_controller = builder.AddSystem<systems::PidController<double>>(
-      GetSchunkWsgFeedbackSelector<double>(),
-      wsg_kp, wsg_ki, wsg_kd);
+  auto wsg_controller =
+      builder.AddSystem<systems::controllers::PidController<double>>(
+          GetSchunkWsgFeedbackSelector<double>(),
+          wsg_kp, wsg_ki, wsg_kd);
 
   builder.Connect(state_pass_through->get_output_port(),
                   wsg_controller->get_input_port_estimated_state());

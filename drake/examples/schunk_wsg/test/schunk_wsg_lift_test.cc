@@ -128,7 +128,7 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   const Vector1d lift_kd(5.);
 
   auto lifting_pid_ports =
-      systems::PidControlledSystem<double>::ConnectController(
+      systems::controllers::PidControlledSystem<double>::ConnectController(
           lifting_input_port, lifting_output_port,
           lift_kp, lift_ki, lift_kd, &builder);
 

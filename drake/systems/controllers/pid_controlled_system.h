@@ -13,6 +13,7 @@
 
 namespace drake {
 namespace systems {
+namespace controllers {
 
 /// A system that encapsulates a PidController and a controlled System (a.k.a
 /// the "plant").
@@ -194,5 +195,6 @@ class PidControlledSystem : public Diagram<T> {
   System<T>* plant_{nullptr};
 };
 
+}  // namespace controllers
 }  // namespace systems
 }  // namespace drake

@@ -1,7 +1,6 @@
-#include "drake/examples/QPInverseDynamicsForHumanoids/plan_eval/generic_plan.h"
-
 #include <string>
 
+#include "drake/examples/QPInverseDynamicsForHumanoids/plan_eval/generic_plan.h"
 #include "drake/manipulation/util/robot_state_msg_translator.h"
 #include "drake/systems/controllers/zmp_planner.h"
 
@@ -151,7 +150,7 @@ class HumanoidManipulationPlan : public GenericPlan<T> {
       const HumanoidStatus&, const param_parsers::ParamSet&,
       const param_parsers::RigidBodyTreeAliasGroups<T>&) override {}
 
-  systems::ZMPPlanner zmp_planner_;
+  systems::controllers::ZMPPlanner zmp_planner_;
   double zmp_height_{1.0};
   int64_t last_handle_plan_time_{-1};
 };

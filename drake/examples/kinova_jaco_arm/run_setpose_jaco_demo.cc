@@ -56,17 +56,18 @@ int DoMain() {
   VectorX<double> jaco_kp, jaco_kd, jaco_ki;
   SetPositionControlledJacoGains(&jaco_kp, &jaco_ki, &jaco_kd);
   auto control_sys =
-      std::make_unique<systems::InverseDynamicsController<double>>(
+      std::make_unique<systems::controllers::InverseDynamicsController<double>>(
           plant->get_rigid_body_tree().Clone(), jaco_kp, jaco_ki, jaco_kd,
           false /* no feedforward acceleration */);
   auto controller =
-      builder.AddSystem<systems::InverseDynamicsController<double>>(
-          std::move(control_sys));
+      builder
+          .AddSystem<systems::controllers::InverseDynamicsController<double>>(
+              std::move(control_sys));
 
   // Adds a constant source for desired state.
   Eigen::VectorXd const_pos = Eigen::VectorXd::Zero(kNumDofs * 2);
   const_pos(1) = 1.57;  // shoulder fore/aft angle, [rad]
-  const_pos(2) = 2.0;  // elbow fore/aft angle, [rad]
+  const_pos(2) = 2.0;   // elbow fore/aft angle, [rad]
 
   systems::ConstantVectorSource<double>* const_src =
       builder.AddSystem<systems::ConstantVectorSource<double>>(const_pos);

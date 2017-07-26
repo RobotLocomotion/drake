@@ -123,13 +123,13 @@ class FormatterBase(object):
             if '// clang-format off' in line:
                 clang_format_on = False
                 continue
-            if '/* clang-format off */' in line:
+            if '/* clang-format off' in line:
                 clang_format_on = False
                 continue
             elif '// clang-format on' in line:
                 clang_format_on = True
                 continue
-            elif '/* clang-format on */' in line:
+            elif '/* clang-format on' in line:
                 clang_format_on = True
                 continue
             if self.should_format(clang_format_on, index, line):

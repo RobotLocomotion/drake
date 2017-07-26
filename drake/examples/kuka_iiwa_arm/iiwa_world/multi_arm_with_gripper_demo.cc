@@ -21,10 +21,9 @@ std::unique_ptr<RigidBodyTree<double>> build_tree(
 
   // Adds models to the simulation builder. Instances of these models can be
   // subsequently added to the world.
-  tree_builder->StoreModel(
-      "iiwa",
-      "drake/manipulation/models/iiwa_description/urdf/"
-          "iiwa14_polytope_collision.urdf");
+  tree_builder->StoreModel("iiwa",
+                           "drake/manipulation/models/iiwa_description/urdf/"
+                           "iiwa14_polytope_collision.urdf");
   tree_builder->StoreModel(
       "wsg",
       "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
@@ -34,8 +33,8 @@ std::unique_ptr<RigidBodyTree<double>> build_tree(
 
   for (int i = 0; i < num_pairs; ++i) {
     // Adds an iiwa arm
-    int id = tree_builder->AddFixedModelInstance(
-        "iiwa", Vector3<double>(i, 0, 0));
+    int id =
+        tree_builder->AddFixedModelInstance("iiwa", Vector3<double>(i, 0, 0));
     iiwa->push_back(tree_builder->get_model_info_for_instance(id));
 
     // Adds a wsg gripper
@@ -104,10 +103,10 @@ void main() {
         info.model_path, multibody::joints::kFixed, info.world_offset,
         single_arm.get());
 
-    auto controller =
-        builder.AddController<systems::InverseDynamicsController<double>>(
-            info.instance_id, std::move(single_arm), iiwa_kp,
-            iiwa_ki, iiwa_kd, false /* no feedforward acceleration */);
+    auto controller = builder.AddController<
+        systems::controllers::InverseDynamicsController<double>>(
+        info.instance_id, std::move(single_arm), iiwa_kp, iiwa_ki, iiwa_kd,
+        false /* no feedforward acceleration */);
     controller->set_name("controller" + std::to_string(info.instance_id));
 
     // Updates the controller's model's end effector's inertia to include
@@ -132,11 +131,11 @@ void main() {
   const VectorX<double> wsg_ki = VectorX<double>::Constant(kWsgActDim, 0.0);
   const VectorX<double> wsg_kd = VectorX<double>::Constant(kWsgActDim, 5.0);
   for (const auto& info : wsg_info) {
-    auto controller =
-        builder.template AddController<systems::PidController<double>>(
-            info.instance_id,
-            manipulation::schunk_wsg::GetSchunkWsgFeedbackSelector<double>(),
-            wsg_kp, wsg_ki, wsg_kd);
+    auto controller = builder.template AddController<
+        systems::controllers::PidController<double>>(
+        info.instance_id,
+        manipulation::schunk_wsg::GetSchunkWsgFeedbackSelector<double>(),
+        wsg_kp, wsg_ki, wsg_kd);
     diagram_builder->Connect(wsg_traj_src->get_output_port(),
                              controller->get_input_port_desired_state());
   }

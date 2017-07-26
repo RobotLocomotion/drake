@@ -12,6 +12,7 @@
 
 namespace drake {
 namespace systems {
+namespace controllers {
 
 template <typename T>
 void InverseDynamicsController<T>::SetUp(const VectorX<double>& kp,
@@ -123,5 +124,6 @@ template class InverseDynamicsController<double>;
 // TODO(siyuan) template on autodiff.
 // template class InverseDynamicsController<AutoDiffXd>;
 
+}  // namespace controllers
 }  // namespace systems
 }  // namespace drake

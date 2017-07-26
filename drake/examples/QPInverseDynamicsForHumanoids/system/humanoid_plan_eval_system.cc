@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "robotlocomotion/robot_plan_t.hpp"
+
 #include "drake/examples/QPInverseDynamicsForHumanoids/plan_eval/dev/humanoid_manipulation_plan.h"
 
 namespace drake {

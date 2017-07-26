@@ -104,7 +104,6 @@ _LIBDRAKE_COMPONENTS = [
     "//drake:mosek_deps",
     "//drake/multibody:approximate_ik",
     "//drake/multibody/benchmarks/acrobot:acrobot",
-    "//drake/multibody/benchmarks/kuka_iiwa_robot:kuka_iiwa_robot",
     "//drake/multibody/benchmarks/mass_damper_spring:mass_damper_spring_analytical_solution",
     "//drake/multibody/collision:bullet_collision",
     "//drake/multibody/collision:collision_api",

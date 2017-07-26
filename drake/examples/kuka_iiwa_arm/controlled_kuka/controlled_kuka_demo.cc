@@ -43,7 +43,8 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 
-const char kUrdfPath[] = "drake/manipulation/models/iiwa_description/urdf/"
+const char kUrdfPath[] =
+    "drake/manipulation/models/iiwa_description/urdf/"
     "iiwa14_polytope_collision.urdf";
 
 unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
@@ -156,11 +157,11 @@ int DoMain() {
   VectorX<double> iiwa_kp, iiwa_kd, iiwa_ki;
   SetPositionControlledIiwaGains(&iiwa_kp, &iiwa_ki, &iiwa_kd);
 
-  auto controller =
-      builder.AddController<systems::InverseDynamicsController<double>>(
-          RigidBodyTreeConstants::kFirstNonWorldModelInstanceId,
-          plant->get_rigid_body_tree().Clone(), iiwa_kp, iiwa_ki, iiwa_kd,
-          false /* no feedforward acceleration */);
+  auto controller = builder.AddController<
+      systems::controllers::InverseDynamicsController<double>>(
+      RigidBodyTreeConstants::kFirstNonWorldModelInstanceId,
+      plant->get_rigid_body_tree().Clone(), iiwa_kp, iiwa_ki, iiwa_kd,
+      false /* no feedforward acceleration */);
 
   // Adds a trajectory source for desired state.
   systems::DiagramBuilder<double>* diagram_builder =
@@ -171,7 +172,7 @@ int DoMain() {
   traj_src->set_name("trajectory_source");
 
   diagram_builder->Connect(traj_src->get_output_port(),
-                  controller->get_input_port_desired_state());
+                           controller->get_input_port_desired_state());
 
   std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
 

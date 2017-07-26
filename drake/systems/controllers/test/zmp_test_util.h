@@ -5,11 +5,11 @@
 #include "drake/systems/controllers/zmp_planner.h"
 
 namespace drake {
-namespace examples {
-namespace zmp {
+namespace systems {
+namespace controllers {
 
 /** A structure for storing trajectories from simulating a linear inverted
- * pendulum model (LIPM) using the policy from a drake::systems::ZMPPlanner.
+ * pendulum model (LIPM) using the policy from a ZMPPlanner.
  */
 struct ZMPTestTraj {
   explicit ZMPTestTraj(int N) {
@@ -40,7 +40,7 @@ struct ZMPTestTraj {
  * the end of the trajectories for convergence.
  * @return ZMPTestTraj that contains all the information.
  */
-ZMPTestTraj SimulateZMPPolicy(const drake::systems::ZMPPlanner& zmp_planner,
+ZMPTestTraj SimulateZMPPolicy(const ZMPPlanner& zmp_planner,
                               const Eigen::Vector4d& x0, double dt,
                               double extra_time_at_the_end);
 
@@ -67,6 +67,6 @@ std::vector<PiecewisePolynomial<double>> GenerateDesiredZMPTrajs(
     const std::vector<Eigen::Vector2d>& footsteps,
     double double_support_duration, double single_support_duration);
 
-}  // namespace zmp
-}  // namespace examples
+}  // namespace controllers
+}  // namespace systems
 }  // namespace drake

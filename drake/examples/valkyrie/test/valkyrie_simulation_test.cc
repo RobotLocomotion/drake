@@ -1,4 +1,6 @@
+/* clang-format off to disable clang-format-includes */
 #include "drake/examples/valkyrie/valkyrie_simulator.h"
+/* clang-format on */
 
 #include <gtest/gtest.h>
 

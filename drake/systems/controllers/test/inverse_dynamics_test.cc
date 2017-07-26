@@ -23,6 +23,7 @@ using std::make_unique;
 
 namespace drake {
 namespace systems {
+namespace controllers {
 namespace {
 
 VectorXd ComputeTorque(const RigidBodyTree<double>& tree, const VectorXd& q,
@@ -167,5 +168,6 @@ TEST_F(InverseDynamicsTest, UnderactuatedModelTest) {
 }
 
 }  // namespace
+}  // namespace controllers
 }  // namespace systems
 }  // namespace drake

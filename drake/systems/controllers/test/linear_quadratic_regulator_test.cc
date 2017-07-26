@@ -6,6 +6,9 @@
 #include "drake/systems/primitives/linear_system.h"
 
 namespace drake {
+namespace systems {
+namespace controllers {
+namespace {
 
 GTEST_TEST(TestLQR, TestException) {
   Eigen::Matrix2d A = Eigen::Matrix2d::Zero();
@@ -15,13 +18,13 @@ GTEST_TEST(TestLQR, TestException) {
   Eigen::Matrix<double, 1, 1> R = Eigen::MatrixXd::Identity(1, 1);
   Eigen::Vector2d N = Eigen::Vector2d::Zero();
 
-  EXPECT_NO_THROW(systems::LinearQuadraticRegulator(A, B, Q, R, N));
-  EXPECT_NO_THROW(systems::LinearQuadraticRegulator(A, B, Q, R));
+  EXPECT_NO_THROW(LinearQuadraticRegulator(A, B, Q, R, N));
+  EXPECT_NO_THROW(LinearQuadraticRegulator(A, B, Q, R));
 
   // R is not positive definite, should throw exception.
-  EXPECT_THROW(systems::LinearQuadraticRegulator(
+  EXPECT_THROW(LinearQuadraticRegulator(
         A, B, Q, Eigen::Matrix<double, 1, 1>::Zero()), std::runtime_error);
-  EXPECT_THROW(systems::LinearQuadraticRegulator(
+  EXPECT_THROW(LinearQuadraticRegulator(
         A, B, Q, Eigen::Matrix<double, 1, 1>::Zero(), N), std::runtime_error);
 }
 
@@ -35,8 +38,8 @@ void TestLQRAgainstKnownSolution(
     const Eigen::Ref<const Eigen::MatrixXd>& R,
     const Eigen::Ref<const Eigen::MatrixXd>& N =
         Eigen::Matrix<double, 0, 0>::Zero()) {
-  systems::LinearQuadraticRegulatorResult result =
-      systems::LinearQuadraticRegulator(A, B, Q, R, N);
+  LinearQuadraticRegulatorResult result =
+      LinearQuadraticRegulator(A, B, Q, R, N);
   EXPECT_TRUE(CompareMatrices(K_known, result.K, tolerance,
         MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(S_known, result.S, tolerance,
@@ -45,13 +48,13 @@ void TestLQRAgainstKnownSolution(
 
 void TestLQRLinearSystemAgainstKnownSolution(
     double tolerance,
-    const systems::LinearSystem<double>& sys,
+    const LinearSystem<double>& sys,
     const Eigen::Ref<const Eigen::MatrixXd>& K_known,
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::MatrixXd>& R,
     const Eigen::Ref<const Eigen::MatrixXd>& N =
         Eigen::Matrix<double, 0, 0>::Zero()) {
-  std::unique_ptr<systems::LinearSystem<double>> linear_lqr =
+  std::unique_ptr<LinearSystem<double>> linear_lqr =
       LinearQuadraticRegulator(sys, Q, R, N);
 
   int n = sys.A().rows();
@@ -71,7 +74,7 @@ void TestLQRLinearSystemAgainstKnownSolution(
 
 void TestLQRAffineSystemAgainstKnownSolution(
     double tolerance,
-    const systems::LinearSystem<double>& sys,
+    const LinearSystem<double>& sys,
     const Eigen::Ref<const Eigen::MatrixXd>& K_known,
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::MatrixXd>& R,
@@ -86,7 +89,7 @@ void TestLQRAffineSystemAgainstKnownSolution(
 
   context->FixInputPort(0, u0);
   context->get_mutable_continuous_state()->SetFromVector(x0);
-  std::unique_ptr<systems::AffineSystem<double>> lqr =
+  std::unique_ptr<AffineSystem<double>> lqr =
       LinearQuadraticRegulator(sys, *context, Q, R, N);
 
   EXPECT_TRUE(CompareMatrices(lqr->A(), Eigen::Matrix<double, 0, 0>::Zero(),
@@ -109,8 +112,8 @@ GTEST_TEST(TestLQR, DoubleIntegrator) {
   Eigen::Vector2d B;
   A << 0, 1, 0, 0;
   B << 0, 1;
-  systems::LinearSystem<double> sys(A, B, Eigen::Matrix<double, 0, 2>::Zero(),
-                                    Eigen::Matrix<double, 0, 1>::Zero());
+  LinearSystem<double> sys(A, B, Eigen::Matrix<double, 0, 2>::Zero(),
+                           Eigen::Matrix<double, 0, 1>::Zero());
 
   // Trivial cost:
   Eigen::Matrix2d Q;
@@ -150,4 +153,7 @@ GTEST_TEST(TestLQR, DoubleIntegrator) {
   TestLQRAffineSystemAgainstKnownSolution(tol, sys, K, Q, R, N);
 }
 
+}  // namespace
+}  // namespace controllers
+}  // namespace systems
 }  // namespace drake

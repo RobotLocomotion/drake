@@ -240,10 +240,22 @@ namespace { }
     def test_internal_related_header(self):
         # Two related headers, guarded by "clang-format off".
         original = """
-/* clang-format off */
+/* clang-format off (with explanatory comment) */
 #include "drake/dummy/dut.h"
 #include "drake/dummy/dut_internal.h"
-/* clang-format on */
+/* clang-format on  (with explanatory comment) */
+
+#include <vector>
+#include <string>
+
+#include "drake/dummy/drake_assert.h"
+#include "drake/dummy/drake_deprecated.h"
+"""
+        expected = """
+/* clang-format off (with explanatory comment) */
+#include "drake/dummy/dut.h"
+#include "drake/dummy/dut_internal.h"
+/* clang-format on  (with explanatory comment) */
 
 #include <string>
 #include <vector>
@@ -251,7 +263,7 @@ namespace { }
 #include "drake/dummy/drake_assert.h"
 #include "drake/dummy/drake_deprecated.h"
 """
-        self._check("dut.cc", original, original)
+        self._check("dut.cc", original, expected)
 
     def test_resort_solo_groups(self):
         # Groups of one, but sorted uncorrectly.

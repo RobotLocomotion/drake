@@ -1379,7 +1379,7 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
     } else {
       if (dt_max < near_enough_larger * current_step_size &&
           current_step_size > get_working_minimum_step_size()) {
-        // dt_max is roughly current step. However, don't increase the step
+        // dt_max is roughly current step. However, we don't increase the step
         // size if the current step size is at the working minimum.
         current_step_size = dt_max;
       }
