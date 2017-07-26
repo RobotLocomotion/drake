@@ -1377,8 +1377,12 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
       dt_was_artificially_limited = true;
       current_step_size = dt_max;
     } else {
-      if (dt_max < near_enough_larger * current_step_size)
-        current_step_size = dt_max;  // dt_max is roughly current step.
+      if (dt_max < near_enough_larger * current_step_size &&
+          current_step_size > get_working_minimum_step_size()) {
+        // dt_max is roughly current step. However, don't increase the step
+        // size if the current step size is at the working minimum.
+        current_step_size = dt_max;
+      }
     }
 
     // Limit the current step size.
@@ -1561,7 +1565,12 @@ std::pair<bool, T> IntegratorBase<T>::CalcAdjustedStepSize(
   if (!isnan(get_maximum_step_size()))
     new_step_size = min(new_step_size, get_maximum_step_size());
   ValidateSmallerStepSize(current_step_size, new_step_size);
+
+  // If the current step size is the working minimum, do not return
+  // failure.
   new_step_size = max(new_step_size, get_working_minimum_step_size());
+  if (current_step_size == get_working_minimum_step_size())
+    return std::make_pair(true, new_step_size);
 
   return std::make_pair(new_step_size >= current_step_size, new_step_size);
 }
