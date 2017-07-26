@@ -171,18 +171,27 @@ struct MultiplyEigenSizes {
 
 namespace detail {
 
+template <typename Derived>
+struct is_eigen_type
+    : std::is_base_of<Eigen::EigenBase<Derived>, Derived> {};
+
 /*
  * Determine if an EigenBase<> has a specific scalar type.
  */
 template <typename Derived, typename Scalar>
-struct is_eigen_scalar_same : std::is_same<typename Derived::Scalar, Scalar> {};
+struct is_eigen_scalar_same
+    : std::integral_constant<bool,
+          detail::is_eigen_type<Derived>::value &&
+          std::is_same<typename Derived::Scalar, Scalar>::value> {};
 
 /*
  * Determine if an EigenBase<> type is a (column) vector.
  */
 template <typename Derived>
 struct is_eigen_vector
-    : std::integral_constant<bool, Derived::ColsAtCompileTime == 1> {};
+    : std::integral_constant<bool,
+          detail::is_eigen_type<Derived>::value &&
+          Derived::ColsAtCompileTime == 1> {};
 
 /*
  * Determine if an EigenBase<> type is a (column) vector of a scalar type.
