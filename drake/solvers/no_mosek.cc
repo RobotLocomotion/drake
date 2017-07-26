@@ -1,4 +1,4 @@
-/* clang-format off */
+/* clang-format off to disable clang-format-includes */
 #include "drake/solvers/mosek_solver.h"
 /* clang-format on */
 

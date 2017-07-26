@@ -1,4 +1,4 @@
-/* clang-format off */
+/* clang-format off to disable clang-format-includes */
 #include "drake/examples/valkyrie/robot_state_encoder.h"
 #include "drake/examples/valkyrie/robot_state_decoder.h"
 /* clang-format on */

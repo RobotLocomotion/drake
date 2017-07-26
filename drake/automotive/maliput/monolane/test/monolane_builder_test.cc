@@ -1,4 +1,4 @@
-/* clang-format off */
+/* clang-format off to disable clang-format-includes */
 #include "drake/automotive/maliput/monolane/builder.h"
 /* clang-format on */
 
