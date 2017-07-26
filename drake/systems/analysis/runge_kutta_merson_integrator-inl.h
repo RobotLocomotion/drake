@@ -86,8 +86,7 @@ bool RungeKuttaMersonIntegrator<T>::DoStep(const T& dt) {
   xc->SetFromVector(xt0);
   xc->PlusEqScaled({{dt * 0.5, xcdot0}, {dt * -3.0/2, xcdot2},
                     {dt * 2.0, xcdot3}});
-  BasicVector<T> xsave(xcdot0.size());
-  xsave.SetFrom(*xc);
+  const VectorX<T> xsave = xc->CopyToVector();
   this->CalcTimeDerivatives(*context, derivs4_.get());
   const auto& xcdot4 = derivs4_->get_vector();
 
@@ -98,13 +97,8 @@ bool RungeKuttaMersonIntegrator<T>::DoStep(const T& dt) {
                     {dt * 1.0/6, xcdot4}});
 
   // Calculate the error estimate.
-  if (!err_est_ || err_est_->size() != xcdot0.size())
-    err_est_ = std::make_unique<BasicVector<T>>(xcdot0.size());
-  err_est_->SetZero();
-//  err_est_->PlusEqScaled({{dt * 1.0/10, xcdot0}, {dt * 3.0/10, xcdot2},
-//                          {dt * 2.0/5, xcdot3}, {dt * 1.0/5, xcdot4}});
-  err_est_->PlusEqScaled({{1, *xc}, {-1, xsave}});
-  this->get_mutable_error_estimate()->SetFromVector(err_est_->CopyToVector() * 2);
+  this->get_mutable_error_estimate()->SetFromVector(
+      (xc->CopyToVector() - xsave) * 2);
 
   // RK Merson always succeeds in taking its desired step.
   return true;

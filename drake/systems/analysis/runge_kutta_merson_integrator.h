@@ -74,12 +74,12 @@ class RungeKuttaMersonIntegrator final : public IntegratorBase<T> {
   void DoInitialize() override;
   bool DoStep(const T& dt) override;
 
-  // Vector used in error estimate calculations.
+  // Vectors used in error estimate calculations.
   std::unique_ptr<VectorBase<T>> err_est_;
 
   // These are pre-allocated temporaries for use by integration.
   std::unique_ptr<ContinuousState<T>> derivs0_, derivs1_, derivs2_, derivs3_,
-                                      derivs4_, derivs5_;
+                                      derivs4_;
 };
 }  // systems
 }  // drake

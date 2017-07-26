@@ -241,8 +241,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "runge_kutta_merson_integrator_test",
-    # Test size increased to not timeout when run with Valgrind.
-    size = "medium",
     deps = [
         ":explicit_error_controlled_integrator_tester",
         ":my_spring_mass_system",
