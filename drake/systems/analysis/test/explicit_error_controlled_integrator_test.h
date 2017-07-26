@@ -12,7 +12,7 @@ namespace analysis_test {
 
 // T is the integrator type (e.g., RungeKutta3Integrator<double>).
 template <class T>
-class ExplicitErrorControlledIntegratorTest : public ::testing::Test {
+struct ExplicitErrorControlledIntegratorTest : public ::testing::Test {
  public:
   ExplicitErrorControlledIntegratorTest() {
     // Create a mass-spring-system with update rate=0.
@@ -27,10 +27,10 @@ class ExplicitErrorControlledIntegratorTest : public ::testing::Test {
   std::unique_ptr<analysis_test::MySpringMassSystem<double>> spring_mass_;
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<IntegratorBase<double>> integrator_;
-  const double dt_ = 1e-3;        // Integration step size.
-  const double big_dt_ = 1e-1;    // Big integration step size.
+  const double dt_ = 1e-3;         // Integration step size.
+  const double big_dt_ = 1e-1;     // Big integration step size.
   const double spring_k_ = 300.0;  // N/m
-  const double mass_ = 2.0;      // kg
+  const double mass_ = 2.0;        // kg
 };
 
 TYPED_TEST_CASE_P(ExplicitErrorControlledIntegratorTest);
@@ -160,8 +160,7 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, BulletProofSetup) {
 
 // Tests the error estimation capabilities.
 TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ErrEst) {
-  // Setup the initial position and initial velocity
-
+  // Setup the initial position and initial velocity.
   const double initial_position = 0.1;
   const double initial_velocity = 0.01;
   const double omega = std::sqrt(this->spring_k_ / this->mass_);
@@ -191,15 +190,15 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ErrEst) {
   EXPECT_NEAR(this->context_->get_time(), this->big_dt_,
               std::numeric_limits<double>::epsilon());
 
-  // Get the true solution
+  // Get the true solution.
   const double x_true = c1 * std::cos(omega * this->big_dt_) +
       c2 * std::sin(omega * this->big_dt_);
 
-  // Get the integrator's solution
+  // Get the integrator's solution.
   const double kXApprox = this->context_->get_continuous_state_vector().
       GetAtIndex(0);
 
-  // Get the error estimate
+  // Get the error estimate.
   const double err_est =
       this->integrator_->get_error_estimate()->get_vector().GetAtIndex(0);
 
@@ -223,7 +222,7 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, SpringMassStepEC) {
   // Initialize the integrator.
   this->integrator_->Initialize();
 
-  // Setup the initial position and initial velocity
+  // Setup the initial position and initial velocity.
   const double initial_position = 0.1;
   const double initial_velocity = 0.01;
   const double omega = std::sqrt(this->spring_k_ / this->mass_);
@@ -247,7 +246,7 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, SpringMassStepEC) {
   const double x_final =
       this->context_->get_continuous_state()->get_vector().GetAtIndex(0);
 
-  // Store the number of integration steps
+  // Store the number of integration steps.
   int fixed_steps = this->integrator_->get_num_steps_taken();
 
   // Check the solution.
@@ -284,7 +283,7 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, SpringMassStepEC) {
       c1 * std::cos(omega * t_final) + c2 * std::sin(omega * t_final),
       x_final, 1e-5);
 
-  // Verify that integrator statistics are valid
+  // Verify that integrator statistics are valid.
   EXPECT_GE(this->integrator_->get_previous_integration_step_size(), 0.0);
   EXPECT_GE(this->integrator_->get_largest_step_size_taken(), 0.0);
   EXPECT_GE(this->integrator_->get_smallest_adapted_step_size_taken(), 0.0);
@@ -349,11 +348,9 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, MinTimeThrows) {
   // Initialize the integrator.
   this->integrator_->Initialize();
 
-  // Setup the initial position and initial velocity
+  // Set the initial position and initial velocity.
   const double initial_position = 0.1;
   const double initial_velocity = 0.01;
-
-  // Set initial conditions.
   this->spring_mass_->set_position(this->integrator_->get_mutable_context(),
                              initial_position);
   this->spring_mass_->set_velocity(this->integrator_->get_mutable_context(),
@@ -413,11 +410,9 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, CheckStat) {
   // Initialize the integrator.
   this->integrator_->Initialize();
 
-  // Setup the initial position and initial velocity
+  // Set the initial position and initial velocity.
   const double initial_position = 0.1;
   const double initial_velocity = 0.01;
-
-  // Set initial conditions.
   this->spring_mass_->set_position(this->integrator_->get_mutable_context(),
                              initial_position);
   this->spring_mass_->set_velocity(this->integrator_->get_mutable_context(),
@@ -426,7 +421,7 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, CheckStat) {
   // Integrate just one step.
   this->integrator_->IntegrateAtMost(this->dt_, this->dt_, this->dt_);
 
-  // Verify that integrator statistics are valid
+  // Verify that integrator statistics are valid.
   EXPECT_GE(this->integrator_->get_previous_integration_step_size(), 0.0);
   EXPECT_LE(this->integrator_->get_previous_integration_step_size(),
             this->dt_);
