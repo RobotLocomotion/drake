@@ -36,7 +36,7 @@ OptitrackPoseExtractor::OptitrackPoseExtractor(
 
 void OptitrackPoseExtractor::DoCalcDiscreteVariableUpdates(
     const Context<double>& context,
-    const std::vector<const systems::DiscreteUpdateEvent<double>*>& events,
+    const std::vector<const systems::DiscreteUpdateEvent<double>*>&,
     systems::DiscreteValues<double>* discrete_state) const {
   const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
