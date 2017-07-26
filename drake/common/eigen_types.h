@@ -167,4 +167,42 @@ struct MultiplyEigenSizes {
   static constexpr int value =
       (a == Eigen::Dynamic || b == Eigen::Dynamic) ? Eigen::Dynamic : a * b;
 };
+
+
+namespace detail {
+
+/*
+ * Determine if an EigenBase<> has a specific scalar type.
+ */
+template <typename Derived, typename Scalar>
+struct is_eigen_scalar_same : std::is_same<typename Derived::Scalar, Scalar> {};
+
+/*
+ * Determine if an EigenBase<> type is a (column) vector.
+ */
+template <typename Derived>
+struct is_eigen_vector
+    : std::integral_constant<bool, Derived::ColsAtCompileTime == 1> {};
+
+/*
+ * Determine if an EigenBase<> type is a (column) vector of a scalar type.
+ */
+template <typename Derived, typename Scalar>
+struct is_eigen_vector_of
+    : std::integral_constant<
+          bool, detail::is_eigen_scalar_same<Derived, Scalar>::value &&
+                    detail::is_eigen_vector<Derived>::value> {};
+
+/*
+ * Determine if a EigenBase<> type is a matrix (non-column-vector) of a scalar
+ * type.
+ */
+template <typename Derived, typename Scalar>
+struct is_eigen_matrix_of
+    : std::integral_constant<
+          bool, detail::is_eigen_scalar_same<Derived, Scalar>::value &&
+                    !detail::is_eigen_vector<Derived>::value> {};
+
+}  // namespace detail
+
 }  // namespace drake
