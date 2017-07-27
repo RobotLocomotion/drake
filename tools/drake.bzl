@@ -133,6 +133,9 @@ def drake_cc_binary(
         cmd = _dsym_command(name),
     )
 
+    if "@gtest//:main" in (deps or []):
+        fail("Use drake_cc_googletest to declare %s as a test" % name)
+
     if add_test_rule:
         drake_cc_test(
             name = name + "_test",
