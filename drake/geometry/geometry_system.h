@@ -5,14 +5,13 @@
 #include <unordered_map>
 #include <vector>
 
-#include "drake/geometry/geometry_ids.h"
+#include "drake/geometry/geometry_state.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 namespace geometry {
 
-template <typename T> class GeometryFrame;
 template <typename T> class GeometryInstance;
 
 // TODO(SeanCurtis-TRI): Introducing the API has been decomposed into two PRs.
@@ -110,8 +109,8 @@ class GeometrySystem : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GeometrySystem)
 
-  GeometrySystem() = default;
-  ~GeometrySystem() override;
+  GeometrySystem();
+  ~GeometrySystem() override {}
 
   /** Registers a new source to the geometry system (see GeometryWorld for the
    discussion of "geometry source"). The caller must save the returned SourceId;
@@ -284,7 +283,13 @@ class GeometrySystem : public systems::LeafSystem<T> {
   // that the error message can include that detail.
   void ThrowIfContextAllocated(const char* source_method) const;
 
-  mutable bool context_allocated_{false};
+  // A raw pointer to the default geometry state (which serves as the model for
+  // allocating contexts for this system). It will only be non-null between
+  // construction and context allocation. It serves a key role in enforcing the
+  // property that source ids can only be added prior to context allocation.
+  // This is mutable so that it can be cleared in the const method
+  // AllocateContext().
+  mutable GeometryState<T>* initial_state_;
 };
 
 }  // namespace geometry
