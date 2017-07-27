@@ -9,6 +9,7 @@ load(
     "drake_cc_library",
     "drake_cc_test",
 )
+load("//tools:gurobi.bzl", "gurobi_test_tags")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -28,6 +29,8 @@ drake_cc_library(
 )
 
 # This library is empty unless Gurobi is available.
+# TODO(jwnimmer-tri) Port this to use the MathematicalProgram API, so that this
+# code can compile even in the absence of Gurobi, so we can remove select()s.
 drake_cc_library(
     name = "approximate_ik",
     srcs = select({
@@ -543,7 +546,9 @@ drake_cc_googletest(
 )
 
 # This test is empty unless Gurobi is enabled.
-drake_cc_test(
+# TODO(jwnimmer-tri) Port this to use the MathematicalProgram API, so that this
+# code can compile even in the absence of Gurobi, so we can remove select()s.
+drake_cc_googletest(
     name = "test_approximate_ik",
     srcs = select({
         "//tools:with_gurobi": [
@@ -551,6 +556,7 @@ drake_cc_test(
         ],
         "//conditions:default": [],
     }),
+    tags = gurobi_test_tags(),
     data = ["//drake/examples/atlas:models"],
     deps = select({
         "//tools:with_gurobi": [
@@ -558,9 +564,7 @@ drake_cc_test(
             "//drake/common:find_resource",
             "//drake/multibody/parsers",
         ],
-        "//conditions:default": [
-            "@gtest//:main",  # No-op stub for main().
-        ],
+        "//conditions:default": [],
     }),
 )
 
