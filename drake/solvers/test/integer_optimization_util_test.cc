@@ -48,7 +48,7 @@ class IntegerOptimizationUtilTest : public ::testing::Test {
     // min operand_result
     // s.t operand_result = b0 operand b1
     //     b0 = b_vals_[i](0)
-    //     b1 = b_vals_[i](1)
+    //     b1 = b_vals_[i](1).
     for (int i = 0; i < 4; ++i) {
       double operand_result_expected;
       switch (operand) {

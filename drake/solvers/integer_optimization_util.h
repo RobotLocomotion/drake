@@ -6,7 +6,7 @@
 namespace drake {
 namespace solvers {
 /**
- * Add linear constraints, such that when b1, b2, b1_xor_b2 satisfy the
+ * Adds linear constraints, such that when b1, b2, b1_and_b2 satisfy the
  * constraints, and b1, b2 take binary values, it is guaranteed that
  * b1_and_b2 = b1 ∧ b2 (b1 and b2).
  * The constraints are
@@ -28,7 +28,7 @@ Binding<LinearConstraint> CreateLogicalAndConstraint(
     const symbolic::Expression& b1_and_b2);
 
 /**
- * Add linear constraints, such that when b1, b2, b1_xor_b2 satisfy the
+ * Adds linear constraints, such that when b1, b2, b1_or_b2 satisfy the
  * constraints, and b1, b2 take binary values, it is guaranteed that
  * b1_or_b2 = b1 ∨ b2 (b1 or b2).
  * The constraints are
