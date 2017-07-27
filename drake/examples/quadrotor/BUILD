@@ -8,17 +8,7 @@ load(
     "drake_cc_library",
     "drake_cc_binary",
 )
-
-filegroup(
-    name = "models",
-    srcs = glob([
-        "**/*.obj",
-        "**/*.sdf",
-        "**/*.urdf",
-        "**/*.xml",
-    ]),
-    visibility = ["//visibility:public"],
-)
+load("//tools:install_data.bzl", "install_data")
 
 drake_cc_library(
     name = "quadrotor_plant",
@@ -97,5 +87,7 @@ drake_cc_googletest(
         "//drake/systems/primitives:constant_vector_source",
     ],
 )
+
+install_data()
 
 cpplint()

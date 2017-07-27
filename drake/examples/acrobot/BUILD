@@ -8,17 +8,7 @@ load(
     "drake_cc_library",
     "drake_cc_binary",
 )
-
-filegroup(
-    name = "models",
-    srcs = glob([
-        "**/*.obj",
-        "**/*.sdf",
-        "**/*.urdf",
-        "**/*.xml",
-    ]),
-    visibility = ["//visibility:public"],
-)
+load("//tools:install_data.bzl", "install_data")
 
 drake_cc_library(
     name = "acrobot_state_vector",
@@ -229,5 +219,7 @@ drake_cc_googletest(
         "//drake/multibody/rigid_body_plant",
     ],
 )
+
+install_data()
 
 cpplint()

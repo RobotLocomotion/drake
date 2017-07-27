@@ -6,20 +6,10 @@ load(
     "//tools:drake.bzl",
     "drake_cc_googletest",
 )
+load("//tools:install_data.bzl", "install_data")
 
 package(
     default_visibility = [":__subpackages__"],
-)
-
-filegroup(
-    name = "models",
-    srcs = glob([
-        "**/*.obj",
-        "**/*.sdf",
-        "**/*.urdf",
-        "**/*.xml",
-    ]),
-    visibility = ["//visibility:public"],
 )
 
 # === test/ ===
@@ -34,5 +24,7 @@ drake_cc_googletest(
         "//drake/multibody/parsers",
     ],
 )
+
+install_data()
 
 cpplint()

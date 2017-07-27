@@ -8,20 +8,10 @@ load(
     "drake_cc_binary",
     "drake_cc_googletest",
 )
+load("//tools:install_data.bzl", "install_data")
 
 package(
     default_visibility = [":__subpackages__"],
-)
-
-filegroup(
-    name = "models",
-    srcs = glob([
-        "**/*.obj",
-        "**/*.sdf",
-        "**/*.urdf",
-        "**/*.xml",
-    ]),
-    visibility = ["//visibility:public"],
 )
 
 drake_cc_library(
@@ -243,5 +233,7 @@ drake_cc_googletest(
         "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
     ],
 )
+
+install_data()
 
 cpplint()

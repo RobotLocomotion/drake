@@ -7,13 +7,7 @@ load(
     "drake_cc_library",
     "drake_cc_binary",
 )
-
-filegroup(
-    name = "models",
-    srcs = glob([
-        "models/*.sdf",
-    ]),
-)
+load("//tools:install_data.bzl", "install_data")
 
 drake_cc_library(
     name = "sdf_helpers",
@@ -95,5 +89,7 @@ drake_cc_googletest(
         "//drake/multibody/joints",
     ],
 )
+
+install_data()
 
 cpplint()

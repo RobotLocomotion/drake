@@ -68,6 +68,8 @@ install(
         "//drake:install",
         "//drake/common:install",
         "//drake/lcmtypes:install",
+        "//drake/examples:install_data",
+        "//drake/manipulation/models:install_data",
         "//tools:install",
     ] + DRAKE_EXTERNAL_PACKAGE_INSTALLS,
 )

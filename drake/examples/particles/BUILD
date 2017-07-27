@@ -7,13 +7,7 @@ load(
     "drake_cc_library",
     "drake_cc_binary",
 )
-
-filegroup(
-    name = "models",
-    srcs = glob([
-        "models/*.sdf",
-    ]),
-)
+load("//tools:install_data.bzl", "install_data")
 
 drake_cc_library(
     name = "particles",
@@ -67,5 +61,7 @@ drake_cc_googletest(
         ":particles",
     ],
 )
+
+install_data()
 
 cpplint()
