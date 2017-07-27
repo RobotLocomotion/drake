@@ -6,8 +6,8 @@
 namespace drake {
 namespace solvers {
 /**
- * For two binary expressions b1 and b2, each can only take value 0 or 1,
- * impose constraints on b1, b2, together with b1_and_b2, such that
+ * For two binary expressions b1 and b2, each can only take a value 0 or 1,
+ * imposes constraints on b1, b2, together with b1_and_b2, such that
  * b1_and_b2 = b1 ∧ b2.
  * The constraints are
  * <pre>
@@ -16,8 +16,8 @@ namespace solvers {
  *   b1_and_b2 <= b2
  *   0 <= b1_and_b2 <= 1
  * </pre>
- * @param b1 An expression that should only take binary value.
- * @param b2 An expression that should only take binary value.
+ * @param b1 An expression that should only take a binary value.
+ * @param b2 An expression that should only take a binary value.
  * @param b1_and_b2 Should be the logical and between `b1` and `b2`.
  * @return The newly added constraints, such that when b1, b2, b1_and_b2 satisfy
  * the constraints, it is guaranteed that b1_and_b2 = b1 ∧ b2.
@@ -28,8 +28,8 @@ Binding<LinearConstraint> CreateLogicalAndConstraint(
     const symbolic::Expression& b1_and_b2);
 
 /**
- * For two binary expressions b1 and b2, each can only take value 0 or 1,
- * impose constraints on b1, b2, together with b1_or_b2, such that
+ * For two binary expressions b1 and b2, each can only take a value 0 or 1,
+ * imposes constraints on b1, b2, together with b1_or_b2, such that
  * b1_or_b2 = b1 ∨ b2.
  * The constraints are
  * <pre>
@@ -38,8 +38,8 @@ Binding<LinearConstraint> CreateLogicalAndConstraint(
  *   b1_or_b2 >= b2
  *   0 <= b1_or_b2 <= 1
  * </pre>
- * @param b1 An expression that should only take binary value.
- * @param b2 An expression that should only take binary value.
+ * @param b1 An expression that should only take a binary value.
+ * @param b2 An expression that should only take a binary value.
  * @param b1_or_b2 Should be the logical or between `b1` and `b2`.
  * @return The newly added constraints, such that when b1, b2, b1_or_b2 satisfy
  * the constraints, it is guaranteed that b1_or_b2 = b1 ∨ b2.
@@ -50,8 +50,8 @@ Binding<LinearConstraint> CreateLogicalOrConstraint(
     const symbolic::Expression& b1_or_b2);
 
 /**
- * For two binary expressions b1 and b2, each can only take value 0 or 1,
- * impose constraints on b1, b2, together with b1_xor_b2, such that
+ * For two binary expressions b1 and b2, each can only take a value 0 or 1,
+ * imposes constraints on b1, b2, together with b1_xor_b2, such that
  * b1_xor_b2 = b1 ⊕ b2 (b1 exclusive or b2).
  * The constraints are
  * <pre>
@@ -61,8 +61,8 @@ Binding<LinearConstraint> CreateLogicalOrConstraint(
  *   b1_xor_b2 <= 2 - b1 - b2
  *   0 <= b1_xor_b2 <= 1
  * </pre>
- * @param b1 An expression that should only take binary value.
- * @param b2 An expression that should only take binary value.
+ * @param b1 An expression that should only take a binary value.
+ * @param b2 An expression that should only take a binary value.
  * @param b1_xor_b2 Should be the logical exclusive or between `b1` and `b2`.
  * @return The newly added constraints, such that when b1, b2, b1_xor_b2 satisfy
  * the constraints, it is guaranteed that b1_xor_b2 = b1 ⊕ b2.

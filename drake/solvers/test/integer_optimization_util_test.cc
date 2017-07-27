@@ -54,18 +54,15 @@ class IntegerOptimizationUtilTest : public ::testing::Test {
       switch (operand) {
         case LogicalOperand::kAnd:
           operand_result_expected =
-              static_cast<double>(static_cast<bool>(b_vals_[i](0)) &
-                                  static_cast<bool>(b_vals_[i](1)));
+              static_cast<double>(b_vals_[i](0) & b_vals_[i](1));
           break;
         case LogicalOperand::kOr:
           operand_result_expected =
-              static_cast<double>(static_cast<bool>(b_vals_[i](0)) |
-                                  static_cast<bool>(b_vals_[i](1)));
+              static_cast<double>(b_vals_[i](0) | b_vals_[i](1));
           break;
         case LogicalOperand::kXor:
           operand_result_expected =
-              static_cast<double>(static_cast<bool>(b_vals_[i](0)) ^
-                                  static_cast<bool>(b_vals_[i](1)));
+              static_cast<double>(b_vals_[i](0) ^ b_vals_[i](1));
           break;
       }
       cost.constraint()->UpdateCoefficients(Vector1d(1));
