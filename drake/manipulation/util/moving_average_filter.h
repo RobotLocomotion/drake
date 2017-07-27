@@ -7,9 +7,8 @@
 #include "drake/common/drake_copyable.h"
 
 namespace drake {
-namespace examples {
-namespace kuka_iiwa_arm {
-namespace tools {
+namespace manipulation {
+namespace utils {
 
 /**
  * The implementation of a Moving Average Filter. This discrete time filter
@@ -27,7 +26,7 @@ namespace tools {
  * @tparam T The element type.
  * Instantiated templates for the following kinds of T's are provided:
  *  - double
- *  - Eigen::Array3d
+ *  - VectorX<double>
  */
 template <typename T>
 class MovingAverageFilter {
@@ -35,15 +34,15 @@ class MovingAverageFilter {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MovingAverageFilter)
   /**
    * Constructs the filter with the specified `window_size`.
-   * @param window_size The size of the window which must be greater than
-   * 0.
+   * @param window_size The size of the window.
    * @throws a std::runtime_error when window_size <= 0.
    */
-  explicit MovingAverageFilter(int window_size);
+  explicit MovingAverageFilter(unsigned int window_size);
 
   /**
    * Computes the average filter result. Every call to this method modifies
    * the internal state of this filter thus resulting in a computation of
+   * the moving average of the data present within the filter window.
    *
    * @param new_data
    * @return
@@ -56,7 +55,6 @@ class MovingAverageFilter {
   T sum_;
 };
 
-}  // namespace tools
-}  // namespace kuka_iiwa_arm
-}  // namespace examples
+}  // namespace utils
+}  // namespace manipulation
 }  // namespace drake
