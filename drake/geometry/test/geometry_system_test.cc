@@ -243,7 +243,7 @@ TEST_F(GeometrySystemTest, TopologyAfterAllocation) {
       "allocated.");
 }
 
-// Confirms that the direct feedthrough logic is correct -- there is no
+// Confirms that the direct feedthrough logic is correct -- there is total
 // direct feedthrough.
 TEST_F(GeometrySystemTest, DirectFeedThrough) {
   SourceId id = system_.RegisterSource();
@@ -251,11 +251,11 @@ TEST_F(GeometrySystemTest, DirectFeedThrough) {
       system_.get_source_frame_id_port(id).get_index(),
       system_.get_source_pose_port(id).get_index()};
   for (int input_port_id : input_ports) {
-    EXPECT_FALSE(GeometrySystemTester::HasDirectFeedthrough(
+    EXPECT_TRUE(GeometrySystemTester::HasDirectFeedthrough(
         system_, input_port_id, system_.get_query_output_port().get_index()));
   }
   // TODO(SeanCurtis-TRI): Update when the pose bundle output is added; it has
-  // direct feedthrough.
+  // direct feedthrough as well.
 }
 
 // NOTE: There are no tests on the query methods: GetFrameId and ComputeContact.

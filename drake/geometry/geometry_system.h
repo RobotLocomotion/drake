@@ -420,14 +420,6 @@ class GeometrySystem : public systems::LeafSystem<T> {
 
   //@}
 
- protected:
-  /** GeometrySystem has _no_ direct feedthrough. The query output port can be
-   evaluated without pulling on any inputs. This implementation encodes that
-   relationship in reporting direct feedthrough. */
-  bool DoHasDirectFeedthrough(const systems::SparsityMatrix* sparsity,
-                              int input_port,
-                              int output_port) const override;
-
  private:
   // Friend class to facilitate testing.
   friend class GeometrySystemTester;

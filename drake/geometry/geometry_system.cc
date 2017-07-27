@@ -165,16 +165,6 @@ std::vector<PenetrationAsPointPair<T>> GeometrySystem<T>::ComputePenetration(
 }
 
 template <typename T>
-bool GeometrySystem<T>::DoHasDirectFeedthrough(const SparsityMatrix*,
-                                               int input_port,
-                                               int output_port) const {
-  // TODO(SeanCurtis-TRI): These parameters *will* be used in subsequent PRs.
-  unused(input_port, output_port);
-  // Query port has no feedthrough.
-  return false;
-}
-
-template <typename T>
 QueryHandle<T> GeometrySystem<T>::MakeQueryHandle(
     const systems::Context<T>&) const {
   return QueryHandle<T>(nullptr, 0);
