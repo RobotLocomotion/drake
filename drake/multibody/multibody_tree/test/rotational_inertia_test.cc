@@ -7,6 +7,8 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_autodiff_types.h"
+#include "drake/math/autodiff.h"
+#include "drake/math/autodiff_gradient.h"
 
 namespace drake {
 namespace multibody {
@@ -15,6 +17,7 @@ namespace {
 
 using Eigen::AngleAxisd;
 using Eigen::Matrix3d;
+using Eigen::MatrixXd;
 using Eigen::NumTraits;
 using Eigen::Vector3d;
 using std::sort;
@@ -516,6 +519,45 @@ GTEST_TEST(RotationalInertia, ShiftOperator) {
   EXPECT_EQ(expected_string, stream.str());
 }
 
+// Tests that we can correctly cast a RotationalInertia<double> to a
+// RotationalInertia templated on an AutoDiffScalar type.
+// The cast from a RotationalInertia<double>, a constant, results in a
+// rotational inertia with zero gradients.
+GTEST_TEST(RotationalInertia, CastToAutoDiff) {
+  typedef Eigen::AutoDiffScalar<Vector1<double>> AutoDiff1d;
+  const RotationalInertia<double> I_double(1, 2.718, 3.14);
+  const RotationalInertia<AutoDiff1d> I_autodiff(1, 2.718, 3.14);
+
+  // Verify derivatives are zero.
+  const auto& m_gradients =
+      drake::math::autoDiffToGradientMatrix(I_autodiff.get_moments());
+  EXPECT_TRUE(m_gradients.isZero(kEpsilon));
+  const auto& p_gradients =
+      drake::math::autoDiffToGradientMatrix(I_autodiff.get_products());
+  EXPECT_TRUE(p_gradients.isZero(kEpsilon));
+
+  // Cast from double to AutoDiffScalar.
+  const RotationalInertia<AutoDiff1d> I_cast = I_double.cast<AutoDiff1d>();
+  EXPECT_TRUE(I_autodiff.IsNearlyEqualTo(I_cast, kEpsilon));
+
+  const Matrix3<AutoDiff1d> I_autodiff_matrix = I_cast.CopyToFullMatrix3();
+  auto I_value = drake::math::autoDiffToValueMatrix(I_autodiff_matrix);
+  I_value.resize(3, 3);
+  EXPECT_TRUE(I_value.isApprox(I_double.CopyToFullMatrix3(), kEpsilon));
+
+  MatrixXd I_gradient =
+      drake::math::autoDiffToGradientMatrix(I_autodiff_matrix);
+  ASSERT_EQ(I_gradient.rows(), 9);
+  ASSERT_EQ(I_gradient.cols(), 1);
+  I_gradient.resize(3, 3);
+  ASSERT_EQ(I_gradient.rows(), 3);
+  ASSERT_EQ(I_gradient.cols(), 3);
+
+  // Since the cast is performed from a RotationalInertia<double>, derivatives
+  // must be zero by default (no independent variables).
+  EXPECT_TRUE(I_gradient.isZero(kEpsilon));
+}
+
 // Tests that we can instantiate a rotational inertia with AutoDiffScalar and
 // we can perform some basic operations with it.
 // As an example, we define the rotational inertia I_B of a body B. The
@@ -525,12 +567,12 @@ GTEST_TEST(RotationalInertia, ShiftOperator) {
 // We then re-express the inertia of B in the world frame and verify the value
 // of its time derivative with the expected result.
 GTEST_TEST(RotationalInertia, AutoDiff) {
-  typedef Eigen::AutoDiffScalar<Vector1<double>> ADScalar;
+  typedef Eigen::AutoDiffScalar<Vector1<double>> AutoDiff1d;
 
   // Helper lambda to extract from a matrix of auto-diff scalar's the matrix of
   // values and the matrix of derivatives.
   auto extract_derivatives = [](
-      const Matrix3<ADScalar>& M, Matrix3d& Mvalue, Matrix3d& Mdot) {
+      const Matrix3<AutoDiff1d>& M, Matrix3d& Mvalue, Matrix3d& Mdot) {
     for (int i = 0; i < 3; ++i) {
       for (int j = 0; j < 3; ++j) {
         Mvalue(i, j) = M(i, j).value();
@@ -541,17 +583,17 @@ GTEST_TEST(RotationalInertia, AutoDiff) {
 
   // Construct a rotational inertia in the frame of a body B.
   const double Ix(1.0), Iy(2.0), Iz(3.0);
-  RotationalInertia<ADScalar> I_B(Ix, Iy, Iz);
+  RotationalInertia<AutoDiff1d> I_B(Ix, Iy, Iz);
 
   // Assume B has a pose rotated +20 degrees about z with respect to the
   // world frame W. The body rotates with angular velocity wz in the z-axis.
   const double angle_value = 20 * M_PI / 180.0;
   const double wz = 1.0;  // Angular velocity in the z-axis.
 
-  ADScalar angle = angle_value;
+  AutoDiff1d angle = angle_value;
   angle.derivatives()[0] = wz;
-  const Matrix3<ADScalar> R_WB =
-      (AngleAxis<ADScalar>(angle, Vector3d::UnitZ())).toRotationMatrix();
+  const Matrix3<AutoDiff1d> R_WB =
+      (AngleAxis<AutoDiff1d>(angle, Vector3d::UnitZ())).toRotationMatrix();
 
   // Split the rotational inertia into two Matrix3d; one with the values and
   // another one with the time derivatives.
@@ -569,7 +611,7 @@ GTEST_TEST(RotationalInertia, AutoDiff) {
   EXPECT_TRUE(wcross.isApprox(wcross_expected, kEpsilon));
 
   // Re-express inertia into another frame.
-  const RotationalInertia<ADScalar> I_W = I_B.ReExpress(R_WB);
+  const RotationalInertia<AutoDiff1d> I_W = I_B.ReExpress(R_WB);
 
   // Extract value and derivatives of I_W into two separate matrices.
   Matrix3d Ivalue_W, Idot_W;
@@ -597,9 +639,9 @@ GTEST_TEST(RotationalInertia, AutoDiff) {
 
   // Test method that compares to inertia matrices using the original rotational
   // inertia and then the rotated/semi-unrotated rotational inertia.
-  const Matrix3<ADScalar> R_BW =
-      (AngleAxis<ADScalar>(-angle, Vector3d::UnitZ())).toRotationMatrix();
-  const RotationalInertia<ADScalar> expectedI_B = I_W.ReExpress(R_BW);
+  const Matrix3<AutoDiff1d> R_BW =
+      (AngleAxis<AutoDiff1d>(-angle, Vector3d::UnitZ())).toRotationMatrix();
+  const RotationalInertia<AutoDiff1d> expectedI_B = I_W.ReExpress(R_BW);
   EXPECT_TRUE(expectedI_B.IsNearlyEqualTo(I_B, kEpsilon));
 }
 
