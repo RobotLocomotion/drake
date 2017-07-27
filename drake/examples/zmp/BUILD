@@ -8,7 +8,7 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
 )
-
+load("//tools:install_data.bzl", "install_data")
 
 drake_cc_binary(
     name = "zmp_example",
@@ -20,6 +20,6 @@ drake_cc_binary(
     ],
 )
 
-# === test/ ===
+install_data("share/drake/drake/examples/zmp")
 
 cpplint()

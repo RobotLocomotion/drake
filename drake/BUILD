@@ -298,7 +298,13 @@ install(
     targets = ["libdrake.so"],
     hdr_dest = "include/drake",
     guess_hdrs = "WORKSPACE",
-    deps = ["//drake/bindings:install"],
+    deps = [
+    "//drake/bindings:install",
+    "//drake/examples:install_data",
+    "//drake/manipulation/models/iiwa_description:install_data",
+    "//drake/manipulation/models/jaco_description:install_data",
+    "//drake/manipulation/models/wsg_50_description:install_data",
+    ],
 )
 
 # Gather all of libdrake.so's dependent headers.

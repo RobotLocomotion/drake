@@ -8,6 +8,7 @@ load(
     "drake_cc_binary",
     "drake_cc_googletest",
 )
+load("//tools:install_data.bzl", "install_data")
 
 package(
     default_visibility = [":__subpackages__"],
@@ -243,5 +244,7 @@ drake_cc_googletest(
         "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
     ],
 )
+
+install_data("share/drake/drake/examples/kuka_iiwa_arm")
 
 cpplint()

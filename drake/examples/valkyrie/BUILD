@@ -8,6 +8,7 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
 )
+load("//tools:install_data.bzl", "install_data")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -190,5 +191,7 @@ drake_cc_googletest(
         "//drake/multibody/rigid_body_plant:drake_visualizer",
     ],
 )
+
+install_data("share/drake/drake/examples/valkyrie")
 
 cpplint()

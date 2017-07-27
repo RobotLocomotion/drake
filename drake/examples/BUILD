@@ -3,6 +3,7 @@
 
 load("//tools:cpplint.bzl", "cpplint")
 load("//tools:drake.bzl", "drake_cc_binary")
+load("//tools:install.bzl", "install")
 
 exports_files([
     "CPPLINT.cfg",
@@ -36,6 +37,26 @@ drake_cc_binary(
         "//drake/systems/analysis:simulator",
         "//drake/systems/framework:leaf_system",
     ],
+)
+
+install(
+    name = "install_data",
+    deps = [
+        "//drake/examples/acrobot:install_data",
+        "//drake/examples/atlas:install_data",
+        "//drake/examples/contact_model:install_data",
+        "//drake/examples/double_pendulum:install_data",
+        "//drake/examples/irb140:install_data",
+        "//drake/examples/kuka_iiwa_arm:install_data",
+        "//drake/examples/particles:install_data",
+        "//drake/examples/pendulum:install_data",
+        "//drake/examples/pr2:install_data",
+        "//drake/examples/quadrotor:install_data",
+        "//drake/examples/simple_four_bar:install_data",
+        "//drake/examples/valkyrie:install_data",
+        "//drake/examples/zmp:install_data",
+    ],
+    visibility = ["//visibility:public"],
 )
 
 cpplint()

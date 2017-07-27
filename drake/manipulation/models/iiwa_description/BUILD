@@ -6,6 +6,7 @@ load(
     "//tools:drake.bzl",
     "drake_cc_googletest",
 )
+load("//tools:install.bzl", "install")
 
 package(
     default_visibility = [":__subpackages__"],
@@ -33,6 +34,13 @@ drake_cc_googletest(
         "//drake/common:find_resource",
         "//drake/multibody/parsers",
     ],
+)
+
+install(
+    name = "install_data",
+    data = [":models"],
+    data_dest = "share/drake/drake/manipulation/models/iiwa_description",
+    visibility = ["//visibility:public"],
 )
 
 cpplint()

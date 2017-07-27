@@ -8,6 +8,7 @@ load(
     "drake_cc_library",
     "drake_cc_binary",
 )
+load("//tools:install_data.bzl", "install_data")
 
 filegroup(
     name = "models",
@@ -97,5 +98,7 @@ drake_cc_googletest(
         "//drake/systems/primitives:constant_vector_source",
     ],
 )
+
+install_data("share/drake/drake/examples/quadrotor")
 
 cpplint()

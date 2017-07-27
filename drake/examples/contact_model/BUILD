@@ -6,6 +6,7 @@ load(
     "//tools:drake.bzl",
     "drake_cc_binary",
 )
+load("//tools:install_data.bzl", "install_data")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -88,5 +89,7 @@ filegroup(
         "pin.urdf",
     ],
 )
+
+install_data("share/drake/drake/examples/contact_model")
 
 cpplint()

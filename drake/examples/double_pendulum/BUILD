@@ -7,6 +7,7 @@ load(
     "drake_cc_library",
     "drake_cc_binary",
 )
+load("//tools:install_data.bzl", "install_data")
 
 filegroup(
     name = "models",
@@ -95,5 +96,7 @@ drake_cc_googletest(
         "//drake/multibody/joints",
     ],
 )
+
+install_data("share/drake/drake/examples/double_pendulum")
 
 cpplint()

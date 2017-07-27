@@ -6,6 +6,7 @@ load(
     "//tools:drake.bzl",
     "drake_cc_googletest",
 )
+load("//tools:install_data.bzl", "install_data")
 
 package(
     default_visibility = [":__subpackages__"],
@@ -37,5 +38,7 @@ drake_cc_googletest(
         "//drake/multibody/parsers",
     ],
 )
+
+install_data("share/drake/drake/manipulation/models/wsg_50_description")
 
 cpplint()

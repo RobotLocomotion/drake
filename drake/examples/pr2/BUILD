@@ -1,5 +1,6 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
+load("//tools:install_data.bzl", "install_data")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -12,3 +13,5 @@ filegroup(
         "pr2.urdf",
     ]),
 )
+
+install_data("share/drake/drake/examples/pr2")

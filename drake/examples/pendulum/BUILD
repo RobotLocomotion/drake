@@ -3,6 +3,7 @@
 
 load("//tools:cpplint.bzl", "cpplint")
 load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library", "drake_cc_binary")
+load("//tools:install_data.bzl", "install_data")
 
 drake_cc_library(
     name = "pendulum_state_vector",
@@ -172,5 +173,7 @@ filegroup(
     ]),
     visibility = ["//visibility:public"],
 )
+
+install_data("share/drake/drake/examples/pendulum")
 
 cpplint()
