@@ -343,16 +343,17 @@ void RigidContactSolver<T>::CalcContactForcesInContactFrames(
     throw std::logic_error("Vector of contact forces is null.");
 
   // Verify that cf is the correct size.
-  const int n_non_sliding = problem_data.non_sliding_contacts.size();
-  const int nc = problem_data.sliding_contacts.size() + n_non_sliding;
-  const int nr = std::accumulate(problem_data.r.begin(),
-                                 problem_data.r.end(), 0);
-  const int nvars = nc + nr;
-  if (nvars != cf.size())
+  const int num_non_sliding_contacts = problem_data.non_sliding_contacts.size();
+  const int num_contacts = problem_data.sliding_contacts.size() +
+      num_non_sliding_contactsn_sliding;
+  const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
+                                                   problem_data.r.end(), 0);
+  const int num_vars = num_contacts + num_spanning_vectors;
+  if (num_vars != cf.size())
     throw std::logic_error("Unexpected packed contact force vector dimension.");
 
   // Verify that the problem is indeed two-dimensional.
-  if (nr != n_non_sliding) {
+  if (num_spanning_vectors != num_non_sliding_contacts) {
     throw std::logic_error("Problem data 'r' indicates contact problem is not "
                                "two-dimensional");
   }

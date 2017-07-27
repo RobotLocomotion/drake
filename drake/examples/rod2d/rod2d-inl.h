@@ -461,31 +461,35 @@ Vector3<T> Rod2D<T>::GetJacobianDotRow(const systems::Context<T>& context,
 }
 
 template <class T>
-Matrix2<T> Rod2D<T>::GetSlidingContactFrame(const T& xaxis_velocity) const {
+Matrix2<T> Rod2D<T>::GetSlidingContactFrameToWorldTransform(
+    const T& xaxis_velocity) const {
   // Note: normal for the rod is always +y; sliding tangent vector is
   // either +/-x. << operator populates the matrix row by row, so
-  // F = | 0  1 |
-  //     | ±1 0 |
+  // R_WC = | 0  1 |
+  //        | ±1 0 |
   // indicating that the contact normal direction is +y ([0 1]) and the contact
   // tangent direction (more precisely, the direction of sliding) is
   // ±x (±[1 0]).
   DRAKE_DEMAND(xaxis_velocity != 0);
-  Matrix2<T> F;
-  F << 0, 1, ((xaxis_velocity > 0) ? 1 : -1), 0;
-  return F;
+  Matrix2<T> R_WC;
+  // NOTE: Formatting indicates matrix setup.
+  R_WC << 0,                               1,
+          ((xaxis_velocity > 0) ? 1 : -1), 0;
+  return R_WC;
 }
 
 template <class T>
-Matrix2<T> Rod2D<T>::GetNonSlidingContactFrame() const {
+Matrix2<T> Rod2D<T>::GetNonSlidingContactFrameToWorldTransform() const {
   // Note: normal for the rod is always +y; non-sliding tangent vector is
   // always +x. << operator populates the matrix row by row, so
-  // F = | 0 1 |
-  //     | 1 0 |
+  // R_WC = | 0 1 |
+  //        | 1 0 |
   // indicating that the contact normal direction is +y ([0 1]) and the contact
   // tangent direction is +x ([1 0]).
-  Matrix2<T> F;
-  F << 0, 1, 1, 0;
-  return F;
+  Matrix2<T> R_WC;
+  R_WC << 0, 1,
+          1, 0;
+  return R_WC;
 }
 
 template <class T>
@@ -503,9 +507,9 @@ void Rod2D<T>::CalcRigidContactProblemData(
                                   std::placeholders::_1);
 
   // The normal and tangent spanning direction are unique.
-  const Matrix2<T> non_sliding_contact_frame = GetNonSlidingContactFrame();
-  const auto& contact_normal = non_sliding_contact_frame.col(0);
-  const auto& contact_tangent = non_sliding_contact_frame.col(1);
+  const Matrix2<T> R_wc = GetNonSlidingContactFrameToWorldTransform();
+  const auto& contact_normal = R_wc.col(0);
+  const auto& contact_tangent = R_wc.col(1);
 
   // Verify contact normal and tangent directions are as we expect.
   DRAKE_ASSERT(abs(contact_normal.dot(Vector2<T>(0, 1)) - 1) <
@@ -578,7 +582,8 @@ void Rod2D<T>::CalcRigidContactProblemData(
     if (std::binary_search(data->non_sliding_contacts.begin(),
                            data->non_sliding_contacts.end(), i))
       continue;
-    const auto& sliding_dir = GetSlidingContactFrame(tangent_vels[i]).col(1);
+    const auto& sliding_dir = GetSlidingContactFrameToWorldTransform(
+        tangent_vels[i]).col(1);
     Qrow = GetJacobianRow(context, points[i], sliding_dir);
     data->N_minus_mu_Q.row(i) -= data->mu_sliding[j] * Qrow;
     ++j;
