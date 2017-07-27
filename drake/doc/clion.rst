@@ -35,7 +35,7 @@ Users upgrading from a previous version of CLion should do the following:
    in your user directory, typically ``~/.local/share/applications``.
 2. Uninstall the previous version of the Bazel plugin and update to the latest
    version. See `Installing the Bazel Plugin`_.
-3. CLion 2017.3.1 users, confirm that you are using Bazel plugin 2017.05.02
+3. CLion 2017.1.3 users, confirm that you are using Bazel plugin 2017.05.02
    and Bazel version 0.5.2.
 
 **Note**: It is not necessary to import your project into a *new* CLion project.
