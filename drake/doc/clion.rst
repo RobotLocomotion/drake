@@ -10,9 +10,9 @@ Using CLion with CMake
 ======================
 
 (We recommend using Bazel rather than CMake; see instructions below.
-**CAUTION**: the Bazel plugin does not necessarily work with the latest
-CLion. We have tested it up to CLion 2016.3.5 and it does not
-currently work with CLion 2017.1.)
+**CAUTION**: the latest Bazel plugin (version 2017.07.05.0.2) does not
+necessarily work with the latest CLion. We have tested it up to CLion 2017.1.3
+and it does not currently work with CLion 2017.2)
 
 Installing CLion
 ----------------
@@ -23,6 +23,24 @@ Installing CLion
    straightforward. Just using defaults for everything is fine. You now have a
    30-day trial version of CLion. Either try it out as is, or get a free
    academic license `here <https://www.jetbrains.com/shop/eform/students>`_.
+
+Upgrading CLion
+---------------
+
+Users upgrading from a previous version of CLion should do the following:
+
+1. To have your Unity launcher CLion icon point to the correct version,
+   run ``locate jetbrains-clion.desktop`` and edit the located file. If more
+   than one file is located, you may want to consolidate to a single launch file
+   in your user directory, typically ``~/.local/share/applications``.
+2. Uninstall the previous version of the Bazel plugin and update to the latest
+   version. See `Installing the Bazel Plugin`_.
+3. CLion 2017.3.1 users, confirm that you are using Bazel plugin 2017.05.02
+   and Bazel version 0.5.2.
+
+**Note**: It is not necessary to import your project into a *new* CLion project.
+Overwriting the old project is appropriate (i.e., the directory likely located
+in ``~/ClionProjects/project-name``).
 
 Setting up Drake in CLion
 -------------------------
