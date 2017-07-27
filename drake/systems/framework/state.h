@@ -12,10 +12,15 @@
 namespace drake {
 namespace systems {
 
-/// The State is a container for all the data comprising the complete state of
-/// a particular System at a particular moment. Any field in the State may be
-/// empty if it is not applicable to the System in question. A System may not
-/// maintain state in any place other than the State object.
+/// %State is a container for all the data comprising the
+/// complete state of a particular System at a particular moment. Any field in
+/// %State may be empty if it is not applicable to the System in question.
+/// A System may not maintain state in any place other than a %State object.
+///
+/// A %State `x` contains three types of state variables:
+/// - ContinuousState `xc`
+/// - DiscreteState   `xd`
+/// - AbstractState   `xa`
 ///
 /// @tparam T A mathematical type compatible with Eigen's Scalar.
 template <typename T>
