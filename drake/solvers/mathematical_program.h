@@ -1963,8 +1963,8 @@ class MathematicalProgram {
    * to be called by the appropriate solver, not by the user. It sets
    * the lower bound of the cost found by the solver, during the optimization
    * process. For example, for mixed-integer optimization, the branch-and-bound
-   * algorithm can find the lower bound of the optimal cost, along the branching
-   * process.
+   * algorithm can find the lower bound of the optimal cost, during the
+   * branching process.
    */
   void SetLowerBoundCost(double lower_bound_cost) {
     lower_bound_cost_ = lower_bound_cost;
