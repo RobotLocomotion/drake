@@ -54,11 +54,15 @@ class QueryHandle {
       : context_(context), guard_(guard) {}
 
   // The context associated with the current handle.
-  const systems::Context<T>* context_;
+  const systems::Context<T>* context_{};
   // Serves as a hash of the state in which this QueryHandle was constructed.
   // Serves to catch usage of a QueryHandle beyond its lifespan. The member is
   // a size_t because std::hash returns a size_t.
-  size_t guard_;
+  // NOTE: This is a short-term solution. Ultimately, QueryHandle would have
+  // appropriate copy semantics such that copying it out of the AbstractValue
+  // will create a version of the handle that is divorced from the underlying
+  // Context.
+  size_t guard_{};
 };
 
 }  // namespace geometry
