@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "drake/systems/analysis/integrator_base.h"
 
 namespace drake {
@@ -81,5 +83,5 @@ class RungeKuttaMersonIntegrator final : public IntegratorBase<T> {
   std::unique_ptr<ContinuousState<T>> derivs0_, derivs1_, derivs2_, derivs3_,
                                       derivs4_;
 };
-}  // systems
-}  // drake
+}  // namespace systems
+}  // namespace drake

@@ -526,7 +526,7 @@ void AutomotiveSimulator<T>::Start(double target_realtime_rate) {
 
   simulator_->set_target_realtime_rate(target_realtime_rate);
   simulator_->get_mutable_integrator()->set_maximum_step_size(0.01);
-  simulator_->get_mutable_integrator()->set_requested_minimum_step_size(0.01);
+  simulator_->get_mutable_integrator()->set_fixed_step_mode(true);
   simulator_->Initialize();
 }
 

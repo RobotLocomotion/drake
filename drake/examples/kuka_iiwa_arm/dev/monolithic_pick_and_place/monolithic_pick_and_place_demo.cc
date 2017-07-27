@@ -306,6 +306,7 @@ int DoMain(void) {
   simulator.Initialize();
   simulator.set_target_realtime_rate(FLAGS_realtime_rate);
   simulator.get_mutable_integrator()->set_maximum_step_size(FLAGS_dt);
+  simulator.get_mutable_integrator()->set_fixed_step_mode(true);
 
   auto& plan_source_context = sys->GetMutableSubsystemContext(
       *iiwa_trajectory_generator, simulator.get_mutable_context());

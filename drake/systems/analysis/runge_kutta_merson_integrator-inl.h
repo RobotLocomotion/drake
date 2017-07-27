@@ -5,7 +5,7 @@
 /// Most users should only include that file, not this one.
 /// For background, see http://drake.mit.edu/cxx_inl.html.
 
-#include "runge_kutta_merson_integrator.h"
+#include "drake/systems/analysis/runge_kutta_merson_integrator.h"
 
 namespace drake {
 namespace systems {
@@ -104,5 +104,5 @@ bool RungeKuttaMersonIntegrator<T>::DoStep(const T& dt) {
   return true;
 }
 
-}  // systems
-}  // drake
+}  // namespace systems
+}  // namespace drake
