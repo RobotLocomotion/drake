@@ -1578,10 +1578,13 @@ std::pair<bool, T> IntegratorBase<T>::CalcAdjustedStepSize(
 template <class T>
 typename IntegratorBase<T>::StepResult IntegratorBase<T>::IntegrateAtMost(
     const T& publish_dt, const T& update_dt, const T& boundary_dt) {
-  const T t0 = context_->get_time();
 
   if (!IntegratorBase<T>::is_initialized())
     throw std::logic_error("Integrator not initialized.");
+
+  // Now that integrator has been checked for initialization, get the current
+  // time.
+  const T t0 = context_->get_time();
 
   // Verify that update dt is positive.
   if (update_dt <= 0.0)
