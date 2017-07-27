@@ -2232,8 +2232,9 @@ class MathematicalProgram {
   std::shared_ptr<SolverData> solver_data_;
   optional<SolverId> solver_id_;
   double optimal_cost_{};
-  double lower_bound_cost_{};  // The lower bound of the objective found by the
-  // solver, during the optimization process.
+  // The lower bound of the objective found by the solver, during the
+  // optimization process.
+  double lower_bound_cost_{};
   std::map<SolverId, std::map<std::string, double>> solver_options_double_;
   std::map<SolverId, std::map<std::string, int>> solver_options_int_;
   std::map<SolverId, std::map<std::string, std::string>> solver_options_str_;
