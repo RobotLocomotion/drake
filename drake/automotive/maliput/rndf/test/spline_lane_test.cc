@@ -317,6 +317,59 @@ GTEST_TEST(RNDFSplineLanesTest, ComputeLength) {
               kVeryExact);
 }
 
+// Performs geometric tests over the bounds of a pair of straight lanes.
+//
+// Geometry of the segment is as follows:
+//
+// x = 0.0        x = 10.0
+// +--------------+   <-- y = 12.5
+// |------l2------|   <-- y = 10.0
+// +--------------+   <-- y = 7.5
+//
+// +--------------+   <-- y = 2.5
+// |------l1------|   <-- y = 0.0
+// +--------------+   <-- y = -2.5
+GTEST_TEST(RNDFSplineLanesTest, TwoFlatLineLanesBoundChecks) {
+  const double kWidth = 5.;
+  RoadGeometry rg({"TwoFlatLineLanes"}, kPathTolerance, kAngularTolerance);
+  Segment* s1 = rg.NewJunction({"j1"})->NewSegment({"s1"});
+  std::vector<std::tuple<ignition::math::Vector3d, ignition::math::Vector3d>>
+      control_points;
+  control_points.push_back(
+      std::make_tuple(ignition::math::Vector3d(0.0, 0.0, 0.0),
+                      ignition::math::Vector3d(1.0, 0.0, 0.0)));
+  control_points.push_back(
+      std::make_tuple(ignition::math::Vector3d(10.0, 0.0, 0.0),
+                      ignition::math::Vector3d(1.0, 0.0, 0.0)));
+  const Lane* l1 = s1->NewSplineLane({"l1"}, control_points, kWidth);
+
+  control_points.clear();
+  control_points.push_back(
+      std::make_tuple(ignition::math::Vector3d(0.0, 10.0, 0.0),
+                      ignition::math::Vector3d(10.0, 0.0, 0.0)));
+  control_points.push_back(
+      std::make_tuple(ignition::math::Vector3d(10.0, 10.0, 0.0),
+                      ignition::math::Vector3d(10.0, 0.0, 0.0)));
+  const Lane* l2 = s1->NewSplineLane({"l2"}, control_points, kWidth);
+  // Checks road geometry invariants.
+  EXPECT_EQ(rg.CheckInvariants(), std::vector<std::string>());
+  // Checks bounds.
+  EXPECT_TRUE(api::test::IsRBoundsClose(l1->lane_bounds(0.),
+                                        api::RBounds(-kWidth / 2., kWidth / 2.),
+                                        kVeryExact));
+  EXPECT_TRUE(api::test::IsRBoundsClose(l2->lane_bounds(0.),
+                                        api::RBounds(-kWidth / 2., kWidth / 2.),
+                                        kVeryExact));
+  EXPECT_TRUE(api::test::IsRBoundsClose(l1->driveable_bounds(0.),
+                                        api::RBounds(-kWidth / 2.,
+                                                     10.0 + kWidth / 2.),
+                                        kVeryExact));
+  EXPECT_TRUE(api::test::IsRBoundsClose(l2->driveable_bounds(0.),
+                                        api::RBounds(-10.0 -kWidth / 2.,
+                                                     kWidth / 2.),
+                                        kVeryExact));
+}
+
 }  // namespace rndf
 }  // namespace maliput
 }  // namespace drake
