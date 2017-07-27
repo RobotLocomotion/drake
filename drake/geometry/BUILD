@@ -38,12 +38,13 @@ drake_cc_library(
     srcs = ["geometry_system.cc"],
     hdrs = [
         "geometry_system.h",
+        "query_handle.h",
     ],
     deps = [
         ":geometry_frame",
-        ":geometry_ids",
         ":geometry_instance",
         "//drake/common",
+        "//drake/geometry/query_results:penetration_as_point_pair",
         "//drake/systems/framework",
     ],
 )
