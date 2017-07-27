@@ -74,6 +74,28 @@ class Polynomial {
   /// Returns an equivalent symbolic expression of this polynomial.
   Expression ToExpression() const;
 
+  /** Differentiates this polynomial with respect to the variable @p x. Note
+   * that a variable @p x can be either a decision variable or an indeterminate.
+   */
+  Polynomial Differentiate(const Variable& x) const;
+
+  /// Computes the Jacobian matrix J of the polynomial with respect to
+  /// @p vars. J(0,i) contains ∂f/∂vars(i).
+  template <typename Derived>
+  Eigen::Matrix<Polynomial, 1, Derived::RowsAtCompileTime> Jacobian(
+      const Eigen::MatrixBase<Derived>& vars) const {
+    static_assert(std::is_same<typename Derived::Scalar, Variable>::value &&
+                      (Derived::ColsAtCompileTime == 1),
+                  "The argument of Polynomial::Jacobian should be a vector of "
+                  "symbolic variables.");
+    const VectorX<Expression>::Index n{vars.size()};
+    Eigen::Matrix<Polynomial, 1, Derived::RowsAtCompileTime> J{1, n};
+    for (VectorX<Expression>::Index i = 0; i < n; ++i) {
+      J(0, i) = Differentiate(vars(i));
+    }
+    return J;
+  }
+
   /// Adds @p coeff * @p m to this polynomial.
   Polynomial& AddProduct(const Expression& coeff, const Monomial& m);
 
