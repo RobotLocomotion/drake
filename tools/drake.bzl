@@ -210,9 +210,9 @@ def drake_cc_googletest(
     if deps == None:
         deps = []
     if use_default_main:
-        deps.append("@gtest//:main")
+        deps = deps + ["@gtest//:main"]
     else:
-        deps.append("@gtest//:without_main")
+        deps = deps + ["@gtest//:without_main"]
     drake_cc_test(
         name = name,
         deps = deps,
