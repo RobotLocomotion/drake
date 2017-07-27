@@ -6,9 +6,9 @@
 namespace drake {
 namespace solvers {
 /**
- * For two binary expressions b1 and b2, each can only take a value 0 or 1,
- * imposes constraints on b1, b2, together with b1_and_b2, such that
- * b1_and_b2 = b1 ∧ b2.
+ * Add linear constraints, such that when b1, b2, b1_xor_b2 satisfy the
+ * constraints, and b1, b2 take binary values, it is guaranteed that
+ * b1_and_b2 = b1 ∧ b2 (b1 and b2).
  * The constraints are
  * <pre>
  *   b1_and_b2 >= b1 + b2 - 1
@@ -28,9 +28,9 @@ Binding<LinearConstraint> CreateLogicalAndConstraint(
     const symbolic::Expression& b1_and_b2);
 
 /**
- * For two binary expressions b1 and b2, each can only take a value 0 or 1,
- * imposes constraints on b1, b2, together with b1_or_b2, such that
- * b1_or_b2 = b1 ∨ b2.
+ * Add linear constraints, such that when b1, b2, b1_xor_b2 satisfy the
+ * constraints, and b1, b2 take binary values, it is guaranteed that
+ * b1_or_b2 = b1 ∨ b2 (b1 or b2).
  * The constraints are
  * <pre>
  *   b1_or_b2 <= b1 + b2
@@ -50,9 +50,9 @@ Binding<LinearConstraint> CreateLogicalOrConstraint(
     const symbolic::Expression& b1_or_b2);
 
 /**
- * For two binary expressions b1 and b2, each can only take a value 0 or 1,
- * imposes constraints on b1, b2, together with b1_xor_b2, such that
- * b1_xor_b2 = b1 ⊕ b2 (b1 exclusive or b2).
+ * Add linear constraints, such that when b1, b2, b1_xor_b2 satisfy the
+ * constraints, and b1, b2 take binary values, it is guaranteed that
+ * b1_xor_b2 = b1 ⊕ b2 (b1 exclusive xor b2).
  * The constraints are
  * <pre>
  *   b1_xor_b2 <= b1 + b2
