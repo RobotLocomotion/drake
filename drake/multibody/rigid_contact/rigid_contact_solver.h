@@ -345,7 +345,7 @@ void RigidContactSolver<T>::CalcContactForcesInContactFrames(
   // Verify that cf is the correct size.
   const int num_non_sliding_contacts = problem_data.non_sliding_contacts.size();
   const int num_contacts = problem_data.sliding_contacts.size() +
-      num_non_sliding_contactsn_sliding;
+      num_non_sliding_contacts;
   const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
                                                    problem_data.r.end(), 0);
   const int num_vars = num_contacts + num_spanning_vectors;
@@ -359,14 +359,15 @@ void RigidContactSolver<T>::CalcContactForcesInContactFrames(
   }
 
   // Verify that the correct number of contact frames has been specified.
-  if (contact_frames.size() != (size_t) nc) {
+  if (contact_frames.size() != (size_t) num_contacts) {
     throw std::logic_error("Number of contact frames does not match number of "
                                "contacts.");
   }
 
   // Set the forces
   contact_forces->resize(contact_frames.size());
-  for (int i = 0, sliding_index = 0, non_sliding_index = 0; i < nc; ++i) {
+  for (int i = 0, sliding_index = 0, non_sliding_index = 0; i < num_contacts;
+       ++i) {
     // Alias the force.
     Vector2<T>& contact_force_i = (*contact_forces)[i];
 
@@ -404,7 +405,7 @@ void RigidContactSolver<T>::CalcContactForcesInContactFrames(
     if (is_sliding) {
       f0 -= contact_tangent * cf[i] * problem_data.mu_sliding[sliding_index++];
     } else {
-      f0 += contact_tangent * cf[nc + non_sliding_index++];
+      f0 += contact_tangent * cf[num_contacts + non_sliding_index++];
     }
 
     // Compute the contact force in the contact frame.
