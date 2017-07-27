@@ -35,9 +35,23 @@ class Acrobot {
   /// z_W = normal_W.normalized();
   /// y_W = (up - up.dot(z_W) * z_W).normalized();
   /// x_W = y_W.cross(z_W);
-  Acrobot(const Vector3<T>& normal, const Vector3<T>& up);
+  Acrobot(const Vector3<T>& normal, const Vector3<T>& up,
+          double m1 = 1.0,
+          double m2 = 1.0,
+          double l1 = 1.0,
+          double l2 = 2.0,
+          double lc1 = 0.5,
+          double lc2 = 1.0,
+          double Ic1 = .083,
+          double Ic2 = .33,
+          double b1 = 0.1,
+          double b2 = 0.1,
+          double g = 9.81);
 
   Matrix2<T> CalcMassMatrix(const T& theta2) const;
+
+  Vector2<T> CalcCoriolisVector(const T& theta1, const T& theta2,
+                                const T& theta1dot, const T& theta2dot) const;
 
   /// Computes the pose of the center of mass of link 1 measured and expressed
   /// in the world frame.
@@ -115,21 +129,21 @@ class Acrobot {
 
  private:
   const T
-      m1{1.0},    // Mass of link 1 (kg).
-      m2{1.0},    // Mass of link 2 (kg).
-      l1{1.0},    // Length of link 1 (m).
-      l2{1.0},    // Length of link 2 (m).
-      lc1{0.5},   // Vertical distance from shoulder joint to center of mass of
-                  // link 1 (m).
-      lc2{0.5},   // Vertical distance from elbox joint to center of mass of
-                  // link 2 (m).
-      Ic1{.083},  // Inertia of link 1 about the center of mass of link 1
-                  // (kg*m^2).
-      Ic2{.33},   // Inertia of link 2 about the center of mass of link 2
-                  // (kg*m^2).
-      b1{0.1},    // Damping coefficient of the shoulder joint (kg*m^2/s).
-      b2{0.1},    // Damping coefficient of the elbow joint (kg*m^2/s).
-      g{9.81};    // Gravitational constant (m/s^2).
+      m1_{1.0},    // Mass of link 1 (kg).
+      m2_{1.0},    // Mass of link 2 (kg).
+      l1_{1.0},    // Length of link 1 (m).
+      l2_{1.0},    // Length of link 2 (m).
+      lc1_{0.5},   // Vertical distance from shoulder joint to center of mass of
+                   // link 1 (m).
+      lc2_{0.5},   // Vertical distance from elbox joint to center of mass of
+                   // link 2 (m).
+      Ic1_{.083},  // Inertia of link 1 about the center of mass of link 1
+                   // (kg*m^2).
+      Ic2_{.33},   // Inertia of link 2 about the center of mass of link 2
+                   // (kg*m^2).
+      b1_{0.1},    // Damping coefficient of the shoulder joint (kg*m^2/s).
+      b2_{0.1},    // Damping coefficient of the elbow joint (kg*m^2/s).
+      g_{9.81};    // Gravitational constant (m/s^2).
 
   // Transformation from the model frame D to the world frame W.
   Isometry3<T> X_WD_{Isometry3<T>::Identity()};
