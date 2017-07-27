@@ -817,7 +817,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
         // If the problem is a mixed-integer optimization program, provide
         // Gurobi's lower bound.
         double lower_bound;
-        auto error = GRBgetdblattr(model, GRB_DBL_ATTR_OBJBOUND, &lower_bound);
+        error = GRBgetdblattr(model, GRB_DBL_ATTR_OBJBOUND, &lower_bound);
         if (error) {
           drake::log()->error("GRB error {} getting lower bound: {}\n", error,
                               GRBgeterrormsg(GRBgetenv(model)));
