@@ -101,7 +101,7 @@ int gurobi_callback(GRBmodel* model, void* cbdata, int where, void* usrdata) {
     auto error = GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOL,
                           callback_info->solver_sol_vector.data());
     if (error) {
-      drake::log()->error("GRB error %d in MIPSol callback cbget: %s\n", error,
+      drake::log()->error("GRB error {} in MIPSol callback cbget: {}\n", error,
                           GRBgeterrormsg(GRBgetenv(model)));
       return 0;
     }
@@ -119,7 +119,7 @@ int gurobi_callback(GRBmodel* model, void* cbdata, int where, void* usrdata) {
     auto error = GRBcbget(cbdata, where, GRB_CB_MIPNODE_STATUS, &sol_status);
     if (error) {
       drake::log()->error(
-          "GRB error %d in MIPNode callback getting sol status: %s\n", error,
+          "GRB error {} in MIPNode callback getting sol status: {}\n", error,
           GRBgeterrormsg(GRBgetenv(model)));
       return 0;
     } else if (sol_status == GRB_OPTIMAL) {
@@ -128,7 +128,7 @@ int gurobi_callback(GRBmodel* model, void* cbdata, int where, void* usrdata) {
       auto error = GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOL,
                             callback_info->solver_sol_vector.data());
       if (error) {
-        drake::log()->error("GRB error %d in MIPSol callback cbget: %s\n",
+        drake::log()->error("GRB error {} in MIPSol callback cbget: {}\n",
                             error, GRBgeterrormsg(GRBgetenv(model)));
         return 0;
       }
@@ -156,7 +156,7 @@ int gurobi_callback(GRBmodel* model, void* cbdata, int where, void* usrdata) {
         double objective_solution;
         error = GRBcbsolution(cbdata, new_sol.data(), &objective_solution);
         if (error) {
-          drake::log()->error("GRB error %d in injection: %s\n", error,
+          drake::log()->error("GRB error {} in injection: {}\n", error,
                               GRBgeterrormsg(GRBgetenv(model)));
         }
       }
@@ -629,6 +629,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
                            std::numeric_limits<double>::infinity());
 
   std::vector<char> gurobi_var_type(num_prog_vars);
+  bool is_mip{false};
   for (int i = 0; i < num_prog_vars; ++i) {
     switch (prog.decision_variable(i).get_type()) {
       case MathematicalProgram::VarType::CONTINUOUS:
@@ -636,9 +637,11 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
         break;
       case MathematicalProgram::VarType::BINARY:
         gurobi_var_type[i] = GRB_BINARY;
+        is_mip = true;
         break;
       case MathematicalProgram::VarType::INTEGER:
         gurobi_var_type[i] = GRB_INTEGER;
+        is_mip = true;
       case MathematicalProgram::VarType::BOOLEAN:
         throw std::runtime_error(
             "Boolean variables should not be used with Gurobi solver.");
@@ -760,8 +763,9 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   // TODO(naveenoid) : Properly handle gurobi specific error.
   // message.
   if (error) {
-    // TODO(naveenoid) : log error message using GRBgeterrormsg(env).
     result = SolutionResult::kInvalidInput;
+    drake::log()->info("Gurobi returns code {}, with message \"{}\".\n", error,
+                       GRBgeterrormsg(env));
   } else {
     int optimstatus = 0;
     GRBgetintattr(model, GRB_INT_ATTR_STATUS, &optimstatus);
@@ -809,14 +813,17 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
       // Provide Gurobi's computed cost in addition to the constant cost.
       prog.SetOptimalCost(optimal_cost + constant_cost);
 
-      // Provide Gurobi's lower bound.
-      double lower_bound;
-      auto error = GRBgetdblattr(model, GRB_DBL_ATTR_OBJBOUND, &lower_bound);
-      if (error) {
-        drake::log()->error("GRB error %d getting lower bound: %s\n", error,
-                            GRBgeterrormsg(GRBgetenv(model)));
-      } else {
-        prog.SetLowerBoundCost(lower_bound);
+      if (is_mip) {
+        // If the problem is a mixed-integer optimization program, provide
+        // Gurobi's lower bound.
+        double lower_bound;
+        error = GRBgetdblattr(model, GRB_DBL_ATTR_OBJBOUND, &lower_bound);
+        if (error) {
+          drake::log()->error("GRB error {} getting lower bound: {}\n", error,
+                              GRBgeterrormsg(GRBgetenv(model)));
+        } else {
+          prog.SetLowerBoundCost(lower_bound);
+        }
       }
     }
   }
