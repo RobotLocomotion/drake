@@ -507,6 +507,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "eigen_types_test",
+    deps = [
+        ":common",
+        ":nice_type_name",
+    ],
+)
+
+drake_cc_googletest(
     name = "eigen_stl_types_test",
     deps = [
         ":common",
