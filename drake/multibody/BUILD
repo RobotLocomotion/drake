@@ -295,7 +295,6 @@ drake_cc_binary(
         ":rigid_body_tree",
         "//drake/common:measure_execution",
         "//drake/multibody/parsers",
-        "@gtest//:main",
     ],
 )
 
