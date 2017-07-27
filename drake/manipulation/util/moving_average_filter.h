@@ -8,13 +8,13 @@
 
 namespace drake {
 namespace manipulation {
-namespace utils {
+namespace util {
 
 /**
  * The implementation of a Moving Average Filter. This discrete time filter
  * outputs the average of the last n samples i.e.
- *  y(k) = 1/n ∑ⱼ x(k-j) ∀ j = 0..n-1, when n<k and,
- *       = 1/k ∑ⱼ x(j) ∀ j = 0..k otherwise;
+ *  y[k] = 1/n ∑ⱼ x[k-j] ∀ j = 0..n-1, when n<k and,
+ *       = 1/k ∑ⱼ x[j] ∀ j = 0..k otherwise;
  * where n is the window size and x being the discrete-time signal that is
  * to be filtered, y is the filtered signal and k is the index of latest
  * element in the signal time-series.
@@ -37,24 +37,24 @@ class MovingAverageFilter {
    * @param window_size The size of the window.
    * @throws a std::runtime_error when window_size <= 0.
    */
-  explicit MovingAverageFilter(unsigned int window_size);
+  explicit MovingAverageFilter(int window_size);
 
   /**
-   * Computes the average filter result. Every call to this method modifies
+   * Updates the average filter result. Every call to this method modifies
    * the internal state of this filter thus resulting in a computation of
    * the moving average of the data present within the filter window.
    *
    * @param new_data
    * @return
    */
-  T Compute(const T& new_data);
+  T Update(const T& new_data);
 
  private:
   std::queue<T> window_;
-  size_t window_size_{0};
+  int window_size_{0};
   T sum_;
 };
 
-}  // namespace utils
+}  // namespace util
 }  // namespace manipulation
 }  // namespace drake

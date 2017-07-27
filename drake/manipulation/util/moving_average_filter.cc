@@ -5,22 +5,22 @@
 
 namespace drake {
 namespace manipulation {
-namespace utils {
+namespace util {
 namespace {
 
-size_t get_dimensions(double data) { return 1; }
+int get_dimensions(double data) { return 1; }
 
-size_t get_dimensions(VectorX<double> data) { return data.size(); }
+int get_dimensions(VectorX<double> data) { return data.size(); }
 }  // namespace
 
 template <typename T>
-MovingAverageFilter<T>::MovingAverageFilter(unsigned int window_size)
+MovingAverageFilter<T>::MovingAverageFilter(int window_size)
     : window_size_(window_size) {
   DRAKE_THROW_UNLESS(window_size_ > 0);
 }
 
 template <typename T>
-T MovingAverageFilter<T>::Compute(const T& new_data) {
+T MovingAverageFilter<T>::Update(const T& new_data) {
   // First intialize sum (needed when type is not a scalar)
 
   if (window_.size() == 0) {
@@ -35,7 +35,7 @@ T MovingAverageFilter<T>::Compute(const T& new_data) {
 
   window_.push(new_data);
 
-  if (window_.size() > window_size_) {
+  if (window_.size() > (unsigned int)window_size_) {
     sum_ -= window_.front();
     window_.pop();
   }
@@ -45,6 +45,6 @@ T MovingAverageFilter<T>::Compute(const T& new_data) {
 template class MovingAverageFilter<double>;
 template class MovingAverageFilter<VectorX<double>>;
 
-}  // namespace utils
+}  // namespace util
 }  // namespace manipulation
 }  // namespace drake
