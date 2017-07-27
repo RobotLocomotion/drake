@@ -1959,7 +1959,12 @@ class MathematicalProgram {
    */
   double GetLowerBoundCost() const { return lower_bound_cost_; }
   /**
-   * Setter for lower bound on optimal cost.
+   * Setter for lower bound on optimal cost. This function is meant
+   * to be called by the appropriate solver, not by the user. It sets
+   * the lower bound of the cost found by the solver, during the optimization
+   * process. For example, for mixed-integer optimization, the branch-and-bound
+   * algorithm can find the lower bound of the optimal cost, along the branching
+   * process.
    */
   void SetLowerBoundCost(double lower_bound_cost) {
     lower_bound_cost_ = lower_bound_cost;
@@ -2227,7 +2232,8 @@ class MathematicalProgram {
   std::shared_ptr<SolverData> solver_data_;
   optional<SolverId> solver_id_;
   double optimal_cost_{};
-  double lower_bound_cost_{};
+  double lower_bound_cost_{}; // The lower bound of the objective found by the
+  // solver, during the optimization process.
   std::map<SolverId, std::map<std::string, double>> solver_options_double_;
   std::map<SolverId, std::map<std::string, int>> solver_options_int_;
   std::map<SolverId, std::map<std::string, std::string>> solver_options_str_;
