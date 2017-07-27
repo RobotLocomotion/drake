@@ -469,7 +469,7 @@ INSTANTIATE_TEST_CASE_P(
 // McCormick relaxation, can lie in either the same or the opposite orthant.
 class TestMcCormickOrthant
     : public ::testing::TestWithParam<
-          std::tuple<int, int, bool, std::pair<int, int>, bool>> {
+          std::tuple<int, int, bool, std::pair<int, int>, bool, bool>> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestMcCormickOrthant)
 
@@ -482,13 +482,18 @@ class TestMcCormickOrthant
     const int idx0 = std::get<3>(GetParam()).first;
     const int idx1 = std::get<3>(GetParam()).second;
     const bool is_same_orthant = std::get<4>(GetParam());
+    const bool replace_bilinear = std::get<5>(GetParam());
     DRAKE_DEMAND(idx0 != idx1);
     DRAKE_DEMAND(idx0 >= 0);
     DRAKE_DEMAND(idx1 >= 0);
     DRAKE_DEMAND(idx0 <= 2);
     DRAKE_DEMAND(idx1 <= 2);
 
-    AddRotationMatrixMcCormickEnvelopeMilpConstraints(&prog_, R_, num_bin);
+    if (replace_bilinear) {
+      AddRotationMatrixBilinearMcCormickMilpConstraints(&prog_, R_, num_bin);
+    } else {
+      AddRotationMatrixMcCormickEnvelopeMilpConstraints(&prog_, R_, num_bin);
+    }
 
     MatrixDecisionVariable<3, 3> R_hat = R_;
     if (is_row_vector) {
@@ -556,15 +561,16 @@ std::array<std::pair<int, int>, 3> vector_indices() {
 INSTANTIATE_TEST_CASE_P(
     RotationTest, TestMcCormickOrthant,
     ::testing::Combine(::testing::ValuesIn<std::vector<int>>(
-                           {1}),  // # of binary variables per half axis
+                           {1}),  // # of intervals per half axis
                        ::testing::ValuesIn<std::vector<int>>(
                            {0, 1, 2, 3, 4, 5, 6, 7}),  // orthant index
                        ::testing::ValuesIn<std::vector<bool>>(
                            {false, true}),  // row vector or column vector
                        ::testing::ValuesIn<std::array<std::pair<int, int>, 3>>(
                            vector_indices()),  // vector indices
-                       ::testing::ValuesIn<std::vector<bool>>(
-                           {false, true})));  // same of opposite orthant
+                       ::testing::ValuesIn<std::vector<bool>>({false, true}),  // same of opposite orthant
+                           ::testing::ValuesIn<std::vector<bool>>(
+                               {false, true}))); // replace bilinear or not.
 }  // namespace
 }  // namespace solvers
 }  // namespace drake
