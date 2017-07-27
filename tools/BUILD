@@ -30,8 +30,8 @@ sh_binary(
         "//conditions:default": ["drake_visualizer_linux.sh"],
     }),
     data = [
+        "//drake/bindings:pydrake",
         "@director",
-        "//drake/bindings:pydrake"
     ],
 )
 
