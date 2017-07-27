@@ -241,8 +241,10 @@ GTEST_TEST(UnitInertia, ShiftFromCenterOfMassInPlace) {
   EXPECT_TRUE(G3.CouldBePhysicallyValid());
 }
 
-// Tests that we can cast a RotationalInertia<double> to a RotationalInertia
+// Tests that we can correctly cast a UnitInertia<double> to a UnitInertia
 // templated on an AutoDiffScalar type.
+// The cast from a UnitInertia<double>, a constant, results in a unit inertia
+// with zero gradients.
 GTEST_TEST(UnitInertia, CastToAutoDiff) {
   typedef Eigen::AutoDiffScalar<Vector1<double>> ADScalar;
   const UnitInertia<double> I_double(1, 2.718, 3.14);

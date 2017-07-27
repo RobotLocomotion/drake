@@ -68,8 +68,11 @@ GTEST_TEST(SpatialInertia, ConstructionFromMasComAndUnitInertia) {
   EXPECT_TRUE(M.IsNaN());
 }
 
-// Tests that we can cast a SpatialInertia<double> to a SpatialInertia
-// templated on an AutoDiffScalar type.
+// Tests that we can correctly cast a SpatialInertia<double> to a
+// SpatialInertia<AutoDiffXd>.
+// The cast from a SpatialInertia<double>, a constant, results in a spatial
+// inertia with zero gradients. Since we are using a dynamic size
+// AutoDiffScalar type, this results in gradient vectors with zero size.
 GTEST_TEST(SpatialInertia, CastToAutoDiff) {
   const double mass_double = 2.5;
   const Vector3d com_double(0.1, -0.2, 0.3);
