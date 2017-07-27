@@ -403,7 +403,7 @@ Simulator<T>::Simulator(const System<T>& system,
   ((RungeKutta3Integrator<T>*) integrator_.get())->
       request_initial_step_size_target(initial_step_size);
   integrator_->set_maximum_step_size(max_step_size);
-  integrator_->set_default_accuracy(default_accuracy);
+  integrator_->set_target_accuracy(default_accuracy);
   integrator_->Initialize();
 
   // Allocate the necessary temporaries for storing state in update calls
