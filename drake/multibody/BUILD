@@ -543,7 +543,7 @@ drake_cc_googletest(
 )
 
 # This test is empty unless Gurobi is enabled.
-drake_cc_test(
+drake_cc_googletest(
     name = "test_approximate_ik",
     srcs = select({
         "//tools:with_gurobi": [
@@ -558,9 +558,7 @@ drake_cc_test(
             "//drake/common:find_resource",
             "//drake/multibody/parsers",
         ],
-        "//conditions:default": [
-            "@gtest//:main",  # No-op stub for main().
-        ],
+        "//conditions:default": [],
     }),
 )
 
