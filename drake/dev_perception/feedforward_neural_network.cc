@@ -94,15 +94,6 @@ VectorX<T> FeedforwardNeuralNetwork<T>::EvaluateLayer(
   DRAKE_ASSERT(layer == LayerType::FullyConnected);
   DRAKE_ASSERT(nonlinearity == NonlinearityType::Relu);
   VectorX<T> layerOutput = relu(Weights * layerInput + bias);
-  
-	#ifndef NDEBUG
-		cout << "This layer's input is: " << endl;
-		cout << layerInput << endl;
-		cout << "W*input + bias is: " << endl;
-		cout << Weights*layerInput + bias << endl;
-		cout << "This layer's output is: " << endl;
-		cout << layerOutput << endl;
-	#endif
 
   return layerOutput;
 }
@@ -125,8 +116,8 @@ VectorX<T> FeedforwardNeuralNetwork<T>::relu(VectorX<T> in) const {
 template <typename T>
 FeedforwardNeuralNetwork<AutoDiffXd>*
 FeedforwardNeuralNetwork<T>::DoToAutoDiffXd() const {
-	// ?
-  //vector<MatrixX<AutoDiffScalar<MatrixX<T>>>> W_autodiff;
+  // ?
+  // vector<MatrixX<AutoDiffScalar<MatrixX<T>>>> W_autodiff;
   // ?
   vector<MatrixX<AutoDiffXd>> W_autodiff;
   vector<VectorX<AutoDiffXd>> b_autodiff;
@@ -135,7 +126,7 @@ FeedforwardNeuralNetwork<T>::DoToAutoDiffXd() const {
   for (sz i = 0; i < weights_matrices_.size(); i++) {
     MatrixX<T> this_W = weights_matrices_[i];
     // ?
-    //W_autodiff.push_back(this_W.template cast<AutoDiffScalar<MatrixX<T>>>());
+    // W_autodiff.push_back(this_W.template cast<AutoDiffScalar<MatrixX<T>>>());
     // ?
     W_autodiff.push_back(this_W.template cast<AutoDiffXd>());
 
