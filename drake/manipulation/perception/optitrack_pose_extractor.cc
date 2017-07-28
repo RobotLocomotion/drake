@@ -24,7 +24,7 @@ OptitrackPoseExtractor::OptitrackPoseExtractor(
                   BasicVector<double>(7),
                   &OptitrackPoseExtractor::OutputMeasuredPose)
               .get_index()},
-      X_WO(X_WO) {
+      X_WO_(X_WO) {
   this->set_name("Optitrack pose extractor");
   this->DeclareAbstractInputPort();
   // Internal state is stored with first 3 dimensions containing the object's
@@ -64,10 +64,10 @@ void OptitrackPoseExtractor::DoCalcDiscreteVariableUpdates(
                                          rigid_bodies[object_id_].xyz[1],
                                          rigid_bodies[object_id_].xyz[2]);
   X_OB.makeAffine();
-  Isometry3<double> X_WOb = X_WO * X_OB;
+  Isometry3<double> X_WB = X_WO_ * X_OB;
 
-  state_value.segment<3>(0) = X_WOb.translation();
-  state_value.segment<4>(3) = Eigen::Quaterniond(X_WOb.linear()).coeffs();
+  state_value.segment<3>(0) = X_WB.translation();
+  state_value.segment<4>(3) = Eigen::Quaterniond(X_WB.linear()).coeffs();
 }
 
 void OptitrackPoseExtractor::OutputMeasuredPose(

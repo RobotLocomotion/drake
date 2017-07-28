@@ -50,7 +50,7 @@ class OptitrackPoseExtractor : public systems::LeafSystem<double> {
   const int object_id_{0};
   const int measured_pose_output_port_{-1};
   // Pose of the optitrack frame O in the world frame W.
-  const Isometry3<double> X_WO;
+  const Isometry3<double> X_WO_;
 };
 
 }  // namespace perception
