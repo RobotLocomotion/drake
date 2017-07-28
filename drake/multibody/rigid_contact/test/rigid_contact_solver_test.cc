@@ -42,6 +42,8 @@ class RigidContact2DSolverTest : public ::testing::Test {
 
   double cfm_{0};    // Regularization parameter.
   double eps_{-1};   // Zero tolerance (< 0 indicates not set).
+  static const Vector2<double> k2DUnitX;
+  static const Vector2<double> k2DUnitY;
   RigidContactSolver<double> solver_;
   std::unique_ptr<Rod2D<double>> rod_;
   std::unique_ptr<Context<double>> context_;
@@ -95,6 +97,10 @@ class RigidContact2DSolverTest : public ::testing::Test {
   }
 };
 
+// Define the variables.
+const Vector2<double> RigidContact2DSolverTest::k2DUnitX(1, 0);
+const Vector2<double> RigidContact2DSolverTest::k2DUnitY(0, 1);
+
 // Tests the rod in a two-point configuration, in a situation where a force
 // pulls the rod upward (and no contact forces should be applied).
 TEST_F(RigidContact2DSolverTest, TwoPointPulledUpward) {
@@ -140,6 +146,17 @@ TEST_F(RigidContact2DSolverTest, TwoPointSticking) {
   std::vector<Matrix2<double>> frames;
   frames.push_back(GetNonSlidingContactFrameToWorldTransform());
   frames.push_back(GetNonSlidingContactFrameToWorldTransform());
+
+  // Verify that the x-axis of the contact frame, which corresponds to the
+  // contact normal, points along the world y-axis, and the y-axis of the
+  // contact frame, which corresponds to a contact tangent vector, points
+  // along the world x-axis.
+  for (size_t i = 0; i < frames.size(); ++i) {
+    EXPECT_LT(std::fabs(frames[i].col(0).dot(k2DUnitY) - 1.0),
+      std::numeric_limits<double>::epsilon());
+    EXPECT_LT(std::fabs(frames[i].col(1).dot(k2DUnitX) - 1.0),
+      std::numeric_limits<double>::epsilon());
+  }
 
   // Get the contact forces expressed in the contact frames.
   std::vector<Vector2<double>> contact_forces;
@@ -187,6 +204,17 @@ TEST_F(RigidContact2DSolverTest, SinglePointSticking) {
   std::vector<Matrix2<double>> frames;
   frames.push_back(GetNonSlidingContactFrameToWorldTransform());
 
+  // Verify that the x-axis of the contact frame, which corresponds to the
+  // contact normal, points along the world y-axis, and the y-axis of the
+  // contact frame, which corresponds to a contact tangent vector, points
+  // along the world x-axis.
+  for (size_t i = 0; i < frames.size(); ++i) {
+    EXPECT_LT(std::fabs(frames[i].col(0).dot(k2DUnitY) - 1.0),
+      std::numeric_limits<double>::epsilon());
+    EXPECT_LT(std::fabs(frames[i].col(1).dot(k2DUnitX) - 1.0),
+      std::numeric_limits<double>::epsilon());
+  }
+
   // Get the contact forces expressed in the contact frame.
   std::vector<Vector2<double>> contact_forces;
   RigidContactSolver<double>::CalcContactForcesInContactFrames(cf, data_,
@@ -231,6 +259,17 @@ TEST_F(RigidContact2DSolverTest, TwoPointNonSlidingToSliding) {
   std::vector<Matrix2<double>> frames;
   frames.push_back(GetNonSlidingContactFrameToWorldTransform());
   frames.push_back(GetNonSlidingContactFrameToWorldTransform());
+
+  // Verify that the x-axis of the contact frame, which corresponds to the
+  // contact normal, points along the world y-axis, and the y-axis of the
+  // contact frame, which corresponds to a contact tangent vector, points
+  // along the world x-axis.
+  for (size_t i = 0; i < frames.size(); ++i) {
+    EXPECT_LT(std::fabs(frames[i].col(0).dot(k2DUnitY) - 1.0),
+      std::numeric_limits<double>::epsilon());
+    EXPECT_LT(std::fabs(frames[i].col(1).dot(k2DUnitX) - 1.0),
+      std::numeric_limits<double>::epsilon());
+  }
 
   // Get the contact forces expressed in the contact frames.
   std::vector<Vector2<double>> contact_forces;
@@ -283,6 +322,16 @@ TEST_F(RigidContact2DSolverTest, TwoPointSliding) {
   frames.push_back(
     GetSlidingContactFrameToWorldTransform(tangent_vels.front()));
   frames.push_back(GetSlidingContactFrameToWorldTransform(tangent_vels.back()));
+
+  // Verify that the x-axis of the contact frame, which corresponds to the
+  // contact normal, points along the world y-axis.
+  EXPECT_LT(std::fabs(frames.back().col(0).dot(k2DUnitY) - 1.0),
+    std::numeric_limits<double>::epsilon());
+
+  // Verify that the y-axis of the contact frame, which corresponds to the
+  // direction of sliding, points along the world x-axis.
+  EXPECT_LT(std::fabs(frames.back().col(1).dot(k2DUnitX) - 1.0),
+    std::numeric_limits<double>::epsilon());
 
   // Get the contact forces expressed in the contact frame.
   std::vector<Vector2<double>> contact_forces;
@@ -340,6 +389,16 @@ TEST_F(RigidContact2DSolverTest, SinglePointSliding) {
   std::vector<Matrix2<double>> frames;
   frames.push_back(
     GetSlidingContactFrameToWorldTransform(tangent_vels.front()));
+
+  // Verify that the x-axis of the contact frame, which corresponds to the
+  // contact normal, points along the world y-axis.
+  EXPECT_LT(std::fabs(frames.back().col(0).dot(k2DUnitY) - 1.0),
+      std::numeric_limits<double>::epsilon());
+
+  // Verify that the y-axis of the contact frame, which corresponds to the
+  // direction of sliding, points along the world x-axis.
+  EXPECT_LT(std::fabs(frames.back().col(1).dot(k2DUnitX) - 1.0),
+            std::numeric_limits<double>::epsilon());
 
   // Get the contact forces expressed in the contact frame.
   std::vector<Vector2<double>> contact_forces;

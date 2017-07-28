@@ -463,29 +463,33 @@ Vector3<T> Rod2D<T>::GetJacobianDotRow(const systems::Context<T>& context,
 template <class T>
 Matrix2<T> Rod2D<T>::GetSlidingContactFrameToWorldTransform(
     const T& xaxis_velocity) const {
-  // Note: normal for the rod is always +y; sliding tangent vector is
-  // either +/-x. << operator populates the matrix row by row, so
-  // R_WC = | 0  1 |
-  //        | ±1 0 |
-  // indicating that the contact normal direction is +y ([0 1]) and the contact
-  // tangent direction (more precisely, the direction of sliding) is
-  // ±x (±[1 0]).
+  // Note: the normal for the rod always points along the world +y axis;
+  // the sliding tangent vector points along either the +/-x (world) axis. The
+  // << operator populates the matrix row by row, so
+  // R_WC = | 0  ±1 |
+  //        | 1   0 |
+  // indicating that the contact normal direction (the +x axis in the contact
+  // frame) is +y in the world frame and the contact tangent direction (more
+  // precisely, the direction of sliding, the +y axis in the contact frame) is
+  // ±x in the world frame.
   DRAKE_DEMAND(xaxis_velocity != 0);
   Matrix2<T> R_WC;
   // NOTE: Formatting indicates matrix setup.
-  R_WC << 0,                               1,
-          ((xaxis_velocity > 0) ? 1 : -1), 0;
+  R_WC << 0, ((xaxis_velocity > 0) ? 1 : -1),
+          1, 0;
   return R_WC;
 }
 
 template <class T>
 Matrix2<T> Rod2D<T>::GetNonSlidingContactFrameToWorldTransform() const {
-  // Note: normal for the rod is always +y; non-sliding tangent vector is
-  // always +x. << operator populates the matrix row by row, so
+  // Note: the normal for the rod always points along the world +y axis; the
+  // non-sliding tangent vector always points along the world +x axis.
+  // The << operator populates the matrix row by row, so
   // R_WC = | 0 1 |
   //        | 1 0 |
-  // indicating that the contact normal direction is +y ([0 1]) and the contact
-  // tangent direction is +x ([1 0]).
+  // indicating that the contact normal direction is (the +x axis in the contact
+  // frame) is +y in the world frame and the contact tangent direction (the +y
+  // axis in the contact frame) is +x in the world frame.
   Matrix2<T> R_WC;
   R_WC << 0, 1,
           1, 0;
