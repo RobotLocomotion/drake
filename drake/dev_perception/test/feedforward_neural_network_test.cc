@@ -28,11 +28,7 @@ namespace {
 std::vector<LayerType> generateFullyConnectedLayers(int numLayers);
 // Helper function to generate a vector of Relu nonlinearities
 std::vector<NonlinearityType> generateReluNonlinearities(int numLayers);
-// Helper function to check IO behavior of a double FeedforwardNeuralNetwor
-// void TestIOdouble(std::vector<MatrixXd> W, std::vector<VectorXd> B, VectorXd
-// input,
-//            VectorXd expectedOutput);
-// Helper function to check IO behavior of a double FeedforwardNeuralNetwor
+// Helper function to check IO behavior of a double FeedforwardNeuralNetwork
 template <typename T>
 void TestIO(std::vector<MatrixX<T>> W, std::vector<VectorX<T>> B,
             VectorX<T> input, VectorX<T> expectedOutput);
@@ -68,17 +64,6 @@ GTEST_TEST(FeedforwardNeuralNetworkTest, MatrixCoderDecoder) {
       dut.DecodeWeightsFromBasicVector(3, 3, *encoded1);
   unique_ptr<MatrixXd> W2recovered =
       dut.DecodeWeightsFromBasicVector(7, 3, *encoded2);
-
-#ifndef NDEBUG
-  cout << "W1 is: " << endl;
-  cout << W1 << endl;
-  cout << "W1 recovered is: " << endl;
-  cout << *W1recovered << endl;
-  cout << "W2 is: " << endl;
-  cout << W2 << endl;
-  cout << "W2 recovered is: " << endl;
-  cout << *W2recovered << endl;
-#endif
 
   EXPECT_EQ(W1, *W1recovered);
   EXPECT_EQ(W2, *W2recovered);
@@ -180,19 +165,6 @@ GTEST_TEST(FeedforwardNeuralNetworkTest, ToAutoDiffTest) {
   unique_ptr<MatrixX<AutoDiffXd>> W3recovered =
       ad_ffnn->get_weight_matrix(2, *ad_context);
 
-#ifndef NDEBUG
-  cout << "Type of W1 is: " << typeid(W1).name() << endl;
-  cout << "W1 is: " << endl;
-  cout << W1 << endl;
-  cout << "Type of *W1recovered is: " << typeid(*W1recovered).name() << endl;
-  cout << "W1 recovered is: " << endl;
-  cout << *W1recovered << endl;
-  cout << "Type of first element is: " << typeid((*W1recovered)(0, 0)).name()
-       << endl;
-  double entry = ((*W1recovered)(0, 0)).value();
-  cout << "double value of first element is: " << entry << endl;
-#endif
-
   EXPECT_TRUE(CompareMats(W1, *W1recovered));
   EXPECT_TRUE(CompareMats(W2, *W2recovered));
   EXPECT_TRUE(CompareMats(W3, *W3recovered));
@@ -279,30 +251,6 @@ bool CompareMats(MatrixX<double> Mdouble, MatrixX<AutoDiffXd> Mautodiff) {
   return true;
 }
 
-// Check that a FeedforwardNeuralNetwork<double> gives the expected result
-// void TestIOdouble(std::vector<MatrixXd> W, std::vector<VectorXd> B, VectorXd
-// input,
-//            VectorXd expectedOutput) {
-//  FeedforwardNeuralNetwork<double> dut(W, B, generateFullyConnectedLayers(3),
-//                                       generateReluNonlinearities(3));
-//  unique_ptr<Context<double>> context = dut.CreateDefaultContext();
-//  unique_ptr<SystemOutput<double>> output = dut.AllocateOutput(*context);
-//
-//  context->FixInputPort(dut.input().get_index(), input);
-//  dut.CalcOutput(*context, output.get());
-//  VectorXd computedOutput =
-//      output->get_vector_data(dut.output().get_index())->get_value();
-//
-//  EXPECT_EQ(expectedOutput, computedOutput);
-//	#ifndef NDEBUG
-//	  cout << "input: " << endl;
-//	  cout << endl << input << endl;
-//	  cout << "expected output: " << endl;
-//	  cout << expectedOutput << endl;
-//	  cout << "computed output: " << endl;
-//	  cout << computedOutput << endl;
-//	#endif
-//}
 // Check that a FeedforwardNeuralNetwork<T> gives the expected result
 template <typename T>
 void TestIO(std::vector<MatrixX<T>> W, std::vector<VectorX<T>> B,
@@ -318,14 +266,6 @@ void TestIO(std::vector<MatrixX<T>> W, std::vector<VectorX<T>> B,
       output->get_vector_data(dut.output().get_index())->get_value();
 
   EXPECT_EQ(expectedOutput, computedOutput);
-#ifndef NDEBUG
-  cout << "input: " << endl;
-  cout << endl << input << endl;
-  cout << "expected output: " << endl;
-  cout << expectedOutput << endl;
-  cout << "computed output: " << endl;
-  cout << computedOutput << endl;
-#endif
 }
 
 }  // namespace

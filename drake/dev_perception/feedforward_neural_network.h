@@ -20,7 +20,7 @@ class FeedforwardNeuralNetwork : public NeuralNetwork<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FeedforwardNeuralNetwork)
 
   /// TODO(nikos-tri): Add documentation
-  /// The number of layers does not count the input or output layers.
+  /// The number of layers does not count the input layer
   FeedforwardNeuralNetwork(const std::vector<MatrixX<T>>& W,
                            const std::vector<VectorX<T>>& b,
                            const std::vector<LayerType>& layers,
