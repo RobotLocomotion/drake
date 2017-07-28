@@ -12,6 +12,23 @@ load("//tools:lint.bzl", "add_lint_tests")
 package(default_visibility = ["//visibility:public"])
 
 drake_cc_library(
+    name = "builder",
+    srcs = [
+        "connection.cc",
+        "directed_waypoint.cc",
+    ],
+    hdrs = [
+        "connection.h",
+        "directed_waypoint.h",
+    ],
+    deps = [
+        "//drake/common",
+        "@ignition_math",
+        "@ignition_rndf",
+    ],
+)
+
+drake_cc_library(
     name = "lanes",
     srcs = [
         "branch_point.cc",
@@ -42,6 +59,26 @@ drake_cc_library(
 )
 
 # === test/ ===
+
+drake_cc_googletest(
+    name = "connection_test",
+    deps = [
+        ":builder",
+        ":ignition_types_compare",
+        "@ignition_math",
+        "@ignition_rndf",
+    ],
+)
+
+drake_cc_googletest(
+    name = "directed_waypoint_test",
+    deps = [
+        ":builder",
+        ":ignition_types_compare",
+        "@ignition_math",
+        "@ignition_rndf",
+    ],
+)
 
 drake_cc_googletest(
     name = "ignition_rndf_test",
