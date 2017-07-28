@@ -1308,6 +1308,24 @@ AddRotationMatrixBilinearMcCormickMilpConstraints(
     AddCrossProductImpliedOrthantConstraint(prog, Bpos);
     AddCrossProductImpliedOrthantConstraint(prog, Bpos.transpose());
   }
+
+  // If num_intervals_per_half_axis = 2, then for each row/column of R, it
+  // cannot have all three entries in the interval [-0.5, 0.5], since that would
+  // imply that the norm of the row/column is less than sqrt(3) / 2. In this
+  // case, B[i][j](1) = 1 => -0.5 <= R(i, j) <= 0.5, so we should have
+  // sum_i B[i][j](1) <= 2 and sum_j B[i][j](1) <= 2
+  if (num_intervals_per_half_axis == 2) {
+    for (int i = 0; i < 3; ++i) {
+      symbolic::Expression row_sum{0};
+      symbolic::Expression col_sum{0};
+      for (int j = 0; j < 3; ++j) {
+        row_sum += B[i][j](1);
+        col_sum += B[j][i](1);
+      }
+      prog->AddLinearConstraint(row_sum <= 2);
+      prog->AddLinearConstraint(col_sum <= 2);
+    }
+  }
   return std::make_pair(B, phi);
 }
 
