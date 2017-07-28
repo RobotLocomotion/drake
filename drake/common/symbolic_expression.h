@@ -904,11 +904,11 @@ namespace detail {
  * Expressions and doubles, to then form an implicit formulas.
  */
 template <typename DerivedV, typename DerivedB>
-struct is_eigen_matrix_expression_double_pair
+struct is_eigen_nonvector_expression_double_pair
     : std::integral_constant<
-          bool,
-          detail::is_eigen_matrix_of<DerivedV, symbolic::Expression>::value &&
-              detail::is_eigen_matrix_of<DerivedB, double>::value> {};
+          bool, detail::is_eigen_nonvector_of<DerivedV,
+                                              symbolic::Expression>::value &&
+                    detail::is_eigen_nonvector_of<DerivedB, double>::value> {};
 
 /*
  * Determine if two EigenBase<> types are vectors of Expressions and doubles

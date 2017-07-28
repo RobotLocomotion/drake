@@ -1153,7 +1153,7 @@ class MathematicalProgram {
    */
   template <typename DerivedV, typename DerivedB>
   typename std::enable_if<
-      drake::detail::is_eigen_matrix_expression_double_pair<
+      drake::detail::is_eigen_nonvector_expression_double_pair<
           DerivedV, DerivedB>::value,
       Binding<LinearEqualityConstraint>>::type
   AddLinearEqualityConstraint(const Eigen::MatrixBase<DerivedV>& V,

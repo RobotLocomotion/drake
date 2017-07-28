@@ -172,17 +172,28 @@ struct MultiplyEigenSizes {
 namespace detail {
 
 /*
+ * Determine if a type derived from EigenBase<> (e.g. ArrayBase<>,
+ * MatrixBase<>).
+ */
+template <typename Derived>
+struct is_eigen_type : std::is_base_of<Eigen::EigenBase<Derived>, Derived> {};
+
+/*
  * Determine if an EigenBase<> has a specific scalar type.
  */
 template <typename Derived, typename Scalar>
-struct is_eigen_scalar_same : std::is_same<typename Derived::Scalar, Scalar> {};
+struct is_eigen_scalar_same
+    : std::integral_constant<
+          bool, detail::is_eigen_type<Derived>::value &&
+                    std::is_same<typename Derived::Scalar, Scalar>::value> {};
 
 /*
  * Determine if an EigenBase<> type is a (column) vector.
  */
 template <typename Derived>
 struct is_eigen_vector
-    : std::integral_constant<bool, Derived::ColsAtCompileTime == 1> {};
+    : std::integral_constant<bool, detail::is_eigen_type<Derived>::value &&
+                                       Derived::ColsAtCompileTime == 1> {};
 
 /*
  * Determine if an EigenBase<> type is a (column) vector of a scalar type.
@@ -194,14 +205,23 @@ struct is_eigen_vector_of
                     detail::is_eigen_vector<Derived>::value> {};
 
 /*
- * Determine if a EigenBase<> type is a matrix (non-column-vector) of a scalar
- * type.
+ * Determine if a EigenBase<> type is a matrix (which can be a column vector)
+ * of a scalar type.
+ * @note For an EigenBase<> of the correct Scalar type, this logic should be
+ * exclusive to is_eigen_vector_of<> such that distinct specializations are not
+ * ambiguous.
  */
+// TODO(eric.cousineau): A 1x1 matrix will be disqualified in this case, and
+// this logic will qualify it as a vector. Address the downstream logic if this
+// becomes an issue.
 template <typename Derived, typename Scalar>
-struct is_eigen_matrix_of
+struct is_eigen_nonvector_of
     : std::integral_constant<
           bool, detail::is_eigen_scalar_same<Derived, Scalar>::value &&
                     !detail::is_eigen_vector<Derived>::value> {};
+
+// TODO(eric.cousineau): Add alias is_eigen_matrix_of = is_eigen_scalar_same if
+// appropriate.
 
 }  // namespace detail
 
