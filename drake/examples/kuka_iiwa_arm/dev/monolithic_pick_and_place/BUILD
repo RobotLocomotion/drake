@@ -66,6 +66,14 @@ pick_and_place_test(
         "--orientation=1.57",
         "--start-position=0",
         "--end-position=2",
+        # TODO(sam.creasey) This is an artisanally crafted timestep
+        # intended to dodge sensitive dependence on initial conditions
+        # in the IK planner.  Depending on slight changes in the arm's
+        # configration after lifting the item from the pick, the IK
+        # planner (particularly when running under SNOPT) can produce
+        # radically different results.  This value produces usable
+        # (but different!) results on Mac vs. Linux builds.
+        "--dt 6e-4",
     ] + select({
         "//tools:apple": ["--quick"],
         "//conditions:default": [],
