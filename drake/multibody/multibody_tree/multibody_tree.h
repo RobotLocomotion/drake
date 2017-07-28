@@ -395,6 +395,11 @@ class MultibodyTree {
     return static_cast<int>(owned_mobilizers_.size());
   }
 
+  /// Returns the number of generalized positions of the model.
+  int get_num_positions() const {
+    return topology_.get_num_positions();
+  }
+
   /// Returns the number of generalized velocities of the model.
   int get_num_velocities() const {
     return topology_.get_num_velocities();

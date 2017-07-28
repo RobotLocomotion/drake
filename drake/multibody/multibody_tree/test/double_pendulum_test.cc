@@ -26,6 +26,7 @@ const double kEpsilon = std::numeric_limits<double>::epsilon();
 using benchmarks::Acrobot;
 using Eigen::AngleAxisd;
 using Eigen::Isometry3d;
+using Eigen::Matrix2d;
 using Eigen::Matrix4d;
 using Eigen::Translation3d;
 using Eigen::Vector2d;
@@ -458,6 +459,53 @@ class PendulumKinematicTests : public PendulumTests {
     mbt_context_ =
         dynamic_cast<MultibodyTreeContext<double>*>(context_.get());
   }
+
+  /// Verifies that we can compute the mass matrix of the system using inverse
+  /// dynamics.
+  /// The result from inverse dynamics is the vector of generalized forces:
+  ///   tau = H(q) * vdot + C(q, v) * v
+  /// where q and v are the generalized positions and velocities, respectively.
+  /// When v = 0 the Coriolis and gyroscopic forces term C(q, v) * v is zero.
+  /// Therefore the i-th column of H(q) can be obtained performing inverse
+  /// dynamics with an acceleration vector vdot = e_i, with e_i the i-th vector
+  /// in the standard basis of ℝ²:
+  ///   tau = Hi(q) = H(q) * e_i
+  /// where Hi(q) is the i-th column in H(q).
+  ///
+  /// The solution is verified against the independent benchmark from
+  /// drake::multibody::benchmarks::Acrobot.
+  void VerifyMassMatrixViaInverseDynamics(
+      double shoulder_angle, double elbow_angle) {
+    Vector2d q(shoulder_angle, elbow_angle);
+    Vector2d v = Vector2d::Zero();
+    Vector2d vdot;
+
+    vdot = Vector2d::UnitX(); // First column of H(q).
+    VerifyInverseDynamics(q, v, vdot);
+
+    vdot = Vector2d::UnitY(); // Second column of H(q).
+    VerifyInverseDynamics(q, v, vdot);
+  }
+
+  void VerifyCoriolisTermViaInverseDynamics(
+      double shoulder_angle, double elbow_angle) {
+    Vector2d q(shoulder_angle, elbow_angle);
+    Vector2d v;
+    Vector2d vdot = Vector2d::Zero();
+
+    v = Vector2d::Zero(); // C(q, v) = 0 for v = 0.
+    VerifyInverseDynamics(q, v, vdot);
+
+    v = Vector2d::UnitX(); // First column of C(q, e_1) times e_1.
+    VerifyInverseDynamics(q, v, vdot);
+
+    v = Vector2d::UnitY(); // Second column of C(q, e_2) times e_2.
+    VerifyInverseDynamics(q, v, vdot);
+
+    v = Vector2d::Ones(); // Both velocities are non-zero.
+    VerifyInverseDynamics(q, v, vdot);
+  }
+
  protected:
   std::unique_ptr<Context<double>> context_;
   MultibodyTreeContext<double>* mbt_context_;
@@ -467,6 +515,87 @@ class PendulumKinematicTests : public PendulumTests {
       link1_mass_, link2_mass_,
       link1_length_, link2_length_, half_link1_length_, half_link2_length_,
       link1_Ic_, link2_Ic_};
+
+ private:
+  // This method verifies the correctness of
+  // MultibodyTree::CalcInverseDynamics() to compute the generalized forces that
+  // would need to be applied in order to attain the generalized accelerations
+  // vdot.
+  // The generalized accelerations are given by:
+  //   tau = H(q) * vdot + C(q, v) * v
+  // where q and v are the generalized positions and velocities, respectively.
+  // These, together with the generalized accelerations vdot are inputs to this
+  // method.
+  // The solution is verified against the independent benchmark from
+  // drake::multibody::benchmarks::Acrobot.
+  void VerifyInverseDynamics(
+      const Eigen::Ref<const VectorXd>& q,
+      const Eigen::Ref<const VectorXd>& v,
+      const Eigen::Ref<const VectorXd>& vdot) const {
+    DRAKE_DEMAND(q.size() == model_->get_num_positions());
+    DRAKE_DEMAND(v.size() == model_->get_num_velocities());
+    DRAKE_DEMAND(vdot.size() == model_->get_num_velocities());
+
+    PRINT_VAR(q.transpose());
+    PRINT_VAR(v.transpose());
+    PRINT_VAR(vdot.transpose());
+
+    // This is the minimum factor of the machine precision within which these
+    // tests pass. There is an additional factor of two (2) to be on the safe
+    // side on other architectures (particularly in Macs).
+    const int kEpsilonFactor = 20;
+    const double kTolerance = kEpsilonFactor * kEpsilon;
+
+    const double shoulder_angle =  q(0);
+    const double elbow_angle =  q(1);
+
+    const double shoulder_angle_rate = v(0);
+    const double elbow_angle_rate = v(1);
+
+    PositionKinematicsCache<double> pc(model_->get_topology());
+    VelocityKinematicsCache<double> vc(model_->get_topology());
+
+    // ======================================================================
+    // Compute position kinematics.
+    shoulder_mobilizer_->set_angle(context_.get(), shoulder_angle);
+    elbow_mobilizer_->set_angle(context_.get(), elbow_angle);
+    model_->CalcPositionKinematicsCache(*context_, &pc);
+
+    // ======================================================================
+    // Compute velocity kinematics.
+    shoulder_mobilizer_->set_angular_rate(context_.get(), shoulder_angle_rate);
+    elbow_mobilizer_->set_angular_rate(context_.get(), elbow_angle_rate);
+    model_->CalcVelocityKinematicsCache(*context_, pc, &vc);
+
+    // ======================================================================
+    // Compute acceleration kinematics.
+    std::vector<SpatialAcceleration<double>> A_WB_array(
+        model_->get_num_bodies());
+    model_->CalcSpatialAccelerationsFromVdot(
+        *context_, pc, vc, vdot, &A_WB_array);
+
+    // ======================================================================
+    // Compute inverse dynamics.
+    VectorXd tau(model_->get_num_velocities());
+    std::vector<SpatialForce<double>> F_BMo_W_array(model_->get_num_bodies());
+    model_->CalcInverseDynamics(*context_, pc, vc, vdot,
+                                &A_WB_array, &F_BMo_W_array, &tau);
+
+    // ======================================================================
+    // Compute expected values using the acrobot benchmark.
+    Vector2d C_expected = acrobot_benchmark_.CalcCoriolisVector(
+        shoulder_angle, elbow_angle, shoulder_angle_rate, elbow_angle_rate);
+    Matrix2d H = acrobot_benchmark_.CalcMassMatrix(elbow_angle);
+    Vector2d tau_expected = H * vdot + C_expected;
+
+    PRINT_VAR((H * vdot).transpose());
+    PRINT_VAR(C_expected.transpose());
+
+    PRINT_VAR(tau.transpose());
+    PRINT_VAR(tau_expected.transpose());
+
+    EXPECT_TRUE(tau.isApprox(tau_expected, kTolerance));
+  }
 };
 
 // Verify the correctness of method MultibodyTree::CalcPositionKinematicsCache()
@@ -672,117 +801,27 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
 }
 
 TEST_F(PendulumKinematicTests, InverseDynamics) {
-  // This is the minimum factor of the machine precision within which these
-  // tests pass. There is an additional factor of two (2) to be on the safe side
-  // on other architectures (particularly in Macs).
-  //const int kEpsilonFactor = 20;
-  //const double kEpsilon =
-   //   kEpsilonFactor * std::numeric_limits<double>::epsilon();
-
-  PositionKinematicsCache<double> pc(model_->get_topology());
-  VelocityKinematicsCache<double> vc(model_->get_topology());
-  AccelerationKinematicsCache<double> ac(model_->get_topology());
-
-  const int num_angles = 1;
-  //const double kDeltaAngle = 2 * M_PI / (num_angles - 1.0);
-  for (double ishoulder = 0; ishoulder < num_angles; ++ishoulder) {
-    //const double shoulder_angle = -M_PI + ishoulder * kDeltaAngle;
-    const double shoulder_angle = 0.0;
-    for (double ielbow = 0; ielbow < num_angles; ++ielbow) {
-      //const double elbow_angle = -M_PI + ielbow * kDeltaAngle;
-      const double elbow_angle = M_PI / 4.0;
-
-      PRINT_VAR(shoulder_angle);
-      PRINT_VAR(elbow_angle);
-
-      // ======================================================================
-      // Compute position kinematics.
-      shoulder_mobilizer_->set_angle(context_.get(), shoulder_angle);
-      elbow_mobilizer_->set_angle(context_.get(), elbow_angle);
-      model_->CalcPositionKinematicsCache(*context_, &pc);
-
-      // ======================================================================
-      // Compute velocity kinematics
-
-      // NOTE FOR THE CONDITION UNDER TEST:
-      // See: http://underactuated.csail.mit.edu/underactuated.html?chapter=3
-      // g = 0
-      // theta1 = 0.0
-      // theta2 = pi/4
-      // theta1dot = 1.0
-      // theta2dot = 0.0
-      // vdot = 0 ==> implies M * vdot = 0
-      // With that we should get (and the benchmark does give you that):
-      // tau1 = 0.0
-      // tau2 = m2 * l1 * lc2 * sin(theta2) * theta1dot^2 = sqrt(2)/2 = 0.707107
-
-      // Set the shoulder's angular velocity.
-      const double shoulder_angle_rate = 1.0;//1.0;
-      shoulder_mobilizer_->set_angular_rate(context_.get(),
-                                            shoulder_angle_rate);
-      // Set the elbow's angular velocity.
-      const double elbow_angle_rate = 0.0;//-0.5;
-      elbow_mobilizer_->set_angular_rate(context_.get(),
-                                         elbow_angle_rate);
-      model_->CalcVelocityKinematicsCache(*context_, pc, &vc);
-
-      // ======================================================================
-      // Compute the Coriolis gyroscopic forces vector C(q, v) using inverse
-      // dynamics.
-      // When the generalized accelerations are zero, vdot = 0, the result from
-      // the inverse dynamics corresponds to the Coriolis term C(q, v).
-
-      VectorX<double> vdot(2);  // Vector of generalized accelerations.
-      vdot.setZero();
-      //vdot(0) = -1.0;  // Shoulder: rad/sec^2
-      //vdot(1) =  2.0;  // Elbow: rad/sec^2
-
-      model_->CalcAccelerationKinematicsCache(*context_, pc, vc, vdot, &ac);
-
-      // Retrieve body spatial accelerations from acceleration kinematics cache.
-      SpatialAcceleration<double> A_WU =
-          get_body_spatial_acceleration_in_world(ac, *upper_link_);
-      SpatialAcceleration<double> A_WL =
-          get_body_spatial_acceleration_in_world(ac, *lower_link_);
-      std::vector<SpatialAcceleration<double>> A_WB_array;
-      A_WB_array.resize(model_->get_num_bodies());
-      A_WB_array[world_index()] = SpatialAcceleration<double>::Zero();
-      A_WB_array[
-          model_->get_topology().get_body(upper_link_->get_index()).body_node] =
-          A_WU;
-      A_WB_array[
-          model_->get_topology().get_body(lower_link_->get_index()).body_node] =
-          A_WU;
-
-      std::vector<SpatialForce<double>> F_BMo_W_array;
-      F_BMo_W_array.resize(model_->get_num_bodies());
-      VectorXd tau(model_->get_num_velocities());
-
-      model_->CalcInverseDynamics(*context_, pc, vc, vdot,
-          &A_WB_array, &F_BMo_W_array, &tau);
-
-      Vector2d C_expected = acrobot_benchmark_.CalcCoriolisVector(
-          shoulder_angle, elbow_angle, shoulder_angle_rate, elbow_angle_rate);
-
-      PRINT_VAR(C_expected.transpose());
-      PRINT_VAR(tau.transpose());
-
 #if 0
-      CalcInverseDynamics(
-      const systems::Context<T>& context,
-      const PositionKinematicsCache<T>& pc,
-      const VelocityKinematicsCache<T>& vc,
-      const VectorX<T>& known_vdot,
-      std::vector<SpatialAcceleration<T>>* A_WB_array,
-      std::vector<SpatialForce<T>>* F_BMo_W_array,
-      VectorX<T>* tau_array) const;
+  VerifyMassMatrixViaInverseDynamics(0.0, 0.0);
+  VerifyMassMatrixViaInverseDynamics(0.0, M_PI / 4.0);
+  VerifyMassMatrixViaInverseDynamics(0.0, M_PI / 2.0);
+
+  // For the double pendulum system it turns out that the mass matrix is only a
+  // function of the elbow angle, independent of the shoulder angle.
+  // Therefore H(q) = H(elbow_angle). We therefore run the same previous tests
+  // on a different shoulder angle.
+  VerifyMassMatrixViaInverseDynamics(M_PI / 3.0, 0.0);
+  VerifyMassMatrixViaInverseDynamics(M_PI / 3.0, M_PI / 4.0);
+  VerifyMassMatrixViaInverseDynamics(M_PI / 3.0, M_PI / 2.0);
 #endif
 
-      // ======================================================================
-      // Compute inverse dynamics
+  //VerifyCoriolisTermViaInverseDynamics(0.0, 0.0);
+  //VerifyCoriolisTermViaInverseDynamics(0.0, M_PI / 4.0);
+  //VerifyCoriolisTermViaInverseDynamics(0.0, M_PI / 2.0);
 
-    }
-  }
+  // C(q, v) should be zero when elbow_angle = 0 independent of the shoulder
+  // angle.
+  VerifyCoriolisTermViaInverseDynamics(M_PI / 2.0, 0.0);
 }
 
 }  // namespace

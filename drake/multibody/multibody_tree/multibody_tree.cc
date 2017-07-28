@@ -204,6 +204,9 @@ void MultibodyTree<T>::CalcSpatialAccelerationsFromVdot(
   // TODO(amcastro-tri): Loop over bodies to compute acceleration kinematics
   // updates corresponding to flexible bodies.
 
+  // The world's spatial acceleration is always zero.
+  A_WB_array->at(world_index()) = SpatialAcceleration<T>::Zero();
+
   // Performs a base-to-tip recursion computing body accelerations.
   // This skips the world, depth = 0.
   for (int depth = 1; depth < get_tree_height(); ++depth) {
