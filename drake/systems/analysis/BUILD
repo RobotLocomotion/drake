@@ -147,7 +147,6 @@ drake_cc_library(
     ],
 )
 
-
 drake_cc_library(
     name = "logistic_system",
     testonly = 1,
@@ -216,9 +215,9 @@ drake_cc_googletest(
     # Test size increased to not timeout when run with Valgrind.
     size = "medium",
     deps = [
+        ":explicit_error_controlled_integrator_tester",
         ":my_spring_mass_system",
         ":runge_kutta3_integrator",
-        ":explicit_error_controlled_integrator_tester",
         "//drake/math:geometric_transform",
         "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant",
