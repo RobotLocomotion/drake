@@ -13,7 +13,6 @@
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/systems/framework/context.h"
 
-
 namespace drake {
 namespace multibody {
 namespace benchmarks {
