@@ -23,6 +23,7 @@
 #include "drake/multibody/rigid_body_plant/contact_results_to_lcm.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
+#include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -45,6 +46,7 @@ namespace drake {
 using manipulation::schunk_wsg::SchunkWsgController;
 using manipulation::schunk_wsg::SchunkWsgStatusSender;
 using systems::RigidBodyPlant;
+using systems::RungeKutta2Integrator;
 using systems::Simulator;
 
 namespace examples {
@@ -305,6 +307,8 @@ int DoMain(void) {
   Simulator<double> simulator(*sys);
   simulator.Initialize();
   simulator.set_target_realtime_rate(FLAGS_realtime_rate);
+  simulator.reset_integrator<RungeKutta2Integrator<double>>(*sys,
+      FLAGS_dt, simulator.get_mutable_context());
   simulator.get_mutable_integrator()->set_maximum_step_size(FLAGS_dt);
   simulator.get_mutable_integrator()->set_fixed_step_mode(true);
 

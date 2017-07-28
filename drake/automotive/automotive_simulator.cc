@@ -21,6 +21,7 @@
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/create_load_robot_message.h"
+#include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
@@ -39,6 +40,7 @@ using systems::AbstractValue;
 using systems::lcm::LcmPublisherSystem;
 using systems::OutputPort;
 using systems::rendering::PoseBundle;
+using systems::RungeKutta2Integrator;
 using systems::System;
 using systems::SystemOutput;
 
@@ -525,7 +527,9 @@ void AutomotiveSimulator<T>::Start(double target_realtime_rate) {
   lcm_->StartReceiveThread();
 
   simulator_->set_target_realtime_rate(target_realtime_rate);
-  simulator_->get_mutable_integrator()->set_maximum_step_size(0.01);
+  const double max_step_size = 0.01;
+  simulator_->template reset_integrator<RungeKutta2Integrator<T>>(*diagram_,
+      max_step_size, simulator_->get_mutable_context());
   simulator_->get_mutable_integrator()->set_fixed_step_mode(true);
   simulator_->Initialize();
 }
