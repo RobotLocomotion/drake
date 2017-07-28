@@ -1295,7 +1295,7 @@ AddRotationMatrixBilinearMcCormickMilpConstraints(
   if ((num_intervals_per_half_axis & (num_intervals_per_half_axis - 1)) == 0) {
     // num_intervals_per_half_axis is a power of 2.
 
-    // Bpos(i, j) = sign(R(i, j)), Bneg(i, j)= 1 - Bpos(i, j)
+    // Bpos(i, j) = sign(R(i, j)).
     MatrixDecisionVariable<3, 3> Bpos;
     for (int i = 0; i < 3; ++i) {
       for (int j = 0; j < 3; ++j) {
