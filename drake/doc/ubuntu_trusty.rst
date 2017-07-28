@@ -7,8 +7,18 @@ Ubuntu 14.04 LTS (Trusty)
 The following instructions are written for Ubuntu 14.04 LTS, which is a
 supported Drake platform.
 
-Install Prerequisites
-=====================
+Using the Bazel Build System
+============================
+
+Prerequisite setup is automated. Simply run::
+
+    ./setup/ubuntu/14.04/install_prereqs.sh
+
+After running the script, return to :doc:`from_source` to complete and test your
+installation.
+
+Using the Legacy CMake Build System
+===================================
 
 C++ Compiler
 ------------
