@@ -46,11 +46,17 @@ gfortran-4.9-multilib
 git
 graphviz
 libboost-dev
+libexpat1
+libfreetype6
 libglib2.0-dev
 libglu1-mesa-dev
+libjpeg8
 libpng-dev
+libqt4-opengl
+libtiff5
 libtinyxml-dev
 libtool
+libxml2
 libxt6
 lldb-3.9
 make
