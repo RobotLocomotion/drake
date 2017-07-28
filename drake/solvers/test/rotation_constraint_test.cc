@@ -568,9 +568,10 @@ INSTANTIATE_TEST_CASE_P(
                            {false, true}),  // row vector or column vector
                        ::testing::ValuesIn<std::array<std::pair<int, int>, 3>>(
                            vector_indices()),  // vector indices
-                       ::testing::ValuesIn<std::vector<bool>>({false, true}),  // same of opposite orthant
-                           ::testing::ValuesIn<std::vector<bool>>(
-                               {false, true}))); // replace bilinear or not.
+                       ::testing::ValuesIn<std::vector<bool>>(
+                           {false, true}),  // same of opposite orthant
+                       ::testing::ValuesIn<std::vector<bool>>(
+                           {false, true})));  // replace bilinear or not.
 }  // namespace
 }  // namespace solvers
 }  // namespace drake

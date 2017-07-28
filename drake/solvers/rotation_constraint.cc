@@ -840,14 +840,11 @@ void AddMcCormickVectorConstraints(
  * Similarly we can impose the constraint on the other orthant.
  * @param prog Add the constraint to this mathematical program.
  * @param Bpos0 Defined in AddRotationMatrixMcCormickEnvelopeMilpConstraints(),
- * Bpos0(i,j) = 1 => R(i, j) >= 0.
- * @param Bneg0 Defined in AddRotationMatrixMcCormickEnvelopeMilpConstraints(),
- * Bneg0(i,j) = 1 => R(i, j) <= 0.
+ * Bpos0(i,j) = 1 => R(i, j) >= 0. Bpos0(i, j) = 0 => R(i, j) <= 0.
  */
 void AddNotInSameOrOppositeOrthantConstraint(
     MathematicalProgram* prog,
-    const Eigen::Ref<const Eigen::Matrix<symbolic::Expression, 3, 3>>& Bpos0,
-    const Eigen::Ref<const Eigen::Matrix<symbolic::Expression, 3, 3>>& Bneg0) {
+    const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& Bpos0) {
   const std::array<std::pair<int, int>, 3> column_idx = {
       {{0, 1}, {0, 2}, {1, 2}}};
   for (const auto& column_pair : column_idx) {
@@ -872,13 +869,13 @@ void AddNotInSameOrOppositeOrthantConstraint(
           vars_same_orthant(2 * axis)     = Bpos0(axis, col_idx0);
           vars_same_orthant(2 * axis + 1) = Bpos0(axis, col_idx1);
           vars_oppo_orthant(2 * axis)     = Bpos0(axis, col_idx0);
-          vars_oppo_orthant(2 * axis + 1) = Bneg0(axis, col_idx1);
+          vars_oppo_orthant(2 * axis + 1) = 1 - Bpos0(axis, col_idx1);
         } else {
           // If the orthant has negative value along the `axis`, then
-          // `vars_same_orthant` choose the negative component Bneg0.
-          vars_same_orthant(2 * axis)     = Bneg0(axis, col_idx0);
-          vars_same_orthant(2 * axis + 1) = Bneg0(axis, col_idx1);
-          vars_oppo_orthant(2 * axis)     = Bneg0(axis, col_idx0);
+          // `vars_same_orthant` choose the negative component 1 - Bpos0.
+          vars_same_orthant(2 * axis)     = 1 - Bpos0(axis, col_idx0);
+          vars_same_orthant(2 * axis + 1) = 1 - Bpos0(axis, col_idx1);
+          vars_oppo_orthant(2 * axis)     = 1 - Bpos0(axis, col_idx0);
           vars_oppo_orthant(2 * axis + 1) = Bpos0(axis, col_idx1);
         }
       }
@@ -1043,6 +1040,69 @@ void AddOrthogonalAndCrossProductConstraintRelaxationReplacingBilinearProduct(
     }
   }
 }
+
+// For the cross product c = a x b, based on the sign of a and b, we can imply
+// the sign of c for some cases. For example, c0 = a1 * b2 - a2 * b1, so if
+// (a1, a2, b1, b2) has sign (+, -, +, +), then c0 has to have sign +.
+// @param Bpos. Bpos(i, j) = 1 => R(i, j) >= 0, Bpos(i, j) = 0 => R(i, j) <= 0
+void AddCrossProductImpliedOrthantConstraint(
+    MathematicalProgram* prog,
+    const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& Bpos) {
+  // The vertices of the polytope {x | A * x <= b} correspond to valid sign
+  // assignment for (a1, b2, a2, b1, c0) in the example above.
+  // Since R.col(k) = R.col(i) x R.col(j), we then know that
+  // A * [Bpos(1, i); Bpos(2, j); Bpos(1, j); Bpos(2, i); Bpos(0, k)] <= b.
+  // The matrix A and b is found, by considering the polytope, whose vertices
+  // are {0, 1}⁵, excluding the 8 points
+  // (0, 0, 1, 0, 0)
+  // (0, 0, 0, 1, 0)
+  // (1, 1, 1, 0, 0)
+  // (1, 1, 0, 1, 0)
+  // (1, 0, 0, 0, 1)
+  // (1, 0, 1, 1, 1)
+  // (0, 1, 0, 0, 1)
+  // (0, 1, 1, 1, 1)
+  // So this polytope has 2⁵ - 8 = 24 vertices in total.
+  Eigen::Matrix<double, 18, 5> A;
+  Eigen::Matrix<double, 18, 1> b;
+  A << 0, 0, 0, 0, -1,
+       1, 1, 1, -1, -1,
+       1, 1, -1, 1, -1,
+       0, 0, -1, 0, 0,
+       -1, 0, 0, 0, 0,
+       -1, -1, -1, 1, -1,
+       -1, -1, 1, -1, -1,
+       0, -1, 0, 0, 0,
+       1, -1, -1, -1, 1,
+       -1, 1, -1, -1, 1,
+       0, 0, 0, -1, 0,
+       1, -1, 1, 1, 1,
+       -1, 1, 1, 1, 1,
+       0, 0, 0, 0, 1,
+       0, 0, 0, 1, 0,
+       0, 0, 1, 0, 0,
+       0, 1, 0, 0, 0,
+       1, 0, 0, 0, 0;
+  b << 0, 2, 2, 0, 0, 0, 0, 0, 1, 1, 0, 3, 3, 1, 1, 1, 1, 1;
+
+  for (int col0 = 0; col0 < 3; ++col0) {
+    int col1 = (col0 + 1) % 3;
+    int col2 = (col1 + 1) % 3;
+    // R(k, col2) = R(i, col0) * R(j, col1) - R(j, col0) * R(i, col1)
+    // where (i, j, k) = (0, 1, 2), (1, 2, 0) or (2, 0, 1)
+    VectorDecisionVariable<5> var;
+    for (int i = 0; i < 3; ++i) {
+      int j = (i + 1) % 3;
+      int k = (j + 1) % 3;
+      var << Bpos(i, col0), Bpos(j, col1), Bpos(j, col0), Bpos(i, col1),
+          Bpos(k, col2);
+      prog->AddLinearConstraint(A,
+                                Eigen::Matrix<double, 18, 1>::Constant(
+                                    -std::numeric_limits<double>::infinity()),
+                                b, var);
+    }
+  }
+}
 }  // namespace
 
 AddRotationMatrixMcCormickEnvelopeReturnType
@@ -1128,9 +1188,8 @@ AddRotationMatrixMcCormickEnvelopeMilpConstraints(
 
   // Add constraint that no two rows (or two columns) can lie in the same
   // orthant (or opposite orthant).
-  AddNotInSameOrOppositeOrthantConstraint(prog, BRpos[0].cast<symbolic::Expression>(), BRneg[0].cast<symbolic::Expression>());
-  AddNotInSameOrOppositeOrthantConstraint(prog, BRpos[0].transpose().cast<symbolic::Expression>(),
-                                          BRneg[0].transpose().cast<symbolic::Expression>());
+  AddNotInSameOrOppositeOrthantConstraint(prog, BRpos[0]);
+  AddNotInSameOrOppositeOrthantConstraint(prog, BRpos[0].transpose());
 
   // Add angle limit constraints.
   // Bounding box will turn on/off an orthant.  It's sufficient to add the
@@ -1162,6 +1221,10 @@ AddRotationMatrixMcCormickEnvelopeMilpConstraints(
                                   R.row((i + 1) % 3).transpose(),
                                   R.row((i + 2) % 3).transpose());
   }
+
+  AddCrossProductImpliedOrthantConstraint(prog, BRpos[0]);
+  AddCrossProductImpliedOrthantConstraint(prog, BRpos[0].transpose());
+
   return make_tuple(CRpos, CRneg, BRpos, BRneg);
 }
 
@@ -1233,16 +1296,17 @@ AddRotationMatrixBilinearMcCormickMilpConstraints(
     // num_intervals_per_half_axis is a power of 2.
 
     // Bpos(i, j) = sign(R(i, j)), Bneg(i, j)= 1 - Bpos(i, j)
-    Eigen::Matrix<symbolic::Expression, 3, 3> Bpos;
-    Eigen::Matrix<symbolic::Expression, 3, 3> Bneg;
+    MatrixDecisionVariable<3, 3> Bpos;
     for (int i = 0; i < 3; ++i) {
       for (int j = 0; j < 3; ++j) {
-        Bpos(i, j) = symbolic::Expression{B[i][j](0)};
-        Bneg(i, j) = symbolic::Expression{1 - B[i][j](0)};
+        Bpos(i, j) = B[i][j](0);
       }
     }
-    AddNotInSameOrOppositeOrthantConstraint(prog, Bpos, Bneg);
-    AddNotInSameOrOppositeOrthantConstraint(prog, Bpos.transpose(), Bneg.transpose());
+    AddNotInSameOrOppositeOrthantConstraint(prog, Bpos);
+    AddNotInSameOrOppositeOrthantConstraint(prog, Bpos.transpose());
+
+    AddCrossProductImpliedOrthantConstraint(prog, Bpos);
+    AddCrossProductImpliedOrthantConstraint(prog, Bpos.transpose());
   }
   return std::make_pair(B, phi);
 }
