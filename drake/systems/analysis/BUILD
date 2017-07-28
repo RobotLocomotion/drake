@@ -70,7 +70,6 @@ drake_cc_library(
     ],
     deps = [
         ":integrator_base",
-        ":runge_kutta2_integrator",
     ],
 )
 

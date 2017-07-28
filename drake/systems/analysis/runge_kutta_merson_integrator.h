@@ -40,12 +40,7 @@ namespace systems {
  * error estimate for the 3rd-order result, which error estimate can then be 
  * used for step size control, since it will behave as h^4. We then propagate 
  * the 4th order result (whose error is unknown), which Hairer calls 'local 
- * extrapolation'. We call the initial state (t0,y0) and want (t0+h,y1). We 
- * are given the initial derivative f0=f(t0,y0), which most likely is left 
- * over from an evaluation at the end of the last step.
- * 
- * We will call the derivatives at stage f1,f2,f3,f4 but these are done with 
- * only two temporaries fa and fb. (What we're calling 'f' Hairer calls 'k'.)
+ * extrapolation'. We call the initial state (t0,y0) and want (t0+h,y1).
  */
 template <class T>
 class RungeKuttaMersonIntegrator final : public IntegratorBase<T> {

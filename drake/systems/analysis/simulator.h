@@ -400,7 +400,7 @@ Simulator<T>::Simulator(const System<T>& system,
   // Create a default integrator and initialize it.
   integrator_ = std::unique_ptr<IntegratorBase<T>>(
       new RungeKutta3Integrator<T>(system_, context_.get()));
-  ((RungeKutta3Integrator<T>*) integrator_.get())->
+  static_cast<RungeKutta3Integrator<T>*>(integrator_.get())->
       request_initial_step_size_target(initial_step_size);
   integrator_->set_maximum_step_size(max_step_size);
   integrator_->set_target_accuracy(default_accuracy);
