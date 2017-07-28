@@ -1044,24 +1044,25 @@ void AddOrthogonalAndCrossProductConstraintRelaxationReplacingBilinearProduct(
 // For the cross product c = a x b, based on the sign of a and b, we can imply
 // the sign of c for some cases. For example, c0 = a1 * b2 - a2 * b1, so if
 // (a1, a2, b1, b2) has sign (+, -, +, +), then c0 has to have sign +.
-// @param Bpos. Bpos(i, j) = 1 => R(i, j) >= 0, Bpos(i, j) = 0 => R(i, j) <= 0
+// @param Bpos0. Bpos0(i, j) = 1 => R(i, j) ≥ 0, Bpos0(i, j) = 0 => R(i, j) ≤ 0
 void AddCrossProductImpliedOrthantConstraint(
     MathematicalProgram* prog,
-    const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& Bpos) {
+    const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& Bpos0) {
   // The vertices of the polytope {x | A * x <= b} correspond to valid sign
   // assignment for (a1, b2, a2, b1, c0) in the example above.
   // Since R.col(k) = R.col(i) x R.col(j), we then know that
-  // A * [Bpos(1, i); Bpos(2, j); Bpos(1, j); Bpos(2, i); Bpos(0, k)] <= b.
+  // A * [Bpos0(1, i); Bpos0(2, j); Bpos0(1, j); Bpos0(2, i); Bpos0(0, k)] <= b.
   // The matrix A and b is found, by considering the polytope, whose vertices
   // are {0, 1}⁵, excluding the 8 points
-  // (0, 0, 1, 0, 0)
-  // (0, 0, 0, 1, 0)
-  // (1, 1, 1, 0, 0)
-  // (1, 1, 0, 1, 0)
-  // (1, 0, 0, 0, 1)
-  // (1, 0, 1, 1, 1)
-  // (0, 1, 0, 0, 1)
-  // (0, 1, 1, 1, 1)
+  // (a1, b2, a2, b1, c0)
+  // ( 0,  0,  1,  0,  0)
+  // ( 0,  0,  0,  1,  0)
+  // ( 1,  1,  1,  0,  0)
+  // ( 1,  1,  0,  1,  0)
+  // ( 1,  0,  0,  0,  1)
+  // ( 1,  0,  1,  1,  1)
+  // ( 0,  1,  0,  0,  1)
+  // ( 0,  1,  1,  1,  1)
   // So this polytope has 2⁵ - 8 = 24 vertices in total.
   Eigen::Matrix<double, 18, 5> A;
   Eigen::Matrix<double, 18, 1> b;
@@ -1094,8 +1095,8 @@ void AddCrossProductImpliedOrthantConstraint(
     for (int i = 0; i < 3; ++i) {
       int j = (i + 1) % 3;
       int k = (j + 1) % 3;
-      var << Bpos(i, col0), Bpos(j, col1), Bpos(j, col0), Bpos(i, col1),
-          Bpos(k, col2);
+      var << Bpos0(i, col0), Bpos0(j, col1), Bpos0(j, col0), Bpos0(i, col1),
+          Bpos0(k, col2);
       prog->AddLinearConstraint(A,
                                 Eigen::Matrix<double, 18, 1>::Constant(
                                     -std::numeric_limits<double>::infinity()),
@@ -1314,6 +1315,7 @@ AddRotationMatrixBilinearMcCormickMilpConstraints(
   // imply that the norm of the row/column is less than sqrt(3) / 2. In this
   // case, B[i][j](1) = 1 => -0.5 <= R(i, j) <= 0.5, so we should have
   // sum_i B[i][j](1) <= 2 and sum_j B[i][j](1) <= 2
+  // TODO(hongkai.dai): generalize this to other num_intervals_per_half_axis.
   if (num_intervals_per_half_axis == 2) {
     for (int i = 0; i < 3; ++i) {
       symbolic::Expression row_sum{0};
