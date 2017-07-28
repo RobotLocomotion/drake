@@ -16,8 +16,8 @@ namespace {
 const unsigned int kWindowSize{3};
 
 GTEST_TEST(MovingAverageFilterTest, InstantiationTest) {
-  EXPECT_NO_THROW(MovingAverageFilter<double> ma_filter1(2));
-  EXPECT_ANY_THROW(MovingAverageFilter<double> ma_filter1(0));
+  EXPECT_NO_THROW(MovingAverageFilter<double>(2));
+  EXPECT_ANY_THROW(MovingAverageFilter<double>(0));
 }
 
 GTEST_TEST(MovingAverageDoubleTest, UpdateTest) {
@@ -48,7 +48,7 @@ GTEST_TEST(MovingAverageVectorTest, UpdateVectorTest) {
   VectorX<double> sum(5);
   sum.setZero();
 
-  // output represents moving average.
+  // Output represents moving average.
   for (size_t i = 0; i < window.size(); ++i) {
     sum += window[i];
     EXPECT_TRUE(CompareMatrices(((1.0 / (i + 1)) * sum),

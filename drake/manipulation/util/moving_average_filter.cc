@@ -35,7 +35,7 @@ T MovingAverageFilter<T>::Update(const T& new_data) {
 
   window_.push(new_data);
 
-  if (window_.size() > (unsigned int)window_size_) {
+  if (window_.size() > static_cast<size_t>(window_size_)) {
     sum_ -= window_.front();
     window_.pop();
   }
