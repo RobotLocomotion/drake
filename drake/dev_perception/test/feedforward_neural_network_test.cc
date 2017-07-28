@@ -20,25 +20,28 @@ using std::endl;
 namespace perception {
 namespace {
 
+/********************************
+ * Helper function declarations
+ * (definitions at end of file)
+ ********************************/
 // Helper function to generate a vector of Connected layers
-std::vector<LayerType> generateFullyConnectedLayers(int numLayers) {
-  std::vector<LayerType> layers;
-  LayerType fullyConnected = LayerType::FullyConnected;
-  for (int i = 0; i < numLayers; i++) {
-    layers.push_back(fullyConnected);
-  }
-  return layers;
-}
-
+std::vector<LayerType> generateFullyConnectedLayers(int numLayers);
 // Helper function to generate a vector of Relu nonlinearities
-std::vector<NonlinearityType> generateReluNonlinearities(int numLayers) {
-  std::vector<NonlinearityType> nonlinearities;
-  NonlinearityType relu = NonlinearityType::Relu;
-  for (int i = 0; i < numLayers; i++) {
-    nonlinearities.push_back(relu);
-  }
-  return nonlinearities;
-}
+std::vector<NonlinearityType> generateReluNonlinearities(int numLayers);
+// Helper function to check IO behavior of a double FeedforwardNeuralNetwor
+// void TestIOdouble(std::vector<MatrixXd> W, std::vector<VectorXd> B, VectorXd
+// input,
+//            VectorXd expectedOutput);
+// Helper function to check IO behavior of a double FeedforwardNeuralNetwor
+template <typename T>
+void TestIO(std::vector<MatrixX<T>> W, std::vector<VectorX<T>> B,
+            VectorX<T> input, VectorX<T> expectedOutput);
+// Helper function to compare a MatrixX<double> and a MatrixX<AutoDiffXd>
+bool CompareMats(MatrixX<double> Mdouble, MatrixX<AutoDiffXd> Mautodiff);
+
+/********************************
+ * Tests
+ ********************************/
 
 // Test that the matrices are being encoded and decoded correctly from
 // BasicVectors
@@ -46,12 +49,14 @@ GTEST_TEST(FeedforwardNeuralNetworkTest, MatrixCoderDecoder) {
   MatrixXd W1 = MatrixXd::Random(3, 3);
   MatrixXd W2 = MatrixXd::Random(7, 3);
   std::vector<MatrixXd> W;
-  W.push_back(W1); W.push_back(W2);
+  W.push_back(W1);
+  W.push_back(W2);
 
   VectorXd B1 = VectorXd::Random(3);
   VectorXd B2 = VectorXd::Random(7);
   std::vector<VectorXd> B;
-  B.push_back(B1); B.push_back(B2);
+  B.push_back(B1);
+  B.push_back(B2);
 
   FeedforwardNeuralNetwork<double> dut(W, B, generateFullyConnectedLayers(2),
                                        generateReluNonlinearities(2));
@@ -86,13 +91,17 @@ GTEST_TEST(FeedforwardNeuralNetworkTest, ParameterStorage) {
   MatrixXd W2 = MatrixXd::Random(7, 3);
   MatrixXd W3 = MatrixXd::Random(2, 7);
   std::vector<MatrixXd> W;
-  W.push_back(W1); W.push_back(W2); W.push_back(W3);
+  W.push_back(W1);
+  W.push_back(W2);
+  W.push_back(W3);
 
   VectorXd B1 = VectorXd::Random(3);
   VectorXd B2 = VectorXd::Random(7);
   VectorXd B3 = VectorXd::Random(2);
   std::vector<VectorXd> B;
-  B.push_back(B1); B.push_back(B2); B.push_back(B3);
+  B.push_back(B1);
+  B.push_back(B2);
+  B.push_back(B3);
 
   FeedforwardNeuralNetwork<double> dut(W, B, generateFullyConnectedLayers(3),
                                        generateReluNonlinearities(3));
@@ -119,13 +128,17 @@ GTEST_TEST(FeedforwardNeuralNetworkTest, ShapeParameters) {
   MatrixXd W2 = MatrixXd::Random(7, 10);
   MatrixXd W3 = MatrixXd::Random(2, 7);
   std::vector<MatrixXd> W;
-  W.push_back(W1); W.push_back(W2); W.push_back(W3);
+  W.push_back(W1);
+  W.push_back(W2);
+  W.push_back(W3);
 
   VectorXd B1 = VectorXd::Random(10);
   VectorXd B2 = VectorXd::Random(7);
   VectorXd B3 = VectorXd::Random(2);
   std::vector<VectorXd> B;
-  B.push_back(B1); B.push_back(B2); B.push_back(B3);
+  B.push_back(B1);
+  B.push_back(B2);
+  B.push_back(B3);
 
   FeedforwardNeuralNetwork<double> dut(W, B, generateFullyConnectedLayers(3),
                                        generateReluNonlinearities(3));
@@ -135,42 +148,74 @@ GTEST_TEST(FeedforwardNeuralNetworkTest, ShapeParameters) {
   EXPECT_EQ(dut.get_num_outputs(), 2);
 }
 
-// Very basic sanity test of input-output behavior with identity weight
-// matrices
-void TestIO(std::vector<MatrixXd> W, std::vector<VectorXd> B, VectorXd input,
-            VectorXd expectedOutput) {
+GTEST_TEST(FeedforwardNeuralNetworkTest, ToAutoDiffTest) {
+  MatrixXd W1 = MatrixXd::Random(10, 19);
+  MatrixXd W2 = MatrixXd::Random(7, 10);
+  MatrixXd W3 = MatrixXd::Random(2, 7);
+  std::vector<MatrixXd> W;
+  W.push_back(W1);
+  W.push_back(W2);
+  W.push_back(W3);
+
+  VectorXd B1 = VectorXd::Random(10);
+  VectorXd B2 = VectorXd::Random(7);
+  VectorXd B3 = VectorXd::Random(2);
+  std::vector<VectorXd> B;
+  B.push_back(B1);
+  B.push_back(B2);
+  B.push_back(B3);
+
   FeedforwardNeuralNetwork<double> dut(W, B, generateFullyConnectedLayers(3),
                                        generateReluNonlinearities(3));
   unique_ptr<Context<double>> context = dut.CreateDefaultContext();
-  unique_ptr<SystemOutput<double>> output = dut.AllocateOutput(*context);
 
-  context->FixInputPort(dut.input().get_index(), input);
-  dut.CalcOutput(*context, output.get());
-  VectorXd computedOutput =
-      output->get_vector_data(dut.output().get_index())->get_value();
+  unique_ptr<FeedforwardNeuralNetwork<AutoDiffXd>> ad_ffnn = dut.ToAutoDiffXd();
+  unique_ptr<Context<AutoDiffXd>> ad_context = ad_ffnn->CreateDefaultContext();
+  ad_context->SetTimeStateAndParametersFrom(*context);
 
-  EXPECT_EQ(expectedOutput, computedOutput);
-	#ifndef NDEBUG
-	  cout << "input: " << endl;
-	  cout << endl << input << endl;
-	  cout << "expected output: " << endl;
-	  cout << expectedOutput << endl;
-	  cout << "computed output: " << endl;
-	  cout << computedOutput << endl;
-	#endif
+  unique_ptr<MatrixX<AutoDiffXd>> W1recovered =
+      ad_ffnn->get_weight_matrix(0, *ad_context);
+  unique_ptr<MatrixX<AutoDiffXd>> W2recovered =
+      ad_ffnn->get_weight_matrix(1, *ad_context);
+  unique_ptr<MatrixX<AutoDiffXd>> W3recovered =
+      ad_ffnn->get_weight_matrix(2, *ad_context);
+
+#ifndef NDEBUG
+  cout << "Type of W1 is: " << typeid(W1).name() << endl;
+  cout << "W1 is: " << endl;
+  cout << W1 << endl;
+  cout << "Type of *W1recovered is: " << typeid(*W1recovered).name() << endl;
+  cout << "W1 recovered is: " << endl;
+  cout << *W1recovered << endl;
+  cout << "Type of first element is: " << typeid((*W1recovered)(0, 0)).name()
+       << endl;
+  double entry = ((*W1recovered)(0, 0)).value();
+  cout << "double value of first element is: " << entry << endl;
+#endif
+
+  EXPECT_TRUE(CompareMats(W1, *W1recovered));
+  EXPECT_TRUE(CompareMats(W2, *W2recovered));
+  EXPECT_TRUE(CompareMats(W3, *W3recovered));
 }
+
+// Very basic sanity test of input-output behavior with identity weight
+// matrices
 GTEST_TEST(FeedforwardNeuralNetworkTest, BasicSanity) {
   MatrixXd I1 = MatrixXd::Identity(3, 3);
   MatrixXd I2 = MatrixXd::Identity(3, 3);
   MatrixXd I3 = MatrixXd::Identity(3, 3);
   std::vector<MatrixXd> W;
-  W.push_back(I1); W.push_back(I2); W.push_back(I3);
+  W.push_back(I1);
+  W.push_back(I2);
+  W.push_back(I3);
 
   VectorXd B1 = VectorXd::Zero(3);
   VectorXd B2 = VectorXd::Zero(3);
   VectorXd B3 = VectorXd::Zero(3);
   std::vector<VectorXd> B;
-  B.push_back(B1); B.push_back(B2); B.push_back(B3);
+  B.push_back(B1);
+  B.push_back(B2);
+  B.push_back(B3);
 
   // A few test vectors
   VectorXd input1(3);
@@ -188,69 +233,99 @@ GTEST_TEST(FeedforwardNeuralNetworkTest, BasicSanity) {
   expectedOutput3 << 0, 0, 1;  // ReLU zeroes out the negative
 
   TestIO(W, B, input1, expectedOutput1);
-  // TODO(nikos-tri) Figure out why these are failing
-  TestIO( W, B, input2, expectedOutput2 );
-  TestIO( W, B, input3, expectedOutput3 );
+  TestIO(W, B, input2, expectedOutput2);
+  TestIO(W, B, input3, expectedOutput3);
 }
 
-// Helper function to see if two matrices are equal
-bool CompareMats( MatrixX<double> Mdouble, MatrixX<AutoDiffXd> Mautodiff) {
-	if ( (Mdouble.rows() != Mautodiff.rows()) || (Mdouble.cols() != Mautodiff.cols()) ) {
-		return false;
-	}
-
-	for ( int i = 0; i < Mdouble.rows(); i++ ) {
-		for ( int j = 0; j < Mdouble.rows(); j++ ) {
-			double thisAdValue = (Mautodiff(i,j)).value();
-			
-			if ( thisAdValue != Mdouble(i,j) ) {
-				return false;
-			}
-		}
-	}
-	return true;
+/********************************
+ * Helper function definitions
+ ********************************/
+// Helper function to generate a vector of Connected layers
+std::vector<LayerType> generateFullyConnectedLayers(int numLayers) {
+  std::vector<LayerType> layers;
+  LayerType fullyConnected = LayerType::FullyConnected;
+  for (int i = 0; i < numLayers; i++) {
+    layers.push_back(fullyConnected);
+  }
+  return layers;
 }
-GTEST_TEST( FeedforwardNeuralNetworkTest, ToAutoDiffTest ) {
-  MatrixXd W1 = MatrixXd::Random(10, 19);
-  MatrixXd W2 = MatrixXd::Random(7, 10);
-  MatrixXd W3 = MatrixXd::Random(2, 7);
-  std::vector<MatrixXd> W;
-  W.push_back(W1); W.push_back(W2); W.push_back(W3);
 
-  VectorXd B1 = VectorXd::Random(10);
-  VectorXd B2 = VectorXd::Random(7);
-  VectorXd B3 = VectorXd::Random(2);
-  std::vector<VectorXd> B;
-  B.push_back(B1); B.push_back(B2); B.push_back(B3);
+// Helper function to generate a vector of Relu nonlinearities
+std::vector<NonlinearityType> generateReluNonlinearities(int numLayers) {
+  std::vector<NonlinearityType> nonlinearities;
+  NonlinearityType relu = NonlinearityType::Relu;
+  for (int i = 0; i < numLayers; i++) {
+    nonlinearities.push_back(relu);
+  }
+  return nonlinearities;
+}
 
-  FeedforwardNeuralNetwork<double> dut(W, B, 
-  																		generateFullyConnectedLayers(3),
-  																		generateReluNonlinearities(3) );
+// Helper function to compare a MatrixX<double> and a MatrixX<AutoDiffXd>
+bool CompareMats(MatrixX<double> Mdouble, MatrixX<AutoDiffXd> Mautodiff) {
+  if ((Mdouble.rows() != Mautodiff.rows()) ||
+      (Mdouble.cols() != Mautodiff.cols())) {
+    return false;
+  }
+
+  for (int i = 0; i < Mdouble.rows(); i++) {
+    for (int j = 0; j < Mdouble.rows(); j++) {
+      double thisAdValue = (Mautodiff(i, j)).value();
+
+      if (thisAdValue != Mdouble(i, j)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+// Check that a FeedforwardNeuralNetwork<double> gives the expected result
+// void TestIOdouble(std::vector<MatrixXd> W, std::vector<VectorXd> B, VectorXd
+// input,
+//            VectorXd expectedOutput) {
+//  FeedforwardNeuralNetwork<double> dut(W, B, generateFullyConnectedLayers(3),
+//                                       generateReluNonlinearities(3));
+//  unique_ptr<Context<double>> context = dut.CreateDefaultContext();
+//  unique_ptr<SystemOutput<double>> output = dut.AllocateOutput(*context);
+//
+//  context->FixInputPort(dut.input().get_index(), input);
+//  dut.CalcOutput(*context, output.get());
+//  VectorXd computedOutput =
+//      output->get_vector_data(dut.output().get_index())->get_value();
+//
+//  EXPECT_EQ(expectedOutput, computedOutput);
+//	#ifndef NDEBUG
+//	  cout << "input: " << endl;
+//	  cout << endl << input << endl;
+//	  cout << "expected output: " << endl;
+//	  cout << expectedOutput << endl;
+//	  cout << "computed output: " << endl;
+//	  cout << computedOutput << endl;
+//	#endif
+//}
+// Check that a FeedforwardNeuralNetwork<T> gives the expected result
+template <typename T>
+void TestIO(std::vector<MatrixX<T>> W, std::vector<VectorX<T>> B,
+            VectorX<T> input, VectorX<T> expectedOutput) {
+  FeedforwardNeuralNetwork<double> dut(W, B, generateFullyConnectedLayers(3),
+                                       generateReluNonlinearities(3));
   unique_ptr<Context<double>> context = dut.CreateDefaultContext();
+  unique_ptr<SystemOutput<double>> output = dut.AllocateOutput(*context);
 
-  unique_ptr<FeedforwardNeuralNetwork<AutoDiffXd>> ad_ffnn = dut.ToAutoDiffXd();
-	unique_ptr<Context<AutoDiffXd>> ad_context = ad_ffnn->CreateDefaultContext();
-	ad_context->SetTimeStateAndParametersFrom( *context );
+  context->FixInputPort(dut.input().get_index(), input);
+  dut.CalcOutput(*context, output.get());
+  VectorXd computedOutput =
+      output->get_vector_data(dut.output().get_index())->get_value();
 
-	unique_ptr<MatrixX<AutoDiffXd>> W1recovered = ad_ffnn->get_weight_matrix(0, *ad_context);
-	unique_ptr<MatrixX<AutoDiffXd>> W2recovered = ad_ffnn->get_weight_matrix(1, *ad_context);
-	unique_ptr<MatrixX<AutoDiffXd>> W3recovered = ad_ffnn->get_weight_matrix(2, *ad_context);
-
-	#ifndef NDEBUG
-		cout << "Type of W1 is: " << typeid(W1).name() << endl;
-		cout << "W1 is: " << endl;
-		cout << W1 << endl;
-		cout << "Type of *W1recovered is: " << typeid(*W1recovered).name() << endl;
-		cout << "W1 recovered is: " <<endl;
-		cout << *W1recovered << endl;
-		cout << "Type of first element is: " << typeid((*W1recovered)(0,0)).name() << endl;
-		double entry = ((*W1recovered)(0,0)).value();
-		cout << "double value of first element is: " << entry << endl;
-	#endif
-
-	EXPECT_TRUE( CompareMats( W1, *W1recovered ) );
-	EXPECT_TRUE( CompareMats( W2, *W2recovered ) );
-	EXPECT_TRUE( CompareMats( W3, *W3recovered ) );
+  EXPECT_EQ(expectedOutput, computedOutput);
+#ifndef NDEBUG
+  cout << "input: " << endl;
+  cout << endl << input << endl;
+  cout << "expected output: " << endl;
+  cout << expectedOutput << endl;
+  cout << "computed output: " << endl;
+  cout << computedOutput << endl;
+#endif
 }
 
 }  // namespace
