@@ -188,29 +188,26 @@ GTEST_TEST(testCost, testCostShim) {
       Vector1d(2), VectorXPoly::Constant(1, poly), var_mapping);
 }
 
-template <typename T, bool is_dereferencable>
-struct deref {
-  static const auto& to_const_ref(T&& x) { return x; }
-};
+// Generic dereferencing for a value type, or a managed pointer.
 template <typename T>
-struct deref<T, true> {
-  static const auto& to_const_ref(T&& x) { return *x; }
-};
-
-template <bool is_dereferencable, typename T>
-const auto& to_const_ref(T&& t) {
-  using impl = deref<T, is_dereferencable>;
-  return impl::to_const_ref(std::forward<T>(t));
-}
+const T& deref(const T& x) { return x; }
+template <typename T>
+const T& deref(const shared_ptr<T>& x) { return *x; }
+template <typename T>
+const T& deref(const unique_ptr<T>& x) { return *x; }
 
 // Verifies that FunctionCost form can be constructed correctly.
-template <bool is_pointer, typename F>
+template <typename F>
 void VerifyFunctionCost(F&& f, const Ref<const VectorXd>& x_value) {
+  // Compute expected value prior to forwarding `f` (which may involve
+  // move'ing `unique_ptr<>` or `shared_ptr<>`, making `f` a nullptr).
+  Eigen::VectorXd y_expected(1);
+  deref(f).eval(x_value, y_expected);
+  // Construct cost, moving `f`, if applicable.
   auto cost = MakeFunctionCost(std::forward<F>(f));
   EXPECT_TRUE(is_dynamic_castable<Cost>(cost));
-  // Compare values
-  Eigen::VectorXd y_expected(1), y;
-  to_const_ref<is_pointer>(f).eval(x_value, y_expected);
+  // Compare values.
+  Eigen::VectorXd y(1);
   cost->Eval(x_value, y);
   EXPECT_TRUE(CompareMatrices(y, y_expected));
 }
@@ -218,13 +215,13 @@ void VerifyFunctionCost(F&& f, const Ref<const VectorXd>& x_value) {
 GTEST_TEST(testCost, testFunctionCost) {
   // Test that we can construct FunctionCosts with different signatures.
   Eigen::Vector2d x(1, 2);
-  VerifyFunctionCost<false>(GenericTrivialCost2(), x);
+  VerifyFunctionCost(GenericTrivialCost2(), x);
   // Ensure that we explictly call the default constructor for a const class.
   // @ref http://stackoverflow.com/a/28338123/7829525
   const GenericTrivialCost2 obj_const{};
-  VerifyFunctionCost<false>(obj_const, x);
-  VerifyFunctionCost<true>(make_shared<GenericTrivialCost2>(), x);
-  VerifyFunctionCost<true>(make_unique<GenericTrivialCost2>(), x);
+  VerifyFunctionCost(obj_const, x);
+  VerifyFunctionCost(make_shared<GenericTrivialCost2>(), x);
+  VerifyFunctionCost(make_unique<GenericTrivialCost2>(), x);
 }
 
 }  // anonymous namespace
