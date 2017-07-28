@@ -21,24 +21,24 @@ class OptitrackPoseExtractor : public systems::LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OptitrackPoseExtractor)
   /**
    * Constructs the OptitrackPoseExtractor.
-   * @param object_id : An ID of the object being tracked. This ID must
+   * @param object_id An ID of the object being tracked. This ID must
    * correspond to the those present within the OPTITRACK_FRAME_T message or
    * else a runtime exception is thrown.
-   * @param world_X_optitrack : The transformation from world frame (Drake
-   * frame) to the optitrack frame.
-   * @param optitrack_lcm_status_period : The discrete update period of the
+   * @param X_WO The pose of the optitrack frame O in the World frame W.
+   * @param optitrack_lcm_status_period The discrete update period of the
    * OptitrackPoseExtractor. It should be set based on the period of incoming
    * optitrack messages.
    */
-  OptitrackPoseExtractor(unsigned int object_id,
-                         const Isometry3<double>& world_X_optitrack,
+  OptitrackPoseExtractor(int object_id,
+                         const Isometry3<double>& X_WO,
                          double optitrack_lcm_status_period);
 
   const systems::OutputPort<double>& get_measured_pose_output_port() const {
     return this->get_output_port(measured_pose_output_port_);
   }
 
- protected:
+ private:
+  // The Calc() method for the measured_pose_output_port.
   void OutputMeasuredPose(const systems::Context<double>& context,
                           systems::BasicVector<double>* output) const;
 
@@ -47,11 +47,10 @@ class OptitrackPoseExtractor : public systems::LeafSystem<double> {
       const std::vector<const systems::DiscreteUpdateEvent<double>*>& events,
       systems::DiscreteValues<double>* discrete_state) const override;
 
- private:
-  const unsigned int object_id_{0};
+  const int object_id_{0};
   const int measured_pose_output_port_{-1};
   // Pose of the optitrack frame O in the world frame W.
-  const Isometry3<double> X_WOp_;
+  const Isometry3<double> X_WO;
 };
 
 }  // namespace perception

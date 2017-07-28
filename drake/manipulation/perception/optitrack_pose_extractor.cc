@@ -16,7 +16,7 @@ namespace manipulation {
 namespace perception {
 
 OptitrackPoseExtractor::OptitrackPoseExtractor(
-    unsigned int object_id, const Isometry3<double>& world_X_optitrack,
+    int object_id, const Isometry3<double>& X_WO,
     double optitrack_lcm_status_period)
     : object_id_(object_id),
       measured_pose_output_port_{
@@ -24,7 +24,7 @@ OptitrackPoseExtractor::OptitrackPoseExtractor(
                   BasicVector<double>(7),
                   &OptitrackPoseExtractor::OutputMeasuredPose)
               .get_index()},
-      X_WOp_(world_X_optitrack) {
+      X_WO(X_WO) {
   this->set_name("Optitrack pose extractor");
   this->DeclareAbstractInputPort();
   // Internal state is stored with first 3 dimensions containing the object's
@@ -48,22 +48,23 @@ void OptitrackPoseExtractor::DoCalcDiscreteVariableUpdates(
   std::vector<optitrack::optitrack_rigid_body_t> rigid_bodies =
       pose_message.rigid_bodies;
 
-  DRAKE_THROW_UNLESS(object_id_ < rigid_bodies.size());
-  DRAKE_THROW_UNLESS(rigid_bodies[object_id_].id == (int)object_id_);
+  DRAKE_THROW_UNLESS(object_id_ < static_cast<int>(rigid_bodies.size()));
+  DRAKE_THROW_UNLESS(rigid_bodies[object_id_].id == object_id_);
 
-  // The optitrack quaternion ordering is Z-W-X-Y.
+  // The optitrack quaternion ordering is X-Y-Z-W and this needs fitting into
+  // Eigens W-X-Y-Z ordering.
   Eigen::Quaterniond quaternion(
       rigid_bodies[object_id_].quat[3], rigid_bodies[object_id_].quat[0],
       rigid_bodies[object_id_].quat[1], rigid_bodies[object_id_].quat[2]);
 
-  // Transform pose to world frame.
-  Isometry3<double> X_OpOb;
-  X_OpOb.linear() = quaternion.toRotationMatrix();
-  X_OpOb.translation() = Eigen::Vector3d(rigid_bodies[object_id_].xyz[0],
+  // Transform from world frame W to rigid body frame B.
+  Isometry3<double> X_OB;
+  X_OB.linear() = quaternion.toRotationMatrix();
+  X_OB.translation() = Eigen::Vector3d(rigid_bodies[object_id_].xyz[0],
                                          rigid_bodies[object_id_].xyz[1],
                                          rigid_bodies[object_id_].xyz[2]);
-  X_OpOb.makeAffine();
-  Isometry3<double> X_WOb = X_WOp_ * X_OpOb;
+  X_OB.makeAffine();
+  Isometry3<double> X_WOb = X_WO * X_OB;
 
   state_value.segment<3>(0) = X_WOb.translation();
   state_value.segment<4>(3) = Eigen::Quaterniond(X_WOb.linear()).coeffs();
