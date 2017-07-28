@@ -280,7 +280,8 @@ TEST_F(RigidContact2DSolverTest, TwoPointSliding) {
 
   // Construct the contact frame.
   std::vector<Matrix2<double>> frames;
-  frames.push_back(GetSlidingContactFrameToWorldTransform(tangent_vels.front()));
+  frames.push_back(
+    GetSlidingContactFrameToWorldTransform(tangent_vels.front()));
   frames.push_back(GetSlidingContactFrameToWorldTransform(tangent_vels.back()));
 
   // Get the contact forces expressed in the contact frame.
@@ -337,7 +338,8 @@ TEST_F(RigidContact2DSolverTest, SinglePointSliding) {
 
   // Construct the contact frame.
   std::vector<Matrix2<double>> frames;
-  frames.push_back(GetSlidingContactFrameToWorldTransform(tangent_vels.front()));
+  frames.push_back(
+    GetSlidingContactFrameToWorldTransform(tangent_vels.front()));
 
   // Get the contact forces expressed in the contact frame.
   std::vector<Vector2<double>> contact_forces;
