@@ -35,8 +35,8 @@ FeedforwardNeuralNetwork<T>::FeedforwardNeuralNetwork(
     weight_indices_.push_back(
         this->DeclareNumericParameter(*(EncodeWeightsToBasicVector(W[i]))));
 
-    BasicVector<T> biasVector(b[i]);
-    bias_indices_.push_back(this->DeclareNumericParameter(biasVector));
+    BasicVector<T> bias_vector(b[i]);
+    bias_indices_.push_back(this->DeclareNumericParameter(bias_vector));
   }
 
   layers_ = layers;
@@ -47,11 +47,11 @@ FeedforwardNeuralNetwork<T>::FeedforwardNeuralNetwork(
 
   // Ok to do this cast to int since we are not going to have a NN that is so
   // large that it will exhaust the range of int
-  MatrixX<T> firstMatrix = W[0];
-  num_inputs_ = firstMatrix.cols();
+  MatrixX<T> first_matrix = W[0];
+  num_inputs_ = first_matrix.cols();
 
-  MatrixX<T> lastMatrix = W[W.size() - 1];
-  num_outputs_ = lastMatrix.rows();
+  MatrixX<T> last_matrix = W[W.size() - 1];
+  num_outputs_ = last_matrix.rows();
 
   num_layers_ = W.size();
 
@@ -64,26 +64,26 @@ template <typename T>
 void FeedforwardNeuralNetwork<T>::DoCalcOutput(const Context<T>& context,
                                                BasicVector<T>* output) const {
   // Read the input
-  VectorX<T> inputValue = ReadInput(context);
+  VectorX<T> input_value = ReadInput(context);
 
   // Evaluate each layer
-  VectorX<T> intermediateValue = inputValue;
-  std::unique_ptr<MatrixX<T>> Weights;
+  VectorX<T> intermediate_value = input_value;
+  std::unique_ptr<MatrixX<T>> weights;
   std::unique_ptr<VectorX<T>> bias;
-  LayerType layerType;
+  LayerType layer_type;
   NonlinearityType nonlinearity;
   for (int i = 0; i < num_layers_; i++) {
-    Weights = get_weight_matrix(i, context);
+    weights = get_weight_matrix(i, context);
     bias = get_bias_vector(i, context);
-    layerType = layers_[i];
+    layer_type = layers_[i];
     nonlinearity = nonlinearities_[i];
 
-    intermediateValue = EvaluateLayer(intermediateValue, *Weights, *bias,
-                                      layerType, nonlinearity);
+    intermediate_value = EvaluateLayer(intermediate_value, *weights, *bias,
+                                      layer_type, nonlinearity);
   }
 
   // Write output
-  WriteOutput(intermediateValue, output);
+  WriteOutput(intermediate_value, output);
 }
 
 template <typename T>
@@ -93,9 +93,9 @@ VectorX<T> FeedforwardNeuralNetwork<T>::EvaluateLayer(
   // Only suppports fully-connected RELU at this time
   DRAKE_ASSERT(layer == LayerType::FullyConnected);
   DRAKE_ASSERT(nonlinearity == NonlinearityType::Relu);
-  VectorX<T> layerOutput = relu(Weights * layerInput + bias);
+  VectorX<T> layer_output = relu(Weights * layerInput + bias);
 
-  return layerOutput;
+  return layer_output;
 }
 
 template <typename T>
@@ -200,17 +200,17 @@ std::unique_ptr<BasicVector<T>> FeedforwardNeuralNetwork<
 template <typename T>
 std::unique_ptr<MatrixX<T>>
 FeedforwardNeuralNetwork<T>::DecodeWeightsFromBasicVector(
-    int rows, int cols, const BasicVector<T>& basicVector) const {
+    int rows, int cols, const BasicVector<T>& basic_vector ) const {
   MatrixX<T>* weights = new MatrixX<T>(rows, cols);
   *weights = MatrixX<T>::Zero(rows, cols);
 
-  VectorX<T> v = basicVector.get_value();
+  VectorX<T> v = basic_vector.get_value();
 
-  int vectorIndex = 0;
+  int vector_index = 0;
   for (int i = 0; i < rows; i++) {
     for (int j = 0; j < cols; j++) {
-      (*weights)(i, j) = v(vectorIndex);
-      vectorIndex++;
+      (*weights)(i, j) = v(vecto_index);
+      vector_index++;
     }
   }
 
