@@ -81,7 +81,7 @@ drake_cc_library(
         "//drake/examples/QPInverseDynamicsForHumanoids:lcm_utils",
         "//drake/manipulation/util:robot_state_msg_translator",
         "//drake/systems/controllers:zmp_planner",
-        "//drake/util:util",
+        "//drake/util",
         "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",
     ],

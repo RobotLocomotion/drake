@@ -555,8 +555,8 @@ drake_cc_googletest(
         ],
         "//conditions:default": [],
     }),
-    tags = gurobi_test_tags(),
     data = ["//drake/examples/atlas:models"],
+    tags = gurobi_test_tags(),
     deps = select({
         "//tools:with_gurobi": [
             ":inverse_kinematics",

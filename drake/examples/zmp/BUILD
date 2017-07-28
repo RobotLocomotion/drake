@@ -9,14 +9,13 @@ load(
     "drake_cc_library",
 )
 
-
 drake_cc_binary(
     name = "zmp_example",
     testonly = 1,
     srcs = ["zmp_example.cc"],
     deps = [
-        "//drake/systems/controllers:zmp_test_util",
         "//drake/common/proto:call_matlab",
+        "//drake/systems/controllers:zmp_test_util",
     ],
 )
 
