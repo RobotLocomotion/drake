@@ -463,9 +463,10 @@ Vector3<T> Rod2D<T>::GetJacobianDotRow(const systems::Context<T>& context,
 template <class T>
 Matrix2<T> Rod2D<T>::GetSlidingContactFrameToWorldTransform(
     const T& xaxis_velocity) const {
-  // Note: the normal for the rod always points along the world +y axis;
-  // the sliding tangent vector points along either the +/-x (world) axis. The
-  // << operator populates the matrix row by row, so
+  // Note: the contact normal for the rod with the horizontal plane always
+  // points along the world +y axis; the sliding tangent vector points along
+  // either the +/-x (world) axis. The << operator populates the matrix row by
+  // row, so
   // R_WC = | 0  ±1 |
   //        | 1   0 |
   // indicating that the contact normal direction (the +x axis in the contact
@@ -482,9 +483,10 @@ Matrix2<T> Rod2D<T>::GetSlidingContactFrameToWorldTransform(
 
 template <class T>
 Matrix2<T> Rod2D<T>::GetNonSlidingContactFrameToWorldTransform() const {
-  // Note: the normal for the rod always points along the world +y axis; the
-  // non-sliding tangent vector always points along the world +x axis.
-  // The << operator populates the matrix row by row, so
+  // Note: the contact normal for the rod with the horizontal plane always
+  // points along the world +y axis; the non-sliding tangent vector always
+  // points along the world +x axis. The << operator populates the matrix row by
+  // row, so
   // R_WC = | 0 1 |
   //        | 1 0 |
   // indicating that the contact normal direction is (the +x axis in the contact
