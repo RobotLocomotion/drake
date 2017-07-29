@@ -61,6 +61,7 @@ def _transform(line, definitions):
 
     return line
 
+
 # Looks like "set(VAR value)".
 _set_var = re.compile(r'^\s*set\s*\(\s*(.+)\s+(.+)\s*\)\s*$')
 
@@ -120,6 +121,7 @@ def main():
                 output_line = _transform(input_line, definitions)
                 output_file.write(output_line)
     os.rename(args.output + '.tmp', args.output)
+
 
 if __name__ == '__main__':
     main()
