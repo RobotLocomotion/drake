@@ -51,8 +51,8 @@ drake_cc_library(
     deps = [
         "//drake/examples/QPInverseDynamicsForHumanoids:control_utils",
         "//drake/examples/QPInverseDynamicsForHumanoids:humanoid_status",
-        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
-        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:rigid_body_tree_alias_groups",
+        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",  # noqa
+        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:rigid_body_tree_alias_groups",  # noqa
         "//drake/systems/framework:leaf_system",
     ],
 )
@@ -63,7 +63,7 @@ drake_cc_library(
     hdrs = ["humanoid_plan_eval_system.h"],
     deps = [
         ":plan_eval_base_system",
-        "//drake/examples/QPInverseDynamicsForHumanoids/plan_eval:humanoid_manipulation_plan",
+        "//drake/examples/QPInverseDynamicsForHumanoids/plan_eval:humanoid_manipulation_plan",  # noqa
     ],
 )
 
@@ -126,8 +126,8 @@ drake_cc_binary(
         "valkyrie_balancing_controller_system.cc",
     ],
     data = [
-        "//drake/examples/QPInverseDynamicsForHumanoids:config/valkyrie.alias_groups",
-        "//drake/examples/QPInverseDynamicsForHumanoids:config/valkyrie.id_controller_config",
+        "//drake/examples/QPInverseDynamicsForHumanoids:config/valkyrie.alias_groups",  # noqa
+        "//drake/examples/QPInverseDynamicsForHumanoids:config/valkyrie.id_controller_config",  # noqa
         "//drake/examples/valkyrie:models",
     ],
     tags = gurobi_test_tags(),
@@ -143,8 +143,8 @@ drake_cc_googletest(
     name = "humanoid_plan_eval_test",
     srcs = ["test/humanoid_plan_eval_system_test.cc"],
     data = [
-        "//drake/examples/QPInverseDynamicsForHumanoids:config/valkyrie.alias_groups",
-        "//drake/examples/QPInverseDynamicsForHumanoids:config/valkyrie.id_controller_config",
+        "//drake/examples/QPInverseDynamicsForHumanoids:config/valkyrie.alias_groups",  # noqa
+        "//drake/examples/QPInverseDynamicsForHumanoids:config/valkyrie.id_controller_config",  # noqa
         "//drake/examples/valkyrie:models",
     ],
     tags = gurobi_test_tags(),
@@ -155,7 +155,7 @@ drake_cc_googletest(
         "//drake/common:find_resource",
         "//drake/examples/QPInverseDynamicsForHumanoids:control_utils",
         "//drake/examples/QPInverseDynamicsForHumanoids:qp_controller",
-        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
+        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",  # noqa
         "//drake/examples/valkyrie:valkyrie_constants",
         "//drake/multibody/parsers",
         "//drake/systems/analysis:simulator",
@@ -168,8 +168,8 @@ drake_cc_googletest(
     name = "manipulator_inverse_dynamics_controller_test",
     srcs = ["test/manipulator_inverse_dynamics_controller_test.cc"],
     data = [
-        "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.alias_groups",
-        "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.id_controller_config",
+        "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.alias_groups",  # noqa
+        "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.id_controller_config",  # noqa
         "//drake/manipulation/models/iiwa_description:models",
     ],
     tags = gurobi_test_tags(),
@@ -189,8 +189,8 @@ drake_cc_googletest(
     name = "qp_controller_system_test",
     srcs = ["test/qp_controller_system_test.cc"],
     data = [
-        "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.alias_groups",
-        "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.id_controller_config",
+        "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.alias_groups",  # noqa
+        "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.id_controller_config",  # noqa
         "//drake/manipulation/models/iiwa_description:models",
     ],
     tags = gurobi_test_tags(),
@@ -199,7 +199,7 @@ drake_cc_googletest(
         "//drake/common:eigen_matrix_compare",
         "//drake/common:find_resource",
         "//drake/examples/QPInverseDynamicsForHumanoids:control_utils",
-        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
+        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",  # noqa
         "//drake/multibody/parsers",
         "//drake/systems/analysis:simulator",
         "//drake/systems/framework",

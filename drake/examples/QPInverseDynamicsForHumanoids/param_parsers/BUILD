@@ -6,8 +6,9 @@ load("//tools:drake.bzl", "drake_cc_library", "drake_cc_googletest")
 load("@protobuf//:protobuf.bzl", "cc_proto_library")
 
 package(
-    default_visibility =
-        ["//drake/examples/QPInverseDynamicsForHumanoids:__subpackages__"],
+    default_visibility = [
+        "//drake/examples/QPInverseDynamicsForHumanoids:__subpackages__",
+    ],
 )
 
 drake_cc_library(

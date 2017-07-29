@@ -46,7 +46,7 @@ def bazel_lint(name = "bazel", ignore = [265, 302, 305]):
 
     Example:
         BUILD:
-            load("//tools:python_lint.bzl", "bazel_lint")
+            load("//tools:bazel_lint.bzl", "bazel_lint")
 
             bazel_lint()
     """
