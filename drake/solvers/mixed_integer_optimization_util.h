@@ -148,10 +148,10 @@ void AddLogarithmicSos1Constraint(
 template <typename DerivedPhiX, typename DerivedPhiY, typename DerivedBx,
           typename DerivedBy>
 typename std::enable_if<
-    detail::is_eigen_vector_of<DerivedPhiX, double>::value &&
-        detail::is_eigen_vector_of<DerivedPhiY, double>::value &&
-        detail::is_eigen_vector_of<DerivedBx, symbolic::Variable>::value &&
-        detail::is_eigen_vector_of<DerivedBy, symbolic::Variable>::value,
+    is_eigen_vector_of<DerivedPhiX, double>::value &&
+        is_eigen_vector_of<DerivedPhiY, double>::value &&
+        is_eigen_vector_of<DerivedBx, symbolic::Variable>::value &&
+        is_eigen_vector_of<DerivedBy, symbolic::Variable>::value,
     MatrixDecisionVariable<DerivedPhiX::RowsAtCompileTime,
                            DerivedPhiY::RowsAtCompileTime>>::type
 AddBilinearProductMcCormickEnvelopeSos2(
