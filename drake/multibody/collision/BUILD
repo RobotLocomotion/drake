@@ -87,8 +87,8 @@ drake_cc_library(
     ],
     defines = ["BULLET_COLLISION"],
     deps = [
-        ":collision_api",
         ":bullet_collision",
+        ":collision_api",
         ":fcl_collision",
         ":unusable_collision",
     ],
