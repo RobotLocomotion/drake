@@ -226,7 +226,7 @@ drake_cc_library(
         "//drake/common:find_resource",
         "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant:drake_visualizer",
-        "//drake/multibody/rigid_body_plant:rigid_body_plant_that_publishes_xdot",
+        "//drake/multibody/rigid_body_plant:rigid_body_plant_that_publishes_xdot",  # noqa
         "//drake/systems/lcm:lcmt_drake_signal_translator",
         "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:signal_logger",

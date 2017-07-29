@@ -28,8 +28,8 @@ drake_cc_library(
         "//drake/examples/QPInverseDynamicsForHumanoids:control_utils",
         "//drake/examples/QPInverseDynamicsForHumanoids:humanoid_status",
         "//drake/examples/QPInverseDynamicsForHumanoids:qp_controller_common",
-        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
-        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:rigid_body_tree_alias_groups",
+        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",  # noqa
+        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:rigid_body_tree_alias_groups",  # noqa
         "//drake/manipulation/util:trajectory_utils",
         "//drake/systems/framework:value",
     ],
@@ -54,8 +54,8 @@ drake_cc_library(
 drake_cc_googletest(
     name = "manipulator_plan_test",
     data = [
-        "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.alias_groups",
-        "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.id_controller_config",
+        "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.alias_groups",  # noqa
+        "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.id_controller_config",  # noqa
         "//drake/manipulation/models/iiwa_description:models",
     ],
     deps = [
@@ -107,11 +107,12 @@ drake_cc_binary(
 )
 
 # === test/ ===
+
 drake_cc_googletest(
     name = "generic_plan_test",
     data = [
-        "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.alias_groups",
-        "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.id_controller_config",
+        "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.alias_groups",  # noqa
+        "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.id_controller_config",  # noqa
         "//drake/manipulation/models/iiwa_description:models",
     ],
     deps = [
@@ -131,8 +132,8 @@ drake_cc_library(
     ],
     deps = [
         "//drake/examples/QPInverseDynamicsForHumanoids:humanoid_status",
-        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
-        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:rigid_body_tree_alias_groups",
+        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",  # noqa
+        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:rigid_body_tree_alias_groups",  # noqa
     ],
 )
 

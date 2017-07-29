@@ -11,7 +11,8 @@ load("//tools:transitive_hdrs.bzl", "transitive_hdrs_library")
 # any new external dependencies to :external_licenses.
 
 # This is the *sorted* output of the following Bazel query:
-# bazel query 'kind("cc_library", visible("//drake:libdrake.so", "//drake/..."))
+# bazel query 'kind("cc_library",
+# visible("//drake:libdrake.so", "//drake/..."))
 # except("//drake/examples/...")
 # except(attr("testonly", "1", "//drake/..."))
 # except("//drake/lcmtypes/...")
@@ -104,7 +105,7 @@ _LIBDRAKE_COMPONENTS = [
     "//drake:mosek_deps",
     "//drake/multibody:approximate_ik",
     "//drake/multibody/benchmarks/acrobot:acrobot",
-    "//drake/multibody/benchmarks/mass_damper_spring:mass_damper_spring_analytical_solution",
+    "//drake/multibody/benchmarks/mass_damper_spring:mass_damper_spring_analytical_solution",  # noqa
     "//drake/multibody/collision:bullet_collision",
     "//drake/multibody/collision:collision_api",
     "//drake/multibody/collision:fcl_collision",

@@ -2,7 +2,7 @@
 
 load("//tools:drake.bzl", "drake_cc_binary")
 
-def drake_pybind_cc_binary(name, srcs=[], copts=[], **kwargs):
+def drake_pybind_cc_binary(name, srcs = [], copts = [], **kwargs):
     """Declare a pybind11 shared library with the given name and srcs.  The
     libdrake.so library and its headers are already automatically depended-on
     by this rule.

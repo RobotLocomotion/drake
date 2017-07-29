@@ -41,7 +41,7 @@ drake_cc_library(
     hdrs = ["humanoid_status.h"],
     deps = [
         "//drake/common",
-        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:rigid_body_tree_alias_groups",
+        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:rigid_body_tree_alias_groups",  # noqa
         "//drake/multibody:rigid_body_tree",
         "//drake/systems/robotInterfaces:side",
     ],
@@ -126,7 +126,7 @@ drake_cc_googletest(
         ":qp_controller",
         "//drake/common:eigen_matrix_compare",
         "//drake/common:find_resource",
-        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
+        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",  # noqa
         "//drake/examples/valkyrie:valkyrie_constants",
         "//drake/multibody/parsers",
     ],
@@ -146,7 +146,7 @@ drake_cc_googletest(
         ":qp_controller",
         "//drake/common:eigen_matrix_compare",
         "//drake/common:find_resource",
-        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
+        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",  # noqa
         "//drake/multibody/parsers",
     ],
 )
