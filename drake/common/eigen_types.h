@@ -167,4 +167,59 @@ struct MultiplyEigenSizes {
   static constexpr int value =
       (a == Eigen::Dynamic || b == Eigen::Dynamic) ? Eigen::Dynamic : a * b;
 };
+
+/*
+ * Determines if a type is derived from EigenBase<> (e.g. ArrayBase<>,
+ * MatrixBase<>).
+ */
+template <typename Derived>
+struct is_eigen_type : std::is_base_of<Eigen::EigenBase<Derived>, Derived> {};
+
+/*
+ * Determines if an EigenBase<> has a specific scalar type.
+ */
+template <typename Derived, typename Scalar>
+struct is_eigen_scalar_same
+    : std::integral_constant<
+          bool, is_eigen_type<Derived>::value &&
+                    std::is_same<typename Derived::Scalar, Scalar>::value> {};
+
+/*
+ * Determines if an EigenBase<> type is a compile-time (column) vector.
+ * This will not check for run-time size.
+ */
+template <typename Derived>
+struct is_eigen_vector
+    : std::integral_constant<bool, is_eigen_type<Derived>::value &&
+                                       Derived::ColsAtCompileTime == 1> {};
+
+/*
+ * Determines if an EigenBase<> type is a compile-time (column) vector of a
+ * scalar type. This will not check for run-time size.
+ */
+template <typename Derived, typename Scalar>
+struct is_eigen_vector_of
+    : std::integral_constant<
+          bool, is_eigen_scalar_same<Derived, Scalar>::value &&
+                    is_eigen_vector<Derived>::value> {};
+
+/*
+ * Determines if a EigenBase<> type is a compile-time non-column-vector matrix
+ * of a scalar type. This will not check for run-time size.
+ * @note For an EigenBase<> of the correct Scalar type, this logic is
+ * exclusive to is_eigen_vector_of<> such that distinct specializations are not
+ * ambiguous.
+ */
+// TODO(eric.cousineau): A 1x1 matrix will be disqualified in this case, and
+// this logic will qualify it as a vector. Address the downstream logic if this
+// becomes an issue.
+template <typename Derived, typename Scalar>
+struct is_eigen_nonvector_of
+    : std::integral_constant<
+          bool, is_eigen_scalar_same<Derived, Scalar>::value &&
+                    !is_eigen_vector<Derived>::value> {};
+
+// TODO(eric.cousineau): Add alias is_eigen_matrix_of = is_eigen_scalar_same if
+// appropriate.
+
 }  // namespace drake
