@@ -27,31 +27,4 @@ endif()
 
 add_subdirectory(util)
 
-if(BUILD_TESTING)
-  function(drake_add_matlab_check_dependency_test dependency)
-    drake_add_matlab_test(NAME matlab/check_dependency_${dependency}
-      REQUIRES ${dependency} COMMAND "checkDependency('${dependency}')"
-      CHECK_DEPENDENCY_STRICT SIZE small)
-  endfunction()
 
-  drake_add_matlab_check_dependency_test(lcm)
-
-  # Unknown dependency.
-  drake_add_matlab_test(NAME matlab/check_dependency_unknown
-    COMMAND "checkDependency('unknown')" CHECK_DEPENDENCY_STRICT)
-  set_tests_properties(matlab/check_dependency_unknown PROPERTIES WILL_FAIL ON)
-
-  function(drake_add_matlab_check_dependency_test_no dependency)
-    if(NOT ${dependency}_FOUND)
-      drake_add_matlab_test(NAME matlab/check_dependency_no_${dependency}
-        COMMAND "checkDependency('${dependency}')" CHECK_DEPENDENCY_STRICT
-        SIZE small)
-      set_tests_properties(matlab/check_dependency_no_${dependency}
-        PROPERTIES WILL_FAIL ON)
-    endif()
-  endfunction()
-
-  # TODO(jamiesnape): This would still pass if MATLAB fails for a reason
-  # other than a missing dependency.
-  drake_add_matlab_check_dependency_test_no(lcm)
-endif()
