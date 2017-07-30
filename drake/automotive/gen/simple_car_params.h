@@ -44,12 +44,12 @@ class SimpleCarParams : public systems::BasicVector<T> {
   typedef SimpleCarParamsIndices K;
 
   /// Default constructor.  Sets all rows to their default value:
-  /// @arg @c wheelbase defaults to 2.700 in units of m.
-  /// @arg @c track defaults to 1.521 in units of m.
-  /// @arg @c max_abs_steering_angle defaults to 0.471 in units of rad.
-  /// @arg @c max_velocity defaults to 45.0 in units of m/s.
-  /// @arg @c max_acceleration defaults to 4.0 in units of m/s^2.
-  /// @arg @c velocity_limit_kp defaults to 10.0 in units of Hz.
+  /// @arg @c wheelbase defaults to 2.700 in m.
+  /// @arg @c track defaults to 1.521 in m.
+  /// @arg @c max_abs_steering_angle defaults to 0.471 in rad.
+  /// @arg @c max_velocity defaults to 45.0 in m/s.
+  /// @arg @c max_acceleration defaults to 4.0 in m/s^2.
+  /// @arg @c velocity_limit_kp defaults to 10.0 in Hz.
   SimpleCarParams() : systems::BasicVector<T>(K::kNumCoordinates) {
     this->set_wheelbase(2.700);
     this->set_track(1.521);

@@ -42,10 +42,10 @@ class MaliputRailcarParams : public systems::BasicVector<T> {
   typedef MaliputRailcarParamsIndices K;
 
   /// Default constructor.  Sets all rows to their default value:
-  /// @arg @c r defaults to 0.0 in units of m.
-  /// @arg @c h defaults to 0.0 in units of m.
-  /// @arg @c max_speed defaults to 45.0 in units of m/s.
-  /// @arg @c velocity_limit_kp defaults to 10.0 in units of Hz.
+  /// @arg @c r defaults to 0.0 in m.
+  /// @arg @c h defaults to 0.0 in m.
+  /// @arg @c max_speed defaults to 45.0 in m/s.
+  /// @arg @c velocity_limit_kp defaults to 10.0 in Hz.
   MaliputRailcarParams() : systems::BasicVector<T>(K::kNumCoordinates) {
     this->set_r(0.0);
     this->set_h(0.0);
