@@ -40,8 +40,8 @@ class DrivingCommand : public systems::BasicVector<T> {
   typedef DrivingCommandIndices K;
 
   /// Default constructor.  Sets all rows to their default value:
-  /// @arg @c steering_angle defaults to 0.0 in units of rad.
-  /// @arg @c acceleration defaults to 0.0 in units of m/s^2.
+  /// @arg @c steering_angle defaults to 0.0 rad.
+  /// @arg @c acceleration defaults to 0.0 m/s^2.
   DrivingCommand() : systems::BasicVector<T>(K::kNumCoordinates) {
     this->set_steering_angle(0.0);
     this->set_acceleration(0.0);

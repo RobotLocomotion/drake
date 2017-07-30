@@ -42,9 +42,9 @@ class Sample : public systems::BasicVector<T> {
   typedef SampleIndices K;
 
   /// Default constructor.  Sets all rows to their default value:
-  /// @arg @c x defaults to 42.0 in units of m/s.
-  /// @arg @c two_word defaults to 0.0 in units of unknown.
-  /// @arg @c absone defaults to 0.0 in units of unknown.
+  /// @arg @c x defaults to 42.0 m/s.
+  /// @arg @c two_word defaults to 0.0 with unknown units.
+  /// @arg @c absone defaults to 0.0 with unknown units.
   Sample() : systems::BasicVector<T>(K::kNumCoordinates) {
     this->set_x(42.0);
     this->set_two_word(0.0);
