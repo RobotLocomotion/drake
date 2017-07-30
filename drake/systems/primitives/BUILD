@@ -164,6 +164,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "piecewise_affine_system",
+    srcs = ["piecewise_affine_system.cc"],
+    hdrs = ["piecewise_affine_system.h"],
+    deps = [
+        ":affine_system",
+        "//drake/systems/framework",
+    ],
+)
+
+drake_cc_library(
     name = "random_source",
     srcs = ["random_source.cc"],
     hdrs = ["random_source.h"],
@@ -356,6 +366,15 @@ drake_cc_googletest(
     ],
     deps = [
         ":pass_through",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/systems/framework",
+    ],
+)
+
+drake_cc_googletest(
+    name = "piecewise_affine_system_test",
+    deps = [
+        ":piecewise_affine_system",
         "//drake/common:eigen_matrix_compare",
         "//drake/systems/framework",
     ],
