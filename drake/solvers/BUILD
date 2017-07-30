@@ -151,20 +151,6 @@ drake_cc_library(
     ],
 )
 
-# Supported solvers:
-# - equality_constrained_qp_solver
-# - linear_system_solver
-# - moby_lcp_solver
-# - IPOPT
-# - MOSEK
-# - NLOPT
-# - SNOPT
-# - Gurobi (on Ubuntu only)
-
-# Unsupported solvers:
-# - dReal
-
-# TODO(jwnimmer-tri, david-german-tri): Support more solvers.
 drake_cc_library(
     name = "mathematical_program",
     srcs = [
