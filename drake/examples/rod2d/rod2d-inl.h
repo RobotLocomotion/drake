@@ -514,8 +514,8 @@ void Rod2D<T>::CalcRigidContactProblemData(
 
   // The normal and tangent spanning direction are unique.
   const Matrix2<T> R_wc = GetNonSlidingContactFrameToWorldTransform();
-  const auto& contact_normal = R_wc.col(0);
-  const auto& contact_tangent = R_wc.col(1);
+  const Vector2<T> contact_normal = R_wc.col(0);
+  const Vector2<T> contact_tangent = R_wc.col(1);
 
   // Verify contact normal and tangent directions are as we expect.
   DRAKE_ASSERT(abs(contact_normal.dot(Vector2<T>(0, 1)) - 1) <

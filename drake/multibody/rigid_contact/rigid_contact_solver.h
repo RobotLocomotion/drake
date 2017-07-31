@@ -90,7 +90,8 @@ class RigidContactSolver {
   /// @param[out] contact_forces a non-null vector of a doublet of values, where
   ///             the iᵗʰ triplet represents the force along each basis
   ///             vector in the iᵗʰ contact frame.
-  /// @throws std::logic_error if @p contact_forces is null, if @p cf is not the
+  /// @throws std::logic_error if @p contact_forces is null, if
+  ///         @p contact_forces is not empty, if @p cf is not the
   ///         proper size, if the number of tangent directions is not one per
   ///         non-sliding contact (indicating that the contact problem might not
   ///         be 2D), if the number of contact frames is not equal to the number
@@ -341,6 +342,8 @@ void RigidContactSolver<T>::CalcContactForcesInContactFrames(
   // Verify that contact_forces is non-null and is empty.
   if (!contact_forces)
     throw std::logic_error("Vector of contact forces is null.");
+  if (!contact_forces->empty())
+    throw std::logic_error("Vector of contact forces is not empty.");
 
   // Verify that cf is the correct size.
   const int num_non_sliding_contacts = problem_data.non_sliding_contacts.size();
@@ -359,21 +362,27 @@ void RigidContactSolver<T>::CalcContactForcesInContactFrames(
   }
 
   // Verify that the correct number of contact frames has been specified.
-  if (contact_frames.size() != (size_t) num_contacts) {
+  if (contact_frames.size() != static_cast<size_t>(num_contacts)) {
     throw std::logic_error("Number of contact frames does not match number of "
                                "contacts.");
   }
 
-  // Set the forces
+  // Resize the force vector.
   contact_forces->resize(contact_frames.size());
+
+  // Verify that sliding contact indices are sorted.
+  DRAKE_ASSERT(std::is_sorted(problem_data.sliding_contacts.begin(),
+                              problem_data.sliding_contacts.end()));
+
+  // Set the forces.
   for (int i = 0, sliding_index = 0, non_sliding_index = 0; i < num_contacts;
        ++i) {
     // Alias the force.
     Vector2<T>& contact_force_i = (*contact_forces)[i];
 
     // Get the contact normal and tangent.
-    const auto& contact_normal = contact_frames[i].col(0);
-    const auto& contact_tangent = contact_frames[i].col(1);
+    const Vector2<T> contact_normal = contact_frames[i].col(0);
+    const Vector2<T> contact_tangent = contact_frames[i].col(1);
 
     // Verify that each direction is of unit length.
     if (abs(contact_normal.norm() - 1) > loose_eps)
