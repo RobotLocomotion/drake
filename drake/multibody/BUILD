@@ -290,6 +290,7 @@ drake_cc_library(
     deps = [
         ":rigid_body_tree",
         ":rigid_body_tree_alias_groups_proto",
+        "//drake/common",
         "//drake/common/proto:protobuf",
     ],
 )

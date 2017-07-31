@@ -9,20 +9,20 @@ namespace qp_inverse_dynamics {
 using systems::controllers::qp_inverse_dynamics::RobotKinematicState;
 
 HumanoidStatusTranslatorSystem::HumanoidStatusTranslatorSystem(
-    const RigidBodyTree<double>& robot, const std::string& alias_group_path)
-    : robot_(robot) {
-  RigidBodyTreeAliasGroups<double> alias_groups(robot_);
+    const RigidBodyTree<double>* robot, const std::string& alias_group_path)
+    : robot_(*robot) {
+  RigidBodyTreeAliasGroups<double> alias_groups(&robot_);
   alias_groups.LoadFromFile(alias_group_path);
-  default_output_.reset(new HumanoidStatus(robot_, alias_groups));
+  default_output_.reset(new HumanoidStatus(&robot_, alias_groups));
 
   // Defer creation of the output port to derived classes where the appropriate
   // calculator method is known.
 }
 
 StateToHumanoidStatusSystem::StateToHumanoidStatusSystem(
-    const RigidBodyTree<double>& robot, const std::string& path)
+    const RigidBodyTree<double>* robot, const std::string& path)
     : HumanoidStatusTranslatorSystem(robot, path) {
-  const int kDim = robot.get_num_positions() + robot.get_num_velocities();
+  const int kDim = robot->get_num_positions() + robot->get_num_velocities();
   input_port_index_state_ =
       DeclareInputPort(systems::kVectorValued, kDim).get_index();
 
@@ -49,9 +49,9 @@ void StateToHumanoidStatusSystem::CalcHumanoidStatus(
 }
 
 RobotStateMsgToHumanoidStatusSystem::RobotStateMsgToHumanoidStatusSystem(
-    const RigidBodyTree<double>& robot, const std::string& alias_group_path)
+    const RigidBodyTree<double>* robot, const std::string& alias_group_path)
     : HumanoidStatusTranslatorSystem(robot, alias_group_path),
-      translator_(robot) {
+      translator_(*robot) {
   input_port_index_lcm_msg_ = DeclareAbstractInputPort().get_index();
   set_output_port_index_humanoid_status(
       DeclareAbstractOutputPort<RobotStateMsgToHumanoidStatusSystem,

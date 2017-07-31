@@ -25,12 +25,12 @@ class HumanoidStatusTranslatorSystem : public systems::LeafSystem<double> {
 
   /**
    * Constructor.
-   * @param robot Reference to a RigidBodyTree. The lifespan of @p robot must
+   * @param robot Pointer to a RigidBodyTree. The lifespan of @p robot must
    * be longer than this object.
    * @param alias_group_path Path to the alias groups file. Used to construct
    * HumanoidStatus.
    */
-  HumanoidStatusTranslatorSystem(const RigidBodyTree<double>& robot,
+  HumanoidStatusTranslatorSystem(const RigidBodyTree<double>* robot,
                                  const std::string& alias_group_path);
 
   /**
@@ -73,12 +73,12 @@ class StateToHumanoidStatusSystem : public HumanoidStatusTranslatorSystem {
 
   /**
    * Constructor.
-   * @param robot Reference to a RigidBodyTree. The lifespan of @p robot must
+   * @param robot Pointer to a RigidBodyTree. The lifespan of @p robot must
    * be longer than this object.
    * @param alias_group_path Path to the alias groups file. Used to construct
    * HumanoidStatus.
    */
-  StateToHumanoidStatusSystem(const RigidBodyTree<double>& robot,
+  StateToHumanoidStatusSystem(const RigidBodyTree<double>* robot,
                               const std::string& alias_group_path);
 
   /**
@@ -108,12 +108,12 @@ class RobotStateMsgToHumanoidStatusSystem
 
   /**
    * Constructor.
-   * @param robot Reference to a RigidBodyTree. The lifespan of @p robot
+   * @param robot Pointer to a RigidBodyTree. The lifespan of @p robot
    * must be longer than this object.
    * @param alias_group_path Path to the alias groups file. Used to construct
    * HumanoidStatus.
    */
-  RobotStateMsgToHumanoidStatusSystem(const RigidBodyTree<double>& robot,
+  RobotStateMsgToHumanoidStatusSystem(const RigidBodyTree<double>* robot,
                                       const std::string& alias_group_path);
   /**
    * Returns input port for bot_core::robot_state_t.

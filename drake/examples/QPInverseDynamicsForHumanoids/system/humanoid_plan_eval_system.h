@@ -30,14 +30,14 @@ class HumanoidPlanEvalSystem : public PlanEvalBaseSystem {
 
   /**
    * Constructor.
-   * @param robot Reference to a RigidBodyTree, whose life span must be longer
+   * @param robot Pointer to a RigidBodyTree, whose life span must be longer
    * than this instance.
    * @param alias_groups_file_name Path to the alias groups file that describes
    * the robot's topology for the controller.
    * @param param_file_name Path to the config file for the controller.
    * @param dt Control time step.
    */
-  HumanoidPlanEvalSystem(const RigidBodyTree<double>& robot,
+  HumanoidPlanEvalSystem(const RigidBodyTree<double>* robot,
                          const std::string& alias_groups_file_name,
                          const std::string& param_file_name, double dt);
 

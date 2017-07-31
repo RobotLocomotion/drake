@@ -17,7 +17,7 @@ using systems::controllers::qp_inverse_dynamics::QpInput;
 using systems::controllers::qp_inverse_dynamics::RobotKinematicState;
 
 HumanoidPlanEvalSystem::HumanoidPlanEvalSystem(
-    const RigidBodyTree<double>& robot,
+    const RigidBodyTree<double>* robot,
     const std::string& alias_groups_file_name,
     const std::string& param_file_name, double dt)
     : PlanEvalBaseSystem(robot, alias_groups_file_name, param_file_name, dt) {

@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/multibody/rigid_body_tree.h"
 
 /**
@@ -29,20 +30,18 @@
 template <typename T>
 class RigidBodyTreeAliasGroups {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RigidBodyTreeAliasGroups)
+
   static constexpr char kBodyGroupsKeyword[] = "body_groups";
   static constexpr char kJointGroupsKeyword[] = "joint_groups";
 
   /**
    * Constructor for RigidBodyTreeAliasGroups.
-   * @param tree Reference to the RigidBodyTree. A pointer to this RigidBodyTree
-   * is stored, so @p tree needs to outlive this object.
+   * @param tree Pointer to the RigidBodyTree, which is aliased internally. So
+   * @p tree needs to outlive this object.
    */
-  explicit RigidBodyTreeAliasGroups(const RigidBodyTree<T>& tree)
-      : tree_(tree) {}
-
-  RigidBodyTreeAliasGroups(const RigidBodyTreeAliasGroups&) = delete;
-  RigidBodyTreeAliasGroups& operator=(const RigidBodyTreeAliasGroups&) = delete;
-
+  explicit RigidBodyTreeAliasGroups(const RigidBodyTree<T>* tree)
+      : tree_(*tree) {}
 
   /**
    * Parses body groups and joint groups from a config file.

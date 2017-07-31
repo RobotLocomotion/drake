@@ -50,11 +50,11 @@ class HumanoidPlanEvalAndQpInverseDynamicsTest : public ::testing::Test {
         "drake/examples/QPInverseDynamicsForHumanoids/"
         "config/valkyrie.id_controller_config");
 
-    auto robot = std::make_unique<RigidBodyTree<double>>();
+    RigidBodyTree<double> robot;
     parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-        kModelPath, multibody::joints::kRollPitchYaw, robot.get());
+        kModelPath, multibody::joints::kRollPitchYaw, &robot);
 
-    RigidBodyTreeAliasGroups<double> alias_groups(*robot);
+    RigidBodyTreeAliasGroups<double> alias_groups(&robot);
     alias_groups.LoadFromFile(kAliasGroupsPath);
 
     // Desired state.
@@ -67,12 +67,12 @@ class HumanoidPlanEvalAndQpInverseDynamicsTest : public ::testing::Test {
     systems::DiagramBuilder<double> builder;
     const double kControlDt = 0.02;
     auto plan_eval = builder.AddSystem<HumanoidPlanEvalSystem>(
-        *robot, kAliasGroupsPath, kControlConfigPath, kControlDt);
+        &robot, kAliasGroupsPath, kControlConfigPath, kControlDt);
     auto controller =
-        builder.AddSystem<QpInverseDynamicsSystem>(*robot, kControlDt);
+        builder.AddSystem<QpInverseDynamicsSystem>(&robot, kControlDt);
 
     // Estimated state source, also set to use the desired q and v.
-    HumanoidStatus robot_status(*robot, alias_groups);
+    HumanoidStatus robot_status(&robot, alias_groups);
     robot_status.UpdateKinematics(0, q, v);
     auto state_source = builder.AddSystem<systems::ConstantValueSource<double>>(
         systems::AbstractValue::Make<RobotKinematicState<double>>(

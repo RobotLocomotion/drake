@@ -44,16 +44,16 @@ class ValkyrieController : public systems::Diagram<double> {
         model_path, multibody::joints::kRollPitchYaw, robot_.get());
     RobotStateMsgToHumanoidStatusSystem* msg_to_humanoid_status =
         builder.AddSystem(std::make_unique<RobotStateMsgToHumanoidStatusSystem>(
-            *robot_, alias_group_path));
+            robot_.get(), alias_group_path));
     msg_to_humanoid_status->set_name("msg_to_humanoid_status");
 
     const double kControlDt = 0.003;
     plan_eval_ = builder.AddSystem(std::make_unique<HumanoidPlanEvalSystem>(
-        *robot_, alias_group_path, control_config_path, kControlDt));
+        robot_.get(), alias_group_path, control_config_path, kControlDt));
     plan_eval_->set_name("plan_eval");
 
     QpInverseDynamicsSystem* qp_con = builder.AddSystem(
-        std::make_unique<QpInverseDynamicsSystem>(*robot_, kControlDt));
+        std::make_unique<QpInverseDynamicsSystem>(robot_.get(), kControlDt));
     qp_con->set_name("qp_con");
 
     AtlasJointLevelControllerSystem* joint_con =
