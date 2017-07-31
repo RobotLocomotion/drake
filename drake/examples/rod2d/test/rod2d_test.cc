@@ -44,7 +44,8 @@ class Rod2DDAETest : public ::testing::Test {
     // Use a non-unit mass.
     dut_->set_rod_mass(2.0);
 
-    // Set cfm to be very small.
+    // Set cfm to be very small, so that the complementarity problems are
+    // well conditioned but the system is still nearly perfectly rigid.
     dut_->set_cfm(100 * std::numeric_limits<double>::epsilon());
 
     // Set a zero input force (this is the default).

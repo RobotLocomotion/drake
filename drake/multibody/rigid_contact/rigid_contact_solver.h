@@ -256,7 +256,7 @@ void RigidContactSolver<T>::SolveImpactProblem(
 
   // Get numbers of friction directions and types of contacts.
   const int num_contacts = problem_data.mu.size();
-  if ((size_t) num_contacts != problem_data.r.size()) {
+  if (static_cast<size_t>(num_contacts) != problem_data.r.size()) {
     throw std::logic_error("Number of elements in 'r' does not match number"
                                "of elements in 'mu'");
   }
@@ -287,7 +287,7 @@ void RigidContactSolver<T>::SolveImpactProblem(
   const int num_vars = qq.size();
   MM += MatrixX<T>::Identity(num_vars, num_vars) * cfm;
 
-  // Get the zero tolerance for solving the LCP.
+  // Get the tolerance for zero used by the LCP solver.
   const T zero_tol = max(cfm, lcp_.ComputeZeroTolerance(MM));
 
   // Solve the LCP and compute the values of the slack variables.
@@ -414,9 +414,8 @@ void RigidContactSolver<T>::FormSustainedContactLCP(
   qq->segment(nc + nk, num_non_sliding).setZero();
 }
 
-// Forms the LCP matrix and vector, which is used to determine the contact
-// forces (and can also be used to determine the active set of constraints at
-// the acceleration-level).
+// Forms the LCP matrix and vector, which is used to determine the collisional
+// impulses.
 template <class T>
 void RigidContactSolver<T>::FormImpactingContactLCP(
     const RigidContactVelProblemData<T>& problem_data,
@@ -570,8 +569,8 @@ void RigidContactSolver<T>::ComputeGeneralizedAcceleration(
   VectorX<T> generalized_force;
   ComputeGeneralizedForceFromContactForces(problem_data, cf,
                                            &generalized_force);
-  *generalized_acceleration = problem_data.solve_inertia(generalized_force +
-                                                         problem_data.f);
+  *generalized_acceleration = problem_data.solve_inertia(problem_data.f +
+                                                         generalized_force);
 }
 
 template <class T>
@@ -602,6 +601,8 @@ void RigidContactSolver<T>::CalcContactForcesInContactFrames(
   // Verify that contact_forces is non-null and is empty.
   if (!contact_forces)
     throw std::logic_error("Vector of contact forces is null.");
+  if (!contact_forces->empty())
+    throw std::logic_error("Vector of contact forces is not empty.");
 
   // Verify that cf is the correct size.
   const int num_non_sliding_contacts = problem_data.non_sliding_contacts.size();

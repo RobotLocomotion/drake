@@ -240,7 +240,8 @@ TEST_F(RigidContact2DSolverTest, SinglePointSticking) {
   // Verify that the number of contact force vectors is correct.
   ASSERT_EQ(contact_forces.size(), 1);
 
-  // Verify that the frictional forces equal the horizontal forces.
+  // Verify that the ℓ₁ norm of frictional forces equals the horizontal force
+  // magnitude.
   const int nc = data_.non_sliding_contacts.size();
   EXPECT_NEAR(cf.segment(nc, cf.size() - nc).lpNorm<1>(), horz_f, eps_);
 
