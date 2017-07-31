@@ -290,10 +290,18 @@ bool MobyLCPSolver<T>::SolveLcpFast(const MatrixX<T>& M,
     // compilation with AutoDiff currently generates template errors.
     zz = Msub.householderQr().solve(zz.eval());
 
-    // compute w and find minimum value
-    w = Mmix * zz;
-    w += qbas;
-    unsigned minw = (w.rows() > 0) ? minCoeffIdx(w) : UINF;
+    // This conditional assignment has been added to resolve a UBSan issue with
+    // Eigen.  Eigen doesn't handle zero sized matrices carefully giving way to
+    // null pointer dereference.
+    unsigned minw;
+    if (Mmix.rows() == 0) {
+      w = VectorX<T>();
+      minw = UINF;
+    } else {
+      w = Mmix * zz;
+      w += qbas;
+      minw = minCoeffIdx(w);
+    }
 
     // TODO(sammy-tri) this log can't print when minw is UINF.
     // LOG() << "MobyLCPSolver::SolveLcpFast() - minimum w after pivot: "
