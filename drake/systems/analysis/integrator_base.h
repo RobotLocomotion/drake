@@ -1096,6 +1096,44 @@ class IntegratorBase {
    */
   void set_accuracy_in_use(double accuracy) { accuracy_in_use_ = accuracy; }
 
+  /// Generic code for validating (and resetting, if need be) the integrator
+  /// working accuracy for error controlled integrators. This method is
+  /// intended to be called from an integrator's DoInitialize() method.
+  /// @param default_accuracy a reasonable default accuracy setting for this
+  ///        integrator.
+  /// @param loosest_accuracy the loosest accuracy that this integrator should
+  ///        support.
+  /// @param max_step_fraction a fraction of the maximum step size to use when
+  ///        setting the integrator accuracy and the user has not specified
+  ///        accuracy directly.
+  /// @throws std::logic_error if neither the initial step size target nor
+  ///         the maximum step size has been set.
+  void InitializeAccuracy(double default_accuracy, double loosest_accuracy,
+                          double max_step_fraction) {
+    using std::isnan;
+
+    // Set an artificial step size target, if not set already.
+    if (isnan(this->get_initial_step_size_target())) {
+      // Verify that maximum step size has been set.
+      if (isnan(this->get_maximum_step_size()))
+        throw std::logic_error("Neither initial step size target nor maximum "
+                                   "step size has been set!");
+
+      this->request_initial_step_size_target(
+          this->get_maximum_step_size() * max_step_fraction);
+    }
+
+    // Sets the working accuracy to a good value.
+    double working_accuracy = this->get_target_accuracy();
+
+    // If the user asks for accuracy that is looser than the loosest this
+    // integrator can provide, use the integrator's loosest accuracy setting
+    // instead.
+    if (isnan(working_accuracy) || working_accuracy > loosest_accuracy)
+      working_accuracy = loosest_accuracy;
+    this->set_accuracy_in_use(working_accuracy);
+  }
+
   /**
    * Default code for advancing the continuous state of the system by a single
    * step of @p dt_max (or smaller, depending on error control). This particular

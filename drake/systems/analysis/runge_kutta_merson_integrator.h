@@ -17,6 +17,7 @@ namespace systems {
  *
  * Instantiated templates for the following kinds of T's are provided:
  * - double
+ * - AutoDiffXd
  *
  * For a discussion of the Runge-Kutta-Merson method, see Hairer,
  * Norsett & Wanner, Solving ODEs I, 2nd rev. ed. pp. 166-8, and table 4.1
@@ -73,6 +74,7 @@ class RungeKuttaMersonIntegrator final : public IntegratorBase<T> {
 
   // Vectors used in error estimate calculations.
   std::unique_ptr<VectorBase<T>> err_est_;
+  VectorX<T> xsave_;
 
   // These are pre-allocated temporaries for use by integration.
   std::unique_ptr<ContinuousState<T>> derivs0_, derivs1_, derivs2_, derivs3_,
