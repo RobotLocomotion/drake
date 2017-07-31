@@ -84,9 +84,6 @@ std::string get_missing_id_message<FrameId>(const FrameId& key) {
 //-----------------------------------------------------------------------------
 
 template <typename T>
-const FrameId GeometryState<T>::kWorldFrame{FrameId::get_new_id()};
-
-template <typename T>
 GeometryState<T>::GeometryState() {}
 
 template <typename T>
@@ -148,7 +145,7 @@ void GeometryState<T>::RemoveFrame(SourceId source_id, FrameId frame_id) {
 template <typename T>
 FrameId GeometryState<T>::RegisterFrame(SourceId source_id,
                                         const GeometryFrame<T>& frame) {
-  return RegisterFrame(source_id, kWorldFrame, frame);
+  return RegisterFrame(source_id, InternalFrame::get_world_frame_id(), frame);
 }
 
 template <typename T>
@@ -158,7 +155,7 @@ FrameId GeometryState<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
   FrameId frame_id = FrameId::get_new_id();
 
   FrameIdSet& f_set = GetMutableValueOrThrow(source_id, &source_frame_id_map_);
-  if (parent_id != kWorldFrame) {
+  if (parent_id != InternalFrame::get_world_frame_id()) {
     FindOrThrow(parent_id, f_set, [parent_id, source_id]() {
       return "Indicated parent id " + to_string(parent_id) + " does not belong "
           "to the indicated source id " + to_string(source_id) + ".";
@@ -223,7 +220,7 @@ void GeometryState<T>::RemoveFrameUnchecked(FrameId frame_id,
     // Only the root needs to explicitly remove itself from a possible parent
     // frame.
     FrameId parent_frame_id = frame.get_parent_frame_id();
-    if (parent_frame_id != kWorldFrame) {
+    if (parent_frame_id != InternalFrame::get_world_frame_id()) {
       auto& parent_frame = GetMutableValueOrThrow(parent_frame_id, &frames_);
       parent_frame.remove_child(frame_id);
     }
