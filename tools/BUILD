@@ -1,12 +1,12 @@
 # -*- python -*-
 
-load("//tools:bazel_lint.bzl", "bazel_lint")
 load(
     "//tools:install.bzl",
     "cmake_config",
     "exports_create_cps_scripts",
     "install_cmake_config",
 )
+load("//tools:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -371,4 +371,4 @@ config_setting(
     },
 )
 
-bazel_lint()
+add_lint_tests()

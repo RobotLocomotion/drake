@@ -3,6 +3,8 @@
 
 package(default_visibility = ["//visibility:public"])
 
+load("//tools:lint.bzl", "add_lint_tests")
+
 genrule(
     name = "sphinx",
     srcs = glob([
@@ -38,3 +40,5 @@ py_binary(
     srcs = ["serve_sphinx.py"],
     data = [":sphinx.zip"],
 )
+
+add_lint_tests(python_lint_exclude = [":conf.py"])
