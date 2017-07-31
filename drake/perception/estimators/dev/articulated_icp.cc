@@ -28,16 +28,16 @@ void ComputeBodyCorrespondenceInfluences(
 }
 
 void ArticulatedIcpBodyPoints::Finalize() {
-  meas_pts_W.conservativeResize(Eigen::NoChange, num_actual);
-  body_pts_W.conservativeResize(Eigen::NoChange, num_actual);
+  meas_pts_W_.conservativeResize(Eigen::NoChange, num_actual_);
+  body_pts_W_.conservativeResize(Eigen::NoChange, num_actual_);
 }
 
 void ArticulatedIcpBodyPoints::Add(const Eigen::Vector3d& meas_W,
                                    const Eigen::Vector3d& body_W) {
-  int i = num_actual++;
-  DRAKE_DEMAND(num_actual <= num_max_);
-  meas_pts_W.col(i) = meas_W;
-  body_pts_W.col(i) = body_W;
+  int i = num_actual_++;
+  DRAKE_DEMAND(num_actual_ <= num_max_);
+  meas_pts_W_.col(i) = meas_W;
+  body_pts_W_.col(i) = body_W;
 }
 
 void ArticulatedIcpBodyPoints::ComputeError(const SceneState& scene_state,
@@ -45,9 +45,9 @@ void ArticulatedIcpBodyPoints::ComputeError(const SceneState& scene_state,
   // Compute measured and body (model) points in their respective frames for
   // Jacobian computation.
   DRAKE_DEMAND(es != nullptr);
-  es->resize(num_actual);
+  es->resize(num_actual_);
   // Compute error
-  es->errors() = meas_pts_W - body_pts_W;
+  es->errors() = meas_pts_W_ - body_pts_W_;
 
   // Get point jacobian w.r.t. camera frame, as that is the only influence
   // on the measured point cloud.
@@ -60,15 +60,16 @@ void ArticulatedIcpBodyPoints::ComputeError(const SceneState& scene_state,
     const auto& cache = scene_state.tree_cache();
     // TODO(eric.cousineau): Do not allocate here if possible.
     Eigen::Matrix3Xd meas_pts_C = tree.transformPoints(
-        cache, meas_pts_W, scene.frame_world(), scene.frame_camera());
+        cache, meas_pts_W_, scene.frame_world(), scene.frame_camera());
     // TODO(eric.cousineau): Consider changing `transformPointsJacobian` to
     // accept points in the base frame rather than the body frame.
     Eigen::MatrixXd J_meas_pts_W = tree.transformPointsJacobian(
         cache, meas_pts_C, scene.frame_camera(), scene.frame_world(), false);
     Eigen::Matrix3Xd body_pts_Bi =
-        tree.transformPoints(cache, body_pts_W, scene.frame_world(), frame_Bi);
+        tree.transformPoints(cache, body_pts_W_, scene.frame_world(),
+                             frame_Bi_);
     Eigen::MatrixXd J_body_pts_W = tree.transformPointsJacobian(
-        cache, body_pts_Bi, frame_Bi, scene.frame_world(), false);
+        cache, body_pts_Bi, frame_Bi_, scene.frame_world(), false);
     // Compute Jacobian of error.
     es->J_errors() = J_meas_pts_W - J_body_pts_W;
   }
