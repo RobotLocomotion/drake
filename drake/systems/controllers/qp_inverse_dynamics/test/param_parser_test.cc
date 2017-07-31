@@ -1,4 +1,4 @@
-#include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/param_parser.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/param_parser.h"
 
 #include <set>
 
@@ -10,9 +10,9 @@
 #include "drake/multibody/parsers/urdf_parser.h"
 
 namespace drake {
-namespace examples {
+namespace systems {
+namespace controllers {
 namespace qp_inverse_dynamics {
-namespace param_parsers {
 namespace {
 
 class ParamParserTests : public ::testing::Test {
@@ -22,11 +22,11 @@ class ParamParserTests : public ::testing::Test {
         "drake/examples/valkyrie/urdf/urdf/"
         "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
     const std::string alias_groups_config_name = FindResourceOrThrow(
-        "drake/examples/QPInverseDynamicsForHumanoids/"
-        "param_parsers/test/params.alias_groups");
+        "drake/systems/controllers/qp_inverse_dynamics/test/"
+        "params.alias_groups");
     const std::string controller_config_name = FindResourceOrThrow(
-        "drake/examples/QPInverseDynamicsForHumanoids/"
-        "param_parsers/test/params.id_controller_config");
+        "drake/systems/controllers/qp_inverse_dynamics/test/"
+        "params.id_controller_config");
 
     robot_ = std::make_unique<RigidBodyTree<double>>();
     parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
@@ -391,7 +391,7 @@ TEST_F(ParamParserTests, MakeQpInputFromRigidBodyPtr) {
 }
 
 }  // namespace
-}  // namespace param_parsers
 }  // namespace qp_inverse_dynamics
-}  // namespace examples
+}  // namespace controllers
+}  // namespace systems
 }  // namespace drake

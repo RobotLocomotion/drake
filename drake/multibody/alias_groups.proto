@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package drake.examples.qp_inverse_dynamics;
+package drake.rigid_body_tree;
 
 // Next ID: 3
 message AliasGroup {

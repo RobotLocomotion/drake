@@ -6,11 +6,6 @@
 
 #include "drake/multibody/rigid_body_tree.h"
 
-namespace drake {
-namespace examples {
-namespace qp_inverse_dynamics {
-namespace param_parsers {
-
 /**
  * This class provides a way to create aliases to groups of RigidBody or
  * DrakeJoint objects. The creation of these groups can be done either
@@ -193,8 +188,3 @@ class RigidBodyTreeAliasGroups {
   std::unordered_map<std::string, std::vector<int>> position_groups_;
   std::unordered_map<std::string, std::vector<int>> velocity_groups_;
 };
-
-}  // namespace param_parsers
-}  // namespace qp_inverse_dynamics
-}  // namespace examples
-}  // namespace drake

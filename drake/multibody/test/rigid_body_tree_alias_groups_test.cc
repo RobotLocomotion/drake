@@ -1,4 +1,4 @@
-#include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/rigid_body_tree_alias_groups.h"
+#include "drake/multibody/rigid_body_tree_alias_groups.h"
 
 #include <gtest/gtest.h>
 
