@@ -2,9 +2,9 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("@protobuf//:protobuf.bzl", "py_proto_library")
-load("//tools:cpplint.bzl", "cpplint")
 load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
 load("//tools:lcm.bzl", "lcm_cc_library")
+load("//tools:lint.bzl", "add_lint_tests")
 
 py_proto_library(
     name = "named_vector",
@@ -113,4 +113,4 @@ sh_test(
     ],
 )
 
-cpplint(data = ["test/gen/drake/CPPLINT.cfg"])
+add_lint_tests(cpplint_data = ["test/gen/drake/CPPLINT.cfg"])

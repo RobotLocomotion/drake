@@ -73,7 +73,7 @@ def _add_linter_rules(source_labels, source_filenames, name, data = None):
         tags = tags,
     )
 
-def cpplint(data = None, extra_srcs = None):
+def cpplint(existing_rules = None, data = None, extra_srcs = None):
     """For every rule in the BUILD file so far, adds a test rule that runs
     cpplint over the C++ sources listed in that rule.  Thus, BUILD file authors
     should call this function at the *end* of every C++-related BUILD file.
@@ -84,9 +84,19 @@ def cpplint(data = None, extra_srcs = None):
     Sources that are not discoverable through the "sources so far" heuristic
     can be passed in as extra_srcs=[].
 
+    The existing_rules may supply the native.existing_result().values(), in
+    case it has already been computed.  When not supplied, the value will be
+    internally (re-)computed.
+
     """
-    # Iterate over all rules.
-    for rule in native.existing_rules().values():
+    if existing_rules == None:
+        existing_rules = native.existing_rules().values()
+
+    for rule in existing_rules:
+        if rule.get("generator_function") == "lcm_cc_library":
+            # Do not lint generated code.
+            continue
+
         # Extract the list of C++ source code labels and convert to filenames.
         candidate_labels = (
             _extract_labels(rule.get("srcs", ())) +
