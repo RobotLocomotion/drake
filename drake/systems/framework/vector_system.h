@@ -88,6 +88,38 @@ class VectorSystem : public LeafSystem<T> {
     }
   }
 
+  /// Like VectorSystem(int, int), but also declares that this System object is
+  /// of dynamic type S, which enables conversion to other scalar-types such as
+  /// AutoDiff or symbolic form.  Subclasses that wish to support conversion to
+  /// other scalar types should either use this constructor or else directly
+  /// call LeafSystem<T>::SetSystemScalarConverter.
+  ///
+  /// Example:
+  ///
+  /// @code
+  /// namespace sample {
+  /// template <typename T>
+  /// class MySystem : public VectorSystem<T> {
+  ///  public:
+  ///   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MySystem);
+  ///
+  ///   /// Default constructor.
+  ///   MySystem() : VectorSystem<T>(SystemTypeTag<sample::MySystem>{}, 1, 1) {}
+  ///
+  ///   /// Scalar-converting copy constructor.
+  ///   template <typename U>
+  ///   explicit MySystem(const MySystem<U>&) : MySystem<T>() {}
+  ///
+  ///   ...
+  /// @endcode
+  ///
+  /// See LeafSystem<T>::SetSystemScalarConverter for more details.
+  template <template <typename> class S>
+  VectorSystem(SystemTypeTag<S> tag, int input_size, int output_size)
+      : VectorSystem(input_size, output_size) {
+    this->template SetSystemScalarConverter<S>();
+  }
+
   /// Converts the parameters to Eigen::VectorBlock form, then delegates to
   /// DoCalcVectorTimeDerivatives().
   void DoCalcTimeDerivatives(const Context<T>& context,
