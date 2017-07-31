@@ -43,8 +43,8 @@ const double kQDiffNormMin = 0.01;
  */
 struct Interval {
   Interval() {}
-  Interval(double min, double max)
-      : min(min), max(max) {
+  Interval(double min_in, double max_in)
+      : min(min_in), max(max_in) {
     DRAKE_DEMAND(min <= max);
   }
   double min{};
@@ -55,8 +55,8 @@ struct Interval {
 
 struct Bounds {
   Bounds() {}
-  Bounds(Interval x, Interval y, Interval z)
-      : x(x), y(y), z(z) {}
+  Bounds(Interval x_in, Interval y_in, Interval z_in)
+      : x(x_in), y(y_in), z(z_in) {}
   Interval x;
   Interval y;
   Interval z;
