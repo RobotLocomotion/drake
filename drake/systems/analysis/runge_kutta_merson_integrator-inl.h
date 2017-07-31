@@ -98,7 +98,7 @@ bool RungeKuttaMersonIntegrator<T>::DoStep(const T& dt) {
 
   // Calculate the error estimate.
   this->get_mutable_error_estimate()->SetFromVector(
-      (xc->CopyToVector() - xsave) * 2);
+      (xc->CopyToVector() - xsave) * 0.2);
 
   // RK Merson always succeeds in taking its desired step.
   return true;
