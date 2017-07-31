@@ -28,7 +28,7 @@ PidControlledSpringMassSystem<T>::PidControlledSpringMassSystem(
   plant_ = builder.template
       AddSystem<SpringMassSystem>(spring_stiffness, mass, true /* is forced */);
   plant_->set_name("plant");
-  controller_ = builder.template AddSystem<PidController>(
+  controller_ = builder.template AddSystem<controllers::PidController>(
       VectorX<double>::Constant(1, Kp), VectorX<double>::Constant(1, Ki),
       VectorX<double>::Constant(1, Kd));
   controller_->set_name("controller");

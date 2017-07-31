@@ -2,8 +2,8 @@
 
 """Rewrite the filenames given on the command line to obey formatting rules for
 #include statements.  The only changes this script will make are to relocate
-#include statements, and possibly some associated additions or removals of blank
-lines near the #include blocks.
+#include statements, and possibly some associated additions or removals of
+blank lines near the #include blocks.
 
 """
 

@@ -6,8 +6,9 @@ load("//tools:drake.bzl", "drake_cc_library", "drake_cc_googletest")
 load("@protobuf//:protobuf.bzl", "cc_proto_library")
 
 package(
-    default_visibility =
-        ["//drake/examples/QPInverseDynamicsForHumanoids:__subpackages__"],
+    default_visibility = [
+        "//drake/examples/QPInverseDynamicsForHumanoids:__subpackages__",
+    ],
 )
 
 drake_cc_library(
@@ -75,7 +76,7 @@ drake_cc_googletest(
     data = [
         "test/params.alias_groups",
         "test/params.id_controller_config",
-        "//drake/examples/Valkyrie:models",
+        "//drake/examples/valkyrie:models",
     ],
     deps = [
         ":param_parser",

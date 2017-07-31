@@ -249,7 +249,7 @@ void TestScenario2(const RigidBodyTree<double>& model) {
 int main() {
   auto tree = std::make_unique<RigidBodyTree<double>>();
   drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      "examples/Atlas/urdf/atlas_minimal_contact.urdf",
+      "examples/atlas/urdf/atlas_minimal_contact.urdf",
       drake::multibody::joints::kRollPitchYaw, tree.get());
 
   drake::multibody::TestScenario1(*tree);

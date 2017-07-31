@@ -360,6 +360,7 @@ toolchain {
   ar_flag: "-s"
   ar_flag: "-o"
   cxx_builtin_include_directory: "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain"
+  cxx_builtin_include_directory: "/Library/Developer/CommandLineTools"
   cxx_builtin_include_directory: "/usr/local/include"
   cxx_builtin_include_directory: "/usr/include"
   cxx_builtin_include_directory: "/System/Library/Frameworks"

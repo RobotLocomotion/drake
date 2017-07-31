@@ -30,7 +30,7 @@ while true; do
       wget -q -O - http://llvm.org/apt/llvm-snapshot.gpg.key | sudo apt-key add -
       add-apt-repository -y "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-3.9 main"
       apt-get update
-      apt install --no-install-recommends clang-3.9 lldb-3.9
+      apt install --no-install-recommends clang-3.9 lldb-3.9 clang-format-3.9
       break
       ;;
     [Nn]*) break ;;
@@ -63,7 +63,6 @@ autoconf
 automake
 bash-completion
 bison
-clang-format
 doxygen
 fakeroot
 flex

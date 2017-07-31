@@ -1,3 +1,26 @@
+#pragma once
+/// @file
+/// This file provides a set of predicates which can be used with GTEST's
+/// ASSERT/EXPECT_PRED{n} macros. The motivation is to provide better diagnostic
+/// information when the assertions fail. Please consider a scenario where a
+/// user wants to assert that two symbolic expressions, `e1` and `e2`, are
+/// structurally identical.
+///
+/// @code
+/// // The following does not work because `operator==(const Expression& e1,
+/// // const Expression& e2)` does not return a Boolean value. We need to use
+/// // Expression::EqualTo() method instead.
+/// ASSERT_EQ(e1, e2);
+///
+/// // The following compiles, but it does not provide enough information when
+/// // the assertion fails. It merely reports that `e1.EqualTo(e2)` is evaluated
+/// // to `false`, not to `true`.
+/// ASSERT_TRUE(e1.EqualTo(e2));
+///
+/// // When the following assertion fails, it reports the value of `e1` and `e2`
+/// // which should help debugging.
+/// ASSERT_PRED2(ExprEqual, e1, e2);
+/// @endcode
 #include <algorithm>
 #include <vector>
 
@@ -39,6 +62,14 @@ inline bool ExprLess(const Expression& e1, const Expression& e2) {
 
 inline bool ExprNotLess(const Expression& e1, const Expression& e2) {
   return !ExprLess(e1, e2);
+}
+
+inline bool PolyEqual(const Polynomial& p1, const Polynomial& p2) {
+  return p1.EqualTo(p2);
+}
+
+inline bool PolyNotEqual(const Polynomial& p1, const Polynomial& p2) {
+  return !PolyEqual(p1, p2);
 }
 
 template <typename F>

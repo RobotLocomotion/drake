@@ -8,6 +8,7 @@
 
 namespace drake {
 namespace systems {
+namespace controllers {
 
 /**
  * Solves inverse dynamics with no consideration for external wrenches,
@@ -88,5 +89,6 @@ class InverseDynamics : public LeafSystem<T> {
   const int act_dim_{0};
 };
 
+}  // namespace controllers
 }  // namespace systems
 }  // namespace drake

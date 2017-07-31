@@ -151,20 +151,6 @@ drake_cc_library(
     ],
 )
 
-# Supported solvers:
-# - equality_constrained_qp_solver
-# - linear_system_solver
-# - moby_lcp_solver
-# - IPOPT
-# - MOSEK
-# - NLOPT
-# - SNOPT
-# - Gurobi (on Ubuntu only)
-
-# Unsupported solvers:
-# - dReal
-
-# TODO(jwnimmer-tri, david-german-tri): Support more solvers.
 drake_cc_library(
     name = "mathematical_program",
     srcs = [
@@ -208,6 +194,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "integer_optimization_util",
+    srcs = ["integer_optimization_util.cc"],
+    hdrs = ["integer_optimization_util.h"],
+    deps = [
+        ":create_constraint",
+    ],
+)
+
+drake_cc_library(
     name = "system_identification",
     srcs = ["system_identification.cc"],
     hdrs = ["system_identification.h"],
@@ -229,7 +224,9 @@ drake_cc_library(
         "rotation_constraint_internal.h",
     ],
     deps = [
+        ":bilinear_product_util",
         ":mathematical_program",
+        ":mixed_integer_optimization_util",
         "//drake/math:gradient",
     ],
 )
@@ -685,6 +682,14 @@ drake_cc_googletest(
         ":mathematical_program_test_util",
         ":quadratic_program_examples",
         "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "integer_optimization_util_test",
+    deps = [
+        ":integer_optimization_util",
+        ":mathematical_program",
     ],
 )
 

@@ -25,7 +25,7 @@ class JointLevelControllerTest : public ::testing::Test {
     // Use this model because the dof order and actuator order are different.
     parsers::urdf::AddModelInstanceFromUrdfFile(
         FindResourceOrThrow(
-            "drake/examples/Valkyrie/urdf/urdf/"
+            "drake/examples/valkyrie/urdf/urdf/"
             "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf"),
         drake::multibody::joints::kQuaternion, nullptr /* weld to frame */,
         robot_.get());

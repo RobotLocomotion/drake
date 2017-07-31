@@ -71,6 +71,13 @@ drake_cc_binary(
     ],
 )
 
+drake_cc_library(
+    name = "moving_average_filter",
+    srcs = ["moving_average_filter.cc"],
+    hdrs = ["moving_average_filter.h"],
+    deps = ["//drake/common"],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -78,7 +85,7 @@ drake_cc_googletest(
     # TODO(siyuan): we should eventually move the models for test outside of
     # /examples.
     data = [
-        "//drake/examples/Valkyrie:models",
+        "//drake/examples/valkyrie:models",
         "//drake/manipulation/models/iiwa_description:models",
         "//drake/manipulation/models/wsg_50_description:models",
     ],
@@ -96,6 +103,16 @@ drake_cc_googletest(
     name = "trajectory_utils_test",
     deps = [
         ":trajectory_utils",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "moving_average_filter_test",
+    srcs = ["test/moving_average_filter_test.cc"],
+    deps = [
+        ":moving_average_filter",
+        "//drake/common",
         "//drake/common:eigen_matrix_compare",
     ],
 )

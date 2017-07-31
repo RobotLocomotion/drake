@@ -193,7 +193,7 @@ TEST_F(DiagramContextTest, State) {
   EXPECT_EQ(0, xc->get_generalized_velocity().size());
   EXPECT_EQ(2, xc->get_misc_continuous_state().size());
 
-  // The zero-order hold has a difference state vector of length 1.
+  // The zero-order hold has a discrete state vector of length 1.
   DiscreteValues<double>* xd = context_->get_mutable_discrete_state();
   EXPECT_EQ(1, xd->num_groups());
   EXPECT_EQ(1, xd->get_vector(0)->size());

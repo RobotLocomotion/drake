@@ -41,7 +41,7 @@ drake_cc_library(
     hdrs = ["humanoid_status.h"],
     deps = [
         "//drake/common",
-        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:rigid_body_tree_alias_groups",
+        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:rigid_body_tree_alias_groups",  # noqa
         "//drake/multibody:rigid_body_tree",
         "//drake/systems/robotInterfaces:side",
     ],
@@ -93,7 +93,7 @@ drake_cc_library(
 drake_cc_googletest(
     name = "lcm_utils_test",
     data = [
-        "//drake/examples/Valkyrie:models",
+        "//drake/examples/valkyrie:models",
     ],
     deps = [
         ":lcm_utils",
@@ -118,7 +118,7 @@ drake_cc_googletest(
     data = [
         "config/valkyrie.alias_groups",
         "config/valkyrie.id_controller_config",
-        "//drake/examples/Valkyrie:models",
+        "//drake/examples/valkyrie:models",
     ],
     tags = gurobi_test_tags(),
     deps = [
@@ -126,8 +126,8 @@ drake_cc_googletest(
         ":qp_controller",
         "//drake/common:eigen_matrix_compare",
         "//drake/common:find_resource",
-        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
-        "//drake/examples/Valkyrie:valkyrie_constants",
+        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",  # noqa
+        "//drake/examples/valkyrie:valkyrie_constants",
         "//drake/multibody/parsers",
     ],
 )
@@ -146,7 +146,7 @@ drake_cc_googletest(
         ":qp_controller",
         "//drake/common:eigen_matrix_compare",
         "//drake/common:find_resource",
-        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
+        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",  # noqa
         "//drake/multibody/parsers",
     ],
 )

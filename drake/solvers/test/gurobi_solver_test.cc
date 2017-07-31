@@ -182,11 +182,11 @@ GTEST_TEST(GurobiTest, TestCallbacks) {
           std::bind(MipNodeCallbackFunctionTest, std::placeholders::_1,
                     std::placeholders::_2, std::placeholders::_3,
                     std::placeholders::_4, &cb_info);
-      GurobiSolver::MipSolCallbackFunction mip_sol_callback_function_wrappre =
+      GurobiSolver::MipSolCallbackFunction mip_sol_callback_function_wrapper =
           std::bind(MipSolCallbackFunctionTest, std::placeholders::_1,
                     std::placeholders::_2, &cb_info);
       solver.AddMipNodeCallback(mip_node_callback_function_wrapper);
-      solver.AddMipSolCallback(mip_sol_callback_function_wrappre);
+      solver.AddMipSolCallback(mip_sol_callback_function_wrapper);
 
       SolutionResult result = solver.Solve(prog);
       EXPECT_EQ(result, SolutionResult::kSolutionFound);

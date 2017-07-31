@@ -40,6 +40,7 @@
       ],
       "Compile-Features": ["c++14"],
       "Requires": [
+        ":drake-lcmtypes-cpp",
         "Eigen3:Eigen",
         "lcm:lcm",
         "bot2-core-lcmtypes:lcmtypes_bot2-core-cpp",

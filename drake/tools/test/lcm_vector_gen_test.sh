@@ -6,6 +6,21 @@ set -ex
 # Dump some debugging output.
 find .
 
+# TODO(jwnimmer-tri) De-duplicate this with lcm_vector_gen.sh.
+if [ -z "$CLANG_FORMAT" ]; then
+    CLANG_FORMAT="/usr/bin/clang-format-3.9"  # Preferred choice.
+    if [ ! -x "$CLANG_FORMAT" ]; then
+        CLANG_FORMAT=clang-format
+    fi
+fi
+if ! type -p $CLANG_FORMAT > /dev/null ; then
+    cat <<EOF
+Cannot find $CLANG_FORMAT ; see installation instructions at:
+http://drake.mit.edu/code_style_tools.html
+EOF
+    exit 1
+fi
+
 # Move the originals (which are symlinks) out of the way.
 tool_outputs="lcmt_sample_t.lcm sample.cc sample.h sample_translator.cc sample_translator.h"
 for item in $tool_outputs; do
@@ -26,9 +41,8 @@ done
 find drake/tools/test/gen
 
 # Re-format the code.
-# TODO(jwnimmer-tri) De-duplicate this with lcm_vector_gen.sh.
 for item in $tool_outputs; do
-    clang-format --style=file -i drake/tools/test/gen/"$item"
+    $CLANG_FORMAT --style=file -i drake/tools/test/gen/"$item"
 done
 
 # Insist that the generated output matches the current copy in git.

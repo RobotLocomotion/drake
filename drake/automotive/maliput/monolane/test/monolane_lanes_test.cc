@@ -1,6 +1,8 @@
+/* clang-format off to disable clang-format-includes */
 #include "drake/automotive/maliput/monolane/arc_lane.h"
 #include "drake/automotive/maliput/monolane/lane.h"
 #include "drake/automotive/maliput/monolane/line_lane.h"
+/* clang-format on */
 
 #include <cmath>
 

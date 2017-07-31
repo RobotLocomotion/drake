@@ -1,4 +1,6 @@
+/* clang-format off to disable clang-format-includes */
 #include "drake/solvers/mathematical_program.h"
+/* clang-format on */
 
 #include <gtest/gtest.h>
 
@@ -215,6 +217,39 @@ TEST_F(SosConstraintTest, AddSosConstraintMultivariate2) {
   ASSERT_EQ(result, SolutionResult::kSolutionFound);
   EXPECT_NEAR(prog_.GetSolution(c), -1.0316, 1E-4);
   CheckPsdBinding(binding_pair.first);
+}
+
+TEST_F(SosConstraintTest, SynthesizeLyapunovFunction) {
+  // Find the Lyapunov function V(x) for system:
+  //
+  //     ẋ₀ = -x₁ + 1.5x₀² - 0.5x₀³
+  //     ẋ₁ = 3x₀ - x₁
+  //
+  // by solving sum-of-squared problems:
+  //
+  //     V(x) is sum-of-squares
+  //    -V̇(x) is sum-of-squares
+  VectorX<Variable> x = prog_.NewIndeterminates<2>();
+  const auto& x0 = x(0);
+  const auto& x1 = x(1);
+
+  // Form the dynamics of the system.
+  Vector2<symbolic::Polynomial> dynamics;
+  // clang-format off
+  dynamics << symbolic::Polynomial{-x1 + 1.5 * x0 * x0 - 0.5 * pow(x0, 3)},
+              symbolic::Polynomial{3 * x0 - x1};
+  // clang-format on
+
+  // Adds V(x) as a 4th order sum-of-squares polynomial.
+  const symbolic::Polynomial V{prog_.NewSosPolynomial({x0, x1}, 4).first};
+
+  // Computes Vdot.
+  const symbolic::Polynomial Vdot = V.Jacobian(x).transpose().dot(dynamics);
+
+  // -Vdot is sum-of-squares.
+  prog_.AddSosConstraint(-Vdot);
+  const auto result = prog_.Solve();
+  EXPECT_EQ(result, SolutionResult::kSolutionFound);
 }
 }  // namespace
 }  // namespace solvers

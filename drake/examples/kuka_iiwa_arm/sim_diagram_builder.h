@@ -99,8 +99,10 @@ class SimDiagramBuilder {
   ControllerType* AddController(int instance_id,
                                 std::unique_ptr<ControllerType> controller) {
     DRAKE_DEMAND(controllers_.find(instance_id) == controllers_.end());
-    DRAKE_DEMAND(dynamic_cast<systems::StateFeedbackControllerInterface<T>*>(
-                     controller.get()) != nullptr);
+    DRAKE_DEMAND(
+        dynamic_cast<
+            systems::controllers::StateFeedbackControllerInterface<T>*>(
+            controller.get()) != nullptr);
 
     ControllerType* controller_ptr =
         builder_.template AddSystem<ControllerType>(std::move(controller));
@@ -143,7 +145,7 @@ class SimDiagramBuilder {
    * model
    * instance @p instance_id.
    */
-  systems::StateFeedbackControllerInterface<T>* get_controller(
+  systems::controllers::StateFeedbackControllerInterface<T>* get_controller(
       int instance_id) const {
     return controllers_.at(instance_id);
   }
@@ -152,7 +154,8 @@ class SimDiagramBuilder {
    * Returns a StateFeedbackControllerInterface pointer to the controller.
    * Assumes the RigidBodyPlant only has one model instance.
    */
-  systems::StateFeedbackControllerInterface<T>* get_controller() const {
+  systems::controllers::StateFeedbackControllerInterface<T>* get_controller()
+      const {
     return get_controller(
         RigidBodyTreeConstants::kFirstNonWorldModelInstanceId);
   }
@@ -185,7 +188,8 @@ class SimDiagramBuilder {
   systems::RigidBodyPlant<T>* plant_{nullptr};
 
   // A map from instance id to pointers to the added controllers.
-  std::unordered_map<int, systems::StateFeedbackControllerInterface<T>*>
+  std::unordered_map<int,
+                     systems::controllers::StateFeedbackControllerInterface<T>*>
       controllers_;
 
   // Pointer to the added DrakeVisualizer.

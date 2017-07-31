@@ -33,7 +33,7 @@ def _bazel_lint(name, files, ignore):
         )
 
 #------------------------------------------------------------------------------
-def bazel_lint(name = "bazel", ignore = [265, 302, 305]):
+def bazel_lint(name = "bazel", ignore = None):
     """
     Runs the ``bzlcodestyle`` code style checker on all Bazel files in the
     current directory. The tool is based on the ``pycodestyle`` :pep:`8` code
@@ -46,10 +46,13 @@ def bazel_lint(name = "bazel", ignore = [265, 302, 305]):
 
     Example:
         BUILD:
-            load("//tools:python_lint.bzl", "bazel_lint")
+            load("//tools:bazel_lint.bzl", "bazel_lint")
 
             bazel_lint()
     """
+
+    if ignore == None:
+        ignore = [265, 302, 305]
 
     _bazel_lint(
         name = name,

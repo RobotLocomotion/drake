@@ -66,8 +66,7 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
-    name = "spatial_algebra_tests",
-    srcs = ["test/spatial_algebra_tests.cc"],
+    name = "spatial_algebra_test",
     deps = [
         ":spatial_algebra",
         "//drake/common:autodiff",

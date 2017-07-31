@@ -122,10 +122,12 @@ class SpatialInertia {
   /// @tparam Scalar The scalar type on which the new spatial inertia will
   /// be templated.
   ///
-  /// @note The cast is only valid when `Scalar` has a valid constructor from
-  /// the scalar type `T` on which `this` object is templated.
-  /// For instance, SpatialInertia<double>::cast<AutoDiffXd>() is valid.
-  /// However, SpatialInertia<AutoDiffXd>::cast<double>() is not.
+  /// @note `SpatialInertia<From>::cast<To>()` creates a new
+  /// `SpatialInertia<To>` from a `SpatialInertia<From>` but only if
+  /// type `To` is constructible from type `From`. As an example of this,
+  /// `SpatialInertia<double>::cast<AutoDiffXd>()` is valid since
+  /// `AutoDiffXd a(1.0)` is valid. However,
+  /// `SpatialInertia<AutoDiffXd>::cast<double>()` is not.
   template <typename Scalar>
   SpatialInertia<Scalar> cast() const {
     return SpatialInertia<Scalar>(

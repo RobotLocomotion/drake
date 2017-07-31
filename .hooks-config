@@ -1,4 +1,0 @@
-# CMake installs a pre-commit hook that reads this configuration
-# file to get the location of the real hook to run.
-[hooks "chain"]
-	pre-commit = cmake/git/pre-commit.bash

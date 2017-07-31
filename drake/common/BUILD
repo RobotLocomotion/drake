@@ -1,15 +1,14 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load(
     "//tools:drake.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
 )
-load("//tools:python_lint.bzl", "python_lint")
 load("//tools:install.bzl", "install")
+load("//tools:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -514,6 +513,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "eigen_types_test",
+    deps = [
+        ":common",
+        ":nice_type_name",
+    ],
+)
+
+drake_cc_googletest(
     name = "extract_double_test",
     deps = [
         ":common",
@@ -789,7 +796,7 @@ py_test(
     data = [
         "test/resource_tool_test_data.txt",
         ":resource_tool",
-        "//drake/examples/Pendulum:models",
+        "//drake/examples/pendulum:models",
     ],
 )
 
@@ -808,6 +815,4 @@ py_test(
 # - drake_deprecated_test in fancy variants
 # - cpplint_wrapper_test.py
 
-cpplint()
-
-python_lint()
+add_lint_tests()

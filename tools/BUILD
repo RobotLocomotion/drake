@@ -1,12 +1,12 @@
 # -*- python -*-
 
-load("//tools:bazel_lint.bzl", "bazel_lint")
 load(
     "//tools:install.bzl",
     "cmake_config",
     "exports_create_cps_scripts",
     "install_cmake_config",
 )
+load("//tools:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -29,7 +29,10 @@ sh_binary(
         "//tools:apple": ["drake_visualizer_apple.sh"],
         "//conditions:default": ["drake_visualizer_linux.sh"],
     }),
-    data = ["@director"],
+    data = [
+        "//drake/bindings:pydrake",
+        "@director",
+    ],
 )
 
 sh_binary(
@@ -368,4 +371,4 @@ config_setting(
     },
 )
 
-bazel_lint()
+add_lint_tests()

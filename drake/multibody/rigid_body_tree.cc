@@ -810,6 +810,7 @@ void RigidBodyTree<T>::collisionDetectFromPoints(
   body_x.resize(3, closest_points.size());
   normal.resize(3, closest_points.size());
   phi.resize(closest_points.size());
+  body_idx.resize(closest_points.size());
 
   for (size_t i = 0; i < closest_points.size(); ++i) {
     x.col(i) = closest_points[i].ptB;
@@ -821,9 +822,9 @@ void RigidBodyTree<T>::collisionDetectFromPoints(
     // In the case that no closest point was found, elementB will come back
     // as a null pointer which we should not attempt to access.
     if (elementB) {
-      body_idx.push_back(elementB->get_body()->get_body_index());
+      body_idx[i] = elementB->get_body()->get_body_index();
     } else {
-      body_idx.push_back(-1);
+      body_idx[i] = -1;
     }
   }
 }

@@ -175,17 +175,17 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "multibody_tree_creation_tests",
+    name = "multibody_tree_creation_test",
     deps = [":multibody_tree"],
 )
 
 drake_cc_googletest(
-    name = "multibody_tree_indexes_tests",
+    name = "multibody_tree_indexes_test",
     deps = [":multibody_tree_indexes"],
 )
 
 drake_cc_googletest(
-    name = "rotational_inertia_tests",
+    name = "rotational_inertia_test",
     deps = [
         ":rotational_inertia",
         "//drake/common:autodiff",
@@ -194,14 +194,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "spatial_inertia_tests",
+    name = "spatial_inertia_test",
     deps = [
         ":spatial_inertia",
     ],
 )
 
 drake_cc_googletest(
-    name = "unit_inertia_tests",
+    name = "unit_inertia_test",
     deps = [
         ":unit_inertia",
         "//drake/math:gradient",

@@ -1,4 +1,6 @@
+/* clang-format off to disable clang-format-includes */
 #include "drake/multibody/rigid_body_tree.h"
+/* clang-format on */
 
 #include <cmath>
 #include <iostream>
@@ -56,7 +58,7 @@ TEST_F(RigidBodyTreeCloneTest, CloneTwoDofRobot) {
 // Tests RigidBodyTree::Clone() using Atlas.
 TEST_F(RigidBodyTreeCloneTest, CloneAtlas) {
   const std::string filename = FindResourceOrThrow(
-      "drake/examples/Atlas/urdf/atlas_convex_hull.urdf");
+      "drake/examples/atlas/urdf/atlas_convex_hull.urdf");
   AddModelInstanceFromUrdfFileToWorld(filename, multibody::joints::kQuaternion,
       tree_.get());
   EXPECT_TRUE(CompareToClone(*tree_));
@@ -74,7 +76,7 @@ TEST_F(RigidBodyTreeCloneTest, ClonePrius) {
 // Tests RigidBodyTree::Clone() using Valkyrie.
 TEST_F(RigidBodyTreeCloneTest, CloneValkyrie) {
   const std::string filename = FindResourceOrThrow(
-      "drake/examples/Valkyrie/urdf/urdf/"
+      "drake/examples/valkyrie/urdf/urdf/"
       "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
   // While it may seem odd to use a fixed floating joint with Valkyrie, it is
   // used in this case just to confirm that RigidBodyTree::Clone() works with
@@ -143,7 +145,7 @@ class TestRbtCloneDiagram : public Diagram<double> {
 // identically.
 TEST_F(RigidBodyTreeCloneTest, PendulumDynamicsTest) {
   const std::string model_file_name =
-      FindResourceOrThrow("drake/examples/Pendulum/Pendulum.urdf");
+      FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf");
   const std::string model_name = "Pendulum";
   auto tree = std::make_unique<RigidBodyTree<double>>();
   AddModelInstanceFromUrdfFileToWorld(

@@ -20,7 +20,7 @@ using systems::Diagram;
 using systems::DiagramBuilder;
 using systems::DrakeVisualizer;
 using systems::MatrixGain;
-using systems::PidControlledSystem;
+using systems::controllers::PidControlledSystem;
 using systems::RigidBodyPlant;
 
 namespace automotive {
@@ -123,7 +123,7 @@ std::unique_ptr<systems::Diagram<double>> CreateCarSimLcmDiagram(
   feedback_selector_matrix(kFeedbackIndexRightWheelSpeed,
                            kStateIndexRightWheelSpeed) = 1;
 
-  auto controller = builder.AddSystem<systems::PidControlledSystem>(
+  auto controller = builder.AddSystem<PidControlledSystem>(
       std::move(plant), feedback_selector_matrix, Kp, Ki, Kd);
   controller->set_name("controller");
 

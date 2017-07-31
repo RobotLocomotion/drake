@@ -23,8 +23,8 @@ struct BouncingBallVectorIndices {
   static const int kNumCoordinates = 2;
 
   // The index of each individual coordinate.
-static const int kZ = 0;
-static const int kZdot = 1;
+  static const int kZ = 0;
+  static const int kZdot = 1;
 
   /// Returns a vector containing the names of each coordinate within this
   /// class. The indices within the returned vector matches that of this class.
@@ -53,14 +53,10 @@ class BouncingBallVector : public systems::BasicVector<T> {
   //@{
   /// z
   const T& z() const { return this->GetAtIndex(K::kZ); }
-  void set_z(const T& z) {
-    this->SetAtIndex(K::kZ, z);
-  }
+  void set_z(const T& z) { this->SetAtIndex(K::kZ, z); }
   /// zdot
   const T& zdot() const { return this->GetAtIndex(K::kZdot); }
-  void set_zdot(const T& zdot) {
-    this->SetAtIndex(K::kZdot, zdot);
-  }
+  void set_zdot(const T& zdot) { this->SetAtIndex(K::kZdot, zdot); }
   //@}
 
   /// See BouncingBallVectorIndices::GetCoordinateNames().
