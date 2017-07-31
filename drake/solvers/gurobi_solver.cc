@@ -98,8 +98,8 @@ int gurobi_callback(GRBmodel* model, void* cbdata, int where, void* usrdata) {
              callback_info->mip_sol_callback != nullptr) {
     // Extract variable values from Gurobi, and set the current
     // solution of the MathematicalProgram to these values.
-    auto error = GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOL,
-                          callback_info->solver_sol_vector.data());
+    int error = GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOL,
+                         callback_info->solver_sol_vector.data());
     if (error) {
       drake::log()->error("GRB error {} in MIPSol callback cbget: {}\n", error,
                           GRBgeterrormsg(GRBgetenv(model)));
@@ -109,14 +109,15 @@ int gurobi_callback(GRBmodel* model, void* cbdata, int where, void* usrdata) {
         callback_info->is_new_variable, callback_info->solver_sol_vector,
         &(callback_info->prog_sol_vector), callback_info->prog);
 
-    auto solve_status = GetGurobiSolveStatus(cbdata, where);
+    GurobiSolver::SolveStatusInfo solve_status =
+        GetGurobiSolveStatus(cbdata, where);
 
     callback_info->mip_sol_callback(*(callback_info->prog), solve_status);
 
   } else if (where == GRB_CB_MIPNODE &&
              callback_info->mip_node_callback != nullptr) {
     int sol_status;
-    auto error = GRBcbget(cbdata, where, GRB_CB_MIPNODE_STATUS, &sol_status);
+    int error = GRBcbget(cbdata, where, GRB_CB_MIPNODE_STATUS, &sol_status);
     if (error) {
       drake::log()->error(
           "GRB error {} in MIPNode callback getting sol status: {}\n", error,
@@ -125,8 +126,8 @@ int gurobi_callback(GRBmodel* model, void* cbdata, int where, void* usrdata) {
     } else if (sol_status == GRB_OPTIMAL) {
       // Extract variable values from Gurobi, and set the current
       // solution of the MathematicalProgram to these values.
-      auto error = GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOL,
-                            callback_info->solver_sol_vector.data());
+      error = GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOL,
+                       callback_info->solver_sol_vector.data());
       if (error) {
         drake::log()->error("GRB error {} in MIPSol callback cbget: {}\n",
                             error, GRBgeterrormsg(GRBgetenv(model)));
@@ -136,7 +137,8 @@ int gurobi_callback(GRBmodel* model, void* cbdata, int where, void* usrdata) {
           callback_info->is_new_variable, callback_info->solver_sol_vector,
           &(callback_info->prog_sol_vector), callback_info->prog);
 
-      auto solve_status = GetGurobiSolveStatus(cbdata, where);
+      GurobiSolver::SolveStatusInfo solve_status =
+          GetGurobiSolveStatus(cbdata, where);
 
       Eigen::VectorXd vals;
       VectorXDecisionVariable vars;

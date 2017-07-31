@@ -77,17 +77,18 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=inconsistent-missing-override")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=sign-compare")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=return-stack-address")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=non-virtual-dtor")
 else()
   # TODO(jwnimmer-tri) Get a similar complement of flags working on clang.
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=extra")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=return-local-addr")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-parameter")
-  # TODO(jwnimmer-tri) Fix these warnings and remove this suppression.
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-missing-field-initializers")
+  # TODO(#2852) Turn on shadow checking for g++ once we use a version that
+  # fixes https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57709
 endif()
 set(CXX_FLAGS_NO_ERROR_SHADOW -Wno-error=shadow -Wno-shadow)
 set(CXX_FLAGS_NO_SIGN_COMPARE -Wno-sign-compare)
-
+ 
 # set up matlab build
 include(../cmake/mex.cmake)
 if(DISABLE_MATLAB AND Matlab_FOUND) # Set by drake_setup_platform
