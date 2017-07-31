@@ -20,12 +20,15 @@ def _python_lint(name, files, ignore):
     )
 
 #------------------------------------------------------------------------------
-def python_lint(ignore = None, exclude = None):
+def python_lint(existing_rules = None, ignore = None, exclude = None):
     """
     Runs the pycodestyle PEP 8 code style checker on all Python source files
     declared in rules in a BUILD file.
 
     Args:
+        existing_rules: The value of native.existing_result().values(), in case
+            it has already been computed.  When not supplied, the value will be
+            internally (re-)computed.
         ignore: List of errors (as integers, without the 'E') to ignore
             (default = []).
         exclude: List of labels to exclude from linting, e.g., [:foo.py].
@@ -42,7 +45,9 @@ def python_lint(ignore = None, exclude = None):
             python_lint()
     """
 
-    for rule in native.existing_rules().values():
+    if existing_rules == None:
+        existing_rules = native.existing_rules().values()
+    for rule in existing_rules:
         # Do not lint generated code.
         if rule.get("generator_function") in [
                 "py_proto_library",
