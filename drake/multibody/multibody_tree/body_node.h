@@ -102,15 +102,26 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// mobilizer in a MultibodyTree this constructor creates the corresponding
   /// %BodyNode. See this class' documentation for details on how a %BodyNode is
   /// defined.
-  /// @param[in] body The body B associated with `this` node.
-  /// @param[in] mobilizer The mobilizer associated with this `node`. It can
-  ///                      only be a `nullptr` `body` **is** the **world** body.
+  /// @param[in] parent_node
+  ///   A const pointer to the parent BodyNode object in the tree structure of
+  ///   the owning MultibodyTree. It can be a `nullptr` only when `body` **is**
+  ///   the **world** body.
+  /// @param[in] body
+  ///   The body B associated with `this` node.
+  /// @param[in]
+  ///   mobilizer The mobilizer associated with this `node`. It can be a
+  ///   `nullptr` only when `body` **is** the **world** body.
   BodyNode(const BodyNode<T>* parent_node,
            const Body<T>& body, const Mobilizer<T>* mobilizer) :
       parent_node_(parent_node), body_(body), mobilizer_(mobilizer) {
+    DRAKE_DEMAND(!(parent_node == nullptr &&
+        body.get_index() != world_index()));
     DRAKE_DEMAND(!(mobilizer == nullptr && body.get_index() != world_index()));
   }
 
+  /// Method to update the list of child body nodes, outboard to this node.
+  /// Used by MultibodyTree at creation of a BodyNode during the
+  /// MultibodyTree::Finalize() method call.
   void add_child_node(const BodyNode<T>* child) {
     children_.push_back(child);
   }
@@ -349,8 +360,12 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   ///   generalized velocities in the model. This method assumes the caller,
   ///   MultibodyTree<T>::CalcAccelerationKinematicsCache(), provides a vector
   ///   of the right size.
-  /// @param[out] ac
-  ///   A pointer to a valid, non nullptr, acceleration kinematics cache.
+  /// @param[out] A_WB_array_ptr
+  ///   A pointer to a valid, non nullptr, vector of spatial accelerations
+  ///   containing the spatial acceleration `A_WB` for each body. It must be of
+  ///   size equal to the number of bodies in the MultibodyTree and ordered by
+  ///   BodyNodeIndex. The calling MultibodyTree method must guarantee these
+  ///   conditions are satisfied.
   ///
   /// @pre The position kinematics cache `pc` was already updated to be in sync
   /// with `context` by MultibodyTree::CalcPositionKinematicsCache().
@@ -499,6 +514,44 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
                                                 V_PB_W, A_PB_W);
   }
 
+  /// This method is used by MultibodyTree within a tip-to-base loop to compute
+  /// the vector of generalized forces `tau` that would correspond with a known
+  /// set of spatial accelerations `A_WB` for each body in the MultibodyTree.
+  ///
+  /// This method aborts in Debug builds when `F_BMo_W_array` is the nullptr.
+  ///
+  /// @param[in] context The context with the state of the MultibodyTree model.
+  /// @param[in] pc
+  ///   An already updated position kinematics cache in sync with `context`.
+  /// @param[in] vc
+  ///   An already updated velocity kinematics cache in sync with `context`.
+  /// @param[in] A_WB_array
+  ///   A vector of known spatial accelerations containing the spatial
+  ///   acceleration `A_WB` for each body in the MultibodyTree model. It must be
+  ///   of size equal to the number of bodies in the MultibodyTree and ordered
+  ///   by BodyNodeIndex. The calling MultibodyTree method must guarantee these
+  ///   conditions are satisfied.
+  /// @param[out] F_BMo_W_array_ptr
+  ///   A pointer to a valid, non nullptr, vector of spatial forces
+  ///   containing, for each body B, the spatial force `F_BMo_W` on body B about
+  ///   the origin of its inboard mobilizer `Mo`, expressed in the world frame
+  ///   W. It must be of size equal to the number of bodies in the MultibodyTree
+  ///   and ordered by BodyNodeIndex. The calling MultibodyTree method must
+  ///   guarantee these conditions are satisfied.
+  /// @param[out] tau_array
+  ///   A non-null pointer to the output vector of generalized forces that would
+  ///   result in body B having spatial acceleration `A_WB`.
+  ///
+  /// @pre The position kinematics cache `pc` was already updated to be in sync
+  /// with `context` by MultibodyTree::CalcPositionKinematicsCache().
+  /// @pre The velocity kinematics cache `vc` was already updated to be in sync
+  /// with `context` by MultibodyTree::CalcVelocityKinematicsCache().
+  /// @pre CalcInverseDynamics_TipToBase() must have already been
+  /// called for all the child nodes of `this` node (and, by recursive
+  /// precondition, all successor nodes in the tree.)
+  // Unit test coverage for this method is provided, among others, in
+  // double_pendulum_test.cc, and by any other unit tests making use of
+  // MultibodyTree::CalcInverseDynamics().
   void CalcInverseDynamics_TipToBase(
       const MultibodyTreeContext<T>& context,
       const PositionKinematicsCache<T>& pc,
@@ -506,8 +559,13 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
       const std::vector<SpatialAcceleration<T>>& A_WB_array,
       std::vector<SpatialForce<T>>* F_BMo_W_array_ptr,
       VectorX<T>* tau_array) const {
-    const SpatialAcceleration<T>& A_WB = A_WB_array[this->get_index()];
     std::vector<SpatialForce<T>>& F_BMo_W_array = *F_BMo_W_array_ptr;
+
+    // Input spatial acceleration for this node's body B.
+    const SpatialAcceleration<T>& A_WB = A_WB_array[this->get_index()];
+
+    // Output spatial force that would need to be excerted by this node's
+    // mobilizer in order to attain the prescribed acceleration A_WB.
     SpatialForce<T>& F_BMo_W = F_BMo_W_array[this->get_index()];
 
     // As a guideline for developers, a summary of the computations performed in
@@ -545,11 +603,17 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // -F_CiMo, hence the negative sign in the summation above.
     // Therefore, spatial force F_BMo due to body B's mobilizer is:
     //   F_BMo = Ftot_BMo + Sum_i(F_CiMo) - Fext_Mo                         (3)
+    // The projection of this force on the motion sub-space of this node's
+    // mobilizer corresponds to the generalized force tau:
+    //  tau = H_FMᵀ * F_BMo_F                                               (4)
+    // where the spatial force F_BMo must be re-expressed in the inboard frame F
+    // before the projection can be performed.
 
     // Total spatial force on body B producing acceleration A_WB.
     SpatialForce<T> Ftot_BBo_W;
     CalcBodyInverseDynamics(context, pc, vc, A_WB, &Ftot_BBo_W);
 
+    // Compute shift vector from Bo to Mo expressed in the world frame W.
     const Body<T>& body_B = get_body();
     const Frame<T>& frame_M = get_outboard_frame();
     DRAKE_ASSERT(frame_M.get_body().get_index() == body_B.get_index());
@@ -589,12 +653,23 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
       F_BMo_W += F_CMo_W;
     }
 
+    // Re-express F_BMo_W in the inboard frame F before projecting it onto the
+    // sub-space generated by H_FM(q).
+    const Isometry3<T> X_PF = get_inboard_frame().CalcPoseInBodyFrame(context);
+    const Isometry3<T>& X_WP = get_X_WP(pc);
+    // TODO(amcastro-tri): consider caching X_WF since also used in position and
+    // velocity kinematics.
+    const Matrix3<T> R_WF = X_WP.rotation() * X_PF.rotation();
+    const SpatialForce<T> F_BMo_F = R_WF * F_BMo_W;
+
+    // Generalized velocities and forces use the same indexing.
+    auto tau = get_mutable_velocities_from_array(tau_array);
+
     // The generalized forces on the mobilizer correspond to the active
     // components of the spatial force performing work. Therefore we need to
     // project F_BMo along the directions of motion.
-    // Generalized velocities and forces use the same indexing.
-    auto tau = get_mutable_velocities_from_array(tau_array);
-    get_mobilizer().ProjectSpatialForce(context, F_BMo_W, tau);
+    // Project as: tau = H_FM^T(q) * F_BMo_F, Eq. (4).
+    get_mobilizer().ProjectSpatialForce(context, F_BMo_F, tau);
   }
 
   /// Returns the topology information for this body node.

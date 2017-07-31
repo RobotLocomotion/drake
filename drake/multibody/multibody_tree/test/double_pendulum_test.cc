@@ -108,12 +108,14 @@ class PendulumTests : public ::testing::Test {
   // Sets up the MultibodyTree model for a double pendulum. See this unit test's
   // class description for details.
   void CreatePendulumModel() {
-    Vector3d link1_com_U = Vector3d::Zero();
+    // Spatial inertia of the upper link about its frame U and expressed in U.
+    Vector3d link1_com_U = Vector3d::Zero();  // U is at the link's COM.
     UnitInertia<double> G_U(
         kEpsilon /* Ixx */, link1_Ic_ /* Iyy */, link1_Ic_ /* Izz */);
     SpatialInertia<double> M_U(link1_mass_, link1_com_U, G_U);
 
-    Vector3d link2_com_L = Vector3d::Zero();
+    // Spatial inertia of the lower link about its frame L and expressed in L.
+    Vector3d link2_com_L = Vector3d::Zero();  // L is at the link's COM.
     UnitInertia<double> G_L(
         kEpsilon /* Ixx */, link2_Ic_ /* Iyy */, link2_Ic_ /* Izz */);
     SpatialInertia<double> M_L(link2_mass_, link2_com_L, G_L);
@@ -489,6 +491,9 @@ class PendulumKinematicTests : public PendulumTests {
     EXPECT_TRUE(H.isApprox(H_expected, 5 * kEpsilon));
   }
 
+  /// Verifies the results from MultibodyTree::CalcInverseDynamics() for a
+  /// number of state configurations against the independently coded
+  /// implementation in drake::multibody::benchmarks::Acrobot.
   void VerifyCoriolisTermViaInverseDynamics(
       double shoulder_angle, double elbow_angle) {
     Vector2d q(shoulder_angle, elbow_angle);

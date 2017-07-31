@@ -70,10 +70,15 @@ class AccelerationKinematicsCache {
     return A_WB_pool_[body_node_index];
   }
 
+  /// Advance use only.
+  /// Returns a const reference to the pool of body accelerations.
+  /// The pool is returned as a `std::vector` of SpatialAcceleration objects
+  /// ordered by BodyNodeIndex.
   const std::vector<SpatialAcceleration<T>>& get_A_WB_pool() const {
     return A_WB_pool_;
   }
 
+  /// Mutable version of get_A_WB_pool().
   std::vector<SpatialAcceleration<T>>& get_mutable_A_WB_pool() {
     return A_WB_pool_;
   }

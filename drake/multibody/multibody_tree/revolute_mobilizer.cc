@@ -70,10 +70,10 @@ SpatialVelocity<T> RevoluteMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
 template <typename T>
 void RevoluteMobilizer<T>::ProjectSpatialForce(
     const MultibodyTreeContext<T>& context,
-    const SpatialForce<T>& F_Mo,
+    const SpatialForce<T>& F_Mo_F,
     Eigen::Ref<VectorX<T>> tau) const {
   DRAKE_ASSERT(tau.size() == kNv);
-  tau[0] = axis_F_.dot(F_Mo.rotational());
+  tau[0] = axis_F_.dot(F_Mo_F.rotational());
 }
 
 template <typename T>

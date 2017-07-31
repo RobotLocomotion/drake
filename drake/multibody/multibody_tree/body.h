@@ -140,6 +140,14 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
     return body_frame_;
   }
 
+  /// Computes the SpatialInertia `I_BBo_B` of `this` body about its frame
+  /// origin `Bo` (not necessarily its center of mass) and expressed in its body
+  /// frame `B`.
+  /// In general, the spatial inertia of a body is a function of state.
+  /// Consider for instance the case of a flexible body for which its spatial
+  /// inertia in the body frame depends on the generalized coordinates
+  /// describing its state of deformation. As a particular case, the spatial
+  /// inertia of a RigidBody in its body frame is constant.
   virtual SpatialInertia<T> CalcSpatialInertiaInBodyFrame(
       const MultibodyTreeContext<T>& context) const = 0;
 

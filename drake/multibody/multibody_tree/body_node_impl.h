@@ -33,6 +33,10 @@ class BodyNodeImpl : public BodyNode<T> {
   /// Given a body and its inboard mobilizer in a MultibodyTree this constructor
   /// creates the corresponding %BodyNode. See the BodyNode class documentation
   /// for details on how a BodyNode is defined.
+  /// @param[in] parent_node
+  ///   A const pointer to the parent BodyNode object in the tree structure of
+  ///   the owning MultibodyTree. It can be a `nullptr` only when `body` **is**
+  ///   the **world** body.
   /// @param[in] body The body B associated with `this` node.
   /// @param[in] mobilizer The mobilizer associated with this `node`. It can
   ///                      only be a `nullptr` for the **world** body.

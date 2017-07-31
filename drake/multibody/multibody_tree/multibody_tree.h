@@ -555,6 +555,35 @@ class MultibodyTree {
       const VectorX<T>& known_vdot,
       AccelerationKinematicsCache<T>* ac) const;
 
+  /// Given the state of `this` %MultibodyTree in `context` and a known vector
+  /// of generalized accelerations `known_vdot`, this method computes the
+  /// spatial acceleration `A_WB` for each body as measured and expressed in the
+  /// world frame W.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the %MultibodyTree model.
+  /// @param[in] pc
+  ///   A position kinematics cache object already updated to be in sync with
+  ///   `context`.
+  /// @param[in] vc
+  ///   A velocity kinematics cache object already updated to be in sync with
+  ///   `context`.
+  /// @param[in] known_vdot
+  ///   A vector with the generalized accelerations for the full %MultibodyTree
+  ///   model.
+  /// @param[out] A_WB_array
+  ///   A pointer to a valid, non nullptr, vector of spatial accelerations
+  ///   containing the spatial acceleration `A_WB` for each body. It must be of
+  ///   size equal to the number of bodies in the MultibodyTree and ordered by
+  ///   BodyNodeIndex. The calling MultibodyTree method must guarantee these
+  ///   conditions are satisfied.
+  ///
+  /// @pre The position kinematics `pc` must have been previously updated with a
+  /// call to CalcPositionKinematicsCache().
+  /// @pre The velocity kinematics `vc` must have been previously updated with a
+  /// call to CalcVelocityKinematicsCache().
+  ///
+  /// @throws std::bad_cast if `context` is not a `MultibodyTreeContext`.
   void CalcSpatialAccelerationsFromVdot(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
@@ -562,13 +591,45 @@ class MultibodyTree {
       const VectorX<T>& known_vdot,
       std::vector<SpatialAcceleration<T>>* A_WB_array) const;
 
+  /// Given the state of `this` %MultibodyTree in `context` and a known vector
+  /// of generalized accelerations `vdot`, this method computes the
+  /// set of generalized forces `tau` that would need to be applied at each
+  /// Mobilizer in order to attain the specified generalized accelerations.
+  /// Mathematically, this method computes: <pre>
+  ///   tau = H(q) * vdot + C(q, v) * v
+  /// </pre>
+  /// where `H(q)` is the %MultibodyTree mass matrix and `C(q, v) * v` is the
+  /// bias term containing Coriolis and gyroscopic effects.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the %MultibodyTree model.
+  /// @param[in] pc
+  ///   A position kinematics cache object already updated to be in sync with
+  ///   `context`.
+  /// @param[in] vc
+  ///   A velocity kinematics cache object already updated to be in sync with
+  ///   `context`.
   /// @param[in] known_vdot
-  ///   Known generalized accelerations. Entries in this vector are in the order
-  ///   described in @ref mbt_generalized_velocities_vectors.
+  ///   A vector with the known generalized accelerations `vdot` for the full
+  ///   %MultibodyTree model.
   /// @param[out] A_WB_array
-  ///   Acceleration of body B in the world frame W, corresponding to the state
-  ///   in `context` and the known generalized accelerations `known_vdot`.
-  ///   Entries in this vector can be accessed by ...
+  ///   A pointer to a valid, non nullptr, vector of spatial accelerations
+  ///   containing the spatial acceleration `A_WB` for each body. It must be of
+  ///   size equal to the number of bodies in the MultibodyTree and ordered by
+  ///   BodyNodeIndex.
+  /// @param[out] F_BMo_W_array_ptr
+  ///   A pointer to a valid, non nullptr, vector of spatial forces
+  ///   containing, for each body B, the spatial force `F_BMo_W` on body B about
+  ///   the origin of its inboard mobilizer `Mo`, expressed in the world frame
+  ///   W. It must be of size equal to the number of bodies in the MultibodyTree
+  ///   and ordered by BodyNodeIndex.
+  ///
+  /// @pre The position kinematics `pc` must have been previously updated with a
+  /// call to CalcPositionKinematicsCache().
+  /// @pre The velocity kinematics `vc` must have been previously updated with a
+  /// call to CalcVelocityKinematicsCache().
+  ///
+  /// @throws std::bad_cast if `context` is not a `MultibodyTreeContext`.
   void CalcInverseDynamics(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,

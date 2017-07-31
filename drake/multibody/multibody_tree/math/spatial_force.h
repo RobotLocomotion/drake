@@ -120,26 +120,25 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
   ///   The equivalent shifted spatial force, now applied at point Q
   ///   rather than P.
   ///
-  /// @note
-  ///   TODO: WRITE THIS IN TERMS OF THE LINEAR OPERATOR PHI.
-  ///         CITE A. JAIN: SECTION 1.4, P. 11
-  ///   A useful property of this operation when dealing with
-  ///   action/reaction pairs is that: <pre>
-  ///     -F_Bp.Shift(p_BpBq) = (-F_Bp).Shift(p_BpBq)
-  ///   </pre>
-  ///   that is, the negating the result of the shift equals the result from
-  ///   negating the spatial force first and then applying the shift. This is a
-  ///   direct consequence of the shift operation being a linear operation on a
-  ///   spatial force.
-  ///
   /// @see ShiftInPlace() to compute the shifted spatial force in-place
   ///                     modifying the original object.
   SpatialForce<T> Shift(const Vector3<T>& p_BpBq_E) const {
     return SpatialForce<T>(*this).ShiftInPlace(p_BpBq_E);
   }
 
-  SpatialForce<T>& operator+=(const SpatialForce<T>& F_P) {
-    this->get_coeffs() += F_P.get_coeffs();
+  /// Adds in a spatial force to `this` spatial force.
+  /// @param[in] F_P_E
+  ///   A spatial force to be added to `this` spatial force. It must be computed
+  ///   about the same point P as `this` spatial force, and expressed in the
+  ///   same frame E.
+  /// @returns
+  ///   A reference to `this` spatial force, which has been updated to include
+  ///   the given spatial force `F_P_E`.
+  ///
+  /// @warning This operation is only valid if both spatial forces are
+  /// computed about the same point P and expressed in the same frame E.
+  SpatialForce<T>& operator+=(const SpatialForce<T>& F_P_E) {
+    this->get_coeffs() += F_P_E.get_coeffs();
     return *this;
   }
 
@@ -158,6 +157,13 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
   T dot(const SpatialVelocity<T>& V_IBp_E) const;
 };
 
+/// Computes the resultant spatial force as the addition of two spatial forces
+/// `F1_Sp_E` and `F2_Sp_E` on a same system or body S, about the same point P
+/// and expressed in the same frame E.
+/// @retval Fr_Sp_E
+///   The resultant spatial force on system or body S from combining `F1_Sp_E`
+///   and `F2_Sp_E`, defined about the same point P and in the same expressed-in
+///   frame E as the operand spatial forces.
 template <typename T>
 inline SpatialForce<T> operator+(
     const SpatialForce<T>& F1_Sp, const SpatialForce<T>& F2_Sp) {

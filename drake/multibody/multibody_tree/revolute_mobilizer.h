@@ -128,9 +128,17 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
       const MultibodyTreeContext<T>& context,
       const Eigen::Ref<const VectorX<T>>& v) const final;
 
+  /// Projects the spatial force `F_Mo_F` about `this` mobilizer's outboard
+  /// frame M onto its rotation axis (@see get_revolute_axis().) Mathematically:
+  /// <pre>
+  ///    tau = F_Mo_F.rotational().dot(axis_F)
+  /// </pre>
+  /// Therefore, the result of this method is the scalar value of the torque at
+  /// the axis of `this` mobilizer.
+  /// This method aborts in Debug builds if `tau.size()` is not one.
   void ProjectSpatialForce(
       const MultibodyTreeContext<T>& context,
-      const SpatialForce<T>& F_Mo,
+      const SpatialForce<T>& F_Mo_F,
       Eigen::Ref<VectorX<T>> tau) const final;
 
   /// Computes the across-mobilizer acceleration `A_FM(q, v, v̇)` of the
