@@ -84,6 +84,8 @@ class InternalFrame {
     child_geometries_.erase(geometry_id);
   }
 
+  static FrameId get_world_frame_id() { return kWorldFrame; }
+
  private:
   // The identifier of the source, to which this frame belongs.
   SourceId source_id_;
@@ -102,6 +104,9 @@ class InternalFrame {
   // that were hung on geometries that were already rigidly affixed.
   // It does *not* include geometries hung on child frames.
   std::unordered_set<GeometryId> child_geometries_;
+
+  // The frame identifier of the world frame.
+  static const FrameId kWorldFrame;
 };
 
 }  // namespace internal

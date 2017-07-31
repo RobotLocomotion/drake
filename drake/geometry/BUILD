@@ -65,7 +65,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "internal_frame",
-    srcs = [],
+    srcs = ["internal_frame.cc"],
     hdrs = ["internal_frame.h"],
     deps = [
         ":geometry_ids",
