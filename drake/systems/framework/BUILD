@@ -307,6 +307,22 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "system_scalar_converter",
+    srcs = [
+        "system_scalar_converter.cc",
+    ],
+    hdrs = [
+        "scalar_conversion_traits.h",
+        "system_scalar_converter.h",
+        "system_type_tag.h",
+    ],
+    deps = [
+        ":system",
+        "//drake/common",
+    ],
+)
+
+drake_cc_library(
     name = "leaf_system",
     srcs = ["leaf_system.cc"],
     hdrs = ["leaf_system.h"],
@@ -617,6 +633,14 @@ drake_cc_googletest(
     name = "vector_system_test",
     deps = [
         ":vector_system",
+    ],
+)
+
+drake_cc_googletest(
+    name = "system_scalar_converter_test",
+    deps = [
+        ":leaf_system",
+        ":system_scalar_converter",
     ],
 )
 
