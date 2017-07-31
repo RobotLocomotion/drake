@@ -549,18 +549,29 @@ void RigidContactSolver<T>::ComputeGeneralizedImpulseFromContactImpulses(
   if (num_vars != cf.size())
     throw std::logic_error("Unexpected packed contact force vector dimension.");
 
-  // Verify cf is the correct size.
-  const int num_vars = num_contacts + num_spanning_vectors;
-  if (cf.size() != num_vars)
-    throw std::logic_error("cf (contact force) parameter incorrectly sized.");
-
   /// Get the normal and tangential contact impulses.
-  const auto& f_normal = cf.segment(0, num_contacts);
-  const auto& f_frictional = cf.segment(num_contacts, num_vars - num_contacts);
+  const Eigen::Ref<const VectorX<T>> f_normal = cf.segment(0, num_contacts);
+  const Eigen::Ref<const VectorX<T>> f_frictional = cf.segment(
+      num_contacts, num_vars - num_contacts);
 
   /// Compute the generalized impules.
   *generalized_impulse = problem_data.N.transpose() * f_normal +
                          problem_data.F.transpose() * f_frictional;
+}
+
+template <class T>
+void RigidContactSolver<T>::ComputeGeneralizedAcceleration(
+    const RigidContactAccelProblemData<T>& problem_data,
+    const VectorX<T>& cf,
+    VectorX<T>* generalized_acceleration) {
+  if (!generalized_acceleration)
+    throw std::logic_error("generalized_acceleration vector is null.");
+
+  VectorX<T> generalized_force;
+  ComputeGeneralizedForceFromContactForces(problem_data, cf,
+                                           &generalized_force);
+  *generalized_acceleration = problem_data.solve_inertia(generalized_force +
+                                                         problem_data.f);
 }
 
 template <class T>
@@ -593,12 +604,13 @@ void RigidContactSolver<T>::CalcContactForcesInContactFrames(
     throw std::logic_error("Vector of contact forces is null.");
 
   // Verify that cf is the correct size.
-  const int n_non_sliding = problem_data.non_sliding_contacts.size();
-  const int nc = problem_data.sliding_contacts.size() + n_non_sliding;
-  const int nr = std::accumulate(problem_data.r.begin(),
-                                 problem_data.r.end(), 0);
-  const int nvars = nc + nr;
-  if (nvars != cf.size())
+  const int num_non_sliding_contacts = problem_data.non_sliding_contacts.size();
+  const int num_contacts = problem_data.sliding_contacts.size() +
+      num_non_sliding_contacts;
+  const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
+                                                   problem_data.r.end(), 0);
+  const int num_vars = num_contacts + num_spanning_vectors;
+  if (num_vars != cf.size())
     throw std::logic_error("Unexpected packed contact force vector dimension.");
 
   // Verify that the problem is indeed two-dimensional.

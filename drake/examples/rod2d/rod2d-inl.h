@@ -617,9 +617,10 @@ void Rod2D<T>::CalcRigidImpactProblemData(
                                   std::placeholders::_1);
 
   // The normal and tangent spanning direction are unique.
-  const Matrix2<T> non_sliding_contact_frame = GetNonSlidingContactFrame();
-  const auto& contact_normal = non_sliding_contact_frame.col(0);
-  const auto& contact_tan = non_sliding_contact_frame.col(1);
+  const Matrix2<T> non_sliding_contact_frame =
+      GetNonSlidingContactFrameToWorldTransform();
+  const Vector2<T> contact_normal = non_sliding_contact_frame.col(0);
+  const Vector2<T> contact_tan = non_sliding_contact_frame.col(1);
 
   // Get the set of contact points.
   const int num_contacts = points.size();
