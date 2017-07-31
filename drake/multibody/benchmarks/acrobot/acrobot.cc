@@ -173,8 +173,8 @@ Vector6<T> Acrobot<T>::CalcLink1SpatialAccelerationInWorldFrame(
 
   // Linear acceleration of link1's center of mass expressed in model frame D.
   Vector3<T> acm1_D =
-      lc1_ * Vector3<T>(-sin(theta1), cos(theta1), 0.0) * theta1dot * theta1dot +
-      lc1_ * Vector3<T>(cos(theta1), sin(theta1), 0.0) * theta1dotdot;
+      lc1_ * Vector3<T>(-sin(theta1), cos(theta1), 0.0) * theta1dot * theta1dot
+          + lc1_ * Vector3<T>(cos(theta1), sin(theta1), 0.0) * theta1dotdot;
 
   // Angular acceleration of link1 expressed in model frame D.
   Vector3<T> alphacm1_D = Vector3<T>::UnitZ() * theta1dotdot;

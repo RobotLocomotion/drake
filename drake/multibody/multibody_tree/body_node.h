@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
@@ -493,7 +494,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     /* p_PB_W = R_WP * p_PB */
     Vector3<T> p_PB_W = get_X_WP(pc).rotation() * get_X_PB(pc).translation();
 
-    get_mutable_A_WB_from_array(A_WB_array) =
+    get_mutable_A_WB_from_array(&A_WB_array) =
         A_WP.ComposeWithMovingFrameAcceleration(p_PB_W, V_WP.rotational(),
                                                 V_PB_W, A_PB_W);
   }
@@ -592,7 +593,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // components of the spatial force performing work. Therefore we need to
     // project F_BMo along the directions of motion.
     // Generalized velocities and forces use the same indexing.
-    auto tau = get_mutable_velocities_from_array(*tau_array);
+    auto tau = get_mutable_velocities_from_array(tau_array);
     get_mobilizer().ProjectSpatialForce(context, F_BMo_W, tau);
   }
 
@@ -771,8 +772,8 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
 
   // Mutable version of get_A_WB_from_array().
   SpatialAcceleration<T>& get_mutable_A_WB_from_array(
-      std::vector<SpatialAcceleration<T>>& A_WB_array) const {
-    return A_WB_array[topology_.index];
+      std::vector<SpatialAcceleration<T>>* A_WB_array) const {
+    return (*A_WB_array)[topology_.index];
   }
 
   // Returns a const reference to the spatial acceleration `A_WP` of the body
@@ -785,8 +786,8 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
 
   // Mutable version of get_A_WP_from_array().
   SpatialAcceleration<T>& get_mutable_A_WP_from_array(
-      std::vector<SpatialAcceleration<T>>& A_WB_array) const {
-    return A_WB_array[topology_.parent_body_node];
+      std::vector<SpatialAcceleration<T>>* A_WB_array) const {
+    return (*A_WB_array)[topology_.parent_body_node];
   }
 
   // Helper to get an Eigen expression of the vector of generalized velocities
@@ -802,9 +803,9 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
 
   // Mutable version of get_velocities_from_array()
   Eigen::VectorBlock<VectorX<T>> get_mutable_velocities_from_array(
-      VectorX<T>& v) const {
-    return v.segment(topology_.mobilizer_velocities_start_in_v,
-                     topology_.num_mobilizer_velocities);
+      VectorX<T>* v) const {
+    return v->segment(topology_.mobilizer_velocities_start_in_v,
+                      topology_.num_mobilizer_velocities);
   }
 
   // Helper method to be called within a base-to-tip recursion that computes
@@ -909,7 +910,8 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
       const MultibodyTreeContext<T>& context,
       const PositionKinematicsCache<T>& pc,
       const VelocityKinematicsCache<T>& vc,
-      const SpatialAcceleration<T>& A_WB, SpatialForce<T>* Ftot_BBo_W_ptr) const {
+      const SpatialAcceleration<T>& A_WB, SpatialForce<T>* Ftot_BBo_W_ptr)
+  const {
     DRAKE_ASSERT(Ftot_BBo_W_ptr != nullptr);
     // TODO(amcastro-tri): add argument for flexible body generalized
     // accelerations and generalized forces.

@@ -108,7 +108,6 @@ class PendulumTests : public ::testing::Test {
   // Sets up the MultibodyTree model for a double pendulum. See this unit test's
   // class description for details.
   void CreatePendulumModel() {
-
     Vector3d link1_com_U = Vector3d::Zero();
     UnitInertia<double> G_U(
         kEpsilon /* Ixx */, link1_Ic_ /* Iyy */, link1_Ic_ /* Izz */);
@@ -247,9 +246,9 @@ class PendulumTests : public ::testing::Test {
   const double link1_length_ = 1.0;
   const double link1_mass_ = 1.0;
   const double link1_Ic_ = .083;
-  const double link2_length_ = 2.0; //2.0
+  const double link2_length_ = 2.0;
   const double link2_mass_ = 1.0;
-  const double link2_Ic_ = .33; //.33;
+  const double link2_Ic_ = .33;
   const double half_link1_length_ = link1_length_ / 2;
   const double half_link2_length_ = link2_length_ / 2;
   // Poses:
@@ -480,10 +479,10 @@ class PendulumKinematicTests : public PendulumTests {
 
     Matrix2d H;
 
-    vdot = Vector2d::UnitX(); // First column of H(q).
+    vdot = Vector2d::UnitX();  // First column of H(q).
     H.col(0) = VerifyInverseDynamics(q, v, vdot);
 
-    vdot = Vector2d::UnitY(); // Second column of H(q).
+    vdot = Vector2d::UnitY();  // Second column of H(q).
     H.col(1) = VerifyInverseDynamics(q, v, vdot);
 
     Matrix2d H_expected = acrobot_benchmark_.CalcMassMatrix(elbow_angle);
@@ -496,16 +495,16 @@ class PendulumKinematicTests : public PendulumTests {
     Vector2d v;
     Vector2d vdot = Vector2d::Zero();
 
-    v = Vector2d::Zero(); // C(q, v) = 0 for v = 0.
+    v = Vector2d::Zero();  // C(q, v) = 0 for v = 0.
     VerifyInverseDynamics(q, v, vdot);
 
-    v = Vector2d::UnitX(); // First column of C(q, e_1) times e_1.
+    v = Vector2d::UnitX();  // First column of C(q, e_1) times e_1.
     VerifyInverseDynamics(q, v, vdot);
 
-    v = Vector2d::UnitY(); // Second column of C(q, e_2) times e_2.
+    v = Vector2d::UnitY();  // Second column of C(q, e_2) times e_2.
     VerifyInverseDynamics(q, v, vdot);
 
-    v = Vector2d::Ones(); // Both velocities are non-zero.
+    v = Vector2d::Ones();  // Both velocities are non-zero.
     VerifyInverseDynamics(q, v, vdot);
   }
 
@@ -780,10 +779,6 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
 
       EXPECT_TRUE(A_WU.IsApprox(A_WU_expected, kTolerance));
       EXPECT_TRUE(A_WL.IsApprox(A_WL_expected, kTolerance));
-
-      // ======================================================================
-      // Compute inverse dynamics
-
     }
   }
 }
