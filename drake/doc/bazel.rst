@@ -119,6 +119,8 @@ This config turns off sandboxing, which allows a ``genrule`` to access the
 
 For more information, see https://github.com/bazelbuild/bazel/issues/2537.
 
+.. _buildifier:
+
 Updating BUILD files
 ====================
 
