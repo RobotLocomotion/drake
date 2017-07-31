@@ -109,9 +109,12 @@ class RobotKinematicState {
 
   T time_;
 
-  // Inertial matrix
+  // Equation of motion: M * vd + h = tau + J^T * lambda, where J is the
+  // stacked contact Jacobian, lambda is the contact forces, and tau is the
+  // joint torques.
+  // Inertial matrix (M)
   MatrixX<T> M_;
-  // Bias term: M * vd + h = tau + J^T * lambda
+  // Bias term (h)
   VectorX<T> bias_term_;
 
   // Center of mass
