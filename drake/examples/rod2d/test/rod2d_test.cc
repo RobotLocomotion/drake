@@ -550,6 +550,8 @@ TEST_F(Rod2DDAETest, InfFrictionImpactThenNoImpact) {
   // to go through the first impact path (impulse within the friction cone).
   dut_->set_mu_coulomb(std::numeric_limits<double>::infinity());
 
+  // TODO(edrumwri): Move from HandleImpact() to ModelImpact() once
+  // ModelImpact() changes abstract state.
   // Handle the impact and copy the result to the context.
   std::unique_ptr<State<double>> new_state = CloneState();
   dut_->HandleImpact(*context_, new_state.get());
