@@ -24,6 +24,12 @@ template<typename T> class MultibodyTree;
 
 namespace internal {
 
+#include <iostream>
+//#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
+//#define PRINT_VARn(x) std::cout <<  #x ":\n" << x << std::endl;
+#define PRINT_VAR(x);
+#define PRINT_VARn(x);
+
 /// For internal use only of the MultibodyTree implementation.
 /// This is a base class representing a **node** in the tree structure of a
 /// MultibodyTree. %BodyNode provides implementations for convenience methods to
@@ -557,10 +563,14 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     const Matrix3<T>& R_WB = get_X_WB(pc).rotation();
     const Vector3<T> p_BoMo_W = R_WB * p_BoMo_B;
 
+    PRINT_VAR(this->get_index());
+
     // Shift spatial force on B to Mo.
     F_BMo_W = Ftot_BBo_W.Shift(p_BoMo_W);
     for (const BodyNode<T>* child_node : children_) {
       BodyNodeIndex child_node_index = child_node->get_index();
+
+      PRINT_VAR(child_node_index);
 
       // p_BoCo_W = R_WB * p_BCo_W:
       const Vector3<T> p_BoCo_W =
@@ -574,11 +584,14 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
 
       // Shift position vector from child C outboard mobilizer frame Mc to body
       // B outboard mobilizer Mc. p_MoMc_W:
-      const Vector3<T> p_McMo_W = p_BoMo_B - p_BoCo_W - p_CoMc_W;
+      const Vector3<T> p_McMo_W = p_BoMo_W - p_BoCo_W - p_CoMc_W;
+      PRINT_VAR(p_McMo_W.transpose());
 
       // Spatial force on the child body C about the origin Mc of the outboard
       // mobilizer frame for the child body.
       const SpatialForce<T>& F_CMc_W = F_BMo_W_array[child_node_index];
+
+      PRINT_VAR(F_CMc_W);
 
       // Shift to this node's mobilizer origin Mo (still, F_CMo is the force
       // acting on the child body C):
@@ -587,6 +600,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
       // applied by this body's mobilizer:
       F_BMo_W += F_CMo_W;
     }
+    PRINT_VAR(F_BMo_W);
 
     // The generalized forces on the mobilizer correspond to the active
     // components of the spatial force performing work. Therefore we need to

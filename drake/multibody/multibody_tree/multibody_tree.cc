@@ -17,6 +17,13 @@ namespace multibody {
 using internal::BodyNode;
 using internal::BodyNodeWelded;
 
+#include <iostream>
+//#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
+//#define PRINT_VARn(x) std::cout <<  #x ":\n" << x << std::endl;
+#define PRINT_VAR(x);
+#define PRINT_VARn(x);
+
+
 template <typename T>
 MultibodyTree<T>::MultibodyTree() {
   // Adds a "world" body to MultibodyTree having a NaN SpatialInertia.
@@ -264,18 +271,16 @@ void MultibodyTree<T>::CalcInverseDynamics(
   const auto& mbt_context =
       dynamic_cast<const MultibodyTreeContext<T>&>(context);
 
-  // A temporary for the spatial accelerations A_WB for each body.
-  AccelerationKinematicsCache<T> ac(get_topology());
-
   // Compute body spatial accelerations given the generalized accelerations are
   // known.
-  CalcAccelerationKinematicsCache(context, pc, vc, known_vdot, &ac);
+  CalcSpatialAccelerationsFromVdot(context, pc, vc, known_vdot, A_WB_array);
 
   // Performs a tip-to-base recursion computing the total spatial force F_BMo_W
   // acting on body B, about pint Mo, expressed in the world frame W.
   // This includes the world (depth = 0) so that F_BMo_W_array[world_index()]
   // contains the total force of the bodies connected to the world by a
   // mobilizer.
+  PRINT_VAR(body_nodes_.size());
   for (int depth = get_tree_height() - 1; depth >= 0; --depth) {
     for (BodyNodeIndex body_node_index : body_node_levels_[depth]) {
       const BodyNode<T>& node = *body_nodes_[body_node_index];
@@ -287,10 +292,14 @@ void MultibodyTree<T>::CalcInverseDynamics(
       // onto the space of generalized forces for the associated mobilizer.
       node.CalcInverseDynamics_TipToBase(
           mbt_context, pc, vc, *A_WB_array, F_BMo_W_array, tau_array);
+
+      PRINT_VAR(body_node_index);
+      PRINT_VAR(node.get_body().get_index());
+      PRINT_VAR(A_WB_array->at(body_node_index));
+      PRINT_VAR(F_BMo_W_array->at(body_node_index));
+      PRINT_VAR(tau_array->transpose());
     }
   }
-
-  *A_WB_array = ac.get_A_WB_pool();
 }
 
 // Explicitly instantiates on the most common scalar types.

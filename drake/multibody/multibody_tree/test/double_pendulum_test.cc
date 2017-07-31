@@ -22,6 +22,7 @@ const double kEpsilon = std::numeric_limits<double>::epsilon();
 
 #include <iostream>
 #define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
+#define PRINT_VARn(x) std::cout <<  #x ":\n" << x << std::endl;
 
 using benchmarks::Acrobot;
 using Eigen::AngleAxisd;
@@ -34,6 +35,7 @@ using Eigen::Vector3d;
 using Eigen::VectorXd;
 using std::make_unique;
 using std::unique_ptr;
+using std::vector;
 using systems::Context;
 
 // Set of MultibodyTree tests for a double pendulum model.
@@ -377,7 +379,7 @@ TEST_F(PendulumTests, StdReferenceWrapperExperiment) {
   CreatePendulumModel();
 
   // Vector of references.
-  std::vector<std::reference_wrapper<const Body<double>>> bodies;
+  vector<std::reference_wrapper<const Body<double>>> bodies;
   bodies.push_back(*world_body_);
   bodies.push_back(*upper_link_);
   bodies.push_back(*lower_link_);
@@ -543,7 +545,7 @@ class PendulumKinematicTests : public PendulumTests {
     // This is the minimum factor of the machine precision within which these
     // tests pass. There is an additional factor of two (2) to be on the safe
     // side on other architectures (particularly in Macs).
-    const int kEpsilonFactor = 20;
+    const int kEpsilonFactor = 5;
     const double kTolerance = kEpsilonFactor * kEpsilon;
 
     const double shoulder_angle =  q(0);
@@ -568,16 +570,10 @@ class PendulumKinematicTests : public PendulumTests {
     model_->CalcVelocityKinematicsCache(*context_, pc, &vc);
 
     // ======================================================================
-    // Compute acceleration kinematics.
-    std::vector<SpatialAcceleration<double>> A_WB_array(
-        model_->get_num_bodies());
-    model_->CalcSpatialAccelerationsFromVdot(
-        *context_, pc, vc, vdot, &A_WB_array);
-
-    // ======================================================================
     // Compute inverse dynamics.
     VectorXd tau(model_->get_num_velocities());
-    std::vector<SpatialForce<double>> F_BMo_W_array(model_->get_num_bodies());
+    vector<SpatialAcceleration<double>> A_WB_array(model_->get_num_bodies());
+    vector<SpatialForce<double>> F_BMo_W_array(model_->get_num_bodies());
     model_->CalcInverseDynamics(*context_, pc, vc, vdot,
                                 &A_WB_array, &F_BMo_W_array, &tau);
 
@@ -588,8 +584,8 @@ class PendulumKinematicTests : public PendulumTests {
     Matrix2d H = acrobot_benchmark_.CalcMassMatrix(elbow_angle);
     Vector2d tau_expected = H * vdot + C_expected;
 
-    PRINT_VAR((H * vdot).transpose());
-    PRINT_VAR(C_expected.transpose());
+    //PRINT_VAR((H * vdot).transpose());
+    //PRINT_VAR(C_expected.transpose());
 
     PRINT_VAR(tau.transpose());
     PRINT_VAR(tau_expected.transpose());
@@ -815,13 +811,22 @@ TEST_F(PendulumKinematicTests, InverseDynamics) {
   VerifyMassMatrixViaInverseDynamics(M_PI / 3.0, M_PI / 2.0);
 #endif
 
-  //VerifyCoriolisTermViaInverseDynamics(0.0, 0.0);
-  //VerifyCoriolisTermViaInverseDynamics(0.0, M_PI / 4.0);
-  //VerifyCoriolisTermViaInverseDynamics(0.0, M_PI / 2.0);
-
   // C(q, v) should be zero when elbow_angle = 0 independent of the shoulder
   // angle.
-  VerifyCoriolisTermViaInverseDynamics(M_PI / 2.0, 0.0);
+  VerifyCoriolisTermViaInverseDynamics(0.0, 0.0);
+  VerifyCoriolisTermViaInverseDynamics(M_PI / 3.0, 0.0);
+
+  // Attempt a number of non-zero elbow angles.
+  VerifyCoriolisTermViaInverseDynamics(0.0, M_PI / 3.0);
+  VerifyCoriolisTermViaInverseDynamics(0.0, M_PI / 4.0);
+  VerifyCoriolisTermViaInverseDynamics(0.0, M_PI / 2.0);
+
+  // Repeat previous tests but this time with different non-zero values of the
+  // shoulder angle. Results should be independent of the shoulder angle for
+  // this double pendulum system.
+  VerifyCoriolisTermViaInverseDynamics(M_PI / 3.0, M_PI / 3.0);
+  VerifyCoriolisTermViaInverseDynamics(M_PI / 3.0, M_PI / 4.0);
+  VerifyCoriolisTermViaInverseDynamics(M_PI / 3.0, M_PI / 2.0);
 }
 
 }  // namespace
