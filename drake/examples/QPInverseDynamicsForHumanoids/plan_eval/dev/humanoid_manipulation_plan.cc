@@ -13,11 +13,14 @@ namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
+using systems::controllers::qp_inverse_dynamics::ParamSet;
+using systems::controllers::qp_inverse_dynamics::QpInput;
+using systems::controllers::qp_inverse_dynamics::RobotKinematicState;
+
 template <typename T>
 void HumanoidManipulationPlan<T>::InitializeGenericPlanDerived(
-    const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
-        robot_status,
-    const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
+    const RobotKinematicState<T>& robot_status,
+    const ParamSet& paramset,
     const RigidBodyTreeAliasGroups<T>& alias_groups) {
   unused(paramset);
 
@@ -62,11 +65,10 @@ void HumanoidManipulationPlan<T>::InitializeGenericPlanDerived(
 
 template <typename T>
 void HumanoidManipulationPlan<T>::UpdateQpInputGenericPlanDerived(
-    const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
-        robot_status,
-    const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
+    const RobotKinematicState<T>& robot_status,
+    const ParamSet& paramset,
     const RigidBodyTreeAliasGroups<T>& alias_groups,
-    systems::controllers::qp_inverse_dynamics::QpInput* qp_input) const {
+    QpInput* qp_input) const {
   unused(paramset, alias_groups);
 
   // Generates CoM acceleration.
@@ -88,9 +90,8 @@ void HumanoidManipulationPlan<T>::UpdateQpInputGenericPlanDerived(
 
 template <typename T>
 void HumanoidManipulationPlan<T>::HandlePlanGenericPlanDerived(
-    const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
-        robot_status,
-    const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
+    const RobotKinematicState<T>& robot_status,
+    const ParamSet& paramset,
     const RigidBodyTreeAliasGroups<T>& alias_groups,
     const systems::AbstractValue& plan) {
   unused(paramset);

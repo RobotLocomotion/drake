@@ -11,6 +11,7 @@ namespace qp_inverse_dynamics {
 using systems::controllers::qp_inverse_dynamics::ConstraintType;
 using systems::controllers::qp_inverse_dynamics::ParamSet;
 using systems::controllers::qp_inverse_dynamics::QpInput;
+using systems::controllers::qp_inverse_dynamics::RobotKinematicState;
 
 // This is a derived class from GenericPlan with no additional features.
 // It sets up a plan that does not have any Cartesian tracking objectives,
@@ -59,26 +60,22 @@ class DummyPlan : public GenericPlan<T> {
   }
 
   void InitializeGenericPlanDerived(
-      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
-          robot_status,
+      const RobotKinematicState<T>& robot_status,
       const ParamSet& paramset,
       const RigidBodyTreeAliasGroups<T>& alias_groups) override {}
 
   void ModifyPlanGenericPlanDerived(
-      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
-          robot_stauts,
+      const RobotKinematicState<T>& robot_stauts,
       const ParamSet& paramset,
       const RigidBodyTreeAliasGroups<T>& alias_groups) override {}
 
   void HandlePlanGenericPlanDerived(
-      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
-          robot_stauts,
+      const RobotKinematicState<T>& robot_stauts,
       const ParamSet& paramset, const RigidBodyTreeAliasGroups<T>& alias_groups,
       const systems::AbstractValue& plan) override {}
 
   void UpdateQpInputGenericPlanDerived(
-      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
-          robot_status,
+      const RobotKinematicState<T>& robot_status,
       const ParamSet& paramset, const RigidBodyTreeAliasGroups<T>& alias_groups,
       QpInput* qp_input) const override {}
 

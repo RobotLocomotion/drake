@@ -30,7 +30,8 @@ class GenericPlanTest : public ::testing::Test {
     parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
         robot_path, multibody::joints::kFixed, robot_.get());
 
-    alias_groups_ = std::make_unique<RigidBodyTreeAliasGroups<double>>(*robot_);
+    alias_groups_ =
+        std::make_unique<RigidBodyTreeAliasGroups<double>>(robot_.get());
     alias_groups_->LoadFromFile(alias_groups_path);
 
     params_ =

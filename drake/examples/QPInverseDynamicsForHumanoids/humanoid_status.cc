@@ -20,9 +20,9 @@ const Matrix3<double> HumanoidStatus::kFootToSensorRotationOffset =
 using drake::systems::controllers::qp_inverse_dynamics::RobotKinematicState;
 
 HumanoidStatus::HumanoidStatus(
-    const RigidBodyTree<double>& robot,
+    const RigidBodyTree<double>* robot,
     const RigidBodyTreeAliasGroups<double>& alias_group)
-    : RobotKinematicState<double>(&robot) {
+    : RobotKinematicState<double>(robot) {
   // These are humanoid specific special group names, and they do not exsit
   // for manupulators such as the iiwa arm.
   const std::vector<std::string> body_names = {"pelvis", "torso", "left_foot",
@@ -51,24 +51,24 @@ HumanoidStatus::HumanoidStatus(
                        kFootToSensorPositionOffset));
   }
 
-  joint_torque_.resize(robot.get_num_actuators());
+  joint_torque_ = VectorX<double>::Zero(robot->get_num_actuators());
 
   // Build various lookup maps.
   body_name_to_id_ = std::unordered_map<std::string, int>();
-  for (auto it = robot.bodies.begin(); it != robot.bodies.end(); ++it) {
-    body_name_to_id_[(*it)->get_name()] = it - robot.bodies.begin();
+  for (auto it = robot->bodies.begin(); it != robot->bodies.end(); ++it) {
+    body_name_to_id_[(*it)->get_name()] = it - robot->bodies.begin();
   }
 
   name_to_position_index_ = std::unordered_map<std::string, int>();
-  for (int i = 0; i < robot.get_num_positions(); ++i) {
-    name_to_position_index_[robot.get_position_name(i)] = i;
+  for (int i = 0; i < robot->get_num_positions(); ++i) {
+    name_to_position_index_[robot->get_position_name(i)] = i;
   }
   name_to_velocity_index_ = std::unordered_map<std::string, int>();
-  for (int i = 0; i < robot.get_num_velocities(); ++i) {
-    name_to_velocity_index_[robot.get_velocity_name(i)] = i;
+  for (int i = 0; i < robot->get_num_velocities(); ++i) {
+    name_to_velocity_index_[robot->get_velocity_name(i)] = i;
   }
-  for (int i = 0; i < robot.get_num_actuators(); ++i) {
-    actuator_name_to_actuator_index_[robot.actuators.at(i).name_] = i;
+  for (int i = 0; i < robot->get_num_actuators(); ++i) {
+    actuator_name_to_actuator_index_[robot->actuators.at(i).name_] = i;
   }
 }
 
@@ -78,8 +78,8 @@ void HumanoidStatus::Update(
     const Eigen::Ref<const VectorX<double>>& joint_torque,
     const Eigen::Ref<const Vector6<double>>& l_wrench,
     const Eigen::Ref<const Vector6<double>>& r_wrench) {
-  if (q.size() != get_cache().get_num_positions() ||
-      v.size() != get_cache().get_num_velocities() ||
+  if (q.size() != get_robot().get_num_positions() ||
+      v.size() != get_robot().get_num_velocities() ||
       joint_torque.size() != joint_torque_.size()) {
     throw std::runtime_error("robot state update dimension mismatch.");
   }

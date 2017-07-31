@@ -23,11 +23,11 @@ class QpInverseDynamicsSystem : public systems::LeafSystem<double> {
 
   /**
    * Constructor for the inverse dynamics controller.
-   * @param robot Reference to a RigidBodyTree. Its lifespan must be longer
+   * @param robot Pointer to a RigidBodyTree. Its lifespan must be longer
    * than this object.
    * @param dt Control cycle period.
    */
-  QpInverseDynamicsSystem(const RigidBodyTree<double>& robot, double dt);
+  QpInverseDynamicsSystem(const RigidBodyTree<double>* robot, double dt);
 
   void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
      const std::vector<const systems::UnrestrictedUpdateEvent<double>*>& events,

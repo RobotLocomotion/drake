@@ -48,7 +48,7 @@ void TestFullConfig(multibody::joints::FloatingBaseType type) {
   auto robot = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(urdf, type, robot.get());
 
-  RigidBodyTreeAliasGroups<double> alias(*robot);
+  RigidBodyTreeAliasGroups<double> alias(robot.get());
   alias.LoadFromFile(config);
 
   EXPECT_TRUE(alias.has_position_group("j_group1"));

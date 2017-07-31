@@ -10,11 +10,13 @@ namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
+using systems::controllers::qp_inverse_dynamics::ParamSet;
+using systems::controllers::qp_inverse_dynamics::RobotKinematicState;
+
 template <typename T>
 void ManipulatorMoveEndEffectorPlan<T>::InitializeGenericPlanDerived(
-    const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
-        robot_status,
-    const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
+    const RobotKinematicState<T>& robot_status,
+    const ParamSet& paramset,
     const RigidBodyTreeAliasGroups<T>& alias_groups) {
   unused(paramset);  // TODO(jwnimmer-tri) This seems bad.
 
@@ -36,9 +38,8 @@ void ManipulatorMoveEndEffectorPlan<T>::InitializeGenericPlanDerived(
 
 template <typename T>
 void ManipulatorMoveEndEffectorPlan<T>::HandlePlanGenericPlanDerived(
-    const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
-        robot_status,
-    const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
+    const RobotKinematicState<T>& robot_status,
+    const ParamSet& paramset,
     const RigidBodyTreeAliasGroups<T>& alias_groups,
     const systems::AbstractValue& plan) {
   unused(paramset);  // TODO(jwnimmer-tri) This seems bad.

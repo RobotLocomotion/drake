@@ -98,10 +98,10 @@ class HumanoidStatus
   static const Matrix3<double> kFootToSensorRotationOffset;
 
   /**
-   * @param robot Reference to a RigidBodyTree, which must be valid through the
+   * @param robot Pointer to a RigidBodyTree, which must be valid through the
    * lifespan of this obejct.
    */
-  HumanoidStatus(const RigidBodyTree<double>& robot,
+  HumanoidStatus(const RigidBodyTree<double>* robot,
                  const RigidBodyTreeAliasGroups<double>& alias_group);
 
   /**
