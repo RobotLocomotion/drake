@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <limits>
 #include <memory>
 #include <numeric>
 #include <utility>
@@ -74,6 +75,35 @@ class RigidContactSolver {
       const RigidContactAccelProblemData<T>& problem_data,
       const VectorX<T>& cf,
       VectorX<T>* generalized_acceleration);
+
+  /// Gets the contact forces expressed in each contact frame *for 2D contact
+  /// problems* from the "packed" solution returned by SolveContactProblem().
+  /// @param cf the output from SolveContactProblem()
+  /// @param problem_data the problem data input to SolveContactProblem()
+  /// @param contact_frames the contact frames corresponding to the contacts.
+  ///        The first column of each matrix should give the contact normal,
+  ///        while the second column gives a contact tangent. For sliding
+  ///        contacts, the contact tangent should point along the direction of
+  ///        sliding. For non-sliding contacts, the tangent direction should be
+  ///        that used to determine @p problem_data.F. All vectors should be
+  ///        expressed in the global frame.
+  /// @param[out] contact_forces a non-null vector of a doublet of values, where
+  ///             the iᵗʰ triplet represents the force along each basis
+  ///             vector in the iᵗʰ contact frame.
+  /// @throws std::logic_error if @p contact_forces is null, if
+  ///         @p contact_forces is not empty, if @p cf is not the
+  ///         proper size, if the number of tangent directions is not one per
+  ///         non-sliding contact (indicating that the contact problem might not
+  ///         be 2D), if the number of contact frames is not equal to the number
+  ///         of contacts, or if a contact frame does not appear to be
+  ///         orthonormal.
+  /// @note If, after returning, @p contact_frames[i] is multiplied by
+  ///       @p contact_forces[i], the result will be the contact forces
+  ///       expressed in the global frame.
+  static void CalcContactForcesInContactFrames(
+      const VectorX<T>& cf, const RigidContactAccelProblemData<T>& problem_data,
+      const std::vector<Matrix2<T>>& contact_frames,
+      std::vector<Vector2<T>>* forces);
 
  private:
   void FormSustainedContactLCP(
@@ -274,9 +304,9 @@ void RigidContactSolver<T>::ComputeGeneralizedForceFromContactForces(
     throw std::logic_error("cf (contact force) parameter incorrectly sized.");
 
   /// Get the normal and non-sliding contact forces.
-  const auto& f_normal = cf.segment(0, num_contacts);
-  const auto& f_non_sliding_frictional = cf.segment(num_contacts,
-                                                    num_vars - num_contacts);
+  const Eigen::Ref<const VectorX<T>> f_normal = cf.segment(0, num_contacts);
+  const Eigen::Ref<const VectorX<T>> f_non_sliding_frictional = cf.segment(
+      num_contacts, num_vars - num_contacts);
 
   /// Compute the generalized force.
   *generalized_force = problem_data.N_minus_mu_Q.transpose() * f_normal +
@@ -297,6 +327,99 @@ void RigidContactSolver<T>::ComputeGeneralizedAcceleration(
                                            &generalized_force);
   *generalized_acceleration = problem_data.solve_inertia(problem_data.f +
                                                          generalized_force);
+}
+
+template <class T>
+void RigidContactSolver<T>::CalcContactForcesInContactFrames(
+    const VectorX<T>& cf, const RigidContactAccelProblemData<T>& problem_data,
+    const std::vector<Matrix2<T>>& contact_frames,
+    std::vector<Vector2<T>>* contact_forces) {
+  using std::abs;
+
+  // Loose tolerance for unit vectors and orthogonality.
+  const double loose_eps = std::sqrt(std::numeric_limits<double>::epsilon());
+
+  // Verify that contact_forces is non-null and is empty.
+  if (!contact_forces)
+    throw std::logic_error("Vector of contact forces is null.");
+  if (!contact_forces->empty())
+    throw std::logic_error("Vector of contact forces is not empty.");
+
+  // Verify that cf is the correct size.
+  const int num_non_sliding_contacts = problem_data.non_sliding_contacts.size();
+  const int num_contacts = problem_data.sliding_contacts.size() +
+      num_non_sliding_contacts;
+  const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
+                                                   problem_data.r.end(), 0);
+  const int num_vars = num_contacts + num_spanning_vectors;
+  if (num_vars != cf.size())
+    throw std::logic_error("Unexpected packed contact force vector dimension.");
+
+  // Verify that the problem is indeed two-dimensional.
+  if (num_spanning_vectors != num_non_sliding_contacts) {
+    throw std::logic_error("Problem data 'r' indicates contact problem is not "
+                               "two-dimensional");
+  }
+
+  // Verify that the correct number of contact frames has been specified.
+  if (contact_frames.size() != static_cast<size_t>(num_contacts)) {
+    throw std::logic_error("Number of contact frames does not match number of "
+                               "contacts.");
+  }
+
+  // Verify that sliding contact indices are sorted.
+  DRAKE_ASSERT(std::is_sorted(problem_data.sliding_contacts.begin(),
+                              problem_data.sliding_contacts.end()));
+
+  // Resize the force vector.
+  contact_forces->resize(contact_frames.size());
+
+  // Set the forces.
+  for (int i = 0, sliding_index = 0, non_sliding_index = 0; i < num_contacts;
+       ++i) {
+    // Alias the force.
+    Vector2<T>& contact_force_i = (*contact_forces)[i];
+
+    // Get the contact normal and tangent.
+    const Vector2<T> contact_normal = contact_frames[i].col(0);
+    const Vector2<T> contact_tangent = contact_frames[i].col(1);
+
+    // Verify that each direction is of unit length.
+    if (abs(contact_normal.norm() - 1) > loose_eps)
+      throw std::runtime_error("Contact normal apparently not unit length.");
+    if (abs(contact_tangent.norm() - 1) > loose_eps)
+      throw std::runtime_error("Contact tangent apparently not unit length.");
+
+    // Verify that the two directions are orthogonal.
+    if (abs(contact_normal.dot(contact_tangent)) > loose_eps) {
+      std::ostringstream oss;
+      oss << "Contact normal (" << contact_normal.transpose() << ") and ";
+      oss << "contact tangent (" << contact_tangent.transpose() << ") ";
+      oss << "insufficiently orthogonal.";
+      throw std::logic_error(oss.str());
+    }
+
+    // Initialize the contact force expressed in the global frame.
+    Vector2<T> f0(0, 0);
+
+    // Add in the contact normal.
+    f0 += contact_normal * cf[i];
+
+    // Determine whether the contact is sliding.
+    const bool is_sliding = std::binary_search(
+        problem_data.sliding_contacts.begin(),
+        problem_data.sliding_contacts.end(), i);
+
+    // Subtract/add the tangential force in the world frame.
+    if (is_sliding) {
+      f0 -= contact_tangent * cf[i] * problem_data.mu_sliding[sliding_index++];
+    } else {
+      f0 += contact_tangent * cf[num_contacts + non_sliding_index++];
+    }
+
+    // Compute the contact force in the contact frame.
+    contact_force_i = contact_frames[i].transpose() * f0;
+  }
 }
 
 }  // namespace rigid_contact

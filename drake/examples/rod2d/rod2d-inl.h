@@ -461,6 +461,45 @@ Vector3<T> Rod2D<T>::GetJacobianDotRow(const systems::Context<T>& context,
 }
 
 template <class T>
+Matrix2<T> Rod2D<T>::GetSlidingContactFrameToWorldTransform(
+    const T& xaxis_velocity) const {
+  // Note: the contact normal for the rod with the horizontal plane always
+  // points along the world +y axis; the sliding tangent vector points along
+  // either the +/-x (world) axis. The << operator populates the matrix row by
+  // row, so
+  // R_WC = | 0  ±1 |
+  //        | 1   0 |
+  // indicating that the contact normal direction (the +x axis in the contact
+  // frame) is +y in the world frame and the contact tangent direction (more
+  // precisely, the direction of sliding, the +y axis in the contact frame) is
+  // ±x in the world frame.
+  DRAKE_DEMAND(xaxis_velocity != 0);
+  Matrix2<T> R_WC;
+  // R_WC's elements match how they appear lexically: one row per line.
+  R_WC << 0, ((xaxis_velocity > 0) ? 1 : -1),
+          1, 0;
+  return R_WC;
+}
+
+template <class T>
+Matrix2<T> Rod2D<T>::GetNonSlidingContactFrameToWorldTransform() const {
+  // Note: the contact normal for the rod with the horizontal plane always
+  // points along the world +y axis; the non-sliding tangent vector always
+  // points along the world +x axis. The << operator populates the matrix row by
+  // row, so
+  // R_WC = | 0 1 |
+  //        | 1 0 |
+  // indicating that the contact normal direction is (the +x axis in the contact
+  // frame) is +y in the world frame and the contact tangent direction (the +y
+  // axis in the contact frame) is +x in the world frame.
+  Matrix2<T> R_WC;
+  // R_WC's elements match how they appear lexically: one row per line.
+  R_WC << 0, 1,
+          1, 0;
+  return R_WC;
+}
+
+template <class T>
 void Rod2D<T>::CalcRigidContactProblemData(
     const systems::Context<T>& context,
     const std::vector<Vector2<T>>& points,
@@ -475,8 +514,15 @@ void Rod2D<T>::CalcRigidContactProblemData(
                                   std::placeholders::_1);
 
   // The normal and tangent spanning direction are unique.
-  const Vector2<T> contact_normal(0, 1);
-  const Vector2<T> contact_tan(1, 0);
+  const Matrix2<T> R_wc = GetNonSlidingContactFrameToWorldTransform();
+  const Vector2<T> contact_normal = R_wc.col(0);
+  const Vector2<T> contact_tangent = R_wc.col(1);
+
+  // Verify contact normal and tangent directions are as we expect.
+  DRAKE_ASSERT(abs(contact_normal.dot(Vector2<T>(0, 1)) - 1) <
+      std::numeric_limits<double>::epsilon());
+  DRAKE_ASSERT(abs(contact_tangent.dot(Vector2<T>(1, 0)) - 1) <
+      std::numeric_limits<double>::epsilon());
 
   // Get the set of contact points.
   const int nc = points.size();
@@ -530,8 +576,8 @@ void Rod2D<T>::CalcRigidContactProblemData(
     if (std::binary_search(data->sliding_contacts.begin(),
                            data->sliding_contacts.end(), i))
       continue;
-    data->F.row(j) = GetJacobianRow(context, points[i], contact_tan);
-    Fdot.row(j) = GetJacobianDotRow(context, points[i], contact_tan);
+    data->F.row(j) = GetJacobianRow(context, points[i], contact_tangent);
+    Fdot.row(j) = GetJacobianDotRow(context, points[i], contact_tangent);
     ++j;
   }
   data->Fdot_x_v = Fdot * v;
@@ -543,11 +589,9 @@ void Rod2D<T>::CalcRigidContactProblemData(
     if (std::binary_search(data->non_sliding_contacts.begin(),
                            data->non_sliding_contacts.end(), i))
       continue;
-    if (tangent_vels[i] > 0) {
-      Qrow = GetJacobianRow(context, points[i], contact_tan);
-    } else {
-      Qrow = GetJacobianRow(context, points[i], -contact_tan);
-    }
+    const auto& sliding_dir = GetSlidingContactFrameToWorldTransform(
+        tangent_vels[i]).col(1);
+    Qrow = GetJacobianRow(context, points[i], sliding_dir);
     data->N_minus_mu_Q.row(i) -= data->mu_sliding[j] * Qrow;
     ++j;
   }
@@ -555,7 +599,6 @@ void Rod2D<T>::CalcRigidContactProblemData(
   // Set external force vector.
   data->f = ComputeExternalForces(context);
 }
-
 
 template <typename T>
 void Rod2D<T>::CopyStateOut(const systems::Context<T>& context,
