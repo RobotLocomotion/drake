@@ -475,7 +475,7 @@ Matrix2<T> Rod2D<T>::GetSlidingContactFrameToWorldTransform(
   // ±x in the world frame.
   DRAKE_DEMAND(xaxis_velocity != 0);
   Matrix2<T> R_WC;
-  // NOTE: Formatting indicates matrix setup.
+  // R_WC's elements match how they appear lexically: one row per line.
   R_WC << 0, ((xaxis_velocity > 0) ? 1 : -1),
           1, 0;
   return R_WC;
@@ -493,6 +493,7 @@ Matrix2<T> Rod2D<T>::GetNonSlidingContactFrameToWorldTransform() const {
   // frame) is +y in the world frame and the contact tangent direction (the +y
   // axis in the contact frame) is +x in the world frame.
   Matrix2<T> R_WC;
+  // R_WC's elements match how they appear lexically: one row per line.
   R_WC << 0, 1,
           1, 0;
   return R_WC;
