@@ -161,38 +161,36 @@ class GeometryState {
   // The origin from where an invocation of RemoveFrameUnchecked was called.
   // The origin changes the work that is required.
   enum class RemoveFrameOrigin {
-    SOURCE,     // Invoked by ClearSource().
-    FRAME,      // Invoked by RemoveFrame().
-    RECURSE     // Invoked by recursive call in RemoveGeometryUnchecked.
+    kSource,     // Invoked by ClearSource().
+    kFrame,      // Invoked by RemoveFrame().
+    kRecurse     // Invoked by recursive call in RemoveGeometryUnchecked.
   };
 
   // Performs the work necessary to remove the identified frame from
   // GeometryWorld. The amount of work depends on the context from which this
   // method is invoked:
   //
-  //  - ClearSource(): ClearSource() is deleting *all* frames and geometries.
+  //  - ClearSource(): ClearSource() is deletes *all* frames and geometries.
   //    It explicitly iterates through the frames (regardless of hierarchy).
   //    Thus, recursion is unnecessary, removal from parent references is
   //    likewise unnecessary (and actually wrong).
-  //  - RemoveFrame(): The full removal is necessary; recursively remove child
-  //    frames (and child geometries), removing references to this id from
-  //    the source and its parent frame (if not the world).
-  //   - RemoveFrameUnchecked(): This is the recursive call; it's parent
+  //  - RemoveFrame(): A specific frame (and its corresponding hierarchy) is
+  //    being removed. In addition to recursively removing all child frames,
+  //    it must also remove this id from the source and its parent frame.
+  //  - RemoveFrameUnchecked(): This is the recursive call; it's parent
   //    is already slated for removal, so parent references can be left alone,
   //    but recursion is necessary.
   void RemoveFrameUnchecked(FrameId frame_id, RemoveFrameOrigin caller);
 
-  // TODO(SeanCurtis-TRI): Several design issues on this:
-  //  1. It should *ideally* be const.
-  //  2. Can I guarantee that it's always 0?
-  // The frame identifier for the world frame.
-  FrameId kWorldFrame;
+  // The frame identifier of the world frame.
+  static const FrameId kWorldFrame;
 
   // ---------------------------------------------------------------------
-  // Maps representing the registered state of sources, frames and geometries,
-  // and their relationships. This data should only change at major discrete
+  // Maps from registered source ids to the entities registered to those
+  // sources (e.g., frames and geometries). This lives in the state to support
+  // runtime topology changes. This data should only change at _discrete_
   // events where frames/geometries are introduced and removed. They do *not*
-  // depend on time-dependent input values (e.g., System::InputPort).
+  // depend on time-dependent input values (e.g., System::Context).
 
   // The registered geometry sources and the frame ids that have been registered
   // on them.
