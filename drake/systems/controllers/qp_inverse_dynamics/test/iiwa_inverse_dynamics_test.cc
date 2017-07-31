@@ -35,7 +35,7 @@ GTEST_TEST(testQPInverseDynamicsController, testForIiwa) {
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       urdf, multibody::joints::kFixed, &robot);
 
-  RigidBodyTreeAliasGroups<double> alias_groups(robot);
+  RigidBodyTreeAliasGroups<double> alias_groups(&robot);
   alias_groups.LoadFromFile(alias_groups_config);
 
   ParamSet paramset;

@@ -40,7 +40,7 @@ GTEST_TEST(testQpInverseDynamicsSystem, IiwaInverseDynamics) {
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       kModelPath, multibody::joints::kFixed, &robot);
 
-  RigidBodyTreeAliasGroups<double> alias_groups(robot);
+  RigidBodyTreeAliasGroups<double> alias_groups(&robot);
   alias_groups.LoadFromFile(kAliasGroupsPath);
   ParamSet paramset;
   paramset.LoadFromFile(kControlConfigPath, alias_groups);
@@ -50,7 +50,7 @@ GTEST_TEST(testQpInverseDynamicsSystem, IiwaInverseDynamics) {
   // Makes a controller block.
   const double kControlDt = 0.02;
   QpInverseDynamicsSystem* controller =
-      builder.AddSystem<QpInverseDynamicsSystem>(robot, kControlDt);
+      builder.AddSystem<QpInverseDynamicsSystem>(&robot, kControlDt);
   controller->set_name("controller");
 
   // Makes a source for humanoid status.

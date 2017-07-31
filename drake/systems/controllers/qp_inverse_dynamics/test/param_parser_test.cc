@@ -32,7 +32,8 @@ class ParamParserTests : public ::testing::Test {
     parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
         urdf_name, multibody::joints::kRollPitchYaw, robot_.get());
 
-    rbt_alias_ = std::make_unique<RigidBodyTreeAliasGroups<double>>(*robot_);
+    rbt_alias_ =
+        std::make_unique<RigidBodyTreeAliasGroups<double>>(robot_.get());
     rbt_alias_->LoadFromFile(alias_groups_config_name);
 
     paramset_.LoadFromFile(controller_config_name, *rbt_alias_);
