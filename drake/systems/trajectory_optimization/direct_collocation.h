@@ -23,8 +23,8 @@ namespace systems {
  * achieve a 3rd order integration accuracy.
  *
  * @param system A dynamical system to be used in the dynamic constraints.
- *    This system must implement DoToAutoDiffXd. Note that this is aliased for
- *    the lifetime of this object.
+ *    This system must support System::ToAutoDiffXd.
+ *    Note that this is aliased for the lifetime of this object.
  * @param context Required to describe any parameters of the system.  The
  *    values of the state in this context do not have any effect.  This
  *    context will also be "cloned" by the optimization; changes to the context
