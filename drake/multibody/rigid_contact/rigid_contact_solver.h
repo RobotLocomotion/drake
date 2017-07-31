@@ -304,9 +304,9 @@ void RigidContactSolver<T>::ComputeGeneralizedForceFromContactForces(
     throw std::logic_error("cf (contact force) parameter incorrectly sized.");
 
   /// Get the normal and non-sliding contact forces.
-  const auto& f_normal = cf.segment(0, num_contacts);
-  const auto& f_non_sliding_frictional = cf.segment(num_contacts,
-                                                    num_vars - num_contacts);
+  const Eigen::Ref<const VectorX<T>> f_normal = cf.segment(0, num_contacts);
+  const Eigen::Ref<const VectorX<T>> f_non_sliding_frictional = cf.segment(
+      num_contacts, num_vars - num_contacts);
 
   /// Compute the generalized force.
   *generalized_force = problem_data.N_minus_mu_Q.transpose() * f_normal +
@@ -367,12 +367,12 @@ void RigidContactSolver<T>::CalcContactForcesInContactFrames(
                                "contacts.");
   }
 
-  // Resize the force vector.
-  contact_forces->resize(contact_frames.size());
-
   // Verify that sliding contact indices are sorted.
   DRAKE_ASSERT(std::is_sorted(problem_data.sliding_contacts.begin(),
                               problem_data.sliding_contacts.end()));
+
+  // Resize the force vector.
+  contact_forces->resize(contact_frames.size());
 
   // Set the forces.
   for (int i = 0, sliding_index = 0, non_sliding_index = 0; i < num_contacts;
