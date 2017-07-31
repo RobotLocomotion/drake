@@ -55,7 +55,7 @@ class OptitrackPoseTest : public ::testing::Test {
 
 TEST_F(OptitrackPoseTest, InvalidObjectTest) {
   Initialize(2 /* object_id */);
-  optitrack::optitrack_frame_t test_frame;
+  optitrack::optitrack_frame_t test_frame{};
   optitrack::optitrack_rigid_body_t default_body{};
   default_body.id = 0;
 
@@ -75,8 +75,8 @@ TEST_F(OptitrackPoseTest, InvalidObjectTest) {
 
 TEST_F(OptitrackPoseTest, InvalidObjectIDTest) {
   Initialize(1 /* object_id */);
-  optitrack::optitrack_frame_t test_frame;
-  optitrack::optitrack_rigid_body_t default_body;
+  optitrack::optitrack_frame_t test_frame{};
+  optitrack::optitrack_rigid_body_t default_body{};
   default_body.id = 0;
   test_frame.rigid_bodies.push_back(default_body);
   default_body.id = 2;
@@ -88,8 +88,8 @@ TEST_F(OptitrackPoseTest, InvalidObjectIDTest) {
 
 TEST_F(OptitrackPoseTest, PoseComparisonTest) {
   Initialize(0 /* object_id */);
-  optitrack::optitrack_frame_t test_frame;
-  optitrack::optitrack_rigid_body_t default_body;
+  optitrack::optitrack_frame_t test_frame{};
+  optitrack::optitrack_rigid_body_t default_body{};
 
   // An arbitrarily chosen test pose is assigned to the default_body.
   Isometry3<double> test_pose;
@@ -134,8 +134,8 @@ TEST_F(OptitrackPoseTest, PoseInReferenceFrameTest) {
       Eigen::AngleAxisd(-0.75 * M_PI, Eigen::Vector3d::UnitX()).matrix();
   Initialize(0 /* object_id */, X_WOp);
 
-  optitrack::optitrack_frame_t test_frame;
-  optitrack::optitrack_rigid_body_t default_body;
+  optitrack::optitrack_frame_t test_frame{};
+  optitrack::optitrack_rigid_body_t default_body{};
 
   // An arbitrarily chosen test pose is assigned to the default_body.
   Isometry3<double> test_pose;
