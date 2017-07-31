@@ -56,8 +56,9 @@ class OptitrackPoseTest : public ::testing::Test {
 TEST_F(OptitrackPoseTest, InvalidObjectTest) {
   Initialize(2 /* object_id */);
   optitrack::optitrack_frame_t test_frame;
-  optitrack::optitrack_rigid_body_t default_body;
+  optitrack::optitrack_rigid_body_t default_body{};
   default_body.id = 0;
+
   test_frame.rigid_bodies.push_back(default_body);
   default_body.id = 1;
   test_frame.rigid_bodies.push_back(default_body);
