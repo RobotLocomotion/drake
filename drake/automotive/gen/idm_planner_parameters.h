@@ -47,15 +47,15 @@ class IdmPlannerParameters : public systems::BasicVector<T> {
   typedef IdmPlannerParametersIndices K;
 
   /// Default constructor.  Sets all rows to their default value:
-  /// @arg @c v_ref defaults to 10.0 in units of m/s.
-  /// @arg @c a defaults to 1.0 in units of m/s^2.
-  /// @arg @c b defaults to 3.0 in units of m/s^2.
-  /// @arg @c s_0 defaults to 1.0 in units of m.
-  /// @arg @c time_headway defaults to 0.1 in units of s.
-  /// @arg @c delta defaults to 4.0 in units of dimensionless.
-  /// @arg @c bloat_diameter defaults to 4.5 in units of m.
-  /// @arg @c distance_lower_limit defaults to 1e-2 in units of m.
-  /// @arg @c scan_ahead_distance defaults to 100.0 in units of m.
+  /// @arg @c v_ref defaults to 10.0 m/s.
+  /// @arg @c a defaults to 1.0 m/s^2.
+  /// @arg @c b defaults to 3.0 m/s^2.
+  /// @arg @c s_0 defaults to 1.0 m.
+  /// @arg @c time_headway defaults to 0.1 s.
+  /// @arg @c delta defaults to 4.0 dimensionless.
+  /// @arg @c bloat_diameter defaults to 4.5 m.
+  /// @arg @c distance_lower_limit defaults to 1e-2 m.
+  /// @arg @c scan_ahead_distance defaults to 100.0 m.
   IdmPlannerParameters() : systems::BasicVector<T>(K::kNumCoordinates) {
     this->set_v_ref(10.0);
     this->set_a(1.0);
