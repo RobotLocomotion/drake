@@ -4,6 +4,7 @@
 package(default_visibility = ["//visibility:public"])
 
 load("//tools:install.bzl", "install")
+load("//tools:lint.bzl", "add_lint_tests")
 load("//tools:transitive_hdrs.bzl", "transitive_hdrs_library")
 
 # Should include everything any consumer of Drake would ever need.
@@ -364,3 +365,5 @@ cc_library(
         ":vtk_deps",
     ],
 )
+
+add_lint_tests()
