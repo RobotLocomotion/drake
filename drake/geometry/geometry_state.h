@@ -170,7 +170,7 @@ class GeometryState {
   // GeometryWorld. The amount of work depends on the context from which this
   // method is invoked:
   //
-  //  - ClearSource(): ClearSource() is deletes *all* frames and geometries.
+  //  - ClearSource(): ClearSource() deletes *all* frames and geometries.
   //    It explicitly iterates through the frames (regardless of hierarchy).
   //    Thus, recursion is unnecessary, removal from parent references is
   //    likewise unnecessary (and actually wrong).
