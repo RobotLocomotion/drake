@@ -10,37 +10,40 @@ namespace examples {
 namespace qp_inverse_dynamics {
 namespace param_parsers {
 
-const char* const kTestDir =
-    "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/test/";
-
-// The test YAML config looks like this:
+// body_group {
+//   name: "b_group1"
+// }
 //
-//    body_groups:
-//      b_group1:
-//        []
+// body_group {
+//   name: "b_group2"
+//   member: "link1"
+// }
 //
-//      b_group2:
-//        [link1]
+// body_group {
+//   name: "b_group2"
+//   member: "link3"
+// }
 //
-//      b_group2:
-//        [link3]
+// body_group {
+//   name: "b_group3"
+//   member: "world"
+// }
 //
-//      b_group3:
-//        [world]
+// joint_group {
+//   name: "j_group1"
+// }
 //
-//    joint_groups:
-//      j_group1:
-//        []
-//
-//      j_group2:
-//        [base, joint1]
-//
+// joint_group {
+//   name: "j_group2"
+//   member: "base"
+//   member: "joint1"
+// }
 // Please refer to the full config file for more details.
 void TestFullConfig(multibody::joints::FloatingBaseType type) {
   std::string urdf = FindResourceOrThrow(
       "drake/multibody/test/rigid_body_tree/two_dof_robot.urdf");
   std::string config = FindResourceOrThrow(
-      std::string(kTestDir) + "test.alias_groups");
+      "drake/multibody/test/test.alias_groups");
 
   auto robot = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(urdf, type, robot.get());
