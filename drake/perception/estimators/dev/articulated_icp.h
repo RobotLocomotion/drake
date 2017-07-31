@@ -181,10 +181,10 @@ class ArticulatedIcpBodyPoints {
    * @param num_max Maximum number of points to be stored.
    */
   ArticulatedIcpBodyPoints(FrameIndex frame_Bi, int num_max)
-      : frame_Bi(frame_Bi),
+      : frame_Bi_(frame_Bi),
         num_max_(num_max) {
-    meas_pts_W.resize(3, num_max);
-    body_pts_W.resize(3, num_max);
+    meas_pts_W_.resize(3, num_max);
+    body_pts_W_.resize(3, num_max);
   }
   /**
    * Add a given measured and body point, both in the world frame.
@@ -205,15 +205,15 @@ class ArticulatedIcpBodyPoints {
 
  private:
   /* Frame of the given body. */
-  FrameIndex frame_Bi{-1};
+  FrameIndex frame_Bi_{-1};
   /* Points measured, fixed in camera frame, `C`, expressed in the world frame,
    * `W`. */
-  Eigen::Matrix3Xd meas_pts_W;
+  Eigen::Matrix3Xd meas_pts_W_;
   /* Points on the given body, `Bi`, fixed in the body frame, expressed in the
    * world frame, `W`. */
-  Eigen::Matrix3Xd body_pts_W;
+  Eigen::Matrix3Xd body_pts_W_;
   int num_max_{};
-  int num_actual{0};
+  int num_actual_{0};
 };
 
 /**
@@ -221,12 +221,12 @@ class ArticulatedIcpBodyPoints {
  */
 struct PointCorrespondence {
   PointCorrespondence() {}
-  PointCorrespondence(const Eigen::Vector3d& meas_point,
-                      const Eigen::Vector3d& model_point,
-                      double distance)
-    : meas_point(meas_point),
-      model_point(model_point),
-      distance(distance) {}
+  PointCorrespondence(const Eigen::Vector3d& meas_point_in,
+                      const Eigen::Vector3d& model_point_in,
+                      double distance_in)
+    : meas_point(meas_point_in),
+      model_point(model_point_in),
+      distance(distance_in) {}
   /** @brief Measured point. */
   Eigen::Vector3d meas_point;
   /** @brief Model point, same frame as measured point. */
