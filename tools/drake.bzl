@@ -8,6 +8,10 @@ CLANG_FLAGS = [
     "-Werror=sign-compare",
     "-Werror=non-virtual-dtor",
     "-Werror=return-stack-address",
+    # TODO(eric.cousineau): See if there is a flag with the same level of strictness
+    # as GCC's -Werror=shadow.
+    # @see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57709
+    "-Werror=shadow",
 ]
 
 # The GCC_FLAGS will be enabled for all C++ rules in the project when
@@ -18,6 +22,7 @@ GCC_FLAGS = [
     "-Werror=return-local-addr",
     "-Werror=non-virtual-dtor",
     "-Wno-missing-field-initializers",
+    "-Werror=shadow",
 ]
 
 # The GCC_CC_TEST_FLAGS will be enabled for all cc_test rules in the project
