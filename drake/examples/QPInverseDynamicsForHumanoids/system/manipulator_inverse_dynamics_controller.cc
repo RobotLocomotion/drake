@@ -7,13 +7,15 @@
 
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/humanoid_status_translator_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/joint_level_controller_system.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/system/qp_controller_system.h"
 #include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/qp_inverse_dynamics_system.h"
 #include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
+
+using systems::controllers::qp_inverse_dynamics::QpInverseDynamicsSystem;
 
 ManipulatorInverseDynamicsController::ManipulatorInverseDynamicsController(
     const std::string& model_path, const std::string& alias_group_path,
@@ -43,17 +45,17 @@ ManipulatorInverseDynamicsController::ManipulatorInverseDynamicsController(
       robot, alias_group_path, controller_config_path, dt);
   plan_eval_->set_name("plan_eval");
   // Inverse dynamics controller
-  QpControllerSystem* id_controller =
-      builder.AddSystem<QpControllerSystem>(robot, dt);
+  QpInverseDynamicsSystem* id_controller =
+      builder.AddSystem<QpInverseDynamicsSystem>(robot, dt);
   id_controller->set_name("id_controller");
 
   // Connects state translator to plan eval.
   builder.Connect(rs_wrapper->get_output_port_humanoid_status(),
-                  plan_eval_->get_input_port_humanoid_status());
+                  plan_eval_->get_input_port_kinematic_state());
 
   // Connects state translator to inverse dynamics.
   builder.Connect(rs_wrapper->get_output_port_humanoid_status(),
-                  id_controller->get_input_port_humanoid_status());
+                  id_controller->get_input_port_kinematic_state());
 
   // Connects plan eval to inverse dynamics.
   builder.Connect(plan_eval_->get_output_port_qp_input(),

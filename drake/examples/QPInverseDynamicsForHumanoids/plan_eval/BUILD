@@ -25,11 +25,11 @@ drake_cc_library(
         "generic_plan.h",
     ],
     deps = [
-        "//drake/systems/controllers:setpoint",
-        "//drake/systems/controllers/qp_inverse_dynamics:qp_inverse_dynamics",
-        "//drake/systems/controllers/qp_inverse_dynamics:param_parser",  # noqa
-        "//drake/multibody:rigid_body_tree_alias_groups",  # noqa
         "//drake/manipulation/util:trajectory_utils",
+        "//drake/multibody:rigid_body_tree_alias_groups",  # noqa
+        "//drake/systems/controllers:setpoint",
+        "//drake/systems/controllers/qp_inverse_dynamics",
+        "//drake/systems/controllers/qp_inverse_dynamics:param_parser",  # noqa
         "//drake/systems/framework:value",
     ],
 )
@@ -77,9 +77,9 @@ drake_cc_library(
     ],
     deps = [
         ":generic_plan",
-        "//drake/systems/controllers/qp_inverse_dynamics:lcm_utils",
         "//drake/manipulation/util:robot_state_msg_translator",
         "//drake/systems/controllers:zmp_planner",
+        "//drake/systems/controllers/qp_inverse_dynamics:lcm_utils",
         "//drake/util",
         "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",

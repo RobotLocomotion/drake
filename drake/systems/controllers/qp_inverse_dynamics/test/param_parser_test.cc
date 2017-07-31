@@ -381,8 +381,8 @@ TEST_F(ParamParserTests, MakeQpInputFromRigidBodyPtr) {
 
   std::vector<const RigidBody<double>*> contact_bodies = pelvis_group;
   std::vector<const RigidBody<double>*> tracked_bodies = pelvis_group;
-  tracked_bodies.insert(tracked_bodies.end(),
-      r_foot_group.begin(), r_foot_group.end());
+  tracked_bodies.insert(tracked_bodies.end(), r_foot_group.begin(),
+                        r_foot_group.end());
 
   QpInput qp_input =
       paramset_.MakeQpInput(contact_bodies, tracked_bodies, *rbt_alias_);

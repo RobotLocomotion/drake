@@ -9,8 +9,8 @@
 #include "drake/common/eigen_stl_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/rigid_body_tree_alias_groups.h"
-#include "drake/systems/robotInterfaces/Side.h"
 #include "drake/systems/controllers/qp_inverse_dynamics/robot_kinematic_state.h"
+#include "drake/systems/robotInterfaces/Side.h"
 
 namespace drake {
 namespace examples {
@@ -81,10 +81,13 @@ class BodyOfInterest {
  * some measured contact force / torque information, joint torque, etc.
  * It also stores robot specific constants.
  */
-class HumanoidStatus : public systems::controllers::qp_inverse_dynamics::RobotKinematicState<double> {
- public:
+class HumanoidStatus
+    : public systems::controllers::qp_inverse_dynamics::RobotKinematicState<
+          double> {
+ protected:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HumanoidStatus)
 
+ public:
   /// Position offset from the foot frame to the sole frame.
   static const Vector3<double> kFootToSoleOffset;
   /// Position Offset from the foot frame to force torque sensor in the foot
@@ -98,9 +101,8 @@ class HumanoidStatus : public systems::controllers::qp_inverse_dynamics::RobotKi
    * @param robot Reference to a RigidBodyTree, which must be valid through the
    * lifespan of this obejct.
    */
-  HumanoidStatus(
-      const RigidBodyTree<double>& robot,
-      const RigidBodyTreeAliasGroups<double>& alias_group);
+  HumanoidStatus(const RigidBodyTree<double>& robot,
+                 const RigidBodyTreeAliasGroups<double>& alias_group);
 
   /**
    * Do kinematics and compute useful information based on kinematics and
@@ -139,6 +141,7 @@ class HumanoidStatus : public systems::controllers::qp_inverse_dynamics::RobotKi
   inline double position(int i) const { return get_cache().getQ()[i]; }
   inline double velocity(int i) const { return get_cache().getV()[i]; }
   inline double joint_torque(int i) const { return joint_torque_[i]; }
+  const VectorX<double>& joint_torque() const { return joint_torque_; }
 
   inline const BodyOfInterest& pelvis() const {
     return bodies_of_interest_.at("pelvis");
@@ -195,9 +198,9 @@ class HumanoidStatus : public systems::controllers::qp_inverse_dynamics::RobotKi
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  private:
-  // Do kinematics first using position_ and velocity_. Force torque information
-  // in foot_wrench_raw_ are used to compute center of pressure if appropriate.
-  void Update();
+  RobotKinematicState<double>* DoClone() const override {
+    return new HumanoidStatus(*this);
+  }
 
   // Map body name to its index.
   std::unordered_map<std::string, int> body_name_to_id_;

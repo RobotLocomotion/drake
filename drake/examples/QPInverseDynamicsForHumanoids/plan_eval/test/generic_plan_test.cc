@@ -59,27 +59,27 @@ class DummyPlan : public GenericPlan<T> {
   }
 
   void InitializeGenericPlanDerived(
-      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>& robot_status,
+      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
+          robot_status,
       const ParamSet& paramset,
-      const RigidBodyTreeAliasGroups<T>& alias_groups) override {
-  }
+      const RigidBodyTreeAliasGroups<T>& alias_groups) override {}
 
   void ModifyPlanGenericPlanDerived(
-      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>& robot_stauts,
+      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
+          robot_stauts,
       const ParamSet& paramset,
-      const RigidBodyTreeAliasGroups<T>& alias_groups) override {
-  }
+      const RigidBodyTreeAliasGroups<T>& alias_groups) override {}
 
   void HandlePlanGenericPlanDerived(
-      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>& robot_stauts,
-      const ParamSet& paramset,
-      const RigidBodyTreeAliasGroups<T>& alias_groups,
+      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
+          robot_stauts,
+      const ParamSet& paramset, const RigidBodyTreeAliasGroups<T>& alias_groups,
       const systems::AbstractValue& plan) override {}
 
   void UpdateQpInputGenericPlanDerived(
-      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>& robot_status,
-      const ParamSet& paramset,
-      const RigidBodyTreeAliasGroups<T>& alias_groups,
+      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
+          robot_status,
+      const ParamSet& paramset, const RigidBodyTreeAliasGroups<T>& alias_groups,
       QpInput* qp_input) const override {}
 
   bool is_model_compatible_{true};

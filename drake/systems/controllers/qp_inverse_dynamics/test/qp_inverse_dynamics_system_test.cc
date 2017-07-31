@@ -7,11 +7,11 @@
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/param_parser.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/robot_kinematic_state.h"
+#include "drake/systems/controllers/setpoint.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_value_source.h"
-#include "drake/systems/controllers/qp_inverse_dynamics/robot_kinematic_state.h"
-#include "drake/systems/controllers/qp_inverse_dynamics/param_parser.h"
-#include "drake/systems/controllers/setpoint.h"
 
 namespace drake {
 namespace systems {
@@ -61,8 +61,7 @@ GTEST_TEST(testQpInverseDynamicsSystem, IiwaInverseDynamics) {
   robot_status.UpdateKinematics(0 /* time */, q, v);
   ConstantValueSource<double>* state_source =
       builder.AddSystem<ConstantValueSource<double>>(
-          AbstractValue::Make<RobotKinematicState<double>>(
-              robot_status));
+          AbstractValue::Make<RobotKinematicState<double>>(robot_status));
   state_source->set_name("state_source");
 
   // Makes a source for qp input.

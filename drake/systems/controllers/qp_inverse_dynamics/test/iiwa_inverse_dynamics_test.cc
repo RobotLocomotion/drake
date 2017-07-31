@@ -3,11 +3,11 @@
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/text_logging.h"
-#include "drake/systems/controllers/setpoint.h"
-#include "drake/systems/controllers/qp_inverse_dynamics/param_parser.h"
-#include "drake/systems/controllers/qp_inverse_dynamics/qp_inverse_dynamics.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/param_parser.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/qp_inverse_dynamics.h"
+#include "drake/systems/controllers/setpoint.h"
 
 namespace drake {
 namespace systems {
@@ -46,8 +46,8 @@ GTEST_TEST(testQPInverseDynamicsController, testForIiwa) {
   QpInverseDynamics con;
   std::vector<std::string> contact_group_names = {};
   std::vector<std::string> tracked_body_names = {};
-  QpInput input = paramset.MakeQpInput(
-      contact_group_names, tracked_body_names, alias_groups);
+  QpInput input = paramset.MakeQpInput(contact_group_names, tracked_body_names,
+                                       alias_groups);
   QpOutput output(GetDofNames(robot));
 
   // Sets up desired q and v.

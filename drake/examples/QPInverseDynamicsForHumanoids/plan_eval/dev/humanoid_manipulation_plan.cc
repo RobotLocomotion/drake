@@ -15,19 +15,20 @@ namespace qp_inverse_dynamics {
 
 template <typename T>
 void HumanoidManipulationPlan<T>::InitializeGenericPlanDerived(
-    const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>& robot_status,
+    const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
+        robot_status,
     const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
     const RigidBodyTreeAliasGroups<T>& alias_groups) {
   unused(paramset);
 
   // Knots are constant, the second time doesn't matter as long as it's larger.
-  const std::vector<T> times =
-      {robot_status.get_time(), robot_status.get_time() + 1};
+  const std::vector<T> times = {robot_status.get_time(),
+                                robot_status.get_time() + 1};
 
   // Current com q and v.
   Vector4<T> xcom;
   xcom << robot_status.get_com().template head<2>(),
-          robot_status.get_com_velocity().template head<2>();
+      robot_status.get_com_velocity().template head<2>();
   // Set desired com q to current.
   MatrixX<T> com_d = robot_status.get_com().template head<2>();
   PiecewisePolynomial<T> zmp_d =
@@ -61,7 +62,8 @@ void HumanoidManipulationPlan<T>::InitializeGenericPlanDerived(
 
 template <typename T>
 void HumanoidManipulationPlan<T>::UpdateQpInputGenericPlanDerived(
-    const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>& robot_status,
+    const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
+        robot_status,
     const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
     const RigidBodyTreeAliasGroups<T>& alias_groups,
     systems::controllers::qp_inverse_dynamics::QpInput* qp_input) const {
@@ -70,7 +72,7 @@ void HumanoidManipulationPlan<T>::UpdateQpInputGenericPlanDerived(
   // Generates CoM acceleration.
   Vector4<T> xcom;
   xcom << robot_status.get_com().template head<2>(),
-          robot_status.get_com_velocity().template head<2>();
+      robot_status.get_com_velocity().template head<2>();
   Vector2<T> comdd_d =
       zmp_planner_.ComputeOptimalCoMdd(robot_status.get_time(), xcom);
 
@@ -86,7 +88,8 @@ void HumanoidManipulationPlan<T>::UpdateQpInputGenericPlanDerived(
 
 template <typename T>
 void HumanoidManipulationPlan<T>::HandlePlanGenericPlanDerived(
-    const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>& robot_status,
+    const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
+        robot_status,
     const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
     const RigidBodyTreeAliasGroups<T>& alias_groups,
     const systems::AbstractValue& plan) {
@@ -164,7 +167,7 @@ void HumanoidManipulationPlan<T>::HandlePlanGenericPlanDerived(
         PiecewisePolynomial<T>::Pchip(com_times, com_knots, true);
     Vector4<T> x_com0;
     x_com0 << robot_status.get_com().template head<2>(),
-              robot_status.get_com_velocity().template head<2>();
+        robot_status.get_com_velocity().template head<2>();
     zmp_planner_.Plan(zmp_poly, x_com0, zmp_height_);
   }
 

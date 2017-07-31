@@ -9,16 +9,6 @@ package(
     default_visibility = [":__subpackages__"],
 )
 
-drake_cc_library(
-    name = "control_utils",
-    srcs = [],
-    hdrs = ["control_utils.h"],
-    deps = [
-        "//drake/common",
-        "//drake/math:geometric_transform",
-    ],
-)
-
 exports_files(
     ["config/valkyrie.alias_groups"],
 )
@@ -67,8 +57,8 @@ drake_cc_googletest(
         "//drake/examples/valkyrie:valkyrie_constants",
         "//drake/multibody/parsers",
         "//drake/systems/controllers:setpoint",
+        "//drake/systems/controllers/qp_inverse_dynamics",
         "//drake/systems/controllers/qp_inverse_dynamics:param_parser",  # noqa
-        "//drake/systems/controllers/qp_inverse_dynamics:qp_inverse_dynamics",
     ],
 )
 

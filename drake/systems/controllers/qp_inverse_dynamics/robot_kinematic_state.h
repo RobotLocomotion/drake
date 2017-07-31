@@ -9,19 +9,39 @@ namespace systems {
 namespace controllers {
 namespace qp_inverse_dynamics {
 
+/**
+ * A wrapper class around KinematicsCache and several useful matrices such as
+ * the inertia matrix, etc. This class serves mainly as a explicit cache to
+ * avoid repeated computation. This class can be replaced with System's cache
+ * is ready.
+ */
 template <typename T>
 class RobotKinematicState {
- public:
+ protected:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RobotKinematicState)
 
+ public:
+  /**
+   * Constructor. The internal KinematicsCache is initialized to @p robot's
+   * zero configuration and zero velocity. Internal time is set to zero.
+   * @param robot Is aliased internally. @p robot's life span must be longer
+   * than this.
+   */
   explicit RobotKinematicState(const RigidBodyTree<T>* robot)
-      : robot_(robot), cache_(robot_->CreateKinematicsCache()) {}
+      : robot_(robot), cache_(robot_->CreateKinematicsCache()) {
+    UpdateKinematics(0, robot_->getZeroConfiguration(),
+                     VectorX<T>::Zero(robot_->get_num_velocities()));
+  }
+
+  virtual ~RobotKinematicState() {}
+
+  std::unique_ptr<RobotKinematicState<T>> Clone() const {
+    return std::unique_ptr<RobotKinematicState<T>>(DoClone());
+  }
 
   /**
-   * Time @p t and the generalized position @p q and velocity @p v are set and
-   * used to generate kinematics related information. Joint torque and all
-   * quantities based on external wrench measurements such as foot force torque
-   * sensor values and center of pressure are set to zero.
+   * The generalized position @p q and velocity @p v are used to update the
+   * internal KinematicsCache. @p time is used to update the internal time.
    * @param time In seconds
    * @param q Generalized positions.
    * @param v Generalized velocities.
@@ -32,20 +52,23 @@ class RobotKinematicState {
     UpdateKinematics(q, v);
   }
 
+  /**
+   * The generalized position @p q and velocity @p v are used to update the
+   * internal KinematicsCache.
+   * @param q Generalized positions.
+   * @param v Generalized velocities.
+   */
   void UpdateKinematics(const Eigen::Ref<const VectorX<T>>& q,
                         const Eigen::Ref<const VectorX<T>>& v) {
     cache_.initialize(q, v);
     robot_->doKinematics(cache_, true);
 
     M_ = robot_->massMatrix(cache_);
+    com_ = robot_->centerOfMass(cache_);
     drake::eigen_aligned_std_unordered_map<RigidBody<double> const*,
                                            drake::TwistVector<double>>
         f_ext;
     bias_term_ = robot_->dynamicsBiasTerm(cache_, f_ext);
-
-    // com
-    com_ = robot_->centerOfMass(cache_);
-
     centroidal_momentum_matrix_ = robot_->centroidalMomentumMatrix(cache_);
     centroidal_momentum_matrix_dot_times_v_ =
         robot_->centroidalMomentumMatrixDotTimesV(cache_);
@@ -73,11 +96,16 @@ class RobotKinematicState {
     return centroidal_momentum_matrix_dot_times_v_;
   }
 
+ protected:
+  virtual RobotKinematicState<T>* DoClone() const {
+    return new RobotKinematicState<T>(*this);
+  }
+
  private:
   const RigidBodyTree<T>* robot_;
   KinematicsCache<T> cache_;
 
-  T time_{-1};
+  T time_;
 
   // Inertial matrix
   MatrixX<T> M_;

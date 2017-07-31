@@ -66,8 +66,7 @@ class ManipulatorPlanEvalSystem : public PlanEvalBaseSystem {
   /**
    * Returns the output port for debugging information.
    */
-  inline const systems::OutputPort<double>&
-  get_output_port_debug_info() const {
+  inline const systems::OutputPort<double>& get_output_port_debug_info() const {
     return get_output_port(output_port_index_debug_info_);
   }
 
@@ -79,9 +78,8 @@ class ManipulatorPlanEvalSystem : public PlanEvalBaseSystem {
       systems::State<double>* state) const override;
 
   // This is the calculator method for the output port.
-  void OutputDebugInfo(
-      const systems::Context<double>& context,
-      lcmt_plan_eval_debug_info* output) const;
+  void OutputDebugInfo(const systems::Context<double>& context,
+                       lcmt_plan_eval_debug_info* output) const;
 
   int input_port_index_desired_state_{};
   int input_port_index_desired_acceleration_{};

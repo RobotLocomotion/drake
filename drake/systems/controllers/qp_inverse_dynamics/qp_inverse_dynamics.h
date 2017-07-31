@@ -8,10 +8,10 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
-#include "drake/systems/controllers/qp_inverse_dynamics/qp_inverse_dynamics_common.h"
-#include "drake/systems/controllers/qp_inverse_dynamics/robot_kinematic_state.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/qp_inverse_dynamics_common.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/robot_kinematic_state.h"
 
 namespace drake {
 namespace systems {

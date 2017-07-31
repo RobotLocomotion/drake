@@ -16,9 +16,9 @@ drake_cc_library(
     hdrs = ["humanoid_status_translator_system.h"],
     deps = [
         "//drake/examples/QPInverseDynamicsForHumanoids:humanoid_status",
-        "//drake/systems/controllers/qp_inverse_dynamics:lcm_utils",
         "//drake/manipulation/util:robot_state_msg_translator",
         "//drake/multibody:rigid_body_tree",
+        "//drake/systems/controllers/qp_inverse_dynamics:lcm_utils",
         "//drake/systems/framework:leaf_system",
     ],
 )
@@ -28,8 +28,8 @@ drake_cc_library(
     srcs = ["joint_level_controller_system.cc"],
     hdrs = ["joint_level_controller_system.h"],
     deps = [
-        "//drake/systems/controllers/qp_inverse_dynamics:qp_inverse_dynamics",
         "//drake/multibody:rigid_body_tree",
+        "//drake/systems/controllers/qp_inverse_dynamics",
         "//drake/systems/framework:leaf_system",
         "@lcmtypes_bot2_core",
     ],
@@ -49,10 +49,10 @@ drake_cc_library(
     srcs = ["plan_eval_base_system.cc"],
     hdrs = ["plan_eval_base_system.h"],
     deps = [
-        "//drake/systems/controllers:setpoint",
         "//drake/examples/QPInverseDynamicsForHumanoids:humanoid_status",
-        "//drake/systems/controllers/qp_inverse_dynamics:param_parser",  # noqa
         "//drake/multibody:rigid_body_tree_alias_groups",  # noqa
+        "//drake/systems/controllers:setpoint",
+        "//drake/systems/controllers/qp_inverse_dynamics:param_parser",  # noqa
         "//drake/systems/framework:leaf_system",
     ],
 )
@@ -140,12 +140,12 @@ drake_cc_googletest(
         ":humanoid_plan_eval_system",
         "//drake/common:eigen_matrix_compare",
         "//drake/common:find_resource",
-        "//drake/systems/controllers:setpoint",
-        "//drake/systems/controllers/qp_inverse_dynamics:param_parser",  # noqa
-        "//drake/systems/controllers/qp_inverse_dynamics:qp_inverse_dynamics_system",
         "//drake/examples/valkyrie:valkyrie_constants",
         "//drake/multibody/parsers",
         "//drake/systems/analysis:simulator",
+        "//drake/systems/controllers:setpoint",
+        "//drake/systems/controllers/qp_inverse_dynamics:param_parser",  # noqa
+        "//drake/systems/controllers/qp_inverse_dynamics:qp_inverse_dynamics_system",
         "//drake/systems/framework",
         "//drake/systems/primitives:constant_value_source",
     ],

@@ -31,7 +31,8 @@ class ManipulatorMoveEndEffectorPlan : public GenericPlan<T> {
    * in @p alias_groups is kEndEffectorAliasGroupName.
    */
   void InitializeGenericPlanDerived(
-      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>& robot_status,
+      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
+          robot_status,
       const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
       const RigidBodyTreeAliasGroups<T>& alias_groups) override;
 
@@ -57,7 +58,8 @@ class ManipulatorMoveEndEffectorPlan : public GenericPlan<T> {
    * lcmt_manipulator_plan_move_end_effector;
    */
   void HandlePlanGenericPlanDerived(
-      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>& robot_stauts,
+      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
+          robot_stauts,
       const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
       const RigidBodyTreeAliasGroups<T>& alias_groups,
       const systems::AbstractValue& plan) override;
@@ -68,8 +70,7 @@ class ManipulatorMoveEndEffectorPlan : public GenericPlan<T> {
   void ModifyPlanGenericPlanDerived(
       const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&,
       const systems::controllers::qp_inverse_dynamics::ParamSet&,
-      const RigidBodyTreeAliasGroups<T>&) override {
-  }
+      const RigidBodyTreeAliasGroups<T>&) override {}
 
   void UpdateQpInputGenericPlanDerived(
       const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&,

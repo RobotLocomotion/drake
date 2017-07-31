@@ -15,7 +15,8 @@ std::unique_ptr<GenericPlan<T>> GenericPlan<T>::Clone() const {
 
 template <typename T>
 void GenericPlan<T>::Initialize(
-    const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>& robot_status,
+    const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
+        robot_status,
     const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
     const RigidBodyTreeAliasGroups<T>& alias_groups) {
   // Checks parameters and throw if they are incompatible.
@@ -31,8 +32,8 @@ void GenericPlan<T>::Initialize(
   // Initializes all dof trajectory to hold at the measured.
   // When interpolating, time is clipped to the bounds, so the end time doesn't
   // matter for a zoh trajectory.
-  const std::vector<T> times =
-      {robot_status.get_time(), robot_status.get_time() + 1};
+  const std::vector<T> times = {robot_status.get_time(),
+                                robot_status.get_time() + 1};
   const MatrixX<T> q_d = robot_status.get_cache().getQ();
   this->set_dof_trajectory(manipulation::PiecewiseCubicTrajectory<T>(
       PiecewisePolynomial<T>::ZeroOrderHold(times, {q_d, q_d})));
@@ -43,7 +44,8 @@ void GenericPlan<T>::Initialize(
 
 template <typename T>
 void GenericPlan<T>::UpdateQpInput(
-    const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>& robot_status,
+    const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
+        robot_status,
     const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
     const RigidBodyTreeAliasGroups<T>& alias_groups,
     systems::controllers::qp_inverse_dynamics::QpInput* qp_input) const {

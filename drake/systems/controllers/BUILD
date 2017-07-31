@@ -82,8 +82,8 @@ drake_cc_library(
     srcs = ["setpoint.cc"],
     hdrs = ["setpoint.h"],
     deps = [
-        "//drake/common:common",
-        "//drake/math:geometric_transform"
+        "//drake/common",
+        "//drake/math:geometric_transform",
     ],
 )
 
@@ -134,7 +134,6 @@ drake_cc_library(
         "//drake/common/trajectories:piecewise_polynomial",
     ],
 )
-
 
 # This library is empty unless Gurobi is available.
 drake_cc_library(

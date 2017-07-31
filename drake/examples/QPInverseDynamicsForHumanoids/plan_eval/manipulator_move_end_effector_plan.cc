@@ -12,14 +12,15 @@ namespace qp_inverse_dynamics {
 
 template <typename T>
 void ManipulatorMoveEndEffectorPlan<T>::InitializeGenericPlanDerived(
-    const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>& robot_status,
+    const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
+        robot_status,
     const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
     const RigidBodyTreeAliasGroups<T>& alias_groups) {
   unused(paramset);  // TODO(jwnimmer-tri) This seems bad.
 
   // Knots are constant, the second time doesn't matter.
-  const std::vector<T> times =
-      {robot_status.get_time(), robot_status.get_time() + 1};
+  const std::vector<T> times = {robot_status.get_time(),
+                                robot_status.get_time() + 1};
   const RigidBody<T>* ee_body =
       alias_groups.get_body(kEndEffectorAliasGroupName);
   Isometry3<T> ee_pose = robot_status.get_robot().CalcBodyPoseInWorldFrame(
@@ -35,7 +36,8 @@ void ManipulatorMoveEndEffectorPlan<T>::InitializeGenericPlanDerived(
 
 template <typename T>
 void ManipulatorMoveEndEffectorPlan<T>::HandlePlanGenericPlanDerived(
-    const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>& robot_status,
+    const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
+        robot_status,
     const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
     const RigidBodyTreeAliasGroups<T>& alias_groups,
     const systems::AbstractValue& plan) {
@@ -70,8 +72,8 @@ void ManipulatorMoveEndEffectorPlan<T>::HandlePlanGenericPlanDerived(
   }
 
   for (int i = 0; i < msg.num_steps; i++) {
-    times.push_back
-        (robot_status.get_time() + static_cast<T>(msg.utimes[i]) / 1e6);
+    times.push_back(robot_status.get_time() +
+                    static_cast<T>(msg.utimes[i]) / 1e6);
     poses.push_back(DecodePose(msg.poses[i]));
   }
 

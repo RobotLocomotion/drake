@@ -75,7 +75,8 @@ class GenericPlan {
    * or @p paramset or @p alias_groups is incompatible.
    */
   void Initialize(
-      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>& robot_status,
+      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
+          robot_status,
       const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
       const RigidBodyTreeAliasGroups<T>& alias_groups);
 
@@ -93,12 +94,13 @@ class GenericPlan {
    * or @p paramset or @p alias_groups is incompatible.
    */
   void ModifyPlan(
-      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>& robot_status,
+      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
+          robot_status,
       const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
       const RigidBodyTreeAliasGroups<T>& alias_groups) {
     // Checks parameters and throw if they are incompatible.
-    CheckCompatibilityAndThrow(
-        robot_status.get_robot(), paramset, alias_groups);
+    CheckCompatibilityAndThrow(robot_status.get_robot(), paramset,
+                               alias_groups);
     ModifyPlanGenericPlanDerived(robot_status, paramset, alias_groups);
   }
 
@@ -115,13 +117,14 @@ class GenericPlan {
    * or @p paramset or @p alias_groups is incompatible.
    */
   void HandlePlan(
-      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>& robot_status,
+      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
+          robot_status,
       const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
       const RigidBodyTreeAliasGroups<T>& alias_groups,
       const systems::AbstractValue& plan) {
     // Checks parameters and throw if they are incompatible.
-    CheckCompatibilityAndThrow(
-        robot_status.get_robot(), paramset, alias_groups);
+    CheckCompatibilityAndThrow(robot_status.get_robot(), paramset,
+                               alias_groups);
     HandlePlanGenericPlanDerived(robot_status, paramset, alias_groups, plan);
   }
 
@@ -153,7 +156,8 @@ class GenericPlan {
    * or @p paramset or @p alias_groups is incompatible.
    */
   void UpdateQpInput(
-      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>& robot_status,
+      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
+          robot_status,
       const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
       const RigidBodyTreeAliasGroups<T>& alias_groups,
       systems::controllers::qp_inverse_dynamics::QpInput* qp_input) const;
@@ -223,7 +227,7 @@ class GenericPlan {
    */
   virtual bool IsParamSetCompatible(
       const systems::controllers::qp_inverse_dynamics::ParamSet& paramset)
-  const {
+      const {
     unused(paramset);
     return true;
   }
@@ -245,7 +249,8 @@ class GenericPlan {
    * Custom initialization can be implemented here.
    */
   virtual void InitializeGenericPlanDerived(
-      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>& robot_status,
+      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
+          robot_status,
       const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
       const RigidBodyTreeAliasGroups<T>& alias_groups) = 0;
 
@@ -253,7 +258,8 @@ class GenericPlan {
    * Custom state mutation can be implemented here.
    */
   virtual void ModifyPlanGenericPlanDerived(
-      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>& robot_status,
+      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
+          robot_status,
       const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
       const RigidBodyTreeAliasGroups<T>& alias_groups) = 0;
 
@@ -261,7 +267,8 @@ class GenericPlan {
    * Custom plan handling can be implemented here.
    */
   virtual void HandlePlanGenericPlanDerived(
-      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>& robot_status,
+      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
+          robot_status,
       const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
       const RigidBodyTreeAliasGroups<T>& alias_groups,
       const systems::AbstractValue& plan) = 0;
@@ -270,7 +277,8 @@ class GenericPlan {
    * Custom QpInput updates can be implemented here.
    */
   virtual void UpdateQpInputGenericPlanDerived(
-      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>& robot_status,
+      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
+          robot_status,
       const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
       const RigidBodyTreeAliasGroups<T>& alias_groups,
       systems::controllers::qp_inverse_dynamics::QpInput* qp_input) const = 0;

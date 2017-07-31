@@ -68,9 +68,9 @@ drake_cc_library(
     srcs = ["qp_inverse_dynamics_system.cc"],
     hdrs = ["qp_inverse_dynamics_system.h"],
     deps = [
-        "//drake/systems/controllers/qp_inverse_dynamics:qp_inverse_dynamics",
         "//drake/lcmtypes:inverse_dynamics_debug_info",
         "//drake/multibody:rigid_body_tree",
+        "//drake/systems/controllers/qp_inverse_dynamics",
         "//drake/systems/framework:leaf_system",
     ],
 )
@@ -158,10 +158,10 @@ drake_cc_googletest(
         ":qp_inverse_dynamics_system",
         "//drake/common:eigen_matrix_compare",
         "//drake/common:find_resource",
-        "//drake/systems/controllers:setpoint",
-        "//drake/systems/controllers/qp_inverse_dynamics:param_parser",  # noqa
         "//drake/multibody/parsers",
         "//drake/systems/analysis:simulator",
+        "//drake/systems/controllers:setpoint",
+        "//drake/systems/controllers/qp_inverse_dynamics:param_parser",  # noqa
         "//drake/systems/framework",
         "//drake/systems/primitives:constant_value_source",
     ],

@@ -49,8 +49,7 @@ class HumanoidManipulationPlan : public GenericPlan<T> {
    * "torso", "left_foot" and "right_foot".
    */
   bool IsRigidBodyTreeAliasGroupsCompatible(
-      const RigidBodyTreeAliasGroups<T>& alias_groups)
-      const override;
+      const RigidBodyTreeAliasGroups<T>& alias_groups) const override;
 
   // TODO(siyuan): override IsParamSetCompatible as well.
 
@@ -60,7 +59,8 @@ class HumanoidManipulationPlan : public GenericPlan<T> {
    * current configuration in @p robot_status.
    */
   void InitializeGenericPlanDerived(
-      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>& robot_status,
+      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
+          robot_status,
       const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
       const RigidBodyTreeAliasGroups<T>& alias_groups) override;
 
@@ -111,7 +111,8 @@ class HumanoidManipulationPlan : public GenericPlan<T> {
    * @throws if @p plan is not of type robotlocomotion::robot_plan_t
    */
   void HandlePlanGenericPlanDerived(
-      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>& robot_status,
+      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
+          robot_status,
       const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
       const RigidBodyTreeAliasGroups<T>& alias_groups,
       const systems::AbstractValue& plan) override;
@@ -123,11 +124,12 @@ class HumanoidManipulationPlan : public GenericPlan<T> {
    * momentum change to zero.
    */
   void UpdateQpInputGenericPlanDerived(
-      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>& robot_status,
+      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
+          robot_status,
       const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
       const RigidBodyTreeAliasGroups<T>& alias_groups,
       systems::controllers::qp_inverse_dynamics::QpInput* qp_input)
-  const override;
+      const override;
 
  private:
   // Returns true if @p alias_groups has a singleton body group whose name is
