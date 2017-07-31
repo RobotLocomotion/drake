@@ -43,6 +43,12 @@ def python_lint(ignore = []):
     """
 
     for rule in native.existing_rules().values():
+        # Do not lint generated code.
+        if rule.get("generator_function") in [
+                "py_proto_library",
+                "lcm_py_library"]:
+            continue
+
         srcs = rule.get("srcs", ())
 
         if type(srcs) == type(()):
