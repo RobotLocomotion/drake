@@ -33,13 +33,16 @@ def _bazel_lint(name, files, ignore):
         )
 
 #------------------------------------------------------------------------------
-def bazel_lint(name = "bazel", ignore = [265, 302, 305]):
+def bazel_lint(name = "bazel", ignore = None):
     """
     Runs the ``bzlcodestyle`` code style checker on all Bazel files in the
     current directory. The tool is based on the ``pycodestyle`` :pep:`8` code
     style checker, but always disables certain checks while adding others.
 
     Args:
+        existing_rules: The value of native.existing_result().values(), in case
+            it has already been computed.  When not supplied, the value will be
+            internally (re-)computed.
         name: Name prefix of the test (default = "bazel").
         ignore: List of errors (as integers, without the 'E') to ignore
             (default = [265, 302, 305]).
@@ -50,6 +53,9 @@ def bazel_lint(name = "bazel", ignore = [265, 302, 305]):
 
             bazel_lint()
     """
+
+    if ignore == None:
+        ignore = [265, 302, 305]
 
     _bazel_lint(
         name = name,
