@@ -151,7 +151,7 @@ FrameId GeometryState<T>::RegisterFrame(SourceId source_id,
 
 template <typename T>
 FrameId GeometryState<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
-                                        const GeometryFrame<T>& frame) {
+                                        const GeometryFrame<T>&) {
   using std::to_string;
   FrameId frame_id = FrameId::get_new_id();
 
