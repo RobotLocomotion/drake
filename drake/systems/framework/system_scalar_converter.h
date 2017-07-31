@@ -29,7 +29,7 @@ class SystemScalarConverter {
   /// Creates an object that returns nullptr for all Convert() requests.  The
   /// single-argument constructor below is the typical way to create a useful
   /// instance of this type.
-  SystemScalarConverter() = default;
+  SystemScalarConverter();
 
   /// Creates an object that uses S's scalar-type converting copy constructor.
   /// That constructor takes the form of, e.g.:

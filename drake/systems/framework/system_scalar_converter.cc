@@ -10,6 +10,8 @@ std::pair<std::type_index, std::type_index> make_key(
 }
 }  // namespace
 
+SystemScalarConverter::SystemScalarConverter() = default;
+
 void SystemScalarConverter::Insert(
     const std::type_info& t_info, const std::type_info& u_info,
     const ErasedConverterFunc& converter) {
