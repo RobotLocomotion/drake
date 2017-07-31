@@ -28,7 +28,7 @@ class InternalFrame {
 
   /** Full constructor.
    @param source_id     The identifier of the source this belongs to.
-   @param frame_id      The identifier for _this_ frame.
+   @param frame_id      The identifier of _this_ frame.
    @param parent_id     The id of the parent frame.
    */
   InternalFrame(SourceId source_id, FrameId frame_id, FrameId parent_id) :
@@ -85,22 +85,22 @@ class InternalFrame {
   }
 
  private:
-  // The identifier of the source to which this frame belongs.
+  // The identifier of the source, to which this frame belongs.
   SourceId source_id_;
 
-  // The identifier for this frame.
+  // The identifier of this frame.
   FrameId id_;
 
-  // The identifier for this frame's parent frame.
+  // The identifier of this frame's parent frame.
   FrameId parent_id_;
 
-  // TODO(SeanCurtis-TRI): These should *probably* be sets instead of vectors.
-  // The identifiers for the frames who have this frame as parent.
+  // The identifiers of the frames, who have this frame as parent.
   std::unordered_set<FrameId> child_frames_;
 
-  // The identifiers for the geometry hung on this frame. This includes
-  // geometries hung directly on the frame, and geometries hung on geometries
-  // hung on this frame. It does *not* include geometries hung on child frames.
+  // The identifiers for the geometries that are rigidly affixed to this frame.
+  // This includes geometries that were hung directly on the frame and those
+  // that were hung on geometries that were already rigidly affixed.
+  // It does *not* include geometries hung on child frames.
   std::unordered_set<GeometryId> child_geometries_;
 };
 

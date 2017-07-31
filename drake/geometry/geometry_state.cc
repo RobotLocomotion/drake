@@ -44,7 +44,7 @@ std::string get_missing_id_message(const Key& key) {
   return "Error in map look up of unexpected key type";
 }
 
-// The look up and error-throwing method.
+// The look up and error-throwing method for const values.
 template <class Key, class Value>
 const Value& GetValueOrThrow(const Key& key,
                        const std::unordered_map<Key, Value>* map) {
@@ -55,7 +55,7 @@ const Value& GetValueOrThrow(const Key& key,
   throw std::logic_error(get_missing_id_message(key));
 }
 
-// The look up and error-throwing method.
+// The look up and error-throwing method for mutable values.
 template <class Key, class Value>
 Value& GetMutableValueOrThrow(const Key& key,
                               std::unordered_map<Key, Value>* map) {
@@ -70,7 +70,7 @@ Value& GetMutableValueOrThrow(const Key& key,
 template <>
 std::string get_missing_id_message<SourceId>(const SourceId& key) {
   std::stringstream ss;
-  ss << "Referenced geometry source " << key << " is not active.";
+  ss << "Referenced geometry source " << key << " is not registered.";
   return ss.str();
 }
 
@@ -84,8 +84,10 @@ std::string get_missing_id_message<FrameId>(const FrameId& key) {
 //-----------------------------------------------------------------------------
 
 template <typename T>
-GeometryState<T>::GeometryState()
-    : kWorldFrame(FrameId::get_new_id()) {}
+const FrameId GeometryState<T>::kWorldFrame{FrameId::get_new_id()};
+
+template <typename T>
+GeometryState<T>::GeometryState() {}
 
 template <typename T>
 bool GeometryState<T>::source_is_registered(SourceId source_id) const {
@@ -126,7 +128,7 @@ template <typename T>
 void GeometryState<T>::ClearSource(SourceId source_id) {
   FrameIdSet& frames = GetMutableValueOrThrow(source_id, &source_frame_id_map_);
   for (auto frame_id : frames) {
-    RemoveFrameUnchecked(frame_id, RemoveFrameOrigin::SOURCE);
+    RemoveFrameUnchecked(frame_id, RemoveFrameOrigin::kSource);
   }
   source_frame_id_map_[source_id].clear();
   source_root_frame_map_[source_id].clear();
@@ -138,9 +140,9 @@ void GeometryState<T>::RemoveFrame(SourceId source_id, FrameId frame_id) {
   if (!BelongsToSource(frame_id, source_id)) {
     throw std::logic_error("Trying to remove frame " + to_string(frame_id) +
                            " from source " + to_string(source_id) +
-                           ". But the frame doesn't belong to that source.");
+                           ", but the frame doesn't belong to that source.");
   }
-  RemoveFrameUnchecked(frame_id, RemoveFrameOrigin::FRAME);
+  RemoveFrameUnchecked(frame_id, RemoveFrameOrigin::kFrame);
 }
 
 template <typename T>
@@ -199,10 +201,10 @@ void GeometryState<T>::RemoveFrameUnchecked(FrameId frame_id,
                                             RemoveFrameOrigin caller) {
   auto& frame = GetMutableValueOrThrow(frame_id, &frames_);
 
-  if (caller != RemoveFrameOrigin::SOURCE) {
+  if (caller != RemoveFrameOrigin::kSource) {
     // Recursively delete the child frames.
     for (auto child_id : *frame.get_mutable_child_frames()) {
-      RemoveFrameUnchecked(child_id, RemoveFrameOrigin::RECURSE);
+      RemoveFrameUnchecked(child_id, RemoveFrameOrigin::kRecurse);
     }
 
     // Remove the frames from the source.
@@ -217,7 +219,7 @@ void GeometryState<T>::RemoveFrameUnchecked(FrameId frame_id,
 
   // TODO(SeanCurtis-TRI): Remove geometries.
 
-  if (caller == RemoveFrameOrigin::FRAME) {
+  if (caller == RemoveFrameOrigin::kFrame) {
     // Only the root needs to explicitly remove itself from a possible parent
     // frame.
     FrameId parent_frame_id = frame.get_parent_frame_id();
