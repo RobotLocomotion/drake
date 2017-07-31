@@ -1064,8 +1064,10 @@ void AddCrossProductImpliedOrthantConstraint(
   // ( 0,  1,  0,  0,  1)
   // ( 0,  1,  1,  1,  1)
   // So this polytope has 2⁵ - 8 = 24 vertices in total.
-  Eigen::Matrix<double, 18, 5> A;
-  Eigen::Matrix<double, 18, 1> b;
+  constexpr int A_rows = 18;
+  constexpr int A_cols = 5;
+  Eigen::Matrix<double, A_rows, A_cols> A;
+  Eigen::Matrix<double, A_rows, 1> b;
   A << 0, 0, 0, 0, -1,
        1, 1, 1, -1, -1,
        1, 1, -1, 1, -1,
@@ -1091,7 +1093,7 @@ void AddCrossProductImpliedOrthantConstraint(
     int col2 = (col1 + 1) % 3;
     // R(k, col2) = R(i, col0) * R(j, col1) - R(j, col0) * R(i, col1)
     // where (i, j, k) = (0, 1, 2), (1, 2, 0) or (2, 0, 1)
-    VectorDecisionVariable<5> var;
+    VectorDecisionVariable<A_cols> var;
     for (int i = 0; i < 3; ++i) {
       int j = (i + 1) % 3;
       int k = (j + 1) % 3;
@@ -1292,7 +1294,7 @@ AddRotationMatrixBilinearMcCormickMilpConstraints(
   // the sign of R(i, j). Namely
   // B[i][j](0) = 0 => R(i, j) <= 0
   // B[i][j](0) = 1 => R(i, j) >= 0
-  // We can thus impose constraint on B[i][j](0).
+  // We can thus impose constraints on B[i][j](0).
   if ((num_intervals_per_half_axis & (num_intervals_per_half_axis - 1)) == 0) {
     // num_intervals_per_half_axis is a power of 2.
 
