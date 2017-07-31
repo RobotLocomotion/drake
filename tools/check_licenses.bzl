@@ -1,5 +1,7 @@
 # -*- python -*-
 
+load("@drake//tools:install.bzl", "InstallInfo")
+
 # List of exact file names of license files
 LICENSE_LITERALS = [
     "BSD-LICENSE",  # ccd
@@ -32,12 +34,12 @@ def _is_license_file(filename):
 def _check_licenses_for_label(label):
     # Don't check empty installs (can happen if an install is a dummy due to
     # some platforms relying on a package already being installed).
-    if not label.install_actions:
+    if not label[InstallInfo].install_actions:
         return []
 
     # Look for file(s) that appear to be license(s) in the install actions.
     has_license = False
-    for a in label.install_actions:
+    for a in label[InstallInfo].install_actions:
         if _is_license_file(a.src.basename):
             has_license = True
 
@@ -62,7 +64,7 @@ def _check_licenses_impl(ctx):
 
 _check_licenses = rule(
     attrs = {
-        "install_labels": attr.label_list(providers = ["install_actions"]),
+        "install_labels": attr.label_list(providers = [InstallInfo]),
     },
     implementation = _check_licenses_impl,
 )
