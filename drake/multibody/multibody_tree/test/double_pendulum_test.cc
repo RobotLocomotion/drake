@@ -20,10 +20,6 @@ namespace {
 
 const double kEpsilon = std::numeric_limits<double>::epsilon();
 
-#include <iostream>
-#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
-#define PRINT_VARn(x) std::cout <<  #x ":\n" << x << std::endl;
-
 using benchmarks::Acrobot;
 using Eigen::AngleAxisd;
 using Eigen::Isometry3d;
@@ -482,11 +478,16 @@ class PendulumKinematicTests : public PendulumTests {
     Vector2d v = Vector2d::Zero();
     Vector2d vdot;
 
+    Matrix2d H;
+
     vdot = Vector2d::UnitX(); // First column of H(q).
-    VerifyInverseDynamics(q, v, vdot);
+    H.col(0) = VerifyInverseDynamics(q, v, vdot);
 
     vdot = Vector2d::UnitY(); // Second column of H(q).
-    VerifyInverseDynamics(q, v, vdot);
+    H.col(1) = VerifyInverseDynamics(q, v, vdot);
+
+    Matrix2d H_expected = acrobot_benchmark_.CalcMassMatrix(elbow_angle);
+    EXPECT_TRUE(H.isApprox(H_expected, 5 * kEpsilon));
   }
 
   void VerifyCoriolisTermViaInverseDynamics(
@@ -530,17 +531,13 @@ class PendulumKinematicTests : public PendulumTests {
   // method.
   // The solution is verified against the independent benchmark from
   // drake::multibody::benchmarks::Acrobot.
-  void VerifyInverseDynamics(
+  Vector2d VerifyInverseDynamics(
       const Eigen::Ref<const VectorXd>& q,
       const Eigen::Ref<const VectorXd>& v,
       const Eigen::Ref<const VectorXd>& vdot) const {
     DRAKE_DEMAND(q.size() == model_->get_num_positions());
     DRAKE_DEMAND(v.size() == model_->get_num_velocities());
     DRAKE_DEMAND(vdot.size() == model_->get_num_velocities());
-
-    PRINT_VAR(q.transpose());
-    PRINT_VAR(v.transpose());
-    PRINT_VAR(vdot.transpose());
 
     // This is the minimum factor of the machine precision within which these
     // tests pass. There is an additional factor of two (2) to be on the safe
@@ -584,13 +581,8 @@ class PendulumKinematicTests : public PendulumTests {
     Matrix2d H = acrobot_benchmark_.CalcMassMatrix(elbow_angle);
     Vector2d tau_expected = H * vdot + C_expected;
 
-    //PRINT_VAR((H * vdot).transpose());
-    //PRINT_VAR(C_expected.transpose());
-
-    PRINT_VAR(tau.transpose());
-    PRINT_VAR(tau_expected.transpose());
-
     EXPECT_TRUE(tau.isApprox(tau_expected, kTolerance));
+    return tau;
   }
 };
 
@@ -797,19 +789,10 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
 }
 
 TEST_F(PendulumKinematicTests, InverseDynamics) {
-#if 0
-  VerifyMassMatrixViaInverseDynamics(0.0, 0.0);
-  VerifyMassMatrixViaInverseDynamics(0.0, M_PI / 4.0);
-  VerifyMassMatrixViaInverseDynamics(0.0, M_PI / 2.0);
-
-  // For the double pendulum system it turns out that the mass matrix is only a
-  // function of the elbow angle, independent of the shoulder angle.
-  // Therefore H(q) = H(elbow_angle). We therefore run the same previous tests
-  // on a different shoulder angle.
-  VerifyMassMatrixViaInverseDynamics(M_PI / 3.0, 0.0);
-  VerifyMassMatrixViaInverseDynamics(M_PI / 3.0, M_PI / 4.0);
-  VerifyMassMatrixViaInverseDynamics(M_PI / 3.0, M_PI / 2.0);
-#endif
+  // ======================================================================
+  // Compute the bias term containing Coriolis and gyroscopic effects for a
+  // number of different pendulum configurations.
+  // This is computed using inverse dynamics with vdot = 0.
 
   // C(q, v) should be zero when elbow_angle = 0 independent of the shoulder
   // angle.
@@ -817,16 +800,32 @@ TEST_F(PendulumKinematicTests, InverseDynamics) {
   VerifyCoriolisTermViaInverseDynamics(M_PI / 3.0, 0.0);
 
   // Attempt a number of non-zero elbow angles.
+  VerifyCoriolisTermViaInverseDynamics(0.0, M_PI / 2.0);
   VerifyCoriolisTermViaInverseDynamics(0.0, M_PI / 3.0);
   VerifyCoriolisTermViaInverseDynamics(0.0, M_PI / 4.0);
-  VerifyCoriolisTermViaInverseDynamics(0.0, M_PI / 2.0);
 
   // Repeat previous tests but this time with different non-zero values of the
   // shoulder angle. Results should be independent of the shoulder angle for
   // this double pendulum system.
+  VerifyCoriolisTermViaInverseDynamics(M_PI / 3.0, M_PI / 2.0);
   VerifyCoriolisTermViaInverseDynamics(M_PI / 3.0, M_PI / 3.0);
   VerifyCoriolisTermViaInverseDynamics(M_PI / 3.0, M_PI / 4.0);
-  VerifyCoriolisTermViaInverseDynamics(M_PI / 3.0, M_PI / 2.0);
+
+  // ======================================================================
+  // Compute the mass matrix using the inverse dynamics method.
+  VerifyMassMatrixViaInverseDynamics(0.0, 0.0);
+  VerifyMassMatrixViaInverseDynamics(0.0, M_PI / 2.0);
+  VerifyMassMatrixViaInverseDynamics(0.0, M_PI / 3.0);
+  VerifyMassMatrixViaInverseDynamics(0.0, M_PI / 4.0);
+
+  // For the double pendulum system it turns out that the mass matrix is only a
+  // function of the elbow angle, independent of the shoulder angle.
+  // Therefore H(q) = H(elbow_angle). We therefore run the same previous tests
+  // with different shoulder angles to verify this is true.
+  VerifyMassMatrixViaInverseDynamics(M_PI / 3.0, 0.0);
+  VerifyMassMatrixViaInverseDynamics(M_PI / 3.0, M_PI / 2.0);
+  VerifyMassMatrixViaInverseDynamics(M_PI / 3.0, M_PI / 3.0);
+  VerifyMassMatrixViaInverseDynamics(M_PI / 3.0, M_PI / 4.0);
 }
 
 }  // namespace
