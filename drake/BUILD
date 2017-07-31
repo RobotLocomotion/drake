@@ -4,6 +4,7 @@
 package(default_visibility = ["//visibility:public"])
 
 load("//tools:install.bzl", "install")
+load("//tools:lint.bzl", "add_lint_tests")
 load("//tools:transitive_hdrs.bzl", "transitive_hdrs_library")
 
 # Should include everything any consumer of Drake would ever need.
@@ -11,7 +12,8 @@ load("//tools:transitive_hdrs.bzl", "transitive_hdrs_library")
 # any new external dependencies to :external_licenses.
 
 # This is the *sorted* output of the following Bazel query:
-# bazel query 'kind("cc_library", visible("//drake:libdrake.so", "//drake/..."))
+# bazel query 'kind("cc_library",
+# visible("//drake:libdrake.so", "//drake/..."))
 # except("//drake/examples/...")
 # except(attr("testonly", "1", "//drake/..."))
 # except("//drake/lcmtypes/...")
@@ -56,10 +58,8 @@ _LIBDRAKE_COMPONENTS = [
     "//drake/common:eigen_autodiff_limits",
     "//drake/common:extract_double",
     "//drake/common:find_resource",
-    "//drake/common:functional_form",
     "//drake/common:is_approx_equal_abstol",
     "//drake/common:is_cloneable",
-    "//drake/common:monomial",
     "//drake/common:nice_type_name",
     "//drake/common:number_traits",
     "//drake/common:polynomial",
@@ -106,8 +106,7 @@ _LIBDRAKE_COMPONENTS = [
     "//drake:mosek_deps",
     "//drake/multibody:approximate_ik",
     "//drake/multibody/benchmarks/acrobot:acrobot",
-    "//drake/multibody/benchmarks/kuka_iiwa_robot:kuka_iiwa_robot",
-    "//drake/multibody/benchmarks/mass_damper_spring:mass_damper_spring_analytical_solution",
+    "//drake/multibody/benchmarks/mass_damper_spring:mass_damper_spring_analytical_solution",  # noqa
     "//drake/multibody/collision:bullet_collision",
     "//drake/multibody/collision:collision_api",
     "//drake/multibody/collision:fcl_collision",
@@ -215,7 +214,7 @@ _LIBDRAKE_COMPONENTS = [
     "//drake/systems/framework:output_port_value",
     "//drake/systems/framework:parameters",
     "//drake/systems/framework:single_output_vector_source",
-    "//drake/systems/framework:siso_vector_system",
+    "//drake/systems/framework:vector_system",
     "//drake/systems/framework:sparsity_matrix",
     "//drake/systems/framework:state",
     "//drake/systems/framework:system",
@@ -366,3 +365,5 @@ cc_library(
         ":vtk_deps",
     ],
 )
+
+add_lint_tests()

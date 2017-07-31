@@ -4,17 +4,19 @@
 load("//tools:cpplint.bzl", "cpplint")
 load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
 
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = [":__subpackages__"])
 
 drake_cc_library(
-    name = "kuka_iiwa_robot",
+    name = "kuka_iiwa_robot_library",
+    testonly = 1,
     srcs = [
-        "MGKukaIIwaRobot.cc",
-        "kuka_iiwa_robot.cc",
+        "test/MG_kuka_iiwa_robot.cc",
+        "test/MG_kuka_iiwa_robot_auto_generated.cc",
     ],
     hdrs = [
-        "MGKukaIIwaRobot.h",
-        "kuka_iiwa_robot.h",
+        "drake_kuka_iiwa_robot.h",
+        "test/MG_kuka_iiwa_robot.h",
+        "test/MG_kuka_iiwa_robot_auto_generated.h",
     ],
     deps = [
         "//drake/common:autodiff",
@@ -25,10 +27,22 @@ drake_cc_library(
 # === test/ ===
 
 drake_cc_googletest(
-    name = "kuka_iiwa_robot_test",
-    size = "medium",
+    name = "MG_kuka_iiwa_robot_test",
+    size = "small",
     deps = [
-        ":kuka_iiwa_robot",
+        ":kuka_iiwa_robot_library",
+    ],
+)
+
+drake_cc_googletest(
+    name = "kuka_iiwa_robot_kinematics_test",
+    size = "small",
+    deps = [
+        ":kuka_iiwa_robot_library",
+        "//drake/math:geometric_transform",
+        "//drake/multibody/multibody_tree",
+        "//drake/multibody/multibody_tree:bodies_and_frames",
+        "//drake/multibody/multibody_tree:mobilizers_and_body_nodes",
     ],
 )
 

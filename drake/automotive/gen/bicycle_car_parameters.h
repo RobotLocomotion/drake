@@ -44,12 +44,12 @@ class BicycleCarParameters : public systems::BasicVector<T> {
   typedef BicycleCarParametersIndices K;
 
   /// Default constructor.  Sets all rows to their default value:
-  /// @arg @c mass defaults to 2278.0 in units of kg.
-  /// @arg @c lf defaults to 1.292 in units of m.
-  /// @arg @c lr defaults to 1.515 in units of m.
-  /// @arg @c Iz defaults to 3210.0 in units of kg m^2.
-  /// @arg @c Cf defaults to 10.8e4 in units of N / rad.
-  /// @arg @c Cr defaults to 10.8e4 in units of N / rad.
+  /// @arg @c mass defaults to 2278.0 kg.
+  /// @arg @c lf defaults to 1.292 m.
+  /// @arg @c lr defaults to 1.515 m.
+  /// @arg @c Iz defaults to 3210.0 kg m^2.
+  /// @arg @c Cf defaults to 10.8e4 N / rad.
+  /// @arg @c Cr defaults to 10.8e4 N / rad.
   BicycleCarParameters() : systems::BasicVector<T>(K::kNumCoordinates) {
     this->set_mass(2278.0);
     this->set_lf(1.292);

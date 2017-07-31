@@ -216,10 +216,10 @@ pair is filtered.  The cost of the comparison is constant, but related to the
 bitmask width.
 
 The width is defined at compile time and is defined by
-DrakeCollision::kMaxNumCollisionFilterGroups. The fixed width is a performance
-optimization but it means that there is a finite number of collision filter
-groups available in the system. Each RigidBodyTree instance has its _own_
-space of collision filter group identifiers.
+drake::multibody::collision::kMaxNumCollisionFilterGroups. The fixed width is a
+performance optimization but it means that there is a finite number of
+collision filter groups available in the system. Each RigidBodyTree instance
+has its _own_ space of collision filter group identifiers.
 <!-- TODO(SeanCurtis-TRI): This will have to be handled carefully in Geometry
  World. Each source of collision elements will get its own space of filters.
  Sources will need to be differentiated. -->

@@ -13,6 +13,7 @@
 
 namespace drake {
 namespace systems {
+namespace controllers {
 namespace {
 
 // This is the parent class of the two test plants defined below.
@@ -308,5 +309,6 @@ TEST_F(ConnectControllerTest, SaturatingController) {
 }
 
 }  // namespace
+}  // namespace controllers
 }  // namespace systems
 }  // namespace drake

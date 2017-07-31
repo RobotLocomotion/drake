@@ -20,7 +20,9 @@
 template <typename T>
 class RigidBody;
 
-namespace DrakeCollision {
+namespace drake {
+namespace multibody {
+namespace collision {
 typedef uintptr_t ElementId;
 
 /**
@@ -183,15 +185,17 @@ class Element : public DrakeShapes::Element {
   // A bitmask that determines the collision groups that this element is part
   // of. If the i-th bit is set this rigid body belongs to the i-th collision
   // group. An element can belong to multiple collision groups.
-  DrakeCollision::bitmask collision_filter_group_{kDefaultGroup};
+  drake::multibody::collision::bitmask collision_filter_group_{kDefaultGroup};
 
   // A bitmask that determines which collision groups this element can *not*
   // collide with. Thus, if the i-th bit is set this element is not checked
   // for collisions with elements in the i-th group.
-  DrakeCollision::bitmask collision_filter_ignores_{kNoneMask};
+  drake::multibody::collision::bitmask collision_filter_ignores_{kNoneMask};
 
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-}  // namespace DrakeCollision
+}  // namespace collision
+}  // namespace multibody
+}  // namespace drake

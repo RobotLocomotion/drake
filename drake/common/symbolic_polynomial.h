@@ -1,5 +1,10 @@
 #pragma once
 
+#ifndef DRAKE_COMMON_SYMBOLIC_HEADER
+// TODO(soonho-tri): Change to #error, when #6613 merged.
+#warning Do not directly include this file. Include "drake/common/symbolic.h".
+#endif
+
 #include <ostream>
 #include <unordered_map>
 
@@ -7,10 +12,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/hash.h"
-#include "drake/common/monomial.h"
-#include "drake/common/symbolic_expression.h"
-#include "drake/common/symbolic_formula.h"
-#include "drake/common/symbolic_variables.h"
+#include "drake/common/symbolic.h"
 
 namespace drake {
 namespace symbolic {
@@ -72,6 +74,31 @@ class Polynomial {
   /// Returns an equivalent symbolic expression of this polynomial.
   Expression ToExpression() const;
 
+  /** Differentiates this polynomial with respect to the variable @p x. Note
+   * that a variable @p x can be either a decision variable or an indeterminate.
+   */
+  Polynomial Differentiate(const Variable& x) const;
+
+  /// Computes the Jacobian matrix J of the polynomial with respect to
+  /// @p vars. J(0,i) contains ∂f/∂vars(i).
+  template <typename Derived>
+  Eigen::Matrix<Polynomial, 1, Derived::RowsAtCompileTime> Jacobian(
+      const Eigen::MatrixBase<Derived>& vars) const {
+    static_assert(std::is_same<typename Derived::Scalar, Variable>::value &&
+                      (Derived::ColsAtCompileTime == 1),
+                  "The argument of Polynomial::Jacobian should be a vector of "
+                  "symbolic variables.");
+    const VectorX<Expression>::Index n{vars.size()};
+    Eigen::Matrix<Polynomial, 1, Derived::RowsAtCompileTime> J{1, n};
+    for (VectorX<Expression>::Index i = 0; i < n; ++i) {
+      J(0, i) = Differentiate(vars(i));
+    }
+    return J;
+  }
+
+  /// Adds @p coeff * @p m to this polynomial.
+  Polynomial& AddProduct(const Expression& coeff, const Monomial& m);
+
   Polynomial& operator+=(const Polynomial& p);
   Polynomial& operator+=(const Monomial& m);
   Polynomial& operator+=(double c);
@@ -92,8 +119,6 @@ class Polynomial {
   Formula operator==(Polynomial p) const;
 
  private:
-  // Adds (coeff * m) to this polynomial.
-  Polynomial& Add(const Expression& coeff, const Monomial& m);
   // Throws std::runtime_error if there is a variable appeared in both of
   // decision_variables() and indeterminates().
   void CheckInvariant() const;
@@ -125,7 +150,8 @@ Polynomial operator*(Polynomial p1, const Polynomial& p2);
 Polynomial operator*(Polynomial p, const Monomial& m);
 Polynomial operator*(Polynomial p, double c);
 Polynomial operator*(const Monomial& m, Polynomial p);
-// Note that `Monomial * Monomial -> Monomial` is provided in Monomial.h file.
+// Note that `Monomial * Monomial -> Monomial` is provided in
+// symbolic_monomial.h file.
 Polynomial operator*(const Monomial& m, double c);
 Polynomial operator*(double c, Polynomial p);
 Polynomial operator*(double c, const Monomial& m);

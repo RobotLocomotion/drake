@@ -14,7 +14,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/number_traits.h"
-#include "drake/common/symbolic_expression.h"
+#include "drake/common/symbolic.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/diagram_context.h"
@@ -188,12 +188,12 @@ class DiagramDiscreteVariables : public DiscreteValues<T> {
 
   ~DiagramDiscreteVariables() override {}
 
-  int num_subdifferences() const {
+  int num_subdiscretes() const {
     return static_cast<int>(subdiscretes_.size());
   }
 
-  DiscreteValues<T>* get_mutable_subdifference(int index) {
-    DRAKE_DEMAND(index >= 0 && index < num_subdifferences());
+  DiscreteValues<T>* get_mutable_subdiscrete(int index) {
+    DRAKE_DEMAND(index >= 0 && index < num_subdiscretes());
     return subdiscretes_[index].get();
   }
 
@@ -380,12 +380,12 @@ class Diagram : public System<T>,
   /// DiagramDiscreteVariables.
   std::unique_ptr<DiscreteValues<T>> AllocateDiscreteVariables()
       const override {
-    std::vector<std::unique_ptr<DiscreteValues<T>>> sub_differences;
+    std::vector<std::unique_ptr<DiscreteValues<T>>> sub_discretes;
     for (const auto& system : registered_systems_) {
-      sub_differences.push_back(system->AllocateDiscreteVariables());
+      sub_discretes.push_back(system->AllocateDiscreteVariables());
     }
     return std::unique_ptr<DiscreteValues<T>>(
-        new internal::DiagramDiscreteVariables<T>(std::move(sub_differences)));
+        new internal::DiagramDiscreteVariables<T>(std::move(sub_discretes)));
   }
 
   void DoCalcTimeDerivatives(const Context<T>& context,
@@ -1043,15 +1043,15 @@ class Diagram : public System<T>,
       DiscreteValues<T>* discrete_state) const final {
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context);
-    auto diagram_differences =
+    auto diagram_discrete =
         dynamic_cast<internal::DiagramDiscreteVariables<T>*>(discrete_state);
-    DRAKE_DEMAND(diagram_differences);
+    DRAKE_DEMAND(diagram_discrete);
 
-    // As a baseline, initialize all the difference variables to their
+    // As a baseline, initialize all the discrete variables to their
     // current values.
     // TODO(siyuan): should have a API level CopyFrom for DiscreteValues.
-    for (int i = 0; i < diagram_differences->num_groups(); ++i) {
-      diagram_differences->get_mutable_vector(i)->set_value(
+    for (int i = 0; i < diagram_discrete->num_groups(); ++i) {
+      diagram_discrete->get_mutable_vector(i)->set_value(
           context.get_discrete_state(i)->get_value());
     }
 
@@ -1065,12 +1065,12 @@ class Diagram : public System<T>,
 
       if (subinfo.HasEvents()) {
         const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
-        DiscreteValues<T>* subdifference =
-            diagram_differences->get_mutable_subdifference(i);
-        DRAKE_DEMAND(subdifference != nullptr);
+        DiscreteValues<T>* subdiscrete =
+            diagram_discrete->get_mutable_subdiscrete(i);
+        DRAKE_DEMAND(subdiscrete != nullptr);
 
         registered_systems_[i]->CalcDiscreteVariableUpdates(subcontext, subinfo,
-            subdifference);
+                                                            subdiscrete);
       }
     }
   }

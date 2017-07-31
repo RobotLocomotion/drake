@@ -53,11 +53,9 @@ drake_cc_library(
         ":decision_variable",
         "//drake/common",
         "//drake/common:autodiff",
-        "//drake/common:monomial",
         "//drake/common:number_traits",
         "//drake/common:polynomial",
         "//drake/common:symbolic",
-        "//drake/common:symbolic_polynomial",
     ],
 )
 
@@ -70,7 +68,6 @@ drake_cc_library(
         ":constraint",
         ":symbolic_extraction",
         "//drake/common",
-        "//drake/common:monomial",
         "//drake/common:polynomial",
         "//drake/common:symbolic",
     ],
@@ -85,10 +82,8 @@ drake_cc_library(
         ":cost",
         ":symbolic_extraction",
         "//drake/common",
-        "//drake/common:monomial",
         "//drake/common:polynomial",
         "//drake/common:symbolic",
-        "//drake/common:symbolic_polynomial",
         "//drake/common:unused",
     ],
 )
@@ -156,20 +151,6 @@ drake_cc_library(
     ],
 )
 
-# Supported solvers:
-# - equality_constrained_qp_solver
-# - linear_system_solver
-# - moby_lcp_solver
-# - IPOPT
-# - MOSEK
-# - NLOPT
-# - SNOPT
-# - Gurobi (on Ubuntu only)
-
-# Unsupported solvers:
-# - dReal
-
-# TODO(jwnimmer-tri, david-german-tri): Support more solvers.
 drake_cc_library(
     name = "mathematical_program",
     srcs = [
@@ -196,11 +177,28 @@ drake_cc_library(
         ":symbolic_extraction",
         "//drake/common",
         "//drake/common:autodiff",
-        "//drake/common:monomial",
         "//drake/common:number_traits",
         "//drake/common:polynomial",
         "//drake/common:symbolic",
-        "//drake/common:symbolic_polynomial",
+    ],
+)
+
+drake_cc_library(
+    name = "bilinear_product_util",
+    srcs = ["bilinear_product_util.cc"],
+    hdrs = ["bilinear_product_util.h"],
+    deps = [
+        ":decision_variable",
+        "//drake/common:symbolic",
+    ],
+)
+
+drake_cc_library(
+    name = "integer_optimization_util",
+    srcs = ["integer_optimization_util.cc"],
+    hdrs = ["integer_optimization_util.h"],
+    deps = [
+        ":create_constraint",
     ],
 )
 
@@ -226,7 +224,9 @@ drake_cc_library(
         "rotation_constraint_internal.h",
     ],
     deps = [
+        ":bilinear_product_util",
         ":mathematical_program",
+        ":mixed_integer_optimization_util",
         "//drake/math:gradient",
     ],
 )
@@ -582,6 +582,14 @@ drake_cc_library(
 
 # === test/ ===
 drake_cc_googletest(
+    name = "bilinear_product_util_test",
+    deps = [
+        ":bilinear_product_util",
+        "//drake/common:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
     name = "binding_test",
     srcs = [
         "test/binding_test.cc",
@@ -678,6 +686,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "integer_optimization_util_test",
+    deps = [
+        ":integer_optimization_util",
+        ":mathematical_program",
+    ],
+)
+
+drake_cc_googletest(
     name = "ipopt_solver_test",
     srcs = [
         "test/ipopt_solver_test.cc",
@@ -727,7 +743,7 @@ drake_cc_googletest(
         ":mathematical_program_test_util",
         "//drake/common:eigen_matrix_compare",
         "//drake/common:is_dynamic_castable",
-        "//drake/common:symbolic_polynomial",
+        "//drake/common:symbolic",
         "//drake/common:symbolic_test_util",
     ],
 )
@@ -800,6 +816,17 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "rotation_constraint_internal_test",
+    tags = mosek_test_tags() + gurobi_test_tags() + ["no_tsan"],
+    deps = [
+        ":mathematical_program",
+        ":rotation_constraint",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/math:geometric_transform",
+    ],
+)
+
 drake_cc_binary(
     name = "plot_feasible_rotation_matrices",
     testonly = 1,
@@ -850,6 +877,14 @@ drake_cc_googletest(
     name = "solver_type_converter_test",
     deps = [
         ":solver_type_converter",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sos_constraint_test",
+    tags = mosek_test_tags(),
+    deps = [
+        ":mathematical_program",
     ],
 )
 

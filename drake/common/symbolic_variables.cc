@@ -1,5 +1,4 @@
-#include "drake/common/symbolic_variables.h"
-
+// NOLINTNEXTLINE(build/include): Its header file is included in symbolic.h.
 #include <algorithm>
 #include <functional>
 #include <iterator>
@@ -10,6 +9,7 @@
 #include <utility>
 
 #include "drake/common/hash.h"
+#include "drake/common/symbolic.h"
 
 using std::accumulate;
 using std::includes;

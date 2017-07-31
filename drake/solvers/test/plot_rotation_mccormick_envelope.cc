@@ -1,4 +1,4 @@
-/* clang-format off */
+/* clang-format off to disable clang-format-includes */
 #include "drake/solvers/test/rotation_constraint_visualization.h"
 /* clang-format on */
 

@@ -3,8 +3,8 @@
 #include <memory>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/symbolic_expression.h"
-#include "drake/systems/framework/siso_vector_system.h"
+#include "drake/common/symbolic.h"
+#include "drake/systems/framework/vector_system.h"
 
 namespace drake {
 namespace systems {
@@ -36,7 +36,7 @@ namespace systems {
 /// They are already available to link against in the containing library.
 /// @ingroup primitive_systems
 template <typename T>
-class PassThrough : public SisoVectorSystem<T> {
+class PassThrough : public VectorSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PassThrough)
 

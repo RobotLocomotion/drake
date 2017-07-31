@@ -1,5 +1,5 @@
 
-oldpath = addpath([getDrakePath(),'/examples/Acrobot']);
+oldpath = addpath([getDrakePath(),'/examples/acrobot']);
 p = AcrobotPlant();
 t0=0;
 u0=0;

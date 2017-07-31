@@ -1,15 +1,14 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load(
     "//tools:drake.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
 )
-load("//tools:python_lint.bzl", "python_lint")
 load("//tools:install.bzl", "install")
+load("//tools:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -99,12 +98,10 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "functional_form",
-    srcs = ["functional_form.cc"],
-    hdrs = ["functional_form.h"],
+    name = "hash",
+    hdrs = ["hash.h"],
     deps = [
         ":common",
-        ":dummy_value",
     ],
 )
 
@@ -123,33 +120,41 @@ drake_cc_library(
 
 drake_cc_library(
     name = "symbolic",
+    # We only expose `symbolic.h` to the users of symbolic target and hide the
+    # rest of the header files by adding them in `srcs` section.
     srcs = [
+        "symbolic.cc",
         "symbolic_environment.cc",
+        "symbolic_environment.h",
         "symbolic_expression.cc",
+        "symbolic_expression.h",
         "symbolic_expression_cell.cc",
         "symbolic_expression_cell.h",
-        "symbolic_expression_visitor.cc",
+        "symbolic_expression_visitor.h",
         "symbolic_formula.cc",
+        "symbolic_formula.h",
         "symbolic_formula_cell.cc",
         "symbolic_formula_cell.h",
-        "symbolic_formula_visitor.cc",
+        "symbolic_formula_visitor.h",
+        "symbolic_monomial.cc",
+        "symbolic_monomial.h",
+        "symbolic_monomial_util.cc",
+        "symbolic_monomial_util.h",
+        "symbolic_polynomial.cc",
+        "symbolic_polynomial.h",
         "symbolic_variable.cc",
+        "symbolic_variable.h",
         "symbolic_variables.cc",
+        "symbolic_variables.h",
     ],
     hdrs = [
-        "hash.h",
-        "symbolic_environment.h",
-        "symbolic_expression.h",
-        "symbolic_expression_visitor.h",
-        "symbolic_formula.h",
-        "symbolic_formula_visitor.h",
-        "symbolic_variable.h",
-        "symbolic_variables.h",
+        "symbolic.h",
     ],
     deps = [
         ":common",
         ":cond",
         ":dummy_value",
+        ":hash",
         ":number_traits",
         ":polynomial",
         "//drake/math:matrix_util",
@@ -231,37 +236,6 @@ drake_cc_library(
     name = "is_memcpy_movable",
     testonly = 1,
     hdrs = ["test/is_memcpy_movable.h"],
-)
-
-drake_cc_library(
-    name = "monomial",
-    srcs = [
-        "monomial.cc",
-        "monomial_util.cc",
-    ],
-    hdrs = [
-        "monomial.h",
-        "monomial_util.h",
-    ],
-    deps = [
-        ":common",
-        ":symbolic",
-    ],
-)
-
-drake_cc_library(
-    name = "symbolic_polynomial",
-    srcs = [
-        "symbolic_polynomial.cc",
-    ],
-    hdrs = [
-        "symbolic_polynomial.h",
-    ],
-    deps = [
-        ":common",
-        ":monomial",
-        ":symbolic",
-    ],
 )
 
 drake_cc_library(
@@ -539,6 +513,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "eigen_types_test",
+    deps = [
+        ":common",
+        ":nice_type_name",
+    ],
+)
+
+drake_cc_googletest(
     name = "extract_double_test",
     deps = [
         ":common",
@@ -557,14 +539,6 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "functional_form_test",
-    deps = [
-        ":common",
-        ":functional_form",
-    ],
-)
-
-drake_cc_googletest(
     name = "is_approx_equal_abstol_test",
     deps = [
         ":common",
@@ -573,10 +547,9 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "monomial_test",
+    name = "symbolic_monomial_test",
     deps = [
         ":common",
-        ":monomial",
         ":symbolic",
         ":symbolic_test_util",
     ],
@@ -692,6 +665,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "symbolic_expression_transform_test",
+    deps = [
+        ":common",
+        ":symbolic",
+        "//drake/math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
     name = "symbolic_mixing_scalar_types_test",
     deps = [
         ":common",
@@ -704,7 +686,7 @@ drake_cc_googletest(
     # Test size increased to not timeout when run with Valgrind.
     size = "medium",
     deps = [
-        ":symbolic_polynomial",
+        ":symbolic",
         ":symbolic_test_util",
     ],
 )
@@ -713,7 +695,7 @@ drake_cc_googletest(
     name = "symbolic_polynomial_matrix_test",
     deps = [
         ":common",
-        ":symbolic_polynomial",
+        ":symbolic",
         ":symbolic_test_util",
     ],
 )
@@ -814,7 +796,7 @@ py_test(
     data = [
         "test/resource_tool_test_data.txt",
         ":resource_tool",
-        "//drake/examples/Pendulum:models",
+        "//drake/examples/pendulum:models",
     ],
 )
 
@@ -833,6 +815,4 @@ py_test(
 # - drake_deprecated_test in fancy variants
 # - cpplint_wrapper_test.py
 
-cpplint()
-
-python_lint()
+add_lint_tests()

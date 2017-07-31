@@ -1,4 +1,4 @@
-/* clang-format off */
+/* clang-format off to disable clang-format-includes */
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 /* clang-format on */
 
@@ -95,8 +95,8 @@ TEST_F(ContactResultTest, SingleCollision) {
   const auto info = contact_results.get_contact_info(0);
 
   // Confirms that the proper bodies are in contact.
-  DrakeCollision::ElementId e1 = info.get_element_id_1();
-  DrakeCollision::ElementId e2 = info.get_element_id_2();
+  drake::multibody::collision::ElementId e1 = info.get_element_id_1();
+  drake::multibody::collision::ElementId e2 = info.get_element_id_2();
   const RigidBody<double>* b1 = GetTree().FindBody(e1);
   const RigidBody<double>* b2 = GetTree().FindBody(e2);
   ASSERT_NE(e1, e2);

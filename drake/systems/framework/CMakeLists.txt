@@ -23,12 +23,13 @@ set(sources
   output_port_value.cc
   parameters.cc
   single_output_vector_source.cc
-  siso_vector_system.cc
+  vector_system.cc
   sparsity_matrix.cc
   state.cc
   subvector.cc
   supervector.cc
   system.cc
+  system_scalar_converter.cc
   value.cc
   vector_base.cc
   witness_function.cc
@@ -67,17 +68,20 @@ set(installed_headers
   output_port_listener_interface.h
   output_port_value.h
   parameters.h
+  scalar_conversion_traits.h
   single_output_vector_source.h
-  siso_vector_system.h
   sparsity_matrix.h
   state.h
   subvector.h
   supervector.h
   system.h
   system_common.h
+  system_scalar_converter.h
+  system_type_tag.h
   value.h
   value_checker.h
   vector_base.h
+  vector_system.h
   witness_function.h
   )
 

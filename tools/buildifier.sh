@@ -80,8 +80,8 @@ fi
 
 if [[ -z $format_all ]]; then
   echo "Running buildifier with passed arguments..."
-  echo "$buildifier $@"
-  "$buildifier" "$@"
+  echo "$buildifier -add_tables=$tables $@"
+  "$buildifier" -add_tables="$tables" "$@"
 else
   echo "Applying buildifier to everything! This may take a moment..."
   find "$workspace" \

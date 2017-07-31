@@ -24,9 +24,7 @@
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/polynomial.h"
-#include "drake/common/symbolic_expression.h"
-#include "drake/common/symbolic_formula.h"
-#include "drake/common/symbolic_variable.h"
+#include "drake/common/symbolic.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/cost.h"
@@ -90,7 +88,7 @@ namespace solvers {
  *    <td align="center">&diams;</td>
  *    <td align="center">&diams;</td>
  *    <td align="center">&diams;</td>
- *    <td></td>
+ *    <td align="center">&diams;</td>
  * </tr>
  * </table>
  *
@@ -496,6 +494,28 @@ class MathematicalProgram {
     }
     return NewSymmetricVariables<rows>(VarType::CONTINUOUS, names);
   }
+
+  /**
+   * Returns a free polynomial in a monomial basis over @p indeterminates of a
+   * given @p degree. It uses @p coeff_name to make new decision variables and
+   * use them as coefficients. For example, `NewFreePolynomial({x₀, x₁}, 2)`
+   * returns a₀x₁² + a₁x₀x₁ + a₂x₀² + a₃x₁ + a₄x₀ + a₅.
+   */
+  symbolic::Polynomial NewFreePolynomial(
+      const symbolic::Variables& indeterminates, int degree,
+      const std::string& coeff_name = "a");
+
+  /** Returns a pair of a SOS polynomial p = xᵀQx of degree @p degree and a PSD
+   * constraint for the coefficients matrix Q, where x is a monomial basis over
+   * @p indeterminates of degree `@p degree / 2`. For example,
+   * `NewSosPolynomial({x}, 4)` returns a pair of a polynomial p = Q₍₀,₀₎x⁴ +
+   * 2Q₍₁,₀₎ x³ + (2Q₍₂,₀₎ + Q₍₁,₁₎)x² + 2Q₍₂,₁₎x + Q₍₂,₂₎ and a PSD constraint
+   * over Q.
+   *
+   * @throws std::runtime_error if @p degree is not a positive even integer.
+   */
+  std::pair<symbolic::Polynomial, Binding<PositiveSemidefiniteConstraint>>
+  NewSosPolynomial(const symbolic::Variables& indeterminates, int degree);
 
   /**
    * Adds indeterminates, appending them to an internal vector of any
@@ -1048,7 +1068,7 @@ class MathematicalProgram {
    */
   template <typename Derived>
   typename std::enable_if<
-      detail::is_eigen_scalar_same<Derived, symbolic::Formula>::value,
+      is_eigen_scalar_same<Derived, symbolic::Formula>::value,
       Binding<LinearConstraint>>::type
   AddLinearConstraint(const Eigen::ArrayBase<Derived>& formulas) {
     return AddConstraint(internal::ParseLinearConstraint(formulas));
@@ -1104,7 +1124,7 @@ class MathematicalProgram {
    */
   template <typename DerivedV, typename DerivedB>
   typename std::enable_if<
-      detail::is_eigen_vector_expression_double_pair<DerivedV, DerivedB>::value,
+      is_eigen_vector_expression_double_pair<DerivedV, DerivedB>::value,
       Binding<LinearEqualityConstraint>>::type
   AddLinearEqualityConstraint(const Eigen::MatrixBase<DerivedV>& v,
                               const Eigen::MatrixBase<DerivedB>& b) {
@@ -1132,7 +1152,7 @@ class MathematicalProgram {
    */
   template <typename DerivedV, typename DerivedB>
   typename std::enable_if<
-      detail::is_eigen_matrix_expression_double_pair<DerivedV, DerivedB>::value,
+      is_eigen_nonvector_expression_double_pair<DerivedV, DerivedB>::value,
       Binding<LinearEqualityConstraint>>::type
   AddLinearEqualityConstraint(const Eigen::MatrixBase<DerivedV>& V,
                               const Eigen::MatrixBase<DerivedB>& B,
@@ -1748,6 +1768,30 @@ class MathematicalProgram {
       const std::vector<Eigen::Ref<const Eigen::MatrixXd>>& F,
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
 
+  /**
+   * Adds constraints that a given polynomial @p p is a sums-of-squares (SOS),
+   * that is, @p p can be decomposed into `xᵀQx`. It returns a pair of
+   * constraint bindings expressing:
+   *  - The coefficients matrix Q is PSD (positive semidefinite).
+   *  - The coefficients matching conditions in linear equality constraint.
+   */
+  std::pair<Binding<PositiveSemidefiniteConstraint>,
+            Binding<LinearEqualityConstraint>>
+  AddSosConstraint(const symbolic::Polynomial& p);
+
+  /**
+   * Adds constraints that a given symbolic expression @p e is a sums-of-squares
+   * (SOS), that is, @p e can be decomposed into `xTQx`. Note that it decomposes
+   * @p e into a polynomial with respect to `indeterminates()` in this
+   * mathematical program. It returns a pair of
+   * constraint bindings expressing:
+   *  - The coefficients matrix Q is PSD (positive semidefinite).
+   *  - The coefficients matching conditions in linear equality constraint.
+   */
+  std::pair<Binding<PositiveSemidefiniteConstraint>,
+            Binding<LinearEqualityConstraint>>
+  AddSosConstraint(const symbolic::Expression& e);
+
   // template <typename FunctionType>
   // void AddCost(std::function..);
   // void AddLinearCost(const Eigen::MatrixBase<Derived>& c, const vector<const
@@ -1908,6 +1952,23 @@ class MathematicalProgram {
   double GetOptimalCost() const { return optimal_cost_; }
 
   void SetOptimalCost(double optimal_cost) { optimal_cost_ = optimal_cost; }
+
+  /**
+   * Getter for lower bound on optimal cost. Defaults to -Infinity
+   * if a lower bound has not been found.
+   */
+  double GetLowerBoundCost() const { return lower_bound_cost_; }
+  /**
+   * Setter for lower bound on optimal cost. This function is meant
+   * to be called by the appropriate solver, not by the user. It sets
+   * the lower bound of the cost found by the solver, during the optimization
+   * process. For example, for mixed-integer optimization, the branch-and-bound
+   * algorithm can find the lower bound of the optimal cost, during the
+   * branching process.
+   */
+  void SetLowerBoundCost(double lower_bound_cost) {
+    lower_bound_cost_ = lower_bound_cost;
+  }
 
   /**
    * Getter for all generic costs.
@@ -2171,6 +2232,9 @@ class MathematicalProgram {
   std::shared_ptr<SolverData> solver_data_;
   optional<SolverId> solver_id_;
   double optimal_cost_{};
+  // The lower bound of the objective found by the solver, during the
+  // optimization process.
+  double lower_bound_cost_{};
   std::map<SolverId, std::map<std::string, double>> solver_options_double_;
   std::map<SolverId, std::map<std::string, int>> solver_options_int_;
   std::map<SolverId, std::map<std::string, std::string>> solver_options_str_;

@@ -17,6 +17,7 @@
 #include "gurobi_c++.h"
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/text_logging.h"
 #include "drake/math/eigen_sparse_triplet.h"
 #include "drake/solvers/mathematical_program.h"
 
@@ -25,6 +26,146 @@
 namespace drake {
 namespace solvers {
 namespace {
+
+// Information to be passed through a Gurobi C callback to
+// grant it information about its problem (the host
+// MathematicalProgram prog, and which decision variables
+// are not represented in prog), and what user functions
+// are present for handling the callback.
+// TODO(gizatt) This struct can be replaced with a ptr to
+// the GurobiSolver class (or the callback can shell to a
+// method on that class) once the above TODO(hongkai.dai) is
+// completed. It might be able to be further reduced if
+// GurobiSolver subclasses GRBCallback in the Gurobi C++ API.
+struct GurobiCallbackInformation {
+  MathematicalProgram* prog{};
+  std::vector<bool> is_new_variable;
+  // Used in callbacks to store raw Gurobi variable values.
+  std::vector<double> solver_sol_vector;
+  // Used in callbacks to store variable values that appear
+  // in the MathematicalProgram (which are a subset of the
+  // Gurobi variable values).
+  Eigen::VectorXd prog_sol_vector;
+  GurobiSolver::MipNodeCallbackFunction mip_node_callback;
+  GurobiSolver::MipSolCallbackFunction mip_sol_callback;
+};
+
+// Utility that, given a raw Gurobi solution vector, a container
+// in which to populate the Mathematical Program solution vector,
+// and a mapping of which elements should be accepted from the Gurobi
+// solution vector, sets a MathematicalProgram's solution to the
+// Gurobi solution.
+void SetProgramSolutionVector(const std::vector<bool>& is_new_variable,
+                              const std::vector<double>& solver_sol_vector,
+                              Eigen::VectorXd* prog_sol_vector,
+                              MathematicalProgram* prog) {
+  int k = 0;
+  for (size_t i = 0; i < is_new_variable.size(); ++i) {
+    if (!is_new_variable[i]) {
+      (*prog_sol_vector)(k) = solver_sol_vector[i];
+      k++;
+    }
+  }
+  prog->SetDecisionVariableValues(*prog_sol_vector);
+}
+
+// Utility to extract Gurobi solve status information into
+// a struct to communicate to user callbacks.
+GurobiSolver::SolveStatusInfo GetGurobiSolveStatus(void* cbdata, int where) {
+  GurobiSolver::SolveStatusInfo solve_status;
+  GRBcbget(cbdata, where, GRB_CB_RUNTIME, &(solve_status.reported_runtime));
+  solve_status.current_objective = -1.0;
+  GRBcbget(cbdata, where, GRB_CB_MIPNODE_OBJBST,
+           &(solve_status.best_objective));
+  GRBcbget(cbdata, where, GRB_CB_MIPNODE_OBJBND, &(solve_status.best_bound));
+  GRBcbget(cbdata, where, GRB_CB_MIPNODE_SOLCNT,
+           &(solve_status.feasible_solutions_count));
+  double explored_node_count_double;
+  GRBcbget(cbdata, where, GRB_CB_MIPNODE_NODCNT, &explored_node_count_double);
+  solve_status.explored_node_count = explored_node_count_double;
+  return solve_status;
+}
+
+int gurobi_callback(GRBmodel* model, void* cbdata, int where, void* usrdata) {
+  GurobiCallbackInformation* callback_info =
+      reinterpret_cast<GurobiCallbackInformation*>(usrdata);
+
+  if (where == GRB_CB_POLLING) {
+  } else if (where == GRB_CB_PRESOLVE) {
+  } else if (where == GRB_CB_SIMPLEX) {
+  } else if (where == GRB_CB_MIP) {
+  } else if (where == GRB_CB_MIPSOL &&
+             callback_info->mip_sol_callback != nullptr) {
+    // Extract variable values from Gurobi, and set the current
+    // solution of the MathematicalProgram to these values.
+    auto error = GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOL,
+                          callback_info->solver_sol_vector.data());
+    if (error) {
+      drake::log()->error("GRB error {} in MIPSol callback cbget: {}\n", error,
+                          GRBgeterrormsg(GRBgetenv(model)));
+      return 0;
+    }
+    SetProgramSolutionVector(
+        callback_info->is_new_variable, callback_info->solver_sol_vector,
+        &(callback_info->prog_sol_vector), callback_info->prog);
+
+    auto solve_status = GetGurobiSolveStatus(cbdata, where);
+
+    callback_info->mip_sol_callback(*(callback_info->prog), solve_status);
+
+  } else if (where == GRB_CB_MIPNODE &&
+             callback_info->mip_node_callback != nullptr) {
+    int sol_status;
+    auto error = GRBcbget(cbdata, where, GRB_CB_MIPNODE_STATUS, &sol_status);
+    if (error) {
+      drake::log()->error(
+          "GRB error {} in MIPNode callback getting sol status: {}\n", error,
+          GRBgeterrormsg(GRBgetenv(model)));
+      return 0;
+    } else if (sol_status == GRB_OPTIMAL) {
+      // Extract variable values from Gurobi, and set the current
+      // solution of the MathematicalProgram to these values.
+      auto error = GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOL,
+                            callback_info->solver_sol_vector.data());
+      if (error) {
+        drake::log()->error("GRB error {} in MIPSol callback cbget: {}\n",
+                            error, GRBgeterrormsg(GRBgetenv(model)));
+        return 0;
+      }
+      SetProgramSolutionVector(
+          callback_info->is_new_variable, callback_info->solver_sol_vector,
+          &(callback_info->prog_sol_vector), callback_info->prog);
+
+      auto solve_status = GetGurobiSolveStatus(cbdata, where);
+
+      Eigen::VectorXd vals;
+      VectorXDecisionVariable vars;
+      callback_info->mip_node_callback(*(callback_info->prog), solve_status,
+                                       &vals, &vars);
+
+      // The callback may return an assignment of some number of variables
+      // as a new heuristic solution seed. If so, feed those back to Gurobi.
+      if (vals.size() > 0) {
+        std::vector<double> new_sol(callback_info->prog->num_vars(),
+                                    GRB_UNDEFINED);
+        for (int i = 0; i < vals.size(); i++) {
+          double val = vals[i];
+          int k = callback_info->prog->FindDecisionVariableIndex(vars[i]);
+          new_sol[k] = val;
+        }
+        double objective_solution;
+        error = GRBcbsolution(cbdata, new_sol.data(), &objective_solution);
+        if (error) {
+          drake::log()->error("GRB error {} in injection: {}\n", error,
+                              GRBgeterrormsg(GRBgetenv(model)));
+        }
+      }
+    }
+  } else if (where == GRB_CB_BARRIER) {
+  } else if (where == GRB_CB_MESSAGE) {
+  }
+  return 0;
+}
 
 // Checks if the number of variables in the Gurobi model is as expected. This
 // operation can be EXPENSIVE, since it requires calling GRBupdatemodel
@@ -236,8 +377,7 @@ int AddSecondOrderConeConstraints(
  * Add quadratic or linear costs to the optimization problem.
  */
 int AddCosts(GRBmodel* model, double* pconstant_cost,
-             const MathematicalProgram& prog,
-             double sparseness_threshold) {
+             const MathematicalProgram& prog, double sparseness_threshold) {
   // Aggregates the quadratic costs and linear costs in the form
   // 0.5 * x' * Q_all * x + linear_term' * x.
   using std::abs;
@@ -489,6 +629,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
                            std::numeric_limits<double>::infinity());
 
   std::vector<char> gurobi_var_type(num_prog_vars);
+  bool is_mip{false};
   for (int i = 0; i < num_prog_vars; ++i) {
     switch (prog.decision_variable(i).get_type()) {
       case MathematicalProgram::VarType::CONTINUOUS:
@@ -496,9 +637,11 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
         break;
       case MathematicalProgram::VarType::BINARY:
         gurobi_var_type[i] = GRB_BINARY;
+        is_mip = true;
         break;
       case MathematicalProgram::VarType::INTEGER:
         gurobi_var_type[i] = GRB_INTEGER;
+        is_mip = true;
       case MathematicalProgram::VarType::BOOLEAN:
         throw std::runtime_error(
             "Boolean variables should not be used with Gurobi solver.");
@@ -588,10 +731,28 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
 
   for (int i = 0; i < static_cast<int>(prog.num_vars()); ++i) {
     if (!std::isnan(prog.initial_guess()(i))) {
-      error = GRBsetdblattrelement(model, "Start",
-                                   i, prog.initial_guess()(i));
+      error = GRBsetdblattrelement(model, "Start", i, prog.initial_guess()(i));
       DRAKE_DEMAND(!error);
     }
+  }
+
+  GRBupdatemodel(model);
+
+  // If we have been supplied a callback,
+  // register it with Gurobi.
+  // We initialize callback_info outside of the if() scope
+  // so that it persists until after GRBoptimize() has been
+  // called and completed. We need this struct to survive
+  // throughout the solve process.
+  GurobiCallbackInformation callback_info;
+  if (mip_node_callback_ != nullptr || mip_sol_callback_ != nullptr) {
+    callback_info.prog = &prog;
+    callback_info.is_new_variable = is_new_variable;
+    callback_info.solver_sol_vector.resize(is_new_variable.size());
+    callback_info.prog_sol_vector.resize(num_prog_vars);
+    callback_info.mip_node_callback = mip_node_callback_;
+    callback_info.mip_sol_callback = mip_sol_callback_;
+    GRBsetcallbackfunc(model, &gurobi_callback, &callback_info);
   }
 
   error = GRBoptimize(model);
@@ -602,23 +763,24 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   // TODO(naveenoid) : Properly handle gurobi specific error.
   // message.
   if (error) {
-    // TODO(naveenoid) : log error message using GRBgeterrormsg(env).
     result = SolutionResult::kInvalidInput;
+    drake::log()->info("Gurobi returns code {}, with message \"{}\".\n", error,
+                       GRBgeterrormsg(env));
   } else {
     int optimstatus = 0;
     GRBgetintattr(model, GRB_INT_ATTR_STATUS, &optimstatus);
 
     if (optimstatus != GRB_OPTIMAL && optimstatus != GRB_SUBOPTIMAL) {
       switch (optimstatus) {
-        case GRB_INF_OR_UNBD : {
+        case GRB_INF_OR_UNBD: {
           result = SolutionResult::kInfeasible_Or_Unbounded;
           break;
         }
-        case GRB_UNBOUNDED : {
+        case GRB_UNBOUNDED: {
           result = SolutionResult::kUnbounded;
           break;
         }
-        case GRB_INFEASIBLE : {
+        case GRB_INFEASIBLE: {
           result = SolutionResult::kInfeasibleConstraints;
           break;
         }
@@ -641,20 +803,28 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
       GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, num_total_variables,
                          solver_sol_vector.data());
       Eigen::VectorXd prog_sol_vector(num_prog_vars);
-      int prog_var_count = 0;
-      for (int i = 0; i < num_total_variables; ++i) {
-        if (!is_new_variable[i]) {
-          prog_sol_vector(prog_var_count) = solver_sol_vector[i];
-          ++prog_var_count;
-        }
-      }
-      prog.SetDecisionVariableValues(prog_sol_vector);
+      SetProgramSolutionVector(is_new_variable, solver_sol_vector,
+                               &prog_sol_vector, &prog);
 
       // Obtain optimal cost.
       double optimal_cost = std::numeric_limits<double>::quiet_NaN();
       GRBgetdblattr(model, GRB_DBL_ATTR_OBJVAL, &optimal_cost);
+
       // Provide Gurobi's computed cost in addition to the constant cost.
       prog.SetOptimalCost(optimal_cost + constant_cost);
+
+      if (is_mip) {
+        // If the problem is a mixed-integer optimization program, provide
+        // Gurobi's lower bound.
+        double lower_bound;
+        error = GRBgetdblattr(model, GRB_DBL_ATTR_OBJBOUND, &lower_bound);
+        if (error) {
+          drake::log()->error("GRB error {} getting lower bound: {}\n", error,
+                              GRBgeterrormsg(GRBgetenv(model)));
+        } else {
+          prog.SetLowerBoundCost(lower_bound);
+        }
+      }
     }
   }
 

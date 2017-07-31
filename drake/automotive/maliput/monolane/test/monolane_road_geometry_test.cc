@@ -1,4 +1,6 @@
+/* clang-format off to disable clang-format-includes */
 #include "drake/automotive/maliput/monolane/road_geometry.h"
+/* clang-format on */
 
 #include <cmath>
 

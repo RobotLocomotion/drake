@@ -1,12 +1,14 @@
-#include "drake/common/symbolic_polynomial.h"
-
+// NOLINTNEXTLINE(build/include): Its header file is included in symbolic.h.
 #include <algorithm>
+#include <map>
 #include <sstream>
 #include <stdexcept>
 #include <utility>
 
-#include "drake/common/symbolic_expression_visitor.h"
+#include "drake/common/symbolic.h"
 
+using std::make_pair;
+using std::map;
 using std::ostream;
 using std::ostringstream;
 using std::pair;
@@ -16,10 +18,14 @@ namespace drake {
 namespace symbolic {
 
 namespace {
-// Helper function to add coeff * m to map (Monomial → Expression).
-// Used in DecomposePolynomialVisitor::VisitAddition and Polynomial::Add.
-void DoAdd(const Expression& coeff, const Monomial& m,
-           Polynomial::MapType* const map) {
+// Helper function to add coeff * m to a map (Monomial → Expression).
+// Used to implement DecomposePolynomialVisitor::VisitAddition and
+// Polynomial::Add.
+void DoAddProduct(const Expression& coeff, const Monomial& m,
+                  Polynomial::MapType* const map) {
+  if (is_zero(coeff)) {
+    return;
+  }
   auto it = map->find(m);
   if (it != map->end()) {
     // m ∈ dom(map)
@@ -100,7 +106,7 @@ class DecomposePolynomialVisitor {
         const Monomial& m_j{term.first};
         const Expression& c_j{term.second};
         // Add (cᵢ * cⱼ) * mⱼ.
-        DoAdd(c_i * c_j, m_j, &new_map);
+        DoAddProduct(c_i * c_j, m_j, &new_map);
       }
     }
     return new_map;
@@ -266,12 +272,67 @@ Expression Polynomial::ToExpression() const {
       });
 }
 
+namespace {
+// Differentiates a monomial `m` with respect to a variable `x`. This is a
+// helper function to implement Polynomial::Differentiate() method. It returns a
+// pair `(n, m₁ * xⁿ⁻¹ * m₂)` where `d/dx (m₁ * xⁿ * m₂) = n * m₁ * xⁿ⁻¹ * m₂`
+// holds. For example, d/dx x²y = 2xy and `DifferentiateMonomial(x²y, x)`
+// returns `(2, xy)`.
+pair<int, Monomial> DifferentiateMonomial(const Monomial& m,
+                                          const Variable& x) {
+  if (m.get_powers().count(x) == 0) {
+    // x does not appear in m. Returns (0, 1).
+    return make_pair(0, Monomial{});
+  }
+  map<Variable, int> powers{m.get_powers()};
+  auto it = powers.find(x);
+  DRAKE_ASSERT(it != powers.end() && it->second >= 1);
+  const int n{it->second--};
+  if (it->second == 0) {
+    powers.erase(it);
+  }
+  return make_pair(n, Monomial{powers});
+}
+}  // namespace
+
+Polynomial Polynomial::Differentiate(const Variable& x) const {
+  Polynomial p;  // p = 0.
+  if (indeterminates().include(x)) {
+    // Case: x is an indeterminate.
+    // d/dx ∑ᵢ (cᵢ * mᵢ) = ∑ᵢ d/dx (cᵢ * mᵢ)
+    //                 = ∑ᵢ (cᵢ * d/dx mᵢ)
+    for (const pair<const Monomial, Expression>& term :
+         monomial_to_coefficient_map_) {
+      const Monomial& m{term.first};
+      const Expression& coeff{term.second};
+      const pair<int, Monomial> m_prime{
+          DifferentiateMonomial(m, x)};                     // = d/dx m.
+      p.AddProduct(coeff * m_prime.first, m_prime.second);  // p += cᵢ * d/dx m.
+    }
+    return p;
+  } else if (decision_variables().include(x)) {
+    // Case: x is a decision variable.
+    // d/dx ∑ᵢ (cᵢ * mᵢ) = ∑ᵢ d/dx (cᵢ * mᵢ)
+    //                 = ∑ᵢ ((d/dx cᵢ) * mᵢ)
+    for (const pair<const Monomial, Expression>& term :
+         monomial_to_coefficient_map_) {
+      const Monomial& m{term.first};
+      const Expression& coeff{term.second};
+      p.AddProduct(coeff.Differentiate(x), m);  // p += (d/dx cᵢ) * m.
+    }
+    return p;
+  } else {
+    // The variable `x` does not appear in this polynomial.
+    return p;
+  }
+}
+
 Polynomial& Polynomial::operator+=(const Polynomial& p) {
   for (const pair<Monomial, Expression>& item :
        p.monomial_to_coefficient_map_) {
     const Monomial& m{item.first};
     const Expression& coeff{item.second};
-    DoAdd(coeff, m, &monomial_to_coefficient_map_);
+    DoAddProduct(coeff, m, &monomial_to_coefficient_map_);
   }
   CheckInvariant();
   return *this;
@@ -279,12 +340,12 @@ Polynomial& Polynomial::operator+=(const Polynomial& p) {
 
 Polynomial& Polynomial::operator+=(const Monomial& m) {
   // No need to call CheckInvariant() since it's called inside of Add.
-  return Add(1.0, m);
+  return AddProduct(1.0, m);
 }
 
 Polynomial& Polynomial::operator+=(const double c) {
   // No need to call CheckInvariant() since it's called inside of Add.
-  return Add(c, Monomial{});
+  return AddProduct(c, Monomial{});
 }
 
 Polynomial& Polynomial::operator-=(const Polynomial& p) {
@@ -294,12 +355,12 @@ Polynomial& Polynomial::operator-=(const Polynomial& p) {
 
 Polynomial& Polynomial::operator-=(const Monomial& m) {
   // No need to call CheckInvariant() since it's called inside of Add.
-  return Add(-1.0, m);
+  return AddProduct(-1.0, m);
 }
 
 Polynomial& Polynomial::operator-=(const double c) {
   // No need to call CheckInvariant() since it's called inside of Add.
-  return Add(-c, Monomial{});
+  return AddProduct(-c, Monomial{});
 }
 
 Polynomial& Polynomial::operator*=(const Polynomial& p) {
@@ -311,7 +372,7 @@ Polynomial& Polynomial::operator*=(const Polynomial& p) {
     for (const auto& p2 : p.monomial_to_coefficient_map()) {
       const Monomial new_monomial{p1.first * p2.first};
       const Expression new_coeff{p1.second * p2.second};
-      DoAdd(new_coeff, new_monomial, &new_map);
+      DoAddProduct(new_coeff, new_monomial, &new_map);
     }
   }
   monomial_to_coefficient_map_ = std::move(new_map);
@@ -357,8 +418,8 @@ Formula Polynomial::operator==(Polynomial p) const {
   return ret;
 }
 
-Polynomial& Polynomial::Add(const Expression& coeff, const Monomial& m) {
-  DoAdd(coeff, m, &monomial_to_coefficient_map_);
+Polynomial& Polynomial::AddProduct(const Expression& coeff, const Monomial& m) {
+  DoAddProduct(coeff, m, &monomial_to_coefficient_map_);
   CheckInvariant();
   return *this;
 }

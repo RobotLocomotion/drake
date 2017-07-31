@@ -139,6 +139,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "explicit_error_controlled_integrator_tester",
+    testonly = 1,
+    hdrs = ["test/explicit_error_controlled_integrator_test.h"],
+    deps = [
+        ":my_spring_mass_system",
+    ],
+)
+
+drake_cc_library(
     name = "logistic_system",
     testonly = 1,
     hdrs = ["test/logistic_system.h"],
@@ -206,6 +215,7 @@ drake_cc_googletest(
     # Test size increased to not timeout when run with Valgrind.
     size = "medium",
     deps = [
+        ":explicit_error_controlled_integrator_tester",
         ":my_spring_mass_system",
         ":runge_kutta3_integrator",
         "//drake/math:geometric_transform",

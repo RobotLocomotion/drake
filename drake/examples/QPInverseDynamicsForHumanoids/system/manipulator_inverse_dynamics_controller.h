@@ -32,7 +32,7 @@ namespace qp_inverse_dynamics {
  * implemented by different plan eval modules.
  */
 class ManipulatorInverseDynamicsController
-    : public systems::StateFeedbackControllerInterface<double>,
+    : public systems::controllers::StateFeedbackControllerInterface<double>,
       public systems::Diagram<double> {
  public:
   /**

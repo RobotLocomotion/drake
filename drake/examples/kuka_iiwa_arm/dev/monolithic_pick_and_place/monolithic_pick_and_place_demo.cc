@@ -29,12 +29,15 @@
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 
-DEFINE_uint64(target, 0, "ID of the target to pick.");
+DEFINE_int32(target, 0, "ID of the target to pick.");
 DEFINE_double(orientation, 2 * M_PI, "Yaw angle of the box.");
-DEFINE_uint32(start_position, 1, "Position index to start from");
-DEFINE_uint32(end_position, 2, "Position index to end at");
+DEFINE_int32(start_position, 1, "Position index to start from");
+DEFINE_int32(end_position, 2, "Position index to end at");
+DEFINE_double(dt, 1e-3, "Integration step size");
 DEFINE_double(realtime_rate, 0.0,
               "Rate at which to run the simulation, relative to realtime");
+DEFINE_bool(quick, false, "Run only a brief simulation and return success "
+            "without executing the entire task");
 
 using robotlocomotion::robot_plan_t;
 
@@ -76,11 +79,12 @@ Target GetTarget() {
   Target targets[] = {
     {"block_for_pick_and_place.urdf", Eigen::Vector3d(0.06, 0.06, 0.2)},
     {"black_box.urdf", Eigen::Vector3d(0.055, 0.165, 0.18)},
-    {"simple_cuboid.urdf", Eigen::Vector3d(0.06, 0.06, 0.06)}
+    {"simple_cuboid.urdf", Eigen::Vector3d(0.06, 0.06, 0.06)},
+    {"simple_cylinder.urdf", Eigen::Vector3d(0.065, 0.065, 0.13)}
   };
 
-  const int num_targets = 3;
-  if (FLAGS_target >= num_targets) {
+  const int num_targets = 4;
+  if ((FLAGS_target >= num_targets) || (FLAGS_target < 0)) {
     throw std::runtime_error("Invalid target ID");
   }
   return targets[FLAGS_target];
@@ -157,13 +161,18 @@ int DoMain(void) {
   post_locations.push_back(Eigen::Vector3d(-0.1, -1.0, 0));  // position E
   post_locations.push_back(Eigen::Vector3d(-0.47, -0.8, 0));  // position F
 
-  // Position of the pick and place location on the table, relative
-  // to the base of the arm.
-  Eigen::Vector3d table_position(0.9, -0.36, -0.07);  // position C
+  // Position of the pick and place location on the table, relative to
+  // the base of the arm.  In the original test, the position was
+  // specified as 0.90m forward of the arm.  We change that to 0.86
+  // here as the previous test grasped the target with the tip of the
+  // fingers in the middle while this test places the fingertip
+  // further forward.  The position is right at the edge of what we
+  // can plan to, so this 4cm change does matter.
+  const Eigen::Vector3d table_position(0.86, -0.36, -0.07);  // position C
 
   // The offset from the top of the table to the top of the post, used for
   // calculating the place locations in iiwa relative coordinates.
-  Eigen::Vector3d post_height_offset(0, 0, 0.26);
+  const Eigen::Vector3d post_height_offset(0, 0, 0.26);
 
   // TODO(sam.creasey) select only one of these
   std::vector<Isometry3<double>> place_locations;
@@ -267,8 +276,8 @@ int DoMain(void) {
   Isometry3<double> iiwa_base = Isometry3<double>::Identity();
   iiwa_base.translation() = robot_base;
 
-  if (FLAGS_end_position > 0) {
-    if (FLAGS_end_position >= place_locations.size()) {
+  if (FLAGS_end_position >= 0) {
+    if (FLAGS_end_position >= static_cast<int>(place_locations.size())) {
       throw std::runtime_error("Invalid end position specified.");
     }
     std::vector<Isometry3<double>> new_place_locations;
@@ -296,6 +305,7 @@ int DoMain(void) {
   Simulator<double> simulator(*sys);
   simulator.Initialize();
   simulator.set_target_realtime_rate(FLAGS_realtime_rate);
+  simulator.get_mutable_integrator()->set_maximum_step_size(FLAGS_dt);
 
   auto& plan_source_context = sys->GetMutableSubsystemContext(
       *iiwa_trajectory_generator, simulator.get_mutable_context());
@@ -307,12 +317,17 @@ int DoMain(void) {
   // Step the simulator in some small increment.  Between steps, check
   // to see if the state machine thinks we're done, and if so that the
   // object is near the target.
-  const double simulation_step = 1.;
+  const double simulation_step = 0.1;
   while (state_machine->state(
              sys->GetSubsystemContext(*state_machine,
                                       simulator.get_context()))
          != pick_and_place::kDone) {
     simulator.StepTo(simulator.get_context().get_time() + simulation_step);
+    if (FLAGS_quick) {
+      // We've run a single step, just get out now since we won't have
+      // reached our destination.
+      return 0;
+    }
   }
 
   const pick_and_place::WorldState& world_state =

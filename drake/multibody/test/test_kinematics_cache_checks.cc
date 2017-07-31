@@ -1,4 +1,4 @@
-/* clang-format off */
+/* clang-format off to disable clang-format-includes */
 #include "drake/multibody/rigid_body_tree.h"
 /* clang-format on */
 
@@ -159,7 +159,7 @@ int main() {
   auto tree = std::make_unique<RigidBodyTree<double>>();
   drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       drake::FindResourceOrThrow(
-          "drake/examples/Atlas/urdf/atlas_minimal_contact.urdf"),
+          "drake/examples/atlas/urdf/atlas_minimal_contact.urdf"),
       drake::multibody::joints::kRollPitchYaw, tree.get());
 
   CheckSettings settings;

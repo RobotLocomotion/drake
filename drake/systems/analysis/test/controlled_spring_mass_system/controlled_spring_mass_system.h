@@ -62,7 +62,7 @@ class PidControlledSpringMassSystem : public Diagram<T> {
  private:
   // These are references into the Diagram; no ownership implied.
   SpringMassSystem<T>* plant_;
-  PidController<T>* controller_;
+  controllers::PidController<T>* controller_;
   ConstantVectorSource<T>* target_;
 };
 

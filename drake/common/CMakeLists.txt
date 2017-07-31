@@ -15,9 +15,6 @@ set(sources
   drake_assert_and_throw.cc
   drake_path_cmake.cc
   find_resource.cc
-  functional_form.cc
-  monomial.cc
-  monomial_util.cc
   nice_type_name.cc
   polynomial.cc
   symbolic_environment.cc
@@ -27,6 +24,8 @@ set(sources
   symbolic_formula.cc
   symbolic_formula_cell.cc
   symbolic_formula_cell.h
+  symbolic_monomial.cc
+  symbolic_monomial_util.cc
   symbolic_polynomial.cc
   symbolic_variable.cc
   symbolic_variables.cc
@@ -57,23 +56,23 @@ set(installed_headers
   eigen_types.h
   extract_double.h
   find_resource.h
-  functional_form.h
   hash.h
   is_approx_equal_abstol.h
   is_cloneable.h
-  monomial.h
-  monomial_util.h
   never_destroyed.h
   nice_type_name.h
   number_traits.h
   polynomial.h
   scoped_singleton.h
   sorted_vectors_have_intersection.h
+  symbolic.h
   symbolic_environment.h
   symbolic_expression.h
   symbolic_expression_visitor.h
   symbolic_formula.h
   symbolic_formula_visitor.h
+  symbolic_monomial.h
+  symbolic_monomial_util.h
   symbolic_polynomial.h
   symbolic_variable.h
   symbolic_variables.h

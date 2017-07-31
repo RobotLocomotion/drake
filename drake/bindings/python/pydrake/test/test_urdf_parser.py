@@ -12,7 +12,7 @@ class TestUrdfParser(unittest.TestCase):
     """
     def testAddModelInstanceFromUrdfStringSearchingInRosPackages(self):
         urdf_file = os.path.join(pydrake.getDrakePath(),
-                                 "examples/PR2/pr2.urdf")
+                                 "examples/pr2/pr2.urdf")
         urdf_string = open(urdf_file).read()
         base_dir = os.path.dirname(urdf_file)
         package_map = pydrake.rbtree.PackageMap()

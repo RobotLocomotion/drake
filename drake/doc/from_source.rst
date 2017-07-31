@@ -292,31 +292,6 @@ You should not see any error messages.
 
 For more details, see :ref:`Using Drake from Matlab <matlab-bindings>`.
 
-Using SNOPT as an external
-==========================
-
-Drake includes support for SNOPT, but is not able to redistribute it directly.
-To use SNOPT with Drake, you must have access to its private GitHub repository,
-and you must set up a GitHub SSH key on your machine. Follow the instructions
-in the
-`GitHub documentation <https://help.github.com/articles/generating-ssh-keys/>`_.
-
-This capability is meant for members of MIT Robot Locomotion Group and close
-collaborators with whom RLG shares licenses.
-
-Using Gurobi as an external
-===========================
-
-Before building Drake with Gurobi, create an account and obtain a license on
-`Gurobi's website <http://www.gurobi.com/>`_. Download Gurobi 7.0.2, and set
-the ``GUROBI_DISTRO`` environment variable to the absolute path to the
-downloaded file. Consult Gurobi's documentation to activate your license;
-exact procedures depend on license type. Once activated, place your Gurobi
-license file ``gurobi.lic`` in your home directory.
-
-Then enable the CMake option ``WITH_GUROBI`` in the Drake superbuild, and
-proceed to build Drake as usual.
-
 Stay up to date
 ===============
 

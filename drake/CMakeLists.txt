@@ -100,54 +100,10 @@ enable_testing()
 include(CTest)
 set(GTEST_ROOT ${CMAKE_INSTALL_PREFIX})
 
-set(drake_jar_javafiles matlab/util/Transform.java)
-set(drake_jar_requires)
-
-
 # set up and build lcm types
 if(lcm_FOUND)
   add_subdirectory(lcmtypes)
-
-  list(APPEND drake_jar_javafiles
-    matlab/util/MyLCMTypeDatabase.java
-    matlab/util/MessageMonitor.java
-    matlab/util/CoordinateFrameData.java
-    matlab/util/LCMCoder.java)
-  list(APPEND drake_jar_requires lcm-java lcmtypes_drake-java)
-
-  # add lcmgl
-  # libbot does not define a classpath variable. there might be a cleaner way to do this
-  if(NOT bot2-lcmgl-client_PREFIX)  # Set by drake_find_package(... PKG_CONFIG)
-    message("
-  --------------------------------------------------------------------------------
-    *** IMPORTANT: bot2-lcmgl build directory not found. ***
-  --------------------------------------------------------------------------------
-    ")
-  else()
-    find_jar(LCMGL_JAR_FILE bot2-lcmgl PATHS "${bot2-lcmgl-client_PREFIX}/share/java/")
-    if(NOT LCMGL_JAR_FILE)
-      message(FATAL_ERROR "
-  --------------------------------------------------------------------------------
-    *** IMPORTANT: bot2-lcmgl JAR file not found. ***
-  --------------------------------------------------------------------------------
-      ")
-    else()
-      message(STATUS "Found bot2-lcmgl")
-    endif()
-    if(DEFINED CMAKE_JAVA_INCLUDE_PATH)
-      set(CMAKE_JAVA_INCLUDE_PATH "${CMAKE_JAVA_INCLUDE_PATH}:${LCMGL_JAR_FILE}")
-    else()
-      set(CMAKE_JAVA_INCLUDE_PATH "${LCMGL_JAR_FILE}")
-    endif()
-    list(APPEND drake_jar_javafiles matlab/util/BotLCMGLClient.java)
-  endif()
 endif()
-
-add_jar(drake SOURCES ${drake_jar_javafiles} INCLUDE_JARS ${drake_jar_requires})
-install_jar(drake share/java)
-drake_install_pkg_config_file(drake-java
-  CLASSPATH drake
-  REQUIRES ${drake_jar_requires})
 
 add_subdirectory(thirdParty/boost/tcbrindle_cpp17_headers/stx)
 add_subdirectory(thirdParty/bsd/spruce)
@@ -156,6 +112,7 @@ add_subdirectory(common)
 add_subdirectory(lcm)
 add_subdirectory(math)
 add_subdirectory(multibody)
+add_subdirectory(perception)
 add_subdirectory(util)
 add_subdirectory(solvers)
 add_subdirectory(systems)
@@ -169,11 +126,10 @@ if(pybind11_FOUND AND NOT DISABLE_PYTHON AND NUMPY_FOUND)
   endif()
 endif()
 if(Matlab_FOUND)
-  add_subdirectory(thirdParty/bsd/GetFullPath)
   add_subdirectory(matlab)
 endif()
 
-add_subdirectory(examples/Atlas)
+add_subdirectory(examples/atlas)
 add_subdirectory(examples/kuka_iiwa_arm)
 
 option(ENABLE_DOCUMENTATION "Enable build target for Doxygen and Sphinx documentation." ON)

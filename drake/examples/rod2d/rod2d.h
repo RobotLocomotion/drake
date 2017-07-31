@@ -347,14 +347,26 @@ class Rod2D : public systems::LeafSystem<T> {
     v_stick_tol_ = v_stick_tol;
   }
 
-  /// Gets the frame for a sliding contact.
+  /// Gets the rotation matrix that transforms velocities from a sliding
+  /// contact frame to the global frame.
   /// @param xaxis_velocity The velocity of the rod at the point of contact,
   ///        projected along the +x-axis.
-  Matrix2<T> GetSlidingContactFrame(const T& xaxis_velocity) const;
+  /// @returns a 2x2 orthogonal matrix with first column set to the contact
+  ///          normal, which is +y ([0 1]) and second column set to the
+  ///          direction of sliding motion, ±x (±[1 0]). Both directions are
+  ///          expressed in the global frame.
+  /// @note Aborts if @p xaxis_velocity is zero.
+  Matrix2<T> GetSlidingContactFrameToWorldTransform(
+      const T& xaxis_velocity) const;
 
-  /// Gets the frame for a non-sliding contact. Note: all such frames are
-  /// identical.
-  Matrix2<T> GetNonSlidingContactFrame() const;
+  /// Gets the rotation matrix that transforms velocities from a non-sliding
+  /// contact frame to the global frame. Note: all such non-sliding frames are
+  /// identical for this example.
+  /// @returns a 2x2 orthogonal matrix with first column set to the contact
+  ///          normal, which is +y ([0 1]) and second column set to the
+  ///          contact tangent +x ([1 0]). Both directions are expressed in
+  ///          the global frame.
+  Matrix2<T> GetNonSlidingContactFrameToWorldTransform() const;
 
   /// Checks whether the system is in an impacting state, meaning that the
   /// relative velocity along the contact normal between the rod and the

@@ -1,5 +1,10 @@
 #pragma once
 
+#ifndef DRAKE_COMMON_SYMBOLIC_HEADER
+// TODO(soonho-tri): Change to #error, when #6613 merged.
+#warning Do not directly include this file. Include "drake/common/symbolic.h".
+#endif
+
 #include <algorithm>  // for cpplint only
 #include <cstddef>
 #include <functional>
@@ -18,12 +23,11 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/dummy_value.h"
+#include "drake/common/eigen_types.h"
 #include "drake/common/hash.h"
 #include "drake/common/number_traits.h"
 #include "drake/common/polynomial.h"
-#include "drake/common/symbolic_environment.h"
-#include "drake/common/symbolic_variable.h"
-#include "drake/common/symbolic_variables.h"
+#include "drake/common/symbolic.h"
 
 namespace drake {
 
@@ -228,7 +232,7 @@ class Expression {
    *  Note that the ID of a variable is preserved in this translation.
    *  \pre{is_polynomial() is true.}
    */
-  Polynomial<double> ToPolynomial() const;
+  Polynomiald ToPolynomial() const;
 
   /** Evaluates under a given environment (by default, an empty environment).
    *  @throws std::runtime_error if NaN is detected during evaluation.
@@ -492,9 +496,6 @@ Expression if_then_else(const Formula& f_cond, const Expression& e_then,
  * than its name and a set of its arguments. This is useful to applications
  * where it is good enough to provide abstract information of a function without
  * exposing full details. Declaring sparsity of a system is a typical example.
- *
- * See also `FunctionalForm::Arbitrary(Variables v)` which shares the same
- * motivation.
  */
 Expression uninterpreted_function(const std::string& name,
                                   const Variables& vars);
@@ -718,6 +719,20 @@ operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs.template cast<Expression>() * rhs.template cast<Expression>();
 }
 
+/// Transform<double> * Transform<Expression> => Transform<Expression>
+template <int Dim, int LhsMode, int RhsMode, int LhsOptions, int RhsOptions>
+auto operator*(const Eigen::Transform<Expression, Dim, LhsMode, LhsOptions>& t1,
+               const Eigen::Transform<double, Dim, RhsMode, RhsOptions>& t2) {
+  return t1 * t2.template cast<Expression>();
+}
+
+/// Transform<Expression> * Transform<double> => Transform<Expression>
+template <int Dim, int LhsMode, int RhsMode, int LhsOptions, int RhsOptions>
+auto operator*(
+    const Eigen::Transform<double, Dim, LhsMode, LhsOptions>& t1,
+    const Eigen::Transform<Expression, Dim, RhsMode, RhsOptions>& t2) {
+  return t1.template cast<Expression>() * t2;
+}
 }  // namespace symbolic
 
 /** Provides specialization of @c cond function defined in drake/common/cond.h
@@ -881,4 +896,25 @@ CheckStructuralEquality(const DerivedA& m1, const DerivedB& m2) {
 }
 
 }  // namespace symbolic
+
+/*
+ * Determine if two EigenBase<> types are matrices (non-column-vectors) of
+ * Expressions and doubles, to then form an implicit formulas.
+ */
+template <typename DerivedV, typename DerivedB>
+struct is_eigen_nonvector_expression_double_pair
+    : std::integral_constant<
+          bool, is_eigen_nonvector_of<DerivedV, symbolic::Expression>::value &&
+                    is_eigen_nonvector_of<DerivedB, double>::value> {};
+
+/*
+ * Determine if two EigenBase<> types are vectors of Expressions and doubles
+ * that could make a formula.
+ */
+template <typename DerivedV, typename DerivedB>
+struct is_eigen_vector_expression_double_pair
+    : std::integral_constant<
+          bool, is_eigen_vector_of<DerivedV, symbolic::Expression>::value &&
+                    is_eigen_vector_of<DerivedB, double>::value> {};
+
 }  // namespace drake

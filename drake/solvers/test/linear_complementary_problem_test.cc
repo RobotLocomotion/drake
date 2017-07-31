@@ -1,4 +1,4 @@
-/* clang-format off */
+/* clang-format off to disable clang-format-includes */
 #include "drake/solvers/mathematical_program.h"
 /* clang-format on */
 

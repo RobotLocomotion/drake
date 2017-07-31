@@ -6,6 +6,7 @@
 
 #include "bot_core/atlas_command_t.hpp"
 #include "bot_core/robot_state_t.hpp"
+#include "robotlocomotion/robot_plan_t.hpp"
 
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/atlas_joint_level_controller_system.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/humanoid_plan_eval_system.h"
@@ -26,7 +27,8 @@ namespace qp_inverse_dynamics {
 /**
  * A controller for humanoid balancing built on top of HumanoidPlanEvalSystem
  * and QpControllerSystem. This diagram does not have any input or output ports.
- * The state inputs and control outputs are sent through LCM messages directly.
+ * The state and plan inputs and control outputs are sent through LCM messages
+ * directly.
  */
 class ValkyrieController : public systems::Diagram<double> {
  public:
@@ -61,6 +63,11 @@ class ValkyrieController : public systems::Diagram<double> {
             "EST_ROBOT_STATE", lcm));
     robot_state_subscriber_->set_name("robot_state_subscriber");
 
+    auto plan_subscriber = builder.AddSystem(
+        systems::lcm::LcmSubscriberSystem::Make<robotlocomotion::robot_plan_t>(
+            "VALKYRIE_MANIP_PLAN", lcm));
+    plan_subscriber->set_name("plan_subscriber");
+
     auto atlas_command_publisher = builder.AddSystem(
         systems::lcm::LcmPublisherSystem::Make<bot_core::atlas_command_t>(
             "ROBOT_COMMAND", lcm));
@@ -69,9 +76,11 @@ class ValkyrieController : public systems::Diagram<double> {
     // lcm -> rs
     builder.Connect(robot_state_subscriber_->get_output_port(0),
                     msg_to_humanoid_status->get_input_port_robot_state_msg());
-    // rs -> qp_input
+    // rs + plan -> qp_input
     builder.Connect(msg_to_humanoid_status->get_output_port_humanoid_status(),
                     plan_eval_->get_input_port_humanoid_status());
+    builder.Connect(plan_subscriber->get_output_port(0),
+                    plan_eval_->get_input_port_manip_plan_msg());
     // rs + qp_input -> qp_output
     builder.Connect(msg_to_humanoid_status->get_output_port_humanoid_status(),
                     qp_con->get_input_port_humanoid_status());

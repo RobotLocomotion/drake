@@ -1,4 +1,4 @@
-/* clang-format off */
+/* clang-format off to disable clang-format-includes */
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 /* clang-format on */
 
@@ -118,7 +118,7 @@ class ContactFormulaTest : public ::testing::Test {
     body->add_joint(&tree_->world(),
                     make_unique<QuaternionFloatingJoint>("base", pose));
     DrakeShapes::Sphere sphere(kRadius);
-    DrakeCollision::Element collision_element(sphere);
+    drake::multibody::collision::Element collision_element(sphere);
     collision_element.set_body(body);
     tree_->addCollisionElement(collision_element, *body, "group1");
     return body;

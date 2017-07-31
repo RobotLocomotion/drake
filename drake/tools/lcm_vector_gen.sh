@@ -23,7 +23,12 @@ workspace=$(dirname "$drake")
 mkdir -p $drake/lcmtypes
 mkdir -p $mydir/gen
 
-CLANG_FORMAT=${CLANG_FORMAT:-clang-format}
+if [ -z "$CLANG_FORMAT" ]; then
+    CLANG_FORMAT="/usr/bin/clang-format-3.9"  # Preferred choice.
+    if [ ! -x "$CLANG_FORMAT" ]; then
+        CLANG_FORMAT=clang-format
+    fi
+fi
 if ! type -p $CLANG_FORMAT > /dev/null ; then
     cat <<EOF
 Cannot find $CLANG_FORMAT ; see installation instructions at:

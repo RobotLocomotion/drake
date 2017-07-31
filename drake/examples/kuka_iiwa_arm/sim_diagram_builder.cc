@@ -45,7 +45,8 @@ void SimDiagramBuilder<T>::ConnectControllersAndVisualizer() {
   for (const auto& pair : controllers_) {
     const int instance_id = pair.first;
 
-    systems::StateFeedbackControllerInterface<T>* controller = pair.second;
+    systems::controllers::StateFeedbackControllerInterface<T>* controller =
+        pair.second;
 
     // Connects the state port to the controller.
     const auto& instance_state_output_port =

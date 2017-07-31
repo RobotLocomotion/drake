@@ -1,5 +1,3 @@
-#include "drake/examples/rod2d/rod2d.h"
-
 #include <cmath>
 #include <iomanip>
 #include <limits>
@@ -9,6 +7,7 @@
 
 #include "drake/common/text_logging.h"
 #include "drake/common/text_logging_gflags.h"
+#include "drake/examples/rod2d/rod2d.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_viewer_draw.hpp"
 #include "drake/lcmtypes/drake/lcmt_viewer_load_robot.hpp"

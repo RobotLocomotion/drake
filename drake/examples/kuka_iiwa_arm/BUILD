@@ -167,6 +167,7 @@ drake_cc_binary(
         "//drake/examples/kuka_iiwa_arm/iiwa_world:world_sim_tree_builder",
         "//drake/lcm",
         "//drake/multibody/rigid_body_plant",
+        "//drake/multibody/rigid_body_plant:frame_visualizer",
         "//drake/systems/analysis:simulator",
         "//drake/systems/controllers:inverse_dynamics_controller",
         "//drake/systems/primitives:constant_vector_source",
