@@ -1808,9 +1808,15 @@ TEST_F(SymbolicExpressionTest, Swap) {
 TEST_F(SymbolicExpressionTest, ToString) {
   const Expression e1{sin(x_ + y_ * z_)};
   const Expression e2{cos(x_ * x_ + pow(y_, 2) * z_)};
+  const Expression e3{M_PI * x_ * pow(y_, M_E)};
+  const Expression e4{M_E + x_ + M_PI * y_};
 
   EXPECT_EQ(e1.to_string(), "sin((x + (y * z)))");
   EXPECT_EQ(e2.to_string(), "cos(((pow(y, 2) * z) + pow(x, 2)))");
+  EXPECT_EQ(e3.to_string(),
+            "(3.1415926535897931 * x * pow(y, 2.7182818284590451))");
+  EXPECT_EQ(e4.to_string(),
+            "(2.7182818284590451 + x + 3.1415926535897931 * y)");
   EXPECT_EQ(e_uf_.to_string(), "uf({x, y})");
 }
 
