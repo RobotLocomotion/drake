@@ -1,7 +1,7 @@
 # -*- python -*-
 
 load(
-    "//tools:install.bzl",
+    "@drake//tools:install.bzl",
     "cmake_config",
     "exports_create_cps_scripts",
     "install_cmake_config",

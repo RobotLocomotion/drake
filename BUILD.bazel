@@ -4,9 +4,9 @@
 # This file is named BUILD.bazel instead of the more typical BUILD, so that on
 # OSX it won't conflict with a build artifacts directory named "build".
 
-load("//tools:check_licenses.bzl", "check_licenses")
-load("//tools:install.bzl", "install", "install_files")
-load("//tools:lint.bzl", "add_lint_tests")
+load("@drake//tools:check_licenses.bzl", "check_licenses")
+load("@drake//tools:install.bzl", "install", "install_files")
+load("@drake//tools:lint.bzl", "add_lint_tests")
 
 package(
     default_visibility = ["//visibility:public"],
