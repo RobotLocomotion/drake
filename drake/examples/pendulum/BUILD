@@ -1,13 +1,13 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load(
     "//tools:drake.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_binary",
 )
+load("//tools:lint.bzl", "add_lint_tests")
 
 drake_cc_library(
     name = "pendulum_state_vector",
@@ -178,4 +178,4 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
-cpplint()
+add_lint_tests()

@@ -1,7 +1,6 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load(
     "//tools:drake.bzl",
     "drake_cc_binary",
@@ -10,6 +9,7 @@ load(
     "drake_cc_test",
 )
 load("//tools:gurobi.bzl", "gurobi_test_tags")
+load("//tools:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -586,13 +586,13 @@ filegroup(
     ],
 )
 
-# The extra_srcs are required here because cpplint() doesn't understand how to
-# extract labels from select() functions yet.
-cpplint(
-    data = [
+# The extra_srcs are required here because add_lint_tests() doesn't understand
+# how to extract labels from select() functions yet.
+add_lint_tests(
+    cpplint_data = [
         "constraint/CPPLINT.cfg",
     ],
-    extra_srcs = [
+    cpplint_extra_srcs = [
         "approximate_ik.cc",
         "test/test_approximate_ik.cc",
     ],
