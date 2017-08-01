@@ -38,7 +38,6 @@ using std::ostream;
 using std::ostringstream;
 using std::pair;
 using std::runtime_error;
-using std::setprecision;
 using std::shared_ptr;
 using std::static_pointer_cast;
 using std::string;
@@ -369,11 +368,7 @@ Expression ExpressionConstant::Differentiate(const Variable&) const {
   return Expression::Zero();
 }
 
-ostream& ExpressionConstant::Display(ostream& os) const {
-  ostringstream oss;
-  oss << setprecision(numeric_limits<double>::max_digits10) << v_;
-  return os << oss.str();
-}
+ostream& ExpressionConstant::Display(ostream& os) const { return os << v_; }
 
 ExpressionNaN::ExpressionNaN()
     : ExpressionCell{ExpressionKind::NaN, 41, false} {
