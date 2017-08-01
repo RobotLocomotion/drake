@@ -1,12 +1,12 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load(
     "//tools:drake.bzl",
     "drake_cc_library",
     "drake_cc_binary",
 )
+load("//tools:lint.bzl", "add_lint_tests")
 
 drake_cc_library(
     name = "world_sim_tree_builder",
@@ -71,4 +71,4 @@ drake_cc_binary(
     ],
 )
 
-cpplint()
+add_lint_tests()

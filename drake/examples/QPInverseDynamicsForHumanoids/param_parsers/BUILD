@@ -1,8 +1,8 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load("//tools:drake.bzl", "drake_cc_library", "drake_cc_googletest")
+load("//tools:lint.bzl", "add_lint_tests")
 load("@protobuf//:protobuf.bzl", "cc_proto_library")
 
 package(
@@ -87,4 +87,4 @@ drake_cc_googletest(
     ],
 )
 
-cpplint()
+add_lint_tests()
