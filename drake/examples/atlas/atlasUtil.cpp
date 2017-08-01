@@ -1,5 +1,7 @@
 #include "drake/examples/atlas/atlasUtil.h"
+
 #include <stdexcept>
+
 #include <Eigen/Core>
 
 using Eigen::Matrix;
