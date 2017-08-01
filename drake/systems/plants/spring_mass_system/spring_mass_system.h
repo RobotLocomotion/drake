@@ -89,10 +89,6 @@ class SpringMassSystem : public LeafSystem<T> {
   SpringMassSystem(double spring_constant_N_per_m, double mass_kg,
                    bool system_is_forced = false);
 
-  /// Scalar-converting copy constructor.
-  template <typename U>
-  explicit SpringMassSystem(const SpringMassSystem<U>&);
-
   // Provide methods specific to this System.
 
   /// Returns the input port to the externally applied force.
@@ -106,9 +102,6 @@ class SpringMassSystem : public LeafSystem<T> {
 
   /// Returns the mass m that was provided at construction, in kg.
   double get_mass() const { return mass_kg_; }
-
-  /// Returns true iff the system is forced.
-  bool get_system_is_forced() const { return system_is_forced_; }
 
   /// Gets the current position of the mass in the given Context.
   T get_position(const Context<T>& context) const {
@@ -243,7 +236,19 @@ class SpringMassSystem : public LeafSystem<T> {
     *vf = -c1*sin(omega*tf)*omega + c2*cos(omega*tf)*omega;
   }
 
+ protected:
+  System<AutoDiffXd>* DoToAutoDiffXd() const override {
+    return new SpringMassSystem<AutoDiffXd>(this->get_spring_constant(),
+                                            this->get_mass(),
+                                            system_is_forced_);
+  }
+
  private:
+  /// This system is not direct feedthrough.
+  bool DoHasDirectFeedthrough(const SparsityMatrix*, int, int) const override {
+    return false;
+  }
+
   // This is the calculator method for the output port.
   void SetOutputValues(const Context<T>& context,
                        SpringMassStateVector<T>* output) const;

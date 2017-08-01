@@ -78,38 +78,14 @@ class VectorSystem : public LeafSystem<T> {
   /// Creates a system with one input port and one output port of the given
   /// sizes.  Does not declare any state -- subclasses may optionally declare
   /// continuous or discrete state, but not both.
-  VectorSystem(int input_size, int output_size)
-      : LeafSystem<T>() {
-    DoConstructorBody(input_size, output_size);
-  }
-
-  /// Like VectorSystem(int, int), but also declares that this System object is
-  /// of dynamic type S, which enables conversion to other scalar-types such as
-  /// AutoDiff or symbolic form.  Subclasses that wish to support conversion to
-  /// other scalar types should use this constructor.
-  ///
-  /// Example:
-  ///
-  /// @code
-  /// namespace sample {
-  /// template <typename T>
-  /// class MySystem : public VectorSystem<T> {
-  ///  public:
-  ///   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MySystem);
-  ///
-  ///   /// Default constructor.
-  ///   MySystem() : VectorSystem<T>(SystemTypeTag<sample::MySystem>{}, 1, 1) {}
-  ///
-  ///   /// Scalar-converting copy constructor.
-  ///   template <typename U>
-  ///   explicit MySystem(const MySystem<U>&) : MySystem<T>() {}
-  ///
-  ///   ...
-  /// @endcode
-  template <template <typename> class S>
-  VectorSystem(SystemTypeTag<S> tag, int input_size, int output_size)
-      : LeafSystem<T>(tag) {
-    DoConstructorBody(input_size, output_size);
+  VectorSystem(int input_size, int output_size) {
+    if (input_size > 0) {
+      this->DeclareInputPort(kVectorValued, input_size);
+    }
+    if (output_size > 0) {
+      this->DeclareVectorOutputPort(BasicVector<T>(output_size),
+                                    &VectorSystem::CalcVectorOutput);
+    }
   }
 
   /// Converts the parameters to Eigen::VectorBlock form, then delegates to
@@ -278,22 +254,6 @@ class VectorSystem : public LeafSystem<T> {
       Eigen::VectorBlock<VectorX<T>>* next_state) const {
     unused(context, input, state);
     DRAKE_THROW_UNLESS(next_state->size() == 0);
-  }
-
- private:
-  // All constructors should call this method immediately after invoking the
-  // base class constructor, as if this were using constructor delegation.
-  ///
-  // We cannot use C++'s constructor delegation, because we need to invoke a
-  // different LeafSystem constructor from each of our constructors.
-  void DoConstructorBody(int input_size, int output_size) {
-    if (input_size > 0) {
-      this->DeclareInputPort(kVectorValued, input_size);
-    }
-    if (output_size > 0) {
-      this->DeclareVectorOutputPort(BasicVector<T>(output_size),
-                                    &VectorSystem::CalcVectorOutput);
-    }
   }
 };
 

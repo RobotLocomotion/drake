@@ -203,20 +203,16 @@ class DoubleIntegrator : public VectorSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DoubleIntegrator);
 
-  DoubleIntegrator()
-      : VectorSystem<T>(
-            SystemTypeTag<systems::DoubleIntegrator>{},
-            1, 1) {
+  DoubleIntegrator() : VectorSystem<T>(1, 1) {
     this->DeclareContinuousState(1, 1, 0);
   }
-
-  template <typename U>
-  explicit DoubleIntegrator(const DoubleIntegrator<U>&)
-      : DoubleIntegrator<T>() {}
-
-  ~DoubleIntegrator() override {}
+  ~DoubleIntegrator() override{};
 
  protected:
+  DoubleIntegrator<AutoDiffXd>* DoToAutoDiffXd() const override {
+    return new DoubleIntegrator<AutoDiffXd>();
+  }
+
   void DoCalcVectorOutput(
       const Context<T>& context,
       const Eigen::VectorBlock<const VectorX<T>>& input,

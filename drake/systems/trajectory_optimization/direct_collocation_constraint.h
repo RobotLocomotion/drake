@@ -64,8 +64,7 @@ class SystemDirectCollocationConstraint : public DirectCollocationConstraint {
 
   /// Creates a direct collocation constraint for a system.
   /// @param system A dynamical system to be used in the dynamic constraints.
-  ///  This system must support System::ToAutoDiffXd.
-  ///  Note that the optimization
+  ///  This system must implement DoToAutoDiffXd.  Note that the optimization
   ///  will "clone" this system for it's internal use; changes to system
   ///  after calling this method will NOT impact the trajectory optimization.
   ///  Currently, this system must have exactly one input port.

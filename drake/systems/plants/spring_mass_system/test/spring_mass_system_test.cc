@@ -75,7 +75,6 @@ TEST_F(SpringMassSystemTest, Construction) {
   EXPECT_EQ("test_system", system_->get_name());
   EXPECT_EQ(kSpring, system_->get_spring_constant());
   EXPECT_EQ(kMass, system_->get_mass());
-  EXPECT_FALSE(system_->get_system_is_forced());
 }
 
 TEST_F(SpringMassSystemTest, DirectFeedthrough) {
@@ -181,9 +180,6 @@ TEST_F(SpringMassSystemTest, ForcesNegativeDisplacement) {
 TEST_F(SpringMassSystemTest, DynamicsWithExternalForce) {
   // Initializes a spring mass system with an input port for an external force.
   Initialize(true);
-  EXPECT_TRUE(system_->get_system_is_forced());
-  EXPECT_FALSE(system_->HasAnyDirectFeedthrough());
-
   // Asserts exactly one input for this case expecting an external force.
   ASSERT_EQ(1, context_->get_num_input_ports());
 
