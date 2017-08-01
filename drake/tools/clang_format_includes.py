@@ -32,7 +32,7 @@ def main():
     if args.all:
         # TODO(jwnimmer-tri) Consolidate this logic with the cpplint_wrapper
         # tree searching logic, including some way to unit test "all" search.
-        extensions = ["cc", "h"]
+        extensions = ["cc", "h", "cpp"]
         pathnames = ["drake", "ros"]
         filenames = [
             os.path.join(dirpath, filename)
