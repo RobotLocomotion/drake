@@ -21,6 +21,7 @@ drake_cc_library(
     deps = [
         "//drake/common:autodiff",
         "//drake/common:extract_double",
+        "//drake/multibody/multibody_tree/math:spatial_force",
     ],
 )
 

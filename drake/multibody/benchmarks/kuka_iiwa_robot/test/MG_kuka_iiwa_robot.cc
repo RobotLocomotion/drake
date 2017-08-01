@@ -74,32 +74,24 @@ MGKukaIIwaRobot<T>::CalcJointReactionForces(
   MG_kuka_auto_generated.CalculateOutput();
 
   // Convert MotionGenesis standard C++ matrices to Eigen matrices.
-
-  const Vector3d f_A_eigen(MG_kuka_auto_generated.tA);
-  const Vector3d t_A_eigen(MG_kuka_auto_generated.fA);
-
-  // const multibody::SpatialForce<double> F_A_Na(t_A_eigen, f_A_eigen);
-
-  const SpatialForced F_A_Na;  // (Vector3d(MG_kuka_auto_generated.tA),
-                               // Vector3d(MG_kuka_auto_generated.fA));
-  const SpatialForced F_B_Ab;  // (Vector3d(MG_kuka_auto_generated.tB),
-                               // Vector3d(MG_kuka_auto_generated.fB));
-  const SpatialForced F_C_Bc;  // (Vector3d(MG_kuka_auto_generated.tC),
-                               // Vector3d(MG_kuka_auto_generated.fC));
-  const SpatialForced F_D_Cd;  // (Vector3d(MG_kuka_auto_generated.tD),
-                               // Vector3d(MG_kuka_auto_generated.fD));
-  const SpatialForced F_E_De;  // (Vector3d(MG_kuka_auto_generated.tE),
-                               // Vector3d(MG_kuka_auto_generated.fE));
-  const SpatialForced F_F_Ef;  // (Vector3d(MG_kuka_auto_generated.tF),
-                               // Vector3d(MG_kuka_auto_generated.fF));
-  const SpatialForced F_G_Fg;  // (Vector3d(MG_kuka_auto_generated.tG),
-                               // Vector3d(MG_kuka_auto_generated.fG));
+  const SpatialForced F_A_Na(Vector3d(MG_kuka_auto_generated.tA),
+                             Vector3d(MG_kuka_auto_generated.fA));
+  const SpatialForced F_B_Ab(Vector3d(MG_kuka_auto_generated.tB),
+                             Vector3d(MG_kuka_auto_generated.fB));
+  const SpatialForced F_C_Bc(Vector3d(MG_kuka_auto_generated.tC),
+                             Vector3d(MG_kuka_auto_generated.fC));
+  const SpatialForced F_D_Cd(Vector3d(MG_kuka_auto_generated.tD),
+                             Vector3d(MG_kuka_auto_generated.fD));
+  const SpatialForced F_E_De(Vector3d(MG_kuka_auto_generated.tE),
+                             Vector3d(MG_kuka_auto_generated.fE));
+  const SpatialForced F_F_Ef(Vector3d(MG_kuka_auto_generated.tF),
+                             Vector3d(MG_kuka_auto_generated.fF));
+  const SpatialForced F_G_Fg(Vector3d(MG_kuka_auto_generated.tG),
+                             Vector3d(MG_kuka_auto_generated.fG));
 
   return std::make_tuple(F_A_Na, F_B_Ab, F_C_Bc, F_D_Cd,
                          F_E_De, F_F_Ef, F_G_Fg);
 }
-
-
 
 
 // Explicitly instantiates on the most common scalar types.
