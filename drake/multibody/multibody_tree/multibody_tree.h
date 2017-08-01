@@ -600,6 +600,15 @@ class MultibodyTree {
   /// </pre>
   /// where `H(q)` is the %MultibodyTree mass matrix and `C(q, v) * v` is the
   /// bias term containing Coriolis and gyroscopic effects.
+  /// This method does not compute explicit expressions for the mass matrix nor
+  /// for the bias term, which would be of at least `O(n²)` complexity, but it
+  /// implements an `O(n)` Newton-Euler recursive algorithm, where n is the
+  /// number of bodies in the %MultibodyTree. The explicit formation of the
+  /// mass matrix `H(q)` would require the calculation of `O(n²)` entries while
+  /// explicitly forming the product `C(q, v) * v` could require `O(n³)`
+  /// operations. The recursive Newton-Euler algorithm is the most efficient
+  /// currently known general method for solving inverse dynamics
+  /// [Featherstone 2008].
   ///
   /// @param[in] context
   ///   The context containing the state of the %MultibodyTree model.
