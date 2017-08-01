@@ -80,7 +80,7 @@ GTEST_TEST(EffortToInputConverterTest, TestEmptyMessage) {
 }
 
 GTEST_TEST(EffortToInputConverterTest, TestNonEmptyMessage) {
-  bot_core::atlas_command_t message;
+  bot_core::atlas_command_t message{};
 
   RigidBodyTree<double> tree;
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(

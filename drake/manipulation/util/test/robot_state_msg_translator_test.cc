@@ -153,7 +153,7 @@ class RobotStateLcmMessageTranslatorTest : public ::testing::Test {
   }
 
   multibody::joints::FloatingBaseType base_type_;
-  bot_core::robot_state_t message_;
+  bot_core::robot_state_t message_{};
   // Same seed every time, but that's OK.
   std::default_random_engine rand_;
   std::unique_ptr<RobotStateLcmMessageTranslator> dut_;

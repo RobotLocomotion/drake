@@ -77,7 +77,7 @@ void RobotStateEncoder::OutputRobotState(const Context<double>& context,
 }
 
 robot_state_t RobotStateEncoder::MakeRobotState() const {
-  robot_state_t msg;
+  robot_state_t msg{};
   translator_.InitializeMessage(&msg);
   return msg;
 }

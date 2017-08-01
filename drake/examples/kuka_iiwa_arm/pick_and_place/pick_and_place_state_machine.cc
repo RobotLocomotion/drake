@@ -152,7 +152,7 @@ void PickAndPlaceStateMachine::Update(
             loose_pos_tol_, loose_rot_tol_, planner, &ik_res, &times);
         DRAKE_DEMAND(res);
 
-        robotlocomotion::robot_plan_t plan;
+        robotlocomotion::robot_plan_t plan{};
         iiwa_move_.MoveJoints(env_state, iiwa, times, ik_res.q_sol, &plan);
         iiwa_callback(&plan);
 
@@ -181,7 +181,7 @@ void PickAndPlaceStateMachine::Update(
             tight_pos_tol_, tight_rot_tol_, planner, &ik_res, &times);
         DRAKE_DEMAND(res);
 
-        robotlocomotion::robot_plan_t plan;
+        robotlocomotion::robot_plan_t plan{};
         iiwa_move_.MoveJoints(env_state, iiwa, times, ik_res.q_sol, &plan);
         iiwa_callback(&plan);
 
@@ -227,7 +227,7 @@ void PickAndPlaceStateMachine::Update(
             tight_pos_tol_, tight_rot_tol_, planner, &ik_res, &times);
         DRAKE_DEMAND(res);
 
-        robotlocomotion::robot_plan_t plan;
+        robotlocomotion::robot_plan_t plan{};
         iiwa_move_.MoveJoints(env_state, iiwa, times, ik_res.q_sol, &plan);
         iiwa_callback(&plan);
 
@@ -259,7 +259,7 @@ void PickAndPlaceStateMachine::Update(
             loose_pos_tol_, loose_rot_tol_, planner, &ik_res, &times);
         DRAKE_DEMAND(res);
 
-        robotlocomotion::robot_plan_t plan;
+        robotlocomotion::robot_plan_t plan{};
         iiwa_move_.MoveJoints(env_state, iiwa, times, ik_res.q_sol, &plan);
         iiwa_callback(&plan);
 
@@ -288,7 +288,7 @@ void PickAndPlaceStateMachine::Update(
             tight_pos_tol_, tight_rot_tol_, planner, &ik_res, &times);
         DRAKE_DEMAND(res);
 
-        robotlocomotion::robot_plan_t plan;
+        robotlocomotion::robot_plan_t plan{};
         iiwa_move_.MoveJoints(env_state, iiwa, times, ik_res.q_sol, &plan);
         iiwa_callback(&plan);
 
@@ -333,7 +333,7 @@ void PickAndPlaceStateMachine::Update(
             tight_pos_tol_, tight_rot_tol_, planner, &ik_res, &times);
         DRAKE_DEMAND(res);
 
-        robotlocomotion::robot_plan_t plan;
+        robotlocomotion::robot_plan_t plan{};
         iiwa_move_.MoveJoints(env_state, iiwa, times, ik_res.q_sol, &plan);
         iiwa_callback(&plan);
 
