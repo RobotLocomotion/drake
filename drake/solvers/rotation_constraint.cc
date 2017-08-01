@@ -1064,6 +1064,13 @@ void AddCrossProductImpliedOrthantConstraint(
   // ( 0,  1,  0,  0,  1)
   // ( 0,  1,  1,  1,  1)
   // So this polytope has 2⁵ - 8 = 24 vertices in total.
+  // The matrix A and b are obtained by converting this polytope from its
+  // vertices (V-representation), to its facets (H-representation). We did
+  // this conversion through Multi-parametric toolbox. Here is the MATLAB code
+  // P = Polyhedron(V);
+  // P.computeHRep();
+  // A = P.A;
+  // b = P.b;
   constexpr int A_rows = 18;
   constexpr int A_cols = 5;
   Eigen::Matrix<double, A_rows, A_cols> A;
@@ -1100,7 +1107,7 @@ void AddCrossProductImpliedOrthantConstraint(
       var << Bpos0(i, col0), Bpos0(j, col1), Bpos0(j, col0), Bpos0(i, col1),
           Bpos0(k, col2);
       prog->AddLinearConstraint(A,
-                                Eigen::Matrix<double, 18, 1>::Constant(
+                                Eigen::Matrix<double, A_rows, 1>::Constant(
                                     -std::numeric_limits<double>::infinity()),
                                 b, var);
     }
