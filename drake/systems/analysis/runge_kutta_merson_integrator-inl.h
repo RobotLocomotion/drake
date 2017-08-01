@@ -24,6 +24,12 @@ void RungeKuttaMersonIntegrator<T>::DoInitialize() {
 template <class T>
 bool RungeKuttaMersonIntegrator<T>::DoStep(const T& dt) {
   auto context = IntegratorBase<T>::get_mutable_context();
+
+  // TODO(edrumwri): Investigate whether saving and reusing the last computed
+  // time derivatives saves considerable compuation after caching is in place.
+  // If not, the current approach removes a powerful precondition (i.e., that
+  // the derivative is always up-to-date), and thus makes ensuring the
+  // correctness of the code easier.
   this->CalcTimeDerivatives(*context, derivs0_.get());
 
   // Find the continuous state xc within the Context, just once.
@@ -57,7 +63,8 @@ bool RungeKuttaMersonIntegrator<T>::DoStep(const T& dt) {
   const auto& xcdot1 = derivs1_->get_vector();
 
   // Compute the second intermediate state and derivative (at t=1/3, x(1/6)).
-  context->set_time(ta + kOneThirdDt);
+  // NOTE: time has not advanced, and we do not reset it for symmetry here
+  // because time-dependent calculations might erroneously become invalidated.
   xc->SetFromVector(xt0);
   xc->PlusEqScaled({{kOneSixthDt, xcdot0}, {kOneSixthDt, xcdot1}});
   this->CalcTimeDerivatives(*context, derivs2_.get());

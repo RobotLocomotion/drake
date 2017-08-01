@@ -1129,8 +1129,12 @@ class IntegratorBase {
     // If the user asks for accuracy that is looser than the loosest this
     // integrator can provide, use the integrator's loosest accuracy setting
     // instead.
-    if (isnan(working_accuracy) || working_accuracy > loosest_accuracy)
-      working_accuracy = loosest_accuracy;
+    if (isnan(working_accuracy)) {
+      working_accuracy = default_accuracy;
+    } else {
+      if (working_accuracy > loosest_accuracy)
+        working_accuracy = loosest_accuracy;
+    }
     this->set_accuracy_in_use(working_accuracy);
   }
 
