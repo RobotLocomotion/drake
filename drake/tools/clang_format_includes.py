@@ -40,8 +40,6 @@ def main():
             for dirpath, _, filenames in os.walk(pathname)
             for filename in filenames
             if os.path.splitext(filename)[1][1:] in extensions and
-            # TODO(jwnimmer-tri) Eventually do pybind11.
-            "bindings/pybind11" not in dirpath and
             "/thirdParty/" not in dirpath and
             "/third_party/" not in dirpath and
             "/matlab/" not in dirpath
