@@ -1,6 +1,8 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
+package(default_visibility = ["//visibility:public"])
+
 load("@protobuf//:protobuf.bzl", "py_proto_library")
 load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
 load("//tools:lcm.bzl", "lcm_cc_library")
