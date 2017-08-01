@@ -167,7 +167,7 @@ class IcpVisualizer {
     lcm_.Publish("DRAKE_VIEWER_DRAW", bytes.data(), bytes.size());
   }
   void PublishCloud(const Matrix3Xd& points) {
-    bot_core::pointcloud_t pt_msg;
+    bot_core::pointcloud_t pt_msg{};
     PointCloudToLcm(points, &pt_msg);
     vector<uint8_t> bytes(pt_msg.getEncodedSize());
     pt_msg.encode(bytes.data(), 0, bytes.size());
