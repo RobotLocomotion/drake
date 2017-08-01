@@ -6,38 +6,8 @@
 #include "drake/multibody/parsers/urdf_parser.h"
 
 namespace drake {
-namespace examples {
-namespace qp_inverse_dynamics {
-namespace param_parsers {
+namespace {
 
-// body_group {
-//   name: "b_group1"
-// }
-//
-// body_group {
-//   name: "b_group2"
-//   member: "link1"
-// }
-//
-// body_group {
-//   name: "b_group2"
-//   member: "link3"
-// }
-//
-// body_group {
-//   name: "b_group3"
-//   member: "world"
-// }
-//
-// joint_group {
-//   name: "j_group1"
-// }
-//
-// joint_group {
-//   name: "j_group2"
-//   member: "base"
-//   member: "joint1"
-// }
 // Please refer to the full config file for more details.
 void TestFullConfig(multibody::joints::FloatingBaseType type) {
   std::string urdf = FindResourceOrThrow(
@@ -132,7 +102,5 @@ GTEST_TEST(RigidBodyTreeParsingTest, TestFull) {
   TestFullConfig(multibody::joints::kFixed);
 }
 
-}  // namespace param_parsers
-}  // namespace qp_inverse_dynamics
-}  // namespace examples
+}  // namespace
 }  // namespace drake

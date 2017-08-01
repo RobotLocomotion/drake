@@ -14,7 +14,7 @@ namespace qp_inverse_dynamics {
 /**
  * A wrapper class around KinematicsCache and several useful matrices such as
  * the inertia matrix, etc. This class serves mainly as a explicit cache to
- * avoid repeated computation. This class can be replaced with System's cache
+ * avoid repeated computation. This class can be replaced when System's cache
  * is ready.
  */
 template <typename T>

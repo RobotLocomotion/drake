@@ -29,10 +29,10 @@ void QpInverseDynamics::AddAsConstraints(
 
 template <typename DerivedA, typename DerivedB, typename DerivedW>
 void QpInverseDynamics::AddAsCosts(const Eigen::MatrixBase<DerivedA>& A,
-                              const Eigen::MatrixBase<DerivedB>& b,
-                              const Eigen::MatrixBase<DerivedW>& weights,
-                              const std::list<int>& idx,
-                              drake::solvers::QuadraticCost* cost) {
+                                   const Eigen::MatrixBase<DerivedB>& b,
+                                   const Eigen::MatrixBase<DerivedW>& weights,
+                                   const std::list<int>& idx,
+                                   drake::solvers::QuadraticCost* cost) {
   if (idx.empty()) return;
   if (A.rows() != b.rows() || A.rows() != weights.rows() ||
       A.rows() > tmp_vd_mat_.rows() || b.cols() != 1 || weights.cols() != 1 ||
@@ -61,8 +61,7 @@ void QpInverseDynamics::SetTempMatricesToZero() {
 
 bool QpInverseDynamics::HasFloatingBase(
     const RigidBodyTree<double>& robot) const {
-  if (robot.get_num_bodies() < 2)
-    return false;
+  if (robot.get_num_bodies() < 2) return false;
 
   // TODO(siyuan.feng): find a better to do this, right now all the other math
   // assumes that the floating base will be the first body.
@@ -70,7 +69,7 @@ bool QpInverseDynamics::HasFloatingBase(
 }
 
 void QpInverseDynamics::ResizeQP(const RigidBodyTree<double>& robot,
-                            const QpInput& input) {
+                                 const QpInput& input) {
   const std::unordered_map<std::string, ContactInformation>& all_contacts =
       input.contact_information();
   const std::unordered_map<std::string, DesiredBodyMotion>& all_body_motions =
@@ -202,7 +201,8 @@ void QpInverseDynamics::ResizeQP(const RigidBodyTree<double>& robot,
             ->AddLinearEqualityConstraint(
                 MatrixX<double>::Zero(num_dynamics_equations_, num_variable_),
                 VectorX<double>::Zero(num_dynamics_equations_), {vd_, basis_})
-            .constraint().get();
+            .constraint()
+            .get();
 
     eq_dynamics_->set_description("dynamics eq");
   } else {
@@ -217,8 +217,9 @@ void QpInverseDynamics::ResizeQP(const RigidBodyTree<double>& robot,
     const ContactInformation& contact = contact_pair.second;
     if (contact.acceleration_constraint_type() == ConstraintType::Soft) {
       cost_contacts_[cost_ctr++] =
-          prog_->AddQuadraticCost(tmp_vd_mat_, tmp_vd_vec_, vd_).constraint()
-               .get();
+          prog_->AddQuadraticCost(tmp_vd_mat_, tmp_vd_vec_, vd_)
+              .constraint()
+              .get();
     } else {
       // Either hard or soft because contact constraint can't be skipped.
       eq_contacts_[eq_ctr++] =
@@ -227,7 +228,8 @@ void QpInverseDynamics::ResizeQP(const RigidBodyTree<double>& robot,
                   MatrixX<double>::Zero(3 * contact.num_contact_points(),
                                         num_vd_),
                   VectorX<double>::Zero(3 * contact.num_contact_points()), vd_)
-              .constraint().get();
+              .constraint()
+              .get();
     }
   }
 
@@ -243,7 +245,8 @@ void QpInverseDynamics::ResizeQP(const RigidBodyTree<double>& robot,
                 VectorX<double>::Constant(num_basis_,
                                           kUpperBoundForContactBasis),
                 basis_)
-            .constraint().get();
+            .constraint()
+            .get();
     ineq_contact_wrench_->set_description("contact force basis ineq");
   } else {
     ineq_contact_wrench_ = nullptr;
@@ -256,7 +259,8 @@ void QpInverseDynamics::ResizeQP(const RigidBodyTree<double>& robot,
                 MatrixX<double>::Zero(num_torque_, num_variable_),
                 VectorX<double>::Zero(num_torque_),
                 VectorX<double>::Zero(num_torque_), {vd_, basis_})
-            .constraint().get();
+            .constraint()
+            .get();
     ineq_torque_limit_->set_description("torque limit ineq");
   } else {
     ineq_torque_limit_ = nullptr;
@@ -264,9 +268,9 @@ void QpInverseDynamics::ResizeQP(const RigidBodyTree<double>& robot,
 
   // Set up cost / eq constraints for centroidal momentum change.
   if (num_cen_mom_dot_as_cost_) {
-    cost_cen_mom_dot_ =
-        prog_->AddQuadraticCost(tmp_vd_mat_, tmp_vd_vec_, vd_)
-             .constraint().get();
+    cost_cen_mom_dot_ = prog_->AddQuadraticCost(tmp_vd_mat_, tmp_vd_vec_, vd_)
+                            .constraint()
+                            .get();
     cost_cen_mom_dot_->set_description("centroidal momentum change cost");
   } else {
     cost_cen_mom_dot_ = nullptr;
@@ -276,7 +280,8 @@ void QpInverseDynamics::ResizeQP(const RigidBodyTree<double>& robot,
     // will be reset when updating the constraint.
     eq_cen_mom_dot_ =
         prog_->AddLinearEqualityConstraint(tmp_vd_mat_, tmp_vd_vec_, vd_)
-             .constraint().get();
+            .constraint()
+            .get();
     eq_cen_mom_dot_->set_description("centroidal momentum change eq");
   } else {
     eq_cen_mom_dot_ = nullptr;
@@ -290,21 +295,23 @@ void QpInverseDynamics::ResizeQP(const RigidBodyTree<double>& robot,
   for (int i = 0; i < num_body_motion_as_cost_; ++i) {
     cost_body_motion_[i] =
         prog_->AddQuadraticCost(tmp_vd_mat_, tmp_vd_vec_, vd_)
-             .constraint().get();
+            .constraint()
+            .get();
   }
   for (int i = 0; i < num_body_motion_as_eq_; ++i) {
     // Dimension doesn't matter for equality constraints,
     // will be reset when updating the constraint.
     eq_body_motion_[i] =
         prog_->AddLinearEqualityConstraint(tmp_vd_mat_, tmp_vd_vec_, vd_)
-             .constraint().get();
+            .constraint()
+            .get();
   }
 
   // Set up cost / eq constraints for dof motion.
   if (num_dof_motion_as_cost_ > 0) {
-    cost_dof_motion_ =
-        prog_->AddQuadraticCost(tmp_vd_mat_, tmp_vd_vec_, vd_)
-             .constraint().get();
+    cost_dof_motion_ = prog_->AddQuadraticCost(tmp_vd_mat_, tmp_vd_vec_, vd_)
+                           .constraint()
+                           .get();
     cost_dof_motion_->set_description("vd cost");
   } else {
     cost_dof_motion_ = nullptr;
@@ -314,7 +321,8 @@ void QpInverseDynamics::ResizeQP(const RigidBodyTree<double>& robot,
     // will be reset when updating the constraint.
     eq_dof_motion_ =
         prog_->AddLinearEqualityConstraint(tmp_vd_mat_, tmp_vd_vec_, vd_)
-             .constraint().get();
+            .constraint()
+            .get();
     eq_dof_motion_->set_description("vd eq");
   } else {
     eq_dof_motion_ = nullptr;
@@ -325,14 +333,15 @@ void QpInverseDynamics::ResizeQP(const RigidBodyTree<double>& robot,
       prog_
           ->AddQuadraticCost(MatrixX<double>::Identity(num_basis_, num_basis_),
                              VectorX<double>::Zero(num_basis_), basis_)
-          .constraint().get();
+          .constraint()
+          .get();
   cost_basis_reg_->set_description("basis reg cost");
   basis_reg_mat_ = MatrixX<double>::Identity(num_basis_, num_basis_);
   basis_reg_vec_ = VectorX<double>::Zero(num_basis_);
 }
 
 int QpInverseDynamics::Control(const RobotKinematicState<double>& rs,
-                          const QpInput& input, QpOutput* output) {
+                               const QpInput& input, QpOutput* output) {
   const RigidBodyTree<double>& robot = rs.get_robot();
   const KinematicsCache<double>& cache = rs.get_cache();
 
@@ -708,9 +717,8 @@ int QpInverseDynamics::Control(const RobotKinematicState<double>& rs,
     }
 
     // Compute acceleration for contact body.
-    Matrix6X<double> J_body =
-        robot.CalcBodySpatialVelocityJacobianInWorldFrame(
-            cache, resolved_contact.body());
+    Matrix6X<double> J_body = robot.CalcBodySpatialVelocityJacobianInWorldFrame(
+        cache, resolved_contact.body());
     Vector6<double> Jdv_body =
         robot.CalcBodySpatialVelocityJacobianDotTimesVInWorldFrame(
             cache, resolved_contact.body());
@@ -723,8 +731,8 @@ int QpInverseDynamics::Control(const RobotKinematicState<double>& rs,
   output->mutable_centroidal_momentum_dot() =
       rs.get_centroidal_momentum_matrix() * output->vd() +
       rs.get_centroidal_momentum_matrix_dot_times_v();
-  output->mutable_comdd() = output->mutable_centroidal_momentum_dot().tail(3) /
-      robot.getMass();
+  output->mutable_comdd() =
+      output->mutable_centroidal_momentum_dot().tail(3) / robot.getMass();
 
   int body_motion_ctr = 0;
   for (const auto& pair : input.desired_body_motions()) {
