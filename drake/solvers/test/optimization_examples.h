@@ -124,6 +124,28 @@ class LinearSystemExample3 : public LinearSystemExample2 {
 };
 
 /**
+ * Simple linear system without a solution
+ * 3 * x = 1
+ * 2 * x + y = 2
+ * x - y = 0
+ */
+class LinearSystemNoSolutionExample : public ::testing::Test {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSystemNoSolutionExample)
+
+  LinearSystemNoSolutionExample()
+      : prog_{},
+        x_{prog_.NewContinuousVariables<2>()} {
+    prog_.AddLinearConstraint(3 * x_(0) == 1 && 2 * x_(0) + x_(1) == 2 &&
+                              x_(0) - x_(1) == 0);
+  }
+
+ protected:
+  MathematicalProgram prog_;
+  VectorDecisionVariable<2> x_;
+};
+
+/**
  * For a stable linear system ẋ = A x, find its Lyapunov function by solving
  * the Lyapunov equality on the symmetric matrix X
  * Aᵀ * X + X * A = -E

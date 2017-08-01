@@ -45,13 +45,18 @@ SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog) const {
     constraint_index += n;
   }
 
+  const Eigen::VectorXd least_square_sol = Aeq.colPivHouseholderQr().solve(beq);
   // least-squares solution
-  prog.SetDecisionVariableValues(
-      Aeq.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(beq));
+  prog.SetDecisionVariableValues(least_square_sol);
   prog.SetOptimalCost(0.);
 
+
   prog.SetSolverId(id());
-  return SolutionResult::kSolutionFound;
+  if (beq.isApprox(Aeq * least_square_sol)) {
+    return SolutionResult::kSolutionFound;
+  } else {
+    return SolutionResult::kInfeasibleConstraints;
+  }
 }
 
 SolverId LinearSystemSolver::solver_id() const {

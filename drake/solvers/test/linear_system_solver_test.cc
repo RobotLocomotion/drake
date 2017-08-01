@@ -29,6 +29,12 @@ GTEST_TEST(testLinearSystemSolver, trivialExample) {
   TestLinearSystemExample(&example1);
 }
 
+TEST_F(LinearSystemNoSolutionExample, testSolution) {
+  auto result = prog_.Solve();
+  EXPECT_EQ(result, SolutionResult::kInfeasibleConstraints);
+  CheckSolver(prog_, LinearSystemSolver::id());
+}
+
 GTEST_TEST(testLinearSystemSolver, linearMatrixEqualityExample) {
   LinearMatrixEqualityExample example{};
   example.prog()->Solve();
