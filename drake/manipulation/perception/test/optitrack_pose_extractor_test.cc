@@ -1,6 +1,7 @@
 #include "drake/manipulation/perception/optitrack_pose_extractor.h"
 
 #include <memory>
+
 #include <gtest/gtest.h>
 #include "optitrack/optitrack_frame_t.hpp"
 

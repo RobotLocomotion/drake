@@ -1,6 +1,7 @@
 #include "drake/manipulation/perception/optitrack_pose_extractor.h"
 
 #include <vector>
+
 #include "optitrack/optitrack_frame_t.hpp"
 
 #include "drake/math/quaternion.h"
