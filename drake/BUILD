@@ -3,7 +3,7 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("//tools:install.bzl", "install")
+load("@drake//tools:install.bzl", "install")
 load("//tools:lint.bzl", "add_lint_tests")
 load("//tools:transitive_hdrs.bzl", "transitive_hdrs_library")
 
