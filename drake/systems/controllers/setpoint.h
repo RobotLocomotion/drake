@@ -2,14 +2,13 @@
 
 #include <iostream>
 
-#include <Eigen/Dense>
-
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/rotation_matrix.h"
 
 namespace drake {
-namespace examples {
-namespace qp_inverse_dynamics {
+namespace systems {
+namespace controllers {
 
 /**
  * This is used to compute target spatial acceleration, which is the input
@@ -32,6 +31,8 @@ namespace qp_inverse_dynamics {
 template <typename Scalar>
 class CartesianSetpoint {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CartesianSetpoint)
+
   CartesianSetpoint() {
     pose_d_.setIdentity();
     vel_d_.setZero();
@@ -160,6 +161,8 @@ inline std::ostream& operator<<(std::ostream& out,
 template <typename Scalar>
 class VectorSetpoint {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VectorSetpoint)
+
   VectorSetpoint() {}
 
   explicit VectorSetpoint(int dim) {
@@ -279,6 +282,6 @@ std::ostream& operator<<(std::ostream& out,
   return out;
 }
 
-}  // namespace qp_inverse_dynamics
-}  // namespace examples
+}  // namespace controllers
+}  // namespace systems
 }  // namespace drake

@@ -4,29 +4,30 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"
 #include "drake/lcmt_inverse_dynamics_debug_info.hpp"
 #include "drake/multibody/rigid_body_tree.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/qp_inverse_dynamics.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
-namespace examples {
+namespace systems {
+namespace controllers {
 namespace qp_inverse_dynamics {
 
 /**
  * A discrete time system block for an inverse dynamics controller.
  */
-class QpControllerSystem : public systems::LeafSystem<double> {
+class QpInverseDynamicsSystem : public systems::LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QpControllerSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QpInverseDynamicsSystem)
 
   /**
    * Constructor for the inverse dynamics controller.
-   * @param robot Reference to a RigidBodyTree. Its lifespan must be longer
+   * @param robot Pointer to a RigidBodyTree. Its lifespan must be longer
    * than this object.
    * @param dt Control cycle period.
    */
-  QpControllerSystem(const RigidBodyTree<double>& robot, double dt);
+  QpInverseDynamicsSystem(const RigidBodyTree<double>* robot, double dt);
 
   void DoCalcUnrestrictedUpdate(const systems::Context<double>& context,
      const std::vector<const systems::UnrestrictedUpdateEvent<double>*>& events,
@@ -36,8 +37,8 @@ class QpControllerSystem : public systems::LeafSystem<double> {
    * Returns the input port for HumanoidStatus.
    */
   inline const systems::InputPortDescriptor<double>&
-  get_input_port_humanoid_status() const {
-    return get_input_port(input_port_index_humanoid_status_);
+  get_input_port_kinematic_state() const {
+    return get_input_port(input_port_index_kinematic_state_);
   }
 
   /**
@@ -83,9 +84,9 @@ class QpControllerSystem : public systems::LeafSystem<double> {
   // (MathematicalProgram, temporary matrices for doing math, etc),
   // and I want to avoid allocating these repeatedly.
   // This should be taken care of with the new system2 cache.
-  mutable QPController qp_controller_;
+  mutable QpInverseDynamics qp_controller_;
 
-  int input_port_index_humanoid_status_{0};
+  int input_port_index_kinematic_state_{0};
   int input_port_index_qp_input_{0};
   int output_port_index_qp_output_{0};
   int output_port_index_debug_info_{0};
@@ -95,5 +96,6 @@ class QpControllerSystem : public systems::LeafSystem<double> {
 };
 
 }  // namespace qp_inverse_dynamics
-}  // namespace examples
+}  // namespace controllers
+}  // namespace systems
 }  // namespace drake

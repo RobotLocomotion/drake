@@ -4,9 +4,8 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/find_resource.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/control_utils.h"
+#include "drake/systems/controllers/setpoint.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/system/qp_controller_system.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
@@ -17,6 +16,11 @@ namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 namespace {
+
+using systems::controllers::VectorSetpoint;
+using systems::controllers::qp_inverse_dynamics::ConstraintType;
+using systems::controllers::qp_inverse_dynamics::ParamSet;
+using systems::controllers::qp_inverse_dynamics::QpInput;
 
 // Builds a test diagram that gives a ManipulatorInverseDynamicsController and
 // a systems::InverseDynamicsController the exact same inputs (estimated state,
@@ -157,7 +161,7 @@ class ManipulatorInverseDynamicsControllerTest : public ::testing::Test {
   std::unique_ptr<systems::Context<double>> context_{nullptr};
   std::unique_ptr<systems::SystemOutput<double>> output_{nullptr};
 
-  const param_parsers::ParamSet* params_;
+  const ParamSet* params_;
 
   VectorX<double> expected_vd_d_;
 

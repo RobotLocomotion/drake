@@ -8,16 +8,17 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller_common.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/qp_inverse_dynamics_common.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/robot_kinematic_state.h"
 
 namespace drake {
-namespace examples {
+namespace systems {
+namespace controllers {
 namespace qp_inverse_dynamics {
 
-class QPController {
+class QpInverseDynamics {
  public:
   /**
    * Computes the generalized acceleration, joint torque and contact wrenches
@@ -28,8 +29,8 @@ class QPController {
    * @param output Container for outputs
    * @return 0 if successful. < 0 if error.
    */
-  int Control(const HumanoidStatus& robot_status, const QpInput& input,
-              QpOutput* output);
+  int Control(const RobotKinematicState<double>& robot_status,
+              const QpInput& input, QpOutput* output);
 
   static const double kUpperBoundForContactBasis;
 
@@ -156,5 +157,6 @@ class QPController {
 };
 
 }  // namespace qp_inverse_dynamics
-}  // namespace examples
+}  // namespace controllers
+}  // namespace systems
 }  // namespace drake

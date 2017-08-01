@@ -1,16 +1,10 @@
-#include "drake/examples/QPInverseDynamicsForHumanoids/lcm_utils.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/lcm_utils.h"
 
-#include <iostream>
-
-#include "drake/common/constants.h"
-#include "drake/math/quaternion.h"
-#include "drake/math/roll_pitch_yaw.h"
-#include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"
-#include "drake/util/lcmUtil.h"
 
 namespace drake {
-namespace examples {
+namespace systems {
+namespace controllers {
 namespace qp_inverse_dynamics {
 
 void DecodeBodyAcceleration(const RigidBodyTree<double>& robot,
@@ -329,5 +323,6 @@ void EncodeContactInformation(const ContactInformation& info,
 }
 
 }  // namespace qp_inverse_dynamics
-}  // namespace examples
+}  // namespace controllers
+}  // namespace systems
 }  // namespace drake

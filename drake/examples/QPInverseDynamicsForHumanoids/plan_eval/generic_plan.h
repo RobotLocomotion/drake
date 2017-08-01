@@ -7,11 +7,11 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/param_parser.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/rigid_body_tree_alias_groups.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller_common.h"
 #include "drake/manipulation/util/trajectory_utils.h"
+#include "drake/multibody/rigid_body_tree_alias_groups.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/param_parser.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/qp_inverse_dynamics_common.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/robot_kinematic_state.h"
 #include "drake/systems/framework/value.h"
 
 namespace drake {
@@ -75,9 +75,10 @@ class GenericPlan {
    * or @p paramset or @p alias_groups is incompatible.
    */
   void Initialize(
-      const HumanoidStatus& robot_status,
-      const param_parsers::ParamSet& paramset,
-      const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups);
+      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
+          robot_status,
+      const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
+      const RigidBodyTreeAliasGroups<T>& alias_groups);
 
   /**
    * Control logic should be implemented in this function. This function is
@@ -93,11 +94,13 @@ class GenericPlan {
    * or @p paramset or @p alias_groups is incompatible.
    */
   void ModifyPlan(
-      const HumanoidStatus& robot_status,
-      const param_parsers::ParamSet& paramset,
-      const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) {
+      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
+          robot_status,
+      const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
+      const RigidBodyTreeAliasGroups<T>& alias_groups) {
     // Checks parameters and throw if they are incompatible.
-    CheckCompatibilityAndThrow(robot_status.robot(), paramset, alias_groups);
+    CheckCompatibilityAndThrow(robot_status.get_robot(), paramset,
+                               alias_groups);
     ModifyPlanGenericPlanDerived(robot_status, paramset, alias_groups);
   }
 
@@ -114,12 +117,14 @@ class GenericPlan {
    * or @p paramset or @p alias_groups is incompatible.
    */
   void HandlePlan(
-      const HumanoidStatus& robot_status,
-      const param_parsers::ParamSet& paramset,
-      const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,
+      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
+          robot_status,
+      const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
+      const RigidBodyTreeAliasGroups<T>& alias_groups,
       const systems::AbstractValue& plan) {
     // Checks parameters and throw if they are incompatible.
-    CheckCompatibilityAndThrow(robot_status.robot(), paramset, alias_groups);
+    CheckCompatibilityAndThrow(robot_status.get_robot(), paramset,
+                               alias_groups);
     HandlePlanGenericPlanDerived(robot_status, paramset, alias_groups, plan);
   }
 
@@ -151,10 +156,11 @@ class GenericPlan {
    * or @p paramset or @p alias_groups is incompatible.
    */
   void UpdateQpInput(
-      const HumanoidStatus& robot_status,
-      const param_parsers::ParamSet& paramset,
-      const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,
-      QpInput* qp_input) const;
+      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
+          robot_status,
+      const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
+      const RigidBodyTreeAliasGroups<T>& alias_groups,
+      systems::controllers::qp_inverse_dynamics::QpInput* qp_input) const;
 
   /**
    * Returns the current planned contact state.
@@ -209,7 +215,7 @@ class GenericPlan {
    * checks.
    */
   virtual bool IsRigidBodyTreeAliasGroupsCompatible(
-      const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) const {
+      const RigidBodyTreeAliasGroups<T>& alias_groups) const {
     unused(alias_groups);
     return true;
   }
@@ -220,7 +226,8 @@ class GenericPlan {
    * checks.
    */
   virtual bool IsParamSetCompatible(
-      const param_parsers::ParamSet& paramset) const {
+      const systems::controllers::qp_inverse_dynamics::ParamSet& paramset)
+      const {
     unused(paramset);
     return true;
   }
@@ -242,35 +249,39 @@ class GenericPlan {
    * Custom initialization can be implemented here.
    */
   virtual void InitializeGenericPlanDerived(
-      const HumanoidStatus& robot_status,
-      const param_parsers::ParamSet& paramset,
-      const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) = 0;
+      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
+          robot_status,
+      const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
+      const RigidBodyTreeAliasGroups<T>& alias_groups) = 0;
 
   /**
    * Custom state mutation can be implemented here.
    */
   virtual void ModifyPlanGenericPlanDerived(
-      const HumanoidStatus& robot_status,
-      const param_parsers::ParamSet& paramset,
-      const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) = 0;
+      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
+          robot_status,
+      const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
+      const RigidBodyTreeAliasGroups<T>& alias_groups) = 0;
 
   /**
    * Custom plan handling can be implemented here.
    */
   virtual void HandlePlanGenericPlanDerived(
-      const HumanoidStatus& robot_status,
-      const param_parsers::ParamSet& paramset,
-      const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,
+      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
+          robot_status,
+      const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
+      const RigidBodyTreeAliasGroups<T>& alias_groups,
       const systems::AbstractValue& plan) = 0;
 
   /**
    * Custom QpInput updates can be implemented here.
    */
   virtual void UpdateQpInputGenericPlanDerived(
-      const HumanoidStatus& robot_status,
-      const param_parsers::ParamSet& paramset,
-      const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,
-      QpInput* qp_input) const = 0;
+      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
+          robot_status,
+      const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
+      const RigidBodyTreeAliasGroups<T>& alias_groups,
+      systems::controllers::qp_inverse_dynamics::QpInput* qp_input) const = 0;
 
   /**
    * Sets the planned contact state to @p contact_state.
@@ -313,8 +324,9 @@ class GenericPlan {
    * std::logic_error if any is incompatible.
    */
   void CheckCompatibilityAndThrow(
-      const RigidBodyTree<T>& robot, const param_parsers::ParamSet& paramset,
-      const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) const {
+      const RigidBodyTree<T>& robot,
+      const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
+      const RigidBodyTreeAliasGroups<T>& alias_groups) const {
     if (!IsRigidBodyTreeCompatible(robot)) {
       throw std::logic_error("Robot model is incompatible with the plan.");
     }

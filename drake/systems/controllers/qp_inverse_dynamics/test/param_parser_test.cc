@@ -1,4 +1,4 @@
-#include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/param_parser.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/param_parser.h"
 
 #include <set>
 
@@ -10,9 +10,9 @@
 #include "drake/multibody/parsers/urdf_parser.h"
 
 namespace drake {
-namespace examples {
+namespace systems {
+namespace controllers {
 namespace qp_inverse_dynamics {
-namespace param_parsers {
 namespace {
 
 class ParamParserTests : public ::testing::Test {
@@ -22,17 +22,18 @@ class ParamParserTests : public ::testing::Test {
         "drake/examples/valkyrie/urdf/urdf/"
         "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
     const std::string alias_groups_config_name = FindResourceOrThrow(
-        "drake/examples/QPInverseDynamicsForHumanoids/"
-        "param_parsers/test/params.alias_groups");
+        "drake/systems/controllers/qp_inverse_dynamics/test/"
+        "params.alias_groups");
     const std::string controller_config_name = FindResourceOrThrow(
-        "drake/examples/QPInverseDynamicsForHumanoids/"
-        "param_parsers/test/params.id_controller_config");
+        "drake/systems/controllers/qp_inverse_dynamics/test/"
+        "params.id_controller_config");
 
     robot_ = std::make_unique<RigidBodyTree<double>>();
     parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
         urdf_name, multibody::joints::kRollPitchYaw, robot_.get());
 
-    rbt_alias_ = std::make_unique<RigidBodyTreeAliasGroups<double>>(*robot_);
+    rbt_alias_ =
+        std::make_unique<RigidBodyTreeAliasGroups<double>>(robot_.get());
     rbt_alias_->LoadFromFile(alias_groups_config_name);
 
     paramset_.LoadFromFile(controller_config_name, *rbt_alias_);
@@ -381,8 +382,8 @@ TEST_F(ParamParserTests, MakeQpInputFromRigidBodyPtr) {
 
   std::vector<const RigidBody<double>*> contact_bodies = pelvis_group;
   std::vector<const RigidBody<double>*> tracked_bodies = pelvis_group;
-  tracked_bodies.insert(tracked_bodies.end(),
-      r_foot_group.begin(), r_foot_group.end());
+  tracked_bodies.insert(tracked_bodies.end(), r_foot_group.begin(),
+                        r_foot_group.end());
 
   QpInput qp_input =
       paramset_.MakeQpInput(contact_bodies, tracked_bodies, *rbt_alias_);
@@ -391,7 +392,7 @@ TEST_F(ParamParserTests, MakeQpInputFromRigidBodyPtr) {
 }
 
 }  // namespace
-}  // namespace param_parsers
 }  // namespace qp_inverse_dynamics
-}  // namespace examples
+}  // namespace controllers
+}  // namespace systems
 }  // namespace drake

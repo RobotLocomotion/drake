@@ -5,13 +5,13 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/rigid_body_tree_alias_groups.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller_common.h"
+#include "drake/multibody/rigid_body_tree_alias_groups.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/qp_inverse_dynamics_common.h"
 
 namespace drake {
-namespace examples {
+namespace systems {
+namespace controllers {
 namespace qp_inverse_dynamics {
-namespace param_parsers {
 
 /**
  * Struct for storing parameters for generating a desired acceleration
@@ -367,7 +367,7 @@ class ParamSet {
       const RigidBody<double>& body, const DesiredMotionParam& param) const;
 };
 
-}  // namespace param_parsers
 }  // namespace qp_inverse_dynamics
-}  // namespace examples
+}  // namespace controllers
+}  // namespace systems
 }  // namespace drake

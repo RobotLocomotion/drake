@@ -1,9 +1,10 @@
-#include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller_common.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/qp_inverse_dynamics_common.h"
 
 #include "drake/math/cross_product.h"
 
 namespace drake {
-namespace examples {
+namespace systems {
+namespace controllers {
 namespace qp_inverse_dynamics {
 
 std::ostream& operator<<(std::ostream& out, const ConstraintType& type) {
@@ -596,5 +597,6 @@ std::ostream& operator<<(std::ostream& out, const QpOutput& output) {
 }
 
 }  // namespace qp_inverse_dynamics
-}  // namespace examples
+}  // namespace controllers
+}  // namespace systems
 }  // namespace drake

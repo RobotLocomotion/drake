@@ -1,4 +1,4 @@
-#include "drake/examples/QPInverseDynamicsForHumanoids/system/qp_controller_system.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/qp_inverse_dynamics_system.h"
 
 #include <memory>
 #include <utility>
@@ -8,7 +8,8 @@
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
-namespace examples {
+namespace systems {
+namespace controllers {
 namespace qp_inverse_dynamics {
 namespace {
 
@@ -22,21 +23,21 @@ ValueType& get_mutable_value(systems::State<double>* state, int index) {
 
 }  // namespace
 
-QpControllerSystem::QpControllerSystem(const RigidBodyTree<double>& robot,
-                                       double dt)
-    : robot_(robot), control_dt_(dt) {
-  input_port_index_humanoid_status_ = DeclareAbstractInputPort().get_index();
+QpInverseDynamicsSystem::QpInverseDynamicsSystem(
+    const RigidBodyTree<double>* robot, double dt)
+    : robot_(*robot), control_dt_(dt) {
+  input_port_index_kinematic_state_ = DeclareAbstractInputPort().get_index();
   input_port_index_qp_input_ = DeclareAbstractInputPort().get_index();
   output_port_index_qp_output_ =
       DeclareAbstractOutputPort(QpOutput(GetDofNames(robot_)),
-                                &QpControllerSystem::CopyOutQpOutput)
+                                &QpInverseDynamicsSystem::CopyOutQpOutput)
           .get_index();
   output_port_index_debug_info_ =
       DeclareAbstractOutputPort(lcmt_inverse_dynamics_debug_info(),
-                                &QpControllerSystem::CopyOutDebugInfo)
+                                &QpInverseDynamicsSystem::CopyOutDebugInfo)
           .get_index();
 
-  set_name("QpControllerSystem");
+  set_name("QpInverseDynamicsSystem");
   DeclarePeriodicUnrestrictedUpdate(control_dt_, 0);
 
   abs_state_index_qp_output_ = DeclareAbstractState(
@@ -46,14 +47,14 @@ QpControllerSystem::QpControllerSystem(const RigidBodyTree<double>& robot,
           lcmt_inverse_dynamics_debug_info()));
 }
 
-void QpControllerSystem::CopyOutQpOutput(
+void QpInverseDynamicsSystem::CopyOutQpOutput(
     const systems::Context<double>& context,
     QpOutput* output) const {
   QpOutput& qp_output = *output;
   qp_output = context.get_abstract_state<QpOutput>(abs_state_index_qp_output_);
 }
 
-void QpControllerSystem::CopyOutDebugInfo(
+void QpInverseDynamicsSystem::CopyOutDebugInfo(
     const systems::Context<double>& context,
     lcmt_inverse_dynamics_debug_info* output) const {
   lcmt_inverse_dynamics_debug_info& debug = *output;
@@ -61,13 +62,14 @@ void QpControllerSystem::CopyOutDebugInfo(
       abs_state_index_debug_info_);
 }
 
-void QpControllerSystem::DoCalcUnrestrictedUpdate(
+void QpInverseDynamicsSystem::DoCalcUnrestrictedUpdate(
     const systems::Context<double>& context,
     const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
     systems::State<double>* state) const {
   // Inputs:
-  const HumanoidStatus* rs = EvalInputValue<HumanoidStatus>(
-      context, input_port_index_humanoid_status_);
+  const RobotKinematicState<double>* rs =
+      EvalInputValue<RobotKinematicState<double>>(
+          context, input_port_index_kinematic_state_);
 
   const QpInput* qp_input =
       EvalInputValue<QpInput>(context, input_port_index_qp_input_);
@@ -78,10 +80,10 @@ void QpControllerSystem::DoCalcUnrestrictedUpdate(
 
   if (qp_controller_.Control(*rs, *qp_input, &qp_output) < 0) {
     std::stringstream err;
-    err << rs->position().transpose() << "\n";
-    err << rs->velocity().transpose() << "\n";
+    err << rs->get_cache().getQ().transpose() << "\n";
+    err << rs->get_cache().getV().transpose() << "\n";
     err << *qp_input << std::endl;
-    throw std::runtime_error("QpControllerSystem: QP cannot solve\n" +
+    throw std::runtime_error("QpInverseDynamicsSystem: QP cannot solve\n" +
                              err.str());
   }
 
@@ -104,5 +106,6 @@ void QpControllerSystem::DoCalcUnrestrictedUpdate(
 }
 
 }  // namespace qp_inverse_dynamics
-}  // namespace examples
+}  // namespace controllers
+}  // namespace systems
 }  // namespace drake

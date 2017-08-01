@@ -13,8 +13,11 @@ namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
+using systems::controllers::qp_inverse_dynamics::QpInput;
+using systems::controllers::qp_inverse_dynamics::RobotKinematicState;
+
 HumanoidPlanEvalSystem::HumanoidPlanEvalSystem(
-    const RigidBodyTree<double>& robot,
+    const RigidBodyTree<double>* robot,
     const std::string& alias_groups_file_name,
     const std::string& param_file_name, double dt)
     : PlanEvalBaseSystem(robot, alias_groups_file_name, param_file_name, dt) {
@@ -35,8 +38,9 @@ void HumanoidPlanEvalSystem::DoExtendedCalcUnrestrictedUpdate(
       state, abs_state_index_plan_);
 
   // Gets the robot state from input.
-  const HumanoidStatus* robot_status = EvalInputValue<HumanoidStatus>(
-      context, get_input_port_humanoid_status().get_index());
+  const RobotKinematicState<double>* robot_status =
+      EvalInputValue<RobotKinematicState<double>>(
+          context, get_input_port_kinematic_state().get_index());
 
   // Gets the plan message fron input.
   const systems::AbstractValue* msg_as_value =
@@ -56,8 +60,9 @@ void HumanoidPlanEvalSystem::DoExtendedCalcUnrestrictedUpdate(
                      &qp_input);
 }
 
-void HumanoidPlanEvalSystem::Initialize(const HumanoidStatus& current_status,
-                                        systems::State<double>* state) const {
+void HumanoidPlanEvalSystem::Initialize(
+    const RobotKinematicState<double>& current_status,
+    systems::State<double>* state) const {
   // Initializes the plan.
   GenericPlan<double>& plan = get_mutable_abstract_value<GenericPlan<double>>(
       state, abs_state_index_plan_);

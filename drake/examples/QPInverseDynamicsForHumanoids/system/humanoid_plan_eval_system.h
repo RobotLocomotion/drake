@@ -5,8 +5,8 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/plan_eval_base_system.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/robot_kinematic_state.h"
 
 namespace drake {
 namespace examples {
@@ -30,14 +30,14 @@ class HumanoidPlanEvalSystem : public PlanEvalBaseSystem {
 
   /**
    * Constructor.
-   * @param robot Reference to a RigidBodyTree, whose life span must be longer
+   * @param robot Pointer to a RigidBodyTree, whose life span must be longer
    * than this instance.
    * @param alias_groups_file_name Path to the alias groups file that describes
    * the robot's topology for the controller.
    * @param param_file_name Path to the config file for the controller.
    * @param dt Control time step.
    */
-  HumanoidPlanEvalSystem(const RigidBodyTree<double>& robot,
+  HumanoidPlanEvalSystem(const RigidBodyTree<double>* robot,
                          const std::string& alias_groups_file_name,
                          const std::string& param_file_name, double dt);
 
@@ -47,8 +47,10 @@ class HumanoidPlanEvalSystem : public PlanEvalBaseSystem {
    * @param current_status Current robot status.
    * @param state State
    */
-  void Initialize(const HumanoidStatus& current_status,
-                  systems::State<double>* state) const;
+  void Initialize(
+      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<
+          double>& current_status,
+      systems::State<double>* state) const;
 
   /**
    * Returns input port of type robotlocomotion::robot_plan_t message that

@@ -12,8 +12,11 @@
 namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
-
 namespace {
+
+using systems::controllers::qp_inverse_dynamics::ConstraintType;
+using systems::controllers::qp_inverse_dynamics::DesiredBodyMotion;
+using systems::controllers::qp_inverse_dynamics::QpInput;
 
 // Makes a lcmt_manipulator_plan_move_end_effector message, where the waypoints
 // are defined by @p times and @p poses.
@@ -77,20 +80,20 @@ TEST_F(ManipPlanTest, MoveEndEffectorInitializeTest) {
   // The desired position interpolated at any time should be equal to the
   // current posture.
   // The desired velocity and acceleration should be zero.
-  std::vector<double> test_times = {robot_status_->time() - 0.5,
-                                    robot_status_->time(),
-                                    robot_status_->time() + 3};
+  std::vector<double> test_times = {robot_status_->get_time() - 0.5,
+                                    robot_status_->get_time(),
+                                    robot_status_->get_time() + 3};
 
   const manipulation::PiecewiseCartesianTrajectory<double>& ee_traj =
       dut_->get_body_trajectory(ee_body_);
   const Isometry3<double> ee_pose =
-      robot_status_->robot().CalcBodyPoseInWorldFrame(robot_status_->cache(),
-                                                      *ee_body_);
+      robot_status_->get_robot().CalcBodyPoseInWorldFrame(
+          robot_status_->get_cache(), *ee_body_);
 
   for (double time : test_times) {
     // Dof trajectory.
     EXPECT_TRUE(drake::CompareMatrices(
-        robot_status_->position(),
+        robot_status_->get_cache().getQ(),
         dut_->get_dof_trajectory().get_position(time), kSmallTolerance,
         drake::MatrixCompareType::absolute));
 
@@ -128,14 +131,14 @@ TEST_F(ManipPlanTest, TestUpdateQpInput) {
   // After initialization, desired body motion objective is set to hold
   // the current pose.
   const Isometry3<double> ee_pose_d =
-      robot_status_->robot().CalcBodyPoseInWorldFrame(robot_status_->cache(),
-                                                      *ee_body_);
+      robot_status_->get_robot().CalcBodyPoseInWorldFrame(
+          robot_status_->get_cache(), *ee_body_);
   const Vector6<double> ee_vel_d = Vector6<double>::Zero();
   const Vector6<double> ee_acc_d = Vector6<double>::Zero();
 
   // Changes the current state, and compute acceleration target.
-  robot_status_->UpdateKinematics(0.66, robot_status_->position() * 0.3,
-                                  robot_status_->velocity());
+  robot_status_->UpdateKinematics(0.66, robot_status_->get_cache().getQ() * 0.3,
+                                  robot_status_->get_cache().getV());
 
   QpInput qp_input;
   dut_->UpdateQpInput(*robot_status_, *params_, *alias_groups_, &qp_input);
@@ -187,9 +190,9 @@ TEST_F(ManipPlanTest, MoveEndEffectorHandleMessageTest) {
         dut_->get_body_trajectory(ee_body_);
     // The new body trajectory should run from cur_time, to cur_time +
     // plan_times[end]
-    EXPECT_EQ(robot_status_->time(),
+    EXPECT_EQ(robot_status_->get_time(),
               body_traj.get_position_trajectory().get_start_time());
-    EXPECT_EQ(robot_status_->time() + plan_times.back(),
+    EXPECT_EQ(robot_status_->get_time() + plan_times.back(),
               body_traj.get_position_trajectory().get_end_time());
 
     // There should be no contacts, but 1 tracked body.
@@ -204,7 +207,7 @@ TEST_F(ManipPlanTest, MoveEndEffectorHandleMessageTest) {
     std::vector<Isometry3<double>> traj_poses = plan_poses;
 
     for (size_t i = 0; i < traj_times.size(); ++i) {
-      traj_times[i] += robot_status_->time();
+      traj_times[i] += robot_status_->get_time();
     }
 
     const Vector3<double> zero = Vector3<double>::Zero();
@@ -227,16 +230,17 @@ TEST_F(ManipPlanTest, MoveEndEffectorHandleMessageTest) {
   msg = make_move_end_effector_message(plan_times, plan_poses);
 
   // Moves the clock forward in time.
-  robot_status_->UpdateKinematics(robot_status_->time() + 1,
-                                  robot_status_->position(),
-                                  robot_status_->velocity());
+  robot_status_->UpdateKinematics(robot_status_->get_time() + 1,
+                                  robot_status_->get_cache().getQ(),
+                                  robot_status_->get_cache().getV());
 
   // Gets the pose and velocity interpolated from the current desired
   // trajectory.
   Isometry3<double> ee_pose_d_now =
-      dut_->get_body_trajectory(ee_body_).get_pose(robot_status_->time());
+      dut_->get_body_trajectory(ee_body_).get_pose(robot_status_->get_time());
   Vector6<double> ee_vel_d_now =
-      dut_->get_body_trajectory(ee_body_).get_velocity(robot_status_->time());
+      dut_->get_body_trajectory(ee_body_).get_velocity(
+          robot_status_->get_time());
 
   // Handles the new plan.
   {
@@ -256,20 +260,20 @@ TEST_F(ManipPlanTest, MoveEndEffectorHandleMessageTest) {
 
     // The new body trajectory should run from cur_time, to cur_time +
     // plan_times[end]
-    EXPECT_EQ(robot_status_->time(),
+    EXPECT_EQ(robot_status_->get_time(),
               body_traj.get_position_trajectory().get_start_time());
-    EXPECT_EQ(robot_status_->time() + plan_times.back(),
+    EXPECT_EQ(robot_status_->get_time() + plan_times.back(),
               body_traj.get_position_trajectory().get_end_time());
 
     // Constructs the expected body traj.
     std::vector<double> traj_times;
     std::vector<Isometry3<double>> traj_poses;
 
-    traj_times.push_back(robot_status_->time());
+    traj_times.push_back(robot_status_->get_time());
     traj_poses.push_back(ee_pose_d_now);
 
     for (size_t i = 0; i < plan_times.size(); ++i) {
-      traj_times.push_back(plan_times[i] + robot_status_->time());
+      traj_times.push_back(plan_times[i] + robot_status_->get_time());
       traj_poses.push_back(plan_poses[i]);
     }
 

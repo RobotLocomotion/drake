@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package drake.examples.qp_inverse_dynamics;
+package drake.systems.controllers.qp_inverse_dynamics;
 
 // TODO(siyuanfeng): This probably should go to drake/common eventually.
 message Vec3 {

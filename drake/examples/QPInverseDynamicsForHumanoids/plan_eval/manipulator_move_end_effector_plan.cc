@@ -10,18 +10,23 @@ namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
+using systems::controllers::qp_inverse_dynamics::ParamSet;
+using systems::controllers::qp_inverse_dynamics::RobotKinematicState;
+
 template <typename T>
 void ManipulatorMoveEndEffectorPlan<T>::InitializeGenericPlanDerived(
-    const HumanoidStatus& robot_status, const param_parsers::ParamSet& paramset,
-    const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) {
+    const RobotKinematicState<T>& robot_status,
+    const ParamSet& paramset,
+    const RigidBodyTreeAliasGroups<T>& alias_groups) {
   unused(paramset);  // TODO(jwnimmer-tri) This seems bad.
 
   // Knots are constant, the second time doesn't matter.
-  const std::vector<T> times = {robot_status.time(), robot_status.time() + 1};
+  const std::vector<T> times = {robot_status.get_time(),
+                                robot_status.get_time() + 1};
   const RigidBody<T>* ee_body =
       alias_groups.get_body(kEndEffectorAliasGroupName);
-  Isometry3<T> ee_pose = robot_status.robot().CalcBodyPoseInWorldFrame(
-      robot_status.cache(), *ee_body);
+  Isometry3<T> ee_pose = robot_status.get_robot().CalcBodyPoseInWorldFrame(
+      robot_status.get_cache(), *ee_body);
 
   manipulation::PiecewiseCartesianTrajectory<T> ee_traj =
       manipulation::PiecewiseCartesianTrajectory<
@@ -33,8 +38,9 @@ void ManipulatorMoveEndEffectorPlan<T>::InitializeGenericPlanDerived(
 
 template <typename T>
 void ManipulatorMoveEndEffectorPlan<T>::HandlePlanGenericPlanDerived(
-    const HumanoidStatus& robot_status, const param_parsers::ParamSet& paramset,
-    const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,
+    const RobotKinematicState<T>& robot_status,
+    const ParamSet& paramset,
+    const RigidBodyTreeAliasGroups<T>& alias_groups,
     const systems::AbstractValue& plan) {
   unused(paramset);  // TODO(jwnimmer-tri) This seems bad.
 
@@ -58,16 +64,17 @@ void ManipulatorMoveEndEffectorPlan<T>::HandlePlanGenericPlanDerived(
   // If the first keyframe does not start immediately (its time > 0), we start
   // from the current desired pose.
   if (msg.utimes.front() > 0) {
-    times.push_back(robot_status.time());
+    times.push_back(robot_status.get_time());
     poses.push_back(
-        this->get_body_trajectory(ee_body).get_pose(robot_status.time()));
+        this->get_body_trajectory(ee_body).get_pose(robot_status.get_time()));
     vel0 = this->get_body_trajectory(ee_body)
-               .get_velocity(robot_status.time())
+               .get_velocity(robot_status.get_time())
                .template tail<3>();
   }
 
   for (int i = 0; i < msg.num_steps; i++) {
-    times.push_back(robot_status.time() + static_cast<T>(msg.utimes[i]) / 1e6);
+    times.push_back(robot_status.get_time() +
+                    static_cast<T>(msg.utimes[i]) / 1e6);
     poses.push_back(DecodePose(msg.poses[i]));
   }
 
