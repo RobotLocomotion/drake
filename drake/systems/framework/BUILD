@@ -332,6 +332,7 @@ drake_cc_library(
         ":model_values",
         ":sparsity_matrix",
         ":system",
+        ":system_scalar_converter",
         ":value_checker",
         "//drake/common",
         "//drake/common:number_traits",
