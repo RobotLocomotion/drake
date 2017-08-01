@@ -69,7 +69,7 @@ SpatialVelocity<T> RevoluteMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
 
 template <typename T>
 void RevoluteMobilizer<T>::ProjectSpatialForce(
-    const MultibodyTreeContext<T>& context,
+    const MultibodyTreeContext<T>&,
     const SpatialForce<T>& F_Mo_F,
     Eigen::Ref<VectorX<T>> tau) const {
   DRAKE_ASSERT(tau.size() == kNv);

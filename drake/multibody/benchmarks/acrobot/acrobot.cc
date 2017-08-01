@@ -64,8 +64,7 @@ Matrix2<T> Acrobot<T>::CalcMassMatrix(const T& theta2) const {
 
 template <typename T>
 Vector2<T> Acrobot<T>::CalcCoriolisVector(
-    const T& theta1, const T& theta2,
-    const T& theta1dot, const T& theta2dot) const {
+    const T&, const T& theta2, const T& theta1dot, const T& theta2dot) const {
   using std::sin;
   using std::cos;
 

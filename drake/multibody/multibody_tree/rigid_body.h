@@ -67,7 +67,7 @@ class RigidBody : public Body<T> {
   int get_num_flexible_velocities() const final { return 0; }
 
   SpatialInertia<T> CalcSpatialInertiaInBodyFrame(
-      const MultibodyTreeContext<T>& context) const override {
+      const MultibodyTreeContext<T>&) const override {
     return default_spatial_inertia_.cast<T>();
   }
 
