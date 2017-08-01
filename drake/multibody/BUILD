@@ -10,6 +10,7 @@ load(
 )
 load("//tools:gurobi.bzl", "gurobi_test_tags")
 load("//tools:lint.bzl", "add_lint_tests")
+load("@protobuf//:protobuf.bzl", "cc_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -272,6 +273,25 @@ drake_cc_library(
     deps = [
         ":rigid_body_compare_to_clone",
         ":rigid_body_tree",
+    ],
+)
+
+cc_proto_library(
+    name = "rigid_body_tree_alias_groups_proto",
+    srcs = [
+        "alias_groups.proto",
+    ],
+)
+
+drake_cc_library(
+    name = "rigid_body_tree_alias_groups",
+    srcs = ["rigid_body_tree_alias_groups.cc"],
+    hdrs = ["rigid_body_tree_alias_groups.h"],
+    deps = [
+        ":rigid_body_tree",
+        ":rigid_body_tree_alias_groups_proto",
+        "//drake/common",
+        "//drake/common/proto:protobuf",
     ],
 )
 
@@ -541,6 +561,22 @@ drake_cc_googletest(
     deps = [
         ":rigid_body_frame_compare_to_clone",
         ":rigid_body_tree",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rigid_body_tree_alias_groups_test",
+    srcs = ["test/rigid_body_tree_alias_groups_test.cc"],
+    data = [
+        "test/rigid_body_tree/two_dof_robot.urdf",
+        "test/test.alias_groups",
+        "//drake/multibody:test_models",
+    ],
+    deps = [
+        ":rigid_body_tree_alias_groups",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
+        "//drake/multibody/parsers",
     ],
 )
 

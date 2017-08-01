@@ -50,7 +50,7 @@ void controller_loop() {
   RigidBodyTree<double> robot;
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       kModelFileName, multibody::joints::kRollPitchYaw, &robot);
-  param_parsers::RigidBodyTreeAliasGroups<double> alias_groups(robot);
+  RigidBodyTreeAliasGroups<double> alias_groups(&robot);
   alias_groups.LoadFromFile(kAliasGroupPath);
 
   VectorX<double> q(robot.get_num_positions());
@@ -58,7 +58,7 @@ void controller_loop() {
   manipulation::RobotStateLcmMessageTranslator translator(robot);
   translator.DecodeMessageKinematics(raw_msg, q, v);
 
-  HumanoidStatus robot_status(robot, alias_groups);
+  HumanoidStatus robot_status(&robot, alias_groups);
   v.setZero();
   robot_status.UpdateKinematics(msg_time, q, v);
 

@@ -31,9 +31,10 @@ class ManipulatorMoveEndEffectorPlan : public GenericPlan<T> {
    * in @p alias_groups is kEndEffectorAliasGroupName.
    */
   void InitializeGenericPlanDerived(
-      const HumanoidStatus& robot_status,
-      const param_parsers::ParamSet& paramset,
-      const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) override;
+      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
+          robot_status,
+      const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
+      const RigidBodyTreeAliasGroups<T>& alias_groups) override;
 
   /**
    * This function assumes that the bytes in @p plan encodes a valid
@@ -57,25 +58,25 @@ class ManipulatorMoveEndEffectorPlan : public GenericPlan<T> {
    * lcmt_manipulator_plan_move_end_effector;
    */
   void HandlePlanGenericPlanDerived(
-      const HumanoidStatus& robot_stauts,
-      const param_parsers::ParamSet& paramset,
-      const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,
+      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
+          robot_stauts,
+      const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
+      const RigidBodyTreeAliasGroups<T>& alias_groups,
       const systems::AbstractValue& plan) override;
 
  private:
   GenericPlan<T>* CloneGenericPlanDerived() const override;
 
   void ModifyPlanGenericPlanDerived(
-      const HumanoidStatus&,
-      const param_parsers::ParamSet&,
-      const param_parsers::RigidBodyTreeAliasGroups<T>&) override {
-  }
+      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&,
+      const systems::controllers::qp_inverse_dynamics::ParamSet&,
+      const RigidBodyTreeAliasGroups<T>&) override {}
 
   void UpdateQpInputGenericPlanDerived(
-      const HumanoidStatus&,
-      const param_parsers::ParamSet&,
-      const param_parsers::RigidBodyTreeAliasGroups<T>&,
-      QpInput*) const override {}
+      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&,
+      const systems::controllers::qp_inverse_dynamics::ParamSet&,
+      const RigidBodyTreeAliasGroups<T>&,
+      systems::controllers::qp_inverse_dynamics::QpInput*) const override {}
 };
 
 }  // namespace qp_inverse_dynamics

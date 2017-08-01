@@ -49,8 +49,7 @@ class HumanoidManipulationPlan : public GenericPlan<T> {
    * "torso", "left_foot" and "right_foot".
    */
   bool IsRigidBodyTreeAliasGroupsCompatible(
-      const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups)
-      const override;
+      const RigidBodyTreeAliasGroups<T>& alias_groups) const override;
 
   // TODO(siyuan): override IsParamSetCompatible as well.
 
@@ -60,9 +59,10 @@ class HumanoidManipulationPlan : public GenericPlan<T> {
    * current configuration in @p robot_status.
    */
   void InitializeGenericPlanDerived(
-      const HumanoidStatus& robot_status,
-      const param_parsers::ParamSet& paramset,
-      const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) override;
+      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
+          robot_status,
+      const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
+      const RigidBodyTreeAliasGroups<T>& alias_groups) override;
 
   /**
    * This function generates various trajectories from the given plan in
@@ -111,9 +111,10 @@ class HumanoidManipulationPlan : public GenericPlan<T> {
    * @throws if @p plan is not of type robotlocomotion::robot_plan_t
    */
   void HandlePlanGenericPlanDerived(
-      const HumanoidStatus& robot_status,
-      const param_parsers::ParamSet& paramset,
-      const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,
+      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
+          robot_status,
+      const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
+      const RigidBodyTreeAliasGroups<T>& alias_groups,
       const systems::AbstractValue& plan) override;
 
   /**
@@ -123,16 +124,18 @@ class HumanoidManipulationPlan : public GenericPlan<T> {
    * momentum change to zero.
    */
   void UpdateQpInputGenericPlanDerived(
-      const HumanoidStatus& robot_status,
-      const param_parsers::ParamSet& paramset,
-      const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,
-      QpInput* qp_input) const override;
+      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
+          robot_status,
+      const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
+      const RigidBodyTreeAliasGroups<T>& alias_groups,
+      systems::controllers::qp_inverse_dynamics::QpInput* qp_input)
+      const override;
 
  private:
   // Returns true if @p alias_groups has a singleton body group whose name is
   // @p body_alias_name.
   bool VerifyRigidBodyTreeAliasGroups(
-      const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,
+      const RigidBodyTreeAliasGroups<T>& alias_groups,
       const std::string& body_alias_name) const {
     if (alias_groups.has_body_group(body_alias_name) &&
         alias_groups.get_body_group(body_alias_name).size() == 1) {
@@ -147,8 +150,9 @@ class HumanoidManipulationPlan : public GenericPlan<T> {
   }
 
   void ModifyPlanGenericPlanDerived(
-      const HumanoidStatus&, const param_parsers::ParamSet&,
-      const param_parsers::RigidBodyTreeAliasGroups<T>&) override {}
+      const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&,
+      const systems::controllers::qp_inverse_dynamics::ParamSet&,
+      const RigidBodyTreeAliasGroups<T>&) override {}
 
   systems::controllers::ZMPPlanner zmp_planner_;
   double zmp_height_{1.0};
