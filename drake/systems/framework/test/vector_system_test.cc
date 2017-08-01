@@ -399,6 +399,60 @@ TEST_F(VectorSystemTest, NoInputNoOutputDiscreteTimeSystemTest) {
   EXPECT_EQ(dut.get_num_output_ports(), 0);
 }
 
+/// A system that can use any scalar type: AutoDiff, symbolic form, etc.
+template <typename T>
+class OpenScalarTypeSystem : public VectorSystem<T> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OpenScalarTypeSystem);
+
+  explicit OpenScalarTypeSystem(int some_number)
+      : VectorSystem<T>(SystemTypeTag<systems::OpenScalarTypeSystem>{}, 1, 1),
+        some_number_(some_number) {}
+
+  template <typename U>
+  explicit OpenScalarTypeSystem(const OpenScalarTypeSystem<U>& other)
+      : OpenScalarTypeSystem<T>(other.some_number_) {}
+
+  int get_some_number() const { return some_number_; }
+
+ private:
+  template <typename> friend class OpenScalarTypeSystem;
+
+  const int some_number_{};
+};
+
+TEST_F(VectorSystemTest, ToAutoDiffXdTest) {
+  const int kSomeNumber = 22;
+  OpenScalarTypeSystem<double> dut{kSomeNumber};
+
+  // Convert to AutoDiffXd.
+  std::unique_ptr<System<AutoDiffXd>> autodiff = dut.ToAutoDiffXd();
+  ASSERT_NE(autodiff, nullptr);
+  const auto* const downcast =
+      dynamic_cast<OpenScalarTypeSystem<AutoDiffXd>*>(autodiff.get());
+  ASSERT_NE(downcast, nullptr);
+
+  // The member field remains intact.
+  EXPECT_EQ(downcast->get_some_number(), kSomeNumber);
+}
+
+TEST_F(VectorSystemTest, ToSymbolicTest) {
+  using Expression = symbolic::Expression;
+
+  const int kSomeNumber = 22;
+  OpenScalarTypeSystem<double> dut{kSomeNumber};
+
+  // Convert to Symbolic form.
+  std::unique_ptr<System<Expression>> autodiff = dut.ToSymbolic();
+  ASSERT_NE(autodiff, nullptr);
+  const auto* const downcast =
+      dynamic_cast<OpenScalarTypeSystem<Expression>*>(autodiff.get());
+  ASSERT_NE(downcast, nullptr);
+
+  // The member field remains intact.
+  EXPECT_EQ(downcast->get_some_number(), kSomeNumber);
+}
+
 // This system declares an output and continuous state, but does not define
 // the required methods.
 class MissingMethodsContinuousTimeSystem : public VectorSystem<double> {
