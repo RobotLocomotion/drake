@@ -10,6 +10,8 @@
 namespace drake {
 namespace {
 
+constexpr double k2Pi = 2.0 * M_PI;
+
 // Test with the simple quantization-only constructor.
 GTEST_TEST(TestEncoders, QuantizeOnly) {
   // Construct a system where all inputs are encoders, with quantization
@@ -18,7 +20,7 @@ GTEST_TEST(TestEncoders, QuantizeOnly) {
   systems::sensors::RotaryEncoders<double> encoders(tick_counts);
 
   Eigen::Vector2d ticks_per_radian;
-  ticks_per_radian << tick_counts[0] / M_2_PI, tick_counts[1] / M_2_PI;
+  ticks_per_radian << tick_counts[0] / k2Pi, tick_counts[1] / k2Pi;
 
   auto context = encoders.CreateDefaultContext();
   auto output = encoders.AllocateOutput(*context);
@@ -85,7 +87,7 @@ GTEST_TEST(TestEncoders, QuantizationAndSelector) {
   systems::sensors::RotaryEncoders<double> encoders(4, indices, tick_counts);
 
   Eigen::Vector2d ticks_per_radian;
-  ticks_per_radian << tick_counts[0] / M_2_PI, tick_counts[1] / M_2_PI;
+  ticks_per_radian << tick_counts[0] / k2Pi, tick_counts[1] / k2Pi;
 
   auto context = encoders.CreateDefaultContext();
   auto output = encoders.AllocateOutput(*context);
@@ -124,7 +126,7 @@ GTEST_TEST(TestEncoders, CalibrationOffsets) {
   systems::sensors::RotaryEncoders<double> encoders(tick_counts);
 
   Eigen::Vector2d ticks_per_radian;
-  ticks_per_radian << tick_counts[0] / M_2_PI, tick_counts[1] / M_2_PI;
+  ticks_per_radian << tick_counts[0] / k2Pi, tick_counts[1] / k2Pi;
 
   auto context = encoders.CreateDefaultContext();
   auto output = encoders.AllocateOutput(*context);
