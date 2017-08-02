@@ -7,18 +7,8 @@ load(
     "drake_cc_library",
     "drake_cc_binary",
 )
+load("//tools:install_data.bzl", "install_data")
 load("//tools:lint.bzl", "add_lint_tests")
-
-filegroup(
-    name = "models",
-    srcs = glob([
-        "**/*.obj",
-        "**/*.sdf",
-        "**/*.urdf",
-        "**/*.xml",
-    ]),
-    visibility = ["//visibility:public"],
-)
 
 drake_cc_library(
     name = "acrobot_state_vector",
@@ -229,5 +219,7 @@ drake_cc_googletest(
         "//drake/multibody/rigid_body_plant",
     ],
 )
+
+install_data()
 
 add_lint_tests()

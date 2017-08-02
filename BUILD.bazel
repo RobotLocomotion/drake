@@ -67,7 +67,9 @@ install(
     deps = [
         "//drake:install",
         "//drake/common:install",
+        "//drake/examples:install_data",
         "//drake/lcmtypes:install",
+        "//drake/manipulation/models:install_data",
         "//tools:install",
     ] + DRAKE_EXTERNAL_PACKAGE_INSTALLS,
 )
