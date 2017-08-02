@@ -235,7 +235,7 @@ Matrix3<T> ZRotation(const T& theta) {
 /// Projects a full-rank 3x3 matrix @p M onto O(3), defined as
 /// <pre>
 ///   min_R  \sum_i,j | R(i,j) - M(i,j) |^2
-///  subject to   R*R^T = I.
+///  subject to   R*R^T = I  =>  R ∈ O(3)
 /// </pre>
 ///
 /// The algorithm (just SVD) can be derived as a small modification of
@@ -244,7 +244,7 @@ Matrix3<T> ZRotation(const T& theta) {
 /// Note that it does not enforce det(R)=1; you could get det(R)=-1 if that
 /// solution is closer to the matrix M using the norm above.
 template <typename Derived>
-Matrix3<typename Derived::Scalar> ProjectMatToRotMat(
+Matrix3<typename Derived::Scalar> ProjectMatToOrthonormalMat(
     const Eigen::MatrixBase<Derived>& M) {
   DRAKE_DEMAND(M.rows() == 3 && M.cols() == 3);
   const auto svd = M.jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeFullV);
