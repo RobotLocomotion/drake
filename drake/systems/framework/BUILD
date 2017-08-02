@@ -316,6 +316,7 @@ drake_cc_library(
         "system_scalar_converter.h",
         "system_type_tag.h",
     ],
+    copts = ["-O0"],
     deps = [
         ":system",
         "//drake/common",
