@@ -24,6 +24,12 @@ namespace {
  * Helper function declarations
  * (definitions at end of file)
  ********************************/
+// Helper functions to generate a new matrix/vector with specified dimensions,
+// and
+// initialize the entries. We don't care about what the entries are; this is
+// meant to be a way to get some variety of entries without using Matrix::Random
+MatrixXd NewMatrix(int rows, int columns);
+VectorXd NewVector(int rows);
 // Helper function to generate a vector of Connected layers
 std::vector<LayerType> generateFullyConnectedLayers(int numLayers);
 // Helper function to generate a vector of Relu nonlinearities
@@ -42,14 +48,14 @@ bool CompareMats(MatrixX<double> Mdouble, MatrixX<AutoDiffXd> Mautodiff);
 // Test that the matrices are being encoded and decoded correctly from
 // BasicVectors
 GTEST_TEST(FeedforwardNeuralNetworkTest, MatrixCoderDecoder) {
-  MatrixXd W1 = MatrixXd::Random(3, 3);
-  MatrixXd W2 = MatrixXd::Random(7, 3);
+  MatrixXd W1 = NewMatrix(3, 3);
+  MatrixXd W2 = NewMatrix(7, 3);
   std::vector<MatrixXd> W;
   W.push_back(W1);
   W.push_back(W2);
 
-  VectorXd B1 = VectorXd::Random(3);
-  VectorXd B2 = VectorXd::Random(7);
+  VectorXd B1 = NewVector(3);
+  VectorXd B2 = NewVector(7);
   std::vector<VectorXd> B;
   B.push_back(B1);
   B.push_back(B2);
@@ -72,17 +78,17 @@ GTEST_TEST(FeedforwardNeuralNetworkTest, MatrixCoderDecoder) {
 // Test that the NN is correctly loading and extracting its parameters from
 // the Context
 GTEST_TEST(FeedforwardNeuralNetworkTest, ParameterStorage) {
-  MatrixXd W1 = MatrixXd::Random(3, 3);
-  MatrixXd W2 = MatrixXd::Random(7, 3);
-  MatrixXd W3 = MatrixXd::Random(2, 7);
+  MatrixXd W1 = NewMatrix(3, 3);
+  MatrixXd W2 = NewMatrix(7, 3);
+  MatrixXd W3 = NewMatrix(2, 7);
   std::vector<MatrixXd> W;
   W.push_back(W1);
   W.push_back(W2);
   W.push_back(W3);
 
-  VectorXd B1 = VectorXd::Random(3);
-  VectorXd B2 = VectorXd::Random(7);
-  VectorXd B3 = VectorXd::Random(2);
+  VectorXd B1 = NewVector(3);
+  VectorXd B2 = NewVector(7);
+  VectorXd B3 = NewVector(2);
   std::vector<VectorXd> B;
   B.push_back(B1);
   B.push_back(B2);
@@ -109,17 +115,17 @@ GTEST_TEST(FeedforwardNeuralNetworkTest, ParameterStorage) {
 // - num outputs,
 // - num layers
 GTEST_TEST(FeedforwardNeuralNetworkTest, ShapeParameters) {
-  MatrixXd W1 = MatrixXd::Random(10, 19);
-  MatrixXd W2 = MatrixXd::Random(7, 10);
-  MatrixXd W3 = MatrixXd::Random(2, 7);
+  MatrixXd W1 = NewMatrix(10, 19);
+  MatrixXd W2 = NewMatrix(7, 10);
+  MatrixXd W3 = NewMatrix(2, 7);
   std::vector<MatrixXd> W;
   W.push_back(W1);
   W.push_back(W2);
   W.push_back(W3);
 
-  VectorXd B1 = VectorXd::Random(10);
-  VectorXd B2 = VectorXd::Random(7);
-  VectorXd B3 = VectorXd::Random(2);
+  VectorXd B1 = NewVector(10);
+  VectorXd B2 = NewVector(7);
+  VectorXd B3 = NewVector(2);
   std::vector<VectorXd> B;
   B.push_back(B1);
   B.push_back(B2);
@@ -134,17 +140,17 @@ GTEST_TEST(FeedforwardNeuralNetworkTest, ShapeParameters) {
 }
 
 GTEST_TEST(FeedforwardNeuralNetworkTest, ToAutoDiffTest) {
-  MatrixXd W1 = MatrixXd::Random(10, 19);
-  MatrixXd W2 = MatrixXd::Random(7, 10);
-  MatrixXd W3 = MatrixXd::Random(2, 7);
+  MatrixXd W1 = NewMatrix(10, 19);
+  MatrixXd W2 = NewMatrix(7, 10);
+  MatrixXd W3 = NewMatrix(2, 7);
   std::vector<MatrixXd> W;
   W.push_back(W1);
   W.push_back(W2);
   W.push_back(W3);
 
-  VectorXd B1 = VectorXd::Random(10);
-  VectorXd B2 = VectorXd::Random(7);
-  VectorXd B3 = VectorXd::Random(2);
+  VectorXd B1 = NewVector(10);
+  VectorXd B2 = NewVector(7);
+  VectorXd B3 = NewVector(2);
   std::vector<VectorXd> B;
   B.push_back(B1);
   B.push_back(B2);
@@ -212,6 +218,31 @@ GTEST_TEST(FeedforwardNeuralNetworkTest, BasicSanity) {
 /********************************
  * Helper function definitions
  ********************************/
+// Helper functions to generate a new matrix/vector with specified dimensions,
+// and
+// initialize the entries. We don't care about what the entries are; this is
+// meant to be a way to get some variety of entries without using Matrix::Random
+MatrixXd NewMatrix(const int rows, const int columns) {
+  MatrixXd matrix(rows, columns);
+
+  for (int i = 0; i < rows; i++) {
+    for (int j = 0; j < columns; j++) {
+      matrix(i, j) = i + j;  // Initialize each entry to whatever number
+    }
+  }
+
+  return matrix;
+}
+VectorXd NewVector(const int rows) {
+  VectorXd vector(rows);
+
+  for (int i = 0; i < rows; i++) {
+    vector(i) = i * i;
+  }
+
+  return vector;
+}
+
 // Helper function to generate a vector of Connected layers
 std::vector<LayerType> generateFullyConnectedLayers(int numLayers) {
   std::vector<LayerType> layers;
