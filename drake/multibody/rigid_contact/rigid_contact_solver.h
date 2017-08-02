@@ -148,11 +148,38 @@ class RigidContactSolver {
   ///         orthonormal.
   /// @note If, after returning, @p contact_frames[i] is multiplied by
   ///       @p contact_forces[i], the result will be the contact forces
-  ///       expressed in the global frame.
+  ///       for the ith contact expressed in the global frame.
   static void CalcContactForcesInContactFrames(
       const VectorX<T>& cf, const RigidContactAccelProblemData<T>& problem_data,
       const std::vector<Matrix2<T>>& contact_frames,
-      std::vector<Vector2<T>>* forces);
+      std::vector<Vector2<T>>* contact_forces);
+
+  /// Gets the contact impulses expressed in each contact frame *for 2D contact
+  /// problems* from the "packed" solution returned by SolveImpactProblem().
+  /// @param cf the output from SolveImpactProblem()
+  /// @param problem_data the problem data input to SolveImpactProblem()
+  /// @param contact_frames the contact frames corresponding to the contacts.
+  ///        The first column of each matrix should give the contact normal,
+  ///        while the second column gives a contact tangent (specifically, the
+  ///        tangent direction used to determine @p problem_data.F). All
+  ///        vectors should be expressed in the global frame.
+  /// @param[out] contact_impulses a non-null vector of a doublet of values,
+  ///             where the iᵗʰ triplet represents the impulsive force along
+  ///             each basis vector in the iᵗʰ contact frame.
+  /// @throws std::logic_error if @p contact_impulses is null, if
+  ///         @p contact_impulses is not empty, if @p cf is not the
+  ///         proper size, if the number of tangent directions is not one per
+  ///         contact (indicating that the contact problem might not be 2D), if
+  ///         the number of contact frames is not equal to the number
+  ///         of contacts, or if a contact frame does not appear to be
+  ///         orthonormal.
+  /// @note If, after returning, @p contact_frames[i] is multiplied by
+  ///       @p contact_impulses[i], the result will be the contact impulses
+  ///       for the ith contact expressed in the global frame.
+  static void CalcImpactForcesInContactFrames(
+      const VectorX<T>& cf, const RigidContactVelProblemData<T>& problem_data,
+      const std::vector<Matrix2<T>>& contact_frames,
+      std::vector<Vector2<T>>* contact_impulses);
 
  private:
   void FormImpactingContactLCP(
@@ -678,6 +705,78 @@ void RigidContactSolver<T>::CalcContactForcesInContactFrames(
 
     // Compute the contact force in the contact frame.
     contact_force_i = contact_frames[i].transpose() * f0;
+  }
+}
+
+template <class T>
+void RigidContactSolver<T>::CalcImpactForcesInContactFrames(
+    const VectorX<T>& cf, const RigidContactVelProblemData<T>& problem_data,
+    const std::vector<Matrix2<T>>& contact_frames,
+    std::vector<Vector2<T>>* contact_impulses) {
+  using std::abs;
+
+  // Loose tolerance for unit vectors and orthogonality.
+  const double loose_eps = std::sqrt(std::numeric_limits<double>::epsilon());
+
+  // Verify that contact_impulses is non-null and is empty.
+  if (!contact_impulses)
+    throw std::logic_error("Vector of contact impulses is null.");
+  if (!contact_impulses->empty())
+    throw std::logic_error("Vector of contact impulses is not empty.");
+
+  // Verify that cf is the correct size.
+  const int num_contacts = problem_data.mu.size();
+  const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
+                                                   problem_data.r.end(), 0);
+  const int num_vars = num_contacts + num_spanning_vectors;
+  if (num_vars != cf.size())
+    throw std::logic_error("Unexpected packed contact force vector dimension.");
+
+  // Verify that the problem is indeed two-dimensional.
+  if (num_spanning_vectors != num_contacts) {
+    throw std::logic_error("Problem data 'r' indicates contact problem is not "
+                               "two-dimensional");
+  }
+
+  // Verify that the correct number of contact frames has been specified.
+  if (contact_frames.size() != static_cast<size_t>(num_contacts)) {
+    throw std::logic_error("Number of contact frames does not match number of "
+                               "contacts.");
+  }
+
+  // Resize the impulse vector.
+  contact_impulses->resize(contact_frames.size());
+
+  // Set the impulses.
+  for (int i = 0, tangent_index = 0; i < num_contacts; ++i) {
+    // Alias the impulse.
+    Vector2<T>& contact_impulse_i = (*contact_impulses)[i];
+
+    // Get the contact normal and tangent.
+    const Vector2<T> contact_normal = contact_frames[i].col(0);
+    const Vector2<T> contact_tangent = contact_frames[i].col(1);
+
+    // Verify that each direction is of unit length.
+    if (abs(contact_normal.norm() - 1) > loose_eps)
+      throw std::runtime_error("Contact normal apparently not unit length.");
+    if (abs(contact_tangent.norm() - 1) > loose_eps)
+      throw std::runtime_error("Contact tangent apparently not unit length.");
+
+    // Verify that the two directions are orthogonal.
+    if (abs(contact_normal.dot(contact_tangent)) > loose_eps) {
+      std::ostringstream oss;
+      oss << "Contact normal (" << contact_normal.transpose() << ") and ";
+      oss << "contact tangent (" << contact_tangent.transpose() << ") ";
+      oss << "insufficiently orthogonal.";
+      throw std::logic_error(oss.str());
+    }
+
+    // Compute the contact impulse expressed in the global frame.
+    Vector2<T> j0 = contact_normal * cf[i] + contact_tangent *
+        cf[num_contacts + tangent_index++];
+
+    // Compute the contact impulse in the contact frame.
+    contact_impulse_i = contact_frames[i].transpose() * j0;
   }
 }
 
