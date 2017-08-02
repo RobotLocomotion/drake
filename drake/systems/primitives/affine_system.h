@@ -58,8 +58,17 @@ class TimeVaryingAffineSystem : public LeafSystem<T> {
   int num_outputs() const { return num_outputs_; }
 
  protected:
-  TimeVaryingAffineSystem(int num_states, int num_inputs, int num_outputs,
-                          double time_period = 0.0);
+  /// Constructor.
+  ///
+  /// @param converter scalar-type conversion support helper (i.e., AutoDiff,
+  /// etc.); pass a default-constructed object if such support is not desired.
+  /// @param num_states size of the system's state vector
+  /// @param num_inputs size of the system's input vector
+  /// @param num_outputs size of the system's output vector
+  /// @param time_period discrete update period, or 0.0 to use continuous time
+  TimeVaryingAffineSystem(SystemScalarConverter converter,
+                          int num_states, int num_inputs, int num_outputs,
+                          double time_period);
 
   /// Computes @f[ y(t) = C(t) x(t) + D(t) u(t) + y_0(t), @f] with by calling
   /// `C(t)`, `D(t)`, and `y0(t)` with runtime size checks.  Derived classes
@@ -143,6 +152,10 @@ class AffineSystem : public TimeVaryingAffineSystem<T> {
                const Eigen::Ref<const Eigen::VectorXd>& y0,
                double time_period = 0.0);
 
+  /// Scalar-converting copy constructor.
+  template <typename U>
+  explicit AffineSystem(const AffineSystem<U>&);
+
   /// Creates a unique pointer to AffineSystem<T> by decomposing @p dynamics and
   /// @p outputs using @p state_vars and @p input_vars.
   ///
@@ -187,10 +200,6 @@ class AffineSystem : public TimeVaryingAffineSystem<T> {
       const drake::systems::Context<T>& context,
       const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>& events,
       drake::systems::DiscreteValues<T>* updates) const final;
-
-  // System<T> override.
-  AffineSystem<AutoDiffXd>* DoToAutoDiffXd() const final;
-  AffineSystem<symbolic::Expression>* DoToSymbolic() const final;
 
   const Eigen::MatrixXd A_;
   const Eigen::MatrixXd B_;

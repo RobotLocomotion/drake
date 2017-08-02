@@ -2,6 +2,7 @@
 
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
@@ -19,11 +20,11 @@ using std::string;
 using std::unique_ptr;
 
 template <typename T>
-TimeVaryingAffineSystem<T>::TimeVaryingAffineSystem(int num_states,
-                                                    int num_inputs,
-                                                    int num_outputs,
-                                                    double time_period)
-    : num_states_(num_states),
+TimeVaryingAffineSystem<T>::TimeVaryingAffineSystem(
+    SystemScalarConverter converter,
+    int num_states, int num_inputs, int num_outputs, double time_period)
+    : LeafSystem<T>(std::move(converter)),
+      num_states_(num_states),
       num_inputs_(num_inputs),
       num_outputs_(num_outputs),
       time_period_(time_period) {
@@ -166,7 +167,9 @@ AffineSystem<T>::AffineSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
                               const Eigen::Ref<const Eigen::MatrixXd>& D,
                               const Eigen::Ref<const Eigen::VectorXd>& y0,
                               double time_period)
-    : TimeVaryingAffineSystem<T>(f0.size(), D.cols(), D.rows(), time_period),
+    : TimeVaryingAffineSystem<T>(
+          SystemScalarConverter{SystemTypeTag<systems::AffineSystem>{}},
+          f0.size(), D.cols(), D.rows(), time_period),
       A_(A),
       B_(B),
       f0_(f0),
@@ -182,6 +185,12 @@ AffineSystem<T>::AffineSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
   DRAKE_DEMAND(this->num_outputs() == C.rows());
   DRAKE_DEMAND(this->num_outputs() == D.rows());
 }
+
+template <typename T>
+template <typename U>
+AffineSystem<T>::AffineSystem(const AffineSystem<U>& other)
+    : AffineSystem(other.A(), other.B(), other.f0(), other.C(), other.D(),
+                   other.y0(), other.time_period()) {}
 
 namespace {
 using symbolic::Expression;
@@ -284,19 +293,6 @@ unique_ptr<AffineSystem<T>> AffineSystem<T>::MakeAffineSystem(
   DecomposeAffineSystem(dynamics, state_vars, input_vars, &A, &B, &f0);
   DecomposeAffineSystem(output, state_vars, input_vars, &C, &D, &y0);
   return make_unique<AffineSystem<T>>(A, B, f0, C, D, y0, time_period);
-}
-
-// Setup equivalent system with a different scalar type.
-template <typename T>
-AffineSystem<AutoDiffXd>* AffineSystem<T>::DoToAutoDiffXd() const {
-  return new AffineSystem<AutoDiffXd>(A_, B_, f0_, C_, D_, y0_,
-                                      this->time_period());
-}
-
-template <typename T>
-AffineSystem<symbolic::Expression>* AffineSystem<T>::DoToSymbolic() const {
-  return new AffineSystem<symbolic::Expression>(A_, B_, f0_, C_, D_, y0_,
-                                                this->time_period());
 }
 
 template <typename T>

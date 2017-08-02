@@ -436,6 +436,47 @@ TEST_F(VectorSystemTest, ToAutoDiffXdTest) {
   EXPECT_EQ(downcast->get_some_number(), kSomeNumber);
 }
 
+/// A system that passes a custom SystemScalarConverter object to VectorSystem,
+/// rather than a SystemTypeTag.
+template <typename T>
+class DirectScalarTypeConversionSystem : public VectorSystem<T> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DirectScalarTypeConversionSystem);
+
+  DirectScalarTypeConversionSystem()
+      : VectorSystem<T>(MakeConverter(), 0, 0) {}
+
+  explicit DirectScalarTypeConversionSystem(
+      const DirectScalarTypeConversionSystem<double>&, int dummy = 0)
+      : DirectScalarTypeConversionSystem<T>() {}
+
+ private:
+  static SystemScalarConverter MakeConverter() {
+    // Only support double => AutoDiffXd.
+    SystemScalarConverter result;
+    result.AddIfSupported<
+      systems::DirectScalarTypeConversionSystem, AutoDiffXd, double>();
+    return result;
+  }
+};
+
+TEST_F(VectorSystemTest, DirectToAutoDiffXdTest) {
+  DirectScalarTypeConversionSystem<double> dut;
+
+  // Convert to AutoDiffXd.
+  std::unique_ptr<System<AutoDiffXd>> autodiff = dut.ToAutoDiffXd();
+  EXPECT_NE(autodiff, nullptr);
+  const auto* const downcast =
+      dynamic_cast<DirectScalarTypeConversionSystem<AutoDiffXd>*>(
+          autodiff.get());
+  EXPECT_NE(downcast, nullptr);
+
+  // Convert to symbolic (expected fail).
+  using Expression = symbolic::Expression;
+  std::unique_ptr<System<Expression>> symbolic = dut.ToSymbolic();
+  EXPECT_EQ(symbolic, nullptr);
+}
+
 TEST_F(VectorSystemTest, ToSymbolicTest) {
   using Expression = symbolic::Expression;
 
@@ -443,10 +484,10 @@ TEST_F(VectorSystemTest, ToSymbolicTest) {
   OpenScalarTypeSystem<double> dut{kSomeNumber};
 
   // Convert to Symbolic form.
-  std::unique_ptr<System<Expression>> autodiff = dut.ToSymbolic();
-  ASSERT_NE(autodiff, nullptr);
+  std::unique_ptr<System<Expression>> symbolic = dut.ToSymbolic();
+  ASSERT_NE(symbolic, nullptr);
   const auto* const downcast =
-      dynamic_cast<OpenScalarTypeSystem<Expression>*>(autodiff.get());
+      dynamic_cast<OpenScalarTypeSystem<Expression>*>(symbolic.get());
   ASSERT_NE(downcast, nullptr);
 
   // The member field remains intact.

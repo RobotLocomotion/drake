@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <vector>
+#include <utility>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
@@ -79,9 +80,7 @@ class VectorSystem : public LeafSystem<T> {
   /// sizes.  Does not declare any state -- subclasses may optionally declare
   /// continuous or discrete state, but not both.
   VectorSystem(int input_size, int output_size)
-      : LeafSystem<T>() {
-    DoConstructorBody(input_size, output_size);
-  }
+      : VectorSystem(SystemScalarConverter{}, input_size, output_size) {}
 
   /// Like VectorSystem(int, int), but also declares that this System object is
   /// of dynamic type S, which enables conversion to other scalar-types such as
@@ -108,8 +107,26 @@ class VectorSystem : public LeafSystem<T> {
   /// @endcode
   template <template <typename> class S>
   VectorSystem(SystemTypeTag<S> tag, int input_size, int output_size)
-      : LeafSystem<T>(tag) {
-    DoConstructorBody(input_size, output_size);
+      : VectorSystem(SystemScalarConverter{tag}, input_size, output_size) {}
+
+  /// Like VectorSystem(int, int), but *may* declare scalar-type conversion
+  /// support (i.e., AutoDiff, etc.).
+  ///
+  /// The scalar-type conversion support will use @p converter.
+  ///
+  /// All else being equal, developers should prefer the other constructors
+  /// over this one.  This constructor is intended only for use by class
+  /// hierarchies, where intermediate classes must conditionally support
+  /// scalar-type conversion.
+  VectorSystem(SystemScalarConverter converter, int input_size, int output_size)
+      : LeafSystem<T>(std::move(converter)) {
+    if (input_size > 0) {
+      this->DeclareInputPort(kVectorValued, input_size);
+    }
+    if (output_size > 0) {
+      this->DeclareVectorOutputPort(BasicVector<T>(output_size),
+                                    &VectorSystem::CalcVectorOutput);
+    }
   }
 
   /// Converts the parameters to Eigen::VectorBlock form, then delegates to
@@ -278,22 +295,6 @@ class VectorSystem : public LeafSystem<T> {
       Eigen::VectorBlock<VectorX<T>>* next_state) const {
     unused(context, input, state);
     DRAKE_THROW_UNLESS(next_state->size() == 0);
-  }
-
- private:
-  // All constructors should call this method immediately after invoking the
-  // base class constructor, as if this were using constructor delegation.
-  ///
-  // We cannot use C++'s constructor delegation, because we need to invoke a
-  // different LeafSystem constructor from each of our constructors.
-  void DoConstructorBody(int input_size, int output_size) {
-    if (input_size > 0) {
-      this->DeclareInputPort(kVectorValued, input_size);
-    }
-    if (output_size > 0) {
-      this->DeclareVectorOutputPort(BasicVector<T>(output_size),
-                                    &VectorSystem::CalcVectorOutput);
-    }
   }
 };
 
