@@ -1013,8 +1013,7 @@ GTEST_TEST(FeedthroughTest, ManualSparsity) {
 template <typename T>
 class SymbolicSparsitySystem : public LeafSystem<T> {
  public:
-  SymbolicSparsitySystem()
-      : LeafSystem<T>(SystemTypeTag<systems::SymbolicSparsitySystem>{}) {
+  SymbolicSparsitySystem() {
     this->DeclareInputPort(kVectorValued, kSize);
     this->DeclareInputPort(kVectorValued, kSize);
 
@@ -1023,10 +1022,6 @@ class SymbolicSparsitySystem : public LeafSystem<T> {
     this->DeclareVectorOutputPort(BasicVector<T>(kSize),
                                   &SymbolicSparsitySystem::CalcY1);
   }
-
-  template <typename U>
-  SymbolicSparsitySystem(const SymbolicSparsitySystem<U>&)
-      : SymbolicSparsitySystem<T>() {}
 
  private:
   void CalcY0(const Context<T>& context,
@@ -1039,6 +1034,11 @@ class SymbolicSparsitySystem : public LeafSystem<T> {
               BasicVector<T>* y1) const {
     const auto& u0 = *(this->EvalVectorInput(context, 0));
     y1->set_value(u0.get_value());
+  }
+
+ protected:
+  SymbolicSparsitySystem<symbolic::Expression>* DoToSymbolic() const override {
+    return new SymbolicSparsitySystem<symbolic::Expression>();
   }
 
   const int kSize = 1;
@@ -1061,18 +1061,6 @@ GTEST_TEST(FeedthroughTest, SymbolicSparsity) {
   expected.emplace(0, 1);
   auto feedthrough_pairs = system.GetDirectFeedthroughs();
   EXPECT_EQ(feedthrough_pairs, expected);
-}
-
-// Sanity check the default implementation of ToAutoDiffXd.
-GTEST_TEST(AutoDiffTest, ScalarConverter) {
-  SymbolicSparsitySystem<double> dut;
-
-  // Convert to AutoDiffXd.
-  std::unique_ptr<System<AutoDiffXd>> autodiff = dut.ToAutoDiffXd();
-  ASSERT_NE(autodiff, nullptr);
-  const auto* const downcast =
-      dynamic_cast<SymbolicSparsitySystem<AutoDiffXd>*>(autodiff.get());
-  ASSERT_NE(downcast, nullptr);
 }
 
 GTEST_TEST(GraphvizTest, Attributes) {

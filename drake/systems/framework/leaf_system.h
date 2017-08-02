@@ -27,7 +27,6 @@
 #include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/sparsity_matrix.h"
 #include "drake/systems/framework/system.h"
-#include "drake/systems/framework/system_scalar_converter.h"
 #include "drake/systems/framework/value.h"
 #include "drake/systems/framework/value_checker.h"
 
@@ -212,9 +211,6 @@ class LeafSystem : public System<T> {
   };
 
  protected:
-  /// Default constructor that declares no inputs, outputs, state, parameters,
-  /// events, nor scalar-type conversion support (i.e., AutoDiff, etc.).  To
-  /// enable AutoDiff support, use the constructor that takes a SystemTypeTag.
   LeafSystem() {
     this->set_forced_publish_events(
         LeafEventCollection<PublishEvent<T>>::MakeForcedEventCollection());
@@ -224,29 +220,6 @@ class LeafSystem : public System<T> {
     this->set_forced_unrestricted_update_events(
         LeafEventCollection<
             UnrestrictedUpdateEvent<T>>::MakeForcedEventCollection());
-  }
-
-  /// Constructor that declares no inputs, outputs, state, parameters, events,
-  /// but *does* declare scalar-type conversion support (i.e., AutoDiff, etc.).
-  ///
-  /// The scalar-type conversion support will use `S` as the system type to
-  /// construct when changing the scalar type.  Systems may specialize their
-  /// scalar_conversion::Traits<S> to govern the supported scalar types; by
-  /// default, both AutoDiff and symbolic types are enabled.
-  ///
-  /// @tparam S must be the most-derived concrete System subclass of `this`.
-  template <template <typename> class S>
-  explicit LeafSystem(SystemTypeTag<S>) : LeafSystem() {
-    system_scalar_converter_ = SystemScalarConverter(SystemTypeTag<S>{});
-  }
-
-  System<AutoDiffXd>* DoToAutoDiffXd() const override {
-    return system_scalar_converter_.Convert<AutoDiffXd, T>(*this).release();
-  }
-
-  System<symbolic::Expression>* DoToSymbolic() const override {
-    return system_scalar_converter_.Convert<symbolic::Expression, T>(*this).
-        release();
   }
 
   /// Provides a new instance of the leaf context for this system. Derived
@@ -1262,9 +1235,6 @@ class LeafSystem : public System<T> {
 
   // Model outputs to be used in AllocateParameters.
   detail::ModelValues model_numeric_parameters_;
-
-  // Functions to convert this system to use alternative scalar types.
-  SystemScalarConverter system_scalar_converter_;
 };
 
 }  // namespace systems
