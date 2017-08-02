@@ -1,7 +1,7 @@
 #pragma once
 
-#include <unordered_set>
 #include <string>
+#include <unordered_set>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/geometry/geometry_ids.h"
