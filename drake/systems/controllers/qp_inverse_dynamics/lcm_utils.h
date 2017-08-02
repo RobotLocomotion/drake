@@ -5,9 +5,7 @@
 #include <vector>
 
 #include "bot_core/atlas_command_t.hpp"
-
 #include "drake/common/eigen_types.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller_common.h"
 #include "drake/lcmt_body_acceleration.hpp"
 #include "drake/lcmt_constrained_values.hpp"
 #include "drake/lcmt_contact_information.hpp"
@@ -16,9 +14,11 @@
 #include "drake/lcmt_desired_dof_motions.hpp"
 #include "drake/lcmt_qp_input.hpp"
 #include "drake/lcmt_resolved_contact.hpp"
+#include "drake/systems/controllers/qp_inverse_dynamics/qp_inverse_dynamics_common.h"
 
 namespace drake {
-namespace examples {
+namespace systems {
+namespace controllers {
 namespace qp_inverse_dynamics {
 
 /**
@@ -79,5 +79,6 @@ void EncodeResolvedContact(const ResolvedContact& contact,
                            lcmt_resolved_contact* msg);
 
 }  // namespace qp_inverse_dynamics
-}  // namespace examples
+}  // namespace controllers
+}  // namespace systems
 }  // namespace drake

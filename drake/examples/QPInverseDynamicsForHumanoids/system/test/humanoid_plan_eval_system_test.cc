@@ -5,12 +5,12 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/find_resource.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/control_utils.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/system/qp_controller_system.h"
 #include "drake/examples/valkyrie/valkyrie_constants.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/qp_inverse_dynamics_system.h"
+#include "drake/systems/controllers/setpoint.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_value_source.h"
 
@@ -19,12 +19,18 @@ namespace examples {
 namespace qp_inverse_dynamics {
 namespace {
 
-// Makes a diagram of HumanoidPlanEvalSystem + QpControllerSystem. The
+using systems::controllers::qp_inverse_dynamics::ConstraintType;
+using systems::controllers::qp_inverse_dynamics::QpInverseDynamicsSystem;
+using systems::controllers::qp_inverse_dynamics::QpInput;
+using systems::controllers::qp_inverse_dynamics::QpOutput;
+using systems::controllers::qp_inverse_dynamics::RobotKinematicState;
+
+// Makes a diagram of HumanoidPlanEvalSystem + QpInverseDynamicsSystem. The
 // controller is initialized to track a desired q (a nominal standing pose for
 // valkyrie). Output is then evaluated with a measured state also set to the
 // same desired p. The expected behavior is that QpInput from
 // HumanoidPlanEvalSystem be zero desired accelerations, and the acceleration
-// part in QpOutput from QpControllerSystem should be very close to the
+// part in QpOutput from QpInverseDynamicsSystem should be very close to the
 // desired accelerations (all zeros) in QpInput.
 // Since the inverse dynamics is set up as a minimization problem that has
 // many objectives, the results is not going to match the desired input exactly
@@ -44,11 +50,11 @@ class HumanoidPlanEvalAndQpInverseDynamicsTest : public ::testing::Test {
         "drake/examples/QPInverseDynamicsForHumanoids/"
         "config/valkyrie.id_controller_config");
 
-    auto robot = std::make_unique<RigidBodyTree<double>>();
+    RigidBodyTree<double> robot;
     parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-        kModelPath, multibody::joints::kRollPitchYaw, robot.get());
+        kModelPath, multibody::joints::kRollPitchYaw, &robot);
 
-    param_parsers::RigidBodyTreeAliasGroups<double> alias_groups(*robot);
+    RigidBodyTreeAliasGroups<double> alias_groups(&robot);
     alias_groups.LoadFromFile(kAliasGroupsPath);
 
     // Desired state.
@@ -61,14 +67,16 @@ class HumanoidPlanEvalAndQpInverseDynamicsTest : public ::testing::Test {
     systems::DiagramBuilder<double> builder;
     const double kControlDt = 0.02;
     auto plan_eval = builder.AddSystem<HumanoidPlanEvalSystem>(
-        *robot, kAliasGroupsPath, kControlConfigPath, kControlDt);
-    auto controller = builder.AddSystem<QpControllerSystem>(*robot, kControlDt);
+        &robot, kAliasGroupsPath, kControlConfigPath, kControlDt);
+    auto controller =
+        builder.AddSystem<QpInverseDynamicsSystem>(&robot, kControlDt);
 
     // Estimated state source, also set to use the desired q and v.
-    HumanoidStatus robot_status(*robot, alias_groups);
+    HumanoidStatus robot_status(&robot, alias_groups);
     robot_status.UpdateKinematics(0, q, v);
     auto state_source = builder.AddSystem<systems::ConstantValueSource<double>>(
-        systems::AbstractValue::Make<HumanoidStatus>(robot_status));
+        systems::AbstractValue::Make<RobotKinematicState<double>>(
+            robot_status));
 
     // Adds a dummy plan message.
     robotlocomotion::robot_plan_t msg{};
@@ -77,10 +85,10 @@ class HumanoidPlanEvalAndQpInverseDynamicsTest : public ::testing::Test {
 
     // State -> qp inverse dynamics.
     builder.Connect(state_source->get_output_port(0),
-                    controller->get_input_port_humanoid_status());
+                    controller->get_input_port_kinematic_state());
     // State -> plan eval.
     builder.Connect(state_source->get_output_port(0),
-                    plan_eval->get_input_port_humanoid_status());
+                    plan_eval->get_input_port_kinematic_state());
     // Plan source -> plan eval.
     builder.Connect(plan_source->get_output_port(0),
                     plan_eval->get_input_port_manip_plan_msg());

@@ -7,15 +7,18 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/find_resource.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller_common.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/atlas_joint_level_controller_system.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/qp_inverse_dynamics_common.h"
 #include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
+
+using systems::controllers::qp_inverse_dynamics::GetDofNames;
+using systems::controllers::qp_inverse_dynamics::QpOutput;
 
 class JointLevelControllerTest : public ::testing::Test {
  protected:

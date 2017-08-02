@@ -25,12 +25,11 @@ drake_cc_library(
         "generic_plan.h",
     ],
     deps = [
-        "//drake/examples/QPInverseDynamicsForHumanoids:control_utils",
-        "//drake/examples/QPInverseDynamicsForHumanoids:humanoid_status",
-        "//drake/examples/QPInverseDynamicsForHumanoids:qp_controller_common",
-        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",  # noqa
-        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:rigid_body_tree_alias_groups",  # noqa
         "//drake/manipulation/util:trajectory_utils",
+        "//drake/multibody:rigid_body_tree_alias_groups",
+        "//drake/systems/controllers:setpoint",
+        "//drake/systems/controllers/qp_inverse_dynamics",
+        "//drake/systems/controllers/qp_inverse_dynamics:param_parser",
         "//drake/systems/framework:value",
     ],
 )
@@ -78,9 +77,9 @@ drake_cc_library(
     ],
     deps = [
         ":generic_plan",
-        "//drake/examples/QPInverseDynamicsForHumanoids:lcm_utils",
         "//drake/manipulation/util:robot_state_msg_translator",
         "//drake/systems/controllers:zmp_planner",
+        "//drake/systems/controllers/qp_inverse_dynamics:lcm_utils",
         "//drake/util",
         "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",
@@ -131,9 +130,8 @@ drake_cc_library(
         "test/test_common.h",
     ],
     deps = [
-        "//drake/examples/QPInverseDynamicsForHumanoids:humanoid_status",
-        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",  # noqa
-        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:rigid_body_tree_alias_groups",  # noqa
+        "//drake/multibody:rigid_body_tree_alias_groups",
+        "//drake/systems/controllers/qp_inverse_dynamics:param_parser",
     ],
 )
 

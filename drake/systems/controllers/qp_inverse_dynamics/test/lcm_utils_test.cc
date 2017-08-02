@@ -1,4 +1,4 @@
-#include "drake/examples/QPInverseDynamicsForHumanoids/lcm_utils.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/lcm_utils.h"
 
 #include <cstdlib>
 #include <memory>
@@ -12,7 +12,8 @@
 #include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {
-namespace examples {
+namespace systems {
+namespace controllers {
 namespace qp_inverse_dynamics {
 namespace {
 
@@ -380,5 +381,6 @@ TEST_F(LcmUtilsTests, TestEncodeDecodeQpInput) {
 
 }  // namespace
 }  // namespace qp_inverse_dynamics
-}  // namespace examples
+}  // namespace controllers
+}  // namespace systems
 }  // namespace drake

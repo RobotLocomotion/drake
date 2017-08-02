@@ -1,16 +1,10 @@
-#include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/rigid_body_tree_alias_groups.h"
+#include "drake/multibody/rigid_body_tree_alias_groups.h"
 
 #include <set>
 
 #include "google/protobuf/text_format.h"
-
 #include "drake/common/proto/protobuf.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/alias_groups.pb.h"
-
-namespace drake {
-namespace examples {
-namespace qp_inverse_dynamics {
-namespace param_parsers {
+#include "drake/multibody/alias_groups.pb.h"
 
 template <typename T>
 constexpr char RigidBodyTreeAliasGroups<T>::kBodyGroupsKeyword[];
@@ -106,8 +100,8 @@ void RigidBodyTreeAliasGroups<T>::AddJointGroup(
 
 template <typename T>
 void RigidBodyTreeAliasGroups<T>::LoadFromFile(const std::string& file_path) {
-  AliasGroups alias_groups;
-  auto istream = MakeFileInputStreamOrThrow(file_path);
+  drake::rigid_body_tree::AliasGroups alias_groups;
+  auto istream = drake::MakeFileInputStreamOrThrow(file_path);
   google::protobuf::TextFormat::Parse(istream.get(), &alias_groups);
 
   for (const auto& group : alias_groups.body_group()) {
@@ -121,8 +115,3 @@ void RigidBodyTreeAliasGroups<T>::LoadFromFile(const std::string& file_path) {
 }
 
 template class RigidBodyTreeAliasGroups<double>;
-
-}  // namespace param_parsers
-}  // namespace qp_inverse_dynamics
-}  // namespace examples
-}  // namespace drake

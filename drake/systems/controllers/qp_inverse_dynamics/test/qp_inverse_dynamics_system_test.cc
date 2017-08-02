@@ -1,67 +1,67 @@
-#include "drake/examples/QPInverseDynamicsForHumanoids/system/qp_controller_system.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/qp_inverse_dynamics_system.h"
 
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/find_resource.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/control_utils.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/param_parser.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/param_parser.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/robot_kinematic_state.h"
+#include "drake/systems/controllers/setpoint.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_value_source.h"
 
 namespace drake {
-namespace examples {
+namespace systems {
+namespace controllers {
 namespace qp_inverse_dynamics {
+namespace {
 
-// Tests that the QpControllerSystem solves a simple inverse dynamics problem
-// for the iiwa arm. Without any external contact, hitting any torque
+// Tests that the QpInverseDynamicsSystem solves a simple inverse dynamics
+// problem for the iiwa arm. Without any external contact, hitting any torque
 // constraints, the inverse dynamics controller should track the desired
 // acceleration almost perfectly.
-GTEST_TEST(testQpControllerSystem, IiwaInverseDynamics) {
+GTEST_TEST(testQpInverseDynamicsSystem, IiwaInverseDynamics) {
   const std::string kModelPath = FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/urdf/"
       "iiwa14_polytope_collision.urdf");
 
   const std::string kAliasGroupsPath = FindResourceOrThrow(
-      "drake/examples/QPInverseDynamicsForHumanoids/config/"
+      "drake/systems/controllers/qp_inverse_dynamics/test/"
       "iiwa.alias_groups");
 
   const std::string kControlConfigPath = FindResourceOrThrow(
-      "drake/examples/QPInverseDynamicsForHumanoids/config/"
+      "drake/systems/controllers/qp_inverse_dynamics/test/"
       "iiwa.id_controller_config");
 
-  auto robot = std::make_unique<RigidBodyTree<double>>();
+  RigidBodyTree<double> robot;
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      kModelPath, multibody::joints::kFixed, robot.get());
+      kModelPath, multibody::joints::kFixed, &robot);
 
-  param_parsers::RigidBodyTreeAliasGroups<double> alias_groups(*robot);
+  RigidBodyTreeAliasGroups<double> alias_groups(&robot);
   alias_groups.LoadFromFile(kAliasGroupsPath);
-  param_parsers::ParamSet paramset;
+  ParamSet paramset;
   paramset.LoadFromFile(kControlConfigPath, alias_groups);
 
-  systems::DiagramBuilder<double> builder;
+  DiagramBuilder<double> builder;
 
   // Makes a controller block.
   const double kControlDt = 0.02;
-  QpControllerSystem* controller =
-      builder.AddSystem<QpControllerSystem>(*robot, kControlDt);
+  QpInverseDynamicsSystem* controller =
+      builder.AddSystem<QpInverseDynamicsSystem>(&robot, kControlDt);
   controller->set_name("controller");
 
   // Makes a source for humanoid status.
-  HumanoidStatus robot_status(*robot, alias_groups);
-  const VectorX<double> q = VectorX<double>::Zero(robot->get_num_positions());
-  const VectorX<double> v = VectorX<double>::Zero(robot->get_num_velocities());
+  RobotKinematicState<double> robot_status(&robot);
+  const VectorX<double> q = VectorX<double>::Zero(robot.get_num_positions());
+  const VectorX<double> v = VectorX<double>::Zero(robot.get_num_velocities());
 
-  robot_status.Update(0 /* time */, q, v,
-                      VectorX<double>::Zero(robot->get_num_actuators()),
-                      Vector6<double>::Zero(), Vector6<double>::Zero());
-  systems::ConstantValueSource<double>* state_source =
-      builder.AddSystem<systems::ConstantValueSource<double>>(
-          systems::AbstractValue::Make<HumanoidStatus>(robot_status));
+  robot_status.UpdateKinematics(0 /* time */, q, v);
+  ConstantValueSource<double>* state_source =
+      builder.AddSystem<ConstantValueSource<double>>(
+          AbstractValue::Make<RobotKinematicState<double>>(robot_status));
   state_source->set_name("state_source");
 
   // Makes a source for qp input.
@@ -82,14 +82,14 @@ GTEST_TEST(testQpControllerSystem, IiwaInverseDynamics) {
   input.mutable_desired_dof_motions().mutable_values() =
       policy.ComputeTargetAcceleration(q, v);
 
-  systems::ConstantValueSource<double>* qp_input_source =
-      builder.AddSystem<systems::ConstantValueSource<double>>(
-          systems::AbstractValue::Make<QpInput>(input));
+  ConstantValueSource<double>* qp_input_source =
+      builder.AddSystem<ConstantValueSource<double>>(
+          AbstractValue::Make<QpInput>(input));
   qp_input_source->set_name("qp_input_source");
 
   // Connects the diagram.
   builder.Connect(state_source->get_output_port(0),
-                  controller->get_input_port_humanoid_status());
+                  controller->get_input_port_kinematic_state());
 
   builder.Connect(qp_input_source->get_output_port(0),
                   controller->get_input_port_qp_input());
@@ -99,8 +99,8 @@ GTEST_TEST(testQpControllerSystem, IiwaInverseDynamics) {
   auto diagram = builder.Build();
 
   // Uses the simulator to avoid various allocations by hand.
-  systems::Simulator<double> sim(*diagram);
-  std::unique_ptr<systems::SystemOutput<double>> output =
+  Simulator<double> sim(*diagram);
+  std::unique_ptr<SystemOutput<double>> output =
       diagram->AllocateOutput(sim.get_context());
   sim.Initialize();
   sim.StepTo(controller->get_control_dt());
@@ -117,12 +117,14 @@ GTEST_TEST(testQpControllerSystem, IiwaInverseDynamics) {
   // Without any external forces or hitting any contraints, torque = M * vd_d +
   // h.
   VectorX<double> expected_torque =
-      robot_status.M() * input.desired_dof_motions().values() +
-      robot_status.bias_term();
+      robot_status.get_M() * input.desired_dof_motions().values() +
+      robot_status.get_bias_term();
   EXPECT_TRUE(drake::CompareMatrices(expected_torque, qp_output.dof_torques(),
                                      1e-9, drake::MatrixCompareType::absolute));
 }
 
+}  // namespace
 }  // namespace qp_inverse_dynamics
-}  // namespace examples
+}  // namespace controllers
+}  // namespace systems
 }  // namespace drake

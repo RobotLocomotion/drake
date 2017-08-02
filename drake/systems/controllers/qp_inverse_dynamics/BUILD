@@ -1,0 +1,170 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load("//tools:lint.bzl", "add_lint_tests")
+load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load("//tools:gurobi.bzl", "gurobi_test_tags")
+load("@protobuf//:protobuf.bzl", "cc_proto_library")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_proto_library(
+    name = "id_controller_config",
+    srcs = [
+        "id_controller_config.proto",
+    ],
+)
+
+drake_cc_library(
+    name = "param_parser",
+    srcs = [
+        "param_parser.cc",
+    ],
+    hdrs = [
+        "param_parser.h",
+    ],
+    deps = [
+        ":id_controller_config",
+        ":qp_inverse_dynamics",
+        "//drake/common/proto:protobuf",
+        "//drake/multibody:rigid_body_tree_alias_groups",
+    ],
+)
+
+drake_cc_library(
+    name = "robot_kinematic_state",
+    srcs = [
+        "robot_kinematic_state.cc",
+    ],
+    hdrs = [
+        "robot_kinematic_state.h",
+    ],
+    deps = [
+        "//drake/multibody:rigid_body_tree",
+    ],
+)
+
+drake_cc_library(
+    name = "qp_inverse_dynamics",
+    srcs = [
+        "qp_inverse_dynamics.cc",
+        "qp_inverse_dynamics_common.cc",
+    ],
+    hdrs = [
+        "qp_inverse_dynamics.h",
+        "qp_inverse_dynamics_common.h",
+    ],
+    deps = [
+        ":robot_kinematic_state",
+        "//drake/common",
+        "//drake/math:gradient",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/solvers:mathematical_program",
+    ],
+)
+
+drake_cc_library(
+    name = "qp_inverse_dynamics_system",
+    srcs = ["qp_inverse_dynamics_system.cc"],
+    hdrs = ["qp_inverse_dynamics_system.h"],
+    deps = [
+        "//drake/lcmtypes:inverse_dynamics_debug_info",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/systems/controllers/qp_inverse_dynamics",
+        "//drake/systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
+    name = "lcm_utils",
+    srcs = ["lcm_utils.cc"],
+    hdrs = ["lcm_utils.h"],
+    deps = [
+        ":qp_inverse_dynamics",
+        "//drake/lcmtypes:body_acceleration",
+        "//drake/lcmtypes:constrained_values",
+        "//drake/lcmtypes:contact_information",
+        "//drake/lcmtypes:desired_body_motion",
+        "//drake/lcmtypes:desired_centroidal_momentum_dot",
+        "//drake/lcmtypes:desired_dof_motions",
+        "//drake/lcmtypes:qp_input",
+        "//drake/lcmtypes:resolved_contact",
+        "//drake/util:lcm_util",
+        "@lcmtypes_bot2_core",
+    ],
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "lcm_utils_test",
+    data = [
+        "//drake/examples/valkyrie:models",
+    ],
+    deps = [
+        ":lcm_utils",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
+        "//drake/multibody/parsers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "param_parser_test",
+    srcs = ["test/param_parser_test.cc"],
+    data = [
+        "test/params.alias_groups",
+        "test/params.id_controller_config",
+        "//drake/examples/valkyrie:models",
+    ],
+    deps = [
+        ":param_parser",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
+        "//drake/multibody:rigid_body_tree_alias_groups",
+        "//drake/multibody/parsers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "iiwa_inverse_dynamics_test",
+    srcs = ["test/iiwa_inverse_dynamics_test.cc"],
+    data = [
+        "test/iiwa.alias_groups",
+        "test/iiwa.id_controller_config",
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
+    tags = gurobi_test_tags(),
+    deps = [
+        ":param_parser",
+        ":qp_inverse_dynamics",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
+        "//drake/multibody/parsers",
+        "//drake/systems/controllers:setpoint",
+    ],
+)
+
+drake_cc_googletest(
+    name = "qp_inverse_dynamics_system_test",
+    srcs = ["test/qp_inverse_dynamics_system_test.cc"],
+    data = [
+        "test/iiwa.alias_groups",
+        "test/iiwa.id_controller_config",
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
+    tags = gurobi_test_tags(),
+    deps = [
+        ":qp_inverse_dynamics_system",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
+        "//drake/multibody/parsers",
+        "//drake/systems/analysis:simulator",
+        "//drake/systems/controllers:setpoint",
+        "//drake/systems/controllers/qp_inverse_dynamics:param_parser",
+        "//drake/systems/framework",
+        "//drake/systems/primitives:constant_value_source",
+    ],
+)
+
+add_lint_tests()

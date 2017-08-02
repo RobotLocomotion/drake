@@ -1,16 +1,16 @@
-#include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/param_parser.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/param_parser.h"
 
 #include "google/protobuf/text_format.h"
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/proto/protobuf.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/id_controller_config.pb.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/id_controller_config.pb.h"
 #include "drake/util/drakeUtil.h"
 
 namespace drake {
-namespace examples {
+namespace systems {
+namespace controllers {
 namespace qp_inverse_dynamics {
-namespace param_parsers {
 
 namespace {
 // Attempts to find a ParamType with @p name. If no such parameter exists, the
@@ -491,7 +491,7 @@ QpInput ParamSet::MakeQpInput(
   return qp_input;
 }
 
-}  // namespace param_parsers
 }  // namespace qp_inverse_dynamics
-}  // namespace examples
+}  // namespace controllers
+}  // namespace systems
 }  // namespace drake
