@@ -1185,16 +1185,24 @@ class IntegratorBase {
    * @param current_step_size
    *      The current step size on entry.
    * @param[in,out] at_minimum_step_size
-   *       If `true` on entry or exit, the error control mechanism cannot shrink the
-   *       step further.
-   * @returns a pair of types AdjustedStepStatus and T; the status indicates
-   *      error control's next move. The value of the T type will be set to the
-   *      recommended next step size.
+   *       If `true` on entry, the error control mechanism is not allowed to
+   *       shrink the step because the integrator is stepping at the minimum
+   *       step size (note that this condition will only occur if
+   *       `get_throw_on_minimum_step_size_violation() == false`- an exception
+   *       would be thrown otherwise). If `true` on entry and `false` on exit,
+   *       the error control mechanism has managed to increase the step size
+   *       above the working minimum; if `true` on entry and `true` on exit,
+   *       error control would like to shrink the step size but cannot. If
+   *       `false` on entry and `true` on exit, error control shrank the step
+   *       to the working minimum step size.
+   * @returns a pair of types bool and T; the bool will be set to `true` if
+   *      the integration step was to be considered successful and `false`
+   *      otherwise. The value of the T type will be set to the recommended next
+   *      step size.
    */
   std::pair<bool, T> CalcAdjustedStepSize(
       const T& err, bool dt_was_artificially_limited,
-      const T& current_step_size, bool convergence_failure_encountered,
-      bool* at_minimum_step_size) const;
+      const T& current_step_size, bool* at_minimum_step_size) const;
 
   /**
    * Derived classes can override this method to perform special
@@ -1466,13 +1474,13 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
     T next_step_size;
     std::tie(step_succeeded, next_step_size) = CalcAdjustedStepSize(
         err_norm, dt_was_artificially_limited, current_step_size,
-        convergence_failure_encountered, &at_minimum_step_size);
+        &at_minimum_step_size);
     SPDLOG_DEBUG(drake::log(), "Adjusted step size: {}", next_step_size);
 
     if (step_succeeded) {
-      // The ideal step size should be the working minimum step size (i.e.,
-      // ignore step increases that were selected to avoid slivers of
-      // steps).
+      // When at the minimum step, the ideal step size should be the working
+      // minimum step size; in other words, ignore step increases that were
+      // selected to avoid slivers of steps.
       if (at_minimum_step_size) {
         ideal_next_step_size_ = get_working_minimum_step_size();
       } else {
@@ -1567,7 +1575,6 @@ std::pair<bool, T> IntegratorBase<T>::CalcAdjustedStepSize(
     const T& err,
     bool dt_was_artificially_limited,
     const T& current_step_size,
-    bool convergence_failure_encountered,
     bool* at_minimum_step_size) const {
   using std::pow;
   using std::min;
@@ -1598,21 +1605,18 @@ std::pair<bool, T> IntegratorBase<T>::CalcAdjustedStepSize(
     new_step_size = kSafety * current_step_size *
                     pow(get_accuracy_in_use() / err, 1.0 / err_order);
 
-  // If the new step is bigger than the old, don't make the change if the
-  // old one was small for some unimportant reason (like reached a publishing
-  // interval). Also, don't grow the step size if the change would be very
-  // small; better to keep the step size stable in that case (maybe just
-  // for aesthetic reasons).
+  // Error indicates that the step size can be increased.
   if (new_step_size > current_step_size) {
-    // If a convergence failure has occurred, don't grow the step size, and
-    // don't adjust the next step size.
-    if (convergence_failure_encountered) {
-      return std::make_pair(true, current_step_size);
-    }
-
     // If the integrator has been directed down to the minimum step size, but
-    // has now been controlled upward, de-activate at_minimum_step_size.
+    // now error indicates that the step size can be increased, de-activate
+    // at_minimum_step_size.
     *at_minimum_step_size = false;
+
+    // If the new step is bigger than the old, don't make the change if the
+    // old one was small for some unimportant reason (like reached a publishing
+    // interval). Also, don't grow the step size if the change would be very
+    // small; better to keep the step size stable in that case (maybe just
+    // for aesthetic reasons).
     if (dt_was_artificially_limited ||
         new_step_size < kHysteresisHigh * current_step_size)
       new_step_size = current_step_size;
