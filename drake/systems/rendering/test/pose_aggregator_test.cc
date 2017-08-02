@@ -71,7 +71,7 @@ PoseBundle<AutoDiffXd> ToAutoDiffXd(const PoseBundle<double>& original) {
 }
 }  // namespace
 
-// Tests that PoseAggregator aggregates poses fromtwo PoseVector inputs (one
+// Tests that PoseAggregator aggregates poses from two PoseVector inputs (one
 // with velocity and one without), and a PoseBundle input.
 TEST_F(PoseAggregatorTest, CompositeAggregation) {
   // Set some arbitrary translations in the PoseBundle input, and a velocity
