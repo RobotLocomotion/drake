@@ -1190,6 +1190,54 @@ GTEST_TEST(SimulatorTest, AutodiffBasic) {
   simulator.StepTo(1);
 }
 
+// Verifies that an error controlled integrator will stretch its integration
+// step when it is near an update action and (a) error control is used, (b)
+// minimum step size exceptions are suppressed, (c) the integration step size
+// necessary to realize error tolerances is below the minimum step size.
+GTEST_TEST(SimulatorTest, StretchedStep) {
+  // Setting the update rate to 1.0 will cause the spring mass to update at
+  // 1.0s.
+  analysis_test::MySpringMassSystem<double> spring_mass(
+      1., 1., 1. /* update rate */);
+  Simulator<double> simulator(spring_mass);
+
+  // We will direct the integrator to take a single step of t_final, which
+  // will be very near the mass-spring system's update event at 1.0s. 1e-8
+  // is so small that any reasonable degree of step "stretching" should jump
+  // to 1.0 proper.
+  const double expected_t_final = 1.0;
+  const double directed_t_final = expected_t_final - 1e-8;
+
+  // Accuracy tolerances are tight so that the integrator is sure to decrease
+  // the step size.
+  const double accuracy = 1e-8;
+  const double req_min_step_size = directed_t_final;
+
+  // Initialize the error controlled integrator and the simulator.
+  simulator.reset_integrator<RungeKutta3Integrator<double>>(spring_mass,
+    simulator.get_mutable_context());
+  IntegratorBase<double>* integrator = simulator.get_mutable_integrator();
+  integrator->set_requested_minimum_step_size(req_min_step_size);
+  integrator->request_initial_step_size_target(directed_t_final);
+  integrator->set_target_accuracy(accuracy);
+  simulator.Initialize();
+
+  // Set initial condition using the Simulator's internal Context.
+  spring_mass.set_position(simulator.get_mutable_context(), 0.1);
+
+  // Activate exceptions on violating the minimum step size to verify that
+  // error control is a limiting factor.
+  integrator->set_throw_on_minimum_step_size_violation(true);
+  EXPECT_THROW(simulator.StepTo(expected_t_final), std::runtime_error);
+
+  // Now disable exceptions on violating the minimum step size and step again.
+  integrator->set_throw_on_minimum_step_size_violation(false);
+  simulator.StepTo(expected_t_final);
+
+  // Verify that the step size was stretched.
+  EXPECT_EQ(simulator.get_context().get_time(), expected_t_final);
+}
+
 // Tests per step publish, discrete and unrestricted update actions. Each
 // action handler logs the context time when it's called, and the test compares
 // the time stamp against the integrator's dt.

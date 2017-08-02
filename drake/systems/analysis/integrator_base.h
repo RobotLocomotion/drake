@@ -264,7 +264,7 @@ class IntegratorBase {
    * Gets the maximum step size that may be taken by this integrator. This is
    * a soft maximum: the integrator may stretch it by as much as 1% to hit a
    * discrete event.
-   * @sa set_minimum_step_size()
+   * @sa set_requested_minimum_step_size()
    */
   // TODO(edrumwri): Update this comment when stretch size is configurable.
   const T& get_maximum_step_size() const { return max_step_size_; }
@@ -1604,7 +1604,7 @@ std::pair<bool, T> IntegratorBase<T>::CalcAdjustedStepSize(
   // small; better to keep the step size stable in that case (maybe just
   // for aesthetic reasons).
   if (new_step_size > current_step_size) {
-    // If a convergence failure was detected, don't grow the step size, and
+    // If a convergence failure has occurred, don't grow the step size, and
     // don't adjust the next step size.
     if (convergence_failure_encountered) {
       return std::make_pair(true, current_step_size);
@@ -1662,8 +1662,7 @@ std::pair<bool, T> IntegratorBase<T>::CalcAdjustedStepSize(
     return std::make_pair(false, new_step_size);
   }
 
-  return std::make_pair(dt_was_artificially_limited ||
-      new_step_size >= current_step_size, new_step_size);
+  return std::make_pair(new_step_size >= current_step_size, new_step_size);
 }
 
 template <class T>
