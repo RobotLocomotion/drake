@@ -47,7 +47,7 @@ SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog) const {
 
   // least-squares solution
   const Eigen::VectorXd least_square_sol =
-      Aeq.completeOrthogonalDecomposition().solve(beq);
+      Aeq.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(beq);
   prog.SetDecisionVariableValues(least_square_sol);
   prog.SetOptimalCost(0.);
 
