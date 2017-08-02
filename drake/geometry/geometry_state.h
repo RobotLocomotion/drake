@@ -18,8 +18,8 @@ namespace geometry {
 template <typename T> class GeometryFrame;
 template <typename T> class GeometrySystem;
 
-/** @name Structures for maintaining the entity relationships
- @{ */
+/** @name Structures for maintaining the entity relationships */
+//@{
 
 /** Collection of unique frame ids. */
 using FrameIdSet = std::unordered_set<FrameId>;
@@ -42,10 +42,10 @@ class GeometryState {
   /** Default constructor. */
   GeometryState();
 
-  /** @name        State introspection.
+  /** @name        State introspection
 
-   Various methods that allow reading the state's properties and values.
-  @{ */
+   Various methods that allow reading the state's properties and values. */
+  //@{
 
   /** Reports the number of registered sources -- whether they have frames or
    not. */
@@ -69,8 +69,8 @@ class GeometryState {
   /** @name       Relationship queries
 
    Various methods that map identifiers for one type of entity to its related
-   entities.
-   @{ */
+   entities. */
+  //@{
 
   /** Reports if the given frame id was registered to the given source id.
    @param frame_id      The query frame id.
@@ -92,17 +92,17 @@ class GeometryState {
   /** @name        State management
 
    The methods that modify the state including: adding/removing entities from
-   the state, modifying values in the state, etc.
-   @{ */
+   the state, modifying values in the state, etc. */
+  //@{
 
   /** Registers a new, named source into the state.
-    @param name          The optional name of the source. If none or the empty
+   @param name          The optional name of the source. If none or the empty
                         string is provided it will be named "Source_##" where
                         the number is the value of the returned SourceId.
-   @trhows std::logic_error is thrown if the name is _not_ unique. */
+   @throws std::logic_error is thrown if the name is _not_ unique. */
   SourceId RegisterNewSource(const std::string& name = "");
 
-  /** Removes  all frames and geometry registered from the identified source.
+  /** Removes all frames and geometry registered from the identified source.
    The source remains registered and further frames and geometry can be
    registered on it.
    @param source_id     The identifier for the source to clear.

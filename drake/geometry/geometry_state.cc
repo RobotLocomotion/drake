@@ -47,7 +47,7 @@ std::string get_missing_id_message(const Key& key) {
 // The look up and error-throwing method for const values.
 template <class Key, class Value>
 const Value& GetValueOrThrow(const Key& key,
-                       const std::unordered_map<Key, Value>* map) {
+                             const std::unordered_map<Key, Value>* map) {
   auto itr = map->find(key);
   if (itr != map->end()) {
     return itr->second;
@@ -174,9 +174,9 @@ FrameId GeometryState<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
 template <typename T>
 bool GeometryState<T>::BelongsToSource(FrameId frame_id,
                                        SourceId source_id) const {
-  // Confirm that the source_id is valid.
-  const auto& frames = GetValueOrThrow(source_id, &source_frame_id_map_);
-  unused(frames);
+  // Confirm that the source_id is valid; use the utility function to confirm
+  // source_id is valid and throw an exception with a known message.
+  GetValueOrThrow(source_id, &source_frame_id_map_);
   // If valid, test the frame.
   return get_source_id(frame_id) == source_id;
 }
