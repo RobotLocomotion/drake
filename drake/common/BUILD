@@ -162,6 +162,19 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "symbolic_decompose",
+    srcs = [
+        "symbolic_decompose.cc",
+    ],
+    hdrs = [
+        "symbolic_decompose.h",
+    ],
+    deps = [
+        ":symbolic",
+    ],
+)
+
+drake_cc_library(
     name = "symbolic_test_util",
     testonly = 1,
     hdrs = [
