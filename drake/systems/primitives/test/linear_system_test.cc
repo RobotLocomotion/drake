@@ -174,6 +174,110 @@ GTEST_TEST(TestLinearize, Observability) {
   EXPECT_TRUE(IsObservable(sys3));
 }
 
+class LinearSystemSymbolicTest : public ::testing::Test {
+ public:
+  LinearSystemSymbolicTest() = default;
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSystemSymbolicTest)
+
+ protected:
+  void SetUp() override {
+    // clang-format off
+  A_  << 1, 0, 3,
+        -4, 5, 0,
+         7, 0, 9;
+  B_  << 10, -7,
+         12, 0,
+         0,  15;
+  C_  <<  1, 2,  0,
+         -4, 0, -7;
+  D_  << -3,  9,
+          0, 13;
+  x_ << x0_, x1_, x2_;
+  u_ << u0_, u1_;
+    // clang-format on
+  }
+
+  const symbolic::Variable x0_{"x0"};
+  const symbolic::Variable x1_{"x1"};
+  const symbolic::Variable x2_{"x2"};
+  const symbolic::Variable u0_{"u0"};
+  const symbolic::Variable u1_{"u1"};
+  Eigen::MatrixXd A_{3, 3};
+  Eigen::MatrixXd B_{3, 2};
+  Eigen::MatrixXd C_{2, 3};
+  Eigen::MatrixXd D_{2, 2};
+  VectorX<symbolic::Variable> x_{3};
+  VectorX<symbolic::Variable> u_{2};
+};
+
+TEST_F(LinearSystemSymbolicTest, MakeLinearSystem) {
+  // Checks if MakeLinearSystem() parses the arguments and build a
+  // system correctly.
+  const auto dut = LinearSystem<double>::MakeLinearSystem(
+      A_ * x_ + B_ * u_, C_ * x_ + D_ * u_, x_, u_, 10.0);
+  EXPECT_EQ(dut->A(), A_);
+  EXPECT_EQ(dut->B(), B_);
+  EXPECT_EQ(dut->C(), C_);
+  EXPECT_EQ(dut->D(), D_);
+  EXPECT_EQ(dut->time_period(), 10.0);
+}
+
+TEST_F(LinearSystemSymbolicTest, MakeLinearSystemException1) {
+  // Add quadratic terms to check if we have an exception.
+  VectorX<symbolic::Expression> extra_terms(3);
+  // clang-format off
+  extra_terms << x0_ * x0_,
+                 x1_ * x1_,
+                 x2_ * x2_;
+  // clang-format on
+  EXPECT_THROW(
+      LinearSystem<double>::MakeLinearSystem(extra_terms + A_ * x_ + B_ * u_,
+                                             C_ * x_ + D_ * u_, x_, u_, 10.0),
+      std::runtime_error);
+}
+
+TEST_F(LinearSystemSymbolicTest, MakeLinearSystemException2) {
+  // Add bilinear terms to check if we have an exception.
+  VectorX<symbolic::Expression> extra_terms(3);
+  // clang-format off
+  extra_terms << x0_ * u0_,
+                 x1_ * u1_,
+                 x2_ * u0_;
+  // clang-format on
+  EXPECT_THROW(
+      LinearSystem<double>::MakeLinearSystem(extra_terms + A_ * x_ + B_ * u_,
+                                             C_ * x_ + D_ * u_, x_, u_, 10.0),
+      std::runtime_error);
+}
+
+TEST_F(LinearSystemSymbolicTest, MakeLinearSystemException3) {
+  // Add nonlinear terms to check if we have an exception.
+  VectorX<symbolic::Expression> extra_terms(3);
+  // clang-format off
+  extra_terms << sin(x0_),
+                 cos(x1_),
+                 log(u0_);
+  // clang-format on
+  EXPECT_THROW(
+      LinearSystem<double>::MakeLinearSystem(extra_terms + A_ * x_ + B_ * u_,
+                                             C_ * x_ + D_ * u_, x_, u_, 10.0),
+      std::runtime_error);
+}
+
+TEST_F(LinearSystemSymbolicTest, MakeLinearSystemException4) {
+  // Add constant terms to check if we have an exception.
+  VectorX<symbolic::Expression> extra_terms(3);
+  // clang-format off
+  extra_terms << -1,
+                  1,
+                  M_PI;
+  // clang-format on
+  EXPECT_THROW(
+      LinearSystem<double>::MakeLinearSystem(extra_terms + A_ * x_ + B_ * u_,
+                                             C_ * x_ + D_ * u_, x_, u_, 10.0),
+      std::runtime_error);
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake

@@ -46,6 +46,8 @@ drake_cc_library(
     srcs = ["affine_system.cc"],
     hdrs = ["affine_system.h"],
     deps = [
+        "//drake/common:symbolic",
+        "//drake/common:symbolic_decompose",
         "//drake/systems/framework",
     ],
 )
@@ -121,6 +123,8 @@ drake_cc_library(
     hdrs = ["linear_system.h"],
     deps = [
         ":affine_system",
+        "//drake/common:symbolic",
+        "//drake/common:symbolic_decompose",
         "//drake/math:autodiff",
         "//drake/math:gradient",
         "//drake/systems/framework",
