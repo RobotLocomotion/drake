@@ -716,7 +716,7 @@ TEST_P(ImplicitIntegratorTest, DiscontinuousSpringMassDamper) {
 
   // Establish tolerances for time and solution.
   const double ttol = 1e2 * std::numeric_limits<double>::epsilon();
-  const double sol_tol = 2e-9;
+  const double sol_tol = 4e-9;
 
   // Integrate for 1 second.
   const double t_final = 1.0;
