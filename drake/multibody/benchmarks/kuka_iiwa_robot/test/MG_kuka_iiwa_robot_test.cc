@@ -1,4 +1,4 @@
-#include "drake/multibody/benchmarks/kuka_iiwa_robot/test/MG_kuka_iiwa_robot.h"
+#include "drake/multibody/benchmarks/kuka_iiwa_robot/MG/MG_kuka_iiwa_robot.h"
 
 #include <cmath>
 #include <limits>

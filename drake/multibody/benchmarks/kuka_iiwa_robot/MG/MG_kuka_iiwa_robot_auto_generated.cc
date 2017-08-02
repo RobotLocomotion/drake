@@ -3,8 +3,7 @@
 // the 3-clause BSD license.  https://opensource.org/licenses/BSD-3-Clause
 // MotionGenesis Professional Licensee: Paul Mitiguy.
 //------------------------------------------------------------------------------
-// GENERATED FILE DO NOT EDIT
-#include "drake/multibody/benchmarks/kuka_iiwa_robot/test/MG_kuka_iiwa_robot_auto_generated.h"
+#include "drake/multibody/benchmarks/kuka_iiwa_robot/MG/MG_kuka_iiwa_robot_auto_generated.h"
 
 //------------------------------------------------------------------------------
 namespace MotionGenesis {
