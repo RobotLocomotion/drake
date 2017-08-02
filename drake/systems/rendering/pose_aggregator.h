@@ -6,9 +6,6 @@
 #include <utility>
 #include <vector>
 
-#include <Eigen/Dense>
-
-#include "drake/common/eigen_types.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/rendering/pose_bundle.h"
 
@@ -67,6 +64,7 @@ namespace pose_aggregator_detail { struct InputRecord; }
 /// other scalar types are supported.
 /// - double
 /// - AutoDiffXd
+/// - symbolic::Expression
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///           Only double and AutoDiffXd are supported.
@@ -76,6 +74,11 @@ class PoseAggregator : public LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PoseAggregator)
 
   PoseAggregator();
+
+  /// Scalar-converting copy constructor.
+  template <typename U>
+  explicit PoseAggregator(const PoseAggregator<U>&);
+
   ~PoseAggregator() override;
 
   /// Adds an input for a PoseVector. @p name must be unique for all inputs with
@@ -98,6 +101,9 @@ class PoseAggregator : public LeafSystem<T> {
                                                int num_poses);
 
  private:
+  // Allow different specializations to access each other's private data.
+  template <typename> friend class PoseAggregator;
+
   // Aggregates the input poses into the output PoseBundle, in the order
   // the input ports were added. Aborts if any inputs have an unexpected
   // dimension.
@@ -109,10 +115,6 @@ class PoseAggregator : public LeafSystem<T> {
   PoseBundle<T> MakePoseBundle() const;
 
   using InputRecord = pose_aggregator_detail::InputRecord;
-
-  // Allow different specializations to access each other's private data.
-  friend class PoseAggregator<double>;
-  friend class PoseAggregator<AutoDiffXd>;
 
   // Returns an InputRecord for a generic single pose input.
   static InputRecord MakeSinglePoseInputRecord(const std::string& name,
@@ -131,9 +133,6 @@ class PoseAggregator : public LeafSystem<T> {
 
   // Returns the total number of poses from all inputs.
   int CountNumPoses() const;
-
-  // System<T> override.
-  PoseAggregator<AutoDiffXd>* DoToAutoDiffXd() const override;
 
   // The type, size, and source of each input port.
   std::vector<InputRecord> input_records_;
