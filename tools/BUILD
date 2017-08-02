@@ -78,6 +78,7 @@ py_binary(
 py_binary(
     name = "drakelint",
     srcs = ["drakelint.py"],
+    deps = ["//drake/tools:formatter"],
 )
 
 py_binary(
