@@ -1,4 +1,5 @@
 #include "drake/perception/dev/feedforward_neural_network.h"
+#include <stdlib.h>
 #include <iostream>
 #include <memory>
 #include <Eigen/Dense>
@@ -7,6 +8,7 @@
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
+using std::abs;
 using std::unique_ptr;
 using systems::SystemOutput;
 using systems::Context;
@@ -24,16 +26,22 @@ namespace {
  * Helper function declarations
  * (definitions at end of file)
  ********************************/
+// Helper functions to generate a new matrix/vector with specified dimensions,
+// initialize the entries. We don't care about what the entries are; this is
+// meant to be a way to get some variety of entries without using Matrix::Random
+MatrixXd NewMatrix(int rows, int columns);
+VectorXd NewVector(int rows);
 // Helper function to generate a vector of Connected layers
-std::vector<LayerType> generateFullyConnectedLayers(int numLayers);
+std::vector<LayerType> GenerateFullyConnectedLayers(int num_layers);
 // Helper function to generate a vector of Relu nonlinearities
-std::vector<NonlinearityType> generateReluNonlinearities(int numLayers);
+std::vector<NonlinearityType> GenerateReluNonlinearities(int num_layers);
 // Helper function to check IO behavior of a double FeedforwardNeuralNetwork
 template <typename T>
 void TestIO(std::vector<MatrixX<T>> W, std::vector<VectorX<T>> B,
             VectorX<T> input, VectorX<T> expectedOutput);
 // Helper function to compare a MatrixX<double> and a MatrixX<AutoDiffXd>
-bool CompareMats(MatrixX<double> Mdouble, MatrixX<AutoDiffXd> Mautodiff);
+bool CompareMats(const MatrixX<double>& Mdouble,
+                 const MatrixX<AutoDiffXd>& Mautodiff, double tolerance = 0);
 
 /********************************
  * Tests
@@ -42,20 +50,20 @@ bool CompareMats(MatrixX<double> Mdouble, MatrixX<AutoDiffXd> Mautodiff);
 // Test that the matrices are being encoded and decoded correctly from
 // BasicVectors
 GTEST_TEST(FeedforwardNeuralNetworkTest, MatrixCoderDecoder) {
-  MatrixXd W1 = MatrixXd::Random(3, 3);
-  MatrixXd W2 = MatrixXd::Random(7, 3);
+  MatrixXd W1 = NewMatrix(3, 3);
+  MatrixXd W2 = NewMatrix(7, 3);
   std::vector<MatrixXd> W;
   W.push_back(W1);
   W.push_back(W2);
 
-  VectorXd B1 = VectorXd::Random(3);
-  VectorXd B2 = VectorXd::Random(7);
+  VectorXd B1 = NewVector(3);
+  VectorXd B2 = NewVector(7);
   std::vector<VectorXd> B;
   B.push_back(B1);
   B.push_back(B2);
 
-  FeedforwardNeuralNetwork<double> dut(W, B, generateFullyConnectedLayers(2),
-                                       generateReluNonlinearities(2));
+  FeedforwardNeuralNetwork<double> dut(W, B, GenerateFullyConnectedLayers(2),
+                                       GenerateReluNonlinearities(2));
 
   unique_ptr<BasicVector<double>> encoded1 = dut.EncodeWeightsToBasicVector(W1);
   unique_ptr<BasicVector<double>> encoded2 = dut.EncodeWeightsToBasicVector(W2);
@@ -72,24 +80,24 @@ GTEST_TEST(FeedforwardNeuralNetworkTest, MatrixCoderDecoder) {
 // Test that the NN is correctly loading and extracting its parameters from
 // the Context
 GTEST_TEST(FeedforwardNeuralNetworkTest, ParameterStorage) {
-  MatrixXd W1 = MatrixXd::Random(3, 3);
-  MatrixXd W2 = MatrixXd::Random(7, 3);
-  MatrixXd W3 = MatrixXd::Random(2, 7);
+  MatrixXd W1 = NewMatrix(3, 3);
+  MatrixXd W2 = NewMatrix(7, 3);
+  MatrixXd W3 = NewMatrix(2, 7);
   std::vector<MatrixXd> W;
   W.push_back(W1);
   W.push_back(W2);
   W.push_back(W3);
 
-  VectorXd B1 = VectorXd::Random(3);
-  VectorXd B2 = VectorXd::Random(7);
-  VectorXd B3 = VectorXd::Random(2);
+  VectorXd B1 = NewVector(3);
+  VectorXd B2 = NewVector(7);
+  VectorXd B3 = NewVector(2);
   std::vector<VectorXd> B;
   B.push_back(B1);
   B.push_back(B2);
   B.push_back(B3);
 
-  FeedforwardNeuralNetwork<double> dut(W, B, generateFullyConnectedLayers(3),
-                                       generateReluNonlinearities(3));
+  FeedforwardNeuralNetwork<double> dut(W, B, GenerateFullyConnectedLayers(3),
+                                       GenerateReluNonlinearities(3));
 
   unique_ptr<Context<double>> context = dut.CreateDefaultContext();
 
@@ -109,24 +117,24 @@ GTEST_TEST(FeedforwardNeuralNetworkTest, ParameterStorage) {
 // - num outputs,
 // - num layers
 GTEST_TEST(FeedforwardNeuralNetworkTest, ShapeParameters) {
-  MatrixXd W1 = MatrixXd::Random(10, 19);
-  MatrixXd W2 = MatrixXd::Random(7, 10);
-  MatrixXd W3 = MatrixXd::Random(2, 7);
+  MatrixXd W1 = NewMatrix(10, 19);
+  MatrixXd W2 = NewMatrix(7, 10);
+  MatrixXd W3 = NewMatrix(2, 7);
   std::vector<MatrixXd> W;
   W.push_back(W1);
   W.push_back(W2);
   W.push_back(W3);
 
-  VectorXd B1 = VectorXd::Random(10);
-  VectorXd B2 = VectorXd::Random(7);
-  VectorXd B3 = VectorXd::Random(2);
+  VectorXd B1 = NewVector(10);
+  VectorXd B2 = NewVector(7);
+  VectorXd B3 = NewVector(2);
   std::vector<VectorXd> B;
   B.push_back(B1);
   B.push_back(B2);
   B.push_back(B3);
 
-  FeedforwardNeuralNetwork<double> dut(W, B, generateFullyConnectedLayers(3),
-                                       generateReluNonlinearities(3));
+  FeedforwardNeuralNetwork<double> dut(W, B, GenerateFullyConnectedLayers(3),
+                                       GenerateReluNonlinearities(3));
 
   EXPECT_EQ(dut.get_num_layers(), 3);
   EXPECT_EQ(dut.get_num_inputs(), 19);
@@ -134,24 +142,24 @@ GTEST_TEST(FeedforwardNeuralNetworkTest, ShapeParameters) {
 }
 
 GTEST_TEST(FeedforwardNeuralNetworkTest, ToAutoDiffTest) {
-  MatrixXd W1 = MatrixXd::Random(10, 19);
-  MatrixXd W2 = MatrixXd::Random(7, 10);
-  MatrixXd W3 = MatrixXd::Random(2, 7);
+  MatrixXd W1 = NewMatrix(10, 19);
+  MatrixXd W2 = NewMatrix(7, 10);
+  MatrixXd W3 = NewMatrix(2, 7);
   std::vector<MatrixXd> W;
   W.push_back(W1);
   W.push_back(W2);
   W.push_back(W3);
 
-  VectorXd B1 = VectorXd::Random(10);
-  VectorXd B2 = VectorXd::Random(7);
-  VectorXd B3 = VectorXd::Random(2);
+  VectorXd B1 = NewVector(10);
+  VectorXd B2 = NewVector(7);
+  VectorXd B3 = NewVector(2);
   std::vector<VectorXd> B;
   B.push_back(B1);
   B.push_back(B2);
   B.push_back(B3);
 
-  FeedforwardNeuralNetwork<double> dut(W, B, generateFullyConnectedLayers(3),
-                                       generateReluNonlinearities(3));
+  FeedforwardNeuralNetwork<double> dut(W, B, GenerateFullyConnectedLayers(3),
+                                       GenerateReluNonlinearities(3));
   unique_ptr<Context<double>> context = dut.CreateDefaultContext();
 
   unique_ptr<FeedforwardNeuralNetwork<AutoDiffXd>> ad_ffnn = dut.ToAutoDiffXd();
@@ -212,28 +220,54 @@ GTEST_TEST(FeedforwardNeuralNetworkTest, BasicSanity) {
 /********************************
  * Helper function definitions
  ********************************/
+// Helper functions to generate a new matrix/vector with specified dimensions,
+// initialize the entries. We don't care about what the entries are; this is
+// meant to be a way to get some variety of entries without using Matrix::Random
+MatrixXd NewMatrix(const int rows, const int columns) {
+  MatrixXd matrix(rows, columns);
+
+  for (int i = 0; i < rows; i++) {
+    for (int j = 0; j < columns; j++) {
+      matrix(i, j) = i + j;  // Initialize each entry to whatever number
+    }
+  }
+
+  return matrix;
+}
+VectorXd NewVector(const int rows) {
+  VectorXd vector(rows);
+
+  for (int i = 0; i < rows; i++) {
+    vector(i) = i * i;
+  }
+
+  return vector;
+}
+
 // Helper function to generate a vector of Connected layers
-std::vector<LayerType> generateFullyConnectedLayers(int numLayers) {
+std::vector<LayerType> GenerateFullyConnectedLayers(int num_layers) {
   std::vector<LayerType> layers;
   LayerType fullyConnected = LayerType::FullyConnected;
-  for (int i = 0; i < numLayers; i++) {
+  for (int i = 0; i < num_layers; i++) {
     layers.push_back(fullyConnected);
   }
   return layers;
 }
 
 // Helper function to generate a vector of Relu nonlinearities
-std::vector<NonlinearityType> generateReluNonlinearities(int numLayers) {
+std::vector<NonlinearityType> GenerateReluNonlinearities(int num_layers) {
   std::vector<NonlinearityType> nonlinearities;
   NonlinearityType relu = NonlinearityType::Relu;
-  for (int i = 0; i < numLayers; i++) {
+  for (int i = 0; i < num_layers; i++) {
     nonlinearities.push_back(relu);
   }
   return nonlinearities;
 }
 
 // Helper function to compare a MatrixX<double> and a MatrixX<AutoDiffXd>
-bool CompareMats(MatrixX<double> Mdouble, MatrixX<AutoDiffXd> Mautodiff) {
+bool CompareMats(const MatrixX<double>& Mdouble,
+                 const MatrixX<AutoDiffXd>& Mautodiff,
+                 double tolerance /* default is 0, see declaration*/) {
   if ((Mdouble.rows() != Mautodiff.rows()) ||
       (Mdouble.cols() != Mautodiff.cols())) {
     return false;
@@ -243,7 +277,7 @@ bool CompareMats(MatrixX<double> Mdouble, MatrixX<AutoDiffXd> Mautodiff) {
     for (int j = 0; j < Mdouble.rows(); j++) {
       double thisAdValue = (Mautodiff(i, j)).value();
 
-      if (thisAdValue != Mdouble(i, j)) {
+      if (abs(thisAdValue - Mdouble(i, j)) > tolerance) {
         return false;
       }
     }
@@ -255,8 +289,8 @@ bool CompareMats(MatrixX<double> Mdouble, MatrixX<AutoDiffXd> Mautodiff) {
 template <typename T>
 void TestIO(std::vector<MatrixX<T>> W, std::vector<VectorX<T>> B,
             VectorX<T> input, VectorX<T> expectedOutput) {
-  FeedforwardNeuralNetwork<double> dut(W, B, generateFullyConnectedLayers(3),
-                                       generateReluNonlinearities(3));
+  FeedforwardNeuralNetwork<double> dut(W, B, GenerateFullyConnectedLayers(3),
+                                       GenerateReluNonlinearities(3));
   unique_ptr<Context<double>> context = dut.CreateDefaultContext();
   unique_ptr<SystemOutput<double>> output = dut.AllocateOutput(*context);
 

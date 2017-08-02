@@ -243,6 +243,7 @@ void FeedforwardNeuralNetwork<T>::WriteOutput(const VectorX<T> value,
 }
 
 template class FeedforwardNeuralNetwork<double>;
+template class FeedforwardNeuralNetwork<AutoDiffXd>;
 
 }  // namespace automotive
 }  // namespace drake
