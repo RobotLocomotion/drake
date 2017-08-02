@@ -35,7 +35,7 @@ GTEST_TEST(testLinearSystemSolver, trivialExample) {
  * 2 * x + y = 2
  * x - y = 0
  */
-GTEST_TEST(testLinearSystemSolver, InfeasibleProblem){
+GTEST_TEST(testLinearSystemSolver, InfeasibleProblem) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
   prog.AddLinearConstraint(3 * x(0) == 1 && 2 * x(0) + x(1) == 2 &&
