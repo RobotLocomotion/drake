@@ -52,6 +52,7 @@ GTEST_TEST(PickAndPlaceWorldStateTest, EndEffectorTest) {
   iiwa_msg.joint_velocity.push_back(-0.4807268);
   iiwa_msg.joint_velocity.push_back(0.45032358);
   iiwa_msg.joint_velocity.push_back(-0.8845549);
+  iiwa_msg.joint_velocity.push_back(0.0);
 
   dut.HandleIiwaStatus(iiwa_msg);
 

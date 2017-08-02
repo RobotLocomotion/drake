@@ -50,6 +50,9 @@ void WorldState::HandleIiwaStatus(const bot_core::robot_state_t& iiwa_msg) {
 
   iiwa_time_ = iiwa_msg.utime / 1e6;
 
+  DRAKE_ASSERT(iiwa_msg.num_joints == iiwa_msg.joint_velocity.size());
+  DRAKE_ASSERT(iiwa_msg.num_joints == iiwa_msg.joint_position.size());
+
   for (int i = 0; i < iiwa_msg.num_joints; ++i) {
     iiwa_v_[i] = iiwa_msg.joint_velocity[i];
     iiwa_q_[i] = iiwa_msg.joint_position[i];
