@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "bot_core/atlas_command_t.hpp"
+
 #include "drake/common/eigen_types.h"
 #include "drake/lcmt_body_acceleration.hpp"
 #include "drake/lcmt_constrained_values.hpp"
