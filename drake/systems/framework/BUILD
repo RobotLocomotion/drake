@@ -319,6 +319,7 @@ drake_cc_library(
     deps = [
         ":system",
         "//drake/common",
+        "//drake/common:hash",
     ],
 )
 
