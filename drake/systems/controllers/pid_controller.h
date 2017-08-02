@@ -7,7 +7,6 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/controllers/state_feedback_controller_interface.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/primitives/matrix_gain.h"
 
 namespace drake {
 namespace systems {
@@ -74,6 +73,10 @@ class PidController : public StateFeedbackControllerInterface<T>,
   PidController(const MatrixX<double>& state_selector,
                 const Eigen::VectorXd& kp, const Eigen::VectorXd& ki,
                 const Eigen::VectorXd& kd);
+
+  /** Scalar-converting copy constructor. */
+  template <typename U>
+  explicit PidController(const PidController<U>&);
 
   /**
    * Returns the proportional gain constant. This method should only be called
@@ -157,12 +160,12 @@ class PidController : public StateFeedbackControllerInterface<T>,
    */
   void GetGraphvizFragment(std::stringstream* dot) const override;
 
-  PidController<symbolic::Expression>* DoToSymbolic() const override;
-
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* derivatives) const override;
 
  private:
+  template <typename> friend class PidController;
+
   static double get_single_gain(const VectorX<double>& gain) {
     if (!gain.isConstant(gain[0])) {
       throw std::runtime_error("Gain is not singleton.");
@@ -173,8 +176,8 @@ class PidController : public StateFeedbackControllerInterface<T>,
   void CalcControl(const Context<T>& context, BasicVector<T>* control) const;
 
   VectorX<double> kp_;
-  VectorX<double> kd_;
   VectorX<double> ki_;
+  VectorX<double> kd_;
 
   // Size of controlled positions / output.
   const int num_controlled_q_{0};
