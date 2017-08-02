@@ -3,6 +3,7 @@
 #include <set>
 
 #include "google/protobuf/text_format.h"
+
 #include "drake/common/proto/protobuf.h"
 #include "drake/multibody/alias_groups.pb.h"
 

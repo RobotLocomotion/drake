@@ -4,11 +4,11 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/find_resource.h"
-#include "drake/systems/controllers/setpoint.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
+#include "drake/systems/controllers/setpoint.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 

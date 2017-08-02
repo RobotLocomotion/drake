@@ -1,7 +1,8 @@
+#include "drake/systems/controllers/setpoint.h"
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/systems/controllers/setpoint.h"
 
 namespace drake {
 namespace systems {
