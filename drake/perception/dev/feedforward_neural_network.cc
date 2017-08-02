@@ -1,4 +1,4 @@
-#include "drake/dev_perception/feedforward_neural_network.h"
+#include "drake/perception/dev/feedforward_neural_network.h"
 
 namespace drake {
 
@@ -79,7 +79,7 @@ void FeedforwardNeuralNetwork<T>::DoCalcOutput(const Context<T>& context,
     nonlinearity = nonlinearities_[i];
 
     intermediate_value = EvaluateLayer(intermediate_value, *weights, *bias,
-                                      layer_type, nonlinearity);
+                                       layer_type, nonlinearity);
   }
 
   // Write output
@@ -200,7 +200,7 @@ std::unique_ptr<BasicVector<T>> FeedforwardNeuralNetwork<
 template <typename T>
 std::unique_ptr<MatrixX<T>>
 FeedforwardNeuralNetwork<T>::DecodeWeightsFromBasicVector(
-    int rows, int cols, const BasicVector<T>& basic_vector ) const {
+    int rows, int cols, const BasicVector<T>& basic_vector) const {
   MatrixX<T>* weights = new MatrixX<T>(rows, cols);
   *weights = MatrixX<T>::Zero(rows, cols);
 

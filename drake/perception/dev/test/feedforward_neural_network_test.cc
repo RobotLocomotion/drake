@@ -1,4 +1,4 @@
-#include "drake/dev_perception/feedforward_neural_network.h"
+#include "drake/perception/dev/feedforward_neural_network.h"
 #include <iostream>
 #include <memory>
 #include <Eigen/Dense>
