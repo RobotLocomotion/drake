@@ -1,6 +1,5 @@
-#include <pybind11/pybind11.h>
-
 #include <Eigen/Core>
+#include <pybind11/pybind11.h>
 #include <unsupported/Eigen/AutoDiff>
 
 typedef Eigen::AutoDiffScalar<Eigen::VectorXd> AutoDiffXd;

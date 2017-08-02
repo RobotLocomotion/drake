@@ -3,15 +3,17 @@
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/text_logging.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/control_utils.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/param_parser.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/param_parser.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/qp_inverse_dynamics.h"
+#include "drake/systems/controllers/setpoint.h"
 
 namespace drake {
-namespace examples {
+namespace systems {
+namespace controllers {
 namespace qp_inverse_dynamics {
+namespace {
 
 // Sets up a inverse dynamics problem for a fixed based manipulator (iiwa arm).
 // The only objective is to only track acceleration in the generalized
@@ -23,34 +25,34 @@ GTEST_TEST(testQPInverseDynamicsController, testForIiwa) {
       "drake/manipulation/models/iiwa_description/urdf/"
       "iiwa14_polytope_collision.urdf");
   std::string alias_groups_config = FindResourceOrThrow(
-      "drake/examples/QPInverseDynamicsForHumanoids/"
-      "config/iiwa.alias_groups");
+      "drake/systems/controllers/qp_inverse_dynamics/test/"
+      "iiwa.alias_groups");
   std::string controller_config = FindResourceOrThrow(
-      "drake/examples/QPInverseDynamicsForHumanoids/"
-      "config/iiwa.id_controller_config");
+      "drake/systems/controllers/qp_inverse_dynamics/test/"
+      "iiwa.id_controller_config");
 
-  auto robot = std::make_unique<RigidBodyTree<double>>();
+  RigidBodyTree<double> robot;
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      urdf, multibody::joints::kFixed, robot.get());
+      urdf, multibody::joints::kFixed, &robot);
 
-  param_parsers::RigidBodyTreeAliasGroups<double> alias_groups(*robot);
+  RigidBodyTreeAliasGroups<double> alias_groups(&robot);
   alias_groups.LoadFromFile(alias_groups_config);
 
-  param_parsers::ParamSet paramset;
+  ParamSet paramset;
   paramset.LoadFromFile(controller_config, alias_groups);
 
-  HumanoidStatus robot_status(*robot, alias_groups);
+  RobotKinematicState<double> robot_status(&robot);
 
-  QPController con;
+  QpInverseDynamics con;
   std::vector<std::string> contact_group_names = {};
   std::vector<std::string> tracked_body_names = {};
-  QpInput input = paramset.MakeQpInput(
-      contact_group_names, tracked_body_names, alias_groups);
-  QpOutput output(GetDofNames(*robot));
+  QpInput input = paramset.MakeQpInput(contact_group_names, tracked_body_names,
+                                       alias_groups);
+  QpOutput output(GetDofNames(robot));
 
   // Sets up desired q and v.
-  VectorX<double> q = VectorX<double>::Zero(robot->get_num_positions());
-  VectorX<double> v = VectorX<double>::Zero(robot->get_num_velocities());
+  VectorX<double> q = VectorX<double>::Zero(robot.get_num_positions());
+  VectorX<double> v = VectorX<double>::Zero(robot.get_num_velocities());
 
   // Sets up a control policy to track q and v.
   VectorX<double> kp, kd;
@@ -59,9 +61,7 @@ GTEST_TEST(testQPInverseDynamicsController, testForIiwa) {
 
   // Perturbs the initial condition.
   v[1] += 1;
-  robot_status.Update(0, q, v,
-                      VectorX<double>::Zero(robot->get_num_actuators()),
-                      Vector6<double>::Zero(), Vector6<double>::Zero());
+  robot_status.UpdateKinematics(0, q, v);
 
   // Uses policy to generate desired acceleration.
   input.mutable_desired_dof_motions().mutable_values() =
@@ -80,12 +80,14 @@ GTEST_TEST(testQPInverseDynamicsController, testForIiwa) {
   // Without any external forces or hitting any contraints, torque = M * vd_d +
   // h.
   VectorX<double> expected_torque =
-      robot_status.M() * input.desired_dof_motions().values() +
-      robot_status.bias_term();
+      robot_status.get_M() * input.desired_dof_motions().values() +
+      robot_status.get_bias_term();
   EXPECT_TRUE(drake::CompareMatrices(expected_torque, output.dof_torques(),
                                      1e-9, drake::MatrixCompareType::absolute));
 }
 
+}  // namespace
 }  // namespace qp_inverse_dynamics
-}  // namespace examples
+}  // namespace controllers
+}  // namespace systems
 }  // namespace drake

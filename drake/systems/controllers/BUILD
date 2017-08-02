@@ -78,6 +78,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "setpoint",
+    srcs = ["setpoint.cc"],
+    hdrs = ["setpoint.h"],
+    deps = [
+        "//drake/common",
+        "//drake/math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
     name = "control_util",
     srcs = ["controlUtil.cpp"],
     hdrs = ["controlUtil.h"],
@@ -213,6 +223,15 @@ drake_cc_googletest(
     name = "pid_controller_test",
     deps = [
         ":pid_controller",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "setpoint_test",
+    srcs = ["test/setpoint_test.cc"],
+    deps = [
+        ":setpoint",
         "//drake/common:eigen_matrix_compare",
     ],
 )

@@ -7,12 +7,13 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/kinematics_cache.h"
 #include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {
-namespace examples {
+namespace systems {
+namespace controllers {
 namespace qp_inverse_dynamics {
 
 /**
@@ -33,6 +34,8 @@ std::ostream& operator<<(std::ostream& out, const ConstraintType& type);
  */
 class ConstrainedValues {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ConstrainedValues)
+
   /**
    * Constructs a ConstrainedValues object with 0 dimension.
    */
@@ -143,6 +146,8 @@ class ConstrainedValues {
  */
 class ContactInformation {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ContactInformation)
+
   static const int kDefaultNumBasisPerContactPoint = 4;
 
   /**
@@ -330,6 +335,8 @@ std::ostream& operator<<(std::ostream& out, const ContactInformation& contact);
  */
 class DesiredBodyMotion : public ConstrainedValues {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DesiredBodyMotion)
+
   /**
    * Constructs a DesiredBodyMotion object that hold desired spatial
    * acceleration for @p body.
@@ -381,6 +388,8 @@ std::ostream& operator<<(std::ostream& out, const DesiredBodyMotion& input);
  */
 class DesiredDofMotions : public ConstrainedValues {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DesiredDofMotions)
+
   DesiredDofMotions() {}
   explicit DesiredDofMotions(const std::vector<std::string>& names)
       : ConstrainedValues(static_cast<int>(names.size())), dof_names_(names) {}
@@ -426,6 +435,8 @@ std::ostream& operator<<(std::ostream& out, const DesiredDofMotions& input);
  */
 class DesiredCentroidalMomentumDot : public ConstrainedValues {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DesiredCentroidalMomentumDot)
+
   DesiredCentroidalMomentumDot() : ConstrainedValues(6) {}
 
   inline bool is_valid() const { return this->ConstrainedValues::is_valid(6); }
@@ -441,6 +452,8 @@ std::ostream& operator<<(std::ostream& out,
  */
 class QpInput {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(QpInput)
+
   QpInput() {}
 
   explicit QpInput(const std::vector<std::string>& dof_names)
@@ -527,6 +540,8 @@ std::ostream& operator<<(std::ostream& out, const QpInput& input);
  */
 class ResolvedContact {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ResolvedContact)
+
   /**
    * Constructs a ResolvedContact object for @p body.
    * @param body Reference to a RigidBody, which must be valid through the
@@ -613,6 +628,8 @@ std::ostream& operator<<(std::ostream& out, const ResolvedContact& contact);
  */
 class BodyAcceleration {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BodyAcceleration)
+
   /**
    * Constructs a BodyAcceleration object for @p body.
    * @param body Reference to a RigidBody, which must be valid through the
@@ -649,6 +666,8 @@ std::ostream& operator<<(std::ostream& out, const BodyAcceleration& acc);
  */
 class QpOutput {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(QpOutput)
+
   QpOutput() {}
 
   explicit QpOutput(const std::vector<std::string>& dof_names)
@@ -757,5 +776,6 @@ std::vector<std::string> GetDofNames(const RigidBodyTree<T>& robot) {
 }
 
 }  // namespace qp_inverse_dynamics
-}  // namespace examples
+}  // namespace controllers
+}  // namespace systems
 }  // namespace drake

@@ -1,7 +1,6 @@
-#include "drake/solvers/mosek_solver.h"
-
 #include <pybind11/pybind11.h>
 
+#include "drake/solvers/mosek_solver.h"
 
 namespace py = pybind11;
 

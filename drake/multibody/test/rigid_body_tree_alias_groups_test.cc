@@ -1,4 +1,4 @@
-#include "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/rigid_body_tree_alias_groups.h"
+#include "drake/multibody/rigid_body_tree_alias_groups.h"
 
 #include <gtest/gtest.h>
 
@@ -6,46 +6,19 @@
 #include "drake/multibody/parsers/urdf_parser.h"
 
 namespace drake {
-namespace examples {
-namespace qp_inverse_dynamics {
-namespace param_parsers {
+namespace {
 
-const char* const kTestDir =
-    "drake/examples/QPInverseDynamicsForHumanoids/param_parsers/test/";
-
-// The test YAML config looks like this:
-//
-//    body_groups:
-//      b_group1:
-//        []
-//
-//      b_group2:
-//        [link1]
-//
-//      b_group2:
-//        [link3]
-//
-//      b_group3:
-//        [world]
-//
-//    joint_groups:
-//      j_group1:
-//        []
-//
-//      j_group2:
-//        [base, joint1]
-//
 // Please refer to the full config file for more details.
 void TestFullConfig(multibody::joints::FloatingBaseType type) {
   std::string urdf = FindResourceOrThrow(
       "drake/multibody/test/rigid_body_tree/two_dof_robot.urdf");
   std::string config = FindResourceOrThrow(
-      std::string(kTestDir) + "test.alias_groups");
+      "drake/multibody/test/test.alias_groups");
 
   auto robot = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(urdf, type, robot.get());
 
-  RigidBodyTreeAliasGroups<double> alias(*robot);
+  RigidBodyTreeAliasGroups<double> alias(robot.get());
   alias.LoadFromFile(config);
 
   EXPECT_TRUE(alias.has_position_group("j_group1"));
@@ -129,7 +102,5 @@ GTEST_TEST(RigidBodyTreeParsingTest, TestFull) {
   TestFullConfig(multibody::joints::kFixed);
 }
 
-}  // namespace param_parsers
-}  // namespace qp_inverse_dynamics
-}  // namespace examples
+}  // namespace
 }  // namespace drake

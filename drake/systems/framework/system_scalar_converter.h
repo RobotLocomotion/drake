@@ -1,8 +1,8 @@
 #pragma once
 
-#include <map>
 #include <memory>
 #include <typeindex>
+#include <unordered_map>
 #include <utility>
 
 #include "drake/common/drake_assert.h"
@@ -106,6 +106,14 @@ class SystemScalarConverter {
   // Like ConverterFunc, but with the args and return value decayed into void*.
   using ErasedConverterFunc = std::function<void*(const void*)>;
 
+  // A pair of types {T, U}, usable as an unordered_map key.
+  struct Key : std::pair<std::type_index, std::type_index> {
+    Key(const std::type_info&, const std::type_info&);
+  };
+  struct KeyHasher {
+    size_t operator()(const Key&) const;
+  };
+
   // Given typeid(T), typeid(U), returns a converter.  If no converter has been
   // added yet, returns nullptr.
   const ErasedConverterFunc* Find(
@@ -117,8 +125,7 @@ class SystemScalarConverter {
       const ErasedConverterFunc&);
 
   // Maps from {T, U} to the function that converts from U into T.
-  std::map<std::pair<std::type_index, std::type_index>, ErasedConverterFunc>
-      funcs_;
+  std::unordered_map<Key, ErasedConverterFunc, KeyHasher> funcs_;
 };
 
 #if !defined(DRAKE_DOXYGEN_CXX)

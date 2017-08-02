@@ -228,7 +228,7 @@ def _install_impl(ctx):
 
     # Collect install actions from dependencies.
     for d in ctx.attr.deps:
-        actions += d.install_actions
+        actions += d[InstallInfo].install_actions
 
     # Generate actions for data, docs and includes.
     actions += _install_actions(ctx, ctx.attr.docs, ctx.attr.doc_dest,
@@ -273,14 +273,17 @@ def _install_impl(ctx):
 
     # Return actions.
     files = ctx.runfiles(files = [a.src for a in actions])
-    return InstallInfo(install_actions = actions, runfiles = files)
+    return [
+        InstallInfo(install_actions = actions),
+        DefaultInfo(runfiles = files),
+    ]
 
 # TODO(mwoehlke-kitware) default guess_data to PACKAGE when we have better
 # default destinations.
 install = rule(
     # Update buildifier-tables.json when this changes.
     attrs = {
-        "deps": attr.label_list(providers = ["install_actions"]),
+        "deps": attr.label_list(providers = [InstallInfo]),
         "docs": attr.label_list(allow_files = True),
         "doc_dest": attr.string(default = "share/doc/@WORKSPACE@"),
         "doc_strip_prefix": attr.string_list(),
@@ -412,7 +415,7 @@ def _install_files_impl(ctx):
                                rename = ctx.attr.rename)
 
     # Return computed actions.
-    return InstallInfo(install_actions = actions)
+    return [InstallInfo(install_actions = actions)]
 
 install_files = rule(
     # Update buildifier-tables.json when this changes.
