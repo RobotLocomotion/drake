@@ -1,8 +1,8 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load("//tools:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -319,6 +319,7 @@ drake_cc_library(
     deps = [
         ":system",
         "//drake/common",
+        "//drake/common:hash",
     ],
 )
 
@@ -332,6 +333,7 @@ drake_cc_library(
         ":model_values",
         ":sparsity_matrix",
         ":system",
+        ":system_scalar_converter",
         ":value_checker",
         "//drake/common",
         "//drake/common:number_traits",
@@ -644,4 +646,4 @@ drake_cc_googletest(
     ],
 )
 
-cpplint()
+add_lint_tests()

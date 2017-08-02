@@ -1,19 +1,13 @@
 # -*- python -*-
 
-load("//tools:cpplint.bzl", "cpplint")
 load(
     "//tools:drake.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_binary",
 )
-
-filegroup(
-    name = "models",
-    srcs = glob([
-        "models/*.sdf",
-    ]),
-)
+load("//tools:install_data.bzl", "install_data")
+load("//tools:lint.bzl", "add_lint_tests")
 
 drake_cc_library(
     name = "particles",
@@ -68,4 +62,6 @@ drake_cc_googletest(
     ],
 )
 
-cpplint()
+install_data()
+
+add_lint_tests()

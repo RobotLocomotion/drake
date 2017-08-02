@@ -840,14 +840,11 @@ void AddMcCormickVectorConstraints(
  * Similarly we can impose the constraint on the other orthant.
  * @param prog Add the constraint to this mathematical program.
  * @param Bpos0 Defined in AddRotationMatrixMcCormickEnvelopeMilpConstraints(),
- * Bpos0(i,j) = 1 => R(i, j) >= 0.
- * @param Bneg0 Defined in AddRotationMatrixMcCormickEnvelopeMilpConstraints(),
- * Bneg0(i,j) = 1 => R(i, j) <= 0.
+ * Bpos0(i,j) = 1 => R(i, j) >= 0. Bpos0(i, j) = 0 => R(i, j) <= 0.
  */
 void AddNotInSameOrOppositeOrthantConstraint(
     MathematicalProgram* prog,
-    const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& Bpos0,
-    const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& Bneg0) {
+    const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& Bpos0) {
   const std::array<std::pair<int, int>, 3> column_idx = {
       {{0, 1}, {0, 2}, {1, 2}}};
   for (const auto& column_pair : column_idx) {
@@ -862,8 +859,8 @@ void AddNotInSameOrOppositeOrthantConstraint(
       // orthants, we will impose the constraint
       // vars_oppo_orthant.sum() <= 5. The variables in vars_oppo_orthant
       // depnd on the orthant number o.
-      Vector6<symbolic::Variable> vars_same_orthant;
-      Vector6<symbolic::Variable> vars_oppo_orthant;
+      Vector6<symbolic::Expression> vars_same_orthant;
+      Vector6<symbolic::Expression> vars_oppo_orthant;
       for (int axis = 0; axis < 3; ++axis) {
         // axis chooses x, y, or z axis.
         if (o & (1 << axis)) {
@@ -872,20 +869,18 @@ void AddNotInSameOrOppositeOrthantConstraint(
           vars_same_orthant(2 * axis)     = Bpos0(axis, col_idx0);
           vars_same_orthant(2 * axis + 1) = Bpos0(axis, col_idx1);
           vars_oppo_orthant(2 * axis)     = Bpos0(axis, col_idx0);
-          vars_oppo_orthant(2 * axis + 1) = Bneg0(axis, col_idx1);
+          vars_oppo_orthant(2 * axis + 1) = 1 - Bpos0(axis, col_idx1);
         } else {
           // If the orthant has negative value along the `axis`, then
-          // `vars_same_orthant` choose the negative component Bneg0.
-          vars_same_orthant(2 * axis)     = Bneg0(axis, col_idx0);
-          vars_same_orthant(2 * axis + 1) = Bneg0(axis, col_idx1);
-          vars_oppo_orthant(2 * axis)     = Bneg0(axis, col_idx0);
+          // `vars_same_orthant` choose the negative component 1 - Bpos0.
+          vars_same_orthant(2 * axis)     = 1 - Bpos0(axis, col_idx0);
+          vars_same_orthant(2 * axis + 1) = 1 - Bpos0(axis, col_idx1);
+          vars_oppo_orthant(2 * axis)     = 1 - Bpos0(axis, col_idx0);
           vars_oppo_orthant(2 * axis + 1) = Bpos0(axis, col_idx1);
         }
       }
-      prog->AddLinearConstraint(Vector6<double>::Ones().transpose(), 0, 5,
-                                vars_same_orthant);
-      prog->AddLinearConstraint(Eigen::Matrix<double, 1, 6>::Ones(), 0, 5,
-                                vars_oppo_orthant);
+      prog->AddLinearConstraint(vars_same_orthant.sum() <= 5);
+      prog->AddLinearConstraint(vars_oppo_orthant.sum() <= 5);
     }
   }
 }
@@ -1045,6 +1040,79 @@ void AddOrthogonalAndCrossProductConstraintRelaxationReplacingBilinearProduct(
     }
   }
 }
+
+// For the cross product c = a x b, based on the sign of a and b, we can imply
+// the sign of c for some cases. For example, c0 = a1 * b2 - a2 * b1, so if
+// (a1, a2, b1, b2) has sign (+, -, +, +), then c0 has to have sign +.
+// @param Bpos0. Bpos0(i, j) = 1 => R(i, j) ≥ 0, Bpos0(i, j) = 0 => R(i, j) ≤ 0
+void AddCrossProductImpliedOrthantConstraint(
+    MathematicalProgram* prog,
+    const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& Bpos0) {
+  // The vertices of the polytope {x | A * x <= b} correspond to valid sign
+  // assignment for (a1, b2, a2, b1, c0) in the example above.
+  // Since R.col(k) = R.col(i) x R.col(j), we then know that
+  // A * [Bpos0(1, i); Bpos0(2, j); Bpos0(1, j); Bpos0(2, i); Bpos0(0, k)] <= b.
+  // The matrix A and b is found, by considering the polytope, whose vertices
+  // are {0, 1}⁵, excluding the 8 points
+  // (a1, b2, a2, b1, c0)
+  // ( 0,  0,  1,  0,  0)
+  // ( 0,  0,  0,  1,  0)
+  // ( 1,  1,  1,  0,  0)
+  // ( 1,  1,  0,  1,  0)
+  // ( 1,  0,  0,  0,  1)
+  // ( 1,  0,  1,  1,  1)
+  // ( 0,  1,  0,  0,  1)
+  // ( 0,  1,  1,  1,  1)
+  // So this polytope has 2⁵ - 8 = 24 vertices in total.
+  // The matrix A and b are obtained by converting this polytope from its
+  // vertices (V-representation), to its facets (H-representation). We did
+  // this conversion through Multi-parametric toolbox. Here is the MATLAB code
+  // P = Polyhedron(V);
+  // P.computeHRep();
+  // A = P.A;
+  // b = P.b;
+  constexpr int A_rows = 18;
+  constexpr int A_cols = 5;
+  Eigen::Matrix<double, A_rows, A_cols> A;
+  Eigen::Matrix<double, A_rows, 1> b;
+  A << 0, 0, 0, 0, -1,
+       1, 1, 1, -1, -1,
+       1, 1, -1, 1, -1,
+       0, 0, -1, 0, 0,
+       -1, 0, 0, 0, 0,
+       -1, -1, -1, 1, -1,
+       -1, -1, 1, -1, -1,
+       0, -1, 0, 0, 0,
+       1, -1, -1, -1, 1,
+       -1, 1, -1, -1, 1,
+       0, 0, 0, -1, 0,
+       1, -1, 1, 1, 1,
+       -1, 1, 1, 1, 1,
+       0, 0, 0, 0, 1,
+       0, 0, 0, 1, 0,
+       0, 0, 1, 0, 0,
+       0, 1, 0, 0, 0,
+       1, 0, 0, 0, 0;
+  b << 0, 2, 2, 0, 0, 0, 0, 0, 1, 1, 0, 3, 3, 1, 1, 1, 1, 1;
+
+  for (int col0 = 0; col0 < 3; ++col0) {
+    int col1 = (col0 + 1) % 3;
+    int col2 = (col1 + 1) % 3;
+    // R(k, col2) = R(i, col0) * R(j, col1) - R(j, col0) * R(i, col1)
+    // where (i, j, k) = (0, 1, 2), (1, 2, 0) or (2, 0, 1)
+    VectorDecisionVariable<A_cols> var;
+    for (int i = 0; i < 3; ++i) {
+      int j = (i + 1) % 3;
+      int k = (j + 1) % 3;
+      var << Bpos0(i, col0), Bpos0(j, col1), Bpos0(j, col0), Bpos0(i, col1),
+          Bpos0(k, col2);
+      prog->AddLinearConstraint(A,
+                                Eigen::Matrix<double, A_rows, 1>::Constant(
+                                    -std::numeric_limits<double>::infinity()),
+                                b, var);
+    }
+  }
+}
 }  // namespace
 
 AddRotationMatrixMcCormickEnvelopeReturnType
@@ -1130,9 +1198,8 @@ AddRotationMatrixMcCormickEnvelopeMilpConstraints(
 
   // Add constraint that no two rows (or two columns) can lie in the same
   // orthant (or opposite orthant).
-  AddNotInSameOrOppositeOrthantConstraint(prog, BRpos[0], BRneg[0]);
-  AddNotInSameOrOppositeOrthantConstraint(prog, BRpos[0].transpose(),
-                                          BRneg[0].transpose());
+  AddNotInSameOrOppositeOrthantConstraint(prog, BRpos[0]);
+  AddNotInSameOrOppositeOrthantConstraint(prog, BRpos[0].transpose());
 
   // Add angle limit constraints.
   // Bounding box will turn on/off an orthant.  It's sufficient to add the
@@ -1164,6 +1231,10 @@ AddRotationMatrixMcCormickEnvelopeMilpConstraints(
                                   R.row((i + 1) % 3).transpose(),
                                   R.row((i + 2) % 3).transpose());
   }
+
+  AddCrossProductImpliedOrthantConstraint(prog, BRpos[0]);
+  AddCrossProductImpliedOrthantConstraint(prog, BRpos[0].transpose());
+
   return make_tuple(CRpos, CRneg, BRpos, BRneg);
 }
 
@@ -1225,6 +1296,47 @@ AddRotationMatrixBilinearMcCormickMilpConstraints(
   }
   AddOrthogonalAndCrossProductConstraintRelaxationReplacingBilinearProduct<
       kNumIntervalsPerHalfAxis>(prog, R, phi, B, lambda);
+
+  // If num_intervals_per_half_axis is a power of 2, then B[i][j](0) indicates
+  // the sign of R(i, j). Namely
+  // B[i][j](0) = 0 => R(i, j) <= 0
+  // B[i][j](0) = 1 => R(i, j) >= 0
+  // We can thus impose constraints on B[i][j](0).
+  if ((num_intervals_per_half_axis & (num_intervals_per_half_axis - 1)) == 0) {
+    // num_intervals_per_half_axis is a power of 2.
+
+    // Bpos(i, j) = sign(R(i, j)).
+    MatrixDecisionVariable<3, 3> Bpos;
+    for (int i = 0; i < 3; ++i) {
+      for (int j = 0; j < 3; ++j) {
+        Bpos(i, j) = B[i][j](0);
+      }
+    }
+    AddNotInSameOrOppositeOrthantConstraint(prog, Bpos);
+    AddNotInSameOrOppositeOrthantConstraint(prog, Bpos.transpose());
+
+    AddCrossProductImpliedOrthantConstraint(prog, Bpos);
+    AddCrossProductImpliedOrthantConstraint(prog, Bpos.transpose());
+
+    // If num_intervals_per_half_axis is a power of 2, and it's >= 2, then
+    // B[i][j](1) = 1 => -0.5 <= R(i, j) <= 0.5. Furthermore, we know for
+    // each row/column of R, it cannot have all three entries in the interval
+    // [-0.5, 0.5], since that would imply the norm of the row/column being
+    // less than sqrt(3)/2. Thus, we have
+    // sum_i B[i][j](1) <= 2 and sum_j B[i][j](1) <= 2
+    if (num_intervals_per_half_axis >= 2) {
+      for (int i = 0; i < 3; ++i) {
+        symbolic::Expression row_sum{0};
+        symbolic::Expression col_sum{0};
+        for (int j = 0; j < 3; ++j) {
+          row_sum += B[i][j](1);
+          col_sum += B[j][i](1);
+        }
+        prog->AddLinearConstraint(row_sum <= 2);
+        prog->AddLinearConstraint(col_sum <= 2);
+      }
+    }
+  }
 
   return std::make_pair(B, phi);
 }

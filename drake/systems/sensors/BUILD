@@ -1,13 +1,13 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load(
     "//tools:drake.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
 )
+load("//tools:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -356,4 +356,4 @@ drake_cc_googletest(
     deps = [":image_to_lcm_image_array_t"],
 )
 
-cpplint()
+add_lint_tests()

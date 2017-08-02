@@ -66,6 +66,10 @@ class AcrobotPlant : public systems::LeafSystem<T> {
                double b2 = 0.1,
                double g = 9.81);
 
+  /// Scalar-converting copy constructor.
+  template <typename U>
+  explicit AcrobotPlant(const AcrobotPlant<U>&);
+
   /// Creates an instance of AcrobotPlant using parameters of MIT lab's acrobot.
   static std::unique_ptr<AcrobotPlant<T>> CreateAcrobotMIT();
 
@@ -79,17 +83,17 @@ class AcrobotPlant : public systems::LeafSystem<T> {
   ///@}
 
   // getters for robot parameters
-  T m1() const { return m1_; }
-  T m2() const { return m2_; }
-  T l1() const { return l1_; }
-  T l2() const { return l2_; }
-  T lc1() const { return lc1_; }
-  T lc2() const { return lc2_; }
-  T Ic1() const { return Ic1_; }
-  T Ic2() const { return Ic2_; }
-  T b1() const { return b1_; }
-  T b2() const { return b2_; }
-  T g() const { return g_; }
+  double m1() const { return m1_; }
+  double m2() const { return m2_; }
+  double l1() const { return l1_; }
+  double l2() const { return l2_; }
+  double lc1() const { return lc1_; }
+  double lc2() const { return lc2_; }
+  double Ic1() const { return Ic1_; }
+  double Ic2() const { return Ic2_; }
+  double b1() const { return b1_; }
+  double b2() const { return b2_; }
+  double g() const { return g_; }
 
  protected:
   T DoCalcKineticEnergy(const systems::Context<T>& context) const override;
@@ -102,10 +106,6 @@ class AcrobotPlant : public systems::LeafSystem<T> {
   void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
-
-  // System<T> override.
-  AcrobotPlant<AutoDiffXd>* DoToAutoDiffXd() const override;
-  AcrobotPlant<symbolic::Expression>* DoToSymbolic() const override;
 
   // TODO(russt): Declare these as parameters in the context.
   const double m1_, m2_, l1_, l2_, lc1_, lc2_, Ic1_, Ic2_, b1_, b2_, g_;

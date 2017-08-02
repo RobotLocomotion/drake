@@ -17,6 +17,7 @@ class LinearSystemSolver : public MathematicalProgramSolverInterface {
 
   bool available() const override;
 
+  /// Find the least-square solution to the linear system A * x = b.
   SolutionResult Solve(MathematicalProgram& prog) const override;
 
   SolverId solver_id() const override;

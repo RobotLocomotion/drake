@@ -1,10 +1,13 @@
+/* clang-format off to disable clang-format-includes */
+#include "drake/util/lcmUtil.h"
+/* clang-format on */
+
+#include <gtest/gtest.h>
+
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/test/random_polynomial_matrix.h"
 #include "drake/common/trajectories/test/random_piecewise_polynomial.h"
 #include "drake/math/random_rotation.h"
-#include "drake/util/lcmUtil.h"
-
-#include <gtest/gtest.h>
 
 using Eigen::Dynamic;
 using Eigen::Sequential;
