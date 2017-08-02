@@ -8,19 +8,9 @@ load(
     "drake_cc_library",
 )
 load("//tools:lint.bzl", "add_lint_tests")
+load("//tools:install_data.bzl", "install_data")
 
 package(default_visibility = ["//visibility:public"])
-
-filegroup(
-    name = "models",
-    srcs = glob([
-        "**/*.dae",
-        "**/*.obj",
-        "**/*.sdf",
-        "**/*.urdf",
-        "**/*.xml",
-    ]),
-)
 
 drake_cc_library(
     name = "valkyrie_constants",
@@ -190,5 +180,7 @@ drake_cc_googletest(
         "//drake/multibody/rigid_body_plant:drake_visualizer",
     ],
 )
+
+install_data()
 
 add_lint_tests()
