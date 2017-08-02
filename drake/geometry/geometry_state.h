@@ -14,8 +14,8 @@
 namespace drake {
 namespace geometry {
 
-// forward declarations
 template <typename T> class GeometryFrame;
+
 template <typename T> class GeometrySystem;
 
 /** @name Structures for maintaining the entity relationships */

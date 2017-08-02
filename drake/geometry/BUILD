@@ -42,7 +42,6 @@ drake_cc_library(
         ":geometry_ids",
         ":geometry_instance",
         ":internal_frame",
-        "//drake/common:unused",
     ],
 )
 

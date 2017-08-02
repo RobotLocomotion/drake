@@ -7,7 +7,6 @@
 #include <string>
 #include <utility>
 
-#include "drake/common/unused.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 
