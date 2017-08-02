@@ -5,9 +5,9 @@
 #include <unordered_map>
 #include <vector>
 
+#include "drake/geometry/geometry_state.h"
 #include "drake/geometry/query_handle.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
-#include "drake/geometry/geometry_state.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
 
