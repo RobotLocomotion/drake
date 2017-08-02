@@ -7,13 +7,13 @@
 
 #include "drake/geometry/query_handle.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
+#include "drake/geometry/geometry_state.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 namespace geometry {
 
-template <typename T> class GeometryFrame;
 template <typename T> class GeometryInstance;
 
 /** GeometrySystem serves as a system-level wrapper for GeometryWorld. It serves
@@ -189,7 +189,7 @@ class GeometrySystem : public systems::LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GeometrySystem)
 
   GeometrySystem();
-  ~GeometrySystem() override;
+  ~GeometrySystem() override {}
 
   /** @name       Port management
    Access to GeometrySystem's input/output ports. This topic includes
@@ -448,8 +448,6 @@ class GeometrySystem : public systems::LeafSystem<T> {
   // message is the given message with the source_id appended if not.
   void ThrowUnlessRegistered(SourceId source_id, const char *message) const;
 
-  mutable bool context_allocated_{false};
-
   // A struct that stores the port indices for a given source.
   // TODO(SeanCurtis-TRI): Consider making these TypeSafeIndex values.
   struct SourcePorts {
@@ -463,6 +461,15 @@ class GeometrySystem : public systems::LeafSystem<T> {
 
   // The index of the output port with the QueryHandle abstract value.
   int query_port_index_{-1};
+
+  // A raw pointer to the default geometry state (which serves as the model for
+  // allocating contexts for this system). The instance is owned by
+  // model_abstract_states_. This pointer will only be non-null between
+  // construction and context allocation. It serves a key role in enforcing the
+  // property that source ids can only be added prior to context allocation.
+  // This is mutable so that it can be cleared in the const method
+  // AllocateContext().
+  mutable GeometryState<T>* initial_state_;
 };
 
 }  // namespace geometry
