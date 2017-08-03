@@ -273,6 +273,17 @@ You can also set the coding style through the following steps
 3. Go to File > Settings > Editor > Code Style > C/C++
 4. On the right panel, choose Set from > Predefined Style > Google
 
+Adding clang format for correcting non-compliant header include order
+------------------------------------------------
+
+1. Go to File > Settings > Tools > External Tools
+2. Add an entry for clang-format correction of include files with
+
+   * Program: ``$Projectpath$/bazel-bin/drake/tools/clang-format-includes``
+   * Parameters: ``$FilePath$``
+   * Working directory: ``$Projectpath$``
+
+
 .. _integrating_cpplint_with_clion:
 
 Integrating Cpplint in CLion
@@ -355,3 +366,25 @@ in two ways:
 To check the whole project, in the menu bar, select ``Tools`` >
 ``External Tools`` > ``Cpplint Project``. Alternatively, this can also be
 done through the right-click context menu.
+
+Integrating drake lint
+----------------------
+
+Drake's linting tools include two different tools to help enforce Drake's
+style guide. The Cpplint integration above will not flag out-of-order
+``#include`` references or invalid line endings. This external tool enables
+the ability to test for these charactersitics on targeted files within
+CLion.
+
+1. Go to File > Settings > Tools > External Tools
+2. Add an entry for drake lint:
+
+   * Program: ``bazel``
+   * Parameters: ``run //tools:drakelint -- $FilePath$``
+   * Working directory: ``$Projectpath$``
+
+
+Unfortunately, due to the tool set which does this analysis, there will be
+no clickable links to the non-compliant lines. Instead, if the error
+message indicates non-compliance, execute the previous external tool on
+the file which corrects the order of included header files.
