@@ -84,8 +84,28 @@ AddLogarithmicSos2Constraint(MathematicalProgram* prog, const Derived& lambda,
  */
 void AddLogarithmicSos2Constraint(
     MathematicalProgram *prog,
-    const Eigen::Ref<const VectorX<symbolic::Expression>> &lambda,
-    const Eigen::Ref<const VectorXDecisionVariable> &y);
+    const Eigen::Ref<const VectorX<symbolic::Expression>>& lambda,
+    const Eigen::Ref<const VectorXDecisionVariable>& y);
+
+/**
+ * Adds the special ordered set 2 (SOS2) constraint. y(i) takes binary values
+ * (either 0 or 1).
+ * <pre>
+ *   y(i) = 1 => λ(i) + λ(i + 1) = 1.
+ * </pre>
+ * @see AddLogarithmicSos2Constraint for a complete explanation on SOS2
+ * constraint.
+ * @param prog The optimization program to which the SOS2 constraint is added.
+ * @param lambda At most two entries in λ can be strictly positive, and these
+ * two entries have to be adjacent. All other entries are zero. Moreover, these
+ * two entries should sum up to 1.
+ * @param y y(i) takes binary value, and determines which two entries in λ can
+ * be strictly positive. Throw a runtime error if y.rows() != lambda.rows() - 1.
+ */
+void AddSos2Constraint(
+    MathematicalProgram* prog,
+    const Eigen::Ref<const VectorX<symbolic::Expression>>& lambda,
+    const Eigen::Ref<const VectorX<symbolic::Expression>>& y);
 
 /**
  * Adds the special ordered set of type 1 (SOS1) constraint. Namely
