@@ -25,7 +25,6 @@ if(lcm_FOUND)
   get_filename_component(LCM_JAR_FILE "${_lcm_jar_file}" REALPATH CACHE)
 endif()
 
-add_subdirectory(solvers/test)
 add_subdirectory(util)
 
 
