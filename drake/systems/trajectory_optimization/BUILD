@@ -34,6 +34,18 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "contact_implicit_constraints",
+    srcs = ["contact_implicit_constraints.cc"],
+    hdrs = ["contact_implicit_constraints.h"],
+    deps = [
+        "//drake/multibody:rigid_body_tree",
+        "//drake/solvers:binding",
+        "//drake/solvers:constraint",
+        "//drake/solvers:mathematical_program",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -53,6 +65,13 @@ drake_cc_googletest(
         "//drake/common:eigen_matrix_compare",
         "//drake/common/trajectories:piecewise_polynomial",
         "//drake/systems/primitives:linear_system",
+    ],
+)
+
+drake_cc_googletest(
+    name = "contact_implicit_constraints_test",
+    deps = [
+        ":contact_implicit_constraints",
     ],
 )
 
