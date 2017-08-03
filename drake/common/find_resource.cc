@@ -153,6 +153,14 @@ optional<string> find_sentinel_dir() {
       return result;
     }
 
+    // Check the subdirectory 'share/drake' in case we are in the install tree
+    spruce::path candidate_subdir;
+    candidate_subdir.setStr(candidate_dir.getStr() + "/share/drake");
+    result = check_candidate_dir(candidate_dir);
+    if (result) {
+      return result;
+    }
+
     // Move up one directory; with spruce, "root" means "parent".
     candidate_dir = candidate_dir.root();
   }
@@ -163,7 +171,7 @@ optional<string> find_sentinel_dir() {
 const char* const kDrakeResourceRootEnvironmentVariableName =
     "DRAKE_RESOURCE_ROOT";
 
-Result FindResource(string resource_path) {
+Result FindResource(string resource_path, string candidate_directory) {
   // Check if resource_path is well-formed.
   if (!is_relative_path(resource_path)) {
     return Result::make_error(
@@ -174,17 +182,21 @@ Result FindResource(string resource_path) {
   // Collect a list of (priority-ordered) directories to check.
   std::vector<optional<string>> candidate_dirs;
 
-  // (1) Search the environment variable first; if it works, it should always
-  // win.  TODO(jwnimmer-tri) Should we split on colons, making this a PATH?
+  // (1) Any programmatically provided search paths. Try this first
+  // if it is non-empty. If it works, it should always win.
+  // TODO(stonier) accept a vector of candidate directories
+  if (!candidate_directory.empty()) {
+    candidate_dirs.emplace_back(candidate_directory);
+  }
+
+  // (2) Search the environment variable next.
+  // TODO(jwnimmer-tri) Should we split on colons, making this a PATH?
   candidate_dirs.emplace_back(getenv_optional(
       kDrakeResourceRootEnvironmentVariableName));
 
-  // (2) Search in cwd (and its parent, grandparent, etc.) to find Drake's
+  // (3) Search in cwd (and its parent, grandparent, etc.) to find Drake's
   // resource-root sentinel file.
   candidate_dirs.emplace_back(find_sentinel_dir());
-
-  // TODO(jwnimmer-tri) Add more search heuristics for installed copies of
-  // Drake resources.
 
   // See which (if any) candidate contains the requested resource.
   for (const auto& candidate_dir : candidate_dirs) {
@@ -199,8 +211,12 @@ Result FindResource(string resource_path) {
       "could not find resource");
 }
 
-std::string FindResourceOrThrow(std::string resource_path) {
-  return FindResource(std::move(resource_path)).get_absolute_path_or_throw();
+std::string FindResourceOrThrow(std::string resource_path,
+                                std::string candidate_directory
+) {
+  return FindResource(
+      std::move(resource_path),
+      std::move(candidate_directory)).get_absolute_path_or_throw();
 }
 
 }  // namespace drake

@@ -4,7 +4,11 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_assertion_error.h"
+#include "drake/common/drake_path.h"
 #include "drake/common/find_resource.h"
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
 namespace py = pybind11;
 
@@ -31,12 +35,18 @@ PYBIND11_PLUGIN(_pydrake_common) {
         PyErr_SetString(PyExc_SystemExit, e.what());
       }
     });
+
   // Convenient wrapper for querying FindResource(resource_path).
   m.def("FindResourceOrThrow", &drake::FindResourceOrThrow,
         "Attempts to locate a Drake resource named by the given path string. "
         "The path refers to the relative path within the Drake repository, "
         "e.g., drake/examples/pendulum/Pendulum.urdf. Raises an exception "
-        "if the resource was not found.");
+        "if the resource was not found.",
+        py::arg("resource_path"),
+        py::arg("candidate_directory") = "");
+  // Returns the fully-qualified path to the root of the `drake` source tree.
+  m.def("GetDrakePath", &drake::GetDrakePath,
+        "Get Drake path");
 
   // These are meant to be called internally by pydrake; not by users.
   m.def("set_assertion_failure_to_throw_exception",
@@ -47,3 +57,4 @@ PYBIND11_PLUGIN(_pydrake_common) {
 
   return m.ptr();
 }
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations

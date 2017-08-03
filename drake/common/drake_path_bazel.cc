@@ -10,11 +10,12 @@
 
 namespace drake {
 
-std::string GetDrakePath() {
+std::string GetDrakePath(std::string candidate_directory) {
   // Find something that represents where Drake resources live.  This will be
   // "/path/to/.drake-resource-sentinel" where "/path/to/" names the root of
   // Drake's git source tree (or perhaps an installed version of the same).
-  const auto& find_result = FindResource(".drake-resource-sentinel");
+  const auto& find_result = FindResource(".drake-resource-sentinel",
+                                         candidate_directory);
   spruce::path sentinel_path = find_result.get_absolute_path_or_throw();
 
   // Rewrite to be the "/path/to/drake" that names the "drake" folder within

@@ -1,6 +1,5 @@
 import os.path
-
+import pydrake.common
 
 def getDrakePath():
-    return os.path.realpath(os.path.join(
-        os.path.dirname(__file__), '@RELATIVE_PATH_PYDRAKE_DRAKE@'))
+    return pydrake.common.GetDrakePath(os.path.dirname(__file__))

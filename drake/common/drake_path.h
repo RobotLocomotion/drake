@@ -9,6 +9,6 @@ namespace drake {
 /// Returns the fully-qualified path to the root of the `drake` source tree.
 /// N.B: <em>not</em> the `drake-distro` source tree.
 DRAKE_DEPRECATED("Please use drake::FindResource() instead.")
-std::string GetDrakePath();
+std::string GetDrakePath(std::string candidate_directory = "");
 
 }  // namespace drake
