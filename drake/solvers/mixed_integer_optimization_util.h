@@ -30,7 +30,7 @@ struct LogarithmicSos2NewBinaryVariables {
   typedef VectorDecisionVariable<Rows> type;
 };
 
-template<>
+template <>
 struct LogarithmicSos2NewBinaryVariables<Eigen::Dynamic> {
   typedef VectorXDecisionVariable type;
   static const int Rows = Eigen::Dynamic;
@@ -83,7 +83,7 @@ AddLogarithmicSos2Constraint(MathematicalProgram* prog, const Derived& lambda,
  * @see AddLogarithmicSos2Constraint.
  */
 void AddLogarithmicSos2Constraint(
-    MathematicalProgram *prog,
+    MathematicalProgram* prog,
     const Eigen::Ref<const VectorX<symbolic::Expression>>& lambda,
     const Eigen::Ref<const VectorXDecisionVariable>& y);
 
@@ -131,10 +131,10 @@ void AddSos2Constraint(
  * @p codes has a non-binary entry (0, 1).
  */
 void AddLogarithmicSos1Constraint(
-    MathematicalProgram *prog,
-    const Eigen::Ref<const VectorX<symbolic::Expression>> &lambda,
-    const Eigen::Ref<const VectorXDecisionVariable> &y,
-    const Eigen::Ref<const Eigen::MatrixXi> &codes);
+    MathematicalProgram* prog,
+    const Eigen::Ref<const VectorX<symbolic::Expression>>& lambda,
+    const Eigen::Ref<const VectorXDecisionVariable>& y,
+    const Eigen::Ref<const Eigen::MatrixXi>& codes);
 
 namespace detail {
 void AddBilinearProductMcCormickEnvelopeSos2Impl(
@@ -184,10 +184,10 @@ typename std::enable_if<
     MatrixDecisionVariable<DerivedPhiX::RowsAtCompileTime,
                            DerivedPhiY::RowsAtCompileTime>>::type
 AddBilinearProductMcCormickEnvelopeLogarithmicSos2(
-    MathematicalProgram *prog, const symbolic::Variable &x,
-    const symbolic::Variable &y, const symbolic::Expression &w,
-    const DerivedPhiX &phi_x, const DerivedPhiY &phi_y, const DerivedBx &Bx,
-    const DerivedBy &By) {
+    MathematicalProgram* prog, const symbolic::Variable& x,
+    const symbolic::Variable& y, const symbolic::Expression& w,
+    const DerivedPhiX& phi_x, const DerivedPhiY& phi_y, const DerivedBx& Bx,
+    const DerivedBy& By) {
   DRAKE_ASSERT(Bx.rows() == CeilLog2(phi_x.rows() - 1));
   DRAKE_ASSERT(By.rows() == CeilLog2(phi_y.rows() - 1));
   const int num_phi_x = phi_x.rows();
