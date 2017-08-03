@@ -580,14 +580,19 @@ void GlobalInverseKinematics::AddJointLimitConstraint(
                     Vector3<symbolic::Expression>(M(0, 0), M(1, 1), M(1, 0)));
 
                 // From Rodriguez formula, we know that -α <= β <= α implies
-                // trace(R(k, β)) = 1 + 2 * cos(β) ∈ [1 + 2*cos(α), 3].
+                // trace(R(k, β)) = 1 + 2 * cos(β) >= 1 + 2*cos(α)
                 // So we can impose the constraint
-                // 1+2*cos(α) ≤ trace(R(k, β)) ≤ 3
+                // 1+2*cos(α) ≤ trace(R(k, β))
                 const symbolic::Expression R_joint_beta_trace{
                     R_joint_beta.trace()};
                 AddLinearConstraint(R_joint_beta_trace >=
-                                        1 + 2 * joint_bound_cos &&
-                                    R_joint_beta_trace <= 3);
+                                        1 + 2 * joint_bound_cos);
+                for (int i = 0; i < 3; ++i) {
+                  for (int j = 0; j < 3; ++j) {
+                    AddLinearConstraint(R_joint_beta(i, j) >= -1 &&
+                                        R_joint_beta(i, j) <= 1);
+                  }
+                }
               }
             }
           } else {
