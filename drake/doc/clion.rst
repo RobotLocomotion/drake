@@ -279,8 +279,8 @@ Adding clang format for correcting non-compliant header include order
 1. Go to File > Settings > Tools > External Tools
 2. Add an entry for clang-format correction of include files with
 
-   * Program: ``$Projectpath$/bazel-bin/drake/tools/clang-format-includes``
-   * Parameters: ``$FilePath$``
+   * Program: ``bazel``
+   * Parameters: ``run //drake/tools:clang-format-includes -- $FilePath$``
    * Working directory: ``$Projectpath$``
 
 
