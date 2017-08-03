@@ -136,6 +136,15 @@ void AddLogarithmicSos1Constraint(
     const Eigen::Ref<const VectorXDecisionVariable> &y,
     const Eigen::Ref<const Eigen::MatrixXi> &codes);
 
+namespace detail {
+void AddBilinearProductMcCormickEnvelopeSos2Impl(
+    MathematicalProgram* prog, const symbolic::Variable& x,
+    const symbolic::Variable& y, const symbolic::Expression& w,
+    const Eigen::Ref<const Eigen::VectorXd>& phi_x,
+    const Eigen::Ref<const Eigen::VectorXd>& phi_y,
+    const Eigen::Ref<const MatrixXDecisionVariable>& lambda);
+}
+
 /**
  * Constrain `w` to approximate the bilinear product x * y. We know
  * that x is in one of the intervals [φx(i), φx(i+1)], y is in one of the
@@ -154,8 +163,69 @@ void AddLogarithmicSos1Constraint(
  * If Bx represents integer M in Gray code, then `x` is in the interval
  * [φx(M), φx(M+1)].
  * @param By The binary variable, to determine in which interval `y` stays.
- * If Bx represents integer M in Gray code, then `y` is in the interval
+ * If By represents integer M in Gray code, then `y` is in the interval
  * [φy(M), φy(M+1)].
+ * @return lambda The auxiliary continuous variables.
+ * x = φxᵀ * (λ.rowwise().sum())
+ * y = φyᵀ * (λ.cowwise().sum())
+ * w = sum_{i, j} φx(i) * φy(j) * λ(i, j)
+ * Both λ.rowwise().sum() and λ.colwise().sum() satisfy SOS2 constraint.
+ * If x ∈ [φx(M), φx(M+1)] and y ∈ [φy(N), φy(N+1)], then only λ(M, N),
+ * λ(M + 1, N), λ(M, N + 1) and λ(M+1, N+1) can be strictly positive, all other
+ * λ(i, j) are zero.
+ */
+template <typename DerivedPhiX, typename DerivedPhiY, typename DerivedBx,
+          typename DerivedBy>
+typename std::enable_if<
+    is_eigen_vector_of<DerivedPhiX, double>::value &&
+        is_eigen_vector_of<DerivedPhiY, double>::value &&
+        is_eigen_vector_of<DerivedBx, symbolic::Variable>::value &&
+        is_eigen_vector_of<DerivedBy, symbolic::Variable>::value,
+    MatrixDecisionVariable<DerivedPhiX::RowsAtCompileTime,
+                           DerivedPhiY::RowsAtCompileTime>>::type
+AddBilinearProductMcCormickEnvelopeLogarithmicSos2(
+    MathematicalProgram *prog, const symbolic::Variable &x,
+    const symbolic::Variable &y, const symbolic::Expression &w,
+    const DerivedPhiX &phi_x, const DerivedPhiY &phi_y, const DerivedBx &Bx,
+    const DerivedBy &By) {
+  DRAKE_ASSERT(Bx.rows() == CeilLog2(phi_x.rows() - 1));
+  DRAKE_ASSERT(By.rows() == CeilLog2(phi_y.rows() - 1));
+  const int num_phi_x = phi_x.rows();
+  const int num_phi_y = phi_y.rows();
+  auto lambda = prog->NewContinuousVariables<DerivedPhiX::RowsAtCompileTime,
+                                             DerivedPhiY::RowsAtCompileTime>(
+      num_phi_x, num_phi_y, "lambda");
+
+  detail::AddBilinearProductMcCormickEnvelopeSos2Impl(prog, x, y, w, phi_x,
+                                                      phi_y, lambda);
+
+  AddLogarithmicSos2Constraint(
+      prog, lambda.template cast<symbolic::Expression>().rowwise().sum(), Bx);
+  AddLogarithmicSos2Constraint(
+      prog,
+      lambda.template cast<symbolic::Expression>().colwise().sum().transpose(),
+      By);
+  return lambda;
+}
+
+/**
+ * Constrain `w` to approximate the bilinear product x * y. We know
+ * that x is in one of the intervals [φx(i), φx(i+1)], y is in one of the
+ * intervals [φy(j), φy(j+1)]. The variable `w` is constrained to be in the
+ * convex hull of x * y for x in [φx(i), φx(i+1)], y in [φy(j), φy(j+1)], namely
+ * (x, y, w) is in the tetrahedron, with vertices [φx(i), φy(j), φx(i)*φy(j)],
+ * [φx(i+1), φy(j), φx(i+1)*φy(j)], [φx(i), φy(j+1), φx(i)*φy(j+1)] and
+ * [φx(i+1), φy(j+1), φx(i+1)*φy(j+1)]
+ * @param prog The program to which the bilinear product constraint is added
+ * @param x The decision variable.
+ * @param y The decision variable.
+ * @param w The expression to approximate x * y
+ * @param phi_x The end points of the intervals for `x`.
+ * @param phi_y The end points of the intervals for `y`.
+ * @param Bx The binary variable, to determine in which interval `x` stays.
+ * If Bx(i) = 1, then `x` is in the interval [φx(i), φx(i + 1)].
+ * @param By The binary variable, to determine in which interval `y` stays.
+ * If By(i) = 1, then `y` is in the interval [φy(i), φy(i+1)].
  * @return lambda The auxiliary continuous variables.
  * x = φxᵀ * (λ.rowwise().sum())
  * y = φyᵀ * (λ.cowwise().sum())
@@ -179,35 +249,24 @@ AddBilinearProductMcCormickEnvelopeSos2(
     const symbolic::Variable& y, const symbolic::Expression& w,
     const DerivedPhiX& phi_x, const DerivedPhiY& phi_y, const DerivedBx& Bx,
     const DerivedBy& By) {
-  DRAKE_ASSERT(Bx.rows() == CeilLog2(phi_x.rows() - 1));
-  DRAKE_ASSERT(By.rows() == CeilLog2(phi_y.rows() - 1));
+  DRAKE_ASSERT(Bx.rows() == phi_x.rows() - 1);
+  DRAKE_ASSERT(By.rows() == phi_y.rows() - 1);
   const int num_phi_x = phi_x.rows();
   const int num_phi_y = phi_y.rows();
   auto lambda = prog->NewContinuousVariables<DerivedPhiX::RowsAtCompileTime,
                                              DerivedPhiY::RowsAtCompileTime>(
       num_phi_x, num_phi_y, "lambda");
-  prog->AddBoundingBoxConstraint(0, 1, lambda);
 
-  symbolic::Expression x_convex_combination{0};
-  symbolic::Expression y_convex_combination{0};
-  symbolic::Expression w_convex_combination{0};
-  for (int i = 0; i < num_phi_x; ++i) {
-    for (int j = 0; j < num_phi_y; ++j) {
-      x_convex_combination += lambda(i, j) * phi_x(i);
-      y_convex_combination += lambda(i, j) * phi_y(j);
-      w_convex_combination += lambda(i, j) * phi_x(i) * phi_y(j);
-    }
-  }
-  prog->AddLinearConstraint(x == x_convex_combination);
-  prog->AddLinearConstraint(y == y_convex_combination);
-  prog->AddLinearConstraint(w == w_convex_combination);
+  detail::AddBilinearProductMcCormickEnvelopeSos2Impl(prog, x, y, w, phi_x,
+                                                      phi_y, lambda);
 
-  AddLogarithmicSos2Constraint(
-      prog, lambda.template cast<symbolic::Expression>().rowwise().sum(), Bx);
-  AddLogarithmicSos2Constraint(
+  AddSos2Constraint(
+      prog, lambda.template cast<symbolic::Expression>().rowwise().sum(),
+      Bx.template cast<symbolic::Expression>());
+  AddSos2Constraint(
       prog,
       lambda.template cast<symbolic::Expression>().colwise().sum().transpose(),
-      By);
+      By.template cast<symbolic::Expression>());
   return lambda;
 }
 }  // namespace solvers

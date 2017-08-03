@@ -91,5 +91,32 @@ void AddLogarithmicSos1Constraint(
     prog->AddLinearConstraint(lambda_sum2 <= 1 - y(j));
   }
 }
+
+namespace detail {
+void AddBilinearProductMcCormickEnvelopeSos2Impl(
+    MathematicalProgram* prog, const symbolic::Variable& x,
+    const symbolic::Variable& y, const symbolic::Expression& w,
+    const Eigen::Ref<const Eigen::VectorXd>& phi_x,
+    const Eigen::Ref<const Eigen::VectorXd>& phi_y,
+    const Eigen::Ref<const MatrixXDecisionVariable>& lambda) {
+  const int num_phi_x = phi_x.rows();
+  const int num_phi_y = phi_y.rows();
+  prog->AddBoundingBoxConstraint(0, 1, lambda);
+
+  symbolic::Expression x_convex_combination{0};
+  symbolic::Expression y_convex_combination{0};
+  symbolic::Expression w_convex_combination{0};
+  for (int i = 0; i < num_phi_x; ++i) {
+    for (int j = 0; j < num_phi_y; ++j) {
+      x_convex_combination += lambda(i, j) * phi_x(i);
+      y_convex_combination += lambda(i, j) * phi_y(j);
+      w_convex_combination += lambda(i, j) * phi_x(i) * phi_y(j);
+    }
+  }
+  prog->AddLinearConstraint(x == x_convex_combination);
+  prog->AddLinearConstraint(y == y_convex_combination);
+  prog->AddLinearConstraint(w == w_convex_combination);
+}
+}  // namespace detail
 }  // namespace solvers
 }  // namespace drake
