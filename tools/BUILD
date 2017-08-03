@@ -78,6 +78,12 @@ py_binary(
 py_binary(
     name = "drakelint",
     srcs = ["drakelint.py"],
+    # The clang-format-includes binary is not used by drakelint, because
+    # drakelint imports the formatter library directly.  However, we add
+    # clang-format-includes here as a data dependency because the formatter
+    # asks the user to run bazel-bin/drake/tools/clang-format-includes for
+    # fixups, and this ensures it always is freshly compiled and available.
+    data = ["//drake/tools:clang-format-includes"],
     deps = ["//drake/tools:formatter"],
 )
 
