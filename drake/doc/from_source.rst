@@ -283,9 +283,9 @@ Testing Your MATLAB Installation
 
 Start MATLAB, then at the MATLAB prompt do::
 
-    cd drake-distro/drake
+    cd drake-distro/drake/matlab
     addpath_drake
-    cd matlab/solvers/test
+    cd solvers/test
     testMathematicalProgram
 
 You should not see any error messages.
