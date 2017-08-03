@@ -321,7 +321,6 @@ drake_cc_googletest(
     ],
 )
 
-# TODO(jamiesnape): Remove the manual tag when Xvfb is available on CI.
 drake_cc_googletest(
     name = "rgbd_camera_test",
     data = [
@@ -335,7 +334,6 @@ drake_cc_googletest(
         "test/models/sphere.sdf",
         "test/models/three_boxes.sdf",
     ],
-    tags = ["manual"],
     deps = [
         ":rgbd_camera",
         "//drake/common:eigen_matrix_compare",
