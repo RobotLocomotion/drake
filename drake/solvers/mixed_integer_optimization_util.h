@@ -100,7 +100,7 @@ void AddLogarithmicSos2Constraint(
  * two entries have to be adjacent. All other entries are zero. Moreover, these
  * two entries should sum up to 1.
  * @param y y(i) takes binary value, and determines which two entries in λ can
- * be strictly positive. Throw a runtime error is y.rows() != lambda.rows() - 1.
+ * be strictly positive. Throw a runtime error if y.rows() != lambda.rows() - 1.
  */
 void AddSos2Constraint(
     MathematicalProgram* prog,
