@@ -41,6 +41,24 @@ void AddLogarithmicSos2Constraint(
   }
 }
 
+void AddSos2Constraint(
+    MathematicalProgram* prog,
+    const Eigen::Ref<const VectorX<symbolic::Expression>>& lambda,
+    const Eigen::Ref<const VectorX<symbolic::Expression>>& y) {
+  if (lambda.rows() != y.rows() + 1) {
+    throw std::runtime_error(
+        "The size of y and lambda do not match when adding the SOS2 "
+        "constraint.");
+  }
+  prog->AddLinearConstraint(lambda.sum() == 1);
+  prog->AddLinearConstraint(lambda(0) <= y(0) && lambda(0) >= 0);
+  for (int i = 1; i < y.rows(); ++i) {
+    prog->AddLinearConstraint(lambda(i) <= y(i - 1) + y(i) && lambda(i) >= 0);
+  }
+  prog->AddLinearConstraint(lambda.tail<1>()(0) <= y.tail<1>()(0));
+  prog->AddLinearConstraint(y.sum() == 1);
+}
+
 void AddLogarithmicSos1Constraint(
     MathematicalProgram *prog,
     const Eigen::Ref<const VectorX<symbolic::Expression>> &lambda,
