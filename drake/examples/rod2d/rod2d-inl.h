@@ -616,7 +616,9 @@ void Rod2D<T>::CalcRigidImpactProblemData(
   data->solve_inertia = std::bind(&Rod2D<T>::solve_inertia, this,
                                   std::placeholders::_1);
 
-  // The normal and tangent spanning direction are unique.
+  // The normal and tangent spanning direction are unique for the rod undergoing
+  // impact (i.e., unlike with non-impacting rigid contact equations, the
+  // frame does not change depending on sliding velocity direction).
   const Matrix2<T> non_sliding_contact_frame =
       GetNonSlidingContactFrameToWorldTransform();
   const Vector2<T> contact_normal = non_sliding_contact_frame.col(0);
