@@ -1,6 +1,0 @@
-
-drake_add_cc_test(luenberger_observer_test)
-target_link_libraries(luenberger_observer_test drakeEstimators)
-
-drake_add_cc_test(kalman_filter_test)
-target_link_libraries(kalman_filter_test drakeEstimators)

@@ -238,39 +238,16 @@ macro(drake_setup_options)
     "Python/C++11 interoperability tool")
 
   drake_system_dependency(
-    LCM OPTIONAL REQUIRES lcm
-    "Lightweight Communications and Marshaling IPC suite")
-
-  drake_system_dependency(
-    BOT_CORE_LCMTYPES OPTIONAL REQUIRES bot2-core
-    DEPENDS "HAVE_LCM"
-    "libbot2 robotics suite LCM types")
-
-  drake_system_dependency(
     PROTOBUF REQUIRES Protobuf
     "Google protocol buffers")
-
-  drake_system_dependency(
-    ROBOTLOCOMOTION_LCMTYPES OPTIONAL REQUIRES robotlocomotion-lcmtypes
-    DEPENDS "HAVE_BOT_CORE_LCMTYPES"
-    "robotlocomotion LCM types")
 
   drake_system_dependency(
     TINYOBJLOADER REQUIRES tinyobjloader
     "library for reading wavefront mesh files")
 
-  drake_system_dependency(YAML_CPP OPTIONAL REQUIRES yaml-cpp
-    "C++ library for reading and writing YAML configuration files")
-
   # END "system" dependencies
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # BEGIN external projects that are ON by default
-
-  drake_optional_external(BULLET ON "Bullet library for collision detection")
-
-  drake_optional_external(DIRECTOR ON
-    DEPENDS "HAVE_LCM\;HAVE_BOT_CORE_LCMTYPES\;NOT DISABLE_PYTHON"
-    "VTK-based visualization tool and robot user interface")
 
   # STRONGLY DEPRECATED.
   drake_optional_external(GOOGLE_STYLEGUIDE ON
@@ -284,33 +261,7 @@ macro(drake_setup_options)
     DEPENDS "NOT APPLE OR NOT Matlab_FOUND\;NOT DISABLE_FORTRAN"
     "Interior Point Optimizer, for solving non-linear optimizations")
 
-  drake_optional_external(LIBBOT ON
-    "libbot2 robotics suite\;"
-    "used for its simple open-gl visualizer + lcmgl for director")
-
   drake_optional_external(NLOPT ON "Non-linear optimization solver")
 
-  drake_optional_external(SPDLOG ON
-    "Fast C++ text logging facility\; disabling will turn off text logging")
-
   # END external projects that are ON by default
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # BEGIN external projects that are OFF by default
-
-  drake_optional_external(TEXTBOOK OFF
-    "The Underactuated Robotics textbook and its examples")
-
-  # END external projects that are OFF by default
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # BEGIN indirectly optional external projects
-
-  # The following projects are enabled iff their related externals are enabled.
-  drake_dependent_external(CTK_PYTHON_CONSOLE
-    "WITH_DIRECTOR OR WITH_SIGNALSCOPE")
-  drake_dependent_external(PYTHONQT
-    "WITH_DIRECTOR OR WITH_SIGNALSCOPE")
-  drake_dependent_external(QT_PROPERTY_BROWSER
-    "WITH_DIRECTOR")
-
-  # END indirectly optional external projects
 endmacro()

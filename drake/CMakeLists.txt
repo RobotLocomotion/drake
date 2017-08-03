@@ -32,25 +32,8 @@ option(LONG_RUNNING_TESTS "some tests should be run nightly for coverage, but ar
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-find_package(BLAS MODULE)
 find_package(Doxygen MODULE)
-find_package(Perl MODULE)
 find_package(Threads MODULE REQUIRED)
-
-# A compatibility shim function that declares a library, with a built-in
-# default of SHARED.
-function(add_library_with_exports)
-  set(options STATIC)
-  set(oneValueArgs LIB_NAME)
-  set(multiValueArgs SOURCE_FILES)
-  cmake_parse_arguments(parsed_args "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
-
-  if(parsed_args_STATIC)
-    add_library(${parsed_args_LIB_NAME} STATIC ${parsed_args_SOURCE_FILES})
-  else()
-    add_library(${parsed_args_LIB_NAME} SHARED ${parsed_args_SOURCE_FILES})
-  endif()
-endfunction()
 
 # This makes all of our #include "drake/..." statements work.
 include_directories(BEFORE ${PROJECT_SOURCE_DIR}/..)
@@ -107,45 +90,30 @@ enable_testing()
 include(CTest)
 set(GTEST_ROOT ${CMAKE_INSTALL_PREFIX})
 
-# set up and build lcm types
-if(lcm_FOUND)
-  add_subdirectory(lcmtypes)
-endif()
-
 add_subdirectory(thirdParty/boost/tcbrindle_cpp17_headers/stx)
 add_subdirectory(thirdParty/bsd/spruce)
 add_subdirectory(thirdParty/zlib/tinyxml2)
 add_subdirectory(common)
-add_subdirectory(lcm)
 add_subdirectory(math)
 add_subdirectory(multibody)
 add_subdirectory(util)
 add_subdirectory(solvers)
-add_subdirectory(systems)
 set(ENABLE_PYTHON_BINDINGS OFF)
 if(pybind11_FOUND AND NOT DISABLE_PYTHON AND NUMPY_FOUND)
   if (NUMPY_VERSION VERSION_LESS 1.7)
     message(WARNING "Python bindings are disabled because numpy version is less than 1.7")
   else()
     set(ENABLE_PYTHON_BINDINGS ON)
-    add_subdirectory(bindings)
+    add_subdirectory(bindings/python)
+    add_subdirectory(bindings/pybind11)
   endif()
 endif()
 if(Matlab_FOUND)
   add_subdirectory(matlab)
 endif()
 
-add_subdirectory(examples/atlas)
-add_subdirectory(examples/kuka_iiwa_arm)
-
 option(ENABLE_DOCUMENTATION "Enable build target for Doxygen and Sphinx documentation." ON)
 
 if(ENABLE_DOCUMENTATION)
   add_subdirectory(doc)
 endif()
-
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/doc/textbook/CMakeLists.txt)
-  add_subdirectory(doc/textbook)
-endif()
-
-drake_install_cmake_package_config_files()
