@@ -13,7 +13,6 @@ drake_cc_library(
     deps = [
         ":explicit_euler_integrator",
         ":implicit_euler_integrator",
-        ":runge_kutta_merson_integrator",
         ":runge_kutta2_integrator",
         ":runge_kutta3_integrator",
         ":semi_explicit_euler_integrator",
@@ -58,18 +57,6 @@ drake_cc_library(
     deps = [
         ":integrator_base",
         "//drake/math:gradient",
-    ],
-)
-
-drake_cc_library(
-    name = "runge_kutta_merson_integrator",
-    srcs = ["runge_kutta_merson_integrator.cc"],
-    hdrs = [
-        "runge_kutta_merson_integrator.h",
-        "runge_kutta_merson_integrator-inl.h",
-    ],
-    deps = [
-        ":integrator_base",
     ],
 )
 
@@ -237,16 +224,6 @@ drake_cc_googletest(
         "//drake/multibody/rigid_body_plant",
     ],
 )
-
-drake_cc_googletest(
-    name = "runge_kutta_merson_integrator_test",
-    deps = [
-        ":explicit_error_controlled_integrator_tester",
-        ":my_spring_mass_system",
-        ":runge_kutta_merson_integrator",
-    ],
-)
-
 
 drake_cc_googletest(
     name = "semi_explicit_euler_integrator_test",
