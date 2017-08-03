@@ -36,7 +36,7 @@ class BodyNodeImpl : public BodyNode<T> {
   /// @param[in] parent_node
   ///   A const pointer to the parent BodyNode object in the tree structure of
   ///   the owning MultibodyTree. It can be a `nullptr` only when `body` **is**
-  ///   the **world** body.
+  ///   the **world** body, otherwise the parent class constructor will abort.
   /// @param[in] body The body B associated with `this` node.
   /// @param[in] mobilizer The mobilizer associated with this `node`. It can
   ///                      only be a `nullptr` for the **world** body.

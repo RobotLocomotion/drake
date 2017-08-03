@@ -93,23 +93,27 @@ template<typename T> class BodyNode;
 ///     vectors as in Featherstone's book). A %Mobilizer implements this
 ///     operator in the method CalcAcrossMobilizerSpatialVelocity().
 /// - H_FMᵀ(q):
-///     The transpose of the geometric Jacobian `H_FM(q)`. This mathematical
-///     object can be thought of as the application:
-///     `F_Mo_F ∈ F⁶ → ℝⁿᵛ: tau = H_FMᵀ(q) * F_Mo_F`, where F⁶ is the vector
-///     space of "force vectors" (be aware that while F⁶ is introduced in
-///     [Featherstone 2008, Ch. 2] spatial forces in Drake are not Plücker
-///     vectors as in Featherstone's book). A %Mobilizer implements this
-///     operator in the method ProjectSpatialForce().
-/// - Hdot_FM(q):
-///     The time derivative of the Jacobian matrix allowing to compute the
-///     spatial acceleration between the F and M frames as the application:
-///     `v̇ ∈ ℝⁿᵛ → M⁶: A_FM(q, v, v̇) = H_FM(q) * v̇ + Ḣ_FM(q) * v`.
-///      A %Mobilizer implements this application in
-///      CalcAcrossMobilizerSpatialAcceleration().
+///     The transpose of the geometric Jacobian `H_FM(q)` describing the
+///     relationship between the spatial force `F_Mo_F ∈ F⁶` and the generalized
+///     forces `tau ∈ ℝⁿᵛ`, where F⁶ is the vector space of "force vectors"
+///     (be aware that while F⁶ is introduced in [Featherstone 2008, Ch. 2]
+///     spatial forces in Drake are not Plücker vectors as in Featherstone's
+///     book.) This mathematical object can be thought of as the application:
+///     `F_Mo_F ∈ F⁶ → ℝⁿᵛ: tau = H_FMᵀ(q) * F_Mo_F`, where `Mo` is M's origin
+///     (see @ref multibody_frames_and_bodies for the monogram notation in use.)
+///     A %Mobilizer implements this operator in the method
+///     ProjectSpatialForce().
+/// - Hdot_FM(q, v):
+///     The time derivative of the Jacobian matrix involved in the computation
+///     of the spatial acceleration `A_FM(q, v, v̇)` between the F and M frames
+///     as the application:
+///     `v̇ ∈ ℝⁿᵛ → M⁶: A_FM(q, v, v̇) = H_FM(q) * v̇ + Ḣ_FM(q, v) * v`.
+///     A %Mobilizer implements this application in
+///     CalcAcrossMobilizerSpatialAcceleration().
 /// - N(q):
 ///     The kinematic coupling matrix describing the relationship between the
 ///     rate of change of generalized coordinates and the generalized velocities
-///     by `qdot = N(q) * v`, [Seth 2010]. N(q) is an `nq x nv` matrix.
+///     by `q̇ = N(q) * v`, [Seth 2010]. N(q) is an `nq x nv` matrix.
 ///
 /// In general, `nv != nq`. As an example, consider a quaternion mobilizer that
 /// would allow frame M to move freely with respect to frame F. For such a
@@ -122,7 +126,7 @@ template<typename T> class BodyNode;
 /// a linear velocity).
 ///
 /// For a detailed discussion on the concept of a mobilizer please refer to
-/// [Seth 2010]. The Jacobian or "Hinge" matrix `H_FM(q)` is introduced in
+/// [Seth 2010]. The Jacobian or "hinge" matrix `H_FM(q)` is introduced in
 /// [Jain 2010], though be aware that what [Jain 2010] calls the hinge matrix is
 /// the transpose of the Jacobian H_FM matrix here in Drake.
 /// For details in the monogram notation used above please refer to
@@ -176,22 +180,21 @@ template<typename T> class BodyNode;
 ///
 /// <h4>Active forces and work</h4>
 ///
-/// The work performed by a mobilizer can essentially be computed in two
-/// equivalent ways. That is, the work performed by a mobilizer can be
-/// computed in terms of the spatial force `F_Mo` and the spatial velocity
-/// `V_FM` as: <pre>
+/// The work performed by a mobilizer can be computed in two equivalent ways.
+/// That is, the work performed by a mobilizer can be computed in terms of the
+/// spatial force `F_Mo` and the spatial velocity `V_FM` as: <pre>
 ///   W = F_Mo⋅V_FM
 /// </pre>
-/// or in terms of the active working set of generalized forces
+/// or in terms of the active working generalized forces
 /// `tau = H_FMᵀ(q) * F_Mo` and the generalized velocities v as: <pre>
 ///   W = tau⋅v
 /// </pre>
 /// Notice that spatial forces in the null space of `H_FM(q)` do not perform any
 /// work.
 /// Since the result from the previous two expressions must be equal, the
-/// Jacobian operator `H_FM(v)`, as applied to `v ∈ ℝⁿᵛ`, and the transpose
-/// operator `H_FMᵀ(F)`, as applied to `F ∈ F⁶` are constrained by: <pre>
-///   H_FMᵀ(F)⋅v = F⋅H_FM(v), ∀ v ∈ ℝⁿᵛ ∧ `F ∈ F⁶`
+/// Jacobian operator `H_FM(q)` and the transpose operator `H_FMᵀ(q)`
+/// are constrained by: <pre>
+///   H_FMᵀ(q)⋅v = F⋅H_FM(q), ∀ v ∈ ℝⁿᵛ ∧ `F ∈ F⁶`
 /// </pre>
 /// Therefore, this enforces a relationship to the operations implemented by
 /// CalcAcrossMobilizerSpatialVelocity() and ProjectSpatialForce() for any
@@ -344,7 +347,7 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
 
   /// Projects the spatial force `F_Mo` about `this` mobilizer's outboard frame
   /// M onto the sub-space of motions spanned by the geometric Jacobian
-  /// `H_FM(q)` to obtain the active working set of generalized forces `tau`.
+  /// `H_FM(q)` to obtain the active working generalized forces `tau`.
   /// @see CalcAcrossMobilizerSpatialVelocity() and this class' documentation
   /// for the definition of the geometric Jacobian `H_FM(q)`.
   ///
@@ -362,7 +365,7 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   ///
   /// @param[in] context
   ///   The context of the parent tree that owns this mobilizer. This
-  ///   mobilizer's generalized positions q are inferred from this context.
+  ///   mobilizer's generalized positions q are stored in this context.
   /// @param[in] F_Mo_F
   ///   A SpatialForce about `this` mobilizer's outboard frame origin `Mo`,
   ///   expressed in the inboard frame F.
