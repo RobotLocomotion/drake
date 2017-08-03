@@ -38,21 +38,44 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "test_util",
+    testonly = 1,
+    srcs = ["test/test_util.cc"],
+    hdrs = ["test/test_util.h"],
+    deps = [
+        "//drake/common",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/lcm",
+        "@lcmtypes_bot2_core",
+    ],
+)
+
+filegroup(
+    name = "test_models",
+    testonly = 1,
+    srcs = glob([
+        "test/**/*.urdf",
+    ]),
+    visibility = ["//visibility:private"],
+)
+
 drake_cc_googletest(
     name = "articulated_icp_test",
     data = [
-        ":models",
+        ":test_models",
     ],
     deps = [
         ":articulated_icp",
+        ":test_util",
         "//drake/common:find_resource",
-        "//drake/lcm",
+        "//drake/lcmtypes:viewer",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/parsers",
+        "//drake/multibody/rigid_body_plant:create_load_robot_message",
         "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/solvers:mathematical_program",
-        "@lcmtypes_bot2_core",
     ],
 )
 
