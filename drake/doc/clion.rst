@@ -249,142 +249,145 @@ able to go to ``VCS > Commit Changes`` and there should be no changes seen.
 Integrating External Tools with CLion
 =====================================
 
-Code formatter settings
------------------------
-
-1. Make sure you have installed ``clang-format`` (see :doc:`code_style_tools`)
-2. Go to File > Settings > Tools > External Tools
-3. Add an entry for clang-format with
-
-   * Program: ``clang-format``
-   * Parameters (whole file): ``-i $FileName$``
-   * Parameters (current selection only):
-     ``-lines $SelectionStartLine$:$SelectionEndLine$ -i $FileName$``
-   * Working directory : ``$FileDir$``
-
-Choose one or the other of the parameter settings. Now you can run this
-(manually) on any file using Tools > External Tools in the drop down menu. You
-can also add a keyboard shortcut.
-
-You can also set the coding style through the following steps
-
-1. Go to File > Settings > Editor > Code Style
-2. On the right panel, Go to Default Options > Right margin (columns): Set it to 80
-3. Go to File > Settings > Editor > Code Style > C/C++
-4. On the right panel, choose Set from > Predefined Style > Google
-
-Adding clang format for correcting non-compliant header include order
-------------------------------------------------
-
-1. Go to File > Settings > Tools > External Tools
-2. Add an entry for clang-format correction of include files with
-
-   * Program: ``bazel``
-   * Parameters: ``run //drake/tools:clang-format-includes -- $FilePath$``
-   * Working directory: ``$Projectpath$``
-
-
-.. _integrating_cpplint_with_clion:
-
-Integrating Cpplint in CLion
-----------------------------
-This will give you the ability to execute ``cpplint`` on a single file or the full
-project and have the result presented in the CLion console with each warning
-a clickable hyperlink.
-
-(These instructions assume you are using CLion with Bazel, as you should be.
-They are slightly different for CMake project organization.)
-
-Creating the External Tools
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 .. role:: raw-html(raw)
    :format: html
 
-Run ``Cpplint`` on Single File
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+CLion provides a mechanism for invoking external binaries/scripts/etc. with
+parameters derived from the CLion GUI. Below, we outline a number of common
+tools to aid with compliance with the Drake style guide. The work to create
+a new external tool is the same in all cases; only the specific tool settings
+differ from tool to tool. We'll outline the general work here and provide
+per-tool details below.
+
 1. Open the Settings dialog (``File`` > ``Settings``) or ``Alt+Ctrl+S``.
 2. Navigate to ``Tools`` > ``External Tools``.
 3. Click the :raw-html:`<font size="5" color="green">+</font>` sign to add a new tool.
-4. Add the following values in the following fields:
+4. Set the appropriate fields in the ``Edit Tool``. See the following tools for details.
+5. Click ``Ok``.
 
-   :Name: ``Cpplint File``
-   :Description: ``Apply cpplint to the current file.``
-   :Program: ``$Projectpath$/drake/common/test/cpplint_wrapper.py``
-   :Parameters: ``$FilePath$``
-   :Working directory: <empty> (CLion may set this; if so leave it.)
-5. Make sure that *only* the following Options are checked (the
-   ``Synchronize files after execution`` is unnecessary because cpplint is
-   a read-only operation):
+There are several ways to use an *External Tool*. One is to right-click on a file
+and select ``External Tools`` > ``Tool Name``. Another is to select ``Tools`` > 
+``External Tools`` > ``Tool Name``. For tools that operate on a selected file,
+make sure that file is "active" by clicking on it. The ``Tool Name`` will be
+the valid set in the ``Name`` field outlined below.
 
-   - ``Open Console``
-   - ``Main Menu``
-   - ``Editor Menu``
-   - ``Project views``
-6. Click the ``Output Filters...`` button.
-7. Click the :raw-html:`<font size="5" color="green">+</font>` sign to add a filter.
-8. Add the following values in the following fields (and click "OK):
+.. _integrating_format_tools_with_clion:
 
-   :Name: ``Extract Links``
-   :Description: ``Convert file/line references into clickable links.``
-   :Regular expression to match output: ``$FILE_PATH$:$LINE$``
-9. Click ``OK`` on the ``Edit filter`` dialog.
-10. Click ``OK`` on the ``Output Filters`` dialog.
+Formatting files
+----------------
 
-Run ``CppLint`` on Full Project
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Repeat the steps from creating the single-file version with the following
-differences:
+You can use clang format to modify the formatting of your file in the GUI. We'll
+introduce three variants:
 
-4. Set the fields as follows:
+- Apply clang-format to a whole file.
+- Apply clang-format to selected lines.
+- Apply clang-format to correct ``#include`` ordering.
 
-    :Name: ``Cpplint Project``
-    :Description: ``Apply cpplint to the entire project.``
-    :Program: ``$Projectpath$/drake/common/test/cpplint_wrapper.py``
-    :Parameters: <empty>
-    :Working directory: <empty> (CLion may set this; if so leave it.)
+These tools modify the selected file. There is a synchronization issue with CLion
+such that the modification may not be immediately apparent. When in doubt, select
+away from the target file and back; this will cause the file to refresh and you
+can confirm that the file has been modified as expected.
 
-Continue on with steps 5 to the end.
+First, make sure you have installed ``clang-format`` (see :doc:`code_style_tools`). 
 
-Executing
-^^^^^^^^^
-The external tools you've created can be exercised in one of several ways,
-depending on whether you're doing a single-file or full-project operation.
+Format full file
+^^^^^^^^^^^^^^^^
+Open the ``Edit Tool`` for external tools as outlined above and enter the following
+values for the fields:
 
-To check a single file, select the file that you want to be worked on to be
-"active".  This can be done by clicking on the file so the cursor lies in
-the file, or by clicking on the file's tab.  The path to the active file
-will be displayed in the title bar.
+  :Name: ``Clang Format Full File``
+  :Description: ``Apply clang-format to the active file``
+  :Program: ``clang-format``
+  :Parameters: ``-i $FileName$``
+  :Working directory: ``$FileDir$``
 
-Once the file is "active", the ``Cpplint File`` External Tool can be invoked
-in two ways:
+Leave the checkbox options in their default state.
 
-1. Right-click on the document (or tab) and select ``External Tools`` >
-   ``Cpplint File``, or
-2. in the menu bar, select ``Tools`` > ``External Tools`` > ``Cpplint File``
+Format selected lines
+^^^^^^^^^^^^^^^^^^^^^
+Open the ``Edit Tool`` for external tools as outlined above and enter the following
+values for the fields:
 
-To check the whole project, in the menu bar, select ``Tools`` >
-``External Tools`` > ``Cpplint Project``. Alternatively, this can also be
-done through the right-click context menu.
+  :Name: ``Clang Format Full File``
+  :Description: ``Apply clang-format to the active file``
+  :Program: ``clang-format``
+  :Parameters: ``-lines $SelectionStartLine$:$SelectionEndLine$ -i $FileName$``
+  :Working directory: ``$FileDir$``
 
-Integrating drake lint
-----------------------
+Leave the checkbox options in their default state.
 
-Drake's linting tools include two different tools to help enforce Drake's
-style guide. The Cpplint integration above will not flag out-of-order
-``#include`` references or invalid line endings. This external tool enables
-the ability to test for these charactersitics on targeted files within
-CLion.
+Correct #include ordering
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
-1. Go to File > Settings > Tools > External Tools
-2. Add an entry for drake lint:
+Open the ``Edit Tool`` for external tools as outlined above and enter the following
+values for the fields:
 
-   * Program: ``bazel``
-   * Parameters: ``run //tools:drakelint -- $FilePath$``
-   * Working directory: ``$Projectpath$``
+  :Name: ``Clang Format Include Ordering``
+  :Description: ``Runs the clang format for correcting includes on the current file``
+  :Program: ``bazel``
+  :Parameters: ``run //drake/tools:clang-format-includes -- $FilePath$``
+  :Working directory: ``$Projectpath$``
 
+Leave the checkbox options in their default state.
 
-Unfortunately, due to the tool set which does this analysis, there will be
-no clickable links to the non-compliant lines. Instead, if the error
-message indicates non-compliance, execute the previous external tool on
-the file which corrects the order of included header files.
+.. _integrating_lint_tools_with_clion:
+
+Delinting files
+---------------
+
+You can apply Drake's delinting tools in CLion to determine if there are coding
+style guide issues. We'll define two tools:
+- General delinting (via cpplint).
+- Detecting out-of-order #includes.
+
+These tools produce reports. In some cases, the reports can be automatically
+converted into clickable links so that you can click on a messsage and be taken
+to the file and line indicated in the message. The configuration instructions 
+include the details of how to configure these clickable links.
+
+You can also set the general coding style for CLion through the following steps
+
+1. Go to ``File`` > ``Settings`` > ``Editor`` > ``Code Style``
+2. On the right panel, Go to ``Default Options`` > ``Right margin (columns)``: 
+   Set it to 80
+3. Go to ``File`` > ``Settings`` > ``Editor`` > ``Code Style`` > ``C/C++``
+4. On the right panel, choose ``Set from`` > ``Predefined Style`` > ``Google``
+
+Delint selected file for google style guide
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Open the ``Edit Tool`` for external tools as outlined above and enter the following
+values for the fields:
+
+  :Name: ``Cpplint File``
+  :Description: ``Apply cpplint to the current file.``
+  :Program: ``bazel``
+  :Parameters: ``run @google_styleguide//:cpplint --  --output=eclipse $FilePath$``
+  :Working directory: ``$Projectpath$``
+
+To configure the clickable links:
+
+1. Click the ``Output Filters...`` button.
+2. Click the :raw-html:`<font size="5" color="green">+</font>` sign to add a filter.
+3. Add the following values in the following fields (and click "OK):
+
+  :Name: ``Extract Links``
+  :Description: ``Convert file/line references into clickable links.``
+  :Regular expression to match output: ``$FILE_PATH$:$LINE$``
+
+4. Click ``OK`` on the ``Edit filter`` dialog.
+5. Click ``OK`` on the ``Output Filters`` dialog.
+
+Delint selected file for Drake style addenda
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Open the ``Edit Tool`` for external tools as outlined above and enter the following
+values for the fields:
+
+  :Name: ``Drake Lint File``
+  :Description: ``Apply drake lint to the current file.``
+  :Program: ``bazel``
+  :Parameters: ``run //tools:drakelint -- $FilePath$``
+  :Working directory: ``$Projectpath$``
+
+This tool does not *currently* produce output from which clickable links can be made.
+In the event that it reports a problem with the includes, simply execute the
+``Clang Format Include Ordering`` external tool on the file.
