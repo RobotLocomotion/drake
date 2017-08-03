@@ -93,9 +93,12 @@ void AddLogarithmicSos2Constraint(
  * <pre>
  *   y(i) = 1 => λ(i) + λ(i + 1) = 1.
  * </pre>
+ * @see AddLogarithmicSos2Constraint for a complete explanation on SOS2
+ * constraint.
  * @param prog The optimization program to which the SOS2 constraint is added.
  * @param lambda At most two entries in λ can be strictly positive, and these
- * two entries have to be adjacent. All other entries are zero.
+ * two entries have to be adjacent. All other entries are zero. Moreover, these
+ * two entries should sum up to 1.
  * @param y y(i) takes binary value, and determines which two entries in λ can
  * be strictly positive. Throw a runtime error is y.rows() != lambda.rows() - 1.
  */

@@ -57,7 +57,8 @@ void LogarithmicSos2Test(int num_lambda, bool logarithmic_binning) {
   int num_intervals = num_lambda - 1;
   auto y_assignment = prog.AddBoundingBoxConstraint(0, 1, y);
 
-  // We assign the binary variables y with value i, expressed in Gray code.
+  // If we use logarithmic binning, we will assign the binary variables y with
+  // value i, expressed in Gray code.
   const auto gray_codes = math::CalculateReflectedGrayCodes(num_binary_vars);
   Eigen::VectorXd y_val(y.rows());
   for (int i = 0; i < num_intervals; ++i) {
