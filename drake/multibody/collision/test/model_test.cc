@@ -68,6 +68,11 @@ class ModelTestBase : public ::testing::Test {
     return model_->AddElement(make_unique<Element>(geom));
   }
 
+  Element* AddCylinder(double radius = 1, double length = 1.0) {
+    const DrakeShapes::Cylinder geom{radius, length};
+    return model_->AddElement(make_unique<Element>(geom));
+  }
+
   void RemoveElement(const Element& element) {
     model_->RemoveElement(element.getId());
   }
@@ -98,6 +103,8 @@ TEST_P(AllModelTypesTests, NewModel) { EXPECT_FALSE(model_ == nullptr); }
 TEST_P(AllModelTypesTests, AddElement) {
   Element* elem = AddSphere();
   EXPECT_EQ(elem->getShape(), DrakeShapes::SPHERE);
+  elem = AddCylinder();
+  EXPECT_EQ(elem->getShape(), DrakeShapes::CYLINDER);
 }
 
 std::vector<ModelType> GetAllModelTypes() {
@@ -168,11 +175,6 @@ class FclModelDeathTests : public ModelTestBase,
     model_->AddElement(make_unique<Element>(geom));
   }
 
-  void CallAddCylinder() {
-    const DrakeShapes::Cylinder geom{1, 1};
-    model_->AddElement(make_unique<Element>(geom));
-  }
-
   void CallAddMesh() {
     std::string file_name = drake::FindResourceOrThrow(
         "drake/multibody/collision/test/ripple_cap.obj");
@@ -225,7 +227,6 @@ TEST_P(FclModelDeathTests, NotImplemented) {
 INSTANTIATE_TEST_CASE_P(
     NotImplementedTest, FclModelDeathTests,
     ::testing::Values(&FclModelDeathTests::CallAddBox,
-                      &FclModelDeathTests::CallAddCylinder,
                       &FclModelDeathTests::CallAddCapsule,
                       &FclModelDeathTests::CallAddMesh,
                       &FclModelDeathTests::CallClosestPointsAllToAll,
@@ -242,28 +243,37 @@ class ShapeVsShapeTestParam {
  public:
   ShapeVsShapeTestParam(ModelType model_type,
                         const DrakeShapes::Geometry& shape_A,
-                        const DrakeShapes::Geometry& shape_B, Isometry3d X_WA,
-                        Isometry3d X_WB, SurfacePoint surface_point_A,
-                        SurfacePoint surface_point_B)
+                        const DrakeShapes::Geometry& shape_B,
+                        const Isometry3d& X_WA, const Isometry3d& X_WB,
+                        const SurfacePoint& surface_point_A,
+                        const SurfacePoint& surface_point_B,
+                        const double tolerance = 1e-9)
       : model_type_(model_type),
         elements_(std::piecewise_construct, std::forward_as_tuple(shape_A),
                   std::forward_as_tuple(shape_B)),
-        surface_points_(surface_point_A, surface_point_B) {
+        surface_points_(surface_point_A, surface_point_B),
+        tolerance_(tolerance) {
     elements_.first.updateWorldTransform(X_WA);
     elements_.second.updateWorldTransform(X_WB);
   }
 
   ShapeVsShapeTestParam(const ShapeVsShapeTestParam& other)
-      : ShapeVsShapeTestParam(
-            other.model_type_, other.elements_.first.getGeometry(),
-            other.elements_.second.getGeometry(),
-            other.elements_.first.getWorldTransform(),
-            other.elements_.second.getWorldTransform(),
-            other.surface_points_.first, other.surface_points_.second) {}
+      : ShapeVsShapeTestParam(other.model_type_,
+                              other.elements_.first.getGeometry(),
+                              other.elements_.second.getGeometry(),
+                              other.elements_.first.getWorldTransform(),
+                              other.elements_.second.getWorldTransform(),
+                              other.surface_points_.first,
+                              other.surface_points_.second, other.tolerance_) {}
 
   ModelType model_type_;
   std::pair<DrakeShapes::Element, DrakeShapes::Element> elements_;
   std::pair<SurfacePoint, SurfacePoint> surface_points_;
+
+  // Numerical precision tolerance to perform floating point comparisons.
+  // Its magnitude was chosen to be the minimum value for which these tests can
+  // successfully pass.
+  double tolerance_{1e-9};
 };
 
 class ShapeVsShapeTest
@@ -285,6 +295,7 @@ class ShapeVsShapeTest
                                         source_B.getWorldTransform());
     solution_ = {{element_A_, GetParam().surface_points_.first},
                  {element_B_, GetParam().surface_points_.second}};
+    tolerance_ = GetParam().tolerance_;
   }
 
  protected:
@@ -323,11 +334,6 @@ std::ostream& operator<<(::std::ostream& os,
 
 // Verify that ComputeMaximumDepthCollisionPoints returns the expected results.
 TEST_P(ShapeVsShapeTest, ComputeMaximumDepthCollisionPoints) {
-  // Numerical precision tolerance to perform floating point comparisons.
-  // Its magnitude was chosen to be the minimum value for which these tests can
-  // successfully pass.
-  tolerance_ = 1.0e-9;
-
   // List of collision points.
   std::vector<PointPair> points;
 
@@ -397,9 +403,95 @@ std::vector<ShapeVsShapeTestParam> GenerateSphereVsSphereParam() {
   return params;
 }
 
+std::vector<ShapeVsShapeTestParam> GenerateCylinderVsCylinderParam() {
+  // First geom
+  DrakeShapes::Cylinder geom_A{0.5, 1};
+  Isometry3d X_WA;
+  X_WA.setIdentity();
+  X_WA.translation() = Vector3d(0, 0.5, 0);
+  Vector3d p_WAc{0.0, 1.0, 0.0};
+  Vector3d p_AAc{0.0, 0.5, 0.0};
+  Vector3d n_AcBc_W{0.0, 1.0, 0.0};
+  SurfacePoint surface_point_A = {p_WAc, p_AAc, n_AcBc_W};
+
+  // Second geom
+  DrakeShapes::Cylinder geom_B{0.5 * M_SQRT1_2, M_SQRT1_2};
+  Isometry3d X_WB;
+  X_WB.setIdentity();
+  X_WB.rotate(Eigen::AngleAxisd(-M_PI_4, Vector3d(1, 0, 0)));
+  X_WB.translation() = Vector3d(0.0, 1.25, 0.0);
+  Vector3d p_WBc{0.0, 0.75, 0.0};
+  Vector3d p_BBc{0.0, -0.5, 0.0};
+  Vector3d n_BcAc_W{0.0, -1.0, 0.0};
+  SurfacePoint surface_point_B = {p_WBc, p_BBc, n_BcAc_W};
+
+  std::vector<ShapeVsShapeTestParam> params;
+#ifdef BULLET_COLLISION
+  // Bullet doesn't handle cylinders very well
+  params.emplace_back(ModelType::kBullet, geom_A, geom_B, X_WA, X_WB,
+                      surface_point_A, surface_point_B, 2e-2);
+  params.emplace_back(ModelType::kBullet, geom_B, geom_A, X_WB, X_WA,
+                      surface_point_B, surface_point_A, 2e-2);
+#endif
+#ifndef DRAKE_DISABLE_FCL
+  params.emplace_back(ModelType::kFcl, geom_A, geom_B, X_WA, X_WB,
+                      surface_point_A, surface_point_B);
+  params.emplace_back(ModelType::kFcl, geom_B, geom_A, X_WB, X_WA,
+                      surface_point_B, surface_point_A);
+#endif
+
+  return params;
+}
+
+std::vector<ShapeVsShapeTestParam> GenerateSphereVsCylinderParam() {
+  // First geom
+  DrakeShapes::Sphere geom_A{0.5};
+  Isometry3d X_WA;
+  X_WA.setIdentity();
+  X_WA.translation() = Vector3d(0, 0.5, 0);
+  Vector3d p_WAc{0.0, 1.0, 0.0};
+  Vector3d p_AAc{0.0, 0.5, 0.0};
+  Vector3d n_AcBc_W{0.0, 1.0, 0.0};
+  SurfacePoint surface_point_A = {p_WAc, p_AAc, n_AcBc_W};
+
+  // Second geom
+  DrakeShapes::Cylinder geom_B{0.5 * M_SQRT1_2, M_SQRT1_2};
+  Isometry3d X_WB;
+  X_WB.setIdentity();
+  X_WB.rotate(Eigen::AngleAxisd(-M_PI_4, Vector3d(1, 0, 0)));
+  X_WB.translation() = Vector3d(0.0, 1.25, 0.0);
+  Vector3d p_WBc{0.0, 0.75, 0.0};
+  Vector3d p_BBc{0.0, -0.5, 0.0};
+  Vector3d n_BcAc_W{0.0, -1.0, 0.0};
+  SurfacePoint surface_point_B = {p_WBc, p_BBc, n_BcAc_W};
+
+  std::vector<ShapeVsShapeTestParam> params;
+#ifdef BULLET_COLLISION
+  // Bullet doesn't handle cylinders very well
+  params.emplace_back(ModelType::kBullet, geom_A, geom_B, X_WA, X_WB,
+                      surface_point_A, surface_point_B, 2e-2);
+  params.emplace_back(ModelType::kBullet, geom_B, geom_A, X_WB, X_WA,
+                      surface_point_B, surface_point_A, 2e-2);
+#endif
+#ifndef DRAKE_DISABLE_FCL
+  params.emplace_back(ModelType::kFcl, geom_A, geom_B, X_WA, X_WB,
+                      surface_point_A, surface_point_B);
+  params.emplace_back(ModelType::kFcl, geom_B, geom_A, X_WB, X_WA,
+                      surface_point_B, surface_point_A);
+#endif
+
+  return params;
+}
+
 // Instantiate pairwise test cases.
 INSTANTIATE_TEST_CASE_P(SphereVsSphere, ShapeVsShapeTest,
                         ::testing::ValuesIn(GenerateSphereVsSphereParam()));
+
+INSTANTIATE_TEST_CASE_P(CylinderVsCylinder, ShapeVsShapeTest,
+                        ::testing::ValuesIn(GenerateCylinderVsCylinderParam()));
+
+INSTANTIATE_TEST_CASE_P(SphereVsCylinder, ShapeVsShapeTest,
+                        ::testing::ValuesIn(GenerateSphereVsCylinderParam()));
 
 // GENERAL REMARKS ON THE TESTS PERFORMED
 // A series of canonical tests are performed. These are Box_vs_Sphere,
