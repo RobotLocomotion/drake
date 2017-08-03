@@ -7,6 +7,7 @@
 
 #include <Eigen/Dense>
 #include <bot_core/pointcloud_t.hpp>
+#include <gtest/gtest.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/lcm/drake_lcm.h"
@@ -65,10 +66,43 @@ Eigen::Matrix3Xd Generate2DPlane(double space, PlaneIndices is);
 
 Eigen::Matrix3Xd GenerateBoxPointCloud(double space, Bounds box);
 
+/*
+ * Expect that R ∈ SO(3) => R'R = I, det(R) = 1
+ */
+::testing::AssertionResult ExpectRotation(const Eigen::Matrix3d& R,
+                                          double tolerance = 0.0);
+
+/*
+ * Compare two transforms.
+ */
+::testing::AssertionResult CompareTransforms(
+    const Eigen::Isometry3d& X_expected, const Eigen::Isometry3d& X_actual,
+    double tolerance = 0.0);
+
+/*
+ * Compare `R_actual` against `R_expected` to ensure that the axes are
+ * aligned, but may have different signs. This is done by checking:
+ *   tr(abs(R_expected' R_actual)) == 3
+ */
+::testing::AssertionResult CompareRotationWithoutAxisSign(
+    const Eigen::Matrix3d& R_expected, const Eigen::Matrix3d& R_actual,
+    double tolerance = 0.0);
+
+/*
+ * Compare `X_actual` against `X_expected`, first comparing translation, and
+ * then comparing rotations using CompareRotationWithoutAxisSign.
+ */
+::testing::AssertionResult CompareTransformWithoutAxisSign(
+    const Eigen::Isometry3d& X_expected, const Eigen::Isometry3d& X_actual,
+    double tolerance = 0.0);
+
 class IcpVisualizer {
  public:
   void PublishCloud(const Eigen::Matrix3Xd& points,
                     const std::string& suffix = "RGBD");
+
+  void PublishFrames(
+      const std::vector<std::pair<std::string, Eigen::Isometry3d>>& frames);
 
   lcm::DrakeLcm& lcm() { return lcm_; }
  private:

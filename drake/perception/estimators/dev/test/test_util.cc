@@ -1,9 +1,17 @@
 #include "drake/perception/estimators/dev/test/test_util.h"
 
+#include "drake/common/eigen_matrix_compare.h"
+#include "drake/lcmtypes/drake/lcmt_viewer_draw.hpp"
+
+using std::pair;
 using std::string;
 using std::vector;
 using Eigen::Matrix2Xd;
 using Eigen::Matrix3Xd;
+using Eigen::Vector3d;
+using Eigen::Matrix3d;
+using Eigen::Isometry3d;
+using Eigen::Quaternion;
 
 namespace drake {
 namespace perception {
@@ -42,6 +50,7 @@ Matrix2Xd Generate2DPlane(double space, Interval x, Interval y) {
   out.conservativeResize(Eigen::NoChange, i);
   return out;
 }
+
 Matrix3Xd Generate2DPlane(double space, PlaneIndices is) {
   // Generate single plane.
   Matrix2Xd p2d = Generate2DPlane(space, is.a.interval, is.b.interval);
@@ -57,6 +66,7 @@ Matrix3Xd Generate2DPlane(double space, PlaneIndices is) {
   map_into(p3du.rightCols(n), is.d.interval.max);
   return p3du;
 }
+
 Matrix3Xd GenerateBoxPointCloud(double space, Bounds box) {
   IntervalIndex ix = {0, box.x};
   IntervalIndex iy = {1, box.y};
@@ -70,6 +80,77 @@ Matrix3Xd GenerateBoxPointCloud(double space, Bounds box) {
   return pts;
 }
 
+::testing::AssertionResult ExpectRotation(const Eigen::Matrix3d& R,
+                                          double tolerance) {
+  // Don't have access to common EXPECT_NEAR low-level macros :(
+  const double det = R.determinant();
+  const double det_err = fabs(det - 1);
+  if (det_err > tolerance) {
+    return ::testing::AssertionFailure()
+           << "Determinant of R = " << det << " != 1 by an error of "
+           << det_err << "\nR = " << R;
+  }
+  return CompareMatrices(Matrix3d::Identity(), R.transpose() * R, tolerance)
+         << "Rotation matrix is non-orthonormal";
+}
+
+::testing::AssertionResult CompareTransforms(
+    const Eigen::Isometry3d& X_expected, const Eigen::Isometry3d& X_actual,
+    double tolerance) {
+  ::testing::AssertionResult check_R_expected =
+      ExpectRotation(X_expected.rotation(), tolerance);
+  if (!check_R_expected) {
+    return check_R_expected << "(X_expected)";
+  }
+  ::testing::AssertionResult check_R_actual =
+      ExpectRotation(X_actual.rotation(), tolerance);
+  if (!check_R_actual) {
+    return check_R_actual << "(X_actual)";
+  }
+  return CompareMatrices(X_expected.matrix(), X_actual.matrix(), tolerance);
+}
+
+::testing::AssertionResult CompareRotationWithoutAxisSign(
+    const Matrix3d& R_expected, const Matrix3d& R_actual, double tolerance) {
+  // First, ensure both are rotation matrices.
+  ::testing::AssertionResult check_R_expected =
+      ExpectRotation(R_expected, tolerance);
+  if (!check_R_expected) {
+    return check_R_expected << "(R_expected)";
+  }
+  ::testing::AssertionResult check_R_actual =
+      ExpectRotation(R_actual, tolerance);
+  if (!check_R_actual) {
+    return check_R_actual << "(R_expected)";
+  }
+  // Next, check the trace of the absolute expected identity.
+  const Matrix3d I_check = R_expected.transpose() * R_actual;
+  const double tr = I_check.diagonal().cwiseAbs().sum();
+  if (fabs(tr - 3) < tolerance) {
+    return ::testing::AssertionSuccess();
+  } else {
+    return ::testing::AssertionFailure()
+           << "tr(abs(R_expected' * R_actual)) = " << tr << " != 3 by an error"
+           << " of " << fabs(tr - 3) << "\n"
+           << "R_expected' * R_actual =\n"
+           << I_check;
+  }
+}
+
+::testing::AssertionResult CompareTransformWithoutAxisSign(
+    const Isometry3d& X_expected, const Isometry3d& X_actual,
+    double tolerance) {
+  // Check translation.
+  ::testing::AssertionResult check_translation = CompareMatrices(
+      X_expected.translation(), X_actual.translation(), tolerance);
+  if (!check_translation) {
+    return check_translation;
+  }
+  // Next, check rotation matrices.
+  return CompareRotationWithoutAxisSign(X_expected.rotation(),
+                                        X_actual.rotation(), tolerance);
+}
+
 void IcpVisualizer::PublishCloud(const Matrix3Xd& points,
                                  const string& suffix) {
   bot_core::pointcloud_t pt_msg{};
@@ -77,6 +158,34 @@ void IcpVisualizer::PublishCloud(const Matrix3Xd& points,
   vector<uint8_t> bytes(pt_msg.getEncodedSize());
   pt_msg.encode(bytes.data(), 0, bytes.size());
   lcm_.Publish("DRAKE_POINTCLOUD_" + suffix, bytes.data(), bytes.size());
+}
+
+void IcpVisualizer::PublishFrames(
+    const vector<pair<string, Isometry3d>>& frames) {
+  drake::lcmt_viewer_draw msg{};
+  const int num_frames = frames.size();
+  msg.num_links = num_frames;
+  msg.robot_num.resize(num_frames, 0);
+  const vector<float> pos = {0, 0, 0};
+  const vector<float> quaternion = {1, 0, 0, 0};
+  msg.position.resize(num_frames, pos);
+  msg.quaternion.resize(num_frames, quaternion);
+  for (int i = 0; i < num_frames; ++i) {
+    const string& name = frames[i].first;
+    const auto& frame = frames[i].second;
+    msg.link_name.push_back(name);
+    for (int j = 0; j < 3; ++j) {
+      msg.position[i][j] = static_cast<float>(frame.translation()[j]);
+    }
+    Quaternion<float> quat(frame.rotation().cast<float>());
+    msg.quaternion[i][0] = quat.w();
+    msg.quaternion[i][1] = quat.x();
+    msg.quaternion[i][2] = quat.y();
+    msg.quaternion[i][3] = quat.z();
+  }
+  vector<uint8_t> bytes(msg.getEncodedSize());
+  msg.encode(bytes.data(), 0, bytes.size());
+  lcm_.Publish("DRAKE_DRAW_FRAMES", bytes.data(), bytes.size());
 }
 
 }  // namespace estimators
