@@ -180,7 +180,7 @@ java_library(
     srcs = glob(["lcm-java/lcm/**/*.java"]),
     javacopts = [
         # Suppressed until lcm-proj/lcm#159 is fixed.
-        "-extra_checks:off",
+        "-XepDisableAllChecks",
     ],
     runtime_deps = [
         "@com_jidesoft_jide_oss//jar",

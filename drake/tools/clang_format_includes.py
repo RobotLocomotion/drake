@@ -32,7 +32,7 @@ def main():
     if args.all:
         # TODO(jwnimmer-tri) Consolidate this logic with the cpplint_wrapper
         # tree searching logic, including some way to unit test "all" search.
-        extensions = ["cc", "h"]
+        extensions = ["cc", "h", "cpp"]
         pathnames = ["drake", "ros"]
         filenames = [
             os.path.join(dirpath, filename)
@@ -40,8 +40,6 @@ def main():
             for dirpath, _, filenames in os.walk(pathname)
             for filename in filenames
             if os.path.splitext(filename)[1][1:] in extensions and
-            # TODO(jwnimmer-tri) Eventually do pybind11.
-            "bindings/pybind11" not in dirpath and
             "/thirdParty/" not in dirpath and
             "/third_party/" not in dirpath and
             "/matlab/" not in dirpath

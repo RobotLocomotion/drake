@@ -157,6 +157,18 @@ TEST_F(PidControllerTest, DirectFeedthrough) {
   EXPECT_FALSE(zero_controller.HasAnyDirectFeedthrough());
 }
 
+TEST_F(PidControllerTest, ToAutoDiff) {
+  std::unique_ptr<System<AutoDiffXd>> clone = controller_.ToAutoDiffXd();
+  ASSERT_NE(clone, nullptr);
+  const auto* const downcast =
+      dynamic_cast<PidController<AutoDiffXd>*>(clone.get());
+  ASSERT_NE(downcast, nullptr);
+
+  EXPECT_EQ(downcast->get_Kp_vector(), kp_);
+  EXPECT_EQ(downcast->get_Ki_vector(), ki_);
+  EXPECT_EQ(downcast->get_Kd_vector(), kd_);
+}
+
 }  // namespace
 }  // namespace controllers
 }  // namespace systems

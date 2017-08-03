@@ -1,11 +1,10 @@
-#include <pybind11/pybind11.h>
 #include <pybind11/eigen.h>
+#include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-
-#include "drake/multibody/rigid_body_tree.h"
-#include "drake/multibody/rigid_body_ik.h"
 #include "drake/multibody/ik_options.h"
+#include "drake/multibody/rigid_body_ik.h"
+#include "drake/multibody/rigid_body_tree.h"
 
 namespace py = pybind11;
 

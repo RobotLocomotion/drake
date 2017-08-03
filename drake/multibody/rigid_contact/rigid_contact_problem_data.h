@@ -17,11 +17,13 @@ struct RigidContactAccelProblemData {
   /// The indices of the sliding contacts (those contacts at which there is
   /// non-zero relative velocity between bodies in the plane tangent to the
   /// point of contact), out of the set of all contact indices (0...n-1).
+  /// This vector must be in sorted order.
   std::vector<int> sliding_contacts;
 
   /// The indices of the non-sliding contacts (those contacts at which there
   /// is zero relative velocity between bodies in the plane tangent to the
   /// point of contact), out of the set of all contact indices (0...n-1).
+  /// This vector must be in sorted order.
   std::vector<int> non_sliding_contacts;
 
   /// The number of spanning vectors in the contact tangents (used to linearize

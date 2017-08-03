@@ -1,12 +1,12 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load(
     "//tools:drake.bzl",
     "drake_cc_binary",
     "drake_cc_library",
 )
+load("//tools:lint.bzl", "add_lint_tests")
 load(":pick_and_place_test.bzl", "pick_and_place_test")
 
 drake_cc_library(
@@ -146,4 +146,4 @@ pick_and_place_test(
     ],
 )
 
-cpplint()
+add_lint_tests()

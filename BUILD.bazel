@@ -5,7 +5,7 @@
 # OSX it won't conflict with a build artifacts directory named "build".
 
 load("//tools:check_licenses.bzl", "check_licenses")
-load("//tools:install.bzl", "install", "install_files")
+load("@drake//tools:install.bzl", "install", "install_files")
 load("//tools:lint.bzl", "add_lint_tests")
 
 package(
@@ -67,7 +67,9 @@ install(
     deps = [
         "//drake:install",
         "//drake/common:install",
+        "//drake/examples:install_data",
         "//drake/lcmtypes:install",
+        "//drake/manipulation/models:install_data",
         "//tools:install",
     ] + DRAKE_EXTERNAL_PACKAGE_INSTALLS,
 )

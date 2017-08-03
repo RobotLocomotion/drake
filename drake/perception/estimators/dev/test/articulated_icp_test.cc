@@ -43,8 +43,8 @@ const double kQDiffNormMin = 0.01;
  */
 struct Interval {
   Interval() {}
-  Interval(double min, double max)
-      : min(min), max(max) {
+  Interval(double min_in, double max_in)
+      : min(min_in), max(max_in) {
     DRAKE_DEMAND(min <= max);
   }
   double min{};
@@ -55,8 +55,8 @@ struct Interval {
 
 struct Bounds {
   Bounds() {}
-  Bounds(Interval x, Interval y, Interval z)
-      : x(x), y(y), z(z) {}
+  Bounds(Interval x_in, Interval y_in, Interval z_in)
+      : x(x_in), y(y_in), z(z_in) {}
   Interval x;
   Interval y;
   Interval z;
@@ -154,7 +154,7 @@ class IcpVisualizer {
   }
   void PublishScene(const SceneState& scene_state) {
     const ViewerDrawTranslator draw_msg_tx(scene_->tree());
-    drake::lcmt_viewer_draw draw_msg;
+    drake::lcmt_viewer_draw draw_msg{};
     vector<uint8_t> bytes;
     const int num_q = scene_->tree().get_num_positions();
     const int num_v = scene_->tree().get_num_velocities();
@@ -167,7 +167,7 @@ class IcpVisualizer {
     lcm_.Publish("DRAKE_VIEWER_DRAW", bytes.data(), bytes.size());
   }
   void PublishCloud(const Matrix3Xd& points) {
-    bot_core::pointcloud_t pt_msg;
+    bot_core::pointcloud_t pt_msg{};
     PointCloudToLcm(points, &pt_msg);
     vector<uint8_t> bytes(pt_msg.getEncodedSize());
     pt_msg.encode(bytes.data(), 0, bytes.size());

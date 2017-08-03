@@ -23,14 +23,14 @@ class ManipulatorPlanEvalSystem : public PlanEvalBaseSystem {
 
   /**
    * Constructor.
-   * @param robot Reference to a RigidBodyTree, whose life span must be longer
+   * @param robot Pointer to a RigidBodyTree, whose life span must be longer
    * than this instance.
    * @param alias_groups_file_name Path to the alias groups file that describes
    * the robot's topology for the controller.
    * @param param_file_name Path to the config file for the controller.
    * @param dt Time step
    */
-  ManipulatorPlanEvalSystem(const RigidBodyTree<double>& robot,
+  ManipulatorPlanEvalSystem(const RigidBodyTree<double>* robot,
                             const std::string& alias_groups_file_name,
                             const std::string& param_file_name, double dt);
 
@@ -66,8 +66,7 @@ class ManipulatorPlanEvalSystem : public PlanEvalBaseSystem {
   /**
    * Returns the output port for debugging information.
    */
-  inline const systems::OutputPort<double>&
-  get_output_port_debug_info() const {
+  inline const systems::OutputPort<double>& get_output_port_debug_info() const {
     return get_output_port(output_port_index_debug_info_);
   }
 
@@ -79,9 +78,8 @@ class ManipulatorPlanEvalSystem : public PlanEvalBaseSystem {
       systems::State<double>* state) const override;
 
   // This is the calculator method for the output port.
-  void OutputDebugInfo(
-      const systems::Context<double>& context,
-      lcmt_plan_eval_debug_info* output) const;
+  void OutputDebugInfo(const systems::Context<double>& context,
+                       lcmt_plan_eval_debug_info* output) const;
 
   int input_port_index_desired_state_{};
   int input_port_index_desired_acceleration_{};

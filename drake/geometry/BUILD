@@ -1,12 +1,12 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load(
     "//tools:drake.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
 )
+load("//tools:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -34,6 +34,18 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "geometry_state",
+    srcs = ["geometry_state.cc"],
+    hdrs = ["geometry_state.h"],
+    deps = [
+        ":geometry_frame",
+        ":geometry_ids",
+        ":geometry_instance",
+        ":internal_frame",
+    ],
+)
+
+drake_cc_library(
     name = "geometry_system",
     srcs = ["geometry_system.cc"],
     hdrs = [
@@ -43,9 +55,20 @@ drake_cc_library(
     deps = [
         ":geometry_frame",
         ":geometry_instance",
+        ":geometry_state",
         "//drake/common",
         "//drake/geometry/query_results:penetration_as_point_pair",
         "//drake/systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "internal_frame",
+    srcs = ["internal_frame.cc"],
+    hdrs = ["internal_frame.h"],
+    deps = [
+        ":geometry_ids",
+        "//drake/common",
     ],
 )
 
@@ -77,4 +100,4 @@ drake_cc_googletest(
     deps = [":identifier"],
 )
 
-cpplint()
+add_lint_tests()

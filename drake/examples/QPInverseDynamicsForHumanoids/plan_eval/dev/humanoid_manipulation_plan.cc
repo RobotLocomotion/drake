@@ -6,27 +6,34 @@
 
 #include "robotlocomotion/robot_plan_t.hpp"
 
-#include "drake/examples/QPInverseDynamicsForHumanoids/control_utils.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/lcm_utils.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/lcm_utils.h"
+#include "drake/systems/controllers/setpoint.h"
 
 namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
+using systems::controllers::qp_inverse_dynamics::ParamSet;
+using systems::controllers::qp_inverse_dynamics::QpInput;
+using systems::controllers::qp_inverse_dynamics::RobotKinematicState;
+
 template <typename T>
 void HumanoidManipulationPlan<T>::InitializeGenericPlanDerived(
-    const HumanoidStatus& robot_status, const param_parsers::ParamSet& paramset,
-    const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) {
+    const RobotKinematicState<T>& robot_status,
+    const ParamSet& paramset,
+    const RigidBodyTreeAliasGroups<T>& alias_groups) {
   unused(paramset);
 
   // Knots are constant, the second time doesn't matter as long as it's larger.
-  const std::vector<T> times = {robot_status.time(), robot_status.time() + 1};
+  const std::vector<T> times = {robot_status.get_time(),
+                                robot_status.get_time() + 1};
 
   // Current com q and v.
-  Vector4<double> xcom;
-  xcom << robot_status.com().head<2>(), robot_status.comd().head<2>();
+  Vector4<T> xcom;
+  xcom << robot_status.get_com().template head<2>(),
+      robot_status.get_com_velocity().template head<2>();
   // Set desired com q to current.
-  MatrixX<double> com_d = robot_status.com().head<2>();
+  MatrixX<T> com_d = robot_status.get_com().template head<2>();
   PiecewisePolynomial<T> zmp_d =
       PiecewisePolynomial<T>::ZeroOrderHold(times, {com_d, com_d});
   // Makes a zmp planner that stays still.
@@ -43,8 +50,8 @@ void HumanoidManipulationPlan<T>::InitializeGenericPlanDerived(
   MatrixX<T> position;
   for (const auto& name : tracked_body_names) {
     const RigidBody<T>* body = alias_groups.get_body(name);
-    Isometry3<T> body_pose = robot_status.robot().CalcBodyPoseInWorldFrame(
-        robot_status.cache(), *body);
+    Isometry3<T> body_pose = robot_status.get_robot().CalcBodyPoseInWorldFrame(
+        robot_status.get_cache(), *body);
     position = body_pose.translation();
     PiecewisePolynomial<T> pos_traj =
         PiecewisePolynomial<T>::ZeroOrderHold(times, {position, position});
@@ -58,16 +65,18 @@ void HumanoidManipulationPlan<T>::InitializeGenericPlanDerived(
 
 template <typename T>
 void HumanoidManipulationPlan<T>::UpdateQpInputGenericPlanDerived(
-    const HumanoidStatus& robot_status, const param_parsers::ParamSet& paramset,
-    const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,
+    const RobotKinematicState<T>& robot_status,
+    const ParamSet& paramset,
+    const RigidBodyTreeAliasGroups<T>& alias_groups,
     QpInput* qp_input) const {
   unused(paramset, alias_groups);
 
   // Generates CoM acceleration.
   Vector4<T> xcom;
-  xcom << robot_status.com().head<2>(), robot_status.comd().head<2>();
+  xcom << robot_status.get_com().template head<2>(),
+      robot_status.get_com_velocity().template head<2>();
   Vector2<T> comdd_d =
-      zmp_planner_.ComputeOptimalCoMdd(robot_status.time(), xcom);
+      zmp_planner_.ComputeOptimalCoMdd(robot_status.get_time(), xcom);
 
   // Zeros linear and angular momentum change.
   qp_input->mutable_desired_centroidal_momentum_dot()
@@ -76,13 +85,14 @@ void HumanoidManipulationPlan<T>::UpdateQpInputGenericPlanDerived(
   // Only sets the xy dimensions of the linear momentum change.
   qp_input->mutable_desired_centroidal_momentum_dot()
       .mutable_values()
-      .segment<2>(3) = robot_status.robot().getMass() * comdd_d;
+      .segment<2>(3) = robot_status.get_robot().getMass() * comdd_d;
 }
 
 template <typename T>
 void HumanoidManipulationPlan<T>::HandlePlanGenericPlanDerived(
-    const HumanoidStatus& robot_status, const param_parsers::ParamSet& paramset,
-    const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,
+    const RobotKinematicState<T>& robot_status,
+    const ParamSet& paramset,
+    const RigidBodyTreeAliasGroups<T>& alias_groups,
     const systems::AbstractValue& plan) {
   unused(paramset);
 
@@ -102,10 +112,10 @@ void HumanoidManipulationPlan<T>::HandlePlanGenericPlanDerived(
     return;
   }
 
-  const RigidBodyTree<T>& robot = robot_status.robot();
+  const RigidBodyTree<T>& robot = robot_status.get_robot();
   KinematicsCache<T> cache = robot.CreateKinematicsCache();
 
-  const double time_now = robot_status.time();
+  const double time_now = robot_status.get_time();
   VectorX<T> q = this->get_dof_trajectory().get_position(time_now);
   VectorX<T> v = VectorX<T>::Zero(robot.get_num_velocities());
 
@@ -123,7 +133,7 @@ void HumanoidManipulationPlan<T>::HandlePlanGenericPlanDerived(
   std::vector<MatrixX<T>> com_knots(1, zmp_planner_.get_nominal_com(time_now));
 
   const manipulation::RobotStateLcmMessageTranslator translator(
-      robot_status.robot());
+      robot_status.get_robot());
 
   for (const bot_core::robot_state_t& keyframe : msg.plan) {
     translator.DecodeMessageKinematics(keyframe, q, v);
@@ -157,7 +167,8 @@ void HumanoidManipulationPlan<T>::HandlePlanGenericPlanDerived(
     PiecewisePolynomial<T> zmp_poly =
         PiecewisePolynomial<T>::Pchip(com_times, com_knots, true);
     Vector4<T> x_com0;
-    x_com0 << robot_status.com().head<2>(), robot_status.comd().head<2>();
+    x_com0 << robot_status.get_com().template head<2>(),
+        robot_status.get_com_velocity().template head<2>();
     zmp_planner_.Plan(zmp_poly, x_com0, zmp_height_);
   }
 
@@ -204,7 +215,7 @@ bool HumanoidManipulationPlan<T>::IsRigidBodyTreeCompatible(
 
 template <typename T>
 bool HumanoidManipulationPlan<T>::IsRigidBodyTreeAliasGroupsCompatible(
-    const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) const {
+    const RigidBodyTreeAliasGroups<T>& alias_groups) const {
   if (VerifyRigidBodyTreeAliasGroups(alias_groups, "pelvis") &&
       VerifyRigidBodyTreeAliasGroups(alias_groups, "torso") &&
       VerifyRigidBodyTreeAliasGroups(alias_groups, "left_foot") &&
