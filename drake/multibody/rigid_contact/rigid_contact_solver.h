@@ -137,7 +137,7 @@ class RigidContactSolver {
   ///        that used to determine @p problem_data.F. All vectors should be
   ///        expressed in the global frame.
   /// @param[out] contact_forces a non-null vector of a doublet of values, where
-  ///             the iᵗʰ triplet represents the force along each basis
+  ///             the iᵗʰ element represents the force along each basis
   ///             vector in the iᵗʰ contact frame.
   /// @throws std::logic_error if @p contact_forces is null, if
   ///         @p contact_forces is not empty, if @p cf is not the
@@ -146,9 +146,8 @@ class RigidContactSolver {
   ///         be 2D), if the number of contact frames is not equal to the number
   ///         of contacts, or if a contact frame does not appear to be
   ///         orthonormal.
-  /// @note If, after returning, @p contact_frames[i] is multiplied by
-  ///       @p contact_forces[i], the result will be the contact forces
-  ///       for the ith contact expressed in the global frame.
+  /// @note On return, the contact force at the iᵗʰ contact point expressed
+  ///       in the world frame is @p contact_frames[i] * @p contact_forces[i].
   static void CalcContactForcesInContactFrames(
       const VectorX<T>& cf, const RigidContactAccelProblemData<T>& problem_data,
       const std::vector<Matrix2<T>>& contact_frames,
@@ -164,7 +163,7 @@ class RigidContactSolver {
   ///        tangent direction used to determine @p problem_data.F). All
   ///        vectors should be expressed in the global frame.
   /// @param[out] contact_impulses a non-null vector of a doublet of values,
-  ///             where the iᵗʰ triplet represents the impulsive force along
+  ///             where the iᵗʰ element represents the impulsive force along
   ///             each basis vector in the iᵗʰ contact frame.
   /// @throws std::logic_error if @p contact_impulses is null, if
   ///         @p contact_impulses is not empty, if @p cf is not the
@@ -173,9 +172,8 @@ class RigidContactSolver {
   ///         the number of contact frames is not equal to the number
   ///         of contacts, or if a contact frame does not appear to be
   ///         orthonormal.
-  /// @note If, after returning, @p contact_frames[i] is multiplied by
-  ///       @p contact_impulses[i], the result will be the contact impulses
-  ///       for the ith contact expressed in the global frame.
+  /// @note On return, the contact impulse at the iᵗʰ contact point expressed
+  ///       in the world frame is @p contact_frames[i] * @p contact_impulses[i].
   static void CalcImpactForcesInContactFrames(
       const VectorX<T>& cf, const RigidContactVelProblemData<T>& problem_data,
       const std::vector<Matrix2<T>>& contact_frames,
@@ -480,22 +478,22 @@ void RigidContactSolver<T>::FormImpactingContactLCP(
   }
 
   // Construct the LCP matrix. First do the "normal contact direction" rows:
-  // N⋅M⁻¹⋅(Nᵀ - μQᵀ)  N⋅M⁻¹⋅Dᵀ  0
-  // D⋅M⁻¹⋅Nᵀ          D⋅M⁻¹⋅Dᵀ  E
-  // μ                 -Eᵀ       0
+  // N⋅M⁻¹⋅Nᵀ  N⋅M⁻¹⋅Dᵀ  0
+  // D⋅M⁻¹⋅Nᵀ  D⋅M⁻¹⋅Dᵀ  E
+  // μ         -Eᵀ       0
   // where D = |  F |
   //           | -F |
   const int nc = num_contacts;          // Alias these vars for more...
   const int nr = num_spanning_vectors;  //   readable construction...
   const int nk = nr * 2;                //    of MM/qq.
-  const int num_vars = nc*2 + nk;
+  const int num_vars = nc * 2 + nk;
   MatrixX<T> M_inv_x_FT = problem_data.solve_inertia(F.transpose());
   MM->resize(num_vars, num_vars);
   MM->block(0, 0, nc, nc) = N * problem_data.solve_inertia(
       problem_data.N.transpose());
   MM->block(0, nc, nc, nr) = N * M_inv_x_FT;
   MM->block(0, nc + nr, nc, nr) = -MM->block(0, nc, nc, nr);
-  MM->block(0, nc + nk, num_contacts, num_contacts).setZero();
+  MM->block(0, nc + nk, nc, nc).setZero();
 
   // Now construct the un-negated tangent contact direction rows (everything
   // but last block column).
@@ -518,8 +516,8 @@ void RigidContactSolver<T>::FormImpactingContactLCP(
   MM->block(nc + nk, nc + nk, nc, nc).setZero();
 
   // Construct the LCP vector:
-  // N⋅M⁻¹⋅v
-  // D⋅M⁻¹⋅v
+  // N⋅v
+  // D⋅v
   // 0
   // where, as above, D is defined as [F -F]
   qq->resize(num_vars, 1);

@@ -129,11 +129,9 @@ class RigidContact2DSolverTest : public ::testing::Test {
   // Computes rigid impacting contact data.
   void CalcRigidContactVelProblemData(
       RigidContactVelProblemData<double>* data) {
-    // Get the points of contact and contact tangent velocities.
+    // Get the points of contact.
     std::vector<Vector2d> contacts;
-    std::vector<double> tangent_vels;
     rod_->GetContactPoints(*context_, &contacts);
-    rod_->GetContactPointsTangentVelocities(*context_, contacts, &tangent_vels);
 
     // Compute the problem data.
     rod_->CalcRigidImpactProblemData(*context_, contacts, data);

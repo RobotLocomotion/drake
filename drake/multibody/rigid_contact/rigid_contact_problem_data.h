@@ -59,7 +59,7 @@ struct RigidContactAccelProblemData {
 
   /// The ℝʸʳˣᵐ Jacobian matrix that transforms generalized velocities (m is the
   /// dimension of generalized velocity) into velocities projected along
-  /// k vectors that span the contact tangents (used to linearize the friction
+  /// r vectors that span the contact tangents (used to linearize the friction
   /// cone) at the n *non-sliding* contact points. For contact problems in two
   /// dimensions, r will be one. For a friction pyramid in three dimensions, r
   /// would be two. While the definition of the dimension of the Jacobian matrix
@@ -122,12 +122,12 @@ struct RigidContactVelProblemData {
 
   /// The ℝⁿʳˣᵐ Jacobian matrix that transforms generalized velocities (m is the
   /// dimension of generalized velocity) into velocities projected along
-  /// k vectors that span the contact tangents (used to linearize the friction
+  /// r vectors that span the contact tangents (used to linearize the friction
   /// cone) at the n contact points. For contact problems in two
   /// dimensions, r will be one. For a friction pyramid in three dimensions, r
   /// would be two. While the definition of the dimension of the Jacobian matrix
-  /// above indicates that every one of the y non-sliding contacts uses the
-  /// same "r", the code imposes no such requirement.
+  /// above indicates that every one of the n contacts uses the same "r", the
+  /// code imposes no such requirement.
   MatrixX<T> F;
 
   /// The ℝᵐ vector v, the generalized velocity immediately before any impulsive
