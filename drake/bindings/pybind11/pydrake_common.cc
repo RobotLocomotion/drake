@@ -4,6 +4,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_assertion_error.h"
+#include "drake/common/find_resource.h"
 
 namespace py = pybind11;
 
@@ -30,6 +31,10 @@ PYBIND11_PLUGIN(_pydrake_common) {
         PyErr_SetString(PyExc_SystemExit, e.what());
       }
     });
+  // Convenient wrapper for querying FindResource(resource_path).
+  m.def("FindResourceOrThrow", &drake::FindResourceOrThrow,
+        "Convenient wrapper for querying FindResource(resource_path) followed by\
+         FindResourceResult::get_absolute_path_or_throw()");
 
   // These are meant to be called internally by pydrake; not by users.
   m.def("set_assertion_failure_to_throw_exception",
