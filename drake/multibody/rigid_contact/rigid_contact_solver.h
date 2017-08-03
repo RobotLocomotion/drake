@@ -279,20 +279,22 @@ void RigidContactSolver<T>::SolveImpactProblem(
                                "negative.");
   }
 
-  // Get numbers of friction directions and types of contacts.
+  // Get number of contacts.
   const int num_contacts = problem_data.mu.size();
   if (static_cast<size_t>(num_contacts) != problem_data.r.size()) {
     throw std::logic_error("Number of elements in 'r' does not match number"
                                "of elements in 'mu'");
   }
-  const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
-                                                   problem_data.r.end(), 0);
 
   // Look for fast exit.
   if (num_contacts == 0) {
     cf->resize(0);
     return;
   }
+
+  // Get number of tangent spanning vectors.
+  const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
+                                                   problem_data.r.end(), 0);
 
   // If no impact, do not apply the impact model.
   if ((problem_data.N * problem_data.v).minCoeff() >= 0) {
@@ -328,10 +330,11 @@ void RigidContactSolver<T>::SolveImpactProblem(
   // the problem size. zzᵀww must use a looser tolerance to account for the
   // num_vars multiplies.
   const int npivots = lcp_.get_num_pivots();
-  if (!success || (zz.size() > 0 &&
-      (zz.minCoeff() < -num_vars * npivots * zero_tol ||
-          ww.minCoeff() < -num_vars * npivots * zero_tol ||
-          abs(zz.dot(ww)) > num_vars * num_vars * npivots * zero_tol))) {
+  if (!success ||
+      (zz.size() > 0 &&
+       (zz.minCoeff() < -num_vars * npivots * zero_tol ||
+        ww.minCoeff() < -num_vars * npivots * zero_tol ||
+        abs(zz.dot(ww)) > num_vars * num_vars * npivots * zero_tol))) {
     throw std::runtime_error("Unable to solve LCP- more regularization might "
                                  "be necessary.");
   }
@@ -477,15 +480,17 @@ void RigidContactSolver<T>::FormImpactingContactLCP(
     j += num_tangent_dirs;
   }
 
+  // Alias these variables for more readable construction of MM and qq.
+  const int nc = num_contacts;
+  const int nr = num_spanning_vectors;
+  const int nk = nr * 2;
+
   // Construct the LCP matrix. First do the "normal contact direction" rows:
   // N⋅M⁻¹⋅Nᵀ  N⋅M⁻¹⋅Dᵀ  0
   // D⋅M⁻¹⋅Nᵀ  D⋅M⁻¹⋅Dᵀ  E
   // μ         -Eᵀ       0
   // where D = |  F |
   //           | -F |
-  const int nc = num_contacts;          // Alias these vars for more...
-  const int nr = num_spanning_vectors;  //   readable construction...
-  const int nk = nr * 2;                //    of MM/qq.
   const int num_vars = nc * 2 + nk;
   MatrixX<T> M_inv_x_FT = problem_data.solve_inertia(F.transpose());
   MM->resize(num_vars, num_vars);

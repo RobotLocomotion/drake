@@ -510,8 +510,9 @@ void Rod2D<T>::CalcRigidContactProblemData(
   DRAKE_DEMAND(points.size() == tangent_vels.size());
 
   // Set the inertia solver.
-  data->solve_inertia = std::bind(&Rod2D<T>::solve_inertia, this,
-                                  std::placeholders::_1);
+  data->solve_inertia = [this](const MatrixX<T>& m) {
+    return solve_inertia(m);
+  };
 
   // The normal and tangent spanning direction are unique.
   const Matrix2<T> R_wc = GetNonSlidingContactFrameToWorldTransform();
@@ -613,8 +614,9 @@ void Rod2D<T>::CalcRigidImpactProblemData(
       CopyToVector();
 
   // Set the inertia solver.
-  data->solve_inertia = std::bind(&Rod2D<T>::solve_inertia, this,
-                                  std::placeholders::_1);
+  data->solve_inertia = [this](const MatrixX<T>& m) {
+    return solve_inertia(m);
+  };
 
   // The normal and tangent spanning direction are unique for the rod undergoing
   // impact (i.e., unlike with non-impacting rigid contact equations, the
