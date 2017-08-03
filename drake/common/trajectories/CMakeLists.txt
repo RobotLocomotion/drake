@@ -1,4 +1,4 @@
-add_library_with_exports(LIB_NAME drakeTrajectories SOURCE_FILES
+add_library(drakeTrajectories
     exponential_plus_piecewise_polynomial.cc
     piecewise_function.cc
     piecewise_polynomial.cc
@@ -19,15 +19,7 @@ drake_install_headers(
     trajectory.h
     piecewise_quaternion.h
     )
-drake_install_pkg_config_file(drake-trajectories
-  TARGET drakeTrajectories
-  LIBS -ldrakeTrajectories
-  REQUIRES
-    drake-common
-    eigen3)
 
 if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
-
-add_subdirectory(qp_spline)

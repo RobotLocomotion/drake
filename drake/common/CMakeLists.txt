@@ -90,8 +90,7 @@ set(private_headers
   )
 
 # Create the library target and note its dependencies.
-add_library_with_exports(LIB_NAME drakeCommon
-  SOURCE_FILES ${sources} ${installed_headers} ${private_headers})
+add_library(drakeCommon ${sources} ${installed_headers} ${private_headers})
 target_include_directories(drakeCommon PUBLIC)
 target_link_libraries(drakeCommon
   Eigen3::Eigen
@@ -101,33 +100,11 @@ target_link_libraries(drakeCommon
   stx
   Threads::Threads)
 
-set(drakeCommon_CFLAGS)
-set(drakeCommon_REQUIRES)
-
-if(spdlog_FOUND)
-  target_compile_definitions(drakeCommon
-    PUBLIC HAVE_SPDLOG
-    SPDLOG_FMT_EXTERNAL)
-  target_link_libraries(drakeCommon spdlog::spdlog)
-  set(drakeCommon_CFLAGS -DHAVE_SPDLOG -DSPDLOG_FMT_EXTERNAL)
-  set(drakeCommon_REQUIRES spdlog)
-endif()
-
 # Install all externally-visible headers.
 drake_install_headers(${installed_headers})
 
 # Install the library and note Drake's dependency on it.
 drake_install_libraries(drakeCommon)
-drake_install_pkg_config_file(drake-common
-  TARGET drakeCommon
-  LIBS
-    -ldrakeCommon
-    -lgflags
-    ${CMAKE_THREAD_LIBS_INIT}
-  CFLAGS ${drakeCommon_CFLAGS}
-  REQUIRES
-    eigen3
-    ${drakeCommon_REQUIRES})
 
 add_executable(resource_tool resource_tool.cc)
 target_link_libraries(resource_tool drakeCommon)

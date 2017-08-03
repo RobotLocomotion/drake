@@ -24,11 +24,6 @@ target_link_libraries(_pydrake_autodiffutils PRIVATE drakeRBM drakeMultibodyPars
 target_compile_options(_pydrake_autodiffutils PRIVATE "-fvisibility=default")
 install(TARGETS _pydrake_autodiffutils DESTINATION ${PYDRAKE_INSTALL_DIR})
 
-pybind11_add_module(_pydrake_ik pydrake_ik.cc)
-target_link_libraries(_pydrake_ik PRIVATE drakeIK Eigen3::Eigen)
-target_compile_options(_pydrake_ik PRIVATE "-fvisibility=default")
-install(TARGETS _pydrake_ik DESTINATION ${PYDRAKE_INSTALL_DIR}/solvers)
-
 pybind11_add_module(_pydrake_symbolic pydrake_symbolic.cc)
 target_link_libraries(_pydrake_symbolic PRIVATE drakeOptimization Eigen3::Eigen)
 target_compile_options(_pydrake_symbolic PRIVATE "-fvisibility=default")
@@ -39,11 +34,13 @@ target_link_libraries(_pydrake_mathematicalprogram PRIVATE drakeOptimization Eig
 target_compile_options(_pydrake_mathematicalprogram PRIVATE "-fvisibility=default")
 install(TARGETS _pydrake_mathematicalprogram DESTINATION ${PYDRAKE_INSTALL_DIR}/solvers)
 
-pybind11_add_module(_pydrake_ipopt pydrake_ipopt.cc)
-target_link_libraries(_pydrake_ipopt PRIVATE drakeOptimization)
-set_target_properties(_pydrake_ipopt PROPERTIES OUTPUT_NAME "ipopt")
-target_compile_options(_pydrake_ipopt PRIVATE "-fvisibility=default")
-install(TARGETS _pydrake_ipopt DESTINATION ${PYDRAKE_INSTALL_DIR}/solvers)
+if(ipopt_FOUND)
+  pybind11_add_module(_pydrake_ipopt pydrake_ipopt.cc)
+  target_link_libraries(_pydrake_ipopt PRIVATE drakeOptimization)
+  set_target_properties(_pydrake_ipopt PROPERTIES OUTPUT_NAME "ipopt")
+  target_compile_options(_pydrake_ipopt PRIVATE "-fvisibility=default")
+  install(TARGETS _pydrake_ipopt DESTINATION ${PYDRAKE_INSTALL_DIR}/solvers)
+endif()
 
 pybind11_add_module(_pydrake_parsers pydrake_parsers.cc)
 target_link_libraries(_pydrake_parsers PRIVATE drakeMultibodyParsers)
