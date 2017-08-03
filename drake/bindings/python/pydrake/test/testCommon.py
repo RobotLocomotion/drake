@@ -23,6 +23,11 @@ class TestCommon(unittest.TestCase):
                     " condition 'false' failed",
                 ]))
 
+    def testDrakeFindResourceOrThrow(self):
+        pydrake.common.FindResourceOrThrow(
+            'drake/examples/atlas/urdf/atlas_convex_hull.urdf'
+            )
+
 
 if __name__ == '__main__':
     unittest.main()
