@@ -99,7 +99,8 @@ time.
 Running a C++ executable
 ------------------------
 1. Go to Run > Run...
-2. Click an executable, or start typing to find your favorite executable and hit enter.
+2. Click an executable, or start typing to find your favorite executable and hit
+   enter.
 
 Debugging .mex functions in OSX
 -------------------------------
@@ -217,8 +218,9 @@ To build or run a specific target go to ``Run > Edit Configurations``. Click
 ``+`` to create a new Bazel command.  Specify the configuration name and Bazel
 options. The ``Target expression`` specifies the actual code (library, binary,
 and/or test) that you want to run. To learn more about target expressions, see
-`the Bazel manual <https://bazel.build/versions/master/docs/bazel-user-manual.html#target-patterns>`_.
-Once you've created a configuration, you can launch it from the ``Run`` menu.
+`the Bazel manual
+<https://bazel.build/versions/master/docs/bazel-user-manual.html#target-patterns>`
+_. Once you've created a configuration, you can launch it from the ``Run`` menu.
 
 To run a specific target in the debugger, create a configuration as above,
 using the ``bazel run`` command. Then launch it from ``Run > Debug``.
@@ -261,15 +263,17 @@ per-tool details below.
 
 1. Open the Settings dialog (``File`` > ``Settings``) or ``Alt+Ctrl+S``.
 2. Navigate to ``Tools`` > ``External Tools``.
-3. Click the :raw-html:`<font size="5" color="green">+</font>` sign to add a new tool.
-4. Set the appropriate fields in the ``Edit Tool``. See the following tools for details.
+3. Click the :raw-html:`<font size="5" color="green">+</font>` sign to add a new
+   tool.
+4. Set the appropriate fields in the ``Edit Tool``. See the following tools for
+   details.
 5. Click ``Ok``.
 
-There are several ways to use an *External Tool*. One is to right-click on a file
-and select ``External Tools`` > ``Tool Name``. Another is to select ``Tools`` > 
-``External Tools`` > ``Tool Name``. For tools that operate on a selected file,
-make sure that file is "active" by clicking on it. The ``Tool Name`` will be
-the valid set in the ``Name`` field outlined below.
+There are several ways to use an *External Tool*. One is to right-click on a
+file and select ``External Tools`` > ``Tool Name``. Another is to select
+``Tools`` > ``External Tools`` > ``Tool Name``. For tools that operate on a
+selected file, make sure that file is "active" by clicking on it. The
+``Tool Name`` will be the valid set in the ``Name`` field outlined below.
 
 .. _integrating_format_tools_with_clion:
 
@@ -283,17 +287,18 @@ introduce three variants:
 - Apply clang-format to selected lines.
 - Apply clang-format to correct ``#include`` ordering.
 
-These tools modify the selected file. There is a synchronization issue with CLion
-such that the modification may not be immediately apparent. When in doubt, select
-away from the target file and back; this will cause the file to refresh and you
-can confirm that the file has been modified as expected.
+These tools modify the selected file. There is a synchronization issue with
+CLion such that the modification may not be immediately apparent. When in doubt,
+select away from the target file and back; this will cause the file to refresh
+and you can confirm that the file has been modified as expected.
 
-First, make sure you have installed ``clang-format`` (see :doc:`code_style_tools`). 
+First, make sure you have installed ``clang-format``
+(see :doc:`code_style_tools`).
 
 Format full file
 ^^^^^^^^^^^^^^^^
-Open the ``Edit Tool`` for external tools as outlined above and enter the following
-values for the fields:
+Open the ``Edit Tool`` for external tools as outlined above and enter the
+following values for the fields:
 
   :Name: ``Clang Format Full File``
   :Description: ``Apply clang-format to the active file``
@@ -305,8 +310,8 @@ Leave the checkbox options in their default state.
 
 Format selected lines
 ^^^^^^^^^^^^^^^^^^^^^
-Open the ``Edit Tool`` for external tools as outlined above and enter the following
-values for the fields:
+Open the ``Edit Tool`` for external tools as outlined above and enter the
+following values for the fields:
 
   :Name: ``Clang Format Full File``
   :Description: ``Apply clang-format to the active file``
@@ -319,11 +324,12 @@ Leave the checkbox options in their default state.
 Correct #include ordering
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Open the ``Edit Tool`` for external tools as outlined above and enter the following
-values for the fields:
+Open the ``Edit Tool`` for external tools as outlined above and enter the
+following values for the fields:
 
   :Name: ``Clang Format Include Ordering``
-  :Description: ``Runs the clang format for correcting includes on the current file``
+  :Description: ``Runs the clang format for correcting includes on the current
+                  file``
   :Program: ``bazel``
   :Parameters: ``run //drake/tools:clang-format-includes -- $FilePath$``
   :Working directory: ``$Projectpath$``
@@ -355,19 +361,21 @@ You can also set the general coding style for CLion through the following steps
 
 Delint selected file for google style guide
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Open the ``Edit Tool`` for external tools as outlined above and enter the following
-values for the fields:
+Open the ``Edit Tool`` for external tools as outlined above and enter the
+following values for the fields:
 
   :Name: ``Cpplint File``
   :Description: ``Apply cpplint to the current file.``
   :Program: ``bazel``
-  :Parameters: ``run @google_styleguide//:cpplint --  --output=eclipse $FilePath$``
+  :Parameters: ``run @google_styleguide//:cpplint -- --output=eclipse
+                 $FilePath$``
   :Working directory: ``$Projectpath$``
 
 To configure the clickable links:
 
 1. Click the ``Output Filters...`` button.
-2. Click the :raw-html:`<font size="5" color="green">+</font>` sign to add a filter.
+2. Click the :raw-html:`<font size="5" color="green">+</font>` sign to add a
+   filter.
 3. Add the following values in the following fields (and click "OK):
 
   :Name: ``Extract Links``
@@ -379,8 +387,8 @@ To configure the clickable links:
 
 Delint selected file for Drake style addenda
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Open the ``Edit Tool`` for external tools as outlined above and enter the following
-values for the fields:
+Open the ``Edit Tool`` for external tools as outlined above and enter the
+following values for the fields:
 
   :Name: ``Drake Lint File``
   :Description: ``Apply drake lint to the current file.``
@@ -388,6 +396,6 @@ values for the fields:
   :Parameters: ``run //tools:drakelint -- $FilePath$``
   :Working directory: ``$Projectpath$``
 
-This tool does not *currently* produce output from which clickable links can be made.
-In the event that it reports a problem with the includes, simply execute the
-``Clang Format Include Ordering`` external tool on the file.
+This tool does not *currently* produce output from which clickable links can be
+made. In the event that it reports a problem with the includes, simply execute
+the ``Clang Format Include Ordering`` external tool on the file.
