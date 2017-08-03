@@ -1,10 +1,12 @@
 #pragma once
 
 #include <cmath>
+#include <limits>
 
 #include <Eigen/Dense>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 
 namespace drake {
@@ -249,6 +251,35 @@ Matrix3<typename Derived::Scalar> ProjectMatToOrthonormalMat(
   DRAKE_DEMAND(M.rows() == 3 && M.cols() == 3);
   const auto svd = M.jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeFullV);
   return svd.matrixU() * svd.matrixV().transpose();
+}
+
+/// Projects a full-rank 3x3 matrix @p M onto O(3), defined as
+/// <pre>
+///   min_R  \sum_i,j | R(i,j) - M(i,j) |^2
+///  subject to   R*R^T = I, det(R)=1  =>  R ∈ SO(3)
+/// </pre>
+///
+/// This algorithm is from Section 3.1, Eq. (3.7), of:
+///   Moakher M (2002). "Means and averaging in the group of rotations."
+/// This reference was obtained from R's documentation and C++ implementation of
+/// project_SO3C.
+template <typename Derived>
+Matrix3<typename Derived::Scalar> ProjectMatToRotMat(
+    const Eigen::MatrixBase<Derived>& M) {
+  DRAKE_DEMAND(M.rows() == 3 && M.cols() == 3);
+  using Scalar = typename Derived::Scalar;
+  const Scalar det = M.determinant();
+  DRAKE_THROW_UNLESS(fabs(det) > std::numeric_limits<Scalar>::epsilon());
+  const Eigen::SelfAdjointEigenSolver<Matrix3<Scalar>> eig(M.transpose() * M);
+  // Get reciprocal square root.
+  Vector3<Scalar> L = eig.eigenvalues().array().rsqrt();
+  if (det < 0) {
+    // Flip the sign on the smallest eigenvalue. Note that
+    // SelfAdjointEigenSolver sorts eigenvalues in real-value ascending order.
+    L(0) *= -1;
+  }
+  const Matrix3<Scalar> U = eig.eigenvectors();
+  return M * U * L.asDiagonal() * U.transpose();
 }
 
 /**
