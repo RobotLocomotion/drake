@@ -951,7 +951,7 @@ std::pair<int, int> Index2Subscripts(int index, int num_rows, int num_cols) {
 // To handle this non-convex bilinear product, we relax any bilinear product
 // in the form x * y, we relax (x, y, w) to be in the convex hull of the
 // curve w = x * y, and replace all the bilinear term x * y with w. For more
-// details, @see AddBilinearProductMcCormickEnvelopeSos2.
+// details, @see AddBilinearProductMcCormickEnvelopeLogarithmicSos2.
 template <int kNumIntervalsPerHalfAxis>
 void AddOrthogonalAndCrossProductConstraintRelaxationReplacingBilinearProduct(
     MathematicalProgram* prog,
@@ -980,7 +980,7 @@ void AddOrthogonalAndCrossProductConstraintRelaxationReplacingBilinearProduct(
           ")*R(" + std::to_string(Rj_row) + "," + std::to_string(Rj_col) + ")";
       W(i, j) = prog->NewContinuousVariables<1>(W_ij_name)(0);
 
-      auto lambda_bilinear = AddBilinearProductMcCormickEnvelopeSos2(
+      auto lambda_bilinear = AddBilinearProductMcCormickEnvelopeLogarithmicSos2(
           prog, R(Ri_row, Ri_col), R(Rj_row, Rj_col), W(i, j), phi, phi,
           B[Ri_row][Ri_col], B[Rj_row][Rj_col]);
       // Both sum_n lambda_bilinear(m, n) and sum_m lambda_bilinear(m, n)
