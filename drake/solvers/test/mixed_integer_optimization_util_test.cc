@@ -20,7 +20,7 @@ GTEST_TEST(TestMixedIntegerUtil, TestCeilLog2) {
   }
 }
 
-GTEST_TEST(TestLogarithmicSOS2, TestAddSOS2) {
+GTEST_TEST(TestLogarithmicSos2, TestAddSos2) {
   MathematicalProgram prog;
   auto lambda1 = prog.NewContinuousVariables(3, "lambda1");
   auto y1 =
@@ -34,7 +34,7 @@ GTEST_TEST(TestLogarithmicSOS2, TestAddSOS2) {
                 "y2 should be a static-sized vector.");
 }
 
-void LogarithmicSOS2Test(int num_lambda) {
+void LogarithmicSos2Test(int num_lambda, bool logarithmic_binning) {
   // Solve the program
   // min λᵀ * λ
   // s.t sum λ = 1
@@ -44,19 +44,30 @@ void LogarithmicSOS2Test(int num_lambda) {
   MathematicalProgram prog;
   auto lambda = prog.NewContinuousVariables(num_lambda, "lambda");
   prog.AddCost(lambda.cast<symbolic::Expression>().dot(lambda));
-  auto y =
-      AddLogarithmicSos2Constraint(&prog, lambda.cast<symbolic::Expression>());
+  VectorXDecisionVariable y;
+  if (logarithmic_binning) {
+    y = AddLogarithmicSos2Constraint(&prog,
+                                     lambda.cast<symbolic::Expression>());
+  } else {
+    y = prog.NewBinaryVariables(num_lambda - 1);
+    AddSos2Constraint(&prog, lambda.cast<symbolic::Expression>(),
+                      y.cast<symbolic::Expression>());
+  }
   int num_binary_vars = y.rows();
   int num_intervals = num_lambda - 1;
   auto y_assignment = prog.AddBoundingBoxConstraint(0, 1, y);
 
   // We assign the binary variables y with value i, expressed in Gray code.
   const auto gray_codes = math::CalculateReflectedGrayCodes(num_binary_vars);
-  Eigen::VectorXd y_val(num_binary_vars);
+  Eigen::VectorXd y_val(y.rows());
   for (int i = 0; i < num_intervals; ++i) {
     y_val.setZero();
-    for (int j = 0; j < num_binary_vars; ++j) {
-      y_val(j) = gray_codes(i, j);
+    if (logarithmic_binning) {
+      for (int j = 0; j < num_binary_vars; ++j) {
+        y_val(j) = gray_codes(i, j);
+      }
+    } else {
+      y_val(i) = 1;
     }
     y_assignment.constraint()->UpdateLowerBound(y_val);
     y_assignment.constraint()->UpdateUpperBound(y_val);
@@ -75,28 +86,48 @@ void LogarithmicSOS2Test(int num_lambda) {
   }
 }
 
-GTEST_TEST(TestLogarithmicSOS2, Test4Lambda) {
-  LogarithmicSOS2Test(4);
+GTEST_TEST(TestLogarithmicSos2, Test4Lambda) {
+  LogarithmicSos2Test(4, true);
 }
 
-GTEST_TEST(TestLogarithmicSOS2, Test5Lambda) {
-  LogarithmicSOS2Test(5);
+GTEST_TEST(TestLogarithmicSos2, Test5Lambda) {
+  LogarithmicSos2Test(5, true);
 }
 
-GTEST_TEST(TestLogarithmicSOS2, Test6Lambda) {
-  LogarithmicSOS2Test(6);
+GTEST_TEST(TestLogarithmicSos2, Test6Lambda) {
+  LogarithmicSos2Test(6, true);
 }
 
-GTEST_TEST(TestLogarithmicSOS2, Test7Lambda) {
-  LogarithmicSOS2Test(7);
+GTEST_TEST(TestLogarithmicSos2, Test7Lambda) {
+  LogarithmicSos2Test(7, true);
 }
 
-GTEST_TEST(TestLogarithmicSOS2, Test8Lambda) {
-  LogarithmicSOS2Test(8);
+GTEST_TEST(TestLogarithmicSos2, Test8Lambda) {
+  LogarithmicSos2Test(8, true);
 }
 
-void LogarithmicSOS1Test(int num_lambda,
-                         const Eigen::Ref<const Eigen::MatrixXi>& codes) {
+GTEST_TEST(TestSos2, Test4Lambda) {
+  LogarithmicSos2Test(4, false);
+}
+
+GTEST_TEST(TestSos2, Test5Lambda) {
+  LogarithmicSos2Test(5, false);
+}
+
+GTEST_TEST(TestSos2, Test6Lambda) {
+  LogarithmicSos2Test(6, false);
+}
+
+GTEST_TEST(TestSos2, Test7Lambda) {
+  LogarithmicSos2Test(7, false);
+}
+
+GTEST_TEST(TestSos2, Test8Lambda) {
+  LogarithmicSos2Test(8, false);
+}
+
+void LogarithmicSos1Test(int num_lambda,
+                         const Eigen::Ref<const Eigen::MatrixXi> &codes) {
   // Check if we impose the constraint
   // λ is in sos1
   // and assign values to the binary variables,
@@ -125,33 +156,33 @@ void LogarithmicSOS1Test(int num_lambda,
   }
 }
 
-GTEST_TEST(TestLogarithmicSOS1, Test2Lambda) {
+GTEST_TEST(TestLogarithmicSos1, Test2Lambda) {
   Eigen::Matrix<int, 2, 1> codes;
   codes << 0, 1;
-  LogarithmicSOS1Test(2, codes);
+  LogarithmicSos1Test(2, codes);
   // Test a different codes
   codes << 1, 0;
-  LogarithmicSOS1Test(2, codes);
+  LogarithmicSos1Test(2, codes);
 }
 
-GTEST_TEST(TestLogarithmicSOS1, Test3Lambda) {
+GTEST_TEST(TestLogarithmicSos1, Test3Lambda) {
   Eigen::Matrix<int, 3, 2> codes;
   // clang-format off
   codes << 0, 0,
            0, 1,
            1, 0;
   // clang-format on
-  LogarithmicSOS1Test(3, codes);
+  LogarithmicSos1Test(3, codes);
   // Test a different codes
   // clang-format off
   codes << 0, 0,
            0, 1,
            1, 1;
   // clang-format on
-  LogarithmicSOS1Test(3, codes);
+  LogarithmicSos1Test(3, codes);
 }
 
-GTEST_TEST(TestLogarithmicSOS1, Test4Lambda) {
+GTEST_TEST(TestLogarithmicSos1, Test4Lambda) {
   Eigen::Matrix<int, 4, 2> codes;
   // clang-format off
   codes << 0, 0,
@@ -159,7 +190,7 @@ GTEST_TEST(TestLogarithmicSOS1, Test4Lambda) {
            1, 0,
            1, 1;
   // clang-format on
-  LogarithmicSOS1Test(4, codes);
+  LogarithmicSos1Test(4, codes);
   // Test a different codes
   // clang-format off
   codes << 0, 0,
@@ -167,15 +198,15 @@ GTEST_TEST(TestLogarithmicSOS1, Test4Lambda) {
            1, 1,
            1, 0;
   // clang-format on
-  LogarithmicSOS1Test(4, codes);
+  LogarithmicSos1Test(4, codes);
 }
 
-GTEST_TEST(TestLogarithmicSOS1, Test5Lambda) {
+GTEST_TEST(TestLogarithmicSos1, Test5Lambda) {
   auto codes = math::CalculateReflectedGrayCodes<3>();
-  LogarithmicSOS1Test(5, codes.topRows<5>());
+  LogarithmicSos1Test(5, codes.topRows<5>());
 }
 
-GTEST_TEST(TestBilinearProductMcCormickEnvelopeSOS2, AddConstraint) {
+GTEST_TEST(TestBilinearProductMcCormickEnvelopeSos2, AddConstraint) {
   // Test if the return argument from AddBilinearProductMcCormickEnvelopeSos2
   // has the right type
   MathematicalProgram prog;
@@ -215,12 +246,13 @@ GTEST_TEST(TestBilinearProductMcCormickEnvelopeSOS2, AddConstraint) {
           MatrixDecisionVariable<Eigen::Dynamic, Eigen::Dynamic>>::value,
       "lambda's type is incorrect");
 }
-class BilinearProductMcCormickEnvelopeSOS2Test
+
+class BilinearProductMcCormickEnvelopeSos2Test
     : public ::testing::TestWithParam<std::tuple<int, int>> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BilinearProductMcCormickEnvelopeSOS2Test)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BilinearProductMcCormickEnvelopeSos2Test)
 
-  BilinearProductMcCormickEnvelopeSOS2Test()
+  BilinearProductMcCormickEnvelopeSos2Test()
       : prog_{},
         num_interval_x_{std::get<0>(GetParam())},
         num_interval_y_{std::get<1>(GetParam())},
@@ -246,7 +278,7 @@ class BilinearProductMcCormickEnvelopeSOS2Test
   const VectorXDecisionVariable By_;
 };
 
-TEST_P(BilinearProductMcCormickEnvelopeSOS2Test, LinearObjectiveTest) {
+TEST_P(BilinearProductMcCormickEnvelopeSos2Test, LinearObjectiveTest) {
   // Solve the program min aᵀ * [x;y;w]
   // s.t (x, y, w) is in the convex hull of the (x, y, x*y).
   // We fix x and y to each intervals.
@@ -329,7 +361,7 @@ TEST_P(BilinearProductMcCormickEnvelopeSOS2Test, LinearObjectiveTest) {
 }
 
 INSTANTIATE_TEST_CASE_P(
-    TestMixedIntegerUtil, BilinearProductMcCormickEnvelopeSOS2Test,
+    TestMixedIntegerUtil, BilinearProductMcCormickEnvelopeSos2Test,
     ::testing::Combine(::testing::ValuesIn(std::vector<int>{2, 3}),
                        ::testing::ValuesIn(std::vector<int>{2, 3})));
 }  // namespace
