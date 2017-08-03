@@ -146,6 +146,7 @@ py_test(
     name = "pydrake_common_test",
     size = "small",
     srcs = ["python/pydrake/test/testCommon.py"],
+    data = ["//drake/examples/atlas:models"],
     main = "python/pydrake/test/testCommon.py",
     deps = [":pydrake"],
 )

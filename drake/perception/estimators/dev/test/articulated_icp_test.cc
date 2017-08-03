@@ -1,21 +1,20 @@
 #include "drake/perception/estimators/dev/articulated_icp.h"
 
-#include <bot_core/pointcloud_t.hpp>
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
-#include "drake/lcm/drake_lcm.h"
-#include "drake/lcmtypes/drake/lcmt_viewer_draw.hpp"
 #include "drake/lcmtypes/drake/lcmt_viewer_load_robot.hpp"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/create_load_robot_message.h"
-#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
+#include "drake/multibody/rigid_body_plant/viewer_draw_translator.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
+#include "drake/perception/estimators/dev/test/test_util.h"
 #include "drake/solvers/mathematical_program.h"
 
 using std::make_shared;
+using std::pair;
 using std::shared_ptr;
 using std::string;
 using std::unique_ptr;
@@ -25,6 +24,8 @@ using Eigen::Matrix3Xd;
 using Eigen::MatrixXd;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
+using Eigen::Matrix3d;
+using Eigen::Isometry3d;
 
 namespace drake {
 namespace perception {
@@ -35,122 +36,21 @@ using solvers::MathematicalProgram;
 using systems::BasicVector;
 using systems::ViewerDrawTranslator;
 
-const double kPi = M_PI;
 const double kQDiffNormMin = 0.01;
 
-/**
- * Simple interval class.
- */
-struct Interval {
-  Interval() {}
-  Interval(double min_in, double max_in)
-      : min(min_in), max(max_in) {
-    DRAKE_DEMAND(min <= max);
-  }
-  double min{};
-  double max{};
-  inline bool IsInside(double i) const { return i >= min && i <= max; }
-  inline double width() const { return max - min; }
-};
-
-struct Bounds {
-  Bounds() {}
-  Bounds(Interval x_in, Interval y_in, Interval z_in)
-      : x(x_in), y(y_in), z(z_in) {}
-  Interval x;
-  Interval y;
-  Interval z;
-  inline bool IsInside(double xi, double yi, double zi) const {
-    return x.IsInside(xi) && y.IsInside(yi) && z.IsInside(zi);
-  }
-};
-
-struct IntervalIndex {
-  int index;
-  Interval interval;
-};
-
-struct PlaneIndices {
-  IntervalIndex a;  // first plane coordinate
-  IntervalIndex b;  // second plane coordinate
-  IntervalIndex d;  // depth plane coordinate
-};
-
-Matrix2Xd Generate2DPlane(double space, Interval x, Interval y) {
-  const int nc = floor(x.width() / space);
-  const int nr = floor(y.width() / space);
-  int i = 0;
-  Matrix2Xd out(2, nc * nr);
-  for (int c = 0; c < nc; c++) {
-    for (int r = 0; r < nr; r++) {
-      out.col(i) << c * space + x.min, r * space + y.min;
-      i++;
-    }
-  }
-  out.conservativeResize(Eigen::NoChange, i);
-  return out;
-}
-
-Matrix3Xd Generate2DPlane(double space, PlaneIndices is) {
-  // Generate single plane.
-  Matrix2Xd p2d = Generate2DPlane(space, is.a.interval, is.b.interval);
-  // Map to 3d for upper and lower bound
-  const int n = p2d.cols();
-  Matrix3Xd p3du(3, 2 * n);
-  auto map_into = [&](auto&& xpr, double value) {
-    xpr.row(is.a.index) = p2d.row(0);
-    xpr.row(is.b.index) = p2d.row(1);
-    xpr.row(is.d.index).setConstant(value);
-  };
-  map_into(p3du.leftCols(n), is.d.interval.min);
-  map_into(p3du.rightCols(n), is.d.interval.max);
-  return p3du;
-}
-
-Matrix3Xd GenerateBoxPointCloud(double space, Bounds box) {
-  IntervalIndex ix = {0, box.x};
-  IntervalIndex iy = {1, box.y};
-  IntervalIndex iz = {2, box.z};
-  // Generate for each face
-  auto xy_z = Generate2DPlane(space, {ix, iy, iz});
-  auto yz_x = Generate2DPlane(space, {iy, iz, ix});
-  auto xz_y = Generate2DPlane(space, {ix, iz, iy});
-  Matrix3Xd pts(3, xy_z.cols() + yz_x.cols() + xz_y.cols());
-  pts << xy_z, yz_x, xz_y;
-  return pts;
-}
-
-// TODO(eric.cousineau): Move to a proper LCM conversion type.
-void PointCloudToLcm(const Matrix3Xd& pts_W, bot_core::pointcloud_t* pmessage) {
-  bot_core::pointcloud_t& message = *pmessage;
-  message.points.clear();
-  message.frame_id = std::string(RigidBodyTreeConstants::kWorldName);
-  message.n_channels = 0;
-  message.n_points = pts_W.cols();
-  message.points.resize(message.n_points);
-  for (int i = 0; i < message.n_points; ++i) {
-    Eigen::Vector3f pt_W = pts_W.col(i).cast<float>();
-    message.points[i] = {pt_W(0), pt_W(1), pt_W(2)};
-  }
-  message.n_points = message.points.size();
-}
-
 // TODO(eric.cousineau): Move to proper utility.
-class IcpVisualizer {
+class ArticulatedIcpVisualizer : public IcpVisualizer {
  public:
-  explicit IcpVisualizer(const Scene* scene,
-                         bool auto_init = true)
+  explicit ArticulatedIcpVisualizer(const Scene* scene)
       : scene_(scene) {
-    if (auto_init) {
-      Init();
-    }
+    Init();
   }
   void Init() {
     const lcmt_viewer_load_robot load_msg(
         (multibody::CreateLoadRobotMessage<double>(scene_->tree())));
     vector<uint8_t> bytes(load_msg.getEncodedSize());
     load_msg.encode(bytes.data(), 0, bytes.size());
-    lcm_.Publish("DRAKE_VIEWER_LOAD_ROBOT", bytes.data(), bytes.size());
+    lcm().Publish("DRAKE_VIEWER_LOAD_ROBOT", bytes.data(), bytes.size());
   }
   void PublishScene(const SceneState& scene_state) {
     const ViewerDrawTranslator draw_msg_tx(scene_->tree());
@@ -164,18 +64,10 @@ class IcpVisualizer {
     xb.setZero();
     xb.head(num_q) = scene_state.q();
     draw_msg_tx.Serialize(0, x, &bytes);
-    lcm_.Publish("DRAKE_VIEWER_DRAW", bytes.data(), bytes.size());
-  }
-  void PublishCloud(const Matrix3Xd& points) {
-    bot_core::pointcloud_t pt_msg{};
-    PointCloudToLcm(points, &pt_msg);
-    vector<uint8_t> bytes(pt_msg.getEncodedSize());
-    pt_msg.encode(bytes.data(), 0, bytes.size());
-    lcm_.Publish("DRAKE_POINTCLOUD_RGBD", bytes.data(), bytes.size());
+    lcm().Publish("DRAKE_VIEWER_DRAW", bytes.data(), bytes.size());
   }
 
  private:
-  lcm::DrakeLcm lcm_;
   const Scene* scene_;
 };
 
@@ -184,7 +76,7 @@ class ArticulatedIcpTest : public ::testing::Test {
   void SetUp() override {
     // Create a formulation for a simple floating-base target
     string file_path = FindResourceOrThrow(
-        "drake/perception/estimators/dev/simple_cuboid.urdf");
+        "drake/perception/estimators/dev/test/simple_cuboid.urdf");
     // TODO(eric.cousineau): Use kQuaternion.
     auto floating_base_type = multibody::joints::kRollPitchYaw;
     shared_ptr<RigidBodyFramed> weld_frame{nullptr};
@@ -239,7 +131,7 @@ class ArticulatedIcpTest : public ::testing::Test {
     points_ = T_WB * GenerateBoxPointCloud(space, box);
 
     // Create visualizer.
-    vis_.reset(new IcpVisualizer(scene_.get()));
+    vis_.reset(new ArticulatedIcpVisualizer(scene_.get()));
   }
 
  protected:
@@ -251,7 +143,7 @@ class ArticulatedIcpTest : public ::testing::Test {
   unique_ptr<Scene> scene_;
   ArticulatedBodyInfluences influences_;
   Matrix3Xd points_;
-  unique_ptr<IcpVisualizer> vis_;
+  unique_ptr<ArticulatedIcpVisualizer> vis_;
 };
 
 TEST_F(ArticulatedIcpTest, PositiveReturnsZeroCost) {
@@ -275,9 +167,6 @@ TEST_F(ArticulatedIcpTest, PositiveReturnsZeroCost) {
   ComputeCost(scene_state, correspondence, &lin_cost);
   EXPECT_EQ(cost.cost(), lin_cost.cost());
 }
-
-// TODO(eric.cousineau): Add SVD computation for known correspondences.
-// Add unittest comparing ICP for a single body using SVD.
 
 TEST_F(ArticulatedIcpTest, PositiveReturnsIncreasingCost) {
   // Start box at the given state, ensure that the cost increases as we

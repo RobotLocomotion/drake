@@ -81,23 +81,10 @@ build:unsupported_crosstool --crosstool_top=//external:cc_toolchain
 # TODO(jwnimmer-tri) Remove this once git submodules are no longer used.
 build --deleted_packages=externals/protobuf,externals/protobuf/util/python,externals/gflags
 
-### Cpplint. ###
-# By default, cpplint tests are run as part of `bazel test` alongside all of
-# the other compilation and test targets.  This is a convenience shortcut to
-# only do the cpplint testing and nothing else.
-test:cpplint --build_tests_only
-test:cpplint --test_tag_filters=cpplint
-
-### Pycodestyle. ###
-# Code style compliance checking for python, analogous to cpplint above.
-test:pycodestyle --build_tests_only
-test:pycodestyle --test_tag_filters=pycodestyle
-
 ### Lint. ###
-# Code style compliance for C++ and Python, merging both cpplint and
-# pycodestyle.
+# Run the tests for code style compliance, but not any functional (unit) tests.
 test:lint --build_tests_only
-test:lint --test_tag_filters=cpplint,pycodestyle
+test:lint --test_tag_filters=lint
 
 ### Debug symbols on OS X. ###
 # See https://github.com/bazelbuild/bazel/issues/2537
