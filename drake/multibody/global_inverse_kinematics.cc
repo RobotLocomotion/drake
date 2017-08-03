@@ -587,12 +587,6 @@ void GlobalInverseKinematics::AddJointLimitConstraint(
                     R_joint_beta.trace()};
                 AddLinearConstraint(R_joint_beta_trace >=
                                         1 + 2 * joint_bound_cos);
-                for (int i = 0; i < 3; ++i) {
-                  for (int j = 0; j < 3; ++j) {
-                    AddLinearConstraint(R_joint_beta(i, j) >= -1 &&
-                                        R_joint_beta(i, j) <= 1);
-                  }
-                }
               }
             }
           } else {
