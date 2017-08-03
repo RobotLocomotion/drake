@@ -318,12 +318,13 @@ class SpatialInertia {
     return SpatialInertia(*this).ShiftInPlace(p_PQ_E);
   }
 
-  /// Multiplies `this` spatial inertia `M_Bo_E` of a body B about it's frame
+  /// Multiplies `this` spatial inertia `M_Bo_E` of a body B about its frame
   /// origin `Bo` by the spatial acceleration of the body frame B in a frame W.
   /// Mathematically: <pre>
   ///   F_Bo_E = M_Bo_E * A_WB_E
   /// </pre>
-  /// or, in terms of its rotational and translational components: <pre>
+  /// or, in terms of its rotational and translational components (see this
+  /// class's documentation for the block form of a rotational inertia): <pre>
   ///   t_Bo = I_Bo * alpha_WB + m * p_BoBcm x a_WBo
   ///   f_Bo = -m * p_BoBcm x alpha_WB + m * a_WBo
   /// </pre>

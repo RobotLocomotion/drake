@@ -609,13 +609,16 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // force F_CMc on body C about Mc is already computed in F_BMo_W_array_ptr.
     //
     // The spatial force through body B's inboard mobilizer is obtained from a
-    // force balance:
-    //   Ftot_BBo = M_Bo * A_WB + b_Bo                                      (1)
-    // where b_Bo contains the velocity dependent gyroscopic terms.
+    // force balance (essentially the F = m * a for rigid bodies, see
+    // [Jain 2010, Eq. 2.26, p. 27] for a derivation):
+    //   Ftot_BBo_W = M_Bo_W * A_WB + b_Bo_W                                (1)
+    // where b_Bo_W contains the velocity dependent gyroscopic terms and
+    // quantities are expressed in the world frame W (though the expressed-in
+    // frame is not needed in a coordinate-free form.)
     //
     // The total spatial force on body B is the combined effect of external
     // spatial forces and spatial forces induced by its inboard and outboard
-    // mobilizers. About its mobilized frame M:
+    // mobilizers. About its mobilized frame M, in coordinate-free form:
     //   Ftot_BMo = Fext_Mo + F_BMo - Σᵢ(F_CiMo)                         (2)
     // where F_CiMo is the spatial force on the i-th child body Ci due to its
     // inboard mobilizer which, by action/reaction, applies to body B as
@@ -636,8 +639,8 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     const Body<T>& body_B = get_body();
     const Frame<T>& frame_M = get_outboard_frame();
     DRAKE_DEMAND(frame_M.get_body().get_index() == body_B.get_index());
-    const Vector3<T>& p_BoMo_B =
-        frame_M.CalcPoseInBodyFrame(context).translation();
+    const Isometry3<T> X_BM = frame_M.CalcPoseInBodyFrame(context);
+    const Vector3<T>& p_BoMo_B = X_BM.translation();
     const Matrix3<T>& R_WB = get_X_WB(pc).rotation();
     const Vector3<T> p_BoMo_W = R_WB * p_BoMo_B;
 
@@ -646,18 +649,20 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     for (const BodyNode<T>* child_node : children_) {
       BodyNodeIndex child_node_index = child_node->get_index();
 
-      // p_BoCo_W = R_WB * p_BCo_W:
-      const Vector3<T> p_BoCo_W =
-          R_WB * child_node->get_X_PB(pc).translation();
+      // Pose of child body C in this node's body frame B.
+      const Isometry3<T>& X_BC = child_node->get_X_PB(pc);
+      // p_BoCo_W = R_WB * p_BoCo_B:
+      const Vector3<T> p_BoCo_W = R_WB * X_BC.translation();
 
       // p_CoMc_W:
       const Frame<T>& frame_Mc = child_node->get_outboard_frame();
       const Matrix3<T>& R_WC = child_node->get_X_WB(pc).rotation();
-      const Vector3<T>& p_CoMc_W =
-          R_WC * frame_Mc.CalcPoseInBodyFrame(context).translation();
+      const Isometry3<T> X_CMc = frame_Mc.CalcPoseInBodyFrame(context);
+      const Vector3<T>& p_CoMc_W = R_WC * X_CMc.translation();
 
       // Shift position vector from child C outboard mobilizer frame Mc to body
       // B outboard mobilizer Mc. p_MoMc_W:
+      // Since p_BoMo = p_BoCo + p_CoMc + p_McMo , we have:
       const Vector3<T> p_McMo_W = p_BoMo_W - p_BoCo_W - p_CoMc_W;
 
       // Spatial force on the child body C about the origin Mc of the outboard
@@ -1006,12 +1011,12 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
       const VelocityKinematicsCache<T>& vc,
       const SpatialAcceleration<T>& A_WB, SpatialForce<T>* Ftot_BBo_W_ptr)
   const {
-    DRAKE_ASSERT(Ftot_BBo_W_ptr != nullptr);
+    DRAKE_DEMAND(Ftot_BBo_W_ptr != nullptr);
     // TODO(amcastro-tri): add argument for flexible body generalized
     // accelerations and generalized forces.
 
     // Output spatial force applied on Body B, about Bo, measured in W.
-    SpatialForce<T>& Ftot_BBo_W = * Ftot_BBo_W_ptr;
+    SpatialForce<T>& Ftot_BBo_W = *Ftot_BBo_W_ptr;
 
     // Body for this node.
     const Body<T>& body_B = get_body();

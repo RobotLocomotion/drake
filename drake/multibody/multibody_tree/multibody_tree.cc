@@ -269,7 +269,7 @@ void MultibodyTree<T>::CalcInverseDynamics(
   CalcSpatialAccelerationsFromVdot(context, pc, vc, known_vdot, A_WB_array);
 
   // Performs a tip-to-base recursion computing the total spatial force F_BMo_W
-  // acting on body B, about pint Mo, expressed in the world frame W.
+  // acting on body B, about point Mo, expressed in the world frame W.
   // This includes the world (depth = 0) so that F_BMo_W_array[world_index()]
   // contains the total force of the bodies connected to the world by a
   // mobilizer.
