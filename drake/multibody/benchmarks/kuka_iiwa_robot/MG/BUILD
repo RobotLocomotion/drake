@@ -4,8 +4,11 @@
 load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
 load("//tools:lint.bzl", "add_lint_tests")
 
-package(default_visibility = ["//visibility:public"])
-#package(default_visibility = [":__subpackages__"])
+package(
+    default_visibility = [
+        "//drake/multibody/benchmarks/kuka_iiwa_robot:__subpackages__",
+    ],
+)
 
 drake_cc_library(
     name = "MG_kuka_robot_lib",
