@@ -219,28 +219,28 @@ GTEST_TEST(TestBilinearProductMcCormickEnvelopeSos2, AddConstraint) {
   Eigen::VectorXd phi_x_dynamic = Eigen::VectorXd::LinSpaced(3, 0, 2);
   const Eigen::Vector4d phi_y_static = Eigen::Vector4d::LinSpaced(0, 3);
   Eigen::VectorXd phi_y_dynamic = Eigen::VectorXd::LinSpaced(4, 0, 3);
-  auto Bx = prog.NewBinaryVariables<1>();
-  auto By = prog.NewBinaryVariables<2>();
-  auto lambda1 = AddBilinearProductMcCormickEnvelopeLogarithmicSos2(
-      &prog, x, y, w, phi_x_static, phi_y_static, Bx, By);
+  auto Bx = prog.NewBinaryVariables<1>().cast<symbolic::Expression>();
+  auto By = prog.NewBinaryVariables<2>().cast<symbolic::Expression>();
+  auto lambda1 = AddBilinearProductMcCormickEnvelopeSos2(
+      &prog, x, y, w, phi_x_static, phi_y_static, Bx, By, true);
   static_assert(
       std::is_same<decltype(lambda1), MatrixDecisionVariable<3, 4>>::value,
       "lambda should be a static matrix");
 
-  auto lambda2 = AddBilinearProductMcCormickEnvelopeLogarithmicSos2(
-      &prog, x, y, w, phi_x_dynamic, phi_y_static, Bx, By);
+  auto lambda2 = AddBilinearProductMcCormickEnvelopeSos2(
+      &prog, x, y, w, phi_x_dynamic, phi_y_static, Bx, By, true);
   static_assert(std::is_same<decltype(lambda2),
                              MatrixDecisionVariable<Eigen::Dynamic, 4>>::value,
                 "lambda's type is incorrect");
 
-  auto lambda3 = AddBilinearProductMcCormickEnvelopeLogarithmicSos2(
-      &prog, x, y, w, phi_x_static, phi_y_dynamic, Bx, By);
+  auto lambda3 = AddBilinearProductMcCormickEnvelopeSos2(
+      &prog, x, y, w, phi_x_static, phi_y_dynamic, Bx, By, true);
   static_assert(std::is_same<decltype(lambda3),
                              MatrixDecisionVariable<3, Eigen::Dynamic>>::value,
                 "lambda's type is incorrect");
 
-  auto lambda4 = AddBilinearProductMcCormickEnvelopeLogarithmicSos2(
-      &prog, x, y, w, phi_x_dynamic, phi_y_dynamic, Bx, By);
+  auto lambda4 = AddBilinearProductMcCormickEnvelopeSos2(
+      &prog, x, y, w, phi_x_dynamic, phi_y_dynamic, Bx, By, true);
   static_assert(
       std::is_same<
           decltype(lambda4),
@@ -292,13 +292,9 @@ TEST_P(BilinearProductMcCormickEnvelopeSos2Test, LinearObjectiveTest) {
   // We fix x and y to each intervals.
   // We expect the optimum obtained at one of the vertices of the tetrahedron.
   MatrixXDecisionVariable lambda;
-  if (logarithmic_binning_) {
-    lambda = AddBilinearProductMcCormickEnvelopeLogarithmicSos2(
-        &prog_, x_, y_, w_, phi_x_, phi_y_, Bx_, By_);
-  } else {
-    lambda = AddBilinearProductMcCormickEnvelopeSos2(&prog_, x_, y_, w_, phi_x_,
-                                                     phi_y_, Bx_, By_);
-  }
+  lambda = AddBilinearProductMcCormickEnvelopeSos2(
+      &prog_, x_, y_, w_, phi_x_, phi_y_, Bx_.cast<symbolic::Expression>(),
+      By_.cast<symbolic::Expression>(), logarithmic_binning_);
   const Eigen::MatrixXi gray_codes_x =
       math::CalculateReflectedGrayCodes(Bx_.rows());
   const Eigen::MatrixXi gray_codes_y =
