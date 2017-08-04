@@ -8,6 +8,8 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include "drake/common/eigen_autodiff_types.h"
+
 using std::string;
 
 namespace drake {
@@ -109,13 +111,23 @@ GTEST_TEST(NiceTypeNameTest, StdClasses) {
 }
 
 GTEST_TEST(NiceTypeNameTest, Eigen) {
-  EXPECT_EQ(NiceTypeName::Get<Eigen::Matrix3f>(),
-            "Eigen::Matrix<float,3,3,0,3,3>");
+  EXPECT_EQ(NiceTypeName::Get<Eigen::Matrix2d>(), "Eigen::Matrix2d");
+  EXPECT_EQ(NiceTypeName::Get<Eigen::Matrix3i>(), "Eigen::Matrix3i");
+  EXPECT_EQ(NiceTypeName::Get<Eigen::Matrix3f>(), "Eigen::Matrix3f");
+  EXPECT_EQ(NiceTypeName::Get<Eigen::Matrix3d>(), "Eigen::Matrix3d");
+  EXPECT_EQ(NiceTypeName::Get<Eigen::MatrixXd>(), "Eigen::MatrixXd");
+
+  EXPECT_EQ(NiceTypeName::Get<Eigen::Vector2d>(), "Eigen::Vector2d");
+  EXPECT_EQ(NiceTypeName::Get<Eigen::Vector3i>(), "Eigen::Vector3i");
+  EXPECT_EQ(NiceTypeName::Get<Eigen::Vector3f>(), "Eigen::Vector3f");
+  EXPECT_EQ(NiceTypeName::Get<Eigen::Vector3d>(), "Eigen::Vector3d");
+  EXPECT_EQ(NiceTypeName::Get<Eigen::VectorXd>(), "Eigen::VectorXd");
+
+  EXPECT_EQ(NiceTypeName::Get<AutoDiffXd>(), "drake::AutoDiffXd");
 
   using PairType = std::pair<Eigen::Vector2i, Eigen::Vector3d>;
   EXPECT_EQ(NiceTypeName::Get<PairType>(),
-            "std::pair<Eigen::Matrix<int,2,1,0,2,1>,"
-            "Eigen::Matrix<double,3,1,0,3,1>>");
+            "std::pair<Eigen::Vector2i,Eigen::Vector3d>");
 }
 
 GTEST_TEST(NiceTypeNameTest, Enum) {
