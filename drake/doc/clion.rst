@@ -340,13 +340,16 @@ Leave the checkbox options in their default state.
 
 .. _integrating_lint_tools_with_clion:
 
-Delinting files
+"Linting" files
 ---------------
 
-You can apply Drake's delinting tools in CLion to determine if there are coding
-style guide issues. We'll define two tools:
-- General delinting (via cpplint).
-- Detecting out-of-order #includes.
+"Linting" refers to using tools to find aspects of code which don't conform
+to specified coding practices. You can apply Drake's linting tools in CLion to
+find such issues. We'll define two tools:
+- General linting (via cpplint) which captures most of the Drake style guide.
+- Drake extended linting which captures aspects of the Drake style guide _not_
+  captured by the general linting tool. This includes detecting out-of-order
+  ``#include`` directives.
 
 These tools produce reports. In some cases, the reports can be automatically
 converted into clickable links so that you can click on a messsage and be taken
@@ -361,8 +364,8 @@ You can also set the general coding style for CLion through the following steps
 3. Go to ``File`` > ``Settings`` > ``Editor`` > ``Code Style`` > ``C/C++``
 4. On the right panel, choose ``Set from`` > ``Predefined Style`` > ``Google``
 
-Delint selected file for google style guide
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Lint selected file for google style guide
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Open the ``Edit Tool`` for external tools as outlined above and enter the
 following values for the fields:
@@ -388,12 +391,13 @@ To configure the clickable links:
 4. Click ``OK`` on the ``Edit filter`` dialog.
 5. Click ``OK`` on the ``Output Filters`` dialog.
 
-Delint selected file for Drake style addenda
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Lint selected file for Drake style addenda
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This tool is a supplement to the google style cpplint. It tests for additional
-style requirements. The most important for users is that this will test that
-the order of the ``#include`` statements is correct.
+style requirements which are otherwise missed by the general tool. The primary
+reason to run this is to confirm that the order of the ``#include`` statements
+is correct.
 
 Open the ``Edit Tool`` for external tools as outlined above and enter the
 following values for the fields:
