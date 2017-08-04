@@ -84,22 +84,18 @@ template <typename T>
 GeometryId GeometrySystem<T>::RegisterGeometry(
     SourceId source_id, FrameId frame_id,
     std::unique_ptr<GeometryInstance<T>> geometry) {
-  // TODO(SeanCurtis-TRI): Replace dummy geometry id with actual registration.
-  // and use all parameters.
-  unused(source_id, frame_id, geometry);
   THROW_IF_CONTEXT_ALLOCATED
-  return GeometryId::get_new_id();
+  return initial_state_->RegisterGeometry(source_id, frame_id,
+                                          std::move(geometry));
 }
 
 template <typename T>
 GeometryId GeometrySystem<T>::RegisterGeometry(
     SourceId source_id, GeometryId geometry_id,
     std::unique_ptr<GeometryInstance<T>> geometry) {
-  // TODO(SeanCurtis-TRI): Replace dummy geometry id with actual registration.
-  // and use all parameters.
-  unused(source_id, geometry_id, geometry);
   THROW_IF_CONTEXT_ALLOCATED
-  return GeometryId::get_new_id();
+  return initial_state_->RegisterGeometryWithParent(source_id, geometry_id,
+                                                    std::move(geometry));
 }
 
 template <typename T>
@@ -128,9 +124,8 @@ void GeometrySystem<T>::RemoveFrame(SourceId source_id, FrameId frame_id) {
 template <typename T>
 void GeometrySystem<T>::RemoveGeometry(SourceId source_id,
                                        GeometryId geometry_id) {
-  // TODO(SeanCurtis-TRI): Actually do the work.
-  unused(source_id, geometry_id);
   THROW_IF_CONTEXT_ALLOCATED
+  initial_state_->RemoveGeometry(source_id, geometry_id);
 }
 
 template <typename T>
