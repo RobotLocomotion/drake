@@ -49,7 +49,7 @@ SolutionResult SolveUnconstrainedQP(const Eigen::Ref<const Eigen::MatrixXd>& G,
     }
     // G is positive semidefinite.
     *x = ldlt.solve(-c);
-    // The precision 1E-10 here is random.
+
     if (!(G * (*x)).isApprox(-c, feasibility_tol)) {
       *x = Eigen::VectorXd::Constant(c.rows(), NAN);
       solver_result = SolutionResult::kUnbounded;
