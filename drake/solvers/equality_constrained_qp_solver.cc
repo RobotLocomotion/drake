@@ -176,6 +176,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
       const Eigen::VectorXd x0 = lu_A.solve(b);
       if (!b.isApprox(A * x0)) {
         solver_result = SolutionResult::kInfeasibleConstraints;
+        x = x0;
       } else {
         const Eigen::MatrixXd N = lu_A.kernel();
         if (N.cols() == 0) {
