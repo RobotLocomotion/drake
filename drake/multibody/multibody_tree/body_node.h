@@ -548,8 +548,8 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   ///   the origin of its inboard mobilizer `Mo`, expressed in the world frame
   ///   W. It must be of size equal to the number of bodies in the MultibodyTree
   ///   and ordered by BodyNodeIndex. The calling MultibodyTree method must
-  ///   guarantee these conditions are satisfied. This method will abort in
-  ///   Debug builds if the the pointer is null.
+  ///   guarantee these conditions are satisfied. This method will abort if the
+  ///   the pointer is null.
   /// @param[out] tau_array
   ///   A non-null pointer to the output vector of generalized forces that would
   ///   result in body B having spatial acceleration `A_WB`.
@@ -578,13 +578,6 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
       VectorX<T>* tau_array) const {
     DRAKE_DEMAND(F_BMo_W_array_ptr != nullptr);
     std::vector<SpatialForce<T>>& F_BMo_W_array = *F_BMo_W_array_ptr;
-
-    // Input spatial acceleration for this node's body B.
-    const SpatialAcceleration<T>& A_WB = A_WB_array[this->get_index()];
-
-    // Output spatial force that would need to be exerted by this node's
-    // mobilizer in order to attain the prescribed acceleration A_WB.
-    SpatialForce<T>& F_BMo_W = F_BMo_W_array[this->get_index()];
 
     // As a guideline for developers, a summary of the computations performed in
     // this method is provided:
@@ -631,12 +624,21 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // where the spatial force F_BMo must be re-expressed in the inboard frame F
     // before the projection can be performed.
 
+    // This node's body B.
+    const Body<T>& body_B = get_body();
+
+    // Input spatial acceleration for this node's body B.
+    const SpatialAcceleration<T>& A_WB = get_A_WB_from_array(A_WB_array);
+
+    // Output spatial force that would need to be exerted by this node's
+    // mobilizer in order to attain the prescribed acceleration A_WB.
+    SpatialForce<T>& F_BMo_W = F_BMo_W_array[this->get_index()];
+
     // Total spatial force on body B producing acceleration A_WB.
     SpatialForce<T> Ftot_BBo_W;
     CalcBodyInverseDynamics(context, pc, vc, A_WB, &Ftot_BBo_W);
 
     // Compute shift vector from Bo to Mo expressed in the world frame W.
-    const Body<T>& body_B = get_body();
     const Frame<T>& frame_M = get_outboard_frame();
     DRAKE_DEMAND(frame_M.get_body().get_index() == body_B.get_index());
     const Isometry3<T> X_BM = frame_M.CalcPoseInBodyFrame(context);
@@ -687,7 +689,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     const SpatialForce<T> F_BMo_F = R_WF * F_BMo_W;
 
     // Generalized velocities and forces use the same indexing.
-    auto tau = get_mutable_velocities_from_array(tau_array);
+    auto tau = get_mutable_forces_from_array(tau_array);
 
     // The generalized forces on the mobilizer correspond to the active
     // components of the spatial force performing work. Therefore we need to
@@ -872,6 +874,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   // Mutable version of get_A_WB_from_array().
   SpatialAcceleration<T>& get_mutable_A_WB_from_array(
       std::vector<SpatialAcceleration<T>>* A_WB_array) const {
+    DRAKE_ASSERT(A_WB_array != nullptr);
     return (*A_WB_array)[topology_.index];
   }
 
@@ -886,6 +889,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   // Mutable version of get_A_WP_from_array().
   SpatialAcceleration<T>& get_mutable_A_WP_from_array(
       std::vector<SpatialAcceleration<T>>* A_WB_array) const {
+    DRAKE_ASSERT(A_WB_array != nullptr);
     return (*A_WB_array)[topology_.parent_body_node];
   }
 
@@ -903,8 +907,24 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   // Mutable version of get_velocities_from_array()
   Eigen::VectorBlock<VectorX<T>> get_mutable_velocities_from_array(
       VectorX<T>* v) const {
+    DRAKE_ASSERT(v != nullptr);
     return v->segment(topology_.mobilizer_velocities_start_in_v,
                       topology_.num_mobilizer_velocities);
+  }
+
+  // Helper to get an Eigen expression of the vector of generalized forces
+  // from a vector of generalized forces for the entire parent multibody
+  // tree.
+  Eigen::VectorBlock<const VectorX<T>> get_forces_from_array(
+      const VectorX<T>& tau) const {
+    return get_velocities_from_array(tau);
+  }
+
+  // Mutable version of get_forces_from_array()
+  Eigen::VectorBlock<VectorX<T>> get_mutable_forces_from_array(
+      VectorX<T>* tau) const {
+    DRAKE_ASSERT(tau != nullptr);
+    return get_mutable_velocities_from_array(tau);
   }
 
   // Helper method to be called within a base-to-tip recursion that computes

@@ -151,6 +151,28 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   virtual SpatialInertia<T> CalcSpatialInertiaInBodyFrame(
       const MultibodyTreeContext<T>& context) const = 0;
 
+  /// Return a constant reference for the acceleration of `this` body from an
+  /// array of body accelerations containing all the body accelerations in the
+  /// MultibodyTree model to which `this` body belongs.
+  /// The returned acceleration has the same measured-in frame M and
+  /// expressed-in frame E as the spatial accelerations in the input array
+  /// `A_MB_E_array`.
+  /// @throws std::out_of_range if the input array does not have the proper size
+  /// for the MultibodyTree model to which `this` body belongs.
+  const SpatialAcceleration<T>& get_from_spatial_acceleration_array(
+      const std::vector<SpatialAcceleration<T>>& A_MB_E_array) const {
+    return A_MB_E_array.at(topology_.body_node);
+  }
+
+  /// Mutable version of get_from_spatial_acceleration_array().
+  /// Aborts if A_MB_E_array is the nullptr.
+  void set_spatial_acceleration_array(
+      std::vector<SpatialAcceleration<T>>* A_MB_E_array,
+      const SpatialAcceleration<T>& A_MB_E) const {
+    DRAKE_DEMAND(A_MB_E_array != nullptr);
+    A_MB_E_array->at(topology_.body_node) = A_MB_E;
+  }
+
  private:
   // Only friends of BodyAttorney (i.e. MultibodyTree) have access to a selected
   // set of private Body methods.

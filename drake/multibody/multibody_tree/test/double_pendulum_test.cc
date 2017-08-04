@@ -579,6 +579,26 @@ class PendulumKinematicTests : public PendulumTests {
                                 &A_WB_array, &F_BMo_W_array, &tau);
 
     // ======================================================================
+    // Compute acceleration kinematics.
+    AccelerationKinematicsCache<double> ac(model_->get_topology());
+    model_->CalcAccelerationKinematicsCache(*context_, pc, vc, vdot, &ac);
+
+    // From acceleration kinematics.
+    const SpatialAcceleration<double>& A_WU_ac =
+        get_body_spatial_acceleration_in_world(ac, *upper_link_);
+    const SpatialAcceleration<double>& A_WL_ac =
+        get_body_spatial_acceleration_in_world(ac, *lower_link_);
+    // From inverse dynamics.
+    const SpatialAcceleration<double>& A_WU_id =
+        upper_link_->get_from_spatial_acceleration_array(A_WB_array);
+    const SpatialAcceleration<double>& A_WL_id =
+        lower_link_->get_from_spatial_acceleration_array(A_WB_array);
+    // Unit test to mostly verify correctness of
+    // Body::get_from_spatial_acceleration_array().
+    EXPECT_TRUE(A_WU_id.IsApprox(A_WU_ac, kTolerance));
+    EXPECT_TRUE(A_WL_id.IsApprox(A_WL_ac, kTolerance));
+
+    // ======================================================================
     // Compute expected values using the acrobot benchmark.
     Vector2d C_expected = acrobot_benchmark_.CalcCoriolisVector(
         shoulder_angle, elbow_angle, shoulder_angle_rate, elbow_angle_rate);
@@ -741,7 +761,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
       VectorX<double> vdot(2);  // Vector of generalized accelerations.
       vdot = VectorX<double>::Zero(2);
 
-      model_->CalcAccelerationKinematicsCache(*mbt_context_, pc, vc, vdot, &ac);
+      model_->CalcAccelerationKinematicsCache(*context_, pc, vc, vdot, &ac);
 
       // Retrieve body spatial accelerations from acceleration kinematics cache.
       SpatialAcceleration<double> A_WU =
@@ -766,7 +786,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
       vdot(0) = -1.0;  // Shoulder: rad/sec^2
       vdot(1) =  2.0;  // Elbow: rad/sec^2
 
-      model_->CalcAccelerationKinematicsCache(*mbt_context_, pc, vc, vdot, &ac);
+      model_->CalcAccelerationKinematicsCache(*context_, pc, vc, vdot, &ac);
 
       // Retrieve body spatial accelerations from acceleration kinematics cache.
       A_WU = get_body_spatial_acceleration_in_world(ac, *upper_link_);

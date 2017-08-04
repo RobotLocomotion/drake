@@ -605,10 +605,10 @@ class MultibodyTree {
   /// implements an `O(n)` Newton-Euler recursive algorithm, where n is the
   /// number of bodies in the %MultibodyTree. The explicit formation of the
   /// mass matrix `H(q)` would require the calculation of `O(n²)` entries while
-  /// explicitly forming the product `C(q, v) * v` could require `O(n³)`
-  /// operations. The recursive Newton-Euler algorithm is the most efficient
-  /// currently known general method for solving inverse dynamics
-  /// [Featherstone 2008].
+  /// explicitly forming the product `C(q, v) * v` could require up to `O(n³)`
+  /// operations, depending on the implementation. The recursive Newton-Euler
+  /// algorithm is the most efficient currently known general method for solving
+  /// inverse dynamics [Featherstone 2008].
   ///
   /// @param[in] context
   ///   The context containing the state of the %MultibodyTree model.
@@ -625,13 +625,21 @@ class MultibodyTree {
   ///   A pointer to a valid, non nullptr, vector of spatial accelerations
   ///   containing the spatial acceleration `A_WB` for each body. It must be of
   ///   size equal to the number of bodies in the MultibodyTree and ordered by
-  ///   BodyNodeIndex.
-  /// @param[out] F_BMo_W_array_ptr
+  ///   BodyNodeIndex. To ensure the proper ordering use
+  ///   Body::get_from_spatial_acceleration_array() and
+  ///   Body::set_spatial_acceleration_array() to read and write into this
+  ///   array. This method will abort if the the pointer is null or if
+  ///   `A_WB_array` is not of size `get_num_bodies()`.
+  /// @param[out] F_BMo_W_array
   ///   A pointer to a valid, non nullptr, vector of spatial forces
   ///   containing, for each body B, the spatial force `F_BMo_W` on body B about
   ///   the origin of its inboard mobilizer `Mo`, expressed in the world frame
   ///   W. It must be of size equal to the number of bodies in the MultibodyTree
-  ///   and ordered by BodyNodeIndex.
+  ///   and ordered by BodyNodeIndex.  This method will abort if the the pointer
+  ///   is null and `F_BMo_W_array` is not of size `get_num_bodies()`.
+  ///
+  /// @note There is no mechanism to assert that either `A_WB_array` nor
+  ///   `F_BMo_W_array` are ordered by BodyNodeIndex.
   ///
   /// @pre The position kinematics `pc` must have been previously updated with a
   /// call to CalcPositionKinematicsCache().
