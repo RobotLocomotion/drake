@@ -39,6 +39,16 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "continuous_lyapunov_equation",
+    srcs = ["continuous_lyapunov_equation.cc"],
+    hdrs = ["continuous_lyapunov_equation.h"],
+    deps = [
+        "//drake/common",
+        "//drake/common:is_approx_equal_abstol",
+    ],
+)
+
 # TODO(jwnimmer-tri) Improved name for this library, "pose_representations"?
 drake_cc_library(
     name = "geometric_transform",
@@ -174,6 +184,14 @@ drake_cc_googletest(
     deps = [
         ":autodiff",
         ":gradient",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "continuous_lyapunov_equation_test",
+    deps = [
+        ":continuous_lyapunov_equation",
         "//drake/common:eigen_matrix_compare",
     ],
 )
