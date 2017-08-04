@@ -346,6 +346,7 @@ Leave the checkbox options in their default state.
 "Linting" refers to using tools to find aspects of code which don't conform
 to specified coding practices. You can apply Drake's linting tools in CLion to
 find such issues. We'll define two tools:
+
 - General linting (via cpplint) which captures most of the Drake style guide.
 - Drake extended linting which captures aspects of the Drake style guide _not_
   captured by the general linting tool. This includes detecting out-of-order
