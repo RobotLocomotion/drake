@@ -33,7 +33,7 @@ void CompareEndEffectorPositionVelocityVsExpectedSolution(
     const Eigen::Vector3d& v_NGo_N_expected,
     const Eigen::Vector3d& alpha_NG_N_expected,
     const Eigen::Vector3d& a_NGo_N_expected) {
-  MGKukaIIwaRobot<double> MG_kuka_robot;
+  MG::MGKukaIIwaRobot<double> MG_kuka_robot;
   // R_NG       | Rotation matrix relating Nx, Ny, Nz to Gx, Gy, Gz.
   // p_NoGo_N   | Go's position from No, expressed in N.
   // w_NG_N     | G's angular velocity in N, expressed in N.

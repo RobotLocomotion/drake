@@ -6,15 +6,16 @@
 namespace drake {
 namespace multibody {
 namespace benchmarks {
+namespace kuka_iiwa_robot {
 namespace {
 
 using Eigen::Vector3d;
 using Eigen::Matrix3d;
 
 // Compare Drake's MultibodyTree kinematics with MotionGenesis solution.
-void TestEndEffectorKinematics(const Eigen::Ref<const VectorX<double>>& q,
-                               const Eigen::Ref<const VectorX<double>>& qDt,
-                               const Eigen::Ref<const VectorX<double>>& qDDt) {
+void TestEndEffectorKinematics(const Eigen::Ref<const VectorX<double>> &q,
+                               const Eigen::Ref<const VectorX<double>> &qDt,
+                               const Eigen::Ref<const VectorX<double>> &qDDt) {
   // Get Drake's end-effector information, including:
   // R_NG       | Rotation matrix relating Nx, Ny, Nz to Gx, Gy, Gz.
   // p_NoGo_N   | Go's position from No, expressed in N.
@@ -22,14 +23,14 @@ void TestEndEffectorKinematics(const Eigen::Ref<const VectorX<double>>& q,
   // v_NGo_N    | Go's velocity in N, expressed in N.
   // alpha_NG_N | G's angular acceleration in N, expressed in N.
   // a_NGo_N    | Go's acceleration in N, expressed in N.
-  kuka_iiwa_robot::DrakeKukaIIwaRobot drake_kuka_robot;
+  DrakeKukaIIwaRobot drake_kuka_robot;
   Matrix3d R_NG;
   Vector3d p_NoGo_N, w_NG_N, v_NGo_N, alpha_NG_N, a_NGo_N;
   std::tie(R_NG, p_NoGo_N, w_NG_N, v_NGo_N, alpha_NG_N, a_NGo_N) =
       drake_kuka_robot.CalcEndEffectorKinematics(q, qDt, qDDt);
 
   // Get corresponding MotionGenesis information.
-  kuka_iiwa_robot::MGKukaIIwaRobot<double> MG_kuka_robot;
+  MG::MGKukaIIwaRobot<double> MG_kuka_robot;
   Matrix3d R_NG_true;
   Vector3d p_NoGo_N_true, w_NG_N_true, v_NGo_N_true;
   Vector3d alpha_NG_N_true, a_NGo_N_true;
@@ -96,6 +97,7 @@ GTEST_TEST(KukaIIwaRobotKinematics, KinematicsTestA) {
 }
 
 }  // namespace
+}  // namespace kuka_iiwa_robot
 }  // namespace benchmarks
 }  // namespace multibody
 }  // namespace drake

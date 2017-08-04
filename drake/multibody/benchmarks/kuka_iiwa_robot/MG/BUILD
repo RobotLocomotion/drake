@@ -28,4 +28,14 @@ drake_cc_library(
     ],
 )
 
+# === test/ ===
+
+drake_cc_googletest(
+    name = "MG_kuka_iiwa_robot_test",
+    size = "small",
+    deps = [
+        ":MG_kuka_robot_lib",
+    ],
+)
+
 add_lint_tests()
