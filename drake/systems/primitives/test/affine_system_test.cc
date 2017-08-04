@@ -1,6 +1,7 @@
 #include "drake/systems/primitives/affine_system.h"
 
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/systems/framework/test_utilities/scalar_conversion.h"
 #include "drake/systems/primitives/test/affine_linear_test.h"
 
 using std::make_unique;
@@ -98,6 +99,26 @@ TEST_F(AffineSystemTest, Output) {
 
   EXPECT_TRUE(CompareMatrices(
       expected_output, system_output_->get_vector_data(0)->get_value(), 1e-10));
+}
+
+// Tests converting to different scalar types.
+TEST_F(AffineSystemTest, ConvertScalarType) {
+  EXPECT_TRUE(is_autodiffxd_convertible(*dut_, [&](const auto& converted) {
+    EXPECT_EQ(converted.A(), A_);
+    EXPECT_EQ(converted.B(), B_);
+    EXPECT_EQ(converted.f0(), f0_);
+    EXPECT_EQ(converted.C(), C_);
+    EXPECT_EQ(converted.D(), D_);
+    EXPECT_EQ(converted.y0(), y0_);
+  }));
+  EXPECT_TRUE(is_symbolic_convertible(*dut_, [&](const auto& converted) {
+    EXPECT_EQ(converted.A(), A_);
+    EXPECT_EQ(converted.B(), B_);
+    EXPECT_EQ(converted.f0(), f0_);
+    EXPECT_EQ(converted.C(), C_);
+    EXPECT_EQ(converted.D(), D_);
+    EXPECT_EQ(converted.y0(), y0_);
+  }));
 }
 
 class FeedthroughAffineSystemTest : public ::testing::Test {

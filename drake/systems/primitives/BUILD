@@ -244,6 +244,7 @@ drake_cc_googletest(
         ":affine_system",
         "//drake/common:eigen_matrix_compare",
         "//drake/systems/framework",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 
