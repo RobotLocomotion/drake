@@ -16,6 +16,7 @@
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
@@ -101,7 +102,11 @@ int do_main(int argc, char* argv[]) {
   Quadrotor<double> model;
   systems::Simulator<double> simulator(model);
 
+  // Same as the nominal step size, since we're using a fixed step integrator.
+  const double max_step_size = 1e-3;
   simulator.Initialize();
+  simulator.reset_integrator<systems::RungeKutta2Integrator<double>>(
+      model, max_step_size, simulator.get_mutable_context());
   simulator.StepTo(FLAGS_duration);
   return 0;
 }
