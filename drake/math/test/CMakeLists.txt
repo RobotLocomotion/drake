@@ -4,11 +4,17 @@ target_link_libraries(autodiff_test drakeCommon)
 drake_add_cc_test(continuous_algebraic_riccati_equation_test)
 target_link_libraries(continuous_algebraic_riccati_equation_test drakeCommon drakeMath)
 
+drake_add_cc_test(continuous_lyapunov_equation_test)
+target_link_libraries(continuous_lyapunov_equation_test drakeCommon drakeMath)
+
 drake_add_cc_test(cross_product_test)
 target_link_libraries(cross_product_test drakeCommon)
 
 drake_add_cc_test(discrete_algebraic_riccati_equation_test)
 target_link_libraries(discrete_algebraic_riccati_equation_test drakeCommon drakeMath)
+
+drake_add_cc_test(discrete_lyapunov_equation_test)
+target_link_libraries(discrete_lyapunov_equation_test drakeCommon drakeMath)
 
 drake_add_cc_test(eigen_sparse_triplet_test)
 target_link_libraries(eigen_sparse_triplet_test Eigen3::Eigen)

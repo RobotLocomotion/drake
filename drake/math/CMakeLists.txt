@@ -4,8 +4,10 @@ set(sources
   autodiff_gradient.cc
   axis_angle.cc
   continuous_algebraic_riccati_equation.cc
+  continuous_lyapunov_equation.cc
   cross_product.cc
   discrete_algebraic_riccati_equation.cc
+  discrete_lyapunov_equation.cc
   eigen_sparse_triplet.cc
   evenly_distributed_pts_on_sphere.cc
   expmap.cc
@@ -26,8 +28,10 @@ set(installed_headers
   autodiff_gradient.h
   axis_angle.h
   continuous_algebraic_riccati_equation.h
+  continuous_lyapunov_equation.h
   cross_product.h
   discrete_algebraic_riccati_equation.h
+  discrete_lyapunov_equation.h
   eigen_sparse_triplet.h
   evenly_distributed_pts_on_sphere.h
   expmap.h

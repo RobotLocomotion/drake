@@ -18,6 +18,7 @@ since contributed their talents to help make Drake successful.  Here's an alphab
 * Evan Drumwright
 * Maurice Fallon
 * Siyuan Feng
+* Moritz Fischer-Gundlach
 * Liang Fok
 * David German
 * Lucy Gibson
