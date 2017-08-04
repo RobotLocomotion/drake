@@ -295,7 +295,7 @@ and you can confirm that the file has been modified as expected.
 First, make sure you have installed ``clang-format``
 (see :doc:`code_style_tools`).
 
-Format full file
+Clang format selected file
 ^^^^^^^^^^^^^^^^
 Open the ``Edit Tool`` for external tools as outlined above and enter the
 following values for the fields:
@@ -308,13 +308,13 @@ following values for the fields:
 
 Leave the checkbox options in their default state.
 
-Format selected lines
+Clang format selected lines
 ^^^^^^^^^^^^^^^^^^^^^
 Open the ``Edit Tool`` for external tools as outlined above and enter the
 following values for the fields:
 
-  :Name: ``Clang Format Full File``
-  :Description: ``Apply clang-format to the active file``
+  :Name: ``Clang Format Selected Lines``
+  :Description: ``Apply clang-format to the selected lines``
   :Program: ``clang-format``
   :Parameters: ``-lines $SelectionStartLine$:$SelectionEndLine$ -i $FileName$``
   :Working directory: ``$FileDir$``
@@ -365,7 +365,7 @@ Open the ``Edit Tool`` for external tools as outlined above and enter the
 following values for the fields:
 
   :Name: ``Cpplint File``
-  :Description: ``Apply cpplint to the current file.``
+  :Description: ``Apply cpplint to the current file``
   :Program: ``bazel``
   :Parameters: ``run @google_styleguide//:cpplint -- --output=eclipse
                  $FilePath$``
@@ -387,11 +387,15 @@ To configure the clickable links:
 
 Delint selected file for Drake style addenda
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+This tool is a supplement to the google style cpplint. It tests for additional
+style requirements. The most important for users is that this will test that
+the order of the ``#include`` statements is correct.
+
 Open the ``Edit Tool`` for external tools as outlined above and enter the
 following values for the fields:
 
   :Name: ``Drake Lint File``
-  :Description: ``Apply drake lint to the current file.``
+  :Description: ``Apply drake lint to the current file``
   :Program: ``bazel``
   :Parameters: ``run //tools:drakelint -- $FilePath$``
   :Working directory: ``$Projectpath$``
