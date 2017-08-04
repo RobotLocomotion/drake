@@ -14,6 +14,7 @@ namespace drake {
 namespace geometry {
 
 using internal::InternalFrame;
+using internal::InternalGeometry;
 using std::make_pair;
 using std::make_unique;
 using std::move;
@@ -80,6 +81,13 @@ std::string get_missing_id_message<FrameId>(const FrameId& key) {
   return ss.str();
 }
 
+template <>
+std::string get_missing_id_message<GeometryId>(const GeometryId& key) {
+  std::stringstream ss;
+  ss << "Referenced geometry " << key << " has not been registered.";
+  return ss.str();
+}
+
 //-----------------------------------------------------------------------------
 
 template <typename T>
@@ -120,26 +128,8 @@ SourceId GeometryState<T>::RegisterNewSource(const std::string& name) {
   return source_id;
 }
 
-template <typename T>
-void GeometryState<T>::ClearSource(SourceId source_id) {
-  FrameIdSet& frames = GetMutableValueOrThrow(source_id, &source_frame_id_map_);
-  for (auto frame_id : frames) {
-    RemoveFrameUnchecked(frame_id, RemoveFrameOrigin::kSource);
-  }
-  source_frame_id_map_[source_id].clear();
-  source_root_frame_map_[source_id].clear();
-}
-
-template <typename T>
-void GeometryState<T>::RemoveFrame(SourceId source_id, FrameId frame_id) {
-  using std::to_string;
-  if (!BelongsToSource(frame_id, source_id)) {
-    throw std::logic_error("Trying to remove frame " + to_string(frame_id) +
-                           " from source " + to_string(source_id) +
-                           ", but the frame doesn't belong to that source.");
-  }
-  RemoveFrameUnchecked(frame_id, RemoveFrameOrigin::kFrame);
-}
+// NOTE: Given that the new_id_() methods are all int64_t, we're not worrying
+// about overflow.
 
 template <typename T>
 FrameId GeometryState<T>::RegisterFrame(SourceId source_id,
@@ -171,6 +161,77 @@ FrameId GeometryState<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
 }
 
 template <typename T>
+GeometryId GeometryState<T>::RegisterGeometry(
+    SourceId source_id, FrameId frame_id,
+    std::unique_ptr<GeometryInstance<T>> geometry) {
+  return RegisterGeometryHelper(source_id, frame_id, move(geometry));
+}
+
+template <typename T>
+GeometryId GeometryState<T>::RegisterGeometryWithParent(
+    SourceId source_id, GeometryId geometry_id,
+    std::unique_ptr<GeometryInstance<T>> geometry) {
+  // The error condition is that geometry_id doesn't belong to source_id or
+  // if the source isn't active.  This is decomposed into two equivalent tests
+  // (implicitly):
+  //    1. Failure if the geometry_id doesn't exist at all, otherwise
+  //    2. Failure if the frame it belongs to doesn't belong to the source (or
+  //       active source).
+
+  using std::to_string;
+  if (geometry == nullptr) {
+    throw std::logic_error(
+        "Registering null geometry to geometry " + to_string(geometry_id) +
+            ", on source " + to_string(source_id) + ".");
+  }
+
+  // Failure condition 1.
+  InternalGeometry& parent_geometry =
+      GetMutableValueOrThrow(geometry_id, &geometries_);
+  FrameId frame_id = parent_geometry.get_frame_id();
+
+  // Failure condition 2.
+  GeometryId new_id = RegisterGeometryHelper(source_id, frame_id,
+                                             move(geometry), geometry_id);
+  parent_geometry.add_child(new_id);
+  return new_id;
+}
+
+template <typename T>
+void GeometryState<T>::ClearSource(SourceId source_id) {
+  FrameIdSet& frames = GetMutableValueOrThrow(source_id, &source_frame_id_map_);
+  for (auto frame_id : frames) {
+    RemoveFrameUnchecked(frame_id, RemoveFrameOrigin::kSource);
+  }
+  source_frame_id_map_[source_id].clear();
+  source_root_frame_map_[source_id].clear();
+}
+
+template <typename T>
+void GeometryState<T>::RemoveFrame(SourceId source_id, FrameId frame_id) {
+  using std::to_string;
+  if (!BelongsToSource(frame_id, source_id)) {
+    throw std::logic_error("Trying to remove frame " + to_string(frame_id) +
+        " from source " + to_string(source_id) +
+        ", but the frame doesn't belong to that source.");
+  }
+  RemoveFrameUnchecked(frame_id, RemoveFrameOrigin::kFrame);
+}
+
+template <typename T>
+void GeometryState<T>::RemoveGeometry(SourceId source_id,
+                                      GeometryId geometry_id) {
+  using std::to_string;
+  if (!BelongsToSource(geometry_id, source_id)) {
+    throw std::logic_error(
+        "Trying to remove geometry " + to_string(geometry_id) + " from "
+            "source " + to_string(source_id) + ". But the geometry doesn't "
+            "belong to that source.");
+  }
+  RemoveGeometryUnchecked(geometry_id, RemoveGeometryOrigin::kGeometry);
+}
+
+template <typename T>
 bool GeometryState<T>::BelongsToSource(FrameId frame_id,
                                        SourceId source_id) const {
   // Confirm that the source_id is valid; use the utility function to confirm
@@ -178,6 +239,21 @@ bool GeometryState<T>::BelongsToSource(FrameId frame_id,
   GetValueOrThrow(source_id, &source_frame_id_map_);
   // If valid, test the frame.
   return get_source_id(frame_id) == source_id;
+}
+
+template <typename T>
+bool GeometryState<T>::BelongsToSource(GeometryId geometry_id,
+                                       SourceId source_id) const {
+  // Look among the dynamic geometry, if not found, the geometry_id
+  // is not valid and an exception is thrown.
+  const auto& geometry = GetValueOrThrow(geometry_id, &geometries_);
+  return BelongsToSource(geometry.get_frame_id(), source_id);
+}
+
+template <typename T>
+FrameId GeometryState<T>::GetFrameId(GeometryId geometry_id) const {
+  auto& geometry = GetValueOrThrow(geometry_id, &geometries_);
+  return geometry.get_frame_id();
 }
 
 template <typename T>
@@ -190,6 +266,38 @@ template <typename T>
 SourceId GeometryState<T>::get_source_id(FrameId frame_id) const {
   auto& frame = GetValueOrThrow(frame_id, &frames_);
   return frame.get_source_id();
+}
+
+template <typename T>
+GeometryId GeometryState<T>::RegisterGeometryHelper(
+    SourceId source_id, FrameId frame_id,
+    std::unique_ptr<GeometryInstance<T>> geometry,
+    optional<GeometryId> parent) {
+  using std::to_string;
+  if (geometry == nullptr) {
+    throw std::logic_error(
+        "Registering null geometry to frame " + to_string(frame_id) +
+            ", on source " + to_string(source_id) + ".");
+  }
+  FrameIdSet& set = GetMutableValueOrThrow(source_id, &source_frame_id_map_);
+
+  FindOrThrow(frame_id, set, [frame_id, source_id]() {
+    return "Referenced frame " + to_string(frame_id) + " for source " +
+        to_string(source_id) + ". But the frame doesn't belong to the source.";
+  });
+
+  GeometryId geometry_id = GeometryId::get_new_id();
+
+  // TODO(SeanCurtis-TRI): Pass the geometry instance to the geometry engine.
+  // Currently, we're just deleting the instance.
+
+  // Configure topology.
+  frames_[frame_id].add_child(geometry_id);
+  // TODO(SeanCurtis-TRI): Get name from geometry instance (when available).
+  geometries_.emplace(
+      geometry_id,
+      InternalGeometry(frame_id, geometry_id, parent));
+  return geometry_id;
 }
 
 template <typename T>
@@ -213,7 +321,10 @@ void GeometryState<T>::RemoveFrameUnchecked(FrameId frame_id,
     source_root_frame_map_[source_id].erase(frame_id);
   }
 
-  // TODO(SeanCurtis-TRI): Remove geometries.
+  // Now delete the geometry on this.
+  for (auto child_id : *frame.get_mutable_child_geometries()) {
+    RemoveGeometryUnchecked(child_id, RemoveGeometryOrigin::kFrame);
+  }
 
   if (caller == RemoveFrameOrigin::kFrame) {
     // Only the root needs to explicitly remove itself from a possible parent
@@ -227,6 +338,36 @@ void GeometryState<T>::RemoveFrameUnchecked(FrameId frame_id,
 
   // Remove from the frames.
   frames_.erase(frame_id);
+}
+
+template <typename T>
+void GeometryState<T>::RemoveGeometryUnchecked(GeometryId geometry_id,
+                                               RemoveGeometryOrigin caller) {
+  auto& geometry = GetValueOrThrow(geometry_id, &geometries_);
+
+  if (caller != RemoveGeometryOrigin::kFrame) {
+    // Clear children
+    for (auto child_id : geometry.get_child_geometries()) {
+      RemoveGeometryUnchecked(child_id, RemoveGeometryOrigin::kRecurse);
+    }
+
+    // Remove the geometry from its frame's list of geometries.
+    auto& frame = GetMutableValueOrThrow(geometry.get_frame_id(), &frames_);
+    frame.remove_child(geometry_id);
+  }
+
+  if (caller == RemoveGeometryOrigin::kGeometry) {
+    // Only the root needs to explicitly remove itself from a possible parent
+    // geometry.
+    if (auto parent_id = geometry.get_parent()) {
+      auto& parent_geometry =
+          GetMutableValueOrThrow(*parent_id, &geometries_);
+      parent_geometry.remove_child(geometry_id);
+    }
+  }
+
+  // Remove from the geometries.
+  geometries_.erase(geometry_id);
 }
 
 // Explicitly instantiates on the most common scalar types.
