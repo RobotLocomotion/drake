@@ -635,6 +635,7 @@ drake_cc_googletest(
     name = "vector_system_test",
     deps = [
         ":vector_system",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 
