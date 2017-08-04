@@ -574,9 +574,11 @@ class MultibodyTree {
   /// @param[out] A_WB_array
   ///   A pointer to a valid, non nullptr, vector of spatial accelerations
   ///   containing the spatial acceleration `A_WB` for each body. It must be of
-  ///   size equal to the number of bodies in the MultibodyTree and ordered by
-  ///   BodyNodeIndex. The calling MultibodyTree method must guarantee these
-  ///   conditions are satisfied.
+  ///   size equal to the number of bodies in the MultibodyTree. This method
+  ///   will abort if the the pointer is null or if `A_WB_array` is not of size
+  ///   `get_num_bodies()`. On output, entries will be ordered by BodyNodeIndex.
+  ///   These accelerations can be read in the proper order with
+  ///   Body::get_from_spatial_acceleration_array().
   ///
   /// @pre The position kinematics `pc` must have been previously updated with a
   /// call to CalcPositionKinematicsCache().
@@ -624,19 +626,19 @@ class MultibodyTree {
   /// @param[out] A_WB_array
   ///   A pointer to a valid, non nullptr, vector of spatial accelerations
   ///   containing the spatial acceleration `A_WB` for each body. It must be of
-  ///   size equal to the number of bodies in the MultibodyTree and ordered by
-  ///   BodyNodeIndex. To ensure the proper ordering use
-  ///   Body::get_from_spatial_acceleration_array() and
-  ///   Body::set_spatial_acceleration_array() to read and write into this
-  ///   array. This method will abort if the the pointer is null or if
-  ///   `A_WB_array` is not of size `get_num_bodies()`.
+  ///   size equal to the number of bodies. This method will abort if the the
+  ///   pointer is null or if `A_WB_array` is not of size `get_num_bodies()`.
+  ///   On output, entries will be ordered by BodyNodeIndex.
+  ///   These accelerations can be read in the proper order with
+  ///   Body::get_from_spatial_acceleration_array().
   /// @param[out] F_BMo_W_array
   ///   A pointer to a valid, non nullptr, vector of spatial forces
   ///   containing, for each body B, the spatial force `F_BMo_W` on body B about
   ///   the origin of its inboard mobilizer `Mo`, expressed in the world frame
-  ///   W. It must be of size equal to the number of bodies in the MultibodyTree
-  ///   and ordered by BodyNodeIndex.  This method will abort if the the pointer
-  ///   is null and `F_BMo_W_array` is not of size `get_num_bodies()`.
+  ///   W. It must be of size equal to the number of bodies in the
+  ///   MultibodyTree. This method will abort if the the pointer
+  ///   is null or if `F_BMo_W_array` is not of size `get_num_bodies()`.
+  ///   On output, entries will be ordered by BodyNodeIndex.
   ///
   /// @note There is no mechanism to assert that either `A_WB_array` nor
   ///   `F_BMo_W_array` are ordered by BodyNodeIndex.

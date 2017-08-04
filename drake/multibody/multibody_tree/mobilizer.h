@@ -185,8 +185,8 @@ template<typename T> class BodyNode;
 /// spatial force `F_Mo` and the spatial velocity `V_FM` as: <pre>
 ///   W = F_Mo⋅V_FM
 /// </pre>
-/// or in terms of the active working generalized forces
-/// `tau = H_FMᵀ(q) * F_Mo` and the generalized velocities v as: <pre>
+/// or in terms of the generalized forces `tau = H_FMᵀ(q) * F_Mo` and the
+/// generalized velocities v as: <pre>
 ///   W = tau⋅v
 /// </pre>
 /// Notice that spatial forces in the null space of `H_FM(q)` do not perform any
@@ -347,7 +347,8 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
 
   /// Projects the spatial force `F_Mo` about `this` mobilizer's outboard frame
   /// M onto the sub-space of motions spanned by the geometric Jacobian
-  /// `H_FM(q)` to obtain the active working generalized forces `tau`.
+  /// `H_FM(q)` to obtain the generalized forces `tau` (i.e. the active
+  /// components of `F_Mo`).
   /// @see CalcAcrossMobilizerSpatialVelocity() and this class' documentation
   /// for the definition of the geometric Jacobian `H_FM(q)`.
   ///
