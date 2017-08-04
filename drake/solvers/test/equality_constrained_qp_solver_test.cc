@@ -170,7 +170,7 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testNegativeDefiniteHessianQP) {
 }
 
 /**
- * Test a QP with positive Hessian, but infeasible constraint.
+ * Test a QP with positive definite Hessian, but infeasible constraint.
  * min x(0)² + 2 * x(1)² + x(0) * x(1)
  * s.t  x(0) + 2 * x(1) = 1
  *      x(0) - x(1) = 3
@@ -189,7 +189,7 @@ GTEST_TEST(testEqualityConstrainedQPSolver,
 }
 
 /**
- * Test a QP with indefinite Hessian, but unique minimal
+ * Test a QP with indefinite Hessian, but unique minimum.
  * min x(0)² - x(1)²
  * s.t x(1) = 1
  */
@@ -206,7 +206,7 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testIndefiniteHessian) {
 }
 
 /**
- * Test a QP with positive semidefinite Hessian, but unbounded
+ * Test a QP with positive semidefinite Hessian, but unbounded objective.
  * min x(0)² - 2 * x(1)
  * s.t x(0) = 1
  */
@@ -221,12 +221,12 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testPSDhessianUnbounded) {
 }
 
 /**
- * Test a QP with negative definite Hessian, but with a unique optimal
+ * Test a QP with negative definite Hessian, but with a unique optimum.
  * min -x(0)² - x(1)²
  * s.t x(0) + x(1) = 2
  *     x(0) - x(1) = 3
  */
-GTEST_TEST(testEqualityConstrainedQPSolver, testNegativeHessianUniqueOptimal) {
+GTEST_TEST(testEqualityConstrainedQPSolver, testNegativeHessianUniqueOptimum) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
   prog.AddCost(-x(0) * x(0) - x(1) * x(1));
@@ -239,7 +239,7 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testNegativeHessianUniqueOptimal) {
 }
 
 /**
- * Test a QP with negative definite Hessian, and unbounded objective
+ * Test a QP with negative definite Hessian, and an unbounded objective.
  * min -x(0)² - x(1)²
  * s.t x(0) + x(1) == 1
  */
@@ -255,7 +255,7 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testNegativeHessianUnbounded) {
 
 /**
  * Test a QP with positive semidefinite Hessian (not strictly positive
- * definite), and a unique minimal
+ * definite), and a unique minimum.
  * min x(0)² + 2 * x(0) + 3 * x(1)
  * s.t x(0) + 2 * x(1) == 1
  */

@@ -17,7 +17,7 @@ bool EqualityConstrainedQPSolver::available() const { return true; }
 
 /**
  * Solve the un-constrained QP problem
- * 0.5 * xᵀ * G * x + cᵀ * x
+ * min 0.5 * xᵀ * G * x + cᵀ * x
  */
 SolutionResult SolveUnconstrainedQP(const Eigen::Ref<const Eigen::MatrixXd>& G,
                                     const Eigen::Ref<const Eigen::VectorXd>& c,
@@ -168,10 +168,12 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
       x = llt.solve(A.transpose() * lambda - c);
     } else {
       // The following code assumes that the Hessian is not positive definite.
-      // We first compute the null space of A. Denote kernal(A) = N.
+      // We first compute the null space of A. Denote kernel(A) = N.
       // If A * x = b is feasible, then x = x₀ + N * y, where A * x₀ = b.
       // The QP can be re-formulated as an un-constrained QP problem
-      // min 0.5 * yᵀ * Nᵀ*G*N * y + (x₀ᵀ*G*N + cᵀ*N)y + constant_term
+      // min 0.5 * (x₀ + N * y)ᵀ * G * (x₀ + N * y) + cᵀ * (x₀ + N * y)
+      // which has the same optimal solution as
+      // min 0.5 * yᵀ * Nᵀ*G*N * y + (x₀ᵀ*G*N + cᵀ*N) * y
       Eigen::FullPivLU<Eigen::MatrixXd> lu_A(A);
       const Eigen::VectorXd x0 = lu_A.solve(b);
       if (!b.isApprox(A * x0)) {
@@ -180,7 +182,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
       } else {
         const Eigen::MatrixXd N = lu_A.kernel();
         if (N.cols() == 0) {
-          // The kernal is empty, the solution is unique.
+          // The kernel is empty, the solution is unique.
           solver_result = SolutionResult::kSolutionFound;
           x = x0;
         } else {
