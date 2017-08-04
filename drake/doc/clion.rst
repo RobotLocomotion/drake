@@ -296,7 +296,8 @@ First, make sure you have installed ``clang-format``
 (see :doc:`code_style_tools`).
 
 Clang format selected file
-^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 Open the ``Edit Tool`` for external tools as outlined above and enter the
 following values for the fields:
 
@@ -309,7 +310,8 @@ following values for the fields:
 Leave the checkbox options in their default state.
 
 Clang format selected lines
-^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 Open the ``Edit Tool`` for external tools as outlined above and enter the
 following values for the fields:
 
@@ -361,6 +363,7 @@ You can also set the general coding style for CLion through the following steps
 
 Delint selected file for google style guide
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 Open the ``Edit Tool`` for external tools as outlined above and enter the
 following values for the fields:
 
@@ -387,6 +390,7 @@ To configure the clickable links:
 
 Delint selected file for Drake style addenda
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 This tool is a supplement to the google style cpplint. It tests for additional
 style requirements. The most important for users is that this will test that
 the order of the ``#include`` statements is correct.
