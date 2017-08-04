@@ -172,4 +172,30 @@ cond(bool f_cond, const Eigen::AutoDiffScalar<DerType>& e_then, Rest... rest) {
   return if_then_else(f_cond, e_then, cond(rest...));
 }
 
+namespace math {
+
+/// An AutoDiffXd override of `math::saturate()` when the limit values `low` and
+/// `high` are of type double.  In that case, the limits are regarded as
+/// constants and the saturated return value preserves the number of derivatives
+/// in `value`, which are all zeros upon saturation.
+template <typename DerType>
+Eigen::AutoDiffScalar<typename DerType::PlainObject> saturate(
+    const Eigen::AutoDiffScalar<DerType>& value, const double& low,
+    const double& high) {
+  DRAKE_ASSERT(low <= high);
+
+  typedef Eigen::AutoDiffScalar<
+      typename Eigen::internal::remove_all<DerType>::type::PlainObject>
+      ADS;
+  auto low_scalar = ADS(low);
+  auto high_scalar = ADS(high);
+  low_scalar.derivatives().resize(value.derivatives().size());
+  low_scalar.derivatives().setZero();
+  high_scalar.derivatives().resize(value.derivatives().size());
+  high_scalar.derivatives().setZero();
+
+  return cond(value<low, low_scalar, value> high, high_scalar, value);
+}
+
+}  // namespace math
 }  // namespace drake
