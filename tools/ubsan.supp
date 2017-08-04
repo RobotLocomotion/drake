@@ -8,3 +8,6 @@ shift-base:BulletCollision/BroadphaseCollision/btOverlappingPairCache.h
 # http://llvm.org/viewvc/llvm-project/llvm/trunk/utils/sanitizers/ubsan_blacklist.txt?view=markup&pathrev=291918
 alignment:bits/stl_tree.h
 alignment:bits/stl_pair.h
+
+# Reported bug: http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1454
+float-divide-by-zero:TriangularSolverVector.h
