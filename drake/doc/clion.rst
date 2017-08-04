@@ -273,7 +273,7 @@ There are several ways to use an *External Tool*. One is to right-click on a
 file and select ``External Tools`` > ``Tool Name``. Another is to select
 ``Tools`` > ``External Tools`` > ``Tool Name``. For tools that operate on a
 selected file, make sure that file is "active" by clicking on it. The
-``Tool Name`` will be the valid set in the ``Name`` field outlined below.
+``Tool Name`` will be the value set in the ``Name`` field outlined below.
 
 .. _integrating_format_tools_with_clion:
 
