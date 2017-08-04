@@ -318,6 +318,7 @@ drake_cc_googletest(
         ":linear_system",
         "//drake/common:eigen_matrix_compare",
         "//drake/systems/framework",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 
@@ -328,6 +329,7 @@ drake_cc_googletest(
         ":matrix_gain",
         "//drake/common:eigen_matrix_compare",
         "//drake/systems/framework",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 
