@@ -2,6 +2,7 @@
 
 #include <cstring>
 #include <limits>
+#include <map>
 #include <memory>
 #include <vector>
 
@@ -21,6 +22,7 @@ bool EqualityConstrainedQPSolver::available() const { return true; }
  */
 SolutionResult SolveUnconstrainedQP(const Eigen::Ref<const Eigen::MatrixXd>& G,
                                     const Eigen::Ref<const Eigen::VectorXd>& c,
+                                    double feasibility_tol,
                                     Eigen::VectorXd* x) {
   SolutionResult solver_result;
   // Check for positive definite Hessian matrix.
@@ -48,7 +50,7 @@ SolutionResult SolveUnconstrainedQP(const Eigen::Ref<const Eigen::MatrixXd>& G,
     // G is positive semidefinite.
     *x = ldlt.solve(-c);
     // The precision 1E-10 here is random.
-    if (!(G * (*x)).isApprox(-c, 1E-10)) {
+    if (!(G * (*x)).isApprox(-c, feasibility_tol)) {
       *x = Eigen::VectorXd::Constant(c.rows(), NAN);
       solver_result = SolutionResult::kUnbounded;
     } else {
@@ -72,16 +74,13 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   // Approach 2: Use the Schur complement ("range space" approach).
   // Approach 3: Use the nullspace of A ("null space" approach).
 
-  // The QP approach attempts Approach (2) and falls back to Approach (1).
-  // The Approach (1) implementation is vestigial and uses a singular value
-  // decomposition. Approach (1) could be made slightly faster by using a
-  // QR factorization instead. It could be made considerably faster than that
-  // if the A matrix were known to have full row rank, which would allow
-  // a symmetric LDL' factorization to be used. As long as the quadratic
-  // cost matrix is symmetric and positive definite, both approaches should
-  // yield the same optimal point; the same set of Lagrange multipliers is
-  // not guaranteed (but the Lagrange multipliers are not currently being
-  // returned to the user).
+  // The QP approach attempts Approach (2), if G is strictly positive definite,
+  // and falls back to Approach (3). For the null-space approach, we compute
+  // kernel(A) = N, and convert the equality connstrained QP to an
+  // un-constrained QP, as
+  // minimize 0.5 y'*(N'*G*N)*y + (c'*N + N'*G*x0)* y
+  // where x0 is one solution to A * x = b.
+
   //
   // This implementation was conducted using [Nocedal 1999], Ch. 16 (Quadratic
   // Programming).  It is recommended that programmers desiring to modify this
@@ -93,6 +92,24 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   DRAKE_ASSERT(prog.linear_constraints().empty());
   DRAKE_ASSERT(prog.bounding_box_constraints().empty());
   DRAKE_ASSERT(prog.linear_complementarity_constraints().empty());
+
+  double feasibility_tol = Eigen::NumTraits<double>::dummy_precision();
+  std::map<std::string, double> option_double =
+      prog.GetSolverOptionsDouble(EqualityConstrainedQPSolver::id());
+  auto it = option_double.find("FeasibilityTol");
+  if (it != option_double.end()) {
+    if (it->second >= 0) {
+      feasibility_tol = it->second;
+      option_double.erase(it);
+    } else {
+      throw std::runtime_error(
+          "FeasibilityTol should be a non-negative number.");
+    }
+  }
+  if (!option_double.empty()) {
+    throw std::runtime_error(
+        "Unsupported option in EqualityConstrainedQPSolver.");
+  }
 
   size_t num_constraints = 0;
   for (auto const& binding : prog.linear_equality_constraints()) {
@@ -160,7 +177,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
       const Eigen::VectorXd rhs = AiG_T.transpose() * c + b;
       Eigen::VectorXd lambda = qr.solve(rhs);
 
-      solver_result = rhs.isApprox(A_iG_A_T * lambda)
+      solver_result = rhs.isApprox(A_iG_A_T * lambda, feasibility_tol)
                           ? SolutionResult::kSolutionFound
                           : SolutionResult::kInfeasibleConstraints;
 
@@ -176,7 +193,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
       // min 0.5 * yᵀ * Nᵀ*G*N * y + (x₀ᵀ*G*N + cᵀ*N) * y
       Eigen::FullPivLU<Eigen::MatrixXd> lu_A(A);
       const Eigen::VectorXd x0 = lu_A.solve(b);
-      if (!b.isApprox(A * x0)) {
+      if (!b.isApprox(A * x0, feasibility_tol)) {
         solver_result = SolutionResult::kInfeasibleConstraints;
         x = x0;
       } else {
@@ -189,14 +206,14 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
           Eigen::VectorXd y(N.cols());
           solver_result = SolveUnconstrainedQP(
               N.transpose() * G * N, x0.transpose() * G * N + c.transpose() * N,
-              &y);
+              feasibility_tol, &y);
           x = x0 + N * y;
         }
       }
     }
   } else {
     // num_constraints = 0
-    solver_result = SolveUnconstrainedQP(G, c, &x);
+    solver_result = SolveUnconstrainedQP(G, c, feasibility_tol, &x);
   }
 
   prog.SetDecisionVariableValues(x);

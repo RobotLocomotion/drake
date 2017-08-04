@@ -289,6 +289,41 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testIndefiniteHessianInfeasible) {
   auto result = equality_qp_solver.Solve(prog);
   EXPECT_EQ(result, SolutionResult::kInfeasibleConstraints);
 }
+
+/**
+ * Test changing the feasibility tolerance.
+ * For a problem
+ * min x(0)² + 2 * x(1)²
+ * s.t x(0) + 2 * x(1) = 1
+ *     x(0) - x(1) = -2
+ *     x(0) + x(1) = 1E-6
+ * when the feasibility tolerance is 1E-12, the problem is infeasible.
+ * when we increase the feasibility tolerance, the problem is feasible.
+ */
+GTEST_TEST(testEqualityConstrainedQPSolver, testFeasibilityTolerance) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>("x");
+  prog.AddCost(x(0) * x(0) + 2 * x(1) * x(1));
+  prog.AddLinearConstraint(x(0) + 2 * x(1) == 1 && x(0) - x(1) == -2 &&
+                           x(0) + x(1) == 1E-6);
+  EqualityConstrainedQPSolver equality_qp_solver;
+  prog.SetSolverOption(EqualityConstrainedQPSolver::id(), "FeasibilityTol",
+                       1E-12);
+  auto result = equality_qp_solver.Solve(prog);
+  EXPECT_EQ(result, SolutionResult::kInfeasibleConstraints);
+
+  // Now increase the feasibility tolerance.
+  double tol = 1E-6;
+  prog.SetSolverOption(EqualityConstrainedQPSolver::id(), "FeasibilityTol",
+                       tol);
+  result = equality_qp_solver.Solve(prog);
+  EXPECT_EQ(result, SolutionResult::kSolutionFound);
+  const Eigen::Vector2d x_val = prog.GetSolution(x);
+  const Eigen::Vector3d cnstr_val(x_val(0) + 2 * x_val(1), x_val(0) - x_val(1),
+                                  x_val(0) + x_val(1));
+  EXPECT_TRUE(CompareMatrices(cnstr_val, Eigen::Vector3d(1, -2, 1E-6), tol,
+                              MatrixCompareType::absolute));
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
