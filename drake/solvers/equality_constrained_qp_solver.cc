@@ -15,6 +15,49 @@ namespace solvers {
 
 bool EqualityConstrainedQPSolver::available() const { return true; }
 
+/**
+ * Solve the un-constrained QP problem
+ * 0.5 * xᵀ * G * x + cᵀ * x
+ */
+SolutionResult SolveUnconstrainedQP(const Eigen::Ref<const Eigen::MatrixXd>& G,
+                                    const Eigen::Ref<const Eigen::VectorXd>& c,
+                                    Eigen::VectorXd* x) {
+  SolutionResult solver_result;
+  // Check for positive definite Hessian matrix.
+  Eigen::LLT<Eigen::MatrixXd> llt(G);
+  if (llt.info() == Eigen::Success) {
+    // G is positive definite.
+    *x = llt.solve(-c);
+    solver_result = SolutionResult::kSolutionFound;
+  } else {
+    // G is not strictly positive definite.
+    // There are two possible cases
+    // 1. If there exists x, s.t G * x = -c, and G is positive semidefinite
+    //    then there are infinitely many optimal solutions, and we will return
+    //    one of the optimal solutions.
+    // 2. Otherwise, if G * x = -c does not have a solution, or G is not
+    //    positive semidefinite, then the problem is unbounded.
+
+    // We first check if G is positive semidefinite, by doing an LDLT
+    // decomposition.
+    Eigen::LDLT<Eigen::MatrixXd> ldlt(G);
+    if (ldlt.info() != Eigen::Success || !ldlt.isPositive()) {
+      *x = Eigen::VectorXd::Constant(c.rows(), NAN);
+      return SolutionResult::kUnbounded;
+    }
+    // G is positive semidefinite.
+    *x = ldlt.solve(-c);
+    // The precision 1E-10 here is random.
+    if (!(G * (*x)).isApprox(-c, 1E-10)) {
+      *x = Eigen::VectorXd::Constant(c.rows(), NAN);
+      solver_result = SolutionResult::kUnbounded;
+    } else {
+      solver_result = SolutionResult::kSolutionFound;
+    }
+  }
+  return solver_result;
+}
+
 SolutionResult EqualityConstrainedQPSolver::Solve(
     MathematicalProgram& prog) const {
   // There are three ways to solve the KKT subproblem for convex QPs.
@@ -85,8 +128,8 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
     Eigen::MatrixXd A = Eigen::MatrixXd::Zero(num_constraints, prog.num_vars());
     Eigen::VectorXd b = Eigen::VectorXd::Zero(num_constraints);
     int constraint_index = 0;
-    for (auto const &binding : prog.linear_equality_constraints()) {
-      auto const &bc = binding.constraint();
+    for (auto const& binding : prog.linear_equality_constraints()) {
+      auto const& bc = binding.constraint();
       size_t n = bc->A().rows();
 
       int num_v_variables = binding.variables().rows();
@@ -110,77 +153,47 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
       Eigen::MatrixXd AiG_T = llt.solve(A.transpose());
 
       // Compute a full pivoting, QR factorization.
-      Eigen::FullPivHouseholderQR<Eigen::MatrixXd> qr(A * AiG_T);
+      const Eigen::MatrixXd A_iG_A_T = A * AiG_T;
+      Eigen::FullPivHouseholderQR<Eigen::MatrixXd> qr(A_iG_A_T);
 
-      // Solve using least-squares A*inv(G)*A'y = A*inv(W)*c + b for `y`.
-      Eigen::VectorXd lambda = qr.solve(AiG_T.transpose() * c + b);
+      // Solve using least-squares A*inv(G)*A'y = A*inv(G)*c + b for `y`.
+      const Eigen::VectorXd rhs = AiG_T.transpose() * c + b;
+      Eigen::VectorXd lambda = qr.solve(rhs);
+
+      solver_result = rhs.isApprox(A_iG_A_T * lambda)
+                          ? SolutionResult::kSolutionFound
+                          : SolutionResult::kInfeasibleConstraints;
 
       // Solve G*x = A'y - c
       x = llt.solve(A.transpose() * lambda - c);
-      solver_result = SolutionResult::kSolutionFound;
     } else {
       // The following code assumes that the Hessian is not positive definite.
-      // It uses the singular value decomposition, which is generally overkill
-      // but does provide a useful fallback in the case that the range space
-      // approach above fails.
-
-      // The expanded problem introduces a Lagrangian multiplier for each
-      // linear equality constraint.
-      size_t num_full_vars = prog.num_vars() + num_constraints;
-      Eigen::MatrixXd A_full(num_full_vars, num_full_vars);
-      Eigen::VectorXd b_full(num_full_vars);
-
-      // Set up the big matrix.
-      A_full.block(0, 0, G.rows(), G.cols()) = G;
-      A_full.block(0, G.cols(), A.cols(), A.rows()) = -A.transpose();
-      A_full.block(G.rows(), 0, A.rows(), A.cols()) = A;
-      A_full.block(G.rows(), G.cols(), A.rows(), A.rows()).setZero();
-
-      // Set up the right hand side vector.
-      b_full.segment(0, G.rows()) = -c;
-      b_full.segment(G.rows(), A.rows()) = b;
-
-      // Compute the least-squares solution.
-      Eigen::VectorXd sol =
-          A_full.jacobiSvd(
-              Eigen::ComputeThinU | Eigen::ComputeThinV).solve(b_full);
-      x = sol.segment(0, prog.num_vars());
-      solver_result = SolutionResult::kSolutionFound;
+      // We first compute the null space of A. Denote kernal(A) = N.
+      // If A * x = b is feasible, then x = x₀ + N * y, where A * x₀ = b.
+      // The QP can be re-formulated as an un-constrained QP problem
+      // min 0.5 * yᵀ * Nᵀ*G*N * y + (x₀ᵀ*G*N + cᵀ*N)y + constant_term
+      Eigen::FullPivLU<Eigen::MatrixXd> lu_A(A);
+      const Eigen::VectorXd x0 = lu_A.solve(b);
+      if (!b.isApprox(A * x0)) {
+        solver_result = SolutionResult::kInfeasibleConstraints;
+      } else {
+        const Eigen::MatrixXd N = lu_A.kernel();
+        if (N.cols() == 0) {
+          // The kernal is empty, the solution is unique.
+          solver_result = SolutionResult::kSolutionFound;
+          x = x0;
+        } else {
+          Eigen::VectorXd y(N.cols());
+          solver_result = SolveUnconstrainedQP(
+              N.transpose() * G * N, x0.transpose() * G * N + c.transpose() * N,
+              &y);
+          x = x0 + N * y;
+        }
+      }
     }
   } else {
     // num_constraints = 0
-    // Check for positive definite Hessian matrix.
-    Eigen::LLT<Eigen::MatrixXd> llt(G);
-    if (llt.info() == Eigen::Success) {
-      // G is positive definite.
-      x = llt.solve(-c);
-      solver_result = SolutionResult::kSolutionFound;
-    } else {
-      // G is not strictly positive definite.
-      // There are two possible cases
-      // 1. If there exists x, s.t G * x = -c, and G is positive semidefinite
-      //    then there are infinitely many optimal solutions, and we will return
-      //    one of the optimal solutions.
-      // 2. Otherwise, if G * x = -c does not have a solution, or G is not
-      //    positive semidefinite, then the problem is unbounded.
-
-      // We first check if G is positive semidefinite, by doing an LDLT
-      // decomposition.
-      Eigen::LDLT<Eigen::MatrixXd> ldlt(G);
-      if (ldlt.info() != Eigen::Success || !ldlt.isPositive()) {
-        x = Eigen::VectorXd::Constant(prog.num_vars(), NAN);
-        return SolutionResult::kUnbounded;
-      }
-      // G is positive semidefinite.
-      x = ldlt.solve(-c);
-      // The precision 1E-10 here is random.
-      if (!(G * x).isApprox(-c, 1E-10)) {
-        x = Eigen::VectorXd::Constant(prog.num_vars(), NAN);
-        solver_result = SolutionResult::kUnbounded;
-      } else {
-        solver_result = SolutionResult::kSolutionFound;
-      }
-    }
+    solver_result = SolveUnconstrainedQP(G, c, &x);
   }
 
   prog.SetDecisionVariableValues(x);
@@ -197,9 +210,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   return solver_result;
 }
 
-SolverId EqualityConstrainedQPSolver::solver_id() const {
-  return id();
-}
+SolverId EqualityConstrainedQPSolver::solver_id() const { return id(); }
 
 SolverId EqualityConstrainedQPSolver::id() {
   static const never_destroyed<SolverId> singleton{"Equality constrained QP"};
