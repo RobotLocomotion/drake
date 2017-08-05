@@ -1223,7 +1223,9 @@ GTEST_TEST(SimulatorTest, StretchedStep) {
   simulator.Initialize();
 
   // Set initial condition using the Simulator's internal Context.
+  simulator.get_mutable_context()->set_time(0);
   spring_mass.set_position(simulator.get_mutable_context(), 0.1);
+  spring_mass.set_velocity(simulator.get_mutable_context(), 0);
 
   // Activate exceptions on violating the minimum step size to verify that
   // error control is a limiting factor.
@@ -1231,11 +1233,17 @@ GTEST_TEST(SimulatorTest, StretchedStep) {
   EXPECT_THROW(simulator.StepTo(expected_t_final), std::runtime_error);
 
   // Now disable exceptions on violating the minimum step size and step again.
+  simulator.get_mutable_context()->set_time(0);
+  spring_mass.set_position(simulator.get_mutable_context(), 0.1);
+  spring_mass.set_velocity(simulator.get_mutable_context(), 0);
   integrator->set_throw_on_minimum_step_size_violation(false);
   simulator.StepTo(expected_t_final);
 
-  // Verify that the step size was stretched.
+  // Verify that the step size was stretched and that exactly two "steps" were
+  // taken (one to integrate the continuous variables forward and one strictly
+  // to publish).
   EXPECT_EQ(simulator.get_context().get_time(), expected_t_final);
+  EXPECT_EQ(simulator.get_num_steps_taken(), 2);
 }
 
 // Tests per step publish, discrete and unrestricted update actions. Each
