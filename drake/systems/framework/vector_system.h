@@ -112,6 +112,37 @@ class VectorSystem : public LeafSystem<T> {
     DoConstructorBody(input_size, output_size);
   }
 
+  /// Causes the vector-valued input port to become up-to-date, and returns
+  /// the port's value as an %Eigen vector.  If the system has zero inputs,
+  /// then returns an empty vector.
+  Eigen::VectorBlock<const VectorX<T>> EvalVectorInput(
+      const Context<T>& context) const {
+    // Obtain the block form of u (or the empty vector).
+    if (this->get_num_input_ports() > 0) {
+      return this->EvalEigenVectorInput(context, 0);
+    }
+    static const VectorX<T> empty_vector{0};
+    return empty_vector.segment(0, 0);
+  }
+
+  /// Returns a reference to an %Eigen vector version of the state from within
+  /// the %Context.
+  Eigen::VectorBlock<const VectorX<T>> GetVectorState(
+      const Context<T>& context) const {
+    // Obtain the block form of xc or xd.
+    DRAKE_ASSERT(context.get_num_abstract_state_groups() == 0);
+    const BasicVector<T>* state_vector{};
+    if (context.get_num_discrete_state_groups() == 0) {
+      const VectorBase<T>& vector_base = context.get_continuous_state_vector();
+      state_vector = dynamic_cast<const BasicVector<T>*>(&vector_base);
+    } else {
+      DRAKE_ASSERT(context.has_only_discrete_state());
+      state_vector = context.get_discrete_state(0);
+    }
+    DRAKE_DEMAND(state_vector != nullptr);
+    return state_vector->get_value();
+  }
+
   /// Converts the parameters to Eigen::VectorBlock form, then delegates to
   /// DoCalcVectorTimeDerivatives().
   void DoCalcTimeDerivatives(const Context<T>& context,
@@ -121,12 +152,8 @@ class VectorSystem : public LeafSystem<T> {
       return;
     }
 
-    // Obtain the block form of u (or the empty vector).
-    const VectorX<T> empty_vector(0);
     const Eigen::VectorBlock<const VectorX<T>> input_block =
-        (this->get_num_input_ports() > 0)
-            ? this->EvalEigenVectorInput(context, 0)
-            : Eigen::VectorBlock<const VectorX<T>>(empty_vector, 0, 0);
+        EvalVectorInput(context);
 
     // Obtain the block form of xc.
     DRAKE_ASSERT(context.has_only_continuous_state());
@@ -156,12 +183,8 @@ class VectorSystem : public LeafSystem<T> {
       return;
     }
 
-    // Obtain the block form of u (or the empty vector).
-    const VectorX<T> empty_vector(0);
     const Eigen::VectorBlock<const VectorX<T>> input_block =
-        (this->get_num_input_ports() > 0)
-        ? this->EvalEigenVectorInput(context, 0)
-        : Eigen::VectorBlock<const VectorX<T>>(empty_vector, 0, 0);
+        EvalVectorInput(context);
 
     // Obtain the block form of xd before the update (i.e., the prior state).
     DRAKE_ASSERT(context.has_only_discrete_state());
@@ -190,26 +213,12 @@ class VectorSystem : public LeafSystem<T> {
     // Should only get here if we've declared an output.
     DRAKE_ASSERT(this->get_num_output_ports() > 0);
 
-    // Obtain the block form of u (or the empty vector).
-    const VectorX<T> empty_vector(0);
     const Eigen::VectorBlock<const VectorX<T>> input_block =
-        (this->get_num_input_ports() > 0)
-        ? this->EvalEigenVectorInput(context, 0)
-        : Eigen::VectorBlock<const VectorX<T>>(empty_vector, 0, 0);
+        EvalVectorInput(context);
 
-    // Obtain the block form of xc or xd[n].
-    DRAKE_ASSERT(context.get_num_abstract_state_groups() == 0);
-    const BasicVector<T>* state_vector{};
-    if (context.get_num_discrete_state_groups() == 0) {
-      const VectorBase<T>& vector_base = context.get_continuous_state_vector();
-      state_vector = dynamic_cast<const BasicVector<T>*>(&vector_base);
-    } else {
-      DRAKE_ASSERT(context.has_only_discrete_state());
-      state_vector = context.get_discrete_state(0);
-    }
-    DRAKE_DEMAND(state_vector != nullptr);
+    // Obtain the block form of xc or xd.
     const Eigen::VectorBlock<const VectorX<T>> state_block =
-        state_vector->get_value();
+        GetVectorState(context);
 
     // Obtain the block form of y.
     Eigen::VectorBlock<VectorX<T>> output_block = output->get_mutable_value();
