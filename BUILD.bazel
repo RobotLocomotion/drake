@@ -36,6 +36,7 @@ alias(
 DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "bullet",
     "ccd",
+    "director",
     "eigen",
     "fcl",
     "fmt",

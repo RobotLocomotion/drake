@@ -50,7 +50,45 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 """
-
+    file_content += """
+load("@drake//tools:install.bzl", "install", "install_files")
+install_files(
+    name = "install_binaries",
+    dest = ".",
+    files = glob([
+        "**/*",
+        ],
+        exclude=["share/**/*", "include/**/*", "lib/pkg-config/*", "**/*lcm*", "**/python*/**/*"],
+    ),
+    visibility = ["//visibility:public"],
+)
+install_files(
+    name = "install_binaries_lcm_hack",
+    dest = ".",
+    files = ["lib/liblcm.so.1"],
+    visibility = ["//visibility:public"],
+)
+install_files(
+    name = "install_python",
+    dest = "lib/python2.7/site-packages",
+    files = glob([
+        "lib/python*/**/*",
+        ],
+        exclude=["**/lcm/*", "**/robotlocomotion/*", "**/bot_core/*", "**/*.pyc"],
+    ),
+    strip_prefix = ["lib/python2.7/dist-packages"],
+    visibility = ["//visibility:public"],
+)
+install(
+    name = "install",
+    deps = [
+        "install_binaries",
+        "install_binaries_lcm_hack",
+        "install_python",
+    ],
+    visibility = ["//visibility:public"],
+)
+"""
     repository_ctx.file("BUILD", content = file_content, executable = False)
 
 director_repository = repository_rule(implementation = _impl)
