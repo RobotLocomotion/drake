@@ -10,7 +10,7 @@ target_link_libraries(explicit_euler_integrator_test
         drakeSystemAnalysis drakeSystemFramework drakeCommon
         drakeSpringMassSystemPlant)
 
-drake_add_cc_test(NAME implicit_euler_integrator_test SIZE medium)
+drake_add_cc_test(NAME implicit_euler_integrator_test SIZE large)
 target_link_libraries(implicit_euler_integrator_test
         drakeSystemAnalysis drakeSystemFramework drakeCommon
         drakeSpringMassSystemPlant)

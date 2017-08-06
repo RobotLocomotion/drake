@@ -266,7 +266,7 @@ void ParseSdfCollision(RigidBody<double>* body, XMLElement* node,
                         " has a collision element without a geometry.");
   }
 
-  DrakeCollision::Element element(
+  drake::multibody::collision::Element element(
       transform_parent_to_model.inverse() * transform_to_model, body);
 
   if (!ParseSdfGeometry(geometry_node, package_map, root_dir, element)) {
@@ -359,7 +359,8 @@ void setSDFDynamics(XMLElement* node,
                     FixedAxisOneDoFJoint<JointType>* fjoint) {
   XMLElement* dynamics_node = node->FirstChildElement("dynamics");
   if (fjoint != nullptr && dynamics_node) {
-    double damping = 0.0, coulomb_friction = 0.0, coulomb_window = 0.0;
+    double damping = 0.0, coulomb_friction = 0.0;
+    double coulomb_window = std::numeric_limits<double>::epsilon();
     parseScalarValue(dynamics_node, "damping", damping);
     parseScalarValue(dynamics_node, "friction", coulomb_friction);
     parseScalarValue(dynamics_node, "coulomb_window",
@@ -504,7 +505,7 @@ void ParseSdfJoint(RigidBodyTree<double>* model,
   Vector3d axis(1, 0, 0);
   XMLElement* axis_node = node->FirstChildElement("axis");
   if (axis_node && type.compare("fixed") != 0 &&
-      type.compare("floating") != 0) {
+      type.compare("floating") != 0 && type.compare("ball") != 0) {
     parseVectorValue(axis_node, "xyz", axis);
     if (axis.norm() < 1e-8) {
       throw runtime_error(string(__FILE__) + ": " + __func__ +
@@ -647,6 +648,8 @@ void ParseSdfJoint(RigidBodyTree<double>* model,
       }
     } else if (type.compare("floating") == 0) {
       joint = new RollPitchYawFloatingJoint(name, transform_to_parent_body);
+    } else if (type.compare("ball") == 0) {
+      joint = new QuaternionBallJoint(name, transform_to_parent_body);
     } else {
       throw runtime_error(string(__FILE__) + ": " + __func__ +
                           ": ERROR: Unrecognized joint type: " + type + ".");

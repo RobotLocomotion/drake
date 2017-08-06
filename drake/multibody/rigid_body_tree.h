@@ -888,17 +888,16 @@ class RigidBodyTree {
    * @param group_name a group name to tag the associated element with.
    */
   void addCollisionElement(
-      const DrakeCollision::Element& element,
+      const drake::multibody::collision::Element& element,
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      RigidBody<T>& body,
-      const std::string& group_name);
+      RigidBody<T>& body, const std::string& group_name);
 
   /// Retrieve a `const` pointer to an element of the collision model.
   /// Note: The use of Find (instead of get) and the use of CamelCase both
   /// imply a potential runtime cost are carried over from the collision model
   /// accessor method.
-  const DrakeCollision::Element* FindCollisionElement(
-      const DrakeCollision::ElementId& id) const {
+  const drake::multibody::collision::Element* FindCollisionElement(
+      const drake::multibody::collision::ElementId& id) const {
     return collision_model_->FindElement(id);
   }
 
@@ -912,7 +911,7 @@ class RigidBodyTree {
           auto& ids = body_ptr->get_mutable_collision_element_ids();
           for (const auto& id : group.second) {
             ids.erase(std::find(ids.begin(), ids.end(), id));
-            collision_model_->removeElement(id);
+            collision_model_->RemoveElement(id);
           }
           names_of_groups_to_delete.push_back(group_name);
         }
@@ -960,8 +959,31 @@ class RigidBodyTree {
                         bool use_margins = false);
 
   /**
-   * Computes the *signed* distance from the given points to the nearest body in
-   * the RigidBodyTree.
+   * Computes the *signed* distance from the given points to the nearest body
+   * in the RigidBodyTree.
+   *
+   * @param[in] cache a KinematicsCache constructed by
+   * RigidBodyTree::doKinematics given `q` and `v`.
+   * @param[in] points A 3xN matrix of points, in world frame, to which signed
+   * distance will be computed.
+   * @param[out] phi Resized to N elements and filled with the computed signed
+   * distances, or inf if no closest point was found.
+   * @param[out] normal Resized to 3xN elements and filled with collision
+   * element normals in world frame, at the closest point on the collision
+   * geometry to each point in `points`. Undefined where no closest point was
+   * found.
+   * @param[out] x Resized to 3xN elements and filled with the closest points
+   * on the collision geometry to each point in `points`, in world frame.
+   * Undefined where no closest point was found.
+   * @param[out] body_x Resized to 3xN elements and filled with the closest
+   * points on the collision geometry to each point in `points`, in the body
+   * frame of the closest body. Undefined where no closest point was found.
+   * @param[out] body_idx Resized to N elements and filled with the body idx
+   * of the closest body to each point in `points`, or -1 where no closest
+   * body was found.
+   * @param[in] use_margins Whether to pad each collision body with a narrow
+   * (see bullet_model) margin to improve stability of normal estimation at
+   * the cost of the accuracy of closest points calculations.
    */
   void collisionDetectFromPoints(
       const KinematicsCache<double>& cache,
@@ -987,7 +1009,7 @@ class RigidBodyTree {
       std::vector<int>& bodyA_idx,
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       std::vector<int>& bodyB_idx,
-      const std::vector<DrakeCollision::ElementId>& ids_to_check,
+      const std::vector<drake::multibody::collision::ElementId>& ids_to_check,
       bool use_margins);
 
   bool collisionDetect(
@@ -1070,22 +1092,6 @@ class RigidBodyTree {
       Eigen::Matrix3Xd& ptsB,
       bool use_margins = true);
 
-  void potentialCollisions(
-      const KinematicsCache<double>& cache,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      Eigen::VectorXd& phi,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      Eigen::Matrix3Xd& normal,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      Eigen::Matrix3Xd& xA,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      Eigen::Matrix3Xd& xB,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      std::vector<int>& bodyA_idx,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      std::vector<int>& bodyB_idx,
-      bool use_margins = true);
-
   /** Computes the point of closest approach between bodies in the
    RigidBodyTree that are in contact.
 
@@ -1100,8 +1106,9 @@ class RigidBodyTree {
    @param use_margins[in] If `true` the model uses the representation with
    margins. If `false`, the representation without margins is used instead.
    **/
-  std::vector<DrakeCollision::PointPair> ComputeMaximumDepthCollisionPoints(
-      const KinematicsCache<double>& cache, bool use_margins = true);
+  std::vector<drake::multibody::collision::PointPair>
+  ComputeMaximumDepthCollisionPoints(const KinematicsCache<double>& cache,
+                                     bool use_margins = true);
 
   virtual bool collidingPointsCheckOnly(
       const KinematicsCache<double>& cache,
@@ -1136,7 +1143,8 @@ class RigidBodyTree {
    * @return A pointer to the owning RigidBody.
    * @throws std::logic_error if no body can be mapped to the element id.
    */
-  const RigidBody<double>* FindBody(DrakeCollision::ElementId element_id) const;
+  const RigidBody<double>* FindBody(
+      drake::multibody::collision::ElementId element_id) const;
 
   /**
    * Returns a vector of pointers to all rigid bodies in this tree that belong
@@ -1440,9 +1448,10 @@ class RigidBodyTree {
    mapped ids directly the manager for when the tree gets compiled.  It relies
    on correct encoding of groups into bitmasks.
    */
-  void SetBodyCollisionFilters(const RigidBody<T>& body,
-                               const DrakeCollision::bitmask& group,
-                               const DrakeCollision::bitmask& ignores);
+  void SetBodyCollisionFilters(
+      const RigidBody<T>& body,
+      const drake::multibody::collision::bitmask& group,
+      const drake::multibody::collision::bitmask& ignores);
 
   /**
    * @brief Returns a mutable reference to the RigidBody associated with the
@@ -1557,7 +1566,8 @@ class RigidBodyTree {
   // RigidBodyTree to become finalized.
   void CompileCollisionState();
 
-  // Defines a number of collision cliques to be used by DrakeCollision::Model.
+  // Defines a number of collision cliques to be used by
+  // drake::multibody::collision::Model.
   // Collision cliques are defined so that:
   // - There is one clique per RigidBody: and so CollisionElement's attached to
   // a RigidBody do not collide.
@@ -1579,7 +1589,7 @@ class RigidBodyTree {
   // RBM for use in collision detection of different kinds. Small margins are
   // applied to all collision geometry when that geometry is added, to improve
   // the numerical stability of contact gradients taken using the model.
-  std::unique_ptr<DrakeCollision::Model> collision_model_;
+  std::unique_ptr<drake::multibody::collision::Model> collision_model_;
 
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -1622,10 +1632,12 @@ class RigidBodyTree {
   //
   // For more information, see:
   //     https://github.com/bulletphysics/bullet3/issues/888
-  std::vector< std::unique_ptr<DrakeCollision::Element>> element_order_;
+  std::vector<std::unique_ptr<drake::multibody::collision::Element>>
+      element_order_;
 
   // A manager for instantiating and managing collision filter groups.
-  DrakeCollision::CollisionFilterGroupManager<T> collision_group_manager_{};
+  drake::multibody::collision::CollisionFilterGroupManager<T>
+      collision_group_manager_{};
 };
 
 typedef RigidBodyTree<double> RigidBodyTreed;

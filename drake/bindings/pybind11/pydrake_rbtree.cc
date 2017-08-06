@@ -1,13 +1,13 @@
 #include <iostream>
-#include <pybind11/pybind11.h>
+
 #include <pybind11/eigen.h>
+#include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "drake/multibody/parsers/package_map.h"
-#include "drake/multibody/rigid_body_tree.h"
-#include "drake/multibody/parsers/urdf_parser.h"
-
 #include "drake/bindings/pybind11/pydrake_autodiff_types.h"
+#include "drake/multibody/parsers/package_map.h"
+#include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/rigid_body_tree.h"
 
 namespace py = pybind11;
 

@@ -2,8 +2,13 @@
 
 #include <string>
 
+#include "drake/common/autodiff_overloads.h"
+#include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/symbolic.h"
+
 namespace drake {
 namespace systems {
+namespace controllers {
 
 template <typename T>
 PidController<T>::PidController(const Eigen::VectorXd& kp,
@@ -17,6 +22,7 @@ PidController<T>::PidController(const MatrixX<double>& state_selector,
                                 const Eigen::VectorXd& kp,
                                 const Eigen::VectorXd& ki,
                                 const Eigen::VectorXd& kd)
+<<<<<<< HEAD
     : PidController(MatrixX<double>::Identity(kp.size(), kp.size()),
                     state_selector, kp, ki, kd) {}
 
@@ -28,7 +34,12 @@ PidController<T>::PidController(const MatrixX<double>& Binv,
                                 const Eigen::VectorXd& kd)
     : kp_(kp),
       kd_(kd),
+=======
+    : LeafSystem<T>(SystemTypeTag<controllers::PidController>{}),
+      kp_(kp),
+>>>>>>> d62ba8084102d4f65a3685e58edec9415863c3bd
       ki_(ki),
+      kd_(kd),
       num_controlled_q_(kp.size()),
       num_full_state_(state_selector.cols()),
       Binv_(Binv),
@@ -50,6 +61,15 @@ PidController<T>::PidController(const MatrixX<double>& Binv,
   input_index_desired_state_ =
       this->DeclareInputPort(kVectorValued, 2 * num_controlled_q_).get_index();
 }
+
+template <typename T>
+template <typename U>
+PidController<T>::PidController(const PidController<U>& other)
+    : PidController(
+          other.state_selector_,
+          other.kp_,
+          other.ki_,
+          other.kd_) {}
 
 template <typename T>
 void PidController<T>::DoCalcTimeDerivatives(
@@ -94,12 +114,6 @@ void PidController<T>::CalcControl(const Context<T>& context,
        (ki_.array() * state_block.array()).matrix()));
 }
 
-template <typename T>
-PidController<symbolic::Expression>* PidController<T>::DoToSymbolic() const {
-  return new PidController<symbolic::Expression>(state_selector_, kp_, ki_,
-                                                 kd_);
-}
-
 // Adds a simple record-based representation of the PID controller to @p dot.
 template <typename T>
 void PidController<T>::GetGraphvizFragment(std::stringstream* dot) const {
@@ -116,5 +130,6 @@ template class PidController<double>;
 template class PidController<AutoDiffXd>;
 template class PidController<symbolic::Expression>;
 
+}  // namespace controllers
 }  // namespace systems
 }  // namespace drake

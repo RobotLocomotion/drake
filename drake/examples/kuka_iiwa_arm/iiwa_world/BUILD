@@ -1,12 +1,12 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load(
     "//tools:drake.bzl",
     "drake_cc_library",
     "drake_cc_binary",
 )
+load("//tools:lint.bzl", "add_lint_tests")
 
 drake_cc_library(
     name = "world_sim_tree_builder",
@@ -14,6 +14,7 @@ drake_cc_library(
     hdrs = ["world_sim_tree_builder.h"],
     visibility = ["//drake/examples/kuka_iiwa_arm:__subpackages__"],
     deps = [
+        "//drake/common:find_resource",
         "//drake/common:unused",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody:rigid_body_tree_construction",
@@ -70,4 +71,4 @@ drake_cc_binary(
     ],
 )
 
-cpplint()
+add_lint_tests()

@@ -1,6 +1,7 @@
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/valkyrie_controller.h"
-#include "drake/examples/Valkyrie/valkyrie_constants.h"
+#include "drake/examples/valkyrie/valkyrie_constants.h"
+#include "drake/manipulation/util/robot_state_msg_translator.h"
 #include "drake/systems/lcm/lcm_driven_loop.h"
 
 namespace drake {
@@ -13,17 +14,15 @@ namespace qp_inverse_dynamics {
 // The overall input and output is a LCM message of type
 // bot_core::robot_state_t and bot_core::atlas_command_t.
 void controller_loop() {
-  const std::string kModelFileName =
-      drake::GetDrakePath() +
-      "/examples/Valkyrie/urdf/urdf/"
-      "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf";
-  const std::string kAliasGroupPath = drake::GetDrakePath() +
-                                      "/examples/QPInverseDynamicsForHumanoids/"
-                                      "config/valkyrie.alias_groups";
-  const std::string kControlConfigPath =
-      drake::GetDrakePath() +
-      "/examples/QPInverseDynamicsForHumanoids/"
-      "config/valkyrie.id_controller_config";
+  const std::string kModelFileName = FindResourceOrThrow(
+      "drake/examples/valkyrie/urdf/urdf/"
+      "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
+  const std::string kAliasGroupPath = FindResourceOrThrow(
+      "drake/examples/QPInverseDynamicsForHumanoids/"
+      "config/valkyrie.alias_groups");
+  const std::string kControlConfigPath = FindResourceOrThrow(
+      "drake/examples/QPInverseDynamicsForHumanoids/"
+      "config/valkyrie.id_controller_config");
 
   drake::lcm::DrakeLcm lcm;
   ValkyrieController valkyrie_controller(kModelFileName, kControlConfigPath,
@@ -39,19 +38,35 @@ void controller_loop() {
       std::make_unique<
           systems::lcm::UtimeMessageToSeconds<bot_core::robot_state_t>>());
 
-  // Do initialization based on the first received message.
+  // Initializes based on the first received message.
   const systems::AbstractValue& first_msg = loop.WaitForMessage();
   double msg_time =
       loop.get_message_to_time_converter().GetTimeInSeconds(first_msg);
   loop.get_mutable_context()->set_time(msg_time);
 
-  // Sets plan eval's desired to the nominal state.
-  systems::Context<double>* plan_eval_context =
-      valkyrie_controller.GetMutableSubsystemContext(loop.get_mutable_context(),
-                                                     plan_eval);
-  VectorX<double> desired_q =
-      valkyrie::RPYValkyrieFixedPointState().head(valkyrie::kRPYValkyrieDof);
-  plan_eval->Initialize(desired_q, plan_eval_context->get_mutable_state());
+  // Decodes the message into q and v.
+  const bot_core::robot_state_t& raw_msg =
+      first_msg.GetValueOrThrow<bot_core::robot_state_t>();
+  RigidBodyTree<double> robot;
+  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+      kModelFileName, multibody::joints::kRollPitchYaw, &robot);
+  RigidBodyTreeAliasGroups<double> alias_groups(&robot);
+  alias_groups.LoadFromFile(kAliasGroupPath);
+
+  VectorX<double> q(robot.get_num_positions());
+  VectorX<double> v(robot.get_num_velocities());
+  manipulation::RobotStateLcmMessageTranslator translator(robot);
+  translator.DecodeMessageKinematics(raw_msg, q, v);
+
+  HumanoidStatus robot_status(&robot, alias_groups);
+  v.setZero();
+  robot_status.UpdateKinematics(msg_time, q, v);
+
+  // Sets plan eval's desired to the measured state.
+  systems::Context<double>& plan_eval_context =
+      valkyrie_controller.GetMutableSubsystemContext(
+          *plan_eval, loop.get_mutable_context());
+  plan_eval->Initialize(robot_status, plan_eval_context.get_mutable_state());
 
   // Starts the loop.
   loop.RunToSecondsAssumingInitialized();

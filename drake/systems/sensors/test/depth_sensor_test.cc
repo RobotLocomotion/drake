@@ -2,7 +2,6 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/context.h"
@@ -155,8 +154,8 @@ std::pair<VectorX<double>, Matrix3Xd> DoBoxOcclusionTest(
   world.AddVisualElement(
       DrakeShapes::VisualElement(geom, T_element_to_link, color));
   tree.addCollisionElement(
-      DrakeCollision::Element(geom, T_element_to_link, &world), world,
-      "terrain");
+      drake::multibody::collision::Element(geom, T_element_to_link, &world),
+      world, "terrain");
   tree.compile();
 
   auto frame = std::allocate_shared<RigidBodyFrame<double>>(

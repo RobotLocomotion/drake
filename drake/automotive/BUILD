@@ -1,14 +1,13 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load(
     "//tools:drake.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_binary",
 )
-load("//tools:python_lint.bzl", "python_lint")
+load("//tools:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -145,8 +144,8 @@ drake_cc_library(
         ":generated_vectors",
         ":idm_planner",
         ":pose_selector",
+        ":road_odometry",
         "//drake/automotive/maliput/api",
-        "//drake/math:saturate",
         "//drake/systems/rendering:pose_bundle",
         "//drake/systems/rendering:pose_vector",
     ],
@@ -195,6 +194,7 @@ drake_cc_library(
         ":idm_planner",
         ":lane_direction",
         ":pose_selector",
+        ":road_odometry",
         "//drake/automotive/maliput/api",
         "//drake/common:cond",
         "//drake/common:symbolic",
@@ -220,6 +220,8 @@ drake_cc_library(
     hdrs = ["pose_selector.h"],
     visibility = [],
     deps = [
+        ":lane_direction",
+        ":road_odometry",
         "//drake/automotive/maliput/api",
         "//drake/systems/rendering:pose_bundle",
         "//drake/systems/rendering:pose_vector",
@@ -233,7 +235,7 @@ drake_cc_library(
     data = ["//drake/automotive:models"],
     deps = [
         ":car_vis",
-        "//drake/common:drake_path",
+        "//drake/common:find_resource",
         "//drake/lcmtypes:viewer",
         "//drake/multibody/joints",
         "//drake/multibody/parsers",
@@ -250,7 +252,6 @@ drake_cc_library(
     deps = [
         ":generated_vectors",
         ":lane_direction",
-        ":pose_selector",
         "//drake/automotive/maliput/api",
         "//drake/common:cond",
         "//drake/common:symbolic",
@@ -266,9 +267,18 @@ drake_cc_library(
     deps = [
         ":generated_vectors",
         ":lane_direction",
-        ":pose_selector",
         ":pure_pursuit",
         "//drake/systems/rendering:pose_vector",
+    ],
+)
+
+drake_cc_library(
+    name = "road_odometry",
+    srcs = ["road_odometry.cc"],
+    hdrs = ["road_odometry.h"],
+    deps = [
+        "//drake/automotive/maliput/api",
+        "//drake/systems/rendering:frame_velocity",
     ],
 )
 
@@ -337,6 +347,7 @@ drake_cc_library(
         ":curve2",
         ":generated_vectors",
         "//drake/common:autodiff",
+        "//drake/common:extract_double",
         "//drake/systems/rendering:frame_velocity",
         "//drake/systems/rendering:pose_vector",
     ],
@@ -404,6 +415,7 @@ drake_cc_binary(
     test_rule_args = [" --simulation_sec=0.01"],
     deps = [
         ":automotive_simulator",
+        "//drake/common:find_resource",
         "//drake/common:text_logging_gflags",
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/rigid_body_plant",
@@ -415,7 +427,7 @@ py_binary(
     name = "steering_command_driver",
     srcs = ["steering_command_driver.py"],
     deps = [
-        "//drake/lcmtypes:lcmtypes-py",
+        "//drake/lcmtypes:lcmtypes_py",
         "@lcm//:lcm-python",
     ],
 )
@@ -424,8 +436,7 @@ java_binary(
     name = "lcm-spy",
     main_class = "lcm.spy.Spy",
     runtime_deps = [
-        "//drake/lcmtypes:automotive_java",
-        "//drake/lcmtypes:viewer_java",
+        "//drake/lcmtypes:lcmtypes_drake_java",
     ],
 )
 
@@ -518,7 +529,6 @@ drake_cc_googletest(
         "//drake/automotive/maliput/api",
         "//drake/automotive/maliput/dragway",
         "//drake/automotive/maliput/monolane",
-        "//drake/common:drake_path",
         "//drake/common:eigen_matrix_compare",
         "//drake/math:geometric_transform",
     ],
@@ -568,6 +578,7 @@ drake_cc_googletest(
     deps = [
         "//drake/automotive:pose_selector",
         "//drake/automotive/maliput/dragway",
+        "//drake/automotive/maliput/monolane:builder",
     ],
 )
 
@@ -640,14 +651,15 @@ drake_cc_googletest(
     name = "trajectory_optimization_test",
     # Test size increased to not timeout when run with Valgrind.
     size = "medium",
+    # Disable IPOPT for this example due to test timeouts on Mac-Clang-Bazel
+    # builds (see #6223).
+    tags = ["snopt"],
     deps = [
         ":simple_car",
-        "//drake/common:call_matlab",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common/proto:call_matlab",
         "//drake/systems/trajectory_optimization:direct_collocation",
     ],
 )
 
-cpplint()
-
-python_lint()
+add_lint_tests()

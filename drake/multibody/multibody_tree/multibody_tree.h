@@ -7,12 +7,15 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/multibody/multibody_tree/acceleration_kinematics_cache.h"
 #include "drake/multibody/multibody_tree/body.h"
 #include "drake/multibody/multibody_tree/body_node.h"
 #include "drake/multibody/multibody_tree/frame.h"
 #include "drake/multibody/multibody_tree/mobilizer.h"
 #include "drake/multibody/multibody_tree/multibody_tree_context.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
+#include "drake/multibody/multibody_tree/position_kinematics_cache.h"
+#include "drake/multibody/multibody_tree/velocity_kinematics_cache.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -484,10 +487,63 @@ class MultibodyTree {
   /// - Body specific quantities such as `com_W` and `M_Bo_W`.
   ///
   /// @throws std::bad_cast if `context` is not a `MultibodyTreeContext`.
-  /// @throws std::runtime_error if `pc` is the nullptr.
+  /// Aborts if `pc` is the nullptr.
   void CalcPositionKinematicsCache(
       const systems::Context<T>& context,
       PositionKinematicsCache<T>* pc) const;
+
+  /// Computes all the kinematic quantities that depend on the generalized
+  /// velocities and stores them in the velocity kinematics cache `vc`.
+  /// These include:
+  /// - Spatial velocity `V_WB` for each body B in the model as measured and
+  ///   expressed in the world frame W.
+  /// - Spatial velocity `V_PB` for each body B in the model as measured and
+  ///   expressed in the inboard (or parent) body frame P.
+  ///
+  /// @pre The position kinematics `pc` must have been previously updated with a
+  /// call to CalcPositionKinematicsCache().
+  ///
+  /// @throws std::bad_cast if `context` is not a `MultibodyTreeContext`.
+  /// Aborts if `vc` is the nullptr.
+  void CalcVelocityKinematicsCache(
+      const systems::Context<T>& context,
+      const PositionKinematicsCache<T>& pc,
+      VelocityKinematicsCache<T>* vc) const;
+
+  /// Computes all the kinematic quantities that depend on the generalized
+  /// accelerations that is, the generalized velocities' time derivatives, and
+  /// stores them in the acceleration kinematics cache `ac`.
+  /// These include:
+  /// - Spatial acceleration `A_WB` for each body B in the model as measured and
+  ///   expressed in the world frame W.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the %MultibodyTree model.
+  /// @param[in] pc
+  ///   A position kinematics cache object already updated to be in sync with
+  ///   `context`.
+  /// @param[in] vc
+  ///   A velocity kinematics cache object already updated to be in sync with
+  ///   `context`.
+  /// @param[in] mbt_vdot
+  ///   A vector with the generalized accelerations for the full %MultibodyTree
+  ///   model.
+  /// @param[out] ac
+  ///   A pointer to a valid, non nullptr, acceleration kinematics cache. This
+  ///   method aborts if `ac` is the nullptr.
+  ///
+  /// @pre The position kinematics `pc` must have been previously updated with a
+  /// call to CalcPositionKinematicsCache().
+  /// @pre The velocity kinematics `vc` must have been previously updated with a
+  /// call to CalcVelocityKinematicsCache().
+  ///
+  /// @throws std::bad_cast if `context` is not a `MultibodyTreeContext`.
+  void CalcAccelerationKinematicsCache(
+      const systems::Context<T>& context,
+      const PositionKinematicsCache<T>& pc,
+      const VelocityKinematicsCache<T>& vc,
+      const VectorX<T>& mbt_vdot,
+      AccelerationKinematicsCache<T>* ac) const;
 
  private:
   void CreateBodyNode(BodyNodeIndex body_node_index);

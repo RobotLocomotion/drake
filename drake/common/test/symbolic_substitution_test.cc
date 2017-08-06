@@ -6,9 +6,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/symbolic_expression.h"
-#include "drake/common/symbolic_formula.h"
-#include "drake/common/symbolic_variable.h"
+#include "drake/common/symbolic.h"
 #include "drake/common/test/symbolic_test_util.h"
 
 using std::function;
@@ -179,6 +177,8 @@ TEST_F(SymbolicSubstitutionTest, CheckHomomorphismExpressionVarExpr) {
   fns.push_back([&](const Expression& x) { return min(y_, x); });
   fns.push_back([&](const Expression& x) { return max(x, z_); });
   fns.push_back([&](const Expression& x) { return max(z_, x); });
+  fns.push_back([](const Expression& x) { return ceil(x); });
+  fns.push_back([](const Expression& x) { return floor(x); });
   fns.push_back([&](const Expression& x) {
     return if_then_else(x > y_ && x > z_, x * y_, x / z_);
   });
@@ -242,6 +242,8 @@ TEST_F(SymbolicSubstitutionTest, CheckHomomorphismExpressionSubstitution) {
   fns.push_back([](const vector<Expression>& v) { return tanh(v[2]); });
   fns.push_back([](const vector<Expression>& v) { return min(v[0], v[1]); });
   fns.push_back([](const vector<Expression>& v) { return max(v[1], v[2]); });
+  fns.push_back([](const vector<Expression>& v) { return ceil(v[0]); });
+  fns.push_back([](const vector<Expression>& v) { return floor(v[1]); });
   fns.push_back([&](const vector<Expression>& v) {
     return fns[9](v) * fns[17](v) / fns[5](v) - fns[19](v);
   });

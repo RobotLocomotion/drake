@@ -42,6 +42,8 @@ using systems::SystemOutput;
 using systems::VectorBase;
 using systems::rendering::FrameVelocity;
 using systems::rendering::PoseVector;
+using systems::Event;
+using systems::UnrestrictedUpdateEvent;
 
 namespace automotive {
 
@@ -333,11 +335,11 @@ void MaliputRailcar<T>::SetDefaultState(
 // vehicle is not considered (see #5532).
 template <typename T>
 void MaliputRailcar<T>::DoCalcNextUpdateTime(const systems::Context<T>& context,
-    systems::UpdateActions<T>* actions) const {
+    systems::CompositeEventCollection<T>* events, T* time) const {
   const MaliputRailcarState<T>& state = get_state(context);
 
   if (state.speed() == 0) {
-    actions->time = T(std::numeric_limits<double>::infinity());
+    *time = T(std::numeric_limits<double>::infinity());
   } else {
     const MaliputRailcarParams<T>& params = get_parameters(context);
     const LaneDirection& lane_direction = get_lane_direction(context);
@@ -359,23 +361,24 @@ void MaliputRailcar<T>::DoCalcNextUpdateTime(const systems::Context<T>& context,
 
     const T distance = cond(with_s, T(lane->length()) - s, -s);
 
-    actions->time = context.get_time() + distance / s_dot;
+    *time = context.get_time() + distance / s_dot;
   }
 
   // Gracefully handle the situation when the next update time is equal to the
   // current time. Since the integrator requires that the next update time be
   // strictly greater than the current time, a small time epsilon is used.
-  if (actions->time == context.get_time()) {
-    actions->time = context.get_time() + kTimeEpsilon;
+  if (*time == context.get_time()) {
+    *time = context.get_time() + kTimeEpsilon;
   }
-  actions->events.push_back(systems::DiscreteEvent<T>());
-  actions->events.back().action =
-      systems::DiscreteEvent<T>::kUnrestrictedUpdateAction;
+  events->add_unrestricted_update_event(
+      std::make_unique<UnrestrictedUpdateEvent<T>>(
+          Event<T>::TriggerType::kTimed));
 }
 
 template <typename T>
 void MaliputRailcar<T>::DoCalcUnrestrictedUpdate(
     const systems::Context<T>& context,
+    const std::vector<const systems::UnrestrictedUpdateEvent<T>*>&,
     systems::State<T>* next_state) const {
   const MaliputRailcarState<T>& current_railcar_state = get_state(context);
   const LaneDirection& current_lane_direction = get_lane_direction(context);

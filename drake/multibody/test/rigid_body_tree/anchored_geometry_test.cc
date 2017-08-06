@@ -1,10 +1,10 @@
-/* clang-format off */
+/* clang-format off to disable clang-format-includes */
 #include "drake/multibody/rigid_body_tree.h"
 /* clang-format on */
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 
@@ -44,8 +44,8 @@ GTEST_TEST(SdfAnchoredGeometry, ParentlessLinkFixedToWorld) {
   RigidBodyTree<double> tree;
   // NOTE: nullptr for weld_to_frame implies welding to the world frame.
   AddModelInstancesFromSdfFile(
-      drake::GetDrakePath() +
-          "/multibody/test/rigid_body_tree/anchored_parentless_link.sdf",
+      FindResourceOrThrow(
+          "drake/multibody/test/rigid_body_tree/anchored_parentless_link.sdf"),
       drake::multibody::joints::kFixed, nullptr, &tree);
   auto body = tree.FindBody("parentless_body");
   ExpectAnchored(body, 1, true);
@@ -57,8 +57,8 @@ GTEST_TEST(SdfAnchoredGeometry, ParentlessLinkFloatOnWorld) {
   RigidBodyTree<double> tree;
   // NOTE: nullptr for weld_to_frame implies welding to the world frame.
   AddModelInstancesFromSdfFile(
-      drake::GetDrakePath() +
-          "/multibody/test/rigid_body_tree/anchored_parentless_link.sdf",
+      FindResourceOrThrow(
+          "drake/multibody/test/rigid_body_tree/anchored_parentless_link.sdf"),
       drake::multibody::joints::kRollPitchYaw, nullptr, &tree);
   auto body = tree.FindBody("parentless_body");
   ExpectAnchored(body, 1, false);
@@ -70,8 +70,8 @@ GTEST_TEST(SdfAnchoredGeometry, LinkedToAnchoredIsAnchored) {
   RigidBodyTree<double> tree;
   // NOTE: nullptr for weld_to_frame implies welding to the world frame.
   AddModelInstancesFromSdfFile(
-      drake::GetDrakePath() +
-          "/multibody/test/rigid_body_tree/anchored_fixed_to_parent.sdf",
+      FindResourceOrThrow(
+          "drake/multibody/test/rigid_body_tree/anchored_fixed_to_parent.sdf"),
       drake::multibody::joints::kFixed, nullptr, &tree);
   auto body = tree.FindBody("parentless_body");
   ExpectAnchored(body, 1, true);
@@ -85,8 +85,8 @@ GTEST_TEST(SdfAnchoredGeometry, LinkedToFloatdIsNotAnchored) {
   RigidBodyTree<double> tree;
   // NOTE: nullptr for weld_to_frame implies welding to the world frame.
   AddModelInstancesFromSdfFile(
-      drake::GetDrakePath() +
-          "/multibody/test/rigid_body_tree/anchored_fixed_to_parent.sdf",
+      FindResourceOrThrow(
+          "drake/multibody/test/rigid_body_tree/anchored_fixed_to_parent.sdf"),
       drake::multibody::joints::kQuaternion, nullptr, &tree);
   auto body = tree.FindBody("parentless_body");
   ExpectAnchored(body, 1, false);
@@ -102,8 +102,8 @@ GTEST_TEST(UrdfAnchoredGeometry, ParentlessLinkFixedToWorld) {
   RigidBodyTree<double> tree;
   // NOTE: nullptr for weld_to_frame implies welding to the world frame.
   AddModelInstanceFromUrdfFileToWorld(
-      drake::GetDrakePath() +
-          "/multibody/test/rigid_body_tree/anchored_parentless_link.urdf",
+      FindResourceOrThrow(
+          "drake/multibody/test/rigid_body_tree/anchored_parentless_link.urdf"),
       drake::multibody::joints::kFixed, &tree);
   auto body = tree.FindBody("parentless_body");
   ExpectAnchored(body, 1, true);
@@ -115,8 +115,8 @@ GTEST_TEST(UrdfAnchoredGeometry, ParentlessLinkFloatOnWorld) {
   RigidBodyTree<double> tree;
   // NOTE: nullptr for weld_to_frame implies welding to the world frame.
   AddModelInstanceFromUrdfFileToWorld(
-      drake::GetDrakePath() +
-          "/multibody/test/rigid_body_tree/anchored_parentless_link.urdf",
+      FindResourceOrThrow(
+          "drake/multibody/test/rigid_body_tree/anchored_parentless_link.urdf"),
       drake::multibody::joints::kRollPitchYaw, &tree);
   auto body = tree.FindBody("parentless_body");
   ExpectAnchored(body, 1, false);
@@ -128,8 +128,8 @@ GTEST_TEST(UrdfAnchoredGeometry, LinkedToAnchoredIsAnchored) {
   RigidBodyTree<double> tree;
   // NOTE: nullptr for weld_to_frame implies welding to the world frame.
   AddModelInstanceFromUrdfFileToWorld(
-      drake::GetDrakePath() +
-          "/multibody/test/rigid_body_tree/anchored_fixed_to_parent.urdf",
+      FindResourceOrThrow(
+          "drake/multibody/test/rigid_body_tree/anchored_fixed_to_parent.urdf"),
       drake::multibody::joints::kFixed, &tree);
   auto body = tree.FindBody("parentless_body");
   ExpectAnchored(body, 1, true);
@@ -143,8 +143,8 @@ GTEST_TEST(UrdfAnchoredGeometry, LinkedToFloatdIsNotAnchored) {
   RigidBodyTree<double> tree;
   // NOTE: nullptr for weld_to_frame implies welding to the world frame.
   AddModelInstanceFromUrdfFileToWorld(
-      drake::GetDrakePath() +
-          "/multibody/test/rigid_body_tree/anchored_fixed_to_parent.urdf",
+      FindResourceOrThrow(
+          "drake/multibody/test/rigid_body_tree/anchored_fixed_to_parent.urdf"),
       drake::multibody::joints::kQuaternion, &tree);
   auto body = tree.FindBody("parentless_body");
   ExpectAnchored(body, 1, false);
@@ -160,7 +160,8 @@ GTEST_TEST(ByHandAnchoredGeometry, WorldCollisionElementIsAnchored) {
   RigidBodyTree<double> tree;
   RigidBody<double>& world = tree.world();
   DrakeShapes::Box geom(Vector3d(1.0, 1.0, 1.0));
-  DrakeCollision::Element element(geom, Isometry3d::Identity(), &world);
+  drake::multibody::collision::Element element(geom, Isometry3d::Identity(),
+                                               &world);
   tree.addCollisionElement(element, world, "rigid_body");
   tree.compile();
 

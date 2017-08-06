@@ -6,6 +6,7 @@
 
 namespace drake {
 namespace systems {
+namespace controllers {
 
 /**
  * Interface for state feedback controllers. This class needs to be extended by
@@ -39,5 +40,6 @@ class StateFeedbackControllerInterface {
   virtual ~StateFeedbackControllerInterface() {}
 };
 
+}  // namespace controllers
 }  // namespace systems
 }  // namespace drake

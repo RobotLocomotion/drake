@@ -1,12 +1,17 @@
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/find_resource.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/plan_eval/test/test_common.h"
 
 namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
+
+using systems::controllers::qp_inverse_dynamics::ConstraintType;
+using systems::controllers::qp_inverse_dynamics::ParamSet;
+using systems::controllers::qp_inverse_dynamics::QpInput;
+using systems::controllers::qp_inverse_dynamics::RobotKinematicState;
 
 // This is a derived class from GenericPlan with no additional features.
 // It sets up a plan that does not have any Cartesian tracking objectives,
@@ -16,59 +21,102 @@ class DummyPlan : public GenericPlan<T> {
  public:
   DummyPlan() {}
 
+  void set_all_to_compatible() {
+    set_model_compatible(true);
+    set_param_compatible(true);
+    set_alias_compatible(true);
+  }
+
+  void set_model_compatible(bool model_compatible) {
+    is_model_compatible_ = model_compatible;
+  }
+
+  void set_param_compatible(bool param_compatible) {
+    is_param_compatible_ = param_compatible;
+  }
+
+  void set_alias_compatible(bool alias_compatible) {
+    is_alias_compatible_ = alias_compatible;
+  }
+
+  bool IsRigidBodyTreeCompatible(const RigidBodyTree<T>&) const override {
+    return is_model_compatible_;
+  }
+
+  bool IsRigidBodyTreeAliasGroupsCompatible(
+      const RigidBodyTreeAliasGroups<T>&) const override {
+    return is_alias_compatible_;
+  }
+
+  bool IsParamSetCompatible(const ParamSet&) const override {
+    return is_param_compatible_;
+  }
+
  private:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DummyPlan)
 
-  GenericPlan<T>* CloneGenericPlanDerived() const {
-    DummyPlan<T>* clone = new DummyPlan<T>(*this);
-    return clone;
+  GenericPlan<T>* CloneGenericPlanDerived() const override {
+    return new DummyPlan<T>(*this);
   }
 
   void InitializeGenericPlanDerived(
-      const HumanoidStatus& robot_status,
-      const param_parsers::ParamSet& paramset,
-      const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) {}
+      const RobotKinematicState<T>& robot_status,
+      const ParamSet& paramset,
+      const RigidBodyTreeAliasGroups<T>& alias_groups) override {}
 
   void ModifyPlanGenericPlanDerived(
-      const HumanoidStatus& robot_stauts,
-      const param_parsers::ParamSet& paramset,
-      const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) {}
+      const RobotKinematicState<T>& robot_stauts,
+      const ParamSet& paramset,
+      const RigidBodyTreeAliasGroups<T>& alias_groups) override {}
 
-  void HandlePlanMessageGenericPlanDerived(
-      const HumanoidStatus& robot_stauts,
-      const param_parsers::ParamSet& paramset,
-      const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,
-      const void* message_bytes, int message_length) {}
+  void HandlePlanGenericPlanDerived(
+      const RobotKinematicState<T>& robot_stauts,
+      const ParamSet& paramset, const RigidBodyTreeAliasGroups<T>& alias_groups,
+      const systems::AbstractValue& plan) override {}
 
   void UpdateQpInputGenericPlanDerived(
-      const HumanoidStatus& robot_status,
-      const param_parsers::ParamSet& paramset,
-      const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,
-      QpInput* qp_input) const {}
+      const RobotKinematicState<T>& robot_status,
+      const ParamSet& paramset, const RigidBodyTreeAliasGroups<T>& alias_groups,
+      QpInput* qp_input) const override {}
+
+  bool is_model_compatible_{true};
+  bool is_param_compatible_{true};
+  bool is_alias_compatible_{true};
 };
 
 class DummyPlanTest : public GenericPlanTest {
  protected:
   void SetUp() override {
-    const std::string kModelPath = drake::GetDrakePath() +
-                                   "/manipulation/models/iiwa_description/urdf/"
-                                   "iiwa14_polytope_collision.urdf";
+    const std::string kModelPath = FindResourceOrThrow(
+        "drake/manipulation/models/iiwa_description/urdf/"
+        "iiwa14_polytope_collision.urdf");
 
-    const std::string kAliasGroupsPath =
-        drake::GetDrakePath() +
-        "/examples/QPInverseDynamicsForHumanoids/"
-        "config/iiwa.alias_groups";
+    const std::string kAliasGroupsPath = FindResourceOrThrow(
+        "drake/examples/QPInverseDynamicsForHumanoids/"
+        "config/iiwa.alias_groups");
 
-    const std::string kControlConfigPath =
-        drake::GetDrakePath() +
-        "/examples/QPInverseDynamicsForHumanoids/"
-        "config/iiwa.id_controller_config";
+    const std::string kControlConfigPath = FindResourceOrThrow(
+        "drake/examples/QPInverseDynamicsForHumanoids/"
+        "config/iiwa.id_controller_config");
 
     std::default_random_engine generator(123);
     AllocateResources(kModelPath, kAliasGroupsPath, kControlConfigPath);
     SetRandomConfiguration(&generator);
     dut_ = std::unique_ptr<GenericPlan<double>>(new DummyPlan<double>());
-    dut_->Initialize(*robot_status_, *params_, *alias_groups_);
+  }
+
+  void CheckIncompatibleAndThrow() {
+    EXPECT_THROW(dut_->Initialize(*robot_status_, *params_, *alias_groups_),
+                 std::logic_error);
+    EXPECT_THROW(dut_->ModifyPlan(*robot_status_, *params_, *alias_groups_),
+                 std::logic_error);
+    EXPECT_THROW(dut_->HandlePlan(*robot_status_, *params_, *alias_groups_,
+                                  systems::Value<int>(10)),
+                 std::logic_error);
+    QpInput qp_input;
+    EXPECT_THROW(dut_->UpdateQpInput(*robot_status_, *params_, *alias_groups_,
+                                     &qp_input),
+                 std::logic_error);
   }
 };
 
@@ -76,19 +124,21 @@ class DummyPlanTest : public GenericPlanTest {
 // contacts, no tracked bodies, and holds all dof at where the plan was
 // initialized.
 TEST_F(DummyPlanTest, TestInitialize) {
+  dut_->Initialize(*robot_status_, *params_, *alias_groups_);
+
   EXPECT_TRUE(dut_->get_planned_contact_state().empty());
   EXPECT_TRUE(dut_->get_body_trajectories().empty());
 
   // The desired position interpolated at any time should be equal to the
   // current posture.
   // The desired velocity and acceleration should be zero.
-  std::vector<double> test_times = {robot_status_->time() - 0.5,
-                                    robot_status_->time(),
-                                    robot_status_->time() + 3};
+  std::vector<double> test_times = {robot_status_->get_time() - 0.5,
+                                    robot_status_->get_time(),
+                                    robot_status_->get_time() + 3};
 
   for (double time : test_times) {
     EXPECT_TRUE(drake::CompareMatrices(
-        robot_status_->position(),
+        robot_status_->get_cache().getQ(),
         dut_->get_dof_trajectory().get_position(time), kSmallTolerance,
         drake::MatrixCompareType::absolute));
 
@@ -105,21 +155,26 @@ TEST_F(DummyPlanTest, TestInitialize) {
 }
 
 // Tests if the cloned fields are the same as the original.
-TEST_F(DummyPlanTest, TestClone) { TestGenericClone(); }
+TEST_F(DummyPlanTest, TestClone) {
+  dut_->Initialize(*robot_status_, *params_, *alias_groups_);
+  TestGenericClone();
+}
 
 // Checks the generated QpInput vs expected.
 TEST_F(DummyPlanTest, TestUpdateQpInput) {
+  dut_->Initialize(*robot_status_, *params_, *alias_groups_);
+
   QpInput qp_input;
 
   // Desired joint position and velocity.
-  VectorX<double> q_d = robot_status_->position();
+  VectorX<double> q_d = robot_status_->get_cache().getQ();
   VectorX<double> v_d = VectorX<double>::Zero(robot_->get_num_velocities());
   VectorX<double> vd_d = VectorX<double>::Zero(robot_->get_num_velocities());
 
   // Changes the current state. The choice of position and velocity is
   // arbitrary.
-  robot_status_->UpdateKinematics(0.66, 0.3 * robot_status_->position(),
-                                  0.4 * robot_status_->velocity());
+  robot_status_->UpdateKinematics(0.66, 0.3 * robot_status_->get_cache().getQ(),
+                                  0.4 * robot_status_->get_cache().getV());
 
   // Computes QpInput.
   dut_->UpdateQpInput(*robot_status_, *params_, *alias_groups_, &qp_input);
@@ -160,6 +215,41 @@ TEST_F(DummyPlanTest, TestUpdateQpInput) {
     EXPECT_EQ(qp_input.desired_centroidal_momentum_dot().constraint_type(i),
               ConstraintType::Skip);
   }
+}
+
+TEST_F(DummyPlanTest, TestIncompatbileAndThrow) {
+  DummyPlan<double>* dummy_plan = dynamic_cast<DummyPlan<double>*>(dut_.get());
+  dummy_plan->set_all_to_compatible();
+  dummy_plan->set_model_compatible(false);
+  CheckIncompatibleAndThrow();
+
+  dummy_plan->set_all_to_compatible();
+  dummy_plan->set_param_compatible(false);
+  CheckIncompatibleAndThrow();
+
+  dummy_plan->set_all_to_compatible();
+  dummy_plan->set_alias_compatible(false);
+  CheckIncompatibleAndThrow();
+
+  dummy_plan->set_all_to_compatible();
+  dummy_plan->set_model_compatible(false);
+  dummy_plan->set_param_compatible(false);
+  CheckIncompatibleAndThrow();
+
+  dummy_plan->set_all_to_compatible();
+  dummy_plan->set_model_compatible(false);
+  dummy_plan->set_alias_compatible(false);
+  CheckIncompatibleAndThrow();
+
+  dummy_plan->set_all_to_compatible();
+  dummy_plan->set_alias_compatible(false);
+  dummy_plan->set_param_compatible(false);
+  CheckIncompatibleAndThrow();
+
+  dummy_plan->set_model_compatible(false);
+  dummy_plan->set_alias_compatible(false);
+  dummy_plan->set_param_compatible(false);
+  CheckIncompatibleAndThrow();
 }
 
 }  // namespace qp_inverse_dynamics

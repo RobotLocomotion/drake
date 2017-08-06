@@ -9,6 +9,7 @@
 
 namespace drake {
 namespace systems {
+namespace controllers {
 
 Eigen::Vector2d ZMPPlanner::ComputeOptimalCoMdd(
     double time, const Eigen::Vector4d& x) const {
@@ -243,5 +244,6 @@ void ZMPPlanner::Plan(const PiecewisePolynomial<double>& zmp_d,
   planned_ = true;
 }
 
+}  // namespace controllers
 }  // namespace systems
 }  // namespace drake

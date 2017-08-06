@@ -3,9 +3,11 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("//tools:lcm.bzl", "lcm_libraries", "lcm_py_library")
+load("@drake//tools:install.bzl", "install")
+load("//tools:lcm.bzl", "lcm_cc_library", "lcm_py_library", "lcm_java_library")
+load("//tools:lint.bzl", "add_lint_tests")
 
-lcm_libraries(
+lcm_cc_library(
     name = "acrobot",
     lcm_package = "drake",
     lcm_srcs = [
@@ -15,127 +17,121 @@ lcm_libraries(
     ],
 )
 
-lcm_libraries(
+lcm_cc_library(
     name = "body_acceleration",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_body_acceleration.lcm"],
 )
 
-lcm_libraries(
+lcm_cc_library(
     name = "body_motion_data",
-    cc_deps = [":piecewise_polynomial"],
-    java_deps = [":piecewise_polynomial_java"],
     lcm_package = "drake",
     lcm_srcs = ["lcmt_body_motion_data.lcm"],
+    deps = [":piecewise_polynomial"],
 )
 
-lcm_libraries(
+lcm_cc_library(
     name = "body_wrench_data",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_body_wrench_data.lcm"],
 )
 
-lcm_libraries(
+lcm_cc_library(
     name = "constrained_values",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_constrained_values.lcm"],
 )
 
-lcm_libraries(
+lcm_cc_library(
     name = "contact_info_for_viz",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_contact_info_for_viz.lcm"],
 )
 
-lcm_libraries(
+lcm_cc_library(
     name = "contact_results_for_viz",
-    cc_deps = [":contact_info_for_viz"],
-    java_deps = [":contact_info_for_viz_java"],
     lcm_package = "drake",
     lcm_srcs = ["lcmt_contact_results_for_viz.lcm"],
+    deps = [":contact_info_for_viz"],
 )
 
-lcm_libraries(
+lcm_cc_library(
     name = "contact_information",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_contact_information.lcm"],
 )
 
-lcm_libraries(
+lcm_cc_library(
     name = "desired_body_motion",
-    cc_deps = [":constrained_values"],
-    java_deps = [":constrained_values_java"],
     lcm_package = "drake",
     lcm_srcs = ["lcmt_desired_body_motion.lcm"],
+    deps = [":constrained_values"],
 )
 
-lcm_libraries(
+lcm_cc_library(
     name = "desired_centroidal_momentum_dot",
-    cc_deps = [":constrained_values"],
-    java_deps = [":constrained_values_java"],
     lcm_package = "drake",
     lcm_srcs = ["lcmt_desired_centroidal_momentum_dot.lcm"],
+    deps = [":constrained_values"],
 )
 
-lcm_libraries(
+lcm_cc_library(
     name = "desired_dof_motions",
-    cc_deps = [":constrained_values"],
-    java_deps = [":constrained_values_java"],
     lcm_package = "drake",
     lcm_srcs = ["lcmt_desired_dof_motions.lcm"],
+    deps = [":constrained_values"],
 )
 
-lcm_libraries(
+lcm_cc_library(
     name = "inverse_dynamics_debug_info",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_inverse_dynamics_debug_info.lcm"],
 )
 
-lcm_libraries(
+lcm_cc_library(
     name = "joint_pd_override",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_joint_pd_override.lcm"],
 )
 
-lcm_libraries(
+lcm_cc_library(
     name = "manipulator_plan_move_end_effector",
-    cc_deps = ["@lcmtypes_bot2_core"],
-    java_deps = ["@lcmtypes_bot2_core//:lcmtypes_bot2_core_java"],
     lcm_package = "drake",
     lcm_srcs = ["lcmt_manipulator_plan_move_end_effector.lcm"],
+    deps = ["@lcmtypes_bot2_core"],
 )
 
-lcm_libraries(
+lcm_cc_library(
     name = "piecewise_polynomial",
-    cc_deps = [":polynomial_matrix"],
-    java_deps = [":polynomial_matrix_java"],
     lcm_package = "drake",
     lcm_srcs = ["lcmt_piecewise_polynomial.lcm"],
+    deps = [":polynomial_matrix"],
 )
 
-lcm_libraries(
+lcm_cc_library(
     name = "polynomial",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_polynomial.lcm"],
 )
 
-lcm_libraries(
+lcm_cc_library(
     name = "plan_eval_debug_info",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_plan_eval_debug_info.lcm"],
 )
 
-lcm_libraries(
+lcm_cc_library(
     name = "polynomial_matrix",
-    cc_deps = [":polynomial"],
-    java_deps = [":polynomial_java"],
     lcm_package = "drake",
     lcm_srcs = ["lcmt_polynomial_matrix.lcm"],
+    deps = [":polynomial"],
 )
 
-lcm_libraries(
+lcm_cc_library(
     name = "qp_controller_input",
-    cc_deps = [
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_qp_controller_input.lcm"],
+    deps = [
         ":body_motion_data",
         ":body_wrench_data",
         ":joint_pd_override",
@@ -143,74 +139,57 @@ lcm_libraries(
         ":whole_body_data",
         ":zmp_data",
     ],
-    java_deps = [
-        ":body_motion_data_java",
-        ":body_wrench_data_java",
-        ":joint_pd_override_java",
-        ":support_data_java",
-        ":whole_body_data_java",
-        ":zmp_data_java",
-    ],
-    lcm_package = "drake",
-    lcm_srcs = ["lcmt_qp_controller_input.lcm"],
 )
 
-lcm_libraries(
+lcm_cc_library(
     name = "qp_input",
-    cc_deps = [
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_qp_input.lcm"],
+    deps = [
         ":contact_information",
         ":desired_body_motion",
         ":desired_centroidal_momentum_dot",
         ":desired_dof_motions",
     ],
-    java_deps = [
-        ":contact_information_java",
-        ":desired_dof_motions_java",
-        ":desired_centroidal_momentum_dot_java",
-        ":desired_body_motion_java",
-        ":desired_dof_motions_java",
-    ],
-    lcm_package = "drake",
-    lcm_srcs = ["lcmt_qp_input.lcm"],
 )
 
-lcm_libraries(
+lcm_cc_library(
     name = "resolved_contact",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_resolved_contact.lcm"],
 )
 
-lcm_libraries(
+lcm_cc_library(
     name = "support_data",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_support_data.lcm"],
 )
 
-lcm_libraries(
+lcm_cc_library(
     name = "whole_body_data",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_whole_body_data.lcm"],
 )
 
-lcm_libraries(
+lcm_cc_library(
     name = "zmp_data",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_zmp_data.lcm"],
 )
 
-lcm_libraries(
+lcm_cc_library(
     name = "zmp_com_observer_state",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_zmp_com_observer_state.lcm"],
 )
 
-lcm_libraries(
+lcm_cc_library(
     name = "drake_signal",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_drake_signal.lcm"],
 )
 
-lcm_libraries(
+lcm_cc_library(
     name = "viewer",
     lcm_package = "drake",
     lcm_srcs = [
@@ -222,7 +201,7 @@ lcm_libraries(
     ],
 )
 
-lcm_libraries(
+lcm_cc_library(
     name = "automotive",
     lcm_package = "drake",
     lcm_srcs = [
@@ -242,7 +221,7 @@ lcm_libraries(
     ],
 )
 
-lcm_libraries(
+lcm_cc_library(
     name = "iiwa",
     lcm_package = "drake",
     lcm_srcs = [
@@ -251,7 +230,7 @@ lcm_libraries(
     ],
 )
 
-lcm_libraries(
+lcm_cc_library(
     name = "schunk",
     lcm_package = "drake",
     lcm_srcs = [
@@ -263,7 +242,7 @@ lcm_libraries(
 # TODO(jwnimmer-tri) Many more C++ messages are missing ...
 
 lcm_py_library(
-    name = "lcmtypes-py",
+    name = "lcmtypes_py",
     lcm_package = "drake",
     lcm_srcs = glob(["*.lcm"]),
     deps = [
@@ -271,42 +250,54 @@ lcm_py_library(
     ],
 )
 
+lcm_java_library(
+    name = "lcmtypes_drake_java",
+    lcm_package = "drake",
+    lcm_srcs = glob(["*.lcm"]),
+    deps = ["@lcmtypes_bot2_core//:lcmtypes_bot2_core_java"],
+)
+
+# This should list every LCM type that is known to Drake.
+DRAKE_LCMTYPES = [
+    ":acrobot",
+    ":automotive",
+    ":body_acceleration",
+    ":body_motion_data",
+    ":body_wrench_data",
+    ":constrained_values",
+    ":contact_info_for_viz",
+    ":contact_information",
+    ":contact_results_for_viz",
+    ":desired_body_motion",
+    ":desired_centroidal_momentum_dot",
+    ":desired_dof_motions",
+    ":drake_signal",
+    ":iiwa",
+    ":inverse_dynamics_debug_info",
+    ":joint_pd_override",
+    ":manipulator_plan_move_end_effector",
+    ":piecewise_polynomial",
+    ":plan_eval_debug_info",
+    ":polynomial",
+    ":polynomial_matrix",
+    ":qp_controller_input",
+    ":qp_input",
+    ":resolved_contact",
+    ":schunk",
+    ":support_data",
+    ":viewer",
+    ":whole_body_data",
+    ":zmp_data",
+    ":zmp_com_observer_state",
+]
+
 # This rule should list every LCM type that is known to Drake or its external
 # dependencies.
 java_binary(
     name = "drake-lcm-spy",
     main_class = "lcm.spy.Spy",
     runtime_deps = [
-        ":acrobot_java",
-        ":automotive_java",
-        ":body_acceleration_java",
-        ":body_motion_data_java",
-        ":body_wrench_data_java",
-        ":constrained_values_java",
-        ":contact_info_for_viz_java",
-        ":contact_information_java",
-        ":contact_results_for_viz_java",
-        ":desired_body_motion_java",
-        ":desired_centroidal_momentum_dot_java",
-        ":desired_dof_motions_java",
-        ":drake_signal_java",
-        ":iiwa_java",
-        ":inverse_dynamics_debug_info_java",
-        ":joint_pd_override_java",
-        ":manipulator_plan_move_end_effector_java",
-        ":piecewise_polynomial_java",
-        ":plan_eval_debug_info_java",
-        ":polynomial_java",
-        ":polynomial_matrix_java",
-        ":qp_controller_input_java",
-        ":qp_input_java",
-        ":resolved_contact_java",
-        ":schunk_java",
-        ":support_data_java",
-        ":viewer_java",
-        ":whole_body_data_java",
-        ":zmp_com_observer_state_java",
-        ":zmp_data_java",
+        ":lcmtypes_drake_java",
         "@lcmtypes_bot2_core//:lcmtypes_bot2_core_java",
         "@lcmtypes_robotlocomotion//:lcmtypes_robotlocomotion_java",
         "@libbot//:lcmtypes_bot2_frames_java",
@@ -315,12 +306,25 @@ java_binary(
     ],
 )
 
+install(
+    name = "install",
+    targets = DRAKE_LCMTYPES + [
+        ":lcmtypes_drake_java",
+        ":lcmtypes_py",
+    ],
+    hdr_dest = "include/drake/lcmtypes",
+    guess_hdrs = "PACKAGE",
+    rename = {"share/java/liblcmtypes_drake_java.jar": "lcmtypes_drake.jar"},
+)
+
 # === test/ ===
 
 py_test(
     name = "polynomial_matrix_test",
     srcs = ["test/polynomial_matrix_test.py"],
     deps = [
-        ":lcmtypes-py",
+        ":lcmtypes_py",
     ],
 )
+
+add_lint_tests()

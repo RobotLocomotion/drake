@@ -7,7 +7,7 @@ from pydrake.solvers.mosek import MosekSolver
 
 
 class TestMathematicalProgram(unittest.TestCase):
-    def test_gurobi_solver(self):
+    def test_mosek_solver(self):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(2, "x")
         prog.AddLinearConstraint(x[0] >= 1)

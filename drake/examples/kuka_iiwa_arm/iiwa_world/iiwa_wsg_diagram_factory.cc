@@ -49,9 +49,6 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
   const auto& iiwa_output_port =
       plant_->model_instance_state_output_port(iiwa_info.instance_id);
 
-  const auto& wsg_output_port =
-      plant_->model_instance_state_output_port(wsg_info.instance_id);
-
   VectorX<double> iiwa_kp, iiwa_kd, iiwa_ki;
   SetPositionControlledIiwaGains(&iiwa_kp, &iiwa_ki, &iiwa_kd);
   // Uses integral gains to deal with the added mass from the grasped object.
@@ -59,10 +56,15 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
 
   // Exposing feedforward acceleration. Should help with more dynamic
   // motions.
-  iiwa_controller_ =
-      builder.template AddController<systems::InverseDynamicsController<T>>(
-          iiwa_info.instance_id, iiwa_info.model_path, iiwa_info.world_offset,
-          iiwa_kp, iiwa_ki, iiwa_kd, true /* with feedforward acceleration */);
+  auto single_arm = std::make_unique<RigidBodyTree<double>>();
+  parsers::urdf::AddModelInstanceFromUrdfFile(
+      iiwa_info.model_path, multibody::joints::kFixed, iiwa_info.world_offset,
+      single_arm.get());
+
+  iiwa_controller_ = builder.template AddController<
+      systems::controllers::InverseDynamicsController<T>>(
+      iiwa_info.instance_id, std::move(single_arm), iiwa_kp, iiwa_ki, iiwa_kd,
+      true /* with feedforward acceleration */);
   iiwa_controller_->set_name("IIWAInverseDynamicsController");
 
   // Updates the controller's model's end effector's inertia to include
@@ -84,23 +86,13 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
   output_port_iiwa_state_ = base_builder->ExportOutput(iiwa_output_port);
 
   // Sets up the WSG gripper part.
-  // TODO(sam.creasey) The choice of position gains below is completely
-  // arbitrary. We'll need to revisit this once we switch to force control
-  // for the gripper.
-  const int kWsgActDim = manipulation::schunk_wsg::kSchunkWsgNumActuators;
-  const VectorX<T> wsg_kp = VectorX<T>::Constant(kWsgActDim, 300.0);
-  const VectorX<T> wsg_ki = VectorX<T>::Constant(kWsgActDim, 0.0);
-  const VectorX<T> wsg_kd = VectorX<T>::Constant(kWsgActDim, 5.0);
+  const auto& wsg_input_port =
+      plant_->model_instance_actuator_command_input_port(wsg_info.instance_id);
+  const auto& wsg_output_port =
+      plant_->model_instance_state_output_port(wsg_info.instance_id);
 
-  wsg_controller_ = builder.template AddController<systems::PidController<T>>(
-      wsg_info.instance_id,
-      manipulation::schunk_wsg::GetSchunkWsgFeedbackSelector<T>(),
-      wsg_kp, wsg_ki, wsg_kd);
-  wsg_controller_->set_name("SchunkWSGPIDController");
-
-  //  Export wsg's desired state input, and state output.
-  input_port_wsg_command_ = base_builder->ExportInput(
-      wsg_controller_->get_input_port_desired_state());
+  //  Export wsg's actuator command input, and state output.
+  input_port_wsg_command_ = base_builder->ExportInput(wsg_input_port);
   output_port_wsg_state_ = base_builder->ExportOutput(wsg_output_port);
 
   output_port_plant_state_ =
@@ -124,14 +116,17 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
   parsers::urdf::AddModelInstanceFromUrdfFile(
       box_info.model_path, multibody::joints::kQuaternion,
       box_info.world_offset, object_.get());
-  box_state_est_ = base_builder->template AddSystem<OracularStateEstimation<T>>(
-      *object_);
+  box_state_est_ =
+      base_builder->template AddSystem<OracularStateEstimation<T>>(*object_);
   box_state_est_->set_name("OracularStateEstimationBoxState");
   base_builder->Connect(
       plant_->model_instance_state_output_port(box_info.instance_id),
       box_state_est_->get_input_port_state());
   output_port_box_robot_state_t_ =
       base_builder->ExportOutput(box_state_est_->get_output_port_msg());
+
+  output_port_contact_results_t_ =
+      base_builder->ExportOutput(plant_->contact_results_output_port());
 
   builder.BuildInto(this);
 }

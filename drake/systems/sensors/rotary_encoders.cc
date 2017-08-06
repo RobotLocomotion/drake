@@ -42,7 +42,7 @@ template <typename T>
 RotaryEncoders<T>::RotaryEncoders(int input_port_size,
                                   const std::vector<int>& input_vector_indices,
                                   const std::vector<int>& ticks_per_revolution)
-    : SisoVectorSystem<T>(input_port_size,
+    : VectorSystem<T>(input_port_size,
                           input_vector_indices.size() /* output_port_size */),
       num_encoders_(input_vector_indices.size()),
       indices_(input_vector_indices),
@@ -81,8 +81,8 @@ void RotaryEncoders<T>::DoCalcVectorOutput(
     // Quantization.
     if (!ticks_per_revolution_.empty()) {
       using std::floor;
-      y(i) = floor(y(i) * ticks_per_revolution_[i] / M_2_PI) * M_2_PI /
-             ticks_per_revolution_[i];
+      const T ticks_per_radian = ticks_per_revolution_[i] / (2.0 * M_PI);
+      y(i) = floor(y(i) * ticks_per_radian) / ticks_per_radian;
     }
   }
 }

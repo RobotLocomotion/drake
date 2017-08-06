@@ -1,5 +1,10 @@
 #pragma once
 
+#ifndef DRAKE_COMMON_SYMBOLIC_HEADER
+// TODO(soonho-tri): Change to #error, when #6613 merged.
+#warning Do not directly include this file. Include "drake/common/symbolic.h".
+#endif
+
 #include <algorithm>  // for cpplint only
 #include <cstddef>
 #include <functional>
@@ -18,12 +23,11 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/dummy_value.h"
+#include "drake/common/eigen_types.h"
 #include "drake/common/hash.h"
 #include "drake/common/number_traits.h"
 #include "drake/common/polynomial.h"
-#include "drake/common/symbolic_environment.h"
-#include "drake/common/symbolic_variable.h"
-#include "drake/common/symbolic_variables.h"
+#include "drake/common/symbolic.h"
 
 namespace drake {
 
@@ -53,6 +57,8 @@ enum class ExpressionKind {
   Tanh,                   ///< hyperbolic tangent
   Min,                    ///< min
   Max,                    ///< max
+  Ceil,                   ///< ceil
+  Floor,                  ///< floor
   IfThenElse,             ///< if then else
   NaN,                    ///< NaN
   UninterpretedFunction,  ///< Uninterpreted function
@@ -87,6 +93,8 @@ class ExpressionCosh;                   // In symbolic_expression_cell.h
 class ExpressionTanh;                   // In symbolic_expression_cell.h
 class ExpressionMin;                    // In symbolic_expression_cell.h
 class ExpressionMax;                    // In symbolic_expression_cell.h
+class ExpressionCeiling;                // In symbolic_expression_cell.h
+class ExpressionFloor;                  // In symbolic_expression_cell.h
 class ExpressionIfThenElse;             // In symbolic_expression_cell.h
 class ExpressionUninterpretedFunction;  // In symbolic_expression_cell.h
 class Formula;                          // In symbolic_formula.h
@@ -105,8 +113,8 @@ Its syntax tree is as follows:
     E := Var | Constant | E + ... + E | E * ... * E | E / E | log(E)
        | abs(E) | exp(E) | sqrt(E) | pow(E, E) | sin(E) | cos(E) | tan(E)
        | asin(E) | acos(E) | atan(E) | atan2(E, E) | sinh(E) | cosh(E) | tanh(E)
-       | min(E, E) | max(E, E) | if_then_else(F, E, E) | NaN
-       | uninterpreted_function(name, {v_1, ..., v_n})
+       | min(E, E) | max(E, E) | ceil(E) | floor(E) | if_then_else(F, E, E)
+       | NaN | uninterpreted_function(name, {v_1, ..., v_n})
 @endverbatim
 
 In the implementation, Expression is a simple wrapper including a shared pointer
@@ -224,18 +232,28 @@ class Expression {
    *  Note that the ID of a variable is preserved in this translation.
    *  \pre{is_polynomial() is true.}
    */
-  Polynomial<double> ToPolynomial() const;
+  Polynomiald ToPolynomial() const;
 
   /** Evaluates under a given environment (by default, an empty environment).
    *  @throws std::runtime_error if NaN is detected during evaluation.
    */
   double Evaluate(const Environment& env = Environment{}) const;
 
+  /** Partially evaluates this expression using an environment @p
+   * env. Internally, this method promotes @p env into a substitution
+   * (Variable → Expression) and call Evaluate::Substitute with it.
+   *
+   * @throws std::runtime_error if NaN is detected during evaluation.
+   */
+  Expression EvaluatePartial(const Environment& env) const;
+
   /** Expands out products and positive integer powers in expression. For
-   * example, <tt>(x + 1) * (x - 1)</tt> is expanded to <tt>x^2 - 1</tt> and
-   * <tt>(x + y)^2</tt> is expanded to <tt>x^2 + 2xy + y^2</tt>. Note that
-   * Expand applies recursively to sub-expressions. For instance, <tt>sin(2 * (x
-   * + y))</tt> is expanded to <tt>sin(2x + 2y)</tt>.
+   * example, `(x + 1) * (x - 1)` is expanded to `x^2 - 1` and `(x + y)^2` is
+   * expanded to `x^2 + 2xy + y^2`. Note that Expand applies recursively to
+   * sub-expressions. For instance, `sin(2 * (x + y))` is expanded to `sin(2x +
+   * 2y)`. It also simplifies "division by constant" cases. See
+   * "drake/common/test/symbolic_expansion_test.cc" to find the examples.
+   *
    * @throws std::runtime_error if NaN is detected during expansion.
    */
   Expression Expand() const;
@@ -319,6 +337,8 @@ class Expression {
   friend Expression tanh(const Expression& e);
   friend Expression min(const Expression& e1, const Expression& e2);
   friend Expression max(const Expression& e1, const Expression& e2);
+  friend Expression ceil(const Expression& e);
+  friend Expression floor(const Expression& e);
 
   /** Constructs if-then-else expression.
 
@@ -388,6 +408,8 @@ class Expression {
   friend bool is_tanh(const Expression& e);
   friend bool is_min(const Expression& e);
   friend bool is_max(const Expression& e);
+  friend bool is_ceil(const Expression& e);
+  friend bool is_floor(const Expression& e);
   friend bool is_if_then_else(const Expression& e);
   friend bool is_uninterpreted_function(const Expression& e);
 
@@ -419,6 +441,8 @@ class Expression {
   friend std::shared_ptr<ExpressionTanh> to_tanh(const Expression& e);
   friend std::shared_ptr<ExpressionMin> to_min(const Expression& e);
   friend std::shared_ptr<ExpressionMax> to_max(const Expression& e);
+  friend std::shared_ptr<ExpressionCeiling> to_ceil(const Expression& e);
+  friend std::shared_ptr<ExpressionFloor> to_floor(const Expression& e);
   friend std::shared_ptr<ExpressionIfThenElse> to_if_then_else(
       const Expression& e);
   friend std::shared_ptr<ExpressionUninterpretedFunction>
@@ -472,9 +496,6 @@ Expression if_then_else(const Formula& f_cond, const Expression& e_then,
  * than its name and a set of its arguments. This is useful to applications
  * where it is good enough to provide abstract information of a function without
  * exposing full details. Declaring sparsity of a system is a typical example.
- *
- * See also `FunctionalForm::Arbitrary(Variables v)` which shares the same
- * motivation.
  */
 Expression uninterpreted_function(const std::string& name,
                                   const Variables& vars);
@@ -698,6 +719,20 @@ operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs.template cast<Expression>() * rhs.template cast<Expression>();
 }
 
+/// Transform<double> * Transform<Expression> => Transform<Expression>
+template <int Dim, int LhsMode, int RhsMode, int LhsOptions, int RhsOptions>
+auto operator*(const Eigen::Transform<Expression, Dim, LhsMode, LhsOptions>& t1,
+               const Eigen::Transform<double, Dim, RhsMode, RhsOptions>& t2) {
+  return t1 * t2.template cast<Expression>();
+}
+
+/// Transform<Expression> * Transform<double> => Transform<Expression>
+template <int Dim, int LhsMode, int RhsMode, int LhsOptions, int RhsOptions>
+auto operator*(
+    const Eigen::Transform<double, Dim, LhsMode, LhsOptions>& t1,
+    const Eigen::Transform<Expression, Dim, RhsMode, RhsOptions>& t2) {
+  return t1.template cast<Expression>() * t2;
+}
 }  // namespace symbolic
 
 /** Provides specialization of @c cond function defined in drake/common/cond.h
@@ -861,4 +896,25 @@ CheckStructuralEquality(const DerivedA& m1, const DerivedB& m2) {
 }
 
 }  // namespace symbolic
+
+/*
+ * Determine if two EigenBase<> types are matrices (non-column-vectors) of
+ * Expressions and doubles, to then form an implicit formulas.
+ */
+template <typename DerivedV, typename DerivedB>
+struct is_eigen_nonvector_expression_double_pair
+    : std::integral_constant<
+          bool, is_eigen_nonvector_of<DerivedV, symbolic::Expression>::value &&
+                    is_eigen_nonvector_of<DerivedB, double>::value> {};
+
+/*
+ * Determine if two EigenBase<> types are vectors of Expressions and doubles
+ * that could make a formula.
+ */
+template <typename DerivedV, typename DerivedB>
+struct is_eigen_vector_expression_double_pair
+    : std::integral_constant<
+          bool, is_eigen_vector_of<DerivedV, symbolic::Expression>::value &&
+                    is_eigen_vector_of<DerivedB, double>::value> {};
+
 }  // namespace drake

@@ -1,4 +1,6 @@
 drake_install_headers(
+    spatial_acceleration.h
+    spatial_force.h
     spatial_velocity.h
 )
 

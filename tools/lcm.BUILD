@@ -10,7 +10,6 @@ load(
     "install_files",
 )
 load("@drake//tools:python_lint.bzl", "python_lint")
-load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -181,11 +180,14 @@ java_library(
     srcs = glob(["lcm-java/lcm/**/*.java"]),
     javacopts = [
         # Suppressed until lcm-proj/lcm#159 is fixed.
-        "-extra_checks:off",
+        "-XepDisableAllChecks",
     ],
-    deps = [
-        "@net_sf_jchart2d_jchart2d//jar",
+    runtime_deps = [
+        "@com_jidesoft_jide_oss//jar",
+        "@commons_io_commons_io//jar",
+        "@org_apache_xmlgraphics_xmlgraphics_commons//jar",
     ],
+    deps = ["@net_sf_jchart2d_jchart2d//jar"],
 )
 
 java_binary(
@@ -216,33 +218,18 @@ install_files(
     strip_prefix = ["**/"],
 )
 
-# TODO(jamiesnape): Find an alternative to the requirement that a license file
-# must be passed to every single use of the install rule.
-LICENSE_DOCS = ["COPYING"]
-
 install(
     name = "install_python",
-    library_dest = "lib/python2.7/site-packages/lcm",
-    license_docs = LICENSE_DOCS,
-    py_strip_prefix = ["lcm-python"],
     targets = [
         ":_lcm.so",
         ":lcm-python-upstream",
     ],
+    library_dest = "lib/python2.7/site-packages/lcm",
+    py_strip_prefix = ["lcm-python"],
 )
 
 install(
     name = "install",
-    hdrs = LCM_PUBLIC_HEADERS,
-    docs = [
-        "AUTHORS",
-        "NEWS",
-    ],
-    license_docs = LICENSE_DOCS,
-    py_strip_prefix = ["lcm-python"],
-    rename = {
-        "share/java/liblcm-java.jar": "lcm.jar",
-    },
     targets = [
         ":lcm",
         ":lcm-gen",
@@ -251,6 +238,16 @@ install(
         ":lcm-logplayer",
         ":lcm-spy",
     ],
+    py_strip_prefix = ["lcm-python"],
+    hdrs = LCM_PUBLIC_HEADERS,
+    docs = [
+        "AUTHORS",
+        "COPYING",
+        "NEWS",
+    ],
+    rename = {
+        "share/java/liblcm-java.jar": "lcm.jar",
+    },
     deps = [
         ":install_cmake_config",
         ":install_extra_cmake",

@@ -64,8 +64,7 @@ void inverseKinTrajBackend(
 
 /// Translate a solver result into something expected for the info
 /// output parameter.
-int GetIKSolverInfo(const drake::solvers::MathematicalProgram& prog,
-                    drake::solvers::SolutionResult result);
+int GetIKSolverInfo(drake::solvers::SolutionResult result);
 
 /// Set solver options based on IK options.
 void SetIKSolverOptions(const IKoptions& ikoptions,

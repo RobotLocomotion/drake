@@ -1,8 +1,8 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load("//tools:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -13,6 +13,7 @@ drake_cc_library(
         "fixed_joint.cc",
         "helical_joint.cc",
         "prismatic_joint.cc",
+        "quaternion_ball_joint.cc",
         "quaternion_floating_joint.cc",
         "revolute_joint.cc",
         "roll_pitch_yaw_floating_joint.cc",
@@ -26,6 +27,7 @@ drake_cc_library(
         "floating_base_types.h",
         "helical_joint.h",
         "prismatic_joint.h",
+        "quaternion_ball_joint.h",
         "quaternion_floating_joint.h",
         "revolute_joint.h",
         "roll_pitch_yaw_floating_joint.h",
@@ -60,4 +62,4 @@ drake_cc_googletest(
     ],
 )
 
-cpplint()
+add_lint_tests()

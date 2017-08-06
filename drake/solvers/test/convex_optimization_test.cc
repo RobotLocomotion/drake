@@ -6,6 +6,8 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
+#include "drake/solvers/gurobi_solver.h"
+#include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/test/add_solver_util.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 
@@ -25,13 +27,13 @@ namespace test {
 namespace {
 void GetSecondOrderConicProgramSolvers(
     std::list<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
-  AddSolverIfAvailable(SolverType::kGurobi, solvers);
-  AddSolverIfAvailable(SolverType::kMosek, solvers);
+  AddSolverIfAvailable<GurobiSolver>(solvers);
+  AddSolverIfAvailable<MosekSolver>(solvers);
 }
 
 void GetSemidefiniteProgramSolvers(
     std::list<std::unique_ptr<MathematicalProgramSolverInterface>>* solvers) {
-  AddSolverIfAvailable(SolverType::kMosek, solvers);
+  AddSolverIfAvailable<MosekSolver>(solvers);
 }
 
 ////////////////////////////////////////
@@ -388,13 +390,11 @@ void FindSpringEquilibrium(const Eigen::VectorXd& weight,
 
   RunSolver(&prog, solver);
 
-  SolverType solver_type;
-  int solver_result;
-  prog.GetSolverResult(&solver_type, &solver_result);
+  const optional<SolverId> solver_id = prog.GetSolverId();
+  ASSERT_TRUE(solver_id);
   double precision = 1e-3;
-  // The precision of Gurobi solver is not as good as Mosek, in
-  // this problem.
-  if (solver_type == SolverType::kGurobi) {
+  // The precision of Gurobi solver is not as good as Mosek, in this problem.
+  if (*solver_id == GurobiSolver::id()) {
     precision = 2e-2;
   }
   for (int i = 0; i < num_nodes - 1; ++i) {

@@ -55,9 +55,6 @@ set(drakeIK_SRC_FILES
     inverse_kinematics_pointwise.cc
     inverse_kinematics_trajectory.cc
     inverse_kinematics_trajectory_backend.cc)
-if (gurobi_FOUND)
-  set(drakeIK_SRC_FILES ${drakeIK_SRC_FILES} approximate_ik.cc)
-endif ()
 add_library_with_exports(LIB_NAME drakeIK SOURCE_FILES ${drakeIK_SRC_FILES})
 target_link_libraries(drakeIK
     drakeIKoptions
@@ -95,7 +92,6 @@ drake_install_headers(global_inverse_kinematics.h)
 add_subdirectory(benchmarks)
 add_subdirectory(collision)
 add_subdirectory(constraint)
-add_subdirectory(dev)
 add_subdirectory(joints)
 add_subdirectory(multibody_tree)
 add_subdirectory(parsers)

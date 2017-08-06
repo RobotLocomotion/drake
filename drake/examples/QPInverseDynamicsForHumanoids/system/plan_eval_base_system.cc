@@ -4,22 +4,25 @@
 #include <string>
 #include <utility>
 
-#include "drake/common/drake_path.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/control_utils.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/robot_kinematic_state.h"
+#include "drake/systems/controllers/setpoint.h"
 
 namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
+using systems::controllers::qp_inverse_dynamics::GetDofNames;
+using systems::controllers::qp_inverse_dynamics::QpInput;
+using systems::controllers::qp_inverse_dynamics::RobotKinematicState;
+
 PlanEvalBaseSystem::PlanEvalBaseSystem(
-    const RigidBodyTree<double>& robot,
+    const RigidBodyTree<double>* robot,
     const std::string& alias_groups_file_name,
     const std::string& param_file_name, double dt)
-    : robot_(robot), control_dt_(dt), alias_groups_(robot) {
+    : robot_(*robot), control_dt_(dt), alias_groups_(robot) {
   DRAKE_DEMAND(control_dt_ > 0);
 
-  input_port_index_humanoid_status_ = DeclareAbstractInputPort().get_index();
+  input_port_index_kinematic_state_ = DeclareAbstractInputPort().get_index();
   output_port_index_qp_input_ =
       DeclareAbstractOutputPort(QpInput(GetDofNames(robot_)),
                                 &PlanEvalBaseSystem::CopyOutQpInput)

@@ -17,8 +17,8 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_contact_results_for_viz.hpp"
@@ -61,7 +61,7 @@ std::unique_ptr<RigidBodyTreed> BuildLiftTestTree(
   // Add a joint to the world which can lift the gripper.
   const auto lifter_id_table =
       parsers::sdf::AddModelInstancesFromSdfFile(
-      GetDrakePath() + "/examples/schunk_wsg/test/test_lifter.sdf",
+      FindResourceOrThrow("drake/examples/schunk_wsg/test/test_lifter.sdf"),
       multibody::joints::kFixed, nullptr, tree.get());
   EXPECT_EQ(lifter_id_table.size(), 1);
   *lifter_instance_id = lifter_id_table.begin()->second;
@@ -73,9 +73,9 @@ std::unique_ptr<RigidBodyTreed> BuildLiftTestTree(
       tree->FindBody("lifted_link"), Eigen::Vector3d(0, -0.05, 0.05),
       Eigen::Vector3d::Zero());
   const auto gripper_id_table = parsers::sdf::AddModelInstancesFromSdfFile(
-      GetDrakePath() +
-      "/manipulation/models/wsg_50_description/sdf/"
-      "schunk_wsg_50_ball_contact.sdf",
+      FindResourceOrThrow(
+          "drake/manipulation/models/wsg_50_description/sdf/"
+          "schunk_wsg_50_ball_contact.sdf"),
       multibody::joints::kFixed, gripper_frame, tree.get());
   EXPECT_EQ(gripper_id_table.size(), 1);
   *gripper_instance_id = gripper_id_table.begin()->second;
@@ -86,7 +86,7 @@ std::unique_ptr<RigidBodyTreed> BuildLiftTestTree(
       nullptr,
       Eigen::Vector3d(0, 0, kBoxInitZ), Eigen::Vector3d::Zero());
   parsers::urdf::AddModelInstanceFromUrdfFile(
-      GetDrakePath() + "/multibody/models/box_small.urdf",
+      FindResourceOrThrow("drake/multibody/models/box_small.urdf"),
       multibody::joints::kQuaternion, box_frame, tree.get());
 
   tree->compile();
@@ -128,7 +128,7 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   const Vector1d lift_kd(5.);
 
   auto lifting_pid_ports =
-      systems::PidControlledSystem<double>::ConnectController(
+      systems::controllers::PidControlledSystem<double>::ConnectController(
           lifting_input_port, lifting_output_port,
           lift_kp, lift_ki, lift_kd, &builder);
 
@@ -164,7 +164,8 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
                   lifting_pid_ports.state_input_port);
 
   // Create a trajectory for grip force.
-  std::vector<double> grip_breaks{0., 0.9, 1.};
+  // Settle the grip by the time the lift starts.
+  std::vector<double> grip_breaks{0., kLiftStart - 0.1, kLiftStart};
   std::vector<Eigen::MatrixXd> grip_knots;
   grip_knots.push_back(Vector1d(0));
   grip_knots.push_back(Vector1d(0));
@@ -217,9 +218,9 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
 
   // Open the gripper.  Due to the number of links involved, this is
   // surprisingly complicated.
-  systems::Context<double>* plant_context =
+  systems::Context<double>& plant_context =
       model->GetMutableSubsystemContext(
-          simulator.get_mutable_context(), plant);
+          *plant, simulator.get_mutable_context());
   Eigen::VectorXd plant_initial_state =
       Eigen::VectorXd::Zero(plant->get_num_states());
   plant_initial_state.head(plant->get_num_positions())
@@ -239,7 +240,7 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   plant_initial_state(3) = 1.27982;
   plant_initial_state(4) = 0.0550667;
   plant_initial_state(5) = 0.009759;
-  plant->set_state_vector(plant_context, plant_initial_state);
+  plant->set_state_vector(&plant_context, plant_initial_state);
 
   auto context = simulator.get_mutable_context();
 
@@ -251,10 +252,28 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
 
   // Simulate to one second beyond the trajectory motion.
   const double kSimDuration = lift_breaks[lift_breaks.size() - 1] + 1.0;
+
+  // Simulation in two pieces -- see notes below on the test for details.
+  simulator.StepTo(kLiftStart);
+
+  // Capture the "initial" positions of the box and the gripper finger as
+  // discussed in the test notes below.
+  auto state_output = model->AllocateOutput(simulator.get_context());
+  model->CalcOutput(simulator.get_context(), state_output.get());
+  auto& interim_kinematics_results =
+      state_output->get_data(kinematrics_results_index)
+          ->GetValue<KinematicsResults<double>>();
+  const int box_index = tree.FindBodyIndex("box");
+  Vector3d init_box_pos =
+      interim_kinematics_results.get_body_position(box_index);
+  const int finger_index = tree.FindBodyIndex("left_finger");
+  Vector3d init_finger_pos =
+      interim_kinematics_results.get_body_position(finger_index);
+
+  // Now run to the end of the simulation.
   simulator.StepTo(kSimDuration);
 
   // Extract and log the state of the robot.
-  auto state_output = model->AllocateOutput(simulator.get_context());
   model->CalcOutput(simulator.get_context(), state_output.get());
   const auto final_output_data =
       state_output->get_vector_data(plant_output_port)->get_value();
@@ -276,23 +295,32 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   // This is a bound on the expected behavior and implicitly defines what we
   // consider to be "acceptable" stiction behavior.
   //
-  // The box starts resting on the ground; its center is at the position
-  // <0, 0, h/2> (where h is the height of the box).
-  // Ostensibly, the box is picked up in stiction and lifted a specific amount
-  // (kLiftHeight).  Ideally, the final position of the box should be
-  // <0, 0, h/2 + kLiftHeight>.  However, the contact model allows
-  // a maximum amount of slipping during stiction (kVStictionTolerance). Thus,
-  // for T seconds of stiction time, the object could slip as much as
-  // T * kVStictionTolerance.  So, we pad our expectation by this amount and
-  // confirm that the box hasn't slid *more* than this.  Due to the fact that
-  // the grip predominantly lies *behind* the box's center of mass, this
-  // displacement due to slip will not be solely in the z-direction, so we
-  // look at the overall displacement of the box's origin.
+  // In perfect stiction, once the gripper grabs the box, the box should undergo
+  // the exact same transformation as the gripper. To measure this, we've
+  // captured the position of the box and one of the fingers at the moment a
+  // secure grip is made -- or the best approximation of that moment -- the end
+  // of the gripping trajectory.
+  //
+  // At the end of the simulation, we measure the position of the finger again.
+  // We then measure the displacement of the finger and apply that same
+  // displacement to the box to represent the ideal stiction position of the
+  // box. (NOTE: This assumes that there is no *rotational* displacement on the
+  // gripper.)
+  //
+  // Based on this ideal end position, we compute the difference between ideal
+  // and actual final position. The _mean slip speed_ is that difference
+  // divided by the simulation duration. Successful simulation means that
+  // the box will have slipped at a rate no greater than that specified by
+  // kVStictionTolerance.
   //
   // Note that this isn't a *definitive* metric.  It's an attempt at a
   // quantitative metric to indicate that the behavior lies with in an expected
-  // qualitative threshold. The completeness of this metric is limited on
-  // multiple fronts:
+  // qualitative threshold. Ideally, the relative velocities between two
+  // contacting bodies *at the point of contact* would be evaluated at
+  // every time step. This is an approximation of that appropriate to a big-
+  // picture, what-is-the-end-result view.
+  //
+  // The approximation will introduce some error from various sources:
   //   - We are looking at the overall displacement of the center of mass and
   //     not its actual trajectory (which is more likely an arc).  However, for
   //     small curves, the chord is a reasonable approximation of the arc.
@@ -302,27 +330,22 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   //     locations can be significant.  However, this is a small scale problem
   //     with multiple points of contact which would help reduce the lever
   //     effect, so this approximation isn't particularly destructive.
-  //   - We haven't guaranteed the initial position of the box when the gripper
-  //     begins lifting it.  There can be slight perturbations while the box
-  //     settles on the ground and as the gripper first grips it.  So, the
-  //     initial position may not be <0, 0, h/2>.  Qualitatively, any error
-  //     introduced by this assumption seems to lie safely below a meaningful
-  //     threshold.
   //   - We allow a fair amount of slippage (at a rate of 0.01 m/s for a box
   //     whose scale is on the same order of magnitude).  This is a testing
   //     expediency to allow for timely execution.  This does not *prove* that
   //     the behavior is correct for smaller thresholds (and the corresponding
   //     more precise integrator settings).
-  const double kBoxZ0 = 0.075;  // Half the box height.
-  const double kIdealBoxHeight = kBoxZ0 + kLiftHeight;
-  Vector3d ideal_pos;
-  ideal_pos << 0.0, 0.0, kIdealBoxHeight;
-  // Expect that the box is off of the ground.
-  auto& kinematics_results = state_output->get_data(kinematrics_results_index)
-      ->GetValue<KinematicsResults<double>>();
-  const int box_index = tree.FindBodyIndex("box");
-  Vector3d final_pos = kinematics_results.get_body_position(box_index);
-  Vector3d displacement = final_pos - ideal_pos;
+
+  // Compute expected final position and compare with observed final position.
+  auto& final_kinematics_results =
+      state_output->get_data(kinematrics_results_index)
+          ->GetValue<KinematicsResults<double>>();
+  Vector3d final_finger_pos =
+      final_kinematics_results.get_body_position(finger_index);
+  Vector3d ideal_final_pos(init_box_pos);
+  ideal_final_pos += final_finger_pos - init_finger_pos;
+  Vector3d final_pos = final_kinematics_results.get_body_position(box_index);
+  Vector3d displacement = final_pos - ideal_final_pos;
   double distance = displacement.norm();
 
   // Lift duration is a sub-interval of the full simulation.

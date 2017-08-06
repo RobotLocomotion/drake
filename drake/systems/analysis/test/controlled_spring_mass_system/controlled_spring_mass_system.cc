@@ -28,7 +28,7 @@ PidControlledSpringMassSystem<T>::PidControlledSpringMassSystem(
   plant_ = builder.template
       AddSystem<SpringMassSystem>(spring_stiffness, mass, true /* is forced */);
   plant_->set_name("plant");
-  controller_ = builder.template AddSystem<PidController>(
+  controller_ = builder.template AddSystem<controllers::PidController>(
       VectorX<double>::Constant(1, Kp), VectorX<double>::Constant(1, Ki),
       VectorX<double>::Constant(1, Kd));
   controller_->set_name("controller");
@@ -77,7 +77,7 @@ template <typename T>
 T PidControlledSpringMassSystem<T>::get_position(
     const Context<T>& context) const {
   const Context<T>& plant_context =
-      Diagram<T>::GetSubsystemContext(context, plant_);
+      Diagram<T>::GetSubsystemContext(*plant_, context);
   return plant_->get_position(plant_context);
 }
 
@@ -85,7 +85,7 @@ template <typename T>
 T PidControlledSpringMassSystem<T>::get_velocity(
     const Context<T>& context) const {
   const Context<T>& plant_context =
-      Diagram<T>::GetSubsystemContext(context, plant_);
+      Diagram<T>::GetSubsystemContext(*plant_, context);
   return plant_->get_velocity(plant_context);
 }
 
@@ -93,24 +93,24 @@ template <typename T>
 T PidControlledSpringMassSystem<T>::get_conservative_work(
     const Context<T>& context) const {
   const Context<T>& plant_context =
-      Diagram<T>::GetSubsystemContext(context, plant_);
+      Diagram<T>::GetSubsystemContext(*plant_, context);
   return plant_->get_conservative_work(plant_context);
 }
 
 template <typename T>
 void PidControlledSpringMassSystem<T>::set_position(
     Context<T>* context, const T& position) const {
-  Context<T>* plant_context =
-      Diagram<T>::GetMutableSubsystemContext(context, plant_);
-  plant_->set_position(plant_context, position);
+  Context<T>& plant_context =
+      Diagram<T>::GetMutableSubsystemContext(*plant_, context);
+  plant_->set_position(&plant_context, position);
 }
 
 template <typename T>
 void PidControlledSpringMassSystem<T>::set_velocity(
     Context<T>* context, const T& velocity) const {
-  Context<T>* plant_context =
-      Diagram<T>::GetMutableSubsystemContext(context, plant_);
-  plant_->set_velocity(plant_context, velocity);
+  Context<T>& plant_context =
+      Diagram<T>::GetMutableSubsystemContext(*plant_, context);
+  plant_->set_velocity(&plant_context, velocity);
 }
 
 template <typename T>

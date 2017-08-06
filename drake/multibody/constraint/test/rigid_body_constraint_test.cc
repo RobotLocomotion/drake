@@ -4,7 +4,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -20,7 +20,8 @@ namespace {
 GTEST_TEST(RigidBodyConstraintTest, TestWorldComConstraint) {
   auto tree = make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      GetDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf",
+      FindResourceOrThrow(
+          "drake/examples/atlas/urdf/atlas_minimal_contact.urdf"),
       multibody::joints::kRollPitchYaw, tree.get());
 
   ASSERT_NE(tree, nullptr);

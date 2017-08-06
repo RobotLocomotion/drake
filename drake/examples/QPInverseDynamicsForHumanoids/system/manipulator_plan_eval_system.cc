@@ -2,17 +2,21 @@
 
 #include <vector>
 
-#include "drake/examples/QPInverseDynamicsForHumanoids/control_utils.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller_common.h"
 #include "drake/lcmt_plan_eval_debug_info.hpp"
+#include "drake/systems/controllers/qp_inverse_dynamics/qp_inverse_dynamics_common.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/robot_kinematic_state.h"
+#include "drake/systems/controllers/setpoint.h"
 
 namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
+using systems::controllers::qp_inverse_dynamics::RobotKinematicState;
+using systems::controllers::qp_inverse_dynamics::QpInput;
+using systems::controllers::VectorSetpoint;
+
 ManipulatorPlanEvalSystem::ManipulatorPlanEvalSystem(
-    const RigidBodyTree<double>& robot,
+    const RigidBodyTree<double>* robot,
     const std::string& alias_groups_file_name,
     const std::string& param_file_name, double dt)
     : PlanEvalBaseSystem(robot, alias_groups_file_name, param_file_name, dt) {
@@ -27,8 +31,9 @@ ManipulatorPlanEvalSystem::ManipulatorPlanEvalSystem(
   input_port_index_desired_acceleration_ =
       DeclareInputPort(systems::kVectorValued, kAccDim).get_index();
 
-  output_port_index_debug_info_ = DeclareAbstractOutputPort(
-      &ManipulatorPlanEvalSystem::OutputDebugInfo).get_index();
+  output_port_index_debug_info_ =
+      DeclareAbstractOutputPort(&ManipulatorPlanEvalSystem::OutputDebugInfo)
+          .get_index();
   set_name("ManipulatorPlanEvalSystem");
 
   abs_state_index_plan_ =
@@ -72,8 +77,9 @@ void ManipulatorPlanEvalSystem::DoExtendedCalcUnrestrictedUpdate(
                                                          abs_state_index_plan_);
 
   // Gets the robot state from input.
-  const HumanoidStatus* robot_status = EvalInputValue<HumanoidStatus>(
-      context, get_input_port_humanoid_status().get_index());
+  const RobotKinematicState<double>* robot_status =
+      EvalInputValue<RobotKinematicState<double>>(
+          context, get_input_port_kinematic_state().get_index());
 
   // Gets the desired position and velocity.
   const systems::BasicVector<double>* state_d =
@@ -94,8 +100,8 @@ void ManipulatorPlanEvalSystem::DoExtendedCalcUnrestrictedUpdate(
   // Updates the desired accelerations.
   QpInput& qp_input = get_mutable_qp_input(state);
   qp_input.mutable_desired_dof_motions().mutable_values() =
-      plan.ComputeTargetAcceleration(robot_status->position(),
-                                     robot_status->velocity());
+      plan.ComputeTargetAcceleration(robot_status->get_cache().getQ(),
+                                     robot_status->get_cache().getV());
 
   // Generates debugging info.
   lcmt_plan_eval_debug_info& debug =

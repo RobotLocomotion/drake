@@ -11,7 +11,10 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/never_destroyed.h"
+#include "drake/common/unused.h"
 #include "drake/math/autodiff.h"
+#include "drake/solvers/mathematical_program.h"
 
 namespace drake {
 namespace solvers {
@@ -373,11 +376,11 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
   opt.set_xtol_abs(xtol_abs);
 
   SolutionResult result = SolutionResult::kSolutionFound;
-  nlopt::result nlopt_result = nlopt::FAILURE;
 
   double minf = 0;
   try {
-    nlopt_result = opt.optimize(x, minf);
+    const nlopt::result nlopt_result = opt.optimize(x, minf);
+    unused(nlopt_result);
   } catch (std::invalid_argument&) {
     result = SolutionResult::kInvalidInput;
   } catch (std::bad_alloc&) {
@@ -397,7 +400,7 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
 
   prog.SetDecisionVariableValues(sol);
   prog.SetOptimalCost(minf);
-  prog.SetSolverResult(solver_type(), nlopt_result);
+  prog.SetSolverId(id());
   return result;
 }
 

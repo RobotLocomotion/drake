@@ -4,8 +4,8 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/find_resource.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
@@ -47,6 +47,11 @@ DEFINE_double(sim_duration, 3, "The simulation duration");
 DEFINE_bool(playback, true,
             "If true, enters looping playback after sim finished");
 
+namespace {
+const char* kSlidingBrickUrdf =
+    "drake/examples/contact_model/sliding_brick.urdf";
+}  // namespace
+
 // Simple scenario of two blocks being pushed across a plane.  The first block
 // has zero initial velocity.  The second has a small initial velocity in the
 // pushing direction.
@@ -66,10 +71,10 @@ int main() {
   // Create RigidBodyTree.
   auto tree_ptr = make_unique<RigidBodyTree<double>>();
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      drake::GetDrakePath() + "/examples/contact_model/sliding_brick.urdf",
+      FindResourceOrThrow(kSlidingBrickUrdf),
       kFixed, nullptr /* weld to frame */, tree_ptr.get());
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      drake::GetDrakePath() + "/examples/contact_model/sliding_brick.urdf",
+      FindResourceOrThrow(kSlidingBrickUrdf),
       kFixed, nullptr /* weld to frame */, tree_ptr.get());
   multibody::AddFlatTerrainToWorld(tree_ptr.get(), 100., 10.);
 
@@ -118,17 +123,17 @@ int main() {
                                                              FLAGS_timestep,
                                                              context);
   // Set initial state.
-  auto plant_context = diagram->GetMutableSubsystemContext(context, &plant);
+  auto& plant_context = diagram->GetMutableSubsystemContext(plant, context);
   // 6 1-dof joints * 2 = 6 * (x, ẋ) * 2
   const int kStateSize = 24;
-  DRAKE_DEMAND(plant_context->get_continuous_state_vector().size() ==
+  DRAKE_DEMAND(plant_context.get_continuous_state_vector().size() ==
                kStateSize);
   VectorX<double> initial_state(kStateSize);
   initial_state << 0, -0.5, 0, 0, 0, 0,  // brick 1 position
                    0, 0.5, 0, 0, 0, 0,   // brick 2 position
                    0, 0, 0, 0, 0, 0,     // brick 1 velocity
                    FLAGS_v, 0, 0, 0, 0, 0;     // brick 2 velocity
-  plant.set_state_vector(plant_context, initial_state);
+  plant.set_state_vector(&plant_context, initial_state);
 
   simulator->StepTo(FLAGS_sim_duration);
 

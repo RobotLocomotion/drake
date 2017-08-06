@@ -34,6 +34,7 @@ lcm_c_library(
 
 lcm_cc_library(
     name = "lcmtypes_bot2_core",
+    aggregate_hdr = "lcmtypes/bot_core.hpp",
     includes = ["lcmtypes"],
     lcm_package = "bot_core",
     lcm_srcs = LCM_SRCS,
@@ -64,22 +65,22 @@ install_cmake_config(
     versioned = 0,
 )
 
-# For license_docs, see  https://github.com/RobotLocomotion/lcmtypes/issues/2
+# For docs, see  https://github.com/RobotLocomotion/lcmtypes/issues/2
 # and https://github.com/openhumanoids/bot_core_lcmtypes/issues/33.
 install(
     name = "install",
-    guess_hdrs = "PACKAGE",
-    license_docs = ["@lcmtypes_robotlocomotion//:LICENSE.txt"],
-    py_strip_prefix = ["lcmtypes"],
-    rename = {
-        "share/java/liblcmtypes_bot2_core_java.jar": "lcmtypes_bot2_core.jar",
-    },
+    workspace = CMAKE_PACKAGE,
     targets = [
         ":lcmtypes_bot2_core",
         ":lcmtypes_bot2_core_c",
         ":lcmtypes_bot2_core_java",
         ":lcmtypes_bot2_core_py",
     ],
-    workspace = CMAKE_PACKAGE,
+    py_strip_prefix = ["lcmtypes"],
+    guess_hdrs = "PACKAGE",
+    docs = ["@lcmtypes_robotlocomotion//:LICENSE.txt"],
+    rename = {
+        "share/java/liblcmtypes_bot2_core_java.jar": "lcmtypes_bot2_core.jar",
+    },
     deps = [":install_cmake_config"],
 )

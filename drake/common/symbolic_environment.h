@@ -1,12 +1,17 @@
 #pragma once
 
+#ifndef DRAKE_COMMON_SYMBOLIC_HEADER
+// TODO(soonho-tri): Change to #error, when #6613 merged.
+#warning Do not directly include this file. Include "drake/common/symbolic.h".
+#endif
+
 #include <initializer_list>
 #include <ostream>
 #include <string>
 #include <unordered_map>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/symbolic_variable.h"
+#include "drake/common/symbolic.h"
 
 namespace drake {
 namespace symbolic {
@@ -97,6 +102,9 @@ class Environment {
   iterator find(const key_type& key) { return map_.find(key); }
   /** Finds element with specific key. */
   const_iterator find(const key_type& key) const { return map_.find(key); }
+
+  /** Returns the domain of this environment. */
+  Variables domain() const;
 
   /** Returns string representation. */
   std::string to_string() const;

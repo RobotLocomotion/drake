@@ -1,11 +1,12 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load(
     "//tools:drake.bzl",
     "drake_cc_binary",
 )
+load("//tools:install_data.bzl", "install_data")
+load("//tools:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -19,7 +20,7 @@ drake_cc_binary(
         " --playback=false",
     ],
     deps = [
-        "//drake/common:drake_path",
+        "//drake/common:find_resource",
         "//drake/lcm",
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/parsers",
@@ -44,7 +45,7 @@ drake_cc_binary(
         " --playback=false",
     ],
     deps = [
-        "//drake/common:drake_path",
+        "//drake/common:find_resource",
         "//drake/lcm",
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/parsers",
@@ -68,7 +69,7 @@ drake_cc_binary(
         " --playback=false",
     ],
     deps = [
-        "//drake/common:drake_path",
+        "//drake/common:find_resource",
         "//drake/lcm",
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/parsers",
@@ -89,4 +90,6 @@ filegroup(
     ],
 )
 
-cpplint()
+install_data()
+
+add_lint_tests()

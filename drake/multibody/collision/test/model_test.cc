@@ -1,14 +1,15 @@
 #include "drake/multibody/collision/model.h"
 
 #include <cmath>
+#include <functional>
 #include <memory>
 #include <unordered_map>
 #include <vector>
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/find_resource.h"
 #include "drake/multibody/collision/drake_collision.h"
 
 using Eigen::AngleAxisd;
@@ -19,7 +20,9 @@ using std::make_unique;
 using std::move;
 using std::unique_ptr;
 
-namespace DrakeCollision {
+namespace drake {
+namespace multibody {
+namespace collision {
 namespace {
 
 // Structure used to hold the analytical solution of the tests.
@@ -34,8 +37,9 @@ struct SurfacePoint {
 };
 
 // Solutions are accessed by collision element id using an std::unordered_set.
-// DrakeCollision::Model returns the collision detection results as a vector of
-// DrakeCollision::PointPair entries. Each entry holds a reference to the pair
+// drake::multibody::collision::Model returns the collision detection results
+// as a vector of drake::multibody::collision::PointPair entries. Each entry
+// holds a reference to the pair
 // of collision elements taking part in the collision. Collision elements are
 // referenced by their id.
 // The order in which the pair of elements is stored in a PointPair cannot
@@ -49,42 +53,148 @@ struct SurfacePoint {
 // contact point on a specific element here we use an `std::unordered_set` to
 // map id's to a `SurfacePoint` structure holding the analytical solution on
 // both body and world frames.
-typedef std::unordered_map<const DrakeCollision::Element*, SurfacePoint>
+typedef std::unordered_map<const drake::multibody::collision::Element*,
+                           SurfacePoint>
     ElementToSurfacePointMap;
+
+// Base fixture for tests that own a collision model
+class ModelTestBase : public ::testing::Test {
+ protected:
+  unique_ptr<drake::multibody::collision::Model> model_;
+};
+
+// Fixture for tests that should be applied to all collision model types
+class ModelTest : public ModelTestBase,
+                  public ::testing::WithParamInterface<
+                      drake::multibody::collision::ModelType> {
+ protected:
+  void SetUp() override {
+    model_ = drake::multibody::collision::newModel(GetParam());
+  }
+};
+
+TEST_P(ModelTest, NewModel) { EXPECT_FALSE(model_ == nullptr); }
+
+INSTANTIATE_TEST_CASE_P(NewModelTest, ModelTest,
+                        ::testing::Values(
+#ifdef BULLET_COLLISION
+                            ModelType::kBullet,
+#endif
+#ifndef DRAKE_DISABLE_FCL
+                            ModelType::kFcl,
+#endif
+                            ModelType::kUnusable));
+
+#ifndef DRAKE_DISABLE_FCL
+// Fixture for locking down FclModel's not-yet-implemented functions.
+class FclModelDeathTests : public ModelTestBase,
+                           public ::testing::WithParamInterface<
+                               std::function<void(FclModelDeathTests*)>> {
+ public:
+  FclModelDeathTests() {
+    model_ = drake::multibody::collision::newModel(ModelType::kFcl);
+  }
+
+  void CallAddBox() {
+    const DrakeShapes::Box geom{Vector3d::Ones()};
+    model_->AddElement(make_unique<Element>(geom));
+  }
+
+  void CallAddSphere() {
+    const DrakeShapes::Sphere geom{1};
+    model_->AddElement(make_unique<Element>(geom));
+  }
+
+  void CallAddCylinder() {
+    const DrakeShapes::Cylinder geom{1, 1};
+    model_->AddElement(make_unique<Element>(geom));
+  }
+
+  void CallAddMesh() {
+    std::string file_name = drake::FindResourceOrThrow(
+        "drake/multibody/collision/test/ripple_cap.obj");
+    const DrakeShapes::Mesh geom{file_name, file_name};
+    model_->AddElement(make_unique<Element>(geom));
+  }
+
+  void CallAddCapsule() {
+    const DrakeShapes::Capsule geom{1, 1};
+    model_->AddElement(make_unique<Element>(geom));
+  }
+
+  void CallUpdateModel() { model_->UpdateModel(); }
+
+  void CallClosestPointsAllToAll() {
+    std::vector<ElementId> ids;
+    std::vector<PointPair> pairs;
+    model_->ClosestPointsAllToAll(ids, true, &pairs);
+  }
+
+  void CallComputeMaximumDepthCollisionPoints() {
+    std::vector<PointPair> pairs;
+    model_->ComputeMaximumDepthCollisionPoints(true, &pairs);
+  }
+
+  void CallCollisionDetectFromPoints() {
+    Eigen::Matrix3Xd points;
+    std::vector<PointPair> closest_points;
+    model_->CollisionDetectFromPoints(points, false, &closest_points);
+  }
+
+  void CallClearCachedResults() { model_->ClearCachedResults(false); }
+
+  void CallCollisionRaycast() {
+    Eigen::Matrix3Xd origins, ray_endpoints, normals;
+    Eigen::VectorXd distances;
+    model_->CollisionRaycast(origins, ray_endpoints, false, &distances,
+                             &normals);
+  }
+
+  void CallCollidingPointsCheckOnly() {
+    std::vector<Eigen::Vector3d> input_points;
+    model_->CollidingPointsCheckOnly(input_points, 0);
+  }
+
+  void CallCollidingPoints() {
+    std::vector<Eigen::Vector3d> input_points;
+    model_->CollidingPoints(input_points, 0);
+  }
+};
+
+TEST_P(FclModelDeathTests, NotImplemented) {
+  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+  EXPECT_DEATH(GetParam()(this), "Not implemented.");
+}
+
+INSTANTIATE_TEST_CASE_P(
+    NotImplementedTest, FclModelDeathTests,
+    ::testing::Values(
+        &FclModelDeathTests::CallAddBox, &FclModelDeathTests::CallAddSphere,
+        &FclModelDeathTests::CallAddCylinder,
+        &FclModelDeathTests::CallAddCapsule, &FclModelDeathTests::CallAddMesh,
+        &FclModelDeathTests::CallUpdateModel,
+        &FclModelDeathTests::CallClosestPointsAllToAll,
+        &FclModelDeathTests::CallComputeMaximumDepthCollisionPoints,
+        &FclModelDeathTests::CallCollisionDetectFromPoints,
+        &FclModelDeathTests::CallClearCachedResults,
+        &FclModelDeathTests::CallCollisionRaycast,
+        &FclModelDeathTests::CallCollidingPointsCheckOnly,
+        &FclModelDeathTests::CallCollidingPoints));
+#endif
 
 // GENERAL REMARKS ON THE TESTS PERFORMED
 // A series of canonical tests are performed. These are Box_vs_Sphere,
 // SmallBoxSittingOnLargeBox and NonAlignedBoxes.
 // These tests are performed using the following algorithms:
-// - closestPointsAllToAll: O(N^2) checking all pairs of collision elements.
+// - ClosestPointsAllToAll: O(N^2) checking all pairs of collision elements.
 //   Results are in bodies' frames.
 // - ComputeMaximumDepthCollisionPoints: Uses collision library dispatching.
 //   Results are in world frame.
-// - potentialCollisionPoints: randomly samples collision elements' pose
-//   searching for potential collision points. Results are in the bodies'
-//   frames.
 
 // CLEARING CACHED RESULTS TEST
 // Test ClearCachedResults tests the model is not caching results when a series
 // of collision dispatch queries is performed. This ensures results do not
 // depend on the past history and that the user gets a fresh query every time.
-
-// REMARKS ON MULTICONTACT
-// Results from Model::potentialCollisionPoints are affected by previous calls
-// to Model::ComputeMaximumDepthCollisionPoints even if cached results are
-// cleared with Model::ClearCachedResults. This is the reason why multicontact
-// tests using Model::potentialCollisionPoints are performed separately in their
-// own tests.
-// For instance, for the NonAlignedBoxes there is a separate test called
-// NonAlignedBoxes_multi performed with Model::potentialCollisionPoints.
-// It seems like Bullet is storing some additional configuration setup with the
-// call to Model::ComputeMaximumDepthCollisionPoints that persists throughout
-// subsequent calls to Model::potentialCollisionPoints.
-// Therefore, DO NOT mix these calls since they might produce erroneous results.
-// Notice also that the tolerance used for these tests is much higher. The
-// reason is that Bullet randomly changes the pose of the collision elements
-// searching for potential collision points. This is the additional source of
-// error introduced.
 
 /*
  * Three bodies (cube (1 m edges) and two spheres (0.5 m radii) arranged like
@@ -109,7 +219,7 @@ typedef std::unordered_map<const DrakeCollision::Element*, SurfacePoint>
  *          |                    |
  *
  */
-GTEST_TEST(ModelTest, closestPointsAllToAll) {
+GTEST_TEST(ModelTest, ClosestPointsAllToAll) {
   // Set up the geometry.
   Isometry3d T_body1_to_world, T_body2_to_world, T_body3_to_world,
       T_elem2_to_body;
@@ -142,14 +252,14 @@ GTEST_TEST(ModelTest, closestPointsAllToAll) {
   ElementId id1 = element_1->getId();
   ElementId id2 = element_2->getId();
   ElementId id3 = element_3->getId();
-  model->updateElementWorldTransform(id1, T_body1_to_world);
-  model->updateElementWorldTransform(id2, T_body2_to_world);
-  model->updateElementWorldTransform(id3, T_body3_to_world);
+  model->UpdateElementWorldTransform(id1, T_body1_to_world);
+  model->UpdateElementWorldTransform(id2, T_body2_to_world);
+  model->UpdateElementWorldTransform(id3, T_body3_to_world);
 
   // Compute the closest points.
   const std::vector<ElementId> ids_to_check = {id1, id2, id3};
   std::vector<PointPair> points;
-  model->closestPointsAllToAll(ids_to_check, true, points);
+  model->ClosestPointsAllToAll(ids_to_check, true, &points);
   ASSERT_EQ(3u, points.size());
 
   // Check the closest point between object 1 and object 2.
@@ -284,13 +394,13 @@ class BoxVsSphereTest : public ::testing::Test {
     Isometry3d box_pose;
     box_pose.setIdentity();
     box_pose.translation() = Vector3d(0.0, 0.5, 0.0);
-    model_->updateElementWorldTransform(box_->getId(), box_pose);
+    model_->UpdateElementWorldTransform(box_->getId(), box_pose);
 
     // Body 2 pose
     Isometry3d sphere_pose;
     sphere_pose.setIdentity();
     sphere_pose.translation() = Vector3d(0.0, 1.25, 0.0);
-    model_->updateElementWorldTransform(sphere_->getId(), sphere_pose);
+    model_->UpdateElementWorldTransform(sphere_->getId(), sphere_pose);
   }
 
  protected:
@@ -309,9 +419,9 @@ TEST_F(BoxVsSphereTest, SingleContact) {
   // List of collision points.
   std::vector<PointPair> points;
 
-  // Collision test performed with Model::closestPointsAllToAll.
+  // Collision test performed with Model::ClosestPointsAllToAll.
   const std::vector<ElementId> ids_to_check = {box_->getId(), sphere_->getId()};
-  model_->closestPointsAllToAll(ids_to_check, true, points);
+  model_->ClosestPointsAllToAll(ids_to_check, true, &points);
   ASSERT_EQ(1u, points.size());
   EXPECT_NEAR(-0.25, points[0].distance, tolerance_);
   // Points are in the bodies' frame on the surface of the corresponding body.
@@ -324,14 +434,14 @@ TEST_F(BoxVsSphereTest, SingleContact) {
   // Collision test performed with Model::ComputeMaximumDepthCollisionPoints.
   // Not using margins.
   points.clear();
-  model_->ComputeMaximumDepthCollisionPoints(false, points);
+  model_->ComputeMaximumDepthCollisionPoints(false, &points);
   ASSERT_EQ(1u, points.size());
   EXPECT_NEAR(-0.25, points[0].distance, tolerance_);
   // Points are in the world frame on the surface of the corresponding body.
   // That is why ptA is generally different from ptB, unless there is
   // an exact non-penetrating collision.
   // WARNING:
-  // This convention is different from the one used by closestPointsAllToAll
+  // This convention is different from the one used by ClosestPointsAllToAll
   // which computes points in the local frame of the body.
   // TODO(amcastro-tri): make these two conventions match? does this interfere
   // with any Matlab functionality?
@@ -344,14 +454,14 @@ TEST_F(BoxVsSphereTest, SingleContact) {
   // Collision test performed with Model::ComputeMaximumDepthCollisionPoints.
   // Using margins.
   points.clear();
-  model_->ComputeMaximumDepthCollisionPoints(true, points);
+  model_->ComputeMaximumDepthCollisionPoints(true, &points);
   ASSERT_EQ(1u, points.size());
   EXPECT_NEAR(-0.25, points[0].distance, tolerance_);
   // Points are in the world frame on the surface of the corresponding body.
   // That is why ptA is generally different from ptB, unless there is
   // an exact non-penetrating collision.
   // WARNING:
-  // This convention is different from the one used by closestPointsAllToAll
+  // This convention is different from the one used by ClosestPointsAllToAll
   // which computes points in the local frame of the body.
   // TODO(amcastro-tri): make these two conventions match? does this interfere
   // with any Matlab functionality?
@@ -360,61 +470,19 @@ TEST_F(BoxVsSphereTest, SingleContact) {
       points[0].ptA.isApprox(solution_[points[0].elementA].world_frame));
   EXPECT_TRUE(
       points[0].ptB.isApprox(solution_[points[0].elementB].world_frame));
-
-  // Calls to BulletModel::potentialCollisionPoints cannot be mixed.
-  // Therefore throw an exception if user attempts to call
-  // potentialCollisionPoints after calling another dispatch method.
-  points.clear();
-  EXPECT_THROW(points = model_->potentialCollisionPoints(false),
-               std::runtime_error);
 }
 
-// This test is exactly the same as the previous Box_vs_Sphere test.
-// The difference is that a multi-contact algorithm is being used.
-// See REMARKS ON MULTICONTACT at the top of this file.
-TEST_F(BoxVsSphereTest, MultiContact) {
-  // Numerical precision tolerance to perform floating point comparisons.
-  // Its magnitude was chosen to be the minimum value for which these tests can
-  // successfully pass.
-  tolerance_ = 2.0e-4;
-
-  // List of collision points.
-  std::vector<PointPair> points;
-
-  // Collision test performed with Model::potentialCollisionPoints.
-  points.clear();
-  points = model_->potentialCollisionPoints(false);
-
-  ASSERT_EQ(1u, points.size());
-  EXPECT_NEAR(-0.25, points[0].distance, tolerance_);
-  // Points are in the bodies' frame on the surface of the corresponding body.
-  EXPECT_TRUE(points[0].normal.isApprox(Vector3d(0.0, -1.0, 0.0)));
-
-  // Ensures the vertical coordinate is computed within tolerance_.
-  EXPECT_NEAR(points[0].ptA.y(),
-              solution_[points[0].elementA].body_frame.y(), tolerance_);
-  EXPECT_NEAR(points[0].ptB.y(),
-              solution_[points[0].elementB].body_frame.y(), tolerance_);
-
-  // Notice however that the x and z coordinates are computed with a much
-  // larger error.
-  EXPECT_TRUE(points[0].ptA.isApprox(
-      solution_[points[0].elementA].body_frame, tolerance_ * 200));
-  EXPECT_TRUE(points[0].ptB.isApprox(
-      solution_[points[0].elementB].body_frame, tolerance_ * 200));
-}
-
-// This test seeks to find out whether DrakeCollision::Model can report
-// collision manifolds. To this end, a small cube with unit length sides is
-// placed on top of a large cube with sides of length 5.0. The smaller cube is
-// placed such that it intersects the large box. Therefore the intersection
+// This test seeks to find out whether drake::multibody::collision::Model can
+// report collision manifolds. To this end, a small cube with unit length sides
+// is placed on top of a large cube with sides of length 5.0. The smaller cube
+// is placed such that it intersects the large box. Therefore the intersection
 // between the two boxes is not just a single point but the (squared) perimeter
 // all around the smaller box (the manifold).
 //
-// Unfortunately these tests show that DrakeCollision::Model only reports a
-// single (randomly chosen) point at one of the smaller box corners. In previous
-// runs this was the corner at (0.5, 0.5, z) where z = 5.0 for the top of the
-// large box and z = 4.9 for the bottom of the smaller box.
+// Unfortunately these tests show that drake::multibody::collision::Model only
+// reports a single (randomly chosen) point at one of the smaller box corners.
+// In previous runs this was the corner at (0.5, 0.5, z) where z = 5.0 for the
+// top of the large box and z = 4.9 for the bottom of the smaller box.
 class SmallBoxSittingOnLargeBox: public ::testing::Test {
  public:
   void SetUp() override {
@@ -439,13 +507,13 @@ class SmallBoxSittingOnLargeBox: public ::testing::Test {
     Isometry3d large_box_pose;
     large_box_pose.setIdentity();
     large_box_pose.translation() = Vector3d(0.0, 2.5, 0.0);
-    model_->updateElementWorldTransform(large_box_->getId(), large_box_pose);
+    model_->UpdateElementWorldTransform(large_box_->getId(), large_box_pose);
 
     // Small body pose
     Isometry3d small_box_pose;
     small_box_pose.setIdentity();
     small_box_pose.translation() = Vector3d(0.0, 5.4, 0.0);
-    model_->updateElementWorldTransform(small_box_->getId(), small_box_pose);
+    model_->UpdateElementWorldTransform(small_box_->getId(), small_box_pose);
   }
 
  protected:
@@ -464,9 +532,9 @@ TEST_F(SmallBoxSittingOnLargeBox, SingleContact) {
   // List of collision points.
   std::vector<PointPair> points;
 
-  // Unfortunately DrakeCollision::Model is randomly selecting one of the small
-  // box's corners instead of reporting a manifold describing the perimeter of
-  // the square where both boxes intersect.
+  // Unfortunately drake::multibody::collision::Model is randomly selecting one
+  // of the small box's corners instead of reporting a manifold describing the
+  // perimeter of the square where both boxes intersect.
   // Therefore it is impossible to assert if that choice would change with
   // future releases (say just because tolerances changed).
   // What we can test for sure is:
@@ -474,10 +542,10 @@ TEST_F(SmallBoxSittingOnLargeBox, SingleContact) {
   // 2. The vertical position of the collision point (since for any of the four
   //    corners of the small box is the same.
 
-  // Collision test performed with Model::closestPointsAllToAll.
+  // Collision test performed with Model::ClosestPointsAllToAll.
   const std::vector<ElementId> ids_to_check = {large_box_->getId(),
                                                small_box_->getId()};
-  model_->closestPointsAllToAll(ids_to_check, true, points);
+  model_->ClosestPointsAllToAll(ids_to_check, true, &points);
   ASSERT_EQ(1u, points.size());
   EXPECT_NEAR(-0.1, points[0].distance, tolerance_);
   EXPECT_TRUE(points[0].normal.isApprox(Vector3d(0.0, -1.0, 0.0)));
@@ -491,12 +559,12 @@ TEST_F(SmallBoxSittingOnLargeBox, SingleContact) {
   // Collision test performed with Model::ComputeMaximumDepthCollisionPoints.
   // Not using margins.
   points.clear();
-  model_->ComputeMaximumDepthCollisionPoints(false, points);
+  model_->ComputeMaximumDepthCollisionPoints(false, &points);
 
-  // Unfortunately DrakeCollision::Model's manifold has one point for this case.
-  // Best for physics simulations would be DrakeCollision::Model to return at
-  // least the four corners of the smaller box. However it randomly picks one
-  // corner.
+  // Unfortunately drake::multibody::collision::Model's manifold has one point
+  // for this case.  Best for physics simulations would be
+  // drake::multibody::collision::Model to return at least the four corners of
+  // the smaller box. However it randomly picks one corner.
   ASSERT_EQ(1u, points.size());
   EXPECT_NEAR(-0.1, points[0].distance, tolerance_);
   // Collision points are reported in the world's frame.
@@ -509,7 +577,7 @@ TEST_F(SmallBoxSittingOnLargeBox, SingleContact) {
   // Collision test performed with Model::ComputeMaximumDepthCollisionPoints.
   // Using margins.
   points.clear();
-  model_->ComputeMaximumDepthCollisionPoints(true, points);
+  model_->ComputeMaximumDepthCollisionPoints(true, &points);
 
   ASSERT_EQ(1u, points.size());
   EXPECT_NEAR(-0.1, points[0].distance, tolerance_);
@@ -519,56 +587,17 @@ TEST_F(SmallBoxSittingOnLargeBox, SingleContact) {
               solution_[points[0].elementA].world_frame.y(), tolerance_);
   EXPECT_NEAR(points[0].ptB.y(),
               solution_[points[0].elementB].world_frame.y(), tolerance_);
-
-  points.clear();
-  EXPECT_THROW(points = model_->potentialCollisionPoints(false),
-               std::runtime_error);
 }
 
-// This test is exactly the same as the previous SmallBoxSittingOnLargeBox.
-// The difference is that a multi-contact algorithm is being used.
-// See REMARKS ON MULTICONTACT at the top of this file.
-TEST_F(SmallBoxSittingOnLargeBox, MultiContact) {
-  // Numerical precision tolerance to perform floating point comparisons.
-  // Its magnitude was chosen to be the minimum value for which these tests can
-  // successfully pass.
-  tolerance_ = 2.0e-9;
+// This test seeks to find out whether drake::multibody::collision::Model can
+// report collision manifolds. To this end two unit length boxes are placed on
+// top of one another. The box sitting on top is rotated by 45 degrees so that
+// the contact area would consist of an octagon. If
+// drake::multibody::collision::Model can report manifolds, the manifold would
+// consist of the perimeter of this octagon.
 
-  // List of collision points.
-  std::vector<PointPair> points;
-
-  // Unfortunately DrakeCollision::Model is randomly selecting the contact
-  // points. It is not even clear at this stage how many points in the manifold
-  // we should expect.
-  // What we can test for sure are:
-  // 1. The penetration depth.
-  // 2. The vertical position of the collision point (since for any of the four
-  //    corners of the small box is the same).
-
-  // Collision test performed with Model::potentialCollisionPoints.
-  points = model_->potentialCollisionPoints(false);
-  ASSERT_EQ(4u, points.size());
-  for (const PointPair& point : points) {
-    EXPECT_NEAR(-0.1, point.distance, tolerance_);
-    EXPECT_TRUE(point.normal.isApprox(Vector3d(0.0, -1.0, 0.0)));
-    // Collision points are reported on each of the respective bodies' frames.
-    // This is consistent with the return by Model::closestPointsAllToAll.
-    // Only test for vertical position.
-    EXPECT_NEAR(point.ptA.y(),
-                solution_[point.elementA].body_frame.y(), tolerance_);
-    EXPECT_NEAR(point.ptB.y(),
-                solution_[point.elementB].body_frame.y(), tolerance_);
-  }
-}
-
-// This test seeks to find out whether DrakeCollision::Model can report
-// collision manifolds. To this end two unit length boxes are placed on top of
-// one another. The box sitting on top is rotated by 45 degrees so that the
-// contact area would consist of an octagon. If DrakeCollision::Model can report
-// manifolds, the manifold would consist of the perimeter of this octagon.
-
-// Unfortunately these tests show that DrakeCollision::Model only reports a
-// single (randomly chosen) point within this octagonal contact area.
+// Unfortunately these tests show that drake::multibody::collision::Model only
+// reports a single (randomly chosen) point within this octagonal contact area.
 class NonAlignedBoxes: public ::testing::Test {
  public:
   void SetUp() override {
@@ -593,7 +622,7 @@ class NonAlignedBoxes: public ::testing::Test {
     Isometry3d box1_pose;
     box1_pose.setIdentity();
     box1_pose.translation() = Vector3d(0.0, 0.5, 0.0);
-    model_->updateElementWorldTransform(box1_->getId(), box1_pose);
+    model_->UpdateElementWorldTransform(box1_->getId(), box1_pose);
 
     // Box 2 pose.
     // Rotate box 2 45 degrees around the y axis so that it does not alight with
@@ -603,7 +632,7 @@ class NonAlignedBoxes: public ::testing::Test {
     box2_pose.translation() = Vector3d(0.0, 1.4, 0.0);
     box2_pose.linear() =
         AngleAxisd(M_PI_4, Vector3d::UnitY()).toRotationMatrix();
-    model_->updateElementWorldTransform(box2_->getId(), box2_pose);
+    model_->UpdateElementWorldTransform(box2_->getId(), box2_pose);
   }
 
  protected:
@@ -622,18 +651,18 @@ TEST_F(NonAlignedBoxes, SingleContact) {
   // List of collision points.
   std::vector<PointPair> points;
 
-  // Unfortunately DrakeCollision::Model is randomly selecting one of the small
-  // box's corners instead of reporting a manifold describing the perimeter of
-  // the square where both boxes intersect.
+  // Unfortunately drake::multibody::collision::Model is randomly selecting one
+  // of the small box's corners instead of reporting a manifold describing the
+  // perimeter of the square where both boxes intersect.
   // Therefore it is impossible to assert if that choice would change with
   // future releases (say just because tolerances changed).
   // What we can test for sure is:
   // 1. The penetration depth.
   // 2. The vertical position of the collision point (since for any of the four
   //    corners of the small box is the same.
-  // Collision test performed with Model::closestPointsAllToAll.
+  // Collision test performed with Model::ClosestPointsAllToAll.
   const std::vector<ElementId> ids_to_check = {box1_->getId(), box2_->getId()};
-  model_->closestPointsAllToAll(ids_to_check, true, points);
+  model_->ClosestPointsAllToAll(ids_to_check, true, &points);
   ASSERT_EQ(1u, points.size());
   EXPECT_NEAR(-0.1, points[0].distance, tolerance_);
   EXPECT_TRUE(points[0].normal.isApprox(Vector3d(0.0, -1.0, 0.0)));
@@ -646,11 +675,11 @@ TEST_F(NonAlignedBoxes, SingleContact) {
 
   // Collision test performed with Model::ComputeMaximumDepthCollisionPoints.
   points.clear();
-  model_->ComputeMaximumDepthCollisionPoints(false, points);
-  // Unfortunately DrakeCollision::Model's manifold has one point for this case.
-  // Best for physics simulations would be DrakeCollision::Model to return at
-  // least the four corners of the smaller box. However it randomly picks one
-  // corner.
+  model_->ComputeMaximumDepthCollisionPoints(false, &points);
+  // Unfortunately drake::multibody::collision::Model's manifold has one point
+  // for this case.  Best for physics simulations would be
+  // drake::multibody::collision::Model to return at least the four corners of
+  // the smaller box. However it randomly picks one corner.
   ASSERT_EQ(1u, points.size());
   EXPECT_NEAR(-0.1, points[0].distance, tolerance_);
   EXPECT_TRUE(points[0].normal.isApprox(Vector3d(0.0, -1.0, 0.0)));
@@ -660,41 +689,6 @@ TEST_F(NonAlignedBoxes, SingleContact) {
               solution_[points[0].elementA].world_frame.y(), tolerance_);
   EXPECT_NEAR(points[0].ptB.y(),
               solution_[points[0].elementB].world_frame.y(), tolerance_);
-
-  points.clear();
-  EXPECT_THROW(points = model_->potentialCollisionPoints(false),
-               std::runtime_error);
-}
-
-// This test is exactly the same as the previous NonAlignedBoxes.
-// The difference is that a multi-contact algorithm is being used.
-// See REMARKS ON MULTICONTACT at the top of this file.
-TEST_F(NonAlignedBoxes, MultiContact) {
-  // Numerical precision tolerance to perform floating point comparisons.
-  // Its magnitude was chosen to be the minimum value for which these tests can
-  // successfully pass.
-  tolerance_ = 5.0e-4;
-
-  // List of collision points.
-  std::vector<PointPair> points;
-
-  // Collision test performed with Model::potentialCollisionPoints.
-  points.clear();
-  points = model_->potentialCollisionPoints(false);
-  ASSERT_EQ(4u, points.size());
-
-  for (const PointPair& point : points) {
-    EXPECT_NEAR(-0.1, point.distance, tolerance_);
-    EXPECT_TRUE(point.normal.isApprox(Vector3d(0.0, -1.0, 0.0),
-                                               tolerance_ * 50));
-    // Collision points are reported on each of the respective bodies' frames.
-    // This is consistent with the return by Model::closestPointsAllToAll.
-    // Only test for vertical position.
-    EXPECT_NEAR(point.ptA.y(),
-                solution_[points[0].elementA].body_frame.y(), tolerance_);
-    EXPECT_NEAR(point.ptB.y(),
-                solution_[points[0].elementB].body_frame.y(), tolerance_);
-  }
 }
 
 // Tests the model is not caching results from a series of different queries.
@@ -710,13 +704,13 @@ TEST_F(SmallBoxSittingOnLargeBox, ClearCachedResults) {
   Isometry3d large_box_pose;
   large_box_pose.setIdentity();
   large_box_pose.translation() = Vector3d(0.0, 2.5, 0.0);
-  model_->updateElementWorldTransform(large_box_->getId(), large_box_pose);
+  model_->UpdateElementWorldTransform(large_box_->getId(), large_box_pose);
 
   // Small body pose
   Isometry3d small_box_pose;
   small_box_pose.setIdentity();
   small_box_pose.translation() = Vector3d(0.0, 5.4, 0.0);
-  model_->updateElementWorldTransform(small_box_->getId(), small_box_pose);
+  model_->UpdateElementWorldTransform(small_box_->getId(), small_box_pose);
 
   // List of collision points.
   std::vector<PointPair> points;
@@ -729,13 +723,13 @@ TEST_F(SmallBoxSittingOnLargeBox, ClearCachedResults) {
     if (i == 1) small_box_pose.translation() = Vector3d(1.0e-3, 5.4,    0.0);
     if (i == 2) small_box_pose.translation() = Vector3d(   0.0, 5.4, 1.0e-3);
     if (i == 3) small_box_pose.translation() = Vector3d(1.0e-3, 5.4, 1.0e-3);
-    model_->updateElementWorldTransform(small_box_->getId(), small_box_pose);
+    model_->UpdateElementWorldTransform(small_box_->getId(), small_box_pose);
 
     // Notice that the results vector is cleared every time so that results
     // do not accumulate.
     points.clear();
 
-    model_->ComputeMaximumDepthCollisionPoints(false, points);
+    model_->ComputeMaximumDepthCollisionPoints(false, &points);
   }
 
   // Check that the model is not caching results even after four queries.
@@ -803,7 +797,7 @@ GTEST_TEST(ModelTest, AnchoredElements) {
   std::vector<PointPair> points;
 
   // Compute all points of contact.
-  model->ComputeMaximumDepthCollisionPoints(false, points);
+  model->ComputeMaximumDepthCollisionPoints(false, &points);
 
   // Only three points are expected (instead of four) since ball1 and ball4 are
   // flagged as anchored.
@@ -832,8 +826,8 @@ GTEST_TEST(ModelTest, AnchoredMeshes) {
   DrakeShapes::Sphere sphere_shape(0.5);
   Isometry3d pose = Isometry3d::Identity();
 
-  std::string file_name = drake::GetDrakePath() +
-      "/multibody/collision/test/ripple_cap.obj";
+  std::string file_name = drake::FindResourceOrThrow(
+      "drake/multibody/collision/test/ripple_cap.obj");
   DrakeShapes::Mesh cap_shape(file_name, file_name);
 
   // Creates collision elements.
@@ -863,16 +857,16 @@ GTEST_TEST(ModelTest, AnchoredMeshes) {
 
   // Sets the collision elements' pose.
   pose.translation() = Vector3d(0.0, 0.0, 0.59);
-  model->updateElementWorldTransform(sphere->getId(), pose);
+  model->UpdateElementWorldTransform(sphere->getId(), pose);
 
   pose.translation() = Vector3d(0.0, 0.0, 0.0);
-  model->updateElementWorldTransform(cap->getId(), pose);
+  model->UpdateElementWorldTransform(cap->getId(), pose);
 
   // List of collision points.
   std::vector<PointPair> points;
 
   // Computes all points of contact.
-  model->ComputeMaximumDepthCollisionPoints(false, points);
+  model->ComputeMaximumDepthCollisionPoints(false, &points);
 
   // Expects one collision point for this test.
   ASSERT_EQ(1u, points.size());
@@ -892,8 +886,8 @@ GTEST_TEST(ModelTest, AnchoredMeshes) {
 // This test confirms that point queries against non-convex objects (e.g.,
 // a static mesh) will *not* produce distance values.
 GTEST_TEST(ModelTest, PointDistanceToNonConvex) {
-  std::string file_name = drake::GetDrakePath() +
-      "/multibody/collision/test/ripple_cap.obj";
+  std::string file_name = drake::FindResourceOrThrow(
+      "drake/multibody/collision/test/ripple_cap.obj");
   DrakeShapes::Mesh cap_shape(file_name, file_name);
 
   // NOTE: The elements are being instantiated here so that the anchored state
@@ -917,7 +911,7 @@ GTEST_TEST(ModelTest, PointDistanceToNonConvex) {
   points << cx, cy, cz;
 
   std::vector<PointPair> results;
-  model->collisionDetectFromPoints(points, false, results);
+  model->CollisionDetectFromPoints(points, false, &results);
 
   ASSERT_EQ(results.size(), 4u);
   const double inf = std::numeric_limits<double>::infinity();
@@ -948,7 +942,7 @@ GTEST_TEST(ModelTest, PointDistanceToEmptyWorld) {
   points << cx, cy, cz;
 
   std::vector<PointPair> results;
-  model->collisionDetectFromPoints(points, false, results);
+  model->CollisionDetectFromPoints(points, false, &results);
 
   ASSERT_EQ(results.size(), 4u);
   const double inf = std::numeric_limits<double>::infinity();
@@ -968,8 +962,8 @@ GTEST_TEST(ModelTest, DistanceToNonConvex) {
   DrakeShapes::Sphere sphere_shape(0.5);
   Isometry3d pose = Isometry3d::Identity();
 
-  std::string file_name = drake::GetDrakePath() +
-      "/multibody/collision/test/ripple_cap.obj";
+  std::string file_name = drake::FindResourceOrThrow(
+      "drake/multibody/collision/test/ripple_cap.obj");
   DrakeShapes::Mesh cap_shape(file_name, file_name);
 
   // Creates collision elements.
@@ -988,17 +982,19 @@ GTEST_TEST(ModelTest, DistanceToNonConvex) {
 
   // Sets the collision elements' pose.
   pose.translation() = Vector3d(0.0, 0.0, 0.7);
-  model->updateElementWorldTransform(sphere->getId(), pose);
+  model->UpdateElementWorldTransform(sphere->getId(), pose);
 
   pose.translation() = Vector3d(0.0, 0.0, 0.0);
-  model->updateElementWorldTransform(cap->getId(), pose);
+  model->UpdateElementWorldTransform(cap->getId(), pose);
 
   std::vector<PointPair> results;
   std::vector<ElementIdPair> pairs;
   pairs.emplace_back(sphere->getId(), cap->getId());
-  model->closestPointsPairwise(pairs, true, results);
+  model->ClosestPointsPairwise(pairs, true, &results);
   EXPECT_EQ(results.size(), 0u);
 }
 
 }  // namespace
-}  // namespace DrakeCollision
+}  // namespace collision
+}  // namespace multibody
+}  // namespace drake

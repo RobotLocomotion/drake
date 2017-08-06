@@ -10,8 +10,8 @@ Optional: Setting up the MATLAB Compiler
 Make sure that the MATLAB executable is in your path.  (e.g., typing ``matlab``
 at the system command line should start an instance of MATLAB).  For example,
 on Mac you might consider
-``sudo ln -s /Applications/MATLAB_R2014a.app/bin/matlab /usr/bin/matlab``,
-or you can actually add the MATLAB/bin directory to your system path.
+``sudo ln -s /Applications/MATLAB_R2016a.app/bin/matlab /usr/local/bin/matlab``
+, or you can actually add the MATLAB/bin directory to your system path.
 
 .. _getting_drake:
 
@@ -283,39 +283,14 @@ Testing Your MATLAB Installation
 
 Start MATLAB, then at the MATLAB prompt do::
 
-    cd drake-distro/drake
+    cd drake-distro/drake/matlab
     addpath_drake
-    cd matlab/solvers/test
+    cd solvers/test
     testMathematicalProgram
 
 You should not see any error messages.
 
 For more details, see :ref:`Using Drake from Matlab <matlab-bindings>`.
-
-Using SNOPT as an external
-==========================
-
-Drake includes support for SNOPT, but is not able to redistribute it directly.
-To use SNOPT with Drake, you must have access to its private GitHub repository,
-and you must set up a GitHub SSH key on your machine. Follow the instructions
-in the
-`GitHub documentation <https://help.github.com/articles/generating-ssh-keys/>`_.
-
-This capability is meant for members of MIT Robot Locomotion Group and close
-collaborators with whom RLG shares licenses.
-
-Using Gurobi as an external
-===========================
-
-Before building Drake with Gurobi, create an account and obtain a license on
-`Gurobi's website <http://www.gurobi.com/>`_. Download Gurobi 6.0.5, and set
-the ``GUROBI_DISTRO`` environment variable to the absolute path to the
-downloaded file. Consult Gurobi's documentation to activate your license;
-exact procedures depend on license type. Once activated, place your Gurobi
-license file ``gurobi.lic`` in your home directory.
-
-Then enable the CMake option ``WITH_GUROBI`` in the Drake superbuild, and
-proceed to build Drake as usual.
 
 Stay up to date
 ===============

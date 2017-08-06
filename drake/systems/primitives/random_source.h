@@ -1,12 +1,36 @@
 #pragma once
 
+#include <memory>
 #include <random>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 namespace systems {
+
+/// State for a given random distribution and generator. This owns both the
+/// distrubtion and the generator.
+template <typename Distribution, typename Generator = std::mt19937>
+class RandomState {
+ public:
+  typedef typename Generator::result_type Seed;
+  static constexpr Seed default_seed = Generator::default_seed;
+
+  explicit RandomState(Seed seed = Generator::default_seed)
+      : generator_(seed) {}
+
+  /// Generate the next random value with the given distribution.
+  double GetNextValue() {
+    return distribution_(generator_);
+  }
+
+ private:
+  // TODO(russt): Obtain consistent results across multiple platforms (#4361).
+  Generator generator_;
+  Distribution distribution_;
+};
 
 /// A source block which generates random numbers at a fixed sampling interval,
 /// with a zero-order hold between samples.  For continuous-time systems, this
@@ -26,34 +50,45 @@ namespace systems {
 /// necessary information for stochastic analysis).
 ///
 /// @ingroup primitive_systems
-template <typename Distribution>
+template <typename Distribution, typename Generator = std::mt19937>
 class RandomSource : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RandomSource)
+
+  typedef systems::RandomState<Distribution, Generator> RandomState;
+  typedef typename RandomState::Seed Seed;
 
   /// Constructs the RandomSource system.
   /// @param num_outputs The dimension of the (single) vector output port.
   /// @param sampling_interval_sec The sampling interval in seconds.
   RandomSource(int num_outputs, double sampling_interval_sec) {
-    this->DeclareDiscreteUpdatePeriodSec(sampling_interval_sec);
+    this->DeclarePeriodicUnrestrictedUpdate(sampling_interval_sec, 0.);
     this->DeclareVectorOutputPort(BasicVector<double>(num_outputs),
                                   &RandomSource::CopyStateToOutput);
     this->DeclareDiscreteState(num_outputs);
+    this->DeclareAbstractState(AbstractValue::Make(RandomState(seed_)));
   }
 
   /// Initializes the random number generator.
-  void set_random_seed(double seed) { generator_.seed(seed); }
+  void set_random_seed(Seed seed) { seed_ = seed; }
 
  private:
   // Computes a random number and stores it in the discrete state.
-  void DoCalcDiscreteVariableUpdates(
-      const drake::systems::Context<double>& context,
-      drake::systems::DiscreteValues<double>* updates) const override {
+  void DoCalcUnrestrictedUpdate(const Context<double>& context,
+      const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
+      State<double>* state) const override {
+    auto& random_state =
+        state->template get_mutable_abstract_state<RandomState>(0);
+    auto* updates = state->get_mutable_discrete_state();
     const int N = updates->size();
     for (int i = 0; i < N; i++) {
-      double random_value = distribution_(generator_);
-      (*updates)[i] = random_value;
+      (*updates)[i] = random_state.GetNextValue();
     }
+  }
+
+  std::unique_ptr<AbstractValues> AllocateAbstractState() const override {
+    return std::make_unique<AbstractValues>(
+        AbstractValue::Make(RandomState(seed_)));
   }
 
   // Output is the zero-order hold of the discrete state.
@@ -62,12 +97,7 @@ class RandomSource : public LeafSystem<double> {
     output->SetFromVector(context.get_discrete_state(0)->CopyToVector());
   }
 
-  // Note: currently there is undeclared state in the variables below.
-  // TODO(russt): Use abstract state to save the parameters of the generator and
-  // distribution (waiting on event scheduling for abstract states).
-  // TODO(russt): Obtain consistent results across multiple platforms (#4361).
-  mutable std::mt19937 generator_;
-  mutable Distribution distribution_;
+  Seed seed_{RandomState::default_seed};
 };
 
 namespace internal {

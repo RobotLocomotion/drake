@@ -188,17 +188,16 @@ install_cmake_config(package = "NLopt")  # Creates rule :install_cmake_config.
 
 install(
     name = "install",
+    targets = [":nlopt"],
+    hdr_dest = "include/nlopt",
+    guess_hdrs = "PACKAGE",
     docs = [
         "AUTHORS",
         "NEWS",
-    ],
-    guess_hdrs = "PACKAGE",
-    hdr_dest = "include/nlopt",
-    license_docs = glob([
+    ] + glob([
         "**/COPYING",
         "**/COPYRIGHT",
     ]),
-    targets = [":nlopt"],
     deps = [":install_cmake_config"],
 )
 

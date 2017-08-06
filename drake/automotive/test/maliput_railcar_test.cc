@@ -13,7 +13,6 @@
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput/dragway/road_geometry.h"
 #include "drake/automotive/maliput/monolane/builder.h"
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/math/roll_pitch_yaw_not_using_quaternion.h"
 #include "drake/multibody/multibody_tree/math/spatial_velocity.h"
@@ -294,11 +293,7 @@ class MaliputRailcarTest : public ::testing::Test {
     std::unique_ptr<BasicVector<double>> prior_velocity =
         velocity_output()->Clone();
 
-    systems::DiscreteEvent<double> event;
-    event.action = systems::DiscreteEvent<double>::kUnrestrictedUpdateAction;
-
-    dut_->CalcUnrestrictedUpdate(
-        *context_, event, context_->get_mutable_state());
+    dut_->CalcUnrestrictedUpdate(*context_, context_->get_mutable_state());
 
     if (flip_curve_lane) {
       EXPECT_EQ(continuous_state()->s(), curved_lane->length());
@@ -773,13 +768,13 @@ TEST_F(MaliputRailcarTest, DecreasingSMonolane) {
 TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeWithSpeedZero) {
   EXPECT_NO_FATAL_FAILURE(InitializeDragwayLane(true /* with_s */));
   continuous_state()->set_speed(0);
-  systems::UpdateActions<double> actions;
-  dut_->CalcNextUpdateTime(*context_, &actions);
-  EXPECT_DOUBLE_EQ(actions.time, std::numeric_limits<double>::infinity());
+  systems::LeafCompositeEventCollection<double> events;
+  double t = dut_->CalcNextUpdateTime(*context_, &events);
+  EXPECT_DOUBLE_EQ(t, std::numeric_limits<double>::infinity());
 
   lane_direction().with_s = false;
-  dut_->CalcNextUpdateTime(*context_, &actions);
-  EXPECT_DOUBLE_EQ(actions.time, std::numeric_limits<double>::infinity());
+  t = dut_->CalcNextUpdateTime(*context_, &events);
+  EXPECT_DOUBLE_EQ(t, std::numeric_limits<double>::infinity());
 }
 
 // Tests the correctness of MaliputRailcar::DoCalcNextUpdateTime() when the
@@ -789,8 +784,6 @@ TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeDragwayWithS) {
   const maliput::api::Lane* lane = road_->junction(0)->segment(0)->lane(0);
   const double kSpeed(10);
 
-  systems::UpdateActions<double> actions;
-
   // Computes the time to reach the end of the lane assuming a speed of kSpeed.
   const double kZeroAccelerationTime = lane->length() / kSpeed;
 
@@ -799,23 +792,27 @@ TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeDragwayWithS) {
   context_->set_time(0);
   continuous_state()->set_s(0);
   continuous_state()->set_speed(kSpeed);
-  dut_->CalcNextUpdateTime(*context_, &actions);
-  EXPECT_DOUBLE_EQ(actions.time, kZeroAccelerationTime);
-  EXPECT_EQ(actions.events.at(0).action,
-            systems::DiscreteEvent<double>::kUnrestrictedUpdateAction);
+  systems::LeafCompositeEventCollection<double> events;
+  double t = dut_->CalcNextUpdateTime(*context_, &events);
+  EXPECT_DOUBLE_EQ(t, kZeroAccelerationTime);
+  const systems::EventCollection<systems::UnrestrictedUpdateEvent<double>>& e =
+      events.get_unrestricted_update_events();
+  const auto& leaf_events = static_cast<const systems::LeafEventCollection<
+      systems::UnrestrictedUpdateEvent<double>>&>(e);
+  EXPECT_EQ(leaf_events.get_events().size(), 1);
 
   // Verifies that when the vehicle is mid-way through the lane, the time till
   // it reaches the end is cut in half.
   continuous_state()->set_s(lane->length() / 2);
-  dut_->CalcNextUpdateTime(*context_, &actions);
-  EXPECT_GE(actions.time, 0);
-  EXPECT_DOUBLE_EQ(actions.time, kZeroAccelerationTime / 2);
+  t = dut_->CalcNextUpdateTime(*context_, &events);
+  EXPECT_GE(t, 0);
+  EXPECT_DOUBLE_EQ(t, kZeroAccelerationTime / 2);
 
   // Verifies that when the vehicle is at the end of the lane, the time till it
   // reaches the end is MaliputRailcar<double>::kTimeEpsilon.
   continuous_state()->set_s(lane->length());
-  dut_->CalcNextUpdateTime(*context_, &actions);
-  EXPECT_DOUBLE_EQ(actions.time, MaliputRailcar<double>::kTimeEpsilon);
+  t = dut_->CalcNextUpdateTime(*context_, &events);
+  EXPECT_DOUBLE_EQ(t, MaliputRailcar<double>::kTimeEpsilon);
 }
 
 // Same as the previous unit test except with_s is false.
@@ -824,33 +821,32 @@ TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeDragwayAgainstS) {
   const maliput::api::Lane* lane = road_->junction(0)->segment(0)->lane(0);
   const double kSpeed(10);
 
-  systems::UpdateActions<double> actions;
-
   // Computes the time to reach the end of the lane assuming a speed of kSpeed
   // and zero acceleration.
   const double kZeroAccelerationTime = lane->length() / kSpeed;
 
   // Verifies that the time till reaching the end of the lane is equal to the
   // lane length divided by the vehicle's speed.
+  systems::LeafCompositeEventCollection<double> events;
   context_->set_time(0);
   continuous_state()->set_s(lane->length());
   continuous_state()->set_speed(kSpeed);
-  dut_->CalcNextUpdateTime(*context_, &actions);
-  EXPECT_GE(actions.time, 0);
-  EXPECT_DOUBLE_EQ(actions.time, kZeroAccelerationTime);
+  double t = dut_->CalcNextUpdateTime(*context_, &events);
+  EXPECT_GE(t, 0);
+  EXPECT_DOUBLE_EQ(t, kZeroAccelerationTime);
 
   // Verifies that when the vehicle is mid-way through the lane, the time till
   // it reaches the end is cut in half.
   continuous_state()->set_s(lane->length() / 2);
-  dut_->CalcNextUpdateTime(*context_, &actions);
-  EXPECT_GE(actions.time, 0);
-  EXPECT_DOUBLE_EQ(actions.time, kZeroAccelerationTime / 2);
+  t = dut_->CalcNextUpdateTime(*context_, &events);
+  EXPECT_GE(t, 0);
+  EXPECT_DOUBLE_EQ(t, kZeroAccelerationTime / 2);
 
   // Verifies that when the vehicle is at the end of the lane, the time till it
   // reaches the end is MaliputRailcar<double>::kTimeEpsilon.
   continuous_state()->set_s(0);
-  dut_->CalcNextUpdateTime(*context_, &actions);
-  EXPECT_DOUBLE_EQ(actions.time, MaliputRailcar<double>::kTimeEpsilon);
+  t = dut_->CalcNextUpdateTime(*context_, &events);
+  EXPECT_DOUBLE_EQ(t, MaliputRailcar<double>::kTimeEpsilon);
 }
 
 // Same as the previous unit test except the road network is a curved monolane
@@ -860,8 +856,6 @@ TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeMonolaneWithS) {
   const maliput::api::Lane* lane = road_->junction(0)->segment(0)->lane(0);
   const double kSpeed(10);
 
-  systems::UpdateActions<double> actions;
-
   MaliputRailcarParams<double> params;
   params.set_r(0);
   params.set_h(0);
@@ -878,22 +872,23 @@ TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeMonolaneWithS) {
   context_->set_time(0);
   continuous_state()->set_s(0);
   continuous_state()->set_speed(kSpeed);
-  dut_->CalcNextUpdateTime(*context_, &actions);
-  EXPECT_DOUBLE_EQ(actions.time, kZeroAccelerationTime);
+  systems::LeafCompositeEventCollection<double> events;
+  double t = dut_->CalcNextUpdateTime(*context_, &events);
+  EXPECT_DOUBLE_EQ(t, kZeroAccelerationTime);
 
   // Sets `r` to be positive and verifies that the time to reach the end is
   // shorter.
   params.set_r(1);
   SetParams(params);
-  dut_->CalcNextUpdateTime(*context_, &actions);
-  EXPECT_LT(actions.time, kZeroAccelerationTime);
+  t = dut_->CalcNextUpdateTime(*context_, &events);
+  EXPECT_LT(t, kZeroAccelerationTime);
 
   // Sets `r` to be negative and verifies that the time to reach the end is
   // longer.
   params.set_r(-1);
   SetParams(params);
-  dut_->CalcNextUpdateTime(*context_, &actions);
-  EXPECT_GT(actions.time, kZeroAccelerationTime);
+  t = dut_->CalcNextUpdateTime(*context_, &events);
+  EXPECT_GT(t, kZeroAccelerationTime);
 }
 
 // Same as the previous unit test except with_s is false.
@@ -901,8 +896,6 @@ TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeMonolaneAgainstS) {
   EXPECT_NO_FATAL_FAILURE(InitializeCurvedMonoLane(false /* with_s */));
   const maliput::api::Lane* lane = road_->junction(0)->segment(0)->lane(0);
   const double kSpeed(10);
-
-  systems::UpdateActions<double> actions;
 
   MaliputRailcarParams<double> params;
   params.set_r(0);
@@ -920,22 +913,23 @@ TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeMonolaneAgainstS) {
   context_->set_time(0);
   continuous_state()->set_s(lane->length());
   continuous_state()->set_speed(kSpeed);
-  dut_->CalcNextUpdateTime(*context_, &actions);
-  EXPECT_DOUBLE_EQ(actions.time, kZeroAccelerationTime);
+  systems::LeafCompositeEventCollection<double> events;
+  double t = dut_->CalcNextUpdateTime(*context_, &events);
+  EXPECT_DOUBLE_EQ(t, kZeroAccelerationTime);
 
   // Sets `r` to be positive and verifies that the time to reach the end is
   // shorter.
   params.set_r(1);
   SetParams(params);
-  dut_->CalcNextUpdateTime(*context_, &actions);
-  EXPECT_LT(actions.time, kZeroAccelerationTime);
+  t = dut_->CalcNextUpdateTime(*context_, &events);
+  EXPECT_LT(t, kZeroAccelerationTime);
 
   // Sets `r` to be negative and verifies that the time to reach the end is
   // longer.
   params.set_r(-1);
   SetParams(params);
-  dut_->CalcNextUpdateTime(*context_, &actions);
-  EXPECT_GT(actions.time, kZeroAccelerationTime);
+  t = dut_->CalcNextUpdateTime(*context_, &events);
+  EXPECT_GT(t, kZeroAccelerationTime);
 }
 
 // Tests the two-lane stretch of road.
@@ -1002,9 +996,6 @@ TEST_F(MaliputRailcarTest, TestStopConditions) {
   params.set_velocity_limit_kp(8);
   SetParams(params);
 
-  systems::DiscreteEvent<double> event;
-  event.action = systems::DiscreteEvent<double>::kUnrestrictedUpdateAction;
-
   // Verifies that when the car is on the straight lane and is just before the
   // lane, it does not stop if it is with s, but does stop if it is against s
   // since there are no ongoing branches.
@@ -1012,14 +1003,12 @@ TEST_F(MaliputRailcarTest, TestStopConditions) {
   continuous_state()->set_speed(kSpeed);
   lane_direction().lane = straight_lane;
   lane_direction().with_s = true;
-  dut_->CalcUnrestrictedUpdate(
-      *context_, event, context_->get_mutable_state());
+  dut_->CalcUnrestrictedUpdate(*context_, context_->get_mutable_state());
   EXPECT_EQ(continuous_state()->speed(), kSpeed);
   continuous_state()->set_s(-1e-10);
   lane_direction().lane = straight_lane;
   lane_direction().with_s = false;
-  dut_->CalcUnrestrictedUpdate(
-      *context_, event, context_->get_mutable_state());
+  dut_->CalcUnrestrictedUpdate(*context_, context_->get_mutable_state());
   EXPECT_EQ(continuous_state()->speed(), 0);
 
   // Verifies that the car does not stop when it is on the straight lane and is
@@ -1042,8 +1031,7 @@ TEST_F(MaliputRailcarTest, TestStopConditions) {
       for (const auto r : std::list<double>{-1, 0, 1}) {
         params.set_r(r);
         SetParams(params);
-        dut_->CalcUnrestrictedUpdate(
-            *context_, event, context_->get_mutable_state());
+        dut_->CalcUnrestrictedUpdate(*context_, context_->get_mutable_state());
         EXPECT_EQ(continuous_state()->speed(), kSpeed);
       }
     }
@@ -1068,8 +1056,7 @@ TEST_F(MaliputRailcarTest, TestStopConditions) {
       for (const auto r : std::list<double>{-1, 0, 1}) {
         params.set_r(r);
         SetParams(params);
-        dut_->CalcUnrestrictedUpdate(
-            *context_, event, context_->get_mutable_state());
+        dut_->CalcUnrestrictedUpdate(*context_, context_->get_mutable_state());
         EXPECT_EQ(continuous_state()->speed(), kSpeed);
       }
     }
@@ -1082,11 +1069,11 @@ TEST_F(MaliputRailcarTest, TestStopConditions) {
   continuous_state()->set_speed(kSpeed);
   lane_direction().lane = curved_lane;
   lane_direction().with_s = false;
-  dut_->CalcUnrestrictedUpdate(*context_, event, context_->get_mutable_state());
+  dut_->CalcUnrestrictedUpdate(*context_, context_->get_mutable_state());
   EXPECT_EQ(continuous_state()->speed(), kSpeed);
   lane_direction().lane = curved_lane;
   lane_direction().with_s = true;
-  dut_->CalcUnrestrictedUpdate(*context_, event, context_->get_mutable_state());
+  dut_->CalcUnrestrictedUpdate(*context_, context_->get_mutable_state());
   EXPECT_EQ(continuous_state()->speed(), 0);
 }
 

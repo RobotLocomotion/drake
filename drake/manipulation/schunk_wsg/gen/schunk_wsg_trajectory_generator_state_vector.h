@@ -20,12 +20,13 @@ namespace schunk_wsg {
 /// Describes the row indices of a SchunkWsgTrajectoryGeneratorStateVector.
 struct SchunkWsgTrajectoryGeneratorStateVectorIndices {
   /// The total number of rows (coordinates).
-  static const int kNumCoordinates = 3;
+  static const int kNumCoordinates = 4;
 
   // The index of each individual coordinate.
   static const int kLastTargetPosition = 0;
   static const int kTrajectoryStartTime = 1;
   static const int kLastPosition = 2;
+  static const int kMaxForce = 3;
 
   /// Returns a vector containing the names of each coordinate within this
   /// class. The indices within the returned vector matches that of this class.
@@ -73,6 +74,11 @@ class SchunkWsgTrajectoryGeneratorStateVector : public systems::BasicVector<T> {
   void set_last_position(const T& last_position) {
     this->SetAtIndex(K::kLastPosition, last_position);
   }
+  /// max_force
+  const T& max_force() const { return this->GetAtIndex(K::kMaxForce); }
+  void set_max_force(const T& max_force) {
+    this->SetAtIndex(K::kMaxForce, max_force);
+  }
   //@}
 
   /// See SchunkWsgTrajectoryGeneratorStateVectorIndices::GetCoordinateNames().
@@ -87,6 +93,7 @@ class SchunkWsgTrajectoryGeneratorStateVector : public systems::BasicVector<T> {
     result = result && !isnan(last_target_position());
     result = result && !isnan(trajectory_start_time());
     result = result && !isnan(last_position());
+    result = result && !isnan(max_force());
     return result;
   }
 };

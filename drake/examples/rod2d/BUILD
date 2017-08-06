@@ -1,13 +1,13 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load(
     "//tools:drake.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_binary",
 )
+load("//tools:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -41,6 +41,7 @@ drake_cc_library(
     ],
     deps = [
         "//drake/common",
+        "//drake/multibody/rigid_contact",
         "//drake/solvers:mathematical_program",
         "//drake/systems/framework:leaf_system",
         "//drake/systems/rendering:pose_vector",
@@ -55,8 +56,9 @@ drake_cc_googletest(
         ":rod2d",
         "//drake/common",
         "//drake/common:eigen_matrix_compare",
+        "//drake/multibody/rigid_contact:rigid_contact_solver",
         "//drake/systems/analysis",
     ],
 )
 
-cpplint()
+add_lint_tests()

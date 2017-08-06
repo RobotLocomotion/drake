@@ -1,13 +1,13 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load(
     "//tools:drake.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
 )
+load("//tools:lint.bzl", "add_lint_tests")
 
 package(
     default_visibility = [
@@ -25,12 +25,12 @@ drake_cc_library(
         "generic_plan.h",
     ],
     deps = [
-        "//drake/examples/QPInverseDynamicsForHumanoids:control_utils",
-        "//drake/examples/QPInverseDynamicsForHumanoids:humanoid_status",
-        "//drake/examples/QPInverseDynamicsForHumanoids:qp_controller_common",
-        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
-        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:rigid_body_tree_alias_groups",
         "//drake/manipulation/util:trajectory_utils",
+        "//drake/multibody:rigid_body_tree_alias_groups",
+        "//drake/systems/controllers:setpoint",
+        "//drake/systems/controllers/qp_inverse_dynamics",
+        "//drake/systems/controllers/qp_inverse_dynamics:param_parser",
+        "//drake/systems/framework:value",
     ],
 )
 
@@ -53,33 +53,72 @@ drake_cc_library(
 drake_cc_googletest(
     name = "manipulator_plan_test",
     data = [
-        "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.alias_groups",
-        "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.id_controller_config",
+        "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.alias_groups",  # noqa
+        "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.id_controller_config",  # noqa
         "//drake/manipulation/models/iiwa_description:models",
     ],
     deps = [
         ":manipulator_plans",
         ":test_common",
-        "//drake/common:drake_path",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
     ],
 )
 
+drake_cc_library(
+    name = "humanoid_manipulation_plan",
+    srcs = [
+        "dev/humanoid_manipulation_plan.cc",
+    ],
+    hdrs = [
+        "dev/humanoid_manipulation_plan.h",
+    ],
+    deps = [
+        ":generic_plan",
+        "//drake/manipulation/util:robot_state_msg_translator",
+        "//drake/systems/controllers:zmp_planner",
+        "//drake/systems/controllers/qp_inverse_dynamics:lcm_utils",
+        "//drake/util",
+        "@lcmtypes_bot2_core",
+        "@lcmtypes_robotlocomotion",
+    ],
+)
+
+drake_cc_binary(
+    name = "humanoid_manipulation_demo",
+    srcs = [
+        "dev/humanoid_manipulation_demo.cc",
+    ],
+    data = [
+        "//drake/examples/valkyrie:models",
+    ],
+    deps = [
+        "//drake/common:find_resource",
+        "//drake/examples/valkyrie:valkyrie_constants",
+        "//drake/manipulation/util:robot_state_msg_translator",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/multibody/parsers",
+        "@lcmtypes_bot2_core",
+        "@lcmtypes_robotlocomotion",
+    ],
+)
+
 # === test/ ===
+
 drake_cc_googletest(
     name = "generic_plan_test",
     data = [
-        "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.alias_groups",
-        "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.id_controller_config",
+        "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.alias_groups",  # noqa
+        "//drake/examples/QPInverseDynamicsForHumanoids:config/iiwa.id_controller_config",  # noqa
         "//drake/manipulation/models/iiwa_description:models",
     ],
     deps = [
         ":generic_plan",
         ":test_common",
-        "//drake/common:drake_path",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
     ],
@@ -91,10 +130,9 @@ drake_cc_library(
         "test/test_common.h",
     ],
     deps = [
-        "//drake/examples/QPInverseDynamicsForHumanoids:humanoid_status",
-        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:param_parser",
-        "//drake/examples/QPInverseDynamicsForHumanoids/param_parsers:rigid_body_tree_alias_groups",
+        "//drake/multibody:rigid_body_tree_alias_groups",
+        "//drake/systems/controllers/qp_inverse_dynamics:param_parser",
     ],
 )
 
-cpplint()
+add_lint_tests()

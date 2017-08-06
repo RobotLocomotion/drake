@@ -1,6 +1,6 @@
 #include <limits>
 
-#include "drake/common/call_matlab.h"
+#include "drake/common/proto/call_matlab.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/rotation_constraint.h"
 
@@ -9,7 +9,7 @@
 ///    min_R max_(i,j) |R(i,j) - R_sample(i,j)|
 ///   subject to  [ chosen list of constraints on R ]
 /// It then evaluates this program over a large number of samples and plots the
-/// points (using lcm_call_matlab) for which R==R_sample (within some tol).
+/// points (using call_matlab) for which R==R_sample (within some tol).
 
 using Eigen::Matrix3d;
 using Eigen::Vector3d;

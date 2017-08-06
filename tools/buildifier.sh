@@ -2,9 +2,6 @@
 #
 # With arguments, fixes the given bazel file(s).  Without arguments, fixes
 # every BUILD, .BUILD, and *.bzl file except third_party.
-#
-# TODO(jwnimmer-tri) Add WORKSPACE to the list of files to find and reformat,
-# once buildifier rules stop murdering it.
 
 set -e
 
@@ -75,6 +72,7 @@ fi
 echo "Refreshing buildifier binary ..."
 bazel build --show_result=0 //tools:buildifier
 buildifier="$workspace"/bazel-bin/external/com_github_bazelbuild_buildtools/buildifier/buildifier
+tables="$workspace"/tools/buildifier-tables.json
 if [[ ! -x $buildifier ]]; then
   echo "Failed to build buildifier at $buildifier"
   exit 1
@@ -82,17 +80,18 @@ fi
 
 if [[ -z $format_all ]]; then
   echo "Running buildifier with passed arguments..."
-  echo "$buildifier $@"
-  "$buildifier" "$@"
+  echo "$buildifier -add_tables=$tables $@"
+  "$buildifier" -add_tables="$tables" "$@"
 else
   echo "Applying buildifier to everything! This may take a moment..."
   find "$workspace" \
        -name third_party -prune -o \
-       \( -name BUILD -o \
+       \( -name WORKSPACE -o \
+          -name BUILD -o \
           -name BUILD.bazel -o \
           -name '*.BUILD' -o \
           -name '*.bzl' \) -print |
-      xargs -t "$buildifier" -mode=fix
+      xargs -t "$buildifier" -mode=fix -add_tables="$tables"
 fi
 
 echo "... done"

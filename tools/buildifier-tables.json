@@ -1,0 +1,76 @@
+{
+  "IsLabelArg": {
+  },
+  "LabelBlacklist": {
+  },
+  "IsSortableListArg": {
+    "allowed_externals": true
+  },
+  "SortableWhitelist": {
+    "install.data": true,
+    "install.docs": true,
+    "install.hdrs": true,
+    "install.targets": true,
+    "install_files.files": true
+  },
+  "NamePriority": {
+    "bitbucket_archive.repository":   300,
+       "github_archive.repository":   300,
+    "bitbucket_archive.commit":       310,
+       "github_archive.commit":       310,
+    "bitbucket_archive.sha256":       340,
+       "github_archive.sha256":       340,
+    "bitbucket_archive.strip_prefix": 350,
+       "github_archive.strip_prefix": 350,
+    "bitbucket_archive.build_file":   360,
+       "github_archive.build_file":   360,
+
+    "git_repository.remote": 300,
+    "git_repository.commit": 310,
+
+    "pypi_archive.package":       300,
+    "pypi_archive.version":       310,
+    "pypi_archive.sha256":        340,
+    "pypi_archive.strip_prefix":  350,
+    "pypi_archive.build_file":    360,
+
+    "new_local_repository.path":                300,
+    "new_local_repository.build_file_content":  360,
+
+    "install.targets":                  400,
+    "install.archive_dest":             401,
+    "install.archive_strip_prefix":     401,
+    "install.library_dest":             401,
+    "install.library_strip_prefix":     401,
+    "install.runtime_dest":             401,
+    "install.runtime_strip_prefix":     401,
+    "install.java_dest":                402,
+    "install.java_strip_prefix":        402,
+    "install.py_dest":                  402,
+    "install.py_strip_prefix":          402,
+    "install.hdrs":                     410,
+    "install.hdr_dest":                 411,
+    "install.hdr_strip_prefix":         411,
+    "install.guess_hdrs":               415,
+    "install.guess_hdrs_exclude":       416,
+    "install.data":                     420,
+    "install.data_dest":                421,
+    "install.guess_data":               425,
+    "install.guess_data_exclude":       426,
+    "install.docs":                     440,
+    "install.doc_dest":                 441,
+    "install.doc_strip_prefix":         441,
+    "install.rename":                   460,
+
+    "install_files.files":              400,
+    "install_files.strip_prefix":       401,
+    "install_files.rename":             460,
+
+          "install.allowed_externals":  465,
+    "install_files.allowed_externals":  465,
+          "install.visibility":         490,
+    "install_files.visibility":         490,
+          "install.deps":               499,
+    "install_files.deps":               499
+  }
+}

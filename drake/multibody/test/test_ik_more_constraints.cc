@@ -6,8 +6,8 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/find_resource.h"
 #include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/multibody/ik_options.h"
 #include "drake/multibody/joints/floating_base_types.h"
@@ -54,7 +54,8 @@ void findJointAndInsert(const RigidBodyTree<double>& model,
 GTEST_TEST(testIKMoreConstraints, IKMoreConstraints) {
   auto model = std::make_unique<RigidBodyTree<double>>();
   drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      GetDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf",
+      FindResourceOrThrow(
+          "drake/examples/atlas/urdf/atlas_minimal_contact.urdf"),
       multibody::joints::kRollPitchYaw, model.get());
 
   Vector2d tspan;

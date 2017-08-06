@@ -3,7 +3,6 @@
 #include <memory>
 #include <utility>
 
-#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/systems/controllers/inverse_dynamics.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/adder.h"
@@ -13,11 +12,12 @@
 
 namespace drake {
 namespace systems {
+namespace controllers {
 
 template <typename T>
-void InverseDynamicsController<T>::SetUp(const VectorX<T>& kp,
-                                         const VectorX<T>& ki,
-                                         const VectorX<T>& kd) {
+void InverseDynamicsController<T>::SetUp(const VectorX<double>& kp,
+                                         const VectorX<double>& ki,
+                                         const VectorX<double>& kd) {
   DiagramBuilder<T> builder;
   this->set_name("InverseDynamicsController");
 
@@ -84,7 +84,7 @@ void InverseDynamicsController<T>::SetUp(const VectorX<T>& kp,
   if (!has_reference_acceleration_) {
     // Uses a zero constant source for reference acceleration.
     auto zero_feedforward_acceleration =
-        builder.template AddSystem<ConstantVectorSource<double>>(
+        builder.template AddSystem<ConstantVectorSource<T>>(
             VectorX<T>::Zero(robot.get_num_velocities()));
     zero_feedforward_acceleration->set_name("zero");
     builder.Connect(zero_feedforward_acceleration->get_output_port(),
@@ -105,43 +105,25 @@ void InverseDynamicsController<T>::SetUp(const VectorX<T>& kp,
 template <typename T>
 void InverseDynamicsController<T>::set_integral_value(
     Context<T>* context, const Eigen::Ref<const VectorX<T>>& value) const {
-  Context<T>* pid_context =
-      Diagram<T>::GetMutableSubsystemContext(context, pid_);
-  pid_->set_integral_value(pid_context, value);
+  Context<T>& pid_context =
+      Diagram<T>::GetMutableSubsystemContext(*pid_, context);
+  pid_->set_integral_value(&pid_context, value);
 }
 
 template <typename T>
 InverseDynamicsController<T>::InverseDynamicsController(
-    const std::string& model_path,
-    std::shared_ptr<RigidBodyFrame<double>> world_offset, const VectorX<T>& kp,
-    const VectorX<T>& ki, const VectorX<T>& kd, bool has_reference_acceleration)
-    : has_reference_acceleration_(has_reference_acceleration) {
-  robot_for_control_ = std::make_unique<RigidBodyTree<T>>();
-  parsers::urdf::AddModelInstanceFromUrdfFile(
-        model_path, multibody::joints::kFixed, world_offset,
-        robot_for_control_.get());
-  SetUp(kp, ki, kd);
-}
-
-template <typename T>
-InverseDynamicsController<T>::InverseDynamicsController(
-    const RigidBodyTree<T>& robot, const VectorX<T>& kp, const VectorX<T>& ki,
-    const VectorX<T>& kd, bool has_reference_acceleration)
-    : has_reference_acceleration_(has_reference_acceleration) {
-  robot_for_control_ = robot.Clone();
-  SetUp(kp, ki, kd);
-}
-
-template <typename T>
-InverseDynamicsController<T>::InverseDynamicsController(
-    std::unique_ptr<RigidBodyTree<T>> robot, const VectorX<T>& kp,
-    const VectorX<T>& ki, const VectorX<T>& kd, bool has_reference_acceleration)
+    std::unique_ptr<RigidBodyTree<T>> robot, const VectorX<double>& kp,
+    const VectorX<double>& ki, const VectorX<double>& kd,
+    bool has_reference_acceleration)
     : has_reference_acceleration_(has_reference_acceleration) {
   robot_for_control_ = std::move(robot);
   SetUp(kp, ki, kd);
 }
 
 template class InverseDynamicsController<double>;
+// TODO(siyuan) template on autodiff.
+// template class InverseDynamicsController<AutoDiffXd>;
 
+}  // namespace controllers
 }  // namespace systems
 }  // namespace drake

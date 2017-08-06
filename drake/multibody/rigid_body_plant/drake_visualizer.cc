@@ -31,24 +31,25 @@ DrakeVisualizer::DrakeVisualizer(const RigidBodyTree<double>& tree,
 }
 
 void DrakeVisualizer::set_publish_period(double period) {
-  LeafSystem<double>::DeclarePublishPeriodSec(period);
+  LeafSystem<double>::DeclarePeriodicPublish(period);
 }
 
 void DrakeVisualizer::DoCalcNextUpdateTime(
-    const Context<double>& context, UpdateActions<double>* events) const {
+    const Context<double>& context, CompositeEventCollection<double>* events,
+    double* time) const {
   if (is_load_message_sent(context)) {
-    return LeafSystem<double>::DoCalcNextUpdateTime(context, events);
+    return LeafSystem<double>::DoCalcNextUpdateTime(context, events, time);
   } else {
     // TODO(siyuan): cleanup after #5725 is resolved.
-    events->time = context.get_time() + 0.0001;
-    DiscreteEvent<double> event;
-    event.action = DiscreteEvent<double>::ActionType::kDiscreteUpdateAction;
-    events->events.push_back(event);
+    *time = context.get_time() + 0.0001;
+    DiscreteUpdateEvent<double> event(Event<double>::TriggerType::kTimed);
+    event.add_to_composite(events);
   }
 }
 
 void DrakeVisualizer::DoCalcDiscreteVariableUpdates(
     const Context<double>& context,
+    const std::vector<const DiscreteUpdateEvent<double>*>&,
     DiscreteValues<double>* discrete_state) const {
   DRAKE_DEMAND(!is_load_message_sent(context));
 
@@ -135,7 +136,8 @@ void DrakeVisualizer::PlaybackTrajectory(
                 message_bytes.size());
 }
 
-void DrakeVisualizer::DoPublish(const Context<double>& context) const {
+void DrakeVisualizer::DoPublish(const Context<double>& context,
+    const std::vector<const PublishEvent<double>*>&) const {
   if (!is_load_message_sent(context)) {
     drake::log()->warn(
         "DrakeVisualizer::Publish() called before PublishLoadRobot()");

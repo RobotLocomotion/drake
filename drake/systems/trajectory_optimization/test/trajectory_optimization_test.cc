@@ -7,7 +7,7 @@
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/solvers/mathematical_program.h"
-#include "drake/systems/framework/siso_vector_system.h"
+#include "drake/systems/framework/vector_system.h"
 #include "drake/systems/primitives/linear_system.h"
 #include "drake/systems/trajectory_optimization/direct_collocation.h"
 #include "drake/systems/trajectory_optimization/direct_trajectory_optimization.h"
@@ -199,20 +199,24 @@ GTEST_TEST(TrajectoryOptimizationTest, PlaceholderVariableTest) {
 
 // qddot = u.
 template <typename T>
-class DoubleIntegrator : public SisoVectorSystem<T> {
+class DoubleIntegrator : public VectorSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DoubleIntegrator);
 
-  DoubleIntegrator() : SisoVectorSystem<T>(1, 1) {
+  DoubleIntegrator()
+      : VectorSystem<T>(
+            SystemTypeTag<systems::DoubleIntegrator>{},
+            1, 1) {
     this->DeclareContinuousState(1, 1, 0);
   }
-  ~DoubleIntegrator() override{};
+
+  template <typename U>
+  explicit DoubleIntegrator(const DoubleIntegrator<U>&)
+      : DoubleIntegrator<T>() {}
+
+  ~DoubleIntegrator() override {}
 
  protected:
-  DoubleIntegrator<AutoDiffXd>* DoToAutoDiffXd() const override {
-    return new DoubleIntegrator<AutoDiffXd>();
-  }
-
   void DoCalcVectorOutput(
       const Context<T>& context,
       const Eigen::VectorBlock<const VectorX<T>>& input,

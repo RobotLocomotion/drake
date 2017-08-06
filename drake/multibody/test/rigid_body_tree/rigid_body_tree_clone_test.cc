@@ -1,4 +1,6 @@
+/* clang-format off to disable clang-format-includes */
 #include "drake/multibody/rigid_body_tree.h"
+/* clang-format on */
 
 #include <cmath>
 #include <iostream>
@@ -6,9 +8,9 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/find_resource.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -47,16 +49,16 @@ class RigidBodyTreeCloneTest : public ::testing::Test {
 
 // Tests RigidBodyTree::Clone() using a simple two DOF robot.
 TEST_F(RigidBodyTreeCloneTest, CloneTwoDofRobot) {
-  std::string filename = drake::GetDrakePath() +
-      "/multibody/test/rigid_body_tree/two_dof_robot.urdf";
+  const std::string filename = FindResourceOrThrow(
+      "drake/multibody/test/rigid_body_tree/two_dof_robot.urdf");
   AddModelInstanceFromUrdfFileWithRpyJointToWorld(filename, tree_.get());
   EXPECT_TRUE(CompareToClone(*tree_));
 }
 
 // Tests RigidBodyTree::Clone() using Atlas.
 TEST_F(RigidBodyTreeCloneTest, CloneAtlas) {
-  std::string filename = drake::GetDrakePath() +
-      "/examples/Atlas/urdf/atlas_convex_hull.urdf";
+  const std::string filename = FindResourceOrThrow(
+      "drake/examples/atlas/urdf/atlas_convex_hull.urdf");
   AddModelInstanceFromUrdfFileToWorld(filename, multibody::joints::kQuaternion,
       tree_.get());
   EXPECT_TRUE(CompareToClone(*tree_));
@@ -64,8 +66,8 @@ TEST_F(RigidBodyTreeCloneTest, CloneAtlas) {
 
 // Tests RigidBodyTree::Clone() using a Prius with LIDAR sensors.
 TEST_F(RigidBodyTreeCloneTest, ClonePrius) {
-  std::string filename = drake::GetDrakePath() +
-     "/automotive/models/prius/prius_with_lidar.sdf";
+  const std::string filename = FindResourceOrThrow(
+      "drake/automotive/models/prius/prius_with_lidar.sdf");
   AddModelInstancesFromSdfFileToWorld(filename, multibody::joints::kQuaternion,
       tree_.get());
   EXPECT_TRUE(CompareToClone(*tree_));
@@ -73,9 +75,9 @@ TEST_F(RigidBodyTreeCloneTest, ClonePrius) {
 
 // Tests RigidBodyTree::Clone() using Valkyrie.
 TEST_F(RigidBodyTreeCloneTest, CloneValkyrie) {
-  std::string filename = drake::GetDrakePath() +
-      "/examples/Valkyrie/urdf/urdf/"
-      "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf";
+  const std::string filename = FindResourceOrThrow(
+      "drake/examples/valkyrie/urdf/urdf/"
+      "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
   // While it may seem odd to use a fixed floating joint with Valkyrie, it is
   // used in this case just to confirm that RigidBodyTree::Clone() works with
   // this type of joint. Previous unit tests already cover the quaternion
@@ -120,11 +122,10 @@ class TestRbtCloneDiagram : public Diagram<double> {
   /// @param[in] q The initial position of the pendulum's pivot joint.
   /// @param[in] v The initial velocity of the pendulum's pivot joint.
   void SetInitialState(Context<double>* context, double q, double v) {
-    Context<double>* plant_context =
-        GetMutableSubsystemContext(context, plant_);
-    DRAKE_DEMAND(plant_context != nullptr);
+    Context<double>& plant_context =
+        GetMutableSubsystemContext(*plant_, context);
     ContinuousState<double>* plant_state =
-        plant_context->get_mutable_continuous_state();
+        plant_context.get_mutable_continuous_state();
     DRAKE_DEMAND(plant_state != nullptr);
     DRAKE_DEMAND(plant_state->size() == 2);
     (*plant_state)[0] = q;
@@ -144,7 +145,7 @@ class TestRbtCloneDiagram : public Diagram<double> {
 // identically.
 TEST_F(RigidBodyTreeCloneTest, PendulumDynamicsTest) {
   const std::string model_file_name =
-      GetDrakePath() + "/examples/Pendulum/Pendulum.urdf";
+      FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf");
   const std::string model_name = "Pendulum";
   auto tree = std::make_unique<RigidBodyTree<double>>();
   AddModelInstanceFromUrdfFileToWorld(

@@ -3,6 +3,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "geometry_msgs/TransformStamped.h"
 #include "ros/ros.h"
@@ -43,8 +44,8 @@ class RosTfPublisher : public LeafSystem<double> {
    * Takes the current state of the RigidBodyTree and publishes ROS tf messages
    * for the bodies in the RigidBodyTree.
    */
-  void DoPublish(const Context<double>& context) const
-      override;
+  void DoPublish(const Context<double>& context,
+      const std::vector<const PublishEvent<double>*>&) const override;
 
   // TODO(liang.fok) Remove this method once we have a proper mock-ROS-topic
   // framework in place.

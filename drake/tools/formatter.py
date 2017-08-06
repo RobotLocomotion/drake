@@ -123,13 +123,13 @@ class FormatterBase(object):
             if '// clang-format off' in line:
                 clang_format_on = False
                 continue
-            if '/* clang-format off */' in line:
+            if '/* clang-format off' in line:
                 clang_format_on = False
                 continue
             elif '// clang-format on' in line:
                 clang_format_on = True
                 continue
-            elif '/* clang-format on */' in line:
+            elif '/* clang-format on' in line:
                 clang_format_on = True
                 continue
             if self.should_format(clang_format_on, index, line):
@@ -166,6 +166,12 @@ class FormatterBase(object):
     def get_non_format_ranges(self):
         return self.indices_to_ranges(self.get_non_format_indices())
 
+    def _get_clang_format_path(self):
+        preferred = "/usr/bin/clang-format-3.9"
+        if os.path.isfile(preferred):
+            return preferred
+        return "clang-format"
+
     def clang_format(self):
         """Reformat the working list using clang-format, passing -lines=...
         groups for only the lines that pass the should_format() predicate.
@@ -178,7 +184,7 @@ class FormatterBase(object):
 
         # Run clang-format.
         command = [
-            "clang-format",
+            self._get_clang_format_path(),
             "-style=file",
             "-assume-filename=%s" % self._filename] + \
             lines_args

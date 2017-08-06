@@ -6,8 +6,8 @@
 // https://github.com/mwoehlke-kitware/bot_core_lcmtypes/pull/1#issuecomment-269343143
 #include <lcmtypes/bot_core/pointcloud_t.hpp>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/find_resource.h"
 #include "drake/multibody/collision/element.h"
 #include "drake/multibody/collision/model.h"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -30,7 +30,7 @@ Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
   const auto& collision_element_ids =
       tree.get_body(1).get_collision_element_ids();
   DRAKE_DEMAND(collision_element_ids.size() == 1);
-  const DrakeCollision::Element* collision_element =
+  const drake::multibody::collision::Element* collision_element =
       tree.FindCollisionElement(collision_element_ids[0]);
   DRAKE_DEMAND(collision_element->getShape() == DrakeShapes::BOX);
 
@@ -184,12 +184,8 @@ Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
 
   prog.PrintSolution();
 
-  drake::solvers::SolverType solver_type{};
-  int solver_result{};
-  prog.GetSolverResult(&solver_type, &solver_result);
-  std::cout << "Solver type " << static_cast<int>(solver_type)
-            << " solution result " << static_cast<int>(solution_result)
-            << " solver result " << solver_result
+  std::cout << "Solver " << prog.GetSolverId()->name()
+            << " result " << static_cast<int>(solution_result)
             << std::endl;
   Eigen::Isometry3d T;
   T.translation() = prog.GetSolution(t);
@@ -211,7 +207,7 @@ int main(int argc, char** argv) {
 
   RigidBodyTree<double> robot;
   drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      drake::GetDrakePath() + "/multibody/models/box.urdf",
+      drake::FindResourceOrThrow("drake/multibody/models/box.urdf"),
       drake::multibody::joints::kQuaternion, &robot);
   Eigen::VectorXd q0(robot.get_num_positions());
   q0.setZero();

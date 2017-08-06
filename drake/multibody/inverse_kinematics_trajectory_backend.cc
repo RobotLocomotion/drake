@@ -531,7 +531,7 @@ void inverseKinTrajBackend(RigidBodyTree<double>* model, const int nT,
   }
 
   const SolutionResult result = prog.Solve();
-  *info = GetIKSolverInfo(prog, result);
+  *info = GetIKSolverInfo(result);
 
   // Populate the output arguments.
   const auto q_value = prog.GetSolution(q);

@@ -1,8 +1,8 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load("//tools:drake.bzl", "drake_cc_library")
+load("//tools:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -26,7 +26,7 @@ drake_cc_library(
         "//drake/common:unused",
         "//drake/common/trajectories:piecewise_polynomial",
         "//drake/common/trajectories/qp_spline:spline_generation",
-        "//drake/examples/Atlas:atlas_util",
+        "//drake/examples/atlas:atlas_util",
         "//drake/lcmtypes:qp_controller_input",
         "//drake/math:autodiff",
         "//drake/math:expmap",
@@ -47,4 +47,4 @@ drake_cc_library(
     deps = [],
 )
 
-cpplint()
+add_lint_tests()

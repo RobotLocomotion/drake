@@ -1,4 +1,3 @@
-
 # Default to an optimized build.
 build -c opt
 
@@ -24,7 +23,7 @@ test --test_env=DISPLAY
 
 ### A configuration that enables Gurobi. ###
 # -- To use this config, the GUROBI_PATH environment variable must be the
-# -- linux64 directory in the Gurobi 6.0.5 release.
+# -- linux64 directory in the Gurobi 7.0.2 release.
 #
 # -- To run tests where Gurobi is used, ensure that you include
 # -- "gurobi_test_tags()" from //tools:gurobi.bzl. If Gurobi is optional, set
@@ -80,25 +79,12 @@ build:unsupported_crosstool --crosstool_top=//external:cc_toolchain
 # manually list out all git submodule externals' BUILD files.
 #
 # TODO(jwnimmer-tri) Remove this once git submodules are no longer used.
-build --deleted_packages=externals/snopt,externals/snopt/cppsrc,externals/snopt/csrc,externals/snopt/libf2c,externals/protobuf,externals/protobuf/util/python,externals/gflags
-
-### Cpplint. ###
-# By default, cpplint tests are run as part of `bazel test` alongside all of
-# the other compilation and test targets.  This is a convenience shortcut to
-# only do the cpplint testing and nothing else.
-test:cpplint --build_tests_only
-test:cpplint --test_tag_filters=cpplint
-
-### Pycodestyle. ###
-# Code style compliance checking for python, analogous to cpplint above.
-test:pycodestyle --build_tests_only
-test:pycodestyle --test_tag_filters=pycodestyle
+build --deleted_packages=externals/protobuf,externals/protobuf/util/python,externals/gflags
 
 ### Lint. ###
-# Code style compliance for C++ and Python, merging both cpplint and
-# pycodestyle.
+# Run the tests for code style compliance, but not any functional (unit) tests.
 test:lint --build_tests_only
-test:lint --test_tag_filters=cpplint,pycodestyle
+test:lint --test_tag_filters=lint
 
 ### Debug symbols on OS X. ###
 # See https://github.com/bazelbuild/bazel/issues/2537
@@ -229,6 +215,12 @@ build:tsan --copt -g
 build:tsan --copt -fsanitize=thread
 build:tsan --copt -O1
 build:tsan --copt -fno-omit-frame-pointer
+# From Tsan documentation for Clang-3.9:
+# fsanitize=thread flag will cause Clang to act as though the -fPIE flag
+# had been supplied if compiling without -fPIC, and as though the
+# -pie flag had been supplied if linking an executable
+# Bug in GCC: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=67308
+build:tsan --noforce_pic
 build:tsan --linkopt -fsanitize=thread
 test:tsan --run_under=//tools:tsan
 test:tsan --test_env=TSAN_OPTIONS

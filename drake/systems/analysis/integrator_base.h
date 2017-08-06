@@ -552,6 +552,13 @@ class IntegratorBase {
   StepResult IntegrateAtMost(const T& publish_dt, const T& update_dt,
                              const T& boundary_dt);
 
+  /// Gets the stretch factor (> 1), which is multiplied by the maximum
+  /// (typically user-designated) integration step size to obtain the amount
+  /// that the integrator is able to stretch the maximum time step toward
+  /// hitting an upcoming publish or update event in IntegrateAtMost().
+  /// @sa IntegrateAtMost()
+  double get_stretch_factor() const { return 1.01; }
+
   /// Stepping function for integrators operating outside of Simulator that
   /// advances the continuous state exactly by @p dt. This method is designed
   /// for integrator users that do not wish to consider publishing or
@@ -1099,7 +1106,8 @@ class IntegratorBase {
    * to function well in most circumstances.
    * @param[in] dt_max The maximum step size to be taken. The integrator may
    *               take a smaller step than specified to satisfy accuracy
-   *               requirements.
+   *               requirements or to respect the integrator's maximum step
+   *               size.
    * @throws std::logic_error if integrator does not support error
    *                          estimation.
    * @note This function will shrink the integration step as necessary whenever
@@ -1328,6 +1336,7 @@ class IntegratorBase {
 template <class T>
 bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
   using std::isnan;
+  using std::min;
 
   // Verify that the integrator supports error estimates.
   if (!supports_error_estimation()) {
@@ -1371,6 +1380,9 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
       if (dt_max < near_enough_larger * current_step_size)
         current_step_size = dt_max;  // dt_max is roughly current step.
     }
+
+    // Limit the current step size.
+    current_step_size = min(current_step_size, get_maximum_step_size());
 
     // Keep adjusting the integration step size until any integrator
     // convergence failures disappear.
@@ -1631,6 +1643,14 @@ typename IntegratorBase<T>::StepResult IntegratorBase<T>::IntegrateAtMost(
     dt = boundary_dt;
   }
 
+  // If there is no continuous state, there will be no need to limit the
+  // integration step size.
+  if (get_context().get_continuous_state()->size() == 0) {
+    Context<T>* context = get_mutable_context();
+    context->set_time(context->get_time() + dt);
+    return candidate_result;
+  }
+
   // If all events are farther into the future than the maximum step
   // size times a stretch factor of 1.01, the maximum step size becomes the
   // candidate dt. Put another way, if the maximum step occurs right before
@@ -1639,10 +1659,9 @@ typename IntegratorBase<T>::StepResult IntegratorBase<T>::IntegrateAtMost(
   // publish or an update.
   const bool reached_boundary =
       (candidate_result == IntegratorBase<T>::kReachedBoundaryTime);
-  static constexpr double kMaxStretch = 1.01;  // Allow 1% step size stretch.
   const T& max_dt = IntegratorBase<T>::get_maximum_step_size();
   if ((reached_boundary && max_dt < dt) ||
-      (!reached_boundary && max_dt * kMaxStretch < dt)) {
+      (!reached_boundary && max_dt * get_stretch_factor() < dt)) {
     candidate_result = IntegratorBase<T>::kTimeHasAdvanced;
     dt = max_dt;
   }

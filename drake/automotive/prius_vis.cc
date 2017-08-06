@@ -3,7 +3,7 @@
 #include <Eigen/Geometry>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/lcmt_viewer_load_robot.hpp"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/joints/roll_pitch_yaw_floating_joint.h"
@@ -27,10 +27,10 @@ template <typename T>
 PriusVis<T>::PriusVis(int id, const std::string& name)
     : CarVis<T>(id, name),
       tree_(new RigidBodyTree<T>()) {
-  const std::string kSdfFilename =
-      GetDrakePath() + "/automotive/models/prius/prius_with_lidar.sdf";
+  const std::string sdf_filename = FindResourceOrThrow(
+      "drake/automotive/models/prius/prius_with_lidar.sdf");
   parsers::sdf::AddModelInstancesFromSdfFileToWorld(
-      kSdfFilename, kRollPitchYaw, tree_.get());
+      sdf_filename, kRollPitchYaw, tree_.get());
 
   // Verifies that the model instance within tree_ meets this method's
   // requirements. See the class description for more details.

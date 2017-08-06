@@ -88,6 +88,12 @@ namespace multibody {
 ///
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
 /// Various methods in this class require numerical (not symbolic) data types.
+///
+/// Instantiated templates for the following kinds of T's are provided:
+/// - double
+/// - AutoDiffXd
+///
+/// They are already available to link against in the containing library.
 template <typename T>
 class RotationalInertia {
  public:
@@ -381,6 +387,23 @@ class RotationalInertia {
       }
     }
     return false;
+  }
+
+  /// Returns a new %RotationalInertia object templated on `Scalar` initialized
+  /// from the values of `this` rotational inertia's entries.
+  ///
+  /// @tparam Scalar The scalar type on which the new rotational inertia will
+  /// be templated.
+  ///
+  /// @note `RotationalInertia<From>::cast<To>()` creates a new
+  /// `RotationalInertia<To>` from a `RotationalInertia<From>` but only if
+  /// type `To` is constructible from type `From`. As an example of this,
+  /// `RotationalInertia<double>::cast<AutoDiffXd>()` is valid since
+  /// `AutoDiffXd a(1.0)` is valid. However,
+  /// `RotationalInertia<AutoDiffXd>::cast<double>()` is not.
+  template <typename Scalar>
+  RotationalInertia<Scalar> cast() const {
+    return RotationalInertia<Scalar>(I_SP_E_.template cast<Scalar>());
   }
 
   /// This method takes `this` rotational inertia about-point P, expressed-in-
@@ -686,6 +709,13 @@ class RotationalInertia {
   }
 
  private:
+  // Make RotationalInertia<Scalar> templated on any other type Scalar be a
+  // friend of this class templated on T. That way the method
+  // RotationalInertia<T>::cast<Scalar>() can make use of the private
+  // constructor RotationalInertia<Scalar>(const Eigen::MatrixBase&) for an
+  // Eigen expression templated on Scalar.
+  template <typename> friend class RotationalInertia;
+
   // Constructs a rotational inertia for a particle Q whose position vector
   // from about-point P is p_PQ_E = xx̂ + yŷ + zẑ = [x, y, z]_E, where E is the
   // expressed-in frame.  Particle Q's mass (or unit mass) is included in the
@@ -708,6 +738,21 @@ class RotationalInertia {
     const T mzz = mz*z;
     set_moments_and_products_no_validity_check(myy + mzz, mxx + mzz, mxx + myy,
                                                -mx * y,   -mx * z,   -my * z);
+    DRAKE_ASSERT_VOID(ThrowIfNotPhysicallyValid());
+  }
+
+  // Constructor from an Eigen expression that represents a matrix in ℝ³ˣ³ with
+  // entries corresponding to inertia moments and products as described in this
+  // class's documentation. This constructor will assert that I is a 3x3 matrix.
+  // For internal use only.
+  template <typename I_Type>
+  explicit RotationalInertia(const Eigen::MatrixBase<I_Type>& I) {
+    EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<I_Type>, 3, 3);
+    // Input matrix must be templated on the same scalar type as this inertia.
+    static_assert(std::is_same<typename I_Type::Scalar, T>::value,
+                  "Input argument I must be templated on the same scalar type "
+                  "as this rotational inertia");
+    I_SP_E_ = I;
     DRAKE_ASSERT_VOID(ThrowIfNotPhysicallyValid());
   }
 

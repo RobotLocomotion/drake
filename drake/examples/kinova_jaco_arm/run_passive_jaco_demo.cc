@@ -6,7 +6,7 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/text_logging_gflags.h"
 #include "drake/examples/kinova_jaco_arm/jaco_common.h"
 #include "drake/lcm/drake_lcm.h"
@@ -40,13 +40,13 @@ int DoMain() {
 
   // Adds a plant.
   RigidBodyPlant<double>* plant = nullptr;
-  const std::string kModelPath = drake::GetDrakePath() +
-      "/manipulation/models/jaco_description/urdf/"
-      "j2n6s300.urdf";
   {
     auto tree = std::make_unique<RigidBodyTree<double>>();
     drake::multibody::AddFlatTerrainToWorld(tree.get());
-    CreateTreeFromFixedModelAtPose(kModelPath, tree.get());
+    CreateTreeFromFixedModelAtPose(
+        FindResourceOrThrow(
+            "drake/manipulation/models/jaco_description/urdf/j2n6s300.urdf"),
+        tree.get());
 
     auto tree_sys =
         std::make_unique<RigidBodyPlant<double>>(std::move(tree));
@@ -75,12 +75,12 @@ int DoMain() {
   std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
   systems::Simulator<double> simulator(*diagram);
 
-  Context<double>* jaco_context = diagram->GetMutableSubsystemContext(
-      simulator.get_mutable_context(), plant);
+  Context<double>& jaco_context = diagram->GetMutableSubsystemContext(
+      *plant, simulator.get_mutable_context());
 
   // Sets (arbitrary) initial conditions.
   // See the @file docblock in jaco_common.h for joint index descriptions.
-  VectorBase<double>* x0 = jaco_context->get_mutable_continuous_state_vector();
+  VectorBase<double>* x0 = jaco_context.get_mutable_continuous_state_vector();
   x0->SetAtIndex(1, 0.5);  // shoulder fore/aft angle [rad]
 
   simulator.Initialize();

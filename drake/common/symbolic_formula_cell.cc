@@ -1,4 +1,6 @@
+#define DRAKE_COMMON_SYMBOLIC_DETAIL_HEADER
 #include "drake/common/symbolic_formula_cell.h"
+#undef DRAKE_COMMON_SYMBOLIC_DETAIL_HEADER
 
 #include <algorithm>
 #include <iostream>
@@ -10,11 +12,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_compat.h"
 #include "drake/common/hash.h"
-#include "drake/common/symbolic_environment.h"
-#include "drake/common/symbolic_expression.h"
-#include "drake/common/symbolic_formula.h"
-#include "drake/common/symbolic_variable.h"
-#include "drake/common/symbolic_variables.h"
+#include "drake/common/symbolic.h"
 #include "drake/math/matrix_util.h"
 
 namespace drake {
@@ -218,9 +216,34 @@ const Variable& FormulaVar::get_variable() const { return var_; }
 FormulaEq::FormulaEq(const Expression& e1, const Expression& e2)
     : RelationalFormulaCell{FormulaKind::Eq, e1, e2} {}
 
+namespace {
+// Helper function for ExpressionEq::Evaluate and ExpressionNeq::Evaluate.
+//
+// Checks if `e1.EvaluatePartial(env)` and `e2.EvaluatePartial(env)` are
+// structurally equal.
+bool CheckStructuralEqualityUptoPartialEvaluation(const Expression& e1,
+                                                  const Expression& e2,
+                                                  const Environment& env) {
+  // Trivial case where env = ∅.
+  if (env.empty()) {
+    return e1.EqualTo(e2);
+  }
+  // Since `Expression::Evaluate` is faster than `Expression::EvaluatePartial`,
+  // we use:
+  //  - `Expression::Evaluate`        if (vars(e₁) ∪ vars(e₂) ⊆ dom(env).
+  //  - `Expression::EvaluatePartial` otherwise.
+  const Variables vars{e1.GetVariables() + e2.GetVariables()};
+  if (vars.size() <= env.size() && vars.IsSubsetOf(env.domain())) {
+    return e1.Evaluate(env) == e2.Evaluate(env);
+  } else {
+    return e1.EvaluatePartial(env).EqualTo(e2.EvaluatePartial(env));
+  }
+}
+}  // namespace
+
 bool FormulaEq::Evaluate(const Environment& env) const {
-  return get_lhs_expression().Evaluate(env) ==
-         get_rhs_expression().Evaluate(env);
+  return CheckStructuralEqualityUptoPartialEvaluation(
+      get_lhs_expression(), get_rhs_expression(), env);
 }
 
 Formula FormulaEq::Substitute(const Substitution& s) const {
@@ -237,8 +260,8 @@ FormulaNeq::FormulaNeq(const Expression& e1, const Expression& e2)
     : RelationalFormulaCell{FormulaKind::Neq, e1, e2} {}
 
 bool FormulaNeq::Evaluate(const Environment& env) const {
-  return get_lhs_expression().Evaluate(env) !=
-         get_rhs_expression().Evaluate(env);
+  return !CheckStructuralEqualityUptoPartialEvaluation(
+      get_lhs_expression(), get_rhs_expression(), env);
 }
 
 Formula FormulaNeq::Substitute(const Substitution& s) const {

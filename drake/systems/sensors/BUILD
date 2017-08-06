@@ -1,13 +1,13 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load(
     "//tools:drake.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
 )
+load("//tools:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -218,14 +218,15 @@ drake_cc_library(
         "test/accelerometer_test/accelerometer_xdot_hack.h",
     ],
     data = [
-        "//drake/examples/Pendulum:models",
+        "//drake/examples/pendulum:models",
     ],
     deps = [
         ":accelerometer",
         "//drake/common",
+        "//drake/common:find_resource",
         "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant:drake_visualizer",
-        "//drake/multibody/rigid_body_plant:rigid_body_plant_that_publishes_xdot",
+        "//drake/multibody/rigid_body_plant:rigid_body_plant_that_publishes_xdot",  # noqa
         "//drake/systems/lcm:lcmt_drake_signal_translator",
         "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:signal_logger",
@@ -282,6 +283,7 @@ drake_cc_googletest(
     deps = [
         ":accelerometer_example_diagram",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
         "//drake/lcm:mock",
         "//drake/systems/analysis:simulator",
     ],
@@ -292,7 +294,6 @@ drake_cc_googletest(
     srcs = ["test/depth_sensor_test.cc"],
     deps = [
         ":depth_sensor",
-        "//drake/common:drake_path",
         "//drake/common:eigen_matrix_compare",
     ],
 )
@@ -302,7 +303,6 @@ drake_cc_googletest(
     srcs = ["test/depth_sensor_to_lcm_point_cloud_message_test.cc"],
     deps = [
         ":depth_sensor_to_lcm_point_cloud_message",
-        "//drake/common:drake_path",
         "//drake/lcm:mock",
     ],
 )
@@ -316,6 +316,7 @@ drake_cc_googletest(
     deps = [
         ":gyroscope",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
         "//drake/multibody/parsers",
     ],
 )
@@ -337,8 +338,8 @@ drake_cc_googletest(
     tags = ["manual"],
     deps = [
         ":rgbd_camera",
-        "//drake/common:drake_path",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant",
@@ -355,4 +356,4 @@ drake_cc_googletest(
     deps = [":image_to_lcm_image_array_t"],
 )
 
-cpplint()
+add_lint_tests()

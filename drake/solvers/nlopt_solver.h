@@ -3,7 +3,7 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/mathematical_program_solver_interface.h"
 
 namespace drake {
 namespace solvers {
@@ -21,9 +21,10 @@ class NloptSolver : public MathematicalProgramSolverInterface {
 
   SolutionResult Solve(MathematicalProgram& prog) const override;
 
-  SolverType solver_type() const override { return SolverType::kNlopt; }
+  SolverId solver_id() const override;
 
-  std::string SolverName() const override { return "NLopt"; }
+  /// @return same as MathematicalProgramSolverInterface::solver_id()
+  static SolverId id();
 };
 
 }  // namespace solvers

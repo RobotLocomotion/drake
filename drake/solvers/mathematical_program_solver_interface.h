@@ -4,7 +4,7 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/solvers/solver_type.h"
+#include "drake/solvers/solver_id.h"
 
 namespace drake {
 namespace solvers {
@@ -38,11 +38,8 @@ class MathematicalProgramSolverInterface {
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   virtual SolutionResult Solve(MathematicalProgram& prog) const = 0;
 
-  /// Returns the type of the solver.
-  virtual SolverType solver_type() const = 0;
-
-  /// Returns the name of the solver.
-  virtual std::string SolverName() const = 0;
+  /// Returns the identifier of this solver.
+  virtual SolverId solver_id() const = 0;
 };
 
 }  // namespace solvers

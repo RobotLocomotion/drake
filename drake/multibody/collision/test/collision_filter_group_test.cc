@@ -1,11 +1,13 @@
+/* clang-format off to disable clang-format-includes */
 #include "drake/multibody/collision/collision_filter.h"
+/* clang-format on */
 
 #include <memory>
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/find_resource.h"
 #include "drake/multibody/joints/drake_joints.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body.h"
@@ -25,10 +27,13 @@
 //    Value: 0b10011
 //    Group:   43210,
 // where groups are enumerated from *right* to *left*.
-namespace DrakeCollision {
+namespace drake {
+namespace multibody {
+namespace collision {
 namespace test {
 namespace {
 
+using drake::FindResourceOrThrow;
 using drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld;
 using Eigen::Isometry3d;
 using Eigen::VectorXd;
@@ -316,12 +321,13 @@ GTEST_TEST(CollisionFilterGroupCompile, ClearFlushesData) {
 
 //---------------------------------------------------------------------------
 
-// This tests the functionality of the DrakeCollision::Element::CanCollideWith
-// method.  Assuming the bit masks have been set properly, this confirms they
-// are interpreted properly.
+// This tests the functionality of the
+// drake::multibody::collision::Element::CanCollideWith method.  Assuming the
+// bit masks have been set properly, this confirms they are interpreted
+// properly.
 GTEST_TEST(CollisionFilterGroupElement, ElementCanCollideWithTest) {
-  DrakeCollision::Element e1;
-  DrakeCollision::Element e2;
+  drake::multibody::collision::Element e1;
+  drake::multibody::collision::Element e2;
 
   // Case 1: By default, elements belong to no group and ignore nothing.
   EXPECT_EQ(e1.get_collision_filter_group(), kDefaultGroup);
@@ -458,9 +464,9 @@ GTEST_TEST(CollisionFilterGroupRBT, CollisionElementSetFilters) {
 GTEST_TEST(CollisionFilterGroupURDF, ParseMultiMemberTest) {
   RigidBodyTree<double> tree;
   AddModelInstanceFromUrdfFileToWorld(
-      drake::GetDrakePath() +
-          "/multibody/collision/test/"
-          "collision_filter_group_test_multi_member.urdf",
+      FindResourceOrThrow(
+          "drake/multibody/collision/test/"
+          "collision_filter_group_test_multi_member.urdf"),
       drake::multibody::joints::kRollPitchYaw, &tree);
   Eigen::Matrix<double, 16, 1> state;
   state << 0, 0, 0, 0, 0, 0, 0, 0,  // x_0, rpy_0, joint12, joint23
@@ -480,9 +486,9 @@ GTEST_TEST(CollisionFilterGroupURDF, ParseMultiMemberTest) {
 GTEST_TEST(CollisionFilterGroupURDF, ParseMultiIgnoreTest) {
   RigidBodyTree<double> tree;
   AddModelInstanceFromUrdfFileToWorld(
-      drake::GetDrakePath() +
-          "/multibody/collision/test/"
-          "collision_filter_group_test_multi_ignore.urdf",
+      FindResourceOrThrow(
+          "drake/multibody/collision/test/"
+          "collision_filter_group_test_multi_ignore.urdf"),
       drake::multibody::joints::kRollPitchYaw, &tree);
   Eigen::Matrix<double, 16, 1> state;
   state << 0, 0, 0, 0, 0, 0, 0, 0,  // x_0, rpy_0, joint12, joint23
@@ -497,4 +503,6 @@ GTEST_TEST(CollisionFilterGroupURDF, ParseMultiIgnoreTest) {
 }
 }  // namespace
 }  // namespace test
-}  // namespace DrakeCollision
+}  // namespace collision
+}  // namespace multibody
+}  // namespace drake

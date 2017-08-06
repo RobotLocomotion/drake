@@ -129,35 +129,37 @@ const DrakeShapes::VectorOfVisualElements& RigidBody<T>::get_visual_elements()
 }
 
 template <typename T>
-void RigidBody<T>::AddCollisionElement(const std::string& group_name,
-                                    DrakeCollision::Element* element) {
-  DrakeCollision::ElementId id = element->getId();
+void RigidBody<T>::AddCollisionElement(
+    const std::string& group_name,
+    drake::multibody::collision::Element* element) {
+  drake::multibody::collision::ElementId id = element->getId();
   collision_element_ids_.push_back(id);
   collision_element_groups_[group_name].push_back(id);
   collision_elements_.push_back(element);
 }
 
 template <typename T>
-const std::vector<DrakeCollision::ElementId>&
-    RigidBody<T>::get_collision_element_ids() const {
+const std::vector<drake::multibody::collision::ElementId>&
+RigidBody<T>::get_collision_element_ids() const {
   return collision_element_ids_;
 }
 
 template <typename T>
-std::vector<DrakeCollision::ElementId>&
-    RigidBody<T>::get_mutable_collision_element_ids() {
+std::vector<drake::multibody::collision::ElementId>&
+RigidBody<T>::get_mutable_collision_element_ids() {
   return collision_element_ids_;
 }
 
 template <typename T>
-const std::map<std::string, std::vector<DrakeCollision::ElementId>>&
-    RigidBody<T>::get_group_to_collision_ids_map() const {
+const std::map<std::string,
+               std::vector<drake::multibody::collision::ElementId>>&
+RigidBody<T>::get_group_to_collision_ids_map() const {
   return collision_element_groups_;
 }
 
 template <typename T>
-std::map<std::string, std::vector<DrakeCollision::ElementId>>&
-    RigidBody<T>::get_mutable_group_to_collision_ids_map() {
+std::map<std::string, std::vector<drake::multibody::collision::ElementId>>&
+RigidBody<T>::get_mutable_group_to_collision_ids_map() {
   return collision_element_groups_;
 }
 
@@ -217,8 +219,9 @@ bool RigidBody<T>::CanCollideWith(const RigidBody& other) const {
 
 template <typename T>
 bool RigidBody<T>::appendCollisionElementIdsFromThisBody(
+    const string& group_name,
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-    const string& group_name, vector<DrakeCollision::ElementId>& ids) const {
+    vector<drake::multibody::collision::ElementId>& ids) const {
   auto group_ids_iter = collision_element_groups_.find(group_name);
   if (group_ids_iter != collision_element_groups_.end()) {
     ids.reserve(ids.size() + distance(group_ids_iter->second.begin(),
@@ -234,7 +237,7 @@ bool RigidBody<T>::appendCollisionElementIdsFromThisBody(
 template <typename T>
 bool RigidBody<T>::appendCollisionElementIdsFromThisBody(
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-    vector<DrakeCollision::ElementId>& ids) const {
+    vector<drake::multibody::collision::ElementId>& ids) const {
   ids.reserve(ids.size() + collision_element_ids_.size());
   ids.insert(ids.end(), collision_element_ids_.begin(),
              collision_element_ids_.end());

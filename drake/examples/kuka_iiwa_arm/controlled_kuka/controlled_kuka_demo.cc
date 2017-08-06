@@ -12,7 +12,7 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/sim_diagram_builder.h"
@@ -43,13 +43,14 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 
-const char kUrdfPath[] = "/manipulation/models/iiwa_description/urdf/"
+const char kUrdfPath[] =
+    "drake/manipulation/models/iiwa_description/urdf/"
     "iiwa14_polytope_collision.urdf";
 
 unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
   auto tree = make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      GetDrakePath() + kUrdfPath, multibody::joints::kFixed, tree.get());
+      FindResourceOrThrow(kUrdfPath), multibody::joints::kFixed, tree.get());
 
   // Creates a basic pointwise IK trajectory for moving the iiwa arm.
   // It starts in the zero configuration (straight up).
@@ -142,24 +143,25 @@ int DoMain() {
   DRAKE_DEMAND(FLAGS_simulation_sec > 0);
 
   auto tree = std::make_unique<RigidBodyTree<double>>();
-  CreateTreedFromFixedModelAtPose(kUrdfPath, tree.get());
+  CreateTreedFromFixedModelAtPose(FindResourceOrThrow(kUrdfPath), tree.get());
 
   std::unique_ptr<PiecewisePolynomialTrajectory> traj = MakePlan();
 
   drake::lcm::DrakeLcm lcm;
   SimDiagramBuilder<double> builder;
   // Adds a plant
-  builder.AddPlant(std::move(tree));
+  auto plant = builder.AddPlant(std::move(tree));
   builder.AddVisualizer(&lcm);
 
   // Adds a iiwa controller
   VectorX<double> iiwa_kp, iiwa_kd, iiwa_ki;
   SetPositionControlledIiwaGains(&iiwa_kp, &iiwa_ki, &iiwa_kd);
-  auto controller =
-      builder.AddController<systems::InverseDynamicsController<double>>(
-          RigidBodyTreeConstants::kFirstNonWorldModelInstanceId,
-          GetDrakePath() + kUrdfPath, nullptr, iiwa_kp, iiwa_ki, iiwa_kd,
-          false /* no feedforward acceleration */);
+
+  auto controller = builder.AddController<
+      systems::controllers::InverseDynamicsController<double>>(
+      RigidBodyTreeConstants::kFirstNonWorldModelInstanceId,
+      plant->get_rigid_body_tree().Clone(), iiwa_kp, iiwa_ki, iiwa_kd,
+      false /* no feedforward acceleration */);
 
   // Adds a trajectory source for desired state.
   systems::DiagramBuilder<double>* diagram_builder =
@@ -170,7 +172,7 @@ int DoMain() {
   traj_src->set_name("trajectory_source");
 
   diagram_builder->Connect(traj_src->get_output_port(),
-                  controller->get_input_port_desired_state());
+                           controller->get_input_port_desired_state());
 
   std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
 

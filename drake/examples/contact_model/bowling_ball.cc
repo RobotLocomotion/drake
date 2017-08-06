@@ -28,8 +28,8 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/find_resource.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
@@ -87,13 +87,13 @@ int main() {
   // Create RigidBodyTree.
   auto tree_ptr = make_unique<RigidBodyTree<double>>();
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      drake::GetDrakePath() + "/examples/contact_model/bowling_ball.urdf",
+      FindResourceOrThrow("drake/examples/contact_model/bowling_ball.urdf"),
       kQuaternion, nullptr /* weld to frame */, tree_ptr.get());
 
   for (int i = 0; i < FLAGS_pin_count; ++i) {
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        drake::GetDrakePath() + "/examples/contact_model/pin.urdf", kQuaternion,
-        nullptr /* weld to frame */, tree_ptr.get());
+        FindResourceOrThrow("drake/examples/contact_model/pin.urdf"),
+        kQuaternion, nullptr /* weld to frame */, tree_ptr.get());
   }
   multibody::AddFlatTerrainToWorld(tree_ptr.get(), 100., 10.);
 
@@ -128,7 +128,7 @@ int main() {
                                                              FLAGS_timestep,
                                                              context);
   // Set initial state.
-  auto plant_context = diagram->GetMutableSubsystemContext(context, &plant);
+  auto& plant_context = diagram->GetMutableSubsystemContext(plant, context);
 
   // 1 floating quat joint = |xyz|, |q|, |w|, |xyzdot| = 3 + 4 + 3 + 3.
   const int kStateSize = 13 * (1 + FLAGS_pin_count);
@@ -177,7 +177,7 @@ int main() {
   // to the linear velocity.  Angular speed is provided from input parameter: w.
   initial_state.segment<6>(idx) << -FLAGS_w, 0, 0, FLAGS_v, 0, 0;
 
-  plant.set_state_vector(plant_context, initial_state);
+  plant.set_state_vector(&plant_context, initial_state);
 
   simulator->StepTo(FLAGS_sim_duration);
 

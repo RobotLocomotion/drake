@@ -1,8 +1,7 @@
-#include "drake/common/symbolic_variables.h"
-
 #include <gtest/gtest.h>
 
-#include "drake/common/symbolic_variable.h"
+#include "drake/common/eigen_types.h"
+#include "drake/common/symbolic.h"
 
 namespace drake {
 namespace symbolic {
@@ -17,6 +16,23 @@ class VariablesTest : public ::testing::Test {
   const Variable w_{"w"};
   const Variable v_{"v"};
 };
+
+TEST_F(VariablesTest, ConstructFromVariableVector) {
+  const Eigen::Matrix<symbolic::Variable, 3, 1> v1(x_, y_, z_);
+  const Variables vars1(v1);  // vars1 = {x, y, z}
+  EXPECT_EQ(vars1.size(), 3u);
+  EXPECT_TRUE(vars1.include(x_));
+  EXPECT_TRUE(vars1.include(y_));
+  EXPECT_TRUE(vars1.include(z_));
+
+  VectorX<Variable> v2(3);
+  v2 << x_, x_, y_;
+  const Variables vars2(v2);  // vars2 = {x, y}
+  EXPECT_EQ(vars2.size(), 2u);
+  EXPECT_TRUE(vars2.include(x_));
+  EXPECT_TRUE(vars2.include(y_));
+  EXPECT_FALSE(vars2.include(z_));
+}
 
 TEST_F(VariablesTest, HashEq) {
   const Variables vars1{x_, y_, z_};
@@ -268,6 +284,44 @@ TEST_F(VariablesTest, IsStrictSuperSetOf) {
   EXPECT_FALSE(vars5.IsStrictSupersetOf(vars3));
   EXPECT_FALSE(vars5.IsStrictSupersetOf(vars4));
   EXPECT_FALSE(vars5.IsStrictSupersetOf(vars5));
+}
+
+TEST_F(VariablesTest, Intersection) {
+  const Variables vars1{x_, y_, z_, w_, v_};
+  const Variables vars2{x_, y_};
+  const Variables vars3{x_, y_, z_};
+  const Variables vars4{z_, w_, v_};
+  const Variables vars5{w_, v_};
+
+  EXPECT_EQ(intersect(vars1, vars1), vars1);
+  EXPECT_EQ(intersect(vars1, vars2), vars2);
+  EXPECT_EQ(intersect(vars1, vars3), vars3);
+  EXPECT_EQ(intersect(vars1, vars4), vars4);
+  EXPECT_EQ(intersect(vars1, vars5), vars5);
+
+  EXPECT_EQ(intersect(vars2, vars1), vars2);
+  EXPECT_EQ(intersect(vars2, vars2), vars2);
+  EXPECT_EQ(intersect(vars2, vars3), vars2);
+  EXPECT_EQ(intersect(vars2, vars4), Variables{});
+  EXPECT_EQ(intersect(vars2, vars5), Variables{});
+
+  EXPECT_EQ(intersect(vars3, vars1), vars3);
+  EXPECT_EQ(intersect(vars3, vars2), vars2);
+  EXPECT_EQ(intersect(vars3, vars3), vars3);
+  EXPECT_EQ(intersect(vars3, vars4), Variables({z_}));
+  EXPECT_EQ(intersect(vars3, vars5), Variables{});
+
+  EXPECT_EQ(intersect(vars4, vars1), vars4);
+  EXPECT_EQ(intersect(vars4, vars2), Variables{});
+  EXPECT_EQ(intersect(vars4, vars3), Variables({z_}));
+  EXPECT_EQ(intersect(vars4, vars4), vars4);
+  EXPECT_EQ(intersect(vars4, vars5), vars5);
+
+  EXPECT_EQ(intersect(vars5, vars1), vars5);
+  EXPECT_EQ(intersect(vars5, vars2), Variables{});
+  EXPECT_EQ(intersect(vars5, vars3), Variables{});
+  EXPECT_EQ(intersect(vars5, vars4), vars5);
+  EXPECT_EQ(intersect(vars5, vars5), vars5);
 }
 
 TEST_F(VariablesTest, ToString) {

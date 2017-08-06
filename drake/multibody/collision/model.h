@@ -11,7 +11,9 @@
 #include "drake/multibody/collision/element.h"
 #include "drake/multibody/collision/point_pair.h"
 
-namespace DrakeCollision {
+namespace drake {
+namespace multibody {
+namespace collision {
 typedef std::pair<ElementId, ElementId> ElementIdPair;
 
 /** Model is an abstract base class of a collision model. Child classes of Model
@@ -28,9 +30,10 @@ class Model {
 
    This operation is frequently referred to as "registering" the collision
    element.  This is the process by which a fully-realized Drake collision
-   element is fed to a specific DrakeCollision::Model implementation.  Prior
-   to this *registration*, the collision model knows nothing about the collision
-   element.  After registration, it owns the collision element.
+   element is fed to a specific drake::multibody::collision::Model
+   implementation.  Prior to this *registration*, the collision model knows
+   nothing about the collision element.  After registration, it owns the
+   collision element.
 
    @param element The element to add.
 
@@ -40,7 +43,7 @@ class Model {
    error configuring collision  model, etc.) **/
   Element* AddElement(std::unique_ptr<Element> element);
 
-  bool removeElement(ElementId id);
+  bool RemoveElement(ElementId id);
 
   /** Gets a read-only pointer to a collision element in this model.
 
@@ -61,15 +64,11 @@ class Model {
    model. **/
   virtual Element* FindMutableElement(ElementId id);
 
-  // TODO(SeanCurtis-TRI): Why is this virtual?
-  virtual void getTerrainContactPoints(
-      ElementId id0,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      Eigen::Matrix3Xd& terrain_points);
+  void GetTerrainContactPoints(ElementId id0, Eigen::Matrix3Xd* terrain_points);
 
   /** Updates the collision model. This method is typically called after changes
    are made to its collision elements. **/
-  virtual void updateModel() = 0;
+  virtual void UpdateModel() = 0;
 
   /** Updates the stored transformation from a collision element's canonical
   space to world space (`X_WE`), where `X_WE = X_WL * X_LE`. `X_LE` is the
@@ -82,7 +81,7 @@ class Model {
    current world pose of the parent body in a given context.
 
    @return Whether the update was successful. **/
-  virtual bool updateElementWorldTransform(
+  virtual bool UpdateElementWorldTransform(
       ElementId id, const Eigen::Isometry3d& X_WL);
 
   /** Computes the points of closest approach between all eligible pairs of
@@ -98,10 +97,9 @@ class Model {
    contains the closest point information after this method is called
 
    @return Whether this method successfully ran. **/
-  virtual bool closestPointsAllToAll(const std::vector<ElementId>& ids_to_check,
-                                     bool use_margins,
-                                     std::vector<PointPair>&
-                                     closest_points) = 0;
+  virtual bool ClosestPointsAllToAll(
+      const std::vector<ElementId>& ids_to_check, bool use_margins,
+      std::vector<PointPair>* closest_points) = 0;
 
   /** Computes the point of closest approach between collision elements that
    are in contact.
@@ -114,9 +112,7 @@ class Model {
 
    @returns Whether this method successfully ran. **/
   virtual bool ComputeMaximumDepthCollisionPoints(
-      bool use_margins,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      std::vector<PointPair>& closest_points) = 0;
+      bool use_margins, std::vector<PointPair>* closest_points) = 0;
 
   /** Computes the points of closest approach between specified pairs of
    collision elements.
@@ -132,10 +128,9 @@ class Model {
    called
 
    @return Whether this method successfully ran. **/
-  virtual bool closestPointsPairwise(const std::vector<ElementIdPair>& id_pairs,
-                                     bool use_margins,
-                                     std::vector<PointPair>&
-                                     closest_points) = 0;
+  virtual bool ClosestPointsPairwise(
+      const std::vector<ElementIdPair>& id_pairs, bool use_margins,
+      std::vector<PointPair>* closest_points) = 0;
 
   /** Clears possibly cached results so that a fresh computation can be
   performed.
@@ -164,27 +159,9 @@ class Model {
 
    @param[out] closest_points A vector of `N` PointPair instances such that the
    i'th instance reports the query result for the i'th input point. **/
-  virtual void collisionDetectFromPoints(
+  virtual void CollisionDetectFromPoints(
       const Eigen::Matrix3Xd& points, bool use_margins,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      std::vector<PointPair>& closest_points) = 0;
-
-  // TODO(SeanCurtis-TRI): In the documentation below, clarify the definitions
-  // of "eligible", "additional", and "potential". Definitely do this before
-  // moving this functionality into GeometryWorld.
-  //
-  /** Computes the set of potential collision points for all eligible pairs of
-   collision geometries in this model. This includes the points of closest
-   approach, but may also include additional points that are "close" to being
-   in contact. This can be useful when simulating scenarios in which two
-   collision elements have more than one contact point.
-
-   @param use_margins A flag indicating whether or not to use the version of
-   this model with collision margins.
-
-   @return A vector of PointPair objects containing the potential collision
-   points. **/
-  virtual std::vector<PointPair> potentialCollisionPoints(bool use_margins) = 0;
+      std::vector<PointPair>* closest_points) = 0;
 
   // TODO(SeanCurtis-TRI): Add a C++ version of "collidingPointsTest.m". Once
   // such a test exists, update the @see reference to it below.
@@ -208,7 +185,7 @@ class Model {
 
   @see drake/matlab/systems/plants/test/collidingPointsTest.m for a MATLAB
   %test. **/
-  virtual std::vector<size_t> collidingPoints(
+  virtual std::vector<size_t> CollidingPoints(
       const std::vector<Eigen::Vector3d>& input_points,
       double collision_threshold) = 0;
 
@@ -229,7 +206,7 @@ class Model {
   used to check for collisions with the model.
 
   @return Whether any of the points positively checks for collision. **/
-  virtual bool collidingPointsCheckOnly(
+  virtual bool CollidingPointsCheckOnly(
       const std::vector<Eigen::Vector3d>& input_points,
       double collision_threshold) = 0;
 
@@ -249,14 +226,10 @@ class Model {
    collision occurs.
 
    @return Whether this method successfully ran. **/
-  virtual bool collisionRaycast(
-      const Eigen::Matrix3Xd& origin,
-      const Eigen::Matrix3Xd& ray_endpoint,
-      bool use_margins,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      Eigen::VectorXd& distances,
-      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-      Eigen::Matrix3Xd& normals) = 0;
+  virtual bool CollisionRaycast(const Eigen::Matrix3Xd& origin,
+                                const Eigen::Matrix3Xd& ray_endpoint,
+                                bool use_margins, Eigen::VectorXd* distances,
+                                Eigen::Matrix3Xd* normals) = 0;
 
   /** Modifies a collision element's local transform to be relative to a joint's
    frame rather than a link's frame. This is necessary because Drake requires
@@ -268,8 +241,8 @@ class Model {
    link's frame to the joint's coordinate frame.
 
    @return Whether the collision element was successfully updated. **/
-  virtual bool transformCollisionFrame(
-      const DrakeCollision::ElementId& eid,
+  virtual bool TransformCollisionFrame(
+      const drake::multibody::collision::ElementId& eid,
       const Eigen::Isometry3d& transform_body_to_joint);
 
   /** A toString method for this class. */
@@ -290,4 +263,6 @@ class Model {
   std::unordered_map<ElementId, std::unique_ptr<Element>> elements;
 };
 
-}  // namespace DrakeCollision
+}  // namespace collision
+}  // namespace multibody
+}  // namespace drake

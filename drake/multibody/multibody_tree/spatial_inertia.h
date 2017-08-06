@@ -77,6 +77,12 @@ namespace multibody {
 ///                algorithms. Springer Science & Business Media.
 ///
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
+///
+/// Instantiated templates for the following kinds of T's are provided:
+/// - double
+/// - AutoDiffXd
+///
+/// They are already available to link against in the containing library.
 template <typename T>
 class SpatialInertia {
  public:
@@ -108,6 +114,26 @@ class SpatialInertia {
       const T& mass, const Vector3<T>& p_PScm_E, const UnitInertia<T>& G_SP_E) :
       mass_(mass), p_PScm_E_(p_PScm_E), G_SP_E_(G_SP_E) {
     CheckInvariants();
+  }
+
+  /// Returns a new %SpatialInertia object templated on `Scalar` initialized
+  /// from the value of `this` spatial inertia.
+  ///
+  /// @tparam Scalar The scalar type on which the new spatial inertia will
+  /// be templated.
+  ///
+  /// @note `SpatialInertia<From>::cast<To>()` creates a new
+  /// `SpatialInertia<To>` from a `SpatialInertia<From>` but only if
+  /// type `To` is constructible from type `From`. As an example of this,
+  /// `SpatialInertia<double>::cast<AutoDiffXd>()` is valid since
+  /// `AutoDiffXd a(1.0)` is valid. However,
+  /// `SpatialInertia<AutoDiffXd>::cast<double>()` is not.
+  template <typename Scalar>
+  SpatialInertia<Scalar> cast() const {
+    return SpatialInertia<Scalar>(
+        get_mass(),
+        get_com().template cast<Scalar>(),
+        get_unit_inertia().template cast<Scalar>());
   }
 
   /// Get a constant reference to the mass of this spatial inertia.

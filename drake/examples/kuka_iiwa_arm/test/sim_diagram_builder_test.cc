@@ -2,11 +2,11 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_tree_builder.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/controllers/pid_controller.h"
@@ -25,13 +25,12 @@ std::unique_ptr<RigidBodyTree<double>> build_tree(
 
   // Adds models to the simulation builder. Instances of these models can be
   // subsequently added to the world.
-  tree_builder->StoreModel(
-      "iiwa",
-      "/manipulation/models/iiwa_description/urdf/"
-          "iiwa14_polytope_collision.urdf");
+  tree_builder->StoreModel("iiwa",
+                           "drake/manipulation/models/iiwa_description/urdf/"
+                           "iiwa14_polytope_collision.urdf");
   tree_builder->StoreModel(
       "wsg",
-      "/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
+      "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
 
   iiwa->clear();
   wsg->clear();
@@ -41,8 +40,8 @@ std::unique_ptr<RigidBodyTree<double>> build_tree(
 
   for (int i = 0; i < num_iiwa; ++i) {
     // Adds an iiwa arm
-    int id = tree_builder->AddFixedModelInstance(
-        "iiwa", Vector3<double>(i, 0, 0));
+    int id =
+        tree_builder->AddFixedModelInstance("iiwa", Vector3<double>(i, 0, 0));
     iiwa->push_back(tree_builder->get_model_info_for_instance(id));
   }
 
@@ -89,11 +88,15 @@ GTEST_TEST(SimDiagramBuilderTest, TestSimulation) {
   SetPositionControlledIiwaGains(&iiwa_kp, &iiwa_ki, &iiwa_kd);
 
   for (const auto& info : iiwa_info) {
-    auto controller =
-        builder
-            .template AddController<systems::InverseDynamicsController<double>>(
-                info.instance_id, info.model_path, info.world_offset, iiwa_kp,
-                iiwa_ki, iiwa_kd, false /* no feedforward acceleration */);
+    auto single_arm = std::make_unique<RigidBodyTree<double>>();
+    parsers::urdf::AddModelInstanceFromUrdfFile(
+        info.model_path, multibody::joints::kFixed, info.world_offset,
+        single_arm.get());
+
+    auto controller = builder.template AddController<
+        systems::controllers::InverseDynamicsController<double>>(
+        info.instance_id, std::move(single_arm), iiwa_kp, iiwa_ki, iiwa_kd,
+        false /* no feedforward acceleration */);
     controller->set_name("controller_" + std::to_string(info.instance_id));
 
     base_builder->Connect(state_d_source->get_output_port(),
@@ -109,15 +112,15 @@ GTEST_TEST(SimDiagramBuilderTest, TestSimulation) {
   // Simulates.
   systems::Simulator<double> simulator(*diagram);
   systems::Context<double>* context = simulator.get_mutable_context();
-  systems::Context<double>* plant_context =
-      diagram->GetMutableSubsystemContext(context, plant);
+  systems::Context<double>& plant_context =
+      diagram->GetMutableSubsystemContext(*plant, context);
   VectorX<double> state0(2 * kNumPos * iiwa_info.size());
   for (size_t i = 0; i < iiwa_info.size(); ++i) {
     state0.segment<kNumPos>(i * kNumPos) = state_d.head<kNumPos>();
     state0.segment<kNumPos>(i * kNumPos + kNumPos * iiwa_info.size()) =
         state_d.tail<kNumPos>();
   }
-  plant->set_state_vector(plant_context, state0);
+  plant->set_state_vector(&plant_context, state0);
 
   simulator.Initialize();
   simulator.StepTo(0.02);
@@ -156,14 +159,16 @@ GTEST_TEST(SimDiagramBuilderTest, TestMultiAddPlant) {
 // crashes.
 GTEST_TEST(SimDiagramBuilderTest, TestMultiAddController) {
   SimDiagramBuilder<double> builder;
-  builder.template AddController<systems::PidController<double>>(
+  builder.template AddController<systems::controllers::PidController<double>>(
       0, VectorX<double>::Zero(1), VectorX<double>::Zero(1),
       VectorX<double>::Zero(1));
 
-  EXPECT_DEATH(builder.template AddController<systems::PidController<double>>(
-                   0, VectorX<double>::Zero(1), VectorX<double>::Zero(1),
-                   VectorX<double>::Zero(1)),
-               ".*");
+  EXPECT_DEATH(
+      builder
+          .template AddController<systems::controllers::PidController<double>>(
+              0, VectorX<double>::Zero(1), VectorX<double>::Zero(1),
+              VectorX<double>::Zero(1)),
+      ".*");
 }
 
 // Tests that multiple calls to AddVisualizer() crashes.

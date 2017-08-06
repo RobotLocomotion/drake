@@ -135,6 +135,10 @@ class GeoPosition {
   /// Fully parameterized constructor.
   GeoPosition(double x, double y, double z) : xyz_(x, y, z) {}
 
+  /// Fully parameterized constructor from a 3-vector @p xyz of the form
+  /// `[x, y, z]`.
+  explicit GeoPosition(const Vector3<double>& xyz) : xyz_(xyz) {}
+
   /// Constructs a GeoPosition from a 3-vector @p xyz of the form `[x, y, z]`.
   static GeoPosition FromXyz(const Vector3<double>& xyz) {
     return GeoPosition(xyz);
@@ -163,14 +167,18 @@ class GeoPosition {
 
  private:
   Vector3<double> xyz_;
-
-  explicit GeoPosition(const Vector3<double>& xyz) : xyz_(xyz) {}
 };
 
 /// Streams a string representation of @p geo_position into @p out. Returns
 /// @p out. This method is provided for the purposes of debugging or
 /// text-logging. It is not intended for serialization.
 std::ostream& operator<<(std::ostream& out, const GeoPosition& geo_position);
+
+/// GeoPosition overload for the equality operator.
+bool operator==(const GeoPosition& lhs, const GeoPosition& rhs);
+
+/// GeoPosition overload for the inequality operator.
+bool operator!=(const GeoPosition& lhs, const GeoPosition& rhs);
 
 /// A 3-dimensional position in a `Lane`-frame, consisting of three components:
 ///  * s is longitudinal position, as arc-length along a Lane's reference line.
@@ -263,18 +271,34 @@ struct RoadPosition {
 /// Bounds in the lateral dimension (r component) of a `Lane`-frame, consisting
 /// of a pair of minimum and maximum r value.  The bounds must straddle r = 0,
 /// i.e., the minimum must be <= 0 and the maximum must be >= 0.
-struct RBounds {
+class RBounds {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RBounds)
+
   /// Default constructor.
   RBounds() = default;
 
   /// Fully parameterized constructor.
-  RBounds(double rmin, double rmax) : r_min(rmin), r_max(rmax) {
-    DRAKE_DEMAND(r_min <= 0.);
-    DRAKE_DEMAND(r_max >= 0.);
+  RBounds(double min, double max) : min_(min), max_(max) {
+    DRAKE_DEMAND(min <= 0.);
+    DRAKE_DEMAND(max >= 0.);
   }
 
-  double r_min{};
-  double r_max{};
+  /// @name Getters and Setters
+  //@{
+  /// Gets minimum bound.
+  double min() const { return min_; }
+  /// Sets minimum bound.
+  void set_min(double min) { min_ = min; }
+  /// Gets maximum bound.
+  double max() const { return max_; }
+  /// Sets maximum bound.
+  void set_max(double max) { max_ = max; }
+  //@}
+
+ private:
+  double min_{};
+  double max_{};
 };
 
 

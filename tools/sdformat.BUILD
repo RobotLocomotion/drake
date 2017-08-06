@@ -117,16 +117,12 @@ cc_library(
     # cc_library rule, or by using a true external version of URDF.
     copts = ["-I external/sdformat/src/urdf"],
     data = glob(["sdf/1.6/*.sdf"]),
-    includes = [
-        "include",
-    ],
-    linkopts = [
-        "-lboost_system",
-        "-ltinyxml",
-    ],
+    includes = ["include"],
     visibility = ["//visibility:public"],
     deps = [
+        "@boost//:boost_headers",
         "@ignition_math",
+        "@tinyxml",
     ],
 )
 
@@ -142,16 +138,15 @@ install_cmake_config(package = "SDFormat")
 
 install(
     name = "install",
+    targets = [":sdformat"],
     hdrs = public_headers + [
         ":sdfhh_genrule",
         ":config",
     ],
-    hdr_dest = "include",
     hdr_strip_prefix = ["include"],
-    license_docs = [
-        "LICENSE",
+    docs = [
         "COPYING",
+        "LICENSE",
     ],
-    targets = [":sdformat"],
     deps = [":install_cmake_config"],
 )

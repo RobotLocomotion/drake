@@ -1,5 +1,4 @@
-#include "drake/common/symbolic_formula.h"
-
+// NOLINTNEXTLINE(build/include): Its header file is included in symbolic.h.
 #include <cstddef>
 #include <iostream>
 #include <memory>
@@ -7,11 +6,10 @@
 #include <sstream>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/symbolic_environment.h"
-#include "drake/common/symbolic_expression.h"
+#include "drake/common/symbolic.h"
+#define DRAKE_COMMON_SYMBOLIC_DETAIL_HEADER
 #include "drake/common/symbolic_formula_cell.h"
-#include "drake/common/symbolic_variable.h"
-#include "drake/common/symbolic_variables.h"
+#undef DRAKE_COMMON_SYMBOLIC_DETAIL_HEADER
 
 namespace drake {
 namespace symbolic {

@@ -172,11 +172,19 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeForwardDiffJacobian(
   // Compute the Jacobian.
   VectorX<T> xtplus_prime = xtplus;
   for (int i = 0; i < n; ++i) {
-    // Compute a good increment to the dimension.
+    // Compute a good increment to the dimension using approximately 1/eps
+    // digits of precision. Note that if |xtplus| is large, the increment will
+    // be large as well. If |xtplus| is small, the increment will be no smaller
+    // than eps.
     const T abs_xi = abs(xtplus(i));
-    T dxi(eps * abs_xi);
-    if (abs_xi <= 0)
+    T dxi(abs_xi);
+    if (dxi <= 1) {
+      // When |xtplus[i]| is small, increment will be eps.
       dxi = eps;
+    } else {
+      // |xtplus[i]| not small; make increment a fraction of |xtplus[i]|.
+      dxi = eps * abs_xi;
+    }
 
     // Update xtplus', minimizing the effect of roundoff error by ensuring that
     // x and dx differ by an exactly representable number. See p. 192 of
@@ -232,11 +240,19 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeCentralDiffJacobian(
   // Compute the Jacobian.
   VectorX<T> xtplus_prime = xtplus;
   for (int i = 0; i < n; ++i) {
-    // Compute a good increment to the dimension.
+    // Compute a good increment to the dimension using approximately 1/eps
+    // digits of precision. Note that if |xtplus| is large, the increment will
+    // be large as well. If |xtplus| is small, the increment will be no smaller
+    // than eps.
     const T abs_xi = abs(xtplus(i));
-    T dxi(eps * abs_xi);
-    if (abs_xi <= 0)
+    T dxi(abs_xi);
+    if (dxi <= 1) {
+      // When |xtplus[i]| is small, increment will be eps.
       dxi = eps;
+    } else {
+      // |xtplus[i]| not small; make increment a fraction of |xtplus[i]|.
+      dxi = eps * abs_xi;
+    }
 
     // Update xtplus', minimizing the effect of roundoff error, by ensuring that
     // x and dx differ by an exactly representable number. See p. 192 of
@@ -304,6 +320,13 @@ VectorX<AutoDiffXd> ImplicitEulerIntegrator<AutoDiffXd>::Solve(
   return QR_.solve(b);
 }
 
+// Checks to see whether a Jacobian matrix has "become bad" and needs to be
+// refactorized.
+template <class T>
+bool ImplicitEulerIntegrator<T>::IsBadJacobian(const MatrixX<T>& J) const {
+  return !J.allFinite();
+}
+
 // Computes any necessary matrices for the Newton-Raphson iteration in
 // StepAbstract(). Parameters are identical to those for StepAbstract;
 // @see StepAbstract() for their documentation.
@@ -316,7 +339,15 @@ bool ImplicitEulerIntegrator<T>::CalcMatrices(const T& tf, const T& dt,
                                               int trial) {
   // Compute the initial Jacobian and negated iteration matrices (see
   // rationale for the negation below) and factor them, if necessary.
-  if (!reuse_ || J_.rows() == 0) {
+  if (!reuse_ || J_.rows() == 0 || IsBadJacobian(J_)) {
+    // Note that the Jacobian can become bad through a divergent Newton-Raphson
+    // iteration, which causes the state to overflow, which then causes the
+    // Jacobian to overflow. If the state overflows, recomputing the Jacobian
+    // using this bad state will result in another bad Jacobian, eventually
+    // causing DoStep() to return indicating failure (but not before resetting
+    // the continuous state to its previous, good value). DoStep() will then
+    // be called again with a smaller step size and the good state; the
+    // bad Jacobian will then be corrected.
     J_ = CalcJacobian(tf, xtplus);
     const int n = xtplus.size();
     neg_iteration_matrix_ = J_ * (dt / scale) - MatrixX<T>::Identity(n, n);
@@ -368,6 +399,20 @@ bool ImplicitEulerIntegrator<T>::CalcMatrices(const T& tf, const T& dt,
   }
 }
 
+// Helper method to keep UBSan happy when a division by zero is not
+// unexpected.
+template <typename T>
+#ifdef __clang__
+__attribute__((no_sanitize("float-divide-by-zero")))
+#elif defined(__GNUC__)
+// https://gcc.gnu.org/bugzilla/show_bug.cgi?id=78204
+__attribute__((no_sanitize_undefined))
+#endif
+T divide_allowing_by_zero(const T& n, const T& d) {
+  DRAKE_ASSERT(!(d == T{0.0} && n == T{0.0}));
+  return n / d;
+}
+
 // Performs the bulk of the stepping computation for both implicit Euler and
 // implicit trapezoid method; all those methods need to do is provide a
 // residual function (@p g) and a scale factor (@p scale) specific to the
@@ -409,8 +454,8 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
   // Get the initial state.
   VectorX<T> xt0 = context->get_continuous_state_vector().CopyToVector();
 
-  SPDLOG_DEBUG(drake::log(), "StepAbstract() entered for t={}, h={}",
-               context->get_time(), dt);
+  SPDLOG_DEBUG(drake::log(), "StepAbstract() entered for t={}, h={}, trial={}",
+               context->get_time(), dt, trial);
 
   // Advance the context time; this means that all derivatives will be computed
   // at t+dt.
@@ -475,20 +520,24 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
     // [Hairer, 1996] notes that this convergence strategy should only be
     // applied after *at least* two iterations (p. 121).
     if (i >= 1) {
-      // [Hairer, 1996] determined values of kappa in [0.01, 0.1] work most
-      // efficiently on a number of test problems with *RADAU5* (a fifth order
-      // implicit integrator), p. 121. We select a value halfway in-between.
-      const double kappa = 0.05;
       const T theta = dx_norm / last_dx_norm;
-      const T eta = theta / (1 - theta);
+      // theta could become 1.
+      const T eta = divide_allowing_by_zero<T>(theta, 1 - theta);
       SPDLOG_DEBUG(drake::log(), "Newton-Raphson loop {} theta: {}, eta: {}",
                    i, theta, eta);
 
       // Look for divergence.
-      if (theta > 1)
+      if (theta > 1) {
+        SPDLOG_DEBUG(drake::log(), "Newton-Raphson divergence detected for "
+            "h={}", dt);
         break;
+      }
 
       // Look for convergence using Equation 8.10 from [Hairer, 1996].
+      // [Hairer, 1996] determined values of kappa in [0.01, 0.1] work most
+      // efficiently on a number of test problems with *RADAU5* (a fifth order
+      // implicit integrator), p. 121. We select a value halfway in-between.
+      const double kappa = 0.05;
       const double k_dot_tol = kappa * this->get_accuracy_in_use();
       if (eta * dx_norm < k_dot_tol) {
         SPDLOG_DEBUG(drake::log(), "Newton-Raphson converged; η = {}, h = {}",
@@ -845,8 +894,7 @@ bool ImplicitEulerIntegrator<T>::DoStep(const T& dt) {
   // Reset the error estimate.
   err_est_vec_.setZero(context->get_continuous_state()->size());
 
-  // Compute and update the error estimate. We assume that the error estimates
-  // can be summed.
+  // Compute and update the error estimate.
   err_est_vec_ += xtplus_ie - xtplus_itr;
 
   // Update the caller-accessible error estimate.

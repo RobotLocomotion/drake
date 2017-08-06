@@ -40,12 +40,23 @@
       ],
       "Compile-Features": ["c++14"],
       "Requires": [
+        ":drake-lcmtypes-cpp",
         "Eigen3:Eigen",
         "lcm:lcm",
         "bot2-core-lcmtypes:lcmtypes_bot2-core-cpp",
         "robotlocomotion-lcmtypes:robotlocomotion-lcmtypes-cpp",
         "spdlog:spdlog"
       ]
+    },
+    "drake-lcmtypes-cpp": {
+      "Type": "interface",
+      "Includes": ["@prefix@/include/drake/lcmtypes"],
+      "Requires": ["lcm:lcm-coretypes"]
+    },
+    "drake-lcmtypes-java": {
+      "Type": "jar",
+      "Location": "@prefix@/share/java/lcmtypes_drake.jar",
+      "Requires": ["lcm:lcm-java"]
     }
   }
 }

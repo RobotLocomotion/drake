@@ -51,6 +51,19 @@ def _dsym_command(name):
         "//conditions:default": "touch $@",
     })
 
+def _check_library_deps_blacklist(name, deps):
+    """Report an error if a library should not use something from deps."""
+    if not deps:
+        return
+    if type(deps) != 'list':
+        # We can't handle select() yet.
+        return
+    for dep in deps:
+        if dep.endswith(":main"):
+            fail("The cc_library '" + name + "' must not depend on a :main " +
+                 "function from a cc_library; only cc_binary program should " +
+                 "have a main function")
+
 def drake_cc_library(
         name,
         hdrs = None,
@@ -65,6 +78,7 @@ def drake_cc_library(
     on all platforms, and to avoid mysterious dyld errors on OS X. This default
     could be revisited if binary size becomes a concern.
     """
+    _check_library_deps_blacklist(name, deps)
     native.cc_library(
         name = name,
         hdrs = hdrs,
@@ -118,6 +132,9 @@ def drake_cc_binary(
         visibility = ["//visibility:private"],
         cmd = _dsym_command(name),
     )
+
+    if "@gtest//:main" in (deps or []):
+        fail("Use drake_cc_googletest to declare %s as a test" % name)
 
     if add_test_rule:
         drake_cc_test(
@@ -196,9 +213,9 @@ def drake_cc_googletest(
     if deps == None:
         deps = []
     if use_default_main:
-        deps.append("@gtest//:main")
+        deps = deps + ["@gtest//:main"]
     else:
-        deps.append("@gtest//:without_main")
+        deps = deps + ["@gtest//:without_main"]
     drake_cc_test(
         name = name,
         deps = deps,

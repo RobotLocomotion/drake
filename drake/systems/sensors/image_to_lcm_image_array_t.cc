@@ -105,44 +105,57 @@ ImageToLcmImageArrayT::image_array_t_msg_output_port() const {
 
 void ImageToLcmImageArrayT::CalcImageArray(
     const systems::Context<double>& context, image_array_t* msg) const {
-  const ImageRgba8U& color_image =
-      this->EvalAbstractInput(context, color_image_input_port_index_)
-          ->GetValue<ImageRgba8U>();
-
-  const ImageDepth32F& depth_image =
-      this->EvalAbstractInput(context, depth_image_input_port_index_)
-          ->GetValue<ImageDepth32F>();
-
-  const ImageLabel16I& label_image =
-      this->EvalAbstractInput(context, label_image_input_port_index_)
-          ->GetValue<ImageLabel16I>();
-
-  const int64_t utime =
-      static_cast<int64_t>(context.get_time() * kSecToMillisec);
-
-  image_t color_image_msg;
-  PackImageToLcmImageT(color_image, utime, image_t::PIXEL_FORMAT_RGBA,
-                       image_t::CHANNEL_TYPE_UINT8, color_frame_name_,
-                       &color_image_msg);
-
-  image_t depth_image_msg;
-  PackImageToLcmImageT(depth_image, utime, image_t::PIXEL_FORMAT_DEPTH,
-                       image_t::CHANNEL_TYPE_FLOAT32, depth_frame_name_,
-                       &depth_image_msg);
-
-  image_t label_image_msg;
-  PackImageToLcmImageT(label_image, utime, image_t::PIXEL_FORMAT_LABEL,
-                       image_t::CHANNEL_TYPE_INT16, label_frame_name_,
-                       &label_image_msg);
-
-  msg->header.utime = utime;
-  msg->header.frame_name = "";
-  msg->num_images = 3;
-
+  msg->header.utime = static_cast<int64_t>(context.get_time() * kSecToMillisec);
+  msg->header.frame_name.clear();
+  msg->num_images = 0;
   msg->images.clear();
-  msg->images.push_back(color_image_msg);
-  msg->images.push_back(depth_image_msg);
-  msg->images.push_back(label_image_msg);
+
+  const AbstractValue* color_image_value =
+      this->EvalAbstractInput(context, color_image_input_port_index_);
+
+  const AbstractValue* depth_image_value =
+      this->EvalAbstractInput(context, depth_image_input_port_index_);
+
+  const AbstractValue* label_image_value =
+      this->EvalAbstractInput(context, label_image_input_port_index_);
+
+  if (color_image_value) {
+    const ImageRgba8U& color_image =
+        color_image_value->GetValue<ImageRgba8U>();
+
+    image_t color_image_msg;
+    PackImageToLcmImageT(color_image, msg->header.utime,
+                         image_t::PIXEL_FORMAT_RGBA,
+                         image_t::CHANNEL_TYPE_UINT8, color_frame_name_,
+                         &color_image_msg);
+    msg->images.push_back(color_image_msg);
+    msg->num_images++;
+  }
+
+  if (depth_image_value) {
+    const ImageDepth32F& depth_image =
+        depth_image_value->GetValue<ImageDepth32F>();
+    image_t depth_image_msg;
+    PackImageToLcmImageT(depth_image, msg->header.utime,
+                         image_t::PIXEL_FORMAT_DEPTH,
+                         image_t::CHANNEL_TYPE_FLOAT32, depth_frame_name_,
+                         &depth_image_msg);
+    msg->images.push_back(depth_image_msg);
+    msg->num_images++;
+  }
+
+  if (label_image_value) {
+    const ImageLabel16I& label_image =
+        label_image_value->GetValue<ImageLabel16I>();
+
+    image_t label_image_msg;
+    PackImageToLcmImageT(label_image, msg->header.utime,
+                         image_t::PIXEL_FORMAT_LABEL,
+                         image_t::CHANNEL_TYPE_INT16, label_frame_name_,
+                         &label_image_msg);
+    msg->images.push_back(label_image_msg);
+    msg->num_images++;
+  }
 }
 
 }  // namespace sensors

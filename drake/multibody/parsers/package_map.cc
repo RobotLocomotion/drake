@@ -9,7 +9,6 @@
 #include "spruce.hh"
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_path.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/text_logging.h"
 #include "drake/thirdParty/bsd/tinydir/tinydir.h"
@@ -21,6 +20,7 @@ using std::getenv;
 using std::istringstream;
 using std::runtime_error;
 using std::string;
+using std::vector;
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
@@ -131,16 +131,15 @@ void PackageMap::AddPackageIfNew(const string& package_name,
 
 namespace {
 
-// Returns true if and only if string @p a ends with string @p b.
-bool StringEndsWith(const std::string& a, const std::string& b) {
-  if (b.size() > a.size()) return false;
-  return std::equal(a.begin() + a.size() - b.size(), a.end(), b.begin());
-}
+// This is the folder that PopulateUpstreamToDrake is documented to use.
+const char* const kDrakeFolderName = "drake";
 
 }  // namespace
 
 void PackageMap::PopulateUpstreamToDrakeHelper(const string& directory) {
   DRAKE_DEMAND(!directory.empty());
+
+  // If there is a new package.xml file, then add it.
   if (HasPackageXmlFile(directory)) {
     spruce::path spruce_path(directory);
     spruce_path.append("package.xml");
@@ -148,26 +147,37 @@ void PackageMap::PopulateUpstreamToDrakeHelper(const string& directory) {
     AddPackageIfNew(package_name, directory);
   }
 
-  // The following if condition uses StringEndsWith() because when Drake is
-  // built using Bazel, GetDrakePath() returns a relative string rather than an
-  // absolute string.
-  if (directory != "/" && !StringEndsWith(directory, GetDrakePath()))
-    PopulateUpstreamToDrakeHelper(GetParentDirectory(directory));
+  // If we've reached .../drake, then stop searching.
+  const vector<string> path_elements = spruce::path(directory).split();
+  DRAKE_DEMAND(!path_elements.empty());
+  const string& final_path_element = path_elements.back();
+  DRAKE_DEMAND(!final_path_element.empty());
+  if (final_path_element == kDrakeFolderName) {
+    return;
+  }
+
+  // Continue searching in our parent directory.
+  PopulateUpstreamToDrakeHelper(GetParentDirectory(directory));
 }
 
 void PackageMap::PopulateUpstreamToDrake(const string& model_file) {
   DRAKE_DEMAND(!model_file.empty());
-  // Aborts if the file is not in drake-distro.
-  if (model_file.find(GetDrakePath()) == std::string::npos) return;
 
+  // Verify that the model_file names an URDF or SDF file.
   spruce::path spruce_path(model_file);
-
-  // Verifies that the model file is to a URDF or SDF file.
-  auto extension = spruce_path.extension();
+  std::string extension = spruce_path.extension();
   std::transform(extension.begin(), extension.end(), extension.begin(),
                  ::tolower);
   DRAKE_DEMAND(extension == ".urdf" || extension == ".sdf");
 
+  // Bail out if the model file is not in .../drake.
+  const string path_sep("/");
+  const string required_substring = path_sep + kDrakeFolderName + path_sep;
+  if (model_file.find(required_substring) == string::npos) {
+    return;
+  }
+
+  // Search the directory containing the model_file and "upstream".
   PopulateUpstreamToDrakeHelper(spruce_path.root());
 }
 

@@ -11,6 +11,7 @@
 
 namespace drake {
 namespace systems {
+namespace controllers {
 
 /**
  * A state feedback controller that uses a PidController to generate desired
@@ -47,39 +48,6 @@ class InverseDynamicsController : public StateFeedbackControllerInterface<T>,
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InverseDynamicsController)
 
   /**
-   * Constructs the controller that instantiates a RigidBodyTree directly
-   * from a model file. Assumes the model is connected to the world with a
-   * multibody::joints::kFixed joint.
-   * @param model_path Path to the model file.
-   * @param world_offset X_WB, where B is the base frame of the model.
-   * @param kp Position gain
-   * @param ki Integral gain
-   * @param kd Velocity gain
-   * @param has_reference_acceleration If true, there is an extra BasicVector
-   * input port for `vd*`. If false, `vd*` is treated as zero, and no extra
-   * input port is declared.
-   */
-  InverseDynamicsController(
-      const std::string& model_path,
-      std::shared_ptr<RigidBodyFrame<double>> world_offset,
-      const VectorX<T>& kp, const VectorX<T>& ki, const VectorX<T>& kd,
-      bool has_reference_acceleration);
-
-  /**
-   * Constructs the controller that clones a given RigidBodyTree.
-   * @param robot Reference to the RigidBodyTree to be cloned.
-   * @param kp Position gain
-   * @param ki Integral gain
-   * @param kd Velocity gain
-   * @param has_reference_acceleration If true, there is an extra BasicVector
-   * input port for `vd*`. If false, `vd*` is treated as zero, and no extra
-   * input port is declared.
-   */
-  InverseDynamicsController(const RigidBodyTree<T>& robot, const VectorX<T>& kp,
-                            const VectorX<T>& ki, const VectorX<T>& kd,
-                            bool has_reference_acceleration);
-
-  /**
    * Constructs the controller that takes ownership of a given RigidBodyTree
    * unique pointer.
    * @param robot Unique pointer whose ownership will be transfered to this
@@ -92,8 +60,9 @@ class InverseDynamicsController : public StateFeedbackControllerInterface<T>,
    * input port is declared.
    */
   InverseDynamicsController(std::unique_ptr<RigidBodyTree<T>> robot,
-                            const VectorX<T>& kp, const VectorX<T>& ki,
-                            const VectorX<T>& kd,
+                            const VectorX<double>& kp,
+                            const VectorX<double>& ki,
+                            const VectorX<double>& kd,
                             bool has_reference_acceleration);
 
   /**
@@ -141,7 +110,8 @@ class InverseDynamicsController : public StateFeedbackControllerInterface<T>,
   }
 
  private:
-  void SetUp(const VectorX<T>& kp, const VectorX<T>& ki, const VectorX<T>& kd);
+  void SetUp(const VectorX<double>& kp,
+      const VectorX<double>& ki, const VectorX<double>& kd);
 
   std::unique_ptr<RigidBodyTree<T>> robot_for_control_{nullptr};
   PidController<T>* pid_{nullptr};
@@ -152,5 +122,6 @@ class InverseDynamicsController : public StateFeedbackControllerInterface<T>,
   int output_port_index_control_{-1};
 };
 
+}  // namespace controllers
 }  // namespace systems
 }  // namespace drake

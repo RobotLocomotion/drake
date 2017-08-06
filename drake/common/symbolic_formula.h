@@ -1,5 +1,10 @@
 #pragma once
 
+#ifndef DRAKE_COMMON_SYMBOLIC_HEADER
+// TODO(soonho-tri): Change to #error, when #6613 merged.
+#warning Do not directly include this file. Include "drake/common/symbolic.h".
+#endif
+
 #include <functional>
 #include <memory>
 #include <ostream>
@@ -13,10 +18,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/hash.h"
-#include "drake/common/symbolic_environment.h"
-#include "drake/common/symbolic_expression.h"
-#include "drake/common/symbolic_variable.h"
-#include "drake/common/symbolic_variables.h"
+#include "drake/common/symbolic.h"
 
 namespace drake {
 namespace symbolic {
@@ -151,7 +153,17 @@ class Formula {
    * std::map<symbolic::Formula> and std::set<symbolic::Formula> via
    * std::less<symbolic::Formula>. */
   bool Less(const Formula& f) const;
-  /** Evaluates under a given environment (by default, an empty environment)*/
+
+  /** Evaluates under a given environment (by default, an empty environment).
+   *
+   * @throws runtime_error if a variable `v` is needed for an evaluation but not
+   * provided by @p env.
+   *
+   * Note that for an equality e₁ = e₂ and an inequality e₁ ≠ e₂, this method
+   * partially evaluates e₁ and e₂ and checks the structural equality of the two
+   * results if @p env does not provide complete information to call Evaluate on
+   * e₁ and e₂.
+   */
   bool Evaluate(const Environment& env = Environment{}) const;
 
   /** Returns a copy of this formula replacing all occurrences of @p var

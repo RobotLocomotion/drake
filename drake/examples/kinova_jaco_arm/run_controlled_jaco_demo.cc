@@ -11,7 +11,7 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/examples/kinova_jaco_arm/jaco_common.h"
 #include "drake/lcm/drake_lcm.h"
@@ -39,15 +39,13 @@ namespace examples {
 namespace kinova_jaco_arm {
 namespace {
 
-const char kRelUrdfPath[] =
-    "/manipulation/models/jaco_description/urdf/j2n6s300.urdf";
+const char* kRelUrdfPath =
+    "drake/manipulation/models/jaco_description/urdf/j2n6s300.urdf";
 
 std::unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
-  const std::string kUrdfPath =
-      drake::GetDrakePath() + std::string(kRelUrdfPath);
   auto tree = make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      kUrdfPath, multibody::joints::kFixed, tree.get());
+      FindResourceOrThrow(kRelUrdfPath), multibody::joints::kFixed, tree.get());
 
   // Create a basic point-wise IK trajectory for moving the Jaco arm.
   // It starts in the zero configuration (straight up).
@@ -92,9 +90,8 @@ std::unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
   // below is a collection of offsets into the state vector referring to the
   // positions of the joints to be constrained.
   Vector1<int> joint_position_start_idx;
-  joint_position_start_idx(0) =
-      tree->FindChildBodyOfJoint("j2n6s300_joint_1")
-      ->get_position_start_index();
+  joint_position_start_idx(0) = tree->FindChildBodyOfJoint("j2n6s300_joint_1")
+                                    ->get_position_start_index();
   Vector2d pc3_tspan = Vector2d(6, 12);
   PostureConstraint pc3(tree.get(), pc3_tspan);
   pc3.setJointLimits(joint_position_start_idx, Vector1d(-0.5), Vector1d(0.5));
@@ -155,9 +152,6 @@ std::unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
 int DoMain() {
   DRAKE_DEMAND(FLAGS_simulation_sec > 0);
 
-  const std::string kUrdfPath =
-      drake::GetDrakePath() + std::string(kRelUrdfPath);
-
   drake::lcm::DrakeLcm lcm;
   systems::DiagramBuilder<double> builder;
   systems::RigidBodyPlant<double>* plant = nullptr;
@@ -166,7 +160,8 @@ int DoMain() {
   {
     auto tree = make_unique<RigidBodyTree<double>>();
     drake::multibody::AddFlatTerrainToWorld(tree.get());
-    CreateTreeFromFixedModelAtPose(kUrdfPath, tree.get());
+    CreateTreeFromFixedModelAtPose(FindResourceOrThrow(kRelUrdfPath),
+                                   tree.get());
 
     auto tree_sys =
         std::make_unique<systems::RigidBodyPlant<double>>(std::move(tree));
@@ -182,12 +177,14 @@ int DoMain() {
   // Adds a controller
   VectorX<double> jaco_kp, jaco_kd, jaco_ki;
   SetPositionControlledJacoGains(&jaco_kp, &jaco_ki, &jaco_kd);
-  auto control_sys = make_unique<systems::InverseDynamicsController<double>>(
-      kUrdfPath, nullptr, jaco_kp, jaco_ki, jaco_kd,
-      false /* no feedforward acceleration */);
+  auto control_sys =
+      make_unique<systems::controllers::InverseDynamicsController<double>>(
+          plant->get_rigid_body_tree().Clone(), jaco_kp, jaco_ki, jaco_kd,
+          false /* no feedforward acceleration */);
   auto controller =
-      builder.AddSystem<systems::InverseDynamicsController<double>>(
-          std::move(control_sys));
+      builder
+          .AddSystem<systems::controllers::InverseDynamicsController<double>>(
+              std::move(control_sys));
 
   // Adds a trajectory source for desired state.
   auto traj_src = builder.AddSystem<systems::TrajectorySource<double>>(
@@ -198,8 +195,7 @@ int DoMain() {
                   controller->get_input_port_desired_state());
 
   // Connects the state port to the controller.
-  const int kInstanceId =
-      RigidBodyTreeConstants::kFirstNonWorldModelInstanceId;
+  const int kInstanceId = RigidBodyTreeConstants::kFirstNonWorldModelInstanceId;
   const auto& state_out_port =
       plant->model_instance_state_output_port(kInstanceId);
   builder.Connect(state_out_port, controller->get_input_port_estimated_state());

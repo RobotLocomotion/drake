@@ -7,7 +7,6 @@ load(
     "install_cmake_config",
 )
 load("@drake//tools:python_lint.bzl", "python_lint")
-load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -38,20 +37,12 @@ install_cmake_config(package = "Eigen3")  # Creates rule :install_cmake_config.
 
 install(
     name = "install",
-    doc_dest = "share/doc/eigen3",
-    guess_hdrs = "PACKAGE",
-    hdr_dest = "include/eigen3",
-    license_docs = glob(["COPYING.*"]),
     targets = [":eigen"],
+    hdr_dest = "include/eigen3",
+    guess_hdrs = "PACKAGE",
+    docs = glob(["COPYING.*"]),
+    doc_dest = "share/doc/eigen3",
     deps = [":install_cmake_config"],
-)
-
-pkg_tar(
-    name = "license",
-    extension = "tar.gz",
-    files = glob(["COPYING.*"]),
-    mode = "0644",
-    package_dir = "eigen",
 )
 
 python_lint()

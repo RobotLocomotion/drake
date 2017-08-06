@@ -1,12 +1,40 @@
 import sys
 
+from drake.tools.formatter import IncludeFormatter
 
-def _check_invalid_line_endings(newlines):
-    """Return 0 if all of the @p newlines are Unix, and 1 otherwise."""
+
+def _check_invalid_line_endings(filename):
+    """Return 0 if all of the newlines in @p filename are Unix, and 1
+    otherwise.
+    """
+    # Ask Python to read the file and determine the newlines convention.
+    with open(filename, 'rU') as file:
+        if not file:
+            print("error: unable to open " + filename)
+            return 1
+        file.read()
+        if file.newlines is None:
+            newlines = tuple()
+        else:
+            newlines = tuple(file.newlines)
+
+    # Only allow Unix newlines.
     for newline in newlines:
         if newline != '\n':
-            print("Non-Unix newline characters found.")
+            print("error: non-Unix newline characters found")
             return 1
+
+    return 0
+
+
+def _check_includes(filename):
+    """Return 0 if clang-format-includes is a no-op, and 1 otherwise."""
+    tool = IncludeFormatter(filename)
+    tool.format_includes()
+    if not tool.is_same_as_original():
+        print("error: the #include ordering is incorrect; to fix, run:")
+        print("  bazel-bin/drake/tools/clang-format-includes " + filename)
+        return 1
     return 0
 
 
@@ -17,29 +45,9 @@ def main():
     """
     total_errors = 0
     for filename in sys.argv[1:]:
-        # Open the file.
         print("drakelint.py: Linting " + filename)
-        with open(filename, 'rU') as file:
-            if not file:
-                print("Unable to open " + filename)
-                sys.exit(1)
-
-            # Read its data.
-            file.read()
-            if file.newlines is None:
-                newlines = tuple()
-            else:
-                newlines = tuple(file.newlines)
-
-            # Run tests and count errors.
-            errors = 0
-            errors += _check_invalid_line_endings(newlines)
-
-            if errors != 0:
-                print(str(errors) + " errors detected.")
-
-            # Wrap up.
-            total_errors += errors
+        total_errors += _check_invalid_line_endings(filename)
+        total_errors += _check_includes(filename)
 
     if total_errors == 0:
         sys.exit(0)

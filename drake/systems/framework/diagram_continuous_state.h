@@ -22,7 +22,7 @@ class DiagramContinuousState : public ContinuousState<T> {
   /// which are not owned by this object and must outlive it.
   ///
   /// The DiagramContinuousState vector xc = [q v z] will have the same
-  /// ordering as the @p substates parameter, which should be the sort order of
+  /// ordering as the @p substates parameter, which should be the order of
   /// the Diagram itself. This fact is an implementation detail that should
   /// only be of interest to framework authors. Everyone else can just use
   /// Diagram<T>::GetMutableSubsystemState.

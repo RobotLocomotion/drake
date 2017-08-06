@@ -6,8 +6,6 @@
 #include "bot_core/robot_state_t.hpp"
 #include "robotlocomotion/robot_plan_t.hpp"
 
-#include "drake/common/drake_path.h"
-
 using bot_core::robot_state_t;
 
 namespace drake {
@@ -126,6 +124,7 @@ void PickAndPlaceStateMachineSystem::CalcWsgCommand(
 
 void PickAndPlaceStateMachineSystem::DoCalcUnrestrictedUpdate(
     const systems::Context<double>& context,
+    const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
     systems::State<double>* state) const {
   // Extract Internal state.
   InternalState& internal_state =

@@ -111,8 +111,8 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   ///
   /// @see Shift() to compute the shifted spatial velocity without modifying
   ///      this original object.
-  SpatialVelocity<T>& ShiftInPlace(const Vector3<T>& p_BQ_E) {
-    this->translational() += this->rotational().cross(p_BQ_E);
+  SpatialVelocity<T>& ShiftInPlace(const Vector3<T>& p_BpBq_E) {
+    this->translational() += this->rotational().cross(p_BpBq_E);
     return *this;
   }
 
@@ -135,8 +135,50 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   ///
   /// @see ShiftInPlace() to compute the shifted spatial velocity in-place
   ///      modifying the original object.
-  SpatialVelocity<T> Shift(const Vector3<T>& p_BQ_E) const {
-    return SpatialVelocity<T>(*this).ShiftInPlace(p_BQ_E);
+  SpatialVelocity<T> Shift(const Vector3<T>& p_BpBq_E) const {
+    return SpatialVelocity<T>(*this).ShiftInPlace(p_BpBq_E);
+  }
+
+  /// This method composes `this` spatial velocity `V_WP` of a frame P measured
+  /// in a frame W, with that of a third frame B moving in P with spatial
+  /// velocity `V_PB`. The result is the spatial velocity `V_WB` of frame B
+  /// measured in W. At the instant in which the velocities are composed, frame
+  /// B is located with its origin `Bo` at `p_PoBo` from P's origin Po.
+  ///
+  /// The composition cannot be performed directly since frames P and B do not
+  /// have the same origins. To perform the composition `V_WB`, the velocity of
+  /// P needs to be shifted to point `Bo`: <pre>
+  ///   V_WB_E = V_WPb_E + V_PB_E = V_WP_E.Shift(p_PoBo_E) + V_PB_E
+  /// </pre>
+  /// where p_PoBo is the position vector from P's origin to B's origin and
+  /// `V_WPb` is the spatial velocity of a new frame `Pb` which is an offset
+  /// frame rigidly aligned with P, but with its origin shifted to B's origin.
+  /// The key is that in the expression above, the two spatial velocities being
+  /// added must be for frames with the same origin point, in this case Bo.
+  ///
+  /// For computation, all quantities above must be expressed in a common
+  /// frame E; we add an `_E` suffix to each symbol to indicate that.
+  ///
+  /// @note If frame B moves rigidly together with frame P, as in a rigid body,
+  /// `V_PB = 0` and the result of this method equals that of the Shift()
+  /// operation.
+  ///
+  /// @param[in] p_PoBo_E
+  ///   Shift vector from P's origin to B's origin, expressed in frame E.
+  ///   The "from" point `Po` must be the point whose velocity is currently
+  ///   represented in `this` spatial velocity, and E must be the same
+  ///   expressed-in frame as for `this` spatial velocity.
+  /// @param[in] V_PB_E
+  ///   The spatial velocity of a third frame B in motion with respect to P,
+  ///   expressed in the same frame E as `this` spatial velocity.
+  /// @retval V_WB_E
+  ///   The spatial velocity of frame B in W resulting from the composition of
+  ///   `this` spatial velocity `V_WP` and B's velocity in P, `V_PB`. The result
+  ///   is expressed in the same frame E as `this` spatial velocity.
+  SpatialVelocity<T> ComposeWithMovingFrameVelocity(
+      const Vector3<T>& p_PoBo_E, const SpatialVelocity<T>& V_PB_E) const {
+    // V_WB_E = V_WPb_E + V_PB_E = V_WP_E.Shift(p_PoBo_E) + V_PB_E
+    return this->Shift(p_PoBo_E) + V_PB_E;
   }
 
   /// Given `this` spatial velocity `V_IBp_E` of point P of body B,
@@ -154,6 +196,45 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   ///          which cannot be enforced by this class.
   T dot(const SpatialForce<T>& F_Q_E) const;
 };
+
+/// Performs the addition of two spatial velocities. This operator
+/// returns the spatial velocity that results from adding the operands as if
+/// they were 6-dimensional vectors. In other words, the resulting spatial
+/// velocity contains a rotational component which is the 3-dimensional
+/// addition of the operand's rotational components and a translational
+/// component which is the 3-dimensional addition of the operand's translational
+/// components.
+///
+/// The addition of two spatial velocities has a clear physical meaning but
+/// can only be performed if the operands meet strict conditions. In addition
+/// the the usual requirement of common expressed-in frames, both spatial
+/// velocities must be for frames with the same origin point. The general idea
+/// is that if frame A has a spatial velocity with respect to E, and frame B
+/// has a spatial velocity with respect to A, we want to "compose" them so that
+/// we get frame B's spatial velocity in E. But that can't be done directly
+/// since frames A and B don't have the same origin. So:
+///
+/// Given the velocity V_EA of a frame A with respect to another frame E, and
+/// the velocity V_AB_E of a frame B measured in frame A (both
+/// expressed in frame E), we can calculate V_EB as their sum after shifting
+/// A's velocity to point Bo: <pre>
+///   V_EB = V_EA.Shift(p_AB_E) + V_AB_E
+/// </pre>
+/// where `p_AB_E` is the position vector from A's origin to B's origin,
+/// expressed in E. This shift can also be thought of as yielding the spatial
+/// velocity of a new frame Ab, which is an offset frame rigidly aligned with A,
+/// but with its origin shifted to B's origin: <pre>
+///   V_EAb = V_EA.Shift(p_AB_E)
+///   V_EB = V_EAb + V_AB_E
+/// </pre>
+///
+/// The addition in the last expression is what is carried out by this operator;
+/// the caller must have already performed the necessary shift.
+template <typename T>
+inline SpatialVelocity<T> operator+(
+    const SpatialVelocity<T>& V_EAb, const SpatialVelocity<T>& V_AB_E) {
+  return SpatialVelocity<T>(V_EAb.get_coeffs() + V_AB_E.get_coeffs());
+}
 
 }  // namespace multibody
 }  // namespace drake

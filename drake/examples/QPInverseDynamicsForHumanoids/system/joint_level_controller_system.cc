@@ -1,11 +1,12 @@
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/joint_level_controller_system.h"
 
-#include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/qp_controller_common.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/qp_inverse_dynamics_common.h"
 
 namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
+
+using systems::controllers::qp_inverse_dynamics::QpOutput;
 
 JointLevelControllerBaseSystem::JointLevelControllerBaseSystem(
     const RigidBodyTree<double>& robot)

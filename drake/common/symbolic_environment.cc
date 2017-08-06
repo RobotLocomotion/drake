@@ -1,11 +1,12 @@
-#include "drake/common/symbolic_environment.h"
-
+// NOLINTNEXTLINE(build/include): Its header file is included in symbolic.h.
 #include <cmath>
 #include <initializer_list>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+
+#include "drake/common/symbolic.h"
 
 namespace drake {
 namespace symbolic {
@@ -54,6 +55,14 @@ void Environment::insert(const key_type& key, const mapped_type& elem) {
   throw_if_dummy(key);
   throw_if_nan(elem);
   map_.emplace(key, elem);
+}
+
+Variables Environment::domain() const {
+  Variables dom;
+  for (const auto& p : map_) {
+    dom += p.first;
+  }
+  return dom;
 }
 
 string Environment::to_string() const {
