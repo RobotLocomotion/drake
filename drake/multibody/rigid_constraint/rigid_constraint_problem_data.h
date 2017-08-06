@@ -8,12 +8,12 @@
 
 namespace drake {
 namespace multibody {
-namespace rigid_contact {
+namespace rigid_constraint {
 
-/// Structure for holding rigid contact data for computing rigid contact
-/// problems at the acceleration-level.
+/// Structure for holding rigid constraint data for computing constraint forces
+/// under the rigid constraint model at the acceleration-level.
 template <class T>
-struct RigidContactAccelProblemData {
+struct RigidConstraintAccelProblemData {
   /// The indices of the sliding contacts (those contacts at which there is
   /// non-zero relative velocity between bodies in the plane tangent to the
   /// point of contact), out of the set of all contact indices (0...n-1).
@@ -95,10 +95,11 @@ struct RigidContactAccelProblemData {
   std::function<MatrixX<T>(const MatrixX<T>&)> solve_inertia;
 };
 
-/// Structure for holding rigid contact data for computing rigid contact
-/// problems at the velocity-level (i.e., impact problems).
+/// Structure for holding rigid constraint data for computing constraint forces
+/// under the rigid constraint model at the velocity-level (i.e., impact
+/// problems).
 template <class T>
-struct RigidContactVelProblemData {
+struct RigidConstraintVelProblemData {
   /// The number of spanning vectors in the contact tangents (used to linearize
   /// the friction cone) at the n contact points. For contact
   /// problems in two dimensions, each element of r will be one. For contact
@@ -140,6 +141,6 @@ struct RigidContactVelProblemData {
   std::function<MatrixX<T>(const MatrixX<T>&)> solve_inertia;
 };
 
-}  // namespace rigid_contact
+}  // namespace rigid_constraint
 }  // namespace multibody
 }  // namespace drake

@@ -4,7 +4,7 @@
 #include <utility>
 #include <vector>
 
-#include "drake/multibody/rigid_contact/rigid_contact_problem_data.h"
+#include "drake/multibody/rigid_constraint/rigid_constraint_problem_data.h"
 #include "drake/solvers/moby_lcp_solver.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/rendering/pose_vector.h"
@@ -510,10 +510,11 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
   /// @param tangent_vels a vector of tangent velocities at the contact points,
   ///        measured along the positive x-axis.
   /// @param[out] data the rigid contact problem data.
-  void CalcRigidContactProblemData(const systems::Context<T>& context,
+  void CalcRigidConstraintProblemData(const systems::Context<T>& context,
                                    const std::vector<Vector2<T>>& points,
                                    const std::vector<T>& tangent_vels,
-    multibody::rigid_contact::RigidContactAccelProblemData<T>* data) const;
+    multibody::rigid_constraint::RigidConstraintAccelProblemData<T>* data)
+    const;
 
   /// Initializes the impacting contact data for the rod, given a set of contact
   /// points. Aborts if data is null.
@@ -521,7 +522,7 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
   /// @param[out] data the rigid impact problem data.
   void CalcRigidImpactProblemData(const systems::Context<T>& context,
                                   const std::vector<Vector2<T>>& points,
-      multibody::rigid_contact::RigidContactVelProblemData<T>* data) const;
+      multibody::rigid_constraint::RigidConstraintVelProblemData<T>* data) const;
 
  private:
   friend class Rod2DDAETest;
