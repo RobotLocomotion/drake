@@ -24,6 +24,13 @@ SolutionResult SolveUnconstrainedQP(const Eigen::Ref<const Eigen::MatrixXd>& G,
                                     const Eigen::Ref<const Eigen::VectorXd>& c,
                                     double feasibility_tol,
                                     Eigen::VectorXd* x) {
+  // If the Hessian G is positive definite, then the problem has a unique
+  // optimal solution.
+  // If the Hessian G has negative eigen values, then the problem is unbounded.
+  // If the Hessian G is positive semidefinite, but with some eigen values
+  // being 0. Then we check the first order derivative G * x + c. If there
+  // exist solution x such that the first order derivative is 0, then the
+  // problem has optimal cost (but can be infinitely many optimal x).
   SolutionResult solver_result;
   // Check for positive definite Hessian matrix.
   Eigen::LLT<Eigen::MatrixXd> llt(G);
@@ -76,11 +83,10 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
 
   // The QP approach attempts Approach (2), if G is strictly positive definite,
   // and falls back to Approach (3). For the null-space approach, we compute
-  // kernel(A) = N, and convert the equality connstrained QP to an
+  // kernel(A) = N, and convert the equality constrained QP to an
   // un-constrained QP, as
   // minimize 0.5 y'*(N'*G*N)*y + (c'*N + N'*G*x0)* y
   // where x0 is one solution to A * x = b.
-
   //
   // This implementation was conducted using [Nocedal 1999], Ch. 16 (Quadratic
   // Programming).  It is recommended that programmers desiring to modify this
@@ -93,6 +99,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   DRAKE_ASSERT(prog.bounding_box_constraints().empty());
   DRAKE_ASSERT(prog.linear_complementarity_constraints().empty());
 
+  // The default tolerance is Eigen's dummy precision.
   double feasibility_tol = Eigen::NumTraits<double>::dummy_precision();
   std::map<std::string, double> option_double =
       prog.GetSolverOptionsDouble(EqualityConstrainedQPSolver::id());
@@ -191,18 +198,32 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
       // min 0.5 * (x₀ + N * y)ᵀ * G * (x₀ + N * y) + cᵀ * (x₀ + N * y)
       // which has the same optimal solution as
       // min 0.5 * yᵀ * Nᵀ*G*N * y + (x₀ᵀ*G*N + cᵀ*N) * y
-      Eigen::FullPivLU<Eigen::MatrixXd> lu_A(A);
-      const Eigen::VectorXd x0 = lu_A.solve(b);
+      Eigen::JacobiSVD<Eigen::MatrixXd> svd_A_thin(
+          A, Eigen::ComputeThinU | Eigen::ComputeThinV);
+      const Eigen::VectorXd x0 = svd_A_thin.solve(b);
       if (!b.isApprox(A * x0, feasibility_tol)) {
         solver_result = SolutionResult::kInfeasibleConstraints;
         x = x0;
       } else {
-        const Eigen::MatrixXd N = lu_A.kernel();
-        if (N.cols() == 0) {
+        if (svd_A_thin.rank() == A.cols()) {
           // The kernel is empty, the solution is unique.
           solver_result = SolutionResult::kSolutionFound;
           x = x0;
         } else {
+          // N is the null space of A
+          // Using QR decomposition
+          // Aᵀ * P = [Q1 Q2] * [R] = Q1 * R
+          //                    [0]
+          // So A = P * R1ᵀ * Q1ᵀ, and A * Q2 = P * R1ᵀ * Q1ᵀ * Q2 = 0 since
+          // Q1 and Q2 are orthogonal to each other.
+          // Thus kernel(A) = Q2.
+          // Notice that we do not call svd here because svd only gives
+          // us a "thin" V, thus the V matrix does not contain the basis vectors
+          // for the null space.
+          Eigen::ColPivHouseholderQR<Eigen::MatrixXd> qr_A(A.transpose());
+          const Eigen::MatrixXd Q =
+              qr_A.householderQ().setLength(qr_A.nonzeroPivots());
+          const Eigen::MatrixXd N = Q.rightCols(A.cols() - qr_A.rank());
           Eigen::VectorXd y(N.cols());
           solver_result = SolveUnconstrainedQP(
               N.transpose() * G * N, x0.transpose() * G * N + c.transpose() * N,
