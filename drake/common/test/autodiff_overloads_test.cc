@@ -363,6 +363,56 @@ GTEST_TEST(AutodiffOverloadsTest, DummyValue2) {
   EXPECT_TRUE(std::isnan(derivatives(1)));
 }
 
+GTEST_TEST(AutodiffOverloadsTest, SaturateFixedSizedDerivatives) {
+  using T = Eigen::AutoDiffScalar<Vector1<double>>;
+  const T x{4., Vector1<double>{3.}};
+
+  // Verifies the value() and derivative() fields in the un-saturated case.
+  const T y_unsat = math::saturate(x, -10., 10.);
+  EXPECT_EQ(y_unsat.value(), x.value());
+  EXPECT_EQ(y_unsat.derivatives().rows(), 1);
+  EXPECT_EQ(y_unsat.derivatives()(0), x.derivatives()(0));
+
+  // Verifies the value() and derivative() fields when the lower bound is
+  // returned.
+  const T y_low = math::saturate(x, 5., 10.);
+  EXPECT_EQ(y_low.value(), 5.);
+  EXPECT_EQ(y_low.derivatives().rows(), 1);
+  EXPECT_EQ(y_low.derivatives()(0), 0.);
+
+  // Verifies the value() and derivative() fields when the upper bound is
+  // returned.
+  const T y_high = math::saturate(x, -10., 2.);
+  EXPECT_EQ(y_high.value(), 2.);
+  EXPECT_EQ(y_high.derivatives().rows(), 1);
+  EXPECT_EQ(y_high.derivatives()(0), 0.);
+}
+
+GTEST_TEST(AutodiffOverloadsTest, SaturateDynamicallySizedDerivatives) {
+  using T = Eigen::AutoDiffScalar<VectorXd>;
+  const T x{4., Vector2<double>{3., 7.}};
+
+  // Verifies the value() and derivative() fields in the un-saturated case.
+  const T y_unsat = math::saturate(x, -10., 10.);
+  EXPECT_EQ(y_unsat.value(), x.value());
+  EXPECT_EQ(y_unsat.derivatives().rows(), 2);
+  EXPECT_EQ(y_unsat.derivatives(), x.derivatives());
+
+  // Verifies the value() and derivative() fields when the lower bound is
+  // returned.
+  const T y_low = math::saturate(x, 5., 10.);
+  EXPECT_EQ(y_low.value(), 5.);
+  EXPECT_EQ(y_low.derivatives().rows(), 2);
+  EXPECT_EQ(y_low.derivatives(), Vector2<double>({0., 0.}));
+
+  // Verifies the value() and derivative() fields when the upper bound is
+  // returned.
+  const T y_high = math::saturate(x, -10., 2.);
+  EXPECT_EQ(y_high.value(), 2.);
+  EXPECT_EQ(y_high.derivatives().rows(), 2);
+  EXPECT_EQ(y_high.derivatives(), Vector2<double>({0., 0.}));
+}
+
 }  // namespace
 }  // namespace common
 }  // namespace drake
