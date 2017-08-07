@@ -295,10 +295,10 @@ TEST_P(BilinearProductMcCormickEnvelopeSos2Test, LinearObjectiveTest) {
   // s.t (x, y, w) is in the convex hull of the (x, y, x*y).
   // We fix x and y to each intervals.
   // We expect the optimum obtained at one of the vertices of the tetrahedron.
-  MatrixXDecisionVariable lambda;
-  lambda = AddBilinearProductMcCormickEnvelopeSos2(
-      &prog_, x_, y_, w_, phi_x_, phi_y_, Bx_.cast<symbolic::Expression>(),
-      By_.cast<symbolic::Expression>(), binning_);
+  const MatrixXDecisionVariable lambda =
+      AddBilinearProductMcCormickEnvelopeSos2(
+          &prog_, x_, y_, w_, phi_x_, phi_y_, Bx_.cast<symbolic::Expression>(),
+          By_.cast<symbolic::Expression>(), binning_);
   const Eigen::MatrixXi gray_codes_x =
       math::CalculateReflectedGrayCodes(Bx_.rows());
   const Eigen::MatrixXi gray_codes_y =
