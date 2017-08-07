@@ -151,7 +151,7 @@ enum class Binning {
  * [φx(i+1), φy(j), φx(i+1)*φy(j)], [φx(i), φy(j+1), φx(i)*φy(j+1)] and
  * [φx(i+1), φy(j+1), φx(i+1)*φy(j+1)]
  * We use two different encoding schemes on the binary variables, to determine
- * which interval is active. We can choose either linear orlogarithmic binning.
+ * which interval is active. We can choose either linear or logarithmic binning.
  * When using linear binning, for a variable with N intervals, we
  * use N binary variables, and B(i) = 1 indicates the variable is in the i'th
  * interval. When using logarithmic binning, we use ⌈log₂(N)⌉ binary variables.

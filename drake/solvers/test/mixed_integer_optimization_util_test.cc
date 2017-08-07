@@ -219,8 +219,10 @@ GTEST_TEST(TestBilinearProductMcCormickEnvelopeSos2, AddConstraint) {
   Eigen::VectorXd phi_x_dynamic = Eigen::VectorXd::LinSpaced(3, 0, 2);
   const Eigen::Vector4d phi_y_static = Eigen::Vector4d::LinSpaced(0, 3);
   Eigen::VectorXd phi_y_dynamic = Eigen::VectorXd::LinSpaced(4, 0, 3);
-  auto Bx = prog.NewBinaryVariables<1>().cast<symbolic::Expression>();
-  auto By = prog.NewBinaryVariables<2>().cast<symbolic::Expression>();
+  Vector1<symbolic::Expression> Bx =
+      prog.NewBinaryVariables<1>().cast<symbolic::Expression>();
+  Vector2<symbolic::Expression> By =
+      prog.NewBinaryVariables<2>().cast<symbolic::Expression>();
   auto lambda1 = AddBilinearProductMcCormickEnvelopeSos2(
       &prog, x, y, w, phi_x_static, phi_y_static, Bx, By,
       Binning::kLogarithmic);
