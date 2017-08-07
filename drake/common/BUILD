@@ -162,6 +162,19 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "symbolic_decompose",
+    srcs = [
+        "symbolic_decompose.cc",
+    ],
+    hdrs = [
+        "symbolic_decompose.h",
+    ],
+    deps = [
+        ":symbolic",
+    ],
+)
+
+drake_cc_library(
     name = "symbolic_test_util",
     testonly = 1,
     hdrs = [
@@ -599,6 +612,15 @@ drake_cc_googletest(
     deps = [
         ":common",
         ":sorted_vectors_have_intersection",
+    ],
+)
+
+drake_cc_googletest(
+    name = "symbolic_decompose_test",
+    deps = [
+        ":common",
+        ":symbolic",
+        ":symbolic_decompose",
     ],
 )
 
