@@ -17,7 +17,7 @@ namespace solvers {
 bool EqualityConstrainedQPSolver::available() const { return true; }
 
 /**
- * Solve the un-constrained QP problem
+ * Solves the un-constrained QP problem
  * min 0.5 * xᵀ * G * x + cᵀ * x
  */
 SolutionResult SolveUnconstrainedQP(const Eigen::Ref<const Eigen::MatrixXd>& G,
@@ -32,13 +32,13 @@ SolutionResult SolveUnconstrainedQP(const Eigen::Ref<const Eigen::MatrixXd>& G,
   // being 0, then we check the first order derivative G * x + c. If there
   // exists solution x* such that the first order derivative at x* is 0, then
   // the problem has optimal cost (but infinitely many optimal x* will exist).
-  SolutionResult solver_result;
+
   // Check for positive definite Hessian matrix.
   Eigen::LLT<Eigen::MatrixXd> llt(G);
   if (llt.info() == Eigen::Success) {
     // G is positive definite.
     *x = llt.solve(-c);
-    solver_result = SolutionResult::kSolutionFound;
+    return SolutionResult::kSolutionFound;
   } else {
     // G is not strictly positive definite.
     // There are two possible cases
@@ -51,21 +51,20 @@ SolutionResult SolveUnconstrainedQP(const Eigen::Ref<const Eigen::MatrixXd>& G,
     // We first check if G is positive semidefinite, by doing an LDLT
     // decomposition.
     Eigen::LDLT<Eigen::MatrixXd> ldlt(G);
-    if (ldlt.info() != Eigen::Success || !ldlt.isPositive()) {
-      *x = Eigen::VectorXd::Constant(c.rows(), NAN);
-      return SolutionResult::kUnbounded;
-    }
-    // G is positive semidefinite.
-    *x = ldlt.solve(-c);
+    if (ldlt.info() == Eigen::Success && ldlt.isPositive()) {
+      // G is positive semidefinite.
+      *x = ldlt.solve(-c);
 
-    if (!(G * (*x)).isApprox(-c, feasibility_tol)) {
-      *x = Eigen::VectorXd::Constant(c.rows(), NAN);
-      solver_result = SolutionResult::kUnbounded;
-    } else {
-      solver_result = SolutionResult::kSolutionFound;
+      if (!(G * (*x)).isApprox(-c, feasibility_tol)) {
+        *x = Eigen::VectorXd::Constant(c.rows(), NAN);
+        return SolutionResult::kUnbounded;
+      } else {
+        return SolutionResult::kSolutionFound;
+      }
     }
+    *x = Eigen::VectorXd::Constant(c.rows(), NAN);
+    return SolutionResult::kUnbounded;
   }
-  return solver_result;
 }
 
 SolutionResult EqualityConstrainedQPSolver::Solve(
@@ -83,8 +82,8 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   // Approach 3: Use the nullspace of A ("null space" approach).
 
   // The QP approach attempts Approach (2), if G is strictly positive definite,
-  // and falls back to Approach (3). For the null-space approach, we compute
-  // kernel(A) = N, and convert the equality constrained QP to an
+  // and falls back to Approach (3) otherwise. For the null-space approach, we
+  // compute kernel(A) = N, and convert the equality constrained QP to an
   // un-constrained QP, as
   // minimize 0.5 y'*(N'*G*N)*y + (c'*N + N'*G*x0)* y
   // where x0 is one solution to A * x = b.

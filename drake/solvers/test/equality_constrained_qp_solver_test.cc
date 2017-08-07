@@ -169,13 +169,11 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testNegativeDefiniteHessianQP) {
   EXPECT_EQ(result, SolutionResult::kUnbounded);
 }
 
-/**
- * Test a QP with positive definite Hessian, but infeasible constraint.
- * min x(0)² + 2 * x(1)² + x(0) * x(1)
- * s.t  x(0) + 2 * x(1) = 1
- *      x(0) - x(1) = 3
- *      2 * x(0) + x(1) = 2
- */
+// Test a QP with positive definite Hessian, but infeasible constraint.
+// min x(0)² + 2 * x(1)² + x(0) * x(1)
+// s.t  x(0) + 2 * x(1) = 1
+//      x(0) - x(1) = 3
+//      2 * x(0) + x(1) = 2
 GTEST_TEST(testEqualityConstrainedQPSolver,
            testPositiveHessianInfeasibleConstraint) {
   MathematicalProgram prog;
@@ -188,11 +186,9 @@ GTEST_TEST(testEqualityConstrainedQPSolver,
   EXPECT_EQ(result, SolutionResult::kInfeasibleConstraints);
 }
 
-/**
- * Test a QP with indefinite Hessian, but unique minimum.
- * min x(0)² - x(1)²
- * s.t x(1) = 1
- */
+// Test a QP with indefinite Hessian, but unique minimum.
+// min x(0)² - x(1)²
+// s.t x(1) = 1
 GTEST_TEST(testEqualityConstrainedQPSolver, testIndefiniteHessian) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
@@ -205,11 +201,9 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testIndefiniteHessian) {
                               MatrixCompareType::absolute));
 }
 
-/**
- * Test a QP with positive semidefinite Hessian, but unbounded objective.
- * min x(0)² - 2 * x(1)
- * s.t x(0) = 1
- */
+// Test a QP with positive semidefinite Hessian, but unbounded objective.
+// min x(0)² - 2 * x(1)
+// s.t x(0) = 1
 GTEST_TEST(testEqualityConstrainedQPSolver, testPSDhessianUnbounded) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
@@ -220,12 +214,10 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testPSDhessianUnbounded) {
   EXPECT_EQ(result, SolutionResult::kUnbounded);
 }
 
-/**
- * Test a QP with negative definite Hessian, but with a unique optimum.
- * min -x(0)² - x(1)²
- * s.t x(0) + x(1) = 2
- *     x(0) - x(1) = 3
- */
+// Test a QP with negative definite Hessian, but with a unique optimum.
+// min -x(0)² - x(1)²
+// s.t x(0) + x(1) = 2
+//     x(0) - x(1) = 3
 GTEST_TEST(testEqualityConstrainedQPSolver, testNegativeHessianUniqueOptimum) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
@@ -238,11 +230,9 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testNegativeHessianUniqueOptimum) {
                               1E-12, MatrixCompareType::absolute));
 }
 
-/**
- * Test a QP with negative definite Hessian, and an unbounded objective.
- * min -x(0)² - x(1)²
- * s.t x(0) + x(1) == 1
- */
+// Test a QP with negative definite Hessian, and an unbounded objective.
+// min -x(0)² - x(1)²
+// s.t x(0) + x(1) == 1
 GTEST_TEST(testEqualityConstrainedQPSolver, testNegativeHessianUnbounded) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
@@ -253,12 +243,10 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testNegativeHessianUnbounded) {
   EXPECT_EQ(result, SolutionResult::kUnbounded);
 }
 
-/**
- * Test a QP with positive semidefinite Hessian (not strictly positive
- * definite), and a unique minimum.
- * min x(0)² + 2 * x(0) + 3 * x(1)
- * s.t x(0) + 2 * x(1) == 1
- */
+// Test a QP with positive semidefinite Hessian (not strictly positive
+// definite), and a unique minimum.
+// min x(0)² + 2 * x(0) + 3 * x(1)
+// s.t x(0) + 2 * x(1) == 1
 GTEST_TEST(testEqualityConstrainedQPSolver, testPSDHessianUniqueOptimal) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
@@ -272,13 +260,11 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testPSDHessianUniqueOptimal) {
                               MatrixCompareType::absolute));
 }
 
-/**
- * Test a QP with indefinite Hessian and infeasible constraints
- * min x(0)² - 2 * x(1)²
- * s.t x(0) + 2 * x(1) = 1
- *     -x(0) + 3 * x(1) = 2
- *     2 * x(0) - 3 * x(1) = 3
- */
+// Test a QP with indefinite Hessian and infeasible constraints
+// min x(0)² - 2 * x(1)²
+// s.t x(0) + 2 * x(1) = 1
+//     -x(0) + 3 * x(1) = 2
+//     2 * x(0) - 3 * x(1) = 3
 GTEST_TEST(testEqualityConstrainedQPSolver, testIndefiniteHessianInfeasible) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
@@ -290,16 +276,14 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testIndefiniteHessianInfeasible) {
   EXPECT_EQ(result, SolutionResult::kInfeasibleConstraints);
 }
 
-/**
- * Test changing the feasibility tolerance.
- * For a problem
- * min x(0)² + 2 * x(1)²
- * s.t x(0) + 2 * x(1) = 1
- *     x(0) - x(1) = -2
- *     x(0) + x(1) = 1E-6
- * when the feasibility tolerance is 1E-12, the problem is infeasible.
- * when we increase the feasibility tolerance, the problem is feasible.
- */
+// Test changing the feasibility tolerance.
+// For a problem
+// min x(0)² + 2 * x(1)²
+// s.t x(0) + 2 * x(1) = 1
+//     x(0) - x(1) = -2
+//     x(0) + x(1) = 1E-6
+// when the feasibility tolerance is 1E-12, the problem is infeasible.
+// when we increase the feasibility tolerance, the problem is feasible.
 GTEST_TEST(testEqualityConstrainedQPSolver, testFeasibilityTolerance) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
@@ -308,7 +292,7 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testFeasibilityTolerance) {
                            x(0) + x(1) == 1E-6);
   EqualityConstrainedQPSolver equality_qp_solver;
   prog.SetSolverOption(EqualityConstrainedQPSolver::id(), "FeasibilityTol",
-                       1E-12);
+                       1E-7);
   auto result = equality_qp_solver.Solve(prog);
   EXPECT_EQ(result, SolutionResult::kInfeasibleConstraints);
 
