@@ -510,8 +510,9 @@ void Rod2D<T>::CalcRigidContactProblemData(
   DRAKE_DEMAND(points.size() == tangent_vels.size());
 
   // Set the inertia solver.
-  data->solve_inertia = std::bind(&Rod2D<T>::solve_inertia, this,
-                                  std::placeholders::_1);
+  data->solve_inertia = [this](const MatrixX<T>& m) {
+    return solve_inertia(m);
+  };
 
   // The normal and tangent spanning direction are unique.
   const Matrix2<T> R_wc = GetNonSlidingContactFrameToWorldTransform();
@@ -598,6 +599,56 @@ void Rod2D<T>::CalcRigidContactProblemData(
 
   // Set external force vector.
   data->f = ComputeExternalForces(context);
+}
+
+template <class T>
+void Rod2D<T>::CalcRigidImpactProblemData(
+    const systems::Context<T>& context,
+    const std::vector<Vector2<T>>& points,
+    multibody::rigid_contact::RigidContactVelProblemData<T>* data) const {
+  using std::abs;
+  DRAKE_DEMAND(data);
+
+  // Get the generalized velocity.
+  data->v = context.get_continuous_state()->get_generalized_velocity().
+      CopyToVector();
+
+  // Set the inertia solver.
+  data->solve_inertia = [this](const MatrixX<T>& m) {
+    return solve_inertia(m);
+  };
+
+  // The normal and tangent spanning direction are unique for the rod undergoing
+  // impact (i.e., unlike with non-impacting rigid contact equations, the
+  // frame does not change depending on sliding velocity direction).
+  const Matrix2<T> non_sliding_contact_frame =
+      GetNonSlidingContactFrameToWorldTransform();
+  const Vector2<T> contact_normal = non_sliding_contact_frame.col(0);
+  const Vector2<T> contact_tan = non_sliding_contact_frame.col(1);
+
+  // Get the set of contact points.
+  const int num_contacts = points.size();
+
+  // Set sliding and non-sliding friction coefficients.
+  data->mu.setOnes(num_contacts) *= get_mu_coulomb();
+
+  // Set spanning friction cone directions (set to unity, because rod is 2D).
+  data->r.resize(num_contacts);
+  for (int i = 0; i < num_contacts; ++i)
+    data->r[i] = 1;
+
+  // Form the normal contact Jacobian (N).
+  const int num_generalized_coordinates = 3;
+  data->N.resize(num_contacts, num_generalized_coordinates);
+  for (int i = 0; i < num_contacts; ++i)
+    data->N.row(i) = GetJacobianRow(context, points[i], contact_normal);
+
+  // Form the tangent directions contact Jacobian (F).
+  const int nr = std::accumulate(data->r.begin(), data->r.end(), 0);
+  data->F.resize(nr, num_generalized_coordinates);
+  for (int i = 0; i < num_contacts; ++i) {
+    data->F.row(i) = GetJacobianRow(context, points[i], contact_tan);
+  }
 }
 
 template <typename T>

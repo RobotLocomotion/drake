@@ -6,9 +6,11 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/multibody/rigid_contact/rigid_contact_problem_data.h"
+#include "drake/multibody/rigid_contact/rigid_contact_solver.h"
 #include "drake/systems/analysis/simulator.h"
 
 using drake::multibody::rigid_contact::RigidContactAccelProblemData;
+using drake::multibody::rigid_contact::RigidContactVelProblemData;
 using drake::systems::VectorBase;
 using drake::systems::BasicVector;
 using drake::systems::ContinuousState;
@@ -41,6 +43,10 @@ class Rod2DDAETest : public ::testing::Test {
 
     // Use a non-unit mass.
     dut_->set_rod_mass(2.0);
+
+    // Set cfm to be very small, so that the complementarity problems are
+    // well conditioned but the system is still nearly perfectly rigid.
+    dut_->set_cfm(100 * std::numeric_limits<double>::epsilon());
 
     // Set a zero input force (this is the default).
     std::unique_ptr<BasicVector<double>> ext_input =
@@ -171,6 +177,16 @@ class Rod2DDAETest : public ::testing::Test {
     abs_state->get_mutable_value(1).template GetMutableValue<int>() = k;
   }
 
+  // Computes rigid impact data.
+  void CalcRigidImpactVelProblemData(RigidContactVelProblemData<double>* data) {
+    // Get the points of contact.
+    std::vector<Vector2d> contacts;
+    dut_->GetContactPoints(*context_, &contacts);
+
+    // Compute the problem data.
+    dut_->CalcRigidImpactProblemData(*context_, contacts, data);
+  }
+
   // Computes rigid contact data.
   void CalcRigidContactAccelProblemData(
       RigidContactAccelProblemData<double>* data) {
@@ -182,6 +198,22 @@ class Rod2DDAETest : public ::testing::Test {
 
     // Compute the problem data.
     dut_->CalcRigidContactProblemData(*context_, contacts, tangent_vels, data);
+  }
+
+  // Models an impact.
+  void ModelImpact() {
+    RigidContactVelProblemData<double> data;
+    CalcRigidImpactVelProblemData(&data);
+    VectorX<double> cf;
+    contact_solver_.SolveImpactProblem(dut_->get_cfm(), data, &cf);
+
+    // Get the update to the generalized velocity.
+    VectorX<double> delta_v;
+    contact_solver_.ComputeGeneralizedVelocityChange(data, cf, &delta_v);
+
+    // Update the velocity part of the state.
+    context_->get_mutable_continuous_state()->get_mutable_generalized_velocity()
+        ->SetFromVector(data.v + delta_v);
   }
 
   // Checks consistency of rigid contact problem data.
@@ -207,10 +239,22 @@ class Rod2DDAETest : public ::testing::Test {
     EXPECT_EQ(data.F.rows(), data.non_sliding_contacts.size());
   }
 
+  // Checks consistency of rigid impact problem data.
+  void CheckProblemConsistency(const RigidContactVelProblemData<double>& data,
+                               int num_contacts) {
+    EXPECT_EQ(num_contacts, data.mu.size());
+    EXPECT_EQ(num_contacts, data.r.size());
+    EXPECT_EQ(data.N.rows(), num_contacts);
+    EXPECT_EQ(data.v.size(), data.N.cols());
+    EXPECT_TRUE(data.solve_inertia);
+    EXPECT_EQ(data.F.rows(), num_contacts);
+  }
+
   std::unique_ptr<Rod2D<double>> dut_;  //< The device under test.
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<ContinuousState<double>> derivatives_;
+  drake::multibody::rigid_contact::RigidContactSolver<double> contact_solver_;
 };
 
 // Checks that the output port represents the state.
@@ -252,9 +296,6 @@ TEST_F(Rod2DDAETest, Parameters) {
 
 // Verify that impact handling works as expected.
 TEST_F(Rod2DDAETest, ImpactWorks) {
-  // Set writable state.
-  std::unique_ptr<State<double>> new_state = CloneState();
-
   // Cause the initial state to be impacting, with center of mass directly
   // over the point of contact.
   const double half_len = dut_->get_rod_half_length();
@@ -277,13 +318,12 @@ TEST_F(Rod2DDAETest, ImpactWorks) {
   // Rod should not be impacting.
   EXPECT_TRUE(dut_->IsImpacting(*context_));
 
-  // Handle the impact.
-  dut_->HandleImpact(*context_, new_state.get());
-  context_->get_mutable_state()->SetFrom(*new_state);
+  // Model the impact (as fully inelastic), updating the state.
+  ModelImpact();
 
   // Verify that the state has been modified such that the body is no longer
   // in an impacting state and the configuration has not been modified.
-  const double tol = std::numeric_limits<double>::epsilon();
+  const double tol = 10 * dut_->get_cfm();
   EXPECT_NEAR(xc[0], 0.0, tol);
   EXPECT_NEAR(xc[1], half_len, tol);
   EXPECT_NEAR(xc[2], M_PI_2, tol);
@@ -473,14 +513,20 @@ TEST_F(Rod2DDAETest, Inconsistent2) {
 // Verify that the (non-impacting) Painlevé configuration does not result in a
 // state change.
 TEST_F(Rod2DDAETest, ImpactNoChange) {
-  // Set state.
-  std::unique_ptr<State<double>> new_state = CloneState();
+  // Verify not impacting at initial state.
   EXPECT_FALSE(dut_->IsImpacting(*context_));
-  dut_->HandleImpact(*context_, new_state.get());
-  EXPECT_TRUE(CompareMatrices(new_state->get_continuous_state()->get_vector().
-                                  CopyToVector(),
-                              context_->get_continuous_state()->get_vector().
-                                  CopyToVector(),
+
+  // Get the continuous state.
+  const VectorX<double> xc_old = context_->get_continuous_state()->
+      get_vector().CopyToVector();
+
+  // Model the impact and get the continuous state out.
+  ModelImpact();
+  const VectorX<double> xc = context_->get_continuous_state()->
+      get_vector().CopyToVector();
+
+  // Verify the continuous state did not change.
+  EXPECT_TRUE(CompareMatrices(xc_old, xc,
                               std::numeric_limits<double>::epsilon(),
                               MatrixCompareType::absolute));
 
@@ -493,9 +539,6 @@ TEST_F(Rod2DDAETest, ImpactNoChange) {
 // in a non-impacting configuration. This test exercises the model for the case
 // where impulses that yield tangential sticking lie within the friction cone.
 TEST_F(Rod2DDAETest, InfFrictionImpactThenNoImpact) {
-  // Set writable state.
-  std::unique_ptr<State<double>> new_state = CloneState();
-
   // Cause the initial state to be impacting.
   SetImpactingState();
 
@@ -507,7 +550,10 @@ TEST_F(Rod2DDAETest, InfFrictionImpactThenNoImpact) {
   // to go through the first impact path (impulse within the friction cone).
   dut_->set_mu_coulomb(std::numeric_limits<double>::infinity());
 
+  // TODO(edrumwri): Move from HandleImpact() to ModelImpact() once
+  // ModelImpact() changes abstract state.
   // Handle the impact and copy the result to the context.
+  std::unique_ptr<State<double>> new_state = CloneState();
   dut_->HandleImpact(*context_, new_state.get());
   context_->get_mutable_state()->SetFrom(*new_state);
   EXPECT_FALSE(dut_->IsImpacting(*context_));
@@ -637,7 +683,7 @@ TEST_F(Rod2DDAETest, MultiPoint) {
   // TODO(edrumwri): Check derivatives now.
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_NEAR((*derivatives_)[3], -large *
-      std::abs(dut_->get_gravitational_acceleration()), eps);
+      std::abs(dut_->get_gravitational_acceleration()), eps * large);
   EXPECT_NEAR((*derivatives_)[4], 0, eps);
   EXPECT_NEAR((*derivatives_)[5], 0, eps);
 
@@ -674,16 +720,17 @@ TEST_F(Rod2DDAETest, MultiPoint) {
 TEST_F(Rod2DDAETest, ImpactNoChange2) {
   SetSecondInitialConfig();
 
-  // Verify no impact.
-  EXPECT_FALSE(dut_->IsImpacting(*context_));
+  // Get the continuous state.
+  const VectorX<double> xc_old = context_->get_continuous_state()->
+    get_vector().CopyToVector();
 
-  // Set writable state.
-  std::unique_ptr<State<double>> new_state = CloneState();
-  dut_->HandleImpact(*context_, new_state.get());
-  EXPECT_TRUE(CompareMatrices(new_state->get_continuous_state()->get_vector().
-                                  CopyToVector(),
-                              context_->get_continuous_state()->get_vector().
-                                  CopyToVector(),
+  // Model the impact and get the continuous state out.
+  ModelImpact();
+  const VectorX<double> xc = context_->get_continuous_state()->
+    get_vector().CopyToVector();
+
+  // Verify the continuous state did not change.
+  EXPECT_TRUE(CompareMatrices(xc_old, xc,
                               std::numeric_limits<double>::epsilon(),
                               MatrixCompareType::absolute));
 }
@@ -764,9 +811,6 @@ TEST_F(Rod2DDAETest, NoFrictionImpactThenNoImpact2) {
 
 // Verifies that rod in a ballistic state does not correspond to an impact.
 TEST_F(Rod2DDAETest, BallisticNoImpact) {
-  // Set writable state.
-  std::unique_ptr<State<double>> new_state = CloneState();
-
   // Cause the initial state to be impacting.
   SetImpactingState();
 

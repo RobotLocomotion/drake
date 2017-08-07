@@ -6,6 +6,8 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include "drake/systems/framework/test_utilities/scalar_conversion.h"
+
 namespace drake {
 namespace systems {
 namespace {
@@ -422,35 +424,19 @@ class OpenScalarTypeSystem : public VectorSystem<T> {
 };
 
 TEST_F(VectorSystemTest, ToAutoDiffXdTest) {
-  const int kSomeNumber = 22;
-  OpenScalarTypeSystem<double> dut{kSomeNumber};
-
-  // Convert to AutoDiffXd.
-  std::unique_ptr<System<AutoDiffXd>> autodiff = dut.ToAutoDiffXd();
-  ASSERT_NE(autodiff, nullptr);
-  const auto* const downcast =
-      dynamic_cast<OpenScalarTypeSystem<AutoDiffXd>*>(autodiff.get());
-  ASSERT_NE(downcast, nullptr);
-
   // The member field remains intact.
-  EXPECT_EQ(downcast->get_some_number(), kSomeNumber);
+  const OpenScalarTypeSystem<double> dut{22};
+  EXPECT_TRUE(is_autodiffxd_convertible(dut, [](const auto& converted) {
+    EXPECT_EQ(converted.get_some_number(), 22);
+  }));
 }
 
 TEST_F(VectorSystemTest, ToSymbolicTest) {
-  using Expression = symbolic::Expression;
-
-  const int kSomeNumber = 22;
-  OpenScalarTypeSystem<double> dut{kSomeNumber};
-
-  // Convert to Symbolic form.
-  std::unique_ptr<System<Expression>> autodiff = dut.ToSymbolic();
-  ASSERT_NE(autodiff, nullptr);
-  const auto* const downcast =
-      dynamic_cast<OpenScalarTypeSystem<Expression>*>(autodiff.get());
-  ASSERT_NE(downcast, nullptr);
-
   // The member field remains intact.
-  EXPECT_EQ(downcast->get_some_number(), kSomeNumber);
+  const OpenScalarTypeSystem<double> dut{22};
+  EXPECT_TRUE(is_symbolic_convertible(dut, [](const auto& converted) {
+    EXPECT_EQ(converted.get_some_number(), 22);
+  }));
 }
 
 // This system declares an output and continuous state, but does not define

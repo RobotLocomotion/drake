@@ -565,6 +565,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "nice_type_name_test",
     deps = [
+        ":autodiff",
         ":common",
         ":nice_type_name",
     ],

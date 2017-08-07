@@ -56,6 +56,7 @@ drake_cc_googletest(
         ":rod2d",
         "//drake/common",
         "//drake/common:eigen_matrix_compare",
+        "//drake/multibody/rigid_contact:rigid_contact_solver",
         "//drake/systems/analysis",
     ],
 )

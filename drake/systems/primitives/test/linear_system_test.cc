@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/systems/framework/test_utilities/scalar_conversion.h"
 #include "drake/systems/primitives/test/affine_linear_test.h"
 
 using std::make_unique;
@@ -83,6 +84,24 @@ TEST_F(LinearSystemTest, Output) {
   expected_output = C_ * x + D_ * u;
 
   EXPECT_EQ(expected_output, system_output_->get_vector_data(0)->get_value());
+}
+
+// Tests converting to different scalar types.
+TEST_F(LinearSystemTest, ConvertScalarType) {
+  // TODO(jwnimmer-tri) We would prefer that these are true, but right now,
+  // LinearSystem does not transmogrify correctly.
+  EXPECT_FALSE(is_autodiffxd_convertible(*dut_, [&](const auto& converted) {
+    EXPECT_EQ(converted.A(), A_);
+    EXPECT_EQ(converted.B(), B_);
+    EXPECT_EQ(converted.C(), C_);
+    EXPECT_EQ(converted.D(), D_);
+  }));
+  EXPECT_FALSE(is_symbolic_convertible(*dut_, [&](const auto& converted) {
+    EXPECT_EQ(converted.A(), A_);
+    EXPECT_EQ(converted.B(), B_);
+    EXPECT_EQ(converted.C(), C_);
+    EXPECT_EQ(converted.D(), D_);
+  }));
 }
 
 // Test that linearizing an affine system returns the original A,B,C,D matrices.

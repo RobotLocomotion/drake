@@ -1,5 +1,6 @@
 #include "drake/systems/primitives/matrix_gain.h"
 
+#include "drake/systems/framework/test_utilities/scalar_conversion.h"
 #include "drake/systems/primitives/test/affine_linear_test.h"
 
 using std::make_unique;
@@ -74,6 +75,18 @@ TEST_F(MatrixGainTest, Output) {
   expected_output = D_ * u;
 
   EXPECT_EQ(system_output_->get_vector_data(0)->get_value(), expected_output);
+}
+
+// Tests converting to different scalar types.
+TEST_F(MatrixGainTest, ConvertScalarType) {
+  // TODO(jwnimmer-tri) We would prefer that these are true, but right now,
+  // MatrixGain does not transmogrify correctly.
+  EXPECT_FALSE(is_autodiffxd_convertible(*dut_, [&](const auto& converted) {
+    EXPECT_EQ(converted.D(), D_);
+  }));
+  EXPECT_FALSE(is_symbolic_convertible(*dut_, [&](const auto& converted) {
+    EXPECT_EQ(converted.D(), D_);
+  }));
 }
 
 }  // namespace

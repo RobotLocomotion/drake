@@ -14,6 +14,7 @@ drake_cc_library(
     deps = [
         ":my_vector",
         ":pack_value",
+        ":scalar_conversion",
     ],
 )
 
@@ -35,6 +36,16 @@ drake_cc_library(
     deps = [
         "//drake/common",
         "//drake/systems/framework:vector",
+    ],
+)
+
+drake_cc_library(
+    name = "scalar_conversion",
+    testonly = 1,
+    srcs = [],
+    hdrs = ["scalar_conversion.h"],
+    deps = [
+        "//drake/common:is_dynamic_castable",
     ],
 )
 
