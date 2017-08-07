@@ -92,14 +92,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/base_v0/base.stl"/>
+        <mesh filename="../meshes/base_v0/base.stl"/>
       </geometry>
       <material name="White"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/base_v0/base_L.stl"/>
+        <mesh filename="../meshes/base_v0/base_L.stl"/>
       </geometry>
     </collision>
   </link>
@@ -200,14 +200,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/base_v0/caster.stl"/>
+        <mesh filename="../meshes/base_v0/caster.stl"/>
       </geometry>
       <material name="Caster"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/base_v0/caster_L.stl"/>
+        <mesh filename="../meshes/base_v0/caster_L.stl"/>
       </geometry>
     </collision>
   </link>
@@ -235,7 +235,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/base_v0/wheel.stl"/>
+        <mesh filename="../meshes/base_v0/wheel.stl"/>
       </geometry>
       <material name="Wheel_l"/>
     </visual>
@@ -278,7 +278,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/base_v0/wheel.stl"/>
+        <mesh filename="../meshes/base_v0/wheel.stl"/>
       </geometry>
       <material name="Wheel_r"/>
     </visual>
@@ -326,14 +326,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/base_v0/caster.stl"/>
+        <mesh filename="../meshes/base_v0/caster.stl"/>
       </geometry>
       <material name="Caster"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/base_v0/caster_L.stl"/>
+        <mesh filename="../meshes/base_v0/caster_L.stl"/>
       </geometry>
     </collision>
   </link>
@@ -361,7 +361,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/base_v0/wheel.stl"/>
+        <mesh filename="../meshes/base_v0/wheel.stl"/>
       </geometry>
       <material name="Wheel_l"/>
     </visual>
@@ -404,7 +404,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/base_v0/wheel.stl"/>
+        <mesh filename="../meshes/base_v0/wheel.stl"/>
       </geometry>
       <material name="Wheel_r"/>
     </visual>
@@ -452,14 +452,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/base_v0/caster.stl"/>
+        <mesh filename="../meshes/base_v0/caster.stl"/>
       </geometry>
       <material name="Caster"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/base_v0/caster_L.stl"/>
+        <mesh filename="../meshes/base_v0/caster_L.stl"/>
       </geometry>
     </collision>
   </link>
@@ -487,7 +487,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/base_v0/wheel.stl"/>
+        <mesh filename="../meshes/base_v0/wheel.stl"/>
       </geometry>
       <material name="Wheel_l"/>
     </visual>
@@ -530,7 +530,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/base_v0/wheel.stl"/>
+        <mesh filename="../meshes/base_v0/wheel.stl"/>
       </geometry>
       <material name="Wheel_r"/>
     </visual>
@@ -578,14 +578,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/base_v0/caster.stl"/>
+        <mesh filename="../meshes/base_v0/caster.stl"/>
       </geometry>
       <material name="Caster"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/base_v0/caster_L.stl"/>
+        <mesh filename="../meshes/base_v0/caster_L.stl"/>
       </geometry>
     </collision>
   </link>
@@ -613,7 +613,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/base_v0/wheel.stl"/>
+        <mesh filename="../meshes/base_v0/wheel.stl"/>
       </geometry>
       <material name="Wheel_l"/>
     </visual>
@@ -656,7 +656,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/base_v0/wheel.stl"/>
+        <mesh filename="../meshes/base_v0/wheel.stl"/>
       </geometry>
       <material name="Wheel_r"/>
     </visual>
@@ -734,14 +734,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/torso_v0/torso_lift.stl"/>
+        <mesh filename="../meshes/torso_v0/torso_lift.stl"/>
       </geometry>
       <material name="Grey2"/>
     </visual>
     <collision name="torso_lift_collision">
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/torso_v0/torso_lift_L.stl"/>
+        <mesh filename="../meshes/torso_v0/torso_lift_L.stl"/>
       </geometry>
     </collision>
   </link>
@@ -824,14 +824,14 @@
     <visual>
       <origin rpy="0 0 0 " xyz="0 0 0.0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/head_v0/head_pan.stl"/>
+        <mesh filename="../meshes/head_v0/head_pan.stl"/>
       </geometry>
       <material name="Blue"/>
     </visual>
     <collision>
       <origin rpy="0 0 0 " xyz="0 0 0.0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/head_v0/head_pan_L.stl"/>
+        <mesh filename="../meshes/head_v0/head_pan_L.stl"/>
       </geometry>
     </collision>
   </link>
@@ -864,14 +864,14 @@
     <visual>
       <origin rpy="0.0 0.0 0.0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/head_v0/head_tilt.stl"/>
+        <mesh filename="../meshes/head_v0/head_tilt.stl"/>
       </geometry>
       <material name="Green"/>
     </visual>
     <collision>
       <origin rpy="0.0 0.0 0.0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/head_v0/head_tilt_L.stl"/>
+        <mesh filename="../meshes/head_v0/head_tilt_L.stl"/>
       </geometry>
     </collision>
   </link>
@@ -1399,14 +1399,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/tilting_laser_v0/tilting_hokuyo.stl"/>
+        <mesh filename="../meshes/tilting_laser_v0/tilting_hokuyo.stl"/>
       </geometry>
       <material name="Red"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/tilting_laser_v0/tilting_hokuyo_L.stl"/>
+        <mesh filename="../meshes/tilting_laser_v0/tilting_hokuyo_L.stl"/>
       </geometry>
     </collision>
   </link>
@@ -1491,14 +1491,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/shoulder_v0/shoulder_pan.stl"/>
+        <mesh filename="../meshes/shoulder_v0/shoulder_pan.stl"/>
       </geometry>
       <material name="Blue"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0.0 0 0.0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/shoulder_v0/shoulder_pan.stl"/>
+        <mesh filename="../meshes/shoulder_v0/shoulder_pan.stl"/>
       </geometry>
     </collision>
   </link>
@@ -1524,14 +1524,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/shoulder_v0/shoulder_lift.stl"/>
+        <mesh filename="../meshes/shoulder_v0/shoulder_lift.stl"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/shoulder_v0/shoulder_lift.stl"/>
+        <mesh filename="../meshes/shoulder_v0/shoulder_lift.stl"/>
       </geometry>
     </collision>
   </link>
@@ -1558,14 +1558,14 @@
       <!-- TODO: This component doesn't actually have a mesh -->
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/shoulder_v0/upper_arm_roll.stl"/>
+        <mesh filename="../meshes/shoulder_v0/upper_arm_roll.stl"/>
       </geometry>
       <material name="RollLinks"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/shoulder_v0/upper_arm_roll_L.stl"/>
+        <mesh filename="../meshes/shoulder_v0/upper_arm_roll_L.stl"/>
       </geometry>
     </collision>
   </link>
@@ -1643,14 +1643,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/upper_arm_v0/upper_arm.stl"/>
+        <mesh filename="../meshes/upper_arm_v0/upper_arm.stl"/>
       </geometry>
       <material name="Green"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/upper_arm_v0/upper_arm.stl"/>
+        <mesh filename="../meshes/upper_arm_v0/upper_arm.stl"/>
       </geometry>
     </collision>
   </link>
@@ -1690,7 +1690,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/upper_arm_v0/forearm_roll.stl"/>
+        <mesh filename="../meshes/upper_arm_v0/forearm_roll.stl"/>
       </geometry>
       <material name="RollLinks"/>
     </visual>
@@ -1698,7 +1698,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/upper_arm_v0/forearm_roll_L.stl"/>
+        <mesh filename="../meshes/upper_arm_v0/forearm_roll_L.stl"/>
       </geometry>
     </collision>
   </link>
@@ -1736,14 +1736,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/upper_arm_v0/elbow_flex.stl"/>
+        <mesh filename="../meshes/upper_arm_v0/elbow_flex.stl"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/upper_arm_v0/elbow_flex.stl"/>
+        <mesh filename="../meshes/upper_arm_v0/elbow_flex.stl"/>
       </geometry>
     </collision>
   </link>
@@ -1788,14 +1788,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/forearm_v0/forearm.stl"/>
+        <mesh filename="../meshes/forearm_v0/forearm.stl"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/forearm_v0/forearm.stl"/>
+        <mesh filename="../meshes/forearm_v0/forearm.stl"/>
       </geometry>
     </collision>
   </link>
@@ -1820,14 +1820,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/forearm_v0/wrist_flex.stl"/>
+        <mesh filename="../meshes/forearm_v0/wrist_flex.stl"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/forearm_v0/wrist_flex.stl"/>
+        <mesh filename="../meshes/forearm_v0/wrist_flex.stl"/>
       </geometry>
     </collision>
   </link>
@@ -1853,14 +1853,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/forearm_v0/wrist_roll.stl"/>
+        <mesh filename="../meshes/forearm_v0/wrist_roll.stl"/>
       </geometry>
       <material name="RollLinks"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/forearm_v0/wrist_roll_L.stl"/>
+        <mesh filename="../meshes/forearm_v0/wrist_roll_L.stl"/>
       </geometry>
       <verbose value="Yes"/>
     </collision>
@@ -1933,14 +1933,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/gripper_palm.stl"/>
+        <mesh filename="../meshes/gripper_v0/gripper_palm.stl"/>
       </geometry>
       <material name="Red"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/gripper_palm.stl"/>
+        <mesh filename="../meshes/gripper_v0/gripper_palm.stl"/>
       </geometry>
       <verbose value="Yes"/>
     </collision>
@@ -1999,14 +1999,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/l_finger.stl"/>
+        <mesh filename="../meshes/gripper_v0/l_finger.stl"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/l_finger.stl"/>
+        <mesh filename="../meshes/gripper_v0/l_finger.stl"/>
       </geometry>
       <verbose value="Yes"/>
     </collision>
@@ -2029,14 +2029,14 @@
     <visual>
       <origin rpy="3.14159265359 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/l_finger.stl"/>
+        <mesh filename="../meshes/gripper_v0/l_finger.stl"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="3.14159265359 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/l_finger.stl"/>
+        <mesh filename="../meshes/gripper_v0/l_finger.stl"/>
       </geometry>
       <verbose value="Yes"/>
     </collision>
@@ -2123,14 +2123,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/l_finger_tip.stl"/>
+        <mesh filename="../meshes/gripper_v0/l_finger_tip.stl"/>
       </geometry>
       <material name="Green"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/l_finger_tip.stl"/>
+        <mesh filename="../meshes/gripper_v0/l_finger_tip.stl"/>
       </geometry>
       <verbose value="Yes"/>
     </collision>
@@ -2153,14 +2153,14 @@
     <visual>
       <origin rpy="3.14159265359 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/l_finger_tip.stl"/>
+        <mesh filename="../meshes/gripper_v0/l_finger_tip.stl"/>
       </geometry>
       <material name="Green"/>
     </visual>
     <collision>
       <origin rpy="3.14159265359 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/l_finger_tip.stl"/>
+        <mesh filename="../meshes/gripper_v0/l_finger_tip.stl"/>
       </geometry>
       <verbose value="Yes"/>
     </collision>
@@ -2385,14 +2385,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/shoulder_v0/shoulder_pan.stl"/>
+        <mesh filename="../meshes/shoulder_v0/shoulder_pan.stl"/>
       </geometry>
       <material name="Blue"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0.0 0 0.0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/shoulder_v0/shoulder_pan.stl"/>
+        <mesh filename="../meshes/shoulder_v0/shoulder_pan.stl"/>
       </geometry>
     </collision>
   </link>
@@ -2418,14 +2418,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/shoulder_v0/shoulder_lift.stl"/>
+        <mesh filename="../meshes/shoulder_v0/shoulder_lift.stl"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/shoulder_v0/shoulder_lift.stl"/>
+        <mesh filename="../meshes/shoulder_v0/shoulder_lift.stl"/>
       </geometry>
     </collision>
   </link>
@@ -2452,14 +2452,14 @@
       <!-- TODO: This component doesn't actually have a mesh -->
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/shoulder_v0/upper_arm_roll.stl"/>
+        <mesh filename="../meshes/shoulder_v0/upper_arm_roll.stl"/>
       </geometry>
       <material name="RollLinks"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/shoulder_v0/upper_arm_roll_L.stl"/>
+        <mesh filename="../meshes/shoulder_v0/upper_arm_roll_L.stl"/>
       </geometry>
     </collision>
   </link>
@@ -2537,14 +2537,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/upper_arm_v0/upper_arm.stl"/>
+        <mesh filename="../meshes/upper_arm_v0/upper_arm.stl"/>
       </geometry>
       <material name="Green"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/upper_arm_v0/upper_arm.stl"/>
+        <mesh filename="../meshes/upper_arm_v0/upper_arm.stl"/>
       </geometry>
     </collision>
   </link>
@@ -2584,7 +2584,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/upper_arm_v0/forearm_roll.stl"/>
+        <mesh filename="../meshes/upper_arm_v0/forearm_roll.stl"/>
       </geometry>
       <material name="RollLinks"/>
     </visual>
@@ -2592,7 +2592,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/upper_arm_v0/forearm_roll_L.stl"/>
+        <mesh filename="../meshes/upper_arm_v0/forearm_roll_L.stl"/>
       </geometry>
     </collision>
   </link>
@@ -2630,14 +2630,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/upper_arm_v0/elbow_flex.stl"/>
+        <mesh filename="../meshes/upper_arm_v0/elbow_flex.stl"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/upper_arm_v0/elbow_flex.stl"/>
+        <mesh filename="../meshes/upper_arm_v0/elbow_flex.stl"/>
       </geometry>
     </collision>
   </link>
@@ -2682,14 +2682,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/forearm_v0/forearm.stl"/>
+        <mesh filename="../meshes/forearm_v0/forearm.stl"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/forearm_v0/forearm.stl"/>
+        <mesh filename="../meshes/forearm_v0/forearm.stl"/>
       </geometry>
     </collision>
   </link>
@@ -2714,14 +2714,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/forearm_v0/wrist_flex.stl"/>
+        <mesh filename="../meshes/forearm_v0/wrist_flex.stl"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/forearm_v0/wrist_flex.stl"/>
+        <mesh filename="../meshes/forearm_v0/wrist_flex.stl"/>
       </geometry>
     </collision>
   </link>
@@ -2747,14 +2747,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/forearm_v0/wrist_roll.stl"/>
+        <mesh filename="../meshes/forearm_v0/wrist_roll.stl"/>
       </geometry>
       <material name="RollLinks"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/forearm_v0/wrist_roll_L.stl"/>
+        <mesh filename="../meshes/forearm_v0/wrist_roll_L.stl"/>
       </geometry>
       <verbose value="Yes"/>
     </collision>
@@ -2827,14 +2827,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/gripper_palm.stl"/>
+        <mesh filename="../meshes/gripper_v0/gripper_palm.stl"/>
       </geometry>
       <material name="Red"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/gripper_palm.stl"/>
+        <mesh filename="../meshes/gripper_v0/gripper_palm.stl"/>
       </geometry>
       <verbose value="Yes"/>
     </collision>
@@ -2893,14 +2893,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/l_finger.stl"/>
+        <mesh filename="../meshes/gripper_v0/l_finger.stl"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/l_finger.stl"/>
+        <mesh filename="../meshes/gripper_v0/l_finger.stl"/>
       </geometry>
       <verbose value="Yes"/>
     </collision>
@@ -2923,14 +2923,14 @@
     <visual>
       <origin rpy="3.14159265359 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/l_finger.stl"/>
+        <mesh filename="../meshes/gripper_v0/l_finger.stl"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <collision>
       <origin rpy="3.14159265359 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/l_finger.stl"/>
+        <mesh filename="../meshes/gripper_v0/l_finger.stl"/>
       </geometry>
       <verbose value="Yes"/>
     </collision>
@@ -3017,14 +3017,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/l_finger_tip.stl"/>
+        <mesh filename="../meshes/gripper_v0/l_finger_tip.stl"/>
       </geometry>
       <material name="Green"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/l_finger_tip.stl"/>
+        <mesh filename="../meshes/gripper_v0/l_finger_tip.stl"/>
       </geometry>
       <verbose value="Yes"/>
     </collision>
@@ -3047,14 +3047,14 @@
     <visual>
       <origin rpy="3.14159265359 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/l_finger_tip.stl"/>
+        <mesh filename="../meshes/gripper_v0/l_finger_tip.stl"/>
       </geometry>
       <material name="Green"/>
     </visual>
     <collision>
       <origin rpy="3.14159265359 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="pr2_description/meshes/gripper_v0/l_finger_tip.stl"/>
+        <mesh filename="../meshes/gripper_v0/l_finger_tip.stl"/>
       </geometry>
       <verbose value="Yes"/>
     </collision>

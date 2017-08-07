@@ -160,6 +160,13 @@ lcm_cc_library(
 )
 
 lcm_cc_library(
+    name = "robot_state",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_robot_state.lcm"],
+)
+
+
+lcm_cc_library(
     name = "support_data",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_support_data.lcm"],
@@ -289,6 +296,7 @@ DRAKE_LCMTYPES = [
     ":whole_body_data",
     ":zmp_data",
     ":zmp_com_observer_state",
+    ":robot_state",
 ]
 
 # This rule should list every LCM type that is known to Drake or its external

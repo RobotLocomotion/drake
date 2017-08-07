@@ -22,7 +22,6 @@ PidController<T>::PidController(const MatrixX<double>& state_selector,
                                 const Eigen::VectorXd& kp,
                                 const Eigen::VectorXd& ki,
                                 const Eigen::VectorXd& kd)
-<<<<<<< HEAD
     : PidController(MatrixX<double>::Identity(kp.size(), kp.size()),
                     state_selector, kp, ki, kd) {}
 
@@ -32,12 +31,8 @@ PidController<T>::PidController(const MatrixX<double>& Binv,
                                 const Eigen::VectorXd& kp,
                                 const Eigen::VectorXd& ki,
                                 const Eigen::VectorXd& kd)
-    : kp_(kp),
-      kd_(kd),
-=======
-    : LeafSystem<T>(SystemTypeTag<controllers::PidController>{}),
+      : LeafSystem<T>(SystemTypeTag<controllers::PidController>{}),
       kp_(kp),
->>>>>>> d62ba8084102d4f65a3685e58edec9415863c3bd
       ki_(ki),
       kd_(kd),
       num_controlled_q_(kp.size()),
