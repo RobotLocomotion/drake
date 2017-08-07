@@ -365,15 +365,18 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   ///   generalized velocities in the model. This method assumes the caller,
   ///   MultibodyTree<T>::CalcAccelerationKinematicsCache(), provides a vector
   ///   of the right size.
-  /// @param[out] A_WB_array_ptr
+  /// @param[in, out] A_WB_array_ptr
   ///   A pointer to a valid, non nullptr, vector of spatial accelerations
-  ///   containing the spatial acceleration `A_WB` for each body. It must be of
-  ///   size equal to the number of bodies in the MultibodyTree and ordered by
-  ///   BodyNodeIndex. The calling MultibodyTree method must guarantee these
-  ///   conditions are satisfied. This method will abort if the the pointer is
-  ///   null. There is no mechanism to assert that `A_WB_array_ptr` is ordered
-  ///   by BodyNodeIndex and the correctness of MultibodyTree methods, properly
-  ///   unit tested, should guarantee this condition.
+  ///   containing the spatial acceleration `A_WB` for each body. On input, it
+  ///   must contain already pre-computed spatial accelerations for the outboard
+  ///   bodies to this node's body B, see precondition below.
+  ///   It must be of size equal to the number of bodies in the MultibodyTree
+  ///   and ordered by BodyNodeIndex. The calling MultibodyTree method must
+  ///   guarantee these conditions are satisfied. This method will abort if the
+  ///   the pointer is null. There is no mechanism to assert that
+  ///   `A_WB_array_ptr` is ordered by BodyNodeIndex and the correctness of
+  ///   MultibodyTree methods, properly unit tested, should guarantee this
+  ///   condition.
   ///
   /// @pre The position kinematics cache `pc` was already updated to be in sync
   /// with `context` by MultibodyTree::CalcPositionKinematicsCache().
@@ -633,10 +636,6 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // Input spatial acceleration for this node's body B.
     const SpatialAcceleration<T>& A_WB = get_A_WB_from_array(A_WB_array);
 
-    // Output spatial force that would need to be exerted by this node's
-    // mobilizer in order to attain the prescribed acceleration A_WB.
-    SpatialForce<T>& F_BMo_W = F_BMo_W_array[this->get_index()];
-
     // Total spatial force on body B producing acceleration A_WB.
     SpatialForce<T> Ftot_BBo_W;
     CalcBodySpatialForceGivenItsSpatialAcceleration(context,
@@ -652,6 +651,10 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     const Vector3<T>& p_BoMo_B = X_BM.translation();
     const Matrix3<T>& R_WB = get_X_WB(pc).rotation();
     const Vector3<T> p_BoMo_W = R_WB * p_BoMo_B;
+
+    // Output spatial force that would need to be exerted by this node's
+    // mobilizer in order to attain the prescribed acceleration A_WB.
+    SpatialForce<T>& F_BMo_W = F_BMo_W_array[this->get_index()];
 
     // Shift spatial force on B to Mo.
     F_BMo_W = Ftot_BBo_W.Shift(p_BoMo_W);

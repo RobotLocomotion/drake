@@ -333,7 +333,7 @@ class SpatialInertia {
   SpatialForce<T> operator*(const SpatialAcceleration<T>& A_WB_E) const {
     const Vector3<T>& alpha_WB_E = A_WB_E.rotational();
     const Vector3<T>& a_WBo_E = A_WB_E.translational();
-    const Vector3<T>& mp_BoBcm_E = CalcComMoment();
+    const Vector3<T>& mp_BoBcm_E = CalcComMoment();  // = m * p_BoBcm
     return SpatialForce<T>(
         /* rotational */
         CalcRotationalInertia() * alpha_WB_E + mp_BoBcm_E.cross(a_WBo_E),
