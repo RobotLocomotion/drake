@@ -10,13 +10,14 @@ load("//tools:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
-filegroup(
-    name = "models",
-    testonly = 1,
-    srcs = glob([
-        "**/*.urdf",
-    ]),
-    visibility = ["//visibility:private"],
+drake_cc_library(
+    name = "pose_closed_form",
+    srcs = ["pose_closed_form.cc"],
+    hdrs = ["pose_closed_form.h"],
+    deps = [
+        "//drake/common",
+        "//drake/math:geometric_transform",
+    ],
 )
 
 drake_cc_library(
@@ -47,6 +48,8 @@ drake_cc_library(
         "//drake/common",
         "//drake/common:eigen_matrix_compare",
         "//drake/lcm",
+        "//drake/lcmtypes:viewer",
+        "@gtest//:without_main",
         "@lcmtypes_bot2_core",
     ],
 )
@@ -58,6 +61,14 @@ filegroup(
         "test/**/*.urdf",
     ]),
     visibility = ["//visibility:private"],
+)
+
+drake_cc_googletest(
+    name = "pose_closed_form_test",
+    deps = [
+        ":pose_closed_form",
+        ":test_util",
+    ],
 )
 
 drake_cc_googletest(

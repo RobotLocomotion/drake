@@ -39,7 +39,7 @@ using systems::ViewerDrawTranslator;
 const double kQDiffNormMin = 0.01;
 
 // TODO(eric.cousineau): Move to proper utility.
-class ArticulatedIcpVisualizer : public IcpVisualizer {
+class ArticulatedIcpVisualizer : public PointCloudVisualizer {
  public:
   explicit ArticulatedIcpVisualizer(const Scene* scene)
       : scene_(scene) {
