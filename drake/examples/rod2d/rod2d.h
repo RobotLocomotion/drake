@@ -398,7 +398,8 @@ class Rod2D : public systems::LeafSystem<T> {
   ///      and the halfspace will be approximately zero and that the vertical
   ///      velocity at the point of contact will be approximately zero.
   ///      Assertion failure is triggered if the rod is in a ballistic mode.
-  T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
+  T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context)
+      const;
 
   /// Evaluates the witness function for sliding direction changes. The witness
   /// function will bracket a zero crossing when the direction of sliding
