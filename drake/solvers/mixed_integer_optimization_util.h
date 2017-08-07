@@ -163,8 +163,10 @@ enum class Binning {
  * @param w The expression to approximate x * y
  * @param phi_x The end points of the intervals for `x`.
  * @param phi_y The end points of the intervals for `y`.
- * @param Bx The binary variables detemine in which interval `x` is in.
- * @param By The binary variables detemine in which interval `y` is in.
+ * @param Bx The binary variables for the interval in which x stays encoded as
+ * described above.
+ * @param By The binary variables for the interval in which y stays encoded as
+ * described above.
  * @param binning Determine whether to use linear binning or
  * logarithmic binning.
  * @return lambda The auxiliary continuous variables.
