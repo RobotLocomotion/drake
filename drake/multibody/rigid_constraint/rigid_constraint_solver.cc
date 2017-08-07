@@ -6,6 +6,6 @@ namespace rigid_constraint {
 
 template class RigidConstraintSolver<double>;
 
-}  // namespace rigid_contact
+}  // namespace rigid_constraint
 }  // namespace multibody
 }  // namespace drake
