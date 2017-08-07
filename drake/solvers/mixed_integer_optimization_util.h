@@ -153,14 +153,14 @@ void AddLogarithmicSos1Constraint(
  * @param phi_y The end points of the intervals for `y`.
  * @param Bx Bx(i) can only take binary values. Bx indicate which interval is
  * activated. Depending on whether we use logarithmic binning or not, Bx has
- * different meanning. If `logarithmic_binning` = true, and Bx represents
+ * different meanings. If `logarithmic_binning` = true, and Bx represents
  * integer M in the reflected Gray code, then the interval [φx(M), φx(M + 1)]
  * is activated. If `logarithmic_binning` = false, and Bx(i) is 1, all other
  * Bx(j) = 0 j ≠ i, then the interval [φx(i), φx(i + 1)] is activated.
  * If Bx(i) = 1, then `x` is in the interval [φx(i), φx(i + 1)].
  * @param By By(i) can only take binary values. By indicate which interval is
  * activated. Depending on whether we use logarithmic binning or not, By has
- * different meanning. If `logarithmic_binning` = true, and By represents
+ * different meanings. If `logarithmic_binning` = true, and By represents
  * integer N in the reflected Gray code, then the interval [φx(N), φx(N + 1)]
  * is activated. If `logarithmic_binning` = false, and By(i) is 1, all other
  * By(j) = 0, j ≠ i, then the interval [φy(i), φy(i + 1)] is activated.
