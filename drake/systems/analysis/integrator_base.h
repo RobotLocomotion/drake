@@ -1422,10 +1422,6 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
   // can go.
   bool at_minimum_step_size = false;
 
-  // This variable will be set to 'true' if the integrator fails to converge
-  // at a directed step size.
-  bool convergence_failure_encountered = false;
-
   bool step_succeeded = false;
   do {
     // Constants used to determine whether modifications to the step size are
@@ -1442,12 +1438,9 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
       dt_was_artificially_limited = true;
       current_step_size = dt_max;
     } else {
-      if (dt_max < near_enough_larger * current_step_size &&
-          !convergence_failure_encountered) {
+      if (dt_max < near_enough_larger * current_step_size) {
         // dt_max is roughly current step. Make it the step size to prevent
-        // creating a small sliver (the remaining step). Do not grow the step
-        // size if we have experienced a convergence failure during this
-        // integration attempt (it could trigger an infinite loop).
+        // creating a small sliver (the remaining step).
         current_step_size = dt_max;
       }
     }
@@ -1463,7 +1456,6 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
       adjusted_step_size *= subdivision_factor_;
       ValidateSmallerStepSize(current_step_size, adjusted_step_size);
       dt_was_artificially_limited = true;
-      convergence_failure_encountered = true;
       ++num_shrinkages_from_substep_failures_;
       ++num_substep_failures_;
     }
