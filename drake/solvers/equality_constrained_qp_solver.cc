@@ -54,11 +54,7 @@ SolutionResult SolveUnconstrainedQP(const Eigen::Ref<const Eigen::MatrixXd>& G,
     if (ldlt.info() == Eigen::Success && ldlt.isPositive()) {
       // G is positive semidefinite.
       *x = ldlt.solve(-c);
-
-      if (!(G * (*x)).isApprox(-c, feasibility_tol)) {
-        *x = Eigen::VectorXd::Constant(c.rows(), NAN);
-        return SolutionResult::kUnbounded;
-      } else {
+      if ((G * (*x)).isApprox(-c, feasibility_tol)) {
         return SolutionResult::kSolutionFound;
       }
     }
