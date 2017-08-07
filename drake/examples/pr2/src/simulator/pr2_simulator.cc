@@ -1,12 +1,12 @@
 #include "robotlocomotion/robot_plan_t.hpp"
 #include "drake/common/find_resource.h"
-#include "drake/examples/pr2/src/utils/robot_state_lcm.h"
+#include "drake/examples/pr2/src/utils/joint_positions_lcm.h"
 #include "drake/examples/pr2/src/utils/plan_status_lcm.h"
 #include "drake/examples/pr2/src/utils/world_sim_tree_builder.h"
 #include "drake/examples/pr2/src/utils/robot_plan_interpolator.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_contact_results_for_viz.hpp"
-#include "drake/lcmt_robot_state.hpp"
+#include "drake/lcmt_joint_positions.hpp"
 #include "drake/multibody/rigid_body_plant/contact_results_to_lcm.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
@@ -115,14 +115,14 @@ void main(int argc, char* argv[]) {
   const int num_actuators = plant_->get_rigid_body_tree().get_num_actuators();
   
   // Set up connections so that the robot's state can be published and the robot can recieve plans.
-  auto robot_state_pub = diagram_builder.AddSystem(
-      systems::lcm::LcmPublisherSystem::Make<lcmt_robot_state>("ROBOT_STATE",
+  auto joint_positions_pub = diagram_builder.AddSystem(
+      systems::lcm::LcmPublisherSystem::Make<lcmt_joint_positions>("ROBOT_JOINT_POSITIONS",
                                                                &lcm));
-  robot_state_pub->set_name("robot_state_publisher");
+  joint_positions_pub->set_name("joint_positions_publisher");
 
-  auto robot_state_sender =
-      diagram_builder.AddSystem<RobotStateSender>(num_actuators);
-  robot_state_sender->set_name("robot_state_sender");
+  auto joint_positions_sender =
+      diagram_builder.AddSystem<JointPositionsSender>(num_actuators);
+  joint_positions_sender->set_name("robot_joint_positions_sender");
 
   auto plan_receiver = diagram_builder.AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<robotlocomotion::robot_plan_t>(
@@ -144,13 +144,14 @@ void main(int argc, char* argv[]) {
   diagram_builder.Connect(command_injector->get_status_output_port(), plan_status_sender->get_input_port(0));
   diagram_builder.Connect(plan_status_sender->get_output_port(0), plan_status_pub->get_input_port(0));
 
-  diagram_builder.Connect(
-      plant_->model_instance_state_output_port(pr2_instance_id),
-      robot_state_sender->get_state_input_port());
-  diagram_builder.Connect(command_injector->get_state_output_port(),
-                           robot_state_sender->get_command_input_port());
-  diagram_builder.Connect(robot_state_sender->get_output_port(0),
-                           robot_state_pub->get_input_port(0));
+  std::cout << "size1: " << plant_->model_instance_state_output_port(pr2_instance_id).size() << "\n";
+  std::cout << "size2: " << joint_positions_sender->get_input_port(0).size() << "\n";
+  auto demux = diagram_builder.template AddSystem<Demultiplexer>(48, 24);
+  demux->set_name("demux");
+  diagram_builder.Connect(plant_->model_instance_state_output_port(pr2_instance_id),
+                           joint_positions_sender->get_input_port(0));
+  diagram_builder.Connect(joint_positions_sender->get_output_port(0),
+                           joint_positions_pub->get_input_port(0));
  
   // Add the controller and connect the appropriate systems together for the controller.
   VectorX<double> kp(num_actuators);

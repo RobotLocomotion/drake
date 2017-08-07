@@ -95,6 +95,13 @@ lcm_cc_library(
 )
 
 lcm_cc_library(
+    name = "joint_positions",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_joint_positions.lcm"],
+)
+
+
+lcm_cc_library(
     name = "manipulator_plan_move_end_effector",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_manipulator_plan_move_end_effector.lcm"],
@@ -164,7 +171,6 @@ lcm_cc_library(
     lcm_package = "drake",
     lcm_srcs = ["lcmt_robot_state.lcm"],
 )
-
 
 lcm_cc_library(
     name = "support_data",
@@ -297,6 +303,7 @@ DRAKE_LCMTYPES = [
     ":zmp_data",
     ":zmp_com_observer_state",
     ":robot_state",
+    ":joint_positions",
 ]
 
 # This rule should list every LCM type that is known to Drake or its external
