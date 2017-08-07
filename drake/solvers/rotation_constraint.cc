@@ -983,7 +983,8 @@ void AddOrthogonalAndCrossProductConstraintRelaxationReplacingBilinearProduct(
       auto lambda_bilinear = AddBilinearProductMcCormickEnvelopeSos2(
           prog, R(Ri_row, Ri_col), R(Rj_row, Rj_col), W(i, j), phi, phi,
           B[Ri_row][Ri_col].template cast<symbolic::Expression>(),
-          B[Rj_row][Rj_col].template cast<symbolic::Expression>(), true);
+          B[Rj_row][Rj_col].template cast<symbolic::Expression>(),
+          Binning::kLogarithmic);
       // Both sum_n lambda_bilinear(m, n) and sum_m lambda_bilinear(m, n)
       // satisfy the SOS2 constraint, and
       // R(Ri_row, Ri_col) = φᵀ * (sum_n lambda_bilinear(m, n))
