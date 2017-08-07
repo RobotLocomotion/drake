@@ -26,11 +26,12 @@ SolutionResult SolveUnconstrainedQP(const Eigen::Ref<const Eigen::MatrixXd>& G,
                                     Eigen::VectorXd* x) {
   // If the Hessian G is positive definite, then the problem has a unique
   // optimal solution.
-  // If the Hessian G has negative eigen values, then the problem is unbounded.
+  // If the Hessian G has one or more negative eigen values, then the problem is
+  // unbounded.
   // If the Hessian G is positive semidefinite, but with some eigen values
-  // being 0. Then we check the first order derivative G * x + c. If there
-  // exist solution x such that the first order derivative is 0, then the
-  // problem has optimal cost (but can be infinitely many optimal x).
+  // being 0, then we check the first order derivative G * x + c. If there
+  // exists solution x* such that the first order derivative at x* is 0, then
+  // the problem has optimal cost (but infinitely many optimal x* will exist).
   SolutionResult solver_result;
   // Check for positive definite Hessian matrix.
   Eigen::LLT<Eigen::MatrixXd> llt(G);
@@ -214,11 +215,12 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
           // Using QR decomposition
           // Aᵀ * P = [Q1 Q2] * [R] = Q1 * R
           //                    [0]
+          // where P is a permutation matrix.
           // So A = P * R1ᵀ * Q1ᵀ, and A * Q2 = P * R1ᵀ * Q1ᵀ * Q2 = 0 since
           // Q1 and Q2 are orthogonal to each other.
           // Thus kernel(A) = Q2.
           // Notice that we do not call svd here because svd only gives
-          // us a "thin" V, thus the V matrix does not contain the basis vectors
+          // us a "thin" V; thus the V matrix does not contain the basis vectors
           // for the null space.
           Eigen::ColPivHouseholderQR<Eigen::MatrixXd> qr_A(A.transpose());
           const Eigen::MatrixXd Q =
