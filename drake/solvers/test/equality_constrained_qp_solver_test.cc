@@ -282,7 +282,7 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testIndefiniteHessianInfeasible) {
 // s.t x(0) + 2 * x(1) = 1
 //     x(0) - x(1) = -2
 //     x(0) + x(1) = 1E-6
-// when the feasibility tolerance is 1E-12, the problem is infeasible.
+// when the feasibility tolerance is 1E-7, the problem is infeasible.
 // when we increase the feasibility tolerance, the problem is feasible.
 GTEST_TEST(testEqualityConstrainedQPSolver, testFeasibilityTolerance) {
   MathematicalProgram prog;
