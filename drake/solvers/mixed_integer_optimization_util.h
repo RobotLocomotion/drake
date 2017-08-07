@@ -137,6 +137,11 @@ void AddLogarithmicSos1Constraint(
     const Eigen::Ref<const VectorXDecisionVariable>& y,
     const Eigen::Ref<const Eigen::MatrixXi>& codes);
 
+enum class Binning {
+  kLogarithmic,
+  kLinear
+};
+
 /**
  * Constrain `w` to approximate the bilinear product x * y. We know
  * that x is in one of the intervals [φx(i), φx(i+1)], y is in one of the
@@ -145,29 +150,23 @@ void AddLogarithmicSos1Constraint(
  * (x, y, w) is in the tetrahedron, with vertices [φx(i), φy(j), φx(i)*φy(j)],
  * [φx(i+1), φy(j), φx(i+1)*φy(j)], [φx(i), φy(j+1), φx(i)*φy(j+1)] and
  * [φx(i+1), φy(j+1), φx(i+1)*φy(j+1)]
+ * We use two different encoding schemes on the binary variables, to determine
+ * which interval is active. We can choose either linear orlogarithmic binning.
+ * When using linear binning, for a variable with N intervals, we
+ * use N binary variables, and B(i) = 1 indicates the variable is in the i'th
+ * interval. When using logarithmic binning, we use ⌈log₂(N)⌉ binary variables.
+ * If these binary variables represent integer M in the reflected Gray code,
+ * then the continuous variable is in the M'th interval.
  * @param prog The program to which the bilinear product constraint is added
  * @param x The decision variable.
  * @param y The decision variable.
  * @param w The expression to approximate x * y
  * @param phi_x The end points of the intervals for `x`.
  * @param phi_y The end points of the intervals for `y`.
- * @param Bx Bx(i) can only take binary values. Bx indicate which interval is
- * activated. Depending on whether we use logarithmic binning or not, Bx has
- * different meanings. If `logarithmic_binning` = true, and Bx represents
- * integer M in the reflected Gray code, then the interval [φx(M), φx(M + 1)]
- * is activated. If `logarithmic_binning` = false, and Bx(i) is 1, all other
- * Bx(j) = 0 j ≠ i, then the interval [φx(i), φx(i + 1)] is activated.
- * If Bx(i) = 1, then `x` is in the interval [φx(i), φx(i + 1)].
- * @param By By(i) can only take binary values. By indicate which interval is
- * activated. Depending on whether we use logarithmic binning or not, By has
- * different meanings. If `logarithmic_binning` = true, and By represents
- * integer N in the reflected Gray code, then the interval [φx(N), φx(N + 1)]
- * is activated. If `logarithmic_binning` = false, and By(i) is 1, all other
- * By(j) = 0, j ≠ i, then the interval [φy(i), φy(i + 1)] is activated.
- * @param logarithmic_binning Determines the meaning of the binary Bx and By. If
- * logarithmic_binning = true, then Bx and By represent the active interval,
- * using reflected Gray code. Otherwise, Bx and By represent the active
- * interval, by their only non-zero entries.
+ * @param Bx The binary variables detemine in which interval `x` is in.
+ * @param By The binary variables detemine in which interval `y` is in.
+ * @param binning Determine whether to use linear binning or
+ * logarithmic binning.
  * @return lambda The auxiliary continuous variables.
  * x = φxᵀ * (λ.rowwise().sum())
  * y = φyᵀ * (λ.cowwise().sum())
@@ -190,13 +189,16 @@ AddBilinearProductMcCormickEnvelopeSos2(
     MathematicalProgram* prog, const symbolic::Variable& x,
     const symbolic::Variable& y, const symbolic::Expression& w,
     const DerivedPhiX& phi_x, const DerivedPhiY& phi_y, const DerivedBx& Bx,
-    const DerivedBy& By, bool logarithmic_binning) {
-  if (logarithmic_binning) {
-    DRAKE_ASSERT(Bx.rows() == CeilLog2(phi_x.rows() - 1));
-    DRAKE_ASSERT(By.rows() == CeilLog2(phi_y.rows() - 1));
-  } else {
-    DRAKE_ASSERT(Bx.rows() == phi_x.rows() - 1);
-    DRAKE_ASSERT(By.rows() == phi_y.rows() - 1);
+    const DerivedBy& By, Binning binning) {
+  switch (binning) {
+    case Binning::kLogarithmic :
+      DRAKE_ASSERT(Bx.rows() == CeilLog2(phi_x.rows() - 1));
+      DRAKE_ASSERT(By.rows() == CeilLog2(phi_y.rows() - 1));
+      break;
+    case Binning::kLinear :
+      DRAKE_ASSERT(Bx.rows() == phi_x.rows() - 1);
+      DRAKE_ASSERT(By.rows() == phi_y.rows() - 1);
+      break;
   }
   const int num_phi_x = phi_x.rows();
   const int num_phi_y = phi_y.rows();
@@ -220,23 +222,28 @@ AddBilinearProductMcCormickEnvelopeSos2(
   prog->AddLinearConstraint(y == y_convex_combination);
   prog->AddLinearConstraint(w == w_convex_combination);
 
-  if (logarithmic_binning) {
-    AddLogarithmicSos2Constraint(
-        prog, lambda.template cast<symbolic::Expression>().rowwise().sum(), Bx);
-    AddLogarithmicSos2Constraint(prog,
-                                 lambda.template cast<symbolic::Expression>()
-                                     .colwise()
-                                     .sum()
-                                     .transpose(),
-                                 By);
-  } else {
-    AddSos2Constraint(
-        prog, lambda.template cast<symbolic::Expression>().rowwise().sum(), Bx);
-    AddSos2Constraint(prog, lambda.template cast<symbolic::Expression>()
-                                .colwise()
-                                .sum()
-                                .transpose(),
-                      By);
+  switch (binning) {
+    case Binning::kLogarithmic:
+      AddLogarithmicSos2Constraint(
+          prog, lambda.template cast<symbolic::Expression>().rowwise().sum(),
+          Bx);
+      AddLogarithmicSos2Constraint(prog,
+                                   lambda.template cast<symbolic::Expression>()
+                                       .colwise()
+                                       .sum()
+                                       .transpose(),
+                                   By);
+      break;
+    case Binning::kLinear:
+      AddSos2Constraint(
+          prog, lambda.template cast<symbolic::Expression>().rowwise().sum(),
+          Bx);
+      AddSos2Constraint(prog, lambda.template cast<symbolic::Expression>()
+                                  .colwise()
+                                  .sum()
+                                  .transpose(),
+                        By);
+      break;
   }
   return lambda;
 }
