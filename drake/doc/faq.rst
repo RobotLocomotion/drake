@@ -142,7 +142,7 @@ Solution: The problem is ``drake-visualizer`` is correctly being built against
 VTK5, but is incorrectly run against VTK6. To fix this problem, modify the
 ``LD_LIBRARY_PATH`` and ``PYTHONPATH`` environment variables to ensure VTK5 is
 prioritized over VTK6 as described
-:ref:`here <faq_drake_visualizer_no_module_named_vtk_common_core_python_non_ros>`.
+:ref:`here <faq_drake_visualizer_no_module_named_vtk_common_core_python>`.
 For more information, see `this comment <https://github.com/RobotLocomotion/drake/issues/5280#issuecomment-282036045>`_.
 
 .. _faq_drake_visualizer_no_module_named_vtk_common_core_python:
@@ -160,17 +160,9 @@ error::
     ImportError: No module named vtkCommonCorePython
 
 Solution: This is a `known problem <https://github.com/RobotLocomotion/drake/issues/4738>`_
-when you have ``python-vtk6`` installed. The workaround depends on whether
-you're building Drake within a ROS Catkin workspace. Please jump to the
-appropriate subsection below.
-
-.. _faq_drake_visualizer_no_module_named_vtk_common_core_python_non_ros:
-
-Non-ROS Users
--------------
-
-To workaround the problem, configure Drake's build system to build VTK5 from
-source (``drake-visualizer`` is built on Director, which is built on VTK5)::
+when you have ``python-vtk6`` installed. To workaround the problem, configure
+Drake's build system to build VTK5 from source (``drake-visualizer`` is built on
+Director, which is built on VTK5)::
 
     cd drake-distro/build
     cmake . -DUSE_SYSTEM_VTK=OFF -DWITH_VTK=ON
@@ -186,40 +178,6 @@ the present working directory)::
     export PYTHONPATH=`pwd`/build/externals/vtk/Wrapping/Python:`pwd`/build/externals/vtk/bin:$PYTHONPATH
 
 You should now be able to start ``drake-visualizer``.
-
-
-.. _faq_drake_visualizer_no_module_named_vtk_common_core_python_ros_indigo:
-
-ROS Indigo Users
-----------------
-
-To workaround the problem, configure Director's build system to build VTK5 from
-source (``drake-visualizer`` is built on Director, which is built on VTK5)::
-
-    cd ~/dev/drake_catkin_workspace/build/drake
-    cmake . -DUSE_SYSTEM_VTK=OFF -DWITH_VTK=ON
-    cd ~/dev/drake_catkin_workspace
-    catkin build
-
-Next, modify two environment variables before starting
-``drake-visualizer``::
-
-    export LD_LIBRARY_PATH=$HOME/dev/drake_catkin_workspace/install/lib/vtk-5.10:$LD_LIBRARY_PATH
-    export PYTHONPATH=$HOME/dev/drake_catkin_workspace/build/drake/externals/vtk/Wrapping/Python:$HOME/dev/drake_catkin_workspace/build/drake/externals/vtk/bin:$PYTHONPATH
-
-You should now be able to start ``drake-visualizer``.
-
-
-.. _faq_drake_visualizer_no_module_named_vtk_common_core_python_ros_kinetic:
-
-ROS Kinetic Users
------------------
-
-Since ROS Kinetic requires VTK6, the
-:ref:`setup instructions <build_from_source_using_ros_kinetic>` already contain
-the workaround to this error. See in particular
-:ref:`step 5 <drake_ros_kinetic_build_workspace>` and
-:ref:`step 6 <drake_ros_kinetic_environment_variables>`.
 
 .. _faq_ubuntu_nvidia:
 
