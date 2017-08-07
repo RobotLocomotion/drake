@@ -198,7 +198,8 @@ class Rod2DDAETest : public ::testing::Test {
     dut_->GetContactPointsTangentVelocities(*context_, contacts, &tangent_vels);
 
     // Compute the problem data.
-    dut_->CalcRigidConstraintProblemData(*context_, contacts, tangent_vels, data);
+    dut_->CalcRigidConstraintProblemData(*context_, contacts, tangent_vels,
+        data);
   }
 
   // Models an impact.
@@ -218,8 +219,9 @@ class Rod2DDAETest : public ::testing::Test {
   }
 
   // Checks consistency of rigid contact problem data.
-  void CheckProblemConsistency(const RigidConstraintAccelProblemData<double>& data,
-                               int num_contacts) {
+  void CheckProblemConsistency(
+      const RigidConstraintAccelProblemData<double>& data,
+      int num_contacts) {
     EXPECT_EQ(num_contacts, data.sliding_contacts.size() +
         data.non_sliding_contacts.size());
     EXPECT_EQ(data.N_minus_mu_Q.rows(), num_contacts);
@@ -241,8 +243,9 @@ class Rod2DDAETest : public ::testing::Test {
   }
 
   // Checks consistency of rigid impact problem data.
-  void CheckProblemConsistency(const RigidConstraintVelProblemData<double>& data,
-                               int num_contacts) {
+  void CheckProblemConsistency(
+      const RigidConstraintVelProblemData<double>& data,
+      int num_contacts) {
     EXPECT_EQ(num_contacts, data.mu.size());
     EXPECT_EQ(num_contacts, data.r.size());
     EXPECT_EQ(data.N.rows(), num_contacts);
