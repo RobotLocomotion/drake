@@ -679,14 +679,13 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
 
       // Spatial force on the child body C about the origin Mc of the outboard
       // mobilizer frame for the child body.
-      // A little note on how to read the next line: when the index is
-      // this->get_index() we have:
-      // - B this node's body.
-      // - Mo body B's inboard frame origin.
-      // When the index points to an outboard child of this node,
-      // in this case indexed by child_node_index:
-      // - B becomes C, the child body.
-      // - Mo body C's inboard frame origin.
+      // A little note for how to read the next line: the frames for
+      // F_BMo_W_array are:
+      //  - B this node's body.
+      //  - Mo body B's inboard frame origin.
+      // However, when indexing by child_node_index:
+      //  - B becomes C, the child node's body.
+      //  - Mo becomes Mc, body C's inboard frame origin.
       const SpatialForce<T>& F_CMc_W = F_BMo_W_array[child_node_index];
 
       // Shift to this node's mobilizer origin Mo (still, F_CMo is the force

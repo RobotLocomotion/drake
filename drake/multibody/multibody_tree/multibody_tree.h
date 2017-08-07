@@ -608,9 +608,9 @@ class MultibodyTree {
   /// number of bodies in the %MultibodyTree. The explicit formation of the
   /// mass matrix `H(q)` would require the calculation of `O(n²)` entries while
   /// explicitly forming the product `C(q, v) * v` could require up to `O(n³)`
-  /// operations, depending on the implementation. The recursive Newton-Euler
-  /// algorithm is the most efficient currently known general method for solving
-  /// inverse dynamics [Featherstone 2008].
+  /// operations (see [Featherstone 1987, §4]), depending on the implementation.
+  /// The recursive Newton-Euler algorithm is the most efficient currently known
+  /// general method for solving inverse dynamics [Featherstone 2008].
   ///
   /// @param[in] context
   ///   The context containing the state of the %MultibodyTree model.

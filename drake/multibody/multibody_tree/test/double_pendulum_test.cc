@@ -76,7 +76,7 @@ using systems::Context;
 //      |  | Ei  | Elbow inboard frame Ei.
 //      |  +-->  |
 //      +--------+
-//      X_SiSo(θ₂) Elbow revolute mobilizer with generalized position θ₂.
+//      X_EiEo(θ₂) Elbow revolute mobilizer with generalized position θ₂.
 //      +--+-----+
 //      |  ^     |
 //      |  | Eo  | Elbow outboard frame Eo.
@@ -111,21 +111,14 @@ class PendulumTests : public ::testing::Test {
     // Spatial inertia of the upper link about its frame U and expressed in U.
     Vector3d link1_com_U = Vector3d::Zero();  // U is at the link's COM.
     UnitInertia<double> G_U(
-        kEpsilon /* Ixx */, link1_Ic_ /* Iyy */, link1_Ic_ /* Izz */);
+        0.0 /* Ixx */, link1_Ic_ /* Iyy */, link1_Ic_ /* Izz */);
     SpatialInertia<double> M_U(link1_mass_, link1_com_U, G_U);
 
     // Spatial inertia of the lower link about its frame L and expressed in L.
     Vector3d link2_com_L = Vector3d::Zero();  // L is at the link's COM.
     UnitInertia<double> G_L(
-        kEpsilon /* Ixx */, link2_Ic_ /* Iyy */, link2_Ic_ /* Izz */);
+        0.0 /* Ixx */, link2_Ic_ /* Iyy */, link2_Ic_ /* Izz */);
     SpatialInertia<double> M_L(link2_mass_, link2_com_L, G_L);
-
-    // Creates a NaN SpatialInertia to instantiate the two RigidBody links of
-    // the pendulum. Using a NaN spatial inertia is ok so far since we are still
-    // not performing any numerical computations. This is only to test API.
-    // M_Bo_B is the spatial inertia about the body frame's origin Bo and
-    // expressed in the body frame B.
-    SpatialInertia<double> M_Bo_B;
 
     // Adds the upper and lower links of the pendulum.
     // Using: const BodyType& AddBody(std::unique_ptr<BodyType> body).
@@ -247,9 +240,11 @@ class PendulumTests : public ::testing::Test {
   // Pendulum parameters:
   const double link1_length_ = 1.0;
   const double link1_mass_ = 1.0;
+  // Unit inertia about an axis perpendicular to the rod for link1.
   const double link1_Ic_ = .083;
   const double link2_length_ = 2.0;
   const double link2_mass_ = 1.0;
+  // Unit inertia about an axis perpendicular to the rod for link2.
   const double link2_Ic_ = .33;
   const double half_link1_length_ = link1_length_ / 2;
   const double half_link2_length_ = link2_length_ / 2;
@@ -600,10 +595,10 @@ class PendulumKinematicTests : public PendulumTests {
 
     // ======================================================================
     // Compute expected values using the acrobot benchmark.
-    Vector2d C_expected = acrobot_benchmark_.CalcCoriolisVector(
+    const Vector2d C_expected = acrobot_benchmark_.CalcCoriolisVector(
         shoulder_angle, elbow_angle, shoulder_angle_rate, elbow_angle_rate);
-    Matrix2d H = acrobot_benchmark_.CalcMassMatrix(elbow_angle);
-    Vector2d tau_expected = H * vdot + C_expected;
+    const Matrix2d H = acrobot_benchmark_.CalcMassMatrix(elbow_angle);
+    const Vector2d tau_expected = H * vdot + C_expected;
 
     EXPECT_TRUE(tau.isApprox(tau_expected, kTolerance));
     return tau;

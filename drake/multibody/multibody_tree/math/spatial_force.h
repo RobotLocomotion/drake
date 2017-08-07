@@ -127,18 +127,20 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
   }
 
   /// Adds in a spatial force to `this` spatial force.
-  /// @param[in] F_P_E
-  ///   A spatial force to be added to `this` spatial force. It must be computed
-  ///   about the same point P as `this` spatial force, and expressed in the
+  /// @param[in] F_Sp_E
+  ///   A spatial force to be added to `this` spatial force. It must be on the
+  ///   same system or body S on which `this` spatial force is applied and at
+  ///   the same point P as `this` spatial force, and expressed in the
   ///   same frame E.
   /// @returns
   ///   A reference to `this` spatial force, which has been updated to include
-  ///   the given spatial force `F_P_E`.
+  ///   the given spatial force `F_Sp_E`.
   ///
-  /// @warning This operation is only valid if both spatial forces are
-  /// computed about the same point P and expressed in the same frame E.
-  SpatialForce<T>& operator+=(const SpatialForce<T>& F_P_E) {
-    this->get_coeffs() += F_P_E.get_coeffs();
+  /// @warning This operation is only valid if both spatial forces are applied
+  /// on the same system or body S, at the same point P and expressed in the
+  /// same frame E.
+  SpatialForce<T>& operator+=(const SpatialForce<T>& F_Sp_E) {
+    this->get_coeffs() += F_Sp_E.get_coeffs();
     return *this;
   }
 
@@ -158,16 +160,16 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
 };
 
 /// Computes the resultant spatial force as the addition of two spatial forces
-/// `F1_Sp_E` and `F2_Sp_E` on a same system or body S, about the same point P
-/// and expressed in the same frame E.
+/// `F1_Sp_E` and `F2_Sp_E` on a same system or body S, at the same point P and
+/// expressed in the same frame E.
 /// @retval Fr_Sp_E
 ///   The resultant spatial force on system or body S from combining `F1_Sp_E`
-///   and `F2_Sp_E`, defined about the same point P and in the same expressed-in
+///   and `F2_Sp_E`, applied at the same point P and in the same expressed-in
 ///   frame E as the operand spatial forces.
 template <typename T>
 inline SpatialForce<T> operator+(
-    const SpatialForce<T>& F1_Sp, const SpatialForce<T>& F2_Sp) {
-  return SpatialForce<T>(F1_Sp.get_coeffs() + F2_Sp.get_coeffs());
+    const SpatialForce<T>& F1_Sp_E, const SpatialForce<T>& F2_Sp_E) {
+  return SpatialForce<T>(F1_Sp_E.get_coeffs() + F2_Sp_E.get_coeffs());
 }
 
 }  // namespace multibody
