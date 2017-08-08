@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_optional.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/solvers/mathematical_program.h"
@@ -142,7 +143,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   }
 
   Eigen::VectorXd x{};
-  SolutionResult solver_result{};
+  optional<SolutionResult> solver_result;
   if (num_constraints > 0) {
     // Setup the linear constraints.
     Eigen::MatrixXd A = Eigen::MatrixXd::Zero(num_constraints, prog.num_vars());
@@ -245,7 +246,9 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   }
   prog.SetOptimalCost(optimal_cost);
   prog.SetSolverId(id());
-  return solver_result;
+  // Make sure solver_result is set.
+  DRAKE_DEMAND(!!solver_result);
+  return *solver_result;
 }
 
 SolverId EqualityConstrainedQPSolver::solver_id() const { return id(); }
