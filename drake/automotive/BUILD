@@ -17,7 +17,6 @@ drake_cc_library(
         "gen/bicycle_car_parameters.cc",
         "gen/bicycle_car_state.cc",
         "gen/driving_command.cc",
-        "gen/euler_floating_joint_state.cc",
         "gen/idm_planner_parameters.cc",
         "gen/maliput_railcar_params.cc",
         "gen/maliput_railcar_state.cc",
@@ -32,7 +31,6 @@ drake_cc_library(
         "gen/bicycle_car_parameters.h",
         "gen/bicycle_car_state.h",
         "gen/driving_command.h",
-        "gen/euler_floating_joint_state.h",
         "gen/idm_planner_parameters.h",
         "gen/maliput_railcar_params.h",
         "gen/maliput_railcar_state.h",
@@ -54,7 +52,6 @@ drake_cc_library(
         "gen/bicycle_car_parameters_translator.cc",
         "gen/bicycle_car_state_translator.cc",
         "gen/driving_command_translator.cc",
-        "gen/euler_floating_joint_state_translator.cc",
         "gen/maliput_railcar_params_translator.cc",
         "gen/maliput_railcar_state_translator.cc",
         "gen/simple_car_params_translator.cc",
@@ -65,7 +62,6 @@ drake_cc_library(
         "gen/bicycle_car_parameters_translator.h",
         "gen/bicycle_car_state_translator.h",
         "gen/driving_command_translator.h",
-        "gen/euler_floating_joint_state_translator.h",
         "gen/maliput_railcar_params_translator.h",
         "gen/maliput_railcar_state_translator.h",
         "gen/simple_car_params_translator.h",
@@ -304,7 +300,6 @@ drake_cc_library(
     srcs = ["simple_car.cc"],
     hdrs = [
         "simple_car.h",
-        "simple_car_to_euler_floating_joint.h",
     ],
     deps = [
         ":calc_smooth_acceleration",
@@ -621,13 +616,6 @@ drake_cc_googletest(
     name = "simple_powertrain_test",
     deps = [
         "//drake/automotive:simple_powertrain",
-    ],
-)
-
-drake_cc_googletest(
-    name = "simple_car_to_euler_floating_joint_test",
-    deps = [
-        "//drake/automotive:simple_car",
     ],
 )
 
