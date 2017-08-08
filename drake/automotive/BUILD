@@ -494,6 +494,7 @@ drake_cc_googletest(
     deps = [
         "//drake/automotive:bicycle_car",
         "//drake/common:eigen_matrix_compare",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 
@@ -547,6 +548,7 @@ drake_cc_googletest(
     deps = [
         "//drake/automotive:simple_car",
         "//drake/common:eigen_matrix_compare",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 
@@ -644,6 +646,7 @@ drake_cc_googletest(
     deps = [
         "//drake/automotive:trajectory_car",
         "//drake/systems/analysis:simulator",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 

@@ -62,11 +62,17 @@ namespace automotive {
 ///
 /// @ingroup automotive_plants
 template <typename T>
-class BicycleCar : public systems::LeafSystem<T> {
+class BicycleCar final : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BicycleCar)
 
+  /// Default constructor.
   BicycleCar();
+
+  /// Scalar-converting copy constructor.
+  template <typename U>
+  explicit BicycleCar(const BicycleCar<U>&);
+
   ~BicycleCar() override;
 
   /// Returns a descriptor of the input port that contains the steering angle.
@@ -92,10 +98,6 @@ class BicycleCar : public systems::LeafSystem<T> {
                                const systems::BasicVector<T>& steering,
                                const systems::BasicVector<T>& force,
                                BicycleCarState<T>* derivatives) const;
-
-  // System<T> override.  Returns an BicycleCar<symbolic::Expression> with the
-  // same dimensions as this BicycleCar.
-  BicycleCar<symbolic::Expression>* DoToSymbolic() const override;
 
   int steering_input_port_{};
   int force_input_port_{};
