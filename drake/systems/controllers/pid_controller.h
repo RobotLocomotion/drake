@@ -16,20 +16,22 @@ namespace controllers {
 // TODO(siyuanfeng): Generalize "q_d - q", e.g. for rotation.
 
 /**
- * Implements the PID controller. Given state `(q, v)`, desired state
- * `(q_d, v_d)`, the output of this controller is
+ * Implements the PID controller. Given state `x = (q, v)`, desired state
+ * `x_d = (q_d, v_d)`, the output of this controller is
  * <pre>
- * y = kp * (q_d - q) + kd * (v_d - v) + ki * integral(q_d - q, dt),
+ * y = P_output * (kp * (q_d - q) + kd * (v_d - v) + ki * integral(q_d - q,
+ * dt)),
  * </pre>
- * where `integral(q_d - q, dt)` is the integrated position error.
+ * where `integral(q_d - q, dt)` is the integrated position error, and
+ * `P_output`
+ * is the output projection matrix.
  *
  * This system has one continuous state which is the integral of position error,
- * two input ports: estimated state (q, v) and desired state (q_d, v_d), and
- * one output port y.
- *
- * Note that this class assumes |q| = |v|, and |q_d| = |v_d|. Also |q| >= |q_d|.
- * The user can specify a selection matrix that picks the *controlled* states
- * from (q, v) for feedback. See constructor documentations for more details.
+ * two input ports: estimated state `x_input` and desired state `x_d`, and one
+ * output port `y`. `x = P_input * x_input`, where `P_input` is the input
+ * projection matrix. Note that this class assumes |q| = |v|, |q_d| = |v_d|.
+ * However, |q| does not have to equal to |q_d|. One use case for non-identity
+ * `P_input` and `P_outputput` is to select a subset of state for feedback.
  *
  * @tparam T The vector element type, which must be a valid Eigen scalar.
  *
@@ -47,9 +49,9 @@ class PidController : public StateFeedbackControllerInterface<T>,
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PidController)
 
   /**
-   * Constructs a PID controller. Assumes that @p kp, @p ki and @p kd have the
-   * same size, the estimated and desired state inputs will have the size of
-   * 2 * @p kp's size, and the control output will have @p kp's size.
+   * Constructs a PID controller. `P_input` and `P_output` are identity
+   * matrices of proper sizes. The estimated and desired state inputs are
+   * 2 * @p kp's size, and the control output has @p kp's size.
    * @param kp P gain.
    * @param ki I gain.
    * @param kd D gain.
@@ -58,14 +60,9 @@ class PidController : public StateFeedbackControllerInterface<T>,
                 const Eigen::VectorXd& kd);
 
   /**
-   * Constructs a PID controller where some of the input states may not be
-   * controlled. Assumes that @p kp, @p ki and @p kd have the same size. The
-   * estimated and desired state input's size and the control output's size need
-   * to match @p feedback_selector. Note that @p state_projection only affects
-   * the estimated state input but not the desired state.
-   * @param feedback_selector, The selection matrix indicating controlled
-   * states, whose size should be 2 * @p kp's size by the size of the full
-   * state.
+   * Constructs a PID controller. Calls the full constructor, with the output
+   * projection matrix `P_output` being the identity matrix.
+   * @param state_projection The input projection matrix `P_input`.
    * @param kp P gain.
    * @param ki I gain.
    * @param kd D gain.
@@ -74,6 +71,22 @@ class PidController : public StateFeedbackControllerInterface<T>,
                 const Eigen::VectorXd& kp, const Eigen::VectorXd& ki,
                 const Eigen::VectorXd& kd);
 
+  /**
+   * Constructs a PID controller. This assumes that
+   * <pre>
+   *   1. |kp| = |kd| = |ki| = |q_d| = |v_d|
+   *   2. 2 * |q_d| = P_input.rows
+   *   3. |x_input| = P_input.cols
+   *   4. |y| = P_output.rows
+   *   4. |q_d| = P_output.cols
+   * </pre>
+   *
+   * @param state_projection The input projection matrix `P_input`.
+   * @param output_projection The output projection matrix `P_output`.
+   * @param kp P gain.
+   * @param ki I gain.
+   * @param kd V gain.
+   */
   PidController(const MatrixX<double>& state_projection,
                 const MatrixX<double>& output_projection,
                 const Eigen::VectorXd& kp, const Eigen::VectorXd& ki,
@@ -169,7 +182,8 @@ class PidController : public StateFeedbackControllerInterface<T>,
                              ContinuousState<T>* derivatives) const override;
 
  private:
-  template <typename> friend class PidController;
+  template <typename>
+  friend class PidController;
 
   static double get_single_gain(const VectorX<double>& gain) {
     if (!gain.isConstant(gain[0])) {

@@ -14,8 +14,8 @@ template <typename T>
 PidController<T>::PidController(const Eigen::VectorXd& kp,
                                 const Eigen::VectorXd& ki,
                                 const Eigen::VectorXd& kd)
-    : PidController(MatrixX<double>::Identity(2 * kp.size(), 2 * kp.size()),
-                    kp, ki, kd) {}
+    : PidController(MatrixX<double>::Identity(2 * kp.size(), 2 * kp.size()), kp,
+                    ki, kd) {}
 
 template <typename T>
 PidController<T>::PidController(const MatrixX<double>& state_projection,
@@ -23,8 +23,8 @@ PidController<T>::PidController(const MatrixX<double>& state_projection,
                                 const Eigen::VectorXd& ki,
                                 const Eigen::VectorXd& kd)
     : PidController(state_projection,
-                    MatrixX<double>::Identity(kp.size(), kp.size()),
-                    kp, ki, kd) {}
+                    MatrixX<double>::Identity(kp.size(), kp.size()), kp, ki,
+                    kd) {}
 
 template <typename T>
 PidController<T>::PidController(const MatrixX<double>& state_projection,
@@ -48,9 +48,9 @@ PidController<T>::PidController(const MatrixX<double>& state_projection,
   this->DeclareContinuousState(num_controlled_q_);
 
   output_index_control_ =
-      this->DeclareVectorOutputPort(
-          BasicVector<T>(output_projection_.rows()),
-          &PidController<T>::CalcControl).get_index();
+      this->DeclareVectorOutputPort(BasicVector<T>(output_projection_.rows()),
+                                    &PidController<T>::CalcControl)
+          .get_index();
 
   input_index_state_ =
       this->DeclareInputPort(kVectorValued, num_full_state_).get_index();
@@ -62,12 +62,8 @@ PidController<T>::PidController(const MatrixX<double>& state_projection,
 template <typename T>
 template <typename U>
 PidController<T>::PidController(const PidController<U>& other)
-    : PidController(
-          other.state_projection_,
-          other.output_projection_,
-          other.kp_,
-          other.ki_,
-          other.kd_) {}
+    : PidController(other.state_projection_, other.output_projection_,
+                    other.kp_, other.ki_, other.kd_) {}
 
 template <typename T>
 void PidController<T>::DoCalcTimeDerivatives(
@@ -104,12 +100,12 @@ void PidController<T>::CalcControl(const Context<T>& context,
 
   // Sets output to the sum of all three terms.
   control->SetFromVector(
-      output_projection_.cast<T>() * (
-      (kp_.array() * controlled_state_diff.head(num_controlled_q_).array())
-          .matrix() +
-      (kd_.array() * controlled_state_diff.tail(num_controlled_q_).array())
-          .matrix() +
-      (ki_.array() * state_block.array()).matrix()));
+      output_projection_.cast<T>() *
+      ((kp_.array() * controlled_state_diff.head(num_controlled_q_).array())
+           .matrix() +
+       (kd_.array() * controlled_state_diff.tail(num_controlled_q_).array())
+           .matrix() +
+       (ki_.array() * state_block.array()).matrix()));
 }
 
 // Adds a simple record-based representation of the PID controller to @p dot.
