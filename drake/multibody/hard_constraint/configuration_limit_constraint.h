@@ -12,7 +12,7 @@ namespace hard_constraint {
 
 /// Structure for describing unilateral constraints on configuration variables.
 /// The constraints can be in the form:<pre>
-/// 0 ≤ z⋅(z⋅q̅ᵢ - z⋅qᵢᴸ)  ⊥  z⋅fᵢᶜ ≥ 0
+/// 0 ≤ z⋅(q̅ᵢ - qᵢᴸ)  ⊥  z⋅fᵢᶜ ≥ 0
 /// </pre>
 /// denoting that the iᵗʰ quasi-coordinate variable is greater than or
 /// equal to its limit, qᵢᴸ (qᵢᴸ ≤ q̅ᵢ), that the generalized force variable is
@@ -23,7 +23,7 @@ namespace hard_constraint {
 /// a lower limit, z = -1 an upper limit). We call the equation above a
 /// "simple constraint" because no transformation of configuration variables is
 /// necessary. The constraints can also be of the more general form:<pre>
-/// 0 ≤ z⋅g(q, z)  ⊥  z⋅f'ᶜ ≥ 0
+/// 0 ≤ z⋅g(q)  ⊥  z⋅f'ᶜ ≥ 0
 /// </pre>
 /// where Lᵀf'ᶜ gives the generalized force resulting from the constraint force
 /// and L ≡ ∂g/∂v (i.e., the Jacobian matrix of the partial derivatives of the
@@ -39,14 +39,14 @@ namespace hard_constraint {
 /// Configuration variables are currently assumed to be feasible (i.e., lying
 /// within their limits), because this structure does not currently
 /// store the distance from limits. Consequently, limits are currently intended
-/// to be processed at the exact time that z⋅g(q, z) = 0.
+/// to be processed at the exact time that z⋅g(q) = 0.
 template <class T>
 struct ConfigurationLimitConstraint {
   enum ConstraintType {
-    /// Denotes a constraint of the form 0 ≤ z⋅(z⋅q̅ᵢ - z⋅qᵢᴸ)  ⊥  z⋅fᵢᶜ ≥ 0.
+    /// Denotes a constraint of the form 0 ≤ z⋅(q̅ᵢ - qᵢᴸ)  ⊥  z⋅fᵢᶜ ≥ 0.
     kSimpleConstraint,
 
-    /// Denotes a constraint of the form 0 ≤ z⋅g(q, z)  ⊥  z⋅f'ᶜ ≥ 0.
+    /// Denotes a constraint of the form 0 ≤ z⋅g(q)  ⊥  z⋅f'ᶜ ≥ 0.
     kGeneralConstraint
   };
 
@@ -66,7 +66,7 @@ struct ConfigurationLimitConstraint {
   int coordinate_index{-1};
 
   /// The ℝⁱˣᵐ Jacobian matrix that transforms generalized velocities (m is the
-  /// dimension of generalized velocity) into time derivatives of g(q, z) ∈ ℝⁱ,
+  /// dimension of generalized velocity) into time derivatives of g(q) ∈ ℝⁱ,
   /// or, in other words, ġ = Lv. Only used for general constraints.
   MatrixX<T> L;
 
