@@ -22,4 +22,4 @@ gen_vector_proto "pure pursuit params" $drake/automotive/pure_pursuit_params.nam
 gen_lcm_and_vector_from_proto "simple car state" $drake/automotive/simple_car_state.named_vector
 gen_lcm_and_vector_from_proto "simple car params" $drake/automotive/simple_car_params.named_vector
 gen_lcm_and_vector_from_proto "trajectory car state" $drake/automotive/trajectory_car_state.named_vector
-gen_vector_from_proto "trajectory car params" $drake/automotive/trajectory_car_params.named_vector
+gen_vector_proto "trajectory car params" $drake/automotive/trajectory_car_params.named_vector
