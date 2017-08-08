@@ -522,7 +522,8 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
   /// @param[out] data the rigid impact problem data.
   void CalcRigidImpactProblemData(const systems::Context<T>& context,
                                   const std::vector<Vector2<T>>& points,
-      multibody::rigid_constraint::RigidConstraintVelProblemData<T>* data) const;
+      multibody::rigid_constraint::RigidConstraintVelProblemData<T>* data)
+      const;
 
  private:
   friend class Rod2DDAETest;
