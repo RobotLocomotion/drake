@@ -143,7 +143,7 @@ _LIBDRAKE_COMPONENTS = [
     "//drake/multibody/rigid_body_plant:rigid_body_plant_that_publishes_xdot",
     "//drake/multibody:rigid_body_tree",
     "//drake/multibody:rigid_body_tree_construction",
-    "//drake/multibody/rigid_contact:rigid_contact",
+    "//drake/multibody/rigid_constraint:rigid_constraint",
     "//drake/multibody/shapes:shapes",
     "//drake/solvers:binding",
     "//drake/solvers:constraint",
