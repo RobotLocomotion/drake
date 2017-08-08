@@ -134,7 +134,7 @@ class MGKukaIIwaRobot {
   /// frames Na to A, Ab to B, Bc to C, ... Fg to G.  These torques arise from
   /// an inverse dynamics problem, namely each revolute motor specifies how its
   /// outboard mobilizer frame moves relative to its inboard mobilizer frame.
-  /// Given these specifies motion and the mass/inertia/geometry of the robot,
+  /// Given these specified motion and the mass/inertia/geometry of the robot,
   /// one can do the inverse dynamics problem of calculating the motor torques.
   ///
   /// For example, there is a z-axis revolute motor between ground N and link A
