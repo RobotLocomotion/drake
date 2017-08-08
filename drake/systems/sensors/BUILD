@@ -269,6 +269,8 @@ drake_cc_googletest(
     deps = [
         ":rotary_encoders",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:symbolic_test_util",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 
