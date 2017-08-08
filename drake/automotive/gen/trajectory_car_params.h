@@ -40,8 +40,8 @@ class TrajectoryCarParams : public systems::BasicVector<T> {
   typedef TrajectoryCarParamsIndices K;
 
   /// Default constructor.  Sets all rows to their default value:
-  /// @arg @c max_speed defaults to 45.0 in units of m/s.
-  /// @arg @c speed_limit_kp defaults to 10.0 in units of Hz.
+  /// @arg @c max_speed defaults to 45.0 m/s.
+  /// @arg @c speed_limit_kp defaults to 10.0 Hz.
   TrajectoryCarParams() : systems::BasicVector<T>(K::kNumCoordinates) {
     this->set_max_speed(45.0);
     this->set_speed_limit_kp(10.0);
