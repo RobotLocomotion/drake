@@ -61,7 +61,7 @@ class PidController : public StateFeedbackControllerInterface<T>,
    * Constructs a PID controller where some of the input states may not be
    * controlled. Assumes that @p kp, @p ki and @p kd have the same size. The
    * estimated and desired state input's size and the control output's size need
-   * to match @p feedback_selector. Note that @p state_selector only affects
+   * to match @p feedback_selector. Note that @p state_projection only affects
    * the estimated state input but not the desired state.
    * @param feedback_selector, The selection matrix indicating controlled
    * states, whose size should be 2 * @p kp's size by the size of the full
@@ -70,7 +70,12 @@ class PidController : public StateFeedbackControllerInterface<T>,
    * @param ki I gain.
    * @param kd D gain.
    */
-  PidController(const MatrixX<double>& state_selector,
+  PidController(const MatrixX<double>& state_projection,
+                const Eigen::VectorXd& kp, const Eigen::VectorXd& ki,
+                const Eigen::VectorXd& kd);
+
+  PidController(const MatrixX<double>& state_projection,
+                const MatrixX<double>& output_projection,
                 const Eigen::VectorXd& kp, const Eigen::VectorXd& ki,
                 const Eigen::VectorXd& kd);
 
@@ -185,7 +190,11 @@ class PidController : public StateFeedbackControllerInterface<T>,
   const int num_full_state_{0};
   // Projection matrix from full state to controlled state, whose size is
   // num_controlled_q_ * 2 X num_full_state_.
-  const MatrixX<double> state_selector_;
+  const MatrixX<double> state_projection_;
+
+  // Projection matrix from full state to controlled state, whose size is
+  // num_controlled_q_ * 2 X num_full_state_.
+  const MatrixX<double> output_projection_;
 
   int input_index_state_{-1};
   int input_index_desired_state_{-1};
