@@ -99,6 +99,7 @@ patchutils
 pkg-config
 python-dev
 python-numpy
+python-pygame
 python-sphinx
 valgrind
 zip
