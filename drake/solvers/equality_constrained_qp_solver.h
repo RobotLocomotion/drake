@@ -17,6 +17,13 @@ class EqualityConstrainedQPSolver : public MathematicalProgramSolverInterface {
 
   bool available() const override;
 
+  /**
+   * Solve the qudratic program with equality constraint.
+   * The user can set the following options
+   *  FeasibilityTol. The feasible solution (both primal and dual
+   *  variables) should satisfy their constraints, with error no
+   *  larger than this value. The default is Eigen::dummy_precision().
+   */
   SolutionResult Solve(MathematicalProgram& prog) const override;
 
   SolverId solver_id() const override;
