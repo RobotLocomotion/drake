@@ -1,5 +1,7 @@
 #pragma once
 
+#include <tuple>
+
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/constraint.h"
@@ -122,8 +124,16 @@ class GeneralNonlinearComplementaryConstraint {
    * @param prog The optimization program to be changed.
    * @param z The generalized nonlinear complementary constraint is imposed on
    * variable `z`.
+   * @return T. T is a tuple
+   * T.get<0>() The newly created bounding box constraint.
+   * T.get<1>() The newly created linear constraint.
+   * T.get<2>() The newly created nonlinear constraint.
+   * T.get<3>() The newly added slack variables.
    */
-  void AddConstraintToProgram(
+  std::tuple<solvers::Binding<solvers::BoundingBoxConstraint>,
+             solvers::Binding<solvers::LinearConstraint>,
+             solvers::Binding<solvers::Constraint>,
+             solvers::VectorXDecisionVariable> AddConstraintToProgram(
       solvers::MathematicalProgram* prog,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& z) const {
     return DoAddConstraintToProgram(prog, z);
@@ -141,7 +151,11 @@ class GeneralNonlinearComplementaryConstraint {
   const double complementary_epsilon_;
 
  private:
-  virtual void DoAddConstraintToProgram(
+  virtual std::tuple<solvers::Binding<solvers::BoundingBoxConstraint>,
+                     solvers::Binding<solvers::LinearConstraint>,
+                     solvers::Binding<solvers::Constraint>,
+                     solvers::VectorXDecisionVariable>
+  DoAddConstraintToProgram(
       solvers::MathematicalProgram* prog,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& z) const;
 };
