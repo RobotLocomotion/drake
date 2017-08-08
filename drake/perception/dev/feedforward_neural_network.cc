@@ -91,8 +91,8 @@ VectorX<T> FeedforwardNeuralNetwork<T>::EvaluateLayer(
     const VectorX<T>& layerInput, MatrixX<T> Weights, VectorX<T> bias,
     LayerType layer, NonlinearityType nonlinearity) const {
   // Only suppports fully-connected RELU at this time
-  DRAKE_ASSERT(layer == LayerType::FullyConnected);
-  DRAKE_ASSERT(nonlinearity == NonlinearityType::Relu);
+  DRAKE_DEMAND(layer == LayerType::FullyConnected);
+  DRAKE_DEMAND(nonlinearity == NonlinearityType::Relu);
   VectorX<T> layer_output = relu(Weights * layerInput + bias);
 
   return layer_output;

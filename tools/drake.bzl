@@ -24,6 +24,7 @@ GCC_FLAGS = CXX_FLAGS + [
     "-Werror=extra",
     "-Werror=return-local-addr",
     "-Werror=non-virtual-dtor",
+    "-Werror=unused-but-set-parameter",
     # TODO(jwnimmer-tri) Fix these warnings and remove this suppression.
     "-Wno-missing-field-initializers",
     # TODO(#2852) Turn on shadow checking for g++ once we use a version that
