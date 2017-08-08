@@ -31,6 +31,8 @@ class TestVectorSystem : public VectorSystem<double> {
   using VectorSystem<double>::DeclareDiscreteState;
   using VectorSystem<double>::DeclareAbstractInputPort;
   using VectorSystem<double>::DeclareAbstractOutputPort;
+  using VectorSystem<double>::EvalVectorInput;
+  using VectorSystem<double>::GetVectorState;
 
   // VectorSystem override.
   // N.B. This method signature might be used by many downstream projects.
@@ -226,6 +228,13 @@ TEST_F(VectorSystemTest, OutputStateless) {
   const auto& basic = output->GetValueOrThrow<BasicVector<double>>();
   EXPECT_EQ(basic.GetAtIndex(0), 1.0);
   EXPECT_EQ(basic.GetAtIndex(1), 2.0);
+
+  const auto& input = dut.EvalVectorInput(*context);
+  EXPECT_EQ(input.size(), 2);
+  EXPECT_EQ(input[0], 1.0);
+  EXPECT_EQ(input[1], 2.0);
+  const auto& state = dut.GetVectorState(*context);
+  EXPECT_EQ(state.size(), 0);
 }
 
 // Forwarding of CalcOutput with continuous state.
@@ -244,6 +253,11 @@ TEST_F(VectorSystemTest, OutputContinuous) {
   const auto& basic = output->GetValueOrThrow<BasicVector<double>>();
   EXPECT_EQ(basic.GetAtIndex(0), 2.0);
   EXPECT_EQ(basic.GetAtIndex(1), 3.0);
+
+  const auto& state = dut.GetVectorState(*context);
+  EXPECT_EQ(state.size(), 2);
+  EXPECT_EQ(state[0], 1.0);
+  EXPECT_EQ(state[1], 1.0);
 }
 
 // Forwarding of CalcOutput with discrete state.
@@ -266,6 +280,11 @@ TEST_F(VectorSystemTest, OutputDiscrete) {
   // Nothing else weird happened.
   EXPECT_EQ(dut.get_discrete_variable_updates_count(), 0);
   EXPECT_EQ(dut.get_time_derivatives_count(), 0);
+
+  const auto& state = dut.GetVectorState(*context);
+  EXPECT_EQ(state.size(), 2);
+  EXPECT_EQ(state[0], 1.0);
+  EXPECT_EQ(state[1], 1.0);
 }
 
 // Forwarding of CalcTimeDerivatives works.
@@ -333,6 +352,9 @@ class NoInputContinuousTimeSystem : public VectorSystem<double> {
     this->DeclareContinuousState(1);
   }
 
+  // Let test code abuse this by making it public.
+  using VectorSystem<double>::EvalVectorInput;
+
  private:
   virtual void DoCalcVectorTimeDerivatives(
       const drake::systems::Context<double>& context,
@@ -366,6 +388,9 @@ TEST_F(VectorSystemTest, NoInputContinuousTimeSystemTest) {
   auto output = dut.get_output_port().Allocate(*context);
   dut.get_output_port().Calc(*context, output.get());
   EXPECT_EQ(output->GetValueOrThrow<BasicVector<double>>().GetAtIndex(0), 1.0);
+
+  const auto& input = dut.EvalVectorInput(*context);
+  EXPECT_EQ(input.size(), 0);
 }
 
 class NoInputNoOutputDiscreteTimeSystem : public VectorSystem<double> {
