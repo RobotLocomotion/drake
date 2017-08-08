@@ -5,9 +5,9 @@
 namespace drake {
 namespace solvers {
 void AddLogarithmicSos2Constraint(
-    MathematicalProgram *prog,
-    const Eigen::Ref<const VectorX<symbolic::Expression>> &lambda,
-    const Eigen::Ref<const VectorXDecisionVariable> &y) {
+    MathematicalProgram* prog,
+    const Eigen::Ref<const VectorX<symbolic::Expression>>& lambda,
+    const Eigen::Ref<const VectorX<symbolic::Expression>>& y) {
   const int num_lambda = lambda.rows();
   for (int i = 0; i < num_lambda; ++i) {
     prog->AddLinearConstraint(lambda(i) >= 0);
@@ -17,11 +17,7 @@ void AddLogarithmicSos2Constraint(
   const int num_interval = num_lambda - 1;
   const int num_binary_vars = CeilLog2(num_interval);
   DRAKE_DEMAND(y.rows() == num_binary_vars);
-  for (int i = 0; i < num_binary_vars; ++i) {
-    DRAKE_ASSERT(y(i).get_type() == symbolic::Variable::Type::BINARY);
-  }
-  const auto gray_codes =
-      math::CalculateReflectedGrayCodes(num_binary_vars);
+  const auto gray_codes = math::CalculateReflectedGrayCodes(num_binary_vars);
   DRAKE_ASSERT(y.rows() == num_binary_vars);
   for (int j = 0; j < num_binary_vars; ++j) {
     symbolic::Expression lambda_sum1 = gray_codes(0, j) == 1 ? lambda(0) : 0;
@@ -60,10 +56,10 @@ void AddSos2Constraint(
 }
 
 void AddLogarithmicSos1Constraint(
-    MathematicalProgram *prog,
-    const Eigen::Ref<const VectorX<symbolic::Expression>> &lambda,
-    const Eigen::Ref<const VectorXDecisionVariable> &y,
-    const Eigen::Ref<const Eigen::MatrixXi> &codes) {
+    MathematicalProgram* prog,
+    const Eigen::Ref<const VectorX<symbolic::Expression>>& lambda,
+    const Eigen::Ref<const VectorXDecisionVariable>& y,
+    const Eigen::Ref<const Eigen::MatrixXi>& codes) {
   const int num_lambda = lambda.rows();
   const int num_digits = CeilLog2(num_lambda);
   DRAKE_DEMAND(codes.rows() == num_lambda && codes.cols() == num_digits);

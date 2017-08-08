@@ -1,7 +1,9 @@
 #pragma once
 
 #include <memory>
+#include <sstream>
 #include <typeindex>
+#include <typeinfo>
 #include <unordered_map>
 #include <utility>
 
@@ -22,6 +24,10 @@ namespace systems {
 /// Because it is not templated on a System subclass, this class can be used by
 /// LeafSystem without any direct knowledge of the subtypes being converted.
 /// In other words, it enables a runtime flavor of the CRTP.
+///
+/// Throughout this class, the template type `S` must be the most-derived
+/// concrete System subclass.  This object may only be used to convert
+/// System<U> objects of runtime type S<U>, not subclasses of S<U>.
 class SystemScalarConverter {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SystemScalarConverter);
@@ -167,7 +173,17 @@ namespace system_scalar_converter_detail {
 template <template <typename> class S, typename T, typename U>
 static std::unique_ptr<System<T>> Make(
     const System<U>& other, std::true_type) {
-  const auto& my_other = dynamic_cast<const S<U>&>(other);
+  // We require that system scalar conversion maintain the exact system type.
+  // Fail fast if `other` is not of exact type S<U>.
+  if (std::type_index{typeid(other)} != std::type_index{typeid(S<U>)}) {
+    std::ostringstream msg;
+    msg << "SystemScalarConverter::Convert was configured to convert a "
+        << NiceTypeName::Get<S<U>>() << " into a "
+        << NiceTypeName::Get<S<T>>() << " but was called with a "
+        << NiceTypeName::Get(other) << " at runtime";
+    throw std::runtime_error(msg.str());
+  }
+  const S<U>& my_other = dynamic_cast<const S<U>&>(other);
   return std::make_unique<S<T>>(my_other);
 }
 // When Traits says not to convert.
