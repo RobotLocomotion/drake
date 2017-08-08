@@ -69,11 +69,6 @@ struct ConfigurationLimitConstraint {
   /// dimension of generalized velocity) into time derivatives of g(q) ∈ ℝⁱ,
   /// or, in other words, ġ = Lv. Only used for general constraints.
   MatrixX<T> L;
-
-  /// This ℝⁱ vector is the time derivative of the matrix L (defined above)
-  /// times the generalized velocity (∈ ℝᵐ) of the rigid body system. Only used
-  /// for general constraints.
-  VectorX<T> Ldot_x_v;
 };
 
 /// Structure for describing unilateral constraints on configuration variables,
