@@ -137,7 +137,14 @@ void AddLogarithmicSos1Constraint(
     const Eigen::Ref<const VectorXDecisionVariable>& y,
     const Eigen::Ref<const Eigen::MatrixXi>& codes);
 
-enum class Binning {
+/**
+ * For a continuous variable whose range is cut into small intervals, we will
+ * use binary variables to represent which interval the continuous variable is
+ * in. We support two representations, either using logarithmic number of binary
+ * variables, or linear number of binary variables. For more details, @see
+ * AddLogarithmicSos2Constraint and AddSos2Constraint
+ */
+enum class IntervalBinning {
   kLogarithmic,
   kLinear
 };
@@ -191,13 +198,13 @@ AddBilinearProductMcCormickEnvelopeSos2(
     MathematicalProgram* prog, const symbolic::Variable& x,
     const symbolic::Variable& y, const symbolic::Expression& w,
     const DerivedPhiX& phi_x, const DerivedPhiY& phi_y, const DerivedBx& Bx,
-    const DerivedBy& By, Binning binning) {
+    const DerivedBy& By, IntervalBinning binning) {
   switch (binning) {
-    case Binning::kLogarithmic :
+    case IntervalBinning::kLogarithmic:
       DRAKE_ASSERT(Bx.rows() == CeilLog2(phi_x.rows() - 1));
       DRAKE_ASSERT(By.rows() == CeilLog2(phi_y.rows() - 1));
       break;
-    case Binning::kLinear :
+    case IntervalBinning::kLinear:
       DRAKE_ASSERT(Bx.rows() == phi_x.rows() - 1);
       DRAKE_ASSERT(By.rows() == phi_y.rows() - 1);
       break;
@@ -225,7 +232,7 @@ AddBilinearProductMcCormickEnvelopeSos2(
   prog->AddLinearConstraint(w == w_convex_combination);
 
   switch (binning) {
-    case Binning::kLogarithmic:
+    case IntervalBinning::kLogarithmic:
       AddLogarithmicSos2Constraint(
           prog, lambda.template cast<symbolic::Expression>().rowwise().sum(),
           Bx);
@@ -236,7 +243,7 @@ AddBilinearProductMcCormickEnvelopeSos2(
                                        .transpose(),
                                    By);
       break;
-    case Binning::kLinear:
+    case IntervalBinning::kLinear:
       AddSos2Constraint(
           prog, lambda.template cast<symbolic::Expression>().rowwise().sum(),
           Bx);

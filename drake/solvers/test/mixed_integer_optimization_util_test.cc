@@ -209,7 +209,7 @@ GTEST_TEST(TestLogarithmicSos1, Test5Lambda) {
 
 GTEST_TEST(TestBilinearProductMcCormickEnvelopeSos2, AddConstraint) {
   // Test if the return argument from
-  // AddBilinearProductMcCormickEnvelopeLogarithmicSos2 has the right type.
+  // AddBilinearProductMcCormickEnvelopeSos2 has the right type.
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<1>()(0);
   auto y = prog.NewContinuousVariables<1>()(0);
@@ -219,34 +219,32 @@ GTEST_TEST(TestBilinearProductMcCormickEnvelopeSos2, AddConstraint) {
   Eigen::VectorXd phi_x_dynamic = Eigen::VectorXd::LinSpaced(3, 0, 2);
   const Eigen::Vector4d phi_y_static = Eigen::Vector4d::LinSpaced(0, 3);
   Eigen::VectorXd phi_y_dynamic = Eigen::VectorXd::LinSpaced(4, 0, 3);
-  Vector1<symbolic::Expression> Bx =
-      prog.NewBinaryVariables<1>().cast<symbolic::Expression>();
-  Vector2<symbolic::Expression> By =
-      prog.NewBinaryVariables<2>().cast<symbolic::Expression>();
+  Vector1<symbolic::Expression> Bx = prog.NewBinaryVariables<1>();
+  Vector2<symbolic::Expression> By = prog.NewBinaryVariables<2>();
   auto lambda1 = AddBilinearProductMcCormickEnvelopeSos2(
       &prog, x, y, w, phi_x_static, phi_y_static, Bx, By,
-      Binning::kLogarithmic);
+      IntervalBinning::kLogarithmic);
   static_assert(
       std::is_same<decltype(lambda1), MatrixDecisionVariable<3, 4>>::value,
       "lambda should be a static matrix");
 
   auto lambda2 = AddBilinearProductMcCormickEnvelopeSos2(
       &prog, x, y, w, phi_x_dynamic, phi_y_static, Bx, By,
-      Binning::kLogarithmic);
+      IntervalBinning::kLogarithmic);
   static_assert(std::is_same<decltype(lambda2),
                              MatrixDecisionVariable<Eigen::Dynamic, 4>>::value,
                 "lambda's type is incorrect");
 
   auto lambda3 = AddBilinearProductMcCormickEnvelopeSos2(
       &prog, x, y, w, phi_x_static, phi_y_dynamic, Bx, By,
-      Binning::kLogarithmic);
+      IntervalBinning::kLogarithmic);
   static_assert(std::is_same<decltype(lambda3),
                              MatrixDecisionVariable<3, Eigen::Dynamic>>::value,
                 "lambda's type is incorrect");
 
   auto lambda4 = AddBilinearProductMcCormickEnvelopeSos2(
       &prog, x, y, w, phi_x_dynamic, phi_y_dynamic, Bx, By,
-      Binning::kLogarithmic);
+      IntervalBinning::kLogarithmic);
   static_assert(
       std::is_same<
           decltype(lambda4),
@@ -255,7 +253,7 @@ GTEST_TEST(TestBilinearProductMcCormickEnvelopeSos2, AddConstraint) {
 }
 
 class BilinearProductMcCormickEnvelopeSos2Test
-    : public ::testing::TestWithParam<std::tuple<int, int, Binning>> {
+    : public ::testing::TestWithParam<std::tuple<int, int, IntervalBinning>> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BilinearProductMcCormickEnvelopeSos2Test)
 
@@ -269,10 +267,12 @@ class BilinearProductMcCormickEnvelopeSos2Test
         y_{prog_.NewContinuousVariables<1>()(0)},
         phi_x_{Eigen::VectorXd::LinSpaced(num_interval_x_ + 1, 0, 1)},
         phi_y_{Eigen::VectorXd::LinSpaced(num_interval_y_ + 1, 0, 1)},
-        Bx_size_{binning_ == Binning::kLogarithmic? CeilLog2(num_interval_x_)
-                                      : num_interval_x_},
-        By_size_{binning_ == Binning::kLogarithmic ? CeilLog2(num_interval_y_)
-                                      : num_interval_y_},
+        Bx_size_{binning_ == IntervalBinning::kLogarithmic
+                     ? CeilLog2(num_interval_x_)
+                     : num_interval_x_},
+        By_size_{binning_ == IntervalBinning::kLogarithmic
+                     ? CeilLog2(num_interval_y_)
+                     : num_interval_y_},
         Bx_{prog_.NewBinaryVariables(Bx_size_)},
         By_{prog_.NewBinaryVariables(By_size_)} {}
 
@@ -280,7 +280,7 @@ class BilinearProductMcCormickEnvelopeSos2Test
   MathematicalProgram prog_;
   const int num_interval_x_;
   const int num_interval_y_;
-  const Binning binning_;
+  const IntervalBinning binning_;
   const symbolic::Variable w_;
   const symbolic::Variable x_;
   const symbolic::Variable y_;
@@ -310,10 +310,10 @@ TEST_P(BilinearProductMcCormickEnvelopeSos2Test, LinearObjectiveTest) {
   // is active. If we use logarithmic binning, then Bx_ and By_ take values in
   // the gray code, representing integer i and j, such that x is constrained in
   // [φx(i), φx(i+1)], y is constrained in [φy(j), φy(j+1)].
-  auto Bx_cnstr =
+  auto Bx_constraint =
       prog_.AddBoundingBoxConstraint(Eigen::VectorXd::Zero(Bx_.rows()),
                                      Eigen::VectorXd::Zero(Bx_.rows()), Bx_);
-  auto By_cnstr =
+  auto By_constraint =
       prog_.AddBoundingBoxConstraint(Eigen::VectorXd::Zero(By_.rows()),
                                      Eigen::VectorXd::Zero(By_.rows()), By_);
   VectorDecisionVariable<3> xyw{x_, y_, w_};
@@ -327,30 +327,30 @@ TEST_P(BilinearProductMcCormickEnvelopeSos2Test, LinearObjectiveTest) {
   for (int i = 0; i < num_interval_x_; ++i) {
     Eigen::VectorXd Bx_val(Bx_size_);
     switch (binning_) {
-      case Binning::kLogarithmic :
+      case IntervalBinning::kLogarithmic :
         Bx_val = gray_codes_x.cast<double>().row(i).transpose();
         break;
-      case Binning::kLinear :
+      case IntervalBinning::kLinear :
         Bx_val.setZero();
         Bx_val(i) = 1;
         break;
     }
 
-    Bx_cnstr.constraint()->UpdateLowerBound(Bx_val);
-    Bx_cnstr.constraint()->UpdateUpperBound(Bx_val);
+    Bx_constraint.constraint()->UpdateLowerBound(Bx_val);
+    Bx_constraint.constraint()->UpdateUpperBound(Bx_val);
     for (int j = 0; j < num_interval_y_; ++j) {
       Eigen::VectorXd By_val(By_size_);
       switch (binning_) {
-        case Binning::kLogarithmic :
+        case IntervalBinning::kLogarithmic :
           By_val = gray_codes_y.cast<double>().row(j).transpose();
           break;
-        case Binning::kLinear :
+        case IntervalBinning::kLinear :
           By_val.setZero();
           By_val(j) = 1;
           break;
       }
-      By_cnstr.constraint()->UpdateLowerBound(By_val);
-      By_cnstr.constraint()->UpdateUpperBound(By_val);
+      By_constraint.constraint()->UpdateLowerBound(By_val);
+      By_constraint.constraint()->UpdateUpperBound(By_val);
 
       // vertices.col(l) is the l'th vertex of the tetrahedron.
       Eigen::Matrix<double, 3, 4> vertices;
@@ -399,8 +399,9 @@ INSTANTIATE_TEST_CASE_P(
     TestMixedIntegerUtil, BilinearProductMcCormickEnvelopeSos2Test,
     ::testing::Combine(::testing::ValuesIn(std::vector<int>{2, 3}),
                        ::testing::ValuesIn(std::vector<int>{2, 3}),
-                       ::testing::ValuesIn(std::vector<Binning>{
-                           Binning::kLogarithmic, Binning::kLinear})));
+                       ::testing::ValuesIn(std::vector<IntervalBinning>{
+                           IntervalBinning::kLogarithmic,
+                           IntervalBinning::kLinear})));
 }  // namespace
 }  // namespace solvers
 }  // namespace drake
