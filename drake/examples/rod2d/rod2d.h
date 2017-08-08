@@ -418,7 +418,8 @@ class Rod2D : public systems::LeafSystem<T> {
   ///      and the halfspace will be approximately zero and that the vertical
   ///      velocity at the point of contact will be approximately zero.
   ///      Assertion failure is triggered if the rod is in a ballistic mode.
-T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
+  T CalcNormalAccelWithoutContactForces(
+      const systems::Context<T>& context) const;
 
   /// Evaluates the witness function for sliding direction changes. The witness
   /// function will bracket a zero crossing when the direction of sliding
@@ -520,8 +521,9 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
   /// points. Aborts if data is null.
   /// @param points a vector of contact points, expressed in the world frame.
   /// @param[out] data the rigid impact problem data.
-  void CalcRigidImpactProblemData(const systems::Context<T>& context,
-                                  const std::vector<Vector2<T>>& points,
+  void CalcRigidImpactProblemData(
+      const systems::Context<T>& context,
+      const std::vector<Vector2<T>>& points,
       multibody::rigid_constraint::RigidConstraintVelProblemData<T>* data)
       const;
 

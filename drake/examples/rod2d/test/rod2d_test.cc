@@ -198,8 +198,8 @@ class Rod2DDAETest : public ::testing::Test {
     dut_->GetContactPointsTangentVelocities(*context_, contacts, &tangent_vels);
 
     // Compute the problem data.
-    dut_->CalcRigidConstraintProblemData(*context_, contacts, tangent_vels,
-        data);
+    dut_->CalcRigidConstraintProblemData(
+        *context_, contacts, tangent_vels, data);
   }
 
   // Models an impact.
