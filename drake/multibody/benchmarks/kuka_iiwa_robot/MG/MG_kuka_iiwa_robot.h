@@ -51,13 +51,13 @@ using Vector7d = Eigen::Matrix<double, 7, 1>;
 template<typename T>
 class MGKukaIIwaRobot {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MGKukaIIwaRobot);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MGKukaIIwaRobot)
 
   /// Constructs an object that serves as Drake's interface to a Motion Genesis
   /// model of the aforementioned KUKA robot.  All model parameters are from:
   /// drake/multibody/benchmarks/kuka_iiwa_robot/kuka_iiwa_robot.urdf
   MGKukaIIwaRobot() {
-    static_assert(std::is_convertible<T, double>::value,
+    static_assert(std::is_same<T, double>::value,
                   "This class only supports T = double.");
   }
 
@@ -83,31 +83,31 @@ class MGKukaIIwaRobot {
                             const Eigen::Ref<const VectorX<T>>& qDt,
                             const Eigen::Ref<const VectorX<T>>& qDDt) const;
 
-  /// This method calculates joint reaction force/torques for the 7 revolute
-  /// motors that connect frames Na to A, Ab to B, Bc to C, ... Fg to G.
+  /// This method calculates joint reaction force/torques for the 7 mobilizers
+  /// that connect frames Na to A, Ab to B, Bc to C, ... Fg to G.
   ///
-  /// For example, there is a revolute motor between links A and B.
-  /// The set Sᴮ of forces exerted on link B by the revolute motor
+  /// For example, there is a revolute mobolizer (with motor actuation) between
+  /// links A and B. The set Sᴮ of forces exerted on link B by the mobolizer
   /// can be replaced by an equivalent set consisting of a single force f_Bo
   /// applied to point Bo of B, together with a couple of torque t_B on link B
   /// (t_B is equal to the moment of the set Sᴮ of forces about point Bo).
   ///
-  /// When the revolute motor is <b>massless</b>, one can prove that the set Sᴬ
-  /// of forces exerted on link A by the revolute motor has an action/reaction
+  /// When the mobolizer is <b>massless</b>, one can prove that the set Sᴬ
+  /// of forces exerted on link A by the mobolizer has an action/reaction
   /// effect on A.  Hence the set Sᴬ of forces on A can be replaced by an
   /// equivalent set consisting of a single force f_Abo = -f_Bo applied to the
   /// point Abo of A that is coincident with Bo, together with a couple of
   /// torque t_A = -t_B on link A (t_A is equal to the moment of the set Sᴬ of
   /// forces about point Abo).
   ///
-  /// The combination of the force f_Bo and torque t_B can be stored in a
-  /// spatial force defined as F_Bo = [f_Bo; t_B].  The spatial force can be
+  /// The combination of the torque t_B and force f_Bo can be stored in a
+  /// spatial force defined as F_Bo = [t_B; f_Bo].  The spatial force can be
   /// expressed in whatever basis is helpful (e.g., for computational efficiency
   /// or for human-meaningful interpretation).
   ///
-  /// Similarly, there is a revolute motor between links B and C.  The set of
-  /// forces on C by that revolute motor is equivalent to the spatial force
-  /// F_Co = [f_Co; t_C], where f_Co and t_C have analogous meanings as above.
+  /// Similarly, there is a mobolizer between links B and C.  The set of
+  /// forces on C by that mobolizer is equivalent to the spatial force
+  /// F_Co = [t_C; f_Co], where t_C and f_Co have analogous meanings as above.
   ///
   /// @param[in] q robot's joint angles (generalized coordinates).
   /// @param[in] qDt 1st-time-derivatives of q (q̇).
@@ -130,20 +130,23 @@ class MGKukaIIwaRobot {
                           const Eigen::Ref<const VectorX<T>>& qDt,
                           const Eigen::Ref<const VectorX<T>>& qDDt) const;
 
-  /// This method calculates the revolute motor torques for the 7 revolute
-  /// motors that connect frames Na to A, Ab to B, Bc to C, ... Fg to G.
+  /// This method calculates the torques for the 7 revolute motors that connect
+  /// frames Na to A, Ab to B, Bc to C, ... Fg to G.  These torques arise from
+  /// an inverse dynamics problem, namely each revolute motor specifies how its
+  /// outboard mobilizer frame moves relative to its inboard mobilizer frame.
+  /// Given these specifies motion and the mass/inertia/geometry of the robot,
+  /// one can do the inverse dynamics problem of calculating the motor torques.
   ///
-  /// For example, there is a z-axis revolute motor between ground N and link A.
-  /// The purpose of the revolute motor is to generate a `driving torque' tAz
-  /// on A, where tAz is the Az measure of the torque on A from the motor
-  /// Similarly, there is a driving torque tBz on B, tCz on C, ... tGz on G.
+  /// For example, there is a z-axis revolute motor between ground N and link A
+  /// that creates a torque tAz on A (tAz is the Az measure of the torque on A).
+  /// Similarly, there is a torque tBz on B, tCz on C, ... tGz on G.
   ///
   /// @param[in] q robot's joint angles (generalized coordinates).
   /// @param[in] qDt 1st-time-derivatives of q (q̇).
   /// @param[in] qDDt 2nd-time-derivatives of q (q̈).
   ///
-  /// @returns 7x1 matrix of machine-precision values for the revolute motor
-  /// driving torques tAz, tBz, tCz, tDz, tEz, tFz, tGz.
+  /// @returns 7x1 matrix of machine-precision values for the actuation
+  /// (generalized) torques tAz, tBz, tCz, tDz, tEz, tFz, tGz.
   Vector7d
   CalcRevoluteMotorZTorques(const Eigen::Ref<const VectorX<T>>& q,
                             const Eigen::Ref<const VectorX<T>>& qDt,
@@ -157,14 +160,14 @@ class MGKukaIIwaRobot {
   // @param[in] qDt 1st-time-derivatives of q (q̇).
   // @param[in] qDDt 2nd-time-derivatives of q (q̈).
   //
-  // @Note: There is no return value because all quantities are calculated
+  // @note: There is no return value because all quantities are calculated
   //        and available as public members of MG_kuka_auto_generated.
-  void CalcMGOutput(const Eigen::Ref<const VectorX<T>>& q,
-                    const Eigen::Ref<const VectorX<T>>& qDt,
-                    const Eigen::Ref<const VectorX<T>>& qDDt) const;
+  void PrepareMGOutput(const Eigen::Ref<const VectorX<T>>& q,
+                       const Eigen::Ref<const VectorX<T>>& qDt,
+                       const Eigen::Ref<const VectorX<T>>& qDDt) const;
 
   // Class that holds MotionGenesis auto-generated code for Kuka robot.
-  mutable MotionGenesis::MGKukaIIwaRobotAutoGenerated MG_kuka_auto_generated;
+  mutable MotionGenesis::MGKukaIIwaRobotAutoGenerated MG_kuka_auto_generated_;
 };
 
 }  // namespace MG
