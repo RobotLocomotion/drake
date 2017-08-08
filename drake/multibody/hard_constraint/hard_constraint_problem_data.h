@@ -5,6 +5,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/hard_constraint/configuration_limit_constraint.h"
 
 namespace drake {
 namespace multibody {
@@ -83,6 +84,10 @@ struct HardConstraintAccelProblemData {
   /// effects for sliding contacts.
   MatrixX<T> N_minus_mu_Q;
 
+  /// The ℓ-dimensional vector of unilateral configuration limit constraints.
+  /// These constraints cannot currently impart any frictional forces.
+  std::vector<ConfigurationLimitAccelConstraint> limit_constraints;
+
   /// The ℝᵐ vector f, the generalized external force vector that
   /// comprises gravitational, centrifugal, Coriolis, actuator, etc. forces. m
   /// is the dimension of the generalized force, which is also equal to the
@@ -130,6 +135,10 @@ struct HardConstraintVelProblemData {
   /// above indicates that every one of the n contacts uses the same "r", the
   /// code imposes no such requirement.
   MatrixX<T> F;
+
+  /// The ℓ-dimensional vector of unilateral configuration limit constraints.
+  /// These constraints cannot currently impart any frictional forces.
+  std::vector<ConfigurationLimitConstraint> limit_constraints;
 
   /// The ℝᵐ vector v, the generalized velocity immediately before any impulsive
   /// forces (from impact) are applied.
