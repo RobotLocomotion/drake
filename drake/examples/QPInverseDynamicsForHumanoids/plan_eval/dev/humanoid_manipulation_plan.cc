@@ -148,8 +148,8 @@ void HumanoidManipulationPlan<T>::HandlePlanGenericPlanDerived(
 
     for (auto& body_knots_pair : body_knots) {
       const RigidBody<T>* body = body_knots_pair.first;
-      std::vector<Isometry3<T>>& body_knots = body_knots_pair.second;
-      body_knots.push_back(robot.CalcBodyPoseInWorldFrame(cache, *body));
+      std::vector<Isometry3<T>>& knots = body_knots_pair.second;
+      knots.push_back(robot.CalcBodyPoseInWorldFrame(cache, *body));
     }
 
     // Computes com.
@@ -183,11 +183,11 @@ void HumanoidManipulationPlan<T>::HandlePlanGenericPlanDerived(
   {
     for (const auto& body_knots_pair : body_knots) {
       const RigidBody<T>* body = body_knots_pair.first;
-      const std::vector<Isometry3<T>>& body_knots = body_knots_pair.second;
+      const std::vector<Isometry3<T>>& knots = body_knots_pair.second;
 
       manipulation::PiecewiseCartesianTrajectory<T> body_traj =
           manipulation::PiecewiseCartesianTrajectory<
-              T>::MakeCubicLinearWithEndLinearVelocity(times, body_knots,
+              T>::MakeCubicLinearWithEndLinearVelocity(times, knots,
                                                        Vector3<T>::Zero(),
                                                        Vector3<T>::Zero());
 
