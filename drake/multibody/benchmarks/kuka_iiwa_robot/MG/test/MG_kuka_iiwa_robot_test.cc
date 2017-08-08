@@ -11,7 +11,10 @@ namespace drake {
 namespace multibody {
 namespace benchmarks {
 namespace kuka_iiwa_robot {
+namespace MG {
 namespace {
+
+using Vector7d = Eigen::Matrix<double, 7, 1>;
 
 // Function to compare Kuka iiwa robot arm end-effector (frame G)'s orientation
 // position, angular velocity, velocity in World (frame N) to expected solution.
@@ -24,16 +27,16 @@ namespace {
 // w_NG_N_expected    |  G's angular velocity in N, expressed in N.
 // v_NGo_N_expected   |  Go's velocity in N, expressed in N.
 void CompareEndEffectorPositionVelocityVsExpectedSolution(
-    const Eigen::Matrix<double, 7, 1>& q,
-    const Eigen::Matrix<double, 7, 1>& qDt,
-    const Eigen::Matrix<double, 7, 1>& qDDt,
-    const Eigen::Matrix3d& R_NG_expected,
-    const Eigen::Vector3d& p_No_Go_N_expected,
-    const Eigen::Vector3d& w_NG_N_expected,
-    const Eigen::Vector3d& v_NGo_N_expected,
-    const Eigen::Vector3d& alpha_NG_N_expected,
-    const Eigen::Vector3d& a_NGo_N_expected) {
-  MG::MGKukaIIwaRobot<double> MG_kuka_robot;
+    const Vector7d &q,
+    const Vector7d &qDt,
+    const Vector7d &qDDt,
+    const Eigen::Matrix3d &R_NG_expected,
+    const Eigen::Vector3d &p_No_Go_N_expected,
+    const Eigen::Vector3d &w_NG_N_expected,
+    const Eigen::Vector3d &v_NGo_N_expected,
+    const Eigen::Vector3d &alpha_NG_N_expected,
+    const Eigen::Vector3d &a_NGo_N_expected) {
+  MGKukaIIwaRobot<double> MG_kuka_robot;
   // R_NG       | Rotation matrix relating Nx, Ny, Nz to Gx, Gy, Gz.
   // p_NoGo_N   | Go's position from No, expressed in N.
   // w_NG_N     | G's angular velocity in N, expressed in N.
@@ -70,7 +73,7 @@ GTEST_TEST(KukaIIwaRobot, ForwardKinematicsA) {
   const double qG = 0.0, qGDt = 0.0, qGDDt = 0.0;
 
   // Create a state with joint angles (q) and their time-derivatives (qDt).
-  Eigen::Matrix<double, 7, 1> q, q_Dt, q_DDt;
+  Vector7d q, q_Dt, q_DDt;
   q << qA, qB, qC, qD, qE, qF, qG;
   q_Dt << qADt, qBDt, qCDt, qDDt, qEDt, qFDt, qGDt;
   q_DDt << qADDt, qBDDt, qCDDt, qDDDt, qEDDt, qFDDt, qGDDt;
@@ -111,7 +114,7 @@ GTEST_TEST(KukaIIwaRobot, ForwardKinematicsB) {
   const double qG = q60, qGDt = 0.0, qGDDt = 0.0;
 
   // Create a state with joint angles (q) and their time-derivatives (qDt).
-  Eigen::Matrix<double, 7, 1> q, q_Dt, q_DDt;
+  Vector7d q, q_Dt, q_DDt;
   q << qA, qB, qC, qD, qE, qF, qG;
   q_Dt << qADt, qBDt, qCDt, qDDt, qEDt, qFDt, qGDt;
   q_DDt << qADDt, qBDDt, qCDDt, qDDDt, qEDDt, qFDDt, qGDDt;
@@ -139,7 +142,46 @@ GTEST_TEST(KukaIIwaRobot, ForwardKinematicsB) {
                                                        a_NGo_N_expected);
 }
 
+// Test accuracy of calculations for Kuka iiwa robot arm torque motors.
+// when the Kuka arm has all joint angles = 0 rad, all joint rates = 0 rad/sec,
+// and all joint angular accelerations = 0 rad/sec^2.  Then redo test
+// except with qGDDt = 1.0 rad/sec^2 (torque on link G).
+GTEST_TEST(KukaIIwaRobot, TorqueMotorA) {
+  const double qA = 0.0, qADt = 0.0, qADDt = 0.0;
+  const double qB = 0.0, qBDt = 0.0, qBDDt = 0.0;
+  const double qC = 0.0, qCDt = 0.0, qCDDt = 0.0;
+  const double qD = 0.0, qDDt = 0.0, qDDDt = 0.0;
+  const double qE = 0.0, qEDt = 0.0, qEDDt = 0.0;
+  const double qF = 0.0, qFDt = 0.0, qFDDt = 0.0;
+  const double qG = 0.0, qGDt = 0.0, qGDDt = 0.0;
+
+  // Create a state with joint angles (q) and their time-derivatives (qDt).
+  Vector7d q, q_Dt, q_DDt;
+  q << qA, qB, qC, qD, qE, qF, qG;
+  q_Dt << qADt, qBDt, qCDt, qDDt, qEDt, qFDt, qGDt;
+  q_DDt << qADDt, qBDDt, qCDDt, qDDDt, qEDDt, qFDDt, qGDDt;
+
+  // MotionGenesis (MG) solution for the motor torques to hold the robot static.
+  MGKukaIIwaRobot<double> MG_kuka_robot;
+  Vector7d torques = MG_kuka_robot.CalcRevoluteMotorZTorques(q, q_Dt, q_DDt);
+
+  // Expected solution for the motor torques to hold the robot static.
+  Vector7d torques_expected;
+  torques_expected << 0, 0, 0, 0, 0, 0, 0;
+
+  // Compare MG results with expected results.
+  constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(torques.isApprox(torques_expected, kEpsilon));
+
+  // Redo test with last motor creating 1 rad/sec^2 angular acceleration on G.
+  q_DDt(6) = 1.0;
+  torques = MG_kuka_robot.CalcRevoluteMotorZTorques(q, q_Dt, q_DDt);
+  torques_expected << 0.001, 0, 0.001, 0, 0.001, 0, 0.001;
+  EXPECT_TRUE(torques.isApprox(torques_expected, 20 * kEpsilon));
+}
+
 }  // namespace
+}  // namespace MG
 }  // namespace kuka_iiwa_robot
 }  // namespace benchmarks
 }  // namespace multibody
