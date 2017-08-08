@@ -1,7 +1,5 @@
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/MG/MG_kuka_iiwa_robot.h"
 
-#include "drake/common/extract_double.h"
-
 namespace drake {
 namespace multibody {
 namespace benchmarks {
@@ -15,7 +13,7 @@ template<typename T>
 void MGKukaIIwaRobot<T>::CalcMGOutput(
     const Eigen::Ref<const VectorX<T>>& q,
     const Eigen::Ref<const VectorX<T>>& qDt,
-    const Eigen::Ref<const VectorX<T>>& qDDt) {
+    const Eigen::Ref<const VectorX<T>>& qDDt) const {
   // Form a continuous vector of joint angles and their time-derivatives.
   const Eigen::Index size = q.size() + qDt.size() + qDDt.size();
   VectorX<double> joint_angles_and_1st_2nd_derivatives(size);
@@ -33,7 +31,7 @@ std::tuple<Matrix3d, Vector3d, Vector3d, Vector3d, Vector3d, Vector3d>
 MGKukaIIwaRobot<T>::CalcEndEffectorKinematics(
     const Eigen::Ref<const VectorX<T>>& q,
     const Eigen::Ref<const VectorX<T>>& qDt,
-    const Eigen::Ref<const VectorX<T>>& qDDt) {
+    const Eigen::Ref<const VectorX<T>>& qDDt) const {
   // Calculate forward kinematics of end-effector with MotionGenesis.
   CalcMGOutput(q, qDt, qDDt);
 
@@ -61,7 +59,7 @@ std::tuple<SpatialForced, SpatialForced, SpatialForced, SpatialForced,
 MGKukaIIwaRobot<T>::CalcJointReactionForces(
     const Eigen::Ref<const VectorX<T>>& q,
     const Eigen::Ref<const VectorX<T>>& qDt,
-    const Eigen::Ref<const VectorX<T>>& qDDt) {
+    const Eigen::Ref<const VectorX<T>>& qDDt) const {
   // Calculate joint reaction torque/forces with MotionGenesis.
   CalcMGOutput(q, qDt, qDDt);
 
@@ -90,7 +88,7 @@ template<typename T>
 Vector7d MGKukaIIwaRobot<T>::CalcRevoluteMotorZTorques(
     const Eigen::Ref<const VectorX<T>>& q,
     const Eigen::Ref<const VectorX<T>>& qDt,
-    const Eigen::Ref<const VectorX<T>>& qDDt) {
+    const Eigen::Ref<const VectorX<T>>& qDDt) const {
   // Calculate joint driving torques with MotionGenesis.
   CalcMGOutput(q, qDt, qDDt);
 

@@ -15,9 +15,8 @@ drake_cc_library(
         "drake_kuka_iiwa_robot.h",
     ],
     deps = [
-        "//drake/common:autodiff",
-        "//drake/common:extract_double",
-        "//drake/multibody/multibody_tree/math:spatial_force",
+        "//drake/math:geometric_transform",
+        "//drake/multibody/multibody_tree",
     ],
 )
 
@@ -28,9 +27,7 @@ drake_cc_googletest(
     size = "small",
     deps = [
         ":kuka_iiwa_robot_library",
-        "//drake/math:geometric_transform",
         "//drake/multibody/benchmarks/kuka_iiwa_robot/MG:MG_kuka_robot_lib",
-        "//drake/multibody/multibody_tree",
     ],
 )
 

@@ -163,21 +163,21 @@ GTEST_TEST(KukaIIwaRobot, TorqueMotorA) {
 
   // MotionGenesis (MG) solution for the motor torques to hold the robot static.
   MGKukaIIwaRobot<double> MG_kuka_robot;
-  Vector7d torques = MG_kuka_robot.CalcRevoluteMotorZTorques(q, q_Dt, q_DDt);
+  Vector7d zTorques = MG_kuka_robot.CalcRevoluteMotorZTorques(q, q_Dt, q_DDt);
 
   // Expected solution for the motor torques to hold the robot static.
-  Vector7d torques_expected;
-  torques_expected << 0, 0, 0, 0, 0, 0, 0;
+  Vector7d zTorques_expected;
+  zTorques_expected << 0, 0, 0, 0, 0, 0, 0;
 
   // Compare MG results with expected results.
   constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
-  EXPECT_TRUE(torques.isApprox(torques_expected, kEpsilon));
+  EXPECT_TRUE(zTorques.isApprox(zTorques_expected, kEpsilon));
 
   // Redo test with last motor creating 1 rad/sec^2 angular acceleration on G.
   q_DDt(6) = 1.0;
-  torques = MG_kuka_robot.CalcRevoluteMotorZTorques(q, q_Dt, q_DDt);
-  torques_expected << 0.001, 0, 0.001, 0, 0.001, 0, 0.001;
-  EXPECT_TRUE(torques.isApprox(torques_expected, 20 * kEpsilon));
+  zTorques = MG_kuka_robot.CalcRevoluteMotorZTorques(q, q_Dt, q_DDt);
+  zTorques_expected << 0.001, 0, 0.001, 0, 0.001, 0, 0.001;
+  EXPECT_TRUE(zTorques.isApprox(zTorques_expected, 20 * kEpsilon));
 }
 
 }  // namespace
