@@ -1,4 +1,4 @@
-# GENERATED FILE DO NOT EDIT
+// GENERATED FILE DO NOT EDIT
 //------------------------------------------------------------------------------
 // File: MGKukaIIwaRobot.cc created Jul 31 2017 by MotionGenesis 5.9.
 // Portions copyright (c) 2009-2017 Motion Genesis LLC. are licensed under

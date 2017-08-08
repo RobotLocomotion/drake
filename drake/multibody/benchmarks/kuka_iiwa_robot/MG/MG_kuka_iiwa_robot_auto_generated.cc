@@ -1,4 +1,4 @@
-# GENERATED FILE DO NOT EDIT
+// GENERATED FILE DO NOT EDIT
 //------------------------------------------------------------------------------
 // File: Created May 25 2017 by MotionGenesis 5.9.
 // Portions copyright (c) 2009-2017 Motion Genesis LLC. are licensed under
