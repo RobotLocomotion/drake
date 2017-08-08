@@ -110,14 +110,18 @@ class PendulumTests : public ::testing::Test {
   void CreatePendulumModel() {
     // Spatial inertia of the upper link about its frame U and expressed in U.
     Vector3d link1_com_U = Vector3d::Zero();  // U is at the link's COM.
+    // For a thin rod in the x-y plane, the inertia bout the y axis can be
+    // neglected. Therefore we make Iyy = 0.
     UnitInertia<double> G_U(
-        0.0 /* Ixx */, link1_Ic_ /* Iyy */, link1_Ic_ /* Izz */);
+        link1_Ic_ /* Ixx */, 0.0 /* Iyy */, link1_Ic_ /* Izz */);
     SpatialInertia<double> M_U(link1_mass_, link1_com_U, G_U);
 
     // Spatial inertia of the lower link about its frame L and expressed in L.
     Vector3d link2_com_L = Vector3d::Zero();  // L is at the link's COM.
+    // For a thin rod in the x-y plane, the inertia bout the y axis can be
+    // neglected. Therefore we make Iyy = 0.
     UnitInertia<double> G_L(
-        0.0 /* Ixx */, link2_Ic_ /* Iyy */, link2_Ic_ /* Izz */);
+        link2_Ic_ /* Ixx */, 0.0 /* Iyy */, link2_Ic_ /* Izz */);
     SpatialInertia<double> M_L(link2_mass_, link2_com_L, G_L);
 
     // Adds the upper and lower links of the pendulum.
