@@ -83,17 +83,17 @@ class MGKukaIIwaRobot {
                             const Eigen::Ref<const VectorX<T>>& qDt,
                             const Eigen::Ref<const VectorX<T>>& qDDt) const;
 
-  /// This method calculates joint reaction force/torques for the 7 mobilizers
+  /// This method calculates joint reaction force/torques for the 7 joints
   /// that connect frames Na to A, Ab to B, Bc to C, ... Fg to G.
   ///
-  /// For example, there is a revolute mobolizer (with motor actuation) between
-  /// links A and B. The set Sᴮ of forces exerted on link B by the mobolizer
+  /// For example, there is a revolute joint (with motor actuation) between
+  /// links A and B. The set Sᴮ of forces exerted on link B by the joint
   /// can be replaced by an equivalent set consisting of a single force f_Bo
   /// applied to point Bo of B, together with a couple of torque t_B on link B
   /// (t_B is equal to the moment of the set Sᴮ of forces about point Bo).
   ///
-  /// When the mobolizer is <b>massless</b>, one can prove that the set Sᴬ
-  /// of forces exerted on link A by the mobolizer has an action/reaction
+  /// When the joint/motor is <b>massless</b>, one can prove that the set Sᴬ
+  /// of forces exerted on link A by the joint has an action/reaction
   /// effect on A.  Hence the set Sᴬ of forces on A can be replaced by an
   /// equivalent set consisting of a single force f_Abo = -f_Bo applied to the
   /// point Abo of A that is coincident with Bo, together with a couple of
@@ -105,8 +105,8 @@ class MGKukaIIwaRobot {
   /// expressed in whatever basis is helpful (e.g., for computational efficiency
   /// or for human-meaningful interpretation).
   ///
-  /// Similarly, there is a mobolizer between links B and C.  The set of
-  /// forces on C by that mobolizer is equivalent to the spatial force
+  /// Similarly, there is a joint between links B and C.  The set of
+  /// forces on C by that mobilizer is equivalent to the spatial force
   /// F_Co = [t_C; f_Co], where t_C and f_Co have analogous meanings as above.
   ///
   /// @param[in] q robot's joint angles (generalized coordinates).

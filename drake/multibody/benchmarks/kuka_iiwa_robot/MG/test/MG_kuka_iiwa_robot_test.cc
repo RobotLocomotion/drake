@@ -174,10 +174,34 @@ GTEST_TEST(KukaIIwaRobot, TorqueMotorA) {
   EXPECT_TRUE(zTorques.isApprox(zTorques_expected, kEpsilon));
 
   // Redo test with last motor creating 1 rad/sec^2 angular acceleration on G.
-  q_DDt(6) = 1.0;
+  q_DDt(6) = 1000;
   zTorques = MG_kuka_robot.CalcRevoluteMotorZTorques(q, q_Dt, q_DDt);
-  zTorques_expected << 0.001, 0, 0.001, 0, 0.001, 0, 0.001;
-  EXPECT_TRUE(zTorques.isApprox(zTorques_expected, 20 * kEpsilon));
+  zTorques_expected << 1, 0, 1, 0, 1, 0, 1;
+  EXPECT_TRUE(zTorques.isApprox(zTorques_expected, 40 * kEpsilon));
+
+  // Calculate the joint reaction torques/forces.
+  SpatialForced F_Ao_Na, F_Bo_Ab, F_Co_Bc, F_Do_Cd, F_Eo_De, F_Fo_Ef, F_Go_Fg;
+  std::tie(F_Ao_Na, F_Bo_Ab, F_Co_Bc, F_Do_Cd, F_Eo_De, F_Fo_Ef, F_Go_Fg) =
+      MG_kuka_robot.CalcJointReactionForces(q, q_Dt, q_DDt);
+
+  // Create the expected solution for the joint reaction torque/forces.
+  Eigen::Vector3d zero_vector(0, 0, 0), y_vector(0, 1, 0), z_vector(0, 0, 1);
+  SpatialForced F_Ao_Na_expected(z_vector, zero_vector);
+  SpatialForced F_Bo_Ab_expected(y_vector, zero_vector);
+  SpatialForced F_Co_Bc_expected(z_vector, zero_vector);
+  SpatialForced F_Do_Cd_expected(y_vector, zero_vector);
+  SpatialForced F_Eo_De_expected(z_vector, zero_vector);
+  SpatialForced F_Fo_Ef_expected(y_vector, zero_vector);
+  SpatialForced F_Go_Fg_expected(z_vector, zero_vector);
+
+  // Compare the joint reaction torques/forces with expected results.
+  EXPECT_TRUE(F_Ao_Na.IsApprox(F_Ao_Na_expected, 40 * kEpsilon));
+  EXPECT_TRUE(F_Bo_Ab.IsApprox(F_Bo_Ab_expected, 40 * kEpsilon));
+  EXPECT_TRUE(F_Co_Bc.IsApprox(F_Co_Bc_expected, 40 * kEpsilon));
+  EXPECT_TRUE(F_Do_Cd.IsApprox(F_Do_Cd_expected, 40 * kEpsilon));
+  EXPECT_TRUE(F_Eo_De.IsApprox(F_Eo_De_expected, 40 * kEpsilon));
+  EXPECT_TRUE(F_Fo_Ef.IsApprox(F_Fo_Ef_expected, 40 * kEpsilon));
+  EXPECT_TRUE(F_Go_Fg.IsApprox(F_Go_Fg_expected, 40 * kEpsilon));
 }
 
 }  // namespace
