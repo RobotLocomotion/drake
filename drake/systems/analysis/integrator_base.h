@@ -1455,7 +1455,6 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
       SPDLOG_DEBUG(drake::log(), "Sub-step failed at {}", adjusted_step_size);
       adjusted_step_size *= subdivision_factor_;
       ValidateSmallerStepSize(current_step_size, adjusted_step_size);
-      dt_was_artificially_limited = true;
       ++num_shrinkages_from_substep_failures_;
       ++num_substep_failures_;
     }
@@ -1476,7 +1475,10 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
       if (at_minimum_step_size) {
         ideal_next_step_size_ = get_working_minimum_step_size();
       } else {
-        ideal_next_step_size_ = next_step_size;
+        // Only update the next step size (retain the previous one) if the
+        // step size was not artificially limited.
+        if (!dt_was_artificially_limited)
+          ideal_next_step_size_ = next_step_size;
       }
 
       if (isnan(get_actual_initial_step_size_taken()))
@@ -1588,7 +1590,8 @@ std::pair<bool, T> IntegratorBase<T>::CalcAdjustedStepSize(
   T new_step_size(-1);
 
   // First, make a first guess at the next step size to use based on
-  // the supplied error norm. Watch out for NaN!
+  // the supplied error norm. Watch out for NaN. Further adjustments will be
+  // made in blocks of code that follow.
   if (isnan(err) || isinf(err))  // e.g., integrand returned NaN.
     new_step_size = kMinShrink * current_step_size;
   else if (err == 0)  // A "perfect" step; can happen if no dofs for example.
