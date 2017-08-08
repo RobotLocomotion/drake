@@ -12,9 +12,9 @@ load("//tools:lint.bzl", "add_lint_tests")
 package(default_visibility = ["//visibility:public"])
 
 drake_cc_library(
-    name = "rigid_constraint",
+    name = "hard_constraint",
     hdrs = [
-        "rigid_constraint_problem_data.h",
+        "hard_constraint_problem_data.h",
     ],
     deps = [
         "//drake/common",
@@ -22,13 +22,13 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "rigid_constraint_solver",
-    srcs = ["rigid_constraint_solver.cc"],
+    name = "hard_constraint_solver",
+    srcs = ["hard_constraint_solver.cc"],
     hdrs = [
-        "rigid_constraint_solver.h",
+        "hard_constraint_solver.h",
     ],
     deps = [
-        ":rigid_constraint",
+        ":hard_constraint",
         "//drake/solvers:mathematical_program",
     ],
 )
@@ -36,9 +36,9 @@ drake_cc_library(
 # === test/ ===
 
 drake_cc_googletest(
-    name = "rigid_constraint_solver_test",
+    name = "hard_constraint_solver_test",
     deps = [
-        ":rigid_constraint_solver",
+        ":hard_constraint_solver",
         "//drake/examples/rod2d",
     ],
 )

@@ -500,11 +500,11 @@ Matrix2<T> Rod2D<T>::GetNonSlidingContactFrameToWorldTransform() const {
 }
 
 template <class T>
-void Rod2D<T>::CalcRigidConstraintProblemData(
+void Rod2D<T>::CalcHardConstraintProblemData(
     const systems::Context<T>& context,
     const std::vector<Vector2<T>>& points,
     const std::vector<T>& tangent_vels,
-    multibody::rigid_constraint::RigidConstraintAccelProblemData<T>* data)
+    multibody::hard_constraint::HardConstraintAccelProblemData<T>* data)
     const {
   using std::abs;
   DRAKE_DEMAND(data);
@@ -606,7 +606,7 @@ template <class T>
 void Rod2D<T>::CalcRigidImpactProblemData(
     const systems::Context<T>& context,
     const std::vector<Vector2<T>>& points,
-    multibody::rigid_constraint::RigidConstraintVelProblemData<T>* data) const {
+    multibody::hard_constraint::HardConstraintVelProblemData<T>* data) const {
   using std::abs;
   DRAKE_DEMAND(data);
 

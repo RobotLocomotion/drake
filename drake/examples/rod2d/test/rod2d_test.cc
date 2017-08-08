@@ -5,12 +5,12 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/multibody/rigid_constraint/rigid_constraint_problem_data.h"
-#include "drake/multibody/rigid_constraint/rigid_constraint_solver.h"
+#include "drake/multibody/hard_constraint/hard_constraint_problem_data.h"
+#include "drake/multibody/hard_constraint/hard_constraint_solver.h"
 #include "drake/systems/analysis/simulator.h"
 
-using drake::multibody::rigid_constraint::RigidConstraintAccelProblemData;
-using drake::multibody::rigid_constraint::RigidConstraintVelProblemData;
+using drake::multibody::hard_constraint::HardConstraintAccelProblemData;
+using drake::multibody::hard_constraint::HardConstraintVelProblemData;
 using drake::systems::VectorBase;
 using drake::systems::BasicVector;
 using drake::systems::ContinuousState;
@@ -179,7 +179,7 @@ class Rod2DDAETest : public ::testing::Test {
 
   // Computes rigid impact data.
   void CalcRigidImpactVelProblemData(
-      RigidConstraintVelProblemData<double>* data) {
+      HardConstraintVelProblemData<double>* data) {
     // Get the points of contact.
     std::vector<Vector2d> contacts;
     dut_->GetContactPoints(*context_, &contacts);
@@ -189,8 +189,8 @@ class Rod2DDAETest : public ::testing::Test {
   }
 
   // Computes rigid contact data.
-  void CalcRigidConstraintAccelProblemData(
-      RigidConstraintAccelProblemData<double>* data) {
+  void CalcHardConstraintAccelProblemData(
+      HardConstraintAccelProblemData<double>* data) {
     // Get the points of contact and contact tangent velocities.
     std::vector<Vector2d> contacts;
     std::vector<double> tangent_vels;
@@ -198,13 +198,13 @@ class Rod2DDAETest : public ::testing::Test {
     dut_->GetContactPointsTangentVelocities(*context_, contacts, &tangent_vels);
 
     // Compute the problem data.
-    dut_->CalcRigidConstraintProblemData(
+    dut_->CalcHardConstraintProblemData(
         *context_, contacts, tangent_vels, data);
   }
 
   // Models an impact.
   void ModelImpact() {
-    RigidConstraintVelProblemData<double> data;
+    HardConstraintVelProblemData<double> data;
     CalcRigidImpactVelProblemData(&data);
     VectorX<double> cf;
     contact_solver_.SolveImpactProblem(dut_->get_cfm(), data, &cf);
@@ -220,7 +220,7 @@ class Rod2DDAETest : public ::testing::Test {
 
   // Checks consistency of rigid contact problem data.
   void CheckProblemConsistency(
-      const RigidConstraintAccelProblemData<double>& data,
+      const HardConstraintAccelProblemData<double>& data,
       int num_contacts) {
     EXPECT_EQ(num_contacts, data.sliding_contacts.size() +
         data.non_sliding_contacts.size());
@@ -244,7 +244,7 @@ class Rod2DDAETest : public ::testing::Test {
 
   // Checks consistency of rigid impact problem data.
   void CheckProblemConsistency(
-      const RigidConstraintVelProblemData<double>& data,
+      const HardConstraintVelProblemData<double>& data,
       int num_contacts) {
     EXPECT_EQ(num_contacts, data.mu.size());
     EXPECT_EQ(num_contacts, data.r.size());
@@ -258,7 +258,7 @@ class Rod2DDAETest : public ::testing::Test {
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<ContinuousState<double>> derivatives_;
-  drake::multibody::rigid_constraint::RigidConstraintSolver<double>
+  drake::multibody::hard_constraint::HardConstraintSolver<double>
       contact_solver_;
 };
 
@@ -969,8 +969,8 @@ TEST_F(Rod2DDAETest, RigidContactProblemDataBallistic) {
   SetBallisticState();
 
   // Compute the problem data.
-  RigidConstraintAccelProblemData<double> data;
-  CalcRigidConstraintAccelProblemData(&data);
+  HardConstraintAccelProblemData<double> data;
+  CalcHardConstraintAccelProblemData(&data);
 
   // Verify that the data has reasonable values.
   const int num_contacts = 0;
@@ -984,8 +984,8 @@ TEST_F(Rod2DDAETest, RigidContactProblemDataHorizontalResting) {
   SetRestingHorizontalConfig();
 
   // Compute the problem data.
-  RigidConstraintAccelProblemData<double> data;
-  CalcRigidConstraintAccelProblemData(&data);
+  HardConstraintAccelProblemData<double> data;
+  CalcHardConstraintAccelProblemData(&data);
   const int num_contacts = 2;
   CheckProblemConsistency(data, num_contacts);
 
@@ -1003,8 +1003,8 @@ TEST_F(Rod2DDAETest, RigidContactProblemDataHorizontalSliding) {
   xc[3] = 1.0;  // horizontal velocity of the rod center-of-mass.
 
   // Compute the problem data.
-  RigidConstraintAccelProblemData<double> data;
-  CalcRigidConstraintAccelProblemData(&data);
+  HardConstraintAccelProblemData<double> data;
+  CalcHardConstraintAccelProblemData(&data);
   const int num_contacts = 2;
   CheckProblemConsistency(data, num_contacts);
 
@@ -1019,8 +1019,8 @@ TEST_F(Rod2DDAETest, RigidContactProblemDataVerticalResting) {
   SetRestingVerticalConfig();
 
   // Compute the problem data.
-  RigidConstraintAccelProblemData<double> data;
-  CalcRigidConstraintAccelProblemData(&data);
+  HardConstraintAccelProblemData<double> data;
+  CalcHardConstraintAccelProblemData(&data);
   const int num_contacts = 1;
   CheckProblemConsistency(data, num_contacts);
 
@@ -1047,8 +1047,8 @@ TEST_F(Rod2DDAETest, RigidContactProblemDataVerticalSliding) {
   xc[3] = 1.0;
 
   // Compute the problem data.
-  RigidConstraintAccelProblemData<double> data;
-  CalcRigidConstraintAccelProblemData(&data);
+  HardConstraintAccelProblemData<double> data;
+  CalcHardConstraintAccelProblemData(&data);
   const int num_contacts = 1;
   CheckProblemConsistency(data, num_contacts);
 
