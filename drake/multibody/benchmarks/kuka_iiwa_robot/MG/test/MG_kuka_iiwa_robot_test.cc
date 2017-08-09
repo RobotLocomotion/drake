@@ -203,8 +203,8 @@ GTEST_TEST(KukaIIwaRobot, TorqueMotorA) {
   EXPECT_TRUE(F_Fo_Ef.IsApprox(F_Fo_Ef_expected, 40 * kEpsilon));
   EXPECT_TRUE(F_Go_Fg.IsApprox(F_Go_Fg_expected, 40 * kEpsilon));
 
-  // Redo test now adding Earth's uniform gravitational forces (in m/s^2).
-  const double g = 9.81;
+  // Redo test now adding Earth's uniform gravitational forces (little g).
+  const double g = 9.81;  // (in m/s^2).
   MG_kuka_robot.SetEarthGravity(g);
 
   // MotionGenesis (MG) solution for the motor torques to hold the robot static.

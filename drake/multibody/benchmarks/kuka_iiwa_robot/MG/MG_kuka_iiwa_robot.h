@@ -154,8 +154,8 @@ class MGKukaIIwaRobot {
 
 
   /// This method sets Earth's uniform gravitational acceleration ("little g")
-  /// for this class's member data MG_kuka_auto_generated.  By default, this
-  /// value is set at construction to 0.0 m/s^2 (not 9.81 m/s^2).
+  /// for the class member MG_kuka_auto_generated.  At construction, little g
+  /// is initialized to 0.0 m/s^2 (not 9.81 m/s^2).
   ///
   /// @param[in] gValue Earth's gravitational acceleration in m/s^2.
   void  SetEarthGravity(double gValue) { MG_kuka_auto_generated_.g = gValue; }
