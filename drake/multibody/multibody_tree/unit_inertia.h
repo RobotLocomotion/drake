@@ -290,6 +290,57 @@ class UnitInertia : public RotationalInertia<T> {
     return UnitInertia(Ix, Ix, Iz);
   }
 
+  /// Returns the unit inertia for a unit-mass body B for which there exists a
+  /// line L passing through the body's center of mass `Bcm` having the property
+  /// that the body's moment of inertia about all lines perpendicular to L are
+  /// equal. Examples of bodies with an axially symmetric inertia include
+  /// axisymmetric objects such as cylinders and cones. Other commonly occurring
+  /// geometries with this property are, for intance, propellers with 3+ evenly
+  /// spaced blades.
+  /// Given a unit vector b defining the symmetry line L, the moment of inertia
+  /// J about this line L and the moment of inertia K about any line
+  /// perpendicular to L, the axially symmetric unit inertia G is computed as:
+  /// <pre>
+  ///   G = K * Id + (J - K) * b ⊗ b
+  /// </pre>
+  /// where `Id` is the identity matrix and ⊗ denotes the tensor product
+  /// operator. See Mitiguy, P., 2016. Advanced Dynamics & Motion Simulation.
+  ///
+  /// This method aborts if:
+  ///   - J is negative. J can be zero.
+  ///   - K is negative. K can be zero.
+  ///   - J ≤ 2 * J, this corresponds to the triangle inequality, see
+  ///     CouldBePhysicallyValid().
+  ///
+  /// @note J is a principal moment of inertia with principal axis equal to b.
+  /// K is a principal moment with multiplicity of two. Any two axes
+  /// perpendicular to b are principal axes with principal moment K.
+  ///
+  /// @param[in] J
+  ///   Unit inertia about axis b.
+  /// @param[in] K
+  ///   Unit inertia about any axis pependicular to b.
+  /// @param[in] b_E
+  ///   Vector defining the symmetry axis, expressed in a frame E. `b_E` can
+  ///   have a norm different from one, however it will be normalized before
+  ///   using it. Therefore its norm is ignored and only its direction is used.
+  /// @retval G_Bcm_E
+  ///   An axially symmetric unit inertia about body B's center of mass,
+  ///   expressed in the same frame E as the input unit vector `b_E`.
+  static UnitInertia<T> AxiallySymmetric(
+      const T& J, const T& K, const Vector3<T>& b_E) {
+    DRAKE_DEMAND(J >= 0.0);
+    DRAKE_DEMAND(K >= 0.0);
+    // The triangle inequalities for this case reduce to J <= 2*K:
+    DRAKE_DEMAND(J <= 2.0 * K);
+    // Normalize b_E before using it. Only direction matters:
+    Vector3<T> bhat_E = b_E.normalized();
+    Matrix3<T> G_matrix =
+        K * Matrix3<T>::Identity() + (J - K) * bhat_E * bhat_E.transpose();
+    return UnitInertia<T>(G_matrix(0, 0), G_matrix(1, 1), G_matrix(2, 2),
+                          G_matrix(0, 1), G_matrix(0, 2), G_matrix(1, 2));
+  }
+
   /// Constructs a unit inertia with equal moments of inertia along its
   /// diagonal and with each product of inertia set to zero. This factory
   /// is useful for the unit inertia of a uniform-density sphere or cube.
