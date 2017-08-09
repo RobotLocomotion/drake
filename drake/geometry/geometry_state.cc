@@ -168,12 +168,13 @@ template <typename T>
 GeometryId GeometryState<T>::RegisterGeometryWithParent(
     SourceId source_id, GeometryId geometry_id,
     std::unique_ptr<GeometryInstance<T>> geometry) {
-  // The error condition is that geometry_id doesn't belong to source_id or
-  // if the source isn't active.  This is decomposed into two equivalent tests
-  // (implicitly):
-  //    1. Failure if the geometry_id doesn't exist at all, otherwise
-  //    2. Failure if the frame it belongs to doesn't belong to the source (or
-  //       active source).
+  // There are three error conditions in the doxygen:.
+  //    1. geometry == nullptr,
+  //    2. source_id is not a registered source, and
+  //    3. geometry_id doesn't belong to source_id.
+  //
+  // Only #1 is tested directly. #2 and #3 are tested implicitly during the act
+  // of registering the geometry.
 
   using std::to_string;
   if (geometry == nullptr) {
@@ -182,12 +183,14 @@ GeometryId GeometryState<T>::RegisterGeometryWithParent(
             ", on source " + to_string(source_id) + ".");
   }
 
-  // Failure condition 1.
+  // This confirms that geometry_id exists at all.
   InternalGeometry& parent_geometry =
       GetMutableValueOrThrow(geometry_id, &geometries_);
   FrameId frame_id = parent_geometry.get_frame_id();
 
-  // Failure condition 2.
+  // This implicitly confirms that source_id is registered (condition #2) and
+  // that frame_id belongs to source_id. By construction, geometry_id must
+  // belong to the same source as frame_id, so this tests  condition #3.
   GeometryId new_id = RegisterGeometryHelper(source_id, frame_id,
                                              move(geometry), geometry_id);
   parent_geometry.add_child(new_id);

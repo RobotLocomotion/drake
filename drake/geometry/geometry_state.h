@@ -198,7 +198,7 @@ class GeometryState {
 
   /** Reports if the given geometry id was ultimately registered to the given
    source id.
-   @param geometry_id      The query geometry id.
+   @param geometry_id   The query geometry id.
    @param source_id     The query source id.
    @returns True if `geometry_id` was registered on `source_id`.
    @throws std::logic_error  If the `geometry_id` does _not_ map to a valid
