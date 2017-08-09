@@ -341,6 +341,15 @@ class UnitInertia : public RotationalInertia<T> {
                           G_matrix(0, 1), G_matrix(0, 2), G_matrix(1, 2));
   }
 
+  /// Computes the unit inertia for an object of unit-mass with its mass
+  /// uniformly distributed about a straight line with direction `b_E`.
+  /// unit moment of inertia K about its center for any axis perpendicular to
+  /// vector `b_E`.
+  static UnitInertia<T> ThinRod(const T& K, const Vector3<T>& b_E) {
+    DRAKE_DEMAND(K >= 0.0);
+    return AxiallySymmetric(0.0, K, b_E);
+  }
+
   /// Constructs a unit inertia with equal moments of inertia along its
   /// diagonal and with each product of inertia set to zero. This factory
   /// is useful for the unit inertia of a uniform-density sphere or cube.
