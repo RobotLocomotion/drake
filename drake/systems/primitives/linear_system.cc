@@ -8,6 +8,7 @@
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/symbolic.h"
 #include "drake/common/symbolic_decompose.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
@@ -18,14 +19,35 @@ namespace systems {
 using std::make_unique;
 using std::unique_ptr;
 
+// TODO(naveenoid): Modify constructor to accommodate 0 dimension systems;
+// i.e. in initializing f0 and y0 with a zero matrix.
 template <typename T>
 LinearSystem<T>::LinearSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
                               const Eigen::Ref<const Eigen::MatrixXd>& B,
                               const Eigen::Ref<const Eigen::MatrixXd>& C,
                               const Eigen::Ref<const Eigen::MatrixXd>& D,
                               double time_period)
-    : AffineSystem<T>(A, B, Eigen::VectorXd::Zero(A.rows()), C, D,
-                      Eigen::VectorXd::Zero(C.rows()), time_period) {}
+    : LinearSystem<T>(
+          SystemScalarConverter{SystemTypeTag<systems::LinearSystem>{}},
+          A, B, C, D, time_period) {}
+
+template <typename T>
+template <typename U>
+LinearSystem<T>::LinearSystem(const LinearSystem<U>& other)
+    : LinearSystem<T>(
+          other.A(), other.B(), other.C(), other.D(), other.time_period()) {}
+
+template <typename T>
+LinearSystem<T>::LinearSystem(SystemScalarConverter converter,
+                              const Eigen::Ref<const Eigen::MatrixXd>& A,
+                              const Eigen::Ref<const Eigen::MatrixXd>& B,
+                              const Eigen::Ref<const Eigen::MatrixXd>& C,
+                              const Eigen::Ref<const Eigen::MatrixXd>& D,
+                              double time_period)
+    : AffineSystem<T>(
+          std::move(converter),
+          A, B, Eigen::VectorXd::Zero(A.rows()), C, D,
+          Eigen::VectorXd::Zero(C.rows()), time_period) {}
 
 template <typename T>
 unique_ptr<LinearSystem<T>> LinearSystem<T>::MakeLinearSystem(
@@ -60,10 +82,9 @@ unique_ptr<LinearSystem<T>> LinearSystem<T>::MakeLinearSystem(
   return make_unique<LinearSystem<T>>(A, B, C, D, time_period);
 }
 
-// TODO(naveenoid): Modify constructor to accommodate 0 dimension systems;
-// i.e. in initializing xDot0 and y0 with a zero matrix.
 template class LinearSystem<double>;
 template class LinearSystem<AutoDiffXd>;
+template class LinearSystem<symbolic::Expression>;
 
 std::unique_ptr<LinearSystem<double>> Linearize(
     const System<double>& system, const Context<double>& context,
