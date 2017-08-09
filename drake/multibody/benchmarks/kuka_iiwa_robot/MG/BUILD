@@ -4,15 +4,22 @@
 load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
 load("//tools:lint.bzl", "add_lint_tests")
 
-package(default_visibility = [":__subpackages__"])
+package(
+    default_visibility = [
+        "//drake/multibody/benchmarks/kuka_iiwa_robot:__subpackages__",
+    ],
+)
 
 drake_cc_library(
-    name = "kuka_iiwa_robot_library",
+    name = "MG_kuka_robot_lib",
     testonly = 1,
     srcs = [
+        "MG_kuka_iiwa_robot.cc",
+        "MG_kuka_iiwa_robot_auto_generated.cc",
     ],
     hdrs = [
-        "drake_kuka_iiwa_robot.h",
+        "MG_kuka_iiwa_robot.h",
+        "MG_kuka_iiwa_robot_auto_generated.h",
     ],
     deps = [
         "//drake/math:geometric_transform",
@@ -23,11 +30,10 @@ drake_cc_library(
 # === test/ ===
 
 drake_cc_googletest(
-    name = "kuka_iiwa_robot_kinematics_test",
+    name = "MG_kuka_iiwa_robot_test",
     size = "small",
     deps = [
-        ":kuka_iiwa_robot_library",
-        "//drake/multibody/benchmarks/kuka_iiwa_robot/MG:MG_kuka_robot_lib",
+        ":MG_kuka_robot_lib",
     ],
 )
 
