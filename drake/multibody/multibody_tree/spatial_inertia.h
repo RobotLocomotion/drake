@@ -344,7 +344,7 @@ class SpatialInertia {
     const Vector3<T>& alpha_WB_E = A_WB_E.rotational();
     const Vector3<T>& a_WBo_E = A_WB_E.translational();
     const Vector3<T>& mp_BoBcm_E = CalcComMoment();  // = m * p_BoBcm
-    // Return (see class' documentation):
+    // Return (see class's documentation):
     // ⌈ tau_Bo_E ⌉   ⌈    I_Bo_E     | m * p_BoBcm× ⌉   ⌈ alpha_WB_E ⌉
     // |          | = |               |              | * |            |
     // ⌊  f_Bo_E  ⌋   ⌊ -m * p_BoBcm× |   m * Id     ⌋   ⌊  a_WBo_E   ⌋

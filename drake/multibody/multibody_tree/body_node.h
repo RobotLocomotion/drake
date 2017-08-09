@@ -388,7 +388,9 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// with `context` by MultibodyTree::CalcVelocityKinematicsCache().
   /// @pre CalcAccelerationKinematicsCache_BaseToTip() must have already been
   /// called for the parent node (and, by recursive precondition, all
-  /// predecessor nodes in the tree.)
+  /// predecessor nodes in the tree.) Therefore, on input, the argument array
+  /// `A_WB_array_ptr` must contain already pre-computed spatial accelerations
+  /// for the inboard bodies to this node's body B.
   // Unit test coverage for this method is provided, among others, in
   // double_pendulum_test.cc, and by any other unit tests making use of
   // MultibodyTree::CalcAccelerationKinematicsCache().
@@ -930,7 +932,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
                      topology_.num_mobilizer_velocities);
   }
 
-  // Mutable version of get_velocities_from_array()
+  // Mutable version of get_velocities_from_array().
   Eigen::VectorBlock<VectorX<T>> get_mutable_velocities_from_array(
       VectorX<T>* v) const {
     DRAKE_ASSERT(v != nullptr);
@@ -1071,7 +1073,8 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     const Isometry3<T>& X_WB = get_X_WB(pc);
 
     // Orientation of B in W.
-    const auto& R_WB = X_WB.rotation();
+    const Matrix3<T> R_WB = X
+    _WB.rotation();
 
     // Body spatial velocity in W.
     const SpatialVelocity<T>& V_WB = get_V_WB(vc);

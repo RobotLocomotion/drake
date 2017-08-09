@@ -185,8 +185,8 @@ template<typename T> class BodyNode;
 /// spatial force `F_Mo` and the spatial velocity `V_FM` as: <pre>
 ///   W = F_Mo⋅V_FM
 /// </pre>
-/// or in terms of the generalized forces `tau = H_FMᵀ(q) * F_Mo` and the
-/// generalized velocities v as: <pre>
+/// where ⋅ is the dot product operator or, in terms of the generalized forces
+/// `tau = H_FMᵀ(q) * F_Mo` and the generalized velocities v as: <pre>
 ///   W = tau⋅v
 /// </pre>
 /// Notice that spatial forces in the null space of `H_FM(q)` do not perform any
