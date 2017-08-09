@@ -494,6 +494,131 @@ TEST_F(HardConstraint2DSolverTest, TwoPointSliding) {
               std::fabs(contact_forces.back()[1]), 0, eps_);
 }
 
+// Tests the rod in a two-point contacting configuration *realized through
+// a configuration limit constraint*. No frictional forces are applied, so
+// any velocity projections along directions other than the contact normal
+// will be irrelevant.
+TEST_F(HardConstraint2DSolverTest, TwoPointAsLimit) {
+  // Set the state of the rod to resting on its side.
+  SetRodToRestingHorizontalConfig();
+
+  // First, construct the acceleration-level problem data as normal to set
+  // inertia solver and external forces.
+  CalcHardConstraintAccelProblemData(&accel_data_);
+
+  // Construct the problem as a limit constraint preventing movement in the
+  // downward direction.
+  const int ngc = 3;  // number of generalized coordinates for the 2D rod.
+  accel_data_.sliding_contacts.resize(0);
+  accel_data_.non_sliding_contacts.resize(0);
+  accel_data_.mu_sliding.resize(0);
+  accel_data_.mu_non_sliding.resize(0);
+  accel_data_.r.resize(0);
+  accel_data_.N.resize(0, ngc);
+  accel_data_.Ndot_x_v.resize(0);
+  accel_data_.F.resize(0, ngc);
+  accel_data_.Fdot_x_v.resize(0);
+  accel_data_.L.resize(1, ngc);
+  accel_data_.Ldot_x_v.resize(1);
+  accel_data_.N_minus_mu_Q.resize(0, ngc);
+
+  // Set the Jacobian entry- in this case, the limit is a lower limit on the
+  // second coordinate (vertical position).
+  accel_data_.L.setZero();
+  accel_data_.Ldot_x_v.setZero();
+  accel_data_.L(0, 1) = 1.0;
+
+  // Compute the constraint forces.
+  VectorX<double> cf;
+  solver_.SolveConstraintProblem(cfm_, accel_data_, &cf);
+
+  // Verify the size of cf is as expected.
+  EXPECT_EQ(cf.size(), 1);
+
+  // Verify that the normal force exactly opposes gravity.
+  const double mg = std::fabs(rod_->get_gravitational_acceleration()) *
+      rod_->get_rod_mass();
+  EXPECT_NEAR(cf[0], mg, 10 * std::numeric_limits<double>::epsilon());
+
+  // Set the Jacobian entry- in this case, the limit is an upper limit on the
+  // second coordinate (vertical position).
+  accel_data_.L.setZero();
+  accel_data_.Ldot_x_v.setZero();
+  accel_data_.L(0, 1) = 1.0;
+  accel_data_.L *= -1;
+
+  // Reverse the external force (gravity) on the rod.
+  accel_data_.f *= -1;
+
+  // Recompute the constraint forces, and verify that they're still equal
+  // to the force from gravity. Note: if the forces were to be applied to the
+  // rod, one will need to compute Lᵀcf[0] to obtain the generalized force;
+  // this is how we can handle upper and lower limits with only non-negativity
+  // constraints.
+  solver_.SolveConstraintProblem(cfm_, accel_data_, &cf);
+  EXPECT_EQ(cf.size(), 1);
+  EXPECT_NEAR(cf[0], mg, 10 * std::numeric_limits<double>::epsilon());
+}
+
+// Tests the rod in a two-point configuration *realized through a configuration
+// limit constraint*, velocity-level version. No frictional forces are applied,
+// so any velocity projections along directions other than the contact normal
+// will be irrelevant.
+TEST_F(HardConstraint2DSolverTest, TwoPointImpactAsLimit) {
+  // Set the state of the rod to impacting on its side.
+  SetRodToSlidingImpactingHorizontalConfig();
+  ContinuousState<double>& xc = *context_->
+      get_mutable_continuous_state();
+  const double vert_vel = xc[4];
+
+  // First, construct the velocity-level problem data as normal to set
+  // inertia solver and external forces.
+  CalcHardConstraintVelProblemData(&vel_data_);
+
+  // Construct the problem as a limit constraint preventing movement in the
+  // downward direction.
+  const int ngc = 3;  // number of generalized coordinates for the 2D rod.
+  vel_data_.mu.resize(0);
+  vel_data_.r.resize(0);
+  vel_data_.N.resize(0, ngc);
+  vel_data_.F.resize(0, ngc);
+  vel_data_.L.resize(1, ngc);
+
+  // Set the Jacobian entry- in this case, the limit is a lower limit on the
+  // second coordinate (vertical position).
+  vel_data_.L.setZero();
+  vel_data_.L(0, 1) = 1.0;
+
+  // Compute the constraint impulses.
+  VectorX<double> cf;
+  solver_.SolveImpactProblem(cfm_, vel_data_, &cf);
+
+  // Verify the size of cf is as expected.
+  EXPECT_EQ(cf.size(), 1);
+
+  // Verify that the normal force exactly opposes the momentum.
+  const double mv = std::fabs(vert_vel) * rod_->get_rod_mass();
+  EXPECT_NEAR(cf[0], mv, 10 * std::numeric_limits<double>::epsilon());
+
+  // Set the Jacobian entry- in this case, the limit is an upper limit on the
+  // second coordinate (vertical position).
+  vel_data_.L.setZero();
+  vel_data_.L(0, 1) = 1.0;
+  vel_data_.L *= -1;
+
+  // Reverse the velocity on the rod.
+  vel_data_.v *= -1;
+
+  // Recompute the constraint impulses, and verify that they're still equal
+  // to the momentum. Note: if the impulses were to be applied to the
+  // rod, one will need to compute Lᵀcf[0] to obtain the generalized impulse;
+  // this is how we can handle upper and lower limits with only non-negativity
+  // constraints.
+  solver_.SolveImpactProblem(cfm_, vel_data_, &cf);
+  EXPECT_EQ(cf.size(), 1);
+  EXPECT_NEAR(cf[0], mv, 10 * std::numeric_limits<double>::epsilon());
+}
+
 // Tests the rod in a single point sliding configuration.
 TEST_F(HardConstraint2DSolverTest, SinglePointSliding) {
   // Set the state of the rod to resting on its side with horizontal velocity.

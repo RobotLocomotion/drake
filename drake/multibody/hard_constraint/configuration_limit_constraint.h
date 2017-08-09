@@ -69,6 +69,22 @@ struct ConfigurationLimitConstraint {
   /// dimension of generalized velocity) into time derivatives of g(q) ∈ ℝⁱ,
   /// or, in other words, ġ = Lv. Only used for general constraints.
   MatrixX<T> L;
+
+  /// Multiplies the Jacobian matrix of the constraints represented by
+  /// @p limit_constraints by the vector @p v, returning the result in @p Lv.
+  /// Aborts if @p Lv is null.
+  static void LMult(
+      const std::vector<ConfigurationLimitConstraint>& limit_constraints,
+      const VectorX<T>& v,
+      VectorX<T>* Lv) {
+    // Verify that Lv is non-null.
+
+    // Get the total number of limit constraints.
+
+    // Resize Lv.
+
+    // Do the computation.
+  }
 };
 
 /// Structure for describing unilateral constraints on configuration variables,

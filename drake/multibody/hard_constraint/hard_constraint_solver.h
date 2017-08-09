@@ -44,7 +44,9 @@ class HardConstraintSolver {
   ///           directions at each non-sliding point of contact. The first `r`
   ///           values (after the initial `nc` elements) correspond to the first
   ///           non-sliding contact, the next `r` values correspond to the
-  ///           second non-sliding contact, etc.
+  ///           second non-sliding contact, etc. The final ℓ values of @p cf
+  ///           correspond to the forces applied to enforce configuration limit
+  ///           constraints.
   /// @pre Constraint data has been computed.
   /// @throws a std::runtime_error if the constraint forces cannot be computed
   ///         (due to, e.g., an "inconsistent" rigid contact configuration).
@@ -67,7 +69,8 @@ class HardConstraintSolver {
   ///           directions at each point of contact. The first `r`
   ///           values (after the initial `nc` elements) correspond to the first
   ///           contact, the next `r` values correspond to the second contact,
-  ///           etc.
+  ///           etc. The final ℓ values of @p cf correspond to the impulsive
+  ///            forces applied to enforce configuration limit constraints.
   /// @pre Constraint data has been computed.
   /// @throws a std::runtime_error if the constraint forces cannot be computed
   ///         (due to, e.g., the effects of roundoff error in attempting to
@@ -221,15 +224,16 @@ void HardConstraintSolver<T>::SolveConstraintProblem(double cfm,
   const int num_contacts = num_sliding + num_non_sliding;
   const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
                                                    problem_data.r.end(), 0);
+  const int num_limits = problem_data.L.rows();
 
   // Look for fast exit.
-  if (num_contacts == 0) {
+  if (num_contacts == 0 && num_limits == 0) {
     cf->resize(0);
     return;
   }
 
   // Initialize contact force vector.
-  cf->resize(num_contacts + num_spanning_vectors);
+  cf->resize(num_contacts + num_spanning_vectors + num_limits);
 
   // Set up the linear complementarity problem.
   MatrixX<T> MM;
@@ -263,11 +267,13 @@ void HardConstraintSolver<T>::SolveConstraintProblem(double cfm,
     throw std::runtime_error("Unable to solve LCP- it may be unsolvable.");
   }
 
-  // Get the contact forces in the specified packed storage format.
+  // Get the constraint forces in the specified packed storage format.
   cf->segment(0, num_contacts) = zz.segment(0, num_contacts);
   cf->segment(num_contacts, num_spanning_vectors) =
       zz.segment(num_contacts, num_spanning_vectors) -
       zz.segment(num_contacts + num_spanning_vectors, num_spanning_vectors);
+  cf->segment(num_contacts + num_spanning_vectors, num_limits) =
+      zz.segment(num_contacts + num_spanning_vectors * 2, num_limits);
 }
 
 template <typename T>
@@ -285,15 +291,16 @@ void HardConstraintSolver<T>::SolveImpactProblem(
                                "negative.");
   }
 
-  // Get number of contacts.
+  // Get number of contacts and limits.
   const int num_contacts = problem_data.mu.size();
   if (static_cast<size_t>(num_contacts) != problem_data.r.size()) {
     throw std::logic_error("Number of elements in 'r' does not match number"
                                "of elements in 'mu'");
   }
+  const int num_limits = problem_data.L.rows();
 
   // Look for fast exit.
-  if (num_contacts == 0) {
+  if (num_contacts == 0 && num_limits == 0) {
     cf->resize(0);
     return;
   }
@@ -303,13 +310,16 @@ void HardConstraintSolver<T>::SolveImpactProblem(
                                                    problem_data.r.end(), 0);
 
   // If no impact, do not apply the impact model.
-  if ((problem_data.N * problem_data.v).minCoeff() >= 0) {
+  if ((num_contacts == 0 ||
+       (problem_data.N * problem_data.v).minCoeff() >= 0) &&
+      (num_limits == 0 ||
+        (problem_data.L * problem_data.v).minCoeff() >= 0)) {
     cf->setZero(num_contacts + num_spanning_vectors);
     return;
   }
 
   // Initialize contact force vector.
-  cf->resize(num_contacts + num_spanning_vectors);
+  cf->resize(num_contacts + num_spanning_vectors + num_limits);
 
   // Set up the linear complementarity problem.
   MatrixX<T> MM;
@@ -345,11 +355,13 @@ void HardConstraintSolver<T>::SolveImpactProblem(
                                  "be necessary.");
   }
 
-  // Get the contact forces in the specified packed storage format.
+  // Get the constraint forces in the specified packed storage format.
   cf->segment(0, num_contacts) = zz.segment(0, num_contacts);
   cf->segment(num_contacts, num_spanning_vectors) =
       zz.segment(num_contacts, num_spanning_vectors) -
           zz.segment(num_contacts + num_spanning_vectors, num_spanning_vectors);
+  cf->segment(num_contacts + num_spanning_vectors, num_limits) =
+      zz.segment(num_contacts + num_spanning_vectors * 2, num_limits);
 }
 
 // Forms the LCP matrix and vector, which is used to determine the constraint
@@ -368,6 +380,7 @@ void HardConstraintSolver<T>::FormSustainedConstraintLCP(
   const int num_contacts = num_sliding + num_non_sliding;
   const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
                                  problem_data.r.end(), 0);
+  const int num_limits = problem_data.L.rows();
 
   // Problem matrices and vectors are mildly adapted from:
   // M. Anitescu and F. Potra. Formulating Dynamic Multi-Rigid Body Contact
@@ -377,8 +390,10 @@ void HardConstraintSolver<T>::FormSustainedConstraintLCP(
   // Alias matrices / vectors to make accessing them less clunky.
   const MatrixX<T>& N = problem_data.N;
   const MatrixX<T>& F = problem_data.F;
+  const MatrixX<T>& L = problem_data.L;
   const VectorX<T>& Ndot_x_v = problem_data.Ndot_x_v;
   const VectorX<T>& Fdot_x_v = problem_data.Fdot_x_v;
+  const VectorX<T>& Ldot_x_v = problem_data.Ldot_x_v;
   const VectorX<T>& mu_non_sliding = problem_data.mu_non_sliding;
 
   // Construct a matrix similar to E in Anitscu and Potra 1997. This matrix
@@ -396,22 +411,26 @@ void HardConstraintSolver<T>::FormSustainedConstraintLCP(
   }
 
   // Construct the LCP matrix. First do the "normal contact direction" rows:
-  // N⋅M⁻¹⋅(Nᵀ - μQᵀ)  N⋅M⁻¹⋅Dᵀ  0
-  // D⋅M⁻¹⋅Nᵀ          D⋅M⁻¹⋅Dᵀ  E
-  // μ                 -Eᵀ       0
+  // N⋅M⁻¹⋅(Nᵀ - μQᵀ)  N⋅M⁻¹⋅Dᵀ  0   N⋅M⁻¹⋅Lᵀ
+  // D⋅M⁻¹⋅Nᵀ          D⋅M⁻¹⋅Dᵀ  E   D⋅M⁻¹⋅Lᵀ
+  // μ                 -Eᵀ       0   0
+  // L⋅M⁻¹⋅Nᵀ          L⋅M⁻¹⋅Dᵀ  0   L⋅M⁻¹⋅Lᵀ
   // where D = |  F |
   //           | -F |
   const int nc = num_contacts;          // Alias these vars for more...
   const int nr = num_spanning_vectors;  //   readable construction...
   const int nk = nr * 2;                //    of MM/qq.
-  const int num_vars = nc + nk + num_non_sliding;
+  const int nl = num_limits;
+  const int num_vars = nc + nk + num_non_sliding + nl;
   MatrixX<T> M_inv_x_FT = problem_data.solve_inertia(F.transpose());
+  MatrixX<T> M_inv_x_LT = problem_data.solve_inertia(L.transpose());
   MM->resize(num_vars, num_vars);
   MM->block(0, 0, nc, nc) = N *
       problem_data.solve_inertia(problem_data.N_minus_mu_Q.transpose());
   MM->block(0, nc, nc, nr) = N * M_inv_x_FT;
   MM->block(0, nc + nr, nc, nr) = -MM->block(0, nc, nc, nr);
   MM->block(0, nc + nk, num_non_sliding, num_non_sliding).setZero();
+  MM->block(0, nc + nk + num_non_sliding, nc, nl) = N * M_inv_x_LT;
 
   // Now construct the un-negated tangent contact direction rows (everything
   // but last block column).
@@ -419,26 +438,35 @@ void HardConstraintSolver<T>::FormSustainedConstraintLCP(
   MM->block(nc, nc, nr, num_spanning_vectors) = F * M_inv_x_FT;
   MM->block(nc, nc + nr, num_spanning_vectors, nr) =
       -MM->block(nc, nc, nr, num_spanning_vectors);
+  MM->block(nc, nc + nk, nr, nl) = F * M_inv_x_LT;
 
   // Now construct the negated tangent contact direction rows (everything but
   // last block column). These negated tangent contact directions allow the
   // LCP to compute forces applied along the negative x-axis.
-  MM->block(nc + nr, 0, nr, nc + nk) = -MM->block(nc, 0, nr, nc + nk);
+  MM->block(nc + nr, 0, nr, nc + nk + nl) = -MM->block(nc, 0, nr, nc + nk + nl);
 
   // Construct the last block column for the last set of rows (see Anitescu and
   // Potra, 1997).
   MM->block(nc, nc + nk, nk, num_non_sliding) = E;
 
-  // Construct the last two rows, which provide the friction "cone" constraint.
+  // Construct the next two rows, which provide the friction "cone" constraint.
   MM->block(nc + nk, 0, num_non_sliding, num_non_sliding) =
       Eigen::DiagonalMatrix<T, Eigen::Dynamic>(mu_non_sliding);
   MM->block(nc + nk, nc, num_non_sliding, nk) = -E.transpose();
-  MM->block(nc + nk, nc + nk, num_non_sliding, num_non_sliding).setZero();
+  MM->block(nc + nk, nc + nk, num_non_sliding, num_non_sliding + nl).setZero();
+
+  // Construct the last row block, which provides the configuration limit
+  // constraint.
+  MM->block(nc + nk + num_non_sliding, 0, nl, nc + nk) =
+      MM->block(0, nc + nk + num_non_sliding, nc + nk, nl).transpose().eval();
+  MM->block(nc + nk + num_non_sliding, nc + num_non_sliding + nk, nl, nl) =
+      L * M_inv_x_LT;
 
   // Construct the LCP vector:
   // N⋅M⁻¹⋅fext + dN/dt⋅v
   // D⋅M⁻¹⋅fext + dD/dt⋅v
   // 0
+  // L⋅M⁻¹⋅fext + dL/dt⋅v
   // where, as above, D is defined as [F -F]
   VectorX<T> M_inv_x_f = problem_data.solve_inertia(problem_data.f);
   qq->resize(num_vars, 1);
@@ -446,6 +474,7 @@ void HardConstraintSolver<T>::FormSustainedConstraintLCP(
   qq->segment(nc, nr) = F * M_inv_x_f + Fdot_x_v;
   qq->segment(nc + nr, num_spanning_vectors) = -qq->segment(nc, nr);
   qq->segment(nc + nk, num_non_sliding).setZero();
+  qq->segment(nc + nk + num_non_sliding, num_limits) = L * M_inv_x_f + Ldot_x_v;
 }
 
 // Forms the LCP matrix and vector, which is used to determine the collisional
@@ -461,6 +490,7 @@ void HardConstraintSolver<T>::FormImpactingConstraintLCP(
   const int num_contacts = problem_data.mu.size();
   const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
                                                    problem_data.r.end(), 0);
+  const int num_limits = problem_data.L.rows();
 
   // Problem matrices and vectors are nearly identical to:
   // M. Anitescu and F. Potra. Formulating Dynamic Multi-Rigid Body Contact
@@ -470,6 +500,7 @@ void HardConstraintSolver<T>::FormImpactingConstraintLCP(
   // Alias matrices / vectors to make accessing them less clunky.
   const MatrixX<T>& N = problem_data.N;
   const MatrixX<T>& F = problem_data.F;
+  const MatrixX<T>& L = problem_data.L;
   const VectorX<T>& mu = problem_data.mu;
 
   // Construct the matrix E in Anitscu and Potra 1997. This matrix
@@ -490,52 +521,66 @@ void HardConstraintSolver<T>::FormImpactingConstraintLCP(
   const int nc = num_contacts;
   const int nr = num_spanning_vectors;
   const int nk = nr * 2;
+  const int nl = num_limits;
 
   // Construct the LCP matrix. First do the "normal contact direction" rows:
-  // N⋅M⁻¹⋅Nᵀ  N⋅M⁻¹⋅Dᵀ  0
-  // D⋅M⁻¹⋅Nᵀ  D⋅M⁻¹⋅Dᵀ  E
-  // μ         -Eᵀ       0
+  // N⋅M⁻¹⋅Nᵀ  N⋅M⁻¹⋅Dᵀ  0   N⋅M⁻¹⋅Lᵀ
+  // D⋅M⁻¹⋅Nᵀ  D⋅M⁻¹⋅Dᵀ  E   D⋅M⁻¹⋅Lᵀ
+  // μ         -Eᵀ       0   0
+  // L⋅M⁻¹⋅Nᵀ  L⋅M⁻¹⋅Dᵀ  0   L⋅M⁻¹⋅Lᵀ
   // where D = |  F |
   //           | -F |
-  const int num_vars = nc * 2 + nk;
+  const int num_vars = nc * 2 + nk + num_limits;
   MatrixX<T> M_inv_x_FT = problem_data.solve_inertia(F.transpose());
+  MatrixX<T> M_inv_x_LT = problem_data.solve_inertia(L.transpose());
   MM->resize(num_vars, num_vars);
   MM->block(0, 0, nc, nc) = N * problem_data.solve_inertia(
       problem_data.N.transpose());
   MM->block(0, nc, nc, nr) = N * M_inv_x_FT;
   MM->block(0, nc + nr, nc, nr) = -MM->block(0, nc, nc, nr);
   MM->block(0, nc + nk, nc, nc).setZero();
+  MM->block(0, nc*2 + nk, nc, nl) = N * M_inv_x_LT;
 
   // Now construct the un-negated tangent contact direction rows (everything
   // but last block column).
   MM->block(nc, 0, nr, nc) = MM->block(0, nc, nc, nr).transpose().eval();
   MM->block(nc, nc, nr, nr) = F * M_inv_x_FT;
   MM->block(nc, nc + nr, nr, nr) = -MM->block(nc, nc, nr, nr);
+  MM->block(nc, nc + nk, nr, nl) = F * M_inv_x_LT;
 
   // Now construct the negated tangent contact direction rows (everything but
   // last block column). These negated tangent contact directions allow the
   // LCP to compute forces applied along the negative x-axis.
-  MM->block(nc + nr, 0, nr, nc + nk) = -MM->block(nc, 0, nr, nc + nk);
+  MM->block(nc + nr, 0, nr, nc + nk + nl) = -MM->block(nc, 0, nr, nc + nk + nl);
 
   // Construct the last block column for the last set of rows (see Anitescu and
   // Potra, 1997).
   MM->block(nc, nc + nk, nk, nc) = E;
 
-  // Construct the last two rows, which provide the friction "cone" constraint.
+  // Construct the next two row blocks, which provide the friction "cone"
+  // constraint.
   MM->block(nc + nk, 0, nc, nc) = Eigen::DiagonalMatrix<T, Eigen::Dynamic>(mu);
   MM->block(nc + nk, nc, nc, nk) = -E.transpose();
-  MM->block(nc + nk, nc + nk, nc, nc).setZero();
+  MM->block(nc + nk, nc + nk, nc, nc + nl).setZero();
+
+  // Construct the last row block, which provides the configuration limit
+  // constraint.
+  MM->block(nc*2 + nk, 0, nl, nc + nk) =
+      MM->block(0, nc*2 + nk, nc + nk, nl).transpose().eval();
+  MM->block(nc*2 + nk, nc*2 + nk, nl, nl) = L * M_inv_x_LT;
 
   // Construct the LCP vector:
   // N⋅v
   // D⋅v
   // 0
+  // L⋅v
   // where, as above, D is defined as [F -F]
   qq->resize(num_vars, 1);
   qq->segment(0, nc) = N * problem_data.v;
   qq->segment(nc, nr) = F * problem_data.v;
   qq->segment(nc + nr, nc) = -qq->segment(nc, nr);
   qq->segment(nc + nk, nc).setZero();
+  qq->segment(nc*2 + nk, num_limits) = L * problem_data.v;
 }
 
 template <class T>
@@ -552,20 +597,28 @@ void HardConstraintSolver<T>::ComputeGeneralizedForceFromConstraintForces(
   const int num_contacts = num_sliding + num_non_sliding;
   const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
                                  problem_data.r.end(), 0);
+  const int num_limits = problem_data.L.rows();
 
   // Verify cf is the correct size.
-  const int num_vars = num_contacts + num_spanning_vectors;
-  if (cf.size() != num_vars)
-    throw std::logic_error("cf (contact force) parameter incorrectly sized.");
+  const int num_vars = num_contacts + num_spanning_vectors + num_limits;
+  if (cf.size() != num_vars) {
+    throw std::logic_error("cf (constraint force) parameter incorrectly"
+                               "sized.");
+  }
 
   /// Get the normal and non-sliding contact forces.
   const Eigen::Ref<const VectorX<T>> f_normal = cf.segment(0, num_contacts);
   const Eigen::Ref<const VectorX<T>> f_non_sliding_frictional = cf.segment(
-      num_contacts, num_vars - num_contacts);
+      num_contacts, num_spanning_vectors);
+
+  /// Get the limit forces.
+  const Eigen::Ref<const VectorX<T>> f_limit = cf.segment(
+      num_contacts + num_spanning_vectors, num_limits);
 
   /// Compute the generalized force.
   *generalized_force = problem_data.N_minus_mu_Q.transpose() * f_normal +
-      problem_data.F.transpose() * f_non_sliding_frictional;
+      problem_data.F.transpose() * f_non_sliding_frictional +
+      problem_data.L.transpose() * f_limit;
 }
 
 template <class T>
@@ -580,18 +633,26 @@ void HardConstraintSolver<T>::ComputeGeneralizedImpulseFromConstraintImpulses(
   const int num_contacts = problem_data.mu.size();
   const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
                                                    problem_data.r.end(), 0);
-  const int num_vars = num_contacts + num_spanning_vectors;
-  if (num_vars != cf.size())
-    throw std::logic_error("Unexpected packed contact force vector dimension.");
+  const int num_limits = problem_data.L.rows();
+  const int num_vars = num_contacts + num_spanning_vectors + num_limits;
+  if (num_vars != cf.size()) {
+    throw std::logic_error("Unexpected packed constraint force vector"
+                               " dimension.");
+  }
 
   /// Get the normal and tangential contact impulses.
   const Eigen::Ref<const VectorX<T>> f_normal = cf.segment(0, num_contacts);
   const Eigen::Ref<const VectorX<T>> f_frictional = cf.segment(
-      num_contacts, num_vars - num_contacts);
+      num_contacts, num_spanning_vectors);
+
+  /// Get the limit forces.
+  const Eigen::Ref<const VectorX<T>> f_limit = cf.segment(
+      num_contacts + num_spanning_vectors, num_limits);
 
   /// Compute the generalized impules.
   *generalized_impulse = problem_data.N.transpose() * f_normal +
-                         problem_data.F.transpose() * f_frictional;
+                         problem_data.F.transpose() * f_frictional +
+                         problem_data.L.transpose() * f_limit;
 }
 
 template <class T>
@@ -647,9 +708,12 @@ void HardConstraintSolver<T>::CalcContactForcesInContactFrames(
       num_non_sliding_contacts;
   const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
                                                    problem_data.r.end(), 0);
-  const int num_vars = num_contacts + num_spanning_vectors;
-  if (num_vars != cf.size())
-    throw std::logic_error("Unexpected packed contact force vector dimension.");
+  const int num_limits = problem_data.L.rows();
+  const int num_vars = num_contacts + num_spanning_vectors + num_limits;
+  if (num_vars != cf.size()) {
+    throw std::logic_error("Unexpected packed constraint force vector "
+                               "dimension.");
+  }
 
   // Verify that the problem is indeed two-dimensional.
   if (num_spanning_vectors != num_non_sliding_contacts) {
@@ -739,9 +803,12 @@ void HardConstraintSolver<T>::CalcImpactForcesInContactFrames(
   const int num_contacts = problem_data.mu.size();
   const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
                                                    problem_data.r.end(), 0);
-  const int num_vars = num_contacts + num_spanning_vectors;
-  if (num_vars != cf.size())
-    throw std::logic_error("Unexpected packed contact force vector dimension.");
+  const int num_limits = problem_data.L.rows();
+  const int num_vars = num_contacts + num_spanning_vectors + num_limits;
+  if (num_vars != cf.size()) {
+    throw std::logic_error("Unexpected packed constraint force vector "
+                               "dimension.");
+  }
 
   // Verify that the problem is indeed two-dimensional.
   if (num_spanning_vectors != num_contacts) {

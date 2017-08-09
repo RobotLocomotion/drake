@@ -598,6 +598,10 @@ void Rod2D<T>::CalcHardConstraintProblemData(
     ++j;
   }
 
+  // Set L and Ldot_x_v
+  data->L.resize(0, ngc);
+  data->Ldot_x_v.resize(0);
+
   // Set external force vector.
   data->f = ComputeExternalForces(context);
 }
@@ -650,6 +654,9 @@ void Rod2D<T>::CalcRigidImpactProblemData(
   for (int i = 0; i < num_contacts; ++i) {
     data->F.row(i) = GetJacobianRow(context, points[i], contact_tan);
   }
+
+  // Set L.
+  data->L.resize(0, num_generalized_coordinates);
 }
 
 template <typename T>

@@ -5,7 +5,6 @@
 #include <Eigen/Core>
 
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/hard_constraint/configuration_limit_constraint.h"
 
 namespace drake {
 namespace multibody {
@@ -73,6 +72,16 @@ struct HardConstraintAccelProblemData {
   /// m is the dimension of the system generalized velocity.
   VectorX<T> Fdot_x_v;
 
+  /// The ℝⁱˣᵐ Jacobian matrix that transforms generalized velocities (m is the
+  /// dimension of generalized velocity) into velocities along the i
+  /// configuration limits.
+  MatrixX<T> L;
+
+  /// This ℝⁱ vector is the time derivative of the matrix L (defined above)
+  /// times the generalized velocity (∈ ℝᵐ) of the rigid body system. As above,
+  /// m is the dimension of the system generalized velocity;
+  VectorX<T> Ldot_x_v;
+
   /// The ℝⁿˣᵐ matrix (N - μQ) that transforms generalized velocities (m is the
   /// dimension of generalized velocity) into velocities projected along the
   /// contact normals at the n contact points, where Q ∈ ℝⁿˣᵐ is the Jacobian
@@ -83,10 +92,6 @@ struct HardConstraintAccelProblemData {
   /// any normal forces applied using this Jacobian will yield frictional
   /// effects for sliding contacts.
   MatrixX<T> N_minus_mu_Q;
-
-  /// The ℓ-dimensional vector of unilateral configuration limit constraints.
-  /// These constraints cannot currently impart any frictional forces.
-  std::vector<ConfigurationLimitAccelConstraint> limit_constraints;
 
   /// The ℝᵐ vector f, the generalized external force vector that
   /// comprises gravitational, centrifugal, Coriolis, actuator, etc. forces. m
@@ -136,9 +141,10 @@ struct HardConstraintVelProblemData {
   /// code imposes no such requirement.
   MatrixX<T> F;
 
-  /// The ℓ-dimensional vector of unilateral configuration limit constraints.
-  /// These constraints cannot currently impart any frictional forces.
-  std::vector<ConfigurationLimitConstraint> limit_constraints;
+  /// The ℝⁱˣᵐ Jacobian matrix that transforms generalized velocities (m is the
+  /// dimension of generalized velocity) into velocities along the i
+  /// configuration limits.
+  MatrixX<T> L;
 
   /// The ℝᵐ vector v, the generalized velocity immediately before any impulsive
   /// forces (from impact) are applied.
