@@ -254,19 +254,22 @@ GTEST_TEST(UnitInertia, AxiallySymmetric) {
   EXPECT_NEAR(moments(2), I_axial, kTolerance);
 }
 
-// Unit test for the factory method UnitInertia::ThinRod().
+// Unit test for the factory methods:
+//   - UnitInertia::StraightLine().
+//   - UnitInertia::ThinRod().
 // This test creates the unit inertia for a thin rod or wire of length L with
 // its axis aligned with an arbitrary vector b. The unit inertia is computed
-// using two methods:
-// 1. Using the ThinRod() factory.
+// using three methods:
+// 1. Using the factory StraightLine().
 // 2. Using the SolidCylinder() factory to create the unit inertia of a zero
 //    radius cylinder aligned with the z axis which is then re-expressed to the
 //    same frame E as the vector b_E.
-// The two unit inertias are then compared to verify ThinRod().
+// 3. Using the factory ThinRod().
+// The three unit inertia objects are then compared to verify the results.
 GTEST_TEST(UnitInertia, ThinRod) {
   const double L = 1.5;  // Rod's length.
 
-  // Moment of inertia for an infinitesimally thin rod of lenght L.
+  // Moment of inertia for an infinitesimally thin rod of length L.
   const double I_rod = L * L / 12.0;
 
   // Rod's axis. A vector on the y-z plane, at -pi/4 from the z axis.
@@ -278,9 +281,9 @@ GTEST_TEST(UnitInertia, ThinRod) {
   Matrix3<double> R_EZ =
       AngleAxisd(-M_PI_4, Vector3d::UnitX()).toRotationMatrix();
 
-  // Unit inertia computed with ThinRod().
+  // Unit inertia computed with StraightLine().
   UnitInertia<double> G =
-      UnitInertia<double>::ThinRod(I_rod, b_E);
+      UnitInertia<double>::StraightLine(I_rod, b_E);
 
   // The expected inertia is that of a cylinder of zero radius and height L with
   // its longitudinal axis aligned with b.
@@ -289,6 +292,11 @@ GTEST_TEST(UnitInertia, ThinRod) {
 
   // Verify the computed values.
   EXPECT_TRUE(G.CopyToFullMatrix3().isApprox(
+      G_expected.CopyToFullMatrix3(), kEpsilon));
+
+  // Verify the result from ThinRod():
+  UnitInertia<double> G_rod = UnitInertia<double>::ThinRod(L, b_E);
+  EXPECT_TRUE(G_rod.CopyToFullMatrix3().isApprox(
       G_expected.CopyToFullMatrix3(), kEpsilon));
 }
 

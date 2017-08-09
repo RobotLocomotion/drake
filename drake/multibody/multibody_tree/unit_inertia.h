@@ -341,13 +341,52 @@ class UnitInertia : public RotationalInertia<T> {
                           G_matrix(0, 1), G_matrix(0, 2), G_matrix(1, 2));
   }
 
-  /// Computes the unit inertia for an object of unit-mass with its mass
-  /// uniformly distributed about a straight line with direction `b_E`.
-  /// unit moment of inertia K about its center for any axis perpendicular to
-  /// vector `b_E`.
-  static UnitInertia<T> ThinRod(const T& K, const Vector3<T>& b_E) {
-    DRAKE_DEMAND(K >= 0.0);
+  /// Computes the unit inertia for a body B of unit-mass uniformly distributed
+  /// along a straight, finite, line L with direction `b_E` and with moment of
+  /// inertia K about any axis perpendicular to this line. Since the mass of the
+  /// body is uniformly distribuited on this line L, its center of mass is
+  /// located right at the center.
+  /// As an example, consider the inertia of a thin for which its transversal
+  /// dimensions can be neglected, see ThinRod().
+  ///
+  /// This method aborts if K not positive.
+  ///
+  /// @note This is the particular case for an axially symmetric unit inertia
+  /// with zero moment about its axis.
+  ///
+  /// @param[in] K
+  ///   Unit inertia about any axis pependicular to the line.
+  /// @param[in] b_E
+  ///   Vector defining the direction of the line, expressed in a frame E.
+  ///   `b_E` can have a norm different from one, its norm is ignored and only
+  ///   its direction is needed.
+  /// @retval G_Bcm_E
+  ///   The unit inertia for a body B of unit mass uniformly distributed along a
+  ///   straigth line L, about its center of mass `Bcm` which is located at the
+  ///   center of the line, expressed in the same frame E as the input unit
+  ///   vector `b_E`.
+  static UnitInertia<T> StraightLine(const T& K, const Vector3 <T>& b_E) {
+    DRAKE_DEMAND(K > 0.0);
     return AxiallySymmetric(0.0, K, b_E);
+  }
+
+  /// Computes the unit inertia for a unit mass rod B of length L, about its
+  /// center of mass, with its mass uniformly distributed along a line parallel
+  /// to vector `b_E`.
+  ///
+  /// This method aborts if L not positive.
+  ///
+  /// @param[in] L The length of the rod. It must be positive.
+  /// @param[in] b_E
+  ///   Vector defining the axis of the rod, expressed in a frame E. `b_E` can
+  ///   have a norm different from one, its norm is ignored and only its
+  ///   direction is needed.
+  /// @retval G_Bcm_E
+  ///   The unit inertia of the rod B about its center of mass,
+  ///   expressed in the same frame E as the input unit vector `b_E`.
+  static UnitInertia<T> ThinRod(const T& L, const Vector3 <T>& b_E) {
+    DRAKE_DEMAND(L > 0.0);
+    return StraightLine(L * L / 12.0, b_E);
   }
 
   /// Constructs a unit inertia with equal moments of inertia along its
