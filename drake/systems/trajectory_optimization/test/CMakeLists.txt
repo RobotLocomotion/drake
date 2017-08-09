@@ -1,2 +1,5 @@
 drake_add_cc_test(direct_collocation_constraint_test)
 target_link_libraries(direct_collocation_constraint_test drakeTrajectoryOptimization)
+
+drake_add_cc_test(contact_implicit_constraints_test)
+target_link_libraries(contact_implicit_constraints_test drakeContactImplicitConstraints)

@@ -45,10 +45,11 @@ GeneralNonlinearComplementaryConstraint::DoAddConstraintToProgram(
   DRAKE_ASSERT(z_size_ == z.rows());
   auto alpha = prog->NewContinuousVariables(num_complementary_);
   auto beta = prog->NewContinuousVariables(num_complementary_);
-  auto nonlinear_constraint{
-      std::make_shared<NonlinearComplementaryNonlinearConstraint>(
-          g_double_, g_autodiff_, h_double_, h_autodiff_, num_complementary_,
-          z_size_, complementary_epsilon_)};
+  std::shared_ptr<NonlinearComplementaryNonlinearConstraint>
+      nonlinear_constraint{
+          std::make_shared<NonlinearComplementaryNonlinearConstraint>(
+              g_double_, g_autodiff_, h_double_, h_autodiff_,
+              num_complementary_, z_size_, complementary_epsilon_)};
   auto nonlinear_binding =
       prog->AddConstraint(nonlinear_constraint, {z, alpha, beta});
   auto bounding_box_binding = prog->AddBoundingBoxConstraint(
