@@ -588,18 +588,25 @@ specified frame. Thus, unambiguous notation for spatial vectors must specify
 both a point and an expressed-in frame. Motion quantities must also state the
 reference frame with respect to which the motion is measured.
 
-Example spatial quantity      |At |Exp|     Typeset        |   Code
-------------------------------|---|:-:|:------------------:|:-------:
-Body B's spatial velocity in A|Bo | A |@f$^AV^B         @f$|`V_AB`
-Same, but expressed in world  |Bo | W |@f$[^AV^B]_W     @f$|`V_AB_W`
-B's spatial acceleration in W |Bcm| W |@f$^WA^{B_{cm}}  @f$|`A_WBcm`
-Spatial force applied to B    |Bcm| W |@f$[F^{B_{cm}}]_W@f$|`F_Bcm_W`
+Example spatial quantity       |At |Exp|     Typeset        |   Code
+-------------------------------|---|:-:|:------------------:|:-------:
+Body B's spatial velocity in A |Bo | A |@f$^AV^B         @f$|`V_AB`
+Same, but expressed in world   |Bo | W |@f$[^AV^B]_W     @f$|`V_AB_W`
+B's spatial acceleration in W  |Bcm| W |@f$^WA^{B_{cm}}  @f$|`A_WBcm`
+Spatial force acting on body B |Bcm| W |@f$[F^{B_{cm}}]_W@f$|`F_Bcm_W`
+Spatial force acting on body A | Q | W |@f$[F^{A/Q}]_W   @f$|`F_AQ_W`
 
 In the above table "At" is the point at which the translational activity occurs;
-"Exp" is the expressed-in frame in which both vectors are expressed. Note that
-the expressed-in frame defaults to the reference (left) frame and that the point
-defaults to the target (right) frame origin. You should use fully-expanded
-symbols if there is any chance of confusion.
+"Exp" is the expressed-in frame in which both vectors are expressed. The
+expressed-in frame defaults to the reference (left) frame and the point
+defaults to the target (right) frame origin. Note that for spatial forces we
+need to identify the body (actually a frame) on which the force is acting, as
+well as a point rigidly fixed to that body (or frame). When the body is obvious
+from the point name (such as Bo or Bcm above), the body does not need to be
+specified again. However, when the body is not clear it should be listed before
+the point as in the last line of the table above. There it can be read as "the
+point of body A coincident in space with point Q". You should use fully-expanded
+symbols, and helpful comments, if there is any chance of confusion.
 
 Next topic: @ref multibody_spatial_inertia
 **/
