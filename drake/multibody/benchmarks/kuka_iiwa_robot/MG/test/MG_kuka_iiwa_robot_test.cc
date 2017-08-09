@@ -211,7 +211,7 @@ GTEST_TEST(KukaIIwaRobot, TorqueMotorA) {
   zTorques = MG_kuka_robot.CalcRevoluteMotorZTorques(q, q_Dt, q_DDt);
 
   // Expected solution for the motor torques to hold the robot static.
-  // The expected solution is specific to this configuration.
+  // Note: The expected solution is specific to this configuration.
   const double mB = 6.35, mE = 3.5;
   const double gravity_moment_B =  0.0003 * mB * g;
   const double gravity_moment_E =  0.0001 * mE * g;
