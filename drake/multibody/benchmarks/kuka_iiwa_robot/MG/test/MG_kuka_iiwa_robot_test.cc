@@ -202,6 +202,24 @@ GTEST_TEST(KukaIIwaRobot, TorqueMotorA) {
   EXPECT_TRUE(F_Eo_De.IsApprox(F_Eo_De_expected, 40 * kEpsilon));
   EXPECT_TRUE(F_Fo_Ef.IsApprox(F_Fo_Ef_expected, 40 * kEpsilon));
   EXPECT_TRUE(F_Go_Fg.IsApprox(F_Go_Fg_expected, 40 * kEpsilon));
+
+  // Redo test now adding Earth's uniform gravitational forces (in m/s^2).
+  const double g = 9.81;
+  MG_kuka_robot.SetEarthGravity(g);
+
+  // MotionGenesis (MG) solution for the motor torques to hold the robot static.
+  zTorques = MG_kuka_robot.CalcRevoluteMotorZTorques(q, q_Dt, q_DDt);
+
+  // Expected solution for the motor torques to hold the robot static.
+  // The expected solution is specific to this configuration.
+  const double mB = 6.35, mE = 3.5;
+  const double gravity_moment_B =  0.0003 * mB * g;
+  const double gravity_moment_E =  0.0001 * mE * g;
+  const double gravity_moment_sum = gravity_moment_B + gravity_moment_E;
+  zTorques_expected << 1, gravity_moment_sum, 1, -gravity_moment_E, 1, 0, 1;
+
+  // Compare MG results with expected results.
+  EXPECT_TRUE(zTorques.isApprox(zTorques_expected, 40 * kEpsilon));
 }
 
 }  // namespace
