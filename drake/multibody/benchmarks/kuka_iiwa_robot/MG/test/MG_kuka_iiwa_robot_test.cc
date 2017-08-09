@@ -173,7 +173,7 @@ GTEST_TEST(KukaIIwaRobot, TorqueMotorA) {
   constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
   EXPECT_TRUE(zTorques.isApprox(zTorques_expected, kEpsilon));
 
-  // Redo test with last motor creating 1 rad/sec^2 angular acceleration on G.
+  // Redo test with last motor creating 1000 rad/s^2 angular acceleration on G.
   q_DDt(6) = 1000;
   zTorques = MG_kuka_robot.CalcRevoluteMotorZTorques(q, q_Dt, q_DDt);
   zTorques_expected << 1, 0, 1, 0, 1, 0, 1;
