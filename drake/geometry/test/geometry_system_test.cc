@@ -86,7 +86,8 @@ class GeometrySystemTest : public ::testing::Test {
 
   static std::unique_ptr<GeometryInstance<double>> make_sphere_instance(
       double radius = 1.0) {
-    return make_unique<GeometryInstance<double>>();
+    return make_unique<GeometryInstance<double>>(Isometry3<double>::Identity(),
+                                                 make_unique<Sphere>(radius));
   }
 
   GeometrySystem<double> system_;
