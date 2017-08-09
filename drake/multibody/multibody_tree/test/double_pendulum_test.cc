@@ -108,6 +108,9 @@ class PendulumTests : public ::testing::Test {
   // Sets up the MultibodyTree model for a double pendulum. See this unit test's
   // class description for details.
   void CreatePendulumModel() {
+    // TODO(amcastro-tri): Create unit inertias using a specific factory.
+    // Either AxiallySymmetric() or ThinRod() once implemented.
+
     // Spatial inertia of the upper link about its frame U and expressed in U.
     Vector3d link1_com_U = Vector3d::Zero();  // U is at the link's COM.
     // For a thin rod in the x-y plane, the inertia bout the y axis can be
