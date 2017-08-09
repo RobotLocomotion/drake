@@ -4,6 +4,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
 namespace drake {
 namespace systems {
@@ -48,7 +49,8 @@ class NonSymbolicSystem : public LeafSystem<T> {
         BasicVector<T>(1),
         [this](const Context<T>& context, BasicVector<T>* output) {
           const BasicVector<T>& input = *(this->EvalVectorInput(context, 0));
-          (*output)[0] = magic_copysign(this->magic(), input[0]);
+          (*output)[0] = test::copysign_int_to_non_symbolic_scalar(
+              this->magic(), input[0]);
         });
   }
 
@@ -60,18 +62,6 @@ class NonSymbolicSystem : public LeafSystem<T> {
   int magic() const { return magic_; }
 
  private:
-  // A non-symbolic-compatible helper function.  If the SystemScalarConverter
-  // implementation fails to avoid instantiating S<symbolic::Expression> when
-  // told not to, then we would see compile errors that this function does not
-  // compile with T = symbolic::Expression.
-  static T magic_copysign(int magic, const T& value) {
-    if ((magic < 0) == (value < 0)) {
-      return value;
-    } else {
-      return -value;
-    }
-  }
-
   int magic_{};
 };
 
