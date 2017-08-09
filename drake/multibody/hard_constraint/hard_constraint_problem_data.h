@@ -11,7 +11,11 @@ namespace multibody {
 namespace hard_constraint {
 
 /// Structure for holding hard constraint data for computing constraint forces
-/// under the hard constraint model at the acceleration-level.
+/// under the hard constraint model at the acceleration-level. All mechanical
+/// quantity member data of this class (N, F, L, and their time derivatives; f;
+/// the generalized inertia matrix) are assumed to be calculated for a
+/// multi-rigid body system at time t, generalized configuration q(t), and
+/// generalized velocity v(t).
 template <class T>
 struct HardConstraintAccelProblemData {
   /// The indices of the sliding contacts (those contacts at which there is
@@ -94,9 +98,10 @@ struct HardConstraintAccelProblemData {
   MatrixX<T> N_minus_mu_Q;
 
   /// The ℝᵐ vector f, the generalized external force vector that
-  /// comprises gravitational, centrifugal, Coriolis, actuator, etc. forces. m
-  /// is the dimension of the generalized force, which is also equal to the
-  /// domension of the generalized velocity.
+  /// comprises gravitational, centrifugal, Coriolis, actuator, etc. forces
+  /// applied to the rigid body system at q. m is the dimension of the
+  /// generalized force, which is also equal to the dimension of the
+  /// generalized velocity.
   VectorX<T> f;
 
   /// A function for solving the equation MX = B for matrix X, given input
@@ -107,7 +112,10 @@ struct HardConstraintAccelProblemData {
 
 /// Structure for holding hard constraint data for computing constraint forces
 /// under the hard constraint model at the velocity-level (i.e., impact
-/// problems).
+/// problems). All mechanical quantity member data of this class (N, F, L, the
+/// generalized inertia matrix) are assumed to be calculated for a
+/// multi-rigid body system at time t, generalized configuration q(t), and
+/// generalized velocity v(t).
 template <class T>
 struct HardConstraintVelProblemData {
   /// The number of spanning vectors in the contact tangents (used to linearize
