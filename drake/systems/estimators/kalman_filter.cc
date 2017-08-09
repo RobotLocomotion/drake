@@ -3,7 +3,7 @@
 #include <utility>
 
 #include "drake/common/drake_assert.h"
-#include "drake/math/continuous_algebraic_ricatti_equation.h"
+#include "drake/math/continuous_algebraic_riccati_equation.h"
 #include "drake/systems/estimators/luenberger_observer.h"
 #include "drake/systems/primitives/linear_system.h"
 
