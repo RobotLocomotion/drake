@@ -255,7 +255,11 @@ build:ubsan --copt -g
 build:ubsan --copt -fsanitize=undefined
 build:ubsan --copt -O1
 build:ubsan --copt -fno-omit-frame-pointer
-build:ubsan --linkopt -fsanitize=undefined
+build:ubsan --linkopt /usr/lib/llvm-3.9/lib/clang/3.9.1/lib/linux/libclang_rt.ubsan_standalone_cxx-x86_64.a
+build:ubsan --linkopt /usr/lib/llvm-3.9/lib/clang/3.9.1/lib/linux/libclang_rt.ubsan_standalone-x86_64.a
+build:ubsan --linkopt -lpthread
+build:ubsan --linkopt -lrt
+build:ubsan --linkopt -ldl
 test:ubsan --run_under=//tools:ubsan
 test:ubsan --test_env=UBSAN_OPTIONS
 test:ubsan --test_tag_filters=-gurobi,-mosek,-snopt,-no_ubsan
