@@ -21,6 +21,7 @@ set(sources
   symbolic_expression.cc
   symbolic_expression_cell.cc
   symbolic_expression_cell.h
+  symbolic_decompose.cc
   symbolic_formula.cc
   symbolic_formula_cell.cc
   symbolic_formula_cell.h
@@ -66,6 +67,7 @@ set(installed_headers
   scoped_singleton.h
   sorted_vectors_have_intersection.h
   symbolic.h
+  symbolic_decompose.h
   symbolic_environment.h
   symbolic_expression.h
   symbolic_expression_visitor.h
