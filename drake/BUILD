@@ -91,7 +91,7 @@ _LIBDRAKE_COMPONENTS = [
     "//drake/manipulation/util:robot_state_msg_translator",
     "//drake/manipulation/util:trajectory_utils",
     "//drake/math:autodiff",
-    "//drake/math:continuous_algebraic_ricatti_equation",
+    "//drake/math:continuous_algebraic_riccati_equation",
     "//drake/math:discrete_algebraic_riccati_equation",
     "//drake/math:eigen_sparse_triplet",
     "//drake/math:evenly_distributed_pts_on_sphere",

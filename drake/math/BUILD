@@ -178,11 +178,11 @@ drake_cc_googletest(
     ],
 )
 drake_cc_googletest(
-  name = "continuous_algebraic_riccati_equation_test",
-  deps = [
-    ":continuous_algebraic_riccati_equation",
-    "//drake/common:eigen_matrix_compare",
-  ],
+    name = "continuous_algebraic_riccati_equation_test",
+    deps = [
+        ":continuous_algebraic_riccati_equation",
+        "//drake/common:eigen_matrix_compare",
+    ],
 )
 
 drake_cc_googletest(
