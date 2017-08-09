@@ -372,7 +372,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// @param[in, out] A_WB_array_ptr
   ///   A pointer to a valid, non nullptr, vector of spatial accelerations
   ///   containing the spatial acceleration `A_WB` for each body. On input, it
-  ///   must contain already pre-computed spatial accelerations for the outboard
+  ///   must contain already pre-computed spatial accelerations for the inboard
   ///   bodies to this node's body B, see precondition below.
   ///   It must be of size equal to the number of bodies in the MultibodyTree
   ///   and ordered by BodyNodeIndex. The calling MultibodyTree method must
@@ -531,6 +531,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
                                                 V_PB_W, A_PB_W);
   }
 
+  /// Computes the generalized forces `tau` for a single BodyNode.
   /// This method is used by MultibodyTree within a tip-to-base loop to compute
   /// the vector of generalized forces `tau` that would correspond with a known
   /// set of spatial accelerations `A_WB` for each body in the MultibodyTree.
@@ -550,12 +551,15 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   ///   conditions are satisfied.
   /// @param[out] F_BMo_W_array_ptr
   ///   A pointer to a valid, non nullptr, vector of spatial forces
-  ///   containing, for each body B, the spatial force `F_BMo_W` on body B about
-  ///   the origin of its inboard mobilizer `Mo`, expressed in the world frame
-  ///   W. It must be of size equal to the number of bodies in the MultibodyTree
+  ///   containing, for each body B, the spatial force `F_BMo_W` corresponding
+  ///   to its inboard mobilizer reaction forces on body B about the origin `Mo`
+  ///   of the inboard mobilizer, expressed in the world frame W.
+  ///   It must be of size equal to the number of bodies in the MultibodyTree
   ///   and ordered by BodyNodeIndex. The calling MultibodyTree method must
   ///   guarantee these conditions are satisfied. This method will abort if the
   ///   the pointer is null.
+  ///   To access a mobilizer's reaction force on a given body B, access this
+  ///   array with the index returned by Body::get_node_index().
   /// @param[out] tau_array
   ///   A non-null pointer to the output vector of generalized forces that would
   ///   result in body B having spatial acceleration `A_WB`. This method will
@@ -600,7 +604,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     //  - C within a loop over children, one of body B's children.
     //  - Mc The origin of the outboard (or mobilized) frame of the mobilizer
     //       attached to body C.
-    // The goal is computing the spatial force F_BMo_W (on body B about its
+    // The goal is computing the spatial force F_BMo_W (on body B applied at its
     // mobilized frame origin Mo) exerted by its inboard mobilizer that is
     // required to produce the spatial acceleration A_WB. The generalized forces
     // are then obtained as the projection of the spatial force F_BMo in the
@@ -608,7 +612,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // forces correspond to the working components of the spatial force living
     // in the motion sub-space of this node's mobilizer.
     // The calculation is recursive (from tip to base) and assumes the spatial
-    // force F_CMc on body C about Mc is already computed in F_BMo_W_array_ptr.
+    // force F_CMc on body C at Mc is already computed in F_BMo_W_array_ptr.
     //
     // The spatial force through body B's inboard mobilizer is obtained from a
     // force balance (essentially the F = m * a for rigid bodies, see
@@ -710,12 +714,13 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     const SpatialForce<T> F_BMo_F = R_WF * F_BMo_W;
 
     // Generalized velocities and forces use the same indexing.
-    auto tau = get_mutable_forces_from_array(tau_array);
+    Eigen::VectorBlock<VectorX<T>> tau =
+        get_mutable_forces_from_array(tau_array);
 
     // The generalized forces on the mobilizer correspond to the active
     // components of the spatial force performing work. Therefore we need to
     // project F_BMo along the directions of motion.
-    // Project as: tau = H_FM^T(q) * F_BMo_F, Eq. (4).
+    // Project as: tau = H_FMᵀ(q) * F_BMo_F, Eq. (4).
     get_mobilizer().ProjectSpatialForce(context, F_BMo_F, tau);
   }
 

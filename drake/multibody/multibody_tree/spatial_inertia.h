@@ -330,14 +330,29 @@ class SpatialInertia {
   /// </pre>
   /// where `alpha_WB` and `a_WBo` are the rotational and translational
   /// components of the spatial acceleration `A_WB`, respectively.
+  ///
+  /// @note
+  /// The term `F_Bo_E` computed by this operator appears in the equations of
+  /// motion for a rigid body which, when writen about the origin `Bo` of the
+  /// body frame B (which does not necessarily need to coincide with the body's
+  /// center of mass), read as: <pre>
+  ///   F_BBo = M_Bo_W * A_WB + b_Bo
+  /// </pre>
+  /// where `b_Bo` contains the velocity dependent gyroscopic terms (see
+  /// Eq. 2.26, p. 27, in A. Jain's book).
   SpatialForce<T> operator*(const SpatialAcceleration<T>& A_WB_E) const {
     const Vector3<T>& alpha_WB_E = A_WB_E.rotational();
     const Vector3<T>& a_WBo_E = A_WB_E.translational();
     const Vector3<T>& mp_BoBcm_E = CalcComMoment();  // = m * p_BoBcm
+    // Return (see class' documentation):
+    // ⌈ tau_Bo_E ⌉   ⌈    I_Bo_E     | m * p_BoBcm× ⌉   ⌈ alpha_WB_E ⌉
+    // |          | = |               |              | * |            |
+    // ⌊  f_Bo_E  ⌋   ⌊ -m * p_BoBcm× |   m * Id     ⌋   ⌊  a_WBo_E   ⌋
     return SpatialForce<T>(
         /* rotational */
         CalcRotationalInertia() * alpha_WB_E + mp_BoBcm_E.cross(a_WBo_E),
-        /* translational */
+        /* translational: notice the order of the cross product is the reversed
+         * of the documentation above and thus no minus sign is needed. */
         alpha_WB_E.cross(mp_BoBcm_E) + get_mass() * a_WBo_E);
   }
 

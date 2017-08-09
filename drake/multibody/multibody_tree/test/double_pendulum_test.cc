@@ -461,14 +461,14 @@ class PendulumKinematicTests : public PendulumTests {
   /// Verifies that we can compute the mass matrix of the system using inverse
   /// dynamics.
   /// The result from inverse dynamics is the vector of generalized forces:
-  ///   tau = H(q) * vdot + C(q, v) * v
+  ///   tau = M(q) * vdot + C(q, v) * v
   /// where q and v are the generalized positions and velocities, respectively.
   /// When v = 0 the Coriolis and gyroscopic forces term C(q, v) * v is zero.
-  /// Therefore the i-th column of H(q) can be obtained performing inverse
+  /// Therefore the i-th column of M(q) can be obtained performing inverse
   /// dynamics with an acceleration vector vdot = e_i, with e_i the i-th vector
   /// in the standard basis of ℝ²:
-  ///   tau = Hi(q) = H(q) * e_i
-  /// where Hi(q) is the i-th column in H(q).
+  ///   tau = Hi(q) = M(q) * e_i
+  /// where Hi(q) is the i-th column in M(q).
   ///
   /// The solution is verified against the independent benchmark from
   /// drake::multibody::benchmarks::Acrobot.
@@ -480,10 +480,10 @@ class PendulumKinematicTests : public PendulumTests {
 
     Matrix2d H;
 
-    vdot = Vector2d::UnitX();  // First column of H(q).
+    vdot = Vector2d::UnitX();  // First column of M(q).
     H.col(0) = VerifyInverseDynamics(q, v, vdot);
 
-    vdot = Vector2d::UnitY();  // Second column of H(q).
+    vdot = Vector2d::UnitY();  // Second column of M(q).
     H.col(1) = VerifyInverseDynamics(q, v, vdot);
 
     Matrix2d H_expected = acrobot_benchmark_.CalcMassMatrix(elbow_angle);
@@ -528,7 +528,7 @@ class PendulumKinematicTests : public PendulumTests {
   // would need to be applied in order to attain the generalized accelerations
   // vdot.
   // The generalized accelerations are given by:
-  //   tau = H(q) * vdot + C(q, v) * v
+  //   tau = M(q) * vdot + C(q, v) * v
   // where q and v are the generalized positions and velocities, respectively.
   // These, together with the generalized accelerations vdot are inputs to this
   // method.
@@ -543,8 +543,8 @@ class PendulumKinematicTests : public PendulumTests {
     DRAKE_DEMAND(vdot.size() == model_->get_num_velocities());
 
     // This is the minimum factor of the machine precision within which these
-    // tests pass. There is an additional factor of two (2) to be on the safe
-    // side on other architectures (particularly in Macs).
+    // tests pass. This factor incorporates an additional factor of two (2) to
+    // be on the safe side on other architectures (particularly in Macs).
     const int kEpsilonFactor = 5;
     const double kTolerance = kEpsilonFactor * kEpsilon;
 
@@ -779,9 +779,13 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
       EXPECT_TRUE(A_WU.IsApprox(A_WU_expected, kTolerance));
       EXPECT_TRUE(A_WL.IsApprox(A_WL_expected, kTolerance));
 
-      // For a non-zero vdot:
-      vdot(0) = -1.0;  // Shoulder: rad/sec^2
-      vdot(1) =  2.0;  // Elbow: rad/sec^2
+      // For a non-zero vdot [rad/sec^2]:
+      shoulder_mobilizer_->get_mutable_velocities_from_array(&vdot)(0) = -1.0;
+      elbow_mobilizer_->get_mutable_velocities_from_array(&vdot)(0) = 2.0;
+      EXPECT_EQ(shoulder_mobilizer_->get_velocities_from_array(vdot).size(), 1);
+      EXPECT_EQ(shoulder_mobilizer_->get_velocities_from_array(vdot)(0), -1.0);
+      EXPECT_EQ(elbow_mobilizer_->get_velocities_from_array(vdot).size(), 1);
+      EXPECT_EQ(elbow_mobilizer_->get_velocities_from_array(vdot)(0), 2.0);
 
       model_->CalcAccelerationKinematicsCache(*context_, pc, vc, vdot, &ac);
 
@@ -837,7 +841,7 @@ TEST_F(PendulumKinematicTests, InverseDynamics) {
 
   // For the double pendulum system it turns out that the mass matrix is only a
   // function of the elbow angle, independent of the shoulder angle.
-  // Therefore H(q) = H(elbow_angle). We therefore run the same previous tests
+  // Therefore M(q) = H(elbow_angle). We therefore run the same previous tests
   // with different shoulder angles to verify this is true.
   VerifyMassMatrixViaInverseDynamics(M_PI / 3.0, 0.0);
   VerifyMassMatrixViaInverseDynamics(M_PI / 3.0, M_PI / 2.0);

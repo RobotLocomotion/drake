@@ -598,15 +598,15 @@ class MultibodyTree {
   /// set of generalized forces `tau` that would need to be applied at each
   /// Mobilizer in order to attain the specified generalized accelerations.
   /// Mathematically, this method computes: <pre>
-  ///   tau = H(q) * vdot + C(q, v) * v
+  ///   tau = M(q) * vdot + C(q, v) * v
   /// </pre>
-  /// where `H(q)` is the %MultibodyTree mass matrix and `C(q, v) * v` is the
+  /// where `M(q)` is the %MultibodyTree mass matrix and `C(q, v) * v` is the
   /// bias term containing Coriolis and gyroscopic effects.
   /// This method does not compute explicit expressions for the mass matrix nor
   /// for the bias term, which would be of at least `O(n²)` complexity, but it
   /// implements an `O(n)` Newton-Euler recursive algorithm, where n is the
   /// number of bodies in the %MultibodyTree. The explicit formation of the
-  /// mass matrix `H(q)` would require the calculation of `O(n²)` entries while
+  /// mass matrix `M(q)` would require the calculation of `O(n²)` entries while
   /// explicitly forming the product `C(q, v) * v` could require up to `O(n³)`
   /// operations (see [Featherstone 1987, §4]), depending on the implementation.
   /// The recursive Newton-Euler algorithm is the most efficient currently known
@@ -622,23 +622,28 @@ class MultibodyTree {
   ///   `context`.
   /// @param[in] known_vdot
   ///   A vector with the known generalized accelerations `vdot` for the full
-  ///   %MultibodyTree model.
+  ///   %MultibodyTree model. Use Mobilizer::get_velocities_from_array() to
+  ///   access entries into this array for a particular Mobilizer. You can use
+  ///   the mutable version of this method to write into this array.
   /// @param[out] A_WB_array
   ///   A pointer to a valid, non nullptr, vector of spatial accelerations
   ///   containing the spatial acceleration `A_WB` for each body. It must be of
   ///   size equal to the number of bodies. This method will abort if the the
   ///   pointer is null or if `A_WB_array` is not of size `get_num_bodies()`.
   ///   On output, entries will be ordered by BodyNodeIndex.
-  ///   These accelerations can be read in the proper order with
-  ///   Body::get_from_spatial_acceleration_array().
+  ///   To access the acceleration `A_WB` of given body B in this array, use the
+  ///   index returned by Body::get_node_index().
   /// @param[out] F_BMo_W_array
   ///   A pointer to a valid, non nullptr, vector of spatial forces
-  ///   containing, for each body B, the spatial force `F_BMo_W` on body B about
-  ///   the origin of its inboard mobilizer `Mo`, expressed in the world frame
-  ///   W. It must be of size equal to the number of bodies in the
-  ///   MultibodyTree. This method will abort if the the pointer
-  ///   is null or if `F_BMo_W_array` is not of size `get_num_bodies()`.
+  ///   containing, for each body B, the spatial force `F_BMo_W` corresponding
+  ///   to its inboard mobilizer reaction forces on body B about the origin `Mo`
+  ///   of the inboard mobilizer, expressed in the world frame W.
+  ///   It must be of size equal to the number of bodies in the MultibodyTree.
+  ///   This method will abort if the the pointer is null or if `F_BMo_W_array`
+  ///   is not of size `get_num_bodies()`.
   ///   On output, entries will be ordered by BodyNodeIndex.
+  ///   To access a mobilizer's reaction force on given body B in this array,
+  ///   use the index returned by Body::get_node_index().
   ///
   /// @note There is no mechanism to assert that either `A_WB_array` nor
   ///   `F_BMo_W_array` are ordered by BodyNodeIndex.
@@ -649,6 +654,8 @@ class MultibodyTree {
   /// call to CalcVelocityKinematicsCache().
   ///
   /// @throws std::bad_cast if `context` is not a `MultibodyTreeContext`.
+  // TODO(amcastro-tri): add provision for an array of applied spatial forces
+  // per body. These could contain both external as well as constraint forces.
   void CalcInverseDynamics(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,

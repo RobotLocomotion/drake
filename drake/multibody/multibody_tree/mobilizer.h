@@ -405,6 +405,26 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
       const Eigen::Ref<const VectorX<T>>& vdot) const = 0;
   /// @}
 
+  /// Returns a const Eigen expression of the vector of generalized velocities
+  /// for `this` mobilizer from a vector of generalized velocities for the
+  /// entire MultibodyTree model.
+  /// @note This same method can be used to access arrays of generalized
+  /// accelerations (v̇) and of generalized forces (τ) since they all have the
+  /// same dimensions and are indexed in the same way.
+  Eigen::VectorBlock<const VectorX<T>> get_velocities_from_array(
+      const VectorX<T>& v) const {
+    return v.segment(topology_.velocities_start_in_v,
+                     topology_.num_velocities);
+  }
+
+  /// Mutable version of get_velocities_from_array()
+  Eigen::VectorBlock<VectorX<T>> get_mutable_velocities_from_array(
+      VectorX<T>* v) const {
+    DRAKE_DEMAND(v != nullptr);
+    return v->segment(topology_.velocities_start_in_v,
+                      topology_.num_velocities);
+  }
+
   /// For MultibodyTree internal use only.
   virtual std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
       const internal::BodyNode<T>* parent_node,

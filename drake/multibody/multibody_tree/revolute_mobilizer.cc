@@ -73,9 +73,9 @@ void RevoluteMobilizer<T>::ProjectSpatialForce(
     const SpatialForce<T>& F_Mo_F,
     Eigen::Ref<VectorX<T>> tau) const {
   DRAKE_ASSERT(tau.size() == kNv);
-  // Computes tau = H_FM^T * F_Mo_F where H_FM ∈ ℝ⁶ is:
-  // H_FM = [axis_F^T; 0^T]^T (see CalcAcrossMobilizerSpatialVelocity().)
-  // Therefore H_FM^T * F_Mo_F = axis_F.dot(F_Mo_F.translational()):
+  // Computes tau = H_FMᵀ * F_Mo_F where H_FM ∈ ℝ⁶ is:
+  // H_FM = [axis_Fᵀ; 0ᵀ]ᵀ (see CalcAcrossMobilizerSpatialVelocity().)
+  // Therefore H_FMᵀ * F_Mo_F = axis_F.dot(F_Mo_F.translational()):
   tau[0] = axis_F_.dot(F_Mo_F.rotational());
 }
 
