@@ -7,6 +7,7 @@
 
 #include "drake/automotive/curve2.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
 namespace drake {
 namespace automotive {
@@ -249,20 +250,29 @@ GTEST_TEST(TrajectoryCarTest, ToAutoDiff) {
   const Curve2d curve{waypoints};
   const TrajectoryCar<double> dut{curve};
 
-  const auto& autodiff_dut = dut.ToAutoDiffXd();  // The device under test.
-  ASSERT_NE(autodiff_dut.get(), nullptr);
+  EXPECT_TRUE(is_autodiffxd_convertible(dut, [&](const auto& autodiff_dut) {
+    auto context = autodiff_dut.CreateDefaultContext();
+    auto output = autodiff_dut.AllocateOutput(*context);
+    auto derivatives = autodiff_dut.AllocateTimeDerivatives();
 
-  auto context = autodiff_dut->CreateDefaultContext();
-  auto output = autodiff_dut->AllocateOutput(*context);
-  auto derivatives = autodiff_dut->AllocateTimeDerivatives();
+    context->FixInputPort(
+        dut.command_input().get_index(),
+        systems::BasicVector<AutoDiffXd>::Make(AutoDiffXd(0.)));
 
-  context->FixInputPort(dut.command_input().get_index(),
-                        systems::BasicVector<AutoDiffXd>::Make(AutoDiffXd(0.)));
+    // Check that the public methods can be called without exceptions.
+    autodiff_dut.CalcOutput(*context, output.get());
+    autodiff_dut.CalcTimeDerivatives(*context, derivatives.get());
+  }));
+}
 
-  // Check that the public methods can be called without exceptions.
-  EXPECT_NO_THROW(autodiff_dut->CalcOutput(*context, output.get()));
-  EXPECT_NO_THROW(
-      autodiff_dut->CalcTimeDerivatives(*context, derivatives.get()));
+GTEST_TEST(TrajectoryCarTest, ToSymbolic) {
+  const std::vector<Point2d> waypoints{{10., 20.},  // BR
+                                       {10., 30.}};
+  const Curve2d curve{waypoints};
+  const TrajectoryCar<double> dut{curve};
+
+  // We do not support symbolic form.
+  EXPECT_EQ(dut.ToSymbolic(), nullptr);
 }
 
 }  // namespace

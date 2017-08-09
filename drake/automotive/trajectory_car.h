@@ -60,7 +60,7 @@ namespace automotive {
 ///
 /// @ingroup automotive_plants
 template <typename T>
-class TrajectoryCar : public systems::LeafSystem<T> {
+class TrajectoryCar final : public systems::LeafSystem<T> {
  public:
   typedef typename Curve2<double>::Point2 Point2d;
 
@@ -69,7 +69,9 @@ class TrajectoryCar : public systems::LeafSystem<T> {
   /// Constructs a TrajectoryCar system that traces a given two-dimensional @p
   /// curve.  Throws an error if the curve is empty (has a zero @p path_length).
   explicit TrajectoryCar(Curve2<double> curve)
-      : curve_(std::move(curve)) {
+      : systems::LeafSystem<T>(
+            systems::SystemTypeTag<automotive::TrajectoryCar>{}),
+        curve_(std::move(curve)) {
     if (curve_.path_length() == 0.0) {
       throw std::invalid_argument{"empty curve"};
     }
@@ -80,6 +82,11 @@ class TrajectoryCar : public systems::LeafSystem<T> {
     this->DeclareContinuousState(TrajectoryCarState<T>());
     this->DeclareNumericParameter(TrajectoryCarParams<T>());
   }
+
+  /// Scalar-converting copy constructor.
+  template <typename U>
+  explicit TrajectoryCar(const TrajectoryCar<U>& other)
+      : TrajectoryCar<T>(other.curve_) {}
 
   /// The command input port (optional).
   const systems::InputPortDescriptor<T>& command_input() const {
@@ -164,6 +171,8 @@ class TrajectoryCar : public systems::LeafSystem<T> {
   }
 
  private:
+  template <typename> friend class TrajectoryCar;
+
   void ImplCalcOutput(const PositionHeading& raw_pose,
                       const TrajectoryCarState<T>& state,
                       SimpleCarState<T>* output) const {
@@ -254,12 +263,17 @@ class TrajectoryCar : public systems::LeafSystem<T> {
     return result;
   }
 
-  TrajectoryCar<AutoDiffXd>* DoToAutoDiffXd() const override {
-    return new TrajectoryCar<AutoDiffXd>(curve_);
-  }
-
   const Curve2<double> curve_;
 };
 
 }  // namespace automotive
+
+namespace systems {
+namespace scalar_conversion {
+// Disable symbolic support, because we use ExtractDoubleOrThrow.
+template <>
+struct Traits<automotive::TrajectoryCar> : public NonSymbolicTraits {};
+}  // namespace scalar_conversion
+}  // namespace systems
+
 }  // namespace drake
