@@ -128,9 +128,6 @@ SourceId GeometryState<T>::RegisterNewSource(const std::string& name) {
   return source_id;
 }
 
-// NOTE: Given that the new_id_() methods are all int64_t, we're not worrying
-// about overflow.
-
 template <typename T>
 FrameId GeometryState<T>::RegisterFrame(SourceId source_id,
                                         const GeometryFrame<T>& frame) {
@@ -225,7 +222,7 @@ void GeometryState<T>::RemoveGeometry(SourceId source_id,
   if (!BelongsToSource(geometry_id, source_id)) {
     throw std::logic_error(
         "Trying to remove geometry " + to_string(geometry_id) + " from "
-            "source " + to_string(source_id) + ". But the geometry doesn't "
+            "source " + to_string(source_id) + ", but the geometry doesn't "
             "belong to that source.");
   }
   RemoveGeometryUnchecked(geometry_id, RemoveGeometryOrigin::kGeometry);
@@ -283,7 +280,7 @@ GeometryId GeometryState<T>::RegisterGeometryHelper(
 
   FindOrThrow(frame_id, set, [frame_id, source_id]() {
     return "Referenced frame " + to_string(frame_id) + " for source " +
-        to_string(source_id) + ". But the frame doesn't belong to the source.";
+        to_string(source_id) + ", but the frame doesn't belong to the source.";
   });
 
   GeometryId geometry_id = GeometryId::get_new_id();
@@ -321,7 +318,7 @@ void GeometryState<T>::RemoveFrameUnchecked(FrameId frame_id,
     source_root_frame_map_[source_id].erase(frame_id);
   }
 
-  // Now delete the geometry on this.
+  // Recursively delete the child geometries.
   for (auto child_id : *frame.get_mutable_child_geometries()) {
     RemoveGeometryUnchecked(child_id, RemoveGeometryOrigin::kFrame);
   }
@@ -343,11 +340,11 @@ void GeometryState<T>::RemoveFrameUnchecked(FrameId frame_id,
 template <typename T>
 void GeometryState<T>::RemoveGeometryUnchecked(GeometryId geometry_id,
                                                RemoveGeometryOrigin caller) {
-  auto& geometry = GetValueOrThrow(geometry_id, &geometries_);
+  const InternalGeometry& geometry = GetValueOrThrow(geometry_id, &geometries_);
 
   if (caller != RemoveGeometryOrigin::kFrame) {
     // Clear children
-    for (auto child_id : geometry.get_child_geometries()) {
+    for (auto child_id : geometry.get_child_geometry_ids()) {
       RemoveGeometryUnchecked(child_id, RemoveGeometryOrigin::kRecurse);
     }
 
@@ -359,7 +356,7 @@ void GeometryState<T>::RemoveGeometryUnchecked(GeometryId geometry_id,
   if (caller == RemoveGeometryOrigin::kGeometry) {
     // Only the root needs to explicitly remove itself from a possible parent
     // geometry.
-    if (auto parent_id = geometry.get_parent()) {
+    if (optional<GeometryId> parent_id = geometry.get_parent_id()) {
       auto& parent_geometry =
           GetMutableValueOrThrow(*parent_id, &geometries_);
       parent_geometry.remove_child(geometry_id);

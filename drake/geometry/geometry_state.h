@@ -64,7 +64,7 @@ class GeometryState {
     return static_cast<int>(geometries_.size());
   }
 
-  /** Reports true if the given `source_id` references an active source. */
+  /** Reports true if the given `source_id` references a registered source. */
   bool source_is_registered(SourceId source_id) const;
 
   /** Reports the source name for the given source id.
@@ -112,14 +112,14 @@ class GeometryState {
 
   /** Registers a GeometryInstance with the state. The state takes ownership of
    the geometry and associates it with the given frame and source. Returns the
-   new identifier for the GeometryInstance.
+   new identifier for the successfully registered GeometryInstance.
    @param source_id    The id of the source to which the frame and geometry
                        belongs.
    @param frame_id     The id of the frame on which the geometry is to hang.
    @param geometry     The geometry to get the id for. The state takes
                        ownership of the geometry.
    @returns  A newly allocated geometry id.
-   @throws std::logic_error  1. the `source_id` does _not_ map to an active
+   @throws std::logic_error  1. the `source_id` does _not_ map to a registered
                              source, or
                              2. the `frame_id` doesn't belong to the source, or
                              3. The `geometry` is equal to `nullptr`. */
@@ -131,14 +131,15 @@ class GeometryState {
    `geometry` instance's pose is assumed to be relative to that parent geometry
    instance. The state takes ownership of the geometry and associates it with
    the given geometry parent (and, ultimately, the parent geometry's frame) and
-   source. Returns the new identifier for the input `geometry`.
+   source. Returns the new identifier for the successfully registered
+   GeometryInstance.
    @param source_id    The id of the source on which the geometry is being
                        declared.
    @param geometry_id  The parent geometry for this geometry.
    @param geometry     The geometry to get the id for. The state takes
                        ownership of the geometry.
    @returns  A newly allocated geometry id.
-   @throws std::logic_error 1. the `source_id` does _not_ map to an active
+   @throws std::logic_error 1. the `source_id` does _not_ map to a registered
                             source, or
                             2. the `geometry_id` doesn't belong to the source,
                             or
@@ -167,12 +168,12 @@ class GeometryState {
                              belong to the indicated source. */
   void RemoveFrame(SourceId source_id, FrameId frame_id);
 
-  /** Removes the given geometry from the the indicated source's frames. Any
+  /** Removes the given geometry from the the indicated source's geometries. Any
    geometry that was hung from the indicated geometry will _also_ be removed.
    @param source_id     The identifier for the owner geometry source.
    @param geometry_id   The identifier of the frame to remove.
-   @throws std::logic_error  1. If the `source_id` does _not_ map to an active
-                             source, or
+   @throws std::logic_error  1. If the `source_id` does _not_ map to a
+                             registered source, or
                              2. the `geometry_id` does not map to a valid
                              geometry, or
                              3. the `geometry_id` maps to a geometry that does
@@ -201,10 +202,11 @@ class GeometryState {
    @param source_id     The query source id.
    @returns True if `geometry_id` was registered on `source_id`.
    @throws std::logic_error  If the `geometry_id` does _not_ map to a valid
-                             geometry or the identified source is not active */
+                             geometry or the identified source is not
+                             registered */
   bool BelongsToSource(GeometryId geometry_id, SourceId source_id) const;
 
-  /** Retrieves the frame id on which the given geometry id is declared.
+  /** Retrieves the frame id on which the given geometry id is registered.
    @param geometry_id   The query geometry id.
    @returns An optional FrameId based on a successful lookup.
    @throws std::logic_error  If the `geometry_id` does _not_ map to a geometry
