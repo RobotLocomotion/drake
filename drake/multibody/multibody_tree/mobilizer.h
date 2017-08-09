@@ -408,7 +408,7 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// For MultibodyTree internal use only.
   virtual std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
       const internal::BodyNode<T>* parent_node,
-      const Body<T>& body, const Mobilizer<T>* mobilizer) const = 0;
+      const Body<T>* body, const Mobilizer<T>* mobilizer) const = 0;
 
  private:
   // Implementation for MultibodyTreeElement::DoSetTopology().

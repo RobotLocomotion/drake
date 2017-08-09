@@ -112,12 +112,15 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   ///   mobilizer The mobilizer associated with this `node`. It can be a
   ///   `nullptr` only when `body` **is** the **world** body, otherwise this
   ///   method will abort.
+  ///
+  /// @note %BodyNode keeps a reference to the parent body, body and mobilizer
+  /// for this node, which must outlive `this` BodyNode.
   BodyNode(const BodyNode<T>* parent_node,
-           const Body<T>& body, const Mobilizer<T>* mobilizer) :
+           const Body<T>* body, const Mobilizer<T>* mobilizer) :
       parent_node_(parent_node), body_(body), mobilizer_(mobilizer) {
     DRAKE_DEMAND(!(parent_node == nullptr &&
-        body.get_index() != world_index()));
-    DRAKE_DEMAND(!(mobilizer == nullptr && body.get_index() != world_index()));
+        body->get_index() != world_index()));
+    DRAKE_DEMAND(!(mobilizer == nullptr && body->get_index() != world_index()));
   }
 
   /// Method to update the list of child body nodes maintained by this node,
@@ -133,7 +136,8 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
 
   /// Returns a constant reference to the body B associated with this node.
   const Body<T>& get_body() const {
-    return body_;
+    DRAKE_ASSERT(body_ != nullptr);
+    return *body_;
   }
 
   /// Returns a constant reference to the unique parent body P of the body B
@@ -1108,7 +1112,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   std::vector<const BodyNode<T>*> children_;
 
   // Pointers for fast access.
-  const Body<T>& body_;
+  const Body<T>* body_;
   const Mobilizer<T>* mobilizer_{nullptr};
 };
 

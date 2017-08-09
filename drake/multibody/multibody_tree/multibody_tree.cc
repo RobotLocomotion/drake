@@ -86,7 +86,7 @@ void MultibodyTree<T>::CreateBodyNode(BodyNodeIndex body_node_index) {
 
   std::unique_ptr<BodyNode<T>> body_node;
   if (body_index == world_index()) {
-    body_node = std::make_unique<BodyNodeWelded<T>>(get_world_body());
+    body_node = std::make_unique<BodyNodeWelded<T>>(&get_world_body());
   } else {
     // The mobilizer should be valid if not at the root (the world).
     DRAKE_ASSERT(node_topology.mobilizer.is_valid());
@@ -98,7 +98,7 @@ void MultibodyTree<T>::CreateBodyNode(BodyNodeIndex body_node_index) {
 
     // Only the mobilizer knows how to create a body node with compile-time
     // fixed sizes.
-    body_node = mobilizer->CreateBodyNode(parent_node, *body, mobilizer);
+    body_node = mobilizer->CreateBodyNode(parent_node, body, mobilizer);
     parent_node->add_child_node(body_node.get());
   }
   body_node->set_parent_tree(this, body_node_index);
