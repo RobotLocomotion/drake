@@ -580,32 +580,37 @@ equivalents:
 alpha | α - angular acceleration ||  a   | linear acceleration
   t   | τ - torque               ||  f   | force
 
-While the rotational component of a spatial vector applies to a rigid body as a
-whole, the translational component refers to a particular point on that same
-body. When assigned numerical values for computation, both subvectors must be
-expressed in the same frame, which may be that body's frame or any other
-specified frame. Thus, unambiguous notation for spatial vectors must specify
-both a point and an expressed-in frame. Motion quantities must also state the
-reference frame with respect to which the motion is measured.
+While the rotational component of a spatial vector applies to a rigid body or
+frame as a whole, the translational component refers to a particular point
+rigidly fixed to that same body or frame. When assigned numerical values
+for computation, both subvectors must be expressed in the same frame, which may
+be that body's frame or any other specified frame. Thus, unambiguous notation
+for spatial vectors must specify both a point and an expressed-in frame. Motion
+quantities must also state the reference frame with respect to which the motion
+is measured.
 
-Example spatial quantity       |At |Exp|     Typeset        |   Code
--------------------------------|---|:-:|:------------------:|:-------:
-Body B's spatial velocity in A |Bo | A |@f$^AV^B         @f$|`V_AB`
-Same, but expressed in world   |Bo | W |@f$[^AV^B]_W     @f$|`V_AB_W`
-B's spatial acceleration in W  |Bcm| W |@f$^WA^{B_{cm}}  @f$|`A_WBcm`
-Spatial force acting on body B |Bcm| W |@f$[F^{B_{cm}}]_W@f$|`F_Bcm_W`
-Spatial force acting on body A | Q | W |@f$[F^{A/Q}]_W   @f$|`F_AQ_W`
+Example spatial quantity      |At |Exp|     Typeset        |   Code  |  Full
+------------------------------|---|:-:|:------------------:|:-------:|:--------:
+Body B's spatial velocity in A|Bo | A |@f$^AV^B         @f$|`V_AB`   |`V_ABo_A`
+Same, but expressed in world  |Bo | W |@f$[^AV^B]_W     @f$|`V_AB_W` |`V_ABo_W`
+B's spatial acceleration in W |Bcm| W |@f$^WA^{B_{cm}}  @f$|`A_WBcm` |`A_WBcm_W`
+Spatial force acting on body B|Bcm| W |@f$[F^{B_{cm}}]_W@f$|`F_Bcm_W`|`F_BBcm_W`
+Spatial force acting on body A| Q | W |@f$[F^{A/Q}]_W   @f$|`F_AQ_W` |    —
 
 In the above table "At" is the point at which the translational activity occurs;
 "Exp" is the expressed-in frame in which both vectors are expressed. The
 expressed-in frame defaults to the reference (left) frame and the point
-defaults to the target (right) frame origin. Note that for spatial forces we
-need to identify the body (actually a frame) on which the force is acting, as
-well as a point rigidly fixed to that body (or frame). When the body is obvious
-from the point name (such as Bo or Bcm above), the body does not need to be
-specified again. However, when the body is not clear it should be listed before
-the point as in the last line of the table above. There it can be read as "the
-point of body A coincident in space with point Q". You should use fully-expanded
+defaults to the target (right) frame origin. The "Code" column shows the
+notation to use in code, using the available defaults; "Full" shows the code
+notation with the defaults shown explicitly.
+
+For spatial forces we need to identify the body (actually a frame) on which the
+force is acting, as well as a point rigidly fixed to that body (or frame). When
+the body is obvious from the point name (such as Bo or Bcm above), the body does
+not need to be specified again. However, when the body is not clear it should be
+listed before the point as in the last line of the table above. There it can be
+read as "the point of body A coincident in space with point Q", where point Q
+might be identified with a different body. You should use fully-expanded
 symbols, and helpful comments, if there is any chance of confusion.
 
 Next topic: @ref multibody_spatial_inertia
