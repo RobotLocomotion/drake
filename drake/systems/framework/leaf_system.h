@@ -214,8 +214,43 @@ class LeafSystem : public System<T> {
  protected:
   /// Default constructor that declares no inputs, outputs, state, parameters,
   /// events, nor scalar-type conversion support (i.e., AutoDiff, etc.).  To
-  /// enable AutoDiff support, use the constructor that takes a SystemTypeTag.
-  LeafSystem() {
+  /// enable AutoDiff support, use the constructor that takes a SystemTypeTag
+  /// or SystemScalarConverter.
+  LeafSystem() : LeafSystem(SystemScalarConverter{}) {}
+
+  /// Constructor that declares no inputs, outputs, state, parameters, events,
+  /// but *does* declare scalar-type conversion support (i.e., AutoDiff, etc.).
+  ///
+  /// @tparam S must be the most-derived concrete System subclass of `this`.
+  /// The scalar-type conversion support will use `S` as the system type to
+  /// construct when changing the scalar type.
+  ///
+  /// Systems may specialize their scalar_conversion::Traits<S> to govern the
+  /// supported scalar types; by default, both AutoDiff and symbolic scalar
+  /// types are enabled.
+  template <template <typename> class S>
+  explicit LeafSystem(SystemTypeTag<S>)
+      : LeafSystem(SystemScalarConverter(SystemTypeTag<S>{})) {}
+
+  /// Constructor that declares no inputs, outputs, state, parameters, events,
+  /// but *may* declare scalar-type conversion support (i.e., AutoDiff, etc.).
+  ///
+  /// The scalar-type conversion support will use @p converter.  To disable
+  /// scalar-type conversion support, pass a default-constructed @p converter.
+  /// To enable scalar-type conversion support, pass a @p converter constructed
+  /// via `SystemScalarConverter(SystemTypeTag<S>{})` where `S` must be the
+  /// most-derived concrete System subclass of `this`.
+  ///
+  /// Systems may specialize their scalar_conversion::Traits<S> to govern the
+  /// supported scalar types; by default, both AutoDiff and symbolic scalar
+  /// types are enabled.
+  ///
+  /// All else being equal, developers should prefer the other constructors
+  /// over this one.  This constructor is intended only for use by class
+  /// hierarchies, where intermediate classes must conditionally support
+  /// scalar-type conversion.
+  explicit LeafSystem(SystemScalarConverter converter)
+      : system_scalar_converter_(std::move(converter)) {
     this->set_forced_publish_events(
         LeafEventCollection<PublishEvent<T>>::MakeForcedEventCollection());
     this->set_forced_discrete_update_events(
@@ -224,20 +259,6 @@ class LeafSystem : public System<T> {
     this->set_forced_unrestricted_update_events(
         LeafEventCollection<
             UnrestrictedUpdateEvent<T>>::MakeForcedEventCollection());
-  }
-
-  /// Constructor that declares no inputs, outputs, state, parameters, events,
-  /// but *does* declare scalar-type conversion support (i.e., AutoDiff, etc.).
-  ///
-  /// The scalar-type conversion support will use `S` as the system type to
-  /// construct when changing the scalar type.  Systems may specialize their
-  /// scalar_conversion::Traits<S> to govern the supported scalar types; by
-  /// default, both AutoDiff and symbolic types are enabled.
-  ///
-  /// @tparam S must be the most-derived concrete System subclass of `this`.
-  template <template <typename> class S>
-  explicit LeafSystem(SystemTypeTag<S>) : LeafSystem() {
-    system_scalar_converter_ = SystemScalarConverter(SystemTypeTag<S>{});
   }
 
   System<AutoDiffXd>* DoToAutoDiffXd() const override {
@@ -1264,7 +1285,7 @@ class LeafSystem : public System<T> {
   detail::ModelValues model_numeric_parameters_;
 
   // Functions to convert this system to use alternative scalar types.
-  SystemScalarConverter system_scalar_converter_;
+  const SystemScalarConverter system_scalar_converter_;
 };
 
 }  // namespace systems

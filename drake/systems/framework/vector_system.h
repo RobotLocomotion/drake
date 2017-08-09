@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
@@ -77,24 +78,35 @@ class VectorSystem : public LeafSystem<T> {
 
  protected:
   /// Creates a system with one input port and one output port of the given
-  /// sizes.  Does not declare any state -- subclasses may optionally declare
-  /// continuous or discrete state, but not both.
+  /// sizes, when the sizes are non-zero.  Either size can be zero, in which
+  /// case no input (or output) port is created.
+  ///
+  /// Does *not* declare scalar-type conversion support (i.e., AutoDiff, etc.).
+  /// To enable AutoDiff support, use the constructor that takes a
+  /// SystemTypeTag or SystemScalarConverter.
   VectorSystem(int input_size, int output_size)
-      : LeafSystem<T>() {
-    DoConstructorBody(input_size, output_size);
-  }
+      : VectorSystem(SystemScalarConverter{}, input_size, output_size) {}
 
-  /// Like VectorSystem(int, int), but also declares that this System object is
-  /// of dynamic type S, which enables conversion to other scalar-types such as
-  /// AutoDiff or symbolic form.  Subclasses that wish to support conversion to
-  /// other scalar types should use this constructor.
+  /// Creates a system with one input port and one output port of the given
+  /// sizes, when the sizes are non-zero.  Either size can be zero, in which
+  /// case no input (or output) port is created.
+  ///
+  /// *Does* declare scalar-type conversion support (i.e., AutoDiff, etc.).
+  ///
+  /// @tparam S must be the most-derived concrete System subclass of `this`.
+  /// The scalar-type conversion support will use `S` as the system type to
+  /// construct when changing the scalar type.
+  ///
+  /// Systems may specialize their scalar_conversion::Traits<S> to govern the
+  /// supported scalar types; by default, both AutoDiff and symbolic scalar
+  /// types are enabled.
   ///
   /// Example:
   ///
   /// @code
   /// namespace sample {
   /// template <typename T>
-  /// class MySystem : public VectorSystem<T> {
+  /// class MySystem final : public VectorSystem<T> {
   ///  public:
   ///   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MySystem);
   ///
@@ -109,8 +121,32 @@ class VectorSystem : public LeafSystem<T> {
   /// @endcode
   template <template <typename> class S>
   VectorSystem(SystemTypeTag<S> tag, int input_size, int output_size)
-      : LeafSystem<T>(tag) {
-    DoConstructorBody(input_size, output_size);
+      : VectorSystem(SystemScalarConverter{tag}, input_size, output_size) {}
+
+  /// Creates a system with one input port and one output port of the given
+  /// sizes, when the sizes are non-zero.  Either size can be zero, in which
+  /// case no input (or output) port is created.
+  ///
+  /// *May* declare scalar-type conversion support (i.e., AutoDiff, etc.).
+  /// The scalar-type conversion support will use @p converter.  To disable
+  /// scalar-type conversion support, pass a default-constructed @p converter.
+  /// To enable scalar-type conversion support, pass a @p converter constructed
+  /// via `SystemScalarConverter(SystemTypeTag<S>{})` where `S` must be the
+  /// most-derived concrete System subclass of `this`.
+  ///
+  /// All else being equal, developers should prefer the other constructors
+  /// over this one.  This constructor is intended only for use by class
+  /// hierarchies, where intermediate classes must conditionally support
+  /// scalar-type conversion.
+  VectorSystem(SystemScalarConverter converter, int input_size, int output_size)
+      : LeafSystem<T>(std::move(converter)) {
+    if (input_size > 0) {
+      this->DeclareInputPort(kVectorValued, input_size);
+    }
+    if (output_size > 0) {
+      this->DeclareVectorOutputPort(BasicVector<T>(output_size),
+                                    &VectorSystem::CalcVectorOutput);
+    }
   }
 
   /// Causes the vector-valued input port to become up-to-date, and returns
@@ -287,22 +323,6 @@ class VectorSystem : public LeafSystem<T> {
       Eigen::VectorBlock<VectorX<T>>* next_state) const {
     unused(context, input, state);
     DRAKE_THROW_UNLESS(next_state->size() == 0);
-  }
-
- private:
-  // All constructors should call this method immediately after invoking the
-  // base class constructor, as if this were using constructor delegation.
-  ///
-  // We cannot use C++'s constructor delegation, because we need to invoke a
-  // different LeafSystem constructor from each of our constructors.
-  void DoConstructorBody(int input_size, int output_size) {
-    if (input_size > 0) {
-      this->DeclareInputPort(kVectorValued, input_size);
-    }
-    if (output_size > 0) {
-      this->DeclareVectorOutputPort(BasicVector<T>(output_size),
-                                    &VectorSystem::CalcVectorOutput);
-    }
   }
 };
 
