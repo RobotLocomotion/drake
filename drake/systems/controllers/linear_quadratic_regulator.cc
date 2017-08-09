@@ -2,7 +2,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/is_approx_equal_abstol.h"
-#include "drake/math/continuous_algebraic_ricatti_equation.h"
+#include "drake/math/continuous_algebraic_riccati_equation.h"
 #include "drake/systems/primitives/linear_system.h"
 
 namespace drake {

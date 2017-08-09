@@ -48,7 +48,7 @@ drake_cc_library(
     hdrs = ["linear_quadratic_regulator.h"],
     deps = [
         "//drake/common:is_approx_equal_abstol",
-        "//drake/math:continuous_algebraic_ricatti_equation",
+        "//drake/math:continuous_algebraic_riccati_equation",
         "//drake/systems/framework",
         "//drake/systems/primitives:linear_system",
     ],
