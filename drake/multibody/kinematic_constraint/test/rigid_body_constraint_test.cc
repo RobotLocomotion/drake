@@ -1,4 +1,4 @@
-#include "drake/multibody/constraint/rigid_body_constraint.h"
+#include "drake/multibody/kinematic_constraint/rigid_body_constraint.h"
 
 #include <memory>
 

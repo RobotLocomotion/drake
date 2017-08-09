@@ -1,4 +1,4 @@
-#include "drake/multibody/hard_constraint/hard_constraint_solver.h"
+#include "drake/multibody/constraint/constraint_solver.h"
 
 #include <memory>
 
@@ -15,10 +15,10 @@ using Vector2d = Eigen::Vector2d;
 
 namespace drake {
 namespace multibody {
-namespace hard_constraint {
+namespace constraint {
 namespace {
 
-class HardConstraint2DSolverTest : public ::testing::Test {
+class Constraint2DSolverTest : public ::testing::Test {
  protected:
   void SetUp() override {
     rod_ = std::make_unique<Rod2D<double>>(
@@ -42,11 +42,11 @@ class HardConstraint2DSolverTest : public ::testing::Test {
 
   double cfm_{0};    // Regularization parameter.
   double eps_{-1};   // Zero tolerance (< 0 indicates not set).
-  HardConstraintSolver<double> solver_;
+  ConstraintSolver<double> solver_;
   std::unique_ptr<Rod2D<double>> rod_;
   std::unique_ptr<Context<double>> context_;
-  HardConstraintAccelProblemData<double> accel_data_;
-  HardConstraintVelProblemData<double> vel_data_;
+  ConstraintAccelProblemData<double> accel_data_;
+  ConstraintVelProblemData<double> vel_data_;
 
   // Gets the frame for a sliding contact.
   Matrix2<double> GetSlidingContactFrameToWorldTransform(
@@ -111,8 +111,8 @@ class HardConstraint2DSolverTest : public ::testing::Test {
   }
 
   // Computes rigid contact data.
-  void CalcHardConstraintAccelProblemData(
-      HardConstraintAccelProblemData<double>* data) {
+  void CalcConstraintAccelProblemData(
+      ConstraintAccelProblemData<double>* data) {
     // Get the points of contact and contact tangent velocities.
     std::vector<Vector2d> contacts;
     std::vector<double> tangent_vels;
@@ -120,7 +120,7 @@ class HardConstraint2DSolverTest : public ::testing::Test {
     rod_->GetContactPointsTangentVelocities(*context_, contacts, &tangent_vels);
 
     // Compute the problem data.
-    rod_->CalcHardConstraintProblemData(*context_, contacts, tangent_vels,
+    rod_->CalcConstraintProblemData(*context_, contacts, tangent_vels,
                                          data);
 
     // Check the consistency of the data.
@@ -128,8 +128,8 @@ class HardConstraint2DSolverTest : public ::testing::Test {
   }
 
   // Computes rigid impacting contact data.
-  void CalcHardConstraintVelProblemData(
-      HardConstraintVelProblemData<double>* data) {
+  void CalcConstraintVelProblemData(
+      ConstraintVelProblemData<double>* data) {
     // Get the points of contact.
     std::vector<Vector2d> contacts;
     rod_->GetContactPoints(*context_, &contacts);
@@ -143,7 +143,7 @@ class HardConstraint2DSolverTest : public ::testing::Test {
 
   // Checks consistency of rigid contact problem data.
   void CheckProblemConsistency(
-      const HardConstraintAccelProblemData<double>& data,
+      const ConstraintAccelProblemData<double>& data,
       int num_contacts) {
     EXPECT_EQ(num_contacts, data.sliding_contacts.size() +
         data.non_sliding_contacts.size());
@@ -164,7 +164,7 @@ class HardConstraint2DSolverTest : public ::testing::Test {
 
   // Checks consistency of rigid impact problem data.
   void CheckProblemConsistency(
-      const HardConstraintVelProblemData<double>& data,
+      const ConstraintVelProblemData<double>& data,
       int num_contacts) {
     EXPECT_EQ(data.N.rows(), num_contacts);
     EXPECT_EQ(data.v.size(), data.N.cols());
@@ -176,12 +176,12 @@ class HardConstraint2DSolverTest : public ::testing::Test {
 
 // Tests the rod in a two-point configuration, in a situation where a force
 // pulls the rod upward (and no contact forces should be applied).
-TEST_F(HardConstraint2DSolverTest, TwoPointPulledUpward) {
+TEST_F(Constraint2DSolverTest, TwoPointPulledUpward) {
   // Set the state of the rod to resting on its side with no velocity.
   SetRodToRestingHorizontalConfig();
 
   // Compute the problem data.
-  CalcHardConstraintAccelProblemData(&accel_data_);
+  CalcConstraintAccelProblemData(&accel_data_);
 
   // Add a force pulling the rod upward.
   accel_data_.f[1] += 100.0;
@@ -196,12 +196,12 @@ TEST_F(HardConstraint2DSolverTest, TwoPointPulledUpward) {
 
 // Tests the rod in a two-point configuration, in a situation where the rod
 // is moving upward, so no impulsive forces should be applied.
-TEST_F(HardConstraint2DSolverTest, NoImpactImpliesNoImpulses) {
+TEST_F(Constraint2DSolverTest, NoImpactImpliesNoImpulses) {
   // Set the state of the rod to resting on its side with upward velocity.
   SetRodToUpwardMovingHorizontalConfig();
 
   // Compute the problem data.
-  CalcHardConstraintVelProblemData(&vel_data_);
+  CalcConstraintVelProblemData(&vel_data_);
 
   // Compute the contact forces.
   VectorX<double> cf;
@@ -212,7 +212,7 @@ TEST_F(HardConstraint2DSolverTest, NoImpactImpliesNoImpulses) {
 }
 
 // Tests the rod in a two-point sticking configuration.
-TEST_F(HardConstraint2DSolverTest, TwoPointSticking) {
+TEST_F(Constraint2DSolverTest, TwoPointSticking) {
   // Set the state of the rod to resting on its side with no velocity.
   SetRodToRestingHorizontalConfig();
 
@@ -221,7 +221,7 @@ TEST_F(HardConstraint2DSolverTest, TwoPointSticking) {
   rod_->set_mu_static(15.0);
 
   // Compute the problem data.
-  CalcHardConstraintAccelProblemData(&accel_data_);
+  CalcConstraintAccelProblemData(&accel_data_);
   EXPECT_TRUE(accel_data_.sliding_contacts.empty());
 
   // Add a force pulling the rod horizontally.
@@ -250,7 +250,7 @@ TEST_F(HardConstraint2DSolverTest, TwoPointSticking) {
 
   // Get the contact forces expressed in the contact frames.
   std::vector<Vector2<double>> contact_forces;
-  HardConstraintSolver<double>::CalcContactForcesInContactFrames(cf,
+  ConstraintSolver<double>::CalcContactForcesInContactFrames(cf,
       accel_data_, frames, &contact_forces);
 
   // Verify that the number of contact force vectors is correct.
@@ -268,7 +268,7 @@ TEST_F(HardConstraint2DSolverTest, TwoPointSticking) {
 }
 
 // Tests the rod in a two-point impacting and sticking configuration.
-TEST_F(HardConstraint2DSolverTest, TwoPointImpactingAndSticking) {
+TEST_F(Constraint2DSolverTest, TwoPointImpactingAndSticking) {
   // Set the state of the rod to lying on its side with both impacting velocity
   // and horizontally moving velocity.
   SetRodToSlidingImpactingHorizontalConfig();
@@ -277,7 +277,7 @@ TEST_F(HardConstraint2DSolverTest, TwoPointImpactingAndSticking) {
   rod_->set_mu_coulomb(15.0);
 
   // Compute the impact problem data.
-  CalcHardConstraintVelProblemData(&vel_data_);
+  CalcConstraintVelProblemData(&vel_data_);
 
   // Compute the contact forces.
   VectorX<double> cf;
@@ -301,7 +301,7 @@ TEST_F(HardConstraint2DSolverTest, TwoPointImpactingAndSticking) {
 
   // Get the impulsive contact forces expressed in the contact frames.
   std::vector<Vector2<double>> contact_forces;
-  HardConstraintSolver<double>::CalcImpactForcesInContactFrames(cf, vel_data_,
+  ConstraintSolver<double>::CalcImpactForcesInContactFrames(cf, vel_data_,
     frames, &contact_forces);
 
   // Verify that the number of contact force vectors is correct.
@@ -314,7 +314,7 @@ TEST_F(HardConstraint2DSolverTest, TwoPointImpactingAndSticking) {
 }
 
 // Tests the rod in a single-point sticking configuration.
-TEST_F(HardConstraint2DSolverTest, SinglePointSticking) {
+TEST_F(Constraint2DSolverTest, SinglePointSticking) {
   // Set the state of the rod to resting on its side with no velocity.
   SetRodToRestingVerticalConfig();
 
@@ -323,7 +323,7 @@ TEST_F(HardConstraint2DSolverTest, SinglePointSticking) {
   rod_->set_mu_static(15.0);
 
   // Compute the problem data.
-  CalcHardConstraintAccelProblemData(&accel_data_);
+  CalcConstraintAccelProblemData(&accel_data_);
   EXPECT_TRUE(accel_data_.sliding_contacts.empty());
 
   // Add a force, acting at the point of contact, that pulls the rod
@@ -353,7 +353,7 @@ TEST_F(HardConstraint2DSolverTest, SinglePointSticking) {
 
   // Get the contact forces expressed in the contact frame.
   std::vector<Vector2<double>> contact_forces;
-  HardConstraintSolver<double>::CalcContactForcesInContactFrames(cf,
+  ConstraintSolver<double>::CalcContactForcesInContactFrames(cf,
       accel_data_, frames, &contact_forces);
 
   // Verify that the number of contact force vectors is correct.
@@ -372,7 +372,7 @@ TEST_F(HardConstraint2DSolverTest, SinglePointSticking) {
 
 // Tests the rod in a two-point non-sticking configuration that will transition
 // to sliding.
-TEST_F(HardConstraint2DSolverTest, TwoPointNonSlidingToSliding) {
+TEST_F(Constraint2DSolverTest, TwoPointNonSlidingToSliding) {
   // Set the state of the rod to resting on its side with no velocity.
   SetRodToRestingHorizontalConfig();
 
@@ -381,7 +381,7 @@ TEST_F(HardConstraint2DSolverTest, TwoPointNonSlidingToSliding) {
   rod_->set_mu_static(0.1);
 
   // Compute the problem data.
-  CalcHardConstraintAccelProblemData(&accel_data_);
+  CalcConstraintAccelProblemData(&accel_data_);
 
   // Add a force pulling the rod horizontally.
   const double horz_f = 100.0;
@@ -411,7 +411,7 @@ TEST_F(HardConstraint2DSolverTest, TwoPointNonSlidingToSliding) {
 
   // Get the contact forces expressed in the contact frames.
   std::vector<Vector2<double>> contact_forces;
-  HardConstraintSolver<double>::CalcContactForcesInContactFrames(cf,
+  ConstraintSolver<double>::CalcContactForcesInContactFrames(cf,
       accel_data_, frames, &contact_forces);
 
   // Verify that the number of contact force vectors is correct.
@@ -432,7 +432,7 @@ TEST_F(HardConstraint2DSolverTest, TwoPointNonSlidingToSliding) {
 }
 
 // Tests the rod in a two-point sliding configuration.
-TEST_F(HardConstraint2DSolverTest, TwoPointSliding) {
+TEST_F(Constraint2DSolverTest, TwoPointSliding) {
   // Set the state of the rod to resting on its side with horizontal velocity.
   SetRodToRestingHorizontalConfig();
   ContinuousState<double>& xc = *context_->
@@ -443,7 +443,7 @@ TEST_F(HardConstraint2DSolverTest, TwoPointSliding) {
   rod_->set_mu_coulomb(0.0);
 
   // Compute the problem data.
-  CalcHardConstraintAccelProblemData(&accel_data_);
+  CalcConstraintAccelProblemData(&accel_data_);
 
   // Compute the contact forces.
   VectorX<double> cf;
@@ -473,7 +473,7 @@ TEST_F(HardConstraint2DSolverTest, TwoPointSliding) {
 
   // Get the contact forces expressed in the contact frame.
   std::vector<Vector2<double>> contact_forces;
-  HardConstraintSolver<double>::CalcContactForcesInContactFrames(cf,
+  ConstraintSolver<double>::CalcContactForcesInContactFrames(cf,
       accel_data_, frames, &contact_forces);
 
   // Verify that the number of contact force vectors is correct.
@@ -495,7 +495,7 @@ TEST_F(HardConstraint2DSolverTest, TwoPointSliding) {
 }
 
 // Tests the rod in a single point sliding configuration.
-TEST_F(HardConstraint2DSolverTest, SinglePointSliding) {
+TEST_F(Constraint2DSolverTest, SinglePointSliding) {
   // Set the state of the rod to resting on its side with horizontal velocity.
   SetRodToRestingVerticalConfig();
   ContinuousState<double>& xc = *context_->
@@ -506,7 +506,7 @@ TEST_F(HardConstraint2DSolverTest, SinglePointSliding) {
   rod_->set_mu_coulomb(0.0);
 
   // Compute the problem data.
-  CalcHardConstraintAccelProblemData(&accel_data_);
+  CalcConstraintAccelProblemData(&accel_data_);
 
   // Compute the contact forces.
   VectorX<double> cf;
@@ -540,7 +540,7 @@ TEST_F(HardConstraint2DSolverTest, SinglePointSliding) {
 
   // Get the contact forces expressed in the contact frame.
   std::vector<Vector2<double>> contact_forces;
-  HardConstraintSolver<double>::CalcContactForcesInContactFrames(cf,
+  ConstraintSolver<double>::CalcContactForcesInContactFrames(cf,
       accel_data_, frames, &contact_forces);
 
   // Verify that the number of contact force vectors is correct.
@@ -555,6 +555,6 @@ TEST_F(HardConstraint2DSolverTest, SinglePointSliding) {
 }
 
 }  // namespace
-}  // namespace hard_constraint
+}  // namespace constraint
 }  // namespace multibody
 }  // namespace drake

@@ -7,27 +7,27 @@
 #include <utility>
 #include <vector>
 
-#include "drake/multibody/hard_constraint/hard_constraint_problem_data.h"
+#include "drake/multibody/constraint/constraint_problem_data.h"
 #include "drake/solvers/moby_lcp_solver.h"
 
 namespace drake {
 namespace multibody {
-namespace hard_constraint {
+namespace constraint {
 
-/// Solves hard (i.e., rigid or somewhat rigid) constraint problems for
-/// constraint forces. Specifically, given problem data corresponding to one or
-/// more rigid or multi-rigid bodies constrained bilaterally and/or unilaterally
-/// and acted upon by friction, this class computes the constraint forces.
+/// Solves constraint problems for constraint forces. Specifically, given
+/// problem data corresponding to a rigid or multi-body system constrained
+/// bilaterally and/or unilaterally and acted upon by friction, this class
+/// computes the constraint forces.
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
 /// Instantiated templates for the following scalar types @p T are provided:
 /// - double
 /// They are already available to link against in the containing library.
 template <typename T>
-class HardConstraintSolver {
+class ConstraintSolver {
  public:
-  HardConstraintSolver() = default;
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(HardConstraintSolver)
+  ConstraintSolver() = default;
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConstraintSolver)
 
   /// Solves the appropriate constraint problem at the acceleration level.
   /// @param cfm The non-negative regularization factor to apply to the
@@ -50,7 +50,7 @@ class HardConstraintSolver {
   ///         (due to, e.g., an "inconsistent" rigid contact configuration).
   /// @throws a std::logic_error if @p cf is null or @p cfm is negative.
   void SolveConstraintProblem(double cfm,
-      const HardConstraintAccelProblemData<T>& problem_data,
+      const ConstraintAccelProblemData<T>& problem_data,
       VectorX<T>* cf) const;
 
   /// Solves the appropriate impact problem at the velocity level.
@@ -75,7 +75,7 @@ class HardConstraintSolver {
   ///         recommended to increase @p cfm and attempt again.
   /// @throws a std::logic_error if @p cf is null or @p cfm is negative.
   void SolveImpactProblem(double cfm,
-                          const HardConstraintVelProblemData<T>& problem_data,
+                          const ConstraintVelProblemData<T>& problem_data,
                           VectorX<T>* cf) const;
 
   /// Computes the generalized force on the system from the constraint forces
@@ -88,7 +88,7 @@ class HardConstraintSolver {
   /// @throws std::logic_error if @p generalized_force is null or @p cf
   ///         vector is incorrectly sized.
   static void ComputeGeneralizedForceFromConstraintForces(
-      const HardConstraintAccelProblemData<T>& problem_data,
+      const ConstraintAccelProblemData<T>& problem_data,
       const VectorX<T>& cf,
       VectorX<T>* generalized_force);
 
@@ -103,7 +103,7 @@ class HardConstraintSolver {
   /// @throws std::logic_error if @p generalized_impulse is null or @p cf
   ///         vector is incorrectly sized.
   static void ComputeGeneralizedImpulseFromConstraintImpulses(
-      const HardConstraintVelProblemData<T>& problem_data,
+      const ConstraintVelProblemData<T>& problem_data,
       const VectorX<T>& cf,
       VectorX<T>* generalized_impulse);
 
@@ -114,7 +114,7 @@ class HardConstraintSolver {
   /// @throws std::logic_error if @p generalized_acceleration is null or
   ///         @p cf vector is incorrectly sized.
   static void ComputeGeneralizedAcceleration(
-      const HardConstraintAccelProblemData<T>& problem_data,
+      const ConstraintAccelProblemData<T>& problem_data,
       const VectorX<T>& cf,
       VectorX<T>* generalized_acceleration);
 
@@ -125,7 +125,7 @@ class HardConstraintSolver {
   /// @throws std::logic_error if @p generalized_delta_v is null or
   ///         @p cf vector is incorrectly sized.
   static void ComputeGeneralizedVelocityChange(
-      const HardConstraintVelProblemData<T>& problem_data,
+      const ConstraintVelProblemData<T>& problem_data,
       const VectorX<T>& cf,
       VectorX<T>* generalized_delta_v);
 
@@ -154,7 +154,7 @@ class HardConstraintSolver {
   ///       in the world frame is @p contact_frames[i] * @p contact_forces[i].
   static void CalcContactForcesInContactFrames(
       const VectorX<T>& cf,
-      const HardConstraintAccelProblemData<T>& problem_data,
+      const ConstraintAccelProblemData<T>& problem_data,
       const std::vector<Matrix2<T>>& contact_frames,
       std::vector<Vector2<T>>* contact_forces);
 
@@ -181,24 +181,24 @@ class HardConstraintSolver {
   ///       in the world frame is @p contact_frames[i] * @p contact_impulses[i].
   static void CalcImpactForcesInContactFrames(
       const VectorX<T>& cf,
-      const HardConstraintVelProblemData<T>& problem_data,
+      const ConstraintVelProblemData<T>& problem_data,
       const std::vector<Matrix2<T>>& contact_frames,
       std::vector<Vector2<T>>* contact_impulses);
 
  private:
   void FormImpactingConstraintLCP(
-      const HardConstraintVelProblemData<T>& problem_data,
+      const ConstraintVelProblemData<T>& problem_data,
       MatrixX<T>* MM, VectorX<T>* qq) const;
   void FormSustainedConstraintLCP(
-      const HardConstraintAccelProblemData<T>& problem_data,
+      const ConstraintAccelProblemData<T>& problem_data,
       MatrixX<T>* MM, VectorX<T>* qq) const;
 
   drake::solvers::MobyLCPSolver<T> lcp_;
 };
 
 template <typename T>
-void HardConstraintSolver<T>::SolveConstraintProblem(double cfm,
-    const HardConstraintAccelProblemData<T>& problem_data,
+void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
+    const ConstraintAccelProblemData<T>& problem_data,
     VectorX<T>* cf) const {
   using std::max;
   using std::abs;
@@ -271,9 +271,9 @@ void HardConstraintSolver<T>::SolveConstraintProblem(double cfm,
 }
 
 template <typename T>
-void HardConstraintSolver<T>::SolveImpactProblem(
+void ConstraintSolver<T>::SolveImpactProblem(
     double cfm,
-    const HardConstraintVelProblemData<T>& problem_data,
+    const ConstraintVelProblemData<T>& problem_data,
     VectorX<T>* cf) const {
   using std::max;
   using std::abs;
@@ -356,8 +356,8 @@ void HardConstraintSolver<T>::SolveImpactProblem(
 // forces (and can also be used to determine the active set of constraints at
 // the acceleration-level).
 template <class T>
-void HardConstraintSolver<T>::FormSustainedConstraintLCP(
-    const HardConstraintAccelProblemData<T>& problem_data,
+void ConstraintSolver<T>::FormSustainedConstraintLCP(
+    const ConstraintAccelProblemData<T>& problem_data,
     MatrixX<T>* MM, VectorX<T>* qq) const {
   DRAKE_DEMAND(MM);
   DRAKE_DEMAND(qq);
@@ -451,8 +451,8 @@ void HardConstraintSolver<T>::FormSustainedConstraintLCP(
 // Forms the LCP matrix and vector, which is used to determine the collisional
 // impulses.
 template <class T>
-void HardConstraintSolver<T>::FormImpactingConstraintLCP(
-    const HardConstraintVelProblemData<T>& problem_data,
+void ConstraintSolver<T>::FormImpactingConstraintLCP(
+    const ConstraintVelProblemData<T>& problem_data,
     MatrixX<T>* MM, VectorX<T>* qq) const {
   DRAKE_DEMAND(MM);
   DRAKE_DEMAND(qq);
@@ -539,8 +539,8 @@ void HardConstraintSolver<T>::FormImpactingConstraintLCP(
 }
 
 template <class T>
-void HardConstraintSolver<T>::ComputeGeneralizedForceFromConstraintForces(
-    const HardConstraintAccelProblemData<T>& problem_data,
+void ConstraintSolver<T>::ComputeGeneralizedForceFromConstraintForces(
+    const ConstraintAccelProblemData<T>& problem_data,
     const VectorX<T>& cf,
     VectorX<T>* generalized_force) {
   if (!generalized_force)
@@ -569,8 +569,8 @@ void HardConstraintSolver<T>::ComputeGeneralizedForceFromConstraintForces(
 }
 
 template <class T>
-void HardConstraintSolver<T>::ComputeGeneralizedImpulseFromConstraintImpulses(
-    const HardConstraintVelProblemData<T>& problem_data,
+void ConstraintSolver<T>::ComputeGeneralizedImpulseFromConstraintImpulses(
+    const ConstraintVelProblemData<T>& problem_data,
     const VectorX<T>& cf,
     VectorX<T>* generalized_impulse) {
   if (!generalized_impulse)
@@ -595,8 +595,8 @@ void HardConstraintSolver<T>::ComputeGeneralizedImpulseFromConstraintImpulses(
 }
 
 template <class T>
-void HardConstraintSolver<T>::ComputeGeneralizedAcceleration(
-    const HardConstraintAccelProblemData<T>& problem_data,
+void ConstraintSolver<T>::ComputeGeneralizedAcceleration(
+    const ConstraintAccelProblemData<T>& problem_data,
     const VectorX<T>& cf,
     VectorX<T>* generalized_acceleration) {
   if (!generalized_acceleration)
@@ -610,8 +610,8 @@ void HardConstraintSolver<T>::ComputeGeneralizedAcceleration(
 }
 
 template <class T>
-void HardConstraintSolver<T>::ComputeGeneralizedVelocityChange(
-    const HardConstraintVelProblemData<T>& problem_data,
+void ConstraintSolver<T>::ComputeGeneralizedVelocityChange(
+    const ConstraintVelProblemData<T>& problem_data,
     const VectorX<T>& cf,
     VectorX<T>* generalized_delta_v) {
 
@@ -625,9 +625,9 @@ void HardConstraintSolver<T>::ComputeGeneralizedVelocityChange(
 }
 
 template <class T>
-void HardConstraintSolver<T>::CalcContactForcesInContactFrames(
+void ConstraintSolver<T>::CalcContactForcesInContactFrames(
     const VectorX<T>& cf,
-    const HardConstraintAccelProblemData<T>& problem_data,
+    const ConstraintAccelProblemData<T>& problem_data,
     const std::vector<Matrix2<T>>& contact_frames,
     std::vector<Vector2<T>>* contact_forces) {
   using std::abs;
@@ -719,9 +719,9 @@ void HardConstraintSolver<T>::CalcContactForcesInContactFrames(
 }
 
 template <class T>
-void HardConstraintSolver<T>::CalcImpactForcesInContactFrames(
+void ConstraintSolver<T>::CalcImpactForcesInContactFrames(
     const VectorX<T>& cf,
-    const HardConstraintVelProblemData<T>& problem_data,
+    const ConstraintVelProblemData<T>& problem_data,
     const std::vector<Matrix2<T>>& contact_frames,
     std::vector<Vector2<T>>* contact_impulses) {
   using std::abs;
@@ -791,6 +791,6 @@ void HardConstraintSolver<T>::CalcImpactForcesInContactFrames(
   }
 }
 
-}  // namespace hard_constraint
+}  // namespace constraint
 }  // namespace multibody
 }  // namespace drake

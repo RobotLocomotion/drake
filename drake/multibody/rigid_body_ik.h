@@ -5,8 +5,8 @@
 
 #include <Eigen/Dense>
 
-#include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/multibody/ik_options.h"
+#include "drake/multibody/kinematic_constraint/rigid_body_constraint.h"
 #include "drake/multibody/rigid_body_tree.h"
 
 /**

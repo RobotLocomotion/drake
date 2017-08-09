@@ -41,7 +41,7 @@ drake_cc_library(
     ],
     deps = [
         "//drake/common",
-        "//drake/multibody/hard_constraint",
+        "//drake/multibody/constraint",
         "//drake/solvers:mathematical_program",
         "//drake/systems/framework:leaf_system",
         "//drake/systems/rendering:pose_vector",
@@ -56,7 +56,7 @@ drake_cc_googletest(
         ":rod2d",
         "//drake/common",
         "//drake/common:eigen_matrix_compare",
-        "//drake/multibody/hard_constraint:hard_constraint_solver",
+        "//drake/multibody/constraint:constraint_solver",
         "//drake/systems/analysis",
     ],
 )

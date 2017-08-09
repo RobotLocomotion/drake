@@ -83,8 +83,8 @@ drake_cc_library(
 
 drake_cc_library(
     name = "rigid_body_constraint",
-    srcs = ["constraint/rigid_body_constraint.cc"],
-    hdrs = ["constraint/rigid_body_constraint.h"],
+    srcs = ["kinematic_constraint/rigid_body_constraint.cc"],
+    hdrs = ["kinematic_constraint/rigid_body_constraint.h"],
     deps = [
         ":rigid_body_tree",
     ],
@@ -397,7 +397,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "rigid_body_constraint_test",
-    srcs = ["constraint/test/rigid_body_constraint_test.cc"],
+    srcs = ["kinematic_constraint/test/rigid_body_constraint_test.cc"],
     data = ["//drake/examples/atlas:models"],
     deps = [
         ":rigid_body_constraint",
@@ -626,7 +626,7 @@ filegroup(
 # how to extract labels from select() functions yet.
 add_lint_tests(
     cpplint_data = [
-        "constraint/CPPLINT.cfg",
+        "kinematic_constraint/CPPLINT.cfg",
     ],
     cpplint_extra_srcs = [
         "approximate_ik.cc",
