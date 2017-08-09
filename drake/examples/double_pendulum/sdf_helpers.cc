@@ -24,10 +24,8 @@ namespace double_pendulum {
 // RigidBodyTree model instance descriptor. Helpful
 // to carry model name and instance id around.
 struct ModelInstance {
-  ModelInstance(const std::string& name, const int& id)
-      : name(name), id(id) {}
-  std::string name{};
-  int id{};
+  std::string name;
+  int id;
 };
 
 // Helper function to express an ignition::math::Vector3d instance as
@@ -349,7 +347,7 @@ int ParseModel(sdf::ElementPtr sdf_model_element, RigidBodyTree<double>* tree) {
   // Define a model instance and a pose tree rooted at the model's frame (D).
   const auto model_name = sdf_model_element->Get<std::string>("name");
   const int model_id = tree->add_model_instance();
-  ModelInstance instance(model_name, model_id);
+  ModelInstance instance{model_name, model_id};
   FrameCache<double> frame_cache(model_name);
 
   if (sdf_model_element->HasElement("link")) {
