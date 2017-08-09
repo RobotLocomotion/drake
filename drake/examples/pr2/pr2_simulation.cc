@@ -14,19 +14,18 @@ namespace examples {
 namespace pr2 {
 
 void main() {
-
-   // Declare diagram builder and lcm.
+  // Declare diagram builder and lcm.
   systems::DiagramBuilder<double> diagram_builder;
   drake::lcm::DrakeLcm lcm;
 
-  // Construct the tree for the PR2. 
+  // Construct the tree for the PR2.
   auto tree_ = std::make_unique<RigidBodyTree<double>>();
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        FindResourceOrThrow(
-            "drake/examples/pr2/"
-            "pr2_drake.urdf"),
-        multibody::joints::kFixed /* our pr2 model moves with actuators, not a floating base */, nullptr /* weld to frame */,
-        tree_.get());
+      FindResourceOrThrow("drake/examples/pr2/"
+                          "pr2_drake.urdf"),
+      multibody::joints::
+          kFixed /* our PR2 model moves with actuators, not a floating base */,
+      nullptr /* weld to frame */, tree_.get());
   const double terrain_size = 100;
   const double terrain_depth = 10;
   multibody::AddFlatTerrainToWorld(tree_.get(), terrain_size, terrain_depth);
@@ -35,46 +34,59 @@ void main() {
   DRAKE_ASSERT(tree_->get_num_actuators() == 28);
   int num_actuators = 28;
 
-  // Set the plant for the PR2.   
-  auto plant_ = diagram_builder.AddSystem<systems::RigidBodyPlant<double>>(std::move(tree_));
+  // Set the plant for the PR2.
+  auto plant_ = diagram_builder.AddSystem<systems::RigidBodyPlant<double>>(
+      std::move(tree_));
   plant_->set_name("plant_");
 
   // Send the PR2's actuators zeros in abscence of a controller.
-  auto constant_zero_source = diagram_builder.AddSystem<systems::ConstantVectorSource<double>>(VectorX<double>::Zero(plant_->actuator_command_input_port().size()));
-  diagram_builder.Connect(constant_zero_source->get_output_port(), plant_->actuator_command_input_port());
-  
+  auto constant_zero_source =
+      diagram_builder.AddSystem<systems::ConstantVectorSource<double>>(
+          VectorX<double>::Zero(plant_->actuator_command_input_port().size()));
+  diagram_builder.Connect(constant_zero_source->get_output_port(),
+                          plant_->actuator_command_input_port());
+
   // Add a visualizer.
-  systems::DrakeVisualizer& visualizer_publisher = *diagram_builder.template AddSystem<systems::DrakeVisualizer>(plant_->get_rigid_body_tree(), &lcm);
+  systems::DrakeVisualizer& visualizer_publisher =
+      *diagram_builder.template AddSystem<systems::DrakeVisualizer>(
+          plant_->get_rigid_body_tree(), &lcm);
   visualizer_publisher.set_name("visualizer_publisher");
   diagram_builder.Connect(plant_->state_output_port(),
-                    visualizer_publisher.get_input_port(0));
- 
+                          visualizer_publisher.get_input_port(0));
+
   // Set contact parameters that support gripping.
   const double kStaticFriction = 1;
   const double kDynamicFriction = 5e-1;
   const double kStictionSlipTolerance = 1e-3;
-  plant_->set_friction_contact_parameters(kStaticFriction, kDynamicFriction, kStictionSlipTolerance);
+  plant_->set_friction_contact_parameters(kStaticFriction, kDynamicFriction,
+                                          kStictionSlipTolerance);
 
   const double kStiffness = 1000;
   const double kDissipation = 100;
   plant_->set_normal_contact_parameters(kStiffness, kDissipation);
-  
+
   // Create the simulator.
   std::unique_ptr<systems::Diagram<double>> diagram = diagram_builder.Build();
   systems::Simulator<double> simulator(*diagram);
 
-  // Reset the integrator with parameters that support stable gripping, given the contact parameters.
+  // Reset the integrator with parameters that support stable gripping, given
+  // the contact parameters.
   auto context = simulator.get_mutable_context();
   const double max_step_size = 1e-4;
   simulator.reset_integrator<systems::SemiExplicitEulerIntegrator<double>>(
       *diagram, max_step_size, context);
-  
-  // Set the initial joint positions to be something more interesting. Note that the joint position order is the same as the order you get when you read the URDF from top to bottom.
+
+  // Set the initial joint positions to be something more interesting. Note that
+  // the joint position order is the same as the order you get when you read the
+  // URDF from top to bottom.
   Eigen::VectorXd initial_joint_positions(num_actuators);
-  initial_joint_positions << 0, 0, 0, 0.3, 0, 0, -1.14, 1.11, -1.40, -2.11, -1.33, -1.12, 2.19, 0.2, 0.2, 0.2, 0.2, 2.1, 1.29, 0 -0.15, 0, -0.1, 0, 0.2, 0.2, 0.2, 0.2;
+  initial_joint_positions << 0, 0, 0, 0.3, 0, 0, -1.14, 1.11, -1.40, -2.11,
+      -1.33, -1.12, 2.19, 0.2, 0.2, 0.2, 0.2, 2.1, 1.29, 0 - 0.15, 0, -0.1, 0,
+      0.2, 0.2, 0.2, 0.2;
 
   for (int index = 0; index < num_actuators; index++) {
-    plant_->set_position(simulator.get_mutable_context(), index, initial_joint_positions[index]);
+    plant_->set_position(simulator.get_mutable_context(), index,
+                         initial_joint_positions[index]);
   }
 
   // Start the simulation.
