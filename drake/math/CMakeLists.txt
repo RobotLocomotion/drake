@@ -50,8 +50,7 @@ set(installed_headers
 # be exposed anywhere else.
 set(private_headers)
 
-add_library_with_exports(LIB_NAME drakeMath
-  SOURCE_FILES ${sources} ${installed_headers} ${private_headers})
+add_library(drakeMath ${sources} ${installed_headers} ${private_headers})
 target_link_libraries(drakeMath
   drakeCommon
   Eigen3::Eigen)
@@ -59,12 +58,6 @@ target_link_libraries(drakeMath
 drake_install_headers(${installed_headers})
 
 drake_install_libraries(drakeMath)
-drake_install_pkg_config_file(drake-math
-  TARGET drakeMath
-  LIBS -ldrakeMath
-  REQUIRES
-    drake-common
-    eigen3)
 
 if(BUILD_TESTING)
   add_subdirectory(test)

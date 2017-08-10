@@ -1,0 +1,2 @@
+drake_add_cc_test(call_matlab_test)
+target_link_libraries(call_matlab_test drakeCommonProto)
