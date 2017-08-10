@@ -217,7 +217,7 @@ void MultibodyTree<T>::CalcSpatialAccelerationsFromVdot(
       DRAKE_ASSERT(node.get_index() == body_node_index);
 
       // Update per-node kinematics.
-      node.CalcAccelerationKinematicsCache_BaseToTip(
+      node.CalcSpatialAcceleration_BaseToTip(
           mbt_context, pc, vc, known_vdot, A_WB_array);
     }
   }

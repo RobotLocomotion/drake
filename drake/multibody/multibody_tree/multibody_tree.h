@@ -636,8 +636,8 @@ class MultibodyTree {
   /// @param[out] F_BMo_W_array
   ///   A pointer to a valid, non nullptr, vector of spatial forces
   ///   containing, for each body B, the spatial force `F_BMo_W` corresponding
-  ///   to its inboard mobilizer reaction forces on body B about the origin `Mo`
-  ///   of the inboard mobilizer, expressed in the world frame W.
+  ///   to its inboard mobilizer reaction forces on body B applied at the origin
+  ///   `Mo` of the inboard mobilizer, expressed in the world frame W.
   ///   It must be of size equal to the number of bodies in the MultibodyTree.
   ///   This method will abort if the the pointer is null or if `F_BMo_W_array`
   ///   is not of size `get_num_bodies()`.

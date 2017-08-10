@@ -128,7 +128,7 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
       const MultibodyTreeContext<T>& context,
       const Eigen::Ref<const VectorX<T>>& v) const final;
 
-  /// Projects the spatial force `F_Mo_F` about `this` mobilizer's outboard
+  /// Projects the spatial force `F_Mo_F` on `this` mobilizer's outboard
   /// frame M onto its rotation axis (@see get_revolute_axis().) Mathematically:
   /// <pre>
   ///    tau = F_Mo_F.rotational().dot(axis_F)

@@ -108,10 +108,9 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   ///   the **world** body, otherwise this constructor will abort.
   /// @param[in] body
   ///   The body B associated with `this` node.
-  /// @param[in]
-  ///   mobilizer The mobilizer associated with this `node`. It can be a
-  ///   `nullptr` only when `body` **is** the **world** body, otherwise this
-  ///   method will abort.
+  /// @param[in] mobilizer
+  ///   The mobilizer associated with this `node`. It can be a `nullptr` only
+  ///   when `body` **is** the **world** body, otherwise this method will abort.
   ///
   /// @note %BodyNode keeps a reference to the parent body, body and mobilizer
   /// for this node, which must outlive `this` BodyNode.
@@ -388,13 +387,13 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// with `context` by MultibodyTree::CalcVelocityKinematicsCache().
   /// @pre CalcAccelerationKinematicsCache_BaseToTip() must have already been
   /// called for the parent node (and, by recursive precondition, all
-  /// predecessor nodes in the tree.) Therefore, on input, the argument array
+  /// predecessor nodes in the tree). Therefore, on input, the argument array
   /// `A_WB_array_ptr` must contain already pre-computed spatial accelerations
   /// for the inboard bodies to this node's body B.
   // Unit test coverage for this method is provided, among others, in
   // double_pendulum_test.cc, and by any other unit tests making use of
   // MultibodyTree::CalcAccelerationKinematicsCache().
-  void CalcAccelerationKinematicsCache_BaseToTip(
+  void CalcSpatialAcceleration_BaseToTip(
       const MultibodyTreeContext<T>& context,
       const PositionKinematicsCache<T>& pc,
       const VelocityKinematicsCache<T>& vc,
@@ -554,8 +553,8 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// @param[out] F_BMo_W_array_ptr
   ///   A pointer to a valid, non nullptr, vector of spatial forces
   ///   containing, for each body B, the spatial force `F_BMo_W` corresponding
-  ///   to its inboard mobilizer reaction forces on body B about the origin `Mo`
-  ///   of the inboard mobilizer, expressed in the world frame W.
+  ///   to its inboard mobilizer reaction forces on body B applied at the origin
+  ///   `Mo` of the inboard mobilizer, expressed in the world frame W.
   ///   It must be of size equal to the number of bodies in the MultibodyTree
   ///   and ordered by BodyNodeIndex. The calling MultibodyTree method must
   ///   guarantee these conditions are satisfied. This method will abort if the
@@ -627,7 +626,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     //
     // The total spatial force on body B is the combined effect of external
     // spatial forces and spatial forces induced by its inboard and outboard
-    // mobilizers. About its mobilized frame M, in coordinate-free form:
+    // mobilizers. On its mobilized frame M, in coordinate-free form:
     //   Ftot_BMo = Fext_BMo + F_BMo - Σᵢ(F_CiMo)                           (2)
     // where F_CiMo is the spatial force on the i-th child body Ci due to its
     // inboard mobilizer which, by action/reaction, applies to body B as
@@ -687,7 +686,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
       // Since p_BoMo = p_BoCo + p_CoMc + p_McMo, we have:
       const Vector3<T> p_McMo_W = p_BoMo_W - p_BoCo_W - p_CoMc_W;
 
-      // Spatial force on the child body C about the origin Mc of the outboard
+      // Spatial force on the child body C at the origin Mc of the outboard
       // mobilizer frame for the child body.
       // A little note for how to read the next line: the frames for
       // F_BMo_W_array are:
@@ -1046,7 +1045,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   // applied for it to incur in a spatial acceleration A_WB. Mathematically:
   //   Ftot_BBo = M_B_W * A_WB + b_Bo
   // where b_Bo contains the velocity dependent gyroscopic terms (see Eq. 2.26,
-  // p. 27, in A. Jain's book). The above balance is performed about the origin
+  // p. 27, in A. Jain's book). The above balance is performed at the origin
   // Bo of the body frame B, which does not necessarily need to coincide with
   // the body center of mass.
   // Notes:
@@ -1063,7 +1062,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // TODO(amcastro-tri): add argument for flexible body generalized
     // accelerations and generalized forces.
 
-    // Output spatial force applied on Body B, about Bo, measured in W.
+    // Output spatial force applied on Body B, at Bo, measured in W.
     SpatialForce<T>& Ftot_BBo_W = *Ftot_BBo_W_ptr;
 
     // Body for this node.
@@ -1073,8 +1072,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     const Isometry3<T>& X_WB = get_X_WB(pc);
 
     // Orientation of B in W.
-    const Matrix3<T> R_WB = X
-    _WB.rotation();
+    const Matrix3<T> R_WB = X_WB.rotation();
 
     // Body spatial velocity in W.
     const SpatialVelocity<T>& V_WB = get_V_WB(vc);
@@ -1101,7 +1099,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
         SpatialForce<T>(w_WB.cross(G_B_W * w_WB),         /* rotational */
                         w_WB.cross(w_WB.cross(p_BoBcm_W)) /* translational */);
 
-    // Equations of motion for a rigid body written about a generic point Bo not
+    // Equations of motion for a rigid body written at a generic point Bo not
     // necessarily coincident with the body's center of mass. This corresponds
     // to Eq. 2.26 (p. 27) in A. Jain's book.
     Ftot_BBo_W = M_B_W * A_WB + b_Bo_W;
