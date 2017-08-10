@@ -238,7 +238,7 @@ Operating System Notes
 .. toctree::
     :maxdepth: 1
 
-    development_on_osx
+    development_on_mac
 
 Programming Style Notes
 =======================
