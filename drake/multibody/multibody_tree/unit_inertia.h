@@ -313,7 +313,7 @@ class UnitInertia : public RotationalInertia<T> {
   ///   - K is negative. K can be zero.
   ///   - J ≤ 2 * K, this corresponds to the triangle inequality, see
   ///     CouldBePhysicallyValid().
-  ///   - `b_E` is the zero vector. That is if `‖b_E‖₂ < ε`, where ε is the
+  ///   - `b_E` is the zero vector. That is if `‖b_E‖₂ ≤ ε`, where ε is the
   ///     machine epsilon.
   ///
   /// @note J is a principal moment of inertia with principal axis equal to b.
@@ -337,7 +337,7 @@ class UnitInertia : public RotationalInertia<T> {
     DRAKE_DEMAND(K >= 0.0);
     // The triangle inequalities for this case reduce to J <= 2*K:
     DRAKE_DEMAND(J <= 2.0 * K);
-    DRAKE_DEMAND(b_E.norm() < std::numeric_limits<double>::epsilon());
+    DRAKE_DEMAND(b_E.norm() > std::numeric_limits<double>::epsilon());
     // Normalize b_E before using it. Only direction matters:
     Vector3<T> bhat_E = b_E.normalized();
     Matrix3<T> G_matrix =
