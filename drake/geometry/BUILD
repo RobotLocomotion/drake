@@ -42,6 +42,7 @@ drake_cc_library(
         ":geometry_ids",
         ":geometry_instance",
         ":internal_frame",
+        ":internal_geometry",
     ],
 )
 
@@ -66,6 +67,16 @@ drake_cc_library(
     name = "internal_frame",
     srcs = ["internal_frame.cc"],
     hdrs = ["internal_frame.h"],
+    deps = [
+        ":geometry_ids",
+        "//drake/common",
+    ],
+)
+
+drake_cc_library(
+    name = "internal_geometry",
+    srcs = [],
+    hdrs = ["internal_geometry.h"],
     deps = [
         ":geometry_ids",
         "//drake/common",
