@@ -226,7 +226,7 @@ class QuadraticConstraint : public Constraint {
                       double ub)
       : Constraint(kNumConstraints, Q.rows(), drake::Vector1d::Constant(lb),
                    drake::Vector1d::Constant(ub)),
-        Q_(Q),
+        Q_((Q + Q.transpose()) / 2),
         b_(b) {
     DRAKE_ASSERT(Q_.rows() == Q_.cols());
     DRAKE_ASSERT(Q_.cols() == b_.rows());
@@ -234,6 +234,7 @@ class QuadraticConstraint : public Constraint {
 
   ~QuadraticConstraint() override {}
 
+  // The symmetric matrix Q, being the Hessian of this constraint.
   virtual const Eigen::MatrixXd& Q() const { return Q_; }
 
   virtual const Eigen::VectorXd& b() const { return b_; }
@@ -256,7 +257,7 @@ class QuadraticConstraint : public Constraint {
       throw std::runtime_error("Can't change the number of decision variables");
     }
 
-    Q_ = new_Q;
+    Q_ = (new_Q + new_Q.transpose()) / 2;
     b_ = new_b;
   }
 
