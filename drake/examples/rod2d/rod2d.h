@@ -4,7 +4,7 @@
 #include <utility>
 #include <vector>
 
-#include "drake/multibody/rigid_contact/rigid_contact_problem_data.h"
+#include "drake/multibody/constraint/constraint_problem_data.h"
 #include "drake/solvers/moby_lcp_solver.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/rendering/pose_vector.h"
@@ -418,7 +418,8 @@ class Rod2D : public systems::LeafSystem<T> {
   ///      and the halfspace will be approximately zero and that the vertical
   ///      velocity at the point of contact will be approximately zero.
   ///      Assertion failure is triggered if the rod is in a ballistic mode.
-T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
+  T CalcNormalAccelWithoutContactForces(
+      const systems::Context<T>& context) const;
 
   /// Evaluates the witness function for sliding direction changes. The witness
   /// function will bracket a zero crossing when the direction of sliding
@@ -510,18 +511,21 @@ T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context) const;
   /// @param tangent_vels a vector of tangent velocities at the contact points,
   ///        measured along the positive x-axis.
   /// @param[out] data the rigid contact problem data.
-  void CalcRigidContactProblemData(const systems::Context<T>& context,
+  void CalcConstraintProblemData(const systems::Context<T>& context,
                                    const std::vector<Vector2<T>>& points,
                                    const std::vector<T>& tangent_vels,
-    multibody::rigid_contact::RigidContactAccelProblemData<T>* data) const;
+    multibody::constraint::ConstraintAccelProblemData<T>* data)
+    const;
 
   /// Initializes the impacting contact data for the rod, given a set of contact
   /// points. Aborts if data is null.
   /// @param points a vector of contact points, expressed in the world frame.
   /// @param[out] data the rigid impact problem data.
-  void CalcRigidImpactProblemData(const systems::Context<T>& context,
-                                  const std::vector<Vector2<T>>& points,
-      multibody::rigid_contact::RigidContactVelProblemData<T>* data) const;
+  void CalcRigidImpactProblemData(
+      const systems::Context<T>& context,
+      const std::vector<Vector2<T>>& points,
+      multibody::constraint::ConstraintVelProblemData<T>* data)
+      const;
 
  private:
   friend class Rod2DDAETest;
