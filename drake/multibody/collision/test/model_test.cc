@@ -59,31 +59,83 @@ typedef std::unordered_map<const drake::multibody::collision::Element*,
 
 // Base fixture for tests that own a collision model
 class ModelTestBase : public ::testing::Test {
+ public:
+  Element* AddSphere(double radius = 1.0) {
+    const DrakeShapes::Sphere geom{radius};
+    return model_->AddElement(make_unique<Element>(geom));
+  }
+
+  void RemoveElement(const Element& element) {
+    model_->RemoveElement(element.getId());
+  }
+
+  void CallComputeMaximumDepthCollisionPoints() {
+    std::vector<PointPair> pairs;
+    model_->ComputeMaximumDepthCollisionPoints(true, &pairs);
+  }
+
  protected:
   unique_ptr<drake::multibody::collision::Model> model_;
 };
 
 // Fixture for tests that should be applied to all collision model types
-class ModelTest : public ModelTestBase,
-                  public ::testing::WithParamInterface<
-                      drake::multibody::collision::ModelType> {
+class AllModelTypesTests : public ModelTestBase,
+                           public ::testing::WithParamInterface<
+                               drake::multibody::collision::ModelType> {
  protected:
   void SetUp() override {
     model_ = drake::multibody::collision::newModel(GetParam());
   }
 };
 
-TEST_P(ModelTest, NewModel) { EXPECT_FALSE(model_ == nullptr); }
+TEST_P(AllModelTypesTests, NewModel) { EXPECT_FALSE(model_ == nullptr); }
 
-INSTANTIATE_TEST_CASE_P(NewModelTest, ModelTest,
-                        ::testing::Values(
 #ifdef BULLET_COLLISION
-                            ModelType::kBullet,
-#endif
+
 #ifndef DRAKE_DISABLE_FCL
-                            ModelType::kFcl,
+std::vector<ModelType> kAllModelTypes{ModelType::kBullet, ModelType::kFcl,
+                                      ModelType::kUnusable};
+std::vector<ModelType> kUsableModelTypes{ModelType::kBullet};
+#else
+std::vector<ModelType> kAllModelTypes{ModelType::kBullet, ModelType::kUnusable};
+std::vector<ModelType> kUsableModelTypes{ModelType::kBullet};
 #endif
-                            ModelType::kUnusable));
+
+#else
+
+#ifndef DRAKE_DISABLE_FCL
+std::vector<ModelType> kAllModelTypes{ModelType::kFcl, ModelType::kUnusable};
+std::vector<ModelType> kUsableModelTypes{};
+#else
+std::vector<ModelType> kAllModelTypes{ModelType::kUnusable};
+std::vector<ModelType> kUsableModelTypes{};
+#endif
+
+#endif
+
+INSTANTIATE_TEST_CASE_P(AllModelTypesTests, AllModelTypesTests,
+                        ::testing::ValuesIn(kAllModelTypes));
+
+class UsableModelTypesTests : public AllModelTypesTests {};
+
+TEST_P(UsableModelTypesTests, ComputeMaximumDepthCollisionPoints) {
+  EXPECT_NO_THROW(CallComputeMaximumDepthCollisionPoints());
+}
+
+// Verifies that ComputeMaximumDepthCollisionPoints() does not crash when called
+// after the removal of collision elements.
+TEST_P(UsableModelTypesTests, RemoveElement) {
+  EXPECT_NO_THROW(CallComputeMaximumDepthCollisionPoints());
+  Element* elem1 = AddSphere();
+  Element* elem2 = AddSphere();
+  RemoveElement(*elem1);
+  EXPECT_NO_THROW(CallComputeMaximumDepthCollisionPoints());
+  RemoveElement(*elem2);
+  EXPECT_NO_THROW(CallComputeMaximumDepthCollisionPoints());
+}
+
+INSTANTIATE_TEST_CASE_P(UsableModelTypesTests, UsableModelTypesTests,
+                        ::testing::ValuesIn(kUsableModelTypes));
 
 #ifndef DRAKE_DISABLE_FCL
 // Fixture for locking down FclModel's not-yet-implemented functions.
@@ -128,11 +180,6 @@ class FclModelDeathTests : public ModelTestBase,
     std::vector<ElementId> ids;
     std::vector<PointPair> pairs;
     model_->ClosestPointsAllToAll(ids, true, &pairs);
-  }
-
-  void CallComputeMaximumDepthCollisionPoints() {
-    std::vector<PointPair> pairs;
-    model_->ComputeMaximumDepthCollisionPoints(true, &pairs);
   }
 
   void CallCollisionDetectFromPoints() {
