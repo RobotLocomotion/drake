@@ -1,3 +1,12 @@
+/// @brief
+///
+/// Implements a passive simulation of the Drake-compatible description of the
+/// PR2 robot. There is no controller, but the contact parameters and integrator
+/// parameters are set to support reliable gripping of objects if a controller
+/// is added.
+
+#include <gflags/gflags.h>
+
 #include "drake/common/find_resource.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -9,20 +18,23 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 
+DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
+              "Number of seconds to simulate.");
+
 namespace drake {
 namespace examples {
 namespace pr2 {
 
-void main() {
-  // Declare diagram builder and lcm.
+int DoMain() {
+  // Declare the diagram builder and lcm.
   systems::DiagramBuilder<double> diagram_builder;
   drake::lcm::DrakeLcm lcm;
 
   // Construct the tree for the PR2.
   auto tree_ = std::make_unique<RigidBodyTree<double>>();
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      FindResourceOrThrow("drake/examples/pr2/"
-                          "pr2_drake.urdf"),
+      FindResourceOrThrow("drake/examples/pr2/models/pr2_description/urdf/"
+                          "pr2_simplified.urdf"),
       multibody::joints::
           kFixed /* our PR2 model moves with actuators, not a floating base */,
       nullptr /* weld to frame */, tree_.get());
@@ -92,14 +104,16 @@ void main() {
   // Start the simulation.
   lcm.StartReceiveThread();
   simulator.Initialize();
-  simulator.set_target_realtime_rate(1.0);
-  simulator.StepTo(10);
+  simulator.StepTo(FLAGS_simulation_sec);
+
+  return 0;
 }
+
 }  // namespace pr2
 }  // namespace examples
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
-  drake::examples::pr2::main();
-  return 0;
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  return drake::examples::pr2::DoMain();
 }

@@ -13,8 +13,8 @@ load("//tools:install_data.bzl", "install_data")
 package(default_visibility = ["//visibility:public"])
 
 drake_cc_binary(
-    name = "pr2_simulation",
-    srcs = ["pr2_simulation.cc"],
+    name = "pr2_passive_simulation",
+    srcs = ["pr2_passive_simulation.cc"],
     data = [":models"],
     deps = [
         "//drake/common:find_resource",
@@ -27,6 +27,7 @@ drake_cc_binary(
         "//drake/systems/analysis:simulator",
         "//drake/systems/framework:diagram_builder",
         "//drake/systems/primitives:constant_vector_source",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 
