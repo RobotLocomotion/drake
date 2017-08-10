@@ -234,7 +234,12 @@ class QuadraticConstraint : public Constraint {
 
   ~QuadraticConstraint() override {}
 
-  // The symmetric matrix Q, being the Hessian of this constraint.
+  /** The symmetric matrix Q, being the Hessian of this constraint.
+   * Notice that if the user constructs the constraint with a non-symmetric Q₀,
+   * then we return the symmetric matrix Q = (Q₀ + Q₀ᵀ) / 2, since
+   * xᵀQ₀x = xᵀQ₀ᵀx = xᵀ*(Q₀+Q₀ᵀ)/2 *x. The first equality holds because the
+   * transpose of a scalar is the scalar itself.
+   */
   virtual const Eigen::MatrixXd& Q() const { return Q_; }
 
   virtual const Eigen::VectorXd& b() const { return b_; }
