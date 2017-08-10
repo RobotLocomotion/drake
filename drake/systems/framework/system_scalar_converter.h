@@ -62,8 +62,13 @@ class SystemScalarConverter {
   /// object to enable support for additional custom types.
   ///
   /// @tparam S is the System type to convert
+  ///
+  /// This an implicit conversion constructor (not marked `explicit`), in order
+  /// to make calling code substantially more readable, with relatively little
+  /// risk of an unwanted accidental conversion happening.
   template <template <typename> class S>
-  explicit SystemScalarConverter(SystemTypeTag<S>) : SystemScalarConverter() {
+  // NOLINTNEXTLINE(runtime/explicit)
+  SystemScalarConverter(SystemTypeTag<S>) : SystemScalarConverter() {
     using Expression = symbolic::Expression;
     // From double to all other types.
     AddIfSupported<S, AutoDiffXd, double>();
