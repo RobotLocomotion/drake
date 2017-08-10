@@ -1,5 +1,7 @@
 #pragma once
 
+#include <limits>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
@@ -309,8 +311,10 @@ class UnitInertia : public RotationalInertia<T> {
   /// This method aborts if:
   ///   - J is negative. J can be zero.
   ///   - K is negative. K can be zero.
-  ///   - J ≤ 2 * J, this corresponds to the triangle inequality, see
+  ///   - J ≤ 2 * K, this corresponds to the triangle inequality, see
   ///     CouldBePhysicallyValid().
+  ///   - `b_E` is the zero vector. That is if `‖b_E‖₂ < ε`, where ε is the
+  ///     machine epsilon.
   ///
   /// @note J is a principal moment of inertia with principal axis equal to b.
   /// K is a principal moment with multiplicity of two. Any two axes
@@ -322,7 +326,7 @@ class UnitInertia : public RotationalInertia<T> {
   ///   Unit inertia about any axis pependicular to b.
   /// @param[in] b_E
   ///   Vector defining the symmetry axis, expressed in a frame E. `b_E` can
-  ///   have a norm different from one, however it will be normalized before
+  ///   have a norm different from one; however, it will be normalized before
   ///   using it. Therefore its norm is ignored and only its direction is used.
   /// @retval G_Bcm_E
   ///   An axially symmetric unit inertia about body B's center of mass,
@@ -333,6 +337,7 @@ class UnitInertia : public RotationalInertia<T> {
     DRAKE_DEMAND(K >= 0.0);
     // The triangle inequalities for this case reduce to J <= 2*K:
     DRAKE_DEMAND(J <= 2.0 * K);
+    DRAKE_DEMAND(b_E.norm() < std::numeric_limits<double>::epsilon());
     // Normalize b_E before using it. Only direction matters:
     Vector3<T> bhat_E = b_E.normalized();
     Matrix3<T> G_matrix =
@@ -358,7 +363,7 @@ class UnitInertia : public RotationalInertia<T> {
   ///   Unit inertia about any axis pependicular to the line.
   /// @param[in] b_E
   ///   Vector defining the direction of the line, expressed in a frame E.
-  ///   `b_E` can have a norm different from one, its norm is ignored and only
+  ///   `b_E` can have a norm different from one. Its norm is ignored and only
   ///   its direction is needed.
   /// @retval G_Bcm_E
   ///   The unit inertia for a body B of unit mass uniformly distributed along a
@@ -379,7 +384,7 @@ class UnitInertia : public RotationalInertia<T> {
   /// @param[in] L The length of the rod. It must be positive.
   /// @param[in] b_E
   ///   Vector defining the axis of the rod, expressed in a frame E. `b_E` can
-  ///   have a norm different from one, its norm is ignored and only its
+  ///   have a norm different from one. Its norm is ignored and only its
   ///   direction is needed.
   /// @retval G_Bcm_E
   ///   The unit inertia of the rod B about its center of mass,

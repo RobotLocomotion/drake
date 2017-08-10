@@ -233,20 +233,20 @@ GTEST_TEST(UnitInertia, AxiallySymmetric) {
       AngleAxisd(-M_PI_4, Vector3d::UnitX()).toRotationMatrix();
 
   // Unit inertia computed with AxiallySymmetric().
-  UnitInertia<double> G =
+  UnitInertia<double> G_E =
       UnitInertia<double>::AxiallySymmetric(I_axial, I_perp, b_E);
 
   // The expected inertia is that of a cylinder of radius r and height L with
   // its longitudinal axis aligned with b.
-  UnitInertia<double> G_expected =
-      UnitInertia<double>::SolidCylinder(r, L).ReExpress(R_EZ);
+  UnitInertia<double> G_Z = UnitInertia<double>::SolidCylinder(r, L);
+  UnitInertia<double> G_E_expected = G_Z.ReExpress(R_EZ);
 
   // Verify the computed values.
-  EXPECT_TRUE(G.CopyToFullMatrix3().isApprox(
-      G_expected.CopyToFullMatrix3(), kEpsilon));
+  EXPECT_TRUE(G_E.CopyToFullMatrix3().isApprox(
+      G_E_expected.CopyToFullMatrix3(), kEpsilon));
 
   // Verify the principal moments indeed are I_perp and I_axial:
-  Vector3d moments = G.CalcPrincipalMomentsOfInertia();
+  Vector3d moments = G_E.CalcPrincipalMomentsOfInertia();
   // The two smallest moments should match I_perp in this case.
   EXPECT_NEAR(moments(0), I_perp, kTolerance);
   EXPECT_NEAR(moments(1), I_perp, kTolerance);
@@ -282,22 +282,22 @@ GTEST_TEST(UnitInertia, ThinRod) {
       AngleAxisd(-M_PI_4, Vector3d::UnitX()).toRotationMatrix();
 
   // Unit inertia computed with StraightLine().
-  UnitInertia<double> G =
+  UnitInertia<double> G_E =
       UnitInertia<double>::StraightLine(I_rod, b_E);
 
   // The expected inertia is that of a cylinder of zero radius and height L with
   // its longitudinal axis aligned with b.
-  UnitInertia<double> G_expected =
-      UnitInertia<double>::SolidCylinder(0.0, L).ReExpress(R_EZ);
+  UnitInertia<double> G_Z = UnitInertia<double>::SolidCylinder(0.0, L);
+  UnitInertia<double> G_E_expected = G_Z.ReExpress(R_EZ);
 
   // Verify the computed values.
-  EXPECT_TRUE(G.CopyToFullMatrix3().isApprox(
-      G_expected.CopyToFullMatrix3(), kEpsilon));
+  EXPECT_TRUE(G_E.CopyToFullMatrix3().isApprox(
+      G_E_expected.CopyToFullMatrix3(), kEpsilon));
 
   // Verify the result from ThinRod():
   UnitInertia<double> G_rod = UnitInertia<double>::ThinRod(L, b_E);
   EXPECT_TRUE(G_rod.CopyToFullMatrix3().isApprox(
-      G_expected.CopyToFullMatrix3(), kEpsilon));
+      G_E_expected.CopyToFullMatrix3(), kEpsilon));
 }
 
 // Tests the methods:
