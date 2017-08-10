@@ -66,6 +66,7 @@ install(
     docs = ["LICENSE.TXT"],
     deps = [
         "//drake:install",
+        "//drake/bindings:install",
         "//drake/common:install",
         "//drake/examples:install_data",
         "//drake/lcmtypes:install",
