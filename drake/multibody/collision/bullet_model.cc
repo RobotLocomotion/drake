@@ -391,6 +391,21 @@ void BulletModel::DoAddElement(const Element& element) {
   }
 }
 
+void BulletModel::DoRemoveElement(ElementId id) {
+  const auto& itr = bullet_world_.bt_collision_objects.find(id);
+  if (itr != bullet_world_.bt_collision_objects.end()) {
+    bullet_world_.bt_collision_world->removeCollisionObject(itr->second.get());
+    bullet_world_.bt_collision_objects.erase(itr);
+  }
+  const auto& itr_no_margin =
+      bullet_world_no_margin_.bt_collision_objects.find(id);
+  if (itr_no_margin != bullet_world_no_margin_.bt_collision_objects.end()) {
+    bullet_world_no_margin_.bt_collision_world->removeCollisionObject(
+        itr_no_margin->second.get());
+    bullet_world_no_margin_.bt_collision_objects.erase(itr_no_margin);
+  }
+}
+
 bool BulletModel::CollidingPointsCheckOnly(
     const std::vector<Vector3d>& input_points, double collision_threshold) {
   // Create sphere geometry
