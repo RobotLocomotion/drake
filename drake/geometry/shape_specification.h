@@ -18,7 +18,7 @@ class ShapeReifier;
 
 /** The base interface for all shape specifications. Shapes have two basic
  requirements:
-   - hey must be cloneable, and
+   - they must be cloneable, and
    - they must invoke the correct method for themselves on a ShapeReifier. */
 class Shape {
  public:
@@ -86,7 +86,7 @@ class Sphere : public ReifiableShape<Sphere> {
   double radius_{};
 };
 
-/** Definition of a half space. In its canonical frame, the plan defining the
+/** Definition of a half space. In its canonical frame, the plane defining the
  boundary of the half space is that frame's z = 0 plane. By implication, the
  plane's normal points in the +z direction and the origin lies on the plane.
  Other shapes are considered to be penetrating the half space if there exists
@@ -101,18 +101,20 @@ class HalfSpace : public ReifiableShape<HalfSpace> {
   /** Given a plane `normal` and a point `X_FP` on the plane, both expressed in
    frame F, creates the transform `X_FC` from the half-space's canonical space
    to frame F.
-   @param normal   A vector perpendicular to the half-space's plane boundary.
-                   Must be a non-zero vector but need not be unit length.
-   @param X_FP     A point lying on the half-space's plane boundary.
-   @retval `X_FC`  The pose of the canonical half-space in frame F.
+   @param normal_F  A vector perpendicular to the half-space's plane boundary
+                    expressed in frame F. It must be a non-zero vector but need
+                    not be unit length.
+   @param r_FP      A point lying on the half-space's plane boundary measured
+                    and expressed in frame F.
+   @retval `X_FC`   The pose of the canonical half-space in frame F.
    @throws std::logic_error if the normal is _close_ to a zero-vector (e.g.,
-                            ‖normal‖₂ < ε).
+                            ‖normal_F‖₂ < ε).
 
    @tparam T       The underlying scalar type. Must be a valid Eigen scalar. */
   template <typename T>
-  static Isometry3<T> MakePose(const Vector3<T>& normal,
-                               const Vector3<T>& X_FP) {
-    T norm = normal.norm();
+  static Isometry3<T> MakePose(const Vector3<T>& normal_F,
+                               const Vector3<T>& r_FP) {
+    T norm = normal_F.norm();
     // Note: this value of epsilon is somewhat arbitrary. It's merely a minor
     // fence over which ridiculous vectors will trip.
     if (norm < 1e-10)
@@ -121,7 +123,7 @@ class HalfSpace : public ReifiableShape<HalfSpace> {
     // First create basis.
     // Projects the normal into the first quadrant in order to identify the
     // *smallest* component of the normal.
-    const Vector3<T> u(normal.cwiseAbs());
+    const Vector3<T> u(normal_F.cwiseAbs());
     int minAxis;
     u.minCoeff(&minAxis);
     // The axis corresponding to the smallest component of the normal will be
@@ -130,9 +132,9 @@ class HalfSpace : public ReifiableShape<HalfSpace> {
     perpAxis << (minAxis == 0 ? 1 : 0), (minAxis == 1 ? 1 : 0),
         (minAxis == 2 ? 1 : 0);
     // Now define x-, y-, and z-axes. The z-axis lies in the normal direction.
-    Vector3<T> z_axis_W = normal / norm;
-    Vector3<T> x_axis_W = normal.cross(perpAxis).normalized();
-    Vector3<T> y_axis_W = normal.cross(x_axis_W);
+    Vector3<T> z_axis_W = normal_F / norm;
+    Vector3<T> x_axis_W = normal_F.cross(perpAxis).normalized();
+    Vector3<T> y_axis_W = normal_F.cross(x_axis_W);
     // Transformation from world frame to local frame.
     Matrix3<T> R_WL;
     R_WL.col(0) = x_axis_W;
@@ -142,7 +144,7 @@ class HalfSpace : public ReifiableShape<HalfSpace> {
     // Construct pose from basis and point.
     Isometry3<T> X_FC = Isometry3<T>::Identity();
     X_FC.linear() = R_WL;
-    X_FC.translation() = X_FP;
+    X_FC.translation() = r_FP;
     return X_FC;
   }
 };
