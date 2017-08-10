@@ -4,9 +4,13 @@ import argparse
 import filecmp
 import os
 import shutil
+import stat
+import sys
+from subprocess import check_output, check_call
 
 subdirs = set()
 prefix = None
+libs = {}
 
 
 def needs_install(src, dst):
@@ -38,16 +42,60 @@ def install(src, dst):
             os.makedirs(subdir_full)
         subdirs.add(subdir)
 
+    installed = False
+    dst_full = os.path.join(prefix, dst)
     # Install file, if not up to date.
     if needs_install(src, dst):
         print("[Installing] %s" % dst)
-        dst_full = os.path.join(prefix, dst)
         if os.path.exists(dst_full):
             os.remove(dst_full)
         shutil.copy2(src, dst_full)
-
+        installed = True
     else:
         print("[Up to date] %s" % dst)
+
+    if dst.endswith('.so') or dst.endswith('.dylib'):
+        basename = os.path.basename(dst)
+        # Check that dependency is only referenced once
+        # in the library dictionary. If it is referenced multiple times,
+        # we do not know which one to use, and fail fast.
+        if basename in libs:
+            sys.stderr.write(
+                "Multiple installation rules found for %s." % (basename))
+            sys.exit(1)
+        libs[basename] = (dst_full, installed)
+
+
+def fix_library_rpaths():
+    # Only fix libraries that are installed now.
+    fix_libs = [(k, libs[k][0]) for k in libs.keys() if libs[k][1]]
+    for basename, dst_full in fix_libs:
+        # Enable write permissions to allow modification.
+        os.chmod(dst_full, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR |
+                 stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH
+                 )
+        # Update library ID (remove relative path).
+        check_call(
+            ['install_name_tool', "-id", "@rpath/" + basename, dst_full]
+            )
+        # Check if library dependencies are specified with relative paths.
+        file_output = check_output(["otool", "-L", dst_full])
+        for line in file_output.splitlines():
+            # keep only file path, remove version information.
+            relative_path = line.split(' (')[0].strip()
+            # If path is relative, it needs to be replaced by absolute path.
+            if "@loader_path" not in relative_path:
+                continue
+            dep_basename = os.path.basename(relative_path)
+            # Look for the absolute path in the dictionary of libraries.
+            if dep_basename not in libs.keys():
+                continue
+            check_call(
+                ['install_name_tool',
+                 "-change", relative_path,
+                 libs[dep_basename][0],
+                 dst_full]
+                )
 
 
 def main(args):
@@ -65,7 +113,6 @@ def main(args):
     # working directory of the user's shell, enforce that the install
     # location is an absolute path so that the user is not surprised.
     if not os.path.isabs(prefix):
-        import sys
         sys.stderr.write(
             "Install prefix must be an absolute path (got %r)\n"
             % prefix)
@@ -74,7 +121,10 @@ def main(args):
     # Execute the install actions.
     <<actions>>
 
+    # On MacOS, library paths may need to be updated.
+    if sys.platform == "darwin":
+        fix_library_rpaths()
+
 
 if __name__ == "__main__":
-    import sys
     main(sys.argv[1:])
