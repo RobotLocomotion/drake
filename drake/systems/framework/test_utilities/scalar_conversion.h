@@ -7,6 +7,21 @@
 namespace drake {
 namespace systems {
 
+namespace test {
+// A helper function incompatible with symbolic::Expression.  This is useful to
+// prove that scalar conversion code does not even instantiate this function
+// when T = symbolic::Expression when told not to.  If it did, we see compile
+// errors that this function does not compile with T = symbolic::Expression.
+template <typename T>
+static T copysign_int_to_non_symbolic_scalar(int magic, const T& value) {
+  if ((magic < 0) == (value < 0.0)) {
+    return value;
+  } else {
+    return -value;
+  }
+}
+}  // namespace test
+
 /// Tests whether the given device under test of type S<double> can be
 /// converted to use AutoDiffXd as its scalar type.  If the test passes,
 /// additional checks on the converted object of type `const S<AutoDiffXd>&`
