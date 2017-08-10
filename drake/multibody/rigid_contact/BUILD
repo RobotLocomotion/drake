@@ -22,6 +22,19 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "rigid_contact_point",
+    hdrs = [
+        "rigid_contact_point.h",
+    ],
+    srcs = ["rigid_contact_point.cc"],
+    deps = [
+        "//drake/common",
+        "//drake/common:autodiff",
+        "//drake/systems/framework:value",
+    ],
+)
+
+drake_cc_library(
     name = "rigid_contact_solver",
     srcs = ["rigid_contact_solver.cc"],
     hdrs = [
