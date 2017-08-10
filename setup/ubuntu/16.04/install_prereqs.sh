@@ -98,9 +98,12 @@ openjdk-8-jdk
 patchutils
 pkg-config
 python-dev
+python-lxml
 python-numpy
 python-pygame
+python-scipy
 python-sphinx
+python-yaml
 valgrind
 zip
 zlib1g-dev
@@ -137,10 +140,7 @@ libvtk-java
 libvtk5-dev
 libvtk5-qt4-dev
 ninja-build
-python-lxml
-python-scipy
 python-vtk
-python-yaml
 
 EOF
     )
