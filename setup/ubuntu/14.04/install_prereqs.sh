@@ -65,9 +65,12 @@ oracle-java8-installer
 patchutils
 pkg-config
 python-dev
+python-lxml
 python-numpy
 python-pygame
+python-scipy
 python-sphinx
+python-yaml
 valgrind
 zip
 zlib1g-dev
