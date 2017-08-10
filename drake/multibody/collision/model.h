@@ -43,6 +43,12 @@ class Model {
    error configuring collision  model, etc.) **/
   Element* AddElement(std::unique_ptr<Element> element);
 
+  /** Removes a collision element from this model.
+
+   @param id The id of the element that will be removed.
+
+   @return True if the element is successfully removed, false if the model does
+   not contain an element with the given id. **/
   bool RemoveElement(ElementId id);
 
   /** Gets a read-only pointer to a collision element in this model.
@@ -256,6 +262,14 @@ class Model {
 
    @throws std::runtime_error If there was a problem processing the element. **/
   virtual void DoAddElement(const Element& element);
+
+  /** Allows sub-classes to do additional processing when elements are
+   removed from the collision model. This is called by Model::RemoveElement()
+   prior to removing id from elements. The derived class should not do this
+   removal.
+
+   @param id The id of the element that will be removed. **/
+  virtual void DoRemoveElement(ElementId id);
 
   // Protected member variables are forbidden by the style guide.
   // Please do not add new references to this member.  Instead, use
