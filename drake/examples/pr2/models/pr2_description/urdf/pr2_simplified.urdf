@@ -7,8 +7,9 @@
 <!-- =================================================================================== -->
 <!-- |    Note that this file has been edited by hand for Drake compatibility:         | -->
 <!-- |    - .stl mesh extensions were replaced with .obj extensions.   		       | -->
-<!-- |    - The wheels intended for base movement have been fixed. 		       | -->
-<!-- |      Joints for planar base movement have been added instead (x, y, theta).     | -->
+<!-- |    - The wheel joints intended for base movement have been changed from 	       | -->
+<!-- |      continuous to fixed types. Joints for planar base movement have been added | -->
+<!-- |	    instead (x, y, theta).     						       | -->
 <!-- |    - For each gripper, the transmission that makes the fingers mimic   	       | -->
 <!-- |      each other from the actions of a prismatic joint has been removed.         | -->
 <!-- |      The finger joints are now fully actuated and are not controlled by a       | -->

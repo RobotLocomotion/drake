@@ -31,6 +31,18 @@ drake_cc_binary(
     ],
 )
 
+# === test/ ===
+
+drake_cc_googletest(
+    name = "load_pr2_simplified_test",
+    srcs = ["test/load_pr2_simplified_test.cc"],
+    data = [":models"],
+    deps = [
+        "//drake/common:find_resource",
+        "//drake/multibody/parsers",
+    ],
+)
+
 install_data()
 
 add_lint_tests()
