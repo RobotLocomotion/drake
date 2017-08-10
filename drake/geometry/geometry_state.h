@@ -234,15 +234,6 @@ class GeometryState {
   // frame belongs to no registered source.
   SourceId get_source_id(FrameId frame_id) const;
 
-  // Does the work of registering geometry. Attaches the given geometry to the
-  // identified frame (which must belong to the identified source). The geometry
-  // can have an optional parent.
-  // Throws an exception as documented in RegisterGeometry().
-  GeometryId RegisterGeometryHelper(
-      SourceId source_id, FrameId frame_id,
-      std::unique_ptr<GeometryInstance<T>> geometry,
-      optional<GeometryId> parent = {});
-
   // The origin from where an invocation of RemoveFrameUnchecked was called.
   // The origin changes the work that is required.
   enum class RemoveFrameOrigin {

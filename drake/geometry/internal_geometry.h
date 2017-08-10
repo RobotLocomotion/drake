@@ -47,6 +47,7 @@ class InternalGeometry {
   FrameId get_frame_id() const { return frame_id_; }
   GeometryId get_id() const { return id_; }
   optional<GeometryId> get_parent_id() const { return parent_id_; }
+  void set_parent_id(GeometryId id) { parent_id_ = id; }
 
   /** Returns true if this geometry has a geometry parent and the parent has the
    given `geometry_id`. */
