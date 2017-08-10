@@ -264,6 +264,7 @@ test:ubsan --run_under=//tools:ubsan
 test:ubsan --test_env=UBSAN_OPTIONS
 test:ubsan --test_tag_filters=-gurobi,-mosek,-snopt,-no_ubsan
 test:ubsan --test_lang_filters=-py
+test:ubsan --test_output=all
 
 ### UBSan everything build. ###
 build:ubsan_everything --define=WITH_GUROBI=ON
