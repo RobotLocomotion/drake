@@ -219,15 +219,16 @@ PYBIND11_PLUGIN(_pydrake_mathematicalprogram) {
     .value("kInfeasible_Or_Unbounded",
            SolutionResult::kInfeasible_Or_Unbounded);
 
-  // Assign the wrapped Constraint class to the name 'constraint'
-  // so we can use it in this file to indicate that the other constraint
-  // types inherit from it.
+  // TODO(eric.cousineau): Expose Eval() in a Python-friendly fashion.
   py::class_<EvaluatorBase, std::shared_ptr<EvaluatorBase>>(m, "EvaluatorBase")
-    .def("num_constraints", &EvaluatorBase::num_constraints)
-    .def("lower_bound", &EvaluatorBase::lower_bound)
-    .def("upper_bound", &EvaluatorBase::upper_bound);
+    .def("num_outputs", &EvaluatorBase::num_outputs)
+    .def("num_vars", &EvaluatorBase::num_vars);
+
   py::class_<Constraint, EvaluatorBase, std::shared_ptr<Constraint>>(
-    m, "Constraint");
+    m, "Constraint")
+    .def("num_constraints", &Constraint::num_constraints)
+    .def("lower_bound", &Constraint::lower_bound)
+    .def("upper_bound", &Constraint::upper_bound);
 
   py::class_<LinearConstraint, Constraint, std::shared_ptr<LinearConstraint>>(
     m, "LinearConstraint")

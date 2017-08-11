@@ -219,6 +219,51 @@ GTEST_TEST(testConstraint, testSimpleLCPConstraintEval) {
       CompareMatrices(w, Vector2d(0, 1), 1e-4, MatrixCompareType::absolute));
   EXPECT_FALSE(c.CheckSatisfied(x2));
 }
+
+class SimpleEvaluator : public EvaluatorBase {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleEvaluator)
+  SimpleEvaluator() : EvaluatorBase(2, 3) {
+    c_.resize(2, 3);
+    c_ <<
+        1, 2, 3,
+        4, 5, 6;
+  }
+
+ protected:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd& y) const override {
+    y = c_ * x;
+  }
+
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd& y) const override {
+    y = c_ * x;
+  }
+
+ private:
+  Eigen::MatrixXd c_;
+};
+
+GTEST_TEST(testConstraint, testEvaluatorConstraint) {
+  const VectorXd lb = VectorXd::Constant(2, -1);
+  const VectorXd ub = VectorXd::Constant(2, 1);
+  EvaluatorConstraint<> constraint(std::make_shared<SimpleEvaluator>(), lb, ub);
+  EXPECT_EQ(3, constraint.num_vars());
+  EXPECT_EQ(2, constraint.num_constraints());
+  EXPECT_EQ(lb, constraint.lower_bound());
+  EXPECT_EQ(ub, constraint.upper_bound());
+  VectorXd x(3);
+  x << 7, 8, 9;
+  VectorXd y(2);
+  MatrixXd c(2, 3);
+  c << 1, 2, 3,
+       4, 5, 6;
+  const VectorXd y_expected = c * x;
+  constraint.Eval(x, y);
+  EXPECT_EQ(y_expected, y);
+}
+
 }  // namespace
 }  // namespace solvers
 }  // namespace drake
