@@ -161,16 +161,22 @@ struct MobilizerTopology {
   BodyNodeIndex body_node;
 
   /// Mobilizer indexing info: Set at Finalize() time.
-  // Number of generalized coordinates granted by this mobilizer.
+  /// Number of generalized coordinates granted by this mobilizer.
   int num_positions{0};
-  // First entry in the global array of generalized coordinates for the parent
-  // MultibodyTree.
+  /// First entry in the global array of states, `x = [q v z]`, for the parent
+  /// MultibodyTree.
   int positions_start{0};
-  // Number of generalized velocities granted by this mobilizer.
+  /// Number of generalized velocities granted by this mobilizer.
   int num_velocities{0};
-  // First entry in the global array of generalized velocities for the parent
-  // MultibodyTree.
+  /// First entry in the global array of states, `x = [q v z]`, for the parent
+  /// MultibodyTree.
   int velocities_start{0};
+
+  /// Start index in a vector containing only generalized velocities.
+  /// It is also a valid index into a vector of generalized accelerations (which
+  /// are the time derivatives of the generalized velocities) and into a vector
+  /// of generalized forces.
+  int velocities_start_in_v{0};
 };
 
 /// Data structure to store the topological information associated with a tree
@@ -557,6 +563,8 @@ class MultibodyTreeTopology {
 
       mobilizer.positions_start = position_index;
       mobilizer.velocities_start = velocity_index;
+      mobilizer.velocities_start_in_v = velocity_index - num_positions_;
+      DRAKE_DEMAND(0 <= mobilizer.velocities_start_in_v);
 
       position_index += mobilizer.num_positions;
       velocity_index += mobilizer.num_velocities;
@@ -567,8 +575,7 @@ class MultibodyTreeTopology {
       node.num_mobilizer_velocities = mobilizer.num_velocities;
 
       // Start index in a vector containing only generalized velocities.
-      node.mobilizer_velocities_start_in_v =
-          mobilizer.velocities_start - num_positions_;
+      node.mobilizer_velocities_start_in_v = mobilizer.velocities_start_in_v;
       DRAKE_DEMAND(0 <= node.mobilizer_velocities_start_in_v);
       DRAKE_DEMAND(node.mobilizer_velocities_start_in_v < num_velocities_);
     }

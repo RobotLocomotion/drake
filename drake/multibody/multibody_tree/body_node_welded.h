@@ -12,10 +12,14 @@ namespace internal {
 /// no-ops for body nodes with zero degrees of freedom. In addition, it also
 /// solves the problem of instantiating a BodyNodeImpl with zero compile-time
 /// sizes, which leads to Eigen expressions that assert at compile-time.
+// TODO(amcastro-tri): consider renaming this to WorldBodyNode since this node
+// already implies having a nullptr as a parent body, i.e. it can only be the
+// world's node.
 template <typename T>
 class BodyNodeWelded : public BodyNode<T> {
  public:
-  explicit BodyNodeWelded(const Body<T>& body) : BodyNode<T>(body, nullptr) {}
+  explicit BodyNodeWelded(const Body<T>* body) :
+      BodyNode<T>(nullptr, body, nullptr) {}
 };
 
 }  // namespace internal
