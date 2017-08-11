@@ -7,6 +7,7 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/symbolic.h"
+#include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
 namespace drake {
 
@@ -349,43 +350,41 @@ TEST_F(SimpleCarTest, Derivatives) {
 }
 
 TEST_F(SimpleCarTest, TransmogrifyAutoDiff) {
-  const auto& other_dut = dut_->ToAutoDiffXd();
-  ASSERT_NE(other_dut.get(), nullptr);
+  EXPECT_TRUE(is_autodiffxd_convertible(*dut_, [&](const auto& other_dut) {
+    auto other_context = other_dut.CreateDefaultContext();
+    auto other_output = other_dut.AllocateOutput(*other_context);
+    auto other_derivatives = other_dut.AllocateTimeDerivatives();
 
-  auto other_context = other_dut->CreateDefaultContext();
-  auto other_output = other_dut->AllocateOutput(*other_context);
-  auto other_derivatives = other_dut->AllocateTimeDerivatives();
+    auto input_value = std::make_unique<DrivingCommand<AutoDiffXd>>();
+    other_context->FixInputPort(0, std::move(input_value));
 
-  auto input_value = std::make_unique<DrivingCommand<AutoDiffXd>>();
-  other_context->FixInputPort(0, std::move(input_value));
-
-  // For now, running without exceptions is good enough.
-  other_dut->CalcOutput(*other_context, other_output.get());
-  other_dut->CalcTimeDerivatives(*other_context, other_derivatives.get());
+    // For now, running without exceptions is good enough.
+    other_dut.CalcOutput(*other_context, other_output.get());
+    other_dut.CalcTimeDerivatives(*other_context, other_derivatives.get());
+  }));
 }
 
 TEST_F(SimpleCarTest, TransmogrifySymbolic) {
-  const auto& other_dut = dut_->ToSymbolic();
-  ASSERT_NE(other_dut.get(), nullptr);
+  EXPECT_TRUE(is_symbolic_convertible(*dut_, [&](const auto& other_dut) {
+    auto other_context = other_dut.CreateDefaultContext();
+    auto other_output = other_dut.AllocateOutput(*other_context);
+    auto other_derivatives = other_dut.AllocateTimeDerivatives();
 
-  auto other_context = other_dut->CreateDefaultContext();
-  auto other_output = other_dut->AllocateOutput(*other_context);
-  auto other_derivatives = other_dut->AllocateTimeDerivatives();
+    // TODO(jwnimmer-tri) We should have a framework way to just say "make the
+    // entire context symbolic variables (vs zero)" that is reusable for any
+    // consumer of the framework.
+    auto input_value = std::make_unique<DrivingCommand<symbolic::Expression>>();
+    other_context->FixInputPort(0, std::move(input_value));
+    systems::VectorBase<symbolic::Expression>& xc =
+        *other_context->get_mutable_continuous_state_vector();
+    for (int i = 0; i < xc.size(); ++i) {
+      xc[i] = symbolic::Variable("xc" + std::to_string(i));
+    }
 
-  // TODO(jwnimmer-tri) We should have a framework way to just say "make the
-  // entire context symbolic variables (vs zero)" that is reusable for any
-  // consumer of the framework.
-  auto input_value = std::make_unique<DrivingCommand<symbolic::Expression>>();
-  other_context->FixInputPort(0, std::move(input_value));
-  systems::VectorBase<symbolic::Expression>& xc =
-      *other_context->get_mutable_continuous_state_vector();
-  for (int i = 0; i < xc.size(); ++i) {
-    xc[i] = symbolic::Variable("xc" + std::to_string(i));
-  }
-
-  // For now, running without exceptions is good enough.
-  other_dut->CalcOutput(*other_context, other_output.get());
-  other_dut->CalcTimeDerivatives(*other_context, other_derivatives.get());
+    // For now, running without exceptions is good enough.
+    other_dut.CalcOutput(*other_context, other_output.get());
+    other_dut.CalcTimeDerivatives(*other_context, other_derivatives.get());
+  }));
 }
 
 }  // namespace

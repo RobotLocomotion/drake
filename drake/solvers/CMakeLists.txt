@@ -136,6 +136,17 @@ drake_install_pkg_config_file(drake-bilinear-product-util
         drake-common
         drake-optimization)
 
+add_library_with_exports(LIB_NAME drakeIntegerOptimizationUtil SOURCE_FILES integer_optimization_util.cc)
+target_link_libraries(drakeIntegerOptimizationUtil
+        drakeOptimization)
+drake_install_libraries(drakeIntegerOptimizationUtil)
+drake_install_headers(integer_optimization_util.h)
+drake_install_pkg_config_file(drake-integer-optimization-util
+        TARGET drakeIntegerOptimizationUtil
+        LIBS -ldrakeIntegerOptimizationUtil
+        REQUIRES
+        drake-optimization)
+
 add_library_with_exports(LIB_NAME drakeRotationConstraint SOURCE_FILES rotation_constraint.cc)
 target_link_libraries(drakeRotationConstraint
         drakeOptimization

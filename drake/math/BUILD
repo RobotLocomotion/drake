@@ -1,8 +1,8 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load("//tools:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -17,11 +17,10 @@ drake_cc_library(
     ],
 )
 
-# TODO(jwnimmer-tri) This should be riccati not ricatti.
 drake_cc_library(
-    name = "continuous_algebraic_ricatti_equation",
-    srcs = ["continuous_algebraic_ricatti_equation.cc"],
-    hdrs = ["continuous_algebraic_ricatti_equation.h"],
+    name = "continuous_algebraic_riccati_equation",
+    srcs = ["continuous_algebraic_riccati_equation.cc"],
+    hdrs = ["continuous_algebraic_riccati_equation.h"],
     deps = [
         "//drake/common",
         "//drake/common:is_approx_equal_abstol",
@@ -179,6 +178,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "continuous_algebraic_riccati_equation_test",
+    deps = [
+        ":continuous_algebraic_riccati_equation",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "cross_product_test",
     deps = [
         ":vector3_util",
@@ -303,4 +310,4 @@ drake_cc_googletest(
     ],
 )
 
-cpplint()
+add_lint_tests()

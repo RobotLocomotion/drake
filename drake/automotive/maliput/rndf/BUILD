@@ -1,15 +1,32 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load(
     "//tools:drake.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
 )
+load("//tools:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
+
+drake_cc_library(
+    name = "builder",
+    srcs = [
+        "connection.cc",
+        "directed_waypoint.cc",
+    ],
+    hdrs = [
+        "connection.h",
+        "directed_waypoint.h",
+    ],
+    deps = [
+        "//drake/common",
+        "@ignition_math",
+        "@ignition_rndf",
+    ],
+)
 
 drake_cc_library(
     name = "lanes",
@@ -34,6 +51,7 @@ drake_cc_library(
     deps = [
         "//drake/automotive/maliput/api",
         "//drake/common",
+        "//drake/common/trajectories:piecewise_polynomial",
         "//drake/math:geometric_transform",
         "//drake/math:saturate",
         "@ignition_math",
@@ -41,6 +59,26 @@ drake_cc_library(
 )
 
 # === test/ ===
+
+drake_cc_googletest(
+    name = "connection_test",
+    deps = [
+        ":builder",
+        ":ignition_types_compare",
+        "@ignition_math",
+        "@ignition_rndf",
+    ],
+)
+
+drake_cc_googletest(
+    name = "directed_waypoint_test",
+    deps = [
+        ":builder",
+        ":ignition_types_compare",
+        "@ignition_math",
+        "@ignition_rndf",
+    ],
+)
 
 drake_cc_googletest(
     name = "ignition_rndf_test",
@@ -97,4 +135,4 @@ drake_cc_googletest(
     ],
 )
 
-cpplint()
+add_lint_tests()

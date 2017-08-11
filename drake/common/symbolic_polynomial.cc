@@ -1,11 +1,14 @@
 // NOLINTNEXTLINE(build/include): Its header file is included in symbolic.h.
 #include <algorithm>
+#include <map>
 #include <sstream>
 #include <stdexcept>
 #include <utility>
 
 #include "drake/common/symbolic.h"
 
+using std::make_pair;
+using std::map;
 using std::ostream;
 using std::ostringstream;
 using std::pair;
@@ -20,6 +23,9 @@ namespace {
 // Polynomial::Add.
 void DoAddProduct(const Expression& coeff, const Monomial& m,
                   Polynomial::MapType* const map) {
+  if (is_zero(coeff)) {
+    return;
+  }
   auto it = map->find(m);
   if (it != map->end()) {
     // m ∈ dom(map)
@@ -264,6 +270,61 @@ Expression Polynomial::ToExpression() const {
         const Expression& coeff{p.second};
         return init + (coeff * m.ToExpression());
       });
+}
+
+namespace {
+// Differentiates a monomial `m` with respect to a variable `x`. This is a
+// helper function to implement Polynomial::Differentiate() method. It returns a
+// pair `(n, m₁ * xⁿ⁻¹ * m₂)` where `d/dx (m₁ * xⁿ * m₂) = n * m₁ * xⁿ⁻¹ * m₂`
+// holds. For example, d/dx x²y = 2xy and `DifferentiateMonomial(x²y, x)`
+// returns `(2, xy)`.
+pair<int, Monomial> DifferentiateMonomial(const Monomial& m,
+                                          const Variable& x) {
+  if (m.get_powers().count(x) == 0) {
+    // x does not appear in m. Returns (0, 1).
+    return make_pair(0, Monomial{});
+  }
+  map<Variable, int> powers{m.get_powers()};
+  auto it = powers.find(x);
+  DRAKE_ASSERT(it != powers.end() && it->second >= 1);
+  const int n{it->second--};
+  if (it->second == 0) {
+    powers.erase(it);
+  }
+  return make_pair(n, Monomial{powers});
+}
+}  // namespace
+
+Polynomial Polynomial::Differentiate(const Variable& x) const {
+  Polynomial p;  // p = 0.
+  if (indeterminates().include(x)) {
+    // Case: x is an indeterminate.
+    // d/dx ∑ᵢ (cᵢ * mᵢ) = ∑ᵢ d/dx (cᵢ * mᵢ)
+    //                 = ∑ᵢ (cᵢ * d/dx mᵢ)
+    for (const pair<const Monomial, Expression>& term :
+         monomial_to_coefficient_map_) {
+      const Monomial& m{term.first};
+      const Expression& coeff{term.second};
+      const pair<int, Monomial> m_prime{
+          DifferentiateMonomial(m, x)};                     // = d/dx m.
+      p.AddProduct(coeff * m_prime.first, m_prime.second);  // p += cᵢ * d/dx m.
+    }
+    return p;
+  } else if (decision_variables().include(x)) {
+    // Case: x is a decision variable.
+    // d/dx ∑ᵢ (cᵢ * mᵢ) = ∑ᵢ d/dx (cᵢ * mᵢ)
+    //                 = ∑ᵢ ((d/dx cᵢ) * mᵢ)
+    for (const pair<const Monomial, Expression>& term :
+         monomial_to_coefficient_map_) {
+      const Monomial& m{term.first};
+      const Expression& coeff{term.second};
+      p.AddProduct(coeff.Differentiate(x), m);  // p += (d/dx cᵢ) * m.
+    }
+    return p;
+  } else {
+    // The variable `x` does not appear in this polynomial.
+    return p;
+  }
 }
 
 Polynomial& Polynomial::operator+=(const Polynomial& p) {

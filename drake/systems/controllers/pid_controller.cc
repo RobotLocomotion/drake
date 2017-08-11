@@ -2,6 +2,10 @@
 
 #include <string>
 
+#include "drake/common/autodiff_overloads.h"
+#include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/symbolic.h"
+
 namespace drake {
 namespace systems {
 namespace controllers {
@@ -14,26 +18,53 @@ PidController<T>::PidController(const Eigen::VectorXd& kp,
                     ki, kd) {}
 
 template <typename T>
-PidController<T>::PidController(const MatrixX<double>& state_selector,
+PidController<T>::PidController(const MatrixX<double>& state_projection,
                                 const Eigen::VectorXd& kp,
                                 const Eigen::VectorXd& ki,
                                 const Eigen::VectorXd& kd)
-    : kp_(kp),
-      kd_(kd),
+    : PidController(state_projection,
+                    MatrixX<double>::Identity(kp.size(), kp.size()), kp, ki,
+                    kd) {}
+
+template <typename T>
+PidController<T>::PidController(const MatrixX<double>& state_projection,
+                                const MatrixX<double>& output_projection,
+                                const Eigen::VectorXd& kp,
+                                const Eigen::VectorXd& ki,
+                                const Eigen::VectorXd& kd)
+    : LeafSystem<T>(SystemTypeTag<controllers::PidController>{}),
+      kp_(kp),
       ki_(ki),
+      kd_(kd),
       num_controlled_q_(kp.size()),
-      num_full_state_(state_selector.cols()),
-      state_selector_(state_selector) {
-  DRAKE_DEMAND(kp_.size() == kd_.size());
-  DRAKE_DEMAND(kd_.size() == ki_.size());
-  DRAKE_DEMAND(state_selector_.rows() == 2 * num_controlled_q_);
+      num_full_state_(state_projection.cols()),
+      state_projection_(state_projection),
+      output_projection_(output_projection) {
+  if (kp_.size() != kd_.size() || kd_.size() != ki_.size()) {
+    throw std::logic_error("Gains must have equal length: |Kp| = " +
+                           std::to_string(kp_.size()) + ", |Ki| = " +
+                           std::to_string(ki_.size()) + ", |Kd| = " +
+                           std::to_string(kd_.size()));
+  }
+  if (state_projection_.rows() != 2 * num_controlled_q_) {
+    throw std::logic_error(
+        "State projection row dimension mismatch, expecting " +
+        std::to_string(2 * num_controlled_q_) + ", is " +
+        std::to_string(state_projection_.rows()));
+  }
+  if (output_projection_.cols() != kp_.size()) {
+    throw std::logic_error(
+        "Output projection column dimension mismatch, expecting " +
+        std::to_string(kp_.size()) + ", is " +
+        std::to_string(output_projection_.cols()));
+  }
 
   this->DeclareContinuousState(num_controlled_q_);
 
   output_index_control_ =
-      this->DeclareVectorOutputPort(
-          BasicVector<T>(num_controlled_q_),
-          &PidController<T>::CalcControl).get_index();
+      this->DeclareVectorOutputPort(BasicVector<T>(output_projection_.rows()),
+                                    &PidController<T>::CalcControl)
+          .get_index();
 
   input_index_state_ =
       this->DeclareInputPort(kVectorValued, num_full_state_).get_index();
@@ -41,6 +72,12 @@ PidController<T>::PidController(const MatrixX<double>& state_selector,
   input_index_desired_state_ =
       this->DeclareInputPort(kVectorValued, 2 * num_controlled_q_).get_index();
 }
+
+template <typename T>
+template <typename U>
+PidController<T>::PidController(const PidController<U>& other)
+    : PidController(other.state_projection_, other.output_projection_,
+                    other.kp_, other.ki_, other.kd_) {}
 
 template <typename T>
 void PidController<T>::DoCalcTimeDerivatives(
@@ -53,7 +90,7 @@ void PidController<T>::DoCalcTimeDerivatives(
   // The derivative of the continuous state is the instantaneous position error.
   VectorBase<T>* const derivatives_vector = derivatives->get_mutable_vector();
   const VectorX<T> controlled_state_diff =
-      state_d - (state_selector_.cast<T>() * state);
+      state_d - (state_projection_.cast<T>() * state);
   derivatives_vector->SetFromVector(
       controlled_state_diff.head(num_controlled_q_));
 }
@@ -68,7 +105,7 @@ void PidController<T>::CalcControl(const Context<T>& context,
 
   // State error.
   const VectorX<T> controlled_state_diff =
-      state_d - (state_selector_.cast<T>() * state);
+      state_d - (state_projection_.cast<T>() * state);
 
   // Intergral error, which is stored in the continuous state.
   const VectorBase<T>& state_vector = context.get_continuous_state_vector();
@@ -77,17 +114,12 @@ void PidController<T>::CalcControl(const Context<T>& context,
 
   // Sets output to the sum of all three terms.
   control->SetFromVector(
-      (kp_.array() * controlled_state_diff.head(num_controlled_q_).array())
-          .matrix() +
-      (kd_.array() * controlled_state_diff.tail(num_controlled_q_).array())
-          .matrix() +
-      (ki_.array() * state_block.array()).matrix());
-}
-
-template <typename T>
-PidController<symbolic::Expression>* PidController<T>::DoToSymbolic() const {
-  return new PidController<symbolic::Expression>(state_selector_, kp_, ki_,
-                                                 kd_);
+      output_projection_.cast<T>() *
+      ((kp_.array() * controlled_state_diff.head(num_controlled_q_).array())
+           .matrix() +
+       (kd_.array() * controlled_state_diff.tail(num_controlled_q_).array())
+           .matrix() +
+       (ki_.array() * state_block.array()).matrix()));
 }
 
 // Adds a simple record-based representation of the PID controller to @p dot.

@@ -5,7 +5,6 @@
 
 #include "drake/automotive/gen/driving_command.h"
 #include "drake/automotive/gen/driving_command_translator.h"
-#include "drake/automotive/gen/euler_floating_joint_state_translator.h"
 #include "drake/automotive/gen/maliput_railcar_state_translator.h"
 #include "drake/automotive/gen/simple_car_state_translator.h"
 #include "drake/automotive/idm_controller.h"
@@ -122,18 +121,13 @@ int AutomotiveSimulator<T>::AddPriusSimpleCar(
   simple_car->set_name(name);
   vehicles_[id] = simple_car;
   simple_car_initial_states_[simple_car].set_value(initial_state.get_value());
-  auto coord_transform =
-      builder_->template AddSystem<SimpleCarToEulerFloatingJoint<T>>();
-  coord_transform->set_name(name + "_transform");
 
   ConnectCarOutputsAndPriusVis(id, simple_car->pose_output(),
       simple_car->velocity_output());
 
   builder_->Connect(*command_subscriber, *simple_car);
-  builder_->Connect(simple_car->state_output(),
-                    coord_transform->get_input_port(0));
+
   AddPublisher(*simple_car, id);
-  AddPublisher(*coord_transform, id);
   return id;
 }
 
@@ -167,11 +161,6 @@ int AutomotiveSimulator<T>::AddMobilControlledSimpleCar(
   auto mux = builder_->template AddSystem<systems::Multiplexer<T>>(
       DrivingCommand<T>());
   mux->set_name(name + "_mux");
-  auto coord_transform =
-      builder_->template AddSystem<SimpleCarToEulerFloatingJoint<T>>();
-  coord_transform->set_name(name + "_transform");
-  builder_->Connect(simple_car->state_output(),
-                    coord_transform->get_input_port(0));
 
   // Wire up MobilPlanner and IdmController.
   builder_->Connect(simple_car->pose_output(), mobil_planner->ego_pose_input());
@@ -202,7 +191,6 @@ int AutomotiveSimulator<T>::AddMobilControlledSimpleCar(
                                simple_car->velocity_output());
 
   AddPublisher(*simple_car, id);
-  AddPublisher(*coord_transform, id);
   return id;
 }
 
@@ -228,17 +216,10 @@ int AutomotiveSimulator<T>::AddPriusTrajectoryCar(
   trajectory_car_initial_states_[trajectory_car].set_value(
       initial_state.get_value());
 
-  auto coord_transform =
-      builder_->template AddSystem<SimpleCarToEulerFloatingJoint<T>>();
-  coord_transform->set_name(name + "_transform");
-
   ConnectCarOutputsAndPriusVis(id, trajectory_car->pose_output(),
       trajectory_car->velocity_output());
 
-  builder_->Connect(trajectory_car->raw_pose_output(),
-                    coord_transform->get_input_port(0));
   AddPublisher(*trajectory_car, id);
-  AddPublisher(*coord_transform, id);
   return id;
 }
 
@@ -413,18 +394,6 @@ void AutomotiveSimulator<T>::AddPublisher(const TrajectoryCar<T>& system,
   auto publisher = builder_->template AddSystem<LcmPublisherSystem>(
       channel, translator, lcm_.get());
   builder_->Connect(system.raw_pose_output(), publisher->get_input_port(0));
-}
-
-template <typename T>
-void AutomotiveSimulator<T>::AddPublisher(
-    const SimpleCarToEulerFloatingJoint<T>& system, int vehicle_number) {
-  DRAKE_DEMAND(!has_started());
-  static const EulerFloatingJointStateTranslator translator;
-  const std::string channel =
-      std::to_string(vehicle_number) + "_FLOATING_JOINT_STATE";
-  auto publisher = builder_->template AddSystem<LcmPublisherSystem>(
-      channel, translator, lcm_.get());
-  builder_->Connect(system, *publisher);
 }
 
 template <typename T>

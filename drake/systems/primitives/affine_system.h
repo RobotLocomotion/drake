@@ -1,9 +1,11 @@
 #pragma once
 
+#include <memory>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/symbolic.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -141,6 +143,18 @@ class AffineSystem : public TimeVaryingAffineSystem<T> {
                const Eigen::Ref<const Eigen::MatrixXd>& D,
                const Eigen::Ref<const Eigen::VectorXd>& y0,
                double time_period = 0.0);
+
+  /// Creates a unique pointer to AffineSystem<T> by decomposing @p dynamics and
+  /// @p outputs using @p state_vars and @p input_vars.
+  ///
+  /// @throws runtime_error if either @p dynamics or @p outputs is not affine in
+  /// @p state_vars and @p input_vars.
+  static std::unique_ptr<AffineSystem<T>> MakeAffineSystem(
+      const Eigen::Ref<const VectorX<symbolic::Expression>>& dynamics,
+      const Eigen::Ref<const VectorX<symbolic::Expression>>& output,
+      const Eigen::Ref<const VectorX<symbolic::Variable>>& state_vars,
+      const Eigen::Ref<const VectorX<symbolic::Variable>>& input_vars,
+      double time_period = 0.0);
 
   /// @name Helper getter methods.
   /// @{

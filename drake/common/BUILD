@@ -1,15 +1,14 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load(
     "//tools:drake.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
 )
-load("//tools:python_lint.bzl", "python_lint")
-load("//tools:install.bzl", "install")
+load("@drake//tools:install.bzl", "install")
+load("//tools:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -159,6 +158,19 @@ drake_cc_library(
         ":number_traits",
         ":polynomial",
         "//drake/math:matrix_util",
+    ],
+)
+
+drake_cc_library(
+    name = "symbolic_decompose",
+    srcs = [
+        "symbolic_decompose.cc",
+    ],
+    hdrs = [
+        "symbolic_decompose.h",
+    ],
+    deps = [
+        ":symbolic",
     ],
 )
 
@@ -514,6 +526,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "eigen_types_test",
+    deps = [
+        ":common",
+        ":nice_type_name",
+    ],
+)
+
+drake_cc_googletest(
     name = "extract_double_test",
     deps = [
         ":common",
@@ -558,6 +578,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "nice_type_name_test",
     deps = [
+        ":autodiff",
         ":common",
         ":nice_type_name",
     ],
@@ -591,6 +612,15 @@ drake_cc_googletest(
     deps = [
         ":common",
         ":sorted_vectors_have_intersection",
+    ],
+)
+
+drake_cc_googletest(
+    name = "symbolic_decompose_test",
+    deps = [
+        ":common",
+        ":symbolic",
+        ":symbolic_decompose",
     ],
 )
 
@@ -808,6 +838,4 @@ py_test(
 # - drake_deprecated_test in fancy variants
 # - cpplint_wrapper_test.py
 
-cpplint()
-
-python_lint()
+add_lint_tests()

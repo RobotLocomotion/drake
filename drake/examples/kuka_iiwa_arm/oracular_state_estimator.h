@@ -68,7 +68,7 @@ class OracularStateEstimation : public systems::LeafSystem<T> {
   }
 
   bot_core::robot_state_t MakeRobotState() const {
-    bot_core::robot_state_t msg;
+    bot_core::robot_state_t msg{};
     // Resize and zeros the message.
     translator_.InitializeMessage(&msg);
     return msg;

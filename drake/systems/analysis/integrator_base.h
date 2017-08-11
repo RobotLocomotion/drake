@@ -1148,8 +1148,8 @@ class IntegratorBase {
    * to function well in most circumstances.
    * @param[in] dt_max The maximum step size to be taken. The integrator may
    *               take a smaller step than specified to satisfy accuracy
-   *               requirements or to respect the integrator's maximum step
-   *               size.
+   *               requirements, to resolve integrator convergence problems, or
+   *               to respect the integrator's maximum step size.
    * @throws std::logic_error if integrator does not support error
    *                          estimation.
    * @note This function will shrink the integration step as necessary whenever
@@ -1178,12 +1178,12 @@ class IntegratorBase {
    * size can be repeated until convergence.
    * @param err
    *      The norm of the integrator error that was computed using
-   *       @p current_step_size.
+   *       @p attempted_step_size.
    * @param dt_was_artificially_limited
    *      `true` if step_size was artificially limited (by, e.g., stepping to
    *      a publishing time).
-   * @param current_step_size
-   *      The current step size on entry.
+   * @param attempted_step_size
+   *      The step size that was attempted.
    * @param[in,out] at_minimum_step_size
    *       If `true` on entry, the error control mechanism is not allowed to
    *       shrink the step because the integrator is stepping at the minimum
@@ -1202,7 +1202,7 @@ class IntegratorBase {
    */
   std::pair<bool, T> CalcAdjustedStepSize(
       const T& err, bool dt_was_artificially_limited,
-      const T& current_step_size, bool* at_minimum_step_size) const;
+      const T& attempted_step_size, bool* at_minimum_step_size) const;
 
   /**
    * Derived classes can override this method to perform special
@@ -1406,13 +1406,13 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
       get_mutable_context()->get_mutable_continuous_state_vector();
   xc0_save_ = xc->CopyToVector();
 
-  // Set the "current" step size.
-  T current_step_size = get_ideal_next_step_size();
-  if (isnan(current_step_size)) {
+  // Set the step size to attempt.
+  T step_size_to_attempt = get_ideal_next_step_size();
+  if (isnan(step_size_to_attempt)) {
     // Integrator has not taken a step. Set the current step size to the
     // initial step size.
-    current_step_size = get_initial_step_size_target();
-    DRAKE_DEMAND(!isnan(current_step_size));
+    step_size_to_attempt = get_initial_step_size_target();
+    DRAKE_DEMAND(!isnan(step_size_to_attempt));
   }
 
   // This variable indicates when the integrator has been pushed to its minimum
@@ -1425,7 +1425,11 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
   bool step_succeeded = false;
   do {
     // Constants used to determine whether modifications to the step size are
-    // close enough to the desired step size to use the unadjusted originals.
+    // close enough to the attempted step size to use the unadjusted originals,
+    // or (1) whether the step size to be attempted is so small that we should
+    // consider it to be artifically limited or (2) whether the step size to
+    // be attempted is sufficiently close to that requested such that the step
+    // size shoudl be stretched slightly.
     const double near_enough_smaller = 0.95;
     const double near_enough_larger = 1.001;
 
@@ -1433,40 +1437,40 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
     // to take due to a need to stop at dt_max, make a note of that so the
     // step size adjuster won't try to grow from the current step.
     bool dt_was_artificially_limited = false;
-    if (dt_max < near_enough_smaller * current_step_size) {
+    if (dt_max < near_enough_smaller * step_size_to_attempt) {
       // dt_max much smaller than current step size.
       dt_was_artificially_limited = true;
-      current_step_size = dt_max;
+      step_size_to_attempt = dt_max;
     } else {
-      if (dt_max < near_enough_larger * current_step_size) {
+      if (dt_max < near_enough_larger * step_size_to_attempt) {
         // dt_max is roughly current step. Make it the step size to prevent
         // creating a small sliver (the remaining step).
-        current_step_size = dt_max;
+        step_size_to_attempt = dt_max;
       }
     }
 
     // Limit the current step size.
-    current_step_size = min(current_step_size, get_maximum_step_size());
+    step_size_to_attempt = min(step_size_to_attempt, get_maximum_step_size());
 
     // Keep adjusting the integration step size until any integrator
     // convergence failures disappear.
-    T adjusted_step_size = current_step_size;
+    T adjusted_step_size = step_size_to_attempt;
     while (!Step(adjusted_step_size)) {
       SPDLOG_DEBUG(drake::log(), "Sub-step failed at {}", adjusted_step_size);
       adjusted_step_size *= subdivision_factor_;
-      ValidateSmallerStepSize(current_step_size, adjusted_step_size);
+      ValidateSmallerStepSize(step_size_to_attempt, adjusted_step_size);
       ++num_shrinkages_from_substep_failures_;
       ++num_substep_failures_;
     }
-    current_step_size = adjusted_step_size;
+    step_size_to_attempt = adjusted_step_size;
 
     //--------------------------------------------------------------------
     T err_norm = CalcStateChangeNorm(*get_error_estimate());
     T next_step_size;
     std::tie(step_succeeded, next_step_size) = CalcAdjustedStepSize(
-        err_norm, dt_was_artificially_limited, current_step_size,
+        err_norm, dt_was_artificially_limited, step_size_to_attempt,
         &at_minimum_step_size);
-    SPDLOG_DEBUG(drake::log(), "Adjusted step size: {}", next_step_size);
+    SPDLOG_DEBUG(drake::log(), "Next step size: {}", next_step_size);
 
     if (step_succeeded) {
       // When at the minimum step, the ideal step size should be the working
@@ -1482,18 +1486,18 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
       }
 
       if (isnan(get_actual_initial_step_size_taken()))
-        set_actual_initial_step_size_taken(current_step_size);
+        set_actual_initial_step_size_taken(step_size_to_attempt);
 
       // Record the adapted step size taken.
       if (isnan(get_smallest_adapted_step_size_taken()) ||
-          (current_step_size < get_smallest_adapted_step_size_taken() &&
-                current_step_size < dt_max))
-          set_smallest_adapted_step_size_taken(current_step_size);
+          (step_size_to_attempt < get_smallest_adapted_step_size_taken() &&
+                step_size_to_attempt < dt_max))
+          set_smallest_adapted_step_size_taken(step_size_to_attempt);
     } else {
       ++num_shrinkages_from_error_control_;
 
-      // Set the next "current" step size.
-      current_step_size = next_step_size;
+      // Set the next step size to attempt.
+      step_size_to_attempt = next_step_size;
 
       // Reset the time, state, and time derivative at t0.
       get_mutable_context()->set_time(current_time);
@@ -1501,7 +1505,7 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
     }
   } while (!step_succeeded);
 
-  return (current_step_size == dt_max);
+  return (step_size_to_attempt == dt_max);
 }
 
 template <class T>
@@ -1568,7 +1572,7 @@ template <class T>
 std::pair<bool, T> IntegratorBase<T>::CalcAdjustedStepSize(
     const T& err,
     bool dt_was_artificially_limited,
-    const T& current_step_size,
+    const T& step_taken,
     bool* at_minimum_step_size) const {
   using std::pow;
   using std::min;
@@ -1583,25 +1587,25 @@ std::pair<bool, T> IntegratorBase<T>::CalcAdjustedStepSize(
   const double kHysteresisLow = 0.9;
   const double kHysteresisHigh = 1.2;
 
-  /// Get the order for the integrator's error estimate.
+  // Get the order for the integrator's error estimate.
   const int err_order = get_error_estimate_order();
 
-  /// Set value for new step size to invalid value initially.
+  // Set value for new step size to invalid value initially.
   T new_step_size(-1);
 
-  // First, make a first guess at the next step size to use based on
+  // First, make a guess at the next step size to use based on
   // the supplied error norm. Watch out for NaN. Further adjustments will be
   // made in blocks of code that follow.
   if (isnan(err) || isinf(err))  // e.g., integrand returned NaN.
-    new_step_size = kMinShrink * current_step_size;
+    new_step_size = kMinShrink * step_taken;
   else if (err == 0)  // A "perfect" step; can happen if no dofs for example.
-    new_step_size = kMaxGrow * current_step_size;
+    new_step_size = kMaxGrow * step_taken;
   else  // Choose best step for skating just below the desired accuracy.
-    new_step_size = kSafety * current_step_size *
+    new_step_size = kSafety * step_taken *
                     pow(get_accuracy_in_use() / err, 1.0 / err_order);
 
   // Error indicates that the step size can be increased.
-  if (new_step_size > current_step_size) {
+  if (new_step_size > step_taken) {
     // If the integrator has been directed down to the minimum step size, but
     // now error indicates that the step size can be increased, de-activate
     // at_minimum_step_size.
@@ -1613,32 +1617,32 @@ std::pair<bool, T> IntegratorBase<T>::CalcAdjustedStepSize(
     // small; better to keep the step size stable in that case (maybe just
     // for aesthetic reasons).
     if (dt_was_artificially_limited ||
-        new_step_size < kHysteresisHigh * current_step_size)
-      new_step_size = current_step_size;
+        new_step_size < kHysteresisHigh * step_taken)
+      new_step_size = step_taken;
   }
 
   // If error indicates that we should shrink the step size but are not allowed
   // to, quit and indicate that the step was successful.
-  if (new_step_size < current_step_size && *at_minimum_step_size) {
-    return std::make_pair(true, current_step_size);
+  if (new_step_size < step_taken && *at_minimum_step_size) {
+    return std::make_pair(true, step_taken);
   }
 
   // If we're supposed to shrink the step size but the one we have actually
   // achieved the desired accuracy last time, we won't change the step now.
   // Otherwise, if we are going to shrink the step, let's not be shy -- we'll
   // shrink it by at least a factor of kHysteresisLow.
-  if (new_step_size < current_step_size) {
+  if (new_step_size < step_taken) {
     if (err <= get_accuracy_in_use()) {
-      new_step_size = current_step_size;  // not this time
+      new_step_size = step_taken;  // not this time
     } else {
-      T test_value = kHysteresisLow * current_step_size;
+      T test_value = kHysteresisLow * step_taken;
       new_step_size = min(new_step_size, test_value);
     }
   }
 
   // Keep the size change within the allowable bounds.
-  T max_grow_step = kMaxGrow * current_step_size;
-  T min_shrink_step = kMinShrink * current_step_size;
+  T max_grow_step = kMaxGrow * step_taken;
+  T min_shrink_step = kMinShrink * step_taken;
   new_step_size = min(new_step_size, max_grow_step);
   new_step_size = max(new_step_size, min_shrink_step);
 
@@ -1650,7 +1654,7 @@ std::pair<bool, T> IntegratorBase<T>::CalcAdjustedStepSize(
   // a special status from IntegrateAtMost().
   if (!isnan(get_maximum_step_size()))
     new_step_size = min(new_step_size, get_maximum_step_size());
-  ValidateSmallerStepSize(current_step_size, new_step_size);
+  ValidateSmallerStepSize(step_taken, new_step_size);
 
   // If the integrator wants to shrink the step size below the
   // minimum allowed and exceptions are suppressed, indicate that status.
@@ -1661,7 +1665,7 @@ std::pair<bool, T> IntegratorBase<T>::CalcAdjustedStepSize(
     return std::make_pair(false, new_step_size);
   }
 
-  return std::make_pair(new_step_size >= current_step_size, new_step_size);
+  return std::make_pair(new_step_size >= step_taken, new_step_size);
 }
 
 template <class T>

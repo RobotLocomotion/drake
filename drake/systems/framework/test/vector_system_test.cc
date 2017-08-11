@@ -6,6 +6,8 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include "drake/systems/framework/test_utilities/scalar_conversion.h"
+
 namespace drake {
 namespace systems {
 namespace {
@@ -29,6 +31,8 @@ class TestVectorSystem : public VectorSystem<double> {
   using VectorSystem<double>::DeclareDiscreteState;
   using VectorSystem<double>::DeclareAbstractInputPort;
   using VectorSystem<double>::DeclareAbstractOutputPort;
+  using VectorSystem<double>::EvalVectorInput;
+  using VectorSystem<double>::GetVectorState;
 
   // VectorSystem override.
   // N.B. This method signature might be used by many downstream projects.
@@ -224,6 +228,13 @@ TEST_F(VectorSystemTest, OutputStateless) {
   const auto& basic = output->GetValueOrThrow<BasicVector<double>>();
   EXPECT_EQ(basic.GetAtIndex(0), 1.0);
   EXPECT_EQ(basic.GetAtIndex(1), 2.0);
+
+  const auto& input = dut.EvalVectorInput(*context);
+  EXPECT_EQ(input.size(), 2);
+  EXPECT_EQ(input[0], 1.0);
+  EXPECT_EQ(input[1], 2.0);
+  const auto& state = dut.GetVectorState(*context);
+  EXPECT_EQ(state.size(), 0);
 }
 
 // Forwarding of CalcOutput with continuous state.
@@ -242,6 +253,11 @@ TEST_F(VectorSystemTest, OutputContinuous) {
   const auto& basic = output->GetValueOrThrow<BasicVector<double>>();
   EXPECT_EQ(basic.GetAtIndex(0), 2.0);
   EXPECT_EQ(basic.GetAtIndex(1), 3.0);
+
+  const auto& state = dut.GetVectorState(*context);
+  EXPECT_EQ(state.size(), 2);
+  EXPECT_EQ(state[0], 1.0);
+  EXPECT_EQ(state[1], 1.0);
 }
 
 // Forwarding of CalcOutput with discrete state.
@@ -264,6 +280,11 @@ TEST_F(VectorSystemTest, OutputDiscrete) {
   // Nothing else weird happened.
   EXPECT_EQ(dut.get_discrete_variable_updates_count(), 0);
   EXPECT_EQ(dut.get_time_derivatives_count(), 0);
+
+  const auto& state = dut.GetVectorState(*context);
+  EXPECT_EQ(state.size(), 2);
+  EXPECT_EQ(state[0], 1.0);
+  EXPECT_EQ(state[1], 1.0);
 }
 
 // Forwarding of CalcTimeDerivatives works.
@@ -331,6 +352,9 @@ class NoInputContinuousTimeSystem : public VectorSystem<double> {
     this->DeclareContinuousState(1);
   }
 
+  // Let test code abuse this by making it public.
+  using VectorSystem<double>::EvalVectorInput;
+
  private:
   virtual void DoCalcVectorTimeDerivatives(
       const drake::systems::Context<double>& context,
@@ -364,6 +388,9 @@ TEST_F(VectorSystemTest, NoInputContinuousTimeSystemTest) {
   auto output = dut.get_output_port().Allocate(*context);
   dut.get_output_port().Calc(*context, output.get());
   EXPECT_EQ(output->GetValueOrThrow<BasicVector<double>>().GetAtIndex(0), 1.0);
+
+  const auto& input = dut.EvalVectorInput(*context);
+  EXPECT_EQ(input.size(), 0);
 }
 
 class NoInputNoOutputDiscreteTimeSystem : public VectorSystem<double> {
@@ -397,6 +424,44 @@ TEST_F(VectorSystemTest, NoInputNoOutputDiscreteTimeSystemTest) {
   EXPECT_EQ(discrete_updates->get_vector(0)->GetAtIndex(0), 8.0);
 
   EXPECT_EQ(dut.get_num_output_ports(), 0);
+}
+
+/// A system that can use any scalar type: AutoDiff, symbolic form, etc.
+template <typename T>
+class OpenScalarTypeSystem : public VectorSystem<T> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OpenScalarTypeSystem);
+
+  explicit OpenScalarTypeSystem(int some_number)
+      : VectorSystem<T>(SystemTypeTag<systems::OpenScalarTypeSystem>{}, 1, 1),
+        some_number_(some_number) {}
+
+  template <typename U>
+  explicit OpenScalarTypeSystem(const OpenScalarTypeSystem<U>& other)
+      : OpenScalarTypeSystem<T>(other.some_number_) {}
+
+  int get_some_number() const { return some_number_; }
+
+ private:
+  template <typename> friend class OpenScalarTypeSystem;
+
+  const int some_number_{};
+};
+
+TEST_F(VectorSystemTest, ToAutoDiffXdTest) {
+  // The member field remains intact.
+  const OpenScalarTypeSystem<double> dut{22};
+  EXPECT_TRUE(is_autodiffxd_convertible(dut, [](const auto& converted) {
+    EXPECT_EQ(converted.get_some_number(), 22);
+  }));
+}
+
+TEST_F(VectorSystemTest, ToSymbolicTest) {
+  // The member field remains intact.
+  const OpenScalarTypeSystem<double> dut{22};
+  EXPECT_TRUE(is_symbolic_convertible(dut, [](const auto& converted) {
+    EXPECT_EQ(converted.get_some_number(), 22);
+  }));
 }
 
 // This system declares an output and continuous state, but does not define

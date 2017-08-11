@@ -159,31 +159,34 @@ ignition::math::Vector3d SplineLane::GetPositionToLane(double s,
   const ignition::math::Vector3d r(-t_p.Y(), t_p.X(), 0.);
   // Gets the beginning and ending of the other lane, and then computes the
   // respective GeoPositions.
-  const api::Lane* other_lane = segment()->lane(lane_id);
+  const SplineLane* other_lane = dynamic_cast<const SplineLane*>(
+      segment()->lane(lane_id));
   DRAKE_DEMAND(other_lane != nullptr);
-  const api::GeoPosition other_lane_beginning =
-      other_lane->ToGeoPosition(api::LanePosition(0., 0., 0.));
-  const api::GeoPosition other_lane_ending = other_lane->ToGeoPosition(
-      api::LanePosition(other_lane->length(), 0., 0.));
+  const Vector2<double> other_lane_beginning = other_lane->xy_of_s(0.);
+  const Vector2<double> other_lane_ending =
+      other_lane->xy_of_s(other_lane->do_length());
+
   // Converts the beginning and ending positions of the other lane into
   // ignition::math::Vector3d objects.
   const ignition::math::Vector3d q(other_lane_beginning.x(),
-                                   other_lane_beginning.y(), 0.);
+                                   other_lane_beginning.y(),
+                                   0.);
   const ignition::math::Vector3d q_ending(other_lane_ending.x(),
-                                          other_lane_ending.y(), 0.);
+                                          other_lane_ending.y(),
+                                          0.);
   // As the lane is approximated as a line, we get the normalized tangent as:
   ignition::math::Vector3d t_q = (q_ending - q);
   t_q.Normalize();
   // Checks if the lines are collinear.
-  const ignition::math::Vector3d r_cross_t_q = r.Cross(t_q);
-  const ignition::math::Vector3d p_to_q_cross_r = (p - q).Cross(r);
+  const ignition::math::Vector3d t_q_cross_r = t_q.Cross(r);
+  const ignition::math::Vector3d p_to_q_cross_t_q = (p - q).Cross(t_q);
   const double kAlmostZero = 1e-6;
   // Lines are parallel or non-intersecting. We cannot handle correctly that
   // case for the purpose of this function.
-  DRAKE_DEMAND(r_cross_t_q.Length() > kAlmostZero);
+  DRAKE_DEMAND(t_q_cross_r.Length() > kAlmostZero);
   // Computes the intersection point between r and the other_lane's line
   // approximation.
-  return p + r * (p_to_q_cross_r.Length() / r_cross_t_q.Length());
+  return p - r * (p_to_q_cross_t_q.Length() / t_q_cross_r.Length());
 }
 
 double SplineLane::ComputeLength(

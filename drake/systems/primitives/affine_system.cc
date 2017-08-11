@@ -4,6 +4,7 @@
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
+#include "drake/common/symbolic_decompose.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_context.h"
 
@@ -11,6 +12,7 @@ namespace drake {
 namespace systems {
 
 using std::make_unique;
+using std::unique_ptr;
 
 template <typename T>
 TimeVaryingAffineSystem<T>::TimeVaryingAffineSystem(int num_states,
@@ -175,6 +177,41 @@ AffineSystem<T>::AffineSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
   DRAKE_DEMAND(this->num_inputs() == D.cols());
   DRAKE_DEMAND(this->num_outputs() == C.rows());
   DRAKE_DEMAND(this->num_outputs() == D.rows());
+}
+
+template <typename T>
+unique_ptr<AffineSystem<T>> AffineSystem<T>::MakeAffineSystem(
+    const Eigen::Ref<const VectorX<symbolic::Expression>>& dynamics,
+    const Eigen::Ref<const VectorX<symbolic::Expression>>& output,
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& state_vars,
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& input_vars,
+    const double time_period) {
+  // Need to extract, A, B, f₀, C, D, y₀ such that,
+  //
+  //     dynamics = Ax + Bu + f₀
+  //     output   = Cx + Du + y₀
+  //
+  // where x = state_vars and u = input_vars.
+  const int num_states = state_vars.size();
+  DRAKE_ASSERT(num_states == dynamics.size());
+  const int num_inputs = input_vars.size();
+  const int num_outputs = output.size();
+
+  Eigen::MatrixXd AB(num_states, num_states + num_inputs);
+  Eigen::VectorXd f0(num_states);
+  VectorX<symbolic::Variable> vars(num_states + num_inputs);
+  vars << state_vars, input_vars;
+  DecomposeAffineExpressions(dynamics, vars, AB, f0);
+  const auto& A = AB.leftCols(num_states);
+  const auto& B = AB.rightCols(num_inputs);
+
+  Eigen::MatrixXd CD(num_outputs, num_states + num_inputs);
+  Eigen::VectorXd y0(num_outputs);
+  DecomposeAffineExpressions(output, vars, CD, y0);
+  const auto& C = CD.leftCols(num_states);
+  const auto& D = CD.rightCols(num_inputs);
+
+  return make_unique<AffineSystem<T>>(A, B, f0, C, D, y0, time_period);
 }
 
 // Setup equivalent system with a different scalar type.

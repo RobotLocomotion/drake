@@ -16,9 +16,28 @@
 namespace drake {
 namespace systems {
 
-/// The ContinuousState is a container for all the State variables that are
-/// unique to continuous Systems, i.e. Systems that have defined dynamics at
-/// all times.
+/// %ContinuousState is a container for all the continuous state
+/// variables `xc`. Continuous state variables are those whose values are
+/// defined by differential equations, so we expect there to be a well-defined
+/// time derivative `xcdot` ≜ `d/dt xc`.
+///
+/// The contents of `xc` are conceptually partitioned into three groups:
+/// <pre>
+///          |------- xc ------|
+/// (index 0)|--q--|--v--|--z--|(index %xc.size() - 1)
+///
+/// Where q is generalized position
+///       v is generalized velocity
+///       z is other continuous state
+/// </pre>
+/// Any of the groups may be empty. However, groups q and v must be either both
+/// present or both empty, because the time derivative `qdot` of the
+/// second-order state variables `q` must be computable using a linear mapping
+/// `qdot=N(q)*v`.
+///
+/// The time derivative `xcdot` has the identical substructure to `xc`, with the
+/// partitions interpreted as `qdot`, `vdot`, and `zdot`. We use identical
+/// %ContinuousState objects for both.
 ///
 /// @tparam T A mathematical type compatible with Eigen's Scalar.
 template <typename T>
@@ -28,7 +47,8 @@ class ContinuousState {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContinuousState)
 
   /// Constructs a ContinuousState for a system that does not have second-order
-  /// structure: All of the state is misc_continuous_state_.
+  /// structure. The `q` and `v` partitions are empty; all of the state `xc` is
+  /// miscellaneous continuous state `z`.
   explicit ContinuousState(std::unique_ptr<VectorBase<T>> state) {
     state_ = std::move(state);
     generalized_position_.reset(new Subvector<T>(state_.get()));
@@ -39,21 +59,14 @@ class ContinuousState {
   }
 
   /// Constructs a ContinuousState that exposes second-order structure.
-  /// The contents of @p state must be laid out as follows:
   ///
-  /// <pre>
-  /// (index 0)|--q--|--v--|--z--|(index state.size() - 1)
+  /// @param state The source xc of continuous state information.
+  /// @param num_q The number of position variables q.
+  /// @param num_v The number of velocity variables v.
+  /// @param num_z The number of other continuous variables z.
   ///
-  /// Where q is generalized position
-  ///       v is generalized velocity
-  ///       z is other continuous state
-  /// </pre>
-  ///
-  ///
-  /// @param state The source of continuous state information.
-  /// @param num_q The number of position variables.
-  /// @param num_v The number of velocity variables.
-  /// @param num_z The number of other variables.
+  /// We require that `num_q ≥ num_v` and that the sum of the partition sizes
+  /// adds up to the size of `state`.
   ContinuousState(std::unique_ptr<VectorBase<T>> state, int num_q, int num_v,
                   int num_z) {
     state_ = std::move(state);

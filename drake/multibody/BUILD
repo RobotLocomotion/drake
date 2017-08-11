@@ -1,7 +1,6 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load(
     "//tools:drake.bzl",
     "drake_cc_binary",
@@ -9,6 +8,9 @@ load(
     "drake_cc_library",
     "drake_cc_test",
 )
+load("//tools:gurobi.bzl", "gurobi_test_tags")
+load("//tools:lint.bzl", "add_lint_tests")
+load("@protobuf//:protobuf.bzl", "cc_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -28,6 +30,8 @@ drake_cc_library(
 )
 
 # This library is empty unless Gurobi is available.
+# TODO(jwnimmer-tri) Port this to use the MathematicalProgram API, so that this
+# code can compile even in the absence of Gurobi, so we can remove select()s.
 drake_cc_library(
     name = "approximate_ik",
     srcs = select({
@@ -79,8 +83,8 @@ drake_cc_library(
 
 drake_cc_library(
     name = "rigid_body_constraint",
-    srcs = ["constraint/rigid_body_constraint.cc"],
-    hdrs = ["constraint/rigid_body_constraint.h"],
+    srcs = ["rigid_body_constraint.cc"],
+    hdrs = ["rigid_body_constraint.h"],
     deps = [
         ":rigid_body_tree",
     ],
@@ -272,6 +276,25 @@ drake_cc_library(
     ],
 )
 
+cc_proto_library(
+    name = "rigid_body_tree_alias_groups_proto",
+    srcs = [
+        "alias_groups.proto",
+    ],
+)
+
+drake_cc_library(
+    name = "rigid_body_tree_alias_groups",
+    srcs = ["rigid_body_tree_alias_groups.cc"],
+    hdrs = ["rigid_body_tree_alias_groups.h"],
+    deps = [
+        ":rigid_body_tree",
+        ":rigid_body_tree_alias_groups_proto",
+        "//drake/common",
+        "//drake/common/proto:protobuf",
+    ],
+)
+
 drake_cc_library(
     name = "rigid_body_loop_compare_to_clone",
     testonly = 1,
@@ -292,7 +315,6 @@ drake_cc_binary(
         ":rigid_body_tree",
         "//drake/common:measure_execution",
         "//drake/multibody/parsers",
-        "@gtest//:main",
     ],
 )
 
@@ -375,7 +397,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "rigid_body_constraint_test",
-    srcs = ["constraint/test/rigid_body_constraint_test.cc"],
+    srcs = ["test/rigid_body_constraint_test.cc"],
     data = ["//drake/examples/atlas:models"],
     deps = [
         ":rigid_body_constraint",
@@ -542,8 +564,26 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "rigid_body_tree_alias_groups_test",
+    srcs = ["test/rigid_body_tree_alias_groups_test.cc"],
+    data = [
+        "test/rigid_body_tree/two_dof_robot.urdf",
+        "test/test.alias_groups",
+        "//drake/multibody:test_models",
+    ],
+    deps = [
+        ":rigid_body_tree_alias_groups",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
+        "//drake/multibody/parsers",
+    ],
+)
+
 # This test is empty unless Gurobi is enabled.
-drake_cc_test(
+# TODO(jwnimmer-tri) Port this to use the MathematicalProgram API, so that this
+# code can compile even in the absence of Gurobi, so we can remove select()s.
+drake_cc_googletest(
     name = "test_approximate_ik",
     srcs = select({
         "//tools:with_gurobi": [
@@ -552,15 +592,14 @@ drake_cc_test(
         "//conditions:default": [],
     }),
     data = ["//drake/examples/atlas:models"],
+    tags = gurobi_test_tags(),
     deps = select({
         "//tools:with_gurobi": [
             ":inverse_kinematics",
             "//drake/common:find_resource",
             "//drake/multibody/parsers",
         ],
-        "//conditions:default": [
-            "@gtest//:main",  # No-op stub for main().
-        ],
+        "//conditions:default": [],
     }),
 )
 
@@ -583,13 +622,10 @@ filegroup(
     ],
 )
 
-# The extra_srcs are required here because cpplint() doesn't understand how to
-# extract labels from select() functions yet.
-cpplint(
-    data = [
-        "constraint/CPPLINT.cfg",
-    ],
-    extra_srcs = [
+# The extra_srcs are required here because add_lint_tests() doesn't understand
+# how to extract labels from select() functions yet.
+add_lint_tests(
+    cpplint_extra_srcs = [
         "approximate_ik.cc",
         "test/test_approximate_ik.cc",
     ],

@@ -123,6 +123,7 @@ class LinearSystemExample3 : public LinearSystemExample2 {
   void CheckSolution() const override;
 };
 
+
 /**
  * For a stable linear system ẋ = A x, find its Lyapunov function by solving
  * the Lyapunov equality on the symmetric matrix X

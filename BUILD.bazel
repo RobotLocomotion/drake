@@ -4,9 +4,9 @@
 # This file is named BUILD.bazel instead of the more typical BUILD, so that on
 # OSX it won't conflict with a build artifacts directory named "build".
 
-load("//tools:bazel_lint.bzl", "bazel_lint")
 load("//tools:check_licenses.bzl", "check_licenses")
-load("//tools:install.bzl", "install", "install_files")
+load("@drake//tools:install.bzl", "install", "install_files")
+load("//tools:lint.bzl", "add_lint_tests")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -67,11 +67,13 @@ install(
     deps = [
         "//drake:install",
         "//drake/common:install",
+        "//drake/examples:install_data",
         "//drake/lcmtypes:install",
+        "//drake/manipulation/models:install_data",
         "//tools:install",
     ] + DRAKE_EXTERNAL_PACKAGE_INSTALLS,
 )
 
 check_licenses(DRAKE_EXTERNAL_PACKAGE_INSTALLS + [":install"])
 
-bazel_lint()
+add_lint_tests()

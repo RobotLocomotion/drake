@@ -8,6 +8,7 @@
 #include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
 #include "drake/manipulation/util/robot_state_msg_translator.h"
 #include "drake/multibody/rigid_body_tree.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/robot_kinematic_state.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -24,27 +25,26 @@ class HumanoidStatusTranslatorSystem : public systems::LeafSystem<double> {
 
   /**
    * Constructor.
-   * @param robot Reference to a RigidBodyTree. The lifespan of @p robot must
+   * @param robot Pointer to a RigidBodyTree. The lifespan of @p robot must
    * be longer than this object.
    * @param alias_group_path Path to the alias groups file. Used to construct
    * HumanoidStatus.
    */
-  HumanoidStatusTranslatorSystem(const RigidBodyTree<double>& robot,
+  HumanoidStatusTranslatorSystem(const RigidBodyTree<double>* robot,
                                  const std::string& alias_group_path);
 
   /**
    * Returns the output port for HumanoidStatus.
    */
-  const systems::OutputPort<double>&
-  get_output_port_humanoid_status() const {
+  const systems::OutputPort<double>& get_output_port_humanoid_status() const {
     return get_output_port(output_port_index_humanoid_status_);
   }
 
  protected:
-  /**
-   * Derived classes should use this method for the output port allocator.
-   */
-  HumanoidStatus MakeHumanoidStatus() const;
+  const systems::controllers::qp_inverse_dynamics::RobotKinematicState<double>&
+  get_default_output() const {
+    return *default_output_;
+  }
 
   /**
    * Derived classes should use this to record the output port index.
@@ -57,7 +57,9 @@ class HumanoidStatusTranslatorSystem : public systems::LeafSystem<double> {
 
  private:
   const RigidBodyTree<double>& robot_;
-  const std::string alias_group_path_;
+  std::unique_ptr<
+      systems::controllers::qp_inverse_dynamics::RobotKinematicState<double>>
+      default_output_;
 
   int output_port_index_humanoid_status_{0};
 };
@@ -71,27 +73,27 @@ class StateToHumanoidStatusSystem : public HumanoidStatusTranslatorSystem {
 
   /**
    * Constructor.
-   * @param robot Reference to a RigidBodyTree. The lifespan of @p robot must
+   * @param robot Pointer to a RigidBodyTree. The lifespan of @p robot must
    * be longer than this object.
    * @param alias_group_path Path to the alias groups file. Used to construct
    * HumanoidStatus.
    */
-  StateToHumanoidStatusSystem(const RigidBodyTree<double>& robot,
+  StateToHumanoidStatusSystem(const RigidBodyTree<double>* robot,
                               const std::string& alias_group_path);
-
 
   /**
    * Returns the input port for a state vector.
    */
-  const systems::InputPortDescriptor<double>& get_input_port_state()
-      const {
+  const systems::InputPortDescriptor<double>& get_input_port_state() const {
     return get_input_port(input_port_index_state_);
   }
 
  private:
   // This is the calculator for the output port.
-  void CalcHumanoidStatus(const systems::Context<double>& context,
-                          HumanoidStatus* output) const;
+  void CalcHumanoidStatus(
+      const systems::Context<double>& context,
+      systems::controllers::qp_inverse_dynamics::RobotKinematicState<double>*
+          output) const;
 
   int input_port_index_state_{0};
 };
@@ -106,12 +108,12 @@ class RobotStateMsgToHumanoidStatusSystem
 
   /**
    * Constructor.
-   * @param robot Reference to a RigidBodyTree. The lifespan of @p robot
+   * @param robot Pointer to a RigidBodyTree. The lifespan of @p robot
    * must be longer than this object.
    * @param alias_group_path Path to the alias groups file. Used to construct
    * HumanoidStatus.
    */
-  RobotStateMsgToHumanoidStatusSystem(const RigidBodyTree<double>& robot,
+  RobotStateMsgToHumanoidStatusSystem(const RigidBodyTree<double>* robot,
                                       const std::string& alias_group_path);
   /**
    * Returns input port for bot_core::robot_state_t.
@@ -123,8 +125,10 @@ class RobotStateMsgToHumanoidStatusSystem
 
  private:
   // This is the calculator for the output port.
-  void CalcHumanoidStatus(const systems::Context<double>& context,
-                          HumanoidStatus* output) const;
+  void CalcHumanoidStatus(
+      const systems::Context<double>& context,
+      systems::controllers::qp_inverse_dynamics::RobotKinematicState<double>*
+          output) const;
 
   const manipulation::RobotStateLcmMessageTranslator translator_;
   int input_port_index_lcm_msg_{0};

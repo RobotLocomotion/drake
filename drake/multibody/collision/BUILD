@@ -1,8 +1,8 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load("//tools:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -40,9 +40,7 @@ drake_cc_library(
     srcs = [
         "bullet_model.cc",
         "bullet_model.h",
-        "drake_collision.cc",
     ],
-    defines = ["BULLET_COLLISION"],
     deps = [
         ":collision_api",
         "//drake/common:unused",
@@ -56,7 +54,6 @@ drake_cc_library(
 drake_cc_library(
     name = "unusable_collision",
     srcs = [
-        "drake_collision.cc",
         "unusable_model.cc",
         "unusable_model.h",
     ],
@@ -83,9 +80,18 @@ drake_cc_library(
 
 # By default, supply a bullet-only model.  As we gain more collision library
 # choices, we may want to be more subtle here.
-alias(
+drake_cc_library(
     name = "collision",
-    actual = ":bullet_collision",
+    srcs = [
+        "drake_collision.cc",
+    ],
+    defines = ["BULLET_COLLISION"],
+    deps = [
+        ":bullet_collision",
+        ":collision_api",
+        ":fcl_collision",
+        ":unusable_collision",
+    ],
 )
 
 drake_cc_googletest(
@@ -128,4 +134,4 @@ filegroup(
     ]),
 )
 
-cpplint()
+add_lint_tests()

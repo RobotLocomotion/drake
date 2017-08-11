@@ -6,8 +6,10 @@
  */
 
 #include "drake/util/drakeUtil.h"
-#include <Eigen/Dense>
+
 #include <stdexcept>
+
+#include <Eigen/Dense>
 
 void baseZeroToBaseOne(std::vector<int>& vec) {
   for (std::vector<int>::iterator iter = vec.begin(); iter != vec.end(); iter++)

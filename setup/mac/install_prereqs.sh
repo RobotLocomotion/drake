@@ -2,7 +2,7 @@
 #
 # Prerequisite set-up script for a Drake build with Bazel on macOS or OS X.
 
-set -eu
+set -euo pipefail
 
 if [[ $EUID -eq 0 ]]; then
   echo "This script must NOT be run as root" >&2
@@ -25,22 +25,29 @@ brew update
 brew upgrade
 
 brew install $(tr '\n' ' ' <<EOF
-
 bazel
 boost
 clang-format
 doxygen
 gcc
 glib
+libyaml
 numpy
 patchutils
 pkg-config
 python
+scipy
 tinyxml
 vtk@8.0
 zlib
-
 EOF
 )
 
-pip2 install --upgrade Sphinx
+pip2 install --upgrade $(tr '\n' ' ' <<EOF
+lxml
+pip
+pygame
+PyYAML
+Sphinx
+EOF
+)

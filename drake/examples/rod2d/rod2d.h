@@ -4,7 +4,7 @@
 #include <utility>
 #include <vector>
 
-#include "drake/multibody/rigid_contact/rigid_contact_problem_data.h"
+#include "drake/multibody/constraint/constraint_problem_data.h"
 #include "drake/solvers/moby_lcp_solver.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/rendering/pose_vector.h"
@@ -221,12 +221,11 @@ class Rod2D : public systems::LeafSystem<T> {
   /// Sets the constraint force mixing parameter (CFM, used for time stepping
   /// systems only). The default CFM value is 1e-8.
   /// @param cfm a floating point value in the range [0, infinity].
-  /// @throws std::logic_error if this is not a time stepping system or if
+  /// @throws std::logic_error if contact is modeled as compliant or if
   ///         cfm is set to a negative value.
   void set_cfm(double cfm) {
-    if (simulation_type_ != SimulationType::kTimeStepping)
-      throw std::logic_error("Attempt to set CFM for non-time stepping "
-                             "system.");
+    if (simulation_type_ == SimulationType::kCompliant)
+      throw std::logic_error("Attempt to set CFM for compliant contact model.");
     if (cfm < 0)
       throw std::logic_error("Negative CFM value specified.");
     cfm_ = cfm;
@@ -348,6 +347,27 @@ class Rod2D : public systems::LeafSystem<T> {
     v_stick_tol_ = v_stick_tol;
   }
 
+  /// Gets the rotation matrix that transforms velocities from a sliding
+  /// contact frame to the global frame.
+  /// @param xaxis_velocity The velocity of the rod at the point of contact,
+  ///        projected along the +x-axis.
+  /// @returns a 2x2 orthogonal matrix with first column set to the contact
+  ///          normal, which is +y ([0 1]) and second column set to the
+  ///          direction of sliding motion, ±x (±[1 0]). Both directions are
+  ///          expressed in the global frame.
+  /// @note Aborts if @p xaxis_velocity is zero.
+  Matrix2<T> GetSlidingContactFrameToWorldTransform(
+      const T& xaxis_velocity) const;
+
+  /// Gets the rotation matrix that transforms velocities from a non-sliding
+  /// contact frame to the global frame. Note: all such non-sliding frames are
+  /// identical for this example.
+  /// @returns a 2x2 orthogonal matrix with first column set to the contact
+  ///          normal, which is +y ([0 1]) and second column set to the
+  ///          contact tangent +x ([1 0]). Both directions are expressed in
+  ///          the global frame.
+  Matrix2<T> GetNonSlidingContactFrameToWorldTransform() const;
+
   /// Checks whether the system is in an impacting state, meaning that the
   /// relative velocity along the contact normal between the rod and the
   /// halfspace is such that the rod will begin interpenetrating the halfspace
@@ -398,8 +418,8 @@ class Rod2D : public systems::LeafSystem<T> {
   ///      and the halfspace will be approximately zero and that the vertical
   ///      velocity at the point of contact will be approximately zero.
   ///      Assertion failure is triggered if the rod is in a ballistic mode.
-  T CalcNormalAccelWithoutContactForces(const systems::Context<T>& context)
-      const;
+  T CalcNormalAccelWithoutContactForces(
+      const systems::Context<T>& context) const;
 
   /// Evaluates the witness function for sliding direction changes. The witness
   /// function will bracket a zero crossing when the direction of sliding
@@ -491,10 +511,21 @@ class Rod2D : public systems::LeafSystem<T> {
   /// @param tangent_vels a vector of tangent velocities at the contact points,
   ///        measured along the positive x-axis.
   /// @param[out] data the rigid contact problem data.
-  void CalcRigidContactProblemData(const systems::Context<T>& context,
+  void CalcConstraintProblemData(const systems::Context<T>& context,
                                    const std::vector<Vector2<T>>& points,
                                    const std::vector<T>& tangent_vels,
-    multibody::rigid_contact::RigidContactAccelProblemData<T>* data) const;
+    multibody::constraint::ConstraintAccelProblemData<T>* data)
+    const;
+
+  /// Initializes the impacting contact data for the rod, given a set of contact
+  /// points. Aborts if data is null.
+  /// @param points a vector of contact points, expressed in the world frame.
+  /// @param[out] data the rigid impact problem data.
+  void CalcRigidImpactProblemData(
+      const systems::Context<T>& context,
+      const std::vector<Vector2<T>>& points,
+      multibody::constraint::ConstraintVelProblemData<T>* data)
+      const;
 
  private:
   friend class Rod2DDAETest;

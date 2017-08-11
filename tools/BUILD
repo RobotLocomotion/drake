@@ -1,12 +1,12 @@
 # -*- python -*-
 
-load("//tools:bazel_lint.bzl", "bazel_lint")
 load(
-    "//tools:install.bzl",
+    "@drake//tools:install.bzl",
     "cmake_config",
     "exports_create_cps_scripts",
     "install_cmake_config",
 )
+load("//tools:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -29,7 +29,10 @@ sh_binary(
         "//tools:apple": ["drake_visualizer_apple.sh"],
         "//conditions:default": ["drake_visualizer_linux.sh"],
     }),
-    data = ["@director"],
+    data = [
+        "//drake/bindings:pydrake",
+        "@director",
+    ],
 )
 
 sh_binary(
@@ -75,6 +78,13 @@ py_binary(
 py_binary(
     name = "drakelint",
     srcs = ["drakelint.py"],
+    # The clang-format-includes binary is not used by drakelint, because
+    # drakelint imports the formatter library directly.  However, we add
+    # clang-format-includes here as a data dependency because the formatter
+    # asks the user to run bazel-bin/drake/tools/clang-format-includes for
+    # fixups, and this ensures it always is freshly compiled and available.
+    data = ["//drake/tools:clang-format-includes"],
+    deps = ["//drake/tools:formatter"],
 )
 
 py_binary(
@@ -368,4 +378,4 @@ config_setting(
     },
 )
 
-bazel_lint()
+add_lint_tests()

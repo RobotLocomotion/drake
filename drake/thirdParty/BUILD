@@ -4,6 +4,7 @@
 # See http://bazel.io/ .
 
 load("//tools:drake.bzl", "drake_cc_library")
+load("//tools:bazel_lint.bzl", "bazel_lint")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -29,3 +30,7 @@ drake_cc_library(
     name = "stx",
     hdrs = ["boost/tcbrindle_cpp17_headers/stx/optional.hpp"],
 )
+
+# Most BUILD files should say add_lint_tests() here, but insetad we only check
+# Bazel lint -- we don't want to lint the style choices in third-party code!
+bazel_lint()

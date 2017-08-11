@@ -1,5 +1,7 @@
 #pragma once
 
+#include <limits>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
@@ -25,12 +27,18 @@ namespace multibody {
 /// @note This class has no means to check at construction from user provided
 /// parameters whether it actually represents the unit inertia or gyration
 /// matrix of a unit-mass body. However, as previously noted, once a unit
-/// inertia is created, a number of operations are dissallowed to ensure the
+/// inertia is created, a number of operations are disallowed to ensure the
 /// unit-mass invariant.
 /// Also notice that once a unit inertia is created, it _is_ the unit inertia
 /// of _some_ body, perhaps with scaled geometry from the user's intention.
 ///
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
+///
+/// Instantiated templates for the following kinds of T's are provided:
+/// - double
+/// - AutoDiffXd
+///
+/// They are already available to link against in the containing library.
 template <typename T>
 class UnitInertia : public RotationalInertia<T> {
  public:
@@ -64,6 +72,23 @@ class UnitInertia : public RotationalInertia<T> {
   explicit UnitInertia(const RotationalInertia<T>& I)
       : RotationalInertia<T>(I) {}
 
+  /// Returns a new %UnitInertia object templated on `Scalar` initialized
+  /// from the value of `this` unit inertia.
+  ///
+  /// @tparam Scalar The scalar type on which the new unit inertia will
+  /// be templated.
+  ///
+  /// @note `UnitInertia<From>::cast<To>()` creates a new
+  /// `UnitInertia<To>` from a `UnitInertia<From>` but only if
+  /// type `To` is constructible from type `From`. As an example of this,
+  /// `UnitInertia<double>::cast<AutoDiffXd>()` is valid since
+  /// `AutoDiffXd a(1.0)` is valid. However,
+  /// `UnitInertia<AutoDiffXd>::cast<double>()` is not.
+  template <typename Scalar>
+  UnitInertia<Scalar> cast() const {
+    return UnitInertia<Scalar>(RotationalInertia<T>::template cast<Scalar>());
+  }
+
   /// Sets `this` unit inertia from a generally non-unit inertia I corresponding
   /// to a body with a given `mass`.
   /// @note In Debug builds, this operation aborts if the provided `mass` is
@@ -90,7 +115,7 @@ class UnitInertia : public RotationalInertia<T> {
   /// @retval G_BP_F The same unit inertia for body B about point P but now
   ///                re-expressed in frameF.
   /// @warning This method does not check whether the input matrix `R_FE`
-  /// represents a valid rotation or not. It is the resposibility of users to
+  /// represents a valid rotation or not. It is the responsibility of users to
   /// provide valid rotation matrices.
   UnitInertia<T> ReExpress(const Matrix3<T>& R_FE) const {
     return UnitInertia<T>(RotationalInertia<T>::ReExpress(R_FE));
@@ -265,6 +290,109 @@ class UnitInertia : public RotationalInertia<T> {
     const T Iz = r * r / T(2);
     const T Ix = (T(3) * r * r + L * L) / T(12) + L * L / T(4);
     return UnitInertia(Ix, Ix, Iz);
+  }
+
+  /// Returns the unit inertia for a unit-mass body B for which there exists a
+  /// line L passing through the body's center of mass `Bcm` having the property
+  /// that the body's moment of inertia about all lines perpendicular to L are
+  /// equal. Examples of bodies with an axially symmetric inertia include
+  /// axisymmetric objects such as cylinders and cones. Other commonly occurring
+  /// geometries with this property are, for instance, propellers with 3+ evenly
+  /// spaced blades.
+  /// Given a unit vector b defining the symmetry line L, the moment of inertia
+  /// J about this line L and the moment of inertia K about any line
+  /// perpendicular to L, the axially symmetric unit inertia G is computed as:
+  /// <pre>
+  ///   G = K * Id + (J - K) * b ⊗ b
+  /// </pre>
+  /// where `Id` is the identity matrix and ⊗ denotes the tensor product
+  /// operator. See Mitiguy, P., 2016. Advanced Dynamics & Motion Simulation.
+  ///
+  /// This method aborts if:
+  ///   - J is negative. J can be zero.
+  ///   - K is negative. K can be zero.
+  ///   - J ≤ 2 * K, this corresponds to the triangle inequality, see
+  ///     CouldBePhysicallyValid().
+  ///   - `b_E` is the zero vector. That is if `‖b_E‖₂ ≤ ε`, where ε is the
+  ///     machine epsilon.
+  ///
+  /// @note J is a principal moment of inertia with principal axis equal to b.
+  /// K is a principal moment with multiplicity of two. Any two axes
+  /// perpendicular to b are principal axes with principal moment K.
+  ///
+  /// @param[in] J
+  ///   Unit inertia about axis b.
+  /// @param[in] K
+  ///   Unit inertia about any axis perpendicular to b.
+  /// @param[in] b_E
+  ///   Vector defining the symmetry axis, expressed in a frame E. `b_E` can
+  ///   have a norm different from one; however, it will be normalized before
+  ///   using it. Therefore its norm is ignored and only its direction is used.
+  /// @retval G_Bcm_E
+  ///   An axially symmetric unit inertia about body B's center of mass,
+  ///   expressed in the same frame E as the input unit vector `b_E`.
+  static UnitInertia<T> AxiallySymmetric(
+      const T& J, const T& K, const Vector3<T>& b_E) {
+    DRAKE_DEMAND(J >= 0.0);
+    DRAKE_DEMAND(K >= 0.0);
+    // The triangle inequalities for this case reduce to J <= 2*K:
+    DRAKE_DEMAND(J <= 2.0 * K);
+    DRAKE_DEMAND(b_E.norm() > std::numeric_limits<double>::epsilon());
+    // Normalize b_E before using it. Only direction matters:
+    Vector3<T> bhat_E = b_E.normalized();
+    Matrix3<T> G_matrix =
+        K * Matrix3<T>::Identity() + (J - K) * bhat_E * bhat_E.transpose();
+    return UnitInertia<T>(G_matrix(0, 0), G_matrix(1, 1), G_matrix(2, 2),
+                          G_matrix(0, 1), G_matrix(0, 2), G_matrix(1, 2));
+  }
+
+  /// Computes the unit inertia for a body B of unit-mass uniformly distributed
+  /// along a straight, finite, line L with direction `b_E` and with moment of
+  /// inertia K about any axis perpendicular to this line. Since the mass of the
+  /// body is uniformly distributed on this line L, its center of mass is
+  /// located right at the center.
+  /// As an example, consider the inertia of a thin rod for which its
+  /// transversal dimensions can be neglected, see ThinRod().
+  ///
+  /// This method aborts if K is not positive.
+  ///
+  /// @note This is the particular case for an axially symmetric unit inertia
+  /// with zero moment about its axis, see AxiallySymmetric().
+  ///
+  /// @param[in] K
+  ///   Unit inertia about any axis perpendicular to the line.
+  /// @param[in] b_E
+  ///   Vector defining the direction of the line, expressed in a frame E.
+  ///   `b_E` can have a norm different from one. Its norm is ignored and only
+  ///   its direction is needed.
+  /// @retval G_Bcm_E
+  ///   The unit inertia for a body B of unit mass uniformly distributed along a
+  ///   straight line L, about its center of mass `Bcm` which is located at the
+  ///   center of the line, expressed in the same frame E as the input unit
+  ///   vector `b_E`.
+  static UnitInertia<T> StraightLine(const T& K, const Vector3 <T>& b_E) {
+    DRAKE_DEMAND(K > 0.0);
+    return AxiallySymmetric(0.0, K, b_E);
+  }
+
+  /// Computes the unit inertia for a unit mass rod B of length L, about its
+  /// center of mass, with its mass uniformly distributed along a line parallel
+  /// to vector `b_E`.
+  ///
+  /// This method aborts if L is not positive.
+  ///
+  /// @param[in] L
+  ///   The length of the rod. It must be positive.
+  /// @param[in] b_E
+  ///   Vector defining the axis of the rod, expressed in a frame E. `b_E` can
+  ///   have a norm different from one. Its norm is ignored and only its
+  ///   direction is needed.
+  /// @retval G_Bcm_E
+  ///   The unit inertia of the rod B about its center of mass `Bcm`,
+  ///   expressed in the same frame E as the input unit vector `b_E`.
+  static UnitInertia<T> ThinRod(const T& L, const Vector3<T>& b_E) {
+    DRAKE_DEMAND(L > 0.0);
+    return StraightLine(L * L / 12.0, b_E);
   }
 
   /// Constructs a unit inertia with equal moments of inertia along its

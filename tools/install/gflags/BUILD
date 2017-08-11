@@ -1,6 +1,12 @@
 # -*- python -*-
 
-load("//tools:install.bzl", "cmake_config", "install", "install_cmake_config")
+load(
+    "@drake//tools:install.bzl",
+    "cmake_config",
+    "install",
+    "install_cmake_config",
+)
+load("//tools:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -28,3 +34,5 @@ install(
     visibility = ["//:__pkg__"],
     deps = [":install_cmake_config"],
 )
+
+add_lint_tests()

@@ -1,11 +1,10 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load("//tools:gurobi.bzl", "gurobi_test_tags")
-load("//tools:install.bzl", "install")
+load("@drake//tools:install.bzl", "install")
+load("//tools:lint.bzl", "add_lint_tests")
 load("//tools:mosek.bzl", "mosek_test_tags")
-load("//tools:python_lint.bzl", "python_lint")
 load(":pybind.bzl", "drake_pybind_cc_binary")
 
 package(default_visibility = ["//visibility:private"])
@@ -147,6 +146,7 @@ py_test(
     name = "pydrake_common_test",
     size = "small",
     srcs = ["python/pydrake/test/testCommon.py"],
+    data = ["//drake/examples/atlas:models"],
     main = "python/pydrake/test/testCommon.py",
     deps = [":pydrake"],
 )
@@ -253,6 +253,4 @@ py_test(
     deps = [":pydrake"],
 )
 
-cpplint()
-
-python_lint()
+add_lint_tests()

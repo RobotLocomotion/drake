@@ -4,10 +4,11 @@
 // Adapted (okay, stolen) from
 // http://en.wikibooks.org/wiki/Algorithm_Implementation/Geometry/Convex_hull/Monotone_chain
 
-#include <algorithm>
-#include <vector>
-#include <iostream>
 #include "drake/util/convexHull.h"
+
+#include <algorithm>
+#include <iostream>
+#include <vector>
 
 using Eigen::Dynamic;
 using Eigen::Matrix;

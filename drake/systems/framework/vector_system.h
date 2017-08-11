@@ -7,6 +7,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/never_destroyed.h"
 #include "drake/common/unused.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
@@ -78,14 +79,69 @@ class VectorSystem : public LeafSystem<T> {
   /// Creates a system with one input port and one output port of the given
   /// sizes.  Does not declare any state -- subclasses may optionally declare
   /// continuous or discrete state, but not both.
-  VectorSystem(int input_size, int output_size) {
-    if (input_size > 0) {
-      this->DeclareInputPort(kVectorValued, input_size);
+  VectorSystem(int input_size, int output_size)
+      : LeafSystem<T>() {
+    DoConstructorBody(input_size, output_size);
+  }
+
+  /// Like VectorSystem(int, int), but also declares that this System object is
+  /// of dynamic type S, which enables conversion to other scalar-types such as
+  /// AutoDiff or symbolic form.  Subclasses that wish to support conversion to
+  /// other scalar types should use this constructor.
+  ///
+  /// Example:
+  ///
+  /// @code
+  /// namespace sample {
+  /// template <typename T>
+  /// class MySystem : public VectorSystem<T> {
+  ///  public:
+  ///   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MySystem);
+  ///
+  ///   /// Default constructor.
+  ///   MySystem() : VectorSystem<T>(SystemTypeTag<sample::MySystem>{}, 1, 1) {}
+  ///
+  ///   /// Scalar-converting copy constructor.
+  ///   template <typename U>
+  ///   explicit MySystem(const MySystem<U>&) : MySystem<T>() {}
+  ///
+  ///   ...
+  /// @endcode
+  template <template <typename> class S>
+  VectorSystem(SystemTypeTag<S> tag, int input_size, int output_size)
+      : LeafSystem<T>(tag) {
+    DoConstructorBody(input_size, output_size);
+  }
+
+  /// Causes the vector-valued input port to become up-to-date, and returns
+  /// the port's value as an %Eigen vector.  If the system has zero inputs,
+  /// then returns an empty vector.
+  Eigen::VectorBlock<const VectorX<T>> EvalVectorInput(
+      const Context<T>& context) const {
+    // Obtain the block form of u (or the empty vector).
+    if (this->get_num_input_ports() > 0) {
+      return this->EvalEigenVectorInput(context, 0);
     }
-    if (output_size > 0) {
-      this->DeclareVectorOutputPort(BasicVector<T>(output_size),
-                                    &VectorSystem::CalcVectorOutput);
+    static const never_destroyed<VectorX<T>> empty_vector(0);
+    return empty_vector.access().segment(0, 0);
+  }
+
+  /// Returns a reference to an %Eigen vector version of the state from within
+  /// the %Context.
+  Eigen::VectorBlock<const VectorX<T>> GetVectorState(
+      const Context<T>& context) const {
+    // Obtain the block form of xc or xd.
+    DRAKE_ASSERT(context.get_num_abstract_state_groups() == 0);
+    const BasicVector<T>* state_vector{};
+    if (context.get_num_discrete_state_groups() == 0) {
+      const VectorBase<T>& vector_base = context.get_continuous_state_vector();
+      state_vector = dynamic_cast<const BasicVector<T>*>(&vector_base);
+    } else {
+      DRAKE_ASSERT(context.has_only_discrete_state());
+      state_vector = context.get_discrete_state(0);
     }
+    DRAKE_DEMAND(state_vector != nullptr);
+    return state_vector->get_value();
   }
 
   /// Converts the parameters to Eigen::VectorBlock form, then delegates to
@@ -97,12 +153,8 @@ class VectorSystem : public LeafSystem<T> {
       return;
     }
 
-    // Obtain the block form of u (or the empty vector).
-    const VectorX<T> empty_vector(0);
     const Eigen::VectorBlock<const VectorX<T>> input_block =
-        (this->get_num_input_ports() > 0)
-            ? this->EvalEigenVectorInput(context, 0)
-            : Eigen::VectorBlock<const VectorX<T>>(empty_vector, 0, 0);
+        EvalVectorInput(context);
 
     // Obtain the block form of xc.
     DRAKE_ASSERT(context.has_only_continuous_state());
@@ -132,12 +184,8 @@ class VectorSystem : public LeafSystem<T> {
       return;
     }
 
-    // Obtain the block form of u (or the empty vector).
-    const VectorX<T> empty_vector(0);
     const Eigen::VectorBlock<const VectorX<T>> input_block =
-        (this->get_num_input_ports() > 0)
-        ? this->EvalEigenVectorInput(context, 0)
-        : Eigen::VectorBlock<const VectorX<T>>(empty_vector, 0, 0);
+        EvalVectorInput(context);
 
     // Obtain the block form of xd before the update (i.e., the prior state).
     DRAKE_ASSERT(context.has_only_discrete_state());
@@ -166,26 +214,12 @@ class VectorSystem : public LeafSystem<T> {
     // Should only get here if we've declared an output.
     DRAKE_ASSERT(this->get_num_output_ports() > 0);
 
-    // Obtain the block form of u (or the empty vector).
-    const VectorX<T> empty_vector(0);
     const Eigen::VectorBlock<const VectorX<T>> input_block =
-        (this->get_num_input_ports() > 0)
-        ? this->EvalEigenVectorInput(context, 0)
-        : Eigen::VectorBlock<const VectorX<T>>(empty_vector, 0, 0);
+        EvalVectorInput(context);
 
-    // Obtain the block form of xc or xd[n].
-    DRAKE_ASSERT(context.get_num_abstract_state_groups() == 0);
-    const BasicVector<T>* state_vector{};
-    if (context.get_num_discrete_state_groups() == 0) {
-      const VectorBase<T>& vector_base = context.get_continuous_state_vector();
-      state_vector = dynamic_cast<const BasicVector<T>*>(&vector_base);
-    } else {
-      DRAKE_ASSERT(context.has_only_discrete_state());
-      state_vector = context.get_discrete_state(0);
-    }
-    DRAKE_DEMAND(state_vector != nullptr);
+    // Obtain the block form of xc or xd.
     const Eigen::VectorBlock<const VectorX<T>> state_block =
-        state_vector->get_value();
+        GetVectorState(context);
 
     // Obtain the block form of y.
     Eigen::VectorBlock<VectorX<T>> output_block = output->get_mutable_value();
@@ -220,7 +254,6 @@ class VectorSystem : public LeafSystem<T> {
   /// System::DoCalcTimeDerivatives but provides VectorBlocks to represent the
   /// input, continuous state, and derivatives.  Subclasses should override
   /// this method, and not the base class method (which is `final`).
-  ///
   /// The @p state will be either empty or the continuous state, depending on
   /// whether continuous state was declared at context-creation time.
   ///
@@ -254,6 +287,22 @@ class VectorSystem : public LeafSystem<T> {
       Eigen::VectorBlock<VectorX<T>>* next_state) const {
     unused(context, input, state);
     DRAKE_THROW_UNLESS(next_state->size() == 0);
+  }
+
+ private:
+  // All constructors should call this method immediately after invoking the
+  // base class constructor, as if this were using constructor delegation.
+  ///
+  // We cannot use C++'s constructor delegation, because we need to invoke a
+  // different LeafSystem constructor from each of our constructors.
+  void DoConstructorBody(int input_size, int output_size) {
+    if (input_size > 0) {
+      this->DeclareInputPort(kVectorValued, input_size);
+    }
+    if (output_size > 0) {
+      this->DeclareVectorOutputPort(BasicVector<T>(output_size),
+                                    &VectorSystem::CalcVectorOutput);
+    }
   }
 };
 

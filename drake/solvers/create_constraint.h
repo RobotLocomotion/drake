@@ -8,70 +8,13 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/constraint.h"
 
 namespace drake {
 namespace solvers {
-
-namespace detail {
-
-/*
- * Determine if an EigenBase<> has a specific scalar type.
- */
-template <typename Derived, typename Scalar>
-struct is_eigen_scalar_same : std::is_same<typename Derived::Scalar, Scalar> {};
-
-/*
- * Determine if an EigenBase<> type is a (column) vector.
- */
-template <typename Derived>
-struct is_eigen_vector
-    : std::integral_constant<bool, Derived::ColsAtCompileTime == 1> {};
-
-/*
- * Determine if an EigenBase<> type is a (column) vector of a scalar type.
- */
-template <typename Derived, typename Scalar>
-struct is_eigen_vector_of
-    : std::integral_constant<
-          bool, detail::is_eigen_scalar_same<Derived, Scalar>::value &&
-                    detail::is_eigen_vector<Derived>::value> {};
-
-/*
- * Determine if a EigenBase<> type is a matrix (non-column-vector) of a scalar
- * type.
- */
-template <typename Derived, typename Scalar>
-struct is_eigen_matrix_of
-    : std::integral_constant<
-          bool, detail::is_eigen_scalar_same<Derived, Scalar>::value &&
-                    !detail::is_eigen_vector<Derived>::value> {};
-
-/*
- * Determine if two EigenBase<> types are matrices (non-column-vectors) of
- * Expressions and doubles, to then form an implicit formulas.
- */
-template <typename DerivedV, typename DerivedB>
-struct is_eigen_matrix_expression_double_pair
-    : std::integral_constant<
-          bool,
-          detail::is_eigen_matrix_of<DerivedV, symbolic::Expression>::value &&
-              detail::is_eigen_matrix_of<DerivedB, double>::value> {};
-
-/*
- * Determine if two EigenBase<> types are vectors of Expressions and doubles
- * that could make a formula.
- */
-template <typename DerivedV, typename DerivedB>
-struct is_eigen_vector_expression_double_pair
-    : std::integral_constant<
-          bool,
-          detail::is_eigen_vector_of<DerivedV, symbolic::Expression>::value &&
-              detail::is_eigen_vector_of<DerivedB, double>::value> {};
-
-}  // namespace detail
 
 namespace internal {
 
@@ -107,9 +50,8 @@ Binding<LinearConstraint> ParseLinearConstraint(
  * Assist MathematicalProgram::AddLinearConstraint(...).
  */
 template <typename Derived>
-typename std::enable_if<
-    detail::is_eigen_scalar_same<Derived, symbolic::Formula>::value,
-    Binding<LinearConstraint>>::type
+typename std::enable_if<is_eigen_scalar_same<Derived, symbolic::Formula>::value,
+                        Binding<LinearConstraint>>::type
 ParseLinearConstraint(const Eigen::ArrayBase<Derived>& formulas) {
   const auto n = formulas.rows() * formulas.cols();
 
@@ -191,7 +133,7 @@ Binding<LinearEqualityConstraint> ParseLinearEqualityConstraint(
  */
 template <typename DerivedV, typename DerivedB>
 typename std::enable_if<
-    detail::is_eigen_vector_expression_double_pair<DerivedV, DerivedB>::value,
+    is_eigen_vector_expression_double_pair<DerivedV, DerivedB>::value,
     Binding<LinearEqualityConstraint>>::type
 ParseLinearEqualityConstraint(const Eigen::MatrixBase<DerivedV>& V,
                               const Eigen::MatrixBase<DerivedB>& b) {
@@ -203,7 +145,7 @@ ParseLinearEqualityConstraint(const Eigen::MatrixBase<DerivedV>& V,
  */
 template <typename DerivedV, typename DerivedB>
 typename std::enable_if<
-    detail::is_eigen_matrix_expression_double_pair<DerivedV, DerivedB>::value,
+    is_eigen_nonvector_expression_double_pair<DerivedV, DerivedB>::value,
     Binding<LinearEqualityConstraint>>::type
 ParseLinearEqualityConstraint(const Eigen::MatrixBase<DerivedV>& V,
                               const Eigen::MatrixBase<DerivedB>& B,
@@ -291,9 +233,8 @@ Binding<LorentzConeConstraint> ParseLorentzConeConstraint(
 // }
 
 template <typename Derived>
-typename std::enable_if<
-    detail::is_eigen_vector_of<Derived, symbolic::Formula>::value,
-    Binding<Constraint>>::type
+typename std::enable_if<is_eigen_vector_of<Derived, symbolic::Formula>::value,
+                        Binding<Constraint>>::type
 ParseConstraint(const Eigen::MatrixBase<Derived>& e) {
   // TODO(eric.cousineau): Implement this.
   throw std::runtime_error("Not implemented");

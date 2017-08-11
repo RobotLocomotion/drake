@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/symbolic.h"
 #include "drake/systems/primitives/affine_system.h"
 
 namespace drake {
@@ -55,6 +56,18 @@ class LinearSystem : public AffineSystem<T> {
                const Eigen::Ref<const Eigen::MatrixXd>& C,
                const Eigen::Ref<const Eigen::MatrixXd>& D,
                double time_period = 0.0);
+
+  /// Creates a unique pointer to LinearSystem<T> by decomposing @p dynamics and
+  /// @p outputs using @p state_vars and @p input_vars.
+  ///
+  /// @throws runtime_error if either @p dynamics or @p outputs is not linear in
+  /// @p state_vars and @p input_vars.
+  static std::unique_ptr<LinearSystem<T>> MakeLinearSystem(
+      const Eigen::Ref<const VectorX<symbolic::Expression>>& dynamics,
+      const Eigen::Ref<const VectorX<symbolic::Expression>>& output,
+      const Eigen::Ref<const VectorX<symbolic::Variable>>& state_vars,
+      const Eigen::Ref<const VectorX<symbolic::Variable>>& input_vars,
+      double time_period = 0.0);
 };
 
 /// Takes the first-order Taylor expansion of a System around a nominal

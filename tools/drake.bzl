@@ -1,23 +1,34 @@
 # -*- python -*-
 
+# The CXX_FLAGS will be enabled for all C++ rules in the project
+# building with any compiler.
+CXX_FLAGS = [
+    "-Werror=all",
+    "-Werror=ignored-qualifiers",
+    "-Werror=overloaded-virtual",
+]
+
 # The CLANG_FLAGS will be enabled for all C++ rules in the project when
 # building with clang.
-CLANG_FLAGS = [
-    "-Werror=all",
+CLANG_FLAGS = CXX_FLAGS + [
+    "-Werror=shadow",
     "-Werror=inconsistent-missing-override",
     "-Werror=sign-compare",
-    "-Werror=non-virtual-dtor",
     "-Werror=return-stack-address",
+    "-Werror=non-virtual-dtor",
 ]
 
 # The GCC_FLAGS will be enabled for all C++ rules in the project when
 # building with gcc.
-GCC_FLAGS = [
-    "-Werror=all",
+GCC_FLAGS = CXX_FLAGS + [
     "-Werror=extra",
     "-Werror=return-local-addr",
     "-Werror=non-virtual-dtor",
+    "-Werror=unused-but-set-parameter",
+    # TODO(jwnimmer-tri) Fix these warnings and remove this suppression.
     "-Wno-missing-field-initializers",
+    # TODO(#2852) Turn on shadow checking for g++ once we use a version that
+    # fixes https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57709
 ]
 
 # The GCC_CC_TEST_FLAGS will be enabled for all cc_test rules in the project
@@ -133,6 +144,9 @@ def drake_cc_binary(
         cmd = _dsym_command(name),
     )
 
+    if "@gtest//:main" in (deps or []):
+        fail("Use drake_cc_googletest to declare %s as a test" % name)
+
     if add_test_rule:
         drake_cc_test(
             name = name + "_test",
@@ -210,9 +224,9 @@ def drake_cc_googletest(
     if deps == None:
         deps = []
     if use_default_main:
-        deps.append("@gtest//:main")
+        deps = deps + ["@gtest//:main"]
     else:
-        deps.append("@gtest//:without_main")
+        deps = deps + ["@gtest//:without_main"]
     drake_cc_test(
         name = name,
         deps = deps,

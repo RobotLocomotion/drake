@@ -1,13 +1,13 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load(
     "//tools:drake.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
 )
+load("//tools:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -226,7 +226,7 @@ drake_cc_library(
         "//drake/common:find_resource",
         "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant:drake_visualizer",
-        "//drake/multibody/rigid_body_plant:rigid_body_plant_that_publishes_xdot",
+        "//drake/multibody/rigid_body_plant:rigid_body_plant_that_publishes_xdot",  # noqa
         "//drake/systems/lcm:lcmt_drake_signal_translator",
         "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:signal_logger",
@@ -269,6 +269,8 @@ drake_cc_googletest(
     deps = [
         ":rotary_encoders",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:symbolic_test_util",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 
@@ -356,4 +358,4 @@ drake_cc_googletest(
     deps = [":image_to_lcm_image_array_t"],
 )
 
-cpplint()
+add_lint_tests()

@@ -1,14 +1,13 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load(
     "//tools:drake.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_binary",
 )
-load("//tools:python_lint.bzl", "python_lint")
+load("//tools:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -18,7 +17,6 @@ drake_cc_library(
         "gen/bicycle_car_parameters.cc",
         "gen/bicycle_car_state.cc",
         "gen/driving_command.cc",
-        "gen/euler_floating_joint_state.cc",
         "gen/idm_planner_parameters.cc",
         "gen/maliput_railcar_params.cc",
         "gen/maliput_railcar_state.cc",
@@ -33,7 +31,6 @@ drake_cc_library(
         "gen/bicycle_car_parameters.h",
         "gen/bicycle_car_state.h",
         "gen/driving_command.h",
-        "gen/euler_floating_joint_state.h",
         "gen/idm_planner_parameters.h",
         "gen/maliput_railcar_params.h",
         "gen/maliput_railcar_state.h",
@@ -55,7 +52,6 @@ drake_cc_library(
         "gen/bicycle_car_parameters_translator.cc",
         "gen/bicycle_car_state_translator.cc",
         "gen/driving_command_translator.cc",
-        "gen/euler_floating_joint_state_translator.cc",
         "gen/maliput_railcar_params_translator.cc",
         "gen/maliput_railcar_state_translator.cc",
         "gen/simple_car_params_translator.cc",
@@ -66,7 +62,6 @@ drake_cc_library(
         "gen/bicycle_car_parameters_translator.h",
         "gen/bicycle_car_state_translator.h",
         "gen/driving_command_translator.h",
-        "gen/euler_floating_joint_state_translator.h",
         "gen/maliput_railcar_params_translator.h",
         "gen/maliput_railcar_state_translator.h",
         "gen/simple_car_params_translator.h",
@@ -305,7 +300,6 @@ drake_cc_library(
     srcs = ["simple_car.cc"],
     hdrs = [
         "simple_car.h",
-        "simple_car_to_euler_floating_joint.h",
     ],
     deps = [
         ":calc_smooth_acceleration",
@@ -495,6 +489,7 @@ drake_cc_googletest(
     deps = [
         "//drake/automotive:bicycle_car",
         "//drake/common:eigen_matrix_compare",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 
@@ -548,6 +543,7 @@ drake_cc_googletest(
     deps = [
         "//drake/automotive:simple_car",
         "//drake/common:eigen_matrix_compare",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 
@@ -626,13 +622,6 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "simple_car_to_euler_floating_joint_test",
-    deps = [
-        "//drake/automotive:simple_car",
-    ],
-)
-
-drake_cc_googletest(
     name = "calc_smooth_acceleration_test",
     deps = [
         "//drake/automotive:calc_smooth_acceleration",
@@ -645,6 +634,7 @@ drake_cc_googletest(
     deps = [
         "//drake/automotive:trajectory_car",
         "//drake/systems/analysis:simulator",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 
@@ -663,6 +653,4 @@ drake_cc_googletest(
     ],
 )
 
-cpplint()
-
-python_lint()
+add_lint_tests()
