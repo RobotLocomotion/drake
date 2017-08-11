@@ -3,8 +3,8 @@
 
 def _impl(repository_ctx):
     if repository_ctx.os.name == "mac os x":
-        archive = "dd-0.1.0-133-g39640642-qt-5.9.0-Darwin.tar.gz"
-        sha256 = "eb76d7b247e72a59acf4cf46408f4173997a542bf252ae2809d4979f5891bea0"  # noqa
+        archive = "dd-0.1.0-133-g39640642-qt-5.9.1-Darwin.tar.gz"
+        sha256 = "8679c1eb52c0216aafd01769f9aee51c467cd9dd38f0598e89640278f1409c6f"  # noqa
     elif repository_ctx.os.name == "linux":
         sed = repository_ctx.which("sed")
 

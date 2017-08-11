@@ -8,6 +8,7 @@
 #include "drake/multibody/multibody_tree/multibody_tree_element.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
+#include "drake/multibody/multibody_tree/spatial_inertia.h"
 
 namespace drake {
 namespace multibody {
@@ -138,6 +139,23 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   const BodyFrame<T>& get_body_frame() const {
     return body_frame_;
   }
+
+  /// Returns the index of the node in the underlying tree structure of
+  /// the parent MultibodyTree to which this body belongs.
+  BodyNodeIndex get_node_index() const {
+    return topology_.body_node;
+  }
+
+  /// Computes the SpatialInertia `I_BBo_B` of `this` body about its frame
+  /// origin `Bo` (not necessarily its center of mass) and expressed in its body
+  /// frame `B`.
+  /// In general, the spatial inertia of a body is a function of state.
+  /// Consider for instance the case of a flexible body for which its spatial
+  /// inertia in the body frame depends on the generalized coordinates
+  /// describing its state of deformation. As a particular case, the spatial
+  /// inertia of a RigidBody in its body frame is constant.
+  virtual SpatialInertia<T> CalcSpatialInertiaInBodyFrame(
+      const MultibodyTreeContext<T>& context) const = 0;
 
  private:
   // Only friends of BodyAttorney (i.e. MultibodyTree) have access to a selected
