@@ -374,6 +374,32 @@ def _impl(repository_ctx):
 
     file_content += _vtk_cc_library(
         repository_ctx.os.name,
+        "vtkIOXMLParser",
+        hdrs = [
+            "vtkIOXMLModule.h",
+        ],
+        deps = [
+            ":vtkIOCore",
+        ],
+    )
+
+    file_content += _vtk_cc_library(
+        repository_ctx.os.name,
+        "vtkIOXML",
+        hdrs = [
+            "vtkXMLDataReader.h",
+            "vtkXMLPolyDataReader.h",
+            "vtkXMLReader.h",
+            "vtkXMLUnstructuredDataReader.h",
+        ],
+        deps = [
+            ":vtkIOCore",
+            ":vtkIOXMLParser",
+        ],
+    )
+
+    file_content += _vtk_cc_library(
+        repository_ctx.os.name,
         "vtkIOGeometry",
         hdrs = [
             "vtkIOGeometryModule.h",
