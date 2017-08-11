@@ -27,7 +27,7 @@ namespace multibody {
 /// @note This class has no means to check at construction from user provided
 /// parameters whether it actually represents the unit inertia or gyration
 /// matrix of a unit-mass body. However, as previously noted, once a unit
-/// inertia is created, a number of operations are dissallowed to ensure the
+/// inertia is created, a number of operations are disallowed to ensure the
 /// unit-mass invariant.
 /// Also notice that once a unit inertia is created, it _is_ the unit inertia
 /// of _some_ body, perhaps with scaled geometry from the user's intention.
@@ -115,7 +115,7 @@ class UnitInertia : public RotationalInertia<T> {
   /// @retval G_BP_F The same unit inertia for body B about point P but now
   ///                re-expressed in frameF.
   /// @warning This method does not check whether the input matrix `R_FE`
-  /// represents a valid rotation or not. It is the resposibility of users to
+  /// represents a valid rotation or not. It is the responsibility of users to
   /// provide valid rotation matrices.
   UnitInertia<T> ReExpress(const Matrix3<T>& R_FE) const {
     return UnitInertia<T>(RotationalInertia<T>::ReExpress(R_FE));
@@ -297,7 +297,7 @@ class UnitInertia : public RotationalInertia<T> {
   /// that the body's moment of inertia about all lines perpendicular to L are
   /// equal. Examples of bodies with an axially symmetric inertia include
   /// axisymmetric objects such as cylinders and cones. Other commonly occurring
-  /// geometries with this property are, for intance, propellers with 3+ evenly
+  /// geometries with this property are, for instance, propellers with 3+ evenly
   /// spaced blades.
   /// Given a unit vector b defining the symmetry line L, the moment of inertia
   /// J about this line L and the moment of inertia K about any line
@@ -323,7 +323,7 @@ class UnitInertia : public RotationalInertia<T> {
   /// @param[in] J
   ///   Unit inertia about axis b.
   /// @param[in] K
-  ///   Unit inertia about any axis pependicular to b.
+  ///   Unit inertia about any axis perpendicular to b.
   /// @param[in] b_E
   ///   Vector defining the symmetry axis, expressed in a frame E. `b_E` can
   ///   have a norm different from one; however, it will be normalized before
@@ -349,7 +349,7 @@ class UnitInertia : public RotationalInertia<T> {
   /// Computes the unit inertia for a body B of unit-mass uniformly distributed
   /// along a straight, finite, line L with direction `b_E` and with moment of
   /// inertia K about any axis perpendicular to this line. Since the mass of the
-  /// body is uniformly distribuited on this line L, its center of mass is
+  /// body is uniformly distributed on this line L, its center of mass is
   /// located right at the center.
   /// As an example, consider the inertia of a thin for which its transversal
   /// dimensions can be neglected, see ThinRod().
@@ -360,14 +360,14 @@ class UnitInertia : public RotationalInertia<T> {
   /// with zero moment about its axis.
   ///
   /// @param[in] K
-  ///   Unit inertia about any axis pependicular to the line.
+  ///   Unit inertia about any axis perpendicular to the line.
   /// @param[in] b_E
   ///   Vector defining the direction of the line, expressed in a frame E.
   ///   `b_E` can have a norm different from one. Its norm is ignored and only
   ///   its direction is needed.
   /// @retval G_Bcm_E
   ///   The unit inertia for a body B of unit mass uniformly distributed along a
-  ///   straigth line L, about its center of mass `Bcm` which is located at the
+  ///   straight line L, about its center of mass `Bcm` which is located at the
   ///   center of the line, expressed in the same frame E as the input unit
   ///   vector `b_E`.
   static UnitInertia<T> StraightLine(const T& K, const Vector3 <T>& b_E) {
