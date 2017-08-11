@@ -21,6 +21,22 @@ drake_install_pkg_config_file(drake-trajectory-optimization
     drake-trajectories
     eigen3)
 
+add_library_with_exports(LIB_NAME drakeContactImplicitConstraints SOURCE_FILES
+        contact_implicit_constraints.cc)
+target_link_libraries(drakeContactImplicitConstraints
+        drakeOptimization
+        drakeRBM)
+drake_install_libraries(drakeContactImplicitConstraints)
+drake_install_headers(
+        contact_implicit_constraints.h
+)
+drake_install_pkg_config_file(drake-contact-implicit-constraints
+        TARGET drakeContactImplicitConstraints
+        LIBS -ldrakeContactImplicitConstraints
+        REQUIRES
+          drake-optimization
+          drake-rbm)
+
 if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
