@@ -261,6 +261,7 @@ test:ubsan --run_under=//tools:ubsan
 test:ubsan --test_env=UBSAN_OPTIONS
 test:ubsan --test_tag_filters=-gurobi,-mosek,-snopt,-no_ubsan
 test:ubsan --test_lang_filters=-py
+test:ubsan --test_output=all
 
 ### UBSan everything build. ###
 build:ubsan_everything --define=WITH_GUROBI=ON
@@ -271,7 +272,9 @@ build:ubsan_everything --copt -fsanitize=undefined
 build:ubsan_everything --copt -O1
 build:ubsan_everything --copt -fno-omit-frame-pointer
 build:ubsan_everything --linkopt -fsanitize=undefined
+build:ubsan_everything --features=ubsan-hack-for-clang
 
+test:ubsan_everything --test_output=all
 test:ubsan_everything --test_env=GRB_LICENSE_FILE
 test:ubsan_everything --test_env=HOME
 test:ubsan_everything --test_tag_filters=-no_ubsan
