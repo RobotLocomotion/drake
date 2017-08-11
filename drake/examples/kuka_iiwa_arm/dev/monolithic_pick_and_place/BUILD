@@ -58,18 +58,21 @@ pick_and_place_test(
     # TODO(sam.creasey) This should be target 1, but that requries
     # offsetting the gripper location to deal with the larger box,
     # which isn't currently supported.
-
-    # TODO(sam.creasey) Remove the part which disables this test on
-    # Mac once #6648 is fixed.
     args = [
         "--target=2",
         "--orientation=1.57",
         "--start-position=0",
         "--end-position=2",
-    ] + select({
-        "//tools:apple": ["--quick"],
-        "//conditions:default": [],
-    }),
+        # TODO(sam.creasey) This is an artisanally crafted timestep
+        # intended to dodge sensitive dependence on initial conditions
+        # in the IK planner.  Depending on slight changes in the arm's
+        # configration after lifting the item from the pick, the IK
+        # planner (particularly when running under SNOPT) can produce
+        # radically different results.  This value produces usable
+        # (but different!) results on Mac vs. Linux builds.  See #6811
+        # for more information.
+        "--dt 6e-4",
+    ],
     # TODO(sam.creasey) IPOPT doesn't find a reasonable solution for
     # one of the steps in this demo.  We should see if this improves
     # when #3128 is fixed.
