@@ -14,7 +14,6 @@ source $drake/tools/lcm_vector_gen.sh
 gen_lcm_and_vector_from_proto "bicycle car parameters" $drake/automotive/bicycle_car_parameters.named_vector
 gen_lcm_and_vector_from_proto "bicycle car state" $drake/automotive/bicycle_car_state.named_vector
 gen_lcm_and_vector_from_proto "driving command" $drake/automotive/driving_command_fields.named_vector
-gen_lcm_and_vector_from_proto "euler floating joint state" $drake/automotive/euler_floating_joint_state.named_vector
 gen_vector_proto "idm planner parameters" $drake/automotive/idm_planner_parameters.named_vector
 gen_lcm_and_vector_from_proto "maliput railcar state" $drake/automotive/maliput_railcar_state.named_vector
 gen_lcm_and_vector_from_proto "maliput railcar params" $drake/automotive/maliput_railcar_params.named_vector
@@ -23,4 +22,4 @@ gen_vector_proto "pure pursuit params" $drake/automotive/pure_pursuit_params.nam
 gen_lcm_and_vector_from_proto "simple car state" $drake/automotive/simple_car_state.named_vector
 gen_lcm_and_vector_from_proto "simple car params" $drake/automotive/simple_car_params.named_vector
 gen_lcm_and_vector_from_proto "trajectory car state" $drake/automotive/trajectory_car_state.named_vector
-gen_vector_from_proto "trajectory car params" $drake/automotive/trajectory_car_params.named_vector
+gen_vector_proto "trajectory car params" $drake/automotive/trajectory_car_params.named_vector

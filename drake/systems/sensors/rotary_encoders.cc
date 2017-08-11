@@ -8,6 +8,7 @@
 
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/symbolic.h"
 #include "drake/common/unused.h"
 #include "drake/systems/framework/basic_vector.h"
 
@@ -42,8 +43,10 @@ template <typename T>
 RotaryEncoders<T>::RotaryEncoders(int input_port_size,
                                   const std::vector<int>& input_vector_indices,
                                   const std::vector<int>& ticks_per_revolution)
-    : VectorSystem<T>(input_port_size,
-                          input_vector_indices.size() /* output_port_size */),
+    : VectorSystem<T>(
+          SystemTypeTag<sensors::RotaryEncoders>{},
+          input_port_size,
+          input_vector_indices.size() /* output_port_size */),
       num_encoders_(input_vector_indices.size()),
       indices_(input_vector_indices),
       ticks_per_revolution_(ticks_per_revolution) {
@@ -57,6 +60,13 @@ RotaryEncoders<T>::RotaryEncoders(int input_port_size,
                *std::min_element(ticks_per_revolution_.begin(),
                                  ticks_per_revolution_.end()) >= 0);
 }
+
+template <typename T>
+template <typename U>
+RotaryEncoders<T>::RotaryEncoders(const RotaryEncoders<U>& other)
+    : RotaryEncoders(other.get_input_port().size(),
+                     other.indices_,
+                     other.ticks_per_revolution_) {}
 
 template <typename T>
 void RotaryEncoders<T>::DoCalcVectorOutput(
@@ -118,14 +128,9 @@ Eigen::VectorBlock<const VectorX<T>> RotaryEncoders<T>::get_calibration_offsets(
   return this->template GetNumericParameter(context, 0).get_value();
 }
 
-template <typename T>
-RotaryEncoders<AutoDiffXd>* RotaryEncoders<T>::DoToAutoDiffXd() const {
-  return new RotaryEncoders<AutoDiffXd>(this->get_input_port().size(),
-                                        indices_, ticks_per_revolution_);
-}
-
 template class RotaryEncoders<double>;
 template class RotaryEncoders<AutoDiffXd>;
+template class RotaryEncoders<symbolic::Expression>;
 
 }  // namespace sensors
 }  // namespace systems

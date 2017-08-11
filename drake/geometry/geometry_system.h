@@ -362,7 +362,7 @@ class GeometrySystem : public systems::LeafSystem<T> {
    @param source_id   The id for the owner geometry source.
    @param frame_id    The id of the frame to remove.
    @throws std::logic_error If:
-                            1. The `source_id` is not an active source,
+                            1. The `source_id` is not a registered source,
                             2. the `frame_id` doesn't belong to the source, or
                             3. a context has been allocated. */
   void RemoveFrame(SourceId source_id, FrameId frame_id);
@@ -373,7 +373,7 @@ class GeometrySystem : public systems::LeafSystem<T> {
    @param source_id   The identifier for the owner geometry source.
    @param geometry_id The identifier of the geometry to remove.
    @throws std::logic_error If:
-                            1. The `source_id` is not an active source,
+                            1. The `source_id` is not a registered source,
                             2. the `geometry_id` doesn't belong to the source,
                                or
                             3. a context has been allocated. */

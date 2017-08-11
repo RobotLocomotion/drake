@@ -1,12 +1,10 @@
 #include "drake/systems/primitives/affine_system.h"
 
-#include <stdexcept>
-#include <string>
-
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
+#include "drake/common/symbolic_decompose.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_context.h"
 
@@ -14,8 +12,6 @@ namespace drake {
 namespace systems {
 
 using std::make_unique;
-using std::runtime_error;
-using std::string;
 using std::unique_ptr;
 
 template <typename T>
@@ -183,81 +179,6 @@ AffineSystem<T>::AffineSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
   DRAKE_DEMAND(this->num_outputs() == D.rows());
 }
 
-namespace {
-using symbolic::Expression;
-using symbolic::Monomial;
-using symbolic::Polynomial;
-using symbolic::Variable;
-using symbolic::Variables;
-
-void ThrowNonAffineError(const string& msg) {
-  throw runtime_error(
-      "DecomposeAffineSystem detects that a non-affine expression: " + msg +
-      ".");
-}
-
-// A helper function for DecomposeAffineSystem. It finds the coefficient of the
-// monomial `m` in the `map` and fills `M(i)` with the value. If the monomial
-// `m` does not appear in `map`, it uses `0.0` instead. If the coefficient is
-// not a constant, it throws a runtime_error.
-template <typename Derived>
-void DecomposeAffineSystemFindAndFill(const Polynomial::MapType& map,
-                                      const Monomial& m, const int i,
-                                      Eigen::MatrixBase<Derived> const& M) {
-  const auto it = map.find(m);
-  // Here, we use const_cast hack. See
-  // https://eigen.tuxfamily.org/dox/TopicFunctionTakingEigenTypes.html for
-  // details.
-  Eigen::MatrixBase<Derived>& M_dummy{
-      const_cast<Eigen::MatrixBase<Derived>&>(M)};
-  if (it != map.end()) {
-    // m should have a constant coefficient.
-    if (!is_constant(it->second)) {
-      ThrowNonAffineError(it->second.to_string());
-    }
-    M_dummy(i) = get_constant_value(it->second);
-  } else {
-    M_dummy(i) = 0.0;
-  }
-}
-
-// Decomposes `expressions` into `M1 * vars1 + M2 * vars2 + v`. This is a helper
-// function used to implement AffineSystem<T>::MakeAffineSystem() method.
-//
-// Note that it throws runtime_error if `expressions` is not affine in `vars1`
-// and `vars2`.
-void DecomposeAffineSystem(
-    const Eigen::Ref<const VectorX<Expression>>& expressions,
-    const Eigen::Ref<const VectorX<symbolic::Variable>> vars1,
-    const Eigen::Ref<const VectorX<symbolic::Variable>> vars2,
-    Eigen::MatrixXd* const M1, Eigen::MatrixXd* const M2,
-    Eigen::VectorXd* const v) {
-  for (int i = 0; i < expressions.size(); ++i) {
-    const Expression& e{expressions(i)};
-    if (!e.is_polynomial()) {
-      ThrowNonAffineError(e.to_string());  // e should be a polynomial.
-    }
-    const Polynomial p{e, Variables{vars1} + Variables{vars2}};
-    if (p.TotalDegree() > 1) {
-      ThrowNonAffineError(e.to_string());  // e should be affine.
-    }
-    const Polynomial::MapType& map{p.monomial_to_coefficient_map()};
-    // Fill M1(i, j).
-    for (int j = 0; j < vars1.size(); ++j) {
-      DecomposeAffineSystemFindAndFill(map, Monomial{vars1.coeff(j)}, j,
-                                       M1->row(i));
-    }
-    // Fill M2(i, j).
-    for (int j = 0; j < vars2.size(); ++j) {
-      DecomposeAffineSystemFindAndFill(map, Monomial{vars2.coeff(j)}, j,
-                                       M2->row(i));
-    }
-    // Fill v(i).
-    DecomposeAffineSystemFindAndFill(map, Monomial{}, i, *v);
-  }
-}
-}  // namespace
-
 template <typename T>
 unique_ptr<AffineSystem<T>> AffineSystem<T>::MakeAffineSystem(
     const Eigen::Ref<const VectorX<symbolic::Expression>>& dynamics,
@@ -275,14 +196,21 @@ unique_ptr<AffineSystem<T>> AffineSystem<T>::MakeAffineSystem(
   DRAKE_ASSERT(num_states == dynamics.size());
   const int num_inputs = input_vars.size();
   const int num_outputs = output.size();
-  Eigen::MatrixXd A(num_states, num_states);
-  Eigen::MatrixXd B(num_states, num_inputs);
+
+  Eigen::MatrixXd AB(num_states, num_states + num_inputs);
   Eigen::VectorXd f0(num_states);
-  Eigen::MatrixXd C(num_outputs, num_states);
-  Eigen::MatrixXd D(num_outputs, num_inputs);
+  VectorX<symbolic::Variable> vars(num_states + num_inputs);
+  vars << state_vars, input_vars;
+  DecomposeAffineExpressions(dynamics, vars, AB, f0);
+  const auto& A = AB.leftCols(num_states);
+  const auto& B = AB.rightCols(num_inputs);
+
+  Eigen::MatrixXd CD(num_outputs, num_states + num_inputs);
   Eigen::VectorXd y0(num_outputs);
-  DecomposeAffineSystem(dynamics, state_vars, input_vars, &A, &B, &f0);
-  DecomposeAffineSystem(output, state_vars, input_vars, &C, &D, &y0);
+  DecomposeAffineExpressions(output, vars, CD, y0);
+  const auto& C = CD.leftCols(num_states);
+  const auto& D = CD.rightCols(num_inputs);
+
   return make_unique<AffineSystem<T>>(A, B, f0, C, D, y0, time_period);
 }
 

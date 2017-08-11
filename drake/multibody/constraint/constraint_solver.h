@@ -7,27 +7,27 @@
 #include <utility>
 #include <vector>
 
-#include "drake/multibody/hard_constraint/hard_constraint_problem_data.h"
+#include "drake/multibody/constraint/constraint_problem_data.h"
 #include "drake/solvers/moby_lcp_solver.h"
 
 namespace drake {
 namespace multibody {
-namespace hard_constraint {
+namespace constraint {
 
-/// Solves hard (i.e., rigid or somewhat rigid) constraint problems for
-/// constraint forces. Specifically, given problem data corresponding to one or
-/// more rigid or multi-rigid bodies constrained bilaterally and/or unilaterally
-/// and acted upon by friction, this class computes the constraint forces.
+/// Solves constraint problems for constraint forces. Specifically, given
+/// problem data corresponding to a rigid or multi-body system constrained
+/// bilaterally and/or unilaterally and acted upon by friction, this class
+/// computes the constraint forces.
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
 /// Instantiated templates for the following scalar types @p T are provided:
 /// - double
 /// They are already available to link against in the containing library.
 template <typename T>
-class HardConstraintSolver {
+class ConstraintSolver {
  public:
-  HardConstraintSolver() = default;
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(HardConstraintSolver)
+  ConstraintSolver() = default;
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConstraintSolver)
 
   /// Solves the appropriate constraint problem at the acceleration level.
   /// @param cfm The non-negative regularization factor to apply to the
@@ -45,14 +45,14 @@ class HardConstraintSolver {
   ///           values (after the initial `nc` elements) correspond to the first
   ///           non-sliding contact, the next `r` values correspond to the
   ///           second non-sliding contact, etc. The final ℓ values of @p cf
-  ///           correspond to the forces applied to enforce configuration limit
-  ///           constraints.
+  ///           correspond to the forces applied to enforce functions of state
+  ///           variable limits.
   /// @pre Constraint data has been computed.
   /// @throws a std::runtime_error if the constraint forces cannot be computed
   ///         (due to, e.g., an "inconsistent" rigid contact configuration).
   /// @throws a std::logic_error if @p cf is null or @p cfm is negative.
   void SolveConstraintProblem(double cfm,
-      const HardConstraintAccelProblemData<T>& problem_data,
+      const ConstraintAccelProblemData<T>& problem_data,
       VectorX<T>* cf) const;
 
   /// Solves the appropriate impact problem at the velocity level.
@@ -70,7 +70,7 @@ class HardConstraintSolver {
   ///           values (after the initial `nc` elements) correspond to the first
   ///           contact, the next `r` values correspond to the second contact,
   ///           etc. The final ℓ values of @p cf correspond to the impulsive
-  ///            forces applied to enforce configuration limit constraints.
+  ///           forces applied to enforce functions of state variable limits.
   /// @pre Constraint data has been computed.
   /// @throws a std::runtime_error if the constraint forces cannot be computed
   ///         (due to, e.g., the effects of roundoff error in attempting to
@@ -78,7 +78,7 @@ class HardConstraintSolver {
   ///         recommended to increase @p cfm and attempt again.
   /// @throws a std::logic_error if @p cf is null or @p cfm is negative.
   void SolveImpactProblem(double cfm,
-                          const HardConstraintVelProblemData<T>& problem_data,
+                          const ConstraintVelProblemData<T>& problem_data,
                           VectorX<T>* cf) const;
 
   /// Computes the generalized force on the system from the constraint forces
@@ -91,7 +91,7 @@ class HardConstraintSolver {
   /// @throws std::logic_error if @p generalized_force is null or @p cf
   ///         vector is incorrectly sized.
   static void ComputeGeneralizedForceFromConstraintForces(
-      const HardConstraintAccelProblemData<T>& problem_data,
+      const ConstraintAccelProblemData<T>& problem_data,
       const VectorX<T>& cf,
       VectorX<T>* generalized_force);
 
@@ -106,7 +106,7 @@ class HardConstraintSolver {
   /// @throws std::logic_error if @p generalized_impulse is null or @p cf
   ///         vector is incorrectly sized.
   static void ComputeGeneralizedImpulseFromConstraintImpulses(
-      const HardConstraintVelProblemData<T>& problem_data,
+      const ConstraintVelProblemData<T>& problem_data,
       const VectorX<T>& cf,
       VectorX<T>* generalized_impulse);
 
@@ -117,7 +117,7 @@ class HardConstraintSolver {
   /// @throws std::logic_error if @p generalized_acceleration is null or
   ///         @p cf vector is incorrectly sized.
   static void ComputeGeneralizedAcceleration(
-      const HardConstraintAccelProblemData<T>& problem_data,
+      const ConstraintAccelProblemData<T>& problem_data,
       const VectorX<T>& cf,
       VectorX<T>* generalized_acceleration);
 
@@ -128,7 +128,7 @@ class HardConstraintSolver {
   /// @throws std::logic_error if @p generalized_delta_v is null or
   ///         @p cf vector is incorrectly sized.
   static void ComputeGeneralizedVelocityChange(
-      const HardConstraintVelProblemData<T>& problem_data,
+      const ConstraintVelProblemData<T>& problem_data,
       const VectorX<T>& cf,
       VectorX<T>* generalized_delta_v);
 
@@ -157,7 +157,7 @@ class HardConstraintSolver {
   ///       in the world frame is @p contact_frames[i] * @p contact_forces[i].
   static void CalcContactForcesInContactFrames(
       const VectorX<T>& cf,
-      const HardConstraintAccelProblemData<T>& problem_data,
+      const ConstraintAccelProblemData<T>& problem_data,
       const std::vector<Matrix2<T>>& contact_frames,
       std::vector<Vector2<T>>* contact_forces);
 
@@ -184,24 +184,36 @@ class HardConstraintSolver {
   ///       in the world frame is @p contact_frames[i] * @p contact_impulses[i].
   static void CalcImpactForcesInContactFrames(
       const VectorX<T>& cf,
-      const HardConstraintVelProblemData<T>& problem_data,
+      const ConstraintVelProblemData<T>& problem_data,
       const std::vector<Matrix2<T>>& contact_frames,
       std::vector<Vector2<T>>* contact_impulses);
 
  private:
+  // Computes a constraint space inertia matrix J⋅M⁻¹⋅Kᵀ, where J ∈ ℝʲˣᵐ and
+  // K ∈ ℝᵏˣᵐ are both Jacobian matrices (realized here using operators) and
+  // M⁻¹ ∈ ℝᵐˣᵐ is the inverse of the generalized inertia matrix. Note that
+  // mixing types of constraints is explicitly allowed. Aborts if J_iM_KT is
+  // not of size j × k.
+  static void ComputeConstraintSpaceInertiaMatrix(
+      std::function<VectorX<T>(const VectorX<T>&)> J_mult,
+      int j,
+      std::function<MatrixX<T>(const MatrixX<T>&)> M_inv_mult,
+      std::function<VectorX<T>(const VectorX<T>&)> K_transpose_mult,
+      int k,
+      Eigen::Ref<MatrixX<T>>);
   void FormImpactingConstraintLCP(
-      const HardConstraintVelProblemData<T>& problem_data,
+      const ConstraintVelProblemData<T>& problem_data,
       MatrixX<T>* MM, VectorX<T>* qq) const;
   void FormSustainedConstraintLCP(
-      const HardConstraintAccelProblemData<T>& problem_data,
+      const ConstraintAccelProblemData<T>& problem_data,
       MatrixX<T>* MM, VectorX<T>* qq) const;
 
   drake::solvers::MobyLCPSolver<T> lcp_;
 };
 
 template <typename T>
-void HardConstraintSolver<T>::SolveConstraintProblem(double cfm,
-    const HardConstraintAccelProblemData<T>& problem_data,
+void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
+    const ConstraintAccelProblemData<T>& problem_data,
     VectorX<T>* cf) const {
   using std::max;
   using std::abs;
@@ -224,7 +236,7 @@ void HardConstraintSolver<T>::SolveConstraintProblem(double cfm,
   const int num_contacts = num_sliding + num_non_sliding;
   const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
                                                    problem_data.r.end(), 0);
-  const int num_limits = problem_data.L.rows();
+  const int num_limits = problem_data.num_limit_constraints;
 
   // Look for fast exit.
   if (num_contacts == 0 && num_limits == 0) {
@@ -277,9 +289,9 @@ void HardConstraintSolver<T>::SolveConstraintProblem(double cfm,
 }
 
 template <typename T>
-void HardConstraintSolver<T>::SolveImpactProblem(
+void ConstraintSolver<T>::SolveImpactProblem(
     double cfm,
-    const HardConstraintVelProblemData<T>& problem_data,
+    const ConstraintVelProblemData<T>& problem_data,
     VectorX<T>* cf) const {
   using std::max;
   using std::abs;
@@ -297,7 +309,7 @@ void HardConstraintSolver<T>::SolveImpactProblem(
     throw std::logic_error("Number of elements in 'r' does not match number"
                                "of elements in 'mu'");
   }
-  const int num_limits = problem_data.L.rows();
+  const int num_limits = problem_data.num_limit_constraints;
 
   // Look for fast exit.
   if (num_contacts == 0 && num_limits == 0) {
@@ -311,10 +323,10 @@ void HardConstraintSolver<T>::SolveImpactProblem(
 
   // If no impact, do not apply the impact model.
   if ((num_contacts == 0 ||
-       (problem_data.N * problem_data.v).minCoeff() >= 0) &&
+       problem_data.N_mult(problem_data.v).minCoeff() >= 0) &&
       (num_limits == 0 ||
-        (problem_data.L * problem_data.v).minCoeff() >= 0)) {
-    cf->setZero(num_contacts + num_spanning_vectors);
+        problem_data.L_mult(problem_data.v).minCoeff() >= 0)) {
+    cf->setZero(num_contacts + num_spanning_vectors + num_limits);
     return;
   }
 
@@ -364,12 +376,39 @@ void HardConstraintSolver<T>::SolveImpactProblem(
       zz.segment(num_contacts + num_spanning_vectors * 2, num_limits);
 }
 
+template <class T>
+void ConstraintSolver<T>::ComputeConstraintSpaceInertiaMatrix(
+    std::function<VectorX<T>(const VectorX<T>&)> J_mult,
+    int j,
+    std::function<MatrixX<T>(const MatrixX<T>&)> M_inv_mult,
+    std::function<VectorX<T>(const VectorX<T>&)> K_transpose_mult,
+    int k,
+    Eigen::Ref<MatrixX<T>> J_iM_KT) {
+  DRAKE_DEMAND(J_iM_KT.rows() == j && J_iM_KT.cols() == k);
+
+  VectorX<T> basis(k);      // Basis vector.
+  VectorX<T> kT, iM_kT;     // Intermediate result vectors.
+
+  // Look for fast exit.
+  if (j == 0 || k == 0)
+    return;
+
+  for (int i = 0; i < k; ++i) {
+    // Get the i'th column of K.
+    basis.setZero();
+    basis[i] = 1;
+    kT = K_transpose_mult(basis);
+    iM_kT = M_inv_mult(kT);
+    J_iM_KT.col(i) = J_mult(iM_kT);
+  }
+}
+
 // Forms the LCP matrix and vector, which is used to determine the constraint
 // forces (and can also be used to determine the active set of constraints at
 // the acceleration-level).
 template <class T>
-void HardConstraintSolver<T>::FormSustainedConstraintLCP(
-    const HardConstraintAccelProblemData<T>& problem_data,
+void ConstraintSolver<T>::FormSustainedConstraintLCP(
+    const ConstraintAccelProblemData<T>& problem_data,
     MatrixX<T>* MM, VectorX<T>* qq) const {
   DRAKE_DEMAND(MM);
   DRAKE_DEMAND(qq);
@@ -380,17 +419,20 @@ void HardConstraintSolver<T>::FormSustainedConstraintLCP(
   const int num_contacts = num_sliding + num_non_sliding;
   const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
                                  problem_data.r.end(), 0);
-  const int num_limits = problem_data.L.rows();
+  const int num_limits = problem_data.num_limit_constraints;
 
   // Problem matrices and vectors are mildly adapted from:
   // M. Anitescu and F. Potra. Formulating Dynamic Multi-Rigid Body Contact
   // Problems as Solvable Linear Complementarity Problems. Nonlinear Dynamics,
   // 14, 1997.
 
-  // Alias matrices / vectors to make accessing them less clunky.
-  const MatrixX<T>& N = problem_data.N;
-  const MatrixX<T>& F = problem_data.F;
-  const MatrixX<T>& L = problem_data.L;
+  // Alias operators and vectors to make accessing them less clunky.
+  auto N = problem_data.N_mult;
+  auto F = problem_data.F_mult;
+  auto FT = problem_data.F_transpose_mult;
+  auto L = problem_data.L_mult;
+  auto LT = problem_data.L_transpose_mult;
+  auto iM = problem_data.solve_inertia;
   const VectorX<T>& Ndot_x_v = problem_data.Ndot_x_v;
   const VectorX<T>& Fdot_x_v = problem_data.Fdot_x_v;
   const VectorX<T>& Ldot_x_v = problem_data.Ldot_x_v;
@@ -410,35 +452,47 @@ void HardConstraintSolver<T>::FormSustainedConstraintLCP(
     j += num_tangent_dirs;
   }
 
-  // Construct the LCP matrix. First do the "normal contact direction" rows:
+  // Alias these variables for more readable construction of MM and qq.
+  const int nc = num_contacts;
+  const int nr = num_spanning_vectors;
+  const int nk = nr * 2;
+  const int nl = num_limits;
+  const int num_vars = nc + nk + num_non_sliding + nl;
+
+  // Prepare blocks of the LCP matrix, which takes the form:
   // N⋅M⁻¹⋅(Nᵀ - μQᵀ)  N⋅M⁻¹⋅Dᵀ  0   N⋅M⁻¹⋅Lᵀ
   // D⋅M⁻¹⋅Nᵀ          D⋅M⁻¹⋅Dᵀ  E   D⋅M⁻¹⋅Lᵀ
   // μ                 -Eᵀ       0   0
   // L⋅M⁻¹⋅Nᵀ          L⋅M⁻¹⋅Dᵀ  0   L⋅M⁻¹⋅Lᵀ
   // where D = |  F |
   //           | -F |
-  const int nc = num_contacts;          // Alias these vars for more...
-  const int nr = num_spanning_vectors;  //   readable construction...
-  const int nk = nr * 2;                //    of MM/qq.
-  const int nl = num_limits;
-  const int num_vars = nc + nk + num_non_sliding + nl;
-  MatrixX<T> M_inv_x_FT = problem_data.solve_inertia(F.transpose());
-  MatrixX<T> M_inv_x_LT = problem_data.solve_inertia(L.transpose());
   MM->resize(num_vars, num_vars);
-  MM->block(0, 0, nc, nc) = N *
-      problem_data.solve_inertia(problem_data.N_minus_mu_Q.transpose());
-  MM->block(0, nc, nc, nr) = N * M_inv_x_FT;
+  Eigen::Ref<MatrixX<T>> N_iM_NT_minus_muQT = MM->block(0, 0, nc, nc);
+  Eigen::Ref<MatrixX<T>> N_iM_FT = MM->block(0, nc, nc, nr);
+  Eigen::Ref<MatrixX<T>> N_iM_LT = MM->block(
+      0, nc + nk + num_non_sliding, nc, nl);
+  Eigen::Ref<MatrixX<T>> F_iM_FT = MM->block(nc, nc, nr, nr);
+  Eigen::Ref<MatrixX<T>> F_iM_LT = MM->block(nc, nc + nk, nr, nl);
+  Eigen::Ref<MatrixX<T>> L_iM_LT = MM->block(
+      nc + nk + num_non_sliding, nc + nk + num_non_sliding, nl, nl);
+  ComputeConstraintSpaceInertiaMatrix(
+      N, nc, iM,problem_data.N_minus_muQ_transpose_mult, nc,
+      N_iM_NT_minus_muQT);
+  ComputeConstraintSpaceInertiaMatrix(N, nc, iM, FT, nr, N_iM_FT);
+  ComputeConstraintSpaceInertiaMatrix(N, nc, iM, LT, nl, N_iM_LT);
+  ComputeConstraintSpaceInertiaMatrix(F, nr, iM, FT, nr, F_iM_FT);
+  ComputeConstraintSpaceInertiaMatrix(F, nr, iM, LT, nl, F_iM_LT);
+  ComputeConstraintSpaceInertiaMatrix(L, nl, iM, LT, nl, L_iM_LT);
+
+  // Construct the LCP matrix. First do the "normal contact direction" rows.
   MM->block(0, nc + nr, nc, nr) = -MM->block(0, nc, nc, nr);
   MM->block(0, nc + nk, num_non_sliding, num_non_sliding).setZero();
-  MM->block(0, nc + nk + num_non_sliding, nc, nl) = N * M_inv_x_LT;
 
   // Now construct the un-negated tangent contact direction rows (everything
   // but last block column).
   MM->block(nc, 0, nr, nc) = MM->block(0, nc, nc, nr).transpose().eval();
-  MM->block(nc, nc, nr, num_spanning_vectors) = F * M_inv_x_FT;
   MM->block(nc, nc + nr, num_spanning_vectors, nr) =
       -MM->block(nc, nc, nr, num_spanning_vectors);
-  MM->block(nc, nc + nk, nr, nl) = F * M_inv_x_LT;
 
   // Now construct the negated tangent contact direction rows (everything but
   // last block column). These negated tangent contact directions allow the
@@ -459,8 +513,6 @@ void HardConstraintSolver<T>::FormSustainedConstraintLCP(
   // constraint.
   MM->block(nc + nk + num_non_sliding, 0, nl, nc + nk) =
       MM->block(0, nc + nk + num_non_sliding, nc + nk, nl).transpose().eval();
-  MM->block(nc + nk + num_non_sliding, nc + num_non_sliding + nk, nl, nl) =
-      L * M_inv_x_LT;
 
   // Construct the LCP vector:
   // N⋅M⁻¹⋅fext + dN/dt⋅v
@@ -470,18 +522,18 @@ void HardConstraintSolver<T>::FormSustainedConstraintLCP(
   // where, as above, D is defined as [F -F]
   VectorX<T> M_inv_x_f = problem_data.solve_inertia(problem_data.f);
   qq->resize(num_vars, 1);
-  qq->segment(0, nc) = N * M_inv_x_f + Ndot_x_v;
-  qq->segment(nc, nr) = F * M_inv_x_f + Fdot_x_v;
+  qq->segment(0, nc) = N(M_inv_x_f) + Ndot_x_v;
+  qq->segment(nc, nr) = F(M_inv_x_f) + Fdot_x_v;
   qq->segment(nc + nr, num_spanning_vectors) = -qq->segment(nc, nr);
   qq->segment(nc + nk, num_non_sliding).setZero();
-  qq->segment(nc + nk + num_non_sliding, num_limits) = L * M_inv_x_f + Ldot_x_v;
+  qq->segment(nc + nk + num_non_sliding, num_limits) = L(M_inv_x_f) + Ldot_x_v;
 }
 
 // Forms the LCP matrix and vector, which is used to determine the collisional
 // impulses.
 template <class T>
-void HardConstraintSolver<T>::FormImpactingConstraintLCP(
-    const HardConstraintVelProblemData<T>& problem_data,
+void ConstraintSolver<T>::FormImpactingConstraintLCP(
+    const ConstraintVelProblemData<T>& problem_data,
     MatrixX<T>* MM, VectorX<T>* qq) const {
   DRAKE_DEMAND(MM);
   DRAKE_DEMAND(qq);
@@ -490,17 +542,21 @@ void HardConstraintSolver<T>::FormImpactingConstraintLCP(
   const int num_contacts = problem_data.mu.size();
   const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
                                                    problem_data.r.end(), 0);
-  const int num_limits = problem_data.L.rows();
+  const int num_limits = problem_data.num_limit_constraints;
 
   // Problem matrices and vectors are nearly identical to:
   // M. Anitescu and F. Potra. Formulating Dynamic Multi-Rigid Body Contact
   // Problems as Solvable Linear Complementarity Problems. Nonlinear Dynamics,
   // 14, 1997.
 
-  // Alias matrices / vectors to make accessing them less clunky.
-  const MatrixX<T>& N = problem_data.N;
-  const MatrixX<T>& F = problem_data.F;
-  const MatrixX<T>& L = problem_data.L;
+  // Alias operators and vectors to make accessing them less clunky.
+  const auto N = problem_data.N_mult;
+  const auto NT = problem_data.N_transpose_mult;
+  const auto F = problem_data.F_mult;
+  const auto FT = problem_data.F_transpose_mult;
+  const auto L = problem_data.L_mult;
+  const auto LT = problem_data.L_transpose_mult;
+  auto iM = problem_data.solve_inertia;
   const VectorX<T>& mu = problem_data.mu;
 
   // Construct the matrix E in Anitscu and Potra 1997. This matrix
@@ -523,7 +579,7 @@ void HardConstraintSolver<T>::FormImpactingConstraintLCP(
   const int nk = nr * 2;
   const int nl = num_limits;
 
-  // Construct the LCP matrix. First do the "normal contact direction" rows:
+  // Prepare blocks of the LCP matrix, which takes the form:
   // N⋅M⁻¹⋅Nᵀ  N⋅M⁻¹⋅Dᵀ  0   N⋅M⁻¹⋅Lᵀ
   // D⋅M⁻¹⋅Nᵀ  D⋅M⁻¹⋅Dᵀ  E   D⋅M⁻¹⋅Lᵀ
   // μ         -Eᵀ       0   0
@@ -531,22 +587,28 @@ void HardConstraintSolver<T>::FormImpactingConstraintLCP(
   // where D = |  F |
   //           | -F |
   const int num_vars = nc * 2 + nk + num_limits;
-  MatrixX<T> M_inv_x_FT = problem_data.solve_inertia(F.transpose());
-  MatrixX<T> M_inv_x_LT = problem_data.solve_inertia(L.transpose());
   MM->resize(num_vars, num_vars);
-  MM->block(0, 0, nc, nc) = N * problem_data.solve_inertia(
-      problem_data.N.transpose());
-  MM->block(0, nc, nc, nr) = N * M_inv_x_FT;
+  Eigen::Ref<MatrixX<T>> N_iM_NT = MM->block(0, 0, nc, nc);
+  Eigen::Ref<MatrixX<T>> N_iM_FT = MM->block(0, nc, nc, nr);
+  Eigen::Ref<MatrixX<T>> N_iM_LT = MM->block(0, nc * 2 + nk, nc, nl);
+  Eigen::Ref<MatrixX<T>> F_iM_FT = MM->block(nc, nc, nr, nr);
+  Eigen::Ref<MatrixX<T>> F_iM_LT = MM->block(nc, nc + nk, nr, nl);
+  Eigen::Ref<MatrixX<T>> L_iM_LT = MM->block(nc * 2 + nk, nc * 2 + nk, nl, nl);
+  ComputeConstraintSpaceInertiaMatrix(N, nc, iM, NT, nc, N_iM_NT);
+  ComputeConstraintSpaceInertiaMatrix(N, nc, iM, FT, nr, N_iM_FT);
+  ComputeConstraintSpaceInertiaMatrix(N, nc, iM, LT, nl, N_iM_LT);
+  ComputeConstraintSpaceInertiaMatrix(F, nr, iM, FT, nr, F_iM_FT);
+  ComputeConstraintSpaceInertiaMatrix(F, nr, iM, LT, nl, F_iM_LT);
+  ComputeConstraintSpaceInertiaMatrix(L, nl, iM, LT, nl, L_iM_LT);
+
+  // Construct the LCP matrix. First do the "normal contact direction" rows:
   MM->block(0, nc + nr, nc, nr) = -MM->block(0, nc, nc, nr);
   MM->block(0, nc + nk, nc, nc).setZero();
-  MM->block(0, nc*2 + nk, nc, nl) = N * M_inv_x_LT;
 
   // Now construct the un-negated tangent contact direction rows (everything
   // but last block column).
   MM->block(nc, 0, nr, nc) = MM->block(0, nc, nc, nr).transpose().eval();
-  MM->block(nc, nc, nr, nr) = F * M_inv_x_FT;
   MM->block(nc, nc + nr, nr, nr) = -MM->block(nc, nc, nr, nr);
-  MM->block(nc, nc + nk, nr, nl) = F * M_inv_x_LT;
 
   // Now construct the negated tangent contact direction rows (everything but
   // last block column). These negated tangent contact directions allow the
@@ -567,7 +629,6 @@ void HardConstraintSolver<T>::FormImpactingConstraintLCP(
   // constraint.
   MM->block(nc*2 + nk, 0, nl, nc + nk) =
       MM->block(0, nc*2 + nk, nc + nk, nl).transpose().eval();
-  MM->block(nc*2 + nk, nc*2 + nk, nl, nl) = L * M_inv_x_LT;
 
   // Construct the LCP vector:
   // N⋅v
@@ -576,16 +637,16 @@ void HardConstraintSolver<T>::FormImpactingConstraintLCP(
   // L⋅v
   // where, as above, D is defined as [F -F]
   qq->resize(num_vars, 1);
-  qq->segment(0, nc) = N * problem_data.v;
-  qq->segment(nc, nr) = F * problem_data.v;
+  qq->segment(0, nc) = N(problem_data.v);
+  qq->segment(nc, nr) = F(problem_data.v);
   qq->segment(nc + nr, nc) = -qq->segment(nc, nr);
   qq->segment(nc + nk, nc).setZero();
-  qq->segment(nc*2 + nk, num_limits) = L * problem_data.v;
+  qq->segment(nc*2 + nk, num_limits) = L(problem_data.v);
 }
 
 template <class T>
-void HardConstraintSolver<T>::ComputeGeneralizedForceFromConstraintForces(
-    const HardConstraintAccelProblemData<T>& problem_data,
+void ConstraintSolver<T>::ComputeGeneralizedForceFromConstraintForces(
+    const ConstraintAccelProblemData<T>& problem_data,
     const VectorX<T>& cf,
     VectorX<T>* generalized_force) {
   if (!generalized_force)
@@ -597,7 +658,7 @@ void HardConstraintSolver<T>::ComputeGeneralizedForceFromConstraintForces(
   const int num_contacts = num_sliding + num_non_sliding;
   const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
                                  problem_data.r.end(), 0);
-  const int num_limits = problem_data.L.rows();
+  const int num_limits = problem_data.num_limit_constraints;
 
   // Verify cf is the correct size.
   const int num_vars = num_contacts + num_spanning_vectors + num_limits;
@@ -616,14 +677,14 @@ void HardConstraintSolver<T>::ComputeGeneralizedForceFromConstraintForces(
       num_contacts + num_spanning_vectors, num_limits);
 
   /// Compute the generalized force.
-  *generalized_force = problem_data.N_minus_mu_Q.transpose() * f_normal +
-      problem_data.F.transpose() * f_non_sliding_frictional +
-      problem_data.L.transpose() * f_limit;
+  *generalized_force = problem_data.N_minus_muQ_transpose_mult(f_normal) +
+                       problem_data.F_transpose_mult(f_non_sliding_frictional) +
+                       problem_data.L_transpose_mult(f_limit);
 }
 
 template <class T>
-void HardConstraintSolver<T>::ComputeGeneralizedImpulseFromConstraintImpulses(
-    const HardConstraintVelProblemData<T>& problem_data,
+void ConstraintSolver<T>::ComputeGeneralizedImpulseFromConstraintImpulses(
+    const ConstraintVelProblemData<T>& problem_data,
     const VectorX<T>& cf,
     VectorX<T>* generalized_impulse) {
   if (!generalized_impulse)
@@ -633,7 +694,7 @@ void HardConstraintSolver<T>::ComputeGeneralizedImpulseFromConstraintImpulses(
   const int num_contacts = problem_data.mu.size();
   const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
                                                    problem_data.r.end(), 0);
-  const int num_limits = problem_data.L.rows();
+  const int num_limits = problem_data.num_limit_constraints;
   const int num_vars = num_contacts + num_spanning_vectors + num_limits;
   if (num_vars != cf.size()) {
     throw std::logic_error("Unexpected packed constraint force vector"
@@ -650,14 +711,14 @@ void HardConstraintSolver<T>::ComputeGeneralizedImpulseFromConstraintImpulses(
       num_contacts + num_spanning_vectors, num_limits);
 
   /// Compute the generalized impules.
-  *generalized_impulse = problem_data.N.transpose() * f_normal +
-                         problem_data.F.transpose() * f_frictional +
-                         problem_data.L.transpose() * f_limit;
+  *generalized_impulse = problem_data.N_transpose_mult(f_normal)  +
+                         problem_data.F_transpose_mult(f_frictional) +
+                         problem_data.L_transpose_mult(f_limit);
 }
 
 template <class T>
-void HardConstraintSolver<T>::ComputeGeneralizedAcceleration(
-    const HardConstraintAccelProblemData<T>& problem_data,
+void ConstraintSolver<T>::ComputeGeneralizedAcceleration(
+    const ConstraintAccelProblemData<T>& problem_data,
     const VectorX<T>& cf,
     VectorX<T>* generalized_acceleration) {
   if (!generalized_acceleration)
@@ -671,8 +732,8 @@ void HardConstraintSolver<T>::ComputeGeneralizedAcceleration(
 }
 
 template <class T>
-void HardConstraintSolver<T>::ComputeGeneralizedVelocityChange(
-    const HardConstraintVelProblemData<T>& problem_data,
+void ConstraintSolver<T>::ComputeGeneralizedVelocityChange(
+    const ConstraintVelProblemData<T>& problem_data,
     const VectorX<T>& cf,
     VectorX<T>* generalized_delta_v) {
 
@@ -686,9 +747,9 @@ void HardConstraintSolver<T>::ComputeGeneralizedVelocityChange(
 }
 
 template <class T>
-void HardConstraintSolver<T>::CalcContactForcesInContactFrames(
+void ConstraintSolver<T>::CalcContactForcesInContactFrames(
     const VectorX<T>& cf,
-    const HardConstraintAccelProblemData<T>& problem_data,
+    const ConstraintAccelProblemData<T>& problem_data,
     const std::vector<Matrix2<T>>& contact_frames,
     std::vector<Vector2<T>>* contact_forces) {
   using std::abs;
@@ -708,7 +769,7 @@ void HardConstraintSolver<T>::CalcContactForcesInContactFrames(
       num_non_sliding_contacts;
   const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
                                                    problem_data.r.end(), 0);
-  const int num_limits = problem_data.L.rows();
+  const int num_limits = problem_data.num_limit_constraints;
   const int num_vars = num_contacts + num_spanning_vectors + num_limits;
   if (num_vars != cf.size()) {
     throw std::logic_error("Unexpected packed constraint force vector "
@@ -783,9 +844,9 @@ void HardConstraintSolver<T>::CalcContactForcesInContactFrames(
 }
 
 template <class T>
-void HardConstraintSolver<T>::CalcImpactForcesInContactFrames(
+void ConstraintSolver<T>::CalcImpactForcesInContactFrames(
     const VectorX<T>& cf,
-    const HardConstraintVelProblemData<T>& problem_data,
+    const ConstraintVelProblemData<T>& problem_data,
     const std::vector<Matrix2<T>>& contact_frames,
     std::vector<Vector2<T>>* contact_impulses) {
   using std::abs;
@@ -803,7 +864,7 @@ void HardConstraintSolver<T>::CalcImpactForcesInContactFrames(
   const int num_contacts = problem_data.mu.size();
   const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
                                                    problem_data.r.end(), 0);
-  const int num_limits = problem_data.L.rows();
+  const int num_limits = problem_data.num_limit_constraints;
   const int num_vars = num_contacts + num_spanning_vectors + num_limits;
   if (num_vars != cf.size()) {
     throw std::logic_error("Unexpected packed constraint force vector "
@@ -858,6 +919,6 @@ void HardConstraintSolver<T>::CalcImpactForcesInContactFrames(
   }
 }
 
-}  // namespace hard_constraint
+}  // namespace constraint
 }  // namespace multibody
 }  // namespace drake

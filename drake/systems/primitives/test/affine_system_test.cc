@@ -343,8 +343,10 @@ TEST_F(AffineSystemSymbolicTest, MakeAffineSystem) {
   EXPECT_EQ(dut->time_period(), 10.0);
 }
 
+// Adds quadratic terms to check if we have an exception. Note that we have
+// similar testcases in drake/common/test/symbolic_decompose_test.cc file but we
+// believe that having redundancy is not bad in testing.
 TEST_F(AffineSystemSymbolicTest, MakeAffineSystemException1) {
-  // Add quadratic terms to check if we have an exception.
   VectorX<symbolic::Expression> extra_terms(3);
   // clang-format off
   extra_terms << x0_ * x0_,
@@ -357,8 +359,8 @@ TEST_F(AffineSystemSymbolicTest, MakeAffineSystemException1) {
                std::runtime_error);
 }
 
+// Adds bilinear terms to check if we have an exception.
 TEST_F(AffineSystemSymbolicTest, MakeAffineSystemException2) {
-  // Add bilinear terms to check if we have an exception.
   VectorX<symbolic::Expression> extra_terms(3);
   // clang-format off
   extra_terms << x0_ * u0_,
@@ -371,8 +373,8 @@ TEST_F(AffineSystemSymbolicTest, MakeAffineSystemException2) {
                std::runtime_error);
 }
 
+// Adds nonlinear terms to check if we have an exception.
 TEST_F(AffineSystemSymbolicTest, MakeAffineSystemException3) {
-  // Add nonlinear terms to check if we have an exception.
   VectorX<symbolic::Expression> extra_terms(3);
   // clang-format off
   extra_terms << sin(x0_),

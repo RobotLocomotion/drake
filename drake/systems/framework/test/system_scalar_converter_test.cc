@@ -1,5 +1,6 @@
 #include "drake/systems/framework/system_scalar_converter.h"
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/systems/framework/leaf_system.h"
@@ -96,6 +97,21 @@ class FromDoubleSystem : public LeafSystem<T> {
 
  private:
   int magic_{};
+};
+
+// A subclass of AnyToAnySystem.
+template <typename T>
+class SubclassOfAnyToAnySystem : public AnyToAnySystem<T> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SubclassOfAnyToAnySystem);
+
+  // User constructor.
+  SubclassOfAnyToAnySystem() : AnyToAnySystem<T>(22) {}
+
+  // Copy constructor that converts to a different scalar type.
+  template <typename U>
+  explicit SubclassOfAnyToAnySystem(const SubclassOfAnyToAnySystem<U>&)
+      : SubclassOfAnyToAnySystem() {}
 };
 
 }  // namespace
@@ -234,6 +250,37 @@ GTEST_TEST(SystemScalarConverterTest, TestUserTypes) {
   const auto* const downcast =
       dynamic_cast<const AnyToAnySystem<AD2>*>(converted.get());
   EXPECT_TRUE(downcast != nullptr);
+}
+
+GTEST_TEST(SystemScalarConverterTest, SubclassMismatch) {
+  // When correctly configured, converting the subclass type is successful.
+  {
+    SystemScalarConverter dut(SystemTypeTag<SubclassOfAnyToAnySystem>{});
+    const SubclassOfAnyToAnySystem<double> original;
+    const std::unique_ptr<System<AutoDiffXd>> converted =
+        dut.Convert<AutoDiffXd, double>(original);
+    EXPECT_NE(converted, nullptr);
+  }
+
+  // When incorrectly configured, converting the subclass type throws.
+  {
+    SystemScalarConverter dut(SystemTypeTag<AnyToAnySystem>{});
+    const SubclassOfAnyToAnySystem<double> original;
+    EXPECT_THROW(({
+      try {
+        dut.Convert<AutoDiffXd, double>(original);
+      } catch (const std::runtime_error& e) {
+        EXPECT_THAT(
+            std::string(e.what()),
+            testing::MatchesRegex(
+                "SystemScalarConverter::Convert was configured to convert a "
+                ".*::AnyToAnySystem<double> into a "
+                ".*::AnyToAnySystem<drake::AutoDiffXd> but was called with a "
+                ".*::SubclassOfAnyToAnySystem<double> at runtime"));
+        throw;
+      }
+    }), std::runtime_error);
+  }
 }
 
 }  // namespace

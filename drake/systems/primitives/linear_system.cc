@@ -8,11 +8,15 @@
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/symbolic_decompose.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 
 namespace drake {
 namespace systems {
+
+using std::make_unique;
+using std::unique_ptr;
 
 template <typename T>
 LinearSystem<T>::LinearSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
@@ -22,6 +26,40 @@ LinearSystem<T>::LinearSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
                               double time_period)
     : AffineSystem<T>(A, B, Eigen::VectorXd::Zero(A.rows()), C, D,
                       Eigen::VectorXd::Zero(C.rows()), time_period) {}
+
+template <typename T>
+unique_ptr<LinearSystem<T>> LinearSystem<T>::MakeLinearSystem(
+    const Eigen::Ref<const VectorX<symbolic::Expression>>& dynamics,
+    const Eigen::Ref<const VectorX<symbolic::Expression>>& output,
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& state_vars,
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& input_vars,
+    const double time_period) {
+  // Need to extract, A, B, C, D such that,
+  //
+  //     dynamics = Ax + Bu
+  //     output   = Cx + Du
+  //
+  // where x = state_vars and u = input_vars.
+  const int num_states = state_vars.size();
+  DRAKE_ASSERT(num_states == dynamics.size());
+  const int num_inputs = input_vars.size();
+  const int num_outputs = output.size();
+
+  Eigen::MatrixXd AB(num_states, num_states + num_inputs);
+  VectorX<symbolic::Variable> vars(num_states + num_inputs);
+  vars << state_vars, input_vars;
+  DecomposeLinearExpressions(dynamics, vars, AB);
+  const auto& A = AB.leftCols(num_states);
+  const auto& B = AB.rightCols(num_inputs);
+
+  Eigen::MatrixXd CD(num_outputs, num_states + num_inputs);
+  DecomposeLinearExpressions(output, vars, CD);
+  const auto& C = CD.leftCols(num_states);
+  const auto& D = CD.rightCols(num_inputs);
+
+  return make_unique<LinearSystem<T>>(A, B, C, D, time_period);
+}
+
 // TODO(naveenoid): Modify constructor to accommodate 0 dimension systems;
 // i.e. in initializing xDot0 and y0 with a zero matrix.
 template class LinearSystem<double>;
