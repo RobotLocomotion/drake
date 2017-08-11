@@ -61,9 +61,9 @@ class PidController : public StateFeedbackControllerInterface<T>,
    * Constructs a PID controller where some of the input states may not be
    * controlled. Assumes that @p kp, @p ki and @p kd have the same size. The
    * estimated and desired state input's size and the control output's size need
-   * to match @p feedback_selector. Note that @p state_selector only affects
+   * to match @p state_selector. Note that @p state_selector only affects
    * the estimated state input but not the desired state.
-   * @param feedback_selector, The selection matrix indicating controlled
+   * @param state_selector the selection matrix indicating controlled
    * states, whose size should be 2 * @p kp's size by the size of the full
    * state.
    * @param kp P gain.
@@ -77,6 +77,43 @@ class PidController : public StateFeedbackControllerInterface<T>,
   /** Scalar-converting copy constructor. */
   template <typename U>
   explicit PidController(const PidController<U>&);
+
+  /**
+ * Constructs a PID controller where some of the input states may not be
+ * controlled. Assumes that @p kp, @p ki and @p kd have the same size. The
+ * estimated and desired state input's size and the control output's size need
+ * to match @p state_selector. Note that @p state_selector only affects
+ * the estimated state input but not the desired state.
+ * @param Binv a matrix with rows and columns @p kp's size. 
+ * Under normal circumstances, Binv should be the identity matrix.
+ * If your robot has negative mechanical reductions specified in it's
+ * description file, then Binv should be the
+ * inverse of the B matrix from the part of the RigidBodyTree that you want to
+ * control.
+ * Binv should only contain the actuators that are being controlled.
+ * For example, if your B matrix from the whole RigidBodyTree is 18 x 18, but
+ * the last 6 rows and columns come from a
+ * floating object that is not being controlled, then only use the top 12x12
+ * submatrix as your B matrix
+ * (in this case, kp will also have a length of 12).
+ * The controller will multiply its final output by Binv, which will negate the
+ * effects of negative mechanical reductions, but will also change the
+ * magnitue of the control (so the kp will have to be readjusted accordingly).
+ * If the controller output was not multiplied by Binv, then the
+ * controller would send the joints with negative mechanical reductions the
+ * wrong way, and then respond with an even larger signal to move them the wrong
+ * way, and loose control very fast.
+ * @param state_selector the selection matrix indicating controlled
+ * states, whose size should be 2 * @p kp's size by the size of the full
+ * state.
+ * @param kp P gain.
+ * @param ki I gain.
+ * @param kd D gain.
+ */
+  PidController(const MatrixX<double>& Binv,
+                const MatrixX<double>& state_selector,
+                const Eigen::VectorXd& kp, const Eigen::VectorXd& ki,
+                const Eigen::VectorXd& kd);
 
   /**
    * Returns the proportional gain constant. This method should only be called
@@ -183,6 +220,7 @@ class PidController : public StateFeedbackControllerInterface<T>,
   const int num_controlled_q_{0};
   // Size of input actual state.
   const int num_full_state_{0};
+  const MatrixX<double> Binv_;
   // Projection matrix from full state to controlled state, whose size is
   // num_controlled_q_ * 2 X num_full_state_.
   const MatrixX<double> state_selector_;

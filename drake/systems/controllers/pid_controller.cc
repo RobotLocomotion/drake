@@ -22,12 +22,22 @@ PidController<T>::PidController(const MatrixX<double>& state_selector,
                                 const Eigen::VectorXd& kp,
                                 const Eigen::VectorXd& ki,
                                 const Eigen::VectorXd& kd)
-    : LeafSystem<T>(SystemTypeTag<controllers::PidController>{}),
+    : PidController(MatrixX<double>::Identity(kp.size(), kp.size()),
+                    state_selector, kp, ki, kd) {}
+
+template <typename T>
+PidController<T>::PidController(const MatrixX<double>& Binv,
+                                const MatrixX<double>& state_selector,
+                                const Eigen::VectorXd& kp,
+                                const Eigen::VectorXd& ki,
+                                const Eigen::VectorXd& kd)
+      : LeafSystem<T>(SystemTypeTag<controllers::PidController>{}),
       kp_(kp),
       ki_(ki),
       kd_(kd),
       num_controlled_q_(kp.size()),
       num_full_state_(state_selector.cols()),
+      Binv_(Binv),
       state_selector_(state_selector) {
   DRAKE_DEMAND(kp_.size() == kd_.size());
   DRAKE_DEMAND(kd_.size() == ki_.size());
@@ -36,9 +46,9 @@ PidController<T>::PidController(const MatrixX<double>& state_selector,
   this->DeclareContinuousState(num_controlled_q_);
 
   output_index_control_ =
-      this->DeclareVectorOutputPort(
-          BasicVector<T>(num_controlled_q_),
-          &PidController<T>::CalcControl).get_index();
+      this->DeclareVectorOutputPort(BasicVector<T>(num_controlled_q_),
+                                    &PidController<T>::CalcControl)
+          .get_index();
 
   input_index_state_ =
       this->DeclareInputPort(kVectorValued, num_full_state_).get_index();
@@ -91,11 +101,12 @@ void PidController<T>::CalcControl(const Context<T>& context,
 
   // Sets output to the sum of all three terms.
   control->SetFromVector(
-      (kp_.array() * controlled_state_diff.head(num_controlled_q_).array())
-          .matrix() +
-      (kd_.array() * controlled_state_diff.tail(num_controlled_q_).array())
-          .matrix() +
-      (ki_.array() * state_block.array()).matrix());
+      Binv_ *
+      ((kp_.array() * controlled_state_diff.head(num_controlled_q_).array())
+           .matrix() +
+       (kd_.array() * controlled_state_diff.tail(num_controlled_q_).array())
+           .matrix() +
+       (ki_.array() * state_block.array()).matrix()));
 }
 
 // Adds a simple record-based representation of the PID controller to @p dot.
