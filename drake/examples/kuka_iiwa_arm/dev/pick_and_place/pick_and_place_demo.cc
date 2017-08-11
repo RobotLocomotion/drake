@@ -37,7 +37,7 @@ class WorldStateSubscriber {
     DRAKE_DEMAND(state);
 
     lcm_subscriptions_.push_back(
-        lcm_->subscribe("IIWA_STATE_EST",
+        lcm_->subscribe("EST_ROBOT_STATE",
                         &WorldStateSubscriber::HandleIiwaStatus, this));
     lcm_subscriptions_.push_back(
         lcm_->subscribe("SCHUNK_WSG_STATUS",
