@@ -351,13 +351,13 @@ class UnitInertia : public RotationalInertia<T> {
   /// inertia K about any axis perpendicular to this line. Since the mass of the
   /// body is uniformly distributed on this line L, its center of mass is
   /// located right at the center.
-  /// As an example, consider the inertia of a thin for which its transversal
-  /// dimensions can be neglected, see ThinRod().
+  /// As an example, consider the inertia of a thin rod for which its
+  /// transversal dimensions can be neglected, see ThinRod().
   ///
-  /// This method aborts if K not positive.
+  /// This method aborts if K is not positive.
   ///
   /// @note This is the particular case for an axially symmetric unit inertia
-  /// with zero moment about its axis.
+  /// with zero moment about its axis, see AxiallySymmetric().
   ///
   /// @param[in] K
   ///   Unit inertia about any axis perpendicular to the line.
@@ -379,15 +379,16 @@ class UnitInertia : public RotationalInertia<T> {
   /// center of mass, with its mass uniformly distributed along a line parallel
   /// to vector `b_E`.
   ///
-  /// This method aborts if L not positive.
+  /// This method aborts if L is not positive.
   ///
-  /// @param[in] L The length of the rod. It must be positive.
+  /// @param[in] L
+  ///   The length of the rod. It must be positive.
   /// @param[in] b_E
   ///   Vector defining the axis of the rod, expressed in a frame E. `b_E` can
   ///   have a norm different from one. Its norm is ignored and only its
   ///   direction is needed.
   /// @retval G_Bcm_E
-  ///   The unit inertia of the rod B about its center of mass,
+  ///   The unit inertia of the rod B about its center of mass `Bcm`,
   ///   expressed in the same frame E as the input unit vector `b_E`.
   static UnitInertia<T> ThinRod(const T& L, const Vector3 <T>& b_E) {
     DRAKE_DEMAND(L > 0.0);
