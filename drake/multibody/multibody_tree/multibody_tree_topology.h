@@ -163,12 +163,12 @@ struct MobilizerTopology {
   /// Mobilizer indexing info: Set at Finalize() time.
   /// Number of generalized coordinates granted by this mobilizer.
   int num_positions{0};
-  /// First entry in the global array of states, `x = [q v]`, for the parent
+  /// First entry in the global array of states, `x = [q v z]`, for the parent
   /// MultibodyTree.
   int positions_start{0};
   /// Number of generalized velocities granted by this mobilizer.
   int num_velocities{0};
-  /// First entry in the global array of states, `x = [q v]`, for the parent
+  /// First entry in the global array of states, `x = [q v z]`, for the parent
   /// MultibodyTree.
   int velocities_start{0};
 

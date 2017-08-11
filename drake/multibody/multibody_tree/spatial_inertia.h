@@ -336,10 +336,12 @@ class SpatialInertia {
   /// motion for a rigid body which, when writen about the origin `Bo` of the
   /// body frame B (which does not necessarily need to coincide with the body's
   /// center of mass), read as: <pre>
-  ///   F_BBo = M_Bo_W * A_WB + b_Bo
+  ///   Ftot_BBo = M_Bo_W * A_WB + b_Bo
   /// </pre>
-  /// where `b_Bo` contains the velocity dependent gyroscopic terms (see
-  /// Eq. 2.26, p. 27, in A. Jain's book).
+  /// where `Ftot_BBo` is the total spatial force applied on body B at at `Bo`
+  /// that corresponds to the body spatial acceleration `A_WB` and `b_Bo`
+  /// contains the velocity dependent gyroscopic terms (see Eq. 2.26, p. 27,
+  /// in A. Jain's book).
   SpatialForce<T> operator*(const SpatialAcceleration<T>& A_WB_E) const {
     const Vector3<T>& alpha_WB_E = A_WB_E.rotational();
     const Vector3<T>& a_WBo_E = A_WB_E.translational();
