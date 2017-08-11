@@ -336,6 +336,19 @@ toolchain {
     linker_flag: "-Wl,--gc-sections"
   }
   linking_mode_flags { mode: DYNAMIC }
+
+  feature {
+    name: "ubsan-hack-for-clang",
+    flag_set {
+      action: 'c++-link-executable'
+      action: 'c++-link-dynamic-library'
+      flag_group {
+        flag: "/usr/lib/llvm-3.9/lib/clang/3.9.1/lib/linux/libclang_rt.ubsan_standalone-x86_64.a"
+        flag: "/usr/lib/llvm-3.9/lib/clang/3.9.1/lib/linux/libclang_rt.ubsan_standalone_cxx-x86_64.a"
+      }
+    }
+  }
+
 }
 
 # Clang on OS X
@@ -436,3 +449,4 @@ toolchain {
   }
   linking_mode_flags { mode: DYNAMIC }
 }
+
