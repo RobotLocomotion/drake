@@ -256,6 +256,9 @@ build:ubsan --copt -fsanitize=undefined
 build:ubsan --copt -O1
 build:ubsan --copt -fno-omit-frame-pointer
 build:ubsan --linkopt -fsanitize=undefined
+# https://groups.google.com/forum/#!topic/bazel-discuss/15h4GPixeGI
+build:ubsan --linkopt /usr/lib/llvm-3.9/lib/clang/3.9.1/lib/linux/libclang_rt.ubsan_standalone_cxx-x86_64.a #noqa
+build:ubsan --linkopt /usr/lib/llvm-3.9/lib/clang/3.9.1/lib/linux/libclang_rt.ubsan_standalone-x86_64.a #noqa
 test:ubsan --run_under=//tools:ubsan
 test:ubsan --test_env=UBSAN_OPTIONS
 test:ubsan --test_tag_filters=-gurobi,-mosek,-snopt,-no_ubsan
@@ -270,7 +273,9 @@ build:ubsan_everything --copt -fsanitize=undefined
 build:ubsan_everything --copt -O1
 build:ubsan_everything --copt -fno-omit-frame-pointer
 build:ubsan_everything --linkopt -fsanitize=undefined
-
+# https://groups.google.com/forum/#!topic/bazel-discuss/15h4GPixeGI
+build:ubsan_everything --linkopt /usr/lib/llvm-3.9/lib/clang/3.9.1/lib/linux/libclang_rt.ubsan_standalone_cxx-x86_64.a #noqa
+build:ubsan_everything --linkopt /usr/lib/llvm-3.9/lib/clang/3.9.1/lib/linux/libclang_rt.ubsan_standalone-x86_64.a #noqa
 test:ubsan_everything --test_env=GRB_LICENSE_FILE
 test:ubsan_everything --test_env=HOME
 test:ubsan_everything --test_tag_filters=-no_ubsan
