@@ -35,7 +35,7 @@ LcmDrivenLoop::LcmDrivenLoop(
 }
 
 const AbstractValue& LcmDrivenLoop::WaitForMessage() {
-  message_count_ = driving_sub_.WaitForMessage(message_count_);
+  driving_sub_.WaitForMessage(driving_sub_.GetMessageCount(*sub_context_));
 
   driving_sub_.CalcNextUpdateTime(*sub_context_, sub_events_.get());
 
