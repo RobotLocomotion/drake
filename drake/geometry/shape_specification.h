@@ -98,9 +98,9 @@ class HalfSpace : public ReifiableShape<HalfSpace> {
 
   HalfSpace() : ReifiableShape() {}
 
-  /** Given a plane `normal` and a point `X_FP` on the plane, both expressed in
-   frame F, creates the transform `X_FC` from the half-space's canonical space
-   to frame F.
+  /** Given a plane `normal_F` and a point on the plane `X_FP`, both expressed
+   in frame F, creates the transform `X_FC` from the half-space's canonical
+   space to frame F.
    @param normal_F  A vector perpendicular to the half-space's plane boundary
                     expressed in frame F. It must be a non-zero vector but need
                     not be unit length.
@@ -134,7 +134,7 @@ class HalfSpace : public ReifiableShape<HalfSpace> {
     // Now define x-, y-, and z-axes. The z-axis lies in the normal direction.
     Vector3<T> z_axis_W = normal_F / norm;
     Vector3<T> x_axis_W = normal_F.cross(perpAxis).normalized();
-    Vector3<T> y_axis_W = normal_F.cross(x_axis_W);
+    Vector3<T> y_axis_W = z_axis_W.cross(x_axis_W);
     // Transformation from world frame to local frame.
     Matrix3<T> R_WL;
     R_WL.col(0) = x_axis_W;
@@ -144,7 +144,8 @@ class HalfSpace : public ReifiableShape<HalfSpace> {
     // Construct pose from basis and point.
     Isometry3<T> X_FC = Isometry3<T>::Identity();
     X_FC.linear() = R_WL;
-    X_FC.translation() = r_FP;
+    // Find the *minimum* translation to make sure the point lies on the plane.
+    X_FC.translation() = z_axis_W.dot(r_FP) * z_axis_W;
     return X_FC;
   }
 };

@@ -120,4 +120,13 @@ drake_cc_googletest(
     deps = [":identifier"],
 )
 
+drake_cc_googletest(
+    name = "shape_specification_test",
+    deps = [
+        ":shape_specification",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/common:is_dynamic_castable",
+    ],
+)
+
 add_lint_tests()
