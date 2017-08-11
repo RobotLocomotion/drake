@@ -150,9 +150,8 @@ GTEST_TEST(RobotPlanInterpolatorTest, TrajectoryTest) {
     EXPECT_FLOAT_EQ(accel, 0);
   }
 
-  // Check that sending an empty plan causes a replan to the current
-  // measured position.
-
+  // Check that sending an empty plan causes us to continue to output
+  // the same commanded position.
   context->set_time(1);
   dut.CalcUnrestrictedUpdate(*context, context->get_mutable_state());
   dut.CalcOutput(*context, output.get());
@@ -167,9 +166,9 @@ GTEST_TEST(RobotPlanInterpolatorTest, TrajectoryTest) {
                         systems::AbstractValue::Make(plan));
   dut.CalcUnrestrictedUpdate(*context, context->get_mutable_state());
   dut.CalcOutput(*context, output.get());
-  position = output->get_vector_data(dut.get_state_output_port().get_index())
-                 ->GetAtIndex(0);
-  EXPECT_DOUBLE_EQ(0, position);
+  position = output->get_vector_data(
+        dut.get_state_output_port().get_index())->GetAtIndex(0);
+  EXPECT_DOUBLE_EQ(1, position);
 }
 
 }  // namespace
