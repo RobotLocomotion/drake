@@ -182,8 +182,10 @@ void RobotPlanInterpolator::DoCalcUnrestrictedUpdate(
       const systems::BasicVector<double>* state_input =
           this->EvalVectorInput(context, state_input_port_);
       DRAKE_DEMAND(state_input);
+
+      const double current_plan_time = context.get_time() - plan.start_time;
       MakeFixedPlan(context.get_time(),
-                    state_input->get_value().head(tree_.get_num_positions()),
+                    plan.pp.value(current_plan_time),
                     state);
     } else if (plan_input.num_states == 1) {
       drake::log()->info("Ignoring plan with only one knot point.");
