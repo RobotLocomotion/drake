@@ -81,7 +81,14 @@ bool PlanStraightLineMotion(const VectorX<double>& q_current,
     waypoints[i].constrain_orientation = true;
   }
   DRAKE_DEMAND(times->size() == waypoints.size() + 1);
-  return planner->PlanSequentialTrajectory(waypoints, q_current, ik_res);
+  const bool planner_result =
+      planner->PlanSequentialTrajectory(waypoints, q_current, ik_res);
+  drake::log()->debug("q initial: {}", q_current.transpose());
+  if (!ik_res->q_sol.empty()) {
+    drake::log()->debug("q final: {}", ik_res->q_sol.back().transpose());
+  }
+  drake::log()->debug("result: {}", planner_result);
+  return planner_result;
 }
 
 }  // namespace

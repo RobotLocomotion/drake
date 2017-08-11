@@ -8,11 +8,29 @@ add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES
     rigid_body_loop.cc
     rigid_body_tree_construction.cc
     $<TARGET_OBJECTS:drakeUtil>)
+
+add_library_with_exports(LIB_NAME drakeRigidBodyConstraint SOURCE_FILES rigid_body_constraint.cc)
+
+drake_install_libraries(drakeRigidBodyConstraint)
+drake_install_headers(rigid_body_constraint.h)
+drake_install_pkg_config_file(drake-rigid-body-constraint
+  TARGET drakeRigidBodyConstraint
+  LIBS -ldrakeRigidBodyConstraint
+  REQUIRES
+    drake-geometry-util
+    drake-rbm
+    eigen3)
+
 target_link_libraries(drakeRBM
     drakeCollision
     drakeCommon
     drakeJoints
     Eigen3::Eigen)
+target_link_libraries(drakeRigidBodyConstraint
+  drakeGeometryUtil
+  drakeRBM
+  Eigen3::Eigen)
+
 drake_install_libraries(drakeRBM)
 drake_install_headers(
     constraint_wrappers.h
@@ -91,7 +109,6 @@ drake_install_headers(global_inverse_kinematics.h)
 
 add_subdirectory(benchmarks)
 add_subdirectory(collision)
-add_subdirectory(constraint)
 add_subdirectory(joints)
 add_subdirectory(multibody_tree)
 add_subdirectory(parsers)

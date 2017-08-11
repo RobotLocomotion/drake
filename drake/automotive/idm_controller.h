@@ -87,7 +87,7 @@ class IdmController : public systems::LeafSystem<T> {
   void CalcAcceleration(const systems::Context<T>& context,
                         systems::BasicVector<T>* accel_output) const;
 
-  // TODO(jadecastro): Introduce DoToAutoDiffXd overload and unit tests.
+  // TODO(jadecastro): Introduce AutoDiff support and unit tests.
 
   const maliput::api::RoadGeometry& road_;
 

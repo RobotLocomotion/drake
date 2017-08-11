@@ -29,6 +29,7 @@ Element* Model::AddElement(std::unique_ptr<Element> element) {
 }
 
 bool Model::RemoveElement(ElementId id) {
+  DoRemoveElement(id);
   return elements.erase(id) > 0;
 }
 
@@ -86,6 +87,8 @@ bool Model::TransformCollisionFrame(
 }
 
 void Model::DoAddElement(const Element&) {}
+
+void Model::DoRemoveElement(ElementId) {}
 
 /**
  * A toString for the collision model.
