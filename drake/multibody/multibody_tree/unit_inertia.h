@@ -390,7 +390,7 @@ class UnitInertia : public RotationalInertia<T> {
   /// @retval G_Bcm_E
   ///   The unit inertia of the rod B about its center of mass `Bcm`,
   ///   expressed in the same frame E as the input unit vector `b_E`.
-  static UnitInertia<T> ThinRod(const T& L, const Vector3 <T>& b_E) {
+  static UnitInertia<T> ThinRod(const T& L, const Vector3<T>& b_E) {
     DRAKE_DEMAND(L > 0.0);
     return StraightLine(L * L / 12.0, b_E);
   }
