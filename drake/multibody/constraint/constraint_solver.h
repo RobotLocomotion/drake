@@ -476,7 +476,7 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
   Eigen::Ref<MatrixX<T>> L_iM_LT = MM->block(
       nc + nk + num_non_sliding, nc + nk + num_non_sliding, nl, nl);
   ComputeConstraintSpaceInertiaMatrix(
-      N, nc, iM,problem_data.N_minus_muQ_transpose_mult, nc,
+      N, nc, iM, problem_data.N_minus_muQ_transpose_mult, nc,
       N_iM_NT_minus_muQT);
   ComputeConstraintSpaceInertiaMatrix(N, nc, iM, FT, nr, N_iM_FT);
   ComputeConstraintSpaceInertiaMatrix(N, nc, iM, LT, nl, N_iM_LT);
