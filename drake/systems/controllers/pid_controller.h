@@ -16,20 +16,22 @@ namespace controllers {
 // TODO(siyuanfeng): Generalize "q_d - q", e.g. for rotation.
 
 /**
- * Implements the PID controller. Given state `(q, v)`, desired state
- * `(q_d, v_d)`, the output of this controller is
+ * Implements the PID controller. Given estimated state `x_in = (q_in, v_in)`,
+ * the controlled state `x_c = (q_c, v_c)` is computed by `x_c = P_x * x_in`,
+ * where `P_x` is a state projection matrix. The desired state
+ * `x_d = (q_d, v_d)`, is in the same space as `x_c`. The output of this
+ * controller is:
  * <pre>
- * y = kp * (q_d - q) + kd * (v_d - v) + ki * integral(q_d - q, dt),
+ * y = P_y * (kp * (q_d - q_c) + kd * (v_d - v_c) + ki * integral(q_d - q_c)),
  * </pre>
- * where `integral(q_d - q, dt)` is the integrated position error.
+ * where `P_y` is the output projection matrix.
  *
- * This system has one continuous state which is the integral of position error,
- * two input ports: estimated state (q, v) and desired state (q_d, v_d), and
- * one output port y.
- *
- * Note that this class assumes |q| = |v|, and |q_d| = |v_d|. Also |q| >= |q_d|.
- * The user can specify a selection matrix that picks the *controlled* states
- * from (q, v) for feedback. See constructor documentations for more details.
+ * This system has one continuous state, which is the integral of position
+ * error, two input ports: estimated state `x_in` and desired state `x_d`, and
+ * one output port `y`. Note that this class assumes `|q_c| = |v_c|` and
+ * `|q_d| = |v_d|`. However, `|q_c|` does not have to equal to `|q_d|`. One
+ * typical use case for non-identity `P_x` and `P_y` is to select a subset of
+ * state for feedback.
  *
  * @tparam T The vector element type, which must be a valid Eigen scalar.
  *
@@ -47,30 +49,54 @@ class PidController : public StateFeedbackControllerInterface<T>,
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PidController)
 
   /**
-   * Constructs a PID controller. Assumes that @p kp, @p ki and @p kd have the
-   * same size, the estimated and desired state inputs will have the size of
-   * 2 * @p kp's size, and the control output will have @p kp's size.
+   * Constructs a PID controller. `P_x` and `P_y` are identity
+   * matrices of proper sizes. The estimated and desired state inputs are
+   * 2 * @p kp's size, and the control output has @p kp's size.
    * @param kp P gain.
    * @param ki I gain.
    * @param kd D gain.
+   *
+   * @throws std::logic_error if @p kp, @p ki and @p kd have different
+   * dimensions.
    */
   PidController(const Eigen::VectorXd& kp, const Eigen::VectorXd& ki,
                 const Eigen::VectorXd& kd);
 
   /**
-   * Constructs a PID controller where some of the input states may not be
-   * controlled. Assumes that @p kp, @p ki and @p kd have the same size. The
-   * estimated and desired state input's size and the control output's size need
-   * to match @p feedback_selector. Note that @p state_selector only affects
-   * the estimated state input but not the desired state.
-   * @param feedback_selector, The selection matrix indicating controlled
-   * states, whose size should be 2 * @p kp's size by the size of the full
-   * state.
+   * Constructs a PID controller. Calls the full constructor, with the output
+   * projection matrix `P_y` being the identity matrix.
+   * @param state_projection The state projection matrix `P_x`.
    * @param kp P gain.
    * @param ki I gain.
    * @param kd D gain.
+   *
+   * @throws std::logic_error if @p kp, @p ki and @p kd have different
+   * dimensions or `P_x.row() != 2 * |kp|'.
    */
-  PidController(const MatrixX<double>& state_selector,
+  PidController(const MatrixX<double>& state_projection,
+                const Eigen::VectorXd& kp, const Eigen::VectorXd& ki,
+                const Eigen::VectorXd& kd);
+
+  /**
+   * Constructs a PID controller. This assumes that
+   * <pre>
+   *   1. |kp| = |kd| = |ki| = |q_d| = |v_d|
+   *   2. 2 * |q_d| = P_x.rows
+   *   3. |x_in| = P_x.cols
+   *   4. |y| = P_y.rows
+   *   4. |q_d| = P_y.cols
+   * </pre>
+   *
+   * @param state_projection The state projection matrix `P_x`.
+   * @param output_projection The output projection matrix `P_y`.
+   * @param kp P gain.
+   * @param ki I gain.
+   * @param kd V gain.
+   *
+   * @throws std::logic_error if any assumption is violated.
+   */
+  PidController(const MatrixX<double>& state_projection,
+                const MatrixX<double>& output_projection,
                 const Eigen::VectorXd& kp, const Eigen::VectorXd& ki,
                 const Eigen::VectorXd& kd);
 
@@ -164,7 +190,8 @@ class PidController : public StateFeedbackControllerInterface<T>,
                              ContinuousState<T>* derivatives) const override;
 
  private:
-  template <typename> friend class PidController;
+  template <typename>
+  friend class PidController;
 
   static double get_single_gain(const VectorX<double>& gain) {
     if (!gain.isConstant(gain[0])) {
@@ -185,7 +212,10 @@ class PidController : public StateFeedbackControllerInterface<T>,
   const int num_full_state_{0};
   // Projection matrix from full state to controlled state, whose size is
   // num_controlled_q_ * 2 X num_full_state_.
-  const MatrixX<double> state_selector_;
+  const MatrixX<double> state_projection_;
+  // Output projection matrix, whose size is num_controlled_q_ by the dimension
+  // of the output port.
+  const MatrixX<double> output_projection_;
 
   int input_index_state_{-1};
   int input_index_desired_state_{-1};
