@@ -92,6 +92,16 @@ struct ConstraintAccelProblemData {
   /// times the generalized velocity (∈ ℝᵐ) of the rigid body system.
   VectorX<T> Ndot_x_v;
 
+  /// This ℝⁿ vector contains the stabilization feedback term for the
+  /// point contact non-interpenetration constraints at the acceleration level,
+  /// meaning that the problem data correspond to seeking satisfaction of the
+  /// kinematic constraint Nv̇ + Ṅv ≥ eⁿ. Note that positive values of eⁿ
+  /// indicate that the corresponding positional constraint, velocity
+  /// constraint, or both has been violated, but negative values may be used to
+  /// anticipate constraints becoming active in the near future (and can thus
+  /// preclude integrating to exact event times).
+  VectorX<T> en;
+
   /// An operator that performs the multiplication F⋅v, where F is the ℝʸʳˣᵐ
   /// Jacobian matrix that transforms generalized velocities (v ∈ ℝᵐ) into
   /// velocities projected along the r vectors that span the contact tangents at
@@ -146,6 +156,16 @@ struct ConstraintAccelProblemData {
   /// times the generalized velocity (∈ ℝᵐ) of the rigid body system. As above,
   /// m is the dimension of the system generalized velocity;
   VectorX<T> Ldot_x_v;
+
+  /// This ℝⁱ vector contains the stabilization feedback term for generic
+  /// unilateral constraint functions over system system at the
+  /// acceleration level, meaning that the problem data correspond to seeking
+  /// satisfaction of the kinematic constraint Lv̇ + L̇v ≥ eˡ. Note that
+  /// positive values of eˡ indicate that the corresponding positional
+  /// constraint, velocity constraint, or both has been violated, but negative
+  /// values may be used to anticipate constraints becoming active in the near
+  /// future (and can thus preclude integrating to exact event times).
+  VectorX<T> el;
 
   /// The ℝᵐ vector f, the generalized external force vector that
   /// comprises gravitational, centrifugal, Coriolis, actuator, etc. forces
@@ -214,6 +234,15 @@ struct ConstraintVelProblemData {
   /// identical to the dimension of the generalized forces).
   std::function<VectorX<T>(const VectorX<T>&)> N_transpose_mult;
 
+  /// This ℝⁿ vector contains the stabilization feedback term for the
+  /// point contact non-interpenetration constraints at the velocity level,
+  /// meaning that the problem data correspond to seeking satisfaction of the
+  /// kinematic constraint Nv ≥ eⁿ. Note that positive values of eⁿ indicate
+  /// that the corresponding positional constraint has been violated, but
+  /// negative values may be used to anticipate constraints becoming active in
+  /// the near future (and can thus preclude integrating to exact event times).
+  VectorX<T> en;
+
   /// An operator that performs the multiplication F⋅v, where F is the ℝⁿʳˣᵐ
   /// Jacobian matrix that transforms generalized velocities (v ∈ ℝᵐ) into
   /// velocities projected along the r vectors that span the contact tangents at
@@ -258,6 +287,15 @@ struct ConstraintVelProblemData {
   /// zero vector of dimension equal to that of the generalized velocities
   /// (which should be identical to the dimension of the generalized forces).
   std::function<VectorX<T>(const VectorX<T>&)> L_transpose_mult;
+
+  /// This ℝⁱ vector contains the stabilization feedback term for generic
+  /// unilateral constraint functions over system system at the velocity level,
+  /// meaning that the problem data correspond to seeking satisfaction of the
+  /// kinematic constraint Lv ≥ eˡ. Note that positive values of eˡ indicate
+  /// that the corresponding positional constraint has been violated, but
+  /// negative values may be used to anticipate constraints becoming active in
+  /// the near future (and can thus preclude integrating to exact event times).
+  VectorX<T> el;
 
   /// The ℝᵐ vector v, the generalized velocity immediately before any impulsive
   /// forces (from impact) are applied.

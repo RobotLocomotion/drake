@@ -515,18 +515,19 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
       MM->block(0, nc + nk + num_non_sliding, nc + nk, nl).transpose().eval();
 
   // Construct the LCP vector:
-  // N⋅M⁻¹⋅fext + dN/dt⋅v
+  // N⋅M⁻¹⋅fext + dN/dt⋅v - en
   // D⋅M⁻¹⋅fext + dD/dt⋅v
   // 0
-  // L⋅M⁻¹⋅fext + dL/dt⋅v
+  // L⋅M⁻¹⋅fext + dL/dt⋅v - en
   // where, as above, D is defined as [F -F]
   VectorX<T> M_inv_x_f = problem_data.solve_inertia(problem_data.f);
   qq->resize(num_vars, 1);
-  qq->segment(0, nc) = N(M_inv_x_f) + Ndot_x_v;
+  qq->segment(0, nc) = N(M_inv_x_f) + Ndot_x_v  - problem_data.en;
   qq->segment(nc, nr) = F(M_inv_x_f) + Fdot_x_v;
   qq->segment(nc + nr, num_spanning_vectors) = -qq->segment(nc, nr);
   qq->segment(nc + nk, num_non_sliding).setZero();
-  qq->segment(nc + nk + num_non_sliding, num_limits) = L(M_inv_x_f) + Ldot_x_v;
+  qq->segment(nc + nk + num_non_sliding, num_limits) = L(M_inv_x_f) + Ldot_x_v -
+      problem_data.el;
 }
 
 // Forms the LCP matrix and vector, which is used to determine the collisional
@@ -631,17 +632,17 @@ void ConstraintSolver<T>::FormImpactingConstraintLCP(
       MM->block(0, nc*2 + nk, nc + nk, nl).transpose().eval();
 
   // Construct the LCP vector:
-  // N⋅v
+  // N⋅v - en
   // D⋅v
   // 0
-  // L⋅v
+  // L⋅v - el
   // where, as above, D is defined as [F -F]
   qq->resize(num_vars, 1);
-  qq->segment(0, nc) = N(problem_data.v);
+  qq->segment(0, nc) = N(problem_data.v) - problem_data.en;
   qq->segment(nc, nr) = F(problem_data.v);
   qq->segment(nc + nr, nc) = -qq->segment(nc, nr);
   qq->segment(nc + nk, nc).setZero();
-  qq->segment(nc*2 + nk, num_limits) = L(problem_data.v);
+  qq->segment(nc*2 + nk, num_limits) = L(problem_data.v) - problem_data.el;
 }
 
 template <class T>

@@ -104,6 +104,20 @@ class Constraint2DSolverTest : public ::testing::Test {
     xc[5] = 0.0;     // no angular velocity.
   }
 
+  // Sets the rod to an impacting, sliding velocity with the rod configured to
+  // lie vertically and without modifying the rod's mode variables.
+  void SetRodToSlidingImpactingVerticalConfig() {
+    ContinuousState<double>& xc =
+        *context_->get_mutable_continuous_state();
+    // Configuration has the rod on its side.
+    xc[0] = 0.0;                          // com horizontal position
+    xc[1] = rod_->get_rod_half_length();  // com vertical position
+    xc[2] = M_PI_2;                       // rod rotation
+    xc[3] = 1.0;                          // sliding horizontal velocity.
+    xc[4] = -1.0;                         // impacting velocity.
+    xc[5] = 0.0;                          // no angular velocity.
+  }
+
   // Sets the rod to a resting vertical configuration without modifying the
   // mode variables.
   void SetRodToRestingVerticalConfig() {
@@ -176,8 +190,10 @@ class Constraint2DSolverTest : public ::testing::Test {
     CheckTransOperatorDim(data.L_transpose_mult, data.num_limit_constraints);
     EXPECT_EQ(data.f.size(), ngc);
     EXPECT_EQ(data.Ndot_x_v.size(), num_contacts);
+    EXPECT_EQ(data.en.size(), num_contacts);
     EXPECT_EQ(data.Fdot_x_v.size(), data.non_sliding_contacts.size());
     EXPECT_EQ(data.Ldot_x_v.size(), data.num_limit_constraints);
+    EXPECT_EQ(data.el.size(), data.num_limit_constraints);
     EXPECT_EQ(data.mu_non_sliding.size(), data.non_sliding_contacts.size());
     EXPECT_EQ(data.mu_sliding.size(), data.sliding_contacts.size());
     EXPECT_EQ(data.r.size(), data.non_sliding_contacts.size());
@@ -197,10 +213,12 @@ class Constraint2DSolverTest : public ::testing::Test {
         data.r.begin(), data.r.end(), 0);
     EXPECT_EQ(GetOperatorDim(data.N_mult), num_contacts);
     CheckTransOperatorDim(data.N_transpose_mult, num_contacts);
+    EXPECT_EQ(data.en.size(), num_contacts);
     EXPECT_EQ(GetOperatorDim(data.F_mult), num_spanning_directions);
     CheckTransOperatorDim(data.F_transpose_mult, num_spanning_directions);
     EXPECT_EQ(GetOperatorDim(data.L_mult), data.num_limit_constraints);
     CheckTransOperatorDim(data.L_transpose_mult, data.num_limit_constraints);
+    EXPECT_EQ(data.el.size(), data.num_limit_constraints);
     EXPECT_EQ(data.v.size(), ngc);
     EXPECT_EQ(data.mu.size(), num_contacts);
     EXPECT_EQ(data.r.size(), num_contacts);
@@ -526,6 +544,16 @@ TEST_F(Constraint2DSolverTest, TwoPointSliding) {
               std::fabs(contact_forces.back()[0]), mg, eps_);
   EXPECT_NEAR(std::fabs(contact_forces.front()[1]) +
               std::fabs(contact_forces.back()[1]), 0, eps_);
+
+  // Now test whether constraint stabilization works by using a negative
+  // stabilization term that should drive the constraint forces to zero.
+  accel_data_->en = accel_data_->N_mult(
+    accel_data_->solve_inertia(accel_data_->f));
+
+  // Recompute the constraint forces, and verify that they're now zero.
+  solver_.SolveConstraintProblem(cfm_, *accel_data_, &cf);
+  EXPECT_EQ(cf.size(), 2);
+  EXPECT_NEAR(cf.norm(), 0, 10 * std::numeric_limits<double>::epsilon());
 }
 
 // Tests the rod in a two-point contacting configuration *realized through
@@ -552,6 +580,7 @@ TEST_F(Constraint2DSolverTest, TwoPointAsLimit) {
     return VectorX<double>(0);
   };
   accel_data_->Ndot_x_v.resize(0);
+  accel_data_->en.resize(0);
   accel_data_->F_mult = [](const VectorX<double>&) {
     return VectorX<double>(0);
   };
@@ -560,6 +589,7 @@ TEST_F(Constraint2DSolverTest, TwoPointAsLimit) {
   };
   accel_data_->Fdot_x_v.resize(0);
   accel_data_->Ldot_x_v.resize(1);
+  accel_data_->el.resize(1);
   accel_data_->N_minus_muQ_transpose_mult = [ngc](const VectorX<double>&) {
     return VectorX<double>::Zero(ngc);
   };
@@ -578,6 +608,7 @@ TEST_F(Constraint2DSolverTest, TwoPointAsLimit) {
     return L.transpose() * v;
   };
   accel_data_->Ldot_x_v.setZero();
+  accel_data_->el.setZero();
 
   // Compute the constraint forces.
   VectorX<double> cf;
@@ -606,6 +637,15 @@ TEST_F(Constraint2DSolverTest, TwoPointAsLimit) {
   solver_.SolveConstraintProblem(cfm_, *accel_data_, &cf);
   EXPECT_EQ(cf.size(), 1);
   EXPECT_NEAR(cf[0], mg, 10 * std::numeric_limits<double>::epsilon());
+
+  // Now test whether constraint stabilization works by using a negative
+  // stabilization term that should drive the constraint forces to zero.
+  accel_data_->el = L * accel_data_->solve_inertia(accel_data_->f);
+
+  // Recompute the constraint forces, and verify that they're now zero.
+  solver_.SolveConstraintProblem(cfm_, *accel_data_, &cf);
+  EXPECT_EQ(cf.size(), 1);
+  EXPECT_NEAR(cf[0], 0, 10 * std::numeric_limits<double>::epsilon());
 }
 
 // Tests the rod in a two-point configuration *realized through a configuration
@@ -634,6 +674,7 @@ TEST_F(Constraint2DSolverTest, TwoPointImpactAsLimit) {
   vel_data_->N_transpose_mult = [ngc](const VectorX<double>&) {
     return VectorX<double>::Zero(ngc);
   };
+  vel_data_->en.resize(0);
   vel_data_->F_mult = [](const VectorX<double>&) {
     return VectorX<double>(0);
   };
@@ -641,6 +682,7 @@ TEST_F(Constraint2DSolverTest, TwoPointImpactAsLimit) {
     return VectorX<double>::Zero(ngc);
   };
   vel_data_->num_limit_constraints = 1;
+  vel_data_->el.resize(vel_data_->num_limit_constraints);
 
   // Set the Jacobian entry- in this case, the limit is a lower limit on the
   // second coordinate (vertical position).
@@ -654,6 +696,7 @@ TEST_F(Constraint2DSolverTest, TwoPointImpactAsLimit) {
     VectorX<double> {
     return L.transpose() * v;
   };
+  vel_data_->el.setZero();
 
   // Compute the constraint impulses.
   VectorX<double> cf;
@@ -681,6 +724,18 @@ TEST_F(Constraint2DSolverTest, TwoPointImpactAsLimit) {
   solver_.SolveImpactProblem(cfm_, *vel_data_, &cf);
   EXPECT_EQ(cf.size(), 1);
   EXPECT_NEAR(cf[0], mv, 10 * std::numeric_limits<double>::epsilon());
+
+  // Now test whether constraint stabilization works by trying to get the
+  // rod to move downward as fast as it's currently moving upward (according to
+  // vel_data_->v). Note that -Lv is positive, indicating "error" to be
+  // corrected (as desired in this test).
+  vel_data_->el = -L * vel_data_->v;
+
+  // Recompute the constraint impulses, and verify that they're now equal to
+  // twice the momentum.
+  solver_.SolveImpactProblem(cfm_, *vel_data_, &cf);
+  EXPECT_EQ(cf.size(), 1);
+  EXPECT_NEAR(cf[0], mv*2, 10 * std::numeric_limits<double>::epsilon());
 }
 
 // Tests the rod in a single point sliding configuration.
@@ -741,6 +796,72 @@ TEST_F(Constraint2DSolverTest, SinglePointSliding) {
       rod_->get_rod_mass();
   EXPECT_NEAR(contact_forces.front()[0], mg, eps_);
   EXPECT_NEAR(contact_forces.front()[1], 0, eps_);
+}
+
+// Tests the rod in a single-point impacting and sliding configuration.
+TEST_F(Constraint2DSolverTest, TwoPointImpactingAndSliding) {
+  // Set the state of the rod to a vertical configuration with both
+  // impacting velocity and horizontally moving velocity.
+  SetRodToSlidingImpactingVerticalConfig();
+
+  // Get the vertical momentum of the rod.
+  ContinuousState<double>& xc = *context_->
+      get_mutable_continuous_state();
+  const double vert_vel = xc[4];
+  const double mv = std::fabs(vert_vel) * rod_->get_rod_mass();
+
+  // Set the rod to zero friction.
+  rod_->set_mu_coulomb(0.0);
+
+  // Compute the impact problem data.
+  CalcConstraintVelProblemData(vel_data_.get());
+
+  // Compute the contact forces.
+  VectorX<double> cf;
+  solver_.SolveImpactProblem(cfm_, *vel_data_, &cf);
+
+  // Construct the contact frame.
+  std::vector<Matrix2<double>> frame;
+  frame.push_back(GetNonSlidingContactFrameToWorldTransform());
+
+  // Verify that the x-axis of the contact frame, which corresponds to the
+  // contact normal, points along the world y-axis, and the y-axis of the
+  // contact frame, which corresponds to a contact tangent vector, points
+  // along the world x-axis.
+  EXPECT_LT(std::fabs(frame.front().col(0).dot(Vector2<double>::UnitY()) - 1.0),
+    std::numeric_limits<double>::epsilon());
+  EXPECT_LT(std::fabs(frame.front().col(1).dot(Vector2<double>::UnitX()) - 1.0),
+    std::numeric_limits<double>::epsilon());
+
+  // Get the impulsive contact forces expressed in the contact frame.
+  std::vector<Vector2<double>> contact_forces;
+  ConstraintSolver<double>::CalcImpactForcesInContactFrames(cf, *vel_data_,
+    frame, &contact_forces);
+
+  // Verify that the number of contact force vectors is correct.
+  ASSERT_EQ(contact_forces.size(), 1);
+
+  // Verify that the frictional component of the contact force is zero. First
+  // component of contact force is normal, and second component is tangential.
+  EXPECT_NEAR(contact_forces.front()[1], 0, eps_);
+
+  // Verify that the normal velocity of the rod is equal to zero.
+  VectorX<double> dgv;
+  solver_.ComputeGeneralizedVelocityChange(*vel_data_, cf, &dgv);
+  EXPECT_LT((vel_data_->v + dgv)[1], eps_);
+
+  // Now test whether constraint stabilization works by trying to get the
+  // rod to move upward as fast as it's currently moving downward (according to
+  // vel_data_->v). Note that -Nv is positive, indicating "error" to be
+  // corrected (as desired in this test).
+  vel_data_->en =  vel_data_->N_mult(-vel_data_->v);
+
+  // Recompute the constraint impulse, and verify that it's now equal to
+  // twice the momentum.
+  solver_.SolveImpactProblem(cfm_, *vel_data_, &cf);
+  EXPECT_EQ(cf.size(), 2);
+  EXPECT_NEAR(cf[0], mv*2, 10 * std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(cf[1], 0, 10 * std::numeric_limits<double>::epsilon());
 }
 
 }  // namespace

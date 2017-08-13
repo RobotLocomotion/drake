@@ -570,6 +570,9 @@ void Rod2D<T>::CalcConstraintProblemData(
   const Vector3<T> v = GetRodVelocity(context);
   data->Ndot_x_v = Ndot * v;
 
+  // TODO(edrumwri): Incorporate constraint stabilization here.
+  data->en.setZero(nc);
+
   // Form the tangent directions contact Jacobian (F), its time derivative
   // (Fdot), and compute Fdot * v.
   const int nr = std::accumulate(data->r.begin(), data->r.end(), 0);
@@ -608,6 +611,7 @@ void Rod2D<T>::CalcConstraintProblemData(
   // Set the number of limit constraints and Ldot_x_v.
   data->num_limit_constraints = 0;
   data->Ldot_x_v.resize(0);
+  data->el.resize(0);
 
   // Set external force vector.
   data->f = ComputeExternalForces(context);
@@ -658,6 +662,9 @@ void Rod2D<T>::CalcImpactProblemData(
   data->N_transpose_mult = [N](const VectorX<T>& w) -> VectorX<T> {
     return N.transpose() * w; };
 
+  // TODO(edrumwri): Incorporate constraint stabilization here.
+  data->en.setZero(num_contacts);
+
   // Form the tangent directions contact Jacobian (F).
   const int nr = std::accumulate(data->r.begin(), data->r.end(), 0);
   MatrixX<T> F(nr, num_generalized_coordinates);
@@ -671,6 +678,7 @@ void Rod2D<T>::CalcImpactProblemData(
 
   // Set the number of limit constraints.
   data->num_limit_constraints = 0;
+  data->el.resize(0);
 }
 
 template <typename T>
