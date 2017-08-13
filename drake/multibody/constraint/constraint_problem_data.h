@@ -14,6 +14,27 @@ namespace constraint {
 /// at the acceleration-level.
 template <class T>
 struct ConstraintAccelProblemData {
+  /// Constructs acceleration problem data for a system with a @p gv_dim
+  /// dimensional generalized velocity.
+  explicit ConstraintAccelProblemData(int gv_dim) {
+    // Set default for non-transpose operators- returns an empty vector.
+    auto zero_fn = [](const VectorX<T>&) -> VectorX<T> {
+      return VectorX<T>(0);
+    };
+    N_mult = zero_fn;
+    F_mult = zero_fn;
+    L_mult = zero_fn;
+
+    // Set default for transpose operators - returns the appropriately sized
+    // zero vector.
+    auto zero_gv_dim_fn = [gv_dim](const VectorX<T>&) -> VectorX<T> {
+      return VectorX<T>::Zero(gv_dim);
+    };
+    N_minus_muQ_transpose_mult = zero_gv_dim_fn;
+    F_transpose_mult = zero_gv_dim_fn;
+    L_transpose_mult = zero_gv_dim_fn;
+  }
+
   /// The indices of the sliding contacts (those contacts at which there is
   /// non-zero relative velocity between bodies in the plane tangent to the
   /// point of contact), out of the set of all contact indices (0...n-1).
@@ -52,8 +73,7 @@ struct ConstraintAccelProblemData {
   /// Jacobian matrix that transforms generalized velocities (v ∈ ℝᵐ) into
   /// velocities projected along the contact normals at the n point contacts.
   /// The default operator returns an empty vector.
-  std::function<VectorX<T>(const VectorX<T>&)> N_mult =
-    [](const VectorX<T>&) -> VectorX<T> { return VectorX<T>(0); };
+  std::function<VectorX<T>(const VectorX<T>&)> N_mult;
 
   /// An operator that performs the multiplication (Nᵀ - μQᵀ)⋅f, where N is the
   /// ℝⁿˣᵐ Jacobian matrix defined immediately above, Q ∈ ℝⁿˣᵐ is the Jacobian
@@ -66,10 +86,7 @@ struct ConstraintAccelProblemData {
   /// (f ∈ ℝⁿ) applied along the contact normals at the n point contacts into
   /// generalized forces. The default operator returns a zero vector of
   /// dimension equal to that of the generalized forces.
-  std::function<VectorX<T>(const VectorX<T>&)> N_minus_muQ_transpose_mult =
-    [this](const VectorX<T>&) -> VectorX<T> {
-      return VectorX<T>::Zero(f.size());
-    };
+  std::function<VectorX<T>(const VectorX<T>&)> N_minus_muQ_transpose_mult;
 
   /// This ℝⁿ vector is the time derivative of the matrix N (defined above)
   /// times the generalized velocity (∈ ℝᵐ) of the rigid body system.
@@ -84,8 +101,7 @@ struct ConstraintAccelProblemData {
   /// above indicates that every one of the y non-sliding contacts uses the
   /// same "r", the code imposes no such requirement. The default operator
   /// returns an empty vector.
-  std::function<VectorX<T>(const VectorX<T>&)> F_mult =
-    [](const VectorX<T>&) -> VectorX<T> { return VectorX<T>(0); };
+  std::function<VectorX<T>(const VectorX<T>&)> F_mult;
 
   /// An operator that performs the multiplication Fᵀ⋅f, where F is the ℝʸʳˣᵐ
   /// Jacobian matrix defined immediately above and Fᵀ transforms forces
@@ -97,10 +113,7 @@ struct ConstraintAccelProblemData {
   /// contacts uses the same "r", the code imposes no such requirement. The
   /// default operator returns a zero vector of dimension equal to that of the
   /// generalized forces.
-  std::function<VectorX<T>(const VectorX<T>&)> F_transpose_mult  =
-    [this](const VectorX<T>&) -> VectorX<T> {
-      return VectorX<T>::Zero(f.size());
-    };
+  std::function<VectorX<T>(const VectorX<T>&)> F_transpose_mult;
 
   /// This ℝʸʳ vector is the time derivative of the matrix F (defined above)
   /// times the generalized velocity (∈ ℝᵐ) of the rigid body system. As above,
@@ -121,17 +134,13 @@ struct ConstraintAccelProblemData {
   /// the force must be applied to limit the joint velocity, and the limiting
   /// force cannot be applied if the joint velocity is not at the limit. The
   /// default operator returns an empty vector.
-  std::function<VectorX<T>(const VectorX<T>&)> L_mult =
-    [](const VectorX<T>&) -> VectorX<T> { return VectorX<T>(0); };
+  std::function<VectorX<T>(const VectorX<T>&)> L_mult;
 
   /// An operator that performs the multiplication Lᵀ⋅f, where L is the ℝⁱˣᵐ
   /// Jacobian matrix defined immediately above and Lᵀ transforms constraint
   /// forces (f ∈ ℝⁿ) into generalized forces. The default operator returns a
   /// zero vector of dimension equal to that of the generalized forces.
-  std::function<VectorX<T>(const VectorX<T>&)> L_transpose_mult =
-    [this](const VectorX<T>&) -> VectorX<T> {
-      return VectorX<T>::Zero(f.size());
-    };
+  std::function<VectorX<T>(const VectorX<T>&)> L_transpose_mult;
 
   /// This ℝⁱ vector is the time derivative of the matrix L (defined above)
   /// times the generalized velocity (∈ ℝᵐ) of the rigid body system. As above,
@@ -155,6 +164,26 @@ struct ConstraintAccelProblemData {
 /// at the velocity-level (i.e., impact problems).
 template <class T>
 struct ConstraintVelProblemData {
+  /// Constructs velocity problem data for a system with a @p gv_dim dimensional
+  /// generalized velocity.
+  explicit ConstraintVelProblemData(int gv_dim) {
+    // Set default for non-transpose operators- returns an empty vector.
+    auto zero_fn = [](const VectorX<T>&) -> VectorX<T> {
+      return VectorX<T>(0);
+    };
+    N_mult = zero_fn;
+    F_mult = zero_fn;
+    L_mult = zero_fn;
+
+    // Set default for transpose operators - returns the appropriately sized
+    // zero vector.
+    auto zero_gv_dim_fn = [gv_dim](const VectorX<T>&) -> VectorX<T> {
+      return VectorX<T>::Zero(gv_dim); };
+    N_transpose_mult = zero_gv_dim_fn;
+    F_transpose_mult = zero_gv_dim_fn;
+    L_transpose_mult = zero_gv_dim_fn;
+  }
+
   /// The number of spanning vectors in the contact tangents (used to linearize
   /// the friction cone) at the n contact points. For contact
   /// problems in two dimensions, each element of r will be one. For contact
@@ -175,8 +204,7 @@ struct ConstraintVelProblemData {
   /// Jacobian matrix that transforms generalized velocities (v ∈ ℝᵐ) into
   /// velocities projected along the contact normals at the n point contacts.
   /// The default operator returns an empty vector.
-  std::function<VectorX<T>(const VectorX<T>&)> N_mult =
-    [](const VectorX<T>&) -> VectorX<T> { return VectorX<T>(0); };
+  std::function<VectorX<T>(const VectorX<T>&)> N_mult;
 
   /// An operator that performs the multiplication Nᵀ⋅f, where N is the ℝⁿˣᵐ
   /// Jacobian matrix defined immediately above and Nᵀ transforms forces
@@ -184,10 +212,7 @@ struct ConstraintVelProblemData {
   /// generalized forces. The default operator returns a zero vector of
   /// dimension equal to that of the generalized velocities (which should be
   /// identical to the dimension of the generalized forces).
-  std::function<VectorX<T>(const VectorX<T>&)> N_transpose_mult =
-    [this](const VectorX<T>&) -> VectorX<T> {
-      return VectorX<T>::Zero(v.size());
-    };
+  std::function<VectorX<T>(const VectorX<T>&)> N_transpose_mult;
 
   /// An operator that performs the multiplication F⋅v, where F is the ℝⁿʳˣᵐ
   /// Jacobian matrix that transforms generalized velocities (v ∈ ℝᵐ) into
@@ -197,8 +222,7 @@ struct ConstraintVelProblemData {
   /// definition of the dimension of the Jacobian matrix above indicates that
   /// every one of the n contacts uses the same "r", the code imposes no such
   /// requirement. The default operator returns an empty vector.
-  std::function<VectorX<T>(const VectorX<T>&)> F_mult =
-    [](const VectorX<T>&) -> VectorX<T> { return VectorX<T>(0); };
+  std::function<VectorX<T>(const VectorX<T>&)> F_mult;
 
   /// An operator that performs the multiplication Fᵀ⋅f, where F is the ℝⁿʳˣᵐ
   /// Jacobian matrix defined immediately above and Fᵀ transforms forces
@@ -210,10 +234,7 @@ struct ConstraintVelProblemData {
   /// the code imposes no such requirement. The default operator returns a zero
   /// vector of dimension equal to that of the generalized velocities (which
   /// should be identical to the dimension of the generalized forces).
-  std::function<VectorX<T>(const VectorX<T>&)> F_transpose_mult =
-    [this](const VectorX<T>&) -> VectorX<T> {
-      return VectorX<T>::Zero(v.size());
-    };
+  std::function<VectorX<T>(const VectorX<T>&)> F_transpose_mult;
 
   /// The number of limit constraints. Must be equivalent to the dimension of
   /// the output of L_mult (defined below).
@@ -229,18 +250,14 @@ struct ConstraintVelProblemData {
   /// the force must be applied to limit the joint velocity, and the limiting
   /// force cannot be applied if the joint velocity is not at the limit. The
   /// default operator returns an empty vector.
-  std::function<VectorX<T>(const VectorX<T>&)> L_mult =
-    [](const VectorX<T>&) -> VectorX<T> { return VectorX<T>(0); };
+  std::function<VectorX<T>(const VectorX<T>&)> L_mult;
 
   /// An operator that performs the multiplication Lᵀ⋅f, where L is the ℝⁱˣᵐ
   /// Jacobian matrix defined immediately above and Lᵀ transforms constraint
   /// forces (f ∈ ℝⁿ) into generalized forces. The default operator returns a
   /// zero vector of dimension equal to that of the generalized velocities
   /// (which should be identical to the dimension of the generalized forces).
-  std::function<VectorX<T>(const VectorX<T>&)> L_transpose_mult =
-    [this](const VectorX<T>&) -> VectorX<T> {
-      return VectorX<T>::Zero(v.size());
-    };
+  std::function<VectorX<T>(const VectorX<T>&)> L_transpose_mult;
 
   /// The ℝᵐ vector v, the generalized velocity immediately before any impulsive
   /// forces (from impact) are applied.

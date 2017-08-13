@@ -204,7 +204,7 @@ class Rod2DDAETest : public ::testing::Test {
 
   // Models an impact.
   void ModelImpact() {
-    ConstraintVelProblemData<double> data;
+    ConstraintVelProblemData<double> data(3 /* ngc */);
     CalcRigidImpactVelProblemData(&data);
     VectorX<double> cf;
     contact_solver_.SolveImpactProblem(dut_->get_cfm(), data, &cf);
@@ -994,7 +994,7 @@ TEST_F(Rod2DDAETest, RigidContactProblemDataBallistic) {
   SetBallisticState();
 
   // Compute the problem data.
-  ConstraintAccelProblemData<double> data;
+  ConstraintAccelProblemData<double> data(3 /* gen. vel. dim */);
   CalcConstraintAccelProblemData(&data);
 
   // Verify that the data has reasonable values.
@@ -1009,7 +1009,7 @@ TEST_F(Rod2DDAETest, RigidContactProblemDataHorizontalResting) {
   SetRestingHorizontalConfig();
 
   // Compute the problem data.
-  ConstraintAccelProblemData<double> data;
+  ConstraintAccelProblemData<double> data(3 /* gen. vel. dim */);
   CalcConstraintAccelProblemData(&data);
   const int num_contacts = 2;
   CheckProblemConsistency(data, num_contacts);
@@ -1028,7 +1028,7 @@ TEST_F(Rod2DDAETest, RigidContactProblemDataHorizontalSliding) {
   xc[3] = 1.0;  // horizontal velocity of the rod center-of-mass.
 
   // Compute the problem data.
-  ConstraintAccelProblemData<double> data;
+  ConstraintAccelProblemData<double> data(3 /* gen. vel. dim */);
   CalcConstraintAccelProblemData(&data);
   const int num_contacts = 2;
   CheckProblemConsistency(data, num_contacts);
@@ -1044,7 +1044,7 @@ TEST_F(Rod2DDAETest, RigidContactProblemDataVerticalResting) {
   SetRestingVerticalConfig();
 
   // Compute the problem data.
-  ConstraintAccelProblemData<double> data;
+  ConstraintAccelProblemData<double> data(3 /* gen. vel. dim */);
   CalcConstraintAccelProblemData(&data);
   const int num_contacts = 1;
   CheckProblemConsistency(data, num_contacts);
@@ -1069,7 +1069,7 @@ TEST_F(Rod2DDAETest, RigidContactProblemDataVerticalSliding) {
   xc[3] = 1.0;
 
   // Compute the problem data.
-  ConstraintAccelProblemData<double> data;
+  ConstraintAccelProblemData<double> data(3 /* gen. vel. dim */);
   CalcConstraintAccelProblemData(&data);
   const int num_contacts = 1;
   CheckProblemConsistency(data, num_contacts);
