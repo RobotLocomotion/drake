@@ -3,7 +3,7 @@
 # This file contains rules for the Bazel build system.
 # See http://bazel.io/ .
 
-load("//tools:drake.bzl", "drake_cc_library")
+load("//tools:drake.bzl", "drake_cc_library", "drake_cc_test")
 load("//tools:bazel_lint.bzl", "bazel_lint")
 
 package(default_visibility = ["//visibility:public"])
@@ -29,6 +29,14 @@ drake_cc_library(
 drake_cc_library(
     name = "stx",
     hdrs = ["boost/tcbrindle_cpp17_headers/stx/optional.hpp"],
+)
+
+# Ensure that we properly link against vtkIOXML.
+drake_cc_test(
+    name = "vtk_io_xml_test",
+    deps = [
+        "@vtk//:vtkIOXML",
+    ],
 )
 
 # Most BUILD files should say add_lint_tests() here, but insetad we only check
