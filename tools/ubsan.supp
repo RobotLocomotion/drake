@@ -10,4 +10,4 @@ alignment:bits/stl_tree.h
 alignment:bits/stl_pair.h
 
 # Reported bug: http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1454
-float-divide-by-zero:TriangularSolverVector.h
+#float-divide-by-zero:TriangularSolverVector.h
