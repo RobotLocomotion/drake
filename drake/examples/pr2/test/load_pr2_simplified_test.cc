@@ -17,6 +17,9 @@ GTEST_TEST(LoadPr2SimplifiedTest, TestIfPr2SimplifiedLoads) {
       multibody::joints::
           kFixed /* our PR2 model moves with actuators, not a floating base */,
       nullptr /* weld to frame */, tree_.get());
+  EXPECT_EQ(tree_->get_num_actuators(), 28);
+  EXPECT_EQ(tree_->get_num_positions(), 28);
+  EXPECT_EQ(tree_->bodies.size(), 86);
 }
 
 }  // namespace pr2

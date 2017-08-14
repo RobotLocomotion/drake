@@ -1,9 +1,7 @@
-/// @brief
-///
-/// Implements a passive simulation of the Drake-compatible description of the
-/// PR2 robot. There is no controller, but the contact parameters and integrator
-/// parameters are set to support reliable gripping of objects if a controller
-/// is added.
+// Implements a passive simulation of the Drake-compatible description of the
+// PR2 robot. There is no controller, but the contact parameters and integrator
+// parameters are set to support reliable gripping of objects if a controller
+// is added.
 
 #include <gflags/gflags.h>
 
