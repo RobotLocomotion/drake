@@ -19,7 +19,6 @@ namespace acrobot {
  * between @p x0 and @p xG).
  */
 void AddSwingUpTrajectoryParams(
-    int num_time_samples,
     const Eigen::Vector4d& x0, const Eigen::Vector4d& xG,
     systems::DircolTrajectoryOptimization*);
 
