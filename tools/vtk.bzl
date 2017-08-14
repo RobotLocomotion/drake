@@ -122,6 +122,11 @@ def _impl(repository_ctx):
 
     # TODO(jamiesnape): Create a script to help generate the targets.
 
+    # To see what the VTK module dependencies are, you can inspect VTK's source
+    # tree. For example, for vtkIOXML and vtkIOXMLParser:
+    #   VTK/IO/XML/module.cmake
+    #   VTK/IO/XMLParser/module.cmake
+
     file_content = _vtk_cc_library(
         repository_ctx.os.name,
         "vtkCommonColor",
@@ -372,6 +377,40 @@ def _impl(repository_ctx):
         ],
     )
 
+    # See: VTK/IO/XMLParser/{*.h,module.cmake}
+    file_content += _vtk_cc_library(
+        repository_ctx.os.name,
+        "vtkIOXMLParser",
+        deps = [
+            ":vtkCommonCore",
+            ":vtkCommonDataModel",
+            ":vtkexpat",
+            ":vtkIOCore",
+            ":vtksys",
+        ],
+    )
+
+    # See: VTK/IO/XML/{*.h,module.cmake}
+    file_content += _vtk_cc_library(
+        repository_ctx.os.name,
+        "vtkIOXML",
+        hdrs = [
+            "vtkIOXMLModule.h",
+            "vtkXMLDataReader.h",
+            "vtkXMLPolyDataReader.h",
+            "vtkXMLReader.h",
+            "vtkXMLUnstructuredDataReader.h",
+        ],
+        deps = [
+            ":vtkCommonCore",
+            ":vtkCommonDataModel",
+            ":vtkCommonExecutionModel",
+            ":vtkIOCore",
+            ":vtkIOXMLParser",
+            ":vtksys",
+        ],
+    )
+
     file_content += _vtk_cc_library(
         repository_ctx.os.name,
         "vtkIOGeometry",
@@ -506,6 +545,10 @@ cc_library(
         visibility = ["//visibility:private"],
         header_only = True,
     )
+
+    # The present build of VTK statically links vtkexpat.
+    file_content += _vtk_cc_library(repository_ctx.os.name, "vtkexpat",
+                                    header_only = True)
 
     file_content += _vtk_cc_library(repository_ctx.os.name, "vtklz4")
 
