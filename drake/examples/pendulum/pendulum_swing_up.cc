@@ -23,16 +23,16 @@ namespace pendulum {
 void AddSwingUpTrajectoryParams(const Eigen::Vector2d& x0,
                                 const Eigen::Vector2d& xG,
                                 systems::DircolTrajectoryOptimization* dircol) {
-  const int kTorqueLimit = 3;  // Arbitrary, taken from PendulumPlant.m.
-  const drake::Vector1d umin(-kTorqueLimit);
-  const drake::Vector1d umax(kTorqueLimit);
-  dircol->AddInputBounds(umin, umax);
+  auto u = dircol->input();
+
+  const double kTorqueLimit = 3.0;  // N*m.
+  dircol->AddConstraintToAllKnotPoints(-kTorqueLimit <= u(0));
+  dircol->AddConstraintToAllKnotPoints(u(0) <= kTorqueLimit);
 
   dircol->AddLinearConstraint(dircol->initial_state() == x0);
   dircol->AddLinearConstraint(dircol->final_state() == xG);
 
   const double R = 10;  // Cost on input "effort".
-  auto u = dircol->input();
   dircol->AddRunningCost((R * u) * u);
 }
 

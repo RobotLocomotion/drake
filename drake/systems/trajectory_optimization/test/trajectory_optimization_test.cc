@@ -25,18 +25,6 @@ namespace {
 
 typedef PiecewisePolynomial<double> PiecewisePolynomialType;
 
-class FinalCost {
- public:
-  static size_t numInputs() { return 3; }
-  static size_t numOutputs() { return 1; }
-
-  template <typename ScalarType>
-  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
-    y(0) = x(2) * x(2);
-  }
-};
-
 class MyDirectTrajOpt : public DirectTrajectoryOptimization {
  public:
   MyDirectTrajOpt(const int num_inputs, const int num_states,
@@ -49,7 +37,6 @@ class MyDirectTrajOpt : public DirectTrajectoryOptimization {
 
  private:
   void DoAddRunningCost(const symbolic::Expression& g) override {}
-  void DoAddRunningCost(std::shared_ptr<solvers::Cost> constraint) override {}
 };
 
 GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
@@ -93,19 +80,19 @@ GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
 
   const int kInputConstraintLo = 1;
   const int kInputConstraintHi = kNumTimeSamples - 2;
-  const Vector1d constrained_input(30);
-  auto input_constraint = std::make_shared<solvers::LinearEqualityConstraint>(
-      Vector1d(1), constrained_input);
-  direct_traj.AddInputConstraint(input_constraint,
-                                 {kInputConstraintLo, kInputConstraintHi});
+  const Vector1d constrained_input(1.0);
+  direct_traj.AddLinearEqualityConstraint(
+      direct_traj.input(kInputConstraintLo) == constrained_input);
+  direct_traj.AddLinearEqualityConstraint(
+      direct_traj.input(kInputConstraintHi) == constrained_input);
 
   const int kStateConstraintLo = 2;
   const int kStateConstraintHi = kNumTimeSamples - 3;
   const Eigen::Vector2d constrained_state(11, 22);
-  auto state_constraint = std::make_shared<solvers::LinearEqualityConstraint>(
-      Eigen::Matrix2d::Identity(), constrained_state);
-  direct_traj.AddStateConstraint(state_constraint,
-                                 {kStateConstraintLo, kStateConstraintHi});
+  direct_traj.AddLinearEqualityConstraint(
+      direct_traj.state(kStateConstraintLo) == constrained_state);
+  direct_traj.AddLinearEqualityConstraint(
+      direct_traj.state(kStateConstraintHi) == constrained_state);
 
   solvers::SolutionResult result = solvers::SolutionResult::kUnknownError;
   result =
@@ -152,7 +139,9 @@ GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
 
   // Add bounds on the inputs and make sure they're enforced.
   Vector1d input_min(1);
-  direct_traj.AddInputBounds(input_min, constrained_input);
+  direct_traj.AddConstraintToAllKnotPoints(input_min <= direct_traj.input());
+  direct_traj.AddConstraintToAllKnotPoints(direct_traj.input() <=
+                                           constrained_input);
   result =
       direct_traj.SolveTraj(t_init_in, PiecewisePolynomialType(), states_x);
   EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound)
@@ -175,7 +164,8 @@ GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
   direct_traj.AddLinearConstraint(direct_traj.initial_state().array() == 0.0);
 
   // Adds a final cost
-  direct_traj.AddFinalCostFunc(FinalCost());
+  direct_traj.AddFinalCost(direct_traj.state().coeff(1) *
+                           direct_traj.state().coeff(1));
   result = direct_traj.SolveTraj(t_init_in, inputs_u, states_x);
   EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound)
       << "Result is an Error";
@@ -204,9 +194,7 @@ class DoubleIntegrator : public VectorSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DoubleIntegrator);
 
   DoubleIntegrator()
-      : VectorSystem<T>(
-            SystemTypeTag<systems::DoubleIntegrator>{},
-            1, 1) {
+      : VectorSystem<T>(SystemTypeTag<systems::DoubleIntegrator>{}, 1, 1) {
     this->DeclareContinuousState(1, 1, 0);
   }
 
@@ -243,7 +231,9 @@ GTEST_TEST(TrajectoryOptimizationTest, DoubleIntegratorTest) {
                                     0.5, 20.0);
 
   // u \in [-1,1].
-  prog.AddInputBounds(Vector1d(-1.0), Vector1d(1.0));
+  prog.AddConstraintToAllKnotPoints(Vector1d(-1.0) <= prog.input());
+  prog.AddConstraintToAllKnotPoints(prog.input() <= Vector1d(1.0));
+
   // xf = [0,0].
   prog.AddLinearConstraint(prog.final_state().array() == 0.0);
 

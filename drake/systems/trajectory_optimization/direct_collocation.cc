@@ -51,60 +51,6 @@ DircolTrajectoryOptimization::DircolTrajectoryOptimization(
   }
 }
 
-namespace {
-/// Since the running cost evaluation needs the timestep mangled, we
-/// need to wrap it and convert the input.
-class RunningCostEndWrapper : public solvers::Cost {
- public:
-  explicit RunningCostEndWrapper(const std::shared_ptr<solvers::Cost>& cost)
-      : solvers::Cost(cost->num_vars()), cost_(cost) {}
-
- protected:
-  void DoEval(const Eigen::Ref<const Eigen::VectorXd>&,
-              Eigen::VectorXd&) const override {
-    throw std::runtime_error("Non-Taylor constraint eval not implemented.");
-  }
-
-  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-              AutoDiffVecXd& y) const override {
-    AutoDiffVecXd wrapped_x = x;
-    wrapped_x(0) *= 0.5;
-    cost_->Eval(wrapped_x, y);
-  };
-
- private:
-  const std::shared_ptr<Cost> cost_;
-};
-
-class RunningCostMidWrapper : public solvers::Cost {
- public:
-  explicit RunningCostMidWrapper(const std::shared_ptr<solvers::Cost>& cost)
-      : Cost(cost->num_vars() + 1),  // We wrap x(0) and x(1) into
-                                     // (x(0) + x(1)) * 0.5, so one
-                                     // less variable when calling
-                                     // Eval.
-        cost_(cost) {}
-
- protected:
-  void DoEval(const Eigen::Ref<const Eigen::VectorXd>&,
-              Eigen::VectorXd&) const override {
-    throw std::runtime_error("Non-Taylor constraint eval not implemented.");
-  }
-
-  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-              AutoDiffVecXd& y) const override {
-    AutoDiffVecXd wrapped_x(x.rows() - 1);
-    wrapped_x.tail(x.rows() - 2) = x.tail(x.rows() - 2);
-    wrapped_x(0) = (x(0) + x(1)) * 0.5;
-    cost_->Eval(wrapped_x, y);
-  };
-
- private:
-  const std::shared_ptr<solvers::Cost> cost_;
-};
-
-}  // anon namespace
-
 void DircolTrajectoryOptimization::DoAddRunningCost(
     const symbolic::Expression& g) {
   // Trapezoidal integration:
@@ -121,25 +67,6 @@ void DircolTrajectoryOptimization::DoAddRunningCost(
           SubstitutePlaceholderVariables(g * h_vars()(N() - 2) / 2, N() - 1));
 }
 
-// We just use a generic constraint here since we need to mangle the
-// input and output anyway.
-void DircolTrajectoryOptimization::DoAddRunningCost(
-    std::shared_ptr<solvers::Cost> cost) {
-  AddCost(std::make_shared<RunningCostEndWrapper>(cost),
-          {h_vars().head(1), x_vars().head(num_states()),
-           u_vars().head(num_inputs())});
-
-  for (int i = 1; i < N() - 1; i++) {
-    AddCost(std::make_shared<RunningCostMidWrapper>(cost),
-            {h_vars().segment(i - 1, 2),
-             x_vars().segment(i * num_states(), num_states()),
-             u_vars().segment(i * num_inputs(), num_inputs())});
-  }
-
-  AddCost(std::make_shared<RunningCostEndWrapper>(cost),
-          {h_vars().tail(1), x_vars().tail(num_states()),
-           u_vars().tail(num_inputs())});
-}
 
 PiecewisePolynomialTrajectory
 DircolTrajectoryOptimization::ReconstructStateTrajectory() const {
