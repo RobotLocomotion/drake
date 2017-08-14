@@ -138,14 +138,6 @@ pick_and_place_test(
         "--target=0",
         "--start-position=2",
         "--end-position=0",
-        # TODO(sam.creasey) This is an artisanally crafted
-        # timestep intended to dodge sensitive dependence on
-        # initial conditions in the IK planner.  If the block
-        # slips in the gripper in just the wrong way (which only
-        # happens on some dt values) then the arm tries to move
-        # into a radically different configuration in the process
-        # of placing the block at the target.
-        "--dt 6e-4",
     ],
 )
 
