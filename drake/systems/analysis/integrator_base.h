@@ -1179,9 +1179,6 @@ class IntegratorBase {
    * @param err
    *      The norm of the integrator error that was computed using
    *       @p attempted_step_size.
-   * @param dt_was_artificially_limited
-   *      `true` if step_size was artificially limited (by, e.g., stepping to
-   *      a publishing time).
    * @param attempted_step_size
    *      The step size that was attempted.
    * @param[in,out] at_minimum_step_size
@@ -1201,8 +1198,9 @@ class IntegratorBase {
    *      step size.
    */
   std::pair<bool, T> CalcAdjustedStepSize(
-      const T& err, bool dt_was_artificially_limited,
-      const T& attempted_step_size, bool* at_minimum_step_size) const;
+      const T& err,
+      const T& attempted_step_size,
+      bool* at_minimum_step_size) const;
 
   /**
    * Derived classes can override this method to perform special
@@ -1468,22 +1466,14 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
     T err_norm = CalcStateChangeNorm(*get_error_estimate());
     T next_step_size;
     std::tie(step_succeeded, next_step_size) = CalcAdjustedStepSize(
-        err_norm, dt_was_artificially_limited, step_size_to_attempt,
-        &at_minimum_step_size);
+        err_norm, step_size_to_attempt, &at_minimum_step_size);
     SPDLOG_DEBUG(drake::log(), "Next step size: {}", next_step_size);
 
     if (step_succeeded) {
-      // When at the minimum step, the ideal step size should be the working
-      // minimum step size; in other words, ignore step increases that were
-      // selected to avoid slivers of steps.
-      if (at_minimum_step_size) {
-        ideal_next_step_size_ = get_working_minimum_step_size();
-      } else {
-        // Only update the next step size (retain the previous one) if the
-        // step size was not artificially limited.
-        if (!dt_was_artificially_limited)
-          ideal_next_step_size_ = next_step_size;
-      }
+      // Only update the next step size (retain the previous one) if the
+      // step size was not artificially limited.
+      if (!dt_was_artificially_limited)
+        ideal_next_step_size_ = next_step_size;
 
       if (isnan(get_actual_initial_step_size_taken()))
         set_actual_initial_step_size_taken(step_size_to_attempt);
@@ -1571,7 +1561,6 @@ T IntegratorBase<T>::CalcStateChangeNorm(
 template <class T>
 std::pair<bool, T> IntegratorBase<T>::CalcAdjustedStepSize(
     const T& err,
-    bool dt_was_artificially_limited,
     const T& step_taken,
     bool* at_minimum_step_size) const {
   using std::pow;
@@ -1616,8 +1605,7 @@ std::pair<bool, T> IntegratorBase<T>::CalcAdjustedStepSize(
     // interval). Also, don't grow the step size if the change would be very
     // small; better to keep the step size stable in that case (maybe just
     // for aesthetic reasons).
-    if (dt_was_artificially_limited ||
-        new_step_size < kHysteresisHigh * step_taken)
+    if (new_step_size < kHysteresisHigh * step_taken)
       new_step_size = step_taken;
   }
 
@@ -1656,13 +1644,17 @@ std::pair<bool, T> IntegratorBase<T>::CalcAdjustedStepSize(
     new_step_size = min(new_step_size, get_maximum_step_size());
   ValidateSmallerStepSize(step_taken, new_step_size);
 
-  // If the integrator wants to shrink the step size below the
-  // minimum allowed and exceptions are suppressed, indicate that status.
+  // Increase the next step size, as necessary.
   new_step_size = max(new_step_size, get_working_minimum_step_size());
-  if (new_step_size == get_working_minimum_step_size() &&
-      !dt_was_artificially_limited) {
+  if (new_step_size == get_working_minimum_step_size()) {
+    // Indicate that the step is integrator is now trying the minimum step
+    // size.
     *at_minimum_step_size = true;
-    return std::make_pair(false, new_step_size);
+
+    // If the integrator wants to shrink the step size below the
+    // minimum allowed and exceptions are suppressed, indicate that status.
+    if (new_step_size < step_taken)
+      return std::make_pair(false, new_step_size);
   }
 
   return std::make_pair(new_step_size >= step_taken, new_step_size);

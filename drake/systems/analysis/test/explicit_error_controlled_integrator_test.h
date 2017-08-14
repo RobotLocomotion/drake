@@ -56,8 +56,6 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ErrorEstSupport) {
       this->kDt));
 }
 
-
-
 // Verifies that the stepping works with relatively small
 // magnitude step sizes.
 TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, MagDisparity) {
