@@ -15,6 +15,36 @@ using Eigen::Vector3d;
 namespace drake {
 namespace solvers {
 namespace {
+GTEST_TEST(testConstraint, testQuadraticConstraintHessian) {
+  // Check if the getters in the QuadraticConstraint are right.
+  Eigen::Matrix2d Q;
+  Eigen::Vector2d b;
+  // clang-format off
+  Q << 1, 0,
+       0, 1;
+  // clang-format on
+  b << 1, 2;
+  // Constructs a constraint with a symmetric Q.
+  QuadraticConstraint constraint1(Q, b, 0, 1);
+  EXPECT_TRUE(CompareMatrices(constraint1.Q(), Q));
+  EXPECT_TRUE(CompareMatrices(constraint1.b(), b));
+
+  // Updates constraint with a non-symmetric Hessian.
+  // clang-format off
+  Q << 1, 1,
+       0, 1;
+  // clang-format on
+  b << 1, 2;
+  constraint1.UpdateCoefficients(Q, b);
+  EXPECT_TRUE(CompareMatrices(constraint1.Q(), (Q + Q.transpose()) / 2));
+  EXPECT_TRUE(CompareMatrices(constraint1.b(), b));
+
+  // Constructs a constraint with a non-symmetric Hessian.
+  QuadraticConstraint constraint2(Q, b, 0, 1);
+  EXPECT_TRUE(CompareMatrices(constraint2.Q(), (Q + Q.transpose()) / 2));
+  EXPECT_TRUE(CompareMatrices(constraint2.b(), b));
+}
+
 // Tests if the Lorentz Cone constraint is imposed correctly.
 void TestLorentzConeEval(const Eigen::Ref<const Eigen::MatrixXd> A,
                          const Eigen::Ref<const Eigen::VectorXd> b,
