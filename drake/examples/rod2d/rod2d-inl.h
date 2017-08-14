@@ -568,7 +568,7 @@ void Rod2D<T>::CalcConstraintProblemData(
   for (int i = 0; i < nc; ++i)
     Ndot.row(i) =  GetJacobianDotRow(context, points[i], contact_normal);
   const Vector3<T> v = GetRodVelocity(context);
-  data->Ndot_x_v = Ndot * v;
+  data->Ndot_times_v = Ndot * v;
 
   // Form the tangent directions contact Jacobian (F), its time derivative
   // (Fdot), and compute Fdot * v.
@@ -583,7 +583,7 @@ void Rod2D<T>::CalcConstraintProblemData(
     Fdot.row(j) = GetJacobianDotRow(context, points[i], contact_tangent);
     ++j;
   }
-  data->Fdot_x_v = Fdot * v;
+  data->Fdot_times_v = Fdot * v;
   data->F_mult = [F](const VectorX<T>& w) -> VectorX<T> { return F * w; };
   data->F_transpose_mult = [F](const VectorX<T>& w) -> VectorX<T> {
     return F.transpose() * w;
@@ -605,12 +605,12 @@ void Rod2D<T>::CalcConstraintProblemData(
   data->N_minus_muQ_transpose_mult = [N_minus_mu_Q](const VectorX<T>& w) ->
       VectorX<T> { return N_minus_mu_Q.transpose() * w; };
 
-  // Set the number of limit constraints and Ldot_x_v.
+  // Set the number of limit constraints and Ldot_times_v.
   data->num_limit_constraints = 0;
-  data->Ldot_x_v.resize(0);
+  data->Ldot_times_v.resize(0);
 
   // Set external force vector.
-  data->f = ComputeExternalForces(context);
+  data->tau = ComputeExternalForces(context);
 }
 
 template <class T>
