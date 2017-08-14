@@ -12,7 +12,7 @@ namespace drake {
 namespace systems {
 
 /**
- * DircolTrajectoryOptimization implements a direct colocation
+ * DircolTrajectoryOptimization implements a direct collocation
  * approach to trajectory optimization, as described in
  *   C. R. Hargraves and S. W. Paris. Direct trajectory optimization using
  *    nonlinear programming and collocation. J Guidance, 10(4):338-342,
@@ -56,8 +56,6 @@ class DircolTrajectoryOptimization : public DirectTrajectoryOptimization {
 
  private:
   void DoAddRunningCost(const symbolic::Expression& e) override;
-
-  void DoAddRunningCost(std::shared_ptr<solvers::Cost> cost) override;
 
   const System<double>* system_{nullptr};
   const std::unique_ptr<Context<double>> context_{nullptr};

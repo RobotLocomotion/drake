@@ -44,12 +44,10 @@ GTEST_TEST(TrajectoryOptimizationTest, SimpleCarDircolTest) {
                                              kTrajectoryTimeUpperBound);
 
   // Input limits (note that the steering limit imposed by SimpleCar is larger).
-  DrivingCommand<double> lower_limit, upper_limit;
-  lower_limit.set_steering_angle(-M_PI_2);
-  lower_limit.set_acceleration(-std::numeric_limits<double>::infinity());
-  upper_limit.set_steering_angle(M_PI_2);
-  upper_limit.set_acceleration(std::numeric_limits<double>::infinity());
-  prog.AddInputBounds(lower_limit.get_value(), upper_limit.get_value());
+  DrivingCommand<symbolic::Expression> input;
+  input.SetFromVector(prog.input().cast<symbolic::Expression>());
+  prog.AddConstraintToAllKnotPoints(input.steering_angle() <= M_PI_2);
+  prog.AddConstraintToAllKnotPoints(-M_PI_2 <= input.steering_angle());
 
   // Ensure that time intervals are (relatively) evenly spaced.
   prog.AddTimeIntervalBounds(kTrajectoryTimeLowerBound / (kNumTimeSamples - 1),

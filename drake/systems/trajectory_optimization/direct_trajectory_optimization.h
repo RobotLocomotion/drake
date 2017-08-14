@@ -123,77 +123,25 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
     DoAddRunningCost(g(0, 0));
   }
 
-  /**
-   * Adds an integrated cost to all time steps.
-   *
-   * @param f A callable which meets the requirments of
-   * MathematicalProgram::AddCost().
-   */
-  template <typename F>
-  typename std::enable_if<solvers::detail::is_cost_functor_candidate<F>::value,
-                          std::shared_ptr<solvers::Cost>>::type
-  AddRunningCostFunc(F&& f) {
-    auto c = solvers::MakeFunctionCost(std::forward<F>(f));
-    AddRunningCost(c);
-    return c;
-  }
-
-  // TODO(russt): Remove the methods below that add constraints without
-  // requesting the variable list to be passed in.  We should force the user
-  // to specify the variables to provide clarity and robustness.
-  // The "add to a list of times" utilities are still useful... we can replace
-  // them with methods of the form AddCost(..., MatrixXDecisionVariable), which
-  // adds the same constraint to each column of the variable matrix.
-
-  // Adds an integrated cost to all time steps.
-  //
-  // @param constraint A constraint which expects a timestep, state, and input
-  // as the elements of x when Eval is invoked.
-  void AddRunningCost(std::shared_ptr<solvers::Cost> cost) {
-    DoAddRunningCost(cost);
-  }
-
-  /**
-   * Add upper and lower bounds on the input values.  Calling this
-   * function multiple times will add additional bounds on the input
-   * rather than resetting any bounds from previous invocations.
-   */
-  void AddInputBounds(const Eigen::VectorXd& lower_bound,
-                      const Eigen::VectorXd& upper_bound);
-
-  /**
-   * Add a constraint on the input at the specified time indices.
-   *
-   * @param constraint The constraint to be applied.
-   *
-   * @param time_indices Apply the constraints only at these time
-   * indices (zero offset).
-   */
-  template <typename ConstraintT>
-  void AddInputConstraint(std::shared_ptr<ConstraintT> constraint,
-                          const std::vector<int>& time_indices) {
-    for (const int i : time_indices) {
-      DRAKE_ASSERT(i < N_);
-      AddConstraint(constraint, u_vars_.segment(i * num_inputs_, num_inputs_));
+  /// Adds a constraint to all knot points, where any instances of time(),
+  /// state(), and/or input() placeholder variables are substituted with the
+  /// relevant variables for each current time index.
+  void AddConstraintToAllKnotPoints(const symbolic::Formula& f) {
+    for (int i = 0; i < N_; i++) {
+      // TODO(russt): update this to AddConstraint once MathematicalProgram
+      // supports AddConstraint for Formulas.
+      // For now, non-linear constraints can be added by users by simply adding
+      // the constraint manually for each
+      // time index in a loop.
+      AddLinearConstraint(SubstitutePlaceholderVariables(f, i));
     }
   }
 
-  /**
-   * Add a constraint on the state at the specified time indices.
-   *
-   * @param constraint The constraint to be applied.
-   *
-   * @param time_indices Apply the constraints only at these time
-   * indices (zero offset).
-   */
-  template <typename ConstraintT>
-  void AddStateConstraint(std::shared_ptr<ConstraintT> constraint,
-                          const std::vector<int>& time_indices) {
-    for (const int i : time_indices) {
-      DRAKE_ASSERT(i < N_);
-      AddConstraint(constraint, x_vars_.segment(i * num_states_, num_states_));
-    }
-  }
+  // TODO(russt): Add additional cost/constraint wrappers that assign e.g.
+  // non-symbolic costs (like QuadraticCost)
+  // by taking in a list of vars that could contain placeholder vars, or that
+  // assign costs/constraints to a set of
+  // interval indices.
 
   /**
    * Add bounds on a set of time intervals, such that
@@ -230,15 +178,6 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
    */
   void AddTimeIntervalBounds(double lower_bound, double upper_bound);
 
-  /**
-   * Add a cost to the final state and total time.
-   *
-   * @param cost A cost which expects total time as the
-   * first element of x when Eval is invoked, followed by the final
-   * state (num_states additional elements).
-   */
-  void AddFinalCost(std::shared_ptr<solvers::Cost> cost);
-
   /// Adds a cost to the final time, of the form
   ///    @f[ cost = e(t,x,u), @f]
   /// where any instances of time(), state(), and/or input() placeholder
@@ -256,21 +195,6 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
   void AddFinalCost(const Eigen::Ref<const MatrixX<symbolic::Expression>>& e) {
     DRAKE_DEMAND(e.rows() == 1 && e.cols() == 1);
     AddFinalCost(e(0, 0));
-  }
-
-  /**
-   * Add a cost to the final state and total time.
-   *
-   * @param f A callable which meets the requirments of
-   * MathematicalProgram::AddCost().
-   */
-  template <typename F>
-  typename std::enable_if<solvers::detail::is_cost_functor_candidate<F>::value,
-                          std::shared_ptr<solvers::Cost>>::type
-  AddFinalCostFunc(F&& f) {
-    auto c = solvers::MakeFunctionCost(std::forward<F>(f));
-    AddFinalCost(c);
-    return c;
   }
 
   /**
@@ -359,6 +283,13 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
   symbolic::Expression SubstitutePlaceholderVariables(
       const symbolic::Expression& e, int interval_index) const;
 
+  /**
+   * Replaces e.g. placeholder_x_var_ with x_vars_ at time interval
+   * @p interval_index, for all placeholder variables.
+   */
+  symbolic::Formula SubstitutePlaceholderVariables(const symbolic::Formula& f,
+                                                   int interval_index) const;
+
   int num_inputs() const { return num_inputs_; }
   int num_states() const { return num_states_; }
   int N() const { return N_; }
@@ -387,7 +318,9 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
 
   virtual void DoAddRunningCost(const symbolic::Expression& g) = 0;
 
-  virtual void DoAddRunningCost(std::shared_ptr<solvers::Cost> cost) = 0;
+  // Helper method that performs the work for SubstitutePlaceHolderVariables
+  symbolic::Substitution ConstructPlaceholderVariableSubstitution(
+      int interval_index) const;
 
   const int num_inputs_{};
   const int num_states_{};
