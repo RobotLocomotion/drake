@@ -30,7 +30,7 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
         joint_axis_(_joint_axis),
         damping_(0.0),
         coulomb_friction_(0.0),
-        coulomb_window_(0.0) {}
+        coulomb_window_(std::numeric_limits<double>::epsilon()) {}
 
  public:
   virtual ~FixedAxisOneDoFJoint() {}
