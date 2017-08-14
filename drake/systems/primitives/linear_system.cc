@@ -60,8 +60,6 @@ unique_ptr<LinearSystem<T>> LinearSystem<T>::MakeLinearSystem(
   return make_unique<LinearSystem<T>>(A, B, C, D, time_period);
 }
 
-// TODO(naveenoid): Modify constructor to accommodate 0 dimension systems;
-// i.e. in initializing xDot0 and y0 with a zero matrix.
 template class LinearSystem<double>;
 template class LinearSystem<AutoDiffXd>;
 

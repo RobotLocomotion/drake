@@ -213,6 +213,11 @@ class Constraint : public EvaluatorBase {
 
 /**
  * lb <= .5 x'Qx + b'x <= ub
+ * Without loss of generality, the class stores a symmetric matrix Q.
+ * For a non-symmetric matrix Q₀, we can define Q = (Q₀ + Q₀ᵀ) / 2, since
+ * xᵀQ₀x = xᵀQ₀ᵀx = xᵀ*(Q₀+Q₀ᵀ)/2 *x. The first equality holds because the
+ * transpose of a scalar is the scalar itself. Hence we can always convert
+ * a non-symmetric matrix Q₀ to a symmetric matrix Q.
  */
 class QuadraticConstraint : public Constraint {
  public:
@@ -220,13 +225,22 @@ class QuadraticConstraint : public Constraint {
 
   static const int kNumConstraints = 1;
 
+  /**
+   * Construct a quadratic constraint.
+   * @tparam DerivedQ The type for Q.
+   * @tparam Derivedb The type for b.
+   * @param Q0 The square matrix. Notice that Q₀ does not have to be symmetric.
+   * @param b The linear coefficient.
+   * @param lb The lower bound.
+   * @param ub The upper bound.
+   */
   template <typename DerivedQ, typename Derivedb>
-  QuadraticConstraint(const Eigen::MatrixBase<DerivedQ>& Q,
+  QuadraticConstraint(const Eigen::MatrixBase<DerivedQ>& Q0,
                       const Eigen::MatrixBase<Derivedb>& b, double lb,
                       double ub)
-      : Constraint(kNumConstraints, Q.rows(), drake::Vector1d::Constant(lb),
+      : Constraint(kNumConstraints, Q0.rows(), drake::Vector1d::Constant(lb),
                    drake::Vector1d::Constant(ub)),
-        Q_(Q),
+        Q_((Q0 + Q0.transpose()) / 2),
         b_(b) {
     DRAKE_ASSERT(Q_.rows() == Q_.cols());
     DRAKE_ASSERT(Q_.cols() == b_.rows());
@@ -234,6 +248,8 @@ class QuadraticConstraint : public Constraint {
 
   ~QuadraticConstraint() override {}
 
+  /** The symmetric matrix Q, being the Hessian of this constraint.
+   */
   virtual const Eigen::MatrixXd& Q() const { return Q_; }
 
   virtual const Eigen::VectorXd& b() const { return b_; }
@@ -256,7 +272,7 @@ class QuadraticConstraint : public Constraint {
       throw std::runtime_error("Can't change the number of decision variables");
     }
 
-    Q_ = new_Q;
+    Q_ = (new_Q + new_Q.transpose()) / 2;
     b_ = new_b;
   }
 
