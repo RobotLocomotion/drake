@@ -5,13 +5,9 @@
 namespace drake {
 namespace geometry {
 
-template <typename T>
-GeometryInstance<T>::GeometryInstance(const Isometry3<T>& X_PG,
-                                      std::unique_ptr<Shape> shape)
-    : X_FG_(X_PG), shape_(std::move(shape)) {}
-
-// Explicitly instantiates on the most common scalar types.
-template class GeometryInstance<double>;
+GeometryInstance::GeometryInstance(const Isometry3<double>& X_PG,
+                                   std::unique_ptr<Shape> shape)
+    : X_PG_(X_PG), shape_(std::move(shape)) {}
 
 }  // namespace geometry
 }  // namespace drake

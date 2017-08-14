@@ -120,8 +120,8 @@ class HalfSpace final : public Shape {
 class ShapeReifier {
  public:
   virtual ~ShapeReifier() {}
-  virtual void implementGeometry(const Sphere& sphere) = 0;
-  virtual void implementGeometry(const HalfSpace& half_space) = 0;
+  virtual void ImplementGeometry(const Sphere& sphere) = 0;
+  virtual void ImplementGeometry(const HalfSpace& half_space) = 0;
 };
 
 template <typename S>
@@ -133,7 +133,7 @@ Shape::Shape(S*) {
     return std::unique_ptr<Shape>(new S(*static_cast<const S*>(this)));
   };
   reifier_ = [this](ShapeReifier* reifier) {
-    reifier->implementGeometry(*static_cast<const S*>(this));
+    reifier->ImplementGeometry(*static_cast<const S*>(this));
   };
 }
 

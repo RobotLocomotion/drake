@@ -13,11 +13,15 @@ namespace {
 
 class ReifierTest : public ShapeReifier, public ::testing::Test {
  public:
-  void implementGeometry(const Sphere& sphere) override {
+  void ImplementGeometry(const Sphere &sphere) override {
     sphere_made_ = true;
   }
-  void implementGeometry(const HalfSpace& half_space) override {
+  void ImplementGeometry(const HalfSpace &half_space) override {
     half_space_made_ = true;
+  }
+  void Reset() {
+    sphere_made_ = false;
+    half_space_made_ = false;
   }
  protected:
   bool sphere_made_{false};
@@ -25,27 +29,24 @@ class ReifierTest : public ShapeReifier, public ::testing::Test {
 };
 
 // This confirms that the shapes invoke the correct Reify method.
-TEST_F(ReifierTest, SphereReification) {
-  implementGeometry(Sphere(1.0));
+TEST_F(ReifierTest, ReificationDifferentiation) {
+  Sphere s(1.0);
+  s.Reify(this);
   ASSERT_TRUE(sphere_made_);
   ASSERT_FALSE(half_space_made_);
-  // NOTE: Because of the CRTP nature of this code, as long as new shape
-  // specifications inherit from ReifiableShape, this test does *not* need to
-  // be extended. The template functionality has already been sufficiently
-  // tested.
-}
 
-// This confirms that the shapes invoke the correct Reify method.
-TEST_F(ReifierTest, HalfSpaceReification) {
-  implementGeometry(HalfSpace());
+  Reset();
+
+  HalfSpace hs{};
+  hs.Reify(this);
   ASSERT_FALSE(sphere_made_);
   ASSERT_TRUE(half_space_made_);
-  // NOTE: Because of the CRTP nature of this code, as long as new shape
-  // specifications inherit from ReifiableShape, this test does *not* need to
+
+  // NOTE: Because of the implementation of the Shape class, as long as new
+  // shape specifications inherit from Shape, this test does *not* need to
   // be extended. The template functionality has already been sufficiently
   // tested.
 }
-
 
 // Confirms that the ReifiableShape properly clones the right types.
 GTEST_TEST(ShapeSpecificationTest, CloningShapes) {
@@ -65,7 +66,7 @@ GTEST_TEST(ShapeSpecificationTest, CloningShapes) {
   using std::abs;
 
   // Test expected z-axis value.
-  const auto& z_axis = pose.linear().col(2);
+  const Vector3<double>& z_axis = pose.linear().col(2);
   if (!CompareMatrices(z_axis, expected_z, tolerance,
                        MatrixCompareType::absolute)) {
     return ::testing::AssertionFailure()
@@ -127,7 +128,7 @@ GTEST_TEST(HalfSpaceTest, MakePose) {
   {
     n << 0, 0, 1;
     p << 0, 0, 0;
-    auto pose = HalfSpace::MakePose(n, p);
+    Isometry3<double> pose = HalfSpace::MakePose(n, p);
     EXPECT_TRUE(ValidatePlanePose(pose, n, p));
   }
 
@@ -135,16 +136,16 @@ GTEST_TEST(HalfSpaceTest, MakePose) {
   {
     n << 0, 0, 1;
     p << 0, 0, 1;
-    auto pose = HalfSpace::MakePose(n, p);
+    Isometry3<double> pose = HalfSpace::MakePose(n, p);
     EXPECT_TRUE(ValidatePlanePose(pose, n, p));
   }
 
-  // Case: n(0, 0, 1), p(1, 0, 0) --> <0, 0, 1> z-axis, <0, 0, 0> transform.
+  // Case: n(0, 0, 1), p(1, 0, 0) --> <0, 0, 1> z-axis, <0, 0, 0> translation.
   // Confirms that the pose's translation is the minimum translation.
   {
     n << 0, 0, 1;
     p << 1, 0, 0;
-    auto pose = HalfSpace::MakePose(n, p);
+    Isometry3<double> pose = HalfSpace::MakePose(n, p);
     EXPECT_TRUE(ValidatePlanePose(pose, n, Vector3<double>::Zero()));
   }
 
@@ -153,7 +154,7 @@ GTEST_TEST(HalfSpaceTest, MakePose) {
   {
     n << 0, 0, 1;
     p << 1, 1, 1;
-    auto pose = HalfSpace::MakePose(n, p);
+    Isometry3<double> pose = HalfSpace::MakePose(n, p);
     p << 0, 0, 1;
     EXPECT_TRUE(ValidatePlanePose(pose, n, p));
   }
@@ -163,7 +164,7 @@ GTEST_TEST(HalfSpaceTest, MakePose) {
   {
     n << 1, 1, 1;
     p << 0, 0, 0;
-    auto pose = HalfSpace::MakePose(n, p);
+    Isometry3<double> pose = HalfSpace::MakePose(n, p);
     EXPECT_TRUE(ValidatePlanePose(pose, n.normalized(), p));
   }
 
@@ -172,7 +173,7 @@ GTEST_TEST(HalfSpaceTest, MakePose) {
   {
     n << 1, 1, 1;
     p << 1, 1, 1;
-    auto pose = HalfSpace::MakePose(n, p);
+    Isometry3<double> pose = HalfSpace::MakePose(n, p);
     EXPECT_TRUE(ValidatePlanePose(pose, n.normalized(), p));
   }
 
@@ -182,7 +183,7 @@ GTEST_TEST(HalfSpaceTest, MakePose) {
   {
     n << 1, 1, 1;
     p << 1, 0, 0;
-    auto pose = HalfSpace::MakePose(n, p);
+    Isometry3<double> pose = HalfSpace::MakePose(n, p);
     p = n / 3.0;
     EXPECT_TRUE(ValidatePlanePose(pose, n.normalized(), p));
   }
