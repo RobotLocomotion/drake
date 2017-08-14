@@ -94,7 +94,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "shape_specification",
-    srcs = [],
+    srcs = ["shape_specification.cc"],
     hdrs = ["shape_specification.h"],
     deps = ["//drake/common"],
 )

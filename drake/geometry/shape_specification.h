@@ -37,18 +37,14 @@ class ShapeReifier;
 class Shape {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Shape)
-  virtual ~Shape() {}
+  virtual ~Shape();
 
   /** Causes this description to be reified in the given `reifier`. Each
    concrete subclass must invoke the single, matching method on the reifier. */
-  virtual void Reify(ShapeReifier* reifier) const {
-    reifier_(reifier);
-  }
+  void Reify(ShapeReifier* reifier) const;
 
   /** Creates a unique copy of this shape. Invokes the protected DoClone(). */
-  std::unique_ptr<Shape> Clone() const {
-    return cloner_();
-  }
+  std::unique_ptr<Shape> Clone() const;
 
  protected:
   /** Constructor available for derived class construction. A derived class
@@ -65,7 +61,7 @@ class Shape {
 
    @tparam S    The derived shape class. It must derive from Shape. */
   template <typename S>
-  Shape(S*);
+  explicit Shape(S*);
 
  private:
   std::function<std::unique_ptr<Shape>()> cloner_;
@@ -78,8 +74,7 @@ class Sphere final : public Shape {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Sphere)
 
-  explicit Sphere(double radius) :
-      Shape(static_cast<Sphere*>(nullptr)), radius_(radius) {}
+  explicit Sphere(double radius);
 
   double get_radius() const { return radius_; }
 
@@ -97,7 +92,7 @@ class HalfSpace final : public Shape {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HalfSpace)
 
-  HalfSpace() : Shape(static_cast<HalfSpace*>(nullptr)) {}
+  HalfSpace();
 
   /** Given a plane `normal_F` and a point on the plane `X_FP`, both expressed
    in frame F, creates the transform `X_FC` from the half-space's canonical
@@ -109,46 +104,9 @@ class HalfSpace final : public Shape {
                     and expressed in frame F.
    @retval `X_FC`   The pose of the canonical half-space in frame F.
    @throws std::logic_error if the normal is _close_ to a zero-vector (e.g.,
-                            ‖normal_F‖₂ < ε).
-
-   @tparam T       The underlying scalar type. Must be a valid Eigen scalar. */
-  template <typename T>
-  static Isometry3<T> MakePose(const Vector3<T>& normal_F,
-                               const Vector3<T>& r_FP) {
-    T norm = normal_F.norm();
-    // Note: this value of epsilon is somewhat arbitrary. It's merely a minor
-    // fence over which ridiculous vectors will trip.
-    if (norm < 1e-10)
-      throw std::logic_error("Can't make pose from a zero vector.");
-
-    // First create basis.
-    // Projects the normal into the first quadrant in order to identify the
-    // *smallest* component of the normal.
-    const Vector3<T> u(normal_F.cwiseAbs());
-    int minAxis;
-    u.minCoeff(&minAxis);
-    // The axis corresponding to the smallest component of the normal will be
-    // *most* perpendicular.
-    Vector3<T> perpAxis;
-    perpAxis << (minAxis == 0 ? 1 : 0), (minAxis == 1 ? 1 : 0),
-        (minAxis == 2 ? 1 : 0);
-    // Now define x-, y-, and z-axes. The z-axis lies in the normal direction.
-    Vector3<T> z_axis_W = normal_F / norm;
-    Vector3<T> x_axis_W = normal_F.cross(perpAxis).normalized();
-    Vector3<T> y_axis_W = z_axis_W.cross(x_axis_W);
-    // Transformation from world frame to local frame.
-    Matrix3<T> R_WL;
-    R_WL.col(0) = x_axis_W;
-    R_WL.col(1) = y_axis_W;
-    R_WL.col(2) = z_axis_W;
-
-    // Construct pose from basis and point.
-    Isometry3<T> X_FC = Isometry3<T>::Identity();
-    X_FC.linear() = R_WL;
-    // Find the *minimum* translation to make sure the point lies on the plane.
-    X_FC.translation() = z_axis_W.dot(r_FP) * z_axis_W;
-    return X_FC;
-  }
+                            ‖normal_F‖₂ < ε). */
+  static Isometry3<double> MakePose(const Vector3<double>& normal_F,
+                                    const Vector3<double>& r_FP);
 };
 
 /** The interface for converting shape descriptions to real shapes. Any entity
