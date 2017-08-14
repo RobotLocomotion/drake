@@ -1,11 +1,12 @@
 #pragma once
 
-#include <cstddef>
 #include <limits>
 #include <list>
 #include <map>
+#include <memory>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <Eigen/Core>
@@ -15,100 +16,108 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/polynomial.h"
+#include "drake/solvers/evaluator_base.h"
+#include "drake/solvers/function.h"
 
 namespace drake {
 namespace solvers {
 
 /**
- * An evaluator base provides an abstract interface to store an expression
- * and then evaluate it, either on a double or a AutoDiff Scalar type.
+ * A constraint is a function + lower and upper bounds.
  *
- * EvaluateBase is not copyable, nor movable.
+ * Solver interfaces must acknowledge that these constraints are mutable.
+ * Parameters can change after the constraint is constructed and before the
+ * call to Solve().
+ *
+ * It should support evaluating the constraint, and adding it to an optimization
+ * problem.
  */
-class EvaluatorBase {
+// TODO(eric.cousineau): Consider enabling the constraint class directly to
+// specify new slack variables.
+// TODO(eric.cousineau): Consider parameterized constraints:  e.g. the
+// acceleration constraints in the rigid body dynamics are constraints
+// on vdot and f, but are "parameterized" by q and v.
+class Constraint : public EvaluatorBase {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EvaluatorBase)
-  // TODO(eric.cousineau): Refactor to move constraint-only functionality to
-  // Constraint. Move this case to a separate file.
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Constraint)
 
+  /**
+   * Constructs a constraint which has `num_constraints` rows, with an input
+   * `num_vars` x 1 vector.
+   * @param num_constraints. The number of rows in the constraint output.
+   * @param num_vars. The number of rows in the input.
+   * If the input dimension is unknown, then set `num_vars` to Eigen::Dynamic.
+   * @param lb Lower bound, which must be a `num_constraints` x 1 vector.
+   * @param ub Upper bound, which must be a `num_constraints` x 1 vector.
+   * @see Eval(...)
+   */
   template <typename DerivedLB, typename DerivedUB>
-  EvaluatorBase(size_t num_constraints, int num_vars,
-                const Eigen::MatrixBase<DerivedLB>& lb,
-                const Eigen::MatrixBase<DerivedUB>& ub)
-      : EvaluatorBase(num_constraints, num_vars, lb, ub, "") {}
-
-  template <typename DerivedLB, typename DerivedUB>
-  EvaluatorBase(size_t num_constraints, int num_vars,
-                const Eigen::MatrixBase<DerivedLB>& lb,
-                const Eigen::MatrixBase<DerivedUB>& ub,
-                const std::string& description)
-      : lower_bound_(lb),
-        upper_bound_(ub),
-        num_vars_(num_vars),
-        description_(description) {
+  Constraint(int num_constraints, int num_vars,
+             const Eigen::MatrixBase<DerivedLB>& lb,
+             const Eigen::MatrixBase<DerivedUB>& ub,
+             const std::string& description = "")
+      : EvaluatorBase(num_constraints, num_vars, description),
+        lower_bound_(lb),
+        upper_bound_(ub) {
     check(num_constraints);
   }
 
-  virtual ~EvaluatorBase() {}
-
-  // TODO(bradking): consider using a Ref for `y`.  This will require the client
-  // to do allocation, but also allows it to choose stack allocation instead.
-  void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-            // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-            Eigen::VectorXd& y) const {
-    DRAKE_ASSERT(x.rows() == num_vars_ || num_vars_ == Eigen::Dynamic);
-    DoEval(x, y);
-  }
-  // Move this to DifferentiableConstraint derived class if/when we
-  // need to support non-differentiable functions (at least, if
-  // DifferentiableConstraint is ever implemented).
-  void Eval(const Eigen::Ref<const AutoDiffVecXd>& x,
-            // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-            AutoDiffVecXd& y) const {
-    DRAKE_ASSERT(x.rows() == num_vars_ || num_vars_ == Eigen::Dynamic);
-    DoEval(x, y);
-  }
+  /**
+   * Constructs a constraint which has `num_constraints` rows, with an input
+   * `num_vars` x 1 vector, with no bounds.
+   * @param num_constraints. The number of rows in the constraint output.
+   * @param num_vars. The number of rows in the input.
+   * If the input dimension is unknown, then set `num_vars` to Eigen::Dynamic.
+   * @see Eval(...)
+   */
+  Constraint(int num_constraints, int num_vars)
+      : Constraint(
+            num_constraints, num_vars,
+            Eigen::VectorXd::Constant(num_constraints,
+                                      -std::numeric_limits<double>::infinity()),
+            Eigen::VectorXd::Constant(
+                num_constraints, std::numeric_limits<double>::infinity())) {}
 
   /**
-   * Return whether this constraint is satisfied by the given value, \p x.
-   * @param x A num_vars() x 1 vector.
+   * Return whether this constraint is satisfied by the given value, `x`.
+   * @param x A `num_vars` x 1 vector.
    * @param tol A tolerance for bound checking.
    */
   bool CheckSatisfied(const Eigen::Ref<const Eigen::VectorXd>& x,
                       const double tol = 1E-6) const {
-    DRAKE_ASSERT(x.rows() == num_vars_ || num_vars_ == Eigen::Dynamic);
+    DRAKE_ASSERT(x.rows() == num_vars() || num_vars() == Eigen::Dynamic);
     return DoCheckSatisfied(x, tol);
   }
 
   bool CheckSatisfied(const Eigen::Ref<const AutoDiffVecXd>& x,
                       const double tol = 1E-6) const {
-    DRAKE_ASSERT(x.rows() == num_vars_ || num_vars_ == Eigen::Dynamic);
+    DRAKE_ASSERT(x.rows() == num_vars() || num_vars() == Eigen::Dynamic);
     return DoCheckSatisfied(x, tol);
   }
 
   Eigen::VectorXd const& lower_bound() const { return lower_bound_; }
   Eigen::VectorXd const& upper_bound() const { return upper_bound_; }
-  size_t num_constraints() const { return lower_bound_.size(); }
 
+  /** Number of rows in the output constraint. */
+  // TODO(eric.cousineau): Change return type to `int`.
+  size_t num_constraints() const { return num_outputs(); }
+
+  /** Updates the lower bound. */
   template <typename Derived>
   void UpdateLowerBound(const Eigen::MatrixBase<Derived>& new_lb) {
     set_bounds(new_lb, upper_bound_);
   }
 
+  /** Updates the upper bound. */
   template <typename Derived>
   void UpdateUpperBound(const Eigen::MatrixBase<Derived>& new_ub) {
     set_bounds(lower_bound_, new_ub);
   }
 
-  inline void set_description(const std::string& description) {
-    description_ = description;
-  }
-  inline const std::string& get_description() const { return description_; }
-
   /**
    * Set the upper and lower bounds of the constraint.
-   * @param lower_bound. A num_constraint() x 1 vector.
-   * @param upper_bound. A num_constraint() x 1 vector.
+   * @param lower_bound. A `num_constraints` x 1 vector.
+   * @param upper_bound. A `num_constraints` x 1 vector.
    */
   template <typename DerivedL, typename DerivedU>
   void set_bounds(const Eigen::MatrixBase<DerivedL>& lower_bound,
@@ -122,19 +131,7 @@ class EvaluatorBase {
     upper_bound_ = upper_bound;
   }
 
-  /** Getter for the number of variables in the constraint, namely the
-   * number of rows in x, as used in Eval(x, y). */
-  int num_vars() const { return num_vars_; }
-
  protected:
-  virtual void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-                      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-                      Eigen::VectorXd& y) const = 0;
-
-  virtual void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-                      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-                      AutoDiffVecXd& y) const = 0;
-
   virtual bool DoCheckSatisfied(const Eigen::Ref<const Eigen::VectorXd>& x,
                                 const double tol) const {
     Eigen::VectorXd y(num_constraints());
@@ -151,24 +148,6 @@ class EvaluatorBase {
            (y.array() <= upper_bound_.cast<AutoDiffXd>().array() + tol).all();
   }
 
- protected:
-  /// Constructs a constraint which has \p num_constraints rows, with input
-  /// variables to Eval a \p num_vars x 1 vector.
-  /// @param num_constraints. The number of rows in the constraints, namely
-  /// in Constraint::Eval(x, y), y should be a \p num_constraints x 1 vector.
-  /// @param num_vars. The number of rows in the input, namely in
-  /// Constraint::Eval(x, y), x should be a \p num_vars x 1 vector.
-  /// If the input dimension is not known, then set \p num_vars to
-  /// Eigen::Dynamic.
-  EvaluatorBase(size_t num_constraints, int num_vars)
-      : lower_bound_(num_constraints),
-        upper_bound_(num_constraints),
-        num_vars_(num_vars) {
-    check(num_constraints);
-    lower_bound_.setConstant(-std::numeric_limits<double>::infinity());
-    upper_bound_.setConstant(std::numeric_limits<double>::infinity());
-  }
-
  private:
   void check(size_t num_constraints) {
     static_cast<void>(num_constraints);
@@ -180,35 +159,6 @@ class EvaluatorBase {
 
   Eigen::VectorXd lower_bound_;
   Eigen::VectorXd upper_bound_;
-  int num_vars_{0};
-  std::string description_;
-};
-
-/**
- * A constraint is a function + lower and upper bounds.
- *
- * Solver interfaces must acknowledge that these constraints are mutable.
- * Parameters can change after the constraint is constructed and before the
- * call to Solve().
- *
- * Some thoughts:
- * It should support evaluating the constraint, adding it to an optimization
- * problem, and have support for constraints that require slack variables
- * (adding additional decision variables to the problem).  There
- * should also be some notion of parameterized constraints:  e.g. the
- * acceleration constraints in the rigid body dynamics are constraints
- * on vdot and f, but are "parameterized" by q and v.
- *
- * Constraint is not copyable, nor movable.
- */
-class Constraint : public EvaluatorBase {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Constraint)
-
-  // TODO(eric.cousineau): Move Constraint-only functionality from
-  // EvaluatorBase here.
-
-  using EvaluatorBase::EvaluatorBase;
 };
 
 /**
@@ -260,14 +210,13 @@ class QuadraticConstraint : public Constraint {
     b_ = new_b;
   }
 
- protected:
+ private:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd& y) const override;
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
               AutoDiffVecXd& y) const override;
 
- private:
   Eigen::MatrixXd Q_;
   Eigen::VectorXd b_;
 };
@@ -313,20 +262,19 @@ class LorentzConeConstraint : public Constraint {
 
   ~LorentzConeConstraint() override {}
 
-  /// Getter for A.
+  /** Getter for A. */
   const Eigen::MatrixXd& A() const { return A_; }
 
-  /// Getter for b.
+  /** Getter for b. */
   const Eigen::VectorXd& b() const { return b_; }
 
- protected:
+ private:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd& y) const override;
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
               AutoDiffVecXd& y) const override;
 
- private:
   const Eigen::MatrixXd A_;
   const Eigen::VectorXd b_;
 };
@@ -364,24 +312,64 @@ class RotatedLorentzConeConstraint : public Constraint {
     DRAKE_ASSERT(A_.rows() == b_.rows());
   }
 
-  /// Getter for A.
+  /** Getter for A. */
   const Eigen::MatrixXd& A() const { return A_; }
 
-  /// Getter for b.
+  /** Getter for b. */
   const Eigen::VectorXd& b() const { return b_; }
 
   ~RotatedLorentzConeConstraint() override {}
 
- protected:
+ private:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd& y) const override;
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
               AutoDiffVecXd& y) const override;
 
- private:
   const Eigen::MatrixXd A_;
   const Eigen::VectorXd b_;
+};
+
+/**
+ * A constraint that may be specified using another (potentially nonlinear)
+ * evaluator.
+ * @tparam EvaluatorType The nested evaluator.
+ */
+template <typename EvaluatorType = EvaluatorBase>
+class EvaluatorConstraint : public Constraint {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EvaluatorConstraint)
+
+  /**
+   * Constructs an evaluator constraint, given the EvaluatorType instance
+   * (which will specify the number of constraints and variables), and will
+   * forward the remaining arguments to the Constraint constructor.
+   * @param evaluator EvaluatorType instance.
+   * @param args Arguments to be forwarded to the constraint constructor.
+   */
+  template <typename... Args>
+  EvaluatorConstraint(const std::shared_ptr<EvaluatorType>& evaluator,
+                      Args&&... args)
+      : Constraint(evaluator->num_outputs(), evaluator->num_vars(),
+                   std::forward<Args>(args)...),
+        evaluator_(evaluator) {}
+
+ protected:
+  /** Reference to the nested evaluator. */
+  const EvaluatorType& evaluator() const { return *evaluator_; }
+
+ private:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd& y) const override {
+    evaluator_->Eval(x, y);
+  }
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd& y) const override {
+    evaluator_->Eval(x, y);
+  }
+
+  std::shared_ptr<EvaluatorType> evaluator_;
 };
 
 /**
@@ -395,42 +383,34 @@ class RotatedLorentzConeConstraint : public Constraint {
  * to the members of the MathematicalProgram::Binding (the individual scalar
  * elements of the given VariableList).
  */
-class PolynomialConstraint : public Constraint {
+class PolynomialConstraint : public EvaluatorConstraint<PolynomialEvaluator> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PolynomialConstraint)
 
+  /**
+   * Constructs a polynomial constraint
+   * @param polynomials Polynomial vector, a `num_constraints` x 1 vector.
+   * @param poly_vars Polynomial variables, a `num_vars` x 1 vector.
+   * @param lb Lower bounds, a `num_constraints` x 1 vector.
+   * @param ub Upper bounds, a `num_constraints` x 1 vector.
+   */
   PolynomialConstraint(const VectorXPoly& polynomials,
                        const std::vector<Polynomiald::VarType>& poly_vars,
                        const Eigen::VectorXd& lb, const Eigen::VectorXd& ub)
-      : Constraint(polynomials.rows(), poly_vars.size(), lb, ub),
-        polynomials_(polynomials),
-        poly_vars_(poly_vars) {}
+      : EvaluatorConstraint(
+            std::make_shared<PolynomialEvaluator>(polynomials, poly_vars), lb,
+            ub) {}
 
   ~PolynomialConstraint() override {}
 
-  const VectorXPoly& polynomials() const { return polynomials_; }
+  const VectorXPoly& polynomials() const { return evaluator().polynomials(); }
 
   const std::vector<Polynomiald::VarType>& poly_vars() const {
-    return poly_vars_;
+    return evaluator().poly_vars();
   }
-
- protected:
-  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd& y) const override;
-
-  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-              AutoDiffVecXd& y) const override;
-
- private:
-  const VectorXPoly polynomials_;
-  const std::vector<Polynomiald::VarType> poly_vars_;
-
-  /// To avoid repeated allocation, reuse a map for the evaluation point.
-  mutable std::map<Polynomiald::VarType, double> double_evaluation_point_;
-  mutable std::map<Polynomiald::VarType, AutoDiffXd> taylor_evaluation_point_;
 };
 
-// todo: consider implementing DifferentiableConstraint,
+// TODO(bradking): consider implementing DifferentiableConstraint,
 // TwiceDifferentiableConstraint, ComplementarityConstraint,
 // IntegerConstraint, ...
 
@@ -531,14 +511,14 @@ class LinearEqualityConstraint : public LinearConstraint {
 };
 
 /**
-* Implements a constraint of the form @f lb <= x <= ub @f
-*
-* Note: the base Constraint class (as implemented at the moment) could
-* play this role.  But this class enforces that it is ONLY a bounding
-* box constraint, and not something more general.  Some solvers use
-* this information to handle bounding box constraints differently than
-* general constraints, so use of this form is encouraged.
-*/
+ * Implements a constraint of the form @f lb <= x <= ub @f
+ *
+ * Note: the base Constraint class (as implemented at the moment) could
+ * play this role.  But this class enforces that it is ONLY a bounding
+ * box constraint, and not something more general.  Some solvers use
+ * this information to handle bounding box constraints differently than
+ * general constraints, so use of this form is encouraged.
+ */
 class BoundingBoxConstraint : public LinearConstraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BoundingBoxConstraint)
@@ -717,7 +697,7 @@ class LinearMatrixInequalityConstraint : public Constraint {
 
   /**
    * @param F Each symmetric matrix F[i] should be of the same size.
-   * @param symmytry_tolerance  The precision to determine if the input matrices
+   * @param symmetry_tolerance  The precision to determine if the input matrices
    * Fi are all symmetric. @see math::IsSymmetric().
    */
   LinearMatrixInequalityConstraint(
@@ -751,5 +731,6 @@ class LinearMatrixInequalityConstraint : public Constraint {
   std::vector<Eigen::MatrixXd> F_;
   const int matrix_rows_{};
 };
+
 }  // namespace solvers
 }  // namespace drake
