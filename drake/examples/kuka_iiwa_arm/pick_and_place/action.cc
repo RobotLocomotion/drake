@@ -67,7 +67,7 @@ void WsgAction::OpenGripper(const WorldState& est_state,
   StartAction(est_state.get_wsg_time());
   *msg = lcmt_schunk_wsg_command();
   msg->utime = est_state.get_wsg_time() * 1e6;
-  msg->target_position_mm = 110;  // Maximum aperture for WSG
+  msg->target_position_mm = 100;  // Maximum aperture for WSG
   msg->force = 40;  // Force in center of WSG range
 }
 
@@ -76,7 +76,9 @@ void WsgAction::CloseGripper(const WorldState& est_state,
   StartAction(est_state.get_wsg_time());
   *msg = lcmt_schunk_wsg_command();
   msg->utime = est_state.get_wsg_time() * 1e6;
-  msg->target_position_mm = 0;
+  msg->target_position_mm = 8;  // 0 would smash the fingers together
+                                // and keep applying force on a real
+                                // WSG when no object is grasped.
   msg->force = 40;
 }
 
