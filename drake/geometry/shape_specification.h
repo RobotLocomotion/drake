@@ -1,7 +1,10 @@
 #pragma once
 
+#include <functional>
 #include <memory>
+#include <typeindex>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 
@@ -14,71 +17,70 @@
 namespace drake {
 namespace geometry {
 
+
 class ShapeReifier;
+
+/** A tag object that denotes a Shape subclass `S` in function signatures.
+
+ For example, `ShapeTag<MyShape>{}` will create a dummy object that
+ can be used to call functions that look like:
+
+ @code
+ template <class S>
+ const char* get_foo(ShapeTag<S>) { return S::get_foo(); }
+
+ int main() {
+    std::cout << get_foo(ShapeTag<MyShape>{});
+ }
+ @endcode
+
+ In this case, we could directly call get_foo<MyShape>() by specifying the
+ template argument, but that is not always possible.  In particular, tag
+ objects are acutely useful when calling templated constructors, because
+ there is no other mechanism for the caller to specify the template type. */
+template <typename T>
+struct ShapeTag {};
 
 /** The base interface for all shape specifications. Shapes have two basic
  requirements:
    - they must be cloneable, and
-   - they must invoke the correct method for themselves on a ShapeReifier. */
+   - they must invoke the correct method for themselves on a ShapeReifier.
+
+ The base class handles both requirements on behalf of derived shape classes.
+ However, derived concrete classes must have a public copy constructor to
+ work. Furthermore, derived classes should be marked final. */
 class Shape {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Shape)
   virtual ~Shape() {}
 
   /** Causes this description to be reified in the given `reifier`. Each
    concrete subclass must invoke the single, matching method on the reifier. */
-  virtual void Reify(ShapeReifier* reifier) const = 0;
+  virtual void Reify(ShapeReifier* reifier) const {
+    reifier_(reifier);
+  }
 
   /** Creates a unique copy of this shape. Invokes the protected DoClone(). */
   std::unique_ptr<Shape> Clone() const {
-    return std::unique_ptr<Shape>(DoClone());
+    return cloner_();
   }
 
  protected:
-  /** Performs the work of cloning a concrete shape. */
-  virtual Shape* DoClone() const = 0;
-};
+  template <typename S>
+  Shape(ShapeTag<S>);
 
-/** Utility class for making sure that concrete Shapes satisfy the requirements
- for shapes (cloneable and reifiable).
-
- Concrete shape classes should be derived from this class (in a CRTP way). They
- must also define a copy constructor. By doing so, concrete classes do not have
- to explicitly implement the cloning mechanism _or_ the reification mechanism.
-
- @internal Technically, this class could be rolled into Shape. But we want to
- be able to talk about Shapes without a hint of templating. So, this serves as
- an intermediate class to gain the CRTP benefit without cluttering up the
- public API.
-
- @tparam S The recursively-defined concrete Shape class.
- */
-template <typename S>
-class ReifiableShape : public Shape {
- public:
-  ReifiableShape() : Shape() {
-    // This enforces the existence of a copy constructor and the recursive
-    // nature of the sub-classes.
-    static_assert(std::is_base_of<Shape, S>::value &&
-                      std::is_copy_constructible<S>::value,
-                  "ReifiableShape should only be instantiated recursively on "
-                  "concrete derivations of the Shape class.");
-  }
-
-  void Reify(ShapeReifier* reifier) const override;
-
- protected:
-  Shape* DoClone() const override {
-    return new S(*static_cast<const S*>(this));
-  }
+ private:
+  std::function<std::unique_ptr<Shape>()> cloner_;
+  std::function<void(ShapeReifier*)> reifier_;
 };
 
 /** Definition of sphere. It is centered in its canonical frame with the
  given radius. */
-class Sphere : public ReifiableShape<Sphere> {
+class Sphere final : public Shape {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Sphere)
 
-  explicit Sphere(double radius) : radius_(radius) {}
+  explicit Sphere(double radius) : Shape(ShapeTag<Sphere>()), radius_(radius) {}
 
   double get_radius() const { return radius_; }
 
@@ -92,11 +94,11 @@ class Sphere : public ReifiableShape<Sphere> {
  Other shapes are considered to be penetrating the half space if there exists
  a point on the test shape that lies on the side of the plane opposite the
  normal. */
-class HalfSpace : public ReifiableShape<HalfSpace> {
+class HalfSpace final : public Shape {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HalfSpace)
 
-  HalfSpace() : ReifiableShape() {}
+  HalfSpace() : Shape(ShapeTag<HalfSpace>()) {}
 
   /** Given a plane `normal_F` and a point on the plane `X_FP`, both expressed
    in frame F, creates the transform `X_FC` from the half-space's canonical
@@ -166,8 +168,16 @@ class ShapeReifier {
 };
 
 template <typename S>
-void ReifiableShape<S>::Reify(ShapeReifier* reifier) const {
-  reifier->implementGeometry(*static_cast<const S*>(this));
+Shape::Shape(ShapeTag<S>) {
+  static_assert(std::is_base_of<Shape, S>::value,
+                "Concrete shapes *must* be derived from the Shape class");
+  cloner_ = [this]() {
+    DRAKE_DEMAND(typeid(*this) == typeid(S));
+    return std::unique_ptr<Shape>(new S(*static_cast<const S*>(this)));
+  };
+  reifier_ = [this](ShapeReifier* reifier) {
+    reifier->implementGeometry(*static_cast<const S*>(this));
+  };
 }
 
 }  // namespace geometry
