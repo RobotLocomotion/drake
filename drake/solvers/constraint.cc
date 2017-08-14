@@ -56,30 +56,6 @@ void RotatedLorentzConeConstraint::DoEval(
   y(2) = z(0) * z(1) - z.tail(z.size() - 2).squaredNorm();
 }
 
-void PolynomialConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
-                                  Eigen::VectorXd &y) const {
-  double_evaluation_point_.clear();
-  for (size_t i = 0; i < poly_vars_.size(); i++) {
-    double_evaluation_point_[poly_vars_[i]] = x[i];
-  }
-  y.resize(num_constraints());
-  for (size_t i = 0; i < num_constraints(); i++) {
-    y[i] = polynomials_[i].EvaluateMultivariate(double_evaluation_point_);
-  }
-}
-
-void PolynomialConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd> &x,
-                                  AutoDiffVecXd &y) const {
-  taylor_evaluation_point_.clear();
-  for (size_t i = 0; i < poly_vars_.size(); i++) {
-    taylor_evaluation_point_[poly_vars_[i]] = x[i];
-  }
-  y.resize(num_constraints());
-  for (size_t i = 0; i < num_constraints(); i++) {
-    y[i] = polynomials_[i].EvaluateMultivariate(taylor_evaluation_point_);
-  }
-}
-
 void LinearConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd> &x,
                               Eigen::VectorXd &y) const {
   y.resize(num_constraints());

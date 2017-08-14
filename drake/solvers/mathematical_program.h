@@ -2170,7 +2170,7 @@ class MathematicalProgram {
    */
   template <typename C>
   Eigen::VectorXd EvalBindingAtSolution(const Binding<C>& binding) const {
-    Eigen::VectorXd val(binding.constraint()->num_constraints());
+    Eigen::VectorXd val(binding.constraint()->num_outputs());
     Eigen::VectorXd binding_var_vals = GetSolution(binding.variables());
     binding.constraint()->Eval(binding_var_vals, val);
     return val;

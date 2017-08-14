@@ -11,6 +11,7 @@
 #include "drake/common/test/is_dynamic_castable.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/solvers/constraint.h"
 #include "drake/solvers/create_cost.h"
 #include "drake/solvers/test/generic_trivial_costs.h"
 
@@ -190,11 +191,17 @@ GTEST_TEST(testCost, testCostShim) {
 
 // Generic dereferencing for a value type, or a managed pointer.
 template <typename T>
-const T& deref(const T& x) { return x; }
+const T& deref(const T& x) {
+  return x;
+}
 template <typename T>
-const T& deref(const shared_ptr<T>& x) { return *x; }
+const T& deref(const shared_ptr<T>& x) {
+  return *x;
+}
 template <typename T>
-const T& deref(const unique_ptr<T>& x) { return *x; }
+const T& deref(const unique_ptr<T>& x) {
+  return *x;
+}
 
 // Verifies that FunctionCost form can be constructed correctly.
 template <typename F>
