@@ -17,38 +17,23 @@
 namespace drake {
 namespace geometry {
 
-
 class ShapeReifier;
 
-/** A tag object that denotes a Shape subclass `S` in function signatures.
-
- For example, `ShapeTag<MyShape>{}` will create a dummy object that
- can be used to call functions that look like:
-
- @code
- template <class S>
- const char* get_foo(ShapeTag<S>) { return S::get_foo(); }
-
- int main() {
-    std::cout << get_foo(ShapeTag<MyShape>{});
- }
- @endcode
-
- In this case, we could directly call get_foo<MyShape>() by specifying the
- template argument, but that is not always possible.  In particular, tag
- objects are acutely useful when calling templated constructors, because
- there is no other mechanism for the caller to specify the template type. */
-template <typename T>
-struct ShapeTag {};
-
-/** The base interface for all shape specifications. Shapes have two basic
- requirements:
+/** The base interface for all shape specifications. It has no public
+  constructor and cannot be instantiated directly. All Shape classes have two
+  basic requirements:
    - they must be cloneable, and
    - they must invoke the correct method for themselves on a ShapeReifier.
 
  The base class handles both requirements on behalf of derived shape classes.
- However, derived concrete classes must have a public copy constructor to
- work. Furthermore, derived classes should be marked final. */
+ However, it places several requirements on derived classes:
+
+   1. they must have a public copy constructor,
+   2. they must be marked as final, and
+   3. their constructors must invoke the parent constructor with a nullptr
+      cast as their type (see Shape() for details), and
+   4. The ShapeReifier class must be extended to include a an invocation of
+      ShapeReifier::implementGeometry() on the derived Shape class. */
 class Shape {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Shape)
@@ -66,8 +51,21 @@ class Shape {
   }
 
  protected:
+  /** Constructor available for derived class construction. A derived class
+   should provide invoke this in its initialization list, passing a `nullptr`
+   cast to a pointer of the derived type, e.g.:
+
+   ```
+   class MyShape final : public Shape {
+    public:
+     MyShape() : Shape(static_cast<MyShape*>(nullptr)) {}
+     ...
+   };
+   ```
+
+   @tparam S    The derived shape class. It must derive from Shape. */
   template <typename S>
-  Shape(ShapeTag<S>);
+  Shape(S*);
 
  private:
   std::function<std::unique_ptr<Shape>()> cloner_;
@@ -80,7 +78,8 @@ class Sphere final : public Shape {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Sphere)
 
-  explicit Sphere(double radius) : Shape(ShapeTag<Sphere>()), radius_(radius) {}
+  explicit Sphere(double radius) :
+      Shape(static_cast<Sphere*>(nullptr)), radius_(radius) {}
 
   double get_radius() const { return radius_; }
 
@@ -98,7 +97,7 @@ class HalfSpace final : public Shape {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HalfSpace)
 
-  HalfSpace() : Shape(ShapeTag<HalfSpace>()) {}
+  HalfSpace() : Shape(static_cast<HalfSpace*>(nullptr)) {}
 
   /** Given a plane `normal_F` and a point on the plane `X_FP`, both expressed
    in frame F, creates the transform `X_FC` from the half-space's canonical
@@ -168,7 +167,7 @@ class ShapeReifier {
 };
 
 template <typename S>
-Shape::Shape(ShapeTag<S>) {
+Shape::Shape(S*) {
   static_assert(std::is_base_of<Shape, S>::value,
                 "Concrete shapes *must* be derived from the Shape class");
   cloner_ = [this]() {
