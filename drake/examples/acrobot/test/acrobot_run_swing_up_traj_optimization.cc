@@ -5,7 +5,7 @@
 #include <iostream>
 #include <memory>
 
-#include <gflags/gflags.h>
+#include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
 #include "drake/examples/acrobot/acrobot_plant.h"
@@ -29,11 +29,7 @@ namespace examples {
 namespace acrobot {
 namespace {
 
-DEFINE_double(realtime_factor, 1.0,
-              "Playback speed.  See documentation for "
-              "Simulator::set_target_realtime_rate() for details.");
-
-int do_main() {
+GTEST_TEST(AcrobotTest, SwingUpTrajectoryOptimization) {
   systems::DiagramBuilder<double> builder;
 
   auto acrobot = AcrobotPlant<double>::CreateAcrobotMIT();
@@ -57,10 +53,7 @@ int do_main() {
       PiecewisePolynomialType::FirstOrderHold({0, timespan_init}, {x0, xG});
   SolutionResult result = dircol_traj.SolveTraj(
       timespan_init, PiecewisePolynomialType(), traj_init_x);
-  if (result != SolutionResult::kSolutionFound) {
-    std::cerr << "Result is an Error" << std::endl;
-    return 1;
-  }
+  EXPECT_EQ(result, SolutionResult::kSolutionFound);
 
   const PiecewisePolynomialTrajectory pp_xtraj =
       dircol_traj.ReconstructStateTrajectory();
@@ -81,19 +74,12 @@ int do_main() {
 
   systems::Simulator<double> simulator(*diagram);
 
-  simulator.set_target_realtime_rate(FLAGS_realtime_factor);
+  simulator.set_target_realtime_rate(1);
   simulator.Initialize();
   simulator.StepTo(kTrajectoryTimeUpperBound);
-
-  return 0;
 }
 
 }  // namespace
 }  // namespace acrobot
 }  // namespace examples
 }  // namespace drake
-
-int main(int argc, char* argv[]) {
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
-  return drake::examples::acrobot::do_main();
-}
