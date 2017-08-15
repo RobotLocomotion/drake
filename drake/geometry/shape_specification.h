@@ -140,6 +140,7 @@ Shape::Shape(S* shape) {
     return std::unique_ptr<Shape>(new S(derived_shape));
   };
   reifier_ = [](const Shape& shape_arg, ShapeReifier* reifier) {
+    DRAKE_DEMAND(typeid(shape_arg) == typeid(S));
     const S& derived_shape = static_cast<const S&>(shape_arg);
     reifier->ImplementGeometry(derived_shape);
   };
