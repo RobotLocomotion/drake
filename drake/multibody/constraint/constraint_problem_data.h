@@ -213,13 +213,13 @@ struct ConstraintVelProblemData {
 
   /// @name Data for constraints on velocities along the contact normal
   /// Problem data for constraining the velocity of two bodies projected
-  /// along the contact surface normal, for n point contacts. 
+  /// along the contact surface normal, for n point contacts.
   /// These data center around the Jacobian matrix N, the ℝⁿˣᵐ
   /// Jacobian matrix that transforms generalized velocities (v ∈ ℝᵐ) into
   /// velocities projected along the contact normals at the n point contacts.
   /// @{
 
-  /// An operator that performs the multiplication N⋅v. The default operator 
+  /// An operator that performs the multiplication N⋅v. The default operator
   /// returns an empty vector.
   std::function<VectorX<T>(const VectorX<T>&)> N_mult;
 
@@ -233,14 +233,14 @@ struct ConstraintVelProblemData {
 
   /// @name Data for constraints on contact friction
   /// Problem data for constraining the tangential velocity of two bodies
-  /// projected along the contact surface tangents, for n point contacts. 
+  /// projected along the contact surface tangents, for n point contacts.
   /// These data center around the Jacobian matrix, F ∈ ℝⁿʳˣᵐ, that
   /// transforms generalized velocities (v ∈ ℝᵐ) into velocities projected
-  /// along the r vectors that span the contact tangents at the n 
-  /// point contacts. For contact problems in two dimensions, r would be one. 
+  /// along the r vectors that span the contact tangents at the n
+  /// point contacts. For contact problems in two dimensions, r would be one.
   /// For a friction pyramid in three dimensions, r would be two. While the
   /// definition of the dimension of the Jacobian matrix above indicates that
-  /// every one of the n contacts uses the same "r", the code imposes no such 
+  /// every one of the n contacts uses the same "r", the code imposes no such
   /// requirement.
   /// @{
 
@@ -262,9 +262,9 @@ struct ConstraintVelProblemData {
   /// which can be read as the velocity at joint j (vⱼ) must be no larger
   /// than k, the force must be applied to limit the velocity at the joint,
   /// and the limiting force cannot be applied if the velocity at the joint
-  /// is not at the limit (i.e., vⱼ ≤ k). These data center around the 
+  /// is not at the limit (i.e., vⱼ ≤ k). These data center around the
   /// Jacobian matrix L, the ℝᵗˣᵐ Jacobian matrix that transforms generalized
-  /// velocities (v ∈ ℝᵐ) into the time derivatives of t unilateral constraint 
+  /// velocities (v ∈ ℝᵐ) into the time derivatives of t unilateral constraint
   /// functions.
   /// @{
 
