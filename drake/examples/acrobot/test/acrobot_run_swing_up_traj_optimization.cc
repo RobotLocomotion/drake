@@ -6,7 +6,6 @@
 #include <memory>
 
 #include <gflags/gflags.h>
-#include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
 #include "drake/examples/acrobot/acrobot_plant.h"
@@ -33,7 +32,7 @@ DEFINE_double(realtime_factor, 1.0,
               "Playback speed.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
 
-GTEST_TEST(AcrobotTest, SwingUpTrajectoryOptimization) {
+int do_main() {
   systems::DiagramBuilder<double> builder;
 
   AcrobotPlant<double> acrobot;
@@ -57,16 +56,25 @@ GTEST_TEST(AcrobotTest, SwingUpTrajectoryOptimization) {
       PiecewisePolynomialType::FirstOrderHold({0, timespan_init}, {x0, xG});
   SolutionResult result = dircol_traj.SolveTraj(
       timespan_init, PiecewisePolynomialType(), traj_init_x);
-  EXPECT_EQ(result, SolutionResult::kSolutionFound);
+  if (result != SolutionResult::kSolutionFound) {
+    std::cerr << "No solution found.\n";
+    return 1;
+  }
 
   const PiecewisePolynomialTrajectory pp_xtraj =
       dircol_traj.ReconstructStateTrajectory();
   auto state_source = builder.AddSystem<systems::TrajectorySource>(pp_xtraj);
 
-  EXPECT_LE(pp_xtraj.get_end_time() - pp_xtraj.get_start_time(),
-            kTrajectoryTimeUpperBound);
-  EXPECT_GE(pp_xtraj.get_end_time() - pp_xtraj.get_start_time(),
-            kTrajectoryTimeLowerBound);
+  if (pp_xtraj.get_end_time() - pp_xtraj.get_start_time() >
+            kTrajectoryTimeUpperBound) {
+    std::cerr << "Trajectory time exceeds above the upper bound.\n";
+    return 1;
+  }
+  if (pp_xtraj.get_end_time() - pp_xtraj.get_start_time() <
+      kTrajectoryTimeLowerBound) {
+    std::cerr << "Trajectory time exceeds below the lower bound.\n";
+    return 1;
+  }
 
   lcm::DrakeLcm lcm;
   auto tree = std::make_unique<RigidBodyTree<double>>();
@@ -93,9 +101,15 @@ GTEST_TEST(AcrobotTest, SwingUpTrajectoryOptimization) {
   simulator.set_target_realtime_rate(FLAGS_realtime_factor);
   simulator.Initialize();
   simulator.StepTo(kTrajectoryTimeUpperBound);
+  return 0;
 }
 
 }  // namespace
 }  // namespace acrobot
 }  // namespace examples
 }  // namespace drake
+
+int main(int argc, char* argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  return drake::examples::acrobot::do_main();
+}

@@ -152,10 +152,12 @@ drake_cc_binary(
     ],
 )
 
-drake_cc_googletest(
+drake_cc_binary(
     name = "acrobot_run_swing_up_traj_optimization",
-    args = ["--realtime_factor=0.0"],
+    srcs = ["test/acrobot_run_swing_up_traj_optimization.cc"],
+    add_test_rule = 1,
     data = [":models"],
+    test_rule_args = ["-realtime_factor=0.0"],
     deps = [
         ":acrobot_plant",
         ":acrobot_swing_up",
