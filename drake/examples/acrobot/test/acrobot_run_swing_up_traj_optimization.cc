@@ -5,6 +5,7 @@
 #include <iostream>
 #include <memory>
 
+#include <gflags/gflags.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
@@ -28,6 +29,9 @@ namespace drake {
 namespace examples {
 namespace acrobot {
 namespace {
+DEFINE_double(realtime_factor, 1.0,
+              "Playback speed.  See documentation for "
+              "Simulator::set_target_realtime_rate() for details.");
 
 GTEST_TEST(AcrobotTest, SwingUpTrajectoryOptimization) {
   systems::DiagramBuilder<double> builder;
@@ -59,6 +63,11 @@ GTEST_TEST(AcrobotTest, SwingUpTrajectoryOptimization) {
       dircol_traj.ReconstructStateTrajectory();
   auto state_source = builder.AddSystem<systems::TrajectorySource>(pp_xtraj);
 
+  EXPECT_LE(pp_xtraj.get_end_time() - pp_xtraj.get_start_time(),
+            kTrajectoryTimeUpperBound);
+  EXPECT_GE(pp_xtraj.get_end_time() - pp_xtraj.get_start_time(),
+            kTrajectoryTimeLowerBound);
+
   lcm::DrakeLcm lcm;
   auto tree = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
@@ -81,7 +90,7 @@ GTEST_TEST(AcrobotTest, SwingUpTrajectoryOptimization) {
 
   systems::Simulator<double> simulator(*diagram);
 
-  simulator.set_target_realtime_rate(1);
+  simulator.set_target_realtime_rate(FLAGS_realtime_factor);
   simulator.Initialize();
   simulator.StepTo(kTrajectoryTimeUpperBound);
 }

@@ -154,6 +154,7 @@ drake_cc_binary(
 
 drake_cc_googletest(
     name = "acrobot_run_swing_up_traj_optimization",
+    args = ["--realtime_factor=0.0"],
     data = [":models"],
     deps = [
         ":acrobot_plant",
@@ -167,6 +168,7 @@ drake_cc_googletest(
         "//drake/systems/analysis",
         "//drake/systems/controllers:linear_quadratic_regulator",
         "//drake/systems/primitives:trajectory_source",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 
@@ -207,7 +209,6 @@ drake_cc_binary(
 
 drake_cc_googletest(
     name = "acrobot_urdf_dynamics_test",
-    args = ["--reltime_factor=0.0"],
     data = [":models"],
     deps = [
         ":acrobot_plant",
