@@ -1,5 +1,7 @@
 #include "drake/geometry/shape_specification.h"
 
+#include <memory>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
@@ -8,6 +10,9 @@
 namespace drake {
 namespace geometry {
 namespace {
+
+using std::move;
+using std::unique_ptr;
 
 // Confirm correct interactions with the Reifier.
 
@@ -49,11 +54,26 @@ TEST_F(ReifierTest, ReificationDifferentiation) {
 }
 
 // Confirms that the ReifiableShape properly clones the right types.
-GTEST_TEST(ShapeSpecificationTest, CloningShapes) {
+TEST_F(ReifierTest, CloningShapes) {
   Sphere s{1.0};
   ASSERT_TRUE(is_dynamic_castable<Sphere>(s.Clone().get()));
   HalfSpace h;
   ASSERT_TRUE(is_dynamic_castable<HalfSpace>(h.Clone().get()));
+
+  // Confirms clone independence. The idea that a clone can outlive its
+  // source and there aren't any unintentional bindings between the two.
+  unique_ptr<Shape> cloned_shape{};
+  {
+    Sphere local_sphere{1.23};
+    cloned_shape = local_sphere.Clone();
+    Sphere* raw_sphere = static_cast<Sphere*>(cloned_shape.get());
+    // Confirm it's an appropriate copy.
+    ASSERT_EQ(raw_sphere->get_radius(), local_sphere.get_radius());
+  }
+  // Now confirm it's still alive. I should be able to reify it into a sphere.
+  cloned_shape->Reify(this);
+  ASSERT_TRUE(sphere_made_);
+  ASSERT_FALSE(half_space_made_);
 }
 
 

@@ -36,6 +36,11 @@ class Shape {
   std::unique_ptr<Shape> Clone() const;
 
  protected:
+  // This is *not* in the public section. However, this allows the children to
+  // also use this macro, but precludes the possibility of external users
+  // slicing Shapes.
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Shape)
+
   /** Constructor available for derived class construction. A derived class
    should provide invoke this in its initialization list, passing a `nullptr`
    cast to a pointer of the derived type, e.g.:
@@ -63,11 +68,9 @@ class Shape {
   template <typename S>
   explicit Shape(S*);
 
-
-
  private:
-  std::function<std::unique_ptr<Shape>()> cloner_;
-  std::function<void(ShapeReifier*)> reifier_;
+  std::function<std::unique_ptr<Shape>(const Shape&)> cloner_;
+  std::function<void(const Shape&, ShapeReifier*)> reifier_;
 };
 
 /** Definition of sphere. It is centered in its canonical frame with the
@@ -131,12 +134,14 @@ Shape::Shape(S* shape) {
   DRAKE_ASSERT(shape == nullptr);
   static_assert(std::is_base_of<Shape, S>::value,
                 "Concrete shapes *must* be derived from the Shape class");
-  cloner_ = [this]() {
-    DRAKE_DEMAND(typeid(*this) == typeid(S));
-    return std::unique_ptr<Shape>(new S(*static_cast<const S*>(this)));
+  cloner_ = [](const Shape& shape_arg) {
+    DRAKE_DEMAND(typeid(shape_arg) == typeid(S));
+    const S& derived_shape = static_cast<const S&>(shape_arg);
+    return std::unique_ptr<Shape>(new S(derived_shape));
   };
-  reifier_ = [this](ShapeReifier* reifier) {
-    reifier->ImplementGeometry(*static_cast<const S*>(this));
+  reifier_ = [](const Shape& shape_arg, ShapeReifier* reifier) {
+    const S& derived_shape = static_cast<const S&>(shape_arg);
+    reifier->ImplementGeometry(derived_shape);
   };
 }
 

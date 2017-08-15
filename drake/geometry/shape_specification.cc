@@ -5,9 +5,9 @@ namespace geometry {
 
 Shape::~Shape() {}
 
-void Shape::Reify(ShapeReifier* reifier) const { reifier_(reifier); }
+void Shape::Reify(ShapeReifier* reifier) const { reifier_(*this, reifier); }
 
-std::unique_ptr<Shape> Shape::Clone() const { return cloner_(); }
+std::unique_ptr<Shape> Shape::Clone() const { return cloner_(*this); }
 
 Sphere::Sphere(double radius)
     : Shape(static_cast<Sphere*>(nullptr)), radius_(radius) {}
