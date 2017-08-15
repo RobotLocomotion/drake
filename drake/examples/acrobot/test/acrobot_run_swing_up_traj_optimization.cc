@@ -32,7 +32,7 @@ namespace {
 GTEST_TEST(AcrobotTest, SwingUpTrajectoryOptimization) {
   systems::DiagramBuilder<double> builder;
 
-  auto acrobot = AcrobotPlant<double>::CreateAcrobotMIT();
+  AcrobotPlant<double> acrobot;
 
   const int kNumTimeSamples = 21;
   const double kTrajectoryTimeLowerBound = 2;
@@ -41,10 +41,10 @@ GTEST_TEST(AcrobotTest, SwingUpTrajectoryOptimization) {
   const Eigen::Vector4d x0(0, 0, 0, 0);
   const Eigen::Vector4d xG(M_PI, 0, 0, 0);
 
-  auto context = acrobot->CreateDefaultContext();
+  auto context = acrobot.CreateDefaultContext();
 
   systems::DircolTrajectoryOptimization dircol_traj(
-      acrobot.get(), *context, kNumTimeSamples, kTrajectoryTimeLowerBound,
+      &acrobot, *context, kNumTimeSamples, kTrajectoryTimeLowerBound,
       kTrajectoryTimeUpperBound);
   AddSwingUpTrajectoryParams(x0, xG, &dircol_traj);
 
