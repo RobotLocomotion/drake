@@ -26,7 +26,7 @@ Argument:
 VTK_MAJOR_MINOR_VERSION = "8.0"
 
 def _vtk_cc_library(os_name, name, hdrs = None, visibility = None, deps = None,
-                    header_only = False):
+                    header_only = False, linkopts = []):
     hdr_paths = []
 
     if hdrs:
@@ -46,14 +46,13 @@ def _vtk_cc_library(os_name, name, hdrs = None, visibility = None, deps = None,
     if not deps:
         deps = []
 
-    linkopts = []
     srcs = []
 
     if os_name == "mac os x":
         srcs = ["empty.cc"]
 
         if not header_only:
-            linkopts = [
+            linkopts = linkopts + [
                 "-L/usr/local/opt/vtk@{}/lib".format(VTK_MAJOR_MINOR_VERSION),
                 "-l{}-{}".format(name, VTK_MAJOR_MINOR_VERSION),
             ]
@@ -121,6 +120,11 @@ def _impl(repository_ctx):
     # those used directly or indirectly by Drake.
 
     # TODO(jamiesnape): Create a script to help generate the targets.
+
+    # To see what the VTK module dependencies are, you can inspect VTK's source
+    # tree. For example, for vtkIOXML and vtkIOXMLParser:
+    #   VTK/IO/XML/module.cmake
+    #   VTK/IO/XMLParser/module.cmake
 
     file_content = _vtk_cc_library(
         repository_ctx.os.name,
@@ -372,6 +376,40 @@ def _impl(repository_ctx):
         ],
     )
 
+    # See: VTK/IO/XMLParser/{*.h,module.cmake}
+    file_content += _vtk_cc_library(
+        repository_ctx.os.name,
+        "vtkIOXMLParser",
+        deps = [
+            ":vtkCommonCore",
+            ":vtkCommonDataModel",
+            ":vtkexpat",
+            ":vtkIOCore",
+            ":vtksys",
+        ],
+    )
+
+    # See: VTK/IO/XML/{*.h,module.cmake}
+    file_content += _vtk_cc_library(
+        repository_ctx.os.name,
+        "vtkIOXML",
+        hdrs = [
+            "vtkIOXMLModule.h",
+            "vtkXMLDataReader.h",
+            "vtkXMLPolyDataReader.h",
+            "vtkXMLReader.h",
+            "vtkXMLUnstructuredDataReader.h",
+        ],
+        deps = [
+            ":vtkCommonCore",
+            ":vtkCommonDataModel",
+            ":vtkCommonExecutionModel",
+            ":vtkIOCore",
+            ":vtkIOXMLParser",
+            ":vtksys",
+        ],
+    )
+
     file_content += _vtk_cc_library(
         repository_ctx.os.name,
         "vtkIOGeometry",
@@ -479,6 +517,17 @@ def _impl(repository_ctx):
             ":vtkRenderingCore",
             ":vtkglew",
         ],
+    )
+
+    # The packaged version of VTK (both Ubuntu and Mac) uses the system version
+    # of expat, and do not include `vtkexpat` as a shared library.
+    file_content += _vtk_cc_library(
+        repository_ctx.os.name,
+        "vtkexpat",
+        linkopts = [
+            "-lexpat",
+        ],
+        header_only = True,
     )
 
     if repository_ctx.os.name == "mac os x":

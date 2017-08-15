@@ -5,6 +5,7 @@ load(
     "//tools:drake.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
+    "drake_cc_test",
 )
 load("//tools:lint.bzl", "add_lint_tests")
 
@@ -87,6 +88,16 @@ drake_cc_googletest(
         "//drake/multibody/rigid_body_plant:create_load_robot_message",
         "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/solvers:mathematical_program",
+    ],
+)
+
+drake_cc_test(
+    name = "tmp_vtk_io_xml_test",
+    data = [
+        "test/tmp_vtk_io_xml_test.vtp",
+    ],
+    deps = [
+        "@vtk//:vtkIOXML",
     ],
 )
 
