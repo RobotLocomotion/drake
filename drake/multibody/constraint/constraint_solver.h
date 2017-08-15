@@ -526,7 +526,8 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
   qq->segment(nc, nr) = F(M_inv_x_f) + Fdot_times_v;
   qq->segment(nc + nr, num_spanning_vectors) = -qq->segment(nc, nr);
   qq->segment(nc + nk, num_non_sliding).setZero();
-  qq->segment(nc + nk + num_non_sliding, num_limits) = L(M_inv_x_f) + Ldot_times_v;
+  qq->segment(nc + nk + num_non_sliding, num_limits) = L(M_inv_x_f) +
+      Ldot_times_v;
 }
 
 // Forms the LCP matrix and vector, which is used to determine the collisional

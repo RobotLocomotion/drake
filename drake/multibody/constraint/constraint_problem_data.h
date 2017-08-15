@@ -71,7 +71,7 @@ struct ConstraintAccelProblemData {
 
   /// @name Data for constraints on accelerations along the contact normal
   /// Problem data for constraining the acceleration of two bodies projected
-  /// along the contact surface normal, for n point contacts. 
+  /// along the contact surface normal, for n point contacts.
   /// These data center around two Jacobian matrices, N and Q. N is the ℝⁿˣᵐ
   /// Jacobian matrix that transforms generalized velocities (v ∈ ℝᵐ) into
   /// velocities projected along the contact normals at the n point contacts.
@@ -100,14 +100,14 @@ struct ConstraintAccelProblemData {
 
   /// @name Data for non-sliding contact friction constraints
   /// Problem data for constraining the tangential acceleration of two bodies
-  /// projected along the contact surface tangents, for n point contacts. 
+  /// projected along the contact surface tangents, for n point contacts.
   /// These data center around the Jacobian matrix, F ∈ ℝʸʳˣᵐ, that
   /// transforms generalized velocities (v ∈ ℝᵐ) into velocities projected
   /// along the r vectors that span the contact tangents at the y *non-sliding*
-  /// point contacts. For contact problems in two dimensions, r would be one. 
+  /// point contacts. For contact problems in two dimensions, r would be one.
   /// For a friction pyramid in three dimensions, r would be two. While the
   /// definition of the dimension of the Jacobian matrix above indicates that
-  /// every one of the y non-sliding contacts uses the same "r", the code 
+  /// every one of the y non-sliding contacts uses the same "r", the code
   /// imposes no such requirement.
   /// @{
 
@@ -134,14 +134,14 @@ struct ConstraintAccelProblemData {
   /// which can be read as the acceleration at joint j (v̇ⱼ) must be no larger
   /// than k, the force must be applied to limit the acceleration at the joint,
   /// and the limiting force cannot be applied if the acceleration at the joint
-  /// is not at the limit (i.e., v̇ⱼ ≤ k). These data center around the 
+  /// is not at the limit (i.e., v̇ⱼ ≤ k). These data center around the
   /// Jacobian matrix L, the ℝᵗˣᵐ Jacobian matrix that transforms generalized
-  /// velocities (v ∈ ℝᵐ) into the time derivatives of t unilateral constraint 
+  /// velocities (v ∈ ℝᵐ) into the time derivatives of t unilateral constraint
   /// functions.
   /// @{
 
-  /// The number of limit constraints. Must equal `t`, i.e., the 
-  /// number of columns of L. 
+  /// The number of limit constraints. Must equal `t`, i.e., the
+  /// number of columns of L.
   int num_limit_constraints{0};
 
   /// An operator that performs the multiplication L⋅v. The default operator
