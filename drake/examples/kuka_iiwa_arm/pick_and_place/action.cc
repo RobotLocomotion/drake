@@ -25,19 +25,23 @@ void Action::StartAction(double start_time) {
   act_start_time_ = start_time;
 }
 
+const double kMaxIiwaJointVelocity = 1.;  // rad/s
+
 IiwaMove::IiwaMove() {}
 
 void IiwaMove::MoveJoints(const WorldState& est_state,
                           const RigidBodyTree<double>& iiwa,
-                          const std::vector<double>& time,
+                          const std::vector<double>& time_in,
                           const std::vector<VectorX<double>>& q,
                           robotlocomotion::robot_plan_t* plan) {
+  std::vector<double> time = time_in;
   DRAKE_DEMAND(time.size() == q.size());
   DRAKE_DEMAND(plan != nullptr);
 
   std::vector<int> info(time.size(), 1);
   MatrixX<double> q_mat(q.front().size(), q.size());
   for (size_t i = 0; i < q.size(); ++i) q_mat.col(i) = q[i];
+  ApplyJointVelocityLimits(kMaxIiwaJointVelocity, q_mat, &time);
   *plan = EncodeKeyFrames(iiwa, time, info, q_mat);
   StartAction(est_state.get_iiwa_time());
   duration_ = time.back();
