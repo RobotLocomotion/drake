@@ -1463,6 +1463,12 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
     while (!Step(adjusted_step_size)) {
       SPDLOG_DEBUG(drake::log(), "Sub-step failed at {}", adjusted_step_size);
       adjusted_step_size *= subdivision_factor_;
+
+      // Note: we could give the user more rope to hang themselves by looking
+      // for zero rather than machine epsilon, which might be advantageous if
+      // the user were modeling systems over extremely small time scales.
+      // However, that issue could be addressed instead by scaling units, and
+      // using machine epsilon allows failure to be detected much more rapidly.
       if (adjusted_step_size < std::numeric_limits<double>::epsilon()) {
         throw std::runtime_error("Integrator has been directed to a near zero-"
                                  "length step in order to obtain convergence.");
