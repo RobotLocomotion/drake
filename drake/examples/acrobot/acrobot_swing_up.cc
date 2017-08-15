@@ -22,76 +22,23 @@ using drake::solvers::LinearEqualityConstraint;
 namespace drake {
 namespace examples {
 namespace acrobot {
-namespace {
-
-/**
- * Define a function to be evaluated as the running cost for an
- * acrobot trajectory (using the solvers::FunctionTraits style
- * interface).
- */
-class AcrobotRunningCost {
- public:
-  static size_t numInputs() {
-    return AcrobotStateVectorIndices::kNumCoordinates + 2;
-  }
-  static size_t numOutputs() { return 1; }
-
-  template <typename ScalarType>
-  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  void eval(const VecIn<ScalarType>& x, VecOut<ScalarType>& y) const {
-    DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
-    DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
-
-    // u represents the input vector.
-    const auto u = x.tail(1);
-    const double R = 10;  // From PendulumPlant.m, arbitrary AFAICT
-    y = (R * u) * u;
-  }
-};
-
-/**
- * Define a function to be evaluated as the final cost for an
- * acrobot trajectory (using the solvers::FunctionTraits style
- * interface).
- */
-class AcrobotFinalCost {
- public:
-  static size_t numInputs() {
-    return AcrobotStateVectorIndices::kNumCoordinates + 1;
-  }
-  static size_t numOutputs() { return 1; }
-
-  template <typename ScalarType>
-  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  void eval(const VecIn<ScalarType>& x, VecOut<ScalarType>& y) const {
-    DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
-    DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
-
-    y(0) = x(0);
-  }
-};
-}  // anon namespace
 
 void AddSwingUpTrajectoryParams(
-    int num_time_samples,
     const Eigen::Vector4d& x0, const Eigen::Vector4d& xG,
-    systems::DircolTrajectoryOptimization* dircol_traj) {
+    systems::DircolTrajectoryOptimization* dircol) {
 
-  // Current limit for MIT's acrobot is 7-9 Amps, accroding to Michael Posa.
+  // Current limit for MIT's acrobot is 7-9 Amps, according to Michael Posa.
   const double kTorqueLimit = 8;
-  const drake::Vector1d umin(-kTorqueLimit);
-  const drake::Vector1d umax(kTorqueLimit);
-  dircol_traj->AddInputBounds(umin, umax);
 
-  dircol_traj->AddStateConstraint(
-      std::make_shared<LinearEqualityConstraint>(
-          Eigen::Matrix4d::Identity(), x0), {0});
-  dircol_traj->AddStateConstraint(
-      std::make_shared<LinearEqualityConstraint>(
-          Eigen::Matrix4d::Identity(), xG), {num_time_samples - 1});
+  auto u = dircol->input();
+  dircol->AddConstraintToAllKnotPoints(-kTorqueLimit <= u(0));
+  dircol->AddConstraintToAllKnotPoints(u(0) <= kTorqueLimit);
 
-  dircol_traj->AddRunningCostFunc(AcrobotRunningCost());
-  dircol_traj->AddFinalCostFunc(AcrobotFinalCost());
+  dircol->AddLinearConstraint(dircol->initial_state() == x0);
+  dircol->AddLinearConstraint(dircol->final_state() == xG);
+
+  const double R = 10;  // Cost on input "effort".
+  dircol->AddRunningCost((R * u) * u);
 }
 
 }  // namespace acrobot
