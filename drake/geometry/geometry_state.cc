@@ -130,13 +130,13 @@ SourceId GeometryState<T>::RegisterNewSource(const std::string& name) {
 
 template <typename T>
 FrameId GeometryState<T>::RegisterFrame(SourceId source_id,
-                                        const GeometryFrame<T>& frame) {
+                                        const GeometryFrame& frame) {
   return RegisterFrame(source_id, InternalFrame::get_world_frame_id(), frame);
 }
 
 template <typename T>
 FrameId GeometryState<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
-                                        const GeometryFrame<T>&) {
+                                        const GeometryFrame&) {
   using std::to_string;
   FrameId frame_id = FrameId::get_new_id();
 
@@ -160,7 +160,7 @@ FrameId GeometryState<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
 template <typename T>
 GeometryId GeometryState<T>::RegisterGeometry(
     SourceId source_id, FrameId frame_id,
-    std::unique_ptr<GeometryInstance<T>> geometry) {
+    std::unique_ptr<GeometryInstance> geometry) {
   using std::to_string;
   if (geometry == nullptr) {
     throw std::logic_error(
@@ -191,7 +191,7 @@ GeometryId GeometryState<T>::RegisterGeometry(
 template <typename T>
 GeometryId GeometryState<T>::RegisterGeometryWithParent(
     SourceId source_id, GeometryId geometry_id,
-    std::unique_ptr<GeometryInstance<T>> geometry) {
+    std::unique_ptr<GeometryInstance> geometry) {
   // There are three error conditions in the doxygen:.
   //    1. geometry == nullptr,
   //    2. source_id is not a registered source, and

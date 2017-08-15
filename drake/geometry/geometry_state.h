@@ -15,9 +15,9 @@
 namespace drake {
 namespace geometry {
 
-template <typename T> class GeometryFrame;
+class GeometryFrame;
 
-template <typename T> class GeometryInstance;
+class GeometryInstance;
 
 template <typename T> class GeometrySystem;
 
@@ -95,7 +95,7 @@ class GeometryState {
    @returns  A newly allocated frame id.
    @throws std::logic_error  If the `source_id` does _not_ map to a registered
                              source. */
-  FrameId RegisterFrame(SourceId source_id, const GeometryFrame<T>& frame);
+  FrameId RegisterFrame(SourceId source_id, const GeometryFrame& frame);
 
   /** Registers a new frame for the given source as a child of a previously
    registered frame. The id of the new frame is returned.
@@ -108,7 +108,7 @@ class GeometryState {
                              2. If the `parent_id` does _not_ map to a known
                              frame or does not belong to the source. */
   FrameId RegisterFrame(SourceId source_id, FrameId parent_id,
-                        const GeometryFrame<T>& frame);
+                        const GeometryFrame& frame);
 
   /** Registers a GeometryInstance with the state. The state takes ownership of
    the geometry and associates it with the given frame and source. Returns the
@@ -124,7 +124,7 @@ class GeometryState {
                              2. the `frame_id` doesn't belong to the source, or
                              3. The `geometry` is equal to `nullptr`. */
   GeometryId RegisterGeometry(SourceId source_id, FrameId frame_id,
-                              std::unique_ptr<GeometryInstance<T>> geometry);
+                              std::unique_ptr<GeometryInstance> geometry);
 
   /** Registers a GeometryInstance with the state. Rather than hanging directly
    from a _frame_, the instance hangs on another geometry instance. The input
@@ -146,7 +146,7 @@ class GeometryState {
                             3. the `geometry` is equal to `nullptr`. */
   GeometryId RegisterGeometryWithParent(
       SourceId source_id, GeometryId geometry_id,
-      std::unique_ptr<GeometryInstance<T>> geometry);
+      std::unique_ptr<GeometryInstance> geometry);
 
   /** Removes all frames and geometry registered from the identified source.
    The source remains registered and further frames and geometry can be

@@ -25,10 +25,7 @@ namespace geometry {
  instance id defined by the RigidBodyTree and used again in automotive to
  serve as unique car identifiers.
 
- @see GeometryWorld
-
- @tparam T The underlying scalar type. Must be a valid Eigen scalar. */
-template <typename T>
+ @see GeometryWorld */
 class GeometryFrame {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeometryFrame)

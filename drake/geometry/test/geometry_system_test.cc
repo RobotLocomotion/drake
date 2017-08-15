@@ -84,9 +84,10 @@ class GeometrySystemTest : public ::testing::Test {
     return query_handle_;
   }
 
-  static std::unique_ptr<GeometryInstance<double>> make_sphere_instance(
+  static std::unique_ptr<GeometryInstance> make_sphere_instance(
       double radius = 1.0) {
-    return make_unique<GeometryInstance<double>>();
+    return make_unique<GeometryInstance>(Isometry3<double>::Identity(),
+                                         make_unique<Sphere>(radius));
   }
 
   GeometrySystem<double> system_;
@@ -184,7 +185,7 @@ TEST_F(GeometrySystemTest, TopologyAfterAllocation) {
   // Attach frame to world.
   EXPECT_ERROR_MESSAGE(
       system_.RegisterFrame(
-          id, GeometryFrame<double>()),
+          id, GeometryFrame()),
       std::logic_error,
       "The call to RegisterFrame is invalid; a context has already been "
       "allocated.");
@@ -193,7 +194,7 @@ TEST_F(GeometrySystemTest, TopologyAfterAllocation) {
   EXPECT_ERROR_MESSAGE(
       system_.RegisterFrame(
           id, FrameId::get_new_id(),
-          GeometryFrame<double>()),
+          GeometryFrame()),
       std::logic_error,
       "The call to RegisterFrame is invalid; a context has already been "
       "allocated.");
