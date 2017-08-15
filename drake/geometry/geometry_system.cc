@@ -68,14 +68,14 @@ GeometrySystem<T>::get_source_pose_port(SourceId id) {
 
 template <typename T>
 FrameId GeometrySystem<T>::RegisterFrame(SourceId source_id,
-                                         const GeometryFrame<T>& frame) {
+                                         const GeometryFrame& frame) {
   THROW_IF_CONTEXT_ALLOCATED
   return initial_state_->RegisterFrame(source_id, frame);
 }
 
 template <typename T>
 FrameId GeometrySystem<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
-                                         const GeometryFrame<T>& frame) {
+                                         const GeometryFrame& frame) {
   THROW_IF_CONTEXT_ALLOCATED
   return initial_state_->RegisterFrame(source_id, parent_id, frame);
 }
@@ -83,7 +83,7 @@ FrameId GeometrySystem<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
 template <typename T>
 GeometryId GeometrySystem<T>::RegisterGeometry(
     SourceId source_id, FrameId frame_id,
-    std::unique_ptr<GeometryInstance<T>> geometry) {
+    std::unique_ptr<GeometryInstance> geometry) {
   THROW_IF_CONTEXT_ALLOCATED
   return initial_state_->RegisterGeometry(source_id, frame_id,
                                           std::move(geometry));
@@ -92,7 +92,7 @@ GeometryId GeometrySystem<T>::RegisterGeometry(
 template <typename T>
 GeometryId GeometrySystem<T>::RegisterGeometry(
     SourceId source_id, GeometryId geometry_id,
-    std::unique_ptr<GeometryInstance<T>> geometry) {
+    std::unique_ptr<GeometryInstance> geometry) {
   THROW_IF_CONTEXT_ALLOCATED
   return initial_state_->RegisterGeometryWithParent(source_id, geometry_id,
                                                     std::move(geometry));
@@ -101,7 +101,7 @@ GeometryId GeometrySystem<T>::RegisterGeometry(
 template <typename T>
 GeometryId GeometrySystem<T>::RegisterAnchoredGeometry(
     SourceId source_id,
-    std::unique_ptr<GeometryInstance<T>> geometry) {
+    std::unique_ptr<GeometryInstance> geometry) {
   // TODO(SeanCurtis-TRI): Replace dummy geometry id with actual registration.
   // and use all parameters.
   unused(source_id, geometry);
