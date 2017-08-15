@@ -20,23 +20,12 @@ namespace geometry {
 class ShapeReifier;
 
 /** The base interface for all shape specifications. It has no public
-  constructor and cannot be instantiated directly. All Shape classes have two
-  basic requirements:
-   - they must be cloneable, and
-   - they must invoke the correct method for themselves on a ShapeReifier.
-
- The base class handles both requirements on behalf of derived shape classes.
- However, it places several requirements on derived classes:
-
-   1. they must have a public copy constructor,
-   2. they must be marked as final, and
-   3. their constructors must invoke the parent constructor with a nullptr
-      cast as their type (see Shape() for details), and
-   4. The ShapeReifier class must be extended to include a an invocation of
-      ShapeReifier::implementGeometry() on the derived Shape class. */
+  constructor and cannot be instantiated directly. The Shape class has two
+  key properties:
+   - it is cloneable, and
+   - it can be "reified" (see ShapeReifier). */
 class Shape {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Shape)
   virtual ~Shape();
 
   /** Causes this description to be reified in the given `reifier`. Each
@@ -59,9 +48,22 @@ class Shape {
    };
    ```
 
+   The base class provides infrastructure for cloning and reification. To work
+   and to maintain sanity, we place the following requirements on derived
+   classes:
+
+     1. they must have a public copy constructor,
+     2. they must be marked as final, and
+     3. their constructors must invoke the parent constructor with a nullptr
+        cast as their type (as noted above), and
+     4. The ShapeReifier class must be extended to include a an invocation of
+        ShapeReifier::ImplementGeometry() on the derived Shape class.
+
    @tparam S    The derived shape class. It must derive from Shape. */
   template <typename S>
   explicit Shape(S*);
+
+
 
  private:
   std::function<std::unique_ptr<Shape>()> cloner_;
@@ -125,7 +127,8 @@ class ShapeReifier {
 };
 
 template <typename S>
-Shape::Shape(S*) {
+Shape::Shape(S* shape) {
+  DRAKE_ASSERT(shape == nullptr);
   static_assert(std::is_base_of<Shape, S>::value,
                 "Concrete shapes *must* be derived from the Shape class");
   cloner_ = [this]() {
