@@ -1227,6 +1227,11 @@ class IntegratorBase {
    * @post If the time on entry is denoted `t`, the time and state will be
    *       advanced to `t+dt` if the method returns `true`; otherwise, the
    *       time and state should be reset to those at `t`.
+   * @warning It is expected that DoStep() will return `true` for some, albeit
+   *          possibly very small, positive value of @p dt. The derived
+   *          integrator's stepping algorithm can make this guarantee, for
+   *          example, by switching to an algorithm not subject to convergence
+   *          failures (e.g., explicit Euler) for very small step sizes.
    */
   virtual bool DoStep(const T& dt) = 0;
 
@@ -1427,7 +1432,7 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
     // or (1) whether the step size to be attempted is so small that we should
     // consider it to be artifically limited or (2) whether the step size to
     // be attempted is sufficiently close to that requested such that the step
-    // size shoudl be stretched slightly.
+    // size should be stretched slightly.
     const double near_enough_smaller = 0.95;
     const double near_enough_larger = 1.001;
 
@@ -1451,11 +1456,17 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
     step_size_to_attempt = min(step_size_to_attempt, get_maximum_step_size());
 
     // Keep adjusting the integration step size until any integrator
-    // convergence failures disappear.
+    // convergence failures disappear. Note: this loop's correctness is
+    // predicated on the assumption that an integrator will always converge for
+    // a sufficiently small, yet nonzero step size.
     T adjusted_step_size = step_size_to_attempt;
     while (!Step(adjusted_step_size)) {
       SPDLOG_DEBUG(drake::log(), "Sub-step failed at {}", adjusted_step_size);
       adjusted_step_size *= subdivision_factor_;
+      if (adjusted_step_size <= 0) {
+        throw std::runtime_error("Integrator has been directed to take a zero-"
+                                 "length step in order to obtain convergence.");
+      }
       ValidateSmallerStepSize(step_size_to_attempt, adjusted_step_size);
       ++num_shrinkages_from_substep_failures_;
       ++num_substep_failures_;
