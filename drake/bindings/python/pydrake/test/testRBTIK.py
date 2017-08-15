@@ -66,9 +66,9 @@ class TestRBTIK(unittest.TestCase):
         gaze_constraint = ik.WorldGazeTargetConstraint(
             self.r,             # model
             2,                  # body
-            np.ones([3,1]),     # axis
-            np.ones([3,1]),     # target
-            np.zeros([3,1]),    # gaze_origin
+            np.ones([3, 1]),    # axis
+            np.ones([3, 1]),    # target
+            np.zeros([3, 1]),   # gaze_origin
             1e-3                # conethreshold
         )
 
@@ -76,26 +76,26 @@ class TestRBTIK(unittest.TestCase):
         gaze_constraint = ik.WorldGazeTargetConstraint(
             self.r,             # model
             2,                  # body
-            np.ones([3,1]),     # axis
-            np.ones([3,1]),     # target
-            np.zeros([3,1]),    # gaze_origin
+            np.ones([3, 1]),    # axis
+            np.ones([3, 1]),    # target
+            np.zeros([3, 1]),   # gaze_origin
             1e-3,               # conethreshold
-            np.array([0.,1.])   # tspan
+            np.array([0., 1.])  # tspan
         )
 
     def testRelativePositionConstraint(self):
         # Transform from origin of B to points on B
         bTbp = np.concatenate([
-            np.zeros(3),           # Translation (identity)
-            np.array([1, 0, 0, 0]) # Rotation (identity quaternion)
+            np.zeros(3),            # Translation (identity)
+            np.array([1, 0, 0, 0])  # Rotation (identity quaternion)
         ]).reshape(7, 1)
 
         # Test that construction doesn't fail (default timespan)
         position_constraint = ik.RelativePositionConstraint(
             self.r,             # model
-            np.zeros([3,1]),    # pts
-            -np.ones([3,1]),    # lb
-            np.ones([3,1]),     # ub
+            np.zeros([3, 1]),   # pts
+            -np.ones([3, 1]),   # lb
+            np.ones([3, 1]),    # ub
             1,                  # bodyA_idx
             2,                  # bodyB_idx
             bTbp                # bTbp
@@ -104,13 +104,13 @@ class TestRBTIK(unittest.TestCase):
         # Test that construction doesn't fail (given timespan)
         position_constraint2 = ik.RelativePositionConstraint(
             self.r,             # model
-            np.zeros([3,1]),    # pts
-            -np.ones([3,1]),    # lb
-            np.ones([3,1]),     # ub
+            np.zeros([3, 1]),   # pts
+            -np.ones([3, 1]),   # lb
+            np.ones([3, 1]),    # ub
             1,                  # bodyA_idx
             2,                  # bodyB_idx
             bTbp,               # bTbp
-            np.array([0.,1.])   # tspan
+            np.array([0., 1.])  # tspan
         )
 
     def testRelativeGazeDirConstraint(self):
@@ -119,8 +119,8 @@ class TestRBTIK(unittest.TestCase):
             self.r,             # model
             1,                  # bodyA_idx
             2,                  # bodyB_idx
-            np.ones([3,1]),     # axis
-            np.ones([3,1]),     # dir
+            np.ones([3, 1]),     # axis
+            np.ones([3, 1]),     # dir
             1e-3                # conethreshold
         )
 
@@ -129,10 +129,10 @@ class TestRBTIK(unittest.TestCase):
             self.r,             # model
             1,                  # bodyA_idx
             2,                  # bodyB_idx
-            np.ones([3,1]),     # axis
-            np.ones([3,1]),     # dir
+            np.ones([3, 1]),    # axis
+            np.ones([3, 1]),    # dir
             1e-3,               # conethreshold
-            np.array([0.,1.])   # tspan
+            np.array([0., 1.])  # tspan
         )
 
     def testMinDistanceConstraint(self):
@@ -150,8 +150,9 @@ class TestRBTIK(unittest.TestCase):
             1e-2,               # min_distance
             list(),             # active_bodies_idx
             set(),              # active_group_names
-            np.array([0.,1.])   # tspan
+            np.array([0., 1.])  # tspan
         )
+
 
 if __name__ == '__main__':
     unittest.main()
