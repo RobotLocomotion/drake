@@ -1227,7 +1227,7 @@ GTEST_TEST(SimulatorTest, StretchedStep) {
 }
 
 // Verifies that an integrator will *not* stretch its integration step in the
-// case that a directed step would before- but not too close- to an event.
+// case that a directed step would be before- but not too close- to an event.
 GTEST_TEST(SimulatorTest, NoStretchedStep) {
   // Setting the update rate to 1.0 will cause the spring mass to update at
   // 1.0s.
@@ -1235,10 +1235,10 @@ GTEST_TEST(SimulatorTest, NoStretchedStep) {
       1., 1., 1. /* update rate */);
   Simulator<double> simulator(spring_mass);
 
-  // We will direct the integrator to take a single step of t_final, which
-  // will be very near the mass-spring system's update event at 1.0s. 1e-8
-  // is so small that any reasonable degree of step "stretching" should jump
-  // to 1.0 proper.
+  // We will direct the integrator to take a single step of 0.9, which
+  // will be not so near the mass-spring system's update event at 1.0s. 0.1
+  // (the difference) is so large that any reasonable approach should avoid
+  // stretching to 1.0 proper.
   const double event_t_final = 1.0;
   const double directed_t_final = event_t_final - 0.1;
 

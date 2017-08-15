@@ -1463,8 +1463,8 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
     while (!Step(adjusted_step_size)) {
       SPDLOG_DEBUG(drake::log(), "Sub-step failed at {}", adjusted_step_size);
       adjusted_step_size *= subdivision_factor_;
-      if (adjusted_step_size <= 0) {
-        throw std::runtime_error("Integrator has been directed to take a zero-"
+      if (adjusted_step_size < std::numeric_limits<double>::epsilon()) {
+        throw std::runtime_error("Integrator has been directed to a near zero-"
                                  "length step in order to obtain convergence.");
       }
       ValidateSmallerStepSize(step_size_to_attempt, adjusted_step_size);
