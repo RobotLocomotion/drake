@@ -50,7 +50,7 @@ int do_main() {
   systems::DircolTrajectoryOptimization dircol_traj(
       acrobot.get(), *context, kNumTimeSamples, kTrajectoryTimeLowerBound,
       kTrajectoryTimeUpperBound);
-  AddSwingUpTrajectoryParams(kNumTimeSamples, x0, xG, &dircol_traj);
+  AddSwingUpTrajectoryParams(x0, xG, &dircol_traj);
 
   const double timespan_init = 4;
   auto traj_init_x =
