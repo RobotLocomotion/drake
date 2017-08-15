@@ -42,6 +42,8 @@ class Binding {
               std::shared_ptr<U>, std::shared_ptr<C>>::value>::type* = nullptr)
       : Binding(b.constraint(), b.variables()) {}
 
+  // TODO(eric.cousineau): Rename `constraint` to `evaluator` to incorporate
+  // `Cost` (and `EvaluatorBase`) as well.
   const std::shared_ptr<C>& constraint() const { return constraint_; }
 
   const VectorXDecisionVariable& variables() const { return vars_; }

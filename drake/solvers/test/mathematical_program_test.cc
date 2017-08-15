@@ -668,7 +668,7 @@ void CheckAddedSymbolicLinearCostUserFun(const MathematicalProgram& prog,
   EXPECT_EQ(prog.linear_costs().back().constraint(), binding.constraint());
   EXPECT_TRUE(CheckStructuralEquality(prog.linear_costs().back().variables(),
                                       binding.variables()));
-  EXPECT_EQ(binding.constraint()->num_constraints(), 1);
+  EXPECT_EQ(binding.constraint()->num_outputs(), 1);
   auto cnstr = prog.linear_costs().back().constraint();
   auto vars = prog.linear_costs().back().variables();
   const Expression cx{cnstr->a().dot(vars)};

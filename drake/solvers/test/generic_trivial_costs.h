@@ -9,7 +9,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/number_traits.h"
 #include "drake/math/autodiff.h"
-#include "drake/solvers/constraint.h"
+#include "drake/solvers/cost.h"
 #include "drake/solvers/function.h"
 
 namespace drake {
