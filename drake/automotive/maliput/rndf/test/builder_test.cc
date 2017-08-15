@@ -32,14 +32,14 @@ int FindJunction(const api::RoadGeometry& road_geometry,
 }
 
 //   * 1.1.1
-//    \\
-//      \\
+//    v
+//      v
 //        * 1.1.2
-//      //
-//    //
+//      v
+//    v
 //   * 1.1.3
-//    \\
-//      \\
+//    v
+//      v
 //        * 1.1.4
 GTEST_TEST(RNDFBuilder, ZigZagLane) {
   std::unique_ptr<Builder> builder =
@@ -139,22 +139,22 @@ GTEST_TEST(RNDFBuilder, ZigZagLane) {
             road_geometry->branch_point(3));
 }
 
-// * 1.2.11  * 1.1.1             1.1.9 *  1.2.1 *
-// ||        ||                       ||       ||
-// ||        ||                       ||       ||
-// * 1.2.10  * 1.1.2             1.1.8 *  1.2.2 *
-// ||        ||                       ||       ||
-// ||        ||                       ||       ||
-// * 1.2.9   * 1.1.3             1.1.7 *  1.2.3 *
-//  \\        \\                     //       //
-//   \\        \\                   //       //
-//     * 1.2.8   * 1.1.4     1.1.6 *  1.2.4 *
-//      \\        \\             //       //
-//       \\          ===  *  ===         //
-//        \\                            //
-//         * 1.2.7      1.1.5     1.2.5 *
-//           ============ * ===========
-//                      1.2.6
+// * 1.2.11  * 1.1.1         1.1.9 *  1.2.1 *
+// ^         v                     ^        v
+// ^         v                     ^        v
+// * 1.2.10  * 1.1.2         1.1.8 *  1.2.2 *
+// ^         v                     ^        v
+// ^         v                     ^        v
+// * 1.2.9   * 1.1.3         1.1.7 *  1.2.3 *
+//  ^         v                   ^        v
+//   ^         v                 ^        v
+//    * 1.2.8   * 1.1.4   1.1.6 *  1.2.4 *
+//     ^         v             ^        v
+//      ^          < <  *  < <         v
+//       ^            1.1.5           v
+//         * 1.2.7             1.2.5 *
+//           > > > > >  *  > > > > >
+//                    1.2.6
 GTEST_TEST(RNDFBuilder, UShapedLane) {
   std::unique_ptr<Builder> builder =
       std::make_unique<Builder>(kLinearTolerance, kAngularTolerance);
@@ -263,11 +263,11 @@ GTEST_TEST(RNDFBuilder, UShapedLane) {
 }
 
 //          1.1.1      1.1.2       1.1.3
-//          *----------*-----------*
+//          * > > > > > * > > > > > *
 //  1.2.1   1.2.2  1.2.3    1.2.4
-//  *-------*------*--------*
-//              1.3.2                      1.3.1
-//              *--------------------------*
+//  * > > > * > > > * > > > > *
+//              1.3.2                    1.3.1
+//              * < < < < < < < < < < < < *
 GTEST_TEST(RNDFBuilder, MultilaneLane) {
   const api::RBounds single_lane_bounds(-kLaneWidth / 2.0, kLaneWidth / 2.0);
   const api::RBounds two_lane_bounds_left(-kLaneWidth / 2.0,
@@ -474,16 +474,16 @@ GTEST_TEST(RNDFBuilder, MultilaneLane) {
 
 //               1.1.1      1.2.3
 //                     *   *
-//                     |   |
-//               1.1.2 |   |
-//    2.2.2    2.2.1   *   *
-//   *--------------*/ |  /| 1.2.2
-//    2.1.1    2.1.2   | / |           2.1.3
-//   *---------------*/---------------*
-//                    \|   |
-//               1.1.3 *   |
-//                     |   |
-//                     |   |
+//                     v   ^
+//               1.1.2 v   ^
+//    2.2.2    2.2.1  /*   *
+//     * < < < < < < * v  /^ 1.2.2
+//    2.1.1    2.1.2   v / ^           2.1.3
+//     * > > > > > > * > > > > > > > *
+//                   | v   ^
+//               1.1.3 *   ^
+//                     v   ^
+//                     v   ^
 //               1.1.4 *   * 1.2.1
 GTEST_TEST(RNDFBuilder, MultilaneLaneCross) {
   std::unique_ptr<Builder> builder =

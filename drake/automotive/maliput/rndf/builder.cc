@@ -129,7 +129,7 @@ void Builder::CreateSegmentConnections(int segment_id,
           valid_lane_ids.push_back(j);
         }
       }
-      OrderConnectionIds(it.second, &valid_lane_ids, 0);
+      OrderConnectionIds(it.second, &valid_lane_ids);
       // Creates a segment name.
       std::string segment_key_name =
           std::to_string(segment_id) + std::string("-") +
@@ -231,7 +231,7 @@ void Builder::GroupConnectionsByDirection(
 }
 
 void Builder::OrderConnectionIds(const std::vector<Connection>& connections,
-                                 std::vector<int>* ids, int index) {
+                                 std::vector<int>* ids) {
   DRAKE_DEMAND(ids != nullptr);
   // Checks for the single connection case, where it is none sense
   // to compute anything.

@@ -313,14 +313,13 @@ class Builder {
 
   // Orders a collection of @p ids, each identifying a connection at the
   // same index in @p connections, in a right to left sense. To perform such
-  // ordering, the waypoints on each connection at @p index are used.
+  // ordering, it uses the first waypoint on each connection.
   // @param connections A collection of Connections.
   // @param ids The collection of ids for each one of the @p connections.
-  // @param index The waypoint index to use for the ordering.
   // @pre The given @p ids collection must not be a nullptr.
   // @warning This method will abort execution if any preconditions are not met.
   void OrderConnectionIds(const std::vector<Connection>& connections,
-                          std::vector<int>* ids, int index);
+                          std::vector<int>* ids);
 
   // Computes the momentum @f$ \tau^W @f$ exerted by the fictitious unitary
   // force @f$ f^W @f$ on @p waypoint @f$ W @f$ around the @p center_of_rotation
