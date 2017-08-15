@@ -12,7 +12,7 @@ drake_cc_library(
     name = "world_sim_tree_builder",
     srcs = ["world_sim_tree_builder.cc"],
     hdrs = ["world_sim_tree_builder.h"],
-    visibility = ["//drake/examples/kuka_iiwa_arm:__subpackages__"],
+    visibility = ["//visibility:public"],
     deps = [
         "//drake/common:find_resource",
         "//drake/common:unused",
