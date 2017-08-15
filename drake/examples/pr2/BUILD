@@ -31,6 +31,29 @@ drake_cc_binary(
     ],
 )
 
+drake_cc_binary(
+    name = "pr2_simulation",
+    srcs = ["pr2_simulation.cc"],
+    data = [":models"],
+    deps = [
+        "//drake/common:find_resource",
+        "//drake/examples/kuka_iiwa_arm:robot_plan_interpolator",
+        "//drake/examples/kuka_iiwa_arm/iiwa_world:world_sim_tree_builder",
+        "//drake/lcm",
+        "//drake/multibody:rigid_body_tree_construction",
+        "//drake/multibody/parsers",
+        "//drake/multibody/rigid_body_plant",
+        "//drake/multibody/rigid_body_plant:drake_visualizer",
+        "//drake/systems/analysis:semi_explicit_euler_integrator",
+        "//drake/systems/analysis:simulator",
+        "//drake/systems/controllers:pid_controller",
+        "//drake/systems/framework:diagram_builder",
+        "//drake/systems/primitives:constant_vector_source",
+        "@com_github_gflags_gflags//:gflags",
+        "@lcmtypes_robotlocomotion",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
