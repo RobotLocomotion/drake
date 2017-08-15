@@ -67,6 +67,13 @@ GTEST_TEST(AcrobotTest, SwingUpTrajectoryOptimization) {
 
   auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
 
+  // By default, the simulator triggers a publish event at the end of each time
+  // step of the integrator. However, since this system is only meant for
+  // playback, there is no continuous state and the integrator does not even get
+  // called. Therefore, we explicitly set the publish frequency for the
+  // visualizer.
+  publisher->set_publish_period(1.0 / 60.0);
+
   builder.Connect(state_source->get_output_port(),
                   publisher->get_input_port(0));
 

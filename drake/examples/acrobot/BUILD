@@ -207,6 +207,7 @@ drake_cc_binary(
 
 drake_cc_googletest(
     name = "acrobot_urdf_dynamics_test",
+    args = ["--reltime_factor=0.0"],
     data = [":models"],
     deps = [
         ":acrobot_plant",
