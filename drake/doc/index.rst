@@ -100,7 +100,7 @@ Here is a quick summary of capabilities:
 		* Walking Robots
 		* Humanoids (most notably including the bulk of our codebase for Atlas from `MIT's entry in the DARPA Robotics Challenge <http://drc.mit.edu>`_)
 * Other
-	* `Message passing interfaces <http://drake.mit.edu/doxygen_cxx/group__message__passing.html>`_  (`LCM <https://github.com/lcm-proj/lcm>`_ and preliminary ROS support)
+	* `Message passing interfaces <http://drake.mit.edu/doxygen_cxx/group__message__passing.html>`_  (`LCM <https://github.com/lcm-proj/lcm>`_)
 
 Most of these models/tools are described in `the companion textbook from an MIT course/MOOC <https://people.csail.mit.edu/russt/underactuated/underactuated.html?chapter=drake>`_.  We've also recently started populating the :doc:`gallery` (contributions welcome!).
 
