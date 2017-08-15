@@ -121,11 +121,42 @@ void SetPositionControlledIiwaGains(Eigen::VectorXd* Kp,
   *Ki = Eigen::VectorXd::Zero(7);
 }
 
+void ApplyJointVelocityLimits(double max_joint_velocity,
+                              const MatrixX<double>& keyframes,
+                              std::vector<double>* time) {
+  DRAKE_DEMAND(keyframes.cols() == static_cast<int>(time->size()));
+
+  const int num_time_steps = keyframes.cols();
+
+  Eigen::MatrixXd velocities(keyframes.rows(), num_time_steps - 1);
+  for (int i = 0; i < velocities.cols(); i++) {
+    for (int j = 0; j < keyframes.rows(); j++) {
+      velocities(j, i) =
+          std::abs((keyframes(j, i + 1) - keyframes(j, i)) /
+                   ((*time)[i + 1] - (*time)[i]));
+    }
+  }
+
+  // The code below slows the entire plan such that the fastest step
+  // meets the limits.  If that step is much faster than the others,
+  // the whole plan becomes very slow.
+  const double max_plan_velocity = velocities.maxCoeff();
+  if (max_plan_velocity > max_joint_velocity) {
+    drake::log()->debug("Slowing plan by {}",
+                        max_plan_velocity / max_joint_velocity);
+    for (int i = 0; i < num_time_steps; i++) {
+      (*time)[i] *= max_plan_velocity / max_joint_velocity;
+    }
+  }
+}
+
+
 robotlocomotion::robot_plan_t EncodeKeyFrames(
     const RigidBodyTree<double>& robot,
     const std::vector<double>& time,
     const std::vector<int>& info,
     const MatrixX<double>& keyframes) {
+
   DRAKE_DEMAND(info.size() == time.size());
   DRAKE_DEMAND(keyframes.cols() == static_cast<int>(time.size()));
   DRAKE_DEMAND(keyframes.rows() == robot.get_num_positions());
