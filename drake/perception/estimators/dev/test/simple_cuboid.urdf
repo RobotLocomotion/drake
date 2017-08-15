@@ -10,7 +10,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <box size="0.06 0.06 0.2" />
+        <box size="0.1 0.02 0.4" />
       </geometry>
       <material name="red">
         <color rgba="0.8 0.1 0.1 1" />
@@ -18,7 +18,7 @@
     </visual>
     <collision>
       <geometry>
-        <box size="0.06 0.06 0.2" />
+        <box size="0.1 0.02 0.4" />
       </geometry>
     </collision>
    </link>

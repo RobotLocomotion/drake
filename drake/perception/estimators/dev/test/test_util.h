@@ -67,6 +67,38 @@ Eigen::Matrix3Xd Generate2DPlane(double space, PlaneIndices is);
 Eigen::Matrix3Xd GenerateBoxPointCloud(double space, Bounds box);
 
 /*
+ * Enumeration for different objects for simple pose estimation.
+ */
+enum ObjectTestType {
+  kSimpleCuboid,
+  kBlueFunnelScan
+};
+
+/*
+ * All object types, for use with a parameterized GTest.
+ */
+const auto ObjectTestTypes = ::testing::Values(
+    kSimpleCuboid,
+    kBlueFunnelScan);
+
+/*
+ * Structure with minimal amount of common data for simple pose estimation.
+ */
+struct ObjectTestSetup {
+  // Model. May or may not be used.
+  std::string urdf_file;
+  // Ground truth pose of the body B in the world W.
+  Eigen::Isometry3d X_WB;
+  // Point cloud of the object in its body frame.
+  Eigen::Matrix3Xd points_B;
+};
+
+/*
+ * Retrieve setup for a given object type.
+ */
+void GetObjectTestSetup(ObjectTestType type, ObjectTestSetup* setup);
+
+/*
  * Expect that a rotation matrix belong to SO(3):
  *    R ∈ SO(3) =>
  *      Rᵀ R = I (orthonormal)

@@ -1,5 +1,6 @@
 #include "drake/perception/estimators/dev/pose_closed_form.h"
 
+#include "drake/common/text_logging.h"
 #include "drake/math/rotation_matrix.h"
 
 using Eigen::Matrix3Xd;
@@ -23,9 +24,17 @@ Eigen::Isometry3d ComputePcaBodyPose(const Matrix3Xd& y_W) {
   Eigen::SelfAdjointEigenSolver<Matrix3d> eig(W_yy);
   Matrix3d R_WB = eig.eigenvectors();
   R_WB.col(0).swap(R_WB.col(2));
-  R_WB.col(2) *= -1;
-  DRAKE_ASSERT(R_WB.determinant() > 0);
-  // W_yy is positive definite, thus we do not need any checks for sign.
+  if (R_WB.determinant() < 0) {
+    // Only swap the z-axes if the rotation matrix constructed directly
+    // from eigenvalues is degenerate. This should happen most of the time,
+    // but there are edge cases where the eigenvalues will be non-degenerate.
+    // This provides a more stable/predictable result than `ProjectMatToRotMat`.
+    // TODO(eric.cousineau): Check degenerate case (with PCA on blue funnel)
+    // using different SO3 projection techniques.
+    R_WB.col(2) *= -1;
+  }
+  const double tol = 1e-5;
+  DRAKE_ASSERT(fabs(R_WB.determinant() - 1) < tol);
   Eigen::Isometry3d X_WB;
   X_WB.setIdentity();
   X_WB.linear() = R_WB;
