@@ -36,8 +36,8 @@ GTEST_TEST(PendulumTrajectoryOptimization, PendulumTrajectoryOptimizationTest) {
   const double timespan_init = 4;
   auto traj_init_x =
       PiecewisePolynomialType::FirstOrderHold({0, timespan_init}, {x0, xG});
-  const SolutionResult result =
-      dircol.SolveTraj(timespan_init, PiecewisePolynomialType(), traj_init_x);
+  dircol.SetInitialTrajectory(PiecewisePolynomialType(), traj_init_x);
+  const SolutionResult result = dircol.Solve();
   ASSERT_EQ(result, SolutionResult::kSolutionFound) << "Result is an Error";
 
   Eigen::MatrixXd inputs;

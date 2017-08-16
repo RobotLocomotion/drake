@@ -28,163 +28,148 @@ typedef PiecewisePolynomial<double> PiecewisePolynomialType;
 class MyDirectTrajOpt : public DirectTrajectoryOptimization {
  public:
   MyDirectTrajOpt(const int num_inputs, const int num_states,
-                  const int num_time_samples,
-                  const double traj_time_lower_bound,
-                  const double traj_time_upper_bound)
+                  const int num_time_samples, const double fixed_timestep)
       : DirectTrajectoryOptimization(num_inputs, num_states, num_time_samples,
-                                     traj_time_lower_bound,
-                                     traj_time_upper_bound) {}
+                                     fixed_timestep) {}
+
+  MyDirectTrajOpt(const int num_inputs, const int num_states,
+                  const int num_time_samples, const double min_timestep,
+                  const double max_timestep)
+      : DirectTrajectoryOptimization(num_inputs, num_states, num_time_samples,
+                                     min_timestep, max_timestep) {}
+
+  // Expose for unit testing.
+  using DirectTrajectoryOptimization::GetTimeVector;
+  using DirectTrajectoryOptimization::h_vars;
+  using DirectTrajectoryOptimization::timesteps_are_decision_variables;
+  using DirectTrajectoryOptimization::fixed_timestep;
 
  private:
   void DoAddRunningCost(const symbolic::Expression& g) override {}
 };
 
-GTEST_TEST(TrajectoryOptimizationTest, DirectTrajectoryOptimizationTest) {
-  const int kNumInputs(1);
-  const int kNumStates(2);
-  const int kNumTimeSamples(21);  // aka N.
-  MyDirectTrajOpt direct_traj(kNumInputs, kNumStates, kNumTimeSamples, 0, 25);
+GTEST_TEST(TrajectoryOptimizationTest, FixedTimestepTest) {
+  MyDirectTrajOpt prog(1, 2, 2,
+                       0.1);  // 1 input, 2 states, 2 timesteps, 0.1<=dt<=0.1.
 
-  // Add bounds on time intervals.
-  direct_traj.AddTimeIntervalBounds(
-      Eigen::Matrix<double, kNumTimeSamples - 1, 1>::Constant(0.01),
-      Eigen::Matrix<double, kNumTimeSamples - 1, 1>::Constant(10));
-  std::vector<int> interval_indices{1, 2, 3};
-  direct_traj.AddTimeIntervalBounds(Eigen::Vector3d(0.2, 0.3, 0.4),
-                                    Eigen::Vector3d(5, 5, 5), interval_indices);
-  Eigen::Matrix<double, kNumTimeSamples - 1, 1> h_lb =
-      Eigen::Matrix<double, kNumTimeSamples - 1, 1>::Constant(0.01);
-  Eigen::Matrix<double, kNumTimeSamples - 1, 1> h_ub =
-      Eigen::Matrix<double, kNumTimeSamples - 1, 1>::Constant(10);
-  h_lb(1) = 0.2;
-  h_lb(2) = 0.3;
-  h_lb(3) = 0.4;
-  h_ub(1) = 5;
-  h_ub(2) = 5;
-  h_ub(3) = 5;
+  EXPECT_FALSE(prog.timesteps_are_decision_variables());
 
-  const double t_init_in(7);
-  const Polynomiald y = Polynomiald("y");
-  const Polynomiald y1 = (7 * y);
-  const Polynomiald y2 = (2 * y) + 1;
+  EXPECT_EQ(prog.num_vars(), 6);
+  const auto times = prog.GetTimeVector();
+  EXPECT_EQ(times.size(), 2);
+  EXPECT_EQ(times[0], 0.0);
+  EXPECT_EQ(times[1], 0.1);
 
-  const std::vector<Polynomiald> u_vec{y1};
-  std::vector<PiecewisePolynomialType::PolynomialMatrix> y_vec(1);
-  y_vec[0].resize(2, 1);
-  y_vec[0](0) = y1;
-  y_vec[0](1) = y2;
-  const std::vector<double> times{0.0, t_init_in};
+  // All methods involving timestep variables should throw.
+  EXPECT_THROW(prog.timestep(0), std::runtime_error);
+  EXPECT_THROW(prog.fixed_timestep(), std::runtime_error);
+  EXPECT_THROW(prog.AddTimeIntervalBounds(Eigen::Vector2d::Constant(0),
+                                          Eigen::Vector2d::Constant(.1)),
+               std::runtime_error);
+  EXPECT_THROW(
+      prog.AddTimeIntervalBounds(Eigen::Vector2d::Constant(0),
+                                 Eigen::Vector2d::Constant(.1), {0, 1}),
+      std::runtime_error);
+  EXPECT_THROW(prog.AddTimeIntervalBounds(0, .1), std::runtime_error);
+  EXPECT_THROW(prog.AddEqualTimeIntervalsConstraints(), std::runtime_error);
+  EXPECT_THROW(prog.AddDurationBounds(0, 1), std::runtime_error);
+}
 
-  const PiecewisePolynomialType inputs_u(u_vec, times);
-  const PiecewisePolynomialType states_x(y_vec, times);
+GTEST_TEST(TrajectoryOptimizationTest, VariableTimestepTest) {
+  MyDirectTrajOpt prog(1, 2, 2, 0.1,
+                       0.1);  // 1 input, 2 states, 2 time samples, dt=0.1.
 
-  const int kInputConstraintLo = 1;
-  const int kInputConstraintHi = kNumTimeSamples - 2;
-  const Vector1d constrained_input(1.0);
-  direct_traj.AddLinearEqualityConstraint(
-      direct_traj.input(kInputConstraintLo) == constrained_input);
-  direct_traj.AddLinearEqualityConstraint(
-      direct_traj.input(kInputConstraintHi) == constrained_input);
+  EXPECT_TRUE(prog.timesteps_are_decision_variables());
 
-  const int kStateConstraintLo = 2;
-  const int kStateConstraintHi = kNumTimeSamples - 3;
-  const Eigen::Vector2d constrained_state(11, 22);
-  direct_traj.AddLinearEqualityConstraint(
-      direct_traj.state(kStateConstraintLo) == constrained_state);
-  direct_traj.AddLinearEqualityConstraint(
-      direct_traj.state(kStateConstraintHi) == constrained_state);
+  EXPECT_EQ(prog.num_vars(), 7);
+  prog.Solve();
+  const auto times = prog.GetTimeVector();
+  EXPECT_EQ(times.size(), 2);
+  EXPECT_EQ(times[0], 0.0);
+  EXPECT_EQ(times[1], 0.1);
+}
 
-  solvers::SolutionResult result = solvers::SolutionResult::kUnknownError;
-  result =
-      direct_traj.SolveTraj(t_init_in, PiecewisePolynomialType(), states_x);
-  EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound)
-      << "Result is an Error";
+GTEST_TEST(TrajectoryOptimizationTest, PlaceholderVariableNames) {
+  MyDirectTrajOpt prog(1, 2, 2,
+                       0.1);  // 1 input, 2 states, 2 time samples, dt=0.1.
 
-  Eigen::MatrixXd inputs;
-  Eigen::MatrixXd states;
-  std::vector<double> times_out;
+  EXPECT_EQ(prog.time().coeff(0).get_name(), "t");
+  EXPECT_EQ(prog.state().coeff(0).get_name(), "x0");
+  EXPECT_EQ(prog.state().coeff(1).get_name(), "x1");
+  EXPECT_EQ(prog.input().coeff(0).get_name(), "u0");
+}
 
-  direct_traj.GetResultSamples(&inputs, &states, &times_out);
-  for (int i = 1; i < kNumTimeSamples; ++i) {
-    EXPECT_GE(times_out[i] - times_out[i - 1], h_lb(i - 1) - 1E-10);
-    EXPECT_LE(times_out[i] - times_out[i - 1], h_ub(i - 1) + 1E-10);
-  }
+GTEST_TEST(TrajectoryOptimizationTest, EqualTimeIntervalsTest) {
+  MyDirectTrajOpt prog(1, 2, 3, 0.01,
+                       0.3);  // 1 input, 2 states, 3 time samples (2 time
+                              // steps), 0 <= dt <= 0.3.
 
-  PiecewisePolynomialTrajectory input_traj =
-      direct_traj.ReconstructInputTrajectory();
+  prog.AddEqualTimeIntervalsConstraints();
 
-  EXPECT_TRUE(CompareMatrices(constrained_input, inputs.col(kInputConstraintLo),
-                              1e-10, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(constrained_input,
-                              input_traj.value(times_out[kInputConstraintLo]),
-                              1e-6, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(constrained_input, inputs.col(kInputConstraintHi),
-                              1e-10, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(constrained_input,
-                              input_traj.value(times_out[kInputConstraintHi]),
-                              1e-6, MatrixCompareType::absolute));
+  prog.SetInitialGuess(prog.timestep(0), Vector1d(.1));
+  prog.SetInitialGuess(prog.timestep(1), Vector1d(.2));
 
-  PiecewisePolynomialTrajectory state_traj =
-      direct_traj.ReconstructStateTrajectory();
-  EXPECT_TRUE(CompareMatrices(constrained_state, states.col(kStateConstraintLo),
-                              1e-10, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(constrained_state,
-                              state_traj.value(times_out[kStateConstraintLo]),
-                              1e-10, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(constrained_state, states.col(kStateConstraintHi),
-                              1e-10, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(constrained_state,
-                              state_traj.value(times_out[kStateConstraintHi]),
-                              1e-10, MatrixCompareType::absolute));
+  prog.SetDecisionVariableValues(prog.initial_guess());
+  EXPECT_NE(prog.GetSolution(prog.timestep(0)),
+            prog.GetSolution(prog.timestep(1)));
 
-  // Add bounds on the inputs and make sure they're enforced.
-  Vector1d input_min(1);
-  direct_traj.AddConstraintToAllKnotPoints(input_min <= direct_traj.input());
-  direct_traj.AddConstraintToAllKnotPoints(direct_traj.input() <=
-                                           constrained_input);
-  result =
-      direct_traj.SolveTraj(t_init_in, PiecewisePolynomialType(), states_x);
-  EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound)
-      << "Result is an Error";
-  direct_traj.GetResultSamples(&inputs, &states, &times_out);
+  prog.Solve();
+  EXPECT_EQ(prog.GetSolution(prog.timestep(0)),
+            prog.GetSolution(prog.timestep(1)));
+}
 
-  EXPECT_GE(inputs(0, 0), input_min(0));
+GTEST_TEST(TrajectoryOptimizationTest, DurationConstraintTest) {
+  MyDirectTrajOpt prog(1, 2, 3, 0.01,
+                       0.3);  // 1 input, 2 states, 3 time samples (2 time
+                              // steps), 0 <= dt <= 0.3.
 
-  result = direct_traj.SolveTraj(t_init_in, inputs_u, states_x);
-  EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound)
-      << "Result is an Error";
+  prog.AddDurationBounds(.5, .5);
 
-  // Add some cost functions and see that something gets minimized.
-  // First check that we have values not particularly near zero where
-  // we're going to try to minimize next time.
-  direct_traj.GetResultSamples(&inputs, &states, &times_out);
+  prog.SetInitialGuess(prog.timestep(0), Vector1d(.1));
+  prog.SetInitialGuess(prog.timestep(1), Vector1d(.2));
 
-  // Tests adding constrainst to the original mathematical program, via
-  // the state variable accessor and symbolic formula.
-  direct_traj.AddLinearConstraint(direct_traj.initial_state().array() == 0.0);
+  prog.SetDecisionVariableValues(prog.initial_guess());
+  EXPECT_NE(prog.GetSolution(prog.h_vars()).array().sum(), .5);
 
-  // Adds a final cost
-  direct_traj.AddFinalCost(direct_traj.state().coeff(1) *
-                           direct_traj.state().coeff(1));
-  result = direct_traj.SolveTraj(t_init_in, inputs_u, states_x);
-  EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound)
-      << "Result is an Error";
+  prog.Solve();
+  EXPECT_EQ(prog.GetSolution(prog.h_vars()).array().sum(), .5);
+}
 
-  direct_traj.GetResultSamples(&inputs, &states, &times_out);
-  EXPECT_NEAR(states(1, 0), 0, 1e-10);
-  EXPECT_NEAR(states(1, kNumTimeSamples - 1), 0, 1e-10);
+GTEST_TEST(TrajectoryOptimizationTest, InitialGuessTest) {
+  MyDirectTrajOpt prog(1, 1, 3, 0.01, 0.5);
+
+  const auto traj1 = PiecewisePolynomial<double>::FirstOrderHold(
+      {1, 2}, {Vector1d(3), Vector1d(4)});
+  const auto traj2 = PiecewisePolynomial<double>::FirstOrderHold(
+      {1, 4}, {Vector1d(5), Vector1d(6)});
+
+  // Throws if both are empty.
+  EXPECT_THROW(prog.SetInitialTrajectory(PiecewisePolynomial<double>(),
+                                         PiecewisePolynomial<double>()),
+               std::runtime_error);
+
+  // If one is empty, uses the duration.
+  prog.SetInitialTrajectory(PiecewisePolynomial<double>(), traj1);
+  prog.SetDecisionVariableValues(prog.initial_guess());
+  EXPECT_EQ(prog.GetTimeVector(), std::vector<double>({0.0, 0.5, 1.0}));
+
+  prog.SetInitialTrajectory(traj2, PiecewisePolynomial<double>());
+  prog.SetDecisionVariableValues(prog.initial_guess());
+  EXPECT_EQ(prog.GetTimeVector(), std::vector<double>({0.0, 1.5, 3.0}));
+
+  // Throws if trajectories don't match.
+  EXPECT_THROW(prog.SetInitialTrajectory(traj1, traj2), std::runtime_error);
 }
 
 GTEST_TEST(TrajectoryOptimizationTest, PlaceholderVariableTest) {
   const int kNumInputs(1);
   const int kNumStates(2);
   const int kNumTimeSamples(21);  // aka N.
-  MyDirectTrajOpt prog(kNumInputs, kNumStates, kNumTimeSamples, 0, 25);
+  MyDirectTrajOpt prog(kNumInputs, kNumStates, kNumTimeSamples, 0.01, 25);
 
   // Adding a placeholder variable directly to the program should fail.
-  // (but currently does NOT; see #5623)
   auto u = prog.input();
-  prog.AddCost(u(0));  // TODO(russt): EXPECT_THROW
+  EXPECT_THROW(prog.AddCost(u(0)), std::runtime_error);
 }
 
 // qddot = u.

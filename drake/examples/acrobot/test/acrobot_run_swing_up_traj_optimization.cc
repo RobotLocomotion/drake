@@ -54,8 +54,8 @@ int do_main() {
   const double timespan_init = 4;
   auto traj_init_x =
       PiecewisePolynomialType::FirstOrderHold({0, timespan_init}, {x0, xG});
-  SolutionResult result = dircol_traj.SolveTraj(
-      timespan_init, PiecewisePolynomialType(), traj_init_x);
+  dircol_traj.SetInitialTrajectory(PiecewisePolynomialType(), traj_init_x);
+  SolutionResult result = dircol_traj.Solve();
   if (result != SolutionResult::kSolutionFound) {
     std::cerr << "No solution found.\n";
     return 1;
