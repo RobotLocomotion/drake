@@ -37,9 +37,11 @@ class Constraint2DSolverTest : public ::testing::Test {
     context_->FixInputPort(0, std::move(ext_input));
 
     // Construct the problem data for the 2D rod.
-    const int gv_dim = 3;
-    accel_data_ = std::make_unique<ConstraintAccelProblemData<double>>(gv_dim);
-    vel_data_ = std::make_unique<ConstraintVelProblemData<double>>(gv_dim);
+    const int num_velocities = 3;
+    accel_data_ = std::make_unique<ConstraintAccelProblemData<double>>(
+      num_velocities);
+    vel_data_ = std::make_unique<ConstraintVelProblemData<double>>(
+      num_velocities);
 
     // Set epsilon.
     eps_ = 200 * std::max(std::numeric_limits<double>::epsilon(), cfm_);
@@ -146,17 +148,18 @@ class Constraint2DSolverTest : public ::testing::Test {
   }
 
   // Gets the number of generalized coordinates for the rod.
-  int get_rod_num_coordinates() { return 3; }
+  int get_rod_num_coordinates() const { return 3; }
 
   // Gets the output dimension of a Jacobian multiplication operator.
-  int GetOperatorDim(std::function<VectorX<double>(const VectorX<double>&)> J) {
+  int GetOperatorDim(std::function<VectorX<double>(
+      const VectorX<double>&)> J) const {
     return J(VectorX<double>(get_rod_num_coordinates())).size();
   }
 
   // Checks the consistency of a transpose operator.
   void CheckTransOperatorDim(
       std::function<VectorX<double>(const VectorX<double>&)> JT,
-      int num_constraints) {
+      int num_constraints) const {
     EXPECT_EQ(JT(VectorX<double>(num_constraints)).size(),
               get_rod_num_coordinates());
   }
@@ -164,7 +167,7 @@ class Constraint2DSolverTest : public ::testing::Test {
   // Checks consistency of rigid contact problem data.
   void CheckProblemConsistency(
       const ConstraintAccelProblemData<double>& data,
-      int num_contacts) {
+      int num_contacts) const {
     const int ngc = get_rod_num_coordinates();
     EXPECT_EQ(num_contacts, data.sliding_contacts.size() +
         data.non_sliding_contacts.size());
@@ -173,10 +176,10 @@ class Constraint2DSolverTest : public ::testing::Test {
     EXPECT_EQ(GetOperatorDim(data.F_mult), data.non_sliding_contacts.size());
     EXPECT_EQ(GetOperatorDim(data.L_mult), data.num_limit_constraints);
     CheckTransOperatorDim(data.L_transpose_mult, data.num_limit_constraints);
-    EXPECT_EQ(data.f.size(), ngc);
-    EXPECT_EQ(data.Ndot_x_v.size(), num_contacts);
-    EXPECT_EQ(data.Fdot_x_v.size(), data.non_sliding_contacts.size());
-    EXPECT_EQ(data.Ldot_x_v.size(), data.num_limit_constraints);
+    EXPECT_EQ(data.tau.size(), ngc);
+    EXPECT_EQ(data.Ndot_times_v.size(), num_contacts);
+    EXPECT_EQ(data.Fdot_times_v.size(), data.non_sliding_contacts.size());
+    EXPECT_EQ(data.Ldot_times_v.size(), data.num_limit_constraints);
     EXPECT_EQ(data.mu_non_sliding.size(), data.non_sliding_contacts.size());
     EXPECT_EQ(data.mu_sliding.size(), data.sliding_contacts.size());
     EXPECT_EQ(data.r.size(), data.non_sliding_contacts.size());
@@ -190,7 +193,7 @@ class Constraint2DSolverTest : public ::testing::Test {
   // Checks consistency of rigid impact problem data.
   void CheckProblemConsistency(
       const ConstraintVelProblemData<double>& data,
-      int num_contacts) {
+      int num_contacts) const {
     const int ngc = get_rod_num_coordinates();
     const int num_spanning_directions = std::accumulate(
         data.r.begin(), data.r.end(), 0);
@@ -217,7 +220,7 @@ TEST_F(Constraint2DSolverTest, TwoPointPulledUpward) {
   CalcConstraintAccelProblemData(accel_data_.get());
 
   // Add a force pulling the rod upward.
-  accel_data_->f[1] += 100.0;
+  accel_data_->tau[1] += 100.0;
 
   // Compute the contact forces.
   VectorX<double> cf;
@@ -259,7 +262,7 @@ TEST_F(Constraint2DSolverTest, TwoPointSticking) {
 
   // Add a force pulling the rod horizontally.
   const double horz_f = 100.0;
-  accel_data_->f[0] += horz_f;
+  accel_data_->tau[0] += horz_f;
 
   // Compute the contact forces.
   VectorX<double> cf;
@@ -368,8 +371,8 @@ TEST_F(Constraint2DSolverTest, SinglePointSticking) {
   // Add a force, acting at the point of contact, that pulls the rod
   // horizontally.
   const double horz_f = 100.0;
-  accel_data_->f[0] += horz_f;
-  accel_data_->f[2] += horz_f * rod_->get_rod_half_length();
+  accel_data_->tau[0] += horz_f;
+  accel_data_->tau[2] += horz_f * rod_->get_rod_half_length();
 
   // Compute the contact forces.
   VectorX<double> cf;
@@ -424,7 +427,7 @@ TEST_F(Constraint2DSolverTest, TwoPointNonSlidingToSliding) {
 
   // Add a force pulling the rod horizontally.
   const double horz_f = 100.0;
-  accel_data_->f[0] += horz_f;
+  accel_data_->tau[0] += horz_f;
 
   // Compute the contact forces.
   VectorX<double> cf;
@@ -556,15 +559,15 @@ TEST_F(Constraint2DSolverTest, TwoPointAsLimit) {
   accel_data_->N_mult = [](const VectorX<double>&) {
     return VectorX<double>(0);
   };
-  accel_data_->Ndot_x_v.resize(0);
+  accel_data_->Ndot_times_v.resize(0);
   accel_data_->F_mult = [](const VectorX<double>&) {
     return VectorX<double>(0);
   };
   accel_data_->F_transpose_mult = [ngc](const VectorX<double>&) {
     return VectorX<double>::Zero(ngc);
   };
-  accel_data_->Fdot_x_v.resize(0);
-  accel_data_->Ldot_x_v.resize(1);
+  accel_data_->Fdot_times_v.resize(0);
+  accel_data_->Ldot_times_v.resize(1);
   accel_data_->N_minus_muQ_transpose_mult = [ngc](const VectorX<double>&) {
     return VectorX<double>::Zero(ngc);
   };
@@ -582,7 +585,7 @@ TEST_F(Constraint2DSolverTest, TwoPointAsLimit) {
     VectorX<double> {
     return L.transpose() * v;
   };
-  accel_data_->Ldot_x_v.setZero();
+  accel_data_->Ldot_times_v.setZero();
 
   // Compute the constraint forces.
   VectorX<double> cf;
@@ -601,7 +604,7 @@ TEST_F(Constraint2DSolverTest, TwoPointAsLimit) {
   L *= -1;
 
   // Reverse the external force (gravity) on the rod.
-  accel_data_->f *= -1;
+  accel_data_->tau *= -1;
 
   // Recompute the constraint forces, and verify that they're still equal
   // to the force from gravity. Note: if the forces were to be applied to the

@@ -433,9 +433,9 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
   auto L = problem_data.L_mult;
   auto LT = problem_data.L_transpose_mult;
   auto iM = problem_data.solve_inertia;
-  const VectorX<T>& Ndot_x_v = problem_data.Ndot_x_v;
-  const VectorX<T>& Fdot_x_v = problem_data.Fdot_x_v;
-  const VectorX<T>& Ldot_x_v = problem_data.Ldot_x_v;
+  const VectorX<T>& Ndot_times_v = problem_data.Ndot_times_v;
+  const VectorX<T>& Fdot_times_v = problem_data.Fdot_times_v;
+  const VectorX<T>& Ldot_times_v = problem_data.Ldot_times_v;
   const VectorX<T>& mu_non_sliding = problem_data.mu_non_sliding;
 
   // Construct a matrix similar to E in Anitscu and Potra 1997. This matrix
@@ -520,13 +520,14 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
   // 0
   // L⋅M⁻¹⋅fext + dL/dt⋅v
   // where, as above, D is defined as [F -F]
-  VectorX<T> M_inv_x_f = problem_data.solve_inertia(problem_data.f);
+  VectorX<T> M_inv_x_f = problem_data.solve_inertia(problem_data.tau);
   qq->resize(num_vars, 1);
-  qq->segment(0, nc) = N(M_inv_x_f) + Ndot_x_v;
-  qq->segment(nc, nr) = F(M_inv_x_f) + Fdot_x_v;
+  qq->segment(0, nc) = N(M_inv_x_f) + Ndot_times_v;
+  qq->segment(nc, nr) = F(M_inv_x_f) + Fdot_times_v;
   qq->segment(nc + nr, num_spanning_vectors) = -qq->segment(nc, nr);
   qq->segment(nc + nk, num_non_sliding).setZero();
-  qq->segment(nc + nk + num_non_sliding, num_limits) = L(M_inv_x_f) + Ldot_x_v;
+  qq->segment(nc + nk + num_non_sliding, num_limits) = L(M_inv_x_f) +
+      Ldot_times_v;
 }
 
 // Forms the LCP matrix and vector, which is used to determine the collisional
@@ -727,7 +728,7 @@ void ConstraintSolver<T>::ComputeGeneralizedAcceleration(
   VectorX<T> generalized_force;
   ComputeGeneralizedForceFromConstraintForces(problem_data, cf,
                                               &generalized_force);
-  *generalized_acceleration = problem_data.solve_inertia(problem_data.f +
+  *generalized_acceleration = problem_data.solve_inertia(problem_data.tau +
                                                          generalized_force);
 }
 
