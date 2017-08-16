@@ -1,7 +1,10 @@
 #include "drake/systems/trajectory_optimization/direct_trajectory_optimization.h"
 
+#include <algorithm>
+#include <cmath>
 #include <limits>
 #include <stdexcept>
+#include <string>
 
 #include "drake/common/symbolic.h"
 #include "drake/solvers/ipopt_solver.h"
@@ -11,57 +14,79 @@ using Eigen::VectorXd;
 
 namespace drake {
 namespace systems {
-namespace {
-VectorXd VectorDiff(const VectorXd& vec) {
-  DRAKE_ASSERT(vec.size() > 1);
-  const int len_minus1 = vec.size() - 1;
-  return vec.tail(len_minus1) - vec.head(len_minus1);
-}
-}  // namespace
 
-// DirectTrajectoryOptimization
 // For readability of long lines, these single-letter variables names are
 // sometimes used:
 // N number of timesteps/samples
 // h timesteps (there are N-1 of these)
 // x state
 // u control input
+
+namespace {
+
+solvers::VectorXDecisionVariable MakeNamedVariables(const std::string prefix,
+                                                    int num) {
+  solvers::VectorXDecisionVariable vars(num);
+  for (int i = 0; i < num; i++)
+    vars(i) = symbolic::Variable(prefix + std::to_string(i));
+  return vars;
+}
+}
+
 DirectTrajectoryOptimization::DirectTrajectoryOptimization(
-    const int num_inputs, const int num_states, const int num_time_samples,
-    const double trajectory_time_lower_bound,
-    const double trajectory_time_upper_bound)
+    int num_inputs, int num_states, int num_time_samples, double fixed_timestep)
     : num_inputs_(num_inputs),
       num_states_(num_states),
       N_(num_time_samples),
+      timesteps_are_decision_variables_(false),
+      fixed_timestep_(fixed_timestep),
+      h_vars_(solvers::VectorXDecisionVariable(0)),
+      x_vars_(NewContinuousVariables(num_states_ * N_, "x")),
+      u_vars_(NewContinuousVariables(num_inputs_ * N_, "u")),
+      placeholder_t_var_(
+          solvers::VectorDecisionVariable<1>(symbolic::Variable("t"))),
+      placeholder_x_vars_(MakeNamedVariables("x", num_states_)),
+      placeholder_u_vars_(MakeNamedVariables("u", num_inputs_)) {
+  DRAKE_DEMAND(num_time_samples > 1);
+  DRAKE_DEMAND(num_states_ > 0);
+  DRAKE_DEMAND(num_inputs_ >= 0);
+  DRAKE_DEMAND(fixed_timestep > 0);
+}
+
+DirectTrajectoryOptimization::DirectTrajectoryOptimization(
+    int num_inputs, int num_states, int num_time_samples,
+    double minimum_timestep, double maximum_timestep)
+    : num_inputs_(num_inputs),
+      num_states_(num_states),
+      N_(num_time_samples),
+      timesteps_are_decision_variables_(true),
       h_vars_(NewContinuousVariables(N_ - 1, "h")),
       x_vars_(NewContinuousVariables(num_states_ * N_, "x")),
       u_vars_(NewContinuousVariables(num_inputs_ * N_, "u")),
-      placeholder_t_var_(NewContinuousVariables<1>("h")),
-      placeholder_x_vars_(NewContinuousVariables(num_states_, "x")),
-      placeholder_u_vars_(NewContinuousVariables(num_inputs_, "u")) {
-  DRAKE_ASSERT(num_time_samples > 1);
-  DRAKE_ASSERT(num_states_ > 0);
-  DRAKE_ASSERT(num_inputs_ >= 0);
-  DRAKE_ASSERT(trajectory_time_lower_bound <= trajectory_time_upper_bound);
-  // Construct total time linear constraint.
-  // TODO(Lucy-tri) add case for all timesteps independent (if needed).
-  AddLinearConstraint(h_vars_.cast<symbolic::Expression>().sum(),
-                      trajectory_time_lower_bound, trajectory_time_upper_bound);
-  for (int i = 0; i < N_ - 2; ++i) {
-    AddLinearEqualityConstraint(h_vars_(i + 1) - h_vars_(i), 0.0);
-  }
-  // // Ensure that all h values are non-negative.
-  AddLinearConstraint(h_vars_.array() >= 0.0);
+      placeholder_t_var_(
+          solvers::VectorDecisionVariable<1>(symbolic::Variable("t"))),
+      placeholder_x_vars_(MakeNamedVariables("x", num_states_)),
+      placeholder_u_vars_(MakeNamedVariables("u", num_inputs_)) {
+  DRAKE_DEMAND(num_time_samples > 1);
+  DRAKE_DEMAND(num_states_ > 0);
+  DRAKE_DEMAND(num_inputs_ >= 0);
+  DRAKE_DEMAND(minimum_timestep > 0);  // == 0 tends to cause numerical issues.
+  DRAKE_DEMAND(maximum_timestep >= minimum_timestep &&
+               std::isfinite(maximum_timestep));
+
+  AddBoundingBoxConstraint(minimum_timestep, maximum_timestep, h_vars_);
 }
 
 void DirectTrajectoryOptimization::AddTimeIntervalBounds(
     const Eigen::VectorXd& lower_bound, const Eigen::VectorXd& upper_bound) {
+  DRAKE_THROW_UNLESS(timesteps_are_decision_variables_);
   AddBoundingBoxConstraint(lower_bound, upper_bound, h_vars_);
 }
 
 void DirectTrajectoryOptimization::AddTimeIntervalBounds(
     const Eigen::VectorXd& lower_bound, const Eigen::VectorXd& upper_bound,
     const std::vector<int>& interval_indices) {
+  DRAKE_THROW_UNLESS(timesteps_are_decision_variables_);
   solvers::VectorXDecisionVariable h(interval_indices.size());
   for (int i = 0; i < static_cast<int>(interval_indices.size()); ++i) {
     h(i) = h_vars_(interval_indices[i]);
@@ -71,60 +96,86 @@ void DirectTrajectoryOptimization::AddTimeIntervalBounds(
 
 void DirectTrajectoryOptimization::AddTimeIntervalBounds(double lower_bound,
                                                          double upper_bound) {
+  DRAKE_THROW_UNLESS(timesteps_are_decision_variables_);
   AddBoundingBoxConstraint(lower_bound, upper_bound, h_vars_);
 }
 
-void DirectTrajectoryOptimization::GetInitialVars(
-    double timespan_init_in, const PiecewisePolynomial<double>& traj_init_u,
+void DirectTrajectoryOptimization::AddEqualTimeIntervalsConstraints() {
+  DRAKE_THROW_UNLESS(timesteps_are_decision_variables_);
+  for (int i = 1; i < N_ - 1; i++) {
+    AddLinearConstraint(h_vars_(i - 1) == h_vars_(i));
+  }
+}
+
+void DirectTrajectoryOptimization::AddDurationBounds(double lower_bound,
+                                                     double upper_bound) {
+  DRAKE_THROW_UNLESS(timesteps_are_decision_variables_);
+  AddLinearConstraint(VectorXd::Ones(h_vars_.size()), lower_bound, upper_bound,
+                      h_vars_);
+}
+
+void DirectTrajectoryOptimization::SetInitialTrajectory(
+    const PiecewisePolynomial<double>& traj_init_u,
     const PiecewisePolynomial<double>& traj_init_x) {
-  VectorXd timespan_init{VectorXd::LinSpaced(N_, 0, timespan_init_in)};
-  SetInitialGuess(h_vars_, VectorDiff(timespan_init));
+  double start_time = 0;
+  double h = fixed_timestep_;
+  if (timesteps_are_decision_variables_) {
+    double end_time = fixed_timestep_ * N_;
+    DRAKE_THROW_UNLESS(!traj_init_u.empty() || !traj_init_x.empty());
+    if (!traj_init_u.empty()) {
+      start_time = traj_init_u.getStartTime();
+      end_time = traj_init_u.getEndTime();
+      if (!traj_init_x.empty()) {
+        // Note: Consider adding a tolerance here if warranted.
+        DRAKE_THROW_UNLESS(start_time == traj_init_x.getStartTime());
+        DRAKE_THROW_UNLESS(end_time == traj_init_x.getEndTime());
+      }
+    } else {
+      start_time = traj_init_x.getStartTime();
+      end_time = traj_init_x.getEndTime();
+    }
+    DRAKE_DEMAND(start_time <= end_time);
+    h = (end_time - start_time) / (N_ - 1);
+    SetInitialGuess(h_vars_, VectorXd::Constant(h_vars_.size(), h));
+  }
 
   VectorXd guess_u(u_vars_.size());
   if (traj_init_u.empty()) {
     guess_u.fill(0.003);  // Start with some small number <= 0.01.
   } else {
-    for (int t = 0; t < N_; ++t) {
-      guess_u.segment(num_inputs_ * t, num_inputs_) =
-          traj_init_u.value(timespan_init[t]);
+    for (int i = 0; i < N_; ++i) {
+      guess_u.segment(num_inputs_ * i, num_inputs_) =
+          traj_init_u.value(start_time + i * h);
     }
   }
   SetInitialGuess(u_vars_, guess_u);
 
-  DRAKE_ASSERT(!traj_init_x.empty());  // TODO(Lucy-tri) see below.
   VectorXd guess_x(x_vars_.size());
   if (traj_init_x.empty()) {
     guess_x.fill(0.003);  // Start with some small number <= 0.01.
     // TODO(Lucy-tri) Do what DirectTrajectoryOptimization.m does.
   } else {
-    for (int t = 0; t < N_; ++t) {
-      guess_x.segment(num_states_ * t, num_states_) =
-          traj_init_x.value(timespan_init[t]);
+    for (int i = 0; i < N_; ++i) {
+      guess_x.segment(num_states_ * i, num_states_) =
+          traj_init_x.value(start_time + i * h);
     }
   }
   SetInitialGuess(x_vars_, guess_x);
 }
 
-solvers::SolutionResult DirectTrajectoryOptimization::SolveTraj(
-    double timespan_init, const PiecewisePolynomial<double>& traj_init_u,
-    const PiecewisePolynomial<double>& traj_init_x) {
-  GetInitialVars(timespan_init, traj_init_u, traj_init_x);
-
-  // If we're using IPOPT, it can't quite solve trajectories to the
-  // default precision level.
-  SetSolverOption(drake::solvers::IpoptSolver::id(), "tol", 1e-7);
-
-  solvers::SolutionResult result = Solve();
-  return result;
-}
-
 std::vector<double> DirectTrajectoryOptimization::GetTimeVector() const {
-  std::vector<double> times;
-  times.resize(N_, 0);
+  std::vector<double> times(N_);
 
-  const auto h_values = GetSolution(h_vars_);
-  for (int i = 1; i < N_; i++) {
-    times[i] = times[i - 1] + h_values(i - 1);
+  if (timesteps_are_decision_variables_) {
+    const auto h_values = GetSolution(h_vars_);
+    times[0] = 0.0;
+    for (int i = 1; i < N_; i++) {
+      times[i] = times[i - 1] + h_values(i - 1);
+    }
+  } else {
+    for (int i = 0; i < N_; i++) {
+      times[i] = i * fixed_timestep_;
+    }
   }
   return times;
 }
@@ -160,11 +211,15 @@ DirectTrajectoryOptimization::ConstructPlaceholderVariableSubstitution(
     int interval_index) const {
   symbolic::Substitution sub;
 
-  // time(i) is the sum of h intervals 0...(i-1)
-  const symbolic::Expression time =
-      h_vars_.head(interval_index).cast<symbolic::Expression>().sum();
+  if (timesteps_are_decision_variables_) {
+    // time(i) is the sum of h intervals 0...(i-1)
+    const symbolic::Expression time =
+        h_vars_.head(interval_index).cast<symbolic::Expression>().sum();
+    sub.emplace(placeholder_t_var_(0), time);
+  } else {
+    sub.emplace(placeholder_t_var_(0), interval_index * fixed_timestep_);
+  }
 
-  sub.emplace(placeholder_t_var_(0), time);
   for (int i = 0; i < num_states_; i++)
     sub.emplace(placeholder_x_vars_(i),
                 x_vars_(interval_index * num_states_ + i));
@@ -180,8 +235,7 @@ DirectTrajectoryOptimization::SubstitutePlaceholderVariables(
   return e.Substitute(ConstructPlaceholderVariableSubstitution(interval_index));
 }
 
-symbolic::Formula
-DirectTrajectoryOptimization::SubstitutePlaceholderVariables(
+symbolic::Formula DirectTrajectoryOptimization::SubstitutePlaceholderVariables(
     const symbolic::Formula& f, int interval_index) const {
   return f.Substitute(ConstructPlaceholderVariableSubstitution(interval_index));
 }

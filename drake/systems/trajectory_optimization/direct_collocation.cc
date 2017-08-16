@@ -17,11 +17,20 @@ DircolTrajectoryOptimization::DircolTrajectoryOptimization(
     : systems::DirectTrajectoryOptimization(
           system->get_num_total_inputs(),
           context.get_continuous_state()->size(), num_time_samples,
-          trajectory_time_lower_bound, trajectory_time_upper_bound),
+          trajectory_time_lower_bound / (num_time_samples - 1),
+          trajectory_time_upper_bound / (num_time_samples - 1)),
       system_(system),
       context_(system_->CreateDefaultContext()),
       continuous_state_(system_->AllocateTimeDerivatives()) {
   DRAKE_DEMAND(context.has_only_continuous_state());
+
+  // TODO(russt):  This should NOT be set automatically.
+  // Once it is removed, the proper constraint to be added will be
+  //   AddDurationBounds(trajectory_time_lower_bound,
+  //                     trajectory_time_upper_bound);
+  // but that constraint is currently implied already by the min/max
+  // timestep + all timesteps equal constraints.
+  AddEqualTimeIntervalsConstraints();
 
   context_->SetTimeStateAndParametersFrom(context);
 
@@ -66,7 +75,6 @@ void DircolTrajectoryOptimization::DoAddRunningCost(
   AddCost(0.5 *
           SubstitutePlaceholderVariables(g * h_vars()(N() - 2) / 2, N() - 1));
 }
-
 
 PiecewisePolynomialTrajectory
 DircolTrajectoryOptimization::ReconstructStateTrajectory() const {

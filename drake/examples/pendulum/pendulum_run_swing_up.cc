@@ -72,8 +72,8 @@ int do_main() {
   const double timespan_init = 4;
   auto traj_init_x =
       PiecewisePolynomial<double>::FirstOrderHold({0, timespan_init}, {x0, xG});
-  SolutionResult result = dircol.SolveTraj(
-      timespan_init, PiecewisePolynomial<double>(), traj_init_x);
+  dircol.SetInitialTrajectory(PiecewisePolynomial<double>(), traj_init_x);
+  SolutionResult result = dircol.Solve();
   if (result != SolutionResult::kSolutionFound) {
     std::cerr << "Result is an Error" << std::endl;
     return 1;
