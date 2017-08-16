@@ -13,6 +13,7 @@
 namespace drake {
 namespace geometry {
 
+using internal::InternalAnchoredGeometry;
 using internal::InternalFrame;
 using internal::InternalGeometry;
 using std::make_pair;
@@ -108,6 +109,13 @@ const std::string& GeometryState<T>::get_source_name(SourceId id) const {
 }
 
 template <typename T>
+const Isometry3<double>& GeometryState<T>::GetPoseInParent(
+    GeometryId geometry_id) const {
+  auto& geometry = GetValueOrThrow(geometry_id, &geometries_);
+  return geometry.get_pose_in_parent();
+}
+
+template <typename T>
 SourceId GeometryState<T>::RegisterNewSource(const std::string& name) {
   SourceId source_id = SourceId::get_new_id();
   using std::to_string;
@@ -124,6 +132,7 @@ SourceId GeometryState<T>::RegisterNewSource(const std::string& name) {
 
   source_frame_id_map_[source_id];
   source_root_frame_map_[source_id];
+  source_anchored_geometry_map_[source_id];
   source_names_[source_id] = final_name;
   return source_id;
 }
@@ -184,7 +193,8 @@ GeometryId GeometryState<T>::RegisterGeometry(
   // TODO(SeanCurtis-TRI): Get name from geometry instance (when available).
   geometries_.emplace(
       geometry_id,
-      InternalGeometry(frame_id, geometry_id));
+      InternalGeometry(geometry->release_shape(), frame_id, geometry_id,
+                       geometry->get_pose()));
   return geometry_id;
 }
 
@@ -222,6 +232,29 @@ GeometryId GeometryState<T>::RegisterGeometryWithParent(
 }
 
 template <typename T>
+GeometryId GeometryState<T>::RegisterAnchoredGeometry(
+    SourceId source_id,
+    std::unique_ptr<GeometryInstance> geometry) {
+  using std::to_string;
+  if (geometry == nullptr) {
+    throw std::logic_error(
+        "Registering null anchored geometry on source "
+        + to_string(source_id) + ".");
+  }
+  auto& set = GetMutableValueOrThrow(source_id, &source_anchored_geometry_map_);
+
+  GeometryId geometry_id = GeometryId::get_new_id();
+  set.emplace(geometry_id);
+
+  // Pass the geometry to the engine.
+  anchored_geometries_.emplace(
+      geometry_id,
+      InternalAnchoredGeometry(
+          geometry->release_shape(), geometry_id, geometry->get_pose()));
+  return geometry_id;
+}
+
+template <typename T>
 void GeometryState<T>::ClearSource(SourceId source_id) {
   FrameIdSet& frames = GetMutableValueOrThrow(source_id, &source_frame_id_map_);
   for (auto frame_id : frames) {
@@ -252,7 +285,11 @@ void GeometryState<T>::RemoveGeometry(SourceId source_id,
             "source " + to_string(source_id) + ", but the geometry doesn't "
             "belong to that source.");
   }
-  RemoveGeometryUnchecked(geometry_id, RemoveGeometryOrigin::kGeometry);
+  if (is_dynamic(geometry_id)) {
+    RemoveGeometryUnchecked(geometry_id, RemoveGeometryOrigin::kGeometry);
+  } else {
+    RemoveAnchoredGeometryUnchecked(geometry_id);
+  }
 }
 
 template <typename T>
@@ -268,7 +305,14 @@ bool GeometryState<T>::BelongsToSource(FrameId frame_id,
 template <typename T>
 bool GeometryState<T>::BelongsToSource(GeometryId geometry_id,
                                        SourceId source_id) const {
-  // Look among the dynamic geometry, if not found, the geometry_id
+  // Geometry could be anchored. This also implicitly tests that source_id is
+  // valid and throws an exception if not.
+  auto& anchored_geometries = GetValueOrThrow(source_id,
+                                              &source_anchored_geometry_map_);
+  if (anchored_geometries.find(geometry_id) != anchored_geometries.end()) {
+    return true;
+  }
+  // If not anchored, geometry must be dynamic. If this fails, the geometry_id
   // is not valid and an exception is thrown.
   const auto& geometry = GetValueOrThrow(geometry_id, &geometries_);
   return BelongsToSource(geometry.get_frame_id(), source_id);
@@ -360,6 +404,12 @@ void GeometryState<T>::RemoveGeometryUnchecked(GeometryId geometry_id,
 
   // Remove from the geometries.
   geometries_.erase(geometry_id);
+}
+
+template <typename T>
+void GeometryState<T>::RemoveAnchoredGeometryUnchecked(GeometryId geometry_id) {
+  GetValueOrThrow(geometry_id, &anchored_geometries_);
+  anchored_geometries_.erase(geometry_id);
 }
 
 // Explicitly instantiates on the most common scalar types.
