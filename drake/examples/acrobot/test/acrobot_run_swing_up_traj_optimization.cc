@@ -28,7 +28,6 @@ namespace drake {
 namespace examples {
 namespace acrobot {
 namespace {
-
 DEFINE_double(realtime_factor, 1.0,
               "Playback speed.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
@@ -36,7 +35,7 @@ DEFINE_double(realtime_factor, 1.0,
 int do_main() {
   systems::DiagramBuilder<double> builder;
 
-  auto acrobot = AcrobotPlant<double>::CreateAcrobotMIT();
+  AcrobotPlant<double> acrobot;
 
   const int kNumTimeSamples = 21;
   const double kTrajectoryTimeLowerBound = 2;
@@ -45,10 +44,10 @@ int do_main() {
   const Eigen::Vector4d x0(0, 0, 0, 0);
   const Eigen::Vector4d xG(M_PI, 0, 0, 0);
 
-  auto context = acrobot->CreateDefaultContext();
+  auto context = acrobot.CreateDefaultContext();
 
   systems::DircolTrajectoryOptimization dircol_traj(
-      acrobot.get(), *context, kNumTimeSamples, kTrajectoryTimeLowerBound,
+      &acrobot, *context, kNumTimeSamples, kTrajectoryTimeLowerBound,
       kTrajectoryTimeUpperBound);
   AddSwingUpTrajectoryParams(x0, xG, &dircol_traj);
 
@@ -58,13 +57,24 @@ int do_main() {
   SolutionResult result = dircol_traj.SolveTraj(
       timespan_init, PiecewisePolynomialType(), traj_init_x);
   if (result != SolutionResult::kSolutionFound) {
-    std::cerr << "Result is an Error" << std::endl;
+    std::cerr << "No solution found.\n";
     return 1;
   }
 
   const PiecewisePolynomialTrajectory pp_xtraj =
       dircol_traj.ReconstructStateTrajectory();
   auto state_source = builder.AddSystem<systems::TrajectorySource>(pp_xtraj);
+
+  if (pp_xtraj.get_end_time() - pp_xtraj.get_start_time() >
+            kTrajectoryTimeUpperBound) {
+    std::cerr << "Trajectory time exceeds above the upper bound.\n";
+    return 1;
+  }
+  if (pp_xtraj.get_end_time() - pp_xtraj.get_start_time() <
+      kTrajectoryTimeLowerBound) {
+    std::cerr << "Trajectory time exceeds below the lower bound.\n";
+    return 1;
+  }
 
   lcm::DrakeLcm lcm;
   auto tree = std::make_unique<RigidBodyTree<double>>();
@@ -73,6 +83,13 @@ int do_main() {
       multibody::joints::kFixed, tree.get());
 
   auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
+
+  // By default, the simulator triggers a publish event at the end of each time
+  // step of the integrator. However, since this system is only meant for
+  // playback, there is no continuous state and the integrator does not even get
+  // called. Therefore, we explicitly set the publish frequency for the
+  // visualizer.
+  publisher->set_publish_period(1.0 / 60.0);
 
   builder.Connect(state_source->get_output_port(),
                   publisher->get_input_port(0));
@@ -84,7 +101,6 @@ int do_main() {
   simulator.set_target_realtime_rate(FLAGS_realtime_factor);
   simulator.Initialize();
   simulator.StepTo(kTrajectoryTimeUpperBound);
-
   return 0;
 }
 
