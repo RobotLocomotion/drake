@@ -46,8 +46,8 @@ void FindCoefficientAndFill(const Polynomial::MapType& map, const Monomial& m,
 void DecomposeLinearExpressions(
     const Eigen::Ref<const VectorX<Expression>>& expressions,
     const Eigen::Ref<const VectorX<symbolic::Variable>>& vars,
-    Eigen::Ref<Eigen::MatrixXd> M) {
-  DRAKE_DEMAND(M.rows() == expressions.rows() && M.cols() == vars.rows());
+    EigenPtr<Eigen::MatrixXd> M) {
+  DRAKE_DEMAND(M->rows() == expressions.rows() && M->cols() == vars.rows());
   for (int i = 0; i < expressions.size(); ++i) {
     const Expression& e{expressions(i)};
     if (!e.is_polynomial()) {
@@ -64,7 +64,7 @@ void DecomposeLinearExpressions(
     }
     // Fill M(i, j).
     for (int j = 0; j < vars.size(); ++j) {
-      FindCoefficientAndFill(map, Monomial{vars.coeff(j)}, j, M.row(i));
+      FindCoefficientAndFill(map, Monomial{vars.coeff(j)}, j, M->row(i));
     }
   }
 }
@@ -72,9 +72,9 @@ void DecomposeLinearExpressions(
 void DecomposeAffineExpressions(
     const Eigen::Ref<const VectorX<Expression>>& expressions,
     const Eigen::Ref<const VectorX<symbolic::Variable>>& vars,
-    Eigen::Ref<Eigen::MatrixXd> M, Eigen::Ref<Eigen::VectorXd> v) {
-  DRAKE_DEMAND(M.rows() == expressions.rows() && M.cols() == vars.rows());
-  DRAKE_DEMAND(v.rows() == expressions.rows());
+    EigenPtr<Eigen::MatrixXd> M, EigenPtr<Eigen::VectorXd> v) {
+  DRAKE_DEMAND(M->rows() == expressions.rows() && M->cols() == vars.rows());
+  DRAKE_DEMAND(v->rows() == expressions.rows());
   for (int i = 0; i < expressions.size(); ++i) {
     const Expression& e{expressions(i)};
     if (!e.is_polynomial()) {
@@ -87,10 +87,10 @@ void DecomposeAffineExpressions(
     const Polynomial::MapType& map{p.monomial_to_coefficient_map()};
     // Fill M(i, j).
     for (int j = 0; j < vars.size(); ++j) {
-      FindCoefficientAndFill(map, Monomial{vars.coeff(j)}, j, M.row(i));
+      FindCoefficientAndFill(map, Monomial{vars.coeff(j)}, j, M->row(i));
     }
     // Fill v(i).
-    FindCoefficientAndFill(map, Monomial{}, i, v);
+    FindCoefficientAndFill(map, Monomial{}, i, *v);
   }
 }
 }  // namespace symbolic

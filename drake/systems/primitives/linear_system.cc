@@ -48,12 +48,12 @@ unique_ptr<LinearSystem<T>> LinearSystem<T>::MakeLinearSystem(
   Eigen::MatrixXd AB(num_states, num_states + num_inputs);
   VectorX<symbolic::Variable> vars(num_states + num_inputs);
   vars << state_vars, input_vars;
-  DecomposeLinearExpressions(dynamics, vars, AB);
+  DecomposeLinearExpressions(dynamics, vars, &AB);
   const auto& A = AB.leftCols(num_states);
   const auto& B = AB.rightCols(num_inputs);
 
   Eigen::MatrixXd CD(num_outputs, num_states + num_inputs);
-  DecomposeLinearExpressions(output, vars, CD);
+  DecomposeLinearExpressions(output, vars, &CD);
   const auto& C = CD.leftCols(num_states);
   const auto& D = CD.rightCols(num_inputs);
 
