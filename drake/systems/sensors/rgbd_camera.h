@@ -130,16 +130,26 @@ class RgbdCamera : public LeafSystem<double> {
   /// @param orientation The roll-pitch-yaw orientation of `B` in `W`. This
   /// defines the orientation component of `X_WB`.
   ///
+  /// @param depth_range_near The minimum depth distance RgbdCamera can measure.
+  /// The default is 0.5 meters.
+  ///
+  /// @param depth_range_far The maximum depth distance RgbdCamera can measure.
+  /// The default is 5 meters.
+  ///
   /// @param fov_y The RgbdCamera's vertical field of view.
+  /// The default is PI / 4.
   ///
   /// @param show_window A flag for showing a visible window.  If this is false,
   /// offscreen rendering is executed. This is useful for debugging purposes.
+  /// The default is true.
   RgbdCamera(const std::string& name,
              const RigidBodyTree<double>& tree,
              const Eigen::Vector3d& position,
              const Eigen::Vector3d& orientation,
-             double fov_y,
-             bool show_window);
+             double depth_range_near = 0.5,
+             double depth_range_far = 5.0,
+             double fov_y = M_PI_4,
+             bool show_window = true);
 
   /// A constructor for %RgbdCamera that defines `B` using a RigidBodyFrame.
   /// The pose of %RgbdCamera is fixed to a user-defined frame and will be
@@ -156,15 +166,25 @@ class RgbdCamera : public LeafSystem<double> {
   ///
   /// @param frame The frame in @tree to which this camera is attached.
   ///
+  /// @param depth_range_near The minimum depth distance RgbdCamera can measure.
+  /// The default is 0.5 meters.
+  ///
+  /// @param depth_range_far The maximum depth distance RgbdCamera can measure.
+  /// The default is 5 meters.
+  ///
   /// @param fov_y The RgbdCamera's vertical field of view.
+  /// The default is PI / 4.
   ///
   /// @param show_window A flag for showing a visible window.  If this is false,
   /// offscreen rendering is executed. This is useful for debugging purposes.
+  /// The default is true.
   RgbdCamera(const std::string& name,
              const RigidBodyTree<double>& tree,
              const RigidBodyFrame<double>& frame,
-             double fov_y,
-             bool show_window);
+             double depth_range_near = 0.5,
+             double depth_range_far = 5.0,
+             double fov_y = M_PI_4,
+             bool show_window = true);
 
   ~RgbdCamera();
 

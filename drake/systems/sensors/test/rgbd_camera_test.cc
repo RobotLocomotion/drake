@@ -36,13 +36,16 @@ const double kColorPixelTolerance = 1.001;
 const double kDepthTolerance = 1e-4;
 const double kFovY = M_PI_4;
 const bool kShowWindow = false;
+const double kDepthRangeNear = 0.5;
+const double kDepthRangeFar = 5.;
 
 class RgbdCameraTest : public ::testing::Test {
  public:
   RgbdCameraTest() : dut_("rgbd_camera", RigidBodyTree<double>(),
                           Eigen::Vector3d(1., 2., 3.),
                           Eigen::Vector3d(0.1, 0.2, 0.3),
-                          kFovY,  kShowWindow) {}
+                          kDepthRangeNear, kDepthRangeFar,
+                          kFovY, kShowWindow) {}
 
   void SetUp() {}
 
@@ -117,8 +120,8 @@ class RenderingSim : public systems::Diagram<double> {
   void InitFixedCamera(const Eigen::Vector3d& position,
                        const Eigen::Vector3d& orientation) {
     rgbd_camera_ = builder_.AddSystem<RgbdCamera>(
-        "rgbd_camera", plant_->get_rigid_body_tree(),
-        position, orientation, kFovY, kShowWindow);
+        "rgbd_camera", plant_->get_rigid_body_tree(), position, orientation,
+        kDepthRangeNear, kDepthRangeFar, kFovY, kShowWindow);
     rgbd_camera_->set_name("rgbd_camera");
     Connect();
   }
@@ -132,7 +135,7 @@ class RenderingSim : public systems::Diagram<double> {
 
     rgbd_camera_ = builder_.AddSystem<RgbdCamera>(
         "rgbd_camera", plant_->get_rigid_body_tree(), *rgbd_camera_frame_.get(),
-        kFovY, kShowWindow);
+        kDepthRangeNear, kDepthRangeFar, kFovY, kShowWindow);
     rgbd_camera_->set_name("rgbd_camera");
     Connect();
   }
