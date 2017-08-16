@@ -125,8 +125,7 @@ class Constraint2DSolverTest : public ::testing::Test {
     rod_->GetContactPointsTangentVelocities(*context_, contacts, &tangent_vels);
 
     // Compute the problem data.
-    rod_->CalcConstraintProblemData(*context_, contacts, tangent_vels,
-                                         data);
+    rod_->CalcConstraintProblemData(*context_, contacts, tangent_vels, data);
 
     // Check the consistency of the data.
     CheckProblemConsistency(*data, contacts.size());
@@ -289,6 +288,12 @@ TEST_F(Constraint2DSolverTest, TwoPointSticking) {
 
   // Verify that the number of contact force vectors is correct.
   ASSERT_EQ(contact_forces.size(), 2);
+
+  // Verify that the normal forces equal the gravitational force.
+  // Normal forces are in the first component of each vector.
+  const double mg = rod_->get_mass() * rod_->get_gravitational_acceleration();
+  EXPECT_NEAR(std::fabs(contact_forces.front()[0]), mg / 2, eps_);
+  EXPECT_NEAR(std::fabs(contact_forces.back()[0]), mg / 2, eps_);
 
   // Verify that the frictional forces equal the horizontal forces. Frictional
   // forces are in the second component of each vector.
