@@ -36,6 +36,9 @@ GTEST_TEST(TestSignalLogger, LinearSystemTest) {
   systems::Context<double>* context = simulator.get_mutable_context();
   context->get_mutable_continuous_state_vector()->SetAtIndex(0, 1.0);
 
+  // Make the integrator tolerance sufficiently tight for the test to pass.
+  simulator.get_mutable_integrator()->set_target_accuracy(1e-4);
+
   simulator.Initialize();
   // The Simulator internally calls Publish(), which triggers data logging.
   simulator.StepTo(3);
