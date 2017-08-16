@@ -108,6 +108,14 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
+    name = "geometry_state_test",
+    deps = [
+        ":expect_error_message",
+        ":geometry_state",
+    ],
+)
+
+drake_cc_googletest(
     name = "geometry_system_test",
     deps = [
         ":expect_error_message",
