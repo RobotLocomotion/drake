@@ -49,10 +49,6 @@ GTEST_TEST(TrajectoryOptimizationTest, SimpleCarDircolTest) {
   prog.AddConstraintToAllKnotPoints(input.steering_angle() <= M_PI_2);
   prog.AddConstraintToAllKnotPoints(-M_PI_2 <= input.steering_angle());
 
-  // Ensure that time intervals are (relatively) evenly spaced.
-  prog.AddTimeIntervalBounds(kTrajectoryTimeLowerBound / (kNumTimeSamples - 1),
-                             kTrajectoryTimeUpperBound / (kNumTimeSamples - 1));
-
   // Fix initial conditions.
   prog.AddLinearConstraint(prog.initial_state() == x0.get_value());
 
@@ -67,8 +63,7 @@ GTEST_TEST(TrajectoryOptimizationTest, SimpleCarDircolTest) {
       {0, initial_duration}, {x0.get_value(), xf.get_value()});
 
   solvers::SolutionResult result =
-      prog.SolveTraj(initial_duration, PiecewisePolynomial<double>(),
-                     initial_state_trajectory);
+      prog.SolveTraj(PiecewisePolynomial<double>(), initial_state_trajectory);
 
   EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound);
 
