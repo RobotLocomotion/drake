@@ -54,6 +54,20 @@ drake_cc_binary(
     ],
 )
 
+drake_cc_binary(
+    name = "pr2_example_plan_sender",
+    srcs = ["pr2_example_plan_sender.cc"],
+    data = [":models"],
+    deps = [
+        "//drake/common:find_resource",
+        "//drake/manipulation/util:robot_state_msg_translator",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/multibody/parsers",
+        "@lcmtypes_bot2_core",
+        "@lcmtypes_robotlocomotion",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
