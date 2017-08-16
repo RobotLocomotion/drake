@@ -294,7 +294,8 @@ TEST_F(Constraint2DSolverTest, TwoPointSticking) {
 
   // Verify that the normal forces equal the gravitational force.
   // Normal forces are in the first component of each vector.
-  const double mg = rod_->get_mass() * rod_->get_gravitational_acceleration();
+  const double mg = rod_->get_rod_mass() *
+      std::fabs(rod_->get_gravitational_acceleration());
   EXPECT_NEAR(std::fabs(contact_forces.front()[0]), mg / 2, eps_);
   EXPECT_NEAR(std::fabs(contact_forces.back()[0]), mg / 2, eps_);
 
@@ -603,7 +604,8 @@ TEST_F(Constraint2DSolverTest, TwoPointAsLimit) {
   // second coordinate (vertical position).
   L *= -1;
 
-  // Reverse the external force (gravity) on the rod.
+  // Reverse the external force (gravity) on the rod. tau was set by the
+  // call to Rod2D::CalcConstraintProblemData().
   accel_data_->tau *= -1;
 
   // Recompute the constraint forces, and verify that they're still equal
@@ -614,6 +616,11 @@ TEST_F(Constraint2DSolverTest, TwoPointAsLimit) {
   solver_.SolveConstraintProblem(cfm_, *accel_data_, &cf);
   EXPECT_EQ(cf.size(), 1);
   EXPECT_NEAR(cf[0], mg, 10 * std::numeric_limits<double>::epsilon());
+
+  // Verify that the vertical acceleration is zero.
+  VectorX<double> vdot;
+  solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &vdot);
+  EXPECT_NEAR(vdot[1], 0, 10 * std::numeric_limits<double>::epsilon());
 }
 
 // Tests the rod in a two-point configuration *realized through a configuration
@@ -678,7 +685,8 @@ TEST_F(Constraint2DSolverTest, TwoPointImpactAsLimit) {
   // second coordinate (vertical position).
   L *= -1;
 
-  // Reverse the velocity on the rod.
+  // Reverse the velocity on the rod, which was set by the call to
+  // Rod2D::CalcImpactProblemData().
   vel_data_->v *= -1;
 
   // Recompute the constraint impulses, and verify that they're still equal
@@ -689,6 +697,12 @@ TEST_F(Constraint2DSolverTest, TwoPointImpactAsLimit) {
   solver_.SolveImpactProblem(cfm_, *vel_data_, &cf);
   EXPECT_EQ(cf.size(), 1);
   EXPECT_NEAR(cf[0], mv, 10 * std::numeric_limits<double>::epsilon());
+
+  // Verify that the vertical velocity is zero.
+  VectorX<double> vnew;
+  solver_.ComputeGeneralizedVelocityChange(*vel_data_, cf, &vnew);
+  EXPECT_NEAR(vel_data_->v[1] + vnew[1], 0,
+              10 * std::numeric_limits<double>::epsilon());
 }
 
 // Tests the rod in a single point sliding configuration.
