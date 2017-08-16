@@ -15,8 +15,8 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
-#include "drake/examples/kuka_iiwa_arm/sim_diagram_builder.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/manipulation/util/sim_diagram_builder.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/ik_options.h"
 #include "drake/multibody/joints/floating_base_types.h"
@@ -39,6 +39,7 @@ using std::string;
 using std::unique_ptr;
 
 namespace drake {
+using manipulation::util::SimDiagramBuilder;
 namespace examples {
 namespace kuka_iiwa_arm {
 namespace {

@@ -2,8 +2,8 @@
 
 #include <memory>
 
-#include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_tree_builder.h"
 #include "drake/examples/kuka_iiwa_arm/oracular_state_estimator.h"
+#include "drake/manipulation/util/world_sim_tree_builder.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/controllers/pid_controller.h"
@@ -12,6 +12,7 @@
 
 namespace drake {
 using systems::PassThrough;
+using manipulation::util::ModelInstanceInfo;
 namespace examples {
 namespace kuka_iiwa_arm {
 
@@ -79,18 +80,15 @@ class IiwaAndWsgPlantWithStateEstimator : public systems::Diagram<T> {
     return this->get_output_port(output_port_plant_state_);
   }
 
-  const systems::OutputPort<T>& get_output_port_iiwa_robot_state_msg()
-      const {
+  const systems::OutputPort<T>& get_output_port_iiwa_robot_state_msg() const {
     return this->get_output_port(output_port_iiwa_robot_state_t_);
   }
 
-  const systems::OutputPort<T>& get_output_port_box_robot_state_msg()
-      const {
+  const systems::OutputPort<T>& get_output_port_box_robot_state_msg() const {
     return this->get_output_port(output_port_box_robot_state_t_);
   }
 
-  const systems::OutputPort<T>& get_output_port_contact_results()
-      const {
+  const systems::OutputPort<T>& get_output_port_contact_results() const {
     return this->get_output_port(output_port_contact_results_t_);
   }
 

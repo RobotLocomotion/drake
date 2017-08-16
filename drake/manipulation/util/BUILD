@@ -12,6 +12,20 @@ load("//tools:lint.bzl", "add_lint_tests")
 package(default_visibility = ["//visibility:public"])
 
 drake_cc_library(
+    name = "world_sim_tree_builder",
+    srcs = ["world_sim_tree_builder.cc"],
+    hdrs = ["world_sim_tree_builder.h"],
+    deps = [
+        "//drake/common:find_resource",
+        "//drake/common:unused",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/multibody:rigid_body_tree_construction",
+        "//drake/multibody/parsers",
+        "//drake/multibody/rigid_body_plant:drake_visualizer",
+    ],
+)
+
+drake_cc_library(
     name = "robot_state_msg_translator",
     srcs = ["robot_state_msg_translator.cc"],
     hdrs = ["robot_state_msg_translator.h"],
@@ -20,6 +34,18 @@ drake_cc_library(
         "//drake/util",
         "//drake/util:lcm_util",
         "@lcmtypes_bot2_core",
+    ],
+)
+
+drake_cc_library(
+    name = "sim_diagram_builder",
+    srcs = ["sim_diagram_builder.cc"],
+    hdrs = ["sim_diagram_builder.h"],
+    deps = [
+        "//drake/multibody/rigid_body_plant",
+        "//drake/multibody/rigid_body_plant:drake_visualizer",
+        "//drake/systems/controllers:state_feedback_controller_interface",
+        "//drake/systems/framework",
     ],
 )
 
@@ -114,6 +140,27 @@ drake_cc_googletest(
         ":moving_average_filter",
         "//drake/common",
         "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sim_diagram_builder_test",
+    data = [
+        "//drake/examples/kuka_iiwa_arm:models",
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":sim_diagram_builder",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/examples/kuka_iiwa_arm:iiwa_common",
+        "//drake/lcm",
+        "//drake/manipulation/util:world_sim_tree_builder",
+        "//drake/multibody/rigid_body_plant",
+        "//drake/systems/analysis",
+        "//drake/systems/controllers:inverse_dynamics_controller",
+        "//drake/systems/controllers:pid_controller",
+        "//drake/systems/framework",
+        "//drake/systems/primitives:constant_vector_source",
     ],
 )
 

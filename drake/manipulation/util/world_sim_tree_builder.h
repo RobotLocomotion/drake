@@ -8,9 +8,8 @@
 #include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {
-namespace examples {
-namespace kuka_iiwa_arm {
-// TODO(naveenoid): Consider a common location for this class.
+namespace manipulation {
+namespace util {
 
 template<typename T> struct ModelInstanceInfo {
   std::string model_path;
@@ -124,6 +123,6 @@ class WorldSimTreeBuilder {
   std::map<int, ModelInstanceInfo<T>> instance_id_to_model_info_;
 };
 
-}  // namespace kuka_iiwa_arm
-}  // namespace examples
+}  // namespace util
+}  // namespace manipulation
 }  // namespace drake

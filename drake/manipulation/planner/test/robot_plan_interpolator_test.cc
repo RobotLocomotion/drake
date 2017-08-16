@@ -1,4 +1,4 @@
-#include "drake/examples/kuka_iiwa_arm/robot_plan_interpolator.h"
+#include "drake/manipulation/planner/robot_plan_interpolator.h"
 
 #include <gtest/gtest.h>
 
@@ -6,8 +6,9 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 
 namespace drake {
-namespace examples {
-namespace kuka_iiwa_arm {
+namespace manipulation {
+namespace planner {
+namespace test {
 namespace {
 
 static const int kNumJoints = 7;
@@ -24,8 +25,7 @@ GTEST_TEST(RobotPlanInterpolatorTest, InstanceTest) {
   RobotPlanInterpolator dut(FindResourceOrThrow(kIiwaUrdf));
   EXPECT_EQ(dut.get_plan_input_port().get_data_type(),
             systems::kAbstractValued);
-  EXPECT_EQ(dut.get_state_input_port().get_data_type(),
-            systems::kVectorValued);
+  EXPECT_EQ(dut.get_state_input_port().get_data_type(), systems::kVectorValued);
   EXPECT_EQ(dut.get_state_input_port().size(), kNumJoints * 2);
   EXPECT_EQ(dut.get_state_output_port().get_data_type(),
             systems::kVectorValued);
@@ -44,8 +44,7 @@ GTEST_TEST(RobotPlanInterpolatorTest, DualInstanceTest) {
 
   EXPECT_EQ(dut.get_plan_input_port().get_data_type(),
             systems::kAbstractValued);
-  EXPECT_EQ(dut.get_state_input_port().get_data_type(),
-            systems::kVectorValued);
+  EXPECT_EQ(dut.get_state_input_port().get_data_type(), systems::kVectorValued);
   EXPECT_EQ(dut.get_state_input_port().size(), kNumJoints * 4);
   EXPECT_EQ(dut.get_state_output_port().get_data_type(),
             systems::kVectorValued);
@@ -67,7 +66,6 @@ struct TrajectoryTestCase {
   const double accel_sign{};
 };
 
-
 GTEST_TEST(RobotPlanInterpolatorTest, TrajectoryTest) {
   RobotPlanInterpolator dut(FindResourceOrThrow(kIiwaUrdf));
 
@@ -81,7 +79,8 @@ GTEST_TEST(RobotPlanInterpolatorTest, TrajectoryTest) {
 
   std::vector<int> info(t.size(), 1);
 
-  robotlocomotion::robot_plan_t plan = EncodeKeyFrames(dut.tree(), t, info, q);
+  robotlocomotion::robot_plan_t plan =
+      examples::kuka_iiwa_arm::EncodeKeyFrames(dut.tree(), t, info, q);
 
   std::unique_ptr<systems::Context<double>> context =
       dut.CreateDefaultContext();
@@ -89,9 +88,8 @@ GTEST_TEST(RobotPlanInterpolatorTest, TrajectoryTest) {
       dut.AllocateOutput(*context);
   context->FixInputPort(dut.get_state_input_port().get_index(),
                         Eigen::VectorXd::Zero(kNumJoints * 2));
-  context->FixInputPort(
-      dut.get_plan_input_port().get_index(),
-      systems::AbstractValue::Make(plan));
+  context->FixInputPort(dut.get_plan_input_port().get_index(),
+                        systems::AbstractValue::Make(plan));
   dut.Initialize(0, Eigen::VectorXd::Zero(kNumJoints),
                  context->get_mutable_state());
 
@@ -109,10 +107,12 @@ GTEST_TEST(RobotPlanInterpolatorTest, TrajectoryTest) {
     context->set_time(kase.time);
     dut.CalcUnrestrictedUpdate(*context, context->get_mutable_state());
     dut.CalcOutput(*context, output.get());
-    const double velocity = output->get_vector_data(
-        dut.get_state_output_port().get_index())->GetAtIndex(kNumJoints);
-    const double accel = output->get_vector_data(
-        dut.get_acceleration_output_port().get_index())->GetAtIndex(0);
+    const double velocity =
+        output->get_vector_data(dut.get_state_output_port().get_index())
+            ->GetAtIndex(kNumJoints);
+    const double accel =
+        output->get_vector_data(dut.get_acceleration_output_port().get_index())
+            ->GetAtIndex(0);
     EXPECT_GT(velocity * kase.velocity_sign, 0);
     EXPECT_GT(accel * kase.accel_sign, 0);
   }
@@ -123,10 +123,12 @@ GTEST_TEST(RobotPlanInterpolatorTest, TrajectoryTest) {
     context->set_time(t.back() + 0.01);
     dut.CalcUnrestrictedUpdate(*context, context->get_mutable_state());
     dut.CalcOutput(*context, output.get());
-    const double velocity = output->get_vector_data(
-        dut.get_state_output_port().get_index())->GetAtIndex(kNumJoints);
-    const double accel = output->get_vector_data(
-        dut.get_acceleration_output_port().get_index())->GetAtIndex(0);
+    const double velocity =
+        output->get_vector_data(dut.get_state_output_port().get_index())
+            ->GetAtIndex(kNumJoints);
+    const double accel =
+        output->get_vector_data(dut.get_acceleration_output_port().get_index())
+            ->GetAtIndex(0);
     EXPECT_FLOAT_EQ(velocity, 0);
     EXPECT_FLOAT_EQ(accel, 0);
   }
@@ -137,24 +139,24 @@ GTEST_TEST(RobotPlanInterpolatorTest, TrajectoryTest) {
   context->set_time(1);
   dut.CalcUnrestrictedUpdate(*context, context->get_mutable_state());
   dut.CalcOutput(*context, output.get());
-  double position = output->get_vector_data(
-        dut.get_state_output_port().get_index())->GetAtIndex(0);
+  double position =
+      output->get_vector_data(dut.get_state_output_port().get_index())
+          ->GetAtIndex(0);
   EXPECT_DOUBLE_EQ(1, position);
 
   plan.num_states = 0;
   plan.plan.clear();
-  context->FixInputPort(
-      dut.get_plan_input_port().get_index(),
-      systems::AbstractValue::Make(plan));
+  context->FixInputPort(dut.get_plan_input_port().get_index(),
+                        systems::AbstractValue::Make(plan));
   dut.CalcUnrestrictedUpdate(*context, context->get_mutable_state());
   dut.CalcOutput(*context, output.get());
-  position = output->get_vector_data(
-        dut.get_state_output_port().get_index())->GetAtIndex(0);
+  position = output->get_vector_data(dut.get_state_output_port().get_index())
+                 ->GetAtIndex(0);
   EXPECT_DOUBLE_EQ(0, position);
 }
 
 }  // namespace
-
-}  // namespace kuka_iiwa_arm
-}  // namespace examples
+}  // namespace test
+}  // namespace planner
+}  // namespace manipulation
 }  // namespace drake

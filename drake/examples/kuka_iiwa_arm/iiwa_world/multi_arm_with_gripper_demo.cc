@@ -1,8 +1,8 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
-#include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_tree_builder.h"
-#include "drake/examples/kuka_iiwa_arm/sim_diagram_builder.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_constants.h"
+#include "drake/manipulation/util/sim_diagram_builder.h"
+#include "drake/manipulation/util/world_sim_tree_builder.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/systems/analysis/simulator.h"
@@ -10,6 +10,9 @@
 #include "drake/systems/primitives/trajectory_source.h"
 
 namespace drake {
+using manipulation::util::ModelInstanceInfo;
+using manipulation::util::WorldSimTreeBuilder;
+using manipulation::util::SimDiagramBuilder;
 namespace examples {
 namespace kuka_iiwa_arm {
 namespace {

@@ -1,11 +1,11 @@
-#include "drake/examples/kuka_iiwa_arm/sim_diagram_builder.h"
+#include "drake/manipulation/util/sim_diagram_builder.h"
 
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
-#include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_tree_builder.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/manipulation/util/world_sim_tree_builder.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
@@ -13,8 +13,8 @@
 #include "drake/systems/primitives/constant_vector_source.h"
 
 namespace drake {
-namespace examples {
-namespace kuka_iiwa_arm {
+namespace manipulation {
+namespace util {
 namespace {
 
 // Builds a RigidBodyTree of @p num_iiwa iiwa arm and @p num_wsg grippers.
@@ -85,7 +85,8 @@ GTEST_TEST(SimDiagramBuilderTest, TestSimulation) {
 
   // Adds a controller.
   VectorX<double> iiwa_kp, iiwa_kd, iiwa_ki;
-  SetPositionControlledIiwaGains(&iiwa_kp, &iiwa_ki, &iiwa_kd);
+  examples::kuka_iiwa_arm::SetPositionControlledIiwaGains(&iiwa_kp, &iiwa_ki,
+                                                          &iiwa_kd);
 
   for (const auto& info : iiwa_info) {
     auto single_arm = std::make_unique<RigidBodyTree<double>>();
@@ -193,6 +194,6 @@ GTEST_TEST(SimDiagramBuilderTest, TestAddVisualizerWithoutPlant) {
 }
 
 }  // namespace
-}  // namespace kuka_iiwa_arm
-}  // namespace examples
+}  // namespace util
+}  // namespace manipulation
 }  // namespace drake

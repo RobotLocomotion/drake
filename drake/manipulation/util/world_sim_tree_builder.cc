@@ -1,4 +1,4 @@
-#include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_tree_builder.h"
+#include "drake/manipulation/util/world_sim_tree_builder.h"
 
 #include <algorithm>
 #include <map>
@@ -34,8 +34,8 @@ using std::string;
 using std::unique_ptr;
 
 namespace drake {
-namespace examples {
-namespace kuka_iiwa_arm {
+namespace manipulation {
+namespace util {
 
 template <typename T>
 WorldSimTreeBuilder<T>::WorldSimTreeBuilder() {}
@@ -122,6 +122,6 @@ void WorldSimTreeBuilder<T>::StoreModel(const std::string& model_name,
 
 template class WorldSimTreeBuilder<double>;
 
-}  // namespace kuka_iiwa_arm
-}  // namespace examples
+}  // namespace util
+}  // namespace manipulation
 }  // namespace drake
