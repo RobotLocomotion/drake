@@ -62,96 +62,73 @@ class TestRBTIK(unittest.TestCase):
         self.assertAlmostEqual(results.q_sol[1][6], q, 1e-9)
 
     def testWorldGazeTargetConstraint(self):
-        # Test that construction doesn't fail (default timespan)
-        gaze_constraint = ik.WorldGazeTargetConstraint(
-            self.r,             # model
-            2,                  # body
-            np.ones([3, 1]),    # axis
-            np.ones([3, 1]),    # target
-            np.zeros([3, 1]),   # gaze_origin
-            1e-3                # conethreshold
-        )
+        model = self.r
+        body = 2
+        axis = np.ones([3, 1])
+        target = np.ones([3, 1])
+        gaze_origin = np.zeros([3, 1])
+        cone_threshold = 1e-3
+        tspan = np.array([0., 1.])
 
-        # Test that construction doesn't fail (given timespan)
-        gaze_constraint = ik.WorldGazeTargetConstraint(
-            self.r,             # model
-            2,                  # body
-            np.ones([3, 1]),    # axis
-            np.ones([3, 1]),    # target
-            np.zeros([3, 1]),   # gaze_origin
-            1e-3,               # conethreshold
-            np.array([0., 1.])  # tspan
-        )
+        # Test that construction doesn't fail with the default timespan.
+        ik.WorldGazeTargetConstraint(model, body, axis, target, gaze_origin,
+                                     cone_threshold)
+
+        # Test that construction doesn't fail with a given timespan.
+        ik.WorldGazeTargetConstraint(model, body, axis, target, gaze_origin,
+                                     cone_threshold, tspan)
 
     def testRelativePositionConstraint(self):
-        # Transform from origin of B to points on B
-        bTbp = np.concatenate([
-            np.zeros(3),            # Translation (identity)
-            np.array([1, 0, 0, 0])  # Rotation (identity quaternion)
-        ]).reshape(7, 1)
+        model = self.r
+        pts = np.zeros([3, 1])
+        lb = -np.ones([3, 1])
+        ub = np.ones([3, 1])
+        bodyA_idx = 1
+        bodyB_idx = 2
+        translation = np.zeros(3)
+        quaternion = np.array([1, 0, 0, 0])
+        bTbp = np.concatenate([translation, quaternion]).reshape(7, 1)
+        tspan = np.array([0., 1.])
 
-        # Test that construction doesn't fail (default timespan)
-        position_constraint = ik.RelativePositionConstraint(
-            self.r,             # model
-            np.zeros([3, 1]),   # pts
-            -np.ones([3, 1]),   # lb
-            np.ones([3, 1]),    # ub
-            1,                  # bodyA_idx
-            2,                  # bodyB_idx
-            bTbp                # bTbp
-        )
+        # Test that construction doesn't fail with the default timespan.
+        ik.RelativePositionConstraint(model, pts, lb, ub, bodyA_idx, bodyB_idx,
+                                      bTbp)
 
-        # Test that construction doesn't fail (given timespan)
-        position_constraint2 = ik.RelativePositionConstraint(
-            self.r,             # model
-            np.zeros([3, 1]),   # pts
-            -np.ones([3, 1]),   # lb
-            np.ones([3, 1]),    # ub
-            1,                  # bodyA_idx
-            2,                  # bodyB_idx
-            bTbp,               # bTbp
-            np.array([0., 1.])  # tspan
-        )
+        # Test that construction doesn't fail with a given timespan.
+        ik.RelativePositionConstraint(model, pts, lb, ub, bodyA_idx, bodyB_idx,
+                                      bTbp, tspan)
 
     def testRelativeGazeDirConstraint(self):
-        # Test that construction doesn't fail (default timespan)
-        gaze_constraint = ik.RelativeGazeDirConstraint(
-            self.r,             # model
-            1,                  # bodyA_idx
-            2,                  # bodyB_idx
-            np.ones([3, 1]),     # axis
-            np.ones([3, 1]),     # dir
-            1e-3                # conethreshold
-        )
+        model = self.r
+        bodyA_idx = 1
+        bodyB_idx = 2
+        axis = np.ones([3, 1])
+        dir = np.ones([3, 1])
+        conethreshold = 1e-3
+        tspan = np.array([0., 1.])
 
-        # Test that construction doesn't fail (given timespan)
-        gaze_constraint = ik.RelativeGazeDirConstraint(
-            self.r,             # model
-            1,                  # bodyA_idx
-            2,                  # bodyB_idx
-            np.ones([3, 1]),    # axis
-            np.ones([3, 1]),    # dir
-            1e-3,               # conethreshold
-            np.array([0., 1.])  # tspan
-        )
+        # Test that construction doesn't fail with the default timespan.
+        ik.RelativeGazeDirConstraint(model, bodyA_idx, bodyB_idx, axis, dir,
+                                     conethreshold)
+
+        # Test that construction doesn't fail with a given timespan.
+        ik.RelativeGazeDirConstraint(model, bodyA_idx, bodyB_idx, axis, dir,
+                                     conethreshold, tspan)
 
     def testMinDistanceConstraint(self):
-        # Test that construction doesn't fail (default timespan)
-        distance_constraint = ik.MinDistanceConstraint(
-            self.r,             # model
-            1e-2,               # min_distance
-            list(),             # active_bodies_idx
-            set()               # active_group_names
-        )
+        model = self.r
+        min_distance = 1e-2
+        active_bodies_idx = list()
+        active_group_name = set()
+        tspan = np.array([0., 1.])
 
-        # Test that construction doesn't fail (given timespan)
-        distance_constraint = ik.MinDistanceConstraint(
-            self.r,             # model
-            1e-2,               # min_distance
-            list(),             # active_bodies_idx
-            set(),              # active_group_names
-            np.array([0., 1.])  # tspan
-        )
+        # Test that construction doesn't fail with the default timespan.
+        ik.MinDistanceConstraint(model, min_distance, active_bodies_idx,
+                                 active_group_name)
+
+        # Test that construction doesn't fail with a given timespan.
+        ik.MinDistanceConstraint(model, min_distance, active_bodies_idx,
+                                 active_group_name, tspan)
 
 
 if __name__ == '__main__':
