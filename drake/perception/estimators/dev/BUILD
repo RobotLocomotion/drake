@@ -40,28 +40,35 @@ drake_cc_library(
     ],
 )
 
+filegroup(
+    name = "test_models",
+    testonly = 1,
+    srcs = glob([
+        "test/**/*.obj",
+        "test/**/*.stl",
+        "test/**/*.urdf",
+        "test/**/*.vtp",
+    ]),
+    visibility = ["//visibility:private"],
+)
+
 drake_cc_library(
     name = "test_util",
     testonly = 1,
     srcs = ["test/test_util.cc"],
     hdrs = ["test/test_util.h"],
+    data = [":test_models"],
     deps = [
         "//drake/common",
         "//drake/common:eigen_matrix_compare",
         "//drake/lcm",
         "//drake/lcmtypes:viewer",
+        "//drake/math:geometric_transform",
         "@gtest//:without_main",
         "@lcmtypes_bot2_core",
+        "@vtk//:vtkFiltersGeneral",
+        "@vtk//:vtkIOXML",
     ],
-)
-
-filegroup(
-    name = "test_models",
-    testonly = 1,
-    srcs = glob([
-        "test/**/*.urdf",
-    ]),
-    visibility = ["//visibility:private"],
 )
 
 drake_cc_googletest(
@@ -88,16 +95,6 @@ drake_cc_googletest(
         "//drake/multibody/rigid_body_plant:create_load_robot_message",
         "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/solvers:mathematical_program",
-    ],
-)
-
-drake_cc_test(
-    name = "tmp_vtk_io_xml_test",
-    data = [
-        "test/tmp_vtk_io_xml_test.vtp",
-    ],
-    deps = [
-        "@vtk//:vtkIOXML",
     ],
 )
 
