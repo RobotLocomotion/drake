@@ -89,6 +89,9 @@ AttributesSet kGenericSolverCapabilities =
      kLorentzConeConstraint | kRotatedLorentzConeConstraint | kLinearCost |
      kLinearConstraint | kLinearEqualityConstraint);
 
+// Snopt solver capabilities.
+AttributesSet kSnoptCapabilities = (kGenericSolverCapabilities | kLinearComplementarityConstraint);
+
 // Returns true iff no capabilities are in required and not in available.
 bool is_satisfied(AttributesSet required, AttributesSet available) {
   return ((required & ~available) == kNoCapabilities);
@@ -497,8 +500,6 @@ Binding<LinearComplementarityConstraint> MathematicalProgram::AddConstraint(
     const Binding<LinearComplementarityConstraint>& binding) {
   required_capabilities_ |= kLinearComplementarityConstraint;
 
-  // TODO(eric.cousineau): Consider checking bitmask rather than list sizes
-
   linear_complementarity_constraints_.push_back(binding);
   return linear_complementarity_constraints_.back();
 }
@@ -629,7 +630,7 @@ SolutionResult MathematicalProgram::Solve() {
   } else if (is_satisfied(required_capabilities_, kMobyLcpCapabilities) &&
              moby_lcp_solver_->available()) {
     return moby_lcp_solver_->Solve(*this);
-  } else if (is_satisfied(required_capabilities_, kGenericSolverCapabilities) &&
+  } else if (is_satisfied(required_capabilities_, kSnoptCapabilities) &&
              snopt_solver_->available()) {
     return snopt_solver_->Solve(*this);
   } else if (is_satisfied(required_capabilities_, kGenericSolverCapabilities) &&

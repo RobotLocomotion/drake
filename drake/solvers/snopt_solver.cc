@@ -472,11 +472,11 @@ LinearConstraintBounds<LinearComplementarityConstraint>(
 
 template <typename C>
 void UpdateLinearConstraint(const MathematicalProgram& prog,
-                       const std::vector<Binding<C>>& linear_constraints,
-                       std::vector<Eigen::Triplet<double>>* tripletList,
-                       snopt::doublereal* Flow, snopt::doublereal* Fupp,
-                       size_t* constraint_index,
-                       size_t* linear_constraint_index) {
+                            const std::vector<Binding<C>>& linear_constraints,
+                            std::vector<Eigen::Triplet<double>>* tripletList,
+                            snopt::doublereal* Flow, snopt::doublereal* Fupp,
+                            size_t* constraint_index,
+                            size_t* linear_constraint_index) {
   for (auto const& binding : linear_constraints) {
     auto const& c = binding.constraint();
     size_t n = LinearConstraintSize(*c);
@@ -714,7 +714,7 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   if (info >= 1 && info <= 6) {
     return SolutionResult::kSolutionFound;
   } else {
-    drake::log()->info("Snopt returns code {}\n", info);
+    drake::log()->debug("Snopt returns code {}\n", info);
     if (info >= 11 && info <= 16) {
       return SolutionResult::kInfeasibleConstraints;
     } else if (info == 91) {

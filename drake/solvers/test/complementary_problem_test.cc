@@ -82,7 +82,7 @@ GTEST_TEST(TestComplementaryProblem, flp2) {
   prog.AddBoundingBoxConstraint(0, 10, x);
   SnoptSolver snopt_solver;
   if (snopt_solver.available()) {
-    auto result = snopt_solver.Solve(prog);
+    auto result = prog.Solve();
     EXPECT_EQ(result, SolutionResult::kSolutionFound);
     const auto x_val = prog.GetSolution(x);
     const auto y_val = prog.GetSolution(y);
