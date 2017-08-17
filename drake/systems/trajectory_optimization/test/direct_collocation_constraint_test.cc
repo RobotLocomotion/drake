@@ -9,6 +9,7 @@
 
 namespace drake {
 namespace systems {
+namespace trajectory_optimization {
 namespace {
 
 class PendulumTestDirectCollocationConstraint
@@ -74,5 +75,6 @@ GTEST_TEST(DirectCollocationConstraintPendulumDynamicsTest,
 }
 
 }  // anonymous namespace
+}  // namespace trajectory_optimization
 }  // namespace systems
 }  // namespace drake

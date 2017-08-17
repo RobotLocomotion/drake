@@ -17,27 +17,29 @@
 
 namespace drake {
 namespace systems {
+namespace trajectory_optimization {
 
+/// MultipleShooting is an abstract class for trajectory optimization
+/// that creates decision variables for inputs, states, and (optionally)
+/// sample times along the trajectory, then provides a number of methods
+/// for working with those decision variables.
 ///
-/// DirectTrajectoryOptimization is an abstract class for direct method
-/// approaches to trajectory optimization.
-///
-/// Subclasses must implement the abstract method:
+/// Subclasses must implement the abstract methods:
 ///  DoAddRunningCost()
-/// and should add any dynamic constraints in their constructor.
+///  ReconstructInputTrajectory()
+///  ReconstructStateTrajectory()
+/// using all of the correct interpolation schemes for the specific
+/// transcription method, and should add the constraints to impose the
+/// %System% dynamics in their constructor.
 ///
 /// This class assumes that there are a fixed number (N) time steps/samples, and
 /// that the trajectory is discretized into timesteps h (N-1 of these), state x
 /// (N of these), and control input u (N of these).
-///
-/// To maintain nominal sparsity in the optimization programs, this
-/// implementation assumes that all constraints and costs are
-/// time-invariant.
-class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
+class MultipleShooting : public solvers::MathematicalProgram {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DirectTrajectoryOptimization)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultipleShooting)
 
-  ~DirectTrajectoryOptimization() override {}
+  ~MultipleShooting() override {}
 
   /// Returns the decision variable associated with the timestep, h, at time
   /// index @p index.
@@ -174,7 +176,7 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
   /// Adds support for passing in a (scalar) matrix Expression, which is a
   /// common output of most symbolic linear algebra operations.
   /// Note: Derived classes will need to type
-  ///    using DirectTrajectoryOptimization::AddFinalCost;
+  ///    using MultipleShooting::AddFinalCost;
   /// to "unhide" this method.
   void AddFinalCost(const Eigen::Ref<const MatrixX<symbolic::Expression>>& e) {
     DRAKE_DEMAND(e.rows() == 1 && e.cols() == 1);
@@ -223,27 +225,25 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
   virtual PiecewisePolynomialTrajectory ReconstructStateTrajectory() const = 0;
 
  protected:
-  /// Construct a DirectTrajectoryOptimization object with fixed sample
-  /// times.
+  /// Construct a MultipleShooting instance with fixed sample times.
   ///
   /// @param num_inputs Number of inputs at each sample point.
   /// @param num_states Number of states at each sample point.
   /// @param num_time_samples Number of time samples.
   /// @param fixed_timestep The spacing between sample times.
-  DirectTrajectoryOptimization(int num_inputs, int num_states,
-                               int num_time_samples, double fixed_timestep);
+  MultipleShooting(int num_inputs, int num_states, int num_time_samples,
+                   double fixed_timestep);
 
-  /// Construct a DirectTrajectoryOptimization object with sample
-  /// times as decision variables.
+  /// Construct a MultipleShooting instance with sample times as decision
+  /// variables.
   ///
   /// @param num_inputs Number of inputs at each sample point.
   /// @param num_states Number of states at each sample point.
   /// @param num_time_samples Number of time samples.
   /// @param minimum_timestep Minimum spacing between sample times.
   /// @param maximum_timestep Maximum spacing between sample times.
-  DirectTrajectoryOptimization(int num_inputs, int num_states,
-                               int num_time_samples, double minimum_timestep,
-                               double maximum_timestep);
+  MultipleShooting(int num_inputs, int num_states, int num_time_samples,
+                   double minimum_timestep, double maximum_timestep);
 
   /// Replaces e.g. placeholder_x_var_ with x_vars_ at time interval
   /// @p interval_index, for all placeholder variables.
@@ -256,17 +256,24 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
                                                    int interval_index) const;
 
   int num_inputs() const { return num_inputs_; }
+
   int num_states() const { return num_states_; }
+
   int N() const { return N_; }
+
   bool timesteps_are_decision_variables() const {
     return timesteps_are_decision_variables_;
   }
+
   double fixed_timestep() const {
     DRAKE_THROW_UNLESS(timesteps_are_decision_variables_);
     return fixed_timestep_;
   }
+
   const solvers::VectorXDecisionVariable& h_vars() const { return h_vars_; }
+
   const solvers::VectorXDecisionVariable& u_vars() const { return u_vars_; }
+
   const solvers::VectorXDecisionVariable& x_vars() const { return x_vars_; }
 
  private:
@@ -283,9 +290,9 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
   const double fixed_timestep_{0.0};
 
   solvers::VectorXDecisionVariable h_vars_;  // Time deltas between each
-                                             // input/state sample or the
-                                             // empty vector (if timesteps
-                                             // are fixed).
+  // input/state sample or the
+  // empty vector (if timesteps
+  // are fixed).
   const solvers::VectorXDecisionVariable x_vars_;
   const solvers::VectorXDecisionVariable u_vars_;
 
@@ -296,5 +303,6 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
   const solvers::VectorXDecisionVariable placeholder_u_vars_;
 };
 
+}  // namespace trajectory_optimization
 }  // namespace systems
 }  // namespace drake

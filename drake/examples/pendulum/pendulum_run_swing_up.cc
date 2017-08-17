@@ -63,7 +63,7 @@ int do_main() {
 
   auto context = pendulum->CreateDefaultContext();
 
-  systems::DircolTrajectoryOptimization dircol(
+  systems::trajectory_optimization::DirectCollocation dircol(
       pendulum, *context, kNumTimeSamples, kTrajectoryTimeLowerBound,
       kTrajectoryTimeUpperBound);
 

@@ -24,7 +24,8 @@ GTEST_TEST(PendulumDirectCollocationConstraint,
   PendulumPlant<double> pendulum;
   auto context = pendulum.CreateDefaultContext();
 
-  drake::systems::SystemDirectCollocationConstraint dut(pendulum, *context);
+  drake::systems::trajectory_optimization::SystemDirectCollocationConstraint
+      dut(pendulum, *context);
 
   drake::AutoDiffVecXd result;
   dut.Eval(drake::math::initializeAutoDiff(x), result);

@@ -13,6 +13,7 @@
 
 namespace drake {
 namespace systems {
+namespace trajectory_optimization {
 
 /// Provides a base implementation and interface for a dynamic
 /// constraint (which is intended to be used with trajectory
@@ -37,9 +38,11 @@ class DirectCollocationConstraint : public solvers::Constraint {
   /// num_inputs: input 0
   /// num_inputs: input 1
   DirectCollocationConstraint(int num_states, int num_inputs);
+
   virtual ~DirectCollocationConstraint();
 
   int num_states() const { return num_states_; }
+
   int num_inputs() const { return num_inputs_; }
 
  protected:
@@ -48,6 +51,7 @@ class DirectCollocationConstraint : public solvers::Constraint {
 
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd& y) const override;
+
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
               AutoDiffVecXd& y) const override;
 
@@ -75,6 +79,7 @@ class SystemDirectCollocationConstraint : public DirectCollocationConstraint {
   ///  after calling this method will NOT impact the trajectory optimization.
   SystemDirectCollocationConstraint(const systems::System<double>& system,
                                     const systems::Context<double>& context);
+
   ~SystemDirectCollocationConstraint() override;
 
  private:
@@ -87,5 +92,6 @@ class SystemDirectCollocationConstraint : public DirectCollocationConstraint {
   std::unique_ptr<ContinuousState<AutoDiffXd>> derivatives_;
 };
 
+}  // namespace trajectory_optimization
 }  // namespace systems
 }  // namespace drake

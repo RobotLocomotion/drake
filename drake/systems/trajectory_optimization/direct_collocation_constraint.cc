@@ -7,6 +7,7 @@
 
 namespace drake {
 namespace systems {
+namespace trajectory_optimization {
 namespace {
 Eigen::MatrixXd ExtractDerivativesMatrix(const AutoDiffVecXd& vec_in) {
   if (!vec_in.size()) {
@@ -129,5 +130,6 @@ void SystemDirectCollocationConstraint::dynamics(const AutoDiffVecXd& state,
   *xdot = derivatives_->CopyToVector();
 }
 
+}  // namespace trajectory_optimization
 }  // namespace systems
 }  // namespace drake
