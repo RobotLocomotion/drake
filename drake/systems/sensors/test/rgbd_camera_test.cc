@@ -247,13 +247,13 @@ class ImageTest : public ::testing::Test {
         }
       }
     }
-    // We have three objects plus the sky and the terrain.
-    const int kExpectedNumIds{5};
+    // We have three objects, but one of them is outside of the view frustum.
+    // In addition, we have the sky and the terrain.
+    const int kExpectedNumIds{4};
     EXPECT_EQ(kExpectedNumIds, actual_ids.size());
 
     ASSERT_EQ(label_image.at(320, 205)[0], 1);
     ASSERT_EQ(label_image.at(470, 205)[0], 2);
-    ASSERT_EQ(label_image.at(170, 205)[0], 3);
     // Terrain
     ASSERT_EQ(label_image.at(0, 479)[0], RgbdCamera::Label::kFlatTerrain);
     // Sky
