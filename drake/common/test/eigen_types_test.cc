@@ -86,5 +86,33 @@ GTEST_TEST(EigenTypesTest, TraitsSFINAE) {
   // EXPECT_FALSE((is_eigen_vector_of<std::string, double>::value));
 }
 
+// Sets M(i, j) = c.
+void set(EigenPtr<MatrixXd> M, const int i, const int j, const double c) {
+  (*M)(i, j) = c;
+}
+
+// Returns M(i, j).
+double get(const EigenPtr<const MatrixXd> M, const int i, const int j) {
+  return M->coeff(i, j);
+}
+
+GTEST_TEST(EigenTypesTest, EigenPtr) {
+  Eigen::MatrixXd M1 = Eigen::MatrixXd::Zero(3, 3);
+  const Eigen::MatrixXd M2 = Eigen::MatrixXd::Zero(3, 3);
+
+  // Tests set.
+  set(&M1, 0, 0, 1);       // Sets M1(0,0) = 1
+  EXPECT_EQ(M1(0, 0), 1);  // Checks M1(0, 0) = 1
+
+  // Tests get.
+  EXPECT_EQ(get(&M1, 0, 0), 1);  // Checks M1(0, 0) = 1
+  EXPECT_EQ(get(&M2, 0, 0), 0);  // Checks M2(0, 0) = 1
+
+  // Shows how to use EigenPtr with .block(). Here we introduce `tmp` to avoid
+  // taking the address of temporary object.
+  auto tmp = M1.block(1, 1, 2, 2);
+  set(&tmp, 0, 0, 1);  // tmp(0, 0) = 1. That is, M1(1, 1) = 1.
+  EXPECT_EQ(get(&M1, 1, 1), 1);
+}
 }  // namespace
 }  // namespace drake
