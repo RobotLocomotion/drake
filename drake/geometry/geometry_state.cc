@@ -109,6 +109,13 @@ const std::string& GeometryState<T>::get_source_name(SourceId id) const {
 }
 
 template <typename T>
+const Isometry3<double>& GeometryState<T>::GetPoseInFrame(
+    GeometryId geometry_id) const {
+  const auto& geometry = GetValueOrThrow(geometry_id, geometries_);
+  return X_FG_[geometry.get_engine_index()];
+}
+
+template <typename T>
 const Isometry3<double>& GeometryState<T>::GetPoseInParent(
     GeometryId geometry_id) const {
   const auto& geometry = GetValueOrThrow(geometry_id, geometries_);
@@ -144,7 +151,7 @@ FrameId GeometryState<T>::RegisterFrame(SourceId source_id,
 
 template <typename T>
 FrameId GeometryState<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
-                                        const GeometryFrame&) {
+                                        const GeometryFrame& frame) {
   FrameId frame_id = FrameId::get_new_id();
 
   FrameIdSet& f_set = GetMutableValueOrThrow(source_id, &source_frame_id_map_);
@@ -158,9 +165,14 @@ FrameId GeometryState<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
     // The parent is the world frame; register it as a root frame.
     source_root_frame_map_[source_id].insert(frame_id);
   }
+  PoseIndex pose_index(X_PF_.size());
+  X_PF_.emplace_back(frame.get_pose());
+  DRAKE_ASSERT(pose_index == static_cast<int>(pose_index_to_frame_map_.size()));
+  pose_index_to_frame_map_.push_back(frame_id);
   f_set.insert(frame_id);
-  frames_.emplace(frame_id,
-                  InternalFrame(source_id, frame_id, parent_id));
+  frames_.emplace(
+      frame_id, InternalFrame(source_id, frame_id, frame.get_name(),
+                              frame.get_frame_group(), pose_index, parent_id));
   return frame_id;
 }
 
@@ -181,9 +193,11 @@ GeometryId GeometryState<T>::RegisterGeometry(
   });
 
   GeometryId geometry_id = GeometryId::get_new_id();
+  geometry_index_id_map_.push_back(geometry_id);
 
-  // TODO(SeanCurtis-TRI): Pass the geometry instance to the geometry engine.
-  // Currently, we're just deleting the instance.
+  // TODO(SeanCurtis-TRI): Replace this stub engine index with a call to the
+  // geometry engine, storing the engine index it actually stores.
+  GeometryIndex engine_index(X_FG_.size());
 
   // Configure topology.
   frames_[frame_id].add_child(geometry_id);
@@ -191,7 +205,14 @@ GeometryId GeometryState<T>::RegisterGeometry(
   geometries_.emplace(
       geometry_id,
       InternalGeometry(geometry->release_shape(), frame_id, geometry_id,
-                       geometry->get_pose()));
+                       geometry->get_pose(), engine_index));
+  // TODO(SeanCurtis-TRI): Enforcing the invariant that the indexes are
+  // compactly distributed. Is there a more robust way to do this?
+  DRAKE_ASSERT(static_cast<int>(X_FG_.size()) == engine_index);
+  DRAKE_ASSERT(static_cast<int>(geometry_index_id_map_.size()) - 1 ==
+               engine_index);
+  X_WG_.push_back(Isometry3<T>::Identity());
+  X_FG_.emplace_back(geometry->get_pose());
   return geometry_id;
 }
 
@@ -222,6 +243,18 @@ GeometryId GeometryState<T>::RegisterGeometryWithParent(
   // that frame_id belongs to source_id. By construction, geometry_id must
   // belong to the same source as frame_id, so this tests  condition #3.
   GeometryId new_id = RegisterGeometry(source_id, frame_id, move(geometry));
+
+  // RegisterGeometry stores X_PG into X_FG_ (having assumed that  the
+  // parent was a frame). This replaces the stored X_PG value with the
+  // semantically correct value X_FG by concatenating X_FP with X_PG.
+
+  // Transform pose relative to geometry, to pose relative to frame.
+  const InternalGeometry& new_geometry = geometries_[new_id];
+  Isometry3<T> X_PG = X_FG_[new_geometry.get_engine_index()];
+  Isometry3<T> X_FG =
+      X_FG_[parent_geometry.get_engine_index()] * X_PG;
+  X_FG_[new_geometry.get_engine_index()] = X_FG;
+
   geometries_[new_id].set_parent_id(geometry_id);
   parent_geometry.add_child(new_id);
   return new_id;
@@ -241,12 +274,20 @@ GeometryId GeometryState<T>::RegisterAnchoredGeometry(
   GeometryId geometry_id = GeometryId::get_new_id();
   set.emplace(geometry_id);
 
-  // TODO(SeanCurtis-TRI): Pass the geometry instance to the geometry engine.
+  // TODO(SeanCurtis-TRI): Replace this stub engine index with a call to the
+  // geometry engine, storing the engine index it actually stores.
+  AnchoredGeometryIndex engine_index(anchored_geometry_index_id_map_.size());
 
+  // Note: This test will be more meaningful when the engine is included at this
+  // enforces an invariant between *two* structures rather than being a
+  // simple tautology.
+  DRAKE_ASSERT(static_cast<int>(anchored_geometry_index_id_map_.size()) ==
+               engine_index);
+  anchored_geometry_index_id_map_.push_back(geometry_id);
   anchored_geometries_.emplace(
       geometry_id,
-      InternalAnchoredGeometry(
-          geometry->release_shape(), geometry_id, geometry->get_pose()));
+      InternalAnchoredGeometry(geometry->release_shape(), geometry_id,
+                               geometry->get_pose(), engine_index));
   return geometry_id;
 }
 
@@ -356,6 +397,18 @@ void GeometryState<T>::RemoveFrameUnchecked(FrameId frame_id,
     RemoveGeometryUnchecked(child_id, RemoveGeometryOrigin::kFrame);
   }
 
+  // Don't leave holes in the pose vectors. Rewire pose indices by taking the
+  // frame with the last pose index and moving it to the newly vacated hold.
+  // We do *not* copy the values in X_PF_ because changes to the topology
+  // renders these values meaningless until recomputed.
+  auto pose_index = frame.get_pose_index();
+  PoseIndex last_index(static_cast<int>(X_PF_.size()) - 1);
+  if (pose_index < last_index) {
+    FrameId moved_id = pose_index_to_frame_map_[last_index];
+    frames_[moved_id].set_pose_index(pose_index);
+  }
+  X_PF_.pop_back();
+
   if (caller == RemoveFrameOrigin::kFrame) {
     // Only the root needs to explicitly remove itself from a possible parent
     // frame.
@@ -386,6 +439,36 @@ void GeometryState<T>::RemoveGeometryUnchecked(GeometryId geometry_id,
     frame.remove_child(geometry_id);
   }
 
+  GeometryIndex engine_index = geometry.get_engine_index();
+
+  // TODO(SeanCurtis-TRI): This simulates removal from the geometry engine where
+  // the *last* geometry is swapped with the removed geometry to maintain
+  // spatial coherency.
+  optional<GeometryIndex> moved_index{
+      GeometryIndex(static_cast<int>(geometry_index_id_map_.size()) - 1)};
+
+  if (moved_index) {
+    // The geometry engine moved a geometry into the removed `engine_index`.
+    // Update the state's knowledge of this.
+    GeometryId moved_id = geometry_index_id_map_[*moved_index];
+    geometries_[moved_id].set_engine_index(engine_index);
+
+    geometry_index_id_map_[engine_index] = moved_id;
+
+    X_FG_[engine_index] = X_FG_[*moved_index];
+  }
+  // Trim the vectors for these removed geometries.
+  X_FG_.pop_back();
+  // NOTE: we are not obliged to copy the value from moved_index to
+  // pose_index in X_WG_. This is a computed value that will live in the cache.
+  // Changing the topology will dirty the cache so it will be recomputed
+  // before being provided next.
+  X_WG_.pop_back();
+
+  // Always pop the last; we assume that either the geometry removed is already
+  // the last, or has been swapped into the last.
+  geometry_index_id_map_.pop_back();
+
   if (caller == RemoveGeometryOrigin::kGeometry) {
     // Only the root needs to explicitly remove itself from a possible parent
     // geometry.
@@ -402,8 +485,21 @@ void GeometryState<T>::RemoveGeometryUnchecked(GeometryId geometry_id,
 
 template <typename T>
 void GeometryState<T>::RemoveAnchoredGeometryUnchecked(GeometryId geometry_id) {
-  FindOrThrow(geometry_id, anchored_geometries_,
-              [geometry_id]() { return get_missing_id_message(geometry_id); });
+  const auto& geometry = GetValueOrThrow(geometry_id, anchored_geometries_);
+  auto engine_index = geometry.get_engine_index();
+
+  // TODO(SeanCurtis-TRI): This simulates removal from the geometry engine where
+  // the *last* geometry is swapped with the removed geometry to maintain
+  // spatial coherency.
+  optional<AnchoredGeometryIndex> moved_index{AnchoredGeometryIndex(
+      static_cast<int>(anchored_geometry_index_id_map_.size()) - 1)};
+
+  if (moved_index) {
+    GeometryId moved_id = anchored_geometry_index_id_map_[*moved_index];
+    anchored_geometries_[moved_id].set_engine_index(engine_index);
+    anchored_geometry_index_id_map_[engine_index] = moved_id;
+  }
+  anchored_geometry_index_id_map_.pop_back();
   anchored_geometries_.erase(geometry_id);
 }
 
