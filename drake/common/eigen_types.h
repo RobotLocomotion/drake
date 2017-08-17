@@ -12,6 +12,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/constants.h"
+#include "drake/common/drake_copyable.h"
 
 namespace drake {
 
@@ -221,5 +222,60 @@ struct is_eigen_nonvector_of
 
 // TODO(eric.cousineau): Add alias is_eigen_matrix_of = is_eigen_scalar_same if
 // appropriate.
+
+/// This wrapper class provides a way to write non-template functions taking raw
+/// pointers to Eigen objects as parameters while limiting the number of copies,
+/// similar to `Eigen::Ref`. Internally, it keeps an instance of `Eigen::Ref<T>`
+/// and provides access to it via `operator*` and `operator->`.
+///
+/// The motivation of this class is to follow <a
+/// href="https://google.github.io/styleguide/cppguide.html#Reference_Arguments">GSG's
+/// "output arguments should be pointers" rule</a> while taking advantage of
+/// using `Eigen::Ref`. Here is an example.
+///
+/// @code
+/// // This function is taking an Eigen::Ref of a matrix and modifies it in
+/// // the body. This violates GSG's rule on output parameters.
+/// void foo(Eigen::Ref<Eigen::MatrixXd> M) {
+///    M(0, 0) = 0;
+/// }
+/// // At Call-site, we have:
+/// foo(M);
+/// foo(M.block(0, 0, 2, 2));
+///
+/// // We can rewrite the above function into the following using EigenPtr.
+/// void foo(EigenPtr<Eigen::MatrixXd> M) {
+///    (*M)(0, 0) = 0;
+/// }
+/// // Note that, call sites should be changed to:
+/// foo(&M);
+
+/// // We need tmp to avoid taking the address of a temporary object such as the
+/// // return value of .block().
+/// auto tmp = M.block(0, 0, 2, 2);
+/// foo(&tmp);
+/// @endcode
+///
+/// @note This class provides a way to avoid the `const_cast` hack introduced in
+/// <a
+/// href="https://eigen.tuxfamily.org/dox/TopicFunctionTakingEigenTypes.html#TopicPlainFunctionsFailing">Eigen's
+/// documentation</a>.
+template <typename PlainObjectType>
+class EigenPtr {
+ public:
+  EigenPtr() = delete;
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(EigenPtr)
+  template <typename PlainObjectTypeIn>
+  // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
+  EigenPtr(PlainObjectTypeIn* m) : m_(*m) {}
+
+  Eigen::Ref<PlainObjectType>& operator*() { return m_; }
+  Eigen::Ref<PlainObjectType>* operator->() { return &m_; }
+  const Eigen::Ref<PlainObjectType>& operator*() const { return m_; }
+  const Eigen::Ref<PlainObjectType>* operator->() const { return &m_; }
+
+ private:
+  Eigen::Ref<PlainObjectType> m_;
+};
 
 }  // namespace drake
