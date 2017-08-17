@@ -43,11 +43,43 @@ GTEST_TEST(TrajectoryOptimizationTest, SimpleCarDircolTest) {
                                              kTrajectoryTimeLowerBound,
                                              kTrajectoryTimeUpperBound);
 
-  // Input limits (note that the steering limit imposed by SimpleCar is larger).
+  const SimpleCarParams<double>* params =
+      dynamic_cast<const SimpleCarParams<double>*>(
+          context->get_numeric_parameter(0));
+  DRAKE_DEMAND(params != nullptr);
+  const double kConstraintLimitScaling{
+      0.8};  // Impose limits that are inside the true command limits.
+
+  // TODO(russt): Provide a more elegant and efficient way to write the bounding
+  // box constraints below
+  // (this generates MANY small bounding box constraints for the
+  // MathematicalProgram).
+
+  // Impose input limits from the SimpleCarParams.
   DrivingCommand<symbolic::Expression> input;
   input.SetFromVector(prog.input().cast<symbolic::Expression>());
-  prog.AddConstraintToAllKnotPoints(input.steering_angle() <= M_PI_2);
-  prog.AddConstraintToAllKnotPoints(-M_PI_2 <= input.steering_angle());
+  prog.AddConstraintToAllKnotPoints(input.steering_angle() <=
+                                    kConstraintLimitScaling *
+                                        params->max_abs_steering_angle());
+  prog.AddConstraintToAllKnotPoints(-kConstraintLimitScaling *
+                                        params->max_abs_steering_angle() <=
+                                    input.steering_angle());
+  prog.AddConstraintToAllKnotPoints(input.acceleration() <=
+                                    kConstraintLimitScaling *
+                                        params->max_acceleration());
+  prog.AddConstraintToAllKnotPoints(-kConstraintLimitScaling *
+                                        params->max_acceleration() <=
+                                    input.acceleration());
+
+  // Impose velocity limit from the SimpleCarParams.
+  SimpleCarState<symbolic::Expression> state;
+  state.SetFromVector(prog.state().cast<symbolic::Expression>());
+  prog.AddConstraintToAllKnotPoints(
+      state.velocity() <= kConstraintLimitScaling * params->max_velocity());
+  prog.AddConstraintToAllKnotPoints(0 <= state.velocity());
+
+  // Help out IPOPT by putting bounds on everything.
+  prog.AddBoundingBoxConstraint(-100, 1000, prog.decision_variables());
 
   // Fix initial conditions.
   prog.AddLinearConstraint(prog.initial_state() == x0.get_value());
@@ -64,9 +96,7 @@ GTEST_TEST(TrajectoryOptimizationTest, SimpleCarDircolTest) {
 
   prog.SetInitialTrajectory(PiecewisePolynomial<double>(),
                             initial_state_trajectory);
-  solvers::SolutionResult result = prog.Solve();
-
-  EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound);
+  EXPECT_EQ(prog.Solve(), solvers::SolutionResult::kSolutionFound);
 
   // Plot the solution.
   // Note: see call_matlab.h for instructions on viewing the plot.
