@@ -29,16 +29,6 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
-    name = "pendulum_swing_up",
-    srcs = ["pendulum_swing_up.cc"],
-    hdrs = ["pendulum_swing_up.h"],
-    deps = [
-        ":pendulum_plant",
-        "//drake/systems/trajectory_optimization:direct_collocation",
-    ],
-)
-
 drake_cc_binary(
     name = "pendulum_run_dynamics",
     srcs = ["pendulum_run_dynamics.cc"],
@@ -102,7 +92,7 @@ drake_cc_binary(
     data = [":models"],
     test_rule_args = ["--target_realtime_rate=0.0"],
     deps = [
-        "pendulum_swing_up",
+        "pendulum_plant",
         "//drake/common:find_resource",
         "//drake/common:is_approx_equal_abstol",
         "//drake/lcm",
@@ -157,14 +147,6 @@ drake_cc_googletest(
     deps = [
         ":pendulum_plant",
         "//drake/common:autodiff",
-    ],
-)
-
-drake_cc_googletest(
-    name = "pendulum_trajectory_optimization_test",
-    deps = [
-        ":pendulum_swing_up",
-        "//drake/common:eigen_matrix_compare",
     ],
 )
 
