@@ -90,7 +90,8 @@ AttributesSet kGenericSolverCapabilities =
      kLinearConstraint | kLinearEqualityConstraint);
 
 // Snopt solver capabilities.
-AttributesSet kSnoptCapabilities = (kGenericSolverCapabilities | kLinearComplementarityConstraint);
+AttributesSet kSnoptCapabilities =
+    (kGenericSolverCapabilities | kLinearComplementarityConstraint);
 
 // Returns true iff no capabilities are in required and not in available.
 bool is_satisfied(AttributesSet required, AttributesSet available) {
