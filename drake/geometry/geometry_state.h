@@ -9,6 +9,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_optional.h"
 #include "drake/geometry/geometry_ids.h"
+#include "drake/geometry/geometry_index.h"
 #include "drake/geometry/internal_frame.h"
 #include "drake/geometry/internal_geometry.h"
 
@@ -78,8 +79,17 @@ class GeometryState {
    @throws std::logic_error if the id does _not_ map to a registered source. */
   const std::string& get_source_name(SourceId id) const;
 
-  /** Reports the pose of identified geometry, relative to its registered
-   parent.
+  /** Reports the pose, relative to the registered _frame_, for the geometry
+   the given identifier refers to.
+   @param geometry_id     The id of the queried geometry.
+   @return The geometry's pose relative to its frame.
+   @throws std::logic_error  If the `geometry_id` does _not_ map to a valid
+                             GeometryInstance. */
+  const Isometry3<double>& GetPoseInFrame(GeometryId geometry_id) const;
+
+  /** Reports the pose of identified dynamic geometry, relative to its
+   registered parent. If the geometry was registered directly to a frame, this
+   _must_ produce the same pose as GetPoseInFrame().
    @param geometry_id     The id of the queried geometry.
    @return The geometry's pose relative to its registered parent.
    @throws std::logic_error  If the `geometry_id` does _not_ map to a valid
@@ -360,6 +370,62 @@ class GeometryState {
   // The _anchored_ geometry data, keyed on the unique geometry identifiers.
   std::unordered_map<GeometryId, internal::InternalAnchoredGeometry>
       anchored_geometries_;
+
+  // This *implicitly* maps each extant geometry engine index to its
+  // corresponding unique geometry identifier. It assumes that the index in the
+  // vector *is* the index in the engine.
+  // The following invariants should always be true:
+  //   1. geometries_[geometry_index_id_map_[i]].get_engine_index() == i.
+  //   2. geometry_index_id_map_.size() == geometries_.size().
+  std::vector<GeometryId> geometry_index_id_map_;
+
+  // This *implicitly* maps each extant anchored geometry engine index to its
+  // corresponding unique geometry identifier. It assumes that the index in the
+  // vector *is* the index in the engine.
+  // It should be an invariant that:
+  //   1. geometries_[geometry_index_id_map_[i]].get_engine_index() == i is
+  //      true.
+  std::vector<GeometryId> anchored_geometry_index_id_map_;
+
+  // The pose of each dynamic geometry relative to the frame to which it
+  // belongs. Each geometry has an "engine index". That geometry's pose is
+  // stored in this vector at that engine index. Because the geometries are
+  // _rigidly_ fixed to frames, these values are a property of the topology and
+  // _not_ the time-dependent frame kinematics.
+  std::vector<Isometry3<double>> X_FG_;
+
+  // This *implicitly* maps each extant frame's pose index to its corresponding
+  // frame identifier. It assumes that the index in the vector *is* the pose
+  // index stored in the InternalFrame.
+  // It should be invariant that:
+  //   1. frames_.size() == pose_index_to_frame_map_.size();
+  //   2. pose_index_to_frame_map_.size() == biggest_index(frames_) + 1
+  //      i.e. the largest pose index associated with frames_ is the last valid
+  //      index of this vector.
+  std::vector<FrameId> pose_index_to_frame_map_;
+
+  // ---------------------------------------------------------------------
+  // These values depend on time-dependent input values (e.g., current frame
+  // poses).
+
+  // TODO(SeanCurtis-TRI): These values are place holders. Ultimately, they
+  // will live in the cache. Furthermore, they will be broken up by source
+  // so that inputs can be pulled independently. This work will be done when
+  // the cache PR lands. For now, they are big blobs of memory.
+
+  // Map from the frame id to the *current* pose of the frame it identifies, F,
+  // relative to its parent frame, P: X_PF.
+  std::vector<Isometry3<T>> X_PF_;
+
+  // The pose of each geometry relative to the *world* frame.
+  // X_FG_.size() == X_WG_.size() is an invariant. Furthermore, after
+  // a complete state update from input poses,
+  //   X_WG_[i] == X_WFₙ X_FₙFₙ₋₁ ... X_F₁F₀ X_FG_[i]
+  // Where F₀ is the parent frame of geometry i, Fₖ₊₁ is the parent frame of
+  // frame Fₖ, and the world frame W is the parent of frame Fₙ.
+  // In other words, it is the full evaluation of the kinematic chain from the
+  // geometry to the world frame.
+  std::vector<Isometry3<T>> X_WG_;
 };
 }  // namespace geometry
 }  // namespace drake
