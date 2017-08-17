@@ -499,20 +499,6 @@ Binding<LinearComplementarityConstraint> MathematicalProgram::AddConstraint(
 
   // TODO(eric.cousineau): Consider checking bitmask rather than list sizes
 
-  // Linear Complementarity Constraint cannot currently coexist with any
-  // other types of constraint or cost.
-  // (TODO(ggould-tri) relax this to non-overlapping bindings, possibly by
-  // calling multiple solvers.)
-  DRAKE_ASSERT(generic_constraints_.empty());
-  DRAKE_ASSERT(generic_costs_.empty());
-  DRAKE_ASSERT(quadratic_costs_.empty());
-  DRAKE_ASSERT(linear_costs_.empty());
-  DRAKE_ASSERT(linear_constraints_.empty());
-  DRAKE_ASSERT(linear_equality_constraints_.empty());
-  DRAKE_ASSERT(bbox_constraints_.empty());
-  DRAKE_ASSERT(lorentz_cone_constraint_.empty());
-  DRAKE_ASSERT(rotated_lorentz_cone_constraint_.empty());
-
   linear_complementarity_constraints_.push_back(binding);
   return linear_complementarity_constraints_.back();
 }

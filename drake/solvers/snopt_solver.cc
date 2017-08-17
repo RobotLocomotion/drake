@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <limits>
+#include <utility>
 #include <vector>
 
 #include "drake/common/text_logging.h"
@@ -187,27 +188,34 @@ struct SNOPTRun {
   }
 };
 
+// Return the number of rows in the nonlinear constraint.
 template <typename C>
 size_t SingleNonlinearConstraintSize(const C& constraint) {
   return constraint.num_constraints();
 }
 
 template <>
-size_t SingleNonlinearConstraintSize<LinearComplementarityConstraint>(const LinearComplementarityConstraint& constraint) {
+size_t SingleNonlinearConstraintSize<LinearComplementarityConstraint>(
+    const LinearComplementarityConstraint& constraint) {
   return 1;
 }
 
 template <typename C>
-void EvaluateSingleNonlinearConstraint(const C& constraint, const Eigen::VectorXd& this_x, AutoDiffVecXd* ty) {
+void EvaluateSingleNonlinearConstraint(const C& constraint,
+                                       const Eigen::VectorXd& this_x,
+                                       AutoDiffVecXd* ty) {
   ty->resize(SingleNonlinearConstraintSize(constraint));
   constraint.Eval(math::initializeAutoDiff(this_x), *ty);
 }
 
 template <>
-void EvaluateSingleNonlinearConstraint<LinearComplementarityConstraint>(const LinearComplementarityConstraint& constraint, const Eigen::VectorXd& this_x, AutoDiffVecXd* ty) {
+void EvaluateSingleNonlinearConstraint<LinearComplementarityConstraint>(
+    const LinearComplementarityConstraint& constraint,
+    const Eigen::VectorXd& this_x, AutoDiffVecXd* ty) {
   ty->resize(1);
   auto tx = math::initializeAutoDiff(this_x);
-  (*ty)(0) = tx.dot(constraint.M().cast<AutoDiffXd>() * tx + constraint.q().cast<AutoDiffXd>());
+  (*ty)(0) = tx.dot(constraint.M().cast<AutoDiffXd>() * tx +
+                    constraint.q().cast<AutoDiffXd>());
 }
 
 /*
@@ -355,7 +363,10 @@ void UpdateNumNonlinearConstraintsAndGradients(
 // 0 <= x ⊥ Mx + q >= 0
 // we add the nonlinear constraint xᵀ(Mx+q) = 0
 template <>
-void UpdateNumNonlinearConstraintsAndGradients<LinearComplementarityConstraint>(const std::vector<Binding<LinearComplementarityConstraint>>& constraint_list, size_t* num_nonlinear_constraints, size_t* max_num_gradients) {
+void UpdateNumNonlinearConstraintsAndGradients<LinearComplementarityConstraint>(
+    const std::vector<Binding<LinearComplementarityConstraint>>&
+        constraint_list,
+    size_t* num_nonlinear_constraints, size_t* max_num_gradients) {
   *num_nonlinear_constraints += constraint_list.size();
   for (const auto& binding : constraint_list) {
     *max_num_gradients += binding.constraint()->M().rows();
@@ -397,7 +408,8 @@ void UpdateConstraintBoundsAndGradients(
 template <>
 void UpdateConstraintBoundsAndGradients<LinearComplementarityConstraint>(
     const MathematicalProgram& prog,
-    const std::vector<Binding<LinearComplementarityConstraint>>& constraint_list,
+    const std::vector<Binding<LinearComplementarityConstraint>>&
+        constraint_list,
     snopt::doublereal* Flow, snopt::doublereal* Fupp, snopt::integer* iGfun,
     snopt::integer* jGvar, size_t* constraint_index, size_t* grad_index) {
   for (const auto& binding : constraint_list) {
@@ -405,7 +417,8 @@ void UpdateConstraintBoundsAndGradients<LinearComplementarityConstraint>(
     Fupp[*constraint_index] = 0;
     for (int j = 0; j < binding.constraint()->M().rows(); ++j) {
       iGfun[*grad_index] = *constraint_index + 1;
-      jGvar[*grad_index] = prog.FindDecisionVariableIndex(binding.variables()(j)) + 1;
+      jGvar[*grad_index] =
+          prog.FindDecisionVariableIndex(binding.variables()(j)) + 1;
       (*grad_index)++;
     }
     ++(*constraint_index);
@@ -417,26 +430,30 @@ Eigen::SparseMatrix<double> LinearConstraintA(const C& constraint) {
   return constraint.GetSparseMatrix();
 }
 
-// For linear complementary condition
-// 0 <= x ⊥ Mx + q >= 0
-// we add the constraint Mx >= -q
+// Return the number of rows in the linear constraint
 template <typename C>
 size_t LinearConstraintSize(const C& constraint) {
   return constraint.num_constraints();
 }
 
+// For linear complementary condition
+// 0 <= x ⊥ Mx + q >= 0
+// we add the constraint Mx >= -q
 template <>
-size_t LinearConstraintSize<LinearComplementarityConstraint>(const LinearComplementarityConstraint& constraint) {
+size_t LinearConstraintSize<LinearComplementarityConstraint>(
+    const LinearComplementarityConstraint& constraint) {
   return constraint.M().rows();
 }
 
 template <>
-Eigen::SparseMatrix<double> LinearConstraintA<LinearComplementarityConstraint>(const LinearComplementarityConstraint& constraint) {
+Eigen::SparseMatrix<double> LinearConstraintA<LinearComplementarityConstraint>(
+    const LinearComplementarityConstraint& constraint) {
   return constraint.M().sparseView();
 }
 
 template <typename C>
-std::pair<Eigen::VectorXd, Eigen::VectorXd> LinearConstraintBounds(const C& constraint) {
+std::pair<Eigen::VectorXd, Eigen::VectorXd> LinearConstraintBounds(
+    const C& constraint) {
   return std::make_pair(constraint.lower_bound(), constraint.upper_bound());
 }
 
@@ -444,8 +461,13 @@ std::pair<Eigen::VectorXd, Eigen::VectorXd> LinearConstraintBounds(const C& cons
 // 0 <= x ⊥ Mx + q >= 0
 // we add the constraint Mx >= -q
 template <>
-std::pair<Eigen::VectorXd, Eigen::VectorXd> LinearConstraintBounds<LinearComplementarityConstraint>(const LinearComplementarityConstraint& constraint) {
-  return std::make_pair(-constraint.q(), Eigen::VectorXd::Constant(constraint.q().rows(), std::numeric_limits<double>::infinity()));
+std::pair<Eigen::VectorXd, Eigen::VectorXd>
+LinearConstraintBounds<LinearComplementarityConstraint>(
+    const LinearComplementarityConstraint& constraint) {
+  return std::make_pair(
+      -constraint.q(),
+      Eigen::VectorXd::Constant(constraint.q().rows(),
+                                std::numeric_limits<double>::infinity()));
 }
 
 template <typename C>
@@ -473,8 +495,10 @@ void UpdateLinearConstraint(const MathematicalProgram& prog,
 
     const auto bounds = LinearConstraintBounds(*c);
     for (size_t i = 0; i < n; i++) {
-      Flow[*constraint_index + i] = static_cast<snopt::doublereal>(bounds.first(i));
-      Fupp[*constraint_index + i] = static_cast<snopt::doublereal>(bounds.second(i));
+      Flow[*constraint_index + i] =
+          static_cast<snopt::doublereal>(bounds.first(i));
+      Fupp[*constraint_index + i] =
+          static_cast<snopt::doublereal>(bounds.second(i));
     }
     *constraint_index += n;
     *linear_constraint_index += n;
@@ -525,8 +549,10 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   // we add the bounding box constraint x >= 0
   for (const auto& binding : prog.linear_complementarity_constraints()) {
     for (int k = 0; k < static_cast<int>(binding.GetNumElements()); ++k) {
-      const size_t vk_index = prog.FindDecisionVariableIndex(binding.variables()(k));
-      xlow[vk_index] = std::max<snopt::doublereal>(xlow[vk_index], snopt::doublereal(0));
+      const size_t vk_index =
+          prog.FindDecisionVariableIndex(binding.variables()(k));
+      xlow[vk_index] =
+          std::max<snopt::doublereal>(xlow[vk_index], snopt::doublereal(0));
     }
   }
 
@@ -597,8 +623,11 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   tripletList.reserve(num_linear_constraints * prog.num_vars());
 
   size_t linear_constraint_index = 0;
-  UpdateLinearConstraint(prog, linear_constraints, &tripletList, Flow, Fupp, &constraint_index, &linear_constraint_index);
-  UpdateLinearConstraint(prog, prog.linear_complementarity_constraints(), &tripletList, Flow, Fupp, &constraint_index, &linear_constraint_index);
+  UpdateLinearConstraint(prog, linear_constraints, &tripletList, Flow, Fupp,
+                         &constraint_index, &linear_constraint_index);
+  UpdateLinearConstraint(prog, prog.linear_complementarity_constraints(),
+                         &tripletList, Flow, Fupp, &constraint_index,
+                         &linear_constraint_index);
 
   snopt::integer lenA = static_cast<snopt::integer>(tripletList.size());
   d->min_alloc_A(lenA);

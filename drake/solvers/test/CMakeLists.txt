@@ -63,6 +63,9 @@ target_link_libraries(drakeRotationConstraintVisualization
         drakeLCMTypes)
 endif()
 
+drake_add_cc_test(complementary_problem_test)
+target_link_libraries(complementary_problem_test drakeOptimization)
+
 drake_add_cc_test(convex_optimization_test)
 target_link_libraries(convex_optimization_test drakeCommon drakeOptimizationTest)
 
