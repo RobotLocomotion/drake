@@ -9,7 +9,6 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/examples/acrobot/acrobot_plant.h"
-#include "drake/examples/acrobot/acrobot_swing_up.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -46,27 +45,39 @@ int do_main() {
 
   auto context = acrobot.CreateDefaultContext();
 
-  systems::DircolTrajectoryOptimization dircol_traj(
+  systems::DircolTrajectoryOptimization dircol(
       &acrobot, *context, kNumTimeSamples, kTrajectoryTimeLowerBound,
       kTrajectoryTimeUpperBound);
-  AddSwingUpTrajectoryParams(x0, xG, &dircol_traj);
+
+  // Current limit for MIT's acrobot is 7-9 Amps, according to Michael Posa.
+  const double kTorqueLimit = 8;
+
+  auto u = dircol.input();
+  dircol.AddConstraintToAllKnotPoints(-kTorqueLimit <= u(0));
+  dircol.AddConstraintToAllKnotPoints(u(0) <= kTorqueLimit);
+
+  dircol.AddLinearConstraint(dircol.initial_state() == x0);
+  dircol.AddLinearConstraint(dircol.final_state() == xG);
+
+  const double R = 10;  // Cost on input "effort".
+  dircol.AddRunningCost((R * u) * u);
 
   const double timespan_init = 4;
   auto traj_init_x =
       PiecewisePolynomialType::FirstOrderHold({0, timespan_init}, {x0, xG});
-  dircol_traj.SetInitialTrajectory(PiecewisePolynomialType(), traj_init_x);
-  SolutionResult result = dircol_traj.Solve();
+  dircol.SetInitialTrajectory(PiecewisePolynomialType(), traj_init_x);
+  SolutionResult result = dircol.Solve();
   if (result != SolutionResult::kSolutionFound) {
     std::cerr << "No solution found.\n";
     return 1;
   }
 
   const PiecewisePolynomialTrajectory pp_xtraj =
-      dircol_traj.ReconstructStateTrajectory();
+      dircol.ReconstructStateTrajectory();
   auto state_source = builder.AddSystem<systems::TrajectorySource>(pp_xtraj);
 
   if (pp_xtraj.get_end_time() - pp_xtraj.get_start_time() >
-            kTrajectoryTimeUpperBound) {
+      kTrajectoryTimeUpperBound) {
     std::cerr << "Trajectory time exceeds above the upper bound.\n";
     return 1;
   }

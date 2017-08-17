@@ -93,6 +93,9 @@ class PiecewisePolynomial final : public PiecewisePolynomialBase {
    *    `knots` has inconsistent dimensions,
    *    `breaks` has length smaller than 2.
    */
+  // TODO(russt): Improve Eigen support.  Should have a version that
+  // accepts Eigen vectors instead of std::vector, and the
+  // CoefficientMatrix can be generalized to an Eigen::Ref.
   static PiecewisePolynomial<CoefficientType> FirstOrderHold(
       const std::vector<double>& breaks,
       const std::vector<CoefficientMatrix>& knots);
