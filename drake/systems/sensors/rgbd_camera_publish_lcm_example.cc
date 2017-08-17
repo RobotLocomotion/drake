@@ -35,6 +35,8 @@ bool ValidateSdf(const char* flagname, const std::string& sdf) {
   return true;
 }
 
+DEFINE_bool(lookup, false,
+            "If true, RgbdCamera looks up at the sky from ground.");
 DEFINE_double(duration, 5., "Total duration of the simulation in secondes.");
 DEFINE_string(sdf, "", "The filename for SDF.");
 DEFINE_validator(sdf, &ValidateSdf);
@@ -49,6 +51,15 @@ constexpr char kLabelCameraFrameName[] = "label_camera_optical_frame";
 
 constexpr char kImageArrayLcmChannelName[] = "DRAKE_RGBD_CAMERA_IMAGES";
 constexpr char kPoseLcmChannelName[] = "DRAKE_RGBD_CAMERA_POSE";
+
+struct CameraConfig {
+  Eigen::Vector3d pos;
+  Eigen::Vector3d rpy;
+  double fov_y;
+  double depth_range_near;
+  double depth_range_far;
+};
+
 }  // anonymous namespace
 
 int main() {
@@ -58,19 +69,37 @@ int main() {
   drake::parsers::sdf::AddModelInstancesFromSdfFileToWorld(
       FLAGS_sdf, kQuaternion, tree.get());
 
+  drake::multibody::AddFlatTerrainToWorld(tree.get());
+
   systems::DiagramBuilder<double> builder;
 
   auto plant = builder.AddSystem<RigidBodyPlant<double>>(move(tree));
   plant->set_name("rigid_body_plant");
-  plant->set_normal_contact_parameters(3000, 10);
+  plant->set_normal_contact_parameters(10000, 1);
   plant->set_friction_contact_parameters(0.9, 0.5, 0.01);
 
   // Adds an RgbdCamera at a fixed pose.
+  CameraConfig config;
+  if (FLAGS_lookup) {
+    config.pos = Eigen::Vector3d(0., -0.02, 0.);
+    config.rpy = Eigen::Vector3d(0., -M_PI_2, 0.);
+    config.fov_y = 130. / 180 * M_PI;
+    config.depth_range_near = 0.02;
+    config.depth_range_far = 0.03;
+  } else {
+    config.pos = Eigen::Vector3d(-1., 0., 1.);
+    config.rpy = Eigen::Vector3d(0., M_PI_4, 0.);
+    config.fov_y = M_PI_4;
+    config.depth_range_near = 0.5;
+    config.depth_range_far = 5.;
+  }
+
   auto rgbd_camera =
       builder.template AddSystem<RgbdCamera>(
           "rgbd_camera", plant->get_rigid_body_tree(),
-          Eigen::Vector3d(-1., 0., 1.),
-          Eigen::Vector3d(0., M_PI_4, 0.), M_PI_4, true);
+          config.pos, config.rpy,
+          config.depth_range_near, config.depth_range_far,
+          config.fov_y);
 
   auto image_to_lcm_image_array =
       builder.template AddSystem<ImageToLcmImageArrayT>(
