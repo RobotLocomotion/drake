@@ -640,8 +640,7 @@ TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
   // This is the minimum factor of the machine precision within which these
   // tests pass.
   const int kEpsilonFactor = 3;
-  const double kTolerance =
-      kEpsilonFactor * std::numeric_limits<double>::epsilon();
+  const double kTolerance = kEpsilonFactor * kEpsilon;
 
   // By default CreateDefaultContext() sets mobilizer to their zero
   // configuration.
@@ -722,8 +721,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
   // tests pass. There is an additional factor of two (2) to be on the safe side
   // on other architectures (particularly in Macs).
   const int kEpsilonFactor = 20;
-  const double kTolerance =
-      kEpsilonFactor * std::numeric_limits<double>::epsilon();
+  const double kTolerance = kEpsilonFactor * kEpsilon;
 
   PositionKinematicsCache<double> pc(model_->get_topology());
   VelocityKinematicsCache<double> vc(model_->get_topology());
@@ -883,8 +881,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
   // This is the minimum factor of the machine precision within which these
   // tests pass.
   const int kEpsilonFactor = 8;
-  const double kEpsilon =
-      kEpsilonFactor * std::numeric_limits<double>::epsilon();
+  const double kTolerance = kEpsilonFactor * kEpsilon;
 
   std::unique_ptr<MultibodyTree<AutoDiffXd>> model_autodiff =
       model_->ToAutoDiffXd();
@@ -940,9 +937,9 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
           model_autodiff->CalcPositionKinematicsCache(*context_autodiff, &pc);
 
           // Retrieve body poses from position kinematics cache.
-          const Isometry3<AutoDiffXd> &X_WU =
+          const Isometry3<AutoDiffXd>& X_WU =
               get_body_pose_in_world(pc, upper_link_autodiff);
-          const Isometry3<AutoDiffXd> &X_WL =
+          const Isometry3<AutoDiffXd>& X_WL =
               get_body_pose_in_world(pc, lower_link_autodiff);
 
           const Isometry3d X_WU_expected =
@@ -961,8 +958,8 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
 
           // Asserts that the retrieved poses match with the ones specified by
           // the unit test method SetPendulumPoses().
-          EXPECT_TRUE(X_WU_value.isApprox(X_WU_expected.matrix(), kEpsilon));
-          EXPECT_TRUE(X_WL_value.isApprox(X_WL_expected.matrix(), kEpsilon));
+          EXPECT_TRUE(X_WU_value.isApprox(X_WU_expected.matrix(), kTolerance));
+          EXPECT_TRUE(X_WL_value.isApprox(X_WL_expected.matrix(), kTolerance));
 
           // Extract the transformations' time derivatives.
           Eigen::MatrixXd X_WU_dot =
@@ -985,8 +982,8 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
               acrobot_benchmark_.CalcLink2SpatialVelocityInWorldFrame(
                   shoulder_angle.value(), elbow_angle.value(), w_WU, w_UL));
 
-          EXPECT_TRUE(V_WU.IsApprox(V_WU_expected, kEpsilon));
-          EXPECT_TRUE(V_WL.IsApprox(V_WL_expected, kEpsilon));
+          EXPECT_TRUE(V_WU.IsApprox(V_WU_expected, kTolerance));
+          EXPECT_TRUE(V_WL.IsApprox(V_WL_expected, kTolerance));
         }  // ielbow
       }  // ishoulder
     }  // iw_elbow
