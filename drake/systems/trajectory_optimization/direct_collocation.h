@@ -49,6 +49,8 @@ class DircolTrajectoryOptimization : public DirectTrajectoryOptimization {
 
   ~DircolTrajectoryOptimization() override {}
 
+  PiecewisePolynomialTrajectory ReconstructInputTrajectory() const override;
+
   PiecewisePolynomialTrajectory ReconstructStateTrajectory() const override;
   // TODO(Lucy-tri) According to @siyuanfeng-tri, the current calculation of
   // derivatives is not correct for floating base joints. More strongly, we

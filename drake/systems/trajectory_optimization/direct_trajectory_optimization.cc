@@ -24,7 +24,7 @@ namespace systems {
 
 namespace {
 
-solvers::VectorXDecisionVariable MakeNamedVariables(const std::string prefix,
+solvers::VectorXDecisionVariable MakeNamedVariables(const std::string& prefix,
                                                     int num) {
   solvers::VectorXDecisionVariable vars(num);
   for (int i = 0; i < num; i++)
@@ -75,23 +75,6 @@ DirectTrajectoryOptimization::DirectTrajectoryOptimization(
                std::isfinite(maximum_timestep));
 
   AddBoundingBoxConstraint(minimum_timestep, maximum_timestep, h_vars_);
-}
-
-void DirectTrajectoryOptimization::AddTimeIntervalBounds(
-    const Eigen::VectorXd& lower_bound, const Eigen::VectorXd& upper_bound) {
-  DRAKE_THROW_UNLESS(timesteps_are_decision_variables_);
-  AddBoundingBoxConstraint(lower_bound, upper_bound, h_vars_);
-}
-
-void DirectTrajectoryOptimization::AddTimeIntervalBounds(
-    const Eigen::VectorXd& lower_bound, const Eigen::VectorXd& upper_bound,
-    const std::vector<int>& interval_indices) {
-  DRAKE_THROW_UNLESS(timesteps_are_decision_variables_);
-  solvers::VectorXDecisionVariable h(interval_indices.size());
-  for (int i = 0; i < static_cast<int>(interval_indices.size()); ++i) {
-    h(i) = h_vars_(interval_indices[i]);
-  }
-  AddBoundingBoxConstraint(lower_bound, upper_bound, h);
 }
 
 void DirectTrajectoryOptimization::AddTimeIntervalBounds(double lower_bound,
@@ -163,8 +146,8 @@ void DirectTrajectoryOptimization::SetInitialTrajectory(
   SetInitialGuess(x_vars_, guess_x);
 }
 
-std::vector<double> DirectTrajectoryOptimization::GetTimeVector() const {
-  std::vector<double> times(N_);
+Eigen::VectorXd DirectTrajectoryOptimization::GetSampleTimes() const {
+  Eigen::VectorXd times(N_);
 
   if (timesteps_are_decision_variables_) {
     const auto h_values = GetSolution(h_vars_);
@@ -180,28 +163,18 @@ std::vector<double> DirectTrajectoryOptimization::GetTimeVector() const {
   return times;
 }
 
-std::vector<Eigen::MatrixXd> DirectTrajectoryOptimization::GetInputVector()
-    const {
-  std::vector<Eigen::MatrixXd> inputs;
-  inputs.reserve(N_);
-
-  const auto u_values = GetSolution(u_vars_);
-
+Eigen::MatrixXd DirectTrajectoryOptimization::GetInputSamples() const {
+  Eigen::MatrixXd inputs(num_inputs_, N_);
   for (int i = 0; i < N_; i++) {
-    inputs.push_back(u_values.segment(i * num_inputs_, num_inputs_));
+    inputs.col(i) = GetSolution(input(i));
   }
   return inputs;
 }
 
-std::vector<Eigen::MatrixXd> DirectTrajectoryOptimization::GetStateVector()
-    const {
-  std::vector<Eigen::MatrixXd> states;
-  states.reserve(N_);
-
-  const auto x_values = GetSolution(x_vars_);
-
+Eigen::MatrixXd DirectTrajectoryOptimization::GetStateSamples() const {
+  Eigen::MatrixXd states(num_states_, N_);
   for (int i = 0; i < N_; i++) {
-    states.push_back(x_values.segment(i * num_states_, num_states_));
+    states.col(i) = GetSolution(state(i));
   }
   return states;
 }
@@ -238,40 +211,6 @@ DirectTrajectoryOptimization::SubstitutePlaceholderVariables(
 symbolic::Formula DirectTrajectoryOptimization::SubstitutePlaceholderVariables(
     const symbolic::Formula& f, int interval_index) const {
   return f.Substitute(ConstructPlaceholderVariableSubstitution(interval_index));
-}
-
-void DirectTrajectoryOptimization::GetResultSamples(
-    Eigen::MatrixXd* inputs, Eigen::MatrixXd* states,
-    std::vector<double>* times_out) const {
-  std::vector<double> times = GetTimeVector();
-  times_out->swap(times);
-
-  inputs->resize(num_inputs_, N_);
-  inputs->fill(0);
-  states->resize(num_states_, N_);
-  states->fill(0);
-
-  const auto& u_values = GetSolution(u_vars_);
-  const auto& x_values = GetSolution(x_vars_);
-
-  for (int i = 0; i < N_; i++) {
-    inputs->col(i) = u_values.segment(i * num_inputs_, num_inputs_);
-    states->col(i) = x_values.segment(i * num_states_, num_states_);
-  }
-}
-
-PiecewisePolynomialTrajectory
-DirectTrajectoryOptimization::ReconstructInputTrajectory() const {
-  return PiecewisePolynomialTrajectory(
-      PiecewisePolynomial<double>::FirstOrderHold(GetTimeVector(),
-                                                  GetInputVector()));
-}
-
-PiecewisePolynomialTrajectory
-DirectTrajectoryOptimization::ReconstructStateTrajectory() const {
-  return PiecewisePolynomialTrajectory(
-      PiecewisePolynomial<double>::FirstOrderHold(GetTimeVector(),
-                                                  GetStateVector()));
 }
 
 }  // namespace systems

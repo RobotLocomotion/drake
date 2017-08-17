@@ -6,7 +6,6 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/is_approx_equal_abstol.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
-#include "drake/examples/pendulum/pendulum_swing_up.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -67,7 +66,18 @@ int do_main() {
   systems::DircolTrajectoryOptimization dircol(
       pendulum, *context, kNumTimeSamples, kTrajectoryTimeLowerBound,
       kTrajectoryTimeUpperBound);
-  drake::examples::pendulum::AddSwingUpTrajectoryParams(x0, xG, &dircol);
+
+  const solvers::VectorXDecisionVariable& u = dircol.input();
+
+  const double kTorqueLimit = 3.0;  // N*m.
+  dircol.AddConstraintToAllKnotPoints(-kTorqueLimit <= u(0));
+  dircol.AddConstraintToAllKnotPoints(u(0) <= kTorqueLimit);
+
+  dircol.AddLinearConstraint(dircol.initial_state() == x0);
+  dircol.AddLinearConstraint(dircol.final_state() == xG);
+
+  const double R = 10;  // Cost on input "effort".
+  dircol.AddRunningCost((R * u) * u);
 
   const double timespan_init = 4;
   auto traj_init_x =
