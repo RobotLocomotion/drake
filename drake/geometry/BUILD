@@ -77,11 +77,13 @@ drake_cc_library(
 
 drake_cc_library(
     name = "internal_geometry",
-    srcs = [],
+    srcs = ["internal_geometry.cc"],
     hdrs = ["internal_geometry.h"],
     deps = [
         ":geometry_ids",
+        ":shape_specification",
         "//drake/common",
+        "//drake/common:copyable_unique_ptr",
     ],
 )
 
@@ -112,6 +114,7 @@ drake_cc_googletest(
     deps = [
         ":expect_error_message",
         ":geometry_state",
+        "//drake/common:eigen_matrix_compare",
     ],
 )
 

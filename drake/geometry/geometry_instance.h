@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <utility>
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_copyable.h"
@@ -10,8 +11,7 @@
 namespace drake {
 namespace geometry {
 
-/**
- A geometry instance combines a geometry definition (i.e., a shape of some
+/** A geometry instance combines a geometry definition (i.e., a shape of some
  sort), a pose (relative to a parent "frame" P), material information, and an
  opaque collection of metadata. The parent frame can be a registered frame or
  another registered geometry. */
@@ -28,6 +28,8 @@ class GeometryInstance {
   void set_pose(const Isometry3<double>& X_PG) { X_PG_ = X_PG; }
 
   const Shape& get_shape() const { return *shape_; }
+  /** Releases the shape from the instance. */
+  std::unique_ptr<Shape> release_shape() { return std::move(shape_); }
 
  private:
   // The pose of the geometry relative to the parent frame it hangs on.
