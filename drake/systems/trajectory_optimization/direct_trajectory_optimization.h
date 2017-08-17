@@ -143,27 +143,6 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
   // assign costs/constraints to a set of
   // interval indices.
 
-  /// Add bounds on a set of time intervals, such that
-  /// lower_bound(i) <= h_vars_(interval_indices[i]) <= upper_bound(i)
-  /// where h_vars_[j] is the time interval between j'th and j+1'th sample
-  /// (starting
-  /// from 0'th sample).
-  /// @param lower_bound  A vector of lower bounds.
-  /// @param upper_bound  A vector of upper bounds.
-  /// @param interval_indices A vector of interval indices.
-  void AddTimeIntervalBounds(const Eigen::VectorXd& lower_bound,
-                             const Eigen::VectorXd& upper_bound,
-                             const std::vector<int>& interval_indices);
-
-  /// Add bounds on all time intervals, such that
-  /// lower_bound(i) <= h_vars_(i) <= upper_bound(i)
-  /// where h_vars_[i] is the time interval between i'th and i+1'th sample
-  /// (starting
-  /// from 0'th sample).
-  /// @param lower_bound  A vector of lower bounds.
-  /// @param upper_bound  A vector of upper bounds.
-  void AddTimeIntervalBounds(const Eigen::VectorXd& lower_bound,
-                             const Eigen::VectorXd& upper_bound);
   /// Add bounds on all time intervals, such that
   /// lower_bound <= h_vars_(i) <= upper_bound
   /// for all time intervals.
@@ -219,19 +198,23 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
   void SetInitialTrajectory(const PiecewisePolynomial<double>& traj_init_u,
                             const PiecewisePolynomial<double>& traj_init_x);
 
-  /// Extract the result of the trajectory solution as a set of
-  /// discrete samples.  Output matrices contain one set of input/state
-  /// per column, and the number of columns is equal to the number of
-  /// time samples.  @p times will be populated with the times
-  /// corresponding to each column.
-  void GetResultSamples(Eigen::MatrixXd* inputs, Eigen::MatrixXd* states,
-                        std::vector<double>* times) const;
+  /// Returns a vector containing the elapsed time at each knot point at the
+  /// solution.
+  Eigen::VectorXd GetSampleTimes() const;
+
+  /// Returns a matrix containing the input values (arranged in columns) at
+  /// each knot point at the solution.
+  Eigen::MatrixXd GetInputSamples() const;
+
+  /// Returns a matrix containing the state values (arranged in columns) at
+  /// each knot point at the solution.
+  Eigen::MatrixXd GetStateSamples() const;
 
   /// Get the input trajectory as a PiecewisePolynomialTrajectory
-  PiecewisePolynomialTrajectory ReconstructInputTrajectory() const;
+  virtual PiecewisePolynomialTrajectory ReconstructInputTrajectory() const = 0;
 
   /// Get the state trajectory as a PiecewisePolynomialTrajectory
-  virtual PiecewisePolynomialTrajectory ReconstructStateTrajectory() const;
+  virtual PiecewisePolynomialTrajectory ReconstructStateTrajectory() const = 0;
 
  protected:
   /// Construct a DirectTrajectoryOptimization object with fixed sample
@@ -255,18 +238,6 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
   DirectTrajectoryOptimization(int num_inputs, int num_states,
                                int num_time_samples, double minimum_timestep,
                                double maximum_timestep);
-
-  /// Returns a vector containing the elapsed time at each knot point at the
-  /// solution.
-  std::vector<double> GetTimeVector() const;
-
-  /// Returns a vector containing the input values at each knot point at the
-  /// solution.
-  std::vector<Eigen::MatrixXd> GetInputVector() const;
-
-  /// Returns a vector containing the state values at each knot point at the
-  /// solution.
-  std::vector<Eigen::MatrixXd> GetStateVector() const;
 
   /// Replaces e.g. placeholder_x_var_ with x_vars_ at time interval
   /// @p interval_index, for all placeholder variables.

@@ -70,10 +70,8 @@ GTEST_TEST(TrajectoryOptimizationTest, SimpleCarDircolTest) {
 
   // Plot the solution.
   // Note: see call_matlab.h for instructions on viewing the plot.
-  Eigen::MatrixXd inputs;
-  Eigen::MatrixXd states;
-  std::vector<double> times_out;
-  prog.GetResultSamples(&inputs, &states, &times_out);
+  Eigen::MatrixXd inputs = prog.GetInputSamples();
+  Eigen::MatrixXd states = prog.GetStateSamples();
   common::CallMatlab("plot", states.row(SimpleCarStateIndices::kX),
                      states.row(SimpleCarStateIndices::kY));
   common::CallMatlab("xlabel", "x (m)");

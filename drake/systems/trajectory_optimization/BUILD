@@ -46,6 +46,16 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "trajectory_optimization_test",
+    size = "small",
+    deps = [
+        ":direct_trajectory_optimization",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/common/trajectories:piecewise_polynomial",
+    ],
+)
+
+drake_cc_googletest(
+    name = "direct_collocation_test",
     # Test size increased to not timeout when run with Valgrind.
     size = "medium",
     deps = [

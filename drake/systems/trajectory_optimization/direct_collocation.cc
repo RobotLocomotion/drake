@@ -77,21 +77,39 @@ void DircolTrajectoryOptimization::DoAddRunningCost(
 }
 
 PiecewisePolynomialTrajectory
-DircolTrajectoryOptimization::ReconstructStateTrajectory() const {
-  const std::vector<Eigen::MatrixXd> input_vec = GetInputVector();
-  const std::vector<Eigen::MatrixXd> state_vec = GetStateVector();
-  std::vector<Eigen::MatrixXd> derivatives;
-  derivatives.reserve(input_vec.size());
+DircolTrajectoryOptimization::ReconstructInputTrajectory() const {
+  Eigen::VectorXd times = GetSampleTimes();
+  std::vector<double> times_vec(N());
+  std::vector<Eigen::MatrixXd> inputs(N());
 
-  for (size_t i = 0; i < input_vec.size(); ++i) {
-    input_port_value_->GetMutableVectorData<double>()->SetFromVector(
-        input_vec[i]);
-    context_->get_mutable_continuous_state()->SetFromVector(state_vec[i]);
-    system_->CalcTimeDerivatives(*context_, continuous_state_.get());
-    derivatives.push_back(continuous_state_->CopyToVector());
+  for (int i = 0; i < N(); i++) {
+    times_vec[i] = times(i);
+    inputs[i] = GetSolution(input(i));
   }
-  return PiecewisePolynomialTrajectory(PiecewisePolynomial<double>::Cubic(
-      GetTimeVector(), state_vec, derivatives));
+  return PiecewisePolynomialTrajectory(
+      PiecewisePolynomial<double>::FirstOrderHold(times_vec, inputs));
+}
+
+PiecewisePolynomialTrajectory
+DircolTrajectoryOptimization::ReconstructStateTrajectory() const {
+  // TODO(russt): Fix this!  It's not using the same interpolation scheme as the
+  // actual collocation method.
+  Eigen::VectorXd times = GetSampleTimes();
+  std::vector<double> times_vec(N());
+  std::vector<Eigen::MatrixXd> states(N());
+  std::vector<Eigen::MatrixXd> derivatives(N());
+
+  for (int i = 0; i < N(); i++) {
+    times_vec[i] = times(i);
+    states[i] = GetSolution(state(i));
+    input_port_value_->GetMutableVectorData<double>()->SetFromVector(
+        GetSolution(input(i)));
+    context_->get_mutable_continuous_state()->SetFromVector(states[i]);
+    system_->CalcTimeDerivatives(*context_, continuous_state_.get());
+    derivatives[i] = continuous_state_->CopyToVector();
+  }
+  return PiecewisePolynomialTrajectory(
+      PiecewisePolynomial<double>::Cubic(times_vec, states, derivatives));
 }
 
 }  // namespace systems
