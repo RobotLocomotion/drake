@@ -2095,15 +2095,6 @@ class MathematicalProgram {
   /** Getter for the initial guess */
   const Eigen::VectorXd& initial_guess() const { return x_initial_guess_; }
 
-  /**
-   * Returns the solution in a flat Eigen::VectorXd. The caller needs to
-   * compute the solution first by calling Solve.
-   * @return a flat Eigen vector that represents the solution.
-   */
-  const Eigen::VectorXd GetSolutionVectorValues() const {
-    return GetSolution(decision_variables_);
-  }
-
   /** Returns the index of the decision variable. Internally the solvers thinks
    * all variables are stored in an array, and it acceses each individual
    * variable using its index. This index is used when adding constraints
