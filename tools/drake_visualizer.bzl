@@ -3,8 +3,8 @@
 
 def _impl(repository_ctx):
     if repository_ctx.os.name == "mac os x":
-        archive = "dd-0.1.0-133-g39640642-qt-5.9.1-Darwin.tar.gz"
-        sha256 = "8679c1eb52c0216aafd01769f9aee51c467cd9dd38f0598e89640278f1409c6f"  # noqa
+        archive = "dv-0.1.0-171-g8752fcd-qt-5.9.1-mac-x86_64.tar.gz"
+        sha256 = "82d93d59f9c2b3f41d8c898e877e3f5d085c44dba9ef6116f5e003dbb00b5eda"  # noqa
     elif repository_ctx.os.name == "linux":
         sed = repository_ctx.which("sed")
 
@@ -26,11 +26,11 @@ def _impl(repository_ctx):
         distro = " ".join(distro)
 
         if distro == "Ubuntu 14.04":
-            archive = "dd-0.1.0-133-g3964064-qt-4.8.6-trusty-x86_64.tar.gz"
-            sha256 = "171331401c520b4b631511b9c377a336e26ac71c5e0eee8134a4eec933dd42c8"  # noqa
+            archive = "dv-0.1.0-171-g8752fcd-qt-4.8.6-trusty-x86_64.tar.gz"
+            sha256 = "c740c7cdbbf237a4aedea36c8aa6f00eb9503a72c69e2cb47286a76f5e96b779"  # noqa
         elif distro == "Ubuntu 16.04":
-            archive = "dd-0.1.0-133-g3964064-qt-5.5.1-xenial-x86_64.tar.gz"
-            sha256 = "f51e1c1992d884576d624b72659deb9fe942b0f887dd9561f63b445aa17d65a1"  # noqa
+            archive = "dv-0.1.0-171-g8752fcd-qt-5.5.1-xenial-x86_64.tar.gz"
+            sha256 = "0c12ef956541c417893ae3a47f81dde485b1f3a849316d5fa202eca81a23cd84"  # noqa
         else:
             fail("Linux distribution is NOT supported", attr = distro)
     else:
@@ -44,13 +44,35 @@ def _impl(repository_ctx):
 
     file_content = """
 filegroup(
-    name = "director",
-    srcs = glob(["**/*"]),
-    data = ["@vtk"],
+    name = "drake_visualizer",
+    srcs = glob([
+        "lib/libPythonQt.*",
+        "lib/libddApp.*",
+        "lib/python2.7/dist-packages/director/**/*.py",
+        "lib/python2.7/dist-packages/director/**/*.so",
+        "lib/python2.7/dist-packages/urdf_parser_py/**/*.py",
+    ]) + [
+        "bin/drake-visualizer",
+        "share/doc/director/LICENSE.txt",
+    ],
+    data = [
+        "@lcm//:lcm-python",
+        "@lcmtypes_bot2_core//:lcmtypes_bot2_core_py",
+        "@lcmtypes_robotlocomotion//:lcmtypes_robotlocomotion_py",
+        "@vtk",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+load("@drake//tools:install.bzl", "install_files")
+install_files(
+    name = "install",
+    dest = ".",
+    files = [":drake_visualizer"],
     visibility = ["//visibility:public"],
 )
 """
 
     repository_ctx.file("BUILD", content = file_content, executable = False)
 
-director_repository = repository_rule(implementation = _impl)
+drake_visualizer_repository = repository_rule(implementation = _impl)
