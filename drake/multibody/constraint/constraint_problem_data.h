@@ -125,24 +125,28 @@ struct ConstraintAccelProblemData {
   VectorX<T> Fdot_times_v;
   /// @}
 
-  /// @name Data for generic holonomic unilateral constraints on acceleration
-  /// Problem data for unilateral constraints of functions on system
+  /// @name Data for holonomic unilateral constraints at the acceleration level
+  /// Problem data for unilateral constraints of functions of system
   /// acceleration, obtained as the second time derivative of holonomic
-  /// constraints. One such constraint function is a joint acceleration
-  /// limit:<pre>
-  /// 0 ≤ -v̇ⱼ + k  ⊥  -fᶜⱼ ≥ 0
+  /// constraints. Specifically, the underlying constraint will be of the form
+  /// c(q,t) ≥ 0, meaning that the second time derivative will be of the form
+  /// c̈(q, v, v̇, t) ≥ 0. This holonomic constraint will always be coupled to a
+  /// force constraint of the form fᶜⱼ ≥ 0 and a complementarity constraint of
+  /// the form c̈(q, v, v̇, t)⋅fᶜ = 0. An example such holonomic constraint
+  /// function is a joint acceleration limit:<pre>
+  /// 0 ≤ -v̇ⱼ + k  ⊥  fᶜⱼ ≥ 0
   /// </pre>
   /// which can be read as the acceleration at joint j (v̇ⱼ) must be no larger
-  /// than k, the force must be applied to limit the acceleration at the joint,
-  /// and the limiting force cannot be applied if the acceleration at the joint
-  /// is not at the limit (i.e., v̇ⱼ ≤ k). In this example, the constraint
-  /// function c(v̇) = -v̇ⱼ + k. The problem data data center around the
-  /// Jacobian matrix L, the ℝᵗˣᵐ Jacobian matrix that transforms generalized
-  /// velocities (v ∈ ℝᵐ) into the time derivatives of t unilateral constraint
-  /// functions.
+  /// than k, the force must be applied to limit the acceleration at the
+  /// joint, and the limiting force cannot be applied if the acceleration at the
+  /// joint is not at the limit (i.e., v̇ⱼ ≤ k). In this example, the constraint
+  /// function c(q,t) ≡ qⱼ + kt², yielding ̈c(q, v, v̇) = -v̇ⱼ + k. The problem
+  /// data center around the Jacobian matrix L, the ℝˢˣᵐ Jacobian matrix that
+  /// transforms generalized velocities (v ∈ ℝᵐ) into the time derivatives of s
+  /// unilateral constraint functions.
   /// @{
 
-  /// The number of limit constraints. Must equal `t`, i.e., the
+  /// The number of limit constraints. Must equal `s`, i.e., the
   /// number of columns of L.
   int num_limit_constraints{0};
 
@@ -150,12 +154,12 @@ struct ConstraintAccelProblemData {
   /// returns an empty vector.
   std::function<VectorX<T>(const VectorX<T>&)> L_mult;
 
-  /// An operator that performs the multiplication Lᵀ⋅f where f ∈ ℝᵗ are the
+  /// An operator that performs the multiplication Lᵀ⋅f where f ∈ ℝˢ are the
   /// magnitudes of the constraint forces. The default operator returns a
   /// zero vector of dimension equal to that of the generalized forces.
   std::function<VectorX<T>(const VectorX<T>&)> L_transpose_mult;
 
-  /// This ℝᵗ vector is the time derivative of L times the generalized velocity
+  /// This ℝˢ vector is the time derivative of L times the generalized velocity
   /// v (∈ ℝᵐ) of the rigid or multi-body system.
   VectorX<T> Ldot_times_v;
   /// @}
@@ -256,8 +260,8 @@ struct ConstraintVelProblemData {
   /// generalized forces.
   std::function<VectorX<T>(const VectorX<T>&)> F_transpose_mult;
 
-  /// @name Data for generic holonomic unilateral constraints on velocity
-  /// Problem data for unilateral constraints of functions on system
+  /// @name Data for holonomic unilateral constraints at the velocity level
+  /// Problem data for unilateral constraints of functions of system
   /// velocity, obtained as the time derivative of holonomic constraints.
   /// One such constraint function is a joint velocity limit:<pre>
   /// 0 ≤ -vⱼ + k  ⊥  -fᶜⱼ ≥ 0

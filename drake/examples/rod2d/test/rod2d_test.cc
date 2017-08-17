@@ -994,7 +994,7 @@ TEST_F(Rod2DDAETest, RigidContactProblemDataBallistic) {
   SetBallisticState();
 
   // Compute the problem data.
-  ConstraintAccelProblemData<double> data(3 /* gen. vel. dim */);
+  ConstraintAccelProblemData<double> data(get_rod_num_coordinates());
   CalcConstraintAccelProblemData(&data);
 
   // Verify that the data has reasonable values.

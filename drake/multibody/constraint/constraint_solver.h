@@ -46,7 +46,11 @@ class ConstraintSolver {
   ///           non-sliding contact, the next `r` values correspond to the
   ///           second non-sliding contact, etc. The final ℓ values of @p cf
   ///           correspond to the forces applied to enforce functions of state
-  ///           variable limits.
+  ///           variable limits. This packed storage format can be turned into
+  ///           more useful representations through
+  ///           ComputeGeneralizedForceFromConstraintForces() and
+  ///           CalcContactForcesInContactFrames(). @p cf will be resized as
+  ///           necessary.
   /// @pre Constraint data has been computed.
   /// @throws a std::runtime_error if the constraint forces cannot be computed
   ///         (due to, e.g., an "inconsistent" rigid contact configuration).
@@ -71,6 +75,11 @@ class ConstraintSolver {
   ///           contact, the next `r` values correspond to the second contact,
   ///           etc. The final ℓ values of @p cf correspond to the impulsive
   ///           forces applied to enforce functions of state variable limits.
+  ///           This packed storage format can be turned into more useful
+  ///           representations through
+  ///           ComputeGeneralizedImpulseFromConstraintImpulses() and
+  ///           CalcImpactForcesInContactFrames(). @p cf will be resized as
+  ///           necessary.
   /// @pre Constraint data has been computed.
   /// @throws a std::runtime_error if the constraint forces cannot be computed
   ///         (due to, e.g., the effects of roundoff error in attempting to
@@ -88,6 +97,9 @@ class ConstraintSolver {
   ///           format described in documentation for SolveConstraintProblem.
   /// @param[out] generalized_force The generalized force acting on the system
   ///             from the total constraint wrench is stored here, on return.
+  ///             This method will resize @p generalized_force as necessary. The
+  ///             indices of @p generalized_force will exactly match the indices
+  ///             of @p problem_data.f.
   /// @throws std::logic_error if @p generalized_force is null or @p cf
   ///         vector is incorrectly sized.
   static void ComputeGeneralizedForceFromConstraintForces(
@@ -102,7 +114,9 @@ class ConstraintSolver {
   ///           format described in documentation for SolveImpactProblem.
   /// @param[out] generalized_impulse The generalized impulse acting on the
   ///             system from the total constraint wrench is stored here, on
-  ///             return.
+  ///             return. This method will resize @p generalized_impulse as
+  ///             necessary. The indices of @p generalized_impulse will exactly
+  ///             match the indices of @p problem_data.v.
   /// @throws std::logic_error if @p generalized_impulse is null or @p cf
   ///         vector is incorrectly sized.
   static void ComputeGeneralizedImpulseFromConstraintImpulses(
