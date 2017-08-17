@@ -6,12 +6,12 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/multibody/constraint/rigid_body_constraint.h"
+#include "drake/common/find_resource.h"
 #include "drake/multibody/ik_options.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/rigid_body_constraint.h"
 #include "drake/multibody/rigid_body_ik.h"
 #include "drake/multibody/rigid_body_tree.h"
 
@@ -25,7 +25,8 @@ namespace {
 GTEST_TEST(testIK, atlasIK) {
   auto model = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      GetDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf",
+      drake::FindResourceOrThrow(
+          "drake/examples/atlas/urdf/atlas_minimal_contact.urdf"),
       drake::multibody::joints::kRollPitchYaw, model.get());
 
   const Vector2d tspan(0, 1);
@@ -60,8 +61,9 @@ GTEST_TEST(testIK, iiwaIK) {
   auto model = std::make_unique<RigidBodyTree<double>>();
 
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      GetDrakePath() + "/manipulation/models/iiwa_description/urdf/"
-          "iiwa14_primitive_collision.urdf",
+      drake::FindResourceOrThrow(
+          "drake/manipulation/models/iiwa_description/urdf/"
+          "iiwa14_primitive_collision.urdf"),
       drake::multibody::joints::kFixed, model.get());
 
   // Create a timespan for the constraints.  It's not particularly
@@ -122,8 +124,9 @@ GTEST_TEST(testIK, iiwaIKInfeasible) {
   auto model = std::make_unique<RigidBodyTree<double>>();
 
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      GetDrakePath() + "/manipulation/models/iiwa_description/urdf/"
-          "iiwa14_primitive_collision.urdf",
+      drake::FindResourceOrThrow(
+          "drake/manipulation/models/iiwa_description/urdf/"
+          "iiwa14_primitive_collision.urdf"),
       drake::multibody::joints::kFixed, model.get());
 
   // Create a timespan for the constraints.  It's not particularly

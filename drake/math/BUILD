@@ -1,8 +1,8 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load("//tools:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -17,11 +17,10 @@ drake_cc_library(
     ],
 )
 
-# TODO(jwnimmer-tri) This should be riccati not ricatti.
 drake_cc_library(
-    name = "continuous_algebraic_ricatti_equation",
-    srcs = ["continuous_algebraic_ricatti_equation.cc"],
-    hdrs = ["continuous_algebraic_ricatti_equation.h"],
+    name = "continuous_algebraic_riccati_equation",
+    srcs = ["continuous_algebraic_riccati_equation.cc"],
+    hdrs = ["continuous_algebraic_riccati_equation.h"],
     deps = [
         "//drake/common",
         "//drake/common:is_approx_equal_abstol",
@@ -65,17 +64,27 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "vector3_util",
+    srcs = ["cross_product.cc"],
+    hdrs = [
+        "convert_time_derivative.h",
+        "cross_product.h",
+    ],
+    deps = [
+        "//drake/common",
+    ],
+)
+
+drake_cc_library(
     name = "gradient",
     srcs = [
         "autodiff_gradient.cc",
-        "cross_product.cc",
         "gradient.cc",
         "normalize_vector.cc",
         "rotation_conversion_gradient.cc",
     ],
     hdrs = [
         "autodiff_gradient.h",
-        "cross_product.h",
         "gradient.h",
         "gradient_util.h",
         "normalize_vector.h",
@@ -83,6 +92,7 @@ drake_cc_library(
     ],
     deps = [
         ":autodiff",
+        ":vector3_util",
         "//drake/common",
     ],
 )
@@ -126,6 +136,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "gray_code",
+    srcs = ["gray_code.cc"],
+    hdrs = ["gray_code.h"],
+    deps = [
+        "//drake/common",
+        "@eigen",
+    ],
+)
+
+drake_cc_library(
     name = "jacobian",
     srcs = ["jacobian.cc"],
     hdrs = ["jacobian.h"],
@@ -158,9 +178,25 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "continuous_algebraic_riccati_equation_test",
+    deps = [
+        ":continuous_algebraic_riccati_equation",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "cross_product_test",
     deps = [
-        ":gradient",
+        ":vector3_util",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "convert_time_derivative_test",
+    deps = [
+        ":vector3_util",
         "//drake/common:eigen_matrix_compare",
     ],
 )
@@ -210,6 +246,14 @@ drake_cc_googletest(
     name = "gradient_util_test",
     deps = [
         ":gradient",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "gray_code_test",
+    deps = [
+        ":gray_code",
         "//drake/common:eigen_matrix_compare",
     ],
 )
@@ -266,4 +310,4 @@ drake_cc_googletest(
     ],
 )
 
-cpplint()
+add_lint_tests()

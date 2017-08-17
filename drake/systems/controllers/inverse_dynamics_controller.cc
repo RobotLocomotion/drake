@@ -12,15 +12,16 @@
 
 namespace drake {
 namespace systems {
+namespace controllers {
 
 template <typename T>
-void InverseDynamicsController<T>::SetUp(const VectorX<T>& kp,
-                                         const VectorX<T>& ki,
-                                         const VectorX<T>& kd) {
+void InverseDynamicsController<T>::SetUp(const VectorX<double>& kp,
+                                         const VectorX<double>& ki,
+                                         const VectorX<double>& kd) {
   DiagramBuilder<T> builder;
   this->set_name("InverseDynamicsController");
 
-  const RigidBodyTree<T>& robot = this->get_robot_for_control();
+  const RigidBodyTree<T>& robot = *robot_for_control_;
   DRAKE_DEMAND(robot.get_num_positions() == kp.size());
   DRAKE_DEMAND(robot.get_num_positions() == robot.get_num_velocities());
   DRAKE_DEMAND(robot.get_num_positions() == robot.get_num_actuators());
@@ -73,17 +74,17 @@ void InverseDynamicsController<T>::SetUp(const VectorX<T>& kp,
                   inverse_dynamics->get_input_port_desired_acceleration());
 
   // Exposes estimated state input port.
-  int index = builder.ExportInput(pass_through->get_input_port());
-  this->set_input_port_index_estimated_state(index);
+  input_port_index_estimated_state_ =
+      builder.ExportInput(pass_through->get_input_port());
 
   // Exposes reference state input port.
-  index = builder.ExportInput(pid_->get_input_port_desired_state());
-  this->set_input_port_index_desired_state(index);
+  input_port_index_desired_state_ =
+      builder.ExportInput(pid_->get_input_port_desired_state());
 
   if (!has_reference_acceleration_) {
     // Uses a zero constant source for reference acceleration.
     auto zero_feedforward_acceleration =
-        builder.template AddSystem<ConstantVectorSource<double>>(
+        builder.template AddSystem<ConstantVectorSource<T>>(
             VectorX<T>::Zero(robot.get_num_velocities()));
     zero_feedforward_acceleration->set_name("zero");
     builder.Connect(zero_feedforward_acceleration->get_output_port(),
@@ -95,8 +96,8 @@ void InverseDynamicsController<T>::SetUp(const VectorX<T>& kp,
   }
 
   // Exposes inverse dynamics' output torque port.
-  index = builder.ExportOutput(inverse_dynamics->get_output_port_torque());
-  this->set_output_port_index_control(index);
+  output_port_index_control_ =
+      builder.ExportOutput(inverse_dynamics->get_output_port_torque());
 
   builder.BuildInto(this);
 }
@@ -104,41 +105,25 @@ void InverseDynamicsController<T>::SetUp(const VectorX<T>& kp,
 template <typename T>
 void InverseDynamicsController<T>::set_integral_value(
     Context<T>* context, const Eigen::Ref<const VectorX<T>>& value) const {
-  Context<T>* pid_context =
-      Diagram<T>::GetMutableSubsystemContext(context, pid_);
-  pid_->set_integral_value(pid_context, value);
+  Context<T>& pid_context =
+      Diagram<T>::GetMutableSubsystemContext(*pid_, context);
+  pid_->set_integral_value(&pid_context, value);
 }
 
 template <typename T>
 InverseDynamicsController<T>::InverseDynamicsController(
-    const std::string& model_path,
-    std::shared_ptr<RigidBodyFrame<double>> world_offset, const VectorX<T>& kp,
-    const VectorX<T>& ki, const VectorX<T>& kd, bool has_reference_acceleration)
-    : ModelBasedController<T>(model_path, world_offset,
-                              multibody::joints::kFixed),
-      has_reference_acceleration_(has_reference_acceleration) {
-  SetUp(kp, ki, kd);
-}
-
-template <typename T>
-InverseDynamicsController<T>::InverseDynamicsController(
-    const RigidBodyTree<T>& robot, const VectorX<T>& kp, const VectorX<T>& ki,
-    const VectorX<T>& kd, bool has_reference_acceleration)
-    : ModelBasedController<T>(robot),
-      has_reference_acceleration_(has_reference_acceleration) {
-  SetUp(kp, ki, kd);
-}
-
-template <typename T>
-InverseDynamicsController<T>::InverseDynamicsController(
-    std::unique_ptr<RigidBodyTree<T>> robot, const VectorX<T>& kp,
-    const VectorX<T>& ki, const VectorX<T>& kd, bool has_reference_acceleration)
-    : ModelBasedController<T>(std::move(robot)),
-      has_reference_acceleration_(has_reference_acceleration) {
+    std::unique_ptr<RigidBodyTree<T>> robot, const VectorX<double>& kp,
+    const VectorX<double>& ki, const VectorX<double>& kd,
+    bool has_reference_acceleration)
+    : has_reference_acceleration_(has_reference_acceleration) {
+  robot_for_control_ = std::move(robot);
   SetUp(kp, ki, kd);
 }
 
 template class InverseDynamicsController<double>;
+// TODO(siyuan) template on autodiff.
+// template class InverseDynamicsController<AutoDiffXd>;
 
+}  // namespace controllers
 }  // namespace systems
 }  // namespace drake

@@ -3,6 +3,7 @@
 #include <limits>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/eigen_autodiff_types.h"
 
 namespace drake {
 namespace multibody {
@@ -10,14 +11,15 @@ namespace benchmarks {
 
 // For `this` mass-damper-spring system, and with the given initial
 // values, this method calculates the values of x, ẋ, ẍ at time t.
-Eigen::Vector3d MassDamperSpringAnalyticalSolution::CalculateOutput(
-    const double t) const {
+template <typename T>
+Vector3<T> MassDamperSpringAnalyticalSolution<T>::CalculateOutput(
+    const T& t) const {
   // TODO(@mitiguy) Enhance algorithm to allow for any real values of m, b, k,
   // (except m = 0), e.g., to allow for unstable control systems.
   DRAKE_DEMAND(m_ > 0  &&  b_ >= 0  &&  k_ > 0);
 
-  const double zeta = CalculateDampingRatio();
-  const double wn = CalculateNaturalFrequency();
+  const T zeta = CalculateDampingRatio();
+  const T wn = CalculateNaturalFrequency();
   return CalculateOutputImpl(zeta, wn, x0_, xDt0_, t);
 }
 
@@ -28,14 +30,14 @@ Eigen::Vector3d MassDamperSpringAnalyticalSolution::CalculateOutput(
 // - [Kane, 1985] "Dynamics: Theory and Applications," McGraw-Hill Book Co.,
 //   New York, 1985 (with D. A. Levinson).  Available for free .pdf download:
 //   https://ecommons.cornell.edu/handle/1813/637
-Eigen::Vector3d MassDamperSpringAnalyticalSolution::CalculateOutputImpl(
-    const double zeta, const double wn,
-    const double x0, const double xDt0,  const double t) {
+template <typename T>
+Vector3<T> MassDamperSpringAnalyticalSolution<T>::CalculateOutputImpl(
+    const T& zeta, const T& wn, const T& x0, const T& xDt0,  const T& t) {
   // TODO(@mitiguy) Enhance algorithm to allow for any real values of zeta, wn.
   DRAKE_DEMAND(zeta >= 0  &&  wn > 0);
 
   // Quantities x, ẋ, ẍ are put into a three-element matrix and returned.
-  double x, xDt, xDtDt;
+  T x, xDt, xDtDt;
 
   using std::abs;
   using std::exp;
@@ -44,63 +46,66 @@ Eigen::Vector3d MassDamperSpringAnalyticalSolution::CalculateOutputImpl(
   using std::sin;
 
   constexpr double epsilon = std::numeric_limits<double>::epsilon();
-  const double is_zeta_nearly_1 = abs(zeta - 1) < 10 * epsilon;
+  const bool is_zeta_nearly_1 = abs(zeta - 1) < 10 * epsilon;
   if (is_zeta_nearly_1) {
     // Critically damped free vibration (zeta = 1).
-    const double A = x0;
-    const double B = xDt0 + wn * x0;
+    const T A = x0;
+    const T B = xDt0 + wn * x0;
 
-    const double factor1 = A + B * t;
-    const double factor2 = exp(-wn * t);
+    const T factor1 = A + B * t;
+    const T factor2 = exp(-wn * t);
     x = factor1 * factor2;
 
-    const double factor1Dt = B;
-    const double factor2Dt = -wn * exp(-wn * t);
+    const T factor1Dt = B;
+    const T factor2Dt = -wn * exp(-wn * t);
     xDt = factor1Dt * factor2 + factor1 * factor2Dt;
 
-    const double factor2DtDt = wn * wn * exp(-wn * t);
+    const T factor2DtDt = wn * wn * exp(-wn * t);
     xDtDt = 2 * factor1Dt * factor2Dt + factor1 * factor2DtDt;
   } else if (zeta < 1) {
     // Undamped or underdamped free vibration (0 <= zeta < 1).
-    const double wd = wn * sqrt(1 - zeta * zeta);  // Damped natural frequency.
-    const double A = (xDt0 + zeta * wn * x0) / wd;
-    const double B = x0;
+    const T wd = wn * sqrt(1 - zeta * zeta);  // Damped natural frequency.
+    const T A = (xDt0 + zeta * wn * x0) / wd;
+    const T B = x0;
 
-    const double factor1 = A * sin(wd * t) + B * cos(wd * t);
-    const double factor2 = exp(-zeta * wn * t);
+    const T factor1 = A * sin(wd * t) + B * cos(wd * t);
+    const T factor2 = exp(-zeta * wn * t);
     x = factor1 * factor2;
 
-    const double factor1Dt = A * wd * cos(wd * t) - B * wd * sin(wd * t);
-    const double factor2Dt = -zeta * wn * exp(-zeta * wn * t);
+    const T factor1Dt = A * wd * cos(wd * t) - B * wd * sin(wd * t);
+    const T factor2Dt = -zeta * wn * exp(-zeta * wn * t);
     xDt = factor1Dt * factor2 + factor1 * factor2Dt;
 
-    const double factor1DtDt = -wd * wd * factor1;
-    const double factor2DtDt = (-zeta*wn) * (-zeta*wn) * exp(-zeta * wn * t);
+    const T factor1DtDt = -wd * wd * factor1;
+    const T factor2DtDt = (-zeta*wn) * (-zeta*wn) * exp(-zeta * wn * t);
     xDtDt = factor1DtDt*factor2 + 2*factor1Dt*factor2Dt + factor1*factor2DtDt;
   } else if (zeta > 1) {
     // Overdamped  free vibration (zeta > 1).
-    const double p1 = -wn * (zeta - sqrt(zeta * zeta - 1));
-    const double p2 = -wn * (zeta + sqrt(zeta * zeta - 1));
-    const double A = (xDt0 - p2 * x0) / (p1 - p2);
-    const double B = (xDt0 - p1 * x0) / (p1 - p2);
+    const T p1 = -wn * (zeta - sqrt(zeta * zeta - 1));
+    const T p2 = -wn * (zeta + sqrt(zeta * zeta - 1));
+    const T A = (xDt0 - p2 * x0) / (p1 - p2);
+    const T B = (xDt0 - p1 * x0) / (p1 - p2);
 
-    const double term1 = A * exp(p1 * t);
-    const double term2 = B * exp(p2 * t);
+    const T term1 = A * exp(p1 * t);
+    const T term2 = B * exp(p2 * t);
     x = term1 - term2;
 
-    const double term1Dt = A * p1 * exp(p1 * t);
-    const double term2Dt = B * p2 * exp(p2 * t);
+    const T term1Dt = A * p1 * exp(p1 * t);
+    const T term2Dt = B * p2 * exp(p2 * t);
     xDt = term1Dt - term2Dt;
 
-    const double term1DtDt = A * p1 * p1 * exp(p1 * t);
-    const double term2DtDt = B * p2 * p2 * exp(p2 * t);
+    const T term1DtDt = A * p1 * p1 * exp(p1 * t);
+    const T term2DtDt = B * p2 * p2 * exp(p2 * t);
     xDtDt = term1DtDt - term2DtDt;
   }
 
-  Eigen::Vector3d output;
+  Vector3<T> output;
   output << x, xDt, xDtDt;
   return output;
 }
+
+template class MassDamperSpringAnalyticalSolution<double>;
+template class MassDamperSpringAnalyticalSolution<AutoDiffXd>;
 
 }  // namespace benchmarks
 }  // namespace multibody

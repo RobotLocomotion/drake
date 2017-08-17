@@ -6,21 +6,21 @@
 #include <map>
 
 #include <gtest/gtest.h>
-
 #include <unsupported/Eigen/AutoDiff>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/text_logging.h"
 #include "drake/common/test/is_dynamic_castable.h"
+#include "drake/common/text_logging.h"
 #include "drake/systems/analysis/explicit_euler_integrator.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/test/controlled_spring_mass_system/controlled_spring_mass_system.h"
-#include "drake/systems/analysis/test/empty_system.h"
 #include "drake/systems/analysis/test/logistic_system.h"
 #include "drake/systems/analysis/test/my_spring_mass_system.h"
+#include "drake/systems/analysis/test/stateless_system.h"
+#include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
 
 using drake::systems::WitnessFunction;
@@ -28,7 +28,7 @@ using drake::systems::Simulator;
 using drake::systems::RungeKutta3Integrator;
 using drake::systems::ImplicitEulerIntegrator;
 using LogisticSystem = drake::systems::analysis_test::LogisticSystem<double>;
-using EmptySystem = drake::systems::analysis_test::EmptySystem<double>;
+using StatelessSystem = drake::systems::analysis_test::StatelessSystem<double>;
 using LogisticWitness = drake::systems::analysis_test::LogisticWitness<double>;
 using ClockWitness = drake::systems::analysis_test::ClockWitness<double>;
 using Eigen::AutoDiffScalar;
@@ -41,6 +41,106 @@ namespace {
 
 // @TODO(edrumwri): Use test fixtures to streamline this file and promote reuse.
 
+// Empty diagram
+class StatelessDiagram : public Diagram<double> {
+ public:
+    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StatelessDiagram)
+
+  explicit StatelessDiagram(double offset) {
+    DiagramBuilder<double> builder;
+
+    // Add the empty system (and its witness function).
+    stateless_ = builder.AddSystem<StatelessSystem>(offset,
+        WitnessFunctionDirection::kCrossesZero);
+    stateless_->set_name("stateless_diagram");
+    builder.BuildInto(this);
+  }
+
+  void set_publish_callback(
+      std::function<void(const Context<double>&)> callback) {
+    stateless_->set_publish_callback(callback);
+  }
+
+ private:
+  StatelessSystem* stateless_ = nullptr;
+};
+
+// Diagram for testing witness functions.
+class ExampleDiagram : public Diagram<double> {
+ public:
+    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExampleDiagram)
+
+  explicit ExampleDiagram(double offset) {
+    DiagramBuilder<double> builder;
+
+    // Add the empty system (and its witness function).
+    stateless_diag_ = builder.AddSystem<StatelessDiagram>(offset);
+    stateless_diag_->set_name("diagram_of_stateless_diagram");
+    builder.BuildInto(this);
+  }
+
+  void set_publish_callback(
+      std::function<void(const Context<double>&)> callback) {
+    stateless_diag_->set_publish_callback(callback);
+  }
+
+ private:
+  StatelessDiagram* stateless_diag_ = nullptr;
+};
+
+// Tests that simulation only takes a single step when there is no continuous
+// state, regardless of the integrator maximum step size (and no discrete state
+// or events).
+GTEST_TEST(SimulatorTest, NoContinuousStateYieldsSingleStep) {
+  const double final_time = 1.0;
+  StatelessSystem system(
+     final_time + 1, /* publish time *after* final time */
+     WitnessFunctionDirection::kCrossesZero);
+
+  // Construct the simulation using the RK2 (fixed step) integrator with a small
+  // time step.
+  const double dt = 1e-3;
+  Simulator<double> simulator(system);
+  Context<double>* context = simulator.get_mutable_context();
+  simulator.reset_integrator<RungeKutta2Integrator<double>>(system, dt,
+      context);
+  simulator.StepTo(final_time);
+
+  EXPECT_EQ(simulator.get_num_steps_taken(), 1);
+}
+
+// Tests ability of simulation to identify the proper number of witness function
+// triggerings going from negative to non-negative witness function evaluation
+// using a Diagram. This particular example uses an empty system and a clock as
+// the witness function, which makes it particularly easy to determine when the
+// witness function should trigger.
+GTEST_TEST(SimulatorTest, DiagramWitness) {
+  // Set empty system to trigger when time is +1.
+  const double trigger_time = 1.0;
+  ExampleDiagram system(trigger_time);
+  double publish_time = -1;
+  int num_publishes = 0;
+  system.set_publish_callback([&](const Context<double>& context) {
+    num_publishes++;
+    publish_time = context.get_time();
+  });
+
+  const double dt = 1;
+  Simulator<double> simulator(system);
+  simulator.set_publish_at_initialization(false);
+  Context<double>* context = simulator.get_mutable_context();
+  simulator.reset_integrator<RungeKutta2Integrator<double>>(system, dt,
+                                                            context);
+  simulator.set_publish_every_time_step(false);
+
+  context->set_time(0);
+  simulator.StepTo(1);
+
+  // Publication should occur at witness function crossing.
+  EXPECT_EQ(1, num_publishes);
+  EXPECT_EQ(publish_time, trigger_time);
+}
+
 // A composite system using the logistic system with the clock-based
 // witness function.
 class CompositeSystem : public LogisticSystem {
@@ -52,13 +152,13 @@ class CompositeSystem : public LogisticSystem {
     this->DeclareContinuousState(1);
     logistic_witness_ = std::make_unique<LogisticWitness>(*this);
     clock_witness_ = std::make_unique<ClockWitness>(trigger_time, *this,
-                          WitnessFunction<double>::DirectionType::kCrossesZero);
+                          WitnessFunctionDirection::kCrossesZero);
   }
 
  protected:
   void DoGetWitnessFunctions(
       const Context<double>&,
-      std::vector<const systems::WitnessFunction<double>*>* w) const override {
+      std::vector<const WitnessFunction<double>*>* w) const override {
     w->push_back(clock_witness_.get());
     w->push_back(logistic_witness_.get());
   }
@@ -69,12 +169,12 @@ class CompositeSystem : public LogisticSystem {
 };
 
 // An empty system using two clock witnesses.
-class TwoWitnessEmptySystem : public LeafSystem<double> {
+class TwoWitnessStatelessSystem : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TwoWitnessEmptySystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TwoWitnessStatelessSystem)
 
-  explicit TwoWitnessEmptySystem(double off1, double off2) {
-    const auto dir_type = WitnessFunction<double>::DirectionType::kCrossesZero;
+  explicit TwoWitnessStatelessSystem(double off1, double off2) {
+    const auto dir_type = WitnessFunctionDirection::kCrossesZero;
     witness1_ = std::make_unique<ClockWitness>(off1, *this, dir_type);
     witness2_ = std::make_unique<ClockWitness>(off2, *this, dir_type);
   }
@@ -86,14 +186,15 @@ class TwoWitnessEmptySystem : public LeafSystem<double> {
 
  protected:
   void DoGetWitnessFunctions(
-      const systems::Context<double>&,
-      std::vector<const systems::WitnessFunction<double>*>* w) const override {
+      const Context<double>&,
+      std::vector<const WitnessFunction<double>*>* w) const override {
     w->push_back(witness1_.get());
     w->push_back(witness2_.get());
   }
 
   void DoPublish(
-      const drake::systems::Context<double>& context) const override {
+      const Context<double>& context,
+      const std::vector<const PublishEvent<double>*>& events) const override {
     if (publish_callback_ != nullptr) publish_callback_(context);
   }
 
@@ -166,7 +267,7 @@ GTEST_TEST(SimulatorTest, FixedStepNoIsolation) {
 GTEST_TEST(SimulatorTest, VariableStepIsolation) {
   // Set empty system to trigger when time is +1 (setting is arbitrary for this
   // test).
-  EmptySystem system(1.0, WitnessFunction<double>::DirectionType::kCrossesZero);
+  StatelessSystem system(1.0, WitnessFunctionDirection::kCrossesZero);
   double publish_time = 0;
   system.set_publish_callback([&](const Context<double>& context){
     publish_time = context.get_time();
@@ -208,7 +309,7 @@ GTEST_TEST(SimulatorTest, VariableStepIsolation) {
 // (in the Context) is increased.
 GTEST_TEST(SimulatorTest, FixedStepIncreasingIsolationAccuracy) {
   // Set empty system to trigger when time is +1.
-  EmptySystem system(1.0, WitnessFunction<double>::DirectionType::kCrossesZero);
+  StatelessSystem system(1.0, WitnessFunctionDirection::kCrossesZero);
   double publish_time = 0;
   system.set_publish_callback([&](const Context<double>& context){
     publish_time = context.get_time();
@@ -220,7 +321,7 @@ GTEST_TEST(SimulatorTest, FixedStepIncreasingIsolationAccuracy) {
   Context<double>* context = simulator.get_mutable_context();
 
   // Get the (one) witness function.
-  std::vector<const systems::WitnessFunction<double>*> witness;
+  std::vector<const WitnessFunction<double>*> witness;
   system.GetWitnessFunctions(*context, &witness);
   DRAKE_DEMAND(witness.size() == 1);
 
@@ -319,8 +420,8 @@ GTEST_TEST(SimulatorTest, MultipleWitnesses) {
 // Tests ability of simulation to identify two witness functions triggering
 // at the identical time over an interval.
 GTEST_TEST(SimulatorTest, MultipleWitnessesIdentical) {
-  // Create an EmptySystem that uses two identical witness functions.
-  TwoWitnessEmptySystem system(1.0, 1.0);
+  // Create a StatelessSystem that uses two identical witness functions.
+  TwoWitnessStatelessSystem system(1.0, 1.0);
   bool published = false;
   std::unique_ptr<Simulator<double>> simulator;
   system.set_publish_callback([&](const Context<double> &context) {
@@ -379,8 +480,8 @@ GTEST_TEST(SimulatorTest, MultipleWitnessesStaggered) {
   const double first_time = 1.0;
   const double second_time = 2.0;
 
-  // Create an EmptySystem that uses clock witnesses.
-  TwoWitnessEmptySystem system(first_time, second_time);
+  // Create a StatelessSystem that uses clock witnesses.
+  TwoWitnessStatelessSystem system(first_time, second_time);
   std::vector<double> publish_times;
   system.set_publish_callback([&](const Context<double> &context) {
     publish_times.push_back(context.get_time());
@@ -417,7 +518,7 @@ GTEST_TEST(SimulatorTest, MultipleWitnessesStaggered) {
 // function should trigger.
 GTEST_TEST(SimulatorTest, WitnessTestCountSimpleNegToZero) {
   // Set empty system to trigger when time is +1.
-  EmptySystem system(1.0, WitnessFunction<double>::DirectionType::kCrossesZero);
+  StatelessSystem system(+1, WitnessFunctionDirection::kCrossesZero);
   int num_publishes = 0;
   system.set_publish_callback([&](const Context<double>& context){
     num_publishes++;
@@ -441,7 +542,7 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimpleNegToZero) {
 // should trigger.
 GTEST_TEST(SimulatorTest, WitnessTestCountSimpleZeroToPos) {
   // Set empty system to trigger when time is zero.
-  EmptySystem system(0, WitnessFunction<double>::DirectionType::kCrossesZero);
+  StatelessSystem system(0, WitnessFunctionDirection::kCrossesZero);
   int num_publishes = 0;
   system.set_publish_callback([&](const Context<double>& context){
     num_publishes++;
@@ -463,7 +564,7 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimpleZeroToPos) {
 // system from WitnessTestCountSimple.
 GTEST_TEST(SimulatorTest, WitnessTestCountSimplePositiveToNegative) {
   // Set empty system to trigger when time is +1.
-  EmptySystem system(1.0, WitnessFunction<double>::DirectionType::
+  StatelessSystem system(+1, WitnessFunctionDirection::
       kPositiveThenNonPositive);
   int num_publishes = 0;
   system.set_publish_callback([&](const Context<double>& context){
@@ -486,7 +587,7 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimplePositiveToNegative) {
 // triggerings (zero) for a negative-to-positive trigger. Uses the same empty
 // system from WitnessTestCountSimple.
 GTEST_TEST(SimulatorTest, WitnessTestCountSimpleNegativeToPositive) {
-  EmptySystem system(0, WitnessFunction<double>::DirectionType::
+  StatelessSystem system(0, WitnessFunctionDirection::
       kNegativeThenNonNegative);
   int num_publishes = 0;
   system.set_publish_callback([&](const Context<double>& context){
@@ -691,6 +792,7 @@ GTEST_TEST(SimulatorTest, RealtimeRate) {
   Simulator<double> simulator(spring_mass);  // Use default Context.
 
   simulator.set_target_realtime_rate(1.);  // No faster than 1X real time.
+  simulator.get_mutable_integrator()->set_maximum_step_size(0.001);
   simulator.get_mutable_context()->set_time(0.);
   simulator.Initialize();
   simulator.StepTo(1.);  // Simulate for 1 simulated second.
@@ -772,24 +874,24 @@ class UnrestrictedUpdater : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnrestrictedUpdater)
 
-  explicit UnrestrictedUpdater(double t_upd) : t_upd_(t_upd) {
-  }
+  explicit UnrestrictedUpdater(double t_upd) : t_upd_(t_upd) {}
 
   ~UnrestrictedUpdater() override {}
 
-  void DoCalcNextUpdateTime(const systems::Context<double>& context,
-                            systems::UpdateActions<double>* actions)
-                              const override {
+  void DoCalcNextUpdateTime(const Context<double>& context,
+                            CompositeEventCollection<double>* event_info,
+                            double* time) const override {
     const double inf = std::numeric_limits<double>::infinity();
-    actions->time = (context.get_time() < t_upd_) ? t_upd_ : inf;
-    actions->events.push_back(systems::DiscreteEvent<double>());
-    actions->events.back().action = systems::DiscreteEvent<double>::
-                                               kUnrestrictedUpdateAction;
+    *time = (context.get_time() < t_upd_) ? t_upd_ : inf;
+    UnrestrictedUpdateEvent<double> event(
+        Event<double>::TriggerType::kPeriodic);
+    event.add_to_composite(event_info);
   }
 
   void DoCalcUnrestrictedUpdate(
-      const drake::systems::Context<double>& context,
-      drake::systems::State<double>* state) const override {
+      const Context<double>& context,
+      const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
+      State<double>* state) const override {
     if (unrestricted_update_callback_ != nullptr)
       unrestricted_update_callback_(context, state);
   }
@@ -813,7 +915,7 @@ class UnrestrictedUpdater : public LeafSystem<double> {
  private:
   const double t_upd_{0.0};
   std::function<void(const Context<double>&, State<double>*)>
-                                      unrestricted_update_callback_{nullptr};
+      unrestricted_update_callback_{nullptr};
   std::function<void(const Context<double>&)> derivatives_callback_{nullptr};
 };
 }  // namespace
@@ -822,20 +924,20 @@ class UnrestrictedUpdater : public LeafSystem<double> {
 // (i.e., without accumulating floating point error).
 GTEST_TEST(SimulatorTest, ExactUpdateTime) {
   // Create the UnrestrictedUpdater system.
-  const double t_upd = 1e-10;                // Inexact floating point rep.
+  const double t_upd = 1e-10;  // Inexact floating point rep.
   UnrestrictedUpdater unrest_upd(t_upd);
   Simulator<double> simulator(unrest_upd);  // Use default Context.
 
   // Set time to an exact floating point representation; we want t_upd to
   // be much smaller in magnitude than the time, hence the negative time.
-  simulator.get_mutable_context()->set_time(-1.0/1024);
+  simulator.get_mutable_context()->set_time(-1.0 / 1024);
 
   // Capture the time at which an update is done using a callback function.
   std::vector<double> updates;
   unrest_upd.set_unrestricted_update_callback(
       [&updates](const Context<double>& context, State<double>* state) {
-    updates.push_back(context.get_time());
-  });
+        updates.push_back(context.get_time());
+      });
 
   // Simulate forward.
   simulator.Initialize();
@@ -877,6 +979,11 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
   PidControlledSpringMassSystem<double> spring_mass(kSpring, kMass, kp, ki, kd,
                                                     x_target);
   Simulator<double> simulator(spring_mass);  // Use default Context.
+
+  // Forces simulator to use fixed-step integration at 1ms (to keep assumptions
+  // below accurate).
+  simulator.get_mutable_integrator()->set_fixed_step_mode(true);
+  simulator.get_mutable_integrator()->set_maximum_step_size(0.001);
 
   // Sets initial condition using the Simulator's internal Context.
   spring_mass.set_position(simulator.get_mutable_context(), x0);
@@ -939,7 +1046,6 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
   EXPECT_NEAR(spring_mass.get_velocity(context), v_final, 1.0e-5);
 }
 
-
 // A mock System that requests discrete update at 1 kHz, and publishes at 400
 // Hz. Calls user-configured callbacks on DoPublish,
 // DoCalcDiscreteVariableUpdates, and EvalTimeDerivatives.
@@ -952,7 +1058,7 @@ class DiscreteSystem : public LeafSystem<double> {
     // floating-point error with, the default max step size.
     const double offset = 0.0;
     this->DeclarePeriodicDiscreteUpdate(kUpdatePeriod, offset);
-    this->DeclarePublishPeriodSec(kPublishPeriod);
+    this->DeclarePeriodicPublish(kPublishPeriod);
 
     set_name("TestSystem");
   }
@@ -960,13 +1066,15 @@ class DiscreteSystem : public LeafSystem<double> {
   ~DiscreteSystem() override {}
 
   void DoCalcDiscreteVariableUpdates(
-      const drake::systems::Context<double>& context,
-      drake::systems::DiscreteValues<double>* updates) const override {
+      const Context<double>& context,
+      const std::vector<const DiscreteUpdateEvent<double>*>& events,
+      DiscreteValues<double>* updates) const override {
     if (update_callback_ != nullptr) update_callback_(context);
   }
 
   void DoPublish(
-      const drake::systems::Context<double>& context) const override {
+      const Context<double>& context,
+      const std::vector<const PublishEvent<double>*>& events) const override {
     if (publish_callback_ != nullptr) publish_callback_(context);
   }
 
@@ -1016,17 +1124,17 @@ bool CheckSampleTime(const Context<double>& context, double period) {
 GTEST_TEST(SimulatorTest, DiscreteUpdateAndPublish) {
   DiscreteSystem system;
   int num_disc_updates = 0;
-  system.set_update_callback([&](const Context<double>& context){
+  system.set_update_callback([&](const Context<double>& context) {
     ASSERT_TRUE(CheckSampleTime(context, system.update_period()));
     num_disc_updates++;
   });
   int num_publishes = 0;
-  system.set_publish_callback([&](const Context<double>& context){
+  system.set_publish_callback([&](const Context<double>& context) {
     ASSERT_TRUE(CheckSampleTime(context, system.publish_period()));
     num_publishes++;
   });
 
-  drake::systems::Simulator<double> simulator(system);
+  Simulator<double> simulator(system);
   simulator.set_publish_every_time_step(false);
   simulator.StepTo(0.5);
   EXPECT_EQ(500, num_disc_updates);
@@ -1038,28 +1146,24 @@ GTEST_TEST(SimulatorTest, DiscreteUpdateAndPublish) {
 // discrete state, then publish, then integrate.
 GTEST_TEST(SimulatorTest, UpdateThenPublishThenIntegrate) {
   DiscreteSystem system;
-  drake::systems::Simulator<double> simulator(system);
-  enum EventType {
-    kUpdate = 0,
-    kPublish = 1,
-    kIntegrate = 2
-  };
+  Simulator<double> simulator(system);
+  enum EventType { kUpdate = 0, kPublish = 1, kIntegrate = 2 };
 
   // Write down the order in which the DiscreteSystem is asked to compute
   // discrete updates, do publishes, or compute derivatives at each time step.
   std::map<int, std::vector<EventType>> events;
   system.set_update_callback(
       [&events, &simulator](const Context<double>& context) {
-    events[simulator.get_num_steps_taken()].push_back(kUpdate);
-  });
+        events[simulator.get_num_steps_taken()].push_back(kUpdate);
+      });
   system.set_publish_callback(
       [&events, &simulator](const Context<double>& context) {
-    events[simulator.get_num_steps_taken()].push_back(kPublish);
-  });
+        events[simulator.get_num_steps_taken()].push_back(kPublish);
+      });
   system.set_derivatives_callback(
       [&events, &simulator](const Context<double>& context) {
-    events[simulator.get_num_steps_taken()].push_back(kIntegrate);
-  });
+        events[simulator.get_num_steps_taken()].push_back(kIntegrate);
+      });
 
   // Run a simulation.
   simulator.set_publish_every_time_step(true);
@@ -1086,17 +1190,216 @@ GTEST_TEST(SimulatorTest, AutodiffBasic) {
   simulator.StepTo(1);
 }
 
+// Verifies that an integrator will stretch its integration step in the case
+// that a directed step would end right before an event.
+GTEST_TEST(SimulatorTest, StretchedStep) {
+  // Setting the update rate to 1.0 will cause the spring mass to update at
+  // 1.0s.
+  analysis_test::MySpringMassSystem<double> spring_mass(
+      1., 1., 1. /* update rate */);
+  Simulator<double> simulator(spring_mass);
+
+  // We will direct the integrator to take a single step of t_final, which
+  // will be very near the mass-spring system's update event at 1.0s. 1e-8
+  // is so small that any reasonable degree of step "stretching" should jump
+  // to 1.0 proper.
+  const double expected_t_final = 1.0;
+  const double directed_t_final = expected_t_final - 1e-8;
+
+  // Initialize a fixed step integrator and the simulator.
+  simulator.reset_integrator<RungeKutta2Integrator<double>>(spring_mass,
+      directed_t_final, simulator.get_mutable_context());
+  simulator.Initialize();
+
+  // Set initial condition using the Simulator's internal Context.
+  simulator.get_mutable_context()->set_time(0);
+  spring_mass.set_position(simulator.get_mutable_context(), 0.1);
+  spring_mass.set_velocity(simulator.get_mutable_context(), 0);
+
+  // Now step.
+  simulator.StepTo(expected_t_final);
+
+  // Verify that the step size was stretched and that exactly two "steps" were
+  // taken (one to integrate the continuous variables forward and one strictly
+  // to publish).
+  EXPECT_EQ(simulator.get_context().get_time(), expected_t_final);
+  EXPECT_EQ(simulator.get_num_steps_taken(), 2);
+}
+
+// Verifies that an integrator will *not* stretch its integration step in the
+// case that a directed step would be before- but not too close- to an event.
+GTEST_TEST(SimulatorTest, NoStretchedStep) {
+  // Setting the update rate to 1.0 will cause the spring mass to update at
+  // 1.0s.
+  analysis_test::MySpringMassSystem<double> spring_mass(
+      1., 1., 1. /* update rate */);
+  Simulator<double> simulator(spring_mass);
+
+  // We will direct the integrator to take a single step of 0.9, which
+  // will be not so near the mass-spring system's update event at 1.0s. 0.1
+  // (the difference) is so large that any reasonable approach should avoid
+  // stretching to 1.0 proper.
+  const double event_t_final = 1.0;
+  const double directed_t_final = event_t_final - 0.1;
+
+  // Initialize a fixed step integrator and the simulator.
+  simulator.reset_integrator<RungeKutta2Integrator<double>>(spring_mass,
+      directed_t_final, simulator.get_mutable_context());
+  simulator.Initialize();
+
+  // Set initial condition using the Simulator's internal Context.
+  simulator.get_mutable_context()->set_time(0);
+  spring_mass.set_position(simulator.get_mutable_context(), 0.1);
+  spring_mass.set_velocity(simulator.get_mutable_context(), 0);
+
+  // Now step.
+  simulator.StepTo(event_t_final);
+
+  // Verify that the step size was not stretched and that exactly three "steps"
+  // were taken (two to integrate the continuous variables forward and one
+  // strictly to publish).
+  EXPECT_EQ(simulator.get_context().get_time(), event_t_final);
+  EXPECT_EQ(simulator.get_num_steps_taken(), 3);
+}
+
+// Verifies that artificially limiting a step does not change the ideal next
+// step for error controlled integrators.
+GTEST_TEST(SimulatorTest, ArtificalLimitingStep) {
+  // Setting the update rate to 1.0 will cause the spring mass to update at
+  // 1.0s.
+  analysis_test::MySpringMassSystem<double> spring_mass(
+    1., 1., 1. /* update rate */);
+  Simulator<double> simulator(spring_mass);
+
+  // Set initial condition using the Simulator's internal Context.
+  spring_mass.set_position(simulator.get_mutable_context(), 1.0);
+  spring_mass.set_velocity(simulator.get_mutable_context(), 0.1);
+
+  // Accuracy tolerances are extremely loose.
+  const double accuracy = 1e-1;
+
+  // Requested step size should start out two orders of magnitude larger than
+  // desired_dt (defined below), in order to prime the ideal next step size.
+  const double req_initial_step_size = 1e-2;
+
+  // Initialize the error controlled integrator and the simulator.
+  simulator.reset_integrator<RungeKutta3Integrator<double>>(spring_mass,
+    simulator.get_mutable_context());
+  IntegratorBase<double>* integrator = simulator.get_mutable_integrator();
+  integrator->request_initial_step_size_target(req_initial_step_size);
+  integrator->set_target_accuracy(accuracy);
+  simulator.Initialize();
+
+  // Mark the event time.
+  const double event_time = 1.0;
+
+  // Take a single step with the integrator.
+  const double inf = std::numeric_limits<double>::infinity();
+  integrator->IntegrateAtMost(inf, 1.0, 1.0);
+
+  // Verify that the integrator has stepped before the event time.
+  EXPECT_LT(simulator.get_mutable_context()->get_time(), event_time);
+
+  // Get the ideal next step size and verify that it is not NaN.
+  const double ideal_next_step_size = integrator->get_ideal_next_step_size();
+
+  // Set the time to right before an event, which should trigger artificial
+  // limiting.
+  const double desired_dt = req_initial_step_size * 1e-2;
+  simulator.get_mutable_context()->set_time(event_time - desired_dt);
+
+  // Step to the event time.
+  integrator->IntegrateAtMost(inf, desired_dt, inf);
+
+  // Verify that the context is at the event time.
+  EXPECT_EQ(simulator.get_context().get_time(), event_time);
+
+  // Verify that artificial limiting did not change the ideal next step size.
+  EXPECT_EQ(integrator->get_ideal_next_step_size(), ideal_next_step_size);
+}
+
+// Verifies that an error controlled integrator will stretch its integration
+// step when it is near an update action and (a) error control is used, (b)
+// minimum step size exceptions are suppressed, (c) the integration step size
+// necessary to realize error tolerances is below the minimum step size.
+GTEST_TEST(SimulatorTest, StretchedStepPerfectStorm) {
+  // Setting the update rate to 1.0 will cause the spring mass to update at
+  // 1.0s.
+  analysis_test::MySpringMassSystem<double> spring_mass(
+      1., 1., 1. /* update rate */);
+  Simulator<double> simulator(spring_mass);
+
+  // We will direct the integrator to take a single step of t_final, which
+  // will be very near the mass-spring system's update event at 1.0s. 1e-8
+  // is so small that any reasonable degree of step "stretching" should jump
+  // to 1.0 proper.
+  const double expected_t_final = 1.0;
+  const double directed_t_final = expected_t_final - 1e-8;
+
+  // Accuracy tolerances are tight so that the integrator is sure to decrease
+  // the step size.
+  const double accuracy = 1e-8;
+  const double req_min_step_size = directed_t_final;
+
+  // Initialize the error controlled integrator and the simulator.
+  simulator.reset_integrator<RungeKutta3Integrator<double>>(spring_mass,
+    simulator.get_mutable_context());
+  IntegratorBase<double>* integrator = simulator.get_mutable_integrator();
+  integrator->set_requested_minimum_step_size(req_min_step_size);
+  integrator->request_initial_step_size_target(directed_t_final);
+  integrator->set_target_accuracy(accuracy);
+  simulator.Initialize();
+
+  // Set initial condition using the Simulator's internal Context.
+  simulator.get_mutable_context()->set_time(0);
+  spring_mass.set_position(simulator.get_mutable_context(), 0.1);
+  spring_mass.set_velocity(simulator.get_mutable_context(), 0);
+
+  // Activate exceptions on violating the minimum step size to verify that
+  // error control is a limiting factor.
+  integrator->set_throw_on_minimum_step_size_violation(true);
+  EXPECT_THROW(simulator.StepTo(expected_t_final), std::runtime_error);
+
+  // Now disable exceptions on violating the minimum step size and step again.
+  simulator.get_mutable_context()->set_time(0);
+  spring_mass.set_position(simulator.get_mutable_context(), 0.1);
+  spring_mass.set_velocity(simulator.get_mutable_context(), 0);
+  integrator->set_throw_on_minimum_step_size_violation(false);
+  simulator.StepTo(expected_t_final);
+
+  // Verify that the step size was stretched and that exactly two "steps" were
+  // taken (one to integrate the continuous variables forward and one strictly
+  // to publish).
+  EXPECT_EQ(simulator.get_context().get_time(), expected_t_final);
+  EXPECT_EQ(simulator.get_num_steps_taken(), 2);
+}
+
 // Tests per step publish, discrete and unrestricted update actions. Each
 // action handler logs the context time when it's called, and the test compares
 // the time stamp against the integrator's dt.
 GTEST_TEST(SimulatorTest, PerStepAction) {
   class PerStepActionTestSystem : public LeafSystem<double> {
    public:
-    PerStepActionTestSystem() {}
+    PerStepActionTestSystem() {
+      // We need some continuous state (which will be unused) so that the
+      // continuous state integration will not be bypassed.
+      this->DeclareContinuousState(1);
+    }
 
-    void AddPerStepAction(
-        const typename DiscreteEvent<double>::ActionType& action) {
-      this->DeclarePerStepAction(action);
+    void AddPerStepPublishEvent() {
+      PublishEvent<double> event(Event<double>::TriggerType::kPerStep);
+      this->DeclarePerStepEvent(event);
+    }
+
+    void AddPerStepDiscreteUpdateEvent() {
+      DiscreteUpdateEvent<double> event(Event<double>::TriggerType::kPerStep);
+      this->DeclarePerStepEvent(event);
+    }
+
+    void AddPerStepUnrestrictedUpdateEvent() {
+      UnrestrictedUpdateEvent<double> event(
+          Event<double>::TriggerType::kPerStep);
+      this->DeclarePerStepEvent(event);
     }
 
     const std::vector<double>& get_publish_times() const {
@@ -1112,17 +1415,30 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
     }
 
    private:
-    void DoCalcDiscreteVariableUpdates(const Context<double>& context,
+    void DoCalcTimeDerivatives(
+        const Context<double>& context,
+        ContinuousState<double>* derivatives) const override {
+      // Derivative will always be zero, making the system stationary.
+      derivatives->get_mutable_vector()->SetAtIndex(0, 0.0);
+    }
+
+    void DoCalcDiscreteVariableUpdates(
+        const Context<double>& context,
+        const std::vector<const DiscreteUpdateEvent<double>*>& events,
         DiscreteValues<double>* discrete_state) const override {
       discrete_update_times_.push_back(context.get_time());
     }
 
-    void DoCalcUnrestrictedUpdate(const Context<double>& context,
+    void DoCalcUnrestrictedUpdate(
+        const Context<double>& context,
+        const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
         State<double>* state) const override {
       unrestricted_update_times_.push_back(context.get_time());
     }
 
-    void DoPublish(const Context<double>& context) const override {
+    void DoPublish(
+        const Context<double>& context,
+        const std::vector<const PublishEvent<double>*>& events) const override {
       publish_times_.push_back(context.get_time());
     }
 
@@ -1148,10 +1464,14 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
   };
 
   PerStepActionTestSystem sys;
-  sys.AddPerStepAction(DiscreteEvent<double>::kPublishAction);
-  sys.AddPerStepAction(DiscreteEvent<double>::kDiscreteUpdateAction);
-  sys.AddPerStepAction(DiscreteEvent<double>::kUnrestrictedUpdateAction);
+  sys.AddPerStepPublishEvent();
+  sys.AddPerStepUnrestrictedUpdateEvent();
+  sys.AddPerStepDiscreteUpdateEvent();
   Simulator<double> sim(sys);
+
+  // Forces simulator to use fixed-step integration.
+  sim.get_mutable_integrator()->set_fixed_step_mode(true);
+  sim.get_mutable_integrator()->set_maximum_step_size(0.001);
 
   // Disables all simulator induced publish events, so that all publish calls
   // are intiated by sys.

@@ -1,9 +1,13 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "drake_cc_binary", "drake_cc_googletest", "drake_cc_library")
-load("//tools:python_lint.bzl", "python_lint")
+load(
+    "//tools:drake.bzl",
+    "drake_cc_binary",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load("//tools:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -96,7 +100,7 @@ drake_cc_googletest(
     srcs = ["test/monolane_lanes_test.cc"],
     deps = [
         ":lanes",
-        ":monolane_test_utils",
+        "//drake/automotive/maliput/api:maliput_types_compare",
         "//drake/common:eigen_matrix_compare",
     ],
 )
@@ -107,16 +111,7 @@ drake_cc_googletest(
     srcs = ["test/monolane_road_geometry_test.cc"],
     deps = [
         ":builder",
-        ":monolane_test_utils",
-    ],
-)
-
-drake_cc_library(
-    name = "monolane_test_utils",
-    testonly = 1,
-    hdrs = ["test/monolane_test_utils.h"],
-    deps = [
-        "//drake/automotive/maliput/api",
+        "//drake/automotive/maliput/api:maliput_types_compare",
     ],
 )
 
@@ -141,6 +136,4 @@ py_test(
     ],
 )
 
-cpplint()
-
-python_lint()
+add_lint_tests()

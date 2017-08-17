@@ -1,20 +1,20 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load(
     "//tools:drake.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_binary",
 )
+load("//tools:lint.bzl", "add_lint_tests")
 
 drake_cc_library(
     name = "simulated_schunk_wsg_system",
     srcs = ["simulated_schunk_wsg_system.cc"],
     hdrs = ["simulated_schunk_wsg_system.h"],
     deps = [
-        "//drake/common:drake_path",
+        "//drake/common:find_resource",
         "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant",
     ],
@@ -33,16 +33,13 @@ drake_cc_binary(
         "//drake/lcm",
         "//drake/lcmtypes:schunk",
         "//drake/manipulation/schunk_wsg:schunk_wsg_constants",
+        "//drake/manipulation/schunk_wsg:schunk_wsg_controller",
         "//drake/manipulation/schunk_wsg:schunk_wsg_lcm",
         "//drake/multibody/rigid_body_plant",
         "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/analysis:simulator",
-        "//drake/systems/controllers:pid_controlled_system",
         "//drake/systems/framework",
         "//drake/systems/lcm",
-        "//drake/systems/primitives:constant_vector_source",
-        "//drake/systems/primitives:matrix_gain",
-        "//drake/systems/primitives:multiplexer",
         "@com_github_gflags_gflags//:gflags",
     ],
 )
@@ -61,7 +58,7 @@ drake_cc_googletest(
     disable_in_compilation_mode_dbg = True,
     deps = [
         "//drake/common",
-        "//drake/common:drake_path",
+        "//drake/common:find_resource",
         "//drake/common/trajectories:piecewise_polynomial_trajectory",
         "//drake/common/trajectories:trajectory",
         "//drake/lcm",
@@ -94,4 +91,4 @@ drake_cc_googletest(
     ],
 )
 
-cpplint()
+add_lint_tests()

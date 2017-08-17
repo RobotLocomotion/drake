@@ -1,5 +1,7 @@
 #include "drake/multibody/global_inverse_kinematics.h"
 
+#include <limits>
+#include <stack>
 #include <string>
 
 #include "drake/common/eigen_types.h"
@@ -19,7 +21,13 @@ namespace drake {
 namespace multibody {
 GlobalInverseKinematics::GlobalInverseKinematics(
     const RigidBodyTreed& robot, int num_binary_vars_per_half_axis)
-    : robot_(&robot) {
+    : robot_(&robot),
+      joint_lower_bounds_{
+          Eigen::VectorXd::Constant(robot_->get_num_positions(),
+                                    -std::numeric_limits<double>::infinity())},
+      joint_upper_bounds_{
+          Eigen::VectorXd::Constant(robot_->get_num_positions(),
+                                    std::numeric_limits<double>::infinity())} {
   const int num_bodies = robot_->get_num_bodies();
   R_WB_.resize(num_bodies);
   p_WBo_.resize(num_bodies);
@@ -34,35 +42,32 @@ GlobalInverseKinematics::GlobalInverseKinematics(
     // the body position and orientation.
     if (body.IsRigidlyFixedToWorld()) {
       R_WB_[body_idx] = NewContinuousVariables<3, 3>(body_R_name);
-      Isometry3d X_WB = body.ComputeWorldFixedPose();
+      const Isometry3d X_WB = body.ComputeWorldFixedPose();
       // TODO(hongkai.dai): clean up this for loop using elementwise matrix
       // constraint when it is ready.
       for (int i = 0; i < 3; ++i) {
-        AddBoundingBoxConstraint(X_WB.linear().col(i),
-                                 X_WB.linear().col(i),
+        AddBoundingBoxConstraint(X_WB.linear().col(i), X_WB.linear().col(i),
                                  R_WB_[body_idx].col(i));
       }
-      AddBoundingBoxConstraint(X_WB.translation(),
-                               X_WB.translation(),
+      AddBoundingBoxConstraint(X_WB.translation(), X_WB.translation(),
                                p_WBo_[body_idx]);
     } else {
-      R_WB_[body_idx] =
-          solvers::NewRotationMatrixVars(this, body_R_name);
+      R_WB_[body_idx] = solvers::NewRotationMatrixVars(this, body_R_name);
 
-      solvers::AddRotationMatrixOrthonormalSocpConstraint(
-          this, R_WB_[body_idx]);
+      solvers::AddRotationMatrixOrthonormalSocpConstraint(this,
+                                                          R_WB_[body_idx]);
 
       // If the body has a parent, then add the constraint to connect the
       // parent body with this body through a joint.
       if (body.has_parent_body()) {
-        const RigidBody<double> *parent_body = body.get_parent();
+        const RigidBody<double>* parent_body = body.get_parent();
         const int parent_idx = parent_body->get_body_index();
         const DrakeJoint* joint = &(body.getJoint());
         // Frame `F` is the inboard frame of the joint, rigidly attached to the
         // parent link.
-        const auto &X_PF = joint->get_transform_to_parent_body();
+        const auto& X_PF = joint->get_transform_to_parent_body();
         switch (joint->get_num_velocities()) {
-          case 0 : {
+          case 0: {
             // Fixed to the parent body.
 
             // The position can be computed from the parent body pose.
@@ -71,24 +76,21 @@ GlobalInverseKinematics::GlobalInverseKinematics(
             //       Bp is the parent body frame.
             //       W is the world frame.
             AddLinearEqualityConstraint(
-                p_WBo_[parent_idx] +
-                    R_WB_[parent_idx] *
-                        X_PF.translation() -
+                p_WBo_[parent_idx] + R_WB_[parent_idx] * X_PF.translation() -
                     p_WBo_[body_idx],
                 Vector3d::Zero());
 
             // The orientation can be computed from the parent body orientation.
             // R_WBp * R_BpBc = R_WBc
             Matrix3<Expression> orient_invariance =
-                R_WB_[parent_idx] * X_PF.linear() -
-                    R_WB_[body_idx];
+                R_WB_[parent_idx] * X_PF.linear() - R_WB_[body_idx];
             for (int i = 0; i < 3; ++i) {
               AddLinearEqualityConstraint(orient_invariance.col(i),
                                           Vector3d::Zero());
             }
             break;
           }
-          case 1 : {
+          case 1: {
             // Should NOT do this evil dynamic cast here, but currently we do
             // not have a method to tell if a joint is revolute or not.
             if (dynamic_cast<const RevoluteJoint*>(joint) != nullptr) {
@@ -97,111 +99,46 @@ GlobalInverseKinematics::GlobalInverseKinematics(
               solvers::AddRotationMatrixMcCormickEnvelopeMilpConstraints(
                   this, R_WB_[body_idx], num_binary_vars_per_half_axis);
 
-              const RevoluteJoint
-                  *revolute_joint = dynamic_cast<const RevoluteJoint*>(joint);
+              const RevoluteJoint* revolute_joint =
+                  dynamic_cast<const RevoluteJoint*>(joint);
               // axis_F is the vector of the rotation axis in the joint
               // inboard/outboard frame.
-              const Vector3d axis_F =
-                  revolute_joint->joint_axis().head<3>();
+              const Vector3d axis_F = revolute_joint->joint_axis().head<3>();
 
               // Add the constraint R_WB * axis_B = R_WP * R_PF * axis_F, where
               // axis_B = axis_F since the rotation axis is invaraiant in the
               // inboard frame F and the outboard frame B.
               AddLinearEqualityConstraint(
                   R_WB_[body_idx] * axis_F -
-                      R_WB_[parent_idx] *
-                          X_PF.linear() * axis_F,
+                      R_WB_[parent_idx] * X_PF.linear() * axis_F,
                   Vector3d::Zero());
 
               // The position of the rotation axis is the same on both child and
               // parent bodies.
               AddLinearEqualityConstraint(
-                  p_WBo_[parent_idx] +
-                      R_WB_[parent_idx] *
-                          X_PF.translation() -
+                  p_WBo_[parent_idx] + R_WB_[parent_idx] * X_PF.translation() -
                       p_WBo_[body_idx],
                   Vector3d::Zero());
 
               // Now we process the joint limits constraint.
-              double joint_lb = joint->getJointLimitMin()(0);
-              double joint_ub = joint->getJointLimitMax()(0);
-              double joint_bound = (joint_ub - joint_lb) / 2;
-
-              if (joint_bound < M_PI) {
-                // We use the fact that if the angle between two unit length
-                // vectors u and v is smaller than α, it is equivalent to
-                // |u - v| <= 2*sin(α/2)
-                // which is a second order cone constraint.
-
-                // If the rotation angle θ satisfies
-                // a <= θ <= b
-                // This is equivalent to
-                // -(b-a)/2 <= θ - (a+b)/2 <= (b-a)/2
-                // where (a+b)/2 is the joint offset, such that the bounds on
-                // θ - (a+b)/2 are symmetric.
-                // We use the following notation:
-                // R_WP     The rotation matrix of parent frame `P` to world
-                //          frame `W`.
-                // R_WC     The rotation matrix of child frame `C` to world
-                //          frame `W`.
-                // R_PF     The rotation matrix of joint frame `F` to parent
-                //          frame `P`.
-                // R(k, θ)  The rotation matrix along joint axis k by angle θ.
-                // The kinematics constraint is
-                // R_WP * R_PJ * R(k, θ) = R_WC.
-                // This is equivalent to
-                // R_WP * R_PF * R(k, (a+b)/2) * R(k, θ-(a+b)/2)) = R_WC.
-                // So to constrain that -(b-a)/2 <= θ - (a+b)/2 <= (b-a)/2,
-                // we can constrain the angle between the two vectors
-                // R_WC * v and R_WP * R_PF * R(k,(a+b)/2) * v is no larger than
-                // (b-a)/2, where v is a unit length vector perpendicular to
-                // the rotation axis k, in the joint frame.
-                // Thus we can constrain that
-                // |R_WC*v - R_WP * R_PF * R(k,(a+b)/2)*v | <= 2*sin ((b-a) / 4)
-                // as we explained above.
-
-                // First generate a vector v_C that is perpendicular to rotation
-                // axis, in child frame.
-                Vector3d v_C = axis_F.cross(Vector3d(1, 0, 0));
-                double v_C_norm = v_C.norm();
-                if (v_C_norm < sqrt(2) / 2) {
-                  // axis_F is almost parallel to [1; 0; 0]. Try another axis
-                  // [0, 1, 0]
-                  v_C = axis_F.cross(Vector3d(0, 1, 0));
-                  v_C_norm = v_C.norm();
-                }
-                // Normalizes the revolute vector.
-                v_C /= v_C_norm;
-
-                // joint_limit_expr is going to be within the Lorentz cone.
-                Eigen::Matrix<Expression, 4, 1> joint_limit_expr;
-                joint_limit_expr(0) = 2 * sin(joint_bound / 2);
-                // rotmat_joint_offset is R(k, (a+b)/2) explained above.
-                Matrix3d rotmat_joint_offset =
-                    Eigen::AngleAxisd((joint_lb + joint_ub) / 2, axis_F)
-                        .toRotationMatrix();
-
-                // joint_limit_expr.tail<3> is
-                // R_WC * v - R_WP * R_PF * R(k,(a+b)/2) * v mentioned above.
-                joint_limit_expr.tail<3>() = R_WB_[body_idx] * v_C -
-                                             R_WB_[parent_idx] * X_PF.linear() *
-                                                 rotmat_joint_offset * v_C;
-                AddLorentzConeConstraint(joint_limit_expr);
-              }
+              const double joint_lb = joint->getJointLimitMin()(0);
+              const double joint_ub = joint->getJointLimitMax()(0);
+              AddJointLimitConstraint(body_idx, joint_lb, joint_ub);
             } else {
               // TODO(hongkai.dai): Add prismatic and helical joint.
               throw std::runtime_error("Unsupported joint type.");
             }
             break;
           }
-          case 6 : {
+          case 6: {
             // This is the floating base case, just add the rotation matrix
             // constraint.
             solvers::AddRotationMatrixMcCormickEnvelopeMilpConstraints(
                 this, R_WB_[body_idx], num_binary_vars_per_half_axis);
             break;
           }
-          default : throw std::runtime_error("Unsupported joint type.");
+          default:
+            throw std::runtime_error("Unsupported joint type.");
         }
       }
     }
@@ -224,68 +161,118 @@ GlobalInverseKinematics::body_position(int body_index) const {
   return p_WBo_[body_index];
 }
 
+void GlobalInverseKinematics::ReconstructGeneralizedPositionSolutionForBody(
+    int body_idx, Eigen::Ref<Eigen::VectorXd> q,
+    std::vector<Eigen::Matrix3d>* reconstruct_R_WB) const {
+  const RigidBody<double>& body = robot_->get_body(body_idx);
+  const RigidBody<double>* parent = body.get_parent();
+  if (!body.IsRigidlyFixedToWorld()) {
+    const Matrix3d R_WC = GetSolution(R_WB_[body_idx]);
+    // R_WP is the rotation matrix of parent frame to the world frame.
+    const Matrix3d& R_WP = reconstruct_R_WB->at(parent->get_body_index());
+    const DrakeJoint* joint = &(body.getJoint());
+    const auto& X_PF = joint->get_transform_to_parent_body();
+
+    int num_positions = joint->get_num_positions();
+    // For each different type of joints, use a separate branch to compute
+    // the posture for that joint.
+    if (joint->is_floating()) {
+      // p_WBi is the position of the body frame in the world frame.
+      Vector3d p_WBi = GetSolution(p_WBo_[body_idx]);
+      Matrix3d normalized_rotmat = math::ProjectMatToRotMat(R_WC);
+
+      q.segment<3>(body.get_position_start_index()) = p_WBi;
+      if (num_positions == 6) {
+        // The position order is x-y-z-roll-pitch-yaw.
+        q.segment<3>(body.get_position_start_index() + 3) =
+            math::rotmat2rpy(normalized_rotmat);
+      } else {
+        // The position order is x-y-z-qw-qx-qy-qz, namely translation
+        // first, and quaternion second.
+        q.segment<4>(body.get_position_start_index() + 3) =
+            math::rotmat2quat(normalized_rotmat);
+      }
+      reconstruct_R_WB->at(body_idx) = normalized_rotmat;
+    } else if (num_positions == 1) {
+      const int joint_idx = body.get_position_start_index();
+      const double joint_lb = joint_lower_bounds_(joint_idx);
+      const double joint_ub = joint_upper_bounds_(joint_idx);
+      // Should NOT do this evil dynamic cast here, but currently we do
+      // not have a method to tell if a joint is revolute or not.
+      if (dynamic_cast<const RevoluteJoint*>(joint) != nullptr) {
+        const RevoluteJoint* revolute_joint =
+            dynamic_cast<const RevoluteJoint*>(joint);
+        const Matrix3d joint_rotmat =
+            X_PF.linear().transpose() * R_WP.transpose() * R_WC;
+        // The joint_rotmat is very likely not on SO(3). The reason is
+        // that we use a relaxation of the rotation matrix, and thus
+        // R_WC might not lie on SO(3) exactly. Here we need to project
+        // joint_rotmat to SO(3), with joint axis as the rotation axis, and
+        // joint limits as the lower and upper bound on the rotation angle.
+        const Vector3d rotate_axis = revolute_joint->joint_axis().head<3>();
+        const double revolute_joint_angle = math::ProjectMatToRotMatWithAxis(
+            joint_rotmat, rotate_axis, joint_lb, joint_ub);
+        q(body.get_position_start_index()) = revolute_joint_angle;
+        reconstruct_R_WB->at(body_idx) =
+            R_WP * X_PF.linear() *
+            Eigen::AngleAxisd(revolute_joint_angle, rotate_axis)
+                .toRotationMatrix();
+      } else {
+        // TODO(hongkai.dai): add prismatic and helical joints.
+        throw std::runtime_error("Unsupported joint type.");
+      }
+    } else if (num_positions == 0) {
+      // Deliberately left empty because the joint is removed by welding the
+      // parent body to the child body.
+    }
+  } else {
+    // The reconstructed body orientation is just the world fixed
+    // orientation.
+    const Isometry3d X_WB = body.ComputeWorldFixedPose();
+    reconstruct_R_WB->at(body_idx) = X_WB.linear();
+  }
+}
+
 Eigen::VectorXd
 GlobalInverseKinematics::ReconstructGeneralizedPositionSolution() const {
   Eigen::VectorXd q(robot_->get_num_positions());
-  for (int body_idx = 1; body_idx < robot_->get_num_bodies(); ++body_idx) {
-    const RigidBody<double>& body = robot_->get_body(body_idx);
-    const Matrix3d R_WC = GetSolution(R_WB_[body_idx]);
-    if (!body.IsRigidlyFixedToWorld() && body.has_parent_body()) {
-      const RigidBody<double>* parent = body.get_parent();
-      // R_WP is the rotation matrix of parent frame to the world frame.
-      const Matrix3d R_WP = GetSolution(R_WB_[parent->get_body_index()]);
-      const DrakeJoint* joint = &(body.getJoint());
-      const auto& X_PF = joint->get_transform_to_parent_body();
-
-      int num_positions = joint->get_num_positions();
-      // For each different type of joints, use a separate branch to compute
-      // the posture for that joint.
-      if (joint->is_floating()) {
-        // p_WBi is the position of the body frame in the world frame.
-        Vector3d p_WBi = GetSolution(p_WBo_[body_idx]);
-        Matrix3d normalized_rotmat = math::ProjectMatToRotMat(R_WC);
-
-        q.segment<3>(body.get_position_start_index()) = p_WBi;
-        if (num_positions == 6) {
-          // The position order is x-y-z-roll-pitch-yaw.
-          q.segment<3>(body.get_position_start_index() + 3) =
-              math::rotmat2rpy(normalized_rotmat);
-        } else {
-          // The position order is x-y-z-qw-qx-qy-qz, namely translation first,
-          // and quaternion second.
-          q.segment<4>(body.get_position_start_index() + 3) =
-              math::rotmat2quat(normalized_rotmat);
-        }
-      } else if (num_positions == 1) {
-        const double joint_lb = joint->getJointLimitMin()(0);
-        const double joint_ub = joint->getJointLimitMax()(0);
-        // Should NOT do this evil dynamic cast here, but currently we do
-        // not have a method to tell if a joint is revolute or not.
-        if (dynamic_cast<const RevoluteJoint *>(joint) != nullptr) {
-          const RevoluteJoint* revolute_joint =
-              dynamic_cast<const RevoluteJoint*>(joint);
-          Matrix3d joint_rotmat =
-              X_PF.linear().transpose() *
-              R_WP.transpose() * R_WC;
-          // The joint_rotmat is very likely not on SO(3). The reason is
-          // that we use a relaxation of the rotation matrix, and thus
-          // R_WC might not lie on SO(3) exactly. Here we need to project
-          // joint_rotmat to SO(3), with joint axis as the rotation axis, and
-          // joint limits as the lower and upper bound on the rotation angle.
-          const Vector3d rotate_axis = revolute_joint->joint_axis().head<3>();
-          q(body.get_position_start_index()) = math::ProjectMatToRotMatWithAxis(
-              joint_rotmat, rotate_axis, joint_lb, joint_ub);
-        } else {
-          // TODO(hongkai.dai): add prismatic and helical joints.
-          throw std::runtime_error("Unsupported joint type.");
-        }
-      } else if (num_positions == 0) {
-        // Deliberately left empty because the joint is removed by welding the
-        // parent body to the child body.
+  // reconstruct_R_WB[i] is the orientation of body i'th body frame expressed in
+  // the world frame, computed from the reconstructed posture.
+  std::vector<Eigen::Matrix3d> reconstruct_R_WB(robot_->get_num_bodies());
+  // is_link_visited[i] is set to true, if the angle of the joint on link i has
+  // been reconstructed.
+  std::vector<bool> is_link_visited(robot_->get_num_bodies(), false);
+  // The first one is the world frame, thus the orientation is identity.
+  reconstruct_R_WB[0].setIdentity();
+  is_link_visited[0] = true;
+  int num_link_visited = 1;
+  int body_idx = 1;
+  while (num_link_visited < robot_->get_num_bodies()) {
+    if (!is_link_visited[body_idx]) {
+      // unvisited_links records all the unvisited links, along the kinematic
+      // path from the root to the body with index body_idx (including
+      // body_idx).
+      std::stack<int> unvisited_links;
+      unvisited_links.push(body_idx);
+      int parent_idx =
+          robot_->get_body(body_idx).get_parent()->get_body_index();
+      while (!is_link_visited[parent_idx]) {
+        unvisited_links.push(parent_idx);
+        parent_idx =
+            robot_->get_body(parent_idx).get_parent()->get_body_index();
+      }
+      // Now the link parent_idx has been visited.
+      while (!unvisited_links.empty()) {
+        int unvisited_link_idx = unvisited_links.top();
+        unvisited_links.pop();
+        ReconstructGeneralizedPositionSolutionForBody(unvisited_link_idx, q,
+                                                      &reconstruct_R_WB);
+        is_link_visited[unvisited_link_idx] = true;
+        ++num_link_visited;
       }
     }
+    ++body_idx;
   }
-
   return q;
 }
 
@@ -293,11 +280,9 @@ solvers::Binding<solvers::LinearConstraint>
 GlobalInverseKinematics::AddWorldPositionConstraint(
     int body_idx, const Eigen::Vector3d& p_BQ, const Eigen::Vector3d& box_lb_F,
     const Eigen::Vector3d& box_ub_F, const Isometry3d& X_WF) {
-  Vector3<Expression> body_pt_pos =
-      p_WBo_[body_idx] + R_WB_[body_idx] * p_BQ;
+  Vector3<Expression> body_pt_pos = p_WBo_[body_idx] + R_WB_[body_idx] * p_BQ;
   Vector3<Expression> body_pt_in_measured_frame =
-      X_WF.linear().transpose() *
-      (body_pt_pos - X_WF.translation());
+      X_WF.linear().transpose() * (body_pt_pos - X_WF.translation());
   return AddLinearConstraint(body_pt_in_measured_frame, box_lb_F, box_ub_F);
 }
 
@@ -310,7 +295,7 @@ GlobalInverseKinematics::AddWorldOrientationConstraint(
   // desired orientation and the current orientation. Thus the constraint is
   // 2 * cos(angle_tol) + 1 <= trace(R_e) <= 3
   Matrix3<Expression> rotation_matrix_err =
-  desired_orientation.toRotationMatrix() * R_WB_[body_idx].transpose();
+      desired_orientation.toRotationMatrix() * R_WB_[body_idx].transpose();
   double lb = angle_tol < M_PI ? 2 * cos(angle_tol) + 1 : -1;
   return AddLinearConstraint(rotation_matrix_err.trace(), lb, 3);
 }
@@ -417,6 +402,210 @@ GlobalInverseKinematics::BodyPointInOneOfRegions(
                               Eigen::Vector3d::Zero());
 
   return z;
+}
+
+void GlobalInverseKinematics::AddJointLimitConstraint(
+    int body_index, double joint_lower_bound, double joint_upper_bound) {
+  if (joint_lower_bound > joint_upper_bound) {
+    throw std::runtime_error(
+        "The joint lower bound should be no larger than the upper bound.");
+  }
+  const RigidBody<double>& body = robot_->get_body(body_index);
+  if (body.has_parent_body()) {
+    const RigidBody<double>* parent_body = body.get_parent();
+    const int parent_idx = parent_body->get_body_index();
+    const DrakeJoint* joint = &(body.getJoint());
+    const auto& X_PF = joint->get_transform_to_parent_body();
+    switch (joint->get_num_velocities()) {
+      case 0: {
+        // Fixed to the parent body.
+        throw std::runtime_error(
+            "Cannot impose joint limits for a fixed joint.");
+      }
+      case 1: {
+        // If the new bound [joint_lower_bound joint_upper_bound] is not tighter
+        // than the existing bound, then we ignore it, without adding new
+        // constraints.
+        bool is_limits_tightened = false;
+        int joint_idx = body.get_position_start_index();
+        if (joint_lower_bound > joint_lower_bounds_(joint_idx)) {
+          joint_lower_bounds_(joint_idx) = joint_lower_bound;
+          is_limits_tightened = true;
+        }
+        if (joint_upper_bound < joint_upper_bounds_(joint_idx)) {
+          joint_upper_bounds_(joint_idx) = joint_upper_bound;
+          is_limits_tightened = true;
+        }
+        if (is_limits_tightened) {
+          // Should NOT do this evil dynamic cast here, but currently we do
+          // not have a method to tell if a joint is revolute or not.
+          if (dynamic_cast<const RevoluteJoint*>(joint) != nullptr) {
+            const RevoluteJoint* revolute_joint =
+                dynamic_cast<const RevoluteJoint*>(joint);
+            // axis_F is the vector of the rotation axis in the joint
+            // inboard/outboard frame.
+            const Vector3d axis_F = revolute_joint->joint_axis().head<3>();
+
+            // Now we process the joint limits constraint.
+            double joint_bound = (joint_upper_bounds_[joint_idx] -
+                                  joint_lower_bounds_[joint_idx]) /
+                                 2;
+
+            if (joint_bound < M_PI) {
+              // We use the fact that if the angle between two unit length
+              // vectors u and v is smaller than α, it is equivalent to
+              // |u - v| <= 2*sin(α/2)
+              // which is a second order cone constraint.
+
+              // If the rotation angle θ satisfies
+              // a <= θ <= b
+              // This is equivalent to
+              // -α <= θ - (a+b)/2 <= α
+              // where α = (b-a) / 2, (a+b) / 2 is the joint offset, such that
+              // the bounds on β = θ - (a+b)/2 are symmetric.
+              // We use the following notation:
+              // R_WP     The rotation matrix of parent frame `P` to world
+              //          frame `W`.
+              // R_WC     The rotation matrix of child frame `C` to world
+              //          frame `W`.
+              // R_PF     The rotation matrix of joint frame `F` to parent
+              //          frame `P`.
+              // R(k, β)  The rotation matrix along joint axis k by angle β.
+              // The kinematics constraint is
+              // R_WP * R_PF * R(k, θ) = R_WC.
+              // This is equivalent to
+              // R_WP * R_PF * R(k, (a+b)/2) * R(k, β)) = R_WC.
+              // So to constrain that -α <= β <= α,
+              // we can constrain the angle between the two vectors
+              // R_WC * v and R_WP * R_PF * R(k,(a+b)/2) * v is no larger than
+              // α, where v is a unit length vector perpendicular to
+              // the rotation axis k, in the joint frame.
+              // Thus we can constrain that
+              // |R_WC*v - R_WP * R_PF * R(k,(a+b)/2)*v | <= 2*sin (α / 2)
+              // as we explained above.
+
+              // First generate a vector v_C that is perpendicular to rotation
+              // axis, in child frame.
+              Vector3d v_C = axis_F.cross(Vector3d(1, 0, 0));
+              double v_C_norm = v_C.norm();
+              if (v_C_norm < sqrt(2) / 2) {
+                // axis_F is almost parallel to [1; 0; 0]. Try another axis
+                // [0, 1, 0]
+                v_C = axis_F.cross(Vector3d(0, 1, 0));
+                v_C_norm = v_C.norm();
+              }
+              // Normalizes the revolute vector.
+              v_C /= v_C_norm;
+
+              // The constraint would be tighter, if we choose many unit
+              // length vector `v`, perpendicular to the joint axis, in the
+              // joint frame. Here to balance between the size of the
+              // optimization problem, and the tightness of the convex
+              // relaxation, we just use four vectors in `v`. Notice that
+              // v_basis contains the orthonormal basis of the null space
+              // null(axis_F).
+              std::array<Eigen::Vector3d, 2> v_basis = {
+                  {v_C, axis_F.cross(v_C)}};
+              v_basis[1] /= v_basis[1].norm();
+
+              std::array<Eigen::Vector3d, 4> v_samples;
+              v_samples[0] = v_basis[0];
+              v_samples[1] = v_basis[1];
+              v_samples[2] = v_basis[0] + v_basis[1];
+              v_samples[2] /= v_samples[2].norm();
+              v_samples[3] = v_basis[0] - v_basis[1];
+              v_samples[3] /= v_samples[3].norm();
+
+              // rotmat_joint_offset is R(k, (a+b)/2) explained above.
+              const Matrix3d rotmat_joint_offset =
+                  Eigen::AngleAxisd((joint_lower_bounds_[joint_idx] +
+                                     joint_upper_bounds_[joint_idx]) /
+                                        2,
+                                    axis_F)
+                      .toRotationMatrix();
+
+              // joint_limit_expr is going to be within the Lorentz cone.
+              Eigen::Matrix<Expression, 4, 1> joint_limit_expr;
+              joint_limit_expr(0) = 2 * sin(joint_bound / 2);
+              for (const auto& v : v_samples) {
+                // joint_limit_expr.tail<3> is
+                // R_WC * v - R_WP * R_PF * R(k,(a+b)/2) * v mentioned above.
+                joint_limit_expr.tail<3>() =
+                    R_WB_[body_index] * v -
+                    R_WB_[parent_idx] * X_PF.linear() * rotmat_joint_offset * v;
+                AddLorentzConeConstraint(joint_limit_expr);
+              }
+              if (robot_->get_body(parent_idx).IsRigidlyFixedToWorld()) {
+                // If the parent body is rigidly fixed to the world. Then we
+                // can impose a tighter constraint. Based on the derivation
+                // above, we have
+                // R(k, β) = [R_WP * R_PF * R(k, (a+b)/2)]ᵀ * R_WC
+                // as a linear expression of the decision variable R_WC
+                // (notice that R_WP is constant, since the parent body is
+                // rigidly fixed to the world.
+                // Any unit length vector `v` that is perpendicular to
+                // joint axis `axis_F` in the joint Frame, can be written as
+                //   v = V * u, uᵀ * u = 1
+                // where V = [v_basis[0] v_basis[1]] containing the basis
+                // vectors for the linear space Null(axis_F).
+                // On the other hand, we know
+                //   vᵀ * R(k, β) * v = cos(β) >= cos(α)
+                // due to the joint limits constraint
+                //   -α <= β <= α.
+                // So we have the condition that
+                // uᵀ * u = 1
+                //    => uᵀ * Vᵀ * R(k, β) * V * u >= cos(α)
+                // Using S-lemma, we know this implication is equivalent to
+                // Vᵀ * [R(k, β) + R(k, β)ᵀ]/2 * V - cos(α) * I is p.s.d
+                // We let a 2 x 2 matrix
+                //   M = Vᵀ * [R(k, β) + R(k, β)ᵀ]/2 * V - cos(α) * I
+                // A 2 x 2 matrix M being positive semidefinite (p.s.d) is
+                // equivalent to the condition that
+                // [M(0, 0), M(1, 1), M(1, 0)] is in the rotated Lorentz cone.
+                const Isometry3d X_WP =
+                    robot_->get_body(parent_idx).ComputeWorldFixedPose();
+                // R_joint_beta is R(k, β) in the documentation.
+                Eigen::Matrix<symbolic::Expression, 3, 3> R_joint_beta =
+                    (X_WP.linear() * X_PF.linear() * rotmat_joint_offset)
+                        .transpose() *
+                    R_WB_[body_index];
+                Eigen::Matrix<double, 3, 2> V;
+                V << v_basis[0], v_basis[1];
+                const double joint_bound_cos{std::cos(joint_bound)};
+                const Eigen::Matrix<symbolic::Expression, 2, 2> M =
+                    V.transpose() * (R_joint_beta + R_joint_beta.transpose()) /
+                        2 * V -
+                    joint_bound_cos * Eigen::Matrix2d::Identity();
+                AddRotatedLorentzConeConstraint(
+                    Vector3<symbolic::Expression>(M(0, 0), M(1, 1), M(1, 0)));
+
+                // From Rodriguez formula, we know that -α <= β <= α implies
+                // trace(R(k, β)) = 1 + 2 * cos(β) >= 1 + 2*cos(α)
+                // So we can impose the constraint
+                // 1+2*cos(α) ≤ trace(R(k, β))
+                const symbolic::Expression R_joint_beta_trace{
+                    R_joint_beta.trace()};
+                AddLinearConstraint(R_joint_beta_trace >=
+                                        1 + 2 * joint_bound_cos);
+              }
+            }
+          } else {
+            // TODO(hongkai.dai): add prismatic and helical joint.
+            throw std::runtime_error("Unsupported joint type.");
+          }
+        }
+        break;
+      }
+      case 6: {
+        break;
+      }
+      default:
+        throw std::runtime_error("Unsupported joint type.");
+    }
+  } else {
+    throw std::runtime_error("The body " + body.get_name() +
+                             " does not have a joint.");
+  }
 }
 }  // namespace multibody
 }  // namespace drake

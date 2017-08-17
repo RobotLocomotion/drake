@@ -14,8 +14,7 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
-#include "drake/common/monomial.h"
-#include "drake/common/symbolic_expression.h"
+#include "drake/common/symbolic.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/equality_constrained_qp_solver.h"
 #include "drake/solvers/gurobi_solver.h"
@@ -26,6 +25,9 @@
 #include "drake/solvers/nlopt_solver.h"
 #include "drake/solvers/snopt_solver.h"
 #include "drake/solvers/symbolic_extraction.h"
+
+// Note that the file mathematical_program_api.cc also contains some of the
+// implementation of mathematical_program.h
 
 namespace drake {
 namespace solvers {
@@ -51,12 +53,10 @@ using std::vector;
 using symbolic::Expression;
 using symbolic::Formula;
 using symbolic::Variable;
+using symbolic::Variables;
 
 using internal::CreateBinding;
 using internal::DecomposeLinearExpression;
-using internal::DecomposeQuadraticExpressionWithMonomialToCoeffMap;
-using internal::ExtractAndAppendVariablesFromExpression;
-using internal::ExtractVariablesFromExpression;
 using internal::SymbolicError;
 
 namespace {
@@ -104,8 +104,8 @@ enum {
 MathematicalProgram::MathematicalProgram()
     : x_initial_guess_(
           static_cast<Eigen::Index>(INITIAL_VARIABLE_ALLOCATION_NUM)),
-      solver_result_(0),
       optimal_cost_(numeric_limits<double>::quiet_NaN()),
+      lower_bound_cost_(-numeric_limits<double>::infinity()),
       required_capabilities_(kNoCapabilities),
       ipopt_solver_(new IpoptSolver()),
       nlopt_solver_(new NloptSolver()),
@@ -124,66 +124,6 @@ MatrixXDecisionVariable MathematicalProgram::NewVariables(
   return decision_variable_matrix;
 }
 
-VectorXDecisionVariable MathematicalProgram::NewVariables(
-    VarType type, int rows, const vector<string>& names) {
-  return NewVariables(type, rows, 1, false, names);
-}
-
-VectorXDecisionVariable MathematicalProgram::NewContinuousVariables(
-    int rows, const vector<string>& names) {
-  return NewVariables(VarType::CONTINUOUS, rows, names);
-}
-
-MatrixXDecisionVariable MathematicalProgram::NewContinuousVariables(
-    int rows, int cols, const vector<string>& names) {
-  return NewVariables(VarType::CONTINUOUS, rows, cols, false, names);
-}
-
-VectorXDecisionVariable MathematicalProgram::NewContinuousVariables(
-    int rows, const string& name) {
-  vector<string> names(rows);
-  for (int i = 0; i < static_cast<int>(rows); ++i) {
-    names[i] = name + "(" + to_string(i) + ")";
-  }
-  return NewContinuousVariables(rows, names);
-}
-
-MatrixXDecisionVariable MathematicalProgram::NewContinuousVariables(
-    int rows, int cols, const string& name) {
-  vector<string> names(rows * cols);
-  int count = 0;
-  for (int j = 0; j < static_cast<int>(cols); ++j) {
-    for (int i = 0; i < static_cast<int>(rows); ++i) {
-      names[count] = name + "(" + to_string(i) + "," + to_string(j) + ")";
-      ++count;
-    }
-  }
-  return NewContinuousVariables(rows, cols, names);
-}
-
-MatrixXDecisionVariable MathematicalProgram::NewBinaryVariables(
-    int rows, int cols, const vector<string>& names) {
-  return NewVariables(VarType::BINARY, rows, cols, false, names);
-}
-
-MatrixXDecisionVariable MathematicalProgram::NewBinaryVariables(
-    int rows, int cols, const string& name) {
-  vector<string> names(rows * cols);
-  int count = 0;
-  for (int j = 0; j < static_cast<int>(cols); ++j) {
-    for (int i = 0; i < static_cast<int>(rows); ++i) {
-      names[count] = name + "(" + to_string(i) + "," + to_string(j) + ")";
-      ++count;
-    }
-  }
-  return NewBinaryVariables(rows, cols, names);
-}
-
-MatrixXDecisionVariable MathematicalProgram::NewSymmetricContinuousVariables(
-    int rows, const vector<string>& names) {
-  return NewVariables(VarType::CONTINUOUS, rows, rows, true, names);
-}
-
 MatrixXDecisionVariable MathematicalProgram::NewSymmetricContinuousVariables(
     int rows, const string& name) {
   vector<string> names(rows * (rows + 1) / 2);
@@ -197,13 +137,71 @@ MatrixXDecisionVariable MathematicalProgram::NewSymmetricContinuousVariables(
   return NewVariables(VarType::CONTINUOUS, rows, rows, true, names);
 }
 
-VectorXDecisionVariable MathematicalProgram::NewBinaryVariables(
+symbolic::Polynomial MathematicalProgram::NewFreePolynomial(
+    const Variables& indeterminates, const int degree,
+    const string& coeff_name) {
+  const drake::VectorX<symbolic::Monomial> m{
+      MonomialBasis(indeterminates, degree)};
+  const VectorXDecisionVariable coeffs{
+      NewContinuousVariables(m.size(), coeff_name)};
+  symbolic::Polynomial p;
+  for (int i = 0; i < m.size(); ++i) {
+    p.AddProduct(coeffs(i), m(i));  // p += coeffs(i) * m(i);
+  }
+  return p;
+}
+
+pair<symbolic::Polynomial, Binding<PositiveSemidefiniteConstraint>>
+MathematicalProgram::NewSosPolynomial(const Variables& indeterminates,
+                                      const int degree) {
+  DRAKE_DEMAND(degree > 0 && degree % 2 == 0);
+  const drake::VectorX<symbolic::Monomial> x{
+      MonomialBasis(indeterminates, degree / 2)};
+  const MatrixXDecisionVariable Q{NewSymmetricContinuousVariables(x.size())};
+  const auto psd_binding = AddPositiveSemidefiniteConstraint(Q);
+  // Constructs a coefficient matrix of Polynomials Q_poly from Q. In the
+  // process, we make sure that each Q_poly(i, j) is treated as a decision
+  // variable, not an indeterminate.
+  const drake::MatrixX<symbolic::Polynomial> Q_poly{
+      Q.unaryExpr([](const Variable& q_i_j) {
+        return symbolic::Polynomial{q_i_j /* coeff */, {} /* Monomial */};
+      })};
+  const symbolic::Polynomial p{x.dot(Q_poly * x)};  // p = xᵀ * Q_poly * x.
+  return make_pair(p, psd_binding);
+}
+
+MatrixXIndeterminate MathematicalProgram::NewIndeterminates(
+    int rows, int cols, const vector<string>& names) {
+  MatrixXIndeterminate indeterminates_matrix(rows, cols);
+  NewIndeterminates_impl(names, indeterminates_matrix);
+  return indeterminates_matrix;
+}
+
+VectorXIndeterminate MathematicalProgram::NewIndeterminates(
+    int rows, const std::vector<std::string>& names) {
+  return NewIndeterminates(rows, 1, names);
+}
+
+VectorXIndeterminate MathematicalProgram::NewIndeterminates(
     int rows, const string& name) {
   vector<string> names(rows);
   for (int i = 0; i < static_cast<int>(rows); ++i) {
     names[i] = name + "(" + to_string(i) + ")";
   }
-  return NewVariables(VarType::BINARY, rows, names);
+  return NewIndeterminates(rows, names);
+}
+
+MatrixXIndeterminate MathematicalProgram::NewIndeterminates(
+    int rows, int cols, const string& name) {
+  vector<string> names(rows * cols);
+  int count = 0;
+  for (int j = 0; j < static_cast<int>(cols); ++j) {
+    for (int i = 0; i < static_cast<int>(rows); ++i) {
+      names[count] = name + "(" + to_string(i) + "," + to_string(j) + ")";
+      ++count;
+    }
+  }
+  return NewIndeterminates(rows, cols, names);
 }
 
 namespace {
@@ -589,39 +587,34 @@ MathematicalProgram::AddLinearMatrixInequalityConstraint(
   return AddConstraint(constraint, vars);
 }
 
-int MathematicalProgram::FindDecisionVariableIndex(const Variable& var) const {
-  auto it = decision_variable_index_.find(var.get_id());
-  if (it == decision_variable_index_.end()) {
-    ostringstream oss;
-    oss << var << " is not a decision variable in the mathematical program, "
-                  "when calling GetSolution.\n";
-    throw runtime_error(oss.str());
-  }
-  return it->second;
+// Note that FindDecisionVariableIndex is implemented in
+// mathematical_program_api.cc instead of this file.
+
+// Note that FindIndeterminateIndex is implemented in
+// mathematical_program_api.cc instead of this file.
+
+pair<Binding<PositiveSemidefiniteConstraint>, Binding<LinearEqualityConstraint>>
+MathematicalProgram::AddSosConstraint(const symbolic::Polynomial& p) {
+  const symbolic::Variables indeterminates{p.indeterminates()};
+  const auto pair = NewSosPolynomial(indeterminates, p.TotalDegree());
+  const symbolic::Polynomial& sos_poly{pair.first};
+  const Binding<PositiveSemidefiniteConstraint>& psd_binding{pair.second};
+  const auto leq_binding = AddLinearEqualityConstraint(sos_poly == p);
+  return make_pair(psd_binding, leq_binding);
+}
+
+pair<Binding<PositiveSemidefiniteConstraint>, Binding<LinearEqualityConstraint>>
+MathematicalProgram::AddSosConstraint(const symbolic::Expression& e) {
+  return AddSosConstraint(
+      symbolic::Polynomial{e, symbolic::Variables{indeterminates_}});
 }
 
 double MathematicalProgram::GetSolution(const Variable& var) const {
   return x_values_[FindDecisionVariableIndex(var)];
 }
 
-void MathematicalProgram::SetDecisionVariableValues(
-    const Eigen::Ref<const Eigen::VectorXd>& values) {
-  SetDecisionVariableValues(decision_variables_, values);
-}
-
-void MathematicalProgram::SetDecisionVariableValues(
-    const Eigen::Ref<const VectorXDecisionVariable>& variables,
-    const Eigen::Ref<const Eigen::VectorXd>& values) {
-  DRAKE_ASSERT(values.rows() == variables.rows());
-  for (int i = 0; i < values.rows(); ++i) {
-    x_values_[FindDecisionVariableIndex(variables(i))] = values(i);
-  }
-}
-
-void MathematicalProgram::SetDecisionVariableValue(const Variable& var,
-                                                   double value) {
-  x_values_[FindDecisionVariableIndex(var)] = value;
-}
+// Note that SetDecisionVariableValue and SetDecisionVariableValues are
+// implemented in mathematical_program_api.cc instead of this file.
 
 SolutionResult MathematicalProgram::Solve() {
   // This implementation is simply copypasta for now; in the future we will

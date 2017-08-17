@@ -4,7 +4,9 @@
 # This file is named BUILD.bazel instead of the more typical BUILD, so that on
 # OSX it won't conflict with a build artifacts directory named "build".
 
-load("//tools:install.bzl", "install")
+load("//tools:check_licenses.bzl", "check_licenses")
+load("@drake//tools:install.bzl", "install", "install_files")
+load("//tools:lint.bzl", "add_lint_tests")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -31,41 +33,48 @@ alias(
     actual = "@protobuf//:protobuf_python",
 )
 
-install(
-    name = "install_net_sf_jchart2d_jchart2d",
-    doc_dest = "share/doc/jchart2d",
-    doc_strip_prefix = ["**/"],
-    license_docs = ["//tools:third_party/jchart2d/LICENSE"],
-    java_strip_prefix = ["**/"],
-    targets = ["@net_sf_jchart2d_jchart2d//jar"],
-    visibility = ["//visibility:private"],
-)
+DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
+    "bullet",
+    "ccd",
+    "eigen",
+    "fcl",
+    "fmt",
+    "ignition_math",
+    "ignition_rndf",
+    "ipopt",
+    "lcm",
+    "lcmtypes_bot2_core",
+    "lcmtypes_robotlocomotion",
+    "libbot",
+    "nlopt",
+    "octomap",
+    "pybind11",
+    "sdformat",
+    "spdlog",
+    "tinyobjloader",
+    "vtk",
+    "yaml_cpp",
+]] + ["//tools/install/%s:install" % p for p in [
+    "gflags",
+    "jchart2d",
+    "optitrack_driver",
+    "protobuf",
+]]
 
 install(
     name = "install",
-    doc_dest = "share/doc/drake",
-    license_docs = ["LICENSE.TXT"],
+    docs = ["LICENSE.TXT"],
     deps = [
-        ":install_net_sf_jchart2d_jchart2d",
         "//drake:install",
+        "//drake/bindings:install",
+        "//drake/common:install",
+        "//drake/examples:install_data",
+        "//drake/lcmtypes:install",
+        "//drake/manipulation/models:install_data",
         "//tools:install",
-        "@bot_core_lcmtypes//:install",
-        "@bullet//:install",
-        "@ccd//:install",
-        "@eigen//:install",
-        "@fcl//:install",
-        "@fmt//:install",
-        "@ignition_math//:install",
-        "@ignition_rndf//:install",
-        "@ipopt//:install",
-        "@lcm//:install",
-        "@nlopt//:install",
-        "@octomap//:install",
-        "@pybind11//:install",
-        "@robotlocomotion_lcmtypes//:install",
-        "@sdformat//:install",
-        "@spdlog//:install",
-        "@tinyobjloader//:install",
-        "@yaml_cpp//:install",
-    ],
+    ] + DRAKE_EXTERNAL_PACKAGE_INSTALLS,
 )
+
+check_licenses(DRAKE_EXTERNAL_PACKAGE_INSTALLS + [":install"])
+
+add_lint_tests()

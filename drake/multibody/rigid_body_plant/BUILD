@@ -1,24 +1,24 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load("//tools:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
 drake_cc_library(
-    name = "rigid_body_plant",
+    name = "compliant_contact_model",
     srcs = [
+        "compliant_contact_model.cc",
         "contact_detail.cc",
         "contact_force.cc",
         "contact_info.cc",
         "contact_resultant_force_calculator.cc",
         "contact_results.cc",
-        "kinematics_results.cc",
         "point_contact_detail.cc",
-        "rigid_body_plant.cc",
     ],
     hdrs = [
+        "compliant_contact_model.h",
         "contact_detail.h",
         "contact_force.h",
         "contact_info.h",
@@ -26,9 +26,26 @@ drake_cc_library(
         "contact_results.h",
         "kinematics_results.h",
         "point_contact_detail.h",
+    ],
+    deps = [
+        "//drake/common",
+        "//drake/common:copyable_unique_ptr",
+        "//drake/multibody:rigid_body_tree",
+    ],
+)
+
+drake_cc_library(
+    name = "rigid_body_plant",
+    srcs = [
+        "kinematics_results.cc",
+        "rigid_body_plant.cc",
+    ],
+    hdrs = [
+        "kinematics_results.h",
         "rigid_body_plant.h",
     ],
     deps = [
+        ":compliant_contact_model",
         "//drake/common",
         "//drake/common:copyable_unique_ptr",
         "//drake/multibody:rigid_body_tree",
@@ -99,11 +116,14 @@ drake_cc_library(
     ],
 )
 
-drake_cc_googletest(
-    name = "compute_contact_result_test",
+drake_cc_library(
+    name = "frame_visualizer",
+    srcs = ["frame_visualizer.cc"],
+    hdrs = ["frame_visualizer.h"],
     deps = [
-        ":rigid_body_plant",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/lcmtypes:viewer",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/systems/lcm",
     ],
 )
 
@@ -140,8 +160,35 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "contact_resultant_force_test",
     deps = [
+        ":contact_result_test_common",
         ":rigid_body_plant",
         "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_result_test_common",
+    testonly = 1,
+    hdrs = ["test/contact_result_test_common.h"],
+)
+
+drake_cc_googletest(
+    name = "compute_contact_result_test",
+    deps = [
+        ":contact_result_test_common",
+        ":rigid_body_plant",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/multibody:rigid_body_tree",
+    ],
+)
+
+drake_cc_googletest(
+    name = "compliant_contact_model_test",
+    deps = [
+        ":compliant_contact_model",
+        ":contact_result_test_common",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/multibody:rigid_body_tree",
     ],
 )
 
@@ -150,9 +197,22 @@ drake_cc_googletest(
     data = ["//drake/multibody/collision:test_models"],
     deps = [
         ":drake_visualizer",
-        "//drake/common:drake_path",
+        "//drake/common:find_resource",
         "//drake/lcm:mock",
         "//drake/systems/analysis",
+    ],
+)
+
+drake_cc_googletest(
+    name = "frame_visualizer_test",
+    data = [
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":frame_visualizer",
+        "//drake/common:find_resource",
+        "//drake/lcm:mock",
+        "//drake/multibody/parsers",
     ],
 )
 
@@ -162,6 +222,7 @@ drake_cc_googletest(
     deps = [
         ":rigid_body_plant",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
         "//drake/multibody/parsers",
     ],
 )
@@ -176,8 +237,8 @@ drake_cc_googletest(
     ],
     deps = [
         ":rigid_body_plant",
-        "//drake/common:drake_path",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
         "//drake/multibody/parsers",
     ],
 )
@@ -189,7 +250,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":rigid_body_plant_that_publishes_xdot",
-        "//drake/common:drake_path",
+        "//drake/common:find_resource",
         "//drake/lcm:lcmt_drake_signal_utils",
         "//drake/lcm:mock",
         "//drake/multibody/parsers",
@@ -214,4 +275,4 @@ filegroup(
     ]),
 )
 
-cpplint()
+add_lint_tests()

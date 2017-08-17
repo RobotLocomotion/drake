@@ -70,6 +70,8 @@ void MultibodyTree<T>::FinalizeInternals() {
   }
 
   // Creates BodyNode's:
+  // This recursion order ensures that a BodyNode's parent is created before the
+  // node itself, since BodyNode objects are in Breadth First Traversal order.
   for (BodyNodeIndex body_node_index(0);
        body_node_index < topology_.get_num_body_nodes(); ++body_node_index) {
     CreateBodyNode(body_node_index);
@@ -92,16 +94,20 @@ void MultibodyTree<T>::CreateBodyNode(BodyNodeIndex body_node_index) {
 
   std::unique_ptr<BodyNode<T>> body_node;
   if (body_index == world_index()) {
-    body_node = std::make_unique<BodyNodeWelded<T>>(get_world_body());
+    body_node = std::make_unique<BodyNodeWelded<T>>(&get_world_body());
   } else {
     // The mobilizer should be valid if not at the root (the world).
     DRAKE_ASSERT(node_topology.mobilizer.is_valid());
     const Mobilizer<T>* mobilizer =
         owned_mobilizers_[node_topology.mobilizer].get();
 
+    BodyNode<T>* parent_node =
+        body_nodes_[node_topology.parent_body_node].get();
+
     // Only the mobilizer knows how to create a body node with compile-time
     // fixed sizes.
-    body_node = mobilizer->CreateBodyNode(*body, mobilizer);
+    body_node = mobilizer->CreateBodyNode(parent_node, body, mobilizer);
+    parent_node->add_child_node(body_node.get());
   }
   body_node->set_parent_tree(this, body_node_index);
   body_node->SetTopology(topology_);
@@ -157,6 +163,135 @@ void MultibodyTree<T>::CalcPositionKinematicsCache(
 
       // Update per-node kinematics.
       node.CalcPositionKinematicsCache_BaseToTip(mbt_context, pc);
+    }
+  }
+}
+
+template <typename T>
+void MultibodyTree<T>::CalcVelocityKinematicsCache(
+    const systems::Context<T>& context,
+    const PositionKinematicsCache<T>& pc,
+    VelocityKinematicsCache<T>* vc) const {
+  DRAKE_DEMAND(vc != nullptr);
+  const auto& mbt_context =
+      dynamic_cast<const MultibodyTreeContext<T>&>(context);
+
+  // TODO(amcastro-tri): Loop over bodies to compute velocity kinematics updates
+  // corresponding to flexible bodies.
+
+  // Performs a base-to-tip recursion computing body velocities.
+  // This skips the world, depth = 0.
+  for (int depth = 1; depth < get_tree_height(); ++depth) {
+    for (BodyNodeIndex body_node_index : body_node_levels_[depth]) {
+      const BodyNode<T>& node = *body_nodes_[body_node_index];
+
+      DRAKE_ASSERT(node.get_topology().level == depth);
+      DRAKE_ASSERT(node.get_index() == body_node_index);
+
+      // Update per-node kinematics.
+      node.CalcVelocityKinematicsCache_BaseToTip(mbt_context, pc, vc);
+    }
+  }
+}
+
+template <typename T>
+void MultibodyTree<T>::CalcSpatialAccelerationsFromVdot(
+    const systems::Context<T>& context,
+    const PositionKinematicsCache<T>& pc,
+    const VelocityKinematicsCache<T>& vc,
+    const VectorX<T>& known_vdot,
+    std::vector<SpatialAcceleration<T>>* A_WB_array) const {
+  DRAKE_DEMAND(A_WB_array != nullptr);
+  DRAKE_DEMAND(static_cast<int>(A_WB_array->size()) == get_num_bodies());
+
+  DRAKE_DEMAND(known_vdot.size() == topology_.get_num_velocities());
+
+  const auto& mbt_context =
+      dynamic_cast<const MultibodyTreeContext<T>&>(context);
+
+  // TODO(amcastro-tri): Loop over bodies to compute acceleration kinematics
+  // updates corresponding to flexible bodies.
+
+  // The world's spatial acceleration is always zero.
+  A_WB_array->at(world_index()) = SpatialAcceleration<T>::Zero();
+
+  // Performs a base-to-tip recursion computing body accelerations.
+  // This skips the world, depth = 0.
+  for (int depth = 1; depth < get_tree_height(); ++depth) {
+    for (BodyNodeIndex body_node_index : body_node_levels_[depth]) {
+      const BodyNode<T>& node = *body_nodes_[body_node_index];
+
+      DRAKE_ASSERT(node.get_topology().level == depth);
+      DRAKE_ASSERT(node.get_index() == body_node_index);
+
+      // Update per-node kinematics.
+      node.CalcSpatialAcceleration_BaseToTip(
+          mbt_context, pc, vc, known_vdot, A_WB_array);
+    }
+  }
+}
+
+template <typename T>
+void MultibodyTree<T>::CalcAccelerationKinematicsCache(
+    const systems::Context<T>& context,
+    const PositionKinematicsCache<T>& pc,
+    const VelocityKinematicsCache<T>& vc,
+    const VectorX<T>& known_vdot,
+    AccelerationKinematicsCache<T>* ac) const {
+  DRAKE_DEMAND(ac != nullptr);
+  DRAKE_DEMAND(known_vdot.size() == topology_.get_num_velocities());
+
+  // TODO(amcastro-tri): Loop over bodies to compute velocity kinematics updates
+  // corresponding to flexible bodies.
+
+  std::vector<SpatialAcceleration<T>>& A_WB_array = ac->get_mutable_A_WB_pool();
+
+  CalcSpatialAccelerationsFromVdot(context, pc, vc, known_vdot, &A_WB_array);
+}
+
+template <typename T>
+void MultibodyTree<T>::CalcInverseDynamics(
+    const systems::Context<T>& context,
+    const PositionKinematicsCache<T>& pc,
+    const VelocityKinematicsCache<T>& vc,
+    const VectorX<T>& known_vdot,
+    std::vector<SpatialAcceleration<T>>* A_WB_array,
+    std::vector<SpatialForce<T>>* F_BMo_W_array,
+    VectorX<T>* tau_array) const {
+  DRAKE_DEMAND(known_vdot.size() == get_num_velocities());
+
+  DRAKE_DEMAND(A_WB_array != nullptr);
+  DRAKE_DEMAND(static_cast<int>(A_WB_array->size()) == get_num_bodies());
+
+  DRAKE_DEMAND(F_BMo_W_array != nullptr);
+  DRAKE_DEMAND(static_cast<int>(F_BMo_W_array->size()) == get_num_bodies());
+
+  DRAKE_DEMAND(tau_array != nullptr);
+  DRAKE_DEMAND(tau_array->size() == get_num_velocities());
+
+  const auto& mbt_context =
+      dynamic_cast<const MultibodyTreeContext<T>&>(context);
+
+  // Compute body spatial accelerations given the generalized accelerations are
+  // known.
+  CalcSpatialAccelerationsFromVdot(context, pc, vc, known_vdot, A_WB_array);
+
+  // Performs a tip-to-base recursion computing the total spatial force F_BMo_W
+  // acting on body B, about point Mo, expressed in the world frame W.
+  // This includes the world (depth = 0) so that F_BMo_W_array[world_index()]
+  // contains the total force of the bodies connected to the world by a
+  // mobilizer.
+  for (int depth = get_tree_height() - 1; depth >= 0; --depth) {
+    for (BodyNodeIndex body_node_index : body_node_levels_[depth]) {
+      const BodyNode<T>& node = *body_nodes_[body_node_index];
+
+      DRAKE_ASSERT(node.get_topology().level == depth);
+      DRAKE_ASSERT(node.get_index() == body_node_index);
+
+      // Compute F_BMo_W for the body associated with this node and project it
+      // onto the space of generalized forces for the associated mobilizer.
+      node.CalcInverseDynamics_TipToBase(
+          mbt_context, pc, vc, *A_WB_array, F_BMo_W_array, tau_array);
     }
   }
 }

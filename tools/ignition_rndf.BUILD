@@ -69,21 +69,21 @@ cmake_config(
     deps = ["@ignition_math//:cps"],
 )
 
-install_cmake_config(package = CMAKE_PACKAGE)  # Creates rule :install_cmake_config.
+# Creates rule :install_cmake_config.
+install_cmake_config(package = CMAKE_PACKAGE)
 
 install(
     name = "install",
+    workspace = CMAKE_PACKAGE,
+    targets = [":ignition_rndf"],
     hdrs = public_headers + [
         ":config",
         ":rndfhh_genrule",
     ],
-    doc_dest = "share/doc/" + CMAKE_PACKAGE,
-    hdr_dest = "include",
     hdr_strip_prefix = ["include"],
-    license_docs = [
-        "LICENSE",
+    docs = [
         "COPYING",
+        "LICENSE",
     ],
-    targets = [":ignition_rndf"],
     deps = [":install_cmake_config"],
 )

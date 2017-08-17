@@ -4,10 +4,33 @@
 #include <string>
 #include <utility>
 
-#include "drake/systems/framework/discrete_event.h"
+#include "drake/common/symbolic.h"
+#include "drake/systems/framework/event_collection.h"
 
 namespace drake {
 namespace systems {
+
+template <class T>
+class System;
+
+enum class WitnessFunctionDirection {
+  /// This witness function will never be triggered.
+  kNone,
+
+  /// Witness function triggers when the function crosses or touches zero
+  /// after an initial positive evaluation.
+  kPositiveThenNonPositive,
+
+  /// Witness function triggers when the function crosses or touches zero
+  /// after an initial negative evaluation.
+  kNegativeThenNonNegative,
+
+  /// Witness function triggers *any time* the function crosses/touches zero,
+  /// *except* when the witness function evaluates to zero at the beginning
+  /// of the interval. Conceptually equivalent to kPositiveThenNonNegative OR
+  /// kNegativeThenNonNegative.
+  kCrossesZero,
+};
 
 /// Abstract class that describes a function that is able to help determine
 /// the time and state at which a simulation should be halted, which may be
@@ -47,7 +70,8 @@ namespace systems {
 /// when crossing from positive values to negative values, or vice versa.
 ///
 /// A good witness function should not cross zero repeatedly over a small
-/// interval of time or over small changes in state; when a witness function has
+/// interval of time (relative to the maximum designated integration step size)
+/// or over small changes in state; when a witness function has
 /// been "bracketed" over an interval of time (i.e., it changes sign), that
 /// witness function will ideally cross zero only once in that interval.
 ///
@@ -64,33 +88,14 @@ namespace systems {
 template <class T>
 class WitnessFunction {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WitnessFunction)
+
   virtual ~WitnessFunction() {}
 
-  enum class DirectionType {
-    /// This witness function will never be triggered.
-    kNone,
-
-    /// Witness function triggers when the function crosses or touches zero
-    /// after an initial positive evaluation.
-    kPositiveThenNonPositive,
-
-    /// Witness function triggers when the function crosses or touches zero
-    /// after an initial negative evaluation.
-    kNegativeThenNonNegative,
-
-    /// Witness function triggers *any time* the function crosses/touches zero,
-    /// *except* when the witness function evaluates to zero at the beginning
-    /// of the interval. Conceptually equivalent to kPositiveThenNonNegative OR
-    /// kNegativeThenNonNegative.
-    kCrossesZero,
-  };
-
-  /// Constructs the witness function with the given direction type and action
-  /// type.
+  /// Constructs the witness function with the given direction type.
   WitnessFunction(const System<T>& system,
-                  const DirectionType& dtype,
-                  const typename DiscreteEvent<T>::ActionType& atype) :
-                  system_(system), dir_type_(dtype), action_type_(atype) {}
+                  const WitnessFunctionDirection& dtype) :
+                  system_(system), dir_type_(dtype) {}
 
   /// Gets the name of this witness function (used primarily for logging and
   /// debugging).
@@ -99,48 +104,56 @@ class WitnessFunction {
   /// Sets the name of this witness function.
   void set_name(const std::string& name) { name_ = name; }
 
-  /// Derived classes will override this function to get the type of event
-  /// that will be taken if this witness function triggers. Example actions are
-  /// publish, perform a discrete variable update, or perform an unrestricted
-  /// update.
-  typename DiscreteEvent<T>::ActionType get_action_type() const {
-      return action_type_; }
+  /// Adds the appropriate event that will be dispatched when this witness
+  /// function triggers.
+  void AddEvent(CompositeEventCollection<T>* events) const {
+    DRAKE_DEMAND(events);
+    DoAddEvent(events);
+  }
 
   /// Gets the direction(s) under which this witness function triggers.
-  DirectionType get_dir_type() const { return dir_type_; }
+  WitnessFunctionDirection get_dir_type() const { return dir_type_; }
 
   /// Evaluates the witness function at the given context.
-  T Evaluate(const Context<T>& context) const {
-    DRAKE_ASSERT_VOID(system_.CheckValidContext(context));
-    return DoEvaluate(context);
-  }
+  T Evaluate(const Context<T>& context) const;
+
+  /// Gets a reference to the System used by this witness function.
+  const System<T>& get_system() const { return system_; }
 
   /// Checks whether the witness function should trigger using given
   /// values at w0 and wf. Note that this function is not specific to a
   /// particular witness function.
-  bool should_trigger(const T& w0, const T& wf) const {
-    DirectionType dtype = get_dir_type();
+  decltype(T() < T()) should_trigger(const T& w0, const T& wf) const {
+    WitnessFunctionDirection dtype = get_dir_type();
 
+    const T zero(0);
     switch (dtype) {
-      case DirectionType::kNone:
-        return false;
+      case WitnessFunctionDirection::kNone:
+        return (T(0) > T(0));
 
-      case DirectionType::kPositiveThenNonPositive:
-        return (w0 > 0 && wf <= 0);
+      case WitnessFunctionDirection::kPositiveThenNonPositive:
+        return (w0 > zero && wf <= zero);
 
-      case DirectionType::kNegativeThenNonNegative:
-        return (w0 < 0 && wf >= 0);
+      case WitnessFunctionDirection::kNegativeThenNonNegative:
+        return (w0 < zero && wf >= zero);
 
-      case DirectionType::kCrossesZero:
-        return ((w0 > 0 && wf <= 0) ||
-                (w0 < 0 && wf >= 0));
+      case WitnessFunctionDirection::kCrossesZero:
+        return ((w0 > zero && wf <= zero) ||
+                (w0 < zero && wf >= zero));
 
       default:
         DRAKE_ABORT();
     }
   }
 
+
  protected:
+  /// Derived classes will override this function to add the appropriate event
+  /// that will be dispatched when this witness function triggers. Example
+  /// events are publish, perform a discrete variable update, and performing an
+  /// unrestricted update. @p events is guaranteed to be non-null on entry.
+  virtual void DoAddEvent(CompositeEventCollection<T>* events) const = 0;
+
   /// Derived classes will implement this function to evaluate the witness
   /// function at the given context.
   /// @param context an already-validated Context
@@ -154,10 +167,7 @@ class WitnessFunction {
   const System<T>& system_;
 
   // Direction(s) under which this witness function triggers.
-  DirectionType dir_type_;
-
-  // Action (event type) to be taken when this witness function triggers.
-  typename DiscreteEvent<T>::ActionType action_type_;
+  WitnessFunctionDirection dir_type_;
 };
 
 }  // namespace systems

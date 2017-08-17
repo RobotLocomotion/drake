@@ -1,13 +1,13 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load(
     "//tools:drake.bzl",
     "drake_cc_library",
     "drake_cc_binary",
     "drake_cc_googletest",
 )
+load("//tools:lint.bzl", "add_lint_tests")
 
 drake_cc_binary(
     name = "controlled_kuka_demo",
@@ -19,6 +19,7 @@ drake_cc_binary(
     ],
     tags = ["snopt"],
     deps = [
+        "//drake/common:find_resource",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
         "//drake/examples/kuka_iiwa_arm:sim_diagram_builder",
         "//drake/lcm",
@@ -29,4 +30,4 @@ drake_cc_binary(
     ],
 )
 
-cpplint()
+add_lint_tests()

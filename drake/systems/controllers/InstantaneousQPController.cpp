@@ -12,17 +12,17 @@
 #include <lcm/lcm-cpp.hpp>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/is_approx_equal_abstol.h"
+#include "drake/lcmt_zmp_com_observer_state.hpp"
 #include "drake/math/quaternion.h"
+#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/solvers/fast_qp.h"
 #include "drake/systems/controllers/controlUtil.h"
-#include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/lcmUtil.h"
 #include "drake/util/yaml/yamlUtil.h"
-#include "drake/lcmt_zmp_com_observer_state.hpp"
 
 const double REG = 1e-8;
 
@@ -133,7 +133,8 @@ void applyURDFModifications(std::unique_ptr<RigidBodyTree<double>>& robot,
           "Could not find attachment frame when handling urdf modifications");
     }
     drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        drake::GetDrakePath() + "/" + it->urdf_filename, it->joint_type,
+        drake::FindResourceOrThrow("drake/" + it->urdf_filename),
+        it->joint_type,
         attach_to_frame, robot.get());
   }
 

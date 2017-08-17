@@ -12,7 +12,6 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_wsg_diagram_factory.h"
@@ -24,6 +23,7 @@
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_constants.h"
+#include "drake/manipulation/schunk_wsg/schunk_wsg_controller.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
@@ -47,7 +47,7 @@ namespace kuka_iiwa_arm {
 namespace {
 
 using manipulation::schunk_wsg::SchunkWsgStatusSender;
-using manipulation::schunk_wsg::SchunkWsgTrajectoryGenerator;
+using manipulation::schunk_wsg::SchunkWsgController;
 using systems::Context;
 using systems::Diagram;
 using systems::DiagramBuilder;
@@ -58,7 +58,7 @@ using systems::RigidBodyPlant;
 using systems::Simulator;
 
 const char* const kIiwaUrdf =
-    "/manipulation/models/iiwa_description/urdf/"
+    "drake/manipulation/models/iiwa_description/urdf/"
     "iiwa14_polytope_collision.urdf";
 
 // TODO(naveen): refactor this to reduce duplicate code.
@@ -72,14 +72,14 @@ std::unique_ptr<RigidBodyPlant<T>> BuildCombinedPlant(
   // subsequently added to the world.
   tree_builder->StoreModel("iiwa", kIiwaUrdf);
   tree_builder->StoreModel("table",
-                           "/examples/kuka_iiwa_arm/models/table/"
+                           "drake/examples/kuka_iiwa_arm/models/table/"
                            "extra_heavy_duty_table_surface_only_collision.sdf");
-  tree_builder->StoreModel(
-      "box",
-      "/examples/kuka_iiwa_arm/models/objects/block_for_pick_and_place.urdf");
+  tree_builder->StoreModel("box",
+                           "drake/examples/kuka_iiwa_arm/models/objects/"
+                           "block_for_pick_and_place.urdf");
   tree_builder->StoreModel(
       "wsg",
-      "/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
+      "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
 
   // Build a world with two fixed tables.  A box is placed one on
   // table, and the iiwa arm is fixed to the other.
@@ -190,10 +190,7 @@ int DoMain() {
       systems::lcm::LcmSubscriberSystem::Make<lcmt_schunk_wsg_command>(
           "SCHUNK_WSG_COMMAND", &lcm));
   wsg_command_sub->set_name("wsg_command_subscriber");
-  auto wsg_trajectory_generator =
-      builder.AddSystem<SchunkWsgTrajectoryGenerator>(
-          model->get_output_port_wsg_state().size(), 0);
-  wsg_trajectory_generator->set_name("wsg_trajectory_generator");
+  auto wsg_controller = builder.AddSystem<SchunkWsgController>();
 
   auto wsg_status_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_schunk_wsg_status>(
@@ -207,13 +204,13 @@ int DoMain() {
   wsg_status_sender->set_name("wsg_status_sender");
 
   builder.Connect(wsg_command_sub->get_output_port(0),
-                  wsg_trajectory_generator->get_command_input_port());
-  builder.Connect(wsg_trajectory_generator->get_output_port(0),
+                  wsg_controller->get_command_input_port());
+  builder.Connect(wsg_controller->get_output_port(0),
                   model->get_input_port_wsg_command());
   builder.Connect(model->get_output_port_wsg_state(),
                   wsg_status_sender->get_input_port(0));
   builder.Connect(model->get_output_port_wsg_state(),
-                  wsg_trajectory_generator->get_state_input_port());
+                  wsg_controller->get_state_input_port());
   builder.Connect(*wsg_status_sender, *wsg_status_pub);
 
   auto iiwa_state_pub = builder.AddSystem(

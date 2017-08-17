@@ -1,13 +1,13 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load(
     "//tools:drake.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
 )
 load("//tools:gurobi.bzl", "gurobi_test_tags")
+load("//tools:lint.bzl", "add_lint_tests")
 
 drake_cc_library(
     name = "global_inverse_kinematics_test_util",
@@ -20,11 +20,12 @@ drake_cc_library(
     ],
     deps = [
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
         "//drake/multibody:global_inverse_kinematics",
         "//drake/multibody:inverse_kinematics",
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/parsers",
-        "@gtest//:main",
+        "@gtest//:without_main",
     ],
 )
 
@@ -70,4 +71,17 @@ drake_cc_googletest(
     ],
 )
 
-cpplint()
+drake_cc_googletest(
+    name = "global_inverse_kinematics_feasible_posture_test",
+    size = "large",
+    srcs = ["test/global_inverse_kinematics_feasible_posture_test.cc"],
+    data = [
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
+    tags = gurobi_test_tags() + ["no_tsan"],
+    deps = [
+        ":global_inverse_kinematics_test_util",
+    ],
+)
+
+add_lint_tests()

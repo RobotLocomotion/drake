@@ -12,6 +12,8 @@ copy of the License at http://www.apache.org/licenses/LICENSE-2.0. */
 #include <regex>
 #include <string>
 
+#include "drake/common/never_destroyed.h"
+
 using std::string;
 
 // __GNUG__ is defined both for gcc and clang. See:
@@ -59,8 +61,9 @@ string drake::NiceTypeName::Canonicalize(const string& demangled) {
 #undef GCC_VERSION
 
   using SPair = std::pair<std::regex, string>;
+  using SPairList = std::initializer_list<SPair>;
   // These are applied in this order.
-  const std::array<SPair, 8> subs{{
+  static const never_destroyed<std::vector<SPair>> subs{SPairList{
     // Remove unwanted keywords and following space. (\b is word boundary.)
     SPair(std::regex("\\b(class|struct|enum|union) "), ""),
     // Tidy up anonymous namespace.
@@ -75,14 +78,32 @@ string drake::NiceTypeName::Canonicalize(const string& demangled) {
     // Delete them.
     SPair(std::regex("\\b__[[:alnum:]_]+::"), ""),
     SPair(std::regex("!"), " "),  // Restore wanted spaces.
+
     // Recognize std::string's full name and abbreviate.
     SPair(std::regex("\\bstd::basic_string<char,std::char_traits<char>,"
                      "std::allocator<char>>"),
-          "std::string")
+          "std::string"),
+
+    // Recognize Eigen types ...
+    // ... square matrices ...
+    SPair(std::regex("\\bEigen::Matrix<([^,<>]*),(-?\\d+),\\2,0,\\2,\\2>"),
+          "drake::Matrix$2<$1>"),
+    // ... vectors ...
+    SPair(std::regex("\\bEigen::Matrix<([^,<>]*),(-?\\d+),1,0,\\2,1>"),
+          "drake::Vector$2<$1>"),
+    // ... dynamic-size is "X" not "-1" ...
+    SPair(std::regex("drake::(Matrix|Vector)-1<"), "drake::$1X<"),
+    // ... for double, float, and int, prefer native Eigen spellings ...
+    SPair(std::regex("drake::(Vector|Matrix)(X|\\d+)"
+                     "<((d)ouble|(f)loat|(i)nt)>"),
+          "Eigen::$1$2$4$5$6"),
+    // ... AutoDiff.
+    SPair(std::regex("Eigen::AutoDiffScalar<Eigen::VectorXd>"),
+          "drake::AutoDiffXd"),
   }};
 
   string canonical(demangled);
-  for (const auto& sp : subs) {
+  for (const auto& sp : subs.access()) {
     canonical = std::regex_replace(canonical, sp.first, sp.second);
   }
   return canonical;

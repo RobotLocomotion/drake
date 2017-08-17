@@ -1,27 +1,17 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load(
     "//tools:drake.bzl",
     "drake_cc_library",
     "drake_cc_binary",
     "drake_cc_googletest",
 )
+load("//tools:install_data.bzl", "install_data")
+load("//tools:lint.bzl", "add_lint_tests")
 
 package(
     default_visibility = [":__subpackages__"],
-)
-
-filegroup(
-    name = "models",
-    srcs = glob([
-        "**/*.obj",
-        "**/*.sdf",
-        "**/*.urdf",
-        "**/*.xml",
-    ]),
-    visibility = ["//visibility:public"],
 )
 
 drake_cc_library(
@@ -33,12 +23,13 @@ drake_cc_library(
         "iiwa_common.h",
     ],
     deps = [
+        "//drake/common:find_resource",
         "//drake/common/trajectories:piecewise_polynomial_trajectory",
         "//drake/multibody:inverse_kinematics",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
-        "@bot_core_lcmtypes",
-        "@robotlocomotion_lcmtypes",
+        "@lcmtypes_bot2_core",
+        "@lcmtypes_robotlocomotion",
     ],
 )
 
@@ -64,7 +55,7 @@ drake_cc_library(
         "//drake/manipulation/util:robot_state_msg_translator",
         "//drake/systems/framework:leaf_system",
         "//drake/util:lcm_util",
-        "@bot_core_lcmtypes",
+        "@lcmtypes_bot2_core",
     ],
 )
 
@@ -77,8 +68,8 @@ drake_cc_library(
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
         "//drake/systems/framework:leaf_system",
-        "@bot_core_lcmtypes",
-        "@robotlocomotion_lcmtypes",
+        "@lcmtypes_bot2_core",
+        "@lcmtypes_robotlocomotion",
     ],
 )
 
@@ -89,7 +80,7 @@ drake_cc_library(
     deps = [
         "//drake/multibody/rigid_body_plant",
         "//drake/multibody/rigid_body_plant:drake_visualizer",
-        "//drake/systems/controllers:state_feedback_controller_base",
+        "//drake/systems/controllers:state_feedback_controller_interface",
         "//drake/systems/framework",
     ],
 )
@@ -105,15 +96,16 @@ drake_cc_binary(
         ":iiwa_common",
         ":iiwa_lcm",
         ":robot_plan_interpolator",
+        "//drake/common:find_resource",
         "//drake/common:text_logging_gflags",
         "//drake/lcm",
         "//drake/systems/analysis:simulator",
         "//drake/systems/lcm",
         "//drake/systems/lcm:lcm_driven_loop",
         "//drake/systems/primitives:demultiplexer",
-        "@bot_core_lcmtypes",
         "@com_github_gflags_gflags//:gflags",
-        "@robotlocomotion_lcmtypes",
+        "@lcmtypes_bot2_core",
+        "@lcmtypes_robotlocomotion",
     ],
 )
 
@@ -135,6 +127,7 @@ drake_cc_binary(
         "//drake/examples/kuka_iiwa_arm/iiwa_world:world_sim_tree_builder",
         "//drake/lcm",
         "//drake/manipulation/schunk_wsg:schunk_wsg_constants",
+        "//drake/manipulation/schunk_wsg:schunk_wsg_controller",
         "//drake/manipulation/schunk_wsg:schunk_wsg_lcm",
         "//drake/multibody/rigid_body_plant",
         "//drake/systems/analysis",
@@ -160,9 +153,11 @@ drake_cc_binary(
         ":iiwa_common",
         ":iiwa_lcm",
         ":sim_diagram_builder",
+        "//drake/common:find_resource",
         "//drake/examples/kuka_iiwa_arm/iiwa_world:world_sim_tree_builder",
         "//drake/lcm",
         "//drake/multibody/rigid_body_plant",
+        "//drake/multibody/rigid_body_plant:frame_visualizer",
         "//drake/systems/analysis:simulator",
         "//drake/systems/controllers:inverse_dynamics_controller",
         "//drake/systems/primitives:constant_vector_source",
@@ -180,8 +175,9 @@ drake_cc_binary(
     deps = [
         ":iiwa_common",
         ":iiwa_lcm",
-        "@bot_core_lcmtypes",
-        "@robotlocomotion_lcmtypes",
+        "//drake/common:find_resource",
+        "@lcmtypes_bot2_core",
+        "@lcmtypes_robotlocomotion",
     ],
 )
 
@@ -205,6 +201,7 @@ drake_cc_googletest(
     deps = [
         ":iiwa_common",
         ":robot_plan_interpolator",
+        "//drake/common:find_resource",
         "//drake/systems/framework",
     ],
 )
@@ -237,4 +234,6 @@ drake_cc_googletest(
     ],
 )
 
-cpplint()
+install_data()
+
+add_lint_tests()

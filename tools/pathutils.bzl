@@ -94,6 +94,24 @@ def _remove_prefix(path, prefix):
 #BEGIN macros
 
 #------------------------------------------------------------------------------
+def basename(path):
+    """Return the file name portion of a file path."""
+    return path.split("/")[-1]
+
+#------------------------------------------------------------------------------
+def dirname(path):
+    """Return the directory portion of a file path."""
+    if path == "/":
+        return "/"
+
+    parts = path.split("/")
+
+    if len(parts) > 1:
+        return "/".join(parts[:-1])
+
+    return "."
+
+#------------------------------------------------------------------------------
 def join_paths(*args):
     """Join paths without duplicating separators.
 
@@ -108,17 +126,18 @@ def join_paths(*args):
     result = ""
 
     for part in args:
-        if len(part) == 0:
+        if part.endswith("/"):
+            part = part[-1]
+
+        if part == "" or part == ".":
             continue
 
-        result += part
-        if result[-1] != "/":
-            result += "/"
+        result += part + "/"
 
     return result[:-1]
 
 #------------------------------------------------------------------------------
-def output_path(ctx, input_file, strip_prefix):
+def output_path(ctx, input_file, strip_prefix, package_root = None):
     """Compute "output path".
 
     This computes the adjusted output path for an input file. Specifically, it
@@ -144,6 +163,9 @@ def output_path(ctx, input_file, strip_prefix):
     the prefix ``foo``, giving a path of ``bar.txt``, which will become
     ``docs/bar.txt`` when the install destination is added.
 
+    The input file must belong to the current package; otherwise, ``None`` is
+    returned.
+
     Args:
         input_file (:obj:`File`): Artifact to be installed.
         strip_prefix (:obj:`list` of :obj:`str`): List of prefixes to strip
@@ -153,8 +175,9 @@ def output_path(ctx, input_file, strip_prefix):
         :obj:`str`: The install destination path for the file.
     """
 
-    # Determine base path of invoking context.
-    package_root = join_paths(ctx.label.workspace_root, ctx.label.package)
+    if package_root == None:
+        # Determine base path of invoking context.
+        package_root = join_paths(ctx.label.workspace_root, ctx.label.package)
 
     # Determine effective path by removing path of invoking context and any
     # Bazel output-files path.
@@ -167,9 +190,7 @@ def output_path(ctx, input_file, strip_prefix):
 
     # Deal with possible case of file outside the package root.
     if input_path == None:
-        print("%s installing file %s which is not in current package"
-              % (package_root, input_file.path))
-        return input_file.basename
+        return None
 
     # Possibly remove prefixes.
     for p in strip_prefix:

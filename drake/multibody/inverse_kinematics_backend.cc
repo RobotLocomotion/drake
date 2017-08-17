@@ -13,11 +13,12 @@
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/gradient.h"
-#include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/multibody/constraint_wrappers.h"
 #include "drake/multibody/ik_options.h"
+#include "drake/multibody/rigid_body_constraint.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/snopt_solver.h"
 
 using Eigen::Map;
 using Eigen::MatrixBase;
@@ -41,18 +42,9 @@ namespace drake {
 namespace systems {
 namespace plants {
 
-int GetIKSolverInfo(const MathematicalProgram& prog, SolutionResult result) {
-  solvers::SolverType solver_type;
-  int solver_result = 0;
-  prog.GetSolverResult(&solver_type, &solver_result);
-
-  if (solver_type ==
-      solvers::SolverType::kSnopt) {
-    // We can return SNOPT results directly.
-    return solver_result;
-  }
-
+int GetIKSolverInfo(SolutionResult result) {
   // Make a SNOPT-like return code out of the generic result.
+  // Magic constants are per rigid_body_ik.h.
   switch (result) {
     case SolutionResult::kSolutionFound: {
       return 1;
@@ -60,9 +52,7 @@ int GetIKSolverInfo(const MathematicalProgram& prog, SolutionResult result) {
     case SolutionResult::kInvalidInput: {
       return 91;
     }
-    case SolutionResult::kInfeasibleConstraints: {
-      return 13;
-    }
+    case SolutionResult::kInfeasibleConstraints:
     case SolutionResult::kInfeasible_Or_Unbounded: {
       return 13;
     }
@@ -82,17 +72,17 @@ int GetIKSolverInfo(const MathematicalProgram& prog, SolutionResult result) {
 
 void SetIKSolverOptions(const IKoptions& ikoptions,
                         drake::solvers::MathematicalProgram* prog) {
-  prog->SetSolverOption(drake::solvers::SolverType::kSnopt,
+  prog->SetSolverOption(drake::solvers::SnoptSolver::id(),
       "Derivative option", 1);
-  prog->SetSolverOption(drake::solvers::SolverType::kSnopt,
+  prog->SetSolverOption(drake::solvers::SnoptSolver::id(),
       "Major optimality tolerance", ikoptions.getMajorOptimalityTolerance());
-  prog->SetSolverOption(drake::solvers::SolverType::kSnopt,
+  prog->SetSolverOption(drake::solvers::SnoptSolver::id(),
       "Major feasibility tolerance", ikoptions.getMajorFeasibilityTolerance());
-  prog->SetSolverOption(drake::solvers::SolverType::kSnopt,
+  prog->SetSolverOption(drake::solvers::SnoptSolver::id(),
       "Superbasics limit", ikoptions.getSuperbasicsLimit());
-  prog->SetSolverOption(drake::solvers::SolverType::kSnopt,
+  prog->SetSolverOption(drake::solvers::SnoptSolver::id(),
       "Major iterations limit", ikoptions.getMajorIterationsLimit());
-  prog->SetSolverOption(drake::solvers::SolverType::kSnopt,
+  prog->SetSolverOption(drake::solvers::SnoptSolver::id(),
       "Iterations limit", ikoptions.getIterationsLimit());
 }
 
@@ -301,7 +291,7 @@ void inverseKinBackend(RigidBodyTree<double>* model, const int nT,
     SolutionResult result = prog.Solve();
     const VectorXd& vars_value = prog.GetSolution(vars);
     q_sol->col(t_index) = vars_value;
-    info[t_index] = GetIKSolverInfo(prog, result);
+    info[t_index] = GetIKSolverInfo(result);
   }
 }
 

@@ -1,6 +1,11 @@
 # -*- python -*-
 
-load("@drake//tools:install.bzl", "cmake_config", "install", "install_cmake_config")
+load(
+    "@drake//tools:install.bzl",
+    "cmake_config",
+    "install",
+    "install_cmake_config",
+)
 
 package(default_visibility = ["//visibility:public"])
 
@@ -13,11 +18,9 @@ filegroup(
 # Generates octomath library
 cc_library(
     name = "octomath",
-    srcs = [
-        "octomap/src/math/Pose6D.cpp",
-        "octomap/src/math/Quaternion.cpp",
-        "octomap/src/math/Vector3.cpp",
-    ],
+    srcs = glob([
+        "octomap/src/math/*.cpp",
+    ]),
     hdrs = glob([
         "octomap/include/octomap/math/*.h*",
     ]),
@@ -35,6 +38,7 @@ cc_library(
         "octomap/src/ColorOcTree.cpp",
         "octomap/src/CountingOcTree.cpp",
         "octomap/src/OcTree.cpp",
+        "octomap/src/OcTreeLUT.cpp",
         "octomap/src/OcTreeNode.cpp",
         "octomap/src/OcTreeStamped.cpp",
         "octomap/src/Pointcloud.cpp",
@@ -53,18 +57,19 @@ cmake_config(
     version_file = ":cmakelists_with_version",
 )
 
-install_cmake_config(package = "octomap")  # Creates rule :install_cmake_config.
+# Creates rule :install_cmake_config.
+install_cmake_config(package = "octomap")
 
 install(
     name = "install",
-    doc_dest = "share/doc",
-    guess_hdrs = "PACKAGE",
-    hdr_dest = "include",
-    hdr_strip_prefix = ["octomap/include"],
-    license_docs = ["octomap/LICENSE.txt"],
     targets = [
         ":octomap",
         ":octomath",
     ],
+    hdr_dest = "include",
+    hdr_strip_prefix = ["octomap/include"],
+    guess_hdrs = "PACKAGE",
+    docs = ["octomap/LICENSE.txt"],
+    doc_dest = "share/doc",
     deps = [":install_cmake_config"],
 )

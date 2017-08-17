@@ -15,6 +15,7 @@
 #include <unsupported/Eigen/AutoDiff>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/never_destroyed.h"
 
 namespace drake {
 namespace solvers {
@@ -178,7 +179,7 @@ SolutionResult MobyLCPSolver<T>::Solve(MathematicalProgram& prog) const {
   // internally.
 
   // We don't actually indicate different results.
-  prog.SetSolverResult(solver_type(), 0);
+  prog.SetSolverId(MobyLcpSolverId::id());
 
   for (const auto& binding : bindings) {
     Eigen::VectorXd constraint_solution(binding.GetNumElements());
@@ -223,10 +224,8 @@ bool MobyLCPSolver<T>::SolveLcpFast(const MatrixX<T>& M,
 
   // set zero tolerance if necessary
   T mod_zero_tol = zero_tol;
-  if (mod_zero_tol < 0) {
-    mod_zero_tol = M.rows() * M.template lpNorm<Eigen::Infinity>() *
-        std::numeric_limits<double>::epsilon();
-  }
+  if (mod_zero_tol < 0)
+    mod_zero_tol = ComputeZeroTolerance(M);
 
   // prepare to setup basic and nonbasic variable indices for z
   nonbas_.clear();
@@ -291,10 +290,17 @@ bool MobyLCPSolver<T>::SolveLcpFast(const MatrixX<T>& M,
     // compilation with AutoDiff currently generates template errors.
     zz = Msub.householderQr().solve(zz.eval());
 
-    // compute w and find minimum value
-    w = Mmix * zz;
-    w += qbas;
-    unsigned minw = (w.rows() > 0) ? minCoeffIdx(w) : UINF;
+    // Eigen doesn't handle empty matrices properly, which causes the code
+    // below to abort in the absence of the conditional.
+    unsigned minw;
+    if (Mmix.rows() == 0) {
+      w = VectorX<T>();
+      minw = UINF;
+    } else {
+      w = Mmix * zz;
+      w += qbas;
+      minw = minCoeffIdx(w);
+    }
 
     // TODO(sammy-tri) this log can't print when minw is UINF.
     // LOG() << "MobyLCPSolver::SolveLcpFast() - minimum w after pivot: "
@@ -406,9 +412,7 @@ bool MobyLCPSolver<T>::SolveLcpFastRegularized(const MatrixX<T>& M,
   // not discernible at this time.
 
   // Assign value for zero tolerance, if necessary.
-  const T naive_tol = q.size() * M.template lpNorm<Eigen::Infinity>() *
-      kSqrtEps;
-  const T mod_zero_tol = (zero_tol > 0) ? zero_tol : naive_tol;
+  const T mod_zero_tol = (zero_tol > 0) ? zero_tol : ComputeZeroTolerance(M);
 
   Log() << " zero tolerance: " << mod_zero_tol << std::endl;
 
@@ -604,11 +608,8 @@ bool MobyLCPSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
 
   // come up with a sensible value for zero tolerance if none is given
   T mod_zero_tol = zero_tol;
-  if (mod_zero_tol <= 0) {
-    mod_zero_tol =
-        M.template lpNorm<Eigen::Infinity>() *
-            std::numeric_limits<double>::epsilon();
-  }
+  if (mod_zero_tol <= 0)
+    mod_zero_tol = ComputeZeroTolerance(M);
 
   if (CheckLemkeTrivial(n, mod_zero_tol, q, z)) {
     Log() << " -- trivial solution found" << std::endl;
@@ -905,8 +906,7 @@ bool MobyLCPSolver<T>::SolveLcpLemkeRegularized(const MatrixX<T>& M,
   // Assign value for zero tolerance, if necessary. See discussion in
   // SolveLcpFastRegularized() to see why this tolerance is computed here once,
   // rather than for each regularized version of M.
-  T naive_tol = q.size() * M.template lpNorm<Eigen::Infinity>() * kSqrtEps;
-  const T mod_zero_tol = (zero_tol > 0) ? zero_tol : naive_tol;
+  const T mod_zero_tol = (zero_tol > 0) ? zero_tol : ComputeZeroTolerance(M);
 
   Log() << " zero tolerance: " << mod_zero_tol << std::endl;
 
@@ -1057,8 +1057,7 @@ bool MobyLCPSolver<T>::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
   // come up with a sensible value for zero tolerance if none is given
   if (zero_tol <= static_cast<double>(0.0)) {
     Eigen::MatrixXd dense_M = M;
-    zero_tol = dense_M.lpNorm<Eigen::Infinity>() *
-        std::numeric_limits<double>::epsilon() * n;
+    zero_tol = ComputeZeroTolerance(dense_M);
   }
 
   if (CheckLemkeTrivial(n, zero_tol, q, z)) {
@@ -1397,6 +1396,16 @@ bool MobyLCPSolver<T>::SolveLcpLemkeRegularized(
 
   // still here?  failure...
   return false;
+}
+
+template <typename T>
+SolverId MobyLCPSolver<T>::solver_id() const {
+  return MobyLcpSolverId::id();
+}
+
+SolverId MobyLcpSolverId::id() {
+  static const never_destroyed<SolverId> singleton{"Moby LCP"};
+  return singleton.access();
 }
 
 // Instantiate templates.

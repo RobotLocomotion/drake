@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -15,9 +15,9 @@ namespace {
 // RigidBodyTree. This unit test also verifies that the URDF can be parsed by
 // the URDF parser.
 GTEST_TEST(JacoArmTest, TestLoadTree) {
-  const std::string kPath(GetDrakePath() +
-      "/manipulation/models/jaco_description/urdf/"
-      "j2n6s300.urdf");
+  const std::string kPath(FindResourceOrThrow(
+      "drake/manipulation/models/jaco_description/urdf/"
+      "j2n6s300.urdf"));
 
   auto tree = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(

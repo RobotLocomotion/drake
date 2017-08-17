@@ -8,11 +8,11 @@
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/gradient.h"
-#include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/multibody/constraint_wrappers.h"
 #include "drake/multibody/ik_options.h"
 #include "drake/multibody/ik_trajectory_helper.h"
 #include "drake/multibody/inverse_kinematics_backend.h"
+#include "drake/multibody/rigid_body_constraint.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/mathematical_program.h"
@@ -531,7 +531,7 @@ void inverseKinTrajBackend(RigidBodyTree<double>* model, const int nT,
   }
 
   const SolutionResult result = prog.Solve();
-  *info = GetIKSolverInfo(prog, result);
+  *info = GetIKSolverInfo(result);
 
   // Populate the output arguments.
   const auto q_value = prog.GetSolution(q);

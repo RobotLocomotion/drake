@@ -73,7 +73,7 @@ class FindResourceResult {
 
 /// Attempts to locate a Drake resource named by the given @p resource_path.
 /// The @p resource_path refers to the relative path within the Drake
-/// repository, e.g., `drake/examples/Pendulum/Pendulum.urdf`.
+/// repository, e.g., `drake/examples/pendulum/Pendulum.urdf`.
 ///
 /// When called from within a source code workspace (i.e., what a Drake
 /// developer would use), this finds the resource within the current workspace.
@@ -81,5 +81,18 @@ class FindResourceResult {
 /// When called from an installed binary build of Drake, this is intended to
 /// find the installed resource, but that feature is not yet implemented.
 FindResourceResult FindResource(std::string resource_path);
+
+/// Convenient wrapper for querying FindResource(resource_path) followed by
+/// FindResourceResult::get_absolute_path_or_throw().
+std::string FindResourceOrThrow(std::string resource_path);
+
+/// The name of the environment variable that provides the first place where
+/// FindResource attempts to look.  The environment variable is allowed to be
+/// unset or empty; in that case, FindResource will attempt to use other
+/// locations without complaint.
+///
+/// The value is guaranteed to be "DRAKE_RESOURCE_ROOT".  (For some users, it
+/// may be easier to hard-code a value than refer to this constant.)
+extern const char* const kDrakeResourceRootEnvironmentVariableName;
 
 }  // namespace drake

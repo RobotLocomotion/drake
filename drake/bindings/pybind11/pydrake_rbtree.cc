@@ -1,13 +1,13 @@
 #include <iostream>
-#include <pybind11/pybind11.h>
+
 #include <pybind11/eigen.h>
+#include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "drake/multibody/parsers/package_map.h"
-#include "drake/multibody/rigid_body_tree.h"
-#include "drake/multibody/parsers/urdf_parser.h"
-
 #include "drake/bindings/pybind11/pydrake_autodiff_types.h"
+#include "drake/multibody/parsers/package_map.h"
+#include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/rigid_body_tree.h"
 
 namespace py = pybind11;
 
@@ -113,6 +113,10 @@ PYBIND11_PLUGIN(_pydrake_rbtree) {
            RigidBodyTreeConstants::default_model_instance_id_set,
          py::arg("in_terms_of_qdot") = false)
     .def("get_num_bodies", &RigidBodyTree<double>::get_num_bodies)
+    .def("get_num_frames", &RigidBodyTree<double>::get_num_frames)
+    .def("getBodyOrFrameName",
+         &RigidBodyTree<double>::getBodyOrFrameName,
+         py::arg("body_or_frame_id"))
     .def("number_of_positions", &RigidBodyTree<double>::get_num_positions)
     .def("get_num_positions", &RigidBodyTree<double>::get_num_positions)
     .def("number_of_velocities", &RigidBodyTree<double>::get_num_velocities)

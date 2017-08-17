@@ -27,10 +27,7 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
                        const Eigen::Isometry3d& transform_to_parent_body,
                        const drake::TwistVector<double>& _joint_axis)
       : DrakeJointImpl<Derived>(derived, name, transform_to_parent_body, 1, 1),
-        joint_axis_(_joint_axis),
-        damping_(0.0),
-        coulomb_friction_(0.0),
-        coulomb_window_(0.0) {}
+        joint_axis_(_joint_axis) {}
 
  public:
   virtual ~FixedAxisOneDoFJoint() {}
@@ -181,6 +178,7 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
     damping_ = damping;
     coulomb_friction_ = coulomb_friction;
     coulomb_window_ = coulomb_window;
+    DRAKE_ASSERT(coulomb_window_ > 0);
   }
 
   std::string get_position_name(int index) const override {
@@ -218,6 +216,9 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
   drake::TwistVector<double> joint_axis_;
   double damping_{};
   double coulomb_friction_{};
-  double coulomb_window_{};
+  // We're trying to emulate MATLAB's code:
+  // NOLINTNEXTLINE(whitespace/line_length)
+  // https://github.com/RobotLocomotion/drake/blob/d7f3c011d37d471d7b9293ecf2066c98d88b2a05/drake/matlab/systems/plants/RigidBody.m#L29
+  double coulomb_window_{std::numeric_limits<double>::epsilon()};
 };
 #pragma GCC diagnostic pop  // pop -Wno-overloaded-virtual

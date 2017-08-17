@@ -23,6 +23,10 @@ Software Design Documents
 - *Coming soon: Dynamics Design*
 - *Coming soon: System Design*
 
+.. toctree::
+  :maxdepth: 1
+
+  models
 
 Mathematical Derivation Documents
 =================================

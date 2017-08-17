@@ -12,6 +12,7 @@
 #include <mosek.h>
 
 #include "drake/common/scoped_singleton.h"
+#include "drake/solvers/mathematical_program.h"
 
 namespace drake {
 namespace solvers {
@@ -762,7 +763,7 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
     }
   }
 
-  prog.SetSolverResult(solver_type(), result);
+  prog.SetSolverId(id());
   if (rescode != MSK_RES_OK) {
     result = SolutionResult::kUnknownError;
   }

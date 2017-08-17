@@ -2,8 +2,8 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/symbolic_expression.h"
-#include "drake/systems/framework/siso_vector_system.h"
+#include "drake/common/symbolic.h"
+#include "drake/systems/framework/vector_system.h"
 
 namespace drake {
 namespace systems {
@@ -41,7 +41,7 @@ namespace systems {
 ///
 /// @ingroup primitive_systems
 template <typename T>
-class FirstOrderLowPassFilter : public SisoVectorSystem<T> {
+class FirstOrderLowPassFilter : public VectorSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FirstOrderLowPassFilter)
 

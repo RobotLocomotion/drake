@@ -1,5 +1,10 @@
 #pragma once
 
+#ifndef DRAKE_COMMON_SYMBOLIC_HEADER
+// TODO(soonho-tri): Change to #error, when #6613 merged.
+#warning Do not directly include this file. Include "drake/common/symbolic.h".
+#endif
+
 #include <cstddef>
 #include <functional>
 #include <memory>
@@ -9,6 +14,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/eigen_types.h"
 #include "drake/common/hash.h"
 
 namespace drake {
@@ -128,10 +134,8 @@ namespace symbolic {
 /// equal to `m2(i, j)` for all `i`, `j`.
 template <typename DerivedA, typename DerivedB>
 typename std::enable_if<
-    std::is_base_of<Eigen::MatrixBase<DerivedA>, DerivedA>::value &&
-        std::is_base_of<Eigen::MatrixBase<DerivedB>, DerivedB>::value &&
-        std::is_same<typename DerivedA::Scalar, Variable>::value &&
-        std::is_same<typename DerivedB::Scalar, Variable>::value,
+    is_eigen_scalar_same<DerivedA, Variable>::value &&
+        is_eigen_scalar_same<DerivedB, Variable>::value,
     bool>::type
 CheckStructuralEquality(const DerivedA& m1, const DerivedB& m2) {
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);

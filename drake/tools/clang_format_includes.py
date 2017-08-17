@@ -2,8 +2,8 @@
 
 """Rewrite the filenames given on the command line to obey formatting rules for
 #include statements.  The only changes this script will make are to relocate
-#include statements, and possibly some associated additions or removals of blank
-lines near the #include blocks.
+#include statements, and possibly some associated additions or removals of
+blank lines near the #include blocks.
 
 """
 
@@ -32,16 +32,14 @@ def main():
     if args.all:
         # TODO(jwnimmer-tri) Consolidate this logic with the cpplint_wrapper
         # tree searching logic, including some way to unit test "all" search.
-        extensions = ["cc", "h"]
-        pathnames = ["drake", "ros"]
+        extensions = ["cc", "h", "cpp"]
+        pathnames = ["drake"]
         filenames = [
             os.path.join(dirpath, filename)
             for pathname in pathnames
             for dirpath, _, filenames in os.walk(pathname)
             for filename in filenames
             if os.path.splitext(filename)[1][1:] in extensions and
-            # TODO(jwnimmer-tri) Eventually do pybind11.
-            "bindings/pybind11" not in dirpath and
             "/thirdParty/" not in dirpath and
             "/third_party/" not in dirpath and
             "/matlab/" not in dirpath

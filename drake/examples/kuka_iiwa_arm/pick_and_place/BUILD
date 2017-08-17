@@ -1,12 +1,12 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load(
     "//tools:drake.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
 )
+load("//tools:lint.bzl", "add_lint_tests")
 
 package(
     default_visibility = ["//drake/examples/kuka_iiwa_arm:__subpackages__"],
@@ -34,8 +34,8 @@ drake_cc_library(
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
         "//drake/util:lcm_util",
-        "@bot_core_lcmtypes",
-        "@robotlocomotion_lcmtypes",
+        "@lcmtypes_bot2_core",
+        "@lcmtypes_robotlocomotion",
     ],
 )
 
@@ -46,6 +46,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":pick_and_place",
+        "//drake/common:find_resource",
     ],
 )
 
@@ -57,7 +58,8 @@ drake_cc_googletest(
     deps = [
         ":pick_and_place",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
     ],
 )
 
-cpplint()
+add_lint_tests()

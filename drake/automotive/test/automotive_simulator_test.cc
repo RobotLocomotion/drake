@@ -9,7 +9,6 @@
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/dragway/road_geometry.h"
 #include "drake/automotive/prius_vis.h"
-#include "drake/common/drake_path.h"
 #include "drake/lcm/drake_mock_lcm.h"
 #include "drake/lcmt_simple_car_state_t.hpp"
 #include "drake/lcmt_viewer_draw.hpp"
@@ -32,27 +31,28 @@ GTEST_TEST(AutomotiveSimulatorTest, BasicTest) {
 }
 
 // Obtains the serialized version of the last message transmitted on LCM channel
-// @p channel. Uses @p translator to decode the message into @p joint_value.
-void GetLastPublishedJointValue(
+// @p channel. Uses @p translator to decode the message into @p result.
+void GetLastPublishedSimpleCarState(
     const std::string& channel,
     const systems::lcm::LcmAndVectorBaseTranslator& translator,
-    lcm::DrakeMockLcm* mock_lcm, EulerFloatingJointState<double>* joint_value) {
+    const lcm::DrakeMockLcm* mock_lcm,
+    SimpleCarState<double>* result) {
   const std::vector<uint8_t>& message =
       mock_lcm->get_last_published_message(channel);
-  translator.Deserialize(message.data(), message.size(), joint_value);
+  translator.Deserialize(message.data(), message.size(), result);
 }
 
 // Covers AddPriusSimpleCar (and thus AddPublisher), Start, StepBy,
 // GetSystemByName.
 GTEST_TEST(AutomotiveSimulatorTest, TestPriusSimpleCar) {
   // TODO(jwnimmer-tri) Do something better than "0_" here.
-  const std::string kJointStateChannelName = "0_FLOATING_JOINT_STATE";
+  const std::string kSimpleCarStateChannelName = "0_SIMPLE_CAR_STATE";
   const std::string kCommandChannelName = "DRIVING_COMMAND";
 
   const std::string driving_command_name =
       systems::lcm::LcmSubscriberSystem::make_name(kCommandChannelName);
-  const std::string joint_state_name =
-      systems::lcm::LcmPublisherSystem::make_name(kJointStateChannelName);
+  const std::string simple_car_state_name =
+      systems::lcm::LcmPublisherSystem::make_name(kSimpleCarStateChannelName);
 
   // Set up a basic simulation with just a Prius SimpleCar.
   auto simulator = std::make_unique<AutomotiveSimulator<double>>(
@@ -67,7 +67,7 @@ GTEST_TEST(AutomotiveSimulatorTest, TestPriusSimpleCar) {
   auto& command_sub = dynamic_cast<systems::lcm::LcmSubscriberSystem&>(
       simulator->GetBuilderSystemByName(driving_command_name));
   auto& state_pub = dynamic_cast<systems::lcm::LcmPublisherSystem&>(
-      simulator->GetBuilderSystemByName(joint_state_name));
+      simulator->GetBuilderSystemByName(simple_car_state_name));
 
   // Finish all initialization, so that we can test the post-init state.
   simulator->Start();
@@ -90,22 +90,22 @@ GTEST_TEST(AutomotiveSimulatorTest, TestPriusSimpleCar) {
   // set).
   simulator->StepBy(0.005);
   simulator->StepBy(0.005);
-  EulerFloatingJointState<double> joint_value;
-  GetLastPublishedJointValue(kJointStateChannelName, state_pub.get_translator(),
-                             mock_lcm, &joint_value);
-  // The following is hard-coded to match prius.sdf and prius_with_lidar.sdf.
-  const double kp_MoVo{1.40948};
-  EXPECT_GT(joint_value.x() - kp_MoVo, 0.0);
-  EXPECT_LT(joint_value.x() - kp_MoVo, 0.001);
+  SimpleCarState<double> simple_car_state;
+  GetLastPublishedSimpleCarState(
+      kSimpleCarStateChannelName, state_pub.get_translator(), mock_lcm,
+      &simple_car_state);
+  EXPECT_GT(simple_car_state.x(), 0.0);
+  EXPECT_LT(simple_car_state.x(), 0.001);
 
   // Move a lot.  Confirm that we're moving in +x.
   for (int i = 0; i < 100; ++i) {
     simulator->StepBy(0.01);
   }
   // TODO(jwnimmer-tri) Check the timestamp of the final publication.
-  GetLastPublishedJointValue(kJointStateChannelName, state_pub.get_translator(),
-                             mock_lcm, &joint_value);
-  EXPECT_GT(joint_value.x(), 1.0);
+  GetLastPublishedSimpleCarState(
+      kSimpleCarStateChannelName, state_pub.get_translator(), mock_lcm,
+      &simple_car_state);
+  EXPECT_GT(simple_car_state.x(), 1.0);
 
   // Confirm that appropriate draw messages are coming out. Just a few of the
   // message's fields are checked.
@@ -120,7 +120,8 @@ GTEST_TEST(AutomotiveSimulatorTest, TestPriusSimpleCar) {
   // The subsystem pointers must not change.
   EXPECT_EQ(&simulator->GetDiagramSystemByName(driving_command_name),
             &command_sub);
-  EXPECT_EQ(&simulator->GetDiagramSystemByName(joint_state_name), &state_pub);
+  EXPECT_EQ(&simulator->GetDiagramSystemByName(simple_car_state_name),
+            &state_pub);
 }
 
 // Tests the ability to initialize a SimpleCar to a non-zero initial state.
@@ -156,12 +157,6 @@ GTEST_TEST(AutomotiveSimulatorTest, TestPriusSimpleCarInitialState) {
 }
 
 GTEST_TEST(AutomotiveSimulatorTest, TestMobilControlledSimpleCar) {
-  // TODO(jwnimmer-tri) Do something better than "0_" here.
-  const std::string kJointStateChannelName = "0_FLOATING_JOINT_STATE";
-
-  const std::string joint_state_name =
-      systems::lcm::LcmPublisherSystem::make_name(kJointStateChannelName);
-
   // Set up a basic simulation with a MOBIL- and IDM-controlled SimpleCar.
   auto simulator = std::make_unique<AutomotiveSimulator<double>>(
       std::make_unique<lcm::DrakeMockLcm>());

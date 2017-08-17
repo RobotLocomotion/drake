@@ -47,18 +47,16 @@ class Frame : public FrameBase<T> {
     return body_;
   }
 
-  /// Computes the pose `X_FB` of the body B associated with `this` frame F,
-  /// measured in `this` frame F.
-  /// In particular, if `this` **is**` the body frame B, i.e. `X_BF` is the
-  /// identity transformation, this method directly returns the identity
-  /// transformation.
-  /// @sa CalcBodyPoseInOtherFrame()
-  virtual Isometry3<T> CalcBodyPoseInThisFrame(
+  /// Returns the pose `X_BF` of `this` frame F in the body frame B associated
+  /// with this frame.
+  /// In particular, if `this` **is** the body frame B, this method directly
+  /// returns the identity transformation.
+  virtual Isometry3<T> CalcPoseInBodyFrame(
       const systems::Context<T>& context) const = 0;
 
-  /// Given the offset pose `X_FQ` of a frame Q measured in this frame F,
-  /// this method computes the pose `X_BQ` of frame Q measured and expressed in
-  /// the frame B of the body to which this frame is attached.
+  /// Given the offset pose `X_FQ` of a frame Q in `this` frame F, this method
+  /// computes the pose `X_BQ` of frame Q in the body frame B to which this
+  /// frame is attached.
   /// In other words, if the pose of `this` frame F in the body frame B is
   /// `X_BF`, this method computes the pose `X_BQ` of frame Q in the body frame
   /// B as `X_BQ = X_BF * X_FQ`.
@@ -69,25 +67,7 @@ class Frame : public FrameBase<T> {
   virtual Isometry3<T> CalcOffsetPoseInBody(
       const systems::Context<T>& context,
       const Isometry3<T>& X_FQ) const {
-    return CalcBodyPoseInThisFrame(context).inverse() * X_FQ;
-  }
-
-  /// Computes the pose `X_QB` of the body B associated with this frame F
-  /// measured in a frame Q, given the pose `X_QF` of this frame F measured
-  /// in Q.
-  /// In other words, if `X_FB` is the pose of body frame B in `this` frame F,
-  /// this method computes the pose `X_QB` of body frame B in frame Q as
-  /// `X_QB = X_QF * X_FB`.
-  /// In particular, if `this` **is**` the body frame B, i.e. `X_FB` is the
-  /// identity transformation, this method directly returns `X_QF`.
-  /// @sa CalcBodyPoseInThisFrame() to compute the pose of the body associated
-  /// with this frame as measured in this frame.
-  /// Specific frame subclasses can override this method to provide faster
-  /// implementations if needed.
-  virtual Isometry3<T> CalcBodyPoseInOtherFrame(
-      const systems::Context<T>& context,
-      const Isometry3<T>& X_QF) const {
-    return X_QF * CalcBodyPoseInThisFrame(context);
+    return CalcPoseInBodyFrame(context) * X_FQ;
   }
 
   /// NVI to DoCloneToScalar() templated on the scalar type of the new clone to

@@ -6,8 +6,7 @@
 #include <utility>
 
 #include "drake/common/eigen_types.h"
-#include "drake/common/monomial.h"
-#include "drake/common/symbolic_expression.h"
+#include "drake/common/symbolic.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/decision_variable.h"
 
@@ -77,24 +76,22 @@ std::pair<VectorXDecisionVariable,
 ExtractVariablesFromExpression(const symbolic::Expression& e);
 
 /*
- * Given a quadratic expression `e` represented by its monomial to coefficient
- * map, decompose it into the form
- * e = 0.5 * x' * Q * x + b' * x + c
- * @param[in] monomial_to_coeff_map. Map the monomial to the coefficient, this
- * is the result of calling DecomposePolynomialIntoMonomial(e).
- * @param[in] map_var_to_index maps variables in
- * monomial_to_coeff_map.GetVariables() to the index in the vector `x`.
- * @param[in] num_variables The number of variables in the expression.
+ * Given a quadratic polynomial @p poly, decomposes it into the form 0.5 * x' *
+ * Q * x + b' * x + c
+ *
+ * @param[in] poly Quadratic polynomial to decompose.
+ * @param[in] map_var_to_index maps variables in `poly.GetVariables()` to the
+ * index in the vector `x`.
  * @param Q[out] The Hessian of the quadratic expression. @pre The size of Q
  * should be `num_variables * num_variables`.
  * @param b[out] The linear term of the quadratic expression. @pre The size of
  * `b` should be `num_variables * 1`.
  * @param c[out] The constant term of the quadratic expression.
  */
-void DecomposeQuadraticExpressionWithMonomialToCoeffMap(
-    const symbolic::MonomialToCoefficientMap& monomial_to_coeff_map,
+void DecomposeQuadraticPolynomial(
+    const symbolic::Polynomial& poly,
     const std::unordered_map<symbolic::Variable::Id, int>& map_var_to_index,
-    int num_variables, Eigen::MatrixXd* Q, Eigen::VectorXd* b, double* c);
+    Eigen::MatrixXd* Q, Eigen::VectorXd* b, double* c);
 
 /*
  * Given a vector of linear expressions v, decompose it to
@@ -147,11 +144,9 @@ DecomposeLinearExpression(
     oss << "Expression " << e << "is not a polynomial.\n";
     throw std::runtime_error(oss.str());
   }
-  const symbolic::Variables& vars = e.GetVariables();
-  const auto& monomial_to_coeff_map =
-      symbolic::DecomposePolynomialIntoMonomial(e, vars);
+  const symbolic::Polynomial poly{e};
   int num_variable = 0;
-  for (const auto& p : monomial_to_coeff_map) {
+  for (const auto& p : poly.monomial_to_coefficient_map()) {
     const auto& p_monomial = p.first;
     DRAKE_ASSERT(is_constant(p.second));
     const double p_coeff = symbolic::get_constant_value(p.second);

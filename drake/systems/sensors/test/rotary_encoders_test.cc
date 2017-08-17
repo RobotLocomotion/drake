@@ -6,9 +6,14 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/symbolic.h"
+#include "drake/common/test/symbolic_test_util.h"
+#include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
 namespace drake {
 namespace {
+
+constexpr double k2Pi = 2.0 * M_PI;
 
 // Test with the simple quantization-only constructor.
 GTEST_TEST(TestEncoders, QuantizeOnly) {
@@ -18,7 +23,7 @@ GTEST_TEST(TestEncoders, QuantizeOnly) {
   systems::sensors::RotaryEncoders<double> encoders(tick_counts);
 
   Eigen::Vector2d ticks_per_radian;
-  ticks_per_radian << tick_counts[0] / M_2_PI, tick_counts[1] / M_2_PI;
+  ticks_per_radian << tick_counts[0] / k2Pi, tick_counts[1] / k2Pi;
 
   auto context = encoders.CreateDefaultContext();
   auto output = encoders.AllocateOutput(*context);
@@ -85,7 +90,7 @@ GTEST_TEST(TestEncoders, QuantizationAndSelector) {
   systems::sensors::RotaryEncoders<double> encoders(4, indices, tick_counts);
 
   Eigen::Vector2d ticks_per_radian;
-  ticks_per_radian << tick_counts[0] / M_2_PI, tick_counts[1] / M_2_PI;
+  ticks_per_radian << tick_counts[0] / k2Pi, tick_counts[1] / k2Pi;
 
   auto context = encoders.CreateDefaultContext();
   auto output = encoders.AllocateOutput(*context);
@@ -124,7 +129,7 @@ GTEST_TEST(TestEncoders, CalibrationOffsets) {
   systems::sensors::RotaryEncoders<double> encoders(tick_counts);
 
   Eigen::Vector2d ticks_per_radian;
-  ticks_per_radian << tick_counts[0] / M_2_PI, tick_counts[1] / M_2_PI;
+  ticks_per_radian << tick_counts[0] / k2Pi, tick_counts[1] / k2Pi;
 
   auto context = encoders.CreateDefaultContext();
   auto output = encoders.AllocateOutput(*context);
@@ -158,6 +163,45 @@ GTEST_TEST(TestEncoders, CalibrationOffsets) {
                                 measurement->CopyToVector(), tol,
                                 MatrixCompareType::absolute));
   }
+}
+
+// Test ToAutoDiff and ToSymbolic.
+GTEST_TEST(TestEncoders, ScalarConversion) {
+  using Expression = symbolic::Expression;
+
+  const std::vector<int> indices = {1, 2};
+  const std::vector<int> tick_counts = {2, 4};
+  systems::sensors::RotaryEncoders<double> encoders(4, indices, tick_counts);
+
+  // Sanity check AutoDiff form.  We rely on symbolic form to test correctness.
+  EXPECT_TRUE(is_autodiffxd_convertible(encoders));
+
+  // Check that both the indices and tick_counts made it into symbolic form.
+  EXPECT_TRUE(is_symbolic_convertible(encoders, [&](
+      const systems::sensors::RotaryEncoders<Expression>& dut) {
+    auto context = dut.CreateDefaultContext();
+
+    // Set input to be symbolic variables.
+    const Vector4<Expression> input{
+      symbolic::Variable("u0"),
+      symbolic::Variable("u1"),
+      symbolic::Variable("u2"),
+      symbolic::Variable("u3")
+    };
+    context->FixInputPort(0, input);
+
+    // Obtain the symbolic outputs.
+    auto outputs = dut.AllocateOutput(*context);
+    dut.CalcOutput(*context, outputs.get());
+    const systems::BasicVector<Expression>& output =
+        *(outputs->get_vector_data(0));
+    ASSERT_EQ(output.size(), 2);
+
+    // Symbolic form should be as expected.
+    using symbolic::test::ExprEqual;
+    EXPECT_PRED2(ExprEqual, output[0], floor((M_1_PI * input[1])) / M_1_PI);
+    EXPECT_PRED2(ExprEqual, output[1], floor((M_2_PI * input[2])) / M_2_PI);
+  }));
 }
 
 }  // namespace

@@ -1,12 +1,10 @@
-#include "drake/common/symbolic_environment.h"
-
 #include <cmath>
 #include <stdexcept>
 #include <string>
 
 #include <gtest/gtest.h>
 
-#include "drake/common/symbolic_variable.h"
+#include "drake/common/symbolic.h"
 
 namespace drake {
 namespace symbolic {
@@ -64,6 +62,13 @@ TEST_F(EnvironmentTest, insert_find) {
 
   env1.insert(var_v_, 6);
   EXPECT_EQ(env1.size(), 5u);
+}
+
+TEST_F(EnvironmentTest, domain) {
+  const Environment env1{};
+  const Environment env2{{var_x_, 2}, {var_y_, 3}, {var_z_, 4}};
+  EXPECT_EQ(env1.domain(), Variables{});
+  EXPECT_EQ(env2.domain(), Variables({var_x_, var_y_, var_z_}));
 }
 
 TEST_F(EnvironmentTest, ToString) {

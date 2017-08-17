@@ -83,10 +83,6 @@ function(drake_add_test)
     set_tests_properties(${_NAME} PROPERTIES
       LABELS ${_size}
       TIMEOUT ${_timeout})
-    if(TESTS_ENVIRONMENT)
-      set_tests_properties(${_NAME} PROPERTIES
-        ENVIRONMENT "${TESTS_ENVIRONMENT}")
-    endif()
   else()
     message(STATUS
       "Not running ${_NAME} because ${_size} tests are not enabled")
@@ -255,26 +251,16 @@ function(drake_add_matlab_test)
   endif()
 
   set(_additional_paths
-    "${CMAKE_INSTALL_PREFIX}/matlab;${_WORKING_DIRECTORY};")
-  set(_test_precommand
-    "addpath_drake; global g_disable_visualizers; g_disable_visualizers=true;")
-
-  if(CHECK_DEPENDENCY_STRICT OR _CHECK_DEPENDENCY_STRICT)
-    set(_exit_status 1)
-  else()
-    set(_exit_status
-      "~strncmp(ex.identifier,'Drake:MissingDependency',23)")  # FIXME: missing dependency => pass
-  endif()
+    "${CMAKE_SOURCE_DIR}/matlab;${_WORKING_DIRECTORY};")
 
   set(_test_command
-    "try, eval('${_COMMAND}'); catch ex, disp(getReport(ex,'extended')); disp(' '); force_close_system; exit(${_exit_status}); end; force_close_system; exit(0)")
+    "try, addpath_drake; eval('${_COMMAND}'); catch ex, disp(getReport(ex,'extended')); disp(' '); exit(1); end; exit(0)")
 
   set(_test_args TEST_ARGS ${_UNPARSED_ARGUMENTS})
 
   matlab_add_unit_test(
     NAME ${_NAME}
     ADDITIONAL_PATH "${_additional_paths}"
-    UNITTEST_PRECOMMAND "${_test_precommand}"
     CUSTOM_TEST_COMMAND "${_test_command}"
     TIMEOUT -1
     WORKING_DIRECTORY "${_WORKING_DIRECTORY}"

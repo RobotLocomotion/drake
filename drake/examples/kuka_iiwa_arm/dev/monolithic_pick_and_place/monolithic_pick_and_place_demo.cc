@@ -3,38 +3,50 @@
 #include <vector>
 
 #include <gflags/gflags.h>
-
 #include "bot_core/robot_state_t.hpp"
 #include "robotlocomotion/robot_plan_t.hpp"
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
+#include "drake/common/text_logging_gflags.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/state_machine_system.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_wsg_diagram_factory.h"
 #include "drake/examples/kuka_iiwa_arm/robot_plan_interpolator.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/lcmt_contact_results_for_viz.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
 #include "drake/lcmtypes/drake/lcmt_schunk_wsg_command.hpp"
+#include "drake/manipulation/schunk_wsg/schunk_wsg_controller.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/rigid_body_plant/contact_results_to_lcm.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
+#include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 
-DEFINE_uint64(target, 0, "ID of the target to pick.");
+DEFINE_int32(target, 0, "ID of the target to pick.");
 DEFINE_double(orientation, 2 * M_PI, "Yaw angle of the box.");
-DEFINE_uint32(start_position, 1, "Position index to start from");
-DEFINE_uint32(end_position, 2, "Position index to end at");
+DEFINE_int32(start_position, 1, "Position index to start from");
+DEFINE_int32(end_position, 2, "Position index to end at");
+DEFINE_double(dt, 1e-3, "Integration step size");
+DEFINE_double(realtime_rate, 0.0,
+              "Rate at which to run the simulation, relative to realtime");
+DEFINE_bool(quick, false, "Run only a brief simulation and return success "
+            "without executing the entire task");
 
 using robotlocomotion::robot_plan_t;
 
 namespace drake {
-using manipulation::schunk_wsg::SchunkWsgTrajectoryGenerator;
+using manipulation::schunk_wsg::SchunkWsgController;
 using manipulation::schunk_wsg::SchunkWsgStatusSender;
 using systems::RigidBodyPlant;
+using systems::RungeKutta2Integrator;
 using systems::Simulator;
 
 namespace examples {
@@ -43,7 +55,7 @@ namespace monolithic_pick_and_place {
 namespace {
 
 const char kIiwaUrdf[] =
-    "/manipulation/models/iiwa_description/urdf/"
+    "drake/manipulation/models/iiwa_description/urdf/"
     "iiwa14_polytope_collision.urdf";
 const char kIiwaEndEffectorName[] = "iiwa_link_ee";
 
@@ -69,11 +81,12 @@ Target GetTarget() {
   Target targets[] = {
     {"block_for_pick_and_place.urdf", Eigen::Vector3d(0.06, 0.06, 0.2)},
     {"black_box.urdf", Eigen::Vector3d(0.055, 0.165, 0.18)},
-    {"simple_cuboid.urdf", Eigen::Vector3d(0.06, 0.06, 0.06)}
+    {"simple_cuboid.urdf", Eigen::Vector3d(0.06, 0.06, 0.06)},
+    {"simple_cylinder.urdf", Eigen::Vector3d(0.065, 0.065, 0.13)}
   };
 
-  const int num_targets = 3;
-  if (FLAGS_target >= num_targets) {
+  const int num_targets = 4;
+  if ((FLAGS_target >= num_targets) || (FLAGS_target < 0)) {
     throw std::runtime_error("Invalid target ID");
   }
   return targets[FLAGS_target];
@@ -94,16 +107,16 @@ std::unique_ptr<systems::RigidBodyPlant<double>> BuildCombinedPlant(
   // subsequently added to the world.
   tree_builder->StoreModel("iiwa", kIiwaUrdf);
   tree_builder->StoreModel("table",
-                           "/examples/kuka_iiwa_arm/models/table/"
+                           "drake/examples/kuka_iiwa_arm/models/table/"
                            "extra_heavy_duty_table_surface_only_collision.sdf");
   tree_builder->StoreModel(
-      "target", "/examples/kuka_iiwa_arm/models/objects/" + target_model);
+      "target", "drake/examples/kuka_iiwa_arm/models/objects/" + target_model);
   tree_builder->StoreModel("yellow_post",
-                           "/examples/kuka_iiwa_arm/models/objects/"
+                           "drake/examples/kuka_iiwa_arm/models/objects/"
                            "yellow_post.urdf");
   tree_builder->StoreModel(
       "wsg",
-      "/manipulation/models/wsg_50_description"
+      "drake/manipulation/models/wsg_50_description"
       "/sdf/schunk_wsg_50_ball_contact.sdf");
 
   // The main table which the arm sits on.
@@ -150,10 +163,18 @@ int DoMain(void) {
   post_locations.push_back(Eigen::Vector3d(-0.1, -1.0, 0));  // position E
   post_locations.push_back(Eigen::Vector3d(-0.47, -0.8, 0));  // position F
 
-  // Location for the extra table from the pick and place tests.
-  Eigen::Vector3d table_position(0.9, -0.36, -0.07);  // position C
+  // Position of the pick and place location on the table, relative to
+  // the base of the arm.  In the original test, the position was
+  // specified as 0.90m forward of the arm.  We change that to 0.86
+  // here as the previous test grasped the target with the tip of the
+  // fingers in the middle while this test places the fingertip
+  // further forward.  The position is right at the edge of what we
+  // can plan to, so this 4cm change does matter.
+  const Eigen::Vector3d table_position(0.86, -0.36, -0.07);  // position C
 
-  Eigen::Vector3d post_height_offset(0, 0, 0.27);
+  // The offset from the top of the table to the top of the post, used for
+  // calculating the place locations in iiwa relative coordinates.
+  const Eigen::Vector3d post_height_offset(0, 0, 0.26);
 
   // TODO(sam.creasey) select only one of these
   std::vector<Isometry3<double>> place_locations;
@@ -200,15 +221,30 @@ int DoMain(void) {
   systems::DiagramBuilder<double> builder;
   ModelInstanceInfo<double> iiwa_instance, wsg_instance, box_instance;
 
+  // Offset from the center of the second table to the pick/place
+  // location on the table.
+  const Eigen::Vector3d table_offset(0.30, 0, 0);
   std::unique_ptr<systems::RigidBodyPlant<double>> model_ptr =
-      BuildCombinedPlant(post_locations, table_position, target.model_name,
+      BuildCombinedPlant(post_locations, table_position + table_offset,
+                         target.model_name,
                          box_origin, Vector3<double>(0, 0, FLAGS_orientation),
                          &iiwa_instance, &wsg_instance, &box_instance);
-
 
   auto plant = builder.AddSystem<IiwaAndWsgPlantWithStateEstimator<double>>(
       std::move(model_ptr), iiwa_instance, wsg_instance, box_instance);
   plant->set_name("plant");
+
+  auto contact_viz =
+      builder.AddSystem<systems::ContactResultsToLcmSystem<double>>(
+          plant->get_tree());
+  auto contact_results_publisher = builder.AddSystem(
+      systems::lcm::LcmPublisherSystem::Make<lcmt_contact_results_for_viz>(
+          "CONTACT_RESULTS", &lcm));
+  // Contact results to lcm msg.
+  builder.Connect(plant->get_output_port_contact_results(),
+                  contact_viz->get_input_port(0));
+  builder.Connect(contact_viz->get_output_port(0),
+                  contact_results_publisher->get_input_port(0));
 
   auto drake_visualizer = builder.AddSystem<systems::DrakeVisualizer>(
       plant->get_plant().get_rigid_body_tree(), &lcm);
@@ -217,7 +253,7 @@ int DoMain(void) {
                   drake_visualizer->get_input_port(0));
 
   auto iiwa_trajectory_generator = builder.AddSystem<RobotPlanInterpolator>(
-      drake::GetDrakePath() + kIiwaUrdf);
+      FindResourceOrThrow(kIiwaUrdf));
   builder.Connect(plant->get_output_port_iiwa_state(),
                   iiwa_trajectory_generator->get_state_input_port());
   builder.Connect(
@@ -227,12 +263,10 @@ int DoMain(void) {
       iiwa_trajectory_generator->get_acceleration_output_port(),
       plant->get_input_port_iiwa_acceleration_command());
 
-  auto wsg_trajectory_generator =
-      builder.AddSystem<SchunkWsgTrajectoryGenerator>(
-          plant->get_output_port_wsg_state().size(), 0);
+  auto wsg_controller = builder.AddSystem<SchunkWsgController>();
   builder.Connect(plant->get_output_port_wsg_state(),
-                  wsg_trajectory_generator->get_state_input_port());
-  builder.Connect(wsg_trajectory_generator->get_output_port(0),
+                  wsg_controller->get_state_input_port());
+  builder.Connect(wsg_controller->get_output_port(0),
                   plant->get_input_port_wsg_command());
 
   auto wsg_status_sender = builder.AddSystem<SchunkWsgStatusSender>(
@@ -244,8 +278,8 @@ int DoMain(void) {
   Isometry3<double> iiwa_base = Isometry3<double>::Identity();
   iiwa_base.translation() = robot_base;
 
-  if (FLAGS_end_position > 0) {
-    if (FLAGS_end_position >= place_locations.size()) {
+  if (FLAGS_end_position >= 0) {
+    if (FLAGS_end_position >= static_cast<int>(place_locations.size())) {
       throw std::runtime_error("Invalid end position specified.");
     }
     std::vector<Isometry3<double>> new_place_locations;
@@ -255,7 +289,7 @@ int DoMain(void) {
 
   auto state_machine =
       builder.template AddSystem<PickAndPlaceStateMachineSystem>(
-          drake::GetDrakePath() + kIiwaUrdf, kIiwaEndEffectorName,
+          FindResourceOrThrow(kIiwaUrdf), kIiwaEndEffectorName,
           iiwa_base, place_locations);
 
   builder.Connect(plant->get_output_port_box_robot_state_msg(),
@@ -265,32 +299,46 @@ int DoMain(void) {
   builder.Connect(plant->get_output_port_iiwa_robot_state_msg(),
                   state_machine->get_input_port_iiwa_state());
   builder.Connect(state_machine->get_output_port_wsg_command(),
-                  wsg_trajectory_generator->get_command_input_port());
+                  wsg_controller->get_command_input_port());
   builder.Connect(state_machine->get_output_port_iiwa_plan(),
                   iiwa_trajectory_generator->get_plan_input_port());
 
   auto sys = builder.Build();
   Simulator<double> simulator(*sys);
   simulator.Initialize();
+  simulator.set_target_realtime_rate(FLAGS_realtime_rate);
+  simulator.reset_integrator<RungeKutta2Integrator<double>>(*sys,
+      FLAGS_dt, simulator.get_mutable_context());
+  simulator.get_mutable_integrator()->set_maximum_step_size(FLAGS_dt);
+  simulator.get_mutable_integrator()->set_fixed_step_mode(true);
 
-  auto plan_source_context = sys->GetMutableSubsystemContext(
-      simulator.get_mutable_context(), iiwa_trajectory_generator);
+  auto& plan_source_context = sys->GetMutableSubsystemContext(
+      *iiwa_trajectory_generator, simulator.get_mutable_context());
   iiwa_trajectory_generator->Initialize(
-      plan_source_context->get_time(),
+      plan_source_context.get_time(),
       Eigen::VectorXd::Zero(7),
-      plan_source_context->get_mutable_state());
+      plan_source_context.get_mutable_state());
 
   // Step the simulator in some small increment.  Between steps, check
   // to see if the state machine thinks we're done, and if so that the
   // object is near the target.
-  const double simulation_step = 1.;
-  while (state_machine->state(simulator.get_context())
+  const double simulation_step = 0.1;
+  while (state_machine->state(
+             sys->GetSubsystemContext(*state_machine,
+                                      simulator.get_context()))
          != pick_and_place::kDone) {
     simulator.StepTo(simulator.get_context().get_time() + simulation_step);
+    if (FLAGS_quick) {
+      // We've run a single step, just get out now since we won't have
+      // reached our destination.
+      return 0;
+    }
   }
 
   const pick_and_place::WorldState& world_state =
-      state_machine->world_state(simulator.get_context());
+      state_machine->world_state(
+          sys->GetSubsystemContext(*state_machine,
+                                   simulator.get_context()));
   const Isometry3<double>& object_pose = world_state.get_object_pose();
   const Vector6<double>& object_velocity = world_state.get_object_velocity();
   Isometry3<double> goal = place_locations.back();
@@ -343,5 +391,6 @@ int DoMain(void) {
 
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
+  drake::logging::HandleSpdlogGflags();
   return drake::examples::kuka_iiwa_arm::monolithic_pick_and_place::DoMain();
 }

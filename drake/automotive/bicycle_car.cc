@@ -9,13 +9,14 @@
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
-#include "drake/common/symbolic_formula.h"
+#include "drake/common/symbolic.h"
 
 namespace drake {
 namespace automotive {
 
 template <typename T>
-BicycleCar<T>::BicycleCar() {
+BicycleCar<T>::BicycleCar()
+    : systems::LeafSystem<T>(systems::SystemTypeTag<automotive::BicycleCar>{}) {
   auto& steering_input = this->DeclareInputPort(systems::kVectorValued, 1);
   auto& force_input = this->DeclareInputPort(systems::kVectorValued, 1);
   auto& state_output = this->DeclareVectorOutputPort(&BicycleCar::CopyOutState);
@@ -39,6 +40,11 @@ BicycleCar<T>::BicycleCar() {
 
   this->DeclareNumericParameter(BicycleCarParameters<T>());
 }
+
+template <typename T>
+template <typename U>
+BicycleCar<T>::BicycleCar(const BicycleCar<U>&)
+    : BicycleCar() {}
 
 template <typename T>
 BicycleCar<T>::~BicycleCar() {}
@@ -167,12 +173,7 @@ void BicycleCar<T>::ImplCalcTimeDerivatives(
   derivatives->set_sy(sy_dot);
 }
 
-template <typename T>
-BicycleCar<symbolic::Expression>* BicycleCar<T>::DoToSymbolic() const {
-  return new BicycleCar<symbolic::Expression>();
-}
-
-// These instantiations must match the API documentation in bicycle.h.
+// These instantiations must match the API documentation in bicycle_car.h.
 template class BicycleCar<double>;
 template class BicycleCar<AutoDiffXd>;
 template class BicycleCar<symbolic::Expression>;

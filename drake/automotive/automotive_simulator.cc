@@ -5,7 +5,6 @@
 
 #include "drake/automotive/gen/driving_command.h"
 #include "drake/automotive/gen/driving_command_translator.h"
-#include "drake/automotive/gen/euler_floating_joint_state_translator.h"
 #include "drake/automotive/gen/maliput_railcar_state_translator.h"
 #include "drake/automotive/gen/simple_car_state_translator.h"
 #include "drake/automotive/idm_controller.h"
@@ -21,6 +20,7 @@
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/create_load_robot_message.h"
+#include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
@@ -39,6 +39,7 @@ using systems::AbstractValue;
 using systems::lcm::LcmPublisherSystem;
 using systems::OutputPort;
 using systems::rendering::PoseBundle;
+using systems::RungeKutta2Integrator;
 using systems::System;
 using systems::SystemOutput;
 
@@ -120,18 +121,13 @@ int AutomotiveSimulator<T>::AddPriusSimpleCar(
   simple_car->set_name(name);
   vehicles_[id] = simple_car;
   simple_car_initial_states_[simple_car].set_value(initial_state.get_value());
-  auto coord_transform =
-      builder_->template AddSystem<SimpleCarToEulerFloatingJoint<T>>();
-  coord_transform->set_name(name + "_transform");
 
   ConnectCarOutputsAndPriusVis(id, simple_car->pose_output(),
       simple_car->velocity_output());
 
   builder_->Connect(*command_subscriber, *simple_car);
-  builder_->Connect(simple_car->state_output(),
-                    coord_transform->get_input_port(0));
+
   AddPublisher(*simple_car, id);
-  AddPublisher(*coord_transform, id);
   return id;
 }
 
@@ -165,11 +161,6 @@ int AutomotiveSimulator<T>::AddMobilControlledSimpleCar(
   auto mux = builder_->template AddSystem<systems::Multiplexer<T>>(
       DrivingCommand<T>());
   mux->set_name(name + "_mux");
-  auto coord_transform =
-      builder_->template AddSystem<SimpleCarToEulerFloatingJoint<T>>();
-  coord_transform->set_name(name + "_transform");
-  builder_->Connect(simple_car->state_output(),
-                    coord_transform->get_input_port(0));
 
   // Wire up MobilPlanner and IdmController.
   builder_->Connect(simple_car->pose_output(), mobil_planner->ego_pose_input());
@@ -200,7 +191,6 @@ int AutomotiveSimulator<T>::AddMobilControlledSimpleCar(
                                simple_car->velocity_output());
 
   AddPublisher(*simple_car, id);
-  AddPublisher(*coord_transform, id);
   return id;
 }
 
@@ -226,17 +216,10 @@ int AutomotiveSimulator<T>::AddPriusTrajectoryCar(
   trajectory_car_initial_states_[trajectory_car].set_value(
       initial_state.get_value());
 
-  auto coord_transform =
-      builder_->template AddSystem<SimpleCarToEulerFloatingJoint<T>>();
-  coord_transform->set_name(name + "_transform");
-
   ConnectCarOutputsAndPriusVis(id, trajectory_car->pose_output(),
       trajectory_car->velocity_output());
 
-  builder_->Connect(trajectory_car->raw_pose_output(),
-                    coord_transform->get_input_port(0));
   AddPublisher(*trajectory_car, id);
-  AddPublisher(*coord_transform, id);
   return id;
 }
 
@@ -323,9 +306,9 @@ void AutomotiveSimulator<T>::SetMaliputRailcarAccelerationCommand(int id,
   }
   DRAKE_ASSERT(diagram_ != nullptr);
   DRAKE_ASSERT(simulator_ != nullptr);
-  systems::Context<T>* context = diagram_->GetMutableSubsystemContext(
-      simulator_->get_mutable_context(), railcar);
-  context->FixInputPort(railcar->command_input().get_index(),
+  systems::Context<T>& context = diagram_->GetMutableSubsystemContext(
+      *railcar, simulator_->get_mutable_context());
+  context.FixInputPort(railcar->command_input().get_index(),
       systems::BasicVector<double>::Make(acceleration));
 }
 
@@ -411,18 +394,6 @@ void AutomotiveSimulator<T>::AddPublisher(const TrajectoryCar<T>& system,
   auto publisher = builder_->template AddSystem<LcmPublisherSystem>(
       channel, translator, lcm_.get());
   builder_->Connect(system.raw_pose_output(), publisher->get_input_port(0));
-}
-
-template <typename T>
-void AutomotiveSimulator<T>::AddPublisher(
-    const SimpleCarToEulerFloatingJoint<T>& system, int vehicle_number) {
-  DRAKE_DEMAND(!has_started());
-  static const EulerFloatingJointStateTranslator translator;
-  const std::string channel =
-      std::to_string(vehicle_number) + "_FLOATING_JOINT_STATE";
-  auto publisher = builder_->template AddSystem<LcmPublisherSystem>(
-      channel, translator, lcm_.get());
-  builder_->Connect(system, *publisher);
 }
 
 template <typename T>
@@ -525,8 +496,10 @@ void AutomotiveSimulator<T>::Start(double target_realtime_rate) {
   lcm_->StartReceiveThread();
 
   simulator_->set_target_realtime_rate(target_realtime_rate);
-  simulator_->get_mutable_integrator()->set_maximum_step_size(0.01);
-  simulator_->get_mutable_integrator()->set_requested_minimum_step_size(0.01);
+  const double max_step_size = 0.01;
+  simulator_->template reset_integrator<RungeKutta2Integrator<T>>(*diagram_,
+      max_step_size, simulator_->get_mutable_context());
+  simulator_->get_mutable_integrator()->set_fixed_step_mode(true);
   simulator_->Initialize();
 }
 
@@ -537,9 +510,9 @@ void AutomotiveSimulator<T>::InitializeTrajectoryCars() {
     const TrajectoryCarState<T>& initial_state = pair.second;
 
     systems::VectorBase<T>* context_state =
-        diagram_->GetMutableSubsystemContext(simulator_->get_mutable_context(),
-                                             car)
-        ->get_mutable_continuous_state()->get_mutable_vector();
+        diagram_->GetMutableSubsystemContext(*car,
+                                             simulator_->get_mutable_context())
+        .get_mutable_continuous_state()->get_mutable_vector();
     TrajectoryCarState<T>* const state =
         dynamic_cast<TrajectoryCarState<T>*>(context_state);
     DRAKE_ASSERT(state);
@@ -554,9 +527,9 @@ void AutomotiveSimulator<T>::InitializeSimpleCars() {
     const SimpleCarState<T>& initial_state = pair.second;
 
     systems::VectorBase<T>* context_state =
-        diagram_->GetMutableSubsystemContext(simulator_->get_mutable_context(),
-                                             car)
-        ->get_mutable_continuous_state()->get_mutable_vector();
+        diagram_->GetMutableSubsystemContext(*car,
+                                             simulator_->get_mutable_context())
+        .get_mutable_continuous_state()->get_mutable_vector();
     SimpleCarState<T>* const state =
         dynamic_cast<SimpleCarState<T>*>(context_state);
     DRAKE_ASSERT(state);
@@ -571,19 +544,18 @@ void AutomotiveSimulator<T>::InitializeMaliputRailcars() {
     const MaliputRailcarParams<T>& params = pair.second.first;
     const MaliputRailcarState<T>& initial_state = pair.second.second;
 
-    systems::Context<T>* context = diagram_->GetMutableSubsystemContext(
-         simulator_->get_mutable_context(), car);
-    DRAKE_DEMAND(context != nullptr);
+    systems::Context<T>& context = diagram_->GetMutableSubsystemContext(
+         *car, simulator_->get_mutable_context());
 
     systems::VectorBase<T>* context_state =
-        context->get_mutable_continuous_state()->get_mutable_vector();
+        context.get_mutable_continuous_state()->get_mutable_vector();
     MaliputRailcarState<T>* const state =
         dynamic_cast<MaliputRailcarState<T>*>(context_state);
     DRAKE_ASSERT(state);
     state->set_value(initial_state.get_value());
 
     MaliputRailcarParams<T>* railcar_system_params =
-        car->get_mutable_parameters(context);
+        car->get_mutable_parameters(&context);
     DRAKE_DEMAND(railcar_system_params != nullptr);
     railcar_system_params->set_value(params.get_value());
   }

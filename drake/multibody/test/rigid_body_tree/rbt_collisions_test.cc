@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -33,9 +33,10 @@ struct SurfacePoint {
 };
 
 // Solutions are accessed by rigid body pointer using an std::unordered_map.
-// DrakeCollision::Model returns the collision detection results as a vector of
-// DrakeCollision::PointPair entries. Each entry holds a reference to the pair
-// of collision elements taking part in the collision.
+// drake::multibody::collision::Model returns the collision detection results
+// as a vector of drake::multibody::collision::PointPair entries. Each entry
+// holds a reference to the pair of collision elements taking part in the
+// collision.
 // To provide a simple access to the appropriate solution for the collision
 // point on each body, a map is used to allow referencing the corresponding
 // solution by body pointer.
@@ -49,8 +50,9 @@ class RBTCollisionTest: public ::testing::Test {
  protected:
   void SetUp() override {
     parsers::sdf::AddModelInstancesFromSdfFileToWorld(
-        GetDrakePath() +
-            "/multibody/test/rigid_body_tree/small_sphere_on_large_box.sdf",
+        FindResourceOrThrow(
+            "drake/multibody/test/rigid_body_tree/"
+            "small_sphere_on_large_box.sdf"),
         multibody::joints::kQuaternion, &tree_);
 
     small_sphere_ = tree_.FindBody("small_sphere");
@@ -92,9 +94,8 @@ TEST_F(RBTCollisionTest, FindAndComputeContactPoints) {
 
   KinematicsCache<double> kinsol = tree_.doKinematics(q, v);
 
-  std::vector<DrakeCollision::PointPair> collision_pairs =
-      tree_.ComputeMaximumDepthCollisionPoints(
-      kinsol, false);
+  std::vector<drake::multibody::collision::PointPair> collision_pairs =
+      tree_.ComputeMaximumDepthCollisionPoints(kinsol, false);
 
   // RigidBodyTree::ComputeMaximumDepthCollisionPoints returns only one point,
   // the maximum depth collision point.
@@ -141,8 +142,9 @@ class RBTCollisionCliqueTest: public ::testing::Test {
  protected:
   void SetUp() override {
     parsers::sdf::AddModelInstancesFromSdfFileToWorld(
-        drake::GetDrakePath() +
-            "/multibody/test/rigid_body_tree/linked_spheres_on_large_box.sdf",
+        FindResourceOrThrow(
+            "drake/multibody/test/rigid_body_tree/"
+            "linked_spheres_on_large_box.sdf"),
         multibody::joints::kQuaternion, &tree_);
 
     small_sphere_1_ = tree_.FindBody("small_sphere_1");
@@ -184,9 +186,8 @@ TEST_F(RBTCollisionCliqueTest, ComputeContactPointsWithCliques) {
 
   KinematicsCache<double> kinsol = tree_.doKinematics(q, v);
 
-  std::vector<DrakeCollision::PointPair> collision_pairs =
-      tree_.ComputeMaximumDepthCollisionPoints(
-          kinsol, false);
+  std::vector<drake::multibody::collision::PointPair> collision_pairs =
+      tree_.ComputeMaximumDepthCollisionPoints(kinsol, false);
 
   // RigidBodyTree::ComputeMaximumDepthCollisionPoints returns only one point,
   // the maximum depth collision point. The overlapping spheres should be

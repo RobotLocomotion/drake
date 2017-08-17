@@ -30,36 +30,6 @@ drake_install_pkg_config_file(drake-control-util
     drake-trajectories
     eigen3)
 
-if(gurobi_FOUND AND lcm_FOUND AND yaml-cpp_FOUND)
-  add_library_with_exports(LIB_NAME drakeQPCommon SOURCE_FILES InstantaneousQPController.cpp)
-  target_link_libraries(drakeQPCommon
-      drakeControlUtil
-      drakeLCMUtil
-      drakeMultibodyParsers
-      drakeQP
-      drakeSide
-      drakeTrajectories
-      drakeYAMLUtil
-      Eigen3::Eigen
-      lcm)
-  drake_install_libraries(drakeQPCommon)
-  drake_install_headers(QPCommon.h InstantaneousQPController.h)
-  drake_install_pkg_config_file(drake-qp-common
-    TARGET drakeQPCommon
-    LIBS -ldrakeQPCommon
-    CFLAGS -I\${prefix}/include/lcmtypes
-    REQUIRES
-      drake-control-util
-      drake-lcm-util
-      drake-multibody-parsers
-      drake-qp
-      drake-side
-      drake-trajectories
-      drake-yaml-util
-      eigen3
-      lcm)
-endif()
-
 add_library_with_exports(LIB_NAME drakeZMPUtil SOURCE_FILES zmpUtil.cpp)
 target_link_libraries(drakeZMPUtil
   drakeTrajectories
@@ -82,15 +52,13 @@ set(system2_sources
 set(system2_installed_headers
   inverse_dynamics.h
   inverse_dynamics_controller.h
-  model_based_controller_base.h
   pid_controlled_system.h
   pid_controller.h
-  state_feedback_controller_base.h)
+  state_feedback_controller_interface.h)
 add_library_with_exports(LIB_NAME drakeSystemControllers
     SOURCE_FILES ${system2_sources} ${system2_installed_headers})
 target_link_libraries(drakeSystemControllers
     drakeCommon
-    drakeMultibodyParsers
     drakeRBM
     drakeSystemFramework
     drakeSystemPrimitives)

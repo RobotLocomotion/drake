@@ -108,7 +108,7 @@ TEST_F(KukaTest, CollisionAvoidanceTest) {
 
   // First run the global IK without collision avoidance.
   solvers::GurobiSolver gurobi_solver;
-  global_ik_.SetSolverOption(solvers::SolverType::kGurobi, "OutputFlag", 1);
+  global_ik_.SetSolverOption(solvers::GurobiSolver::id(), "OutputFlag", 1);
   SolutionResult sol_result = gurobi_solver.Solve(global_ik_);
   EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
   const auto& q_without_collision_avoidance =
@@ -121,7 +121,7 @@ TEST_F(KukaTest, CollisionAvoidanceTest) {
           cache, rigid_body_tree_->get_body(ee_idx_));
   EXPECT_LE(
       (ee_pose_ik_without_collision_avoidance.translation() - ee_pos).norm(),
-      0.06);
+      0.11);
 
   int link6_idx = rigid_body_tree_->FindBodyIndex("iiwa_link_6");
   int link5_idx = rigid_body_tree_->FindBodyIndex("iiwa_link_5");

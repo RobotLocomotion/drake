@@ -1,11 +1,10 @@
-#include <pybind11/pybind11.h>
 #include <pybind11/eigen.h>
+#include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-
-#include "drake/multibody/rigid_body_tree.h"
-#include "drake/multibody/rigid_body_ik.h"
 #include "drake/multibody/ik_options.h"
+#include "drake/multibody/rigid_body_ik.h"
+#include "drake/multibody/rigid_body_tree.h"
 
 namespace py = pybind11;
 
@@ -39,6 +38,25 @@ PYBIND11_PLUGIN(_pydrake_ik) {
          py::arg("ub"),
          py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan);
 
+  py::class_<RelativePositionConstraint, RigidBodyConstraint>(
+    m, "RelativePositionConstraint")
+    .def(py::init<RigidBodyTree<double>*,
+                  const Eigen::Matrix3Xd&,
+                  const Eigen::MatrixXd&,
+                  const Eigen::MatrixXd&,
+                  int,
+                  int,
+                  const Eigen::Matrix<double, 7, 1>&,
+                  const Eigen::Vector2d&>(),
+         py::arg("model"),
+         py::arg("pts"),
+         py::arg("lb"),
+         py::arg("ub"),
+         py::arg("bodyA_idx"),
+         py::arg("bodyB_idx"),
+         py::arg("bTbp"),
+         py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan);
+
   py::class_<WorldPositionInFrameConstraint, RigidBodyConstraint>(
     m, "WorldPositionInFrameConstraint")
     .def(py::init<RigidBodyTree<double>*,
@@ -69,6 +87,53 @@ PYBIND11_PLUGIN(_pydrake_ik) {
          py::arg("axis"),
          py::arg("dir"),
          py::arg("conethreshold"),
+         py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan);
+
+  py::class_<WorldGazeTargetConstraint, RigidBodyConstraint>(
+    m, "WorldGazeTargetConstraint")
+    .def(py::init<RigidBodyTree<double>*,
+                  int,
+                  const Eigen::Vector3d&,
+                  const Eigen::Vector3d&,
+                  const Eigen::Vector3d&,
+                  double,
+                  const Eigen::Vector2d&>(),
+        py::arg("model"),
+        py::arg("body"),
+        py::arg("axis"),
+        py::arg("target"),
+        py::arg("gaze_origin"),
+        py::arg("conethreshold"),
+        py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan);
+
+  py::class_<RelativeGazeDirConstraint, RigidBodyConstraint>(
+    m, "RelativeGazeDirConstraint")
+    .def(py::init<RigidBodyTree<double>*,
+                  int,
+                  int,
+                  const Eigen::Vector3d&,
+                  const Eigen::Vector3d&,
+                  double,
+                  const Eigen::Vector2d&>(),
+         py::arg("model"),
+         py::arg("bodyA_idx"),
+         py::arg("bodyB_idx"),
+         py::arg("axis"),
+         py::arg("dir"),
+         py::arg("conethreshold"),
+         py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan);
+
+  py::class_<MinDistanceConstraint, RigidBodyConstraint>(
+    m, "MinDistanceConstraint")
+    .def(py::init<RigidBodyTree<double>*,
+                  double,
+                  const std::vector<int>&,
+                  const std::set<std::string>&,
+                  const Eigen::Vector2d&>(),
+         py::arg("model"),
+         py::arg("min_distance"),
+         py::arg("active_bodies_idx"),
+         py::arg("active_group_names"),
          py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan);
 
   py::class_<WorldEulerConstraint, RigidBodyConstraint>(

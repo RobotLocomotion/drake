@@ -11,8 +11,8 @@
 #include <vtkVersion.h>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/unused.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
@@ -156,7 +156,7 @@ class RenderingSim : public systems::Diagram<double> {
 
 // TODO(kunimatsu-tri) Remove this once the arbitrary terrain color support
 // is added.
-const std::array<uint8_t, 4> kTerrainColor{{204u, 229u, 255u, 255u}};
+const std::array<uint8_t, 4> kTerrainColor{{255u, 229u, 204u, 255u}};
 
 const int kWidth = 640;
 const int kHeight = 480;
@@ -178,11 +178,11 @@ UV kCorners[4] = {
 class ImageTest : public ::testing::Test {
  public:
   typedef std::function<void(
-      const sensors::ImageBgra8U& color_image,
+      const sensors::ImageRgba8U& color_image,
       const sensors::ImageDepth32F& depth_image)> ImageVerifier;
 
   typedef std::function<void(
-      const sensors::ImageBgra8U& color_image,
+      const sensors::ImageRgba8U& color_image,
       const sensors::ImageDepth32F& depth_image,
       int horizon)> ImageHorizonVerifier;
 
@@ -193,7 +193,7 @@ class ImageTest : public ::testing::Test {
     diagram_->CalcOutput(*context_, output_.get());
 
     auto color_image = output_->GetMutableData(0)->GetMutableValue<
-      sensors::ImageBgra8U>();
+      sensors::ImageRgba8U>();
     auto depth_image = output_->GetMutableData(1)->GetMutableValue<
       sensors::ImageDepth32F>();
 
@@ -210,7 +210,7 @@ class ImageTest : public ::testing::Test {
 
   void VerifyPoseUpdate(ImageHorizonVerifier verifier) {
     auto& color_image = output_->GetMutableData(0)->GetMutableValue<
-      sensors::ImageBgra8U>();
+      sensors::ImageRgba8U>();
     auto& depth_image = output_->GetMutableData(1)->GetMutableValue<
       sensors::ImageDepth32F>();
     VectorBase<double>* cstate =
@@ -279,7 +279,7 @@ class ImageTest : public ::testing::Test {
   }
 
   static void VerifyUniformColorAndDepth(
-      const sensors::ImageBgra8U& color_image,
+      const sensors::ImageRgba8U& color_image,
       const sensors::ImageDepth32F& depth_image,
       const std::array<uint8_t, 4>& color, float depth) {
     // Verifies by sampling 32 x 24 points instead of 640 x 480 points. The
@@ -296,14 +296,14 @@ class ImageTest : public ::testing::Test {
     }
   }
 
-  static void VerifyTerrain(const sensors::ImageBgra8U& color_image,
+  static void VerifyTerrain(const sensors::ImageRgba8U& color_image,
                             const sensors::ImageDepth32F& depth_image) {
     VerifyUniformColorAndDepth(color_image, depth_image,
                                kTerrainColor, 4.999f);
   }
 
   static void VerifyBox(
-      const sensors::ImageBgra8U& color_image,
+      const sensors::ImageRgba8U& color_image,
       const sensors::ImageDepth32F& depth_image) {
     // This is given by the material diffuse element in `box.sdf`.
     const std::array<uint8_t, 4> kPixelColor{{255u, 255u, 255u, 255u}};
@@ -311,22 +311,22 @@ class ImageTest : public ::testing::Test {
   }
 
   static void VerifyCylinder(
-      const sensors::ImageBgra8U& color_image,
+      const sensors::ImageRgba8U& color_image,
       const sensors::ImageDepth32F& depth_image) {
     // This is given by the material diffuse element in `cylinder.sdf`.
     const std::array<uint8_t, 4> kPixelColor{{255u, 0u, 255u, 255u}};
     VerifyUniformColorAndDepth(color_image, depth_image, kPixelColor, 1.f);
   }
 
-  static void VerifyMeshBox(const sensors::ImageBgra8U& color_image,
+  static void VerifyMeshBox(const sensors::ImageRgba8U& color_image,
                             const sensors::ImageDepth32F& depth_image) {
     // This is given by `box.png` which is the texture file for `box.obj`.
-    const std::array<uint8_t, 4> kPixelColor{{33u, 241u, 4u, 255u}};
+    const std::array<uint8_t, 4> kPixelColor{{4u, 241u, 33u, 255u}};
     VerifyUniformColorAndDepth(color_image, depth_image, kPixelColor, 1.f);
   }
 
   // Verifies the color and depth of the image at the center and four corners.
-  static void VerifySphere(const sensors::ImageBgra8U& color_image,
+  static void VerifySphere(const sensors::ImageRgba8U& color_image,
                            const sensors::ImageDepth32F& depth_image) {
     // Verifies the four corner points.
 
@@ -357,7 +357,7 @@ class ImageTest : public ::testing::Test {
   }
 
   // Verifies the color and depth of the image at the two visuals (boxes).
-  static void VerifyMultipleVisuals(const sensors::ImageBgra8U& color_image,
+  static void VerifyMultipleVisuals(const sensors::ImageRgba8U& color_image,
                                     const sensors::ImageDepth32F& depth_image) {
     // Verifies the four corner points.
     for (const auto& corner : kCorners) {
@@ -384,7 +384,7 @@ class ImageTest : public ::testing::Test {
                 3.999f, kDepthTolerance);
   }
 
-  static void VerifyMovingCamera(const sensors::ImageBgra8U& color_image,
+  static void VerifyMovingCamera(const sensors::ImageRgba8U& color_image,
                                  const sensors::ImageDepth32F& depth_image,
                                  int expected_horizon) {
     // TODO(jamiesnape): Is depth_image actually needed?
@@ -413,7 +413,8 @@ class ImageTest : public ::testing::Test {
   // For fixed camera base.
   void SetUp(const std::string& sdf, const Eigen::Vector3d& position,
              const Eigen::Vector3d& orientation) {
-    diagram_ = std::make_unique<RenderingSim>(GetDrakePath() + sdf);
+    diagram_ = std::make_unique<RenderingSim>(
+        FindResourceOrThrow("drake/systems/sensors/test/models/" + sdf));
     diagram_->InitFixedCamera(position, orientation);
     context_ = diagram_->CreateDefaultContext();
     output_ = diagram_->AllocateOutput(*context_);
@@ -422,7 +423,8 @@ class ImageTest : public ::testing::Test {
   // For moving camera base.
   void SetUp(const std::string& sdf,
              const Eigen::Isometry3d& transformation) {
-    diagram_ = std::make_unique<RenderingSim>(GetDrakePath() + sdf);
+    diagram_ = std::make_unique<RenderingSim>(
+        FindResourceOrThrow("drake/systems/sensors/test/models/" + sdf));
     diagram_->InitMovableCamera(transformation);
     context_ = diagram_->CreateDefaultContext();
     output_ = diagram_->AllocateOutput(*context_);
@@ -437,8 +439,7 @@ class ImageTest : public ::testing::Test {
 
 // Verifies the rendered terrain and the camera's pose.
 TEST_F(ImageTest, TerrainRenderingTest) {
-  const std::string sdf("/systems/sensors/test/models/nothing.sdf");
-  SetUp(sdf,
+  SetUp("nothing.sdf",
         Eigen::Vector3d(0., 0., 4.999),
         Eigen::Vector3d(0., M_PI_2, 0.));
   Verify(ImageTest::VerifyTerrain);
@@ -447,8 +448,7 @@ TEST_F(ImageTest, TerrainRenderingTest) {
 
 // Verifies the rendered box.
 TEST_F(ImageTest, BoxRenderingTest) {
-  const std::string sdf("/systems/sensors/test/models/box.sdf");
-  SetUp(sdf,
+  SetUp("box.sdf",
         Eigen::Vector3d(0., 0., 2.),
         Eigen::Vector3d(0., M_PI_2, 0.));
   Verify(ImageTest::VerifyBox);
@@ -456,8 +456,7 @@ TEST_F(ImageTest, BoxRenderingTest) {
 
 // Verifies the rendered cylinder.
 TEST_F(ImageTest, CylinderRenderingTest) {
-  const std::string sdf("/systems/sensors/test/models/cylinder.sdf");
-  SetUp(sdf,
+  SetUp("cylinder.sdf",
         Eigen::Vector3d(0., 0., 2.),
         Eigen::Vector3d(0., M_PI_2, 0.));
   Verify(ImageTest::VerifyCylinder);
@@ -467,8 +466,7 @@ TEST_F(ImageTest, CylinderRenderingTest) {
 #if VTK_MAJOR_VERSION <= 5
 // Verifies the rendered mesh box.
 TEST_F(ImageTest, MeshBoxRenderingTest) {
-  const std::string sdf("/systems/sensors/test/models/mesh_box.sdf");
-  SetUp(sdf,
+  SetUp("mesh_box.sdf",
         Eigen::Vector3d(0., 0., 3.),
         Eigen::Vector3d(0., M_PI_2, 0.));
   Verify(ImageTest::VerifyMeshBox);
@@ -477,8 +475,7 @@ TEST_F(ImageTest, MeshBoxRenderingTest) {
 
 // Verifies the rendered sphere.
 TEST_F(ImageTest, SphereRenderingTest) {
-  const std::string sdf("/systems/sensors/test/models/sphere.sdf");
-  SetUp(sdf,
+  SetUp("sphere.sdf",
         Eigen::Vector3d(0., 0., 2.),
         Eigen::Vector3d(0., M_PI_2, 0.));
   Verify(ImageTest::VerifySphere);
@@ -490,21 +487,19 @@ TEST_F(ImageTest, SphereRenderingTest) {
 // verifies that the horizon's pixel location changes as the model's state
 // updated.
 TEST_F(ImageTest, CameraPoseUpdateTest) {
-  const std::string sdf("/systems/sensors/test/models/nothing.sdf");
   // Attaches the camera to a location that is 11 m above the model.
   Eigen::Isometry3d transformation((Eigen::Matrix4d() <<
                                     1., 0., 0., 0.,
                                     0., 1., 0., 0.,
                                     0., 0., 1., 11.,
                                     0., 0., 0., 1.).finished());
-  SetUp(sdf, transformation);
+  SetUp("nothing.sdf", transformation);
   VerifyPoseUpdate(ImageTest::VerifyMovingCamera);
 }
 
 // Verifies the number of ids in a label image.
 TEST_F(ImageTest, LabelRenderingTest) {
-  const std::string sdf("/systems/sensors/test/models/three_boxes.sdf");
-  SetUp(sdf,
+  SetUp("three_boxes.sdf",
         Eigen::Vector3d(-10., 0., 2.),
         Eigen::Vector3d(0., M_PI_4 * 0.2, 0.));
   VerifyLabelImage();
@@ -513,8 +508,7 @@ TEST_F(ImageTest, LabelRenderingTest) {
 // Verifies the case that a model has multiple visuals.
 TEST_F(ImageTest, MultipleVisualsTest) {
   // The following SDF includes a link that has more than two visuals.
-  const std::string sdf("/systems/sensors/test/models/multiple_visuals.sdf");
-  SetUp(sdf,
+  SetUp("multiple_visuals.sdf",
         Eigen::Vector3d(0., 0., 4.999),
         Eigen::Vector3d(0., M_PI_2, 0.));
   Verify(ImageTest::VerifyMultipleVisuals);

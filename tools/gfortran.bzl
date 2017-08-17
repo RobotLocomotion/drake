@@ -31,7 +31,7 @@ def _gfortran_impl(repository_ctx):
     libquadmath_path = _find_library(repository_ctx, libquadmath)
 
     if repository_ctx.os.name == "mac os x":
-        repository_ctx.file("empty.cc", executable=False)
+        repository_ctx.file("empty.cc", executable = False)
         srcs = ["empty.cc"]
 
         libgfortran_dir = repository_ctx.path(libgfortran_path).dirname
@@ -67,7 +67,7 @@ def _gfortran_impl(repository_ctx):
     """.format(srcs, linkopts).replace(
         "\n    ", "\n")  # Strip leading indentation.
 
-    repository_ctx.file("BUILD", content=BUILD)
+    repository_ctx.file("BUILD", content = BUILD)
 
 gfortran_repository = repository_rule(
     local = True,

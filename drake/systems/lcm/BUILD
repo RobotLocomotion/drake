@@ -1,8 +1,8 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load("//tools:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -17,6 +17,18 @@ drake_cc_library(
         "lcm_translator_dictionary.h",
     ],
     deps = [
+        "//drake/systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "translator_system",
+    hdrs = [
+        "translator_system.h",
+    ],
+    deps = [
+        "//drake/common",
+        "//drake/lcm:translator_base",
         "//drake/systems/framework",
     ],
 )
@@ -128,4 +140,12 @@ drake_cc_googletest(
     ],
 )
 
-cpplint()
+drake_cc_googletest(
+    name = "translator_test",
+    deps = [
+        ":translator_system",
+        "//drake/lcm:lcmt_drake_signal_utils",
+    ],
+)
+
+add_lint_tests()

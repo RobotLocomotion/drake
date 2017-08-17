@@ -3,7 +3,8 @@
 #include <limits>
 #include <stdexcept>
 
-#include "drake/common/symbolic_expression.h"
+#include "drake/common/symbolic.h"
+#include "drake/solvers/ipopt_solver.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -53,20 +54,6 @@ DirectTrajectoryOptimization::DirectTrajectoryOptimization(
   AddLinearConstraint(h_vars_.array() >= 0.0);
 }
 
-void DirectTrajectoryOptimization::AddInputBounds(
-    const Eigen::VectorXd& lower_bound, const Eigen::VectorXd& upper_bound) {
-  DRAKE_ASSERT(lower_bound.size() == num_inputs_);
-  DRAKE_ASSERT(upper_bound.size() == num_inputs_);
-
-  Eigen::VectorXd lb_all(num_inputs_ * N_);
-  Eigen::VectorXd ub_all(num_inputs_ * N_);
-  for (int i = 0; i < N_; i++) {
-    lb_all.segment(num_inputs_ * i, num_inputs_) = lower_bound;
-    ub_all.segment(num_inputs_ * i, num_inputs_) = upper_bound;
-  }
-  AddBoundingBoxConstraint(lb_all, ub_all, u_vars_);
-}
-
 void DirectTrajectoryOptimization::AddTimeIntervalBounds(
     const Eigen::VectorXd& lower_bound, const Eigen::VectorXd& upper_bound) {
   AddBoundingBoxConstraint(lower_bound, upper_bound, h_vars_);
@@ -85,61 +72,6 @@ void DirectTrajectoryOptimization::AddTimeIntervalBounds(
 void DirectTrajectoryOptimization::AddTimeIntervalBounds(double lower_bound,
                                                          double upper_bound) {
   AddBoundingBoxConstraint(lower_bound, upper_bound, h_vars_);
-}
-
-namespace {
-/// Since the final cost evaluation needs a total time, we need a
-/// wrapper which will calculate the total time from the individual
-/// time steps and mangle the output appropriately.
-class FinalCostWrapper : public solvers::Cost {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FinalCostWrapper)
-
-  FinalCostWrapper(int num_time_samples, int num_states,
-                   std::shared_ptr<solvers::Cost> cost)
-      : Cost((num_time_samples - 1) + num_states),
-        num_time_samples_(num_time_samples),
-        num_states_(num_states),
-        cost_(cost) {}
-
- protected:
-  void DoEval(const Eigen::Ref<const Eigen::VectorXd>&,
-              Eigen::VectorXd&) const override {
-    // TODO(sam.creasey) If we actually need this, we could cut and
-    // paste most of the implementation below (or maybe delegate to a
-    // templated version).  I don't expect that scenario to occur.
-    throw std::runtime_error("Non-Taylor constraint eval not implemented.");
-  }
-
-  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-              AutoDiffVecXd& y) const override {
-    DRAKE_ASSERT(x.rows() == (num_time_samples_ - 1) + num_states_);
-
-    AutoDiffVecXd wrapped_x(num_states_ + 1);
-    wrapped_x(0) = x.head(num_time_samples_ - 1).sum();
-    wrapped_x.tail(num_states_) = x.tail(num_states_);
-    DRAKE_ASSERT(wrapped_x(0).derivatives().rows() ==
-                 x(0).derivatives().rows());
-
-    cost_->Eval(wrapped_x, y);
-    DRAKE_ASSERT(y(0).derivatives().rows() == x(0).derivatives().rows());
-  };
-
- private:
-  const int num_time_samples_;
-  const int num_states_;
-  std::shared_ptr<solvers::Cost> cost_;
-};
-
-}  // namespace
-
-// We just use a generic constraint here since we need to mangle the
-// input and output anyway.
-void DirectTrajectoryOptimization::AddFinalCost(
-    std::shared_ptr<solvers::Cost> constraint) {
-  auto wrapper =
-      std::make_shared<FinalCostWrapper>(N_, num_states_, constraint);
-  AddCost(wrapper, {h_vars_, x_vars_.tail(num_states_)});
 }
 
 void DirectTrajectoryOptimization::GetInitialVars(
@@ -180,7 +112,7 @@ solvers::SolutionResult DirectTrajectoryOptimization::SolveTraj(
 
   // If we're using IPOPT, it can't quite solve trajectories to the
   // default precision level.
-  SetSolverOption(drake::solvers::SolverType::kIpopt, "tol", 1e-7);
+  SetSolverOption(drake::solvers::IpoptSolver::id(), "tol", 1e-7);
 
   solvers::SolutionResult result = Solve();
   return result;
@@ -223,9 +155,9 @@ std::vector<Eigen::MatrixXd> DirectTrajectoryOptimization::GetStateVector()
   return states;
 }
 
-symbolic::Expression
-DirectTrajectoryOptimization::SubstitutePlaceholderVariables(
-    const symbolic::Expression& e, int interval_index) const {
+symbolic::Substitution
+DirectTrajectoryOptimization::ConstructPlaceholderVariableSubstitution(
+    int interval_index) const {
   symbolic::Substitution sub;
 
   // time(i) is the sum of h intervals 0...(i-1)
@@ -239,7 +171,19 @@ DirectTrajectoryOptimization::SubstitutePlaceholderVariables(
   for (int i = 0; i < num_inputs_; i++)
     sub.emplace(placeholder_u_vars_(i),
                 u_vars_(interval_index * num_inputs_ + i));
-  return e.Substitute(sub);
+  return sub;
+}
+
+symbolic::Expression
+DirectTrajectoryOptimization::SubstitutePlaceholderVariables(
+    const symbolic::Expression& e, int interval_index) const {
+  return e.Substitute(ConstructPlaceholderVariableSubstitution(interval_index));
+}
+
+symbolic::Formula
+DirectTrajectoryOptimization::SubstitutePlaceholderVariables(
+    const symbolic::Formula& f, int interval_index) const {
+  return f.Substitute(ConstructPlaceholderVariableSubstitution(interval_index));
 }
 
 void DirectTrajectoryOptimization::GetResultSamples(

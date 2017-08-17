@@ -51,10 +51,11 @@ class FixedOffsetFrame : public Frame<T> {
   /// @param[in] X_BF  The transform giving the pose of F in B.
   FixedOffsetFrame(const Body<T>& bodyB, const Isometry3<double>& X_BF);
 
-  Isometry3<T> CalcBodyPoseInThisFrame(
+  Isometry3<T> CalcPoseInBodyFrame(
       const systems::Context<T>& context) const final {
-    return parent_frame_.CalcBodyPoseInOtherFrame(context,
-                                                  X_PF_.cast<T>().inverse());
+    // X_BF = X_BP * X_PF
+    return parent_frame_.CalcOffsetPoseInBody(context,
+                                              X_PF_.cast<T>().inverse());
   }
 
  protected:

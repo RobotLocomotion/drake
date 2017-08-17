@@ -12,8 +12,7 @@
 #include "drake/common/double_overloads.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
-#include "drake/common/symbolic_expression.h"
-#include "drake/common/symbolic_formula.h"
+#include "drake/common/symbolic.h"
 #include "drake/math/saturate.h"
 #include "drake/systems/framework/vector_base.h"
 
@@ -40,7 +39,8 @@ const SimpleCarState<T>& get_state(const systems::Context<T>& context) {
 }  // namespace
 
 template <typename T>
-SimpleCar<T>::SimpleCar() {
+SimpleCar<T>::SimpleCar()
+    : systems::LeafSystem<T>(systems::SystemTypeTag<automotive::SimpleCar>{}) {
   this->DeclareVectorInputPort(DrivingCommand<T>());
   this->DeclareVectorOutputPort(&SimpleCar::CalcStateOutput);
   this->DeclareVectorOutputPort(&SimpleCar::CalcPose);
@@ -48,6 +48,11 @@ SimpleCar<T>::SimpleCar() {
   this->DeclareContinuousState(SimpleCarState<T>());
   this->DeclareNumericParameter(SimpleCarParams<T>());
 }
+
+template <typename T>
+template <typename U>
+SimpleCar<T>::SimpleCar(const SimpleCar<U>&)
+    : SimpleCar() {}
 
 template <typename T>
 const systems::OutputPort<T>& SimpleCar<T>::state_output() const {
@@ -171,16 +176,6 @@ void SimpleCar<T>::ImplCalcTimeDerivatives(const SimpleCarParams<T>& params,
   rates->set_y(nonneg_velocity * sin(state.heading()));
   rates->set_heading(curvature * nonneg_velocity);
   rates->set_velocity(smooth_acceleration);
-}
-
-template <typename T>
-systems::System<AutoDiffXd>* SimpleCar<T>::DoToAutoDiffXd() const {
-  return new SimpleCar<AutoDiffXd>;
-}
-
-template <typename T>
-systems::System<symbolic::Expression>* SimpleCar<T>::DoToSymbolic() const {
-  return new SimpleCar<symbolic::Expression>;
 }
 
 // These instantiations must match the API documentation in simple_car.h.

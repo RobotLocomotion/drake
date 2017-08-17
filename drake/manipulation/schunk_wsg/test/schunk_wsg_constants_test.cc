@@ -2,8 +2,8 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/find_resource.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
 
@@ -17,8 +17,8 @@ namespace {
 GTEST_TEST(SchunkWsgConstantTest, ConstantTest) {
   RigidBodyTree<double> wsg;
   parsers::sdf::AddModelInstancesFromSdfFile(
-      GetDrakePath() +
-      "/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf",
+      FindResourceOrThrow(
+          "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf"),
       multibody::joints::kFixed, nullptr, &wsg);
 
   const std::map<std::string, int> index_map =

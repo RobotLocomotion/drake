@@ -1,4 +1,6 @@
+/* clang-format off to disable clang-format-includes */
 #include "drake/common/drake_assert.h"
+/* clang-format on */
 
 #include "drake/common/unused.h"
 

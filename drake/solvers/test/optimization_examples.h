@@ -10,6 +10,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/solver_type.h"
 
 namespace drake {
 namespace solvers {
@@ -121,6 +122,7 @@ class LinearSystemExample3 : public LinearSystemExample2 {
 
   void CheckSolution() const override;
 };
+
 
 /**
  * For a stable linear system ẋ = A x, find its Lyapunov function by solving

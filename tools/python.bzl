@@ -36,7 +36,7 @@ def _impl(repository_ctx):
     result = repository_ctx.execute([python_config, "--includes"])
 
     if result.return_code != 0:
-        fail("Could NOT determine Python includes", attr=result.stderr)
+        fail("Could NOT determine Python includes", attr = result.stderr)
 
     cflags = result.stdout.strip().split(" ")
     cflags = [cflag for cflag in cflags if cflag]
@@ -60,7 +60,7 @@ def _impl(repository_ctx):
     result = repository_ctx.execute([python_config, "--ldflags"])
 
     if result.return_code != 0:
-        fail("Could NOT determine Python linkopts", attr=result.stderr)
+        fail("Could NOT determine Python linkopts", attr = result.stderr)
 
     linkopts = result.stdout.strip().split(" ")
     linkopts = [linkopt for linkopt in linkopts if linkopt]
@@ -79,7 +79,7 @@ cc_library(
 )
     """.format(includes, linkopts)
 
-    repository_ctx.file("BUILD", content=file_content, executable=False)
+    repository_ctx.file("BUILD", content = file_content, executable = False)
 
 python_repository = repository_rule(
     _impl,

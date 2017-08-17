@@ -4,6 +4,7 @@
 #pragma once
 
 #include <fstream>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -11,12 +12,23 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/mathematical_program_solver_interface.h"
 
 // TODO(jwnimmer-tri): This class should be renamed MobyLcpSolver to comply with
 //                     style guide.
 
 namespace drake {
 namespace solvers {
+
+/// Non-template class for MobyLcpSolver<T> constants.
+class MobyLcpSolverId {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MobyLcpSolverId);
+  MobyLcpSolverId() = delete;
+
+  /// @return same as MathematicalProgramSolverInterface::solver_id()
+  static SolverId id();
+};
 
 /// A class for solving Linear Complementarity Problems (LCPs). Solving a LCP
 /// requires finding a solution to the problem:<pre>
@@ -63,6 +75,14 @@ class MobyLCPSolver : public MathematicalProgramSolverInterface {
   ~MobyLCPSolver() override = default;
 
   void SetLoggingEnabled(bool enabled);
+
+  /// Calculates the zero tolerance that the solver would compute if the user
+  /// does not specify a tolerance.
+  template <class U>
+  static U ComputeZeroTolerance(const MatrixX<U>& M) {
+    return M.rows() * M.template lpNorm<Eigen::Infinity>() *
+        (10 * std::numeric_limits<double>::epsilon());
+  }
 
   /// Fast pivoting algorithm for LCPs of the form M = PAPᵀ, q = Pb, where
   /// b ∈ ℝᵐ, P ∈ ℝⁿˣᵐ, and A ∈ ℝᵐˣᵐ (where A is positive definite). Therefore,
@@ -278,9 +298,7 @@ class MobyLCPSolver : public MathematicalProgramSolverInterface {
 
   SolutionResult Solve(MathematicalProgram& prog) const override;
 
-  SolverType solver_type() const override { return SolverType::kMobyLCP; }
-
-  std::string SolverName() const override { return "Moby LCP"; }
+  SolverId solver_id() const override;
 
   /// Returns the number of pivoting operations made by the last LCP solve.
   int get_num_pivots() const { return pivots_; }

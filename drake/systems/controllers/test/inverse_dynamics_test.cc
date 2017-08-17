@@ -8,9 +8,9 @@
 #include <unsupported/Eigen/AutoDiff>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/find_resource.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -23,6 +23,7 @@ using std::make_unique;
 
 namespace drake {
 namespace systems {
+namespace controllers {
 namespace {
 
 VectorXd ComputeTorque(const RigidBodyTree<double>& tree, const VectorXd& q,
@@ -119,8 +120,8 @@ class InverseDynamicsTest : public ::testing::Test {
 TEST_F(InverseDynamicsTest, GravityCompensationTest) {
   auto tree = std::make_unique<RigidBodyTree<double>>();
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      drake::GetDrakePath() + "/manipulation/models/iiwa_description/urdf/"
-          "iiwa14_primitive_collision.urdf",
+      drake::FindResourceOrThrow("drake/manipulation/models/"
+          "iiwa_description/urdf/iiwa14_primitive_collision.urdf"),
       drake::multibody::joints::kFixed, nullptr /* weld to frame */,
       tree.get());
   Init(std::move(tree), true /* pure gravity compensation */);
@@ -137,8 +138,8 @@ TEST_F(InverseDynamicsTest, GravityCompensationTest) {
 TEST_F(InverseDynamicsTest, InverseDynamicsTest) {
   auto tree = std::make_unique<RigidBodyTree<double>>();
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      drake::GetDrakePath() + "/manipulation/models/iiwa_description/urdf/"
-          "iiwa14_primitive_collision.urdf",
+      drake::FindResourceOrThrow("drake/manipulation/models/"
+          "iiwa_description/urdf/iiwa14_primitive_collision.urdf"),
       drake::multibody::joints::kFixed, nullptr /* weld to frame */,
       tree.get());
   Init(std::move(tree), false /* inverse dynamics */);
@@ -160,12 +161,13 @@ TEST_F(InverseDynamicsTest, InverseDynamicsTest) {
 TEST_F(InverseDynamicsTest, UnderactuatedModelTest) {
   auto tree = std::make_unique<RigidBodyTree<double>>();
   drake::parsers::sdf::AddModelInstancesFromSdfFile(
-      drake::GetDrakePath() + "/examples/SimpleFourBar/FourBar.sdf",
+      drake::FindResourceOrThrow("drake/examples/simple_four_bar/FourBar.sdf"),
       drake::multibody::joints::kFixed, nullptr /* weld to frame */,
       tree.get());
   EXPECT_THROW(Init(std::move(tree), true), std::runtime_error);
 }
 
 }  // namespace
+}  // namespace controllers
 }  // namespace systems
 }  // namespace drake

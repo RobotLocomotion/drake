@@ -1,6 +1,9 @@
 drake_add_cc_test(autodiff_test)
 target_link_libraries(autodiff_test drakeCommon)
 
+drake_add_cc_test(continuous_algebraic_riccati_equation_test)
+target_link_libraries(continuous_algebraic_riccati_equation_test drakeCommon drakeMath)
+
 drake_add_cc_test(cross_product_test)
 target_link_libraries(cross_product_test drakeCommon)
 
@@ -32,4 +35,7 @@ drake_add_cc_test(jacobian_test)
 target_link_libraries(jacobian_test drakeCommon)
 
 drake_add_cc_test(matrix_util_test)
-target_linK_libraries(matrix_util_test drakeCommon)
+target_link_libraries(matrix_util_test drakeCommon)
+
+drake_add_cc_test(gray_code_test)
+target_link_libraries(gray_code_test drakeCommon drakeMath)

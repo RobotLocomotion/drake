@@ -3,13 +3,14 @@ set(sources
   autodiff.cc
   autodiff_gradient.cc
   axis_angle.cc
-  continuous_algebraic_ricatti_equation.cc
+  continuous_algebraic_riccati_equation.cc
   cross_product.cc
   discrete_algebraic_riccati_equation.cc
   eigen_sparse_triplet.cc
   evenly_distributed_pts_on_sphere.cc
   expmap.cc
   gradient.cc
+  gray_code.cc
   jacobian.cc
   matrix_util.cc
   normalize_vector.cc
@@ -24,7 +25,7 @@ set(installed_headers
   autodiff.h
   autodiff_gradient.h
   axis_angle.h
-  continuous_algebraic_ricatti_equation.h
+  continuous_algebraic_riccati_equation.h
   cross_product.h
   discrete_algebraic_riccati_equation.h
   eigen_sparse_triplet.h
@@ -32,6 +33,7 @@ set(installed_headers
   expmap.h
   gradient.h
   gradient_util.h
+  gray_code.h
   jacobian.h
   matrix_util.h
   normalize_vector.h

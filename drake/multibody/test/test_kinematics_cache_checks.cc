@@ -1,4 +1,4 @@
-/* clang-format off */
+/* clang-format off to disable clang-format-includes */
 #include "drake/multibody/rigid_body_tree.h"
 /* clang-format on */
 
@@ -11,8 +11,8 @@
 #include <string>
 #include <vector>
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/find_resource.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/util/drakeGeometryUtil.h"
@@ -158,7 +158,8 @@ void performChecks(RigidBodyTree<double>& model, KinematicsCache<double>& cache,
 int main() {
   auto tree = std::make_unique<RigidBodyTree<double>>();
   drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      drake::GetDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf",
+      drake::FindResourceOrThrow(
+          "drake/examples/atlas/urdf/atlas_minimal_contact.urdf"),
       drake::multibody::joints::kRollPitchYaw, tree.get());
 
   CheckSettings settings;

@@ -45,8 +45,10 @@ class TestMathematicalProgram(unittest.TestCase):
         a = np.array([1.0, 2.0, 3.0])
         prog.AddLinearConstraint(a.dot(x) <= 4)
         prog.AddLinearConstraint(x[0] + x[1], 1, np.inf)
+        self.assertIsNone(prog.GetSolverId())
         result = prog.Solve()
         self.assertEqual(result, mp.SolutionResult.kSolutionFound)
+        self.assertIsNotNone(prog.GetSolverId().name())
 
         # Test that we got the right solution for all x
         x_expected = np.array([1.0, 0.0, 1.0])
@@ -123,7 +125,7 @@ class TestMathematicalProgram(unittest.TestCase):
             self.assertEqual(
                 prog.FindDecisionVariableIndex(binding.variables()[1]),
                 prog.FindDecisionVariableIndex(x[1]))
-            self.assertTrue(np.allclose(constraint.A(), [-3, 1]))
+            self.assertTrue(np.allclose(constraint.A(), [3, -1]))
             self.assertTrue(constraint.lower_bound(), -2)
             self.assertTrue(constraint.upper_bound(), np.inf)
 
@@ -156,7 +158,7 @@ class TestMathematicalProgram(unittest.TestCase):
         costs = qp.costs
         cost_values_expected = [2., 1.]
         constraints = qp.constraints
-        constraint_values_expected = [1., 1., -2., 3.]
+        constraint_values_expected = [1., 1., 2., 3.]
 
         prog.Solve()
         self.assertTrue(np.allclose(prog.GetSolution(x), x_expected))

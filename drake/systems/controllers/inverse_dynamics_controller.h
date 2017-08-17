@@ -4,11 +4,14 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/systems/controllers/model_based_controller_base.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/controllers/pid_controller.h"
+#include "drake/systems/controllers/state_feedback_controller_interface.h"
+#include "drake/systems/framework/diagram.h"
 
 namespace drake {
 namespace systems {
+namespace controllers {
 
 /**
  * A state feedback controller that uses a PidController to generate desired
@@ -30,44 +33,19 @@ namespace systems {
  * and velocity have the same dimension, it does not have a floating base.
  * If violated, the program will abort. It is discouraged to use this controller
  * for robots with closed kinematic loops.
+ *
+ * @tparam T The vector element type, which must be a valid Eigen scalar.
+ *
+ * Instantiated templates for the following kinds of T's are provided:
+ * - double
+ *
+ * @ingroup control_systems
  */
 template <typename T>
-class InverseDynamicsController : public ModelBasedController<T> {
+class InverseDynamicsController : public StateFeedbackControllerInterface<T>,
+                                  public Diagram<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InverseDynamicsController)
-
-  /**
-   * Constructs the controller that instantiates a RigidBodyTree directly
-   * from a model file. Assumes the model is connected to the world with a
-   * multibody::joints::kFixed joint.
-   * @param model_path Path to the model file.
-   * @param world_offset X_WB, where B is the base frame of the model.
-   * @param kp Position gain
-   * @param ki Integral gain
-   * @param kd Velocity gain
-   * @param has_reference_acceleration If true, there is an extra BasicVector
-   * input port for `vd*`. If false, `vd*` is treated as zero, and no extra
-   * input port is declared.
-   */
-  InverseDynamicsController(
-      const std::string& model_path,
-      std::shared_ptr<RigidBodyFrame<double>> world_offset,
-      const VectorX<T>& kp, const VectorX<T>& ki, const VectorX<T>& kd,
-      bool has_reference_acceleration);
-
-  /**
-   * Constructs the controller that clones a given RigidBodyTree.
-   * @param robot Reference to the RigidBodyTree to be cloned.
-   * @param kp Position gain
-   * @param ki Integral gain
-   * @param kd Velocity gain
-   * @param has_reference_acceleration If true, there is an extra BasicVector
-   * input port for `vd*`. If false, `vd*` is treated as zero, and no extra
-   * input port is declared.
-   */
-  InverseDynamicsController(const RigidBodyTree<T>& robot, const VectorX<T>& kp,
-                            const VectorX<T>& ki, const VectorX<T>& kd,
-                            bool has_reference_acceleration);
 
   /**
    * Constructs the controller that takes ownership of a given RigidBodyTree
@@ -82,8 +60,9 @@ class InverseDynamicsController : public ModelBasedController<T> {
    * input port is declared.
    */
   InverseDynamicsController(std::unique_ptr<RigidBodyTree<T>> robot,
-                            const VectorX<T>& kp, const VectorX<T>& ki,
-                            const VectorX<T>& kd,
+                            const VectorX<double>& kp,
+                            const VectorX<double>& ki,
+                            const VectorX<double>& kd,
                             bool has_reference_acceleration);
 
   /**
@@ -102,13 +81,47 @@ class InverseDynamicsController : public ModelBasedController<T> {
     return Diagram<T>::get_input_port(input_port_index_desired_acceleration_);
   }
 
- private:
-  void SetUp(const VectorX<T>& kp, const VectorX<T>& ki, const VectorX<T>& kd);
+  /**
+   * Returns the input port for the estimated state.
+   */
+  const InputPortDescriptor<T>& get_input_port_estimated_state() const final {
+    return this->get_input_port(input_port_index_estimated_state_);
+  }
 
+  /**
+   * Returns the input port for the desired state.
+   */
+  const InputPortDescriptor<T>& get_input_port_desired_state() const final {
+    return this->get_input_port(input_port_index_desired_state_);
+  }
+
+  /**
+   * Returns the output port for computed control.
+   */
+  const OutputPort<T>& get_output_port_control() const final {
+    return this->get_output_port(output_port_index_control_);
+  }
+
+  /**
+   * Returns a constant reference to the RigidBodyTree used for control.
+   */
+  const RigidBodyTree<T>& get_robot_for_control() const {
+    return *robot_for_control_;
+  }
+
+ private:
+  void SetUp(const VectorX<double>& kp,
+      const VectorX<double>& ki, const VectorX<double>& kd);
+
+  std::unique_ptr<RigidBodyTree<T>> robot_for_control_{nullptr};
   PidController<T>* pid_{nullptr};
   const bool has_reference_acceleration_{false};
+  int input_port_index_estimated_state_{-1};
+  int input_port_index_desired_state_{-1};
   int input_port_index_desired_acceleration_{-1};
+  int output_port_index_control_{-1};
 };
 
+}  // namespace controllers
 }  // namespace systems
 }  // namespace drake

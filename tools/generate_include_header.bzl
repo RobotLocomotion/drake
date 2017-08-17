@@ -13,7 +13,7 @@ def _generate_include_header_impl(ctx):
     # Generate include header
     content = "#pragma once\n"
     content = content + "\n".join(["#include <%s>" % h for h in hdrs])
-    ctx.file_action(output=ctx.outputs.out, content=content)
+    ctx.file_action(output = ctx.outputs.out, content = content)
 
 drake_generate_include_header = rule(
     attrs = {

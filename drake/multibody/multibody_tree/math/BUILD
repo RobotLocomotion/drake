@@ -1,12 +1,12 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load(
     "//tools:drake.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
 )
+load("//tools:lint.bzl", "add_lint_tests")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -32,6 +32,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "spatial_acceleration",
+    srcs = [],
+    hdrs = ["spatial_acceleration.h"],
+    deps = [
+        ":spatial_vector",
+        "//drake/common",
+        "//drake/math:vector3_util",
+    ],
+)
+
+drake_cc_library(
     name = "spatial_force",
     srcs = [],
     hdrs = ["spatial_force.h"],
@@ -46,6 +57,7 @@ drake_cc_library(
     srcs = [],
     hdrs = ["spatial_algebra.h"],
     deps = [
+        ":spatial_acceleration",
         ":spatial_force",
         ":spatial_vector",
         ":spatial_velocity",
@@ -54,12 +66,11 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
-    name = "spatial_algebra_tests",
-    srcs = ["test/spatial_algebra_tests.cc"],
+    name = "spatial_algebra_test",
     deps = [
         ":spatial_algebra",
         "//drake/common:autodiff",
     ],
 )
 
-cpplint()
+add_lint_tests()

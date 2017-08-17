@@ -9,9 +9,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/common/monomial.h"
-#include "drake/common/symbolic_expression.h"
-#include "drake/common/symbolic_variable.h"
+#include "drake/common/symbolic.h"
 
 using Eigen::Matrix3d;
 using Eigen::MatrixXd;
@@ -127,14 +125,12 @@ GTEST_TEST(SymbolicExtraction, DecomposeQuadraticExpression) {
     const MapVarToIndex& map_var_to_index = pair.second;
     EXPECT_EQ(vars_expected, vars);
 
-    const auto monomial_to_coeff_map =
-        symbolic::DecomposePolynomialIntoMonomial(e, e.GetVariables());
+    const symbolic::Polynomial poly{e};
 
     MatrixXd Q(num_variables, num_variables);
     VectorXd b(num_variables);
     double c;
-    DecomposeQuadraticExpressionWithMonomialToCoeffMap(
-        monomial_to_coeff_map, map_var_to_index, num_variables, &Q, &b, &c);
+    DecomposeQuadraticPolynomial(poly, map_var_to_index, &Q, &b, &c);
     Matrix3d Q_expected;
     AverageOffDiagonalTerms(Q_in, &Q_expected);
     EXPECT_TRUE(CompareMatrices(Q_expected, Q, kTol));

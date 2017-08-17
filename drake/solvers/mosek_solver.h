@@ -6,7 +6,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/mathematical_program_solver_interface.h"
 
 namespace drake {
 namespace solvers {
@@ -25,9 +25,10 @@ class MosekSolver : public MathematicalProgramSolverInterface {
 
   SolutionResult Solve(MathematicalProgram& prog) const override;
 
-  SolverType solver_type() const override { return SolverType::kMosek; }
+  SolverId solver_id() const override;
 
-  std::string SolverName() const override { return "Mosek"; }
+  /// @return same as MathematicalProgramSolverInterface::solver_id()
+  static SolverId id();
 
   /**
    * This type contains a valid MOSEK license environment, and is only to be

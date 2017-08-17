@@ -1,6 +1,7 @@
 #include "drake/systems/primitives/affine_system.h"
 
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/systems/framework/test_utilities/scalar_conversion.h"
 #include "drake/systems/primitives/test/affine_linear_test.h"
 
 using std::make_unique;
@@ -100,6 +101,26 @@ TEST_F(AffineSystemTest, Output) {
       expected_output, system_output_->get_vector_data(0)->get_value(), 1e-10));
 }
 
+// Tests converting to different scalar types.
+TEST_F(AffineSystemTest, ConvertScalarType) {
+  EXPECT_TRUE(is_autodiffxd_convertible(*dut_, [&](const auto& converted) {
+    EXPECT_EQ(converted.A(), A_);
+    EXPECT_EQ(converted.B(), B_);
+    EXPECT_EQ(converted.f0(), f0_);
+    EXPECT_EQ(converted.C(), C_);
+    EXPECT_EQ(converted.D(), D_);
+    EXPECT_EQ(converted.y0(), y0_);
+  }));
+  EXPECT_TRUE(is_symbolic_convertible(*dut_, [&](const auto& converted) {
+    EXPECT_EQ(converted.A(), A_);
+    EXPECT_EQ(converted.B(), B_);
+    EXPECT_EQ(converted.f0(), f0_);
+    EXPECT_EQ(converted.C(), C_);
+    EXPECT_EQ(converted.D(), D_);
+    EXPECT_EQ(converted.y0(), y0_);
+  }));
+}
+
 class FeedthroughAffineSystemTest : public ::testing::Test {
  public:
   void SetDCornerElement(double d_1_1_element) {
@@ -170,10 +191,7 @@ GTEST_TEST(DiscreteAffineSystemTest, DiscreteTime) {
   context->FixInputPort(0, Vector1d::Constant(u0));
 
   auto update = system.AllocateDiscreteVariables();
-  DiscreteEvent<double> update_event;
-  update_event.action = DiscreteEvent<double>::kDiscreteUpdateAction;
-
-  system.CalcDiscreteVariableUpdates(*context, update_event, update.get());
+  system.CalcDiscreteVariableUpdates(*context, update.get());
 
   EXPECT_TRUE(CompareMatrices(update->get_vector(0)->CopyToVector(),
                               A * x0 + B * u0 + f0));
@@ -268,6 +286,106 @@ GTEST_TEST(IllegalTimeVaryingAffineSystemTest, EvalDeathTest) {
   ASSERT_DEATH(sys.CalcTimeDerivatives(*context, derivatives.get()), "rows");
 }
 
+class AffineSystemSymbolicTest : public ::testing::Test {
+ public:
+  AffineSystemSymbolicTest() = default;
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AffineSystemSymbolicTest)
+
+ protected:
+  void SetUp() override {
+    // clang-format off
+  A_  << 1, 0, 3,
+        -4, 5, 0,
+         7, 0, 9;
+  B_  << 10, -7,
+         12, 0,
+         0,  15;
+  C_  <<  1, 2,  0,
+         -4, 0, -7;
+  D_  << -3,  9,
+          0, 13;
+  f0_ << 3,
+        -7,
+         2;
+  y0_ << 6,
+        -7;
+  x_ << x0_, x1_, x2_;
+  u_ << u0_, u1_;
+    // clang-format on
+  }
+
+  const symbolic::Variable x0_{"x0"};
+  const symbolic::Variable x1_{"x1"};
+  const symbolic::Variable x2_{"x2"};
+  const symbolic::Variable u0_{"u0"};
+  const symbolic::Variable u1_{"u1"};
+  Eigen::MatrixXd A_{3, 3};
+  Eigen::MatrixXd B_{3, 2};
+  Eigen::MatrixXd C_{2, 3};
+  Eigen::MatrixXd D_{2, 2};
+  Eigen::VectorXd f0_{3};
+  Eigen::VectorXd y0_{2};
+  VectorX<symbolic::Variable> x_{3};
+  VectorX<symbolic::Variable> u_{2};
+};
+
+TEST_F(AffineSystemSymbolicTest, MakeAffineSystem) {
+  // Checks if MakeAffineSystem() parses the arguments and build a
+  // system correctly.
+  const auto dut = AffineSystem<double>::MakeAffineSystem(
+      A_ * x_ + B_ * u_ + f0_, C_ * x_ + D_ * u_ + y0_, x_, u_, 10.0);
+  EXPECT_EQ(dut->A(), A_);
+  EXPECT_EQ(dut->B(), B_);
+  EXPECT_EQ(dut->C(), C_);
+  EXPECT_EQ(dut->D(), D_);
+  EXPECT_EQ(dut->f0(), f0_);
+  EXPECT_EQ(dut->y0(), y0_);
+  EXPECT_EQ(dut->time_period(), 10.0);
+}
+
+// Adds quadratic terms to check if we have an exception. Note that we have
+// similar testcases in drake/common/test/symbolic_decompose_test.cc file but we
+// believe that having redundancy is not bad in testing.
+TEST_F(AffineSystemSymbolicTest, MakeAffineSystemException1) {
+  VectorX<symbolic::Expression> extra_terms(3);
+  // clang-format off
+  extra_terms << x0_ * x0_,
+                 x1_ * x1_,
+                 x2_ * x2_;
+  // clang-format on
+  EXPECT_THROW(AffineSystem<double>::MakeAffineSystem(
+                   extra_terms + A_ * x_ + B_ * u_ + f0_,
+                   C_ * x_ + D_ * u_ + y0_, x_, u_, 10.0),
+               std::runtime_error);
+}
+
+// Adds bilinear terms to check if we have an exception.
+TEST_F(AffineSystemSymbolicTest, MakeAffineSystemException2) {
+  VectorX<symbolic::Expression> extra_terms(3);
+  // clang-format off
+  extra_terms << x0_ * u0_,
+                 x1_ * u1_,
+                 x2_ * u0_;
+  // clang-format on
+  EXPECT_THROW(AffineSystem<double>::MakeAffineSystem(
+                   extra_terms + A_ * x_ + B_ * u_ + f0_,
+                   C_ * x_ + D_ * u_ + y0_, x_, u_, 10.0),
+               std::runtime_error);
+}
+
+// Adds nonlinear terms to check if we have an exception.
+TEST_F(AffineSystemSymbolicTest, MakeAffineSystemException3) {
+  VectorX<symbolic::Expression> extra_terms(3);
+  // clang-format off
+  extra_terms << sin(x0_),
+                 cos(x1_),
+                 log(u0_);
+  // clang-format on
+  EXPECT_THROW(AffineSystem<double>::MakeAffineSystem(
+                   extra_terms + A_ * x_ + B_ * u_ + f0_,
+                   C_ * x_ + D_ * u_ + y0_, x_, u_, 10.0),
+               std::runtime_error);
+}
 }  // namespace
 }  // namespace systems
 }  // namespace drake

@@ -30,10 +30,32 @@ GTEST_TEST(AutodiffOverloadsTest, ExtractDouble) {
   EXPECT_EQ(ExtractDoubleOrThrow(y), 1.0);
 }
 
+// Helper method to keep UBSan happy when a division by zero is not
+// unexpected.
+// Has been implemented in implicit_euler_integrator-inl.h as well
+// but it can't be reused without modification because there's a 0.0 / 0.0
+// being done in one of the tests.
+
+// The attribute can't be directly applied before the GTEST_TEST because
+// they are applicable for functions and GTEST_TESTs are creating classes.
+// https://git.io/v7Jem
+// https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html
+#ifdef __clang__
+__attribute__((no_sanitize("float-divide-by-zero")))
+// Note that __GNUC__ is defined for clang as well.
+#elif defined(__GNUC__) && \
+  (__GNUC__  > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 9))
+// https://gcc.gnu.org/bugzilla/show_bug.cgi?id=78204
+__attribute__((no_sanitize_undefined))
+#endif
+double divide_allowing_by_zero(const double& n, const double& d) {
+  return n / d;
+}
+
 // Tests correctness of isinf.
 GTEST_TEST(AutodiffOverloadsTest, IsInf) {
   Eigen::AutoDiffScalar<Eigen::Vector2d> x;
-  x.value() = 1.0 / 0.0;
+  x.value() = divide_allowing_by_zero(1.0, 0.0);
   EXPECT_EQ(isinf(x), true);
   x.value() = 0.0;
   EXPECT_EQ(isinf(x), false);
@@ -42,7 +64,7 @@ GTEST_TEST(AutodiffOverloadsTest, IsInf) {
 // Tests correctness of isnan.
 GTEST_TEST(AutodiffOverloadsTest, IsNaN) {
   Eigen::AutoDiffScalar<Eigen::Vector2d> x;
-  x.value() = 0.0 / 0.0;
+  x.value() = divide_allowing_by_zero(0.0, 0.0);
   EXPECT_EQ(isnan(x), true);
   x.value() = 0.0;
   EXPECT_EQ(isnan(x), false);

@@ -50,12 +50,12 @@ class RigidBody : public Body<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RigidBody)
 
   /// Constructs a %RigidBody with the given default SpatialInertia.
-  // TODO(amcastro-tri): In a future PR this constructor will take a
-  // MassProperties object to:
-  //   1. Force users to provide all the necessary information at creation.
-  //   2. Perform all the necessary checks to ensure the supplied mass
-  //      properties are physically valid.
-  explicit RigidBody(const SpatialInertia<double> M);
+  /// @param[in] M_BBo_B
+  ///   Spatial inertia of `this` body B about the frame's origin `Bo` and
+  ///   expressed in the body frame B.
+  /// @note See @ref multibody_spatial_inertia for details on the monogram
+  /// notation used for spatial inertia quantities.
+  explicit RigidBody(const SpatialInertia<double> M_BBo_B);
 
   /// There are no flexible degrees of freedom associated with a rigid body and
   /// therefore this method returns zero. By definition, a rigid body has no
@@ -66,6 +66,11 @@ class RigidBody : public Body<T> {
   /// therefore this method returns zero. By definition, a rigid body has no
   /// state associated with flexible deformations.
   int get_num_flexible_velocities() const final { return 0; }
+
+  SpatialInertia<T> CalcSpatialInertiaInBodyFrame(
+      const MultibodyTreeContext<T>&) const override {
+    return default_spatial_inertia_.cast<T>();
+  }
 
  protected:
   std::unique_ptr<Body<double>> DoCloneToScalar(
@@ -87,6 +92,8 @@ class RigidBody : public Body<T> {
     return std::make_unique<RigidBody<ToScalar>>(default_spatial_inertia_);
   }
 
+ private:
+  // Spatial inertia about the body frame origin Bo, expressed in B.
   SpatialInertia<double> default_spatial_inertia_;
 };
 

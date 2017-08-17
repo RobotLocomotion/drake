@@ -4,8 +4,7 @@
 #include <type_traits>
 #include <utility>
 
-#include "drake/common/monomial.h"
-#include "drake/common/symbolic_expression.h"
+#include "drake/common/symbolic.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/cost.h"
 #include "drake/solvers/function.h"
@@ -80,6 +79,11 @@ struct is_cost_functor_candidate
                                        (!is_convertible_workaround<
                                            F, symbolic::Expression>::value)> {};
 
+// Forward declare this for the template used below.
+// TODO(eric.cousineau): Place the template below directly in mathematical
+// program.
+class Constraint;
+
 /**
  * Template condition to only catch when Constraints are inadvertently passed
  * as an argument. If the class is binding-compatible with a Constraint, then
@@ -94,8 +98,8 @@ struct assert_if_is_constraint {
   // Use deferred evaluation
   static_assert(
       !value,
-      "You cannot pass a Constraint to "
-      "create a FunctionCost object. Please ensure you are passing a Cost.");
+      "You cannot pass a Constraint to create a Cost object from a function. "
+      "Please ensure you are passing a Cost.");
 };
 
 }  // namespace detail

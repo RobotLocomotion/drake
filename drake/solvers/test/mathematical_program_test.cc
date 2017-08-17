@@ -19,11 +19,8 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/common/monomial.h"
 #include "drake/common/polynomial.h"
-#include "drake/common/symbolic_expression.h"
-#include "drake/common/symbolic_formula.h"
-#include "drake/common/symbolic_variable.h"
+#include "drake/common/symbolic.h"
 #include "drake/common/test/is_dynamic_castable.h"
 #include "drake/common/test/symbolic_test_util.h"
 #include "drake/math/matrix_util.h"
@@ -150,6 +147,37 @@ void CheckAddedVariable(const MathematicalProgram& prog,
   }
 }
 
+template <typename Derived>
+void CheckAddedIndeterminates(const MathematicalProgram& prog,
+                              const Eigen::MatrixBase<Derived>& indeterminates,
+                              const string& indeterminates_name) {
+  // Checks the name of the newly added indeterminates.
+  ostringstream msg_buff;
+  msg_buff << indeterminates << endl;
+  EXPECT_EQ(msg_buff.str(), indeterminates_name);
+  // Checks num_indeterminates() function.
+  const int num_new_indeterminates = indeterminates.size();
+  EXPECT_EQ(prog.num_indeterminates(), num_new_indeterminates);
+  // Checks the indices of the newly added indeterminates.
+  for (int i = 0; i < indeterminates.rows(); ++i) {
+    for (int j = 0; j < indeterminates.cols(); ++j) {
+      EXPECT_EQ(prog.FindIndeterminateIndex(indeterminates(i, j)),
+                j * indeterminates.rows() + i);
+    }
+  }
+
+  // Checks if the indeterminate is of type
+  // MathematicalProgram::VarType::CONTINUOUS variable (by default). This test
+  // should always be true (by defaults), but keep it to make sure everything
+  // works as it is supposed to be.
+  for (int i = 0; i < indeterminates.rows(); ++i) {
+    for (int j = 0; j < indeterminates.cols(); ++j) {
+      EXPECT_EQ(indeterminates(i, j).get_type(),
+                MathematicalProgram::VarType::CONTINUOUS);
+    }
+  }
+}
+
 GTEST_TEST(testAddVariable, testAddContinuousVariables1) {
   // Adds a dynamic-sized matrix of continuous variables.
   MathematicalProgram prog;
@@ -193,6 +221,55 @@ GTEST_TEST(testAddVariable, testAddContinuousVariable4) {
                      MathematicalProgram::VarType::CONTINUOUS);
 }
 
+GTEST_TEST(testAddVariable, testAddContinuousVariable5) {
+  // Adds a static-sized matrix of continuous variables.
+  MathematicalProgram prog;
+  auto X = prog.NewContinuousVariables<2, 3>(2, 3, "X");
+  static_assert(is_same<decltype(X), MatrixDecisionVariable<2, 3>>::value,
+                "should be a static sized matrix");
+  CheckAddedVariable(prog, X, "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n",
+                     false, MathematicalProgram::VarType::CONTINUOUS);
+}
+
+GTEST_TEST(testAddVariable, testAddContinuousVariables6) {
+  // Adds a dynamic-sized matrix of continuous variables.
+  MathematicalProgram prog;
+  auto X =
+      prog.NewContinuousVariables<Eigen::Dynamic, Eigen::Dynamic>(2, 3, "X");
+  static_assert(is_same<decltype(X), MatrixXDecisionVariable>::value,
+                "should be a dynamic sized matrix");
+  EXPECT_EQ(X.rows(), 2);
+  EXPECT_EQ(X.cols(), 3);
+  CheckAddedVariable(prog, X, "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n",
+                     false, MathematicalProgram::VarType::CONTINUOUS);
+}
+
+GTEST_TEST(testAddVariable, testAddContinuousVariables7) {
+  // Adds a dynamic-sized matrix of continuous variables.
+  MathematicalProgram prog;
+  auto X = prog.NewContinuousVariables<2, Eigen::Dynamic>(2, 3, "X");
+  static_assert(
+      is_same<decltype(X), MatrixDecisionVariable<2, Eigen::Dynamic>>::value,
+      "should be a dynamic sized matrix");
+  EXPECT_EQ(X.rows(), 2);
+  EXPECT_EQ(X.cols(), 3);
+  CheckAddedVariable(prog, X, "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n",
+                     false, MathematicalProgram::VarType::CONTINUOUS);
+}
+
+GTEST_TEST(testAddVariable, testAddContinuousVariables8) {
+  // Adds a dynamic-sized matrix of continuous variables.
+  MathematicalProgram prog;
+  auto X = prog.NewContinuousVariables<Eigen::Dynamic, 3>(2, 3, "X");
+  static_assert(
+      is_same<decltype(X), MatrixDecisionVariable<Eigen::Dynamic, 3>>::value,
+      "should be a dynamic sized matrix");
+  EXPECT_EQ(X.rows(), 2);
+  EXPECT_EQ(X.cols(), 3);
+  CheckAddedVariable(prog, X, "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n",
+                     false, MathematicalProgram::VarType::CONTINUOUS);
+}
+
 GTEST_TEST(testAddVariable, testAddSymmetricVariable1) {
   // Adds a static-sized symmetric matrix of continuous variables.
   MathematicalProgram prog;
@@ -231,6 +308,18 @@ GTEST_TEST(testAddVariable, testAddBinaryVariable1) {
                      false, MathematicalProgram::VarType::BINARY);
 }
 
+GTEST_TEST(testAddVariable, testAddBinaryVariable2) {
+  // Adds a dynamic-sized matrix of binary variables.
+  MathematicalProgram prog;
+  auto X = prog.NewBinaryVariables<Eigen::Dynamic, Eigen::Dynamic>(2, 3, "B");
+  static_assert(is_same<decltype(X), MatrixXDecisionVariable>::value,
+                "wrong type");
+  EXPECT_EQ(X.rows(), 2);
+  EXPECT_EQ(X.cols(), 3);
+  CheckAddedVariable(prog, X, "B(0,0) B(0,1) B(0,2)\nB(1,0) B(1,1) B(1,2)\n",
+                     false, MathematicalProgram::VarType::BINARY);
+}
+
 GTEST_TEST(testAddVariable, testAddBinaryVariable3) {
   // Adds dynamic-sized vector of binary variables.
   MathematicalProgram prog;
@@ -250,6 +339,91 @@ GTEST_TEST(testAddVariable, testAddBinaryVariable4) {
                 "wrong type");
   CheckAddedVariable(prog, X, "B(0)\nB(1)\nB(2)\nB(3)\n", false,
                      MathematicalProgram::VarType::BINARY);
+}
+
+GTEST_TEST(testAddVariable, testAddBinaryVariable5) {
+  // Adds a static-sized matrix of binary variables.
+  MathematicalProgram prog;
+  auto X = prog.NewBinaryVariables<2, 3>("B");
+  static_assert(is_same<decltype(X), MatrixDecisionVariable<2, 3>>::value,
+                "wrong type");
+  CheckAddedVariable(prog, X, "B(0,0) B(0,1) B(0,2)\nB(1,0) B(1,1) B(1,2)\n",
+                     false, MathematicalProgram::VarType::BINARY);
+}
+
+GTEST_TEST(testAddVariable, testAddBinaryVariable6) {
+  // Adds a static-sized matrix of binary variables.
+  MathematicalProgram prog;
+  auto X = prog.NewBinaryVariables<2, 3>(2, 3, "B");
+  static_assert(is_same<decltype(X), MatrixDecisionVariable<2, 3>>::value,
+                "wrong type");
+  CheckAddedVariable(prog, X, "B(0,0) B(0,1) B(0,2)\nB(1,0) B(1,1) B(1,2)\n",
+                     false, MathematicalProgram::VarType::BINARY);
+}
+
+GTEST_TEST(testAddVariable, testAddBinaryVariable7) {
+  // Adds a dynamic-sized matrix of binary variables.
+  MathematicalProgram prog;
+  auto X = prog.NewBinaryVariables<2, Eigen::Dynamic>(2, 3, "B");
+  static_assert(
+      is_same<decltype(X), MatrixDecisionVariable<2, Eigen::Dynamic>>::value,
+      "wrong type");
+  EXPECT_EQ(X.cols(), 3);
+  CheckAddedVariable(prog, X, "B(0,0) B(0,1) B(0,2)\nB(1,0) B(1,1) B(1,2)\n",
+                     false, MathematicalProgram::VarType::BINARY);
+}
+
+GTEST_TEST(testAddVariable, testAddBinaryVariable8) {
+  // Adds a dynamic-sized matrix of binary variables.
+  MathematicalProgram prog;
+  auto X = prog.NewBinaryVariables<Eigen::Dynamic, 3>(2, 3, "B");
+  static_assert(
+      is_same<decltype(X), MatrixDecisionVariable<Eigen::Dynamic, 3>>::value,
+      "wrong type");
+  EXPECT_EQ(X.rows(), 2);
+  CheckAddedVariable(prog, X, "B(0,0) B(0,1) B(0,2)\nB(1,0) B(1,1) B(1,2)\n",
+                     false, MathematicalProgram::VarType::BINARY);
+}
+
+GTEST_TEST(testAddIndeterminates, testAddIndeterminates1) {
+  // Adds a dynamic-sized matrix of Indeterminates.
+  MathematicalProgram prog;
+  auto X = prog.NewIndeterminates(2, 3, "X");
+  static_assert(is_same<decltype(X), MatrixXIndeterminate>::value,
+                "should be a dynamic sized matrix");
+  EXPECT_EQ(X.rows(), 2);
+  EXPECT_EQ(X.cols(), 3);
+  CheckAddedIndeterminates(prog, X,
+                           "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n");
+}
+
+GTEST_TEST(testAddIndeterminates, testAddIndeterminates2) {
+  // Adds a static-sized matrix of Indeterminates.
+  MathematicalProgram prog;
+  auto X = prog.NewIndeterminates<2, 3>("X");
+  static_assert(is_same<decltype(X), MatrixIndeterminate<2, 3>>::value,
+                "should be a static sized matrix");
+  CheckAddedIndeterminates(prog, X,
+                           "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n");
+}
+
+GTEST_TEST(testAddIndeterminates, testAddIndeterminates3) {
+  // Adds a dynamic-sized vector of Indeterminates.
+  MathematicalProgram prog;
+  auto x = prog.NewIndeterminates(4, "x");
+  static_assert(is_same<decltype(x), VectorXIndeterminate>::value,
+                "Should be a VectorXDecisionVariable object.");
+  EXPECT_EQ(x.rows(), 4);
+  CheckAddedIndeterminates(prog, x, "x(0)\nx(1)\nx(2)\nx(3)\n");
+}
+
+GTEST_TEST(testAddIndeterminates, testAddIndeterminates4) {
+  // Adds a static-sized vector of Indeterminate variables.
+  MathematicalProgram prog;
+  auto x = prog.NewIndeterminates<4>("x");
+  static_assert(is_same<decltype(x), VectorIndeterminate<4>>::value,
+                "Should be a VectorXDecisionVariable object.");
+  CheckAddedIndeterminates(prog, x, "x(0)\nx(1)\nx(2)\nx(3)\n");
 }
 
 template <typename Derived1, typename Derived2>
@@ -494,7 +668,7 @@ void CheckAddedSymbolicLinearCostUserFun(const MathematicalProgram& prog,
   EXPECT_EQ(prog.linear_costs().back().constraint(), binding.constraint());
   EXPECT_TRUE(CheckStructuralEquality(prog.linear_costs().back().variables(),
                                       binding.variables()));
-  EXPECT_EQ(binding.constraint()->num_constraints(), 1);
+  EXPECT_EQ(binding.constraint()->num_outputs(), 1);
   auto cnstr = prog.linear_costs().back().constraint();
   auto vars = prog.linear_costs().back().variables();
   const Expression cx{cnstr->a().dot(vars)};
@@ -883,16 +1057,128 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula4) {
     EXPECT_EQ(prog.linear_equality_constraints().size(), 0);
     EXPECT_EQ(prog.bounding_box_constraints().size(), 0);
     auto binding = prog.linear_constraints().back();
-    EXPECT_TRUE(CompareMatrices(binding.constraint()->upper_bound(),
-                                Vector1d(numeric_limits<double>::infinity())));
+    EXPECT_TRUE(CompareMatrices(binding.constraint()->lower_bound(),
+                                Vector1d(-numeric_limits<double>::infinity())));
     EXPECT_TRUE(
-        CompareMatrices(binding.constraint()->lower_bound(), Vector1d(-1)));
+        CompareMatrices(binding.constraint()->upper_bound(), Vector1d(1)));
 
-    VectorX<Expression> expr = binding.constraint()->A() * binding.variables() -
-                               binding.constraint()->lower_bound();
+    const VectorX<Expression> expr =
+        binding.constraint()->upper_bound() -
+        binding.constraint()->A() * binding.variables();
     EXPECT_EQ(expr.size(), 1);
     EXPECT_PRED2(ExprEqual, expr(0), 1 - x(0) - 2 * x(2));
   }
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula5) {
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<1>();
+  const double inf = std::numeric_limits<double>::infinity();
+  // This test checks all of the following formula is translated into the
+  // bounding constraint, x ∈ [-∞, ∞].
+  // clang-format off
+  const vector<Formula> f{x(0) <= inf,
+                      2 * x(0) <= inf,
+                     -3 * x(0) <= inf,
+                  2 * x(0) + 1 <= inf,
+                 -7 * x(0) + 1 <= inf,
+                          -inf <= x(0),
+                          -inf <= 2 * x(0),
+                          -inf <= -7 * x(0) + 9};
+  // clang-format on
+  for (const auto& f_i : f) {
+    const auto binding = prog.AddLinearConstraint(f_i);
+    const VectorX<Expression> expr =
+        binding.constraint()->A() * binding.variables();
+    EXPECT_EQ(binding.constraint()->lower_bound()(0), -inf);
+    EXPECT_EQ(binding.constraint()->upper_bound()(0), inf);
+    EXPECT_PRED2(ExprEqual, expr(0), x(0));
+  }
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula6) {
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<2>();
+  const double inf = std::numeric_limits<double>::infinity();
+  // This test checks that all of the following formula is translated into
+  // linear constraints.
+  // clang-format off
+  const vector<Formula> f{x(0) + x(1) <= inf,
+                      2 * x(0) + x(1) <= inf,
+                 -3 * x(0) - 7 * x(1) <= inf};
+  // clang-format on
+  for (const auto& f_i : f) {
+    const auto binding = prog.AddLinearConstraint(f_i);
+    EXPECT_TRUE(is_dynamic_castable<LinearConstraint>(binding.constraint()));
+    const VectorX<Expression> expr =
+        binding.constraint()->A() * binding.variables();
+    EXPECT_EQ(binding.constraint()->lower_bound()(0), -inf);
+    EXPECT_EQ(binding.constraint()->upper_bound()(0), inf);
+    EXPECT_PRED2(ExprEqual, expr(0), get_lhs_expression(f_i));
+  }
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula7) {
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<2>();
+  const double inf = std::numeric_limits<double>::infinity();
+  // This test checks that all of the following formula is translated into
+  // linear constraints.
+  // clang-format off
+  const vector<Formula> f{x(0) + x(1) >= -inf,
+                      2 * x(0) + x(1) >= -inf,
+                 -3 * x(0) - 7 * x(1) >= -inf};
+  // clang-format on
+  for (const auto& f_i : f) {
+    const auto binding = prog.AddLinearConstraint(f_i);
+    EXPECT_TRUE(is_dynamic_castable<LinearConstraint>(binding.constraint()));
+    const VectorX<Expression> expr =
+        binding.constraint()->A() * binding.variables();
+    EXPECT_EQ(binding.constraint()->lower_bound()(0), -inf);
+    EXPECT_EQ(binding.constraint()->upper_bound()(0), inf);
+    EXPECT_PRED2(ExprEqual, expr(0), -get_lhs_expression(f_i));
+  }
+}
+
+GTEST_TEST(testMathematicalProgram,
+           AddLinearConstraintSymbolicFormulaException1) {
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<2>();
+  const double inf = std::numeric_limits<double>::infinity();
+  EXPECT_THROW(prog.AddLinearConstraint(x(0) + inf <= x(1)), runtime_error);
+  EXPECT_THROW(prog.AddLinearConstraint(x(0) - inf <= x(1)), runtime_error);
+  EXPECT_THROW(prog.AddLinearConstraint(x(0) <= x(1) + inf), runtime_error);
+  EXPECT_THROW(prog.AddLinearConstraint(x(0) <= x(1) - inf), runtime_error);
+}
+
+GTEST_TEST(testMathematicalProgram,
+           AddLinearConstraintSymbolicFormulaException2) {
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<2>();
+  // (x₀ + 1)² - x₀² -2x₀ -1 => 0 (by Expand()).
+  const Expression zero_after_expansion0 =
+      pow(x(0) + 1, 2) - pow(x(0), 2) - 2 * x(0) - 1;
+  // (x₁ + 1)² - x₁² -2x₁ -1 => 0 (by Expand()).
+  const Expression zero_after_expansion1 =
+      pow(x(1) + 1, 2) - pow(x(1), 2) - 2 * x(1) - 1;
+
+  const double inf = std::numeric_limits<double>::infinity();
+  // +∞ <= -∞   -->  Exception.
+  // +∞ <= +∞   -->  Exception.
+  // -∞ <= +∞   -->  Exception.
+  // -∞ <= -∞   -->  Exception.
+  EXPECT_THROW(prog.AddLinearConstraint(zero_after_expansion0 + inf <=
+                                        zero_after_expansion1 + -inf),
+               runtime_error);
+  EXPECT_THROW(prog.AddLinearConstraint(zero_after_expansion0 + inf <=
+                                        zero_after_expansion1 + inf),
+               runtime_error);
+  EXPECT_THROW(prog.AddLinearConstraint(zero_after_expansion0 - inf <=
+                                        zero_after_expansion1 + inf),
+               runtime_error);
+  EXPECT_THROW(prog.AddLinearConstraint(zero_after_expansion0 - inf <=
+                                        zero_after_expansion1 - inf),
+               runtime_error);
 }
 
 GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormulaAnd1) {
@@ -969,10 +1255,16 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormulaAnd2) {
   constraint_set.emplace(e31 - e32);
   for (int i = 0; i < 3; ++i) {
     if (!std::isinf(lb_in_ctr(i))) {
-      EXPECT_EQ(constraint_set.count(Ax(i) - lb_in_ctr(i)), 1);
+      // Either `Ax - lb` or `-(Ax - lb)` should be in the constraint set.
+      EXPECT_EQ(constraint_set.count(Ax(i) - lb_in_ctr(i)) +
+                    constraint_set.count(-(Ax(i) - lb_in_ctr(i))),
+                1);
     }
     if (!std::isinf(ub_in_ctr(i))) {
-      EXPECT_EQ(constraint_set.count(Ax(i) - ub_in_ctr(i)), 1);
+      // Either `Ax - ub` or `-(Ax - ub)` should be in the constraint set.
+      EXPECT_EQ(constraint_set.count(Ax(i) - ub_in_ctr(i)) +
+                    constraint_set.count(-(Ax(i) - ub_in_ctr(i))),
+                1);
     }
   }
 }
@@ -1453,26 +1745,17 @@ GTEST_TEST(testMathematicalProgram,
 }
 
 namespace {
-bool AreTwoPolynomialsNear(const symbolic::MonomialToCoefficientMap& poly1,
-                           const symbolic::MonomialToCoefficientMap& poly2,
-                           double tol = numeric_limits<double>::epsilon()) {
-  // TODO(hongkai.dai): rewrite this part when we have function to add and
-  // subtract two polynomials.
-  symbolic::MonomialToCoefficientMap poly_diff;
-  poly_diff.reserve(poly1.size() + poly2.size());
-  poly_diff.insert(poly1.begin(), poly1.end());
-  for (const auto& p2 : poly2) {
-    const auto it = poly_diff.find(p2.first);
-    if (it == poly_diff.end()) {
-      poly_diff.emplace_hint(it, p2.first, -p2.second);
-    } else {
-      it->second -= p2.second;
-    }
-  }
-  return all_of(poly_diff.begin(), poly_diff.end(), [&tol](const auto& p) {
-    return std::abs(symbolic::get_constant_value(p.second)) <= tol;
-  });
-}
+bool AreTwoPolynomialsNear(
+    const symbolic::Polynomial& p1, const symbolic::Polynomial& p2,
+    const double tol = numeric_limits<double>::epsilon()) {
+  symbolic::Polynomial diff{p1 - p2};
+  const auto& monomial_to_coeff_map = diff.monomial_to_coefficient_map();
+  return all_of(monomial_to_coeff_map.begin(), monomial_to_coeff_map.end(),
+                [tol](const auto& p) {
+                  return std::abs(symbolic::get_constant_value(p.second)) <=
+                         tol;
+                });
+}  // namespace
 
 void CheckParsedSymbolicLorentzConeConstraint(
     MathematicalProgram* prog, const Expression& linear_expr,
@@ -1494,14 +1777,10 @@ void CheckParsedSymbolicLorentzConeConstraint(
   // do not match exactly.So we will compare each term in the two polynomials,
   // and regard them to be equal if the error in the coefficient is sufficiently
   // small.
-  const auto& monomial_to_coeff_map_parsed =
-      symbolic::DecomposePolynomialIntoMonomial(
-          quadratic_expr_parsed, quadratic_expr_parsed.GetVariables());
-  const auto& monomial_to_coeff_map = symbolic::DecomposePolynomialIntoMonomial(
-      quadratic_expr, quadratic_expr.GetVariables());
-  double tol = 100 * numeric_limits<double>::epsilon();
-  EXPECT_TRUE(AreTwoPolynomialsNear(monomial_to_coeff_map_parsed,
-                                    monomial_to_coeff_map, tol));
+  const symbolic::Polynomial poly_parsed{quadratic_expr_parsed};
+  const symbolic::Polynomial poly{quadratic_expr};
+  const double tol{100 * numeric_limits<double>::epsilon()};
+  EXPECT_TRUE(AreTwoPolynomialsNear(poly_parsed, poly, tol));
 }
 
 void CheckParsedSymbolicLorentzConeConstraint(
@@ -1922,7 +2201,7 @@ GTEST_TEST(testMathematicalProgram, TestL2NormCost) {
   }
 }
 
-// Helper function for AreMonomialToCoefficientMapIsomorphic.
+// Helper function for ArePolynomialIsomorphic.
 //
 // Transforms a monomial into an isomorphic one up to a given map (Variable::Id
 // → Variable). Consider an example where monomial is "x³y⁴" and var_id_to_var
@@ -1959,39 +2238,39 @@ symbolic::Monomial transform(const symbolic::Monomial& monomial,
   return symbolic::Monomial{new_powers};
 }
 
-// Helper function for AreMonomialToCoefficientMapIsomorphic.
+// Helper function for ArePolynomialIsomorphic.
 //
-// Transforms a MonomialToCoefficientMap into an isomorphic one up to a given
-// map (Variable::Id → Variable). Consider an example where m is {x³y⁴ ↦ 1, x² ↦
-// 2} and var_id_to_var is {x.get_id() ↦ z, y.get_id() ↦ w}. We have
-// transform(m, var_id_to_var) = {z³w⁴ ↦ 1, z² ↦ 2}.
+// Transforms a Polynomial into an isomorphic one up to a given map
+// (Variable::Id → Variable). Consider an example where poly = x³y⁴ + 2x² and
+// var_id_to_var is {x.get_id() ↦ z, y.get_id() ↦ w}. We have transform(poly,
+// var_id_to_var) = z³w⁴ + 2z².
 //
 // @pre `var_id_to_var` is 1-1.
 // @pre The domain of `var_id_to_var` includes all variables in `m`.
 // @pre `var_id_to_var` should be chain-free.
-symbolic::MonomialToCoefficientMap transform(
-    const symbolic::MonomialToCoefficientMap& m,
+symbolic::Polynomial transform(
+    const symbolic::Polynomial& poly,
     const map<Variable::Id, Variable>& var_id_to_var) {
-  symbolic::MonomialToCoefficientMap new_map;
-  for (const pair<symbolic::Monomial, symbolic::Expression>& p : m) {
+  symbolic::Polynomial::MapType new_map;
+  for (const pair<symbolic::Monomial, symbolic::Expression>& p :
+       poly.monomial_to_coefficient_map()) {
     new_map.emplace(transform(p.first, var_id_to_var), p.second);
   }
-  return new_map;
+  return symbolic::Polynomial{new_map};
 }
 
 // Helper function for CheckAddedPolynomialCost.
 //
-// Checks if two MonomialToCoefficientMap `map1` and `map2` are isomorphic with
-// respect to a bijection `var_id_to_var`.
+// Checks if two Polynomial `p1` and `p2` are isomorphic with respect to a
+// bijection `var_id_to_var`.
 //
 // @pre `var_id_to_var` is 1-1.
 // @pre The domain of `var_id_to_var` includes all variables in `m`.
 // @pre `var_id_to_var` should be chain-free.
-bool AreMonomialToCoefficientMapIsomorphic(
-    const symbolic::MonomialToCoefficientMap& map1,
-    const symbolic::MonomialToCoefficientMap& map2,
-    const map<Variable::Id, Variable>& var_id_to_var) {
-  return transform(map1, var_id_to_var) == map2;
+bool ArePolynomialIsomorphic(const symbolic::Polynomial& p1,
+                             const symbolic::Polynomial& p2,
+                             const map<Variable::Id, Variable>& var_id_to_var) {
+  return transform(p1, var_id_to_var).EqualTo(p2);
 }
 
 void CheckAddedPolynomialCost(MathematicalProgram* prog, const Expression& e) {
@@ -2002,10 +2281,9 @@ void CheckAddedPolynomialCost(MathematicalProgram* prog, const Expression& e) {
   // Now reconstruct the symbolic expression from `binding`.
   const auto polynomial = binding.constraint()->polynomials()(0);
 
-  // map_expected : symbolic::Monomial → symbolic::Expression.
-  symbolic::MonomialToCoefficientMap map_expected;
   // var_id_to_var : Variable::Id → Variable. It keeps the relation between a
   // variable in a Polynomial<double> and symbolic::Monomial.
+  symbolic::Polynomial poly_expected;
   map<Variable::Id, Variable> var_id_to_var;
   for (const Polynomial<double>::Monomial& m : polynomial.GetMonomials()) {
     map<Variable, int> map_var_to_power;
@@ -2019,16 +2297,12 @@ void CheckAddedPolynomialCost(MathematicalProgram* prog, const Expression& e) {
         map_var_to_power.emplace(it->second, term.power);
       }
     }
-    symbolic::Monomial m_symbolic(map_var_to_power);
-    map_expected.emplace(m_symbolic, m.coefficient);
+    poly_expected += symbolic::Monomial(map_var_to_power) * m.coefficient;
   }
-  // Now compare the reconstructed symbolic polynomial with `e`.
-  const symbolic::MonomialToCoefficientMap map =
-      symbolic::DecomposePolynomialIntoMonomial(e, e.GetVariables());
-  // Checks if the two map, `map` and `map_expected` are isomorphic with respect
-  // to `var_id_to_var`.
-  EXPECT_TRUE(
-      AreMonomialToCoefficientMapIsomorphic(map, map_expected, var_id_to_var));
+  // Checks if the two polynomials, `poly` and `poly_expected` are isomorphic
+  // with respect to `var_id_to_var`.
+  const symbolic::Polynomial poly{e};
+  EXPECT_TRUE(ArePolynomialIsomorphic(poly, poly_expected, var_id_to_var));
 }
 
 GTEST_TEST(testMathematicalProgram, testAddPolynomialCost) {

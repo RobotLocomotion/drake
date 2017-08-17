@@ -1,15 +1,20 @@
 # -*- python -*-
 
-load("@drake//tools:install.bzl", "cmake_config", "install", "install_cmake_config")
+load(
+    "@drake//tools:install.bzl",
+    "cmake_config",
+    "install",
+    "install_cmake_config",
+)
 load("@drake//tools:python_lint.bzl", "python_lint")
 
 package(default_visibility = ["//visibility:public"])
 
 # We build IPOPT by shelling out to autotools.
 
-# We run autotools in a genrule, and only files explicitly identified as outputs
-# of that genrule can be made available to other rules. Therefore, we need a
-# list of every file in the IPOPT install.
+# We run autotools in a genrule, and only files explicitly identified as
+# outputs of that genrule can be made available to other rules. Therefore, we
+# need a list of every file in the IPOPT install.
 # See https://github.com/bazelbuild/bazel/issues/281.
 
 # find include/coin -name "*.h" -o -name "*.hpp" -o -name "*.hdd" | sort |
@@ -143,12 +148,11 @@ install_cmake_config(package = "IPOPT")  # Creates rule :install_cmake_config.
 # TODO(jamiesnape): At the moment libipopt.a has gone AWOL.
 install(
     name = "install",
-    doc_dest = "share/doc/ipopt",
-    guess_hdrs = "PACKAGE",
+    targets = [":ipopt"],
     hdr_dest = "include/ipopt",
     hdr_strip_prefix = ["include/coin"],
-    license_docs = glob(["**/LICENSE"]),
-    targets = [":ipopt"],
+    guess_hdrs = "PACKAGE",
+    docs = glob(["**/LICENSE"]),
     deps = [":install_cmake_config"],
 )
 

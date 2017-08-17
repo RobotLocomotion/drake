@@ -12,7 +12,7 @@ namespace drake {
 namespace systems {
 
 /**
- * DircolTrajectoryOptimization implements a direct colocation
+ * DircolTrajectoryOptimization implements a direct collocation
  * approach to trajectory optimization, as described in
  *   C. R. Hargraves and S. W. Paris. Direct trajectory optimization using
  *    nonlinear programming and collocation. J Guidance, 10(4):338-342,
@@ -23,8 +23,8 @@ namespace systems {
  * achieve a 3rd order integration accuracy.
  *
  * @param system A dynamical system to be used in the dynamic constraints.
- *    This system must implement DoToAutoDiffXd. Note that this is aliased for
- *    the lifetime of this object.
+ *    This system must support System::ToAutoDiffXd.
+ *    Note that this is aliased for the lifetime of this object.
  * @param context Required to describe any parameters of the system.  The
  *    values of the state in this context do not have any effect.  This
  *    context will also be "cloned" by the optimization; changes to the context
@@ -56,8 +56,6 @@ class DircolTrajectoryOptimization : public DirectTrajectoryOptimization {
 
  private:
   void DoAddRunningCost(const symbolic::Expression& e) override;
-
-  void DoAddRunningCost(std::shared_ptr<solvers::Cost> cost) override;
 
   const System<double>* system_{nullptr};
   const std::unique_ptr<Context<double>> context_{nullptr};

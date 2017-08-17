@@ -1,13 +1,13 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load(
     "//tools:drake.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_binary",
 )
+load("//tools:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -30,47 +30,10 @@ drake_cc_library(
         "xml_util.h",
     ],
     deps = [
-        "//drake/common:drake_path",
         "//drake/multibody:rigid_body_tree",
         "//drake/thirdParty:spruce",
         "//drake/thirdParty:tinydir",
         "//drake/thirdParty:tinyxml2",
-    ],
-)
-
-# TODO(jwnimmer-tri) This is just some random program.  Do we want to keep it?
-drake_cc_binary(
-    name = "urdf_kinematics_test",
-    testonly = 1,
-    srcs = ["test/urdf_kinematics_test.cc"],
-    deps = [
-        ":parsers",
-        "//drake/multibody:rigid_body_tree",
-        "@gtest//:main",
-    ],
-)
-
-# TODO(jwnimmer-tri) This is just some random program.  Do we want to keep it?
-drake_cc_binary(
-    name = "urdf_collision_test",
-    testonly = 1,
-    srcs = ["test/urdf_collision_test.cc"],
-    deps = [
-        ":parsers",
-        "//drake/multibody:rigid_body_tree",
-        "@gtest//:main",
-    ],
-)
-
-# TODO(jwnimmer-tri) This is just some random program.  Do we want to keep it?
-drake_cc_binary(
-    name = "urdf_manipulator_dynamics_test",
-    testonly = 1,
-    srcs = ["test/urdf_manipulator_dynamics_test.cc"],
-    deps = [
-        ":parsers",
-        "//drake/multibody:rigid_body_tree",
-        "@gtest//:main",
     ],
 )
 
@@ -82,6 +45,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":parsers",
+        "//drake/common:find_resource",
     ],
 )
 
@@ -100,6 +64,7 @@ drake_cc_googletest(
     data = [":test_models"],
     deps = [
         ":parsers",
+        "//drake/common:find_resource",
     ],
 )
 
@@ -108,10 +73,11 @@ drake_cc_googletest(
     srcs = ["test/urdf_parser_test/urdf_parser_test.cc"],
     data = [
         ":test_models",
-        "//drake/examples/Atlas:models",
+        "//drake/examples/atlas:models",
     ],
     deps = [
         ":parsers",
+        "//drake/common:find_resource",
     ],
 )
 
@@ -141,4 +107,4 @@ filegroup(
     ]),
 )
 
-cpplint()
+add_lint_tests()

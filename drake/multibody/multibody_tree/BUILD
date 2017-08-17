@@ -1,12 +1,12 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load(
     "//tools:drake.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
 )
+load("//tools:lint.bzl", "add_lint_tests")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -35,16 +35,22 @@ drake_cc_library(
 drake_cc_library(
     name = "multibody_tree_context",
     srcs = [
+        "acceleration_kinematics_cache.cc",
         "multibody_tree_context.cc",
         "position_kinematics_cache.cc",
+        "velocity_kinematics_cache.cc",
     ],
     hdrs = [
+        "acceleration_kinematics_cache.h",
         "multibody_tree_context.h",
         "position_kinematics_cache.h",
+        "velocity_kinematics_cache.h",
     ],
     deps = [
         ":multibody_tree_topology",
         "//drake/common:autodiff",
+        "//drake/multibody/multibody_tree/math:spatial_acceleration",
+        "//drake/multibody/multibody_tree/math:spatial_velocity",
         "//drake/systems/framework:leaf_context",
     ],
 )
@@ -96,7 +102,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "rotational_inertia",
-    srcs = [],
+    srcs = ["rotational_inertia.cc"],
     hdrs = ["rotational_inertia.h"],
     deps = [
         "//drake/common",
@@ -107,7 +113,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "spatial_inertia",
-    srcs = [],
+    srcs = ["spatial_inertia.cc"],
     hdrs = ["spatial_inertia.h"],
     deps = [
         ":unit_inertia",
@@ -118,7 +124,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "unit_inertia",
-    srcs = [],
+    srcs = ["unit_inertia.cc"],
     hdrs = ["unit_inertia.h"],
     deps = [
         ":rotational_inertia",
@@ -141,35 +147,37 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "multibody_tree_creation_tests",
+    name = "multibody_tree_creation_test",
     deps = [":multibody_tree"],
 )
 
 drake_cc_googletest(
-    name = "multibody_tree_indexes_tests",
+    name = "multibody_tree_indexes_test",
     deps = [":multibody_tree_indexes"],
 )
 
 drake_cc_googletest(
-    name = "rotational_inertia_tests",
+    name = "rotational_inertia_test",
     deps = [
         ":rotational_inertia",
         "//drake/common:autodiff",
+        "//drake/math:gradient",
     ],
 )
 
 drake_cc_googletest(
-    name = "spatial_inertia_tests",
+    name = "spatial_inertia_test",
     deps = [
         ":spatial_inertia",
     ],
 )
 
 drake_cc_googletest(
-    name = "unit_inertia_tests",
+    name = "unit_inertia_test",
     deps = [
         ":unit_inertia",
+        "//drake/math:gradient",
     ],
 )
 
-cpplint()
+add_lint_tests()

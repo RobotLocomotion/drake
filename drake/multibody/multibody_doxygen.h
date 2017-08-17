@@ -247,65 +247,156 @@ simulation. User-supplied information such as mass properties, visual geometry,
 and collision geometry are given with respect to frame L; Drake transforms those
 internally so that they are maintained with respect to B instead.
 
+<h3>Notation for offset frame</h3>
+Given a frame F, we commonly need to work with another frame that is rigidly
+fixed to frame F, with all axes aligned, but with its origin shifted from Fo
+to some other point R. We call that an _offset frame_. In our mathematical
+notation we would write that @f$ F_R @f$. In code we don't have subscripts so we
+lowercase the point name to make it look like one: `Fr` is the closest we can
+come. Recall that we also permit frame names and body names to serve as points
+(by using their origins), so if we have a frame E or body B we can create `Fe`
+(rigidly aligned with F but with origin at Eo) or `Fb` (rigidly aligned with F
+but with origin at Bo). Here is a typical example to clarify the use of this
+notation:
+
+We have the spatial velocity V_WP (@f$ ^WV^P @f$) of frame P in World, and the
+spatial velocity V_PB of a frame B that moves with respect to P. We would like
+to get V_WB, the spatial velocity of frame B in World. To do that we must shift
+V_WP to get V_WPb (@f$ ^WV^{P_B} @f$), where Pb is a frame rigidly aligned with
+P but with its origin at Bo.
+
+This notation is not fully satisfactory since you may not always have available
+a convenient one-letter name for the point. In that case we suggest that you
+first define the offset frame by explaining where its origin is to be placed,
+and give it a locally-meaningful frame name. Then work with the newly-named
+frame rather than deriving the name from the original frame. When in doubt, use
+comments to clarify your precise meaning. That's a good idea even if the
+notation fits since some readers of your code may not be facile with this
+notation.
+
 Next topic: @ref multibody_quantities
 **/
 
 /** @defgroup multibody_quantities Multibody Quantities
 @ingroup multibody_notation
 
-Quantities of interest in multibody dynamics have distinct types,
-which we denote with a single letter. For example, a rotation matrix is
-denoted with `R` and a position vector with `p`. Most quantities have a
-_reference_ and _target_, either of which may be a frame, basis, or point, that
-specify how the quantity is to be defined. In addition, for purposes of
-computation, vector quantities
-must be _expressed_ in a particular basis to provide numerical values for the
-vector elements. For example, the velocity of a point is a vector quantity. To
-define that quantity we must know the target point P, and the reference frame F
-in which that point's velocity is to be measured. As a typeset symbol, we would
-write that quantity @f$^Fv^P@f$. Here v is the quantity type, the left
-superscript is the reference, and the right superscript is the target. That is
-the physical quantity of interest, but we have not said what basis we will
-choose to give meaning to the numerical values for the vector. By default, we
-always assume that the expressed-in frame is the same as the reference frame,
-so in this case we would expect the vector expressed in frame F's basis. In case
-we wish to use a different expressed-in frame, say W, we use bracket notation
-to indicate how to write down the bracketed quantity: @f$[^Fv^P]_W@f$.
+Quantities of interest in multibody dynamics have distinct types. For example,
+a rotation matrix is denoted with `R` and a position vector with `p`. New
+quantities can be created by differentiation of an existing quantity (see
+@ref Dt_multibody_quantities).
 
-Translating that to monogram notation in code we would write @f$^Fv^P@f$ as
-`v_FP`. The quantity type always comes first, then
-an underscore, then left and right superscripts. That symbol implies that the
-vector is expressed in the reference frame F. To express in a different frame,
-we would write @f$[^Fv^P]_W@f$ as `v_FP_W`, that is, add a final underscore
-and expressed-in frame. We follow that pattern closely for all
-quantities and it is quite useful once you get used to it. As a second example,
-the position vector of body B's center of mass point Bcm, measured from
-reference frame B and expressed in B would be @f$^Bp^{B_{cm}}@f$ or more
-explicitly, @f$[^{B_O}p^{B_{cm}}]_B @f$ where we have noted that it is the
-body origin point serving as a reference, and that we will express the quantity
-in the body frame. The monogram equivalents are `p_BBcm` and `p_BoBcm_B`,
-respectively.
+Most quantities have a
+_reference_ and _target_, either of which may be a frame, basis, or point, that
+specify how the quantity is to be defined. In computation, vector quantities
+are _expressed_ in a particular basis to provide numerical values for the
+vector elements. For example, the velocity of a point P moving in a reference
+frame F is a vector quantity with _target_ point P and _reference_ frame F.  In
+typeset this symbol is written as @f$^Fv^P@f$. Here v is the quantity type, the
+left superscript F is the reference, and the right superscript P is the target.
+In computation, this vector is _expressed_ in a particular basis. By default,
+the assumed expressed-in frame is the same as the _reference_ frame, so in this
+case, the assumed expressed-in frame is frame F's basis. Alternately, to use a
+different expressed-in frame, say W, typeset with the bracket notation:
+@f$[^Fv^P]_W@f$.
+
+The typeset symbol @f$^Fv^P@f$ is translated to monogram notation as `v_FP`.
+The quantity type always comes first, then an underscore, then left and right
+superscripts.  The symbol `v_FP` implies the vector is expressed in frame F.
+Alternately, to express in frame W, we typeset as @f$[^Fv^P]_W@f$ and use the
+monogram notation `v_FP_W` (adding a final underscore and expressed-in frame W).
+We adhere to this pattern for all quantities and it is quite useful once you get
+familiar with it. As a second example, consider the position vector of point Bcm
+(body B's center of mass) from point Bo (the origin of frame B), expressed in B.
+In full typeset, this is @f$[^{B_o}p^{B_{cm}}]_B @f$ whereas in implicit typeset
+this can be abbreviated @f$^Bp^{B_{cm}}@f$ (where the left-superscript B denotes
+Bo and the expressed-in frame is implied to be B). The corresponding
+monogram equivalents are `p_BoBcm_B` and `p_BBcm`, respectively.
 
 Here are some more useful multibody quantities.
 
 <!-- Developer note: Markdown tables are nice since you can read them in the
 source file. However, each row must be specified on a single line of text. You
 can violate the 80-character style guide limit if you have to, but be
-reasonable! Here I've used a footnote to avoid running over. -->
+reasonable! Alternately, use a footnote to avoid running over. -->
 
-Quantity       |Symbol|  Typeset  | Code | Meaning
----------------|:----:|:---------:|:----:|-------------------------
-Position vector|  p   |@f$^Pp^Q@f$|`p_PQ`|Vector from point P to Q †
-Rotation Matrix|  R   |@f$^AR^B@f$|`R_AB`|Frame B's orientation in A
-Transform      |  X   |@f$^AX^B@f$|`X_AB`|Frame B's pose in A
+Quantity            |Symbol|     Typeset    |   Code   | Meaning †
+--------------------|:----:|:--------------:|:--------:|----------------------------
+Rotation matrix     |  R   |@f$^BR^C@f$     |`R_BC`    |Frame C's orientation in B
+Position vector     |  p   |@f$^Pp^Q@f$     |`p_PQ`    |Position from point P to point Q
+Transform/pose      |  X   |@f$^BX^C@f$     |`X_BC`    |Frame C's transform (pose) in B
+Angular velocity    |  w   |@f$^B\omega^C@f$|`w_BC`    |Frame C's angular velocity in B
+Velocity            |  v   |@f$^Bv^Q@f$     |`v_BQ`    |%Point Q's velocity in B
+Spatial velocity    |  V   |@f$^BV^C@f$     |`V_BC`    |Frame C's spatial velocity in B
+Angular acceleration|alpha |@f$^B\alpha^C@f$|`alpha_BC`|Frame C's angular acceleration in B
+Acceleration        |  a   |@f$^Ba^Q@f$     |`a_BQ`    |%Point Q's acceleration in B
+Spatial acceleration|  A   |@f$^BA^C@f$     |`A_BC`    |Frame C's spatial acceleration in B
+Torque              |  t   |@f$\tau@f$      |`t`       |Torque
+Force               |  f   |@f$f^{P}@f$     |`f_P`     |Force on a point P
+Spatial force       |  F   |@f$F^{P}@f$     |`F_P`     |Spatial force (torque/force) ††
 
-† expressed in point P's body's frame.
+† In code, a vector has an expressed-in-frame which appears after the quantity.
+<br>Example: `w_BC_E` is C's angular velocity in B, expressed in frame E, typeset
+as @f$[^B\omega^C]_E @f$.
 
-<!-- TODO(sherm1,mitiguy) fill out above table? -->
+†† In mechanical systems, it is often useful to <b>replace</b> a set of forces
+by an equivalent set with a force fᴾ placed at an arbitrary point P (fᴾ is equal
+to the set's resultant), together with a torque `t` equal to the moment of the
+set about P.  A spatial force Fᴾ containing `t` and fᴾ can be useful for
+representing this replacement.
+
+Next topic: @ref Dt_multibody_quantities
+**/
+
+//------------------------------------------------------------------------------
+/** @defgroup Dt_multibody_quantities Time Derivatives of Multibody Quantities
+@ingroup multibody_notation
+
+<b>Scalar quantities</b>: The ordinary first time-derivative of the scalar x is
+ denoted xdot or xDt whereas the ordinary second time-derivative of x is denoted
+ xddot or xDDt.
+
+<b>Vector quantities</b> (Advanced topic): The ordinary time-derivative of a
+vector v (such as position or velocity) is different than the derivative of a
+scalar.  A vector has direction whereas a scalar does not.  The derivative of
+a vector requires a frame in which the derivative is being taken.
+The typeset notation for the ordinary time-derivative in frame @f$ G @f$ of a
+vector @f$ v @f$ is @f$ \frac{^Gd}{dt}\,v @f$ and its monogram notation is
+`DtG_v`.  Since the derivative of a vector is a vector, we need to specify an
+expressed-in frame E. The typeset notation is @f$ [\frac{^Gd}{dt}\,v]_E @f$
+whereas the monogram notation is `DtG_v_E`. In unicode comments (e.g., in a
+header or source file), use `[ᴳd/dt v]_E` or `DtG(v)_E` (see below).†
+
+Important note: The derivative operator applies to the vector, _not_ the
+computational representation of the vector. It is misleading to include
+an expressed-in frame in the symbol name for the vector v.  The expressed-in
+frame applies only to the final derived quantity. For example, consider
+`V_BC`, frame C's spatial velocity in frame B (a spatial velocity contains
+two vectors, namely angular velocity and velocity).  In code, you may express
+`V_BC` in frame E as `V_BC_E`. The definition of the spatial acceleration `A_BC`
+is the derivative in frame B of `V_BC` (the derivative <b>must</b> be in B).
+However, the resulting expressed-in frame is arbitrary, e.g., a frame F.
+The expressed-in frame E for `V_BC` does not impact the final result. The
+monogram notation for this derivative is `DtB_V_BC_F` which is interpreted as
+@f$ [\frac{^Bd}{dt}\,^BV^C]_F @f$; the `_F` goes with the result,
+not the quantity being differentiated. The resulting vector happens to
+be `A_BC_F`, but that is only because the derivative was taken in frame B.
+If the derivative was taken in F (or C or E or any frame other than B), there
+is <b>no</b> conventional spatial acceleration name or notation for the result
+`DtF_V_BC`.
+
+When using this DtFrame derivative notation in code, the expressed-in frame is
+_always_ specified at the end of the symbol.  However there is _never_ an
+expressed-in frame specified for the quantity being differentiated. For
+example, given a vector v, the expression `DtG(v_E)_F` is misleading.
+Instead, use `DtG(v)_F`.
+
+† In unicode comments for the derivative in frame A of a vector v, use `ᴬd/dt v`
+(preferred if available) or `DtA(v)`.  Although the former is preferred, not all
+uppercase letters are available as superscripts in unicode.  Consider choosing
+frame names to accommodate this strange quirk in unicode.
 
 Next topic: @ref multibody_spatial_algebra
 **/
-
 
 //------------------------------------------------------------------------------
 /** @defgroup multibody_spatial_algebra Spatial Algebra
@@ -489,26 +580,38 @@ equivalents:
 alpha | α - angular acceleration ||  a   | linear acceleration
   t   | τ - torque               ||  f   | force
 
-While the rotational component of a spatial vector applies to a rigid body as a
-whole, the translational component refers to a particular point on that same
-body. When assigned numerical values for computation, both subvectors must be
-expressed in the same frame, which may be that body's frame or any other
-specified frame. Thus, unambiguous notation for spatial vectors must specify
-both a point and an expressed-in frame. Motion quantities must also state the
-reference frame with respect to which the motion is measured.
+While the rotational component of a spatial vector applies to a rigid body or
+frame as a whole, the translational component refers to a particular point
+rigidly fixed to that same body or frame. When assigned numerical values
+for computation, both subvectors must be expressed in the same frame, which may
+be that body's frame or any other specified frame. Thus, unambiguous notation
+for spatial vectors must specify both a point and an expressed-in frame. Motion
+quantities must also state the reference frame with respect to which the motion
+is measured.
 
-Example spatial quantity      |At |Exp|     Typeset        |   Code
-------------------------------|---|:-:|:------------------:|:-------:
-Body B's spatial velocity in A|Bo | A |@f$^AV^B         @f$|`V_AB`
-Same, but expressed in world  |Bo | W |@f$[^AV^B]_W     @f$|`V_AB_W`
-B's spatial acceleration in W |Bcm| W |@f$^WA^{B_{cm}}  @f$|`A_WBcm`
-Spatial force applied to B    |Bcm| W |@f$[F^{B_{cm}}]_W@f$|`F_Bcm_W`
+Example spatial quantity      |At |Exp|     Typeset        |   Code  |  Full
+------------------------------|---|:-:|:------------------:|:-------:|:--------:
+Body B's spatial velocity in A|Bo | A |@f$^AV^B         @f$|`V_AB`   |`V_ABo_A`
+Same, but expressed in world  |Bo | W |@f$[^AV^B]_W     @f$|`V_AB_W` |`V_ABo_W`
+B's spatial acceleration in W |Bcm| W |@f$^WA^{B_{cm}}  @f$|`A_WBcm` |`A_WBcm_W`
+Spatial force acting on body B|Bcm| W |@f$[F^{B_{cm}}]_W@f$|`F_Bcm_W`|`F_BBcm_W`
+Spatial force acting on body A| Q | W |@f$[F^{A/Q}]_W   @f$|`F_AQ_W` |    —
 
 In the above table "At" is the point at which the translational activity occurs;
-"Exp" is the expressed-in frame in which both vectors are expressed. Note that
-the expressed-in frame defaults to the reference (left) frame and that the point
-defaults to the target (right) frame origin. You should use fully-expanded
-symbols if there is any chance of confusion.
+"Exp" is the expressed-in frame in which both vectors are expressed. The
+expressed-in frame defaults to the reference (left) frame and the point
+defaults to the target (right) frame origin. The "Code" column shows the
+notation to use in code, using the available defaults; "Full" shows the code
+notation with the defaults shown explicitly.
+
+For spatial forces we need to identify the body (actually a frame) on which the
+force is acting, as well as a point rigidly fixed to that body (or frame). When
+the body is obvious from the point name (such as Bo or Bcm above), the body does
+not need to be specified again. However, when the body is not clear it should be
+listed before the point as in the last line of the table above. There it can be
+read as "the point of body A coincident in space with point Q", where point Q
+might be identified with a different body. You should use fully-expanded
+symbols, and helpful comments, if there is any chance of confusion.
 
 Next topic: @ref multibody_spatial_inertia
 **/

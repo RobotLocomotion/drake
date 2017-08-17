@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/systems/framework/test_utilities/scalar_conversion.h"
 #include "drake/systems/primitives/test/affine_linear_test.h"
 
 using std::make_unique;
@@ -83,6 +84,24 @@ TEST_F(LinearSystemTest, Output) {
   expected_output = C_ * x + D_ * u;
 
   EXPECT_EQ(expected_output, system_output_->get_vector_data(0)->get_value());
+}
+
+// Tests converting to different scalar types.
+TEST_F(LinearSystemTest, ConvertScalarType) {
+  // TODO(jwnimmer-tri) We would prefer that these are true, but right now,
+  // LinearSystem does not transmogrify correctly.
+  EXPECT_FALSE(is_autodiffxd_convertible(*dut_, [&](const auto& converted) {
+    EXPECT_EQ(converted.A(), A_);
+    EXPECT_EQ(converted.B(), B_);
+    EXPECT_EQ(converted.C(), C_);
+    EXPECT_EQ(converted.D(), D_);
+  }));
+  EXPECT_FALSE(is_symbolic_convertible(*dut_, [&](const auto& converted) {
+    EXPECT_EQ(converted.A(), A_);
+    EXPECT_EQ(converted.B(), B_);
+    EXPECT_EQ(converted.C(), C_);
+    EXPECT_EQ(converted.D(), D_);
+  }));
 }
 
 // Test that linearizing an affine system returns the original A,B,C,D matrices.
@@ -172,6 +191,112 @@ GTEST_TEST(TestLinearize, Observability) {
   // Observable: y = x1;
   LinearSystem<double> sys3(A, B, C.topRows(1), D.topRows(1));
   EXPECT_TRUE(IsObservable(sys3));
+}
+
+class LinearSystemSymbolicTest : public ::testing::Test {
+ public:
+  LinearSystemSymbolicTest() = default;
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSystemSymbolicTest)
+
+ protected:
+  void SetUp() override {
+    // clang-format off
+  A_  << 1, 0, 3,
+        -4, 5, 0,
+         7, 0, 9;
+  B_  << 10, -7,
+         12, 0,
+         0,  15;
+  C_  <<  1, 2,  0,
+         -4, 0, -7;
+  D_  << -3,  9,
+          0, 13;
+  x_ << x0_, x1_, x2_;
+  u_ << u0_, u1_;
+    // clang-format on
+  }
+
+  const symbolic::Variable x0_{"x0"};
+  const symbolic::Variable x1_{"x1"};
+  const symbolic::Variable x2_{"x2"};
+  const symbolic::Variable u0_{"u0"};
+  const symbolic::Variable u1_{"u1"};
+  Eigen::MatrixXd A_{3, 3};
+  Eigen::MatrixXd B_{3, 2};
+  Eigen::MatrixXd C_{2, 3};
+  Eigen::MatrixXd D_{2, 2};
+  VectorX<symbolic::Variable> x_{3};
+  VectorX<symbolic::Variable> u_{2};
+};
+
+TEST_F(LinearSystemSymbolicTest, MakeLinearSystem) {
+  // Checks if MakeLinearSystem() parses the arguments and build a
+  // system correctly.
+  const auto dut = LinearSystem<double>::MakeLinearSystem(
+      A_ * x_ + B_ * u_, C_ * x_ + D_ * u_, x_, u_, 10.0);
+  EXPECT_EQ(dut->A(), A_);
+  EXPECT_EQ(dut->B(), B_);
+  EXPECT_EQ(dut->C(), C_);
+  EXPECT_EQ(dut->D(), D_);
+  EXPECT_EQ(dut->time_period(), 10.0);
+}
+
+// Adds quadratic terms to check if we have an exception. Note that we have
+// similar testcases in drake/common/test/symbolic_decompose_test.cc file but we
+// believe that having redundancy is not bad in testing.
+TEST_F(LinearSystemSymbolicTest, MakeLinearSystemException1) {
+  VectorX<symbolic::Expression> extra_terms(3);
+  // clang-format off
+  extra_terms << x0_ * x0_,
+                 x1_ * x1_,
+                 x2_ * x2_;
+  // clang-format on
+  EXPECT_THROW(
+      LinearSystem<double>::MakeLinearSystem(extra_terms + A_ * x_ + B_ * u_,
+                                             C_ * x_ + D_ * u_, x_, u_, 10.0),
+      std::runtime_error);
+}
+
+// Adds bilinear terms to check if we have an exception.
+TEST_F(LinearSystemSymbolicTest, MakeLinearSystemException2) {
+  VectorX<symbolic::Expression> extra_terms(3);
+  // clang-format off
+  extra_terms << x0_ * u0_,
+                 x1_ * u1_,
+                 x2_ * u0_;
+  // clang-format on
+  EXPECT_THROW(
+      LinearSystem<double>::MakeLinearSystem(extra_terms + A_ * x_ + B_ * u_,
+                                             C_ * x_ + D_ * u_, x_, u_, 10.0),
+      std::runtime_error);
+}
+
+// Adds nonlinear terms to check if we have an exception.
+TEST_F(LinearSystemSymbolicTest, MakeLinearSystemException3) {
+  VectorX<symbolic::Expression> extra_terms(3);
+  // clang-format off
+  extra_terms << sin(x0_),
+                 cos(x1_),
+                 log(u0_);
+  // clang-format on
+  EXPECT_THROW(
+      LinearSystem<double>::MakeLinearSystem(extra_terms + A_ * x_ + B_ * u_,
+                                             C_ * x_ + D_ * u_, x_, u_, 10.0),
+      std::runtime_error);
+}
+
+// Adds constant terms to check if we have an exception.
+TEST_F(LinearSystemSymbolicTest, MakeLinearSystemException4) {
+  VectorX<symbolic::Expression> extra_terms(3);
+  // clang-format off
+  extra_terms << -1,
+                  1,
+                  M_PI;
+  // clang-format on
+  EXPECT_THROW(
+      LinearSystem<double>::MakeLinearSystem(extra_terms + A_ * x_ + B_ * u_,
+                                             C_ * x_ + D_ * u_, x_, u_, 10.0),
+      std::runtime_error);
 }
 
 }  // namespace

@@ -7,7 +7,9 @@
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/text_logging.h"
 
-namespace DrakeCollision {
+namespace drake {
+namespace multibody {
+namespace collision {
 
 using drake::AutoDiffXd;
 
@@ -149,4 +151,6 @@ template class CollisionFilterGroup<AutoDiffXd>;
 template class CollisionFilterGroupManager<double>;
 template class CollisionFilterGroupManager<AutoDiffXd>;
 
-}  // namespace DrakeCollision
+}  // namespace collision
+}  // namespace multibody
+}  // namespace drake

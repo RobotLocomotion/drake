@@ -13,8 +13,10 @@
 #undef HAVE_CSTDDEF
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/never_destroyed.h"
 #include "drake/common/unused.h"
 #include "drake/math/autodiff.h"
+#include "drake/solvers/mathematical_program.h"
 
 using Ipopt::Index;
 using Ipopt::IpoptCalculatedQuantities;
@@ -386,7 +388,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
                                  IpoptCalculatedQuantities* ip_cq) {
     unused(z_L, z_U, m, g, lambda, ip_data, ip_cq);
 
-    problem_->SetSolverResult(SolverType::kIpopt, status);
+    problem_->SetSolverId(IpoptSolver::id());
 
     switch (status) {
       case Ipopt::SUCCESS: {
@@ -510,15 +512,15 @@ SolutionResult IpoptSolver::Solve(MathematicalProgram& prog) const {
   // useful for debugging.
   app->Options()->SetIntegerValue("print_level", 2);
 
-  for (const auto& it : prog.GetSolverOptionsDouble(SolverType::kIpopt)) {
+  for (const auto& it : prog.GetSolverOptionsDouble(id())) {
     app->Options()->SetNumericValue(it.first, it.second);
   }
 
-  for (const auto& it : prog.GetSolverOptionsInt(SolverType::kIpopt)) {
+  for (const auto& it : prog.GetSolverOptionsInt(id())) {
     app->Options()->SetIntegerValue(it.first, it.second);
   }
 
-  for (const auto& it : prog.GetSolverOptionsStr(SolverType::kIpopt)) {
+  for (const auto& it : prog.GetSolverOptionsStr(id())) {
     app->Options()->SetStringValue(it.first, it.second);
   }
 

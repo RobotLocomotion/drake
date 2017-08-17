@@ -39,7 +39,7 @@ class PurePursuitParams : public systems::BasicVector<T> {
   typedef PurePursuitParamsIndices K;
 
   /// Default constructor.  Sets all rows to their default value:
-  /// @arg @c s_lookahead defaults to 15.0 in units of m.
+  /// @arg @c s_lookahead defaults to 15.0 m.
   PurePursuitParams() : systems::BasicVector<T>(K::kNumCoordinates) {
     this->set_s_lookahead(15.0);
   }

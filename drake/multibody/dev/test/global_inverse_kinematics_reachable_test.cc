@@ -25,14 +25,14 @@ TEST_F(KukaTest, ReachableTest) {
 
   solvers::GurobiSolver gurobi_solver;
   if (gurobi_solver.available()) {
-    global_ik_.SetSolverOption(solvers::SolverType::kGurobi, "OutputFlag", 1);
+    global_ik_.SetSolverOption(solvers::GurobiSolver::id(), "OutputFlag", 1);
 
     SolutionResult sol_result = gurobi_solver.Solve(global_ik_);
 
     EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
 
     double pos_tol = 0.06;
-    double orient_tol = 0.2;
+    double orient_tol = 0.22;
     CheckGlobalIKSolution(pos_tol, orient_tol);
     // Now call nonlinear IK with the solution from global IK as the initial
     // seed. If the global IK provides a good initial seed, then the nonlinear
@@ -67,6 +67,25 @@ TEST_F(KukaTest, ReachableTest) {
     q_global_ik = global_ik_.ReconstructGeneralizedPositionSolution();
     CheckNonlinearIK(ee_pos_lb_W, ee_pos_ub_W,
                      ee_desired_orient, angle_tol, q_global_ik, q_global_ik, 1);
+
+    // Now tighten the joint limits, the problem should be feasible.
+    global_ik_.AddJointLimitConstraint(3, 0.5, 0.5);
+    global_ik_.AddJointLimitConstraint(4, -0.5, -0.4);
+    sol_result = gurobi_solver.Solve(global_ik_);
+    EXPECT_EQ(sol_result, solvers::SolutionResult::kSolutionFound);
+    q_global_ik = global_ik_.ReconstructGeneralizedPositionSolution();
+    // The reconstructed posture should be within the user specified bound.
+    EXPECT_NEAR(q_global_ik(0), 0.5, 1e-3);
+    EXPECT_GE(q_global_ik(1), -0.5);
+    EXPECT_LE(q_global_ik(1), -0.4);
+
+    // Now further tighten the joint limits, the problem should be infeasible
+    global_ik_.AddJointLimitConstraint(5, 0.5, 0.55);
+    sol_result = gurobi_solver.Solve(global_ik_);
+    EXPECT_TRUE(sol_result == solvers::SolutionResult::kInfeasibleConstraints ||
+                sol_result ==
+                    solvers::SolutionResult::kInfeasible_Or_Unbounded);
+    q_global_ik = global_ik_.ReconstructGeneralizedPositionSolution();
   }
 }
 }  // namespace

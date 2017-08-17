@@ -41,17 +41,9 @@ macro(add_ik_gtest)
     drakeRigidBodyConstraint)
 endmacro()
 
-if (gurobi_FOUND)
-  add_ik_cpp(test_approximate_ik)
-endif ()
-
-if (snopt_FOUND OR ipopt_FOUND)
+if (ipopt_FOUND)
   add_ik_gtest(test_ik)
   add_ik_gtest(test_ik_pointwise)
-endif ()
-if (snopt_FOUND)
-  add_ik_gtest(test_ik_more_constraints)
-  add_ik_gtest(test_ik_traj)
 endif ()
 
 add_library_with_exports(LIB_NAME drakeRigidBodyCompareToClone
@@ -75,3 +67,10 @@ target_link_libraries(drakeRigidBodyLoopCompareToClone
   drakeRigidBodyFrameCompareToClone)
 
 add_subdirectory(rigid_body_tree)
+
+# Rigid body constraint unit tests
+drake_add_cc_test(NAME rigid_body_constraint_test)
+target_link_libraries(rigid_body_constraint_test
+    drakeMultibodyParsers
+    drakeRBM
+    drakeRigidBodyConstraint)

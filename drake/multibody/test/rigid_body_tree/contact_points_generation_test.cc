@@ -1,4 +1,4 @@
-/* clang-format off */
+/* clang-format off to disable clang-format-includes */
 #include "drake/multibody/rigid_body_tree.h"
 /* clang-format on */
 
@@ -7,7 +7,7 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 
 // Tests the functionality that computes the contact points for each body.
@@ -38,7 +38,7 @@ class RBTContactPointsTest : public ::testing::Test {
   void SetUp() override {
     initialize_expected_points();
     drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-        drake::GetDrakePath() + get_urdf_file(),
+        FindResourceOrThrow(get_urdf_file()),
         drake::multibody::joints::kQuaternion, &tree_);
   }
 
@@ -51,7 +51,8 @@ class RBTContactPointsTest : public ::testing::Test {
 class ContactGenerationTest : public RBTContactPointsTest {
  public:
   std::string get_urdf_file() const override {
-    return "/multibody/test/rigid_body_tree/contact_points_generation.urdf";
+    return "drake/multibody/test/rigid_body_tree/"
+        "contact_points_generation.urdf";
   }
 
   void initialize_expected_points() override {
@@ -80,7 +81,8 @@ TEST_F(ContactGenerationTest, GeneratingElementsTest) {
 class ContactGroupNameTest : public RBTContactPointsTest {
  public:
   std::string get_urdf_file() const override {
-    return "/multibody/test/rigid_body_tree/contact_points_group_name.urdf";
+    return "drake/multibody/test/rigid_body_tree/"
+        "contact_points_group_name.urdf";
   }
 
   void initialize_expected_points() override {

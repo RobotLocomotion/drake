@@ -1,6 +1,7 @@
 #include "drake/solvers/create_constraint.h"
 
 #include <algorithm>
+#include <cmath>
 #include <sstream>
 
 #include "drake/solvers/symbolic_extraction.h"
@@ -10,6 +11,7 @@ namespace solvers {
 namespace internal {
 
 using std::find;
+using std::isfinite;
 using std::make_shared;
 using std::numeric_limits;
 using std::ostringstream;
@@ -24,7 +26,7 @@ using symbolic::Formula;
 using symbolic::Variable;
 
 using internal::DecomposeLinearExpression;
-using internal::DecomposeQuadraticExpressionWithMonomialToCoeffMap;
+using internal::DecomposeQuadraticPolynomial;
 using internal::ExtractAndAppendVariablesFromExpression;
 using internal::ExtractVariablesFromExpression;
 using internal::SymbolicError;
@@ -64,6 +66,8 @@ Binding<LinearConstraint> ParseLinearConstraint(
     } else {
       new_lb(i) = lb(i) - constant_term;
       new_ub(i) = ub(i) - constant_term;
+      DRAKE_DEMAND(!std::isnan(new_lb(i)));
+      DRAKE_DEMAND(!std::isnan(new_ub(i)));
       if (num_vi_variables != 1) {
         is_v_bounding_box = false;
       }
@@ -91,6 +95,8 @@ Binding<LinearConstraint> ParseLinearConstraint(
         new_lb(i) = new_ub(i) / x_coeff;
         new_ub(i) = lb_i / x_coeff;
       }
+      DRAKE_DEMAND(!std::isnan(new_lb(i)));
+      DRAKE_DEMAND(!std::isnan(new_ub(i)));
     }
     return CreateBinding(make_shared<BoundingBoxConstraint>(new_lb, new_ub),
                          bounding_box_x);
@@ -99,6 +105,119 @@ Binding<LinearConstraint> ParseLinearConstraint(
                          vars);
   }
 }
+
+namespace {
+// Given two symbolic expressions, e1 and e2, finds an equi-satisfiable
+// constraint `e <= c` for `e1 <= e2`. First, it decomposes e1 and e2 into `e1 =
+// c1 + e1'` and `e2 = c2 + e2'`. Then it does the following case analysis.
+//
+// Case 1: If c1 or c2 are finite, we use the following derivations:
+//
+//              e1 <= e2
+//   ->   c1 + e1' <= c2 + e2'
+//   ->  e1' - e2' <= c2 - c1.
+//
+// and set e := e1' - e2' and c := c2 - c1.
+//
+// Case 2: If both c1 and c2 are infinite. We use the following table
+//
+//        c1    c2
+//     --------------------------
+//        +∞ <= +∞     Trivially holds.
+//        +∞ <= -∞     Infeasible.
+//        -∞ <= +∞     Trivially holds.
+//        -∞ <= -∞     Trivially holds.
+//
+//  and throw an exception for all the cases.
+//
+// Note that c1 (resp. c2) can be infinite only if e1 (resp. e2) is zero.
+// Otherwise, it throws an exception. To understand this side-condition,
+// consider the following example:
+//
+//     e1 = 0
+//     e2 = x + ∞
+//
+//     e1 <= e2   :=    0 <= x + ∞    -- (1)
+//
+// Without the side-condition, we might derive the following (wrong)
+// equi-satisfiable constraint:
+//
+//     -x <= ∞                        -- (2)
+//
+// This is problematic because x ↦ -∞ is a satisfying constraint of
+// (2) but it's not for (1) since we have:
+//
+//     0 <= -∞ + ∞
+//     0 <= nan
+//     False.
+//
+void FindBound(const Expression& e1, const Expression& e2, Expression* const e,
+               double* const c) {
+  DRAKE_ASSERT(e);
+  DRAKE_ASSERT(c);
+  double c1 = 0;
+  double c2 = 0;
+  const Expression e1_expanded{e1.Expand()};
+  if (is_constant(e1_expanded)) {
+    c1 = get_constant_value(e1_expanded);
+  } else if (is_addition(e1_expanded)) {
+    c1 = get_constant_in_addition(e1_expanded);
+    if (!isfinite(c1)) {
+      ostringstream oss;
+      oss << "FindBound() cannot handle the constraint: " << e1 << " <= " << e2
+          << " because " << e1
+          << " has infinity in the constant term after expansion.";
+      throw runtime_error{oss.str()};
+    }
+    *e = Expression::Zero();
+    for (const auto& p : get_expr_to_coeff_map_in_addition(e1_expanded)) {
+      *e += p.first * p.second;
+    }
+  } else {
+    *e = e1_expanded;
+  }
+  const Expression e2_expanded{e2.Expand()};
+  if (is_constant(e2_expanded)) {
+    c2 = get_constant_value(e2_expanded);
+  } else if (is_addition(e2_expanded)) {
+    c2 = get_constant_in_addition(e2_expanded);
+    if (!isfinite(c2)) {
+      ostringstream oss;
+      oss << "FindBound() cannot handle the constraint: " << e1 << " <= " << e2
+          << " because " << e2
+          << " has infinity in the constant term after expansion.";
+      throw runtime_error{oss.str()};
+    }
+    for (const auto& p : get_expr_to_coeff_map_in_addition(e2_expanded)) {
+      *e -= p.first * p.second;
+    }
+  } else {
+    *e -= e2_expanded;
+  }
+  if (isfinite(c1) || isfinite(c2)) {
+    *c = c2 - c1;
+    return;
+  }
+  // Handle special cases where both of `c1` and `c2` are infinite.
+  //    c1    c2
+  // --------------------------
+  //    +∞ <= +∞     Trivially holds.
+  //    +∞ <= -∞     Infeasible.
+  //    -∞ <= +∞     Trivially holds.
+  //    -∞ <= -∞     Trivially holds.
+  ostringstream oss;
+  if (c1 == numeric_limits<double>::infinity() &&
+      c2 == -numeric_limits<double>::infinity()) {
+    oss << "FindBound() detects an infeasible constraint: " << e1
+        << " <= " << e2 << ".";
+    throw runtime_error{oss.str()};
+  } else {
+    oss << "FindBound() detects a trivial constraint: " << e1 << " <= " << e2
+        << ".";
+    throw runtime_error{oss.str()};
+  }
+}
+}  // namespace
 
 Binding<LinearConstraint> ParseLinearConstraint(const set<Formula>& formulas) {
   const auto n = formulas.size();
@@ -122,17 +241,17 @@ Binding<LinearConstraint> ParseLinearConstraint(const set<Formula>& formulas) {
       ub(i) = 0.0;
     } else if (is_less_than_or_equal_to(f)) {
       // f := (lhs <= rhs)
-      //      (-∞ <= lhs - rhs <= 0)
-      v(i) = get_lhs_expression(f) - get_rhs_expression(f);
+      const Expression& lhs = get_lhs_expression(f);
+      const Expression& rhs = get_rhs_expression(f);
       lb(i) = -numeric_limits<double>::infinity();
-      ub(i) = 0.0;
+      FindBound(lhs, rhs, &v(i), &ub(i));
       are_all_formulas_equal = false;
     } else if (is_greater_than_or_equal_to(f)) {
       // f := (lhs >= rhs)
-      //      (∞ >= lhs - rhs >= 0)
-      v(i) = get_lhs_expression(f) - get_rhs_expression(f);
-      lb(i) = 0.0;
-      ub(i) = numeric_limits<double>::infinity();
+      const Expression& lhs = get_lhs_expression(f);
+      const Expression& rhs = get_rhs_expression(f);
+      lb(i) = -numeric_limits<double>::infinity();
+      FindBound(rhs, lhs, &v(i), &ub(i));
       are_all_formulas_equal = false;
     } else {
       ostringstream oss;
@@ -159,17 +278,21 @@ Binding<LinearConstraint> ParseLinearConstraint(const Formula& f) {
     const Expression& e2{get_rhs_expression(f)};
     return ParseLinearEqualityConstraint(e1 - e2, 0.0);
   } else if (is_greater_than_or_equal_to(f)) {
-    // e1 >= e2  ->  e1 - e2 >= 0  ->  0 <= e1 - e2 <= ∞
+    // e1 >= e2
     const Expression& e1{get_lhs_expression(f)};
     const Expression& e2{get_rhs_expression(f)};
-    return ParseLinearConstraint(e1 - e2, 0.0,
-                                 numeric_limits<double>::infinity());
+    Expression e;
+    double ub = 0.0;
+    FindBound(e2, e1, &e, &ub);
+    return ParseLinearConstraint(e, -numeric_limits<double>::infinity(), ub);
   } else if (is_less_than_or_equal_to(f)) {
-    // e1 <= e2  ->  0 <= e2 - e1  ->  0 <= e2 - e1 <= ∞
+    // e1 <= e2
     const Expression& e1{get_lhs_expression(f)};
     const Expression& e2{get_rhs_expression(f)};
-    return ParseLinearConstraint(e2 - e1, 0.0,
-                                 numeric_limits<double>::infinity());
+    Expression e;
+    double ub = 0.0;
+    FindBound(e1, e2, &e, &ub);
+    return ParseLinearConstraint(e, -numeric_limits<double>::infinity(), ub);
   }
   if (is_conjunction(f)) {
     return ParseLinearConstraint(get_operands(f));
@@ -217,8 +340,7 @@ Binding<LinearEqualityConstraint> ParseLinearEqualityConstraint(
     return ParseLinearEqualityConstraint(get_operands(f));
   }
   ostringstream oss;
-  oss << "ParseLinearConstraint is called with a formula "
-      << f
+  oss << "ParseLinearConstraint is called with a formula " << f
       << " which is neither an equality formula nor a conjunction of equality "
          "formulas.";
   throw runtime_error(oss.str());
@@ -308,14 +430,11 @@ Binding<LorentzConeConstraint> ParseLorentzConeConstraint(
   const auto& quadratic_p = ExtractVariablesFromExpression(quadratic_expr);
   const auto& quadratic_vars = quadratic_p.first;
   const auto& quadratic_var_to_index_map = quadratic_p.second;
-  const auto& monomial_to_coeff_map = symbolic::DecomposePolynomialIntoMonomial(
-      quadratic_expr, quadratic_expr.GetVariables());
+  const symbolic::Polynomial poly{quadratic_expr};
   Eigen::MatrixXd Q(quadratic_vars.size(), quadratic_vars.size());
   Eigen::VectorXd b(quadratic_vars.size());
   double a;
-  DecomposeQuadraticExpressionWithMonomialToCoeffMap(
-      monomial_to_coeff_map, quadratic_var_to_index_map, quadratic_vars.size(),
-      &Q, &b, &a);
+  DecomposeQuadraticPolynomial(poly, quadratic_var_to_index_map, &Q, &b, &a);
   // The constraint that the linear expression v1 satisfying
   // v1 >= sqrt(0.5 * x' * Q * x + b' * x + a), is equivalent to the vector
   // [z; y] being within a Lorentz cone, where

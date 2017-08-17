@@ -1,4 +1,4 @@
-/* clang-format off */
+/* clang-format off to disable clang-format-includes */
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 /* clang-format on */
 
@@ -118,7 +118,7 @@ class ContactFormulaTest : public ::testing::Test {
     body->add_joint(&tree_->world(),
                     make_unique<QuaternionFloatingJoint>("base", pose));
     DrakeShapes::Sphere sphere(kRadius);
-    DrakeCollision::Element collision_element(sphere);
+    drake::multibody::collision::Element collision_element(sphere);
     collision_element.set_body(body);
     tree_->addCollisionElement(collision_element, *body, "group1");
     return body;
@@ -145,7 +145,14 @@ class ContactFormulaTest : public ::testing::Test {
   double v_stiction_tolerance_ = 0.01;
   double dissipation_ = 0.5;
 
-  const double kTolerance = Eigen::NumTraits<double>::dummy_precision();
+  // dummy_precision is a very tight threshold for these tests. It is well
+  // suited to the static contact force (1000 N) but because the moving contact
+  // force is 1.5 greater than the static contact force (1500 N), the threshold
+  // may not be enough to account for small errors/approximations in the
+  // underlying geometric code. This scale factor satisfies both scenarios.
+  // If the constants or configuration of these tests change, this value may
+  // have to increase.
+  const double kTolerance = 1.5 * Eigen::NumTraits<double>::dummy_precision();
 };
 
 // Tests the case where the collision is a zero-velocity collision.  The force

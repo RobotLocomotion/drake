@@ -1,26 +1,17 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load("//tools:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
 drake_cc_library(
-    name = "state_feedback_controller_base",
-    hdrs = ["state_feedback_controller_base.h"],
+    name = "state_feedback_controller_interface",
+    hdrs = ["state_feedback_controller_interface.h"],
     deps = [
-        "//drake/systems/framework",
-    ],
-)
-
-drake_cc_library(
-    name = "model_based_controller_base",
-    hdrs = ["model_based_controller_base.h"],
-    deps = [
-        ":state_feedback_controller_base",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/parsers",
+        "//drake/systems/framework:input_port_descriptor",
+        "//drake/systems/framework:system",
     ],
 )
 
@@ -40,11 +31,14 @@ drake_cc_library(
     hdrs = ["inverse_dynamics_controller.h"],
     deps = [
         ":inverse_dynamics",
-        ":model_based_controller_base",
         ":pid_controller",
-        "//drake/multibody/parsers",
+        ":state_feedback_controller_interface",
+        "//drake/multibody:rigid_body_tree",
         "//drake/systems/framework",
+        "//drake/systems/primitives:adder",
         "//drake/systems/primitives:constant_vector_source",
+        "//drake/systems/primitives:demultiplexer",
+        "//drake/systems/primitives:pass_through",
     ],
 )
 
@@ -54,7 +48,7 @@ drake_cc_library(
     hdrs = ["linear_quadratic_regulator.h"],
     deps = [
         "//drake/common:is_approx_equal_abstol",
-        "//drake/math:continuous_algebraic_ricatti_equation",
+        "//drake/math:continuous_algebraic_riccati_equation",
         "//drake/systems/framework",
         "//drake/systems/primitives:linear_system",
     ],
@@ -65,15 +59,9 @@ drake_cc_library(
     srcs = ["pid_controller.cc"],
     hdrs = ["pid_controller.h"],
     deps = [
-        ":state_feedback_controller_base",
-        "//drake/systems/framework",
-        "//drake/systems/primitives:adder",
-        "//drake/systems/primitives:demultiplexer",
-        "//drake/systems/primitives:gain",
-        "//drake/systems/primitives:integrator",
+        ":state_feedback_controller_interface",
+        "//drake/systems/framework:leaf_system",
         "//drake/systems/primitives:matrix_gain",
-        "//drake/systems/primitives:pass_through",
-        "//drake/systems/primitives:saturation",
     ],
 )
 
@@ -83,7 +71,19 @@ drake_cc_library(
     hdrs = ["pid_controlled_system.h"],
     deps = [
         ":pid_controller",
+        "//drake/systems/primitives:adder",
         "//drake/systems/primitives:constant_vector_source",
+        "//drake/systems/primitives:saturation",
+    ],
+)
+
+drake_cc_library(
+    name = "setpoint",
+    srcs = ["setpoint.cc"],
+    hdrs = ["setpoint.h"],
+    deps = [
+        "//drake/common",
+        "//drake/math:geometric_transform",
     ],
 )
 
@@ -150,7 +150,7 @@ drake_cc_library(
         ":control_util",
         ":qp_common",
         "//drake/common",
-        "//drake/common:drake_path",
+        "//drake/common:find_resource",
         "//drake/common:is_approx_equal_abstol",
         "//drake/lcmtypes:qp_controller_input",
         "//drake/lcmtypes:zmp_com_observer_state",
@@ -164,17 +164,28 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "zmp_test_util",
+    testonly = 1,
+    srcs = ["test/zmp_test_util.cc"],
+    hdrs = ["test/zmp_test_util.h"],
+    deps = [
+        ":zmp_planner",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
     name = "inverse_dynamics_test",
     data = [
-        "//drake/examples/SimpleFourBar:models",
+        "//drake/examples/simple_four_bar:models",
         "//drake/manipulation/models/iiwa_description:models",
     ],
     deps = [
         ":inverse_dynamics",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
         "//drake/multibody/parsers",
     ],
 )
@@ -187,6 +198,7 @@ drake_cc_googletest(
     deps = [
         ":inverse_dynamics_controller",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:find_resource",
         "//drake/multibody/parsers",
     ],
 )
@@ -215,9 +227,26 @@ drake_cc_googletest(
     ],
 )
 
-# The extra_srcs are required here because cpplint() doesn't understand how to
-# extract labels from select() functions yet.
-cpplint(extra_srcs = [
+drake_cc_googletest(
+    name = "setpoint_test",
+    srcs = ["test/setpoint_test.cc"],
+    deps = [
+        ":setpoint",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "zmp_planner_test",
+    deps = [
+        ":zmp_test_util",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+# The extra_srcs are required here because add_lint_tests() doesn't understand
+# how to extract labels from select() functions yet.
+add_lint_tests(cpplint_extra_srcs = [
     "InstantaneousQPController.cpp",
     "InstantaneousQPController.h",
 ])

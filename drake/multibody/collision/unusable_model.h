@@ -7,7 +7,9 @@
 #include "drake/multibody/collision/element.h"
 #include "drake/multibody/collision/model.h"
 
-namespace DrakeCollision {
+namespace drake {
+namespace multibody {
+namespace collision {
 
 /// An unusable model, used when no collision detection backend is available.
 class UnusableModel : public Model {
@@ -18,42 +20,42 @@ class UnusableModel : public Model {
 
   virtual ~UnusableModel() {}
 
-  void updateModel() override;
+  void UpdateModel() override;
 
-  bool updateElementWorldTransform(
+  bool UpdateElementWorldTransform(
       ElementId, const Eigen::Isometry3d& T_local_to_world) override;
 
-  bool closestPointsAllToAll(const std::vector<ElementId>& ids_to_check,
+  bool ClosestPointsAllToAll(const std::vector<ElementId>& ids_to_check,
                              bool use_margins,
-                             std::vector<PointPair>& closest_points) override;
+                             std::vector<PointPair>* closest_points) override;
 
   bool ComputeMaximumDepthCollisionPoints(
-      bool use_margins, std::vector<PointPair>& points) override;
+      bool use_margins, std::vector<PointPair>* points) override;
 
-  bool closestPointsPairwise(const std::vector<ElementIdPair>& id_pairs,
+  bool ClosestPointsPairwise(const std::vector<ElementIdPair>& id_pairs,
                              bool use_margins,
-                             std::vector<PointPair>& closest_points) override;
+                             std::vector<PointPair>* closest_points) override;
 
-  void collisionDetectFromPoints(
+  void CollisionDetectFromPoints(
       const Eigen::Matrix3Xd& points, bool use_margins,
-      std::vector<PointPair>& closest_points) override;
+      std::vector<PointPair>* closest_points) override;
 
   void ClearCachedResults(bool use_margins) override;
 
-  bool collisionRaycast(const Eigen::Matrix3Xd& origins,
+  bool CollisionRaycast(const Eigen::Matrix3Xd& origins,
                         const Eigen::Matrix3Xd& ray_endpoints, bool use_margins,
-                        Eigen::VectorXd& distances,
-                        Eigen::Matrix3Xd& normals) override;
+                        Eigen::VectorXd* distances,
+                        Eigen::Matrix3Xd* normals) override;
 
-  std::vector<PointPair> potentialCollisionPoints(bool use_margins) override;
-
-  bool collidingPointsCheckOnly(
+  bool CollidingPointsCheckOnly(
       const std::vector<Eigen::Vector3d>& input_points,
       double collision_threshold) override;
 
-  std::vector<size_t> collidingPoints(
+  std::vector<size_t> CollidingPoints(
       const std::vector<Eigen::Vector3d>& input_points,
       double collision_threshold) override;
 };
 
-}  // namespace DrakeCollision
+}  // namespace collision
+}  // namespace multibody
+}  // namespace drake

@@ -1,4 +1,6 @@
+/* clang-format off to disable clang-format-includes */
 #include "drake/solvers/rotation_constraint.h"
+/* clang-format on */
 
 #include <gtest/gtest.h>
 
@@ -48,7 +50,7 @@ class TestMinimumDistance : public testing::TestWithParam<int> {
   void SolveAndCheckSolution() {
     GurobiSolver gurobi_solver;
     if (gurobi_solver.available()) {
-      prog_.SetSolverOption(SolverType::kGurobi, "OutputFlag", true);
+      prog_.SetSolverOption(GurobiSolver::id(), "OutputFlag", true);
       SolutionResult sol_result = gurobi_solver.Solve(prog_);
 
       EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);

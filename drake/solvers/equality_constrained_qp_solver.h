@@ -3,7 +3,7 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/mathematical_program_solver_interface.h"
 
 namespace drake {
 namespace solvers {
@@ -17,15 +17,19 @@ class EqualityConstrainedQPSolver : public MathematicalProgramSolverInterface {
 
   bool available() const override;
 
+  /**
+   * Solve the qudratic program with equality constraint.
+   * The user can set the following options
+   *  FeasibilityTol. The feasible solution (both primal and dual
+   *  variables) should satisfy their constraints, with error no
+   *  larger than this value. The default is Eigen::dummy_precision().
+   */
   SolutionResult Solve(MathematicalProgram& prog) const override;
 
-  SolverType solver_type() const override {
-    return SolverType::kEqualityConstrainedQP;
-  }
+  SolverId solver_id() const override;
 
-  std::string SolverName() const override {
-    return "Equality constrained QP";
-  }
+  /// @return same as MathematicalProgramSolverInterface::solver_id()
+  static SolverId id();
 };
 
 }  // namespace solvers

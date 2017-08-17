@@ -10,18 +10,23 @@ namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
+using systems::controllers::qp_inverse_dynamics::ParamSet;
+using systems::controllers::qp_inverse_dynamics::RobotKinematicState;
+
 template <typename T>
 void ManipulatorMoveEndEffectorPlan<T>::InitializeGenericPlanDerived(
-    const HumanoidStatus& robot_status, const param_parsers::ParamSet& paramset,
-    const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups) {
+    const RobotKinematicState<T>& robot_status,
+    const ParamSet& paramset,
+    const RigidBodyTreeAliasGroups<T>& alias_groups) {
   unused(paramset);  // TODO(jwnimmer-tri) This seems bad.
 
   // Knots are constant, the second time doesn't matter.
-  const std::vector<T> times = {robot_status.time(), robot_status.time() + 1};
+  const std::vector<T> times = {robot_status.get_time(),
+                                robot_status.get_time() + 1};
   const RigidBody<T>* ee_body =
       alias_groups.get_body(kEndEffectorAliasGroupName);
-  Isometry3<T> ee_pose = robot_status.robot().CalcBodyPoseInWorldFrame(
-      robot_status.cache(), *ee_body);
+  Isometry3<T> ee_pose = robot_status.get_robot().CalcBodyPoseInWorldFrame(
+      robot_status.get_cache(), *ee_body);
 
   manipulation::PiecewiseCartesianTrajectory<T> ee_traj =
       manipulation::PiecewiseCartesianTrajectory<
@@ -32,18 +37,17 @@ void ManipulatorMoveEndEffectorPlan<T>::InitializeGenericPlanDerived(
 }
 
 template <typename T>
-void ManipulatorMoveEndEffectorPlan<T>::HandlePlanMessageGenericPlanDerived(
-    const HumanoidStatus& robot_status, const param_parsers::ParamSet& paramset,
-    const param_parsers::RigidBodyTreeAliasGroups<T>& alias_groups,
-    const void* message_bytes, int message_length) {
+void ManipulatorMoveEndEffectorPlan<T>::HandlePlanGenericPlanDerived(
+    const RobotKinematicState<T>& robot_status,
+    const ParamSet& paramset,
+    const RigidBodyTreeAliasGroups<T>& alias_groups,
+    const systems::AbstractValue& plan) {
   unused(paramset);  // TODO(jwnimmer-tri) This seems bad.
 
-  // Tries to decode as a lcmt_manipulator_plan_move_end_effector message.
-  lcmt_manipulator_plan_move_end_effector msg;
-  int consumed = msg.decode(message_bytes, 0, message_length);
-  DRAKE_DEMAND(consumed == message_length);
+  const auto& msg =
+      plan.GetValueOrThrow<lcmt_manipulator_plan_move_end_effector>();
 
-  // TODO(siyuan): should do better error handling wrt bad plan message.
+  // TODO(siyuan): should do better error handling wrt bad plan plan.
   DRAKE_DEMAND(static_cast<size_t>(msg.num_steps) == msg.utimes.size() &&
                static_cast<size_t>(msg.num_steps) == msg.poses.size());
   DRAKE_DEMAND(msg.num_steps >= 0);
@@ -60,16 +64,17 @@ void ManipulatorMoveEndEffectorPlan<T>::HandlePlanMessageGenericPlanDerived(
   // If the first keyframe does not start immediately (its time > 0), we start
   // from the current desired pose.
   if (msg.utimes.front() > 0) {
-    times.push_back(robot_status.time());
+    times.push_back(robot_status.get_time());
     poses.push_back(
-        this->get_body_trajectory(ee_body).get_pose(robot_status.time()));
+        this->get_body_trajectory(ee_body).get_pose(robot_status.get_time()));
     vel0 = this->get_body_trajectory(ee_body)
-               .get_velocity(robot_status.time())
+               .get_velocity(robot_status.get_time())
                .template tail<3>();
   }
 
   for (int i = 0; i < msg.num_steps; i++) {
-    times.push_back(robot_status.time() + static_cast<T>(msg.utimes[i]) / 1e6);
+    times.push_back(robot_status.get_time() +
+                    static_cast<T>(msg.utimes[i]) / 1e6);
     poses.push_back(DecodePose(msg.poses[i]));
   }
 

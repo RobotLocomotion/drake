@@ -1,8 +1,8 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load("//tools:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -139,6 +139,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "explicit_error_controlled_integrator_tester",
+    testonly = 1,
+    hdrs = ["test/explicit_error_controlled_integrator_test.h"],
+    deps = [
+        ":my_spring_mass_system",
+    ],
+)
+
+drake_cc_library(
     name = "logistic_system",
     testonly = 1,
     hdrs = ["test/logistic_system.h"],
@@ -148,9 +157,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "empty_system",
+    name = "stateless_system",
     testonly = 1,
-    hdrs = ["test/empty_system.h"],
+    hdrs = ["test/stateless_system.h"],
     deps = [
         "//drake/systems/framework",
     ],
@@ -159,13 +168,13 @@ drake_cc_library(
 drake_cc_googletest(
     name = "simulator_test",
     deps = [
-        ":empty_system",
         ":explicit_euler_integrator",
         ":implicit_euler_integrator",
         ":logistic_system",
         ":my_spring_mass_system",
         ":runge_kutta3_integrator",
         ":simulator",
+        ":stateless_system",
         "//drake/common:is_dynamic_castable",
         "//drake/systems/analysis/test/controlled_spring_mass_system",
     ],
@@ -182,7 +191,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "implicit_euler_integrator_test",
     # Test size increased to not timeout when run with Valgrind.
-    size = "medium",
+    size = "large",
     deps = [
         ":discontinuous_spring_mass_damper_system",
         ":implicit_euler_integrator",
@@ -206,9 +215,9 @@ drake_cc_googletest(
     # Test size increased to not timeout when run with Valgrind.
     size = "medium",
     deps = [
+        ":explicit_error_controlled_integrator_tester",
         ":my_spring_mass_system",
         ":runge_kutta3_integrator",
-        "//drake/common:drake_path",
         "//drake/math:geometric_transform",
         "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant",
@@ -228,4 +237,4 @@ drake_cc_googletest(
     ],
 )
 
-cpplint()
+add_lint_tests()

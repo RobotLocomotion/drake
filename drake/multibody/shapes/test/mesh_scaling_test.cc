@@ -1,10 +1,12 @@
-/* clang-format off */
+/* clang-format off to disable clang-format-includes */
 #include "drake/multibody/shapes/geometry.h"
 /* clang-format on */
 
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_path.h"
+#include "drake/common/find_resource.h"
+
+using drake::FindResourceOrThrow;
 
 namespace DrakeShapes {
 namespace {
@@ -16,8 +18,8 @@ const char * kUri = "";  // No specific URI is required for these tests.
 // checks that the resulting vertex coordinates are correctly
 // scaled.
 GTEST_TEST(MeshScalingTests, ScaleCubeMesh) {
-  const std::string kFileName = drake::GetDrakePath() +
-      "/multibody/shapes/test/tri_cube.obj";
+  const std::string kFileName = FindResourceOrThrow(
+      "drake/multibody/shapes/test/tri_cube.obj");
   Mesh mesh(kUri, kFileName);
 
   // Scale each axis differently, and apply no scaling to

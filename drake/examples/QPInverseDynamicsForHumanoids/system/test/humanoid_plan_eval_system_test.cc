@@ -1,15 +1,16 @@
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/humanoid_plan_eval_system.h"
 
 #include <gtest/gtest.h>
+#include "robotlocomotion/robot_plan_t.hpp"
 
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/control_utils.h"
+#include "drake/common/find_resource.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/humanoid_status.h"
-#include "drake/examples/QPInverseDynamicsForHumanoids/system/qp_controller_system.h"
-#include "drake/examples/Valkyrie/valkyrie_constants.h"
+#include "drake/examples/valkyrie/valkyrie_constants.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/qp_inverse_dynamics_system.h"
+#include "drake/systems/controllers/setpoint.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_value_source.h"
 
@@ -18,12 +19,18 @@ namespace examples {
 namespace qp_inverse_dynamics {
 namespace {
 
-// Makes a diagram of HumanoidPlanEvalSystem + QpControllerSystem. The
+using systems::controllers::qp_inverse_dynamics::ConstraintType;
+using systems::controllers::qp_inverse_dynamics::QpInverseDynamicsSystem;
+using systems::controllers::qp_inverse_dynamics::QpInput;
+using systems::controllers::qp_inverse_dynamics::QpOutput;
+using systems::controllers::qp_inverse_dynamics::RobotKinematicState;
+
+// Makes a diagram of HumanoidPlanEvalSystem + QpInverseDynamicsSystem. The
 // controller is initialized to track a desired q (a nominal standing pose for
 // valkyrie). Output is then evaluated with a measured state also set to the
 // same desired p. The expected behavior is that QpInput from
 // HumanoidPlanEvalSystem be zero desired accelerations, and the acceleration
-// part in QpOutput from QpControllerSystem should be very close to the
+// part in QpOutput from QpInverseDynamicsSystem should be very close to the
 // desired accelerations (all zeros) in QpInput.
 // Since the inverse dynamics is set up as a minimization problem that has
 // many objectives, the results is not going to match the desired input exactly
@@ -31,26 +38,23 @@ namespace {
 class HumanoidPlanEvalAndQpInverseDynamicsTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    const std::string kModelPath =
-        drake::GetDrakePath() +
-        "/examples/Valkyrie/urdf/urdf/"
-        "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf";
+    const std::string kModelPath = FindResourceOrThrow(
+        "drake/examples/valkyrie/urdf/urdf/"
+        "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf");
 
-    const std::string kAliasGroupsPath =
-        drake::GetDrakePath() +
-        "/examples/QPInverseDynamicsForHumanoids/"
-        "config/valkyrie.alias_groups";
+    const std::string kAliasGroupsPath = FindResourceOrThrow(
+        "drake/examples/QPInverseDynamicsForHumanoids/"
+        "config/valkyrie.alias_groups");
 
-    const std::string kControlConfigPath =
-        drake::GetDrakePath() +
-        "/examples/QPInverseDynamicsForHumanoids/"
-        "config/valkyrie.id_controller_config";
+    const std::string kControlConfigPath = FindResourceOrThrow(
+        "drake/examples/QPInverseDynamicsForHumanoids/"
+        "config/valkyrie.id_controller_config");
 
-    auto robot = std::make_unique<RigidBodyTree<double>>();
+    RigidBodyTree<double> robot;
     parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-        kModelPath, multibody::joints::kRollPitchYaw, robot.get());
+        kModelPath, multibody::joints::kRollPitchYaw, &robot);
 
-    param_parsers::RigidBodyTreeAliasGroups<double> alias_groups(*robot);
+    RigidBodyTreeAliasGroups<double> alias_groups(&robot);
     alias_groups.LoadFromFile(kAliasGroupsPath);
 
     // Desired state.
@@ -63,21 +67,31 @@ class HumanoidPlanEvalAndQpInverseDynamicsTest : public ::testing::Test {
     systems::DiagramBuilder<double> builder;
     const double kControlDt = 0.02;
     auto plan_eval = builder.AddSystem<HumanoidPlanEvalSystem>(
-        *robot, kAliasGroupsPath, kControlConfigPath, kControlDt);
-    auto controller = builder.AddSystem<QpControllerSystem>(*robot, kControlDt);
+        &robot, kAliasGroupsPath, kControlConfigPath, kControlDt);
+    auto controller =
+        builder.AddSystem<QpInverseDynamicsSystem>(&robot, kControlDt);
 
     // Estimated state source, also set to use the desired q and v.
-    HumanoidStatus robot_status(*robot, alias_groups);
+    HumanoidStatus robot_status(&robot, alias_groups);
     robot_status.UpdateKinematics(0, q, v);
     auto state_source = builder.AddSystem<systems::ConstantValueSource<double>>(
-        systems::AbstractValue::Make<HumanoidStatus>(robot_status));
+        systems::AbstractValue::Make<RobotKinematicState<double>>(
+            robot_status));
+
+    // Adds a dummy plan message.
+    robotlocomotion::robot_plan_t msg{};
+    auto plan_source = builder.AddSystem<systems::ConstantValueSource<double>>(
+        systems::AbstractValue::Make<robotlocomotion::robot_plan_t>(msg));
 
     // State -> qp inverse dynamics.
     builder.Connect(state_source->get_output_port(0),
-                    controller->get_input_port_humanoid_status());
+                    controller->get_input_port_kinematic_state());
     // State -> plan eval.
     builder.Connect(state_source->get_output_port(0),
-                    plan_eval->get_input_port_humanoid_status());
+                    plan_eval->get_input_port_kinematic_state());
+    // Plan source -> plan eval.
+    builder.Connect(plan_source->get_output_port(0),
+                    plan_eval->get_input_port_manip_plan_msg());
     // plan eval -> qp inverse dynamics.
     builder.Connect(plan_eval->get_output_port_qp_input(),
                     controller->get_input_port_qp_input());
@@ -95,18 +109,17 @@ class HumanoidPlanEvalAndQpInverseDynamicsTest : public ::testing::Test {
     output_ = diagram_->AllocateOutput(*context_);
 
     // Initializes.
-    auto plan_eval_context =
-        diagram_->GetMutableSubsystemContext(context_.get(), plan_eval);
-    plan_eval->Initialize(q, plan_eval_context->get_mutable_state());
+    auto& plan_eval_context =
+        diagram_->GetMutableSubsystemContext(*plan_eval, context_.get());
+    plan_eval->Initialize(robot_status, plan_eval_context.get_mutable_state());
 
     // Computes results.
-    systems::UpdateActions<double> actions;
-    diagram_->CalcNextUpdateTime(*context_, &actions);
-    EXPECT_EQ(actions.events.size(), 1);
+    auto events = diagram_->AllocateCompositeEventCollection();
+    diagram_->CalcNextUpdateTime(*context_, events.get());
 
     std::unique_ptr<systems::State<double>> state = context_->CloneState();
-    diagram_->CalcUnrestrictedUpdate(*context_, actions.events.front(),
-                                     state.get());
+    diagram_->CalcUnrestrictedUpdate(
+        *context_, events->get_unrestricted_update_events(), state.get());
     context_->get_mutable_state()->CopyFrom(*state);
     diagram_->CalcOutput(*context_, output_.get());
   }
@@ -153,7 +166,7 @@ TEST_F(HumanoidPlanEvalAndQpInverseDynamicsTest, DofAcceleration) {
 
       case ConstraintType::Soft:
         EXPECT_NEAR(qp_input.desired_dof_motions().value(i), qp_output.vd()[i],
-                    5e-4);
+                    1e-2);
         break;
 
       default:
@@ -169,7 +182,7 @@ TEST_F(HumanoidPlanEvalAndQpInverseDynamicsTest, ContactAcceleration) {
 
   for (const auto& contact_pair : qp_output.resolved_contacts()) {
     EXPECT_TRUE(drake::CompareMatrices(contact_pair.second.body_acceleration(),
-                                       Vector6<double>::Zero(), 1e-8,
+                                       Vector6<double>::Zero(), 1e-7,
                                        drake::MatrixCompareType::absolute));
   }
 }
@@ -185,7 +198,7 @@ TEST_F(HumanoidPlanEvalAndQpInverseDynamicsTest, BodyAcceleration) {
     EXPECT_TRUE(drake::CompareMatrices(
         body_motion_pair.second.accelerations(),
         qp_input.desired_body_motions().at(body_motion_pair.first).values(),
-        5e-4, drake::MatrixCompareType::absolute));
+        1e-3, drake::MatrixCompareType::absolute));
   }
 }
 

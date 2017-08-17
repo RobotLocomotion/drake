@@ -11,9 +11,6 @@
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
 #include "drake/systems/framework/context.h"
 
-// Forward declarations.
-template <typename T> class MultibodyTree;
-
 namespace drake {
 namespace multibody {
 
@@ -93,11 +90,70 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
   const RevoluteMobilizer<T>& set_angle(
       systems::Context<T>* context, const T& angle) const;
 
+  /// Gets the rate of change, in radians per second, of `this` mobilizer's
+  /// angle (see get_angle()) from `context`. See class documentation for the
+  /// angle sign convention.
+  /// @param[in] context The context of the MultibodyTree this mobilizer
+  ///                    belongs to.
+  /// @returns The rate of change of `this` mobilizer's angle in the `context`.
+  const T& get_angular_rate(const systems::Context<T> &context) const;
+
+  /// Sets the rate of change, in radians per second, of this `this` mobilizer's
+  /// angle to `theta_dot`. The new rate of change `theta_dot` gets stored in
+  /// `context`.
+  /// See class documentation for the angle sign convention.
+  /// @param[in] context The context of the MultibodyTree this mobilizer
+  ///                    belongs to.
+  /// @param[in] theta_dot The desired rate of change of `this` mobilizer's
+  /// angle in radians per second.
+  /// @returns a constant reference to `this` mobilizer.
+  const RevoluteMobilizer<T>& set_angular_rate(
+      systems::Context<T> *context, const T& theta_dot) const;
+
   /// Computes the across-mobilizer transform `X_FM(q)` between the inboard
   /// frame F and the outboard frame M as a function of the rotation angle
   /// about this mobilizer's axis (@see get_revolute_axis().)
+  /// The generalized coordinate q for `this` mobilizer (the rotation angle) is
+  /// stored in `context`.
+  /// This method aborts in Debug builds if `v.size()` is not one.
   Isometry3<T> CalcAcrossMobilizerTransform(
       const MultibodyTreeContext<T>& context) const final;
+
+  /// Computes the across-mobilizer velocity `V_FM(q, v)` of the outboard frame
+  /// M measured and expressed in frame F as a function of the rotation angle
+  /// and input angular velocity `v` about this mobilizer's axis
+  /// (@see get_revolute_axis()).
+  /// The generalized coordinate q for `this` mobilizer (the rotation angle) is
+  /// stored in `context`.
+  /// This method aborts in Debug builds if `v.size()` is not one.
+  SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(
+      const MultibodyTreeContext<T>& context,
+      const Eigen::Ref<const VectorX<T>>& v) const final;
+
+  /// Projects the spatial force `F_Mo_F` on `this` mobilizer's outboard
+  /// frame M onto its rotation axis (@see get_revolute_axis().) Mathematically:
+  /// <pre>
+  ///    tau = F_Mo_F.rotational().dot(axis_F)
+  /// </pre>
+  /// Therefore, the result of this method is the scalar value of the torque at
+  /// the axis of `this` mobilizer.
+  /// This method aborts in Debug builds if `tau.size()` is not one.
+  void ProjectSpatialForce(
+      const MultibodyTreeContext<T>& context,
+      const SpatialForce<T>& F_Mo_F,
+      Eigen::Ref<VectorX<T>> tau) const final;
+
+  /// Computes the across-mobilizer acceleration `A_FM(q, v, v̇)` of the
+  /// outboard frame M in the inboard frame F.
+  /// By definition `A_FM = d_F(V_FM)/dt = H_FM(q) * v̇ + Ḣ_FM * v`.
+  /// The acceleration `A_FM` will be a function of the rotation angle q, its
+  /// rate of change v for the current state in `context` and of the input
+  /// generalized acceleration `v̇ = dv/dt`, the rate of change of v.
+  /// See class documentation for the angle sign convention.
+  /// This method aborts in Debug builds if `vdot.size()` is not one.
+  SpatialAcceleration<T> CalcAcrossMobilizerSpatialAcceleration(
+      const MultibodyTreeContext<T>& context,
+      const Eigen::Ref<const VectorX<T>>& vdot) const final;
 
  protected:
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
@@ -114,8 +170,8 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
   // Operations with fixed-sized quantities can be optimized at compile time
   // and therefore they are highly preferred compared to the very slow dynamic
   // sized quantities.
-  using MobilizerBase::nq;
-  using MobilizerBase::nv;
+  using MobilizerBase::kNq;
+  using MobilizerBase::kNv;
 
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>

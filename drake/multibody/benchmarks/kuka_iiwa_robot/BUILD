@@ -1,35 +1,34 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load("//tools:lint.bzl", "add_lint_tests")
 
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = [":__subpackages__"])
 
 drake_cc_library(
-    name = "kuka_iiwa_robot",
+    name = "kuka_iiwa_robot_library",
+    testonly = 1,
     srcs = [
-        "MGKukaIIwaRobot.cc",
-        "kuka_iiwa_robot.cc",
     ],
     hdrs = [
-        "MGKukaIIwaRobot.h",
-        "kuka_iiwa_robot.h",
+        "drake_kuka_iiwa_robot.h",
     ],
     deps = [
-        "//drake/common:autodiff",
-        "//drake/common:extract_double",
+        "//drake/math:geometric_transform",
+        "//drake/multibody/multibody_tree",
     ],
 )
 
 # === test/ ===
 
 drake_cc_googletest(
-    name = "kuka_iiwa_robot_test",
-    size = "medium",
+    name = "kuka_iiwa_robot_kinematics_test",
+    size = "small",
     deps = [
-        ":kuka_iiwa_robot",
+        ":kuka_iiwa_robot_library",
+        "//drake/multibody/benchmarks/kuka_iiwa_robot/MG:MG_kuka_robot_lib",
     ],
 )
 
-cpplint()
+add_lint_tests()

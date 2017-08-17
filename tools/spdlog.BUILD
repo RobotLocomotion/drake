@@ -1,7 +1,11 @@
 # -*- python -*-
 
-load("@drake//tools:install.bzl", "cmake_config", "install", "install_cmake_config")
-load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
+load(
+    "@drake//tools:install.bzl",
+    "cmake_config",
+    "install",
+    "install_cmake_config",
+)
 
 package(
     default_visibility = ["//visibility:public"],
@@ -17,7 +21,8 @@ cc_library(
     includes = ["include"],
     linkopts = select({
         "@drake//tools:linux": ["-pthread"],
-        "@//conditions:default": [],  # This is a bazel-default rule, and does not need @drake//
+        # This is a bazel-default rule, and does not need @drake//
+        "@//conditions:default": [],
     }),
     deps = ["@fmt"],
 )
@@ -33,19 +38,10 @@ install_cmake_config(package = "spdlog")  # Creates rule :install_cmake_config.
 
 install(
     name = "install",
-    doc_dest = "share/doc/spdlog",
-    guess_hdrs = "PACKAGE",
+    targets = [":spdlog"],
     hdr_dest = "include/spdlog",
     hdr_strip_prefix = ["include/spdlog"],
-    license_docs = ["LICENSE"],
-    targets = [":spdlog"],
+    guess_hdrs = "PACKAGE",
+    docs = ["LICENSE"],
     deps = [":install_cmake_config"],
-)
-
-pkg_tar(
-    name = "license",
-    extension = "tar.gz",
-    files = ["LICENSE"],
-    mode = "0644",
-    package_dir = "spdlog",
 )

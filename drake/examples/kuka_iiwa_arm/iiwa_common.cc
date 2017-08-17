@@ -7,13 +7,13 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
-#include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/multibody/ik_options.h"
 #include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/rigid_body_constraint.h"
 #include "drake/multibody/rigid_body_ik.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/util/drakeGeometryUtil.h"
@@ -101,7 +101,7 @@ void CreateTreedFromFixedModelAtPose(const std::string& model_file_name,
 
   // TODO(naveenoid) : consider implementing SDF version of this method.
   drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      drake::GetDrakePath() + model_file_name, drake::multibody::joints::kFixed,
+      model_file_name, drake::multibody::joints::kFixed,
       weld_to_frame, tree);
 }
 

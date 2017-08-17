@@ -1,23 +1,34 @@
 # -*- python -*-
 
+# The CXX_FLAGS will be enabled for all C++ rules in the project
+# building with any compiler.
+CXX_FLAGS = [
+    "-Werror=all",
+    "-Werror=ignored-qualifiers",
+    "-Werror=overloaded-virtual",
+]
+
 # The CLANG_FLAGS will be enabled for all C++ rules in the project when
 # building with clang.
-CLANG_FLAGS = [
-    "-Werror=all",
+CLANG_FLAGS = CXX_FLAGS + [
+    "-Werror=shadow",
     "-Werror=inconsistent-missing-override",
     "-Werror=sign-compare",
-    "-Werror=non-virtual-dtor",
     "-Werror=return-stack-address",
+    "-Werror=non-virtual-dtor",
 ]
 
 # The GCC_FLAGS will be enabled for all C++ rules in the project when
 # building with gcc.
-GCC_FLAGS = [
-    "-Werror=all",
+GCC_FLAGS = CXX_FLAGS + [
     "-Werror=extra",
     "-Werror=return-local-addr",
     "-Werror=non-virtual-dtor",
+    "-Werror=unused-but-set-parameter",
+    # TODO(jwnimmer-tri) Fix these warnings and remove this suppression.
     "-Wno-missing-field-initializers",
+    # TODO(#2852) Turn on shadow checking for g++ once we use a version that
+    # fixes https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57709
 ]
 
 # The GCC_CC_TEST_FLAGS will be enabled for all cc_test rules in the project
@@ -26,7 +37,7 @@ GCC_CC_TEST_FLAGS = [
     "-Wno-unused-parameter",
 ]
 
-def _platform_copts(rule_copts, cc_test=0):
+def _platform_copts(rule_copts, cc_test = 0):
     """Returns both the rule_copts, and platform-specific copts.
 
     When cc_test=1, the GCC_CC_TEST_FLAGS will be added.  It should only be set
@@ -51,13 +62,26 @@ def _dsym_command(name):
         "//conditions:default": "touch $@",
     })
 
+def _check_library_deps_blacklist(name, deps):
+    """Report an error if a library should not use something from deps."""
+    if not deps:
+        return
+    if type(deps) != 'list':
+        # We can't handle select() yet.
+        return
+    for dep in deps:
+        if dep.endswith(":main"):
+            fail("The cc_library '" + name + "' must not depend on a :main " +
+                 "function from a cc_library; only cc_binary program should " +
+                 "have a main function")
+
 def drake_cc_library(
         name,
-        hdrs=None,
-        srcs=None,
-        deps=None,
-        copts=[],
-        linkstatic=1,
+        hdrs = None,
+        srcs = None,
+        deps = None,
+        copts = [],
+        linkstatic = 1,
         **kwargs):
     """Creates a rule to declare a C++ library.
 
@@ -65,26 +89,27 @@ def drake_cc_library(
     on all platforms, and to avoid mysterious dyld errors on OS X. This default
     could be revisited if binary size becomes a concern.
     """
+    _check_library_deps_blacklist(name, deps)
     native.cc_library(
-        name=name,
-        hdrs=hdrs,
-        srcs=srcs,
-        deps=deps,
-        copts=_platform_copts(copts),
-        linkstatic=linkstatic,
+        name = name,
+        hdrs = hdrs,
+        srcs = srcs,
+        deps = deps,
+        copts = _platform_copts(copts),
+        linkstatic = linkstatic,
         **kwargs)
 
 def drake_cc_binary(
         name,
-        hdrs=None,
-        srcs=None,
-        deps=None,
-        copts=[],
-        linkstatic=1,
-        testonly=0,
-        add_test_rule=0,
-        test_rule_args=[],
-        test_rule_size=None,
+        hdrs = None,
+        srcs = None,
+        deps = None,
+        copts = [],
+        linkstatic = 1,
+        testonly = 0,
+        add_test_rule = 0,
+        test_rule_args = [],
+        test_rule_size = None,
         **kwargs):
     """Creates a rule to declare a C++ binary.
 
@@ -98,46 +123,49 @@ def drake_cc_binary(
     defaults using test_rule_args=["-f", "--bar=42"] or test_rule_size="baz".
     """
     native.cc_binary(
-        name=name,
-        hdrs=hdrs,
-        srcs=srcs,
-        deps=deps,
-        copts=_platform_copts(copts),
-        testonly=testonly,
-        linkstatic=linkstatic,
+        name = name,
+        hdrs = hdrs,
+        srcs = srcs,
+        deps = deps,
+        copts = _platform_copts(copts),
+        testonly = testonly,
+        linkstatic = linkstatic,
         **kwargs)
 
     # Also generate the OS X debug symbol file for this binary.
     native.genrule(
-        name=name + "_dsym",
-        srcs=[":" + name],
-        outs=[name + ".dSYM"],
-        output_to_bindir=1,
-        testonly=testonly,
-        tags=["dsym"],
-        visibility=["//visibility:private"],
-        cmd=_dsym_command(name),
+        name = name + "_dsym",
+        srcs = [":" + name],
+        outs = [name + ".dSYM"],
+        output_to_bindir = 1,
+        testonly = testonly,
+        tags = ["dsym"],
+        visibility = ["//visibility:private"],
+        cmd = _dsym_command(name),
     )
+
+    if "@gtest//:main" in (deps or []):
+        fail("Use drake_cc_googletest to declare %s as a test" % name)
 
     if add_test_rule:
         drake_cc_test(
-            name=name + "_test",
-            hdrs=hdrs,
-            srcs=srcs,
-            deps=deps,
-            copts=copts,
-            size=test_rule_size,
-            testonly=testonly,
-            linkstatic=linkstatic,
-            args=test_rule_args,
+            name = name + "_test",
+            hdrs = hdrs,
+            srcs = srcs,
+            deps = deps,
+            copts = copts,
+            size = test_rule_size,
+            testonly = testonly,
+            linkstatic = linkstatic,
+            args = test_rule_args,
             **kwargs)
 
 def drake_cc_test(
         name,
-        size=None,
-        srcs=None,
-        copts=[],
-        disable_in_compilation_mode_dbg=False,
+        size = None,
+        srcs = None,
+        copts = [],
+        disable_in_compilation_mode_dbg = False,
         **kwargs):
     """Creates a rule to declare a C++ unit test.  Note that for almost all
     cases, drake_cc_googletest should be used, instead of this rule.
@@ -156,30 +184,30 @@ def drake_cc_test(
     if disable_in_compilation_mode_dbg:
         # Remove the test declarations from the test in debug mode.
         # TODO(david-german-tri): Actually suppress the test rule.
-        srcs = select({"//tools:debug" : [], "//conditions:default" : srcs})
+        srcs = select({"//tools:debug": [], "//conditions:default": srcs})
     native.cc_test(
-        name=name,
-        size=size,
-        srcs=srcs,
-        copts=_platform_copts(copts, cc_test=1),
+        name = name,
+        size = size,
+        srcs = srcs,
+        copts = _platform_copts(copts, cc_test = 1),
         **kwargs)
 
     # Also generate the OS X debug symbol file for this test.
     native.genrule(
-        name=name + "_dsym",
-        srcs=[":" + name],
-        outs=[name + ".dSYM"],
-        output_to_bindir=1,
-        testonly=1,
-        tags=["dsym"],
-        visibility=["//visibility:private"],
-        cmd=_dsym_command(name),
+        name = name + "_dsym",
+        srcs = [":" + name],
+        outs = [name + ".dSYM"],
+        output_to_bindir = 1,
+        testonly = 1,
+        tags = ["dsym"],
+        visibility = ["//visibility:private"],
+        cmd = _dsym_command(name),
     )
 
 def drake_cc_googletest(
         name,
-        deps=None,
-        use_default_main=True,
+        deps = None,
+        use_default_main = True,
         **kwargs):
     """Creates a rule to declare a C++ unit test using googletest.  Always adds
     a deps= entry for googletest main (@gtest//:main).
@@ -196,17 +224,17 @@ def drake_cc_googletest(
     if deps == None:
         deps = []
     if use_default_main:
-        deps.append("@gtest//:main")
+        deps = deps + ["@gtest//:main"]
     else:
-        deps.append("@gtest//:without_main")
+        deps = deps + ["@gtest//:without_main"]
     drake_cc_test(
-        name=name,
-        deps=deps,
+        name = name,
+        deps = deps,
         **kwargs)
 
 # Generate a file with specified content
 def _generate_file_impl(ctx):
-    ctx.file_action(output=ctx.outputs.out, content=ctx.attr.content)
+    ctx.file_action(output = ctx.outputs.out, content = ctx.attr.content)
 
 drake_generate_file = rule(
     attrs = {

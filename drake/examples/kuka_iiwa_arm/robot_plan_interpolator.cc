@@ -127,6 +127,11 @@ void RobotPlanInterpolator::OutputAccel(
 
   const double current_plan_time = context.get_time() - plan.start_time;
   output_acceleration_vec = plan.pp_double_deriv.value(current_plan_time);
+
+  // Stop outputting accelerations at the end of the plan.
+  if (current_plan_time > plan.pp_double_deriv.getEndTime()) {
+    output_acceleration_vec.fill(0);
+  }
 }
 
 void RobotPlanInterpolator::MakeFixedPlan(
@@ -156,6 +161,7 @@ void RobotPlanInterpolator::Initialize(double plan_start_time,
 
 void RobotPlanInterpolator::DoCalcUnrestrictedUpdate(
     const systems::Context<double>& context,
+    const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
     systems::State<double>* state) const {
   PlanData& plan =
       state->get_mutable_abstract_state<PlanData>(kAbsStateIdxPlan);
@@ -170,7 +176,18 @@ void RobotPlanInterpolator::DoCalcUnrestrictedUpdate(
   plan_input.encode(encoded_msg.data(), 0, encoded_msg.size());
   if (encoded_msg != plan.encoded_msg) {
     plan.encoded_msg.swap(encoded_msg);
-    if (plan_input.num_states) {
+    if (plan_input.num_states == 0) {
+      // The plan is empty.  Encode a plan for the current measured
+      // position.
+      const systems::BasicVector<double>* state_input =
+          this->EvalVectorInput(context, state_input_port_);
+      DRAKE_DEMAND(state_input);
+      MakeFixedPlan(context.get_time(),
+                    state_input->get_value().head(tree_.get_num_positions()),
+                    state);
+    } else if (plan_input.num_states == 1) {
+      drake::log()->info("Ignoring plan with only one knot point.");
+    } else {
       plan.start_time = context.get_time();
       std::vector<Eigen::MatrixXd> knots(
           plan_input.num_states,
@@ -193,26 +210,12 @@ void RobotPlanInterpolator::DoCalcUnrestrictedUpdate(
         input_time.push_back(plan_input.plan[k].utime / 1e6);
       }
 
-      if (knots.size() >= 3) {
-        const Eigen::MatrixXd knot_dot =
-            Eigen::MatrixXd::Zero(tree_.get_num_velocities(), 1);
-        plan.pp = PiecewisePolynomial<double>::Cubic(
-            input_time, knots, knot_dot, knot_dot);
-      } else {
-        plan.pp = PiecewisePolynomial<double>::FirstOrderHold(
-            input_time, knots);
-      }
+      const Eigen::MatrixXd knot_dot =
+          Eigen::MatrixXd::Zero(tree_.get_num_velocities(), 1);
+      plan.pp = PiecewisePolynomial<double>::Cubic(
+          input_time, knots, knot_dot, knot_dot);
       plan.pp_deriv = plan.pp.derivative();
       plan.pp_double_deriv = plan.pp_deriv.derivative();
-    } else {
-      // The plan is empty.  Encode a plan for the current measured
-      // position.
-      const systems::BasicVector<double>* state_input =
-          this->EvalVectorInput(context, state_input_port_);
-      DRAKE_DEMAND(state_input);
-      MakeFixedPlan(context.get_time(),
-                    state_input->get_value().head(tree_.get_num_positions()),
-                    state);
     }
   }
 }

@@ -5,6 +5,8 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/never_destroyed.h"
+#include "drake/solvers/mathematical_program.h"
 
 namespace drake {
 namespace solvers {
@@ -44,12 +46,26 @@ SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog) const {
   }
 
   // least-squares solution
-  prog.SetDecisionVariableValues(
-      Aeq.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(beq));
+  const Eigen::VectorXd least_square_sol =
+      Aeq.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(beq);
+  prog.SetDecisionVariableValues(least_square_sol);
   prog.SetOptimalCost(0.);
 
-  prog.SetSolverResult(solver_type(), 0);
-  return SolutionResult::kSolutionFound;
+  prog.SetSolverId(id());
+  if (beq.isApprox(Aeq * least_square_sol)) {
+    return SolutionResult::kSolutionFound;
+  } else {
+    return SolutionResult::kInfeasibleConstraints;
+  }
+}
+
+SolverId LinearSystemSolver::solver_id() const {
+  return id();
+}
+
+SolverId LinearSystemSolver::id() {
+  static const never_destroyed<SolverId> singleton{"Linear system"};
+  return singleton.access();
 }
 
 }  // namespace solvers

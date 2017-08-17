@@ -1,8 +1,13 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
-load("//tools:drake.bzl", "drake_cc_binary", "drake_cc_googletest", "drake_cc_library")
+load(
+    "//tools:drake.bzl",
+    "drake_cc_binary",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load("//tools:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -47,11 +52,13 @@ drake_cc_binary(
 
 drake_cc_googletest(
     name = "dragway_test",
-    size = "small",
+    # Test size increased to not timeout when run with Valgrind.
+    size = "medium",
     srcs = ["test/dragway_test.cc"],
     deps = [
         ":dragway",
+        "//drake/automotive/maliput/api:maliput_types_compare",
     ],
 )
 
-cpplint()
+add_lint_tests()

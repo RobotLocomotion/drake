@@ -6,7 +6,7 @@ def github_archive(
         commit = None,
         sha256 = None,
         build_file = None,
-        local_repository_override=None,
+        local_repository_override = None,
         **kwargs):
     """A macro to be called in the WORKSPACE that adds an external from github
     using a workspace rule.
@@ -39,11 +39,12 @@ def github_archive(
         sha256 = "0" * 64
 
     # Packages are mirrored from GitHub to CloudFront backed by an S3 bucket.
-    urls = [
-        "https://github.com/%s/archive/%s.tar.gz" % (repository, commit),
-        "https://d2tbce6hkathzp.cloudfront.net/github/%s/%s.tar.gz" % (repository, commit),
-        "https://s3.amazonaws.com/drake-mirror/github/%s/%s.tar.gz" % (repository, commit),
+    mirrors = [
+        "https://github.com/%s/archive/%s.tar.gz",
+        "https://d2tbce6hkathzp.cloudfront.net/github/%s/%s.tar.gz",
+        "https://s3.amazonaws.com/drake-mirror/github/%s/%s.tar.gz",
     ]
+    urls = [mirror % (repository, commit) for mirror in mirrors]
 
     repository_split = repository.split("/")
     if len(repository_split) != 2:
@@ -58,27 +59,27 @@ def github_archive(
     if local_repository_override != None:
         if build_file == None:
             native.local_repository(
-                name=name,
-                path=local_repository_override)
+                name = name,
+                path = local_repository_override)
         else:
             native.new_local_repository(
-                name=name,
-                build_file=build_file,
-                path=local_repository_override)
+                name = name,
+                build_file = build_file,
+                path = local_repository_override)
         return
 
     if build_file == None:
         native.http_archive(
-            name=name,
-            urls=urls,
-            sha256=sha256,
-            strip_prefix=strip_prefix,
+            name = name,
+            urls = urls,
+            sha256 = sha256,
+            strip_prefix = strip_prefix,
             **kwargs)
     else:
         native.new_http_archive(
-            name=name,
-            urls=urls,
-            sha256=sha256,
-            build_file=build_file,
-            strip_prefix=strip_prefix,
+            name = name,
+            urls = urls,
+            sha256 = sha256,
+            build_file = build_file,
+            strip_prefix = strip_prefix,
             **kwargs)

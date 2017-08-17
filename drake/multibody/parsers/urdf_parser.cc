@@ -467,7 +467,7 @@ void ParseCollision(RigidBody<double>* body, XMLElement* node,
         body->get_name() + " has a collision element without geometry");
   }
 
-  DrakeCollision::Element element(T_element_to_link, body);
+  drake::multibody::collision::Element element(T_element_to_link, body);
   if (!ParseGeometry(geometry_node, package_map, root_dir, element)) {
     throw runtime_error(string(__FILE__) + ": " + __func__ + ": ERROR: Failed "
         "to parse collision element in link " + body->get_name() + ".");
@@ -535,7 +535,8 @@ template <typename JointType>
 void SetDynamics(XMLElement* node, FixedAxisOneDoFJoint<JointType>* fjoint) {
   XMLElement* dynamics_node = node->FirstChildElement("dynamics");
   if (fjoint != nullptr && dynamics_node) {
-    double damping = 0.0, coulomb_friction = 0.0, coulomb_window = 0.0;
+    double damping = 0.0, coulomb_friction = 0.0;
+    double coulomb_window = std::numeric_limits<double>::epsilon();
     parseScalarAttribute(dynamics_node, "damping", damping);
     parseScalarAttribute(dynamics_node, "friction", coulomb_friction);
     parseScalarAttribute(dynamics_node, "coulomb_window", coulomb_window);
@@ -703,7 +704,7 @@ void ParseJoint(RigidBodyTree<double>* tree, XMLElement* node,
   Vector3d axis(1, 0, 0);
   XMLElement* axis_node = node->FirstChildElement("axis");
   if (axis_node && type.compare("fixed") != 0 &&
-      type.compare("floating") != 0) {
+      type.compare("floating") != 0 && type.compare("ball") != 0) {
     parseVectorAttribute(axis_node, "xyz", axis);
     if (axis.norm() < 1e-8) {
       throw runtime_error(string(__FILE__) + ": " + __func__ + ": ERROR: axis "
@@ -731,6 +732,10 @@ void ParseJoint(RigidBodyTree<double>* tree, XMLElement* node,
     joint = fjoint;
   } else if (type.compare("floating") == 0) {
     joint = new RollPitchYawFloatingJoint(name, transform_to_parent_body);
+  } else if (type.compare("ball") == 0) {
+    joint = new QuaternionBallJoint(name, transform_to_parent_body);
+    cerr << string(__FILE__) + ": " + __func__ + ": Warning: ball joint "
+      "is not an official part of the URDF standard." << endl;
   } else {
     throw runtime_error(string(__FILE__) + ": " + __func__ + ": ERROR: "
         "Unrecognized joint type: " + type);

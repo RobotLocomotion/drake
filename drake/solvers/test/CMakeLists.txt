@@ -1,6 +1,9 @@
 drake_add_cc_test(decision_variable_test)
 target_link_libraries(decision_variable_test drakeOptimization)
 
+drake_add_cc_test(indeterminate_test)
+target_link_libraries(indeterminate_test drakeOptimization)
+
 drake_add_cc_test(binding_test)
 target_link_libraries(binding_test drakeOptimization)
 
@@ -13,11 +16,22 @@ target_link_libraries(moby_lcp_solver_test drakeOptimization)
 drake_add_cc_test(NAME system_identification_test SIZE large)
 target_link_libraries(system_identification_test drakeOptimization)
 
+drake_add_cc_test(evaluator_base_test)
+target_link_libraries(evaluator_base_test drakeOptimization drakeCommon)
+
 drake_add_cc_test(constraint_test)
 target_link_libraries(constraint_test drakeOptimization drakeCommon)
 
 drake_add_cc_test(cost_test)
 target_link_libraries(cost_test drakeOptimization drakeCommon)
+
+drake_add_cc_test(bilinear_product_util_test)
+target_link_libraries(bilinear_product_util_test drakeBilinearProductUtil)
+
+if (ipopt_FOUND)
+  drake_add_cc_test(integer_optimization_util_test)
+  target_link_libraries(integer_optimization_util_test drakeIntegerOptimizationUtil)
+endif()
 
 set(drakeOptimizationTestSources
         add_solver_util.cc
@@ -43,6 +57,7 @@ target_link_libraries(drakeOptimizationTest
 if (lcm_FOUND)
 add_library_with_exports(LIB_NAME drakeRotationConstraintVisualization SOURCE_FILES rotation_constraint_visualization.cc)
 target_link_libraries(drakeRotationConstraintVisualization
+        drakeCommonProto
         drakeRotationConstraint
         drakeLcm
         drakeLCMTypes)
@@ -69,6 +84,9 @@ target_link_libraries(gurobi_solver_test drakeCommon drakeOptimizationTest)
 drake_add_cc_test(mosek_solver_test)
 target_link_libraries(mosek_solver_test drakeCommon drakeOptimizationTest)
 
+drake_add_cc_test(mixed_integer_optimization_util_test)
+target_link_libraries(mixed_integer_optimization_util_test drakeCommon drakeMixedIntegerOptimizationUtil)
+
 drake_add_cc_test(linear_complementary_problem_test)
 target_link_libraries(linear_complementary_problem_test drakeOptimization)
 
@@ -78,22 +96,16 @@ target_link_libraries(ipopt_solver_test drakeOptimizationTest)
 drake_add_cc_test(snopt_solver_test)
 target_link_libraries(snopt_solver_test drakeOptimizationTest)
 
-if (mosek_FOUND)
-  drake_add_cc_test(NAME rotation_constraint_test rotation_constraint_test.cc
-    SIZE large)
-  target_link_libraries(rotation_constraint_test drakeRotationConstraint)
-endif()
+drake_add_cc_test(solver_id_test)
+target_link_libraries(solver_id_test drakeOptimization)
 
-if (gurobi_FOUND)
-  if(NOT APPLE)
-	  drake_add_cc_test(NAME rotation_constraint_limit_test SIZE large)
-	  target_link_libraries(rotation_constraint_limit_test drakeRotationConstraint)
-  endif()
-endif()
+drake_add_cc_test(solver_type_converter_test)
+target_link_libraries(solver_type_converter_test drakeOptimization)
 
 if (lcm_FOUND)
   add_executable(plot_feasible_rotation_matrices plot_feasible_rotation_matrices.cc)
   target_link_libraries(plot_feasible_rotation_matrices
+    drakeCommonProto
     drakeOptimization
     drakeRotationConstraint
     drakeLCMTypes
@@ -101,6 +113,7 @@ if (lcm_FOUND)
 
   add_executable(plot_rotation_mccormick_envelope plot_rotation_mccormick_envelope.cc)
   target_link_libraries(plot_rotation_mccormick_envelope
+          drakeCommonProto
           drakeOptimization
           drakeRotationConstraint
           drakeRotationConstraintVisualization)

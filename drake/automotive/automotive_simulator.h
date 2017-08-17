@@ -17,7 +17,6 @@
 #include "drake/automotive/mobil_planner.h"
 #include "drake/automotive/pure_pursuit_controller.h"
 #include "drake/automotive/simple_car.h"
-#include "drake/automotive/simple_car_to_euler_floating_joint.h"
 #include "drake/automotive/trajectory_car.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/lcm/drake_lcm_interface.h"
@@ -62,7 +61,7 @@ class AutomotiveSimulator {
   systems::DiagramBuilder<T>* get_builder();
 
   /// Adds a SimpleCar to this simulation visualized as a Toyota Prius. This
-  /// includes its DrivingCommand LCM input and EulerFloatingJoint output.
+  /// includes its DrivingCommand LCM input.
   ///
   /// @pre Start() has NOT been called.
   ///
@@ -102,8 +101,7 @@ class AutomotiveSimulator {
       const std::string& name, bool initial_with_s,
       const SimpleCarState<T>& initial_state = SimpleCarState<T>());
 
-  /// Adds a TrajectoryCar to this simulation visualized as a Toyota Prius. This
-  /// includes its EulerFloatingJoint output.
+  /// Adds a TrajectoryCar to this simulation visualized as a Toyota Prius.
   ///
   /// @pre Start() has NOT been called.
   ///
@@ -282,11 +280,6 @@ class AutomotiveSimulator {
   // Adds an LCM publisher for the given @p system.
   // @pre Start() has NOT been called.
   void AddPublisher(const TrajectoryCar<T>& system, int vehicle_number);
-
-  // Adds an LCM publisher for the given @p system.
-  // @pre Start() has NOT been called.
-  void AddPublisher(const SimpleCarToEulerFloatingJoint<T>& system,
-                    int vehicle_number);
 
   // Generates the URDF model of the road network and loads it into the
   // `RigidBodyTree`. Member variable `road_` must be set prior to calling this

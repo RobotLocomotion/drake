@@ -13,4 +13,4 @@ namespace="drake::manipulation::schunk_wsg"
 source $drake/tools/lcm_vector_gen.sh
 
 gen_vector "schunk wsg trajectory generator state vector" \
-           last_target_position trajectory_start_time last_position
+           last_target_position trajectory_start_time last_position max_force

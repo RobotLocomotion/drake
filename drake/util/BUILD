@@ -1,8 +1,8 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:cpplint.bzl", "cpplint")
 load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load("//tools:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -44,8 +44,8 @@ drake_cc_library(
         "//drake/lcmtypes:polynomial_matrix",
         "//drake/lcmtypes:qp_controller_input",
         "//drake/math:geometric_transform",
-        "@bot_core_lcmtypes",
         "@eigen",
+        "@lcmtypes_bot2_core",
     ],
 )
 
@@ -58,12 +58,6 @@ drake_cc_library(
         "//drake/systems/controllers:qp_common",
         "@yaml_cpp",
     ],
-)
-
-drake_cc_library(
-    name = "app_util",
-    hdrs = ["drakeAppUtil.h"],
-    deprecation = "Please use gflags instead of drakeAppUtil.h.",
 )
 
 # === test/ ===
@@ -96,4 +90,4 @@ drake_cc_googletest(
     ],
 )
 
-cpplint()
+add_lint_tests()

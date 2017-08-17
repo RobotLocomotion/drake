@@ -5,7 +5,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/systems/framework/siso_vector_system.h"
+#include "drake/systems/framework/vector_system.h"
 
 namespace drake {
 namespace systems {
@@ -20,7 +20,7 @@ namespace sensors {
 ///
 /// @ingroup sensor_systems
 template <typename T>
-class RotaryEncoders : public SisoVectorSystem<T> {
+class RotaryEncoders final : public VectorSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RotaryEncoders)
 
@@ -41,6 +41,10 @@ class RotaryEncoders : public SisoVectorSystem<T> {
                  const std::vector<int>& input_vector_indices,
                  const std::vector<int>& ticks_per_revolution);
 
+  /// Scalar-converting copy constructor.
+  template <typename U>
+  explicit RotaryEncoders(const RotaryEncoders<U>&);
+
   /// Calibration offsets are defined as parameters.
   std::unique_ptr<Parameters<T>> AllocateParameters() const override;
 
@@ -54,6 +58,8 @@ class RotaryEncoders : public SisoVectorSystem<T> {
       const Context<T>& context) const;
 
  private:
+  template <typename> friend class RotaryEncoders;
+
   // Outputs the transformed signal.
   void DoCalcVectorOutput(
       const Context<T>& context,
@@ -63,9 +69,6 @@ class RotaryEncoders : public SisoVectorSystem<T> {
 
   void SetDefaultParameters(const LeafContext<T>& context,
                             Parameters<T>* params) const override;
-
-  // System<T> override.
-  RotaryEncoders<AutoDiffXd>* DoToAutoDiffXd() const override;
 
   const int num_encoders_{0};       // Dimension of the output port.
   const std::vector<int> indices_;  // Selects from the input port.
