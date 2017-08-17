@@ -105,15 +105,6 @@ class RenderingSim : public systems::Diagram<double> {
 
     plant_ = builder_.AddSystem<RigidBodyPlant<double>>(std::move(tree));
     plant_->set_name("rigid_body_plant");
-    const double kPenetrationStiffness = 3000.;
-    const double kPenetrationDamping = 10.;
-    const double kStaticFriction = 0.9;
-    const double kDynamicFriction = 0.5;
-    const double kStictionSlipTolerance = 0.01;
-    plant_->set_normal_contact_parameters(kPenetrationStiffness,
-                                          kPenetrationDamping);
-    plant_->set_friction_contact_parameters(kStaticFriction, kDynamicFriction,
-                                            kStictionSlipTolerance);
   }
 
   // For fixed camera base.
@@ -528,13 +519,13 @@ class DepthImageToPointCloudConversionTest : public ::testing::Test {
       kWidth, kHeight, kFocal, kFocal, kWidth * 0.5, kHeight * 0.5),
       depth_image_(kWidth, kHeight, 1) {}
 
+  // kTooClose is treated as kTooFar. For the detail, refer to the document of
+  // RgbdCamera::ConvertDepthImageToPointCloud.
   void VerifyTooFarTooClose() {
     for (int v = 0; v < depth_image_.height(); ++v) {
       for (int u = 0; u < depth_image_.width(); ++u) {
         const int i = v * depth_image_.width() + u;
-        Eigen::Vector3f actual(Eigen::Map<Eigen::Vector3f>(
-            actual_point_cloud_.col(i).data(), actual_point_cloud_.rows()));
-
+        Eigen::Vector3f actual = actual_point_cloud_.col(i);
         EXPECT_EQ(actual(0), RgbdCamera::InvalidDepth::kTooFar);
         EXPECT_EQ(actual(1), RgbdCamera::InvalidDepth::kTooFar);
         EXPECT_EQ(actual(2), RgbdCamera::InvalidDepth::kTooFar);
@@ -568,8 +559,7 @@ TEST_F(DepthImageToPointCloudConversionTest, ValidValueTest) {
   for (int v = 0; v < depth_image_.height(); ++v) {
     for (int u = 0; u < depth_image_.width(); ++u) {
       const int i = v * depth_image_.width() + u;
-      Eigen::Vector3f actual(Eigen::Map<Eigen::Vector3f>(
-          actual_point_cloud_.col(i).data(), actual_point_cloud_.rows()));
+      Eigen::Vector3f actual = actual_point_cloud_.col(i);
 
       EXPECT_NEAR(actual(0), kDepthValue * (u - kWidth * 0.5) / kFocal,
                   kDistanceTolerance);
@@ -591,8 +581,7 @@ TEST_F(DepthImageToPointCloudConversionTest, NanValueTest) {
   for (int v = 0; v < depth_image_.height(); ++v) {
     for (int u = 0; u < depth_image_.width(); ++u) {
       const int i = v * depth_image_.width() + u;
-      Eigen::Vector3f actual(Eigen::Map<Eigen::Vector3f>(
-          actual_point_cloud_.col(i).data(), actual_point_cloud_.rows()));
+      Eigen::Vector3f actual = actual_point_cloud_.col(i);
 
       EXPECT_TRUE(std::isnan(actual(0)));
       EXPECT_TRUE(std::isnan(actual(1)));
