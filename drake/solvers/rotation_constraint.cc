@@ -739,48 +739,42 @@ void AddMcCormickVectorConstraints(
               // Since normal and vi are both unit length,
               //     -sin(theta) <= normal.dot(vi) <= sin(theta).
               // To activate this only when this box is active, we use
-              //   -sin(theta)-6+2*c[xi](0)+2*c[yi](1)+2*c[zi](2) <=
+              //   -sin(theta)-3+c[xi](0)+c[yi](1)+c[zi](2) <=
               //   normal.dot(vi)
               //     normal.dot(vi) <=
-              //     sin(theta)+6-2*c[xi](0)-2*c[yi](1)-2*c[zi](2).
+              //     sin(theta)+3-c[xi](0)-c[yi](1)-c[zi](2).
               // Note: (An alternative tighter, but SOCP constraint)
               //   v, v1, v2 forms an orthornormal basis. So n'*v is the
               //   projection of n in the v direction, same for n'*v1, n'*v2.
               //   Thus
-              //     (n'*v)^2 + (n'*v1)^2 + (n'*v2)^2 = n'*n
+              //     (n'*v)² + (n'*v1)² + (n'*v2)² = n'*n
               //   which translates to "The norm of a vector is equal to the
               //   sum of squares of the vector projected onto each axes of an
               //   orthornormal basis".
               //   This equation is the same as
-              //     (n'*v1)^2 + (n'*v2)^2 <= sin(theta)^2
+              //     (n'*v1)² + (n'*v2)² <= sin(theta)²
               //   So actually instead of imposing
               //     -sin(theta)<=n'*vi <=sin(theta),
               //   we can impose a tighter Lorentz cone constraint
               //     [|sin(theta)|, n'*v1, n'*v2] is in the Lorentz cone.
               prog->AddLinearConstraint(
-                orthant_normal.dot(v1) - 2*orthant_c.sum() >= -sin(theta) - 6);
+                orthant_normal.dot(v1) - orthant_c.sum() >= -sin(theta) - 3);
               prog->AddLinearConstraint(
-                orthant_normal.dot(v1) - 2*orthant_c.sum() <= 1);
-              prog->AddLinearConstraint(
-                orthant_normal.dot(v2) - 2*orthant_c.sum() >= -sin(theta) - 6);
-              prog->AddLinearConstraint(
-                orthant_normal.dot(v2) - 2*orthant_c.sum() <= 1);
+                orthant_normal.dot(v2) - orthant_c.sum() >= -sin(theta) - 3);
 
               prog->AddLinearConstraint(
-                orthant_normal.dot(v1) + 2*orthant_c.sum() >= -1);
+                orthant_normal.dot(v1) + orthant_c.sum() <= sin(theta) + 3);
               prog->AddLinearConstraint(
-                orthant_normal.dot(v1) + 2*orthant_c.sum() <= sin(theta) + 6);
-              prog->AddLinearConstraint(
-                orthant_normal.dot(v2) + 2*orthant_c.sum() >= -1);
-              prog->AddLinearConstraint(
-                orthant_normal.dot(v2) + 2*orthant_c.sum() <= sin(theta) + 6);
-
+                orthant_normal.dot(v2) + orthant_c.sum() <= sin(theta) + 3);
+              
               // Cross-product constraint: ideally v2 = v.cross(v1).
               // Since v is within theta of normal, we will prove that
               // |v2 - normal.cross(v1)| <= 2 * sin(theta / 2)
               // Notice that (v2 - normal.cross(v1))ᵀ * (v2 - normal.cross(v1))
-              // = v2ᵀ * v2 + (normal.cross(v1))ᵀ * (normal.cross(v1)) -
+              // = v2ᵀ * v2 + |normal.cross(v1))|² -
               //      2 * v2ᵀ * (normal.cross(v1))
+              // = 1 + |normal.cross(v1))|² - 2 * normalᵀ*(v1.cross(v2))
+              // = 1 + |normal.cross(v1))|² - 2 * normalᵀ*v
               // <= 1 + 1 - 2 * cos(theta)
               // = (2 * sin(theta / 2))²
               // Thus we get |v2 - normal.cross(v1)| <= 2 * sin(theta / 2)
@@ -793,19 +787,20 @@ void AddMcCormickVectorConstraints(
 
               // To activate this only when the box is active, the complete
               // constraints are
-              //  -2*sin(theta/2)-6+2(cxi+cyi+czi) <= v2-normal.cross(v1)
-              //    v2-normal.cross(v1) <= 2*sin(theta/2)+6-2(cxi+cyi+czi)
+              //  -2*sin(theta/2)-sqrt(2)*(3-(cxi+cyi+czi)) <= v2-normal.cross(v1)
+              //    v2-normal.cross(v1) <= 2*sin(theta/2)+sqrt(2)*(3-(cxi+cyi+czi))
               // Note: Again this constraint could be tighter as a Lorenz cone
               // constraint of the form:
               //   |v2 - normal.cross(v1)| <= 2*sin(theta/2).
+              const double sin_theta2 = sin(theta/2);
               prog->AddLinearConstraint(
                 Vector3<Expression>::Constant(
-                  -2*sin(theta/2) - 6 + 2*orthant_c.sum())
+                  -2*sin_theta2 - 2*(3 - orthant_c.sum()))
                 <= v2 - orthant_normal.cross(v1));
               prog->AddLinearConstraint(
                 v2 - orthant_normal.cross(v1) <=
                 Vector3<Expression>::Constant(
-                  2*sin(theta/2) + 6 - 2*orthant_c.sum()));
+                  2*sin_theta2 + 2* (3 - orthant_c.sum())));
             }
           }
         } else {
