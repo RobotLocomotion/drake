@@ -6,6 +6,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/internal_frame.h"
@@ -46,6 +47,11 @@ class GeometryStateTester {
   const std::unordered_map<GeometryId, internal::InternalGeometry>&
   get_geometries() {
     return state_->geometries_;
+  }
+
+  const std::unordered_map<GeometryId, internal::InternalAnchoredGeometry>&
+  get_anchored_geometries() {
+    return state_->anchored_geometries_;
   }
 
  private:
@@ -526,6 +532,10 @@ TEST_F(GeometryStateTest, RegisterGeometryonValidGeometry) {
                                                  parent_id,
                                                  move(instance));
 
+  Isometry3<double> X_PG = geometry_state_.GetPoseInParent(g_id);
+  EXPECT_TRUE(CompareMatrices(X_PG.matrix(), pose.matrix(),
+                  1e-14, MatrixCompareType::absolute));
+
   EXPECT_TRUE(gs_tester_.get_frames().at(frame_id).has_child(g_id));
   const auto& geometry = gs_tester_.get_geometries().at(g_id);
   EXPECT_EQ(geometry.get_frame_id(), frame_id);
@@ -669,6 +679,73 @@ TEST_F(GeometryStateTest, RemoveGeometryInvalid) {
           "belong.+");
 }
 
+// Tests the registration of anchored geometry.
+TEST_F(GeometryStateTest, RegisterAnchoredGeometry) {
+  SourceId s_id = NewSource("new source");
+  Isometry3<double> pose = Isometry3<double>::Identity();
+  auto instance = make_unique<GeometryInstance>(
+      pose, unique_ptr<Shape>(new Sphere(1)));
+  auto g_id = geometry_state_.RegisterAnchoredGeometry(s_id, move(instance));
+  EXPECT_TRUE(geometry_state_.BelongsToSource(g_id, s_id));
+}
+
+// Tests the attempt to register anchored geometry on an invalid source.
+TEST_F(GeometryStateTest, RegisterAnchoredGeometryInvalidSource) {
+  Isometry3<double> pose = Isometry3<double>::Identity();
+  auto instance = make_unique<GeometryInstance>(
+      pose, unique_ptr<Shape>(new Sphere(1)));
+  EXPECT_ERROR_MESSAGE(
+      geometry_state_.RegisterAnchoredGeometry(SourceId::get_new_id(),
+                                               move(instance)),
+      std::logic_error,
+      "Referenced geometry source \\d+ is not registered.");
+}
+
+// Tests the response of attempting to register a null pointer GeometryInstance
+// as anchored geometry.
+TEST_F(GeometryStateTest, RegisterAnchoredNullGeometry) {
+  unique_ptr<GeometryInstance> instance;
+  EXPECT_ERROR_MESSAGE(
+      geometry_state_.RegisterAnchoredGeometry(SourceId::get_new_id(),
+                                               move(instance)),
+      std::logic_error,
+      "Registering null anchored geometry on source \\d+.");
+}
+
+// Tests removal of anchored geometry.
+TEST_F(GeometryStateTest, RemoveAnchoredGeometry) {
+  SourceId s_id = SetUpSingleSourceTree();
+  Vector3<double> normal{0, 1, 0};
+  Vector3<double> point{1, 1, 1};
+  auto anchored_id_1 = geometry_state_.RegisterAnchoredGeometry(
+      s_id, make_unique<GeometryInstance>(HalfSpace::MakePose(normal, point),
+                                          make_unique<HalfSpace>()));
+  auto anchored_id_2 = geometry_state_.RegisterAnchoredGeometry(
+      s_id, make_unique<GeometryInstance>(
+                HalfSpace::MakePose(Vector3<double>{1, 0, 0},
+                                    Vector3<double>{-1, 0, 0}),
+                make_unique<HalfSpace>()));
+  // Confirm conditions of having added two anchored geometries.
+  EXPECT_TRUE(geometry_state_.BelongsToSource(anchored_id_1, s_id));
+  EXPECT_TRUE(geometry_state_.BelongsToSource(anchored_id_2, s_id));
+  EXPECT_EQ(geometry_state_.get_num_anchored_geometries(), 2);
+
+  // Performs tested action.
+  geometry_state_.RemoveGeometry(s_id, anchored_id_1);
+
+  EXPECT_EQ(geometry_state_.get_num_anchored_geometries(), 1);
+}
+
+// Confirms the behavior for requesting geometry poses with a bad geometry
+// identifier. The basic behavior is tested implicitly in other tests because
+// they rely on them to validate state.
+TEST_F(GeometryStateTest, GetPoseForBadGeometryId) {
+  EXPECT_ERROR_MESSAGE(
+      geometry_state_.GetPoseInParent(GeometryId::get_new_id()),
+      std::logic_error,
+      "Referenced geometry \\d+ has not been registered.");
+}
+
 // This tests the source ownership functionality - a function which reports if
 // a geometry or frame belongs to the specified source - in the case where the
 // source id is invalid. Whether or not the frame/geometry ids are valid, the
@@ -683,14 +760,22 @@ TEST_F(GeometryStateTest, SourceOwnershipInvalidSource) {
   EXPECT_ERROR_MESSAGE(geometry_state_.BelongsToSource(GeometryId::get_new_id(),
                                                        source_id),
                        std::logic_error,
-                       "Referenced geometry \\d+ has not been registered.");
+                       "Referenced geometry source \\d+ is not registered.");
   SetUpSingleSourceTree();
+  GeometryId anchored_id = geometry_state_.RegisterAnchoredGeometry(
+      source_id_,
+      make_unique<GeometryInstance>(Isometry3<double>::Identity(),
+                                    std::unique_ptr<Shape>(new Sphere(1))));
   // Valid frame/geometry ids.
   EXPECT_ERROR_MESSAGE(geometry_state_.BelongsToSource(frames_[0],
                                                        source_id),
                        std::logic_error,
                        "Referenced geometry source \\d+ is not registered.");
   EXPECT_ERROR_MESSAGE(geometry_state_.BelongsToSource(geometries_[0],
+                                                       source_id),
+                       std::logic_error,
+                       "Referenced geometry source \\d+ is not registered.");
+  EXPECT_ERROR_MESSAGE(geometry_state_.BelongsToSource(anchored_id,
                                                        source_id),
                        std::logic_error,
                        "Referenced geometry source \\d+ is not registered.");
@@ -710,9 +795,15 @@ TEST_F(GeometryStateTest, SourceOwnershipFrameId) {
 }
 
 // This tests the source ownership functionality for geometry - a function which
-// reports if a geometry belongs to the specified source.
+// reports if a geometry belongs to the specified source. It examines dynamic
+// and anchored geometry.
 TEST_F(GeometryStateTest, SourceOwnershipGeometryId) {
   SourceId s_id = SetUpSingleSourceTree();
+  GeometryId anchored_id = geometry_state_.RegisterAnchoredGeometry(
+      s_id,
+      make_unique<GeometryInstance>(
+          Isometry3<double>::Identity(),
+          std::unique_ptr<Shape>(new Sphere(1))));
   // Test for invalid geometry.
   EXPECT_ERROR_MESSAGE(geometry_state_.BelongsToSource(GeometryId::get_new_id(),
                                                        s_id),
@@ -720,6 +811,7 @@ TEST_F(GeometryStateTest, SourceOwnershipGeometryId) {
                        "Referenced geometry \\d+ has not been registered.");
   // Test for valid geometry.
   EXPECT_TRUE(geometry_state_.BelongsToSource(geometries_[0], s_id));
+  EXPECT_TRUE(geometry_state_.BelongsToSource(anchored_id, s_id));
 }
 
 // This confirms the failure state of calling GeometryState::GetFrameId with a
