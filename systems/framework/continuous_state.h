@@ -43,7 +43,8 @@ namespace systems {
 template <typename T>
 class ContinuousState {
  public:
-  // ContinuousState is not copyable or moveable.
+  // ContinuousState is not copyable or moveable, but can be cloned with some
+  // caveats.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContinuousState)
 
   /// Constructs a ContinuousState for a system that does not have second-order
@@ -95,8 +96,29 @@ class ContinuousState {
 
   virtual ~ContinuousState() {}
 
-  /// Returns the size of the entire continuous state vector.
+  /// Creates a deep copy of this object with the same substructure but with all
+  /// data owned by the copy. That is, if the original was a Diagram continuous
+  /// state that merely referenced substates, the clone will not include any
+  /// references to the original substates and is thus decoupled from the
+  /// Context containing the original. The concrete type of the BasicVector
+  /// underlying each leaf ContinuousState is preserved.
+  std::unique_ptr<ContinuousState<T>> Clone() const {
+    return std::unique_ptr<ContinuousState<T>>(DoClone());
+  }
+
+  /// Returns the size of the entire continuous state vector, which is
+  /// necessarily num_q+num_v+num_z.
   int size() const { return get_vector().size(); }
+
+  /// Returns the number of generalized positions q in this state vector.
+  int num_q() const { return get_generalized_position().size(); }
+
+  /// Returns the number of generalized velocities v in this state vector.
+  int num_v() const { return get_generalized_velocity().size(); }
+
+  /// Returns the number of miscellaneous continuous state variables z
+  /// in this state vector.
+  int num_z() const { return get_misc_continuous_state().size(); }
 
   T& operator[](std::size_t idx) { return (*state_)[idx]; }
   const T& operator[](std::size_t idx) const { return (*state_)[idx]; }
@@ -149,7 +171,6 @@ class ContinuousState {
     return *misc_continuous_state_.get();
   }
 
-
   /// Copies the values from another ContinuousState of the same scalar type
   /// into this State.
   void CopyFrom(const ContinuousState<T>& other) {
@@ -193,35 +214,41 @@ class ContinuousState {
     DRAKE_ASSERT_VOID(DemandInvariants());
   }
 
+  /// DiagramContinuousState must override this to maintain the necessary
+  /// internal substructure, and to perform a deep copy so that the result
+  /// owns all its own data. The default implementation here requires that the
+  /// full state is a BasicVector (that is, this is a leaf continuous state).
+  /// The BasicVector is cloned to preserve its concrete type and contents,
+  /// then the q, v, z Subvectors are created referencing it.
+  virtual ContinuousState* DoClone() const {
+    auto state = dynamic_cast<const BasicVector<T>*>(state_.get());
+    DRAKE_DEMAND(state != nullptr);
+    return new ContinuousState(state->Clone(), num_q(), num_v(), num_z());
+  }
+
  private:
   template <typename U>
   void SetFromGeneric(const ContinuousState<U>& other) {
     DRAKE_DEMAND(size() == other.size());
-    DRAKE_DEMAND(get_generalized_position().size() ==
-        other.get_generalized_position().size());
-    DRAKE_DEMAND(get_generalized_velocity().size() ==
-        other.get_generalized_velocity().size());
-    DRAKE_DEMAND(get_misc_continuous_state().size() ==
-        other.get_misc_continuous_state().size());
+    DRAKE_DEMAND(num_q() == other.num_q());
+    DRAKE_DEMAND(num_v() == other.num_v());
+    DRAKE_DEMAND(num_z() == other.num_z());
     SetFromVector(other.CopyToVector().template cast<T>());
   }
 
   // Demand that the representation invariants hold.
   void DemandInvariants() const {
     // Nothing is nullptr.
-    DRAKE_DEMAND(!!generalized_position_);
-    DRAKE_DEMAND(!!generalized_velocity_);
-    DRAKE_DEMAND(!!misc_continuous_state_);
+    DRAKE_DEMAND(generalized_position_ != nullptr);
+    DRAKE_DEMAND(generalized_velocity_ != nullptr);
+    DRAKE_DEMAND(misc_continuous_state_ != nullptr);
 
     // The sizes are consistent.
-    const int num_q = generalized_position_->size();
-    const int num_v = generalized_velocity_->size();
-    const int num_z = misc_continuous_state_->size();
-    const int num_total = (num_q + num_v + num_z);
-    DRAKE_DEMAND(num_q >= 0);
-    DRAKE_DEMAND(num_v >= 0);
-    DRAKE_DEMAND(num_z >= 0);
-    DRAKE_DEMAND(num_v <= num_q);
+    DRAKE_DEMAND(num_q() >= 0);
+    DRAKE_DEMAND(num_v() >= 0);
+    DRAKE_DEMAND(num_z() >= 0);
+    DRAKE_DEMAND(num_v() <= num_q());
+    const int num_total = (num_q() + num_v() + num_z());
     DRAKE_DEMAND(state_->size() == num_total);
 
     // The storage addresses of `state_` elements contain no duplicates.
@@ -237,17 +264,17 @@ class ContinuousState {
     // Therefore, the `state_` vector and (q, v, z) vectors form views into the
     // same unique underlying data, just with different indexing.
     std::unordered_set<const T*> qvz_element_pointers;
-    for (int i = 0; i < num_q; ++i) {
+    for (int i = 0; i < num_q(); ++i) {
       const T* element = &(generalized_position_->GetAtIndex(i));
       qvz_element_pointers.emplace(element);
       DRAKE_DEMAND(state_element_pointers.count(element) == 1);
     }
-    for (int i = 0; i < num_v; ++i) {
+    for (int i = 0; i < num_v(); ++i) {
       const T* element = &(generalized_velocity_->GetAtIndex(i));
       qvz_element_pointers.emplace(element);
       DRAKE_DEMAND(state_element_pointers.count(element) == 1);
     }
-    for (int i = 0; i < num_z; ++i) {
+    for (int i = 0; i < num_z(); ++i) {
       const T* element = &(misc_continuous_state_->GetAtIndex(i));
       qvz_element_pointers.emplace(element);
       DRAKE_DEMAND(state_element_pointers.count(element) == 1);

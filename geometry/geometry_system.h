@@ -488,7 +488,7 @@ class GeometrySystem final : public systems::LeafSystem<T> {
   //    - instantiating a GeometryContext instance (as opposed to LeafContext),
   //    - to detect allocation in support of the topology semantics described
   //      above.
-  std::unique_ptr<systems::LeafContext<T>> DoMakeContext() const override;
+  std::unique_ptr<systems::LeafContext<T>> DoMakeLeafContext() const override;
 
   // Helper method for throwing an exception if a context has *ever* been
   // allocated by this system. The invoking method should pass it's name so

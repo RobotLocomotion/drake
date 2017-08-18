@@ -252,10 +252,8 @@ void DirectTranscription::AddAutodiffDynamicConstraints(
 
   if (context_->get_num_input_ports() > 0) {
     // Allocate the input port and keep an alias around.
-    input_port_value_ = new FreestandingInputPortValue(
-        system_->AllocateInputVector(system_->get_input_port(0)));
-    std::unique_ptr<InputPortValue> input_port_value(input_port_value_);
-    context_->SetInputPortValue(0, std::move(input_port_value));
+    input_port_value_ = &context_->FixInputPort(
+        0, system_->AllocateInputVector(system_->get_input_port(0)));
   }
 
   // For N-1 timesteps, add a constraint which depends on the knot

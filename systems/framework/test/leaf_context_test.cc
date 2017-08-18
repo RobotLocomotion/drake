@@ -12,6 +12,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/input_port_descriptor.h"
 #include "drake/systems/framework/input_port_value.h"
 #include "drake/systems/framework/test_utilities/pack_value.h"
 #include "drake/systems/framework/value.h"
@@ -35,16 +36,33 @@ class TestAbstractType {
   TestAbstractType() = default;
 };
 
+// Defines a minimal System we can use to define input ports and cache entries.
+class MySystemBase : public SystemBase {
+ public:
+ private:
+  std::unique_ptr<ContextBase> DoMakeContext() const override {
+    return std::make_unique<LeafContext<double>>();
+  }
+  // Dummies. We're not going to call these.
+  void DoAcquireContextResources(ContextBase*) const override {}
+  void DoCheckValidContext(const ContextBase&) const override {}
+};
+
 class LeafContextTest : public ::testing::Test {
  protected:
   void SetUp() override {
     context_.set_time(kTime);
 
     // Input
-    context_.SetNumInputPorts(kNumInputPorts);
+    SetNumInputPorts(kNumInputPorts, &system_, &context_);
+
+    // Fixed input values get new tickets -- manually update the System
+    // ticket counter here so this test can add more System things later.
+    // (That's not allowed in user code.)
     for (int i = 0; i < kNumInputPorts; ++i) {
       context_.FixInputPort(
           i, std::make_unique<BasicVector<double>>(kInputSize[i]));
+      (void)system_.assign_next_dependency_ticket();
     }
 
     // Reserve a continuous state with five elements.
@@ -81,32 +99,46 @@ class LeafContextTest : public ::testing::Test {
 
   // Mocks up a descriptor sufficient to read a FreestandingInputPortValue
   // connected to @p context at @p index.
-  static const BasicVector<double>* ReadVectorInputPort(
+  const BasicVector<double>* ReadVectorInputPort(
       const Context<double>& context, int index) {
-    InputPortDescriptor<double> descriptor(nullptr, index, kVectorValued, 0,
-                                           nullopt);
+    InputPortDescriptor<double> descriptor(InputPortIndex(index), kVectorValued,
+                                           0, nullopt, &system_);
     return context.EvalVectorInput(nullptr, descriptor);
   }
 
   // Mocks up a descriptor sufficient to read a FreestandingInputPortValue
   // connected to @p context at @p index.
-  static const std::string* ReadStringInputPort(
-      const Context<double>& context, int index) {
-    InputPortDescriptor<double> descriptor(nullptr, index, kAbstractValued, 0,
-                                           nullopt);
+  const std::string* ReadStringInputPort(const Context<double>& context,
+                                         int index) {
+    InputPortDescriptor<double> descriptor(InputPortIndex(index),
+                                           kAbstractValued, 0, nullopt,
+                                           &system_);
     return context.EvalInputValue<std::string>(nullptr, descriptor);
   }
 
   // Mocks up a descriptor sufficient to read a FreestandingInputPortValue
   // connected to @p context at @p index.
-  static const AbstractValue* ReadAbstractInputPort(
+  const AbstractValue* ReadAbstractInputPort(
       const Context<double>& context, int index) {
-    InputPortDescriptor<double> descriptor(nullptr, index, kAbstractValued, 0,
-                                           nullopt);
+    InputPortDescriptor<double> descriptor(InputPortIndex(index),
+                                           kAbstractValued, 0, nullopt,
+                                           &system_);
     return context.EvalAbstractInput(nullptr, descriptor);
   }
 
-  LeafContext<double> context_;
+  // Mocks up some input ports sufficient to allow us to give them fixed values.
+  // This code mimics SystemBase::CreateSourceTrackers.
+  template <typename T>
+  static void SetNumInputPorts(int n, SystemBase* system, Context<T>* context) {
+    for (InputPortIndex i(0); i < n; ++i) {
+      context->AddInputPort(i, system->assign_next_dependency_ticket());
+    }
+  }
+
+  MySystemBase system_;
+  std::unique_ptr<ContextBase> context_ptr_ = system_.AllocateContext();
+  LeafContext<double>& context_ =
+      dynamic_cast<LeafContext<double>&>(*context_ptr_);
   std::unique_ptr<AbstractValue> abstract_state_;
 };
 
@@ -166,17 +198,12 @@ TEST_F(LeafContextTest, GetNumInputPorts) {
   ASSERT_EQ(kNumInputPorts, context_.get_num_input_ports());
 }
 
-TEST_F(LeafContextTest, ClearInputPorts) {
-  context_.ClearInputPorts();
-  EXPECT_EQ(0, context_.get_num_input_ports());
-}
-
 TEST_F(LeafContextTest, GetNumDiscreteStateGroups) {
   EXPECT_EQ(2, context_.get_num_discrete_state_groups());
 }
 
 TEST_F(LeafContextTest, GetNumAbstractStateGroups) {
-  EXPECT_EQ(1, context_.get_num_abstract_state_groups());
+  EXPECT_EQ(1, context_.get_num_abstract_states());
 }
 
 TEST_F(LeafContextTest, IsStateless) {
@@ -225,8 +252,9 @@ TEST_F(LeafContextTest, GetNumStates) {
 }
 
 TEST_F(LeafContextTest, GetVectorInput) {
+  MySystemBase system;
   LeafContext<double> context;
-  context.SetNumInputPorts(2);
+  SetNumInputPorts(2, &system, &context);
 
   // Add input port 0 to the context, but leave input port 1 uninitialized.
   context.FixInputPort(0, BasicVector<double>::Make({5, 6}));
@@ -241,8 +269,9 @@ TEST_F(LeafContextTest, GetVectorInput) {
 }
 
 TEST_F(LeafContextTest, GetAbstractInput) {
+  MySystemBase system;
   LeafContext<double> context;
-  context.SetNumInputPorts(2);
+  SetNumInputPorts(2, &system, &context);
 
   // Add input port 0 to the context, but leave input port 1 uninitialized.
   context.FixInputPort(0, AbstractValue::Make<std::string>("foo"));
@@ -254,17 +283,51 @@ TEST_F(LeafContextTest, GetAbstractInput) {
   EXPECT_EQ(nullptr, ReadAbstractInputPort(context, 1));
 }
 
+auto alloc = [](const ContextBase&){return AbstractValue::Make<int>(3);};
+auto calc = [](const ContextBase&, AbstractValue* result) {
+  result->SetValue(99);
+};
+
 // Tests that items can be stored and retrieved in the cache, even when
 // the LeafContext is const.
 TEST_F(LeafContextTest, SetAndGetCache) {
+  auto& cache_entry = system_.DeclareCacheEntry("entry", alloc, calc,
+                                               {system_.nothing_ticket()});
   const LeafContext<double>& ctx = context_;
-  CacheTicket ticket = ctx.CreateCacheEntry({});
-  ctx.InitCachedValue(ticket, PackValue(42));
-  const AbstractValue* value = ctx.GetCachedValue(ticket);
-  EXPECT_EQ(42, UnpackIntValue(value));
+  CacheIndex index =
+      context_.get_mutable_cache()
+          .CreateNewCacheEntryValue(cache_entry,
+                                    &context_.get_mutable_dependency_graph())
+          .cache_index();
+  CacheEntryValue& entry =
+      ctx.get_mutable_cache().get_mutable_cache_entry_value(index);
+  entry.SetInitialValue(PackValue(42));
+  EXPECT_EQ(entry.cache_index(), index);
+  EXPECT_TRUE(entry.ticket().is_valid());
+  EXPECT_EQ(entry.description(), "entry");
 
-  ctx.SetCachedValue<int>(ticket, 43);
-  EXPECT_EQ(43, UnpackIntValue(ctx.GetCachedValue(ticket)));
+  EXPECT_FALSE(entry.is_up_to_date());  // Initial value is not up to date.
+  EXPECT_THROW(entry.GetValueOrThrow<int>(), std::logic_error);
+  entry.set_is_up_to_date(true);
+  EXPECT_NO_THROW(entry.GetValueOrThrow<int>());
+
+  const AbstractValue& value = entry.GetAbstractValueOrThrow();
+  EXPECT_EQ(42, UnpackIntValue(value));
+  EXPECT_EQ(42, entry.GetValueOrThrow<int>());
+  EXPECT_EQ(42, entry.get_value<int>());
+
+  // Already up to date.
+  EXPECT_THROW(entry.SetValueOrThrow<int>(43), std::logic_error);
+  entry.set_is_up_to_date(false);
+
+  EXPECT_NO_THROW(entry.SetValueOrThrow<int>(43));
+  EXPECT_TRUE(entry.is_up_to_date());  // Set marked it up to date.
+  EXPECT_EQ(43, UnpackIntValue(entry.GetAbstractValueOrThrow()));
+
+  entry.set_is_up_to_date(false);
+  entry.set_value<int>(99);
+  EXPECT_TRUE(entry.is_up_to_date());  // Set marked it up to date.
+  EXPECT_EQ(99, entry.get_value<int>());
 }
 
 TEST_F(LeafContextTest, Clone) {

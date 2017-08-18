@@ -54,7 +54,7 @@ FreeRotatingBodyPlant<T>::get_default_initial_angular_velocity() const {
 
 template<typename T>
 std::unique_ptr<systems::LeafContext<T>>
-FreeRotatingBodyPlant<T>::DoMakeContext() const {
+FreeRotatingBodyPlant<T>::DoMakeLeafContext() const {
   return model_.CreateDefaultContext();
 }
 

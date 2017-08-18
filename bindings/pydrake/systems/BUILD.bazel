@@ -34,6 +34,9 @@ drake_py_library(
 
 drake_pybind_library(
     name = "framework_py",
+    cc_deps = [
+        "//drake/bindings/pydrake:type_safe_index_py_h",
+    ],
     cc_so_name = "framework",
     cc_srcs = ["framework_py.cc"],
     py_deps = [

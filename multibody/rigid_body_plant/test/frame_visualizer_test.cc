@@ -46,9 +46,7 @@ GTEST_TEST(FrameVisualizerTests, TestMessageGeneration) {
   auto input_data = std::make_unique<systems::BasicVector<double>>(vector_size);
   VectorX<double> x = VectorX<double>::Zero(vector_size);
   input_data->set_value(x);
-  context->SetInputPortValue(
-      0, std::make_unique<systems::FreestandingInputPortValue>(
-             std::move(input_data)));
+  context->FixInputPort(0, std::move(input_data));
   dut.Publish(*context);
 
   KinematicsCache<double> cache = tree.CreateKinematicsCache();

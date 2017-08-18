@@ -360,7 +360,7 @@ void GeometrySystem<T>::FullPoseUpdate(
 }
 
 template <typename T>
-std::unique_ptr<LeafContext<T>> GeometrySystem<T>::DoMakeContext() const {
+std::unique_ptr<LeafContext<T>> GeometrySystem<T>::DoMakeLeafContext() const {
   // Disallow further geometry source additions.
   initial_state_ = nullptr;
   DRAKE_ASSERT(geometry_state_index_ >= 0);

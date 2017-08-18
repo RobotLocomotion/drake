@@ -4,6 +4,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include "drake/bindings/pydrake/type_safe_index_py.h"
 #include "drake/systems/framework/abstract_values.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
@@ -28,6 +29,10 @@ PYBIND11_MODULE(framework, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
 
+  // TODO(eric.cousineau): pybind11 defaults to C++-like copies when dealing
+  // with rvalues. We should wrap this into a drake-level binding, so that we
+  // can default this to `reference` or `reference_internal.`
+
   // Aliases for commonly used return value policies.
   // `py_ref` is used when `keep_alive` is explicitly used (e.g. for extraction
   // methods, like `GetMutableSubsystemState`).
@@ -45,6 +50,16 @@ PYBIND11_MODULE(framework, m) {
 
   // TODO(eric.cousineau): Resolve `str_py` workaround.
   auto str_py = py::eval("str");
+
+  BindTypeSafeIndex<SubsystemIndex>(m, "SubsystemIndex");
+  BindTypeSafeIndex<InputPortIndex>(m, "InputPortIndex");
+  BindTypeSafeIndex<OutputPortIndex>(m, "OutputPortIndex");
+  BindTypeSafeIndex<DependencyTicket>(m, "DependencyTicket");
+  BindTypeSafeIndex<CacheIndex>(m, "CacheIndex");
+  BindTypeSafeIndex<DiscreteStateIndex>(m, "DiscreteStateIndex");
+  BindTypeSafeIndex<AbstractStateIndex>(m, "AbstractStateIndex");
+  BindTypeSafeIndex<NumericParameterIndex>(m, "NumericParameterIndex");
+  BindTypeSafeIndex<AbstractParameterIndex>(m, "AbstractParameterIndex");
 
   py::setattr(m, "kAutoSize", py::cast(kAutoSize));
 
@@ -123,7 +138,7 @@ PYBIND11_MODULE(framework, m) {
     .def("get_num_input_ports", &Context<T>::get_num_input_ports)
     .def("FixInputPort",
          py::overload_cast<int, unique_ptr<BasicVector<T>>>(
-             &Context<T>::FixInputPort))
+             &Context<T>::FixInputPort), py_iref)
     .def("get_time", &Context<T>::get_time)
     .def("Clone", &Context<T>::Clone)
     .def("__copy__", &Context<T>::Clone)
@@ -152,10 +167,14 @@ PYBIND11_MODULE(framework, m) {
     .def("Connect",
          py::overload_cast<const OutputPort<T>&, const InputPortDescriptor<T>&>(
              &DiagramBuilder<T>::Connect))
-    .def("ExportInput", &DiagramBuilder<T>::ExportInput)
-    .def("ExportOutput", &DiagramBuilder<T>::ExportOutput)
+    .def("ExportInput", &DiagramBuilder<T>::ExportInput, py_iref)
+    .def("ExportOutput", &DiagramBuilder<T>::ExportOutput, py_iref)
     .def("Build", &DiagramBuilder<T>::Build)
     .def("BuildInto", &DiagramBuilder<T>::BuildInto);
+
+  // TODO(eric.cousineau): Figure out how to handle template-specialized method
+  // signatures(e.g. GetValue<T>()).
+  py::class_<FreestandingInputPortValue>(m, "FreestandingInputPortValue");
 
   py::class_<OutputPort<T>>(m, "OutputPort");
 

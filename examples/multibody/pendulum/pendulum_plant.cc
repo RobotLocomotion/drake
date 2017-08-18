@@ -235,7 +235,7 @@ void PendulumPlant<T>::RegisterGeometry(
 
 template<typename T>
 std::unique_ptr<systems::LeafContext<T>>
-PendulumPlant<T>::DoMakeContext() const {
+PendulumPlant<T>::DoMakeLeafContext() const {
   return model_->CreateDefaultContext();
 }
 

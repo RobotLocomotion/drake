@@ -73,13 +73,9 @@ class LeafOutputPort : public OutputPort<T> {
   invoked here during construction of the port so it may depend on data that
   becomes available only after completion of the containing System or
   Diagram. */
-  LeafOutputPort(const System<T>& system,
-                 AllocCallback alloc_function,
-                 CalcCallback calc_function)
-      : OutputPort<T>(system, kAbstractValued, 0 /* size */) {
-    set_allocation_function(alloc_function);
-    set_calculation_function(calc_function);
-  }
+  LeafOutputPort(AllocCallback alloc_function, CalcCallback calc_function,
+                 std::vector<DependencyTicket> calc_prerequisites,
+                 System<T>* system);
 
   /** Constructs a fixed-size vector-valued output port. The supplied allocator
   must return a `Value<BasicVector>` of the correct size in which to hold the
@@ -92,14 +88,10 @@ class LeafOutputPort : public OutputPort<T> {
   // here since construction of the containing System is likely incomplete when
   // this method is invoked. Do not attempt to extract the size from
   // the allocator by calling it here.
-  LeafOutputPort(const System<T>& system,
-                 int fixed_size,
-                 AllocCallback vector_alloc_function,
-                 CalcVectorCallback vector_calc_function)
-      : OutputPort<T>(system, kVectorValued, fixed_size) {
-    set_allocation_function(vector_alloc_function);
-    set_calculation_function(vector_calc_function);
-  }
+  LeafOutputPort(int fixed_size, AllocCallback alloc_function,
+                 CalcVectorCallback vector_calc_function,
+                 std::vector<DependencyTicket> calc_prerequisites,
+                 System<T>* system);
 
   /** (Advanced) Sets or replaces the evaluation function for this output
   port, using a function that returns an `AbstractValue`. By default, an
@@ -110,22 +102,18 @@ class LeafOutputPort : public OutputPort<T> {
     eval_function_ = eval_function;
   }
 
+  /** Returns the cache entry associated with this output port. */
+  CacheIndex cache_index() const { return cache_index_; }
+
  private:
-  // Sets or replaces the allocation function for this output port, using
-  // a function that returns an AbstractValue.
-  void set_allocation_function(AllocCallback alloc_function) {
-    alloc_function_ = alloc_function;
-  }
-
-  // Sets or replaces the calculation function for this output port, using
-  // a function that writes into an `AbstractValue`.
-  void set_calculation_function(CalcCallback calc_function) {
-    calc_function_ = calc_function;
-  }
-
-  // Sets or replaces the calculation function for this vector-valued output
+  // Creates an AbstractValue calculation function for this vector-valued output
   // port, using a function that writes into a `BasicVector<T>`.
-  void set_calculation_function(CalcVectorCallback vector_calc_function);
+  CalcCallback ConvertVectorCallback(CalcVectorCallback vector_calc_function);
+
+  // Handles common constructor tasks.
+  void CompleteConstruction(
+  AllocCallback alloc_function, CalcCallback calc_function,
+      std::vector<DependencyTicket> calc_prerequisites, System<T>* system);
 
   // Invokes the supplied allocation function if there is one, otherwise
   // complains.
@@ -136,13 +124,18 @@ class LeafOutputPort : public OutputPort<T> {
   void DoCalc(const Context<T>& context, AbstractValue* value) const final;
 
   // Currently just invokes the supplied evaluation function if present,
-  // otherwise complains.
-  // TODO(sherm1) Generate this automatically using the cache & DoCalc().
+  // otherwise forwards to this port's cache entry.
   const AbstractValue& DoEval(const Context<T>& context) const final;
+
+  // Returns the cache entry's ticket and no subsystem.
+  std::pair<optional<SubsystemIndex>, DependencyTicket> DoGetPrerequisite()
+      const final;
 
   AllocCallback alloc_function_;
   CalcCallback  calc_function_;
   EvalCallback  eval_function_;
+
+  CacheIndex cache_index_;
 };
 
 // See diagram.h for DiagramOutputPort.
