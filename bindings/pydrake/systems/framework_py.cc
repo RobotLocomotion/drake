@@ -486,7 +486,6 @@ PYBIND11_MODULE(framework, m) {
     .def("get_index", &OutputPort<T>::get_index);
 
   py::class_<SystemOutput<T>> system_output(m, "SystemOutput");
-  DefClone(&system_output);
   system_output
     .def("get_num_ports", &SystemOutput<T>::get_num_ports)
     .def("get_data", &SystemOutput<T>::get_data,

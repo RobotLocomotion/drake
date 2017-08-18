@@ -9,6 +9,8 @@
 #include "drake/common/unused.h"
 #include "drake/systems/framework/cache_entry.h"
 #include "drake/systems/framework/framework_common.h"
+#include "drake/systems/framework/input_port_base.h"
+#include "drake/systems/framework/output_port_base.h"
 
 namespace drake {
 namespace systems {
@@ -40,6 +42,13 @@ class SystemBase : public internal::SystemMessageInterface {
   Diagram will have a default name automatically assigned. Systems created
   by copying with a scalar type change have the same name as the source
   system. */
+  std::string get_name() const { return name_; }
+
+  /** Returns the name last supplied to set_name(), or a default name if
+  set_name() was never called. Systems with an empty name that are added to a
+  Diagram will have a default name automatically assigned. Systems created
+  by copying with a scalar type change have the same name as the source
+  system. */
   const std::string& GetSystemName() const final { return name_; }
 
   /** Generates and returns the full path name of this subsystem, starting from
@@ -61,8 +70,66 @@ class SystemBase : public internal::SystemMessageInterface {
   /** Returns a Context suitable for use with this System. Context resources
   are allocated based on resource requests that were made during System
   construction. */
-  // TODO(sherm1) Split this into phases as needed for caching.
-  std::unique_ptr<ContextBase> AllocateContext() const;
+  // ContextBase resources are added directly; derived classes
+  // are asked to add theirs via DoAcquireContextResources(). Derived classes
+  // also provide the concrete Context object and may reject the final result
+  // if they impose restrictions on the kind of System they support.
+  std::unique_ptr<ContextBase> AllocateContext() const {
+    std::unique_ptr<ContextBase> context = MakeContext();
+    MakeContextConnections(context.get());
+    AcquireContextResources(context.get());
+    return context;
+  }
+
+  /** Returns the number nu of input ports currently allocated in this System.
+  These are indexed from 0 to nu-1. */
+  int get_num_input_ports() const {
+    return static_cast<int>(input_ports_.size());
+  }
+
+  /** Returns the number ny of output ports currently allocated in this System.
+  These are indexed from 0 to ny-1. */
+  int get_num_output_ports() const {
+    return static_cast<int>(output_ports_.size());
+  }
+
+  /** Returns a reference to an InputPort given its `index`. */
+  const InputPortBase& get_input_port_base(InputPortIndex port_index) const {
+    if (port_index < 0 || port_index >= get_num_input_ports()) {
+      throw std::out_of_range(
+          "System " + this->get_name() + ": Port index " +
+              std::to_string(port_index) + " is out of range. There are only " +
+              std::to_string(get_num_input_ports()) + " input ports.");
+    }
+    return *input_ports_[port_index];
+  }
+
+  /** Returns a reference to an OutputPort given its `index`. */
+  const OutputPortBase& get_output_port_base(OutputPortIndex port_index) const {
+    if (port_index < 0 || port_index >= get_num_output_ports()) {
+      throw std::out_of_range(
+          "System " + this->get_name() + ": Port index " +
+              std::to_string(port_index) + " is out of range. There are only " +
+              std::to_string(get_num_output_ports()) + " output ports.");
+    }
+    return *output_ports_[port_index];
+  }
+
+  /** Returns the total dimension of all of the vector-valued input ports (as if
+  they were muxed). */
+  int get_num_total_inputs() const {
+    int count = 0;
+    for (const auto& in : input_ports_) count += in->size();
+    return count;
+  }
+
+  /** Returns the total dimension of all of the vector-valued output ports (as
+  if they were muxed). */
+  int get_num_total_outputs() const {
+    int count = 0;
+    for (const auto& out : output_ports_) count += out->size();
+    return count;
+  }
 
   /** Returns the number nc of cache entries currently allocated in this System.
   These are indexed from 0 to nc-1. */
@@ -74,6 +141,27 @@ class SystemBase : public internal::SystemMessageInterface {
   const CacheEntry& get_cache_entry(CacheIndex index) const {
     DRAKE_ASSERT(0 <= index && index < num_cache_entries());
     return *cache_entries_[index];
+  }
+
+  /** Adds an already-constructed input port to this System. Insists that the
+  port already contains a reference to this System, and that the port's index is
+  already set to the next available input port index for this System. */
+  void CreateInputPort(std::unique_ptr<InputPortBase> port) {
+    DRAKE_DEMAND(port != nullptr);
+    DRAKE_DEMAND(&port->get_system_base() == this);
+    DRAKE_DEMAND(port->get_index() == this->get_num_input_ports());
+    input_ports_.push_back(std::move(port));
+  }
+
+
+  /** Adds an already-constructed output port to this System. Insists that the
+  port already contains a reference to this System, and that the port's index is
+  already set to the next available output port index for this System. */
+  void CreateOutputPort(std::unique_ptr<OutputPortBase> port) {
+    DRAKE_DEMAND(port != nullptr);
+    DRAKE_DEMAND(&port->get_system_base() == this);
+    DRAKE_DEMAND(port->get_index() == this->get_num_output_ports());
+    output_ports_.push_back(std::move(port));
   }
 
   // TODO(sherm1) Consider whether to make DeclareCacheEntry methods protected.
@@ -415,12 +503,149 @@ class SystemBase : public internal::SystemMessageInterface {
     return DependencyTicket(internal::kAllInputPortsTicket);
   }
 
+  /** Returns a ticket indicating dependence on a particular input port. */
+  DependencyTicket input_port_ticket(InputPortIndex index) {
+    DRAKE_DEMAND(0 <= index && index < get_num_input_ports());
+    return input_ports_[index]->ticket();
+  }
+
+  /** Returns a ticket indicating dependence on a particular output port. */
+  DependencyTicket output_port_ticket(OutputPortIndex index) {
+    DRAKE_DEMAND(0 <= index && index < get_num_output_ports());
+    return output_ports_[index]->ticket();
+  }
+
   /** Returns a ticket indicating dependence on a particular cache entry. */
   DependencyTicket cache_entry_ticket(CacheIndex index) {
     DRAKE_DEMAND(0 <= index && index < num_cache_entries());
     return cache_entries_[index]->ticket();
   }
+
+  /** Returns a ticket indicating dependence on a particular discrete state
+  variable (may be a vector). (We sometimes refer to this as a "discrete
+  variable group".) */
+  DependencyTicket discrete_state_ticket(DiscreteStateIndex index) const {
+    return discrete_state_tracker_info(index).ticket;
+  }
+
+  /** Returns a ticket indicating dependence on a particular abstract state
+  variable. */
+  DependencyTicket abstract_state_ticket(AbstractStateIndex index) const {
+    return abstract_state_tracker_info(index).ticket;
+  }
+
+  /** Returns a ticket indicating dependence on a particular numeric parameter
+  (may be a vector). */
+  DependencyTicket numeric_parameter_ticket(NumericParameterIndex index) const {
+    return numeric_parameter_tracker_info(index).ticket;
+  }
+
+  /** Returns a ticket indicating dependence on a particular abstract
+  parameter. */
+  DependencyTicket abstract_parameter_ticket(
+      AbstractParameterIndex index) const {
+    return abstract_parameter_tracker_info(index).ticket;
+  }
   //@}
+
+  /** Returns a string suitable for identifying this particular %System in
+  error messages, when it is a subsystem of a larger Diagram. This method
+  captures human-readable subsystem identification best practice; the
+  specifics of that are likely to change over time. However it will always
+  be formatted like "System xxx" or "adjective System xxx" so that the
+  remainder of the error message will continue to make sense. Currently it
+  returns "system_type_name System subsystem_pathname". */
+  // TODO(sherm1) Remove the system type noise once the subsystem path is
+  // a fully reliable identifier.
+  std::string GetSystemIdString() const {
+    return NiceTypeName::Get(*this) + " System " + GetPath();
+  }
+
+  /** Writes the full path of this System in the tree of Systems to `output`.
+  The path has the form (::ancestor_system_name)*::this_system_name. */
+  void GetPath(std::stringstream* output) const {
+    // If this System has a parent, that parent's path is a prefix to this
+    // System's path. Otherwise, this is the root system and there is no prefix.
+    if (parent_ != nullptr) {
+      parent_->GetPath(output);
+    }
+    *output << "::" << (get_name().empty() ? "_" : get_name());
+  }
+
+  /** Returns the full path of the System in the tree of Systems as a string. */
+  std::string GetPath() const {
+    std::stringstream path;
+    GetPath(&path);
+    return path.str();
+  }
+
+  #ifndef DRAKE_DOXYGEN_CXX
+  // Obtains a context of the right concrete type, with all internal trackers
+  // allocated and internal wiring set up.
+  std::unique_ptr<ContextBase> MakeContext() const;
+
+  // Sets up the inter-subsystem wiring in the context.
+  void MakeContextConnections(ContextBase* context) const {
+    DRAKE_DEMAND(context != nullptr);
+    DoMakeContextConnections(&*context);
+  }
+
+  // Allocates additional context resources if needed, and validates that the
+  // supplied context is acceptable.
+  void AcquireContextResources(ContextBase* context) const;
+
+  // Used to create trackers for variable-number System-allocated objects.
+  struct TrackerInfo {
+    DependencyTicket ticket;
+    std::string description;
+  };
+
+  const TrackerInfo& discrete_state_tracker_info(
+      DiscreteStateIndex index) const {
+    DRAKE_DEMAND(0 <= index && index < num_discrete_state_tickets());
+    return discrete_state_tickets_[index];
+  }
+
+  const TrackerInfo& abstract_state_tracker_info(
+      AbstractStateIndex index) const {
+    DRAKE_DEMAND(0 <= index && index < num_abstract_state_tickets());
+    return abstract_state_tickets_[index];
+  }
+
+  const TrackerInfo& numeric_parameter_tracker_info(
+      NumericParameterIndex index) const {
+    DRAKE_DEMAND(0 <= index && index < num_numeric_parameter_tickets());
+    return numeric_parameter_tickets_[index];
+  }
+
+  const TrackerInfo& abstract_parameter_tracker_info(
+      AbstractParameterIndex index) const {
+    DRAKE_DEMAND(0 <= index && index < num_abstract_parameter_tickets());
+    return abstract_parameter_tickets_[index];
+  }
+
+  // Declares that `parent` is the immediately enclosing
+  // Diagram. The enclosing Diagram is needed for interactions between peer
+  // subsystems via input and output ports. Aborts if the parent has already
+  // been set to something else.
+  void set_parent(const SystemBase* parent) {
+    DRAKE_DEMAND(parent_ == nullptr || parent_ == parent);
+    parent_ = parent;
+  }
+
+  // Returns a pointer to the immediately enclosing Diagram
+  // if one has been set, otherwise nullptr.
+  const SystemBase* get_parent_base() const {
+    return parent_;
+  }
+
+  // Assigns the next unused dependency ticket number, unique only within a
+  // particular subsystem. Each call to this method increments the
+  // ticket number.
+  DependencyTicket assign_next_dependency_ticket() {
+    return next_available_ticket_++;
+  }
+  #endif  // DRAKE_DOXYGEN_CXX
 
  protected:
   SystemBase() = default;
@@ -432,32 +657,103 @@ class SystemBase : public internal::SystemMessageInterface {
   made in this step. */
   virtual std::unique_ptr<ContextBase> DoMakeContext() const = 0;
 
+  /** If the derived class is a diagram it should implement this method to
+  set up the inter-subcontext dependencies. The given `context` already has
+  the right structure and each subcontext has trackers available for each of
+  its resources. The supplied context is guaranteed to be non-null; you don't
+  need to error-check that. The default implementation does nothing, which is
+  suitable for leaf systems. */
+  virtual void DoMakeContextConnections(ContextBase* context) const {
+    unused(context);
+  }
+
+  /** Derived classes should override to complete resource allocation, and to
+  validate that the Context resource collection is acceptable. The
+  supplied Context is the one returned earlier from DoMakeContext(), with all
+  base class resources allocated. The supplied context is guaranteed to be
+  non-null; you don't need to error-check that. */
+  virtual void DoAcquireContextResources(ContextBase* context) const = 0;
+
+  /** Returns the number of direct child subsystems this system has.
+  A leaf system will return 0. */
+  int num_subsystems() const { return do_num_subsystems(); }
+
+  /** Gets const access to a particular subsystem of this diagram system.
+  The index must be in range [0..num_subsystems()-1]. */
+  const SystemBase& get_subsystem(SubsystemIndex index) const {
+    return do_get_subsystem(index);
+  }
+
+  /** Gets mutable access to a particular subsystem of this diagram system.
+  The index must be in range [0..num_subsystems()-1]. */
+  SystemBase& get_mutable_subsystem(SubsystemIndex index) {
+    return const_cast<SystemBase&>(get_subsystem(index));
+  }
+
+  /** DiagramSystem must override this to return the actual number of immediate
+  child subsystems it contains. The default is 0, suitable for leaf systems. */
+  virtual int do_num_subsystems() const { return 0; }
+
+  /** DiagramSystem must override this to provide access to its contained
+  subsystems. The default implementation throws a logic error, which is
+  a suitable implementation for leaf systems. */
+  virtual const SystemBase& do_get_subsystem(SubsystemIndex index) const {
+    unused(index);
+    throw std::logic_error(
+        "SystemBase::do_get_subsystem(): called on a leaf system.");
+  }
+
   /** Derived classes must implement this to verify that the supplied
   context is suitable, and throw an exception if not. */
   virtual void DoCheckValidContext(const ContextBase&) const = 0;
 
  private:
-  // Assigns the next unused dependency ticket number, unique only within a
-  // particular subsystem. Each call to this method increments the
-  // ticket number.
-  DependencyTicket assign_next_dependency_ticket() {
-    return next_available_ticket_++;
+  void CreateSourceTrackers(ContextBase*) const;
+
+  int num_discrete_state_tickets() const {
+    return static_cast<int>(discrete_state_tickets_.size());
+  }
+
+  int num_abstract_state_tickets() const {
+    return static_cast<int>(abstract_state_tickets_.size());
+  }
+
+  int num_numeric_parameter_tickets() const {
+    return static_cast<int>(numeric_parameter_tickets_.size());
+  }
+
+  int num_abstract_parameter_tickets() const {
+    return static_cast<int>(abstract_parameter_tickets_.size());
   }
 
   // Ports and cache entries hold their own DependencyTickets. Note that the
   // addresses of the elements are stable even if the std::vectors are resized.
 
+  // Indexed by InputPortIndex.
+  std::vector<std::unique_ptr<InputPortBase>> input_ports_;
+  // Indexed by OutputPortIndex.
+  std::vector<std::unique_ptr<OutputPortBase>> output_ports_;
   // Indexed by CacheIndex.
   std::vector<std::unique_ptr<CacheEntry>> cache_entries_;
-  // TODO(sherm1) Add input and output ports here.
 
   // States and parameters don't hold their own tickets so we track them here.
-  // TODO(sherm1) Add state & parameter trackers here.
+
+  // Indexed by DiscreteStateIndex.
+  std::vector<TrackerInfo> discrete_state_tickets_;
+  // Indexed by AbstractStateIndex.
+  std::vector<TrackerInfo> abstract_state_tickets_;
+  // Indexed by NumericParameterIndex.
+  std::vector<TrackerInfo> numeric_parameter_tickets_;
+  // Indexed by AbstractParameterIndex.
+  std::vector<TrackerInfo> abstract_parameter_tickets_;
 
   // Initialize to the first ticket number available after all the well-known
   // ones. This gets incremented as tickets are handed out for the optional
   // entities above.
   DependencyTicket next_available_ticket_{internal::kNextAvailableTicket};
+
+  // The enclosing Diagram. Null/invalid when this is the root system.
+  const SystemBase* parent_{nullptr};
 
   // Name of this subsystem.
   std::string name_;

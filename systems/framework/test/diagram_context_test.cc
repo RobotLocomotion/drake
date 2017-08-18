@@ -74,7 +74,6 @@ class DiagramContextTest : public ::testing::Test {
         std::make_unique<SystemWithAbstractParameters>();
 
     context_ = std::make_unique<DiagramContext<double>>(kNumSystems);
-    context_->set_time(kTime);
 
     AddSystem(*adder0_, SubsystemIndex(0));
     AddSystem(*adder1_, SubsystemIndex(1));
@@ -85,13 +84,14 @@ class DiagramContextTest : public ::testing::Test {
     AddSystem(*system_with_numeric_parameters_, SubsystemIndex(6));
     AddSystem(*system_with_abstract_parameters_, SubsystemIndex(7));
 
-    context_->ExportInput(
-        {SubsystemIndex(0) /* adder0_ */, InputPortIndex(1) /* port 1 */});
-    context_->ExportInput(
-        {SubsystemIndex(1) /* adder1_ */, InputPortIndex(0) /* port 0 */});
+    // Fake up some input ports for this diagram.
+    context_->AddInputPort(InputPortIndex(0), DependencyTicket(100));
+    context_->AddInputPort(InputPortIndex(1), DependencyTicket(101));
 
     context_->MakeState();
     context_->MakeParameters();
+
+    context_->set_time(kTime);
     ContinuousState<double>& xc = context_->get_mutable_continuous_state();
     xc.get_mutable_vector().SetAtIndex(0, 42.0);
     xc.get_mutable_vector().SetAtIndex(1, 43.0);
@@ -105,8 +105,7 @@ class DiagramContextTest : public ::testing::Test {
 
   void AddSystem(const System<double>& sys, SubsystemIndex index) {
     auto subcontext = sys.CreateDefaultContext();
-    auto suboutput = sys.AllocateOutput(*subcontext);
-    context_->AddSystem(index, std::move(subcontext), std::move(suboutput));
+    context_->AddSystem(SubsystemIndex(index), std::move(subcontext));
   }
 
   void AttachInputPorts() {
@@ -114,13 +113,12 @@ class DiagramContextTest : public ::testing::Test {
     context_->FixInputPort(1, BasicVector<double>::Make({256}));
   }
 
-  // Mocks up a descriptor sufficient to read a FreestandingInputPortValue
-  // connected to @p context at @p index.
-  static const BasicVector<double>* ReadVectorInputPort(
-      const Context<double>& context, int index) {
-    InputPortDescriptor<double> descriptor(nullptr, InputPortIndex(index),
-                                           kVectorValued, 0, nullopt);
-    return context.EvalVectorInput(nullptr, descriptor);
+  // Reads a FreestandingInputPortValue connected to @p context at @p index.
+  const BasicVector<double>* ReadVectorInputPort(const Context<double>& context,
+                                                 int index) {
+    const FreestandingInputPortValue* free_value =
+        context.GetInputPortValue(InputPortIndex(index));
+    return free_value ? &free_value->get_vector_value<double>() : nullptr;
   }
 
   std::unique_ptr<DiagramContext<double>> context_;
@@ -160,17 +158,13 @@ void VerifyClonedParameters(const Parameters<double>& params) {
   EXPECT_EQ(2048, UnpackIntValue(params.get_abstract_parameter(0)));
 }
 
-// Tests that subsystems have outputs and contexts in the DiagramContext.
+// Tests that subsystems have contexts in the DiagramContext.
 TEST_F(DiagramContextTest, RetrieveConstituents) {
   // All of the subsystems should be leaf Systems.
   for (SubsystemIndex i(0); i < kNumSystems; ++i) {
     auto context = dynamic_cast<const LeafContext<double>*>(
         &context_->GetSubsystemContext(i));
     EXPECT_TRUE(context != nullptr);
-
-    auto output = dynamic_cast<const LeafSystemOutput<double>*>(
-        context_->GetSubsystemOutput(i));
-    EXPECT_TRUE(output != nullptr);
   }
 }
 

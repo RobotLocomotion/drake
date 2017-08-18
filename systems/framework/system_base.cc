@@ -6,8 +6,15 @@ namespace systems {
 SystemBase::~SystemBase() {}
 
 std::string SystemBase::GetSystemPathname() const {
-  // TODO(sherm1) Replace with the real pathname.
-  return "/dummy/system/pathname/" + GetSystemName();
+  std::vector<const SystemBase*> path_to_root{this};
+  while (const SystemBase* parent = path_to_root.back()->get_parent_base())
+    path_to_root.push_back(parent);
+  std::string path;
+  std::for_each(path_to_root.rbegin(), path_to_root.rend(),
+                [&path](const SystemBase* node) {
+                  path += "/" + node->GetSystemName();
+                });
+  return path;
 }
 
 const CacheEntry& SystemBase::DeclareCacheEntry(
@@ -25,18 +32,18 @@ const CacheEntry& SystemBase::DeclareCacheEntry(
   return new_entry;
 }
 
-std::unique_ptr<ContextBase> SystemBase::AllocateContext() const {
+std::unique_ptr<ContextBase> SystemBase::MakeContext() const {
   // Derived class creates the concrete Context object, which already contains
   // all the well-known trackers (the ones with fixed tickets).
   std::unique_ptr<ContextBase> context_ptr = DoMakeContext();
   DRAKE_DEMAND(context_ptr != nullptr);
   ContextBase& context = *context_ptr;
 
-  // TODO(sherm1) Set context system name from GetSystemName().
+  context.set_system_name(get_name());
 
-  // TODO(sherm1) Add the independent-source trackers and wire them up
-  // appropriately. That includes input ports since their dependencies are
-  // external.
+  // Add the independent-source trackers and wire them up appropriately. That
+  // includes input ports since their dependencies are external.
+  CreateSourceTrackers(&context);
 
   DependencyGraph& graph = context.get_mutable_dependency_graph();
 
@@ -53,18 +60,93 @@ std::unique_ptr<ContextBase> SystemBase::AllocateContext() const {
         entry.description(), entry.prerequisites(), &graph);
   }
 
-  // TODO(sherm1) Create the output port trackers yᵢ here.
-
-  // TODO(sherm1) Move this to the AcquireContextResources phase.
-  // We now have a complete Context. We can allocate space for cache entry
-  // values using the allocators, which require a context.
-  for (CacheIndex index(0); index < num_cache_entries(); ++index) {
-    const CacheEntry& entry = get_cache_entry(index);
-    CacheEntryValue& cache_value = cache.get_mutable_cache_entry_value(index);
-    cache_value.SetInitialValue(entry.Allocate(context));
+  // Create the output port trackers yᵢ here. Nothing in this System may
+  // depend on them; subscribers will be input ports from peer Systems or
+  // an exported output port in the parent Diagram. The associated cache entries
+  // were just created above. If the output port's prerequisite is just a
+  // cache entry in this subsystem, set up that dependency here. For output
+  // ports that have been exported from a child subsystem, defer setting up the
+  // dependency until we're doing inter-subsystem dependencies later.
+  context.output_port_tickets().clear();
+  for (const auto& oport : output_ports_) {
+    auto& yi_tracker = graph.CreateNewDependencyTracker(
+        oport->ticket(), "y_" + std::to_string(oport->get_index()));
+    context.output_port_tickets().push_back(oport->ticket());
+    std::pair<optional<SubsystemIndex>, DependencyTicket> prerequisite =
+        oport->GetPrerequisite();
+    if (prerequisite.first)
+      continue;  // Depends on some other subsystem; defer until later.
+    yi_tracker.SubscribeToPrerequisite(
+        &context.get_mutable_tracker(prerequisite.second));
   }
 
   return context_ptr;
+}
+
+void SystemBase::AcquireContextResources(ContextBase* context) const {
+  DRAKE_DEMAND(context != nullptr);
+  // Let the derived class acquire its needed resources and validate
+  // that it can handle a System with this structure.
+  DoAcquireContextResources(&*context);
+
+  // We now have a complete Context. We can allocate space for cache entry
+  // values using the allocators, which require a context.
+  Cache& cache = context->get_mutable_cache();
+  for (CacheIndex index(0); index < num_cache_entries(); ++index) {
+    const CacheEntry& entry = get_cache_entry(index);
+    CacheEntryValue& cache_value = cache.get_mutable_cache_entry_value(index);
+    cache_value.SetInitialValue(entry.Allocate(*context));
+  }
+}
+
+// Set up trackers for variable-numbered independent sources: discrete and
+// abstract state, numerical and abstract parameters, and input ports.
+// The generic trackers like "all parameters" are already present in the
+// supplied Context, but we have to subscribe them to the individual
+// elements now.
+void SystemBase::CreateSourceTrackers(ContextBase* context_ptr) const {
+  ContextBase& context = *context_ptr;
+  DependencyGraph& graph = context.get_mutable_dependency_graph();
+
+  // Define a lambda to do the repeated work below: create trackers for
+  // individual entities and subscribe the group tracker to each of them.
+  auto MakeTrackers = [&graph](
+      DependencyTicket subscriber_ticket,
+      const std::vector<TrackerInfo>& system_ticket_info,
+      std::vector<DependencyTicket>* context_tickets) {
+    DependencyTracker& subscriber =
+        graph.get_mutable_tracker(subscriber_ticket);
+    context_tickets->clear();
+    for (const auto& info : system_ticket_info) {
+      auto& source_tracker =
+          graph.CreateNewDependencyTracker(info.ticket, info.description);
+      context_tickets->push_back(info.ticket);
+      subscriber.SubscribeToPrerequisite(&source_tracker);
+    }
+  };
+
+  // Allocate trackers for each discrete variable group xdᵢ, and subscribe
+  // the "all discrete variables" tracker xd to those.
+  MakeTrackers(xd_ticket(), discrete_state_tickets_,
+               &context.discrete_state_tickets());
+
+  // Allocate trackers for each abstract state variable xaᵢ, and subscribe
+  // the "all abstract variables" tracker xa to those.
+  MakeTrackers(xa_ticket(), abstract_state_tickets_,
+               &context.abstract_state_tickets());
+
+  // Allocate trackers for each numeric parameter pnᵢ and each abstract
+  // parameter paᵢ, and subscribe the "all parameters" tracker p to those.
+  MakeTrackers(all_parameters_ticket(), numeric_parameter_tickets_,
+               &context.numeric_parameter_tickets());
+  MakeTrackers(all_parameters_ticket(), abstract_parameter_tickets_,
+               &context.abstract_parameter_tickets());
+
+  // Allocate trackers for each input port uᵢ, and subscribe the "all input
+  // ports" tracker u to them. Doesn't use TrackerInfo so can't use the lambda.
+  for (const auto& iport : input_ports_) {
+    context.AddInputPort(iport->get_index(), iport->ticket());
+  }
 }
 
 }  // namespace systems
