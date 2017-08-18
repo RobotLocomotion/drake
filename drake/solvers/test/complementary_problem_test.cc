@@ -34,11 +34,11 @@ GTEST_TEST(TestComplementaryProblem, bard1) {
   // 0 <= z ⊥ M*z + q >= 0
   Eigen::Matrix<double, 5, 5> M;
   // clang-format off
-M <<  3,  -1, 0, 0, 0,
-     -1, 0.5, 0, 0, 0,
-     -1,  -1, 0, 0, 0,
-      0,   0, 0, 0, 0,
-      0,   0, 0, 0, 0;
+  M <<  3,  -1, 0, 0, 0,
+       -1, 0.5, 0, 0, 0,
+       -1,  -1, 0, 0, 0,
+        0,   0, 0, 0, 0,
+        0,   0, 0, 0, 0;
   // clang-format on
   Eigen::Matrix<double, 5, 1> q;
   q << -3, 4, 7, 0, 0;
