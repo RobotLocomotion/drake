@@ -123,7 +123,7 @@ class TestGeneral(unittest.TestCase):
         system = PassThrough(model_value.size())
         context = system.CreateDefaultContext()
         context.FixInputPort(0, model_value)
-        output = system.AllocateOutput(context)
+        output = system.AllocateOutput()
         input_eval = system.EvalVectorInput(context, 0)
         compare_value(self, input_eval, model_value)
         system.CalcOutput(context, output)
@@ -135,7 +135,7 @@ class TestGeneral(unittest.TestCase):
         system = PassThrough(model_value)
         context = system.CreateDefaultContext()
         context.FixInputPort(0, model_value)
-        output = system.AllocateOutput(context)
+        output = system.AllocateOutput()
         input_eval = system.EvalAbstractInput(context, 0)
         compare_value(self, input_eval, model_value)
         system.CalcOutput(context, output)
@@ -145,7 +145,7 @@ class TestGeneral(unittest.TestCase):
     def test_saturation(self):
         system = Saturation((0., -1., 3.), (1., 2., 4.))
         context = system.CreateDefaultContext()
-        output = system.AllocateOutput(context)
+        output = system.AllocateOutput()
 
         def mytest(input, expected):
             context.FixInputPort(0, BasicVector(input))
@@ -160,7 +160,7 @@ class TestGeneral(unittest.TestCase):
         system = WrapToSystem(2)
         system.set_interval(1, 1., 2.)
         context = system.CreateDefaultContext()
-        output = system.AllocateOutput(context)
+        output = system.AllocateOutput()
 
         def mytest(input, expected):
             context.FixInputPort(0, BasicVector(input))
@@ -186,7 +186,7 @@ class TestGeneral(unittest.TestCase):
             port_size = sum([len(vec) for vec in case['data']])
             self.assertEqual(mux.get_output_port(0).size(), port_size)
             context = mux.CreateDefaultContext()
-            output = mux.AllocateOutput(context)
+            output = mux.AllocateOutput()
             num_ports = len(case['data'])
             self.assertEqual(context.get_num_input_ports(), num_ports)
             for j, vec in enumerate(case['data']):

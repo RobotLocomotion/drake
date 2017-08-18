@@ -279,7 +279,9 @@ PYBIND11_MODULE(framework, m) {
          py::arg("input_port"), py::arg("output_port"))
     // Context.
     .def("CreateDefaultContext", &System<T>::CreateDefaultContext)
-    .def("AllocateOutput", &System<T>::AllocateOutput)
+    .def("AllocateOutput",
+         overload_cast_explicit<std::unique_ptr<SystemOutput<T>>>(
+             &System<T>::AllocateOutput))
     .def(
         "EvalVectorInput",
         [](const System<T>* self, const Context<T>& arg1, int arg2) {
@@ -488,7 +490,6 @@ PYBIND11_MODULE(framework, m) {
     .def("get_index", &OutputPort<T>::get_index);
 
   py::class_<SystemOutput<T>> system_output(m, "SystemOutput");
-  DefClone(&system_output);
   system_output
     .def("get_num_ports", &SystemOutput<T>::get_num_ports)
     .def("get_data", &SystemOutput<T>::get_data,

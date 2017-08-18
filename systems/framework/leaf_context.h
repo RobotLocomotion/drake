@@ -8,7 +8,6 @@
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/context.h"
-#include "drake/systems/framework/input_port_evaluator_interface.h"
 #include "drake/systems/framework/input_port_value.h"
 #include "drake/systems/framework/parameters.h"
 #include "drake/systems/framework/state.h"
@@ -17,11 +16,28 @@
 namespace drake {
 namespace systems {
 
-/// %LeafContext contains all prerequisite data necessary to uniquely determine
-/// the results of computations performed by the associated LeafSystem.
-///
-/// @tparam T The mathematical type of the context, which must be a valid Eigen
-///           scalar.
+/** %LeafContext contains all prerequisite data necessary to uniquely determine
+the results of computations performed by the associated LeafSystem. It also
+contains mutable cache for holding the results of those computations, and
+infrastructure for ensuring that those results are up to date with their
+prerequisites. Here is an inventory:
+
+##### Source data
+- Time t, accuracy a (from base class)
+- %State values x
+- %Parameter values p
+- %Value sources for input ports u
+  - Stored values for locally-fixed input ports
+  - References to value sources for externally-connected input ports
+
+##### Cached computations
+- Output port values
+- %State derivatives and discrete update values
+- Constraint errors
+- User-specified cached computations
+
+@tparam T The mathematical type of the context, which must be a valid Eigen
+          scalar. */
 template <typename T>
 class LeafContext : public Context<T> {
  public:
@@ -34,52 +50,8 @@ class LeafContext : public Context<T> {
   //@}
 
   LeafContext()
-      : state_(std::make_unique<State<T>>()),
-        parameters_(std::make_unique<Parameters<T>>()) {}
+      : state_(std::make_unique<State<T>>()) {}
   ~LeafContext() override {}
-
-  /// Removes all the input ports, and deregisters them from the output ports
-  /// on which they depend.
-  void ClearInputPorts() { input_values_.clear(); }
-
-  /// Clears the input ports and allocates @p n new input ports, not connected
-  /// to anything.
-  void SetNumInputPorts(int n) {
-    ClearInputPorts();
-    input_values_.resize(n);
-  }
-
-  int get_num_input_ports() const override {
-    return static_cast<int>(input_values_.size());
-  }
-
-  const State<T>& get_state() const final {
-    DRAKE_ASSERT(state_ != nullptr);
-    return *state_;
-  }
-
-  State<T>& get_mutable_state() final {
-    DRAKE_ASSERT(state_ != nullptr);
-    return *state_.get();
-  }
-
-  // =========================================================================
-  // Accessors and Mutators for Parameters.
-
-  /// Sets the parameters to @p params, deleting whatever was there before.
-  void set_parameters(std::unique_ptr<Parameters<T>> params) {
-    parameters_ = std::move(params);
-  }
-
-  /// Returns the entire Parameters object.
-  const Parameters<T>& get_parameters() const final {
-    return *parameters_;
-  }
-
-  /// Returns the entire Parameters object.
-  Parameters<T>& get_mutable_parameters() final {
-    return *parameters_;
-  }
 
  protected:
   /// Protected copy constructor takes care of the local data members and
@@ -88,20 +60,6 @@ class LeafContext : public Context<T> {
   LeafContext(const LeafContext& source) : Context<T>(source) {
     // Make a deep copy of the state.
     state_ = source.CloneState();
-
-    // Make deep copies of the parameters.
-    set_parameters(source.parameters_->Clone());
-
-    // Make deep copies of the inputs into FreestandingInputPortValues.
-    // TODO(david-german-tri): Preserve version numbers as well.
-    for (const auto& port : source.input_values_) {
-      if (port == nullptr) {
-        input_values_.emplace_back(nullptr);
-      } else {
-        input_values_.emplace_back(new FreestandingInputPortValue(
-            port->get_abstract_data()->Clone()));
-      }
-    }
 
     // Everything else was handled by the Context<T> copy constructor.
   }
@@ -126,32 +84,25 @@ class LeafContext : public Context<T> {
         xc_vector.Clone(), num_q, num_v, num_z));
 
     // Make deep copies of the discrete and abstract states.
-    clone->set_discrete_state(get_state().get_discrete_state().Clone());
-    clone->set_abstract_state(get_state().get_abstract_state().Clone());
+    clone->set_discrete_state(state_->get_discrete_state().Clone());
+    clone->set_abstract_state(state_->get_abstract_state().Clone());
 
     return clone;
   }
 
-  const InputPortValue* GetInputPortValue(int index) const override {
-    DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
-    return input_values_[index].get();
-  }
-
  private:
-  void SetInputPortValue(int index,
-                         std::unique_ptr<InputPortValue> port) final {
-    DRAKE_DEMAND(index >= 0 && index < get_num_input_ports());
-    input_values_[index] = std::move(port);
+  const State<T>& do_access_state() const final {
+    DRAKE_ASSERT(state_ != nullptr);
+    return *state_;
   }
 
-  // The external inputs to the System.
-  std::vector<std::unique_ptr<InputPortValue>> input_values_;
+  State<T>& do_access_mutable_state() final {
+    DRAKE_ASSERT(state_ != nullptr);
+    return *state_.get();
+  }
 
-  // The internal state of the System.
+  // The internal state x of this LeafSystem.
   std::unique_ptr<State<T>> state_;
-
-  // The parameters of the system.
-  std::unique_ptr<Parameters<T>> parameters_;
 };
 
 }  // namespace systems

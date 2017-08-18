@@ -32,7 +32,7 @@ class TestGeneral(unittest.TestCase):
 
         def check_output(context):
             # Check number of output ports and value for a given context.
-            output = system.AllocateOutput(context)
+            output = system.AllocateOutput()
             self.assertEquals(output.get_num_ports(), 1)
             system.CalcOutput(context, output)
             value = output.get_vector_data(0).get_value()
