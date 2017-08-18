@@ -1,40 +1,17 @@
 #include "drake/systems/framework/input_port_value.h"
 
+#include "drake/systems/framework/context_base.h"
+
 namespace drake {
 namespace systems {
 
-InputPortValue::~InputPortValue() {}
-
-void InputPortValue::Invalidate() {
-  if (invalidation_callback_ != nullptr) {
-    invalidation_callback_();
-  }
-}
-
-DependentInputPortValue::DependentInputPortValue(
-    OutputPortValue* output_port_value)
-    : output_port_value_(output_port_value) {
-  DRAKE_DEMAND(output_port_value_ != nullptr);
-  output_port_value_->add_dependent(this);
-}
-
-DependentInputPortValue::~DependentInputPortValue() {
-  if (output_port_value_ != nullptr) {
-    output_port_value_->remove_dependent(this);
-  }
-}
-
-void DependentInputPortValue::Disconnect() {
-  output_port_value_ = nullptr;
-}
-FreestandingInputPortValue::FreestandingInputPortValue(
-    std::unique_ptr<AbstractValue> data)
-    : output_port_value_(std::move(data)) {
-  output_port_value_.add_dependent(this);
-}
-
-FreestandingInputPortValue::~FreestandingInputPortValue() {
-  output_port_value_.remove_dependent(this);
+AbstractValue* FreestandingInputPortValue::GetMutableData() {
+  ContextBase& context = get_mutable_owning_context();
+  const DependencyTracker& tracker = context.get_tracker(ticket_);
+  const int64_t change_event = context.start_new_change_event();
+  tracker.NoteValueChange(change_event);
+  ++serial_number_;
+  return value_.get();
 }
 
 }  // namespace systems

@@ -74,7 +74,6 @@ class DiagramContextTest : public ::testing::Test {
         std::make_unique<SystemWithAbstractParameters>();
 
     context_ = std::make_unique<DiagramContext<double>>(kNumSystems);
-    context_->set_time(kTime);
 
     AddSystem(*adder0_, 0);
     AddSystem(*adder1_, 1);
@@ -85,11 +84,14 @@ class DiagramContextTest : public ::testing::Test {
     AddSystem(*system_with_numeric_parameters_, 6);
     AddSystem(*system_with_abstract_parameters_, 7);
 
-    context_->ExportInput({0 /* adder0_ */, 1 /* port 1 */});
-    context_->ExportInput({1 /* adder1_ */, 0 /* port 0 */});
+    // Fake up some input ports for this diagram.
+    context_->AddInputPort(InputPortIndex(0), DependencyTicket(100));
+    context_->AddInputPort(InputPortIndex(1), DependencyTicket(101));
 
     context_->MakeState();
     context_->MakeParameters();
+
+    context_->set_time(kTime);
     ContinuousState<double>& xc = context_->get_mutable_continuous_state();
     xc.get_mutable_vector().SetAtIndex(0, 42.0);
     xc.get_mutable_vector().SetAtIndex(1, 43.0);
@@ -103,8 +105,7 @@ class DiagramContextTest : public ::testing::Test {
 
   void AddSystem(const System<double>& sys, int index) {
     auto subcontext = sys.CreateDefaultContext();
-    auto suboutput = sys.AllocateOutput(*subcontext);
-    context_->AddSystem(index, std::move(subcontext), std::move(suboutput));
+    context_->AddSystem(SubsystemIndex(index), std::move(subcontext));
   }
 
   void AttachInputPorts() {
@@ -114,10 +115,11 @@ class DiagramContextTest : public ::testing::Test {
 
   // Mocks up a descriptor sufficient to read a FreestandingInputPortValue
   // connected to @p context at @p index.
-  static const BasicVector<double>* ReadVectorInputPort(
+  const BasicVector<double>* ReadVectorInputPort(
       const Context<double>& context, int index) {
-    InputPortDescriptor<double> descriptor(nullptr, index, kVectorValued, 0,
-                                           nullopt);
+    InputPortDescriptor<double> descriptor(InputPortIndex(index), kVectorValued,
+                                           0, nullopt,
+                                           abstract_state_system_.get());
     return context.EvalVectorInput(nullptr, descriptor);
   }
 
@@ -158,17 +160,13 @@ void VerifyClonedParameters(const Parameters<double>& params) {
   EXPECT_EQ(2048, UnpackIntValue(params.get_abstract_parameter(0)));
 }
 
-// Tests that subsystems have outputs and contexts in the DiagramContext.
+// Tests that subsystems have contexts in the DiagramContext.
 TEST_F(DiagramContextTest, RetrieveConstituents) {
   // All of the subsystems should be leaf Systems.
-  for (int i = 0; i < kNumSystems; ++i) {
+  for (SubsystemIndex i(0); i < kNumSystems; ++i) {
     auto context = dynamic_cast<const LeafContext<double>*>(
         &context_->GetSubsystemContext(i));
     EXPECT_TRUE(context != nullptr);
-
-    auto output = dynamic_cast<const LeafSystemOutput<double>*>(
-        context_->GetSubsystemOutput(i));
-    EXPECT_TRUE(output != nullptr);
   }
 }
 
@@ -176,7 +174,7 @@ TEST_F(DiagramContextTest, RetrieveConstituents) {
 TEST_F(DiagramContextTest, Time) {
   context_->set_time(42.0);
   EXPECT_EQ(42.0, context_->get_time());
-  for (int i = 0; i < kNumSystems; ++i) {
+  for (SubsystemIndex i(0); i < kNumSystems; ++i) {
     EXPECT_EQ(42.0, context_->GetSubsystemContext(i).get_time());
   }
 }
@@ -199,14 +197,17 @@ TEST_F(DiagramContextTest, State) {
   // Changes to the diagram state write through to constituent system states.
   // - Continuous
   ContinuousState<double>& integrator0_xc =
-      context_->GetMutableSubsystemContext(2).get_mutable_continuous_state();
+      context_->GetMutableSubsystemContext(SubsystemIndex(2))
+          .get_mutable_continuous_state();
   ContinuousState<double>& integrator1_xc =
-      context_->GetMutableSubsystemContext(3).get_mutable_continuous_state();
+      context_->GetMutableSubsystemContext(SubsystemIndex(3))
+          .get_mutable_continuous_state();
   EXPECT_EQ(42.0, integrator0_xc.get_vector().GetAtIndex(0));
   EXPECT_EQ(43.0, integrator1_xc.get_vector().GetAtIndex(0));
   // - Discrete
   DiscreteValues<double>& hold_xd =
-      context_->GetMutableSubsystemContext(4).get_mutable_discrete_state();
+      context_->GetMutableSubsystemContext(SubsystemIndex(4))
+          .get_mutable_discrete_state();
   EXPECT_EQ(44.0, hold_xd.get_vector(0).GetAtIndex(0));
 
   // Changes to constituent system states appear in the diagram state.
@@ -224,7 +225,7 @@ TEST_F(DiagramContextTest, DiagramState) {
   auto diagram_state = dynamic_cast<DiagramState<double>*>(
       &context_->get_mutable_state());
   ASSERT_NE(nullptr, diagram_state);
-  for (int i = 0; i < kNumSystems; ++i) {
+  for (SubsystemIndex i(0); i < kNumSystems; ++i) {
     EXPECT_EQ(&context_->GetMutableSubsystemContext(i).get_mutable_state(),
               &diagram_state->get_mutable_substate(i));
   }
@@ -233,8 +234,9 @@ TEST_F(DiagramContextTest, DiagramState) {
 // Tests that no exception is thrown when connecting a valid source
 // and destination port.
 TEST_F(DiagramContextTest, ConnectValid) {
-  EXPECT_NO_THROW(context_->Connect({0 /* adder0_ */, 0 /* port 0 */},
-                                    {1 /* adder1_ */, 1 /* port 1 */}));
+  EXPECT_NO_THROW(
+      context_->Connect({SubsystemIndex(0) /* adder0_ */, OutputPortIndex(0)},
+                        {SubsystemIndex(1) /* adder1_ */, InputPortIndex(1)}));
 }
 
 // Tests that input ports can be assigned to the DiagramContext and then
@@ -247,8 +249,8 @@ TEST_F(DiagramContextTest, SetAndGetInputPorts) {
 }
 
 TEST_F(DiagramContextTest, Clone) {
-  context_->Connect({0 /* adder0_ */, 0 /* port 0 */},
-                    {1 /* adder1_ */, 1 /* port 1 */});
+  context_->Connect({SubsystemIndex(0) /* adder0_ */, OutputPortIndex(0)},
+                    {SubsystemIndex(1) /* adder1_ */, InputPortIndex(1)});
   AttachInputPorts();
 
   std::unique_ptr<DiagramContext<double>> clone(

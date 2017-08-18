@@ -9,7 +9,6 @@ drake_cc_library(
     name = "state_feedback_controller_interface",
     hdrs = ["state_feedback_controller_interface.h"],
     deps = [
-        "//drake/systems/framework:input_port_descriptor",
         "//drake/systems/framework:system",
     ],
 )

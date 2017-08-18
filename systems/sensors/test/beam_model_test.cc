@@ -106,7 +106,7 @@ GTEST_TEST(BeamModelTest, TestProbabilityDensity) {
     }
   }
 
-  auto& params =
+  BeamModelParams<double>& params =
       beam_model->get_mutable_parameters(&diagram->GetMutableSubsystemContext(
           *beam_model, &simulator.get_mutable_context()));
 

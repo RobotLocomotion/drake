@@ -6,176 +6,162 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/input_port_evaluator_interface.h"
-#include "drake/systems/framework/output_port_listener_interface.h"
-#include "drake/systems/framework/output_port_value.h"
+#include "drake/systems/framework/framework_common.h"
 #include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {
 
-/// %InputPortValue identifies the value source for a single System input port.
-/// Objects of this type are contained in the System's Context for use when the
-/// value of that input port is needed. Users should not subclass
-/// %InputPortValue; these will always be of one of two predefined derived
-/// types:
-/// - DependentInputPortValue, meaning the value source for this input port is
-///   an output port of another System, or
-/// - FreestandingInputPortValue, meaning the value source is an independent
-///   object contained internally.
-class InputPortValue : public detail::OutputPortListenerInterface {
+class ContextBase;
+
+//==============================================================================
+//                     FREESTANDING INPUT PORT VALUE
+//==============================================================================
+/** A %FreestandingInputPortValue encapsulates a vector or abstract value for
+use as an internal value source for one of a System's input ports. The semantics
+are identical to a Parameter. We assign a DependencyTracker to this object
+and subscribe the InputPort to it when that port is fixed. Any modification to
+the value here issues a notification to its dependent, and increments a serial
+number kept here. */
+class FreestandingInputPortValue {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InputPortValue)
+  /** @name  Does not allow move or assignment; copy is private. */
+  /** @{ */
+  FreestandingInputPortValue(FreestandingInputPortValue&&) =
+      delete;
+  FreestandingInputPortValue& operator=(const FreestandingInputPortValue&) =
+      delete;
+  FreestandingInputPortValue& operator=(FreestandingInputPortValue&&) =
+      delete;
+  /** @} */
 
-  ~InputPortValue() override;
+  /** Constructs an abstract-valued %FreestandingInputPortValue from a value
+  of arbitrary type. Takes ownership of the given value and sets the serial
+  number to 1. */
+  explicit FreestandingInputPortValue(std::unique_ptr<AbstractValue> value)
+      : value_(std::move(value)), serial_number_{1} {}
 
-  /// Returns a positive number that increases monotonically, and changes
-  /// whenever the data on this port changes, according to the source of
-  /// that data.
-  virtual int64_t get_version() const = 0;
+  ~FreestandingInputPortValue() = default;
 
-  /// Returns true if this InputPortValue is not in control of its own data.
-  virtual bool requires_evaluation() const = 0;
-
-  /// Returns the data on this port, which must be connected to a value source.
-  const AbstractValue* get_abstract_data() const {
-    DRAKE_DEMAND(get_output_port_value() != nullptr);
-    return get_output_port_value()->get_abstract_data();
+  /** Returns a reference to the contained abstract value; throws if there
+  isn't one. */
+  const AbstractValue& get_value() const {
+    DRAKE_DEMAND(value_ != nullptr);
+    return *value_;
   }
 
-  /// Returns the vector data on this port, which must be connected to a value
-  /// source. Throws std::bad_cast if the port is not vector-valued.
-  ///
-  /// @tparam T The type of the input port. Must be a valid Eigen scalar.
+  /** Returns a reference to the contained `BasicVector<T>` or throws an
+  exception if this doesn't contain an object of that type. */
   template <typename T>
-  const BasicVector<T>* get_vector_data() const {
-    DRAKE_DEMAND(get_output_port_value() != nullptr);
-    return get_output_port_value()->get_vector_data<T>();
+  const BasicVector<T>& get_vector_value() const {
+    return get_value().GetValue<BasicVector<T>>();
   }
 
-  /// Registers @p callback to be called whenever the value source on which this
-  /// %InputPortValue depends. The callback should invalidate data that depends
-  /// on the value of this port, but should not do any substantive computation.
-  void set_invalidation_callback(std::function<void()> callback) {
-    invalidation_callback_ = callback;
-  }
+  /** Returns a pointer to the data inside this %FreestandingInputPortValue, and
+  notifies the dependent input port that the value has changed.
 
-  /// Receives notification that the value source on which this %InputPortValue
-  /// depends has changed, and calls the invalidation callback.
-  void Invalidate() override;
+  To ensure invalidation notifications are delivered, callers should call this
+  method every time they wish to update the stored value. In particular, callers
+  MUST NOT write through the returned pointer if there is any possibility this
+  %FreestandingInputPortValue has been accessed since the last time this method
+  was called. */
+  // TODO(sherm1) Replace these with safer Set() methods.
+  AbstractValue* GetMutableData();
 
- protected:
-  InputPortValue() {}
+  /** Returns a pointer to the data inside this %FreestandingInputPortValue, and
+  notifies the dependent input port that the value has changed, invalidating
+  downstream computations. Throws std::bad_cast if the data is not vector data.
 
-  virtual const OutputPortValue* get_output_port_value() const = 0;
+  To ensure invalidation notifications are delivered, callers should call this
+  method every time they wish to update the stored value. In particular, callers
+  MUST NOT write through the returned pointer if there is any possibility this
+  %FreestandingInputPortValue has been accessed since the last time this method
+  was called.
 
- private:
-  std::function<void()> invalidation_callback_ = nullptr;
-};
-
-/// A %DependentInputPortValue wraps a pointer to an OutputPortValue associated
-/// with one System for use as an input to another System. Many
-/// %DependentInputPortValue objects may wrap a single OutputPortValue.
-class DependentInputPortValue : public InputPortValue {
- public:
-  // DependentInputPortValue objects are neither copyable nor moveable.
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DependentInputPortValue)
-
-  /// Creates an input port value source connected to the given
-  /// @p output_port_value, which must not be nullptr. The OutputPortValue must
-  /// outlive this %DependentInputPortValue object.
-  explicit DependentInputPortValue(OutputPortValue* output_port_value);
-
-  /// Disconnects from the output port.
-  ~DependentInputPortValue() override;
-
-  /// Sets the associated OutputPortValue to nullptr.
-  void Disconnect() override;
-
-  /// Returns the value version of the connected output port.
-  int64_t get_version() const override {
-    return output_port_value_->get_version();
-  }
-
-  /// A %DependentInputPortValue must be evaluated in a Context, because it does
-  /// not control its own data.
-  bool requires_evaluation() const override { return true; }
-
- protected:
-  const OutputPortValue* get_output_port_value() const override {
-    return output_port_value_;
-  }
-
- private:
-  OutputPortValue* output_port_value_{};
-};
-
-/// A %FreestandingInputPortValue encapsulates a vector or abstract value for
-/// use as an internal value source for one of a System's input ports.
-class FreestandingInputPortValue : public InputPortValue {
- public:
-  // FreestandingInputPortValue objects are neither copyable nor moveable.
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FreestandingInputPortValue)
-
-  /// Constructs an abstract-valued %FreestandingInputPortValue from a value
-  /// of arbitrary type. Takes ownership of @p data.
-  explicit FreestandingInputPortValue(std::unique_ptr<AbstractValue> data);
-
-  ~FreestandingInputPortValue() override;
-
-  /// Returns a positive and monotonically increasing number that is guaranteed
-  /// to change whenever GetMutableVectorData is called.
-  int64_t get_version() const override {
-    return output_port_value_.get_version();
-  }
-
-  /// A %FreestandingInputPortValue does not require evaluation, because it
-  /// controls its own data.
-  bool requires_evaluation() const override { return false; }
-
-  /// Returns a pointer to the data inside this %FreestandingInputPortValue, and
-  /// updates the version so that Contexts depending on this know to invalidate
-  /// their caches.
-  ///
-  /// To ensure invalidation notifications are delivered, callers should
-  /// call this method every time they wish to update the stored value.  In
-  /// particular, callers MUST NOT write through the returned pointer if there
-  /// is any possibility this %FreestandingInputPortValue has been accessed
-  /// since the last time this method was called.
-  AbstractValue* GetMutableData() {
-    return output_port_value_.GetMutableData();
-  }
-
-  /// Returns a pointer to the data inside this %FreestandingInputPortValue, and
-  /// updates the version so that Contexts depending on this know to invalidate
-  /// their caches. Throws std::bad_cast if the data is not vector data.
-  ///
-  /// To ensure invalidation notifications are delivered, callers should
-  /// call this method every time they wish to update the stored value.  In
-  /// particular, callers MUST NOT write through the returned pointer if there
-  /// is any possibility this %FreestandingInputPortValue has been accessed
-  /// since the last time this method was called.
-  ///
-  /// @tparam T Element type of the input port's vector value. Must be a valid
-  ///           Eigen scalar.
+  @tparam T Element type of the input port's vector value. Must be a valid
+            Eigen scalar. */
   template <typename T>
   BasicVector<T>* GetMutableVectorData() {
-    return output_port_value_.GetMutableVectorData<T>();
+    return &GetMutableData()->GetMutableValueOrThrow<BasicVector<T>>();
   }
 
-  /// Does nothing. A %FreestandingInputPortValue wraps its own OutputPortValue,
-  /// so there is no need to handle destruction of an output port.
-  void Disconnect() override {}
+  /** Returns the serial number of the contained value. This counts up every
+  time the contained value changes, or when mutable access is granted. */
+  int64_t serial_number() const { return serial_number_; }
 
- protected:
-  const OutputPortValue* get_output_port_value() const override {
-    return &output_port_value_;
+  /** Returns the ticket used to find the associated DependencyTracker. */
+  DependencyTicket ticket() const { return ticket_; }
+
+  /** Returns the index of the input port for which this is the value. */
+  InputPortIndex input_port_index() const {
+    DRAKE_ASSERT(index_.is_valid());
+    return index_;
+  }
+
+  /** Returns a const reference to the context that owns this object. */
+  const ContextBase& get_owning_context() const {
+    DRAKE_ASSERT(owner_ != nullptr);
+    return *owner_;
+  }
+
+  /** Returns a mutable reference to the context that owns this object. */
+  ContextBase& get_mutable_owning_context() {
+    DRAKE_ASSERT(owner_ != nullptr);
+    return *owner_;
+  }
+
+  /** (Internal use only) */
+  // Informs this FreestandingInputPortValue of its assigned DependencyTracker
+  // so it knows who to notify when its value changes.
+  void set_ticket(DependencyTicket ticket) { ticket_ = ticket; }
+
+  /** (Internal use only) */
+  // Informs this %FreestandingInputPortValue of the context that owns it and
+  // the input port within that context for which it is the value. Aborts if
+  // this has already been done or given bad args.
+  void set_owning_context(ContextBase* context, InputPortIndex index) {
+    DRAKE_DEMAND(owner_ == nullptr && !index_.is_valid());
+    DRAKE_DEMAND(context != nullptr && index.is_valid());
+    owner_ = context;
+    index_ = index;
+  }
+
+  /** (Internal use only) */
+  // Makes a copy of this %FreestandingInputPortValue to be used in a new
+  // context. The copy must have the same index as the source; we pass it here
+  // just to validate that. The value, ticket, and serial number are preserved.
+  std::unique_ptr<FreestandingInputPortValue> CloneForNewContext(
+      ContextBase* new_owner, InputPortIndex new_index) const {
+    DRAKE_DEMAND(new_owner != nullptr && new_index.is_valid());
+    DRAKE_DEMAND(new_owner != owner_ && new_index == index_);
+    auto clone = std::unique_ptr<FreestandingInputPortValue>(
+        new FreestandingInputPortValue(*this));
+    clone->set_owning_context(new_owner, new_index);
+    return clone;
   }
 
  private:
-  OutputPortValue output_port_value_;
+  // Copy constructor is only used for cloning and is not a complete copy --
+  // we leave owner_ and index_ unassigned.
+  FreestandingInputPortValue(const FreestandingInputPortValue& source)
+      : value_(source.value_->Clone()),
+        serial_number_(source.serial_number()),
+        ticket_(source.ticket()) {}
+
+  // Needed for invalidation.
+  ContextBase* owner_{nullptr};
+  InputPortIndex index_;
+
+  // The value and its serial number.
+  std::unique_ptr<AbstractValue> value_;
+  int64_t serial_number_{-1};  // Currently just for debugging use.
+
+  // Index of the dependency tracker for this freestanding value. The input
+  // port should have registered with this tracker.
+  DependencyTicket ticket_;
 };
 
 }  // namespace systems

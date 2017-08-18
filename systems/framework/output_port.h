@@ -11,6 +11,7 @@
 #include "drake/common/type_safe_index.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/framework_common.h"
+#include "drake/systems/framework/output_port_base.h"
 #include "drake/systems/framework/value.h"
 
 namespace drake {
@@ -21,8 +22,6 @@ class System;
 
 template <typename T>
 class Context;
-
-using OutputPortIndex = TypeSafeIndex<class OutputPortTag>;
 
 /** An %OutputPort belongs to a System and represents the properties of one of
 that System's output ports. %OutputPort objects are assigned OutputPortIndex
@@ -64,11 +63,24 @@ No other values for T are currently supported. */
 // TODO(sherm1) Implement caching for output ports and update the above
 // documentation to explain in more detail.
 template <typename T>
-class OutputPort {
+class OutputPort : public OutputPortBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OutputPort)
 
-  virtual ~OutputPort() = default;
+  ~OutputPort() override = default;
+
+  /** Returns a reference to the up-to-date value of this output port contained
+  in the given Context. This is the preferred way to obtain an output port's
+  value since it will not be recalculated once up to date. If the value is not
+  already up to date with respect to its prerequisites, this port's Calc()
+  method is used first to update the value before the reference is returned. The
+  Calc() method may be arbitrarily expensive, but Eval() is constant time and
+  _very_ fast if the value is already up to date. */
+  template <typename ValueType>
+  const ValueType& Eval(const Context<T>& context) const {
+    const AbstractValue& abstract_value = EvalAbstract(context);
+    return ExtractValueOrThrow<ValueType>(abstract_value, __func__);
+  }
 
   /** Allocates a concrete object suitable for holding the value to be exposed
   by this output port, and returns that as an AbstractValue. The returned object
@@ -91,41 +103,30 @@ class OutputPort {
   /** Returns a reference to the value of this output port contained in the
   given Context. If that value is not up to date with respect to its
   prerequisites, the Calc() method above is used first to update the value
-  before the reference is returned. (Not implemented yet.) */
-  // TODO(sherm1) Implement properly.
-  const AbstractValue& Eval(const Context<T>& context) const;
+  before the reference is returned. */
+  const AbstractValue& EvalAbstract(const Context<T>& context) const;
 
   /** Returns a reference to the System that owns this output port. Note that
   for a diagram output port this will be the diagram, not the leaf system whose
-  output port was forwarded. */
+  output port was exported. */
   const System<T>& get_system() const {
-    return system_;
+    return dynamic_cast<const System<T>&>(this->get_system_base());
   }
-
-  /** Returns the index of this output port within the owning System. */
-  OutputPortIndex get_index() const {
-    return index_;
-  }
-
-  /** Gets the port data type specified at port construction. */
-  PortDataType get_data_type() const { return data_type_; }
-
-  /** Returns the fixed size expected for a vector-valued output port. Not
-  meaningful for abstract output ports. */
-  int size() const { return size_; }
 
  protected:
   /** Provides derived classes the ability to set the base class members at
   construction.
-  @param system
-    The System that will own this new output port. This port will
-    be assigned the next available output port index in this system.
+
   @param data_type
     Whether the port described is vector or abstract valued.
   @param size
     If the port described is vector-valued, the number of elements expected,
-    otherwise ignored. */
-  OutputPort(const System<T>& system, PortDataType data_type, int size);
+    otherwise ignored.
+  @param system
+    The System that will own this new output port. This port will
+    be assigned the next available output port index in this system, and
+    the next available dependency ticket. */
+  OutputPort(PortDataType data_type, int size, System<T>* system);
 
   /** A concrete %OutputPort must provide a way to allocate a suitable object
   for holding the runtime value of this output port. The particulars may depend
@@ -157,11 +158,6 @@ class OutputPort {
                  the System whose output port this is. */
   virtual const AbstractValue& DoEval(const Context<T>& context) const = 0;
 
-  /** This is useful for error messages and produces `"output port <#> of
-  GetSystemIdString()"` with whatever System identification string is produced
-  by that method. */
-  std::string GetPortIdString() const;
-
  private:
   // Check whether the allocator returned a value that is consistent with
   // this port's specification.
@@ -179,10 +175,29 @@ class OutputPort {
   void CheckValidBasicVector(const BasicVector<T>& good,
                              const BasicVector<T>& proposed) const;
 
-  const System<T>& system_;
-  const OutputPortIndex index_;
-  const PortDataType data_type_;
-  const int size_;
+  // The user told us the output port would have a particular concrete type
+  // but it doesn't.
+  template <typename ValueType>
+  void ThrowBadValueType(const char* func_name,
+                         const AbstractValue& abstract) const {
+    std::ostringstream msg;
+    msg << "OutputPort::" << func_name << "(): wrong value type <"
+        << NiceTypeName::Get<ValueType>() << "> specified but actual type was <"
+        << abstract.GetNiceTypeName() << ">."
+        << "\n-- " << GetPortIdString();
+    throw std::logic_error(msg.str());
+  }
+
+  // Pull a value of a given type from an abstract value or issue a nice
+  // message if the type is not correct.
+  template <typename ValueType>
+  const ValueType& ExtractValueOrThrow(const AbstractValue& abstract,
+                                       const char* func_name) const {
+    const ValueType* value = abstract.GetValueIfPossible<ValueType>();
+    if (!value)
+      ThrowBadValueType<ValueType>(func_name, abstract);
+    return *value;
+  }
 };
 
 }  // namespace systems

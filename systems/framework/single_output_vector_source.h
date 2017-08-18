@@ -39,13 +39,6 @@ class SingleOutputVectorSource : public LeafSystem<T> {
   // Don't use the indexed get_output_port when calling this system directly.
   void get_output_port(int) = delete;
 
-  // Confirms the single-output invariant when allocating the context.
-  std::unique_ptr<Context<T>> AllocateContext() const override {
-    DRAKE_DEMAND(this->get_num_input_ports() == 0);
-    DRAKE_DEMAND(this->get_num_output_ports() == 1);
-    return LeafSystem<T>::AllocateContext();
-  }
-
  protected:
   /// Creates a source with the given sole output port configuration.
   explicit SingleOutputVectorSource(int size)
@@ -67,6 +60,12 @@ class SingleOutputVectorSource : public LeafSystem<T> {
       Eigen::VectorBlock<VectorX<T>>* output) const = 0;
 
  private:
+  // Confirms the single-output invariant when allocating the context.
+  void DoAcquireLeafContextResources(Context<T>*) const final {
+    DRAKE_DEMAND(this->get_num_input_ports() == 0);
+    DRAKE_DEMAND(this->get_num_output_ports() == 1);
+  }
+
   // Converts the parameters to Eigen::VectorBlock form, then delegates to
   // DoCalcVectorOutput().
   void CalcVectorOutput(const Context<T>& context,

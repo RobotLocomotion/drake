@@ -6,6 +6,7 @@
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/systems_pybind.h"
+#include "drake/bindings/pydrake/type_safe_index_py.h"
 #include "drake/bindings/pydrake/util/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/util/eigen_pybind.h"
 #include "drake/systems/framework/abstract_values.h"
@@ -46,6 +47,21 @@ using systems::DiscreteValues;
 
 using pysystems::AddValueInstantiation;
 using pysystems::DefClone;
+
+BindTypeSafeIndex<SubsystemIndex>(m, "SubsystemIndex");
+BindTypeSafeIndex<InputPortIndex>(m, "InputPortIndex");
+BindTypeSafeIndex<OutputPortIndex>(m, "OutputPortIndex");
+BindTypeSafeIndex<DependencyTicket>(m, "DependencyTicket");
+BindTypeSafeIndex<CacheIndex>(m, "CacheIndex");
+BindTypeSafeIndex<DiscreteStateIndex>(m, "DiscreteStateIndex");
+BindTypeSafeIndex<AbstractStateIndex>(m, "AbstractStateIndex");
+BindTypeSafeIndex<NumericParameterIndex>(m, "NumericParameterIndex");
+BindTypeSafeIndex<AbstractParameterIndex>(m, "AbstractParameterIndex");
+
+m.attr("kAutoSize") = kAutoSize;
+py::enum_<PortDataType>(m, "PortDataType")
+  .value("kVectorValued", kVectorValued)
+  .value("kAbstractValued", kAbstractValued);
 
 class PySystem : public py::wrapper<System<T>> {
  public:

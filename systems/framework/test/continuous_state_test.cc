@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/test_utilities/my_vector.h"
 #include "drake/systems/framework/vector_base.h"
 
 namespace drake {
@@ -102,6 +103,41 @@ TEST_F(ContinuousStateTest, CopyFrom) {
   EXPECT_EQ(2, next_state[1]);
   EXPECT_EQ(3, next_state[2]);
   EXPECT_EQ(4, next_state[3]);
+}
+
+// This is testing the default implementation of Clone() for when a
+// ContinuousState is used as a concrete object. A DiagramContinuousState has
+// to do more but that is not tested here.
+TEST_F(ContinuousStateTest, Clone) {
+  auto clone_ptr = continuous_state_->Clone();
+  const ContinuousState<double>& clone = *clone_ptr;
+
+  EXPECT_EQ(1, clone[0]);
+  EXPECT_EQ(2, clone[1]);
+  EXPECT_EQ(3, clone[2]);
+  EXPECT_EQ(4, clone[3]);
+
+  // Make sure underlying BasicVector type, and 2nd-order structure,
+  // is preserved in the clone.
+  ContinuousState<double> state(MyVector<3, double>::Make(1.25, 1.5, 1.75),
+                                2, 1, 0);
+  clone_ptr = state.Clone();
+  const ContinuousState<double>& clone2 = *clone_ptr;
+  EXPECT_EQ(clone2[0], 1.25);
+  EXPECT_EQ(clone2[1], 1.5);
+  EXPECT_EQ(clone2[2], 1.75);
+  EXPECT_EQ(clone2.num_q(), 2);
+  EXPECT_EQ(clone2.num_v(), 1);
+  EXPECT_EQ(clone2.num_z(), 0);
+  EXPECT_EQ(clone2.get_generalized_position()[0], 1.25);
+  EXPECT_EQ(clone2.get_generalized_position()[1], 1.5);
+  EXPECT_EQ(clone2.get_generalized_velocity()[0], 1.75);
+
+  auto vector = dynamic_cast<const MyVector<3, double>*>(&clone2.get_vector());
+  EXPECT_NE(vector, nullptr);
+  EXPECT_EQ((*vector)[0], 1.25);
+  EXPECT_EQ((*vector)[1], 1.5);
+  EXPECT_EQ((*vector)[2], 1.75);
 }
 
 }  // namespace

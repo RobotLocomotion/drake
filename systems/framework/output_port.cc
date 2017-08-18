@@ -36,30 +36,15 @@ void OutputPort<T>::Calc(const Context<T>& context,
 }
 
 template <typename T>
-const AbstractValue& OutputPort<T>::Eval(const Context<T>& context) const {
+const AbstractValue& OutputPort<T>::EvalAbstract(
+    const Context<T>& context) const {
   DRAKE_ASSERT_VOID(get_system().CheckValidContext(context));
   return DoEval(context);
 }
 
 template <typename T>
-OutputPort<T>::OutputPort(const System<T>& system, PortDataType data_type,
-                          int size)
-    : system_(system),
-      index_(system.get_num_output_ports()),
-      data_type_(data_type),
-      size_(size) {
-  if (size_ == kAutoSize) {
-    DRAKE_ABORT_MSG("Auto-size ports are not yet implemented.");
-  }
-}
-
-template <typename T>
-std::string OutputPort<T>::GetPortIdString() const {
-  std::ostringstream oss;
-  oss << "output port " << this->get_index() << " of "
-      << this->get_system().GetSystemIdString();
-  return oss.str();
-}
+OutputPort<T>::OutputPort(PortDataType data_type, int size, System<T>* system)
+    : OutputPortBase(data_type, size, system) {}
 
 // If this is a vector-valued port, we can check that the returned abstract
 // value actually holds a BasicVector-derived object, and for fixed-size ports
