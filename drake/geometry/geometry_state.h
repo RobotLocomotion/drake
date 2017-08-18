@@ -59,9 +59,14 @@ class GeometryState {
   /** Reports the total number of frames -- across all sources. */
   int get_num_frames() const { return static_cast<int>(frames_.size()); }
 
-  /** Reports the total number of geometries. */
+  /** Reports the total number of _dynamic_ geometries. */
   int get_num_geometries() const {
     return static_cast<int>(geometries_.size());
+  }
+
+  /** Reports the total number of _anchored_ geometries. */
+  int get_num_anchored_geometries() const {
+    return static_cast<int>(anchored_geometries_.size());
   }
 
   /** Reports true if the given `source_id` references a registered source. */
@@ -72,6 +77,14 @@ class GeometryState {
    @return The name of the source.
    @throws std::logic_error if the id does _not_ map to a registered source. */
   const std::string& get_source_name(SourceId id) const;
+
+  /** Reports the pose of identified geometry, relative to its registered
+   parent.
+   @param geometry_id     The id of the queried geometry.
+   @return The geometry's pose relative to its registered parent.
+   @throws std::logic_error  If the `geometry_id` does _not_ map to a valid
+                             GeometryInstance. */
+  const Isometry3<double>& GetPoseInParent(GeometryId geometry_id) const;
 
   //@}
 
@@ -148,6 +161,21 @@ class GeometryState {
       SourceId source_id, GeometryId geometry_id,
       std::unique_ptr<GeometryInstance> geometry);
 
+  /** Registers a GeometryInstance with the state as anchored geometry. This
+   registers geometry which "hangs" from the world frame and never moves.
+   The `geometry`'s pose value is relative to the world frame. The state takes
+   ownership of the geometry and associates it with the given source. Returns
+   the new identifier for the GeometryInstance.
+   @param source_id    The id of the source on which the geometry is being
+                       declared.
+   @param geometry     The geometry to get the id for. The state takes
+                       ownership of the geometry.
+   @returns  A newly allocated geometry id.
+   @throws std::logic_error  If the `source_id` does _not_ map to a registered
+                             source. */
+  GeometryId RegisterAnchoredGeometry(
+      SourceId source_id,
+      std::unique_ptr<GeometryInstance> geometry);
   /** Removes all frames and geometry registered from the identified source.
    The source remains registered and further frames and geometry can be
    registered on it.
@@ -171,7 +199,8 @@ class GeometryState {
   /** Removes the given geometry from the the indicated source's geometries. Any
    geometry that was hung from the indicated geometry will _also_ be removed.
    @param source_id     The identifier for the owner geometry source.
-   @param geometry_id   The identifier of the frame to remove.
+   @param geometry_id   The identifier of the geometry to remove (can be dynamic
+                        or anchored).
    @throws std::logic_error  1. If the `source_id` does _not_ map to a
                              registered source, or
                              2. the `geometry_id` does not map to a valid
@@ -280,8 +309,20 @@ class GeometryState {
   //    frame and, if it exists, its parent geometry.
   //   - RemoveGeometryUnchecked(): This is the recursive call; it's parent
   //    is already slated for removal, so parent references can be left alone.
+  // @throws std::logic_error if `geometry_id` is not in `geometries_`.
   void RemoveGeometryUnchecked(GeometryId geometry_id,
                                RemoveGeometryOrigin caller);
+
+  // Removes anchored geometry indicated by the id. No checking of source is
+  // required.
+  // @throws std::logic_error if `geometry_id` is not in `anchored_geometries_`.
+  void RemoveAnchoredGeometryUnchecked(GeometryId geometry_id);
+
+  // Reports true if the given id refers to a _dynamic_ geometry. Assumes the
+  // precondition that id refers to a valid geometry in the state.
+  bool is_dynamic(GeometryId id) const {
+    return geometries_.count(id) > 0;
+  }
 
   // ---------------------------------------------------------------------
   // Maps from registered source ids to the entities registered to those
@@ -304,11 +345,21 @@ class GeometryState {
   // source_root_frame_map_.
   std::unordered_map<SourceId, std::string> source_names_;
 
+  // The registered geometry sources and the _anchored_ geometries that have
+  // been registered on them. These don't fit in the frame hierarchy because
+  // they do not belong to dynamic frames.
+  std::unordered_map<SourceId, std::unordered_set<GeometryId>>
+      source_anchored_geometry_map_;
+
   // The frame data, keyed on unique frame identifier.
   std::unordered_map<FrameId, internal::InternalFrame> frames_;
 
   // The geometry data, keyed on unique geometry identifiers.
   std::unordered_map<GeometryId, internal::InternalGeometry> geometries_;
+
+  // The _anchored_ geometry data, keyed on the unique geometry identifiers.
+  std::unordered_map<GeometryId, internal::InternalAnchoredGeometry>
+      anchored_geometries_;
 };
 }  // namespace geometry
 }  // namespace drake
