@@ -658,6 +658,14 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "complementary_problem_test",
+    tags = ["snopt"],
+    deps = [
+        ":mathematical_program",
+    ],
+)
+
 # TODO(hongkai-dai): Separate this test into a test that uses Gurobi, and a
 # test that doesn't.
 drake_cc_googletest(
