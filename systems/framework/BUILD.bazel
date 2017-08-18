@@ -22,9 +22,6 @@ drake_cc_library(
         ":discrete_values",
         ":event_collection",
         ":framework_common",
-        ":input_port_descriptor",
-        ":input_port_evaluator_interface",
-        ":input_port_value",
         ":leaf_context",
         ":leaf_output_port",
         ":leaf_system",
@@ -96,6 +93,7 @@ drake_cc_library(
     srcs = ["abstract_values.cc"],
     hdrs = ["abstract_values.h"],
     deps = [
+        ":framework_common",
         ":value",
         "//drake/common:autodiff",
         "//drake/common:essential",
@@ -107,6 +105,7 @@ drake_cc_library(
     srcs = ["continuous_state.cc"],
     hdrs = ["continuous_state.h"],
     deps = [
+        ":framework_common",
         ":vector",
         "//drake/common:autodiff",
         "//drake/common:default_scalars",
@@ -119,6 +118,7 @@ drake_cc_library(
     srcs = ["discrete_values.cc"],
     hdrs = ["discrete_values.h"],
     deps = [
+        ":framework_common",
         ":value",
         ":vector",
         "//drake/common:autodiff",
@@ -210,9 +210,11 @@ drake_cc_library(
     name = "context_base",
     srcs = [
         "context_base.cc",
+        "input_port_value.cc",
     ],
     hdrs = [
         "context_base.h",
+        "input_port_value.h",
     ],
     deps = [
         ":cache_and_dependency_tracker",
@@ -222,17 +224,21 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "input_port_descriptor",
+    name = "framework_base",
     srcs = [
-        "input_port_descriptor.cc",
+        "cache_entry.cc",
+        "input_port_base.cc",
+        "output_port_base.cc",
+        "system_base.cc",
     ],
     hdrs = [
-        "input_port_descriptor.h",
+        "cache_entry.h",
+        "input_port_base.h",
+        "output_port_base.h",
+        "system_base.h",
     ],
     deps = [
-        ":framework_common",
-        "//drake/common:default_scalars",
-        "//drake/common:essential",
+        ":context_base",
     ],
 )
 
@@ -241,6 +247,7 @@ drake_cc_library(
     srcs = ["output_port_value.cc"],
     hdrs = ["output_port_value.h"],
     deps = [
+        ":framework_common",
         ":value",
         ":value_checker",
         ":vector",
@@ -250,34 +257,11 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "input_port_evaluator_interface",
-    srcs = ["input_port_evaluator_interface.cc"],
-    hdrs = ["input_port_evaluator_interface.h"],
-    deps = [
-        ":input_port_descriptor",
-        ":output_port_value",
-        "//drake/common:essential",
-    ],
-)
-
-drake_cc_library(
-    name = "input_port_value",
-    srcs = ["input_port_value.cc"],
-    hdrs = ["input_port_value.h"],
-    deps = [
-        ":input_port_evaluator_interface",
-        ":vector",
-        "//drake/common:essential",
-    ],
-)
-
-drake_cc_library(
     name = "context",
     srcs = ["context.cc"],
     hdrs = ["context.h"],
     deps = [
-        ":input_port_evaluator_interface",
-        ":input_port_value",
+        ":context_base",
         ":parameters",
         ":state",
         "//drake/common:default_scalars",
@@ -290,9 +274,7 @@ drake_cc_library(
     srcs = ["leaf_context.cc"],
     hdrs = ["leaf_context.h"],
     deps = [
-        ":cache_and_dependency_tracker",
         ":context",
-        ":parameters",
         ":vector",
         "//drake/common:default_scalars",
         "//drake/common:essential",
@@ -302,11 +284,13 @@ drake_cc_library(
 drake_cc_library(
     name = "system",
     srcs = [
+        "input_port_descriptor.cc",
         "output_port.cc",
         "system.cc",
         "witness_function.cc",
     ],
     hdrs = [
+        "input_port_descriptor.h",
         "output_port.h",
         "system.h",
         "witness_function.h",
@@ -314,7 +298,8 @@ drake_cc_library(
     deps = [
         ":context",
         ":event_collection",
-        ":framework_common",
+        ":framework_base",
+        ":output_port_value",
         ":system_constraint",
         ":system_scalar_converter",
         ":value",
@@ -500,8 +485,16 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "cache_test",
     deps = [
-        ":cache_and_dependency_tracker",
         ":context_base",
+        "//drake/common",
+        "//drake/systems/framework/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "cache_entry_test",
+    deps = [
+        ":framework_base",
         "//drake/common:essential",
         "//drake/systems/framework/test_utilities",
     ],
@@ -512,6 +505,7 @@ drake_cc_googletest(
     deps = [
         ":continuous_state",
         "//drake/common:essential",
+        "//drake/systems/framework/test_utilities:my_vector",
     ],
 )
 
@@ -565,6 +559,8 @@ drake_cc_googletest(
     deps = [
         ":discrete_values",
         "//drake/common:essential",
+        "//drake/common/test_utilities:is_dynamic_castable",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 
@@ -586,6 +582,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "leaf_context_test",
     deps = [
+        ":framework_base",
         ":leaf_context",
         "//drake/common:essential",
         "//drake/common/test_utilities:eigen_matrix_compare",
@@ -653,7 +650,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "input_port_value_test",
     deps = [
-        ":input_port_value",
+        ":framework_base",
         "//drake/common:essential",
     ],
 )
@@ -663,6 +660,7 @@ drake_cc_googletest(
     deps = [
         ":output_port_value",
         "//drake/common:essential",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 

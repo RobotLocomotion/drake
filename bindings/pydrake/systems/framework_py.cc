@@ -485,7 +485,6 @@ PYBIND11_MODULE(framework, m) {
     .def("size", &OutputPort<T>::size);
 
   py::class_<SystemOutput<T>> system_output(m, "SystemOutput");
-  DefClone(&system_output);
   system_output
     .def("get_num_ports", &SystemOutput<T>::get_num_ports)
     .def("get_data", &SystemOutput<T>::get_data,

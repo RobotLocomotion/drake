@@ -128,12 +128,12 @@ class DiagramBuilder {
   void Connect(const OutputPort<T>& src,
                const InputPortDescriptor<T>& dest) {
     DRAKE_DEMAND(src.size() == dest.size());
-    PortIdentifier dest_id{dest.get_system(), dest.get_index()};
-    PortIdentifier src_id{&src.get_system(), src.get_index()};
+    InputPortLocator dest_id{dest.get_system(), dest.get_index()};
+    OutputPortLocator src_id{&src.get_system(), src.get_index()};
     ThrowIfInputAlreadyWired(dest_id);
     ThrowIfSystemNotRegistered(&src.get_system());
     ThrowIfSystemNotRegistered(dest.get_system());
-    dependency_graph_[dest_id] = src_id;
+    connection_map_[dest_id] = src_id;
   }
 
   /// Declares that sole input port on the @p dest system is connected to sole
@@ -159,11 +159,11 @@ class DiagramBuilder {
   /// Declares that the given @p input port of a constituent system is an input
   /// to the entire Diagram.
   /// @return The index of the exported input port of the entire diagram.
-  int ExportInput(const InputPortDescriptor<T>& input) {
-    PortIdentifier id{input.get_system(), input.get_index()};
+  InputPortIndex ExportInput(const InputPortDescriptor<T>& input) {
+    InputPortLocator id{input.get_system(), input.get_index()};
     ThrowIfInputAlreadyWired(id);
     ThrowIfSystemNotRegistered(input.get_system());
-    int return_id = static_cast<int>(input_port_ids_.size());
+    InputPortIndex return_id(input_port_ids_.size());
     input_port_ids_.push_back(id);
     diagram_input_set_.insert(id);
     return return_id;
@@ -172,11 +172,11 @@ class DiagramBuilder {
   /// Declares that the given @p output port of a constituent system is an
   /// output of the entire diagram.
   /// @return The index of the exported output port of the entire diagram.
-  int ExportOutput(const OutputPort<T>& output) {
+  OutputPortIndex ExportOutput(const OutputPort<T>& output) {
     ThrowIfSystemNotRegistered(&output.get_system());
-    int return_id = static_cast<int>(output_port_ids_.size());
+    OutputPortIndex return_id(output_port_ids_.size());
     output_port_ids_.push_back(
-        PortIdentifier{&output.get_system(), output.get_index()});
+        OutputPortLocator{&output.get_system(), output.get_index()});
     return return_id;
   }
 
@@ -199,10 +199,18 @@ class DiagramBuilder {
   }
 
  private:
-  typedef typename Diagram<T>::PortIdentifier PortIdentifier;
+  using InputPortLocator = typename Diagram<T>::InputPortLocator;
+  using OutputPortLocator = typename Diagram<T>::OutputPortLocator;
 
-  void ThrowIfInputAlreadyWired(const PortIdentifier& id) const {
-    if (dependency_graph_.find(id) != dependency_graph_.end() ||
+  // This generic port identifier is used only for cycle detection below
+  // because the algorithm stores both input & output ports in node.
+  using PortIdentifier = std::pair<const System<T>*, int>;
+
+  // Throws if the given input port (belonging to a child subsystem) has
+  // already been connected to an output port, or exported to be an input
+  // port of the whole diagram.
+  void ThrowIfInputAlreadyWired(const InputPortLocator& id) const {
+    if (connection_map_.find(id) != connection_map_.end() ||
         diagram_input_set_.find(id) != diagram_input_set_.end()) {
       throw std::logic_error("Input port is already wired.");
     }
@@ -278,11 +286,13 @@ class DiagramBuilder {
 
     // Populate the node set from the connections (and define the edges implied
     // by those connections).
-    for (const auto& connection : dependency_graph_) {
+    for (const auto& connection : connection_map_) {
       // Dependency graph is a mapping from the destination of the connection
       // to what it *depends on* (the source).
-      const PortIdentifier& src = connection.second;
-      const PortIdentifier& dest = connection.first;
+      const PortIdentifier src(connection.second.first,
+                               connection.second.second);
+      const PortIdentifier dest(connection.first.first,
+                                connection.first.second);
       PortIdentifier encoded_src{src.first, output_to_key(src.second)};
       nodes.insert(encoded_src);
       nodes.insert(dest);
@@ -349,22 +359,22 @@ class DiagramBuilder {
     auto blueprint = std::make_unique<typename Diagram<T>::Blueprint>();
     blueprint->input_port_ids = input_port_ids_;
     blueprint->output_port_ids = output_port_ids_;
-    blueprint->dependency_graph = dependency_graph_;
+    blueprint->connection_map = connection_map_;
     blueprint->systems = std::move(registered_systems_);
 
     return blueprint;
   }
 
   // The ordered inputs and outputs of the Diagram to be built.
-  std::vector<PortIdentifier> input_port_ids_;
-  std::vector<PortIdentifier> output_port_ids_;
+  std::vector<InputPortLocator> input_port_ids_;
+  std::vector<OutputPortLocator> output_port_ids_;
 
   // For fast membership queries: has this input port already been declared?
-  std::set<PortIdentifier> diagram_input_set_;
+  std::set<InputPortLocator> diagram_input_set_;
 
   // A map from the input ports of constituent systems, to the output ports of
   // the systems on which they depend.
-  std::map<PortIdentifier, PortIdentifier> dependency_graph_;
+  std::map<InputPortLocator, OutputPortLocator> connection_map_;
 
   // A mirror on the systems in the diagram. Should have the same values as
   // registered_systems_. Used for fast membership queries.

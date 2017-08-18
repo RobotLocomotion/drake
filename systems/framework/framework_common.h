@@ -29,9 +29,6 @@ the corresponding CacheEntryValue in that System's Context. This is an index
 providing extremely fast constant-time access to both. */
 using CacheIndex = TypeSafeIndex<class CacheTag>;
 
-// TODO(sherm1) Reveal these when they are used.
-#ifndef DRAKE_DOXYGEN_CXX
-
 /** Serves as a local index for a child subsystem within a parent
 Diagram, or a child subcontext within a parent DiagramContext. A subsystem and
 its matching subcontext have the same %SubsystemIndex. Unique only
@@ -61,7 +58,6 @@ using NumericParameterIndex = TypeSafeIndex<class NumericParameterTag>;
 /** Serves as the local index for abstract parameters within a given System
 and its corresponding Context. */
 using AbstractParameterIndex = TypeSafeIndex<class AbstractParameterTag>;
-#endif
 
 /** All system ports are either vectors of Eigen scalars, or black-box
 AbstractValues which may contain any type. */
@@ -112,12 +108,44 @@ enum BuiltInTicketNumbers {
   kXdTicket             =  7,
   kXaTicket             =  8,
   kXTicket              =  9,
-  kAllParametersTicket  = 10,
-  kAllInputPortsTicket  = 11,
-  kAllSourcesTicket     = 12,
-  kNextAvailableTicket  = kAllSourcesTicket+1
-  // TODO(sherm1) Add the rest of the built-in tickets here.
+  kConfigurationTicket  = 10,
+  kVelocityTicket       = 11,
+  kKinematicsTicket     = 12,
+  kAllParametersTicket  = 13,
+  kAllInputPortsTicket  = 14,
+  kAllSourcesTicket     = 15,
+  kXcdotTicket          = 16,
+  kXdhatTicket          = 17,
+  kNextAvailableTicket  = kXdhatTicket+1
 };
+
+// These are some utility methods that are reused within the framework.
+
+/** Returns a vector of raw pointers that correspond placewise with the
+unique_ptrs in the vector `in`. */
+template<typename U>
+std::vector<U*> Unpack(const std::vector<std::unique_ptr<U>>& in) {
+  std::vector<U*> out(in.size());
+  std::transform(in.begin(), in.end(), out.begin(),
+                 [](const std::unique_ptr<U>& p) { return p.get(); });
+  return out;
+}
+
+/** Checks a vector of pointer-like objects to make sure no entries are null,
+aborting if so. Use this as a Debug-only check:
+@code{.cpp}
+  std::vector<Thing*> things;
+  std::vector<std::unique_ptr<Thing> owned_things;
+  DRAKE_ASSERT_VOID(CheckNonNull(things));
+  DRAKE_ASSERT_VOID(CheckNonNull(owned_things);
+@endcode
+This function can be applied to an std::vector of any type T that can be
+meaningfully compared to `nullptr`. */
+template <typename PtrType>
+void CheckNonNull(const std::vector<PtrType>& pointers) {
+  for (const PtrType& p : pointers)
+    DRAKE_DEMAND(p != nullptr);
+}
 
 }  // namespace internal
 #endif

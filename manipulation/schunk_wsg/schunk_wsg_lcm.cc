@@ -79,30 +79,30 @@ void SchunkWsgTrajectoryGenerator::DoCalcDiscreteVariableUpdates(
   const systems::BasicVector<double>* state = this->EvalVectorInput(context, 1);
   const double cur_position = state->GetAtIndex(position_index_);
 
-  const SchunkWsgTrajectoryGeneratorStateVector<double>* last_traj_state =
-      dynamic_cast<const SchunkWsgTrajectoryGeneratorStateVector<double>*>(
-          &context.get_discrete_state(0));
-  SchunkWsgTrajectoryGeneratorStateVector<double>* new_traj_state =
-      dynamic_cast<SchunkWsgTrajectoryGeneratorStateVector<double>*>(
-          &discrete_state->get_mutable_vector(0));
-  new_traj_state->set_last_position(cur_position);
+  const SchunkWsgTrajectoryGeneratorStateVector<double>& last_traj_state =
+      dynamic_cast<const SchunkWsgTrajectoryGeneratorStateVector<double>&>(
+          context.get_discrete_state(0));
+  SchunkWsgTrajectoryGeneratorStateVector<double>& new_traj_state =
+      dynamic_cast<SchunkWsgTrajectoryGeneratorStateVector<double>&>(
+          discrete_state->get_mutable_vector(0));
+  new_traj_state.set_last_position(cur_position);
 
   double max_force = command.force;
   if (std::isnan(max_force)) {
     max_force = 0;
   }
-  new_traj_state->set_max_force(max_force);
+  new_traj_state.set_max_force(max_force);
 
-  if (std::abs(last_traj_state->last_target_position() - target_position) >
+  if (std::abs(last_traj_state.last_target_position() - target_position) >
       kTargetEpsilon) {
     UpdateTrajectory(cur_position, target_position);
-    new_traj_state->set_last_target_position(target_position);
-    new_traj_state->set_trajectory_start_time(context.get_time());
+    new_traj_state.set_last_target_position(target_position);
+    new_traj_state.set_trajectory_start_time(context.get_time());
   } else {
-    new_traj_state->set_last_target_position(
-        last_traj_state->last_target_position());
-    new_traj_state->set_trajectory_start_time(
-        last_traj_state->trajectory_start_time());
+    new_traj_state.set_last_target_position(
+        last_traj_state.last_target_position());
+    new_traj_state.set_trajectory_start_time(
+        last_traj_state.trajectory_start_time());
   }
 }
 
