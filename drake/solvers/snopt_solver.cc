@@ -21,10 +21,10 @@ namespace snopt {
 // not work.
 // clang-format wants to switch the order of this inclusion, which causes
 // compiler failure.
-/* clang-format off */
+// clang-format off
 #include "snopt.hh"
 #include "snfilewrapper.hh"
-/* clang-format on */
+// clang-format on
 }
 
 // todo(sammy-tri) :  implement sparsity inside each cost/constraint
@@ -200,6 +200,11 @@ size_t SingleNonlinearConstraintSize<LinearComplementarityConstraint>(
   return 1;
 }
 
+// Evaluate a single nonlinear constraints. For generic Constraint,
+// LorentzConeConstraint, RotatedLorentzConeConstraint, we call Eval function
+// of the constraint directly. For some other constraint, such as
+// LinearComplementaryConstraint, we will evaluate its nonlinear constraint
+// differently, than its Eval function.
 template <typename C>
 void EvaluateSingleNonlinearConstraint(const C& constraint,
                                        const Eigen::VectorXd& this_x,
@@ -362,6 +367,8 @@ void UpdateNumNonlinearConstraintsAndGradients(
 // For linear complementary condition
 // 0 <= x ⊥ Mx + q >= 0
 // we add the nonlinear constraint xᵀ(Mx+q) = 0
+// So we only add one row of nonlinear constraint, and update the gradient of
+// this nonlinear constraint accordingly.
 template <>
 void UpdateNumNonlinearConstraintsAndGradients<LinearComplementarityConstraint>(
     const std::vector<Binding<LinearComplementarityConstraint>>&
@@ -405,6 +412,8 @@ void UpdateConstraintBoundsAndGradients(
 // For linear complementary condition
 // 0 <= x ⊥ Mx + q >= 0
 // we add the nonlinear constraint xᵀ(Mx + q) = 0
+// The bound of this constraint is 0. The indices of the non-zero gradient
+// of this constraint is updated accordingly.
 template <>
 void UpdateConstraintBoundsAndGradients<LinearComplementarityConstraint>(
     const MathematicalProgram& prog,
@@ -438,7 +447,8 @@ size_t LinearConstraintSize(const C& constraint) {
 
 // For linear complementary condition
 // 0 <= x ⊥ Mx + q >= 0
-// we add the constraint Mx >= -q
+// The linear constraint we add to the program is Mx >= -q
+// This linear constraint has the same number of rows, as matrix M.
 template <>
 size_t LinearConstraintSize<LinearComplementarityConstraint>(
     const LinearComplementarityConstraint& constraint) {
@@ -486,10 +496,10 @@ void UpdateLinearConstraint(const MathematicalProgram& prog,
     for (int k = 0; k < static_cast<int>(binding.GetNumElements()); ++k) {
       for (Eigen::SparseMatrix<double>::InnerIterator it(A_constraint, k); it;
            ++it) {
-        tripletList->push_back(Eigen::Triplet<double>(
+        tripletList->emplace_back(
             *linear_constraint_index + it.row(),
             prog.FindDecisionVariableIndex(binding.variables()(k)),
-            it.value()));
+            it.value());
       }
     }
 
@@ -578,7 +588,8 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
 
   // For linear complementary condition
   // 0 <= x ⊥ Mx + q >= 0
-  // we add the linear constraint Mx + q >= 0
+  // The linear constraint we add is Mx + q >= 0, so we will append
+  // M.rows() rows to the linear constraints.
   for (const auto& binding : prog.linear_complementarity_constraints()) {
     num_linear_constraints += binding.constraint()->M().rows();
   }

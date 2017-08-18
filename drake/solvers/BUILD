@@ -660,6 +660,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "complementary_problem_test",
+    tags = ["snopt"],
     deps = [
         ":mathematical_program",
     ],
