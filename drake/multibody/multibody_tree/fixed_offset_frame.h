@@ -38,8 +38,11 @@ class FixedOffsetFrame : public Frame<T> {
   /// parent material Frame P. The pose is given by a spatial transform `X_PF`;
   /// see class documentation for more information.
   ///
-  /// @param[in] P The frame to which this frame is attached with a fixed pose.
-  /// @param[in] X_PF The transform giving the pose of F in P.
+  /// @param[in] P
+  ///   The frame to which this frame is attached with a fixed pose.
+  /// @param[in] X_PF
+  ///   The _default_ transform giving the pose of F in P, therefore only the
+  ///   value (as an Isometry3<double>) is provided.
   FixedOffsetFrame(const Frame<T>& P, const Isometry3<double>& X_PF);
 
   /// Creates a material Frame F whose pose is fixed with respect to the

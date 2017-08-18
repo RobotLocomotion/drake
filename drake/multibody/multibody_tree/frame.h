@@ -96,7 +96,7 @@ class Frame : public FrameBase<T> {
   /// might specify a number of prerequisites on the cloned tree and therefore
   /// require it to be at a given state of cloning. See
   /// MultibodyTree::CloneToScalar() for a list of prerequisites that are
-  /// guarenteed to be satisfied during the cloning process.
+  /// guaranteed to be satisfied during the cloning process.
   /// @{
 
   /// Clones this %Frame (templated on T) to a frame templated on `double`.

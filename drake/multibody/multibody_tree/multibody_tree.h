@@ -692,8 +692,8 @@ class MultibodyTree {
   /// %MultibodyTree variant templated on AutoDiffXd from a %MultibodyTree
   /// templated on `double`. Typically, a user holding a `Body<double>` (or any
   /// other multibody element in the original variant templated on `double`)
-  /// would like to retrieve the `Body<AutoDiffXd>` variant from the new
-  /// AutoDiffXd tree variant.
+  /// would like to retrieve the corresponding `Body<AutoDiffXd>` variant from
+  /// the new AutoDiffXd tree variant.
   ///
   /// Consider the following code example:
   /// @code
@@ -770,7 +770,7 @@ class MultibodyTree {
   std::unique_ptr<MultibodyTree<ToScalar>> CloneToScalar() const {
     if (!topology_is_valid()) {
       throw std::logic_error(
-          "Attempting to clone a MultibodyTree with an invalid topology."
+          "Attempting to clone a MultibodyTree with an invalid topology. "
           "MultibodyTree::Finalize() must be called before attempting to clone"
           " a MultibodyTree.");
     }
@@ -783,10 +783,10 @@ class MultibodyTree {
       tree_clone->CloneBodyAndAdd(body);
     }
 
-    // Frames are cloned in the order they are indexed that is, in the exact
-    // same order they were added to the original tree. Since the Frame API
-    // enforces the creation of the parent frame first, this traversal
-    // guarantees that parent body frames are created before their child frames.
+    // Frames are cloned in their index order, that is, in the exact same order
+    // they were added to the original tree. Since the Frame API enforces the
+    // creation of the parent frame first, this traversal guarantees that parent
+    // body frames are created before their child frames.
     for (const auto& frame : owned_frames_) {
       tree_clone->CloneFrameAndAdd(*frame);
     }

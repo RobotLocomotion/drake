@@ -202,7 +202,7 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   /// require it to be at a given state of cloning (for instance requiring that
   /// the cloned tree already contains all the frames in the world as in the
   /// original tree.) See MultibodyTree::CloneToScalar() for a list of
-  /// prerequisites that are guarenteed to be satisfied during the cloning
+  /// prerequisites that are guaranteed to be satisfied during the cloning
   /// process.
   ///
   /// @{

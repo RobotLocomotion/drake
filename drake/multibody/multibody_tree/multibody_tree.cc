@@ -29,7 +29,7 @@ void MultibodyTree<T>::FinalizeTopology() {
   // finalized. Re-compilation is not allowed.
   if (topology_is_valid()) {
     throw std::logic_error(
-        "Attempting to call MultibodyTree::FinalizeTopology() on an tree with"
+        "Attempting to call MultibodyTree::FinalizeTopology() on a tree with"
         " an already finalized topology.");
   }
 
@@ -42,7 +42,8 @@ template <typename T>
 void MultibodyTree<T>::FinalizeInternals() {
   if (!topology_is_valid()) {
     throw std::logic_error(
-        "MultibodyTree::FinalizeTopology() must be called before this method.");
+        "MultibodyTree::FinalizeTopology() must be called before "
+        "MultibodyTree::FinalizeInternals().");
   }
 
   // Give bodies the chance to perform any finalize-time setup.
