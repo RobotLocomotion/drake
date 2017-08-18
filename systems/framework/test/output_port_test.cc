@@ -96,9 +96,11 @@ class LeafOutputPortTest : public ::testing::Test {
 
   // Create abstract- and vector-valued ports.
   DummySystem dummy_;
-  LeafOutputPort<double> absport_general_{dummy_, alloc_string, calc_string};
-  LeafOutputPort<double> vecport_general_{dummy_, 3, alloc_myvector3,
-                                          calc_vector3};
+  LeafOutputPort<double> absport_general_{
+      alloc_string, calc_string, std::vector<DependencyTicket>{}, &dummy_};
+  LeafOutputPort<double> vecport_general_{3, alloc_myvector3, calc_vector3,
+                                          std::vector<DependencyTicket>{},
+                                          &dummy_};
 };
 
 // Helper function for testing an abstract-valued port.
@@ -109,8 +111,7 @@ void AbstractPortCheck(const Context<double>& context,
   EXPECT_EQ(val->GetValueOrThrow<string>(), alloc_string);
   port.Calc(context, val.get());
   EXPECT_EQ(val->GetValueOrThrow<string>(), string("from calc_string"));
-  const AbstractValue& val_cached = port.Eval(context);
-  EXPECT_EQ(val_cached.GetValueOrThrow<string>(), string("from eval_string"));
+  EXPECT_EQ(port.Eval<string>(context), string("from eval_string"));
 }
 
 // Check for proper construction and functioning of abstract LeafOutputPorts.
@@ -150,7 +151,8 @@ unique_ptr<AbstractValue> alloc_null(const Context<double>&) {
 // The null check is done in all builds.
 TEST_F(LeafOutputPortTest, ThrowIfNullAlloc) {
   // Create an abstract port with an allocator that returns null.
-  LeafOutputPort<double> null_port{dummy_, alloc_null, calc_string};
+  LeafOutputPort<double> null_port{alloc_null, calc_string,
+                                   std::vector<DependencyTicket>{}, &dummy_};
   EXPECT_THROW(null_port.Allocate(*context_), std::logic_error);
 }
 

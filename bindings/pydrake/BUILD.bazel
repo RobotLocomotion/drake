@@ -88,10 +88,16 @@ drake_py_library(
     ],
 )
 
-# TODO(eric.cousineau): Make private.
 drake_cc_library(
     name = "symbolic_types_pybind",
     hdrs = ["symbolic_types_pybind.h"],
+    visibility = ["//bindings/pydrake:__subpackages__"],
+)
+
+drake_cc_library(
+    name = "type_safe_index_py_h",
+    hdrs = ["type_safe_index_py.h"],
+    visibility = ["//bindings/pydrake:__subpackages__"],
 )
 
 drake_pybind_library(

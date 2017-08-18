@@ -268,14 +268,49 @@ GTEST_TEST(EmptySystemDiagramTest, CheckPeriodicTriggerDiscreteUpdate) {
   }
 }
 
-/// ExampleDiagram has the following structure:
-/// adder0_: (input0_ + input1_) -> A
-/// adder1_: (A + input2_)       -> B, output 0
-/// adder2_: (A + B)             -> output 1
-/// integrator1_: A              -> C
-/// integrator2_: C              -> output 2
-/// It also uses an StatelessSystem to verify Diagram's ability to retrieve
-/// witness functions from its subsystems.
+/* ExampleDiagram has the following structure:
+adder0_: (input0_ + input1_) -> A
+adder1_: (A + input2_)       -> B, output 0
+adder2_: (A + B)             -> output 1
+integrator1_: A              -> C
+integrator2_: C              -> output 2
+It also uses an StatelessSystem to verify Diagram's ability to retrieve
+witness functions from its subsystems.
+
+             +----------------------------------------------------------+
+             |                                                          |
+             |  +--------+                       +------------------------->
+1, 2, 4  +------>        |                       |                   B  | y0
+          u0 |  | Adder0 | A  +-----------+      |                      |
+             |  |        +-+--> u0        |      |                      |
+8, 16, 32+------>        | |  |           |      |                      |
+          u1 |  +--------+ |  | Adder1    |  B   |       +-----------+  |
+             |             |  |           +------+-------> u1        |  |
+64, 128, 256 |             |  |           | 73,146,292   |           |  |
+         +--------------------> u1        |              | Adder2    |  |
+          u2 |             |  +-----------+              |           +----->
+             |             |                 A           |           |  | y1
+             |             +-----------------------------> u0        |  |
+             |             |     9, 18, 36               +-----------+  |  82
+             |             |                                            | 164
+             |             |                                            | 328
+             |             |                                            |
+             |             |  +------------+             +-----------+  |
+             |             |  |            |             |           |  |
+             |           A |  |            |     C       |           |  |
+             |             +--> Integ0     +-------------> Integ1    +----->
+             |                |            |             |           |  | y2
+             |                |  3, 9, 27  |             |81,243,729 |  |
+             |                +------------+             +-----------+  |
+             |                                                          |
+             |  +----------------+            +-------------------+     |
+             |  |                |            |    ConstantVector |     |
+             |  |  Stateless     |            |    or             |     |
+             |  |                |            |    DoubleOnly     |     |
+             |  +----------------+            +-------------------+     |
+             |                                                          |
+             +----------------------------------------------------------|
+*/
 class ExampleDiagram : public Diagram<double> {
  public:
   explicit ExampleDiagram(
@@ -552,20 +587,18 @@ TEST_F(DiagramTest, CalcTimeDerivatives) {
   ASSERT_EQ(6, derivatives->get_misc_continuous_state().size());
 
   // The derivative of the first integrator is A.
-  const ContinuousState<double>* integrator0_xcdot =
+  const ContinuousState<double>& integrator0_xcdot =
       diagram_->GetSubsystemDerivatives(*derivatives, integrator0());
-  ASSERT_TRUE(integrator0_xcdot != nullptr);
-  EXPECT_EQ(1 + 8, integrator0_xcdot->get_vector().GetAtIndex(0));
-  EXPECT_EQ(2 + 16, integrator0_xcdot->get_vector().GetAtIndex(1));
-  EXPECT_EQ(4 + 32, integrator0_xcdot->get_vector().GetAtIndex(2));
+  EXPECT_EQ(1 + 8, integrator0_xcdot.get_vector().GetAtIndex(0));
+  EXPECT_EQ(2 + 16, integrator0_xcdot.get_vector().GetAtIndex(1));
+  EXPECT_EQ(4 + 32, integrator0_xcdot.get_vector().GetAtIndex(2));
 
   // The derivative of the second integrator is the state of the first.
-  const ContinuousState<double>* integrator1_xcdot =
+  const ContinuousState<double>& integrator1_xcdot =
       diagram_->GetSubsystemDerivatives(*derivatives, integrator1());
-  ASSERT_TRUE(integrator1_xcdot != nullptr);
-  EXPECT_EQ(3, integrator1_xcdot->get_vector().GetAtIndex(0));
-  EXPECT_EQ(9, integrator1_xcdot->get_vector().GetAtIndex(1));
-  EXPECT_EQ(27, integrator1_xcdot->get_vector().GetAtIndex(2));
+  EXPECT_EQ(3, integrator1_xcdot.get_vector().GetAtIndex(0));
+  EXPECT_EQ(9, integrator1_xcdot.get_vector().GetAtIndex(1));
+  EXPECT_EQ(27, integrator1_xcdot.get_vector().GetAtIndex(2));
 }
 
 // Tests the AllocateInput logic.
@@ -724,7 +757,7 @@ TEST_F(DiagramTest, DerivativesOfStatelessSystemAreEmpty) {
   std::unique_ptr<ContinuousState<double>> derivatives =
       diagram_->AllocateTimeDerivatives();
   EXPECT_EQ(0,
-            diagram_->GetSubsystemDerivatives(*derivatives, adder0())->size());
+            diagram_->GetSubsystemDerivatives(*derivatives, adder0()).size());
 }
 
 class DiagramOfDiagramsTest : public ::testing::Test {
@@ -820,12 +853,31 @@ TEST_F(DiagramOfDiagramsTest, EvalOutput) {
   //   output1 = output0 + 8 + 64 = 656
   //   output2 = 9 (state of integrator1_)
 
-  // So, the outputs of subsytem1_, and thus of the whole diagram, are:
+  // So, the outputs of subsystem1_, and thus of the whole diagram, are:
   //   output0 = 584 + 656 + 9 = 1249
   //   output1 = output0 + 584 + 656 = 2489
   //   output2 = 81 (state of integrator1_)
   EXPECT_EQ(1249, output_->get_vector_data(0)->get_value().x());
   EXPECT_EQ(2489, output_->get_vector_data(1)->get_value().x());
+  EXPECT_EQ(81, output_->get_vector_data(2)->get_value().x());
+
+  // Check that invalidation flows through input ports properly. We'll change
+  // the fixed input value for input port 0 from 8 to 10. That should cause
+  // everything to get recalculated.
+  // The outputs of subsystem0_ are now:
+  //   output0 = 10 + 64 + 512 = 586
+  //   output1 = output0 + 10 + 64 = 660
+  //   output2 = 9 (state of integrator1_)
+
+  // So, the outputs of subsystem1_, and thus of the whole diagram, are:
+  //   output0 = 586 + 660 + 9 = 1255
+  //   output1 = output0 + 586 + 660 = 2501
+  //   output2 = 81 (state of integrator1_)
+  auto value10 = BasicVector<double>::Make({10});
+  context_->FixInputPort(0, std::move(value10));
+  diagram_->CalcOutput(*context_, output_.get());
+  EXPECT_EQ(1255, output_->get_vector_data(0)->get_value().x());
+  EXPECT_EQ(2501, output_->get_vector_data(1)->get_value().x());
   EXPECT_EQ(81, output_->get_vector_data(2)->get_value().x());
 }
 

@@ -93,6 +93,14 @@ class LeafSystem : public System<T> {
     return std::make_unique<LeafCompositeEventCollection<T>>();
   }
 
+  /// Shadows `System<T>::AllocateContext` to provide a more concrete return
+  /// type `LeafContext<T>`.
+  std::unique_ptr<LeafContext<T>> AllocateContext() const {
+    std::unique_ptr<Context<T>> context = System<T>::AllocateContext();
+    return std::unique_ptr<LeafContext<T>>(
+        dynamic_cast<LeafContext<T>*>(context.release()));
+  }
+
   // =========================================================================
   // Implementations of System<T> methods.
 
@@ -117,10 +125,14 @@ class LeafSystem : public System<T> {
   }
   /// @endcond
 
-  std::unique_ptr<Context<T>> AllocateContext() const override {
-    std::unique_ptr<LeafContext<T>> context = DoMakeContext();
-    // Reserve inputs that have already been declared.
-    context->SetNumInputPorts(this->get_num_input_ports());
+  std::unique_ptr<ContextBase> DoMakeContext() const final {
+    std::unique_ptr<LeafContext<T>> context = DoMakeLeafContext();
+    return std::move(context);
+  }
+
+  // Caller contract guarantees non null, compatible Context.
+  void DoAcquireContextResources(ContextBase* context_base) const final {
+    auto context = dynamic_cast<LeafContext<T>*>(context_base);
     // Reserve continuous state via delegation to subclass.
     context->set_continuous_state(this->AllocateContinuousState());
     // Reserve discrete state via delegation to subclass.
@@ -153,11 +165,12 @@ class LeafSystem : public System<T> {
     // Note that the outputs are not part of the Context, but instead are
     // checked by LeafSystemOutput::add_port.
 
-    return std::move(context);
+    // Allow derived LeafSystem to acquire and validate Context resources.
+    DoAcquireLeafContextResources(context);
   }
 
   /// Default implementation: sets all continuous state to the model vector
-  /// given in DeclareContinousState (or zero if no model vector was given) and
+  /// given in DeclareContinuousState (or zero if no model vector was given) and
   /// discrete states to zero.  This method makes no attempt to set abstract
   /// state values.  Overrides must not change the number of state variables.
   // TODO(sherm/russt): Initialize the discrete state from the model vector
@@ -201,17 +214,6 @@ class LeafSystem : public System<T> {
       auto model_value = model_abstract_parameters_.CloneModel(i);
       p.SetFrom(*model_value);
     }
-  }
-
-  std::unique_ptr<SystemOutput<T>> AllocateOutput(
-      const Context<T>& context) const final {
-    std::unique_ptr<LeafSystemOutput<T>> output(new LeafSystemOutput<T>);
-    for (int i = 0; i < this->get_num_output_ports(); ++i) {
-      const OutputPort<T>& port = this->get_output_port(i);
-      output->add_port(std::make_unique<OutputPortValue>(
-          port.Allocate(context)));
-    }
-    return std::move(output);
   }
 
   /// Returns the AllocateContinuousState value, which must not be nullptr.
@@ -298,13 +300,23 @@ class LeafSystem : public System<T> {
   /// leaf systems with custom derived leaf system contexts should override this
   /// to provide a context of the appropriate type. The returned context should
   /// be "empty"; invoked by AllocateContext(), the caller will take the
-  /// responsibility to initialize the core LeafContext data.
+  /// responsibility to initialize the core LeafContext data. The default
+  /// implementation provides a default-constructed `LeafContext<T>`.
   // TODO(SeanCurtis-TRI): This currently assumes that derived LeafContext
   // classes do *not* add new data members. If that changes, e.g., with the
   // advent of the cache, this documentation should be changed to include the
   // initialization of the sub-class's *unique* data members.
-  virtual std::unique_ptr<LeafContext<T>> DoMakeContext() const {
+  virtual std::unique_ptr<LeafContext<T>> DoMakeLeafContext() const {
     return std::make_unique<LeafContext<T>>();
+  }
+
+  /// Derived classes that need their own resource allocation beyond the
+  /// SystemBase- and LeafSystem-acquired ones should implement this. This can
+  /// also be used to impose restrictions on what resources are permitted. For
+  /// example, a derived class might require a single input and single output.
+  /// The default implementation does nothing.
+  virtual void DoAcquireLeafContextResources(Context<T>* context) const {
+    unused(context);
   }
 
   // =========================================================================
@@ -1400,7 +1412,8 @@ class LeafSystem : public System<T> {
       typename LeafOutputPort<T>::AllocCallback vector_allocator,
       typename LeafOutputPort<T>::CalcVectorCallback vector_calculator) {
     auto port = std::make_unique<LeafOutputPort<T>>(
-        *this, fixed_size, vector_allocator, vector_calculator);
+        fixed_size, vector_allocator, vector_calculator,
+        std::vector<DependencyTicket>{}, this);
     LeafOutputPort<T>* const port_ptr = port.get();
     this->CreateOutputPort(std::move(port));
     return *port_ptr;
@@ -1411,8 +1424,9 @@ class LeafSystem : public System<T> {
   LeafOutputPort<T>& CreateAbstractLeafOutputPort(
       typename LeafOutputPort<T>::AllocCallback allocator,
       typename LeafOutputPort<T>::CalcCallback calculator) {
-    auto port =
-        std::make_unique<LeafOutputPort<T>>(*this, allocator, calculator);
+    auto port = std::make_unique<LeafOutputPort<T>>(
+        allocator, calculator,
+        std::vector<DependencyTicket>{}, this);
     LeafOutputPort<T>* const port_ptr = port.get();
     this->CreateOutputPort(std::move(port));
     return *port_ptr;
@@ -1473,25 +1487,25 @@ class LeafSystem : public System<T> {
   // Update or Publish events that need to be handled at system initialization.
   LeafCompositeEventCollection<T> initialization_events_;
 
-  // A model continuous state to be used in AllocateDefaultContext.
+  // A model continuous state to be used during Context allocation.
   std::unique_ptr<BasicVector<T>> model_continuous_state_vector_;
   int num_generalized_positions_{0};
   int num_generalized_velocities_{0};
   int num_misc_continuous_states_{0};
 
-  // A model discrete state to be used in AllocateDefaultContext.
+  // A model discrete state to be used during Context allocation.
   std::unique_ptr<BasicVector<T>> model_discrete_state_vector_;
 
-  // A model abstract state to be used in AllocateAbstractState.
+  // A model abstract state to be used during Context allocation.
   detail::ModelValues model_abstract_states_;
 
-  // Model inputs to be used in AllocateOutput{Vector,Abstract}.
+  // Model inputs to be used in AllocateInput{Vector,Abstract}.
   detail::ModelValues model_input_values_;
 
-  // Model numeric parameters to be used in AllocateParameters.
+  // Model numeric parameters to be used during Context allocation.
   detail::ModelValues model_numeric_parameters_;
 
-  // Model abstract parameters to be used in AllocateParameters.
+  // Model abstract parameters to be used during Context allocation.
   detail::ModelValues model_abstract_parameters_;
 };
 

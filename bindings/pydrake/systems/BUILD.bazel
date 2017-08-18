@@ -58,6 +58,7 @@ drake_pybind_library(
     name = "framework_py",
     cc_deps = [
         ":systems_pybind",
+        "//bindings/pydrake:type_safe_index_py_h",
         "//bindings/pydrake/util:drake_optional_pybind",
         "//bindings/pydrake/util:eigen_pybind",
     ],
@@ -157,8 +158,8 @@ drake_py_library(
 
 install(
     name = "install",
-    targets = PY_LIBRARIES + [":all_py"],
     py_dest = PACKAGE_INFO.py_dest,
+    targets = PY_LIBRARIES + [":all_py"],
     deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL),
 )
 
