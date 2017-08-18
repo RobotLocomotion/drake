@@ -137,8 +137,8 @@ class MySystemBase final : public SystemBase {
     return std::make_unique<MyContextBase>();
   }
 
-  void DoValidateAllocatedContext(const ContextBase& context) const final {}
-
+  void DoAcquireContextResources(ContextBase* context) const final {}
+  void DoValidateAllocatedContext(const ContextBase&) const final {}
   void DoCheckValidContext(const ContextBase&) const final {}
 
   const CacheEntry& entry0_;

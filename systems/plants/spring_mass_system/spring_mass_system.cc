@@ -118,7 +118,7 @@ const OutputPort<T>& SpringMassSystem<T>::get_output_port() const {
 }
 
 template <typename T>
-T SpringMassSystem<T>::EvalSpringForce(const Context<T>& context) const {
+T SpringMassSystem<T>::CalcSpringForce(const Context<T>& context) const {
   const double k = spring_constant_N_per_m_;
   const T& x = get_position(context);
   T x0 = 0;  // TODO(david-german-tri) should be a parameter.
@@ -145,7 +145,7 @@ T SpringMassSystem<T>::DoCalcKineticEnergy(const Context<T>& context) const {
 template <typename T>
 T SpringMassSystem<T>::DoCalcConservativePower(
     const Context<T>& context) const {
-  const T& power_c = EvalSpringForce(context) * get_velocity(context);
+  const T& power_c = CalcSpringForce(context) * get_velocity(context);
   return power_c;
 }
 
@@ -183,14 +183,14 @@ void SpringMassSystem<T>::DoCalcTimeDerivatives(
   // By Newton's 2nd law, the derivative of velocity (acceleration) is f/m where
   // f is the force applied to the body by the spring, and m is the mass of the
   // body.
-  const T force_applied_to_body = EvalSpringForce(context) + external_force;
+  const T force_applied_to_body = CalcSpringForce(context) + external_force;
   derivative_vector.set_velocity(force_applied_to_body / mass_kg_);
 
   // We are integrating conservative power to get the work done by conservative
   // force elements, that is, the net energy transferred between the spring and
   // the mass over time.
   derivative_vector.set_conservative_work(
-      this->CalcConservativePower(context));
+      this->EvalConservativePower(context));
 }
 
 

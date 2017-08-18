@@ -14,7 +14,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
-#include "drake/common/drake_optional.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/number_traits.h"
 #include "drake/common/pointer_cast.h"
@@ -128,18 +127,22 @@ class LeafSystem : public System<T> {
 
   std::unique_ptr<ContextBase> DoMakeContext() const final {
     std::unique_ptr<LeafContext<T>> context = DoMakeLeafContext();
+    return std::move(context);
+  }
+
+  // Caller contract guarantees non null, compatible Context.
+  void DoAcquireContextResources(ContextBase* context_base) const final {
+    auto& context = dynamic_cast<LeafContext<T>&>(*context_base);
     // Reserve continuous state via delegation to subclass.
-    context->set_continuous_state(this->AllocateContinuousState());
+    context.set_continuous_state(this->AllocateContinuousState());
     // Reserve discrete state via delegation to subclass.
-    context->set_discrete_state(this->AllocateDiscreteState());
-    context->set_abstract_state(this->AllocateAbstractState());
+    context.set_discrete_state(this->AllocateDiscreteState());
+    context.set_abstract_state(this->AllocateAbstractState());
     // Reserve parameters via delegation to subclass.
-    context->set_parameters(this->AllocateParameters());
+    context.set_parameters(this->AllocateParameters());
 
-    // Note that the outputs are not part of the Context, but instead are
-    // checked by LeafSystemOutput::add_port.
-
-    return context;
+    // Allow derived LeafSystem to acquire Context resources.
+    DoAcquireLeafContextResources(&context);
   }
 
   // Enforce some requirements on the fully-assembled Context.
@@ -215,16 +218,6 @@ class LeafSystem : public System<T> {
       auto model_value = model_abstract_parameters_.CloneModel(i);
       p.SetFrom(*model_value);
     }
-  }
-
-  std::unique_ptr<SystemOutput<T>> AllocateOutput(
-      const Context<T>&) const final {
-    std::unique_ptr<LeafSystemOutput<T>> output(new LeafSystemOutput<T>);
-    for (int i = 0; i < this->get_num_output_ports(); ++i) {
-      const OutputPort<T>& port = this->get_output_port(i);
-      output->add_port(std::make_unique<OutputPortValue>(port.Allocate()));
-    }
-    return std::move(output);
   }
 
   /// Returns the AllocateContinuousState value, which must not be nullptr.
@@ -315,6 +308,13 @@ class LeafSystem : public System<T> {
   /// implementation provides a default-constructed `LeafContext<T>`.
   virtual std::unique_ptr<LeafContext<T>> DoMakeLeafContext() const {
     return std::make_unique<LeafContext<T>>();
+  }
+
+  /// Derived classes that need their own resource allocation beyond the
+  /// SystemBase- and LeafSystem-acquired ones should implement this. The
+  /// default implementation does nothing.
+  virtual void DoAcquireLeafContextResources(LeafContext<T>* context) const {
+    unused(context);
   }
 
   /// Derived classes that impose restrictions on what resources are permitted
@@ -1552,8 +1552,10 @@ class LeafSystem : public System<T> {
       typename LeafOutputPort<T>::AllocCallback vector_allocator,
       typename LeafOutputPort<T>::CalcVectorCallback vector_calculator) {
     auto port = std::make_unique<LeafOutputPort<T>>(
-        *this, *this, OutputPortIndex(this->get_num_output_ports()),
-        fixed_size, vector_allocator, vector_calculator);
+        static_cast<const System<T>*>(this), static_cast<SystemBase*>(this),
+        OutputPortIndex(this->get_num_output_ports()),
+        this->assign_next_dependency_ticket(), fixed_size, vector_allocator,
+        vector_calculator, std::vector<DependencyTicket>{});
     LeafOutputPort<T>* const port_ptr = port.get();
     this->CreateOutputPort(std::move(port));
     return *port_ptr;
@@ -1565,8 +1567,10 @@ class LeafSystem : public System<T> {
       typename LeafOutputPort<T>::AllocCallback allocator,
       typename LeafOutputPort<T>::CalcCallback calculator) {
     auto port = std::make_unique<LeafOutputPort<T>>(
-        *this, *this, OutputPortIndex(this->get_num_output_ports()),
-        allocator, calculator);
+        static_cast<const System<T>*>(this), static_cast<SystemBase*>(this),
+        OutputPortIndex(this->get_num_output_ports()),
+        this->assign_next_dependency_ticket(), allocator, calculator,
+        std::vector<DependencyTicket>{});
     LeafOutputPort<T>* const port_ptr = port.get();
     this->CreateOutputPort(std::move(port));
     return *port_ptr;

@@ -145,6 +145,127 @@ class ContextBase : public internal::ContextMessageInterface {
     return static_cast<int>(input_port_tickets_.size());
   }
 
+  /** Returns the number of output ports represented in this context. */
+  int get_num_output_ports() const {
+    return static_cast<int>(output_port_tickets_.size());
+  }
+
+  /** Returns the number of direct child subcontexts this context has.
+  A leaf context will return 0. */
+  int num_subcontexts() const { return do_num_subcontexts(); }
+
+  /** Gets const access to a particular subcontext of this diagram context.
+  The index must be in range [0..num_subsystems()-1]. */
+  const ContextBase& get_subcontext(SubsystemIndex index) const {
+    return do_get_subcontext(index);
+  }
+
+  /** Gets const access to a particular subcontext of this diagram context.
+  The index must be in range [0..num_subsystems()-1]. */
+  ContextBase& get_mutable_subcontext(SubsystemIndex index) {
+    return const_cast<ContextBase&>(get_subcontext(index));
+  }
+
+  /** Returns `true` if this subcontext is the root of the Context tree that
+  it is in. If so, it has a null parent context. */
+  bool is_root_context() const { return !parent_; }
+
+  /** Returns a const reference to the %ContextBase of the root Context of the
+  tree containing this subcontext. */
+  // TODO(sherm1) Consider precalculating this for faster access.
+  const ContextBase& get_root_context_base() const {
+    const ContextBase* node = this;
+    while (node->get_parent_base()) node = node->get_parent_base();
+    return *node;
+  }
+
+  /** Returns a mutable reference to the root Context of the tree containing
+  this subcontext. */
+  ContextBase& get_mutable_root_context_base() {
+    return const_cast<ContextBase&>(get_root_context_base());
+  }
+
+  /** Starts a new change event and returns the event number which is unique
+  for this entire Context tree, not just this subcontext. */
+  int64_t start_new_change_event() {
+    return get_mutable_root_context_base()
+        .increment_local_change_event_counter();
+  }
+
+  /** Force invalidation of any time-dependent computation. */
+  void NoteTimeChanged(int64_t change_event) {
+    get_tracker(DependencyTicket(internal::kTimeTicket))
+        .NoteValueChange(change_event);
+  }
+
+  /** Force invalidation of any accuracy-dependent computation. */
+  void NoteAccuracyChanged(int64_t change_event) {
+    get_tracker(DependencyTicket(internal::kAccuracyTicket))
+        .NoteValueChange(change_event);
+  }
+
+  /** Force invalidation of any state-dependent computation. */
+  void NoteAllStateChanged(int64_t change_event) {
+    NoteAllContinuousStateChanged(change_event);
+    NoteAllDiscreteStateChanged(change_event);
+    NoteAllAbstractStateChanged(change_event);
+  }
+
+  /** Force invalidation of any continuous state-dependent computation. */
+  void NoteAllContinuousStateChanged(int64_t change_event) {
+    NoteAllQChanged(change_event);
+    NoteAllVChanged(change_event);
+    NoteAllZChanged(change_event);
+  }
+
+  /** Force invalidation of any q-dependent computation. */
+  void NoteAllQChanged(int64_t change_event) {
+    get_tracker(DependencyTicket(internal::kQTicket))
+        .NoteValueChange(change_event);
+  }
+
+  /** Force invalidation of any v-dependent computation. */
+  void NoteAllVChanged(int64_t change_event) {
+    get_tracker(DependencyTicket(internal::kVTicket))
+        .NoteValueChange(change_event);
+  }
+
+  /** Force invalidation of any z-dependent computation. */
+  void NoteAllZChanged(int64_t change_event) {
+    get_tracker(DependencyTicket(internal::kZTicket))
+        .NoteValueChange(change_event);
+  }
+
+  /** Force invalidation of any discrete state-dependent computation. */
+  void NoteAllDiscreteStateChanged(int64_t change_event) {
+    for (auto ticket : discrete_state_tickets_)
+      get_tracker(ticket).NoteValueChange(change_event);
+  }
+
+  /** Force invalidation of any abstract state-dependent computation. */
+  void NoteAllAbstractStateChanged(int64_t change_event) {
+    for (auto ticket : abstract_state_tickets_)
+      get_tracker(ticket).NoteValueChange(change_event);
+  }
+
+  /** Force invalidation of any parameter-dependent computation. */
+  void NoteAllParametersChanged(int64_t change_event) {
+    NoteAllNumericParametersChanged(change_event);
+    NoteAllAbstractParametersChanged(change_event);
+  }
+
+  /** Force invalidation of any numeric parameter-dependent computation. */
+  void NoteAllNumericParametersChanged(int64_t change_event) {
+    for (auto ticket : numeric_parameter_tickets_)
+      get_tracker(ticket).NoteValueChange(change_event);
+  }
+
+  /** Force invalidation of any abstract parameter-dependent computation. */
+  void NoteAllAbstractParametersChanged(int64_t change_event) {
+    for (auto ticket : abstract_parameter_tickets_)
+      get_tracker(ticket).NoteValueChange(change_event);
+  }
+
   /** Connects the input port at `index` to a FixedInputPortValue with
   the given abstract `value`. Returns a reference to the allocated
   FixedInputPortValue that will remain valid until this input port's value
@@ -184,13 +305,34 @@ class ContextBase : public internal::ContextMessageInterface {
   }
 
   // For internal use only.
-#if !defined(DRAKE_DOXYGEN_CXX)
+  #if !defined(DRAKE_DOXYGEN_CXX)
 
   // Add the next input port. Expected index is supplied along with the
   // assigned ticket. Subscribe the "all input ports" tracker to this one.
   void AddInputPort(InputPortIndex expected_index, DependencyTicket ticket);
 
-#endif
+  // These provide access to the memorized tickets for various resources.
+  // These are set by SystemBase::AllocateContext().
+
+  std::vector<DependencyTicket>& input_port_tickets() {
+    return input_port_tickets_;
+  }
+  std::vector<DependencyTicket>& output_port_tickets() {
+    return output_port_tickets_;
+  }
+  std::vector<DependencyTicket>& discrete_state_tickets() {
+    return discrete_state_tickets_;
+  }
+  std::vector<DependencyTicket>& abstract_state_tickets() {
+    return abstract_state_tickets_;
+  }
+  std::vector<DependencyTicket>& numeric_parameter_tickets() {
+    return numeric_parameter_tickets_;
+  }
+  std::vector<DependencyTicket>& abstract_parameter_tickets() {
+    return abstract_parameter_tickets_;
+  }
+  #endif
 
  protected:
   /** Default constructor creates an empty ContextBase but initializes all the
@@ -228,6 +370,21 @@ class ContextBase : public internal::ContextMessageInterface {
     child->set_parent(parent);
   }
 
+  /** (Internal use only) */
+  // Gets the value of change event counter stored in this subcontext. This
+  // should only be used when this subcontext is serving as root.
+  int64_t get_local_change_event_counter() const {
+    return current_change_event_;
+  }
+
+  /** (Internal use only) */
+  // Increments the change event counter for this subcontext and returns the
+  // new value. This should only be used when this subcontext is serving
+  // as root.
+  int64_t increment_local_change_event_counter() {
+    return ++current_change_event_;
+  }
+
   /** Derived classes must implement this so that it performs the complete
   deep copy of the context, including all base class members but not fixing
   up base class pointers. To do that, implement a protected copy constructor
@@ -235,6 +392,19 @@ class ContextBase : public internal::ContextMessageInterface {
   pointers), then implement DoCloneWithoutPointers() as
   `return unique_ptr<ContextBase>(new DerivedType(*this));`. */
   virtual std::unique_ptr<ContextBase> DoCloneWithoutPointers() const = 0;
+
+  /** DiagramContext must override this to return the actual number
+  of immediate child subcontexts it contains. The default is 0. */
+  virtual int do_num_subcontexts() const { return 0; }
+
+  /** DiagramContext must override this to provide access to its contained
+  subcontexts. The default implementation throws a logic error. */
+  virtual const ContextBase& do_get_subcontext(
+      SubsystemIndex index) const {
+    unused(index);
+    throw std::logic_error(
+        "ContextBase::do_get_subcontext: called on a leaf context.");
+  }
 
  private:
   friend class detail::SystemBaseContextBaseAttorney;
@@ -279,13 +449,21 @@ class ContextBase : public internal::ContextMessageInterface {
   void FixContextPointers(const ContextBase& source,
                           const DependencyTracker::PointerMap& tracker_map);
 
-  // TODO(sherm1) Use these tickets to reconstruct the dependency graph when
-  // cloning or transmogrifying a Context without a System present.
+  // We record tickets so we can reconstruct the dependency graph when cloning
+  // or transmogrifying a Context without a System present.
 
   // Index by InputPortIndex.
   std::vector<DependencyTicket> input_port_tickets_;
-
-  // TODO(sherm1) Output port, state, and parameter tickets go here.
+  // Index by OutputPortIndex.
+  std::vector<DependencyTicket> output_port_tickets_;
+  // Index by DiscreteStateIndex.
+  std::vector<DependencyTicket> discrete_state_tickets_;
+  // Index by AbstractStateIndex.
+  std::vector<DependencyTicket> abstract_state_tickets_;
+  // Index by NumericParameterIndex.
+  std::vector<DependencyTicket> numeric_parameter_tickets_;
+  // Index by AbstractParameterIndex.
+  std::vector<DependencyTicket> abstract_parameter_tickets_;
 
   // For each input port, the fixed value or null if the port is connected to
   // something else (in which case we need System help to get the value).
@@ -301,6 +479,10 @@ class ContextBase : public internal::ContextMessageInterface {
 
   // This is the dependency graph for values within this subcontext.
   DependencyGraph graph_;
+
+  // This is used only when this subcontext is serving as the root
+  // of a context tree.
+  int64_t current_change_event_{0};
 
   // The Context of the enclosing Diagram. Null/invalid when this is the root
   // context.

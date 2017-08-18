@@ -106,8 +106,7 @@ class DiagramContextTest : public ::testing::Test {
 
   void AddSystem(const System<double>& sys, SubsystemIndex index) {
     auto subcontext = sys.CreateDefaultContext();
-    auto suboutput = sys.AllocateOutput(*subcontext);
-    context_->AddSystem(index, std::move(subcontext), std::move(suboutput));
+    context_->AddSystem(SubsystemIndex(index), std::move(subcontext));
   }
 
   void AttachInputPorts() {
@@ -161,17 +160,13 @@ void VerifyClonedParameters(const Parameters<double>& params) {
   EXPECT_EQ(2048, UnpackIntValue(params.get_abstract_parameter(0)));
 }
 
-// Tests that subsystems have outputs and contexts in the DiagramContext.
+// Tests that subsystems have contexts in the DiagramContext.
 TEST_F(DiagramContextTest, RetrieveConstituents) {
   // All of the subsystems should be leaf Systems.
   for (SubsystemIndex i(0); i < kNumSystems; ++i) {
     auto context = dynamic_cast<const LeafContext<double>*>(
         &context_->GetSubsystemContext(i));
     EXPECT_TRUE(context != nullptr);
-
-    auto output = dynamic_cast<const LeafSystemOutput<double>*>(
-        context_->GetSubsystemOutput(i));
-    EXPECT_TRUE(output != nullptr);
   }
 }
 

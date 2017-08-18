@@ -46,7 +46,8 @@ class MySystemBase final : public SystemBase {
     return std::make_unique<MyContextBase>(true);  // A valid context.
   }
 
-  void DoValidateAllocatedContext(const ContextBase& context) const final {}
+  void DoAcquireContextResources(ContextBase*) const final {}
+  void DoValidateAllocatedContext(const ContextBase&) const final {}
 
   void DoCheckValidContext(const ContextBase& context) const final {
     auto& my_context = dynamic_cast<const MyContextBase&>(context);

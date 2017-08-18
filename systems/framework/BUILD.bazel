@@ -35,6 +35,7 @@ drake_cc_package_library(
         ":leaf_system",
         ":model_values",
         ":output_port",
+        ":output_port_base",
         ":output_port_value",
         ":parameters",
         ":single_output_vector_source",
@@ -261,6 +262,19 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "output_port_base",
+    srcs = [
+        "output_port_base.cc",
+    ],
+    hdrs = [
+        "output_port_base.h",
+    ],
+    deps = [
+        ":framework_common",
+    ],
+)
+
+drake_cc_library(
     name = "system_base",
     srcs = [
         "system_base.cc",
@@ -272,6 +286,7 @@ drake_cc_library(
         ":cache_entry",
         ":context_base",
         ":input_port_base",
+        ":output_port_base",
     ],
 )
 
@@ -280,6 +295,7 @@ drake_cc_library(
     srcs = ["output_port_value.cc"],
     hdrs = ["output_port_value.h"],
     deps = [
+        ":framework_common",
         ":value",
         ":value_checker",
         ":vector",
@@ -295,7 +311,6 @@ drake_cc_library(
     hdrs = ["context.h"],
     deps = [
         ":context_base",
-        ":output_port_value",
         ":parameters",
         ":state",
         "//common:default_scalars",
@@ -309,15 +324,14 @@ drake_cc_library(
     srcs = ["leaf_context.cc"],
     hdrs = ["leaf_context.h"],
     deps = [
-        ":cache_and_dependency_tracker",
         ":context",
-        ":parameters",
         ":vector",
         "//common:default_scalars",
         "//common:essential",
     ],
 )
 
+# TODO(sherm1) This should be "input_port".
 drake_cc_library(
     name = "input_port_descriptor",
     srcs = [
@@ -335,17 +349,19 @@ drake_cc_library(
 
 drake_cc_library(
     name = "output_port",
-    srcs = ["output_port.cc"],
-    hdrs = ["output_port.h"],
+    srcs = [
+        "output_port.cc",
+    ],
+    hdrs = [
+        "output_port.h",
+    ],
     deps = [
         ":context",
-        ":framework_common",
+        ":output_port_base",
         ":system_base",
         ":value",
-        ":vector",
         "//common:default_scalars",
         "//common:essential",
-        "//common:type_safe_index",
     ],
 )
 
@@ -364,6 +380,7 @@ drake_cc_library(
         ":event_collection",
         ":input_port_descriptor",
         ":output_port",
+        ":output_port_value",
         ":system_base",
         ":system_constraint",
         ":system_scalar_converter",
@@ -384,7 +401,7 @@ drake_cc_library(
     srcs = ["leaf_output_port.cc"],
     hdrs = ["leaf_output_port.h"],
     deps = [
-        ":framework_common",
+        ":leaf_context",
         ":output_port",
         ":value",
         ":vector",
@@ -584,7 +601,6 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "cache_test",
     deps = [
-        ":cache_and_dependency_tracker",
         ":context_base",
         "//common:essential",
         "//systems/framework/test_utilities",
@@ -765,6 +781,7 @@ drake_cc_googletest(
     deps = [
         ":output_port_value",
         "//common:essential",
+        "//systems/framework/test_utilities",
     ],
 )
 
