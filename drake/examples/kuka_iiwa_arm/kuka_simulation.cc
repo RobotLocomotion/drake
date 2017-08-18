@@ -35,11 +35,10 @@ DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
 DEFINE_string(urdf, "", "Name of urdf to load");
 
 namespace drake {
-using manipulation::util::SimDiagramBuilder;
 namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
-
+using manipulation::util::SimDiagramBuilder;
 using systems::ConstantVectorSource;
 using systems::Context;
 using systems::Diagram;

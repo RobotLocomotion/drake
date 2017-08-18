@@ -36,15 +36,18 @@ DEFINE_double(orientation, 2 * M_PI, "Yaw angle of the box.");
 DEFINE_int32(start_position, 1, "Position index to start from");
 DEFINE_int32(end_position, 2, "Position index to end at");
 DEFINE_double(dt, 1e-3, "Integration step size");
-DEFINE_double(realtime_rate, 0.0,
-              "Rate at which to run the simulation, relative to realtime");
-DEFINE_bool(quick, false,
-            "Run only a brief simulation and return success "
-                "without executing the entire task");
+DEFINE_double( realtime_rate, 0.0, "Rate at which to run the simulation, "
+    "relative to realtime");
+DEFINE_bool(quick, false, "Run only a brief simulation and return success "
+    "without executing the entire task");
 
 using robotlocomotion::robot_plan_t;
 
 namespace drake {
+namespace examples {
+namespace kuka_iiwa_arm {
+namespace monolithic_pick_and_place {
+namespace {
 using manipulation::schunk_wsg::SchunkWsgController;
 using manipulation::schunk_wsg::SchunkWsgStatusSender;
 using systems::RigidBodyPlant;
@@ -53,11 +56,6 @@ using systems::Simulator;
 using manipulation::util::ModelInstanceInfo;
 using manipulation::planner::RobotPlanInterpolator;
 using manipulation::util::WorldSimTreeBuilder;
-
-namespace examples {
-namespace kuka_iiwa_arm {
-namespace monolithic_pick_and_place {
-namespace {
 
 const char kIiwaUrdf[] =
     "drake/manipulation/models/iiwa_description/urdf/"

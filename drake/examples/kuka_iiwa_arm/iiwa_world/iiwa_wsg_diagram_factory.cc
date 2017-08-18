@@ -22,7 +22,8 @@
 #include "drake/util/drakeGeometryUtil.h"
 
 namespace drake {
-
+namespace examples {
+namespace kuka_iiwa_arm {
 using systems::Context;
 using systems::Diagram;
 using systems::DiagramBuilder;
@@ -30,9 +31,6 @@ using systems::InputPortDescriptor;
 using systems::OutputPort;
 using systems::RigidBodyPlant;
 using manipulation::util::SimDiagramBuilder;
-
-namespace examples {
-namespace kuka_iiwa_arm {
 
 template <typename T>
 IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(

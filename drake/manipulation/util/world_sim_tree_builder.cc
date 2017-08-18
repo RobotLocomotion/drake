@@ -16,8 +16,6 @@
 
 using Eigen::aligned_allocator;
 using Eigen::Vector3d;
-using drake::multibody::joints::FloatingBaseType;
-using drake::multibody::joints::kFixed;
 using drake::multibody::joints::kQuaternion;
 using std::allocate_shared;
 using std::string;

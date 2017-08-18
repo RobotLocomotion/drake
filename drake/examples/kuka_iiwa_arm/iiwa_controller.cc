@@ -29,10 +29,10 @@ using robotlocomotion::robot_plan_t;
 DEFINE_string(urdf, "", "Name of urdf to load");
 
 namespace drake {
-using manipulation::planner::RobotPlanInterpolator;
 namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
+using manipulation::planner::RobotPlanInterpolator;
 
 const char* const kIiwaUrdf =
     "drake/manipulation/models/iiwa_description/urdf/"

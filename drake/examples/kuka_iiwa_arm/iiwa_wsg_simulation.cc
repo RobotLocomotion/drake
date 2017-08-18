@@ -42,14 +42,14 @@ DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
               "Number of seconds to simulate.");
 
 namespace drake {
-using manipulation::util::WorldSimTreeBuilder;
-using manipulation::util::ModelInstanceInfo;
 namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 
 using manipulation::schunk_wsg::SchunkWsgStatusSender;
 using manipulation::schunk_wsg::SchunkWsgController;
+using manipulation::util::WorldSimTreeBuilder;
+using manipulation::util::ModelInstanceInfo;
 using systems::Context;
 using systems::Diagram;
 using systems::DiagramBuilder;

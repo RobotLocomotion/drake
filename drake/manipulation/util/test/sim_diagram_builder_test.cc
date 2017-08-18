@@ -1,3 +1,4 @@
+// This test covers both the SimDiagramBuilder and the WorldSimTreeBuilder.
 #include "drake/manipulation/util/sim_diagram_builder.h"
 
 #include <gtest/gtest.h>

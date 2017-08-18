@@ -39,10 +39,10 @@ using std::string;
 using std::unique_ptr;
 
 namespace drake {
-using manipulation::util::SimDiagramBuilder;
 namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
+using manipulation::util::SimDiagramBuilder;
 
 const char kUrdfPath[] =
     "drake/manipulation/models/iiwa_description/urdf/"

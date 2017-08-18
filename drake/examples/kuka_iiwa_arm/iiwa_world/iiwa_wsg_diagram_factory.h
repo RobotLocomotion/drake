@@ -11,10 +11,10 @@
 #include "drake/systems/primitives/pass_through.h"
 
 namespace drake {
-using systems::PassThrough;
-using manipulation::util::ModelInstanceInfo;
 namespace examples {
 namespace kuka_iiwa_arm {
+using systems::PassThrough;
+using manipulation::util::ModelInstanceInfo;
 
 /// A custom `systems::Diagram` composed of a `systems::RigidBodyPlant`, and a
 /// `systems::InverseDynamicsController`, `systems::PidController`, and two

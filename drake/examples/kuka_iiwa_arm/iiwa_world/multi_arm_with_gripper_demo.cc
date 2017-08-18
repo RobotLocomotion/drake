@@ -10,12 +10,12 @@
 #include "drake/systems/primitives/trajectory_source.h"
 
 namespace drake {
-using manipulation::util::ModelInstanceInfo;
-using manipulation::util::WorldSimTreeBuilder;
-using manipulation::util::SimDiagramBuilder;
 namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
+using manipulation::util::ModelInstanceInfo;
+using manipulation::util::WorldSimTreeBuilder;
+using manipulation::util::SimDiagramBuilder;
 
 std::unique_ptr<RigidBodyTree<double>> build_tree(
     int num_pairs, std::vector<ModelInstanceInfo<double>>* iiwa,
