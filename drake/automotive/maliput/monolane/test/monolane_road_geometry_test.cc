@@ -24,7 +24,7 @@ const double kHeight{5.};  // Elevation bound.
 const api::Lane* GetLaneByJunctionId(const api::RoadGeometry& rg,
                                      const std::string& junction_id) {
   for (int i = 0; i < rg.num_junctions(); ++i) {
-    if (rg.junction(i)->id().id == junction_id) {
+    if (rg.junction(i)->id() == api::JunctionId(junction_id)) {
       return rg.junction(i)->segment(0)->lane(0);
     }
   }
