@@ -775,29 +775,30 @@ void AddMcCormickVectorConstraints(
 
               // Cross-product constraint: ideally v2 = v.cross(v1).
               // Since v is within theta of normal, we will prove that
-              // |v2 - normal.cross(v1)| <= 2 * sin(theta / 2)
+              // |v2 - normal.cross(v1)| <= 2 * sin(θ / 2)
               // Notice that (v2 - normal.cross(v1))ᵀ * (v2 - normal.cross(v1))
               // = v2ᵀ * v2 + |normal.cross(v1))|² -
               //      2 * v2ᵀ * (normal.cross(v1))
               // = 1 + |normal.cross(v1))|² - 2 * normalᵀ*(v1.cross(v2))
               // = 1 + |normal.cross(v1))|² - 2 * normalᵀ*v
-              // <= 1 + 1 - 2 * cos(theta)
-              // = (2 * sin(theta / 2))²
-              // Thus we get |v2 - normal.cross(v1)| <= 2 * sin(theta / 2)
+              // <= 1 + 1 - 2 * cos(θ)
+              // = (2 * sin(θ / 2))²
+              // Thus we get |v2 - normal.cross(v1)| <= 2 * sin(θ / 2)
               // Here we consider to use an elementwise linear constraint
-              // -2*sin(theta / 2) <=  v2 - normal.cross(v1) <= 2*sin(theta / 2)
-              // Since 0<=theta<=pi/2, this should be enough to rule out the
+              // -2*sin(theta / 2) <=  v2 - normal.cross(v1) <= 2*sin(θ / 2)
+              // Since 0<=θ<=pi/2, this should be enough to rule out the
               // det(R)=-1 case (the shortest projection of a line across the
               // circle onto a single axis has length 2sqrt(3)/3 > 1.15), and
               // can be significantly tighter.
 
               // To activate this only when the box is active, the complete
               // constraints are
-              //  -2*sin(theta/2)-2*(3-(cxi+cyi+czi)) <= v2-normal.cross(v1)
-              //    v2-normal.cross(v1) <= 2*sin(theta/2)+2*(3-(cxi+cyi+czi))
+              //  -2*sin(θ/2)-(2 - 2sin(θ/2))*(3-(cxi+cyi+czi))
+              //   <= v2-normal.cross(v1)
+              //     <= 2*sin(θ/2)+(2 - 2sin(θ/2))*(3-(cxi+cyi+czi))
               // Note: Again this constraint could be tighter as a Lorenz cone
               // constraint of the form:
-              //   |v2 - normal.cross(v1)| <= 2*sin(theta/2).
+              //   |v2 - normal.cross(v1)| <= 2*sin(θ/2).
               const double sin_theta2 = sin(theta/2);
               const Vector3<symbolic::Expression> v2_minus_n_cross_n1{
                   v2 - orthant_normal.cross(v1)};
