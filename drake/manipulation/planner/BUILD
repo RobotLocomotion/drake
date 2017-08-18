@@ -67,8 +67,9 @@ drake_cc_googletest(
     deps = [
         ":robot_plan_interpolator",
         "//drake/common:find_resource",
-        "//drake/examples/kuka_iiwa_arm:iiwa_common",
         "//drake/systems/framework",
+        "@lcmtypes_bot2_core",
+        "@lcmtypes_robotlocomotion",
     ],
 )
 

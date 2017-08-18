@@ -1,14 +1,13 @@
 #include "drake/manipulation/planner/robot_plan_interpolator.h"
 
 #include <gtest/gtest.h>
+#include "robotlocomotion/robot_plan_t.hpp"
 
 #include "drake/common/find_resource.h"
-#include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 
 namespace drake {
 namespace manipulation {
 namespace planner {
-namespace test {
 namespace {
 
 static const int kNumJoints = 7;
@@ -77,17 +76,35 @@ GTEST_TEST(RobotPlanInterpolatorTest, TrajectoryTest) {
   q(0, 3) = 1.5;
   q(0, 4) = 1;
 
-  std::vector<int> info(t.size(), 1);
+    std::vector<int> info(t.size(), 1);
 
-  robotlocomotion::robot_plan_t plan =
-      examples::kuka_iiwa_arm::EncodeKeyFrames(dut.tree(), t, info, q);
+  const int num_time_steps = q.cols();
+
+  // Encode into a robot_plan_t structure.
+  robotlocomotion::robot_plan_t plan{};
+  plan.num_states = num_time_steps;
+  const bot_core::robot_state_t default_robot_state{};
+  plan.plan.resize(num_time_steps, default_robot_state);
+  plan.plan_info.resize(num_time_steps, 0);
+  for (int i = 0; i < num_time_steps; i++) {
+    bot_core::robot_state_t& step = plan.plan[i];
+    step.utime = t[i] * 1e6;
+    step.num_joints = q.rows();
+    for (int j = 0; j < step.num_joints; j++) {
+      step.joint_name.push_back(dut.tree().get_position_name(j));
+      step.joint_position.push_back(q(j, i));
+      step.joint_velocity.push_back(0);
+      step.joint_effort.push_back(0);
+    }
+  }
 
   std::unique_ptr<systems::Context<double>> context =
       dut.CreateDefaultContext();
   std::unique_ptr<systems::SystemOutput<double>> output =
       dut.AllocateOutput(*context);
-  context->FixInputPort(dut.get_state_input_port().get_index(),
-                        Eigen::VectorXd::Zero(kNumJoints * 2));
+  context->FixInputPort(
+      dut.get_state_input_port().get_index(),
+      Eigen::VectorXd::Zero(kNumJoints * 2));
   context->FixInputPort(dut.get_plan_input_port().get_index(),
                         systems::AbstractValue::Make(plan));
   dut.Initialize(0, Eigen::VectorXd::Zero(kNumJoints),
@@ -96,7 +113,7 @@ GTEST_TEST(RobotPlanInterpolatorTest, TrajectoryTest) {
   dut.CalcUnrestrictedUpdate(*context, context->get_mutable_state());
 
   // Test we're running the plan through time by watching the
-  // velocities and acceleraiton change.
+  // velocities and acceleration change.
   std::vector<TrajectoryTestCase> cases;
   cases.push_back(TrajectoryTestCase{0.5, 1, 1});
   cases.push_back(TrajectoryTestCase{1.5, 1, -1});
@@ -156,7 +173,6 @@ GTEST_TEST(RobotPlanInterpolatorTest, TrajectoryTest) {
 }
 
 }  // namespace
-}  // namespace test
 }  // namespace planner
 }  // namespace manipulation
 }  // namespace drake

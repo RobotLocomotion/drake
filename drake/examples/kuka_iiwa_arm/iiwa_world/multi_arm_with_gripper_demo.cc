@@ -42,8 +42,7 @@ std::unique_ptr<RigidBodyTree<double>> build_tree(
 
     // Adds a wsg gripper
     id = tree_builder->AddModelInstanceToFrame(
-        "wsg", Vector3<double>::Zero(), Vector3<double>::Zero(),
-        tree_builder->tree().findFrame("iiwa_frame_ee", id),
+        "wsg", tree_builder->tree().findFrame("iiwa_frame_ee", id),
         drake::multibody::joints::kFixed);
     wsg->push_back(tree_builder->get_model_info_for_instance(id));
   }

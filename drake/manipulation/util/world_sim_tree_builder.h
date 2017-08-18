@@ -54,16 +54,14 @@ class WorldSimTreeBuilder {
       const Eigen::Vector3d& rpy = Eigen::Vector3d::Zero());
 
   /// Adds a model instance specified by its model name, @p model_name, to
-  /// the `RigidBodyTree` being built at the pose specified by position @p xyz
-  /// and orientation @p rpy. The model instance is connected to the existing
-  /// world based on @p weld_to_frame using a floating joint of type @p
+  /// the `RigidBodyTree` being built. The model instance is connected to the
+  /// existing world based on a @p weld_to_frame using a joint of type @p
   /// floating_base_type. The model name must have been previously loaded via
   /// a call to StoreModel().
   ///
   /// @return model_instance_id of the object that is added.
   int AddModelInstanceToFrame(
-      const std::string& model_name, const Eigen::Vector3d& xyz,
-      const Eigen::Vector3d& rpy,
+      const std::string& model_name,
       std::shared_ptr<RigidBodyFrame<T>> weld_to_frame,
       const drake::multibody::joints::FloatingBaseType floating_base_type =
           drake::multibody::joints::kFixed);

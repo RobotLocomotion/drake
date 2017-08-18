@@ -3,7 +3,6 @@
 #include <memory>
 #include <unordered_map>
 #include <utility>
-#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"

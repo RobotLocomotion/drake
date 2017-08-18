@@ -118,8 +118,7 @@ std::unique_ptr<RigidBodyPlant<T>> BuildCombinedPlant(
                                               Vector3<double>(0, 0, 1));
   *box_instance = tree_builder->get_model_info_for_instance(id);
   id = tree_builder->AddModelInstanceToFrame(
-      "wsg", Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(),
-      tree_builder->tree().findFrame("iiwa_frame_ee"),
+      "wsg", tree_builder->tree().findFrame("iiwa_frame_ee"),
       drake::multibody::joints::kFixed);
   *wsg_instance = tree_builder->get_model_info_for_instance(id);
 

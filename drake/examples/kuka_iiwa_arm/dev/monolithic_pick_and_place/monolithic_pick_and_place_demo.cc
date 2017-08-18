@@ -40,7 +40,7 @@ DEFINE_double(realtime_rate, 0.0,
               "Rate at which to run the simulation, relative to realtime");
 DEFINE_bool(quick, false,
             "Run only a brief simulation and return success "
-            "without executing the entire task");
+                "without executing the entire task");
 
 using robotlocomotion::robot_plan_t;
 
@@ -84,10 +84,11 @@ struct Target {
 
 Target GetTarget() {
   Target targets[] = {
-      {"block_for_pick_and_place.urdf", Eigen::Vector3d(0.06, 0.06, 0.2)},
-      {"black_box.urdf", Eigen::Vector3d(0.055, 0.165, 0.18)},
-      {"simple_cuboid.urdf", Eigen::Vector3d(0.06, 0.06, 0.06)},
-      {"simple_cylinder.urdf", Eigen::Vector3d(0.065, 0.065, 0.13)}};
+    {"block_for_pick_and_place.urdf", Eigen::Vector3d(0.06, 0.06, 0.2)},
+    {"black_box.urdf", Eigen::Vector3d(0.055, 0.165, 0.18)},
+    {"simple_cuboid.urdf", Eigen::Vector3d(0.06, 0.06, 0.06)},
+    {"simple_cylinder.urdf", Eigen::Vector3d(0.065, 0.065, 0.13)}
+  };
 
   const int num_targets = 4;
   if ((FLAGS_target >= num_targets) || (FLAGS_target < 0)) {
@@ -98,8 +99,10 @@ Target GetTarget() {
 
 std::unique_ptr<systems::RigidBodyPlant<double>> BuildCombinedPlant(
     const std::vector<Eigen::Vector3d>& post_positions,
-    const Eigen::Vector3d& table_position, const std::string& target_model,
-    const Eigen::Vector3d& box_position, const Eigen::Vector3d& box_orientation,
+    const Eigen::Vector3d& table_position,
+    const std::string& target_model,
+    const Eigen::Vector3d& box_position,
+    const Eigen::Vector3d& box_orientation,
     ModelInstanceInfo<double>* iiwa_instance,
     ModelInstanceInfo<double>* wsg_instance,
     ModelInstanceInfo<double>* box_instance) {
@@ -116,17 +119,21 @@ std::unique_ptr<systems::RigidBodyPlant<double>> BuildCombinedPlant(
   tree_builder->StoreModel("yellow_post",
                            "drake/examples/kuka_iiwa_arm/models/objects/"
                            "yellow_post.urdf");
-  tree_builder->StoreModel("wsg",
-                           "drake/manipulation/models/wsg_50_description"
-                           "/sdf/schunk_wsg_50_ball_contact.sdf");
+  tree_builder->StoreModel(
+      "wsg",
+      "drake/manipulation/models/wsg_50_description"
+      "/sdf/schunk_wsg_50_ball_contact.sdf");
 
   // The main table which the arm sits on.
-  tree_builder->AddFixedModelInstance("table", kTableBase,
+  tree_builder->AddFixedModelInstance("table",
+                                      kTableBase,
                                       Eigen::Vector3d::Zero());
-  tree_builder->AddFixedModelInstance("table", kTableBase + table_position,
+  tree_builder->AddFixedModelInstance("table",
+                                      kTableBase + table_position,
                                       Eigen::Vector3d::Zero());
   for (const Eigen::Vector3d& post_location : post_positions) {
-    tree_builder->AddFixedModelInstance("yellow_post", post_location,
+    tree_builder->AddFixedModelInstance("yellow_post",
+                                        post_location,
                                         Eigen::Vector3d::Zero());
   }
   tree_builder->AddGround();
@@ -140,8 +147,7 @@ std::unique_ptr<systems::RigidBodyPlant<double>> BuildCombinedPlant(
   *box_instance = tree_builder->get_model_info_for_instance(box_id);
 
   int wsg_id = tree_builder->AddModelInstanceToFrame(
-      "wsg", Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(),
-      tree_builder->tree().findFrame("iiwa_frame_ee"),
+      "wsg", tree_builder->tree().findFrame("iiwa_frame_ee"),
       drake::multibody::joints::kFixed);
   *wsg_instance = tree_builder->get_model_info_for_instance(wsg_id);
 
@@ -149,15 +155,16 @@ std::unique_ptr<systems::RigidBodyPlant<double>> BuildCombinedPlant(
       tree_builder->Build());
 }
 
+
 int DoMain(void) {
   // Locations for the posts from physical pick and place tests with
   // the iiwa+WSG.
   std::vector<Eigen::Vector3d> post_locations;
   // TODO(sam.creasey) this should be 1.10 in the Y direction.
-  post_locations.push_back(Eigen::Vector3d(0.00, 1.00, 0));   // position A
-  post_locations.push_back(Eigen::Vector3d(0.80, 0.36, 0));   // position B
-  post_locations.push_back(Eigen::Vector3d(0.30, -0.9, 0));   // position D
-  post_locations.push_back(Eigen::Vector3d(-0.1, -1.0, 0));   // position E
+  post_locations.push_back(Eigen::Vector3d(0.00, 1.00, 0));  // position A
+  post_locations.push_back(Eigen::Vector3d(0.80, 0.36, 0));  // position B
+  post_locations.push_back(Eigen::Vector3d(0.30, -0.9, 0));  // position D
+  post_locations.push_back(Eigen::Vector3d(-0.1, -1.0, 0));  // position E
   post_locations.push_back(Eigen::Vector3d(-0.47, -0.8, 0));  // position F
 
   // Position of the pick and place location on the table, relative to
@@ -177,8 +184,8 @@ int DoMain(void) {
   std::vector<Isometry3<double>> place_locations;
   Isometry3<double> place_location;
   place_location.translation() = post_locations[0] + post_height_offset;
-  place_location.linear() =
-      Matrix3<double>(AngleAxis<double>(M_PI / 2., Vector3<double>::UnitZ()));
+  place_location.linear() = Matrix3<double>(
+      AngleAxis<double>(M_PI / 2., Vector3<double>::UnitZ()));
   place_locations.push_back(place_location);
 
   place_location.translation() = post_locations[1] + post_height_offset;
@@ -190,18 +197,18 @@ int DoMain(void) {
   place_locations.push_back(place_location);
 
   place_location.translation() = post_locations[2] + post_height_offset;
-  place_location.linear() =
-      Matrix3<double>(AngleAxis<double>(-M_PI / 2., Vector3<double>::UnitZ()));
+  place_location.linear() = Matrix3<double>(
+      AngleAxis<double>(-M_PI / 2., Vector3<double>::UnitZ()));
   place_locations.push_back(place_location);
 
   place_location.translation() = post_locations[3] + post_height_offset;
-  place_location.linear() =
-      Matrix3<double>(AngleAxis<double>(-M_PI / 2., Vector3<double>::UnitZ()));
+  place_location.linear() = Matrix3<double>(
+      AngleAxis<double>(-M_PI / 2., Vector3<double>::UnitZ()));
   place_locations.push_back(place_location);
 
   place_location.translation() = post_locations[4] + post_height_offset;
-  place_location.linear() =
-      Matrix3<double>(AngleAxis<double>(-M_PI / 2., Vector3<double>::UnitZ()));
+  place_location.linear() = Matrix3<double>(
+      AngleAxis<double>(-M_PI / 2., Vector3<double>::UnitZ()));
   place_locations.push_back(place_location);
 
   Target target = GetTarget();
@@ -223,8 +230,8 @@ int DoMain(void) {
   const Eigen::Vector3d table_offset(0.30, 0, 0);
   std::unique_ptr<systems::RigidBodyPlant<double>> model_ptr =
       BuildCombinedPlant(post_locations, table_position + table_offset,
-                         target.model_name, box_origin,
-                         Vector3<double>(0, 0, FLAGS_orientation),
+                         target.model_name,
+                         box_origin, Vector3<double>(0, 0, FLAGS_orientation),
                          &iiwa_instance, &wsg_instance, &box_instance);
 
   auto plant = builder.AddSystem<IiwaAndWsgPlantWithStateEstimator<double>>(
@@ -249,14 +256,16 @@ int DoMain(void) {
   builder.Connect(plant->get_output_port_plant_state(),
                   drake_visualizer->get_input_port(0));
 
-  auto iiwa_trajectory_generator =
-      builder.AddSystem<RobotPlanInterpolator>(FindResourceOrThrow(kIiwaUrdf));
+  auto iiwa_trajectory_generator = builder.AddSystem<RobotPlanInterpolator>(
+      FindResourceOrThrow(kIiwaUrdf));
   builder.Connect(plant->get_output_port_iiwa_state(),
                   iiwa_trajectory_generator->get_state_input_port());
-  builder.Connect(iiwa_trajectory_generator->get_state_output_port(),
-                  plant->get_input_port_iiwa_state_command());
-  builder.Connect(iiwa_trajectory_generator->get_acceleration_output_port(),
-                  plant->get_input_port_iiwa_acceleration_command());
+  builder.Connect(
+      iiwa_trajectory_generator->get_state_output_port(),
+      plant->get_input_port_iiwa_state_command());
+  builder.Connect(
+      iiwa_trajectory_generator->get_acceleration_output_port(),
+      plant->get_input_port_iiwa_acceleration_command());
 
   auto wsg_controller = builder.AddSystem<SchunkWsgController>();
   builder.Connect(plant->get_output_port_wsg_state(),
@@ -284,8 +293,8 @@ int DoMain(void) {
 
   auto state_machine =
       builder.template AddSystem<PickAndPlaceStateMachineSystem>(
-          FindResourceOrThrow(kIiwaUrdf), kIiwaEndEffectorName, iiwa_base,
-          place_locations);
+          FindResourceOrThrow(kIiwaUrdf), kIiwaEndEffectorName,
+          iiwa_base, place_locations);
 
   builder.Connect(plant->get_output_port_box_robot_state_msg(),
                   state_machine->get_input_port_box_state());
@@ -302,24 +311,26 @@ int DoMain(void) {
   Simulator<double> simulator(*sys);
   simulator.Initialize();
   simulator.set_target_realtime_rate(FLAGS_realtime_rate);
-  simulator.reset_integrator<RungeKutta2Integrator<double>>(
-      *sys, FLAGS_dt, simulator.get_mutable_context());
+  simulator.reset_integrator<RungeKutta2Integrator<double>>(*sys,
+      FLAGS_dt, simulator.get_mutable_context());
   simulator.get_mutable_integrator()->set_maximum_step_size(FLAGS_dt);
   simulator.get_mutable_integrator()->set_fixed_step_mode(true);
 
   auto& plan_source_context = sys->GetMutableSubsystemContext(
       *iiwa_trajectory_generator, simulator.get_mutable_context());
   iiwa_trajectory_generator->Initialize(
-      plan_source_context.get_time(), Eigen::VectorXd::Zero(7),
+      plan_source_context.get_time(),
+      Eigen::VectorXd::Zero(7),
       plan_source_context.get_mutable_state());
 
   // Step the simulator in some small increment.  Between steps, check
   // to see if the state machine thinks we're done, and if so that the
   // object is near the target.
   const double simulation_step = 0.1;
-  while (state_machine->state(sys->GetSubsystemContext(
-             *state_machine, simulator.get_context())) !=
-         pick_and_place::kDone) {
+  while (state_machine->state(
+             sys->GetSubsystemContext(*state_machine,
+                                      simulator.get_context()))
+         != pick_and_place::kDone) {
     simulator.StepTo(simulator.get_context().get_time() + simulation_step);
     if (FLAGS_quick) {
       // We've run a single step, just get out now since we won't have
@@ -328,8 +339,10 @@ int DoMain(void) {
     }
   }
 
-  const pick_and_place::WorldState& world_state = state_machine->world_state(
-      sys->GetSubsystemContext(*state_machine, simulator.get_context()));
+  const pick_and_place::WorldState& world_state =
+      state_machine->world_state(
+          sys->GetSubsystemContext(*state_machine,
+                                   simulator.get_context()));
   const Isometry3<double>& object_pose = world_state.get_object_pose();
   const Vector6<double>& object_velocity = world_state.get_object_velocity();
   Isometry3<double> goal = place_locations.back();
@@ -337,10 +350,12 @@ int DoMain(void) {
   Eigen::Vector3d object_rpy = math::rotmat2rpy(object_pose.rotation());
   Eigen::Vector3d goal_rpy = math::rotmat2rpy(goal.rotation());
 
-  drake::log()->info("Pose: {} {}", object_pose.translation().transpose(),
+  drake::log()->info("Pose: {} {}",
+                     object_pose.translation().transpose(),
                      object_rpy.transpose());
   drake::log()->info("Velocity: {}", object_velocity.transpose());
-  drake::log()->info("Goal: {} {}", goal.translation().transpose(),
+  drake::log()->info("Goal: {} {}",
+                     goal.translation().transpose(),
                      goal_rpy.transpose());
 
   const double position_tolerance = 0.02;
@@ -357,6 +372,7 @@ int DoMain(void) {
   DRAKE_DEMAND(std::abs(rpy_error(0)) < angle_tolerance);
   DRAKE_DEMAND(std::abs(rpy_error(1)) < angle_tolerance);
   DRAKE_DEMAND(std::abs(rpy_error(2)) < angle_tolerance);
+
 
   const double linear_velocity_tolerance = 0.1;
   DRAKE_DEMAND(std::abs(object_velocity(0)) < linear_velocity_tolerance);

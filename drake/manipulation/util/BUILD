@@ -21,7 +21,6 @@ drake_cc_library(
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/parsers",
-        "//drake/multibody/rigid_body_plant:drake_visualizer",
     ],
 )
 
@@ -152,7 +151,6 @@ drake_cc_googletest(
     deps = [
         ":sim_diagram_builder",
         "//drake/common:eigen_matrix_compare",
-        "//drake/examples/kuka_iiwa_arm:iiwa_common",
         "//drake/lcm",
         "//drake/manipulation/util:world_sim_tree_builder",
         "//drake/multibody/rigid_body_plant",
