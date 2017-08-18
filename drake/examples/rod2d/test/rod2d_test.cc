@@ -277,6 +277,7 @@ class Rod2DDAETest : public ::testing::Test {
     CheckTransOperatorDim(data.F_transpose_mult, num_contacts);
     EXPECT_EQ(GetOperatorDim(data.L_mult), data.num_limit_constraints);
     CheckTransOperatorDim(data.L_transpose_mult, data.num_limit_constraints);
+    EXPECT_EQ(data.kL.size(), data.num_limit_constraints);
   }
 
   std::unique_ptr<Rod2D<double>> dut_;  //< The device under test.

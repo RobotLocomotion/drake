@@ -655,7 +655,7 @@ void ConstraintSolver<T>::FormImpactingConstraintLCP(
   qq->segment(nc, nr) = F(problem_data.v);
   qq->segment(nc + nr, nc) = -qq->segment(nc, nr);
   qq->segment(nc + nk, nc).setZero();
-  qq->segment(nc*2 + nk, num_limits) = L(problem_data.v);
+  qq->segment(nc*2 + nk, num_limits) = L(problem_data.v) + problem_data.kL;
 }
 
 template <class T>

@@ -131,7 +131,7 @@ struct ConstraintAccelProblemData {
   /// 0 ≤ L(q)⋅v̇ + kᴸ(t,q,v)  ⊥  fᶜ ≥ 0
   /// </pre>
   /// which means that the constraint c(q,v,v̇) ≡ L(q)⋅v̇ + kᴸ(t,q,v) is coupled
-  /// to a force constraint (fᶜⱼ ≥ 0) and a complementarity constraint
+  /// to a force constraint (fᶜ ≥ 0) and a complementarity constraint
   /// fᶜ⋅(L⋅v̇ + kᴸ(t,q,v)) = 0, meaning that the constraint can apply no force
   /// if it is inactive (i.e., if c(q,v,v̇) is strictly greater than zero). L
   /// is defined as the ℝˢˣᵐ Jacobian matrix that transforms generalized
@@ -149,7 +149,7 @@ struct ConstraintAccelProblemData {
   /// which can be read as the acceleration at joint j (v̇ⱼ) must be no larger
   /// than r, the force must be applied to limit the acceleration at the joint,
   /// and the limiting force cannot be applied if the acceleration at the
-  /// joint is not at the limit (i.e., v̇ⱼ ≤ r). In this example, the constraint
+  /// joint is not at the limit (i.e., v̇ⱼ < r). In this example, the constraint
   /// function is g(q,t) ≡ qⱼ + rt², yielding ̈g(q, v, v̇) = -v̇ⱼ + r.
   /// @{
 
@@ -266,20 +266,31 @@ struct ConstraintVelProblemData {
   /// generalized forces.
   std::function<VectorX<T>(const VectorX<T>&)> F_transpose_mult;
 
-  /// @name Data for holonomic unilateral constraints at the velocity level
+  /// @name Data for unilateral constraints at the velocity level
   /// Problem data for unilateral constraints of functions of system
-  /// velocity, obtained as the time derivative of holonomic constraints.
-  /// One such constraint function is a joint velocity limit:<pre>
-  /// 0 ≤ -vⱼ + k  ⊥  -fᶜⱼ ≥ 0
+  /// velocity, where the constraint can be formulated as:<pre>
+  /// 0 ≤ L(q)⋅v + kᴸ(t,q)  ⊥  fᶜ ≥ 0
   /// </pre>
-  /// which can be read as the velocity at joint j (vⱼ) must be no larger
-  /// than k, the force must be applied to limit the velocity at the joint,
-  /// and the limiting force cannot be applied if the velocity at the joint
-  /// is not at the limit (i.e., vⱼ ≤ k). In this example, the constraint
-  /// function c(v) = -vⱼ + k. The problem data center around the
-  /// Jacobian matrix L, the ℝᵗˣᵐ Jacobian matrix that transforms generalized
-  /// velocities (v ∈ ℝᵐ) into the time derivatives of t unilateral constraint
-  /// functions.
+  /// which means that the constraint c(q,v) ≡ L(q)⋅v + kᴸ(t,q) is coupled
+  /// to an impulsive force constraint (fᶜ ≥ 0) and a complementarity constraint
+  /// fᶜ⋅(L⋅v + kᴸ(t,q)) = 0, meaning that the constraint can apply no force
+  /// if it is inactive (i.e., if c(q,v) is strictly greater than zero). L
+  /// is defined as the ℝˢˣᵐ Jacobian matrix that transforms generalized
+  /// velocities (v ∈ ℝᵐ) into the time derivatives of s unilateral constraint
+  /// functions. The class of constraint functions naturally includes holonomic
+  /// constraints, which are constraints posable as g(q). Such holonomic
+  /// constraints must be differentiated with respect to time to yield
+  /// a velocity-level formulation (i.e., ġ(q, v), for the aforementioned
+  /// definition of g(q)). That differentiation yields ġ() = L⋅v, which is
+  /// consistent with the constraint class under the definition kᴸ(t,q) ≡ 0. An
+  /// example such holonomic constraint function is a joint velocity limit:<pre>
+  /// 0 ≤ -vⱼ + r  ⊥  fᶜⱼ ≥ 0
+  /// </pre>
+  /// which can be read as the velocity at joint j (vⱼ) must be no larger than
+  /// r, the impulsive force must be applied to limit the acceleration at the
+  /// joint, and the limiting force cannot be applied if the velocity at the
+  /// joint is not at the limit (i.e., vⱼ < r). In this example, the constraint
+  /// function is g(q,t) ≡ qⱼ + rt, yielding ġ(q, v) = -vⱼ + r.
   /// @{
 
   /// The number of limit constraints. Must be equivalent to the dimension of
@@ -295,6 +306,9 @@ struct ConstraintVelProblemData {
   /// returns a zero vector of dimension equal to that of the generalized
   /// forces.
   std::function<VectorX<T>(const VectorX<T>&)> L_transpose_mult;
+
+  /// This ℝˢ vector is the vector kᴸ(t,q) defined above.
+  VectorX<T> kL;
   /// @}
 
   /// The ℝᵐ vector v, the generalized velocity immediately before any impulsive

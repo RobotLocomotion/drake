@@ -203,6 +203,7 @@ class Constraint2DSolverTest : public ::testing::Test {
     CheckTransOperatorDim(data.F_transpose_mult, num_spanning_directions);
     EXPECT_EQ(GetOperatorDim(data.L_mult), data.num_limit_constraints);
     CheckTransOperatorDim(data.L_transpose_mult, data.num_limit_constraints);
+    EXPECT_EQ(data.kL.size(), data.num_limit_constraints);
     EXPECT_EQ(data.v.size(), ngc);
     EXPECT_EQ(data.mu.size(), num_contacts);
     EXPECT_EQ(data.r.size(), num_contacts);
@@ -669,6 +670,7 @@ TEST_F(Constraint2DSolverTest, TwoPointImpactAsLimit) {
     VectorX<double> {
     return L.transpose() * v;
   };
+  vel_data_->kL.setZero(1);
 
   // Compute the constraint impulses.
   VectorX<double> cf;
