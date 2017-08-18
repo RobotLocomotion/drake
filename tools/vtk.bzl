@@ -307,7 +307,10 @@ def _impl(repository_ctx):
     file_content += _vtk_cc_library(
         repository_ctx.os.name,
         "vtkFiltersCore",
-        hdrs = ["vtkFiltersCoreModule.h"],
+        hdrs = [
+            "vtkCleanPolyData.h",
+            "vtkFiltersCoreModule.h",
+        ],
         visibility = ["//visibility:private"],
         deps = [
             ":vtkCommonCore",
