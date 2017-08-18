@@ -708,29 +708,37 @@ class MultibodyTree {
   ///   // User retrieves the AutoDiffXd variant corresponding to the original
   ///   // body added above.
   ///   const RigidBody<AutoDiffXd>&
-  ///       variant_body = variant_model.retrieve_variant(body);
+  ///       variant_body = variant_model.get_variant(body);
   /// @endcode
   ///
-  /// MultibodyTree::retrieve_variant() is templated on the multibody element
+  /// MultibodyTree::get_variant() is templated on the multibody element
   /// type which is deduced from its only input argument. The returned element
   /// is templated on the scalar type T of the %MultibodyTree on which this
   /// method is invoked.
   /// @{
 
+  /// SFINAE overload for Frame<T> elements.
+  template <template <typename> class MultibodyElement, typename Scalar>
+  std::enable_if_t<std::is_base_of<Frame<T>, MultibodyElement<T>>::value,
+                   const MultibodyElement<T>&> get_variant(
+      const MultibodyElement<Scalar>& element) const {
+    return get_frame_variant(element);
+  }
+
   /// SFINAE overload for Body<T> elements.
   template <template <typename> class MultibodyElement, typename Scalar>
   std::enable_if_t<std::is_base_of<Body<T>, MultibodyElement<T>>::value,
-                   const MultibodyElement<T>&> retrieve_variant(
-      const MultibodyElement<Scalar>& element) {
-    return retrieve_body_variant(element);
+                   const MultibodyElement<T>&> get_variant(
+      const MultibodyElement<Scalar>& element) const {
+    return get_body_variant(element);
   }
 
   /// SFINAE overload for Mobilizer<T> elements.
   template <template <typename> class MultibodyElement, typename Scalar>
   std::enable_if_t<std::is_base_of<Mobilizer<T>, MultibodyElement<T>>::value,
-                   const MultibodyElement<T>&> retrieve_variant(
-      const MultibodyElement<Scalar>& element) {
-    return retrieve_mobilizer_variant(element);
+                   const MultibodyElement<T>&> get_variant(
+      const MultibodyElement<Scalar>& element) const {
+    return get_mobilizer_variant(element);
   }
   /// @}
 
@@ -875,10 +883,24 @@ class MultibodyTree {
     return raw_mobilizer_clone_ptr;
   }
 
+  // Helper method to retrieve the corresponding Frame<T> variant to a Frame in
+  // a MultibodyTree variant templated on Scalar.
+  template <template <typename> class FrameType, typename Scalar>
+  const FrameType<T>& get_frame_variant(const FrameType<Scalar>& frame) const {
+    static_assert(std::is_convertible<FrameType<T>*, Frame<T>*>::value,
+                  "FrameType must be a sub-class of Frame<T>.");
+    FrameIndex frame_index = frame.get_index();
+    DRAKE_DEMAND(frame_index < get_num_frames());
+    const FrameType<T>* frame_variant =
+        dynamic_cast<const FrameType<T>*>(frames_[frame_index]);
+    DRAKE_DEMAND(frame_variant != nullptr);
+    return *frame_variant;
+  }
+
   // Helper method to retrieve the corresponding Body<T> variant to a Body in a
   // MultibodyTree variant templated on Scalar.
   template <template <typename> class BodyType, typename Scalar>
-  const BodyType<T>& retrieve_body_variant(const BodyType<Scalar>& body) {
+  const BodyType<T>& get_body_variant(const BodyType<Scalar>& body) const {
     static_assert(std::is_convertible<BodyType<T>*, Body<T>*>::value,
                   "BodyType must be a sub-class of Body<T>.");
     BodyIndex body_index = body.get_index();
@@ -893,8 +915,8 @@ class MultibodyTree {
   // Helper method to retrieve the corresponding Mobilizer<T> variant to a Body
   // in a MultibodyTree variant templated on Scalar.
   template <template <typename> class MobilizerType, typename Scalar>
-  const MobilizerType<T>& retrieve_mobilizer_variant(
-      const MobilizerType<Scalar>& mobilizer) {
+  const MobilizerType<T>& get_mobilizer_variant(
+      const MobilizerType<Scalar>& mobilizer) const {
     static_assert(std::is_convertible<MobilizerType<T>*, Mobilizer<T>*>::value,
                   "MobilizerType must be a sub-class of Mobilizer<T>.");
     MobilizerIndex mobilizer_index = mobilizer.get_index();

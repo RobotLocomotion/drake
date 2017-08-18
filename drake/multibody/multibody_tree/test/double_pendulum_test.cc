@@ -887,14 +887,14 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
       model_->ToAutoDiffXd();
 
   const RevoluteMobilizer<AutoDiffXd>& shoulder_mobilizer_autodiff =
-      model_autodiff->retrieve_variant(*shoulder_mobilizer_);
+      model_autodiff->get_variant(*shoulder_mobilizer_);
   const RevoluteMobilizer<AutoDiffXd>& elbow_mobilizer_autodiff =
-      model_autodiff->retrieve_variant(*elbow_mobilizer_);
+      model_autodiff->get_variant(*elbow_mobilizer_);
 
   const RigidBody<AutoDiffXd>& upper_link_autodiff =
-      model_autodiff->retrieve_variant(*upper_link_);
+      model_autodiff->get_variant(*upper_link_);
   const RigidBody<AutoDiffXd>& lower_link_autodiff =
-      model_autodiff->retrieve_variant(*lower_link_);
+      model_autodiff->get_variant(*lower_link_);
 
   std::unique_ptr<Context<AutoDiffXd>> context_autodiff =
       model_autodiff->CreateDefaultContext();
