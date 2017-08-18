@@ -179,7 +179,7 @@ class Constraint2DSolverTest : public ::testing::Test {
     EXPECT_EQ(data.tau.size(), ngc);
     EXPECT_EQ(data.Ndot_times_v.size(), num_contacts);
     EXPECT_EQ(data.Fdot_times_v.size(), data.non_sliding_contacts.size());
-    EXPECT_EQ(data.Ldot_times_v.size(), data.num_limit_constraints);
+    EXPECT_EQ(data.kL.size(), data.num_limit_constraints);
     EXPECT_EQ(data.mu_non_sliding.size(), data.non_sliding_contacts.size());
     EXPECT_EQ(data.mu_sliding.size(), data.sliding_contacts.size());
     EXPECT_EQ(data.r.size(), data.non_sliding_contacts.size());
@@ -568,7 +568,7 @@ TEST_F(Constraint2DSolverTest, TwoPointAsLimit) {
     return VectorX<double>::Zero(ngc);
   };
   accel_data_->Fdot_times_v.resize(0);
-  accel_data_->Ldot_times_v.resize(1);
+  accel_data_->kL.resize(1);
   accel_data_->N_minus_muQ_transpose_mult = [ngc](const VectorX<double>&) {
     return VectorX<double>::Zero(ngc);
   };
@@ -586,7 +586,7 @@ TEST_F(Constraint2DSolverTest, TwoPointAsLimit) {
     VectorX<double> {
     return L.transpose() * v;
   };
-  accel_data_->Ldot_times_v.setZero();
+  accel_data_->kL.setZero();
 
   // Compute the constraint forces.
   VectorX<double> cf;
