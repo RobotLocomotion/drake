@@ -7,10 +7,11 @@
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/solvers/mathematical_program.h"
-#include "drake/systems/trajectory_optimization/direct_trajectory_optimization.h"
+#include "drake/systems/trajectory_optimization/multiple_shooting.h"
 
 namespace drake {
 namespace systems {
+namespace trajectory_optimization {
 namespace {
 
 // TODO(russt): MathematicalProgram should provide this number for each solver.
@@ -18,30 +19,31 @@ const double kSolverTolerance = 1e-6;
 
 typedef PiecewisePolynomial<double> PiecewisePolynomialType;
 
-class MyDirectTrajOpt : public DirectTrajectoryOptimization {
+class MyDirectTrajOpt : public MultipleShooting {
  public:
   MyDirectTrajOpt(const int num_inputs, const int num_states,
                   const int num_time_samples, const double fixed_timestep)
-      : DirectTrajectoryOptimization(num_inputs, num_states, num_time_samples,
-                                     fixed_timestep) {}
+      : MultipleShooting(num_inputs, num_states, num_time_samples,
+                         fixed_timestep) {}
 
   MyDirectTrajOpt(const int num_inputs, const int num_states,
                   const int num_time_samples, const double min_timestep,
                   const double max_timestep)
-      : DirectTrajectoryOptimization(num_inputs, num_states, num_time_samples,
-                                     min_timestep, max_timestep) {}
+      : MultipleShooting(num_inputs, num_states, num_time_samples, min_timestep,
+                         max_timestep) {}
 
   PiecewisePolynomialTrajectory ReconstructInputTrajectory() const override {
     return PiecewisePolynomialTrajectory(PiecewisePolynomial<double>());
   };
+
   PiecewisePolynomialTrajectory ReconstructStateTrajectory() const override {
     return PiecewisePolynomialTrajectory(PiecewisePolynomial<double>());
   };
 
   // Expose for unit testing.
-  using DirectTrajectoryOptimization::h_vars;
-  using DirectTrajectoryOptimization::timesteps_are_decision_variables;
-  using DirectTrajectoryOptimization::fixed_timestep;
+  using MultipleShooting::h_vars;
+  using MultipleShooting::timesteps_are_decision_variables;
+  using MultipleShooting::fixed_timestep;
 
  private:
   void DoAddRunningCost(const symbolic::Expression& g) override {}
@@ -304,5 +306,6 @@ GTEST_TEST(TrajectoryOptimizationTest, ResultSamplesTest) {
 }
 
 }  // anonymous namespace
+}  // namespace trajectory_optimization
 }  // namespace systems
 }  // namespace drake

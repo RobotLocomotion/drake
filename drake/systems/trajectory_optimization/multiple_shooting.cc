@@ -1,4 +1,4 @@
-#include "drake/systems/trajectory_optimization/direct_trajectory_optimization.h"
+#include "drake/systems/trajectory_optimization/multiple_shooting.h"
 
 #include <algorithm>
 #include <cmath>
@@ -14,6 +14,7 @@ using Eigen::VectorXd;
 
 namespace drake {
 namespace systems {
+namespace trajectory_optimization {
 
 // For readability of long lines, these single-letter variables names are
 // sometimes used:
@@ -33,8 +34,8 @@ solvers::VectorXDecisionVariable MakeNamedVariables(const std::string& prefix,
 }
 }
 
-DirectTrajectoryOptimization::DirectTrajectoryOptimization(
-    int num_inputs, int num_states, int num_time_samples, double fixed_timestep)
+MultipleShooting::MultipleShooting(int num_inputs, int num_states,
+                                   int num_time_samples, double fixed_timestep)
     : num_inputs_(num_inputs),
       num_states_(num_states),
       N_(num_time_samples),
@@ -53,9 +54,10 @@ DirectTrajectoryOptimization::DirectTrajectoryOptimization(
   DRAKE_DEMAND(fixed_timestep > 0);
 }
 
-DirectTrajectoryOptimization::DirectTrajectoryOptimization(
-    int num_inputs, int num_states, int num_time_samples,
-    double minimum_timestep, double maximum_timestep)
+MultipleShooting::MultipleShooting(int num_inputs, int num_states,
+                                   int num_time_samples,
+                                   double minimum_timestep,
+                                   double maximum_timestep)
     : num_inputs_(num_inputs),
       num_states_(num_states),
       N_(num_time_samples),
@@ -77,27 +79,27 @@ DirectTrajectoryOptimization::DirectTrajectoryOptimization(
   AddBoundingBoxConstraint(minimum_timestep, maximum_timestep, h_vars_);
 }
 
-void DirectTrajectoryOptimization::AddTimeIntervalBounds(double lower_bound,
-                                                         double upper_bound) {
+void MultipleShooting::AddTimeIntervalBounds(double lower_bound,
+                                             double upper_bound) {
   DRAKE_THROW_UNLESS(timesteps_are_decision_variables_);
   AddBoundingBoxConstraint(lower_bound, upper_bound, h_vars_);
 }
 
-void DirectTrajectoryOptimization::AddEqualTimeIntervalsConstraints() {
+void MultipleShooting::AddEqualTimeIntervalsConstraints() {
   DRAKE_THROW_UNLESS(timesteps_are_decision_variables_);
   for (int i = 1; i < N_ - 1; i++) {
     AddLinearConstraint(h_vars_(i - 1) == h_vars_(i));
   }
 }
 
-void DirectTrajectoryOptimization::AddDurationBounds(double lower_bound,
-                                                     double upper_bound) {
+void MultipleShooting::AddDurationBounds(double lower_bound,
+                                         double upper_bound) {
   DRAKE_THROW_UNLESS(timesteps_are_decision_variables_);
   AddLinearConstraint(VectorXd::Ones(h_vars_.size()), lower_bound, upper_bound,
                       h_vars_);
 }
 
-void DirectTrajectoryOptimization::SetInitialTrajectory(
+void MultipleShooting::SetInitialTrajectory(
     const PiecewisePolynomial<double>& traj_init_u,
     const PiecewisePolynomial<double>& traj_init_x) {
   double start_time = 0;
@@ -146,7 +148,7 @@ void DirectTrajectoryOptimization::SetInitialTrajectory(
   SetInitialGuess(x_vars_, guess_x);
 }
 
-Eigen::VectorXd DirectTrajectoryOptimization::GetSampleTimes() const {
+Eigen::VectorXd MultipleShooting::GetSampleTimes() const {
   Eigen::VectorXd times(N_);
 
   if (timesteps_are_decision_variables_) {
@@ -163,7 +165,7 @@ Eigen::VectorXd DirectTrajectoryOptimization::GetSampleTimes() const {
   return times;
 }
 
-Eigen::MatrixXd DirectTrajectoryOptimization::GetInputSamples() const {
+Eigen::MatrixXd MultipleShooting::GetInputSamples() const {
   Eigen::MatrixXd inputs(num_inputs_, N_);
   for (int i = 0; i < N_; i++) {
     inputs.col(i) = GetSolution(input(i));
@@ -171,7 +173,7 @@ Eigen::MatrixXd DirectTrajectoryOptimization::GetInputSamples() const {
   return inputs;
 }
 
-Eigen::MatrixXd DirectTrajectoryOptimization::GetStateSamples() const {
+Eigen::MatrixXd MultipleShooting::GetStateSamples() const {
   Eigen::MatrixXd states(num_states_, N_);
   for (int i = 0; i < N_; i++) {
     states.col(i) = GetSolution(state(i));
@@ -180,7 +182,7 @@ Eigen::MatrixXd DirectTrajectoryOptimization::GetStateSamples() const {
 }
 
 symbolic::Substitution
-DirectTrajectoryOptimization::ConstructPlaceholderVariableSubstitution(
+MultipleShooting::ConstructPlaceholderVariableSubstitution(
     int interval_index) const {
   symbolic::Substitution sub;
 
@@ -202,16 +204,16 @@ DirectTrajectoryOptimization::ConstructPlaceholderVariableSubstitution(
   return sub;
 }
 
-symbolic::Expression
-DirectTrajectoryOptimization::SubstitutePlaceholderVariables(
+symbolic::Expression MultipleShooting::SubstitutePlaceholderVariables(
     const symbolic::Expression& e, int interval_index) const {
   return e.Substitute(ConstructPlaceholderVariableSubstitution(interval_index));
 }
 
-symbolic::Formula DirectTrajectoryOptimization::SubstitutePlaceholderVariables(
+symbolic::Formula MultipleShooting::SubstitutePlaceholderVariables(
     const symbolic::Formula& f, int interval_index) const {
   return f.Substitute(ConstructPlaceholderVariableSubstitution(interval_index));
 }
 
+}  // namespace trajectory_optimization
 }  // namespace systems
 }  // namespace drake

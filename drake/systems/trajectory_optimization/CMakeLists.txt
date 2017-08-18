@@ -1,7 +1,7 @@
 add_library_with_exports(LIB_NAME drakeTrajectoryOptimization SOURCE_FILES
   direct_collocation.cc
   direct_collocation_constraint.cc
-  direct_trajectory_optimization.cc)
+    multiple_shooting.cc)
 target_link_libraries(drakeTrajectoryOptimization
   drakeOptimization
   drakeSystemFramework
@@ -11,7 +11,7 @@ drake_install_libraries(drakeTrajectoryOptimization)
 drake_install_headers(
   direct_collocation.h
   direct_collocation_constraint.h
-  direct_trajectory_optimization.h)
+    multiple_shooting.h)
 drake_install_pkg_config_file(drake-trajectory-optimization
   TARGET drakeTrajectoryOptimization
   LIBS -ldrakeTrajectoryOptimization

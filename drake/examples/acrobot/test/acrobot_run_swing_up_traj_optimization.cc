@@ -45,7 +45,7 @@ int do_main() {
 
   auto context = acrobot.CreateDefaultContext();
 
-  systems::DircolTrajectoryOptimization dircol(
+  systems::trajectory_optimization::DirectCollocation dircol(
       &acrobot, *context, kNumTimeSamples, kTrajectoryTimeLowerBound,
       kTrajectoryTimeUpperBound);
 

@@ -6,13 +6,14 @@
 #include "drake/solvers/constraint.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
-#include "drake/systems/trajectory_optimization/direct_trajectory_optimization.h"
+#include "drake/systems/trajectory_optimization/multiple_shooting.h"
 
 namespace drake {
 namespace systems {
+namespace trajectory_optimization {
 
 /**
- * DircolTrajectoryOptimization implements a direct collocation
+ * DirectCollocation implements a direct collocation
  * approach to trajectory optimization, as described in
  *   C. R. Hargraves and S. W. Paris. Direct trajectory optimization using
  *    nonlinear programming and collocation. J Guidance, 10(4):338-342,
@@ -37,17 +38,16 @@ namespace systems {
  *    entire trajectory.  Required to prevent trivial solutions and solutions
  *    with unbounded/unreasonable numerical integration errors.
  */
-class DircolTrajectoryOptimization : public DirectTrajectoryOptimization {
+class DirectCollocation : public MultipleShooting {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DircolTrajectoryOptimization)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DirectCollocation)
 
-  DircolTrajectoryOptimization(const System<double>* system,
-                               const Context<double>& context,
-                               int num_time_samples,
-                               double trajectory_time_lower_bound,
-                               double trajectory_time_upper_bound);
+  DirectCollocation(const System<double>* system,
+                    const Context<double>& context, int num_time_samples,
+                    double trajectory_time_lower_bound,
+                    double trajectory_time_upper_bound);
 
-  ~DircolTrajectoryOptimization() override {}
+  ~DirectCollocation() override {}
 
   PiecewisePolynomialTrajectory ReconstructInputTrajectory() const override;
 
@@ -65,5 +65,6 @@ class DircolTrajectoryOptimization : public DirectTrajectoryOptimization {
   FreestandingInputPortValue* input_port_value_{nullptr};
 };
 
+}  // namespace trajectory_optimization
 }  // namespace systems
 }  // namespace drake

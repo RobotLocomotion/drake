@@ -39,9 +39,9 @@ GTEST_TEST(TrajectoryOptimizationTest, SimpleCarDircolTest) {
   const double kTrajectoryTimeLowerBound = 0.8 * initial_duration,
                kTrajectoryTimeUpperBound = 1.2 * initial_duration;
 
-  systems::DircolTrajectoryOptimization prog(&plant, *context, kNumTimeSamples,
-                                             kTrajectoryTimeLowerBound,
-                                             kTrajectoryTimeUpperBound);
+  systems::trajectory_optimization::DirectCollocation prog(
+      &plant, *context, kNumTimeSamples, kTrajectoryTimeLowerBound,
+      kTrajectoryTimeUpperBound);
 
   // Input limits (note that the steering limit imposed by SimpleCar is larger).
   DrivingCommand<symbolic::Expression> input;

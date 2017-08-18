@@ -11,10 +11,11 @@
 #include "drake/solvers/mathematical_program.h"
 #include "drake/systems/framework/vector_system.h"
 #include "drake/systems/primitives/linear_system.h"
-#include "drake/systems/trajectory_optimization/direct_trajectory_optimization.h"
+#include "drake/systems/trajectory_optimization/multiple_shooting.h"
 
 namespace drake {
 namespace systems {
+namespace trajectory_optimization {
 namespace {
 
 // Implements the double integrator: qddot = u.
@@ -24,7 +25,9 @@ class DoubleIntegrator : public VectorSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DoubleIntegrator);
 
   DoubleIntegrator()
-      : VectorSystem<T>(SystemTypeTag<systems::DoubleIntegrator>{}, 1, 1) {
+      : VectorSystem<T>(
+            SystemTypeTag<systems::trajectory_optimization::DoubleIntegrator>{},
+            1, 1) {
     this->DeclareContinuousState(1, 1, 0);
   }
 
@@ -57,8 +60,7 @@ GTEST_TEST(TrajectoryOptimizationTest, DoubleIntegratorTest) {
   DoubleIntegrator<double> double_integrator;
   auto context = double_integrator.CreateDefaultContext();
   const int timesteps{10};
-  DircolTrajectoryOptimization prog(&double_integrator, *context, timesteps,
-                                    0.5, 20.0);
+  DirectCollocation prog(&double_integrator, *context, timesteps, 0.5, 20.0);
 
   // u \in [-1,1].
   prog.AddConstraintToAllKnotPoints(Vector1d(-1.0) <= prog.input());
@@ -89,8 +91,8 @@ GTEST_TEST(TrajectoryOptimizationTest, MinimumTimeTest) {
   auto context = double_integrator.CreateDefaultContext();
   const int timesteps{10};
   const double min_time{0.5};
-  DircolTrajectoryOptimization prog(&double_integrator, *context, timesteps,
-                                    min_time, 20.0);
+  DirectCollocation prog(&double_integrator, *context, timesteps, min_time,
+                         20.0);
 
   // Note: No input limits this time.
 
@@ -124,8 +126,7 @@ GTEST_TEST(TrajectoryOptimizationTest, NoInputs) {
   auto context = plant.CreateDefaultContext();
   const int timesteps{10};
   const double duration{1.0};
-  DircolTrajectoryOptimization prog(&plant, *context, timesteps, duration,
-                                    duration);
+  DirectCollocation prog(&plant, *context, timesteps, duration, duration);
 
   prog.AddTimeIntervalBounds(duration / (timesteps - 1),
                              duration / (timesteps - 1));
@@ -140,5 +141,6 @@ GTEST_TEST(TrajectoryOptimizationTest, NoInputs) {
 }
 
 }  // anonymous namespace
+}  // namespace trajectory_optimization
 }  // namespace systems
 }  // namespace drake
