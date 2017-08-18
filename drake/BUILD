@@ -115,13 +115,11 @@ _LIBDRAKE_COMPONENTS = [
     "//drake/multibody:inverse_kinematics",
     "//drake/multibody/joints:joints",
     "//drake/multibody:kinematics_cache",
-    "//drake/multibody/multibody_tree:bodies_and_frames",
     "//drake/multibody/multibody_tree/math:spatial_acceleration",
     "//drake/multibody/multibody_tree/math:spatial_algebra",
     "//drake/multibody/multibody_tree/math:spatial_force",
     "//drake/multibody/multibody_tree/math:spatial_vector",
     "//drake/multibody/multibody_tree/math:spatial_velocity",
-    "//drake/multibody/multibody_tree:mobilizers_and_body_nodes",
     "//drake/multibody/multibody_tree:multibody_tree",
     "//drake/multibody/multibody_tree:multibody_tree_context",
     "//drake/multibody/multibody_tree:multibody_tree_element",
@@ -296,9 +294,9 @@ cc_binary(
 # (i.e. in Drake itself; not externals).
 install(
     name = "install",
-    targets = ["libdrake.so"],
-    hdr_dest = "include/drake",
     guess_hdrs = "WORKSPACE",
+    hdr_dest = "include/drake",
+    targets = ["libdrake.so"],
 )
 
 # Gather all of libdrake.so's dependent headers.

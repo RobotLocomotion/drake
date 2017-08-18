@@ -27,7 +27,7 @@ template <typename ToScalar>
 std::unique_ptr<Frame<ToScalar>> FixedOffsetFrame<T>::TemplatedDoCloneToScalar(
     const MultibodyTree<ToScalar>& tree_clone) const {
   const Frame<ToScalar>& parent_frame_clone =
-      tree_clone.get_frame(parent_frame_.get_index());
+      tree_clone.get_variant(parent_frame_);
   return std::make_unique<FixedOffsetFrame<ToScalar>>(
       parent_frame_clone, X_PF_);
 }
