@@ -166,7 +166,7 @@ GTEST_TEST(MonolaneBuilderTest, QuadRing) {
 
   EXPECT_EQ(rg->num_junctions(), 1);
   const api::Junction* junction = rg->junction(0);
-  EXPECT_EQ(junction->id().id, "j:all");
+  EXPECT_EQ(junction->id(), api::JunctionId("j:all"));
 
   EXPECT_EQ(junction->num_segments(), 4);
   for (int si = 0; si < junction->num_segments(); ++si) {

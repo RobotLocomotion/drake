@@ -140,7 +140,7 @@ std::vector<std::string> RoadGeometry::CheckInvariants() const {
     const Junction* jnx = junction(ji);
     if (jnx->road_geometry() != this) {
       std::stringstream ss;
-      ss << "Junction " << jnx->id().id << " is owned by "
+      ss << "Junction " << jnx->id().string() << " is owned by "
          << this->id().id << " (" << this << ") but claims to be owned by "
          << jnx->road_geometry()->id().id << " ("
          << jnx->road_geometry() << ").";
@@ -151,8 +151,9 @@ std::vector<std::string> RoadGeometry::CheckInvariants() const {
       if (seg->junction() != jnx) {
         std::stringstream ss;
         ss << "Segment " << seg->id().id << " is owned by "
-           << jnx->id().id << " (" << jnx << ") but claims to be owned by "
-           << seg->junction()->id().id << " (" << seg->junction() << ").";
+           << jnx->id().string()
+           << " (" << jnx << ") but claims to be owned by "
+           << seg->junction()->id().string() << " (" << seg->junction() << ").";
         failures.push_back(ss.str());
       }
       for (int li = 0; li < seg->num_lanes(); ++li) {

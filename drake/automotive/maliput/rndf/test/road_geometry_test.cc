@@ -26,11 +26,11 @@ GTEST_TEST(RNDFRoadGeometryTest, JunctionTest) {
 
   EXPECT_EQ(rg.num_junctions(), 0);
 
-  Junction* j1 = rg.NewJunction({"j:1"});
+  Junction* j1 = rg.NewJunction(api::JunctionId{"j:1"});
   EXPECT_EQ(rg.num_junctions(), 1);
   EXPECT_EQ(rg.junction(0), j1);
 
-  Junction* j2 = rg.NewJunction({"j:2"});
+  Junction* j2 = rg.NewJunction(api::JunctionId{"j:2"});
   EXPECT_EQ(rg.num_junctions(), 2);
   EXPECT_EQ(rg.junction(1), j2);
 

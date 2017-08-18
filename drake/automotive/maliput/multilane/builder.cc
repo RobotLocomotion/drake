@@ -268,8 +268,9 @@ std::unique_ptr<const api::RoadGeometry> Builder::Build(
 
   for (const std::unique_ptr<Group>& group : groups_) {
     Junction* junction =
-        road_geometry->NewJunction({std::string("j:") + group->id()});
-    drake::log()->debug("junction: {}", junction->id().id);
+        road_geometry->NewJunction(
+            api::JunctionId{std::string("j:") + group->id()});
+    drake::log()->debug("junction: {}", junction->id().string());
     for (auto& connection : group->connections()) {
       drake::log()->debug("connection: {}", connection->id());
       DRAKE_DEMAND(!connection_was_built[connection]);
@@ -284,8 +285,9 @@ std::unique_ptr<const api::RoadGeometry> Builder::Build(
       continue;
     }
     Junction* junction =
-        road_geometry->NewJunction({std::string("j:") + connection->id()});
-    drake::log()->debug("junction: {}", junction->id().id);
+        road_geometry->NewJunction(
+            api::JunctionId{std::string("j:") + connection->id()});
+    drake::log()->debug("junction: {}", junction->id().string());
     drake::log()->debug("connection: {}", connection->id());
     lane_map[connection.get()] =
         BuildConnection(connection.get(),
