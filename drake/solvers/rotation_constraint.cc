@@ -800,15 +800,15 @@ void AddMcCormickVectorConstraints(
               // constraint of the form:
               //   |v2 - normal.cross(v1)| <= 2*sin(θ/2).
               const double sin_theta2 = sin(theta/2);
-              const Vector3<symbolic::Expression> v2_minus_n_cross_n1{
+              const Vector3<symbolic::Expression> v2_minus_n_cross_v1{
                   v2 - orthant_normal.cross(v1)};
               prog->AddLinearConstraint(
-                  v2_minus_n_cross_n1 <=
+                  v2_minus_n_cross_v1 <=
                   Vector3<symbolic::Expression>::Constant(
                       2 * sin_theta2 +
                       (2 - 2 * sin_theta2) * (3 - orthant_c_sum)));
               prog->AddLinearConstraint(
-                  v2_minus_n_cross_n1 >=
+                  v2_minus_n_cross_v1 >=
                   Vector3<symbolic::Expression>::Constant(
                       -2 * sin_theta2 +
                       (-2 + 2 * sin_theta2) * (3 - orthant_c_sum)));
