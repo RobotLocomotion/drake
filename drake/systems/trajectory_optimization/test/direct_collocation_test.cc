@@ -59,8 +59,11 @@ class DoubleIntegrator : public VectorSystem<T> {
 GTEST_TEST(TrajectoryOptimizationTest, DoubleIntegratorTest) {
   DoubleIntegrator<double> double_integrator;
   auto context = double_integrator.CreateDefaultContext();
-  const int timesteps{10};
-  DirectCollocation prog(&double_integrator, *context, timesteps, 0.5, 20.0);
+  const int kNumSampleTimes{10};
+  DirectCollocation prog(&double_integrator, *context, kNumSampleTimes, 0.05,
+                         2.0);
+
+  prog.AddEqualTimeIntervalsConstraints();
 
   // u \in [-1,1].
   prog.AddConstraintToAllKnotPoints(Vector1d(-1.0) <= prog.input());
@@ -79,9 +82,9 @@ GTEST_TEST(TrajectoryOptimizationTest, DoubleIntegratorTest) {
 
   // Solution should be bang-band (u = +1 then -1).
   int i = 0;
-  while (i < timesteps / 2.0)
+  while (i < kNumSampleTimes / 2.0)
     EXPECT_NEAR(prog.GetSolution(prog.input(i++))(0), 1.0, 1e-5);
-  while (i < timesteps)
+  while (i < kNumSampleTimes)
     EXPECT_NEAR(prog.GetSolution(prog.input(i++))(0), -1.0, 1e-5);
 }
 
@@ -89,10 +92,13 @@ GTEST_TEST(TrajectoryOptimizationTest, DoubleIntegratorTest) {
 GTEST_TEST(TrajectoryOptimizationTest, MinimumTimeTest) {
   DoubleIntegrator<double> double_integrator;
   auto context = double_integrator.CreateDefaultContext();
-  const int timesteps{10};
-  const double min_time{0.5};
-  DirectCollocation prog(&double_integrator, *context, timesteps, min_time,
-                         20.0);
+  const int kNumSampleTimes{10};
+  const double kMinTimeStep{0.05};
+  const double kMaxTimeStep{2.0};
+  DirectCollocation prog(&double_integrator, *context, kNumSampleTimes,
+                         kMinTimeStep, kMaxTimeStep);
+
+  prog.AddEqualTimeIntervalsConstraints();
 
   // Note: No input limits this time.
 
@@ -109,9 +115,9 @@ GTEST_TEST(TrajectoryOptimizationTest, MinimumTimeTest) {
 
   // Solution should have total time equal to 0.5.
   double total_time = 0;
-  for (int i = 0; i < timesteps - 1; i++)
+  for (int i = 0; i < kNumSampleTimes - 1; i++)
     total_time += prog.GetSolution(prog.timestep(i))(0);
-  EXPECT_NEAR(total_time, min_time, 1e-5);
+  EXPECT_NEAR(total_time, kMinTimeStep * (kNumSampleTimes - 1), 1e-5);
 }
 
 // A simple example where the plant has no inputs.
@@ -124,18 +130,17 @@ GTEST_TEST(TrajectoryOptimizationTest, NoInputs) {
       Eigen::Matrix<double, 0, 0>::Zero());  // D
 
   auto context = plant.CreateDefaultContext();
-  const int timesteps{10};
-  const double duration{1.0};
-  DirectCollocation prog(&plant, *context, timesteps, duration, duration);
-
-  prog.AddTimeIntervalBounds(duration / (timesteps - 1),
-                             duration / (timesteps - 1));
+  const int kNumSampleTimes{10};
+  const double kFixedTimeStep{0.1};
+  DirectCollocation prog(&plant, *context, kNumSampleTimes, kFixedTimeStep,
+                         kFixedTimeStep);
 
   const double x0 = 2.0;
   prog.AddLinearConstraint(prog.initial_state() == Vector1d(x0));
 
   EXPECT_EQ(prog.Solve(), solvers::SolutionResult::kSolutionFound);
 
+  const double duration = (kNumSampleTimes - 1) * kFixedTimeStep;
   EXPECT_NEAR(prog.GetSolution(prog.final_state())(0), x0 * std::exp(-duration),
               1e-6);
 }

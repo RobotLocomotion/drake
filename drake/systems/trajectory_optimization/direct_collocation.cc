@@ -18,19 +18,19 @@ class DirectCollocationConstraint : public solvers::Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DirectCollocationConstraint)
 
-  /// The format of the input to the eval() function is defined by @p
-  /// num_states and @p num_inputs.  The length of the vector will be
-  /// (1 + num_states * 2 + num_inputs * 2), with the format:
-  ///
-  /// (length)
-  /// 1: timestep
-  /// num_states: state 0
-  /// num_states: state 1
-  /// num_inputs: input 0
-  /// num_inputs: input 1
+  // The format of the input to the eval() function is defined by @p
+  // num_states and @p num_inputs.  The length of the vector will be
+  // (1 + num_states * 2 + num_inputs * 2), with the format:
+  //
+  // (length)
+  // 1: timestep
+  // num_states: state 0
+  // num_states: state 1
+  // num_inputs: input 0
+  // num_inputs: input 1
  public:
-  DirectCollocationConstraint(const systems::System<double>& system,
-                              const systems::Context<double>& context,
+  DirectCollocationConstraint(const System<double>& system,
+                              const Context<double>& context,
                               int num_states, int num_inputs)
       : Constraint(num_states, 1 + (2 * num_states) + (2 * num_inputs),
                    Eigen::VectorXd::Zero(num_states),
@@ -149,24 +149,15 @@ class DirectCollocationConstraint : public solvers::Constraint {
 DirectCollocation::DirectCollocation(const System<double>* system,
                                      const Context<double>& context,
                                      int num_time_samples,
-                                     double trajectory_time_lower_bound,
-                                     double trajectory_time_upper_bound)
+                                     double minimum_timestep,
+                                     double maximum_timestep)
     : MultipleShooting(system->get_num_total_inputs(),
                        context.get_continuous_state()->size(), num_time_samples,
-                       trajectory_time_lower_bound / (num_time_samples - 1),
-                       trajectory_time_upper_bound / (num_time_samples - 1)),
+                       minimum_timestep, maximum_timestep),
       system_(system),
       context_(system_->CreateDefaultContext()),
       continuous_state_(system_->AllocateTimeDerivatives()) {
   DRAKE_DEMAND(context.has_only_continuous_state());
-
-  // TODO(russt):  This should NOT be set automatically.
-  // Once it is removed, the proper constraint to be added will be
-  //   AddDurationBounds(trajectory_time_lower_bound,
-  //                     trajectory_time_upper_bound);
-  // but that constraint is currently implied already by the min/max
-  // timestep + all timesteps equal constraints.
-  AddEqualTimeIntervalsConstraints();
 
   context_->SetTimeStateAndParametersFrom(context);
 
