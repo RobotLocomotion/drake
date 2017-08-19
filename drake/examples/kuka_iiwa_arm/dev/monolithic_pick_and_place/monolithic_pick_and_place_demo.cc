@@ -36,7 +36,7 @@ DEFINE_double(orientation, 2 * M_PI, "Yaw angle of the box.");
 DEFINE_int32(start_position, 1, "Position index to start from");
 DEFINE_int32(end_position, 2, "Position index to end at");
 DEFINE_double(dt, 1e-3, "Integration step size");
-DEFINE_double( realtime_rate, 0.0, "Rate at which to run the simulation, "
+DEFINE_double(realtime_rate, 0.0, "Rate at which to run the simulation, "
     "relative to realtime");
 DEFINE_bool(quick, false, "Run only a brief simulation and return success "
     "without executing the entire task");
