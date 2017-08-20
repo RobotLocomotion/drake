@@ -217,8 +217,6 @@ PiecewisePolynomialTrajectory DirectCollocation::ReconstructInputTrajectory()
 
 PiecewisePolynomialTrajectory DirectCollocation::ReconstructStateTrajectory()
     const {
-  // TODO(russt): Fix this!  It's not using the same interpolation scheme as the
-  // actual collocation method.
   Eigen::VectorXd times = GetSampleTimes();
   std::vector<double> times_vec(N());
   std::vector<Eigen::MatrixXd> states(N());
