@@ -42,6 +42,13 @@ class DirectCollocation : public MultipleShooting {
                     const Context<double>& context, int num_time_samples,
                     double minimum_timestep, double maximum_timestep);
 
+  // NOTE: The fixed timestep constructor, which would avoid adding h as
+  // decision variables, has been removed since it complicates the API and code.
+  // Unlike other trajectory optimization transcriptions, direct collocation
+  // will not be a convex optimization even if the sample times are fixed, so
+  // there is little advantage to actually removing the variables.  Setting
+  // minimum_timestep == maximum_timestep should be essentially just as good.
+
   ~DirectCollocation() override {}
 
   /// Get the input trajectory at the solution as a
