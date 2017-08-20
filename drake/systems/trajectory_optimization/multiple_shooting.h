@@ -218,16 +218,16 @@ class MultipleShooting : public solvers::MathematicalProgram {
   /// each knot point at the solution.
   Eigen::MatrixXd GetStateSamples() const;
 
-  /// Get the input trajectory at the solution as a
+  /// Gets the input trajectory at the solution as a
   /// %PiecewisePolynomialTrajectory%.
   virtual PiecewisePolynomialTrajectory ReconstructInputTrajectory() const = 0;
 
-  /// Get the state trajectory at the solution as a
+  /// Gets the state trajectory at the solution as a
   /// %PiecewisePolynomialTrajectory%.
   virtual PiecewisePolynomialTrajectory ReconstructStateTrajectory() const = 0;
 
  protected:
-  /// Construct a MultipleShooting instance with fixed sample times.
+  /// Constructs a MultipleShooting instance with fixed sample times.
   ///
   /// @param num_inputs Number of inputs at each sample point.
   /// @param num_states Number of states at each sample point.
@@ -236,7 +236,7 @@ class MultipleShooting : public solvers::MathematicalProgram {
   MultipleShooting(int num_inputs, int num_states, int num_time_samples,
                    double fixed_timestep);
 
-  /// Construct a MultipleShooting instance with sample times as decision
+  /// Constructs a MultipleShooting instance with sample times as decision
   /// variables.
   ///
   /// @param num_inputs Number of inputs at each sample point.

@@ -18,16 +18,15 @@ class DirectCollocationConstraint : public solvers::Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DirectCollocationConstraint)
 
-  // The format of the input to the eval() function is defined by @p
-  // num_states and @p num_inputs.  The length of the vector will be
-  // (1 + num_states * 2 + num_inputs * 2), with the format:
-  //
-  // (length)
-  // 1: timestep
-  // num_states: state 0
-  // num_states: state 1
-  // num_inputs: input 0
-  // num_inputs: input 1
+  // The format of the input to the eval() function is the
+  // tuple { timestep, state 0, state 1, input 0, input 1 },
+  // which has a total length of 1 + 2*num_states + 2*num_inputs.
+
+  // Note that the DirectCollocation implementation below allocates
+  // only ONE of these constraints, but binds that constraint
+  // multiple times (with different decision variables, along the
+  // trajectory).
+
  public:
   DirectCollocationConstraint(const System<double>& system,
                               const Context<double>& context,
@@ -115,15 +114,16 @@ class DirectCollocationConstraint : public solvers::Constraint {
     const auto u0 = x.segment(1 + (2 * num_states_), num_inputs_);
     const auto u1 = x.segment(1 + (2 * num_states_) + num_inputs_, num_inputs_);
 
-    // TODO(sam.creasey): We should cache the dynamics outputs to avoid
-    // recalculating for every knot point as we advance.
+    // TODO(sam.creasey): Use caching (when it arrives) to avoid recomputing
+    // the dynamics.  Currently the dynamics evaluated here as {u1,x1} are
+    // recomputed in the next constraint as {u0,x0}.
     AutoDiffVecXd xdot0;
     dynamics(x0, u0, &xdot0);
-    Eigen::MatrixXd dxdot0 = math::autoDiffToGradientMatrix(xdot0);
+    const Eigen::MatrixXd dxdot0 = math::autoDiffToGradientMatrix(xdot0);
 
     AutoDiffVecXd xdot1;
     dynamics(x1, u1, &xdot1);
-    Eigen::MatrixXd dxdot1 = math::autoDiffToGradientMatrix(xdot1);
+    const Eigen::MatrixXd dxdot1 = math::autoDiffToGradientMatrix(xdot1);
 
     // Cubic interpolation to get xcol and xdotcol.
     const AutoDiffVecXd xcol = 0.5 * (x0 + x1) + h / 8 * (xdot0 - xdot1);
@@ -144,7 +144,7 @@ class DirectCollocationConstraint : public solvers::Constraint {
   const int num_inputs_{0};
 };
 
-}  // end namespace
+}  // namespace
 
 DirectCollocation::DirectCollocation(const System<double>* system,
                                      const Context<double>& context,
@@ -217,8 +217,6 @@ PiecewisePolynomialTrajectory DirectCollocation::ReconstructInputTrajectory()
 
 PiecewisePolynomialTrajectory DirectCollocation::ReconstructStateTrajectory()
     const {
-  // TODO(russt): Fix this!  It's not using the same interpolation scheme as the
-  // actual collocation method.
   Eigen::VectorXd times = GetSampleTimes();
   std::vector<double> times_vec(N());
   std::vector<Eigen::MatrixXd> states(N());
