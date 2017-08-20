@@ -11,10 +11,9 @@ namespace manipulation {
 namespace perception {
 
 /**
- * Extracts and provides an output of the pose of a desired object (A vector of
- * dimension 7 - Cartesian position as the first 3 and the orientation
- * in quaternions as the next 4) from an Optitrack LCM OPTITRACK_FRAME_T
- * message, transformed to a desired coordinate frame.
+ * Extracts and provides an output of the pose of a desired object as an
+ * Eigen::Isometry3d from an Optitrack LCM OPTITRACK_FRAME_T message, the
+ * pose transformed to a desired coordinate frame.
  */
 class OptitrackPoseExtractor : public systems::LeafSystem<double> {
  public:
@@ -29,8 +28,7 @@ class OptitrackPoseExtractor : public systems::LeafSystem<double> {
    * OptitrackPoseExtractor. It should be set based on the period of incoming
    * optitrack messages.
    */
-  OptitrackPoseExtractor(int object_id,
-                         const Isometry3<double>& X_WO,
+  OptitrackPoseExtractor(int object_id, const Isometry3<double>& X_WO,
                          double optitrack_lcm_status_period);
 
   const systems::OutputPort<double>& get_measured_pose_output_port() const {
@@ -38,14 +36,20 @@ class OptitrackPoseExtractor : public systems::LeafSystem<double> {
   }
 
  private:
+  void DoCalcUnrestrictedUpdate(
+      const systems::Context<double>& context,
+      const std::vector<const systems::UnrestrictedUpdateEvent<double>*>& event,
+      systems::State<double>* state) const override;
+
+  std::unique_ptr<systems::AbstractValues> AllocateAbstractState()
+      const override;
+
   // The Calc() method for the measured_pose_output_port.
   void OutputMeasuredPose(const systems::Context<double>& context,
-                          systems::BasicVector<double>* output) const;
+                          Isometry3<double>* output) const;
 
-  void DoCalcDiscreteVariableUpdates(
-      const systems::Context<double>& context,
-      const std::vector<const systems::DiscreteUpdateEvent<double>*>& events,
-      systems::DiscreteValues<double>* discrete_state) const override;
+  void SetDefaultState(const systems::Context<double>&,
+                       systems::State<double>* state) const override;
 
   const int object_id_{0};
   const int measured_pose_output_port_{-1};
