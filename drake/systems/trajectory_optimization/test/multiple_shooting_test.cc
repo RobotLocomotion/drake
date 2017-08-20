@@ -67,7 +67,6 @@ GTEST_TEST(MultipleShootingTest, FixedTimestepTest) {
 
   // All methods involving timestep variables should throw.
   EXPECT_THROW(prog.timestep(0), std::runtime_error);
-  EXPECT_THROW(prog.fixed_timestep(), std::runtime_error);
   EXPECT_THROW(prog.AddTimeIntervalBounds(0, .1), std::runtime_error);
   EXPECT_THROW(prog.AddEqualTimeIntervalsConstraints(), std::runtime_error);
   EXPECT_THROW(prog.AddDurationBounds(0, 1), std::runtime_error);
@@ -83,6 +82,7 @@ GTEST_TEST(MultipleShootingTest, VariableTimestepTest) {
                        kMaxTimeStep);
 
   EXPECT_TRUE(prog.timesteps_are_decision_variables());
+  EXPECT_THROW(prog.fixed_timestep(), std::runtime_error);
 
   EXPECT_EQ(prog.num_vars(), 7);
   EXPECT_EQ(prog.Solve(), solvers::SolutionResult::kSolutionFound);
