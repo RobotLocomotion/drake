@@ -33,6 +33,21 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "direct_transcription",
+    srcs = [
+        "direct_transcription.cc",
+    ],
+    hdrs = [
+        "direct_transcription.h",
+    ],
+    deps = [
+        ":multiple_shooting",
+        "//drake/math:autodiff",
+        "//drake/math:gradient",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -51,6 +66,18 @@ drake_cc_googletest(
     size = "medium",
     deps = [
         ":direct_collocation",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/common/trajectories:piecewise_polynomial",
+        "//drake/systems/primitives:linear_system",
+    ],
+)
+
+drake_cc_googletest(
+    name = "direct_transcription_test",
+    # Test size increased to not timeout when run with Valgrind.
+    size = "medium",
+    deps = [
+        ":direct_transcription",
         "//drake/common:eigen_matrix_compare",
         "//drake/common/trajectories:piecewise_polynomial",
         "//drake/systems/primitives:linear_system",

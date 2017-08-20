@@ -268,7 +268,7 @@ class MultipleShooting : public solvers::MathematicalProgram {
   }
 
   double fixed_timestep() const {
-    DRAKE_THROW_UNLESS(timesteps_are_decision_variables_);
+    DRAKE_THROW_UNLESS(!timesteps_are_decision_variables_);
     return fixed_timestep_;
   }
 

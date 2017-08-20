@@ -77,7 +77,7 @@ GTEST_TEST(DirectCollocationTest, TestReconstruction) {
   const std::unique_ptr<LinearSystem<double>> system = MakeSimpleLinearSystem();
   const auto context = system->CreateDefaultContext();
 
-  const int kNumSampleTimes = 3;
+  const int kNumSampleTimes = 4;
   const double kTimeStep = .1;
   DirectCollocation prog(system.get(), *context, kNumSampleTimes, kTimeStep,
                          kTimeStep);
@@ -95,9 +95,9 @@ GTEST_TEST(DirectCollocationTest, TestReconstruction) {
   double time = 0.0;
   for (int i = 0; i < kNumSampleTimes; i++) {
     EXPECT_TRUE(CompareMatrices(prog.GetSolution(prog.input(i)),
-                                input_spline.value(time)));
+                                input_spline.value(time), 1e-6));
     EXPECT_TRUE(CompareMatrices(prog.GetSolution(prog.state(i)),
-                                state_spline.value(time)));
+                                state_spline.value(time), 1e-6));
 
     EXPECT_TRUE(
         CompareMatrices(system->A() * prog.GetSolution(prog.state(i)) +
