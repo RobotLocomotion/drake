@@ -45,7 +45,7 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "trajectory_optimization_test",
+    name = "multiple_shooting_test",
     size = "small",
     deps = [
         ":multiple_shooting",
