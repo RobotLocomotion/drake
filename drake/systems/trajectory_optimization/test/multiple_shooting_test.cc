@@ -1,3 +1,5 @@
+#include "drake/systems/trajectory_optimization/multiple_shooting.h"
+
 #include <cmath>
 #include <cstddef>
 #include <vector>
@@ -7,7 +9,6 @@
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/solvers/mathematical_program.h"
-#include "drake/systems/trajectory_optimization/multiple_shooting.h"
 
 namespace drake {
 namespace systems {
