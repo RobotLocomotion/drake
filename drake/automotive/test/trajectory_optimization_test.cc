@@ -32,16 +32,19 @@ GTEST_TEST(TrajectoryOptimizationTest, SimpleCarDircolTest) {
   xf.set_heading(0.0);
   xf.set_velocity(x0.velocity());
 
-  const int kNumTimeSamples = 20;
+  const int kNumTimeSamples = 21;
 
   // The solved trajectory may deviate from the initial guess at a reasonable
   // duration.
-  const double kTrajectoryTimeLowerBound = 0.8 * initial_duration,
-               kTrajectoryTimeUpperBound = 1.2 * initial_duration;
+  const double kMinimumTimeStep =
+                   0.8 * initial_duration / (kNumTimeSamples - 1),
+               kMaximumTimeStep =
+                   1.2 * initial_duration / (kNumTimeSamples - 1);
 
   systems::trajectory_optimization::DirectCollocation prog(
-      &plant, *context, kNumTimeSamples, kTrajectoryTimeLowerBound,
-      kTrajectoryTimeUpperBound);
+      &plant, *context, kNumTimeSamples, kMinimumTimeStep, kMaximumTimeStep);
+
+  prog.AddEqualTimeIntervalsConstraints();
 
   // Input limits (note that the steering limit imposed by SimpleCar is larger).
   DrivingCommand<symbolic::Expression> input;

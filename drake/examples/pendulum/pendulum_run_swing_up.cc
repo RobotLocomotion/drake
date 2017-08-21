@@ -49,30 +49,24 @@ int do_main() {
   DRAKE_DEMAND(pendulum != nullptr);
   DRAKE_DEMAND(controller != nullptr);
 
-  // This is a fairly small number of time samples for this system,
-  // and it winds up making the controller do a lot of the work when
-  // getting to the target state.  I (sam.creasey) suspect that a
-  // different interpolation strategy (not linear interpolation of a
-  // non-linear system, basically) would reduce this effect.
-  const int kNumTimeSamples = 21;
-  const int kTrajectoryTimeLowerBound = 2;
-  const int kTrajectoryTimeUpperBound = 6;
-
-  const Eigen::Vector2d x0(0, 0);
-  const Eigen::Vector2d xG(M_PI, 0);
-
   auto context = pendulum->CreateDefaultContext();
 
+  const int kNumTimeSamples = 21;
+  const double kMinimumTimeStep = 0.2;
+  const double kMaximumSampleTime = 0.5;
   systems::trajectory_optimization::DirectCollocation dircol(
-      pendulum, *context, kNumTimeSamples, kTrajectoryTimeLowerBound,
-      kTrajectoryTimeUpperBound);
+      pendulum, *context, kNumTimeSamples, kMinimumTimeStep,
+      kMaximumSampleTime);
 
-  const solvers::VectorXDecisionVariable& u = dircol.input();
+  dircol.AddEqualTimeIntervalsConstraints();
 
   const double kTorqueLimit = 3.0;  // N*m.
+  const solvers::VectorXDecisionVariable& u = dircol.input();
   dircol.AddConstraintToAllKnotPoints(-kTorqueLimit <= u(0));
   dircol.AddConstraintToAllKnotPoints(u(0) <= kTorqueLimit);
 
+  const Eigen::Vector2d x0(0, 0);
+  const Eigen::Vector2d xG(M_PI, 0);
   dircol.AddLinearConstraint(dircol.initial_state() == x0);
   dircol.AddLinearConstraint(dircol.final_state() == xG);
 

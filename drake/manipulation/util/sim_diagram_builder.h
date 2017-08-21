@@ -3,7 +3,6 @@
 #include <memory>
 #include <unordered_map>
 #include <utility>
-#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
@@ -13,10 +12,8 @@
 #include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
-namespace examples {
-namespace kuka_iiwa_arm {
-
-// TODO(siyuan): move this to /manipulation when it's there.
+namespace manipulation {
+namespace util {
 
 /**
  * A wrapper class around DiagramBuilder that facilitates diagram building for
@@ -196,6 +193,6 @@ class SimDiagramBuilder {
   systems::DrakeVisualizer* visualizer_{nullptr};
 };
 
-}  // namespace kuka_iiwa_arm
-}  // namespace examples
+}  // namespace util
+}  // namespace manipulation
 }  // namespace drake
