@@ -1,4 +1,4 @@
-#include "drake/examples/kuka_iiwa_arm/robot_plan_interpolator.h"
+#include "drake/manipulation/planner/robot_plan_interpolator.h"
 
 #include <map>
 #include <memory>
@@ -17,8 +17,8 @@
 using robotlocomotion::robot_plan_t;
 
 namespace drake {
-namespace examples {
-namespace kuka_iiwa_arm {
+namespace manipulation {
+namespace planner {
 namespace {
 
 // This corresponds to the actual plan.
@@ -220,6 +220,6 @@ void RobotPlanInterpolator::DoCalcUnrestrictedUpdate(
   }
 }
 
-}  // namespace kuka_iiwa_arm
-}  // namespace examples
+}  // namespace planner
+}  // namespace manipulation
 }  // namespace drake

@@ -15,7 +15,6 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_wsg_diagram_factory.h"
-#include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_tree_builder.h"
 #include "drake/examples/kuka_iiwa_arm/oracular_state_estimator.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_iiwa_command.hpp"
@@ -25,6 +24,7 @@
 #include "drake/manipulation/schunk_wsg/schunk_wsg_constants.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_controller.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_lcm.h"
+#include "drake/manipulation/util/world_sim_tree_builder.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
@@ -48,6 +48,8 @@ namespace {
 
 using manipulation::schunk_wsg::SchunkWsgStatusSender;
 using manipulation::schunk_wsg::SchunkWsgController;
+using manipulation::util::WorldSimTreeBuilder;
+using manipulation::util::ModelInstanceInfo;
 using systems::Context;
 using systems::Diagram;
 using systems::DiagramBuilder;
@@ -116,8 +118,7 @@ std::unique_ptr<RigidBodyPlant<T>> BuildCombinedPlant(
                                               Vector3<double>(0, 0, 1));
   *box_instance = tree_builder->get_model_info_for_instance(id);
   id = tree_builder->AddModelInstanceToFrame(
-      "wsg", Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(),
-      tree_builder->tree().findFrame("iiwa_frame_ee"),
+      "wsg", tree_builder->tree().findFrame("iiwa_frame_ee"),
       drake::multibody::joints::kFixed);
   *wsg_instance = tree_builder->get_model_info_for_instance(id);
 

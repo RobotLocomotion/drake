@@ -1,10 +1,10 @@
-#include "drake/examples/kuka_iiwa_arm/sim_diagram_builder.h"
+#include "drake/manipulation/util/sim_diagram_builder.h"
 
 #include <utility>
 
 namespace drake {
-namespace examples {
-namespace kuka_iiwa_arm {
+namespace manipulation {
+namespace util {
 
 template <typename T>
 systems::DrakeVisualizer* SimDiagramBuilder<T>::AddVisualizer(
@@ -69,6 +69,6 @@ void SimDiagramBuilder<T>::ConnectControllersAndVisualizer() {
 
 template class SimDiagramBuilder<double>;
 
-}  // namespace kuka_iiwa_arm
-}  // namespace examples
+}  // namespace util
+}  // namespace manipulation
 }  // namespace drake

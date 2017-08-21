@@ -1,11 +1,11 @@
-#include "drake/examples/kuka_iiwa_arm/sim_diagram_builder.h"
+// This test covers both the SimDiagramBuilder and the WorldSimTreeBuilder.
+#include "drake/manipulation/util/sim_diagram_builder.h"
 
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
-#include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
-#include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_tree_builder.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/manipulation/util/world_sim_tree_builder.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
@@ -13,8 +13,8 @@
 #include "drake/systems/primitives/constant_vector_source.h"
 
 namespace drake {
-namespace examples {
-namespace kuka_iiwa_arm {
+namespace manipulation {
+namespace util {
 namespace {
 
 // Builds a RigidBodyTree of @p num_iiwa iiwa arm and @p num_wsg grippers.
@@ -48,8 +48,7 @@ std::unique_ptr<RigidBodyTree<double>> build_tree(
   for (int i = 0; i < num_wsg; ++i) {
     // Adds a wsg gripper
     int id = tree_builder->AddModelInstanceToFrame(
-        "wsg", Vector3<double>::Zero(), Vector3<double>::Zero(),
-        tree_builder->tree().findFrame("iiwa_frame_ee",
+        "wsg", tree_builder->tree().findFrame("iiwa_frame_ee",
                                        iiwa->at(i).instance_id),
         drake::multibody::joints::kFixed);
     wsg->push_back(tree_builder->get_model_info_for_instance(id));
@@ -85,7 +84,10 @@ GTEST_TEST(SimDiagramBuilderTest, TestSimulation) {
 
   // Adds a controller.
   VectorX<double> iiwa_kp, iiwa_kd, iiwa_ki;
-  SetPositionControlledIiwaGains(&iiwa_kp, &iiwa_ki, &iiwa_kd);
+
+  iiwa_kp = VectorX<double>::Constant(7, 100);
+  iiwa_kd = VectorX<double>::Constant(7, 0.1);
+  iiwa_ki = VectorX<double>::Zero(7);
 
   for (const auto& info : iiwa_info) {
     auto single_arm = std::make_unique<RigidBodyTree<double>>();
@@ -193,6 +195,6 @@ GTEST_TEST(SimDiagramBuilderTest, TestAddVisualizerWithoutPlant) {
 }
 
 }  // namespace
-}  // namespace kuka_iiwa_arm
-}  // namespace examples
+}  // namespace util
+}  // namespace manipulation
 }  // namespace drake

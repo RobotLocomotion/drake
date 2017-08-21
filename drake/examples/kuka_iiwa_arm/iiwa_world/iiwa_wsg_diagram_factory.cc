@@ -7,10 +7,10 @@
 #include <utility>
 
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
-#include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_tree_builder.h"
 #include "drake/examples/kuka_iiwa_arm/oracular_state_estimator.h"
-#include "drake/examples/kuka_iiwa_arm/sim_diagram_builder.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_constants.h"
+#include "drake/manipulation/util/sim_diagram_builder.h"
+#include "drake/manipulation/util/world_sim_tree_builder.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
@@ -22,16 +22,15 @@
 #include "drake/util/drakeGeometryUtil.h"
 
 namespace drake {
-
+namespace examples {
+namespace kuka_iiwa_arm {
 using systems::Context;
 using systems::Diagram;
 using systems::DiagramBuilder;
 using systems::InputPortDescriptor;
 using systems::OutputPort;
 using systems::RigidBodyPlant;
-
-namespace examples {
-namespace kuka_iiwa_arm {
+using manipulation::util::SimDiagramBuilder;
 
 template <typename T>
 IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
