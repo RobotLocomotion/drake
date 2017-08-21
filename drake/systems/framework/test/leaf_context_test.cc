@@ -197,6 +197,31 @@ TEST_F(LeafContextTest, HasOnlyDiscreteState) {
   EXPECT_TRUE(context_.has_only_discrete_state());
 }
 
+TEST_F(LeafContextTest, GetNumStates) {
+  LeafContext<double> context;
+  EXPECT_EQ(context.get_num_total_states(), 0);
+
+  // Reserve a continuous state with five elements.
+  context.set_continuous_state(std::make_unique<ContinuousState<double>>(
+      BasicVector<double>::Make({1.0, 2.0, 3.0, 5.0, 8.0})));
+  EXPECT_EQ(context.get_num_total_states(), 5);
+
+  // Reserve a discrete state with two elements, of size 1 and size 2.
+  std::vector<std::unique_ptr<BasicVector<double>>> xd;
+  xd.push_back(BasicVector<double>::Make({128.0}));
+  xd.push_back(BasicVector<double>::Make({256.0, 512.0}));
+  context.set_discrete_state(
+      std::make_unique<DiscreteValues<double>>(std::move(xd)));
+  EXPECT_EQ(context.get_num_total_states(), 8);
+
+  // Reserve an abstract state with one element, which is not owned.
+  std::unique_ptr<AbstractValue> abstract_state = PackValue(42);
+  std::vector<AbstractValue*> xa;
+  xa.push_back(abstract_state.get());
+  context.set_abstract_state(std::make_unique<AbstractValues>(std::move(xa)));
+  EXPECT_THROW(context.get_num_total_states(), std::runtime_error);
+}
+
 TEST_F(LeafContextTest, GetVectorInput) {
   LeafContext<double> context;
   context.SetNumInputPorts(2);
