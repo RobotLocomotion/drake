@@ -9,11 +9,12 @@
 /// usage of `<Scalar>` in Eigen's code base.
 /// @see also eigen_autodiff_types.h
 
+#include <memory>
+
 #include <Eigen/Dense>
 
 #include "drake/common/constants.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_optional.h"
 
 namespace drake {
 
@@ -264,7 +265,17 @@ struct is_eigen_nonvector_of
 template <typename PlainObjectType>
 class EigenPtr {
  public:
+  typedef Eigen::Ref<PlainObjectType> RefType;
+
   EigenPtr() : EigenPtr(nullptr) {}
+
+  /// Overload for `nullptr`.
+  // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
+  EigenPtr(std::nullptr_t) {}
+
+  /// Constructs with a reference to the given matrix type.
+  // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
+  EigenPtr(const EigenPtr& other) { assign(other); }
 
   /// Constructs with a reference to another matrix type.
   /// May be `nullptr`.
@@ -272,20 +283,17 @@ class EigenPtr {
   // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
   EigenPtr(PlainObjectTypeIn* m) {
     if (m) {
-      m_.emplace(*m);
+      m_.reset(new RefType(*m));
     }
   }
 
+  /// Constructs from another EigenPtr.
   template <typename PlainObjectTypeIn>
   // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
   EigenPtr(const EigenPtr<PlainObjectTypeIn>& other) {
     // Cannot directly construct `m_` from `other.m_`.
     assign(other);
   }
-
-  /// Overload for `nullptr`.
-  // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
-  EigenPtr(std::nullptr_t) {}
 
   EigenPtr& operator=(const EigenPtr& other) {
     // We must explicitly override this version of operator=.
@@ -298,51 +306,38 @@ class EigenPtr {
     return assign(other);
   }
 
-  /// @throws std::exception if this is a null dereference.
-  // Cppreference only indicates that std::bad_optional_access inherits
-  // from std::exception, even though stx's implementation inherits from
-  // std::logic_error.
-  // http://en.cppreference.com/w/cpp/utility/optional/bad_optional_access
-  Eigen::Ref<PlainObjectType>& operator*() { return m_.value(); }
-  /// @throws std::exception if this is a null dereference.
-  Eigen::Ref<PlainObjectType>* operator->() { return &m_.value(); }
+  /// @throws std::runtime_error if this is a null dereference.
+  RefType& operator*() const { return *get_reference(); }
 
-  /// @throws std::exception if this is a null dereference.
-  const Eigen::Ref<PlainObjectType>& operator*() const { return m_.value(); }
-  /// @throws std::exception if this is a null dereference.
-  const Eigen::Ref<PlainObjectType>* operator->() const { return &m_.value(); }
+  /// @throws std::runtime_error if this is a null dereference.
+  RefType* operator->() const { return get_reference(); }
 
   /// Returns whether or not this contains a valid reference.
-  operator bool() const {
-    // has_value is not defind for Drake's version of stx::optional.
-    return static_cast<bool>(m_);
-  }
+  operator bool() const { return static_cast<bool>(m_); }
 
  private:
-  // Use optional<> so that we may "reconstruct" the reference, making this more
-  // of a pointer-like type.
-  // TODO(eric.cousineau): Consider using std::unique_ptr<> for a more stable
-  // (but more heap-y) implementation.
-  optional<Eigen::Ref<PlainObjectType>> m_;
-
-  // Ensure that other instantiaions can access private members.
-  template <typename PlainObjectTypeIn>
-  friend class EigenPtr;
+  // Use unique_ptr<> so that we may "reconstruct" the reference, making this
+  // a pointer-like type.
+  // TODO(eric.cousineau): Consider using a stack-based implementation if
+  // performance is a concern, possibly with a mutable member.
+  std::unique_ptr<RefType> m_;
 
   // Consolidate assignment here, so that both the copy constructor and the
   // construction from another type may be used.
   template <typename PlainObjectTypeIn>
   EigenPtr& assign(const EigenPtr<PlainObjectTypeIn>& other) {
-    // Do NOT use m's operator=, as that will modify the values
-    // (m_ = other.m_) rather than update the reference.
-    if (other.m_) {
-      // This conditional is here because emplace(other.m_) has difficulty
-      // inferring template parameters.
-      m_.emplace(other.m_.value());
+    if (other) {
+      m_.reset(new RefType(*other));
     } else {
-      m_ = nullopt;
+      m_.reset();
     }
     return *this;
+  }
+
+  // Consolidate getting a reference here.
+  RefType* get_reference() const {
+    if (!m_) throw std::runtime_error("EigenPtr: nullptr dereference");
+    return m_.get();
   }
 };
 

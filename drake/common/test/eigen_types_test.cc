@@ -90,7 +90,7 @@ GTEST_TEST(EigenTypesTest, EigenPtr_Null) {
   EigenPtr<const Matrix3d> null_ptr = nullptr;
   EXPECT_FALSE(null_ptr);
   EXPECT_TRUE(!null_ptr);
-  EXPECT_THROW(*null_ptr, std::exception);
+  EXPECT_THROW(*null_ptr, std::runtime_error);
 }
 
 bool ptr_optional_arg(EigenPtr<MatrixXd> arg = nullptr) {
@@ -120,12 +120,12 @@ GTEST_TEST(EigenTypesTest, EigenPtr) {
   // Tests set.
   set(&M1, 0, 0, 1);       // Sets M1(0,0) = 1
   EXPECT_EQ(M1(0, 0), 1);  // Checks M1(0, 0) = 1
-  EXPECT_THROW(set(nullptr, 0, 0, 1), std::exception);
+  EXPECT_THROW(set(nullptr, 0, 0, 1), std::runtime_error);
 
   // Tests get.
   EXPECT_EQ(get(&M1, 0, 0), 1);  // Checks M1(0, 0) = 1
   EXPECT_EQ(get(&M2, 0, 0), 0);  // Checks M2(0, 0) = 1
-  EXPECT_THROW(get(nullptr, 0, 0), std::exception);
+  EXPECT_THROW(get(nullptr, 0, 0), std::runtime_error);
 
   // Shows how to use EigenPtr with .block(). Here we introduce `tmp` to avoid
   // taking the address of temporary object.
@@ -177,9 +177,9 @@ GTEST_TEST(EigenTypesTest, EigenPtr_Assignment) {
 
   // Ensure that we can use const pointers.
   EigenPtr<const Matrix3d> const_ptr = &A;
-  EXPECT_TRUE((A.array() == a).all());
+  EXPECT_TRUE((const_ptr->array() == a).all());
   const_ptr = &B;
-  EXPECT_TRUE((B.array() == b).all());
+  EXPECT_TRUE((const_ptr->array() == b).all());
 
   // Test mutable pointers.
   EigenPtr<Matrix3d> mutable_ptr = &A;
