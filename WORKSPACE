@@ -409,8 +409,8 @@ pkg_config_package(
     modname = "zlib",
 )
 
-load("//tools:director.bzl", "director_repository")
+load("//tools:drake_visualizer.bzl", "drake_visualizer_repository")
 
-director_repository(
-    name = "director",
+drake_visualizer_repository(
+    name = "drake_visualizer",
 )
