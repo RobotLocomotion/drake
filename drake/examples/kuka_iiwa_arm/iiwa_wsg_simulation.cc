@@ -216,7 +216,7 @@ int DoMain() {
 
   auto iiwa_state_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<bot_core::robot_state_t>(
-          "IIWA_STATE_EST", &lcm));
+          "EST_ROBOT_STATE", &lcm));
   iiwa_state_pub->set_name("iiwa_state_publisher");
   iiwa_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
 
