@@ -22,27 +22,18 @@ drake_cc_library(
     name = "direct_collocation",
     srcs = [
         "direct_collocation.cc",
-        "direct_collocation_constraint.cc",
     ],
     hdrs = [
         "direct_collocation.h",
-        "direct_collocation_constraint.h",
     ],
     deps = [
         ":multiple_shooting",
         "//drake/math:autodiff",
+        "//drake/math:gradient",
     ],
 )
 
 # === test/ ===
-
-drake_cc_googletest(
-    name = "direct_collocation_constraint_test",
-    deps = [
-        ":direct_collocation",
-        "//drake/common:eigen_matrix_compare",
-    ],
-)
 
 drake_cc_googletest(
     name = "trajectory_optimization_test",

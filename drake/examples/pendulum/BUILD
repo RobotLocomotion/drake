@@ -134,15 +134,6 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "pendulum_dynamic_constraint_test",
-    deps = [
-        ":pendulum_plant",
-        "//drake/common:eigen_matrix_compare",
-        "//drake/systems/trajectory_optimization:direct_collocation",
-    ],
-)
-
-drake_cc_googletest(
     name = "pendulum_plant_test",
     deps = [
         ":pendulum_plant",
