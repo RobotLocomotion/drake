@@ -120,12 +120,12 @@ GTEST_TEST(EigenTypesTest, EigenPtr) {
   // Tests set.
   set(&M1, 0, 0, 1);       // Sets M1(0,0) = 1
   EXPECT_EQ(M1(0, 0), 1);  // Checks M1(0, 0) = 1
-  EXPECT_THROW(set(nullptr, 0, 0, 1), std::exception);
+  EXPECT_THROW(set(nullptr, 0, 0, 1), std::runtime_error);
 
   // Tests get.
   EXPECT_EQ(get(&M1, 0, 0), 1);  // Checks M1(0, 0) = 1
   EXPECT_EQ(get(&M2, 0, 0), 0);  // Checks M2(0, 0) = 1
-  EXPECT_THROW(get(nullptr, 0, 0), std::exception);
+  EXPECT_THROW(get(nullptr, 0, 0), std::runtime_error);
 
   // Shows how to use EigenPtr with .block(). Here we introduce `tmp` to avoid
   // taking the address of temporary object.
