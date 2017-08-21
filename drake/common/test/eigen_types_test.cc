@@ -86,5 +86,63 @@ GTEST_TEST(EigenTypesTest, TraitsSFINAE) {
   // EXPECT_FALSE((is_eigen_vector_of<std::string, double>::value));
 }
 
+// Sets M(i, j) = c.
+void set(EigenPtr<MatrixXd> M, const int i, const int j, const double c) {
+  (*M)(i, j) = c;
+}
+
+// Returns M(i, j).
+double get(const EigenPtr<const MatrixXd> M, const int i, const int j) {
+  return M->coeff(i, j);
+}
+
+GTEST_TEST(EigenTypesTest, EigenPtr) {
+  Eigen::MatrixXd M1 = Eigen::MatrixXd::Zero(3, 3);
+  const Eigen::MatrixXd M2 = Eigen::MatrixXd::Zero(3, 3);
+
+  // Tests set.
+  set(&M1, 0, 0, 1);       // Sets M1(0,0) = 1
+  EXPECT_EQ(M1(0, 0), 1);  // Checks M1(0, 0) = 1
+
+  // Tests get.
+  EXPECT_EQ(get(&M1, 0, 0), 1);  // Checks M1(0, 0) = 1
+  EXPECT_EQ(get(&M2, 0, 0), 0);  // Checks M2(0, 0) = 1
+
+  // Shows how to use EigenPtr with .block(). Here we introduce `tmp` to avoid
+  // taking the address of temporary object.
+  auto tmp = M1.block(1, 1, 2, 2);
+  set(&tmp, 0, 0, 1);  // tmp(0, 0) = 1. That is, M1(1, 1) = 1.
+  EXPECT_EQ(get(&M1, 1, 1), 1);
+}
+
+GTEST_TEST(EigenTypesTest, EigenPtr_EigenRef) {
+  Eigen::MatrixXd M = Eigen::MatrixXd::Zero(3, 3);
+  Eigen::Ref<Eigen::MatrixXd> M_ref(M);
+
+  // Tests set.
+  set(&M_ref, 0, 0, 1);       // Sets M(0,0) = 1
+  EXPECT_EQ(M_ref(0, 0), 1);  // Checks M(0, 0) = 1
+
+  // Tests get.
+  EXPECT_EQ(get(&M_ref, 0, 0), 1);  // Checks M(0, 0) = 1
+}
+
+// EigenPtr_MixMatrixTypes1 and EigenPtr_MixMatrixTypes2 tests check if we can
+// mix static-size and dynamic-size matrices with EigenPtr. They only check if
+// the code compiles. There are no runtime assertions.
+GTEST_TEST(EigenTypesTest, EigenPtr_MixMatrixTypes1) {
+  MatrixXd M(3, 3);
+  Eigen::Ref<Matrix3d> M_ref(M);         // MatrixXd -> Ref<Matrix3d>
+  EigenPtr<Matrix3d> M_ptr(&M);          // MatrixXd -> EigenPtr<Matrix3d>
+  EigenPtr<MatrixXd> M_ptr_ref(&M_ref);  // Ref<Matrix3d> -> EigenPtr<MatrixXd>
+}
+
+GTEST_TEST(EigenTypesTest, EigenPtr_MixMatrixTypes2) {
+  Matrix3d M;
+  Eigen::Ref<MatrixXd> M_ref(M);         // Matrix3d -> Ref<MatrixXd>
+  EigenPtr<MatrixXd> M_ptr(&M);          // Matrix3d -> EigenPtr<MatrixXd>
+  EigenPtr<Matrix3d> M_ptr_ref(&M_ref);  // Ref<MatrixXd> -> EigenPtr<Matrix3d>
+}
+
 }  // namespace
 }  // namespace drake
