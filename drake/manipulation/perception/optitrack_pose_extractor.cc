@@ -27,24 +27,12 @@ OptitrackPoseExtractor::OptitrackPoseExtractor(
               .get_index()},
       X_WO_(X_WO) {
   this->set_name("Optitrack pose extractor");
+  DeclareAbstractState(
+      systems::AbstractValue::Make<Isometry3<double>>(
+          Isometry3<double>::Identity()));
   this->DeclareAbstractInputPort();
   // Internal state is an Isometry3d
   this->DeclarePeriodicUnrestrictedUpdate(optitrack_lcm_status_period, 0);
-}
-
-std::unique_ptr<systems::AbstractValues>
-OptitrackPoseExtractor::AllocateAbstractState() const {
-  std::vector<std::unique_ptr<systems::AbstractValue>> abstract_vals;
-  abstract_vals.push_back(std::unique_ptr<systems::AbstractValue>(
-      new systems::Value<Isometry3<double>>(Isometry3<double>::Identity())));
-  return std::make_unique<systems::AbstractValues>(std::move(abstract_vals));
-}
-
-void OptitrackPoseExtractor::SetDefaultState(
-    const systems::Context<double>&, systems::State<double>* state) const {
-  Isometry3<double>& internal_state =
-      state->get_mutable_abstract_state<Isometry3<double>>(0);
-  internal_state = Isometry3<double>::Identity();
 }
 
 void OptitrackPoseExtractor::DoCalcUnrestrictedUpdate(
@@ -81,10 +69,6 @@ void OptitrackPoseExtractor::DoCalcUnrestrictedUpdate(
   Eigen::Quaterniond quaternion(
       rigid_bodies[vector_index].quat[3], rigid_bodies[vector_index].quat[0],
       rigid_bodies[vector_index].quat[1], rigid_bodies[vector_index].quat[2]);
-
-  drake::log()->info(
-      "Raw object position {}, {}, {}", rigid_bodies[vector_index].xyz[0],
-      rigid_bodies[vector_index].xyz[1], rigid_bodies[vector_index].xyz[2]);
 
   // Transform from world frame W to rigid body frame B.
   Isometry3<double> X_OB;

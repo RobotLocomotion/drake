@@ -41,15 +41,9 @@ class OptitrackPoseExtractor : public systems::LeafSystem<double> {
       const std::vector<const systems::UnrestrictedUpdateEvent<double>*>& event,
       systems::State<double>* state) const override;
 
-  std::unique_ptr<systems::AbstractValues> AllocateAbstractState()
-      const override;
-
   // The Calc() method for the measured_pose_output_port.
   void OutputMeasuredPose(const systems::Context<double>& context,
                           Isometry3<double>* output) const;
-
-  void SetDefaultState(const systems::Context<double>&,
-                       systems::State<double>* state) const override;
 
   const int object_id_{0};
   const int measured_pose_output_port_{-1};
