@@ -86,6 +86,23 @@ GTEST_TEST(EigenTypesTest, TraitsSFINAE) {
   // EXPECT_FALSE((is_eigen_vector_of<std::string, double>::value));
 }
 
+GTEST_TEST(EigenTypesTest, EigenPtr_Null) {
+  EigenPtr<const Matrix3d> null_ptr = nullptr;
+  EXPECT_FALSE(null_ptr);
+  EXPECT_TRUE(!null_ptr);
+  EXPECT_THROW(*null_ptr, std::exception);
+}
+
+bool ptr_optional_arg(EigenPtr<MatrixXd> arg = nullptr) {
+  return arg;
+}
+
+GTEST_TEST(EigenTypesTest, EigenPtr_OptionalArg) {
+  EXPECT_FALSE(ptr_optional_arg());
+  MatrixXd X(0, 0);
+  EXPECT_TRUE(ptr_optional_arg(&X));
+}
+
 // Sets M(i, j) = c.
 void set(EigenPtr<MatrixXd> M, const int i, const int j, const double c) {
   (*M)(i, j) = c;
@@ -103,10 +120,12 @@ GTEST_TEST(EigenTypesTest, EigenPtr) {
   // Tests set.
   set(&M1, 0, 0, 1);       // Sets M1(0,0) = 1
   EXPECT_EQ(M1(0, 0), 1);  // Checks M1(0, 0) = 1
+  EXPECT_THROW(set(nullptr, 0, 0, 1), std::exception);
 
   // Tests get.
   EXPECT_EQ(get(&M1, 0, 0), 1);  // Checks M1(0, 0) = 1
   EXPECT_EQ(get(&M2, 0, 0), 0);  // Checks M2(0, 0) = 1
+  EXPECT_THROW(get(nullptr, 0, 0), std::exception);
 
   // Shows how to use EigenPtr with .block(). Here we introduce `tmp` to avoid
   // taking the address of temporary object.
@@ -135,6 +154,8 @@ GTEST_TEST(EigenTypesTest, EigenPtr_MixMatrixTypes1) {
   Eigen::Ref<Matrix3d> M_ref(M);         // MatrixXd -> Ref<Matrix3d>
   EigenPtr<Matrix3d> M_ptr(&M);          // MatrixXd -> EigenPtr<Matrix3d>
   EigenPtr<MatrixXd> M_ptr_ref(&M_ref);  // Ref<Matrix3d> -> EigenPtr<MatrixXd>
+  EigenPtr<MatrixXd> M_ptr_ref2(M_ptr);  // EigenPtr<MatrixXd> ->
+                                         // EigenPtr<Matrix3d>
 }
 
 GTEST_TEST(EigenTypesTest, EigenPtr_MixMatrixTypes2) {
@@ -142,6 +163,39 @@ GTEST_TEST(EigenTypesTest, EigenPtr_MixMatrixTypes2) {
   Eigen::Ref<MatrixXd> M_ref(M);         // Matrix3d -> Ref<MatrixXd>
   EigenPtr<MatrixXd> M_ptr(&M);          // Matrix3d -> EigenPtr<MatrixXd>
   EigenPtr<Matrix3d> M_ptr_ref(&M_ref);  // Ref<MatrixXd> -> EigenPtr<Matrix3d>
+  EigenPtr<Matrix3d> M_ptr_ref2(M_ptr);  // EigenPtr<Matrix3d> ->
+                                         // EigenPtr<MatrixXd>
+}
+
+GTEST_TEST(EigenTypesTest, EigenPtr_Assignment) {
+  const double a = 1;
+  const double b = 2;
+  Matrix3d A;
+  A.setConstant(a);
+  MatrixXd B(3, 3);
+  B.setConstant(b);
+
+  // Ensure that we can use const pointers.
+  EigenPtr<const Matrix3d> const_ptr = &A;
+  EXPECT_TRUE((A.array() == a).all());
+  const_ptr = &B;
+  EXPECT_TRUE((B.array() == b).all());
+
+  // Test mutable pointers.
+  EigenPtr<Matrix3d> mutable_ptr = &A;
+  EXPECT_TRUE((mutable_ptr->array() == a).all());
+  mutable_ptr = &B;
+  EXPECT_TRUE((mutable_ptr->array() == b).all());
+
+  // Ensure we have changed neither A nor B.
+  EXPECT_TRUE((A.array() == a).all());
+  EXPECT_TRUE((B.array() == b).all());
+
+  // Ensure that we can assign nullptr.
+  const_ptr = nullptr;
+  EXPECT_FALSE(const_ptr);
+  mutable_ptr = nullptr;
+  EXPECT_FALSE(mutable_ptr);
 }
 
 }  // namespace

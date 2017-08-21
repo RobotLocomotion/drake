@@ -13,6 +13,7 @@
 
 #include "drake/common/constants.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_optional.h"
 
 namespace drake {
 
@@ -263,19 +264,86 @@ struct is_eigen_nonvector_of
 template <typename PlainObjectType>
 class EigenPtr {
  public:
-  EigenPtr() = delete;
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(EigenPtr)
+  EigenPtr() : EigenPtr(nullptr) {}
+
+  /// Constructs with a reference to another matrix type.
+  /// May be `nullptr`.
   template <typename PlainObjectTypeIn>
   // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
-  EigenPtr(PlainObjectTypeIn* m) : m_(*m) {}
+  EigenPtr(PlainObjectTypeIn* m) {
+    if (m) {
+      m_.emplace(*m);
+    }
+  }
 
-  Eigen::Ref<PlainObjectType>& operator*() { return m_; }
-  Eigen::Ref<PlainObjectType>* operator->() { return &m_; }
-  const Eigen::Ref<PlainObjectType>& operator*() const { return m_; }
-  const Eigen::Ref<PlainObjectType>* operator->() const { return &m_; }
+  template <typename PlainObjectTypeIn>
+  // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
+  EigenPtr(const EigenPtr<PlainObjectTypeIn>& other) {
+    // Cannot directly construct `m_` from `other.m_`.
+    assign(other);
+  }
+
+  /// Overload for `nullptr`.
+  // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
+  EigenPtr(std::nullptr_t) {}
+
+  EigenPtr& operator=(const EigenPtr& other) {
+    // We must explicitly override this version of operator=.
+    // The template below will not take precedence over this one.
+    return assign(other);
+  }
+
+  template <typename PlainObjectTypeIn>
+  EigenPtr& operator=(const EigenPtr<PlainObjectTypeIn>& other) {
+    return assign(other);
+  }
+
+  /// @throws std::exception if this is a null dereference.
+  // Cppreference only indicates that std::bad_optional_access inherits
+  // from std::exception, even though stx's implementation inherits from
+  // std::logic_error.
+  // http://en.cppreference.com/w/cpp/utility/optional/bad_optional_access
+  Eigen::Ref<PlainObjectType>& operator*() { return m_.value(); }
+  /// @throws std::exception if this is a null dereference.
+  Eigen::Ref<PlainObjectType>* operator->() { return &m_.value(); }
+
+  /// @throws std::exception if this is a null dereference.
+  const Eigen::Ref<PlainObjectType>& operator*() const { return m_.value(); }
+  /// @throws std::exception if this is a null dereference.
+  const Eigen::Ref<PlainObjectType>* operator->() const { return &m_.value(); }
+
+  /// Returns whether or not this contains a valid reference.
+  operator bool() const {
+    // has_value is not defind for Drake's version of stx::optional.
+    return static_cast<bool>(m_);
+  }
 
  private:
-  Eigen::Ref<PlainObjectType> m_;
+  // Use optional<> so that we may "reconstruct" the reference, making this more
+  // of a pointer-like type.
+  // TODO(eric.cousineau): Consider using std::unique_ptr<> for a more stable
+  // (but more heap-y) implementation.
+  optional<Eigen::Ref<PlainObjectType>> m_;
+
+  // Ensure that other instantiaions can access private members.
+  template <typename PlainObjectTypeIn>
+  friend class EigenPtr;
+
+  // Consolidate assignment here, so that both the copy constructor and the
+  // construction from another type may be used.
+  template <typename PlainObjectTypeIn>
+  EigenPtr& assign(const EigenPtr<PlainObjectTypeIn>& other) {
+    // Do NOT use m's operator=, as that will modify the values
+    // (m_ = other.m_) rather than update the reference.
+    if (other.m_) {
+      // This conditional is here because emplace(other.m_) has difficulty
+      // inferring template parameters.
+      m_.emplace(other.m_.value());
+    } else {
+      m_ = nullopt;
+    }
+    return *this;
+  }
 };
 
 }  // namespace drake
