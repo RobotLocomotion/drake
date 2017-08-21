@@ -140,17 +140,18 @@ struct ConstraintAccelProblemData {
   /// constraints, which are constraints posable as g(q,t). Such holonomic
   /// constraints must be twice differentiated with respect to time to yield
   /// an acceleration-level formulation (i.e., g̈(q, v, v̇, t), for the
-  /// aforementioned definition of g(q,t)). That differentiation yields g̈() =
-  /// L⋅v̇ + dL/dt⋅v, which is consistent with the constraint class under the
-  /// definition kᴸ(t,q,v) ≡ dL/dt⋅v. An example such holonomic constraint
+  /// aforementioned definition of g(q,t)). That differentiation yields
+  /// g̈ = L⋅v̇ + dL/dt⋅v, which is consistent with the constraint class under
+  /// the definition kᴸ(t,q,v) ≡ dL/dt⋅v. An example such holonomic constraint
   /// function is a joint acceleration limit:<pre>
   /// 0 ≤ -v̇ⱼ + r  ⊥  fᶜⱼ ≥ 0
   /// </pre>
   /// which can be read as the acceleration at joint j (v̇ⱼ) must be no larger
   /// than r, the force must be applied to limit the acceleration at the joint,
   /// and the limiting force cannot be applied if the acceleration at the
-  /// joint is not at the limit (i.e., v̇ⱼ < r). In this example, the constraint
-  /// function is g(q,t) ≡ qⱼ + rt², yielding ̈g(q, v, v̇) = -v̇ⱼ + r.
+  /// joint is not at the limit (i.e., v̇ⱼ < r). In this example, the
+  /// corresponding holonomic constraint function is g(q,t) ≡ qⱼ + rt²,
+  /// yielding  ̈g(q, v, v̇) = -v̇ⱼ + r.
   /// @{
 
   /// The number of limit constraints. Must equal `s`, i.e., the
@@ -278,10 +279,10 @@ struct ConstraintVelProblemData {
   /// is defined as the ℝˢˣᵐ Jacobian matrix that transforms generalized
   /// velocities (v ∈ ℝᵐ) into the time derivatives of s unilateral constraint
   /// functions. The class of constraint functions naturally includes holonomic
-  /// constraints, which are constraints posable as g(q). Such holonomic
+  /// constraints, which are constraints posable as g(q, t). Such holonomic
   /// constraints must be differentiated with respect to time to yield
-  /// a velocity-level formulation (i.e., ġ(q, v), for the aforementioned
-  /// definition of g(q)). That differentiation yields ġ() = L⋅v, which is
+  /// a velocity-level formulation (i.e., ġ(q, v, t), for the aforementioned
+  /// definition of g(q, t)). That differentiation yields ġ = L⋅v, which is
   /// consistent with the constraint class under the definition kᴸ(t,q) ≡ 0. An
   /// example such holonomic constraint function is a joint velocity limit:<pre>
   /// 0 ≤ -vⱼ + r  ⊥  fᶜⱼ ≥ 0
