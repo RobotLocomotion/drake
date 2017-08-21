@@ -201,15 +201,15 @@ unique_ptr<AffineSystem<T>> AffineSystem<T>::MakeAffineSystem(
   Eigen::VectorXd f0(num_states);
   VectorX<symbolic::Variable> vars(num_states + num_inputs);
   vars << state_vars, input_vars;
-  DecomposeAffineExpressions(dynamics, vars, AB, f0);
-  const auto& A = AB.leftCols(num_states);
-  const auto& B = AB.rightCols(num_inputs);
+  DecomposeAffineExpressions(dynamics, vars, &AB, &f0);
+  const auto A = AB.leftCols(num_states);
+  const auto B = AB.rightCols(num_inputs);
 
   Eigen::MatrixXd CD(num_outputs, num_states + num_inputs);
   Eigen::VectorXd y0(num_outputs);
-  DecomposeAffineExpressions(output, vars, CD, y0);
-  const auto& C = CD.leftCols(num_states);
-  const auto& D = CD.rightCols(num_inputs);
+  DecomposeAffineExpressions(output, vars, &CD, &y0);
+  const auto C = CD.leftCols(num_states);
+  const auto D = CD.rightCols(num_inputs);
 
   return make_unique<AffineSystem<T>>(A, B, f0, C, D, y0, time_period);
 }

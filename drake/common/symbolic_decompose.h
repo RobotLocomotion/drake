@@ -16,7 +16,7 @@ namespace symbolic {
 void DecomposeLinearExpressions(
     const Eigen::Ref<const VectorX<Expression>>& expressions,
     const Eigen::Ref<const VectorX<Variable>>& vars,
-    Eigen::Ref<Eigen::MatrixXd> M);
+    EigenPtr<Eigen::MatrixXd> M);
 
 /// Decomposes @p expressions into @p M * @p vars + @p v.
 ///
@@ -26,7 +26,7 @@ void DecomposeLinearExpressions(
 void DecomposeAffineExpressions(
     const Eigen::Ref<const VectorX<Expression>>& expressions,
     const Eigen::Ref<const VectorX<Variable>>& vars,
-    Eigen::Ref<Eigen::MatrixXd> M, Eigen::Ref<Eigen::VectorXd> v);
+    EigenPtr<Eigen::MatrixXd> M, EigenPtr<Eigen::VectorXd> v);
 
 }  // namespace symbolic
 }  // namespace drake
