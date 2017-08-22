@@ -49,6 +49,12 @@ namespace rndf {
 /// all other connections, the "momentum" is computed and compared against the
 /// sign of the reference.
 ///
+/// RNDF zones do not have a direct mapping to Maliput either. Consequently,
+/// fake connections are added between every entry and exit waypoints on these
+/// to keep them driveable. These waypoints' direction is set so as to head
+/// towards the centroid of all the zone perimeter waypoints. There's currently
+/// no support for RNDF zones' parking spots.
+///
 /// The resulting RoadGeometry presents the following naming for its composed
 /// entities:
 /// - Lane naming: "l:$1-$2", where
@@ -107,6 +113,14 @@ namespace rndf {
 /// - Segment 1-0-2:
 ///   - Lane 1.2.4-1.2.2
 ///
+/// General workflow with this class should be:
+/// -# Create a Builder.
+/// -# Call SetBoundingBox().
+/// -# Call CreateSegmentConnections() for each RNDF segment.
+/// -# Call CreateConnectionsForZones() for each RNDF zone.
+/// -# Call CreateConnection() for each pair of entry-exit in RNDF lanes and
+/// perimeters.
+/// -# Call Build() to get the built api::RoadGeometry.
 class Builder {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Builder)
@@ -148,6 +162,32 @@ class Builder {
   /// @throw std::runtime_error When @p connections is an empty collection.
   void CreateSegmentConnections(int segment_id,
                                 std::vector<Connection>* connections);
+
+  /// Creates a collection of Connections between every pair of entry and exit
+  /// waypoints in @p perimeter_waypoints.
+  ///
+  /// RNDF defines zones as areas where free-path driving is allowed. Since
+  /// Maliput does not cover this concept, and to avoid having lanes with closed
+  /// ends, every pair of entry and exit waypoints is connected. These
+  /// waypoints' direction is set to head towards the centroid of all
+  /// @p perimeter_waypoints.
+  /// @param width The width of this zone's inner connections.
+  /// @param perimeter_waypoints A collection of DirectedWaypoints describing
+  /// the zone perimeter.
+  /// @throw std::runtime_error When @p perimeter_waypoints is a nullptr.
+  /// @throw std::runtime_error When @p perimeter_waypoints' is an empty
+  /// collection.
+  void CreateConnectionsForZones(
+      double width, std::vector<DirectedWaypoint>* perimeter_waypoints);
+
+  /// Creates a connection between two RNDF lanes based on a pair of @p exit and
+  /// @p entry ids that map to specific, existing waypoints.
+  /// @param width The connection's width.
+  /// @param exit_id The start waypoint ID of the connection.
+  /// @param entry_id The end waypoint ID of the connection.
+  /// @throw std::runtime_error When neither @p exit nor @p entry are found.
+  void CreateConnection(double width, const ignition::rndf::UniqueId& exit_id,
+                        const ignition::rndf::UniqueId& entry_id);
 
   /// Builds an api::RoadGeometry.
   ///

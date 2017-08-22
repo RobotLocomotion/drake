@@ -57,6 +57,16 @@ const double kWaypointDistancePhase = 2.0;
 // affecting the accuracy of the approximation.
 const double kLinearStep = 1e-2;
 
+// Let S be a cubic Bezier spline, with control points p0, p1, p2 and p3.
+//                        Define a critical point c where lines (p1-p0)*t +
+//      p1 -- p2          p0 and (p2-p3)*w + p3 meet. To prevent loops and
+//      /       \         cusps, it sufficient to ensure that control points
+//     p0        \        p1 and p2 lie in the line segments (c - p0)*u + p0
+//               p3       and (c - p3)*v + p3.
+// Here we make u = v = kBezierScaling. Note that a unitary scaling will
+// place inner control points p1 and p2 at the critical point c.
+const double kBezierScaling = 1.0;
+
 // Determines the heading (in xy-plane) along the centerline when traveling
 // towards/into the @p lane, from the specified @p end.
 double HeadingIntoLane(const api::Lane* const lane,
@@ -528,7 +538,83 @@ void SetInvertedConnections(const pair<ignition::math::Vector3d,
   }
 }
 
+// Creates a pair of waypoints based on the given @p exit and @p entry
+// ones, keeping their heading but affecting tangent norms to
+// achieve smooth transitions by making use of cubic Bezier interpolants.
+// This is helpful for connecting lanes at intersections.
+// @param exit The start DirectedWaypoint of the lane's reference curve.
+// @param entry The end DirectedWaypoint of the lane's reference curve.
+// @return A vector with the two (2) waypoints that represent the
+// extents of the connection.
+vector<DirectedWaypoint> CreateDirectedWaypointsForConnections(
+    const DirectedWaypoint& exit, const DirectedWaypoint& entry) {
+  // Converts points and tangents into Bezier control points.
+  const vector<ignition::math::Vector3d>& bezier_points = SplineToBezier(
+      exit.position(), exit.tangent(), entry.position(), entry.tangent());
+  // Adjusts these controls points to prevent loops and cusps.
+  const vector<ignition::math::Vector3d>& adapted_bezier_points =
+      MakeBezierCurveMonotonic(bezier_points, kBezierScaling);
+  // Converts back those Bezier control points to Hermite control points.
+  const vector<ignition::math::Vector3d>& hermite_points =
+      BezierToSpline(adapted_bezier_points[0], adapted_bezier_points[1],
+                     adapted_bezier_points[2], adapted_bezier_points[3]);
+  // Creates a pair of DirectedWaypoints and returns them.
+  vector<DirectedWaypoint> waypoints;
+  waypoints.push_back(DirectedWaypoint(exit.id(), hermite_points[0],
+                                       hermite_points[1], true, false));
+  waypoints.push_back(DirectedWaypoint(entry.id(), hermite_points[2],
+                                       hermite_points[3], false, true));
+  return waypoints;
+}
+
 }  // namespace
+
+void Builder::CreateConnection(double width,
+                               const ignition::rndf::UniqueId& exit_id,
+                               const ignition::rndf::UniqueId& entry_id) {
+  const auto& exit_it = directed_waypoints_.find(exit_id.String());
+  const auto& entry_it = directed_waypoints_.find(entry_id.String());
+  DRAKE_THROW_UNLESS(exit_it != directed_waypoints_.end());
+  DRAKE_THROW_UNLESS(entry_it != directed_waypoints_.end());
+
+  std::vector<DirectedWaypoint> waypoints =
+      CreateDirectedWaypointsForConnections(exit_it->second, entry_it->second);
+  std::string key_id = exit_id.String() + "-" + entry_id.String();
+  InsertConnection(key_id, width, waypoints);
+}
+
+void Builder::CreateConnectionsForZones(
+    double width, std::vector<DirectedWaypoint>* perimeter_waypoints) {
+  DRAKE_THROW_UNLESS(perimeter_waypoints != nullptr);
+  DRAKE_THROW_UNLESS(perimeter_waypoints->size() > 0);
+  // Computes the mean coordinates from all the waypoints of the perimeter.
+  ignition::math::Vector3d center(0., 0., 0.);
+  for (const DirectedWaypoint& waypoint : *perimeter_waypoints) {
+    center += waypoint.position();
+  }
+  center /= static_cast<double>(perimeter_waypoints->size());
+  // Fills the tangents for the entries and exits pointing to center.
+  std::vector<DirectedWaypoint> entries, exits;
+  for (DirectedWaypoint& waypoint : *perimeter_waypoints) {
+    if (waypoint.is_entry()) {
+      waypoint.set_tangent((center - waypoint.position()).Normalize());
+      entries.push_back(waypoint);
+      directed_waypoints_[waypoint.id().String()] = waypoint;
+    } else if (waypoint.is_exit()) {
+      waypoint.set_tangent((waypoint.position() - center).Normalize());
+      exits.push_back(waypoint);
+      directed_waypoints_[waypoint.id().String()] = waypoint;
+    }
+  }
+  // Creates connection that join exit waypoints with entry waypoints.
+  for (const DirectedWaypoint& entry : entries) {
+    for (const DirectedWaypoint& exit : exits) {
+      std::vector<DirectedWaypoint> control_points = {entry, exit};
+      const std::string key_id = exit.id().String() + "-" + entry.id().String();
+      InsertConnection(key_id, width, control_points);
+    }
+  }
+}
 
 void Builder::CreateSegmentConnections(int segment_id,
                                        std::vector<Connection>* connections) {
