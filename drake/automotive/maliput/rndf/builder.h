@@ -131,6 +131,10 @@ class Builder {
   ///
   /// @param bounding_box A tuple containing the lower left corner and
   /// upper right corner positions of the bounding box respectively.
+  /// @remarks Bounding box definition is kept in 3D space for the sake
+  /// of generality, even though there's currently no support for nonplanar
+  /// RNDF geometries and, most of the time, the z-component of the given
+  /// corners will come zeroed.
   void SetBoundingBox(
       const std::tuple<ignition::math::Vector3d, ignition::math::Vector3d>&
           bounding_box) {
