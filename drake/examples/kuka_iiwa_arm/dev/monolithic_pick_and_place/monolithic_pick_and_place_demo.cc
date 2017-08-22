@@ -11,13 +11,14 @@
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/state_machine_system.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_wsg_diagram_factory.h"
-#include "drake/examples/kuka_iiwa_arm/robot_plan_interpolator.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_contact_results_for_viz.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
 #include "drake/lcmtypes/drake/lcmt_schunk_wsg_command.hpp"
+#include "drake/manipulation/planner/robot_plan_interpolator.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_controller.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_lcm.h"
+#include "drake/manipulation/util/world_sim_tree_builder.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/contact_results_to_lcm.h"
@@ -35,24 +36,26 @@ DEFINE_double(orientation, 2 * M_PI, "Yaw angle of the box.");
 DEFINE_int32(start_position, 1, "Position index to start from");
 DEFINE_int32(end_position, 2, "Position index to end at");
 DEFINE_double(dt, 1e-3, "Integration step size");
-DEFINE_double(realtime_rate, 0.0,
-              "Rate at which to run the simulation, relative to realtime");
+DEFINE_double(realtime_rate, 0.0, "Rate at which to run the simulation, "
+    "relative to realtime");
 DEFINE_bool(quick, false, "Run only a brief simulation and return success "
-            "without executing the entire task");
+    "without executing the entire task");
 
 using robotlocomotion::robot_plan_t;
 
 namespace drake {
+namespace examples {
+namespace kuka_iiwa_arm {
+namespace monolithic_pick_and_place {
+namespace {
 using manipulation::schunk_wsg::SchunkWsgController;
 using manipulation::schunk_wsg::SchunkWsgStatusSender;
 using systems::RigidBodyPlant;
 using systems::RungeKutta2Integrator;
 using systems::Simulator;
-
-namespace examples {
-namespace kuka_iiwa_arm {
-namespace monolithic_pick_and_place {
-namespace {
+using manipulation::util::ModelInstanceInfo;
+using manipulation::planner::RobotPlanInterpolator;
+using manipulation::util::WorldSimTreeBuilder;
 
 const char kIiwaUrdf[] =
     "drake/manipulation/models/iiwa_description/urdf/"
@@ -142,8 +145,7 @@ std::unique_ptr<systems::RigidBodyPlant<double>> BuildCombinedPlant(
   *box_instance = tree_builder->get_model_info_for_instance(box_id);
 
   int wsg_id = tree_builder->AddModelInstanceToFrame(
-      "wsg", Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(),
-      tree_builder->tree().findFrame("iiwa_frame_ee"),
+      "wsg", tree_builder->tree().findFrame("iiwa_frame_ee"),
       drake::multibody::joints::kFixed);
   *wsg_instance = tree_builder->get_model_info_for_instance(wsg_id);
 

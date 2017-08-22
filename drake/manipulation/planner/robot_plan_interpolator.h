@@ -10,16 +10,16 @@
 #include "drake/systems/framework/value.h"
 
 namespace drake {
-namespace examples {
-namespace kuka_iiwa_arm {
+namespace manipulation {
+namespace planner {
 
-/// This class implements a source of joint positions for an iiwa arm.
+/// This class implements a source of joint positions for a robot.
 /// It has two input ports, one for robot_plan_t messages containing a
 /// plan to follow, and another vector-valued port which expects the
-/// current (q,v) state of the iiwa arm.
+/// current (q,v) state of the robot.
 ///
 /// The system has two output ports, one with the current desired
-/// state (q,v) of the iiwa arm and another for the accelerations.
+/// state (q,v) of the robot and another for the accelerations.
 ///
 /// If a plan is received with no knot points, the system will create
 /// a plan which commands the arm to hold at the measured position.
@@ -92,6 +92,6 @@ class RobotPlanInterpolator : public systems::LeafSystem<double> {
   RigidBodyTree<double> tree_;
 };
 
-}  // namespace kuka_iiwa_arm
-}  // namespace examples
+}  // namespace planner
+}  // namespace manipulation
 }  // namespace drake

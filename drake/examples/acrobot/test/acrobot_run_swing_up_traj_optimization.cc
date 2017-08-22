@@ -9,7 +9,6 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/examples/acrobot/acrobot_plant.h"
-#include "drake/examples/acrobot/acrobot_swing_up.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -36,45 +35,44 @@ int do_main() {
   systems::DiagramBuilder<double> builder;
 
   AcrobotPlant<double> acrobot;
+  auto context = acrobot.CreateDefaultContext();
 
   const int kNumTimeSamples = 21;
-  const double kTrajectoryTimeLowerBound = 2;
-  const double kTrajectoryTimeUpperBound = 10;
+  const double kMinimumTimeStep = 0.2;
+  const double kMaximumTimeStep = 0.5;
+  systems::trajectory_optimization::DirectCollocation dircol(
+      &acrobot, *context, kNumTimeSamples, kMinimumTimeStep,
+      kMaximumTimeStep);
+
+  dircol.AddEqualTimeIntervalsConstraints();
+
+  // Current limit for MIT's acrobot is 7-9 Amps, according to Michael Posa.
+  const double kTorqueLimit = 8;
+  auto u = dircol.input();
+  dircol.AddConstraintToAllKnotPoints(-kTorqueLimit <= u(0));
+  dircol.AddConstraintToAllKnotPoints(u(0) <= kTorqueLimit);
 
   const Eigen::Vector4d x0(0, 0, 0, 0);
   const Eigen::Vector4d xG(M_PI, 0, 0, 0);
+  dircol.AddLinearConstraint(dircol.initial_state() == x0);
+  dircol.AddLinearConstraint(dircol.final_state() == xG);
 
-  auto context = acrobot.CreateDefaultContext();
-
-  systems::DircolTrajectoryOptimization dircol_traj(
-      &acrobot, *context, kNumTimeSamples, kTrajectoryTimeLowerBound,
-      kTrajectoryTimeUpperBound);
-  AddSwingUpTrajectoryParams(x0, xG, &dircol_traj);
+  const double R = 10;  // Cost on input "effort".
+  dircol.AddRunningCost((R * u) * u);
 
   const double timespan_init = 4;
   auto traj_init_x =
       PiecewisePolynomialType::FirstOrderHold({0, timespan_init}, {x0, xG});
-  SolutionResult result = dircol_traj.SolveTraj(
-      timespan_init, PiecewisePolynomialType(), traj_init_x);
+  dircol.SetInitialTrajectory(PiecewisePolynomialType(), traj_init_x);
+  SolutionResult result = dircol.Solve();
   if (result != SolutionResult::kSolutionFound) {
     std::cerr << "No solution found.\n";
     return 1;
   }
 
   const PiecewisePolynomialTrajectory pp_xtraj =
-      dircol_traj.ReconstructStateTrajectory();
+      dircol.ReconstructStateTrajectory();
   auto state_source = builder.AddSystem<systems::TrajectorySource>(pp_xtraj);
-
-  if (pp_xtraj.get_end_time() - pp_xtraj.get_start_time() >
-            kTrajectoryTimeUpperBound) {
-    std::cerr << "Trajectory time exceeds above the upper bound.\n";
-    return 1;
-  }
-  if (pp_xtraj.get_end_time() - pp_xtraj.get_start_time() <
-      kTrajectoryTimeLowerBound) {
-    std::cerr << "Trajectory time exceeds below the lower bound.\n";
-    return 1;
-  }
 
   lcm::DrakeLcm lcm;
   auto tree = std::make_unique<RigidBodyTree<double>>();
@@ -100,7 +98,7 @@ int do_main() {
 
   simulator.set_target_realtime_rate(FLAGS_realtime_factor);
   simulator.Initialize();
-  simulator.StepTo(kTrajectoryTimeUpperBound);
+  simulator.StepTo(pp_xtraj.get_end_time());
   return 0;
 }
 

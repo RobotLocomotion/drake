@@ -17,32 +17,37 @@
 
 namespace drake {
 namespace systems {
+namespace trajectory_optimization {
 
+/// MultipleShooting is an abstract class for trajectory optimization
+/// that creates decision variables for inputs, states, and (optionally)
+/// sample times along the trajectory, then provides a number of methods
+/// for working with those decision variables.
 ///
-/// DirectTrajectoryOptimization is an abstract class for direct method
-/// approaches to trajectory optimization.
-///
-/// Subclasses must implement the abstract method:
+/// Subclasses must implement the abstract methods:
 ///  DoAddRunningCost()
-/// and should add any dynamic constraints in their constructor.
+///  ReconstructInputTrajectory()
+///  ReconstructStateTrajectory()
+/// using all of the correct interpolation schemes for the specific
+/// transcription method, and should add the constraints to impose the
+/// %System% dynamics in their constructor.
 ///
 /// This class assumes that there are a fixed number (N) time steps/samples, and
 /// that the trajectory is discretized into timesteps h (N-1 of these), state x
 /// (N of these), and control input u (N of these).
-///
-/// To maintain nominal sparsity in the optimization programs, this
-/// implementation assumes that all constraints and costs are
-/// time-invariant.
-class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
+class MultipleShooting : public solvers::MathematicalProgram {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DirectTrajectoryOptimization)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultipleShooting)
 
-  ~DirectTrajectoryOptimization() override {}
+  ~MultipleShooting() override {}
 
   /// Returns the decision variable associated with the timestep, h, at time
   /// index @p index.
+  /// @throws std::runtime_error if timesteps are not declared as decision
+  /// variables.
   const solvers::VectorDecisionVariable<1> timestep(int index) const {
-    DRAKE_DEMAND(index >= 0 && index < N_);
+    DRAKE_THROW_UNLESS(timesteps_are_decision_variables_);
+    DRAKE_DEMAND(index >= 0 && index < N_ - 1);
     return h_vars_.segment<1>(index);
   }
 
@@ -142,34 +147,22 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
   // assign costs/constraints to a set of
   // interval indices.
 
-  /// Add bounds on a set of time intervals, such that
-  /// lower_bound(i) <= h_vars_(interval_indices[i]) <= upper_bound(i)
-  /// where h_vars_[j] is the time interval between j'th and j+1'th sample
-  /// (starting
-  /// from 0'th sample).
-  /// @param lower_bound  A vector of lower bounds.
-  /// @param upper_bound  A vector of upper bounds.
-  /// @param interval_indices A vector of interval indices.
-  void AddTimeIntervalBounds(const Eigen::VectorXd& lower_bound,
-                             const Eigen::VectorXd& upper_bound,
-                             const std::vector<int>& interval_indices);
-
-  /// Add bounds on all time intervals, such that
-  /// lower_bound(i) <= h_vars_(i) <= upper_bound(i)
-  /// where h_vars_[i] is the time interval between i'th and i+1'th sample
-  /// (starting
-  /// from 0'th sample).
-  /// @param lower_bound  A vector of lower bounds.
-  /// @param upper_bound  A vector of upper bounds.
-  void AddTimeIntervalBounds(const Eigen::VectorXd& lower_bound,
-                             const Eigen::VectorXd& upper_bound);
-
-  /// Add bounds on all time intervals, such that
-  /// lower_bound <= h_vars_(i) <= upper_bound
-  /// for all time intervals.
+  /// Adds bounds on all time intervals.
   /// @param lower_bound  A scalar double lower bound.
   /// @param upper_bound  A scalar double upper bound.
+  /// @throws std::runtime_error if timesteps are not declared as decision
+  /// variables.
   void AddTimeIntervalBounds(double lower_bound, double upper_bound);
+
+  /// Adds constraints to enforce that all timesteps have equal duration.
+  /// @throws std::runtime_error if timesteps are not declared as decision
+  /// variables.
+  void AddEqualTimeIntervalsConstraints();
+
+  /// Adds a constraint on the total duration of the trajectory.
+  /// @throws std::runtime_error if timesteps are not declared as decision
+  /// variables.
+  void AddDurationBounds(double lower_bound, double upper_bound);
 
   /// Adds a cost to the final time, of the form
   ///    @f[ cost = e(t,x,u), @f]
@@ -183,75 +176,76 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
   /// Adds support for passing in a (scalar) matrix Expression, which is a
   /// common output of most symbolic linear algebra operations.
   /// Note: Derived classes will need to type
-  ///    using DirectTrajectoryOptimization::AddFinalCost;
+  ///    using MultipleShooting::AddFinalCost;
   /// to "unhide" this method.
   void AddFinalCost(const Eigen::Ref<const MatrixX<symbolic::Expression>>& e) {
     DRAKE_DEMAND(e.rows() == 1 && e.cols() == 1);
     AddFinalCost(e(0, 0));
   }
 
-  /// Solve the nonlinear program and return the resulting trajectory.
-  ///
-  /// @param timespan_init The initial guess for the timespan of
-  /// the resulting trajectory.
+  /// Set the initial guess for the trajectory decision variables.
   ///
   /// @param traj_init_u Initial guess for trajectory for control
   /// input. The number of rows for each segment in @p traj_init_u must
-  /// be equal to num_inputs (the first param of the constructor).
+  /// be equal to num_inputs (the first param of the constructor). If
+  /// empty, then a default small non-zero initial value is used instead.
   ///
   /// @param traj_init_x Initial guess for trajectory for state
   /// input. The number of rows for each segment in @p traj_init_x must
-  /// be equal to num_states (the second param of the constructor).
-  solvers::SolutionResult SolveTraj(
-      double timespan_init, const PiecewisePolynomial<double>& traj_init_u,
-      const PiecewisePolynomial<double>& traj_init_x);
-  // TODO(Lucy-tri) If timespan_init has any relationship to
-  // trajectory_time_{lower,upper}_bound, then add doc and asserts.
+  /// be equal to num_states (the second param of the constructor). If
+  /// empty, then a default small non-zero initial value is used instead.
+  ///
+  /// If time steps are decision variables, then the initial guess for
+  /// the time steps are evenly distributed to match the duration of the
+  /// @p traj_init_u and @p traj_init_x. Throws std::runtime_error if
+  /// @p traj_init_u and @p traj_init_x are both empty, or if
+  /// @p traj_init_u and @p traj_init_x are both non-empty, and have
+  /// different start and end times.
+  // TODO(russt): Consider taking the actual breakpoints from
+  // traj_init_{u,x} iff they match the number of sample times.
+  void SetInitialTrajectory(const PiecewisePolynomial<double>& traj_init_u,
+                            const PiecewisePolynomial<double>& traj_init_x);
 
-  /// Extract the result of the trajectory solution as a set of
-  /// discrete samples.  Output matrices contain one set of input/state
-  /// per column, and the number of columns is equal to the number of
-  /// time samples.  @p times will be populated with the times
-  /// corresponding to each column.
-  void GetResultSamples(Eigen::MatrixXd* inputs, Eigen::MatrixXd* states,
-                        std::vector<double>* times) const;
+  /// Returns a vector containing the elapsed time at each knot point at the
+  /// solution.
+  Eigen::VectorXd GetSampleTimes() const;
 
-  /// Get the input trajectory as a PiecewisePolynomialTrajectory
-  PiecewisePolynomialTrajectory ReconstructInputTrajectory() const;
+  /// Returns a matrix containing the input values (arranged in columns) at
+  /// each knot point at the solution.
+  Eigen::MatrixXd GetInputSamples() const;
 
-  /// Get the state trajectory as a PiecewisePolynomialTrajectory
-  virtual PiecewisePolynomialTrajectory ReconstructStateTrajectory() const;
+  /// Returns a matrix containing the state values (arranged in columns) at
+  /// each knot point at the solution.
+  Eigen::MatrixXd GetStateSamples() const;
+
+  /// Gets the input trajectory at the solution as a
+  /// %PiecewisePolynomialTrajectory%.
+  virtual PiecewisePolynomialTrajectory ReconstructInputTrajectory() const = 0;
+
+  /// Gets the state trajectory at the solution as a
+  /// %PiecewisePolynomialTrajectory%.
+  virtual PiecewisePolynomialTrajectory ReconstructStateTrajectory() const = 0;
 
  protected:
-  /// Construct a DirectTrajectoryOptimization object. The dimensions
-  /// of the trajectory are established at construction, though other
-  /// parameters (costs, bounds, constraints, etc) can be set before
-  /// calling SolveTraj.
+  /// Constructs a MultipleShooting instance with fixed sample times.
   ///
   /// @param num_inputs Number of inputs at each sample point.
   /// @param num_states Number of states at each sample point.
   /// @param num_time_samples Number of time samples.
-  /// @param trajectory_time_lower_bound Bound on total time for
-  ///        trajectory.
-  /// @param trajectory_time_upper_bound Bound on total time for
-  ///        trajectory.
-  // TODO(russt): update comment above. Note that system/context are cloned
-  // internally... must use accessors to make any changes to the system.
-  DirectTrajectoryOptimization(int num_inputs, int num_states,
-                               int num_time_samples,
-                               double trajectory_time_lower_bound,
-                               double trajectory_time_upper_bound);
-  // TODO(Lucy-tri) add param to indicate whether time steps are constant or
-  // independent, and modify implementation to handle.
+  /// @param fixed_timestep The spacing between sample times.
+  MultipleShooting(int num_inputs, int num_states, int num_time_samples,
+                   double fixed_timestep);
 
-  /// Returns a vector containing the elapsed time at each knot point.
-  std::vector<double> GetTimeVector() const;
-
-  /// Returns a vector containing the input values at each knot point.
-  std::vector<Eigen::MatrixXd> GetInputVector() const;
-
-  /// Returns a vector containing the state values at each knot point.
-  std::vector<Eigen::MatrixXd> GetStateVector() const;
+  /// Constructs a MultipleShooting instance with sample times as decision
+  /// variables.
+  ///
+  /// @param num_inputs Number of inputs at each sample point.
+  /// @param num_states Number of states at each sample point.
+  /// @param num_time_samples Number of time samples.
+  /// @param minimum_timestep Minimum spacing between sample times.
+  /// @param maximum_timestep Maximum spacing between sample times.
+  MultipleShooting(int num_inputs, int num_states, int num_time_samples,
+                   double minimum_timestep, double maximum_timestep);
 
   /// Replaces e.g. placeholder_x_var_ with x_vars_ at time interval
   /// @p interval_index, for all placeholder variables.
@@ -264,29 +258,27 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
                                                    int interval_index) const;
 
   int num_inputs() const { return num_inputs_; }
+
   int num_states() const { return num_states_; }
+
   int N() const { return N_; }
+
+  bool timesteps_are_decision_variables() const {
+    return timesteps_are_decision_variables_;
+  }
+
+  double fixed_timestep() const {
+    DRAKE_THROW_UNLESS(timesteps_are_decision_variables_);
+    return fixed_timestep_;
+  }
+
   const solvers::VectorXDecisionVariable& h_vars() const { return h_vars_; }
+
   const solvers::VectorXDecisionVariable& u_vars() const { return u_vars_; }
+
   const solvers::VectorXDecisionVariable& x_vars() const { return x_vars_; }
 
  private:
-  // Evaluate the initial trajectories at the sampled times and construct the
-  // nominal initial vectors.
-  //
-  // @param timespan_init The final time of the solution.
-  //
-  // @param traj_init_u Initial guess for trajectory for control
-  // input. The number of rows for each segment in @p traj_init_u must
-  // be equal to num_inputs (the first param of the constructor).
-  //
-  // @param traj_init_x Initial guess for trajectory for state
-  // input. The number of rows for each segment in @p traj_init_x must
-  // be equal to num_states (the second param of the constructor).
-  void GetInitialVars(double timespan_init_in,
-                      const PiecewisePolynomial<double>& traj_init_u,
-                      const PiecewisePolynomial<double>& traj_init_x);
-
   virtual void DoAddRunningCost(const symbolic::Expression& g) = 0;
 
   // Helper method that performs the work for SubstitutePlaceHolderVariables
@@ -296,18 +288,23 @@ class DirectTrajectoryOptimization : public solvers::MathematicalProgram {
   const int num_inputs_{};
   const int num_states_{};
   const int N_{};  // Number of time samples
+  const bool timesteps_are_decision_variables_{false};
+  const double fixed_timestep_{0.0};
 
   solvers::VectorXDecisionVariable h_vars_;  // Time deltas between each
-                                             // input/state sample.
-  solvers::VectorXDecisionVariable x_vars_;
-  solvers::VectorXDecisionVariable u_vars_;
+  // input/state sample or the
+  // empty vector (if timesteps
+  // are fixed).
+  const solvers::VectorXDecisionVariable x_vars_;
+  const solvers::VectorXDecisionVariable u_vars_;
 
   // See description of the public time(), state(), and input() accessor methods
   // for details about the placeholder variables.
-  solvers::VectorDecisionVariable<1> placeholder_t_var_;
-  solvers::VectorXDecisionVariable placeholder_x_vars_;
-  solvers::VectorXDecisionVariable placeholder_u_vars_;
+  const solvers::VectorDecisionVariable<1> placeholder_t_var_;
+  const solvers::VectorXDecisionVariable placeholder_x_vars_;
+  const solvers::VectorXDecisionVariable placeholder_u_vars_;
 };
 
+}  // namespace trajectory_optimization
 }  // namespace systems
 }  // namespace drake

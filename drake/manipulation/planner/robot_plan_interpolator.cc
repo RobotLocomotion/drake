@@ -1,4 +1,4 @@
-#include "drake/examples/kuka_iiwa_arm/robot_plan_interpolator.h"
+#include "drake/manipulation/planner/robot_plan_interpolator.h"
 
 #include <map>
 #include <memory>
@@ -17,8 +17,8 @@
 using robotlocomotion::robot_plan_t;
 
 namespace drake {
-namespace examples {
-namespace kuka_iiwa_arm {
+namespace manipulation {
+namespace planner {
 namespace {
 
 // This corresponds to the actual plan.
@@ -182,8 +182,10 @@ void RobotPlanInterpolator::DoCalcUnrestrictedUpdate(
       const systems::BasicVector<double>* state_input =
           this->EvalVectorInput(context, state_input_port_);
       DRAKE_DEMAND(state_input);
+
+      const double current_plan_time = context.get_time() - plan.start_time;
       MakeFixedPlan(context.get_time(),
-                    state_input->get_value().head(tree_.get_num_positions()),
+                    plan.pp.value(current_plan_time),
                     state);
     } else if (plan_input.num_states == 1) {
       drake::log()->info("Ignoring plan with only one knot point.");
@@ -220,6 +222,6 @@ void RobotPlanInterpolator::DoCalcUnrestrictedUpdate(
   }
 }
 
-}  // namespace kuka_iiwa_arm
-}  // namespace examples
+}  // namespace planner
+}  // namespace manipulation
 }  // namespace drake

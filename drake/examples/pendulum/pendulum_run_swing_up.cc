@@ -6,7 +6,6 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/is_approx_equal_abstol.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
-#include "drake/examples/pendulum/pendulum_swing_up.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -50,30 +49,35 @@ int do_main() {
   DRAKE_DEMAND(pendulum != nullptr);
   DRAKE_DEMAND(controller != nullptr);
 
-  // This is a fairly small number of time samples for this system,
-  // and it winds up making the controller do a lot of the work when
-  // getting to the target state.  I (sam.creasey) suspect that a
-  // different interpolation strategy (not linear interpolation of a
-  // non-linear system, basically) would reduce this effect.
+  auto context = pendulum->CreateDefaultContext();
+
   const int kNumTimeSamples = 21;
-  const int kTrajectoryTimeLowerBound = 2;
-  const int kTrajectoryTimeUpperBound = 6;
+  const double kMinimumTimeStep = 0.2;
+  const double kMaximumSampleTime = 0.5;
+  systems::trajectory_optimization::DirectCollocation dircol(
+      pendulum, *context, kNumTimeSamples, kMinimumTimeStep,
+      kMaximumSampleTime);
+
+  dircol.AddEqualTimeIntervalsConstraints();
+
+  const double kTorqueLimit = 3.0;  // N*m.
+  const solvers::VectorXDecisionVariable& u = dircol.input();
+  dircol.AddConstraintToAllKnotPoints(-kTorqueLimit <= u(0));
+  dircol.AddConstraintToAllKnotPoints(u(0) <= kTorqueLimit);
 
   const Eigen::Vector2d x0(0, 0);
   const Eigen::Vector2d xG(M_PI, 0);
+  dircol.AddLinearConstraint(dircol.initial_state() == x0);
+  dircol.AddLinearConstraint(dircol.final_state() == xG);
 
-  auto context = pendulum->CreateDefaultContext();
-
-  systems::DircolTrajectoryOptimization dircol(
-      pendulum, *context, kNumTimeSamples, kTrajectoryTimeLowerBound,
-      kTrajectoryTimeUpperBound);
-  drake::examples::pendulum::AddSwingUpTrajectoryParams(x0, xG, &dircol);
+  const double R = 10;  // Cost on input "effort".
+  dircol.AddRunningCost((R * u) * u);
 
   const double timespan_init = 4;
   auto traj_init_x =
       PiecewisePolynomial<double>::FirstOrderHold({0, timespan_init}, {x0, xG});
-  SolutionResult result = dircol.SolveTraj(
-      timespan_init, PiecewisePolynomial<double>(), traj_init_x);
+  dircol.SetInitialTrajectory(PiecewisePolynomial<double>(), traj_init_x);
+  SolutionResult result = dircol.Solve();
   if (result != SolutionResult::kSolutionFound) {
     std::cerr << "Result is an Error" << std::endl;
     return 1;

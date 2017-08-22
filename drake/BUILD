@@ -267,7 +267,7 @@ _LIBDRAKE_COMPONENTS = [
     "//drake/systems/sensors:sensors",
     "//drake/systems/sensors:vtk_util",
     "//drake/systems/trajectory_optimization:direct_collocation",
-    "//drake/systems/trajectory_optimization:direct_trajectory_optimization",
+    "//drake/systems/trajectory_optimization:multiple_shooting",
     "//drake/thirdParty:spruce",
     "//drake/thirdParty:stx",
     "//drake/thirdParty:tinydir",

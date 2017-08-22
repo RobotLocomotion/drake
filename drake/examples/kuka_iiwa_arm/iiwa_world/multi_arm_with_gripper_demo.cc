@@ -1,8 +1,8 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
-#include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_tree_builder.h"
-#include "drake/examples/kuka_iiwa_arm/sim_diagram_builder.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_constants.h"
+#include "drake/manipulation/util/sim_diagram_builder.h"
+#include "drake/manipulation/util/world_sim_tree_builder.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/systems/analysis/simulator.h"
@@ -13,6 +13,9 @@ namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
+using manipulation::util::ModelInstanceInfo;
+using manipulation::util::WorldSimTreeBuilder;
+using manipulation::util::SimDiagramBuilder;
 
 std::unique_ptr<RigidBodyTree<double>> build_tree(
     int num_pairs, std::vector<ModelInstanceInfo<double>>* iiwa,
@@ -39,8 +42,7 @@ std::unique_ptr<RigidBodyTree<double>> build_tree(
 
     // Adds a wsg gripper
     id = tree_builder->AddModelInstanceToFrame(
-        "wsg", Vector3<double>::Zero(), Vector3<double>::Zero(),
-        tree_builder->tree().findFrame("iiwa_frame_ee", id),
+        "wsg", tree_builder->tree().findFrame("iiwa_frame_ee", id),
         drake::multibody::joints::kFixed);
     wsg->push_back(tree_builder->get_model_info_for_instance(id));
   }

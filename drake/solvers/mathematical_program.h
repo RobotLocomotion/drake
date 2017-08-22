@@ -2212,7 +2212,10 @@ class MathematicalProgram {
   std::vector<Binding<LinearMatrixInequalityConstraint>>
       linear_matrix_inequality_constraint_;
 
-  // Invariant:  The bindings in this list must be non-overlapping.
+  // Invariant:  The bindings in this list must be non-overlapping, when calling
+  // Linear Complementarity solver like Moby. If this constraint is solved
+  // through a nonlinear optimization solver (like SNOPT) instead, then we allow
+  // the bindings to be overlapping.
   // TODO(ggould-tri) can this constraint be relaxed?
   std::vector<Binding<LinearComplementarityConstraint>>
       linear_complementarity_constraints_;
