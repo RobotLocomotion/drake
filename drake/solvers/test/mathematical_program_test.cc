@@ -488,6 +488,67 @@ GTEST_TEST(testGetSolution, testSetSolution1) {
                runtime_error);
 }
 
+namespace {
+
+// Overloads to permit `ExpectBadVar` call `AddItem` for both `Cost` and
+// `Constraint`.
+void AddItem(MathematicalProgram* prog, const Binding<Constraint>& binding) {
+  prog->AddConstraint(binding);
+}
+void AddItem(MathematicalProgram* prog, const Binding<Cost>& binding) {
+  prog->AddCost(binding);
+}
+
+// Expect that adding a given constraint with bad variables (those that have
+// not been added to MathematicalProgram) will throw an exception.
+template <typename C, typename... Args>
+void ExpectBadVar(MathematicalProgram* prog, int num_var, Args&&... args) {
+  using internal::CreateBinding;
+  auto c = make_shared<C>(std::forward<Args>(args)...);
+  VectorXDecisionVariable x(num_var);
+  for (int i = 0; i < num_var; ++i)
+    x(i) = Variable("bad" + std::to_string(i));
+  // Use minimal call site (directly on adding Binding<C>).
+  // TODO(eric.cousineau): Check if there is a way to parse the error text to
+  // ensure that we are capturing the correct error.
+  EXPECT_THROW(AddItem(prog, CreateBinding(c, x)), std::runtime_error);
+}
+
+}  // namespace
+
+GTEST_TEST(testMathematicalProgram, testBadBindingVariable) {
+  // Attempt to add a binding that does not have a valid decision variable.
+  MathematicalProgram prog;
+
+  const int num_var = 3;
+  Eigen::Matrix3d A;
+  A.setIdentity();
+  Eigen::Vector3d f, lb, ub;
+  f.setConstant(2);
+  lb.setConstant(0);
+  ub.setConstant(1);
+  vector<Eigen::Ref<const MatrixXd>> F{A, 2 * A};
+  shared_ptr<EvaluatorBase> func = MakeFunctionEvaluator(Movable());
+
+  // Test each constraint type.
+  ExpectBadVar<LinearConstraint>(&prog, num_var, A, lb, ub);
+  ExpectBadVar<LinearEqualityConstraint>(&prog, num_var, A, lb);
+  ExpectBadVar<BoundingBoxConstraint>(&prog, num_var, lb, ub);
+  ExpectBadVar<LorentzConeConstraint>(&prog, num_var, A, f);
+  ExpectBadVar<RotatedLorentzConeConstraint>(&prog, num_var, A, f);
+  ExpectBadVar<PositiveSemidefiniteConstraint>(&prog, num_var * num_var,
+                                               num_var);
+  ExpectBadVar<LinearMatrixInequalityConstraint>(&prog, F.size() - 1, F);
+  ExpectBadVar<LinearComplementarityConstraint>(&prog, num_var, A, f);
+  // Use this as a test for nonlinear constraints.
+  ExpectBadVar<EvaluatorConstraint<>>(&prog, 1, func, lb.head(1), ub.head(1));
+
+  // Test each cost type.
+  ExpectBadVar<LinearCost>(&prog, num_var, f);
+  ExpectBadVar<QuadraticCost>(&prog, num_var, A, f);
+  ExpectBadVar<EvaluatorCost<>>(&prog, 1, func);
+}
+
 GTEST_TEST(testMathematicalProgram, testAddFunction) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<1>();

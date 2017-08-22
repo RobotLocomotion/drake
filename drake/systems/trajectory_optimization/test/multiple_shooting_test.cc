@@ -112,9 +112,9 @@ GTEST_TEST(MultipleShootingTest, PlaceholderVariableTest) {
                                           Eigen::Vector2d::Zero(), x),
                std::runtime_error);
 
-  // TODO(soonho): These should THROW, but currently do not.
-  EXPECT_NO_THROW(prog.AddLinearConstraint(t(0) <= 1.0));
-  EXPECT_NO_THROW(prog.AddLinearConstraint(u <= Vector1d(1.0)));
+  EXPECT_THROW(prog.AddLinearConstraint(t(0) <= 1.0), std::runtime_error);
+  EXPECT_THROW(prog.AddLinearConstraint(u <= Vector1d(1.0)),
+               std::runtime_error);
 
   EXPECT_THROW(prog.AddLinearConstraint(Eigen::Matrix2d::Identity(),
                                         Eigen::Vector2d::Zero(),
