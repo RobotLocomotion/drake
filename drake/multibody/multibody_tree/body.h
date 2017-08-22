@@ -93,7 +93,7 @@ class BodyFrame : public Frame<T> {
   explicit BodyFrame(const Body<T>& body) : Frame<T>(body) {}
 
   // Helper method to make a clone templated on any other scalar type.
-  // This method hods the common implementation for the different overrides to
+  // This method holds the common implementation for the different overrides to
   // DoCloneToScalar().
   template <typename ToScalar>
   std::unique_ptr<Frame<ToScalar>> TemplatedDoCloneToScalar(
@@ -179,10 +179,10 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   virtual SpatialInertia<T> CalcSpatialInertiaInBodyFrame(
       const MultibodyTreeContext<T>& context) const = 0;
 
-  /// NVI to DoCloneToScalar() templated on the scalar type of the new clone to
-  /// be created. This method is mostly intended to be called by
-  /// MultibodyTree::CloneToScalar(). Most users should not call this clone
-  /// method directly but rather clone the entire parent MultibodyTree if
+  /// NVI (Non-Virtual Interface) to DoCloneToScalar() templated on the scalar
+  /// type of the new clone to be created. This method is mostly intended to be
+  /// called by MultibodyTree::CloneToScalar(). Most users should not call this
+  /// clone method directly but rather clone the entire parent MultibodyTree if
   /// needed.
   /// @sa MultibodyTree::CloneToScalar()
   template <typename ToScalar>

@@ -130,6 +130,18 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
       const MultibodyTreeContext<T>& context,
       const Eigen::Ref<const VectorX<T>>& v) const final;
 
+  /// Computes the across-mobilizer acceleration `A_FM(q, v, v̇)` of the
+  /// outboard frame M in the inboard frame F.
+  /// By definition `A_FM = d_F(V_FM)/dt = H_FM(q) * v̇ + Ḣ_FM * v`.
+  /// The acceleration `A_FM` will be a function of the rotation angle q, its
+  /// rate of change v for the current state in `context` and of the input
+  /// generalized acceleration `v̇ = dv/dt`, the rate of change of v.
+  /// See class documentation for the angle sign convention.
+  /// This method aborts in Debug builds if `vdot.size()` is not one.
+  SpatialAcceleration<T> CalcAcrossMobilizerSpatialAcceleration(
+      const MultibodyTreeContext<T>& context,
+      const Eigen::Ref<const VectorX<T>>& vdot) const final;
+
   /// Projects the spatial force `F_Mo_F` on `this` mobilizer's outboard
   /// frame M onto its rotation axis (@see get_revolute_axis().) Mathematically:
   /// <pre>
@@ -142,18 +154,6 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
       const MultibodyTreeContext<T>& context,
       const SpatialForce<T>& F_Mo_F,
       Eigen::Ref<VectorX<T>> tau) const final;
-
-  /// Computes the across-mobilizer acceleration `A_FM(q, v, v̇)` of the
-  /// outboard frame M in the inboard frame F.
-  /// By definition `A_FM = d_F(V_FM)/dt = H_FM(q) * v̇ + Ḣ_FM * v`.
-  /// The acceleration `A_FM` will be a function of the rotation angle q, its
-  /// rate of change v for the current state in `context` and of the input
-  /// generalized acceleration `v̇ = dv/dt`, the rate of change of v.
-  /// See class documentation for the angle sign convention.
-  /// This method aborts in Debug builds if `vdot.size()` is not one.
-  SpatialAcceleration<T> CalcAcrossMobilizerSpatialAcceleration(
-      const MultibodyTreeContext<T>& context,
-      const Eigen::Ref<const VectorX<T>>& vdot) const final;
 
  protected:
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(

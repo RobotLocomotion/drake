@@ -683,7 +683,7 @@ class MultibodyTree {
       std::vector<SpatialForce<T>>* F_BMo_W_array,
       VectorX<T>* tau_array) const;
 
-  /// @name Methods to retrieve multibody element variants.
+  /// @name Methods to retrieve multibody element variants
   ///
   /// Given two variants of the same %MultibodyTree, these methods map an
   /// element in one variant, to its corresponding element in the other variant.
@@ -807,13 +807,14 @@ class MultibodyTree {
   }
 
  private:
-  // Make MultibodyTree templated on any other scalar type a friend of
+  // Make MultibodyTree templated on every other scalar type a friend of
   // MultibodyTree<T> so that CloneToScalar<ToAnyOtherScalar>() can access
   // private methods from MultibodyTree<T>.
   template <typename> friend class MultibodyTree;
 
   // Finalizes the MultibodyTreeTopology of this tree.
   void FinalizeTopology();
+
   // At Finalize(), this method performs all other finalization that is not
   // topological (i.e. performed by FinalizeTopology()). This includes for
   // instance the creation of BodyNode objects.
@@ -848,8 +849,8 @@ class MultibodyTree {
   // in the source variant `body`.
   template <typename FromScalar>
   Body<T>* CloneBodyAndAdd(const Body<FromScalar>& body) {
-    BodyIndex body_index = body.get_index();
-    FrameIndex body_frame_index = body.get_body_frame().get_index();
+    const BodyIndex body_index = body.get_index();
+    const FrameIndex body_frame_index = body.get_body_frame().get_index();
 
     auto body_clone = body.CloneToScalar(*this);
     body_clone->set_parent_tree(this, body_index);
@@ -889,6 +890,9 @@ class MultibodyTree {
   const FrameType<T>& get_frame_variant(const FrameType<Scalar>& frame) const {
     static_assert(std::is_convertible<FrameType<T>*, Frame<T>*>::value,
                   "FrameType must be a sub-class of Frame<T>.");
+    // TODO(amcastro-tri):
+    //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
+    //   MultibodyTree. That will require the tree to have some sort of id.
     FrameIndex frame_index = frame.get_index();
     DRAKE_DEMAND(frame_index < get_num_frames());
     const FrameType<T>* frame_variant =
@@ -903,6 +907,9 @@ class MultibodyTree {
   const BodyType<T>& get_body_variant(const BodyType<Scalar>& body) const {
     static_assert(std::is_convertible<BodyType<T>*, Body<T>*>::value,
                   "BodyType must be a sub-class of Body<T>.");
+    // TODO(amcastro-tri):
+    //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
+    //   MultibodyTree. That will require the tree to have some sort of id.
     BodyIndex body_index = body.get_index();
     DRAKE_DEMAND(body_index < get_num_bodies());
     const BodyType<T>* body_variant =
@@ -919,6 +926,9 @@ class MultibodyTree {
       const MobilizerType<Scalar>& mobilizer) const {
     static_assert(std::is_convertible<MobilizerType<T>*, Mobilizer<T>*>::value,
                   "MobilizerType must be a sub-class of Mobilizer<T>.");
+    // TODO(amcastro-tri):
+    //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
+    //   MultibodyTree. That will require the tree to have some sort of id.
     MobilizerIndex mobilizer_index = mobilizer.get_index();
     DRAKE_DEMAND(mobilizer_index < get_num_mobilizers());
     const MobilizerType<T>* mobilizer_variant =

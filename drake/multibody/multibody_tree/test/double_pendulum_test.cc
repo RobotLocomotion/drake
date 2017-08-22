@@ -920,13 +920,13 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
       const double w_UL = w_UL_min + iw_elbow * kDelta_w_UL;
 
       // Loops over angles.
-      for (double ishoulder = 0; ishoulder < num_angles; ++ishoulder) {
+      for (double iq_shoulder = 0; iq_shoulder < num_angles; ++iq_shoulder) {
         const AutoDiffXd shoulder_angle(
-            -M_PI + ishoulder * kDeltaAngle, /* angle value */
+            -M_PI + iq_shoulder * kDeltaAngle, /* angle value */
             Vector1<double>::Constant(w_WU)  /* angular velocity */);
-        for (double ielbow = 0; ielbow < num_angles; ++ielbow) {
+        for (double iq_elbow = 0; iq_elbow < num_angles; ++iq_elbow) {
           const AutoDiffXd elbow_angle(
-              -M_PI + ielbow * kDeltaAngle,   /* angle value */
+              -M_PI + iq_elbow * kDeltaAngle,   /* angle value */
               Vector1<double>::Constant(w_UL) /* angular velocity */);
 
           // Update position kinematics.
@@ -964,10 +964,10 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
           // Extract the transformations' time derivatives.
           Eigen::MatrixXd X_WU_dot =
               math::autoDiffToGradientMatrix(X_WU.matrix());
-          X_WU_dot.resize(4, 4);
+          X_WU_dot.conservativeResize(4, 4);
           Eigen::MatrixXd X_WL_dot =
               math::autoDiffToGradientMatrix(X_WL.matrix());
-          X_WL_dot.resize(4, 4);
+          X_WL_dot.conservativeResize(4, 4);
 
           // Convert transformations' time derivatives to spatial velocities.
           SpatialVelocity<double> V_WU =

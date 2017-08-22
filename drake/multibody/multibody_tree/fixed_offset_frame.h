@@ -30,7 +30,7 @@ template <class T> class RigidBody;
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 template <typename T>
-class FixedOffsetFrame : public Frame<T> {
+class FixedOffsetFrame final : public Frame<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FixedOffsetFrame)
 

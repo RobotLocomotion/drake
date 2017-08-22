@@ -431,6 +431,9 @@ TEST_F(TreeTopologyTests, Clone) {
   EXPECT_EQ(cloned_model->get_num_bodies(), 8);
   const MultibodyTreeTopology& clone_topology = cloned_model->get_topology();
 
+  // Verify the cloned topology actually is a different object.
+  ASSERT_NE(&topology, &clone_topology);
+
   // The topology of the clone must be exactly equal to the topology of the
   // original MultibodyTree.
   EXPECT_EQ(topology, clone_topology);
