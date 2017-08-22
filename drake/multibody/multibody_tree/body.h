@@ -54,28 +54,28 @@ template<typename T> class Body;
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 template <typename T>
-class BodyFrame : public Frame<T> {
+class BodyFrame final : public Frame<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BodyFrame)
 
   Isometry3<T> CalcPoseInBodyFrame(
-      const systems::Context<T>&) const final {
+      const systems::Context<T>&) const override {
     return Isometry3<T>::Identity();
   }
 
   Isometry3<T> CalcOffsetPoseInBody(
       const systems::Context<T>&,
-      const Isometry3<T>& X_FQ) const final {
+      const Isometry3<T>& X_FQ) const override {
     return X_FQ;
   }
 
  protected:
   // Frame<T>::DoCloneToScalar() overrides.
   std::unique_ptr<Frame<double>> DoCloneToScalar(
-      const MultibodyTree<double>& tree_clone) const final;
+      const MultibodyTree<double>& tree_clone) const override;
 
   std::unique_ptr<Frame<AutoDiffXd>> DoCloneToScalar(
-      const MultibodyTree<AutoDiffXd>& tree_clone) const final;
+      const MultibodyTree<AutoDiffXd>& tree_clone) const override;
 
  private:
   // Body<T> and BodyFrame<T> are natural allies. A BodyFrame object is created

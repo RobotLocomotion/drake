@@ -55,7 +55,7 @@ class FixedOffsetFrame final : public Frame<T> {
   FixedOffsetFrame(const Body<T>& bodyB, const Isometry3<double>& X_BF);
 
   Isometry3<T> CalcPoseInBodyFrame(
-      const systems::Context<T>& context) const final {
+      const systems::Context<T>& context) const override {
     // X_BF = X_BP * X_PF
     return parent_frame_.CalcOffsetPoseInBody(context, X_PF_.cast<T>());
   }
@@ -72,11 +72,11 @@ class FixedOffsetFrame final : public Frame<T> {
 
   /// @pre The parent frame to this frame already has a clone in `tree_clone`.
   std::unique_ptr<Frame<double>> DoCloneToScalar(
-      const MultibodyTree<double>& tree_clone) const final;
+      const MultibodyTree<double>& tree_clone) const override;
 
   /// @pre The parent frame to this frame already has a clone in `tree_clone`.
   std::unique_ptr<Frame<AutoDiffXd>> DoCloneToScalar(
-      const MultibodyTree<AutoDiffXd>& tree_clone) const final;
+      const MultibodyTree<AutoDiffXd>& tree_clone) const override;
   /// @}
 
  private:

@@ -797,7 +797,7 @@ class MultibodyTree {
       tree_clone->CloneMobilizerAndAdd(*mobilizer);
     }
 
-    // We can safely copy-assign here since the original multibody tree is
+    // We can safely make a deep copy here since the original multibody tree is
     // required to be finalized.
     tree_clone->topology_ = this->topology_;
     // All other internals templated on T are created with the following call to
