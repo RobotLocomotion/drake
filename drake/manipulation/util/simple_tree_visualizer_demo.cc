@@ -27,7 +27,7 @@ int DoMain() {
   // Adds a demo tree.
   const std::string kModelPath =
       "drake/manipulation/models/iiwa_description/urdf/"
-          "iiwa14_polytope_collision.urdf";
+      "iiwa14_polytope_collision.urdf";
 
   auto tree = std::make_unique<RigidBodyTree<double>>();
 
