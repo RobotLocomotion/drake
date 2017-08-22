@@ -52,12 +52,12 @@ class SymbolicDecomposeTest : public ::testing::Test {
 };
 
 TEST_F(SymbolicDecomposeTest, DecomposeLinearExpressionsDynamic) {
-  DecomposeLinearExpressions(M_ * x_, x_, M_expected_dynamic_);
+  DecomposeLinearExpressions(M_ * x_, x_, &M_expected_dynamic_);
   EXPECT_EQ(M_expected_dynamic_, M_);
 }
 
 TEST_F(SymbolicDecomposeTest, DecomposeLinearExpressionsStatic) {
-  DecomposeLinearExpressions(M_ * x_, x_, M_expected_static_);
+  DecomposeLinearExpressions(M_ * x_, x_, &M_expected_static_);
   EXPECT_EQ(M_expected_static_, M_);
 }
 
@@ -69,7 +69,7 @@ TEST_F(SymbolicDecomposeTest, DecomposeLinearExpressionsExceptionNonLinear) {
                  x2_ * x2_;
   // clang-format on
   EXPECT_THROW(DecomposeLinearExpressions(M_ * x_ + extra_terms_, x_,
-                                          M_expected_static_),
+                                          &M_expected_static_),
                runtime_error);
 }
 
@@ -82,7 +82,7 @@ TEST_F(SymbolicDecomposeTest,
                  log(x2_);
   // clang-format on
   EXPECT_THROW(DecomposeLinearExpressions(M_ * x_ + extra_terms_, x_,
-                                          M_expected_static_),
+                                          &M_expected_static_),
                runtime_error);
 }
 
@@ -95,7 +95,7 @@ TEST_F(SymbolicDecomposeTest,
                   c_ * x2_;
   // clang-format on
   EXPECT_THROW(DecomposeLinearExpressions(M_ * x_ + extra_terms_, x_,
-                                          M_expected_static_),
+                                          &M_expected_static_),
                runtime_error);
 }
 
@@ -107,28 +107,28 @@ TEST_F(SymbolicDecomposeTest, DecomposeLinearExpressionsExceptionAffine) {
                   M_PI;
   // clang-format on
   EXPECT_THROW(DecomposeLinearExpressions(M_ * x_ + extra_terms_, x_,
-                                          M_expected_static_),
+                                          &M_expected_static_),
                runtime_error);
 }
 
 TEST_F(SymbolicDecomposeTest, DecomposeAffineExpressionsDynamic) {
-  DecomposeAffineExpressions(M_ * x_ + v_, x_, M_expected_dynamic_,
-                             v_expected_dynamic_);
+  DecomposeAffineExpressions(M_ * x_ + v_, x_, &M_expected_dynamic_,
+                             &v_expected_dynamic_);
   EXPECT_EQ(M_expected_dynamic_, M_);
   EXPECT_EQ(v_expected_dynamic_, v_);
 }
 
 TEST_F(SymbolicDecomposeTest, DecomposeAffineExpressionsStatic) {
-  DecomposeAffineExpressions(M_ * x_ + v_, x_, M_expected_static_,
-                             v_expected_static_);
+  DecomposeAffineExpressions(M_ * x_ + v_, x_, &M_expected_static_,
+                             &v_expected_static_);
   EXPECT_EQ(M_expected_static_, M_);
   EXPECT_EQ(v_expected_static_, v_);
 }
 
 TEST_F(SymbolicDecomposeTest, DecomposeAffineExpressionsBlock) {
   Eigen::Matrix4d M_expected;
-  DecomposeAffineExpressions(M_ * x_ + v_, x_, M_expected.block(0, 0, 3, 3),
-                             v_expected_static_);
+  auto block = M_expected.block(0, 0, 3, 3);
+  DecomposeAffineExpressions(M_ * x_ + v_, x_, &block, &v_expected_static_);
   EXPECT_EQ(M_expected.block(0, 0, 3, 3), M_);
   EXPECT_EQ(v_expected_static_, v_);
 }
@@ -142,7 +142,7 @@ TEST_F(SymbolicDecomposeTest, DecomposeAffineExpressionsExceptionNonlinear) {
   // clang-format on
   EXPECT_THROW(
       DecomposeAffineExpressions(M_ * x_ + v_ + extra_terms_, x_,
-                                 M_expected_static_, v_expected_static_),
+                                 &M_expected_static_, &v_expected_static_),
       runtime_error);
 }
 
@@ -156,7 +156,7 @@ TEST_F(SymbolicDecomposeTest,
   // clang-format on
   EXPECT_THROW(
       DecomposeAffineExpressions(M_ * x_ + v_ + extra_terms_, x_,
-                                 M_expected_static_, v_expected_static_),
+                                 &M_expected_static_, &v_expected_static_),
       runtime_error);
 }
 
@@ -170,7 +170,7 @@ TEST_F(SymbolicDecomposeTest,
   // clang-format on
   EXPECT_THROW(
       DecomposeAffineExpressions(M_ * x_ + v_ + extra_terms_, x_,
-                                 M_expected_static_, v_expected_static_),
+                                 &M_expected_static_, &v_expected_static_),
       runtime_error);
 }
 
