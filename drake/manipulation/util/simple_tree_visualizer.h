@@ -5,6 +5,7 @@
 
 namespace drake {
 namespace manipulation {
+namespace util {
 
 /**
  * A utility to render a `RigidBodyTree` in a specified configuration.
@@ -22,7 +23,7 @@ class SimpleTreeVisualizer {
    * class.
    * @param lcm pointer to the `lcm::DrakeLcm` interface.
    */
-  SimpleTreeVisualizer(const RigidBodyTreed& tree, lcm::DrakeLcmInterface* lcm);
+  SimpleTreeVisualizer(const RigidBodyTreed &tree, lcm::DrakeLcmInterface *lcm);
 
   /**
    * Visualizes a given state position configuration.
@@ -31,14 +32,15 @@ class SimpleTreeVisualizer {
    * number of positions in the `RigidBodyTree` with which this class was
    * constructed.
    */
-  void visualize(const VectorX<double>& position_vector);
+  void visualize(const VectorX<double> &position_vector);
 
  private:
-  const RigidBodyTreed& tree_;
+  const RigidBodyTreed &tree_;
   const int state_dimension_{0};
   const systems::ViewerDrawTranslator draw_message_translator_;
-  lcm::DrakeLcmInterface* lcm_{nullptr};
+  lcm::DrakeLcmInterface *lcm_{nullptr};
 };
 
+}  // namespace util
 }  // namespace manipulation
 }  // namespace drake

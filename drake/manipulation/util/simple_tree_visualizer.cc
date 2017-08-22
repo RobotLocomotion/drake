@@ -14,9 +14,10 @@
 
 namespace drake {
 namespace manipulation {
+namespace util {
 
-SimpleTreeVisualizer::SimpleTreeVisualizer(const RigidBodyTreed& tree,
-                                           lcm::DrakeLcmInterface* lcm)
+SimpleTreeVisualizer::SimpleTreeVisualizer(const RigidBodyTreed &tree,
+                                           lcm::DrakeLcmInterface *lcm)
     : tree_(tree),
       state_dimension_(tree_.get_num_positions() + tree_.get_num_velocities()),
       draw_message_translator_(tree_),
@@ -34,7 +35,7 @@ SimpleTreeVisualizer::SimpleTreeVisualizer(const RigidBodyTreed& tree,
                 lcm_message_length);
 }
 
-void SimpleTreeVisualizer::visualize(const VectorX<double>& position_vector) {
+void SimpleTreeVisualizer::visualize(const VectorX<double> &position_vector) {
   DRAKE_DEMAND(position_vector.size() == tree_.get_num_positions());
   Eigen::VectorXd state = Eigen::VectorXd::Zero(state_dimension_);
   state.head(tree_.get_num_positions()) = position_vector;
@@ -51,5 +52,6 @@ void SimpleTreeVisualizer::visualize(const VectorX<double>& position_vector) {
                 message_bytes.size());
 }
 
+}  // namespace util
 }  // namespace manipulation
 }  // namespace drake
