@@ -527,7 +527,8 @@ GTEST_TEST(testMathematicalProgram, testBadBindingVariable) {
   f.setConstant(2);
   lb.setConstant(0);
   ub.setConstant(1);
-  vector<Eigen::Ref<const MatrixXd>> F{A, 2 * A};
+  Eigen::Matrix3d twiceA = 2 * A;
+  vector<Eigen::Ref<const MatrixXd>> F{A, twiceA};
   shared_ptr<EvaluatorBase> func = MakeFunctionEvaluator(Movable());
 
   // Test each constraint type.
