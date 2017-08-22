@@ -538,6 +538,80 @@ TEST_F(Constraint2DSolverTest, TwoPointSliding) {
               std::fabs(contact_forces.back()[1]), 0, eps_);
 }
 
+// Tests the rod in a one-point sliding contact configuration with a second
+// constraint that prevents horizontal acceleration. This test tests the
+// interaction between contact and limit constraints.
+TEST_F(Constraint2DSolverTest, OnePointPlusLimit) {
+  // Set the state of the rod to resting vertically and sliding to the left.
+  // Set the state of the rod to resting on its side with horizontal velocity.
+  SetRodToRestingHorizontalConfig();
+  ContinuousState<double>& xc = *context_->
+    get_mutable_continuous_state();
+  xc[3] = 1.0;
+
+  // Set the coefficient of friction to somewhat small (to limit sliding force)
+  rod_->set_mu_coulomb(1e-1);
+
+  // First, construct the acceleration-level problem data as normal to set
+  // inertia solver and external forces.
+  CalcConstraintAccelProblemData(accel_data_.get());
+
+  // Get the original N and Nᵀ - μQᵀ
+  const int ngc = get_rod_num_coordinates();
+  const int num_old_contacts = 2;
+  MatrixX<double> N(num_old_contacts, ngc);
+  MatrixX<double> N_minus_muQ_transpose(ngc, num_old_contacts);
+  for (int i = 0; i < num_old_contacts; ++i) {
+    N_minus_muQ_transpose.col(i) = accel_data_->N_minus_muQ_transpose_mult(
+      VectorX<double>::Unit(2, i));
+    for (int j = 0; j< ngc; ++j)
+      N(i, j) = accel_data_->N_mult(VectorX<double>::Unit(ngc, j))[i];
+  }
+
+  // Construct the problem as a limit constraint preventing movement in the
+  // downward direction.
+  accel_data_->sliding_contacts.resize(1);
+  accel_data_->mu_sliding.resize(1);
+  accel_data_->N_mult = [&N](const VectorX<double>& v) {
+    return N.row(0) * v;
+  };
+  accel_data_->Ndot_times_v.setZero(1);
+  accel_data_->kL.resize(1);
+  accel_data_->N_minus_muQ_transpose_mult =
+      [&N_minus_muQ_transpose](const VectorX<double>& l) {
+    return N_minus_muQ_transpose.col(0) * l;
+  };
+
+  // Set the Jacobian entry- in this case, the limit is a lower limit on the
+  // second coordinate (vertical position).
+  const int num_limits = 1;
+  accel_data_->num_limit_constraints = num_limits;
+  accel_data_->num_limit_constraints = 1;
+  accel_data_->L_mult = [&N](const VectorX<double>& v) -> VectorX<double> {
+    return N.row(1) * v;
+  };
+  accel_data_->L_transpose_mult = [&N](const VectorX<double>& v) ->
+    VectorX<double> {
+      return N.row(1).transpose() * v;
+  };
+  accel_data_->kL.setZero();
+
+  // Compute the constraint forces.
+  VectorX<double> cf;
+  solver_.SolveConstraintProblem(cfm_, *accel_data_, &cf);
+
+  // Verify the size of cf is as expected.
+  const int num_contacts = 1;
+  EXPECT_EQ(cf.size(), num_contacts + num_limits);
+
+  // Verify that the vertical acceleration is zero. If the cross-constraint
+  // term LM⁻¹(Nᵀ - μQᵀ) is not computed properly, this acceleration will not
+  // be zero.
+  VectorX<double> vdot;
+  solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &vdot);
+  EXPECT_NEAR(vdot[1], 0, 10 * std::numeric_limits<double>::epsilon());
+}
+
 // Tests the rod in a two-point contacting configuration *realized through
 // a configuration limit constraint*. No frictional forces are applied, so
 // any velocity projections along directions other than the contact normal
