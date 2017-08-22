@@ -294,9 +294,9 @@ cc_binary(
 # (i.e. in Drake itself; not externals).
 install(
     name = "install",
-    guess_hdrs = "WORKSPACE",
-    hdr_dest = "include/drake",
     targets = ["libdrake.so"],
+    hdr_dest = "include/drake",
+    guess_hdrs = "WORKSPACE",
 )
 
 # Gather all of libdrake.so's dependent headers.
