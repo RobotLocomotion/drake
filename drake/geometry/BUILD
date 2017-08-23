@@ -25,6 +25,13 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "geometry_index",
+    srcs = [],
+    hdrs = ["geometry_index.h"],
+    deps = ["//drake/common:type_safe_index"],
+)
+
+drake_cc_library(
     name = "geometry_instance",
     srcs = ["geometry_instance.cc"],
     hdrs = ["geometry_instance.h"],
@@ -42,6 +49,7 @@ drake_cc_library(
     deps = [
         ":geometry_frame",
         ":geometry_ids",
+        ":geometry_index",
         ":geometry_instance",
         ":internal_frame",
         ":internal_geometry",
@@ -71,6 +79,7 @@ drake_cc_library(
     hdrs = ["internal_frame.h"],
     deps = [
         ":geometry_ids",
+        ":geometry_index",
         "//drake/common",
     ],
 )
@@ -81,6 +90,7 @@ drake_cc_library(
     hdrs = ["internal_geometry.h"],
     deps = [
         ":geometry_ids",
+        ":geometry_index",
         ":shape_specification",
         "//drake/common",
         "//drake/common:copyable_unique_ptr",
@@ -107,6 +117,14 @@ drake_cc_library(
     name = "expect_error_message",
     srcs = [],
     hdrs = ["test/expect_error_message.h"],
+)
+
+drake_cc_googletest(
+    name = "geometry_instance_test",
+    deps = [
+        ":geometry_instance",
+        "//drake/common:copyable_unique_ptr",
+    ],
 )
 
 drake_cc_googletest(

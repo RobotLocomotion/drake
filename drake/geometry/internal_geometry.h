@@ -9,6 +9,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_optional.h"
 #include "drake/geometry/geometry_ids.h"
+#include "drake/geometry/geometry_index.h"
 #include "drake/geometry/shape_specification.h"
 
 namespace drake {
@@ -82,14 +83,18 @@ class InternalGeometry : public InternalGeometryBase {
    @param geometry_id   The identifier for _this_ geometry.
    @param X_PG          The pose of the geometry G in the parent frame P. The
                         parent may be a frame, or another registered geometry.
+   @param engine_index  The position in the geometry engine of this geometry.
    @param parent_id     The optional id of the parent geometry. */
   InternalGeometry(std::unique_ptr<Shape> shape, FrameId frame_id,
                    GeometryId geometry_id, const Isometry3<double>& X_PG,
+                   GeometryIndex engine_index,
                    const optional<GeometryId>& parent_id = {});
 
   FrameId get_frame_id() const { return frame_id_; }
   optional<GeometryId> get_parent_id() const { return parent_id_; }
   void set_parent_id(GeometryId id) { parent_id_ = id; }
+  GeometryIndex get_engine_index() const { return engine_index_; }
+  void set_engine_index(GeometryIndex index) { engine_index_ = index; }
 
   /** Returns true if this geometry has a geometry parent and the parent has the
    given `geometry_id`. */
@@ -132,6 +137,9 @@ class InternalGeometry : public InternalGeometryBase {
   // The identifier of the frame to which this geometry belongs.
   FrameId frame_id_;
 
+  // The index of the geometry in the engine.
+  GeometryIndex engine_index_;
+
   // The identifier for this frame's parent frame.
   optional<GeometryId> parent_id_;
 
@@ -146,15 +154,25 @@ class InternalAnchoredGeometry : public InternalGeometryBase {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(InternalAnchoredGeometry)
 
-  /** Default constructor. All ids will be invalid. */
+  /** Default constructor. State will be as documented in
+   InternalGeometryBase(). */
   InternalAnchoredGeometry();
 
   /** Full constructor.
    @param shape         The shape specification for this instance.
    @param geometry_id   The identifier for _this_ geometry.
-   @param X_WG          The pose of the geometry G in the world frame W. */
+   @param X_WG          The pose of the geometry G in the world frame W.
+   @param engine_index  The position in the geometry engine of this geometry. */
   InternalAnchoredGeometry(std::unique_ptr<Shape> shape, GeometryId geometry_id,
-                           const Isometry3<double>& X_WG);
+                           const Isometry3<double>& X_WG,
+                           AnchoredGeometryIndex engine_index);
+
+  AnchoredGeometryIndex get_engine_index() const { return engine_index_; }
+  void set_engine_index(AnchoredGeometryIndex index) { engine_index_ = index; }
+
+ private:
+  // The index of the geometry in the engine.
+  AnchoredGeometryIndex engine_index_;
 };
 
 }  // namespace internal
