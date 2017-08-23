@@ -533,19 +533,21 @@ void Rod2D<T>::CalcConstraintProblemData(
   const T sliding_vel_tol = GetSlidingVelocityTolerance();
 
   // Set sliding and non-sliding contacts.
-  data->non_sliding_contacts.clear();
-  data->sliding_contacts.clear();
+  std::vector<int>& non_sliding_contacts = data->non_sliding_contacts;
+  std::vector<int>& sliding_contacts = data->sliding_contacts;
+  non_sliding_contacts.clear();
+  sliding_contacts.clear();
   for (int i = 0; i < nc; ++i) {
     if (abs(tangent_vels[i]) < sliding_vel_tol) {
-      data->non_sliding_contacts.push_back(i);
+      non_sliding_contacts.push_back(i);
     } else {
-      data->sliding_contacts.push_back(i);
+      sliding_contacts.push_back(i);
     }
   }
 
   // Designate sliding and non-sliding contacts.
-  const int num_sliding = data->sliding_contacts.size();
-  const int num_non_sliding = data->non_sliding_contacts.size();
+  const int num_sliding = sliding_contacts.size();
+  const int num_non_sliding = non_sliding_contacts.size();
 
   // Set sliding and non-sliding friction coefficients.
   data->mu_sliding.setOnes(num_sliding) *= get_mu_coulomb();
@@ -573,15 +575,14 @@ void Rod2D<T>::CalcConstraintProblemData(
   // Form the tangent directions contact Jacobian (F), its time derivative
   // (Fdot), and compute Fdot * v.
   const int nr = std::accumulate(data->r.begin(), data->r.end(), 0);
-  MatrixX<T> F(nr, ngc);
-  MatrixX<T> Fdot(nr, ngc);
-  for (int i = 0, j = 0; i < nc; ++i) {
-    if (std::binary_search(data->sliding_contacts.begin(),
-                           data->sliding_contacts.end(), i))
-      continue;
-    F.row(j) = GetJacobianRow(context, points[i], contact_tangent);
-    Fdot.row(j) = GetJacobianDotRow(context, points[i], contact_tangent);
-    ++j;
+  MatrixX<T> F = MatrixX<T>::Zero(nr, ngc);
+  MatrixX<T> Fdot = MatrixX<T>::Zero(nr, ngc);
+  for (int i = 0; i < static_cast<int>(non_sliding_contacts.size()); ++i) {
+    const int contact_index = non_sliding_contacts[i];
+    F.row(contact_index) = GetJacobianRow(
+        context, points[contact_index], contact_tangent);
+    Fdot.row(contact_index) = GetJacobianDotRow(
+        context, points[contact_index], contact_tangent);
   }
   data->Fdot_times_v = Fdot * v;
   data->F_mult = [F](const VectorX<T>& w) -> VectorX<T> { return F * w; };
@@ -592,15 +593,12 @@ void Rod2D<T>::CalcConstraintProblemData(
   // Form N - mu*Q (Q is sliding contact direction Jacobian).
   MatrixX<T> N_minus_mu_Q = N;
   Vector3<T> Qrow;
-  for (int i = 0, j = 0; i < nc; ++i) {
-    if (std::binary_search(data->non_sliding_contacts.begin(),
-                           data->non_sliding_contacts.end(), i))
-      continue;
+  for (int i = 0; i < static_cast<int>(sliding_contacts.size()); ++i) {
+    const int contact_index = sliding_contacts[i];
     const auto& sliding_dir = GetSlidingContactFrameToWorldTransform(
-        tangent_vels[i]).col(1);
-    Qrow = GetJacobianRow(context, points[i], sliding_dir);
-    N_minus_mu_Q.row(i) -= data->mu_sliding[j] * Qrow;
-    ++j;
+        tangent_vels[contact_index]).col(1);
+    Qrow = GetJacobianRow(context, points[contact_index], sliding_dir);
+    N_minus_mu_Q.row(contact_index) -= data->mu_sliding[i] * Qrow;
   }
   data->N_minus_muQ_transpose_mult = [N_minus_mu_Q](const VectorX<T>& w) ->
       VectorX<T> { return N_minus_mu_Q.transpose() * w; };

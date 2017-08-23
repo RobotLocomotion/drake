@@ -203,7 +203,7 @@ class ConstraintSolver {
       std::vector<Vector2<T>>* contact_impulses);
 
  private:
-  // Computes a constraint space compliance matrix A⋅M⁻¹⋅Bᵀ, where J ∈ ℝᵃˣᵐ and
+  // Computes a constraint space compliance matrix A⋅M⁻¹⋅Bᵀ, where A ∈ ℝᵃˣᵐ and
   // B ∈ ℝᵇˣᵐ are both Jacobian matrices (realized here using operators) and
   // M⁻¹ ∈ ℝᵐˣᵐ is the inverse of the generalized inertia matrix. Note that
   // mixing types of constraints is explicitly allowed. Aborts if J_iM_KT is
@@ -211,10 +211,18 @@ class ConstraintSolver {
   static void ComputeConstraintSpaceComplianceMatrix(
       std::function<VectorX<T>(const VectorX<T>&)> A_mult,
       int a,
-      std::function<MatrixX<T>(const MatrixX<T>&)> M_inv_mult,
-      std::function<VectorX<T>(const VectorX<T>&)> B_transpose_mult,
-      int b,
+      const MatrixX<T>& M_inv_BT,
       Eigen::Ref<MatrixX<T>>);
+
+  // Computes the matrix M⁻¹⋅Gᵀ, G ∈ ℝᵐˣⁿ is a constraint Jacobian matrix
+  // (realized here using an operator) and M⁻¹ ∈ ℝⁿˣⁿ is the inverse of the
+  // generalized inertia matrix. Resizes iM_GT as necessary.
+  static void ComputeInverseInertiaTimesGT(
+      std::function<MatrixX<T>(const MatrixX<T>&)> M_inv_mult,
+      std::function<VectorX<T>(const VectorX<T>&)> G_transpose_mult,
+      int m,
+      MatrixX<T>* iM_GT);
+
   void FormImpactingConstraintLCP(
       const ConstraintVelProblemData<T>& problem_data,
       MatrixX<T>* MM, VectorX<T>* qq) const;
@@ -394,26 +402,45 @@ template <class T>
 void ConstraintSolver<T>::ComputeConstraintSpaceComplianceMatrix(
     std::function<VectorX<T>(const VectorX<T>&)> A_mult,
     int a,
-    std::function<MatrixX<T>(const MatrixX<T>&)> M_inv_mult,
-    std::function<VectorX<T>(const VectorX<T>&)> B_transpose_mult,
-    int b,
+    const MatrixX<T>& iM_BT,
     Eigen::Ref<MatrixX<T>> A_iM_BT) {
+  const int b = iM_BT.cols();
   DRAKE_DEMAND(A_iM_BT.rows() == a && A_iM_BT.cols() == b);
-
-  VectorX<T> basis(b);      // Basis vector.
-  VectorX<T> bT, iM_bT;     // Intermediate result vectors.
 
   // Look for fast exit.
   if (a == 0 || b == 0)
     return;
 
+  VectorX<T> iM_bT;     // Intermediate result vector.
+
   for (int i = 0; i < b; ++i) {
-    // Get the i'th column of B.
+    iM_bT = iM_BT.col(i);
+    A_iM_BT.col(i) = A_mult(iM_bT);
+  }
+}
+
+template <class T>
+void ConstraintSolver<T>::ComputeInverseInertiaTimesGT(
+    std::function<MatrixX<T>(const MatrixX<T>&)> M_inv_mult,
+    std::function<VectorX<T>(const VectorX<T>&)> G_transpose_mult,
+    int m,
+    MatrixX<T>* iM_GT) {
+  DRAKE_DEMAND(iM_GT);
+  DRAKE_DEMAND(iM_GT->cols() == m);
+
+  VectorX<T> basis(m);  // Basis vector.
+  VectorX<T> gT;        // Intermediate result vector.
+
+  // Look for fast exit.
+  if (m == 0)
+    return;
+
+  for (int i = 0; i < m; ++i) {
+    // Get the i'th column of G.
     basis.setZero();
     basis[i] = 1;
-    bT = B_transpose_mult(basis);
-    iM_bT = M_inv_mult(bT);
-    A_iM_BT.col(i) = A_mult(iM_bT);
+    gT = G_transpose_mult(basis);
+    iM_GT->col(i) = M_inv_mult(gT);
   }
 }
 
@@ -452,13 +479,14 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
   const VectorX<T>& kL = problem_data.kL;
   const VectorX<T>& mu_non_sliding = problem_data.mu_non_sliding;
 
-  // Construct a matrix similar to E in Anitscu and Potra 1997. This matrix
-  // will be used to specify the constraints:
-  // 0 ≤ μ⋅fN - E⋅fF ⊥ λ ≥ 0 and
-  // 0 ≤ e⋅λ + F⋅dv/dt + dF/dt⋅v ⊥ fF ≥ 0,
-  // where λ can roughly be interpreted as the remaining tangential acceleration
-  // at the non-sliding contacts after frictional forces have been applied and
-  // e is a vector of ones (i.e., a segment of the appropriate column of E).
+  // Construct a matrix similar to E in [Anitescu 1997]. This matrix will be
+  // used to specify the constraints (adapted from [Anitescu 1997] Eqn 2.7):
+  // 0 ≤  μₙₛ fNᵢ - eᵀ fF  ⊥  λᵢ ≥ 0 and
+  // 0 ≤ e λᵢ + F dv/dt + dF/dt v ⊥ fF ≥ 0,
+  // where scalar λᵢ can roughly be interpreted as the remaining tangential
+  // acceleration at non-sliding contact i after frictional forces have been
+  // applied and e is a vector of ones (i.e., a segment of the appropriate
+  // column of E).
   MatrixX<T> E = MatrixX<T>::Zero(num_spanning_vectors * 2, num_non_sliding);
   for (int i = 0, j = 0; i < num_non_sliding; ++i) {
     const int num_tangent_dirs = problem_data.r[i] * 2;
@@ -467,17 +495,25 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
   }
 
   // Alias these variables for more readable construction of MM and qq.
+  const int ngv = problem_data.tau.size();  // generalized velocity dimension.
   const int nc = num_contacts;
   const int nr = num_spanning_vectors;
   const int nk = nr * 2;
   const int nl = num_limits;
   const int num_vars = nc + nk + num_non_sliding + nl;
 
+  // Precompute some matrices that will be reused repeatedly.
+  MatrixX<T> iM_NT_minus_muQT(ngv, nc), iM_FT(ngv, nr), iM_LT(ngv, nl);
+  ComputeInverseInertiaTimesGT(
+      iM, problem_data.N_minus_muQ_transpose_mult, nc, &iM_NT_minus_muQT);
+  ComputeInverseInertiaTimesGT(iM, FT, nr, &iM_FT);
+  ComputeInverseInertiaTimesGT(iM, LT, nl, &iM_LT);
+
   // Prepare blocks of the LCP matrix, which takes the form:
-  // N⋅M⁻¹⋅(Nᵀ - μQᵀ)  N⋅M⁻¹⋅Dᵀ  0   N⋅M⁻¹⋅Lᵀ
-  // D⋅M⁻¹⋅(Nᵀ - μQᵀ)  D⋅M⁻¹⋅Dᵀ  E   D⋅M⁻¹⋅Lᵀ
+  // N⋅M⁻¹⋅(Nᵀ - μₛQᵀ)  N⋅M⁻¹⋅Dᵀ  0   N⋅M⁻¹⋅Lᵀ
+  // D⋅M⁻¹⋅(Nᵀ - μₛQᵀ)  D⋅M⁻¹⋅Dᵀ  E   D⋅M⁻¹⋅Lᵀ
   // μ                 -Eᵀ       0   0
-  // L⋅M⁻¹⋅(Nᵀ - μQᵀ)  L⋅M⁻¹⋅Dᵀ  0   L⋅M⁻¹⋅Lᵀ
+  // L⋅M⁻¹⋅(Nᵀ - μₛQᵀ)  L⋅M⁻¹⋅Dᵀ  0   L⋅M⁻¹⋅Lᵀ
   // where D = |  F |
   //           | -F |
   MM->resize(num_vars, num_vars);
@@ -493,19 +529,16 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
   Eigen::Ref<MatrixX<T>> L_iM_LT = MM->block(
       nc + nk + num_non_sliding, nc + nk + num_non_sliding, nl, nl);
   ComputeConstraintSpaceComplianceMatrix(
-      N, nc, iM, problem_data.N_minus_muQ_transpose_mult, nc,
-      N_iM_NT_minus_muQT);
-  ComputeConstraintSpaceComplianceMatrix(N, nc, iM, FT, nr, N_iM_FT);
-  ComputeConstraintSpaceComplianceMatrix(N, nc, iM, LT, nl, N_iM_LT);
+      N, nc, iM_NT_minus_muQT, N_iM_NT_minus_muQT);
+  ComputeConstraintSpaceComplianceMatrix(N, nc, iM_FT, N_iM_FT);
+  ComputeConstraintSpaceComplianceMatrix(N, nc, iM_LT, N_iM_LT);
   ComputeConstraintSpaceComplianceMatrix(
-      F, nr, iM, problem_data.N_minus_muQ_transpose_mult, nc,
-      F_iM_NT_minus_muQT);
-  ComputeConstraintSpaceComplianceMatrix(F, nr, iM, FT, nr, F_iM_FT);
-  ComputeConstraintSpaceComplianceMatrix(F, nr, iM, LT, nl, F_iM_LT);
+      F, nr, iM_NT_minus_muQT, F_iM_NT_minus_muQT);
+  ComputeConstraintSpaceComplianceMatrix(F, nr, iM_FT, F_iM_FT);
+  ComputeConstraintSpaceComplianceMatrix(F, nr, iM_LT, F_iM_LT);
   ComputeConstraintSpaceComplianceMatrix(
-      L, nl, iM, problem_data.N_minus_muQ_transpose_mult, nc,
-      L_iM_NT_minus_muQT);
-  ComputeConstraintSpaceComplianceMatrix(L, nl, iM, LT, nl, L_iM_LT);
+      L, nl, iM_NT_minus_muQT, L_iM_NT_minus_muQT);
+  ComputeConstraintSpaceComplianceMatrix(L, nl, iM_LT, L_iM_LT);
 
   // Construct the LCP matrix. First do the "normal contact direction" rows.
   MM->block(0, nc + nr, nc, nr) = -MM->block(0, nc, nc, nr);
@@ -596,10 +629,17 @@ void ConstraintSolver<T>::FormImpactingConstraintLCP(
   }
 
   // Alias these variables for more readable construction of MM and qq.
+  const int ngv = problem_data.v.size();  // generalized velocity dimension.
   const int nc = num_contacts;
   const int nr = num_spanning_vectors;
   const int nk = nr * 2;
   const int nl = num_limits;
+
+  // Precompute some matrices that will be reused repeatedly.
+  MatrixX<T> iM_NT(ngv, nc), iM_FT(ngv, nr), iM_LT(ngv, nl);
+  ComputeInverseInertiaTimesGT(iM, NT, nc, &iM_NT);
+  ComputeInverseInertiaTimesGT(iM, FT, nr, &iM_FT);
+  ComputeInverseInertiaTimesGT(iM, LT, nl, &iM_LT);
 
   // Prepare blocks of the LCP matrix, which takes the form:
   // N⋅M⁻¹⋅Nᵀ  N⋅M⁻¹⋅Dᵀ  0   N⋅M⁻¹⋅Lᵀ
@@ -616,12 +656,12 @@ void ConstraintSolver<T>::FormImpactingConstraintLCP(
   Eigen::Ref<MatrixX<T>> F_iM_FT = MM->block(nc, nc, nr, nr);
   Eigen::Ref<MatrixX<T>> F_iM_LT = MM->block(nc, nc + nk, nr, nl);
   Eigen::Ref<MatrixX<T>> L_iM_LT = MM->block(nc * 2 + nk, nc * 2 + nk, nl, nl);
-  ComputeConstraintSpaceComplianceMatrix(N, nc, iM, NT, nc, N_iM_NT);
-  ComputeConstraintSpaceComplianceMatrix(N, nc, iM, FT, nr, N_iM_FT);
-  ComputeConstraintSpaceComplianceMatrix(N, nc, iM, LT, nl, N_iM_LT);
-  ComputeConstraintSpaceComplianceMatrix(F, nr, iM, FT, nr, F_iM_FT);
-  ComputeConstraintSpaceComplianceMatrix(F, nr, iM, LT, nl, F_iM_LT);
-  ComputeConstraintSpaceComplianceMatrix(L, nl, iM, LT, nl, L_iM_LT);
+  ComputeConstraintSpaceComplianceMatrix(N, nc, iM_NT, N_iM_NT);
+  ComputeConstraintSpaceComplianceMatrix(N, nc, iM_FT, N_iM_FT);
+  ComputeConstraintSpaceComplianceMatrix(N, nc, iM_LT, N_iM_LT);
+  ComputeConstraintSpaceComplianceMatrix(F, nr, iM_FT, F_iM_FT);
+  ComputeConstraintSpaceComplianceMatrix(F, nr, iM_LT, F_iM_LT);
+  ComputeConstraintSpaceComplianceMatrix(L, nl, iM_LT, L_iM_LT);
 
   // Construct the LCP matrix. First do the "normal contact direction" rows:
   MM->block(0, nc + nr, nc, nr) = -MM->block(0, nc, nc, nr);

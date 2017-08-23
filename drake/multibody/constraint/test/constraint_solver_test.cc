@@ -564,9 +564,9 @@ TEST_F(Constraint2DSolverTest, OnePointPlusLimit) {
   for (int i = 0; i < num_old_contacts; ++i) {
     N_minus_muQ_transpose.col(i) = accel_data_->N_minus_muQ_transpose_mult(
       VectorX<double>::Unit(2, i));
-    for (int j = 0; j< ngc; ++j)
-      N(i, j) = accel_data_->N_mult(VectorX<double>::Unit(ngc, j))[i];
   }
+  for (int i = 0; i < ngc; ++i)
+    N.col(i) = accel_data_->N_mult(VectorX<double>::Unit(ngc, i));
 
   // Construct the problem as a limit constraint preventing movement in the
   // downward direction.
@@ -576,7 +576,7 @@ TEST_F(Constraint2DSolverTest, OnePointPlusLimit) {
     return N.row(0) * v;
   };
   accel_data_->Ndot_times_v.setZero(1);
-  accel_data_->kL.resize(1);
+  accel_data_->kL.setZero(1);
   accel_data_->N_minus_muQ_transpose_mult =
       [&N_minus_muQ_transpose](const VectorX<double>& l) {
     return N_minus_muQ_transpose.col(0) * l;
@@ -605,8 +605,8 @@ TEST_F(Constraint2DSolverTest, OnePointPlusLimit) {
   EXPECT_EQ(cf.size(), num_contacts + num_limits);
 
   // Verify that the vertical acceleration is zero. If the cross-constraint
-  // term LM⁻¹(Nᵀ - μQᵀ) is not computed properly, this acceleration will not
-  // be zero.
+  // term LM⁻¹(Nᵀ - μQᵀ) is not computed properly, this acceleration might not
+  // be zero. Note that μQᵀ will not have any effect here.
   VectorX<double> vdot;
   solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &vdot);
   EXPECT_NEAR(vdot[1], 0, 10 * std::numeric_limits<double>::epsilon());
