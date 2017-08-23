@@ -55,6 +55,16 @@ GTEST_TEST(FindResourceTest, NotFound) {
   EXPECT_THROW(FindResourceOrThrow(relpath), std::runtime_error);
 }
 
+GTEST_TEST(FindResourceTest, AlternativeDirectory) {
+  // until std::tmpfile has a cross platform way of extracting filename
+  std::string absolute_path = std::tmpnam(nullptr);
+  std::FILE* fp = std::fopen(absolute_path.c_str(), "w");
+  std::string candidate_filename = absolute_path.substr(absolute_path.find_last_of("/\\") + 1);
+  std::string candidate_directory = absolute_path.substr(0, absolute_path.find_last_of("\\/"));
+  auto result = drake::FindResourceOrThrow(candidate_filename, candidate_directory);
+  std::fclose(fp);
+}
+
 GTEST_TEST(FindResourceTest, FoundDeclaredData) {
   const string relpath = "drake/common/test/find_resource_test_data.txt";
   const auto& result = FindResource(relpath);
