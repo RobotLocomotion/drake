@@ -542,7 +542,7 @@ TEST_F(Constraint2DSolverTest, TwoPointSliding) {
 // constraint that prevents horizontal acceleration. This test tests the
 // interaction between contact and limit constraints.
 TEST_F(Constraint2DSolverTest, OnePointPlusLimit) {
-  // Set the state of the rod to resting vertically and sliding to the left.
+  // Set the state of the rod to vertically-at-rest and sliding to the left.
   // Set the state of the rod to resting on its side with horizontal velocity.
   SetRodToRestingHorizontalConfig();
   ContinuousState<double>& xc = *context_->
@@ -610,6 +610,55 @@ TEST_F(Constraint2DSolverTest, OnePointPlusLimit) {
   VectorX<double> vdot;
   solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &vdot);
   EXPECT_NEAR(vdot[1], 0, 10 * std::numeric_limits<double>::epsilon());
+}
+
+// Tests the rod in a two-point contact configuration with both sticking and
+// sliding contacts. This test tests that the cross-term interaction between
+// sliding friction forces and non-sliding friction forces constraints is
+// correct.
+TEST_F(Constraint2DSolverTest, TwoPointContactCrossTerms) {
+  // Set the state of the rod to resting.
+  SetRodToRestingHorizontalConfig();
+
+  // Set the sliding coefficient of friction to somewhat small and the static
+  // coefficient of friction to very large.
+  rod_->set_mu_coulomb(1e-1);
+  rod_->set_mu_static(100.0);
+
+  // First, construct the acceleration-level problem data as normal to set
+  // inertia solver and external forces.
+  std::vector<Vector2d> contacts;
+  std::vector<double> tangent_vels;
+  rod_->GetContactPoints(*context_, &contacts);
+  rod_->GetContactPointsTangentVelocities(*context_, contacts, &tangent_vels);
+
+  // Modify the tangent velocity on the second contact to effect a sliding
+  // contact.
+  tangent_vels[0] = 1.0;
+
+  // Compute the constraint problem data.
+  rod_->CalcConstraintProblemData(
+    *context_, contacts, tangent_vels, accel_data_.get());
+
+  // Check the consistency of the data.
+  CheckProblemConsistency(*accel_data_, contacts.size());
+
+  // Compute the constraint forces.
+  VectorX<double> cf;
+  solver_.SolveConstraintProblem(cfm_, *accel_data_, &cf);
+
+  // Verify the size of cf is as expected.
+  const int num_sliding_contacts = 1;
+  const int num_non_sliding_contacts = 1;
+  EXPECT_EQ(cf.size(), num_sliding_contacts + num_non_sliding_contacts * 2);
+
+  // Verify that the horizontal acceleration is zero (since mu_static is so
+  // large, meaning that the sticking friction force is able to overwhelm the
+  // sliding friction force. If the cross-constraint term FM⁻¹(Nᵀ - μQᵀ) is not
+  // computed properly, this acceleration might not be zero.
+  VectorX<double> vdot;
+  solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &vdot);
+  EXPECT_NEAR(vdot[0], 0, 10 * std::numeric_limits<double>::epsilon());
 }
 
 // Tests the rod in a two-point contacting configuration *realized through

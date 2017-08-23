@@ -579,9 +579,8 @@ void Rod2D<T>::CalcConstraintProblemData(
   MatrixX<T> Fdot = MatrixX<T>::Zero(nr, ngc);
   for (int i = 0; i < static_cast<int>(non_sliding_contacts.size()); ++i) {
     const int contact_index = non_sliding_contacts[i];
-    F.row(contact_index) = GetJacobianRow(
-        context, points[contact_index], contact_tangent);
-    Fdot.row(contact_index) = GetJacobianDotRow(
+    F.row(i) = GetJacobianRow(context, points[contact_index], contact_tangent);
+    Fdot.row(i) = GetJacobianDotRow(
         context, points[contact_index], contact_tangent);
   }
   data->Fdot_times_v = Fdot * v;
