@@ -5,33 +5,159 @@
 #include <utility>
 #include <vector>
 
-#include "drake/systems/trajectory_optimization/direct_collocation_constraint.h"
+#include "drake/math/autodiff.h"
+#include "drake/math/autodiff_gradient.h"
 
 namespace drake {
 namespace systems {
 namespace trajectory_optimization {
 
-DirectCollocation::DirectCollocation(const systems::System<double>* system,
-                                     const systems::Context<double>& context,
+namespace {
+
+class DirectCollocationConstraint : public solvers::Constraint {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DirectCollocationConstraint)
+
+  // The format of the input to the eval() function is the
+  // tuple { timestep, state 0, state 1, input 0, input 1 },
+  // which has a total length of 1 + 2*num_states + 2*num_inputs.
+
+  // Note that the DirectCollocation implementation below allocates
+  // only ONE of these constraints, but binds that constraint
+  // multiple times (with different decision variables, along the
+  // trajectory).
+
+ public:
+  DirectCollocationConstraint(const System<double>& system,
+                              const Context<double>& context,
+                              int num_states, int num_inputs)
+      : Constraint(num_states, 1 + (2 * num_states) + (2 * num_inputs),
+                   Eigen::VectorXd::Zero(num_states),
+                   Eigen::VectorXd::Zero(num_states)),
+        system_(System<double>::ToAutoDiffXd(system)),
+        context_(system_->CreateDefaultContext()),
+        // Don't allocate the input port until we're past the point
+        // where we might throw.
+        derivatives_(system_->AllocateTimeDerivatives()),
+        num_states_(num_states),
+        num_inputs_(num_inputs) {
+    DRAKE_DEMAND(num_states_ == context.get_continuous_state()->size());
+    DRAKE_DEMAND(num_inputs_ == (context.get_num_input_ports() > 0
+                                     ? system.get_input_port(0).size()
+                                     : 0));
+    DRAKE_THROW_UNLESS(system_->get_num_input_ports() <= 1);
+    DRAKE_THROW_UNLESS(context.has_only_continuous_state());
+
+    // TODO(russt): Add support for time-varying dynamics OR check for
+    // time-invariance.
+
+    context_->SetTimeStateAndParametersFrom(context);
+
+    // Set derivatives of all parameters in the context to zero (but with the
+    // correct size).
+    int num_gradients = 1 + 2 * num_states_ + 2 * num_inputs_;
+    for (int i = 0; i < context_->get_parameters().num_numeric_parameters();
+         i++) {
+      auto params = context_->get_mutable_parameters()
+                        .get_mutable_numeric_parameter(i)
+                        ->get_mutable_value();
+      for (int j = 0; j < params.size(); j++) {
+        auto& derivs = params(j).derivatives();
+        if (derivs.size() == 0) {
+          derivs.resize(num_gradients);
+          derivs.setZero();
+        }
+      }
+    }
+
+    if (context.get_num_input_ports() > 0) {
+      // Allocate the input port and keep an alias around.
+      input_port_value_ = new FreestandingInputPortValue(
+          system_->AllocateInputVector(system_->get_input_port(0)));
+      std::unique_ptr<InputPortValue> input_port_value(input_port_value_);
+      context_->SetInputPortValue(0, std::move(input_port_value));
+    }
+  }
+
+  virtual ~DirectCollocationConstraint() {}
+
+ protected:
+  void dynamics(const AutoDiffVecXd& state, const AutoDiffVecXd& input,
+                AutoDiffVecXd* xdot) const {
+    if (context_->get_num_input_ports() > 0) {
+      input_port_value_->GetMutableVectorData<AutoDiffXd>()->SetFromVector(
+          input);
+    }
+    context_->get_mutable_continuous_state()->SetFromVector(state);
+    system_->CalcTimeDerivatives(*context_, derivatives_.get());
+    *xdot = derivatives_->CopyToVector();
+  }
+
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd& y) const override {
+    AutoDiffVecXd y_t;
+    Eval(math::initializeAutoDiff(x), y_t);
+    y = math::autoDiffToValueMatrix(y_t);
+  }
+
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd& y) const override {
+    DRAKE_ASSERT(x.size() == 1 + (2 * num_states_) + (2 * num_inputs_));
+
+    // Extract our input variables:
+    // h - current time (knot) value
+    // x0, x1 state vector at time steps k, k+1
+    // u0, u1 input vector at time steps k, k+1
+    const AutoDiffXd h = x(0);
+    const auto x0 = x.segment(1, num_states_);
+    const auto x1 = x.segment(1 + num_states_, num_states_);
+    const auto u0 = x.segment(1 + (2 * num_states_), num_inputs_);
+    const auto u1 = x.segment(1 + (2 * num_states_) + num_inputs_, num_inputs_);
+
+    // TODO(sam.creasey): Use caching (when it arrives) to avoid recomputing
+    // the dynamics.  Currently the dynamics evaluated here as {u1,x1} are
+    // recomputed in the next constraint as {u0,x0}.
+    AutoDiffVecXd xdot0;
+    dynamics(x0, u0, &xdot0);
+    const Eigen::MatrixXd dxdot0 = math::autoDiffToGradientMatrix(xdot0);
+
+    AutoDiffVecXd xdot1;
+    dynamics(x1, u1, &xdot1);
+    const Eigen::MatrixXd dxdot1 = math::autoDiffToGradientMatrix(xdot1);
+
+    // Cubic interpolation to get xcol and xdotcol.
+    const AutoDiffVecXd xcol = 0.5 * (x0 + x1) + h / 8 * (xdot0 - xdot1);
+    const AutoDiffVecXd xdotcol = -1.5 * (x0 - x1) / h - .25 * (xdot0 + xdot1);
+
+    AutoDiffVecXd g;
+    dynamics(xcol, 0.5 * (u0 + u1), &g);
+    y = xdotcol - g;
+  }
+
+ private:
+  std::unique_ptr<System<AutoDiffXd>> system_;
+  std::unique_ptr<Context<AutoDiffXd>> context_;
+  FreestandingInputPortValue* input_port_value_{nullptr};
+  std::unique_ptr<ContinuousState<AutoDiffXd>> derivatives_;
+
+  const int num_states_{0};
+  const int num_inputs_{0};
+};
+
+}  // namespace
+
+DirectCollocation::DirectCollocation(const System<double>* system,
+                                     const Context<double>& context,
                                      int num_time_samples,
-                                     double trajectory_time_lower_bound,
-                                     double trajectory_time_upper_bound)
+                                     double minimum_timestep,
+                                     double maximum_timestep)
     : MultipleShooting(system->get_num_total_inputs(),
                        context.get_continuous_state()->size(), num_time_samples,
-                       trajectory_time_lower_bound / (num_time_samples - 1),
-                       trajectory_time_upper_bound / (num_time_samples - 1)),
+                       minimum_timestep, maximum_timestep),
       system_(system),
       context_(system_->CreateDefaultContext()),
       continuous_state_(system_->AllocateTimeDerivatives()) {
   DRAKE_DEMAND(context.has_only_continuous_state());
-
-  // TODO(russt):  This should NOT be set automatically.
-  // Once it is removed, the proper constraint to be added will be
-  //   AddDurationBounds(trajectory_time_lower_bound,
-  //                     trajectory_time_upper_bound);
-  // but that constraint is currently implied already by the min/max
-  // timestep + all timesteps equal constraints.
-  AddEqualTimeIntervalsConstraints();
 
   context_->SetTimeStateAndParametersFrom(context);
 
@@ -44,8 +170,8 @@ DirectCollocation::DirectCollocation(const systems::System<double>* system,
   }
 
   // Add the dynamic constraints.
-  auto constraint =
-      std::make_shared<SystemDirectCollocationConstraint>(*system, context);
+  auto constraint = std::make_shared<DirectCollocationConstraint>(
+      *system, context, num_states(), num_inputs());
 
   DRAKE_ASSERT(static_cast<int>(constraint->num_constraints()) == num_states());
 
@@ -91,8 +217,6 @@ PiecewisePolynomialTrajectory DirectCollocation::ReconstructInputTrajectory()
 
 PiecewisePolynomialTrajectory DirectCollocation::ReconstructStateTrajectory()
     const {
-  // TODO(russt): Fix this!  It's not using the same interpolation scheme as the
-  // actual collocation method.
   Eigen::VectorXd times = GetSampleTimes();
   std::vector<double> times_vec(N());
   std::vector<Eigen::MatrixXd> states(N());

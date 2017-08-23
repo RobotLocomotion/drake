@@ -1,3 +1,5 @@
+#include "drake/systems/trajectory_optimization/multiple_shooting.h"
+
 #include <cmath>
 #include <cstddef>
 #include <vector>
@@ -7,7 +9,6 @@
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/solvers/mathematical_program.h"
-#include "drake/systems/trajectory_optimization/multiple_shooting.h"
 
 namespace drake {
 namespace systems {
@@ -49,7 +50,7 @@ class MyDirectTrajOpt : public MultipleShooting {
   void DoAddRunningCost(const symbolic::Expression& g) override {}
 };
 
-GTEST_TEST(TrajectoryOptimizationTest, FixedTimestepTest) {
+GTEST_TEST(MultipleShootingTest, FixedTimestepTest) {
   const int kNumInputs{1};
   const int kNumStates{2};
   const int kNumSampleTimes{2};
@@ -72,7 +73,7 @@ GTEST_TEST(TrajectoryOptimizationTest, FixedTimestepTest) {
   EXPECT_THROW(prog.AddDurationBounds(0, 1), std::runtime_error);
 }
 
-GTEST_TEST(TrajectoryOptimizationTest, VariableTimestepTest) {
+GTEST_TEST(MultipleShootingTest, VariableTimestepTest) {
   const int kNumInputs{1};
   const int kNumStates{2};
   const int kNumSampleTimes{2};
@@ -91,7 +92,7 @@ GTEST_TEST(TrajectoryOptimizationTest, VariableTimestepTest) {
   EXPECT_NEAR(times[1], 0.1, kSolverTolerance);
 }
 
-GTEST_TEST(TrajectoryOptimizationTest, PlaceholderVariableTest) {
+GTEST_TEST(MultipleShootingTest, PlaceholderVariableTest) {
   const int kNumInputs{1};
   const int kNumStates{2};
   const int kNumSampleTimes{2};
@@ -111,9 +112,9 @@ GTEST_TEST(TrajectoryOptimizationTest, PlaceholderVariableTest) {
                                           Eigen::Vector2d::Zero(), x),
                std::runtime_error);
 
-  // TODO(soonho): These should THROW, but currently do not.
-  EXPECT_NO_THROW(prog.AddLinearConstraint(t(0) <= 1.0));
-  EXPECT_NO_THROW(prog.AddLinearConstraint(u <= Vector1d(1.0)));
+  EXPECT_THROW(prog.AddLinearConstraint(t(0) <= 1.0), std::runtime_error);
+  EXPECT_THROW(prog.AddLinearConstraint(u <= Vector1d(1.0)),
+               std::runtime_error);
 
   EXPECT_THROW(prog.AddLinearConstraint(Eigen::Matrix2d::Identity(),
                                         Eigen::Vector2d::Zero(),
@@ -124,7 +125,7 @@ GTEST_TEST(TrajectoryOptimizationTest, PlaceholderVariableTest) {
   EXPECT_THROW(prog.GetSolution(u), std::runtime_error);
 }
 
-GTEST_TEST(TrajectoryOptimizationTest, PlaceholderVariableNames) {
+GTEST_TEST(MultipleShootingTest, PlaceholderVariableNames) {
   const int kNumInputs{1};
   const int kNumStates{2};
   const int kNumSampleTimes{2};
@@ -137,7 +138,7 @@ GTEST_TEST(TrajectoryOptimizationTest, PlaceholderVariableNames) {
   EXPECT_EQ(prog.input().coeff(0).get_name(), "u0");
 }
 
-GTEST_TEST(TrajectoryOptimizationTest, TimeIntervalBoundsTest) {
+GTEST_TEST(MultipleShootingTest, TimeIntervalBoundsTest) {
   const int kNumInputs{1};
   const int kNumStates{1};
   const int kNumSampleTimes{3};
@@ -152,7 +153,7 @@ GTEST_TEST(TrajectoryOptimizationTest, TimeIntervalBoundsTest) {
                               Eigen::Vector2d(0.5, 0.5), 1e-6));
 }
 
-GTEST_TEST(TrajectoryOptimizationTest, EqualTimeIntervalsTest) {
+GTEST_TEST(MultipleShootingTest, EqualTimeIntervalsTest) {
   const int kNumInputs{1};
   const int kNumStates{2};
   const int kNumSampleTimes{3};
@@ -171,7 +172,7 @@ GTEST_TEST(TrajectoryOptimizationTest, EqualTimeIntervalsTest) {
               prog.GetSolution(prog.timestep(1).coeff(0)), kSolverTolerance);
 }
 
-GTEST_TEST(TrajectoryOptimizationTest, DurationConstraintTest) {
+GTEST_TEST(MultipleShootingTest, DurationConstraintTest) {
   const int kNumInputs{0};
   const int kNumStates{1};
   const int kNumSampleTimes{3};
@@ -193,7 +194,7 @@ GTEST_TEST(TrajectoryOptimizationTest, DurationConstraintTest) {
   EXPECT_NEAR(prog.GetSolution(prog.h_vars()).sum(), .5, 1e-6);
 }
 
-GTEST_TEST(TrajectoryOptimizationTest, ConstraintAllKnotsTest) {
+GTEST_TEST(MultipleShootingTest, ConstraintAllKnotsTest) {
   const int kNumInputs{1};
   const int kNumStates{2};
   const int kNumSampleTimes{3};
@@ -225,7 +226,7 @@ GTEST_TEST(TrajectoryOptimizationTest, ConstraintAllKnotsTest) {
               prog.GetSolution(prog.h_vars()).sum(), 1e-6);
 }
 
-GTEST_TEST(TrajectoryOptimizationTest, FinalCostTest) {
+GTEST_TEST(MultipleShootingTest, FinalCostTest) {
   const int kNumInputs{1};
   const int kNumStates{2};
   const int kNumSampleTimes{2};
@@ -243,7 +244,7 @@ GTEST_TEST(TrajectoryOptimizationTest, FinalCostTest) {
                               kSolverTolerance));
 }
 
-GTEST_TEST(TrajectoryOptimizationTest, InitialGuessTest) {
+GTEST_TEST(MultipleShootingTest, InitialGuessTest) {
   const int kNumInputs{1};
   const int kNumStates{1};
   const int kNumSampleTimes{3};
@@ -279,7 +280,7 @@ GTEST_TEST(TrajectoryOptimizationTest, InitialGuessTest) {
   EXPECT_THROW(prog.SetInitialTrajectory(traj1, traj2), std::runtime_error);
 }
 
-GTEST_TEST(TrajectoryOptimizationTest, ResultSamplesTest) {
+GTEST_TEST(MultipleShootingTest, ResultSamplesTest) {
   const int kNumInputs{1};
   const int kNumStates{2};
   const int kNumSampleTimes{2};

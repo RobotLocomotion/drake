@@ -85,6 +85,17 @@ class Context {
     return nxd > 0 && nxc == 0 && nxa == 0;
   }
 
+  /// Returns the total dimension of all of the basic vector states (as if they
+  /// were muxed).
+  /// @throws std::runtime_error if the system contains any abstract state.
+  int get_num_total_states() const {
+    DRAKE_THROW_UNLESS(get_num_abstract_state_groups() == 0);
+    int count = get_continuous_state()->size();
+    for (int i = 0; i < get_num_discrete_state_groups(); i++)
+      count += get_discrete_state(i)->size();
+    return count;
+  }
+
   /// Sets the continuous state to @p xc, deleting whatever was there before.
   void set_continuous_state(std::unique_ptr<ContinuousState<T>> xc) {
     get_mutable_state()->set_continuous_state(std::move(xc));

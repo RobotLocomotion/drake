@@ -14,4 +14,5 @@ kcov \
     --include-path=$WORKSPACE \
     --exclude-pattern=thirdParty,externals \
     $WORKSPACE/bazel-kcov \
+    --replace-src-path=/proc/self/cwd:$WORKSPACE \
     "$@"

@@ -2212,7 +2212,10 @@ class MathematicalProgram {
   std::vector<Binding<LinearMatrixInequalityConstraint>>
       linear_matrix_inequality_constraint_;
 
-  // Invariant:  The bindings in this list must be non-overlapping.
+  // Invariant:  The bindings in this list must be non-overlapping, when calling
+  // Linear Complementarity solver like Moby. If this constraint is solved
+  // through a nonlinear optimization solver (like SNOPT) instead, then we allow
+  // the bindings to be overlapping.
   // TODO(ggould-tri) can this constraint be relaxed?
   std::vector<Binding<LinearComplementarityConstraint>>
       linear_complementarity_constraints_;
@@ -2357,7 +2360,7 @@ class MathematicalProgram {
   template <typename Derived>
   typename std::enable_if<
       std::is_same<typename Derived::Scalar, symbolic::Variable>::value>::type
-  CheckIsDecisionVariable(const Eigen::MatrixBase<Derived>& vars) {
+  CheckIsDecisionVariable(const Eigen::MatrixBase<Derived>& vars) const {
     for (int i = 0; i < vars.rows(); ++i) {
       for (int j = 0; j < vars.cols(); ++j) {
         if (decision_variable_index_.find(vars(i, j).get_id()) ==
@@ -2369,6 +2372,21 @@ class MathematicalProgram {
         }
       }
     }
+  }
+
+  /*
+   * Ensure a binding is valid *before* adding it to the program.
+   * @pre The binding has not yet been registered.
+   * @pre The decision variables have been registered.
+   * @throws std::runtime_error if the binding is invalid.
+   */
+  template <typename C>
+  void CheckBinding(const Binding<C>& binding) const {
+    // TODO(eric.cousineau): In addition to identifiers, hash bindings by
+    // their constraints and their variables, to prevent duplicates.
+    // TODO(eric.cousineau): Once bindings have identifiers (perhaps
+    // retrofitting `description`), ensure that they have unique names.
+    CheckIsDecisionVariable(binding.variables());
   }
 
   // Adds a linear constraint represented by a set of symbolic formulas to the

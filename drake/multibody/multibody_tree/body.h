@@ -4,6 +4,8 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/unused.h"
 #include "drake/multibody/multibody_tree/frame.h"
 #include "drake/multibody/multibody_tree/multibody_tree_element.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
@@ -52,20 +54,28 @@ template<typename T> class Body;
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 template <typename T>
-class BodyFrame : public Frame<T> {
+class BodyFrame final : public Frame<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BodyFrame)
 
   Isometry3<T> CalcPoseInBodyFrame(
-      const systems::Context<T>&) const final {
+      const systems::Context<T>&) const override {
     return Isometry3<T>::Identity();
   }
 
   Isometry3<T> CalcOffsetPoseInBody(
       const systems::Context<T>&,
-      const Isometry3<T>& X_FQ) const final {
+      const Isometry3<T>& X_FQ) const override {
     return X_FQ;
   }
+
+ protected:
+  // Frame<T>::DoCloneToScalar() overrides.
+  std::unique_ptr<Frame<double>> DoCloneToScalar(
+      const MultibodyTree<double>& tree_clone) const override;
+
+  std::unique_ptr<Frame<AutoDiffXd>> DoCloneToScalar(
+      const MultibodyTree<AutoDiffXd>& tree_clone) const override;
 
  private:
   // Body<T> and BodyFrame<T> are natural allies. A BodyFrame object is created
@@ -73,9 +83,21 @@ class BodyFrame : public Frame<T> {
   // other.
   friend class Body<T>;
 
+  // Make BodyFrame templated on any other scalar type a friend of
+  // BodyFrame<T> so that CloneToScalar<ToAnyOtherScalar>() can access
+  // private methods from BodyFrame<T>.
+  template <typename> friend class BodyFrame;
+
   // Only Body objects can create BodyFrame objects since Body is a friend of
   // BodyFrame.
   explicit BodyFrame(const Body<T>& body) : Frame<T>(body) {}
+
+  // Helper method to make a clone templated on any other scalar type.
+  // This method holds the common implementation for the different overrides to
+  // DoCloneToScalar().
+  template <typename ToScalar>
+  std::unique_ptr<Frame<ToScalar>> TemplatedDoCloneToScalar(
+      const MultibodyTree<ToScalar>& tree_clone) const;
 };
 
 // Forward declarations for Body<T>.
@@ -156,6 +178,44 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   /// inertia of a RigidBody in its body frame is constant.
   virtual SpatialInertia<T> CalcSpatialInertiaInBodyFrame(
       const MultibodyTreeContext<T>& context) const = 0;
+
+  /// NVI (Non-Virtual Interface) to DoCloneToScalar() templated on the scalar
+  /// type of the new clone to be created. This method is mostly intended to be
+  /// called by MultibodyTree::CloneToScalar(). Most users should not call this
+  /// clone method directly but rather clone the entire parent MultibodyTree if
+  /// needed.
+  /// @sa MultibodyTree::CloneToScalar()
+  template <typename ToScalar>
+  std::unique_ptr<Body<ToScalar>> CloneToScalar(
+  const MultibodyTree<ToScalar>& tree_clone) const {
+    return DoCloneToScalar(tree_clone);
+  }
+
+ protected:
+  /// @name Methods to make a clone templated on different scalar types.
+  ///
+  /// These methods are meant to be called by MultibodyTree::CloneToScalar()
+  /// when making a clone of the entire tree or a new instance templated on a
+  /// different scalar type. The only const argument to these methods is the
+  /// new MultibodyTree clone under construction. Specific %Body subclasses
+  /// might specify a number of prerequisites on the cloned tree and therefore
+  /// require it to be at a given state of cloning (for instance requiring that
+  /// the cloned tree already contains all the frames in the world as in the
+  /// original tree.) See MultibodyTree::CloneToScalar() for a list of
+  /// prerequisites that are guaranteed to be satisfied during the cloning
+  /// process.
+  ///
+  /// @{
+
+  /// Clones this %Body (templated on T) to a body templated on `double`.
+  virtual std::unique_ptr<Body<double>> DoCloneToScalar(
+      const MultibodyTree<double>& tree_clone) const = 0;
+
+  /// Clones this %Body (templated on T) to a body templated on AutoDiffXd.
+  virtual std::unique_ptr<Body<AutoDiffXd>> DoCloneToScalar(
+      const MultibodyTree<AutoDiffXd>& tree_clone) const = 0;
+
+  /// @}
 
  private:
   // Only friends of BodyAttorney (i.e. MultibodyTree) have access to a selected
