@@ -203,10 +203,10 @@ class ConstraintSolver {
       std::vector<Vector2<T>>* contact_impulses);
 
  private:
-  // Computes a constraint space compliance matrix A⋅M⁻¹⋅Bᵀ, where A ∈ ℝᵃˣᵐ and
-  // B ∈ ℝᵇˣᵐ are both Jacobian matrices (realized here using operators) and
-  // M⁻¹ ∈ ℝᵐˣᵐ is the inverse of the generalized inertia matrix. Note that
-  // mixing types of constraints is explicitly allowed. Aborts if J_iM_KT is
+  // Computes a constraint space compliance matrix A⋅M⁻¹⋅Bᵀ, where A ∈ ℝᵃˣᵐ
+  // (realized here using an operator) and B ∈ ℝᵇˣᵐ are both Jacobian matrices
+  // and M⁻¹ ∈ ℝᵐˣᵐ is the inverse of the generalized inertia matrix. Note that
+  // mixing types of constraints is explicitly allowed. Aborts if A_iM_BT is
   // not of size a × b.
   static void ComputeConstraintSpaceComplianceMatrix(
       std::function<VectorX<T>(const VectorX<T>&)> A_mult,

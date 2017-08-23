@@ -632,7 +632,7 @@ TEST_F(Constraint2DSolverTest, TwoPointContactCrossTerms) {
   rod_->GetContactPoints(*context_, &contacts);
   rod_->GetContactPointsTangentVelocities(*context_, contacts, &tangent_vels);
 
-  // Modify the tangent velocity on the second contact to effect a sliding
+  // Modify the tangent velocity on one of the contacts to effect a sliding
   // contact.
   tangent_vels[0] = 1.0;
 
@@ -648,9 +648,8 @@ TEST_F(Constraint2DSolverTest, TwoPointContactCrossTerms) {
   solver_.SolveConstraintProblem(cfm_, *accel_data_, &cf);
 
   // Verify the size of cf is as expected.
-  const int num_sliding_contacts = 1;
-  const int num_non_sliding_contacts = 1;
-  EXPECT_EQ(cf.size(), num_sliding_contacts + num_non_sliding_contacts * 2);
+  EXPECT_EQ(cf.size(), accel_data_->sliding_contacts.size() +
+                       accel_data_->non_sliding_contacts.size() * 2);
 
   // Verify that the horizontal acceleration is zero (since mu_static is so
   // large, meaning that the sticking friction force is able to overwhelm the
