@@ -15,6 +15,6 @@ if ! [ -d "external/drake_visualizer" ]; then
 fi
 
 export LD_LIBRARY_PATH="external/vtk/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-export PYTHONPATH="drake/bindings/python:drake/lcmtypes:external:external/drake_visualizer/lib/python2.7/dist-packages:external/lcmtypes_bot2_core/lcmtypes:external/lcmtypes_robotlocomotion/lcmtypes:external/vtk/lib/python2.7/site-packages${PYTHONPATH:+:$PYTHONPATH}"
+export PYTHONPATH="drake/bindings/python:drake/lcmtypes:external/drake_visualizer/lib/python2.7/dist-packages:external/lcmtypes_bot2_core/lcmtypes:external/lcmtypes_robotlocomotion/lcmtypes:external/vtk/lib/python2.7/site-packages:external${PYTHONPATH:+:$PYTHONPATH}"
 
 exec "external/drake_visualizer/bin/drake-visualizer" "$@"
