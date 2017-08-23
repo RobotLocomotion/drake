@@ -893,11 +893,27 @@ class MinDistanceConstraint : public SingleTimeKinematicConstraint {
   std::set<std::string> active_group_names_;
 };
 
+/**
+ * Constrain the points Q on a body to be within a bounding box specified in a
+ * fixed frame F. Namely lb ≤ p_FQ ≤ ub
+ */
 class WorldPositionInFrameConstraint : public WorldPositionConstraint {
  public:
+  /**
+   * Constrain the points Q on a body to be within a bounding box specified in
+   * a fixed frame F.
+   * @param model The kinematics model of the whole robot.
+   * @param body The points Q are rigidly fixed to this body.
+   * @param pts The coordinates of Q in the body frame.
+   * @param T_frame_to_world The homogeneous transform from the frame F to the
+   * world frame.
+   * @param lb The lower bound of the bounding box.
+   * @param ub The upper bound of the bounding box.
+   * @param tspan The time span of the constraint.
+   */
   WorldPositionInFrameConstraint(
       RigidBodyTree<double>* model, int body, const Eigen::Matrix3Xd& pts,
-      const Eigen::Matrix4d& T_world_to_frame, const Eigen::MatrixXd& lb,
+      const Eigen::Matrix4d& T_frame_to_world, const Eigen::MatrixXd& lb,
       const Eigen::MatrixXd& ub,
       const Eigen::Vector2d& tspan = DrakeRigidBodyConstraint::default_tspan);
   virtual ~WorldPositionInFrameConstraint();
