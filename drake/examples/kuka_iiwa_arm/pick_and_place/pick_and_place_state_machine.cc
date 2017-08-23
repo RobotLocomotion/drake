@@ -81,7 +81,14 @@ bool PlanStraightLineMotion(const VectorX<double>& q_current,
     waypoints[i].constrain_orientation = true;
   }
   DRAKE_DEMAND(times->size() == waypoints.size() + 1);
-  return planner->PlanSequentialTrajectory(waypoints, q_current, ik_res);
+  const bool planner_result =
+      planner->PlanSequentialTrajectory(waypoints, q_current, ik_res);
+  drake::log()->debug("q initial: {}", q_current.transpose());
+  if (!ik_res->q_sol.empty()) {
+    drake::log()->debug("q final: {}", ik_res->q_sol.back().transpose());
+  }
+  drake::log()->debug("result: {}", planner_result);
+  return planner_result;
 }
 
 }  // namespace
@@ -173,10 +180,10 @@ void PickAndPlaceStateMachine::Update(
         X_Wend_effector_0_ = X_Wend_effector_1_;
         X_Wend_effector_1_ = ComputeGraspPose(env_state.get_object_pose());
 
-        // 1 second, 3 via points. More via points to ensure the end effector
-        // moves in more or less a straight line.
+        // 2 seconds, 3 via points. More via points to ensure the end
+        // effector moves in more or less a straight line.
         bool res = PlanStraightLineMotion(
-            env_state.get_iiwa_q(), 3, 1,
+            env_state.get_iiwa_q(), 3, 2,
             X_Wend_effector_0_, X_Wend_effector_1_,
             tight_pos_tol_, tight_rot_tol_, planner, &ik_res, &times);
         DRAKE_DEMAND(res);
@@ -220,9 +227,9 @@ void PickAndPlaceStateMachine::Update(
         X_Wend_effector_0_ = X_Wend_effector_1_;
         X_Wend_effector_1_.translation()[2] += kPreGraspHeightOffset;
 
-        // 1 seconds, 3 via points.
+        // 2 seconds, 3 via points.
         bool res = PlanStraightLineMotion(
-            env_state.get_iiwa_q(), 3, 1,
+            env_state.get_iiwa_q(), 3, 2,
             X_Wend_effector_0_, X_Wend_effector_1_,
             tight_pos_tol_, tight_rot_tol_, planner, &ik_res, &times);
         DRAKE_DEMAND(res);
@@ -281,9 +288,9 @@ void PickAndPlaceStateMachine::Update(
         X_Wend_effector_0_ = X_Wend_effector_1_;
         X_Wend_effector_1_ = ComputeGraspPose(X_Wobj_desired_);
 
-        // 1 seconds, 3 via points.
+        // 2 seconds, 3 via points.
         bool res = PlanStraightLineMotion(
-            env_state.get_iiwa_q(), 3, 1,
+            env_state.get_iiwa_q(), 3, 2,
             X_Wend_effector_0_, X_Wend_effector_1_,
             tight_pos_tol_, tight_rot_tol_, planner, &ik_res, &times);
         DRAKE_DEMAND(res);

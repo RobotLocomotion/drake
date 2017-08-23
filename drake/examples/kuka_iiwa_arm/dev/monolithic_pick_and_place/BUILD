@@ -40,12 +40,12 @@ drake_cc_binary(
         "//drake/common:text_logging_gflags",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
         "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
-        "//drake/examples/kuka_iiwa_arm:robot_plan_interpolator",
         "//drake/examples/kuka_iiwa_arm/iiwa_world:iiwa_wsg_diagram_factory",
-        "//drake/examples/kuka_iiwa_arm/iiwa_world:world_sim_tree_builder",
         "//drake/lcm",
         "//drake/lcmtypes:iiwa",
+        "//drake/manipulation/planner:robot_plan_interpolator",
         "//drake/manipulation/schunk_wsg:schunk_wsg_controller",
+        "//drake/manipulation/util:world_sim_tree_builder",
         "//drake/multibody/rigid_body_plant:contact_results_to_lcm",
         "//drake/systems/analysis:simulator",
         "@com_github_gflags_gflags//:gflags",
@@ -58,18 +58,21 @@ pick_and_place_test(
     # TODO(sam.creasey) This should be target 1, but that requries
     # offsetting the gripper location to deal with the larger box,
     # which isn't currently supported.
-
-    # TODO(sam.creasey) Remove the part which disables this test on
-    # Mac once #6648 is fixed.
     args = [
         "--target=2",
         "--orientation=1.57",
         "--start-position=0",
         "--end-position=2",
-    ] + select({
-        "//tools:apple": ["--quick"],
-        "//conditions:default": [],
-    }),
+        # TODO(sam.creasey) This is an artisanally crafted timestep
+        # intended to dodge sensitive dependence on initial conditions
+        # in the IK planner.  Depending on slight changes in the arm's
+        # configration after lifting the item from the pick, the IK
+        # planner (particularly when running under SNOPT) can produce
+        # radically different results.  This value produces usable
+        # (but different!) results on Mac vs. Linux builds.  See #6811
+        # for more information.
+        "--dt 6e-4",
+    ],
     # TODO(sam.creasey) IPOPT doesn't find a reasonable solution for
     # one of the steps in this demo.  We should see if this improves
     # when #3128 is fixed.
@@ -135,14 +138,6 @@ pick_and_place_test(
         "--target=0",
         "--start-position=2",
         "--end-position=0",
-        # TODO(sam.creasey) This is an artisanally crafted
-        # timestep intended to dodge sensitive dependence on
-        # initial conditions in the IK planner.  If the block
-        # slips in the gripper in just the wrong way (which only
-        # happens on some dt values) then the arm tries to move
-        # into a radically different configuration in the process
-        # of placing the block at the target.
-        "--dt 6e-4",
     ],
 )
 

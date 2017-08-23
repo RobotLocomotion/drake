@@ -11,9 +11,9 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
-#include "drake/multibody/constraint/rigid_body_constraint.h"
 #include "drake/multibody/ik_options.h"
 #include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/rigid_body_constraint.h"
 #include "drake/multibody/rigid_body_ik.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/util/drakeGeometryUtil.h"
@@ -121,11 +121,46 @@ void SetPositionControlledIiwaGains(Eigen::VectorXd* Kp,
   *Ki = Eigen::VectorXd::Zero(7);
 }
 
+void ApplyJointVelocityLimits(double max_joint_velocity,
+                              const MatrixX<double>& keyframes,
+                              std::vector<double>* time) {
+  DRAKE_DEMAND(keyframes.cols() == static_cast<int>(time->size()));
+
+  const int num_time_steps = keyframes.cols();
+
+  // Calculate a matrix of velocities between each timestep.  We'll
+  // use this later to determine by how much the plan exceeds the
+  // joint velocity limits.
+  Eigen::MatrixXd velocities(keyframes.rows(), num_time_steps - 1);
+  for (int i = 0; i < velocities.rows(); i++) {
+    for (int j = 0; j < velocities.cols(); j++) {
+      DRAKE_ASSERT((*time)[j + 1] > (*time)[j]);
+      velocities(i, j) =
+          std::abs((keyframes(i, j + 1) - keyframes(i, j)) /
+                   ((*time)[j + 1] - (*time)[j]));
+    }
+  }
+
+  // The code below slows the entire plan such that the fastest step
+  // meets the limits.  If that step is much faster than the others,
+  // the whole plan becomes very slow.
+  const double max_plan_velocity = velocities.maxCoeff();
+  if (max_plan_velocity > max_joint_velocity) {
+    drake::log()->debug("Slowing plan by {}",
+                        max_plan_velocity / max_joint_velocity);
+    for (int j = 0; j < num_time_steps; j++) {
+      (*time)[j] *= max_plan_velocity / max_joint_velocity;
+    }
+  }
+}
+
+
 robotlocomotion::robot_plan_t EncodeKeyFrames(
     const RigidBodyTree<double>& robot,
     const std::vector<double>& time,
     const std::vector<int>& info,
     const MatrixX<double>& keyframes) {
+
   DRAKE_DEMAND(info.size() == time.size());
   DRAKE_DEMAND(keyframes.cols() == static_cast<int>(time.size()));
   DRAKE_DEMAND(keyframes.rows() == robot.get_num_positions());

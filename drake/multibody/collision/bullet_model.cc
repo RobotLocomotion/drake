@@ -391,6 +391,17 @@ void BulletModel::DoAddElement(const Element& element) {
   }
 }
 
+void BulletModel::DoRemoveElement(ElementId id) {
+  for (BulletCollisionWorldWrapper* world :
+       {&bullet_world_, &bullet_world_no_margin_}) {
+    const auto& itr = world->bt_collision_objects.find(id);
+    if (itr != world->bt_collision_objects.end()) {
+      world->bt_collision_world->removeCollisionObject(itr->second.get());
+      world->bt_collision_objects.erase(itr);
+    }
+  }
+}
+
 bool BulletModel::CollidingPointsCheckOnly(
     const std::vector<Vector3d>& input_points, double collision_threshold) {
   // Create sphere geometry

@@ -178,10 +178,12 @@ The following GitHub users are Drake owners. If possible, seek platform review
 from an owner who has previously reviewed related changes. Shared context will
 make the review faster.
 
+- @EricCousineau-TRI (Toyota Research Institute)
 - @ggould-tri (Toyota Research Institute)
 - @jwnimmer-tri (Toyota Research Institute)
 - @psiorx (MIT)
 - @sammy-tri (Toyota Research Institute)
+- @SeanCurtis-TRI (Toyota Research Institute)
 - @sherm1 (Toyota Research Institute)
 - @soonho-tri (Toyota Research Institute)
 - @RussTedrake (MIT / Toyota Research Institute)
@@ -238,7 +240,7 @@ Operating System Notes
 .. toctree::
     :maxdepth: 1
 
-    development_on_osx
+    development_on_mac
 
 Programming Style Notes
 =======================

@@ -21,8 +21,8 @@ drake_cc_binary(
     deps = [
         "//drake/common:find_resource",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
-        "//drake/examples/kuka_iiwa_arm:sim_diagram_builder",
         "//drake/lcm",
+        "//drake/manipulation/util:sim_diagram_builder",
         "//drake/systems/analysis:simulator",
         "//drake/systems/controllers:inverse_dynamics_controller",
         "//drake/systems/primitives:trajectory_source",

@@ -318,6 +318,46 @@ class SpatialInertia {
     return SpatialInertia(*this).ShiftInPlace(p_PQ_E);
   }
 
+  /// Multiplies `this` spatial inertia `M_Bo_E` of a body B about its frame
+  /// origin `Bo` by the spatial acceleration of the body frame B in a frame W.
+  /// Mathematically: <pre>
+  ///   F_Bo_E = M_Bo_E * A_WB_E
+  /// </pre>
+  /// or, in terms of its rotational and translational components (see this
+  /// class's documentation for the block form of a rotational inertia): <pre>
+  ///   t_Bo = I_Bo * alpha_WB + m * p_BoBcm x a_WBo
+  ///   f_Bo = -m * p_BoBcm x alpha_WB + m * a_WBo
+  /// </pre>
+  /// where `alpha_WB` and `a_WBo` are the rotational and translational
+  /// components of the spatial acceleration `A_WB`, respectively.
+  ///
+  /// @note
+  /// The term `F_Bo_E` computed by this operator appears in the equations of
+  /// motion for a rigid body which, when writen about the origin `Bo` of the
+  /// body frame B (which does not necessarily need to coincide with the body's
+  /// center of mass), read as: <pre>
+  ///   Ftot_BBo = M_Bo_W * A_WB + b_Bo
+  /// </pre>
+  /// where `Ftot_BBo` is the total spatial force applied on body B at at `Bo`
+  /// that corresponds to the body spatial acceleration `A_WB` and `b_Bo`
+  /// contains the velocity dependent gyroscopic terms (see Eq. 2.26, p. 27,
+  /// in A. Jain's book).
+  SpatialForce<T> operator*(const SpatialAcceleration<T>& A_WB_E) const {
+    const Vector3<T>& alpha_WB_E = A_WB_E.rotational();
+    const Vector3<T>& a_WBo_E = A_WB_E.translational();
+    const Vector3<T>& mp_BoBcm_E = CalcComMoment();  // = m * p_BoBcm
+    // Return (see class's documentation):
+    // ⌈ tau_Bo_E ⌉   ⌈    I_Bo_E     | m * p_BoBcm× ⌉   ⌈ alpha_WB_E ⌉
+    // |          | = |               |              | * |            |
+    // ⌊  f_Bo_E  ⌋   ⌊ -m * p_BoBcm× |   m * Id     ⌋   ⌊  a_WBo_E   ⌋
+    return SpatialForce<T>(
+        /* rotational */
+        CalcRotationalInertia() * alpha_WB_E + mp_BoBcm_E.cross(a_WBo_E),
+        /* translational: notice the order of the cross product is the reversed
+         * of the documentation above and thus no minus sign is needed. */
+        alpha_WB_E.cross(mp_BoBcm_E) + get_mass() * a_WBo_E);
+  }
+
  private:
   // Helper method for NaN initialization.
   static constexpr T nan() {

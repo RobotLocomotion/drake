@@ -341,9 +341,10 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, MaxStepSizeRespected) {
 // an exception.
 TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, MinTimeThrows) {
   // Set integrator parameters: do error control.
-  this->integrator->set_maximum_step_size(this->kDt);
+  const double dt = 1e-1;
+  this->integrator->set_maximum_step_size(dt);
   this->integrator->set_fixed_step_mode(false);
-  this->integrator->set_target_accuracy(1e-8);
+  this->integrator->set_target_accuracy(1e-14);
 
   // Initialize the integrator.
   this->integrator->Initialize();
@@ -360,24 +361,21 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, MinTimeThrows) {
   const double large_time = 1e20;
   this->integrator->get_mutable_context()->set_time(large_time);
 
-  // Step should be relatively small.
-  const double dt = 1e-4;
-
   // It should throw if we try to integrate forward.
   EXPECT_THROW(this->integrator->IntegrateWithMultipleSteps(dt),
                std::runtime_error);
 
   // Set the requested minimum step size and try to integrate again; should
   // still throw an exception.
+  this->integrator->set_maximum_step_size(dt * 10);
   this->integrator->get_mutable_context()->set_time(0);
-  this->integrator->set_requested_minimum_step_size(1e-3);
-  const double large_dt = 1e-2;
-  EXPECT_THROW(this->integrator->IntegrateWithMultipleSteps(large_dt),
+  this->integrator->set_requested_minimum_step_size(1e-2);
+  EXPECT_THROW(this->integrator->IntegrateWithMultipleSteps(dt),
                std::runtime_error);
 
   // Disable the throw and verify that the exception does not still occur.
   this->integrator->set_throw_on_minimum_step_size_violation(false);
-  EXPECT_NO_THROW(this->integrator->IntegrateWithMultipleSteps(large_dt));
+  EXPECT_NO_THROW(this->integrator->IntegrateWithMultipleSteps(dt));
 }
 
 // Verify that attempting to take a single fixed step throws an exception.

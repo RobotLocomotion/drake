@@ -42,7 +42,9 @@ GTEST_TEST(AutodiffOverloadsTest, ExtractDouble) {
 // https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html
 #ifdef __clang__
 __attribute__((no_sanitize("float-divide-by-zero")))
-#elif defined(__GNUC__)
+// Note that __GNUC__ is defined for clang as well.
+#elif defined(__GNUC__) && \
+  (__GNUC__  > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 9))
 // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=78204
 __attribute__((no_sanitize_undefined))
 #endif

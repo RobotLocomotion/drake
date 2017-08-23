@@ -59,7 +59,8 @@
     <static>1</static>
   </model>
   <model name="mesh_box3">
-    <pose>0 2.5 1 0 0 0</pose>
+    <!-- This is placing the object outside of the view frustum. -->
+    <pose>0 10 1 0 0 0</pose>
     <link name="box3">
       <pose>0 0 0 0 0 0</pose>
       <inertial>

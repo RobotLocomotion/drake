@@ -30,14 +30,47 @@ class Acrobot {
   /// this plane. Both @p normal and @p up are expressed in the world's frame.
   /// Essentially the two dimensional equations of the acrobot are described
   /// in a model frame D within a x-y plane with y the vertical direction
-  /// and graviting pointing downwards.
-  /// Thefore the axes defining the model frame D are:
-  /// z_W = normal_W.normalized();
-  /// y_W = (up - up.dot(z_W) * z_W).normalized();
-  /// x_W = y_W.cross(z_W);
-  Acrobot(const Vector3<T>& normal, const Vector3<T>& up);
+  /// and gravity pointing downwards.
+  /// Thefore the axes defining the model frame D are: <pre>
+  ///   z_W = normal_W.normalized()
+  ///   y_W = (up - up.dot(z_W) * z_W).normalized()
+  ///   x_W = y_W.cross(z_W)
+  /// </pre>
+  /// The remaining arguments define the properties of the double pendulum
+  /// system:
+  ///   - m1: mass of the first link.
+  ///   - m2: mass of the second link.
+  ///   - l1: length of the first link.
+  ///   - l2: length of the second link.
+  ///   - lc1: length from the shoulder to the center of mass of the first link.
+  ///   - lc2: length from the elbow to the center of mass of the second link.
+  ///   - Ic1: moment of inertia about the center of mass for the first link.
+  ///   - Ic2: moment of inertia about the center of mass for the second link.
+  ///   - b1: damping coefficient of the shoulder joint.
+  ///   - b2: damping coefficient of the elbow joint.
+  ///   - g: acceleration of gavity.
+  Acrobot(const Vector3<T>& normal, const Vector3<T>& up,
+          double m1 = 1.0,
+          double m2 = 1.0,
+          double l1 = 1.0,
+          double l2 = 1.0,
+          double lc1 = 0.5,
+          double lc2 = 0.5,
+          double Ic1 = .083,
+          double Ic2 = .33,
+          double b1 = 0.1,
+          double b2 = 0.1,
+          double g = 9.81);
 
+  /// Computes the mass matrix `H(q)` for the double pendulum system. It turns
+  /// out that for this system the mass matrix is independent of the shoulder
+  /// angle `theta1`.
   Matrix2<T> CalcMassMatrix(const T& theta2) const;
+
+  /// Computes the bias term `C(q, v) * v` containing Coriolis and gyroscopic
+  /// effects as a function of the state of the pendulum.
+  Vector2<T> CalcCoriolisVector(const T& theta1, const T& theta2,
+                                const T& theta1dot, const T& theta2dot) const;
 
   /// Computes the pose of the center of mass of link 1 measured and expressed
   /// in the world frame.
@@ -115,21 +148,21 @@ class Acrobot {
 
  private:
   const T
-      m1{1.0},    // Mass of link 1 (kg).
-      m2{1.0},    // Mass of link 2 (kg).
-      l1{1.0},    // Length of link 1 (m).
-      l2{1.0},    // Length of link 2 (m).
-      lc1{0.5},   // Vertical distance from shoulder joint to center of mass of
-                  // link 1 (m).
-      lc2{0.5},   // Vertical distance from elbox joint to center of mass of
-                  // link 2 (m).
-      Ic1{.083},  // Inertia of link 1 about the center of mass of link 1
-                  // (kg*m^2).
-      Ic2{.33},   // Inertia of link 2 about the center of mass of link 2
-                  // (kg*m^2).
-      b1{0.1},    // Damping coefficient of the shoulder joint (kg*m^2/s).
-      b2{0.1},    // Damping coefficient of the elbow joint (kg*m^2/s).
-      g{9.81};    // Gravitational constant (m/s^2).
+      m1_{1.0},    // Mass of link 1 (kg).
+      m2_{1.0},    // Mass of link 2 (kg).
+      l1_{1.0},    // Length of link 1 (m).
+      l2_{1.0},    // Length of link 2 (m).
+      lc1_{0.5},   // Vertical distance from shoulder joint to center of mass of
+                   // link 1 (m).
+      lc2_{0.5},   // Vertical distance from elbox joint to center of mass of
+                   // link 2 (m).
+      Ic1_{.083},  // Inertia of link 1 about the center of mass of link 1
+                   // (kg*m^2).
+      Ic2_{.33},   // Inertia of link 2 about the center of mass of link 2
+                   // (kg*m^2).
+      b1_{0.1},    // Damping coefficient of the shoulder joint (kg*m^2/s).
+      b2_{0.1},    // Damping coefficient of the elbow joint (kg*m^2/s).
+      g_{9.81};    // Gravitational constant (m/s^2).
 
   // Transformation from the model frame D to the world frame W.
   Isometry3<T> X_WD_{Isometry3<T>::Identity()};

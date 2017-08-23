@@ -1,7 +1,13 @@
 #include "drake/perception/estimators/dev/test/test_util.h"
 
+#include <vtkCleanPolyData.h>
+#include <vtkPolyData.h>
+#include <vtkSmartPointer.h>
+#include <vtkXMLPolyDataReader.h>
+
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/lcmtypes/drake/lcmt_viewer_draw.hpp"
+#include "drake/math/roll_pitch_yaw.h"
 
 using std::pair;
 using std::string;
@@ -153,6 +159,101 @@ AssertionResult CompareTransformWithoutAxisSign(
   // Next, check rotation matrices.
   return CompareRotMatWithoutAxisSign(X_expected.rotation(),
                                       X_actual.rotation(), tolerance);
+}
+
+namespace {
+
+void LoadVTPPointCloud(const std::string& filename, Matrix3Xd *pts,
+double distance_tolerance = 0.0) {
+  auto reader = vtkSmartPointer<vtkXMLPolyDataReader>::New();
+  reader->SetFileName(filename.c_str());
+  reader->Update();
+
+  // TODO(eric.cousineau): Consider using GetVoidPointer() and doing memory
+  // mapping, akin to what the vtk.utils.numpy_support module does.
+  vtkSmartPointer<vtkPolyData> polyData = reader->GetOutput();
+  DRAKE_DEMAND(distance_tolerance >= 0);
+  if (distance_tolerance > 0) {
+    // Downsample based on distance tolerance.
+    const int num_points_full = polyData->GetNumberOfPoints();
+    auto cleaner = vtkSmartPointer<vtkCleanPolyData>::New();
+    cleaner->SetTolerance(distance_tolerance);
+    cleaner->SetInputData(polyData);
+    cleaner->Update();
+    polyData = cleaner->GetOutput();
+    drake::log()->debug("Loading: {}. Downsample from {} to {}",
+                        filename, num_points_full,
+                        polyData->GetNumberOfPoints());
+  }
+
+  const int num_points = polyData->GetNumberOfPoints();
+  pts->resize(Eigen::NoChange, num_points);
+  Vector3d tmp;
+  for (int i = 0; i < num_points; ++i) {
+    polyData->GetPoint(i, tmp.data());
+    pts->col(i) = tmp;
+  }
+}
+
+}  // namespace
+
+void GetObjectTestSetup(ObjectTestType type, ObjectTestSetup *setup) {
+  switch (type) {
+    case kSimpleCuboid: {
+      // Simple URDF definition.
+      setup->urdf_file =
+          "drake/perception/estimators/dev/test/simple_cuboid.urdf";
+      // Use a bound whose principal axes (in order) are NOT (x, y, z), but
+      // rather (z, x, y).
+      const Bounds box(
+          Interval(-0.05, 0.05),
+          Interval(-0.01, 0.01),
+          Interval(-0.2, 0.2));
+      const double spacing = 0.01;
+      // Generate points in body frame.
+      setup->points_B = GenerateBoxPointCloud(spacing, box);
+      // Define a generic pose in the world.
+      const Vector3d xyz(0.1, 0.2, 0.3);
+      const Vector3d rpy(kPi / 3, kPi / 11, kPi / 12);
+      setup->X_WB.setIdentity();
+      setup->X_WB.linear() << drake::math::rpy2rotmat(rpy);
+      setup->X_WB.translation() << xyz;
+      break;
+    }
+    case kBlueFunnelScan: {
+      setup->urdf_file =
+          "drake/perception/estimators/dev/test/blue_funnel.urdf";
+      // `Wm` is the measured transform, from the CORL scene in Director.
+      // This is distinguished from `W` so that we may change this in the
+      // test code.
+      //   f = om.findObjectByName("blue_funnel frame")
+      //   print(f.transform)
+      Isometry3d X_WmB;
+      X_WmB.setIdentity();
+      X_WmB.linear() <<
+        0.147663, 0.642632, -0.751811,
+        0.988952, -0.10596, 0.103667,
+        -0.013042, -0.758812, -0.651179;
+      X_WmB.translation() << -0.026111, 0.0496843, 0.548844;
+
+      setup->X_WB = X_WmB;
+      // Add translation along the x-axis (to simplify debugging with
+      // drake-visualizer).
+      setup->X_WB.translation() += Vector3d(0.5, 0, 0);
+
+      // Measured points are in the world frame.
+      const double distance_tolerance = 0.05;
+      Matrix3Xd points_Wm;
+      LoadVTPPointCloud(
+          "drake/perception/estimators/dev/test/blue_funnel_meas.vtp",
+          &points_Wm, distance_tolerance);
+      setup->points_B = X_WmB.inverse() * points_Wm;
+      break;
+    }
+    default: {
+      DRAKE_DEMAND(false);
+    }
+  }
 }
 
 void PointCloudVisualizer::PublishCloud(const Matrix3Xd& points,

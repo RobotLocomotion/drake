@@ -203,6 +203,103 @@ GTEST_TEST(UnitInertia, SolidCylinderAboutEnd) {
       G_expected.CopyToFullMatrix3(), kEpsilon));
 }
 
+// Unit tests for the factory method UnitInertia::AxiallySymmetric().
+// This test creates the unit inertia for a cylinder of radius r and length L
+// with its longitudinal axis aligned with a vector b using two different
+// methods:
+// 1. Using the AxiallySymmetric() factory.
+// 2. Using the SolidCylinder() factory to create the unit inertia of a cylinder
+//    aligned with the z axis which is then re-expressed to the same frame E as
+//    the vector b_E.
+// The two unit inertias are then compared to verify AxiallySymmetric().
+GTEST_TEST(UnitInertia, AxiallySymmetric) {
+  const double kTolerance = 5 * kEpsilon;
+
+  // Cylinder's radius and length.
+  const double r = 2.5;
+  const double L = 1.5;
+  // Cylinder's moments about its longitudinal axis (I_axial) and about any
+  // other axis perpendicular to its longitudinal axis (I_perp).
+  const double I_perp = (3.0 * r * r + L * L) / 12.0;
+  const double I_axial = r * r / 2.0;
+
+  // Cylinder's axis. A vector on the y-z plane, at -pi/4 from the z axis.
+  // The vector doesn't need to be normalized.
+  const Vector3d b_E = Vector3d::UnitY() + Vector3d::UnitZ();
+
+  // Rotation of -pi/4 about the x axis, from a Z frame having its z axis
+  // aligned with the z-axis of the cylinder to the expressed-in frame E.
+  Matrix3<double> R_EZ =
+      AngleAxisd(-M_PI_4, Vector3d::UnitX()).toRotationMatrix();
+
+  // Unit inertia computed with AxiallySymmetric().
+  UnitInertia<double> G_E =
+      UnitInertia<double>::AxiallySymmetric(I_axial, I_perp, b_E);
+
+  // The expected inertia is that of a cylinder of radius r and height L with
+  // its longitudinal axis aligned with b.
+  UnitInertia<double> G_Z = UnitInertia<double>::SolidCylinder(r, L);
+  UnitInertia<double> G_E_expected = G_Z.ReExpress(R_EZ);
+
+  // Verify the computed values.
+  EXPECT_TRUE(G_E.CopyToFullMatrix3().isApprox(
+      G_E_expected.CopyToFullMatrix3(), kEpsilon));
+
+  // Verify the principal moments indeed are I_perp and I_axial:
+  Vector3d moments = G_E.CalcPrincipalMomentsOfInertia();
+  // The two smallest moments should match I_perp in this case.
+  EXPECT_NEAR(moments(0), I_perp, kTolerance);
+  EXPECT_NEAR(moments(1), I_perp, kTolerance);
+  // The largest moments should match I_axial in this case.
+  EXPECT_NEAR(moments(2), I_axial, kTolerance);
+}
+
+// Unit test for the factory methods:
+//   - UnitInertia::StraightLine().
+//   - UnitInertia::ThinRod().
+// This test creates the unit inertia for a thin rod or wire of length L with
+// its axis aligned with an arbitrary vector b. The unit inertia is computed
+// using three methods:
+// 1. Using the factory StraightLine().
+// 2. Using the SolidCylinder() factory to create the unit inertia of a zero
+//    radius cylinder aligned with the z axis which is then re-expressed to the
+//    same frame E as the vector b_E.
+// 3. Using the factory ThinRod().
+// The three unit inertia objects are then compared to verify the results.
+GTEST_TEST(UnitInertia, ThinRod) {
+  const double L = 1.5;  // Rod's length.
+
+  // Moment of inertia for an infinitesimally thin rod of length L.
+  const double I_rod = L * L / 12.0;
+
+  // Rod's axis. A vector on the y-z plane, at -pi/4 from the z axis.
+  // The vector doesn't need to be normalized.
+  const Vector3d b_E = Vector3d::UnitY() + Vector3d::UnitZ();
+
+  // Rotation of -pi/4 about the x axis, from a Z frame having its z-axis
+  // aligned with the rod to the expressed-in frame E.
+  Matrix3<double> R_EZ =
+      AngleAxisd(-M_PI_4, Vector3d::UnitX()).toRotationMatrix();
+
+  // Unit inertia computed with StraightLine().
+  UnitInertia<double> G_E =
+      UnitInertia<double>::StraightLine(I_rod, b_E);
+
+  // The expected inertia is that of a cylinder of zero radius and height L with
+  // its longitudinal axis aligned with b.
+  UnitInertia<double> G_Z = UnitInertia<double>::SolidCylinder(0.0, L);
+  UnitInertia<double> G_E_expected = G_Z.ReExpress(R_EZ);
+
+  // Verify the computed values.
+  EXPECT_TRUE(G_E.CopyToFullMatrix3().isApprox(
+      G_E_expected.CopyToFullMatrix3(), kEpsilon));
+
+  // Verify the result from ThinRod():
+  UnitInertia<double> G_rod = UnitInertia<double>::ThinRod(L, b_E);
+  EXPECT_TRUE(G_rod.CopyToFullMatrix3().isApprox(
+      G_E_expected.CopyToFullMatrix3(), kEpsilon));
+}
+
 // Tests the methods:
 //  - ShiftFromCenterOfMassInPlace()
 //  - ShiftFromCenterOfMass()

@@ -15,6 +15,36 @@ using Eigen::Vector3d;
 namespace drake {
 namespace solvers {
 namespace {
+GTEST_TEST(testConstraint, testQuadraticConstraintHessian) {
+  // Check if the getters in the QuadraticConstraint are right.
+  Eigen::Matrix2d Q;
+  Eigen::Vector2d b;
+  // clang-format off
+  Q << 1, 0,
+       0, 1;
+  // clang-format on
+  b << 1, 2;
+  // Constructs a constraint with a symmetric Q.
+  QuadraticConstraint constraint1(Q, b, 0, 1);
+  EXPECT_TRUE(CompareMatrices(constraint1.Q(), Q));
+  EXPECT_TRUE(CompareMatrices(constraint1.b(), b));
+
+  // Updates constraint with a non-symmetric Hessian.
+  // clang-format off
+  Q << 1, 1,
+       0, 1;
+  // clang-format on
+  b << 1, 2;
+  constraint1.UpdateCoefficients(Q, b);
+  EXPECT_TRUE(CompareMatrices(constraint1.Q(), (Q + Q.transpose()) / 2));
+  EXPECT_TRUE(CompareMatrices(constraint1.b(), b));
+
+  // Constructs a constraint with a non-symmetric Hessian.
+  QuadraticConstraint constraint2(Q, b, 0, 1);
+  EXPECT_TRUE(CompareMatrices(constraint2.Q(), (Q + Q.transpose()) / 2));
+  EXPECT_TRUE(CompareMatrices(constraint2.b(), b));
+}
+
 // Tests if the Lorentz Cone constraint is imposed correctly.
 void TestLorentzConeEval(const Eigen::Ref<const Eigen::MatrixXd> A,
                          const Eigen::Ref<const Eigen::VectorXd> b,
@@ -219,6 +249,51 @@ GTEST_TEST(testConstraint, testSimpleLCPConstraintEval) {
       CompareMatrices(w, Vector2d(0, 1), 1e-4, MatrixCompareType::absolute));
   EXPECT_FALSE(c.CheckSatisfied(x2));
 }
+
+class SimpleEvaluator : public EvaluatorBase {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleEvaluator)
+  SimpleEvaluator() : EvaluatorBase(2, 3) {
+    c_.resize(2, 3);
+    c_ <<
+        1, 2, 3,
+        4, 5, 6;
+  }
+
+ protected:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd& y) const override {
+    y = c_ * x;
+  }
+
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd& y) const override {
+    y = c_ * x;
+  }
+
+ private:
+  Eigen::MatrixXd c_;
+};
+
+GTEST_TEST(testConstraint, testEvaluatorConstraint) {
+  const VectorXd lb = VectorXd::Constant(2, -1);
+  const VectorXd ub = VectorXd::Constant(2, 1);
+  EvaluatorConstraint<> constraint(std::make_shared<SimpleEvaluator>(), lb, ub);
+  EXPECT_EQ(3, constraint.num_vars());
+  EXPECT_EQ(2, constraint.num_constraints());
+  EXPECT_EQ(lb, constraint.lower_bound());
+  EXPECT_EQ(ub, constraint.upper_bound());
+  VectorXd x(3);
+  x << 7, 8, 9;
+  VectorXd y(2);
+  MatrixXd c(2, 3);
+  c << 1, 2, 3,
+       4, 5, 6;
+  const VectorXd y_expected = c * x;
+  constraint.Eval(x, y);
+  EXPECT_EQ(y_expected, y);
+}
+
 }  // namespace
 }  // namespace solvers
 }  // namespace drake

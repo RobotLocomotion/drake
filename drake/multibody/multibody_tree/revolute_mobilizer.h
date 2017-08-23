@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
@@ -36,7 +38,7 @@ namespace multibody {
 /// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 template <typename T>
-class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
+class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RevoluteMobilizer)
 
@@ -115,7 +117,7 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
   /// stored in `context`.
   /// This method aborts in Debug builds if `v.size()` is not one.
   Isometry3<T> CalcAcrossMobilizerTransform(
-      const MultibodyTreeContext<T>& context) const final;
+      const MultibodyTreeContext<T>& context) const override;
 
   /// Computes the across-mobilizer velocity `V_FM(q, v)` of the outboard frame
   /// M measured and expressed in frame F as a function of the rotation angle
@@ -126,7 +128,7 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
   /// This method aborts in Debug builds if `v.size()` is not one.
   SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(
       const MultibodyTreeContext<T>& context,
-      const Eigen::Ref<const VectorX<T>>& v) const final;
+      const Eigen::Ref<const VectorX<T>>& v) const override;
 
   /// Computes the across-mobilizer acceleration `A_FM(q, v, v̇)` of the
   /// outboard frame M in the inboard frame F.
@@ -138,7 +140,27 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
   /// This method aborts in Debug builds if `vdot.size()` is not one.
   SpatialAcceleration<T> CalcAcrossMobilizerSpatialAcceleration(
       const MultibodyTreeContext<T>& context,
-      const Eigen::Ref<const VectorX<T>>& vdot) const final;
+      const Eigen::Ref<const VectorX<T>>& vdot) const override;
+
+  /// Projects the spatial force `F_Mo_F` on `this` mobilizer's outboard
+  /// frame M onto its rotation axis (@see get_revolute_axis().) Mathematically:
+  /// <pre>
+  ///    tau = F_Mo_F.rotational().dot(axis_F)
+  /// </pre>
+  /// Therefore, the result of this method is the scalar value of the torque at
+  /// the axis of `this` mobilizer.
+  /// This method aborts in Debug builds if `tau.size()` is not one.
+  void ProjectSpatialForce(
+      const MultibodyTreeContext<T>& context,
+      const SpatialForce<T>& F_Mo_F,
+      Eigen::Ref<VectorX<T>> tau) const override;
+
+ protected:
+  std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
+      const MultibodyTree<double>& tree_clone) const override;
+
+  std::unique_ptr<Mobilizer<AutoDiffXd>> DoCloneToScalar(
+      const MultibodyTree<AutoDiffXd>& tree_clone) const override;
 
  private:
   typedef MobilizerImpl<T, 1, 1> MobilizerBase;
@@ -150,6 +172,11 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
   // sized quantities.
   using MobilizerBase::kNq;
   using MobilizerBase::kNv;
+
+  // Helper method to make a clone templated on ToScalar.
+  template <typename ToScalar>
+  std::unique_ptr<Mobilizer<ToScalar>> TemplatedDoCloneToScalar(
+      const MultibodyTree<ToScalar>& tree_clone) const;
 
   // Default joint axis expressed in the inboard frame F.
   Vector3<double> axis_F_;

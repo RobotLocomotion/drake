@@ -133,6 +133,11 @@ class LcmSubscriberSystem : public LeafSystem<double>,
    */
   int WaitForMessage(int old_message_count) const;
 
+  /**
+   * Returns the message counter stored in @p context.
+   */
+  int GetMessageCount(const Context<double>& context) const;
+
  protected:
   void DoCalcNextUpdateTime(const Context<double>& context,
                             systems::CompositeEventCollection<double>* events,

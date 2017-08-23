@@ -48,20 +48,18 @@ unique_ptr<LinearSystem<T>> LinearSystem<T>::MakeLinearSystem(
   Eigen::MatrixXd AB(num_states, num_states + num_inputs);
   VectorX<symbolic::Variable> vars(num_states + num_inputs);
   vars << state_vars, input_vars;
-  DecomposeLinearExpressions(dynamics, vars, AB);
-  const auto& A = AB.leftCols(num_states);
-  const auto& B = AB.rightCols(num_inputs);
+  DecomposeLinearExpressions(dynamics, vars, &AB);
+  const auto A = AB.leftCols(num_states);
+  const auto B = AB.rightCols(num_inputs);
 
   Eigen::MatrixXd CD(num_outputs, num_states + num_inputs);
-  DecomposeLinearExpressions(output, vars, CD);
-  const auto& C = CD.leftCols(num_states);
-  const auto& D = CD.rightCols(num_inputs);
+  DecomposeLinearExpressions(output, vars, &CD);
+  const auto C = CD.leftCols(num_states);
+  const auto D = CD.rightCols(num_inputs);
 
   return make_unique<LinearSystem<T>>(A, B, C, D, time_period);
 }
 
-// TODO(naveenoid): Modify constructor to accommodate 0 dimension systems;
-// i.e. in initializing xDot0 and y0 with a zero matrix.
 template class LinearSystem<double>;
 template class LinearSystem<AutoDiffXd>;
 

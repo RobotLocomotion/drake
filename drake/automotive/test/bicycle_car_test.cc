@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
 namespace drake {
 namespace automotive {
@@ -80,6 +81,14 @@ TEST_F(BicycleCarTest, Topology) {
   const auto& state_port = dut_->get_output_port(0);
   EXPECT_EQ(systems::kVectorValued, state_port.get_data_type());
   EXPECT_EQ(kStateDimension, state_port.size());
+}
+
+TEST_F(BicycleCarTest, ToAutoDiff) {
+  EXPECT_TRUE(is_autodiffxd_convertible(*dut_));
+}
+
+TEST_F(BicycleCarTest, ToSymbolic) {
+  EXPECT_TRUE(is_symbolic_convertible(*dut_));
 }
 
 TEST_F(BicycleCarTest, DirectFeedthrough) {

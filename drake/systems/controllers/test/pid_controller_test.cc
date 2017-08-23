@@ -5,6 +5,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/input_port_value.h"
@@ -98,8 +99,10 @@ TEST_F(PidControllerTest, GetterVectorKd) {
 
 TEST_F(PidControllerTest, Graphviz) {
   const std::string dot = controller_.GetGraphvizString();
-  EXPECT_NE(std::string::npos, dot.find(
-      "label=\"PID Controller | { {<u0> x |<u1> x_d} |<y0> y}\"")) << dot;
+  EXPECT_NE(
+      std::string::npos,
+      dot.find("label=\"PID Controller | { {<u0> x |<u1> x_d} |<y0> y}\""))
+      << dot;
 }
 
 // Evaluates the output and asserts correctness.
@@ -113,7 +116,8 @@ TEST_F(PidControllerTest, CalcOutput) {
   const BasicVector<double>* output_vector = output_->get_vector_data(0);
   EXPECT_EQ(3, output_vector->size());
   EXPECT_EQ((kp_.array() * error_signal_.array() +
-            kd_.array() * error_rate_signal_.array()).matrix(),
+             kd_.array() * error_rate_signal_.array())
+                .matrix(),
             output_vector->get_value());
 
   // Initializes the integral to a non-zero value. A more interesting example.
@@ -121,11 +125,11 @@ TEST_F(PidControllerTest, CalcOutput) {
   integral_value << 3.0, 2.0, 1.0;
   controller_.set_integral_value(context_.get(), integral_value);
   controller_.CalcOutput(*context_, output_.get());
-  EXPECT_EQ(
-      (kp_.array() * error_signal_.array() +
-       ki_.array() * integral_value.array() +
-       kd_.array() * error_rate_signal_.array()).matrix(),
-      output_vector->get_value());
+  EXPECT_EQ((kp_.array() * error_signal_.array() +
+             ki_.array() * integral_value.array() +
+             kd_.array() * error_rate_signal_.array())
+                .matrix(),
+            output_vector->get_value());
 }
 
 // Evaluates derivatives and asserts correctness.
@@ -167,6 +171,69 @@ TEST_F(PidControllerTest, ToAutoDiff) {
   EXPECT_EQ(downcast->get_Kp_vector(), kp_);
   EXPECT_EQ(downcast->get_Ki_vector(), ki_);
   EXPECT_EQ(downcast->get_Kd_vector(), kd_);
+}
+
+GTEST_TEST(PidConstructorTest, TestThrow) {
+  // Gains size mismatch.
+  EXPECT_THROW(PidController<double>(VectorX<double>(2), VectorX<double>(3),
+                                     VectorX<double>(3)),
+               std::logic_error);
+  // State projection row != 2 * |kp|.
+  EXPECT_THROW(PidController<double>(MatrixX<double>(5, 2), VectorX<double>(3),
+                                     VectorX<double>(3), VectorX<double>(3)),
+               std::logic_error);
+  // Output projection col != |kp|
+  EXPECT_THROW(PidController<double>(MatrixX<double>(6, 2),
+                                     MatrixX<double>(3, 2), VectorX<double>(3),
+                                     VectorX<double>(3), VectorX<double>(3)),
+               std::logic_error);
+}
+
+// Tests the full version with non identity P_input and P_output.
+GTEST_TEST(PidIOProjectionTest, Test) {
+  const int num_full_q = 3;
+  const int num_controlled_q = 2;
+  const int num_control = 3;
+
+  std::srand(1234);
+
+  const VectorX<double> kp = VectorX<double>::Random(num_controlled_q);
+  const VectorX<double> kd = VectorX<double>::Random(num_controlled_q);
+  const VectorX<double> ki = VectorX<double>::Random(num_controlled_q);
+  MatrixX<double> P_input =
+      MatrixX<double>::Random(2 * num_controlled_q, 2 * num_full_q);
+  MatrixX<double> P_output =
+      MatrixX<double>::Random(num_control, num_controlled_q);
+
+  PidController<double> dut(P_input, P_output, kp, ki, kd);
+  auto context = dut.CreateDefaultContext();
+  auto output = dut.AllocateOutput(*context);
+
+  VectorX<double> x = VectorX<double>::Random(2 * num_full_q);
+  VectorX<double> x_d = VectorX<double>::Random(2 * num_controlled_q);
+  VectorX<double> integral = VectorX<double>::Random(num_controlled_q);
+
+  // State:
+  context->FixInputPort(0, std::make_unique<BasicVector<double>>(x));
+  // Desired state:
+  context->FixInputPort(1, std::make_unique<BasicVector<double>>(x_d));
+  // Integral:
+  dut.set_integral_value(context.get(), integral);
+
+  dut.CalcOutput(*context, output.get());
+
+  VectorX<double> x_err = x_d - P_input * x;
+  auto q_err = x_err.head(num_controlled_q);
+  auto v_err = x_err.tail(num_controlled_q);
+
+  VectorX<double> output_expected = (kp.array() * q_err.array()).matrix() +
+                                    (kd.array() * v_err.array()).matrix() +
+                                    (ki.array() * integral.array()).matrix();
+  output_expected = P_output * output_expected;
+
+  EXPECT_TRUE(CompareMatrices(output_expected,
+                              output->get_vector_data(0)->get_value(), 1e-12,
+                              MatrixCompareType::absolute));
 }
 
 }  // namespace
