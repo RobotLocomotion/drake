@@ -7,7 +7,10 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
+#include "drake/math/autodiff.h"
+#include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/benchmarks/acrobot/acrobot.h"
 #include "drake/multibody/multibody_tree/fixed_offset_frame.h"
 #include "drake/multibody/multibody_tree/revolute_mobilizer.h"
@@ -24,6 +27,7 @@ using benchmarks::Acrobot;
 using Eigen::AngleAxisd;
 using Eigen::Isometry3d;
 using Eigen::Matrix2d;
+using Eigen::Matrix3d;
 using Eigen::Matrix4d;
 using Eigen::Translation3d;
 using Eigen::Vector2d;
@@ -187,9 +191,10 @@ class PendulumTests : public ::testing::Test {
   // TODO(amcastro-tri):
   // Replace this by a method Body<T>::get_pose_in_world(const Context<T>&)
   // when we can place cache entries in the context.
-  const Isometry3d& get_body_pose_in_world(
-      const PositionKinematicsCache<double>& pc,
-      const Body<double>& body) const {
+  template <typename T>
+  const Isometry3<T>& get_body_pose_in_world(
+      const PositionKinematicsCache<T>& pc,
+      const Body<T>& body) const {
     const MultibodyTreeTopology& topology = model_->get_topology();
     // Cache entries are accessed by BodyNodeIndex for fast traversals.
     return pc.get_X_WB(topology.get_body(body.get_index()).body_node);
@@ -515,6 +520,24 @@ class PendulumKinematicTests : public PendulumTests {
     VerifyInverseDynamics(q, v, vdot);
   }
 
+  /// Given the transformation `X_AB` between two frames A and B and its time
+  /// derivative in frame A `Xdot_AB`, this method computes the spatial velocity
+  /// `V_AB` of frame B as measured and expressed in A.
+  static SpatialVelocity<double> ComputeSpatialVelocityFromXdot(
+      const Matrix4d& X_AB, const Matrix4d& X_AB_dot) {
+    const Matrix3d R_AB = X_AB.topLeftCorner(3, 3);
+    const Matrix3d R_AB_dot = X_AB_dot.topLeftCorner(3, 3);
+    // Compute cross product matrix w_ABx = [w_AB].
+    Matrix3d w_ABx = R_AB_dot * R_AB.transpose();
+    // Take the average to take into account both upper and lower parts.
+    w_ABx = (w_ABx - w_ABx.transpose()) / 2.0;
+    // Extract angular velocity vector.
+    Vector3d w_AB(w_ABx(2, 1), w_ABx(0, 2), w_ABx(1, 0));
+    // Extract linear velocity vector.
+    Vector3d v_AB = X_AB_dot.col(3).head(3);
+    return SpatialVelocity<double>(w_AB, v_AB);
+  }
+
  protected:
   std::unique_ptr<Context<double>> context_;
   MultibodyTreeContext<double>* mbt_context_;
@@ -617,8 +640,7 @@ TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
   // This is the minimum factor of the machine precision within which these
   // tests pass.
   const int kEpsilonFactor = 3;
-  const double kTolerance =
-      kEpsilonFactor * std::numeric_limits<double>::epsilon();
+  const double kTolerance = kEpsilonFactor * kEpsilon;
 
   // By default CreateDefaultContext() sets mobilizer to their zero
   // configuration.
@@ -699,8 +721,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
   // tests pass. There is an additional factor of two (2) to be on the safe side
   // on other architectures (particularly in Macs).
   const int kEpsilonFactor = 20;
-  const double kTolerance =
-      kEpsilonFactor * std::numeric_limits<double>::epsilon();
+  const double kTolerance = kEpsilonFactor * kEpsilon;
 
   PositionKinematicsCache<double> pc(model_->get_topology());
   VelocityKinematicsCache<double> vc(model_->get_topology());
@@ -850,6 +871,123 @@ TEST_F(PendulumKinematicTests, InverseDynamics) {
   VerifyMassMatrixViaInverseDynamics(M_PI / 3.0, M_PI / 2.0);
   VerifyMassMatrixViaInverseDynamics(M_PI / 3.0, M_PI / 3.0);
   VerifyMassMatrixViaInverseDynamics(M_PI / 3.0, M_PI / 4.0);
+}
+
+// Compute the spatial velocity of each link as measured in the world frame
+// using automatic differentiation through
+// MultibodyTree::CalcPositionKinematicsCache(). The results are verified
+// comparing with the reference solution provided by benchmarks::Acrobot.
+TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
+  // This is the minimum factor of the machine precision within which these
+  // tests pass.
+  const int kEpsilonFactor = 8;
+  const double kTolerance = kEpsilonFactor * kEpsilon;
+
+  std::unique_ptr<MultibodyTree<AutoDiffXd>> model_autodiff =
+      model_->ToAutoDiffXd();
+
+  const RevoluteMobilizer<AutoDiffXd>& shoulder_mobilizer_autodiff =
+      model_autodiff->get_variant(*shoulder_mobilizer_);
+  const RevoluteMobilizer<AutoDiffXd>& elbow_mobilizer_autodiff =
+      model_autodiff->get_variant(*elbow_mobilizer_);
+
+  const RigidBody<AutoDiffXd>& upper_link_autodiff =
+      model_autodiff->get_variant(*upper_link_);
+  const RigidBody<AutoDiffXd>& lower_link_autodiff =
+      model_autodiff->get_variant(*lower_link_);
+
+  std::unique_ptr<Context<AutoDiffXd>> context_autodiff =
+      model_autodiff->CreateDefaultContext();
+
+  PositionKinematicsCache<AutoDiffXd> pc(model_autodiff->get_topology());
+
+  const int num_angles = 50;
+  const double kDeltaAngle = 2 * M_PI / (num_angles - 1.0);
+
+  const int num_velocities = 2;
+  const double w_WU_min = -1.0;
+  const double w_WU_max = 1.0;
+  const double w_UL_min = -0.5;
+  const double w_UL_max = 0.5;
+
+  const double kDelta_w_WU = (w_WU_max - w_WU_min) / (num_velocities - 1.0);
+  const double kDelta_w_UL = (w_UL_max - w_UL_min) / (num_velocities - 1.0);
+
+  // Loops over angular velocities.
+  for (int iw_shoulder = 0; iw_shoulder < num_velocities; ++iw_shoulder) {
+    const double w_WU = w_WU_min + iw_shoulder * kDelta_w_WU;
+    for (int iw_elbow = 0; iw_elbow < num_velocities; ++iw_elbow) {
+      const double w_UL = w_UL_min + iw_elbow * kDelta_w_UL;
+
+      // Loops over angles.
+      for (double iq_shoulder = 0; iq_shoulder < num_angles; ++iq_shoulder) {
+        const AutoDiffXd shoulder_angle(
+            -M_PI + iq_shoulder * kDeltaAngle, /* angle value */
+            Vector1<double>::Constant(w_WU)  /* angular velocity */);
+        for (double iq_elbow = 0; iq_elbow < num_angles; ++iq_elbow) {
+          const AutoDiffXd elbow_angle(
+              -M_PI + iq_elbow * kDeltaAngle,   /* angle value */
+              Vector1<double>::Constant(w_UL) /* angular velocity */);
+
+          // Update position kinematics.
+          shoulder_mobilizer_autodiff.set_angle(context_autodiff.get(),
+                                                shoulder_angle);
+          elbow_mobilizer_autodiff.set_angle(context_autodiff.get(),
+                                             elbow_angle);
+          model_autodiff->CalcPositionKinematicsCache(*context_autodiff, &pc);
+
+          // Retrieve body poses from position kinematics cache.
+          const Isometry3<AutoDiffXd>& X_WU =
+              get_body_pose_in_world(pc, upper_link_autodiff);
+          const Isometry3<AutoDiffXd>& X_WL =
+              get_body_pose_in_world(pc, lower_link_autodiff);
+
+          const Isometry3d X_WU_expected =
+              acrobot_benchmark_.CalcLink1PoseInWorldFrame(
+                  shoulder_angle.value());
+
+          const Isometry3d X_WL_expected =
+              acrobot_benchmark_.CalcLink2PoseInWorldFrame(
+                  shoulder_angle.value(), elbow_angle.value());
+
+          // Extract the transformations' values.
+          Eigen::MatrixXd X_WU_value =
+              math::autoDiffToValueMatrix(X_WU.matrix());
+          Eigen::MatrixXd X_WL_value =
+              math::autoDiffToValueMatrix(X_WL.matrix());
+
+          // Asserts that the retrieved poses match with the ones specified by
+          // the unit test method SetPendulumPoses().
+          EXPECT_TRUE(X_WU_value.isApprox(X_WU_expected.matrix(), kTolerance));
+          EXPECT_TRUE(X_WL_value.isApprox(X_WL_expected.matrix(), kTolerance));
+
+          // Extract the transformations' time derivatives.
+          Eigen::MatrixXd X_WU_dot =
+              math::autoDiffToGradientMatrix(X_WU.matrix());
+          X_WU_dot.resize(4, 4);
+          Eigen::MatrixXd X_WL_dot =
+              math::autoDiffToGradientMatrix(X_WL.matrix());
+          X_WL_dot.resize(4, 4);
+
+          // Convert transformations' time derivatives to spatial velocities.
+          SpatialVelocity<double> V_WU =
+              ComputeSpatialVelocityFromXdot(X_WU_value, X_WU_dot);
+          SpatialVelocity<double> V_WL =
+              ComputeSpatialVelocityFromXdot(X_WL_value, X_WL_dot);
+
+          const SpatialVelocity<double> V_WU_expected(
+              acrobot_benchmark_.CalcLink1SpatialVelocityInWorldFrame(
+                  shoulder_angle.value(), w_WU));
+          const SpatialVelocity<double> V_WL_expected(
+              acrobot_benchmark_.CalcLink2SpatialVelocityInWorldFrame(
+                  shoulder_angle.value(), elbow_angle.value(), w_WU, w_UL));
+
+          EXPECT_TRUE(V_WU.IsApprox(V_WU_expected, kTolerance));
+          EXPECT_TRUE(V_WL.IsApprox(V_WL_expected, kTolerance));
+        }  // ielbow
+      }  // ishoulder
+    }  // iw_elbow
+  }  // iw_shoulder
 }
 
 }  // namespace

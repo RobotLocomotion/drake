@@ -1,3 +1,6 @@
+drake_add_cc_test(frames_test)
+target_link_libraries(frames_test Eigen3::Eigen drakeMultibodyTree)
+
 drake_add_cc_test(double_pendulum_test)
 target_link_libraries(double_pendulum_test Eigen3::Eigen drakeMultibodyTree
   drakeMultibodyBenchmarks)
