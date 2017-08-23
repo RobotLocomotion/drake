@@ -5,8 +5,10 @@
 #include <cstdlib>
 #include <cstring>
 #include <limits>
+#include <utility>
 #include <vector>
 
+#include "drake/common/text_logging.h"
 #include "drake/math/autodiff.h"
 #include "drake/solvers/mathematical_program.h"
 
@@ -19,10 +21,10 @@ namespace snopt {
 // not work.
 // clang-format wants to switch the order of this inclusion, which causes
 // compiler failure.
-/* clang-format off */
+// clang-format off
 #include "snopt.hh"
 #include "snfilewrapper.hh"
-/* clang-format on */
+// clang-format on
 }
 
 // todo(sammy-tri) :  implement sparsity inside each cost/constraint
@@ -186,6 +188,41 @@ struct SNOPTRun {
   }
 };
 
+// Return the number of rows in the nonlinear constraint.
+template <typename C>
+size_t SingleNonlinearConstraintSize(const C& constraint) {
+  return constraint.num_constraints();
+}
+
+template <>
+size_t SingleNonlinearConstraintSize<LinearComplementarityConstraint>(
+    const LinearComplementarityConstraint& constraint) {
+  return 1;
+}
+
+// Evaluate a single nonlinear constraints. For generic Constraint,
+// LorentzConeConstraint, RotatedLorentzConeConstraint, we call Eval function
+// of the constraint directly. For some other constraint, such as
+// LinearComplementaryConstraint, we will evaluate its nonlinear constraint
+// differently, than its Eval function.
+template <typename C>
+void EvaluateSingleNonlinearConstraint(const C& constraint,
+                                       const Eigen::VectorXd& this_x,
+                                       AutoDiffVecXd* ty) {
+  ty->resize(SingleNonlinearConstraintSize(constraint));
+  constraint.Eval(math::initializeAutoDiff(this_x), *ty);
+}
+
+template <>
+void EvaluateSingleNonlinearConstraint<LinearComplementarityConstraint>(
+    const LinearComplementarityConstraint& constraint,
+    const Eigen::VectorXd& this_x, AutoDiffVecXd* ty) {
+  ty->resize(1);
+  auto tx = math::initializeAutoDiff(this_x);
+  (*ty)(0) = tx.dot(constraint.M().cast<AutoDiffXd>() * tx +
+                    constraint.q().cast<AutoDiffXd>());
+}
+
 /*
  * Evaluate the value and gradients of nonlinear constraints.
  * The template type Binding is supposed to be a
@@ -209,7 +246,7 @@ void EvaluateNonlinearConstraints(
   Eigen::VectorXd this_x;
   for (const auto& binding : constraint_list) {
     const auto& c = binding.constraint();
-    size_t num_constraints = c->num_constraints();
+    size_t num_constraints = SingleNonlinearConstraintSize(*c);
 
     int num_v_variables = binding.GetNumElements();
     this_x.resize(num_v_variables);
@@ -219,7 +256,7 @@ void EvaluateNonlinearConstraints(
 
     AutoDiffVecXd ty;
     ty.resize(num_constraints);
-    c->Eval(math::initializeAutoDiff(this_x), ty);
+    EvaluateSingleNonlinearConstraint(*c, this_x, &ty);
 
     for (snopt::integer i = 0; i < static_cast<snopt::integer>(num_constraints);
          i++) {
@@ -300,6 +337,9 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
   EvaluateNonlinearConstraints(
       *current_problem, current_problem->rotated_lorentz_cone_constraints(), F,
       G, &constraint_index, &grad_index, xvec);
+  EvaluateNonlinearConstraints(
+      *current_problem, current_problem->linear_complementarity_constraints(),
+      F, G, &constraint_index, &grad_index, xvec);
 
   return 0;
 }
@@ -321,6 +361,22 @@ void UpdateNumNonlinearConstraintsAndGradients(
     size_t n = c->num_constraints();
     *max_num_gradients += n * binding.GetNumElements();
     *num_nonlinear_constraints += n;
+  }
+}
+
+// For linear complementary condition
+// 0 <= x ⊥ Mx + q >= 0
+// we add the nonlinear constraint xᵀ(Mx+q) = 0
+// So we only add one row of nonlinear constraint, and update the gradient of
+// this nonlinear constraint accordingly.
+template <>
+void UpdateNumNonlinearConstraintsAndGradients<LinearComplementarityConstraint>(
+    const std::vector<Binding<LinearComplementarityConstraint>>&
+        constraint_list,
+    size_t* num_nonlinear_constraints, size_t* max_num_gradients) {
+  *num_nonlinear_constraints += constraint_list.size();
+  for (const auto& binding : constraint_list) {
+    *max_num_gradients += binding.constraint()->M().rows();
   }
 }
 
@@ -353,6 +409,111 @@ void UpdateConstraintBoundsAndGradients(
   }
 }
 
+// For linear complementary condition
+// 0 <= x ⊥ Mx + q >= 0
+// we add the nonlinear constraint xᵀ(Mx + q) = 0
+// The bound of this constraint is 0. The indices of the non-zero gradient
+// of this constraint is updated accordingly.
+template <>
+void UpdateConstraintBoundsAndGradients<LinearComplementarityConstraint>(
+    const MathematicalProgram& prog,
+    const std::vector<Binding<LinearComplementarityConstraint>>&
+        constraint_list,
+    snopt::doublereal* Flow, snopt::doublereal* Fupp, snopt::integer* iGfun,
+    snopt::integer* jGvar, size_t* constraint_index, size_t* grad_index) {
+  for (const auto& binding : constraint_list) {
+    Flow[*constraint_index] = 0;
+    Fupp[*constraint_index] = 0;
+    for (int j = 0; j < binding.constraint()->M().rows(); ++j) {
+      iGfun[*grad_index] = *constraint_index + 1;
+      jGvar[*grad_index] =
+          prog.FindDecisionVariableIndex(binding.variables()(j)) + 1;
+      (*grad_index)++;
+    }
+    ++(*constraint_index);
+  }
+}
+
+template <typename C>
+Eigen::SparseMatrix<double> LinearConstraintA(const C& constraint) {
+  return constraint.GetSparseMatrix();
+}
+
+// Return the number of rows in the linear constraint
+template <typename C>
+size_t LinearConstraintSize(const C& constraint) {
+  return constraint.num_constraints();
+}
+
+// For linear complementary condition
+// 0 <= x ⊥ Mx + q >= 0
+// The linear constraint we add to the program is Mx >= -q
+// This linear constraint has the same number of rows, as matrix M.
+template <>
+size_t LinearConstraintSize<LinearComplementarityConstraint>(
+    const LinearComplementarityConstraint& constraint) {
+  return constraint.M().rows();
+}
+
+template <>
+Eigen::SparseMatrix<double> LinearConstraintA<LinearComplementarityConstraint>(
+    const LinearComplementarityConstraint& constraint) {
+  return constraint.M().sparseView();
+}
+
+template <typename C>
+std::pair<Eigen::VectorXd, Eigen::VectorXd> LinearConstraintBounds(
+    const C& constraint) {
+  return std::make_pair(constraint.lower_bound(), constraint.upper_bound());
+}
+
+// For linear complementary condition
+// 0 <= x ⊥ Mx + q >= 0
+// we add the constraint Mx >= -q
+template <>
+std::pair<Eigen::VectorXd, Eigen::VectorXd>
+LinearConstraintBounds<LinearComplementarityConstraint>(
+    const LinearComplementarityConstraint& constraint) {
+  return std::make_pair(
+      -constraint.q(),
+      Eigen::VectorXd::Constant(constraint.q().rows(),
+                                std::numeric_limits<double>::infinity()));
+}
+
+template <typename C>
+void UpdateLinearConstraint(const MathematicalProgram& prog,
+                            const std::vector<Binding<C>>& linear_constraints,
+                            std::vector<Eigen::Triplet<double>>* tripletList,
+                            snopt::doublereal* Flow, snopt::doublereal* Fupp,
+                            size_t* constraint_index,
+                            size_t* linear_constraint_index) {
+  for (auto const& binding : linear_constraints) {
+    auto const& c = binding.constraint();
+    size_t n = LinearConstraintSize(*c);
+
+    const Eigen::SparseMatrix<double> A_constraint = LinearConstraintA(*c);
+
+    for (int k = 0; k < static_cast<int>(binding.GetNumElements()); ++k) {
+      for (Eigen::SparseMatrix<double>::InnerIterator it(A_constraint, k); it;
+           ++it) {
+        tripletList->emplace_back(
+            *linear_constraint_index + it.row(),
+            prog.FindDecisionVariableIndex(binding.variables()(k)),
+            it.value());
+      }
+    }
+
+    const auto bounds = LinearConstraintBounds(*c);
+    for (size_t i = 0; i < n; i++) {
+      Flow[*constraint_index + i] =
+          static_cast<snopt::doublereal>(bounds.first(i));
+      Fupp[*constraint_index + i] =
+          static_cast<snopt::doublereal>(bounds.second(i));
+    }
+    *constraint_index += n;
+    *linear_constraint_index += n;
+  }
+}
 }  // anon namespace
 
 bool SnoptSolver::available() const { return true; }
@@ -393,6 +554,18 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
     }
   }
 
+  // For linear complementary condition
+  // 0 <= x ⊥ Mx + q >= 0
+  // we add the bounding box constraint x >= 0
+  for (const auto& binding : prog.linear_complementarity_constraints()) {
+    for (int k = 0; k < static_cast<int>(binding.GetNumElements()); ++k) {
+      const size_t vk_index =
+          prog.FindDecisionVariableIndex(binding.variables()(k));
+      xlow[vk_index] =
+          std::max<snopt::doublereal>(xlow[vk_index], snopt::doublereal(0));
+    }
+  }
+
   size_t num_nonlinear_constraints = 0, max_num_gradients = nx;
   UpdateNumNonlinearConstraintsAndGradients(prog.generic_constraints(),
                                             &num_nonlinear_constraints,
@@ -403,11 +576,22 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   UpdateNumNonlinearConstraintsAndGradients(
       prog.rotated_lorentz_cone_constraints(), &num_nonlinear_constraints,
       &max_num_gradients);
+  UpdateNumNonlinearConstraintsAndGradients(
+      prog.linear_complementarity_constraints(), &num_nonlinear_constraints,
+      &max_num_gradients);
 
   size_t num_linear_constraints = 0;
   const auto linear_constraints = prog.GetAllLinearConstraints();
   for (auto const& binding : linear_constraints) {
     num_linear_constraints += binding.constraint()->num_constraints();
+  }
+
+  // For linear complementary condition
+  // 0 <= x ⊥ Mx + q >= 0
+  // The linear constraint we add is Mx + q >= 0, so we will append
+  // M.rows() rows to the linear constraints.
+  for (const auto& binding : prog.linear_complementarity_constraints()) {
+    num_linear_constraints += binding.constraint()->M().rows();
   }
 
   snopt::integer nF = 1 + num_nonlinear_constraints + num_linear_constraints;
@@ -440,6 +624,9 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   UpdateConstraintBoundsAndGradients(
       prog, prog.rotated_lorentz_cone_constraints(), Flow, Fupp, iGfun, jGvar,
       &constraint_index, &grad_index);
+  UpdateConstraintBoundsAndGradients(
+      prog, prog.linear_complementarity_constraints(), Flow, Fupp, iGfun, jGvar,
+      &constraint_index, &grad_index);
 
   // http://eigen.tuxfamily.org/dox/group__TutorialSparse.html
   typedef Eigen::Triplet<double> T;
@@ -447,30 +634,11 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   tripletList.reserve(num_linear_constraints * prog.num_vars());
 
   size_t linear_constraint_index = 0;
-  for (auto const& binding : linear_constraints) {
-    auto const& c = binding.constraint();
-    size_t n = c->num_constraints();
-
-    Eigen::SparseMatrix<double> A_constraint = c->GetSparseMatrix();
-
-    for (int k = 0; k < static_cast<int>(binding.GetNumElements()); ++k) {
-      for (Eigen::SparseMatrix<double>::InnerIterator it(A_constraint, k); it;
-           ++it) {
-        tripletList.push_back(
-            T(linear_constraint_index + it.row(),
-              prog.FindDecisionVariableIndex(binding.variables()(k)),
-              it.value()));
-      }
-    }
-
-    auto const lb = c->lower_bound(), ub = c->upper_bound();
-    for (size_t i = 0; i < n; i++) {
-      Flow[constraint_index + i] = static_cast<snopt::doublereal>(lb(i));
-      Fupp[constraint_index + i] = static_cast<snopt::doublereal>(ub(i));
-    }
-    constraint_index += n;
-    linear_constraint_index += n;
-  }
+  UpdateLinearConstraint(prog, linear_constraints, &tripletList, Flow, Fupp,
+                         &constraint_index, &linear_constraint_index);
+  UpdateLinearConstraint(prog, prog.linear_complementarity_constraints(),
+                         &tripletList, Flow, Fupp, &constraint_index,
+                         &linear_constraint_index);
 
   snopt::integer lenA = static_cast<snopt::integer>(tripletList.size());
   d->min_alloc_A(lenA);
@@ -556,10 +724,13 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
 
   if (info >= 1 && info <= 6) {
     return SolutionResult::kSolutionFound;
-  } else if (info >= 11 && info <= 16) {
-    return SolutionResult::kInfeasibleConstraints;
-  } else if (info == 91) {
-    return SolutionResult::kInvalidInput;
+  } else {
+    drake::log()->debug("Snopt returns code {}\n", info);
+    if (info >= 11 && info <= 16) {
+      return SolutionResult::kInfeasibleConstraints;
+    } else if (info == 91) {
+      return SolutionResult::kInvalidInput;
+    }
   }
   return SolutionResult::kUnknownError;
 }

@@ -307,7 +307,10 @@ def _impl(repository_ctx):
     file_content += _vtk_cc_library(
         repository_ctx.os.name,
         "vtkFiltersCore",
-        hdrs = ["vtkFiltersCoreModule.h"],
+        hdrs = [
+            "vtkCleanPolyData.h",
+            "vtkFiltersCoreModule.h",
+        ],
         visibility = ["//visibility:private"],
         deps = [
             ":vtkCommonCore",
@@ -556,7 +559,20 @@ cc_library(
         header_only = True,
     )
 
-    file_content += _vtk_cc_library(repository_ctx.os.name, "vtklz4")
+    if repository_ctx.os.name == "mac os x":
+        file_content += """
+cc_library(
+    name = "vtklz4",
+    srcs = ["empty.cc"],
+    linkopts = [
+        "-L/usr/local/opt/lz4/lib",
+        "-llz4",
+    ],
+    visibility = ["//visibility:private"],
+)
+        """
+    else:
+        file_content += _vtk_cc_library(repository_ctx.os.name, "vtklz4")
 
     file_content += _vtk_cc_library(repository_ctx.os.name, "vtkmetaio",
                                     deps = ["@zlib"])

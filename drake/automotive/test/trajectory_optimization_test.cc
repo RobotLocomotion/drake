@@ -32,26 +32,58 @@ GTEST_TEST(TrajectoryOptimizationTest, SimpleCarDircolTest) {
   xf.set_heading(0.0);
   xf.set_velocity(x0.velocity());
 
-  const int kNumTimeSamples = 20;
+  const int kNumTimeSamples = 21;
 
   // The solved trajectory may deviate from the initial guess at a reasonable
   // duration.
-  const double kTrajectoryTimeLowerBound = 0.8 * initial_duration,
-               kTrajectoryTimeUpperBound = 1.2 * initial_duration;
+  const double kMinimumTimeStep =
+                   0.8 * initial_duration / (kNumTimeSamples - 1),
+               kMaximumTimeStep =
+                   1.2 * initial_duration / (kNumTimeSamples - 1);
 
-  systems::DircolTrajectoryOptimization prog(&plant, *context, kNumTimeSamples,
-                                             kTrajectoryTimeLowerBound,
-                                             kTrajectoryTimeUpperBound);
+  systems::trajectory_optimization::DirectCollocation prog(
+      &plant, *context, kNumTimeSamples, kMinimumTimeStep, kMaximumTimeStep);
 
-  // Input limits (note that the steering limit imposed by SimpleCar is larger).
+  prog.AddEqualTimeIntervalsConstraints();
+
+  const SimpleCarParams<double>* params =
+      dynamic_cast<const SimpleCarParams<double>*>(
+          context->get_numeric_parameter(0));
+  DRAKE_DEMAND(params != nullptr);
+
+  // Impose limits that are inside the true command limits.
+  const double kConstraintSafetyFactor{1.2};
+
+  // TODO(russt): Provide a more elegant and efficient way to write the bounding
+  // box constraints below
+  // (this generates MANY small bounding box constraints for the
+  // MathematicalProgram).
+
+  // Impose input limits from the SimpleCarParams.
   DrivingCommand<symbolic::Expression> input;
   input.SetFromVector(prog.input().cast<symbolic::Expression>());
-  prog.AddConstraintToAllKnotPoints(input.steering_angle() <= M_PI_2);
-  prog.AddConstraintToAllKnotPoints(-M_PI_2 <= input.steering_angle());
+  prog.AddConstraintToAllKnotPoints(kConstraintSafetyFactor *
+                                        input.steering_angle() <=
+                                    params->max_abs_steering_angle());
+  prog.AddConstraintToAllKnotPoints(-params->max_abs_steering_angle() <=
+                                    kConstraintSafetyFactor *
+                                        input.steering_angle());
+  prog.AddConstraintToAllKnotPoints(kConstraintSafetyFactor *
+                                        input.acceleration() <=
+                                    params->max_acceleration());
+  prog.AddConstraintToAllKnotPoints(-params->max_acceleration() <=
+                                    kConstraintSafetyFactor *
+                                        input.acceleration());
 
-  // Ensure that time intervals are (relatively) evenly spaced.
-  prog.AddTimeIntervalBounds(kTrajectoryTimeLowerBound / (kNumTimeSamples - 1),
-                             kTrajectoryTimeUpperBound / (kNumTimeSamples - 1));
+  // Impose velocity limit from the SimpleCarParams.
+  SimpleCarState<symbolic::Expression> state;
+  state.SetFromVector(prog.state().cast<symbolic::Expression>());
+  prog.AddConstraintToAllKnotPoints(
+      kConstraintSafetyFactor * state.velocity() <= params->max_velocity());
+  prog.AddConstraintToAllKnotPoints(0 <= state.velocity());
+
+  // Help out IPOPT by putting bounds on everything.
+  prog.AddBoundingBoxConstraint(-100, 1000, prog.decision_variables());
 
   // Fix initial conditions.
   prog.AddLinearConstraint(prog.initial_state() == x0.get_value());
@@ -66,18 +98,14 @@ GTEST_TEST(TrajectoryOptimizationTest, SimpleCarDircolTest) {
   auto initial_state_trajectory = PiecewisePolynomial<double>::FirstOrderHold(
       {0, initial_duration}, {x0.get_value(), xf.get_value()});
 
-  solvers::SolutionResult result =
-      prog.SolveTraj(initial_duration, PiecewisePolynomial<double>(),
-                     initial_state_trajectory);
-
-  EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound);
+  prog.SetInitialTrajectory(PiecewisePolynomial<double>(),
+                            initial_state_trajectory);
+  EXPECT_EQ(prog.Solve(), solvers::SolutionResult::kSolutionFound);
 
   // Plot the solution.
   // Note: see call_matlab.h for instructions on viewing the plot.
-  Eigen::MatrixXd inputs;
-  Eigen::MatrixXd states;
-  std::vector<double> times_out;
-  prog.GetResultSamples(&inputs, &states, &times_out);
+  Eigen::MatrixXd inputs = prog.GetInputSamples();
+  Eigen::MatrixXd states = prog.GetStateSamples();
   common::CallMatlab("plot", states.row(SimpleCarStateIndices::kX),
                      states.row(SimpleCarStateIndices::kY));
   common::CallMatlab("xlabel", "x (m)");

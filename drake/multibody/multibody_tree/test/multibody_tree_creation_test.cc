@@ -248,22 +248,22 @@ class TreeTopologyTests : public ::testing::Test {
 
   // Performs a number of tests on the BodyNodeTopology corresponding to the
   // body indexed by `body`.
-  void TestBodyNode(BodyIndex body) const {
-    const MultibodyTreeTopology& topology = model_->get_topology();
-    const BodyNodeIndex node = get_body_topology(body).body_node;
+  static void TestBodyNode(const MultibodyTreeTopology& topology,
+                           BodyIndex body) {
+    const BodyNodeIndex node = topology.get_body(body).body_node;
 
     // Verify that the corresponding Body and BodyNode reference each other
     // correctly.
-    EXPECT_EQ(get_body_topology(body).body_node,
-              get_body_node_topology(node).index);
-    EXPECT_EQ(get_body_node_topology(node).body, get_body_topology(body).index);
+    EXPECT_EQ(topology.get_body(body).body_node,
+              topology.get_body_node(node).index);
+    EXPECT_EQ(topology.get_body_node(node).body, topology.get_body(body).index);
 
     // They should belong to the same level.
-    EXPECT_EQ(get_body_topology(body).level,
-              get_body_node_topology(node).level);
+    EXPECT_EQ(topology.get_body(body).level,
+              topology.get_body_node(node).level);
 
     const BodyNodeIndex parent_node =
-        get_body_node_topology(node).parent_body_node;
+        topology.get_body_node(node).parent_body_node;
     // Either (and thus the exclusive or):
     // 1. `body` is the world, and thus `parent_node` is invalid, XOR
     // 2. `body` is not the world, and thus we have a valid `parent_node`.
@@ -271,15 +271,15 @@ class TreeTopologyTests : public ::testing::Test {
 
     if (body != world_index()) {
       // Verifies BodyNode has the parent node to the correct body.
-      const BodyIndex parent_body = get_body_node_topology(parent_node).body;
+      const BodyIndex parent_body = topology.get_body_node(parent_node).body;
       EXPECT_TRUE(parent_body.is_valid());
-      EXPECT_EQ(parent_body, get_body_topology(body).parent_body);
-      EXPECT_EQ(get_body_node_topology(parent_node).index,
-                get_body_topology(parent_body).body_node);
+      EXPECT_EQ(parent_body, topology.get_body(body).parent_body);
+      EXPECT_EQ(topology.get_body_node(parent_node).index,
+                topology.get_body(parent_body).body_node);
 
       // Verifies that BodyNode makes reference to the proper mobilizer index.
-      const MobilizerIndex mobilizer = get_body_node_topology(node).mobilizer;
-      EXPECT_EQ(mobilizer, get_body_topology(body).inboard_mobilizer);
+      const MobilizerIndex mobilizer = topology.get_body_node(node).mobilizer;
+      EXPECT_EQ(mobilizer, topology.get_body(body).inboard_mobilizer);
 
       // Verifies the mobilizer makes reference to the appropriate node.
       EXPECT_EQ(topology.get_mobilizer(mobilizer).body_node, node);
@@ -287,7 +287,7 @@ class TreeTopologyTests : public ::testing::Test {
       // Helper lambda to check if this "node" effectively is a child of
       // "parent_node".
       auto is_child_of_parent = [&]() {
-        const auto& children = get_body_node_topology(parent_node).child_nodes;
+        const auto& children = topology.get_body_node(parent_node).child_nodes;
         return
             std::find(children.begin(), children.end(), node) != children.end();
       };
@@ -295,14 +295,55 @@ class TreeTopologyTests : public ::testing::Test {
     }
   }
 
-  const BodyTopology& get_body_topology(int body_index) const {
-    const MultibodyTreeTopology& topology = model_->get_topology();
-    return topology.get_body(BodyIndex(body_index));
+  static const BodyNodeTopology& node_topology_from_body_index(
+      const MultibodyTreeTopology& topology, int body_index) {
+    return topology.get_body_node(
+        topology.get_body(BodyIndex(body_index)).body_node);
   }
 
-  const BodyNodeTopology& get_body_node_topology(int body_node_index) const {
-    const MultibodyTreeTopology& topology = model_->get_topology();
-    return topology.get_body_node(BodyNodeIndex(body_node_index));
+  static void VerifyTopology(const MultibodyTreeTopology& topology) {
+    const int kNumBodies = 8;
+
+    EXPECT_EQ(topology.get_num_body_nodes(), kNumBodies);
+    EXPECT_EQ(topology.get_tree_height(), 4);
+
+    // These sets contain the indexes of the bodies in each tree level.
+    // The order of these indexes in each set is not important, but only the
+    // fact that they belong to the appropriate set.
+    set<BodyIndex> expected_level0 = {BodyIndex(0)};
+    set<BodyIndex> expected_level1 = {BodyIndex(4), BodyIndex(7), BodyIndex(5)};
+    set<BodyIndex> expected_level2 = {BodyIndex(2), BodyIndex(1), BodyIndex(3)};
+    set<BodyIndex> expected_level3 = {BodyIndex(6)};
+
+    set<BodyIndex> level0 = {topology.get_body_node(BodyNodeIndex(0)).body};
+    set<BodyIndex> level1 = {topology.get_body_node(BodyNodeIndex(1)).body,
+                             topology.get_body_node(BodyNodeIndex(2)).body,
+                             topology.get_body_node(BodyNodeIndex(3)).body};
+    set<BodyIndex> level2 = {topology.get_body_node(BodyNodeIndex(4)).body,
+                             topology.get_body_node(BodyNodeIndex(5)).body,
+                             topology.get_body_node(BodyNodeIndex(6)).body};
+    set<BodyIndex> level3 = {topology.get_body_node(BodyNodeIndex(7)).body};
+
+    // Comparison of sets. The order of the elements is not important.
+    EXPECT_EQ(level0, expected_level0);
+    EXPECT_EQ(level1, expected_level1);
+    EXPECT_EQ(level2, expected_level2);
+    EXPECT_EQ(level3, expected_level3);
+
+    // Verifies the expected number of child nodes.
+    EXPECT_EQ(node_topology_from_body_index(topology, 0).get_num_children(), 3);
+    EXPECT_EQ(node_topology_from_body_index(topology, 4).get_num_children(), 2);
+    EXPECT_EQ(node_topology_from_body_index(topology, 7).get_num_children(), 0);
+    EXPECT_EQ(node_topology_from_body_index(topology, 5).get_num_children(), 1);
+    EXPECT_EQ(node_topology_from_body_index(topology, 2).get_num_children(), 0);
+    EXPECT_EQ(node_topology_from_body_index(topology, 1).get_num_children(), 1);
+    EXPECT_EQ(node_topology_from_body_index(topology, 3).get_num_children(), 0);
+    EXPECT_EQ(node_topology_from_body_index(topology, 6).get_num_children(), 0);
+
+    // Checks the correctness of each BodyNode associated with a body.
+    for (BodyIndex body(0); body < kNumBodies; ++body) {
+      TestBodyNode(topology, body);
+    }
   }
 
  protected:
@@ -323,50 +364,7 @@ TEST_F(TreeTopologyTests, Finalize) {
   EXPECT_EQ(topology.get_num_body_nodes(), model_->get_num_bodies());
   EXPECT_EQ(topology.get_tree_height(), 4);
 
-  // These sets contain the indexes of the bodies in each tree level.
-  // The order of these indexes in each set is not important, but only the fact
-  // that they belong to the appropriate set.
-  set<BodyIndex> expected_level0 = {BodyIndex(0)};
-  set<BodyIndex> expected_level1 = {BodyIndex(4), BodyIndex(7), BodyIndex(5)};
-  set<BodyIndex> expected_level2 = {BodyIndex(2), BodyIndex(1), BodyIndex(3)};
-  set<BodyIndex> expected_level3 = {BodyIndex(6)};
-
-  set<BodyIndex> level0 = {get_body_node_topology(0).body};
-  set<BodyIndex> level1 = {get_body_node_topology(1).body,
-                           get_body_node_topology(2).body,
-                           get_body_node_topology(3).body};
-  set<BodyIndex> level2 = {get_body_node_topology(4).body,
-                           get_body_node_topology(5).body,
-                           get_body_node_topology(6).body};
-  set<BodyIndex> level3 = {get_body_node_topology(7).body};
-
-  // Comparison of sets. The order of the elements is not important.
-  EXPECT_EQ(level0, expected_level0);
-  EXPECT_EQ(level1, expected_level1);
-  EXPECT_EQ(level2, expected_level2);
-  EXPECT_EQ(level3, expected_level3);
-
-  // Verifies the expected number of child nodes.
-  EXPECT_EQ(get_body_node_topology(0).get_num_children(), 3);
-  EXPECT_EQ(get_body_node_topology(
-      get_body_topology(4).body_node).get_num_children(), 2);
-  EXPECT_EQ(get_body_node_topology(
-      get_body_topology(7).body_node).get_num_children(), 0);
-  EXPECT_EQ(get_body_node_topology(
-      get_body_topology(5).body_node).get_num_children(), 1);
-  EXPECT_EQ(get_body_node_topology(
-      get_body_topology(2).body_node).get_num_children(), 0);
-  EXPECT_EQ(get_body_node_topology(
-      get_body_topology(1).body_node).get_num_children(), 1);
-  EXPECT_EQ(get_body_node_topology(
-      get_body_topology(3).body_node).get_num_children(), 0);
-  EXPECT_EQ(get_body_node_topology(
-      get_body_topology(6).body_node).get_num_children(), 0);
-
-  // Checks the correctness of each BodyNode associated with a body.
-  for (BodyIndex body(0); body < model_->get_num_bodies(); ++body) {
-    TestBodyNode(body);
-  }
+  VerifyTopology(topology);
 }
 
 // This unit tests verifies the correct number of generalized positions and
@@ -418,6 +416,54 @@ TEST_F(TreeTopologyTests, SizesAndIndexing) {
   }
   EXPECT_EQ(positions_index, topology.get_num_positions());
   EXPECT_EQ(velocities_index, topology.get_num_states());
+}
+
+// Verifies that the clone of a given MultibodyTree model created with
+// MultibodyTree::Clone() has has exactly the same topology as the original
+// model.
+TEST_F(TreeTopologyTests, Clone) {
+  model_->Finalize();
+  EXPECT_EQ(model_->get_num_bodies(), 8);
+  EXPECT_EQ(model_->get_num_mobilizers(), 7);
+  const MultibodyTreeTopology& topology = model_->get_topology();
+
+  auto cloned_model = model_->Clone();
+  EXPECT_EQ(cloned_model->get_num_bodies(), 8);
+  const MultibodyTreeTopology& clone_topology = cloned_model->get_topology();
+
+  // Verify the cloned topology actually is a different object.
+  ASSERT_NE(&topology, &clone_topology);
+
+  // The topology of the clone must be exactly equal to the topology of the
+  // original MultibodyTree.
+  EXPECT_EQ(topology, clone_topology);
+
+  // Even though the test above confirms the two topologies are exactly equal,
+  // we perform a number of additional tests.
+  VerifyTopology(clone_topology);
+}
+
+// Verifies that the AutoDiffXd version of a given MultibodyTree model created
+// with MultibodyTree::ToAutoDiffXd() has exactly the same topology as the
+// original model.
+TEST_F(TreeTopologyTests, ToAutoDiffXd) {
+  model_->Finalize();
+  EXPECT_EQ(model_->get_num_bodies(), 8);
+  EXPECT_EQ(model_->get_num_mobilizers(), 7);
+  const MultibodyTreeTopology& topology = model_->get_topology();
+
+  auto autodiff_model = model_->ToAutoDiffXd();
+  EXPECT_EQ(autodiff_model->get_num_bodies(), 8);
+  const MultibodyTreeTopology& autodiff_topology =
+      autodiff_model->get_topology();
+
+  // The topology of the clone must be exactly equal to the topology of the
+  // original MultibodyTree.
+  EXPECT_EQ(topology, autodiff_topology);
+
+  // Even though the test above confirms the two topologies are exactly equal,
+  // we perform a number of additional tests.
+  VerifyTopology(autodiff_topology);
 }
 
 }  // namespace

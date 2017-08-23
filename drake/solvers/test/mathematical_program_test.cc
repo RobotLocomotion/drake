@@ -488,6 +488,68 @@ GTEST_TEST(testGetSolution, testSetSolution1) {
                runtime_error);
 }
 
+namespace {
+
+// Overloads to permit `ExpectBadVar` call `AddItem` for both `Cost` and
+// `Constraint`.
+void AddItem(MathematicalProgram* prog, const Binding<Constraint>& binding) {
+  prog->AddConstraint(binding);
+}
+void AddItem(MathematicalProgram* prog, const Binding<Cost>& binding) {
+  prog->AddCost(binding);
+}
+
+// Expect that adding a given constraint with bad variables (those that have
+// not been added to MathematicalProgram) will throw an exception.
+template <typename C, typename... Args>
+void ExpectBadVar(MathematicalProgram* prog, int num_var, Args&&... args) {
+  using internal::CreateBinding;
+  auto c = make_shared<C>(std::forward<Args>(args)...);
+  VectorXDecisionVariable x(num_var);
+  for (int i = 0; i < num_var; ++i)
+    x(i) = Variable("bad" + std::to_string(i));
+  // Use minimal call site (directly on adding Binding<C>).
+  // TODO(eric.cousineau): Check if there is a way to parse the error text to
+  // ensure that we are capturing the correct error.
+  EXPECT_THROW(AddItem(prog, CreateBinding(c, x)), std::runtime_error);
+}
+
+}  // namespace
+
+GTEST_TEST(testMathematicalProgram, testBadBindingVariable) {
+  // Attempt to add a binding that does not have a valid decision variable.
+  MathematicalProgram prog;
+
+  const int num_var = 3;
+  Eigen::Matrix3d A;
+  A.setIdentity();
+  Eigen::Vector3d f, lb, ub;
+  f.setConstant(2);
+  lb.setConstant(0);
+  ub.setConstant(1);
+  Eigen::Matrix3d twiceA = 2 * A;
+  vector<Eigen::Ref<const MatrixXd>> F{A, twiceA};
+  shared_ptr<EvaluatorBase> func = MakeFunctionEvaluator(Movable());
+
+  // Test each constraint type.
+  ExpectBadVar<LinearConstraint>(&prog, num_var, A, lb, ub);
+  ExpectBadVar<LinearEqualityConstraint>(&prog, num_var, A, lb);
+  ExpectBadVar<BoundingBoxConstraint>(&prog, num_var, lb, ub);
+  ExpectBadVar<LorentzConeConstraint>(&prog, num_var, A, f);
+  ExpectBadVar<RotatedLorentzConeConstraint>(&prog, num_var, A, f);
+  ExpectBadVar<PositiveSemidefiniteConstraint>(&prog, num_var * num_var,
+                                               num_var);
+  ExpectBadVar<LinearMatrixInequalityConstraint>(&prog, F.size() - 1, F);
+  ExpectBadVar<LinearComplementarityConstraint>(&prog, num_var, A, f);
+  // Use this as a test for nonlinear constraints.
+  ExpectBadVar<EvaluatorConstraint<>>(&prog, 1, func, lb.head(1), ub.head(1));
+
+  // Test each cost type.
+  ExpectBadVar<LinearCost>(&prog, num_var, f);
+  ExpectBadVar<QuadraticCost>(&prog, num_var, A, f);
+  ExpectBadVar<EvaluatorCost<>>(&prog, 1, func);
+}
+
 GTEST_TEST(testMathematicalProgram, testAddFunction) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<1>();
@@ -1057,16 +1119,128 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula4) {
     EXPECT_EQ(prog.linear_equality_constraints().size(), 0);
     EXPECT_EQ(prog.bounding_box_constraints().size(), 0);
     auto binding = prog.linear_constraints().back();
-    EXPECT_TRUE(CompareMatrices(binding.constraint()->upper_bound(),
-                                Vector1d(numeric_limits<double>::infinity())));
+    EXPECT_TRUE(CompareMatrices(binding.constraint()->lower_bound(),
+                                Vector1d(-numeric_limits<double>::infinity())));
     EXPECT_TRUE(
-        CompareMatrices(binding.constraint()->lower_bound(), Vector1d(-1)));
+        CompareMatrices(binding.constraint()->upper_bound(), Vector1d(1)));
 
-    VectorX<Expression> expr = binding.constraint()->A() * binding.variables() -
-                               binding.constraint()->lower_bound();
+    const VectorX<Expression> expr =
+        binding.constraint()->upper_bound() -
+        binding.constraint()->A() * binding.variables();
     EXPECT_EQ(expr.size(), 1);
     EXPECT_PRED2(ExprEqual, expr(0), 1 - x(0) - 2 * x(2));
   }
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula5) {
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<1>();
+  const double inf = std::numeric_limits<double>::infinity();
+  // This test checks all of the following formula is translated into the
+  // bounding constraint, x ∈ [-∞, ∞].
+  // clang-format off
+  const vector<Formula> f{x(0) <= inf,
+                      2 * x(0) <= inf,
+                     -3 * x(0) <= inf,
+                  2 * x(0) + 1 <= inf,
+                 -7 * x(0) + 1 <= inf,
+                          -inf <= x(0),
+                          -inf <= 2 * x(0),
+                          -inf <= -7 * x(0) + 9};
+  // clang-format on
+  for (const auto& f_i : f) {
+    const auto binding = prog.AddLinearConstraint(f_i);
+    const VectorX<Expression> expr =
+        binding.constraint()->A() * binding.variables();
+    EXPECT_EQ(binding.constraint()->lower_bound()(0), -inf);
+    EXPECT_EQ(binding.constraint()->upper_bound()(0), inf);
+    EXPECT_PRED2(ExprEqual, expr(0), x(0));
+  }
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula6) {
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<2>();
+  const double inf = std::numeric_limits<double>::infinity();
+  // This test checks that all of the following formula is translated into
+  // linear constraints.
+  // clang-format off
+  const vector<Formula> f{x(0) + x(1) <= inf,
+                      2 * x(0) + x(1) <= inf,
+                 -3 * x(0) - 7 * x(1) <= inf};
+  // clang-format on
+  for (const auto& f_i : f) {
+    const auto binding = prog.AddLinearConstraint(f_i);
+    EXPECT_TRUE(is_dynamic_castable<LinearConstraint>(binding.constraint()));
+    const VectorX<Expression> expr =
+        binding.constraint()->A() * binding.variables();
+    EXPECT_EQ(binding.constraint()->lower_bound()(0), -inf);
+    EXPECT_EQ(binding.constraint()->upper_bound()(0), inf);
+    EXPECT_PRED2(ExprEqual, expr(0), get_lhs_expression(f_i));
+  }
+}
+
+GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula7) {
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<2>();
+  const double inf = std::numeric_limits<double>::infinity();
+  // This test checks that all of the following formula is translated into
+  // linear constraints.
+  // clang-format off
+  const vector<Formula> f{x(0) + x(1) >= -inf,
+                      2 * x(0) + x(1) >= -inf,
+                 -3 * x(0) - 7 * x(1) >= -inf};
+  // clang-format on
+  for (const auto& f_i : f) {
+    const auto binding = prog.AddLinearConstraint(f_i);
+    EXPECT_TRUE(is_dynamic_castable<LinearConstraint>(binding.constraint()));
+    const VectorX<Expression> expr =
+        binding.constraint()->A() * binding.variables();
+    EXPECT_EQ(binding.constraint()->lower_bound()(0), -inf);
+    EXPECT_EQ(binding.constraint()->upper_bound()(0), inf);
+    EXPECT_PRED2(ExprEqual, expr(0), -get_lhs_expression(f_i));
+  }
+}
+
+GTEST_TEST(testMathematicalProgram,
+           AddLinearConstraintSymbolicFormulaException1) {
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<2>();
+  const double inf = std::numeric_limits<double>::infinity();
+  EXPECT_THROW(prog.AddLinearConstraint(x(0) + inf <= x(1)), runtime_error);
+  EXPECT_THROW(prog.AddLinearConstraint(x(0) - inf <= x(1)), runtime_error);
+  EXPECT_THROW(prog.AddLinearConstraint(x(0) <= x(1) + inf), runtime_error);
+  EXPECT_THROW(prog.AddLinearConstraint(x(0) <= x(1) - inf), runtime_error);
+}
+
+GTEST_TEST(testMathematicalProgram,
+           AddLinearConstraintSymbolicFormulaException2) {
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<2>();
+  // (x₀ + 1)² - x₀² -2x₀ -1 => 0 (by Expand()).
+  const Expression zero_after_expansion0 =
+      pow(x(0) + 1, 2) - pow(x(0), 2) - 2 * x(0) - 1;
+  // (x₁ + 1)² - x₁² -2x₁ -1 => 0 (by Expand()).
+  const Expression zero_after_expansion1 =
+      pow(x(1) + 1, 2) - pow(x(1), 2) - 2 * x(1) - 1;
+
+  const double inf = std::numeric_limits<double>::infinity();
+  // +∞ <= -∞   -->  Exception.
+  // +∞ <= +∞   -->  Exception.
+  // -∞ <= +∞   -->  Exception.
+  // -∞ <= -∞   -->  Exception.
+  EXPECT_THROW(prog.AddLinearConstraint(zero_after_expansion0 + inf <=
+                                        zero_after_expansion1 + -inf),
+               runtime_error);
+  EXPECT_THROW(prog.AddLinearConstraint(zero_after_expansion0 + inf <=
+                                        zero_after_expansion1 + inf),
+               runtime_error);
+  EXPECT_THROW(prog.AddLinearConstraint(zero_after_expansion0 - inf <=
+                                        zero_after_expansion1 + inf),
+               runtime_error);
+  EXPECT_THROW(prog.AddLinearConstraint(zero_after_expansion0 - inf <=
+                                        zero_after_expansion1 - inf),
+               runtime_error);
 }
 
 GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormulaAnd1) {
@@ -1143,10 +1317,16 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormulaAnd2) {
   constraint_set.emplace(e31 - e32);
   for (int i = 0; i < 3; ++i) {
     if (!std::isinf(lb_in_ctr(i))) {
-      EXPECT_EQ(constraint_set.count(Ax(i) - lb_in_ctr(i)), 1);
+      // Either `Ax - lb` or `-(Ax - lb)` should be in the constraint set.
+      EXPECT_EQ(constraint_set.count(Ax(i) - lb_in_ctr(i)) +
+                    constraint_set.count(-(Ax(i) - lb_in_ctr(i))),
+                1);
     }
     if (!std::isinf(ub_in_ctr(i))) {
-      EXPECT_EQ(constraint_set.count(Ax(i) - ub_in_ctr(i)), 1);
+      // Either `Ax - ub` or `-(Ax - ub)` should be in the constraint set.
+      EXPECT_EQ(constraint_set.count(Ax(i) - ub_in_ctr(i)) +
+                    constraint_set.count(-(Ax(i) - ub_in_ctr(i))),
+                1);
     }
   }
 }

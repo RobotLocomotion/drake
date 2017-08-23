@@ -1,4 +1,4 @@
-#include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_tree_builder.h"
+#include "drake/manipulation/util/world_sim_tree_builder.h"
 
 #include <algorithm>
 #include <map>
@@ -7,35 +7,22 @@
 #include "spruce.hh"
 
 #include "drake/common/find_resource.h"
-#include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/parsers/model_instance_id_table.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_frame.h"
-#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
 
 using Eigen::aligned_allocator;
 using Eigen::Vector3d;
-using drake::multibody::joints::FloatingBaseType;
-using drake::multibody::joints::kFixed;
 using drake::multibody::joints::kQuaternion;
-using drake::parsers::ModelInstanceIdTable;
-using drake::parsers::sdf::AddModelInstancesFromSdfFile;
-using drake::parsers::urdf::AddModelInstanceFromUrdfFile;
-using drake::systems::Context;
-using drake::systems::ContinuousState;
-using drake::systems::DrakeVisualizer;
-using drake::systems::VectorBase;
 using std::allocate_shared;
-using std::make_unique;
 using std::string;
-using std::unique_ptr;
 
 namespace drake {
-namespace examples {
-namespace kuka_iiwa_arm {
+namespace manipulation {
+namespace util {
 
 template <typename T>
 WorldSimTreeBuilder<T>::WorldSimTreeBuilder() {}
@@ -52,7 +39,7 @@ int WorldSimTreeBuilder<T>::AddFixedModelInstance(const string& model_name,
   auto weld_to_frame = allocate_shared<RigidBodyFrame<T>>(
       aligned_allocator<RigidBodyFrame<T>>(), "world", nullptr, xyz, rpy);
 
-  return AddModelInstanceToFrame(model_name, xyz, rpy, weld_to_frame);
+  return AddModelInstanceToFrame(model_name, weld_to_frame);
 }
 
 template <typename T>
@@ -64,17 +51,16 @@ int WorldSimTreeBuilder<T>::AddFloatingModelInstance(const string& model_name,
   auto weld_to_frame = allocate_shared<RigidBodyFrame<T>>(
       aligned_allocator<RigidBodyFrame<T>>(), "world", nullptr, xyz, rpy);
 
-  return AddModelInstanceToFrame(model_name, xyz, rpy, weld_to_frame,
+  return AddModelInstanceToFrame(model_name, weld_to_frame,
                                  kQuaternion);
 }
 
 template <typename T>
 int WorldSimTreeBuilder<T>::AddModelInstanceToFrame(
-    const string& model_name, const Vector3d& xyz, const Vector3d& rpy,
+    const string& model_name,
     std::shared_ptr<RigidBodyFrame<T>> weld_to_frame,
     const drake::multibody::joints::FloatingBaseType floating_base_type) {
   DRAKE_DEMAND(!built_);
-  unused(xyz, rpy);  // TODO(jwnimmer-tri) This seems bad.
 
   spruce::path p(model_map_[model_name]);
 
@@ -122,6 +108,6 @@ void WorldSimTreeBuilder<T>::StoreModel(const std::string& model_name,
 
 template class WorldSimTreeBuilder<double>;
 
-}  // namespace kuka_iiwa_arm
-}  // namespace examples
+}  // namespace util
+}  // namespace manipulation
 }  // namespace drake
