@@ -297,9 +297,6 @@ macro(drake_setup_options)
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # BEGIN external projects that are OFF by default
 
-  drake_optional_external(TEXTBOOK OFF
-    "The Underactuated Robotics textbook and its examples")
-
   # END external projects that are OFF by default
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # BEGIN indirectly optional external projects
