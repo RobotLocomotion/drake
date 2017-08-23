@@ -31,7 +31,7 @@ OptitrackPoseExtractor::OptitrackPoseExtractor(
       systems::AbstractValue::Make<Isometry3<double>>(
           Isometry3<double>::Identity()));
   this->DeclareAbstractInputPort();
-  // Internal state is an Isometry3d
+  // Internal state is an Isometry3d.
   this->DeclarePeriodicUnrestrictedUpdate(optitrack_lcm_status_period, 0);
 }
 
@@ -43,7 +43,7 @@ void OptitrackPoseExtractor::DoCalcUnrestrictedUpdate(
   Isometry3<double>& internal_state =
       state->get_mutable_abstract_state<Isometry3<double>>(0);
 
-  /* Update world state from inputs. */
+  // Update world state from inputs.
   const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
   const auto& pose_message = input->GetValue<optitrack::optitrack_frame_t>();
@@ -65,7 +65,7 @@ void OptitrackPoseExtractor::DoCalcUnrestrictedUpdate(
   DRAKE_THROW_UNLESS(body_exists);
 
   // The optitrack quaternion ordering is X-Y-Z-W and this needs fitting into
-  // Eigens W-X-Y-Z ordering.
+  // Eigen's W-X-Y-Z ordering.
   Eigen::Quaterniond quaternion(
       rigid_bodies[vector_index].quat[3], rigid_bodies[vector_index].quat[0],
       rigid_bodies[vector_index].quat[1], rigid_bodies[vector_index].quat[2]);
