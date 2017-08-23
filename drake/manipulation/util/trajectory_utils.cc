@@ -2,9 +2,13 @@
 
 namespace drake {
 namespace manipulation {
+namespace util {
 
-template class PiecewiseCartesianTrajectory<double>;
-template class PiecewiseCubicTrajectory<double>;
+template
+class PiecewiseCartesianTrajectory<double>;
+template
+class PiecewiseCubicTrajectory<double>;
 
+}  // namespace util
 }  // namespace manipulation
 }  // namespace drake

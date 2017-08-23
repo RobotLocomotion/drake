@@ -130,7 +130,7 @@ class RobotStateMsgToHumanoidStatusSystem
       systems::controllers::qp_inverse_dynamics::RobotKinematicState<double>*
           output) const;
 
-  const manipulation::RobotStateLcmMessageTranslator translator_;
+  const manipulation::util::RobotStateLcmMessageTranslator translator_;
   int input_port_index_lcm_msg_{0};
 };
 

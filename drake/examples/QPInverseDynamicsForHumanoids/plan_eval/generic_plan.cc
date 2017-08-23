@@ -35,7 +35,7 @@ void GenericPlan<T>::Initialize(
   const std::vector<T> times = {robot_status.get_time(),
                                 robot_status.get_time() + 1};
   const MatrixX<T> q_d = robot_status.get_cache().getQ();
-  this->set_dof_trajectory(manipulation::PiecewiseCubicTrajectory<T>(
+  this->set_dof_trajectory(manipulation::util::PiecewiseCubicTrajectory<T>(
       PiecewisePolynomial<T>::ZeroOrderHold(times, {q_d, q_d})));
 
   // Calls custom initialization.
@@ -71,7 +71,7 @@ void GenericPlan<T>::UpdateQpInput(
   const T interp_time = robot_status.get_time();
   for (const auto& body_motion_pair : body_trajectories_) {
     const RigidBody<T>* body = body_motion_pair.first;
-    const manipulation::PiecewiseCartesianTrajectory<T>& traj =
+    const manipulation::util::PiecewiseCartesianTrajectory<T>& traj =
         body_motion_pair.second;
 
     Vector6<T> kp, kd;
@@ -94,7 +94,8 @@ void GenericPlan<T>::UpdateQpInput(
   // Generates desired acceleration for all dof.
   VectorX<T> kp, kd;
   paramset.LookupDesiredDofMotionGains(&kp, &kd);
-  const manipulation::PiecewiseCubicTrajectory<T>& dof_traj = dof_trajectory_;
+  const manipulation::util::PiecewiseCubicTrajectory<T>& dof_traj =
+      dof_trajectory_;
   systems::controllers::VectorSetpoint<T> tracker(
       dof_traj.get_position(interp_time), dof_traj.get_velocity(interp_time),
       dof_traj.get_acceleration(interp_time), kp, kd);

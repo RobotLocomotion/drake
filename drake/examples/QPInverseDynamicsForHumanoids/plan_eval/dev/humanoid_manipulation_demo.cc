@@ -31,7 +31,7 @@ void send_manip_message() {
       examples::valkyrie::kRPYValkyrieDof);
   VectorX<double> v = VectorX<double>::Zero(robot.get_num_velocities());
 
-  const manipulation::RobotStateLcmMessageTranslator translator(robot);
+  const manipulation::util::RobotStateLcmMessageTranslator translator(robot);
 
   // There needs to be at least 1 knot point, the controller will insert its
   // current desired q to the beginning to make the desired trajectories.

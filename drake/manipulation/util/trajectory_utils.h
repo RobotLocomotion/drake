@@ -9,6 +9,7 @@
 
 namespace drake {
 namespace manipulation {
+namespace util {
 
 /**
  * A wrapper class that stores a PiecewisePolynomial and its first and second
@@ -238,5 +239,6 @@ class PiecewiseCartesianTrajectory {
   PiecewiseQuaternionSlerp<T> orientation_;
 };
 
+}  // namespace util
 }  // namespace manipulation
 }  // namespace drake

@@ -58,7 +58,8 @@ void HumanoidManipulationPlan<T>::InitializeGenericPlanDerived(
     PiecewiseQuaternionSlerp<T> rot_traj(
         times, {body_pose.linear(), body_pose.linear()});
 
-    manipulation::PiecewiseCartesianTrajectory<T> body_traj(pos_traj, rot_traj);
+    manipulation::util::PiecewiseCartesianTrajectory<T> body_traj(
+        pos_traj, rot_traj);
     this->set_body_trajectory(body, body_traj);
   }
 }
@@ -132,7 +133,7 @@ void HumanoidManipulationPlan<T>::HandlePlanGenericPlanDerived(
   std::vector<T> com_times(1, time_now);
   std::vector<MatrixX<T>> com_knots(1, zmp_planner_.get_nominal_com(time_now));
 
-  const manipulation::RobotStateLcmMessageTranslator translator(
+  const manipulation::util::RobotStateLcmMessageTranslator translator(
       robot_status.get_robot());
 
   for (const bot_core::robot_state_t& keyframe : msg.plan) {
@@ -175,7 +176,8 @@ void HumanoidManipulationPlan<T>::HandlePlanGenericPlanDerived(
   // Generates dof trajectories.
   {
     MatrixX<T> zeros = MatrixX<T>::Zero(robot.get_num_positions(), 1);
-    this->set_dof_trajectory(manipulation::PiecewiseCubicTrajectory<T>(
+    this->set_dof_trajectory(
+        manipulation::util::PiecewiseCubicTrajectory<T>(
         PiecewisePolynomial<T>::Cubic(times, dof_knots, zeros, zeros)));
   }
 
@@ -185,8 +187,8 @@ void HumanoidManipulationPlan<T>::HandlePlanGenericPlanDerived(
       const RigidBody<T>* body = body_knots_pair.first;
       const std::vector<Isometry3<T>>& knots = body_knots_pair.second;
 
-      manipulation::PiecewiseCartesianTrajectory<T> body_traj =
-          manipulation::PiecewiseCartesianTrajectory<
+      manipulation::util::PiecewiseCartesianTrajectory<T> body_traj =
+          manipulation::util::PiecewiseCartesianTrajectory<
               T>::MakeCubicLinearWithEndLinearVelocity(times, knots,
                                                        Vector3<T>::Zero(),
                                                        Vector3<T>::Zero());

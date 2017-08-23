@@ -55,7 +55,7 @@ void controller_loop() {
 
   VectorX<double> q(robot.get_num_positions());
   VectorX<double> v(robot.get_num_velocities());
-  manipulation::RobotStateLcmMessageTranslator translator(robot);
+  manipulation::util::RobotStateLcmMessageTranslator translator(robot);
   translator.DecodeMessageKinematics(raw_msg, q, v);
 
   HumanoidStatus robot_status(&robot, alias_groups);

@@ -8,17 +8,17 @@
 
 namespace drake {
 namespace manipulation {
-
+namespace util {
 namespace {
 
 // For every ith name in @p names, if it is present in @p name_to_index, set
 // msg_values[i] = values[name_to_index.find(names[i])]
-void EncodeValue(const std::unordered_map<std::string, int>& name_to_index,
-                 const std::vector<std::string>& names,
-                 const Eigen::Ref<const VectorX<double>>& values,
-                 std::vector<float>* msg_values) {
+void EncodeValue(const std::unordered_map<std::string, int> &name_to_index,
+                 const std::vector<std::string> &names,
+                 const Eigen::Ref<const VectorX<double>> &values,
+                 std::vector<float> *msg_values) {
   for (size_t i = 0; i < names.size(); ++i) {
-    const std::string& name = names[i];
+    const std::string &name = names[i];
     // Ignores joints we don't know about.
     auto it = name_to_index.find(name);
     if (it != name_to_index.end()) {
@@ -30,12 +30,12 @@ void EncodeValue(const std::unordered_map<std::string, int>& name_to_index,
 
 // For every ith name in @p names, if it is present in @p name_to_index, set
 // values[name_to_index.find(names[i])] = msg_values[i]
-void DecodeJointValue(const std::unordered_map<std::string, int>& name_to_index,
-                      const std::vector<std::string>& names,
-                      const std::vector<float>& msg_values,
+void DecodeJointValue(const std::unordered_map<std::string, int> &name_to_index,
+                      const std::vector<std::string> &names,
+                      const std::vector<float> &msg_values,
                       Eigen::Ref<VectorX<double>> values) {
   for (size_t i = 0; i < names.size(); ++i) {
-    const std::string& name = names[i];
+    const std::string &name = names[i];
     // Ignores joints we don't know about.
     auto it = name_to_index.find(name);
     if (it != name_to_index.end()) {
@@ -48,22 +48,22 @@ void DecodeJointValue(const std::unordered_map<std::string, int>& name_to_index,
 }  // namespace
 
 RobotStateLcmMessageTranslator::RobotStateLcmMessageTranslator(
-    const RigidBodyTree<double>& robot)
+    const RigidBodyTree<double> &robot)
     : robot_(CheckTreeIsRobotStateLcmTypeCompatible(robot)),
       root_body_(robot_.get_body(1)),
       is_floating_base_(root_body_.getJoint().is_floating()) {
-  std::unordered_map<const RigidBody<double>*, std::string> body_to_joint_name;
+  std::unordered_map<const RigidBody<double> *, std::string> body_to_joint_name;
 
   if (!is_floating_base_) {
-    const DrakeJoint& root_joint = root_body_.getJoint();
+    const DrakeJoint &root_joint = root_body_.getJoint();
     DRAKE_DEMAND(root_joint.is_fixed());
     DRAKE_DEMAND(root_joint.get_num_positions() == 0);
     DRAKE_DEMAND(root_joint.get_num_velocities() == 0);
   }
 
-  for (const auto& body : robot.bodies) {
+  for (const auto &body : robot.bodies) {
     if (body->has_parent_body()) {
-      const auto& joint = body->getJoint();
+      const auto &joint = body->getJoint();
       if (!joint.is_fixed() && !joint.is_floating()) {
         // Assuming for the non floating joints, the sizes for q and v are
         // both 1.
@@ -73,7 +73,7 @@ RobotStateLcmMessageTranslator::RobotStateLcmMessageTranslator(
         DRAKE_ASSERT(joint.get_num_velocities() == 1);
 
         // The convention is to use position coordinate name as joint name.
-        const std::string& name = robot.get_position_name(position_index);
+        const std::string &name = robot.get_position_name(position_index);
 
         joint_name_to_q_index_[name] = position_index;
         joint_name_to_v_index_[name] = velocity_index;
@@ -84,14 +84,14 @@ RobotStateLcmMessageTranslator::RobotStateLcmMessageTranslator(
 
   for (int actuator_index = 0; actuator_index < robot_.get_num_actuators();
        ++actuator_index) {
-    const RigidBody<double>* body = robot_.actuators[actuator_index].body_;
-    const std::string& joint_name = body_to_joint_name.at(body);
+    const RigidBody<double> *body = robot_.actuators[actuator_index].body_;
+    const std::string &joint_name = body_to_joint_name.at(body);
     joint_name_to_actuator_index_[joint_name] = actuator_index;
   }
 }
 
 void RobotStateLcmMessageTranslator::DecodeMessageKinematics(
-    const bot_core::robot_state_t& msg,
+    const bot_core::robot_state_t &msg,
     Eigen::Ref<VectorX<double>> q,
     Eigen::Ref<VectorX<double>> v) const {
   DRAKE_DEMAND(CheckMessageVectorSize(msg));
@@ -101,7 +101,7 @@ void RobotStateLcmMessageTranslator::DecodeMessageKinematics(
 
   // Floating joint.
   if (is_floating_base_) {
-    const DrakeJoint& root_joint = root_body_.getJoint();
+    const DrakeJoint &root_joint = root_body_.getJoint();
 
     // Pose of floating base in the world frame.
     Isometry3<double> X_WB = DecodePose(msg.pose);
@@ -114,7 +114,7 @@ void RobotStateLcmMessageTranslator::DecodeMessageKinematics(
     V_JB.head<3>() = X_WJ.linear().transpose() * V_WB.head<3>();
     V_JB.tail<3>() = X_WJ.linear().transpose() * V_WB.tail<3>();
 
-    const DrakeJoint& floating_joint = root_body_.getJoint();
+    const DrakeJoint &floating_joint = root_body_.getJoint();
     int position_start = root_body_.get_position_start_index();
     int velocity_start = root_body_.get_velocity_start_index();
 
@@ -133,9 +133,9 @@ void RobotStateLcmMessageTranslator::DecodeMessageKinematics(
 
       // Rotational velocity.
       Eigen::Matrix<double, 3, 3> phi;
-      typename math::Gradient<decltype(phi), Eigen::Dynamic>::type* dphi =
+      typename math::Gradient<decltype(phi), Eigen::Dynamic>::type *dphi =
           nullptr;
-      typename math::Gradient<decltype(phi), Eigen::Dynamic, 2>::type* ddphi =
+      typename math::Gradient<decltype(phi), Eigen::Dynamic, 2>::type *ddphi =
           nullptr;
       angularvel2rpydotMatrix(rpy, phi, dphi, ddphi);
       auto angular_velocity_world = V_JB.head<3>();
@@ -170,7 +170,7 @@ void RobotStateLcmMessageTranslator::DecodeMessageKinematics(
 }
 
 void RobotStateLcmMessageTranslator::InitializeMessage(
-    bot_core::robot_state_t* msg) const {
+    bot_core::robot_state_t *msg) const {
   DRAKE_DEMAND(msg != nullptr);
 
   // Encode all the other joints assuming they are all 1 dof.
@@ -194,7 +194,7 @@ void RobotStateLcmMessageTranslator::InitializeMessage(
   // Initialize joints.
   int joint_counter = 0;
   for (int i = 0; i < robot_.get_num_positions(); i++) {
-    const std::string& name = robot_.get_position_name(i);
+    const std::string &name = robot_.get_position_name(i);
     if (joint_name_to_q_index_.find(name) != joint_name_to_q_index_.end()) {
       msg->joint_name[joint_counter] = name;
       msg->joint_position[joint_counter] = 0;
@@ -221,16 +221,16 @@ void RobotStateLcmMessageTranslator::InitializeMessage(
 }
 
 void RobotStateLcmMessageTranslator::EncodeMessageKinematics(
-    const Eigen::Ref<const VectorX<double>>& q,
-    const Eigen::Ref<const VectorX<double>>& v,
-    bot_core::robot_state_t* msg) const {
+    const Eigen::Ref<const VectorX<double>> &q,
+    const Eigen::Ref<const VectorX<double>> &v,
+    bot_core::robot_state_t *msg) const {
   DRAKE_DEMAND(msg != nullptr);
   DRAKE_DEMAND(q.size() == robot_.get_num_positions());
   DRAKE_DEMAND(v.size() == robot_.get_num_velocities());
   DRAKE_DEMAND(CheckMessageVectorSize(*msg));
 
   // Encodes the floating base.
-  const DrakeJoint& root_joint = root_body_.getJoint();
+  const DrakeJoint &root_joint = root_body_.getJoint();
   // J is the root_joint frame.
   Isometry3<double> X_JB;
   Vector6<double> V_JB;
@@ -249,8 +249,8 @@ void RobotStateLcmMessageTranslator::EncodeMessageKinematics(
       X_JB.makeAffine();
 
       Matrix3<double> phi = Matrix3<double>::Zero();
-      angularvel2rpydotMatrix(rpy, phi, static_cast<Matrix3<double>*>(nullptr),
-                              static_cast<Matrix3<double>*>(nullptr));
+      angularvel2rpydotMatrix(rpy, phi, static_cast<Matrix3<double> *>(nullptr),
+                              static_cast<Matrix3<double> *>(nullptr));
 
       auto decomp = Eigen::ColPivHouseholderQR<Matrix3<double>>(phi);
       V_JB.head<3>() = decomp.solve(rpydot);
@@ -289,8 +289,8 @@ void RobotStateLcmMessageTranslator::EncodeMessageKinematics(
 }
 
 void RobotStateLcmMessageTranslator::EncodeMessageTorque(
-    const Eigen::Ref<const VectorX<double>>& torque,
-    bot_core::robot_state_t* msg) const {
+    const Eigen::Ref<const VectorX<double>> &torque,
+    bot_core::robot_state_t *msg) const {
   DRAKE_DEMAND(msg != nullptr);
   DRAKE_DEMAND(torque.size() == robot_.get_num_actuators());
   DRAKE_DEMAND(CheckMessageVectorSize(*msg));
@@ -300,7 +300,7 @@ void RobotStateLcmMessageTranslator::EncodeMessageTorque(
 }
 
 void RobotStateLcmMessageTranslator::DecodeMessageTorque(
-    const bot_core::robot_state_t& msg,
+    const bot_core::robot_state_t &msg,
     Eigen::Ref<VectorX<double>> torque) const {
   DRAKE_DEMAND(CheckMessageVectorSize(msg));
 
@@ -309,17 +309,17 @@ void RobotStateLcmMessageTranslator::DecodeMessageTorque(
                    msg.joint_effort, torque);
 }
 
-const RigidBodyTree<double>&
+const RigidBodyTree<double> &
 RobotStateLcmMessageTranslator::CheckTreeIsRobotStateLcmTypeCompatible(
-    const RigidBodyTree<double>& robot) {
+    const RigidBodyTree<double> &robot) {
   if (robot.get_num_bodies() < 2) {
     throw std::logic_error("This class assumes at least one non-world body.");
   }
 
   // Checks the "root_body".
-  const RigidBody<double>& world = robot.get_body(0);
-  const RigidBody<double>& root_body = robot.get_body(1);
-  const DrakeJoint& root_joint = root_body.getJoint();
+  const RigidBody<double> &world = robot.get_body(0);
+  const RigidBody<double> &root_body = robot.get_body(1);
+  const DrakeJoint &root_joint = root_body.getJoint();
 
   DRAKE_DEMAND(root_body.has_parent_body());
 
@@ -338,7 +338,7 @@ RobotStateLcmMessageTranslator::CheckTreeIsRobotStateLcmTypeCompatible(
         root_body.get_velocity_start_index() != 0) {
       throw std::logic_error(
           "This class assumes that floating joint positions and velocities are "
-          "at the head of the generalized position and velocity vectors.");
+              "at the head of the generalized position and velocity vectors.");
     }
   }
 
@@ -352,15 +352,15 @@ RobotStateLcmMessageTranslator::CheckTreeIsRobotStateLcmTypeCompatible(
   if (!(floating_joint_found ^ fixed_base_found)) {
     throw std::logic_error(
         "The first body has to be attached to the world with either a fixed "
-        "joint or a floating joint.");
+            "joint or a floating joint.");
   }
 
   // Skip the "world" and the "root_body".
   for (int i = 2; i < robot.get_num_bodies(); ++i) {
-    const RigidBody<double>* body = robot.bodies[i].get();
+    const RigidBody<double> *body = robot.bodies[i].get();
     DRAKE_DEMAND(body->has_parent_body());
 
-    const auto& joint = body->getJoint();
+    const auto &joint = body->getJoint();
 
     if (joint.is_floating()) {
       if (fixed_base_found) {
@@ -376,7 +376,7 @@ RobotStateLcmMessageTranslator::CheckTreeIsRobotStateLcmTypeCompatible(
       if (joint.get_num_positions() > 1 || joint.get_num_velocities() > 1) {
         throw std::logic_error(
             "robot_state_t assumes non-floating joints to be "
-            "1-DoF or fixed.");
+                "1-DoF or fixed.");
       }
 
       if (joint.is_fixed()) {
@@ -392,7 +392,7 @@ RobotStateLcmMessageTranslator::CheckTreeIsRobotStateLcmTypeCompatible(
 }
 
 bool RobotStateLcmMessageTranslator::CheckMessageVectorSize(
-    const bot_core::robot_state_t& msg) {
+    const bot_core::robot_state_t &msg) {
   if (msg.num_joints < 0) return false;
   size_t size = static_cast<size_t>(msg.num_joints);
   if (size != msg.joint_name.size()) return false;
@@ -403,5 +403,6 @@ bool RobotStateLcmMessageTranslator::CheckMessageVectorSize(
   return true;
 }
 
+}  // namespace util
 }  // namespace manipulation
 }  // namespace drake

@@ -12,6 +12,7 @@
 
 namespace drake {
 namespace manipulation {
+namespace util {
 
 /**
  * This is a utility class for converting bot_core::robot_state_t message to
@@ -166,5 +167,6 @@ class RobotStateLcmMessageTranslator {
   std::unordered_map<std::string, int> joint_name_to_actuator_index_;
 };
 
+}  // namespace util
 }  // namespace manipulation
 }  // namespace drake

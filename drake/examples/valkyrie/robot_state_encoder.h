@@ -79,7 +79,7 @@ class RobotStateEncoder final : public LeafSystem<double> {
       const ContactResults<double>& contact_results,
       const RigidBody<double>& body1, const RigidBody<double>& body2) const;
 
-  const manipulation::RobotStateLcmMessageTranslator translator_;
+  const manipulation::util::RobotStateLcmMessageTranslator translator_;
 
   // Output port.
   const int lcm_message_port_index_;
