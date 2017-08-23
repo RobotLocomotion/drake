@@ -57,7 +57,7 @@ class ZeroOrderHold : public LeafSystem<T> {
 
  protected:
   // Override feedthrough detection to avoid the need for `DoToSymbolic()`.
-  bool DoHasDirectFeedthrough(const SparsityMatrix* sparsity,
+  bool DoHasDirectFeedthrough(const SymbolicSystemInspector* sparsity,
                               int input_port, int output_port) const override;
 
   // System<T> override.  Returns a ZeroOrderHold<symbolic::Expression> with
