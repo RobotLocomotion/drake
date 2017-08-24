@@ -139,6 +139,8 @@ drake_cc_googletest(
         ":multibody_tree",
         "//drake/multibody/benchmarks/acrobot",
     ],
+    # Presently times out in valgrind + debug with default size, "small".
+    size = "medium",
 )
 
 drake_cc_googletest(
