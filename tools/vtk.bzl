@@ -99,11 +99,11 @@ def _impl(repository_ctx):
         distro = " ".join(distro)
 
         if distro == "Ubuntu 14.04":
-            archive = "vtk-v8.0.0-qt-4.8.6-trusty-x86_64.tar.gz"
-            sha256 = "e5240b6fab2f5d7675d11b77d2014987c5337bb6276e38ab8299a1ab1fee5167"  # noqa
+            archive = "vtk-v8.0.0_1-qt-4.8.6-trusty-x86_64.tar.gz"
+            sha256 = "442930eb0593b26297ea45e86e165c260d9267b9ee1e740b51cc8492e6e77514"  # noqa
         elif distro == "Ubuntu 16.04":
-            archive = "vtk-v8.0.0-qt-5.5.1-xenial-x86_64.tar.gz"
-            sha256 = "455edf52f5d7c8d2e8ff6b1e909b6e7c44c61da7922bf8cbe7301a42e9539a3f"  # noqa
+            archive = "vtk-v8.0.0_1-qt-5.5.1-xenial-x86_64.tar.gz"
+            sha256 = "6835e1e408a4c25377843613e923e1ae1ab4a1619a76e58d65c7b55b3d3637d6"  # noqa
         else:
             fail("Linux distribution is NOT supported", attr = distro)
 
@@ -365,6 +365,11 @@ def _impl(repository_ctx):
         ],
     )
 
+    if repository_ctx.os.name == "linux" and distro == "Ubuntu 14.04":
+        VTKLZ4 = ":vtklz4"
+    else:
+        VTKLZ4 = "@liblz4"
+
     file_content += _vtk_cc_library(
         repository_ctx.os.name,
         "vtkIOCore",
@@ -375,7 +380,7 @@ def _impl(repository_ctx):
         deps = [
             ":vtkCommonCore",
             ":vtkCommonExecutionModel",
-            ":vtklz4",
+            VTKLZ4,
         ],
     )
 
@@ -386,9 +391,9 @@ def _impl(repository_ctx):
         deps = [
             ":vtkCommonCore",
             ":vtkCommonDataModel",
-            ":vtkexpat",
             ":vtkIOCore",
             ":vtksys",
+            "@expat",
         ],
     )
 
@@ -518,35 +523,9 @@ def _impl(repository_ctx):
             ":vtkCommonCore",
             ":vtkCommonDataModel",
             ":vtkRenderingCore",
-            ":vtkglew",
+            "@glew",
         ],
     )
-
-    # The packaged version of VTK (both Ubuntu and Mac) uses the system version
-    # of expat, and do not include `vtkexpat` as a shared library.
-    file_content += _vtk_cc_library(
-        repository_ctx.os.name,
-        "vtkexpat",
-        linkopts = [
-            "-lexpat",
-        ],
-        header_only = True,
-    )
-
-    if repository_ctx.os.name == "mac os x":
-        file_content += """
-cc_library(
-    name = "vtkglew",
-    srcs = ["empty.cc"],
-    linkopts = [
-        "-L/usr/local/opt/glew/lib",
-        "-lGLEW",
-    ],
-    visibility = ["//visibility:private"],
-)
-        """
-    else:
-        file_content += _vtk_cc_library(repository_ctx.os.name, "vtkglew")
 
     file_content += _vtk_cc_library(
         repository_ctx.os.name, "vtkkwiml",
@@ -559,19 +538,7 @@ cc_library(
         header_only = True,
     )
 
-    if repository_ctx.os.name == "mac os x":
-        file_content += """
-cc_library(
-    name = "vtklz4",
-    srcs = ["empty.cc"],
-    linkopts = [
-        "-L/usr/local/opt/lz4/lib",
-        "-llz4",
-    ],
-    visibility = ["//visibility:private"],
-)
-        """
-    else:
+    if repository_ctx.os.name == "linux" and distro == "Ubuntu 14.04":
         file_content += _vtk_cc_library(repository_ctx.os.name, "vtklz4")
 
     file_content += _vtk_cc_library(repository_ctx.os.name, "vtkmetaio",
