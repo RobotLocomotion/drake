@@ -253,6 +253,7 @@ test:tsan_everything --test_timeout=300,1500,5400,18000
 ### UBSan build. ###
 build:ubsan --copt -g
 build:ubsan --copt -fsanitize=undefined
+build:ubsan --copt -fno-sanitize=float-divide-by-zero
 build:ubsan --copt -O1
 build:ubsan --copt -fno-omit-frame-pointer
 build:ubsan --linkopt -fsanitize=undefined

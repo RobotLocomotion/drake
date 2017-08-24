@@ -12,6 +12,8 @@ class FramesVisualizer(object):
         self._folder_name = 'Frames'
         self._name = "Frame Visualizer"
         self._subscriber = None
+        # Link names that were previously published.
+        self._link_name_published = []
         self.set_enabled(True)
 
     def _add_subscriber(self):
@@ -41,11 +43,12 @@ class FramesVisualizer(object):
             self._remove_subscriber()
 
     def _handle_message(self, msg):
-        # Removes the folder completely. This is the clearest and easiest way
-        # of doing update. Otherwise we need to store the FrameItem returned
-        # by vis.showFrame, and update its transform. Also need to handle
-        # enable / disable.
-        om.removeFromObjectModel(om.findObjectByName(self._folder_name))
+        if set(self._link_name_published) != set(msg.link_name):
+            # Removes the folder completely.
+            # TODO(eric.cousineau): Consider only removing frames that are in
+            # the set difference.
+            om.removeFromObjectModel(om.findObjectByName(self._folder_name))
+            self._link_name_published = msg.link_name
 
         # Recreates folder.
         folder = om.getOrCreateContainer(self._folder_name)
@@ -54,7 +57,9 @@ class FramesVisualizer(object):
             name = msg.link_name[i]
             transform = transformUtils.transformFromPose(
                 msg.position[i], msg.quaternion[i])
-            vis.showFrame(transform, name, parent=folder, scale=0.1);
+            # `vis.updateFrame` will either create or update the frame
+            # according to its name within its parent folder.
+            vis.updateFrame(transform, name, parent=folder, scale=0.1);
 
 def init_visualizer():
     frame_viz = FramesVisualizer()
