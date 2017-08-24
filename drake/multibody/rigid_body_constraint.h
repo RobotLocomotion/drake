@@ -894,13 +894,13 @@ class MinDistanceConstraint : public SingleTimeKinematicConstraint {
 };
 
 /**
- * Constrain the points Q on a body to be within a bounding box specified in a
- * fixed frame F. Namely lb ≤ p_FQ ≤ ub
+ * Constrains the points Q on a body to be within a bounding box specified in a
+ * fixed frame F. Namely lb ≤ p_FQ ≤ ub.
  */
 class WorldPositionInFrameConstraint : public WorldPositionConstraint {
  public:
   /**
-   * Constrain the points Q on a body to be within a bounding box specified in
+   * Constrains the points Q on a body to be within a bounding box specified in
    * a fixed frame F.
    * @param model The kinematics model of the whole robot.
    * @param body The points Q are rigidly fixed to this body.
