@@ -11,13 +11,13 @@
 namespace drake {
 namespace systems {
 
-/// The SymbolicSystemInspector uses symbolic::Expressions to analyze various
+/// The SystemSymbolicInspector uses symbolic::Expressions to analyze various
 /// properties of the System, such as time invariance and input-to-output
 /// sparsity, along with many others.
 ///
-/// A SymbolicSystemInspector is only interesting if the Context contains purely
+/// A SystemSymbolicInspector is only interesting if the Context contains purely
 /// vector-valued elements. If any abstract-valued elements are present, the
-/// SymbolicSystemInspector will not be able to parse the governing equations
+/// SystemSymbolicInspector will not be able to parse the governing equations
 /// reliably.
 ///
 /// It would be possible to report system properties for a specific
@@ -26,23 +26,23 @@ namespace systems {
 /// themselves in the foot by accidentally overstating sparsity, for instance if
 /// a given input affects a given output in some modes, but not the mode tested.
 ///
-/// Even with that limitation on scope, SymbolicSystemInspector has risks, if
+/// Even with that limitation on scope, SystemSymbolicInspector has risks, if
 /// the System contains C++ native conditionals like "if" or "switch".
 /// symbolic::Expression does not provide an implicit conversion to `bool`, so
 /// it is unlikely that anyone will accidentally write a System that both uses
 /// native conditionals and compiles with a symbolic::Expression scalar type.
 /// However, it is possible, for instance using an explicit cast, or
 /// `std::equal_to`.
-class SymbolicSystemInspector {
+class SystemSymbolicInspector {
  public:
-  /// Constructs a SymbolicSystemInspector for the given @p system by
+  /// Constructs a SystemSymbolicInspector for the given @p system by
   /// initializing every vector-valued element in the Context with symbolic
   /// variables.
-  explicit SymbolicSystemInspector(const System<symbolic::Expression>& system);
+  explicit SystemSymbolicInspector(const System<symbolic::Expression>& system);
 
-  ~SymbolicSystemInspector() = default;
+  ~SystemSymbolicInspector() = default;
 
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SymbolicSystemInspector)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemSymbolicInspector)
 
   /// Returns true if the input port at the given @p input_port_index is or
   /// might possibly be a term in the output at the given @p output_port_index.

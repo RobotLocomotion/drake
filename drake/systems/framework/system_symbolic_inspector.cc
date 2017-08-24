@@ -1,4 +1,4 @@
-#include "drake/systems/framework/symbolic_system_inspector.h"
+#include "drake/systems/framework/system_symbolic_inspector.h"
 
 #include <sstream>
 
@@ -11,7 +11,7 @@ namespace systems {
 
 using symbolic::Expression;
 
-SymbolicSystemInspector::SymbolicSystemInspector(
+SystemSymbolicInspector::SystemSymbolicInspector(
     const System<symbolic::Expression>& system)
     : context_(system.CreateDefaultContext()),
       output_(system.AllocateOutput(*context_)),
@@ -59,7 +59,7 @@ SymbolicSystemInspector::SymbolicSystemInspector(
   }
 }
 
-void SymbolicSystemInspector::InitializeVectorInputs(
+void SystemSymbolicInspector::InitializeVectorInputs(
     const System<symbolic::Expression>& system) {
   // For each input vector i, set each element j to a symbolic expression whose
   // value is the variable "ui_j".
@@ -78,7 +78,7 @@ void SymbolicSystemInspector::InitializeVectorInputs(
   }
 }
 
-void SymbolicSystemInspector::InitializeContinuousState() {
+void SystemSymbolicInspector::InitializeContinuousState() {
   // Set each element i in the continuous state to a symbolic expression whose
   // value is the variable "xci".
   VectorBase<symbolic::Expression>& xc =
@@ -91,7 +91,7 @@ void SymbolicSystemInspector::InitializeContinuousState() {
   }
 }
 
-void SymbolicSystemInspector::InitializeDiscreteState() {
+void SystemSymbolicInspector::InitializeDiscreteState() {
   // For each discrete state vector i, set each element j to a symbolic
   // expression whose value is the variable "xdi_j".
   auto& xd = *context_->get_mutable_discrete_state();
@@ -107,7 +107,7 @@ void SymbolicSystemInspector::InitializeDiscreteState() {
   }
 }
 
-bool SymbolicSystemInspector::IsAbstract(
+bool SystemSymbolicInspector::IsAbstract(
     const System<symbolic::Expression>& system,
     const Context<symbolic::Expression>& context) {
   // If any of the input ports are abstract, we cannot do sparsity analysis of
@@ -129,7 +129,7 @@ bool SymbolicSystemInspector::IsAbstract(
   return false;
 }
 
-bool SymbolicSystemInspector::IsConnectedInputToOutput(
+bool SystemSymbolicInspector::IsConnectedInputToOutput(
     int input_port_index, int output_port_index) const {
   DRAKE_ASSERT(input_port_index >= 0 &&
                input_port_index < static_cast<int>(input_variables_.size()));
@@ -184,7 +184,7 @@ bool is_time_invariant(const VectorX<symbolic::Expression>& expressions,
 
 }  // namespace
 
-bool SymbolicSystemInspector::IsTimeInvariant() const {
+bool SystemSymbolicInspector::IsTimeInvariant() const {
   // Do not trust the parsing, so return the conservative answer.
   if (context_is_abstract_) {
     return false;
@@ -232,7 +232,7 @@ bool is_affine(const VectorX<symbolic::Expression>& expressions,
 
 }  // namespace
 
-bool SymbolicSystemInspector::HasAffineDynamics() const {
+bool SystemSymbolicInspector::HasAffineDynamics() const {
   // If the Context contains any abstract values, then I can't trust my parsing.
   if (context_is_abstract_) {
     return false;
