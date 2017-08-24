@@ -59,11 +59,11 @@ def _impl(repository_ctx):
         distro = " ".join(distro)
 
         if distro == "Ubuntu 14.04":
-            archive = "dv-0.1.0-173-g6e49220-qt-4.8.6-trusty-x86_64.tar.gz"
-            sha256 = "c227652e4c27e5bf6ab91b74e991299cd01f536aef762c19b9e2bccd08e03ff2"  # noqa
+            archive = "dv-0.1.0-173-g6e49220_1-qt-4.8.6-trusty-x86_64.tar.gz"
+            sha256 = "28bbaf42ff77a0ab0c55a9e690a931c390a528fdeb7b7509d59307f7ddc22f15"  # noqa
         elif distro == "Ubuntu 16.04":
-            archive = "dv-0.1.0-173-g6e49220-qt-5.5.1-xenial-x86_64.tar.gz"
-            sha256 = "157323d2f7a22ad488bfd75923612685c1d7cbf2b321c61155110ca19666dd85"  # noqa
+            archive = "dv-0.1.0-173-g6e49220_1-qt-5.5.1-xenial-x86_64.tar.gz"
+            sha256 = "e4be8380bf3dca177592267f922367575b5cef528a2949b26bf31b0d88354112"  # noqa
         else:
             fail("Linux distribution is NOT supported", attr = distro)
     else:
