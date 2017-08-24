@@ -3,13 +3,16 @@
 #include <memory>
 #include <tuple>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/multibody/multibody_tree/modeler/link.h"
-#include "drake/multibody/multibody_tree/modeler/link.h"
+#include "drake/multibody/multibody_tree/modeler/modeler_ids.h"
+//#include "drake/multibody/multibody_tree/modeler/link.h"
+#include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/systems/framework/context.h"
+#include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 
 namespace drake {
 namespace multibody {
@@ -21,20 +24,86 @@ class Link {
 
   Link();
 
+  void set_parent_modeler(const MultibodyModeler<T>*, LinkId id);
+
  private:
   std::string name_;
 };
 
 template <typename T>
-class RigidLink {
+class RigidLink : public Link<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Link)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RigidLink)
 
-  /// Creates a %Link with a LinkFrame associated with it.
   RigidLink();
 
  private:
   const Body<T>* body_;
+};
+
+template <typename T>
+class Joint {
+ public:
+  Joint(
+      const Link<T>& link1, const Isometry3<double> X_L1J1,
+      const Link<T>& link2, const Isometry3<double> X_L2J2) {}
+
+  void set_parent_modeler(const MultibodyModeler<T>*, JointId id);
+
+ private:
+  const MultibodyModeler<T>* parent_modeler_;
+  JointId id_;
+};
+
+template <typename T>
+class RevoluteJoint : public Joint<T> {
+ public:
+  RevoluteJoint(
+      const Link<T>& link1, const Link<T>& link2,
+      const Vector3<double>& axis_F) :
+      Joint(link1, link2), axis_F_(axis_F) {
+
+}
+
+  /// @retval axis_F The rotation axis as a unit vector expressed in the inboard
+  ///                frame F.
+  const Vector3<double>& get_revolute_axis() const {
+    return axis_F_;
+  }
+
+  /// Gets the rotation angle of `this` mobilizer from `context`. See class
+  /// documentation for sign convention.
+  /// @throws std::logic_error if `context` is not a valid
+  /// MultibodyTreeContext.
+  /// @param[in] context The context of the MultibodyTree this mobilizer
+  ///                    belongs to.
+  /// @returns The angle coordinate of `this` mobilizer in the `context`.
+  const T& get_angle(const systems::Context<T>& context) const {
+    GetMobilizerOrThrow().get_angle(context);
+  }
+
+  /// Sets the `context` so that the generalized coordinate corresponding to the
+  /// rotation angle of `this` mobilizer equals `angle`.
+  /// @throws std::logic_error if `context` is not a valid
+  /// MultibodyTreeContext.
+  /// @param[in] context The context of the MultibodyTree this mobilizer
+  ///                    belongs to.
+  /// @param[in] angle The desired angle in radians.
+  /// @returns a constant reference to `this` mobilizer.
+  const RevoluteMobilizer<T>& set_angle(
+      systems::Context<T>* context, const T& angle) const;
+
+ private:
+  const RevoluteMobilizer<T>& GetMobilizerOrThrow() const {
+    if(mobilizer_ == nullptr) {
+      throw std::logic_error(
+          "You must finalize your model before attempting this request");
+    }
+    return *mobilizer_;
+  }
+
+  const Vector3<double> axis_F_;
+  const RevoluteMobilizer<T>* mobilizer_{nullptr};
 };
 
 /// %MultibodyModeler provides a representation for a physical system consisting of
@@ -58,40 +127,6 @@ class MultibodyModeler {
 
   /// Creates a MultibodyModeler containing only a **world** body.
   MultibodyModeler();
-
-  template <template<typename Scalar> class BodyType>
-  const BodyType<T>& AddBody(std::unique_ptr<BodyType<T>> body) {
-    static_assert(std::is_convertible<BodyType<T>*, Body<T>*>::value,
-                  "BodyType must be a sub-class of Body<T>.");
-    if (topology_is_valid()) {
-      throw std::logic_error("This MultibodyModeler is finalized already. "
-                             "Therefore adding more bodies is not allowed. "
-                             "See documentation for Finalize() for details.");
-    }
-    if (body == nullptr) {
-      throw std::logic_error("Input body is a nullptr.");
-    }
-    BodyIndex body_index(0);
-    FrameIndex body_frame_index(0);
-    std::tie(body_index, body_frame_index) = topology_.add_body();
-    // These tests MUST be performed BEFORE frames_.push_back() and
-    // owned_bodies_.push_back() below. Do not move them around!
-    DRAKE_ASSERT(body_index == get_num_bodies());
-    DRAKE_ASSERT(body_frame_index == get_num_frames());
-
-    // TODO(amcastro-tri): consider not depending on setting this pointer at
-    // all. Consider also removing MultibodyModelerElement altogether.
-    body->set_parent_tree(this, body_index);
-    // MultibodyModeler can access selected private methods in Body through its
-    // BodyAttorney.
-    Frame<T>* body_frame =
-        &internal::BodyAttorney<T>::get_mutable_body_frame(body.get());
-    body_frame->set_parent_tree(this, body_frame_index);
-    frames_.push_back(body_frame);
-    BodyType<T>* raw_body_ptr = body.get();
-    owned_bodies_.push_back(std::move(body));
-    return *raw_body_ptr;
-  }
 
   /// Constructs a new body with type `BodyType` with the given `args`, and adds
   /// it to `this` %MultibodyModeler, which retains ownership. The `BodyType` will
@@ -125,106 +160,14 @@ class MultibodyModeler {
   /// @tparam BodyType A template for the type of Body to construct. The
   ///                  template will be specialized on the scalar type T of this
   ///                  %MultibodyModeler.
-  template<template<typename Scalar> class BodyType, typename... Args>
-  const BodyType<T>& AddBody(Args&&... args) {
-    static_assert(std::is_convertible<BodyType<T>*, Body<T>*>::value,
-                  "BodyType must be a sub-class of Body<T>.");
-    return AddBody(std::make_unique<BodyType<T>>(std::forward<Args>(args)...));
+  template<template<typename Scalar> class LinkType, typename... Args>
+  const LinkType<T>& AddLink(Args&&... args) {
+    static_assert(std::is_convertible<LinkType<T>*, Link<T>*>::value,
+                  "LinkType must be a sub-class of Link<T>.");
+    return AddLink(std::make_unique<LinkType<T>>(std::forward<Args>(args)...));
   }
 
-  /// Takes ownership of `frame` and adds it to `this` %MultibodyModeler. Returns
-  /// a constant reference to the frame just added, which will remain valid for
-  /// the lifetime of `this` %MultibodyModeler.
-  ///
-  /// Example of usage:
-  /// @code
-  ///   MultibodyModeler<T> model;
-  ///   // ... Define body and X_BF ...
-  ///   const FixedOffsetFrame<T>& frame =
-  ///       model.AddFrame(std::make_unique<FixedOffsetFrame<T>>(body, X_BF));
-  /// @endcode
-  ///
-  /// @throws std::logic_error if `frame` is a nullptr.
-  /// @throws std::logic_error if Finalize() was already called on `this` tree.
-  ///
-  /// @param[in] frame A unique pointer to a frame to be added to `this`
-  ///                  %MultibodyModeler. The frame class must be specialized on
-  ///                  the same scalar type T as this %MultibodyModeler.
-  /// @returns A constant reference of type `FrameType` to the created frame.
-  ///          This reference which will remain valid for the lifetime of `this`
-  ///          %MultibodyModeler.
-  ///
-  /// @tparam FrameType The type of the specific sub-class of Frame to add. The
-  ///                   template needs to be specialized on the same scalar type
-  ///                   T of this %MultibodyModeler.
-  template <template<typename Scalar> class FrameType>
-  const FrameType<T>& AddFrame(std::unique_ptr<FrameType<T>> frame) {
-    static_assert(std::is_convertible<FrameType<T>*, Frame<T>*>::value,
-                  "FrameType must be a sub-class of Frame<T>.");
-    if (topology_is_valid()) {
-      throw std::logic_error("This MultibodyModeler is finalized already. "
-                             "Therefore adding more frames is not allowed. "
-                             "See documentation for Finalize() for details.");
-    }
-    if (frame == nullptr) {
-      throw std::logic_error("Input frame is a nullptr.");
-    }
-    FrameIndex frame_index = topology_.add_frame(frame->get_body().get_index());
-    // This test MUST be performed BEFORE frames_.push_back() and
-    // owned_frames_.push_back() below. Do not move it around!
-    DRAKE_ASSERT(frame_index == get_num_frames());
-    // TODO(amcastro-tri): consider not depending on setting this pointer at
-    // all. Consider also removing MultibodyModelerElement altogether.
-    frame->set_parent_tree(this, frame_index);
-    FrameType<T>* raw_frame_ptr = frame.get();
-    frames_.push_back(raw_frame_ptr);
-    owned_frames_.push_back(std::move(frame));
-    return *raw_frame_ptr;
-  }
-
-  /// Constructs a new frame with type `FrameType` with the given `args`, and
-  /// adds it to `this` %MultibodyModeler, which retains ownership. The `FrameType`
-  /// will be specialized on the scalar type T of this %MultibodyModeler.
-  ///
-  /// Example of usage:
-  /// @code
-  ///   MultibodyModeler<T> model;
-  ///   // ... Define body and X_BF ...
-  ///   // Notice FixedOffsetFrame is a template an a scalar type.
-  ///   const FixedOffsetFrame<T>& frame =
-  ///       model.AddFrame<FixedOffsetFrame>(body, X_BF);
-  /// @endcode
-  ///
-  /// Note that for dependent names you must use the template keyword (say for
-  /// instance you have a MultibodyModeler<T> member within your custom class):
-  ///
-  /// @code
-  ///   MultibodyModeler<T> model;
-  ///   // ... Define body and X_BF ...
-  ///   const auto& frame =
-  ///       model.template AddFrame<FixedOffsetFrame>(body, X_BF);
-  /// @endcode
-  ///
-  /// @throws std::logic_error if Finalize() was already called on `this` tree.
-  ///
-  /// @param[in] args The arguments needed to construct a valid Frame of type
-  ///                 `FrameType`. `FrameType` must provide a public constructor
-  ///                 that takes these arguments.
-  /// @returns A constant reference of type `FrameType` to the created frame.
-  ///          This reference which will remain valid for the lifetime of `this`
-  ///          %MultibodyModeler.
-  ///
-  /// @tparam FrameType A template for the type of Frame to construct. The
-  ///                   template will be specialized on the scalar type T of
-  ///                   this %MultibodyModeler.
-  template<template<typename Scalar> class FrameType, typename... Args>
-  const FrameType<T>& AddFrame(Args&&... args) {
-    static_assert(std::is_convertible<FrameType<T>*, Frame<T>*>::value,
-                  "FrameType must be a sub-class of Frame<T>.");
-    return AddFrame(
-        std::make_unique<FrameType<T>>(std::forward<Args>(args)...));
-  }
-
+#if 0
   /// Takes ownership of `mobilizer` and adds it to `this` %MultibodyModeler.
   /// Returns a constant reference to the mobilizer just added, which will
   /// remain valid for the lifetime of `this` %MultibodyModeler.
@@ -347,83 +290,33 @@ class MultibodyModeler {
     return AddMobilizer(
         std::make_unique<MobilizerType<T>>(std::forward<Args>(args)...));
   }
-
+#endif
   /// @}
   // Closes Doxygen section.
 
-  /// Returns the number of Frame objects in the MultibodyModeler.
-  /// Frames include body frames associated with each of the bodies in
-  /// the %MultibodyModeler including the _world_ body. Therefore the minimum
-  /// number of frames in a %MultibodyModeler is one.
-  int get_num_frames() const {
-    return static_cast<int>(frames_.size());
+  int get_num_links() const {
+    return static_cast<int>(owned_links_.size());
   }
 
-  /// Returns the number of bodies in the %MultibodyModeler including the *world*
-  /// body. Therefore the minimum number of bodies in a MultibodyModeler is one.
-  int get_num_bodies() const { return static_cast<int>(owned_bodies_.size()); }
-
-  /// Returns the number of mobilizers in the %MultibodyModeler. Since the world
-  /// has no Mobilizer, the number of mobilizers equals the number of bodies
-  /// minus one, i.e. get_num_mobilizers() returns get_num_bodies() - 1.
-  // TODO(amcastro-tri): Consider adding a WorldMobilizer (0-dofs) for the world
-  // body. This could be useful to query for reaction forces of the entire
-  // model.
-  int get_num_mobilizers() const {
-    return static_cast<int>(owned_mobilizers_.size());
-  }
+  int get_num_joints() const;
 
   /// Returns the number of generalized positions of the model.
   int get_num_positions() const {
-    return topology_.get_num_positions();
+    if (multibody_tree_)
+      return multibody_tree_->get_num_positions();
+    else
+      return 0;
   }
 
   /// Returns the number of generalized velocities of the model.
   int get_num_velocities() const {
-    return topology_.get_num_velocities();
+    if (multibody_tree_)
+      return multibody_tree_->get_num_velocities();
+    else
+      return 0;
   }
 
-  /// Returns the height of the tree data structure of `this` %MultibodyModeler.
-  /// That is, the number of bodies in the longest kinematic path between the
-  /// world and any other leaf body. For a model that only contains the _world_
-  /// body, the height of the tree is one.
-  /// Kinematic paths are created by Mobilizer objects connecting a chain of
-  /// frames. Therefore, this method does not count kinematic cycles, which
-  /// could only be considered in the model using constraints.
-  int get_tree_height() const {
-    return topology_.get_tree_height();
-  }
-
-  /// Returns a constant reference to the *world* body.
-  const Body<T>& get_world_body() const {
-    return *owned_bodies_[world_index()];
-  }
-
-  /// Returns a constant reference to the *world* frame.
-  const BodyFrame<T>& get_world_frame() const {
-    return owned_bodies_[world_index()]->get_body_frame();
-  }
-
-  /// Returns a constant reference to the body with unique index `body_index`.
-  /// This method aborts in Debug builds when `body_index` does not correspond
-  /// to a body in this multibody tree.
-  const Body<T>& get_body(BodyIndex body_index) const {
-    DRAKE_ASSERT(body_index < get_num_bodies());
-    return *owned_bodies_[body_index];
-  }
-
-  /// Returns `true` if this %MultibodyModeler was finalized with Finalize() after
-  /// all multibody elements were added, and `false` otherwise.
-  /// When a %MultibodyModeler is instantiated, its topology remains invalid until
-  /// Finalize() is called, which validates the topology.
-  /// @see Finalize().
-  bool topology_is_valid() const { return topology_.is_valid(); }
-
-  /// Returns the topology information for this multibody tree. Users should not
-  /// need to call this method since MultibodyModelerTopology is an internal
-  /// bookkeeping detail. Used at Finalize() stage by multibody elements to
-  /// retrieve a local copy of their topology.
-  const MultibodyModelerTopology& get_topology() const { return topology_; }
+  bool is_finalized() const;
 
   /// This method must be called after all elements in the tree (joints, bodies,
   /// force elements, constraints) were added and before any computations are
@@ -463,209 +356,48 @@ class MultibodyModeler {
   /// Sets default values in the context. For mobilizers, this method sets them
   /// to their _zero_ configuration according to
   /// Mobilizer::set_zero_configuration().
-  void SetDefaults(systems::Context<T>* context) const;
-
-  /// Computes into the position kinematics `pc` all the kinematic quantities
-  /// that depend on the generalized positions only. These include:
-  /// - For each body B, the pose `X_BF` of each of the frames F attached to
-  ///   body B.
-  /// - Pose `X_WB` of each body B in the model as measured and expressed in
-  ///   the world frame W.
-  /// - Across-mobilizer Jacobian matrices `H_FM` and `H_PB_W`.
-  /// - Body specific quantities such as `com_W` and `M_Bo_W`.
-  ///
-  /// @throws std::bad_cast if `context` is not a `MultibodyModelerContext`.
-  /// Aborts if `pc` is the nullptr.
-  void CalcPositionKinematicsCache(
-      const systems::Context<T>& context,
-      PositionKinematicsCache<T>* pc) const;
-
-  /// Computes all the kinematic quantities that depend on the generalized
-  /// velocities and stores them in the velocity kinematics cache `vc`.
-  /// These include:
-  /// - Spatial velocity `V_WB` for each body B in the model as measured and
-  ///   expressed in the world frame W.
-  /// - Spatial velocity `V_PB` for each body B in the model as measured and
-  ///   expressed in the inboard (or parent) body frame P.
-  ///
-  /// @pre The position kinematics `pc` must have been previously updated with a
-  /// call to CalcPositionKinematicsCache().
-  ///
-  /// @throws std::bad_cast if `context` is not a `MultibodyModelerContext`.
-  /// Aborts if `vc` is the nullptr.
-  void CalcVelocityKinematicsCache(
-      const systems::Context<T>& context,
-      const PositionKinematicsCache<T>& pc,
-      VelocityKinematicsCache<T>* vc) const;
-
-  /// Computes all the kinematic quantities that depend on the generalized
-  /// accelerations that is, the generalized velocities' time derivatives, and
-  /// stores them in the acceleration kinematics cache `ac`.
-  /// These include:
-  /// - Spatial acceleration `A_WB` for each body B in the model as measured and
-  ///   expressed in the world frame W.
-  ///
-  /// @param[in] context
-  ///   The context containing the state of the %MultibodyModeler model.
-  /// @param[in] pc
-  ///   A position kinematics cache object already updated to be in sync with
-  ///   `context`.
-  /// @param[in] vc
-  ///   A velocity kinematics cache object already updated to be in sync with
-  ///   `context`.
-  /// @param[in] known_vdot
-  ///   A vector with the generalized accelerations for the full %MultibodyModeler
-  ///   model.
-  /// @param[out] ac
-  ///   A pointer to a valid, non nullptr, acceleration kinematics cache. This
-  ///   method aborts if `ac` is the nullptr.
-  ///
-  /// @pre The position kinematics `pc` must have been previously updated with a
-  /// call to CalcPositionKinematicsCache().
-  /// @pre The velocity kinematics `vc` must have been previously updated with a
-  /// call to CalcVelocityKinematicsCache().
-  ///
-  /// @throws std::bad_cast if `context` is not a `MultibodyModelerContext`.
-  void CalcAccelerationKinematicsCache(
-      const systems::Context<T>& context,
-      const PositionKinematicsCache<T>& pc,
-      const VelocityKinematicsCache<T>& vc,
-      const VectorX<T>& known_vdot,
-      AccelerationKinematicsCache<T>* ac) const;
-
-  /// Given the state of `this` %MultibodyModeler in `context` and a known vector
-  /// of generalized accelerations `known_vdot`, this method computes the
-  /// spatial acceleration `A_WB` for each body as measured and expressed in the
-  /// world frame W.
-  ///
-  /// @param[in] context
-  ///   The context containing the state of the %MultibodyModeler model.
-  /// @param[in] pc
-  ///   A position kinematics cache object already updated to be in sync with
-  ///   `context`.
-  /// @param[in] vc
-  ///   A velocity kinematics cache object already updated to be in sync with
-  ///   `context`.
-  /// @param[in] known_vdot
-  ///   A vector with the generalized accelerations for the full %MultibodyModeler
-  ///   model.
-  /// @param[out] A_WB_array
-  ///   A pointer to a valid, non nullptr, vector of spatial accelerations
-  ///   containing the spatial acceleration `A_WB` for each body. It must be of
-  ///   size equal to the number of bodies in the MultibodyModeler. This method
-  ///   will abort if the the pointer is null or if `A_WB_array` is not of size
-  ///   `get_num_bodies()`. On output, entries will be ordered by BodyNodeIndex.
-  ///   These accelerations can be read in the proper order with
-  ///   Body::get_from_spatial_acceleration_array().
-  ///
-  /// @pre The position kinematics `pc` must have been previously updated with a
-  /// call to CalcPositionKinematicsCache().
-  /// @pre The velocity kinematics `vc` must have been previously updated with a
-  /// call to CalcVelocityKinematicsCache().
-  ///
-  /// @throws std::bad_cast if `context` is not a `MultibodyModelerContext`.
-  void CalcSpatialAccelerationsFromVdot(
-      const systems::Context<T>& context,
-      const PositionKinematicsCache<T>& pc,
-      const VelocityKinematicsCache<T>& vc,
-      const VectorX<T>& known_vdot,
-      std::vector<SpatialAcceleration<T>>* A_WB_array) const;
-
-  /// Given the state of `this` %MultibodyModeler in `context` and a known vector
-  /// of generalized accelerations `vdot`, this method computes the
-  /// set of generalized forces `tau` that would need to be applied at each
-  /// Mobilizer in order to attain the specified generalized accelerations.
-  /// Mathematically, this method computes: <pre>
-  ///   tau = M(q) * vdot + C(q, v) * v
-  /// </pre>
-  /// where `M(q)` is the %MultibodyModeler mass matrix and `C(q, v) * v` is the
-  /// bias term containing Coriolis and gyroscopic effects.
-  /// This method does not compute explicit expressions for the mass matrix nor
-  /// for the bias term, which would be of at least `O(n²)` complexity, but it
-  /// implements an `O(n)` Newton-Euler recursive algorithm, where n is the
-  /// number of bodies in the %MultibodyModeler. The explicit formation of the
-  /// mass matrix `M(q)` would require the calculation of `O(n²)` entries while
-  /// explicitly forming the product `C(q, v) * v` could require up to `O(n³)`
-  /// operations (see [Featherstone 1987, §4]), depending on the implementation.
-  /// The recursive Newton-Euler algorithm is the most efficient currently known
-  /// general method for solving inverse dynamics [Featherstone 2008].
-  ///
-  /// @param[in] context
-  ///   The context containing the state of the %MultibodyModeler model.
-  /// @param[in] pc
-  ///   A position kinematics cache object already updated to be in sync with
-  ///   `context`.
-  /// @param[in] vc
-  ///   A velocity kinematics cache object already updated to be in sync with
-  ///   `context`.
-  /// @param[in] known_vdot
-  ///   A vector with the known generalized accelerations `vdot` for the full
-  ///   %MultibodyModeler model. Use Mobilizer::get_velocities_from_array() to
-  ///   access entries into this array for a particular Mobilizer. You can use
-  ///   the mutable version of this method to write into this array.
-  /// @param[out] A_WB_array
-  ///   A pointer to a valid, non nullptr, vector of spatial accelerations
-  ///   containing the spatial acceleration `A_WB` for each body. It must be of
-  ///   size equal to the number of bodies. This method will abort if the the
-  ///   pointer is null or if `A_WB_array` is not of size `get_num_bodies()`.
-  ///   On output, entries will be ordered by BodyNodeIndex.
-  ///   To access the acceleration `A_WB` of given body B in this array, use the
-  ///   index returned by Body::get_node_index().
-  /// @param[out] F_BMo_W_array
-  ///   A pointer to a valid, non nullptr, vector of spatial forces
-  ///   containing, for each body B, the spatial force `F_BMo_W` corresponding
-  ///   to its inboard mobilizer reaction forces on body B applied at the origin
-  ///   `Mo` of the inboard mobilizer, expressed in the world frame W.
-  ///   It must be of size equal to the number of bodies in the MultibodyModeler.
-  ///   This method will abort if the the pointer is null or if `F_BMo_W_array`
-  ///   is not of size `get_num_bodies()`.
-  ///   On output, entries will be ordered by BodyNodeIndex.
-  ///   To access a mobilizer's reaction force on given body B in this array,
-  ///   use the index returned by Body::get_node_index().
-  ///
-  /// @note There is no mechanism to assert that either `A_WB_array` nor
-  ///   `F_BMo_W_array` are ordered by BodyNodeIndex.
-  ///
-  /// @pre The position kinematics `pc` must have been previously updated with a
-  /// call to CalcPositionKinematicsCache().
-  /// @pre The velocity kinematics `vc` must have been previously updated with a
-  /// call to CalcVelocityKinematicsCache().
-  ///
-  /// @throws std::bad_cast if `context` is not a `MultibodyModelerContext`.
-  // TODO(amcastro-tri): add provision for an array of applied spatial forces
-  // per body. These could contain both external as well as constraint forces.
-  void CalcInverseDynamics(
-      const systems::Context<T>& context,
-      const PositionKinematicsCache<T>& pc,
-      const VelocityKinematicsCache<T>& vc,
-      const VectorX<T>& known_vdot,
-      std::vector<SpatialAcceleration<T>>* A_WB_array,
-      std::vector<SpatialForce<T>>* F_BMo_W_array,
-      VectorX<T>* tau_array) const;
+  void SetZeroConfiguration(systems::Context<T>* context) const;
 
  private:
-  void CreateBodyNode(BodyNodeIndex body_node_index);
+  template <template<typename Scalar> class LinkType>
+  const LinkType<T>& AddLink(std::unique_ptr<LinkType<T>> link) {
+    static_assert(std::is_convertible<LinkType<T>*, Link<T>*>::value,
+                  "LinkType must be a sub-class of Link<T>.");
+    is_finalized_ = false;
 
-  // TODO(amcastro-tri): In future PR's adding MBT computational methods, write
-  // a method that verifies the state of the topology with a signature similar
-  // to RoadGeometry::CheckInvariants().
+    if (link == nullptr) {
+      throw std::logic_error("Input link is a nullptr.");
+    }
 
-  std::vector<std::unique_ptr<Body<T>>> owned_bodies_;
-  std::vector<std::unique_ptr<Frame<T>>> owned_frames_;
-  std::vector<std::unique_ptr<Mobilizer<T>>> owned_mobilizers_;
-  std::vector<std::unique_ptr<internal::BodyNode<T>>> body_nodes_;
+    LinkId link_id = LinkId::get_new_id();
+    link->set_parent_modeler(this, link_id);
+    const LinkType* raw_link_ptr = link.get();
+    owned_links_[link_id] = std::move(link);
+    return *raw_link_ptr;
+  }
 
-  // List of all frames in the system ordered by their FrameIndex.
-  // This vector contains a pointer to all frames in owned_frames_ as well as a
-  // pointer to each BodyFrame, which are owned by their corresponding Body.
-  std::vector<const Frame<T>*> frames_;
+  // The modeler owns the underlying MultibodyTree. The tree model can be reset
+  // if the modeler changes and needs to be re-finalized.
+  std::unique_ptr<MultibodyTree<T>> multibody_tree_;
 
-  // Body node indexes ordered by level (a.k.a depth). Therefore for the
-  // i-th level body_node_levels_[i] contains the list of all body node indexes
-  // in that level.
-  std::vector<std::vector<BodyNodeIndex>> body_node_levels_;
+  // List of links owned by the modeler accessed by their id.
+  std::unordered_map<LinkId, std::unique_ptr<Link<T>>> owned_links_;
 
-  MultibodyModelerTopology topology_;
+  // Set of Body objects in the MultibodyTree forming each Link model.
+  // Each Link could be modeled by multiple "ghost" bodies.
+  std::unordered_map<LinkId, std::unordered_set<BodyIndex>>
+      link_id_to_body_index_map_;
+
+  // This *implicitly* maps the index of each body in the MultibodyTree engine
+  // to its corresponding unique link identifier in the modeler.
+  // It assumes that the index in this vector *is* the index in the underlying
+  // MultibodyTree.
+  // The following invariants should always be true:
+  //   1. body_index_to_link_id_map_.size() ==
+  //      multibody_tree_->get_num_bodies().
+  std::vector<LinkId> body_index_to_link_id_map_;
+
+  bool is_finalized_{false};
 };
 
 }  // namespace multibody
