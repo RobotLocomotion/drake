@@ -214,12 +214,12 @@ GTEST_TEST(KukaIIwaRobot, TorqueMotorA) {
   // Note: The expected solution is specific to this straight-up configuration
   // (with all joint-angles equal to 0).  The expected solution was calculated
   // with a visual of the straight-up configuration and a "back-of-the-envelope"
-  // analysis.  The values 0.0003 and 0.0001 (below) are x values of the center
-  // of masses of links B and E, respectively.  The x-values of the center of
-  // masses of links A, C, D, F, G are all 0.  These x-values are from:
+  // analysis.  The values 0.0003 and 0.0001 (below) are x values (in meters) of
+  // the center of masses of links B and E, respectively.  The x-values of the
+  // center of masses of links A, C, D, F, G are all 0.  All x-values are from:
   // drake/multibody/benchmarks/kuka_iiwa_robot/kuka_iiwa_robot-urdf.
-  const double mB = MG_kuka_robot.get_mass_link_B();
-  const double mE = MG_kuka_robot.get_mass_link_E();
+  const double mB = MG_kuka_robot.get_mass_of_link_B();
+  const double mE = MG_kuka_robot.get_mass_of_link_E();
   const double gravity_moment_B =  0.0003 * mB * g;
   const double gravity_moment_E =  0.0001 * mE * g;
   const double gravity_moment_sum = gravity_moment_B + gravity_moment_E;

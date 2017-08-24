@@ -155,20 +155,23 @@ class MGKukaIIwaRobot {
 
   /// This method sets Earth's uniform gravitational acceleration ("little g")
   /// for the class member MG_kuka_auto_generated.  At construction, little g
-  /// is initialized to 0.0 m/s^2 (not 9.81 m/s^2).
+  /// is initialized to 0.0 m/s² (not 9.81 m/s²).  As mentioned above, right-
+  /// handed orthogonal unit vectors Nx, Ny, Nz are fixed in N (e.g., Earth)
+  /// with Nz vertically upward.  Hence gravity acts in the -Nz direction.
   ///
-  /// @param[in] g Celestial body's gravitational acceleration in m/s^2.
+  /// @param[in] g Earth (or celestial body) gravitational acceleration in m/s².
   void set_surface_gravity(double g) { MG_kuka_auto_generated_.g = g; }
 
-  /// These methods return the mass of links A, B, ... G in the robot.
-  /// @retval mass of link in kilograms.
-  double get_mass_link_A() const  { return MG_kuka_auto_generated_.mA; }
-  double get_mass_link_B() const  { return MG_kuka_auto_generated_.mB; }
-  double get_mass_link_C() const  { return MG_kuka_auto_generated_.mC; }
-  double get_mass_link_D() const  { return MG_kuka_auto_generated_.mD; }
-  double get_mass_link_E() const  { return MG_kuka_auto_generated_.mE; }
-  double get_mass_link_F() const  { return MG_kuka_auto_generated_.mF; }
-  double get_mass_link_G() const  { return MG_kuka_auto_generated_.mG; }
+  /// These methods return the mass of links A, B, ... G in the robot that was
+  /// set for the class member MG_kuka_auto_generated.
+  /// @retval mass of one of the robot's rigid bodies (link) in kilograms.
+  double get_mass_of_link_A() const  { return MG_kuka_auto_generated_.mA; }
+  double get_mass_of_link_B() const  { return MG_kuka_auto_generated_.mB; }
+  double get_mass_of_link_C() const  { return MG_kuka_auto_generated_.mC; }
+  double get_mass_of_link_D() const  { return MG_kuka_auto_generated_.mD; }
+  double get_mass_of_link_E() const  { return MG_kuka_auto_generated_.mE; }
+  double get_mass_of_link_F() const  { return MG_kuka_auto_generated_.mF; }
+  double get_mass_of_link_G() const  { return MG_kuka_auto_generated_.mG; }
 
  private:
   // This method calculates all the output quantities designated by the
