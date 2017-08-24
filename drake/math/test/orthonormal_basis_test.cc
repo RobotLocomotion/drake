@@ -60,14 +60,14 @@ GTEST_TEST(OrthnormalBasisTest, ZAxis) {
 // Tests that CalcOrthonormalBasis() computes the correct result for input
 // of a vector with equal components in all directions.
 GTEST_TEST(OrthnormalBasisTest, EqualComponents) {
-  Vec3d v(1,1,1);
+  Vec3d v(1, 1, 1);
   Vec3d v1, v2;
   CalcOrthonormalBasis(&v, &v1, &v2);
 }
 
 // Tests CalcOrthonormalBasis() exception handling.
 GTEST_TEST(OrthnormalBasisTest, Exceptions) {
-  Vec3d zero(0,0,0);
+  Vec3d zero(0, 0, 0);
   Vec3d xaxis = Vec3d::UnitX();
   Vec3d v1, v2;
   Vec3d* null = nullptr;
@@ -78,7 +78,7 @@ GTEST_TEST(OrthnormalBasisTest, Exceptions) {
 
 // Tests ComputeBasisFromX() produces a right-handed orthogonal matrix.
 GTEST_TEST(ComputeBasisFromXTest, RightHandOrthogonal) {
-  Vec3d v(1,1,1);
+  Vec3d v(1, 1, 1);
   EXPECT_THROW(ComputeBasisFromX(v), std::logic_error);
   v.normalize();
   Matrix3<double> R = ComputeBasisFromX(v);
@@ -87,7 +87,7 @@ GTEST_TEST(ComputeBasisFromXTest, RightHandOrthogonal) {
 
 // Tests ComputeBasisFromY() produces a right-handed orthogonal matrix.
 GTEST_TEST(ComputeBasisFromYTest, RightHandOrthogonal) {
-  Vec3d v(1,1,1);
+  Vec3d v(1, 1, 1);
   EXPECT_THROW(ComputeBasisFromY(v), std::logic_error);
   v.normalize();
   Matrix3<double> R = ComputeBasisFromY(v);
@@ -96,7 +96,7 @@ GTEST_TEST(ComputeBasisFromYTest, RightHandOrthogonal) {
 
 // Tests ComputeBasisFromZ() produces a right-handed orthogonal matrix.
 GTEST_TEST(ComputeBasisFromZTest, RightHandOrthogonal) {
-  Vec3d v(1,1,1);
+  Vec3d v(1, 1, 1);
   EXPECT_THROW(ComputeBasisFromY(v), std::logic_error);
   v.normalize();
   Matrix3<double> R = ComputeBasisFromZ(v);

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <limits>
+
 #include "drake/common/eigen_types.h"
 
 namespace drake {
