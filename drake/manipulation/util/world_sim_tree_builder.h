@@ -103,6 +103,13 @@ class WorldSimTreeBuilder {
     return *rigid_body_tree_;
   }
 
+  /// Return the (not yet built) mutable tree. Build() must not have been
+  /// called yet.
+  RigidBodyTree<T>& mutable_tree() {
+    DRAKE_DEMAND(built_ == false && rigid_body_tree_ != nullptr);
+    return *rigid_body_tree_;
+  }
+
   ModelInstanceInfo<T> get_model_info_for_instance(int id) {
     return instance_id_to_model_info_.at(id);
   }

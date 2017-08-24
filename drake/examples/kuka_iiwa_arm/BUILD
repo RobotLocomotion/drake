@@ -156,6 +156,27 @@ drake_cc_binary(
     ],
 )
 
+# This is tested by usage in monolithic_pick_and_place_demo.
+drake_cc_library(
+    name = "iiwa_camera",
+    srcs = ["iiwa_camera.cc"],
+    hdrs = ["iiwa_camera.h"],
+    data = [
+        ":models",
+    ],
+    deps = [
+        "//drake/common",
+        "//drake/lcm",
+        "//drake/manipulation/util:world_sim_tree_builder",
+        "//drake/multibody/rigid_body_plant",
+        "//drake/multibody/rigid_body_plant:frame_visualizer",
+        "//drake/systems/framework:diagram_builder",
+        "//drake/systems/primitives",
+        "//drake/systems/sensors:image_to_lcm_image_array_t",
+        "//drake/systems/sensors:rgbd_camera",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(

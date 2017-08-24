@@ -9,6 +9,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/text_logging_gflags.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/state_machine_system.h"
+#include "drake/examples/kuka_iiwa_arm/iiwa_camera.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_wsg_diagram_factory.h"
 #include "drake/lcm/drake_lcm.h"
@@ -40,6 +41,7 @@ DEFINE_double(realtime_rate, 0.0, "Rate at which to run the simulation, "
     "relative to realtime");
 DEFINE_bool(quick, false, "Run only a brief simulation and return success "
     "without executing the entire task");
+DEFINE_bool(with_camera, false, "Attach an Asus Xtion to the gripper.");
 
 using robotlocomotion::robot_plan_t;
 
@@ -103,7 +105,8 @@ std::unique_ptr<systems::RigidBodyPlant<double>> BuildCombinedPlant(
     const Eigen::Vector3d& box_orientation,
     ModelInstanceInfo<double>* iiwa_instance,
     ModelInstanceInfo<double>* wsg_instance,
-    ModelInstanceInfo<double>* box_instance) {
+    ModelInstanceInfo<double>* box_instance,
+    IiwaCamera** pcamera = nullptr) {
   auto tree_builder = std::make_unique<WorldSimTreeBuilder<double>>();
 
   // Adds models to the simulation builder. Instances of these models can be
@@ -149,10 +152,13 @@ std::unique_ptr<systems::RigidBodyPlant<double>> BuildCombinedPlant(
       drake::multibody::joints::kFixed);
   *wsg_instance = tree_builder->get_model_info_for_instance(wsg_id);
 
+  if (pcamera) {
+    *pcamera = new IiwaCamera(tree_builder.get(), wsg_id);
+  }
+
   return std::make_unique<systems::RigidBodyPlant<double>>(
       tree_builder->Build());
 }
-
 
 int DoMain(void) {
   // Locations for the posts from physical pick and place tests with
@@ -223,6 +229,8 @@ int DoMain(void) {
   systems::DiagramBuilder<double> builder;
   ModelInstanceInfo<double> iiwa_instance, wsg_instance, box_instance;
 
+  IiwaCamera* camera = nullptr;
+
   // Offset from the center of the second table to the pick/place
   // location on the table.
   const Eigen::Vector3d table_offset(0.30, 0, 0);
@@ -230,7 +238,8 @@ int DoMain(void) {
       BuildCombinedPlant(post_locations, table_position + table_offset,
                          target.model_name,
                          box_origin, Vector3<double>(0, 0, FLAGS_orientation),
-                         &iiwa_instance, &wsg_instance, &box_instance);
+                         &iiwa_instance, &wsg_instance, &box_instance,
+                         FLAGS_with_camera ? &camera : nullptr);
 
   auto plant = builder.AddSystem<IiwaAndWsgPlantWithStateEstimator<double>>(
       std::move(model_ptr), iiwa_instance, wsg_instance, box_instance);
@@ -304,6 +313,15 @@ int DoMain(void) {
                   wsg_controller->get_command_input_port());
   builder.Connect(state_machine->get_output_port_iiwa_plan(),
                   iiwa_trajectory_generator->get_plan_input_port());
+
+  // Add camera if enabled.
+  if (camera) {
+    camera->Build(&lcm, true, true);
+    builder.AddSystem(std::unique_ptr<IiwaCamera>(camera));
+    builder.Connect(
+        plant->get_output_port_plant_state(),
+        camera->get_input_port_state());
+  }
 
   auto sys = builder.Build();
   Simulator<double> simulator(*sys);
