@@ -113,5 +113,8 @@
       "Location": "@prefix@/share/java/lcmtypes_drake.jar",
       "Requires": ["lcm:lcm-java"]
     }
+  },
+  "X-CMake-Variables": {
+    "drake_RESOURCE_ROOT": "${CMAKE_CURRENT_LIST_DIR}/../../../share/drake"
   }
 }
