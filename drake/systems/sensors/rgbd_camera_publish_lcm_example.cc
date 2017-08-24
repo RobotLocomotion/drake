@@ -1,3 +1,4 @@
+#include <memory>
 #include <string>
 
 #include <gflags/gflags.h>
@@ -39,8 +40,7 @@ DEFINE_double(duration, 5., "Total duration of the simulation in secondes.");
 DEFINE_string(sdf, "", "The filename for SDF.");
 DEFINE_validator(sdf, &ValidateSdf);
 
-constexpr double kCameraPosePublishPeriod{0.01};
-constexpr double kImageArrayPublishPeriod{0.01};
+constexpr double kCameraUpdatePeriod{0.01};
 
 constexpr char kCameraBaseFrameName[] = "camera_base_frame";
 constexpr char kColorCameraFrameName[] = "color_camera_optical_frame";
@@ -67,10 +67,12 @@ int main() {
 
   // Adds an RgbdCamera at a fixed pose.
   auto rgbd_camera =
-      builder.template AddSystem<RgbdCamera>(
-          "rgbd_camera", plant->get_rigid_body_tree(),
-          Eigen::Vector3d(-1., 0., 1.),
-          Eigen::Vector3d(0., M_PI_4, 0.), M_PI_4, true);
+      builder.template AddSystem<RgbdCameraDiscrete>(
+          std::make_unique<RgbdCamera>(
+              "rgbd_camera", plant->get_rigid_body_tree(),
+              Eigen::Vector3d(-1., 0., 1.),
+              Eigen::Vector3d(0., M_PI_4, 0.), M_PI_4, true),
+          kCameraUpdatePeriod);
 
   auto image_to_lcm_image_array =
       builder.template AddSystem<ImageToLcmImageArrayT>(
@@ -82,13 +84,13 @@ int main() {
       lcm::LcmPublisherSystem::Make<robotlocomotion::image_array_t>(
           kImageArrayLcmChannelName, &lcm));
   image_array_lcm_publisher->set_name("publisher");
-  image_array_lcm_publisher->set_publish_period(kImageArrayPublishPeriod);
+  image_array_lcm_publisher->set_publish_period(kCameraUpdatePeriod);
 
   rendering::PoseStampedTPoseVectorTranslator translator(kCameraBaseFrameName);
   auto pose_lcm_publisher = builder.template AddSystem<lcm::LcmPublisherSystem>(
       kPoseLcmChannelName, translator, &lcm);
   pose_lcm_publisher->set_name("pose_lcm_publisher");
-  pose_lcm_publisher->set_publish_period(kCameraPosePublishPeriod);
+  pose_lcm_publisher->set_publish_period(kCameraUpdatePeriod);
 
   builder.Connect(
       plant->get_output_port(0),

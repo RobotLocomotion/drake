@@ -170,6 +170,8 @@ drake_cc_library(
         "//drake/multibody:rigid_body_frame",
         "//drake/multibody:rigid_body_tree",
         "//drake/systems/framework",
+        "//drake/systems/framework:diagram_builder",
+        "//drake/systems/primitives",
         "//drake/systems/rendering:pose_vector",
         "@eigen",
         "@vtk//:vtkCommonCore",
@@ -184,6 +186,8 @@ drake_cc_library(
     ],
 )
 
+# TODO(eric.cousineau): Add sh_test (similar to KUKA IIWA demo) to run this
+# in CI.
 drake_cc_binary(
     name = "rgbd_camera_publish_lcm_example",
     srcs = [
@@ -202,6 +206,20 @@ drake_cc_binary(
         "//drake/systems/lcm",
         "//drake/systems/rendering:pose_stamped_t_pose_vector_translator",
         "@com_github_gflags_gflags//:gflags",
+    ],
+)
+
+sh_test(
+    name = "rgbd_camera_publish_lcm_test",
+    srcs = ["rgbd_camera_publish_lcm_example"],
+    args = [
+        # TODO(eric.cousineau): Find skylark rule that can resolve
+        # "test/models/sphere.sdf" to the path below.
+        "--sdf=drake/systems/sensors/test/models/sphere.sdf",
+        "--duration=0.1",
+    ],
+    data = [
+        ":test_models",
     ],
 )
 
@@ -323,10 +341,10 @@ drake_cc_googletest(
     ],
 )
 
-# TODO(jamiesnape): Remove the manual tag when Xvfb is available on CI.
-drake_cc_googletest(
-    name = "rgbd_camera_test",
-    data = [
+filegroup(
+    name = "test_models",
+    testonly = 1,
+    srcs = glob([
         "test/models/box.sdf",
         "test/models/cylinder.sdf",
         "test/models/mesh_box.sdf",
@@ -336,6 +354,15 @@ drake_cc_googletest(
         "test/models/nothing.sdf",
         "test/models/sphere.sdf",
         "test/models/three_boxes.sdf",
+    ]),
+    visibility = ["//visibility:private"],
+)
+
+# TODO(jamiesnape): Remove the manual tag when Xvfb is available on CI.
+drake_cc_googletest(
+    name = "rgbd_camera_test",
+    data = [
+        ":test_models",
     ],
     tags = ["manual"],
     deps = [
