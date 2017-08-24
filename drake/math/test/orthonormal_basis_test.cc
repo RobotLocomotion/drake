@@ -76,6 +76,33 @@ GTEST_TEST(OrthnormalBasisTest, Exceptions) {
   EXPECT_THROW(CalcOrthonormalBasis(&xaxis, &v1, null), std::logic_error);
 }
 
+// Tests ComputeBasisFromX() produces a right-handed orthogonal matrix.
+GTEST_TEST(ComputeBasisFromXTest, RightHandOrthogonal) {
+  Vec3d v(1,1,1);
+  EXPECT_THROW(ComputeBasisFromX(v), std::logic_error);
+  v.normalize();
+  Matrix3<double> R = ComputeBasisFromX(v);
+  EXPECT_NEAR(R.determinant(), 1.0, std::numeric_limits<double>::epsilon());
+}
+
+// Tests ComputeBasisFromY() produces a right-handed orthogonal matrix.
+GTEST_TEST(ComputeBasisFromYTest, RightHandOrthogonal) {
+  Vec3d v(1,1,1);
+  EXPECT_THROW(ComputeBasisFromY(v), std::logic_error);
+  v.normalize();
+  Matrix3<double> R = ComputeBasisFromY(v);
+  EXPECT_NEAR(R.determinant(), 1.0, std::numeric_limits<double>::epsilon());
+}
+
+// Tests ComputeBasisFromZ() produces a right-handed orthogonal matrix.
+GTEST_TEST(ComputeBasisFromZTest, RightHandOrthogonal) {
+  Vec3d v(1,1,1);
+  EXPECT_THROW(ComputeBasisFromY(v), std::logic_error);
+  v.normalize();
+  Matrix3<double> R = ComputeBasisFromZ(v);
+  EXPECT_NEAR(R.determinant(), 1.0, std::numeric_limits<double>::epsilon());
+}
+
 }  // namespace
 }  // namespace math
 }  // namespace drake
