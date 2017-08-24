@@ -25,9 +25,9 @@
 #include "drake/systems/framework/leaf_output_port.h"
 #include "drake/systems/framework/model_values.h"
 #include "drake/systems/framework/output_port_value.h"
-#include "drake/systems/framework/symbolic_system_inspector.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_scalar_converter.h"
+#include "drake/systems/framework/system_symbolic_inspector.h"
 #include "drake/systems/framework/value.h"
 #include "drake/systems/framework/value_checker.h"
 
@@ -199,7 +199,7 @@ class LeafSystem : public System<T> {
   }
 
   std::multimap<int, int> GetDirectFeedthroughs() const final {
-    auto sparsity = MakeSymbolicSystemInspector();
+    auto sparsity = MakeSystemSymbolicInspector();
     std::multimap<int, int> pairs;
     for (int u = 0; u < this->get_num_input_ports(); ++u) {
       for (int v = 0; v < this->get_num_output_ports(); ++v) {
@@ -451,7 +451,7 @@ class LeafSystem : public System<T> {
   ///   corner cases where fully descriptive symbolic analysis is impossible,
   ///   e.g. when the symbolic form depends on C++ native conditionals. For
   ///   additional discussion, consult the documentation for
-  ///   SymbolicSystemInspector.
+  ///   SystemSymbolicInspector.
   ///
   /// - Override this function directly, reporting manual sparsity. This method
   ///   is recommended when ToSymbolic has not been implemented, or when its
@@ -459,7 +459,7 @@ class LeafSystem : public System<T> {
   ///   sparsity must be conservative: if there is any Context for which an
   ///   input port is direct-feedthrough to an output port, this function must
   ///   return true for those two ports.
-  virtual bool DoHasDirectFeedthrough(const SymbolicSystemInspector* sparsity,
+  virtual bool DoHasDirectFeedthrough(const SystemSymbolicInspector* sparsity,
                                       int input_port, int output_port) const {
     DRAKE_ASSERT(input_port >= 0);
     DRAKE_ASSERT(input_port < this->get_num_input_ports());
@@ -1182,14 +1182,14 @@ class LeafSystem : public System<T> {
     return next_t;
   }
 
-  // Returns a SymbolicSystemInspector for this system, or nullptr if a
-  // SymbolicSystemInspector cannot be constructed because this System has no
+  // Returns a SystemSymbolicInspector for this system, or nullptr if a
+  // SystemSymbolicInspector cannot be constructed because this System has no
   // symbolic representation.
-  std::unique_ptr<SymbolicSystemInspector> MakeSymbolicSystemInspector() const {
+  std::unique_ptr<SystemSymbolicInspector> MakeSystemSymbolicInspector() const {
     std::unique_ptr<System<symbolic::Expression>> symbolic_system =
         this->ToSymbolic();
     if (symbolic_system) {
-      return std::make_unique<SymbolicSystemInspector>(*symbolic_system);
+      return std::make_unique<SystemSymbolicInspector>(*symbolic_system);
     } else {
       return nullptr;
     }

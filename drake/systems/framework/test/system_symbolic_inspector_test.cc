@@ -1,4 +1,4 @@
-#include "drake/systems/framework/symbolic_system_inspector.h"
+#include "drake/systems/framework/system_symbolic_inspector.h"
 
 #include <memory>
 
@@ -100,22 +100,22 @@ class SparseSystem : public LeafSystem<symbolic::Expression> {
   }
 };
 
-class SymbolicSystemInspectorTest : public ::testing::Test {
+class SystemSymbolicInspectorTest : public ::testing::Test {
  public:
-  SymbolicSystemInspectorTest() : system_() {}
+  SystemSymbolicInspectorTest() : system_() {}
 
  protected:
   void SetUp() override {
-    inspector_ = std::make_unique<SymbolicSystemInspector>(system_);
+    inspector_ = std::make_unique<SystemSymbolicInspector>(system_);
   }
 
   SparseSystem system_;
-  std::unique_ptr<SymbolicSystemInspector> inspector_;
+  std::unique_ptr<SystemSymbolicInspector> inspector_;
 };
 
-// Tests that the SymbolicSystemInspector infers, from the symbolic equations of
+// Tests that the SystemSymbolicInspector infers, from the symbolic equations of
 // the System, that input 1 does not affect output 0.
-TEST_F(SymbolicSystemInspectorTest, InputToOutput) {
+TEST_F(SystemSymbolicInspectorTest, InputToOutput) {
   // Only input 0 affects output 0.
   EXPECT_TRUE(inspector_->IsConnectedInputToOutput(0, 0));
   EXPECT_FALSE(inspector_->IsConnectedInputToOutput(1, 0));
@@ -127,11 +127,11 @@ TEST_F(SymbolicSystemInspectorTest, InputToOutput) {
   EXPECT_TRUE(inspector_->IsConnectedInputToOutput(1, 2));
 }
 
-// Tests that, if the System has an abstract input, the SymbolicSystemInspector
+// Tests that, if the System has an abstract input, the SystemSymbolicInspector
 // conservatively reports that every output might depend on every input.
-TEST_F(SymbolicSystemInspectorTest, AbstractContextThwartsSparsity) {
+TEST_F(SystemSymbolicInspectorTest, AbstractContextThwartsSparsity) {
   system_.AddAbstractInputPort();
-  inspector_ = std::make_unique<SymbolicSystemInspector>(system_);
+  inspector_ = std::make_unique<SystemSymbolicInspector>(system_);
   for (int i = 0; i < system_.get_num_input_ports(); ++i) {
     for (int j = 0; j < system_.get_num_output_ports(); ++j) {
       EXPECT_TRUE(inspector_->IsConnectedInputToOutput(i, j));
@@ -139,23 +139,23 @@ TEST_F(SymbolicSystemInspectorTest, AbstractContextThwartsSparsity) {
   }
 }
 
-TEST_F(SymbolicSystemInspectorTest, IsTimeInvariant) {
+TEST_F(SystemSymbolicInspectorTest, IsTimeInvariant) {
   // The derivatives depends on t.
   EXPECT_FALSE(inspector_->IsTimeInvariant());
 
   examples::pendulum::PendulumPlant<symbolic::Expression> pendulum;
   const auto pendulum_inspector =
-      std::make_unique<SymbolicSystemInspector>(pendulum);
+      std::make_unique<SystemSymbolicInspector>(pendulum);
 
   EXPECT_TRUE(pendulum_inspector->IsTimeInvariant());
 }
 
-TEST_F(SymbolicSystemInspectorTest, HasAffineDynamics) {
+TEST_F(SystemSymbolicInspectorTest, HasAffineDynamics) {
   EXPECT_TRUE(inspector_->HasAffineDynamics());
 
   examples::pendulum::PendulumPlant<symbolic::Expression> pendulum;
   const auto pendulum_inspector =
-      std::make_unique<SymbolicSystemInspector>(pendulum);
+      std::make_unique<SystemSymbolicInspector>(pendulum);
 
   EXPECT_FALSE(pendulum_inspector->HasAffineDynamics());
 }
