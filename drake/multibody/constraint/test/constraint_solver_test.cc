@@ -679,7 +679,7 @@ TEST_F(Constraint2DSolverTest, TwoPointContactCrossTerms) {
   // Set the sliding coefficient of friction to somewhat small and the static
   // coefficient of friction to very large.
   rod_->set_mu_coulomb(1e-1);
-  rod_->set_mu_static(100.0);
+  rod_->set_mu_static(1.0);
 
   // First, construct the acceleration-level problem data as normal to set
   // inertia solver and external forces.

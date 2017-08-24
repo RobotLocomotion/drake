@@ -298,17 +298,10 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
       (zz.minCoeff() < -num_vars * npivots * zero_tol ||
       ww.minCoeff() < -num_vars * npivots * zero_tol ||
       abs(zz.dot(ww)) > num_vars * num_vars * npivots * zero_tol))) {
-    std::cout << "MM: " << MM << std::endl;
-    std::cout << "qq: " << qq << std::endl;
-    std::cout << "success? " << success << std::endl;
-    std::cout << "zz.minCoeff(): " << zz.minCoeff() << std::endl;
-    std::cout << "ww.minCoeff(): " << ww.minCoeff() << std::endl;
-    std::cout << "z'w: " << zz.dot(ww) << std::endl;
-    std::cout << "num vars: " << num_vars << std::endl;
-    std::cout << "num pivots: " << npivots << std::endl;
-    std::cout << "zero tolerance: " << zero_tol << std::endl;
     throw std::runtime_error("Unable to solve LCP- it may be unsolvable.");
   }
+  std::cout << "zz: " << zz << std::endl;
+  std::cout << "ww: " << ww << std::endl;
 
   // Get the constraint forces in the specified packed storage format.
   cf->segment(0, num_contacts) = zz.segment(0, num_contacts);
@@ -525,7 +518,7 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
   // Prepare blocks of the LCP matrix, which takes the form:
   // N⋅M⁻¹⋅(Nᵀ - μₛQᵀ)  N⋅M⁻¹⋅Dᵀ  0   N⋅M⁻¹⋅Lᵀ
   // D⋅M⁻¹⋅(Nᵀ - μₛQᵀ)  D⋅M⁻¹⋅Dᵀ  E   D⋅M⁻¹⋅Lᵀ
-  // μ                 -Eᵀ       0   0
+  // μ                 -Eᵀ        0   0
   // L⋅M⁻¹⋅(Nᵀ - μₛQᵀ)  L⋅M⁻¹⋅Dᵀ  0   L⋅M⁻¹⋅Lᵀ
   // where D = |  F |
   //           | -F |
@@ -569,8 +562,10 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
   MM->block(nc + nr, nc + nk, num_spanning_vectors, num_non_sliding) = E;
 
   // Construct the next two rows, which provide the friction "cone" constraint.
-  MM->block(nc + nk, 0, num_non_sliding, num_non_sliding) =
-      Eigen::DiagonalMatrix<T, Eigen::Dynamic>(mu_non_sliding);
+  const std::vector<int>& ns_contacts = problem_data.non_sliding_contacts;
+  MM->block(nc + nk, 0, num_non_sliding, nc).setZero();
+  for (int i = 0; static_cast<size_t>(i) < ns_contacts.size(); ++i)
+    (*MM)(nc + nk + i, ns_contacts[i]) = mu_non_sliding[i];
   MM->block(nc + nk, nc, num_non_sliding, num_spanning_vectors) =
       -E.transpose();
   MM->block(nc + nk, nc + num_spanning_vectors, num_non_sliding,
@@ -581,6 +576,7 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
   // constraint.
   MM->block(nc + nk + num_non_sliding, 0, nl, nc + nk) =
       MM->block(0, nc + nk + num_non_sliding, nc + nk, nl).transpose().eval();
+std::cout << "MM: " << (*MM) << std::endl;
 
   // Construct the LCP vector:
   // N⋅M⁻¹⋅fext + dN/dt⋅v
