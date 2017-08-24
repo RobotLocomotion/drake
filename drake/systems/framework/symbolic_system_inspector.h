@@ -5,17 +5,15 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/eigen_types.h"
 #include "drake/systems/framework/system.h"
 
 namespace drake {
 namespace systems {
 
-/// The SymbolicSystemInspector reports the connectivity between fields in a
-/// System's Context, and outputs computed by that System.
-///
-/// TODO(david-german-tri): Extend SymbolicSystemInspector to report
-/// input-to-state, state-to-derivatives, state-to-discrete-updates, and
-/// state-to-output sparsity.
+/// The SymbolicSystemInspector uses symbolic::Expressions to analyze various
+/// properties of the System, such as time invariance and input-to-output
+/// sparsity, along with many others.
 ///
 /// A SymbolicSystemInspector is only interesting if the Context contains purely
 /// vector-valued elements. If any abstract-valued elements are present, the
@@ -51,6 +49,71 @@ class SymbolicSystemInspector {
   bool IsConnectedInputToOutput(int input_port_index,
                                 int output_port_index) const;
 
+  /// Returns true if there is no dependence on time in the dynamics (continuous
+  /// nor discrete) nor the outputs.
+  bool IsTimeInvariant() const;
+
+  /// Returns true iff all of the derivatives and discrete updates have at
+  /// most an affine dependence on state and input.  Note that the return value
+  /// does NOT depend on the output methods (they may be affine or not).
+  bool HasAffineDynamics() const;
+
+  /// @name Reference symbolic components
+  /// A set of accessor methods that provide direct access to the symbolic
+  /// forms of the System.  This class carefully sets up and names all
+  /// of the symbolic elements of the Context, and other methods should
+  /// be able to reap the benefits.
+  /// @{
+  /// Returns a reference to the symbolic representation of time.
+  const symbolic::Variable& time() const { return time_; }
+
+  /// Returns a reference to the symbolic representation of the input.
+  /// @param i The input port number.
+  Eigen::VectorBlock<const VectorX<symbolic::Variable>> input(int i) const {
+    DRAKE_DEMAND(i >= 0 && i < static_cast<int>(input_variables_.size()));
+    return input_variables_[i].head(input_variables_[i].rows());
+  }
+
+  /// Returns a reference to the symbolic representation of the continuous
+  /// state.
+  Eigen::VectorBlock<const VectorX<symbolic::Variable>> continuous_state()
+      const {
+    return continuous_state_variables_.head(continuous_state_variables_.rows());
+  }
+
+  /// Returns a reference to the symbolic representation of the discrete state.
+  /// @param i The discrete state group number.
+  Eigen::VectorBlock<const VectorX<symbolic::Variable>> discrete_state(
+      int i) const {
+    DRAKE_DEMAND(i >= 0 &&
+                 i < static_cast<int>(discrete_state_variables_.size()));
+    return discrete_state_variables_[i].head(
+        discrete_state_variables_[i].rows());
+  }
+
+  /// Returns a copy of the symbolic representation of the continuous-time
+  /// dynamics.
+  VectorX<symbolic::Expression> derivatives() const {
+    return derivatives_->CopyToVector();
+  }
+
+  /// Returns a reference to the symbolic representation of the discrete-time
+  /// dynamics.
+  /// @param i The discrete state group number.
+  Eigen::VectorBlock<const VectorX<symbolic::Expression>> discrete_update(
+      int i) const {
+    DRAKE_DEMAND(i >= 0 && i < context_->get_num_discrete_state_groups());
+    return discrete_updates_->get_vector(i)->get_value();
+  }
+
+  /// Returns a reference to the symbolic representation of the output.
+  /// @param i The output port number.
+  Eigen::VectorBlock<const VectorX<symbolic::Expression>> output(int i) const {
+    DRAKE_DEMAND(output_port_types_[i] == kVectorValued);
+    return output_->get_vector_data(i)->get_value();
+  }
+  /// @}
+
  private:
   // Populates the @p system inputs in the context_ with symbolic variables.
   void InitializeVectorInputs(const System<symbolic::Expression>& system);
@@ -65,9 +128,14 @@ class SymbolicSystemInspector {
 
   const std::unique_ptr<Context<symbolic::Expression>> context_;
   const std::unique_ptr<SystemOutput<symbolic::Expression>> output_;
+  const std::unique_ptr<ContinuousState<symbolic::Expression>> derivatives_;
+  const std::unique_ptr<DiscreteValues<symbolic::Expression>> discrete_updates_;
 
   // The symbolic expression attached to each input port in the `context_`.
-  std::vector<std::vector<symbolic::Expression>> input_expressions_;
+  symbolic::Variable time_;
+  std::vector<VectorX<symbolic::Variable>> input_variables_;
+  VectorX<symbolic::Variable> continuous_state_variables_;
+  std::vector<VectorX<symbolic::Variable>> discrete_state_variables_;
 
   // The types of the output ports.
   std::vector<PortDataType> output_port_types_;

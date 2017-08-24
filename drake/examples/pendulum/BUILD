@@ -23,6 +23,7 @@ drake_cc_library(
     name = "pendulum_plant",
     srcs = ["pendulum_plant.cc"],
     hdrs = ["pendulum_plant.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":pendulum_state_vector",
         "//drake/systems/framework",
