@@ -231,6 +231,11 @@ required. If you believe the rate of a particular infrastructure flake has
 increased, alert Kitware by assigning a GitHub issue to both @BetsyMcPhail and
 @jamiesnape.
 
+Note that "slow read" warnings during Bazel builds are due to the relative
+slowness of the remote storage used by the CI infrastructure when compared to
+storage connected to the local bus on a local developer workstation build and
+can be safely ignored.
+
 If you see "All nodes of label <label> are offline", this should disappear
 eventually and the build should run, once Jenkins gets a node booted up.
 
