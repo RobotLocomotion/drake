@@ -486,13 +486,19 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
   // where scalar λᵢ can roughly be interpreted as the remaining tangential
   // acceleration at non-sliding contact i after frictional forces have been
   // applied and e is a vector of ones (i.e., a segment of the appropriate
-  // column of E).
+  // column of E). Note that this matrix differs from the exact definition of
+  // E in [Anitescu 1997] to reflect the different layout of the LCP matrix
+  // from [Antiescu 1997] (the latter puts all spanning directions corresponding
+  // to a contact in one block; we put half of the spanning directions
+  // corresponding to a contact into one block and the other half into another
+  // block.
   MatrixX<T> E = MatrixX<T>::Zero(num_spanning_vectors * 2, num_non_sliding);
   for (int i = 0, j = 0; i < num_non_sliding; ++i) {
-    const int num_tangent_dirs = problem_data.r[i] * 2;
-    E.col(i).segment(j, num_tangent_dirs).setOnes();
-    j += num_tangent_dirs;
+    E.col(i).segment(j, problem_data.r[i]).setOnes();
+    j += problem_data.r[i];
   }
+  E.block(num_spanning_vectors, 0, num_spanning_vectors, num_non_sliding) =
+      E.block(0, 0, num_spanning_vectors, num_non_sliding);
 
   // Alias these variables for more readable construction of MM and qq.
   const int ngv = problem_data.tau.size();  // generalized velocity dimension.
@@ -623,10 +629,11 @@ void ConstraintSolver<T>::FormImpactingConstraintLCP(
   // e is a vector of ones (i.e., a segment of the appropriate column of E).
   MatrixX<T> E = MatrixX<T>::Zero(num_spanning_vectors * 2, num_contacts);
   for (int i = 0, j = 0; i < num_contacts; ++i) {
-    const int num_tangent_dirs = problem_data.r[i] * 2;
-    E.col(i).segment(j, num_tangent_dirs).setOnes();
-    j += num_tangent_dirs;
+    E.col(i).segment(j, problem_data.r[i]).setOnes();
+    j += problem_data.r[i];
   }
+  E.block(num_spanning_vectors, 0, num_spanning_vectors, num_contacts) =
+      E.block(0, 0, num_spanning_vectors, num_contacts);
 
   // Alias these variables for more readable construction of MM and qq.
   const int ngv = problem_data.v.size();  // generalized velocity dimension.

@@ -421,8 +421,9 @@ TEST_F(Constraint2DSolverTest, TwoPointNonSlidingToSliding) {
   SetRodToRestingHorizontalConfig();
 
   // Set the coefficient of friction.
-  rod_->set_mu_coulomb(0.1);
-  rod_->set_mu_static(0.1);
+  const double mu_static = 0.1;
+  rod_->set_mu_coulomb(mu_static);  // Must set mu_coulomb to prevent abort.
+  rod_->set_mu_static(mu_static);
 
   // Compute the problem data.
   CalcConstraintAccelProblemData(accel_data_.get());
@@ -461,13 +462,11 @@ TEST_F(Constraint2DSolverTest, TwoPointNonSlidingToSliding) {
   // Verify that the number of contact force vectors is correct.
   ASSERT_EQ(contact_forces.size(), 2);
 
-  // Verify that the frictional forces are not zero and are less than the
-  // horizontal forces. Frictional forces are in the second component of each
-  // vector.
-  EXPECT_GT(std::fabs(contact_forces.front()[1]) +
-              std::fabs(contact_forces.back()[1]), eps_);
-  EXPECT_LT(std::fabs(contact_forces.front()[1]) +
-            std::fabs(contact_forces.back()[1]), horz_f);
+  // Verify that the frictional forces are maximized.
+  EXPECT_NEAR(std::fabs(contact_forces.front()[1]) +
+              std::fabs(contact_forces.back()[1]),
+              mu_static *
+              (contact_forces.front()[0] + contact_forces.back()[0]), eps_);
 
   // Verify that the horizontal acceleration is to the right.
   VectorX<double> ga;
@@ -644,7 +643,8 @@ TEST_F(Constraint2DSolverTest, TwoPointContactCrossTerms) {
   // Check the consistency of the data.
   CheckProblemConsistency(*accel_data_, contacts.size());
 
-  // Compute the constraint forces.
+  // Compute the constraint forces. Note that we increase cfm to prevent the
+  // occasional "failure to solve LCP" exception.
   VectorX<double> cf;
   solver_.SolveConstraintProblem(cfm_, *accel_data_, &cf);
 
