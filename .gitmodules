@@ -1,6 +1,3 @@
-[submodule "drake/doc/textbook"]
-	path = drake/doc/textbook
-	url = https://github.com/RussTedrake/underactuated.git
 [submodule "externals/googletest"]
 	path = externals/googletest
 	url = https://github.com/google/googletest.git

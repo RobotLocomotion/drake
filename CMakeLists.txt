@@ -122,12 +122,6 @@ drake_add_external(pythonqt CMAKE PYTHON QT
     -DPythonQt_Wrap_Qtuitools:BOOL=ON
 )
 
-# textbook
-drake_add_external(textbook PUBLIC CMAKE MATLAB PYTHON
-  CMAKE_ARGS -DBUILD_TESTING=${Matlab_FOUND}
-  INSTALL_COMMAND :
-  SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake/doc/textbook)
-
 # tinyobjloader
 drake_add_external(tinyobjloader PUBLIC CMAKE
   CMAKE_ARGS
@@ -199,7 +193,6 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON VTK
     -DWITH_PYBIND11:BOOL=${WITH_PYBIND11}
     -DWITH_PYTHON_3:BOOL=${WITH_PYTHON_3}
     -DWITH_SPDLOG:BOOL=${WITH_SPDLOG}
-    -DWITH_TEXTBOOK:BOOL=${WITH_TEXTBOOK}
     -DWITH_TINYOBJLOADER:BOOL=${WITH_TINYOBJLOADER}
     -DWITH_YAML_CPP:BOOL=${WITH_YAML_CPP}
   DEPENDS
@@ -218,7 +211,6 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON VTK
     pybind11
     robotlocomotion_lcmtypes
     spdlog
-    textbook
     tinyobjloader
     yaml_cpp
 )

@@ -17,7 +17,7 @@ using systems::Context;
 using systems::InputPortDescriptor;
 using systems::LeafContext;
 using systems::LeafSystem;
-using systems::SparsityMatrix;
+using systems::SymbolicSystemInspector;
 using systems::SystemOutput;
 using std::make_unique;
 using std::vector;

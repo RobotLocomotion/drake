@@ -55,8 +55,8 @@ target_link_libraries(model_values_test drakeSystemFramework)
 drake_add_cc_test(parameters_test)
 target_link_libraries(parameters_test drakeSystemFramework drakeSystemPrimitives)
 
-drake_add_cc_test(sparsity_matrix_test)
-target_link_libraries(sparsity_matrix_test drakeSystemFramework)
+drake_add_cc_test(symbolic_system_inspector_test)
+target_link_libraries(symbolic_system_inspector_test drakeSystemFramework)
 
 drake_add_cc_test(single_output_vector_source_test)
 target_link_libraries(single_output_vector_source_test

@@ -1,5 +1,8 @@
 #pragma once
 
+#include <memory>
+
+#include "drake/common/eigen_autodiff_types.h"
 #include "drake/multibody/multibody_tree/frame_base.h"
 #include "drake/multibody/multibody_tree/multibody_tree_context.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
@@ -67,9 +70,43 @@ class Frame : public FrameBase<T> {
     return CalcPoseInBodyFrame(context) * X_FQ;
   }
 
+  /// NVI to DoCloneToScalar() templated on the scalar type of the new clone to
+  /// be created. This method is mostly intended to be called by
+  /// MultibodyTree::CloneToScalar(). Most users should not call this clone
+  /// method directly but rather clone the entire parent MultibodyTree if
+  /// needed.
+  /// @sa MultibodyTree::CloneToScalar()
+  template <typename ToScalar>
+  std::unique_ptr<Frame<ToScalar>> CloneToScalar(
+      const MultibodyTree<ToScalar>& tree_clone) const {
+    return DoCloneToScalar(tree_clone);
+  }
+
  protected:
-  // Only derived classes can use this constructor.
+  /// Only derived classes can use this constructor. It creates a %Frame
+  /// object attached to `body`.
   explicit Frame(const Body<T>& body) : body_(body) {}
+
+  /// @name Methods to make a clone templated on different scalar types.
+  ///
+  /// These methods are meant to be called by MultibodyTree::CloneToScalar()
+  /// when making a clone of the entire tree or a new instance templated on a
+  /// different scalar type. The only const argument to these methods is the
+  /// new MultibodyTree clone under construction. Specific %Frame subclasses
+  /// might specify a number of prerequisites on the cloned tree and therefore
+  /// require it to be at a given state of cloning. See
+  /// MultibodyTree::CloneToScalar() for a list of prerequisites that are
+  /// guaranteed to be satisfied during the cloning process.
+  /// @{
+
+  /// Clones this %Frame (templated on T) to a frame templated on `double`.
+  virtual std::unique_ptr<Frame<double>> DoCloneToScalar(
+      const MultibodyTree<double>& tree_clone) const = 0;
+
+  /// Clones this %Frame (templated on T) to a frame templated on AutoDiffXd.
+  virtual std::unique_ptr<Frame<AutoDiffXd>> DoCloneToScalar(
+      const MultibodyTree<AutoDiffXd>& tree_clone) const = 0;
+  /// @}
 
  private:
   // Implementation for MultibodyTreeElement::DoSetTopology().

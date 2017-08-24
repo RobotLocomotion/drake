@@ -1,4 +1,4 @@
-#include "drake/systems/framework/sparsity_matrix.h"
+#include "drake/systems/framework/symbolic_system_inspector.h"
 
 #include <memory>
 
@@ -66,23 +66,23 @@ class SparseSystem : public LeafSystem<symbolic::Expression> {
   void CalcNothing(const Context<symbolic::Expression>& context, int*) const {}
 };
 
-class SparsityMatrixTest : public ::testing::Test {
+class SymbolicSystemInspectorTest : public ::testing::Test {
  public:
-  SparsityMatrixTest()
+  SymbolicSystemInspectorTest()
       : system_() {}
 
  protected:
   void SetUp() override {
-    matrix_ = std::make_unique<SparsityMatrix>(system_);
+    matrix_ = std::make_unique<SymbolicSystemInspector>(system_);
   }
 
   SparseSystem system_;
-  std::unique_ptr<SparsityMatrix> matrix_;
+  std::unique_ptr<SymbolicSystemInspector> matrix_;
 };
 
-// Tests that the SparsityMatrix infers, from the symbolic equations of the
-// System, that input 1 does not affect output 0.
-TEST_F(SparsityMatrixTest, InputToOutput) {
+// Tests that the SymbolicSystemInspector infers, from the symbolic equations of
+// the System, that input 1 does not affect output 0.
+TEST_F(SymbolicSystemInspectorTest, InputToOutput) {
   // Only input 0 affects output 0.
   EXPECT_TRUE(matrix_->IsConnectedInputToOutput(0, 0));
   EXPECT_FALSE(matrix_->IsConnectedInputToOutput(1, 0));
@@ -94,11 +94,11 @@ TEST_F(SparsityMatrixTest, InputToOutput) {
   EXPECT_TRUE(matrix_->IsConnectedInputToOutput(1, 2));
 }
 
-// Tests that, if the System has an abstract input, the SparsityMatrix
+// Tests that, if the System has an abstract input, the SymbolicSystemInspector
 // conservatively reports that every output might depend on every input.
-TEST_F(SparsityMatrixTest, AbstractContextThrwartsSparsity) {
+TEST_F(SymbolicSystemInspectorTest, AbstractContextThrwartsSparsity) {
   system_.AddAbstractInputPort();
-  matrix_ = std::make_unique<SparsityMatrix>(system_);
+  matrix_ = std::make_unique<SymbolicSystemInspector>(system_);
   for (int i = 0; i < system_.get_num_input_ports(); ++i) {
     for (int j = 0; j < system_.get_num_output_ports(); ++j) {
       EXPECT_TRUE(matrix_->IsConnectedInputToOutput(i, j));

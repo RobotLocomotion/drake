@@ -19,8 +19,8 @@ drake_cc_library(
         ":leaf_system",
         ":parameters",
         ":single_output_vector_source",
-        ":sparsity_matrix",
         ":state",
+        ":symbolic_system_inspector",
         ":system",
         ":value",
         ":vector",
@@ -331,7 +331,7 @@ drake_cc_library(
         ":leaf_context",
         ":leaf_output_port",
         ":model_values",
-        ":sparsity_matrix",
+        ":symbolic_system_inspector",
         ":system",
         ":system_scalar_converter",
         ":value_checker",
@@ -387,9 +387,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "sparsity_matrix",
-    srcs = ["sparsity_matrix.cc"],
-    hdrs = ["sparsity_matrix.h"],
+    name = "symbolic_system_inspector",
+    srcs = ["symbolic_system_inspector.cc"],
+    hdrs = ["symbolic_system_inspector.h"],
     deps = [
         ":context",
         ":system",
@@ -617,10 +617,10 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "sparsity_matrix_test",
+    name = "symbolic_system_inspector_test",
     deps = [
         ":leaf_system",
-        ":sparsity_matrix",
+        ":symbolic_system_inspector",
     ],
 )
 

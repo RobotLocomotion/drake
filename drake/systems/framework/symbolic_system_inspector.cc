@@ -1,4 +1,4 @@
-#include "drake/systems/framework/sparsity_matrix.h"
+#include "drake/systems/framework/symbolic_system_inspector.h"
 
 #include <sstream>
 
@@ -7,7 +7,8 @@
 namespace drake {
 namespace systems {
 
-SparsityMatrix::SparsityMatrix(const System<symbolic::Expression>& system)
+SymbolicSystemInspector::SymbolicSystemInspector(
+    const System<symbolic::Expression>& system)
     : context_(system.CreateDefaultContext()),
       output_(system.AllocateOutput(*context_)),
       input_expressions_(system.get_num_input_ports()),
@@ -41,7 +42,7 @@ SparsityMatrix::SparsityMatrix(const System<symbolic::Expression>& system)
   // TODO(david-german-tri): Other System computations, such as derivatives.
 }
 
-void SparsityMatrix::InitializeVectorInputs(
+void SymbolicSystemInspector::InitializeVectorInputs(
     const System<symbolic::Expression>& system) {
   // For each input vector i, set each element j to a symbolic expression whose
   // value is the variable "ui_j".
@@ -60,7 +61,7 @@ void SparsityMatrix::InitializeVectorInputs(
   }
 }
 
-void SparsityMatrix::InitializeContinuousState() {
+void SymbolicSystemInspector::InitializeContinuousState() {
   // Set each element i in the continuous state to a symbolic expression whose
   // value is the variable "xci".
   VectorBase<symbolic::Expression>& xc =
@@ -72,7 +73,7 @@ void SparsityMatrix::InitializeContinuousState() {
   }
 }
 
-void SparsityMatrix::InitializeDiscreteState() {
+void SymbolicSystemInspector::InitializeDiscreteState() {
   // For each discrete state vector i, set each element j to a symbolic
   // expression whose value is the variable "xdi_j".
   auto& xd = *context_->get_mutable_discrete_state();
@@ -86,8 +87,9 @@ void SparsityMatrix::InitializeDiscreteState() {
   }
 }
 
-bool SparsityMatrix::IsAbstract(const System<symbolic::Expression>& system,
-                                const Context<symbolic::Expression>& context) {
+bool SymbolicSystemInspector::IsAbstract(
+    const System<symbolic::Expression>& system,
+    const Context<symbolic::Expression>& context) {
   // If any of the input ports are abstract, we cannot do sparsity analysis of
   // this Context.
   for (int i = 0; i < system.get_num_input_ports(); ++i) {
@@ -107,7 +109,7 @@ bool SparsityMatrix::IsAbstract(const System<symbolic::Expression>& system,
   return false;
 }
 
-bool SparsityMatrix::IsConnectedInputToOutput(int input_port_index,
+bool SymbolicSystemInspector::IsConnectedInputToOutput(int input_port_index,
                                               int output_port_index) const {
   DRAKE_ASSERT(
       input_port_index >= 0 &&
