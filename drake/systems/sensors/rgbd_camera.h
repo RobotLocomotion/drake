@@ -3,12 +3,14 @@
 #include <limits>
 #include <memory>
 #include <string>
+#include <utility>
 
 #include <Eigen/Dense>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/rigid_body_frame.h"
 #include "drake/multibody/rigid_body_tree.h"
+#include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/rendering/pose_vector.h"
 #include "drake/systems/sensors/camera_info.h"
@@ -245,6 +247,61 @@ class RgbdCamera : public LeafSystem<double> {
 
   class Impl;
   std::unique_ptr<Impl> impl_;
+};
+
+/**
+ * Wraps a continuous RgbdCamera with zero order holds to have it function as
+ * a discrete sensor.
+ */
+class RgbdCameraDiscrete : public systems::Diagram<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RgbdCameraDiscrete);
+
+  /// Constructs a diagram containing a (non-registered) RgbdCamera that will
+  /// update at a given rate.
+  RgbdCameraDiscrete(std::unique_ptr<RgbdCamera> camera,
+                     double period = 1. / 30);
+
+  /// @return Reference to RgbdCamera intsance.
+  RgbdCamera& camera() const { return *camera_; }
+
+  /// @return Update period for discrete camera.
+  double period() const { return period_; }
+
+  /// @see RgbdCamera::state_input_port().
+  const InputPortDescriptor<double>& state_input_port() const {
+    return get_input_port(input_port_state_);
+  }
+
+  /// @see RgbdCamera::color_image_output_port().
+  const systems::OutputPort<double>& color_image_output_port() const {
+    return get_output_port(output_port_color_image_);
+  }
+
+  /// @see RgbdCamera::depth_image_output_port().
+  const systems::OutputPort<double>& depth_image_output_port() const {
+    return get_output_port(output_port_depth_image_);
+  }
+
+  /// @see RgbdCamera::label_image_output_port().
+  const systems::OutputPort<double>& label_image_output_port() const {
+    return get_output_port(output_port_label_image_);
+  }
+
+  /// @see RgbdCamera::camera_base_pose_output_port().
+  const systems::OutputPort<double>& camera_base_pose_output_port() const {
+    return get_output_port(output_port_pose_);
+  }
+
+ private:
+  RgbdCamera* camera_{};
+  double period_{};
+
+  int input_port_state_{-1};
+  int output_port_color_image_{-1};
+  int output_port_depth_image_{-1};
+  int output_port_label_image_{-1};
+  int output_port_pose_{-1};
 };
 
 }  // namespace sensors
