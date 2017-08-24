@@ -478,11 +478,7 @@ TEST_F(Constraint2DSolverTest, TwoPointNonSlidingToSliding) {
 // into stiction.
 TEST_F(Constraint2DSolverTest, TwoPointImpactNoTransitionToStiction) {
   // Set the configuration of the rod to lying on its side and impacting.
-  SetRodToRestingHorizontalConfig();
-  ContinuousState<double>& xc =
-    *context_->get_mutable_continuous_state();
-  xc[3] = 1.0;
-  xc[4] = -1.0;
+  SetRodToSlidingImpactingHorizontalConfig();
 
   // Set the coefficient of friction to very small.
   const double mu = 1e-4;
