@@ -11,7 +11,7 @@
 #include "drake/manipulation/planner/constraint_relaxing_ik.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/framework/sparsity_matrix.h"
+#include "drake/systems/framework/symbolic_system_inspector.h"
 
 namespace drake {
 namespace examples {
@@ -44,7 +44,7 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
       const override;
 
   // This kind of a system is not a direct feedthrough.
-  bool DoHasDirectFeedthrough(const systems::SparsityMatrix*,
+  bool DoHasDirectFeedthrough(const systems::SymbolicSystemInspector*,
                               int, int) const final {
     return false;
   }

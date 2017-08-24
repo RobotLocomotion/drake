@@ -9,7 +9,7 @@
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/framework/sparsity_matrix.h"
+#include "drake/systems/framework/symbolic_system_inspector.h"
 #include "drake/systems/rendering/frame_velocity.h"
 #include "drake/systems/rendering/pose_vector.h"
 
@@ -125,7 +125,7 @@ class MaliputRailcar : public systems::LeafSystem<T> {
   // LeafSystem<T> overrides.
   std::unique_ptr<systems::AbstractValues> AllocateAbstractState()
       const override;
-  bool DoHasDirectFeedthrough(const systems::SparsityMatrix* sparsity,
+  bool DoHasDirectFeedthrough(const systems::SymbolicSystemInspector* sparsity,
                               int input_port, int output_port) const override;
   void DoCalcNextUpdateTime(const systems::Context<T>& context,
                             systems::CompositeEventCollection<T>*,
