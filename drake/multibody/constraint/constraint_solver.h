@@ -300,8 +300,6 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
       abs(zz.dot(ww)) > num_vars * num_vars * npivots * zero_tol))) {
     throw std::runtime_error("Unable to solve LCP- it may be unsolvable.");
   }
-  std::cout << "zz: " << zz << std::endl;
-  std::cout << "ww: " << ww << std::endl;
 
   // Get the constraint forces in the specified packed storage format.
   cf->segment(0, num_contacts) = zz.segment(0, num_contacts);
@@ -576,7 +574,6 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
   // constraint.
   MM->block(nc + nk + num_non_sliding, 0, nl, nc + nk) =
       MM->block(0, nc + nk + num_non_sliding, nc + nk, nl).transpose().eval();
-std::cout << "MM: " << (*MM) << std::endl;
 
   // Construct the LCP vector:
   // N⋅M⁻¹⋅fext + dN/dt⋅v
