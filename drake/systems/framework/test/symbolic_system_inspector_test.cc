@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/examples/pendulum/pendulum_plant.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -18,21 +19,17 @@ class SparseSystem : public LeafSystem<symbolic::Expression> {
     this->DeclareInputPort(kVectorValued, kSize);
     this->DeclareInputPort(kVectorValued, kSize);
 
-    this->DeclareVectorOutputPort(
-        BasicVector<symbolic::Expression>(kSize),
-        &SparseSystem::CalcY0);
-    this->DeclareVectorOutputPort(
-        BasicVector<symbolic::Expression>(kSize),
-        &SparseSystem::CalcY1);
+    this->DeclareVectorOutputPort(BasicVector<symbolic::Expression>(kSize),
+                                  &SparseSystem::CalcY0);
+    this->DeclareVectorOutputPort(BasicVector<symbolic::Expression>(kSize),
+                                  &SparseSystem::CalcY1);
     this->DeclareAbstractOutputPort(42, &SparseSystem::CalcNothing);
 
     this->DeclareContinuousState(kSize);
     this->DeclareDiscreteState(kSize);
   }
 
-  void AddAbstractInputPort() {
-    this->DeclareAbstractInputPort();
-  }
+  void AddAbstractInputPort() { this->DeclareAbstractInputPort(); }
 
   ~SparseSystem() override {}
 
@@ -64,12 +61,47 @@ class SparseSystem : public LeafSystem<symbolic::Expression> {
   }
 
   void CalcNothing(const Context<symbolic::Expression>& context, int*) const {}
+
+  void DoCalcTimeDerivatives(
+      const Context<symbolic::Expression>& context,
+      ContinuousState<symbolic::Expression>* derivatives) const override {
+    const auto& u0 = this->EvalVectorInput(context, 0)->CopyToVector();
+    const auto& u1 = this->EvalVectorInput(context, 1)->CopyToVector();
+    const auto& t = context.get_time();
+    const Vector2<symbolic::Expression> x =
+        context.get_continuous_state_vector().CopyToVector();
+    const Eigen::Matrix2d A = 2 * Eigen::Matrix2d::Identity();
+    const Eigen::Matrix2d B1 = 3 * Eigen::Matrix2d::Identity();
+    const Eigen::Matrix2d B2 = 4 * Eigen::Matrix2d::Identity();
+    const Eigen::Vector2d f0(5.0, 6.0);
+    const Vector2<symbolic::Expression> xdot =
+        A * t * x + B1 * u0 + B2 * u1 + f0;
+    derivatives->SetFromVector(xdot);
+  }
+
+  void DoCalcDiscreteVariableUpdates(
+      const systems::Context<symbolic::Expression>& context,
+      const std::vector<
+          const systems::DiscreteUpdateEvent<symbolic::Expression>*>&,
+      systems::DiscreteValues<symbolic::Expression>* discrete_state)
+      const override {
+    const auto& u0 = this->EvalVectorInput(context, 0)->CopyToVector();
+    const auto& u1 = this->EvalVectorInput(context, 1)->CopyToVector();
+    const Vector2<symbolic::Expression> xd =
+        context.get_discrete_state(0)->get_value();
+    const Eigen::Matrix2d A = 7 * Eigen::Matrix2d::Identity();
+    const Eigen::Matrix2d B1 = 8 * Eigen::Matrix2d::Identity();
+    const Eigen::Matrix2d B2 = 9 * Eigen::Matrix2d::Identity();
+    const Eigen::Vector2d f0(10.0, 11.0);
+    const Vector2<symbolic::Expression> next_xd =
+        A * xd + B1 * u0 + B2 * u1 + f0;
+    discrete_state->get_mutable_vector(0)->SetFromVector(next_xd);
+  }
 };
 
 class SymbolicSystemInspectorTest : public ::testing::Test {
  public:
-  SymbolicSystemInspectorTest()
-      : system_() {}
+  SymbolicSystemInspectorTest() : system_() {}
 
  protected:
   void SetUp() override {
@@ -104,6 +136,27 @@ TEST_F(SymbolicSystemInspectorTest, AbstractContextThrwartsSparsity) {
       EXPECT_TRUE(matrix_->IsConnectedInputToOutput(i, j));
     }
   }
+}
+
+TEST_F(SymbolicSystemInspectorTest, IsTimeInvariant) {
+  // The derivatives depends on t.
+  EXPECT_FALSE(matrix_->IsTimeInvariant());
+
+  examples::pendulum::PendulumPlant<symbolic::Expression> pendulum;
+  const auto pendulum_inspector =
+      std::make_unique<SymbolicSystemInspector>(pendulum);
+
+  EXPECT_TRUE(pendulum_inspector->IsTimeInvariant());
+}
+
+TEST_F(SymbolicSystemInspectorTest, HasAffineDynamics) {
+  EXPECT_TRUE(matrix_->HasAffineDynamics());
+
+  examples::pendulum::PendulumPlant<symbolic::Expression> pendulum;
+  const auto pendulum_inspector =
+      std::make_unique<SymbolicSystemInspector>(pendulum);
+
+  EXPECT_FALSE(pendulum_inspector->HasAffineDynamics());
 }
 
 }  // namespace
