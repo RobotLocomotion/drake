@@ -4,18 +4,24 @@
 #include <tuple>
 #include <type_traits>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_optional.h"
 #include "drake/multibody/multibody_tree/modeler/modeler_ids.h"
 //#include "drake/multibody/multibody_tree/modeler/link.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
+#include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
 #include "drake/systems/framework/context.h"
 #include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 
 namespace drake {
 namespace multibody {
+
+// Forward declarations.
+template<typename T> class MultibodyModeler;
 
 template <typename T>
 class Link {
@@ -44,41 +50,73 @@ class RigidLink : public Link<T> {
 template <typename T>
 class Joint {
  public:
-  Joint(
-      const Link<T>& link1, const Isometry3<double> X_L1J1,
-      const Link<T>& link2, const Isometry3<double> X_L2J2) {}
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Joint)
 
+  Joint(const Link<T>& parent, const Isometry3<double> X_PJp,
+        const Link<T>& child, const Isometry3<double> X_CJc) :
+      parent_(parent), child_(child), X_PJp_(X_PJp), X_CJc_(X_CJc) {}
+
+  /// Constructor for the common case when joint frame attached on the child
+  /// link **is** the link's frame.
+  Joint(const Link<T>& parent, const Isometry3<double> X_PJp,
+        const Link<T>& child) :
+      parent_(parent), child_(child), X_PJp_(X_PJp) {}
+
+  /// @cond
+  // For internal use only.
   void set_parent_modeler(const MultibodyModeler<T>*, JointId id);
+  /// @endcond
 
  private:
   const MultibodyModeler<T>* parent_modeler_;
   JointId id_;
+  const Link<T>& parent_;
+  const Link<T>& child_;
+  // The pose of the joint frame J1 in link frame L1 is optional, meaning that
+  // frame J1 IS frame L1.
+  optional<Isometry3<double>> X_PJp_;
+  // The pose of the joint frame J2 in link frame L2 is optional, meaning that
+  // frame J2 IS frame L2.
+  optional<Isometry3<double>> X_CJc_;
 };
 
 template <typename T>
 class RevoluteJoint : public Joint<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RevoluteJoint)
+
+  template<typename Scalar>
+  using Context = systems::Context<Scalar>;
+
   RevoluteJoint(
-      const Link<T>& link1, const Link<T>& link2,
-      const Vector3<double>& axis_F) :
-      Joint(link1, link2), axis_F_(axis_F) {
+      const Link<T>& parent, const Isometry3<double> X_PJp,
+      const Link<T>& child, const Isometry3<double> X_CJc,
+      const Vector3<double>& axis_Jp) :
+      Joint<T>(parent, X_PJp, child, X_CJc), axis_Jp_(axis_Jp) {}
 
-}
+  /// Constructor for the common case when joint frame attached on the child
+  /// link **is** the link's frame.
+  RevoluteJoint(
+      const Link<T>& parent, const Isometry3<double> X_PJp,
+      const Link<T>& child, const Vector3<double>& axis_Jp) :
+      Joint<T>(parent, X_PJp, child), axis_Jp_(axis_Jp) {}
 
-  /// @retval axis_F The rotation axis as a unit vector expressed in the inboard
-  ///                frame F.
+  /// Returns the axis of revolution of `this` joint as a unit vector expressed
+  /// in the frame `Jp` attached on the parent body P.
   const Vector3<double>& get_revolute_axis() const {
-    return axis_F_;
+    return axis_Jp_;
   }
 
   /// Gets the rotation angle of `this` mobilizer from `context`. See class
   /// documentation for sign convention.
-  /// @throws std::logic_error if `context` is not a valid
-  /// MultibodyTreeContext.
+  /// @throws std::logic_error if the parent MultibodyModeler of `this` joint
+  /// was not finalized, @see MultibodyModeler::Finalize().
   /// @param[in] context The context of the MultibodyTree this mobilizer
   ///                    belongs to.
   /// @returns The angle coordinate of `this` mobilizer in the `context`.
-  const T& get_angle(const systems::Context<T>& context) const {
+  const T& get_angle(const Context<T>& context) const {
+    // TODO(amcastro-tri): expand this capability for the case when the joint
+    // is implemented as a constraint.
     GetMobilizerOrThrow().get_angle(context);
   }
 
@@ -91,7 +129,11 @@ class RevoluteJoint : public Joint<T> {
   /// @param[in] angle The desired angle in radians.
   /// @returns a constant reference to `this` mobilizer.
   const RevoluteMobilizer<T>& set_angle(
-      systems::Context<T>* context, const T& angle) const;
+      Context<T>* context, const T& angle) const {
+    // TODO(amcastro-tri): expand this capability for the case when the joint
+    // is implemented as a constraint.
+    GetMobilizerOrThrow().set_angle(context, angle);
+  }
 
  private:
   const RevoluteMobilizer<T>& GetMobilizerOrThrow() const {
@@ -102,7 +144,7 @@ class RevoluteJoint : public Joint<T> {
     return *mobilizer_;
   }
 
-  const Vector3<double> axis_F_;
+  const Vector3<double> axis_Jp_;
   const RevoluteMobilizer<T>* mobilizer_{nullptr};
 };
 
@@ -371,7 +413,7 @@ class MultibodyModeler {
 
     LinkId link_id = LinkId::get_new_id();
     link->set_parent_modeler(this, link_id);
-    const LinkType* raw_link_ptr = link.get();
+    const LinkType<T>* raw_link_ptr = link.get();
     owned_links_[link_id] = std::move(link);
     return *raw_link_ptr;
   }
