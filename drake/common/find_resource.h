@@ -83,11 +83,13 @@ class FindResourceResult {
 ///
 /// When called from an installed binary build of Drake, this is intended to
 /// find the installed resource, but that feature is not yet implemented.
-FindResourceResult FindResource(std::string resource_path, std::string candidate_directory = "");
+FindResourceResult FindResource(std::string resource_path,
+                                std::string candidate_directory = "");
 
 /// Convenient wrapper for querying FindResource(resource_path) followed by
 /// FindResourceResult::get_absolute_path_or_throw().
-std::string FindResourceOrThrow(std::string resource_path, std::string candidate_directory = "");
+std::string FindResourceOrThrow(std::string resource_path,
+                                std::string candidate_directory = "");
 
 /// The name of the environment variable that provides the first place where
 /// FindResource attempts to look.  The environment variable is allowed to be

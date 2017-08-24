@@ -203,8 +203,12 @@ Result FindResource(string resource_path, string candidate_directory) {
       "could not find resource");
 }
 
-std::string FindResourceOrThrow(std::string resource_path, string candidate_directory) {
-  return FindResource(std::move(resource_path), std::move(candidate_directory)).get_absolute_path_or_throw();
+std::string FindResourceOrThrow(std::string resource_path,
+                                string candidate_directory
+) {
+  return FindResource(
+      std::move(resource_path),
+      std::move(candidate_directory)).get_absolute_path_or_throw();
 }
 
 }  // namespace drake
