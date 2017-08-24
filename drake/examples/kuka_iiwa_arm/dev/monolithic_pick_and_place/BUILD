@@ -40,6 +40,7 @@ drake_cc_binary(
         "//drake/common:text_logging_gflags",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
         "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
+        "//drake/examples/kuka_iiwa_arm:iiwa_xtion",
         "//drake/examples/kuka_iiwa_arm/iiwa_world:iiwa_wsg_diagram_factory",
         "//drake/lcm",
         "//drake/lcmtypes:iiwa",
@@ -138,6 +139,15 @@ pick_and_place_test(
         "--target=0",
         "--start-position=2",
         "--end-position=0",
+    ],
+)
+
+# Adds a small test using the camera.
+pick_and_place_test(
+    name = "pick_and_place_camera",
+    args = [
+        "--quick",
+        "--with_camera",
     ],
 )
 
