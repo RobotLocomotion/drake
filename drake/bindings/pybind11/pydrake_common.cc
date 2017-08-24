@@ -37,9 +37,8 @@ PYBIND11_PLUGIN(_pydrake_common) {
         "The path refers to the relative path within the Drake repository, "
         "e.g., drake/examples/pendulum/Pendulum.urdf. Raises an exception "
         "if the resource was not found.",
-        py::arg("resource_path"), 
-        py::arg("candidate_directory") = ""
-       );
+        py::arg("resource_path"),
+        py::arg("candidate_directory") = "");
 
   // These are meant to be called internally by pydrake; not by users.
   m.def("set_assertion_failure_to_throw_exception",
