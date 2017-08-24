@@ -474,6 +474,63 @@ TEST_F(Constraint2DSolverTest, TwoPointNonSlidingToSliding) {
   EXPECT_GT(ga[0], 0);
 }
 
+// Tests the rod in a two-point impact which is insufficient to put the rod
+// into stiction.
+TEST_F(Constraint2DSolverTest, TwoPointImpactNoTransitionToStiction) {
+  // Set the configuration of the rod to lying on its side and impacting.
+  SetRodToRestingHorizontalConfig();
+  ContinuousState<double>& xc =
+    *context_->get_mutable_continuous_state();
+  xc[3] = 1.0;
+  xc[4] = -1.0;
+
+  // Set the coefficient of friction to very small.
+  const double mu = 1e-4;
+  rod_->set_mu_coulomb(mu);  // Must set mu_coulomb to prevent abort.
+
+  // Compute the problem data.
+  CalcConstraintVelProblemData(vel_data_.get());
+
+  // Compute the contact forces.
+  VectorX<double> cf;
+  solver_.SolveImpactProblem(cfm_, *vel_data_, &cf);
+
+  // Construct the contact frames.
+  std::vector<Matrix2<double>> frames;
+  frames.push_back(GetNonSlidingContactFrameToWorldTransform());
+  frames.push_back(GetNonSlidingContactFrameToWorldTransform());
+
+  // Verify that the x-axis of the contact frame, which corresponds to the
+  // contact normal, points along the world y-axis, and the y-axis of the
+  // contact frame, which corresponds to a contact tangent vector, points
+  // along the world x-axis.
+  for (size_t i = 0; i < frames.size(); ++i) {
+    EXPECT_LT(std::fabs(frames[i].col(0).dot(Vector2<double>::UnitY()) - 1.0),
+      std::numeric_limits<double>::epsilon());
+    EXPECT_LT(std::fabs(frames[i].col(1).dot(Vector2<double>::UnitX()) - 1.0),
+      std::numeric_limits<double>::epsilon());
+  }
+
+  // Get the contact impulses expressed in the contact frames.
+  std::vector<Vector2<double>> contact_impulses;
+  ConstraintSolver<double>::CalcImpactForcesInContactFrames(cf,
+    *vel_data_, frames, &contact_impulses);
+
+  // Verify that the number of contact impulse vectors is correct.
+  ASSERT_EQ(contact_impulses.size(), 2);
+
+  // Verify that the frictional forces are maximized.
+  EXPECT_NEAR(std::fabs(contact_impulses.front()[1]) +
+              std::fabs(contact_impulses.back()[1]),
+              mu *
+              (contact_impulses.front()[0] + contact_impulses.back()[0]), eps_);
+
+  // Verify that the horizontal velocity is to the right.
+  VectorX<double> dgv;
+  solver_.ComputeGeneralizedVelocityChange(*vel_data_, cf, &dgv);
+  EXPECT_GT(vel_data_->v[0] + dgv[0], 0);
+}
+
 // Tests the rod in a two-point sliding configuration.
 TEST_F(Constraint2DSolverTest, TwoPointSliding) {
   // Set the state of the rod to resting on its side with horizontal velocity.

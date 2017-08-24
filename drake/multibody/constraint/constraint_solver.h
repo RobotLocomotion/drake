@@ -571,7 +571,8 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
   // Construct the next two rows, which provide the friction "cone" constraint.
   MM->block(nc + nk, 0, num_non_sliding, num_non_sliding) =
       Eigen::DiagonalMatrix<T, Eigen::Dynamic>(mu_non_sliding);
-  MM->block(nc + nk, nc, num_non_sliding, num_spanning_vectors) = -E.transpose();
+  MM->block(nc + nk, nc, num_non_sliding, num_spanning_vectors) =
+      -E.transpose();
   MM->block(nc + nk, nc + num_spanning_vectors, num_non_sliding,
             num_spanning_vectors) = -E.transpose();
   MM->block(nc + nk, nc + nk, num_non_sliding, num_non_sliding + nl).setZero();
