@@ -621,6 +621,7 @@ drake_cc_googletest(
     deps = [
         ":leaf_system",
         ":symbolic_system_inspector",
+        "//drake/examples/pendulum:pendulum_plant",
     ],
 )
 
