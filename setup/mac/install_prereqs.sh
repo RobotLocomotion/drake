@@ -30,8 +30,10 @@ boost
 clang-format
 doxygen
 gcc
+glew
 glib
 libyaml
+lz4
 numpy
 patchutils
 pkg-config
@@ -39,7 +41,6 @@ python
 scipy
 tinyxml
 vtk@8.0
-zlib
 EOF
 )
 
