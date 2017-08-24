@@ -298,6 +298,15 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
       (zz.minCoeff() < -num_vars * npivots * zero_tol ||
       ww.minCoeff() < -num_vars * npivots * zero_tol ||
       abs(zz.dot(ww)) > num_vars * num_vars * npivots * zero_tol))) {
+    std::cout << "MM: " << MM << std::endl;
+    std::cout << "qq: " << qq << std::endl;
+    std::cout << "success? " << success << std::endl;
+    std::cout << "zz.minCoeff(): " << zz.minCoeff() << std::endl;
+    std::cout << "ww.minCoeff(): " << ww.minCoeff() << std::endl;
+    std::cout << "z'w: " << zz.dot(ww) << std::endl;
+    std::cout << "num vars: " << num_vars << std::endl;
+    std::cout << "num pivots: " << npivots << std::endl;
+    std::cout << "zero tolerance: " << zero_tol << std::endl;
     throw std::runtime_error("Unable to solve LCP- it may be unsolvable.");
   }
 
@@ -488,17 +497,15 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
   // applied and e is a vector of ones (i.e., a segment of the appropriate
   // column of E). Note that this matrix differs from the exact definition of
   // E in [Anitescu 1997] to reflect the different layout of the LCP matrix
-  // from [Antiescu 1997] (the latter puts all spanning directions corresponding
+  // from [Anitescu 1997] (the latter puts all spanning directions corresponding
   // to a contact in one block; we put half of the spanning directions
   // corresponding to a contact into one block and the other half into another
-  // block.
-  MatrixX<T> E = MatrixX<T>::Zero(num_spanning_vectors * 2, num_non_sliding);
+  // block).
+  MatrixX<T> E = MatrixX<T>::Zero(num_spanning_vectors, num_non_sliding);
   for (int i = 0, j = 0; i < num_non_sliding; ++i) {
     E.col(i).segment(j, problem_data.r[i]).setOnes();
     j += problem_data.r[i];
   }
-  E.block(num_spanning_vectors, 0, num_spanning_vectors, num_non_sliding) =
-      E.block(0, 0, num_spanning_vectors, num_non_sliding);
 
   // Alias these variables for more readable construction of MM and qq.
   const int ngv = problem_data.tau.size();  // generalized velocity dimension.
@@ -548,26 +555,25 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
 
   // Construct the LCP matrix. First do the "normal contact direction" rows.
   MM->block(0, nc + nr, nc, nr) = -MM->block(0, nc, nc, nr);
-  MM->block(0, nc + nk, num_non_sliding, num_non_sliding).setZero();
+  MM->block(0, nc + nk, nc, num_non_sliding).setZero();
 
-  // Now construct the un-negated tangent contact direction rows (everything
-  // but last block column).
+  // Now construct the un-negated tangent contact direction rows.
   MM->block(nc, nc + nr, num_spanning_vectors, nr) =
       -MM->block(nc, nc, nr, num_spanning_vectors);
+  MM->block(nc, nc + nk, num_spanning_vectors, num_non_sliding) = E;
 
-  // Now construct the negated tangent contact direction rows (everything but
-  // last block column). These negated tangent contact directions allow the
-  // LCP to compute forces applied along the negative x-axis.
+  // Now construct the negated tangent contact direction rows. These negated
+  // tangent contact directions allow the LCP to compute forces applied along
+  // the negative x-axis. E will have to be reset to un-negate it.
   MM->block(nc + nr, 0, nr, nc + nk + nl) = -MM->block(nc, 0, nr, nc + nk + nl);
-
-  // Construct the last block column for the last set of rows (see Anitescu and
-  // Potra, 1997).
-  MM->block(nc, nc + nk, nk, num_non_sliding) = E;
+  MM->block(nc + nr, nc + nk, num_spanning_vectors, num_non_sliding) = E;
 
   // Construct the next two rows, which provide the friction "cone" constraint.
   MM->block(nc + nk, 0, num_non_sliding, num_non_sliding) =
       Eigen::DiagonalMatrix<T, Eigen::Dynamic>(mu_non_sliding);
-  MM->block(nc + nk, nc, num_non_sliding, nk) = -E.transpose();
+  MM->block(nc + nk, nc, num_non_sliding, num_spanning_vectors) = -E.transpose();
+  MM->block(nc + nk, nc + num_spanning_vectors, num_non_sliding,
+            num_spanning_vectors) = -E.transpose();
   MM->block(nc + nk, nc + nk, num_non_sliding, num_non_sliding + nl).setZero();
 
   // Construct the last row block, which provides the configuration limit
@@ -620,20 +626,24 @@ void ConstraintSolver<T>::FormImpactingConstraintLCP(
   auto iM = problem_data.solve_inertia;
   const VectorX<T>& mu = problem_data.mu;
 
-  // Construct the matrix E in Anitscu and Potra 1997. This matrix
-  // will be used to specify the constraints:
+  // Construct the matrix E in [Anitscu 1997]. This matrix will be used to
+  // specify the constraints:
   // 0 ≤ μ⋅fN - E⋅fF ⊥ λ ≥ 0 and
   // 0 ≤ e⋅λ + F⋅v ⊥ fF ≥ 0,
   // where λ can roughly be interpreted as the remaining tangential velocity
   // at the impacting contacts after frictional impulses have been applied and
   // e is a vector of ones (i.e., a segment of the appropriate column of E).
-  MatrixX<T> E = MatrixX<T>::Zero(num_spanning_vectors * 2, num_contacts);
+  // Note that this matrix differs from the exact definition of E in
+  // [Anitescu 1997] to reflect the different layout of the LCP matrix from
+  // [Anitescu 1997] (the latter puts all spanning directions corresponding
+  // to a contact in one block; we put half of the spanning directions
+  // corresponding to a contact into one block and the other half into another
+  // block).
+  MatrixX<T> E = MatrixX<T>::Zero(num_spanning_vectors, num_contacts);
   for (int i = 0, j = 0; i < num_contacts; ++i) {
     E.col(i).segment(j, problem_data.r[i]).setOnes();
     j += problem_data.r[i];
   }
-  E.block(num_spanning_vectors, 0, num_spanning_vectors, num_contacts) =
-      E.block(0, 0, num_spanning_vectors, num_contacts);
 
   // Alias these variables for more readable construction of MM and qq.
   const int ngv = problem_data.v.size();  // generalized velocity dimension.
@@ -674,28 +684,27 @@ void ConstraintSolver<T>::FormImpactingConstraintLCP(
   MM->block(0, nc + nr, nc, nr) = -MM->block(0, nc, nc, nr);
   MM->block(0, nc + nk, nc, nc).setZero();
 
-  // Now construct the un-negated tangent contact direction rows (everything
-  // but last block column).
+  // Now construct the un-negated tangent contact direction rows.
   MM->block(nc, 0, nr, nc) = MM->block(0, nc, nc, nr).transpose().eval();
   MM->block(nc, nc + nr, nr, nr) = -MM->block(nc, nc, nr, nr);
+  MM->block(nc, nc + nk, num_spanning_vectors, nc) = E;
 
-  // Now construct the negated tangent contact direction rows (everything but
-  // last block column). These negated tangent contact directions allow the
-  // LCP to compute forces applied along the negative x-axis.
+  // Now construct the negated tangent contact direction rows. These negated
+  // tangent contact directions allow the LCP to compute forces applied along
+  // the negative x-axis. E will have to be reset to un-negate it.
   MM->block(nc + nr, 0, nr, nc + nk + nl) = -MM->block(nc, 0, nr, nc + nk + nl);
-
-  // Construct the last block column for the last set of rows (see Anitescu and
-  // Potra, 1997).
-  MM->block(nc, nc + nk, nk, nc) = E;
+  MM->block(nc + nr, nc + nk, num_spanning_vectors, nc) = E;
 
   // Construct the next two row blocks, which provide the friction "cone"
   // constraint.
   MM->block(nc + nk, 0, nc, nc) = Eigen::DiagonalMatrix<T, Eigen::Dynamic>(mu);
-  MM->block(nc + nk, nc, nc, nk) = -E.transpose();
+  MM->block(nc + nk, nc, nc, num_spanning_vectors) = -E.transpose();
+  MM->block(nc + nk, nc + num_spanning_vectors, nc, num_spanning_vectors) =
+      -E.transpose();
   MM->block(nc + nk, nc + nk, nc, nc + nl).setZero();
 
-  // Construct the last row block, which provides the configuration limit
-  // constraint.
+  // Construct the last row block, which provides the generic unilateral
+  // constraints.
   MM->block(nc*2 + nk, 0, nl, nc + nk) =
       MM->block(0, nc*2 + nk, nc + nk, nl).transpose().eval();
 
