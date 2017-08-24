@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 #include <tuple>
 #include <type_traits>
 #include <unordered_map>
@@ -28,12 +29,25 @@ class Link {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Link)
 
-  Link();
+  Link(const std::string& name) : name_(name) {}
 
-  void set_parent_modeler(const MultibodyModeler<T>*, LinkId id);
+  LinkId get_id() const {
+    return id_;
+  }
+
+  /// @cond
+  // For internal use only.
+  void set_parent_modeler(const MultibodyModeler<T>* parent_modeler, LinkId id)
+  {
+    id_ = id;
+    parent_modeler_ = parent_modeler;
+  }
+  /// @endcond
 
  private:
   std::string name_;
+  const MultibodyModeler<T>* parent_modeler_{nullptr};
+  LinkId id_;
 };
 
 template <typename T>
@@ -41,10 +55,20 @@ class RigidLink : public Link<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RigidLink)
 
-  RigidLink();
+  /// Constructs a %RigidLink with the given default SpatialInertia.
+  /// @param[in] M_LLo_L
+  ///   Spatial inertia of `this` link L about its frame's L origin `Lo` and
+  ///   expressed in the link frame L.
+  /// @note See @ref multibody_spatial_inertia for details on the monogram
+  /// notation used for spatial inertia quantities.
+  RigidLink(const std::string& name,
+            const SpatialInertia<double>& M_LLo_L) :
+      Link<T>(name), M_Lo_default_(M_LLo_L) {}
 
  private:
   const Body<T>* body_;
+  // Spatial inertia about the link frame origin Lo, expressed in L.
+  SpatialInertia<double> M_Lo_default_;
 };
 
 template <typename T>
@@ -168,7 +192,10 @@ class MultibodyModeler {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyModeler)
 
   /// Creates a MultibodyModeler containing only a **world** body.
-  MultibodyModeler();
+  MultibodyModeler() {
+    // Adds a "world" body to MultibodyTree having a NaN SpatialInertia.
+    world_id_ = AddLink<RigidLink>("World", SpatialInertia<double>()).get_id();
+  }
 
   /// Constructs a new body with type `BodyType` with the given `args`, and adds
   /// it to `this` %MultibodyModeler, which retains ownership. The `BodyType` will
@@ -209,135 +236,23 @@ class MultibodyModeler {
     return AddLink(std::make_unique<LinkType<T>>(std::forward<Args>(args)...));
   }
 
-#if 0
-  /// Takes ownership of `mobilizer` and adds it to `this` %MultibodyModeler.
-  /// Returns a constant reference to the mobilizer just added, which will
-  /// remain valid for the lifetime of `this` %MultibodyModeler.
-  ///
-  /// Example of usage:
-  /// @code
-  ///   MultibodyModeler<T> model;
-  ///   // ... Code to define inboard and outboard frames by calling
-  ///   // MultibodyModeler::AddFrame() ...
-  ///   const RevoluteMobilizer<T>& pin =
-  ///     model.AddMobilizer(std::make_unique<RevoluteMobilizer<T>>(
-  ///       inboard_frame, elbow_outboard_frame,
-  ///       Vector3d::UnitZ() /*revolute axis*/));
-  /// @endcode
-  ///
-  /// A %Mobilizer effectively connects the two bodies to which the inboard and
-  /// outboard frames belong.
-  ///
-  /// @throws std::logic_error if `mobilizer` is a nullptr.
-  /// @throws std::logic_error if Finalize() was already called on `this` tree.
-  /// @throws a std::runtime_error if the new mobilizer attempts to connect a
-  /// frame with itself.
-  /// @throws std::runtime_error if attempting to connect two bodies with more
-  /// than one mobilizer between them.
-  ///
-  /// @param[in] mobilizer A unique pointer to a mobilizer to add to `this`
-  ///                      %MultibodyModeler. The mobilizer class must be
-  ///                      specialized on the same scalar type T as this
-  ///                      %MultibodyModeler. Notice this is a requirement of this
-  ///                      method's signature and therefore an input mobilzer
-  ///                      specialized on a different scalar type than that of
-  ///                      this %MultibodyModeler's T will fail to compile.
-  /// @returns A constant reference of type `MobilizerType` to the created
-  ///          mobilizer. This reference which will remain valid for the
-  ///          lifetime of `this` %MultibodyModeler.
-  ///
-  /// @tparam MobilizerType The type of the specific sub-class of Mobilizer to
-  ///                       add. The template needs to be specialized on the
-  ///                       same scalar type T of this %MultibodyModeler.
-  template <template<typename Scalar> class MobilizerType>
-  const MobilizerType<T>& AddMobilizer(
-      std::unique_ptr<MobilizerType<T>> mobilizer) {
-    static_assert(std::is_convertible<MobilizerType<T>*, Mobilizer<T>*>::value,
-                  "MobilizerType must be a sub-class of mobilizer<T>.");
-    if (topology_is_valid()) {
-      throw std::logic_error("This MultibodyModeler is finalized already. "
-                             "Therefore adding more bodies is not allowed. "
-                             "See documentation for Finalize() for details.");
-    }
-    if (mobilizer == nullptr) {
-      throw std::logic_error("Input mobilizer is a nullptr.");
-    }
-    // Verifies that the inboard/outboard frames provided by the user do belong
-    // to this tree. This is a pathological case, but in theory nothing
-    // (but this test) stops a user from adding frames to a tree1 and attempting
-    // later to define mobilizers between those frames in a second tree2.
-    mobilizer->get_inboard_frame().HasThisParentTreeOrThrow(this);
-    mobilizer->get_outboard_frame().HasThisParentTreeOrThrow(this);
-    const int num_positions = mobilizer->get_num_positions();
-    const int num_velocities = mobilizer->get_num_velocities();
-    MobilizerIndex mobilizer_index = topology_.add_mobilizer(
-        mobilizer->get_inboard_frame().get_index(),
-        mobilizer->get_outboard_frame().get_index(),
-        num_positions, num_velocities);
 
-    // This DRAKE_ASSERT MUST be performed BEFORE owned_mobilizers_.push_back()
-    // below. Do not move it around!
-    DRAKE_ASSERT(mobilizer_index == get_num_mobilizers());
-
-    // TODO(amcastro-tri): consider not depending on setting this pointer at
-    // all. Consider also removing MultibodyModelerElement altogether.
-    mobilizer->set_parent_tree(this, mobilizer_index);
-
-    MobilizerType<T>* raw_mobilizer_ptr = mobilizer.get();
-    owned_mobilizers_.push_back(std::move(mobilizer));
-    return *raw_mobilizer_ptr;
+  template<template<typename Scalar> class JointType, typename... Args>
+  const JointType<T>& AddJoint(Args&&... args) {
+    static_assert(std::is_convertible<JointType<T>*, Joint<T>*>::value,
+                  "JointType must be a sub-class of Joint<T>.");
+    return AddJoint(std::make_unique<JointType<T>>(
+        std::forward<Args>(args)...));
   }
-
-  /// Constructs a new mobilizer with type `MobilizerType` with the given
-  /// `args`, and adds it to `this` %MultibodyModeler, which retains ownership.
-  /// The `MobilizerType` will be specialized on the scalar type T of this
-  /// %MultibodyModeler.
-  ///
-  /// Example of usage:
-  /// @code
-  ///   MultibodyModeler<T> model;
-  ///   // ... Code to define inboard and outboard frames by calling
-  ///   // MultibodyModeler::AddFrame() ...
-  ///   // Notice RevoluteMobilizer is a template an a scalar type.
-  ///   const RevoluteMobilizer<T>& pin =
-  ///     model.template AddMobilizer<RevoluteMobilizer>(
-  ///       inboard_frame, outboard_frame,
-  ///       Vector3d::UnitZ() /*revolute axis*/);
-  /// @endcode
-  ///
-  /// Note that for dependent names _only_ you must use the template keyword
-  /// (say for instance you have a MultibodyModeler<T> member within your custom
-  /// class).
-  ///
-  /// @throws std::logic_error if Finalize() was already called on `this` tree.
-  /// @throws a std::runtime_error if the new mobilizer attempts to connect a
-  /// frame with itself.
-  /// @throws std::runtime_error if attempting to connect two bodies with more
-  /// than one mobilizer between them.
-  ///
-  /// @param[in] args The arguments needed to construct a valid Mobilizer of
-  ///                 type `MobilizerType`. `MobilizerType` must provide a
-  ///                 public constructor that takes these arguments.
-  /// @returns A constant reference of type `MobilizerType` to the created
-  ///          mobilizer. This reference which will remain valid for the
-  ///          lifetime of `this` %MultibodyModeler.
-  ///
-  /// @tparam MobilizerType A template for the type of Mobilizer to construct.
-  ///                       The template will be specialized on the scalar type
-  ///                       T of `this` %MultibodyModeler.
-  template<template<typename Scalar> class MobilizerType, typename... Args>
-  const MobilizerType<T>& AddMobilizer(Args&&... args) {
-    static_assert(std::is_base_of<Mobilizer<T>, MobilizerType<T>>::value,
-                  "MobilizerType must be a sub-class of Mobilizer<T>.");
-    return AddMobilizer(
-        std::make_unique<MobilizerType<T>>(std::forward<Args>(args)...));
-  }
-#endif
   /// @}
   // Closes Doxygen section.
 
   int get_num_links() const {
     return static_cast<int>(owned_links_.size());
+  }
+
+  const Link<T>& get_world_link() const {
+    return *owned_links_.at(world_id_);
   }
 
   int get_num_joints() const;
@@ -418,12 +333,30 @@ class MultibodyModeler {
     return *raw_link_ptr;
   }
 
+  template <template<typename Scalar> class JointType>
+  const JointType<T>& AddJoint(std::unique_ptr<JointType<T>> joint) {
+    static_assert(std::is_convertible<JointType<T>*, Joint<T>*>::value,
+                  "JointType must be a sub-class of Joint<T>.");
+    is_finalized_ = false;
+
+    if (joint == nullptr) {
+      throw std::logic_error("Input joint is a nullptr.");
+    }
+
+    JointId joint_id = JointId::get_new_id();
+    joint->set_parent_modeler(this, joint_id);
+    const JointType<T>* raw_joint_ptr = joint.get();
+    owned_joints_[joint_id] = std::move(joint);
+    return *raw_joint_ptr;
+  }
+
   // The modeler owns the underlying MultibodyTree. The tree model can be reset
   // if the modeler changes and needs to be re-finalized.
   std::unique_ptr<MultibodyTree<T>> multibody_tree_;
 
   // List of links owned by the modeler accessed by their id.
   std::unordered_map<LinkId, std::unique_ptr<Link<T>>> owned_links_;
+  LinkId world_id_;
 
   // Set of Body objects in the MultibodyTree forming each Link model.
   // Each Link could be modeled by multiple "ghost" bodies.
@@ -438,6 +371,9 @@ class MultibodyModeler {
   //   1. body_index_to_link_id_map_.size() ==
   //      multibody_tree_->get_num_bodies().
   std::vector<LinkId> body_index_to_link_id_map_;
+
+  // List of joints owned by the modeler accessed by their id.
+  std::unordered_map<JointId, std::unique_ptr<Joint<T>>> owned_joints_;
 
   bool is_finalized_{false};
 };

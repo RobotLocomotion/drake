@@ -6,7 +6,6 @@
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/primitives/affine_system.h"
 #include "drake/multibody/multibody_tree/modeler/multibody_modeler.h"
 
 namespace drake {
@@ -105,6 +104,8 @@ class MultibodyAcrobotPlant : public systems::LeafSystem<T> {
   void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
+
+  void BuildMultibodyModeler();
 
   // TODO(amcastro-tri): Declare these as parameters in the context.
   const double m1_, m2_, l1_, l2_, lc1_, lc2_, Ic1_, Ic2_, b1_, b2_, g_;

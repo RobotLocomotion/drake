@@ -43,6 +43,17 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "acrobot_multibody_model",
+    srcs = ["acrobot_multibody_model.cc"],
+    hdrs = ["acrobot_multibody_model.h"],
+    deps = [
+        ":acrobot_state_vector",
+        "//drake/multibody/multibody_tree/modeler:multibody_modeler",
+        "//drake/systems/framework",
+    ],
+)
+
 # Note: This is a development tool for testing LCM communication
 # but does not actually provide test coverage as a stand-alone
 # executable.

@@ -5,10 +5,8 @@
 
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_autodiff_types.h"
-#include "drake/systems/controllers/linear_quadratic_regulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/sensors/rotary_encoders.h"
 
 using std::sin;
 using std::cos;
@@ -16,6 +14,12 @@ using std::cos;
 namespace drake {
 namespace examples {
 namespace acrobot {
+
+using Eigen::Isometry3d;
+using Eigen::Translation3d;
+using Eigen::Vector3d;
+
+using namespace multibody;
 
 namespace {
 constexpr int kNumDOF = 2;  // theta1 + theta2.
@@ -38,6 +42,8 @@ MultibodyAcrobotPlant<T>::MultibodyAcrobotPlant(double m1, double m2, double l1,
       b1_(b1),
       b2_(b2),
       g_(g) {
+  BuildMultibodyModeler();
+
   this->DeclareInputPort(systems::kVectorValued, 1);
   this->DeclareVectorOutputPort(&MultibodyAcrobotPlant::OutputState);
   static_assert(AcrobotStateVectorIndices::kNumCoordinates == kNumDOF * 2, "");
@@ -63,6 +69,51 @@ MultibodyAcrobotPlant<T>::MultibodyAcrobotPlant(const MultibodyAcrobotPlant<U>& 
           other.b1(),
           other.b2(),
           other.g()) {}
+
+template <typename T>
+void MultibodyAcrobotPlant<T>::BuildMultibodyModeler() {
+  // Spatial inertia of the upper link about its frame L1 and expressed in L1.
+  Vector3<double> com1_L1 =
+      Vector3<double>::Zero();  // L1 is at the link's COM.
+  // Rotational inertia of a thin rod along the y-axis.
+  UnitInertia<double> G_L1 =
+      UnitInertia<double>::ThinRod(Ic1_, Vector3<double>::UnitY());
+  SpatialInertia<double> M_L1(m1_, com1_L1, G_L1);
+
+  // Spatial inertia of the upper link about its frame L2 and expressed in L2.
+  Vector3<double> com2_L2 =
+      Vector3<double>::Zero();  // L2 is at the link's COM.
+  // Rotational inertia of a thin rod along the y-axis.
+  UnitInertia<double> G_L2 =
+      UnitInertia<double>::ThinRod(Ic2_, Vector3<double>::UnitY());
+  SpatialInertia<double> M_L2(m2_, com2_L2, G_L2);
+
+  const Link<T>& world = modeler_.get_world_link();
+  const Link<T>& link1 = modeler_.template AddLink<RigidLink>("Link1", M_L1);
+  const Link<T>& link2 = modeler_.template AddLink<RigidLink>("Link2", M_L2);
+
+  // Pose of the shoulder outboard frame So in link1's frame L1.
+  const Isometry3d X_L1So{Translation3d(0.0, lc1(), 0.0)};
+
+  // Shoulder joint.
+  const RevoluteJoint<T>& joint1 =
+      modeler_.template AddJoint<RevoluteJoint>(
+          world, Isometry3d::Identity(), link1, X_L1So, Vector3d::UnitZ());
+
+  // Elbow joint.
+  // Pose of the elbow inboard frame Ei in the frame L1 of link1.
+  const Isometry3d X_L1Ei{Translation3d(0.0, -lc1(), 0.0)};
+  // Pose of the elbow outboard frame Eo in the frame L2 of link2.
+  const Isometry3d X_L2Eo{Translation3d(0.0, lc2(), 0.0)};
+  const RevoluteJoint<T>& joint2 =
+      modeler_.template AddJoint<RevoluteJoint>(
+          link1, X_L1Ei, link2, X_L2Eo, Vector3d::UnitZ());
+
+  (void) link1;
+  (void) link2;
+  (void) joint1;
+  (void) joint2;
+}
 
 template <typename T>
 void MultibodyAcrobotPlant<T>::OutputState(const systems::Context<T>& context,
