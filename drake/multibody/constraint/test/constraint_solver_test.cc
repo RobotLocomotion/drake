@@ -632,8 +632,9 @@ TEST_F(Constraint2DSolverTest, TwoPointContactCrossTerms) {
   rod_->GetContactPoints(*context_, &contacts);
   rod_->GetContactPointsTangentVelocities(*context_, contacts, &tangent_vels);
 
-  // Modify the tangent velocity on one of the contacts to effect a sliding
-  // contact.
+  // Modify the tangent velocity on the left contact to effect a sliding
+  // contact. This modification can be imagined as the left end of the rod
+  // is touching a conveyer belt moving to the right.
   tangent_vels[0] = 1.0;
 
   // Compute the constraint problem data.

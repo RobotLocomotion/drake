@@ -347,7 +347,7 @@ void ConstraintSolver<T>::SolveImpactProblem(
   if ((num_contacts == 0 ||
        problem_data.N_mult(problem_data.v).minCoeff() >= 0) &&
       (num_limits == 0 ||
-        problem_data.L_mult(problem_data.v).minCoeff() >= 0)) {
+       problem_data.L_mult(problem_data.v).minCoeff() >= 0)) {
     cf->setZero(num_contacts + num_spanning_vectors + num_limits);
     return;
   }
