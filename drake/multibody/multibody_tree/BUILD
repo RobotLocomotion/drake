@@ -135,6 +135,8 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "double_pendulum_test",
+    # Presently times out in valgrind + debug with default size, "small".
+    size = "medium",
     deps = [
         ":multibody_tree",
         "//drake/multibody/benchmarks/acrobot",
