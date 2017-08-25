@@ -56,7 +56,9 @@ GTEST_TEST(FindResourceTest, NotFound) {
 }
 
 GTEST_TEST(FindResourceTest, AlternativeDirectory) {
-  // until std::tmpfile has a cross platform way of extracting filename
+  // Use std::tmpname/std::fopen until std::tmpfile has a cross
+  // platform way of extracting the filename.
+  // TODO (stonier) Add such a cross-platform capability to spruce
   std::string absolute_path = std::tmpnam(nullptr);
   std::FILE* fp = std::fopen(absolute_path.c_str(), "w");
   std::string candidate_filename = absolute_path.substr(
