@@ -5,6 +5,7 @@
 #include "drake/automotive/maliput/api/junction.h"
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/api/segment.h"
+#include "drake/automotive/maliput/multilane/cubic_polynomial.h"
 #include "drake/automotive/maliput/multilane/lane.h"
 #include "drake/common/drake_copyable.h"
 
