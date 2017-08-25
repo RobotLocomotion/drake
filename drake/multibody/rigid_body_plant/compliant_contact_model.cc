@@ -29,30 +29,6 @@ void CompliantContactModel<T>::set_friction_contact_parameters(
 }
 
 template <typename T>
-Matrix3<T> CompliantContactModel<T>::ComputeBasisFromZ(
-    const Vector3<T>& z_axis_W) {
-  // Projects the z-axis into the first quadrant in order to identify the
-  // *smallest* component of the normal.
-  const Vector3<T> u(z_axis_W.cwiseAbs());
-  int minAxis;
-  u.minCoeff(&minAxis);
-  // The world axis corresponding to the smallest component of the local
-  // z-axis will be *most* perpendicular.
-  Vector3<T> perpAxis;
-  perpAxis << (minAxis == 0 ? 1 : 0), (minAxis == 1 ? 1 : 0),
-      (minAxis == 2 ? 1 : 0);
-  // Now define x- and y-axes.
-  Vector3<T> x_axis_W = z_axis_W.cross(perpAxis).normalized();
-  Vector3<T> y_axis_W = z_axis_W.cross(x_axis_W);
-  // Transformation from world frame to local frame.
-  Matrix3<T> R_WL;
-  R_WL.col(0) = x_axis_W;
-  R_WL.col(1) = y_axis_W;
-  R_WL.col(2) = z_axis_W;
-  return R_WL;
-}
-
-template <typename T>
 VectorX<T> CompliantContactModel<T>::ComputeContactForce(
     const RigidBodyTree<T>& tree,
     const KinematicsCache<T>& kinsol, ContactResults<T>* contacts) const {
@@ -110,7 +86,7 @@ VectorX<T> CompliantContactModel<T>::ComputeContactForce(
 
       // R_WC is a left-multiplied rotation matrix to transform a vector from
       // contact frame (C) to world (W), e.g., v_W = R_WC * v_C.
-      const Matrix3<T> R_WC = ComputeBasisFromZ(this_normal);
+      const Matrix3<T> R_WC = math::ComputeBasisFromZ(this_normal);
       const auto J = R_WC.transpose() * (JA - JB);  // J = [ D1; D2; n ]
 
       // TODO(SeanCurtis-TRI): Coordinate with Paul Mitiguy to standardize this

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "drake/common/drake_copyable.h"
+#include "drake/math/orthonormal_basis.h"
 #include "drake/multibody/rigid_body_plant/contact_results.h"
 #include "drake/multibody/rigid_body_tree.h"
 
@@ -61,16 +62,6 @@ class CompliantContactModel {
   // Evaluates an S-shaped quintic curve, f(x), mapping the domain [0, 1] to the
   // range [0, 1] where the f''(0) = f''(1) = f'(0) = f'(1) = 0.
   static T step5(const T& x);
-
-  // Creates a right-handed local basis from a z-axis. Defines an arbitrary x-
-  // and y-axis such that the basis is orthonormal. The basis is R_WL, where W
-  // is the frame in which the z-axis is expressed and L is a local basis such
-  // that v_W = R_WL * v_L.
-  //
-  // @param[in] z_axis_W   The vector defining the basis's z-axis expressed
-  //                       in frame W.
-  // @retval R_WL          The computed basis.
-  static Matrix3<T> ComputeBasisFromZ(const Vector3<T>& z_axis_W);
 
   // Some parameters defining the contact.
   // TODO(amcastro-tri): Implement contact materials for the RBT engine.

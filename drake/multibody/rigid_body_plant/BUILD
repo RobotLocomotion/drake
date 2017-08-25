@@ -30,6 +30,7 @@ drake_cc_library(
     deps = [
         "//drake/common",
         "//drake/common:copyable_unique_ptr",
+        "//drake/math:orthonormal_basis",
         "//drake/multibody:rigid_body_tree",
     ],
 )
