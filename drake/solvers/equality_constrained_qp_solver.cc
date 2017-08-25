@@ -141,6 +141,19 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
       c(v_index[i]) += b(i);
     }
   }
+  for (const auto& binding : prog.linear_costs()) {
+    const auto& a = binding.constraint()->a();
+    constant_term += binding.constraint()->b();
+    int num_v_variables = binding.variables().rows();
+
+    std::vector<size_t> v_index(num_v_variables);
+    for (int i = 0; i < num_v_variables; ++i) {
+      v_index[i] = prog.FindDecisionVariableIndex(binding.variables()(i));
+    }
+    for (int i = 0; i < num_v_variables; ++i) {
+      c(v_index[i]) += a(i);
+    }
+  }
 
   Eigen::VectorXd x{};
   optional<SolutionResult> solver_result;

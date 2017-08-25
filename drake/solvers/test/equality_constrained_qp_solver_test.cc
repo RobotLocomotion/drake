@@ -308,6 +308,25 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testFeasibilityTolerance) {
   EXPECT_TRUE(CompareMatrices(cnstr_val, Eigen::Vector3d(1, -2, 1E-6), tol,
                               MatrixCompareType::absolute));
 }
+
+// min x'*x + x0 + x1 + 1
+// s.t. x0 = x1.
+// (aka min 2x^2 + 2x + 1)
+// The solution is x0 = x1 = -.5, with optimal value .5.
+GTEST_TEST(testEqualityConstrainedQPSolver, testLinearCost) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>("x");
+
+  prog.AddQuadraticCost(x.transpose() * x);
+  prog.AddLinearCost(x(0) + x(1) + 1);
+
+  EXPECT_EQ(prog.Solve(), SolutionResult::kSolutionFound);
+
+  EXPECT_TRUE(
+      CompareMatrices(prog.GetSolution(x), Eigen::Vector2d(-.5, -.5), 1e-6));
+  EXPECT_EQ(prog.GetOptimalCost(), .5);
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
