@@ -176,8 +176,8 @@ Result FindResource(string resource_path, string candidate_directory) {
 
   // (1) Any programmatically provided search paths. Try this first
   // if it is non-empty. If it works, it should always win.
-  // TODO(stonier) Should we split on colons, making this a PATH?
-  if ( !candidate_directory.empty() ) {
+  // TODO(stonier) accept a vector of candidate directories
+  if (!candidate_directory.empty()) {
     candidate_dirs.emplace_back(candidate_directory);
   }
 
