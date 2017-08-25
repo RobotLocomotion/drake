@@ -27,61 +27,26 @@ void CheckBasis(const Matrix3<double>& R) {
   EXPECT_TRUE(CompareMatrices(a.cross(b), c, tol, MatrixCompareType::absolute));
 }
 
-// Tests ComputeBasisFromX() produces a right-handed orthogonal matrix.
-GTEST_TEST(ComputeBasisFromXTest, RightHandOrthogonal) {
-  // Check a non-unit vector.
-  Vec3d v(1, 1, 1);
-  EXPECT_THROW(ComputeBasisFromX(v), std::logic_error);
+// Tests ComputeBasisFromAxis() produces a right-handed orthogonal matrix.
+GTEST_TEST(ComputeBasisFromAxisTest, RightHandOrthogonal) {
+  // Iterate over all three axes.
+  for (int i = 0; i < 3; ++i) {
+    // Check a non-unit vector.
+    Vec3d v(1, 1, 1);
+    EXPECT_THROW(ComputeBasisFromAxis(i, v), std::logic_error);
 
-  // Check a unit vector.
-  v.normalize();
-  CheckBasis(ComputeBasisFromX(v));
+    // Check a unit vector.
+    v.normalize();
+    CheckBasis(ComputeBasisFromAxis(i, v));
 
-  // Check the x-, y- and z-axes.
-  const Vec3d x_axis = Vec3d::UnitX();
-  const Vec3d y_axis = Vec3d::UnitY();
-  const Vec3d z_axis = Vec3d::UnitZ();
-  CheckBasis(ComputeBasisFromX(x_axis));
-  CheckBasis(ComputeBasisFromX(y_axis));
-  CheckBasis(ComputeBasisFromX(z_axis));
-}
-
-// Tests ComputeBasisFromY() produces a right-handed orthogonal matrix.
-GTEST_TEST(ComputeBasisFromYTest, RightHandOrthogonal) {
-  // Check a non-unit vector.
-  Vec3d v(1, 1, 1);
-  EXPECT_THROW(ComputeBasisFromY(v), std::logic_error);
-
-  // Check a unit vector.
-  v.normalize();
-  CheckBasis(ComputeBasisFromY(v));
-
-  // Check the x-, y- and z-axes.
-  const Vec3d x_axis = Vec3d::UnitX();
-  const Vec3d y_axis = Vec3d::UnitY();
-  const Vec3d z_axis = Vec3d::UnitZ();
-  CheckBasis(ComputeBasisFromY(x_axis));
-  CheckBasis(ComputeBasisFromY(y_axis));
-  CheckBasis(ComputeBasisFromY(z_axis));
-}
-
-// Tests ComputeBasisFromZ() produces a right-handed orthogonal matrix.
-GTEST_TEST(ComputeBasisFromZTest, RightHandOrthogonal) {
-  // Check a non-unit vector.
-  Vec3d v(1, 1, 1);
-  EXPECT_THROW(ComputeBasisFromZ(v), std::logic_error);
-
-  // Check a unit vector.
-  v.normalize();
-  CheckBasis(ComputeBasisFromZ(v));
-
-  // Check the x-, y- and z-axes.
-  const Vec3d x_axis = Vec3d::UnitX();
-  const Vec3d y_axis = Vec3d::UnitY();
-  const Vec3d z_axis = Vec3d::UnitZ();
-  CheckBasis(ComputeBasisFromZ(x_axis));
-  CheckBasis(ComputeBasisFromZ(y_axis));
-  CheckBasis(ComputeBasisFromZ(z_axis));
+    // Check the x-, y- and z-axes.
+    const Vec3d x_axis = Vec3d::UnitX();
+    const Vec3d y_axis = Vec3d::UnitY();
+    const Vec3d z_axis = Vec3d::UnitZ();
+    CheckBasis(ComputeBasisFromAxis(i, x_axis));
+    CheckBasis(ComputeBasisFromAxis(i, y_axis));
+    CheckBasis(ComputeBasisFromAxis(i, z_axis));
+  }
 }
 
 }  // namespace
