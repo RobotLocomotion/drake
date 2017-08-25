@@ -1,0 +1,298 @@
+<robot xmlns="http://drake.mit.edu"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd" name="Will1D">
+
+  <material name="green">
+    <color rgba=".3 .6 .4 1" />
+  </material>
+  <material name="red">
+    <color rgba=".9 .1 0 1" />
+  </material>
+  <material name="blue">
+    <color rgba="0 0 1 1" />
+  </material>
+  <material name="white">
+    <color rgba="1.0 1.0 1.0 1.0"/>
+  </material>
+  <material name="black">
+    <color rgba="0.0 0.0 0.0 0.0"/>
+  </material>
+
+ <link name="head">
+    <inertial> 
+      <mass value="62" />
+      <inertia ixx="6.2" ixy="0" ixz="0" iyy="6.2" iyz="0" izz="6.2"/> 
+    </inertial>
+    <visual>
+      <geometry>
+        <sphere radius="0.0"/>
+      </geometry>
+      <material name="red"/>
+    </visual>
+  </link>
+
+  <link name="BarForVisual1">
+    <visual>
+      <geometry>
+        <cylinder length="0.0" radius=".02"/>
+      </geometry>
+      <origin rpy="0 pi/2 0" xyz="0 0 0"/>
+      <material name="black"/>
+    </visual>
+  </link>
+
+  <joint name="Bar1" type="fixed">
+    <parent link="head"/>
+    <child link="BarForVisual1" />
+    <origin xyz="0 0 0" />
+  </joint>
+
+  <link name="BarForVisual2">
+    <visual>
+      <geometry>
+        <cylinder length="0.0" radius=".02"/>
+      </geometry>
+      <origin rpy="pi/2 0 0" xyz="0 0 0"/>
+      <material name="black"/>
+    </visual>
+  </link>
+
+  <joint name="Bar2" type="fixed">
+    <parent link="head"/>
+    <child link="BarForVisual2" />
+    <origin xyz="0 0 0" />
+  </joint>
+
+  <link name="CylinderForVisual">
+    <visual>
+      <geometry>
+        <cylinder length=".05" radius=".1"/>
+      </geometry>
+      <origin rpy="0 pi/2 0" xyz="0 0 0"/>
+      <material name="blue"/>
+    </visual>
+  </link>
+
+  <joint name="rotationIndicator" type="fixed">
+    <parent link="head"/>
+    <child link="CylinderForVisual" />
+    <origin xyz="0 0 0" />
+  </joint>
+
+  <link name="left_leg">
+    <visual>
+      <geometry>
+        <cylinder length="0.5" radius="0.02"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="-0.0 0 -.25"/>
+      <material name="green"/>
+    </visual>
+  </link>
+
+  <link name="right_leg">
+    <visual>
+      <geometry>
+        <cylinder length="0.5" radius="0.02"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0.0 0 -.25"/>
+      <material name="white"/>
+    </visual>
+  </link>
+
+  <joint name="shoulder_left" type="continuous">
+    <parent link="head"/>
+    <child link="left_link_virtual" />
+    <origin xyz="-0.0 0 0" />
+    <axis xyz="1 0 0" />
+  </joint>
+
+  <joint name="shoulder_right" type="continuous">
+    <parent link="head"/>
+    <child link="right_link_virtual" />
+    <origin xyz="0.0 0 0" />
+    <axis xyz="1 0 0" />
+  </joint>
+
+  <link name="left_link_virtual">
+    <inertial> 
+      <mass value="1" />
+      <inertia ixx=".001" ixy="0" ixz="0" iyy=".001" iyz="0" izz=".001"/> 
+    </inertial>
+  </link>
+  <joint name="shoulder_left2" type="continuous">
+    <parent link="left_link_virtual"/>
+    <child link="left_leg" />
+    <origin xyz="0 0 0" />
+    <axis xyz="0 1 0" />
+  </joint>
+
+  <link name="right_link_virtual">
+    <inertial> 
+      <mass value="1" />
+      <inertia ixx=".001" ixy="0" ixz="0" iyy=".001" iyz="0" izz=".001"/> 
+    </inertial>
+  </link>
+  <joint name="shoulder_right2" type="continuous">
+    <parent link="right_link_virtual"/>
+    <child link="right_leg" />
+    <origin xyz="0 0 0" />
+    <axis xyz="0 1 0" />
+  </joint>
+
+
+  <link name="left_foot">
+    <inertial> 
+      <mass value="1" />
+      <inertia ixx=".001" ixy="0" ixz="0" iyy=".001" iyz="0" izz=".001"/> 
+    </inertial>
+    <visual>
+      <geometry>
+        <sphere radius=".05"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <material name="blue"/>
+    </visual>
+    <collision>
+      <geometry>
+         <sphere radius="0.0"/>
+      </geometry>
+    </collision>
+  </link>
+
+
+  <link name="right_foot">
+    <inertial> 
+      <mass value="1" />
+      <inertia ixx=".001" ixy="0" ixz="0" iyy=".001" iyz="0" izz=".001"/> 
+    </inertial>
+    <visual>
+      <geometry>
+        <sphere radius=".05"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <material name="blue"/>
+    </visual>
+    <collision>
+      <geometry>
+         <sphere radius="0.0"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="ankle_left" type="prismatic">
+    <parent link="left_leg"/>
+    <child link="left_foot" />
+    <origin xyz="-0.0 0 -.5" />
+    <axis xyz="0 0 1" />
+  </joint>
+  <joint name="ankle_right" type="prismatic">
+    <parent link="right_leg"/>
+    <child link="right_foot" />
+    <origin xyz="0.0 0 -.5" />
+    <axis xyz="0 0 1" />
+  </joint>
+
+
+  <link name="left_toe">
+    <inertial> 
+      <mass value="1" />
+      <inertia ixx=".001" ixy="0" ixz="0" iyy=".001" iyz="0" izz=".001"/> 
+    </inertial>
+    <visual>
+      <geometry>
+        <sphere radius=".05"/>
+      </geometry>
+      <material name="red"/>
+    </visual>
+    <collision>
+      <geometry>
+         <sphere radius="0.0"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="right_toe">
+    <inertial> 
+      <mass value="1" />
+      <inertia ixx=".001" ixy="0" ixz="0" iyy=".001" iyz="0" izz=".001"/> 
+    </inertial>
+    <visual>
+      <geometry>
+        <sphere radius=".05"/>
+      </geometry>
+      <material name="red"/>
+    </visual>
+    <collision>
+      <geometry>
+         <sphere radius="0.0"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="right_foot_to_toe" type="prismatic">
+    <parent link="right_foot"/>
+    <child link="right_toe" />
+    <origin xyz="0 0 -.4" />
+    <axis xyz="0 0 1" />
+  </joint>
+  <force_element name="spring_right">
+    <linear_spring_damper stiffness="25000" damping="150" rest_length=".4">
+      <link1 link="right_foot" xyz="0 0 0"/>
+      <link2 link="right_toe" xyz="0 0 0"/>
+    </linear_spring_damper>
+  </force_element>
+  <joint name="left_foot_to_toe" type="prismatic">
+    <parent link="left_foot"/>
+    <child link="left_toe" />
+    <origin xyz="0 0 -.4" />
+    <axis xyz="0 0 1" />
+  </joint>
+  <force_element name="spring_left">
+    <linear_spring_damper stiffness="25000" damping="150" rest_length=".4">
+      <link1 link="left_foot" xyz="0 0 0"/>
+      <link2 link="left_toe" xyz="0 0 0"/>
+    </linear_spring_damper>
+  </force_element>
+
+  <transmission type="SimpleTransmission" name="ankle_left_trans">
+    <actuator name="shoulder" />
+    <joint name="ankle_left" />
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+  <transmission type="SimpleTransmission" name="ankle_right_trans">
+    <actuator name="elbow" />
+    <joint name="ankle_right" />
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+
+  <transmission type="SimpleTransmission" name="shoulder_2D_left">
+    <actuator name="shoulder_left" />
+    <joint name="shoulder_left" />
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+  <transmission type="SimpleTransmission" name="shoulder_2D_right">
+    <actuator name="shoulder_right" />
+    <joint name="shoulder_right" />
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+
+  <transmission type="SimpleTransmission" name="shoulder_3D_left">
+    <actuator name="shoulder_left2" />
+    <joint name="shoulder_left2" />
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+  <transmission type="SimpleTransmission" name="shoulder_3D_right">
+    <actuator name="shoulder_right2" />
+    <joint name="shoulder_right2" />
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+
+  <gazebo>
+    <plugin filename="libgazebo_ros_pub_robot_state.so" name="gazebo_ros_pub_robot_controller">
+      <alwaysOn>true</alwaysOn>
+      <updateRate>100.0</updateRate>
+      <topicName>true_robot_state</topicName>
+    </plugin>
+  </gazebo>
+</robot>
+
+  
