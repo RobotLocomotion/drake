@@ -14,6 +14,27 @@ namespace constraint {
 /// at the acceleration-level.
 template <class T>
 struct ConstraintAccelProblemData {
+  /// Constructs acceleration problem data for a system with a @p gv_dim
+  /// dimensional generalized velocity.
+  explicit ConstraintAccelProblemData(int gv_dim) {
+    // Set default for non-transpose operators- returns an empty vector.
+    auto zero_fn = [](const VectorX<T>&) -> VectorX<T> {
+      return VectorX<T>(0);
+    };
+    N_mult = zero_fn;
+    F_mult = zero_fn;
+    L_mult = zero_fn;
+
+    // Set default for transpose operators - returns the appropriately sized
+    // zero vector.
+    auto zero_gv_dim_fn = [gv_dim](const VectorX<T>&) -> VectorX<T> {
+      return VectorX<T>::Zero(gv_dim);
+    };
+    N_minus_muQ_transpose_mult = zero_gv_dim_fn;
+    F_transpose_mult = zero_gv_dim_fn;
+    L_transpose_mult = zero_gv_dim_fn;
+  }
+
   /// The indices of the sliding contacts (those contacts at which there is
   /// non-zero relative velocity between bodies in the plane tangent to the
   /// point of contact), out of the set of all contact indices (0...n-1).
@@ -48,46 +69,114 @@ struct ConstraintAccelProblemData {
   /// equal to `non_sliding_contacts.size()`.
   VectorX<T> mu_non_sliding;
 
-  /// The ℝⁿˣᵐ Jacobian matrix that transforms generalized velocities (m is the
-  /// dimension of generalized velocity) into velocities projected along the
-  /// contact normals at the n contact points.
-  MatrixX<T> N;
+  /// @name Data for constraints on accelerations along the contact normal
+  /// Problem data for constraining the acceleration of two bodies projected
+  /// along the contact surface normal, for n point contacts.
+  /// These data center around two Jacobian matrices, N and Q. N is the ℝⁿˣᵐ
+  /// Jacobian matrix that transforms generalized velocities (v ∈ ℝᵐ) into
+  /// velocities projected along the contact normals at the n point contacts.
+  /// Q ∈ ℝⁿˣᵐ is the Jacobian matrix that transforms generalized velocities
+  /// (m is the dimension of generalized velocity) into velocities projected
+  /// along the directions of sliding at the s *sliding* contact points (rows
+  /// of Q that correspond to non-sliding contacts should be zero).
+  /// @{
 
-  /// This ℝⁿ vector is the time derivative of the matrix N (defined above)
-  /// times the generalized velocity (∈ ℝᵐ) of the rigid body system.
-  VectorX<T> Ndot_x_v;
+  /// An operator that performs the multiplication N⋅v.
+  /// The default operator returns an empty vector.
+  std::function<VectorX<T>(const VectorX<T>&)> N_mult;
 
-  /// The ℝʸʳˣᵐ Jacobian matrix that transforms generalized velocities (m is the
-  /// dimension of generalized velocity) into velocities projected along
-  /// r vectors that span the contact tangents (used to linearize the friction
-  /// cone) at the n *non-sliding* contact points. For contact problems in two
-  /// dimensions, r will be one. For a friction pyramid in three dimensions, r
-  /// would be two. While the definition of the dimension of the Jacobian matrix
-  /// above indicates that every one of the y non-sliding contacts uses the
-  /// same "r", the code imposes no such requirement.
-  MatrixX<T> F;
+  /// An operator that performs the multiplication (Nᵀ - μQᵀ)⋅f, where μ is a
+  /// diagonal matrix with nonzero entries corresponding to the coefficients of
+  /// friction at the s sliding contact points, and (Nᵀ - μQᵀ) transforms forces
+  /// (f ∈ ℝⁿ) applied along the contact normals at the n point contacts into
+  /// generalized forces. The default operator returns a zero vector of
+  /// dimension equal to that of the generalized forces.
+  std::function<VectorX<T>(const VectorX<T>&)> N_minus_muQ_transpose_mult;
 
-  /// This ℝʸʳ vector is the time derivative of the matrix F (defined above)
-  /// times the generalized velocity (∈ ℝᵐ) of the rigid body system. As above,
-  /// m is the dimension of the system generalized velocity.
-  VectorX<T> Fdot_x_v;
+  /// This ℝⁿ vector is the time derivative of N times the generalized velocity
+  /// v (∈ ℝᵐ) of the rigid body system.
+  VectorX<T> Ndot_times_v;
+  /// @}
 
-  /// The ℝⁿˣᵐ matrix (N - μQ) that transforms generalized velocities (m is the
-  /// dimension of generalized velocity) into velocities projected along the
-  /// contact normals at the n contact points, where Q ∈ ℝⁿˣᵐ is the Jacobian
-  /// matrix that transforms generalized velocities (m is the dimension of
-  /// generalized velocity) into velocities projected along the directions of
-  /// sliding at the s *sliding* contact points (rows of Q that correspond to
-  /// non-sliding contacts are set to zero). The μQ factor indicates that
-  /// any normal forces applied using this Jacobian will yield frictional
-  /// effects for sliding contacts.
-  MatrixX<T> N_minus_mu_Q;
+  /// @name Data for non-sliding contact friction constraints
+  /// Problem data for constraining the tangential acceleration of two bodies
+  /// projected along the contact surface tangents, for n point contacts.
+  /// These data center around the Jacobian matrix, F ∈ ℝʸʳˣᵐ, that
+  /// transforms generalized velocities (v ∈ ℝᵐ) into velocities projected
+  /// along the r vectors that span the contact tangents at the y *non-sliding*
+  /// point contacts. For contact problems in two dimensions, r would be one.
+  /// For a friction pyramid in three dimensions, r would be two. While the
+  /// definition of the dimension of the Jacobian matrix above indicates that
+  /// every one of the y non-sliding contacts uses the same "r", the code
+  /// imposes no such requirement.
+  /// @{
 
-  /// The ℝᵐ vector f, the generalized external force vector that
-  /// comprises gravitational, centrifugal, Coriolis, actuator, etc. forces. m
-  /// is the dimension of the generalized force, which is also equal to the
-  /// domension of the generalized velocity.
-  VectorX<T> f;
+  /// An operator that performs the multiplication F⋅v. The default operator
+  /// returns an empty vector.
+  std::function<VectorX<T>(const VectorX<T>&)> F_mult;
+
+  /// An operator that performs the multiplication Fᵀ⋅f, where f ∈ ℝʸʳ
+  /// corresponds to frictional force magnitudes. The default operator returns
+  /// a zero vector of dimension equal to that of the generalized forces.
+  std::function<VectorX<T>(const VectorX<T>&)> F_transpose_mult;
+
+  /// This ℝʸʳ vector is the time derivative of F times the generalized
+  /// velocity v (∈ ℝᵐ) of the rigid or multi-body system.
+  VectorX<T> Fdot_times_v;
+  /// @}
+
+  /// @name Data for unilateral constraints at the acceleration level
+  /// Problem data for unilateral constraints of functions of system
+  /// acceleration, where the constraint can be formulated as:<pre>
+  /// 0 ≤ L(q)⋅v̇ + kᴸ(t,q,v)  ⊥  fᶜ ≥ 0
+  /// </pre>
+  /// which means that the constraint c(q,v,v̇) ≡ L(q)⋅v̇ + kᴸ(t,q,v) is coupled
+  /// to a force constraint (fᶜ ≥ 0) and a complementarity constraint
+  /// fᶜ⋅(L⋅v̇ + kᴸ(t,q,v)) = 0, meaning that the constraint can apply no force
+  /// if it is inactive (i.e., if c(q,v,v̇) is strictly greater than zero). L
+  /// is defined as the ℝˢˣᵐ Jacobian matrix that transforms generalized
+  /// velocities (v ∈ ℝᵐ) into the time derivatives of s unilateral constraint
+  /// functions. The class of constraint functions naturally includes holonomic
+  /// constraints, which are constraints posable as g(q,t). Such holonomic
+  /// constraints must be twice differentiated with respect to time to yield
+  /// an acceleration-level formulation (i.e., g̈(q, v, v̇, t), for the
+  /// aforementioned definition of g(q,t)). That differentiation yields
+  /// g̈ = L⋅v̇ + dL/dt⋅v, which is consistent with the constraint class under
+  /// the definition kᴸ(t,q,v) ≡ dL/dt⋅v. An example such holonomic constraint
+  /// function is a joint acceleration limit:<pre>
+  /// 0 ≤ -v̇ⱼ + r  ⊥  fᶜⱼ ≥ 0
+  /// </pre>
+  /// which can be read as the acceleration at joint j (v̇ⱼ) must be no larger
+  /// than r, the force must be applied to limit the acceleration at the joint,
+  /// and the limiting force cannot be applied if the acceleration at the
+  /// joint is not at the limit (i.e., v̇ⱼ < r). In this example, the
+  /// corresponding holonomic constraint function is g(q,t) ≡ qⱼ + rt²,
+  /// yielding  ̈g(q, v, v̇) = -v̇ⱼ + r.
+  /// @{
+
+  /// The number of limit constraints. Must equal `s`, i.e., the
+  /// number of columns of L.
+  int num_limit_constraints{0};
+
+  /// An operator that performs the multiplication L⋅v. The default operator
+  /// returns an empty vector.
+  std::function<VectorX<T>(const VectorX<T>&)> L_mult;
+
+  /// An operator that performs the multiplication Lᵀ⋅f where f ∈ ℝˢ are the
+  /// magnitudes of the constraint forces. The default operator returns a
+  /// zero vector of dimension equal to that of the generalized forces.
+  std::function<VectorX<T>(const VectorX<T>&)> L_transpose_mult;
+
+  /// This ℝˢ vector is the vector kᴸ(t,q,v) defined above.
+  VectorX<T> kL;
+  /// @}
+
+  /// The ℝᵐ vector tau, the generalized external force vector that
+  /// comprises gravitational, centrifugal, Coriolis, actuator, etc. forces
+  /// applied to the rigid body system at q. m is the dimension of the
+  /// generalized force, which is also equal to the dimension of the
+  /// generalized velocity.
+  VectorX<T> tau;
 
   /// A function for solving the equation MX = B for matrix X, given input
   /// matrix B, where M is the generalized inertia matrix for the rigid body
@@ -99,6 +188,26 @@ struct ConstraintAccelProblemData {
 /// at the velocity-level (i.e., impact problems).
 template <class T>
 struct ConstraintVelProblemData {
+  /// Constructs velocity problem data for a system with a @p gv_dim dimensional
+  /// generalized velocity.
+  explicit ConstraintVelProblemData(int gv_dim) {
+    // Set default for non-transpose operators- returns an empty vector.
+    auto zero_fn = [](const VectorX<T>&) -> VectorX<T> {
+      return VectorX<T>(0);
+    };
+    N_mult = zero_fn;
+    F_mult = zero_fn;
+    L_mult = zero_fn;
+
+    // Set default for transpose operators - returns the appropriately sized
+    // zero vector.
+    auto zero_gv_dim_fn = [gv_dim](const VectorX<T>&) -> VectorX<T> {
+      return VectorX<T>::Zero(gv_dim); };
+    N_transpose_mult = zero_gv_dim_fn;
+    F_transpose_mult = zero_gv_dim_fn;
+    L_transpose_mult = zero_gv_dim_fn;
+  }
+
   /// The number of spanning vectors in the contact tangents (used to linearize
   /// the friction cone) at the n contact points. For contact
   /// problems in two dimensions, each element of r will be one. For contact
@@ -115,20 +224,93 @@ struct ConstraintVelProblemData {
   /// does not distinguish between static and dynamic friction coefficients.
   VectorX<T> mu;
 
-  /// The ℝⁿˣᵐ Jacobian matrix that transforms generalized velocities (m is the
-  /// dimension of generalized velocity) into velocities projected along the
-  /// contact normals at the n contact points.
-  MatrixX<T> N;
+  /// @name Data for constraints on velocities along the contact normal
+  /// Problem data for constraining the velocity of two bodies projected
+  /// along the contact surface normal, for n point contacts.
+  /// These data center around the Jacobian matrix N, the ℝⁿˣᵐ
+  /// Jacobian matrix that transforms generalized velocities (v ∈ ℝᵐ) into
+  /// velocities projected along the contact normals at the n point contacts.
+  /// @{
 
-  /// The ℝⁿʳˣᵐ Jacobian matrix that transforms generalized velocities (m is the
-  /// dimension of generalized velocity) into velocities projected along
-  /// r vectors that span the contact tangents (used to linearize the friction
-  /// cone) at the n contact points. For contact problems in two
-  /// dimensions, r will be one. For a friction pyramid in three dimensions, r
-  /// would be two. While the definition of the dimension of the Jacobian matrix
-  /// above indicates that every one of the n contacts uses the same "r", the
-  /// code imposes no such requirement.
-  MatrixX<T> F;
+  /// An operator that performs the multiplication N⋅v. The default operator
+  /// returns an empty vector.
+  std::function<VectorX<T>(const VectorX<T>&)> N_mult;
+
+  /// An operator that performs the multiplication Nᵀ⋅f, where f ∈ ℝⁿ are the
+  /// the magnitudes of the impulsive forces applied along the contact normals
+  /// at the n point contacts. The default operator returns a zero vector of
+  /// dimension equal to that of the generalized velocities (which should be
+  /// identical to the dimension of the generalized forces).
+  std::function<VectorX<T>(const VectorX<T>&)> N_transpose_mult;
+  /// @}
+
+  /// @name Data for constraints on contact friction
+  /// Problem data for constraining the tangential velocity of two bodies
+  /// projected along the contact surface tangents, for n point contacts.
+  /// These data center around the Jacobian matrix, F ∈ ℝⁿʳˣᵐ, that
+  /// transforms generalized velocities (v ∈ ℝᵐ) into velocities projected
+  /// along the r vectors that span the contact tangents at the n
+  /// point contacts. For contact problems in two dimensions, r would be one.
+  /// For a friction pyramid in three dimensions, r would be two. While the
+  /// definition of the dimension of the Jacobian matrix above indicates that
+  /// every one of the n contacts uses the same "r", the code imposes no such
+  /// requirement.
+  /// @{
+
+  /// An operator that performs the multiplication F⋅v. The default operator
+  /// returns an empty vector.
+  std::function<VectorX<T>(const VectorX<T>&)> F_mult;
+
+  /// An operator that performs the multiplication Fᵀ⋅f, where f ∈ ℝⁿʳ
+  /// corresponds to frictional impulsive force magnitudes. The default
+  /// operator returns a zero vector of dimension equal to that of the
+  /// generalized forces.
+  std::function<VectorX<T>(const VectorX<T>&)> F_transpose_mult;
+
+  /// @name Data for unilateral constraints at the velocity level
+  /// Problem data for unilateral constraints of functions of system
+  /// velocity, where the constraint can be formulated as:<pre>
+  /// 0 ≤ L(q)⋅v + kᴸ(t,q)  ⊥  fᶜ ≥ 0
+  /// </pre>
+  /// which means that the constraint c(q,v) ≡ L(q)⋅v + kᴸ(t,q) is coupled
+  /// to an impulsive force constraint (fᶜ ≥ 0) and a complementarity constraint
+  /// fᶜ⋅(L⋅v + kᴸ(t,q)) = 0, meaning that the constraint can apply no force
+  /// if it is inactive (i.e., if c(q,v) is strictly greater than zero). L
+  /// is defined as the ℝˢˣᵐ Jacobian matrix that transforms generalized
+  /// velocities (v ∈ ℝᵐ) into the time derivatives of s unilateral constraint
+  /// functions. The class of constraint functions naturally includes holonomic
+  /// constraints, which are constraints posable as g(q, t). Such holonomic
+  /// constraints must be differentiated with respect to time to yield
+  /// a velocity-level formulation (i.e., ġ(q, v, t), for the aforementioned
+  /// definition of g(q, t)). That differentiation yields ġ = L⋅v, which is
+  /// consistent with the constraint class under the definition kᴸ(t,q) ≡ 0. An
+  /// example such holonomic constraint function is a joint velocity limit:<pre>
+  /// 0 ≤ -vⱼ + r  ⊥  fᶜⱼ ≥ 0
+  /// </pre>
+  /// which can be read as the velocity at joint j (vⱼ) must be no larger than
+  /// r, the impulsive force must be applied to limit the acceleration at the
+  /// joint, and the limiting force cannot be applied if the velocity at the
+  /// joint is not at the limit (i.e., vⱼ < r). In this example, the constraint
+  /// function is g(q,t) ≡ qⱼ + rt, yielding ġ(q, v) = -vⱼ + r.
+  /// @{
+
+  /// The number of limit constraints. Must be equivalent to the dimension of
+  /// the output of L_mult (defined below).
+  int num_limit_constraints{0};
+
+  /// An operator that performs the multiplication L⋅v. The default operator
+  /// returns an empty vector.
+  std::function<VectorX<T>(const VectorX<T>&)> L_mult;
+
+  /// An operator that performs the multiplication Lᵀ⋅f where f ∈ ℝᵗ are the
+  /// magnitudes of the impulsive constraint forces. The default operator
+  /// returns a zero vector of dimension equal to that of the generalized
+  /// forces.
+  std::function<VectorX<T>(const VectorX<T>&)> L_transpose_mult;
+
+  /// This ℝˢ vector is the vector kᴸ(t,q) defined above.
+  VectorX<T> kL;
+  /// @}
 
   /// The ℝᵐ vector v, the generalized velocity immediately before any impulsive
   /// forces (from impact) are applied.
