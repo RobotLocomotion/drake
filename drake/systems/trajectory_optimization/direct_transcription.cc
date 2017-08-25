@@ -8,6 +8,7 @@
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/solvers/constraint.h"
+#include "drake/systems/framework/system_symbolic_inspector.h"
 
 namespace drake {
 namespace systems {
@@ -98,9 +99,7 @@ DirectTranscription::DirectTranscription(const System<double>* system,
                        context.get_num_total_states(), num_time_samples,
                        0.1),  // TODO(russt): Replace this with the actual
                               // sample time of the discrete update (#6878).
-      system_(System<double>::ToAutoDiffXd(*system)),
-      context_(system_->CreateDefaultContext()),
-      discrete_state_(system_->AllocateDiscreteVariables()) {
+      discrete_time_system_(true) {
   // This is the constructor for discrete-time systems.  For continuous-time
   // systems, you must use a different constructor that specifies the timesteps.
   DRAKE_THROW_UNLESS(context.has_only_discrete_state());
@@ -110,48 +109,86 @@ DirectTranscription::DirectTranscription(const System<double>* system,
 
   DRAKE_DEMAND(context.get_num_discrete_state_groups() == 1);
   DRAKE_DEMAND(num_states() == context.get_discrete_state(0)->size());
-  DRAKE_DEMAND(system_->get_num_input_ports() <= 1);
+  DRAKE_DEMAND(system->get_num_input_ports() <= 1);
   DRAKE_DEMAND(num_inputs() == (context.get_num_input_ports() > 0
-                                    ? system_->get_input_port(0).size()
+                                    ? system->get_input_port(0).size()
                                     : 0));
 
-  context_->SetTimeStateAndParametersFrom(context);
+  // First try symbolic dynamics.
+  bool added_symbolic_dynamic_constraints = false;
+  const auto symbolic_system = System<double>::ToSymbolic(*system);
+  if (symbolic_system != nullptr) {
+    const auto inspector =
+        std::make_unique<SystemSymbolicInspector>(*symbolic_system);
+    if (inspector->HasAffineDynamics()) {
+      // TODO(russt): Substitute parameter values from Context<double>.
 
-  // Set derivatives of all parameters in the context to zero (but with the
-  // correct size).
-  int num_gradients = 2 * num_states() + num_inputs();
-  for (int i = 0; i < context_->get_parameters().num_numeric_parameters();
-       i++) {
-    auto params = context_->get_mutable_parameters()
-                      .get_mutable_numeric_parameter(i)
-                      ->get_mutable_value();
-    for (int j = 0; j < params.size(); j++) {
-      auto& derivs = params(j).derivatives();
-      if (derivs.size() == 0) {
-        derivs.resize(num_gradients);
-        derivs.setZero();
+      for (int i = 0; i < N() - 1; i++) {
+        VectorX<symbolic::Expression> update = inspector->discrete_update(0);
+        symbolic::Substitution sub;
+        sub.emplace(inspector->time(), i * fixed_timestep());
+        // TODO(russt/soonho): Can we make a cleaner way to do substitutions
+        // with
+        // Vectors to avoid these loops appearing everywhere?
+        for (int j = 0; j < num_states(); j++) {
+          sub.emplace(inspector->discrete_state(0)[j], state(i)[j]);
+        }
+        for (int j = 0; j < num_inputs(); j++) {
+          sub.emplace(inspector->input(0)[j], input(i)[j]);
+        }
+        for (int j = 0; j < num_states(); j++) {
+          update(j) = update(j).Substitute(sub);
+        }
+        AddLinearConstraint(state(i + 1) == update);
       }
+      added_symbolic_dynamic_constraints = true;
     }
   }
 
-  if (context_->get_num_input_ports() > 0) {
-    // Allocate the input port and keep an alias around.
-    input_port_value_ = new FreestandingInputPortValue(
-        system_->AllocateInputVector(system_->get_input_port(0)));
-    std::unique_ptr<InputPortValue> input_port_value(input_port_value_);
-    context_->SetInputPortValue(0, std::move(input_port_value));
-  }
+  if (!added_symbolic_dynamic_constraints) {
+    system_ = System<double>::ToAutoDiffXd(*system);
+    DRAKE_DEMAND(system_ != nullptr);
+    context_ = system_->CreateDefaultContext();
+    discrete_state_ = system_->AllocateDiscreteVariables();
 
-  // For N-1 timesteps, add a constraint which depends on the knot
-  // value along with the state and input vectors at that knot and the
-  // next.
-  for (int i = 0; i < N() - 1; i++) {
-    // Add the dynamic constraints.
-    auto constraint = std::make_shared<DiscreteTimeSystemConstraint>(
-        *system_, context_.get(), discrete_state_.get(), input_port_value_,
-        num_states(), num_inputs(), i * fixed_timestep());
+    context_->SetTimeStateAndParametersFrom(context);
 
-    AddConstraint(constraint, {input(i), state(i), state(i + 1)});
+    // Set derivatives of all parameters in the context to zero (but with the
+    // correct size).
+    int num_gradients = 2 * num_states() + num_inputs();
+    for (int i = 0; i < context_->get_parameters().num_numeric_parameters();
+         i++) {
+      auto params = context_->get_mutable_parameters()
+                        .get_mutable_numeric_parameter(i)
+                        ->get_mutable_value();
+      for (int j = 0; j < params.size(); j++) {
+        auto& derivs = params(j).derivatives();
+        if (derivs.size() == 0) {
+          derivs.resize(num_gradients);
+          derivs.setZero();
+        }
+      }
+    }
+
+    if (context_->get_num_input_ports() > 0) {
+      // Allocate the input port and keep an alias around.
+      input_port_value_ = new FreestandingInputPortValue(
+          system_->AllocateInputVector(system_->get_input_port(0)));
+      std::unique_ptr<InputPortValue> input_port_value(input_port_value_);
+      context_->SetInputPortValue(0, std::move(input_port_value));
+    }
+
+    // For N-1 timesteps, add a constraint which depends on the knot
+    // value along with the state and input vectors at that knot and the
+    // next.
+    for (int i = 0; i < N() - 1; i++) {
+      // Add the dynamic constraints.
+      auto constraint = std::make_shared<DiscreteTimeSystemConstraint>(
+          *system_, context_.get(), discrete_state_.get(), input_port_value_,
+          num_states(), num_inputs(), i * fixed_timestep());
+
+      AddConstraint(constraint, {input(i), state(i), state(i + 1)});
+    }
   }
 
   // Constrain the final input to match the penultimate, otherwise the final
@@ -164,11 +201,12 @@ DirectTranscription::DirectTranscription(const System<double>* system,
 }
 
 void DirectTranscription::DoAddRunningCost(const symbolic::Expression& g) {
-  if (context_->has_only_discrete_state()) {
-    // Cost = \sum_n g(n,x[n],u[n]) dt
-    for (int i = 0; i < N() - 1; i++) {
-      AddCost(SubstitutePlaceholderVariables(g * fixed_timestep(), i));
-    }
+  DRAKE_DEMAND(discrete_time_system_);  // TODO(russt): implement
+                                        // continuous-time version.
+
+  // Cost = \sum_n g(n,x[n],u[n]) dt
+  for (int i = 0; i < N() - 1; i++) {
+    AddCost(SubstitutePlaceholderVariables(g * fixed_timestep(), i));
   }
 }
 
