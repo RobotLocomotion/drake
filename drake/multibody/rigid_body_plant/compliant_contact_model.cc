@@ -86,7 +86,8 @@ VectorX<T> CompliantContactModel<T>::ComputeContactForce(
 
       // R_WC is a left-multiplied rotation matrix to transform a vector from
       // contact frame (C) to world (W), e.g., v_W = R_WC * v_C.
-      const Matrix3<T> R_WC = math::ComputeBasisFromZ(this_normal);
+      const int z_axis = 2;
+      const Matrix3<T> R_WC = math::ComputeBasisFromAxis(z_axis, this_normal);
       const auto J = R_WC.transpose() * (JA - JB);  // J = [ D1; D2; n ]
 
       // TODO(SeanCurtis-TRI): Coordinate with Paul Mitiguy to standardize this

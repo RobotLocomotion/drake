@@ -33,11 +33,11 @@ GTEST_TEST(ComputeBasisFromAxisTest, RightHandOrthogonal) {
   for (int i = 0; i < 3; ++i) {
     // Check a non-unit vector.
     Vec3d v(1, 1, 1);
-    EXPECT_THROW(ComputeBasisFromAxis(i, v), std::logic_error);
-
-    // Check a unit vector.
-    v.normalize();
     CheckBasis(ComputeBasisFromAxis(i, v));
+
+    // Check a zero vector.
+    v.setZero();
+    EXPECT_THROW(CheckBasis(ComputeBasisFromAxis(i, v)), std::logic_error);
 
     // Check the x-, y- and z-axes.
     const Vec3d x_axis = Vec3d::UnitX();

@@ -16,10 +16,11 @@ namespace math {
 ///                       0 corresponding to the x-axis, 1 corresponding to the
 ///                       y-axis, and z-corresponding to the z-axis.
 /// @param[in] axis_W   The vector defining the basis's given axis expressed
-///                     in frame W.
+///                     in frame W. The vector need not be a unit vector: this
+///                     routine will normalize it.
 /// @retval R_WL        The computed basis.
-/// @throws std::logic_error if @p axis_W is not a unit vector or @p axis_index
-///         does not lie in the range [0,2].
+/// @throws std::logic_error if the norm of @p axis_W is within 1e-10 to zero or
+///         @p axis_index does not lie in the range [0,2].
 template <class T>
 Matrix3<T> ComputeBasisFromAxis(int axis_index, const Vector3<T>& axis_W) {
   using std::abs;
@@ -28,27 +29,28 @@ Matrix3<T> ComputeBasisFromAxis(int axis_index, const Vector3<T>& axis_W) {
   if (axis_index < 0 || axis_index > 2)
     throw std::logic_error("Invalid axis specified: must be 0, 1, or 2.");
 
-  // Verify that the vector is normalized.
-  const T nrm_sq = axis_W.squaredNorm();
-  if (abs(nrm_sq - 1.0) > 10 * std::numeric_limits<double>::epsilon())
-    throw std::logic_error("Vector does not appear to be normalized.");
+  // Verify that the vector is not nearly zero.
+  const double zero_tol = 1e-10;
+  const T norm = axis_W.norm();
+  if (norm < zero_tol)
+    throw std::logic_error("Vector appears to be nearly zero.");
 
   // The axis corresponding to the smallest component of axis_W will be *most*
   // perpendicular.
   const Vector3<T> u(axis_W.cwiseAbs());
   int minAxis;
   u.minCoeff(&minAxis);
-  Vector3<T> perpAxis;
-  perpAxis << (minAxis == 0 ? 1 : 0), (minAxis == 1 ? 1 : 0),
-      (minAxis == 2 ? 1 : 0);
+  Vector3<T> perpAxis = Vector3<T>::Zero();
+  perpAxis[minAxis] = 1;
+  const Vector3<T> axis_W_unit = axis_W / norm;
 
   // Now define additional vectors in the basis.
-  Vector3<T> v1_W = axis_W.cross(perpAxis).normalized();
-  Vector3<T> v2_W = axis_W.cross(v1_W);
+  Vector3<T> v1_W = axis_W_unit.cross(perpAxis).normalized();
+  Vector3<T> v2_W = axis_W_unit.cross(v1_W);
 
   // Set the columns of the matrix.
   Matrix3<T> R_WL;
-  R_WL.col(axis_index) = axis_W;
+  R_WL.col(axis_index) = axis_W_unit;
   R_WL.col((axis_index + 1) % 3) = v1_W;
   R_WL.col((axis_index + 2) % 3) = v2_W;
 
