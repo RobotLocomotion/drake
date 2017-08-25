@@ -5,7 +5,7 @@
 			<String>xsd.documentation.options</String>
 			<xsdDocumentationOptions>
 				<field name="imageType">
-					<String>jpeg</String>
+					<String>svg</String>
 				</field>
 				<field name="includeGlobalElements">
 					<Boolean>true</Boolean>
