@@ -63,9 +63,9 @@ GTEST_TEST(FindResourceTest, AlternativeDirectory) {
       absolute_path.find_last_of("/\\") + 1);
   std::string candidate_directory = absolute_path.substr(
       0, absolute_path.find_last_of("\\/"));
-  auto result = drake::FindResourceOrThrow(
+  EXPECT_NO_THROW(drake::FindResourceOrThrow(
       candidate_filename,
-      candidate_directory);
+      candidate_directory));
   std::fclose(fp);
 }
 
