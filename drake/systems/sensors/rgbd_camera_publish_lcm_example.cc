@@ -29,9 +29,17 @@ namespace systems {
 namespace sensors {
 namespace {
 
-bool ValidateSdf(const char* flagname, const std::string& sdf) {
-  if (sdf.empty()) {
-    cout << "Invalid filename for --" << flagname << ": " << sdf << endl;
+bool ValidateSdf(const char* flagname, const std::string& filename) {
+  if (filename.substr(filename.find_last_of(".") + 1) == "sdf") {
+    return true;
+  }
+  cout << "Invalid filename for --" << flagname << ": " << filename << endl;
+  return false;
+}
+
+bool ValidateDir(const char* flagname, const std::string& dir) {
+  if (dir.empty()) {
+    cout << "Invalid directory for --" << flagname << ": " << dir << endl;
     return false;
   }
   return true;
@@ -47,10 +55,9 @@ DEFINE_string(sdf_fixed, "sphere.sdf",
               "The filename for a SDF that contains fixed base objects.");
 DEFINE_string(sdf_floating, "box.sdf",
               "The filename for a SDF that contains floating base objects.");
-DEFINE_validator(sdf_dir, &ValidateSdf);
+DEFINE_validator(sdf_dir, &ValidateDir);
 DEFINE_validator(sdf_fixed, &ValidateSdf);
 DEFINE_validator(sdf_floating, &ValidateSdf);
-
 
 constexpr double kCameraPosePublishPeriod{0.01};
 constexpr double kImageArrayPublishPeriod{0.01};
@@ -66,9 +73,9 @@ constexpr char kPoseLcmChannelName[] = "DRAKE_RGBD_CAMERA_POSE";
 struct CameraConfig {
   Eigen::Vector3d pos;
   Eigen::Vector3d rpy;
-  double fov_y;
-  double depth_range_near;
-  double depth_range_far;
+  double fov_y{};
+  double depth_range_near{};
+  double depth_range_far{};
 };
 
 }  // anonymous namespace
