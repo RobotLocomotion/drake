@@ -31,7 +31,75 @@ GTEST_TEST(DirectTranscriptionTest, DiscreteTimeConstructorThrows) {
   EXPECT_THROW(DirectTranscription(&system, *context, 3), std::runtime_error);
 }
 
+namespace {
+
+template <typename T>
+class CubicPolynomialSystem final : public systems::LeafSystem<T> {
+ public:
+  explicit CubicPolynomialSystem(double timestep)
+      : systems::LeafSystem<T>(
+            systems::SystemTypeTag<
+                trajectory_optimization::CubicPolynomialSystem>{}),
+        timestep_(timestep) {       // Zero inputs, zero outputs.
+    this->DeclareDiscreteState(1);  // One state variable.
+    this->DeclarePeriodicDiscreteUpdate(timestep);
+  }
+
+  // Scalar-converting copy constructor.
+  template <typename U>
+  explicit CubicPolynomialSystem(const CubicPolynomialSystem<U>& system)
+      : CubicPolynomialSystem(system.timestep()) {}
+
+  double timestep() const { return timestep_; }
+
+ private:
+  // x[n+1] = x³[n]
+  void DoCalcDiscreteVariableUpdates(
+      const Context<T>& context,
+      const std::vector<const DiscreteUpdateEvent<T>*>&,
+      DiscreteValues<T>* discrete_state) const final {
+    using std::pow;
+    discrete_state->get_mutable_vector(0)->SetAtIndex(
+        0, pow(context.get_discrete_state(0)->get_value()[0], 3.0));
+  }
+
+  const double timestep_{0.0};
+};
+
+}  // namespace
+
+// This example will NOT use the symbolic constraints.
 GTEST_TEST(DirectTranscriptionTest, DiscreteTimeConstraintTest) {
+  const double kTimeStep = 1.0;
+  CubicPolynomialSystem<double> system(kTimeStep);
+
+  const auto context = system.CreateDefaultContext();
+  int kNumSampleTimes = 3;
+  DirectTranscription prog(&system, *context, kNumSampleTimes);
+
+  // TODO(russt):  Uncomment this upon resolution of #6878.
+  // EXPECT_EQ(prog.fixed_timestep(),kTimeStep);
+
+  // Sets all decision variables to trivial known values (1,2,3,...).
+  prog.SetDecisionVariableValues(
+      Eigen::VectorXd::LinSpaced(prog.num_vars(), 1, prog.num_vars()));
+
+  // Constructor should add dynamic constraints, and these are the
+  // only generic constraints that should be in the program so far.
+  const std::vector<solvers::Binding<solvers::Constraint>>&
+      dynamic_constraints = prog.generic_constraints();
+  EXPECT_EQ(dynamic_constraints.size(), kNumSampleTimes - 1);
+
+  using std::pow;
+  for (int i = 0; i < (kNumSampleTimes - 1); i++) {
+    EXPECT_EQ(prog.EvalBindingAtSolution(dynamic_constraints[i])[0],
+              prog.GetSolution(prog.state(i + 1)[0]) -
+                  pow(prog.GetSolution(prog.state(i)[0]), 3.0));
+  }
+}
+
+// This example WILL use the symbolic constraints.
+GTEST_TEST(DirectTranscriptionTest, DiscreteTimeSymbolicConstraintTest) {
   Eigen::Matrix2d A, B;
   // clang-format off
   A << 1, 2,
@@ -54,13 +122,14 @@ GTEST_TEST(DirectTranscriptionTest, DiscreteTimeConstraintTest) {
   prog.SetDecisionVariableValues(
       Eigen::VectorXd::LinSpaced(prog.num_vars(), 1, prog.num_vars()));
 
-  // Constructor should add dynamic constraints, and these are the
-  // only generic constraints that should be in the program so far.
-  // TODO(russt): Update this once symbolic dynamics are supported, as
-  // these dynamic constraints will not be generic_constraints.
-  const std::vector<solvers::Binding<solvers::Constraint>>&
-      dynamic_constraints = prog.generic_constraints();
-  EXPECT_EQ(dynamic_constraints.size(), kNumSampleTimes - 1);
+  // Constructor should add dynamic constraints, and these should have been
+  // added as linear equality constraints. (There is also one linear
+  // equality constraint for the control input).
+  const std::vector<solvers::Binding<solvers::LinearEqualityConstraint>>&
+      dynamic_constraints = prog.linear_equality_constraints();
+  EXPECT_EQ(dynamic_constraints.size(), kNumSampleTimes);
+  // Check that there are no nonlinear constraints in the program.
+  EXPECT_EQ(prog.generic_constraints().size(), 0);
 
   for (int i = 0; i < (kNumSampleTimes - 1); i++) {
     EXPECT_TRUE(
@@ -87,13 +156,16 @@ GTEST_TEST(DirectTranscriptionTest, AddRunningCostTest) {
 
   DirectTranscription prog(&system, *context, kNumSamples);
 
+  // Check that there are no nonlinear constraints in the program.
+  EXPECT_EQ(prog.generic_constraints().size(), 0);
+
   // x[0] = 0.
   prog.AddLinearConstraint(prog.initial_state() == Vector1d(1.0));
 
   prog.AddRunningCost(prog.state());
   prog.AddFinalCost(prog.state().cast<symbolic::Expression>());
 
-  prog.Solve();
+  EXPECT_EQ(prog.Solve(), solvers::SolutionResult::kSolutionFound);
 
   // Cost is x[N] + \sum_{0...N-1} h*x[i]
   EXPECT_NEAR(prog.GetOptimalCost(), kTimeStep * (kNumSamples - 1) + 1, 1e-6);
