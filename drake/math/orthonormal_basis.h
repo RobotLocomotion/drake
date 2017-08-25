@@ -23,8 +23,6 @@ namespace math {
 ///         @p axis_index does not lie in the range [0,2].
 template <class T>
 Matrix3<T> ComputeBasisFromAxis(int axis_index, const Vector3<T>& axis_W) {
-  using std::abs;
-
   // Verify that the correct axis is given.
   if (axis_index < 0 || axis_index > 2)
     throw std::logic_error("Invalid axis specified: must be 0, 1, or 2.");
