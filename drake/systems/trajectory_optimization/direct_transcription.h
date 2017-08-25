@@ -3,7 +3,6 @@
 #include <memory>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/solvers/constraint.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/trajectory_optimization/multiple_shooting.h"
@@ -21,7 +20,7 @@ class DirectTranscription : public MultipleShooting {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DirectTranscription)
 
-  /// Constructs the %MathematicalProgram% and adds the dynamic constraints.
+  /// Constructs the MathematicalProgram and adds the dynamic constraints.
   /// This version of the constructor is only for simple discrete-time systems
   /// (with a single periodic timestep update).  Continuous-time systems
   /// must call one of the constructors that takes bounds on the timestep as
@@ -33,7 +32,7 @@ class DirectTranscription : public MultipleShooting {
   /// @param context Required to describe any parameters of the system.  The
   ///    values of the state in this context do not have any effect.  This
   ///    context will also be "cloned" by the optimization; changes to the
-  ///    context after calling this method will NOT impact the trajector
+  ///    context after calling this method will NOT impact the trajectory
   ///    optimization.
   /// @param num_time_samples The number of knot points in the trajectory.
   /// @throws std::runtime_error If the system is not discrete time (only).
@@ -46,12 +45,12 @@ class DirectTranscription : public MultipleShooting {
   ~DirectTranscription() override {}
 
   /// Get the input trajectory at the solution as a
-  /// %PiecewisePolynomialTrajectory%.  The order of the trajectory
+  /// PiecewisePolynomialTrajectory.  The order of the trajectory
   /// will be determined by the integrator used in the dynamic constraints.
   PiecewisePolynomialTrajectory ReconstructInputTrajectory() const override;
 
   /// Get the state trajectory at the solution as a
-  /// %PiecewisePolynomialTrajectory%.  The order of the trajectory
+  /// PiecewisePolynomialTrajectory.  The order of the trajectory
   /// will be determined by the integrator used in the dynamic constraints.
   PiecewisePolynomialTrajectory ReconstructStateTrajectory() const override;
 
@@ -60,9 +59,9 @@ class DirectTranscription : public MultipleShooting {
   void DoAddRunningCost(const symbolic::Expression& e) override;
 
   // Create AutoDiff versions of the System components (for the constraints).
-  const std::unique_ptr<const System<AutoDiffXd>> system_{nullptr};
-  const std::unique_ptr<Context<AutoDiffXd>> context_{nullptr};
-  const std::unique_ptr<DiscreteValues<AutoDiffXd>> discrete_state_{nullptr};
+  const std::unique_ptr<const System<AutoDiffXd>> system_;
+  const std::unique_ptr<Context<AutoDiffXd>> context_;
+  const std::unique_ptr<DiscreteValues<AutoDiffXd>> discrete_state_;
   FreestandingInputPortValue* input_port_value_{
       nullptr};  // Owned by the context.
 };

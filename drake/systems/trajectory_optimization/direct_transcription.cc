@@ -7,6 +7,7 @@
 
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/solvers/constraint.h"
 
 namespace drake {
 namespace systems {
@@ -17,9 +18,6 @@ namespace {
 class DiscreteTimeSystemConstraint : public solvers::Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiscreteTimeSystemConstraint)
-
-  // The format of the input to the eval() function is a vector
-  // containing {input, state, next_state}.
 
  public:
   // @param evaluation_time  The time along the trajectory at which this
@@ -48,7 +46,7 @@ class DiscreteTimeSystemConstraint : public solvers::Constraint {
     evaluation_time_.derivatives().setZero();
   }
 
-  virtual ~DiscreteTimeSystemConstraint() {}
+  ~DiscreteTimeSystemConstraint() override = default;
 
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -58,6 +56,8 @@ class DiscreteTimeSystemConstraint : public solvers::Constraint {
     y = math::autoDiffToValueMatrix(y_t);
   }
 
+  // The format of the input to the eval() function is a vector
+  // containing {input, state, next_state}.
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
               AutoDiffVecXd& y) const override {
     DRAKE_ASSERT(x.size() == num_inputs_ + (2 * num_states_));
@@ -80,9 +80,9 @@ class DiscreteTimeSystemConstraint : public solvers::Constraint {
 
  private:
   const System<AutoDiffXd>& system_;
-  Context<AutoDiffXd>* context_;
-  FreestandingInputPortValue* input_port_value_;
-  DiscreteValues<AutoDiffXd>* discrete_state_;
+  Context<AutoDiffXd>* const context_;
+  FreestandingInputPortValue* const input_port_value_;
+  DiscreteValues<AutoDiffXd>* const discrete_state_;
 
   const int num_states_{0};
   const int num_inputs_{0};

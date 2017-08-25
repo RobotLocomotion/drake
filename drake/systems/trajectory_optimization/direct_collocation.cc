@@ -14,23 +14,18 @@ namespace trajectory_optimization {
 
 namespace {
 
+// Note that the DirectCollocation implementation below allocates
+// only ONE of these constraints, but binds that constraint
+// multiple times (with different decision variables, along the
+// trajectory).
 class DirectCollocationConstraint : public solvers::Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DirectCollocationConstraint)
 
-  // The format of the input to the eval() function is the
-  // tuple { timestep, state 0, state 1, input 0, input 1 },
-  // which has a total length of 1 + 2*num_states + 2*num_inputs.
-
-  // Note that the DirectCollocation implementation below allocates
-  // only ONE of these constraints, but binds that constraint
-  // multiple times (with different decision variables, along the
-  // trajectory).
-
  public:
   DirectCollocationConstraint(const System<double>& system,
-                              const Context<double>& context,
-                              int num_states, int num_inputs)
+                              const Context<double>& context, int num_states,
+                              int num_inputs)
       : Constraint(num_states, 1 + (2 * num_states) + (2 * num_inputs),
                    Eigen::VectorXd::Zero(num_states),
                    Eigen::VectorXd::Zero(num_states)),
@@ -79,7 +74,7 @@ class DirectCollocationConstraint : public solvers::Constraint {
     }
   }
 
-  virtual ~DirectCollocationConstraint() {}
+  ~DirectCollocationConstraint() override = default;
 
  protected:
   void dynamics(const AutoDiffVecXd& state, const AutoDiffVecXd& input,
@@ -100,6 +95,9 @@ class DirectCollocationConstraint : public solvers::Constraint {
     y = math::autoDiffToValueMatrix(y_t);
   }
 
+  // The format of the input to the eval() function is the
+  // tuple { timestep, state 0, state 1, input 0, input 1 },
+  // which has a total length of 1 + 2*num_states + 2*num_inputs.
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
               AutoDiffVecXd& y) const override {
     DRAKE_ASSERT(x.size() == 1 + (2 * num_states_) + (2 * num_inputs_));
