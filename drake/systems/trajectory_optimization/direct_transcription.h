@@ -58,12 +58,14 @@ class DirectTranscription : public MultipleShooting {
   // Implements a running cost at all timesteps.
   void DoAddRunningCost(const symbolic::Expression& e) override;
 
-  // Create AutoDiff versions of the System components (for the constraints).
-  const std::unique_ptr<const System<AutoDiffXd>> system_;
-  const std::unique_ptr<Context<AutoDiffXd>> context_;
-  const std::unique_ptr<DiscreteValues<AutoDiffXd>> discrete_state_;
+  // AutoDiff versions of the System components (for the constraints).
+  std::unique_ptr<const System<AutoDiffXd>> system_;
+  std::unique_ptr<Context<AutoDiffXd>> context_;
+  std::unique_ptr<DiscreteValues<AutoDiffXd>> discrete_state_;
   FreestandingInputPortValue* input_port_value_{
       nullptr};  // Owned by the context.
+
+  const bool discrete_time_system_{false};
 };
 
 }  // namespace trajectory_optimization
