@@ -160,7 +160,7 @@ class MGKukaIIwaRobot {
   /// @param[in] g Earth (or celestial body) gravitational acceleration in m/s².
   void set_surface_gravity(double g) { MG_kuka_auto_generated_.g = g; }
 
-  /** @name
+  /** @name Methods for returning mass
    *  These methods return the mass of robot links A, B, C, D, E, F, G (in kg).
    */
   ///@{
