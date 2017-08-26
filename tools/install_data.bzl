@@ -29,11 +29,15 @@ def install_data(
     models_extensions = [
         "csv",
         "dae",
+        "jpg",
         "json",
         "obj",
+        "png",
         "sdf",
         "stl",
         "urdf",
+        "vtm",
+        "vtp",
         "xml",
     ]
     exclude_patterns = ["**/test/*", "**/test*"]
