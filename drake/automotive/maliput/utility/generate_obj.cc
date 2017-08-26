@@ -766,7 +766,7 @@ bool IsSegmentRenderedNormally(const api::SegmentId& id,
     return true;
   }
   for (const api::SegmentId& highlighted_id : highlights) {
-    if (id.id == highlighted_id.id) {
+    if (id == highlighted_id) {
       return true;
     }
   }

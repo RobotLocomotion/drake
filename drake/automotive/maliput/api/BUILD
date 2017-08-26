@@ -12,7 +12,6 @@ drake_cc_library(
         "lane.cc",
         "lane_data.cc",
         "road_geometry.cc",
-        "segment.cc",
     ],
     hdrs = [
         "branch_point.h",
