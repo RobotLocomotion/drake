@@ -40,7 +40,8 @@ GTEST_TEST(MonolaneLanesTest, FlatLineLane) {
   const double kHalfWidth = 10.;
   const double kMaxHeight = 5.;
   RoadGeometry rg({"apple"}, kLinearTolerance, kAngularTolerance);
-  Segment* s1 = rg.NewJunction(api::JunctionId{"j1"})->NewSegment({"s1"});
+  Segment* s1 =
+      rg.NewJunction(api::JunctionId{"j1"})->NewSegment(api::SegmentId{"s1"});
   Lane* l1 = s1->NewLineLane(
       {"l1"},
       {100., -75.}, {100., 50.},
@@ -122,7 +123,8 @@ GTEST_TEST(MonolaneLanesTest, FlatLineLane) {
   // Case 3: Tests LineLane::ToLanePosition() at a non-zero but flat elevation.
   const double elevation = 10.;
   const double length = std::sqrt(std::pow(100, 2.) + std::pow(50, 2.));
-  Segment* s2 = rg.NewJunction(api::JunctionId{"j2"})->NewSegment({"s2"});
+  Segment* s2 =
+      rg.NewJunction(api::JunctionId{"j2"})->NewSegment(api::SegmentId{"s2"});
   Lane* l1_with_z = s2->NewLineLane(
       {"l1_with_z"},
       {100., -75.}, {100., 50.},
@@ -203,7 +205,8 @@ GTEST_TEST(MonolaneLanesTest, FlatArcLane) {
   const V2 center{100., -75.};
   const double kHalfWidth = 10.;
   const double kMaxHeight = 5.;
-  Segment* s1 = rg.NewJunction(api::JunctionId{"j1"})->NewSegment({"s1"});
+  Segment* s1 =
+      rg.NewJunction(api::JunctionId{"j1"})->NewSegment(api::SegmentId{"s1"});
   Lane* l2 = s1->NewArcLane(
       {"l2"},
       center, radius, theta0, d_theta,
@@ -303,7 +306,8 @@ GTEST_TEST(MonolaneLanesTest, FlatArcLane) {
 
   // Case 3: Tests ArcLane::ToLanePosition() at a non-zero but flat elevation.
   const double elevation = 10.;
-  Segment* s2 = rg.NewJunction(api::JunctionId{"j2"})->NewSegment({"s2"});
+  Segment* s2 =
+      rg.NewJunction(api::JunctionId{"j2"})->NewSegment(api::SegmentId{"s2"});
   Lane* l2_with_z = s2->NewArcLane(
       {"l2_with_z"},
       center, radius, theta0, d_theta,
@@ -328,7 +332,8 @@ GTEST_TEST(MonolaneLanesTest, FlatArcLane) {
   // Case 4: Tests ArcLane::ToLanePosition() with a lane that overlaps itself.
   // The result should be identical to Case 1.
   const double d_theta_overlap = 3 * M_PI;
-  Segment* s3 = rg.NewJunction(api::JunctionId{"j3"})->NewSegment({"s3"});
+  Segment* s3 =
+      rg.NewJunction(api::JunctionId{"j3"})->NewSegment(api::SegmentId{"s3"});
   Lane* l2_overlapping = s3->NewArcLane(
       {"l2_overlapping"},
       center, radius, theta0, d_theta_overlap,
@@ -358,7 +363,8 @@ GTEST_TEST(MonolaneLanesTest, FlatArcLane) {
   // in the third quadrant.
   const double theta0_wrap = 1.2 * M_PI;
   const double d_theta_wrap = -0.4 * M_PI;
-  Segment* s4 = rg.NewJunction(api::JunctionId{"j4"})->NewSegment({"s4"});
+  Segment* s4 =
+      rg.NewJunction(api::JunctionId{"j4"})->NewSegment(api::SegmentId{"s4"});
   Lane* l2_wrap = s4->NewArcLane(
       {"l2_wrap"},
       center, radius, theta0_wrap, d_theta_wrap,
@@ -443,7 +449,8 @@ GTEST_TEST(MonolaneLanesTest, ArcLaneWithConstantSuperelevation) {
   CubicPolynomial zp {0., 0., 0., 0.};
   const double kTheta = 0.10 * M_PI;  // superelevation
   RoadGeometry rg({"apple"}, kLinearTolerance, kAngularTolerance);
-  Segment* s1 = rg.NewJunction(api::JunctionId{"j1"})->NewSegment({"s1"});
+  Segment* s1 =
+      rg.NewJunction(api::JunctionId{"j1"})->NewSegment(api::SegmentId{"s1"});
   Lane* l2 = s1->NewArcLane(
       {"l2"},
       {100., -75.}, 100., 0.25 * M_PI, 1.5 * M_PI,
@@ -555,7 +562,8 @@ api::LanePosition IntegrateTrivially(const api::Lane* lane,
 GTEST_TEST(MonolaneLanesTest, HillIntegration) {
   CubicPolynomial zp {0., 0., 0., 0.};
   RoadGeometry rg({"apple"}, kLinearTolerance, kAngularTolerance);
-  Segment* s1 = rg.NewJunction(api::JunctionId{"j1"})->NewSegment({"s1"});
+  Segment* s1 =
+      rg.NewJunction(api::JunctionId{"j1"})->NewSegment(api::SegmentId{"s1"});
   const double theta0 = 0.25 * M_PI;
   const double d_theta = 0.5 * M_PI;
   const double theta1 = theta0 + d_theta;

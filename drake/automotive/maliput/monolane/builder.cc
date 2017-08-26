@@ -188,7 +188,8 @@ Lane* Builder::BuildConnection(
     Junction* const junction,
     RoadGeometry* const road_geometry,
     std::map<Endpoint, BranchPoint*, EndpointFuzzyOrder>* const bp_map) const {
-  Segment* segment = junction->NewSegment({std::string("s:") + conn->id()});
+  Segment* segment =
+      junction->NewSegment(api::SegmentId{std::string("s:") + conn->id()});
   Lane* lane{};
   api::LaneId lane_id{std::string("l:") + conn->id()};
 

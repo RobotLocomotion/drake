@@ -150,7 +150,7 @@ std::vector<std::string> RoadGeometry::CheckInvariants() const {
       const Segment* seg = jnx->segment(si);
       if (seg->junction() != jnx) {
         std::stringstream ss;
-        ss << "Segment " << seg->id().id << " is owned by "
+        ss << "Segment " << seg->id().string() << " is owned by "
            << jnx->id().string()
            << " (" << jnx << ") but claims to be owned by "
            << seg->junction()->id().string() << " (" << seg->junction() << ").";
@@ -161,8 +161,10 @@ std::vector<std::string> RoadGeometry::CheckInvariants() const {
         if (lane->segment() != seg) {
           std::stringstream ss;
           ss << "Lane " << lane->id().id << " is owned by "
-             << seg->id().id << " (" << seg << ") but claims to be owned by "
-             << lane->segment()->id().id << " (" << lane->segment() << ").";
+             << seg->id().string()
+             << " (" << seg << ") but claims to be owned by "
+             << lane->segment()->id().string()
+             << " (" << lane->segment() << ").";
           failures.push_back(ss.str());
         }
         // Currently, only Lane has an index() accessor, because its the only

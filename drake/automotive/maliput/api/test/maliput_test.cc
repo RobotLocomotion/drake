@@ -14,7 +14,6 @@ namespace {
 // Tests the streaming string operators for the following Maliput abstractions:
 //   - LaneId
 //   - RoadGeometryId
-//   - SegmentId
 GTEST_TEST(MaliputApiTest, TestIdToStringStream) {
   std::stringstream buffer;
 
@@ -31,11 +30,6 @@ GTEST_TEST(MaliputApiTest, TestIdToStringStream) {
   EXPECT_EQ(buffer.str(), "RoadGeometry(" + road_geometry_name + ")");
   buffer.str("");
   buffer.clear();
-
-  // Tests SegmentId.
-  const std::string segment_name = "foo segment id";
-  buffer << SegmentId({segment_name});
-  EXPECT_EQ(buffer.str(), "Segment(" + segment_name + ")");
 }
 
 // Tests the streaming string operators for the following Maliput abstractions:

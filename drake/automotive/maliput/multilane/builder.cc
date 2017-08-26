@@ -241,8 +241,9 @@ Lane* Builder::BuildConnection(
     }
   }
   api::LaneId lane_id{std::string("l:") + conn->id()};
-  Segment* segment = junction->NewSegment({std::string("s:") + conn->id()},
-                                          std::move(road_curve));
+  Segment* segment = junction->NewSegment(
+      api::SegmentId{std::string("s:") + conn->id()},
+      std::move(road_curve));
   Lane* lane = segment->NewLane(lane_id, lane_bounds_, driveable_bounds_,
                                 elevation_bounds_);
   AttachBranchPoint(

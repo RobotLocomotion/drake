@@ -36,11 +36,11 @@ GTEST_TEST(RNDFJunctionTest, SegmentTest) {
 
   EXPECT_EQ(junction->num_segments(), 0);
 
-  Segment* s1 = junction->NewSegment({"s:1"});
+  Segment* s1 = junction->NewSegment(api::SegmentId{"s:1"});
   EXPECT_EQ(junction->num_segments(), 1);
   EXPECT_EQ(junction->segment(0), s1);
 
-  Segment* s2 = junction->NewSegment({"s:2"});
+  Segment* s2 = junction->NewSegment(api::SegmentId{"s:2"});
   EXPECT_EQ(junction->num_segments(), 2);
   EXPECT_EQ(junction->segment(1), s2);
 
