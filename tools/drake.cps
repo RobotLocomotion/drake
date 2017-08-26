@@ -31,11 +31,6 @@
       "Hints": ["@prefix@/lib/cmake/fmt"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
-    "IPOPT": {
-      "Version": "3.12.5",
-      "Hints": ["@prefix@/lib/cmake/ipopt"],
-      "X-CMake-Find-Args": ["CONFIG"]
-    },
     "lcm": {
       "Version": "1.3.95",
       "Hints": ["@prefix@/lib/cmake/lcm"],
@@ -93,7 +88,6 @@
         "Eigen3:Eigen",
         "fcl:fcl",
         "fmt:fmt",
-        "IPOPT:ipopt",
         "lcm:lcm",
         "NLopt:nlopt",
         "protobuf:protobuf",
