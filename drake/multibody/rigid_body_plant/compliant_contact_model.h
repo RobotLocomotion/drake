@@ -1,7 +1,6 @@
 #pragma once
 
 #include "drake/common/drake_copyable.h"
-#include "drake/math/orthonormal_basis.h"
 #include "drake/multibody/rigid_body_plant/contact_results.h"
 #include "drake/multibody/rigid_body_tree.h"
 
