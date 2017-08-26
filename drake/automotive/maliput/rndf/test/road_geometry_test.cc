@@ -44,11 +44,11 @@ GTEST_TEST(RNDFRoadGeometryTest, BranchPointTest) {
 
   EXPECT_EQ(rg.num_branch_points(), 0);
 
-  BranchPoint* bp1 = rg.NewBranchPoint({"bp:1"});
+  BranchPoint* bp1 = rg.NewBranchPoint(api::BranchPointId{"bp:1"});
   EXPECT_EQ(rg.num_branch_points(), 1);
   EXPECT_EQ(rg.branch_point(0), bp1);
 
-  BranchPoint* bp2 = rg.NewBranchPoint({"bp:2"});
+  BranchPoint* bp2 = rg.NewBranchPoint(api::BranchPointId{"bp:2"});
   EXPECT_EQ(rg.num_branch_points(), 2);
   EXPECT_EQ(rg.branch_point(1), bp2);
 

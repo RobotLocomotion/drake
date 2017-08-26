@@ -128,7 +128,7 @@ std::vector<std::string> RoadGeometry::CheckInvariants() const {
     const BranchPoint* bp = branch_point(bpi);
     if (bp->road_geometry() != this) {
       std::stringstream ss;
-      ss << "BranchPoint " << bp->id().id << " is owned by "
+      ss << "BranchPoint " << bp->id().string() << " is owned by "
          << this->id().id << " (" << this
          << ") but claims to be owned by "
          << bp->road_geometry()->id().id << " ("
@@ -191,7 +191,7 @@ std::vector<std::string> RoadGeometry::CheckInvariants() const {
     if ((bp->GetASide()->size() == 0) &&
         (bp->GetBSide()->size() == 0)) {
       std::stringstream ss;
-      ss << "BranchPoint " << bp->id().id << " is empty.";
+      ss << "BranchPoint " << bp->id().string() << " is empty.";
       failures.push_back(ss.str());
       continue;
     }

@@ -33,7 +33,7 @@ Lane::Lane(const Segment* segment, const api::LaneId& id,  int index,
   // TODO(liang.fok) Consider initializing this variable in the constructor's
   // initializer list so branch_point_ can be declared `const`.
   branch_point_ = make_unique<BranchPoint>(
-      api::BranchPointId({id.id + "_Branch_Point"}), this,
+      api::BranchPointId(id.id + "_Branch_Point"), this,
       segment->junction()->road_geometry());
 }
 

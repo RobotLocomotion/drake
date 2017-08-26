@@ -135,7 +135,8 @@ BranchPoint* Builder::FindOrCreateBranchPoint(
   }
   // TODO(maddog@tri.global) Generate a more meaningful id (user-specified?)
   BranchPoint* bp = road_geometry->NewBranchPoint(
-      {"bp:" + std::to_string(road_geometry->num_branch_points())});
+      api::BranchPointId{
+        "bp:" + std::to_string(road_geometry->num_branch_points())});
   auto result = bp_map->emplace(point, bp);
   DRAKE_DEMAND(result.second);
   return bp;
