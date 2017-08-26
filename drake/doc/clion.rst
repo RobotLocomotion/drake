@@ -157,10 +157,7 @@ with the environment you actually want!
 
 **Ubuntu users** will generally get good behavior by default, because ``apt``
 installs binaries in reasonable, standard paths, and because most CLion launch
-mechanisms will have already sourced the ``.bashrc``. Do be careful that
-``ccache`` is not on your ``PATH``, though.  If you launch CLion with ``ccache``
-on your ``PATH``, and then CLion launches a Bazel server, you'll need to quit
-CLion, kill the Bazel server, and run ``bazel clean`` to recover.
+mechanisms will have already sourced the ``.bashrc``.
 
 **OS X users** will get broken behavior by default.  When you run an OS X app
 graphically, the parent process is `launchd` (PID 1), which provides its own

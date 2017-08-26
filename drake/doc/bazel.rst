@@ -29,9 +29,6 @@ The one-time platform setup is the same as for a CMake build:
  - Continue with the *"Mandatory platform specific instructions"* on the same
    page.
 
-When using Bazel, be sure that **ccache is not on your default $PATH**, e.g.,
-``env | grep ccache`` is empty.
-
 .. _using_bazel:
 
 Developing Drake using Bazel
@@ -230,12 +227,3 @@ view it, browse to ``drake-distro/bazel-kcov/index.html``.
    :hidden:
 
    building_kcov
-
-FAQ
-===
-
-Q: What does ``ccache: error: Could not find compiler "gcc" in PATH`` mean?
-
-   A: Your ``$PATH`` still has the magic ``ccache`` directory on it somewhere.
-      Update your dotfiles so that something like ``/usr/lib/ccache`` is not on
-      your ``$PATH``.
