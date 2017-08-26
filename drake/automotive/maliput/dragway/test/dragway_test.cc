@@ -266,7 +266,7 @@ TEST_F(MaliputDragwayLaneTest, SingleLane) {
   ASSERT_NE(segment, nullptr);
   EXPECT_EQ(segment->lane(0)->length(), length_);
   EXPECT_EQ(segment->num_lanes(), 1);
-  EXPECT_EQ(segment->id().id, "Dragway_Segment_ID");
+  EXPECT_EQ(segment->id(), api::SegmentId("Dragway_Segment_ID"));
 
   const int kLaneIndex = 0;
   const api::Lane* lane = segment->lane(kLaneIndex);
@@ -313,7 +313,7 @@ TEST_F(MaliputDragwayLaneTest, TwoLaneDragway) {
   ASSERT_NE(lane_zero, nullptr);
   EXPECT_EQ(lane_zero->length(), length_);
   EXPECT_EQ(segment->num_lanes(), kNumLanes);
-  EXPECT_EQ(segment->id().id, "Dragway_Segment_ID");
+  EXPECT_EQ(segment->id(), api::SegmentId("Dragway_Segment_ID"));
 
   for (int i = 0; i < kNumLanes; ++i) {
     const api::Lane* lane = segment->lane(i);

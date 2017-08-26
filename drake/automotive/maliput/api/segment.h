@@ -2,6 +2,7 @@
 
 #include <string>
 
+#include "drake/automotive/maliput/api/type_specific_identifier.h"
 #include "drake/common/drake_copyable.h"
 
 namespace drake {
@@ -10,17 +11,12 @@ namespace api {
 
 class Junction;
 class Lane;
+class Segment;
 
 
 /// Persistent identifier for a Segment element.
-struct SegmentId {
-  std::string id;
-};
+using SegmentId = TypeSpecificIdentifier<Segment>;
 
-/// Streams a string representation of @p segment_id into @p out. Returns
-/// @p out. This method is provided for the purposes of debugging or
-/// text-logging. It is not intended for serialization.
-std::ostream& operator<<(std::ostream& out, const SegmentId& segment_id);
 
 /// A Segment represents a bundle of adjacent Lanes which share a
 /// continuously traversable road surface.  Every LanePosition on a
