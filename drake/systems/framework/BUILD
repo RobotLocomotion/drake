@@ -261,11 +261,13 @@ drake_cc_library(
     srcs = [
         "output_port.cc",
         "system.cc",
+        "system_constraint.cc",
         "witness_function.cc",
     ],
     hdrs = [
         "output_port.h",
         "system.h",
+        "system_constraint.h",
         "witness_function.h",
     ],
     deps = [
@@ -645,6 +647,16 @@ drake_cc_googletest(
     deps = [
         ":leaf_system",
         ":system_scalar_converter",
+    ],
+)
+
+drake_cc_googletest(
+    name = "system_constraint_test",
+    deps = [
+        ":diagram",
+        ":diagram_builder",
+        ":leaf_system",
+        ":system",
     ],
 )
 
