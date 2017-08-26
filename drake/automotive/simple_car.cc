@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <utility>
 
 #include <Eigen/Geometry>
@@ -47,6 +48,35 @@ SimpleCar<T>::SimpleCar()
   this->DeclareVectorOutputPort(&SimpleCar::CalcVelocity);
   this->DeclareContinuousState(SimpleCarState<T>());
   this->DeclareNumericParameter(SimpleCarParams<T>());
+
+  // -∞ <= input.steering_angle - params.max_abs_steering_angle <= 0,
+  // 0 <= input.steering_angle + params.max_abs_steering_angle <= ∞.
+  // Note: I'm preferring this to a scalar-valued constraint
+  //   -1 <= input.steering_angle / params.max_abs_steering_angle <= 1
+  // to preserve linearity, but it's possible that we could be smart
+  // enough with our symbolic processing to realize that the trivial
+  // rational forms are, in fact, linear constraints.
+  this->DeclareConstraint(
+      &SimpleCar::CalcSteeringAngleConstraint,
+      Eigen::Vector2d(-std::numeric_limits<double>::infinity(), 0.0),
+      Eigen::Vector2d(0.0, std::numeric_limits<double>::infinity()),
+      "steering angle limit");
+
+  // -∞ <= input.acceleration - params.max_acceleration <= 0,
+  // 0 <= input.acceleration + params.max_acceleration <= ∞.
+  this->DeclareConstraint(
+      &SimpleCar::CalcAccelerationConstraint,
+      Eigen::Vector2d(-std::numeric_limits<double>::infinity(), 0.0),
+      Eigen::Vector2d(0.0, std::numeric_limits<double>::infinity()),
+      "acceleration limit");
+
+  // -∞ <= state.velocity - params.max_velocity <= 0,
+  // 0 <= state.velocity <= ∞.
+  this->DeclareConstraint(
+      &SimpleCar::CalcVelocityConstraint,
+      Eigen::Vector2d(-std::numeric_limits<double>::infinity(), 0.0),
+      Eigen::Vector2d(0.0, std::numeric_limits<double>::infinity()),
+      "velocity limit");
 }
 
 template <typename T>
@@ -176,6 +206,39 @@ void SimpleCar<T>::ImplCalcTimeDerivatives(const SimpleCarParams<T>& params,
   rates->set_y(nonneg_velocity * sin(state.heading()));
   rates->set_heading(curvature * nonneg_velocity);
   rates->set_velocity(smooth_acceleration);
+}
+
+template <typename T>
+void SimpleCar<T>::CalcSteeringAngleConstraint(
+    const systems::Context<T>& context, VectorX<T>* value) const {
+  const DrivingCommand<T>* const input =
+      this->template EvalVectorInput<DrivingCommand>(context, 0);
+  const SimpleCarParams<T>& params =
+      this->template GetNumericParameter<SimpleCarParams>(context, 0);
+  *value =
+      Vector2<T>(input->steering_angle() - params.max_abs_steering_angle(),
+                 input->steering_angle() + params.max_abs_steering_angle());
+}
+
+template <typename T>
+void SimpleCar<T>::CalcAccelerationConstraint(
+    const systems::Context<T>& context, VectorX<T>* value) const {
+  const DrivingCommand<T>* const input =
+      this->template EvalVectorInput<DrivingCommand>(context, 0);
+  const SimpleCarParams<T>& params =
+      this->template GetNumericParameter<SimpleCarParams>(context, 0);
+  *value = Vector2<T>(input->acceleration() - params.max_acceleration(),
+                      input->acceleration() + params.max_acceleration());
+}
+
+template <typename T>
+void SimpleCar<T>::CalcVelocityConstraint(const systems::Context<T>& context,
+                                          VectorX<T>* value) const {
+  const SimpleCarState<T>& state = get_state(context);
+  const SimpleCarParams<T>& params =
+      this->template GetNumericParameter<SimpleCarParams>(context, 0);
+  *value =
+      Vector2<T>(state.velocity() - params.max_velocity(), state.velocity());
 }
 
 // These instantiations must match the API documentation in simple_car.h.

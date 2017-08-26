@@ -26,6 +26,7 @@
 #include "drake/systems/framework/model_values.h"
 #include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/system.h"
+#include "drake/systems/framework/system_constraint.h"
 #include "drake/systems/framework/system_scalar_converter.h"
 #include "drake/systems/framework/system_symbolic_inspector.h"
 #include "drake/systems/framework/value.h"
@@ -667,7 +668,7 @@ class LeafSystem : public System<T> {
   }
 
   /// Declares an abstract state.
-  /// @param abstract_state The abstract state, its ownership is transfered.
+  /// @param abstract_state The abstract state, its ownership is transferred.
   /// @return index of the declared abstract state.
   int DeclareAbstractState(std::unique_ptr<AbstractValue> abstract_state) {
     int index = model_abstract_states_.size();
@@ -947,6 +948,57 @@ class LeafSystem : public System<T> {
     return port;
   }
   //@}
+
+  /// Declares a system constraint by specifying a member function to
+  /// use to calculate the (Vector) constraint value with a signature:
+  /// @code
+  /// void MySystem::CalcConstraint(const Context<T>&, VectorX<T>*) const;
+  /// @endcode
+  /// and by specifying the lower- and upper-bounds for that constraint value.
+  ///
+  /// @param description should be a human-readable phrase.
+  /// @returns The index of the constraint.
+  /// Template arguments will be deduced and do not need to be specified.
+  ///
+  /// @see SystemConstraint<T> for more information about the meaning of
+  /// these constraints.
+  template <class MySystem>
+  SystemConstraintIndex DeclareConstraint(
+      void (MySystem::*calc)(const Context<T>&, VectorX<T>*) const,
+      const Eigen::Ref<const Eigen::VectorXd>& lower_bound,
+      const Eigen::Ref<const Eigen::VectorXd>& upper_bound,
+      const std::string& description) {
+    auto this_ptr = dynamic_cast<const MySystem*>(this);
+    DRAKE_DEMAND(this_ptr != nullptr);
+    return DeclareConstraint(
+        [this_ptr, calc](const Context<T>& context, VectorX<T>* value) {
+          DRAKE_DEMAND(value != nullptr);
+          (this_ptr->*calc)(context, value);
+        },
+        lower_bound, upper_bound, description);
+  }
+
+  /// Declares a system constraint by specifying a std::function to
+  /// use to calculate the (Vector) constraint value with a signature:
+  /// @code
+  /// void CalcConstraint(const Context<T>&, VectorX<T>*);
+  /// @endcode
+  /// and by specifying the lower- and upper-bounds for that constraint value.
+  ///
+  /// @param description should be a human-readable phrase.
+  /// @returns The index of the constraint.
+  ///
+  /// @see SystemConstraint<T> for more information about the meaning of
+  /// these constraints.
+  SystemConstraintIndex DeclareConstraint(
+      typename SystemConstraint<T>::CalcCallback calc,
+      const Eigen::Ref<const Eigen::VectorXd>& lower_bound,
+      const Eigen::Ref<const Eigen::VectorXd>& upper_bound,
+      const std::string& description) {
+    this->CreateConstraint(std::make_unique<SystemConstraint<T>>(
+        calc, lower_bound, upper_bound, description));
+    return SystemConstraintIndex(this->get_num_constraints() - 1);
+  }
 
   /// Derived-class event handler for all simultaneous publish events
   /// in @p events. Override this in your derived LeafSystem if your derived
