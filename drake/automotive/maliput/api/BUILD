@@ -22,6 +22,7 @@ drake_cc_library(
         "lane_data.h",
         "road_geometry.h",
         "segment.h",
+        "typed_id.h",
     ],
     deps = [
         "//drake/common",
@@ -42,6 +43,14 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "maliput_test",
     srcs = ["test/maliput_test.cc"],
+    deps = [
+        ":api",
+    ],
+)
+
+drake_cc_googletest(
+    name = "typed_id_test",
+    srcs = ["test/typed_id_test.cc"],
     deps = [
         ":api",
     ],
