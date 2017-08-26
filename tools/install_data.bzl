@@ -1,3 +1,5 @@
+# -*- python -*-
+
 load("@drake//tools:install.bzl", "install")
 
 def install_data(
