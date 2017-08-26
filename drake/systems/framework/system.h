@@ -25,6 +25,7 @@
 #include "drake/systems/framework/input_port_evaluator_interface.h"
 #include "drake/systems/framework/output_port.h"
 #include "drake/systems/framework/output_port_value.h"
+#include "drake/systems/framework/system_constraint.h"
 #include "drake/systems/framework/witness_function.h"
 
 namespace drake {
@@ -830,6 +831,25 @@ class System {
     return *output_ports_[port_index];
   }
 
+  /// Returns the number of constraints specified for the system.
+  int get_num_constraints() const {
+    return static_cast<int>(constraints_.size());
+  }
+
+  /// Returns the constraint at index @p constraint_index.
+  /// @throws std::out_of_range for an invalid constraint_index.
+  const SystemConstraint<T>& get_constraint(
+      SystemConstraintIndex constraint_index) const {
+    if (constraint_index < 0 || constraint_index >= get_num_constraints()) {
+      throw std::out_of_range("System " + get_name() + ": Constraint index " +
+                              std::to_string(constraint_index) +
+                              " is out of range. There are only " +
+                              std::to_string(get_num_constraints()) +
+                              " constraints.");
+    }
+    return *constraints_[constraint_index];
+  }
+
   /// Returns the total dimension of all of the input ports (as if they were
   /// muxed).
   int get_num_total_inputs() const {
@@ -1244,6 +1264,15 @@ class System {
   }
   //@}
 
+  /// Adds an already-created constraint to the list of constraints for this
+  /// System.  Ownership of the SystemConstraint is transferred to this system.
+  SystemConstraintIndex AddConstraint(
+      std::unique_ptr<SystemConstraint<T>> constraint) {
+    DRAKE_DEMAND(constraint != nullptr);
+    constraints_.push_back(std::move(constraint));
+    return SystemConstraintIndex(constraints_.size() - 1);
+  }
+
   //----------------------------------------------------------------------------
   /// @name               Virtual methods for input allocation
   /// Authors of derived %Systems should override these methods to self-describe
@@ -1627,6 +1656,8 @@ class System {
   std::vector<std::unique_ptr<InputPortDescriptor<T>>> input_ports_;
   std::vector<std::unique_ptr<OutputPort<T>>> output_ports_;
   const detail::InputPortEvaluatorInterface<T>* parent_{nullptr};
+
+  std::vector<std::unique_ptr<SystemConstraint<T>>> constraints_;
 
   // These are only used to dispatch forced event handling. For a LeafSystem,
   // all of these have exactly one kForced triggered event. For a Diagram, they

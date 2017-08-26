@@ -24,6 +24,7 @@ set(sources
   parameters.cc
   single_output_vector_source.cc
   vector_system.cc
+  system_constraint.cc
   system_symbolic_inspector.cc
   state.cc
   subvector.cc
@@ -76,6 +77,7 @@ set(installed_headers
   supervector.h
   system.h
   system_common.h
+  system_constraint.h
   system_scalar_converter.h
   system_type_tag.h
   value.h

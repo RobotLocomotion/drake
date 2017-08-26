@@ -1236,6 +1236,116 @@ GTEST_TEST(CustomContextTest, AllocatedContext) {
   ASSERT_TRUE(is_dynamic_castable<CustomContext<double>>(defaulted.get()));
 }
 
+class ConstraintTestSystem : public LeafSystem<double> {
+ public:
+  ConstraintTestSystem() { DeclareContinuousState(2); }
+
+  // Expose some protected methods for testing.
+  using LeafSystem<double>::DeclareInequalityConstraint;
+  using LeafSystem<double>::DeclareEqualityConstraint;
+
+  void CalcState0Constraint(const Context<double>& context,
+                            Eigen::VectorXd* value) const {
+    *value = Vector1d(context.get_continuous_state_vector().GetAtIndex(0));
+  }
+  void CalcStateConstraint(const Context<double>& context,
+                           Eigen::VectorXd* value) const {
+    *value = context.get_continuous_state_vector().CopyToVector();
+  }
+
+ private:
+  void DoCalcTimeDerivatives(
+      const Context<double>& context,
+      ContinuousState<double>* derivatives) const override {
+    // xdot = -x.
+    derivatives->SetFromVector(-dynamic_cast<const BasicVector<double>&>(
+                                    context.get_continuous_state_vector())
+                                    .get_value());
+  }
+};
+
+// Tests adding constraints implemented as methods inside the System class.
+GTEST_TEST(SystemConstraintTest, ClassMethodTest) {
+  ConstraintTestSystem dut;
+  EXPECT_EQ(dut.get_num_constraints(), 0);
+
+  EXPECT_EQ(dut.DeclareEqualityConstraint(
+                &ConstraintTestSystem::CalcState0Constraint, 1, "x0"),
+            0);
+  EXPECT_EQ(dut.get_num_constraints(), 1);
+
+  EXPECT_EQ(dut.DeclareInequalityConstraint(
+                &ConstraintTestSystem::CalcStateConstraint, 2, "x"),
+            1);
+  EXPECT_EQ(dut.get_num_constraints(), 2);
+
+  auto context = dut.CreateDefaultContext();
+  context->get_mutable_continuous_state_vector()->SetFromVector(
+      Eigen::Vector2d(5.0, 7.0));
+
+  EXPECT_EQ(dut.get_constraint(SystemConstraintIndex(0)).size(), 1);
+  EXPECT_EQ(dut.get_constraint(SystemConstraintIndex(1)).size(), 2);
+
+  Eigen::VectorXd value;
+  dut.get_constraint(SystemConstraintIndex(0)).Calc(*context, &value);
+  EXPECT_EQ(value.rows(), 1);
+  EXPECT_EQ(value[0], 5.0);
+
+  dut.get_constraint(SystemConstraintIndex(1)).Calc(*context, &value);
+  EXPECT_EQ(value.rows(), 2);
+  EXPECT_EQ(value[0], 5.0);
+  EXPECT_EQ(value[1], 7.0);
+
+  EXPECT_EQ(dut.get_constraint(SystemConstraintIndex(0)).lower_bound()[0], 0.0);
+  EXPECT_EQ(dut.get_constraint(SystemConstraintIndex(0)).upper_bound()[0], 0.0);
+  EXPECT_EQ(dut.get_constraint(SystemConstraintIndex(0)).description(), "x0");
+
+  EXPECT_EQ(dut.get_constraint(SystemConstraintIndex(1)).lower_bound()[1], 0.0);
+  EXPECT_EQ(dut.get_constraint(SystemConstraintIndex(1)).upper_bound()[1],
+            std::numeric_limits<double>::infinity());
+  EXPECT_EQ(dut.get_constraint(SystemConstraintIndex(1)).description(), "x");
+}
+
+// Tests adding constraints implemented as function handles (lambda functions).
+GTEST_TEST(SystemConstraintTest, FunctionHandleTest) {
+  ConstraintTestSystem dut;
+  EXPECT_EQ(dut.get_num_constraints(), 0);
+
+  SystemConstraint<double>::CalcCallback calc = [](
+      const Context<double>& context, Eigen::VectorXd* value) {
+    *value = Vector1d(context.get_continuous_state_vector().GetAtIndex(1));
+  };
+  EXPECT_EQ(dut.DeclareInequalityConstraint(calc, 1, "x1"), 0);
+  EXPECT_EQ(dut.get_num_constraints(), 1);
+
+  auto context = dut.CreateDefaultContext();
+  context->get_mutable_continuous_state_vector()->SetFromVector(
+      Eigen::Vector2d(5.0, 7.0));
+
+  Eigen::VectorXd value;
+  const SystemConstraint<double>& inequality_constraint =
+      dut.get_constraint(SystemConstraintIndex(0));
+  inequality_constraint.Calc(*context, &value);
+  EXPECT_EQ(value.rows(), 1);
+  EXPECT_EQ(value[0], 7.0);
+  EXPECT_EQ(inequality_constraint.lower_bound()[0], 0.0);
+  EXPECT_EQ(inequality_constraint.upper_bound()[0],
+            std::numeric_limits<double>::infinity());
+  EXPECT_EQ(inequality_constraint.description(), "x1");
+
+  EXPECT_EQ(dut.DeclareEqualityConstraint(calc, 1, "x1eq"), 1);
+  EXPECT_EQ(dut.get_num_constraints(), 2);
+
+  const SystemConstraint<double>& equality_constraint =
+      dut.get_constraint(SystemConstraintIndex(1));
+  equality_constraint.Calc(*context, &value);
+  EXPECT_EQ(value.rows(), 1);
+  EXPECT_EQ(value[0], 7.0);
+  EXPECT_EQ(equality_constraint.lower_bound()[0], 0.0);
+  EXPECT_EQ(equality_constraint.upper_bound()[0], 0.0);
+  EXPECT_EQ(equality_constraint.description(), "x1eq");
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake
