@@ -28,13 +28,13 @@ def install_data(
     """
     models_extensions = [
         "csv",
+        "dae",
         "json",
-        "stl",
         "obj",
         "sdf",
+        "stl",
         "urdf",
         "xml",
-        "dae",
     ]
     exclude_patterns = ["**/test/*", "**/test*"]
     prod_models_include = ["**/*.{}".format(x) for x in models_extensions]
