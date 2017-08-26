@@ -21,6 +21,7 @@ drake_cc_library(
         ":single_output_vector_source",
         ":state",
         ":system",
+        ":system_constraint",
         ":system_symbolic_inspector",
         ":value",
         ":vector",
@@ -273,6 +274,7 @@ drake_cc_library(
         ":context",
         ":event_collection",
         ":system_common",
+        ":system_constraint",
         ":value",
         "//drake/common",
         "//drake/common:autodiff",
@@ -383,6 +385,17 @@ drake_cc_library(
     deps = [
         ":diagram",
         "//drake/common",
+    ],
+)
+
+drake_cc_library(
+    name = "system_constraint",
+    srcs = ["system_constraint.cc"],
+    hdrs = ["system_constraint.h"],
+    deps = [
+        "//drake/common",
+        "//drake/common:symbolic",
+        "//drake/common:type_safe_index",
     ],
 )
 
@@ -645,6 +658,14 @@ drake_cc_googletest(
     deps = [
         ":leaf_system",
         ":system_scalar_converter",
+    ],
+)
+
+drake_cc_googletest(
+    name = "system_constraint_test",
+    deps = [
+        "//drake/common:eigen_matrix_compare",
+        "//drake/systems/primitives:linear_system",
     ],
 )
 
