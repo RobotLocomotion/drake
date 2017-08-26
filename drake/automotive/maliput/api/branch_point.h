@@ -4,6 +4,7 @@
 #include <string>
 
 #include "drake/automotive/maliput/api/lane_data.h"
+#include "drake/automotive/maliput/api/type_specific_identifier.h"
 #include "drake/common/drake_copyable.h"
 
 namespace drake {
@@ -11,11 +12,10 @@ namespace maliput {
 namespace api {
 
 class RoadGeometry;
+class BranchPoint;
 
 // Persistent identifier for a BranchPoint element.
-struct BranchPointId {
-  std::string id;
-};
+using BranchPointId = TypeSpecificIdentifier<BranchPoint>;
 
 
 /// A set of LaneEnds.
