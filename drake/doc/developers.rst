@@ -232,6 +232,7 @@ IDE and Text Editor Notes
     clion
     Eclipse <https://github.com/tkoolen/drake/wiki/Eclipse-setup-(experimental)>
     sublime_text
+    unicode_tips_tricks
 
 Operating System Notes
 ======================
@@ -256,4 +257,3 @@ Version Control
     :maxdepth: 1
 
     no_push_to_origin
-
