@@ -42,7 +42,8 @@ int exec(int argc, char* argv[]) {
   logging::HandleSpdlogGflags();
 
   RoadGeometry road_geometry(
-      {"Dragway with " + std::to_string(FLAGS_num_lanes) + " lanes."},
+      api::RoadGeometryId{
+        "Dragway with " + std::to_string(FLAGS_num_lanes) + " lanes."},
       FLAGS_num_lanes,
       FLAGS_length,
       FLAGS_lane_width,

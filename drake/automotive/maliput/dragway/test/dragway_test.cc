@@ -253,7 +253,7 @@ class MaliputDragwayLaneTest : public ::testing::Test {
                V
  */
 TEST_F(MaliputDragwayLaneTest, SingleLane) {
-  const api::RoadGeometryId road_geometry_id({"OneLaneDragwayRoadGeometry"});
+  const api::RoadGeometryId road_geometry_id("OneLaneDragwayRoadGeometry");
   const int kNumLanes = 1;
 
   RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_, lane_width_,
@@ -298,7 +298,7 @@ TEST_F(MaliputDragwayLaneTest, SingleLane) {
                               V
  */
 TEST_F(MaliputDragwayLaneTest, TwoLaneDragway) {
-  const api::RoadGeometryId road_geometry_id({"TwoLaneDragwayRoadGeometry"});
+  const api::RoadGeometryId road_geometry_id("TwoLaneDragwayRoadGeometry");
   const int kNumLanes = 2;
 
   RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_,
@@ -329,7 +329,7 @@ TEST_F(MaliputDragwayLaneTest, TwoLaneDragway) {
 // dragway::RoadGeometry::IsGeoPositionOnDragway() does not incorrectly return
 // false.
 TEST_F(MaliputDragwayLaneTest, TestToRoadPositionOnRoad) {
-  const api::RoadGeometryId road_geometry_id({"TwoLaneDragwayRoadGeometry"});
+  const api::RoadGeometryId road_geometry_id("TwoLaneDragwayRoadGeometry");
   const int kNumLanes = 2;
 
   RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_,
@@ -402,7 +402,7 @@ TEST_F(MaliputDragwayLaneTest, TestToRoadPositionOnRoad) {
 // dragway::RoadGeometry::IsGeoPositionOnDragway() does not incorrectly return
 // false.
 TEST_F(MaliputDragwayLaneTest, TestToRoadPositionOffRoad) {
-  const api::RoadGeometryId road_geometry_id({"TwoLaneDragwayRoadGeometry"});
+  const api::RoadGeometryId road_geometry_id("TwoLaneDragwayRoadGeometry");
   const int kNumLanes = 2;
 
   RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_,
@@ -498,7 +498,7 @@ TEST_F(MaliputDragwayLaneTest, TestToRoadPositionOffRoad) {
 // Tests that dragway::RoadGeometry::ToRoadPosition() can be called with
 // parameters `nearest_position` and `distance` set to `nullptr`.
 TEST_F(MaliputDragwayLaneTest, TestToRoadPositionNullptr) {
-  const api::RoadGeometryId road_geometry_id({"TwoLaneDragwayRoadGeometry"});
+  const api::RoadGeometryId road_geometry_id("TwoLaneDragwayRoadGeometry");
   const int kNumLanes = 2;
 
   RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_,
@@ -523,7 +523,7 @@ TEST_F(MaliputDragwayLaneTest, TestToRoadPositionNullptr) {
 // Tests dragway::Lane::ToLanePosition() using geographic positions whose
 // projections onto the XY plane reside within the lane's driveable region.
 TEST_F(MaliputDragwayLaneTest, TestToLanePosition) {
-  const api::RoadGeometryId road_geometry_id({"OneLaneDragwayRoadGeometry"});
+  const api::RoadGeometryId road_geometry_id("OneLaneDragwayRoadGeometry");
   const int kNumLanes = 1;
 
   RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_,

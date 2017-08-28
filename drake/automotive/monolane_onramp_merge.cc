@@ -73,7 +73,7 @@ MonolaneOnrampMerge::BuildOnramp() {
   rb->SetDefaultBranch(onramp1, LaneEnd::kStart, post0, LaneEnd::kFinish);
   rb->SetDefaultBranch(onramp0, LaneEnd::kStart, onramp1, LaneEnd::kFinish);
 
-  return rb->Build({"monolane-merge-example"});
+  return rb->Build(maliput::api::RoadGeometryId{"monolane-merge-example"});
 }
 
 }  // namespace automotive
