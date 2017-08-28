@@ -43,7 +43,7 @@ GTEST_TEST(MonolaneLanesTest, FlatLineLane) {
   Segment* s1 =
       rg.NewJunction(api::JunctionId{"j1"})->NewSegment(api::SegmentId{"s1"});
   Lane* l1 = s1->NewLineLane(
-      {"l1"},
+      api::LaneId{"l1"},
       {100., -75.}, {100., 50.},
       // lane/driveable/elevation bounds
       {-5., 5.}, {-kHalfWidth, kHalfWidth}, {0., kMaxHeight},
@@ -52,7 +52,7 @@ GTEST_TEST(MonolaneLanesTest, FlatLineLane) {
 
   EXPECT_EQ(rg.CheckInvariants(), std::vector<std::string>());
 
-  EXPECT_EQ(l1->id().id, "l1");
+  EXPECT_EQ(l1->id(), api::LaneId("l1"));
   EXPECT_EQ(l1->segment(), s1);
   EXPECT_EQ(l1->index(), 0);
   EXPECT_EQ(l1->to_left(), nullptr);
@@ -126,7 +126,7 @@ GTEST_TEST(MonolaneLanesTest, FlatLineLane) {
   Segment* s2 =
       rg.NewJunction(api::JunctionId{"j2"})->NewSegment(api::SegmentId{"s2"});
   Lane* l1_with_z = s2->NewLineLane(
-      {"l1_with_z"},
+      api::LaneId{"l1_with_z"},
       {100., -75.}, {100., 50.},
       {-5., 5.}, {-kHalfWidth, kHalfWidth}, {0., kMaxHeight},
       {elevation / length, 0., 0., 0.} /* constant elevation */,
@@ -208,7 +208,7 @@ GTEST_TEST(MonolaneLanesTest, FlatArcLane) {
   Segment* s1 =
       rg.NewJunction(api::JunctionId{"j1"})->NewSegment(api::SegmentId{"s1"});
   Lane* l2 = s1->NewArcLane(
-      {"l2"},
+      api::LaneId{"l2"},
       center, radius, theta0, d_theta,
       // lane/driveable/elevation bounds
       {-5., 5.}, {-kHalfWidth, kHalfWidth}, {0., kMaxHeight},
@@ -217,7 +217,7 @@ GTEST_TEST(MonolaneLanesTest, FlatArcLane) {
 
   EXPECT_EQ(rg.CheckInvariants(), std::vector<std::string>());
 
-  EXPECT_EQ(l2->id().id, "l2");
+  EXPECT_EQ(l2->id(), api::LaneId("l2"));
   EXPECT_EQ(l2->segment(), s1);
   EXPECT_EQ(l2->index(), 0);
   EXPECT_EQ(l2->to_left(), nullptr);
@@ -309,7 +309,7 @@ GTEST_TEST(MonolaneLanesTest, FlatArcLane) {
   Segment* s2 =
       rg.NewJunction(api::JunctionId{"j2"})->NewSegment(api::SegmentId{"s2"});
   Lane* l2_with_z = s2->NewArcLane(
-      {"l2_with_z"},
+      api::LaneId{"l2_with_z"},
       center, radius, theta0, d_theta,
       {-5., 5.}, {-kHalfWidth, kHalfWidth}, {0., kMaxHeight},
       {elevation / radius / d_theta, 0., 0., 0.} /* constant elevation */,
@@ -335,7 +335,7 @@ GTEST_TEST(MonolaneLanesTest, FlatArcLane) {
   Segment* s3 =
       rg.NewJunction(api::JunctionId{"j3"})->NewSegment(api::SegmentId{"s3"});
   Lane* l2_overlapping = s3->NewArcLane(
-      {"l2_overlapping"},
+      api::LaneId{"l2_overlapping"},
       center, radius, theta0, d_theta_overlap,
       {-5., 5.}, {-kHalfWidth, kHalfWidth}, {0., kMaxHeight},
       // Zero elevation, zero superelevation == flat.
@@ -366,7 +366,7 @@ GTEST_TEST(MonolaneLanesTest, FlatArcLane) {
   Segment* s4 =
       rg.NewJunction(api::JunctionId{"j4"})->NewSegment(api::SegmentId{"s4"});
   Lane* l2_wrap = s4->NewArcLane(
-      {"l2_wrap"},
+      api::LaneId{"l2_wrap"},
       center, radius, theta0_wrap, d_theta_wrap,
       {-5., 5.}, {-kHalfWidth, kHalfWidth}, {0., kMaxHeight},
       // Zero elevation, zero superelevation == flat.
@@ -452,7 +452,7 @@ GTEST_TEST(MonolaneLanesTest, ArcLaneWithConstantSuperelevation) {
   Segment* s1 =
       rg.NewJunction(api::JunctionId{"j1"})->NewSegment(api::SegmentId{"s1"});
   Lane* l2 = s1->NewArcLane(
-      {"l2"},
+      api::LaneId{"l2"},
       {100., -75.}, 100., 0.25 * M_PI, 1.5 * M_PI,
       {-5., 5.}, {-10., 10.}, {0., 5.},  // lane/driveable/elevation bounds
       zp,
@@ -577,7 +577,7 @@ GTEST_TEST(MonolaneLanesTest, HillIntegration) {
                                         (3. * (z1 - z0) / p_scale),
                                         (-2. * (z1 - z0) / p_scale));
   Lane* l1 = s1->NewArcLane(
-      {"l2"},
+      api::LaneId{"l2"},
       {-100., -100.}, 100., theta0, d_theta,
       {-5., 5.}, {-10., 10.}, {0., 5.},  // lane/driveable/elevation bounds
       kHillPolynomial,

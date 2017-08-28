@@ -33,16 +33,16 @@ GTEST_TEST(RNDFSegmentTest, MetadataLane) {
       std::make_tuple(ignition::math::Vector3d(0.0, 0.0, 0.0),
                       ignition::math::Vector3d(10.0, 0.0, 0.0)));
   // As I add only one control_point, I expect the creator to throw.
-  EXPECT_THROW(s1->NewSplineLane({"l1"}, control_points, 5.),
+  EXPECT_THROW(s1->NewSplineLane(api::LaneId{"l1"}, control_points, 5.),
                std::runtime_error);
   // Now I add the second control_point and expect it to not throw.
   control_points.push_back(
       std::make_tuple(ignition::math::Vector3d(20.0, 0.0, 0.0),
                       ignition::math::Vector3d(10.0, 0.0, 0.0)));
-  EXPECT_NO_THROW(s1->NewSplineLane({"l1"}, control_points, 5.));
+  EXPECT_NO_THROW(s1->NewSplineLane(api::LaneId{"l1"}, control_points, 5.));
   EXPECT_EQ(s1->num_lanes(), 1);
 
-  EXPECT_NO_THROW(s1->NewSplineLane({"l2"}, control_points, 5.));
+  EXPECT_NO_THROW(s1->NewSplineLane(api::LaneId{"l2"}, control_points, 5.));
 
   EXPECT_EQ(s1->num_lanes(), 2);
 

@@ -165,7 +165,7 @@ class MaliputDragwayLaneTest : public ::testing::Test {
         lane->GetBranchPoint(api::LaneEnd::kStart);
     EXPECT_NE(branch_point, nullptr);
     EXPECT_EQ(branch_point->id(),
-              api::BranchPointId(lane->id().id + "_Branch_Point"));
+              api::BranchPointId(lane->id().string() + "_Branch_Point"));
     EXPECT_EQ(branch_point->road_geometry(), road_geometry);
 
     // Verifies correctness of the confluent branches.
