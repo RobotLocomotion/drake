@@ -202,6 +202,31 @@ GTEST_TEST(KukaIIwaRobot, TorqueMotorA) {
   EXPECT_TRUE(F_Eo_De.IsApprox(F_Eo_De_expected, 40 * kEpsilon));
   EXPECT_TRUE(F_Fo_Ef.IsApprox(F_Fo_Ef_expected, 40 * kEpsilon));
   EXPECT_TRUE(F_Go_Fg.IsApprox(F_Go_Fg_expected, 40 * kEpsilon));
+
+  // Redo test now adding Earth's uniform gravitational forces (little g).
+  const double g = 9.81;  // (in m/s^2).
+  MG_kuka_robot.set_surface_gravity(g);
+
+  // MotionGenesis (MG) solution for the motor torques to hold the robot static.
+  zTorques = MG_kuka_robot.CalcRevoluteMotorZTorques(q, q_Dt, q_DDt);
+
+  // Expected solution for the motor torques to hold the robot static.
+  // Note: The expected solution is specific to this straight-up configuration
+  // (with all joint-angles equal to 0).  The expected solution was calculated
+  // with a visual of the straight-up configuration and a "back-of-the-envelope"
+  // analysis.  The values 0.0003 and 0.0001 (below) are x values (in meters) of
+  // the center of masses of links B and E, respectively.  The x-values of the
+  // center of masses of links A, C, D, F, G are all 0.  All x-values are from:
+  // drake/multibody/benchmarks/kuka_iiwa_robot/kuka_iiwa_robot-urdf.
+  const double mB = MG_kuka_robot.get_mass_of_link_B();
+  const double mE = MG_kuka_robot.get_mass_of_link_E();
+  const double gravity_moment_B =  0.0003 * mB * g;
+  const double gravity_moment_E =  0.0001 * mE * g;
+  const double gravity_moment_sum = gravity_moment_B + gravity_moment_E;
+  zTorques_expected << 1, gravity_moment_sum, 1, -gravity_moment_E, 1, 0, 1;
+
+  // Compare MG results with expected results.
+  EXPECT_TRUE(zTorques.isApprox(zTorques_expected, 40 * kEpsilon));
 }
 
 }  // namespace

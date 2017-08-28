@@ -6,6 +6,7 @@
 #include "drake/common/unused.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/parsers/sdf_parser.h"
+#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
@@ -21,23 +22,42 @@ using std::endl;
 using std::string;
 
 using drake::multibody::joints::kQuaternion;
+using drake::multibody::joints::kFixed;
 
 namespace drake {
 namespace systems {
 namespace sensors {
 namespace {
 
-bool ValidateSdf(const char* flagname, const std::string& sdf) {
-  if (sdf.empty()) {
-    cout << "Invalid filename for --" << flagname << ": " << sdf << endl;
+bool ValidateSdf(const char* flagname, const std::string& filename) {
+  if (filename.substr(filename.find_last_of(".") + 1) == "sdf") {
+    return true;
+  }
+  cout << "Invalid filename for --" << flagname << ": " << filename << endl;
+  return false;
+}
+
+bool ValidateDir(const char* flagname, const std::string& dir) {
+  if (dir.empty()) {
+    cout << "Invalid directory for --" << flagname << ": " << dir << endl;
     return false;
   }
   return true;
 }
 
+DEFINE_bool(lookup, true,
+            "If true, RgbdCamera faces a direction normal to the "
+            "terrain plane.");
 DEFINE_double(duration, 5., "Total duration of the simulation in secondes.");
-DEFINE_string(sdf, "", "The filename for SDF.");
-DEFINE_validator(sdf, &ValidateSdf);
+DEFINE_string(sdf_dir, "",
+              "The full path of directory where SDFs are located.");
+DEFINE_string(sdf_fixed, "sphere.sdf",
+              "The filename for a SDF that contains fixed base objects.");
+DEFINE_string(sdf_floating, "box.sdf",
+              "The filename for a SDF that contains floating base objects.");
+DEFINE_validator(sdf_dir, &ValidateDir);
+DEFINE_validator(sdf_fixed, &ValidateSdf);
+DEFINE_validator(sdf_floating, &ValidateSdf);
 
 constexpr double kCameraPosePublishPeriod{0.01};
 constexpr double kImageArrayPublishPeriod{0.01};
@@ -49,28 +69,60 @@ constexpr char kLabelCameraFrameName[] = "label_camera_optical_frame";
 
 constexpr char kImageArrayLcmChannelName[] = "DRAKE_RGBD_CAMERA_IMAGES";
 constexpr char kPoseLcmChannelName[] = "DRAKE_RGBD_CAMERA_POSE";
+
+struct CameraConfig {
+  Eigen::Vector3d pos;
+  Eigen::Vector3d rpy;
+  double fov_y{};
+  double depth_range_near{};
+  double depth_range_far{};
+};
+
 }  // anonymous namespace
 
 int main() {
-  drake::unused(sdf_validator_registered);
+  drake::unused(sdf_dir_validator_registered);
+  drake::unused(sdf_fixed_validator_registered);
+  drake::unused(sdf_floating_validator_registered);
 
   auto tree = std::make_unique<RigidBodyTree<double>>();
   drake::parsers::sdf::AddModelInstancesFromSdfFileToWorld(
-      FLAGS_sdf, kQuaternion, tree.get());
+      FLAGS_sdf_dir + "/" + FLAGS_sdf_fixed, kFixed, tree.get());
+
+  drake::parsers::sdf::AddModelInstancesFromSdfFileToWorld(
+      FLAGS_sdf_dir + "/" + FLAGS_sdf_floating, kQuaternion, tree.get());
+
+  drake::multibody::AddFlatTerrainToWorld(tree.get());
 
   systems::DiagramBuilder<double> builder;
 
   auto plant = builder.AddSystem<RigidBodyPlant<double>>(move(tree));
   plant->set_name("rigid_body_plant");
-  plant->set_normal_contact_parameters(3000, 10);
+  plant->set_normal_contact_parameters(10000, 1);
   plant->set_friction_contact_parameters(0.9, 0.5, 0.01);
 
   // Adds an RgbdCamera at a fixed pose.
+  CameraConfig config;
+  if (FLAGS_lookup) {
+    config.pos = Eigen::Vector3d(0., -0.02, 0.05);
+    config.rpy = Eigen::Vector3d(0., -M_PI_2, 0.);
+    config.fov_y = 130. / 180 * M_PI;
+    config.depth_range_near = 0.01;
+    config.depth_range_far = 1.;
+  } else {
+    config.pos = Eigen::Vector3d(-1., 0., 1.);
+    config.rpy = Eigen::Vector3d(0., M_PI_4, 0.);
+    config.fov_y = M_PI_4;
+    config.depth_range_near = 0.5;
+    config.depth_range_far = 5.;
+  }
+
   auto rgbd_camera =
       builder.template AddSystem<RgbdCamera>(
           "rgbd_camera", plant->get_rigid_body_tree(),
-          Eigen::Vector3d(-1., 0., 1.),
-          Eigen::Vector3d(0., M_PI_4, 0.), M_PI_4, true);
+          config.pos, config.rpy,
+          config.depth_range_near, config.depth_range_far,
+          config.fov_y);
 
   auto image_to_lcm_image_array =
       builder.template AddSystem<ImageToLcmImageArrayT>(
@@ -78,6 +130,10 @@ int main() {
   image_to_lcm_image_array->set_name("converter");
 
   ::drake::lcm::DrakeLcm lcm;
+  auto drake_viz = builder.template AddSystem<DrakeVisualizer>(
+      plant->get_rigid_body_tree(), &lcm);
+  drake_viz->set_publish_period(0.01);
+
   auto image_array_lcm_publisher = builder.template AddSystem(
       lcm::LcmPublisherSystem::Make<robotlocomotion::image_array_t>(
           kImageArrayLcmChannelName, &lcm));
@@ -93,6 +149,10 @@ int main() {
   builder.Connect(
       plant->get_output_port(0),
       rgbd_camera->state_input_port());
+
+  builder.Connect(
+      plant->get_output_port(0),
+      drake_viz->get_input_port(0));
 
   builder.Connect(
       rgbd_camera->color_image_output_port(),

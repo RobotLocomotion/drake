@@ -977,7 +977,7 @@ class ManualSparsitySystem : public DefaultFeedthroughSystem {
   }
 
  protected:
-  bool DoHasDirectFeedthrough(const SymbolicSystemInspector* sparsity,
+  bool DoHasDirectFeedthrough(const SystemSymbolicInspector* sparsity,
                               int input_port, int output_port) const override {
     if (input_port == 0 && output_port == 1) {
       return true;

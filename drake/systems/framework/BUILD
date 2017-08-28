@@ -20,8 +20,8 @@ drake_cc_library(
         ":parameters",
         ":single_output_vector_source",
         ":state",
-        ":symbolic_system_inspector",
         ":system",
+        ":system_symbolic_inspector",
         ":value",
         ":vector",
         ":vector_system",
@@ -331,9 +331,9 @@ drake_cc_library(
         ":leaf_context",
         ":leaf_output_port",
         ":model_values",
-        ":symbolic_system_inspector",
         ":system",
         ":system_scalar_converter",
+        ":system_symbolic_inspector",
         ":value_checker",
         "//drake/common",
         "//drake/common:number_traits",
@@ -387,9 +387,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "symbolic_system_inspector",
-    srcs = ["symbolic_system_inspector.cc"],
-    hdrs = ["symbolic_system_inspector.h"],
+    name = "system_symbolic_inspector",
+    srcs = ["system_symbolic_inspector.cc"],
+    hdrs = ["system_symbolic_inspector.h"],
     deps = [
         ":context",
         ":system",
@@ -617,10 +617,11 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "symbolic_system_inspector_test",
+    name = "system_symbolic_inspector_test",
     deps = [
         ":leaf_system",
-        ":symbolic_system_inspector",
+        ":system_symbolic_inspector",
+        "//drake/examples/pendulum:pendulum_plant",
     ],
 )
 
