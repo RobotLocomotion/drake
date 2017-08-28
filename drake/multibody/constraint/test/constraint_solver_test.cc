@@ -93,8 +93,9 @@ class Constraint2DSolverTest : public ::testing::Test {
     xc[5] = 0.0;     // no angular velocity.
   }
 
-  // Sets the rod to an impacting, sliding velocity with the rod configured to
-  // lie upon its side and without modifying the rod's mode variables.
+  // Sets the rod to an impacting, sliding velocity (of `sign`) with the rod
+  // configured to lie upon its side and without modifying the rod's mode
+  // variables.
   void SetRodToSlidingImpactingHorizontalConfig(double sign) {
     DRAKE_DEMAND(sign == -1.0 || sign == 1.0);
     ContinuousState<double>& xc =
@@ -125,7 +126,7 @@ class Constraint2DSolverTest : public ::testing::Test {
       ConstraintAccelProblemData<double>* data,
       int contact_points_dup,
       int friction_directions_dup) {
-    // Get the points of contact.
+    // Get the points of contact from Rod2D.
     std::vector<Vector2d> contacts;
     std::vector<double> tangent_vels;
     rod_->GetContactPoints(*context_, &contacts);
@@ -145,13 +146,13 @@ class Constraint2DSolverTest : public ::testing::Test {
     rod_->CalcConstraintProblemData(*context_, contacts, tangent_vels, data);
 
     // Get old F.
-    const int nr = std::accumulate(data->r.begin(), data->r.end(), 0);
+    const int num_fdir = std::accumulate(data->r.begin(), data->r.end(), 0);
     const int ngc = get_rod_num_coordinates();
-    MatrixX<double> Fold = MatrixX<double>::Zero(nr, ngc);
+    MatrixX<double> Fold = MatrixX<double>::Zero(num_fdir, ngc);
     for (int j = 0; j < ngc; ++j)
       Fold.col(j) = data->F_mult(VectorX<double>::Unit(ngc, j));
 
-    // Determine new F.
+    // Determine new F by duplicating each row the specified number of times.
     const int new_friction_directions = friction_directions_dup + 1;
     MatrixX<double> F(new_friction_directions *
                       data->non_sliding_contacts.size(), ngc);
@@ -167,7 +168,7 @@ class Constraint2DSolverTest : public ::testing::Test {
       return F.transpose() * w;
     };
 
-    // Redetermine r.
+    // Update r with the new friction directions.
     for (int i = 0; i < static_cast<int>(data->r.size()); ++i)
       data->r[i] = new_friction_directions;
 
@@ -194,7 +195,7 @@ class Constraint2DSolverTest : public ::testing::Test {
       ConstraintVelProblemData<double>* data,
       int contact_points_dup,
       int friction_directions_dup) {
-    // Get the points of contact.
+    // Get the points of contact from Rod2D.
     std::vector<Vector2d> contacts;
     rod_->GetContactPoints(*context_, &contacts);
 
@@ -210,13 +211,13 @@ class Constraint2DSolverTest : public ::testing::Test {
     rod_->CalcImpactProblemData(*context_, contacts, data);
 
     // Get old F.
-    const int nr = std::accumulate(data->r.begin(), data->r.end(), 0);
+    const int num_fdir = std::accumulate(data->r.begin(), data->r.end(), 0);
     const int ngc = get_rod_num_coordinates();
-    MatrixX<double> Fold = MatrixX<double>::Zero(nr, ngc);
+    MatrixX<double> Fold = MatrixX<double>::Zero(num_fdir, ngc);
     for (int j = 0; j < ngc; ++j)
       Fold.col(j) = data->F_mult(VectorX<double>::Unit(ngc, j));
 
-    // Determine new F.
+    // Determine new F by duplicating each row the specified number of times.
     const int new_friction_directions = friction_directions_dup + 1;
     MatrixX<double> F(new_friction_directions * contacts.size(), ngc);
     for (int i = 0, k = 0; i < Fold.rows(); ++i)
@@ -231,7 +232,7 @@ class Constraint2DSolverTest : public ::testing::Test {
       return F.transpose() * w;
     };
 
-    // Redetermine r.
+    // Update r with the new friction directions per contact.
     for (int i = 0; i < static_cast<int>(data->r.size()); ++i)
       data->r[i] = new_friction_directions;
 
@@ -271,17 +272,17 @@ class Constraint2DSolverTest : public ::testing::Test {
       const ConstraintAccelProblemData<double>& data,
       int num_contacts) const {
     const int ngc = get_rod_num_coordinates();
-    const int nr = std::accumulate(data.r.begin(), data.r.end(), 0);
+    const int num_fdir = std::accumulate(data.r.begin(), data.r.end(), 0);
     EXPECT_EQ(num_contacts, data.sliding_contacts.size() +
         data.non_sliding_contacts.size());
     EXPECT_EQ(GetOperatorDim(data.N_mult), num_contacts);
     CheckTransOperatorDim(data.N_minus_muQ_transpose_mult, num_contacts);
-    EXPECT_EQ(GetOperatorDim(data.F_mult), nr);
+    EXPECT_EQ(GetOperatorDim(data.F_mult), num_fdir);
     EXPECT_EQ(GetOperatorDim(data.L_mult), data.num_limit_constraints);
     CheckTransOperatorDim(data.L_transpose_mult, data.num_limit_constraints);
     EXPECT_EQ(data.tau.size(), ngc);
     EXPECT_EQ(data.Ndot_times_v.size(), num_contacts);
-    EXPECT_EQ(data.Fdot_times_v.size(), nr);
+    EXPECT_EQ(data.Fdot_times_v.size(), num_fdir);
     EXPECT_EQ(data.kL.size(), data.num_limit_constraints);
     EXPECT_EQ(data.mu_non_sliding.size(), data.non_sliding_contacts.size());
     EXPECT_EQ(data.mu_sliding.size(), data.sliding_contacts.size());
@@ -345,7 +346,7 @@ class Constraint2DSolverTest : public ::testing::Test {
         VectorX<double> cf;
         solver_.SolveConstraintProblem(cfm_, *accel_data_, &cf);
 
-        // These tests require no friction direction duplication because
+        // These tests preclude friction direction duplication because
         // CalcContactForcesInContactFrames() would throw an exception.
         if (friction_dir_dup == 0) {
           // Construct the contact frame.
@@ -377,9 +378,7 @@ class Constraint2DSolverTest : public ::testing::Test {
           // Verify that the frictional forces equal the horizontal force.
           const int total_cone_edges = std::accumulate(
               accel_data_->r.begin(), accel_data_->r.end(), 0);
-          double ffriction = 0;
-          for (int i = n_contacts; i < n_contacts + total_cone_edges; ++i)
-            ffriction += cf[i];
+          double ffriction = cf.segment(n_contacts, total_cone_edges).sum();
           EXPECT_NEAR(ffriction, -horz_f, eps_ * cf.size());
         }
 
@@ -458,9 +457,9 @@ class Constraint2DSolverTest : public ::testing::Test {
             std::fabs(rod_->get_gravitational_acceleration());
           double normal_force_mag = 0;
           double fric_force = 0;
-            for (int i = 0; i < static_cast<int>(contact_forces.size()); ++i) {
-              normal_force_mag += contact_forces[i][0];
-              fric_force += contact_forces[i][1];
+          for (int i = 0; i < static_cast<int>(contact_forces.size()); ++i) {
+            normal_force_mag += contact_forces[i][0];
+            fric_force += contact_forces[i][1];
           }
           EXPECT_NEAR(normal_force_mag, mg, eps_ * cf.size());
 
@@ -660,7 +659,7 @@ class Constraint2DSolverTest : public ::testing::Test {
 
         // Construct the contact frames.
         std::vector<Matrix2<double>> frames;
-        for (int i = 0; i < static_cast<int>(vel_data_->mu.size()); ++i)
+        for (int i = 0; i < static_cast<int>(n_contacts); ++i)
           frames.push_back(GetNonSlidingContactFrameToWorldTransform());
 
         // Verify that the x-axis of the contact frame, which corresponds to the
