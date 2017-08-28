@@ -95,6 +95,7 @@ class Constraint2DSolverTest : public ::testing::Test {
   // Sets the rod to an impacting, sliding velocity with the rod configured to
   // lie upon its side and without modifying the rod's mode variables.
   void SetRodToSlidingImpactingHorizontalConfig(double sign) {
+    DRAKE_DEMAND(sign == -1.0 || sign == 1.0);
     ContinuousState<double>& xc =
         *context_->get_mutable_continuous_state();
     // Configuration has the rod on its side.
@@ -131,11 +132,10 @@ class Constraint2DSolverTest : public ::testing::Test {
     // Duplicate the contact points.
     std::vector<Vector2d> contacts_dup;
     for (int i = 0; i < static_cast<int>(contacts.size()); ++i) {
-      contacts_dup.push_back(contacts[i]);
       for (int j = 0; j < contact_points_dup; ++j)
         contacts_dup.push_back(contacts[i]);
     }
-    contacts = contacts_dup;
+    contacts.insert(contacts.end(), contacts_dup.begin(), contacts_dup.end());
 
     // Get the contact tangent velocities.
     rod_->GetContactPointsTangentVelocities(*context_, contacts, &tangent_vels);
@@ -144,8 +144,8 @@ class Constraint2DSolverTest : public ::testing::Test {
     rod_->CalcConstraintProblemData(*context_, contacts, tangent_vels, data);
 
     // Get old F.
-    const int nr = 1 * data->non_sliding_contacts.size();
-    const int ngc = 3;                  /* Rod # of generalized coordinates */
+    const int nr = std::accumulate(data->r.begin(), data->r.end(), 0);
+    const int ngc = get_rod_num_coordinates();
     MatrixX<double> Fold = MatrixX<double>::Zero(nr, ngc);
     for (int j = 0; j < ngc; ++j)
       Fold.col(j) = data->F_mult(VectorX<double>::Unit(ngc, j));
@@ -158,7 +158,7 @@ class Constraint2DSolverTest : public ::testing::Test {
       for (int j = 0; j < new_friction_directions; ++j)
         F.row(k++) = Fold.row(i);
 
-    // Redetermine F_mult and F_transpose_mult.
+    // Redetermine F_mult and F_transpose_mult operator lambdas.
     data->F_mult = [F](const VectorX<double>& w) -> VectorX<double> {
       return F * w;
     };
@@ -170,7 +170,7 @@ class Constraint2DSolverTest : public ::testing::Test {
     for (int i = 0; i < static_cast<int>(data->r.size()); ++i)
       data->r[i] = new_friction_directions;
 
-    // Resize Fdot * v.
+    // Resize Fdot * v (recall the vector always is zero for this 2D problem).
     data->Fdot_times_v.setZero(data->non_sliding_contacts.size() *
                                new_friction_directions);
 
@@ -179,10 +179,13 @@ class Constraint2DSolverTest : public ::testing::Test {
   }
 
   // Computes rigid contact data without any duplication of contact points or
-  // basis directions.
+  // friction directions.
   void CalcConstraintAccelProblemData(
       ConstraintAccelProblemData<double>* data) {
-    CalcConstraintAccelProblemData(data, 0, 0);
+    CalcConstraintAccelProblemData(
+        data,
+        0,    // no contacts duplicated
+        0);   // no friction directions duplicated
   }
 
   // Computes rigid impacting contact data.
@@ -197,18 +200,17 @@ class Constraint2DSolverTest : public ::testing::Test {
     // Duplicate the contact points.
     std::vector<Vector2d> contacts_dup;
     for (int i = 0; i < static_cast<int>(contacts.size()); ++i) {
-      contacts_dup.push_back(contacts[i]);
       for (int j = 0; j < contact_points_dup; ++j)
         contacts_dup.push_back(contacts[i]);
     }
-    contacts = contacts_dup;
+    contacts.insert(contacts.end(), contacts_dup.begin(), contacts_dup.end());
 
     // Compute the problem data.
     rod_->CalcImpactProblemData(*context_, contacts, data);
 
     // Get old F.
-    const int nr = 1 * contacts.size();
-    const int ngc = 3;                  /* Rod # of generalized coordinates */
+    const int nr = std::accumulate(data->r.begin(), data->r.end(), 0);
+    const int ngc = get_rod_num_coordinates();
     MatrixX<double> Fold = MatrixX<double>::Zero(nr, ngc);
     for (int j = 0; j < ngc; ++j)
       Fold.col(j) = data->F_mult(VectorX<double>::Unit(ngc, j));
@@ -220,7 +222,7 @@ class Constraint2DSolverTest : public ::testing::Test {
       for (int j = 0; j < new_friction_directions; ++j)
         F.row(k++) = Fold.row(i);
 
-    // Redetermine F_mult and F_transpose_mult.
+    // Redetermine F_mult and F_transpose_mult operator lambdas.
     data->F_mult = [F](const VectorX<double>& w) -> VectorX<double> {
       return F * w;
     };
@@ -240,7 +242,10 @@ class Constraint2DSolverTest : public ::testing::Test {
   // or friction directions.
   void CalcConstraintVelProblemData(
       ConstraintVelProblemData<double>* data) {
-    CalcConstraintVelProblemData(data, 0, 0);
+    CalcConstraintVelProblemData(
+        data,
+        0,    // no contact points duplicated
+        0);   // no friction directions duplicated
   }
 
   // Gets the number of generalized coordinates for the rod.
@@ -309,6 +314,8 @@ class Constraint2DSolverTest : public ::testing::Test {
   // Tests the rod in a single-point sticking configuration, with force either
   // to the right (sign = +1) or to the left (sign = -1).
   void SinglePointSticking(double sign) {
+    ASSERT_EQ(std::fabs(sign), 1.0);
+
     // Set the rod to large friction.
     rod_->set_mu_coulomb(15.0);
     rod_->set_mu_static(15.0);
@@ -317,6 +324,8 @@ class Constraint2DSolverTest : public ::testing::Test {
     // to three times.
     for (int contact_dup = 0; contact_dup < 3; ++contact_dup) {
       for (int friction_dir_dup = 0; friction_dir_dup < 4; ++friction_dir_dup) {
+        const int n_contacts = contact_dup + 1;
+
         // Set the state of the rod to resting on its side with no velocity.
         SetRodToRestingVerticalConfig();
 
@@ -340,7 +349,7 @@ class Constraint2DSolverTest : public ::testing::Test {
         if (friction_dir_dup == 0) {
           // Construct the contact frame.
           std::vector<Matrix2<double>> frames;
-          for (int i = 0; i < contact_dup + 1; ++i)
+          for (int i = 0; i < n_contacts; ++i)
             frames.push_back(GetNonSlidingContactFrameToWorldTransform());
 
           // Verify that the x-axis of the contact frame, which corresponds to
@@ -364,9 +373,7 @@ class Constraint2DSolverTest : public ::testing::Test {
           // Verify that the number of contact force vectors is correct.
           ASSERT_EQ(contact_forces.size(), frames.size());
 
-          // Verify that the ℓ₁ norm of frictional forces equals the horizontal
-          // force magnitude.
-          const int n_contacts = contact_dup + 1;
+          // Verify that the frictional forces equal the horizontal force.
           const int total_cone_edges = std::accumulate(
               accel_data_->r.begin(), accel_data_->r.end(), 0);
           double ffriction = 0;
@@ -386,6 +393,8 @@ class Constraint2DSolverTest : public ::testing::Test {
   // Tests the rod in a two-point sticking configuration, with force either
   // to the right (sign = +1) or to the left (sign = -1).
   void TwoPointSticking(double sign) {
+    ASSERT_EQ(std::fabs(sign), 1.0);
+
     // Set the rod to large friction.
     rod_->set_mu_coulomb(15.0);
     rod_->set_mu_static(15.0);
@@ -394,6 +403,8 @@ class Constraint2DSolverTest : public ::testing::Test {
     // to three times.
     for (int contact_dup = 0; contact_dup < 3; ++contact_dup) {
       for (int friction_dir_dup = 0; friction_dir_dup < 4; ++friction_dir_dup) {
+        const int n_contacts = 2 * (contact_dup + 1);
+
         // Set the state of the rod to resting on its side with no velocity.
         SetRodToRestingHorizontalConfig();
 
@@ -437,7 +448,7 @@ class Constraint2DSolverTest : public ::testing::Test {
               *accel_data_, frames, &contact_forces);
 
           // Verify that the number of contact force vectors is correct.
-          ASSERT_EQ(contact_forces.size(), 2 * (contact_dup + 1));
+          ASSERT_EQ(contact_forces.size(), n_contacts);
 
           // Verify that the normal forces equal the gravitational force.
           // Normal forces are in the first component of each vector.
@@ -469,6 +480,8 @@ class Constraint2DSolverTest : public ::testing::Test {
   // transition to sliding from the external force (applied in the direction of
   // sign).
   void TwoPointNonSlidingToSliding(double sign) {
+    ASSERT_EQ(std::fabs(sign), 1.0);
+
     // Set the coefficient of friction.
     const double mu_static = 0.1;
     rod_->set_mu_coulomb(mu_static);  // Must set mu_coulomb to prevent abort.
@@ -547,6 +560,8 @@ class Constraint2DSolverTest : public ::testing::Test {
   // Tests the rod in a two-point impact which is insufficient to put the rod
   // into stiction.
   void TwoPointImpactNoTransitionToStiction(double sign) {
+    ASSERT_EQ(std::fabs(sign), 1.0);
+
     // Set the coefficient of friction to very small.
     const double mu = 1e-4;
     rod_->set_mu_coulomb(mu);
@@ -625,6 +640,8 @@ class Constraint2DSolverTest : public ::testing::Test {
     // to three times.
     for (int contact_dup = 0; contact_dup < 3; ++contact_dup) {
       for (int friction_dir_dup = 0; friction_dir_dup < 4; ++friction_dir_dup) {
+        const int n_contacts = 2 * (contact_dup + 1);
+
         // Set the state of the rod to lying on its side with both impacting
         // velocity and horizontally moving velocity.
         SetRodToSlidingImpactingHorizontalConfig(sign);
@@ -664,7 +681,7 @@ class Constraint2DSolverTest : public ::testing::Test {
               cf, *vel_data_, frames, &contact_forces);
 
           // Verify that the number of contact force vectors is correct.
-          ASSERT_EQ(contact_forces.size(), 2 * (contact_dup + 1));
+          ASSERT_EQ(contact_forces.size(), n_contacts);
         }
 
         // Verify that the generalized velocity of the rod is equal to zero.
@@ -676,8 +693,10 @@ class Constraint2DSolverTest : public ::testing::Test {
   }
 
   // Tests the rod in a two-point sliding configuration with velocity to the
-  // left or right.
+  // left (sign = -1) or right (sign = +1).
   void TwoPointSliding(double sign) {
+    ASSERT_EQ(std::fabs(sign), 1.0);
+
     // Set the state of the rod to resting on its side with horizontal velocity.
     SetRodToRestingHorizontalConfig();
     ContinuousState<double>& xc = *context_->
@@ -742,8 +761,11 @@ class Constraint2DSolverTest : public ::testing::Test {
                 std::fabs(contact_forces.back()[1]), 0, eps_);
   }
 
-  // Tests the rod in a single point sliding configuration.
+  // Tests the rod in a single point sliding configuration with velocity to the
+  // left (sign = -1) or right (sign = +1).
   void SinglePointSliding(double sign) {
+    ASSERT_EQ(std::fabs(sign), 1.0);
+
     // Set the state of the rod to resting on its side with horizontal velocity.
     SetRodToRestingVerticalConfig();
     ContinuousState<double>& xc = *context_->
@@ -1134,7 +1156,7 @@ TEST_F(Constraint2DSolverTest, TwoPointImpactAsLimit) {
 
   // Construct the problem as a limit constraint preventing movement in the
   // downward direction.
-  const int ngc = 3;  // number of generalized coordinates for the 2D rod.
+  const int ngc = get_rod_num_coordinates();
   vel_data_->mu.resize(0);
   vel_data_->r.resize(0);
   vel_data_->N_mult = [](const VectorX<double>&) {
