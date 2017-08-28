@@ -489,7 +489,7 @@ class RotationalInertia {
     // a number related to machine precision multiplied by the largest possible
     // element that can appear in a valid `this` rotational inertia.  Note: The
     // largest product of inertia is at most half the largest moment of inertia.
-    const double precision = 10 * std::numeric_limits<double>::epsilon();
+    const double precision = 20 * std::numeric_limits<double>::epsilon();
     const T epsilon = precision * max_possible_inertia_moment;
 
     // Test `this` rotational inertia's moments of inertia to be mostly
