@@ -133,6 +133,26 @@ drake_cc_binary(
 )
 
 drake_cc_binary(
+    name = "acrobot_multibody_run_passive",
+    srcs = ["acrobot_multibody_run_passive.cc"],
+    add_test_rule = 1,
+    data = [":models"],
+    test_rule_args = ["-realtime_factor=0.0"],
+    deps = [
+        ":acrobot_multibody_model",
+        "//drake/common:find_resource",
+        "//drake/lcm",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/multibody/joints",
+        "//drake/multibody/parsers",
+        "//drake/multibody/rigid_body_plant:drake_visualizer",
+        "//drake/systems/analysis:simulator",
+        "//drake/systems/framework:diagram",
+        "@com_github_gflags_gflags//:gflags",
+    ],
+)
+
+drake_cc_binary(
     name = "acrobot_run_swing_up",
     srcs = [
         "acrobot_run_swing_up.cc",

@@ -98,6 +98,10 @@ class MultibodyAcrobotPlant : public systems::LeafSystem<T> {
   T DoCalcPotentialEnergy(const systems::Context<T>& context) const override;
 
  private:
+  // Override of context construction so that we can delegate it to
+  // MultibodyModeler.
+  //std::unique_ptr<systems::LeafContext<T>> DoMakeContext() const override;
+
   void OutputState(const systems::Context<T>& context,
                    AcrobotStateVector<T>* output) const;
 
@@ -116,8 +120,23 @@ class MultibodyAcrobotPlant : public systems::LeafSystem<T> {
   const double m2l1lc2_ = m2_ * l1_ * lc2_;
   
   multibody::MultibodyModeler<T> modeler_;
+  const multibody::Link<T>* link1_;
+  const multibody::Link<T>* link2_;
+  const multibody::RevoluteJoint<T>* shoulder_;
+  const multibody::RevoluteJoint<T>* elbow_;
 };
 
 }  // namespace acrobot
 }  // namespace examples
+}  // namespace drake
+
+// Disable scalar conversion from/to symbolic::Expresion.
+namespace drake {
+namespace systems {
+namespace scalar_conversion {
+template <>
+struct Traits<examples::acrobot::MultibodyAcrobotPlant> :
+    public NonSymbolicTraits {};
+}  // namespace scalar_conversion
+}  // namespace systems
 }  // namespace drake

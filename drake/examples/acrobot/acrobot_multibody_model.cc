@@ -19,6 +19,10 @@ using Eigen::Isometry3d;
 using Eigen::Translation3d;
 using Eigen::Vector3d;
 
+#include <iostream>
+#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
+#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
+
 using namespace multibody;
 
 namespace {
@@ -89,31 +93,37 @@ void MultibodyAcrobotPlant<T>::BuildMultibodyModeler() {
   SpatialInertia<double> M_L2(m2_, com2_L2, G_L2);
 
   const Link<T>& world = modeler_.get_world_link();
-  const Link<T>& link1 = modeler_.template AddLink<RigidLink>("Link1", M_L1);
-  const Link<T>& link2 = modeler_.template AddLink<RigidLink>("Link2", M_L2);
+  link1_ = &modeler_.template AddLink<RigidLink>("Link1", M_L1);
+  link2_ = &modeler_.template AddLink<RigidLink>("Link2", M_L2);
 
   // Pose of the shoulder outboard frame So in link1's frame L1.
   const Isometry3d X_L1So{Translation3d(0.0, lc1(), 0.0)};
 
   // Shoulder joint.
-  const RevoluteJoint<T>& joint1 =
-      modeler_.template AddJoint<RevoluteJoint>(
-          world, Isometry3d::Identity(), link1, X_L1So, Vector3d::UnitZ());
+  shoulder_ =
+      &modeler_.template AddJoint<RevoluteJoint>(
+          "ShoulderJoint",
+          world, Isometry3d::Identity(), *link1_, X_L1So, Vector3d::UnitZ());
 
   // Elbow joint.
   // Pose of the elbow inboard frame Ei in the frame L1 of link1.
   const Isometry3d X_L1Ei{Translation3d(0.0, -lc1(), 0.0)};
   // Pose of the elbow outboard frame Eo in the frame L2 of link2.
   const Isometry3d X_L2Eo{Translation3d(0.0, lc2(), 0.0)};
-  const RevoluteJoint<T>& joint2 =
-      modeler_.template AddJoint<RevoluteJoint>(
-          link1, X_L1Ei, link2, X_L2Eo, Vector3d::UnitZ());
-
-  (void) link1;
-  (void) link2;
-  (void) joint1;
-  (void) joint2;
+  elbow_ =
+      &modeler_.template AddJoint<RevoluteJoint>(
+          "ElbowJoint",
+          *link1_, X_L1Ei, *link2_, X_L2Eo, Vector3d::UnitZ());
+  modeler_.Finalize();
 }
+
+#if 0
+template <typename T>
+std::unique_ptr<systems::LeafContext<T>>
+MultibodyAcrobotPlant<T>::DoMakeContext() const {
+  return modeler_.CreateDefaultContext();
+}
+#endif
 
 template <typename T>
 void MultibodyAcrobotPlant<T>::OutputState(const systems::Context<T>& context,

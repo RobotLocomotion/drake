@@ -498,7 +498,7 @@ class MultibodyTree {
   // introduction of system's methods to:
   //  - Create a context different from LeafContext, in this case MBTContext.
   //  - Create or request cache entries.
-  std::unique_ptr<systems::Context<T>> CreateDefaultContext() const;
+  std::unique_ptr<systems::LeafContext<T>> CreateDefaultContext() const;
 
   /// Sets default values in the context. For mobilizers, this method sets them
   /// to their _zero_ configuration according to

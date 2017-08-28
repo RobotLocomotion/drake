@@ -117,7 +117,7 @@ void MultibodyTree<T>::CreateBodyNode(BodyNodeIndex body_node_index) {
 }
 
 template <typename T>
-std::unique_ptr<systems::Context<T>>
+std::unique_ptr<systems::LeafContext<T>>
 MultibodyTree<T>::CreateDefaultContext() const {
   if (!topology_is_valid()) {
     throw std::logic_error(
