@@ -44,7 +44,7 @@ class Constraint2DSolverTest : public ::testing::Test {
       num_velocities);
 
     // Set epsilon. Tests will fail without epsilon being this large,
-    // apparently due to the rounding error introduced by LCP solver pivoting. 
+    // apparently due to the rounding error introduced by LCP solver pivoting.
     eps_ = 250 * std::max(std::numeric_limits<double>::epsilon(), cfm_);
   }
 
