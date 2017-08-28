@@ -160,7 +160,7 @@ std::vector<std::string> RoadGeometry::CheckInvariants() const {
         const Lane* lane = seg->lane(li);
         if (lane->segment() != seg) {
           std::stringstream ss;
-          ss << "Lane " << lane->id().id << " is owned by "
+          ss << "Lane " << lane->id().string() << " is owned by "
              << seg->id().string()
              << " (" << seg << ") but claims to be owned by "
              << lane->segment()->id().string()
@@ -172,7 +172,7 @@ std::vector<std::string> RoadGeometry::CheckInvariants() const {
         // lanes).
         if (lane->index() != li) {
           std::stringstream ss;
-          ss << "Lane " << lane->id().id << " has index " << li
+          ss << "Lane " << lane->id().string() << " has index " << li
              << " but claims to have index " << lane->index() << ".";
           failures.push_back(ss.str());
         }
@@ -211,7 +211,7 @@ std::vector<std::string> RoadGeometry::CheckInvariants() const {
         const double d = Distance(ref_geo, LaneEndGeoPosition(le));
         if (d > linear_tolerance()) {
           std::stringstream ss;
-          ss << "Lane " << le.lane->id().id
+          ss << "Lane " << le.lane->id().string()
              << ((le.end == LaneEnd::kStart) ? "[start]" : "[end]")
              << " position is off by " << d << ".";
           failures.push_back(ss.str());
@@ -232,7 +232,7 @@ std::vector<std::string> RoadGeometry::CheckInvariants() const {
         const double d = Distance(reference, OrientationOutFromLane(le));
         if (d > angular_tolerance()) {
           std::stringstream ss;
-          ss << "Lane " << le.lane->id().id
+          ss << "Lane " << le.lane->id().string()
              << ((le.end == LaneEnd::kStart) ? "[start]" : "[end]")
              << " orientation is off by " << d << ".";
           failures.push_back(ss.str());

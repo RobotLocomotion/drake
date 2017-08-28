@@ -174,40 +174,40 @@ GTEST_TEST(MonolaneBuilderTest, QuadRing) {
     EXPECT_EQ(segment->num_lanes(), 1);
     const api::Lane* lane = segment->lane(0);
 
-    if (lane->id().id == "l:left1") {
+    if (lane->id() == api::LaneId("l:left1")) {
       EXPECT_EQ(lane->segment()->id(), api::SegmentId("s:left1"));
-      EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kStart)->lane->id().id,
-                "l:left1");
+      EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kStart)->lane->id(),
+                api::LaneId("l:left1"));
       EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kStart)->end,
                 api::LaneEnd::kFinish);
-      EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kFinish)->lane->id().id,
-                "l:left1");
+      EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kFinish)->lane->id(),
+                api::LaneId("l:left1"));
       EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kFinish)->end,
                 api::LaneEnd::kStart);
-    } else if (lane->id().id == "l:left0") {
+    } else if (lane->id() == api::LaneId("l:left0")) {
       EXPECT_EQ(lane->segment()->id(), api::SegmentId("s:left0"));
-      EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kStart)->lane->id().id,
-                "l:right1");
+      EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kStart)->lane->id(),
+                api::LaneId("l:right1"));
       EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kStart)->end,
                 api::LaneEnd::kStart);
-      EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kFinish)->lane->id().id,
-                "l:right0");
+      EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kFinish)->lane->id(),
+                api::LaneId("l:right0"));
       EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kFinish)->end,
                 api::LaneEnd::kStart);
-    } else if (lane->id().id == "l:right0") {
+    } else if (lane->id() == api::LaneId("l:right0")) {
       EXPECT_EQ(lane->segment()->id(), api::SegmentId("s:right0"));
-      EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kStart)->lane->id().id,
-                "l:right1");
+      EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kStart)->lane->id(),
+                api::LaneId("l:right1"));
       EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kStart)->end,
                 api::LaneEnd::kStart);
-      EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kFinish)->lane->id().id,
-                "l:right1");
+      EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kFinish)->lane->id(),
+                api::LaneId("l:right1"));
       EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kFinish)->end,
                 api::LaneEnd::kFinish);
-    } else if (lane->id().id == "l:right1") {
+    } else if (lane->id() == api::LaneId("l:right1")) {
       EXPECT_EQ(lane->segment()->id(), api::SegmentId("s:right1"));
-      EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kStart)->lane->id().id,
-                "l:left1");
+      EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kStart)->lane->id(),
+                api::LaneId("l:left1"));
       EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kStart)->end,
                 api::LaneEnd::kFinish);
       EXPECT_EQ(lane->GetDefaultBranch(api::LaneEnd::kFinish).get(), nullptr);

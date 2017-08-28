@@ -36,7 +36,7 @@ Segment::Segment(Junction* junction,
 
     auto lane = std::make_unique<Lane>(
         this,
-        api::LaneId({"Dragway_Lane_" + std::to_string(i)}),
+        api::LaneId("Dragway_Lane_" + std::to_string(i)),
         i,
         length,
         y_offset,
