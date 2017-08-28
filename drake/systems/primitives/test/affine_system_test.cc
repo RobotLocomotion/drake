@@ -204,6 +204,12 @@ GTEST_TEST(DiscreteAffineSystemTest, DiscreteTime) {
   EXPECT_TRUE(CompareMatrices(system.C(t), C));
   EXPECT_TRUE(CompareMatrices(system.D(t), D));
   EXPECT_TRUE(CompareMatrices(system.y0(t), y0));
+
+  // Compare the calculated output against the expected output.
+  auto system_output = system.AllocateOutput(*context);
+  system.CalcOutput(*context, system_output.get());
+  EXPECT_TRUE(CompareMatrices(system_output->get_vector_data(0)->get_value(),
+                              C * x0 + D * u0 + y0));
 }
 
 // xdot = rotmat(t)*x, y = x;
@@ -213,8 +219,9 @@ class SimpleTimeVaryingAffineSystem : public TimeVaryingAffineSystem<double> {
   static constexpr int kNumInputs = 1;
   static constexpr int kNumOutputs = 2;
 
-  SimpleTimeVaryingAffineSystem()
-      : TimeVaryingAffineSystem(kNumStates, kNumInputs, kNumOutputs) {}
+  explicit SimpleTimeVaryingAffineSystem(double time_period)
+      : TimeVaryingAffineSystem(kNumStates, kNumInputs, kNumOutputs,
+                                time_period) {}
   ~SimpleTimeVaryingAffineSystem() override {}
 
   Eigen::MatrixXd A(const double& t) const override {
@@ -240,7 +247,7 @@ class SimpleTimeVaryingAffineSystem : public TimeVaryingAffineSystem<double> {
 };
 
 GTEST_TEST(SimpleTimeVaryingAffineSystemTest, EvalTest) {
-  SimpleTimeVaryingAffineSystem sys;
+  SimpleTimeVaryingAffineSystem sys(0.0);  // A continuous-time system.
   const double t = 2.5;
   Eigen::Vector2d x(1, 2);
 
@@ -260,11 +267,32 @@ GTEST_TEST(SimpleTimeVaryingAffineSystemTest, EvalTest) {
                               output->get_vector_data(0)->CopyToVector()));
 }
 
+GTEST_TEST(SimpleTimeVaryingAffineSystemTest, DiscreteEvalTest) {
+  SimpleTimeVaryingAffineSystem sys(1.0);  // A discrete-time system.
+  const double t = 2.5;
+  Eigen::Vector2d x(1, 2);
+
+  auto context = sys.CreateDefaultContext();
+  context->set_time(t);
+  context->get_mutable_discrete_state()->get_mutable_vector()->SetFromVector(x);
+  context->FixInputPort(0, BasicVector<double>::Make(42.0));
+
+  auto updates = sys.AllocateDiscreteVariables();
+  sys.CalcDiscreteVariableUpdates(*context, updates.get());
+  EXPECT_TRUE(CompareMatrices(sys.A(t) * x + 42.0 * sys.B(t),
+                              updates->get_vector()->CopyToVector()));
+
+  auto output = sys.AllocateOutput(*context);
+  sys.CalcOutput(*context, output.get());
+  EXPECT_TRUE(CompareMatrices(x + sys.y0(t) + 42.0 * sys.D(t),
+                              output->get_vector_data(0)->CopyToVector()));
+}
+
 // Checks that a time-varying affine system will fail if the matrices do not
 // match the specified number of states.
 class IllegalTimeVaryingAffineSystem : public SimpleTimeVaryingAffineSystem {
  public:
-  IllegalTimeVaryingAffineSystem() : SimpleTimeVaryingAffineSystem() {}
+  IllegalTimeVaryingAffineSystem() : SimpleTimeVaryingAffineSystem(0.0) {}
   ~IllegalTimeVaryingAffineSystem() override {}
 
   Eigen::MatrixXd A(const double& t) const override {
