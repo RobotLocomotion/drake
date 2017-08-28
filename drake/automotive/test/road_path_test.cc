@@ -69,7 +69,7 @@ std::unique_ptr<const RoadGeometry> MakeTwoLaneRoad(bool is_opposing) {
                     kEndZ);                                       /* z_end */
   }
 
-  return builder.Build(maliput::api::RoadGeometryId({"TwoLaneStretchOfRoad"}));
+  return builder.Build(maliput::api::RoadGeometryId("TwoLaneStretchOfRoad"));
 }
 
 const Lane* GetLaneById(const RoadGeometry& road, const std::string& lane_id) {
