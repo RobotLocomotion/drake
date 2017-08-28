@@ -52,7 +52,8 @@ std::unique_ptr<ignition::math::Spline> CreateSpline(
 // Performs geometric tests over a straight lane.
 GTEST_TEST(RNDFSplineLanesTest, FlatLineLane) {
   const double kWidth = 5.;
-  RoadGeometry rg({"FlatLineLane"}, kPathTolerance, kAngularTolerance);
+  RoadGeometry rg(api::RoadGeometryId{"FlatLineLane"},
+                  kPathTolerance, kAngularTolerance);
   Segment* s1 =
       rg.NewJunction(api::JunctionId{"j1"})->NewSegment(api::SegmentId{"s1"});
   std::vector<std::tuple<ignition::math::Vector3d, ignition::math::Vector3d>>
@@ -150,7 +151,8 @@ GTEST_TEST(RNDFSplineLanesTest, FlatLineLane) {
 // Performs geometric tests over a curved lane.
 GTEST_TEST(RNDFSplineLanesTest, CurvedLineLane) {
   const double kWidth = 5.;
-  RoadGeometry rg({"CurvedLineLane"}, kPathTolerance, kAngularTolerance);
+  RoadGeometry rg(api::RoadGeometryId{"CurvedLineLane"},
+                  kPathTolerance, kAngularTolerance);
   Segment* s1 =
       rg.NewJunction(api::JunctionId{"j1"})->NewSegment(api::SegmentId{"s1"});
   std::vector<std::tuple<ignition::math::Vector3d, ignition::math::Vector3d>>
@@ -334,7 +336,8 @@ GTEST_TEST(RNDFSplineLanesTest, ComputeLength) {
 // +--------------+   <-- y = -2.5
 GTEST_TEST(RNDFSplineLanesTest, TwoFlatLineLanesBoundChecks) {
   const double kWidth = 5.;
-  RoadGeometry rg({"TwoFlatLineLanes"}, kPathTolerance, kAngularTolerance);
+  RoadGeometry rg(api::RoadGeometryId{"TwoFlatLineLanes"},
+                  kPathTolerance, kAngularTolerance);
   Segment* s1 =
       rg.NewJunction(api::JunctionId{"j1"})->NewSegment(api::SegmentId{"s1"});
   std::vector<std::tuple<ignition::math::Vector3d, ignition::math::Vector3d>>

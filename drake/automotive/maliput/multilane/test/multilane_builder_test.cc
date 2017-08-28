@@ -57,9 +57,10 @@ GTEST_TEST(MultilaneBuilderTest, Fig8) {
 
   b.Connect("7", c6end, 50., c0start_z);
 
-  std::unique_ptr<const api::RoadGeometry> rg = b.Build({"figure-eight"});
+  std::unique_ptr<const api::RoadGeometry> rg =
+      b.Build(api::RoadGeometryId{"figure-eight"});
 
-  EXPECT_EQ(rg->id().id, "figure-eight");
+  EXPECT_EQ(rg->id(), api::RoadGeometryId("figure-eight"));
 
   EXPECT_EQ(rg->num_junctions(), 8);
   for (int j = 0; j < rg->num_junctions(); ++j) {
@@ -158,7 +159,8 @@ GTEST_TEST(MultilaneBuilderTest, QuadRing) {
 
   b.MakeGroup("all", {right1, right0, left0, left1});
 
-  std::unique_ptr<const api::RoadGeometry> rg = b.Build({"figure-eight"});
+  std::unique_ptr<const api::RoadGeometry> rg =
+      b.Build(api::RoadGeometryId{"figure-eight"});
 
   EXPECT_EQ(rg->num_branch_points(), 1);
   EXPECT_EQ(rg->branch_point(0)->GetASide()->size(), 4);

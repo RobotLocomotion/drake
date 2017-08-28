@@ -114,11 +114,6 @@ double Distance(const Rotation& a, const Rotation& b) {
 
 }  // namespace
 
-std::ostream& operator<<(std::ostream& out,
-    const RoadGeometryId& road_geometry_id) {
-  return out << std::string("RoadGeometry(") << road_geometry_id.id
-      << std::string(")");
-}
 
 std::vector<std::string> RoadGeometry::CheckInvariants() const {
   std::vector<std::string> failures;
@@ -129,9 +124,9 @@ std::vector<std::string> RoadGeometry::CheckInvariants() const {
     if (bp->road_geometry() != this) {
       std::stringstream ss;
       ss << "BranchPoint " << bp->id().string() << " is owned by "
-         << this->id().id << " (" << this
+         << this->id().string() << " (" << this
          << ") but claims to be owned by "
-         << bp->road_geometry()->id().id << " ("
+         << bp->road_geometry()->id().string() << " ("
          << bp->road_geometry() << ").";
       failures.push_back(ss.str());
     }
@@ -141,8 +136,9 @@ std::vector<std::string> RoadGeometry::CheckInvariants() const {
     if (jnx->road_geometry() != this) {
       std::stringstream ss;
       ss << "Junction " << jnx->id().string() << " is owned by "
-         << this->id().id << " (" << this << ") but claims to be owned by "
-         << jnx->road_geometry()->id().id << " ("
+         << this->id().string()
+         << " (" << this << ") but claims to be owned by "
+         << jnx->road_geometry()->id().string() << " ("
          << jnx->road_geometry() << ").";
       failures.push_back(ss.str());
     }

@@ -22,7 +22,8 @@ const double kAngularTolerance = 1e-12;
 
 // The following tests the Junction relative API.
 GTEST_TEST(RNDFRoadGeometryTest, JunctionTest) {
-  RoadGeometry rg({"RG-Junction"}, kLinearTolerance, kAngularTolerance);
+  RoadGeometry rg(api::RoadGeometryId{"RG-Junction"},
+                  kLinearTolerance, kAngularTolerance);
 
   EXPECT_EQ(rg.num_junctions(), 0);
 
@@ -40,7 +41,8 @@ GTEST_TEST(RNDFRoadGeometryTest, JunctionTest) {
 
 // The following tests the BranchPoint relative API.
 GTEST_TEST(RNDFRoadGeometryTest, BranchPointTest) {
-  RoadGeometry rg({"RG-BranchPoint"}, kLinearTolerance, kAngularTolerance);
+  RoadGeometry rg(api::RoadGeometryId{"RG-BranchPoint"},
+                  kLinearTolerance, kAngularTolerance);
 
   EXPECT_EQ(rg.num_branch_points(), 0);
 
@@ -58,7 +60,8 @@ GTEST_TEST(RNDFRoadGeometryTest, BranchPointTest) {
 
 // The following tests the Getters of tolerances relative API.
 GTEST_TEST(RNDFRoadGeometryTest, GettersTest) {
-  RoadGeometry rg({"RG-Tolerances"}, kLinearTolerance, kAngularTolerance);
+  RoadGeometry rg(api::RoadGeometryId{"RG-Tolerances"},
+                  kLinearTolerance, kAngularTolerance);
   EXPECT_EQ(rg.linear_tolerance(), kLinearTolerance);
   EXPECT_EQ(rg.angular_tolerance(), kAngularTolerance);
 }

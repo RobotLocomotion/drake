@@ -38,7 +38,7 @@ GTEST_TEST(MonolaneOnrampMergeTest, TestDefaultAndNonDefaultAttributes) {
       RoadCharacteristics{}.driveable_bounds.max(),
       rg->junction(0)->segment(0)->lane(0)->driveable_bounds(kSPosition).max());
 
-  EXPECT_EQ(rg->id().id, "monolane-merge-example");
+  EXPECT_EQ(rg->id(), api::RoadGeometryId("monolane-merge-example"));
   EXPECT_EQ(rg->num_junctions(), 9);
 
   // Verify that there's only one ongoing branch from `onramp1`, and that it is
@@ -93,7 +93,7 @@ GTEST_TEST(MonolaneOnrampMergeTest, TestDefaultAndNonDefaultAttributes) {
                                       ->lane(0)
                                       ->driveable_bounds(kSPosition).max());
 
-  EXPECT_EQ(new_rg->id().id, "monolane-merge-example");
+  EXPECT_EQ(new_rg->id(), api::RoadGeometryId("monolane-merge-example"));
   EXPECT_EQ(new_rg->num_junctions(), 9);
 }
 

@@ -20,7 +20,8 @@ const double kAngularTolerance = 1e-12;
 
 // The following tests segment creation and the values of the lanes' indexes.
 GTEST_TEST(RNDFSegmentTest, MetadataLane) {
-  RoadGeometry rg({"BareSegment"}, kLinearTolerance, kAngularTolerance);
+  RoadGeometry rg(api::RoadGeometryId{"BareSegment"},
+                  kLinearTolerance, kAngularTolerance);
   Segment* s1 =
       rg.NewJunction(api::JunctionId{"j1"})->NewSegment(api::SegmentId{"s1"});
 

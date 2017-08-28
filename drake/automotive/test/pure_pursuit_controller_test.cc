@@ -22,7 +22,7 @@ class PurePursuitControllerTest : public ::testing::Test {
   void SetUp() override {
     // Create a straight road with two lanes.
     road_.reset(new maliput::dragway::RoadGeometry(
-        maliput::api::RoadGeometryId({"Two-Lane Dragway"}), 1 /* num_lanes */,
+        maliput::api::RoadGeometryId("Two-Lane Dragway"), 1 /* num_lanes */,
         100 /* length */, kLaneWidth /* lane_width */,
         0. /* shoulder_width */,
         5. /* maximum_height */,

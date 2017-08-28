@@ -29,7 +29,7 @@ class MobilPlannerTest : public ::testing::Test {
     // Create a dragway with the specified number of lanes starting at `x = 0`
     // and centered at `y = 0`.
     road_.reset(new maliput::dragway::RoadGeometry(
-        maliput::api::RoadGeometryId({"Test Dragway"}), num_lanes,
+        maliput::api::RoadGeometryId("Test Dragway"), num_lanes,
         100 /* length */, kLaneWidth /* lane_width */,
         0. /* shoulder_width */,
         5. /* maximum_height */,

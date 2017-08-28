@@ -52,7 +52,7 @@ class MaliputRailcarTest : public ::testing::Test {
     const double kAngularTolerance{std::numeric_limits<double>::epsilon()};
     Initialize(
         std::make_unique<const maliput::dragway::RoadGeometry>(
-            maliput::api::RoadGeometryId({"RailcarTestDragway"}), kNumLanes,
+            maliput::api::RoadGeometryId("RailcarTestDragway"), kNumLanes,
             kDragwayLength, kDragwayLaneWidth, kDragwayShoulderWidth,
             kMaximumHeight, kLinearTolerance, kAngularTolerance), with_s);
   }
@@ -70,7 +70,7 @@ class MaliputRailcarTest : public ::testing::Test {
         ArcOffset(kCurvedRoadRadius, kCurvedRoadTheta),        /* arc   */
         EndpointZ(0, 0, 0, 0));                                /* z_end */
     Initialize(
-        builder.Build(maliput::api::RoadGeometryId({"RailcarTestCurvedRoad"})),
+        builder.Build(maliput::api::RoadGeometryId("RailcarTestCurvedRoad")),
         with_s);
   }
 
@@ -87,7 +87,7 @@ class MaliputRailcarTest : public ::testing::Test {
         ArcOffset(kCurvedRoadRadius, kCurvedRoadTheta),        /* arc   */
         EndpointZ(2, 0, 0.5, 0));                              /* z_end */
     Initialize(
-        builder.Build(maliput::api::RoadGeometryId({"RailcarTestCurvedRoad"})),
+        builder.Build(maliput::api::RoadGeometryId("RailcarTestCurvedRoad")),
         with_s);
   }
 
@@ -169,7 +169,7 @@ class MaliputRailcarTest : public ::testing::Test {
 
     std::unique_ptr<const maliput::api::RoadGeometry> road =
         builder.Build(maliput::api::RoadGeometryId(
-            {"RailcarTestTwoLaneStretchOfRoad"}));
+            "RailcarTestTwoLaneStretchOfRoad"));
     Initialize(std::move(road), with_s);
   }
 

@@ -22,7 +22,8 @@ const double kAngularTolerance = 1e-12;
 
 // The following tests Junction creation and id assignment.
 GTEST_TEST(RNDFJunctionTest, GettersTest) {
-  RoadGeometry rg({"RG-GettersTest"}, kLinearTolerance, kAngularTolerance);
+  RoadGeometry rg(api::RoadGeometryId{"RG-GettersTest"},
+                  kLinearTolerance, kAngularTolerance);
   Junction* junction = rg.NewJunction(api::JunctionId{"j:1"});
 
   EXPECT_EQ(junction->road_geometry(), &rg);
@@ -31,7 +32,8 @@ GTEST_TEST(RNDFJunctionTest, GettersTest) {
 
 // The following tests Segment creation, getters and index constraints.
 GTEST_TEST(RNDFJunctionTest, SegmentTest) {
-  RoadGeometry rg({"RG-SegmentTest"}, kLinearTolerance, kAngularTolerance);
+  RoadGeometry rg(api::RoadGeometryId{"RG-SegmentTest"},
+                  kLinearTolerance, kAngularTolerance);
   Junction* junction = rg.NewJunction(api::JunctionId{"j:1"});
 
   EXPECT_EQ(junction->num_segments(), 0);

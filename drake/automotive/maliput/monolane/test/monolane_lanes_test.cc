@@ -39,7 +39,8 @@ GTEST_TEST(MonolaneLanesTest, FlatLineLane) {
   CubicPolynomial zp {0., 0., 0., 0.};
   const double kHalfWidth = 10.;
   const double kMaxHeight = 5.;
-  RoadGeometry rg({"apple"}, kLinearTolerance, kAngularTolerance);
+  RoadGeometry rg(api::RoadGeometryId{"apple"},
+                  kLinearTolerance, kAngularTolerance);
   Segment* s1 =
       rg.NewJunction(api::JunctionId{"j1"})->NewSegment(api::SegmentId{"s1"});
   Lane* l1 = s1->NewLineLane(
@@ -198,7 +199,8 @@ GTEST_TEST(MonolaneLanesTest, FlatLineLane) {
 
 GTEST_TEST(MonolaneLanesTest, FlatArcLane) {
   CubicPolynomial zp {0., 0., 0., 0.};
-  RoadGeometry rg({"apple"}, kLinearTolerance, kAngularTolerance);
+  RoadGeometry rg(api::RoadGeometryId{"apple"},
+                  kLinearTolerance, kAngularTolerance);
   const double theta0 = 0.25 * M_PI;
   const double d_theta = 1.5 * M_PI;
   const double radius = 100.;
@@ -448,7 +450,8 @@ GTEST_TEST(MonolaneLanesTest, FlatArcLane) {
 GTEST_TEST(MonolaneLanesTest, ArcLaneWithConstantSuperelevation) {
   CubicPolynomial zp {0., 0., 0., 0.};
   const double kTheta = 0.10 * M_PI;  // superelevation
-  RoadGeometry rg({"apple"}, kLinearTolerance, kAngularTolerance);
+  RoadGeometry rg(api::RoadGeometryId{"apple"},
+                  kLinearTolerance, kAngularTolerance);
   Segment* s1 =
       rg.NewJunction(api::JunctionId{"j1"})->NewSegment(api::SegmentId{"s1"});
   Lane* l2 = s1->NewArcLane(
@@ -561,7 +564,8 @@ api::LanePosition IntegrateTrivially(const api::Lane* lane,
 
 GTEST_TEST(MonolaneLanesTest, HillIntegration) {
   CubicPolynomial zp {0., 0., 0., 0.};
-  RoadGeometry rg({"apple"}, kLinearTolerance, kAngularTolerance);
+  RoadGeometry rg(api::RoadGeometryId{"apple"},
+                  kLinearTolerance, kAngularTolerance);
   Segment* s1 =
       rg.NewJunction(api::JunctionId{"j1"})->NewSegment(api::SegmentId{"s1"});
   const double theta0 = 0.25 * M_PI;

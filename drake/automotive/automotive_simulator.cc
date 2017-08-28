@@ -348,7 +348,7 @@ const maliput::api::Lane* AutomotiveSimulator<T>::FindLane(
 
 template <typename T>
 void AutomotiveSimulator<T>::GenerateAndLoadRoadNetworkUrdf() {
-  std::string filename = road_->id().id;
+  std::string filename = road_->id().string();
   std::transform(filename.begin(), filename.end(), filename.begin(),
                  [](char ch) { return ch == ' ' ? '_' : ch; });
   maliput::utility::GenerateUrdfFile(road_.get(),

@@ -60,7 +60,7 @@ GTEST_TEST(MonolaneLanesTest, DoToRoadPosition) {
               kFlatZ);
 
   std::unique_ptr<const api::RoadGeometry> rg =
-      rb->Build({"multi_lane_with_branches"});
+      rb->Build(api::RoadGeometryId{"multi_lane_with_branches"});
 
   // Place a point at the middle of lane1.
   api::GeoPosition geo_pos{kArcRadius, -kArcRadius - kLength / 2., 0.};
@@ -220,7 +220,7 @@ GTEST_TEST(MonolaneLanesTest, HintWithDisconnectedLanes) {
   rb->Connect("lane1", kRoadOrigin1, ArcOffset(50., M_PI / 2.), kFlatZ);
 
   std::unique_ptr<const api::RoadGeometry> rg =
-      rb->Build({"disconnected_lanes"});
+      rb->Build(api::RoadGeometryId{"disconnected_lanes"});
 
   // Place a point at the middle of lane0.
   api::GeoPosition geo_pos{50. * std::sqrt(2.) / 2., -50. * std::sqrt(2.) / 2.,
