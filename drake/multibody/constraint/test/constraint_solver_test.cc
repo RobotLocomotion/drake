@@ -43,7 +43,8 @@ class Constraint2DSolverTest : public ::testing::Test {
     vel_data_ = std::make_unique<ConstraintVelProblemData<double>>(
       num_velocities);
 
-    // Set epsilon.
+    // Set epsilon. Tests will fail without epsilon being this large,
+    // apparently due to the rounding error introduced by LCP solver pivoting. 
     eps_ = 250 * std::max(std::numeric_limits<double>::epsilon(), cfm_);
   }
 
@@ -426,7 +427,7 @@ class Constraint2DSolverTest : public ::testing::Test {
         if (friction_dir_dup == 0) {
           // Construct the contact frames.
           std::vector<Matrix2<double>> frames;
-          for (int i = 0; i < 2 * (1 + contact_dup); ++i)
+          for (int i = 0; i < n_contacts; ++i)
             frames.push_back(GetNonSlidingContactFrameToWorldTransform());
 
           // Verify that the x-axis of the contact frame, which corresponds to
@@ -491,6 +492,8 @@ class Constraint2DSolverTest : public ::testing::Test {
     // to three times.
     for (int contact_dup = 0; contact_dup < 3; ++contact_dup) {
       for (int friction_dir_dup = 0; friction_dir_dup < 4; ++friction_dir_dup) {
+        const int n_contacts = 2 * (1 + contact_dup);
+
         // Set the state of the rod to resting on its side with no velocity.
         SetRodToRestingHorizontalConfig();
 
@@ -514,7 +517,7 @@ class Constraint2DSolverTest : public ::testing::Test {
 
           // Construct the contact frames.
           std::vector<Matrix2<double>> frames;
-          for (int i = 0; i < 2 * (1 + contact_dup); ++i)
+          for (int i = 0; i < n_contacts; ++i)
             frames.push_back(GetNonSlidingContactFrameToWorldTransform());
 
           // Verify that the x-axis of the contact frame, which corresponds to
@@ -536,7 +539,7 @@ class Constraint2DSolverTest : public ::testing::Test {
               *accel_data_, frames, &contact_forces);
 
           // Verify that the number of contact force vectors is correct.
-          ASSERT_EQ(contact_forces.size(), 2 * (1 + contact_dup));
+          ASSERT_EQ(contact_forces.size(), n_contacts);
 
           // Verify that the frictional forces are maximized.
           double fnormal = 0;
@@ -570,6 +573,8 @@ class Constraint2DSolverTest : public ::testing::Test {
     // to three times.
     for (int contact_dup = 0; contact_dup < 3; ++contact_dup) {
       for (int friction_dir_dup = 0; friction_dir_dup < 4; ++friction_dir_dup) {
+        const int n_contacts = 2 * (contact_dup + 1);
+
         // Set the configuration of the rod to lying on its side and impacting.
         SetRodToSlidingImpactingHorizontalConfig(sign);
 
@@ -584,7 +589,6 @@ class Constraint2DSolverTest : public ::testing::Test {
         // Get the impact forces expressed in the contact frames *only*
         // if the friction directions are not duplicated (which would cause an
         // exception to be thrown).
-        const int n_contacts = 2 * (contact_dup + 1);
         if (friction_dir_dup == 0) {
           // Construct the contact frames.
           std::vector<Matrix2<double>> frames;
@@ -883,8 +887,8 @@ TEST_F(Constraint2DSolverTest, SinglePointSlidingTest) {
 TEST_F(Constraint2DSolverTest, TwoPointPulledUpward) {
   // Duplicate contact points up to two times and the friction directions up
   // to three times.
-  for (int contact_dup = 0; contact_dup <= 2; ++contact_dup) {
-    for (int friction_dir_dup = 0; friction_dir_dup <= 3; ++friction_dir_dup) {
+  for (int contact_dup = 0; contact_dup < 3; ++contact_dup) {
+    for (int friction_dir_dup = 0; friction_dir_dup < 4; ++friction_dir_dup) {
       // Set the state of the rod to resting on its side with no velocity.
       SetRodToRestingHorizontalConfig();
 
@@ -910,8 +914,8 @@ TEST_F(Constraint2DSolverTest, TwoPointPulledUpward) {
 TEST_F(Constraint2DSolverTest, NoImpactImpliesNoImpulses) {
   // Duplicate contact points up to two times and the friction directions up
   // to three times.
-  for (int contact_dup = 0; contact_dup <= 2; ++contact_dup) {
-    for (int friction_dir_dup = 0; friction_dir_dup <= 3; ++friction_dir_dup) {
+  for (int contact_dup = 0; contact_dup < 3; ++contact_dup) {
+    for (int friction_dir_dup = 0; friction_dir_dup < 4; ++friction_dir_dup) {
       // Set the state of the rod to resting on its side with upward velocity.
       SetRodToUpwardMovingHorizontalConfig();
 
