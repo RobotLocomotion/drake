@@ -47,13 +47,13 @@ GTEST_TEST(MultilaneLanesTest, FlatLineLane) {
       rg.NewJunction(api::JunctionId{"j1"})
       ->NewSegment(api::SegmentId{"s1"}, std::move(road_curve_1));
   Lane* l1 =
-      s1->NewLane({"l1"},
+      s1->NewLane(api::LaneId{"l1"},
                   // lane/driveable/elevation bounds
                   {-5., 5.}, {-kHalfWidth, kHalfWidth}, {0., kMaxHeight});
 
   EXPECT_EQ(rg.CheckInvariants(), std::vector<std::string>());
 
-  EXPECT_EQ(l1->id().id, "l1");
+  EXPECT_EQ(l1->id(), api::LaneId("l1"));
   EXPECT_EQ(l1->segment(), s1);
   EXPECT_EQ(l1->index(), 0);
   EXPECT_EQ(l1->to_left(), nullptr);
@@ -130,7 +130,7 @@ GTEST_TEST(MultilaneLanesTest, FlatLineLane) {
   Segment* s2 =
       rg.NewJunction(api::JunctionId{"j2"})
       ->NewSegment(api::SegmentId{"s2"}, std::move(road_curve_2));
-  Lane* l1_with_z = s2->NewLane({"l1_with_z"}, {-5., 5.},
+  Lane* l1_with_z = s2->NewLane(api::LaneId{"l1_with_z"}, {-5., 5.},
                                 {-kHalfWidth, kHalfWidth}, {0., kMaxHeight});
   EXPECT_TRUE(api::test::IsLanePositionClose(
       l1_with_z->ToLanePosition(point_outside_lane, &nearest_position,
@@ -212,13 +212,13 @@ GTEST_TEST(MultilaneLanesTest, FlatArcLane) {
       rg.NewJunction(api::JunctionId{"j1"})
       ->NewSegment(api::SegmentId{"s1"}, std::move(road_curve_1));
   Lane* l2 =
-      s1->NewLane({"l2"},
+      s1->NewLane(api::LaneId{"l2"},
                   // lane/driveable/elevation bounds
                   {-5., 5.}, {-kHalfWidth, kHalfWidth}, {0., kMaxHeight});
 
   EXPECT_EQ(rg.CheckInvariants(), std::vector<std::string>());
 
-  EXPECT_EQ(l2->id().id, "l2");
+  EXPECT_EQ(l2->id(), api::LaneId("l2"));
   EXPECT_EQ(l2->segment(), s1);
   EXPECT_EQ(l2->index(), 0);
   EXPECT_EQ(l2->to_left(), nullptr);
@@ -313,7 +313,7 @@ GTEST_TEST(MultilaneLanesTest, FlatArcLane) {
   Segment* s2 =
       rg.NewJunction(api::JunctionId{"j2"})
       ->NewSegment(api::SegmentId{"s2"}, std::move(road_curve_2));
-  Lane* l2_with_z = s2->NewLane({"l2_with_z"}, {-5., 5.},
+  Lane* l2_with_z = s2->NewLane(api::LaneId{"l2_with_z"}, {-5., 5.},
                                 {-kHalfWidth, kHalfWidth}, {0., kMaxHeight});
   EXPECT_TRUE(api::test::IsLanePositionClose(
       l2_with_z->ToLanePosition(point_outside_lane, &nearest_position,
@@ -339,7 +339,8 @@ GTEST_TEST(MultilaneLanesTest, FlatArcLane) {
       rg.NewJunction(api::JunctionId{"j3"})
       ->NewSegment(api::SegmentId{"s3"}, std::move(road_curve_3));
   Lane* l2_overlapping =
-      s3->NewLane({"l2_overlapping"}, {-5., 5.}, {-kHalfWidth, kHalfWidth},
+      s3->NewLane(api::LaneId{"l2_overlapping"},
+                  {-5., 5.}, {-kHalfWidth, kHalfWidth},
                   {0., kMaxHeight});
   EXPECT_TRUE(api::test::IsLanePositionClose(
       l2_overlapping->ToLanePosition(point_within_lane, &nearest_position,
@@ -368,7 +369,8 @@ GTEST_TEST(MultilaneLanesTest, FlatArcLane) {
   Segment* s4 =
       rg.NewJunction(api::JunctionId{"j4"})
       ->NewSegment(api::SegmentId{"s4"}, std::move(road_curve_4));
-  Lane* l2_wrap = s4->NewLane({"l2_wrap"}, {-5., 5.}, {-kHalfWidth, kHalfWidth},
+  Lane* l2_wrap = s4->NewLane(api::LaneId{"l2_wrap"},
+                              {-5., 5.}, {-kHalfWidth, kHalfWidth},
                               {0., kMaxHeight});
   const api::GeoPosition point_in_third_quadrant{
     center(0) - 90., center(1) - 25., 0.};  // θ ~= -0.9π.
@@ -454,7 +456,7 @@ GTEST_TEST(MultilaneLanesTest, ArcLaneWithConstantSuperelevation) {
   Segment* s1 =
       rg.NewJunction(api::JunctionId{"j1"})
       ->NewSegment(api::SegmentId{"s1"}, std::move(road_curve_1));
-  Lane* l2 = s1->NewLane({"l2"}, {-5., 5.}, {-10., 10.}, {0., 5.});
+  Lane* l2 = s1->NewLane(api::LaneId{"l2"}, {-5., 5.}, {-10., 10.}, {0., 5.});
 
   EXPECT_EQ(rg.CheckInvariants(), std::vector<std::string>());
 
@@ -577,7 +579,7 @@ GTEST_TEST(MultilaneLanesTest, HillIntegration) {
   Segment* s1 =
       rg.NewJunction(api::JunctionId{"j1"})
       ->NewSegment(api::SegmentId{"s1"}, std::move(road_curve_1));
-  Lane* l1 = s1->NewLane({"l2"}, {-5., 5.}, {-10., 10.}, {0., 5.});
+  Lane* l1 = s1->NewLane(api::LaneId{"l2"}, {-5., 5.}, {-10., 10.}, {0., 5.});
 
   EXPECT_EQ(rg.CheckInvariants(), std::vector<std::string>());
 
