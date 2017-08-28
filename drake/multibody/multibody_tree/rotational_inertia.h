@@ -872,7 +872,7 @@ class RotationalInertia {
     const bool are_moments_near_positive = AreMomentsOfInertiaNearPositive(
         Ixx, Iyy, Izz, epsilon);
     const bool is_triangle_inequality_satisified = Ixx + Iyy + epsilon >= Izz &&
-                                                   Ixx + Iyy + epsilon >= Iyy &&
+                                                   Ixx + Izz + epsilon >= Iyy &&
                                                    Iyy + Izz + epsilon >= Ixx;
     return are_moments_near_positive && is_triangle_inequality_satisified;
   }
