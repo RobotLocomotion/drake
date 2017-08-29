@@ -30,7 +30,7 @@ class MultilaneLineRoadCurveTest : public ::testing::Test {
 TEST_F(MultilaneLineRoadCurveTest, LineRoadCurve) {
   const LineRoadCurve dut(kOrigin, kDirection, zp, zp);
   // Checks the length.
-  EXPECT_NEAR(dut.length(),
+  EXPECT_NEAR(dut.p_scale(),
               std::sqrt(kDirection.x() * kDirection.x() +
                         kDirection.y() * kDirection.y()),
               kVeryExact);
