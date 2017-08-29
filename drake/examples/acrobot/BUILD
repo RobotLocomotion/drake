@@ -43,17 +43,6 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
-    name = "acrobot_multibody_model",
-    srcs = ["acrobot_multibody_model.cc"],
-    hdrs = ["acrobot_multibody_model.h"],
-    deps = [
-        ":acrobot_state_vector",
-        "//drake/multibody/multibody_tree/modeler:multibody_modeler",
-        "//drake/systems/framework",
-    ],
-)
-
 # Note: This is a development tool for testing LCM communication
 # but does not actually provide test coverage as a stand-alone
 # executable.
@@ -128,27 +117,6 @@ drake_cc_binary(
         "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/analysis:simulator",
         "//drake/systems/framework:diagram",
-        "@com_github_gflags_gflags//:gflags",
-    ],
-)
-
-drake_cc_binary(
-    name = "acrobot_multibody_run_passive",
-    srcs = ["acrobot_multibody_run_passive.cc"],
-    add_test_rule = 1,
-    data = [":models"],
-    test_rule_args = ["-realtime_factor=0.0"],
-    deps = [
-        ":acrobot_multibody_model",
-        "//drake/common:find_resource",
-        "//drake/lcm",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/joints",
-        "//drake/multibody/parsers",
-        "//drake/multibody/rigid_body_plant:drake_visualizer",
-        "//drake/systems/analysis:simulator",
-        "//drake/systems/framework:diagram",
-        "//drake/systems/primitives:signal_logger",
         "@com_github_gflags_gflags//:gflags",
     ],
 )
