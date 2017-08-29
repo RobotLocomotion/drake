@@ -8,6 +8,8 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 
+#include "drake/multibody/benchmarks/acrobot/acrobot.h"
+
 using std::sin;
 using std::cos;
 
@@ -18,6 +20,8 @@ namespace acrobot {
 using Eigen::Isometry3d;
 using Eigen::Translation3d;
 using Eigen::Vector3d;
+
+using drake::multibody::benchmarks::Acrobot;
 
 #include <iostream>
 #define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
@@ -146,14 +150,10 @@ Vector2<T> AcrobotMultibodyPlant<T>::VectorC(
     const systems::Context<T>& context) const {
   Vector2<T> C;
   modeler_.CalcBiasTerm(context, C);
-  //PRINT_VAR(C.transpose());
 
   const systems::BasicVector<T>& x =
       dynamic_cast<const systems::BasicVector<T>&>(
           context.get_continuous_state_vector());
-
-  //C.setZero();
-  //PRINT_VAR(x.CopyToVector().transpose());
 
   const T theta1 = x[0];
   const T theta2 = x[1];

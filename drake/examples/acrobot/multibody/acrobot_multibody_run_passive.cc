@@ -12,6 +12,7 @@
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
+#include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -80,15 +81,11 @@ int do_main(int argc, char* argv[]) {
 
   simulator.set_target_realtime_rate(FLAGS_realtime_factor);
   simulator.Initialize();
-  const double max_step_size = 1.0e-4;
-  //simulator.reset_integrator<systems::RungeKutta2Integrator<double>>(
-  //    *diagram, max_step_size, simulator.get_mutable_context());
-  simulator.reset_integrator<systems::SemiExplicitEulerIntegrator<double>>(
+  const double max_step_size = 1.0e-3;
+  simulator.reset_integrator<systems::RungeKutta2Integrator<double>>(
       *diagram, max_step_size, simulator.get_mutable_context());
   PRINT_VAR(simulator.get_integrator()->get_fixed_step_mode());
   PRINT_VAR(simulator.get_integrator()->supports_error_estimation());
-  //simulator.get_mutable_integrator()->set_target_accuracy(FLAGS_accuracy);
-  //simulator.get_mutable_integrator()->set_maximum_step_size(FLAGS_dt);
   simulator.StepTo(10);
 
   // Write to file logged data.

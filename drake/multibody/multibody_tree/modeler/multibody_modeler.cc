@@ -41,14 +41,11 @@ void MultibodyModeler<T>::CalcMassMatrixViaInverseDynamics(
   const MultibodyTree<T>& model = get_multibody_tree_model();
   PositionKinematicsCache<T> pc(model.get_topology());
   VelocityKinematicsCache<T> vc(model.get_topology());
+  vc.InitializeToZero();
 
   // ======================================================================
   // Compute position kinematics.
   model.CalcPositionKinematicsCache(context, &pc);
-
-  // ======================================================================
-  // Compute velocity kinematics.
-  model.CalcVelocityKinematicsCache(context, pc, &vc);
 
   // ======================================================================
   // Compute one column of the mass matrix via inverse dynamics at a time.
@@ -59,13 +56,11 @@ void MultibodyModeler<T>::CalcMassMatrixViaInverseDynamics(
   std::vector<SpatialAcceleration<T>> A_WB_array(model.get_num_bodies());
   std::vector<SpatialForce<T>> F_BMo_W_array(model.get_num_bodies());
 
-  vdot.setZero();
   for (int j = 0; j < nv; ++j) {
     // TODO(amcastro-tri): make next line to work by making CalcInverseDynamics
     // take an Eigen::Ref<VectorX<T>> instead of a pointer.
     // auto tau = H.col(j);
-    if( j != 0) vdot(j-1) = 0.0;
-    vdot(j) = 1.0;
+    vdot = VectorX<T>::Unit(nv, j);
     model.CalcInverseDynamics(context, pc, vc, vdot,
                               &A_WB_array, &F_BMo_W_array, &tau);
     H.col(j) = tau;

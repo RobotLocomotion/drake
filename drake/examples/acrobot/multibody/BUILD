@@ -15,6 +15,7 @@ drake_cc_library(
     srcs = ["acrobot_multibody_plant.cc"],
     hdrs = ["acrobot_multibody_plant.h"],
     deps = [
+        "//drake/multibody/benchmarks/acrobot",
         "//drake/multibody/multibody_tree/modeler:multibody_modeler",
         "//drake/systems/framework",
     ],
