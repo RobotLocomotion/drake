@@ -236,6 +236,9 @@ class MultibodyModeler {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyModeler)
 
+  template<typename Scalar>
+  using Context = systems::Context<Scalar>;
+
   /// Creates a MultibodyModeler containing only a **world** body.
   MultibodyModeler() {
     // Adds a "world" body to MultibodyTree having a NaN SpatialInertia.
@@ -319,13 +322,21 @@ class MultibodyModeler {
       return 0;
   }
 
+  /// Returns the total size of the state vector in the model.
+  int get_num_states() const {
+    if (model_state_.multibody_tree)
+      return model_state_.multibody_tree->get_num_states();
+    else
+      return 0;
+  }
+
   bool is_finalized() const { return model_state_.is_finalized; }
 
   void set_finalized(bool is_finalized = true) const {
     model_state_.is_finalized = is_finalized;
   }
 
-  const MultibodyTree<T>& get_multibody_tree_model() {
+  const MultibodyTree<T>& get_multibody_tree_model() const {
     FinalizeOnlyIfNeeded();
     return *model_state_.multibody_tree;
   }
@@ -354,6 +365,12 @@ class MultibodyModeler {
   /// to their _zero_ configuration according to
   /// Mobilizer::set_zero_configuration().
   void SetZeroConfiguration(systems::Context<T>* context) const;
+
+  void CalcMassMatrixViaInverseDynamics(
+      const Context<T>& context, Eigen::Ref<MatrixX<T>> H) const;
+
+  void CalcBiasTerm(
+      const Context<T>& context, Eigen::Ref<VectorX<T>> C) const;
 
   void Finalize() const {
     // Discard previous model and create a new one.

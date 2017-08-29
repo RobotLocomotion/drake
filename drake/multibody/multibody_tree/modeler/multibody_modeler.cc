@@ -36,6 +36,90 @@ const Body<T>& MultibodyModeler<T>::get_link_body(LinkId link_id) const {
 }
 
 template <typename T>
+void MultibodyModeler<T>::CalcMassMatrixViaInverseDynamics(
+    const Context<T>& context, Eigen::Ref<MatrixX<T>> H) const {
+  const MultibodyTree<T>& model = get_multibody_tree_model();
+  PositionKinematicsCache<T> pc(model.get_topology());
+  VelocityKinematicsCache<T> vc(model.get_topology());
+
+  // ======================================================================
+  // Compute position kinematics.
+  model.CalcPositionKinematicsCache(context, &pc);
+
+  // ======================================================================
+  // Compute velocity kinematics.
+  model.CalcVelocityKinematicsCache(context, pc, &vc);
+
+  // ======================================================================
+  // Compute one column of the mass matrix via inverse dynamics at a time.
+  const int nv = model.get_num_velocities();
+  VectorX<T> vdot(nv);
+  VectorX<T> tau(nv);
+  // Auxiliary arrays used by inverse dynamics.
+  std::vector<SpatialAcceleration<T>> A_WB_array(model.get_num_bodies());
+  std::vector<SpatialForce<T>> F_BMo_W_array(model.get_num_bodies());
+
+  vdot.setZero();
+  for (int j = 0; j < nv; ++j) {
+    // TODO(amcastro-tri): make next line to work by makcing CalcInverseDynamics
+    // take an Eigen::Ref<VectorX<T>> instead of a pointer.
+    // auto tau = H.col(j);
+    if( j != 0) vdot(j-1) = 0.0;
+    vdot(j) = 1.0;
+    model.CalcInverseDynamics(context, pc, vc, vdot,
+                              &A_WB_array, &F_BMo_W_array, &tau);
+    H.col(j) = tau;
+  }
+}
+
+template <typename T>
+void MultibodyModeler<T>::CalcBiasTerm(
+    const Context<T>& context, Eigen::Ref<VectorX<T>> C) const {
+  const MultibodyTree<T>& model = get_multibody_tree_model();
+  PositionKinematicsCache<T> pc(model.get_topology());
+  VelocityKinematicsCache<T> vc(model.get_topology());
+
+  const int nv = model.get_num_velocities();
+  if (C.size() != nv) C.resize(nv);
+  C.setZero();
+
+  // ======================================================================
+  // Compute position kinematics.
+  model.CalcPositionKinematicsCache(context, &pc);
+
+  // ======================================================================
+  // Compute velocity kinematics.
+  model.CalcVelocityKinematicsCache(context, pc, &vc);
+
+  // ======================================================================
+  // Compute one column of the mass matrix via inverse dynamics at a time.
+  const VectorX<T> vdot = VectorX<T>::Zero(nv);
+  // Auxiliary arrays used by inverse dynamics.
+  std::vector<SpatialAcceleration<T>> A_WB_array(model.get_num_bodies());
+  std::vector<SpatialForce<T>> F_BMo_W_array(model.get_num_bodies());
+
+  // TODO(amcastro-tri): make next line to work by makcing CalcInverseDynamics
+  // take an Eigen::Ref<VectorX<T>> instead of a pointer.
+  VectorX<T> tau(nv);
+
+  // TODO(amcastro-tri): provide specific API for when vdot = 0.
+  model.CalcInverseDynamics(context, pc, vc, vdot,
+                            &A_WB_array, &F_BMo_W_array, &tau);
+  PRINT_VAR(tau.transpose());
+  for (const auto& id_link_pair : model_state_.owned_links) {
+    LinkId link_id = id_link_pair.first;
+    const Link<T>& link = *id_link_pair.second;
+    const Body<T>& body = get_link_body(link_id);
+    PRINT_VAR(link.get_name());
+    PRINT_VAR(A_WB_array[body.get_index()]);
+    PRINT_VAR(F_BMo_W_array[body.get_index()]);
+    PRINT_VAR(vc.get_V_WB(body.get_node_index()));
+  }
+  C = tau;
+}
+
+
+template <typename T>
 void MultibodyModeler<T>::MakeMultibodyTreeModel() const {
 
   // A number of convenient aliases into the model state.
@@ -46,16 +130,6 @@ void MultibodyModeler<T>::MakeMultibodyTreeModel() const {
   auto& model = model_state_.multibody_tree;
 
   model = std::move(std::make_unique<MultibodyTree<T>>());
-
-#if 0
-  // List of links excluding the world link.
-    std::vector<LinkId> links_ids(get_num_links()-1);
-    std::copy_if(owned_links.begin(), owned_links.end(),
-                 links_ids.begin(),
-                 [world_id = model_state_.world_id](LinkId id){
-                   return id != world_id;
-                 });
-#endif
 
   // Pre-compute the number of bodies.
   // TODO(amcastro-tri): check if a link needs to be split into ghost bodies.

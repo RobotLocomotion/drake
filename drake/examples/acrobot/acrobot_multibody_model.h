@@ -2,7 +2,6 @@
 
 #include <memory>
 
-#include "drake/examples/acrobot/gen/acrobot_state_vector.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -76,8 +75,8 @@ class MultibodyAcrobotPlant : public systems::LeafSystem<T> {
   /// H[2x2] is the mass matrix.
   /// C[2x1] includes the Coriolis term, gravity term and the damping term, i.e.
   /// C[2x1] = Coriolis(q,v)*v + g(q) + [b1*theta1;b2*theta2]
-  Vector2<T> VectorC(const AcrobotStateVector<T>& x) const;
-  Matrix2<T> MatrixH(const AcrobotStateVector<T>& x) const;
+  Vector2<T> VectorC(const systems::Context<T>& context) const;
+  Matrix2<T> MatrixH(const systems::Context<T>& context) const;
   ///@}
 
   // getters for robot parameters
@@ -100,10 +99,10 @@ class MultibodyAcrobotPlant : public systems::LeafSystem<T> {
  private:
   // Override of context construction so that we can delegate it to
   // MultibodyModeler.
-  //std::unique_ptr<systems::LeafContext<T>> DoMakeContext() const override;
+  std::unique_ptr<systems::LeafContext<T>> DoMakeContext() const override;
 
   void OutputState(const systems::Context<T>& context,
-                   AcrobotStateVector<T>* output) const;
+                   systems::BasicVector<T>* state_port_value) const;
 
   void DoCalcTimeDerivatives(
       const systems::Context<T>& context,

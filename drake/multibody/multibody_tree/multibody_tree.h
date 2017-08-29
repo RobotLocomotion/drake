@@ -406,6 +406,11 @@ class MultibodyTree {
     return topology_.get_num_velocities();
   }
 
+  /// Returns the total size of the state vector in the model.
+  int get_num_states() const {
+    return topology_.get_num_states();
+  }
+
   /// Returns the height of the tree data structure of `this` %MultibodyTree.
   /// That is, the number of bodies in the longest kinematic path between the
   /// world and any other leaf body. For a model that only contains the _world_
