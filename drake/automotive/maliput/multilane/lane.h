@@ -66,11 +66,6 @@ class Lane : public api::Lane {
   /// @param road_curve The trajectory of the Lane over parent @p segment's
   ///        surface.
   ///
-  /// This is the base class for subclasses, each of which describe a
-  /// primitive reference curve in the xy ground-plane of the world frame.
-  /// The specific curve is expressed by a subclass's implementations of
-  /// private virtual functions; see the private method xy_of_p().
-  ///
   /// N.B. The override Lane::ToLanePosition() is currently restricted to lanes
   /// in which superelevation and elevation change are both zero.
   Lane(const api::LaneId& id, const api::Segment* segment,
@@ -188,6 +183,10 @@ class Lane : public api::Lane {
   //
   // The following methods compute various terms derived from the above which
   // see repeated use.
+  //
+  // Note that xy_of_p(), xy_dot_of_p(), heading_of_p() and heading_dot_of_p(),
+  // as well as the reference to the elevation and superelevation objects live
+  // on the RoadCurve object.
 
   // Returns the parametric position p along the reference curve corresponding
   // to longitudinal position @p s along the lane.
