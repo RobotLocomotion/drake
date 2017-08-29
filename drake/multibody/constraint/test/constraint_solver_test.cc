@@ -370,7 +370,7 @@ class Constraint2DSolverTest : public ::testing::Test {
       for (int friction_dir_dup = 0; friction_dir_dup < 4; ++friction_dir_dup) {
         const int n_contacts = contact_dup + 1;
 
-        // Set the state of the rod to resting on its side with no velocity.
+        // Set the state of the rod to resting vertically with no velocity.
         SetRodToRestingVerticalConfig();
 
         // Compute the problem data.
@@ -428,7 +428,7 @@ class Constraint2DSolverTest : public ::testing::Test {
     // coefficient will be used since there are no sliding contacts. However,
     // set_mu_static() throws an exception if it is not larger than the Coulomb
     // friction coefficient.
-    rod_->set_mu_coulomb(15.0);
+    rod_->set_mu_coulomb(0.0);
     rod_->set_mu_static(15.0);
 
     // Duplicate contact points up to two times and the friction directions up
