@@ -35,7 +35,7 @@ class RoadCurve {
   /// @return The path length integral of the curve composed with the elevation
   /// polynomial.
   double trajectory_length() const {
-    return elevation_.s_p(1.0) * length();
+    return elevation_.s_p(1.0) * p_scale();
   }
 
   /// Computes the reference curve.
@@ -65,7 +65,7 @@ class RoadCurve {
   /// Computes the path length integral of the reference curve for the interval
   /// [0;1] of p.
   /// @return The path length integral of the reference curve.
-  virtual double length() const = 0;
+  virtual double p_scale() const = 0;
 
   /// Converts a @p geo_coordinate in the world frame to the composed curve
   /// frame, i.e., the superposition of the reference curve, elevation and
@@ -119,7 +119,7 @@ class RoadCurve {
   /// These two functions (@p elevation and @p superelevation) must be
   /// isotropically scaled to operate over the domain p in [0, 1], where
   /// p is linear in the path-length of the planar reference curve,
-  /// p = 0 corresponds to the start and p = 1 to the end.  @p p_scale is
+  /// p = 0 corresponds to the start and p = 1 to the end. p_scale() is
   /// the scale factor.  In other words...
   ///
   /// Given:

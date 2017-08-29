@@ -92,7 +92,7 @@ class ArcRoadCurve : public RoadCurve {
     return d_theta_;
   }
 
-  double length() const override { return radius_ * std::abs(d_theta_); }
+  double p_scale() const override { return radius_ * std::abs(d_theta_); }
 
   Vector3<double> ToCurveFrame(
       const Vector3<double>& geo_coordinate,
