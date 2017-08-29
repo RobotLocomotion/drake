@@ -386,9 +386,9 @@ def _impl(repository_ctx):
         deps = [
             ":vtkCommonCore",
             ":vtkCommonDataModel",
-            ":vtkexpat",
             ":vtkIOCore",
             ":vtksys",
+            "@expat",
         ],
     )
 
@@ -520,17 +520,6 @@ def _impl(repository_ctx):
             ":vtkRenderingCore",
             ":vtkglew",
         ],
-    )
-
-    # The packaged version of VTK (both Ubuntu and Mac) uses the system version
-    # of expat, and do not include `vtkexpat` as a shared library.
-    file_content += _vtk_cc_library(
-        repository_ctx.os.name,
-        "vtkexpat",
-        linkopts = [
-            "-lexpat",
-        ],
-        header_only = True,
     )
 
     if repository_ctx.os.name == "mac os x":

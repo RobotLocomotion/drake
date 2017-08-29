@@ -39,7 +39,6 @@ python
 scipy
 tinyxml
 vtk@8.0
-zlib
 EOF
 )
 
