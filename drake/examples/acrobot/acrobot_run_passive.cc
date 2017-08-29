@@ -1,4 +1,5 @@
 #include <memory>
+#include <fstream>
 
 #include <gflags/gflags.h>
 
@@ -13,6 +14,7 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/primitives/signal_logger.h"
 
 namespace drake {
 namespace examples {
@@ -36,10 +38,21 @@ int do_main(int argc, char* argv[]) {
       multibody::joints::kFixed, tree.get());
 
   systems::DiagramBuilder<double> builder;
-  auto acrobot = builder.AddSystem<AcrobotPlant>();
+  auto acrobot = builder.AddSystem<AcrobotPlant>(
+      1.0, 1.0,     /* masses */
+      1.0, 2.0,     /* lengths */
+      0.5, 1.0,     /* com's */
+      0.083, 0.33,  /* masses */
+      0.0, 0.0,     /* damping */
+      9.81);
   acrobot->set_name("acrobot");
   auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
   builder.Connect(acrobot->get_output_port(0), publisher->get_input_port(0));
+
+  auto energy_logger = builder.AddSystem<systems::SignalLogger<double>>(2);
+  energy_logger->set_name("Energy Logger");
+  builder.Connect(acrobot->get_energy_port(),
+                  energy_logger->get_input_port(0));
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);
@@ -63,6 +76,17 @@ int do_main(int argc, char* argv[]) {
   simulator.set_target_realtime_rate(FLAGS_realtime_factor);
   simulator.Initialize();
   simulator.StepTo(10);
+
+  // Write to file logged data.
+  std::ofstream file("energy.dat");
+  MatrixX<double> time_data(energy_logger->data().cols(),
+                            energy_logger->data().rows() + 1);
+  const int nsteps = energy_logger->sample_times().size();
+  time_data.block(0, 0, nsteps, 1) = energy_logger->sample_times();
+  time_data.block(0, 1, nsteps, 2) = energy_logger->data().transpose();
+  file << time_data;
+  file.close();
+
   return 0;
 }
 
