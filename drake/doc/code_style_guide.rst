@@ -209,6 +209,43 @@ Exceptions
   <https://google.github.io/styleguide/cppguide.html#Self_contained_Headers>`_
   rule may be disobeyed when implementing the
   :ref:`C++ *-inl.h files <cxx-inl-files>` pattern in its exact form.
+* The `std::hash <https://google.github.io/styleguide/cppguide.html#std_hash>`_
+  rule ("Don't specialize ``std::hash``.") is replaced with the following:
+
+  * Drake-defined types which are expected to be used as hashed keys should
+    provide their own hash functions.
+  * For a type with an ``operator==`` and a compatible general-purpose hash
+    function, the hash function should be implemented via specialization of
+    ``std::hash`` so that the standard hashing containers
+    (``std::unordered_map``, ``std::unordered_set``) will "just work".
+    Conversely, any specialization of ``std::hash`` must be paired with
+    a compatible ``operator==`` and must be similarly adequate for general-use
+    as the built-in ``std::hash`` specializations.
+  * If a type has implementations of any of ``std::hash``, ``std::equal_to``,
+    ``std::less``, ``operator==``, or ``operator<``, then those
+    implementations must all be mutually compatible with each other.
+  * Unless there is a specific and well-documented reason to the contrary,
+    *all* hash functions should be implemented either by a direct call to a
+    specialization of ``std::hash`` provided by the C++ standard, or by using
+    the machinery in ``drake/common/hash.h``.
+  * Only special-purpose hash functions need special names (i.e., other than
+    ``std::hash``) --- but such applications will also involve pairing with
+    special-purpose equality predicates (i.e., other than ``operator==``).
+  * Rationale:
+
+    * Hash functions are a necessity of modern C++ programming.
+    * Since hash functions are difficult to write correctly, we aim for fewer
+      implementations of more carefully vetted hash functions, that are easy to
+      find and easy to use with standard containers.
+    * The standard allows for specialization of ``std::hash`` to do this,
+      and there is no benefit to naming a general-use hash function as
+      something other than ``std::hash``. To the contrary, naming it something
+      else makes downstream code more wordy and more difficult to understand.
+    * Until the standard embraces a method for composing hash functions for
+      user-defined types, using our own tiny library to do so will help to
+      ensure a baseline level of hash quality (i.e., on par with the built-in
+      hash functions), while keeping the advantages of using standard-blessed
+      ``std::hash`` and avoiding an external dependency.
 
 .. _code-style-guide-cpp-addon-rules:
 
