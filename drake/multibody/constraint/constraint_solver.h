@@ -37,24 +37,26 @@ class ConstraintSolver {
   ///            mixing" parameter.
   /// @param problem_data The data used to compute the constraint forces.
   /// @param cf The computed constraint forces, on return, in a packed storage
-  ///           format. The first `nc` elements of @p cf correspond to the
+  ///           format. The first `nc` elements of `cf` correspond to the
   ///           magnitudes of the contact forces applied along the normals of
-  ///           the `nc` contact points. The next elements of @p cf
+  ///           the `nc` contact points. The next elements of `cf`
   ///           correspond to the frictional forces along the `r` spanning
   ///           directions at each non-sliding point of contact. The first `r`
   ///           values (after the initial `nc` elements) correspond to the first
   ///           non-sliding contact, the next `r` values correspond to the
-  ///           second non-sliding contact, etc. The final ℓ values of @p cf
-  ///           correspond to the forces applied to enforce functions of state
-  ///           variable limits. This packed storage format can be turned into
-  ///           more useful representations through
+  ///           second non-sliding contact, etc. The next `ℓ` values of `cf`
+  ///           correspond to the forces applied to enforce generic unilateral
+  ///           constraints. The final `b` values of `cf` correspond to the
+  ///           forces applied to enforce generic bilateral constraints. Thi
+  ///           packed storage format can be turned into more useful
+  ///           representations through 
   ///           ComputeGeneralizedForceFromConstraintForces() and
-  ///           CalcContactForcesInContactFrames(). @p cf will be resized as
+  ///           CalcContactForcesInContactFrames(). `cf` will be resized as
   ///           necessary.
   /// @pre Constraint data has been computed.
   /// @throws a std::runtime_error if the constraint forces cannot be computed
   ///         (due to, e.g., an "inconsistent" rigid contact configuration).
-  /// @throws a std::logic_error if @p cf is null or @p cfm is negative.
+  /// @throws a std::logic_error if `cf` is null or `cfm` is negative.
   void SolveConstraintProblem(double cfm,
       const ConstraintAccelProblemData<T>& problem_data,
       VectorX<T>* cf) const;
@@ -66,26 +68,27 @@ class ConstraintSolver {
   /// @param problem_data The data used to compute the impulsive constraint
   ///            forces.
   /// @param cf The computed impulsive forces, on return, in a packed storage
-  ///           format. The first `nc` elements of @p cf correspond to the
+  ///           format. The first `nc` elements of `cf` correspond to the
   ///           magnitudes of the contact impulses applied along the normals of
-  ///           the `nc` contact points. The next elements of @p cf
+  ///           the `nc` contact points. The next elements of `cf`
   ///           correspond to the frictional impulses along the `r` spanning
   ///           directions at each point of contact. The first `r`
   ///           values (after the initial `nc` elements) correspond to the first
   ///           contact, the next `r` values correspond to the second contact,
-  ///           etc. The final ℓ values of @p cf correspond to the impulsive
-  ///           forces applied to enforce functions of state variable limits.
-  ///           This packed storage format can be turned into more useful
-  ///           representations through
+  ///           etc. The next `ℓ` values of `cf` correspond to the impulsive
+  ///           forces applied to enforce unilateral constraint functions. The
+  ///           final `b` values of `cf` correspond to the forces applied to
+  ///           enforce generic bilateral constraints. This packed storage
+  ///           format can be turned into more useful representations through
   ///           ComputeGeneralizedImpulseFromConstraintImpulses() and
-  ///           CalcImpactForcesInContactFrames(). @p cf will be resized as
+  ///           CalcImpactForcesInContactFrames(). `cf` will be resized as
   ///           necessary.
   /// @pre Constraint data has been computed.
   /// @throws a std::runtime_error if the constraint forces cannot be computed
   ///         (due to, e.g., the effects of roundoff error in attempting to
   ///         solve a complementarity problem); in such cases, it is
-  ///         recommended to increase @p cfm and attempt again.
-  /// @throws a std::logic_error if @p cf is null or @p cfm is negative.
+  ///         recommended to increase `cfm` and attempt again.
+  /// @throws a std::logic_error if `cf` is null or `cfm` is negative.
   void SolveImpactProblem(double cfm,
                           const ConstraintVelProblemData<T>& problem_data,
                           VectorX<T>* cf) const;
@@ -97,10 +100,10 @@ class ConstraintSolver {
   ///           format described in documentation for SolveConstraintProblem.
   /// @param[out] generalized_force The generalized force acting on the system
   ///             from the total constraint wrench is stored here, on return.
-  ///             This method will resize @p generalized_force as necessary. The
-  ///             indices of @p generalized_force will exactly match the indices
-  ///             of @p problem_data.f.
-  /// @throws std::logic_error if @p generalized_force is null or @p cf
+  ///             This method will resize `generalized_force` as necessary. The
+  ///             indices of `generalized_force` will exactly match the indices
+  ///             of `problem_data.f`.
+  /// @throws std::logic_error if `generalized_force` is null or `cf`
   ///         vector is incorrectly sized.
   static void ComputeGeneralizedForceFromConstraintForces(
       const ConstraintAccelProblemData<T>& problem_data,
@@ -114,10 +117,10 @@ class ConstraintSolver {
   ///           format described in documentation for SolveImpactProblem.
   /// @param[out] generalized_impulse The generalized impulse acting on the
   ///             system from the total constraint wrench is stored here, on
-  ///             return. This method will resize @p generalized_impulse as
-  ///             necessary. The indices of @p generalized_impulse will exactly
-  ///             match the indices of @p problem_data.v.
-  /// @throws std::logic_error if @p generalized_impulse is null or @p cf
+  ///             return. This method will resize `generalized_impulse` as
+  ///             necessary. The indices of `generalized_impulse` will exactly
+  ///             match the indices of `problem_data.v`.
+  /// @throws std::logic_error if `generalized_impulse` is null or `cf`
   ///         vector is incorrectly sized.
   static void ComputeGeneralizedImpulseFromConstraintImpulses(
       const ConstraintVelProblemData<T>& problem_data,
@@ -125,11 +128,11 @@ class ConstraintSolver {
       VectorX<T>* generalized_impulse);
 
   /// Computes the system generalized acceleration, given the external forces
-  /// (stored in @p problem_data) and the constraint forces.
+  /// (stored in `problem_data`) and the constraint forces.
   /// @param cf The computed constraint forces, in the packed storage
   ///           format described in documentation for SolveConstraintProblem.
-  /// @throws std::logic_error if @p generalized_acceleration is null or
-  ///         @p cf vector is incorrectly sized.
+  /// @throws std::logic_error if `generalized_acceleration` is null or
+  ///         `cf` vector is incorrectly sized.
   static void ComputeGeneralizedAcceleration(
       const ConstraintAccelProblemData<T>& problem_data,
       const VectorX<T>& cf,
@@ -139,8 +142,8 @@ class ConstraintSolver {
   /// impulses.
   /// @param cf The computed constraint impulses, in the packed storage
   ///           format described in documentation for SolveImpactProblem.
-  /// @throws std::logic_error if @p generalized_delta_v is null or
-  ///         @p cf vector is incorrectly sized.
+  /// @throws std::logic_error if `generalized_delta_v` is null or
+  ///         `cf` vector is incorrectly sized.
   static void ComputeGeneralizedVelocityChange(
       const ConstraintVelProblemData<T>& problem_data,
       const VectorX<T>& cf,
@@ -155,20 +158,20 @@ class ConstraintSolver {
   ///        while the second column gives a contact tangent. For sliding
   ///        contacts, the contact tangent should point along the direction of
   ///        sliding. For non-sliding contacts, the tangent direction should be
-  ///        that used to determine @p problem_data.F. All vectors should be
+  ///        that used to determine `problem_data.F`. All vectors should be
   ///        expressed in the global frame.
   /// @param[out] contact_forces a non-null vector of a doublet of values, where
   ///             the iᵗʰ element represents the force along each basis
   ///             vector in the iᵗʰ contact frame.
-  /// @throws std::logic_error if @p contact_forces is null, if
-  ///         @p contact_forces is not empty, if @p cf is not the
+  /// @throws std::logic_error if `contact_forces` is null, if
+  ///         `contact_forces` is not empty, if `cf` is not the
   ///         proper size, if the number of tangent directions is not one per
   ///         non-sliding contact (indicating that the contact problem might not
   ///         be 2D), if the number of contact frames is not equal to the number
   ///         of contacts, or if a contact frame does not appear to be
   ///         orthonormal.
   /// @note On return, the contact force at the iᵗʰ contact point expressed
-  ///       in the world frame is @p contact_frames[i] * @p contact_forces[i].
+  ///       in the world frame is `contact_frames[i]` * `contact_forces[i]`.
   static void CalcContactForcesInContactFrames(
       const VectorX<T>& cf,
       const ConstraintAccelProblemData<T>& problem_data,
@@ -182,20 +185,20 @@ class ConstraintSolver {
   /// @param contact_frames the contact frames corresponding to the contacts.
   ///        The first column of each matrix should give the contact normal,
   ///        while the second column gives a contact tangent (specifically, the
-  ///        tangent direction used to determine @p problem_data.F). All
+  ///        tangent direction used to determine `problem_data.F`). All
   ///        vectors should be expressed in the global frame.
   /// @param[out] contact_impulses a non-null vector of a doublet of values,
   ///             where the iᵗʰ element represents the impulsive force along
   ///             each basis vector in the iᵗʰ contact frame.
-  /// @throws std::logic_error if @p contact_impulses is null, if
-  ///         @p contact_impulses is not empty, if @p cf is not the
+  /// @throws std::logic_error if `contact_impulses` is null, if
+  ///         `contact_impulses` is not empty, if `cf` is not the
   ///         proper size, if the number of tangent directions is not one per
   ///         contact (indicating that the contact problem might not be 2D), if
   ///         the number of contact frames is not equal to the number
   ///         of contacts, or if a contact frame does not appear to be
   ///         orthonormal.
   /// @note On return, the contact impulse at the iᵗʰ contact point expressed
-  ///       in the world frame is @p contact_frames[i] * @p contact_impulses[i].
+  ///       in the world frame is `contact_frames[i]` * `contact_impulses[i]`.
   static void CalcImpactForcesInContactFrames(
       const VectorX<T>& cf,
       const ConstraintVelProblemData<T>& problem_data,
@@ -258,18 +261,73 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
   const int num_contacts = num_sliding + num_non_sliding;
   const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
                                                    problem_data.r.end(), 0);
-  const int num_limits = problem_data.num_limit_constraints;
+  const int num_limits = problem_data.kL.size();
+  const int num_eq_constraints = problem_data.kG.size();
 
   // Look for fast exit.
-  if (num_contacts == 0 && num_limits == 0) {
+  if (num_contacts == 0 && num_limits == 0 && num_eq_constraints == 0) {
     cf->resize(0);
     return;
   }
 
   // Initialize contact force vector.
-  cf->resize(num_contacts + num_spanning_vectors + num_limits);
+  cf->resize(num_contacts + num_spanning_vectors + num_limits +
+      num_eq_constraints);
 
-  // Set up the linear complementarity problem.
+  // From [Cottle 1992] (p. 29), the constraint problem is a mixed linear
+  // complementarity problem of the form:
+  //     Au + Cv + a = 0
+  //     Du + Bv + b ≥ 0
+  //               v ≥ 0
+  // vᵀ(b + Du + Bv) = 0
+  // where u are "free" variables. If the matrix A is nonsingular, u can be
+  // solved for:
+  //      u = A⁻¹ (a + Cv)
+  // allowing the mixed LCP to be converted to a "pure" LCP (q, M) by:
+  // q = b - DA⁻¹a
+  // M = B - DA⁻¹C
+
+  // Our mixed linear complementarity problem takes the form:
+  // (1) | M  -Gᵀ  -Nᵀ  -Dᵀ  0  -Lᵀ | | v̇ | + | M f | = | 0 |
+  //     | G   0    0    0   0   0  | | fG | + |   0 | = | 0 |
+  //     | N   0    0    0   0   0  | | fN | + |   0 | = | α |
+  //     | D   0    0    0   E   0  | | fD | + |   0 | = | β |
+  //     | 0   0    μ   -Eᵀ  0   0  | |  λ | + |   0 | = | γ |
+  //     | L   0    0    0   0   0  | | fL | + |   0 | = | δ |
+  // (2) 0 ≤ fN  ⊥  α ≥ 0
+  // (3) 0 ≤ fD  ⊥  β ≥ 0
+  // (4) 0 ≤ λ   ⊥  γ ≥ 0
+  // (5) 0 ≤ fL  ⊥  δ ≥ 0
+
+  // G is not of full row rank, making | M  -Gᵀ | singular.
+  //                                   | G   0  |
+  //
+  // Selecting the largest independent subset of rows of G, which we call Ĝ,
+  // addresses this problem. First, note that linear dependence in G implies
+  // Gx = 0 for any vector x that satisfies Ĝx = 0. Now assume that G is a
+  // stacked matrix with independent rows (Ĝ) on top and dependent rows (G̅) on
+  // bottom:
+  // G ≡ | Ĝ  |
+  //     | G̅ |
+
+  // We will assign zero to the components of fG corresponding to the dependent
+  // rows of G, which allows casting the MCLP into a slightly modified form:
+  // (6)  | M  -Ĝᵀ  -Nᵀ  -Dᵀ  0  -Lᵀ | | v̇ | + | M f | = | 0 |
+  //      | Ĝ   0    0    0   0   0  | | fĜ | + |   0 | = | 0 |
+  //      | N   0    0    0   0   0  | | fN | + |   0 | = | α |
+  //      | D   0    0    0   E   0  | | fD | + |   0 | = | β |
+  //      | 0   0    μ   -Eᵀ  0   0  | |  λ | + |   0 | = | γ |
+  //      | L   0    0    0   0   0  | | fL | + |   0 | = | δ |
+  // (7)  0 ≤ fN  ⊥  α ≥ 0
+  // (8)  0 ≤ fD  ⊥  β ≥ 0
+  // (9)  0 ≤ λ   ⊥  γ ≥ 0
+  // (10) 0 ≤ fL  ⊥  δ ≥ 0
+
+  // It should be clear that any solution to this MLCP allows us to solve the
+  // MLCP (1)-(5) by setting fG = | fĜ |
+  //                              |  0 |.
+
+  // Set up the pure linear complementarity problem.
   MatrixX<T> MM;
   VectorX<T> qq;
   FormSustainedConstraintLCP(problem_data, &MM, &qq);
@@ -331,10 +389,11 @@ void ConstraintSolver<T>::SolveImpactProblem(
     throw std::logic_error("Number of elements in 'r' does not match number"
                                "of elements in 'mu'");
   }
-  const int num_limits = problem_data.num_limit_constraints;
+  const int num_limits = problem_data.kL.size();
+  const int num_eq_constraints = problem_data.kG.size();
 
   // Look for fast exit.
-  if (num_contacts == 0 && num_limits == 0) {
+  if (num_contacts == 0 && num_limits == 0 && num_eq_constraints == 0) {
     cf->resize(0);
     return;
   }
@@ -343,6 +402,7 @@ void ConstraintSolver<T>::SolveImpactProblem(
   const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
                                                    problem_data.r.end(), 0);
 
+  // TODO(edrumwri): Fix me.
   // If no impact, do not apply the impact model.
   if ((num_contacts == 0 ||
        problem_data.N_mult(problem_data.v).minCoeff() >= 0) &&
@@ -353,7 +413,8 @@ void ConstraintSolver<T>::SolveImpactProblem(
   }
 
   // Initialize contact force vector.
-  cf->resize(num_contacts + num_spanning_vectors + num_limits);
+  cf->resize(num_contacts + num_spanning_vectors + num_limits +
+      num_eq_constraints);
 
   // Set up the linear complementarity problem.
   MatrixX<T> MM;
@@ -460,12 +521,15 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
   const int num_contacts = num_sliding + num_non_sliding;
   const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
                                  problem_data.r.end(), 0);
-  const int num_limits = problem_data.num_limit_constraints;
+  const int num_limits = problem_data.kL.size();
 
   // Problem matrices and vectors are mildly adapted from:
   // M. Anitescu and F. Potra. Formulating Dynamic Multi-Rigid Body Contact
   // Problems as Solvable Linear Complementarity Problems. Nonlinear Dynamics,
   // 14, 1997.
+
+  // @TODO(edrumwri): Set up a new operator for inverting [ M -G'; G 0 ]
+
 
   // Alias operators and vectors to make accessing them less clunky.
   auto N = problem_data.N_mult;
@@ -603,7 +667,7 @@ void ConstraintSolver<T>::FormImpactingConstraintLCP(
   const int num_contacts = problem_data.mu.size();
   const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
                                                    problem_data.r.end(), 0);
-  const int num_limits = problem_data.num_limit_constraints;
+  const int num_limits = problem_data.kL.size();
 
   // Problem matrices and vectors are nearly identical to:
   // M. Anitescu and F. Potra. Formulating Dynamic Multi-Rigid Body Contact
@@ -730,10 +794,12 @@ void ConstraintSolver<T>::ComputeGeneralizedForceFromConstraintForces(
   const int num_contacts = num_sliding + num_non_sliding;
   const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
                                  problem_data.r.end(), 0);
-  const int num_limits = problem_data.num_limit_constraints;
+  const int num_limits = problem_data.kL.size();
+  const int num_bilat_constraints = problem_data.kG.size();
 
   // Verify cf is the correct size.
-  const int num_vars = num_contacts + num_spanning_vectors + num_limits;
+  const int num_vars = num_contacts + num_spanning_vectors + num_limits +
+      num_bilat_constraints;
   if (cf.size() != num_vars) {
     throw std::logic_error("cf (constraint force) parameter incorrectly"
                                "sized.");
@@ -748,10 +814,15 @@ void ConstraintSolver<T>::ComputeGeneralizedForceFromConstraintForces(
   const Eigen::Ref<const VectorX<T>> f_limit = cf.segment(
       num_contacts + num_spanning_vectors, num_limits);
 
+  // Get the bilateral constraint forces.
+  const Eigen::Ref<const VectorX<T>> f_bilat = cf.segment(
+      num_contacts + num_spanning_vectors + num_limits, num_bilat_constraints);
+
   /// Compute the generalized force.
   *generalized_force = problem_data.N_minus_muQ_transpose_mult(f_normal) +
                        problem_data.F_transpose_mult(f_non_sliding_frictional) +
-                       problem_data.L_transpose_mult(f_limit);
+                       problem_data.L_transpose_mult(f_limit) +
+                       problem_data.G_transpose_mult(f_bilat);
 }
 
 template <class T>
@@ -766,8 +837,12 @@ void ConstraintSolver<T>::ComputeGeneralizedImpulseFromConstraintImpulses(
   const int num_contacts = problem_data.mu.size();
   const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
                                                    problem_data.r.end(), 0);
-  const int num_limits = problem_data.num_limit_constraints;
-  const int num_vars = num_contacts + num_spanning_vectors + num_limits;
+  const int num_limits = problem_data.kL.size();
+  const int num_bilat_constraints = problem_data.kG.size();
+
+  // Verify cf is the correct size.
+  const int num_vars = num_contacts + num_spanning_vectors + num_limits +
+      num_bilat_constraints;
   if (num_vars != cf.size()) {
     throw std::logic_error("Unexpected packed constraint force vector"
                                " dimension.");
@@ -782,10 +857,15 @@ void ConstraintSolver<T>::ComputeGeneralizedImpulseFromConstraintImpulses(
   const Eigen::Ref<const VectorX<T>> f_limit = cf.segment(
       num_contacts + num_spanning_vectors, num_limits);
 
+  // Get the bilateral constraint forces.
+  const Eigen::Ref<const VectorX<T>> f_bilat = cf.segment(
+      num_contacts + num_spanning_vectors + num_limits, num_bilat_constraints);
+
   /// Compute the generalized impules.
   *generalized_impulse = problem_data.N_transpose_mult(f_normal)  +
                          problem_data.F_transpose_mult(f_frictional) +
-                         problem_data.L_transpose_mult(f_limit);
+                         problem_data.L_transpose_mult(f_limit) +
+                         problem_data.G_transpose_mult(f_bilat);
 }
 
 template <class T>
@@ -841,8 +921,10 @@ void ConstraintSolver<T>::CalcContactForcesInContactFrames(
       num_non_sliding_contacts;
   const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
                                                    problem_data.r.end(), 0);
-  const int num_limits = problem_data.num_limit_constraints;
-  const int num_vars = num_contacts + num_spanning_vectors + num_limits;
+  const int num_limits = problem_data.kL.size();
+  const int num_bilat_constraints = problem_data.kG.size();
+  const int num_vars = num_contacts + num_spanning_vectors + num_limits +
+      num_bilat_constraints;
   if (num_vars != cf.size()) {
     throw std::logic_error("Unexpected packed constraint force vector "
                                "dimension.");
@@ -936,8 +1018,10 @@ void ConstraintSolver<T>::CalcImpactForcesInContactFrames(
   const int num_contacts = problem_data.mu.size();
   const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
                                                    problem_data.r.end(), 0);
-  const int num_limits = problem_data.num_limit_constraints;
-  const int num_vars = num_contacts + num_spanning_vectors + num_limits;
+  const int num_limits = problem_data.kL.size();
+  const int num_bilat_constraints = problem_data.kG.size();
+  const int num_vars = num_contacts + num_spanning_vectors + num_limits +
+      num_bilat_constraints;
   if (num_vars != cf.size()) {
     throw std::logic_error("Unexpected packed constraint force vector "
                                "dimension.");

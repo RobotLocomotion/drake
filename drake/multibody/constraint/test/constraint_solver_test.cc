@@ -174,12 +174,11 @@ class Constraint2DSolverTest : public ::testing::Test {
     EXPECT_EQ(GetOperatorDim(data.N_mult), num_contacts);
     CheckTransOperatorDim(data.N_minus_muQ_transpose_mult, num_contacts);
     EXPECT_EQ(GetOperatorDim(data.F_mult), data.non_sliding_contacts.size());
-    EXPECT_EQ(GetOperatorDim(data.L_mult), data.num_limit_constraints);
-    CheckTransOperatorDim(data.L_transpose_mult, data.num_limit_constraints);
+    EXPECT_EQ(GetOperatorDim(data.L_mult), data.kL.size());
+    CheckTransOperatorDim(data.L_transpose_mult, data.kL.size());
     EXPECT_EQ(data.tau.size(), ngc);
     EXPECT_EQ(data.Ndot_times_v.size(), num_contacts);
     EXPECT_EQ(data.Fdot_times_v.size(), data.non_sliding_contacts.size());
-    EXPECT_EQ(data.kL.size(), data.num_limit_constraints);
     EXPECT_EQ(data.mu_non_sliding.size(), data.non_sliding_contacts.size());
     EXPECT_EQ(data.mu_sliding.size(), data.sliding_contacts.size());
     EXPECT_EQ(data.r.size(), data.non_sliding_contacts.size());
@@ -201,9 +200,8 @@ class Constraint2DSolverTest : public ::testing::Test {
     CheckTransOperatorDim(data.N_transpose_mult, num_contacts);
     EXPECT_EQ(GetOperatorDim(data.F_mult), num_spanning_directions);
     CheckTransOperatorDim(data.F_transpose_mult, num_spanning_directions);
-    EXPECT_EQ(GetOperatorDim(data.L_mult), data.num_limit_constraints);
-    CheckTransOperatorDim(data.L_transpose_mult, data.num_limit_constraints);
-    EXPECT_EQ(data.kL.size(), data.num_limit_constraints);
+    EXPECT_EQ(GetOperatorDim(data.L_mult), data.kL.size());
+    CheckTransOperatorDim(data.L_transpose_mult, data.kL.size());
     EXPECT_EQ(data.v.size(), ngc);
     EXPECT_EQ(data.mu.size(), num_contacts);
     EXPECT_EQ(data.r.size(), num_contacts);
@@ -637,8 +635,6 @@ TEST_F(Constraint2DSolverTest, OnePointPlusLimit) {
   // Set the Jacobian entry- in this case, the limit is a lower limit on the
   // second coordinate (vertical position).
   const int num_limits = 1;
-  accel_data_->num_limit_constraints = num_limits;
-  accel_data_->num_limit_constraints = 1;
   accel_data_->L_mult = [&N](const VectorX<double>& v) -> VectorX<double> {
     return N.row(1) * v;
   };
@@ -646,7 +642,7 @@ TEST_F(Constraint2DSolverTest, OnePointPlusLimit) {
     VectorX<double> {
       return N.row(1).transpose() * v;
   };
-  accel_data_->kL.setZero();
+  accel_data_->kL.setZero(num_limits);
 
   // Compute the constraint forces.
   VectorX<double> cf;
@@ -752,8 +748,8 @@ TEST_F(Constraint2DSolverTest, TwoPointAsLimit) {
 
   // Set the Jacobian entry- in this case, the limit is a lower limit on the
   // second coordinate (vertical position).
-  accel_data_->num_limit_constraints = 1;
-  MatrixX<double> L(accel_data_->num_limit_constraints, ngc);
+  const int num_limits = 1;
+  MatrixX<double> L(num_limits, ngc);
   L.setZero();
   L(0, 1) = 1;
   accel_data_->L_mult = [&L](const VectorX<double>& v) -> VectorX<double> {
@@ -763,7 +759,7 @@ TEST_F(Constraint2DSolverTest, TwoPointAsLimit) {
     VectorX<double> {
     return L.transpose() * v;
   };
-  accel_data_->kL.setZero();
+  accel_data_->kL.setZero(num_limits);
 
   // Compute the constraint forces.
   VectorX<double> cf;
@@ -832,11 +828,11 @@ TEST_F(Constraint2DSolverTest, TwoPointImpactAsLimit) {
   vel_data_->F_transpose_mult = [ngc](const VectorX<double>&) {
     return VectorX<double>::Zero(ngc);
   };
-  vel_data_->num_limit_constraints = 1;
+  const int num_limits = 1;
 
   // Set the Jacobian entry- in this case, the limit is a lower limit on the
   // second coordinate (vertical position).
-  MatrixX<double> L(vel_data_->num_limit_constraints, ngc);
+  MatrixX<double> L(num_limits, ngc);
   L.setZero();
   L(0, 1) = 1;
   vel_data_->L_mult = [&L](const VectorX<double>& v) -> VectorX<double> {
@@ -846,7 +842,7 @@ TEST_F(Constraint2DSolverTest, TwoPointImpactAsLimit) {
     VectorX<double> {
     return L.transpose() * v;
   };
-  vel_data_->kL.setZero(1);
+  vel_data_->kL.setZero(num_limits);
 
   // Compute the constraint impulses.
   VectorX<double> cf;
