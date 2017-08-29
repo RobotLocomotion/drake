@@ -35,7 +35,7 @@ namespace acrobot {
 ///
 /// The parameters are defaulted to values in Spong's paper (see
 /// acrobot_spong_controller.cc for more details). Alternatively, an instance
-/// of MultibodyAcrobotPlant using parameters of MIT lab's acrobot can be created by
+/// of AcrobotMultibodyPlant using parameters of MIT lab's acrobot can be created by
 /// calling the static method CreateAcrobotMIT();
 ///
 /// Note that the Spong controller behaves differently on these two sets of
@@ -49,11 +49,11 @@ namespace acrobot {
 /// - double
 /// - AutoDiffXd
 template <typename T>
-class MultibodyAcrobotPlant : public systems::LeafSystem<T> {
+class AcrobotMultibodyPlant : public systems::LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyAcrobotPlant)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AcrobotMultibodyPlant)
 
-  MultibodyAcrobotPlant(
+  AcrobotMultibodyPlant(
       double m1 = 1.0,
       double m2 = 1.0,
       double l1 = 1.0,
@@ -68,7 +68,7 @@ class MultibodyAcrobotPlant : public systems::LeafSystem<T> {
 
   /// Scalar-converting copy constructor.
   template <typename U>
-  explicit MultibodyAcrobotPlant(const MultibodyAcrobotPlant<U>&);
+  explicit AcrobotMultibodyPlant(const AcrobotMultibodyPlant<U>&);
   
   ///@{
   /// Manipulator equation of Acrobot: H * qdotdot + C = B*u.
@@ -134,7 +134,7 @@ namespace drake {
 namespace systems {
 namespace scalar_conversion {
 template <>
-struct Traits<examples::acrobot::MultibodyAcrobotPlant> :
+struct Traits<examples::acrobot::AcrobotMultibodyPlant> :
     public NonSymbolicTraits {};
 }  // namespace scalar_conversion
 }  // namespace systems

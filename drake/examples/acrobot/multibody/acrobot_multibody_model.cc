@@ -26,11 +26,11 @@ using Eigen::Vector3d;
 using namespace multibody;
 
 template <typename T>
-MultibodyAcrobotPlant<T>::MultibodyAcrobotPlant(double m1, double m2, double l1, double l2,
+AcrobotMultibodyPlant<T>::AcrobotMultibodyPlant(double m1, double m2, double l1, double l2,
                               double lc1, double lc2, double Ic1, double Ic2,
                               double b1, double b2, double g)
     : systems::LeafSystem<T>(
-          systems::SystemTypeTag<acrobot::MultibodyAcrobotPlant>{}),
+          systems::SystemTypeTag<acrobot::AcrobotMultibodyPlant>{}),
       m1_(m1),
       m2_(m2),
       l1_(l1),
@@ -50,7 +50,7 @@ MultibodyAcrobotPlant<T>::MultibodyAcrobotPlant(double m1, double m2, double l1,
   this->DeclareInputPort(systems::kVectorValued, 1);
   this->DeclareVectorOutputPort(
       systems::BasicVector<T>(modeler_.get_num_states()),
-      &MultibodyAcrobotPlant::OutputState);
+      &AcrobotMultibodyPlant::OutputState);
   this->DeclareContinuousState(2 /* num_q */, 2 /* num_v */, 0 /* num_z */);
 
   // Energy output port.
@@ -65,8 +65,8 @@ MultibodyAcrobotPlant<T>::MultibodyAcrobotPlant(double m1, double m2, double l1,
 
 template <typename T>
 template <typename U>
-MultibodyAcrobotPlant<T>::MultibodyAcrobotPlant(const MultibodyAcrobotPlant<U>& other)
-    : MultibodyAcrobotPlant<T>(
+AcrobotMultibodyPlant<T>::AcrobotMultibodyPlant(
+    const AcrobotMultibodyPlant<U>& other) : AcrobotMultibodyPlant<T>(
           other.m1(),
           other.m2(),
           other.l1(),
@@ -80,7 +80,7 @@ MultibodyAcrobotPlant<T>::MultibodyAcrobotPlant(const MultibodyAcrobotPlant<U>& 
           other.g()) {}
 
 template <typename T>
-void MultibodyAcrobotPlant<T>::BuildMultibodyModeler() {
+void AcrobotMultibodyPlant<T>::BuildMultibodyModeler() {
   // Rotational inertia of a thin rod along the y-axis.
   UnitInertia<double> G_L1cm =
       UnitInertia<double>::StraightLine(Ic1(), Vector3<double>::UnitY());
@@ -118,12 +118,12 @@ void MultibodyAcrobotPlant<T>::BuildMultibodyModeler() {
 
 template <typename T>
 std::unique_ptr<systems::LeafContext<T>>
-MultibodyAcrobotPlant<T>::DoMakeContext() const {
+AcrobotMultibodyPlant<T>::DoMakeContext() const {
   return modeler_.CreateDefaultContext();
 }
 
 template <typename T>
-void MultibodyAcrobotPlant<T>::OutputState(
+void AcrobotMultibodyPlant<T>::OutputState(
     const systems::Context<T>& context, 
     systems::BasicVector<T>* state_port_value) const {
   // Output port value is just the continuous or discrete state.
@@ -132,7 +132,7 @@ void MultibodyAcrobotPlant<T>::OutputState(
 }
 
 template <typename T>
-Matrix2<T> MultibodyAcrobotPlant<T>::MatrixH(
+Matrix2<T> AcrobotMultibodyPlant<T>::MatrixH(
     const systems::Context<T>& context) const {
   Matrix2<T> H;
   modeler_.CalcMassMatrixViaInverseDynamics(context, H);
@@ -140,7 +140,7 @@ Matrix2<T> MultibodyAcrobotPlant<T>::MatrixH(
 }
 
 template <typename T>
-Vector2<T> MultibodyAcrobotPlant<T>::VectorC(
+Vector2<T> AcrobotMultibodyPlant<T>::VectorC(
     const systems::Context<T>& context) const {
   Vector2<T> C;
   modeler_.CalcBiasTerm(context, C);
@@ -170,7 +170,7 @@ Vector2<T> MultibodyAcrobotPlant<T>::VectorC(
 
 // Compute the actual physics.
 template <typename T>
-void MultibodyAcrobotPlant<T>::DoCalcTimeDerivatives(
+void AcrobotMultibodyPlant<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
   const systems::BasicVector<T>& x =
@@ -191,7 +191,7 @@ void MultibodyAcrobotPlant<T>::DoCalcTimeDerivatives(
 }
 
 template <typename T>
-T MultibodyAcrobotPlant<T>::DoCalcKineticEnergy(
+T AcrobotMultibodyPlant<T>::DoCalcKineticEnergy(
     const systems::Context<T>& context) const {
   const systems::BasicVector<T>& x =
       dynamic_cast<const systems::BasicVector<T>&>(
@@ -207,7 +207,7 @@ T MultibodyAcrobotPlant<T>::DoCalcKineticEnergy(
 }
 
 template <typename T>
-T MultibodyAcrobotPlant<T>::DoCalcPotentialEnergy(
+T AcrobotMultibodyPlant<T>::DoCalcPotentialEnergy(
     const systems::Context<T>& context) const {
   const systems::BasicVector<T>& x =
       dynamic_cast<const systems::BasicVector<T>&>(
@@ -223,8 +223,8 @@ T MultibodyAcrobotPlant<T>::DoCalcPotentialEnergy(
   return -m1_ * g_ * lc1_ * c1 - m2_ * g_ * (l1_ * c1 + lc2_ * c12);
 }
 
-template class MultibodyAcrobotPlant<double>;
-template class MultibodyAcrobotPlant<AutoDiffXd>;
+template class AcrobotMultibodyPlant<double>;
+template class AcrobotMultibodyPlant<AutoDiffXd>;
 
 }  // namespace acrobot
 }  // namespace examples

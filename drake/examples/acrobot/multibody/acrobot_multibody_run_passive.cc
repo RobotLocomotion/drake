@@ -42,7 +42,7 @@ int do_main(int argc, char* argv[]) {
       multibody::joints::kFixed, tree.get());
 
   systems::DiagramBuilder<double> builder;
-  auto acrobot = builder.AddSystem<MultibodyAcrobotPlant>();
+  auto acrobot = builder.AddSystem<AcrobotMultibodyPlant>();
   acrobot->set_name("Acrobot");
   auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
   builder.Connect(acrobot->get_output_port(0), publisher->get_input_port(0));
