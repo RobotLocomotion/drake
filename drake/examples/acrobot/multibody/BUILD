@@ -24,7 +24,7 @@ drake_cc_binary(
     name = "acrobot_multibody_run_passive",
     srcs = ["acrobot_multibody_run_passive.cc"],
     add_test_rule = 1,
-    data = [":models"],
+    data = ["//drake/examples/acrobot:models"],
     test_rule_args = ["-realtime_factor=0.0"],
     deps = [
         ":acrobot_multibody_plant",
@@ -34,10 +34,20 @@ drake_cc_binary(
         "//drake/multibody/joints",
         "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant:drake_visualizer",
+        "//drake/systems/analysis:runge_kutta2_integrator",
+        "//drake/systems/analysis:semi_explicit_euler_integrator",
         "//drake/systems/analysis:simulator",
         "//drake/systems/framework:diagram",
         "//drake/systems/primitives:signal_logger",
         "@com_github_gflags_gflags//:gflags",
+    ],
+)
+
+drake_cc_googletest(
+    name = "acrobot_multibody_plant_test",
+    deps = [
+        ":acrobot_multibody_plant",
+        "//drake/multibody/benchmarks/acrobot",
     ],
 )
 

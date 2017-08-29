@@ -92,6 +92,26 @@ class AcrobotMultibodyPlant : public systems::LeafSystem<T> {
   double b2() const { return b2_; }
   double g() const { return g_; }
 
+  const multibody::MultibodyModeler<T>& get_modeler() const {
+    return modeler_;
+  }
+
+  const multibody::Link<T>& get_link1() const {
+    return *link1_;
+  }
+
+  const multibody::Link<T>& get_link2() const {
+    return *link2_;
+  }
+
+  const multibody::RevoluteJoint<T>& get_shoulder_joint() const {
+    return *shoulder_;
+  }
+
+  const multibody::RevoluteJoint<T>& get_elbow_joint() const {
+    return *elbow_;
+  }
+
  protected:
   T DoCalcKineticEnergy(const systems::Context<T>& context) const override;
   T DoCalcPotentialEnergy(const systems::Context<T>& context) const override;
@@ -119,10 +139,10 @@ class AcrobotMultibodyPlant : public systems::LeafSystem<T> {
   const double m2l1lc2_ = m2_ * l1_ * lc2_;
   
   multibody::MultibodyModeler<T> modeler_;
-  const multibody::Link<T>* link1_;
-  const multibody::Link<T>* link2_;
-  const multibody::RevoluteJoint<T>* shoulder_;
-  const multibody::RevoluteJoint<T>* elbow_;
+  const multibody::Link<T>* link1_{nullptr};
+  const multibody::Link<T>* link2_{nullptr};
+  const multibody::RevoluteJoint<T>* shoulder_{nullptr};
+  const multibody::RevoluteJoint<T>* elbow_{nullptr};
 };
 
 }  // namespace acrobot

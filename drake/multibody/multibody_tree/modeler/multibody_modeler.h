@@ -102,7 +102,7 @@ class Joint {
       X_PJp_ = X_PJp;
     }
     if (!X_CJc.matrix().isIdentity(std::numeric_limits<double>::epsilon())) {
-      X_CJc_ = X_PJp;
+      X_CJc_ = X_CJc;
     }
   }
 
@@ -128,12 +128,18 @@ class Joint {
     id_ = id;
     parent_modeler_ = parent_modeler;
   }
+
+  void SetImplementation(const Mobilizer<T>* impl) {
+    DoSetImplementation(impl);
+  }
   /// @endcond
 
   virtual std::unique_ptr<Mobilizer<T>> MakeMobilizer(
       const Frame<T>& inboard_frame, const Frame<T>& outboard_frame) const = 0;
 
  private:
+  virtual void DoSetImplementation(const Mobilizer<T>* impl) = 0;
+
   const MultibodyModeler<T>* parent_modeler_;
   JointId id_;
 
@@ -179,7 +185,21 @@ class RevoluteJoint : public Joint<T> {
   const T& get_angle(const Context<T>& context) const {
     // TODO(amcastro-tri): expand this capability for the case when the joint
     // is implemented as a constraint.
-    GetMobilizerOrThrow().get_angle(context);
+    return GetMobilizerOrThrow().get_angle(context);
+  }
+
+  const T& get_angular_rate(const Context<T>& context) const {
+    // TODO(amcastro-tri): expand this capability for the case when the joint
+    // is implemented as a constraint.
+    return GetMobilizerOrThrow().get_angular_rate(context);
+  }
+
+  const RevoluteJoint<T>& set_angular_rate(
+      Context<T>* context, const T& angle) const {
+    // TODO(amcastro-tri): expand this capability for the case when the joint
+    // is implemented as a constraint.
+    GetMobilizerOrThrow().set_angular_rate(context, angle);
+    return *this;
   }
 
   /// Sets the `context` so that the generalized coordinate corresponding to the
@@ -190,11 +210,12 @@ class RevoluteJoint : public Joint<T> {
   ///                    belongs to.
   /// @param[in] angle The desired angle in radians.
   /// @returns a constant reference to `this` mobilizer.
-  const RevoluteMobilizer<T>& set_angle(
+  const RevoluteJoint<T>& set_angle(
       Context<T>* context, const T& angle) const {
     // TODO(amcastro-tri): expand this capability for the case when the joint
     // is implemented as a constraint.
     GetMobilizerOrThrow().set_angle(context, angle);
+    return *this;
   }
 
   virtual std::unique_ptr<Mobilizer<T>> MakeMobilizer(
@@ -211,6 +232,10 @@ class RevoluteJoint : public Joint<T> {
           "You must finalize your model before attempting this request");
     }
     return *mobilizer_;
+  }
+
+  void DoSetImplementation(const Mobilizer<T>* impl) final {
+    mobilizer_ = dynamic_cast<const RevoluteMobilizer<T>*>(impl);
   }
 
   const Vector3<double> axis_Jp_;
@@ -341,6 +366,16 @@ class MultibodyModeler {
     return *model_state_.multibody_tree;
   }
 
+  /// Retrieve the Body<T> associated with a Link<T>. It assumes that there is
+  /// only one body associated with the given link.
+  const Body<T>& get_link_body(LinkId link_id) const;
+
+  /// Retrieve the Body<T> associated with a Link<T>. It assumes that there is
+  /// only one body associated with the given link.
+  const Body<T>& get_link_body(const Link<T>& link) const {
+    return get_link_body(link.get_id());
+  }
+
   /// Allocates a new context for this %MultibodyModeler uniquely identifying the
   /// state of the multibody system.
   ///
@@ -420,9 +455,6 @@ class MultibodyModeler {
   }
 
   void MakeMultibodyTreeModel() const;
-
-  // Helper method to retrieve the Body<T> associated with a Link<T>.
-  const Body<T>& get_link_body(LinkId link_id) const;
 
   struct ModelState {
     // The modeler owns the underlying MultibodyTree. The tree model can be reset

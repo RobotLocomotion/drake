@@ -82,13 +82,15 @@ AcrobotMultibodyPlant<T>::AcrobotMultibodyPlant(
 template <typename T>
 void AcrobotMultibodyPlant<T>::BuildMultibodyModeler() {
   // Rotational inertia of a thin rod along the y-axis.
-  UnitInertia<double> G_L1cm =
-      UnitInertia<double>::StraightLine(Ic1(), Vector3<double>::UnitY());
+  //UnitInertia<double> G_L1cm =
+    //  UnitInertia<double>::StraightLine(Ic1(), Vector3<double>::UnitY());
+  UnitInertia<double> G_L1cm(Ic1() /* Ixx */, 0.0 /* Iyy */, Ic1() /* Izz */);
   SpatialInertia<double> M_L1cm(m1(), Vector3<double>::Zero(), G_L1cm);
 
   // Rotational inertia of a thin rod along the y-axis.
-  UnitInertia<double> G_L2cm =
-      UnitInertia<double>::StraightLine(Ic2(), Vector3<double>::UnitY());
+  //UnitInertia<double> G_L2cm =
+    //  UnitInertia<double>::StraightLine(Ic2(), Vector3<double>::UnitY());
+  UnitInertia<double> G_L2cm(Ic2() /* Ixx */, 0.0 /* Iyy */, Ic2() /* Izz */);
   SpatialInertia<double> M_L2cm(m2(), Vector3<double>::Zero(), G_L2cm);
 
   const Link<T>& world = modeler_.get_world_link();
@@ -144,13 +146,14 @@ Vector2<T> AcrobotMultibodyPlant<T>::VectorC(
     const systems::Context<T>& context) const {
   Vector2<T> C;
   modeler_.CalcBiasTerm(context, C);
-  PRINT_VAR(C.transpose());
+  //PRINT_VAR(C.transpose());
 
   const systems::BasicVector<T>& x =
       dynamic_cast<const systems::BasicVector<T>&>(
           context.get_continuous_state_vector());
 
-  PRINT_VAR(x.CopyToVector().transpose());
+  //C.setZero();
+  //PRINT_VAR(x.CopyToVector().transpose());
 
   const T theta1 = x[0];
   const T theta2 = x[1];

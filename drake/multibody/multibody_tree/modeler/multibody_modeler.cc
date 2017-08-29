@@ -61,7 +61,7 @@ void MultibodyModeler<T>::CalcMassMatrixViaInverseDynamics(
 
   vdot.setZero();
   for (int j = 0; j < nv; ++j) {
-    // TODO(amcastro-tri): make next line to work by makcing CalcInverseDynamics
+    // TODO(amcastro-tri): make next line to work by making CalcInverseDynamics
     // take an Eigen::Ref<VectorX<T>> instead of a pointer.
     // auto tau = H.col(j);
     if( j != 0) vdot(j-1) = 0.0;
@@ -82,6 +82,13 @@ void MultibodyModeler<T>::CalcBiasTerm(
   const int nv = model.get_num_velocities();
   if (C.size() != nv) C.resize(nv);
   C.setZero();
+
+  //const systems::BasicVector<T>& x =
+  //    dynamic_cast<const systems::BasicVector<T>&>(
+  //        context.get_continuous_state_vector());
+
+  //PRINT_VAR("CalcBiasTerm()");
+  //PRINT_VAR(x.CopyToVector().transpose());
 
   // ======================================================================
   // Compute position kinematics.
@@ -105,6 +112,7 @@ void MultibodyModeler<T>::CalcBiasTerm(
   // TODO(amcastro-tri): provide specific API for when vdot = 0.
   model.CalcInverseDynamics(context, pc, vc, vdot,
                             &A_WB_array, &F_BMo_W_array, &tau);
+#if 0
   PRINT_VAR(tau.transpose());
   for (const auto& id_link_pair : model_state_.owned_links) {
     LinkId link_id = id_link_pair.first;
@@ -115,6 +123,7 @@ void MultibodyModeler<T>::CalcBiasTerm(
     PRINT_VAR(F_BMo_W_array[body.get_index()]);
     PRINT_VAR(vc.get_V_WB(body.get_node_index()));
   }
+#endif
   C = tau;
 }
 
@@ -185,6 +194,8 @@ void MultibodyModeler<T>::MakeMultibodyTreeModel() const {
         get_link_body(joint->get_parent_link().get_id());
     const Body<T>& outboard_body =
         get_link_body(joint->get_child_link().get_id());
+    PRINT_VAR(inboard_body.get_index());
+    PRINT_VAR(outboard_body.get_index());
 
     // Define the inboard frame.
     const Frame<T>* frame_Jp;
@@ -201,13 +212,15 @@ void MultibodyModeler<T>::MakeMultibodyTreeModel() const {
     if(joint->get_X_CJc()) {
       // Create frame Jc attached to child body C.
       frame_Jc = &model->template AddFrame<FixedOffsetFrame>(
-          outboard_body, *joint->get_X_PJp());
+          outboard_body, *joint->get_X_CJc());
     } else {
       frame_Jc = &outboard_body.get_body_frame();
     }
 
     // Create the mobilizer.
-    model->AddMobilizer(joint->MakeMobilizer(*frame_Jp, *frame_Jc));
+    const auto& mobilizer =
+        model->AddMobilizer(joint->MakeMobilizer(*frame_Jp, *frame_Jc));
+    joint->SetImplementation(&mobilizer);
   }
 
   model->Finalize();
