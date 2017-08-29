@@ -11,9 +11,9 @@ load("//tools:install_data.bzl", "install_data")
 load("//tools:lint.bzl", "add_lint_tests")
 
 drake_cc_library(
-    name = "acrobot_multibody_model",
-    srcs = ["acrobot_multibody_model.cc"],
-    hdrs = ["acrobot_multibody_model.h"],
+    name = "acrobot_multibody_plant",
+    srcs = ["acrobot_multibody_plant.cc"],
+    hdrs = ["acrobot_multibody_plant.h"],
     deps = [
         "//drake/multibody/multibody_tree/modeler:multibody_modeler",
         "//drake/systems/framework",
@@ -27,7 +27,7 @@ drake_cc_binary(
     data = [":models"],
     test_rule_args = ["-realtime_factor=0.0"],
     deps = [
-        ":acrobot_multibody_model",
+        ":acrobot_multibody_plant",
         "//drake/common:find_resource",
         "//drake/lcm",
         "//drake/multibody:rigid_body_tree",

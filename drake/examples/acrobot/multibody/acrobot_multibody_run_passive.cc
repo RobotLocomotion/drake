@@ -4,7 +4,7 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/find_resource.h"
-#include "drake/examples/acrobot/multibody/acrobot_multibody_model.h"
+#include "drake/examples/acrobot/multibody/acrobot_multibody_plant.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"

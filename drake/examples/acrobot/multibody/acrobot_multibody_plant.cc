@@ -1,4 +1,4 @@
-#include "drake/examples/acrobot/multibody/acrobot_multibody_model.h"
+#include "drake/examples/acrobot/multibody/acrobot_multibody_plant.h"
 
 #include <cmath>
 #include <vector>
