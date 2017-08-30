@@ -80,6 +80,7 @@ drake_cc_binary(
     deps = [
         ":pendulum_plant",
         "//drake/common:find_resource",
+        "//drake/common:is_approx_equal_abstol",
         "//drake/lcm",
         "//drake/multibody/joints",
         "//drake/multibody/parsers",

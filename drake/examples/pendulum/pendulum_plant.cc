@@ -46,6 +46,17 @@ void PendulumPlant<T>::CopyStateOut(const systems::Context<T>& context,
   output->set_value(get_state(context).get_value());
 }
 
+template <typename T>
+T PendulumPlant<T>::CalcTotalEnergy(const systems::Context<T>& context) const {
+  using std::pow;
+  const PendulumStateVector<T>& state = get_state(context);
+  // Kinetic energy = 1/2 m l² θ̇².
+  const T kinetic_energy = 0.5 * m() * pow(l() * state.thetadot(), 2);
+  // Potential energy = -mgl cos θ.
+  const T potential_energy = -m() * g() * l() * cos(state.theta());
+  return kinetic_energy + potential_energy;
+}
+
 // Compute the actual physics.
 template <typename T>
 void PendulumPlant<T>::DoCalcTimeDerivatives(

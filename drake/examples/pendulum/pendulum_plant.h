@@ -63,6 +63,8 @@ class PendulumPlant : public systems::LeafSystem<T> {
   explicit PendulumPlant(PendulumPlant&& other) = delete;
   PendulumPlant& operator=(PendulumPlant&& other) = delete;
 
+  T CalcTotalEnergy(const MyContext& context) const;
+
  private:
   // This is the calculator method for the state output port.
   void CopyStateOut(const MyContext& context,
