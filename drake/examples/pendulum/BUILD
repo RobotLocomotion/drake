@@ -31,8 +31,8 @@ drake_cc_library(
 )
 
 drake_cc_binary(
-    name = "pendulum_run_dynamics",
-    srcs = ["pendulum_run_dynamics.cc"],
+    name = "passive_simulation",
+    srcs = ["passive_simulation.cc"],
     add_test_rule = 1,
     data = [":models"],
     deps = [
@@ -50,8 +50,8 @@ drake_cc_binary(
 )
 
 drake_cc_binary(
-    name = "pendulum_run_energy_shaping",
-    srcs = ["pendulum_run_energy_shaping.cc"],
+    name = "energy_shaping_simulation",
+    srcs = ["energy_shaping_simulation.cc"],
     add_test_rule = 1,
     data = [":models"],
     deps = [
@@ -68,8 +68,8 @@ drake_cc_binary(
 )
 
 drake_cc_binary(
-    name = "pendulum_run_lqr",
-    srcs = ["pendulum_run_lqr.cc"],
+    name = "lqr_simulation",
+    srcs = ["lqr_simulation.cc"],
     add_test_rule = 1,
     data = [":models"],
     deps = [
@@ -87,8 +87,8 @@ drake_cc_binary(
 )
 
 drake_cc_binary(
-    name = "pendulum_run_swing_up",
-    srcs = ["pendulum_run_swing_up.cc"],
+    name = "trajectory_optimization_simulation",
+    srcs = ["trajectory_optimization_simulation.cc"],
     add_test_rule = 1,
     data = [":models"],
     test_rule_args = ["--target_realtime_rate=0.0"],
@@ -122,7 +122,7 @@ drake_cc_binary(
 # === test/ ===
 
 drake_cc_googletest(
-    name = "pendulum_urdf_dynamics_test",
+    name = "urdf_dynamics_test",
     data = ["Pendulum.urdf"],
     deps = [
         ":pendulum_plant",
