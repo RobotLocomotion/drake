@@ -233,6 +233,7 @@ struct ConstraintVelProblemData {
     N_mult = zero_fn;
     F_mult = zero_fn;
     L_mult = zero_fn;
+    G_mult = zero_fn;
 
     // Set default for transpose operators - returns the appropriately sized
     // zero vector.
@@ -241,6 +242,7 @@ struct ConstraintVelProblemData {
     N_transpose_mult = zero_gv_dim_fn;
     F_transpose_mult = zero_gv_dim_fn;
     L_transpose_mult = zero_gv_dim_fn;
+    G_transpose_mult = zero_gv_dim_fn;
   }
 
   /// The number of spanning vectors in the contact tangents (used to linearize
