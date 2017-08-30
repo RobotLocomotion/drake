@@ -60,11 +60,9 @@ fi
 apt update -y
 apt install --no-install-recommends $(tr '\n' ' ' <<EOF
 
-alien
 bash-completion
 binutils
 doxygen
-fakeroot
 g++
 g++-5
 g++-5-multilib
@@ -78,7 +76,7 @@ gfortran-5-multilib
 git
 graphviz
 libboost-dev
-libexpat1
+libexpat1-dev
 libfreetype6
 libglib2.0-dev
 libglu1-mesa-dev
@@ -121,10 +119,10 @@ fi
 
 rm /tmp/bazel_0.5.2-linux-x86_64.deb
 
-# Repair a bad Bazel/ccache interaction.
-# See https://github.com/RobotLocomotion/drake/issues/4464.
-# See https://github.com/bazelbuild/bazel/issues/1322.
-$(dirname $0)/ccache-bazel-wrapper-mkdeb.sh --install
+# Remove deb that we used to generate and install, but no longer need.
+if [ -L /usr/lib/ccache/bazel ]; then
+  apt purge ccache-bazel-wrapper
+fi
 
 # TODO(david-german-tri): Do we need to munge the MATLAB C++ libraries?
 # http://drake.mit.edu/ubuntu.html#matlab

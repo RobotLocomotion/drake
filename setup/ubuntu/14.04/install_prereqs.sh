@@ -46,7 +46,7 @@ gfortran-4.9-multilib
 git
 graphviz
 libboost-dev
-libexpat1
+libexpat1-dev
 libfreetype6
 libglib2.0-dev
 libglu1-mesa-dev

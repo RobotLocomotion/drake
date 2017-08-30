@@ -71,6 +71,7 @@ build:everything --define=WITH_SNOPT=ON
 # Use the default Bazel-generated CROSSTOOL.
 # This may be useful for developers with unsupported workstation configurations.
 build:unsupported_crosstool --crosstool_top=//external:cc_toolchain
+build:unsupported_crosstool --action_env=CCACHE_DISABLE=1
 
 ### git submodules
 # If a CMake build is performed from the same source tree, it will checkout git
@@ -253,6 +254,7 @@ test:tsan_everything --test_timeout=300,1500,5400,18000
 ### UBSan build. ###
 build:ubsan --copt -g
 build:ubsan --copt -fsanitize=undefined
+build:ubsan --copt -fno-sanitize=float-divide-by-zero
 build:ubsan --copt -O1
 build:ubsan --copt -fno-omit-frame-pointer
 build:ubsan --linkopt -fsanitize=undefined
