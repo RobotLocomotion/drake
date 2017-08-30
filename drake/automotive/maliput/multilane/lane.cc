@@ -40,14 +40,14 @@ double Lane::do_length() const {
 
 
 Rot3 Lane::Rabg_of_p(const double p) const {
-  return Rot3(road_curve_->superelevation().f_p(p) * road_curve_->length(),
+  return Rot3(road_curve_->superelevation().f_p(p) * road_curve_->p_scale(),
               -std::atan(road_curve_->elevation().f_dot_p(p)),
               road_curve_->heading_of_p(p));
 }
 
 
 double Lane::p_from_s(const double s) const {
-  return road_curve_->elevation().p_s(s / road_curve_->length());
+  return road_curve_->elevation().p_s(s / road_curve_->p_scale());
 }
 
 
@@ -70,11 +70,10 @@ V3 Lane::W_prime_of_prh(const double p, const double r, const double h,
 
   // Evaluate dα/dp, dβ/dp, dγ/dp...
   const double d_alpha = road_curve_->superelevation().f_dot_p(p) *
-                         road_curve_->length();
+                         road_curve_->p_scale();
   const double d_beta = -cb * cb * road_curve_->elevation().f_ddot_p(p);
   const double d_gamma = road_curve_->heading_dot_of_p(p);
 
-  const double p_scale = road_curve_->length();
   // Recall that W is the lane-to-world transform, defined by
   //   (x,y,z)  = W(p,r,h) = (G(p), Z(p)) + R_αβγ*(0,r,h)
   // where G is the reference curve, Z is the elevation profile, and R_αβγ is
@@ -91,7 +90,7 @@ V3 Lane::W_prime_of_prh(const double p, const double r, const double h,
   return
       V3(G_prime.x(),
          G_prime.y(),
-         p_scale * g_prime) +
+         road_curve_->p_scale() * g_prime) +
 
       V3((((sa*sg)+(ca*sb*cg))*r + ((ca*sg)-(sa*sb*cg))*h),
          (((-sa*cg)+(ca*sb*sg))*r - ((ca*cg)+(sa*sb*sg))*h),
@@ -127,7 +126,7 @@ api::GeoPosition Lane::DoToGeoPosition(
   // Recover parameter p from arc-length position s.
   const double p = p_from_s(lane_pos.s());
   // Calculate z (elevation) of (s,0,0);
-  const double z = road_curve_->elevation().f_p(p) * road_curve_->length();
+  const double z = road_curve_->elevation().f_p(p) * road_curve_->p_scale();
   // Calculate x,y of (s,0,0).
   const V2 xy = road_curve_->xy_of_p(p);
   // Calculate orientation of (s,r,h) basis at (s,0,0).
@@ -193,10 +192,10 @@ api::LanePosition Lane::DoEvalMotionDerivatives(
 
   // The definition of path-length of a path along σ yields dσ = |∂W/∂p| dp.
   // Similarly, path-length s along the road at r = 0 is related to the
-  // elevation by ds = p_scale * sqrt(1 + g'^2) dp.  Chaining yields ds/dσ:
-  const double p_scale = road_curve_->length();
-  const double ds_dsigma =
-      p_scale * std::sqrt(1 + (g_prime * g_prime)) / W_prime.norm();
+  // elevation by ds = p_scale * sqrt(1 + g'^2) dp. Chaining yields
+  // ds/dσ:
+  const double ds_dsigma = road_curve_->p_scale() *
+                           std::sqrt(1 + (g_prime * g_prime)) / W_prime.norm();
 
   return api::LanePosition(ds_dsigma * velocity.sigma_v,
                            velocity.rho_v,
