@@ -327,6 +327,116 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
   // MLCP (1)-(5) by setting fG = | fĜ |
   //                              |  0 |.
 
+  // Set the initial set of active constraints.
+  std::vector<int> active_constraints;
+
+  // Determine new G_mult using active constraints.
+  auto G_mult = [&problem_data, &active_constraints](
+      const VectorX<T>& v) -> VectorX<T> {
+    VectorX<T> result_full = problem_data.G_mult(v);
+    VectorX<T> result(active_constraints.size());
+    for (int i = 0; i < static_cast<int>(active_constraints.size()); ++i)
+      result[i] = result_full[active_constraints[i]];
+    return result;
+  };
+
+  // Determine new G_transpose_mult using active constraints
+  auto G_transpose_mult = [&problem_data, &active_constraints](
+      const VectorX<T>& f) -> VectorX<T> {
+    VectorX<T> lambda = VectorX<T>::Zero(problem_data.kG.size());
+    for (int i = 0; i < static_cast<int>(active_constraints.size()); ++i)
+      lambda[i] = f[active_constraints[i]];
+    return problem_data.G_transpose_mult(lambda);
+  };
+
+  // Determine the set of active constraints.
+  MatrixX<T> iM_GT;
+  Eigen::LDLT<MatrixX<T>> Del;
+  MatrixX<T> tentative_Del;
+  for (int i = 0; i < problem_data.kG.size(); ++i)
+  {
+    // Tentatively add the constraint to the active set of constraints.
+    active_constraints.push_back(i);
+
+    // Form the tentative Delassus matrix.
+    ComputeInverseInertiaTimesGT(problem_data.solve_inertia,
+                                 G_transpose_mult,
+                                 problem_data.kG.size(), &iM_GT);
+    ComputeConstraintSpaceComplianceMatrix(G_mult,
+                                           problem_data.kG.size(),
+                                           iM_GT, tentative_Del);
+
+    // Try to do a LDL' factorization.
+    Del.compute(tentative_Del);
+    if (Del.info() != Eigen::Success) {
+      // Remove the constraint from the active constraint set.
+      active_constraints.pop_back();
+    } else {
+      // If the problem is fully constrained, do not keep looping.
+      if (tentative_Del.rows() == problem_data.tau.size())
+        break;
+    }
+  }
+
+  // From a block matrix inversion,
+  // | M  -Gᵀ |⁻¹ | Y | = |  C  E || Y | = | CY + EZ   |
+  // | G'  0  |   | Z |   | -Eᵀ F || Z |   | -EᵀY + FZ |
+  // where C  ≡ M⁻¹ - M⁻¹Gᵀ(GM⁻¹Gᵀ)⁻¹GM⁻¹
+  //       E  ≡ M⁻¹Gᵀ(GM⁻¹Gᵀ)⁻¹
+  //      -Eᵀ ≡ -(GM⁻¹Gᵀ)⁻¹GM⁻¹
+  //       F  ≡ (GM⁻¹Gᵀ)
+  // Compute block inversion.
+  auto block_solve = [&problem_data, &Del, G_mult, G_transpose_mult,
+      &active_constraints](const MatrixX<T>& X) -> MatrixX<T> {
+    // Set the result matrix.
+    const int C_rows = problem_data.tau.size();
+    const int E_cols = active_constraints.size();
+    MatrixX<T> result(C_rows + E_cols, C_rows + E_cols);
+
+    // Name the blocks of X and result.
+    const auto Y = X.block(0, 0, C_rows, X.cols());
+    const auto Z = X.block(C_rows, 0, E_cols, X.cols());
+    auto result_top = result.block(0, 0, C_rows, result.cols());
+    auto result_bot = result.block(C_rows, 0, E_cols, result.cols());
+
+    // 1. Begin computation of components of C.
+    // Compute M⁻¹ Y
+    const MatrixX<T> iM_Y = problem_data.solve_inertia(Y);
+
+    // Compute G M⁻¹ Y
+    MatrixX<T> G_iM_Y(E_cols, Y.cols());
+    for (int i = 0; i < Y.cols(); ++i)
+      G_iM_Y.col(i) = G_mult(iM_Y.col(i));
+
+    // Compute (GM⁻¹Gᵀ)⁻¹GM⁻¹Y
+    const MatrixX<T> Del_G_iM_Y = Del.solve(G_iM_Y);
+
+    // Compute Gᵀ(GM⁻¹Gᵀ)⁻¹GM⁻¹Y
+    const MatrixX<T> GT_Del_G_iM_Y = G_transpose_mult(Del_G_iM_Y);
+
+    // Compute M⁻¹Gᵀ(GM⁻¹Gᵀ)⁻¹GM⁻¹Y
+    const MatrixX<T> iM_GT_Del_G_iM_Y = problem_data.solve_inertia(
+        GT_Del_G_iM_Y);
+
+    // 2. Begin computation of components of E
+    // Compute (GM⁻¹Gᵀ)⁻¹Z
+    const MatrixX<T> Del_Z = Del.solve(Z);
+
+    // Compute Gᵀ(GM⁻¹Gᵀ)⁻¹Z
+    const MatrixX<T> GT_Del_Z = G_transpose_mult(Del_Z);
+
+    // Compute M⁻¹Gᵀ(GM⁻¹Gᵀ)⁻¹Z = EZ
+    const MatrixX<T> iM_GT_Del_Z = problem_data.solve_inertia(GT_Del_Z);
+
+    // Set the top block of the result.
+    result_top = problem_data.solve_inertia(Y) - iM_GT_Del_G_iM_Y + iM_GT_Del_Z;
+
+    // Set the bottom block of the result.
+    result_bot = Del.solve(Z) - Del_G_iM_Y;
+
+    return result;
+  };
+
   // Set up the pure linear complementarity problem.
   MatrixX<T> MM;
   VectorX<T> qq;
@@ -527,9 +637,6 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
   // M. Anitescu and F. Potra. Formulating Dynamic Multi-Rigid Body Contact
   // Problems as Solvable Linear Complementarity Problems. Nonlinear Dynamics,
   // 14, 1997.
-
-  // @TODO(edrumwri): Set up a new operator for inverting [ M -G'; G 0 ]
-
 
   // Alias operators and vectors to make accessing them less clunky.
   auto N = problem_data.N_mult;
