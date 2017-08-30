@@ -1,37 +1,30 @@
 #pragma once
 
-#include <algorithm>
-#include <cmath>
-#include <iostream>
 #include <map>
 #include <memory>
-#include <set>
 #include <string>
 #include <tuple>
 #include <vector>
 
 #include "ignition/math/Spline.hh"
 #include "ignition/math/Vector3.hh"
-#include "ignition/rndf/UniqueId.hh"
 
 #include "drake/automotive/maliput/api/lane_data.h"
+#include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput/rndf/connection.h"
 #include "drake/automotive/maliput/rndf/directed_waypoint.h"
-#include "drake/automotive/maliput/rndf/junction.h"
 #include "drake/automotive/maliput/rndf/road_geometry.h"
-#include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_throw.h"
 
 namespace drake {
 namespace maliput {
 namespace rndf {
 
-/// A class to ease the construction of a RoadGeometry from Connections and
-/// DirectedWaypoints.
+/// A class to ease the construction of a RoadGeometry from Connection and
+/// DirectedWaypoint objects.
 ///
 /// RNDF segments and lanes are mapped to Maliput's Segment and Lane entities,
-/// respectively. This mapping is not straightforward, as Maliput is based on
+/// respectively. This mapping is not straightforward as Maliput is based on
 /// analytical curve parameterizations while RNDF provides a sampled geometry
 /// based on waypoints. RNDF waypoints are thus used as control points in a
 /// cubic spline interpolation that results in SplineLanes. RNDF lanes'
@@ -43,8 +36,8 @@ namespace rndf {
 /// process, interpolated waypoints are added to these Connections so as to keep
 /// their distribution akin to a grid (and thus enable index-based operations).
 ///
-/// As lanes in an RNDF segment may or may not flow in the same direction,
-/// segment connections are also grouped by its direction relative to the first
+/// Since lanes in an RNDF segment may flow in different directions, segment
+/// connections are also grouped by its direction relative to the first
 /// connection found in the collection. An arbitrary point outside the bounding
 /// box of the road geometry is selected to be a "center of rotation" and the
 /// sum of all the DirectedWaypoints "momentums" (with normalized tangents) is
@@ -73,7 +66,7 @@ namespace rndf {
 ///    1. Index in RoadGeometry's inner collection.
 ///
 /// An example of how this is achieved is depicted in the following example.
-/// Please, note that '+' denotes RNDF waypoints, 'x' denotes invalid waypoints
+/// Note that '+' denotes RNDF waypoints, 'x' denotes invalid waypoints
 /// and 'o' denotes interpolated waypoints. Also '|' denotes Segment boundaries.
 ///
 /// <pre>
@@ -134,7 +127,7 @@ class Builder {
   /// @remarks Bounding box definition is kept in 3D space for the sake
   /// of generality, even though there's currently no support for nonplanar
   /// RNDF geometries and, most of the time, the z-component of the given
-  /// corners will come zeroed.
+  /// corners will be zero.
   void SetBoundingBox(
       const std::tuple<ignition::math::Vector3d, ignition::math::Vector3d>&
           bounding_box) {
@@ -144,11 +137,11 @@ class Builder {
   /// Populates the Builder's inner connection map with the given
   /// @p connections representing an RNDF segment.
   ///
-  /// In order to do so, the @p connections' waypoints are first used to derive
+  /// To do this, the @p connections' waypoints are first used to derive
   /// a geometry. Then, these @p connections are grouped based on relative
   /// direction using the first connection found as a reference. Once grouped,
   /// extra waypoints are added to each of them on a per group basis as
-  /// necessary so as to ensure a grid-like distribution of waypoints.
+  /// necessary to ensure a grid-like distribution of waypoints.
   /// @param segment_id The RNDF segment ID.
   /// @param connections A collection of Connections representing each RNDF lane
   /// in the segment.
@@ -185,7 +178,7 @@ class Builder {
 
   // Builds or updates a BranchPoint given a @p connection and the corresponding
   // @p lane. The former provides the start and end waypoints of the lane,
-  // necessary to lookup the branch points in the @p branch_point_map.
+  // which are necessary to lookup the branch points in the @p branch_point_map.
   // @param connection The Connection that provides the start and end waypoints.
   // @param lane The Lane to be attached to the right correspoding
   // branch points.
@@ -196,7 +189,7 @@ class Builder {
   // @pre The given @p lane must not be a nullptr.
   // @pre The given @p branch_point_map must not be a nullptr.
   // @pre The given @p road_geometry must not be a nullptr.
-  // @warning This method will abort if preconditions are not met.:
+  // @warning This method will abort if preconditions are not met.
   void BuildOrUpdateBranchpoints(
       Connection* connection, Lane* lane,
       std::map<std::string, BranchPoint*>* branch_point_map,
@@ -251,7 +244,7 @@ class Builder {
 
   // Adds either invalid or interpolated extra waypoints on those @p connections
   // not listed in the @p ids of the @p connections that come first for the
-  // given @p index, as computed by GetInitialConnectionToProcess(), so as to
+  // given @p index, as computed by GetInitialConnectionToProcess(), to
   // make all waypoints at @p index lie in line with @p connections's normal.
   // That is to say, to lie in a row.
   // @param ids A collection of the indexes of the @p connections that come
@@ -324,7 +317,7 @@ class Builder {
       std::map<int, std::vector<Connection>>* connection_groups) const;
 
   // Creates a pair of waypoints based on the given @p exit and @p entry
-  // ones, keeping their heading but affecting tangent norms so as to
+  // waypoints, keeping their heading but affecting tangent norms to
   // achieve smooth transitions by making use of cubic Bezier interpolants.
   // This is helpful for connecting lanes at intersections.
   // @param exit The start DirectedWaypoint of the lane's reference curve.

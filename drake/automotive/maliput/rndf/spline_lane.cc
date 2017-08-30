@@ -159,14 +159,12 @@ ignition::math::Vector3d SplineLane::GetPositionToLane(double s,
   const ignition::math::Vector3d r(-t_p.Y(), t_p.X(), 0.);
   // Gets the beginning and ending of the other lane, and then computes the
   // respective GeoPositions.
-
   const SplineLane* other_lane = dynamic_cast<const SplineLane*>(
       segment()->lane(lane_id));
   DRAKE_DEMAND(other_lane != nullptr);
   const Vector2<double> other_lane_beginning = other_lane->xy_of_s(0.);
   const Vector2<double> other_lane_ending =
       other_lane->xy_of_s(other_lane->do_length());
-
   // Converts the beginning and ending positions of the other lane into
   // ignition::math::Vector3d objects.
   const ignition::math::Vector3d q(other_lane_beginning.x(),

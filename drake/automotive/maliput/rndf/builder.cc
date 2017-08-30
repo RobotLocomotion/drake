@@ -1,15 +1,20 @@
 #include "drake/automotive/maliput/rndf/builder.h"
 
+#include <algorithm>
 #include <cmath>
 #include <utility>
 
+#include "ignition/rndf/UniqueId.hh"
+
 #include "drake/automotive/maliput/rndf/branch_point.h"
+#include "drake/automotive/maliput/rndf/junction.h"
 #include "drake/automotive/maliput/rndf/road_geometry.h"
+#include "drake/automotive/maliput/rndf/segment.h"
 #include "drake/automotive/maliput/rndf/spline_lane.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/text_logging.h"
-#include "drake/common/trajectories/piecewise_polynomial.h"
 
 namespace drake {
 namespace maliput {
