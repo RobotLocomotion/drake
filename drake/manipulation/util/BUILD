@@ -73,6 +73,7 @@ drake_cc_library(
     deps = [
         "//drake/common/trajectories:piecewise_polynomial",
         "//drake/common/trajectories:piecewise_quaternion",
+        "//drake/math:geometric_transform",
     ],
 )
 
@@ -95,11 +96,26 @@ drake_cc_binary(
     ],
 )
 
+# TODO(naveenoid) : Move the moving_average_filter and the
+# perception_utils to within drake/perception.
 drake_cc_library(
     name = "moving_average_filter",
     srcs = ["moving_average_filter.cc"],
     hdrs = ["moving_average_filter.h"],
     deps = ["//drake/common:essential"],
+)
+
+# TODO(naveenoid) : This library is currently jointly tested
+# with the pose smoother. Add independent unit tests for
+# it.
+drake_cc_library(
+    name = "perception_utils",
+    srcs = ["perception_utils.cc"],
+    hdrs = ["perception_utils.h"],
+    deps = [
+        "//drake/common",
+        "//drake/math:geometric_transform",
+    ],
 )
 
 # === test/ ===
@@ -138,6 +154,18 @@ drake_cc_googletest(
         ":moving_average_filter",
         "//drake/common:eigen_matrix_compare",
         "//drake/common:essential",
+    ],
+)
+
+drake_cc_googletest(
+    name = "perception_utils_test",
+    srcs = ["test/perception_utils_test.cc"],
+    deps = [
+        ":perception_utils",
+        "//drake/common",
+        "//drake/common:eigen_geometry_compare",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/math:geometric_transform",
     ],
 )
 

@@ -2,13 +2,14 @@
 
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/text_logging.h"
 
 namespace drake {
 namespace manipulation {
 namespace util {
 namespace {
-
-int get_dimensions(double) { return 1; }
+//
+//int get_dimensions(double) { return 1; }
 
 int get_dimensions(VectorX<double> data) { return data.size(); }
 }  // namespace
@@ -32,17 +33,17 @@ T MovingAverageFilter<T>::Update(const T& new_data) {
                        get_dimensions(window_.front()));
     sum_ += new_data;
   }
-
   window_.push(new_data);
 
   if (window_.size() > static_cast<size_t>(window_size_)) {
     sum_ -= window_.front();
     window_.pop();
   }
+
   return (1.0 / window_.size()) * sum_;
 }
 
-template class MovingAverageFilter<double>;
+//template class MovingAverageFilter<double>;
 template class MovingAverageFilter<VectorX<double>>;
 
 }  // namespace util

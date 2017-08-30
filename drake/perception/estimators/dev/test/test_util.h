@@ -99,30 +99,6 @@ struct ObjectTestSetup {
 void GetObjectTestSetup(ObjectTestType type, ObjectTestSetup* setup);
 
 /*
- * Expect that a rotation matrix belong to SO(3):
- *    R ∈ SO(3) =>
- *      Rᵀ R = I (orthonormal)
- *      det(R) = 1 (right-hand rule)
- * @param R Rotation matrix.
- * @param tolerance  The tolerance for determining equivalence for
- * the orthonormal and right-hand rule cases.
- */
-::testing::AssertionResult ExpectRotMat(const Eigen::Matrix3d& R,
-                                        double tolerance = 0.0);
-
-/*
- * Compare two SE(3) transforms.
- * @param X_expected Expected SE(3) transform.
- * @param X_actual Actual SE(3) transform.
- * @param tolerance The tolerance for determining equivalence for the
- * rotation matrix cases (using ExpectRotMat) and comparing both transforms
- * as matrices.
- */
-::testing::AssertionResult CompareTransforms(
-    const Eigen::Isometry3d& X_expected, const Eigen::Isometry3d& X_actual,
-    double tolerance = 0.0);
-
-/*
  * Compare `R_actual` against `R_expected` to ensure that the axes are
  * aligned, but may have different signs. This is done by checking:
  *   tr(abs(R_expectedᵀ R_actual)) = 3

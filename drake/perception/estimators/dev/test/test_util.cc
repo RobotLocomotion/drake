@@ -5,6 +5,7 @@
 #include <vtkSmartPointer.h>
 #include <vtkXMLPolyDataReader.h>
 
+#include "drake/common/eigen_geometry_compare.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/lcmtypes/drake/lcmt_viewer_draw.hpp"
 #include "drake/math/roll_pitch_yaw.h"
@@ -88,36 +89,6 @@ Matrix3Xd GenerateBoxPointCloud(double space, Bounds box) {
   Matrix3Xd pts(3, xy_z.cols() + yz_x.cols() + xz_y.cols());
   pts << xy_z, yz_x, xz_y;
   return pts;
-}
-
-AssertionResult ExpectRotMat(const Eigen::Matrix3d& R,
-                             double tolerance) {
-  // Don't have access to common EXPECT_NEAR low-level macros :(
-  const double det = R.determinant();
-  const double det_err = fabs(det - 1);
-  if (det_err > tolerance) {
-    return AssertionFailure()
-           << "Determinant of R = " << det << " != 1 by an error of "
-           << det_err << "\nR = " << R;
-  }
-  return CompareMatrices(Matrix3d::Identity(), R.transpose() * R, tolerance)
-         << "Rotation matrix is non-orthonormal";
-}
-
-AssertionResult CompareTransforms(
-    const Eigen::Isometry3d& X_expected, const Eigen::Isometry3d& X_actual,
-    double tolerance) {
-  AssertionResult check_R_expected =
-      ExpectRotMat(X_expected.linear(), tolerance);
-  if (!check_R_expected) {
-    return check_R_expected << "(X_expected)";
-  }
-  AssertionResult check_R_actual =
-      ExpectRotMat(X_actual.linear(), tolerance);
-  if (!check_R_actual) {
-    return check_R_actual << "(X_actual)";
-  }
-  return CompareMatrices(X_expected.matrix(), X_actual.matrix(), tolerance);
 }
 
 AssertionResult CompareRotMatWithoutAxisSign(
