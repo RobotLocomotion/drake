@@ -44,7 +44,9 @@ int do_main() {
   auto pendulum_context = pendulum->CreateDefaultContext();
   pendulum->set_theta(pendulum_context.get(), M_PI);
   pendulum->set_thetadot(pendulum_context.get(), 0);
-  pendulum_context->FixInputPort(0, Vector1d::Zero());
+  auto input = std::make_unique<PendulumInput<double>>();
+  input->set_tau(0.0);
+  pendulum_context->FixInputPort(0, std::move(input));
 
   // Set up cost function for LQR: integral of 10*theta^2 + thetadot^2 + tau^2.
   // The factor of 10 is heuristic, but roughly accounts for the unit conversion
