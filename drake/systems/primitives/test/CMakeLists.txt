@@ -25,9 +25,6 @@ target_link_libraries(gain_scalartype_test drakeSystemPrimitives)
 drake_add_cc_test(integrator_test)
 target_link_libraries(integrator_test drakeSystemPrimitives)
 
-drake_add_cc_test(linear_system_test)
-target_link_libraries(linear_system_test drakeSystemPrimitives)
-
 drake_add_cc_test(matrix_gain_test)
 target_link_libraries(matrix_gain_test drakeSystemPrimitives)
 
