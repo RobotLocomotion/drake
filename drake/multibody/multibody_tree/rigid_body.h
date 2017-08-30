@@ -67,6 +67,14 @@ class RigidBody : public Body<T> {
   /// state associated with flexible deformations.
   int get_num_flexible_velocities() const final { return 0; }
 
+  double get_default_mass() const final {
+    return default_spatial_inertia_.get_mass();
+  }
+
+  const Vector3<double>& get_default_com() const final {
+    return default_spatial_inertia_.get_com();
+  }
+
   SpatialInertia<T> CalcSpatialInertiaInBodyFrame(
       const MultibodyTreeContext<T>&) const override {
     return default_spatial_inertia_.cast<T>();

@@ -168,6 +168,10 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
     return topology_.body_node;
   }
 
+  virtual double get_default_mass() const = 0;
+
+  virtual const Vector3<double>& get_default_com() const = 0;
+
   /// Computes the SpatialInertia `I_BBo_B` of `this` body about its frame
   /// origin `Bo` (not necessarily its center of mass) and expressed in its body
   /// frame `B`.
