@@ -1,6 +1,8 @@
 #include <cmath>
 #include <memory>
 
+#include <gflags/gflags.h>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
@@ -18,14 +20,15 @@ namespace examples {
 namespace pendulum {
 namespace {
 
+DEFINE_double(target_realtime_rate, 1.0,
+              "Playback speed.  See documentation for "
+              "Simulator::set_target_realtime_rate() for details.");
+
 template <typename T>
 class PendulumEnergyShapingController : public systems::LeafSystem<T> {
  public:
   explicit PendulumEnergyShapingController(const PendulumPlant<T>& pendulum)
-      : m_(pendulum.m()),
-        l_(pendulum.l()),
-        b_(pendulum.b()),
-        g_(pendulum.g()) {
+      : m_(pendulum.m()), l_(pendulum.l()), b_(pendulum.b()), g_(pendulum.g()) {
     this->DeclareInputPort(systems::kVectorValued,
                            pendulum.get_output_port().size());
     this->DeclareVectorOutputPort(
@@ -46,7 +49,7 @@ class PendulumEnergyShapingController : public systems::LeafSystem<T> {
     // 6.832). Downloaded on 2016-09-30 from
     // http://underactuated.csail.mit.edu/underactuated.html?chapter=3
     const T Etilde = .5 * m_ * l_ * l_ * state->thetadot() * state->thetadot() -
-        m_ * g_ * l_ * cos(state->theta()) - 1.1 * m_ * g_ * l_;
+                     m_ * g_ * l_ * cos(state->theta()) - 1.1 * m_ * g_ * l_;
     const T tau = b_ * state->thetadot() - .1 * state->thetadot() * Etilde;
     output->SetAtIndex(0, tau);
   }
@@ -73,19 +76,19 @@ int do_main() {
   builder.Connect(pendulum->get_output_port(), controller->get_input_port(0));
   builder.Connect(controller->get_output_port(0), pendulum->get_tau_port());
 
-  auto publisher =
-      builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
+  auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
   publisher->set_name("publisher");
   builder.Connect(pendulum->get_output_port(), publisher->get_input_port(0));
 
   auto diagram = builder.Build();
   systems::Simulator<double> simulator(*diagram);
   systems::Context<double>& pendulum_context =
-      diagram->GetMutableSubsystemContext(
-          *pendulum, simulator.get_mutable_context());
+      diagram->GetMutableSubsystemContext(*pendulum,
+                                          simulator.get_mutable_context());
   pendulum->set_theta(&pendulum_context, 0.1);
   pendulum->set_thetadot(&pendulum_context, 0.2);
 
+  simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
   simulator.StepTo(10);
   return 0;
@@ -96,6 +99,7 @@ int do_main() {
 }  // namespace examples
 }  // namespace drake
 
-int main() {
+int main(int argc, char* argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   return drake::examples::pendulum::do_main();
 }

@@ -1,6 +1,8 @@
 #include <cmath>
 #include <memory>
 
+#include <gflags/gflags.h>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
@@ -20,6 +22,10 @@ namespace drake {
 namespace examples {
 namespace pendulum {
 namespace {
+
+DEFINE_double(target_realtime_rate, 1.0,
+              "Playback speed.  See documentation for "
+              "Simulator::set_target_realtime_rate() for details.");
 
 int do_main() {
   lcm::DrakeLcm lcm;
@@ -48,8 +54,8 @@ int do_main() {
   Eigen::MatrixXd R(1, 1);
   R << 1;
 
-  auto controller = builder.AddSystem(
-      systems::controllers::LinearQuadraticRegulator(
+  auto controller =
+      builder.AddSystem(systems::controllers::LinearQuadraticRegulator(
           *pendulum, *pendulum_context, Q, R));
   controller->set_name("controller");
   builder.Connect(pendulum->get_output_port(), controller->get_input_port());
@@ -67,6 +73,7 @@ int do_main() {
   pendulum->set_theta(&sim_pendulum_context, M_PI + 0.1);
   pendulum->set_thetadot(&sim_pendulum_context, 0.2);
 
+  simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
   simulator.StepTo(10);
   return 0;
@@ -77,6 +84,7 @@ int do_main() {
 }  // namespace examples
 }  // namespace drake
 
-int main() {
+int main(int argc, char* argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   return drake::examples::pendulum::do_main();
 }
