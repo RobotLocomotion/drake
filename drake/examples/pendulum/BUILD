@@ -35,6 +35,7 @@ drake_cc_binary(
     srcs = ["passive_simulation.cc"],
     add_test_rule = 1,
     data = [":models"],
+    test_rule_args = ["--target_realtime_rate=0.0"],
     deps = [
         ":pendulum_plant",
         "//drake/common:find_resource",
@@ -46,6 +47,7 @@ drake_cc_binary(
         "//drake/systems/analysis:simulator",
         "//drake/systems/framework:diagram",
         "//drake/systems/primitives:constant_vector_source",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 
@@ -54,6 +56,7 @@ drake_cc_binary(
     srcs = ["energy_shaping_simulation.cc"],
     add_test_rule = 1,
     data = [":models"],
+    test_rule_args = ["--target_realtime_rate=0.0"],
     deps = [
         ":pendulum_plant",
         "//drake/common:find_resource",
@@ -64,6 +67,7 @@ drake_cc_binary(
         "//drake/systems/analysis:simulator",
         "//drake/systems/framework:diagram",
         "//drake/systems/framework:leaf_system",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 
@@ -72,6 +76,7 @@ drake_cc_binary(
     srcs = ["lqr_simulation.cc"],
     add_test_rule = 1,
     data = [":models"],
+    test_rule_args = ["--target_realtime_rate=0.0"],
     deps = [
         ":pendulum_plant",
         "//drake/common:find_resource",
@@ -83,6 +88,7 @@ drake_cc_binary(
         "//drake/systems/controllers:linear_quadratic_regulator",
         "//drake/systems/framework:diagram",
         "//drake/systems/framework:leaf_system",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 
