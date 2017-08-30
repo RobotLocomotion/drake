@@ -5,6 +5,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/is_approx_equal_abstol.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/joints/floating_base_types.h"
@@ -76,6 +77,15 @@ int do_main() {
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
   simulator.StepTo(10);
+
+  Eigen::Vector2d desired_state =
+      pendulum_context->get_continuous_state_vector().CopyToVector();
+  Eigen::Vector2d final_state =
+      sim_pendulum_context.get_continuous_state_vector().CopyToVector();
+
+  // Adds a numerical test to make sure we're stabilizing the fixed point.
+  DRAKE_DEMAND(is_approx_equal_abstol(final_state, desired_state, 1e-3));
+
   return 0;
 }
 

@@ -85,12 +85,27 @@ int do_main() {
   systems::Context<double>& pendulum_context =
       diagram->GetMutableSubsystemContext(*pendulum,
                                           simulator.get_mutable_context());
+  pendulum->set_theta(&pendulum_context, M_PI);
+  pendulum->set_thetadot(&pendulum_context, 0.0);
+
+  const double desired_energy = pendulum->CalcTotalEnergy(pendulum_context);
+
   pendulum->set_theta(&pendulum_context, 0.1);
   pendulum->set_thetadot(&pendulum_context, 0.2);
+
+  const double initial_energy = pendulum->CalcTotalEnergy(pendulum_context);
 
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
   simulator.StepTo(10);
+
+  const double final_energy = pendulum->CalcTotalEnergy(pendulum_context);
+
+  // Adds a numerical test that we have successfully regulated the energy
+  // towards the desired energy level.
+  DRAKE_DEMAND(std::abs(initial_energy - desired_energy) >
+               2.0 * std::abs(final_energy - desired_energy));
+
   return 0;
 }
 

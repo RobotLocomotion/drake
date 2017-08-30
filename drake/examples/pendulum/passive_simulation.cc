@@ -50,9 +50,16 @@ int do_main() {
   pendulum->set_theta(&pendulum_context, 1.);
   pendulum->set_thetadot(&pendulum_context, 0.);
 
+  const double initial_energy = pendulum->CalcTotalEnergy(pendulum_context);
+
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
   simulator.StepTo(10);
+
+  const double final_energy = pendulum->CalcTotalEnergy(pendulum_context);
+
+  // Adds a numerical sanity test on total energy.
+  DRAKE_DEMAND(initial_energy > 2.0 * final_energy);
   return 0;
 }
 
