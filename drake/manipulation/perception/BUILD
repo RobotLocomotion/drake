@@ -19,11 +19,32 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "pose_smoother",
+    srcs = ["pose_smoother.cc"],
+    hdrs = ["pose_smoother.h"],
+    deps = [
+        "//drake/manipulation/util:moving_average_filter",
+        "//drake/math:geometric_transform",
+        "//drake/systems/framework",
+    ],
+)
+
 drake_cc_googletest(
     name = "optitrack_pose_extractor_test",
     deps = [
         ":optitrack_pose_extractor",
         "//drake/common:eigen_matrix_compare",
+        "//drake/systems/framework",
+    ],
+)
+
+drake_cc_googletest(
+    name = "pose_smoother_test",
+    deps = [
+        ":pose_smoother",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/manipulation/util:moving_average_filter",
         "//drake/systems/framework",
     ],
 )
