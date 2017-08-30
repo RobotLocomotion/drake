@@ -27,37 +27,38 @@ DEFINE_double(target_realtime_rate, 1.0,
 template <typename T>
 class PendulumEnergyShapingController : public systems::LeafSystem<T> {
  public:
-  explicit PendulumEnergyShapingController(const PendulumPlant<T>& pendulum)
-      : m_(pendulum.m()), l_(pendulum.l()), b_(pendulum.b()), g_(pendulum.g()) {
-    this->DeclareInputPort(systems::kVectorValued,
-                           pendulum.get_output_port().size());
-    this->DeclareVectorOutputPort(
-        systems::BasicVector<T>(pendulum.get_tau_port().size()),
-        &PendulumEnergyShapingController::CalcTau);
+  explicit PendulumEnergyShapingController(const PendulumParams<T>& params) {
+    this->DeclareVectorInputPort(PendulumState<T>());
+    this->DeclareVectorOutputPort(PendulumInput<T>(),
+                                  &PendulumEnergyShapingController::CalcTau);
+    this->DeclareNumericParameter(params);
   }
 
  private:
   void CalcTau(const systems::Context<T>& context,
-               systems::BasicVector<T>* output) const {
-    const PendulumStateVector<T>* const state =
-        dynamic_cast<const PendulumStateVector<T>*>(
-            this->EvalVectorInput(context, 0));
-    DRAKE_ASSERT(state != nullptr);
-    // Pendulum energy shaping formula from Section 3.5.2 of Russ
-    // Tedrake. Underactuated Robotics: Algorithms for Walking, Running,
-    // Swimming, Flying, and Manipulation (Course Notes for MIT
-    // 6.832). Downloaded on 2016-09-30 from
-    // http://underactuated.csail.mit.edu/underactuated.html?chapter=3
-    const T Etilde = .5 * m_ * l_ * l_ * state->thetadot() * state->thetadot() -
-                     m_ * g_ * l_ * cos(state->theta()) - 1.1 * m_ * g_ * l_;
-    const T tau = b_ * state->thetadot() - .1 * state->thetadot() * Etilde;
-    output->SetAtIndex(0, tau);
-  }
+               PendulumInput<T>* output) const {
+    const auto* state =
+        this->template EvalVectorInput<PendulumState>(context, 0);
+    const PendulumParams<T>& params =
+        this->template GetNumericParameter<PendulumParams>(context, 0);
 
-  const T m_;
-  const T l_;
-  const T b_;
-  const T g_;
+    // Pendulum energy shaping from Section 3.5.2 of
+    // http://underactuated.csail.mit.edu/underactuated.html?chapter=3
+    using std::pow;
+    // Desired energy is slightly more than the energy at the top (want to pass
+    // through the upright with non-zero velocity).
+    const T desired_energy =
+        1.1 * params.mass() * params.gravity() * params.length();
+    // Current total energy (see PendulumPlant::CalcTotalEnergy).
+    const T current_energy = 0.5 * params.mass() * pow(params.length(), 2) *
+                                 state->thetadot() * state->thetadot() -
+                             params.mass() * params.gravity() *
+                                 params.length() * cos(state->theta());
+    const double kEnergyFeedbackGain = .1;
+    output->set_tau(params.damping() * state->thetadot() +
+                    kEnergyFeedbackGain * state->thetadot() *
+                        (desired_energy - current_energy));
+  }
 };
 
 int do_main() {
@@ -70,8 +71,10 @@ int do_main() {
   systems::DiagramBuilder<double> builder;
   auto pendulum = builder.AddSystem<PendulumPlant>();
   pendulum->set_name("pendulum");
-  auto controller =
-      builder.AddSystem<PendulumEnergyShapingController>(*pendulum);
+  // Use default pendulum parameters in the controller (real controllers never
+  // get the true parameters).
+  auto controller = builder.AddSystem<PendulumEnergyShapingController>(
+      PendulumParams<double>());
   controller->set_name("controller");
   builder.Connect(pendulum->get_output_port(), controller->get_input_port(0));
   builder.Connect(controller->get_output_port(0), pendulum->get_tau_port());
@@ -103,8 +106,8 @@ int do_main() {
 
   // Adds a numerical test that we have successfully regulated the energy
   // towards the desired energy level.
-  DRAKE_DEMAND(std::abs(initial_energy - desired_energy) >
-               2.0 * std::abs(final_energy - desired_energy));
+  DRAKE_DEMAND(std::abs(final_energy - desired_energy) <
+               (0.5 * std::abs(initial_energy - desired_energy)));
 
   return 0;
 }

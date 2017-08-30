@@ -11,9 +11,17 @@ load("//tools:install_data.bzl", "install_data")
 load("//tools:lint.bzl", "add_lint_tests")
 
 drake_cc_library(
-    name = "pendulum_state_vector",
-    srcs = ["gen/pendulum_state_vector.cc"],
-    hdrs = ["gen/pendulum_state_vector.h"],
+    name = "pendulum_vector_types",
+    srcs = [
+        "gen/pendulum_input.cc",
+        "gen/pendulum_params.cc",
+        "gen/pendulum_state.cc",
+    ],
+    hdrs = [
+        "gen/pendulum_input.h",
+        "gen/pendulum_params.h",
+        "gen/pendulum_state.h",
+    ],
     deps = [
         "//drake/systems/framework:vector",
     ],
@@ -25,7 +33,7 @@ drake_cc_library(
     hdrs = ["pendulum_plant.h"],
     visibility = ["//visibility:public"],
     deps = [
-        ":pendulum_state_vector",
+        ":pendulum_vector_types",
         "//drake/systems/framework",
     ],
 )
