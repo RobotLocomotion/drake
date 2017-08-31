@@ -184,6 +184,46 @@ GTEST_TEST(RigidBodyPlantTest, MapVelocityToConfigurationDerivativesAndBack) {
   }
 }
 
+// Tests the generalized velocities to generalized coordinates time
+// derivatives for a free body with a quaternion base *with discrete state
+// variables* (meaning that no such conversion should be performed).
+GTEST_TEST(RigidBodyPlantTest, MapVelocityToConfigurationDerivativesAndBackTS) {
+  auto tree = make_unique<RigidBodyTree<double>>();
+
+  // Adds a single free body with a quaternion base.
+  RigidBody<double>* body;
+  tree->add_rigid_body(
+      unique_ptr<RigidBody<double>>(body = new RigidBody<double>()));
+  body->set_name("free_body");
+
+  // Sets body to have a non-zero spatial inertia. Otherwise the body gets
+  // welded by a fixed joint to the world by RigidBodyTree::compile().
+  body->set_mass(1.0);
+  body->set_spatial_inertia(Matrix6<double>::Identity());
+
+  body->add_joint(&tree->world(), make_unique<QuaternionFloatingJoint>(
+                                      "base", Isometry3d::Identity()));
+
+  tree->compile();
+
+  // Instantiates a RigidBodyPlant from the previously instantiated
+  // RigidBodyTree.
+  const double dt = 1e-3;
+  RigidBodyPlant<double> plant(move(tree), dt);
+  auto context = plant.CreateDefaultContext();
+
+  // Make empty generalized velocity and positions_derivative vectors.
+  BasicVector<double> generalized_velocities(0);
+  BasicVector<double> positions_derivatives(0);
+
+  // Call the transformation functions. They should do nothing, since both
+  // vectors are zero sized *and* the state is discrete.
+  EXPECT_NO_THROW(plant.MapVelocityToQDot(
+      *context, generalized_velocities, &positions_derivatives));
+  EXPECT_NO_THROW(plant.MapQDotToVelocity(
+      *context, positions_derivatives, &generalized_velocities));
+}
+
 class KukaArmTest : public ::testing::Test {
  protected:
   void SetUp() override {
