@@ -287,29 +287,13 @@ void MultibodyTree<T>::CalcInverseDynamics(
   // known.
   CalcSpatialAccelerationsFromVdot(context, pc, vc, known_vdot, A_WB_array);
 
-  // Vector to contain the generalized forces per mobilizer.
+  // Vector of generalized forces per mobilizer.
   VectorUpTo6<T> tau_applied_mobilizer;
+  tau_applied_mobilizer.setZero();
 
-  // Compute into the supplied temporaries F_BMo_W_array and tau_array the
-  // contribution from ForceElement objects. Notice however F_BMo_W_array
-  // will now contain applied forces at Bo, ie. F_Bo_W (not at Mo as on output).
-  PRINT_VAR(get_num_force_elements());
-  // Initialize with the externally applied forces or zero them.
-  if (Fapplied_size != 0) {
-    *F_BMo_W_array = Fapplied_Bo_W_array;
-  } else {
-    for (auto& F : *F_BMo_W_array) F.SetZero();
-  }
-  if (tau_applied_size != 0) {
-    tau_array = tau_applied_array;
-  } else {
-    tau_array.setZero();
-  }
-  // Add contributions from force elements.
-  for (const auto& force_element : owned_force_elements_) {
-    force_element->CalcAndAddForceContribution(
-        mbt_context, pc, vc, F_BMo_W_array, tau_array);
-  }
+  // Spatial force applied on B at Bo.
+  SpatialForce<T> Fapplied_Bo_W;
+  Fapplied_Bo_W.SetZero();
 
   // Performs a tip-to-base recursion computing the total spatial force F_BMo_W
   // acting on body B, about point Mo, expressed in the world frame W.
@@ -324,13 +308,20 @@ void MultibodyTree<T>::CalcInverseDynamics(
       DRAKE_ASSERT(node.get_index() == body_node_index);
 
       // Make a copy to the total applied forces since the call to
-      // CalcInverseDynamics_TipToBase() below will overwrite the entry for the
-      // current body node.
-      tau_applied_mobilizer =
-          node.get_mobilizer().get_generalized_forces_from_array(tau_array);
-      PRINT_VAR(decltype(tau_applied_mobilizer)::MaxSizeAtCompileTime);
-      PRINT_VAR(tau_applied_mobilizer.size());
-      const SpatialForce<T> Fapplied_Bo_W = (*F_BMo_W_array)[body_node_index];
+      // CalcInverseDynamics_TipToBase() below could overwrite the entry for the
+      // current body node if the input applied forces arrays are the same
+      // in-memory object as the output arrays.
+      // This allows users to specify the same input and output arrays if
+      // desired to minimize memory footprint.
+      // Leave them initialized to zero if no applied forces were provided.
+      if (tau_applied_size != 0) {
+        tau_applied_mobilizer =
+            node.get_mobilizer().get_generalized_forces_from_array(
+                tau_applied_array);
+      }
+      if (Fapplied_size != 0) {
+        Fapplied_Bo_W = (*F_BMo_W_array)[body_node_index];
+      }
 
       // Compute F_BMo_W for the body associated with this node and project it
       // onto the space of generalized forces for the associated mobilizer.
@@ -339,6 +330,33 @@ void MultibodyTree<T>::CalcInverseDynamics(
           Fapplied_Bo_W, tau_applied_mobilizer,
           F_BMo_W_array, tau_array);
     }
+  }
+}
+
+template <typename T>
+void MultibodyTree<T>::CalcForceElementsContribution(
+    const systems::Context<T>& context,
+    const PositionKinematicsCache<T>& pc,
+    const VelocityKinematicsCache<T>& vc,
+    std::vector<SpatialForce<T>>* F_Bo_W_array,
+    Eigen::Ref<VectorX<T>> tau_array) const {
+  DRAKE_DEMAND(F_Bo_W_array != nullptr);
+  DRAKE_DEMAND(static_cast<int>(F_Bo_W_array->size()) == get_num_bodies());
+  DRAKE_DEMAND(tau_array.size() == get_num_velocities());
+
+  const auto& mbt_context =
+      dynamic_cast<const MultibodyTreeContext<T>&>(context);
+
+  PRINT_VAR(get_num_force_elements());
+
+  // Zero the arrays before adding contributions.
+  tau_array.setZero();
+  for (auto& F : *F_Bo_W_array) F.SetZero();
+
+  // Add contributions from force elements.
+  for (const auto& force_element : owned_force_elements_) {
+    force_element->CalcAndAddForceContribution(
+        mbt_context, pc, vc, F_Bo_W_array, tau_array);
   }
 }
 

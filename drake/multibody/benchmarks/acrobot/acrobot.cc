@@ -80,6 +80,21 @@ Vector2<T> Acrobot<T>::CalcCoriolisVector(
 }
 
 template <typename T>
+Vector2<T> Acrobot<T>::CalcGravityVector(
+    const T& theta1, const T& theta2) const {
+  using std::sin;
+  using std::cos;
+
+  const T s1 = sin(theta1);
+  const T s12 = sin(theta1 + theta2);
+  Vector2<T> C;
+  C(0) = g_ * m1_ * lc1_ * s1 + g_ * m2_ * (l1_ * s1 + lc2_ * s12);
+  C(1) = g_ * m2_ * lc2_ * s12;
+
+  return C;
+}
+
+template <typename T>
 Isometry3<T> Acrobot<T>::CalcLink1PoseInWorldFrame(
     const T& theta1) const {
 

@@ -27,7 +27,7 @@ class ForceElement : public
   /// information in their respective constructors.
   /// @throws std::runtime_error if `inboard_frame` and `outboard_frame`
   /// reference the same frame object.
-  ForceElement();
+  ForceElement() {}
 
   void CalcAndAddForceContribution(const MultibodyTreeContext<T>& context,
                                    const PositionKinematicsCache<T>& pc,

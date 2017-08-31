@@ -740,6 +740,10 @@ class MultibodyTree {
   /// temporaries and therefore no additional dynamic memory allocation is
   /// performed.
   ///
+  /// @note note on how applied and output arrays can actually be the same
+  /// object in memory
+  ///
+  ///
   /// @pre The position kinematics `pc` must have been previously updated with a
   /// call to CalcPositionKinematicsCache().
   /// @pre The velocity kinematics `vc` must have been previously updated with a
@@ -756,6 +760,15 @@ class MultibodyTree {
       std::vector<SpatialAcceleration<T>>* A_WB_array,
       std::vector<SpatialForce<T>>* F_BMo_W_array,
       Eigen::Ref<VectorX<T>> tau_array) const;
+
+  void CalcForceElementsContribution(
+      const systems::Context<T>& context,
+      const PositionKinematicsCache<T>& pc,
+      const VelocityKinematicsCache<T>& vc,
+      std::vector<SpatialForce<T>>* F_Bo_W_array,
+      Eigen::Ref<VectorX<T>> tau_array) const;
+
+  // SEE SYMBODY METHOD: addInStationForce() TO ACCUMULATE BODY FORCES.
 
   /// @name Methods to retrieve multibody element variants
   ///
