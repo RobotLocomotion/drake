@@ -135,6 +135,20 @@ class Constraint2DSolverTest : public ::testing::Test {
     xc[5] = 0.0;                          // no angular velocity.
   }
 
+  // Sets the rod to a sliding velocity with the rod configured to impact
+  // vertically and without modifying the rod's mode variables.
+  void SetRodToSlidingImpactingVerticalConfig(bool sliding_to_right) {
+    ContinuousState<double>& xc =
+        *context_->get_mutable_continuous_state();
+    // Configuration has the rod on its side.
+    xc[0] = 0.0;                          // com horizontal position
+    xc[1] = 0.0;                          // com vertical position
+    xc[2] = M_PI_2;                       // rod rotation
+    xc[3] = (sliding_to_right) ? 1 : -1;  // sliding horizontal velocity.
+    xc[4] = -1.0;                         // impacting velocity.
+    xc[5] = 0.0;                          // no angular velocity.
+  }
+
   // Sets the rod to a resting vertical configuration without modifying the
   // mode variables.
   void SetRodToRestingVerticalConfig() {
@@ -858,6 +872,83 @@ class Constraint2DSolverTest : public ::testing::Test {
     solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &ga);
     EXPECT_LT(ga[2], lcp_eps_ * cf.size());
   }
+
+
+  // Tests the rod in an upright sliding and impacting state, with sliding
+  // velocity as specified. The rod will be constrained to prevent rotational
+  // velocity using a bilateral constraint as well.
+  void SlidingPlusBilateralImpact(bool sliding_to_right) {
+    SetRodToSlidingImpactingVerticalConfig(sliding_to_right);
+
+    // Set the coefficient of friction. A nonzero coefficient of friction should
+    // cause the rod to rotate.
+    rod_->set_mu_coulomb(0.1);
+
+    // Compute the problem data.
+    CalcConstraintVelProblemData(vel_data_.get());
+
+    // Add in bilateral constraints on rotational motion.
+    vel_data_->kG.setZero(1);    // No right hand side term.
+    vel_data_->G_mult = [](const VectorX<double>& v) -> VectorX<double> {
+      VectorX<double> result(1);   // Only one constraint.
+
+      // Constrain the angular velocity to be zero.
+      result[0] = v[2];
+      return result;
+    };
+    accel_data_->G_transpose_mult =
+        [this](const VectorX<double>& f) -> VectorX<double> {
+          // An impulsive force (torque) applied to the third component needs no
+          // transformation.
+          DRAKE_DEMAND(f.size() == 1);
+          VectorX<double> result(get_rod_num_coordinates());
+          result.setZero();
+          result[2] = f[0];
+          return result;
+        };
+
+    // Compute the impact forces.
+    VectorX<double> cf;
+    solver_.SolveImpactProblem(cfm_, *vel_data_, &cf);
+
+    // Construct the contact frame(s).
+    std::vector<Matrix2<double>> frames;
+    frames.push_back(GetNonSlidingContactFrameToWorldTransform());
+
+    // Get the contact impulses expressed in the contact frame.
+    std::vector<Vector2<double>> contact_forces;
+    ConstraintSolver<double>::CalcImpactForcesInContactFrames(
+        cf, *vel_data_, frames, &contact_forces);
+
+    // Verify that the number of contact force vectors is correct.
+    ASSERT_EQ(contact_forces.size(), frames.size());
+
+    // Verify that there are no non-sliding frictional forces.
+    const int num_contacts = vel_data_->mu.size();
+    const int num_bilateral_eqns = accel_data_->kG.size();
+    EXPECT_EQ(cf.size(), num_contacts + num_bilateral_eqns);
+
+    // Get the pre-impact vertical momentum.
+    ContinuousState<double>& xc =
+        *context_->get_mutable_continuous_state();
+    const double mv = rod_->get_rod_mass() * xc[4];
+
+    // Verify that the normal contact impulses exactly oppose the pre-impact
+    double fN = 0, fF = 0;
+    for (int i = 0; i < static_cast<int>(contact_forces.size()); ++i) {
+      fN += contact_forces[i][0];
+      fF += contact_forces[i][1];
+    }
+    const double sign = (sliding_to_right) ? 1 : -1;
+    EXPECT_NEAR(fN, -mv, lcp_eps_);
+    EXPECT_NEAR(fF, sign * mv * rod_->get_mu_coulomb(), lcp_eps_);
+
+    // Get the change in generalized velocity and verify that there is no
+    // angular velocity..
+    VectorX<double> gv;
+    solver_.ComputeGeneralizedVelocityChange(*vel_data_, cf, &gv);
+    EXPECT_LT((vel_data_->v[2] + gv[2]), lcp_eps_ * cf.size());
+  }
 };
 
 // Tests the rod in single-point sticking configurations.
@@ -912,10 +1003,17 @@ TEST_F(Constraint2DSolverTest, SinglePointSlidingTest) {
 }
 
 // Tests the rod in a single point sliding configuration, with sliding both
-// to the right and to the left.
+// to the right and to the left, and with a bilateral constraint imposed.
 TEST_F(Constraint2DSolverTest, SinglePointSlidingPlusBilateralTest) {
   SlidingPlusBilateral(true /* slide to the right */);
   SlidingPlusBilateral(false /* slide to the left */);
+}
+
+// Tests the rod in a single point impacting configuration, with sliding both
+// to the right and to the left, and with a bilateral constraint imposed.
+TEST_F(Constraint2DSolverTest, SinglePointSlidingImpactPlusBilateralTest) {
+  SlidingPlusBilateralImpact(true /* slide to the right */);
+  SlidingPlusBilateralImpact(false /* slide to the left */);
 }
 
 // Tests the rod in a two-point configuration, in a situation where a force
