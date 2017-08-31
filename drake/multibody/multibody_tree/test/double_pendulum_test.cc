@@ -21,10 +21,6 @@ namespace drake {
 namespace multibody {
 namespace {
 
-#include <iostream>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
-
 const double kEpsilon = std::numeric_limits<double>::epsilon();
 
 using benchmarks::Acrobot;
@@ -571,11 +567,6 @@ class PendulumKinematicTests : public PendulumTests {
     model_->CalcForceElementsContribution(
         *context_, pc, vc, &F_Bo_W_array, tau);
 
-    PRINT_VAR(F_Bo_W_array[0]);
-    PRINT_VAR(F_Bo_W_array[1]);
-    PRINT_VAR(F_Bo_W_array[2]);
-    PRINT_VAR(tau.transpose());
-
     // ======================================================================
     // To get generalized forces, compute inverse dynamics applying the forces
     // computed by CalcForceElementsContribution().
@@ -593,9 +584,6 @@ class PendulumKinematicTests : public PendulumTests {
     // Compute expected values using the acrobot benchmark.
     const Vector2d G_expected = acrobot_benchmark_.CalcGravityVector(
         shoulder_angle, elbow_angle);
-
-    PRINT_VAR(G_expected.transpose());
-    PRINT_VAR(tau.transpose());
 
     EXPECT_TRUE(tau.isApprox(G_expected, kTolerance));
     return tau;

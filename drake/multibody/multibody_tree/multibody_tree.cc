@@ -17,10 +17,6 @@ namespace multibody {
 using internal::BodyNode;
 using internal::BodyNodeWelded;
 
-#include <iostream>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
-
 template <typename T>
 MultibodyTree<T>::MultibodyTree() {
   // Adds a "world" body to MultibodyTree having a NaN SpatialInertia.
@@ -346,8 +342,6 @@ void MultibodyTree<T>::CalcForceElementsContribution(
 
   const auto& mbt_context =
       dynamic_cast<const MultibodyTreeContext<T>&>(context);
-
-  PRINT_VAR(get_num_force_elements());
 
   // Zero the arrays before adding contributions.
   tau_array.setZero();

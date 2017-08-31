@@ -695,20 +695,29 @@ class MultibodyTree {
   ///   %MultibodyTree model. Use Mobilizer::get_velocities_from_array() to
   ///   access entries into this array for a particular Mobilizer. You can use
   ///   the mutable version of this method to write into this array.
-  /// @param[in,out] Fapplied_Bo_W_array
+  /// @param[in] Fapplied_Bo_W_array
   ///   A pointer to a vector containing the spatial force `Fapplied_Bo_W`
   ///   applied on each body at the body's frame origin `Bo` and expressed in
-  ///   the world frame W. `Fapplied_Bo_W_array` can be `nullptr` or have zero
-  ///   size which means there are no applied forces. To apply non-zero forces,
-  ///   `Fapplied_Bo_W_array` must be non-null and it must be of size equal to
-  ///   the number of bodies in the `this` %MultibodyTree model.
-  ///   This method will abort if provided with a non-null pointer to an array
-  ///   that does not have a size of either `get_num_bodies()` or zero.
-  ///   This array must be ordered by BodyNodeIndex, which can be retrieved for
-  ///   a given body with Body::get_node_index().
-  ///   On output,
-  /// @param[in,out] tau_applied_array
-  ///   Blah...
+  ///   the world frame W. `Fapplied_Bo_W_array` can have zero size which means
+  ///   there are no applied forces. To apply non-zero forces,
+  ///   `Fapplied_Bo_W_array` must be of size equal to the number of bodies in
+  ///   `this` %MultibodyTree model. This array must be ordered by
+  ///   BodyNodeIndex, which for a given body can be retrieved with
+  ///   Body::get_node_index().
+  ///   This method will abort if provided with an array that does not have a
+  ///   size of either `get_num_bodies()` or zero.
+  /// @param[in] tau_applied_array
+  ///   An array of applied generalized forces for the entire model. For a
+  ///   given mobilizer, entries in this array can be accessed using the method
+  ///   Mobilizer::get_generalized_forces_from_array() while its mutable
+  ///   counterpart, Mobilizer::get_mutable_generalized_forces_from_array(),
+  ///   allows writing into this array.
+  ///   `tau_applied_array` can have zero size, which means there are no applied
+  ///   forces. To apply non-zero forces, `tau_applied_array` must be of size
+  ///   equal to the number to the number of generalized velocities in the
+  ///   model, see MultibodyTree::get_num_velocities().
+  ///   This method will abort if provided with an array that does not have a
+  ///   size of either MultibodyTree::get_num_velocities() or zero.
   /// @param[out] A_WB_array
   ///   A pointer to a valid, non nullptr, vector of spatial accelerations
   ///   containing the spatial acceleration `A_WB` for each body. It must be of
@@ -728,9 +737,17 @@ class MultibodyTree {
   ///   On output, entries will be ordered by BodyNodeIndex.
   ///   To access a mobilizer's reaction force on given body B in this array,
   ///   use the index returned by Body::get_node_index().
-  ///
+  ///   Notice that in order to reduce the memory footprint this array can be
+  ///   the same in-memory object as `Fapplied_Bo_W_array`. However, in this
+  ///   case `Fapplied_Bo_W_array` will be overwriten and any applied force
+  ///   information would be lost. Make a copy if data must be preserved.
   /// @param[out] tau_array
-  ///   Blah...
+  ///   On output this array will contain the generalized forces that must be
+  ///   applied in order to achieve the desired generalized accelerations given
+  ///   by the input argument `known_vdot`. It must be of size
+  ///   MultibodyTree::get_num_velocities(). Generalized forces for each
+  ///   Mobilizer can be accessed with
+  ///   Mobilizer::get_generalized_forces_from_array().
   ///
   /// @warning There is no mechanism to assert that either `A_WB_array` nor
   ///   `F_BMo_W_array` are ordered by BodyNodeIndex. You can use
@@ -740,9 +757,12 @@ class MultibodyTree {
   /// temporaries and therefore no additional dynamic memory allocation is
   /// performed.
   ///
-  /// @note note on how applied and output arrays can actually be the same
-  /// object in memory
-  ///
+  /// @note `F_BMo_W_array` (`tau_array`) and `Fapplied_Bo_W_array`
+  /// (`tau_applied_array`) can actually be the same
+  /// array in order to reduce memory footprint and/or dynamic memory
+  /// allocations. However the information in `Fapplied_Bo_W_array`
+  /// (`tau_applied_array`) would be overwritten through `F_BMo_W_array`
+  /// (`tau_array`).
   ///
   /// @pre The position kinematics `pc` must have been previously updated with a
   /// call to CalcPositionKinematicsCache().
