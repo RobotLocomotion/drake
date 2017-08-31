@@ -389,8 +389,12 @@ void ConstraintSolver<T>::DetermineNewInertiaSolveOperator(
     std::function<VectorX<T>(const VectorX<T>&)> G_transpose_mult,
     const Eigen::LLT<MatrixX<T>>& Del,
     std::function<MatrixX<T>(const MatrixX<T>&)>* A_solve) const {
-  *A_solve = [&problem_data, &Del, G_mult, G_transpose_mult,
-      &indep_constraints](const MatrixX<T>& X) -> MatrixX<T> {
+  const ProblemData* problem_data_ptr = &problem_data;
+  const std::vector<int>* indep_constraints_ptr = &indep_constraints;
+  const Eigen::LLT<MatrixX<T>>* Del_ptr = &Del;
+
+  *A_solve = [problem_data_ptr, Del_ptr, G_mult, G_transpose_mult,
+      indep_constraints_ptr](const MatrixX<T>& X) -> MatrixX<T> {
     // From a block matrix inversion,
     // | M  -Gᵀ |⁻¹ | Y | = |  C  E || Y | = | CY + EZ   |
     // | G'  0  |   | Z |   | -Eᵀ F || Z |   | -EᵀY + FZ |
@@ -401,8 +405,8 @@ void ConstraintSolver<T>::DetermineNewInertiaSolveOperator(
     // Compute block inversion.
 
     // Set the result matrix.
-    const int C_rows = problem_data.tau.size();
-    const int E_cols = indep_constraints.size();
+    const int C_rows = problem_data_ptr->tau.size();
+    const int E_cols = indep_constraints_ptr->size();
     MatrixX<T> result(C_rows + E_cols, X.cols());
 
     // Name the blocks of X and result.
@@ -413,7 +417,7 @@ void ConstraintSolver<T>::DetermineNewInertiaSolveOperator(
 
     // 1. Begin computation of components of C.
     // Compute M⁻¹ Y
-    const MatrixX<T> iM_Y = problem_data.solve_inertia(Y);
+    const MatrixX<T> iM_Y = problem_data_ptr->solve_inertia(Y);
 
     // Compute G M⁻¹ Y
     MatrixX<T> G_iM_Y(E_cols, Y.cols());
@@ -421,30 +425,31 @@ void ConstraintSolver<T>::DetermineNewInertiaSolveOperator(
       G_iM_Y.col(i) = G_mult(iM_Y.col(i));
 
     // Compute (GM⁻¹Gᵀ)⁻¹GM⁻¹Y
-    const MatrixX<T> Del_G_iM_Y = Del.solve(G_iM_Y);
+    const MatrixX<T> Del_G_iM_Y = Del_ptr->solve(G_iM_Y);
 
     // Compute Gᵀ(GM⁻¹Gᵀ)⁻¹GM⁻¹Y
     const MatrixX<T> GT_Del_G_iM_Y = G_transpose_mult(Del_G_iM_Y);
 
     // Compute M⁻¹Gᵀ(GM⁻¹Gᵀ)⁻¹GM⁻¹Y
-    const MatrixX<T> iM_GT_Del_G_iM_Y = problem_data.solve_inertia(
+    const MatrixX<T> iM_GT_Del_G_iM_Y = problem_data_ptr->solve_inertia(
         GT_Del_G_iM_Y);
 
     // 2. Begin computation of components of E
     // Compute (GM⁻¹Gᵀ)⁻¹Z
-    const MatrixX<T> Del_Z = Del.solve(Z);
+    const MatrixX<T> Del_Z = Del_ptr->solve(Z);
 
     // Compute Gᵀ(GM⁻¹Gᵀ)⁻¹Z
     const MatrixX<T> GT_Del_Z = G_transpose_mult(Del_Z);
 
     // Compute M⁻¹Gᵀ(GM⁻¹Gᵀ)⁻¹Z = EZ
-    const MatrixX<T> iM_GT_Del_Z = problem_data.solve_inertia(GT_Del_Z);
+    const MatrixX<T> iM_GT_Del_Z = problem_data_ptr->solve_inertia(GT_Del_Z);
 
     // Set the top block of the result.
-    result_top = problem_data.solve_inertia(Y) - iM_GT_Del_G_iM_Y + iM_GT_Del_Z;
+    result_top = problem_data_ptr->solve_inertia(Y) - iM_GT_Del_G_iM_Y +
+        iM_GT_Del_Z;
 
     // Set the bottom block of the result.
-    result_bot = Del.solve(Z) - Del_G_iM_Y;
+    result_bot = Del_ptr->solve(Z) - Del_G_iM_Y;
 
     return result;
   };
@@ -458,6 +463,10 @@ void ConstraintSolver<T>::UpdateProblemDataForUnilateralConstraints(
     ConstraintAccelProblemData<T>** modified_problem_data) const {
   // Verify that the modified problem data points to something.
   DRAKE_DEMAND(modified_problem_data);
+
+  // Get pointers to the objects.
+  const std::vector<int>* indep_constraints_ptr = &indep_constraints;
+  const ConstraintAccelProblemData<T>* problem_data_ptr = &problem_data;
 
   // Construct a new problem data.
   if (indep_constraints.empty()) {
@@ -490,46 +499,55 @@ void ConstraintSolver<T>::UpdateProblemDataForUnilateralConstraints(
 
     // (2) Contact normal operators.
     new_data.N_mult =
-        [&problem_data, &indep_constraints](const VectorX<T>& v) -> VectorX<T> {
-          return problem_data.N_mult(v.segment(0, problem_data.tau.size()));
+        [problem_data_ptr, indep_constraints_ptr](const VectorX<T>& v)
+            -> VectorX<T> {
+          return problem_data_ptr->N_mult(
+              v.segment(0, problem_data_ptr->tau.size()));
         };
     new_data.N_minus_muQ_transpose_mult =
-        [&problem_data, &indep_constraints](const VectorX<T>& lambda) ->
+        [problem_data_ptr, indep_constraints_ptr](const VectorX<T>& lambda) ->
             VectorX<T> {
-          VectorX<T> concat(problem_data.tau.size() + indep_constraints.size());
+          VectorX<T> concat(problem_data_ptr->tau.size() +
+              indep_constraints_ptr->size());
           concat.setZero();
-          concat.segment(0, problem_data.tau.size()) =
-              problem_data.N_minus_muQ_transpose_mult(lambda);
+          concat.segment(0, problem_data_ptr->tau.size()) =
+              problem_data_ptr->N_minus_muQ_transpose_mult(lambda);
           return concat;
         };
 
     // (3) Contact spanning direction operators.
     new_data.F_mult =
-        [&problem_data, &indep_constraints](const VectorX<T>& v) -> VectorX<T> {
-          return problem_data.F_mult(v.segment(0, problem_data.tau.size()));
+        [problem_data_ptr, indep_constraints_ptr](const VectorX<T>& v)
+            -> VectorX<T> {
+          return problem_data_ptr->F_mult(
+              v.segment(0, problem_data_ptr->tau.size()));
         };
     new_data.F_transpose_mult =
-        [&problem_data, &indep_constraints](const VectorX<T>& lambda) ->
+        [problem_data_ptr, indep_constraints_ptr](const VectorX<T>& lambda) ->
             VectorX<T> {
-          VectorX<T> concat(problem_data.tau.size() + indep_constraints.size());
+          VectorX<T> concat(problem_data_ptr->tau.size() +
+              indep_constraints_ptr->size());
           concat.setZero();
-          concat.segment(0, problem_data.tau.size()) =
-              problem_data.F_transpose_mult(lambda);
+          concat.segment(0, problem_data_ptr->tau.size()) =
+              problem_data_ptr->F_transpose_mult(lambda);
           return concat;
         };
 
     // (4) Unilateral constraint operators.
     new_data.L_mult =
-        [&problem_data, &indep_constraints](const VectorX<T>& v) -> VectorX<T> {
-          return problem_data.L_mult(v.segment(0, problem_data.tau.size()));
+        [problem_data_ptr, indep_constraints_ptr](const VectorX<T>& v)
+            -> VectorX<T> {
+          return problem_data_ptr->L_mult(
+              v.segment(0, problem_data_ptr->tau.size()));
         };
     new_data.L_transpose_mult =
-        [&problem_data, &indep_constraints](const VectorX<T>& lambda) ->
+        [problem_data_ptr, indep_constraints_ptr](const VectorX<T>& lambda) ->
             VectorX<T> {
-          VectorX<T> concat(problem_data.tau.size() + indep_constraints.size());
+          VectorX<T> concat(problem_data_ptr->tau.size() +
+              indep_constraints_ptr->size());
           concat.setZero();
-          concat.segment(0, problem_data.tau.size()) =
-              problem_data.L_transpose_mult(lambda);
+          concat.segment(0, problem_data_ptr->tau.size()) =
+              problem_data_ptr->L_transpose_mult(lambda);
           return concat;
         };
 
@@ -583,24 +601,24 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
 
   // From [Cottle 1992] (p. 29), the constraint problem is a mixed linear
   // complementarity problem of the form:
-  //     Au + Cv + a = 0
-  //     Du + Bv + b ≥ 0
-  //               v ≥ 0
-  // vᵀ(b + Du + Bv) = 0
+  // (a)    Au + Xv + a = 0
+  // (b)    Yu + Bv + b ≥ 0
+  // (c)              v ≥ 0
+  // (d) vᵀ(b + Yu + Bv) = 0
   // where u are "free" variables. If the matrix A is nonsingular, u can be
   // solved for:
-  //      u = A⁻¹ (a + Cv)
+  // (e) u = -A⁻¹ (a + Xv)
   // allowing the mixed LCP to be converted to a "pure" LCP (q, M) by:
-  // q = b - DA⁻¹a
-  // M = B - DA⁻¹C
+  // (f) q = b - YA⁻¹a
+  // (g) M = B - YA⁻¹X
 
   // Our mixed linear complementarity problem takes the form:
-  // (1) | M  -Gᵀ  -Nᵀ  -Dᵀ  0  -Lᵀ | | v̇ | + | M f | = | 0 |
-  //     | G   0    0    0   0   0  | | fG | + |   0 | = | 0 |
-  //     | N   0    0    0   0   0  | | fN | + |   0 | = | α |
-  //     | D   0    0    0   E   0  | | fD | + |   0 | = | β |
-  //     | 0   0    μ   -Eᵀ  0   0  | |  λ | + |   0 | = | γ |
-  //     | L   0    0    0   0   0  | | fL | + |   0 | = | δ |
+  // (1) | M  -Gᵀ  -(Nᵀ-μQᵀ) -Dᵀ  0  -Lᵀ | | v̇ | + |-M f | = | 0 |
+  //     | G   0    0         0   0   0  | | fG | + |  kᴳ | = | 0 |
+  //     | N   0    0         0   0   0  | | fN | + |  kᴺ | = | α |
+  //     | D   0    0         0   E   0  | | fD | + |  kᴰ | = | β |
+  //     | 0   0    μ        -Eᵀ  0   0  | |  λ | + |   0 | = | γ |
+  //     | L   0    0         0   0   0  | | fL | + |  kᴸ | = | δ |
   // (2) 0 ≤ fN  ⊥  α ≥ 0
   // (3) 0 ≤ fD  ⊥  β ≥ 0
   // (4) 0 ≤ λ   ⊥  γ ≥ 0
@@ -619,12 +637,12 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
 
   // We will assign zero to the components of fG corresponding to the dependent
   // rows of G, which allows casting the MCLP into a slightly modified form:
-  // (6)  | M  -Ĝᵀ  -Nᵀ  -Dᵀ  0  -Lᵀ | | v̇ | + | M f | = | 0 |
-  //      | Ĝ   0    0    0   0   0  | | fĜ | + |   0 | = | 0 |
-  //      | N   0    0    0   0   0  | | fN | + |   0 | = | α |
-  //      | D   0    0    0   E   0  | | fD | + |   0 | = | β |
-  //      | 0   0    μ   -Eᵀ  0   0  | |  λ | + |   0 | = | γ |
-  //      | L   0    0    0   0   0  | | fL | + |   0 | = | δ |
+  // (6)  | M  -Ĝᵀ  -(Nᵀ-μQᵀ) -Dᵀ  0  -Lᵀ | | v̇ | + |-M f | = | 0 |
+  //      | Ĝ   0    0         0   0   0  | | fĜ | + |  kᴳ | = | 0 |
+  //      | N   0    0         0   0   0  | | fN | + |  kᴺ | = | α |
+  //      | D   0    0         0   E   0  | | fD | + |  kᴰ | = | β |
+  //      | 0   0    μ        -Eᵀ  0   0  | |  λ | + |   0 | = | γ |
+  //      | L   0    0         0   0   0  | | fL | + |  kᴸ | = | δ |
   // (7)  0 ≤ fN  ⊥  α ≥ 0
   // (8)  0 ≤ fD  ⊥  β ≥ 0
   // (9)  0 ≤ λ   ⊥  γ ≥ 0
@@ -633,6 +651,40 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
   // It should be clear that any solution to this MLCP allows us to solve the
   // MLCP (1)-(5) by setting fG = | fĜ |
   //                              |  0 |.
+
+  // --------------------------------------------------------------------------
+  // Converting the MLCP to a pure LCP:
+  // --------------------------------------------------------------------------
+
+  // From the notation above in Equations (a)-(d):
+  // A ≡ | M  -Ĝᵀ|   a ≡ |-M f |   X ≡ |-(Nᵀ-μQᵀ) -Dᵀ  0  -Lᵀ |
+  //     | Ĝ   0 |       |  kᴳ |       | 0         0   0   0  |
+  //
+  // Y ≡ | N   0 |   b ≡ |  kᴺ |   B ≡ | 0    0   0   0  |
+  //     | D   0 |       |  kᴰ |       | 0    0   E   0  |
+  //     | 0   0 |       |  0  |       | μ   -Eᵀ  0   0  |
+  //     | L   0 |       |  kᴸ |       | 0    0   0   0  |
+
+  // Therefore, using Equations (f) and (g), the pure LCP (q,M) is defined as:
+  // M ≡ | NC(Nᵀ-μQᵀ)  NCDᵀ   0   NCLᵀ |
+  //     | DC(Nᵀ-μQᵀ)  DCDᵀ   E   DCLᵀ |
+  //     | μ          -Eᵀ     0   0    |
+  //     | LC(Nᵀ-μQᵀ)  LCDᵀ   0   LCLᵀ |
+  //
+  // q ≡ | kᴺ + NCMf |
+  //     | kᴰ + DCMf |
+  //     |     0     |
+  //     | kᴸ + LCMf |
+
+  // --------------------------------------------------------------------------
+  // Using the LCP solution to solve the MLCP.
+  // --------------------------------------------------------------------------
+
+  // From Equation (e) and the solution to the LCP (v), we can solve for u using
+  // the following equations:
+  // Xv + a = | -(Nᵀ-μQᵀ)fN - DᵀfD - LᵀfL - M f |
+  //          |                kᴳ               |
+  //
 
   // Determine the set of linearly independent constraints.
   std::vector<int> indep_constraints;
@@ -683,7 +735,7 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
   // operation), we must compensate for the number of pivoting operations and
   // the problem size. zzᵀww must use a looser tolerance to account for the
   // num_vars multiplies.
-  const int npivots = lcp_.get_num_pivots();
+  const int npivots = std::max(1, lcp_.get_num_pivots());
   if (!success || (zz.size() > 0 &&
       (zz.minCoeff() < -num_vars * npivots * zero_tol ||
       ww.minCoeff() < -num_vars * npivots * zero_tol ||
@@ -723,7 +775,7 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
     const VectorX<T> Cv = -data_ptr->N_minus_muQ_transpose_mult(fN)
         -data_ptr->F_transpose_mult(fF)
         -data_ptr->L_transpose_mult(fL);
-    const VectorX<T> u = A_solve(Cv) + data_ptr->tau;
+    const VectorX<T> u = A_solve(-Cv + data_ptr->tau);
     auto lambda = cf->segment(num_contacts + num_spanning_vectors + num_limits,
                               indep_constraints.size());
     lambda = u.segment(problem_data.tau.size(), indep_constraints.size());
@@ -802,7 +854,7 @@ void ConstraintSolver<T>::SolveImpactProblem(
   // operation), we must compensate for the number of pivoting operations and
   // the problem size. zzᵀww must use a looser tolerance to account for the
   // num_vars multiplies.
-  const int npivots = lcp_.get_num_pivots();
+  const int npivots = std::max(lcp_.get_num_pivots(), 1);
   if (!success ||
       (zz.size() > 0 &&
        (zz.minCoeff() < -num_vars * npivots * zero_tol ||
@@ -1008,7 +1060,7 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
   qq->resize(num_vars, 1);
   qq->segment(0, nc) = N(M_inv_x_f) + Ndot_times_v;
   qq->segment(nc, nr) = F(M_inv_x_f) + Fdot_times_v;
-  qq->segment(nc + nr, num_spanning_vectors) = -qq->segment(nc, nr);
+  qq->segment(nc + nr, nr) = -qq->segment(nc, nr);
   qq->segment(nc + nk, num_non_sliding).setZero();
   qq->segment(nc + nk + num_non_sliding, num_limits) = L(M_inv_x_f) + kL;
 }
