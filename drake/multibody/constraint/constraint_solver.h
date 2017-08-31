@@ -18,6 +18,52 @@ namespace constraint {
 /// problem data corresponding to a rigid or multi-body system constrained
 /// bilaterally and/or unilaterally and acted upon by friction, this class
 /// computes the constraint forces.
+///
+/// This problem can be formulated as a mixed linear complementarity problem
+/// (MLCP)- for 2D problems with Coulomb friction or 3D problems without Coulomb
+/// friction- or a nonlinear complementarity problem (for 3D problems with
+/// Coulomb friction). We use a polygonal approximation (of selectable accuracy)
+/// to the friction cone, which yields a MLCP in all cases.
+///
+/// Existing algorithms
+/// for solving MLCPs, which are based upon algorithms for solving "pure" linear
+/// complementarity problems (LCPs), solving a smaller class of problems than
+/// the corresponding LCP versions. For example, Lemke's Algorithm, which is
+/// provably able to solve the impacting problems covered by this class, can
+/// solve LCPs with copositive matrices [Cottle 1992] but MLCPs with only
+/// positive semi-definite matrices (the latter is a strict subset of the
+/// former) [Sargent 1978].
+///
+/// Rather than using one of these algorithms, we instead transform the problem
+/// into a pure LCP by first solving for the bilateral constraint forces. This
+/// method yields an implication of which the user should be aware. Bilateral
+/// constraint forces are computed before unilateral constraint forces: the
+/// constraint forces will not be evenly distributed between bilateral and
+/// unilateral constraints.
+///
+/// For the normal case of unilateral constraints admitting degrees of
+/// freedom, the solution methods in this class support "softening" of the
+/// constraints, as described in [Lacoursiere 2007] via the constraint force
+/// mixing (CFM) and error reduction parameter (ERP) parameters that are now
+/// ubiquitous in game multi-body dynamics simulation libraries.
+///
+/// - [Cottle 1992]   R. W. Cottle, J.-S. Pang, and R. E. Stone. The Linear
+///                   Complementarity Problem. SIAM Classics in Applied
+///                   Mathematics, 1992.
+/// - [Judice 1992]   J. J. Judice, J. Machado, and A. Faustino. An extension of
+///                   the Lemke's method for the solution of a generalized
+///                   linear complementarity problem. In System Modeling and
+///                   Optimization (Lecture Notes in Control and Information
+///                       Sciences), Springer-Verlag, 1992.
+/// - [Lacoursiere 2007]  C. Lacoursiere. Ghosts and Machines: Regularized
+///                       Variational Methods for Interactive Simulations of
+///                       Multibodies with Dry Frictional Contacts.
+///                       Ph. D. thesis (Umea University), 2007.
+/// - [Sargent 1978]  R. W. H. Sargent. An efficient implementation of the Lemke
+///                   Algorithm and its extension to deal with upper and lower
+///                   bounds. Mathematical Programming Study, 7, 1978.
+///
+///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
 /// Instantiated templates for the following scalar types @p T are provided:
@@ -595,9 +641,6 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
   DetermineIndependentConstraints(num_generalized_velocities, problem_data,
                                   &indep_constraints, &G_mult,
                                   &G_transpose_mult, &Del);
-
-  // @TODO(edrumwri): Talk about how solution method prioritizes bilateral
-  // constraints over unilateral constraints.
 
   // Determine a new "inertia" solve operator, which solves AX = B, where
   // A = | M  -Gᵀ |
