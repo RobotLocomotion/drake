@@ -368,7 +368,7 @@ bool MobyLCPSolver<T>::SolveLcpFast(const MatrixX<T>& M,
         << std::endl;
 
   // if we're here, then the maximum number of pivots has been exceeded
-  z->setZero(N);  
+  z->setZero(N);
   return false;
 }
 
