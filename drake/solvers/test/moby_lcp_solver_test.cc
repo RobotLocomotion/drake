@@ -442,11 +442,14 @@ GTEST_TEST(testMobyLCP, testFailure) {
   EXPECT_FALSE(result);
   ASSERT_EQ(z.size(), neg_q.size());
   EXPECT_EQ(z[0], 0.0);
+  LinearComplementarityConstraint constraint(neg_M, neg_q);
+  EXPECT_FALSE(constraint.CheckSatisfied(z));
 
   result = l.SolveLcpLemke(neg_M, neg_q, &z);
   EXPECT_FALSE(result);
   ASSERT_EQ(z.size(), neg_q.size());
   EXPECT_EQ(z[0], 0.0);
+  EXPECT_FALSE(constraint.CheckSatisfied(z));
 
   Eigen::SparseMatrix<double> neg_sparse_M(1, 1);
   neg_sparse_M.setIdentity();
@@ -455,6 +458,7 @@ GTEST_TEST(testMobyLCP, testFailure) {
   EXPECT_FALSE(result);
   ASSERT_EQ(z.size(), neg_q.size());
   EXPECT_EQ(z[0], 0.0);
+  EXPECT_FALSE(constraint.CheckSatisfied(z));
 
   // Note: we do not test regularized solvers here, as we're specifically
   // interested in algorithm failure and the regularized solvers are designed
