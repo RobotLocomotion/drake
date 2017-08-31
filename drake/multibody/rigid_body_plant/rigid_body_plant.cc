@@ -46,11 +46,29 @@ RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree<T>> tree,
               KinematicsResults<T>(tree_.get()),
               &RigidBodyPlant::CalcKinematicsResultsOutput)
           .get_index();
-  // Declares an abstract valued output port for contact information.
-  contact_output_port_index_ =
-      this->DeclareAbstractOutputPort(ContactResults<T>(),
-                                      &RigidBodyPlant::CalcContactResultsOutput)
-          .get_index();
+
+  // Declares an abstract valued output port for contact information *if the
+  // system is not discrete.
+  contact_output_port_index_ = DeclareContactResultsOutputPort();
+}
+
+template <class T>
+int RigidBodyPlant<T>::DeclareContactResultsOutputPort() {
+  return this->DeclareAbstractOutputPort(
+      ContactResults<T>(), 
+      &RigidBodyPlant::CalcContactResultsOutput).get_index();
+}
+
+template <class T>
+Eigen::Ref<const VectorX<T>> RigidBodyPlant<T>::GetStateVector(
+    const Context<T>& context) const {
+  if (timestep_ == 0.0) {
+    return dynamic_cast<const BasicVector<T>&>(
+        context.get_continuous_state_vector()).get_value();
+  } else {
+    return dynamic_cast<const BasicVector<T>&>(*
+        context.get_discrete_state()->get_vector()).get_value();
+  }
 }
 
 template <typename T>
@@ -592,12 +610,16 @@ template <typename T>
 void RigidBodyPlant<T>::DoMapQDotToVelocity(
     const Context<T>& context, const Eigen::Ref<const VectorX<T>>& qdot,
     VectorBase<T>* generalized_velocity) const {
+  // Time stepping does not use this method, since there are no continuous
+  // qdot variables. Verify that, then return silently in this case.
+  if (timestep_ > 0.0) {
+    DRAKE_DEMAND(qdot.size() == 0);
+    return;
+  }
+
   // TODO(amcastro-tri): provide nicer accessor to an Eigen representation for
   // LeafSystems.
-  auto x =
-      dynamic_cast<const BasicVector<T>&>(context.get_continuous_state_vector())
-          .get_value();
-
+  auto x = GetStateVector(context);
   const int nq = get_num_positions();
   const int nv = get_num_velocities();
   const int nstates = get_num_states();
@@ -626,12 +648,16 @@ void RigidBodyPlant<T>::DoMapVelocityToQDot(
     const Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& generalized_velocity,
     VectorBase<T>* configuration_dot) const {
-  // TODO(amcastro-tri): provide nicer accessor to an Eigen representation for
-  // LeafSystems.
-  auto x =
-      dynamic_cast<const BasicVector<T>&>(context.get_continuous_state_vector())
-          .get_value();
+  
+  // Time stepping does not use this method, since there are no continuous
+  // generalized velocity variables. Verify that, then return silently in this
+  // case.
+  if (timestep_ > 0.0) {
+    DRAKE_DEMAND(generalized_velocity.size() == 0);
+    return;
+  }
 
+  auto x = GetStateVector(context);
   const int nq = get_num_positions();
   const int nv = get_num_velocities();
   const int nstates = get_num_states();
@@ -685,13 +711,16 @@ void RigidBodyPlant<T>::CalcContactResultsOutput(
     const Context<T>& context, ContactResults<T>* contacts) const {
   DRAKE_ASSERT(contacts != nullptr);
   contacts->Clear();
+
+  // This code should do nothing if the state is discrete.
+  if (timestep_ > 0.0)
+    return;
+
   // TODO(SeanCurtis-TRI): This is horribly redundant code that only exists
   // because the data is not properly accessible in the cache.  This is
   // boilerplate drawn from EvalDerivatives.  See that code for further
   // comments
-  auto x =
-      dynamic_cast<const BasicVector<T>&>(context.get_continuous_state_vector())
-          .get_value();
+  auto x = GetStateVector(context);
   const int nq = get_num_positions();
   const int nv = get_num_velocities();
   VectorX<T> q = x.topRows(nq);

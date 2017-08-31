@@ -321,6 +321,8 @@ class RigidBodyPlant : public LeafSystem<T> {
   ///@}
 
  protected:
+  virtual int DeclareContactResultsOutputPort();
+
   // LeafSystem<T> overrides.
 
   std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const override;
@@ -367,6 +369,11 @@ class RigidBodyPlant : public LeafSystem<T> {
       VectorBase<T>* generalized_velocity) const override;
 
  private:
+    // Gets a constant reference to the state vector, irrespective of whether
+    // the state is continuous or discrete.
+    Eigen::Ref<const VectorX<T>> GetStateVector(
+        const Context<T>& context) const;
+
   // These four are the output port calculator methods.
   void CopyStateToOutput(const Context<T>& context,
                          BasicVector<T>* state_output_vector) const;
