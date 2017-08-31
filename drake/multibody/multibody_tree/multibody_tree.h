@@ -11,6 +11,7 @@
 #include "drake/multibody/multibody_tree/acceleration_kinematics_cache.h"
 #include "drake/multibody/multibody_tree/body.h"
 #include "drake/multibody/multibody_tree/body_node.h"
+#include "drake/multibody/multibody_tree/force_element.h"
 #include "drake/multibody/multibody_tree/frame.h"
 #include "drake/multibody/multibody_tree/mobilizer.h"
 #include "drake/multibody/multibody_tree/multibody_tree_context.h"
@@ -371,6 +372,38 @@ class MultibodyTree {
         std::make_unique<MobilizerType<T>>(std::forward<Args>(args)...));
   }
 
+  template <template<typename Scalar> class ForceElementType>
+  const ForceElementType<T>& AddForceElement(
+      std::unique_ptr<ForceElementType<T>> force_element) {
+    static_assert(
+        std::is_convertible<ForceElementType<T>*, ForceElement<T>*>::value,
+        "ForceElementType<T> must be a sub-class of ForceElement<T>.");
+    if (topology_is_valid()) {
+      throw std::logic_error(
+          "This MultiforceTree is finalized already. Therefore adding more "
+          "force elements is not allowed. "
+          "See documentation for Finalize() for details.");
+    }
+    if (force_element == nullptr) {
+      throw std::logic_error("Input force element is a nullptr.");
+    }
+    ForceElementIndex force_element_index = topology_.add_force_element();
+    // This test MUST be performed BEFORE owned_force_elements_.push_back()
+    // below. Do not move it around!
+    DRAKE_ASSERT(force_element_index == get_num_force_elements());
+    force_element->set_parent_tree(this, force_element_index);
+    ForceElementType<T>* raw_force_element_ptr = force_element.get();
+    owned_force_elements_.push_back(std::move(force_element));
+    return *raw_force_element_ptr;
+  }
+
+  template<template<typename Scalar> class ForceElementType, typename... Args>
+  const ForceElementType<T>& AddForceElement(Args&&... args) {
+    static_assert(std::is_base_of<ForceElement<T>, ForceElementType<T>>::value,
+                  "ForceElementType<T> must be a sub-class of ForceElement<T>.");
+    return AddForceElement(
+        std::make_unique<ForceElementType<T>>(std::forward<Args>(args)...));
+  }
   /// @}
   // Closes Doxygen section.
 
@@ -394,6 +427,11 @@ class MultibodyTree {
   // model.
   int get_num_mobilizers() const {
     return static_cast<int>(owned_mobilizers_.size());
+  }
+
+  /// Returns the number of ForceElement objects in the MultibodyTree.
+  int get_num_force_elements() const {
+    return static_cast<int>(owned_force_elements_.size());
   }
 
   /// Returns the number of generalized positions of the model.
@@ -657,6 +695,20 @@ class MultibodyTree {
   ///   %MultibodyTree model. Use Mobilizer::get_velocities_from_array() to
   ///   access entries into this array for a particular Mobilizer. You can use
   ///   the mutable version of this method to write into this array.
+  /// @param[in,out] Fapplied_Bo_W_array
+  ///   A pointer to a vector containing the spatial force `Fapplied_Bo_W`
+  ///   applied on each body at the body's frame origin `Bo` and expressed in
+  ///   the world frame W. `Fapplied_Bo_W_array` can be `nullptr` or have zero
+  ///   size which means there are no applied forces. To apply non-zero forces,
+  ///   `Fapplied_Bo_W_array` must be non-null and it must be of size equal to
+  ///   the number of bodies in the `this` %MultibodyTree model.
+  ///   This method will abort if provided with a non-null pointer to an array
+  ///   that does not have a size of either `get_num_bodies()` or zero.
+  ///   This array must be ordered by BodyNodeIndex, which can be retrieved for
+  ///   a given body with Body::get_node_index().
+  ///   On output,
+  /// @param[in,out] tau_applied_array
+  ///   Blah...
   /// @param[out] A_WB_array
   ///   A pointer to a valid, non nullptr, vector of spatial accelerations
   ///   containing the spatial acceleration `A_WB` for each body. It must be of
@@ -677,8 +729,16 @@ class MultibodyTree {
   ///   To access a mobilizer's reaction force on given body B in this array,
   ///   use the index returned by Body::get_node_index().
   ///
-  /// @note There is no mechanism to assert that either `A_WB_array` nor
-  ///   `F_BMo_W_array` are ordered by BodyNodeIndex.
+  /// @param[out] tau_array
+  ///   Blah...
+  ///
+  /// @warning There is no mechanism to assert that either `A_WB_array` nor
+  ///   `F_BMo_W_array` are ordered by BodyNodeIndex. You can use
+  ///   Body::get_node_index() to obtain the node index for a given body.
+  ///
+  /// @note This method uses `F_BMo_W_array` and `tau_array` as the only local
+  /// temporaries and therefore no additional dynamic memory allocation is
+  /// performed.
   ///
   /// @pre The position kinematics `pc` must have been previously updated with a
   /// call to CalcPositionKinematicsCache().
@@ -686,16 +746,16 @@ class MultibodyTree {
   /// call to CalcVelocityKinematicsCache().
   ///
   /// @throws std::bad_cast if `context` is not a `MultibodyTreeContext`.
-  // TODO(amcastro-tri): add provision for an array of applied spatial forces
-  // per body. These could contain both external as well as constraint forces.
   void CalcInverseDynamics(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
       const VelocityKinematicsCache<T>& vc,
       const VectorX<T>& known_vdot,
+      const std::vector<SpatialForce<T>>& Fapplied_Bo_W_array,
+      const Eigen::Ref<const VectorX<T>>& tau_applied_array,
       std::vector<SpatialAcceleration<T>>* A_WB_array,
       std::vector<SpatialForce<T>>* F_BMo_W_array,
-      VectorX<T>* tau_array) const;
+      Eigen::Ref<VectorX<T>> tau_array) const;
 
   /// @name Methods to retrieve multibody element variants
   ///
@@ -959,6 +1019,7 @@ class MultibodyTree {
   std::vector<std::unique_ptr<Body<T>>> owned_bodies_;
   std::vector<std::unique_ptr<Frame<T>>> owned_frames_;
   std::vector<std::unique_ptr<Mobilizer<T>>> owned_mobilizers_;
+  std::vector<std::unique_ptr<ForceElement<T>>> owned_force_elements_;
   std::vector<std::unique_ptr<internal::BodyNode<T>>> body_nodes_;
 
   // List of all frames in the system ordered by their FrameIndex.

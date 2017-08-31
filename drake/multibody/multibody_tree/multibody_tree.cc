@@ -17,6 +17,10 @@ namespace multibody {
 using internal::BodyNode;
 using internal::BodyNodeWelded;
 
+#include <iostream>
+#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
+#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
+
 template <typename T>
 MultibodyTree<T>::MultibodyTree() {
   // Adds a "world" body to MultibodyTree having a NaN SpatialInertia.
@@ -256,10 +260,17 @@ void MultibodyTree<T>::CalcInverseDynamics(
     const PositionKinematicsCache<T>& pc,
     const VelocityKinematicsCache<T>& vc,
     const VectorX<T>& known_vdot,
+    const std::vector<SpatialForce<T>>& Fapplied_Bo_W_array,
+    const Eigen::Ref<const VectorX<T>>& tau_applied_array,
     std::vector<SpatialAcceleration<T>>* A_WB_array,
     std::vector<SpatialForce<T>>* F_BMo_W_array,
-    VectorX<T>* tau_array) const {
+    Eigen::Ref<VectorX<T>> tau_array) const {
   DRAKE_DEMAND(known_vdot.size() == get_num_velocities());
+  const int Fapplied_size = static_cast<int>(Fapplied_Bo_W_array.size());
+  DRAKE_DEMAND(Fapplied_size == get_num_bodies() || Fapplied_size == 0);
+  const int tau_applied_size = tau_applied_array.size();
+  DRAKE_DEMAND(
+      tau_applied_size == get_num_velocities() || tau_applied_size == 0);
 
   DRAKE_DEMAND(A_WB_array != nullptr);
   DRAKE_DEMAND(static_cast<int>(A_WB_array->size()) == get_num_bodies());
@@ -267,8 +278,7 @@ void MultibodyTree<T>::CalcInverseDynamics(
   DRAKE_DEMAND(F_BMo_W_array != nullptr);
   DRAKE_DEMAND(static_cast<int>(F_BMo_W_array->size()) == get_num_bodies());
 
-  DRAKE_DEMAND(tau_array != nullptr);
-  DRAKE_DEMAND(tau_array->size() == get_num_velocities());
+  DRAKE_DEMAND(tau_array.size() == get_num_velocities());
 
   const auto& mbt_context =
       dynamic_cast<const MultibodyTreeContext<T>&>(context);
@@ -276,6 +286,30 @@ void MultibodyTree<T>::CalcInverseDynamics(
   // Compute body spatial accelerations given the generalized accelerations are
   // known.
   CalcSpatialAccelerationsFromVdot(context, pc, vc, known_vdot, A_WB_array);
+
+  // Vector to contain the generalized forces per mobilizer.
+  VectorUpTo6<T> tau_applied_mobilizer;
+
+  // Compute into the supplied temporaries F_BMo_W_array and tau_array the
+  // contribution from ForceElement objects. Notice however F_BMo_W_array
+  // will now contain applied forces at Bo, ie. F_Bo_W (not at Mo as on output).
+  PRINT_VAR(get_num_force_elements());
+  // Initialize with the externally applied forces or zero them.
+  if (Fapplied_size != 0) {
+    *F_BMo_W_array = Fapplied_Bo_W_array;
+  } else {
+    for (auto& F : *F_BMo_W_array) F.SetZero();
+  }
+  if (tau_applied_size != 0) {
+    tau_array = tau_applied_array;
+  } else {
+    tau_array.setZero();
+  }
+  // Add contributions from force elements.
+  for (const auto& force_element : owned_force_elements_) {
+    force_element->CalcAndAddForceContribution(
+        mbt_context, pc, vc, F_BMo_W_array, tau_array);
+  }
 
   // Performs a tip-to-base recursion computing the total spatial force F_BMo_W
   // acting on body B, about point Mo, expressed in the world frame W.
@@ -289,10 +323,21 @@ void MultibodyTree<T>::CalcInverseDynamics(
       DRAKE_ASSERT(node.get_topology().level == depth);
       DRAKE_ASSERT(node.get_index() == body_node_index);
 
+      // Make a copy to the total applied forces since the call to
+      // CalcInverseDynamics_TipToBase() below will overwrite the entry for the
+      // current body node.
+      tau_applied_mobilizer =
+          node.get_mobilizer().get_generalized_forces_from_array(tau_array);
+      PRINT_VAR(decltype(tau_applied_mobilizer)::MaxSizeAtCompileTime);
+      PRINT_VAR(tau_applied_mobilizer.size());
+      const SpatialForce<T> Fapplied_Bo_W = (*F_BMo_W_array)[body_node_index];
+
       // Compute F_BMo_W for the body associated with this node and project it
       // onto the space of generalized forces for the associated mobilizer.
       node.CalcInverseDynamics_TipToBase(
-          mbt_context, pc, vc, *A_WB_array, F_BMo_W_array, tau_array);
+          mbt_context, pc, vc, *A_WB_array,
+          Fapplied_Bo_W, tau_applied_mobilizer,
+          F_BMo_W_array, tau_array);
     }
   }
 }
