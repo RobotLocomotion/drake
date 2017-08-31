@@ -47,8 +47,7 @@ RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree<T>> tree,
               &RigidBodyPlant::CalcKinematicsResultsOutput)
           .get_index();
 
-  // Declares an abstract valued output port for contact information *if the
-  // system is not discrete.
+  // Declares an abstract valued output port for contact information.
   contact_output_port_index_ = DeclareContactResultsOutputPort();
 }
 

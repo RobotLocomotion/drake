@@ -320,6 +320,16 @@ class RigidBodyPlant : public LeafSystem<T> {
   }
   ///@}
 
+  // Gets a constant reference to the state vector, irrespective of whether
+  // the state is continuous or discrete.
+  Eigen::Ref<const VectorX<T>> GetStateVector(
+      const Context<T>& context) const;
+
+  // Get the time step used to construct the plant. If the step is zero, the
+  // system is continuous. Otherwise, the step corresponds to the update rate
+  // (seconds per update).
+  double get_time_step() const { return timestep_; }
+
  protected:
   // LeafSystem<T> overrides.
 
@@ -368,11 +378,6 @@ class RigidBodyPlant : public LeafSystem<T> {
 
  private:
   int DeclareContactResultsOutputPort();
-
-  // Gets a constant reference to the state vector, irrespective of whether
-  // the state is continuous or discrete.
-  Eigen::Ref<const VectorX<T>> GetStateVector(
-      const Context<T>& context) const;
 
   // These four are the output port calculator methods.
   void CopyStateToOutput(const Context<T>& context,
