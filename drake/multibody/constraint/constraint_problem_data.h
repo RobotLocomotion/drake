@@ -80,21 +80,22 @@ struct ConstraintAccelProblemData {
   /// along the directions of sliding at the s *sliding* contact points (rows
   /// of Q that correspond to non-sliding contacts should be zero). Finally,
   /// the Jacobian matrix N allows formulating the non-interpenetration
-  /// constraint as:<pre>
+  /// constraint (a constraint imposed at the velocity level) as:<pre>
   /// 0 ≤ N(q)⋅v̇ + kᴺ(t,q,v)  ⊥  fᶜ ≥ 0
   /// </pre>
   /// which means that the constraint c̈(q,v,v̇) ≡ N(q)⋅v̇ + kᴺ(t,q,v) is
   /// coupled to a force constraint (fᶜ ≥ 0) and a complementarity constraint
   /// fᶜ⋅(Nv̇ + kᴺ(t,q,v)) = 0, meaning that the constraint can apply no force
-  /// if it is inactive (i.e., if ċ(q,v,v̇) is strictly greater than zero). Note
-  /// that differentiating the nonholonomic constraint ġ(q,v,v̇) ≡ Nv once with
-  /// respect to time, toward turning an Index-2 DAE into an Index-1 DAE,
-  /// yields: <pre>
-  /// g̈(t,q,v) = N(q) v̇ + dN/dt(q,v) v
+  /// if it is inactive (i.e., if c̈(q,v,v̇) is strictly greater than zero).
+  /// Note that differentiating the original constraint ċ(q,v,v̇) ≡ Nv (i.e.,
+  /// the constraint posed at the velocity level) once with
+  /// respect to time, such that all constraints are imposed at the
+  /// acceleration level, yields: <pre>
+  /// c̈(t,q,v) = N(q) v̇ + dN/dt(q,v) v
   /// </pre>
   /// Thus, the constraint at the acceleration level can be realized by setting
   /// kᴺ(t,q,v) = dN/dt(q,v) v. If there is pre-existing constraint error (e.g.,
-  /// if N(q) v < 0), that error can be "stabilized" by augmenting the kᴺ term.
+  /// if N(q) v < 0), the kᴺ term can be used to "stabilize" this error.
   /// For example, one could set kᴺ(t,q,v) = dN/dt(q,v) v + α(N(q) v), for
   /// 0 ≤ α ≤ 1.
   /// @{
@@ -131,24 +132,17 @@ struct ConstraintAccelProblemData {
   /// force constraints as:<pre>
   /// 0 ≤ F(q)⋅v̇ + kᶠ(t,q,v) + λe  ⊥  fᶜ ≥ 0
   /// </pre>
-  /// which means that the constraint c̈(q,v,v̇) ≡ F(q)⋅v̇ + kᶠ(t,q,v) is coupled
-  /// to a force constraint (fᶜ ≥ 0) and a complementarity constraint
-  /// fᶜ⋅(Fv̇ + kᴺ(t,q,v) + λe) = 0, meaning that the constraint can apply no
+  /// which means that the constraint c̈(q,v,v̇) ≡ F(q)⋅v̇ + kᶠ(t,q,v) is
+  /// coupled to a force constraint (fᶜ ≥ 0) and a complementarity constraint
+  /// fᶜ⋅(Fv̇ + kᴺ(t,q,v) + λe) = 0: the constraint can apply no
   /// force if it is inactive (i.e., if ċ(q,v,v̇) is strictly greater than
   /// zero). The presence of the λe term is taken directly from [Anitescu 1997],
   /// where e is a vector of ones and zeros and λ corresponds roughly to the
   /// tangential acceleration at the contacts. The interested reader should
   /// refer to [Anitescu 1997] for a more thorough explanation of this
-  /// constraint. However, note that differentiating the nonholonomic
-  /// constraint ġ(q,v,v̇) ≡ Fv once with respect to time, toward turning an
-  /// Index-2 DAE into an Index-1 DAE, yields: <pre>
-  /// g̈(t,q,v) = F(q) v̇ + dF/dt(q,v) v
-  /// </pre>
-  /// Thus, the constraint at the acceleration level can be realized by setting
-  /// kᶠ(t,q,v) = dF/dt(q,v) v. If there is pre-existing constraint error, that
-  /// error can be "stabilized" by augmenting the kᴺ term.
-  /// For example, one could set kᶠ(t,q,v) = dF/dt(q,v) v + α(F(q) v), for
-  /// 0 ≤ α ≤ 1.
+  /// constraint. Analogously to the case of kᴺ, kᶠ should be set to
+  /// dF/dt(q,v)⋅v; also analogously, kᶠ can be used to perform constraint
+  /// stabilization.
   /// @{
 
   /// An operator that performs the multiplication F⋅v. The default operator
@@ -269,10 +263,11 @@ struct ConstraintVelProblemData {
   /// These data center around the Jacobian matrix N, the ℝⁿˣᵐ
   /// Jacobian matrix that transforms generalized velocities (v ∈ ℝᵐ) into
   /// velocities projected along the contact normals at the n point contacts.
-  /// Constraint error (N v < 0) can be incorporated into the constraint
-  /// solution process through the kN term. The resulting constraint on the
-  /// motion will be: <pre>
-  /// 0 ≤ N(q)⋅v̇ + kᴺ(t,q)  ⊥  fᶜ ≥ 0
+  /// Constraint error (N⋅v < 0) can be incorporated into the constraint
+  /// solution process (and thereby reduced) through setting the kN term to
+  /// something other than its nonzero value (typically kN = αN⋅v, where
+  /// 0 ≤ α ≤ 1). The resulting constraint on the motion will be: <pre>
+  /// 0 ≤ N(q)⋅v + kᴺ(t,q)  ⊥  fᶜ ≥ 0
   /// </pre>
   /// which means that the constraint ċ(q,v) ≡ N(q)⋅v + kᴺ(t,q) is coupled
   /// to an impulsive force constraint (fᶜ ≥ 0) and a complementarity constraint
@@ -305,12 +300,13 @@ struct ConstraintVelProblemData {
   /// For a friction pyramid in three dimensions, r would be two. While the
   /// definition of the dimension of the Jacobian matrix above indicates that
   /// every one of the n contacts uses the same "r", the code imposes no such
-  /// requirement. Constraint error (F v < 0) can be incorporated into the
-  /// constraint solution process through the kF term. The resulting constraint
-  /// on the motion will be: <pre>
+  /// requirement. Constraint error (F⋅v < 0) can be reduced through the
+  /// constraint solution process by setting the kF term to something other than
+  /// its default zero value. The resulting constraint on the motion will be:
+  /// <pre>
   /// 0 ≤ F(q)⋅v̇ + kᴺ(t,q) + eλ  ⊥  fᶜ ≥ 0
   /// </pre>
-  /// which means that the constraint ċ(q,v) ≡ F(q)⋅v + kᶠ(t,q) eλ is coupled
+  /// which means that the constraint ċ(q,v) ≡ F(q)⋅v + kᶠ(t,q) + eλ is coupled
   /// to an impulsive force constraint (fᶜ ≥ 0) and a complementarity constraint
   /// fᶜ⋅(Fv + kᶠ(t,q) + eλ) = 0, meaning that the constraint can apply no force
   /// if it is inactive (i.e., if ċ(q,v) is strictly greater than zero).
