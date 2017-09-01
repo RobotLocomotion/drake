@@ -25,11 +25,10 @@ void UniformGravityFieldElement<T>::DoCalcAndAddForceContribution(
   for (BodyNodeIndex node_index(1); node_index < num_bodies; ++node_index) {
     const Body<T>& body = model.get_body(node_index);
 
-    // TODO(amcastro-tri): Use methods get_mass(context) and get_com(context)
-    // once caching is in place so that we can retrieve these from the
-    // parameters.
-    const double mass = body.get_default_mass();
-    const Vector3<double>& p_BoBcm_B = body.get_default_com();
+    // TODO(amcastro-tri): Replace this CalcXXX() calls by GetXXX() calls once
+    // caching is in place.
+    const T mass = body.CalcMass(context);
+    const Vector3<T> p_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
     const Matrix3<T> R_WB = pc.get_X_WB(node_index).rotation();
     // TODO(amcastro-tri): Consider caching p_BoBcm_W.
     const Vector3<T> p_BoBcm_W = R_WB * p_BoBcm_B;
@@ -53,11 +52,10 @@ T UniformGravityFieldElement<T>::CalcPotentialEnergy(
   for (BodyNodeIndex node_index(1); node_index < num_bodies; ++node_index) {
     const Body<T>& body = model.get_body(node_index);
 
-    // TODO(amcastro-tri): Use methods get_mass(context) and get_com(context)
-    // once caching is in place so that we can retrieve these from the
-    // parameters.
-    const double mass = body.get_default_mass();
-    const Vector3<double>& p_BoBcm_B = body.get_default_com();
+    // TODO(amcastro-tri): Replace this CalcXXX() calls by GetXXX() calls once
+    // caching is in place.
+    const T mass = body.CalcMass(context);
+    const Vector3<T> p_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
     const Isometry3<T>& X_WB = pc.get_X_WB(node_index);
     const Matrix3<T> R_WB = X_WB.rotation();
     const Vector3<T> p_WBo = X_WB.translation();
@@ -83,11 +81,10 @@ T UniformGravityFieldElement<T>::CalcConservativePower(
   for (BodyNodeIndex node_index(1); node_index < num_bodies; ++node_index) {
     const Body<T>& body = model.get_body(node_index);
 
-    // TODO(amcastro-tri): Use methods get_mass(context) and get_com(context)
-    // once caching is in place so that we can retrieve these from the
-    // parameters.
-    const double mass = body.get_default_mass();
-    const Vector3<double>& p_BoBcm_B = body.get_default_com();
+    // TODO(amcastro-tri): Replace this CalcXXX() calls by GetXXX() calls once
+    // caching is in place.
+    const T mass = body.CalcMass(context);
+    const Vector3<T> p_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
     const Isometry3<T>& X_WB = pc.get_X_WB(node_index);
     const Matrix3<T> R_WB = X_WB.rotation();
     // TODO(amcastro-tri): Consider caching p_BoBcm_W.
