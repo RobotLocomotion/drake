@@ -32,6 +32,7 @@ namespace drake {
 
 using maliput::api::Lane;
 using maliput::api::LaneEnd;
+using maliput::api::LaneId;
 using maliput::api::RoadGeometry;
 using maliput::api::RoadGeometryId;
 using multibody::joints::kRollPitchYaw;
@@ -335,7 +336,7 @@ const maliput::api::Lane* AutomotiveSimulator<T>::FindLane(
       const maliput::api::Segment* segment = junction->segment(j);
       for (int k = 0; k < segment->num_lanes(); ++k) {
         const maliput::api::Lane* lane = segment->lane(k);
-        if (lane->id().id == name) {
+        if (lane->id() == LaneId(name)) {
           return lane;
         }
       }
@@ -347,7 +348,7 @@ const maliput::api::Lane* AutomotiveSimulator<T>::FindLane(
 
 template <typename T>
 void AutomotiveSimulator<T>::GenerateAndLoadRoadNetworkUrdf() {
-  std::string filename = road_->id().id;
+  std::string filename = road_->id().string();
   std::transform(filename.begin(), filename.end(), filename.begin(),
                  [](char ch) { return ch == ' ' ? '_' : ch; });
   maliput::utility::GenerateUrdfFile(road_.get(),

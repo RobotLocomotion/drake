@@ -57,7 +57,7 @@ class PoseSelectorDragwayTest : public ::testing::Test {
     // Create a dragway with the specified number of lanes starting at `x = 0`
     // and centered at `y = 0`.
     road_.reset(new maliput::dragway::RoadGeometry(
-        maliput::api::RoadGeometryId({"Test Dragway"}), num_lanes, lane_length,
+        maliput::api::RoadGeometryId("Test Dragway"), num_lanes, lane_length,
         kDragwayLaneWidth, 0. /* shoulder width */, 5. /* maximum_height */,
         std::numeric_limits<double>::epsilon() /* linear_tolerance */,
         std::numeric_limits<double>::epsilon() /* angular_tolerance */));
@@ -470,7 +470,7 @@ std::unique_ptr<const maliput::api::RoadGeometry> MakeThreeSegmentMonolaneRoad(
     builder.SetDefaultBranch(c1, LaneEnd::kFinish, c2, LaneEnd::kStart);
   }
 
-  return builder.Build(maliput::api::RoadGeometryId({"ThreeLaneStretch"}));
+  return builder.Build(maliput::api::RoadGeometryId("ThreeLaneStretch"));
 }
 
 // Verifies the soundness of the results when applied to multi-segment roads.
