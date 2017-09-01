@@ -67,18 +67,23 @@ class RigidBody : public Body<T> {
   /// state associated with flexible deformations.
   int get_num_flexible_velocities() const final { return 0; }
 
-  double get_default_mass() const final {
-    return default_spatial_inertia_.get_mass();
-  }
-
   /// Returns the default value of this body's center of mass as measured and
   /// expressed in this body's frame. This value is initially supplied at
   /// construction when specifying this body's SpatialInertia.
   /// @retval p_BoBcm_B The position of this body's center of mass `Bcm`
   /// measured from this body's frame origin `Bo` and expressed in this
   /// body's frame B.
-  const Vector3<double>& get_default_com() const final {
+  const Vector3<double>& get_default_com() const {
     return default_spatial_inertia_.get_com();
+  }
+
+  T CalcMass(const MultibodyTreeContext<T>& context) const final {
+    return default_spatial_inertia_.get_mass();
+  }
+
+  const Vector3<T> CalcCenterOfMassInBodyFrame(
+      const MultibodyTreeContext<T>& context) const final {
+    return get_default_com().template cast<T>();
   }
 
   SpatialInertia<T> CalcSpatialInertiaInBodyFrame(
