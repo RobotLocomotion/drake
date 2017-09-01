@@ -440,15 +440,6 @@ class MultibodyTree {
     return *owned_bodies_[body_index];
   }
 
-  /// Returns a constant reference to the body belonging to the body node
-  /// identified with unique index `node_index`.
-  /// This method aborts in Debug builds when `node_index` does not correspond
-  /// to a node in this multibody tree.
-  const Body<T>& get_body(BodyNodeIndex node_index) const {
-    DRAKE_ASSERT(node_index < get_num_bodies());
-    return body_nodes_[node_index]->get_body();
-  }
-
   /// Returns a constant reference to the frame with unique index `frame_index`.
   /// This method aborts in Debug builds when `frame_index` does not correspond
   /// to a frame in `this` multibody tree.
