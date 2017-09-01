@@ -1,4 +1,4 @@
-#include "drake/multibody/multibody_tree/force_element.h"
+#include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/multibody/multibody_tree/body.h"
