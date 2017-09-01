@@ -911,7 +911,9 @@ class Diagram : public System<T>,
     using FromType = System<double>;
     using ToType = std::unique_ptr<System<AutoDiffXd>>;
     std::function<ToType(const FromType&)> subsystem_converter{
-        [](const FromType& subsystem) { return subsystem.ToAutoDiffXd(); }};
+        [](const FromType& subsystem) {
+          return subsystem.ToAutoDiffXdMaybe();
+        }};
     return ConvertScalarType<AutoDiffXd>(subsystem_converter).release();
   }
 
@@ -924,7 +926,9 @@ class Diagram : public System<T>,
     using FromType = System<double>;
     using ToType = std::unique_ptr<System<symbolic::Expression>>;
     std::function<ToType(const FromType&)> subsystem_converter{
-        [](const FromType& subsystem) { return subsystem.ToSymbolic(); }};
+        [](const FromType& subsystem) {
+          return subsystem.ToSymbolicMaybe();
+        }};
     return ConvertScalarType<symbolic::Expression>(subsystem_converter)
         .release();
   }
@@ -1181,6 +1185,10 @@ class Diagram : public System<T>,
     std::map<const System<T1>*, const System<NewType>*> old_to_new_map;
     for (const auto& old_system : registered_systems_) {
       new_systems.push_back(converter(*old_system));
+      if (!new_systems.back().get()) {
+        // A subsystem could not support the conversion.
+        return nullptr;
+      }
       old_to_new_map[old_system.get()] = new_systems.back().get();
     }
 

@@ -335,7 +335,7 @@ TEST_F(DiagramTest, AllocateInputs) {
 /// Tests that a diagram can be transmogrified to AutoDiffXd.
 TEST_F(DiagramTest, ToAutoDiffXd) {
   std::unique_ptr<System<AutoDiffXd>> ad_diagram =
-      System<double>::ToAutoDiffXd(*diagram_);
+      diagram_->ToAutoDiffXd();
   std::unique_ptr<Context<AutoDiffXd>> context =
       ad_diagram->CreateDefaultContext();
   std::unique_ptr<SystemOutput<AutoDiffXd>> output =
