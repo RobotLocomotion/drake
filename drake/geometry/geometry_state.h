@@ -45,6 +45,12 @@ class GeometryState {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeometryState)
 
+ private:
+  template <typename K, typename V> class MapKeyIterator;
+
+ public:
+  using FrameIdIterator = MapKeyIterator<FrameId, internal::InternalFrame>;
+
   /** Default constructor. */
   GeometryState();
 
@@ -74,6 +80,52 @@ class GeometryState {
 
   /** Reports true if the given `source_id` references a registered source. */
   bool source_is_registered(SourceId source_id) const;
+
+  /** The set of all dynamic geometries registered to the world. The order is
+   _not_ guaranteed to have any particular semantic meaning. But the order is
+   guaranteed to remain fixed between topological changes (e.g., removal or
+   addition of geometry/frames). */
+  const std::vector<GeometryId>& get_geometry_ids() const {
+    return geometry_index_id_map_;
+  }
+
+  /** Provides a const range iterator for all of the frame ids in the world. The
+   order is not generally guaranteed; but it will be consistent as long as there
+   are no changes to the topology. This is intended to be used as:
+   @code
+   for (FrameId id : state.get_frame_ids()) {
+    ...
+   }
+   @endcode  */
+  FrameIdIterator get_frame_ids() const {
+    return FrameIdIterator(frames_);
+  }
+
+  /** Reports the frame group for the given frame.
+   @internal This is equivalent to the old "model instance id". */
+  int get_frame_group(FrameId frame_id) const {
+    return frames_.at(frame_id).get_frame_group();
+  }
+
+  /** Reports the name of the frame. */
+  const std::string& get_frame_name(FrameId frame_id) const {
+    return frames_.at(frame_id).get_name();
+  }
+
+  /** Reports the pose of the frame with the given id. */
+  const Isometry3<T>& get_pose_in_world(FrameId frame_id) const {
+    return X_WF_[frames_.at(frame_id).get_pose_index()];
+  }
+
+  /** Reports the pose of the geometry with the given id. */
+  const Isometry3<T>& get_pose_in_world(GeometryId geometry_id) const {
+    return X_WG_[geometries_.at(geometry_id).get_engine_index()];
+  }
+
+  /** Reports the pose of the frame with the given id. */
+  const Isometry3<T>& get_pose_in_parent(FrameId frame_id) const {
+    return X_PF_[frames_.at(frame_id).get_pose_index()];
+  }
 
   /** Reports the source name for the given source id.
    @param id  The identifier of the source.
@@ -264,6 +316,9 @@ class GeometryState {
   //@}
 
  private:
+  // Allow geometry dispatch to peek into GeometryState.
+  friend void DispatchLoadMessage(const GeometryState<double>&);
+
   // Allow GeometrySystem unique access to the state members to perform queries.
   friend class GeometrySystem<T>;
 
@@ -292,6 +347,36 @@ class GeometryState {
   //                           ids or matching size.
   void ValidateFramePoses(const FrameIdVector& ids,
                           const FramePoseVector<T>& poses) const;
+
+  /** Iterator through the keys of an unordered map. */
+  template <typename K, typename V>
+  class MapKeyIterator {
+   public:
+    class iterator {
+     public:
+      const K& operator*() const { return itr_->first; }
+      const iterator& operator++() {
+        ++itr_;
+        return *this;
+      }
+      bool operator!=(const iterator& other) { return itr_ != other.itr_; }
+
+     protected:
+      explicit iterator(typename std::unordered_map<K, V>::const_iterator itr)
+          : itr_(itr) {}
+
+     private:
+      typename std::unordered_map<K, V>::const_iterator itr_;
+      friend class MapKeyIterator;
+    };
+
+    explicit MapKeyIterator(std::unordered_map<K, V> map) : map_(map) {}
+    iterator begin() const { return iterator(map_.begin()); }
+    iterator end() const { return iterator(map_.end()); }
+
+   private:
+    std::unordered_map<K, V> map_;
+  };
 
   // Gets the source id for the given frame id. Throws std::logic_error if the
   // frame belongs to no registered source.
@@ -458,6 +543,16 @@ class GeometryState {
   // In other words, it is the full evaluation of the kinematic chain from the
   // geometry to the world frame.
   std::vector<Isometry3<T>> X_WG_;
+
+  // The pose of each frame relative to the *world* frame.
+  // frames_.size() == X_WF_.size() is an invariant. Furthermore, after a
+  // complete state update from input poses,
+  //   X_WF_[i] == X_WFₙ X_FₙFₙ₋₁ ... X_Fᵢ₊₂Fᵢ₊₁ X_PF_[i]
+  // Where Fᵢ₊₁ is the parent frame of frame i, Fₖ₊₁ is the parent frame of
+  // frame Fₖ, and the world frame W is the parent of frame Fₙ.
+  // In other words, it is the full evaluation of the kinematic chain from
+  // frame i to the world frame.
+  std::vector<Isometry3<T>> X_WF_;
 };
 }  // namespace geometry
 }  // namespace drake

@@ -5,9 +5,11 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/unused.h"
+#include "drake/geometry/geometry_context.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_state.h"
 #include "drake/systems/framework/context.h"
+#include "drake/systems/rendering/pose_bundle.h"
 
 namespace drake {
 namespace geometry {
@@ -19,6 +21,7 @@ using systems::LeafContext;
 using systems::LeafSystem;
 using systems::SystemSymbolicInspector;
 using systems::SystemOutput;
+using systems::rendering::PoseBundle;
 using std::make_unique;
 using std::vector;
 
@@ -29,7 +32,12 @@ GeometrySystem<T>::GeometrySystem() : LeafSystem<T>() {
   std::unique_ptr<GeometryState<T>> state = make_unique<GeometryState<T>>();
   auto state_value = AbstractValue::Make<GeometryState<T>>(*state.get());
   initial_state_ = &state_value->template GetMutableValue<GeometryState<T>>();
-  this->DeclareAbstractState(std::move(state_value));
+  geometry_state_index_ = this->DeclareAbstractState(std::move(state_value));
+
+  bundle_port_index_ =
+      this->DeclareAbstractOutputPort(&GeometrySystem::MakePoseBundle,
+                                      &GeometrySystem::CalcPoseBundle)
+          .get_index();
 
   query_port_index_ =
       this->DeclareAbstractOutputPort(&GeometrySystem::MakeQueryHandle,
@@ -102,11 +110,9 @@ template <typename T>
 GeometryId GeometrySystem<T>::RegisterAnchoredGeometry(
     SourceId source_id,
     std::unique_ptr<GeometryInstance> geometry) {
-  // TODO(SeanCurtis-TRI): Replace dummy geometry id with actual registration.
-  // and use all parameters.
-  unused(source_id, geometry);
   THROW_IF_CONTEXT_ALLOCATED
-  return GeometryId::get_new_id();
+  return initial_state_->RegisterAnchoredGeometry(source_id,
+                                                  std::move(geometry));
 }
 
 template <typename T>
@@ -167,10 +173,107 @@ void GeometrySystem<T>::CalcQueryHandle(const Context<T>& context,
 }
 
 template <typename T>
+PoseBundle<T> GeometrySystem<T>::MakePoseBundle(
+    const Context<T>& context) const {
+  const auto& g_context = static_cast<const GeometryContext<T>&>(context);
+  const auto& g_state = g_context.get_geometry_state();
+  PoseBundle<T> bundle(g_state.get_num_frames());
+  int i = 0;
+  for (FrameId f_id : g_state.get_frame_ids()) {
+    int frame_group = g_state.get_frame_group(f_id);
+    bundle.set_model_instance_id(i, frame_group);
+
+    SourceId s_id = g_state.get_source_id(f_id);
+    const std::string& src_name = g_state.get_source_name(s_id);
+    const std::string& frm_name = g_state.get_frame_name(f_id);
+    std::string name = src_name + "::" + frm_name;
+    bundle.set_name(i, name);
+    ++i;
+  }
+  return bundle;
+}
+
+template <typename T>
+void GeometrySystem<T>::CalcPoseBundle(const Context<T>& context,
+                                       PoseBundle<T>* output) const {
+  // NOTE: Adding/removing frames during discrete updates will
+  // change the size/composition of the pose bundle. This calculation will *not*
+  // explicitly test this. It is assumed the discrete update will also be
+  // responsible for updating the bundle in the output port.
+  int i = 0;
+
+  const auto& g_context = static_cast<const GeometryContext<T>&>(context);
+  // TODO(SeanCurtis-TRI): Modify this when the cache is available to use the
+  // cache instead of this heavy-handed update.
+  FullPoseUpdate(g_context);
+  const auto& g_state = g_context.get_geometry_state();
+  for (FrameId f_id : g_state.get_frame_ids()) {
+    output->set_pose(i, g_state.get_pose_in_world(f_id));
+    // TODO(SeanCurtis-TRI): Handle velocity.
+    ++i;
+  }
+}
+
+template <typename T>
+void GeometrySystem<T>::FullPoseUpdate(
+    const GeometryContext<T>& context) const {
+  // TODO(SeanCurtis-TRI): Update this when the cache is available.
+  // This method is const and the context is const. Ultimately, this will pull
+  // cached entities to do the query work. For now, we have to const cast the
+  // thing so that we can update the geometry engine contained.
+
+  using std::to_string;
+
+  const GeometryState<T>& state = context.get_geometry_state();
+  GeometryState<T>& mutable_state = const_cast<GeometryState<T>&>(state);
+
+  for (const auto& pair : state.source_frame_id_map_) {
+    if (pair.second.size() > 0) {
+      SourceId source_id = pair.first;
+      const auto itr = input_source_ids_.find(source_id);
+      DRAKE_ASSERT(itr != input_source_ids_.end());
+      const int id_port = itr->second.id_port;
+      const auto id_port_value =
+          this->template EvalAbstractInput(context, id_port);
+      if (id_port_value) {
+        const FrameIdVector& ids =
+            id_port_value->template GetValue<FrameIdVector>();
+        // TODO(SeanCurtis-TRI): In future versions consider moving this to
+        // a DRAKE_ASSERT_VOID execution.
+        state.ValidateFrameIds(ids);
+        const int pose_port = itr->second.pose_port;
+        const auto pose_port_value =
+            this->template EvalAbstractInput(context, pose_port);
+        if (pose_port_value) {
+          const auto& poses =
+              pose_port_value->template GetValue<FramePoseVector<T>>();
+          mutable_state.SetFramePoses(ids, poses);
+        } else {
+          throw std::logic_error(
+              "Source " + to_string(source_id) + " has registered frames "
+              "but does not provide pose values on the input port.");
+        }
+      } else {
+        throw std::logic_error(
+            "Source " + to_string(source_id) + " has registered frames "
+            "but does not provide id values on the input port.");
+      }
+    }
+  }
+
+  // TODO(SeanCurtis-TRI): Propagate changes to the geometry engine.
+  // Again, this will change significantly when caching becomes available.
+
+  // TODO(SeanCurtis-TRI): Add velocity as appropriate.
+}
+
+template <typename T>
 std::unique_ptr<LeafContext<T>> GeometrySystem<T>::DoMakeContext() const {
   // Disallow further geometry source additions.
   initial_state_ = nullptr;
-  return std::make_unique<LeafContext<T>>();
+  DRAKE_ASSERT(geometry_state_index_ >= 0);
+  return std::unique_ptr<LeafContext<T>>(
+      new GeometryContext<T>(geometry_state_index_));
 }
 
 template <typename T>

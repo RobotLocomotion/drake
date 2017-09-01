@@ -167,6 +167,7 @@ FrameId GeometryState<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
   }
   PoseIndex pose_index(X_PF_.size());
   X_PF_.emplace_back(frame.get_pose());
+  X_WF_.emplace_back(Isometry3<double>::Identity());
   DRAKE_ASSERT(pose_index == static_cast<int>(pose_index_to_frame_map_.size()));
   pose_index_to_frame_map_.push_back(frame_id);
   f_set.insert(frame_id);
@@ -562,6 +563,7 @@ void GeometryState<T>::UpdatePosesRecursively(
   // Cache this transform for later use.
   X_PF_[frame.get_pose_index()] = X_PF;
   Isometry3<T> X_WF = X_WP * X_PF;
+  X_WF_[frame.get_pose_index()] = X_WF;
 
   // Update the geometry which belong to *this* frame.
   for (auto child_id : frame.get_child_geometries()) {
