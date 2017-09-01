@@ -6,6 +6,7 @@
 #include <map>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include <Eigen/Dense>
@@ -34,6 +35,8 @@
 #endif
 
 #include "drake/math/roll_pitch_yaw.h"
+#include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/primitives/zero_order_hold.h"
 #include "drake/systems/rendering/pose_vector.h"
 #include "drake/systems/sensors/camera_info.h"
 #include "drake/systems/sensors/image.h"
@@ -871,6 +874,46 @@ constexpr float RgbdCamera::InvalidDepth::kTooClose;
 
 constexpr int16_t RgbdCamera::Label::kNoBody;
 constexpr int16_t RgbdCamera::Label::kFlatTerrain;
+
+RgbdCameraDiscrete::RgbdCameraDiscrete(std::unique_ptr<RgbdCamera> camera,
+                                       double period)
+    : camera_(camera.get()), period_(period) {
+  const int width = kImageWidth, height = kImageHeight;
+
+  DiagramBuilder<double> builder;
+  builder.AddSystem(std::move(camera));
+  input_port_state_ = builder.ExportInput(camera_->state_input_port());
+
+  // Color image.
+  const Value<ImageRgba8U> image_color(width, height);
+  const auto* const zoh_color =
+      builder.AddSystem<ZeroOrderHold>(period_, image_color);
+  builder.Connect(camera_->color_image_output_port(),
+                  zoh_color->get_input_port());
+  output_port_color_image_ = builder.ExportOutput(zoh_color->get_output_port());
+
+  // Depth image.
+  const Value<ImageDepth32F> image_depth(width, height);
+  const auto* const zoh_depth =
+      builder.AddSystem<ZeroOrderHold>(period_, image_depth);
+  builder.Connect(camera_->depth_image_output_port(),
+                  zoh_depth->get_input_port());
+  output_port_depth_image_ = builder.ExportOutput(zoh_depth->get_output_port());
+
+  // Label image.
+  const Value<ImageLabel16I> image_label(width, height);
+  const auto* const zoh_label =
+      builder.AddSystem<ZeroOrderHold>(period_, image_label);
+  builder.Connect(camera_->label_image_output_port(),
+                  zoh_label->get_input_port());
+  output_port_label_image_ = builder.ExportOutput(zoh_label->get_output_port());
+
+  // No need to place a ZOH on pose output.
+  output_port_pose_ =
+      builder.ExportOutput(camera_->camera_base_pose_output_port());
+
+  builder.BuildInto(this);
+}
 
 }  // namespace sensors
 }  // namespace systems
