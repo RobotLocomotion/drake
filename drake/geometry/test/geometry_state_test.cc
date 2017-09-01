@@ -505,6 +505,18 @@ TEST_F(GeometryStateTest, RemoveFrame) {
   EXPECT_EQ(gs_tester_.get_frame_parent_poses().size(), frames_.size() - 1);
 }
 
+// Tests the frame iterator, confirming that it iterates through all frames.
+TEST_F(GeometryStateTest, FrameIdIterator) {
+  SetUpSingleSourceTree();
+  std::unordered_set<FrameId> all_frames(frames_.begin(), frames_.end());
+  for (FrameId id : geometry_state_.get_frame_ids()) {
+    // This should remove exactly one element.
+    EXPECT_EQ(all_frames.erase(id), 1);
+  }
+  // There shouldn't be any left over.
+  EXPECT_EQ(all_frames.size(), 0);
+}
+
 // Tests the removal of a frame that has other frames hanging on it.
 TEST_F(GeometryStateTest, RemoveFrameTree) {
   SourceId s_id = SetUpSingleSourceTree();
