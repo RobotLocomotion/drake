@@ -943,6 +943,10 @@ class MultibodyTree {
       tree_clone->CloneMobilizerAndAdd(*mobilizer);
     }
 
+    for (const auto& force_element : owned_force_elements_) {
+      tree_clone->CloneForceElementAndAdd(*force_element);
+    }
+
     // We can safely make a deep copy here since the original multibody tree is
     // required to be finalized.
     tree_clone->topology_ = this->topology_;
@@ -1028,6 +1032,20 @@ class MultibodyTree {
     Mobilizer<T>* raw_mobilizer_clone_ptr = mobilizer_clone.get();
     owned_mobilizers_.push_back(std::move(mobilizer_clone));
     return raw_mobilizer_clone_ptr;
+  }
+
+  // Helper method to create a clone of `force_element` and add it to `this`
+  // tree.
+  template <typename FromScalar>
+  ForceElement<T>* CloneForceElementAndAdd(
+      const ForceElement<FromScalar>& force_element) {
+    ForceElementIndex force_element_index = force_element.get_index();
+    auto force_element_clone = force_element.CloneToScalar(*this);
+    force_element_clone->set_parent_tree(this, force_element_index);
+
+    ForceElement<T>* raw_force_element_clone_ptr = force_element_clone.get();
+    owned_force_elements_.push_back(std::move(force_element_clone));
+    return raw_force_element_clone_ptr;
   }
 
   // Helper method to retrieve the corresponding Frame<T> variant to a Frame in

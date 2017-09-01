@@ -5,6 +5,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/eigen_autodiff_types.h"
 #include "drake/multibody/multibody_tree/math/spatial_force.h"
 #include "drake/multibody/multibody_tree/multibody_tree_context.h"
 #include "drake/multibody/multibody_tree/multibody_tree_element.h"
@@ -41,6 +42,18 @@ class ForceElement : public
     DoCalcAndAddForceContribution(context, pc, vc, F_B_W, tau);
   }
 
+  /// @cond
+  // For internal use only.
+  // NVI to DoCloneToScalar() templated on the scalar type of the new clone to
+  // be created. This method is intended to be called by
+  // MultibodyTree::CloneToScalar().
+  template <typename ToScalar>
+  std::unique_ptr<ForceElement<ToScalar>> CloneToScalar(
+  const MultibodyTree<ToScalar>& cloned_tree) const {
+    return DoCloneToScalar(cloned_tree);
+  }
+  /// @endcond
+
  protected:
 
   virtual void DoCalcAndAddForceContribution(
@@ -50,47 +63,19 @@ class ForceElement : public
       std::vector<SpatialForce<T>>* F_B_W,
       Eigen::Ref<VectorX<T>> tau) const = 0;
 
-#if 0
-  /// NVI to DoCloneToScalar() templated on the scalar type of the new clone to
-  /// be created. This method is mostly intended to be called by
-  /// MultibodyTree::CloneToScalar(). Most users should not call this clone
-  /// method directly but rather clone the entire parent MultibodyTree if
-  /// needed.
-  /// @sa MultibodyTree::CloneToScalar()
-  template <typename ToScalar>
-  std::unique_ptr<Mobilizer<ToScalar>> CloneToScalar(
-      const MultibodyTree<ToScalar>& cloned_tree) const {
-    return DoCloneToScalar(cloned_tree);
-  }
-
-  /// For MultibodyTree internal use only.
-  virtual std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
-      const internal::BodyNode<T>* parent_node,
-      const Body<T>* body, const Mobilizer<T>* mobilizer) const = 0;
-
- protected:
   /// @name Methods to make a clone templated on different scalar types.
-  ///
-  /// The only const argument to these methods is the new MultibodyTree clone
-  /// under construction, which is required to already own the clones of the
-  /// inboard and outboard frames of the mobilizer being cloned.
   /// @{
 
-  /// Clones this %Mobilizer (templated on T) to a mobilizer templated on
+  /// Clones this %ForceElement (templated on T) to a mobilizer templated on
   /// `double`.
-  /// @pre Inboard and outboard frames for this mobilizer already have a clone
-  /// in `tree_clone`.
-  virtual std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
+  virtual std::unique_ptr<ForceElement<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const = 0;
 
-  /// Clones this %Mobilizer (templated on T) to a mobilizer templated on
+  /// Clones this %ForceElement (templated on T) to a mobilizer templated on
   /// AutoDiffXd.
-  /// @pre Inboard and outboard frames for this mobilizer already have a clone
-  /// in `tree_clone`.
-  virtual std::unique_ptr<Mobilizer<AutoDiffXd>> DoCloneToScalar(
+  virtual std::unique_ptr<ForceElement<AutoDiffXd>> DoCloneToScalar(
       const MultibodyTree<AutoDiffXd>& tree_clone) const = 0;
   /// @}
-#endif
 
  private:
   // Implementation for MultibodyTreeElement::DoSetTopology().
@@ -117,6 +102,12 @@ class UniformGravityElement : public ForceElement<T> {
       const VelocityKinematicsCache<T>& vc,
       std::vector<SpatialForce<T>>* F_B_W,
       Eigen::Ref<VectorX<T>> tau) const final;
+
+  std::unique_ptr<ForceElement<double>> DoCloneToScalar(
+      const MultibodyTree<double>& tree_clone) const override;
+
+  std::unique_ptr<ForceElement<AutoDiffXd>> DoCloneToScalar(
+      const MultibodyTree<AutoDiffXd>& tree_clone) const override;
 
  private:
   Vector3<double> g_W_;

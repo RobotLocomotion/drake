@@ -39,6 +39,20 @@ void UniformGravityElement<T>::DoCalcAndAddForceContribution(
   }
 }
 
+template <typename T>
+std::unique_ptr<ForceElement<double>>
+UniformGravityElement<T>::DoCloneToScalar(
+    const MultibodyTree<double>& tree_clone) const {
+  return std::make_unique<UniformGravityElement<double>>(g_W());
+}
+
+template <typename T>
+std::unique_ptr<ForceElement<AutoDiffXd>>
+UniformGravityElement<T>::DoCloneToScalar(
+    const MultibodyTree<AutoDiffXd>& tree_clone) const {
+  return std::make_unique<UniformGravityElement<AutoDiffXd>>(g_W());
+}
+
 // Explicitly instantiates on the most common scalar types.
 template class UniformGravityElement<double>;
 template class UniformGravityElement<AutoDiffXd>;
