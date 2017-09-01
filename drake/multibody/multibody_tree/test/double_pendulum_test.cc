@@ -16,7 +16,6 @@
 #include "drake/multibody/multibody_tree/fixed_offset_frame.h"
 #include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
-#include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -192,10 +191,6 @@ class PendulumTests : public ::testing::Test {
     elbow_mobilizer_ = &model_->AddMobilizer<RevoluteMobilizer>(
         *elbow_inboard_frame_, *elbow_outboard_frame_,
         Vector3d::UnitZ() /*revolute axis*/);
-
-    // Add force element for a constant gravity.
-    model_->AddForceElement<UniformGravityFieldElement>(
-        Vector3d(0.0, -acceleration_of_gravity_, 0.0));
   }
 
   // Helper method to extract a pose from the position kinematics.
@@ -271,7 +266,6 @@ class PendulumTests : public ::testing::Test {
   const double link2_Ic_ = .33;
   const double half_link1_length_ = link1_length_ / 2;
   const double half_link2_length_ = link2_length_ / 2;
-  const double acceleration_of_gravity_ = 9.81;
   // Poses:
   // Desired pose of the lower link frame L in the world frame W.
   const Isometry3d X_WL_{Translation3d(0.0, -half_link1_length_, 0.0)};
@@ -532,70 +526,6 @@ class PendulumKinematicTests : public PendulumTests {
     VerifyInverseDynamics(q, v, vdot);
   }
 
-  /// This method verifies the correctness of
-  /// MultibodyTree::CalcForceElementsContribution() to compute the vector of
-  /// generalized forces due to gravity.
-  /// Generalized forces due to gravity are a function of positions only and are
-  /// denoted by G(q).
-  /// The solution is verified against the independent benchmark from
-  /// drake::multibody::benchmarks::Acrobot.
-  Vector2d VerifyGravityTerm(
-      const Eigen::Ref<const VectorXd>& q) const {
-    DRAKE_DEMAND(q.size() == model_->get_num_positions());
-
-    // This is the minimum factor of the machine precision within which these
-    // tests pass. This factor incorporates an additional factor of two (2) to
-    // be on the safe side on other architectures (particularly in Macs).
-    const int kEpsilonFactor = 5;
-    const double kTolerance = kEpsilonFactor * kEpsilon;
-
-    const double shoulder_angle =  q(0);
-    const double elbow_angle =  q(1);
-
-    PositionKinematicsCache<double> pc(model_->get_topology());
-    VelocityKinematicsCache<double> vc(model_->get_topology());
-    // Even though G(q) only depends on positions, other velocity dependent
-    // forces (for instance damping) could depend on velocities. Therefore we
-    // set the velocity kinematics cache entries to zero so that only G(q) gets
-    // computed (at least for this pendulum model that only includes gravity
-    // and damping).
-    vc.InitializeToZero();
-
-    // ======================================================================
-    // Compute position kinematics.
-    shoulder_mobilizer_->set_angle(context_.get(), shoulder_angle);
-    elbow_mobilizer_->set_angle(context_.get(), elbow_angle);
-    model_->CalcPositionKinematicsCache(*context_, &pc);
-
-    // ======================================================================
-    // Compute inverse dynamics.
-    VectorXd tau(model_->get_num_velocities());
-    vector<SpatialForce<double>> F_Bo_W_array(model_->get_num_bodies());
-    model_->CalcForceElementsContribution(
-        *context_, pc, vc, &F_Bo_W_array, tau);
-
-    // ======================================================================
-    // To get generalized forces, compute inverse dynamics applying the forces
-    // computed by CalcForceElementsContribution().
-    // Notice that we do not need to allocate extra memory since both
-    // F_Bo_W_array and tau can be used as input and output arguments. However,
-    // the data given at input is lost on output. A user might choose then to
-    // have separate input/output arrays.
-    VectorXd vdot(model_->get_num_velocities());
-    vector<SpatialAcceleration<double>> A_WB_array(model_->get_num_bodies());
-    model_->CalcInverseDynamics(
-        *context_, pc, vc, vdot, F_Bo_W_array, tau,
-        &A_WB_array, &F_Bo_W_array, tau);
-
-    // ======================================================================
-    // Compute expected values using the acrobot benchmark.
-    const Vector2d G_expected = acrobot_benchmark_.CalcGravityVector(
-        shoulder_angle, elbow_angle);
-
-    EXPECT_TRUE(tau.isApprox(G_expected, kTolerance));
-    return tau;
-  }
-
   /// Given the transformation `X_AB` between two frames A and B and its time
   /// derivative in frame A `Xdot_AB`, this method computes the spatial velocity
   /// `V_AB` of frame B as measured and expressed in A.
@@ -622,7 +552,7 @@ class PendulumKinematicTests : public PendulumTests {
       Vector3d::UnitZ() /* Plane normal */, Vector3d::UnitY() /* Up vector */,
       link1_mass_, link2_mass_,
       link1_length_, link2_length_, half_link1_length_, half_link2_length_,
-      link1_Ic_, link2_Ic_, 0.0, 0.0, acceleration_of_gravity_};
+      link1_Ic_, link2_Ic_};
 
  private:
   // This method verifies the correctness of
@@ -963,33 +893,6 @@ TEST_F(PendulumKinematicTests, MassMatrix) {
   VerifyMassMatrixViaInverseDynamics(M_PI / 3.0, M_PI / 2.0);
   VerifyMassMatrixViaInverseDynamics(M_PI / 3.0, M_PI / 3.0);
   VerifyMassMatrixViaInverseDynamics(M_PI / 3.0, M_PI / 4.0);
-}
-
-// Compute the mass matrix using the inverse dynamics method.
-TEST_F(PendulumKinematicTests, GravityTerm) {
-  // A list of conditions used for testing.
-  std::vector<Vector2d> test_matrix;
-
-  test_matrix.push_back({0.0, 0.0});
-  test_matrix.push_back({0.0, M_PI / 2.0});
-  test_matrix.push_back({0.0, M_PI / 3.0});
-  test_matrix.push_back({0.0, M_PI / 4.0});
-
-  test_matrix.push_back({M_PI / 2.0, M_PI / 2.0});
-  test_matrix.push_back({M_PI / 2.0, M_PI / 3.0});
-  test_matrix.push_back({M_PI / 2.0, M_PI / 4.0});
-
-  test_matrix.push_back({M_PI / 3.0, M_PI / 2.0});
-  test_matrix.push_back({M_PI / 3.0, M_PI / 3.0});
-  test_matrix.push_back({M_PI / 3.0, M_PI / 4.0});
-
-  test_matrix.push_back({M_PI / 4.0, M_PI / 2.0});
-  test_matrix.push_back({M_PI / 4.0, M_PI / 3.0});
-  test_matrix.push_back({M_PI / 4.0, M_PI / 4.0});
-
-  for (const Vector2d& q : test_matrix) {
-    VerifyGravityTerm(q);
-  }
 }
 
 // Compute the spatial velocity of each link as measured in the world frame

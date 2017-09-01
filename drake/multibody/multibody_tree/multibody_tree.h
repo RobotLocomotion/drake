@@ -11,7 +11,6 @@
 #include "drake/multibody/multibody_tree/acceleration_kinematics_cache.h"
 #include "drake/multibody/multibody_tree/body.h"
 #include "drake/multibody/multibody_tree/body_node.h"
-#include "drake/multibody/multibody_tree/force_element.h"
 #include "drake/multibody/multibody_tree/frame.h"
 #include "drake/multibody/multibody_tree/mobilizer.h"
 #include "drake/multibody/multibody_tree/multibody_tree_context.h"
@@ -372,39 +371,6 @@ class MultibodyTree {
         std::make_unique<MobilizerType<T>>(std::forward<Args>(args)...));
   }
 
-  template <template<typename Scalar> class ForceElementType>
-  const ForceElementType<T>& AddForceElement(
-      std::unique_ptr<ForceElementType<T>> force_element) {
-    static_assert(
-        std::is_convertible<ForceElementType<T>*, ForceElement<T>*>::value,
-        "ForceElementType<T> must be a sub-class of ForceElement<T>.");
-    if (topology_is_valid()) {
-      throw std::logic_error(
-          "This MultiforceTree is finalized already. Therefore adding more "
-          "force elements is not allowed. "
-          "See documentation for Finalize() for details.");
-    }
-    if (force_element == nullptr) {
-      throw std::logic_error("Input force element is a nullptr.");
-    }
-    ForceElementIndex force_element_index = topology_.add_force_element();
-    // This test MUST be performed BEFORE owned_force_elements_.push_back()
-    // below. Do not move it around!
-    DRAKE_ASSERT(force_element_index == get_num_force_elements());
-    force_element->set_parent_tree(this, force_element_index);
-    ForceElementType<T>* raw_force_element_ptr = force_element.get();
-    owned_force_elements_.push_back(std::move(force_element));
-    return *raw_force_element_ptr;
-  }
-
-  template<template<typename Scalar> class ForceElementType, typename... Args>
-  const ForceElementType<T>& AddForceElement(Args&&... args) {
-    static_assert(std::is_base_of<ForceElement<T>, ForceElementType<T>>::value,
-                  "ForceElementType<T> must be a sub-class of "
-                  "ForceElement<T>.");
-    return AddForceElement(
-        std::make_unique<ForceElementType<T>>(std::forward<Args>(args)...));
-  }
   /// @}
   // Closes Doxygen section.
 
@@ -428,11 +394,6 @@ class MultibodyTree {
   // model.
   int get_num_mobilizers() const {
     return static_cast<int>(owned_mobilizers_.size());
-  }
-
-  /// Returns the number of ForceElement objects in the MultibodyTree.
-  int get_num_force_elements() const {
-    return static_cast<int>(owned_force_elements_.size());
   }
 
   /// Returns the number of generalized positions of the model.
@@ -782,54 +743,6 @@ class MultibodyTree {
       std::vector<SpatialForce<T>>* F_BMo_W_array,
       Eigen::Ref<VectorX<T>> tau_array) const;
 
-  /// Computes the combined force contribution of ForceElement objects in the
-  /// model. A ForceElement can apply forcing as a spatial force per body or as
-  /// generalized forces, depending on the ForceElement model. Therefore this
-  /// method provides outputs for both spatial forces per body (with
-  /// `F_Bo_W_array`) and generalized forces (with `tau_array`).
-  /// ForceElement contributions are a function of the state only.
-  /// The output from this method can immediately be used as input to
-  /// CalcInverseDynamics() to include the effect of applied forces by force
-  /// elements.
-  ///
-  /// @param[in] context
-  ///   The context containing the state of the %MultibodyTree model.
-  /// @param[in] pc
-  ///   A position kinematics cache object already updated to be in sync with
-  ///   `context`.
-  /// @param[in] vc
-  ///   A velocity kinematics cache object already updated to be in sync with
-  ///   `context`.
-  /// @param[out] F_Bo_W_array
-  ///   A pointer to a valid, non nullptr, vector of spatial forces
-  ///   containing, for each body B, the total spatial force `F_Bo_W` applied at
-  ///   Bo by the force elements in `this` model, expressed in the world frame
-  ///   W. It must be of size equal to the number of bodies in the
-  ///   MultibodyTree. This method will abort if the the pointer is null or if
-  ///   `F_Bo_W_array` is not of size `get_num_bodies()`.
-  ///   On output, entries will be ordered by BodyNodeIndex.
-  ///   To access a mobilizer's reaction force on given body B in this array,
-  ///   use the index returned by Body::get_node_index().
-  /// @param[out] tau_array
-  ///   On output this array will contain the generalized forces contribution
-  ///   applied by the force elements in `this` model. It must be of size
-  ///   MultibodyTree::get_num_velocities() or this method will abort.
-  ///   Generalized forces for each Mobilizer can be accessed with
-  ///   Mobilizer::get_generalized_forces_from_array().
-  ///
-  /// @pre The position kinematics `pc` must have been previously updated with a
-  /// call to CalcPositionKinematicsCache().
-  /// @pre The velocity kinematics `vc` must have been previously updated with a
-  /// call to CalcVelocityKinematicsCache().
-  ///
-  /// @throws std::bad_cast if `context` is not a `MultibodyTreeContext`.
-  void CalcForceElementsContribution(
-      const systems::Context<T>& context,
-      const PositionKinematicsCache<T>& pc,
-      const VelocityKinematicsCache<T>& vc,
-      std::vector<SpatialForce<T>>* F_Bo_W_array,
-      Eigen::Ref<VectorX<T>> tau_array) const;
-
   /// @name Methods to retrieve multibody element variants
   ///
   /// Given two variants of the same %MultibodyTree, these methods map an
@@ -944,10 +857,6 @@ class MultibodyTree {
       tree_clone->CloneMobilizerAndAdd(*mobilizer);
     }
 
-    for (const auto& force_element : owned_force_elements_) {
-      tree_clone->CloneForceElementAndAdd(*force_element);
-    }
-
     // We can safely make a deep copy here since the original multibody tree is
     // required to be finalized.
     tree_clone->topology_ = this->topology_;
@@ -1035,20 +944,6 @@ class MultibodyTree {
     return raw_mobilizer_clone_ptr;
   }
 
-  // Helper method to create a clone of `force_element` and add it to `this`
-  // tree.
-  template <typename FromScalar>
-  ForceElement<T>* CloneForceElementAndAdd(
-      const ForceElement<FromScalar>& force_element) {
-    ForceElementIndex force_element_index = force_element.get_index();
-    auto force_element_clone = force_element.CloneToScalar(*this);
-    force_element_clone->set_parent_tree(this, force_element_index);
-
-    ForceElement<T>* raw_force_element_clone_ptr = force_element_clone.get();
-    owned_force_elements_.push_back(std::move(force_element_clone));
-    return raw_force_element_clone_ptr;
-  }
-
   // Helper method to retrieve the corresponding Frame<T> variant to a Frame in
   // a MultibodyTree variant templated on Scalar.
   template <template <typename> class FrameType, typename Scalar>
@@ -1110,7 +1005,6 @@ class MultibodyTree {
   std::vector<std::unique_ptr<Body<T>>> owned_bodies_;
   std::vector<std::unique_ptr<Frame<T>>> owned_frames_;
   std::vector<std::unique_ptr<Mobilizer<T>>> owned_mobilizers_;
-  std::vector<std::unique_ptr<ForceElement<T>>> owned_force_elements_;
   std::vector<std::unique_ptr<internal::BodyNode<T>>> body_nodes_;
 
   // List of all frames in the system ordered by their FrameIndex.
