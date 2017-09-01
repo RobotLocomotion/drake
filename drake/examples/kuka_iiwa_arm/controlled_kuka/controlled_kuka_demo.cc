@@ -15,8 +15,8 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
-#include "drake/examples/kuka_iiwa_arm/sim_diagram_builder.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/manipulation/util/sim_diagram_builder.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/ik_options.h"
 #include "drake/multibody/joints/floating_base_types.h"
@@ -42,6 +42,7 @@ namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
+using manipulation::util::SimDiagramBuilder;
 
 const char kUrdfPath[] =
     "drake/manipulation/models/iiwa_description/urdf/"

@@ -1,10 +1,13 @@
 #include "drake/geometry/geometry_instance.h"
 
+#include <utility>
+
 namespace drake {
 namespace geometry {
 
-// Explicitly instantiates on the most common scalar types.
-template class GeometryInstance<double>;
+GeometryInstance::GeometryInstance(const Isometry3<double>& X_PG,
+                                   std::unique_ptr<Shape> shape)
+    : X_PG_(X_PG), shape_(std::move(shape)) {}
 
 }  // namespace geometry
 }  // namespace drake

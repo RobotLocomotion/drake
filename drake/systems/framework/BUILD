@@ -19,9 +19,9 @@ drake_cc_library(
         ":leaf_system",
         ":parameters",
         ":single_output_vector_source",
-        ":sparsity_matrix",
         ":state",
         ":system",
+        ":system_symbolic_inspector",
         ":value",
         ":vector",
         ":vector_system",
@@ -331,9 +331,9 @@ drake_cc_library(
         ":leaf_context",
         ":leaf_output_port",
         ":model_values",
-        ":sparsity_matrix",
         ":system",
         ":system_scalar_converter",
+        ":system_symbolic_inspector",
         ":value_checker",
         "//drake/common",
         "//drake/common:number_traits",
@@ -387,9 +387,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "sparsity_matrix",
-    srcs = ["sparsity_matrix.cc"],
-    hdrs = ["sparsity_matrix.h"],
+    name = "system_symbolic_inspector",
+    srcs = ["system_symbolic_inspector.cc"],
+    hdrs = ["system_symbolic_inspector.h"],
     deps = [
         ":context",
         ":system",
@@ -617,10 +617,11 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "sparsity_matrix_test",
+    name = "system_symbolic_inspector_test",
     deps = [
         ":leaf_system",
-        ":sparsity_matrix",
+        ":system_symbolic_inspector",
+        "//drake/examples/pendulum:pendulum_plant",
     ],
 )
 

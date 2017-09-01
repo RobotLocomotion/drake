@@ -93,6 +93,9 @@ class PiecewisePolynomial final : public PiecewisePolynomialBase {
    *    `knots` has inconsistent dimensions,
    *    `breaks` has length smaller than 2.
    */
+  // TODO(russt): Improve Eigen support.  Should have a version that
+  // accepts Eigen vectors instead of std::vector, and the
+  // CoefficientMatrix can be generalized to an Eigen::Ref.
   static PiecewisePolynomial<CoefficientType> FirstOrderHold(
       const std::vector<double>& breaks,
       const std::vector<CoefficientMatrix>& knots);
@@ -101,9 +104,9 @@ class PiecewisePolynomial final : public PiecewisePolynomialBase {
    * Constructs a third order PiecewisePolynomial from `breaks` and `knots`.
    * First derivatives are chosen to be "shape preserving", i.e. if
    * `knots` is monotonic within some interval, the interpolated data will
-   * also be monotonic.
-   * The second derivative is not guaranteed to be smooth across the entire
-   * spline.
+   * also be monotonic. The second derivative is not guaranteed to be smooth
+   * across the entire spline.
+   *
    * Pchip stands for "Piecewise Cubic Hermite Interpolating Polynomial".
    * For more details, refer to the matlab file "pchip.m".
    * http://home.uchicago.edu/~sctchoi/courses/cs138/interp.pdf is also a good

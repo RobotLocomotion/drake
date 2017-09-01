@@ -23,10 +23,11 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "constraint",
-    srcs = ["constraint.cc"],
-    hdrs = ["constraint.h"],
+    name = "evaluator_base",
+    srcs = ["evaluator_base.cc"],
+    hdrs = ["evaluator_base.h"],
     deps = [
+        ":function",
         "//drake/common",
         "//drake/common:autodiff",
         "//drake/common:polynomial",
@@ -34,14 +35,29 @@ drake_cc_library(
     ],
 )
 
-# TODO(eric.cousineau): Remove CostShim that produces coupling
+drake_cc_library(
+    name = "constraint",
+    srcs = ["constraint.cc"],
+    hdrs = ["constraint.h"],
+    deps = [
+        ":evaluator_base",
+        "//drake/common",
+        "//drake/common:autodiff",
+        "//drake/common:polynomial",
+        "//drake/math:matrix_util",
+    ],
+)
+
 drake_cc_library(
     name = "cost",
     srcs = ["cost.cc"],
     hdrs = ["cost.h"],
     deps = [
-        ":constraint",
-        ":function",
+        ":evaluator_base",
+        "//drake/common",
+        "//drake/common:autodiff",
+        "//drake/common:polynomial",
+        "//drake/math:matrix_util",
     ],
 )
 
@@ -602,9 +618,19 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "evaluator_base_test",
+    deps = [
+        ":evaluator_base",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/common:is_dynamic_castable",
+        "//drake/math:gradient",
+    ],
+)
+
+drake_cc_googletest(
     name = "constraint_test",
     deps = [
-        ":mathematical_program",
+        ":constraint",
         "//drake/common:eigen_matrix_compare",
         "//drake/math:gradient",
     ],
@@ -629,6 +655,14 @@ drake_cc_googletest(
         ":symbolic_extraction",
         "//drake/common:eigen_matrix_compare",
         "//drake/common:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "complementary_problem_test",
+    tags = ["snopt"],
+    deps = [
+        ":mathematical_program",
     ],
 )
 

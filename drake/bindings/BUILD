@@ -131,6 +131,7 @@ install(
     library_strip_prefix = ["python"],
     py_strip_prefix = ["python"],
     visibility = ["//visibility:public"],
+    deps = ["//drake:install"],
 )
 
 py_test(

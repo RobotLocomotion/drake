@@ -5,6 +5,7 @@ load(
     "//tools:drake.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
+    "drake_cc_test",
 )
 load("//tools:lint.bzl", "add_lint_tests")
 
@@ -39,28 +40,35 @@ drake_cc_library(
     ],
 )
 
+filegroup(
+    name = "test_models",
+    testonly = 1,
+    srcs = glob([
+        "test/**/*.obj",
+        "test/**/*.stl",
+        "test/**/*.urdf",
+        "test/**/*.vtp",
+    ]),
+    visibility = ["//visibility:private"],
+)
+
 drake_cc_library(
     name = "test_util",
     testonly = 1,
     srcs = ["test/test_util.cc"],
     hdrs = ["test/test_util.h"],
+    data = [":test_models"],
     deps = [
         "//drake/common",
         "//drake/common:eigen_matrix_compare",
         "//drake/lcm",
         "//drake/lcmtypes:viewer",
+        "//drake/math:geometric_transform",
         "@gtest//:without_main",
         "@lcmtypes_bot2_core",
+        "@vtk//:vtkFiltersGeneral",
+        "@vtk//:vtkIOXML",
     ],
-)
-
-filegroup(
-    name = "test_models",
-    testonly = 1,
-    srcs = glob([
-        "test/**/*.urdf",
-    ]),
-    visibility = ["//visibility:private"],
 )
 
 drake_cc_googletest(

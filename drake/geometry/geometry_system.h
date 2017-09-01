@@ -14,7 +14,7 @@
 namespace drake {
 namespace geometry {
 
-template <typename T> class GeometryInstance;
+class GeometryInstance;
 
 /** GeometrySystem serves as a system-level wrapper for GeometryWorld. It serves
  as the nexus for all geometry (and geometry-based operations) in a Diagram.
@@ -62,10 +62,10 @@ template <typename T> class GeometryInstance;
  pose port will be interpreted. Use get_source_frame_id_port() to acquire the
  port for a given source.
 
- __pose port__: An abstract-valued port containing an instance of FramePoseSet.
- There should be one pose value for each id in the the identifier port value.
- The iᵗʰ pose belongs to the iᵗʰ id. Use get_source_pose_port() to acquire the
- port for a given source.
+ __pose port__: An abstract-valued port containing an instance of
+ FramePoseVector. There should be one pose value for each id in the the
+ identifier port value. The iᵗʰ pose belongs to the iᵗʰ id. Use
+ get_source_pose_port() to acquire the port for a given source.
 
  For source systems, there are some implicit assumptions regarding these input
  ports. Generally, we assume that the source system already has some logic for
@@ -281,7 +281,7 @@ class GeometrySystem : public systems::LeafSystem<T> {
    @returns  A newly allocated frame id.
    @throws std::logic_error  If the `source_id` does _not_ map to a registered
                              source or if a context has been allocated. */
-  FrameId RegisterFrame(SourceId source_id, const GeometryFrame<T>& frame);
+  FrameId RegisterFrame(SourceId source_id, const GeometryFrame& frame);
 
   /** Registers a new frame F for this source. This hangs frame F on another
    previously registered frame P (indicated by `parent_id`). The pose of the new
@@ -297,7 +297,7 @@ class GeometrySystem : public systems::LeafSystem<T> {
                              frame or does not belong to the source, or
                              3. a context has been allocated. */
   FrameId RegisterFrame(SourceId source_id, FrameId parent_id,
-                        const GeometryFrame<T>& frame);
+                        const GeometryFrame& frame);
 
   /** Registers a new geometry G for this source. This hangs geometry G on a
    previously registered frame F (indicated by `frame_id`). The pose of the
@@ -314,7 +314,7 @@ class GeometrySystem : public systems::LeafSystem<T> {
                              4. a context has been allocated. */
   GeometryId RegisterGeometry(SourceId source_id,
                               FrameId frame_id,
-                              std::unique_ptr<GeometryInstance<T>> geometry);
+                              std::unique_ptr<GeometryInstance> geometry);
 
   /** Registers a new geometry G for this source. This hangs geometry G on a
    previously registered geometry P (indicated by `geometry_id`). The pose of
@@ -333,7 +333,7 @@ class GeometrySystem : public systems::LeafSystem<T> {
                             4. a context has been allocated. */
   GeometryId RegisterGeometry(SourceId source_id,
                               GeometryId geometry_id,
-                              std::unique_ptr<GeometryInstance<T>> geometry);
+                              std::unique_ptr<GeometryInstance> geometry);
 
   /** Registers a new _anchored_ geometry G for this source. This hangs geometry
    G from the world frame (W). Its pose is defined in that frame (i.e., `X_WG`).
@@ -345,7 +345,7 @@ class GeometrySystem : public systems::LeafSystem<T> {
                              source or a context has been allocated. */
   GeometryId RegisterAnchoredGeometry(
       SourceId source_id,
-      std::unique_ptr<GeometryInstance<T>> geometry);
+      std::unique_ptr<GeometryInstance> geometry);
 
   /** Clears of all the registered frames and geometries from this source, but
    the source is still registered, allowing future registration of frames

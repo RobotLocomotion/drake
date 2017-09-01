@@ -71,9 +71,10 @@ void TimeVaryingAffineSystem<T>::CalcOutputY(
   if (num_states_ > 0) {
     const MatrixX<T> Ct = C(t);
     DRAKE_DEMAND(Ct.rows() == num_outputs_ && Ct.cols() == num_states_);
-    const auto& x = dynamic_cast<const BasicVector<T>&>(
-                        context.get_continuous_state_vector())
-                        .get_value();
+    const VectorX<T>& x = (this->time_period() == 0.)
+        ? dynamic_cast<const BasicVector<T>&>(
+            context.get_continuous_state_vector()).get_value()
+        : context.get_discrete_state()->get_vector()->get_value();
     y += Ct * x;
   }
 
@@ -201,15 +202,15 @@ unique_ptr<AffineSystem<T>> AffineSystem<T>::MakeAffineSystem(
   Eigen::VectorXd f0(num_states);
   VectorX<symbolic::Variable> vars(num_states + num_inputs);
   vars << state_vars, input_vars;
-  DecomposeAffineExpressions(dynamics, vars, AB, f0);
-  const auto& A = AB.leftCols(num_states);
-  const auto& B = AB.rightCols(num_inputs);
+  DecomposeAffineExpressions(dynamics, vars, &AB, &f0);
+  const auto A = AB.leftCols(num_states);
+  const auto B = AB.rightCols(num_inputs);
 
   Eigen::MatrixXd CD(num_outputs, num_states + num_inputs);
   Eigen::VectorXd y0(num_outputs);
-  DecomposeAffineExpressions(output, vars, CD, y0);
-  const auto& C = CD.leftCols(num_states);
-  const auto& D = CD.rightCols(num_inputs);
+  DecomposeAffineExpressions(output, vars, &CD, &y0);
+  const auto C = CD.leftCols(num_states);
+  const auto D = CD.rightCols(num_inputs);
 
   return make_unique<AffineSystem<T>>(A, B, f0, C, D, y0, time_period);
 }
@@ -230,9 +231,10 @@ AffineSystem<symbolic::Expression>* AffineSystem<T>::DoToSymbolic() const {
 template <typename T>
 void AffineSystem<T>::CalcOutputY(const Context<T>& context,
                                   BasicVector<T>* output_vector) const {
-  const auto& x =
-      dynamic_cast<const BasicVector<T>&>(context.get_continuous_state_vector())
-          .get_value();
+  const VectorX<T>& x = (this->time_period() == 0.)
+      ? dynamic_cast<const BasicVector<T>&>(
+          context.get_continuous_state_vector()).get_value()
+      : context.get_discrete_state()->get_vector()->get_value();
 
   auto y = output_vector->get_mutable_value();
   y = C_ * x + y0_;

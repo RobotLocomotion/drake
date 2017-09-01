@@ -29,7 +29,7 @@ void DoAddProduct(const Expression& coeff, const Monomial& m,
   auto it = map->find(m);
   if (it != map->end()) {
     // m ∈ dom(map)
-    Expression& existing_coeff{it->second};
+    Expression& existing_coeff = it->second;
     // Note that `.Expand()` is needed in the following line. For example,
     // consider the following case:
     //     c1 := (a + b)²
@@ -394,7 +394,7 @@ Polynomial& Polynomial::operator*=(const Monomial& m) {
 
 Polynomial& Polynomial::operator*=(const double c) {
   for (pair<const Monomial, Expression>& p : monomial_to_coefficient_map_) {
-    Expression& coeff{p.second};
+    Expression& coeff = p.second;
     coeff *= c;
   }  // No need to call CheckInvariant() since `c` doesn't include a variable.
   return *this;

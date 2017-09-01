@@ -18,6 +18,7 @@ namespace systems {
  *
  * Instantiated templates for the following kinds of T's are provided:
  * - double
+ * - AutoDiffXd
  *
  * For a discussion of this Runge-Kutta method, see [Butcher, 1987]. The
  * embedded error estimate was derived using the method mentioned in

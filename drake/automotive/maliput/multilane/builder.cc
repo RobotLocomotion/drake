@@ -5,6 +5,7 @@
 
 #include "drake/automotive/maliput/multilane/arc_lane.h"
 #include "drake/automotive/maliput/multilane/branch_point.h"
+#include "drake/automotive/maliput/multilane/cubic_polynomial.h"
 #include "drake/automotive/maliput/multilane/line_lane.h"
 #include "drake/automotive/maliput/multilane/road_geometry.h"
 #include "drake/common/drake_assert.h"

@@ -6,11 +6,6 @@
 namespace drake {
 namespace systems {
 template class RungeKutta3Integrator<double>;
+template class RungeKutta3Integrator<AutoDiffXd>;
 }  // namespace systems
 }  // namespace drake
-
-// TODO(edrumwri): correct compile bug from uncommenting line below.
-// template class
-// drake::systems::RungeKutta3Integrator<
-// Eigen::AutoDiffScalar<drake::Vector1d>>;
-

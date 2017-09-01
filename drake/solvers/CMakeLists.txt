@@ -21,6 +21,7 @@ list(APPEND optimization_files
   decision_variable.cc
   dreal_solver_common.cc
   equality_constrained_qp_solver.cc
+  evaluator_base.cc
   gurobi_solver_common.cc
   indeterminate.cc
   ipopt_solver_common.cc
@@ -65,6 +66,7 @@ drake_install_headers(
   cost.h
   create_constraint.h
   create_cost.h
+  evaluator_base.h
   function.h
   mathematical_program.h
   mathematical_program_solver_interface.h

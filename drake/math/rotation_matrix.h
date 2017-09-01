@@ -253,7 +253,7 @@ Matrix3<typename Derived::Scalar> ProjectMatToOrthonormalMat(
   return svd.matrixU() * svd.matrixV().transpose();
 }
 
-/// Projects a full-rank 3x3 matrix @p M onto O(3), defined as
+/// Projects a full-rank 3x3 matrix @p M onto SO(3), defined as
 /// <pre>
 ///   min_R  \sum_i,j | R(i,j) - M(i,j) |^2
 ///  subject to   R*R^T = I, det(R)=1  =>  R ∈ SO(3)

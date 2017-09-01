@@ -244,12 +244,10 @@ class Rod2DDAETest : public ::testing::Test {
     CheckTransOperatorDim(data.N_minus_muQ_transpose_mult, num_contacts);
     EXPECT_EQ(GetOperatorDim(data.L_mult), data.num_limit_constraints);
     CheckTransOperatorDim(data.L_transpose_mult, data.num_limit_constraints);
-    EXPECT_EQ(data.f.size(), get_rod_num_coordinates());
-    EXPECT_EQ(data.Fdot_x_v.size(), data.non_sliding_contacts.size());
-    EXPECT_EQ(data.Ndot_x_v.size(), num_contacts);
-    EXPECT_EQ(data.en.size(), num_contacts);
-    EXPECT_EQ(data.Ldot_x_v.size(), data.num_limit_constraints);
-    EXPECT_EQ(data.el.size(), data.num_limit_constraints);
+    EXPECT_EQ(data.tau.size(), get_rod_num_coordinates());
+    EXPECT_EQ(data.kN.size(), num_contacts);
+    EXPECT_EQ(data.kF.size(), data.non_sliding_contacts.size());
+    EXPECT_EQ(data.kL.size(), data.num_limit_constraints);
     EXPECT_EQ(data.mu_non_sliding.size(), data.non_sliding_contacts.size());
     EXPECT_EQ(data.mu_sliding.size(), data.sliding_contacts.size());
     EXPECT_EQ(data.r.size(), data.non_sliding_contacts.size());
@@ -273,14 +271,15 @@ class Rod2DDAETest : public ::testing::Test {
     EXPECT_EQ(num_contacts, data.r.size());
     EXPECT_EQ(GetOperatorDim(data.N_mult), num_contacts);
     CheckTransOperatorDim(data.N_transpose_mult, num_contacts);
-    EXPECT_EQ(data.en.size(), num_contacts);
+    EXPECT_EQ(data.kN.size(), num_contacts);
     EXPECT_EQ(data.v.size(), get_rod_num_coordinates());
     EXPECT_TRUE(data.solve_inertia);
     EXPECT_EQ(GetOperatorDim(data.F_mult), num_contacts);
     CheckTransOperatorDim(data.F_transpose_mult, num_contacts);
+    EXPECT_EQ(data.kF.size(), num_contacts);
     EXPECT_EQ(GetOperatorDim(data.L_mult), data.num_limit_constraints);
     CheckTransOperatorDim(data.L_transpose_mult, data.num_limit_constraints);
-    EXPECT_EQ(data.el.size(), data.num_limit_constraints);
+    EXPECT_EQ(data.kL.size(), data.num_limit_constraints);
   }
 
   std::unique_ptr<Rod2D<double>> dut_;  //< The device under test.
@@ -998,7 +997,7 @@ TEST_F(Rod2DDAETest, RigidContactProblemDataBallistic) {
   SetBallisticState();
 
   // Compute the problem data.
-  ConstraintAccelProblemData<double> data(3 /* gen. vel. dim */);
+  ConstraintAccelProblemData<double> data(get_rod_num_coordinates());
   CalcConstraintAccelProblemData(&data);
 
   // Verify that the data has reasonable values.

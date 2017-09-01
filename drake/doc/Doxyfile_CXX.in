@@ -112,8 +112,7 @@ WARN_LOGFILE           = "@CMAKE_CURRENT_BINARY_DIR@/doxygen_cxx.log"
 #---------------------------------------------------------------------------
 # Configuration options related to the input files
 #---------------------------------------------------------------------------
-INPUT                  = "@drake_SOURCE_DIR@" \
-                         "@drake_SOURCE_DIR@/../ros"
+INPUT                  = "@drake_SOURCE_DIR@"
 INPUT_ENCODING         = UTF-8
 FILE_PATTERNS          = *.c \
                          *.cc \
@@ -346,8 +345,8 @@ CALL_GRAPH             = YES
 CALLER_GRAPH           = YES
 GRAPHICAL_HIERARCHY    = YES
 DIRECTORY_GRAPH        = YES
-DOT_IMAGE_FORMAT       = png
-INTERACTIVE_SVG        = NO
+DOT_IMAGE_FORMAT       = svg
+INTERACTIVE_SVG        = YES
 DOT_PATH               = "@DOXYGEN_DOT_EXECUTABLE@"
 DOTFILE_DIRS           =
 MSCFILE_DIRS           =

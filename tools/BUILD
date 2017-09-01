@@ -31,7 +31,8 @@ sh_binary(
     }),
     data = [
         "//drake/bindings:pydrake",
-        "@director",
+        "//drake/lcmtypes:lcmtypes_py",
+        "@drake_visualizer",
     ],
 )
 
@@ -206,20 +207,6 @@ cc_toolchain_suite(
     },
 )
 
-sh_binary(
-    name = "complain_about_ccache",
-    srcs = ["complain_about_ccache.sh"],
-    visibility = ["//visibility:private"],
-)
-
-load("//tools:ccache.bzl", "ccache_is_bad")
-
-# This rule will fail loudly if ccache is on the path.
-ccache_is_bad(
-    name = "ccache_is_bad",
-    visibility = ["//visibility:private"],
-)
-
 filegroup(
     name = "empty",
     srcs = [],
@@ -228,10 +215,10 @@ filegroup(
 
 # This filegroup contains the files on which every toolchain component should
 # always depend, regardless of platform. It is a useful place for the outputs
-# of rules that check preconditions for the entire build.
+# of rules that check preconditions for the entire build.  (At the moment, we
+# do not have any such files, although we once did.)
 filegroup(
     name = "universal_toolchain_deps",
-    srcs = ["ccache.txt"],  # ccache.txt is an output of :ccache_is_bad
     visibility = ["//visibility:private"],
 )
 

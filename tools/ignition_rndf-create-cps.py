@@ -25,7 +25,8 @@ content = """
     "ignition-rndf0": {
       "Type": "dylib",
       "Location": "@prefix@/lib/libignition_rndf.so",
-      "Includes": [ "@prefix@/include" ]
+      "Includes": [ "@prefix@/include" ],
+      "Requires": [ "ignition-math3:ignition-math3" ]
     }
   }
 }

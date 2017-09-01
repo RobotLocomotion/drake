@@ -1,7 +1,5 @@
 #!/bin/bash
 ### Build and install/package Drake and its dependencies.
-### After installing the package, OS X users may want to adjust the .so file's
-### id to match its installed location, using install_name_tool -id.
 
 # If any command in the script exits non-zero, stop.
 set -e

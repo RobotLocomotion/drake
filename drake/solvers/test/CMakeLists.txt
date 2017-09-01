@@ -16,6 +16,9 @@ target_link_libraries(moby_lcp_solver_test drakeOptimization)
 drake_add_cc_test(NAME system_identification_test SIZE large)
 target_link_libraries(system_identification_test drakeOptimization)
 
+drake_add_cc_test(evaluator_base_test)
+target_link_libraries(evaluator_base_test drakeOptimization drakeCommon)
+
 drake_add_cc_test(constraint_test)
 target_link_libraries(constraint_test drakeOptimization drakeCommon)
 

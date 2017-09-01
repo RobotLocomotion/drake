@@ -26,7 +26,9 @@ content = """
     "sdformat": {
       "Type": "dylib",
       "Location": "@prefix@/lib/libsdformat.so",
-      "Includes": [ "@prefix@/include" ]
+      "Includes": [ "@prefix@/include" ],
+      "Link-Flags": [ "-ltinyxml" ],
+      "Requires": [ "ignition-math3:ignition-math3" ]
     }
   }
 }

@@ -618,7 +618,7 @@ int QpInverseDynamics::Control(const RobotKinematicState<double>& rs,
     std::cerr << "solution not found\n";
     return -1;
   }
-  solution_ = prog_->GetSolutionVectorValues();
+  solution_ = prog_->GetSolution(prog_->decision_variables());
 
   ////////////////////////////////////////////////////////////////////
   // Examples of inspecting each cost / eq, ineq term

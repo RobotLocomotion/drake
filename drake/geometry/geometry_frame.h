@@ -25,15 +25,38 @@ namespace geometry {
  instance id defined by the RigidBodyTree and used again in automotive to
  serve as unique car identifiers.
 
- @see GeometryWorld
-
- @tparam T The underlying scalar type. Must be a valid Eigen scalar. */
-template <typename T>
+ @see GeometryWorld */
 class GeometryFrame {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeometryFrame)
 
-  GeometryFrame() = default;
+  /** Constructor.
+   @param frame_name        The name of the frame.
+   @param X_PF              The initial pose of this frame F, measured and
+                            expressed in the _intended_ parent frame P.
+   @param frame_group_id    The optional frame group identifier. If unspecified,
+                            defaults to the common, 0 group. */
+  GeometryFrame(const std::string& frame_name, const Isometry3<double>& X_PF,
+                int frame_group_id = 0)
+      : name_(frame_name), X_PF_(X_PF), frame_group_(frame_group_id) {}
+
+  const std::string& get_name() const { return name_; }
+  const Isometry3<double>& get_pose() const { return X_PF_; }
+  int get_frame_group() const { return frame_group_; }
+
+ private:
+  // The name of the frame. Must be unique across frames from the same geometry
+  // source.
+  std::string name_;
+
+  // The initial pose of frame F, measured and expressed in the parent frame P.
+  Isometry3<double> X_PF_;
+
+  // TODO(SeanCurtis-TRI): Consider whether this should be an Identifier or
+  // TypeSafeIndex type.
+  // The frame group to which this frame belongs.
+  int frame_group_;
 };
+
 }  // namespace geometry
 }  // namespace drake

@@ -198,6 +198,7 @@ drake_cc_binary(
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant",
+        "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/analysis:simulator",
         "//drake/systems/lcm",
         "//drake/systems/rendering:pose_stamped_t_pose_vector_translator",

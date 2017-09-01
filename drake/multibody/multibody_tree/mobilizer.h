@@ -5,6 +5,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/eigen_autodiff_types.h"
 #include "drake/multibody/multibody_tree/frame.h"
 #include "drake/multibody/multibody_tree/math/spatial_acceleration.h"
 #include "drake/multibody/multibody_tree/math/spatial_force.h"
@@ -345,6 +346,33 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
       const MultibodyTreeContext<T>& context,
       const Eigen::Ref<const VectorX<T>>& v) const = 0;
 
+  /// Computes the across-mobilizer spatial accelerations `A_FM(q, v, v̇)` of the
+  /// outboard frame M in the inboard frame F.
+  /// This method can be thought of as the application of the operation
+  /// `v̇ ∈ ℝⁿᵛ → M⁶: A_FM(q, v, v̇) = H_FM(q) * v̇ + Ḣ_FM(q) * v`, where
+  /// `nv` is the number of generalized velocities of this mobilizer (see
+  /// get_num_velocities()) and M⁶ is the vector space of "motion vectors" (be
+  /// aware that while M⁶ is introduced in [Featherstone 2008, Ch. 2] spatial
+  /// vectors in Drake are not Plücker vectors as in Featherstone's book).
+  /// Therefore, we say this method is in its _operator form_; the Jacobian
+  /// matrix `H_FM(q)` is not explicitly formed.
+  /// This method aborts in Debug builds if the dimension of the input vector of
+  /// generalized accelerations has a size different from get_num_velocities().
+  ///
+  /// @param[in] context
+  ///   The context of the parent tree that owns this mobilizer. This
+  ///   mobilizer's generalized positions q and generalized velocities v are
+  ///   taken from this context.
+  /// @param[in] vdot
+  ///   The vector of generalized velocities' time derivatives v̇. It must live
+  ///   in ℝⁿᵛ.
+  /// @retval A_FM
+  ///   The across-mobilizer spatial acceleration of the outboard frame M
+  ///   measured and expressed in the inboard frame F.
+  virtual SpatialAcceleration<T> CalcAcrossMobilizerSpatialAcceleration(
+      const MultibodyTreeContext<T>& context,
+      const Eigen::Ref<const VectorX<T>>& vdot) const = 0;
+
   /// Projects the spatial force `F_Mo` on `this` mobilizer's outboard frame
   /// M onto the sub-space of motions spanned by the geometric Jacobian
   /// `H_FM(q)` to obtain the generalized forces `tau` (i.e. the active
@@ -376,33 +404,6 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
       const MultibodyTreeContext<T>& context,
       const SpatialForce<T>& F_Mo_F,
       Eigen::Ref<VectorX<T>> tau) const = 0;
-
-  /// Computes the across-mobilizer spatial accelerations `A_FM(q, v, v̇)` of the
-  /// outboard frame M in the inboard frame F.
-  /// This method can be thought of as the application of the operation
-  /// `v̇ ∈ ℝⁿᵛ → M⁶: A_FM(q, v, v̇) = H_FM(q) * v̇ + Ḣ_FM(q) * v`, where
-  /// `nv` is the number of generalized velocities of this mobilizer (see
-  /// get_num_velocities()) and M⁶ is the vector space of "motion vectors" (be
-  /// aware that while M⁶ is introduced in [Featherstone 2008, Ch. 2] spatial
-  /// vectors in Drake are not Plücker vectors as in Featherstone's book).
-  /// Therefore, we say this method is in its _operator form_; the Jacobian
-  /// matrix `H_FM(q)` is not explicitly formed.
-  /// This method aborts in Debug builds if the dimension of the input vector of
-  /// generalized accelerations has a size different from get_num_velocities().
-  ///
-  /// @param[in] context
-  ///   The context of the parent tree that owns this mobilizer. This
-  ///   mobilizer's generalized positions q and generalized velocities v are
-  ///   taken from this context.
-  /// @param[in] vdot
-  ///   The vector of generalized velocities' time derivatives v̇. It must live
-  ///   in ℝⁿᵛ.
-  /// @retval A_FM
-  ///   The across-mobilizer spatial acceleration of the outboard frame M
-  ///   measured and expressed in the inboard frame F.
-  virtual SpatialAcceleration<T> CalcAcrossMobilizerSpatialAcceleration(
-      const MultibodyTreeContext<T>& context,
-      const Eigen::Ref<const VectorX<T>>& vdot) const = 0;
   /// @}
 
   /// Returns a const Eigen expression of the vector of generalized velocities
@@ -425,10 +426,45 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
                       topology_.num_velocities);
   }
 
+  /// NVI to DoCloneToScalar() templated on the scalar type of the new clone to
+  /// be created. This method is mostly intended to be called by
+  /// MultibodyTree::CloneToScalar(). Most users should not call this clone
+  /// method directly but rather clone the entire parent MultibodyTree if
+  /// needed.
+  /// @sa MultibodyTree::CloneToScalar()
+  template <typename ToScalar>
+  std::unique_ptr<Mobilizer<ToScalar>> CloneToScalar(
+      const MultibodyTree<ToScalar>& cloned_tree) const {
+    return DoCloneToScalar(cloned_tree);
+  }
+
   /// For MultibodyTree internal use only.
   virtual std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
       const internal::BodyNode<T>* parent_node,
       const Body<T>* body, const Mobilizer<T>* mobilizer) const = 0;
+
+ protected:
+  /// @name Methods to make a clone templated on different scalar types.
+  ///
+  /// The only const argument to these methods is the new MultibodyTree clone
+  /// under construction, which is required to already own the clones of the
+  /// inboard and outboard frames of the mobilizer being cloned.
+  /// @{
+
+  /// Clones this %Mobilizer (templated on T) to a mobilizer templated on
+  /// `double`.
+  /// @pre Inboard and outboard frames for this mobilizer already have a clone
+  /// in `tree_clone`.
+  virtual std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
+      const MultibodyTree<double>& tree_clone) const = 0;
+
+  /// Clones this %Mobilizer (templated on T) to a mobilizer templated on
+  /// AutoDiffXd.
+  /// @pre Inboard and outboard frames for this mobilizer already have a clone
+  /// in `tree_clone`.
+  virtual std::unique_ptr<Mobilizer<AutoDiffXd>> DoCloneToScalar(
+      const MultibodyTree<AutoDiffXd>& tree_clone) const = 0;
+  /// @}
 
  private:
   // Implementation for MultibodyTreeElement::DoSetTopology().

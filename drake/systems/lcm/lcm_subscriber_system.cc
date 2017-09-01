@@ -127,9 +127,7 @@ void LcmSubscriberSystem::ProcessMessageAndStoreToAbstractState(
       .GetMutableValue<int>() = received_message_count_;
 }
 
-void LcmSubscriberSystem::DoCalcNextUpdateTime(
-    const Context<double>& context,
-    systems::CompositeEventCollection<double>* events, double* time) const {
+int LcmSubscriberSystem::GetMessageCount(const Context<double>& context) const {
   // Gets the last message count from either abstract state or discrete state.
   int last_message_count;
   if (translator_ == nullptr) {
@@ -141,6 +139,13 @@ void LcmSubscriberSystem::DoCalcNextUpdateTime(
     last_message_count = static_cast<int>(
         context.get_discrete_state(kStateIndexMessageCount)->GetAtIndex(0));
   }
+  return last_message_count;
+}
+
+void LcmSubscriberSystem::DoCalcNextUpdateTime(
+    const Context<double>& context,
+    systems::CompositeEventCollection<double>* events, double* time) const {
+  int last_message_count = GetMessageCount(context);
 
   std::unique_lock<std::mutex> lock(received_message_mutex_);
   // Has a new message. Schedule an update event.

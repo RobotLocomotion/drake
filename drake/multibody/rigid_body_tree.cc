@@ -332,7 +332,7 @@ void RigidBodyTree<T>::compile() {
   SortTree();
 
   // Welds joints for links that have zero inertia and no children (as seen in
-  // pr2.urdf)
+  // pr2_simplified.urdf)
   // TODO(amcastro-tri): this is O(n^2). RigidBody should contain a list of
   // children
   // TODO(amcastro-tri): the order in which these loops should be performed

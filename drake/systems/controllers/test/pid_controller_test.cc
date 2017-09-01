@@ -209,19 +209,8 @@ GTEST_TEST(PidIOProjectionTest, Test) {
   auto context = dut.CreateDefaultContext();
   auto output = dut.AllocateOutput(*context);
 
-  VectorX<double> q = VectorX<double>::Random(num_full_q);
-  VectorX<double> v = VectorX<double>::Random(num_full_q);
-
-  VectorX<double> x(2 * num_full_q);
-  x.head(num_full_q) = q;
-  x.tail(num_full_q) = v;
-
-  VectorX<double> q_d = VectorX<double>::Random(num_controlled_q);
-  VectorX<double> v_d = VectorX<double>::Random(num_controlled_q);
-  VectorX<double> x_d(2 * num_controlled_q);
-  x_d.head(num_controlled_q) = q_d;
-  v_d.head(num_controlled_q) = v_d;
-
+  VectorX<double> x = VectorX<double>::Random(2 * num_full_q);
+  VectorX<double> x_d = VectorX<double>::Random(2 * num_controlled_q);
   VectorX<double> integral = VectorX<double>::Random(num_controlled_q);
 
   // State:

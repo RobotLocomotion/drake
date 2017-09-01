@@ -32,16 +32,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "acrobot_swing_up",
-    srcs = ["acrobot_swing_up.cc"],
-    hdrs = ["acrobot_swing_up.h"],
-    deps = [
-        ":acrobot_plant",
-        "//drake/systems/trajectory_optimization:direct_collocation",
-    ],
-)
-
-drake_cc_library(
     name = "acrobot_plant",
     srcs = ["acrobot_plant.cc"],
     hdrs = ["acrobot_plant.h"],
@@ -154,11 +144,12 @@ drake_cc_binary(
 
 drake_cc_binary(
     name = "acrobot_run_swing_up_traj_optimization",
-    srcs = ["acrobot_run_swing_up_traj_optimization.cc"],
+    srcs = ["test/acrobot_run_swing_up_traj_optimization.cc"],
+    add_test_rule = 1,
     data = [":models"],
+    test_rule_args = ["-realtime_factor=0.0"],
     deps = [
         ":acrobot_plant",
-        ":acrobot_swing_up",
         "//drake/common:find_resource",
         "//drake/lcm",
         "//drake/multibody:rigid_body_tree",
@@ -168,6 +159,7 @@ drake_cc_binary(
         "//drake/systems/analysis",
         "//drake/systems/controllers:linear_quadratic_regulator",
         "//drake/systems/primitives:trajectory_source",
+        "//drake/systems/trajectory_optimization:direct_collocation",
         "@com_github_gflags_gflags//:gflags",
     ],
 )

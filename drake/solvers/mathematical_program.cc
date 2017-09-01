@@ -89,6 +89,10 @@ AttributesSet kGenericSolverCapabilities =
      kLorentzConeConstraint | kRotatedLorentzConeConstraint | kLinearCost |
      kLinearConstraint | kLinearEqualityConstraint);
 
+// Snopt solver capabilities.
+AttributesSet kSnoptCapabilities =
+    (kGenericSolverCapabilities | kLinearComplementarityConstraint);
+
 // Returns true iff no capabilities are in required and not in available.
 bool is_satisfied(AttributesSet required, AttributesSet available) {
   return ((required & ~available) == kNoCapabilities);
@@ -223,6 +227,7 @@ Binding<Cost> MathematicalProgram::AddCost(const Binding<Cost>& binding) {
   } else if (dynamic_cast<LinearCost*>(cost)) {
     return AddCost(BindingDynamicCast<LinearCost>(binding));
   } else {
+    CheckBinding(binding);
     required_capabilities_ |= kGenericCost;
     generic_costs_.push_back(binding);
     return generic_costs_.back();
@@ -231,8 +236,8 @@ Binding<Cost> MathematicalProgram::AddCost(const Binding<Cost>& binding) {
 
 Binding<LinearCost> MathematicalProgram::AddCost(
     const Binding<LinearCost>& binding) {
+  CheckBinding(binding);
   required_capabilities_ |= kLinearCost;
-  CheckIsDecisionVariable(binding.variables());
   linear_costs_.push_back(binding);
   return linear_costs_.back();
 }
@@ -249,12 +254,12 @@ Binding<LinearCost> MathematicalProgram::AddLinearCost(
 
 Binding<QuadraticCost> MathematicalProgram::AddCost(
     const Binding<QuadraticCost>& binding) {
+  CheckBinding(binding);
   required_capabilities_ |= kQuadraticCost;
   DRAKE_ASSERT(binding.constraint()->Q().rows() ==
                    static_cast<int>(binding.GetNumElements()) &&
                binding.constraint()->b().rows() ==
                    static_cast<int>(binding.GetNumElements()));
-  CheckIsDecisionVariable(binding.variables());
   quadratic_costs_.push_back(binding);
   return quadratic_costs_.back();
 }
@@ -323,6 +328,7 @@ Binding<Constraint> MathematicalProgram::AddConstraint(
   } else if (dynamic_cast<LinearConstraint*>(constraint)) {
     return AddConstraint(BindingDynamicCast<LinearConstraint>(binding));
   } else {
+    CheckBinding(binding);
     required_capabilities_ |= kGenericConstraint;
     generic_constraints_.push_back(binding);
     return generic_constraints_.back();
@@ -362,15 +368,12 @@ Binding<LinearConstraint> MathematicalProgram::AddConstraint(
   } else if (dynamic_cast<LinearEqualityConstraint*>(constraint)) {
     return AddConstraint(BindingDynamicCast<LinearEqualityConstraint>(binding));
   } else {
-    required_capabilities_ |= kLinearConstraint;
     // TODO(eric.cousineau): This is a good assertion... But seems out of place,
     // possibly redundant w.r.t. the binding infrastructure.
     DRAKE_ASSERT(binding.constraint()->A().cols() ==
-                 static_cast<int>(binding.GetNumElements()));
-    // TODO(eric.cousineau): Move this and other checks to a generic
-    // BindingCheck() (to handle checking for a unique name, or assigning a
-    // default name, etc.)
-    CheckIsDecisionVariable(binding.variables());
+        static_cast<int>(binding.GetNumElements()));
+    CheckBinding(binding);
+    required_capabilities_ |= kLinearConstraint;
     linear_constraints_.push_back(binding);
     return linear_constraints_.back();
   }
@@ -386,9 +389,10 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
 
 Binding<LinearEqualityConstraint> MathematicalProgram::AddConstraint(
     const Binding<LinearEqualityConstraint>& binding) {
-  required_capabilities_ |= kLinearEqualityConstraint;
   DRAKE_ASSERT(binding.constraint()->A().cols() ==
-               static_cast<int>(binding.GetNumElements()));
+      static_cast<int>(binding.GetNumElements()));
+  CheckBinding(binding);
+  required_capabilities_ |= kLinearEqualityConstraint;
   linear_equality_constraints_.push_back(binding);
   return linear_equality_constraints_.back();
 }
@@ -419,17 +423,18 @@ MathematicalProgram::AddLinearEqualityConstraint(
 
 Binding<BoundingBoxConstraint> MathematicalProgram::AddConstraint(
     const Binding<BoundingBoxConstraint>& binding) {
-  required_capabilities_ |= kLinearConstraint;
+  CheckBinding(binding);
   DRAKE_ASSERT(binding.constraint()->num_constraints() ==
-               binding.GetNumElements());
+      binding.GetNumElements());
+  required_capabilities_ |= kLinearConstraint;
   bbox_constraints_.push_back(binding);
   return bbox_constraints_.back();
 }
 
 Binding<LorentzConeConstraint> MathematicalProgram::AddConstraint(
     const Binding<LorentzConeConstraint>& binding) {
+  CheckBinding(binding);
   required_capabilities_ |= kLorentzConeConstraint;
-  CheckIsDecisionVariable(binding.variables());
   lorentz_cone_constraint_.push_back(binding);
   return lorentz_cone_constraint_.back();
 }
@@ -456,8 +461,8 @@ Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
 
 Binding<RotatedLorentzConeConstraint> MathematicalProgram::AddConstraint(
     const Binding<RotatedLorentzConeConstraint>& binding) {
+  CheckBinding(binding);
   required_capabilities_ |= kRotatedLorentzConeConstraint;
-  CheckIsDecisionVariable(binding.variables());
   rotated_lorentz_cone_constraint_.push_back(binding);
   return rotated_lorentz_cone_constraint_.back();
 }
@@ -495,23 +500,9 @@ Binding<BoundingBoxConstraint> MathematicalProgram::AddBoundingBoxConstraint(
 
 Binding<LinearComplementarityConstraint> MathematicalProgram::AddConstraint(
     const Binding<LinearComplementarityConstraint>& binding) {
+  CheckBinding(binding);
+
   required_capabilities_ |= kLinearComplementarityConstraint;
-
-  // TODO(eric.cousineau): Consider checking bitmask rather than list sizes
-
-  // Linear Complementarity Constraint cannot currently coexist with any
-  // other types of constraint or cost.
-  // (TODO(ggould-tri) relax this to non-overlapping bindings, possibly by
-  // calling multiple solvers.)
-  DRAKE_ASSERT(generic_constraints_.empty());
-  DRAKE_ASSERT(generic_costs_.empty());
-  DRAKE_ASSERT(quadratic_costs_.empty());
-  DRAKE_ASSERT(linear_costs_.empty());
-  DRAKE_ASSERT(linear_constraints_.empty());
-  DRAKE_ASSERT(linear_equality_constraints_.empty());
-  DRAKE_ASSERT(bbox_constraints_.empty());
-  DRAKE_ASSERT(lorentz_cone_constraint_.empty());
-  DRAKE_ASSERT(rotated_lorentz_cone_constraint_.empty());
 
   linear_complementarity_constraints_.push_back(binding);
   return linear_complementarity_constraints_.back();
@@ -539,10 +530,11 @@ Binding<Constraint> MathematicalProgram::AddPolynomialConstraint(
 
 Binding<PositiveSemidefiniteConstraint> MathematicalProgram::AddConstraint(
     const Binding<PositiveSemidefiniteConstraint>& binding) {
-  required_capabilities_ |= kPositiveSemidefiniteConstraint;
+  CheckBinding(binding);
   DRAKE_ASSERT(math::IsSymmetric(Eigen::Map<const MatrixXDecisionVariable>(
       binding.variables().data(), binding.constraint()->matrix_rows(),
       binding.constraint()->matrix_rows())));
+  required_capabilities_ |= kPositiveSemidefiniteConstraint;
   positive_semidefinite_constraint_.push_back(binding);
   return positive_semidefinite_constraint_.back();
 }
@@ -572,9 +564,10 @@ MathematicalProgram::AddPositiveSemidefiniteConstraint(
 
 Binding<LinearMatrixInequalityConstraint> MathematicalProgram::AddConstraint(
     const Binding<LinearMatrixInequalityConstraint>& binding) {
-  required_capabilities_ |= kPositiveSemidefiniteConstraint;
+  CheckBinding(binding);
   DRAKE_ASSERT(static_cast<int>(binding.constraint()->F().size()) ==
-               static_cast<int>(binding.GetNumElements()) + 1);
+      static_cast<int>(binding.GetNumElements()) + 1);
+  required_capabilities_ |= kPositiveSemidefiniteConstraint;
   linear_matrix_inequality_constraint_.push_back(binding);
   return linear_matrix_inequality_constraint_.back();
 }
@@ -643,7 +636,7 @@ SolutionResult MathematicalProgram::Solve() {
   } else if (is_satisfied(required_capabilities_, kMobyLcpCapabilities) &&
              moby_lcp_solver_->available()) {
     return moby_lcp_solver_->Solve(*this);
-  } else if (is_satisfied(required_capabilities_, kGenericSolverCapabilities) &&
+  } else if (is_satisfied(required_capabilities_, kSnoptCapabilities) &&
              snopt_solver_->available()) {
     return snopt_solver_->Solve(*this);
   } else if (is_satisfied(required_capabilities_, kGenericSolverCapabilities) &&

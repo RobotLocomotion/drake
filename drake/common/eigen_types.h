@@ -9,9 +9,12 @@
 /// usage of `<Scalar>` in Eigen's code base.
 /// @see also eigen_autodiff_types.h
 
+#include <memory>
+
 #include <Eigen/Dense>
 
 #include "drake/common/constants.h"
+#include "drake/common/drake_copyable.h"
 
 namespace drake {
 
@@ -221,5 +224,121 @@ struct is_eigen_nonvector_of
 
 // TODO(eric.cousineau): Add alias is_eigen_matrix_of = is_eigen_scalar_same if
 // appropriate.
+
+/// This wrapper class provides a way to write non-template functions taking raw
+/// pointers to Eigen objects as parameters while limiting the number of copies,
+/// similar to `Eigen::Ref`. Internally, it keeps an instance of `Eigen::Ref<T>`
+/// and provides access to it via `operator*` and `operator->`.
+///
+/// The motivation of this class is to follow <a
+/// href="https://google.github.io/styleguide/cppguide.html#Reference_Arguments">GSG's
+/// "output arguments should be pointers" rule</a> while taking advantage of
+/// using `Eigen::Ref`. Here is an example.
+///
+/// @code
+/// // This function is taking an Eigen::Ref of a matrix and modifies it in
+/// // the body. This violates GSG's rule on output parameters.
+/// void foo(Eigen::Ref<Eigen::MatrixXd> M) {
+///    M(0, 0) = 0;
+/// }
+/// // At Call-site, we have:
+/// foo(M);
+/// foo(M.block(0, 0, 2, 2));
+///
+/// // We can rewrite the above function into the following using EigenPtr.
+/// void foo(EigenPtr<Eigen::MatrixXd> M) {
+///    (*M)(0, 0) = 0;
+/// }
+/// // Note that, call sites should be changed to:
+/// foo(&M);
+
+/// // We need tmp to avoid taking the address of a temporary object such as the
+/// // return value of .block().
+/// auto tmp = M.block(0, 0, 2, 2);
+/// foo(&tmp);
+/// @endcode
+///
+/// @note This class provides a way to avoid the `const_cast` hack introduced in
+/// <a
+/// href="https://eigen.tuxfamily.org/dox/TopicFunctionTakingEigenTypes.html#TopicPlainFunctionsFailing">Eigen's
+/// documentation</a>.
+template <typename PlainObjectType>
+class EigenPtr {
+ public:
+  typedef Eigen::Ref<PlainObjectType> RefType;
+
+  EigenPtr() : EigenPtr(nullptr) {}
+
+  /// Overload for `nullptr`.
+  // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
+  EigenPtr(std::nullptr_t) {}
+
+  /// Constructs with a reference to the given matrix type.
+  // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
+  EigenPtr(const EigenPtr& other) { assign(other); }
+
+  /// Constructs with a reference to another matrix type.
+  /// May be `nullptr`.
+  template <typename PlainObjectTypeIn>
+  // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
+  EigenPtr(PlainObjectTypeIn* m) {
+    if (m) {
+      m_.reset(new RefType(*m));
+    }
+  }
+
+  /// Constructs from another EigenPtr.
+  template <typename PlainObjectTypeIn>
+  // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
+  EigenPtr(const EigenPtr<PlainObjectTypeIn>& other) {
+    // Cannot directly construct `m_` from `other.m_`.
+    assign(other);
+  }
+
+  EigenPtr& operator=(const EigenPtr& other) {
+    // We must explicitly override this version of operator=.
+    // The template below will not take precedence over this one.
+    return assign(other);
+  }
+
+  template <typename PlainObjectTypeIn>
+  EigenPtr& operator=(const EigenPtr<PlainObjectTypeIn>& other) {
+    return assign(other);
+  }
+
+  /// @throws std::runtime_error if this is a null dereference.
+  RefType& operator*() const { return *get_reference(); }
+
+  /// @throws std::runtime_error if this is a null dereference.
+  RefType* operator->() const { return get_reference(); }
+
+  /// Returns whether or not this contains a valid reference.
+  operator bool() const { return static_cast<bool>(m_); }
+
+ private:
+  // Use unique_ptr<> so that we may "reconstruct" the reference, making this
+  // a pointer-like type.
+  // TODO(eric.cousineau): Consider using a stack-based implementation if
+  // performance is a concern, possibly with a mutable member.
+  std::unique_ptr<RefType> m_;
+
+  // Consolidate assignment here, so that both the copy constructor and the
+  // construction from another type may be used.
+  template <typename PlainObjectTypeIn>
+  EigenPtr& assign(const EigenPtr<PlainObjectTypeIn>& other) {
+    if (other) {
+      m_.reset(new RefType(*other));
+    } else {
+      m_.reset();
+    }
+    return *this;
+  }
+
+  // Consolidate getting a reference here.
+  RefType* get_reference() const {
+    if (!m_) throw std::runtime_error("EigenPtr: nullptr dereference");
+    return m_.get();
+  }
+};
 
 }  // namespace drake

@@ -76,25 +76,35 @@ void ToMatlabArray(const std::string& str, MatlabArray* matlab_array) {
 
 void internal::PublishCallMatlab(const MatlabRPC& message) {
   // TODO(russt): Provide option for setting the filename.
+
+  // NOTE(russt): This code violates the style-guide by expecting the file to be
+  // closed properly at program termination.  Experimentally we found that the
+  // output file could be corrupt unless we included *both* the Flush() call and
+  // the SetCloseOnDelete() calls below.  Sadly, I cannot explain why.
   static google::protobuf::io::FileOutputStream raw_output(
       open("/tmp/matlab_rpc", O_WRONLY | O_CREAT, S_IRWXU));
+  raw_output.SetCloseOnDelete(true);
 
-  google::protobuf::io::CodedOutputStream output(&raw_output);
+  {  // Defines the lifetime of the CodedOutputStream.
+    google::protobuf::io::CodedOutputStream output(&raw_output);
 
-  // Write the size.
-  const int size = message.ByteSize();
-  output.WriteVarint32(size);
+    // Write the size.
+    const int size = message.ByteSize();
+    output.WriteVarint32(size);
 
-  uint8_t* buffer = output.GetDirectBufferForNBytesAndAdvance(size);
-  if (buffer != NULL) {
-    // Optimization:  The message fits in one buffer, so use the faster
-    // direct-to-array serialization path.
-    message.SerializeWithCachedSizesToArray(buffer);
-  } else {
-    // Slightly-slower path when the message is multiple buffers.
-    message.SerializeWithCachedSizes(&output);
-    DRAKE_DEMAND(!output.HadError());
+    uint8_t* buffer = output.GetDirectBufferForNBytesAndAdvance(size);
+    if (buffer != NULL) {
+      // Optimization:  The message fits in one buffer, so use the faster
+      // direct-to-array serialization path.
+      message.SerializeWithCachedSizesToArray(buffer);
+    } else {
+      // Slightly-slower path when the message is multiple buffers.
+      message.SerializeWithCachedSizes(&output);
+      DRAKE_DEMAND(!output.HadError());
+    }
   }
+
+  raw_output.Flush();
 }
 
 }  // namespace common

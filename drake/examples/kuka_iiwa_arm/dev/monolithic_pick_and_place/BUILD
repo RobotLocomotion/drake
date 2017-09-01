@@ -40,12 +40,12 @@ drake_cc_binary(
         "//drake/common:text_logging_gflags",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
         "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
-        "//drake/examples/kuka_iiwa_arm:robot_plan_interpolator",
         "//drake/examples/kuka_iiwa_arm/iiwa_world:iiwa_wsg_diagram_factory",
-        "//drake/examples/kuka_iiwa_arm/iiwa_world:world_sim_tree_builder",
         "//drake/lcm",
         "//drake/lcmtypes:iiwa",
+        "//drake/manipulation/planner:robot_plan_interpolator",
         "//drake/manipulation/schunk_wsg:schunk_wsg_controller",
+        "//drake/manipulation/util:world_sim_tree_builder",
         "//drake/multibody/rigid_body_plant:contact_results_to_lcm",
         "//drake/systems/analysis:simulator",
         "@com_github_gflags_gflags//:gflags",
@@ -138,14 +138,6 @@ pick_and_place_test(
         "--target=0",
         "--start-position=2",
         "--end-position=0",
-        # TODO(sam.creasey) This is an artisanally crafted
-        # timestep intended to dodge sensitive dependence on
-        # initial conditions in the IK planner.  If the block
-        # slips in the gripper in just the wrong way (which only
-        # happens on some dt values) then the arm tries to move
-        # into a radically different configuration in the process
-        # of placing the block at the target.
-        "--dt 6e-4",
     ],
 )
 

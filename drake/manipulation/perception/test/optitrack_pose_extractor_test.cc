@@ -15,7 +15,6 @@
 namespace drake {
 namespace manipulation {
 namespace perception {
-namespace test {
 
 class OptitrackPoseTest : public ::testing::Test {
  public:
@@ -31,21 +30,18 @@ class OptitrackPoseTest : public ::testing::Test {
     EXPECT_EQ(dut_->get_num_output_ports(), 1);
   }
 
-  VectorX<double> UpdateStateCalcOutput(
+  Isometry3<double> UpdateStateCalcOutput(
       const optitrack::optitrack_frame_t& input_frame) {
     std::unique_ptr<systems::AbstractValue> input(
         new systems::Value<optitrack::optitrack_frame_t>());
     input->SetValue(input_frame);
     context_->FixInputPort(0 /* input port ID*/, std::move(input));
-    std::unique_ptr<systems::DiscreteValues<double>> state =
-        dut_->AllocateDiscreteVariables();
-    state->SetFrom(*context_->get_mutable_discrete_state());
-    dut_->CalcDiscreteVariableUpdates(*context_, state.get());
-    context_->set_discrete_state(std::move(state));
+
+    dut_->CalcUnrestrictedUpdate(*context_, context_->get_mutable_state());
     dut_->CalcOutput(*context_, output_.get());
-    const systems::BasicVector<double>* output_vector =
-        output_->get_vector_data(0);
-    return output_vector->get_value();
+    auto output_value = output_->get_data(0);
+
+    return output_value->GetValue<Isometry3<double>>();
   }
 
  private:
@@ -113,18 +109,17 @@ TEST_F(OptitrackPoseTest, PoseComparisonTest) {
 
   test_frame.rigid_bodies.push_back(default_body);
 
-  VectorX<double> extracted_pose;
+  Isometry3<double> extracted_pose;
   EXPECT_NO_THROW(extracted_pose = UpdateStateCalcOutput(test_frame));
 
   // Compare translation.
-  EXPECT_TRUE(CompareMatrices(extracted_pose.segment<3>(0),
+  EXPECT_TRUE(CompareMatrices(extracted_pose.translation(),
                               test_pose.translation(), 1e-3,
                               MatrixCompareType::absolute));
 
   // Compare quaternions.
-  EXPECT_TRUE(CompareMatrices(extracted_pose.segment<4>(3),
-                              test_pose_quaternion.coeffs(), 1e-3,
-                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(extracted_pose.rotation(), test_pose.rotation(),
+                              1e-3, MatrixCompareType::absolute));
 }
 
 TEST_F(OptitrackPoseTest, PoseInReferenceFrameTest) {
@@ -161,21 +156,19 @@ TEST_F(OptitrackPoseTest, PoseInReferenceFrameTest) {
 
   Isometry3<double> transformed_test_pose = X_WOp * test_pose;
 
-  VectorX<double> extracted_pose;
+  Isometry3<double> extracted_pose;
   EXPECT_NO_THROW(extracted_pose = UpdateStateCalcOutput(test_frame));
 
-  EXPECT_TRUE(CompareMatrices(extracted_pose.segment<3>(0),
+  EXPECT_TRUE(CompareMatrices(extracted_pose.translation(),
                               transformed_test_pose.translation(), 1e-3,
                               MatrixCompareType::absolute));
 
   // Compare quaternions.
-  EXPECT_TRUE(CompareMatrices(
-      extracted_pose.segment<4>(3),
-      Eigen::Quaterniond(transformed_test_pose.linear()).coeffs(), 1e-3,
-      MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(extracted_pose.linear(),
+                              transformed_test_pose.linear(), 1e-3,
+                              MatrixCompareType::absolute));
 }
 
-}  // namespace test
 }  // namespace perception
 }  // namespace manipulation
 }  // namespace drake

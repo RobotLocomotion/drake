@@ -4,14 +4,16 @@
 
 #include <Eigen/Dense>
 
+#include "drake/common/eigen_types.h"
+
 namespace drake {
 namespace solvers {
 namespace detail {
 
 template <typename ScalarType>
-using VecIn = Eigen::Ref<Eigen::Matrix<ScalarType, Eigen::Dynamic, 1> const>;
+using VecIn = Eigen::Ref<const VectorX<ScalarType>>;
 template <typename ScalarType>
-using VecOut = Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>;
+using VecOut = VectorX<ScalarType>;
 
 /** FunctionTraits
  * @brief Define interface to a function of the form y = f(x).

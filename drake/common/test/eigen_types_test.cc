@@ -86,5 +86,117 @@ GTEST_TEST(EigenTypesTest, TraitsSFINAE) {
   // EXPECT_FALSE((is_eigen_vector_of<std::string, double>::value));
 }
 
+GTEST_TEST(EigenTypesTest, EigenPtr_Null) {
+  EigenPtr<const Matrix3d> null_ptr = nullptr;
+  EXPECT_FALSE(null_ptr);
+  EXPECT_TRUE(!null_ptr);
+  EXPECT_THROW(*null_ptr, std::runtime_error);
+}
+
+bool ptr_optional_arg(EigenPtr<MatrixXd> arg = nullptr) {
+  return arg;
+}
+
+GTEST_TEST(EigenTypesTest, EigenPtr_OptionalArg) {
+  EXPECT_FALSE(ptr_optional_arg());
+  MatrixXd X(0, 0);
+  EXPECT_TRUE(ptr_optional_arg(&X));
+}
+
+// Sets M(i, j) = c.
+void set(EigenPtr<MatrixXd> M, const int i, const int j, const double c) {
+  (*M)(i, j) = c;
+}
+
+// Returns M(i, j).
+double get(const EigenPtr<const MatrixXd> M, const int i, const int j) {
+  return M->coeff(i, j);
+}
+
+GTEST_TEST(EigenTypesTest, EigenPtr) {
+  Eigen::MatrixXd M1 = Eigen::MatrixXd::Zero(3, 3);
+  const Eigen::MatrixXd M2 = Eigen::MatrixXd::Zero(3, 3);
+
+  // Tests set.
+  set(&M1, 0, 0, 1);       // Sets M1(0,0) = 1
+  EXPECT_EQ(M1(0, 0), 1);  // Checks M1(0, 0) = 1
+  EXPECT_THROW(set(nullptr, 0, 0, 1), std::runtime_error);
+
+  // Tests get.
+  EXPECT_EQ(get(&M1, 0, 0), 1);  // Checks M1(0, 0) = 1
+  EXPECT_EQ(get(&M2, 0, 0), 0);  // Checks M2(0, 0) = 1
+  EXPECT_THROW(get(nullptr, 0, 0), std::runtime_error);
+
+  // Shows how to use EigenPtr with .block(). Here we introduce `tmp` to avoid
+  // taking the address of temporary object.
+  auto tmp = M1.block(1, 1, 2, 2);
+  set(&tmp, 0, 0, 1);  // tmp(0, 0) = 1. That is, M1(1, 1) = 1.
+  EXPECT_EQ(get(&M1, 1, 1), 1);
+}
+
+GTEST_TEST(EigenTypesTest, EigenPtr_EigenRef) {
+  Eigen::MatrixXd M = Eigen::MatrixXd::Zero(3, 3);
+  Eigen::Ref<Eigen::MatrixXd> M_ref(M);
+
+  // Tests set.
+  set(&M_ref, 0, 0, 1);       // Sets M(0,0) = 1
+  EXPECT_EQ(M_ref(0, 0), 1);  // Checks M(0, 0) = 1
+
+  // Tests get.
+  EXPECT_EQ(get(&M_ref, 0, 0), 1);  // Checks M(0, 0) = 1
+}
+
+// EigenPtr_MixMatrixTypes1 and EigenPtr_MixMatrixTypes2 tests check if we can
+// mix static-size and dynamic-size matrices with EigenPtr. They only check if
+// the code compiles. There are no runtime assertions.
+GTEST_TEST(EigenTypesTest, EigenPtr_MixMatrixTypes1) {
+  MatrixXd M(3, 3);
+  Eigen::Ref<Matrix3d> M_ref(M);         // MatrixXd -> Ref<Matrix3d>
+  EigenPtr<Matrix3d> M_ptr(&M);          // MatrixXd -> EigenPtr<Matrix3d>
+  EigenPtr<MatrixXd> M_ptr_ref(&M_ref);  // Ref<Matrix3d> -> EigenPtr<MatrixXd>
+  EigenPtr<MatrixXd> M_ptr_ref2(M_ptr);  // EigenPtr<MatrixXd> ->
+                                         // EigenPtr<Matrix3d>
+}
+
+GTEST_TEST(EigenTypesTest, EigenPtr_MixMatrixTypes2) {
+  Matrix3d M;
+  Eigen::Ref<MatrixXd> M_ref(M);         // Matrix3d -> Ref<MatrixXd>
+  EigenPtr<MatrixXd> M_ptr(&M);          // Matrix3d -> EigenPtr<MatrixXd>
+  EigenPtr<Matrix3d> M_ptr_ref(&M_ref);  // Ref<MatrixXd> -> EigenPtr<Matrix3d>
+  EigenPtr<Matrix3d> M_ptr_ref2(M_ptr);  // EigenPtr<Matrix3d> ->
+                                         // EigenPtr<MatrixXd>
+}
+
+GTEST_TEST(EigenTypesTest, EigenPtr_Assignment) {
+  const double a = 1;
+  const double b = 2;
+  Matrix3d A;
+  A.setConstant(a);
+  MatrixXd B(3, 3);
+  B.setConstant(b);
+
+  // Ensure that we can use const pointers.
+  EigenPtr<const Matrix3d> const_ptr = &A;
+  EXPECT_TRUE((const_ptr->array() == a).all());
+  const_ptr = &B;
+  EXPECT_TRUE((const_ptr->array() == b).all());
+
+  // Test mutable pointers.
+  EigenPtr<Matrix3d> mutable_ptr = &A;
+  EXPECT_TRUE((mutable_ptr->array() == a).all());
+  mutable_ptr = &B;
+  EXPECT_TRUE((mutable_ptr->array() == b).all());
+
+  // Ensure we have changed neither A nor B.
+  EXPECT_TRUE((A.array() == a).all());
+  EXPECT_TRUE((B.array() == b).all());
+
+  // Ensure that we can assign nullptr.
+  const_ptr = nullptr;
+  EXPECT_FALSE(const_ptr);
+  mutable_ptr = nullptr;
+  EXPECT_FALSE(mutable_ptr);
+}
+
 }  // namespace
 }  // namespace drake

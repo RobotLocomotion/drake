@@ -4,7 +4,4 @@ if(lcm_FOUND)
     drakeKukaIiwaArmCommon
     drakeLCMTypes
     Eigen3::Eigen)
-
-  drake_add_cc_test(robot_plan_interpolator_test)
-  target_link_libraries(robot_plan_interpolator_test drakeKukaIiwaArmCommon)
 endif()

@@ -394,6 +394,12 @@ vtk_repository(
     name = "vtk",
 )
 
+load("//tools:expat.bzl", "expat_repository")
+
+expat_repository(
+    name = "expat",
+)
+
 pkg_config_package(
     name = "libpng",
     modname = "libpng",
@@ -404,13 +410,14 @@ pkg_config_package(
     modname = "tinyxml",
 )
 
-pkg_config_package(
+load("//tools:zlib.bzl", "zlib_repository")
+
+zlib_repository(
     name = "zlib",
-    modname = "zlib",
 )
 
-load("//tools:director.bzl", "director_repository")
+load("//tools:drake_visualizer.bzl", "drake_visualizer_repository")
 
-director_repository(
-    name = "director",
+drake_visualizer_repository(
+    name = "drake_visualizer",
 )

@@ -78,6 +78,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "simulated_schunk_wsg_system_test",
+    # Test size increased to not timeout when run with Valgrind.
+    size = "medium",
     data = [
         "//drake/manipulation/models/wsg_50_description:models",
     ],

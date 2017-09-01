@@ -1,3 +1,4 @@
+#include <cerrno>
 #include <cstring>
 #include <map>
 #include <mutex>
@@ -30,10 +31,23 @@
 // manually delete a client variable.
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
-  // TODO(russt): Take filename as an optional input.
-  const std::string filename = "/tmp/matlab_rpc";
-  google::protobuf::io::FileInputStream raw_input(
-      open(filename.c_str(), O_RDONLY));
+  std::string filename = "/tmp/matlab_rpc";
+
+  if (nrhs == 1) {
+    filename = mxGetStdString(prhs[0]);
+  } else if (nrhs > 1) {
+    mexErrMsgTxt("Usage: call_matlab_client([filename])");
+  }
+
+  int file_descriptor = open(filename.c_str(), O_RDONLY);
+  if (file_descriptor == -1) {
+    const int open_errno = errno;
+    mexErrMsgTxt(
+        ("Failed to open " + filename + ": " + std::strerror(open_errno))
+            .c_str());
+  }
+
+  google::protobuf::io::FileInputStream raw_input(file_descriptor);
   google::protobuf::io::CodedInputStream input(&raw_input);
 
   // TODO(russt): Document use of mkfifo?
@@ -60,7 +74,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     input.PopLimit(limit);
 
     int i;
-    std::vector<mxArray*> lhs(message.lhs_size()), rhs(message.rhs_size());
+    std::vector<mxArray *> lhs(message.lhs_size()), rhs(message.rhs_size());
 
     // Create the input arguments
     for (i = 0; i < message.rhs_size(); i++) {

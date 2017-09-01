@@ -142,7 +142,7 @@ int do_main(int argc, char* argv[]) {
   // Simulate.
   simulator.set_target_realtime_rate(FLAGS_realtime_factor);
   simulator.get_mutable_integrator()->set_maximum_step_size(0.01);
-  simulator.get_mutable_integrator()->set_requested_minimum_step_size(0.01);
+  simulator.get_mutable_integrator()->set_fixed_step_mode(true);
   simulator.Initialize();
   simulator.StepTo(5);
 

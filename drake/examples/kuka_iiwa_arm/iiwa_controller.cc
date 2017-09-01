@@ -11,10 +11,10 @@
 #include "drake/common/text_logging.h"
 #include "drake/common/text_logging_gflags.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
-#include "drake/examples/kuka_iiwa_arm/robot_plan_interpolator.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
+#include "drake/manipulation/planner/robot_plan_interpolator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram.h"
@@ -32,8 +32,10 @@ namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
+using manipulation::planner::RobotPlanInterpolator;
 
-const char* const kIiwaUrdf = "drake/manipulation/models/iiwa_description/urdf/"
+const char* const kIiwaUrdf =
+    "drake/manipulation/models/iiwa_description/urdf/"
     "iiwa14_polytope_collision.urdf";
 const char* const kLcmStatusChannel = "IIWA_STATUS";
 const char* const kLcmCommandChannel = "IIWA_COMMAND";
@@ -50,10 +52,9 @@ int DoMain() {
           kLcmPlanChannel, &lcm));
   plan_sub->set_name("plan_sub");
 
-  const std::string urdf = (!FLAGS_urdf.empty() ? FLAGS_urdf :
-                            FindResourceOrThrow(kIiwaUrdf));
-  auto plan_source =
-      builder.AddSystem<RobotPlanInterpolator>(urdf);
+  const std::string urdf =
+      (!FLAGS_urdf.empty() ? FLAGS_urdf : FindResourceOrThrow(kIiwaUrdf));
+  auto plan_source = builder.AddSystem<RobotPlanInterpolator>(urdf);
   plan_source->set_name("plan_source");
   const int num_joints = plan_source->tree().get_num_positions();
 

@@ -49,7 +49,17 @@ void SetPositionControlledIiwaGains(Eigen::VectorXd* Kp,
                                     Eigen::VectorXd* Ki,
                                     Eigen::VectorXd* Kd);
 
-/// Makes a robotlocomotion::robot_plan_t message.
+/// Scales a plan so that no step exceeds the maximum joint velocity
+/// specified.  The number of columns in @p keyframes must match the
+/// size of @p time.  Times must be in strictly increasing order.
+void ApplyJointVelocityLimits(double max_joint_velocity,
+                              const MatrixX<double>& keyframes,
+                              std::vector<double>* time);
+
+
+/// Makes a robotlocomotion::robot_plan_t message.  The number of
+/// columns in @p keyframes must match the size of @p time.  Times
+/// must be in strictly increasing order.
 robotlocomotion::robot_plan_t EncodeKeyFrames(
     const RigidBodyTree<double>& robot, const std::vector<double>& time,
     const std::vector<int>& info, const MatrixX<double>& keyframes);

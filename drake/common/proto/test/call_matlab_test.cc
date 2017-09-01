@@ -6,9 +6,7 @@
 
 // Note: Unfortunately these really only test whether the code compiles and
 // runs... the actual output must currently be verified by human inspection in
-// the matlab window.
-// TODO(russt): Add tests using the DrakeMockLcm to verify that the correct
-// messages are being sent.
+// the matlab window.  See #6707.
 
 namespace drake {
 namespace common {
@@ -38,8 +36,8 @@ GTEST_TEST(TestCallMatlab, RemoteVarTest) {
   CallMatlab("disp", magic(Eigen::VectorXd::LinSpaced(5, 1, 5)));
 
   CallMatlab("disp", "row 2 (accessed via logicals) is");
-  CallMatlab(
-      "disp", magic(Eigen::Matrix<bool, 4, 1>(false, true, false, false), ":"));
+  CallMatlab("disp",
+             magic(Eigen::Matrix<bool, 4, 1>(false, true, false, false), ":"));
 
   CallMatlab("disp", "Second column should now be 1,2,3,4: ");
   auto n = magic.subsasgn(Eigen::Vector4d(1, 2, 3, 4), ":", 2);

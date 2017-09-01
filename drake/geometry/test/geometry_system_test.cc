@@ -8,6 +8,7 @@
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/query_handle.h"
+#include "drake/geometry/shape_specification.h"
 #include "drake/geometry/test/expect_error_message.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -84,9 +85,10 @@ class GeometrySystemTest : public ::testing::Test {
     return query_handle_;
   }
 
-  static std::unique_ptr<GeometryInstance<double>> make_sphere_instance(
+  static std::unique_ptr<GeometryInstance> make_sphere_instance(
       double radius = 1.0) {
-    return make_unique<GeometryInstance<double>>();
+    return make_unique<GeometryInstance>(Isometry3<double>::Identity(),
+                                         make_unique<Sphere>(radius));
   }
 
   GeometrySystem<double> system_;
@@ -184,7 +186,7 @@ TEST_F(GeometrySystemTest, TopologyAfterAllocation) {
   // Attach frame to world.
   EXPECT_ERROR_MESSAGE(
       system_.RegisterFrame(
-          id, GeometryFrame<double>()),
+          id, GeometryFrame("frame", Isometry3<double>::Identity())),
       std::logic_error,
       "The call to RegisterFrame is invalid; a context has already been "
       "allocated.");
@@ -193,7 +195,7 @@ TEST_F(GeometrySystemTest, TopologyAfterAllocation) {
   EXPECT_ERROR_MESSAGE(
       system_.RegisterFrame(
           id, FrameId::get_new_id(),
-          GeometryFrame<double>()),
+          GeometryFrame("frame", Isometry3<double>::Identity())),
       std::logic_error,
       "The call to RegisterFrame is invalid; a context has already been "
       "allocated.");

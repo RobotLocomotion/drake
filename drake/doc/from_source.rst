@@ -65,12 +65,11 @@ All else being equal, we would recommend developers use Ubuntu Xenial.
 
 Build the collection
 ====================
-There are four ways to build Drake:
+There are three ways to build Drake:
 
 1. :ref:`Using Bazel <build_with_bazel>`
 2. :ref:`Using Make <build_with_make>`
 3. :ref:`Using Ninja <build_with_ninja>`
-4. :ref:`Using ROS Catkin <build_with_ros_catkin>`
 
 For instructions on how to switch build systems, see
 :ref:`this subsection <identifying_build_system_used>`.
@@ -84,7 +83,6 @@ Alternatively, if you want to use Drake as a toolbox within another project,
 you might instead use
 :ref:`make <build_with_make>`,
 :ref:`ninja <build_with_ninja>`, or
-:ref:`catkin <build_with_ros_catkin>`
 as detailed below.
 
 .. _build_with_bazel:
@@ -179,18 +177,6 @@ To review the raw shell commands, compiler flags, and linker flags that CMake
 generated, consult ``build.ninja`` and ``drake/build.ninja``, or run
 ``ninja -v`` for a verbose build.
 
-.. _build_with_ros_catkin:
-
-Build with ROS Catkin
----------------------
-
-See:
-
-.. toctree::
-    :maxdepth: 1
-
-    from_source_ros
-
 .. _build_and_install_directories:
 
 Locations of Build and Install Directories
@@ -206,27 +192,16 @@ Builds based on `Make <https://www.gnu.org/software/make/>`_ and
 ``drake-distro/build/``. Externally visible build artifacts are placed in
 ``drake-distro/build/install``.
 
-Builds using ROS Catkin place build artifacts in Catkin's
-`development space <http://wiki.ros.org/catkin/workspaces#Development_.28Devel.29_Space>`_
-and place externally-visible build artifacts in Catkin's
-`install space <http://wiki.ros.org/catkin/workspaces#Install_Space>`_. When
-following the
-:ref:`official Drake/ROS installation instructions <build_from_source_using_ros_catkin>`,
-these spaces are typically ``drake_catkin_workspace/devel`` and
-``drake_catkin_workspace/install``, respectively.
-
 .. _identifying_build_system_used:
 
 Identifying the Build System Used
 =================================
 
 If you encounter an existing from-source installation of Drake and aren't sure
-whether it was built using ``Make`` or ``Ninja``, [1]_ look
-in ``drake-distro/build``. If there is a file called ``Makefile``, Drake was
-built using ``Make``. If there is a file called ``rules.ninja``, Drake was built
-using ``Ninja``.
-
-.. [1] ROS Catkin is not listed since you should immediately know if Drake was :ref:`compiled using ROS Catkin <build_from_source_using_ros_catkin>` based on whether it is located in a ROS workspace. Once compiled using Catkin, do not attempt to switch build systems.
+whether it was built using ``Make`` or ``Ninja``, look in
+``drake-distro/build``. If there is a file called ``Makefile``, Drake was built
+using ``Make``. If there is a file called ``rules.ninja``, Drake was built using
+``Ninja``.
 
 .. _how_to_switch_build_systems:
 
@@ -253,11 +228,6 @@ If you're using ``make`` or ``ninja``, execute::
     rm -rf externals
     git clean -fdx
     git reset --hard HEAD
-
-If you're using ROS Catkin, simply execute::
-
-    cd drake_catkin_workspace
-    catkin clean
 
 .. _test_from_source_installation:
 
@@ -313,4 +283,4 @@ Troubleshooting
 
 If you're unable to launch ``drake-visualizer`` due to a
 "No module named vtkCommonCorePython" error, see
-:ref:`this FAQ <faq_drake_visualizer_no_module_named_vtk_common_core_python_non_ros>`.
+:ref:`this FAQ <faq_drake_visualizer_no_module_named_vtk_common_core_python>`.

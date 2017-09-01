@@ -19,6 +19,7 @@ cc_library(
             "Eigen/*",
             "Eigen/**/*.h",
             "unsupported/Eigen/*",
+            "unsupported/Eigen/CXX11/Tensor",
             "unsupported/Eigen/**/*.h",
         ],
         exclude = ["**/CMakeLists.txt"],

@@ -22,6 +22,7 @@ drake_cc_library(
     hdrs = [
         "iiwa_common.h",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         "//drake/common:find_resource",
         "//drake/common/trajectories:piecewise_polynomial_trajectory",
@@ -59,32 +60,6 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
-    name = "robot_plan_interpolator",
-    srcs = ["robot_plan_interpolator.cc"],
-    hdrs = ["robot_plan_interpolator.h"],
-    deps = [
-        "//drake/common/trajectories:piecewise_polynomial",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/parsers",
-        "//drake/systems/framework:leaf_system",
-        "@lcmtypes_bot2_core",
-        "@lcmtypes_robotlocomotion",
-    ],
-)
-
-drake_cc_library(
-    name = "sim_diagram_builder",
-    srcs = ["sim_diagram_builder.cc"],
-    hdrs = ["sim_diagram_builder.h"],
-    deps = [
-        "//drake/multibody/rigid_body_plant",
-        "//drake/multibody/rigid_body_plant:drake_visualizer",
-        "//drake/systems/controllers:state_feedback_controller_interface",
-        "//drake/systems/framework",
-    ],
-)
-
 drake_cc_binary(
     name = "iiwa_controller",
     srcs = ["iiwa_controller.cc"],
@@ -95,10 +70,10 @@ drake_cc_binary(
     deps = [
         ":iiwa_common",
         ":iiwa_lcm",
-        ":robot_plan_interpolator",
         "//drake/common:find_resource",
         "//drake/common:text_logging_gflags",
         "//drake/lcm",
+        "//drake/manipulation/planner:robot_plan_interpolator",
         "//drake/systems/analysis:simulator",
         "//drake/systems/lcm",
         "//drake/systems/lcm:lcm_driven_loop",
@@ -124,11 +99,11 @@ drake_cc_binary(
         ":iiwa_lcm",
         ":oracular_state_estimator",
         "//drake/examples/kuka_iiwa_arm/iiwa_world:iiwa_wsg_diagram_factory",
-        "//drake/examples/kuka_iiwa_arm/iiwa_world:world_sim_tree_builder",
         "//drake/lcm",
         "//drake/manipulation/schunk_wsg:schunk_wsg_constants",
         "//drake/manipulation/schunk_wsg:schunk_wsg_controller",
         "//drake/manipulation/schunk_wsg:schunk_wsg_lcm",
+        "//drake/manipulation/util:world_sim_tree_builder",
         "//drake/multibody/rigid_body_plant",
         "//drake/systems/analysis",
         "//drake/systems/controllers:inverse_dynamics_controller",
@@ -152,10 +127,10 @@ drake_cc_binary(
     deps = [
         ":iiwa_common",
         ":iiwa_lcm",
-        ":sim_diagram_builder",
         "//drake/common:find_resource",
-        "//drake/examples/kuka_iiwa_arm/iiwa_world:world_sim_tree_builder",
         "//drake/lcm",
+        "//drake/manipulation/util:sim_diagram_builder",
+        "//drake/manipulation/util:world_sim_tree_builder",
         "//drake/multibody/rigid_body_plant",
         "//drake/multibody/rigid_body_plant:frame_visualizer",
         "//drake/systems/analysis:simulator",
@@ -189,41 +164,6 @@ drake_cc_googletest(
         ":iiwa_lcm",
         "//drake/common:eigen_matrix_compare",
         "//drake/systems/framework",
-    ],
-)
-
-drake_cc_googletest(
-    name = "robot_plan_interpolator_test",
-    data = [
-        ":models",
-        "//drake/manipulation/models/iiwa_description:models",
-    ],
-    deps = [
-        ":iiwa_common",
-        ":robot_plan_interpolator",
-        "//drake/common:find_resource",
-        "//drake/systems/framework",
-    ],
-)
-
-drake_cc_googletest(
-    name = "sim_diagram_builder_test",
-    data = [
-        ":models",
-        "//drake/manipulation/models/iiwa_description:models",
-    ],
-    deps = [
-        ":iiwa_common",
-        ":sim_diagram_builder",
-        "//drake/common:eigen_matrix_compare",
-        "//drake/examples/kuka_iiwa_arm/iiwa_world:world_sim_tree_builder",
-        "//drake/lcm",
-        "//drake/multibody/rigid_body_plant",
-        "//drake/systems/analysis",
-        "//drake/systems/controllers:inverse_dynamics_controller",
-        "//drake/systems/controllers:pid_controller",
-        "//drake/systems/framework",
-        "//drake/systems/primitives:constant_vector_source",
     ],
 )
 
