@@ -3,10 +3,11 @@
 #include <cmath>
 #include <utility>
 
-#include "drake/automotive/maliput/multilane/arc_lane.h"
+#include "drake/automotive/maliput/multilane/arc_road_curve.h"
 #include "drake/automotive/maliput/multilane/branch_point.h"
 #include "drake/automotive/maliput/multilane/cubic_polynomial.h"
-#include "drake/automotive/maliput/multilane/line_lane.h"
+#include "drake/automotive/maliput/multilane/junction.h"
+#include "drake/automotive/maliput/multilane/line_road_curve.h"
 #include "drake/automotive/maliput/multilane/road_geometry.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
@@ -188,10 +189,7 @@ Lane* Builder::BuildConnection(
     Junction* const junction,
     RoadGeometry* const road_geometry,
     std::map<Endpoint, BranchPoint*, EndpointFuzzyOrder>* const bp_map) const {
-  Segment* segment = junction->NewSegment({std::string("s:") + conn->id()});
-  Lane* lane{};
-  api::LaneId lane_id{std::string("l:") + conn->id()};
-
+  std::unique_ptr<RoadCurve> road_curve;
   switch (conn->type()) {
     case Connection::kLine: {
       const V2 xy0(conn->start().xy().x(),
@@ -210,12 +208,8 @@ Lane* Builder::BuildConnection(
           conn->end().z().theta() - conn->start().z().theta(),
           conn->start().z().theta_dot(),
           conn->end().z().theta_dot()));
-
-      lane = segment->NewLineLane(lane_id,
-                                  xy0, dxy,
-                                  lane_bounds_, driveable_bounds_,
-                                  elevation_bounds_,
-                                  elevation, superelevation);
+      road_curve = std::make_unique<LineRoadCurve>(
+          xy0, dxy, elevation, superelevation);
       break;
     }
     case Connection::kArc: {
@@ -237,19 +231,19 @@ Lane* Builder::BuildConnection(
           conn->end().z().theta() - conn->start().z().theta(),
           conn->start().z().theta_dot(),
           conn->end().z().theta_dot()));
-
-      lane = segment->NewArcLane(lane_id,
-                                 center, radius, theta0, d_theta,
-                                 lane_bounds_, driveable_bounds_,
-                                 elevation_bounds_,
-                                 elevation, superelevation);
+      road_curve = std::make_unique<ArcRoadCurve>(
+          center, radius, theta0, d_theta, elevation, superelevation);
       break;
     }
     default: {
       DRAKE_ABORT();
     }
   }
-
+  api::LaneId lane_id{std::string("l:") + conn->id()};
+  Segment* segment = junction->NewSegment({std::string("s:") + conn->id()},
+                                          std::move(road_curve));
+  Lane* lane = segment->NewLane(lane_id, lane_bounds_, driveable_bounds_,
+                                elevation_bounds_);
   AttachBranchPoint(
       conn->start(), lane, api::LaneEnd::kStart, road_geometry, bp_map);
   AttachBranchPoint(
