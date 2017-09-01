@@ -28,15 +28,89 @@ void UniformGravityFieldElement<T>::DoCalcAndAddForceContribution(
     // TODO(amcastro-tri): Use methods get_mass(context) and get_com(context)
     // once caching is in place so that we can retrieve these from the
     // parameters.
-    const T& mass = body.get_default_mass();
+    const double mass = body.get_default_mass();
     const Vector3<double>& p_BoBcm_B = body.get_default_com();
     const Matrix3<T> R_WB = pc.get_X_WB(node_index).rotation();
+    // TODO(amcastro-tri): Consider caching p_BoBcm_W.
     const Vector3<T> p_BoBcm_W = R_WB * p_BoBcm_B;
 
     const Vector3<T> f_Bcm_W = mass * g_W();
     const SpatialForce<T> F_Bo_W(p_BoBcm_W.cross(f_Bcm_W), f_Bcm_W);
     F_Bo_W_array->at(node_index) += F_Bo_W;
   }
+}
+
+template <typename T>
+T UniformGravityFieldElement<T>::CalcPotentialEnergy(
+    const MultibodyTreeContext<T>& context,
+    const PositionKinematicsCache<T>& pc,
+    const VelocityKinematicsCache<T>& vc) const {
+  // Add the potential energy due to gravity for each body in the model.
+  // Skip the world.
+  const MultibodyTree<T>& model = this->get_parent_tree();
+  const int num_bodies = model.get_num_bodies();
+  T TotalPotentialEnergy = 0.0;
+  for (BodyNodeIndex node_index(1); node_index < num_bodies; ++node_index) {
+    const Body<T>& body = model.get_body(node_index);
+
+    // TODO(amcastro-tri): Use methods get_mass(context) and get_com(context)
+    // once caching is in place so that we can retrieve these from the
+    // parameters.
+    const double mass = body.get_default_mass();
+    const Vector3<double>& p_BoBcm_B = body.get_default_com();
+    const Isometry3<T>& X_WB = pc.get_X_WB(node_index);
+    const Matrix3<T> R_WB = X_WB.rotation();
+    const Vector3<T> p_WBo = X_WB.translation();
+    // TODO(amcastro-tri): Consider caching p_BoBcm_W and/or p_WBcm.
+    const Vector3<T> p_BoBcm_W = R_WB * p_BoBcm_B;
+    const Vector3<T> p_WBcm = p_WBo + p_BoBcm_W;
+
+    TotalPotentialEnergy -= (mass * p_WBcm.dot(g_W()));
+  }
+  return TotalPotentialEnergy;
+}
+
+template <typename T>
+T UniformGravityFieldElement<T>::CalcConservativePower(
+    const MultibodyTreeContext<T>& context,
+    const PositionKinematicsCache<T>& pc,
+    const VelocityKinematicsCache<T>& vc) const {
+  // Add the potential energy due to gravity for each body in the model.
+  // Skip the world.
+  const MultibodyTree<T>& model = this->get_parent_tree();
+  const int num_bodies = model.get_num_bodies();
+  T TotalConservativePower = 0.0;
+  for (BodyNodeIndex node_index(1); node_index < num_bodies; ++node_index) {
+    const Body<T>& body = model.get_body(node_index);
+
+    // TODO(amcastro-tri): Use methods get_mass(context) and get_com(context)
+    // once caching is in place so that we can retrieve these from the
+    // parameters.
+    const double mass = body.get_default_mass();
+    const Vector3<double>& p_BoBcm_B = body.get_default_com();
+    const Isometry3<T>& X_WB = pc.get_X_WB(node_index);
+    const Matrix3<T> R_WB = X_WB.rotation();
+    // TODO(amcastro-tri): Consider caching p_BoBcm_W.
+    const Vector3<T> p_BoBcm_W = R_WB * p_BoBcm_B;
+
+    const SpatialVelocity<T>& V_WB = vc.get_V_WB(node_index);
+    const SpatialVelocity<T> V_WBcm = V_WB.Shift(p_BoBcm_W);
+    const Vector3<T>& v_WBcm = V_WBcm.translational();
+
+    // The conservative power is defined to be positive when the potential
+    // energy decreases.
+    TotalConservativePower += (mass * v_WBcm.dot(g_W()));
+  }
+  return TotalConservativePower;
+}
+
+template <typename T>
+T UniformGravityFieldElement<T>::CalcNonConservativePower(
+    const MultibodyTreeContext<T>& context,
+    const PositionKinematicsCache<T>& pc,
+    const VelocityKinematicsCache<T>& vc) const {
+  // A uniform gravity field is conservative. Therefore return zero power.
+  return 0.0;
 }
 
 template <typename T>
