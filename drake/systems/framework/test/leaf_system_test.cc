@@ -1064,15 +1064,33 @@ GTEST_TEST(FeedthroughTest, SymbolicSparsity) {
 }
 
 // Sanity check the default implementation of ToAutoDiffXd.
-GTEST_TEST(AutoDiffTest, ScalarConverter) {
+GTEST_TEST(AutoDiffTest, ScalarConverterAutoDiff) {
   SymbolicSparsitySystem<double> dut;
+  dut.set_name("special_name");
 
-  // Convert to AutoDiffXd.
-  std::unique_ptr<System<AutoDiffXd>> autodiff = dut.ToAutoDiffXd();
-  ASSERT_NE(autodiff, nullptr);
-  const auto* const downcast =
-      dynamic_cast<SymbolicSparsitySystem<AutoDiffXd>*>(autodiff.get());
-  ASSERT_NE(downcast, nullptr);
+  // Conversion works.
+  std::unique_ptr<SymbolicSparsitySystem<AutoDiffXd>> clone =
+      System<double>::ToAutoDiffXd(dut);
+  ASSERT_NE(clone, nullptr);
+  EXPECT_EQ(clone->get_name(), "special_name");
+
+  // Conversion is not supported.
+  EXPECT_THROW(TestSystem<double>{}.ToAutoDiffXd(), std::exception);
+}
+
+// Sanity check the default implementation of ToSymbolic.
+GTEST_TEST(AutoDiffTest, ScalarConverterSymbolic) {
+  SymbolicSparsitySystem<double> dut;
+  dut.set_name("special_name");
+
+  // Conversion works.
+  std::unique_ptr<SymbolicSparsitySystem<symbolic::Expression>> clone =
+      System<double>::ToSymbolic(dut);
+  ASSERT_NE(clone, nullptr);
+  EXPECT_EQ(clone->get_name(), "special_name");
+
+  // Conversion is not supported.
+  EXPECT_EQ(TestSystem<double>{}.ToSymbolic(), nullptr);
 }
 
 GTEST_TEST(GraphvizTest, Attributes) {
