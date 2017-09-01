@@ -53,7 +53,6 @@ class Constraint2DSolverTest : public ::testing::Test {
   // Zero tolerance for results depending on LCP solve (< 0 indicates not set).
   double lcp_eps_{-1};
   double cfm_{0};    // Regularization parameter.
-  double eps_{-1};   // Zero tolerance (< 0 indicates not set).
   ConstraintSolver<double> solver_;
   std::unique_ptr<Rod2D<double>> rod_;
   std::unique_ptr<Context<double>> context_;
