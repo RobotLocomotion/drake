@@ -8,11 +8,11 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
-UniformGravityElement<T>::UniformGravityElement(Vector3<double> g_W) :
+UniformGravityFieldElement<T>::UniformGravityFieldElement(Vector3<double> g_W) :
     g_W_(g_W) {}
 
 template <typename T>
-void UniformGravityElement<T>::DoCalcAndAddForceContribution(
+void UniformGravityFieldElement<T>::DoCalcAndAddForceContribution(
     const MultibodyTreeContext<T>& context,
     const PositionKinematicsCache<T>& pc,
     const VelocityKinematicsCache<T>& vc,
@@ -41,21 +41,21 @@ void UniformGravityElement<T>::DoCalcAndAddForceContribution(
 
 template <typename T>
 std::unique_ptr<ForceElement<double>>
-UniformGravityElement<T>::DoCloneToScalar(
+UniformGravityFieldElement<T>::DoCloneToScalar(
     const MultibodyTree<double>& tree_clone) const {
-  return std::make_unique<UniformGravityElement<double>>(g_W());
+  return std::make_unique<UniformGravityFieldElement<double>>(g_W());
 }
 
 template <typename T>
 std::unique_ptr<ForceElement<AutoDiffXd>>
-UniformGravityElement<T>::DoCloneToScalar(
+UniformGravityFieldElement<T>::DoCloneToScalar(
     const MultibodyTree<AutoDiffXd>& tree_clone) const {
-  return std::make_unique<UniformGravityElement<AutoDiffXd>>(g_W());
+  return std::make_unique<UniformGravityFieldElement<AutoDiffXd>>(g_W());
 }
 
 // Explicitly instantiates on the most common scalar types.
-template class UniformGravityElement<double>;
-template class UniformGravityElement<AutoDiffXd>;
+template class UniformGravityFieldElement<double>;
+template class UniformGravityFieldElement<AutoDiffXd>;
 
 }  // namespace multibody
 }  // namespace drake

@@ -85,11 +85,11 @@ class ForceElement : public
 };
 
 template <typename T>
-class UniformGravityElement : public ForceElement<T> {
+class UniformGravityFieldElement : public ForceElement<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UniformGravityElement)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UniformGravityFieldElement)
 
-  UniformGravityElement(Vector3<double> g_W);
+  UniformGravityFieldElement(Vector3<double> g_W);
 
   /// Returns the acceleration of gravity vector, expressed in the world frame
   /// W.

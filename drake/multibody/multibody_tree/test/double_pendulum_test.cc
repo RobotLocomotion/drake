@@ -193,7 +193,7 @@ class PendulumTests : public ::testing::Test {
         Vector3d::UnitZ() /*revolute axis*/);
 
     // Add force element for a constant gravity.
-    model_->AddForceElement<UniformGravityElement>(
+    model_->AddForceElement<UniformGravityFieldElement>(
         Vector3d(0.0, -acceleration_of_gravity_, 0.0));
   }
 

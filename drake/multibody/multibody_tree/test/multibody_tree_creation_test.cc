@@ -227,7 +227,7 @@ class TreeTopologyTests : public ::testing::Test {
     ConnectBodies(*bodies_[0], *bodies_[4]);  // mob. 6
 
     // Adds a force element for a uniform gravity field.
-    model_->AddForceElement<UniformGravityElement>(g_);
+    model_->AddForceElement<UniformGravityFieldElement>(g_);
   }
 
   const RigidBody<double>* AddTestBody() {
