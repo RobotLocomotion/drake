@@ -217,14 +217,7 @@ class RigidBodyPlant : public LeafSystem<T> {
     VectorX<T> x0 = VectorX<T>::Zero(get_num_states());
     x0.head(get_num_positions()) = tree_->getZeroConfiguration();
 
-    if (timestep_ == 0.0) {
-      // Extract a pointer to continuous state from the context.
-      ContinuousState<T>* xc = state->get_mutable_continuous_state();
-      DRAKE_DEMAND(xc != nullptr);
-
-      // Write the zero configuration into the continuous state.
-      xc->SetFromVector(x0);
-    } else {
+    if (is_state_discrete()) {
       // Extract a pointer to the discrete state from the context.
       BasicVector<T>* xd =
           state->get_mutable_discrete_state()->get_mutable_vector(0);
@@ -232,6 +225,13 @@ class RigidBodyPlant : public LeafSystem<T> {
 
       // Write the zero configuration into the discrete state.
       xd->SetFromVector(x0);
+    } else {
+      // Extract a pointer to continuous state from the context.
+      ContinuousState<T>* xc = state->get_mutable_continuous_state();
+      DRAKE_DEMAND(xc != nullptr);
+
+      // Write the zero configuration into the continuous state.
+      xc->SetFromVector(x0);
     }
   }
 
@@ -322,12 +322,15 @@ class RigidBodyPlant : public LeafSystem<T> {
 
   // Gets a constant reference to the state vector, irrespective of whether
   // the state is continuous or discrete.
-  Eigen::Ref<const VectorX<T>> GetStateVector(
+  Eigen::VectorBlock<const VectorX<T>> GetStateVector(
       const Context<T>& context) const;
 
-  // Get the time step used to construct the plant. If the step is zero, the
-  // system is continuous. Otherwise, the step corresponds to the update rate
-  // (seconds per update).
+  /// Gets whether this system is modeled using discrete state.
+  bool is_state_discrete() const { return timestep_ > 0.0; }
+
+  /// Get the time step used to construct the plant. If the step is zero, the
+  /// system is continuous. Otherwise, the step corresponds to the update rate
+  /// (seconds per update).
   double get_time_step() const { return timestep_; }
 
  protected:

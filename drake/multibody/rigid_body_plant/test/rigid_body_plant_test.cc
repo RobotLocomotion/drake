@@ -223,7 +223,7 @@ class KukaArmTest : public ::testing::TestWithParam<double> {
         drake::multibody::joints::kFixed, nullptr /* weld to frame */,
         tree.get());
 
-    kuka_plant_ = make_unique<RigidBodyPlant<double>>(move(tree), 
+    kuka_plant_ = make_unique<RigidBodyPlant<double>>(move(tree),
                                                       this->GetParam());
 
     context_ = kuka_plant_->CreateDefaultContext();
@@ -245,8 +245,8 @@ class KukaArmTest : public ::testing::TestWithParam<double> {
 // Tests that the KUKA iiwa arm's RigidBodyPlant allocates a continuous state
 // of the proper size in the context.
 TEST_P(KukaArmTest, StateHasTheRightSizes) {
-  // Only check these if the time step is zero (indicating continuous state).
-  if (kuka_plant_->get_time_step() == 0.0) {
+  // Only check these if the state is continuous.
+  if (!kuka_plant_->is_state_discrete()) {
     const VectorBase<double>& xc =
         context_->get_continuous_state()->get_generalized_position();
     const VectorBase<double>& vc =
@@ -328,7 +328,7 @@ TEST_P(KukaArmTest, EvalOutput) {
   }
   VectorXd desired_state(kNumStates_);
   desired_state << desired_angles, VectorXd::Zero(kNumVelocities_);
-  auto x = kuka_plant_->GetStateVector(*context_); 
+  auto x = kuka_plant_->GetStateVector(*context_);
   ASSERT_EQ(x, desired_state);
 
   // Four output ports:
@@ -383,7 +383,7 @@ TEST_P(KukaArmTest, EvalOutput) {
 // Instantiate the value-parameterized tests to run twice: once with continuous
 // state and once with discrete state.
 INSTANTIATE_TEST_CASE_P(Blank, KukaArmTest,
-    testing::Values(0.0, /* continuous state */, 1e-3 /* discrete state */));
+    testing::Values(0.0 /* continuous state */, 1e-3 /* discrete state */));
 
 GTEST_TEST(rigid_body_plant_test, TestJointLimitForcesFormula) {
   typedef RigidBodyPlant<double> RBP;

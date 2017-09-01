@@ -80,7 +80,6 @@ TwistVector<T> KinematicsResults<T>::get_twist_in_world_aligned_body_frame(
 
 template <typename T>
 void KinematicsResults<T>::UpdateFromContext(const Context<T>& context) {
-
   const int nq = tree_->get_num_positions();
   const int nv = tree_->get_num_velocities();
 
