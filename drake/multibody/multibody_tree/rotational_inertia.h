@@ -477,56 +477,32 @@ class RotationalInertia {
   /// @throws std::runtime_error if principal moments of inertia cannot be
   ///         calculated (eigenvalue solver) or if scalar type T cannot be
   ///         converted to a double.
-  bool CouldBePhysicallyValid(std::vector<std::string>* failures) const {
-    if (IsNaN()) {
-      std::stringstream ss;
-      ss << "Rotational inertia has NaN entries:\n"
-         << *this
-         << std::endl;
-      failures->push_back(ss.str());
-    }
+  bool CouldBePhysicallyValid() const {
+    if (IsNaN()) return false;
 
     // All the moments of inertia should be non-negative, so the maximum moment
     // of inertia (which is trace / 2) should be non-negative.
     const T max_possible_inertia_moment  = CalcMaximumPossibleMomentOfInertia();
-    if (max_possible_inertia_moment < 0) {
-      std::stringstream ss;
-      ss << "The trace of this rotational inertia is negative and equal to: \n"
-         << Trace() << std::endl;
-      failures->push_back(ss.str());
-    }
+    if (max_possible_inertia_moment < 0) return false;
 
     // To check the validity of rotational inertia use an epsilon value that is
     // a number related to machine precision multiplied by the largest possible
     // element that can appear in a valid `this` rotational inertia.  Note: The
     // largest product of inertia is at most half the largest moment of inertia.
-    const double precision = 20 * std::numeric_limits<double>::epsilon();
+    const double precision = 10 * std::numeric_limits<double>::epsilon();
     const T epsilon = precision * max_possible_inertia_moment;
 
     // Test `this` rotational inertia's moments of inertia to be mostly
     // non-negative and also satisfy triangle inequality.
     const Vector3<T> m = get_moments();
     if (!AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
-        m(0), m(1), m(2), epsilon, failures)) {
-      std::stringstream ss;
-      ss << "Moments of inertia do not satisfy the triangle inequality: ["
-         << m.transpose() << "]\n";
-      failures->push_back(ss.str());
-    }
+        m(0), m(1), m(2), epsilon)) return false;
 
     // Calculate principal moments of inertia p and then test these principal
     // moments to be mostly non-negative and also satisfy triangle inequality.
     const Vector3<double> p = CalcPrincipalMomentsOfInertia();
-    if (!AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
-        p(0), p(1), p(2), epsilon, failures)) {
-      std::stringstream ss;
-      ss << "Principal moments of inertia do not satisfy the triangle"
-            "inequality: [" << p.transpose() << "]\n";
-      failures->push_back(ss.str());
-    }
-
-    if (failures->size() != 0) return false;
-    return true;
+    return AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
+        p(0), p(1), p(2), epsilon);
   }
 
   /// Re-expresses `this` rotational inertia `I_BP_E` to `I_BP_A`.
@@ -892,30 +868,12 @@ class RotationalInertia {
   //       0 <= Imin <= tr/3,   tr/3 <= Imed <= tr/2,   tr/3 <= Imax <= tr/2.
   //       If Imin == 0, then Imed == Imax == tr / 2.
   static bool AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
-      const T& Ixx, const T& Iyy, const T& Izz, const T& epsilon,
-      std::vector<std::string>* failures) {
+      const T& Ixx, const T& Iyy, const T& Izz, const T& epsilon) {
     const bool are_moments_near_positive = AreMomentsOfInertiaNearPositive(
         Ixx, Iyy, Izz, epsilon);
-    if (!are_moments_near_positive) {
-      std::stringstream ss;
-      ss << "Moments of inertia are not positive: ["
-         << Ixx << " " << Iyy << " " << Izz << " " << "]\n";
-      failures->push_back(ss.str());
-    }
-
     const bool is_triangle_inequality_satisified = Ixx + Iyy + epsilon >= Izz &&
-                                                   Ixx + Izz + epsilon >= Iyy &&
+                                                   Ixx + Iyy + epsilon >= Iyy &&
                                                    Iyy + Izz + epsilon >= Ixx;
-    if (!is_triangle_inequality_satisified) {
-      std::stringstream ss;
-      ss << " The triangle inequality is not satisfied:\n"
-         << "   Ixx + Iyy - Izz = " << Ixx + Iyy - Izz << std::endl
-         << "   Ixx + Izz - Iyy = " << Ixx + Izz - Iyy << std::endl
-         << "   Iyy + Izz - Ixx = " << Iyy + Izz - Ixx << std::endl
-         << "   with epsilon = " << epsilon << std::endl;
-      failures->push_back(ss.str());
-    }
-
     return are_moments_near_positive && is_triangle_inequality_satisified;
   }
 
@@ -934,12 +892,7 @@ class RotationalInertia {
 
   // Throws an exception if a rotational inertia is not physically valid.
   void ThrowIfNotPhysicallyValid() {
-    std::vector<std::string> failures;
-    if (!CouldBePhysicallyValid(&failures)) {
-      for (const auto& s : failures) {
-        std::cout << s << std::endl;
-        //drake::log()->error(s);
-      }
+    if (!CouldBePhysicallyValid()) {
       throw std::logic_error("Error: Rotational inertia did not pass test: "
                              "CouldBePhysicallyValid().");
     }
