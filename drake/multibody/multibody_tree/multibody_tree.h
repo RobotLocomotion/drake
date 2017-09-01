@@ -400,7 +400,8 @@ class MultibodyTree {
   template<template<typename Scalar> class ForceElementType, typename... Args>
   const ForceElementType<T>& AddForceElement(Args&&... args) {
     static_assert(std::is_base_of<ForceElement<T>, ForceElementType<T>>::value,
-                  "ForceElementType<T> must be a sub-class of ForceElement<T>.");
+                  "ForceElementType<T> must be a sub-class of "
+                  "ForceElement<T>.");
     return AddForceElement(
         std::make_unique<ForceElementType<T>>(std::forward<Args>(args)...));
   }

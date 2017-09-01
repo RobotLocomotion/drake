@@ -75,7 +75,7 @@ class ForceElement : public
   /// @pre The position kinematics `pc` must have been previously updated with a
   /// call to CalcPositionKinematicsCache().
   /// @pre The velocity kinematics `vc` must have been previously updated with a
-  /// call to CalcVelocityKinematicsCache(). 
+  /// call to CalcVelocityKinematicsCache().
   void CalcAndAddForceContribution(const MultibodyTreeContext<T>& context,
                                    const PositionKinematicsCache<T>& pc,
                                    const VelocityKinematicsCache<T>& vc,
@@ -168,7 +168,6 @@ class ForceElement : public
   /// @endcond
 
  protected:
-
   virtual void DoCalcAndAddForceContribution(
       const MultibodyTreeContext<T>& context,
       const PositionKinematicsCache<T>& pc,
