@@ -270,6 +270,17 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
   // Initialize contact force vector.
   cf->resize(num_contacts + num_spanning_vectors + num_limits);
 
+  // Look for a second fast exit.
+  const VectorX<T> candidate_accel = problem_data.solve_inertia(
+      problem_data.tau);
+  const VectorX<T> Nv = problem_data.N_mult(candidate_accel) + problem_data.kN;
+  const VectorX<T> Lv = problem_data.L_mult(candidate_accel) + problem_data.kL;
+  if ((num_contacts == 0 || Nv.minCoeff() >= 0) &&
+      (num_limits == 0 || Lv.minCoeff() >= 0)) {
+    cf->setZero();
+    return;
+  }
+
   // Set up the linear complementarity problem.
   MatrixX<T> MM;
   VectorX<T> qq;
@@ -286,6 +297,7 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
   VectorX<T> zz;
   bool success = lcp_.SolveLcpLemke(MM, qq, &zz, -1, zero_tol);
   VectorX<T> ww = MM * zz + qq;
+  const double max_dot = (zz.array() * ww.array()).abs().maxCoeff();
 
   // NOTE: This LCP might not be solvable due to inconsistent configurations.
   // Check the answer and throw a runtime error if it's no good.
@@ -298,7 +310,8 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
   if (!success || (zz.size() > 0 &&
       (zz.minCoeff() < -num_vars * npivots * zero_tol ||
       ww.minCoeff() < -num_vars * npivots * zero_tol ||
-      abs(zz.dot(ww)) > num_vars * num_vars * npivots * zero_tol))) {
+      max_dot > max(T(1), zz.maxCoeff()) * max(T(1), ww.maxCoeff()) * num_vars *
+          npivots * zero_tol))) {
     throw std::runtime_error("Unable to solve LCP- it may be unsolvable.");
   }
 
@@ -345,11 +358,10 @@ void ConstraintSolver<T>::SolveImpactProblem(
                                                    problem_data.r.end(), 0);
 
   // If no impact, do not apply the impact model.
-  if ((num_contacts == 0 ||
-       (problem_data.N_mult(problem_data.v) + problem_data.kN).minCoeff() >= 0)
-   && (num_limits == 0 ||
-       (problem_data.L_mult(problem_data.v) + problem_data.kL).minCoeff() >= 0)
-      ) {
+  const VectorX<T> Nv = problem_data.N_mult(problem_data.v) + problem_data.kN;
+  const VectorX<T> Lv = problem_data.L_mult(problem_data.v) + problem_data.kL;
+  if ((num_contacts == 0 || Nv.minCoeff() >= 0) &&
+      (num_limits == 0 || Lv.minCoeff() >= 0)) {
     cf->setZero(num_contacts + num_spanning_vectors + num_limits);
     return;
   }
@@ -373,6 +385,7 @@ void ConstraintSolver<T>::SolveImpactProblem(
   VectorX<T> zz;
   bool success = lcp_.SolveLcpLemke(MM, qq, &zz, -1, zero_tol);
   VectorX<T> ww = MM * zz + qq;
+  const double max_dot = (zz.array() * ww.array()).abs().maxCoeff();
 
   // NOTE: This LCP should always be solvable.
   // Check the answer and throw a runtime error if it's no good.
@@ -386,7 +399,8 @@ void ConstraintSolver<T>::SolveImpactProblem(
       (zz.size() > 0 &&
        (zz.minCoeff() < -num_vars * npivots * zero_tol ||
         ww.minCoeff() < -num_vars * npivots * zero_tol ||
-        abs(zz.dot(ww)) > num_vars * num_vars * npivots * zero_tol))) {
+        max_dot > max(T(1), zz.maxCoeff()) * max(T(1), ww.maxCoeff()) *
+            num_vars * npivots * zero_tol))) {
     throw std::runtime_error("Unable to solve LCP- more regularization might "
                                  "be necessary.");
   }
