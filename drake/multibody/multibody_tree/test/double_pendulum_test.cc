@@ -266,6 +266,8 @@ class PendulumTests : public ::testing::Test {
   const double link2_Ic_ = .33;
   const double half_link1_length_ = link1_length_ / 2;
   const double half_link2_length_ = link2_length_ / 2;
+  // Acceleration of gravity at Earth's surface.
+  const double acceleration_of_gravity_ = 9.81;
   // Poses:
   // Desired pose of the lower link frame L in the world frame W.
   const Isometry3d X_WL_{Translation3d(0.0, -half_link1_length_, 0.0)};
@@ -524,6 +526,91 @@ class PendulumKinematicTests : public PendulumTests {
 
     v = Vector2d::Ones();  // Both velocities are non-zero.
     VerifyInverseDynamics(q, v, vdot);
+  }
+
+  /// This method verifies the correctness of
+  /// MultibodyTree::CalcForceElementsContribution() to compute the vector of
+  /// generalized forces due to gravity.
+  /// Generalized forces due to gravity are a function of positions only and are
+  /// denoted by G(q).
+  /// The solution is verified against the independent benchmark from
+  /// drake::multibody::benchmarks::Acrobot.
+  Vector2d VerifyGravityTerm(
+      const Eigen::Ref<const VectorXd>& q) const {
+    DRAKE_DEMAND(q.size() == model_->get_num_positions());
+
+    // This is the minimum factor of the machine precision within which these
+    // tests pass. This factor incorporates an additional factor of two (2) to
+    // be on the safe side on other architectures (particularly in Macs).
+    const int kEpsilonFactor = 5;
+    const double kTolerance = kEpsilonFactor * kEpsilon;
+
+    const double shoulder_angle =  q(0);
+    const double elbow_angle =  q(1);
+
+    PositionKinematicsCache<double> pc(model_->get_topology());
+    VelocityKinematicsCache<double> vc(model_->get_topology());
+    // Even though G(q) only depends on positions, other velocity dependent
+    // forces (for instance damping) could depend on velocities. Therefore we
+    // set the velocity kinematics cache entries to zero so that only G(q) gets
+    // computed (at least for this pendulum model that only includes gravity
+    // and damping).
+    vc.InitializeToZero();
+
+    // ======================================================================
+    // Compute position kinematics.
+    shoulder_mobilizer_->set_angle(context_.get(), shoulder_angle);
+    elbow_mobilizer_->set_angle(context_.get(), elbow_angle);
+    model_->CalcPositionKinematicsCache(*context_, &pc);
+
+    // ======================================================================
+    // Compute inverse dynamics. Add applied forces due to gravity.
+
+    // Spatial force on the upper link due to gravity.
+    const SpatialForce<double> F_U_W =
+        SpatialForce<double>(
+            Vector3d::Zero(),
+            -link1_mass_ * acceleration_of_gravity_ * Vector3d::UnitY());
+
+    // Spatial force on the lower link due to gravity.
+    const SpatialForce<double> F_Lcm_W =
+        SpatialForce<double>(
+            Vector3d::Zero(),
+            -link2_mass_ * acceleration_of_gravity_ * Vector3d::UnitY());
+    // Obtain the position of the lower link's center of mass.
+    const Isometry3d& X_WL = get_body_pose_in_world(pc, *lower_link_);
+    const Matrix3d R_WL = X_WL.rotation();
+    const Vector3d p_LoLcm_L = lower_link_->get_default_com();
+    const Vector3d p_LoLcm_W = R_WL * p_LoLcm_L;
+    const SpatialForce<double> F_L_W = F_Lcm_W.Shift(-p_LoLcm_W);
+
+    VectorXd tau(model_->get_num_velocities());
+    tau.setZero();
+
+    vector<SpatialForce<double>> F_Bo_W_array(model_->get_num_bodies());
+    F_Bo_W_array[upper_link_->get_node_index()] = F_U_W;
+    F_Bo_W_array[lower_link_->get_node_index()] = F_L_W;
+
+    // ======================================================================
+    // To get generalized forces, compute inverse dynamics applying the forces
+    // computed by CalcForceElementsContribution().
+    // Notice that we do not need to allocate extra memory since both
+    // F_Bo_W_array and tau can be used as input and output arguments. However,
+    // the data given at input is lost on output. A user might choose then to
+    // have separate input/output arrays.
+    VectorXd vdot(model_->get_num_velocities());
+    vector<SpatialAcceleration<double>> A_WB_array(model_->get_num_bodies());
+    model_->CalcInverseDynamics(
+        *context_, pc, vc, vdot, F_Bo_W_array, tau,
+        &A_WB_array, &F_Bo_W_array, tau);
+
+    // ======================================================================
+    // Compute expected values using the acrobot benchmark.
+    const Vector2d G_expected = acrobot_benchmark_.CalcGravityVector(
+        shoulder_angle, elbow_angle);
+
+    EXPECT_TRUE(tau.isApprox(G_expected, kTolerance));
+    return tau;
   }
 
   /// Given the transformation `X_AB` between two frames A and B and its time
@@ -893,6 +980,33 @@ TEST_F(PendulumKinematicTests, MassMatrix) {
   VerifyMassMatrixViaInverseDynamics(M_PI / 3.0, M_PI / 2.0);
   VerifyMassMatrixViaInverseDynamics(M_PI / 3.0, M_PI / 3.0);
   VerifyMassMatrixViaInverseDynamics(M_PI / 3.0, M_PI / 4.0);
+}
+
+// A test to compute generalized forces due to gravity.
+TEST_F(PendulumKinematicTests, GravityTerm) {
+  // A list of conditions used for testing.
+  std::vector<Vector2d> test_matrix;
+
+  test_matrix.push_back({0.0, 0.0});
+  test_matrix.push_back({0.0, M_PI / 2.0});
+  test_matrix.push_back({0.0, M_PI / 3.0});
+  test_matrix.push_back({0.0, M_PI / 4.0});
+
+  test_matrix.push_back({M_PI / 2.0, M_PI / 2.0});
+  test_matrix.push_back({M_PI / 2.0, M_PI / 3.0});
+  test_matrix.push_back({M_PI / 2.0, M_PI / 4.0});
+
+  test_matrix.push_back({M_PI / 3.0, M_PI / 2.0});
+  test_matrix.push_back({M_PI / 3.0, M_PI / 3.0});
+  test_matrix.push_back({M_PI / 3.0, M_PI / 4.0});
+
+  test_matrix.push_back({M_PI / 4.0, M_PI / 2.0});
+  test_matrix.push_back({M_PI / 4.0, M_PI / 3.0});
+  test_matrix.push_back({M_PI / 4.0, M_PI / 4.0});
+
+  for (const Vector2d& q : test_matrix) {
+    VerifyGravityTerm(q);
+  }
 }
 
 // Compute the spatial velocity of each link as measured in the world frame
