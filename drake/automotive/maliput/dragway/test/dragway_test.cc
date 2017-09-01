@@ -164,7 +164,8 @@ class MaliputDragwayLaneTest : public ::testing::Test {
     const api::BranchPoint* branch_point =
         lane->GetBranchPoint(api::LaneEnd::kStart);
     EXPECT_NE(branch_point, nullptr);
-    EXPECT_EQ(branch_point->id().id, lane->id().id + "_Branch_Point");
+    EXPECT_EQ(branch_point->id(),
+              api::BranchPointId(lane->id().string() + "_Branch_Point"));
     EXPECT_EQ(branch_point->road_geometry(), road_geometry);
 
     // Verifies correctness of the confluent branches.
@@ -252,7 +253,7 @@ class MaliputDragwayLaneTest : public ::testing::Test {
                V
  */
 TEST_F(MaliputDragwayLaneTest, SingleLane) {
-  const api::RoadGeometryId road_geometry_id({"OneLaneDragwayRoadGeometry"});
+  const api::RoadGeometryId road_geometry_id("OneLaneDragwayRoadGeometry");
   const int kNumLanes = 1;
 
   RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_, lane_width_,
@@ -265,7 +266,7 @@ TEST_F(MaliputDragwayLaneTest, SingleLane) {
   ASSERT_NE(segment, nullptr);
   EXPECT_EQ(segment->lane(0)->length(), length_);
   EXPECT_EQ(segment->num_lanes(), 1);
-  EXPECT_EQ(segment->id().id, "Dragway_Segment_ID");
+  EXPECT_EQ(segment->id(), api::SegmentId("Dragway_Segment_ID"));
 
   const int kLaneIndex = 0;
   const api::Lane* lane = segment->lane(kLaneIndex);
@@ -297,7 +298,7 @@ TEST_F(MaliputDragwayLaneTest, SingleLane) {
                               V
  */
 TEST_F(MaliputDragwayLaneTest, TwoLaneDragway) {
-  const api::RoadGeometryId road_geometry_id({"TwoLaneDragwayRoadGeometry"});
+  const api::RoadGeometryId road_geometry_id("TwoLaneDragwayRoadGeometry");
   const int kNumLanes = 2;
 
   RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_,
@@ -312,7 +313,7 @@ TEST_F(MaliputDragwayLaneTest, TwoLaneDragway) {
   ASSERT_NE(lane_zero, nullptr);
   EXPECT_EQ(lane_zero->length(), length_);
   EXPECT_EQ(segment->num_lanes(), kNumLanes);
-  EXPECT_EQ(segment->id().id, "Dragway_Segment_ID");
+  EXPECT_EQ(segment->id(), api::SegmentId("Dragway_Segment_ID"));
 
   for (int i = 0; i < kNumLanes; ++i) {
     const api::Lane* lane = segment->lane(i);
@@ -328,7 +329,7 @@ TEST_F(MaliputDragwayLaneTest, TwoLaneDragway) {
 // dragway::RoadGeometry::IsGeoPositionOnDragway() does not incorrectly return
 // false.
 TEST_F(MaliputDragwayLaneTest, TestToRoadPositionOnRoad) {
-  const api::RoadGeometryId road_geometry_id({"TwoLaneDragwayRoadGeometry"});
+  const api::RoadGeometryId road_geometry_id("TwoLaneDragwayRoadGeometry");
   const int kNumLanes = 2;
 
   RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_,
@@ -401,7 +402,7 @@ TEST_F(MaliputDragwayLaneTest, TestToRoadPositionOnRoad) {
 // dragway::RoadGeometry::IsGeoPositionOnDragway() does not incorrectly return
 // false.
 TEST_F(MaliputDragwayLaneTest, TestToRoadPositionOffRoad) {
-  const api::RoadGeometryId road_geometry_id({"TwoLaneDragwayRoadGeometry"});
+  const api::RoadGeometryId road_geometry_id("TwoLaneDragwayRoadGeometry");
   const int kNumLanes = 2;
 
   RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_,
@@ -497,7 +498,7 @@ TEST_F(MaliputDragwayLaneTest, TestToRoadPositionOffRoad) {
 // Tests that dragway::RoadGeometry::ToRoadPosition() can be called with
 // parameters `nearest_position` and `distance` set to `nullptr`.
 TEST_F(MaliputDragwayLaneTest, TestToRoadPositionNullptr) {
-  const api::RoadGeometryId road_geometry_id({"TwoLaneDragwayRoadGeometry"});
+  const api::RoadGeometryId road_geometry_id("TwoLaneDragwayRoadGeometry");
   const int kNumLanes = 2;
 
   RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_,
@@ -522,7 +523,7 @@ TEST_F(MaliputDragwayLaneTest, TestToRoadPositionNullptr) {
 // Tests dragway::Lane::ToLanePosition() using geographic positions whose
 // projections onto the XY plane reside within the lane's driveable region.
 TEST_F(MaliputDragwayLaneTest, TestToLanePosition) {
-  const api::RoadGeometryId road_geometry_id({"OneLaneDragwayRoadGeometry"});
+  const api::RoadGeometryId road_geometry_id("OneLaneDragwayRoadGeometry");
   const int kNumLanes = 1;
 
   RoadGeometry road_geometry(road_geometry_id, kNumLanes, length_,

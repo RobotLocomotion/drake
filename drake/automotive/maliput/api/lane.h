@@ -4,6 +4,7 @@
 #include <string>
 
 #include "drake/automotive/maliput/api/lane_data.h"
+#include "drake/automotive/maliput/api/type_specific_identifier.h"
 #include "drake/common/drake_copyable.h"
 
 namespace drake {
@@ -16,14 +17,8 @@ class LaneEndSet;
 
 
 /// Persistent identifier for a Lane element.
-struct LaneId {
-  std::string id;
-};
+using LaneId = TypeSpecificIdentifier<class Lane>;
 
-/// Streams a string representation of @p lane_id into @p out. Returns @p out.
-/// This method is provided for the purposes of debugging or text-logging. It is
-/// not intended for serialization.
-std::ostream& operator<<(std::ostream& out, const LaneId& lane_id);
 
 /// A Lane represents a lane of travel in a road network.  A Lane defines
 /// a curvilinear coordinate system covering the road surface, with a

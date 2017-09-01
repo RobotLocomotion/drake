@@ -2,6 +2,7 @@
 
 #include <string>
 
+#include "drake/automotive/maliput/api/type_specific_identifier.h"
 #include "drake/common/drake_copyable.h"
 
 namespace drake {
@@ -13,14 +14,8 @@ class Segment;
 
 
 /// Persistent identifier for a Junction element.
-struct JunctionId {
-  std::string id;
-};
+using JunctionId = TypeSpecificIdentifier<class Junction>;
 
-/// Streams a string representation of @p junction_id into @p out. Returns
-/// @p out. This method is provided for the purposes of debugging or
-/// text-logging. It is not intended for serialization.
-std::ostream& operator<<(std::ostream& out, const JunctionId& junction_id);
 
 /// A Junction is a closed set of Segments which have physically
 /// coplanar road surfaces, in the sense that RoadPositions with the

@@ -133,7 +133,8 @@ BranchPoint* Builder::FindOrCreateBranchPoint(
   }
   // TODO(maddog@tri.global) Generate a more meaningful id (user-specified?)
   BranchPoint* bp = road_geometry->NewBranchPoint(
-      {"bp:" + std::to_string(road_geometry->num_branch_points())});
+      api::BranchPointId{
+        "bp:" + std::to_string(road_geometry->num_branch_points())});
   auto result = bp_map->emplace(point, bp);
   DRAKE_DEMAND(result.second);
   return bp;
@@ -187,7 +188,8 @@ Lane* Builder::BuildConnection(
     Junction* const junction,
     RoadGeometry* const road_geometry,
     std::map<Endpoint, BranchPoint*, EndpointFuzzyOrder>* const bp_map) const {
-  Segment* segment = junction->NewSegment({std::string("s:") + conn->id()});
+  Segment* segment =
+      junction->NewSegment(api::SegmentId{std::string("s:") + conn->id()});
   Lane* lane{};
   api::LaneId lane_id{std::string("l:") + conn->id()};
 
@@ -272,8 +274,9 @@ std::unique_ptr<const api::RoadGeometry> Builder::Build(
 
   for (const std::unique_ptr<Group>& group : groups_) {
     Junction* junction =
-        road_geometry->NewJunction({std::string("j:") + group->id()});
-    drake::log()->debug("junction: {}", junction->id().id);
+        road_geometry->NewJunction(
+            api::JunctionId{std::string("j:") + group->id()});
+    drake::log()->debug("junction: {}", junction->id().string());
     for (auto& connection : group->connections()) {
       drake::log()->debug("connection: {}", connection->id());
       DRAKE_DEMAND(!connection_was_built[connection]);
@@ -288,8 +291,9 @@ std::unique_ptr<const api::RoadGeometry> Builder::Build(
       continue;
     }
     Junction* junction =
-        road_geometry->NewJunction({std::string("j:") + connection->id()});
-    drake::log()->debug("junction: {}", junction->id().id);
+        road_geometry->NewJunction(
+            api::JunctionId{std::string("j:") + connection->id()});
+    drake::log()->debug("junction: {}", junction->id().string());
     drake::log()->debug("connection: {}", connection->id());
     lane_map[connection.get()] =
         BuildConnection(connection.get(),

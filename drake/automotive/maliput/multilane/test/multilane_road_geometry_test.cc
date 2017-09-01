@@ -24,7 +24,7 @@ const double kHeight{5.};  // Elevation bound.
 const api::Lane* GetLaneByJunctionId(const api::RoadGeometry& rg,
                                      const std::string& junction_id) {
   for (int i = 0; i < rg.num_junctions(); ++i) {
-    if (rg.junction(i)->id().id == junction_id) {
+    if (rg.junction(i)->id() == api::JunctionId(junction_id)) {
       return rg.junction(i)->segment(0)->lane(0);
     }
   }
@@ -60,7 +60,7 @@ GTEST_TEST(MultilaneLanesTest, DoToRoadPosition) {
               kFlatZ);
 
   std::unique_ptr<const api::RoadGeometry> rg =
-      rb->Build({"multi_lane_with_branches"});
+      rb->Build(api::RoadGeometryId{"multi_lane_with_branches"});
 
   // Place a point at the middle of lane1.
   api::GeoPosition geo_pos{kArcRadius, -kArcRadius - kLength / 2., 0.};
@@ -75,7 +75,7 @@ GTEST_TEST(MultilaneLanesTest, DoToRoadPosition) {
       actual_position.pos,
       api::LanePosition(kLength / 2. /* s */, 0. /* r */, 0. /* h */),
       kVeryExact));
-  EXPECT_EQ(actual_position.lane->id().id, "l:lane1");
+  EXPECT_EQ(actual_position.lane->id(), api::LaneId("l:lane1"));
   EXPECT_EQ(distance, 0.);
   EXPECT_TRUE(api::test::IsGeoPositionClose(
       nearest_position, api::GeoPosition(geo_pos.x(), geo_pos.y(), geo_pos.z()),
@@ -102,7 +102,7 @@ GTEST_TEST(MultilaneLanesTest, DoToRoadPosition) {
       actual_position.pos,
       api::LanePosition(kLength / 2. /* s */, kWidth /* r */, 0. /* h */),
       kVeryExact));
-  EXPECT_EQ(actual_position.lane->id().id, "l:lane1");
+  EXPECT_EQ(actual_position.lane->id(), api::LaneId("l:lane1"));
   EXPECT_EQ(distance, kWidth);
   EXPECT_TRUE(api::test::IsGeoPositionClose(
       nearest_position,
@@ -128,7 +128,7 @@ GTEST_TEST(MultilaneLanesTest, DoToRoadPosition) {
       actual_position.pos,
       api::LanePosition(kLength / 2. /* s */, 0. /* r */, 0. /* h */),
       kVeryExact));
-  EXPECT_EQ(actual_position.lane->id().id, "l:lane3a");
+  EXPECT_EQ(actual_position.lane->id(), api::LaneId("l:lane3a"));
   EXPECT_EQ(distance, 0.);
   EXPECT_TRUE(api::test::IsGeoPositionClose(
       nearest_position, api::GeoPosition(geo_pos.x(), geo_pos.y(), geo_pos.z()),
@@ -147,7 +147,7 @@ GTEST_TEST(MultilaneLanesTest, DoToRoadPosition) {
       actual_position.pos,
       api::LanePosition(kLength / 2. /* s */, 0. /* r */, kHeight /* h */),
       kVeryExact));
-  EXPECT_EQ(actual_position.lane->id().id, "l:lane3a");
+  EXPECT_EQ(actual_position.lane->id(), api::LaneId("l:lane3a"));
   EXPECT_EQ(distance, 50. - kHeight);
   EXPECT_TRUE(api::test::IsGeoPositionClose(
       nearest_position, api::GeoPosition(geo_pos.x(), geo_pos.y(), kHeight),
@@ -165,7 +165,7 @@ GTEST_TEST(MultilaneLanesTest, DoToRoadPosition) {
       actual_position.pos,
       api::LanePosition(kArcRadius * M_PI / 2. /* s */, 0. /* r */, 0. /* h */),
       kVeryExact));
-  EXPECT_EQ(actual_position.lane->id().id, "l:lane3b");
+  EXPECT_EQ(actual_position.lane->id(), api::LaneId("l:lane3b"));
   EXPECT_EQ(distance, 0.);
   EXPECT_TRUE(api::test::IsGeoPositionClose(
       nearest_position, api::GeoPosition(geo_pos.x(), geo_pos.y(), geo_pos.z()),
@@ -179,7 +179,7 @@ GTEST_TEST(MultilaneLanesTest, DoToRoadPosition) {
 
   // Expect to locate the point outside of lanes lane3c (and ongoing adjacent
   // lanes), since lane3b is not ongoing from lane3c.
-  EXPECT_EQ(actual_position.lane->id().id, "l:lane3c");
+  EXPECT_EQ(actual_position.lane->id(), api::LaneId("l:lane3c"));
   EXPECT_GT(distance, 0.);  // geo_pos is not within this lane.
 
   // Supply a hint with a position at the start of lane2 to try and determine
@@ -190,7 +190,7 @@ GTEST_TEST(MultilaneLanesTest, DoToRoadPosition) {
 
   // Expect to traverse to lane3b (an ongoing lane) and then locate the point
   // within lane lane3b.
-  EXPECT_EQ(actual_position.lane->id().id, "l:lane3b");
+  EXPECT_EQ(actual_position.lane->id(), api::LaneId("l:lane3b"));
   EXPECT_EQ(distance, 0.);  // geo_pos is inside lane3b.
   EXPECT_TRUE(api::test::IsGeoPositionClose(
       nearest_position, api::GeoPosition(geo_pos.x(), geo_pos.y(), geo_pos.z()),
@@ -220,7 +220,7 @@ GTEST_TEST(MultilaneLanesTest, HintWithDisconnectedLanes) {
   rb->Connect("lane1", kRoadOrigin1, ArcOffset(50., M_PI / 2.), kFlatZ);
 
   std::unique_ptr<const api::RoadGeometry> rg =
-      rb->Build({"disconnected_lanes"});
+      rb->Build(api::RoadGeometryId{"disconnected_lanes"});
 
   // Place a point at the middle of lane0.
   api::GeoPosition geo_pos{50. * std::sqrt(2.) / 2., -50. * std::sqrt(2.) / 2.,
@@ -233,9 +233,10 @@ GTEST_TEST(MultilaneLanesTest, HintWithDisconnectedLanes) {
   api::RoadPosition actual_position{};
   EXPECT_NO_THROW(actual_position =
                       rg->ToRoadPosition(geo_pos, &hint, nullptr, &distance));
-  EXPECT_EQ(actual_position.lane->id().id, "l:lane1");  // The search is
-                                                        // confined to lane1.
-  EXPECT_GT(distance, 0.);  // lane1 does not contain the point.
+  // The search is confined to lane1.
+  EXPECT_EQ(actual_position.lane->id(), api::LaneId("l:lane1"));
+  // lane1 does not contain the point.
+  EXPECT_GT(distance, 0.);
 }
 
 }  // namespace multilane

@@ -22,25 +22,27 @@ const double kAngularTolerance = 1e-12;
 
 // The following tests Junction creation and id assignment.
 GTEST_TEST(RNDFJunctionTest, GettersTest) {
-  RoadGeometry rg({"RG-GettersTest"}, kLinearTolerance, kAngularTolerance);
-  Junction* junction = rg.NewJunction({"j:1"});
+  RoadGeometry rg(api::RoadGeometryId{"RG-GettersTest"},
+                  kLinearTolerance, kAngularTolerance);
+  Junction* junction = rg.NewJunction(api::JunctionId{"j:1"});
 
   EXPECT_EQ(junction->road_geometry(), &rg);
-  EXPECT_EQ(junction->id().id, std::string("j:1"));
+  EXPECT_EQ(junction->id(), api::JunctionId("j:1"));
 }
 
 // The following tests Segment creation, getters and index constraints.
 GTEST_TEST(RNDFJunctionTest, SegmentTest) {
-  RoadGeometry rg({"RG-SegmentTest"}, kLinearTolerance, kAngularTolerance);
-  Junction* junction = rg.NewJunction({"j:1"});
+  RoadGeometry rg(api::RoadGeometryId{"RG-SegmentTest"},
+                  kLinearTolerance, kAngularTolerance);
+  Junction* junction = rg.NewJunction(api::JunctionId{"j:1"});
 
   EXPECT_EQ(junction->num_segments(), 0);
 
-  Segment* s1 = junction->NewSegment({"s:1"});
+  Segment* s1 = junction->NewSegment(api::SegmentId{"s:1"});
   EXPECT_EQ(junction->num_segments(), 1);
   EXPECT_EQ(junction->segment(0), s1);
 
-  Segment* s2 = junction->NewSegment({"s:2"});
+  Segment* s2 = junction->NewSegment(api::SegmentId{"s:2"});
   EXPECT_EQ(junction->num_segments(), 2);
   EXPECT_EQ(junction->segment(1), s2);
 

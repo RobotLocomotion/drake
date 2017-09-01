@@ -114,11 +114,6 @@ double Distance(const Rotation& a, const Rotation& b) {
 
 }  // namespace
 
-std::ostream& operator<<(std::ostream& out,
-    const RoadGeometryId& road_geometry_id) {
-  return out << std::string("RoadGeometry(") << road_geometry_id.id
-      << std::string(")");
-}
 
 std::vector<std::string> RoadGeometry::CheckInvariants() const {
   std::vector<std::string> failures;
@@ -128,10 +123,10 @@ std::vector<std::string> RoadGeometry::CheckInvariants() const {
     const BranchPoint* bp = branch_point(bpi);
     if (bp->road_geometry() != this) {
       std::stringstream ss;
-      ss << "BranchPoint " << bp->id().id << " is owned by "
-         << this->id().id << " (" << this
+      ss << "BranchPoint " << bp->id().string() << " is owned by "
+         << this->id().string() << " (" << this
          << ") but claims to be owned by "
-         << bp->road_geometry()->id().id << " ("
+         << bp->road_geometry()->id().string() << " ("
          << bp->road_geometry() << ").";
       failures.push_back(ss.str());
     }
@@ -140,9 +135,10 @@ std::vector<std::string> RoadGeometry::CheckInvariants() const {
     const Junction* jnx = junction(ji);
     if (jnx->road_geometry() != this) {
       std::stringstream ss;
-      ss << "Junction " << jnx->id().id << " is owned by "
-         << this->id().id << " (" << this << ") but claims to be owned by "
-         << jnx->road_geometry()->id().id << " ("
+      ss << "Junction " << jnx->id().string() << " is owned by "
+         << this->id().string()
+         << " (" << this << ") but claims to be owned by "
+         << jnx->road_geometry()->id().string() << " ("
          << jnx->road_geometry() << ").";
       failures.push_back(ss.str());
     }
@@ -150,18 +146,21 @@ std::vector<std::string> RoadGeometry::CheckInvariants() const {
       const Segment* seg = jnx->segment(si);
       if (seg->junction() != jnx) {
         std::stringstream ss;
-        ss << "Segment " << seg->id().id << " is owned by "
-           << jnx->id().id << " (" << jnx << ") but claims to be owned by "
-           << seg->junction()->id().id << " (" << seg->junction() << ").";
+        ss << "Segment " << seg->id().string() << " is owned by "
+           << jnx->id().string()
+           << " (" << jnx << ") but claims to be owned by "
+           << seg->junction()->id().string() << " (" << seg->junction() << ").";
         failures.push_back(ss.str());
       }
       for (int li = 0; li < seg->num_lanes(); ++li) {
         const Lane* lane = seg->lane(li);
         if (lane->segment() != seg) {
           std::stringstream ss;
-          ss << "Lane " << lane->id().id << " is owned by "
-             << seg->id().id << " (" << seg << ") but claims to be owned by "
-             << lane->segment()->id().id << " (" << lane->segment() << ").";
+          ss << "Lane " << lane->id().string() << " is owned by "
+             << seg->id().string()
+             << " (" << seg << ") but claims to be owned by "
+             << lane->segment()->id().string()
+             << " (" << lane->segment() << ").";
           failures.push_back(ss.str());
         }
         // Currently, only Lane has an index() accessor, because its the only
@@ -169,7 +168,7 @@ std::vector<std::string> RoadGeometry::CheckInvariants() const {
         // lanes).
         if (lane->index() != li) {
           std::stringstream ss;
-          ss << "Lane " << lane->id().id << " has index " << li
+          ss << "Lane " << lane->id().string() << " has index " << li
              << " but claims to have index " << lane->index() << ".";
           failures.push_back(ss.str());
         }
@@ -191,7 +190,7 @@ std::vector<std::string> RoadGeometry::CheckInvariants() const {
     if ((bp->GetASide()->size() == 0) &&
         (bp->GetBSide()->size() == 0)) {
       std::stringstream ss;
-      ss << "BranchPoint " << bp->id().id << " is empty.";
+      ss << "BranchPoint " << bp->id().string() << " is empty.";
       failures.push_back(ss.str());
       continue;
     }
@@ -208,7 +207,7 @@ std::vector<std::string> RoadGeometry::CheckInvariants() const {
         const double d = Distance(ref_geo, LaneEndGeoPosition(le));
         if (d > linear_tolerance()) {
           std::stringstream ss;
-          ss << "Lane " << le.lane->id().id
+          ss << "Lane " << le.lane->id().string()
              << ((le.end == LaneEnd::kStart) ? "[start]" : "[end]")
              << " position is off by " << d << ".";
           failures.push_back(ss.str());
@@ -229,7 +228,7 @@ std::vector<std::string> RoadGeometry::CheckInvariants() const {
         const double d = Distance(reference, OrientationOutFromLane(le));
         if (d > angular_tolerance()) {
           std::stringstream ss;
-          ss << "Lane " << le.lane->id().id
+          ss << "Lane " << le.lane->id().string()
              << ((le.end == LaneEnd::kStart) ? "[start]" : "[end]")
              << " orientation is off by " << d << ".";
           failures.push_back(ss.str());

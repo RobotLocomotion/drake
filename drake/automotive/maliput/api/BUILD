@@ -9,11 +9,8 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_library(
     name = "api",
     srcs = [
-        "junction.cc",
-        "lane.cc",
         "lane_data.cc",
         "road_geometry.cc",
-        "segment.cc",
     ],
     hdrs = [
         "branch_point.h",

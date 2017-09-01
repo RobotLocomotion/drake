@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <memory>
+#include <string>
 
 #include "drake/automotive/maliput/dragway/branch_point.h"
 #include "drake/automotive/maliput/dragway/road_geometry.h"
@@ -33,7 +34,7 @@ Lane::Lane(const Segment* segment, const api::LaneId& id,  int index,
   // TODO(liang.fok) Consider initializing this variable in the constructor's
   // initializer list so branch_point_ can be declared `const`.
   branch_point_ = make_unique<BranchPoint>(
-      api::BranchPointId({id.id + "_Branch_Point"}), this,
+      api::BranchPointId(id.string() + "_Branch_Point"), this,
       segment->junction()->road_geometry());
 }
 

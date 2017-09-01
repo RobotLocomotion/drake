@@ -317,7 +317,7 @@ const maliput::api::RoadGeometry* AddDragway(
   const double kAngularTolerance = std::numeric_limits<double>::epsilon();
   std::unique_ptr<const maliput::api::RoadGeometry> road_geometry
       = std::make_unique<const maliput::dragway::RoadGeometry>(
-          maliput::api::RoadGeometryId({"Automotive Demo Dragway"}),
+          maliput::api::RoadGeometryId("Automotive Demo Dragway"),
           FLAGS_num_dragway_lanes,
           FLAGS_dragway_length,
           FLAGS_dragway_lane_width,
