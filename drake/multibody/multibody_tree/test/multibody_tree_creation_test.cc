@@ -12,6 +12,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
+#include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 
 namespace drake {
 namespace multibody {
