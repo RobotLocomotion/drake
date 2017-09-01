@@ -8,6 +8,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
@@ -83,13 +84,13 @@ using systems::Context;
 //      X_EiEo(θ₂) Elbow revolute mobilizer with generalized position θ₂.
 //      +--+-----+
 //      |  ^     |
-//      |  | Eo  | Elbow outboard frame Eo.
-//      |  +-->  |
+//      |  |Eo/L | Elbow outboard frame Eo.
+//      |  +-->  | Lower link's frame L is coincident with the elbow frame Eo.
 //      |        |
-//      |  X_LEo | Pose of Eo in L.
-//      |        |
+//      |p_LoLcm | Position vector of the link's com measured from the link's
+//      |        | frame origin Lo.
 //      |  ^     |
-//      |  | L   | Lower link body frame L.
+//      |  | Lcm | Lower link's frame L shifted to its center of mass.
 //      |  +-->  |
 //      |        |
 //      |        |
@@ -127,9 +128,15 @@ class PendulumTests : public ::testing::Test {
     Vector3d link2_com_L = Vector3d::Zero();  // L is at the link's COM.
     // For a thin rod in the x-y plane, the inertia bout the y axis can be
     // neglected. Therefore we make Iyy = 0.
-    UnitInertia<double> G_L(
+    // Unit inertia about L's center of mass Lcm.
+    UnitInertia<double> G_Lcm(
         link2_Ic_ /* Ixx */, 0.0 /* Iyy */, link2_Ic_ /* Izz */);
-    SpatialInertia<double> M_L(link2_mass_, link2_com_L, G_L);
+    // Spatial inertia about L's center of mass Lcm.
+    SpatialInertia<double> M_Lcm(link2_mass_, link2_com_L, G_Lcm);
+    // Since L's frame origin Lo is not at the the lower link's center of mass
+    // Lcm, we must shift M_Lcm to obtain M_Lo.
+    const Vector3d p_LoLcm(0.0, -half_link2_length_, 0.0);
+    SpatialInertia<double> M_L = M_Lcm.Shift(-p_LoLcm);
 
     // Adds the upper and lower links of the pendulum.
     // Using: const BodyType& AddBody(std::unique_ptr<BodyType> body).
@@ -159,19 +166,18 @@ class PendulumTests : public ::testing::Test {
     // pendulum's elbow.
     // An inboard frame Ei is rigidly attached to the upper link. It is located
     // at y = -half_link_length_ in the frame of the upper link body.
-    // An outboard frame Eo is rigidly attached to the lower link. It is located
-    // at y = +half_link_length_ in the frame of the lower link body.
     // X_UEi specifies the pose of the elbow inboard frame Ei in the body
     // frame U of the upper link.
-    // X_LEo specifies the pose of the elbow outboard frame Eo in the body
-    // frame L of the lower link.
     // In this case we create a frame using the FixedOffsetFrame::Create()
     // method taking a Body, i.e., creating a frame with a fixed offset from the
     // upper link body frame.
     elbow_inboard_frame_ =
         &model_->AddFrame<FixedOffsetFrame>(*upper_link_, X_UEi_);
-    elbow_outboard_frame_ =
-        &model_->AddFrame<FixedOffsetFrame>(*lower_link_, X_LEo_);
+
+    // To make this test a bit more interesting, we define the lower link's
+    // frame L to be coincident with the elbow's outboard frame. Therefore,
+    // Lo != Lcm.
+    elbow_outboard_frame_ = &lower_link_->get_body_frame();
 
     // Adds the shoulder and elbow mobilizers of the pendulum.
     // Using:
@@ -249,7 +255,7 @@ class PendulumTests : public ::testing::Test {
   const BodyFrame<double>* shoulder_inboard_frame_;
   const FixedOffsetFrame<double>* shoulder_outboard_frame_;
   const FixedOffsetFrame<double>* elbow_inboard_frame_;
-  const FixedOffsetFrame<double>* elbow_outboard_frame_;
+  const Frame<double>* elbow_outboard_frame_;
   // Mobilizers:
   const RevoluteMobilizer<double>* shoulder_mobilizer_;
   const RevoluteMobilizer<double>* elbow_mobilizer_;
@@ -286,7 +292,7 @@ TEST_F(PendulumTests, CreateModelBasics) {
 
   // Verifies the number of multibody elements is correct.
   EXPECT_EQ(model_->get_num_bodies(), 3);
-  EXPECT_EQ(model_->get_num_frames(), 6);
+  EXPECT_EQ(model_->get_num_frames(), 5);
   EXPECT_EQ(model_->get_num_mobilizers(), 2);
 
   // Check that frames are associated with the correct bodies.
@@ -353,7 +359,7 @@ TEST_F(PendulumTests, Indexes) {
   EXPECT_EQ(lower_link_->get_body_frame().get_index(), FrameIndex(2));
   EXPECT_EQ(shoulder_outboard_frame_->get_index(), FrameIndex(3));
   EXPECT_EQ(elbow_inboard_frame_->get_index(), FrameIndex(4));
-  EXPECT_EQ(elbow_outboard_frame_->get_index(), FrameIndex(5));
+  EXPECT_EQ(elbow_outboard_frame_->get_index(), FrameIndex(2));
 }
 
 // Asserts that the Finalize() stage is successful and that re-finalization is
@@ -640,7 +646,7 @@ class PendulumKinematicTests : public PendulumTests {
     // This is the minimum factor of the machine precision within which these
     // tests pass. This factor incorporates an additional factor of two (2) to
     // be on the safe side on other architectures (particularly in Macs).
-    const int kEpsilonFactor = 5;
+    const int kEpsilonFactor = 30;
     const double kTolerance = kEpsilonFactor * kEpsilon;
 
     const double shoulder_angle =  q(0);
@@ -697,7 +703,8 @@ class PendulumKinematicTests : public PendulumTests {
     const Matrix2d H = acrobot_benchmark_.CalcMassMatrix(elbow_angle);
     const Vector2d tau_expected = H * vdot + C_expected;
 
-    EXPECT_TRUE(tau.isApprox(tau_expected, kTolerance));
+    EXPECT_TRUE(CompareMatrices(tau, tau_expected, kTolerance,
+                                MatrixCompareType::relative));
     return tau;
   }
 };
@@ -773,8 +780,8 @@ TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
           acrobot_benchmark_.CalcLink1PoseInWorldFrame(shoulder_angle);
 
       const Isometry3d X_WL_expected =
-          acrobot_benchmark_.CalcLink2PoseInWorldFrame(shoulder_angle,
-                                                       elbow_angle);
+          acrobot_benchmark_.CalcElbowOutboardFramePoseInWorldFrame(
+              shoulder_angle, elbow_angle);
 
       // Asserts that the retrieved poses match with the ones specified by the
       // unit test method SetPendulumPoses().
@@ -789,7 +796,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
   // This is the minimum factor of the machine precision within which these
   // tests pass. There is an additional factor of two (2) to be on the safe side
   // on other architectures (particularly in Macs).
-  const int kEpsilonFactor = 20;
+  const int kEpsilonFactor = 30;
   const double kTolerance = kEpsilonFactor * kEpsilon;
 
   PositionKinematicsCache<double> pc(model_->get_topology());
@@ -808,6 +815,14 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
       shoulder_mobilizer_->set_angle(context_.get(), shoulder_angle);
       elbow_mobilizer_->set_angle(context_.get(), elbow_angle);
       model_->CalcPositionKinematicsCache(*context_, &pc);
+
+      // Obtain the lower link center of mass to later shift its computed
+      // spatial velocity and acceleration to the center of mass frame for
+      // comparison with the benchmark.
+      const Isometry3d& X_WL = get_body_pose_in_world(pc, *lower_link_);
+      const Matrix3d R_WL = X_WL.rotation();
+      const Vector3d p_LoLcm_L = lower_link_->get_default_com();
+      const Vector3d p_LoLcm_W = R_WL * p_LoLcm_L;
 
       // ======================================================================
       // Compute velocity kinematics
@@ -832,6 +847,9 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
           get_body_spatial_velocity_in_world(vc, *upper_link_);
       const SpatialVelocity<double>& V_WL =
           get_body_spatial_velocity_in_world(vc, *lower_link_);
+      // Obtain the lower link's center of mass frame spatial velocity by
+      // shifting V_WL:
+      const SpatialVelocity<double> V_WLcm = V_WL.Shift(p_LoLcm_W);
 
       const SpatialVelocity<double> V_WU_expected(
           acrobot_benchmark_.CalcLink1SpatialVelocityInWorldFrame(
@@ -842,7 +860,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
               shoulder_angle_rate, elbow_angle_rate));
 
       EXPECT_TRUE(V_WU.IsApprox(V_WU_expected, kTolerance));
-      EXPECT_TRUE(V_WL.IsApprox(V_WL_expected, kTolerance));
+      EXPECT_TRUE(V_WLcm.IsApprox(V_WL_expected, kTolerance));
 
       // ======================================================================
       // Compute acceleration kinematics
@@ -858,6 +876,10 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
           get_body_spatial_acceleration_in_world(ac, *upper_link_);
       SpatialAcceleration<double> A_WL =
           get_body_spatial_acceleration_in_world(ac, *lower_link_);
+      // Obtain the lower link's center of mass frame spatial acceleration by
+      // shifting A_WL:
+      const Vector3d& w_WL = V_WL.rotational();
+      SpatialAcceleration<double> A_WLcm = A_WL.Shift(p_LoLcm_W, w_WL);
 
       SpatialAcceleration<double> A_WU_expected(
           acrobot_benchmark_.CalcLink1SpatialAccelerationInWorldFrame(
@@ -870,7 +892,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
               vdot(0), vdot(1)));
 
       EXPECT_TRUE(A_WU.IsApprox(A_WU_expected, kTolerance));
-      EXPECT_TRUE(A_WL.IsApprox(A_WL_expected, kTolerance));
+      EXPECT_TRUE(A_WLcm.IsApprox(A_WL_expected, kTolerance));
 
       // For a non-zero vdot [rad/sec^2]:
       shoulder_mobilizer_->get_mutable_velocities_from_array(vdot)(0) = -1.0;
@@ -885,6 +907,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
       // Retrieve body spatial accelerations from acceleration kinematics cache.
       A_WU = get_body_spatial_acceleration_in_world(ac, *upper_link_);
       A_WL = get_body_spatial_acceleration_in_world(ac, *lower_link_);
+      A_WLcm = A_WL.Shift(p_LoLcm_W, w_WL);
 
       A_WU_expected = SpatialAcceleration<double>(
           acrobot_benchmark_.CalcLink1SpatialAccelerationInWorldFrame(
@@ -897,7 +920,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
               vdot(0), vdot(1)));
 
       EXPECT_TRUE(A_WU.IsApprox(A_WU_expected, kTolerance));
-      EXPECT_TRUE(A_WL.IsApprox(A_WL_expected, kTolerance));
+      EXPECT_TRUE(A_WLcm.IsApprox(A_WL_expected, kTolerance));
     }
   }
 }
@@ -975,7 +998,7 @@ TEST_F(PendulumKinematicTests, GravityTerm) {
 TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
   // This is the minimum factor of the machine precision within which these
   // tests pass.
-  const int kEpsilonFactor = 8;
+  const int kEpsilonFactor = 20;
   const double kTolerance = kEpsilonFactor * kEpsilon;
 
   std::unique_ptr<MultibodyTree<AutoDiffXd>> model_autodiff =
@@ -1042,7 +1065,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
                   shoulder_angle.value());
 
           const Isometry3d X_WL_expected =
-              acrobot_benchmark_.CalcLink2PoseInWorldFrame(
+              acrobot_benchmark_.CalcElbowOutboardFramePoseInWorldFrame(
                   shoulder_angle.value(), elbow_angle.value());
 
           // Extract the transformations' values.
@@ -1050,6 +1073,13 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
               math::autoDiffToValueMatrix(X_WU.matrix());
           Eigen::MatrixXd X_WL_value =
               math::autoDiffToValueMatrix(X_WL.matrix());
+
+          // Obtain the lower link center of mass to later shift its computed
+          // spatial velocity to the center of mass frame for comparison with
+          // the benchmark.
+          const Matrix3d R_WL = X_WL_value.block<3, 3>(0, 0);
+          const Vector3d p_LoLcm_L = lower_link_->get_default_com();
+          const Vector3d p_LoLcm_W = R_WL * p_LoLcm_L;
 
           // Asserts that the retrieved poses match with the ones specified by
           // the unit test method SetPendulumPoses().
@@ -1069,6 +1099,9 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
               ComputeSpatialVelocityFromXdot(X_WU_value, X_WU_dot);
           SpatialVelocity<double> V_WL =
               ComputeSpatialVelocityFromXdot(X_WL_value, X_WL_dot);
+          // Obtain the lower link's center of mass frame spatial velocity by
+          // shifting V_WL:
+          const SpatialVelocity<double> V_WLcm = V_WL.Shift(p_LoLcm_W);
 
           const SpatialVelocity<double> V_WU_expected(
               acrobot_benchmark_.CalcLink1SpatialVelocityInWorldFrame(
@@ -1078,7 +1111,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
                   shoulder_angle.value(), elbow_angle.value(), w_WU, w_UL));
 
           EXPECT_TRUE(V_WU.IsApprox(V_WU_expected, kTolerance));
-          EXPECT_TRUE(V_WL.IsApprox(V_WL_expected, kTolerance));
+          EXPECT_TRUE(V_WLcm.IsApprox(V_WL_expected, kTolerance));
         }  // ielbow
       }  // ishoulder
     }  // iw_elbow

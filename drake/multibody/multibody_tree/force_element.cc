@@ -29,7 +29,9 @@ void UniformGravityElement<T>::DoCalcAndAddForceContribution(
     // once caching is in place so that we can retrieve these from the
     // parameters.
     const T& mass = body.get_default_mass();
-    const Vector3<T>& p_BoBcm_W = body.get_default_com();
+    const Vector3<double>& p_BoBcm_B = body.get_default_com();
+    const Matrix3<T> R_WB = pc.get_X_WB(node_index).rotation();
+    const Vector3<T> p_BoBcm_W = R_WB * p_BoBcm_B;
 
     const Vector3<T> f_Bcm_W = mass * g_W();
     const SpatialForce<T> F_Bo_W(p_BoBcm_W.cross(f_Bcm_W), f_Bcm_W);

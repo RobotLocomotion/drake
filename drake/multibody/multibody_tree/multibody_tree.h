@@ -781,6 +781,35 @@ class MultibodyTree {
       std::vector<SpatialForce<T>>* F_BMo_W_array,
       Eigen::Ref<VectorX<T>> tau_array) const;
 
+  /// Computes the combined force contribution of ForceElement objects in the
+  /// model. A ForceElement can apply forcing as a spatial force per body or as
+  /// generalized forces, depending on the ForceElement model. Therefore this
+  /// method provides outputs for both spatial forces per body (with
+  /// `F_Bo_W_array`) and generalized forces (with `tau_array`).
+  /// ForceElement contributions are a function of the state only.
+  /// The output from this method can immediately be used as input to
+  /// CalcInverseDynamics() to include the effect of applied forces by force
+  /// elements.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the %MultibodyTree model.
+  /// @param[in] pc
+  ///   A position kinematics cache object already updated to be in sync with
+  ///   `context`.
+  /// @param[in] vc
+  ///   A velocity kinematics cache object already updated to be in sync with
+  ///   `context`.
+  /// @param[out] F_Bo_W_array
+  ///
+  /// @param[out] tau_array
+  ///
+  ///
+  /// @pre The position kinematics `pc` must have been previously updated with a
+  /// call to CalcPositionKinematicsCache().
+  /// @pre The velocity kinematics `vc` must have been previously updated with a
+  /// call to CalcVelocityKinematicsCache().
+  ///
+  /// @throws std::bad_cast if `context` is not a `MultibodyTreeContext`.
   void CalcForceElementsContribution(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,

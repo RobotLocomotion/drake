@@ -93,6 +93,13 @@ class Acrobot {
   Isometry3<T> CalcLink2PoseInWorldFrame(
       const T& theta1, const T& theta2) const;
 
+  /// Computes the pose of the elbow outboard frame `Eo` in the world frame W.
+  /// @param theta1 The shoulder angle in radians.
+  /// @param theta2 The elbow angle in radians.
+  /// @returns X_WEo the pose of the elbow frame Eo in the world frame W.
+  Isometry3<T> CalcElbowOutboardFramePoseInWorldFrame(
+      const T& theta1, const T& theta2) const;
+
   /// Computes the spatial velocity of the center of mass of link 1 expressed
   /// in the world frame.
   /// @param theta1 The shoulder angle in radians.

@@ -105,6 +105,10 @@ using AngleAxis = Eigen::AngleAxis<Scalar>;
 template <typename Scalar>
 using Isometry3 = Eigen::Transform<Scalar, 3, Eigen::Isometry>;
 
+/// A translation in 3D templated on scalar type.
+template <typename Scalar>
+using Translation3 = Eigen::Translation<Scalar, 3>;
+
 /// A column vector of dynamic size, up to a maximum of 73 elements.
 using VectorUpTo73d = Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73, 1>;
 

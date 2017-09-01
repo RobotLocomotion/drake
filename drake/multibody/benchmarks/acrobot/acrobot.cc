@@ -135,6 +135,16 @@ Isometry3<T> Acrobot<T>::CalcLink2PoseInWorldFrame(
 }
 
 template <typename T>
+Isometry3<T> Acrobot<T>::CalcElbowOutboardFramePoseInWorldFrame(
+    const T& theta1, const T& theta2) const {
+  // Pose of link2's frame Lcm, a the com, in the world frame.
+  const Isometry3<T> X_WLcm = CalcLink2PoseInWorldFrame(theta1, theta2);
+  // Pose of the elbow outboard frame Eo in Lcm's frame.
+  const Isometry3<T> X_LcmEo(Translation3<T>(0.0, lc2_, 0.0));
+  return X_WLcm * X_LcmEo;
+}
+
+template <typename T>
 Vector6<T> Acrobot<T>::CalcLink1SpatialVelocityInWorldFrame(
     const T& theta1, const T& theta1dot) const {
   using std::sin;
