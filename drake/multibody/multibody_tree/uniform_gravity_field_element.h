@@ -28,7 +28,7 @@ class UniformGravityFieldElement : public ForceElement<T> {
 
   /// Constructs a uniform gravity field element with a strength given by the
   /// acceleration of gravity vector `g_W`, expressed in the world frame W.
-  UniformGravityFieldElement(Vector3<double> g_W);
+  explicit UniformGravityFieldElement(Vector3<double> g_W);
 
   /// Returns the acceleration of gravity vector, expressed in the world frame
   /// W.

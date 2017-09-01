@@ -235,7 +235,7 @@ struct ForceElementTopology {
   ForceElementTopology() {}
 
   /// Constructs a force element topology with index `force_element_index`.
-  ForceElementTopology(ForceElementIndex force_element_index) :
+  explicit ForceElementTopology(ForceElementIndex force_element_index) :
       index(force_element_index) {}
 
   /// Returns `true` if all members of `this` topology are exactly equal to the

@@ -983,11 +983,6 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   // Mutable version of get_velocities_from_array().
   Eigen::VectorBlock<Eigen::Ref<VectorX<T>>> get_mutable_velocities_from_array(
       Eigen::Ref<VectorX<T>> v) const {
-    // If we do return xc.segment() directly, we would instead get a
-    // Block<Block<VectorX>>, which is very different from Block<VectorX>.
-    //return Eigen::VectorBlock<VectorX<T>>(
-     //   v, topology_.mobilizer_velocities_start_in_v,
-       // topology_.num_mobilizer_velocities);
     return v.segment(topology_.mobilizer_velocities_start_in_v,
                      topology_.num_mobilizer_velocities);
   }
