@@ -155,6 +155,23 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     return *mobilizer_;
   }
 
+  /// @name Methods to retrieve BodyNode sizes
+  //@{
+
+  /// Returns the number of generalized positions for the Mobilizer in `this`
+  /// node.
+  int get_num_mobilizer_positions() const {
+    return topology_.num_mobilizer_positions;
+  }
+
+  /// Returns the number of generalized velocities for the Mobilizer in `this`
+  /// node.
+  int get_num_mobilizer_velocites() const {
+    return topology_.num_mobilizer_velocities;
+  }
+  //@}
+
+
   /// This method is used by MultibodyTree within a base-to-tip loop to compute
   /// this node's kinematics that only depend on generalized positions.
   /// This method aborts in Debug builds when:
@@ -550,6 +567,18 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   ///   of size equal to the number of bodies in the MultibodyTree and ordered
   ///   by BodyNodeIndex. The calling MultibodyTree method must guarantee these
   ///   conditions are satisfied.
+  /// @param[in] Fapplied_Bo_W
+  ///   Externally applied spatial force on this node's body B at the body's
+  ///   frame origin `Bo`, expressed in the world frame.
+  ///   `Fapplied_Bo_W` **must** not be an entry into `F_BMo_W_array_ptr`, which
+  ///   would result in undefined results.
+  /// @param[in] tau_applied
+  ///   Externally applied generalized force at this node's mobilizer. It can
+  ///   have zero size, implying no generalized forces are applied. Otherwise it
+  ///   must have a size equal to the number of generalized coordinates for this
+  ///   node's mobilizer, see get_num_mobilizer_velocites().
+  ///   `tau_applied` **must** not be an entry into `tau_array`, which would
+  ///   result in undefined results.
   /// @param[out] F_BMo_W_array_ptr
   ///   A pointer to a valid, non nullptr, vector of spatial forces
   ///   containing, for each body B, the spatial force `F_BMo_W` corresponding
@@ -594,6 +623,9 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
       Eigen::Ref<VectorX<T>> tau_array) const {
     DRAKE_DEMAND(F_BMo_W_array_ptr != nullptr);
     std::vector<SpatialForce<T>>& F_BMo_W_array = *F_BMo_W_array_ptr;
+    DRAKE_DEMAND(
+        tau_applied.size() == get_num_mobilizer_velocites() ||
+        tau_applied.size() == 0);
 
     // As a guideline for developers, a summary of the computations performed in
     // this method is provided:
@@ -670,6 +702,10 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // mobilizer in order to attain the prescribed acceleration A_WB.
     SpatialForce<T>& F_BMo_W = F_BMo_W_array[this->get_index()];
 
+    // Ensure this method was not called with an Fapplied_Bo_W being an entry
+    // into F_BMo_W_array, otherwise we would be overwriting Fapplied_Bo_W.
+    DRAKE_DEMAND(&F_BMo_W != &Fapplied_Bo_W);
+
     // Shift spatial force on B to Mo.
     F_BMo_W = Ftot_BBo_W.Shift(p_BoMo_W);
     for (const BodyNode<T>* child_node : children_) {
@@ -724,6 +760,10 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // Generalized velocities and forces use the same indexing.
     auto tau = get_mutable_forces_from_array(tau_array);
 
+    // Demand that tau_applied is not an entry of tau. It would otherwise get
+    // overwritten.
+    DRAKE_DEMAND(tau.data() != tau_applied.data());
+
     // The generalized forces on the mobilizer correspond to the active
     // components of the spatial force performing work. Therefore we need to
     // project F_BMo along the directions of motion.
@@ -731,7 +771,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     get_mobilizer().ProjectSpatialForce(context, F_BMo_F, tau);
 
     // Include the contribution of applied generalized forces.
-    tau -= tau_applied;
+    if (tau_applied.size() != 0) tau -= tau_applied;
   }
 
   /// Returns the topology information for this body node.

@@ -284,12 +284,12 @@ void MultibodyTree<T>::CalcInverseDynamics(
   CalcSpatialAccelerationsFromVdot(context, pc, vc, known_vdot, A_WB_array);
 
   // Vector of generalized forces per mobilizer.
-  VectorUpTo6<T> tau_applied_mobilizer;
-  tau_applied_mobilizer.setZero();
+  // It has zero size if no forces are applied.
+  VectorUpTo6<T> tau_applied_mobilizer(0);
 
   // Spatial force applied on B at Bo.
-  SpatialForce<T> Fapplied_Bo_W;
-  Fapplied_Bo_W.SetZero();
+  // It is left initialized to zero if no forces are applied.
+  SpatialForce<T> Fapplied_Bo_W = SpatialForce<T>::Zero();
 
   // Performs a tip-to-base recursion computing the total spatial force F_BMo_W
   // acting on body B, about point Mo, expressed in the world frame W.
