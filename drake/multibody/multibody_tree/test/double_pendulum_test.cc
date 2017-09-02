@@ -114,24 +114,18 @@ class PendulumTests : public ::testing::Test {
   // Sets up the MultibodyTree model for a double pendulum. See this unit test's
   // class description for details.
   void CreatePendulumModel() {
-    // TODO(amcastro-tri): Create unit inertias using a specific factory.
-    // Either AxiallySymmetric() or ThinRod() once implemented.
-
     // Spatial inertia of the upper link about its frame U and expressed in U.
     Vector3d link1_com_U = Vector3d::Zero();  // U is at the link's COM.
-    // For a thin rod in the x-y plane, the inertia bout the y axis can be
-    // neglected. Therefore we make Iyy = 0.
-    UnitInertia<double> G_U(
-        link1_Ic_ /* Ixx */, 0.0 /* Iyy */, link1_Ic_ /* Izz */);
+    // Inertia for a thin rod with moment of inertia link1_Ic_ about the y axis.
+    UnitInertia<double> G_U =
+        UnitInertia<double>::StraightLine(link1_Ic_, Vector3d::UnitY());
     SpatialInertia<double> M_U(link1_mass_, link1_com_U, G_U);
 
     // Spatial inertia of the lower link about its frame L and expressed in L.
     Vector3d link2_com_L = Vector3d::Zero();  // L is at the link's COM.
-    // For a thin rod in the x-y plane, the inertia bout the y axis can be
-    // neglected. Therefore we make Iyy = 0.
-    // Unit inertia about L's center of mass Lcm.
-    UnitInertia<double> G_Lcm(
-        link2_Ic_ /* Ixx */, 0.0 /* Iyy */, link2_Ic_ /* Izz */);
+    // Inertia for a thin rod with moment of inertia link2_Ic_ about the y axis.
+    UnitInertia<double> G_Lcm =
+        UnitInertia<double>::StraightLine(link2_Ic_, Vector3d::UnitY());
     // Spatial inertia about L's center of mass Lcm.
     SpatialInertia<double> M_Lcm(link2_mass_, link2_com_L, G_Lcm);
     // Since L's frame origin Lo is not at the the lower link's center of mass
