@@ -18,7 +18,8 @@ class TestSystem : public LeafSystem<double> {
   TestSystem() { DeclareContinuousState(2); }
 
   // Expose some protected methods for testing.
-  using LeafSystem<double>::DeclareConstraint;
+  using LeafSystem<double>::DeclareInequalityConstraint;
+  using LeafSystem<double>::DeclareEqualityConstraint;
 
   void CalcState0Constraint(const Context<double>& context,
                             Eigen::VectorXd* value) const {
@@ -45,14 +46,13 @@ GTEST_TEST(SystemConstraintTest, ClassMethodTest) {
   TestSystem dut;
   EXPECT_EQ(dut.get_num_constraints(), 0);
 
-  EXPECT_EQ(dut.DeclareConstraint(&TestSystem::CalcState0Constraint,
-                                  Vector1d(0.0), Vector1d(0.0), "x0"),
+  EXPECT_EQ(dut.DeclareEqualityConstraint(&TestSystem::CalcState0Constraint,
+                                  1, "x0"),
             0);
   EXPECT_EQ(dut.get_num_constraints(), 1);
 
-  EXPECT_EQ(dut.DeclareConstraint(&TestSystem::CalcStateConstraint,
-                                  Eigen::Vector2d(0.0, 0.0),
-                                  Eigen::Vector2d(8.0, 10.0), "x"),
+  EXPECT_EQ(dut.DeclareInequalityConstraint(&TestSystem::CalcStateConstraint,
+                                  2, "x"),
             1);
   EXPECT_EQ(dut.get_num_constraints(), 2);
 
@@ -92,7 +92,7 @@ GTEST_TEST(SystemConstraintTest, FunctionHandleTest) {
       const Context<double>& context, Eigen::VectorXd* value) {
     *value = Vector1d(context.get_continuous_state_vector().GetAtIndex(1));
   };
-  EXPECT_EQ(dut.DeclareConstraint(calc, Vector1d(0.0), Vector1d(2.0), "x1"), 0);
+  EXPECT_EQ(dut.DeclareInequalityConstraint(calc, 1, "x1"), 0);
   EXPECT_EQ(dut.get_num_constraints(), 1);
 
   auto context = dut.CreateDefaultContext();
@@ -112,10 +112,9 @@ GTEST_TEST(SystemConstraintTest, DiagramTest) {
   auto sys1 = builder.AddSystem<TestSystem>();
 
   auto sys2 = builder.AddSystem<TestSystem>();
-  sys2->DeclareConstraint(&TestSystem::CalcState0Constraint, Vector1d(0.0),
-                          Vector1d(0.0), "sys2x0");
-  sys2->DeclareConstraint(&TestSystem::CalcStateConstraint,
-                          Eigen::Vector2d(0.0, 0.0), Eigen::Vector2d(8.0, 10.0),
+  sys2->DeclareEqualityConstraint(&TestSystem::CalcState0Constraint, 1, "sys2x0");
+  sys2->DeclareInequalityConstraint(&TestSystem::CalcStateConstraint,
+                          2,
                           "x");
 
   auto diagram = builder.Build();

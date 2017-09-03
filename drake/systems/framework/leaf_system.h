@@ -949,13 +949,15 @@ class LeafSystem : public System<T> {
   }
   //@}
 
-  /// Declares a system constraint by specifying a member function to
-  /// use to calculate the (Vector) constraint value with a signature:
+  /// Declares a system constraint of the form
+  ///   f(context) = 0
+  /// by specifying a member function to use to calculate the (VectorX) constraint
+  /// value with a signature:
   /// @code
   /// void MySystem::CalcConstraint(const Context<T>&, VectorX<T>*) const;
   /// @endcode
-  /// and by specifying the lower- and upper-bounds for that constraint value.
   ///
+  /// @param count is the dimension of the VectorX output.
   /// @param description should be a human-readable phrase.
   /// @returns The index of the constraint.
   /// Template arguments will be deduced and do not need to be specified.
@@ -963,42 +965,97 @@ class LeafSystem : public System<T> {
   /// @see SystemConstraint<T> for more information about the meaning of
   /// these constraints.
   template <class MySystem>
-  SystemConstraintIndex DeclareConstraint(
+  SystemConstraintIndex DeclareEqualityConstraint(
       void (MySystem::*calc)(const Context<T>&, VectorX<T>*) const,
-      const Eigen::Ref<const Eigen::VectorXd>& lower_bound,
-      const Eigen::Ref<const Eigen::VectorXd>& upper_bound,
-      const std::string& description) {
+      const int count, const std::string& description) {
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
-    return DeclareConstraint(
+    return DeclareEqualityConstraint(
         [this_ptr, calc](const Context<T>& context, VectorX<T>* value) {
           DRAKE_DEMAND(value != nullptr);
           (this_ptr->*calc)(context, value);
         },
-        lower_bound, upper_bound, description);
+        count, description);
   }
 
-  /// Declares a system constraint by specifying a std::function to
-  /// use to calculate the (Vector) constraint value with a signature:
+  /// Declares a system constraint of the form
+  ///   f(context) = 0
+  /// by specifying a std::function to use to calculate the (Vector) constraint
+  /// value with a signature:
   /// @code
   /// void CalcConstraint(const Context<T>&, VectorX<T>*);
   /// @endcode
-  /// and by specifying the lower- and upper-bounds for that constraint value.
   ///
+  /// @param count is the dimension of the VectorX output.
   /// @param description should be a human-readable phrase.
   /// @returns The index of the constraint.
   ///
   /// @see SystemConstraint<T> for more information about the meaning of
   /// these constraints.
-  SystemConstraintIndex DeclareConstraint(
+  SystemConstraintIndex DeclareEqualityConstraint(
       typename SystemConstraint<T>::CalcCallback calc,
-      const Eigen::Ref<const Eigen::VectorXd>& lower_bound,
-      const Eigen::Ref<const Eigen::VectorXd>& upper_bound,
+      const int count,
       const std::string& description) {
+    Eigen::VectorXd lower_bound = Eigen::VectorXd::Zero(count);
+    this->CreateConstraint(std::make_unique<SystemConstraint<T>>(
+        calc, lower_bound, lower_bound, description));
+    return SystemConstraintIndex(this->get_num_constraints() - 1);
+  }
+
+  /// Declares a system constraint of the form
+  ///   f(context) ≥ 0
+  /// by specifying a member function to use to calculate the (VectorX) constraint
+  /// value with a signature:
+  /// @code
+  /// void MySystem::CalcConstraint(const Context<T>&, VectorX<T>*) const;
+  /// @endcode
+  ///
+  /// @param count is the dimension of the VectorX output.
+  /// @param description should be a human-readable phrase.
+  /// @returns The index of the constraint.
+  /// Template arguments will be deduced and do not need to be specified.
+  ///
+  /// @see SystemConstraint<T> for more information about the meaning of
+  /// these constraints.
+  template <class MySystem>
+  SystemConstraintIndex DeclareInequalityConstraint(
+      void (MySystem::*calc)(const Context<T>&, VectorX<T>*) const,
+      const int count, const std::string& description) {
+    auto this_ptr = dynamic_cast<const MySystem*>(this);
+    DRAKE_DEMAND(this_ptr != nullptr);
+    return DeclareInequalityConstraint(
+        [this_ptr, calc](const Context<T>& context, VectorX<T>* value) {
+          DRAKE_DEMAND(value != nullptr);
+          (this_ptr->*calc)(context, value);
+        },
+        count, description);
+  }
+
+  /// Declares a system constraint of the form
+  ///   f(context) ≥ 0
+  /// by specifying a std::function to use to calculate the (Vector) constraint
+  /// value with a signature:
+  /// @code
+  /// void CalcConstraint(const Context<T>&, VectorX<T>*);
+  /// @endcode
+  ///
+  /// @param count is the dimension of the VectorX output.
+  /// @param description should be a human-readable phrase.
+  /// @returns The index of the constraint.
+  ///
+  /// @see SystemConstraint<T> for more information about the meaning of
+  /// these constraints.
+  SystemConstraintIndex DeclareInequalityConstraint(
+      typename SystemConstraint<T>::CalcCallback calc,
+      const int count,
+      const std::string& description) {
+    Eigen::VectorXd lower_bound = Eigen::VectorXd::Zero(count);
+    Eigen::VectorXd upper_bound = Eigen::VectorXd::Constant(count,std::numeric_limits<double>::infinity());
     this->CreateConstraint(std::make_unique<SystemConstraint<T>>(
         calc, lower_bound, upper_bound, description));
     return SystemConstraintIndex(this->get_num_constraints() - 1);
   }
+
 
   /// Derived-class event handler for all simultaneous publish events
   /// in @p events. Override this in your derived LeafSystem if your derived
