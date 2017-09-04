@@ -103,13 +103,10 @@ int do_main(int argc, char* argv[]) {
   builder.Connect(controller->get_output_port(), observer->get_input_port(1));
 
   // Log the true state and the estimated state.
-  auto x_logger = builder.AddSystem<systems::SignalLogger<double>>(4);
+  auto x_logger = LogOutput(acrobot_w_encoder->get_output_port(1), &builder);
   x_logger->set_name("x_logger");
-  builder.Connect(acrobot_w_encoder->get_output_port(1),
-                  x_logger->get_input_port(0));
-  auto xhat_logger = builder.AddSystem<systems::SignalLogger<double>>(4);
+  auto xhat_logger = LogOutput(observer->get_output_port(0), &builder);
   xhat_logger->set_name("xhat_logger");
-  builder.Connect(observer->get_output_port(0), xhat_logger->get_input_port(0));
 
   // Build the system/simulator.
   auto diagram = builder.Build();
