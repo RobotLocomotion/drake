@@ -17,6 +17,12 @@ void SignalLogger<T>::DoPublish(const Context<T>& context,
                this->EvalVectorInput(context, 0)->get_value());
 }
 
+template <typename T>
+const InputPortDescriptor<T>& SignalLogger<T>::get_input_port()
+const {
+  return System<T>::get_input_port(0);
+}
+
 template class SignalLogger<double>;
 template class SignalLogger<AutoDiffXd>;
 
