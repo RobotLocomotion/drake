@@ -93,10 +93,9 @@ std::unique_ptr<Endpoint> ResolvePointReference(
 // Otherwise, return a nullptr (meaning, "try again after making some other
 // connections").
 const Connection* MaybeMakeConnection(
-    std::string id,
-    YAML::Node node,
-    const std::map<std::string, Endpoint>& xyz_catalog,
-    Builder* builder) {
+    std::string id, YAML::Node node,
+    const std::map<std::string, Endpoint>& xyz_catalog, Builder* builder,
+    double left_shoulder, double right_shoulder) {
   DRAKE_DEMAND(node.IsMap());
 
   // "start" required.
@@ -123,20 +122,23 @@ const Connection* MaybeMakeConnection(
   switch (segment_type) {
     case kLine: {
       if (ee_point) {
-        return builder->Connect(
-            id, *start_point, node["length"].as<double>(), ee_point->z());
+        return builder->Connect(id, 1, 0., left_shoulder, right_shoulder,
+                                *start_point, node["length"].as<double>(),
+                                ee_point->z());
       } else {
-        return builder->Connect(
-            id, *start_point, node["length"].as<double>(),
-            endpoint_z(node["z_end"]));
+        return builder->Connect(id, 1, 0., left_shoulder, right_shoulder,
+                                *start_point, node["length"].as<double>(),
+                                endpoint_z(node["z_end"]));
       }
     }
     case kArc: {
       if (ee_point) {
-        return builder->Connect(id, *start_point, arc_offset(node["arc"]),
+        return builder->Connect(id, 1, 0., left_shoulder, right_shoulder,
+                                *start_point, arc_offset(node["arc"]),
                                 ee_point->z());
       } else {
-        return builder->Connect(id, *start_point, arc_offset(node["arc"]),
+        return builder->Connect(id, 1, 0., left_shoulder, right_shoulder,
+                                *start_point, arc_offset(node["arc"]),
                                 endpoint_z(node["z_end"]));
       }
     }
@@ -152,8 +154,14 @@ std::unique_ptr<const api::RoadGeometry> BuildFrom(YAML::Node node) {
   YAML::Node mmb = node["maliput_multilane_builder"];
   DRAKE_DEMAND(mmb.IsMap());
 
-  Builder builder(r_bounds(mmb["lane_bounds"]),
-                  r_bounds(mmb["driveable_bounds"]),
+  const api::RBounds lane_bounds(r_bounds(mmb["lane_bounds"]));
+  DRAKE_DEMAND(lane_bounds.max() == (-lane_bounds.min()));
+  const api::RBounds driveable_bounds(r_bounds(mmb["driveable_bounds"]));
+  const double left_shoulder =
+      std::abs(driveable_bounds.min()) - std::abs(lane_bounds.min());
+  const double right_shoulder =
+      std::abs(driveable_bounds.max()) - std::abs(lane_bounds.max());
+  Builder builder(lane_bounds.max() - lane_bounds.min(),
                   h_bounds(mmb["elevation_bounds"]),
                   mmb["position_precision"].as<double>(),
                   deg_to_rad(mmb["orientation_precision"].as<double>()));
@@ -183,8 +191,8 @@ std::unique_ptr<const api::RoadGeometry> BuildFrom(YAML::Node node) {
     size_t cooked_before_this_pass = cooked_connections.size();
     for (const auto& r : raw_connections) {
       std::string id = r.first;
-      const Connection* conn =
-          MaybeMakeConnection(id, r.second, xyz_catalog, &builder);
+      const Connection* conn = MaybeMakeConnection(
+          id, r.second, xyz_catalog, &builder, left_shoulder, right_shoulder);
       if (!conn) {
         drake::log()->debug("...skipping '{}'", id);
         continue;
