@@ -76,6 +76,7 @@ drake_cc_library(
         "multibody_tree.cc",
         "revolute_mobilizer.cc",
         "rigid_body.cc",
+        "rod_element.cc",
         "uniform_gravity_field_element.cc",
     ],
     hdrs = [
@@ -92,6 +93,7 @@ drake_cc_library(
         "multibody_tree.h",
         "revolute_mobilizer.h",
         "rigid_body.h",
+        "rod_element.h",
         "uniform_gravity_field_element.h",
     ],
     deps = [
