@@ -105,14 +105,11 @@ class TestRbtCloneDiagram : public Diagram<double> {
             VectorX<double>::Zero(num_actuators));
     constant_zero_source->set_name("zero");
 
-    logger_ = builder.template AddSystem<SignalLogger<double>>(
-        plant_->get_num_states());
+    logger_ = LogOutput(plant_->state_output_port(), &builder);
     logger_->set_name("logger");
 
     builder.Connect(constant_zero_source->get_output_port(),
         plant_->actuator_command_input_port());
-    builder.Connect(plant_->state_output_port(),
-        logger_->get_input_port(0));
     builder.BuildInto(this);
   }
 

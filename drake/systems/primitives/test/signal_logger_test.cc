@@ -29,6 +29,9 @@ GTEST_TEST(TestSignalLogger, LinearSystemTest) {
   logger->set_name("logger");
   builder.Cascade(*plant, *logger);
 
+  // Test the AddSignalLogger helper method, too.
+  auto logger2 = LogOutput(plant->get_output_port(), &builder);
+
   auto diagram = builder.Build();
 
   // Simulate the simple system from x(0) = 1.0.
@@ -56,6 +59,10 @@ GTEST_TEST(TestSignalLogger, LinearSystemTest) {
 
   double tol = 1e-6;  // Not bad for numerical integration!
   EXPECT_TRUE(CompareMatrices(expected_x, x, tol));
+
+  // Confirm that both loggers acquired the same data.
+  EXPECT_TRUE(CompareMatrices(logger->sample_times(), logger2->sample_times()));
+  EXPECT_TRUE(CompareMatrices(logger->data(), logger2->data()));
 }
 
 }  // namespace
