@@ -42,6 +42,25 @@ class LineRoadCurve : public RoadCurve {
 
   ~LineRoadCurve() override = default;
 
+  double trajectory_length(double r) const override {
+    return elevation().s_p(1.0) * p_scale() / p_scale_offset_factor(1.0, r);
+  }
+
+  double p_from_s(double s, double r) const override {
+    return elevation().p_s(s / (p_scale() / p_scale_offset_factor(1.0, r)));
+  }
+
+  double p_scale_offset_factor(double p, double r) const override {
+    // TODO(@maddog-tri) We should take care of the superelevation() scale that
+    // will modify curve's path length.
+    DRAKE_DEMAND(r == 0. || (superelevation().a() == 0. &&
+                 superelevation().b() == 0. && superelevation().c() == 0. &&
+                 superelevation().d() == 0.));
+    unused(p);
+    unused(r);
+    return 1.0;
+  }
+
   Vector2<double> xy_of_p(double p) const override { return p0_ + p * dp_; }
 
   Vector2<double> xy_dot_of_p(double p) const override {
@@ -63,21 +82,14 @@ class LineRoadCurve : public RoadCurve {
 
   Vector3<double> ToCurveFrame(
       const Vector3<double>& geo_coordinate,
-      const api::RBounds& lateral_bounds,
+      double r_min, double r_max,
       const api::HBounds& height_bounds) const override;
 
-  /// As the reference curve is a line, the curvature radius is infinity at any
-  /// point in the range of p = [0;1] so no value of elevation or superelevation
-  /// may result in a geometry that intersects with itself.
-  /// @param lateral_bounds An api::RBounds object that represents the lateral
-  /// bounds of the surface mapping.
-  /// @param height_bounds An api::HBounds object that represents the elevation
-  /// bounds of the surface mapping.
-  /// @return True.
   bool IsValid(
-      const api::RBounds& lateral_bounds,
+      double r_min, double r_max,
       const api::HBounds& height_bounds) const override {
-    unused(lateral_bounds);
+    unused(r_min);
+    unused(r_max);
     unused(height_bounds);
     return true;
   }
