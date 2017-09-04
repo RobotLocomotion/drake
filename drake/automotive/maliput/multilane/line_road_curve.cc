@@ -10,8 +10,9 @@ const double LineRoadCurve::kMinimumNorm = 1e-12;
 
 Vector3<double> LineRoadCurve::ToCurveFrame(
     const Vector3<double>& geo_coordinate,
-    const api::RBounds& lateral_bounds,
+    double r_min, double r_max,
     const api::HBounds& height_bounds) const {
+  DRAKE_DEMAND(r_min <= r_max);
   // TODO(jadecastro): Lift the zero superelevation and zero elevation gradient
   // restriction.
   const Vector2<double> s_unit_vector = dp_ / dp_.norm();
@@ -24,8 +25,7 @@ Vector3<double> LineRoadCurve::ToCurveFrame(
   const double s_unsaturated = lane_origin_to_p.dot(s_unit_vector);
   const double s = math::saturate(s_unsaturated, 0., p_scale());
   const double r_unsaturated = lane_origin_to_p.dot(r_unit_vector);
-  const double r = math::saturate(r_unsaturated, lateral_bounds.min(),
-                                  lateral_bounds.max());
+  const double r = math::saturate(r_unsaturated, r_min, r_max);
   // N.B. h is the geo z-coordinate referenced against the lane elevation (whose
   // `a` coefficient is normalized by lane length).
   const double h_unsaturated = geo_coordinate.z() - elevation().a() * p_scale();
