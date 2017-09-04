@@ -30,6 +30,7 @@ drake_cc_library(
         "junction.cc",
         "lane.cc",
         "line_road_curve.cc",
+        "road_curve.cc",
         "road_geometry.cc",
         "segment.cc",
     ],

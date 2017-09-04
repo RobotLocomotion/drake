@@ -1,0 +1,90 @@
+#include "drake/automotive/maliput/multilane/road_curve.h"
+
+namespace drake {
+namespace maliput {
+namespace multilane {
+
+Rot3 RoadCurve::Rabg_of_p(const double p) const {
+  // TODO(agalbachicar)  This method needs test coverage.
+  return Rot3(superelevation().f_p(p) * p_scale(),
+              -std::atan(elevation().f_dot_p(p)),
+              heading_of_p(p));
+}
+
+
+Vector3<double> RoadCurve::W_prime_of_prh(double p, double r, double h,
+                                          const Rot3& Rabg,
+                                          double g_prime) const {
+  // TODO(agalbachicar)  This method needs test coverage.
+  const Vector2<double> G_prime = xy_dot_of_p(p);
+
+  const Rot3& R = Rabg;
+  const double alpha = R.roll();
+  const double beta = R.pitch();
+  const double gamma = R.yaw();
+
+  const double ca = std::cos(alpha);
+  const double cb = std::cos(beta);
+  const double cg = std::cos(gamma);
+  const double sa = std::sin(alpha);
+  const double sb = std::sin(beta);
+  const double sg = std::sin(gamma);
+
+  // Evaluate dα/dp, dβ/dp, dγ/dp...
+  const double d_alpha = superelevation().f_dot_p(p) * p_scale();
+  const double d_beta = -cb * cb * elevation().f_ddot_p(p);
+  const double d_gamma = heading_dot_of_p(p);
+
+  // Recall that W is the lane-to-world transform, defined by
+  //   (x,y,z)  = W(p,r,h) = (G(p), Z(p)) + R_αβγ*(0,r,h)
+  // where G is the reference curve, Z is the elevation profile, and R_αβγ is
+  // a rotation matrix derived from reference curve (heading), elevation,
+  // and superelevation.
+  //
+  // Thus, ∂W/∂p = (∂G(p)/∂p, ∂Z(p)/∂p) + (∂R_αβγ/∂p)*(0,r,h), where
+  //
+  //   ∂G(p)/∂p = G'(p)
+  //
+  //   ∂Z(p)/∂p = p_scale * (z / p_scale) = p_scale * g'(p)
+  //
+  //   ∂R_αβγ/∂p = (∂R_αβγ/∂α ∂R_αβγ/∂β ∂R_αβγ/∂γ)*(dα/dp, dβ/dp, dγ/dp)
+  return
+      Vector3<double>(G_prime.x(),
+                      G_prime.y(),
+                      p_scale() * g_prime) +
+
+      Vector3<double>((((sa*sg)+(ca*sb*cg))*r + ((ca*sg)-(sa*sb*cg))*h),
+                      (((-sa*cg)+(ca*sb*sg))*r - ((ca*cg)+(sa*sb*sg))*h),
+                      ((ca*cb)*r + (-sa*cb)*h))
+                      * d_alpha +
+
+      Vector3<double>(((sa*cb*cg)*r + (ca*cb*cg)*h),
+                      ((sa*cb*sg)*r + (ca*cb*sg)*h),
+                      ((-sa*sb)*r - (ca*sb)*h))
+                      * d_beta +
+
+      Vector3<double>((((-ca*cg)-(sa*sb*sg))*r + ((+sa*cg)-(ca*sb*sg))*h),
+                      (((-ca*sg)+(sa*sb*cg))*r + ((sa*sg)+(ca*sb*cg))*h),
+                      0)
+                      * d_gamma;
+}
+
+
+Vector3<double> RoadCurve::s_hat_of_prh(double p, double r, double h,
+                                        const Rot3& Rabg,
+                                        double g_prime) const {
+  // TODO(agalbachicar)  This method needs direct test coverage.
+  const Vector3<double> W_prime = W_prime_of_prh(p, r, h, Rabg, g_prime);
+  return W_prime * (1.0 / W_prime.norm());
+}
+
+
+Vector3<double> RoadCurve::r_hat_of_Rabg(const Rot3& Rabg) const {
+  // TODO(agalbachicar)  This method needs direct test coverage.
+  return Rabg.apply({0., 1., 0.});
+}
+
+
+}  // namespace multilane
+}  // namespace maliput
+}  // namespace drake

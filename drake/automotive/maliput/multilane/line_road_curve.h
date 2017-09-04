@@ -42,6 +42,10 @@ class LineRoadCurve : public RoadCurve {
 
   ~LineRoadCurve() override = default;
 
+  double p_from_s(double s, double r) const override;
+
+  double s_from_p(double p, double r) const override;
+
   Vector2<double> xy_of_p(double p) const override { return p0_ + p * dp_; }
 
   Vector2<double> xy_dot_of_p(double p) const override {
@@ -63,21 +67,14 @@ class LineRoadCurve : public RoadCurve {
 
   Vector3<double> ToCurveFrame(
       const Vector3<double>& geo_coordinate,
-      const api::RBounds& lateral_bounds,
+      double r_min, double r_max,
       const api::HBounds& height_bounds) const override;
 
-  /// As the reference curve is a line, the curvature radius is infinity at any
-  /// point in the range of p = [0;1] so no value of elevation or superelevation
-  /// may result in a geometry that intersects with itself.
-  /// @param lateral_bounds An api::RBounds object that represents the lateral
-  /// bounds of the surface mapping.
-  /// @param height_bounds An api::HBounds object that represents the elevation
-  /// bounds of the surface mapping.
-  /// @return True.
   bool IsValid(
-      const api::RBounds& lateral_bounds,
+      double r_min, double r_max,
       const api::HBounds& height_bounds) const override {
-    unused(lateral_bounds);
+    unused(r_min);
+    unused(r_max);
     unused(height_bounds);
     return true;
   }
