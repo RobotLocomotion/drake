@@ -65,6 +65,8 @@ class Lane : public api::Lane {
   ///        entire driveable surface
   /// @param road_curve The trajectory of the Lane over parent @p segment's
   ///        surface.
+  /// @param r0 The lateral displacement with respect to the @p road_curve's
+  ///        reference curve.
   ///
   /// N.B. The override Lane::ToLanePosition() is currently restricted to lanes
   /// in which superelevation and elevation change are both zero.
@@ -72,19 +74,21 @@ class Lane : public api::Lane {
        const api::RBounds& lane_bounds,
        const api::RBounds& driveable_bounds,
        const api::HBounds& elevation_bounds,
-       const RoadCurve *road_curve)
+       const RoadCurve* road_curve,
+       double r0)
       : id_(id), segment_(segment),
         lane_bounds_(lane_bounds),
         driveable_bounds_(driveable_bounds),
         elevation_bounds_(elevation_bounds),
-        road_curve_(road_curve) {
+        road_curve_(road_curve),
+        r0_(r0) {
     DRAKE_DEMAND(lane_bounds_.min() >= driveable_bounds_.min());
     DRAKE_DEMAND(lane_bounds_.max() <= driveable_bounds_.max());
     DRAKE_DEMAND(road_curve != nullptr);
   }
 
-  // TODO(maddog@tri.global)  Allow superelevation to have a center-of-rotation
-  //                          which is different from r = 0.
+  // TODO(maddog-tri)  Allow superelevation to have a center-of-rotation
+  //                   which is different from r = 0.
 
   const CubicPolynomial& elevation() const {
     return road_curve_->elevation();
@@ -187,10 +191,18 @@ class Lane : public api::Lane {
   // Note that xy_of_p(), xy_dot_of_p(), heading_of_p() and heading_dot_of_p(),
   // as well as the reference to the elevation and superelevation objects live
   // on the RoadCurve object.
-
-  // Returns the parametric position p along the reference curve corresponding
-  // to longitudinal position @p s along the lane.
-  double p_from_s(const double s) const;
+  //
+  // Note that the Lane includes r0 lateral offset of the reference curve, which
+  // actually lives in RoadCurve object. This r0 distance makes the reference
+  // curve be transformed so as to translate the reference curve over the z=0
+  // plane (curves with constant curvature radius should apply a scaling factor
+  // only) and the superelevation polynomial act over the road curve
+  // since its center of rotation is over the original reference curve. There is
+  // no support yet for Lanes that has both r0 and superelevation polynomial
+  // different of zero.
+  //
+  // TODO(maddog-tri)  Add support for Lanes with both non-zero r0 and
+  //                   superelevation polynomial.
 
   // Returns the rotation R_αβγ, evaluated at @p p along the reference curve.
   Rot3 Rabg_of_p(const double p) const;
@@ -227,6 +239,7 @@ class Lane : public api::Lane {
   const api::RBounds driveable_bounds_;
   const api::HBounds elevation_bounds_;
   const RoadCurve* road_curve_{};
+  const double r0_;
 };
 
 

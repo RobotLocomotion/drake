@@ -47,6 +47,33 @@ class ArcRoadCurve : public RoadCurve {
 
   ~ArcRoadCurve() override = default;
 
+  double trajectory_length(double r) const override {
+    return elevation().s_p(1.0) * p_scale() / p_scale_offset_factor(1.0, r);
+  }
+
+  double p_from_s(double s, double r) const override {
+    return elevation().p_s(s / (p_scale() / p_scale_offset_factor(1.0, r)));
+  }
+
+  /// Computes the scale factor between the path length integral of the
+  /// reference curve with respect to an offset of it at `r` lateral distance
+  /// and `p` position over the reference curve.
+  /// @param p The reference curve parameter.
+  /// @param r The lateral distance from the reference curve.
+  /// @throws std::runtime_error When the effective radius of the arc is
+  /// negative.
+  double p_scale_offset_factor(double p, double r) const override {
+    // TODO(@maddog-tri) We should take care of the superelevation() scale that
+    // will modify curve's path length.
+    DRAKE_DEMAND(r == 0. ||
+                 (superelevation().a() == 0. && superelevation().b() == 0. &&
+                  superelevation().c() == 0. && superelevation().d() == 0.));
+    unused(p);
+    const double effective_radius = offset_radius(r);
+    DRAKE_THROW_UNLESS(effective_radius > 0.0);
+    return radius_ / effective_radius;
+  }
+
   Vector2<double> xy_of_p(double p) const override {
     // The result will be computed with the following function:
     //      [x;y] = center + [radius * cos(θ); radius * sin(θ)]
@@ -96,25 +123,26 @@ class ArcRoadCurve : public RoadCurve {
 
   Vector3<double> ToCurveFrame(
       const Vector3<double>& geo_coordinate,
-      const api::RBounds& lateral_bounds,
+      double r_min, double r_max,
       const api::HBounds& height_bounds) const override;
 
-  /// Evaluates extrema in superelevation polynomial to verify that for the
-  /// given @p lateral_bounds the surface do not fold over itself.
-  /// @param lateral_bounds An api::RBounds object that represents the lateral
-  /// bounds of the surface mapping.
-  /// @param height_bounds An api::HBounds object that represents the elevation
-  /// bounds of the surface mapping.
-  /// @return True.
-  bool IsValid(
-      const api::RBounds& lateral_bounds,
-      const api::HBounds& height_bounds) const override;
+  bool IsValid(double r_min, double r_max,
+               const api::HBounds& height_bounds) const override;
 
  private:
   // Computes the absolute position along reference arc as an angle in
   // range [theta0_, (theta0 + d_theta_)],
   // as a function of parameter @p p (in domain [0, 1]).
   double theta_of_p(double p) const { return theta0_ + (p * d_theta_); }
+
+  // Computes the radius of the reference arc offset at a distance @p r.
+  // Uses d_theta_'s sign (see ArcRoadCurve() for more details)  to add or
+  // or subtract @p r distance.
+  // @param r Lateral offset of the reference curve over the z=0 plane.
+  // @return The reference arc offset radius.
+  double offset_radius(double r) const {
+    return radius_ - std::copysign(1., d_theta_) * r;
+  }
 
   // Center of rotation in z=0 plane, world coordinates, for the arc reference
   // curve.

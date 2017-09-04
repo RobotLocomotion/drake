@@ -14,13 +14,23 @@ namespace multilane {
 
 /// Defines an interface for a path in a Segment object surface. The path is
 /// defined by an elevation and superelevation CubicPolynomial objects and a
-/// reference curve. This reference curve is a C1 function over the z=0 plane.
+/// reference curve. This reference curve is a C1 function in the z=0 plane.
 /// Its domain is constrained in [0;1] interval and it should map a ℝ² curve.
-/// As per notation, p is the parameter of the reference curve, and function
-/// interpolations and function derivatives as well as headings and heading
-/// derivatives are expressed in world coordinates, which is the same frame as
-/// api::GeoPosition.
+/// As per notation, p is the parameter of the reference curve, not necessarily
+/// arc length s, and function interpolations and function derivatives as well
+/// as headings and heading derivatives are expressed in world coordinates,
+/// which is the same frame as api::GeoPosition.
 /// By implementing this interface the road curve is defined and a complete.
+///
+/// Composed curve is defined on [p,r,h] frame, where p is the parameter of
+/// reference curve, and elevation and superelevation polynomials in domain
+/// [0,1]. r is the lateral distance from the composed curve and h is the
+/// height from plane z=0 in global coordinates. In addition, RoadCurve objects
+/// are able to compute path length integral of the composed curve, where s is
+/// defined. Consequently, we can also describe composed curve frame with
+/// [s,r,h] which uses path length integral coordinate instead of p. Also, a
+/// global frame defined by [x,y,z] coordinates is used to get a curve frame
+/// vector ([s,r,h]) from a global one.
 class RoadCurve {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RoadCurve)
@@ -32,11 +42,37 @@ class RoadCurve {
   const CubicPolynomial& superelevation() const { return superelevation_; }
 
   /// Computes the composed curve path integral in the interval of p = [0; 1].
+  ///
+  /// It does not have support yet for the superelevation effect when computing
+  /// the path length integral.
+  /// @param r Lateral offset of the reference curve in the z=0 plane. The
+  /// path integral changes to reflect the length of the modified curve.
   /// @return The path length integral of the curve composed with the elevation
   /// polynomial.
-  double trajectory_length() const {
-    return elevation_.s_p(1.0) * p_scale();
-  }
+  virtual double trajectory_length(double r) const = 0;
+
+  /// Computes the parametric position p along an offset of the reference curve
+  /// at `r` distance corresponding to longitudinal position `s` along the road
+  /// curve.
+  ///
+  /// It scales p_scale() based on `r` lateral offset distance from the
+  /// reference curve.
+  /// @param s Longitudinal position over the road curve.
+  /// @param r Lateral distance from the reference curve.
+  /// @return The parametric position p along an offset of the reference curve.
+  virtual double p_from_s(double s, double r) const = 0;
+
+  /// Computes the scale factor between the path length integral of the
+  /// reference curve with respect to an offset of it at `r` lateral distance
+  /// and `p` position over the reference curve.
+  ///
+  /// When the reference curve has a constant curvature radius, scale factor
+  /// will be constant along the complete path length of the reference curve.
+  /// @param p The reference curve parameter.
+  /// @param r Lateral distance from the reference curve.
+  /// @return The scale factor between p_scale() and the path length integral of
+  /// the curve at offset distance `r`.
+  virtual double p_scale_offset_factor(double p, double r) const = 0;
 
   /// Computes the reference curve.
   /// @param p The reference curve parameter.
@@ -70,13 +106,15 @@ class RoadCurve {
   /// Converts a @p geo_coordinate in the world frame to the composed curve
   /// frame, i.e., the superposition of the reference curve, elevation and
   /// superelevation polynomials. The resulting coordinates are saturated to
-  /// @p lateral_bounds and @p height_bounds in the lateral and vertical
+  /// @p r_min, @p r_max and @p height_bounds in the lateral and vertical
   /// directions over the composed curve trajectory. The path length coordinate
   /// is saturated in the interval [0; trajectory_length()].
   /// @param geo_coordinate A 3D vector in the world frame to be converted to
   /// the composed curve frame.
-  /// @param lateral_bounds An api::RBounds object that represents the lateral
-  /// bounds of the surface mapping.
+  /// @param r_min Minimum lateral distance from the composed curve to saturate,
+  /// if it is necessary, the result in the given direction.
+  /// @param r_max Maximum lateral distance from the composed curve to evaluate,
+  /// if it is necessary, the result in the given direction
   /// @param height_bounds An api::HBounds object that represents the elevation
   /// bounds of the surface mapping.
   /// @return A 3D vector that represents the coordinates with respect to the
@@ -86,20 +124,21 @@ class RoadCurve {
   /// frame where this vector is defined is the same as api::LanePosition.
   virtual Vector3<double> ToCurveFrame(
       const Vector3<double>& geo_coordinate,
-      const api::RBounds& lateral_bounds,
+      double r_min, double r_max,
       const api::HBounds& height_bounds) const = 0;
 
   /// Checks that there are no self-intersections (singularities) in the volume
-  /// created by applying the constant @p lateral_bounds and @p height_bounds to
-  /// the RoadCurve.
-  /// @param lateral_bounds An api::RBounds object that represents the lateral
-  /// bounds of the surface mapping.
+  /// created by applying the constant @p r_min, @p r_max and @p height_bounds
+  /// to the RoadCurve.
+  /// @param r_min Minimum lateral distance from the composed curve to evaluate
+  /// the validity of the geometry.
+  /// @param r_max Maximum lateral distance from the composed curve to evaluate
+  /// the validity of the geometry.
   /// @param height_bounds An api::HBounds object that represents the elevation
   /// bounds of the surface mapping.
   /// @return True when there are no self-intersections.
-  virtual bool IsValid(
-      const api::RBounds& lateral_bounds,
-      const api::HBounds& height_bounds) const = 0;
+  virtual bool IsValid(double r_min, double r_max,
+                       const api::HBounds& height_bounds) const = 0;
 
  protected:
   /// Constructs a road curve given elevation and superelevation curves.
