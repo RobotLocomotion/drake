@@ -71,6 +71,8 @@ class Segment : public api::Segment {
   /// @return A Lane object.
   Lane* NewLane(api::LaneId id, double r0, const api::RBounds& lane_bounds);
 
+  const RoadCurve* road_curve() const { return road_curve_.get(); }
+
   ~Segment() override = default;
 
  private:
