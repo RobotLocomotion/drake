@@ -32,11 +32,32 @@ class RoadCurve {
   const CubicPolynomial& superelevation() const { return superelevation_; }
 
   /// Computes the composed curve path integral in the interval of p = [0; 1].
+  ///
+  /// It does not have support yet for the superelevation effect when computing
+  /// the path length integral.
+  /// @param r Lateral offset of the reference curve over the z=0 plane. It
+  /// makes the reference curve be scaled to go over it.
   /// @return The path length integral of the curve composed with the elevation
   /// polynomial.
-  double trajectory_length() const {
-    return elevation_.s_p(1.0) * p_scale();
-  }
+  virtual double trajectory_length(double r) const = 0;
+
+  /// Computes the parametric position p along an offset of the reference curve
+  /// at `r` distance corresponding to longitudinal position `s` along the road
+  /// curve.
+  ///
+  /// It scales p_scale() based on `r` lateral offset distance from the
+  /// reference curve.
+  /// @param s Longitudinal position over the road curve.
+  /// @param r Lateral distance from the reference curve.
+  /// @return The parametric position p along an offset of the reference curve.
+  virtual double p_from_s(double s, double r) const = 0;
+
+  /// Computes the scale factor between the path length integral of the
+  /// reference curve with respect to an offset of it at `r` lateral distance.
+  /// @param r Lateral distance from the reference curve.
+  /// @return The scale factor between p_scale() and the path length integral of
+  /// the curve at offset distance `r`.
+  virtual double p_scale_offset_factor(double r) const = 0;
 
   /// Computes the reference curve.
   /// @param p The reference curve parameter.
@@ -90,16 +111,17 @@ class RoadCurve {
       const api::HBounds& height_bounds) const = 0;
 
   /// Checks that there are no self-intersections (singularities) in the volume
-  /// created by applying the constant @p lateral_bounds and @p height_bounds to
-  /// the RoadCurve.
-  /// @param lateral_bounds An api::RBounds object that represents the lateral
-  /// bounds of the surface mapping.
+  /// created by applying the constant @p r_min, @p r_max and @p height_bounds
+  /// to the RoadCurve.
+  /// @param r_min Minimum lateral distance from the composed curve to evaluate
+  /// the validity of the geometry.
+  /// @param r_max Maximum lateral distance from the composed curve to evaluate
+  /// the validity of the geometry.
   /// @param height_bounds An api::HBounds object that represents the elevation
   /// bounds of the surface mapping.
   /// @return True when there are no self-intersections.
-  virtual bool IsValid(
-      const api::RBounds& lateral_bounds,
-      const api::HBounds& height_bounds) const = 0;
+  virtual bool IsValid(double r_min, double r_max,
+                       const api::HBounds& height_bounds) const = 0;
 
  protected:
   /// Constructs a road curve given elevation and superelevation curves.

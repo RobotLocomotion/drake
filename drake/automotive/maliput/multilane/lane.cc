@@ -34,20 +34,13 @@ std::unique_ptr<api::LaneEnd> Lane::DoGetDefaultBranch(
 }
 
 
-double Lane::do_length() const {
-  return road_curve_->trajectory_length();
-}
+double Lane::do_length() const { return road_curve_->trajectory_length(r0_); }
 
 
 Rot3 Lane::Rabg_of_p(const double p) const {
   return Rot3(road_curve_->superelevation().f_p(p) * road_curve_->p_scale(),
               -std::atan(road_curve_->elevation().f_dot_p(p)),
               road_curve_->heading_of_p(p));
-}
-
-
-double Lane::p_from_s(const double s) const {
-  return road_curve_->elevation().p_s(s / road_curve_->p_scale());
 }
 
 
@@ -124,7 +117,7 @@ V3 Lane::r_hat_of_Rabg(const Rot3& Rabg) const {
 api::GeoPosition Lane::DoToGeoPosition(
     const api::LanePosition& lane_pos) const {
   // Recover parameter p from arc-length position s.
-  const double p = p_from_s(lane_pos.s());
+  const double p = road_curve_->p_from_s(lane_pos.s(), r0_);
   // Calculate z (elevation) of (s,0,0);
   const double z = road_curve_->elevation().f_p(p) * road_curve_->p_scale();
   // Calculate x,y of (s,0,0).
@@ -134,15 +127,15 @@ api::GeoPosition Lane::DoToGeoPosition(
 
   // Rotate (0,r,h) and sum with mapped (s,0,0).
   const V3 xyz =
-      ypr.apply({0., lane_pos.r(), lane_pos.h()}) + V3(xy.x(), xy.y(), z);
+      ypr.apply({0., lane_pos.r() + r0_, lane_pos.h()}) + V3(xy.x(), xy.y(), z);
   return {xyz.x(), xyz.y(), xyz.z()};
 }
 
 
 api::Rotation Lane::DoGetOrientation(const api::LanePosition& lane_pos) const {
   // Recover linear parameter p from arc-length position s.
-  const double p = p_from_s(lane_pos.s());
-  const double r = lane_pos.r();
+  const double p = road_curve_->p_from_s(lane_pos.s(), r0_);
+  const double r = lane_pos.r() + r0_;
   const double h = lane_pos.h();
   // Calculate orientation of (s,r,h) basis at (s,0,0).
   const Rot3 Rabg = Rabg_of_p(p);
@@ -179,8 +172,8 @@ api::LanePosition Lane::DoEvalMotionDerivatives(
     const api::LanePosition& position,
     const api::IsoLaneVelocity& velocity) const {
 
-  const double p = p_from_s(position.s());
-  const double r = position.r();
+  const double p = road_curve_->p_from_s(position.s(), r0_);
+  const double r = position.r() + r0_;
   const double h = position.h();
 
   // TODO(maddog@tri.global)  When s(p) is integrated properly, do this:
@@ -192,9 +185,10 @@ api::LanePosition Lane::DoEvalMotionDerivatives(
 
   // The definition of path-length of a path along σ yields dσ = |∂W/∂p| dp.
   // Similarly, path-length s along the road at r = 0 is related to the
-  // elevation by ds = p_scale * sqrt(1 + g'^2) dp. Chaining yields
-  // ds/dσ:
-  const double ds_dsigma = road_curve_->p_scale() *
+  // elevation by ds = p_scale * sqrt(1 + g'^2) dp. Note that p_scale should be
+  // scaled because of Lane's offset distance, r0_. Chaining yields ds/dσ:
+  const double ds_dsigma = road_curve_->p_scale() /
+                           road_curve_->p_scale_offset_factor(r0_) *
                            std::sqrt(1 + (g_prime * g_prime)) / W_prime.norm();
 
   return api::LanePosition(ds_dsigma * velocity.sigma_v,
@@ -206,9 +200,21 @@ api::LanePosition Lane::DoToLanePosition(
       const api::GeoPosition& geo_position,
       api::GeoPosition* nearest_position,
       double* distance) const {
-  const api::LanePosition lane_position = api::LanePosition::FromSrh(
-      road_curve_->ToCurveFrame(
-          geo_position.xyz(), driveable_bounds_, elevation_bounds_));
+  // Computes the lateral extents of the surface in terms of the definition of
+  // the reference curve. It implies a translation of the driveable bounds
+  // center by the lane by r0 distance.
+  const api::RBounds surface_bounds(driveable_bounds_.min() + r0_,
+                                    driveable_bounds_.max() + r0_);
+  // Lane position is over the segment's road curve frame, so a change is
+  // needed. That implies rescaling the s coordinate and translating the r
+  // coordinate because of the offset.
+  const V3 lane_position_in_segment_curve_frame = road_curve_->ToCurveFrame(
+      geo_position.xyz(), surface_bounds, elevation_bounds_);
+  const api::LanePosition lane_position =
+      api::LanePosition(lane_position_in_segment_curve_frame[0] /
+                            road_curve_->p_scale_offset_factor(r0_),
+                        lane_position_in_segment_curve_frame[1] - r0_,
+                        lane_position_in_segment_curve_frame[2]);
 
   const api::GeoPosition nearest = ToGeoPosition(lane_position);
   if (nearest_position != nullptr) {
@@ -221,7 +227,6 @@ api::LanePosition Lane::DoToLanePosition(
 
   return lane_position;
 }
-
 
 }  // namespace multilane
 }  // namespace maliput
