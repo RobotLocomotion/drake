@@ -47,6 +47,8 @@ class MultilaneLanesParamTest : public ::testing::TestWithParam<double> {
   const double kHalfWidth{10.};
   const double kMaxHeight{5.};
   const double kHalfLaneWidth{5.};
+  const int kNumLanes{1};
+  const double kRSpacing{0.};
   double r0{};
   // NB:  kIntegrationScaleMap and kIntegrationFactorMap are regression
   //      coefficients to match within the integration tolerance the path
@@ -73,10 +75,9 @@ TEST_P(MultilaneLanesParamTest, FlatLineLane) {
   const Vector3<double> r_offset_vector = r0 * r_vector;
   Segment* s1 = rg.NewJunction(api::JunctionId{"j1"})
                     ->NewSegment(api::SegmentId{"s1"}, std::move(road_curve_1),
-                                 -kHalfWidth + r0, kHalfWidth + r0,
-                                 {0., kMaxHeight});
-  Lane* l1 =
-      s1->NewLane(api::LaneId{"l1"}, r0, {-kHalfLaneWidth, kHalfLaneWidth});
+                                 kNumLanes, r0, kRSpacing, -kHalfWidth + r0,
+                                 kHalfWidth + r0, {0., kMaxHeight});
+  Lane* l1 = s1->NewLane(api::LaneId{"l1"}, {-kHalfLaneWidth, kHalfLaneWidth});
 
   EXPECT_EQ(rg.CheckInvariants(), std::vector<std::string>());
 
@@ -166,10 +167,10 @@ TEST_P(MultilaneLanesParamTest, FlatLineLane) {
       CubicPolynomial(elevation / length, 0.0, 0.0, 0.0), zp);
   Segment* s2 = rg.NewJunction(api::JunctionId{"j2"})
                     ->NewSegment(api::SegmentId{"s2"}, std::move(road_curve_2),
-                                 -kHalfWidth + r0, kHalfWidth + r0,
-                                 {0., kMaxHeight});
-  Lane* l1_with_z = s2->NewLane(api::LaneId{"l1_with_z"}, r0,
-                                {-kHalfLaneWidth, kHalfLaneWidth});
+                                 kNumLanes, r0, kRSpacing, -kHalfWidth + r0,
+                                 kHalfWidth + r0, {0., kMaxHeight});
+  Lane* l1_with_z =
+      s2->NewLane(api::LaneId{"l1_with_z"}, {-kHalfLaneWidth, kHalfLaneWidth});
   EXPECT_TRUE(api::test::IsLanePositionClose(
       l1_with_z->ToLanePosition(point_outside_lane, &nearest_position,
                                 &distance),
@@ -247,10 +248,9 @@ TEST_P(MultilaneLanesParamTest, FlatArcLane) {
       std::make_unique<ArcRoadCurve>(center, radius, theta0, d_theta, zp, zp);
   Segment* s1 = rg.NewJunction(api::JunctionId{"j1"})
                     ->NewSegment(api::SegmentId{"s1"}, std::move(road_curve_1),
-                                 -kHalfWidth + r0, kHalfWidth + r0,
-                                 {0., kMaxHeight});
-  Lane* l2 =
-      s1->NewLane(api::LaneId{"l2"}, r0, {-kHalfLaneWidth, kHalfLaneWidth});
+                                 kNumLanes, r0, kRSpacing, -kHalfWidth + r0,
+                                 kHalfWidth + r0, {0., kMaxHeight});
+  Lane* l2 = s1->NewLane(api::LaneId{"l2"}, {-kHalfLaneWidth, kHalfLaneWidth});
 
   EXPECT_EQ(rg.CheckInvariants(), std::vector<std::string>());
 
@@ -358,10 +358,10 @@ TEST_P(MultilaneLanesParamTest, FlatArcLane) {
       CubicPolynomial(elevation / radius / d_theta, 0.0, 0.0, 0.0), zp);
   Segment* s2 = rg.NewJunction(api::JunctionId{"j2"})
                     ->NewSegment(api::SegmentId{"s2"}, std::move(road_curve_2),
-                                 -kHalfWidth + r0, kHalfWidth + r0,
-                                 {0., kMaxHeight});
-  Lane* l2_with_z = s2->NewLane(api::LaneId{"l2_with_z"}, r0,
-                                {-kHalfLaneWidth, kHalfLaneWidth});
+                                 kNumLanes, r0, kRSpacing, -kHalfWidth + r0,
+                                 kHalfWidth + r0, {0., kMaxHeight});
+  Lane* l2_with_z =
+      s2->NewLane(api::LaneId{"l2_with_z"}, {-kHalfLaneWidth, kHalfLaneWidth});
   EXPECT_TRUE(api::test::IsLanePositionClose(
       l2_with_z->ToLanePosition(point_outside_lane, &nearest_position,
                                 &distance),
@@ -384,11 +384,11 @@ TEST_P(MultilaneLanesParamTest, FlatArcLane) {
   const double d_theta_overlap = 3 * M_PI;
   std::unique_ptr<RoadCurve> road_curve_3 = std::make_unique<ArcRoadCurve>(
       center, radius, theta0, d_theta_overlap, zp, zp);
-  Segment* s3 =
-      rg.NewJunction(api::JunctionId{"j3"})
-      ->NewSegment(api::SegmentId{"s3"}, std::move(road_curve_3),
-                   -kHalfWidth + r0, kHalfWidth + r0, {0., kMaxHeight});
-  Lane* l2_overlapping = s3->NewLane(api::LaneId{"l2_overlapping"}, r0,
+  Segment* s3 = rg.NewJunction(api::JunctionId{"j3"})
+                    ->NewSegment(api::SegmentId{"s3"}, std::move(road_curve_3),
+                                 kNumLanes, r0, kRSpacing, -kHalfWidth + r0,
+                                 kHalfWidth + r0, {0., kMaxHeight});
+  Lane* l2_overlapping = s3->NewLane(api::LaneId{"l2_overlapping"},
                                      {-kHalfLaneWidth, kHalfLaneWidth});
   EXPECT_TRUE(api::test::IsLanePositionClose(
       l2_overlapping->ToLanePosition(point_within_lane, &nearest_position,
@@ -418,10 +418,10 @@ TEST_P(MultilaneLanesParamTest, FlatArcLane) {
       center, radius, theta0_wrap, d_theta_wrap, zp, zp);
   Segment* s4 = rg.NewJunction(api::JunctionId{"j4"})
                     ->NewSegment(api::SegmentId{"s4"}, std::move(road_curve_4),
-                                 -kHalfWidth + r0, kHalfWidth + r0,
-                                 {0., kMaxHeight});
-  Lane* l2_wrap = s4->NewLane(api::LaneId{"l2_wrap"}, r0,
-                              {-kHalfLaneWidth, kHalfLaneWidth});
+                                 kNumLanes, r0, kRSpacing, -kHalfWidth + r0,
+                                 kHalfWidth + r0, {0., kMaxHeight});
+  Lane* l2_wrap =
+      s4->NewLane(api::LaneId{"l2_wrap"}, {-kHalfLaneWidth, kHalfLaneWidth});
   const double offset_radius_wrap = radius + r0 + 2.;
   const api::GeoPosition point_in_third_quadrant{  // θ ~= -0.9π.
       center(0) + offset_radius_wrap * std::cos(-0.9 * M_PI),
@@ -538,10 +538,9 @@ TEST_P(MultilaneLanesParamTest, HillIntegration) {
                                      theta0, d_theta, kHillPolynomial, zp);
   Segment* s1 = rg.NewJunction(api::JunctionId{"j1"})
                     ->NewSegment(api::SegmentId{"s1"}, std::move(road_curve_1),
-                                 -kHalfWidth + r0, kHalfWidth + r0,
-                                 {0., kMaxHeight});
-  Lane* l1 = s1->NewLane(api::LaneId{"l2"}, r0,
-                         {-kHalfLaneWidth, kHalfLaneWidth});
+                                 kNumLanes, r0, kRSpacing, -kHalfWidth + r0,
+                                 kHalfWidth + r0, {0., kMaxHeight});
+  Lane* l1 = s1->NewLane(api::LaneId{"l2"}, {-kHalfLaneWidth, kHalfLaneWidth});
 
   EXPECT_EQ(rg.CheckInvariants(), std::vector<std::string>());
 
@@ -591,9 +590,11 @@ INSTANTIATE_TEST_CASE_P(Offset, MultilaneLanesParamTest,
 
 
 GTEST_TEST(MultilaneLanesTest, ArcLaneWithConstantSuperelevation) {
-  CubicPolynomial zp {0., 0., 0., 0.};
+  CubicPolynomial zp{0., 0., 0., 0.};
   const double kTheta = 0.10 * M_PI;  // superelevation
   const double kR0 = 0.;
+  const int kNumLanes = 1;
+  const double kRSpacing = 0.;
   const double kHalfWidth = 10.;
   const double kHalfLaneWidth = 5.;
   const double kMaxHeight = 5.;
@@ -603,12 +604,11 @@ GTEST_TEST(MultilaneLanesTest, ArcLaneWithConstantSuperelevation) {
   std::unique_ptr<RoadCurve> road_curve_1 = std::make_unique<ArcRoadCurve>(
       Vector2<double>(100., -75.), 100.0, 0.25 * M_PI, 1.5 * M_PI, zp,
       CubicPolynomial((kTheta) / (100. * 1.5 * M_PI), 0., 0., 0.));
-  Segment* s1 =
-      rg.NewJunction(api::JunctionId{"j1"})
-      ->NewSegment(api::SegmentId{"s1"}, std::move(road_curve_1), -kHalfWidth,
-                   kHalfWidth, {0., kMaxHeight});
-  Lane* l2 = s1->NewLane(api::LaneId{"l2"}, kR0,
-                         {-kHalfLaneWidth, kHalfLaneWidth});
+  Segment* s1 = rg.NewJunction(api::JunctionId{"j1"})
+                    ->NewSegment(api::SegmentId{"s1"}, std::move(road_curve_1),
+                                 kNumLanes, kR0, kRSpacing, -kHalfWidth + kR0,
+                                 kHalfWidth + kR0, {0., kMaxHeight});
+  Lane* l2 = s1->NewLane(api::LaneId{"l2"}, {-kHalfLaneWidth, kHalfLaneWidth});
 
   EXPECT_EQ(rg.CheckInvariants(), std::vector<std::string>());
 
@@ -691,6 +691,301 @@ GTEST_TEST(MultilaneLanesTest, ArcLaneWithConstantSuperelevation) {
               1.,
           1., 1.),
       kVeryExact));
+}
+
+class MultilaneMultipleLanesTest : public ::testing::Test {
+ protected:
+  const CubicPolynomial zp{0., 0., 0., 0.};
+  const double kR0{10.};
+  const int kNumLanes{3};
+  const double kRSpacing{15.};
+  const double kRMin{2.};
+  const double kRMax{42.};
+  const double kHalfLaneWidth{0.5 * kRSpacing};
+  const double kMaxHeight{5.};
+  const api::HBounds height_bounds{0.0, kMaxHeight};
+};
+
+TEST_F(MultilaneMultipleLanesTest, MultipleLineLanes) {
+  RoadGeometry rg(api::RoadGeometryId{"apple"}, kLinearTolerance,
+                  kAngularTolerance);
+  std::unique_ptr<RoadCurve> road_curve = std::make_unique<LineRoadCurve>(
+      Vector2<double>(100., -75.), Vector2<double>(100., 50.), zp, zp);
+  Segment* s1 =
+      rg.NewJunction(api::JunctionId{"j1"})
+          ->NewSegment(api::SegmentId{"s1"}, std::move(road_curve), kNumLanes,
+                       kR0, kRSpacing, kRMin, kRMax, height_bounds);
+  const Lane* l0 = s1->NewLane(api::LaneId{"l0"}, {-8., kHalfLaneWidth});
+  const Lane* l1 =
+      s1->NewLane(api::LaneId{"l1"}, {-kHalfLaneWidth, kHalfLaneWidth});
+  const Lane* l2 = s1->NewLane(api::LaneId{"l2"}, {-kHalfLaneWidth, 2.});
+  const std::vector<const Lane*> lanes{l0, l1, l2};
+
+  // Checks right to left ordering.
+  EXPECT_EQ(l0->to_right(), nullptr);
+  EXPECT_EQ(l0->to_left(), l1);
+  EXPECT_EQ(l1->to_right(), l0);
+  EXPECT_EQ(l1->to_left(), l2);
+  EXPECT_EQ(l2->to_right(), l1);
+  EXPECT_EQ(l2->to_left(), nullptr);
+
+  // Checks length of the three Lanes.
+  const double lane_length = Vector2<double>(100., 50.).norm();
+  for (const Lane* lane : lanes) {
+    EXPECT_EQ(lane->length(), lane_length);
+  }
+
+  // Checks api::GeoPositions and api::Rotations at different points over the
+  // centerline of each Lane.
+  const Vector3<double> s_vector = Vector3<double>(100., 50., 0.).normalized();
+  const Vector3<double> r_vector = Vector3<double>(-50, 100., 0.).normalized();
+  const std::vector<double> p_vector{0., 0.1, 0.2, 0.5, 0.7, 1.0};
+  const std::vector<double> r_offset_vector{-2., 0., 2.};
+  double lane_spacing{};
+  const double theta = std::atan2(50., 100.);
+  for (const Lane* lane : lanes) {
+    for (const double p : p_vector) {
+      for (const double r : r_offset_vector) {
+        EXPECT_TRUE(api::test::IsGeoPositionClose(
+            lane->ToGeoPosition({p * lane_length, r, 0.}),
+            api::GeoPosition::FromXyz(Vector3<double>(100., -75., 0.) +
+                                      (p * lane_length) * s_vector +
+                                      (kR0 + lane_spacing + r) * r_vector),
+            kVeryExact));
+        EXPECT_TRUE(api::test::IsRotationClose(
+            lane->GetOrientation({p * lane_length, r, 0.}),
+            api::Rotation::FromRpy(0., 0., theta), kVeryExact));
+      }
+    }
+    lane_spacing += kRSpacing;
+  }
+
+  // Checks api::LanePosition conversion to api::GeoPosition in the
+  // surroundings of each Lane. No saturation is tested.
+  lane_spacing = 0.;
+  api::GeoPosition nearest_position;
+  double distance;
+  for (const Lane* lane : lanes) {
+    for (const double p : p_vector) {
+      for (const double r : r_offset_vector) {
+        const api::GeoPosition geo_point = api::GeoPosition::FromXyz(
+            Vector3<double>(100., -75., 0.) + (p * lane_length) * s_vector +
+            (kR0 + lane_spacing + r) * r_vector);
+        EXPECT_TRUE(api::test::IsLanePositionClose(
+            lane->ToLanePosition(geo_point, &nearest_position, &distance),
+            api::LanePosition(p * lane_length, r, 0.), kVeryExact));
+        EXPECT_TRUE(api::test::IsGeoPositionClose(nearest_position, geo_point,
+                                                  kVeryExact));
+        EXPECT_NEAR(distance, 0., kVeryExact);
+      }
+    }
+    lane_spacing += kRSpacing;
+  }
+
+  // Checks api::LanePosition conversion to api::GeoPosition in the Segment's
+  // RoadCurve, which is outside the driveable bounds, to verify that it
+  // saturates.
+  for (const Lane* lane : lanes) {
+    for (const double p : p_vector) {
+      const api::GeoPosition geo_point = api::GeoPosition::FromXyz(
+          Vector3<double>(100., -75., 0.) + (p * lane_length) * s_vector);
+      const double expected_r = lane->driveable_bounds(0.).min();
+      EXPECT_TRUE(api::test::IsLanePositionClose(
+          lane->ToLanePosition(geo_point, &nearest_position, &distance),
+          api::LanePosition(p * lane_length, expected_r, 0.), kVeryExact));
+      EXPECT_TRUE(api::test::IsGeoPositionClose(
+          nearest_position,
+          api::GeoPosition::FromXyz(Vector3<double>(100., -75., 0.) +
+                                    (p * lane_length) * s_vector +
+                                    kRMin * r_vector),
+          kVeryExact));
+      EXPECT_NEAR(distance, kRMin, kVeryExact);
+    }
+  }
+
+  // Derivative map should be identity (for a flat, straight road).
+  for (const Lane* lane : lanes) {
+    EXPECT_TRUE(api::test::IsLanePositionClose(
+        lane->EvalMotionDerivatives({0., 0., 0.}, {0., 0., 0.}),
+        api::LanePosition(0., 0., 0.), kVeryExact));
+
+    EXPECT_TRUE(api::test::IsLanePositionClose(
+        lane->EvalMotionDerivatives({0., 0., 0.}, {1., 0., 0.}),
+        api::LanePosition(1., 0., 0.), kVeryExact));
+
+    EXPECT_TRUE(api::test::IsLanePositionClose(
+        lane->EvalMotionDerivatives({0., 0., 0.}, {0., 1., 0.}),
+        api::LanePosition(0., 1., 0.), kVeryExact));
+
+    EXPECT_TRUE(api::test::IsLanePositionClose(
+        lane->EvalMotionDerivatives({0., 0., 0.}, {0., 0., 1.}),
+        api::LanePosition(0., 0., 1.), kVeryExact));
+
+    EXPECT_TRUE(api::test::IsLanePositionClose(
+        l1->EvalMotionDerivatives({10., 5., 3.}, {1., 2., 3.}),
+        api::LanePosition(1., 2., 3.), kVeryExact));
+  }
+}
+
+TEST_F(MultilaneMultipleLanesTest, MultipleArcLanes) {
+  const double kTheta0{0.25 * M_PI};
+  const double kDTheta{1.5 * M_PI};
+  const double kRadius{100.};
+  const Vector2<double> kCenter{100., -75.};
+  const Vector3<double> kGeoCenter{kCenter(0), kCenter(1), 0.};
+
+  RoadGeometry rg(api::RoadGeometryId{"apple"}, kLinearTolerance,
+                  kAngularTolerance);
+  std::unique_ptr<RoadCurve> road_curve = std::make_unique<ArcRoadCurve>(
+      kCenter, kRadius, kTheta0, kDTheta, zp, zp);
+  Segment* s1 =
+      rg.NewJunction(api::JunctionId{"j1"})
+          ->NewSegment(api::SegmentId{"s1"}, std::move(road_curve), kNumLanes,
+                       kR0, kRSpacing, kRMin, kRMax, height_bounds);
+  const Lane* l0 = s1->NewLane(api::LaneId{"l0"}, {-8., kHalfLaneWidth});
+  const Lane* l1 =
+      s1->NewLane(api::LaneId{"l1"}, {-kHalfLaneWidth, kHalfLaneWidth});
+  const Lane* l2 = s1->NewLane(api::LaneId{"l2"}, {-kHalfLaneWidth, 2.});
+  const std::vector<const Lane*> lanes{l0, l1, l2};
+
+  // Checks right to left ordering.
+  EXPECT_EQ(l0->to_right(), nullptr);
+  EXPECT_EQ(l0->to_left(), l1);
+  EXPECT_EQ(l1->to_right(), l0);
+  EXPECT_EQ(l1->to_left(), l2);
+  EXPECT_EQ(l2->to_right(), l1);
+  EXPECT_EQ(l2->to_left(), nullptr);
+
+  // Checks length of the three Lanes.
+  const std::vector<double> lane_radius{(kRadius - kR0),
+                                        (kRadius - kR0 - kRSpacing),
+                                        (kRadius - kR0 - 2. * kRSpacing)};
+  for (size_t i = 0; i < lanes.size(); i++) {
+    EXPECT_EQ(lanes[i]->length(), lane_radius[i] * kDTheta);
+  }
+
+  // Checks api::GeoPositions and api::Rotations at different points over the
+  // centerline of each Lane.
+  auto wrap_angle = [](double angle) {
+    double angle_new = std::fmod(angle + M_PI, 2. * M_PI);
+    if (angle_new < 0.) angle_new += 2. * M_PI;
+    return angle_new - M_PI;
+  };
+  const std::vector<double> p_vector{0., 0.1, 0.2, 0.5, 0.7, 1.0};
+  const std::vector<double> r_offset_vector{-2., 0., 2.};
+  for (size_t i = 0; i < lanes.size(); i++) {
+    const Lane* lane = lanes[i];
+    const double radius = lane_radius[i];
+    for (const double p : p_vector) {
+      for (const double r : r_offset_vector) {
+        const double effective_radius = radius - r;
+        const double effective_angle = p * kDTheta + kTheta0;
+        EXPECT_TRUE(api::test::IsGeoPositionClose(
+            lane->ToGeoPosition({p * radius * kDTheta, r, 0.}),
+            api::GeoPosition::FromXyz(
+                kGeoCenter +
+                effective_radius * Vector3<double>(std::cos(effective_angle),
+                                                   std::sin(effective_angle),
+                                                   0.)),
+            kVeryExact));
+        EXPECT_TRUE(api::test::IsRotationClose(
+            lane->GetOrientation({p * radius * kDTheta, r, 0.}),
+            api::Rotation::FromRpy(0., 0.,
+                                   wrap_angle(effective_angle + (0.5 * M_PI))),
+            kVeryExact));
+      }
+    }
+  }
+
+  // Checks api::LanePosition conversion to api::GeoPosition in the
+  // surroundings of each Lane. No saturation is tested.
+  api::GeoPosition nearest_position;
+  double distance;
+  for (size_t i = 0; i < lanes.size(); i++) {
+    const Lane* lane = lanes[i];
+    const double radius = lane_radius[i];
+    for (const double p : p_vector) {
+      for (const double r : r_offset_vector) {
+        const double effective_radius = radius - r;
+        const double effective_angle = p * kDTheta + kTheta0;
+        const api::GeoPosition geo_point = api::GeoPosition::FromXyz(
+            kGeoCenter +
+            effective_radius * Vector3<double>(std::cos(effective_angle),
+                                               std::sin(effective_angle), 0.));
+        EXPECT_TRUE(api::test::IsLanePositionClose(
+            lane->ToLanePosition(geo_point, &nearest_position, &distance),
+            api::LanePosition(p * radius * kDTheta, r, 0.), kVeryExact));
+        EXPECT_TRUE(api::test::IsGeoPositionClose(nearest_position, geo_point,
+                                                  kVeryExact));
+        EXPECT_NEAR(distance, 0., kVeryExact);
+      }
+    }
+  }
+
+  // Checks api::LanePosition conversion to api::GeoPosition in the Segment's
+  // RoadCurve, which is outside the driveable bounds, to verify that it
+  // saturates.
+  for (size_t i = 0; i < lanes.size(); i++) {
+    const Lane* lane = lanes[i];
+    const double radius = lane_radius[i];
+    for (const double p : p_vector) {
+      const double effective_angle = p * kDTheta + kTheta0;
+      const api::GeoPosition geo_point = api::GeoPosition::FromXyz(
+          kGeoCenter +
+          kRadius * Vector3<double>(std::cos(effective_angle),
+                                    std::sin(effective_angle), 0.));
+      const double expected_r = lane->driveable_bounds(0.).min();
+      EXPECT_TRUE(api::test::IsLanePositionClose(
+          lane->ToLanePosition(geo_point, &nearest_position, &distance),
+          api::LanePosition(p * radius * kDTheta, expected_r, 0.), kVeryExact));
+      EXPECT_TRUE(api::test::IsGeoPositionClose(
+          nearest_position,
+          api::GeoPosition::FromXyz(
+              kGeoCenter +
+              (kRadius - kRMin) * Vector3<double>(std::cos(effective_angle),
+                                                  std::sin(effective_angle),
+                                                  0.)),
+          kVeryExact));
+      EXPECT_NEAR(distance, kRMin, kVeryExact);
+    }
+  }
+
+  // Checks motion derivatives for the lanes.
+  for (size_t i = 0; i < lanes.size(); i++) {
+    const Lane* lane = lanes[i];
+    const double radius = lane_radius[i];
+
+    // For r=0, derivative map should be identity.
+    EXPECT_TRUE(api::test::IsLanePositionClose(
+        lane->EvalMotionDerivatives({0., 0., 0.}, {0., 0., 0.}),
+        api::LanePosition(0., 0., 0.), kVeryExact));
+
+    EXPECT_TRUE(api::test::IsLanePositionClose(
+        lane->EvalMotionDerivatives({0., 0., 0.}, {1., 0., 0.}),
+        api::LanePosition(1., 0., 0.), kVeryExact));
+
+    EXPECT_TRUE(api::test::IsLanePositionClose(
+        lane->EvalMotionDerivatives({0., 0., 0.}, {0., 1., 0.}),
+        api::LanePosition(0., 1., 0.), kVeryExact));
+
+    EXPECT_TRUE(api::test::IsLanePositionClose(
+        lane->EvalMotionDerivatives({0., 0., 0.}, {0., 0., 1.}),
+        api::LanePosition(0., 0., 1.), kVeryExact));
+
+    EXPECT_TRUE(api::test::IsLanePositionClose(
+        lane->EvalMotionDerivatives({lane->length(), 0., 0.}, {1., 1., 1.}),
+        api::LanePosition(1., 1., 1.), kVeryExact));
+
+    // Checks motion derivatives at different offsets from Lane's centerline.
+    for (const double r : r_offset_vector) {
+      EXPECT_TRUE(api::test::IsLanePositionClose(
+          lane->EvalMotionDerivatives({0., r, 0.}, {1., 1., 1.}),
+          api::LanePosition((radius / (radius - r)) * 1., 1., 1.), kVeryExact));
+      EXPECT_TRUE(api::test::IsLanePositionClose(
+          lane->EvalMotionDerivatives({lane->length(), r, 100.}, {1., 1., 1.}),
+          api::LanePosition(radius / (radius - r), 1., 1.), kVeryExact));
+    }
+  }
 }
 
 }  // namespace multilane
