@@ -29,6 +29,10 @@ namespace systems {
 namespace sensors {
 namespace {
 
+// This suite tests RgbdCamera.
+// RgbdCameraDiscrete is tested in :rgbd_camera_publish_lcm_test,
+// given the relative simplicity of its interface.
+
 // The following tolerance is used due to a precision difference between Ubuntu
 // Linux and Macintosh OSX.
 const double kTolerance = 1e-12;
