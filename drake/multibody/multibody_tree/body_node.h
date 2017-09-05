@@ -575,7 +575,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// @param[in] tau_applied
   ///   Externally applied generalized force at this node's mobilizer. It can
   ///   have zero size, implying no generalized forces are applied. Otherwise it
-  ///   must have a size equal to the number of generalized coordinates for this
+  ///   must have a size equal to the number of generalized velocities for this
   ///   node's mobilizer, see get_num_mobilizer_velocites().
   ///   `tau_applied` **must** not be an entry into `tau_array`, which would
   ///   result in undefined results.

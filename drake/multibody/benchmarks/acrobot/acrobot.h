@@ -73,7 +73,7 @@ class Acrobot {
                                 const T& theta1dot, const T& theta2dot) const;
 
   /// Computes the the term `G(q)` containing the effect of gravity as a
-  /// function of the state of the pendulum.
+  /// function of the configuration of the pendulum.
   Vector2<T> CalcGravityVector(const T& theta1, const T& theta2) const;
 
   /// Computes the pose of the center of mass of link 1 measured and expressed

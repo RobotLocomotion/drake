@@ -645,25 +645,24 @@ class MultibodyTree {
   ///   `context`.
   /// @param[in] known_vdot
   ///   A vector with the known generalized accelerations `vdot` for the full
-  ///   %MultibodyTree model. Use Mobilizer::get_velocities_from_array() to
+  ///   %MultibodyTree model. Use Mobilizer::get_accelerations_from_array() to
   ///   access entries into this array for a particular Mobilizer. You can use
   ///   the mutable version of this method to write into this array.
   /// @param[in] Fapplied_Bo_W_array
-  ///   A pointer to a vector containing the spatial force `Fapplied_Bo_W`
-  ///   applied on each body at the body's frame origin `Bo` and expressed in
-  ///   the world frame W. `Fapplied_Bo_W_array` can have zero size which means
-  ///   there are no applied forces. To apply non-zero forces,
-  ///   `Fapplied_Bo_W_array` must be of size equal to the number of bodies in
-  ///   `this` %MultibodyTree model. This array must be ordered by
-  ///   BodyNodeIndex, which for a given body can be retrieved with
-  ///   Body::get_node_index().
+  ///   A vector containing the spatial force `Fapplied_Bo_W` applied on each
+  ///   body at the body's frame origin `Bo` and expressed in the world frame W.
+  ///   `Fapplied_Bo_W_array` can have zero size which means there are no
+  ///   applied forces. To apply non-zero forces, `Fapplied_Bo_W_array` must be
+  ///   of size equal to the number of bodies in `this` %MultibodyTree model.
+  ///   This array must be ordered by BodyNodeIndex, which for a given body can
+  ///   be retrieved with Body::get_node_index().
   ///   This method will abort if provided with an array that does not have a
   ///   size of either `get_num_bodies()` or zero.
   /// @param[in] tau_applied_array
   ///   An array of applied generalized forces for the entire model. For a
   ///   given mobilizer, entries in this array can be accessed using the method
-  ///   Mobilizer::get_generalized_forces_from_array() while its mutable
-  ///   counterpart, Mobilizer::get_mutable_generalized_forces_from_array(),
+  ///   Mobilizer::get_forces_from_array() while its mutable
+  ///   counterpart, Mobilizer::get_mutable_forces_from_array(),
   ///   allows writing into this array.
   ///   `tau_applied_array` can have zero size, which means there are no applied
   ///   forces. To apply non-zero forces, `tau_applied_array` must be of size
@@ -700,7 +699,7 @@ class MultibodyTree {
   ///   by the input argument `known_vdot`. It must be of size
   ///   MultibodyTree::get_num_velocities(). Generalized forces for each
   ///   Mobilizer can be accessed with
-  ///   Mobilizer::get_generalized_forces_from_array().
+  ///   Mobilizer::get_forces_from_array().
   ///
   /// @warning There is no mechanism to assert that either `A_WB_array` nor
   ///   `F_BMo_W_array` are ordered by BodyNodeIndex. You can use
