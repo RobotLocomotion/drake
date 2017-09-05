@@ -96,8 +96,9 @@ struct ConstraintAccelProblemData {
   /// Thus, the constraint at the acceleration level can be realized by setting
   /// kᴺ(t,q,v) = dN/dt(q,v)⋅v. If there is pre-existing constraint error (e.g.,
   /// if N(q)⋅v < 0), the kᴺ term can be used to "stabilize" this error.
-  /// For example, one could set kᴺ(t,q,v) = dN/dt(q,v)⋅v + α(N(q)⋅v), for
-  /// 0 ≤ α ≤ 1.
+  /// For example, one could set `kᴺ(t,q,v) = dN/dt(q,v)⋅v + α⋅N(q)⋅v`, for
+  /// α ≥ 0. 
+  /// </pre>
   /// @{
 
   /// An operator that performs the multiplication N⋅v.
@@ -266,7 +267,7 @@ struct ConstraintVelProblemData {
   /// Constraint error (φ < 0, where φ is the signed distance between two
   /// bodies) can be incorporated into the constraint solution process (and
   /// thereby reduced) through setting the `kN` term to something other than its
-  /// nonzero value (typically `kN` = αφ, where 0 ≤ α ≤ 1). The resulting
+  /// nonzero value (typically `kN = αφ`, where `α ≥ 0`). The resulting
   /// constraint on the motion will be: <pre>
   /// 0 ≤ N(q) v + kᴺ(t,q)  ⊥  fᶜ ≥ 0
   /// </pre>
@@ -305,7 +306,7 @@ struct ConstraintVelProblemData {
   /// constraint solution process by setting the `kF` term to something other
   /// than its default zero value. The resulting constraint on the motion will
   /// be:<pre>
-  /// 0 ≤ F(q)⋅v̇ + kᴺ(t,q) + eλ  ⊥  fᶜ ≥ 0
+  /// 0 ≤ F(q)⋅v + kᴺ(t,q) + eλ  ⊥  fᶜ ≥ 0
   /// </pre>
   /// which means that the constraint ċ(q,v) ≡ F(q)⋅v + kᶠ(t,q) + eλ is coupled
   /// to an impulsive force constraint (fᶜ ≥ 0) and a complementarity constraint
