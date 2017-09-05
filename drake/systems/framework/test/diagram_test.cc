@@ -12,6 +12,7 @@
 #include "drake/systems/framework/output_port.h"
 #include "drake/systems/framework/test_utilities/pack_value.h"
 #include "drake/systems/primitives/adder.h"
+#include "drake/systems/primitives/constant_value_source.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/gain.h"
 #include "drake/systems/primitives/integrator.h"
@@ -31,7 +32,7 @@ namespace {
 /// witness functions from its subsystems.
 class ExampleDiagram : public Diagram<double> {
  public:
-  explicit ExampleDiagram(int size) {
+  explicit ExampleDiagram(int size, bool use_abstract = false) {
     DiagramBuilder<double> builder;
 
     adder0_ = builder.AddSystem<Adder<double>>(2 /* inputs */, size);
@@ -65,6 +66,11 @@ class ExampleDiagram : public Diagram<double> {
     builder.ExportOutput(adder1_->get_output_port());
     builder.ExportOutput(adder2_->get_output_port());
     builder.ExportOutput(integrator1_->get_output_port());
+
+    if (use_abstract) {
+      builder.AddSystem<ConstantValueSource<double>>(
+          std::make_unique<Value<int>>(0));
+    }
 
     builder.BuildInto(this);
   }
@@ -335,11 +341,14 @@ TEST_F(DiagramTest, AllocateInputs) {
 /// Tests that a diagram can be transmogrified to AutoDiffXd.
 TEST_F(DiagramTest, ToAutoDiffXd) {
   std::unique_ptr<System<AutoDiffXd>> ad_diagram =
-      System<double>::ToAutoDiffXd(*diagram_);
+      diagram_->ToAutoDiffXd();
   std::unique_ptr<Context<AutoDiffXd>> context =
       ad_diagram->CreateDefaultContext();
   std::unique_ptr<SystemOutput<AutoDiffXd>> output =
       ad_diagram->AllocateOutput(*context);
+
+  // The name was preserved.
+  EXPECT_EQ(diagram_->get_name(), ad_diagram->get_name());
 
   // Set up some inputs, computing gradients with respect to every other input.
   /// adder0_: (input0_ + input1_) -> A
@@ -391,6 +400,11 @@ TEST_F(DiagramTest, ToAutoDiffXd) {
       EXPECT_EQ(0.0, (*output1)[1].derivatives()[i]);
     }
   }
+
+  // If the Diagram contains a System that does not support AutoDiffXd, we
+  // cannot transmogrify the Diagram.
+  auto diagram_with_abstract = std::make_unique<ExampleDiagram>(kSize, true);
+  EXPECT_THROW(diagram_with_abstract->ToAutoDiffXd(), std::exception);
 }
 
 // Tests that the same diagram can be evaluated into the same output with

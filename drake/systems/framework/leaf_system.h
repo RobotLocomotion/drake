@@ -1292,7 +1292,7 @@ class LeafSystem : public System<T> {
   // symbolic representation.
   std::unique_ptr<SystemSymbolicInspector> MakeSystemSymbolicInspector() const {
     std::unique_ptr<System<symbolic::Expression>> symbolic_system =
-        this->ToSymbolic();
+        this->ToSymbolicMaybe();
     if (symbolic_system) {
       return std::make_unique<SystemSymbolicInspector>(*symbolic_system);
     } else {

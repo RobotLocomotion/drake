@@ -1063,16 +1063,76 @@ GTEST_TEST(FeedthroughTest, SymbolicSparsity) {
   EXPECT_EQ(feedthrough_pairs, expected);
 }
 
-// Sanity check the default implementation of ToAutoDiffXd.
-GTEST_TEST(AutoDiffTest, ScalarConverter) {
+// Sanity check the default implementation of ToAutoDiffXd, for cases that
+// should succeed.
+GTEST_TEST(LeafSystemScalarConverterTest, AutoDiffYes) {
   SymbolicSparsitySystem<double> dut;
+  dut.set_name("special_name");
 
-  // Convert to AutoDiffXd.
-  std::unique_ptr<System<AutoDiffXd>> autodiff = dut.ToAutoDiffXd();
-  ASSERT_NE(autodiff, nullptr);
-  const auto* const downcast =
-      dynamic_cast<SymbolicSparsitySystem<AutoDiffXd>*>(autodiff.get());
-  ASSERT_NE(downcast, nullptr);
+  // Static method automatically downcasts.
+  std::unique_ptr<SymbolicSparsitySystem<AutoDiffXd>> clone =
+      System<double>::ToAutoDiffXd(dut);
+  ASSERT_NE(clone, nullptr);
+  EXPECT_EQ(clone->get_name(), "special_name");
+
+  // Instance method that reports failures via exception.
+  EXPECT_NE(dut.ToAutoDiffXd(), nullptr);
+
+  // Instance method that reports failures via nullptr.
+  auto maybe = dut.ToAutoDiffXdMaybe();
+  ASSERT_NE(maybe, nullptr);
+  EXPECT_EQ(maybe->get_name(), "special_name");
+}
+
+// Sanity check the default implementation of ToAutoDiffXd, for cases that
+// should fail.
+GTEST_TEST(LeafSystemScalarConverterTest, AutoDiffNo) {
+  TestSystem<double> dut;
+
+  // Static method.
+  EXPECT_THROW(System<double>::ToAutoDiffXd(dut), std::exception);
+
+  // Instance method that reports failures via exception.
+  EXPECT_THROW(dut.ToAutoDiffXd(), std::exception);
+
+  // Instance method that reports failures via nullptr.
+  EXPECT_EQ(dut.ToAutoDiffXdMaybe(), nullptr);
+}
+
+// Sanity check the default implementation of ToSymbolic, for cases that
+// should succeed.
+GTEST_TEST(LeafSystemScalarConverterTest, SymbolicYes) {
+  SymbolicSparsitySystem<double> dut;
+  dut.set_name("special_name");
+
+  // Static method automatically downcasts.
+  std::unique_ptr<SymbolicSparsitySystem<symbolic::Expression>> clone =
+      System<double>::ToSymbolic(dut);
+  ASSERT_NE(clone, nullptr);
+  EXPECT_EQ(clone->get_name(), "special_name");
+
+  // Instance method that reports failures via exception.
+  EXPECT_NE(dut.ToSymbolic(), nullptr);
+
+  // Instance method that reports failures via nullptr.
+  auto maybe = dut.ToSymbolicMaybe();
+  ASSERT_NE(maybe, nullptr);
+  EXPECT_EQ(maybe->get_name(), "special_name");
+}
+
+// Sanity check the default implementation of ToSymbolic, for cases that
+// should fail.
+GTEST_TEST(LeafSystemScalarConverterTest, SymbolicNo) {
+  TestSystem<double> dut;
+
+  // Static method.
+  EXPECT_THROW(System<double>::ToSymbolic(dut), std::exception);
+
+  // Instance method that reports failures via exception.
+  EXPECT_THROW(dut.ToSymbolic(), std::exception);
+
+  // Instance method that reports failures via nullptr.
+  EXPECT_EQ(dut.ToSymbolicMaybe(), nullptr);
 }
 
 GTEST_TEST(GraphvizTest, Attributes) {
