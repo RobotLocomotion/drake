@@ -879,7 +879,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
       // shifting V_WL:
       const SpatialVelocity<double> V_WLcm = V_WL.Shift(p_LoLcm_W);
 
-      const SpatialVelocity<double> V_WUcmcm_expected(
+      const SpatialVelocity<double> V_WUcm_expected(
           acrobot_benchmark_.CalcLink1SpatialVelocityInWorldFrame(
               shoulder_angle, shoulder_angle_rate));
       const SpatialVelocity<double> V_WLcm_expected(
@@ -887,7 +887,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
               shoulder_angle, elbow_angle,
               shoulder_angle_rate, elbow_angle_rate));
 
-      EXPECT_TRUE(V_WUcm.IsApprox(V_WUcmcm_expected, kTolerance));
+      EXPECT_TRUE(V_WUcm.IsApprox(V_WUcm_expected, kTolerance));
       EXPECT_TRUE(V_WLcm.IsApprox(V_WLcm_expected, kTolerance));
 
       // ======================================================================
@@ -1136,14 +1136,14 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
           // shifting V_WL:
           const SpatialVelocity<double> V_WLcm = V_WL.Shift(p_LoLcm_W);
 
-          const SpatialVelocity<double> V_WUcmcm_expected(
+          const SpatialVelocity<double> V_WUcm_expected(
               acrobot_benchmark_.CalcLink1SpatialVelocityInWorldFrame(
                   shoulder_angle.value(), w_WU));
           const SpatialVelocity<double> V_WLcm_expected(
               acrobot_benchmark_.CalcLink2SpatialVelocityInWorldFrame(
                   shoulder_angle.value(), elbow_angle.value(), w_WU, w_UL));
 
-          EXPECT_TRUE(V_WUcm.IsApprox(V_WUcmcm_expected, kTolerance));
+          EXPECT_TRUE(V_WUcm.IsApprox(V_WUcm_expected, kTolerance));
           EXPECT_TRUE(V_WLcm.IsApprox(V_WLcm_expected, kTolerance));
         }  // ielbow
       }  // ishoulder
