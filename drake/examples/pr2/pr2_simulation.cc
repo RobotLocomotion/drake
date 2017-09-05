@@ -6,9 +6,9 @@
 #include "robotlocomotion/robot_plan_t.hpp"
 
 #include "drake/common/find_resource.h"
-#include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_tree_builder.h"
-#include "drake/examples/kuka_iiwa_arm/robot_plan_interpolator.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/manipulation/planner/robot_plan_interpolator.h"
+#include "drake/manipulation/util/world_sim_tree_builder.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
@@ -27,17 +27,12 @@ namespace drake {
 namespace examples {
 namespace pr2 {
 
-// TODO: wait for pull request to change this to a more general directory.
-using kuka_iiwa_arm::ModelInstanceInfo;
-using kuka_iiwa_arm::WorldSimTreeBuilder;
-using kuka_iiwa_arm::RobotPlanInterpolator;
-
 std::unique_ptr<RigidBodyTree<double>> build_world_tree(
-    std::vector<ModelInstanceInfo<double>>* world_info_,
+    std::vector<manipulation::util::ModelInstanceInfo<double>>* world_info_,
     std::vector<std::string> names, std::vector<std::string> description_paths,
     std::vector<Eigen::Vector3d> poses_xyz,
     std::vector<Eigen::Vector3d> poses_rpy, std::vector<bool> fixed) {
-  auto tree_builder_ = std::make_unique<WorldSimTreeBuilder<double>>();
+  auto tree_builder_ = std::make_unique<manipulation::util::WorldSimTreeBuilder<double>>();
   for (int index = 0; index < (int)names.size(); index++) {
     tree_builder_->StoreModel(names[index], description_paths[index]);
   }
@@ -65,7 +60,7 @@ int DoMain() {
   drake::lcm::DrakeLcm lcm;
 
   // Construct the tree for the PR2, a soda box, and two tables.
-  std::vector<ModelInstanceInfo<double>> world_info_;
+  std::vector<manipulation::util::ModelInstanceInfo<double>> world_info_;
 
   std::vector<std::string> names;
   names.push_back("pr2");
@@ -137,7 +132,7 @@ int DoMain() {
           "PR2_PLAN", &lcm));
   plan_receiver_->set_name("plan_receiver");
 
-  auto command_injector_ = diagram_builder.AddSystem<RobotPlanInterpolator>(
+  auto command_injector_ = diagram_builder.AddSystem<manipulation::planner::RobotPlanInterpolator>(
       drake::FindResourceOrThrow(pr2_urdf_path));
   command_injector_->set_name("command_injector");
 

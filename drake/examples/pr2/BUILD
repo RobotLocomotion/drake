@@ -37,9 +37,9 @@ drake_cc_binary(
     data = [":models"],
     deps = [
         "//drake/common:find_resource",
-        "//drake/examples/kuka_iiwa_arm:robot_plan_interpolator",
-        "//drake/examples/kuka_iiwa_arm/iiwa_world:world_sim_tree_builder",
         "//drake/lcm",
+        "//drake/manipulation/planner:robot_plan_interpolator",
+        "//drake/manipulation/util:world_sim_tree_builder",
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant",
