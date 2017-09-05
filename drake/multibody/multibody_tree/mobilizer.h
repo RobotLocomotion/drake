@@ -421,8 +421,10 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
 
   /// Mutable version of get_velocities_from_array().
   Eigen::VectorBlock<Eigen::Ref<VectorX<T>>> get_mutable_velocities_from_array(
-      Eigen::Ref<VectorX<T>> v_array) const {
-    return v_array.segment(topology_.velocities_start_in_v,
+      EigenPtr<VectorX<T>> v_array) const {
+    DRAKE_DEMAND(
+        v_array->size() == this->get_parent_tree().get_num_velocities());
+    return v_array->segment(topology_.velocities_start_in_v,
                            topology_.num_velocities);
   }
 
@@ -440,7 +442,7 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// Mutable version of get_accelerations_from_array().
   Eigen::VectorBlock<Eigen::Ref<VectorX<T>>>
   get_mutable_accelerations_from_array(
-      Eigen::Ref<VectorX<T>> vdot_array) const {
+      EigenPtr<VectorX<T>> vdot_array) const {
     return get_mutable_velocities_from_array(vdot_array);
   }
 
@@ -457,7 +459,7 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// Mutable version of get_forces_from_array().
   Eigen::VectorBlock<Eigen::Ref<VectorX<T>>>
   get_mutable_forces_from_array(
-      Eigen::Ref<VectorX<T>> tau_array) const {
+      EigenPtr<VectorX<T>> tau_array) const {
     return get_mutable_velocities_from_array(tau_array);
   }
 

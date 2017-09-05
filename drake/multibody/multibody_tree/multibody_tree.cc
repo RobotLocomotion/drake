@@ -260,7 +260,7 @@ void MultibodyTree<T>::CalcInverseDynamics(
     const Eigen::Ref<const VectorX<T>>& tau_applied_array,
     std::vector<SpatialAcceleration<T>>* A_WB_array,
     std::vector<SpatialForce<T>>* F_BMo_W_array,
-    Eigen::Ref<VectorX<T>> tau_array) const {
+    EigenPtr<VectorX<T>> tau_array) const {
   DRAKE_DEMAND(known_vdot.size() == get_num_velocities());
   const int Fapplied_size = static_cast<int>(Fapplied_Bo_W_array.size());
   DRAKE_DEMAND(Fapplied_size == get_num_bodies() || Fapplied_size == 0);
@@ -274,7 +274,8 @@ void MultibodyTree<T>::CalcInverseDynamics(
   DRAKE_DEMAND(F_BMo_W_array != nullptr);
   DRAKE_DEMAND(static_cast<int>(F_BMo_W_array->size()) == get_num_bodies());
 
-  DRAKE_DEMAND(tau_array.size() == get_num_velocities());
+  DRAKE_DEMAND(tau_array);  // Demand it is not a nullptr.
+  DRAKE_DEMAND(tau_array->size() == get_num_velocities());
 
   const auto& mbt_context =
       dynamic_cast<const MultibodyTreeContext<T>&>(context);

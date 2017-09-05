@@ -620,12 +620,15 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
       const SpatialForce<T>& Fapplied_Bo_W,
       const Eigen::Ref<const VectorX<T>>& tau_applied,
       std::vector<SpatialForce<T>>* F_BMo_W_array_ptr,
-      Eigen::Ref<VectorX<T>> tau_array) const {
+      EigenPtr<VectorX<T>> tau_array) const {
     DRAKE_DEMAND(F_BMo_W_array_ptr != nullptr);
     std::vector<SpatialForce<T>>& F_BMo_W_array = *F_BMo_W_array_ptr;
     DRAKE_DEMAND(
         tau_applied.size() == get_num_mobilizer_velocites() ||
         tau_applied.size() == 0);
+    DRAKE_DEMAND(tau_array);  // Demand it is not a nullptr.
+    DRAKE_DEMAND(tau_array->size() ==
+        this->get_parent_tree().get_num_velocities());
 
     // As a guideline for developers, a summary of the computations performed in
     // this method is provided:
@@ -982,8 +985,8 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
 
   // Mutable version of get_velocities_from_array().
   Eigen::VectorBlock<Eigen::Ref<VectorX<T>>> get_mutable_velocities_from_array(
-      Eigen::Ref<VectorX<T>> v) const {
-    return v.segment(topology_.mobilizer_velocities_start_in_v,
+      EigenPtr<VectorX<T>> v) const {
+    return v->segment(topology_.mobilizer_velocities_start_in_v,
                      topology_.num_mobilizer_velocities);
   }
 
@@ -997,7 +1000,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
 
   // Mutable version of get_forces_from_array()
   Eigen::VectorBlock<Eigen::Ref<VectorX<T>>> get_mutable_forces_from_array(
-      Eigen::Ref<VectorX<T>> tau) const {
+      EigenPtr<VectorX<T>> tau) const {
     return get_mutable_velocities_from_array(tau);
   }
 

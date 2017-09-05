@@ -696,9 +696,9 @@ class MultibodyTree {
   /// @param[out] tau_array
   ///   On output this array will contain the generalized forces that must be
   ///   applied in order to achieve the desired generalized accelerations given
-  ///   by the input argument `known_vdot`. It must be of size
-  ///   MultibodyTree::get_num_velocities(). Generalized forces for each
-  ///   Mobilizer can be accessed with
+  ///   by the input argument `known_vdot`. It must not be the nullptr and it
+  ///   must be of size MultibodyTree::get_num_velocities(). Generalized forces
+  ///   for each Mobilizer can be accessed with
   ///   Mobilizer::get_forces_from_array().
   ///
   /// @warning There is no mechanism to assert that either `A_WB_array` nor
@@ -731,7 +731,7 @@ class MultibodyTree {
       const Eigen::Ref<const VectorX<T>>& tau_applied_array,
       std::vector<SpatialAcceleration<T>>* A_WB_array,
       std::vector<SpatialForce<T>>* F_BMo_W_array,
-      Eigen::Ref<VectorX<T>> tau_array) const;
+      EigenPtr<VectorX<T>> tau_array) const;
 
   /// @name Methods to retrieve multibody element variants
   ///

@@ -578,14 +578,16 @@ class PendulumKinematicTests : public PendulumTests {
     const Vector3d p_LoLcm_W = R_WL * p_LoLcm_L;
     const SpatialForce<double> F_L_W = F_Lcm_W.Shift(-p_LoLcm_W);
 
+    // Output vector of generalized forces.
     VectorXd tau(model_->get_num_velocities());
-    tau.setZero();
+    // Input vector of applied generalized forces.
+    VectorXd tau_applied(model_->get_num_velocities());
 
     vector<SpatialForce<double>> F_Bo_W_array(model_->get_num_bodies());
     F_Bo_W_array[upper_link_->get_node_index()] = F_U_W;
     F_Bo_W_array[lower_link_->get_node_index()] = F_L_W;
 
-    // Output vector of generalized forces for each body B at their inboard
+    // Output vector of spatial forces for each body B at their inboard
     // frame Mo, expressed in the world W.
     vector<SpatialForce<double>> F_BMo_W_array(model_->get_num_bodies());
 
@@ -603,18 +605,20 @@ class PendulumKinematicTests : public PendulumTests {
     vector<SpatialAcceleration<double>> A_WB_array(model_->get_num_bodies());
 
     // Try first using different arrays for input/ouput:
-    tau.setZero();
+    // Initialize output to garbage, it should not affect the results.
+    tau.setOnes() * std::numeric_limits<double>::quiet_NaN();
+    tau_applied.setZero();
     model_->CalcInverseDynamics(
-        *context_, pc, vc, vdot, F_Bo_W_array, tau,
-        &A_WB_array, &F_BMo_W_array, tau);
+        *context_, pc, vc, vdot, F_Bo_W_array, tau_applied,
+        &A_WB_array, &F_BMo_W_array, &tau);
     EXPECT_TRUE(tau.isApprox(G_expected, kTolerance));
 
     // Now try using the same arrays for input/output (input data F_Bo_W_array
     // will get overwritten through the output argument).
-    tau.setZero();  // clean up previous result.
+    tau_applied.setZero();  // This will now get overwritten.
     model_->CalcInverseDynamics(
-        *context_, pc, vc, vdot, F_Bo_W_array, tau,
-        &A_WB_array, &F_Bo_W_array, tau);
+        *context_, pc, vc, vdot, F_Bo_W_array, tau_applied,
+        &A_WB_array, &F_Bo_W_array, &tau_applied);
     EXPECT_TRUE(tau.isApprox(G_expected, kTolerance));
     return tau;
   }
@@ -700,7 +704,7 @@ class PendulumKinematicTests : public PendulumTests {
     vector<SpatialAcceleration<double>> A_WB_array(model_->get_num_bodies());
     vector<SpatialForce<double>> F_BMo_W_array(model_->get_num_bodies());
     model_->CalcInverseDynamics(*context_, pc, vc, vdot, {}, VectorXd(),
-                                &A_WB_array, &F_BMo_W_array, tau);
+                                &A_WB_array, &F_BMo_W_array, &tau);
 
     // ======================================================================
     // Compute acceleration kinematics.
@@ -919,8 +923,9 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
       EXPECT_TRUE(A_WLcm.IsApprox(A_WLcm_expected, kTolerance));
 
       // For a non-zero vdot [rad/sec^2]:
-      shoulder_mobilizer_->get_mutable_accelerations_from_array(vdot)(0) = -1.0;
-      elbow_mobilizer_->get_mutable_accelerations_from_array(vdot)(0) = 2.0;
+      shoulder_mobilizer_->get_mutable_accelerations_from_array(
+          &vdot)(0) = -1.0;
+      elbow_mobilizer_->get_mutable_accelerations_from_array(&vdot)(0) = 2.0;
       EXPECT_EQ(
           shoulder_mobilizer_->get_accelerations_from_array(vdot).size(), 1);
       EXPECT_EQ(
