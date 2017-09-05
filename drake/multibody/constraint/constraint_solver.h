@@ -273,10 +273,12 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
   // Look for a second fast exit.
   const VectorX<T> candidate_accel = problem_data.solve_inertia(
       problem_data.tau);
-  const VectorX<T> Nv = problem_data.N_mult(candidate_accel) + problem_data.kN;
-  const VectorX<T> Lv = problem_data.L_mult(candidate_accel) + problem_data.kL;
-  if ((num_contacts == 0 || Nv.minCoeff() >= 0) &&
-      (num_limits == 0 || Lv.minCoeff() >= 0)) {
+  const VectorX<T> N_eval = problem_data.N_mult(candidate_accel) +
+      problem_data.kN;
+  const VectorX<T> L_eval = problem_data.L_mult(candidate_accel) +
+      problem_data.kL;
+  if ((num_contacts == 0 || N_eval.minCoeff() >= 0) &&
+      (num_limits == 0 || L_eval.minCoeff() >= 0)) {
     cf->setZero();
     return;
   }
@@ -358,10 +360,12 @@ void ConstraintSolver<T>::SolveImpactProblem(
                                                    problem_data.r.end(), 0);
 
   // If no impact, do not apply the impact model.
-  const VectorX<T> Nv = problem_data.N_mult(problem_data.v) + problem_data.kN;
-  const VectorX<T> Lv = problem_data.L_mult(problem_data.v) + problem_data.kL;
-  if ((num_contacts == 0 || Nv.minCoeff() >= 0) &&
-      (num_limits == 0 || Lv.minCoeff() >= 0)) {
+  const VectorX<T> N_eval = problem_data.N_mult(problem_data.v) +
+      problem_data.kN;
+  const VectorX<T> L_eval = problem_data.L_mult(problem_data.v) +
+      problem_data.kL;
+  if ((num_contacts == 0 || N_eval.minCoeff() >= 0) &&
+      (num_limits == 0 || L_eval.minCoeff() >= 0)) {
     cf->setZero(num_contacts + num_spanning_vectors + num_limits);
     return;
   }
