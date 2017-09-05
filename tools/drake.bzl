@@ -209,13 +209,12 @@ def drake_cc_googletest(
         deps = None,
         use_default_main = True,
         **kwargs):
-    """Creates a rule to declare a C++ unit test using googletest.  Always adds
-    a deps= entry for googletest main (@gtest//:main).
+    """Creates a rule to declare a C++ unit test using googletest.
 
     By default, sets size="small" because that indicates a unit test.
     By default, sets name="test/${name}.cc" per Drake's filename convention.
-    By default, sets use_default_main=True to use GTest's main, via
-    @gtest//:main. Otherwise, it will depend on @gtest//:without_main.
+    By default, sets use_default_main=True to use a default main() function.
+    Otherwise, it will depend on @gtest//:without_main.
 
     If disable_in_compilation_mode_dbg is True, the srcs will be suppressed
     in debug-mode builds, so the test will trivially pass. This option should
@@ -224,7 +223,7 @@ def drake_cc_googletest(
     if deps == None:
         deps = []
     if use_default_main:
-        deps = deps + ["@gtest//:main"]
+        deps = deps + ["//drake/common:drake_cc_googletest_main"]
     else:
         deps = deps + ["@gtest//:without_main"]
     drake_cc_test(
