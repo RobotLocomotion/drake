@@ -380,7 +380,7 @@ class RigidBodyPlant : public LeafSystem<T> {
       VectorBase<T>* generalized_velocity) const override;
 
  private:
-  int DeclareContactResultsOutputPort();
+  OutputPortIndex DeclareContactResultsOutputPort();
 
   // These four are the output port calculator methods.
   void CopyStateToOutput(const Context<T>& context,
@@ -404,9 +404,9 @@ class RigidBodyPlant : public LeafSystem<T> {
 
   std::unique_ptr<const RigidBodyTree<T>> tree_;
 
-  int state_output_port_index_{};
-  int kinematics_output_port_index_{};
-  int contact_output_port_index_{};
+  OutputPortIndex state_output_port_index_{};
+  OutputPortIndex kinematics_output_port_index_{};
+  OutputPortIndex contact_output_port_index_{};
 
   // timestep == 0.0 implies continuous-time dynamics,
   // timestep > 0.0 implies a discrete-time dynamics approximation.

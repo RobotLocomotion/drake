@@ -52,7 +52,7 @@ RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree<T>> tree,
 }
 
 template <class T>
-int RigidBodyPlant<T>::DeclareContactResultsOutputPort() {
+OutputPortIndex RigidBodyPlant<T>::DeclareContactResultsOutputPort() {
   return this->DeclareAbstractOutputPort(
       ContactResults<T>(),
       &RigidBodyPlant::CalcContactResultsOutput).get_index();
