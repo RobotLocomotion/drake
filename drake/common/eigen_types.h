@@ -313,7 +313,11 @@ class EigenPtr {
   RefType* operator->() const { return get_reference(); }
 
   /// Returns whether or not this contains a valid reference.
-  operator bool() const { return static_cast<bool>(m_); }
+  operator bool() const { return is_valid(); }
+
+  bool operator==(std::nullptr_t) const { return !is_valid(); }
+
+  bool operator!=(std::nullptr_t) const { return is_valid(); }
 
  private:
   // Use unique_ptr<> so that we may "reconstruct" the reference, making this
@@ -338,6 +342,10 @@ class EigenPtr {
   RefType* get_reference() const {
     if (!m_) throw std::runtime_error("EigenPtr: nullptr dereference");
     return m_.get();
+  }
+
+  bool is_valid() const {
+    return static_cast<bool>(m_);
   }
 };
 
