@@ -97,7 +97,7 @@ struct ConstraintAccelProblemData {
   /// kᴺ(t,q,v) = dN/dt(q,v)⋅v. If there is pre-existing constraint error (e.g.,
   /// if N(q)⋅v < 0), the kᴺ term can be used to "stabilize" this error.
   /// For example, one could set `kᴺ(t,q,v) = dN/dt(q,v)⋅v + α⋅N(q)⋅v`, for
-  /// α ≥ 0. 
+  /// α ≥ 0.
   /// </pre>
   /// @{
 
@@ -141,9 +141,10 @@ struct ConstraintAccelProblemData {
   /// where e is a vector of ones and zeros and λ corresponds roughly to the
   /// tangential acceleration at the contacts. The interested reader should
   /// refer to [Anitescu 1997] for a more thorough explanation of this
-  /// constraint. Analogously to the case of kᴺ, kᶠ should be set to
-  /// dF/dt(q,v)⋅v; also analogously, kᶠ can be used to perform constraint
-  /// stabilization.
+  /// constraint; the full constraint equation is presented only to elucidate
+  /// the purpose of the kᶠ term. Analogously to the case of kᴺ, kᶠ should be
+  /// set to dF/dt(q,v)⋅v; also analogously, kᶠ can be used to perform
+  /// constraint stabilization.
   /// @{
 
   /// An operator that performs the multiplication F⋅v. The default operator
@@ -185,7 +186,7 @@ struct ConstraintAccelProblemData {
   /// and the limiting force cannot be applied if the acceleration at the
   /// joint is not at the limit (i.e., v̇ⱼ < r). In this example, the
   /// corresponding holonomic constraint function is g(q,t) ≡ qⱼ + rt²,
-  /// yielding  ̈g(q, v, v̇) = -v̇ⱼ + r.
+  /// yielding ̈g(q, v, v̇) = -v̇ⱼ + r.
   /// @{
 
   /// The number of limit constraints. Must equal `s`, i.e., the
@@ -316,7 +317,8 @@ struct ConstraintVelProblemData {
   /// where e is a vector of ones and zeros and λ corresponds roughly to the
   /// tangential acceleration at the contacts. The interested reader should
   /// refer to [Anitescu 1997] for a more thorough explanation of this
-  /// constraint.
+  /// constraint; the full constraint equation is presented only to elucidate
+  /// the purpose of the kᶠ term.
   /// @{
 
   /// An operator that performs the multiplication F⋅v. The default operator
