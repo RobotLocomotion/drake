@@ -313,7 +313,7 @@ void MultibodyTree<T>::CalcInverseDynamics(
       // Leave them initialized to zero if no applied forces were provided.
       if (tau_applied_size != 0) {
         tau_applied_mobilizer =
-            node.get_mobilizer().get_forces_from_array(
+            node.get_mobilizer().get_generalized_forces_from_array(
                 tau_applied_array);
       }
       if (Fapplied_size != 0) {

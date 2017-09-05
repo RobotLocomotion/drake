@@ -452,13 +452,14 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// This method aborts if the input array is not of size
   /// MultibodyTree::get_num_velocities().
   Eigen::VectorBlock<const Eigen::Ref<const VectorX<T>>>
-  get_forces_from_array(const Eigen::Ref<const VectorX<T>>& tau_array) const {
+  get_generalized_forces_from_array(
+      const Eigen::Ref<const VectorX<T>>& tau_array) const {
     return get_velocities_from_array(tau_array);
   }
 
-  /// Mutable version of get_forces_from_array().
+  /// Mutable version of get_generalized_forces_from_array().
   Eigen::VectorBlock<Eigen::Ref<VectorX<T>>>
-  get_mutable_forces_from_array(
+  get_mutable_generalized_forces_from_array(
       EigenPtr<VectorX<T>> tau_array) const {
     return get_mutable_velocities_from_array(tau_array);
   }

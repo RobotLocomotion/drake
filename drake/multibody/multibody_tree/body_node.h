@@ -761,7 +761,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     const SpatialForce<T> F_BMo_F = R_WF * F_BMo_W;
 
     // Generalized velocities and forces use the same indexing.
-    auto tau = get_mutable_forces_from_array(tau_array);
+    auto tau = get_mutable_generalized_forces_from_array(tau_array);
 
     // Demand that tau_applied is not an entry of tau. It would otherwise get
     // overwritten.
@@ -993,13 +993,14 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   // Helper to get an Eigen expression of the vector of generalized forces
   // from a vector of generalized forces for the entire parent multibody
   // tree.
-  Eigen::VectorBlock<const VectorX<T>> get_forces_from_array(
+  Eigen::VectorBlock<const VectorX<T>> get_generalized_forces_from_array(
       const VectorX<T>& tau) const {
     return get_velocities_from_array(tau);
   }
 
-  // Mutable version of get_forces_from_array()
-  Eigen::VectorBlock<Eigen::Ref<VectorX<T>>> get_mutable_forces_from_array(
+  // Mutable version of get_generalized_forces_from_array()
+  Eigen::VectorBlock<Eigen::Ref<VectorX<T>>>
+  get_mutable_generalized_forces_from_array(
       EigenPtr<VectorX<T>> tau) const {
     return get_mutable_velocities_from_array(tau);
   }
