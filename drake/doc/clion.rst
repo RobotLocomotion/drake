@@ -409,3 +409,43 @@ following values for the fields:
 This tool does not *currently* produce output from which clickable links can be
 made. In the event that it reports a problem with the includes, simply execute
 the ``Clang Format Include Ordering`` external tool on the file.
+
+Alternative linting configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The linting tools have been configured to use the bazel system. The advantage in
+doing so is that it guarantees that the tools are built prior to being used.
+However, bazel only allows one instance of bazel to run at a time. For example,
+if building Drake in a command-line window, it would be impossible to lint files
+at the same time.
+
+The work around is to change the configurations to execute the binaries
+directly. This approach generally works but will fail if the corresponding bazel
+targets have not been built. The tools would need to be built
+
+With this warning in place, you can make the following modifications to the
+linting tools to be able to lint and compile simultaneously.
+
+Google style guide linting
+""""""""""""""""""""""""""
+
+Change the following fields in the instructions given above:
+
+  :Program: ``bazel-bin/external/google_styleguide/cpplint_binary``
+  :Parameters: ``--output=eclipse $FilePath$``
+
+Building the google styleguide lint tool:
+
+``bazel build @google_styleguide//:cpplint``
+
+Drake style addenda
+"""""""""""""""""""
+
+Change the following fields in the instructions given above:
+
+  :Program: ``/bazel-bin/tools/drakelint``
+  :Parameters: ``$FilePath$``
+
+Building the drake addenda lint tool:
+
+``bazel build //tools:drakelint``
