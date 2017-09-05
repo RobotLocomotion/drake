@@ -30,8 +30,10 @@ boost
 clang-format
 doxygen
 gcc
+glew
 glib
 libyaml
+lz4
 numpy
 patchutils
 pkg-config
