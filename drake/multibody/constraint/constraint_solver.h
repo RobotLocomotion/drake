@@ -44,7 +44,13 @@ class ConstraintSolver {
   ///           directions at each non-sliding point of contact. The first `r`
   ///           values (after the initial `nc` elements) correspond to the first
   ///           non-sliding contact, the next `r` values correspond to the
-  ///           second non-sliding contact, etc.
+  ///           second non-sliding contact, etc. The final ℓ values of @p cf
+  ///           correspond to the forces applied to enforce functions of state
+  ///           variable limits. This packed storage format can be turned into
+  ///           more useful representations through
+  ///           ComputeGeneralizedForceFromConstraintForces() and
+  ///           CalcContactForcesInContactFrames(). @p cf will be resized as
+  ///           necessary.
   /// @pre Constraint data has been computed.
   /// @throws a std::runtime_error if the constraint forces cannot be computed
   ///         (due to, e.g., an "inconsistent" rigid contact configuration).
@@ -67,7 +73,13 @@ class ConstraintSolver {
   ///           directions at each point of contact. The first `r`
   ///           values (after the initial `nc` elements) correspond to the first
   ///           contact, the next `r` values correspond to the second contact,
-  ///           etc.
+  ///           etc. The final ℓ values of @p cf correspond to the impulsive
+  ///           forces applied to enforce functions of state variable limits.
+  ///           This packed storage format can be turned into more useful
+  ///           representations through
+  ///           ComputeGeneralizedImpulseFromConstraintImpulses() and
+  ///           CalcImpactForcesInContactFrames(). @p cf will be resized as
+  ///           necessary.
   /// @pre Constraint data has been computed.
   /// @throws a std::runtime_error if the constraint forces cannot be computed
   ///         (due to, e.g., the effects of roundoff error in attempting to
@@ -85,6 +97,9 @@ class ConstraintSolver {
   ///           format described in documentation for SolveConstraintProblem.
   /// @param[out] generalized_force The generalized force acting on the system
   ///             from the total constraint wrench is stored here, on return.
+  ///             This method will resize @p generalized_force as necessary. The
+  ///             indices of @p generalized_force will exactly match the indices
+  ///             of @p problem_data.f.
   /// @throws std::logic_error if @p generalized_force is null or @p cf
   ///         vector is incorrectly sized.
   static void ComputeGeneralizedForceFromConstraintForces(
@@ -99,7 +114,9 @@ class ConstraintSolver {
   ///           format described in documentation for SolveImpactProblem.
   /// @param[out] generalized_impulse The generalized impulse acting on the
   ///             system from the total constraint wrench is stored here, on
-  ///             return.
+  ///             return. This method will resize @p generalized_impulse as
+  ///             necessary. The indices of @p generalized_impulse will exactly
+  ///             match the indices of @p problem_data.v.
   /// @throws std::logic_error if @p generalized_impulse is null or @p cf
   ///         vector is incorrectly sized.
   static void ComputeGeneralizedImpulseFromConstraintImpulses(
@@ -186,6 +203,26 @@ class ConstraintSolver {
       std::vector<Vector2<T>>* contact_impulses);
 
  private:
+  // Computes a constraint space compliance matrix A⋅M⁻¹⋅Bᵀ, where A ∈ ℝᵃˣᵐ
+  // (realized here using an operator) and B ∈ ℝᵇˣᵐ are both Jacobian matrices
+  // and M⁻¹ ∈ ℝᵐˣᵐ is the inverse of the generalized inertia matrix. Note that
+  // mixing types of constraints is explicitly allowed. Aborts if A_iM_BT is
+  // not of size a × b.
+  static void ComputeConstraintSpaceComplianceMatrix(
+      std::function<VectorX<T>(const VectorX<T>&)> A_mult,
+      int a,
+      const MatrixX<T>& M_inv_BT,
+      Eigen::Ref<MatrixX<T>>);
+
+  // Computes the matrix M⁻¹⋅Gᵀ, G ∈ ℝᵐˣⁿ is a constraint Jacobian matrix
+  // (realized here using an operator) and M⁻¹ ∈ ℝⁿˣⁿ is the inverse of the
+  // generalized inertia matrix. Resizes iM_GT as necessary.
+  static void ComputeInverseInertiaTimesGT(
+      std::function<MatrixX<T>(const MatrixX<T>&)> M_inv_mult,
+      std::function<VectorX<T>(const VectorX<T>&)> G_transpose_mult,
+      int m,
+      MatrixX<T>* iM_GT);
+
   void FormImpactingConstraintLCP(
       const ConstraintVelProblemData<T>& problem_data,
       MatrixX<T>* MM, VectorX<T>* qq) const;
@@ -221,15 +258,16 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
   const int num_contacts = num_sliding + num_non_sliding;
   const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
                                                    problem_data.r.end(), 0);
+  const int num_limits = problem_data.num_limit_constraints;
 
   // Look for fast exit.
-  if (num_contacts == 0) {
+  if (num_contacts == 0 && num_limits == 0) {
     cf->resize(0);
     return;
   }
 
   // Initialize contact force vector.
-  cf->resize(num_contacts + num_spanning_vectors);
+  cf->resize(num_contacts + num_spanning_vectors + num_limits);
 
   // Set up the linear complementarity problem.
   MatrixX<T> MM;
@@ -263,11 +301,13 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
     throw std::runtime_error("Unable to solve LCP- it may be unsolvable.");
   }
 
-  // Get the contact forces in the specified packed storage format.
+  // Get the constraint forces in the specified packed storage format.
   cf->segment(0, num_contacts) = zz.segment(0, num_contacts);
   cf->segment(num_contacts, num_spanning_vectors) =
       zz.segment(num_contacts, num_spanning_vectors) -
       zz.segment(num_contacts + num_spanning_vectors, num_spanning_vectors);
+  cf->segment(num_contacts + num_spanning_vectors, num_limits) =
+      zz.segment(num_contacts + num_spanning_vectors * 2, num_limits);
 }
 
 template <typename T>
@@ -285,15 +325,16 @@ void ConstraintSolver<T>::SolveImpactProblem(
                                "negative.");
   }
 
-  // Get number of contacts.
+  // Get number of contacts and limits.
   const int num_contacts = problem_data.mu.size();
   if (static_cast<size_t>(num_contacts) != problem_data.r.size()) {
     throw std::logic_error("Number of elements in 'r' does not match number"
                                "of elements in 'mu'");
   }
+  const int num_limits = problem_data.num_limit_constraints;
 
   // Look for fast exit.
-  if (num_contacts == 0) {
+  if (num_contacts == 0 && num_limits == 0) {
     cf->resize(0);
     return;
   }
@@ -303,13 +344,16 @@ void ConstraintSolver<T>::SolveImpactProblem(
                                                    problem_data.r.end(), 0);
 
   // If no impact, do not apply the impact model.
-  if ((problem_data.N * problem_data.v).minCoeff() >= 0) {
-    cf->setZero(num_contacts + num_spanning_vectors);
+  if ((num_contacts == 0 ||
+       problem_data.N_mult(problem_data.v).minCoeff() >= 0) &&
+      (num_limits == 0 ||
+       problem_data.L_mult(problem_data.v).minCoeff() >= 0)) {
+    cf->setZero(num_contacts + num_spanning_vectors + num_limits);
     return;
   }
 
   // Initialize contact force vector.
-  cf->resize(num_contacts + num_spanning_vectors);
+  cf->resize(num_contacts + num_spanning_vectors + num_limits);
 
   // Set up the linear complementarity problem.
   MatrixX<T> MM;
@@ -345,11 +389,59 @@ void ConstraintSolver<T>::SolveImpactProblem(
                                  "be necessary.");
   }
 
-  // Get the contact forces in the specified packed storage format.
+  // Get the constraint forces in the specified packed storage format.
   cf->segment(0, num_contacts) = zz.segment(0, num_contacts);
   cf->segment(num_contacts, num_spanning_vectors) =
       zz.segment(num_contacts, num_spanning_vectors) -
           zz.segment(num_contacts + num_spanning_vectors, num_spanning_vectors);
+  cf->segment(num_contacts + num_spanning_vectors, num_limits) =
+      zz.segment(num_contacts + num_spanning_vectors * 2, num_limits);
+}
+
+template <class T>
+void ConstraintSolver<T>::ComputeConstraintSpaceComplianceMatrix(
+    std::function<VectorX<T>(const VectorX<T>&)> A_mult,
+    int a,
+    const MatrixX<T>& iM_BT,
+    Eigen::Ref<MatrixX<T>> A_iM_BT) {
+  const int b = iM_BT.cols();
+  DRAKE_DEMAND(A_iM_BT.rows() == a && A_iM_BT.cols() == b);
+
+  // Look for fast exit.
+  if (a == 0 || b == 0)
+    return;
+
+  VectorX<T> iM_bT;     // Intermediate result vector.
+
+  for (int i = 0; i < b; ++i) {
+    iM_bT = iM_BT.col(i);
+    A_iM_BT.col(i) = A_mult(iM_bT);
+  }
+}
+
+template <class T>
+void ConstraintSolver<T>::ComputeInverseInertiaTimesGT(
+    std::function<MatrixX<T>(const MatrixX<T>&)> M_inv_mult,
+    std::function<VectorX<T>(const VectorX<T>&)> G_transpose_mult,
+    int m,
+    MatrixX<T>* iM_GT) {
+  DRAKE_DEMAND(iM_GT);
+  DRAKE_DEMAND(iM_GT->cols() == m);
+
+  VectorX<T> basis(m);  // Basis vector.
+  VectorX<T> gT;        // Intermediate result vector.
+
+  // Look for fast exit.
+  if (m == 0)
+    return;
+
+  for (int i = 0; i < m; ++i) {
+    // Get the i'th column of G.
+    basis.setZero();
+    basis[i] = 1;
+    gT = G_transpose_mult(basis);
+    iM_GT->col(i) = M_inv_mult(gT);
+  }
 }
 
 // Forms the LCP matrix and vector, which is used to determine the constraint
@@ -368,84 +460,134 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
   const int num_contacts = num_sliding + num_non_sliding;
   const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
                                  problem_data.r.end(), 0);
+  const int num_limits = problem_data.num_limit_constraints;
 
   // Problem matrices and vectors are mildly adapted from:
   // M. Anitescu and F. Potra. Formulating Dynamic Multi-Rigid Body Contact
   // Problems as Solvable Linear Complementarity Problems. Nonlinear Dynamics,
   // 14, 1997.
 
-  // Alias matrices / vectors to make accessing them less clunky.
-  const MatrixX<T>& N = problem_data.N;
-  const MatrixX<T>& F = problem_data.F;
-  const VectorX<T>& Ndot_x_v = problem_data.Ndot_x_v;
-  const VectorX<T>& Fdot_x_v = problem_data.Fdot_x_v;
+  // Alias operators and vectors to make accessing them less clunky.
+  auto N = problem_data.N_mult;
+  auto F = problem_data.F_mult;
+  auto FT = problem_data.F_transpose_mult;
+  auto L = problem_data.L_mult;
+  auto LT = problem_data.L_transpose_mult;
+  auto iM = problem_data.solve_inertia;
+  const VectorX<T>& Ndot_times_v = problem_data.Ndot_times_v;
+  const VectorX<T>& Fdot_times_v = problem_data.Fdot_times_v;
+  const VectorX<T>& kL = problem_data.kL;
   const VectorX<T>& mu_non_sliding = problem_data.mu_non_sliding;
 
-  // Construct a matrix similar to E in Anitscu and Potra 1997. This matrix
-  // will be used to specify the constraints:
-  // 0 ≤ μ⋅fN - E⋅fF ⊥ λ ≥ 0 and
-  // 0 ≤ e⋅λ + F⋅dv/dt ⊥ fF ≥ 0,
-  // where λ can roughly be interpreted as the remaining tangential acceleration
-  // at the non-sliding contacts after frictional forces have been applied and
-  // e is a vector of ones (i.e., a segment of the appropriate column of E).
-  MatrixX<T> E = MatrixX<T>::Zero(num_spanning_vectors * 2, num_non_sliding);
+  // Construct a matrix similar to E in [Anitescu 1997]. This matrix will be
+  // used to specify the constraints (adapted from [Anitescu 1997] Eqn 2.7):
+  // 0 ≤  μₙₛ fNᵢ - eᵀ fF  ⊥  λᵢ ≥ 0 and
+  // 0 ≤ e λᵢ + F dv/dt + dF/dt v ⊥ fF ≥ 0,
+  // where scalar λᵢ can roughly be interpreted as the remaining tangential
+  // acceleration at non-sliding contact i after frictional forces have been
+  // applied and e is a vector of ones (i.e., a segment of the appropriate
+  // column of E). Note that this matrix differs from the exact definition of
+  // E in [Anitescu 1997] to reflect the different layout of the LCP matrix
+  // from [Anitescu 1997] (the latter puts all spanning directions corresponding
+  // to a contact in one block; we put half of the spanning directions
+  // corresponding to a contact into one block and the other half into another
+  // block).
+  MatrixX<T> E = MatrixX<T>::Zero(num_spanning_vectors, num_non_sliding);
   for (int i = 0, j = 0; i < num_non_sliding; ++i) {
-    const int num_tangent_dirs = problem_data.r[i] * 2;
-    E.col(i).segment(j, num_tangent_dirs).setOnes();
-    j += num_tangent_dirs;
+    E.col(i).segment(j, problem_data.r[i]).setOnes();
+    j += problem_data.r[i];
   }
 
-  // Construct the LCP matrix. First do the "normal contact direction" rows:
-  // N⋅M⁻¹⋅(Nᵀ - μQᵀ)  N⋅M⁻¹⋅Dᵀ  0
-  // D⋅M⁻¹⋅Nᵀ          D⋅M⁻¹⋅Dᵀ  E
-  // μ                 -Eᵀ       0
+  // Alias these variables for more readable construction of MM and qq.
+  const int ngv = problem_data.tau.size();  // generalized velocity dimension.
+  const int nc = num_contacts;
+  const int nr = num_spanning_vectors;
+  const int nk = nr * 2;
+  const int nl = num_limits;
+  const int num_vars = nc + nk + num_non_sliding + nl;
+
+  // Precompute some matrices that will be reused repeatedly.
+  MatrixX<T> iM_NT_minus_muQT(ngv, nc), iM_FT(ngv, nr), iM_LT(ngv, nl);
+  ComputeInverseInertiaTimesGT(
+      iM, problem_data.N_minus_muQ_transpose_mult, nc, &iM_NT_minus_muQT);
+  ComputeInverseInertiaTimesGT(iM, FT, nr, &iM_FT);
+  ComputeInverseInertiaTimesGT(iM, LT, nl, &iM_LT);
+
+  // Prepare blocks of the LCP matrix, which takes the form:
+  // N⋅M⁻¹⋅(Nᵀ - μₛQᵀ)  N⋅M⁻¹⋅Dᵀ  0   N⋅M⁻¹⋅Lᵀ
+  // D⋅M⁻¹⋅(Nᵀ - μₛQᵀ)  D⋅M⁻¹⋅Dᵀ  E   D⋅M⁻¹⋅Lᵀ
+  // μ                 -Eᵀ        0   0
+  // L⋅M⁻¹⋅(Nᵀ - μₛQᵀ)  L⋅M⁻¹⋅Dᵀ  0   L⋅M⁻¹⋅Lᵀ
   // where D = |  F |
   //           | -F |
-  const int nc = num_contacts;          // Alias these vars for more...
-  const int nr = num_spanning_vectors;  //   readable construction...
-  const int nk = nr * 2;                //    of MM/qq.
-  const int num_vars = nc + nk + num_non_sliding;
-  MatrixX<T> M_inv_x_FT = problem_data.solve_inertia(F.transpose());
   MM->resize(num_vars, num_vars);
-  MM->block(0, 0, nc, nc) = N *
-      problem_data.solve_inertia(problem_data.N_minus_mu_Q.transpose());
-  MM->block(0, nc, nc, nr) = N * M_inv_x_FT;
-  MM->block(0, nc + nr, nc, nr) = -MM->block(0, nc, nc, nr);
-  MM->block(0, nc + nk, num_non_sliding, num_non_sliding).setZero();
+  Eigen::Ref<MatrixX<T>> N_iM_NT_minus_muQT = MM->block(0, 0, nc, nc);
+  Eigen::Ref<MatrixX<T>> N_iM_FT = MM->block(0, nc, nc, nr);
+  Eigen::Ref<MatrixX<T>> N_iM_LT = MM->block(
+      0, nc + nk + num_non_sliding, nc, nl);
+  Eigen::Ref<MatrixX<T>> F_iM_NT_minus_muQT = MM->block(nc, 0, nr, nc);
+  Eigen::Ref<MatrixX<T>> F_iM_FT = MM->block(nc, nc, nr, nr);
+  Eigen::Ref<MatrixX<T>> F_iM_LT = MM->block(nc, nc + nk, nr, nl);
+  Eigen::Ref<MatrixX<T>> L_iM_NT_minus_muQT = MM->block(
+      nc + nk + num_non_sliding, 0, nl, nc);
+  Eigen::Ref<MatrixX<T>> L_iM_LT = MM->block(
+      nc + nk + num_non_sliding, nc + nk + num_non_sliding, nl, nl);
+  ComputeConstraintSpaceComplianceMatrix(
+      N, nc, iM_NT_minus_muQT, N_iM_NT_minus_muQT);
+  ComputeConstraintSpaceComplianceMatrix(N, nc, iM_FT, N_iM_FT);
+  ComputeConstraintSpaceComplianceMatrix(N, nc, iM_LT, N_iM_LT);
+  ComputeConstraintSpaceComplianceMatrix(
+      F, nr, iM_NT_minus_muQT, F_iM_NT_minus_muQT);
+  ComputeConstraintSpaceComplianceMatrix(F, nr, iM_FT, F_iM_FT);
+  ComputeConstraintSpaceComplianceMatrix(F, nr, iM_LT, F_iM_LT);
+  ComputeConstraintSpaceComplianceMatrix(
+      L, nl, iM_NT_minus_muQT, L_iM_NT_minus_muQT);
+  ComputeConstraintSpaceComplianceMatrix(L, nl, iM_LT, L_iM_LT);
 
-  // Now construct the un-negated tangent contact direction rows (everything
-  // but last block column).
-  MM->block(nc, 0, nr, nc) = MM->block(0, nc, nc, nr).transpose().eval();
-  MM->block(nc, nc, nr, num_spanning_vectors) = F * M_inv_x_FT;
+  // Construct the LCP matrix. First do the "normal contact direction" rows.
+  MM->block(0, nc + nr, nc, nr) = -MM->block(0, nc, nc, nr);
+  MM->block(0, nc + nk, nc, num_non_sliding).setZero();
+
+  // Now construct the un-negated tangent contact direction rows.
   MM->block(nc, nc + nr, num_spanning_vectors, nr) =
       -MM->block(nc, nc, nr, num_spanning_vectors);
+  MM->block(nc, nc + nk, num_spanning_vectors, num_non_sliding) = E;
 
-  // Now construct the negated tangent contact direction rows (everything but
-  // last block column). These negated tangent contact directions allow the
-  // LCP to compute forces applied along the negative x-axis.
-  MM->block(nc + nr, 0, nr, nc + nk) = -MM->block(nc, 0, nr, nc + nk);
+  // Now construct the negated tangent contact direction rows. These negated
+  // tangent contact directions allow the LCP to compute forces applied along
+  // the negative x-axis. E will have to be reset to un-negate it.
+  MM->block(nc + nr, 0, nr, nc + nk + nl) = -MM->block(nc, 0, nr, nc + nk + nl);
+  MM->block(nc + nr, nc + nk, num_spanning_vectors, num_non_sliding) = E;
 
-  // Construct the last block column for the last set of rows (see Anitescu and
-  // Potra, 1997).
-  MM->block(nc, nc + nk, nk, num_non_sliding) = E;
+  // Construct the next two rows, which provide the friction "cone" constraint.
+  const std::vector<int>& ns_contacts = problem_data.non_sliding_contacts;
+  MM->block(nc + nk, 0, num_non_sliding, nc).setZero();
+  for (int i = 0; static_cast<size_t>(i) < ns_contacts.size(); ++i)
+    (*MM)(nc + nk + i, ns_contacts[i]) = mu_non_sliding[i];
+  MM->block(nc + nk, nc, num_non_sliding, num_spanning_vectors) =
+      -E.transpose();
+  MM->block(nc + nk, nc + num_spanning_vectors, num_non_sliding,
+            num_spanning_vectors) = -E.transpose();
+  MM->block(nc + nk, nc + nk, num_non_sliding, num_non_sliding + nl).setZero();
 
-  // Construct the last two rows, which provide the friction "cone" constraint.
-  MM->block(nc + nk, 0, num_non_sliding, num_non_sliding) =
-      Eigen::DiagonalMatrix<T, Eigen::Dynamic>(mu_non_sliding);
-  MM->block(nc + nk, nc, num_non_sliding, nk) = -E.transpose();
-  MM->block(nc + nk, nc + nk, num_non_sliding, num_non_sliding).setZero();
+  // Construct the last row block, which provides the configuration limit
+  // constraint.
+  MM->block(nc + nk + num_non_sliding, 0, nl, nc + nk) =
+      MM->block(0, nc + nk + num_non_sliding, nc + nk, nl).transpose().eval();
 
   // Construct the LCP vector:
   // N⋅M⁻¹⋅fext + dN/dt⋅v
   // D⋅M⁻¹⋅fext + dD/dt⋅v
   // 0
+  // L⋅M⁻¹⋅fext + dL/dt⋅v + kL
   // where, as above, D is defined as [F -F]
-  VectorX<T> M_inv_x_f = problem_data.solve_inertia(problem_data.f);
+  VectorX<T> M_inv_x_f = problem_data.solve_inertia(problem_data.tau);
   qq->resize(num_vars, 1);
-  qq->segment(0, nc) = N * M_inv_x_f + Ndot_x_v;
-  qq->segment(nc, nr) = F * M_inv_x_f + Fdot_x_v;
+  qq->segment(0, nc) = N(M_inv_x_f) + Ndot_times_v;
+  qq->segment(nc, nr) = F(M_inv_x_f) + Fdot_times_v;
   qq->segment(nc + nr, num_spanning_vectors) = -qq->segment(nc, nr);
   qq->segment(nc + nk, num_non_sliding).setZero();
+  qq->segment(nc + nk + num_non_sliding, num_limits) = L(M_inv_x_f) + kL;
 }
 
 // Forms the LCP matrix and vector, which is used to determine the collisional
@@ -461,81 +603,117 @@ void ConstraintSolver<T>::FormImpactingConstraintLCP(
   const int num_contacts = problem_data.mu.size();
   const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
                                                    problem_data.r.end(), 0);
+  const int num_limits = problem_data.num_limit_constraints;
 
   // Problem matrices and vectors are nearly identical to:
   // M. Anitescu and F. Potra. Formulating Dynamic Multi-Rigid Body Contact
   // Problems as Solvable Linear Complementarity Problems. Nonlinear Dynamics,
   // 14, 1997.
 
-  // Alias matrices / vectors to make accessing them less clunky.
-  const MatrixX<T>& N = problem_data.N;
-  const MatrixX<T>& F = problem_data.F;
+  // Alias operators and vectors to make accessing them less clunky.
+  const auto N = problem_data.N_mult;
+  const auto NT = problem_data.N_transpose_mult;
+  const auto F = problem_data.F_mult;
+  const auto FT = problem_data.F_transpose_mult;
+  const auto L = problem_data.L_mult;
+  const auto LT = problem_data.L_transpose_mult;
+  auto iM = problem_data.solve_inertia;
   const VectorX<T>& mu = problem_data.mu;
 
-  // Construct the matrix E in Anitscu and Potra 1997. This matrix
-  // will be used to specify the constraints:
+  // Construct the matrix E in [Anitscu 1997]. This matrix will be used to
+  // specify the constraints:
   // 0 ≤ μ⋅fN - E⋅fF ⊥ λ ≥ 0 and
   // 0 ≤ e⋅λ + F⋅v ⊥ fF ≥ 0,
   // where λ can roughly be interpreted as the remaining tangential velocity
   // at the impacting contacts after frictional impulses have been applied and
   // e is a vector of ones (i.e., a segment of the appropriate column of E).
-  MatrixX<T> E = MatrixX<T>::Zero(num_spanning_vectors * 2, num_contacts);
+  // Note that this matrix differs from the exact definition of E in
+  // [Anitescu 1997] to reflect the different layout of the LCP matrix from
+  // [Anitescu 1997] (the latter puts all spanning directions corresponding
+  // to a contact in one block; we put half of the spanning directions
+  // corresponding to a contact into one block and the other half into another
+  // block).
+  MatrixX<T> E = MatrixX<T>::Zero(num_spanning_vectors, num_contacts);
   for (int i = 0, j = 0; i < num_contacts; ++i) {
-    const int num_tangent_dirs = problem_data.r[i] * 2;
-    E.col(i).segment(j, num_tangent_dirs).setOnes();
-    j += num_tangent_dirs;
+    E.col(i).segment(j, problem_data.r[i]).setOnes();
+    j += problem_data.r[i];
   }
 
   // Alias these variables for more readable construction of MM and qq.
+  const int ngv = problem_data.v.size();  // generalized velocity dimension.
   const int nc = num_contacts;
   const int nr = num_spanning_vectors;
   const int nk = nr * 2;
+  const int nl = num_limits;
 
-  // Construct the LCP matrix. First do the "normal contact direction" rows:
-  // N⋅M⁻¹⋅Nᵀ  N⋅M⁻¹⋅Dᵀ  0
-  // D⋅M⁻¹⋅Nᵀ  D⋅M⁻¹⋅Dᵀ  E
-  // μ         -Eᵀ       0
+  // Precompute some matrices that will be reused repeatedly.
+  MatrixX<T> iM_NT(ngv, nc), iM_FT(ngv, nr), iM_LT(ngv, nl);
+  ComputeInverseInertiaTimesGT(iM, NT, nc, &iM_NT);
+  ComputeInverseInertiaTimesGT(iM, FT, nr, &iM_FT);
+  ComputeInverseInertiaTimesGT(iM, LT, nl, &iM_LT);
+
+  // Prepare blocks of the LCP matrix, which takes the form:
+  // N⋅M⁻¹⋅Nᵀ  N⋅M⁻¹⋅Dᵀ  0   N⋅M⁻¹⋅Lᵀ
+  // D⋅M⁻¹⋅Nᵀ  D⋅M⁻¹⋅Dᵀ  E   D⋅M⁻¹⋅Lᵀ
+  // μ         -Eᵀ       0   0
+  // L⋅M⁻¹⋅Nᵀ  L⋅M⁻¹⋅Dᵀ  0   L⋅M⁻¹⋅Lᵀ
   // where D = |  F |
   //           | -F |
-  const int num_vars = nc * 2 + nk;
-  MatrixX<T> M_inv_x_FT = problem_data.solve_inertia(F.transpose());
+  const int num_vars = nc * 2 + nk + num_limits;
   MM->resize(num_vars, num_vars);
-  MM->block(0, 0, nc, nc) = N * problem_data.solve_inertia(
-      problem_data.N.transpose());
-  MM->block(0, nc, nc, nr) = N * M_inv_x_FT;
+  Eigen::Ref<MatrixX<T>> N_iM_NT = MM->block(0, 0, nc, nc);
+  Eigen::Ref<MatrixX<T>> N_iM_FT = MM->block(0, nc, nc, nr);
+  Eigen::Ref<MatrixX<T>> N_iM_LT = MM->block(0, nc * 2 + nk, nc, nl);
+  Eigen::Ref<MatrixX<T>> F_iM_FT = MM->block(nc, nc, nr, nr);
+  Eigen::Ref<MatrixX<T>> F_iM_LT = MM->block(nc, nc + nk, nr, nl);
+  Eigen::Ref<MatrixX<T>> L_iM_LT = MM->block(nc * 2 + nk, nc * 2 + nk, nl, nl);
+  ComputeConstraintSpaceComplianceMatrix(N, nc, iM_NT, N_iM_NT);
+  ComputeConstraintSpaceComplianceMatrix(N, nc, iM_FT, N_iM_FT);
+  ComputeConstraintSpaceComplianceMatrix(N, nc, iM_LT, N_iM_LT);
+  ComputeConstraintSpaceComplianceMatrix(F, nr, iM_FT, F_iM_FT);
+  ComputeConstraintSpaceComplianceMatrix(F, nr, iM_LT, F_iM_LT);
+  ComputeConstraintSpaceComplianceMatrix(L, nl, iM_LT, L_iM_LT);
+
+  // Construct the LCP matrix. First do the "normal contact direction" rows:
   MM->block(0, nc + nr, nc, nr) = -MM->block(0, nc, nc, nr);
   MM->block(0, nc + nk, nc, nc).setZero();
 
-  // Now construct the un-negated tangent contact direction rows (everything
-  // but last block column).
+  // Now construct the un-negated tangent contact direction rows.
   MM->block(nc, 0, nr, nc) = MM->block(0, nc, nc, nr).transpose().eval();
-  MM->block(nc, nc, nr, nr) = F * M_inv_x_FT;
   MM->block(nc, nc + nr, nr, nr) = -MM->block(nc, nc, nr, nr);
+  MM->block(nc, nc + nk, num_spanning_vectors, nc) = E;
 
-  // Now construct the negated tangent contact direction rows (everything but
-  // last block column). These negated tangent contact directions allow the
-  // LCP to compute forces applied along the negative x-axis.
-  MM->block(nc + nr, 0, nr, nc + nk) = -MM->block(nc, 0, nr, nc + nk);
+  // Now construct the negated tangent contact direction rows. These negated
+  // tangent contact directions allow the LCP to compute forces applied along
+  // the negative x-axis. E will have to be reset to un-negate it.
+  MM->block(nc + nr, 0, nr, nc + nk + nl) = -MM->block(nc, 0, nr, nc + nk + nl);
+  MM->block(nc + nr, nc + nk, num_spanning_vectors, nc) = E;
 
-  // Construct the last block column for the last set of rows (see Anitescu and
-  // Potra, 1997).
-  MM->block(nc, nc + nk, nk, nc) = E;
-
-  // Construct the last two rows, which provide the friction "cone" constraint.
+  // Construct the next two row blocks, which provide the friction "cone"
+  // constraint.
   MM->block(nc + nk, 0, nc, nc) = Eigen::DiagonalMatrix<T, Eigen::Dynamic>(mu);
-  MM->block(nc + nk, nc, nc, nk) = -E.transpose();
-  MM->block(nc + nk, nc + nk, nc, nc).setZero();
+  MM->block(nc + nk, nc, nc, num_spanning_vectors) = -E.transpose();
+  MM->block(nc + nk, nc + num_spanning_vectors, nc, num_spanning_vectors) =
+      -E.transpose();
+  MM->block(nc + nk, nc + nk, nc, nc + nl).setZero();
+
+  // Construct the last row block, which provides the generic unilateral
+  // constraints.
+  MM->block(nc*2 + nk, 0, nl, nc + nk) =
+      MM->block(0, nc*2 + nk, nc + nk, nl).transpose().eval();
 
   // Construct the LCP vector:
   // N⋅v
   // D⋅v
   // 0
+  // L⋅v
   // where, as above, D is defined as [F -F]
   qq->resize(num_vars, 1);
-  qq->segment(0, nc) = N * problem_data.v;
-  qq->segment(nc, nr) = F * problem_data.v;
-  qq->segment(nc + nr, nc) = -qq->segment(nc, nr);
+  qq->segment(0, nc) = N(problem_data.v);
+  qq->segment(nc, nr) = F(problem_data.v);
+  qq->segment(nc + nr, nr) = -qq->segment(nc, nr);
   qq->segment(nc + nk, nc).setZero();
+  qq->segment(nc*2 + nk, num_limits) = L(problem_data.v) + problem_data.kL;
 }
 
 template <class T>
@@ -552,20 +730,28 @@ void ConstraintSolver<T>::ComputeGeneralizedForceFromConstraintForces(
   const int num_contacts = num_sliding + num_non_sliding;
   const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
                                  problem_data.r.end(), 0);
+  const int num_limits = problem_data.num_limit_constraints;
 
   // Verify cf is the correct size.
-  const int num_vars = num_contacts + num_spanning_vectors;
-  if (cf.size() != num_vars)
-    throw std::logic_error("cf (contact force) parameter incorrectly sized.");
+  const int num_vars = num_contacts + num_spanning_vectors + num_limits;
+  if (cf.size() != num_vars) {
+    throw std::logic_error("cf (constraint force) parameter incorrectly"
+                               "sized.");
+  }
 
   /// Get the normal and non-sliding contact forces.
   const Eigen::Ref<const VectorX<T>> f_normal = cf.segment(0, num_contacts);
   const Eigen::Ref<const VectorX<T>> f_non_sliding_frictional = cf.segment(
-      num_contacts, num_vars - num_contacts);
+      num_contacts, num_spanning_vectors);
+
+  /// Get the limit forces.
+  const Eigen::Ref<const VectorX<T>> f_limit = cf.segment(
+      num_contacts + num_spanning_vectors, num_limits);
 
   /// Compute the generalized force.
-  *generalized_force = problem_data.N_minus_mu_Q.transpose() * f_normal +
-      problem_data.F.transpose() * f_non_sliding_frictional;
+  *generalized_force = problem_data.N_minus_muQ_transpose_mult(f_normal) +
+                       problem_data.F_transpose_mult(f_non_sliding_frictional) +
+                       problem_data.L_transpose_mult(f_limit);
 }
 
 template <class T>
@@ -580,18 +766,26 @@ void ConstraintSolver<T>::ComputeGeneralizedImpulseFromConstraintImpulses(
   const int num_contacts = problem_data.mu.size();
   const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
                                                    problem_data.r.end(), 0);
-  const int num_vars = num_contacts + num_spanning_vectors;
-  if (num_vars != cf.size())
-    throw std::logic_error("Unexpected packed contact force vector dimension.");
+  const int num_limits = problem_data.num_limit_constraints;
+  const int num_vars = num_contacts + num_spanning_vectors + num_limits;
+  if (num_vars != cf.size()) {
+    throw std::logic_error("Unexpected packed constraint force vector"
+                               " dimension.");
+  }
 
   /// Get the normal and tangential contact impulses.
   const Eigen::Ref<const VectorX<T>> f_normal = cf.segment(0, num_contacts);
   const Eigen::Ref<const VectorX<T>> f_frictional = cf.segment(
-      num_contacts, num_vars - num_contacts);
+      num_contacts, num_spanning_vectors);
+
+  /// Get the limit forces.
+  const Eigen::Ref<const VectorX<T>> f_limit = cf.segment(
+      num_contacts + num_spanning_vectors, num_limits);
 
   /// Compute the generalized impules.
-  *generalized_impulse = problem_data.N.transpose() * f_normal +
-                         problem_data.F.transpose() * f_frictional;
+  *generalized_impulse = problem_data.N_transpose_mult(f_normal)  +
+                         problem_data.F_transpose_mult(f_frictional) +
+                         problem_data.L_transpose_mult(f_limit);
 }
 
 template <class T>
@@ -605,7 +799,7 @@ void ConstraintSolver<T>::ComputeGeneralizedAcceleration(
   VectorX<T> generalized_force;
   ComputeGeneralizedForceFromConstraintForces(problem_data, cf,
                                               &generalized_force);
-  *generalized_acceleration = problem_data.solve_inertia(problem_data.f +
+  *generalized_acceleration = problem_data.solve_inertia(problem_data.tau +
                                                          generalized_force);
 }
 
@@ -647,9 +841,12 @@ void ConstraintSolver<T>::CalcContactForcesInContactFrames(
       num_non_sliding_contacts;
   const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
                                                    problem_data.r.end(), 0);
-  const int num_vars = num_contacts + num_spanning_vectors;
-  if (num_vars != cf.size())
-    throw std::logic_error("Unexpected packed contact force vector dimension.");
+  const int num_limits = problem_data.num_limit_constraints;
+  const int num_vars = num_contacts + num_spanning_vectors + num_limits;
+  if (num_vars != cf.size()) {
+    throw std::logic_error("Unexpected packed constraint force vector "
+                               "dimension.");
+  }
 
   // Verify that the problem is indeed two-dimensional.
   if (num_spanning_vectors != num_non_sliding_contacts) {
@@ -739,9 +936,12 @@ void ConstraintSolver<T>::CalcImpactForcesInContactFrames(
   const int num_contacts = problem_data.mu.size();
   const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
                                                    problem_data.r.end(), 0);
-  const int num_vars = num_contacts + num_spanning_vectors;
-  if (num_vars != cf.size())
-    throw std::logic_error("Unexpected packed contact force vector dimension.");
+  const int num_limits = problem_data.num_limit_constraints;
+  const int num_vars = num_contacts + num_spanning_vectors + num_limits;
+  if (num_vars != cf.size()) {
+    throw std::logic_error("Unexpected packed constraint force vector "
+                               "dimension.");
+  }
 
   // Verify that the problem is indeed two-dimensional.
   if (num_spanning_vectors != num_contacts) {

@@ -29,7 +29,7 @@ class MobilPlannerTest : public ::testing::Test {
     // Create a dragway with the specified number of lanes starting at `x = 0`
     // and centered at `y = 0`.
     road_.reset(new maliput::dragway::RoadGeometry(
-        maliput::api::RoadGeometryId({"Test Dragway"}), num_lanes,
+        maliput::api::RoadGeometryId("Test Dragway"), num_lanes,
         100 /* length */, kLaneWidth /* lane_width */,
         0. /* shoulder_width */,
         5. /* maximum_height */,
@@ -66,11 +66,11 @@ class MobilPlannerTest : public ::testing::Test {
   }
 
   int get_lane_index(const Lane* lane) {
-    if (segment_->lane(0)->id().id == lane->id().id) {
+    if (segment_->lane(0)->id() == lane->id()) {
       return 0;
-    } else if (segment_->lane(1)->id().id == lane->id().id) {
+    } else if (segment_->lane(1)->id() == lane->id()) {
       return 1;
-    } else if (segment_->lane(2)->id().id == lane->id().id) {
+    } else if (segment_->lane(2)->id() == lane->id()) {
       return 2;
     } else {
       throw std::runtime_error("The specified Lane does not belong to road_.");
@@ -192,8 +192,8 @@ TEST_F(MobilPlannerTest, IncentiveWhileTailgating) {
   auto lane_direction = result->template GetMutableValue<LaneDirection>();
 
   // Expect the left lane to be more desirable.
-  EXPECT_EQ(lane_directions_[left_lane_index_].lane->id().id,
-            lane_direction.lane->id().id);
+  EXPECT_EQ(lane_directions_[left_lane_index_].lane->id(),
+            lane_direction.lane->id());
 }
 
 // Verifies that the same results as above are obtained when `with_s = false`.
@@ -216,8 +216,8 @@ TEST_F(MobilPlannerTest, IncentiveWhileTailgatingInBackwardLane) {
   auto lane_direction = result->template GetMutableValue<LaneDirection>();
 
   // Expect the left lane to be more desirable.
-  EXPECT_EQ(lane_directions_[left_lane_index_].lane->id().id,
-            lane_direction.lane->id().id);
+  EXPECT_EQ(lane_directions_[left_lane_index_].lane->id(),
+            lane_direction.lane->id());
 }
 
 // Tests that valid results can be obtained with no cars in the road, and that
@@ -236,8 +236,8 @@ TEST_F(MobilPlannerTest, NoCars) {
   auto lane_direction = result->template GetMutableValue<LaneDirection>();
 
   // Expect the right lane to be more desirable (the left is above threshold).
-  EXPECT_EQ(lane_directions_[right_lane_index_].lane->id().id,
-            lane_direction.lane->id().id);
+  EXPECT_EQ(lane_directions_[right_lane_index_].lane->id(),
+            lane_direction.lane->id());
 }
 
 // Tests the incentive of the ego car to keep its current lane when a car is far
@@ -258,8 +258,8 @@ TEST_F(MobilPlannerTest, IncentiveWhileNotTailgating) {
   auto lane_direction = result->template GetMutableValue<LaneDirection>();
 
   // Expect the left lane to be more desirable.
-  EXPECT_EQ(lane_directions_[left_lane_index_].lane->id().id,
-            lane_direction.lane->id().id);
+  EXPECT_EQ(lane_directions_[left_lane_index_].lane->id(),
+            lane_direction.lane->id());
 }
 
 // Tests the politeness of the ego car to keep its current lane when a car is
@@ -280,8 +280,8 @@ TEST_F(MobilPlannerTest, PolitenessNoTailgator) {
   auto lane_direction = result->template GetMutableValue<LaneDirection>();
 
   // Expect the right lane to be more desirable.
-  EXPECT_EQ(lane_directions_[right_lane_index_].lane->id().id,
-            lane_direction.lane->id().id);
+  EXPECT_EQ(lane_directions_[right_lane_index_].lane->id(),
+            lane_direction.lane->id());
 }
 
 // Tests the politeness of the ego car to change lanes in response to being
@@ -302,8 +302,8 @@ TEST_F(MobilPlannerTest, PolitenessWithTailgator) {
   auto lane_direction = result->template GetMutableValue<LaneDirection>();
 
   // Expect the left lane to be more desirable.
-  EXPECT_EQ(lane_directions_[left_lane_index_].lane->id().id,
-            lane_direction.lane->id().id);
+  EXPECT_EQ(lane_directions_[left_lane_index_].lane->id(),
+            lane_direction.lane->id());
 }
 
 TEST_F(MobilPlannerTest, ThreeLanePolitenessTestPreferLeft) {
@@ -324,8 +324,8 @@ TEST_F(MobilPlannerTest, ThreeLanePolitenessTestPreferLeft) {
   auto lane_direction = result->template GetMutableValue<LaneDirection>();
 
   // Expect the leftmost lane to be more desirable.
-  EXPECT_EQ(lane_directions_[left_lane_index_].lane->id().id,
-            lane_direction.lane->id().id);
+  EXPECT_EQ(lane_directions_[left_lane_index_].lane->id(),
+            lane_direction.lane->id());
 }
 
 TEST_F(MobilPlannerTest, ThreeLaneIncentiveTestPreferRight) {
@@ -346,8 +346,8 @@ TEST_F(MobilPlannerTest, ThreeLaneIncentiveTestPreferRight) {
   auto lane_direction = result->template GetMutableValue<LaneDirection>();
 
   // Expect the rightmost lane to be more desirable.
-  EXPECT_EQ(lane_directions_[right_lane_index_].lane->id().id,
-            lane_direction.lane->id().id);
+  EXPECT_EQ(lane_directions_[right_lane_index_].lane->id(),
+            lane_direction.lane->id());
 }
 
 // Tests that MobilPlanner is failsafe to two cars side-by-side.
@@ -365,8 +365,8 @@ TEST_F(MobilPlannerTest, SideBySideCars) {
   auto lane_direction = result->template GetMutableValue<LaneDirection>();
 
   // Expect the rightmost lane (ego car's lane) to be more desirable.
-  EXPECT_EQ(lane_directions_[right_lane_index_].lane->id().id,
-            lane_direction.lane->id().id);
+  EXPECT_EQ(lane_directions_[right_lane_index_].lane->id(),
+            lane_direction.lane->id());
 }
 
 }  // namespace

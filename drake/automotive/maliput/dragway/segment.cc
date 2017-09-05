@@ -18,7 +18,7 @@ Segment::Segment(Junction* junction,
     double lane_width,
     double shoulder_width,
     double maximum_height)
-    : id_({"Dragway_Segment_ID"}),
+    : id_("Dragway_Segment_ID"),
       junction_(junction) {
   // To better understand the semantics of the variables defined in this method,
   // see the class description.
@@ -36,7 +36,7 @@ Segment::Segment(Junction* junction,
 
     auto lane = std::make_unique<Lane>(
         this,
-        api::LaneId({"Dragway_Lane_" + std::to_string(i)}),
+        api::LaneId("Dragway_Lane_" + std::to_string(i)),
         i,
         length,
         y_offset,

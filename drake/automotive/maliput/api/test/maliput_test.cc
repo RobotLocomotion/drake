@@ -12,41 +12,6 @@ namespace api {
 namespace {
 
 // Tests the streaming string operators for the following Maliput abstractions:
-//   - JunctionId
-//   - LaneId
-//   - RoadGeometryId
-//   - SegmentId
-GTEST_TEST(MaliputApiTest, TestIdToStringStream) {
-  std::stringstream buffer;
-
-  // Tests JunctionId.
-  const std::string junction_name = "foo junction id";
-  buffer << JunctionId({junction_name});
-  EXPECT_EQ(buffer.str(), "Junction(" + junction_name + ")");
-  buffer.str("");
-  buffer.clear();
-
-  // Tests LaneId.
-  const std::string lane_name = "foo lane id";
-  buffer << LaneId({lane_name});
-  EXPECT_EQ(buffer.str(), "Lane(" + lane_name + ")");
-  buffer.str("");
-  buffer.clear();
-
-  // Tests RoadGeometryId.
-  const std::string road_geometry_name = "foo road id";
-  buffer << RoadGeometryId({road_geometry_name});
-  EXPECT_EQ(buffer.str(), "RoadGeometry(" + road_geometry_name + ")");
-  buffer.str("");
-  buffer.clear();
-
-  // Tests SegmentId.
-  const std::string segment_name = "foo segment id";
-  buffer << SegmentId({segment_name});
-  EXPECT_EQ(buffer.str(), "Segment(" + segment_name + ")");
-}
-
-// Tests the streaming string operators for the following Maliput abstractions:
 //   - GeoPosition
 //   - LaneEnd::Which
 //   - LanePosition

@@ -95,9 +95,9 @@ GTEST_TEST(DirectCollocationTest, TestReconstruction) {
   double time = 0.0;
   for (int i = 0; i < kNumSampleTimes; i++) {
     EXPECT_TRUE(CompareMatrices(prog.GetSolution(prog.input(i)),
-                                input_spline.value(time)));
+                                input_spline.value(time), 1e-6));
     EXPECT_TRUE(CompareMatrices(prog.GetSolution(prog.state(i)),
-                                state_spline.value(time)));
+                                state_spline.value(time), 1e-6));
 
     EXPECT_TRUE(
         CompareMatrices(system->A() * prog.GetSolution(prog.state(i)) +
