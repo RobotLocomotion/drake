@@ -366,6 +366,11 @@ class MultibodyModeler {
     return *model_state_.multibody_tree;
   }
 
+  MultibodyTree<T>& get_mutable_multibody_tree_model() const {
+    // Finalize? or remove completely?
+    return *model_state_.multibody_tree;
+  }
+
   /// Retrieve the Body<T> associated with a Link<T>. It assumes that there is
   /// only one body associated with the given link.
   const Body<T>& get_link_body(LinkId link_id) const;

@@ -38,6 +38,9 @@ const Body<T>& MultibodyModeler<T>::get_link_body(LinkId link_id) const {
 template <typename T>
 void MultibodyModeler<T>::CalcMassMatrixViaInverseDynamics(
     const Context<T>& context, Eigen::Ref<MatrixX<T>> H) const {
+  DRAKE_DEMAND(H.rows() == get_num_velocities());
+  DRAKE_DEMAND(H.cols() == get_num_velocities());
+
   const MultibodyTree<T>& model = get_multibody_tree_model();
   PositionKinematicsCache<T> pc(model.get_topology());
   VelocityKinematicsCache<T> vc(model.get_topology());
@@ -61,8 +64,8 @@ void MultibodyModeler<T>::CalcMassMatrixViaInverseDynamics(
     // take an Eigen::Ref<VectorX<T>> instead of a pointer.
     // auto tau = H.col(j);
     vdot = VectorX<T>::Unit(nv, j);
-    model.CalcInverseDynamics(context, pc, vc, vdot,
-                              &A_WB_array, &F_BMo_W_array, &tau);
+    model.CalcInverseDynamics(context, pc, vc, vdot, {}, VectorX<T>(),
+                              &A_WB_array, &F_BMo_W_array, tau);
     H.col(j) = tau;
   }
 }
@@ -70,6 +73,8 @@ void MultibodyModeler<T>::CalcMassMatrixViaInverseDynamics(
 template <typename T>
 void MultibodyModeler<T>::CalcBiasTerm(
     const Context<T>& context, Eigen::Ref<VectorX<T>> C) const {
+  DRAKE_DEMAND(C.size() == get_num_velocities());
+
   const MultibodyTree<T>& model = get_multibody_tree_model();
   PositionKinematicsCache<T> pc(model.get_topology());
   VelocityKinematicsCache<T> vc(model.get_topology());
@@ -105,8 +110,8 @@ void MultibodyModeler<T>::CalcBiasTerm(
   VectorX<T> tau(nv);
 
   // TODO(amcastro-tri): provide specific API for when vdot = 0.
-  model.CalcInverseDynamics(context, pc, vc, vdot,
-                            &A_WB_array, &F_BMo_W_array, &tau);
+  model.CalcInverseDynamics(context, pc, vc, vdot, {}, VectorX<T>(),
+                            &A_WB_array, &F_BMo_W_array, tau);
 #if 0
   PRINT_VAR(tau.transpose());
   for (const auto& id_link_pair : model_state_.owned_links) {
