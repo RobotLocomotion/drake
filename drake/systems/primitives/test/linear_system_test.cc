@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/examples/pendulum/pendulum_plant.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 #include "drake/systems/primitives/test/affine_linear_test.h"
 
@@ -371,6 +372,43 @@ TEST_F(LinearSystemSymbolicTest, MakeLinearSystemException4) {
       LinearSystem<double>::MakeLinearSystem(extra_terms + A_ * x_ + B_ * u_,
                                              C_ * x_ + D_ * u_, x_, u_, 10.0),
       std::runtime_error);
+}
+
+TEST_F(LinearSystemTest, LinearizeSystemWithParameters) {
+  examples::pendulum::PendulumPlant<double> pendulum;
+  auto context = pendulum.CreateDefaultContext();
+  auto input = std::make_unique<examples::pendulum::PendulumInput<double>>();
+  input->set_tau(0.0);
+  context->FixInputPort(0, std::move(input));
+  examples::pendulum::PendulumState<double>* state =
+      dynamic_cast<examples::pendulum::PendulumState<double>*>(
+          context->get_mutable_continuous_state_vector());
+  state->set_theta(0.0);
+  state->set_thetadot(0.0);
+
+  std::unique_ptr<LinearSystem<double>> linearized_pendulum =
+      Linearize(pendulum, *context);
+
+  const auto params =
+      dynamic_cast<const examples::pendulum::PendulumParams<double>*>(
+          context->get_numeric_parameter(0));
+  EXPECT_TRUE(params);
+
+  // Compare against manual linearization of the pendulum dynamics.
+  using std::pow;
+  const double inertia = params->mass() * pow(params->length(), 2.0);
+  Eigen::Matrix2d A;
+  A << 0, 1.0, -params->gravity() / params->length(),
+      -params->damping() / inertia;
+  Eigen::Vector2d B(0.0, 1.0 / inertia);
+  Eigen::Matrix2d C = Eigen::Matrix2d::Identity();
+  Eigen::Vector2d D = Eigen::Vector2d::Zero();
+
+  const double tol = 1e-6;
+  EXPECT_TRUE(CompareMatrices(linearized_pendulum->A(), A, tol));
+  EXPECT_TRUE(CompareMatrices(linearized_pendulum->B(), B, tol));
+  EXPECT_TRUE(CompareMatrices(linearized_pendulum->C(), C, tol));
+  EXPECT_TRUE(CompareMatrices(linearized_pendulum->D(), D, tol));
 }
 
 }  // namespace
