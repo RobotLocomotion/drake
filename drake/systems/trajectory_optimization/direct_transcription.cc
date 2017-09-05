@@ -175,7 +175,7 @@ PiecewisePolynomialTrajectory DirectTranscription::ReconstructStateTrajectory()
 
 bool DirectTranscription::AddSymbolicDynamicConstraints(
     const System<double>* system, const Context<double>& context) {
-  const auto symbolic_system = system->ToSymbolic();
+  const auto symbolic_system = system->ToSymbolicMaybe();
   if (!symbolic_system) {
     return false;
   }
