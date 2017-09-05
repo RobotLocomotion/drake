@@ -29,12 +29,13 @@ namespace rndf {
 // set of DirectedWaypoints that will describe F1. In other words,
 // kWaypointDistancePhase sets a tolerance for waypoint aligment and thus
 // prevents the proliferation of very short segments that in turn would pose
-// a significant strain to geometrical interpolation.
+// a strain on spline interpolation attempting to ensure convexity and
+// monotonicity.
 static const double kWaypointDistancePhase = 2.0;
 
 // Let F be a function that describes a reference curve for a Lane. To find
-// the point on the reference curve whose euclidean distance to another
-// arbitrary point is minimum, F will be sampled every kLinearStep's, directly
+// the point on the reference curve whose Euclidean distance to another
+// arbitrary point is minimum, F will be sampled every kLinearStep, directly
 // affecting the accuracy of the approximation.
 static const double kLinearStep = 1e-2;
 
@@ -55,8 +56,8 @@ double HeadingIntoLane(const api::Lane* const lane,
   }
 }
 
-// Computes the euclidean distance between @p base and @p target
-// waypoints, projected along base's tangent.
+// Computes the Euclidean distance between @p base and @p target,
+// projected along base's tangent.
 double ComputeProjectedDistance(const DirectedWaypoint& base,
                                 const DirectedWaypoint& target) {
   return (target.position() - base.position())
