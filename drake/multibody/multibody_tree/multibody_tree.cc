@@ -316,7 +316,7 @@ void MultibodyTree<T>::CalcInverseDynamics(
                 tau_applied_array);
       }
       if (Fapplied_size != 0) {
-        Fapplied_Bo_W = (*F_BMo_W_array)[body_node_index];
+        Fapplied_Bo_W = Fapplied_Bo_W_array[body_node_index];
       }
 
       // Compute F_BMo_W for the body associated with this node and project it

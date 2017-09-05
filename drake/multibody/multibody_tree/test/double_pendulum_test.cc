@@ -585,24 +585,36 @@ class PendulumKinematicTests : public PendulumTests {
     F_Bo_W_array[upper_link_->get_node_index()] = F_U_W;
     F_Bo_W_array[lower_link_->get_node_index()] = F_L_W;
 
-    // ======================================================================
-    // To get generalized forces, compute inverse dynamics applying the forces
-    // computed by CalcForceElementsContribution().
-    // Notice that we do not need to allocate extra memory since both
-    // F_Bo_W_array and tau can be used as input and output arguments. However,
-    // the data given at input is lost on output. A user might choose then to
-    // have separate input/output arrays.
-    const VectorXd vdot = VectorXd::Zero(model_->get_num_velocities());
-    vector<SpatialAcceleration<double>> A_WB_array(model_->get_num_bodies());
-    model_->CalcInverseDynamics(
-        *context_, pc, vc, vdot, F_Bo_W_array, tau,
-        &A_WB_array, &F_Bo_W_array, tau);
+    // Output vector of generalized forces for each body B at their inboard
+    // frame Mo, expressed in the world W.
+    vector<SpatialForce<double>> F_BMo_W_array(model_->get_num_bodies());
 
     // ======================================================================
     // Compute expected values using the acrobot benchmark.
     const Vector2d G_expected = acrobot_benchmark_.CalcGravityVector(
         shoulder_angle, elbow_angle);
 
+    // ======================================================================
+    // Notice that we do not need to allocate extra memory since both
+    // F_Bo_W_array and tau can be used as input and output arguments. However,
+    // the data given at input is lost on output. A user might choose then to
+    // have separate input/output arrays.
+    const VectorXd vdot = VectorXd::Zero(model_->get_num_velocities());
+    vector<SpatialAcceleration<double>> A_WB_array(model_->get_num_bodies());
+
+    // Try first using different arrays for input/ouput:
+    tau.setZero();
+    model_->CalcInverseDynamics(
+        *context_, pc, vc, vdot, F_Bo_W_array, tau,
+        &A_WB_array, &F_BMo_W_array, tau);
+    EXPECT_TRUE(tau.isApprox(G_expected, kTolerance));
+
+    // Now try using the same arrays for input/output (input data F_Bo_W_array
+    // will get overwritten through the output argument).
+    tau.setZero();  // clean up previous result.
+    model_->CalcInverseDynamics(
+        *context_, pc, vc, vdot, F_Bo_W_array, tau,
+        &A_WB_array, &F_Bo_W_array, tau);
     EXPECT_TRUE(tau.isApprox(G_expected, kTolerance));
     return tau;
   }
