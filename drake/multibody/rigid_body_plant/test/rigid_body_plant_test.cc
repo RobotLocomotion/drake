@@ -68,7 +68,7 @@ GTEST_TEST(RigidBodyPlantTest, TestLoadUrdf) {
 }
 
 // Creates a rigid body tree with a floating base.
-RigidBodyTree<double>* CreateFloatingRBTree() {
+std::unique_ptr<RigidBodyTree<double>> CreateFloatingRBTree() {
   const int kNumPositions = 7;   // One quaternion + 3d position.
   const int kNumVelocities = 6;  // Angular velocity + linear velocity.
   RigidBodyTree<double>* tree = new RigidBodyTree<double>();
@@ -94,7 +94,7 @@ RigidBodyTree<double>* CreateFloatingRBTree() {
   // There are two bodies: the "world" and "free_body".
   EXPECT_EQ(tree->get_num_velocities(), kNumVelocities);
 
-  return tree;
+  return std::unique_ptr<RigidBodyTree<double>>(tree);
 }
 
 // Tests the generalized velocities to generalized coordinates time
@@ -106,7 +106,7 @@ GTEST_TEST(RigidBodyPlantTest, MapVelocityToConfigurationDerivativesAndBack) {
   const int kNumStates = kNumPositions + kNumVelocities;
 
   // Instantiates a RigidBodyPlant from a RigidBodyTree.
-  auto tree = std::unique_ptr<RigidBodyTree<double>>(CreateFloatingRBTree());
+  auto tree = CreateFloatingRBTree();
   RigidBodyPlant<double> plant(std::move(tree));
   auto context = plant.CreateDefaultContext();
 
@@ -197,7 +197,7 @@ GTEST_TEST(RigidBodyPlantTest, MapVelocityToConfigurationDerivativesAndBack) {
 GTEST_TEST(RigidBodyPlantTest, MapVelocityToConfigurationDerivativesAndBackTS) {
   // Instantiates a RigidBodyPlant from a RigidBodyTree.
   const double dt = 1e-3;
-  auto tree = std::unique_ptr<RigidBodyTree<double>>(CreateFloatingRBTree());
+  auto tree = CreateFloatingRBTree();
   RigidBodyPlant<double> plant(std::move(tree), dt);
   auto context = plant.CreateDefaultContext();
 
