@@ -1,5 +1,7 @@
 #include <memory>
 
+#include <gflags/gflags.h>
+
 #include "drake/common/find_resource.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
 #include "drake/lcm/drake_lcm.h"
@@ -17,6 +19,10 @@ namespace examples {
 namespace pendulum {
 namespace {
 
+DEFINE_double(target_realtime_rate, 1.0,
+              "Playback speed.  See documentation for "
+              "Simulator::set_target_realtime_rate() for details.");
+
 int do_main() {
   lcm::DrakeLcm lcm;
   auto tree = std::make_unique<RigidBodyTree<double>>();
@@ -31,8 +37,7 @@ int do_main() {
   source->set_name("tau");
   auto pendulum = builder.AddSystem<PendulumPlant>();
   pendulum->set_name("pendulum");
-  auto publisher =
-      builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
+  auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
   publisher->set_name("publisher");
   builder.Connect(source->get_output_port(), pendulum->get_tau_port());
   builder.Connect(pendulum->get_output_port(), publisher->get_input_port(0));
@@ -40,13 +45,21 @@ int do_main() {
 
   systems::Simulator<double> simulator(*diagram);
   systems::Context<double>& pendulum_context =
-      diagram->GetMutableSubsystemContext(
-          *pendulum, simulator.get_mutable_context());
+      diagram->GetMutableSubsystemContext(*pendulum,
+                                          simulator.get_mutable_context());
   pendulum->set_theta(&pendulum_context, 1.);
   pendulum->set_thetadot(&pendulum_context, 0.);
 
+  const double initial_energy = pendulum->CalcTotalEnergy(pendulum_context);
+
+  simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
   simulator.StepTo(10);
+
+  const double final_energy = pendulum->CalcTotalEnergy(pendulum_context);
+
+  // Adds a numerical sanity test on total energy.
+  DRAKE_DEMAND(initial_energy > 2.0 * final_energy);
   return 0;
 }
 
@@ -55,6 +68,7 @@ int do_main() {
 }  // namespace examples
 }  // namespace drake
 
-int main() {
+int main(int argc, char* argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   return drake::examples::pendulum::do_main();
 }

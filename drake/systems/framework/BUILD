@@ -21,6 +21,7 @@ drake_cc_library(
         ":single_output_vector_source",
         ":state",
         ":system",
+        ":system_constraint",
         ":system_symbolic_inspector",
         ":value",
         ":vector",
@@ -273,6 +274,7 @@ drake_cc_library(
         ":context",
         ":event_collection",
         ":system_common",
+        ":system_constraint",
         ":value",
         "//drake/common",
         "//drake/common:autodiff",
@@ -387,6 +389,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "system_constraint",
+    srcs = ["system_constraint.cc"],
+    hdrs = ["system_constraint.h"],
+    deps = [
+        "//drake/common",
+        "//drake/common:symbolic",
+        "//drake/common:type_safe_index",
+    ],
+)
+
+drake_cc_library(
     name = "system_symbolic_inspector",
     srcs = ["system_symbolic_inspector.cc"],
     hdrs = ["system_symbolic_inspector.h"],
@@ -482,6 +495,7 @@ drake_cc_googletest(
         "//drake/systems/analysis:stateless_system",
         "//drake/systems/framework/test_utilities:pack_value",
         "//drake/systems/primitives:adder",
+        "//drake/systems/primitives:constant_value_source",
         "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:gain",
         "//drake/systems/primitives:integrator",
@@ -645,6 +659,15 @@ drake_cc_googletest(
     deps = [
         ":leaf_system",
         ":system_scalar_converter",
+        "//drake/systems/framework/test_utilities:scalar_conversion",
+    ],
+)
+
+drake_cc_googletest(
+    name = "system_constraint_test",
+    deps = [
+        "//drake/common:eigen_matrix_compare",
+        "//drake/systems/primitives:linear_system",
     ],
 )
 

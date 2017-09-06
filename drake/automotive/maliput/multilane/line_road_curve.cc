@@ -22,13 +22,13 @@ Vector3<double> LineRoadCurve::ToCurveFrame(
 
   // Compute the distance from `p` to the start of the lane.
   const double s_unsaturated = lane_origin_to_p.dot(s_unit_vector);
-  const double s = math::saturate(s_unsaturated, 0., length());
+  const double s = math::saturate(s_unsaturated, 0., p_scale());
   const double r_unsaturated = lane_origin_to_p.dot(r_unit_vector);
   const double r = math::saturate(r_unsaturated, lateral_bounds.min(),
                                   lateral_bounds.max());
   // N.B. h is the geo z-coordinate referenced against the lane elevation (whose
   // `a` coefficient is normalized by lane length).
-  const double h_unsaturated = geo_coordinate.z() - elevation().a() * length();
+  const double h_unsaturated = geo_coordinate.z() - elevation().a() * p_scale();
   const double h = math::saturate(h_unsaturated, height_bounds.min(),
                                   height_bounds.max());
   return Vector3<double>(s, r, h);

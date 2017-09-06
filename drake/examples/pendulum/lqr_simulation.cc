@@ -1,8 +1,11 @@
 #include <cmath>
 #include <memory>
 
+#include <gflags/gflags.h>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/is_approx_equal_abstol.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/joints/floating_base_types.h"
@@ -21,6 +24,10 @@ namespace examples {
 namespace pendulum {
 namespace {
 
+DEFINE_double(target_realtime_rate, 1.0,
+              "Playback speed.  See documentation for "
+              "Simulator::set_target_realtime_rate() for details.");
+
 int do_main() {
   lcm::DrakeLcm lcm;
 
@@ -37,7 +44,9 @@ int do_main() {
   auto pendulum_context = pendulum->CreateDefaultContext();
   pendulum->set_theta(pendulum_context.get(), M_PI);
   pendulum->set_thetadot(pendulum_context.get(), 0);
-  pendulum_context->FixInputPort(0, Vector1d::Zero());
+  auto input = std::make_unique<PendulumInput<double>>();
+  input->set_tau(0.0);
+  pendulum_context->FixInputPort(0, std::move(input));
 
   // Set up cost function for LQR: integral of 10*theta^2 + thetadot^2 + tau^2.
   // The factor of 10 is heuristic, but roughly accounts for the unit conversion
@@ -48,8 +57,8 @@ int do_main() {
   Eigen::MatrixXd R(1, 1);
   R << 1;
 
-  auto controller = builder.AddSystem(
-      systems::controllers::LinearQuadraticRegulator(
+  auto controller =
+      builder.AddSystem(systems::controllers::LinearQuadraticRegulator(
           *pendulum, *pendulum_context, Q, R));
   controller->set_name("controller");
   builder.Connect(pendulum->get_output_port(), controller->get_input_port());
@@ -67,8 +76,18 @@ int do_main() {
   pendulum->set_theta(&sim_pendulum_context, M_PI + 0.1);
   pendulum->set_thetadot(&sim_pendulum_context, 0.2);
 
+  simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
   simulator.StepTo(10);
+
+  Eigen::Vector2d desired_state =
+      pendulum_context->get_continuous_state_vector().CopyToVector();
+  Eigen::Vector2d final_state =
+      sim_pendulum_context.get_continuous_state_vector().CopyToVector();
+
+  // Adds a numerical test to make sure we're stabilizing the fixed point.
+  DRAKE_DEMAND(is_approx_equal_abstol(final_state, desired_state, 1e-3));
+
   return 0;
 }
 
@@ -77,6 +96,7 @@ int do_main() {
 }  // namespace examples
 }  // namespace drake
 
-int main() {
+int main(int argc, char* argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   return drake::examples::pendulum::do_main();
 }
