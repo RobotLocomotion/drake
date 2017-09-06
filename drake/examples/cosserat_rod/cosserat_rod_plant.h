@@ -6,6 +6,7 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/multibody/multibody_tree/modeler/multibody_modeler.h"
+#include "drake/examples/cosserat_rod/rod_element.h"
 
 namespace drake {
 namespace examples {

@@ -5,7 +5,7 @@
 
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_autodiff_types.h"
-#include "drake/multibody/multibody_tree/rod_element.h"
+#include "drake/examples/cosserat_rod/rod_element.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 

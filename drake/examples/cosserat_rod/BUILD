@@ -12,8 +12,14 @@ load("//tools:lint.bzl", "add_lint_tests")
 
 drake_cc_library(
     name = "cosserat_rod_plant",
-    srcs = ["cosserat_rod_plant.cc"],
-    hdrs = ["cosserat_rod_plant.h"],
+    srcs = [
+        "cosserat_rod_plant.cc",
+        "rod_element.cc",
+    ],
+    hdrs = [
+        "cosserat_rod_plant.h",
+        "rod_element.h",
+    ],
     deps = [
         "//drake/multibody/multibody_tree/modeler:multibody_modeler",
         "//drake/systems/framework",

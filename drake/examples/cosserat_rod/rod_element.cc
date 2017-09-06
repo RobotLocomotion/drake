@@ -1,4 +1,4 @@
-#include "drake/multibody/multibody_tree/rod_element.h"
+#include "drake/examples/cosserat_rod/rod_element.h"
 
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/math/cross_product.h"
