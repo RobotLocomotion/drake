@@ -89,7 +89,7 @@ class SpringMassSystem : public LeafSystem<T> {
   SpringMassSystem(double spring_constant_N_per_m, double mass_kg,
                    bool system_is_forced = false);
 
-  /// Scalar-converting copy constructor.
+  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
   explicit SpringMassSystem(const SpringMassSystem<U>&);
 
