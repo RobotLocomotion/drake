@@ -53,7 +53,8 @@ class GeometrySystemTester {
   }
   static bool HasDirectFeedthrough(const GeometrySystem<double>& system,
                                    int input_port, int output_port) {
-    return system.DoHasDirectFeedthrough(nullptr, input_port, output_port);
+    return system.DoHasDirectFeedthrough(
+        input_port, output_port).value_or(true);
   }
 };
 

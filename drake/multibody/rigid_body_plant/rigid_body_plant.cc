@@ -170,8 +170,7 @@ void RigidBodyPlant<T>::set_friction_contact_parameters(
 }
 
 template <typename T>
-bool RigidBodyPlant<T>::DoHasDirectFeedthrough(const SystemSymbolicInspector*,
-                                               int, int) const {
+optional<bool> RigidBodyPlant<T>::DoHasDirectFeedthrough(int, int) const {
   return false;
 }
 
