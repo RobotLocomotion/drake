@@ -425,6 +425,46 @@ GTEST_TEST(testMobyLCP, ThrowsOnNaN) {
   EXPECT_LE(lcp.get_num_pivots(), 1);
 }
 
+// Verifies that z is zero on LCP solver failure.
+GTEST_TEST(testMobyLCP, testFailure) {
+  Eigen::MatrixXd neg_M(1, 1);
+  Eigen::VectorXd neg_q(1);
+
+  // This LCP is unsolvable: -z - 1 cannot be greater than zero when z is
+  // restricted to be non-negative.
+  neg_M(0, 0) = -1;
+  neg_q[0] = -1;
+  Eigen::VectorXd z;
+  MobyLCPSolver<double> l;
+  l.SetLoggingEnabled(verbose);
+
+  bool result = l.SolveLcpFast(neg_M, neg_q, &z);
+  EXPECT_FALSE(result);
+  ASSERT_EQ(z.size(), neg_q.size());
+  EXPECT_EQ(z[0], 0.0);
+  LinearComplementarityConstraint constraint(neg_M, neg_q);
+  EXPECT_FALSE(constraint.CheckSatisfied(z));
+
+  result = l.SolveLcpLemke(neg_M, neg_q, &z);
+  EXPECT_FALSE(result);
+  ASSERT_EQ(z.size(), neg_q.size());
+  EXPECT_EQ(z[0], 0.0);
+  EXPECT_FALSE(constraint.CheckSatisfied(z));
+
+  Eigen::SparseMatrix<double> neg_sparse_M(1, 1);
+  neg_sparse_M.setIdentity();
+  neg_sparse_M *= -1;
+  result = l.SolveLcpLemke(neg_sparse_M, neg_q, &z);
+  EXPECT_FALSE(result);
+  ASSERT_EQ(z.size(), neg_q.size());
+  EXPECT_EQ(z[0], 0.0);
+  EXPECT_FALSE(constraint.CheckSatisfied(z));
+
+  // Note: we do not test regularized solvers here, as we're specifically
+  // interested in algorithm failure and the regularized solvers are designed
+  // not to fail.
+}
+
 }  // namespace
 }  // namespace solvers
 }  // namespace drake

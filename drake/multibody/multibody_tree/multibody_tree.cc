@@ -260,7 +260,7 @@ void MultibodyTree<T>::CalcInverseDynamics(
     const Eigen::Ref<const VectorX<T>>& tau_applied_array,
     std::vector<SpatialAcceleration<T>>* A_WB_array,
     std::vector<SpatialForce<T>>* F_BMo_W_array,
-    Eigen::Ref<VectorX<T>> tau_array) const {
+    EigenPtr<VectorX<T>> tau_array) const {
   DRAKE_DEMAND(known_vdot.size() == get_num_velocities());
   const int Fapplied_size = static_cast<int>(Fapplied_Bo_W_array.size());
   DRAKE_DEMAND(Fapplied_size == get_num_bodies() || Fapplied_size == 0);
@@ -274,7 +274,7 @@ void MultibodyTree<T>::CalcInverseDynamics(
   DRAKE_DEMAND(F_BMo_W_array != nullptr);
   DRAKE_DEMAND(static_cast<int>(F_BMo_W_array->size()) == get_num_bodies());
 
-  DRAKE_DEMAND(tau_array.size() == get_num_velocities());
+  DRAKE_DEMAND(tau_array->size() == get_num_velocities());
 
   const auto& mbt_context =
       dynamic_cast<const MultibodyTreeContext<T>&>(context);
@@ -316,7 +316,7 @@ void MultibodyTree<T>::CalcInverseDynamics(
                 tau_applied_array);
       }
       if (Fapplied_size != 0) {
-        Fapplied_Bo_W = (*F_BMo_W_array)[body_node_index];
+        Fapplied_Bo_W = Fapplied_Bo_W_array[body_node_index];
       }
 
       // Compute F_BMo_W for the body associated with this node and project it
@@ -384,7 +384,7 @@ void MultibodyTree<T>::CalcMassMatrixViaInverseDynamics(
     // auto tau = H.col(j);
     vdot = VectorX<T>::Unit(nv, j);
     CalcInverseDynamics(context, pc, vc, vdot, {}, VectorX<T>(),
-                              &A_WB_array, &F_BMo_W_array, tau);
+                        &A_WB_array, &F_BMo_W_array, &tau);
     H->col(j) = tau;
   }
 }
@@ -423,7 +423,7 @@ void MultibodyTree<T>::CalcBiasTerm(
 
   // TODO(amcastro-tri): provide specific API for when vdot = 0.
   CalcInverseDynamics(context, pc, vc, vdot, Fapplied_Bo_W_array, VectorX<T>(),
-                      &A_WB_array, &F_BMo_W_array, tau);
+                      &A_WB_array, &F_BMo_W_array, &tau);
   *C = tau;
 }
 

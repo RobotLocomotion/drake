@@ -8,6 +8,8 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_optional.h"
+#include "drake/geometry/frame_id_vector.h"
+#include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_index.h"
 #include "drake/geometry/internal_frame.h"
@@ -269,6 +271,28 @@ class GeometryState {
   // unit tests.
   template <class U> friend class GeometryStateTester;
 
+  // Sets the kinematic poses for the frames indicated by the given ids. This
+  // method assumes that the `ids` have already been validated by
+  // ValidateFrameIds().
+  // @param ids   The ids of the frames whose poses are being set.
+  // @param poses The frame pose values.
+  // @throws std::logic_error  if the poses don't "match" the ids.
+  void SetFramePoses(const FrameIdVector& ids, const FramePoseVector<T>& poses);
+
+  // Confirms that the set of ids provided include _all_ of the frames
+  // registered to the set's source id and that no extra frames are included.
+  // @param ids The id set to validate.
+  // @throws std::logic_error if the set is inconsistent with known topology.
+  void ValidateFrameIds(const FrameIdVector& ids) const;
+
+  // Confirms that the pose data is consistent with the set of ids.
+  // @param ids       The id set to test against.
+  // @param poses     The poses to test.
+  // @throws  std::logic_error if the two data sets don't have matching source
+  //                           ids or matching size.
+  void ValidateFramePoses(const FrameIdVector& ids,
+                          const FramePoseVector<T>& poses) const;
+
   // Gets the source id for the given frame id. Throws std::logic_error if the
   // frame belongs to no registered source.
   SourceId get_source_id(FrameId frame_id) const;
@@ -327,6 +351,14 @@ class GeometryState {
   // required.
   // @throws std::logic_error if `geometry_id` is not in `anchored_geometries_`.
   void RemoveAnchoredGeometryUnchecked(GeometryId geometry_id);
+
+  // Recursively updates the frame and geometry _pose_ information for the tree
+  // rooted at the given frame, whose parent's pose in the world frame is given
+  // as `X_WP`.
+  void UpdatePosesRecursively(const internal::InternalFrame& frame,
+                              const Isometry3<T>& X_WP,
+                              const FrameIdVector& ids,
+                              const FramePoseVector<T>& poses);
 
   // Reports true if the given id refers to a _dynamic_ geometry. Assumes the
   // precondition that id refers to a valid geometry in the state.

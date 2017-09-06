@@ -575,7 +575,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// @param[in] tau_applied
   ///   Externally applied generalized force at this node's mobilizer. It can
   ///   have zero size, implying no generalized forces are applied. Otherwise it
-  ///   must have a size equal to the number of generalized coordinates for this
+  ///   must have a size equal to the number of generalized velocities for this
   ///   node's mobilizer, see get_num_mobilizer_velocites().
   ///   `tau_applied` **must** not be an entry into `tau_array`, which would
   ///   result in undefined results.
@@ -620,12 +620,15 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
       const SpatialForce<T>& Fapplied_Bo_W,
       const Eigen::Ref<const VectorX<T>>& tau_applied,
       std::vector<SpatialForce<T>>* F_BMo_W_array_ptr,
-      Eigen::Ref<VectorX<T>> tau_array) const {
+      EigenPtr<VectorX<T>> tau_array) const {
     DRAKE_DEMAND(F_BMo_W_array_ptr != nullptr);
     std::vector<SpatialForce<T>>& F_BMo_W_array = *F_BMo_W_array_ptr;
     DRAKE_DEMAND(
         tau_applied.size() == get_num_mobilizer_velocites() ||
         tau_applied.size() == 0);
+    DRAKE_DEMAND(tau_array != nullptr);
+    DRAKE_DEMAND(tau_array->size() ==
+        this->get_parent_tree().get_num_velocities());
 
     // As a guideline for developers, a summary of the computations performed in
     // this method is provided:
@@ -758,7 +761,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     const SpatialForce<T> F_BMo_F = R_WF * F_BMo_W;
 
     // Generalized velocities and forces use the same indexing.
-    auto tau = get_mutable_forces_from_array(tau_array);
+    auto tau = get_mutable_generalized_forces_from_array(tau_array);
 
     // Demand that tau_applied is not an entry of tau. It would otherwise get
     // overwritten.
@@ -982,22 +985,25 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
 
   // Mutable version of get_velocities_from_array().
   Eigen::VectorBlock<Eigen::Ref<VectorX<T>>> get_mutable_velocities_from_array(
-      Eigen::Ref<VectorX<T>> v) const {
-    return v.segment(topology_.mobilizer_velocities_start_in_v,
+      EigenPtr<VectorX<T>> v) const {
+    DRAKE_ASSERT(v != nullptr);
+    return v->segment(topology_.mobilizer_velocities_start_in_v,
                      topology_.num_mobilizer_velocities);
   }
 
   // Helper to get an Eigen expression of the vector of generalized forces
   // from a vector of generalized forces for the entire parent multibody
   // tree.
-  Eigen::VectorBlock<const VectorX<T>> get_forces_from_array(
+  Eigen::VectorBlock<const VectorX<T>> get_generalized_forces_from_array(
       const VectorX<T>& tau) const {
     return get_velocities_from_array(tau);
   }
 
-  // Mutable version of get_forces_from_array()
-  Eigen::VectorBlock<Eigen::Ref<VectorX<T>>> get_mutable_forces_from_array(
-      Eigen::Ref<VectorX<T>> tau) const {
+  // Mutable version of get_generalized_forces_from_array()
+  Eigen::VectorBlock<Eigen::Ref<VectorX<T>>>
+  get_mutable_generalized_forces_from_array(
+      EigenPtr<VectorX<T>> tau) const {
+    DRAKE_ASSERT(tau != nullptr);
     return get_mutable_velocities_from_array(tau);
   }
 

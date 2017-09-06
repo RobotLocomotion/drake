@@ -669,10 +669,15 @@ class MultibodyTree {
   /// set of generalized forces `tau` that would need to be applied at each
   /// Mobilizer in order to attain the specified generalized accelerations.
   /// Mathematically, this method computes: <pre>
-  ///   tau = M(q) * vdot + C(q, v) * v
+  ///   tau = M(q)v̇ + C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W
   /// </pre>
-  /// where `M(q)` is the %MultibodyTree mass matrix and `C(q, v) * v` is the
-  /// bias term containing Coriolis and gyroscopic effects.
+  /// where `M(q)` is the %MultibodyTree mass matrix, `C(q, v)v` is the bias
+  /// term containing Coriolis and gyroscopic effects and `tau_app` consists
+  /// of a vector applied generalized forces. The last term is a summation over
+  /// all bodies in the model where `Fapp_Bo_W` is an applied spatial force on
+  /// body B at `Bo` which gets projected into the space of generalized forces
+  /// with the geometric Jacobian `J_WB(q)` which maps generalized velocities
+  /// into body B spatial velocity as `V_WB = J_WB(q)v`.
   /// This method does not compute explicit expressions for the mass matrix nor
   /// for the bias term, which would be of at least `O(n²)` complexity, but it
   /// implements an `O(n)` Newton-Euler recursive algorithm, where n is the
@@ -693,18 +698,17 @@ class MultibodyTree {
   ///   `context`.
   /// @param[in] known_vdot
   ///   A vector with the known generalized accelerations `vdot` for the full
-  ///   %MultibodyTree model. Use Mobilizer::get_velocities_from_array() to
+  ///   %MultibodyTree model. Use Mobilizer::get_accelerations_from_array() to
   ///   access entries into this array for a particular Mobilizer. You can use
   ///   the mutable version of this method to write into this array.
   /// @param[in] Fapplied_Bo_W_array
-  ///   A pointer to a vector containing the spatial force `Fapplied_Bo_W`
-  ///   applied on each body at the body's frame origin `Bo` and expressed in
-  ///   the world frame W. `Fapplied_Bo_W_array` can have zero size which means
-  ///   there are no applied forces. To apply non-zero forces,
-  ///   `Fapplied_Bo_W_array` must be of size equal to the number of bodies in
-  ///   `this` %MultibodyTree model. This array must be ordered by
-  ///   BodyNodeIndex, which for a given body can be retrieved with
-  ///   Body::get_node_index().
+  ///   A vector containing the spatial force `Fapplied_Bo_W` applied on each
+  ///   body at the body's frame origin `Bo` and expressed in the world frame W.
+  ///   `Fapplied_Bo_W_array` can have zero size which means there are no
+  ///   applied forces. To apply non-zero forces, `Fapplied_Bo_W_array` must be
+  ///   of size equal to the number of bodies in `this` %MultibodyTree model.
+  ///   This array must be ordered by BodyNodeIndex, which for a given body can
+  ///   be retrieved with Body::get_node_index().
   ///   This method will abort if provided with an array that does not have a
   ///   size of either `get_num_bodies()` or zero.
   /// @param[in] tau_applied_array
@@ -738,16 +742,12 @@ class MultibodyTree {
   ///   On output, entries will be ordered by BodyNodeIndex.
   ///   To access a mobilizer's reaction force on given body B in this array,
   ///   use the index returned by Body::get_node_index().
-  ///   Notice that in order to reduce the memory footprint this array can be
-  ///   the same in-memory object as `Fapplied_Bo_W_array`. However, in this
-  ///   case `Fapplied_Bo_W_array` will be overwriten and any applied force
-  ///   information would be lost. Make a copy if data must be preserved.
   /// @param[out] tau_array
   ///   On output this array will contain the generalized forces that must be
   ///   applied in order to achieve the desired generalized accelerations given
-  ///   by the input argument `known_vdot`. It must be of size
-  ///   MultibodyTree::get_num_velocities(). Generalized forces for each
-  ///   Mobilizer can be accessed with
+  ///   by the input argument `known_vdot`. It must not be the nullptr and it
+  ///   must be of size MultibodyTree::get_num_velocities(). Generalized forces
+  ///   for each Mobilizer can be accessed with
   ///   Mobilizer::get_generalized_forces_from_array().
   ///
   /// @warning There is no mechanism to assert that either `A_WB_array` nor
@@ -758,12 +758,12 @@ class MultibodyTree {
   /// temporaries and therefore no additional dynamic memory allocation is
   /// performed.
   ///
-  /// @note `F_BMo_W_array` (`tau_array`) and `Fapplied_Bo_W_array`
+  /// @warning `F_BMo_W_array` (`tau_array`) and `Fapplied_Bo_W_array`
   /// (`tau_applied_array`) can actually be the same
   /// array in order to reduce memory footprint and/or dynamic memory
   /// allocations. However the information in `Fapplied_Bo_W_array`
   /// (`tau_applied_array`) would be overwritten through `F_BMo_W_array`
-  /// (`tau_array`).
+  /// (`tau_array`). Make a copy if data must be preserved.
   ///
   /// @pre The position kinematics `pc` must have been previously updated with a
   /// call to CalcPositionKinematicsCache().
@@ -780,7 +780,7 @@ class MultibodyTree {
       const Eigen::Ref<const VectorX<T>>& tau_applied_array,
       std::vector<SpatialAcceleration<T>>* A_WB_array,
       std::vector<SpatialForce<T>>* F_BMo_W_array,
-      Eigen::Ref<VectorX<T>> tau_array) const;
+      EigenPtr<VectorX<T>> tau_array) const;
 
   void CalcMassMatrixViaInverseDynamics(
       const systems::Context<T>& context, EigenPtr<MatrixX<T>> H) const;

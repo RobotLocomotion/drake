@@ -96,8 +96,8 @@ void ZeroOrderHold<T>::DoCalcUnrestrictedUpdate(
 }
 
 template <typename T>
-bool ZeroOrderHold<T>::DoHasDirectFeedthrough(
-    const SystemSymbolicInspector*, int input_port, int output_port) const {
+optional<bool> ZeroOrderHold<T>::DoHasDirectFeedthrough(
+    int input_port, int output_port) const {
   DRAKE_DEMAND(input_port == 0);
   DRAKE_DEMAND(output_port == 0);
   // By definition, a zero-order hold will not have direct feedthrough, as the

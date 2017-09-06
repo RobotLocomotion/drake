@@ -36,7 +36,7 @@ TEST_F(MultilaneArcRoadCurveTest, ConstructorTest) {
 TEST_F(MultilaneArcRoadCurveTest, ArcGeometryTest) {
   const ArcRoadCurve dut(kCenter, kRadius, kTheta0, kDTheta, zp, zp);
   // Checks the length.
-  EXPECT_NEAR(dut.length(), kDTheta * kRadius, kVeryExact);
+  EXPECT_NEAR(dut.p_scale(), kDTheta * kRadius, kVeryExact);
   EXPECT_NEAR(dut.trajectory_length(), kDTheta * kRadius, kVeryExact);
   // Checks the evaluation of xy at different values over the reference curve.
   EXPECT_TRUE(

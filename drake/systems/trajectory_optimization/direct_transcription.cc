@@ -175,7 +175,7 @@ PiecewisePolynomialTrajectory DirectTranscription::ReconstructStateTrajectory()
 
 bool DirectTranscription::AddSymbolicDynamicConstraints(
     const System<double>* system, const Context<double>& context) {
-  const auto symbolic_system = system->ToSymbolic();
+  const auto symbolic_system = system->ToSymbolicMaybe();
   if (!symbolic_system) {
     return false;
   }
@@ -220,6 +220,7 @@ void DirectTranscription::AddAutodiffDynamicConstraints(
 
   // Set derivatives of all parameters in the context to zero (but with the
   // correct size).
+  // TODO(russt): This hack should be removed upon resolution of #6944.
   int num_gradients = 2 * num_states() + num_inputs();
   for (int i = 0; i < context_->get_parameters().num_numeric_parameters();
        i++) {

@@ -62,10 +62,10 @@ class GeometryInstance;
  pose port will be interpreted. Use get_source_frame_id_port() to acquire the
  port for a given source.
 
- __pose port__: An abstract-valued port containing an instance of FramePoseSet.
- There should be one pose value for each id in the the identifier port value.
- The iᵗʰ pose belongs to the iᵗʰ id. Use get_source_pose_port() to acquire the
- port for a given source.
+ __pose port__: An abstract-valued port containing an instance of
+ FramePoseVector. There should be one pose value for each id in the the
+ identifier port value. The iᵗʰ pose belongs to the iᵗʰ id. Use
+ get_source_pose_port() to acquire the port for a given source.
 
  For source systems, there are some implicit assumptions regarding these input
  ports. Generally, we assume that the source system already has some logic for

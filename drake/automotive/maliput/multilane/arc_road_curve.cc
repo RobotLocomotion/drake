@@ -99,10 +99,9 @@ Vector3<double> ArcRoadCurve::ToCurveFrame(
                                   lateral_bounds.max());
 
   // Calculate the (uniform) road elevation.
-  const double p_scale = length();
   // N.B. h is the geo z-coordinate referenced against the lane elevation (whose
   // `a` coefficient is normalized by lane length).
-  const double h_unsaturated = geo_coordinate.z() - elevation().a() * p_scale;
+  const double h_unsaturated = geo_coordinate.z() - elevation().a() * p_scale();
   const double h = math::saturate(h_unsaturated, height_bounds.min(),
                                   height_bounds.max());
   return Vector3<double>(s, r, h);
