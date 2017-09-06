@@ -786,7 +786,9 @@ class MultibodyTree {
       const systems::Context<T>& context, EigenPtr<MatrixX<T>> H) const;
 
   void CalcBiasTerm(
-      const systems::Context<T>& context, EigenPtr<VectorX<T>> C) const;
+      const systems::Context<T>& context,
+      const std::vector<SpatialForce<T>>& Fapplied_Bo_W_array,
+      EigenPtr<VectorX<T>> C) const;
 
   /// Computes the combined force contribution of ForceElement objects in the
   /// model. A ForceElement can apply forcing as a spatial force per body or as

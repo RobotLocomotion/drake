@@ -73,6 +73,13 @@ int do_main(int argc, char* argv[]) {
   builder.Connect(rod_plant->get_energy_output_port(),
                   energy_logger->get_input_port(0));
 
+  auto state_logger =
+      builder.AddSystem<systems::SignalLogger<double>>(
+          rod_plant->get_num_states());
+  state_logger->set_name("State Logger");
+  builder.Connect(rod_plant->get_state_output_port(),
+                  state_logger->get_input_port(0));
+
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);
@@ -92,24 +99,54 @@ int do_main(int argc, char* argv[]) {
   simulator.StepTo(T1);
 
   // Write to file logged data.
-  std::ofstream file("energy.dat");
-  //energy_logger->sample_times(),
-      //energy_logger->data()
-  MatrixX<double> time_data(energy_logger->data().cols(),
-                            energy_logger->data().rows() + 1);
-  const int nsteps = energy_logger->sample_times().size();
-  time_data.block(0, 0, nsteps, 1) = energy_logger->sample_times();
-  time_data.block(0, 1, nsteps, 2) = energy_logger->data().transpose();
+  {
+    std::ofstream file("energy.dat");
+    //energy_logger->sample_times(),
+    //energy_logger->data()
+    MatrixX<double> time_data(energy_logger->data().cols(),
+                              energy_logger->data().rows() + 1);
+    const int nsteps = energy_logger->sample_times().size();
+    time_data.block(0, 0, nsteps, 1) = energy_logger->sample_times();
+    time_data.block(0, 1, nsteps, 2) = energy_logger->data().transpose();
 
-  PRINT_VAR(energy_logger->sample_times().size());
-  PRINT_VAR(energy_logger->sample_times().rows());
-  PRINT_VAR(energy_logger->sample_times().cols());
-  PRINT_VAR(energy_logger->data().rows());
-  PRINT_VAR(energy_logger->data().cols());
-  PRINT_VAR(time_data.rows());
-  PRINT_VAR(time_data.cols());
-  file << time_data;
-  file.close();
+    PRINT_VAR(energy_logger->sample_times().size());
+    PRINT_VAR(energy_logger->sample_times().rows());
+    PRINT_VAR(energy_logger->sample_times().cols());
+    PRINT_VAR(energy_logger->data().rows());
+    PRINT_VAR(energy_logger->data().cols());
+    PRINT_VAR(time_data.rows());
+    PRINT_VAR(time_data.cols());
+    file << time_data;
+    file.close();
+  }
+
+  // Write to file logged data.
+  {
+    std::ofstream file("state.dat");
+    //state_logger->sample_times(),
+    //state_logger->data()
+
+    PRINT_VAR(state_logger->sample_times().size());
+    PRINT_VAR(state_logger->sample_times().rows());
+    PRINT_VAR(state_logger->sample_times().cols());
+    PRINT_VAR(state_logger->data().rows());
+    PRINT_VAR(state_logger->data().cols());
+
+    MatrixX<double> time_data(state_logger->data().cols(),
+                              state_logger->data().rows() + 1);
+
+    PRINT_VAR(time_data.rows());
+    PRINT_VAR(time_data.cols());
+
+    const int nsteps = state_logger->sample_times().size();
+    const int num_states = rod_plant->get_num_states();
+    time_data.block(0, 0, nsteps, 1) = state_logger->sample_times();
+    time_data.block(0, 1, nsteps, num_states) =
+        state_logger->data().transpose();
+    file << time_data;
+    file.close();
+  }
+
 
   return 0;
 }

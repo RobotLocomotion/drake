@@ -20,6 +20,7 @@ namespace cosserat_rod {
 using Eigen::Isometry3d;
 using Eigen::Translation3d;
 using Eigen::Vector3d;
+using multibody::SpatialForce;
 
 #include <iostream>
 #define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
@@ -51,9 +52,10 @@ CosseratRodPlant<T>::CosseratRodPlant(
   shear_modulus_ = [shear_modulus](const T& s) -> T { return shear_modulus; };
 
   BuildMultibodyModel();
-  DRAKE_DEMAND(model_.get_num_positions() == 3 * num_links);
-  DRAKE_DEMAND(model_.get_num_velocities() == 3 * num_links);
-  DRAKE_DEMAND(model_.get_num_states() == 6 * num_links);
+  // TODO: updated this to the 3D case.
+  DRAKE_DEMAND(model_.get_num_positions() == num_links);
+  DRAKE_DEMAND(model_.get_num_velocities() == num_links);
+  DRAKE_DEMAND(model_.get_num_states() == 2 * num_links);
 
   //this->DeclareInputPort(systems::kVectorValued, 1);
   state_output_port_index_ = this->DeclareVectorOutputPort(
@@ -161,16 +163,17 @@ void CosseratRodPlant<T>::BuildMultibodyModel() {
   double element_length = length_ / num_elements_;
 
   // First element is attached to the world.
-  const RigidBody<T>* parent_element =
-      &AddElement(0, world, element_length / 2.0);
+  first_element_ = &AddElement(0, world, element_length / 2.0);
+
 
   // Add the rest.
+  const RigidBody<T>* parent_element = first_element_;
   for (int element_index = 1; element_index < num_elements_; ++element_index) {
     const T s = element_index * element_length + element_length / 2.0;
     parent_element = &AddElement(element_index, *parent_element, s);
   }
   DRAKE_ASSERT(static_cast<int>(mobilizers_.size()) == num_elements_);
-
+  last_element_ = parent_element;
   model_.Finalize();
 }
 
@@ -214,11 +217,18 @@ void CosseratRodPlant<T>::DoCalcTimeDerivatives(
 
   const int nv = model_.get_num_velocities();
 
+  // Apply a constant moment at the end link.
+  const T M0 = 50.0;  // Torque in Nm
+  SpatialForce<T> M_W(Vector3<T>(-M0, 0.0, 0.0), Vector3<T>::Zero());
+  std::vector<SpatialForce<T>> Fapplied_Bo_W_array(model_.get_num_bodies());
+  for (auto& F : Fapplied_Bo_W_array) F.SetZero();
+  Fapplied_Bo_W_array[last_element_->get_node_index()] = M_W;
+
   MatrixX<T> M(nv, nv);
   model_.CalcMassMatrixViaInverseDynamics(context, &M);
 
   VectorX<T> C(nv);
-  model_.CalcBiasTerm(context, &C);
+  model_.CalcBiasTerm(context, Fapplied_Bo_W_array, &C);
 
   auto v = x.bottomRows(nv);
 

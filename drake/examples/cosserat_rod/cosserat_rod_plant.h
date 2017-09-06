@@ -33,6 +33,8 @@ class CosseratRodPlant : public systems::LeafSystem<T> {
   template <typename U>
   explicit CosseratRodPlant(const CosseratRodPlant<U>&);
 
+  int get_num_states() const { return model_.get_num_states(); }
+
   double mass() const { return mass_; }
 
   const systems::OutputPort<T>& get_energy_output_port() const {
@@ -100,6 +102,8 @@ class CosseratRodPlant : public systems::LeafSystem<T> {
 
   multibody::MultibodyTree<T> model_;
   std::vector<const multibody::RevoluteMobilizer<T>*> mobilizers_;
+  const multibody::RigidBody<T>* first_element_{nullptr};
+  const multibody::RigidBody<T>* last_element_{nullptr};
 };
 
 }  // namespace cosserat_rod

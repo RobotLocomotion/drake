@@ -391,7 +391,9 @@ void MultibodyTree<T>::CalcMassMatrixViaInverseDynamics(
 
 template <typename T>
 void MultibodyTree<T>::CalcBiasTerm(
-    const systems::Context<T>& context, EigenPtr<VectorX<T>> C) const {
+    const systems::Context<T>& context,
+    const std::vector<SpatialForce<T>>& Fapplied_Bo_W_array,
+    EigenPtr<VectorX<T>> C) const {
   DRAKE_DEMAND(C->size() == get_num_velocities());
 
   PositionKinematicsCache<T> pc(get_topology());
@@ -420,7 +422,7 @@ void MultibodyTree<T>::CalcBiasTerm(
   VectorX<T> tau(nv);
 
   // TODO(amcastro-tri): provide specific API for when vdot = 0.
-  CalcInverseDynamics(context, pc, vc, vdot, {}, VectorX<T>(),
+  CalcInverseDynamics(context, pc, vc, vdot, Fapplied_Bo_W_array, VectorX<T>(),
                       &A_WB_array, &F_BMo_W_array, tau);
   *C = tau;
 }
