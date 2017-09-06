@@ -694,10 +694,6 @@ class MultibodyTree {
   ///   On output, entries will be ordered by BodyNodeIndex.
   ///   To access a mobilizer's reaction force on given body B in this array,
   ///   use the index returned by Body::get_node_index().
-  ///   Notice that in order to reduce the memory footprint this array can be
-  ///   the same in-memory object as `Fapplied_Bo_W_array`. However, in this
-  ///   case `Fapplied_Bo_W_array` will be overwriten and any applied force
-  ///   information would be lost. Make a copy if data must be preserved.
   /// @param[out] tau_array
   ///   On output this array will contain the generalized forces that must be
   ///   applied in order to achieve the desired generalized accelerations given
@@ -714,12 +710,12 @@ class MultibodyTree {
   /// temporaries and therefore no additional dynamic memory allocation is
   /// performed.
   ///
-  /// @note `F_BMo_W_array` (`tau_array`) and `Fapplied_Bo_W_array`
+  /// @warning `F_BMo_W_array` (`tau_array`) and `Fapplied_Bo_W_array`
   /// (`tau_applied_array`) can actually be the same
   /// array in order to reduce memory footprint and/or dynamic memory
   /// allocations. However the information in `Fapplied_Bo_W_array`
   /// (`tau_applied_array`) would be overwritten through `F_BMo_W_array`
-  /// (`tau_array`).
+  /// (`tau_array`). Make a copy if data must be preserved.
   ///
   /// @pre The position kinematics `pc` must have been previously updated with a
   /// call to CalcPositionKinematicsCache().

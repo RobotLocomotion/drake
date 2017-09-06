@@ -422,6 +422,7 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// Mutable version of get_velocities_from_array().
   Eigen::VectorBlock<Eigen::Ref<VectorX<T>>> get_mutable_velocities_from_array(
       EigenPtr<VectorX<T>> v_array) const {
+    DRAKE_DEMAND(v_array != nullptr);
     DRAKE_DEMAND(
         v_array->size() == this->get_parent_tree().get_num_velocities());
     return v_array->segment(topology_.velocities_start_in_v,

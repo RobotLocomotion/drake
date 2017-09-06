@@ -274,7 +274,7 @@ void MultibodyTree<T>::CalcInverseDynamics(
   DRAKE_DEMAND(F_BMo_W_array != nullptr);
   DRAKE_DEMAND(static_cast<int>(F_BMo_W_array->size()) == get_num_bodies());
 
-  DRAKE_DEMAND(tau_array);  // Demand it is not a nullptr.
+  DRAKE_DEMAND(tau_array != nullptr);
   DRAKE_DEMAND(tau_array->size() == get_num_velocities());
 
   const auto& mbt_context =

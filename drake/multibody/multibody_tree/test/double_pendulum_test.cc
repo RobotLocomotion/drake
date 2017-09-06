@@ -606,7 +606,7 @@ class PendulumKinematicTests : public PendulumTests {
 
     // Try first using different arrays for input/ouput:
     // Initialize output to garbage, it should not affect the results.
-    tau.setOnes() * std::numeric_limits<double>::quiet_NaN();
+    tau.setConstant(std::numeric_limits<double>::quiet_NaN());
     tau_applied.setZero();
     model_->CalcInverseDynamics(
         *context_, pc, vc, vdot, F_Bo_W_array, tau_applied,

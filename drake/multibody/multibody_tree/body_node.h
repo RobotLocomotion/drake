@@ -626,7 +626,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     DRAKE_DEMAND(
         tau_applied.size() == get_num_mobilizer_velocites() ||
         tau_applied.size() == 0);
-    DRAKE_DEMAND(tau_array);  // Demand it is not a nullptr.
+    DRAKE_DEMAND(tau_array != nullptr);
     DRAKE_DEMAND(tau_array->size() ==
         this->get_parent_tree().get_num_velocities());
 
@@ -986,6 +986,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   // Mutable version of get_velocities_from_array().
   Eigen::VectorBlock<Eigen::Ref<VectorX<T>>> get_mutable_velocities_from_array(
       EigenPtr<VectorX<T>> v) const {
+    DRAKE_ASSERT(v != nullptr);
     return v->segment(topology_.mobilizer_velocities_start_in_v,
                      topology_.num_mobilizer_velocities);
   }
@@ -1002,6 +1003,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   Eigen::VectorBlock<Eigen::Ref<VectorX<T>>>
   get_mutable_generalized_forces_from_array(
       EigenPtr<VectorX<T>> tau) const {
+    DRAKE_ASSERT(tau != nullptr);
     return get_mutable_velocities_from_array(tau);
   }
 
