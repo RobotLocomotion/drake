@@ -671,4 +671,11 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "system_scalar_conversion_doxygen_test",
+    deps = [
+        "//drake/examples/pendulum:pendulum_plant",
+    ],
+)
+
 add_lint_tests()
