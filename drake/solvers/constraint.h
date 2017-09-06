@@ -84,13 +84,13 @@ class Constraint : public EvaluatorBase {
    * @param tol A tolerance for bound checking.
    */
   bool CheckSatisfied(const Eigen::Ref<const Eigen::VectorXd>& x,
-                      const double tol = 1E-6) const {
+                      double tol = 1E-6) const {
     DRAKE_ASSERT(x.rows() == num_vars() || num_vars() == Eigen::Dynamic);
     return DoCheckSatisfied(x, tol);
   }
 
   bool CheckSatisfied(const Eigen::Ref<const AutoDiffVecXd>& x,
-                      const double tol = 1E-6) const {
+                      double tol = 1E-6) const {
     DRAKE_ASSERT(x.rows() == num_vars() || num_vars() == Eigen::Dynamic);
     return DoCheckSatisfied(x, tol);
   }

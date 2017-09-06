@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <string>
+#include <utility>
 
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/drake_assert.h"
@@ -51,18 +52,22 @@ class SystemConstraint {
 
   /// This is the signature of a stateless function that evaluates the value of
   /// the constraint function f:
-  ///   value = f(context)
-  /// where value has the same number of elements as lower_bound and
-  /// upper_bound.
+  ///   value = f(context),
+  /// where value has the dimension specified in the constructor.
   // TODO(russt): replace the argument VectorX<T>* with an Eigen::Ref* using
   // whatever magic jwnimmer and soonho figured out a few weeks back.
   using CalcCallback =
       std::function<void(const Context<T>& context, VectorX<T>* value)>;
 
   /// Constructs the SystemConstraint.
+  ///
+  /// @param count the number of constraints (size of the value vector).
+  /// @param is_equality_constraint true implies that the constraint is of the
+  /// form f(x)=0, false implies an inequality constraint of the form f(x)≥0.
+  /// @param description a human-readable description useful for debugging.
   SystemConstraint(CalcCallback calc_function, int count,
                    bool is_equality_constraint, const std::string& description)
-      : calc_function_(calc_function),
+      : calc_function_(std::move(calc_function)),
         count_(count),
         is_equality_constraint_(is_equality_constraint),
         description_(description) {
@@ -85,7 +90,7 @@ class SystemConstraint {
   // gen scripts call this IsValid, but Constraint calls it CheckSatisfied.
   template <typename T1 = T>
   typename std::enable_if<is_numeric<T1>::value, bool>::type CheckSatisfied(
-      const Context<T1>& context, const double tol = 1E-6) const {
+      const Context<T1>& context, double tol = 1E-6) const {
     DRAKE_DEMAND(tol >= 0.0);
     VectorX<T> value(count_);
     Calc(context, &value);
