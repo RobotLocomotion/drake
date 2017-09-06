@@ -22,6 +22,7 @@
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/subvector.h"
 #include "drake/systems/framework/system.h"
+#include "drake/systems/framework/system_constraint.h"
 
 namespace drake {
 namespace systems {
@@ -1343,6 +1344,22 @@ class Diagram : public System<T>,
     for (int i = 0; i < num_subsystems(); ++i) {
       system_index_map_[registered_systems_[i].get()] = i;
       registered_systems_[i]->set_parent(this);
+    }
+
+    // Generate constraints for the diagram from the constraints on the
+    // subsystems.
+    for (int i = 0; i < num_subsystems(); ++i) {
+      const auto sys = registered_systems_[i].get();
+      for (SystemConstraintIndex j(0); j < sys->get_num_constraints(); ++j) {
+        const auto c = &(sys->get_constraint(j));
+        typename SystemConstraint<T>::CalcCallback diagram_calc =
+            [this, sys, c](const Context<T>& context, VectorX<T>* value) {
+              c->Calc(this->GetSubsystemContext(*sys, context), value);
+            };
+        this->AddConstraint(std::make_unique<SystemConstraint<T>>(
+            diagram_calc, c->lower_bound(), c->upper_bound(),
+            sys->get_name() + ":" + c->description()));
+      }
     }
 
     // Every system must appear exactly once.

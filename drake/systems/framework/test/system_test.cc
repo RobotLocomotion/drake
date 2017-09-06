@@ -36,6 +36,8 @@ class TestSystem : public System<double> {
   }
   ~TestSystem() override {}
 
+  using System::AddConstraint;  // allow access to protected method.
+
   std::unique_ptr<ContinuousState<double>> AllocateTimeDerivatives()
       const override {
     return nullptr;
@@ -313,6 +315,27 @@ TEST_F(SystemTest, PortDescriptorsAreStable) {
   // Check for valid content.
   EXPECT_EQ(kAbstractValued, first_input.get_data_type());
   EXPECT_EQ(kAbstractValued, first_output.get_data_type());
+}
+
+// Tests the constraint list logic.
+TEST_F(SystemTest, SystemConstraintTest) {
+  EXPECT_EQ(system_.get_num_constraints(), 0);
+  EXPECT_THROW(system_.get_constraint(SystemConstraintIndex(0)),
+               std::out_of_range);
+
+  // Note: This method won't even get evaluated... we're only testing the
+  // management of constraints here.
+  SystemConstraint<double>::CalcCallback calc = [](
+      const Context<double>& context, Eigen::VectorXd* value) {
+    *value = Vector1d(context.get_continuous_state_vector().GetAtIndex(1));
+  };
+  SystemConstraintIndex test_constraint =
+      system_.AddConstraint(std::make_unique<SystemConstraint<double>>(
+          calc, Vector1d(0.0), Vector1d(1.0), "test"));
+  EXPECT_EQ(test_constraint, 0);
+
+  EXPECT_NO_THROW(system_.get_constraint(test_constraint));
+  EXPECT_EQ(system_.get_constraint(test_constraint).description(), "test");
 }
 
 // Tests GetMemoryObjectName.
