@@ -64,10 +64,6 @@ drake_add_external(googletest PUBLIC CMAKE
     -DBUILD_SHARED_LIBS=ON
     -DCMAKE_INSTALL_NAME_DIR=${CMAKE_INSTALL_PREFIX}/lib)
 
-# google_styleguide
-drake_add_external(google_styleguide PUBLIC PYTHON
-  BUILD_COMMAND :)
-
 # ipopt
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   # Work around horrific clang* = clang, */cl* = msvc bug in BuildTools/coin.m4
@@ -183,7 +179,6 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON VTK
     -DWITH_BULLET:BOOL=${WITH_BULLET}
     -DWITH_EIGEN3:BOOL=${WITH_EIGEN}  # TODO(jamiesnape): Fix naming inconsistency
     -DWITH_GFLAGS:BOOL=${WITH_GFLAGS}
-    -DWITH_GOOGLE_STYLEGUIDE:BOOL=${WITH_GOOGLE_STYLEGUIDE}
     -DWITH_GTEST:BOOL=${WITH_GOOGLETEST}  # TODO(jamiesnape): Fix naming inconsistency
     -DWITH_IPOPT:BOOL=${WITH_IPOPT}
     -DWITH_LCM:BOOL=${WITH_LCM}
@@ -201,7 +196,6 @@ drake_add_external(drake LOCAL PUBLIC CMAKE ALWAYS MATLAB PYTHON VTK
     eigen
     fmt
     gflags
-    google_styleguide
     googletest
     ipopt
     lcm

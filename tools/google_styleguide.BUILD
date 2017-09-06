@@ -26,3 +26,5 @@ py_test(
         ":cpplint_py",
     ],
 )
+
+exports_files(["cpplint/cpplint_test_header.h"])

@@ -20,7 +20,8 @@ def _python_lint(name, files, ignore):
     )
 
 #------------------------------------------------------------------------------
-def python_lint(existing_rules = None, ignore = None, exclude = None):
+def python_lint(existing_rules = None, ignore = None, exclude = None,
+                extra_srcs = None):
     """
     Runs the pycodestyle PEP 8 code style checker on all Python source files
     declared in rules in a BUILD file.
@@ -32,6 +33,7 @@ def python_lint(existing_rules = None, ignore = None, exclude = None):
         ignore: List of errors (as integers, without the 'E') to ignore
             (default = []).
         exclude: List of labels to exclude from linting, e.g., [:foo.py].
+        extra_srcs: Source files that are not discoverable via rules.
 
     Example:
         BUILD:
@@ -72,3 +74,9 @@ def python_lint(existing_rules = None, ignore = None, exclude = None):
                 files = files,
                 ignore = ignore,
             )
+    if extra_srcs:
+        _python_lint(
+            name = "extra_srcs_pycodestyle",
+            files = extra_srcs,
+            ignore = ignore,
+        )

@@ -50,6 +50,7 @@ class DirectCollocationConstraint : public solvers::Constraint {
 
     // Set derivatives of all parameters in the context to zero (but with the
     // correct size).
+    // TODO(russt): This hack should be removed upon resolution of #6944.
     int num_gradients = 1 + 2 * num_states_ + 2 * num_inputs_;
     for (int i = 0; i < context_->get_parameters().num_numeric_parameters();
          i++) {

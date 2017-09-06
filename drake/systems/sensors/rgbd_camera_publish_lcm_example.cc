@@ -1,3 +1,4 @@
+#include <memory>
 #include <string>
 
 #include <gflags/gflags.h>
@@ -59,8 +60,7 @@ DEFINE_validator(sdf_dir, &ValidateDir);
 DEFINE_validator(sdf_fixed, &ValidateSdf);
 DEFINE_validator(sdf_floating, &ValidateSdf);
 
-constexpr double kCameraPosePublishPeriod{0.01};
-constexpr double kImageArrayPublishPeriod{0.01};
+constexpr double kCameraUpdatePeriod{0.01};
 
 constexpr char kCameraBaseFrameName[] = "camera_base_frame";
 constexpr char kColorCameraFrameName[] = "color_camera_optical_frame";
@@ -118,11 +118,13 @@ int main() {
   }
 
   auto rgbd_camera =
-      builder.template AddSystem<RgbdCamera>(
-          "rgbd_camera", plant->get_rigid_body_tree(),
-          config.pos, config.rpy,
-          config.depth_range_near, config.depth_range_far,
-          config.fov_y);
+      builder.AddSystem<RgbdCameraDiscrete>(
+          std::make_unique<RgbdCamera>(
+              "rgbd_camera", plant->get_rigid_body_tree(),
+              config.pos, config.rpy,
+              config.depth_range_near, config.depth_range_far,
+              config.fov_y),
+      kCameraUpdatePeriod);
 
   auto image_to_lcm_image_array =
       builder.template AddSystem<ImageToLcmImageArrayT>(
@@ -132,19 +134,19 @@ int main() {
   ::drake::lcm::DrakeLcm lcm;
   auto drake_viz = builder.template AddSystem<DrakeVisualizer>(
       plant->get_rigid_body_tree(), &lcm);
-  drake_viz->set_publish_period(0.01);
+  drake_viz->set_publish_period(kCameraUpdatePeriod);
 
   auto image_array_lcm_publisher = builder.template AddSystem(
       lcm::LcmPublisherSystem::Make<robotlocomotion::image_array_t>(
           kImageArrayLcmChannelName, &lcm));
   image_array_lcm_publisher->set_name("publisher");
-  image_array_lcm_publisher->set_publish_period(kImageArrayPublishPeriod);
+  image_array_lcm_publisher->set_publish_period(kCameraUpdatePeriod);
 
   rendering::PoseStampedTPoseVectorTranslator translator(kCameraBaseFrameName);
   auto pose_lcm_publisher = builder.template AddSystem<lcm::LcmPublisherSystem>(
       kPoseLcmChannelName, translator, &lcm);
   pose_lcm_publisher->set_name("pose_lcm_publisher");
-  pose_lcm_publisher->set_publish_period(kCameraPosePublishPeriod);
+  pose_lcm_publisher->set_publish_period(kCameraUpdatePeriod);
 
   builder.Connect(
       plant->get_output_port(0),

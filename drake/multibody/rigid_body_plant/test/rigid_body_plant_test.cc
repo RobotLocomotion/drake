@@ -67,15 +67,11 @@ GTEST_TEST(RigidBodyPlantTest, TestLoadUrdf) {
   }
 }
 
-// Tests the generalized velocities to generalized coordinates time
-// derivatives for a free body with a quaternion base.
-GTEST_TEST(RigidBodyPlantTest, MapVelocityToConfigurationDerivativesAndBack) {
-  const double kTol = 5e-12;     // Loosest tolerance that all tests succeed.
+// Creates a rigid body tree with a floating base.
+std::unique_ptr<RigidBodyTree<double>> CreateFloatingRBTree() {
   const int kNumPositions = 7;   // One quaternion + 3d position.
   const int kNumVelocities = 6;  // Angular velocity + linear velocity.
-  const int kNumStates = kNumPositions + kNumVelocities;
-
-  auto tree = make_unique<RigidBodyTree<double>>();
+  RigidBodyTree<double>* tree = new RigidBodyTree<double>();
 
   // Adds a single free body with a quaternion base.
   RigidBody<double>* body;
@@ -98,9 +94,20 @@ GTEST_TEST(RigidBodyPlantTest, MapVelocityToConfigurationDerivativesAndBack) {
   // There are two bodies: the "world" and "free_body".
   EXPECT_EQ(tree->get_num_velocities(), kNumVelocities);
 
-  // Instantiates a RigidBodyPlant from the previously instantiated
-  // RigidBodyTree.
-  RigidBodyPlant<double> plant(move(tree));
+  return std::unique_ptr<RigidBodyTree<double>>(tree);
+}
+
+// Tests the generalized velocities to generalized coordinates time
+// derivatives for a free body with a quaternion base.
+GTEST_TEST(RigidBodyPlantTest, MapVelocityToConfigurationDerivativesAndBack) {
+  const double kTol = 5e-12;     // Loosest tolerance that all tests succeed.
+  const int kNumPositions = 7;   // One quaternion + 3d position.
+  const int kNumVelocities = 6;  // Angular velocity + linear velocity.
+  const int kNumStates = kNumPositions + kNumVelocities;
+
+  // Instantiates a RigidBodyPlant from a RigidBodyTree.
+  auto tree = CreateFloatingRBTree();
+  RigidBodyPlant<double> plant(std::move(tree));
   auto context = plant.CreateDefaultContext();
 
   // Verifies the number of states, inputs, and outputs.
@@ -184,7 +191,29 @@ GTEST_TEST(RigidBodyPlantTest, MapVelocityToConfigurationDerivativesAndBack) {
   }
 }
 
-class KukaArmTest : public ::testing::Test {
+// Tests the generalized velocities to generalized coordinates time
+// derivatives for a free body with a quaternion base *with discrete state
+// variables* (meaning that no such conversion should be performed).
+GTEST_TEST(RigidBodyPlantTest, MapVelocityToConfigurationDerivativesAndBackTS) {
+  // Instantiates a RigidBodyPlant from a RigidBodyTree.
+  const double dt = 1e-3;
+  auto tree = CreateFloatingRBTree();
+  RigidBodyPlant<double> plant(std::move(tree), dt);
+  auto context = plant.CreateDefaultContext();
+
+  // Make empty generalized velocity and positions_derivative vectors.
+  BasicVector<double> generalized_velocities(0);
+  BasicVector<double> positions_derivatives(0);
+
+  // Call the transformation functions. They should do nothing, since both
+  // vectors are zero sized *and* the state is discrete.
+  EXPECT_NO_THROW(plant.MapVelocityToQDot(
+      *context, generalized_velocities, &positions_derivatives));
+  EXPECT_NO_THROW(plant.MapQDotToVelocity(
+      *context, positions_derivatives, &generalized_velocities));
+}
+
+class KukaArmTest : public ::testing::TestWithParam<double> {
  protected:
   void SetUp() override {
     auto tree = make_unique<RigidBodyTree<double>>();
@@ -194,7 +223,8 @@ class KukaArmTest : public ::testing::Test {
         drake::multibody::joints::kFixed, nullptr /* weld to frame */,
         tree.get());
 
-    kuka_plant_ = make_unique<RigidBodyPlant<double>>(move(tree));
+    kuka_plant_ = make_unique<RigidBodyPlant<double>>(move(tree),
+                                                      this->GetParam());
 
     context_ = kuka_plant_->CreateDefaultContext();
     output_ = kuka_plant_->AllocateOutput(*context_);
@@ -214,24 +244,27 @@ class KukaArmTest : public ::testing::Test {
 
 // Tests that the KUKA iiwa arm's RigidBodyPlant allocates a continuous state
 // of the proper size in the context.
-TEST_F(KukaArmTest, StateHasTheRightSizes) {
-  const VectorBase<double>& xc =
-      context_->get_continuous_state()->get_generalized_position();
-  const VectorBase<double>& vc =
-      context_->get_continuous_state()->get_generalized_velocity();
-  const VectorBase<double>& zc =
-      context_->get_continuous_state()->get_misc_continuous_state();
+TEST_P(KukaArmTest, StateHasTheRightSizes) {
+  // Only check these if the state is continuous.
+  if (!kuka_plant_->is_state_discrete()) {
+    const VectorBase<double>& xc =
+        context_->get_continuous_state()->get_generalized_position();
+    const VectorBase<double>& vc =
+        context_->get_continuous_state()->get_generalized_velocity();
+    const VectorBase<double>& zc =
+        context_->get_continuous_state()->get_misc_continuous_state();
 
-  EXPECT_EQ(kNumPositions_, xc.size());
-  EXPECT_EQ(kNumVelocities_, vc.size());
-  EXPECT_EQ(0, zc.size());
+    EXPECT_EQ(kNumPositions_, xc.size());
+    EXPECT_EQ(kNumVelocities_, vc.size());
+    EXPECT_EQ(0, zc.size());
+  }
 }
 
 // Tests the method that obtains the zero configuration of the system for a
 // Kuka arm model. In this case the zero configuration corresponds to all joint
 // angles and velocities being zero.
 // The system configuration is written to a context.
-TEST_F(KukaArmTest, SetDefaultState) {
+TEST_P(KukaArmTest, SetDefaultState) {
   // Connect to a "fake" free standing input.
   // TODO(amcastro-tri): Connect to a ConstantVectorSource once Diagrams have
   // derivatives per #3218.
@@ -241,13 +274,18 @@ TEST_F(KukaArmTest, SetDefaultState) {
 
   // Asserts that for this case the zero configuration corresponds to a state
   // vector with all entries equal to zero.
-  VectorXd xc = context_->get_continuous_state()->CopyToVector();
-  ASSERT_EQ(kNumStates_, xc.size());
-  ASSERT_EQ(xc, VectorXd::Zero(xc.size()));
+  auto x = kuka_plant_->GetStateVector(*context_);
+  ASSERT_EQ(kNumStates_, x.size());
+  ASSERT_EQ(x, VectorXd::Zero(x.size()));
+}
+
+// Checks that the time step provided is correct.
+TEST_P(KukaArmTest, CheckTimeStep) {
+  EXPECT_EQ(kuka_plant_->get_time_step(), this->GetParam());
 }
 
 // Tests RigidBodyPlant<T>::CalcOutput() for a KUKA iiwa arm model.
-TEST_F(KukaArmTest, EvalOutput) {
+TEST_P(KukaArmTest, EvalOutput) {
   auto& tree = kuka_plant_->get_rigid_body_tree();
 
   // Checks that the number of input and output ports in the system and context
@@ -290,8 +328,8 @@ TEST_F(KukaArmTest, EvalOutput) {
   }
   VectorXd desired_state(kNumStates_);
   desired_state << desired_angles, VectorXd::Zero(kNumVelocities_);
-  VectorXd xc = context_->get_continuous_state()->CopyToVector();
-  ASSERT_EQ(xc, desired_state);
+  auto x = kuka_plant_->GetStateVector(*context_);
+  ASSERT_EQ(x, desired_state);
 
   // Four output ports:
   //
@@ -323,8 +361,8 @@ TEST_F(KukaArmTest, EvalOutput) {
   ASSERT_EQ(kinematics_results.get_num_positions(), kNumPositions_);
   ASSERT_EQ(kinematics_results.get_num_velocities(), kNumVelocities_);
 
-  VectorXd q = xc.topRows(kNumPositions_);
-  VectorXd v = xc.bottomRows(kNumVelocities_);
+  VectorXd q = x.topRows(kNumPositions_);
+  VectorXd v = x.bottomRows(kNumVelocities_);
   auto cache = tree.doKinematics(q, v);
 
   for (int ibody = 0; ibody < kuka_plant_->get_num_bodies(); ++ibody) {
@@ -341,6 +379,11 @@ TEST_F(KukaArmTest, EvalOutput) {
     EXPECT_TRUE(position.isApprox(kinematics_results.get_body_position(ibody)));
   }
 }
+
+// Instantiate the value-parameterized tests to run twice: once with continuous
+// state and once with discrete state.
+INSTANTIATE_TEST_CASE_P(Blank, KukaArmTest,
+    testing::Values(0.0 /* continuous state */, 1e-3 /* discrete state */));
 
 GTEST_TEST(rigid_body_plant_test, TestJointLimitForcesFormula) {
   typedef RigidBodyPlant<double> RBP;

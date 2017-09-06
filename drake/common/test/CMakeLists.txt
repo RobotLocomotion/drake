@@ -168,9 +168,3 @@ drake_add_test(NAME
 set_tests_properties(
   drake_deprecated_test_nocompile
   PROPERTIES WILL_FAIL TRUE)
-
-# Rules for cpplint_wrapper.py.
-if(WITH_GOOGLE_STYLEGUIDE)
-  drake_add_test(NAME cpplint_wrapper_test COMMAND
-    ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/cpplint_wrapper_test.py)
-endif()

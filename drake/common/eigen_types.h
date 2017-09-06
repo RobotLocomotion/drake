@@ -45,6 +45,11 @@ using Vector6 = Eigen::Matrix<Scalar, 6, 1>;
 template <typename Scalar>
 using VectorX = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
 
+/// A vector of dynamic size templated on scalar type, up to a maximum of 6
+/// elements.
+template <typename Scalar>
+using VectorUpTo6 = Eigen::Matrix<Scalar, Eigen::Dynamic, 1, 0, 6, 1>;
+
 /// A matrix of 2 rows and 2 columns, templated on scalar type.
 template <typename Scalar>
 using Matrix2 = Eigen::Matrix<Scalar, 2, 2>;
@@ -99,6 +104,10 @@ using AngleAxis = Eigen::AngleAxis<Scalar>;
 /// An Isometry templated on scalar type.
 template <typename Scalar>
 using Isometry3 = Eigen::Transform<Scalar, 3, Eigen::Isometry>;
+
+/// A translation in 3D templated on scalar type.
+template <typename Scalar>
+using Translation3 = Eigen::Translation<Scalar, 3>;
 
 /// A column vector of dynamic size, up to a maximum of 73 elements.
 using VectorUpTo73d = Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73, 1>;
@@ -313,7 +322,11 @@ class EigenPtr {
   RefType* operator->() const { return get_reference(); }
 
   /// Returns whether or not this contains a valid reference.
-  operator bool() const { return static_cast<bool>(m_); }
+  operator bool() const { return is_valid(); }
+
+  bool operator==(std::nullptr_t) const { return !is_valid(); }
+
+  bool operator!=(std::nullptr_t) const { return is_valid(); }
 
  private:
   // Use unique_ptr<> so that we may "reconstruct" the reference, making this
@@ -338,6 +351,10 @@ class EigenPtr {
   RefType* get_reference() const {
     if (!m_) throw std::runtime_error("EigenPtr: nullptr dereference");
     return m_.get();
+  }
+
+  bool is_valid() const {
+    return static_cast<bool>(m_);
   }
 };
 

@@ -368,6 +368,7 @@ bool MobyLCPSolver<T>::SolveLcpFast(const MatrixX<T>& M,
         << std::endl;
 
   // if we're here, then the maximum number of pivots has been exceeded
+  z->setZero(N);
   return false;
 }
 
@@ -785,6 +786,7 @@ bool MobyLCPSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
           << "MobyLCPSolver::SolveLcpLemke() - no new pivots (ray termination)"
           << std::endl;
       Log() << "MobyLCPSolver::SolveLcpLemke() exiting" << std::endl;
+      z->setZero(n);
       return false;
     }
 
@@ -839,6 +841,7 @@ bool MobyLCPSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
     if (j_.empty()) {
       Log() << "zero tolerance too low?" << std::endl;
       Log() << "MobyLCPSolver::SolveLcpLemke() exited" << std::endl;
+      z->setZero(n);
       return false;
     }
 
@@ -878,6 +881,7 @@ bool MobyLCPSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
   Log() << " -- maximum number of iterations exceeded (n=" << n
         << ", max=" << max_iter << ")" << std::endl;
   Log() << "MobyLCPSolver::SolveLcpLemke() exited" << std::endl;
+  z->setZero(n);
   return false;
 }
 
@@ -1203,8 +1207,10 @@ bool MobyLCPSolver<T>::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
     // We go ahead and return failure here as the basis matrix has become
     // singular due to too many pivoting operations; without this change,
     // failure would presumably occur (eventually).
-    if (solver->info() != Eigen::ComputationInfo::Success)
+    if (solver->info() != Eigen::ComputationInfo::Success) {
+      z->setZero(n);
       return false;
+    }
     dl = solver->solve(Be);
 
     // use a new pivot tolerance if necessary
@@ -1225,6 +1231,7 @@ bool MobyLCPSolver<T>::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
           << "MobyLCPSolver::SolveLcpLemke() - no new pivots (ray termination)"
           << std::endl;
       Log() << "MobyLCPSolver::SolveLcpLemke() exited" << std::endl;
+      z->setZero(n);
       return false;
     }
 
@@ -1259,6 +1266,7 @@ bool MobyLCPSolver<T>::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
     if (j_.empty()) {
       Log() << "zero tolerance too low?" << std::endl;
       Log() << "MobyLCPSolver::SolveLcpLemke() exited" << std::endl;
+      z->setZero(n);
       return false;
     }
 
@@ -1297,6 +1305,7 @@ bool MobyLCPSolver<T>::SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
 
   Log() << " -- maximum number of iterations exceeded" << std::endl;
   Log() << "MobyLCPSolver::SolveLcpLemke() exited" << std::endl;
+  z->setZero(n);
   return false;
 }
 

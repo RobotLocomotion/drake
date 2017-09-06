@@ -28,7 +28,7 @@ class GeometryStateTester {
   using State = GeometryState<T>;
 
  public:
-  void set_state(const State* state) { state_ = state; }
+  void set_state(State* state) { state_ = state; }
 
   FrameId get_world_frame() {
     return internal::InternalFrame::get_world_frame_id();
@@ -76,8 +76,22 @@ class GeometryStateTester {
     return state_->X_PF_;
   }
 
+  void SetFramePoses(const FrameIdVector& ids,
+                     const FramePoseVector<T>& poses) {
+    state_->SetFramePoses(ids, poses);
+  }
+
+  void ValidateFrameIds(const FrameIdVector& ids) const {
+    state_->ValidateFrameIds(ids);
+  }
+
+  void ValidateFramePoses(const FrameIdVector& ids,
+                          const FramePoseVector<T>& poses) const {
+    state_->ValidateFramePoses(ids, poses);
+  }
+
  private:
-  const State* state_;
+  State* state_;
 };
 
 namespace {
@@ -1014,6 +1028,141 @@ TEST_F(GeometryStateTest, ClearSourceData) {
   geometry_state_.ClearSource(s_id);
   EXPECT_TRUE(geometry_state_.source_is_registered(s_id));
   AssertSingleTreeCleared();
+}
+
+// Tests the validation of the set of ids provided.
+TEST_F(GeometryStateTest, ValidateFrameIdVector) {
+  SourceId s_id = SetUpSingleSourceTree();
+  FrameIdVector frame_set(s_id, frames_);
+
+  // Case: frame ids are valid.
+  EXPECT_NO_THROW(gs_tester_.ValidateFrameIds(frame_set));
+
+  // Case: Set has *extra* frame.
+  frame_set.AddFrameId(FrameId::get_new_id());
+  EXPECT_ERROR_MESSAGE(gs_tester_.ValidateFrameIds(frame_set),
+                       std::logic_error,
+                       "Disagreement in expected number of frames \\(\\d+\\)"
+                       " and the given number of frames \\(\\d+\\).");
+
+  // Case: Right number, wrong frames.
+  FrameIdVector frame_set_2(s_id);
+  for (size_t i = 0; i < frames_.size(); ++i) {
+    frame_set_2.AddFrameId(FrameId::get_new_id());
+  }
+  EXPECT_ERROR_MESSAGE(gs_tester_.ValidateFrameIds(frame_set_2),
+                       std::logic_error,
+                       "Frame id provided in kinematics data \\(\\d+\\) does "
+                       "not belong to the source \\(\\d+\\). At least one "
+                       "required frame id is also missing.");
+
+  // Case: Too few frames.
+  FrameIdVector frame_set_3(s_id);
+  for (size_t i = 0; i < frames_.size() - 1; ++i) {
+    frame_set_3.AddFrameId(frames_[i]);
+  }
+  EXPECT_ERROR_MESSAGE(gs_tester_.ValidateFrameIds(frame_set_3),
+                       std::logic_error,
+                       "Disagreement in expected number of frames \\(\\d+\\)"
+                       " and the given number of frames \\(\\d+\\).");
+}
+
+// Tests validation of kinematics pose data against ids.
+TEST_F(GeometryStateTest, ValidateFramePoses) {
+  SourceId s_id = SetUpSingleSourceTree();
+  // These tests are only meaningful for *valid* frame_set.
+  FrameIdVector frame_set(s_id, frames_);
+  vector<Isometry3<double>> pose_source;
+  for (size_t i = 0; i < frames_.size(); ++i) {
+    pose_source.push_back(Isometry3<double>::Identity());
+  }
+
+  // Case: validated.
+  FramePoseVector<double> poses(s_id, pose_source);
+  EXPECT_NO_THROW(gs_tester_.ValidateFramePoses(frame_set, poses));
+
+  // Case: Too many pose values.
+  poses.mutable_vector().push_back(Isometry3<double>::Identity());
+  EXPECT_ERROR_MESSAGE(
+      gs_tester_.ValidateFramePoses(frame_set, poses),
+      std::logic_error,
+      "Different number of ids and poses. \\d+ ids and \\d+ poses.");
+
+  // Case: Too few pose values.
+  poses.mutable_vector().pop_back();
+  poses.mutable_vector().pop_back();
+  EXPECT_ERROR_MESSAGE(
+      gs_tester_.ValidateFramePoses(frame_set, poses),
+      std::logic_error,
+      "Different number of ids and poses. \\d+ ids and \\d+ poses.");
+
+  // Case: mis-matched source ids.
+  FramePoseVector<double> poses2(SourceId::get_new_id(), pose_source);
+  EXPECT_ERROR_MESSAGE(gs_tester_.ValidateFramePoses(frame_set, poses2),
+                       std::logic_error,
+                       "Error setting poses for given ids; the ids and poses "
+                           "belong to different geometry sources \\(\\d+ and "
+                           "\\d+, respectively\\).");
+}
+
+// Tests the GeometryState::SetFramePoses() method. This doesn't test
+// invalid kinematics sets (as that has been tested already). It simply confirms
+// that for valid values, the geometries are posed as expected in the world
+// frame. This only tests pose (not velocity or acceleration). These tests use
+// simple transforms because it isn't validating matrix multiplication, only
+// that the right matrix multiplications are performed based on the hierarchy
+// of constructs.
+TEST_F(GeometryStateTest, SetFramePoses) {
+  SourceId s_id = SetUpSingleSourceTree();
+  FrameIdVector ids(s_id, frames_);
+
+  // Create a vector of poses (initially set to the identity pose).
+  vector<Isometry3<double>> frame_poses;
+  for (int i = 0; i < kFrameCount; ++i) {
+    frame_poses.push_back(Isometry3<double>::Identity());
+  }
+
+  // Case 1: Set all frames to identity poses. The world pose of all the
+  // geometry should be that of the geometry in its frame.
+  FramePoseVector<double> poses1(s_id, frame_poses);
+  gs_tester_.SetFramePoses(ids, poses1);
+  const auto& world_poses = gs_tester_.get_geometry_world_poses();
+  for (int i = 0; i < kFrameCount * kGeometryCount; ++i) {
+    EXPECT_TRUE(CompareMatrices(world_poses[i].matrix().block<3, 4>(0, 0),
+                                X_FG_[i].matrix().block<3, 4>(0, 0)));
+  }
+
+  // Case 2: Move the two *root* frames 1 unit in the +y direction. The f2 will
+  // stay at the identity.
+  // The final geometry poses should all be offset by 1 unit in the y.
+  Isometry3<double> offset = Isometry3<double>::Identity();
+  offset.translation() << 0, 1, 0;
+  frame_poses[0] = offset;
+  frame_poses[1] = offset;
+  FramePoseVector<double> poses2(s_id, frame_poses);
+  gs_tester_.SetFramePoses(ids, poses2);
+  for (int i = 0; i < kFrameCount * kGeometryCount; ++i) {
+    EXPECT_TRUE(
+        CompareMatrices(world_poses[i].matrix().block<3, 4>(0, 0),
+                        (offset * X_FG_[i].matrix()).block<3, 4>(0, 0)));
+  }
+
+  // Case 3: All frames get set to move up one unit. This will leave geometries
+  // 0, 1, 2, & 3 moved up 1, and geometries 4 & 5 moved up two.
+  frame_poses[2] = offset;
+  FramePoseVector<double> poses3(s_id, frame_poses);
+  gs_tester_.SetFramePoses(ids, poses3);
+  for (int i = 0; i < (kFrameCount - 1) * kGeometryCount; ++i) {
+    EXPECT_TRUE(
+        CompareMatrices(world_poses[i].matrix().block<3, 4>(0, 0),
+                        (offset * X_FG_[i].matrix()).block<3, 4>(0, 0)));
+  }
+  for (int i = (kFrameCount - 1) * kGeometryCount;
+       i < kFrameCount * kGeometryCount; ++i) {
+    EXPECT_TRUE(CompareMatrices(
+        world_poses[i].matrix().block<3, 4>(0, 0),
+        (offset * offset * X_FG_[i].matrix()).block<3, 4>(0, 0)));
+  }
 }
 
 }  // namespace

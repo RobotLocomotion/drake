@@ -84,7 +84,7 @@ class GenerateObjBasicDutTest : public GenerateObjTest {
     const mono::EndpointZ kZeroZ{0., 0., 0., 0.};
     const mono::Endpoint start{{0., 0., 0.}, kZeroZ};
     b.Connect("0", start, 1., kZeroZ);
-    dut_ = b.Build({"dut"});
+    dut_ = b.Build(api::RoadGeometryId{"dut"});
   }
 
   std::unique_ptr<const api::RoadGeometry> dut_;
@@ -136,7 +136,7 @@ TEST_F(GenerateObjBasicDutTest, ChangeOrigin) {
     const mono::EndpointZ kZeroZ{kOffsetZ, 0., 0., 0.};
     const mono::Endpoint start{{kOffsetX, kOffsetY, 0.}, kZeroZ};
     b.Connect("0", start, 1., kZeroZ);
-    dut_ = b.Build({"dut"});
+    dut_ = b.Build(api::RoadGeometryId{"dut"});
   }
 
   ObjFeatures obj_features;
@@ -229,7 +229,7 @@ TEST_F(GenerateObjBasicDutTest, StackedBranchPointsObjContent) {
     const mono::Endpoint start1{{10. * kLinearTolerance, 0., M_PI}, kZeroZ};
     b.Connect("0", start0, 1., kZeroZ);
     b.Connect("1", start1, 1., kZeroZ);
-    dut_ = b.Build({"dut"});
+    dut_ = b.Build(api::RoadGeometryId{"dut"});
   }
 
   GenerateObjFile(dut_.get(), directory_.getStr(), basename, ObjFeatures());
@@ -307,7 +307,7 @@ TEST_F(GenerateObjBasicDutTest, HighlightedSegments) {
     const mono::Endpoint start0{{0., 0., 0.}, kZeroZ};
     auto c0 = b.Connect("0", start0, 2., kZeroZ);
     b.Connect("1", c0->end(), 2., kZeroZ);
-    dut_ = b.Build({"dut"});
+    dut_ = b.Build(api::RoadGeometryId{"dut"});
   }
 
   ObjFeatures features;

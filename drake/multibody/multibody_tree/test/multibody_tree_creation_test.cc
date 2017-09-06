@@ -304,6 +304,8 @@ class TreeTopologyTests : public ::testing::Test {
   static void VerifyTopology(const MultibodyTreeTopology& topology) {
     const int kNumBodies = 8;
 
+    EXPECT_EQ(topology.get_num_bodies(), kNumBodies);
+    EXPECT_EQ(topology.get_num_mobilizers(), 7);
     EXPECT_EQ(topology.get_num_body_nodes(), kNumBodies);
     EXPECT_EQ(topology.get_tree_height(), 4);
 
@@ -429,6 +431,7 @@ TEST_F(TreeTopologyTests, Clone) {
 
   auto cloned_model = model_->Clone();
   EXPECT_EQ(cloned_model->get_num_bodies(), 8);
+  EXPECT_EQ(cloned_model->get_num_mobilizers(), 7);
   const MultibodyTreeTopology& clone_topology = cloned_model->get_topology();
 
   // Verify the cloned topology actually is a different object.
