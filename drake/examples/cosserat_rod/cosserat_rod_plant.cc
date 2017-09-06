@@ -215,10 +215,10 @@ void CosseratRodPlant<T>::DoCalcTimeDerivatives(
   const int nv = model_.get_num_velocities();
 
   MatrixX<T> M(nv, nv);
-  //modeler_.CalcMassMatrixViaInverseDynamics(context, M);
+  model_.CalcMassMatrixViaInverseDynamics(context, &M);
 
   VectorX<T> C(nv);
-  //modeler_.CalcBiasTerm(context, C);
+  model_.CalcBiasTerm(context, &C);
 
   auto v = x.bottomRows(nv);
 

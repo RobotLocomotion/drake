@@ -354,6 +354,77 @@ void MultibodyTree<T>::CalcForceElementsContribution(
   }
 }
 
+template <typename T>
+void MultibodyTree<T>::CalcMassMatrixViaInverseDynamics(
+    const systems::Context<T>& context,
+    EigenPtr<MatrixX<T>> H) const {
+  DRAKE_DEMAND(H->rows() == get_num_velocities());
+  DRAKE_DEMAND(H->cols() == get_num_velocities());
+
+  PositionKinematicsCache<T> pc(get_topology());
+  VelocityKinematicsCache<T> vc(get_topology());
+  vc.InitializeToZero();
+
+  // ======================================================================
+  // Compute position kinematics.
+  CalcPositionKinematicsCache(context, &pc);
+
+  // ======================================================================
+  // Compute one column of the mass matrix via inverse dynamics at a time.
+  const int nv = get_num_velocities();
+  VectorX<T> vdot(nv);
+  VectorX<T> tau(nv);
+  // Auxiliary arrays used by inverse dynamics.
+  std::vector<SpatialAcceleration<T>> A_WB_array(get_num_bodies());
+  std::vector<SpatialForce<T>> F_BMo_W_array(get_num_bodies());
+
+  for (int j = 0; j < nv; ++j) {
+    // TODO(amcastro-tri): make next line to work by making CalcInverseDynamics
+    // take an Eigen::Ref<VectorX<T>> instead of a pointer.
+    // auto tau = H.col(j);
+    vdot = VectorX<T>::Unit(nv, j);
+    CalcInverseDynamics(context, pc, vc, vdot, {}, VectorX<T>(),
+                              &A_WB_array, &F_BMo_W_array, tau);
+    H->col(j) = tau;
+  }
+}
+
+template <typename T>
+void MultibodyTree<T>::CalcBiasTerm(
+    const systems::Context<T>& context, EigenPtr<VectorX<T>> C) const {
+  DRAKE_DEMAND(C->size() == get_num_velocities());
+
+  PositionKinematicsCache<T> pc(get_topology());
+  VelocityKinematicsCache<T> vc(get_topology());
+
+  const int nv = get_num_velocities();
+  C->setZero();
+
+  // ======================================================================
+  // Compute position kinematics.
+  CalcPositionKinematicsCache(context, &pc);
+
+  // ======================================================================
+  // Compute velocity kinematics.
+  CalcVelocityKinematicsCache(context, pc, &vc);
+
+  // ======================================================================
+  // Compute one column of the mass matrix via inverse dynamics at a time.
+  const VectorX<T> vdot = VectorX<T>::Zero(nv);
+  // Auxiliary arrays used by inverse dynamics.
+  std::vector<SpatialAcceleration<T>> A_WB_array(get_num_bodies());
+  std::vector<SpatialForce<T>> F_BMo_W_array(get_num_bodies());
+
+  // TODO(amcastro-tri): make next line to work by makcing CalcInverseDynamics
+  // take an Eigen::Ref<VectorX<T>> instead of a pointer.
+  VectorX<T> tau(nv);
+
+  // TODO(amcastro-tri): provide specific API for when vdot = 0.
+  CalcInverseDynamics(context, pc, vc, vdot, {}, VectorX<T>(),
+                      &A_WB_array, &F_BMo_W_array, tau);
+  *C = tau;
+}
+
 // Explicitly instantiates on the most common scalar types.
 template class MultibodyTree<double>;
 template class MultibodyTree<AutoDiffXd>;

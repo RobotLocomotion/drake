@@ -782,6 +782,12 @@ class MultibodyTree {
       std::vector<SpatialForce<T>>* F_BMo_W_array,
       Eigen::Ref<VectorX<T>> tau_array) const;
 
+  void CalcMassMatrixViaInverseDynamics(
+      const systems::Context<T>& context, EigenPtr<MatrixX<T>> H) const;
+
+  void CalcBiasTerm(
+      const systems::Context<T>& context, EigenPtr<VectorX<T>> C) const;
+
   /// Computes the combined force contribution of ForceElement objects in the
   /// model. A ForceElement can apply forcing as a spatial force per body or as
   /// generalized forces, depending on the ForceElement model. Therefore this
