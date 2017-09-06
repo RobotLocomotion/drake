@@ -58,10 +58,8 @@ GTEST_TEST(RNDFBuilder, ZigZagLane) {
 
   std::vector<Connection> connected_lanes = {connection};
 
-  auto bounding_box =
-      std::make_tuple<ignition::math::Vector3d, ignition::math::Vector3d>(
-          ignition::math::Vector3d(0., -30., 0.),
-          ignition::math::Vector3d(10., 0., 0.));
+  auto bounding_box = std::make_pair(ignition::math::Vector3d(0., -30., 0.),
+                                     ignition::math::Vector3d(10., 0., 0.));
   builder->SetBoundingBox(bounding_box);
   builder->CreateSegmentConnections(1, &connected_lanes);
 
@@ -212,10 +210,8 @@ GTEST_TEST(RNDFBuilder, UShapedLane) {
         Connection(std::to_string(2), waypoints, kLaneWidth, false));
   }
 
-  auto bounding_box =
-      std::make_tuple<ignition::math::Vector3d, ignition::math::Vector3d>(
-          ignition::math::Vector3d(-40.0, 0.0, 0.0),
-          ignition::math::Vector3d(40., 50.0, 0.0));
+  auto bounding_box = std::make_pair(ignition::math::Vector3d(-40.0, 0.0, 0.0),
+                                     ignition::math::Vector3d(40., 50.0, 0.0));
   builder->SetBoundingBox(bounding_box);
   builder->CreateSegmentConnections(1, &connected_lanes);
 
@@ -315,10 +311,8 @@ GTEST_TEST(RNDFBuilder, MultilaneLane) {
     connected_lanes.push_back(connection);
   }
 
-  auto bounding_box =
-      std::make_tuple<ignition::math::Vector3d, ignition::math::Vector3d>(
-          ignition::math::Vector3d(0., -10., 0.),
-          ignition::math::Vector3d(40., 10., 0.));
+  auto bounding_box = std::make_pair(ignition::math::Vector3d(0., -10., 0.),
+                                     ignition::math::Vector3d(40., 10., 0.));
   builder->SetBoundingBox(bounding_box);
   builder->CreateSegmentConnections(1, &connected_lanes);
 

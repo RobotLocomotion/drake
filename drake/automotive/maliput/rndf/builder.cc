@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <tuple>
 #include <utility>
 
 #include "ignition/rndf/UniqueId.hh"
@@ -193,9 +194,8 @@ std::vector<int> GetInitialConnectionToProcess(
 // waypoints are on the @f$ z = 0 @f$ plane and the torque will always be
 // applied entirely on the z-axis.
 // @return The computed momentum's z-axis component.
-double CalculateMomentum(
-    const ignition::math::Vector3d& center_of_rotation,
-    const DirectedWaypoint& waypoint) {
+double CalculateMomentum(const ignition::math::Vector3d& center_of_rotation,
+                         const DirectedWaypoint& waypoint) {
   // Calculates waypoint W position with respect to the center of rotation R.
   const ignition::math::Vector3d p_WR =
       waypoint.position() - center_of_rotation;
@@ -361,9 +361,10 @@ void AttachLaneEndToBranchPoint(const api::LaneEnd::Which end, Lane* lane,
 // @pre The given @p branch_point_map must not be a nullptr.
 // @pre The given @p road_geometry must not be a nullptr.
 // @warning This method will abort if preconditions are not met.
-void BuildOrUpdateBranchpoints(Connection* connection, Lane* lane,
-                               std::map<std::string, BranchPoint*>*
-                               branch_point_map, RoadGeometry* road_geometry) {
+void BuildOrUpdateBranchpoints(
+    Connection* connection, Lane* lane,
+    std::map<std::string, BranchPoint*>* branch_point_map,
+    RoadGeometry* road_geometry) {
   DRAKE_DEMAND(connection != nullptr);
   DRAKE_DEMAND(lane != nullptr);
   DRAKE_DEMAND(branch_point_map != nullptr);
@@ -409,8 +410,8 @@ void BuildOrUpdateBranchpoints(Connection* connection, Lane* lane,
 // @pre The given @p connections collection must not be a nullptr.
 // @warning This method will abort execution if any preconditions are not met.
 void AddWaypointsIfNecessary(const std::vector<int>& ids,
-                             std::vector<Connection>* connections,
-                             int index, double linear_tolerance) {
+                             std::vector<Connection>* connections, int index,
+                             double linear_tolerance) {
   DRAKE_DEMAND(connections != nullptr);
   for (int i = 0; i < static_cast<int>(connections->size()); i++) {
     Connection& connection = connections->at(i);
@@ -464,8 +465,8 @@ void AddWaypointsIfNecessary(const std::vector<int>& ids,
 // interpolation for road geometrical inference.
 // @pre The given @p connections collection must not be a nullptr.
 // @warning This method will abort execution if any preconditions are not met.
-void CreateNewControlPointsForConnections(
-    std::vector<Connection>* connections, double linear_tolerance) {
+void CreateNewControlPointsForConnections(std::vector<Connection>* connections,
+                                          double linear_tolerance) {
   DRAKE_DEMAND(connections != nullptr);
   // Loads the tangents for each of the connections' waypoints.
   for (Connection& connection : *connections) {
@@ -503,9 +504,10 @@ void CreateNewControlPointsForConnections(
 // connections' waypoints are disposed with respect to the first connection.
 // @pre The given @p connections collection must not be a nullptr.
 // @warning This method will abort execution if any preconditions are not met.
-void SetInvertedConnections(const std::tuple<ignition::math::Vector3d,
-                            ignition::math::Vector3d>& bounding_box,
-                            std::vector<Connection>* connections) {
+void SetInvertedConnections(
+    const std::pair<ignition::math::Vector3d, ignition::math::Vector3d>&
+        bounding_box,
+    std::vector<Connection>* connections) {
   DRAKE_DEMAND(connections != nullptr);
   if (connections->size() == 0) {
     return;
@@ -513,7 +515,7 @@ void SetInvertedConnections(const std::tuple<ignition::math::Vector3d,
   // Creates a center of rotation outside the bounding box, for connection
   // direction estimation by means of "momentum" computations.
   const ignition::math::Vector3d center_of_rotation =
-      std::get<0>(bounding_box) - ignition::math::Vector3d(1., 1., 0);
+      bounding_box.first - ignition::math::Vector3d(1., 1., 0);
   // Gets all the "momentum"s and mark the connections if necessary.
   double momentum = CalculateConnectionMomentum(center_of_rotation,
                                                 connections->at(0).waypoints());

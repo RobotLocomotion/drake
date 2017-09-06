@@ -3,7 +3,7 @@
 #include <map>
 #include <memory>
 #include <string>
-#include <tuple>
+#include <utility>
 #include <vector>
 
 #include "ignition/math/Spline.hh"
@@ -122,15 +122,14 @@ class Builder {
 
   /// Sets the bounding box of the RNDF map.
   ///
-  /// @param bounding_box A tuple containing the lower left corner and
-  /// upper right corner positions of the bounding box respectively.
+  /// @param bounding_box The lower left and upper right corners' position
+  /// pair for the bounding box.
   /// @remarks Bounding box definition is kept in 3D space for the sake
   /// of generality, even though there's currently no support for nonplanar
   /// RNDF geometries and, most of the time, the z-component of the given
   /// corners will be zero.
-  void SetBoundingBox(
-      const std::tuple<ignition::math::Vector3d, ignition::math::Vector3d>&
-          bounding_box) {
+  void SetBoundingBox(const std::pair<ignition::math::Vector3d,
+                                      ignition::math::Vector3d>& bounding_box) {
     bounding_box_ = bounding_box;
   }
 
@@ -178,7 +177,7 @@ class Builder {
   // A map to hold all the DirectedWaypoints that are used as Lane extents.
   std::map<std::string, DirectedWaypoint> directed_waypoints_;
   // The coordinates of the bounding box that encloses RNDF's waypoints.
-  std::tuple<ignition::math::Vector3d, ignition::math::Vector3d> bounding_box_;
+  std::pair<ignition::math::Vector3d, ignition::math::Vector3d> bounding_box_;
 };
 
 }  // namespace rndf
