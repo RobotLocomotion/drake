@@ -298,8 +298,7 @@ MaliputRailcar<T>::AllocateAbstractState() const {
 }
 
 template <typename T>
-bool MaliputRailcar<T>::DoHasDirectFeedthrough(
-    const SystemSymbolicInspector*, int, int) const {
+optional<bool> MaliputRailcar<T>::DoHasDirectFeedthrough(int, int) const {
   return false;
 }
 

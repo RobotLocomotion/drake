@@ -125,8 +125,7 @@ class MaliputRailcar : public systems::LeafSystem<T> {
   // LeafSystem<T> overrides.
   std::unique_ptr<systems::AbstractValues> AllocateAbstractState()
       const override;
-  bool DoHasDirectFeedthrough(const systems::SystemSymbolicInspector* sparsity,
-                              int input_port, int output_port) const override;
+  optional<bool> DoHasDirectFeedthrough(int, int) const override;
   void DoCalcNextUpdateTime(const systems::Context<T>& context,
                             systems::CompositeEventCollection<T>*,
                             T* time) const override;

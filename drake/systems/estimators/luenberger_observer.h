@@ -61,8 +61,7 @@ class LuenbergerObserver : public systems::LeafSystem<T> {
                           systems::BasicVector<T>* output) const;
 
   /// This system is not direct feedthrough.
-  bool DoHasDirectFeedthrough(const SystemSymbolicInspector*, int,
-                              int) const override {
+  optional<bool> DoHasDirectFeedthrough(int, int) const override {
     return false;
   }
 

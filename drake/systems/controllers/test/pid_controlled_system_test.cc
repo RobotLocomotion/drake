@@ -57,8 +57,7 @@ class TestPlantWithMinOutputs : public TestPlant {
   }
 
  protected:
-  bool DoHasDirectFeedthrough(const SystemSymbolicInspector* sparsity,
-                              int input_port, int output_port) const override {
+  optional<bool> DoHasDirectFeedthrough(int, int) const override {
     return false;
   }
 };
@@ -101,8 +100,7 @@ class TestPlantWithMoreOutputs : public TestPlant {
   }
 
  protected:
-  bool DoHasDirectFeedthrough(const SystemSymbolicInspector* sparsity,
-                              int input_port, int output_port) const override {
+  optional<bool> DoHasDirectFeedthrough(int, int) const override {
     return false;
   }
 };
