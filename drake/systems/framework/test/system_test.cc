@@ -331,7 +331,7 @@ TEST_F(SystemTest, SystemConstraintTest) {
   };
   SystemConstraintIndex test_constraint =
       system_.AddConstraint(std::make_unique<SystemConstraint<double>>(
-          calc, Vector1d(0.0), Vector1d(1.0), "test"));
+          calc, 1, false, "test"));
   EXPECT_EQ(test_constraint, 0);
 
   EXPECT_NO_THROW(system_.get_constraint(test_constraint));
