@@ -4,12 +4,13 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/polynomial.h"
-#include "drake/common/symbolic_expression.h"
+#include "drake/common/symbolic.h"
 
 namespace drake {
 namespace systems {
 
 using symbolic::Expression;
+using symbolic::Formula;
 
 SystemSymbolicInspector::SystemSymbolicInspector(
     const System<symbolic::Expression>& system)
@@ -40,22 +41,37 @@ SystemSymbolicInspector::SystemSymbolicInspector(
   // Parameters
   // TODO(david-german-tri): Initialize parameters, once #5072 is resolved.
 
-  // Outputs
-  // -- Record the output ports and compute the outputs.
+  // Outputs.
   for (int i = 0; i < system.get_num_output_ports(); ++i) {
     const OutputPort<symbolic::Expression>& port = system.get_output_port(i);
     output_port_types_[i] = port.get_data_type();
     port.Calc(*context_, output_->GetMutableData(i));
   }
 
-  // Time derivatives
+  // Time derivatives.
   if (context_->get_continuous_state()->size() > 0) {
     system.CalcTimeDerivatives(*context_, derivatives_.get());
   }
 
-  // Discrete updates
+  // Discrete updates.
   if (context_->get_num_discrete_state_groups() > 0) {
     system.CalcDiscreteVariableUpdates(*context_, discrete_updates_.get());
+  }
+
+  // Constraints.
+  // TODO(russt): Maintain constraint descriptions.
+  for (int i = 0; i < system.get_num_constraints(); i++) {
+    const SystemConstraint<Expression>& constraint =
+        system.get_constraint(SystemConstraintIndex(i));
+    VectorX<Expression> value;
+    constraint.Calc(*context_, &value);
+    for (int j = 0; j < value.size(); j++) {
+      if (constraint.is_equality_constraint()) {
+        constraints_.emplace(value[j] == 0.0);
+      } else {
+        constraints_.emplace(value[j] >= 0.0);
+      }
+    }
   }
 }
 

@@ -1,11 +1,13 @@
 #pragma once
 
 #include <memory>
+#include <set>
 #include <utility>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/symbolic.h"
 #include "drake/systems/framework/system.h"
 
 namespace drake {
@@ -112,6 +114,11 @@ class SystemSymbolicInspector {
     DRAKE_DEMAND(output_port_types_[i] == kVectorValued);
     return output_->get_vector_data(i)->get_value();
   }
+
+  /// Returns a reference to the symbolic representation of the constraints.
+  const std::set<symbolic::Formula>& constraints() const {
+    return constraints_;
+  }
   /// @}
 
  private:
@@ -136,6 +143,7 @@ class SystemSymbolicInspector {
   std::vector<VectorX<symbolic::Variable>> input_variables_;
   VectorX<symbolic::Variable> continuous_state_variables_;
   std::vector<VectorX<symbolic::Variable>> discrete_state_variables_;
+  std::set<symbolic::Formula> constraints_;
 
   // The types of the output ports.
   std::vector<PortDataType> output_port_types_;

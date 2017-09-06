@@ -27,6 +27,11 @@ class SparseSystem : public LeafSystem<symbolic::Expression> {
 
     this->DeclareContinuousState(kSize);
     this->DeclareDiscreteState(kSize);
+
+    this->DeclareEqualityConstraint(&SparseSystem::CalcConstraint, kSize,
+                                    "equality constraint");
+    this->DeclareInequalityConstraint(&SparseSystem::CalcConstraint, kSize,
+                                      "inequality constraint");
   }
 
   void AddAbstractInputPort() { this->DeclareAbstractInputPort(); }
@@ -61,6 +66,11 @@ class SparseSystem : public LeafSystem<symbolic::Expression> {
   }
 
   void CalcNothing(const Context<symbolic::Expression>& context, int*) const {}
+
+  void CalcConstraint(const Context<symbolic::Expression>& context,
+                      VectorX<symbolic::Expression>* value) const {
+    *value = context.get_continuous_state_vector().CopyToVector();
+  }
 
   // Implements a time-varying affine dynamics.
   void DoCalcTimeDerivatives(
@@ -137,6 +147,20 @@ TEST_F(SystemSymbolicInspectorTest, AbstractContextThwartsSparsity) {
       EXPECT_TRUE(inspector_->IsConnectedInputToOutput(i, j));
     }
   }
+}
+
+TEST_F(SystemSymbolicInspectorTest, ConstraintTest) {
+  EXPECT_EQ(inspector_->constraints().size(), 4);
+
+  int equality_constraint_count{0};
+  for (const auto& formula : inspector_->constraints()) {
+    if (is_equal_to(formula)) {
+      equality_constraint_count++;
+    }
+    EXPECT_EQ(get_rhs_expression(formula), 0);
+    EXPECT_TRUE(is_variable(get_lhs_expression(formula)));
+  }
+  EXPECT_EQ(equality_constraint_count, 2);
 }
 
 TEST_F(SystemSymbolicInspectorTest, IsTimeInvariant) {
