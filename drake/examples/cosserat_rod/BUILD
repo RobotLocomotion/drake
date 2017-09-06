@@ -28,12 +28,6 @@ drake_cc_binary(
     test_rule_args = ["-realtime_factor=0.0"],
     deps = [
         ":cosserat_rod_plant",
-        "//drake/common:find_resource",
-        "//drake/lcm",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/joints",
-        "//drake/multibody/parsers",
-        "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/analysis:runge_kutta2_integrator",
         "//drake/systems/analysis:semi_explicit_euler_integrator",
         "//drake/systems/analysis:simulator",

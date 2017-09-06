@@ -3,13 +3,13 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/find_resource.h"
-#include "drake/examples/acrobot/multibody/acrobot_multibody_plant.h"
-#include "drake/lcm/drake_lcm.h"
-#include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
-#include "drake/multibody/rigid_body_tree.h"
+//#include "drake/common/find_resource.h"
+#include "drake/examples/cosserat_rod/cosserat_rod_plant.h"
+//#include "drake/lcm/drake_lcm.h"
+//#include "drake/multibody/joints/floating_base_types.h"
+//#include "drake/multibody/parsers/urdf_parser.h"
+//#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
+//#include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
@@ -20,7 +20,7 @@
 
 namespace drake {
 namespace examples {
-namespace acrobot {
+namespace cosserat_rod {
 namespace {
 
 #include <iostream>
@@ -31,7 +31,7 @@ namespace {
 // Simple example which simulates the (passive) Acrobot.  Run drake-visualizer
 // to see the animated result.
 
-DEFINE_double(realtime_factor, 1.0,
+DEFINE_double(realtime_factor, 0.0,
               "Playback speed.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
 
@@ -39,54 +39,57 @@ using drake::systems::SemiExplicitEulerIntegrator;
 using drake::systems::RungeKutta2Integrator;
 
 int do_main(int argc, char* argv[]) {
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
-
-  lcm::DrakeLcm lcm;
-  auto tree = std::make_unique<RigidBodyTree<double>>();
-  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      FindResourceOrThrow("drake/examples/acrobot/Acrobot.urdf"),
-      multibody::joints::kFixed, tree.get());
 
   systems::DiagramBuilder<double> builder;
-  auto acrobot = builder.AddSystem<AcrobotMultibodyPlant>();
-  acrobot->set_name("Acrobot");
-  auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
-  builder.Connect(acrobot->get_output_port(0), publisher->get_input_port(0));
+
+  // Geometric parameters:
+  const double length = 1.0;  // [m]
+  const double radius = 0.005; // [m]
+  const double area = M_PI * radius * radius;
+
+  // Material parameters (aluminum):
+  const double rho = 2700;  // [Kgr/m^3]
+  const double E = 70.0e9;  // [Pa]
+  const double nu = 0.5;  // Poission ratio [-]
+  const double G = E / (2*(1+nu));  // Shear modulus. E = 2G(1+ν)
+  const double tau_d = 0.04469;  // [sec]
+
+  // Numerical parameters:
+  const int num_elements = 5;
+  const double dt = 0.001;  // [sec]
+
+  // Other derived numbers.
+  const double mass = rho * area * length;
+  const double T1 = 0.140387;  // First period of osscillation.
+
+  // TODO: make this constructor to take rho instead.
+  auto rod_plant = builder.AddSystem<CosseratRodPlant>(
+      length, radius, mass,
+      E, G, tau_d, tau_d, num_elements);
+  rod_plant->set_name("Cosserat rod");
 
   auto energy_logger = builder.AddSystem<systems::SignalLogger<double>>(2);
   energy_logger->set_name("Energy Logger");
-  builder.Connect(acrobot->get_output_port(1),
+  builder.Connect(rod_plant->get_energy_output_port(),
                   energy_logger->get_input_port(0));
 
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);
-  systems::Context<double>& acrobot_context =
-      diagram->GetMutableSubsystemContext(*acrobot,
+  systems::Context<double>& rod_context =
+      diagram->GetMutableSubsystemContext(*rod_plant,
                                           simulator.get_mutable_context());
 
-  double tau = 0;
-  acrobot_context.FixInputPort(0, Eigen::Matrix<double, 1, 1>::Constant(tau));
-
-  // Set an initial condition that is sufficiently far from the downright fixed
-  // point.
-  systems::BasicVector<double>* x0 =
-      dynamic_cast<systems::BasicVector<double>*>(
-          acrobot_context.get_mutable_continuous_state_vector());
-  DRAKE_DEMAND(x0 != nullptr);
-  x0->SetAtIndex(0, 1.0);
-  x0->SetAtIndex(1, 1.0);
-  x0->SetAtIndex(2, 0.0);
-  x0->SetAtIndex(3, 0.0);
+  rod_plant->SetHorizontalCantileverState(&rod_context);
 
   simulator.set_target_realtime_rate(FLAGS_realtime_factor);
   simulator.Initialize();
-  const double max_step_size = 1.0e-3;
+  const double max_step_size = dt;
   simulator.reset_integrator<systems::RungeKutta2Integrator<double>>(
       *diagram, max_step_size, simulator.get_mutable_context());
   PRINT_VAR(simulator.get_integrator()->get_fixed_step_mode());
   PRINT_VAR(simulator.get_integrator()->supports_error_estimation());
-  simulator.StepTo(10);
+  simulator.StepTo(T1);
 
   // Write to file logged data.
   std::ofstream file("energy.dat");
@@ -112,10 +115,10 @@ int do_main(int argc, char* argv[]) {
 }
 
 }  // namespace
-}  // namespace acrobot
+}  // namespace cosserat_rod
 }  // namespace examples
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
-  return drake::examples::acrobot::do_main(argc, argv);
+  return drake::examples::cosserat_rod::do_main(argc, argv);
 }

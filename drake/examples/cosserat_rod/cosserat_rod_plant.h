@@ -36,6 +36,16 @@ class CosseratRodPlant : public systems::LeafSystem<T> {
 
   double mass() const { return mass_; }
 
+  const systems::OutputPort<T>& get_energy_output_port() const {
+    return this->get_output_port(energy_output_port_index_);
+  }
+
+  const systems::OutputPort<T>& get_state_output_port() const {
+    return this->get_output_port(state_output_port_index_);
+  }
+
+  void SetHorizontalCantileverState(systems::Context<T>* context) const;
+
  protected:
   T DoCalcKineticEnergy(const systems::Context<T>& context) const override;
   T DoCalcPotentialEnergy(const systems::Context<T>& context) const override;
@@ -90,6 +100,7 @@ class CosseratRodPlant : public systems::LeafSystem<T> {
   systems::OutputPortIndex energy_output_port_index_;
 
   multibody::MultibodyModeler<T> modeler_;
+  std::vector<const multibody::RevoluteJoint<T>*> joints_;
   //const multibody::Link<T>* link1_{nullptr};
   const multibody::Link<T>* link2_{nullptr};
   //const multibody::RevoluteJoint<T>* elbow_{nullptr};

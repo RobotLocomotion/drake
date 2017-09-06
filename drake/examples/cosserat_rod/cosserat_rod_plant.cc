@@ -127,9 +127,10 @@ const RigidLink<T>& CosseratRodPlant<T>::AddLinkElement(
 
   stream.clear();
   stream << "Joint_" << element_index;
-  modeler_.template AddJoint<RevoluteJoint>(
+  const RevoluteJoint<T>& joint = modeler_.template AddJoint<RevoluteJoint>(
       stream.str(),
       parent, X_QimF, link_element, X_QiM, Vector3d::UnitX());
+  joints_.push_back(&joint);
 
   // Add force element modelling the rod's internal forces.
   MultibodyTree<T>& model = modeler_.get_mutable_multibody_tree_model();
@@ -166,6 +167,7 @@ void CosseratRodPlant<T>::BuildMultibodyModeler() {
     const T s = element_index * element_length + element_length / 2.0;
     parent_element = &AddLinkElement(element_index, *parent_element, s);
   }
+  DRAKE_ASSERT(static_cast<int>(joints_.size()) == num_elements_);
 
   modeler_.Finalize();
 }
@@ -174,6 +176,20 @@ template <typename T>
 std::unique_ptr<systems::LeafContext<T>>
 CosseratRodPlant<T>::DoMakeContext() const {
   return modeler_.CreateDefaultContext();
+}
+
+template <typename T>
+void CosseratRodPlant<T>::SetHorizontalCantileverState(
+    systems::Context<T>* context) const {
+  // The first joint, connecting to the world has angle = -pi/2:
+  joints_[0]->set_angle(context, M_PI / 2);
+
+  // Set the rest to zero angle.
+  for (int joint_index(1); joint_index < num_elements_; ++joint_index) {
+    const multibody::RevoluteJoint<T>* joint = joints_[joint_index];
+    const double angle = 0.0;
+    joint->set_angle(context, angle);
+  }
 }
 
 template <typename T>
