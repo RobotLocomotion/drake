@@ -337,6 +337,17 @@ drake_cc_binary(
     ],
 )
 
+py_binary(
+    name = "cpplint_wrapper",
+    testonly = 1,
+    srcs = ["test/cpplint_wrapper.py"],
+    data = [
+        "//:CPPLINT.cfg",
+        "@google_styleguide//:cpplint",
+    ],
+    main = "test/cpplint_wrapper.py",
+)
+
 install(
     name = "install",
     targets = [":resource_tool"],
@@ -836,6 +847,16 @@ py_test(
     srcs = ["test/drake_cc_googletest_main_test.py"],
     data = [":drake_cc_googletest_main_test"],
     main = "test/drake_cc_googletest_main_test.py",
+)
+
+py_test(
+    name = "cpplint_wrapper_test",
+    srcs = ["test/cpplint_wrapper_test.py"],
+    data = [
+        ":cpplint_wrapper",
+        ":eigen_types.h",
+        "@google_styleguide//:cpplint/cpplint_test_header.h",
+    ],
 )
 
 py_test(
