@@ -60,7 +60,7 @@ int do_main(int argc, char* argv[]) {
 
   // Other derived numbers.
   const double mass = rho * area * length;
-  const double T1 = 0.140387;  // First period of osscillation.
+  //const double T1 = 0.140387;  // First period of osscillation.
 
   // TODO: make this constructor to take rho instead.
   auto rod_plant = builder.AddSystem<CosseratRodPlant>(
@@ -96,7 +96,7 @@ int do_main(int argc, char* argv[]) {
       *diagram, max_step_size, simulator.get_mutable_context());
   PRINT_VAR(simulator.get_integrator()->get_fixed_step_mode());
   PRINT_VAR(simulator.get_integrator()->supports_error_estimation());
-  simulator.StepTo(T1);
+  simulator.StepTo(3*dt);
 
   // Write to file logged data.
   {

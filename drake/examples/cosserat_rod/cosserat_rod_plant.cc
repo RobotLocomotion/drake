@@ -235,6 +235,7 @@ void CosseratRodPlant<T>::SetHorizontalCantileverState(
     const multibody::RevoluteMobilizer<T>* mobilizer = mobilizers_[joint_index];
     const double angle = 0.0;
     mobilizer->set_angle(context, angle);
+    mobilizer->set_angular_rate(context, 0.0);
   }
 }
 
@@ -259,17 +260,26 @@ void CosseratRodPlant<T>::DoCalcTimeDerivatives(
   const int nv = model_.get_num_velocities();
 
   // Apply a constant moment at the end link.
-  const T M0 = 50.0;  // Torque in Nm
+  const T M0 = 0.0;  // Torque in Nm
   SpatialForce<T> M_W(Vector3<T>(-M0, 0.0, 0.0), Vector3<T>::Zero());
   std::vector<SpatialForce<T>> Fapplied_Bo_W_array(model_.get_num_bodies());
   for (auto& F : Fapplied_Bo_W_array) F.SetZero();
-  Fapplied_Bo_W_array[last_element_->get_node_index()] = M_W;
+  //Fapplied_Bo_W_array[last_element_->get_node_index()] = M_W;
+
+  PRINT_VAR(last_element_->get_node_index());
+  for (auto& F : Fapplied_Bo_W_array) {
+    PRINT_VAR(F);
+  }
 
   MatrixX<T> M(nv, nv);
   model_.CalcMassMatrixViaInverseDynamics(context, &M);
 
+  PRINT_VARn(M);
+
   VectorX<T> C(nv);
   model_.CalcBiasTerm(context, Fapplied_Bo_W_array, &C);
+
+  PRINT_VAR(C.transpose());
 
   auto v = x.bottomRows(nv);
 
