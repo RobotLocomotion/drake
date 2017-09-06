@@ -33,15 +33,11 @@ class MatrixGain : public LinearSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MatrixGain)
 
-  /**
-   * A constructor where the gain matrix `D` is a square identity matrix of size
-   * @p size.
-   */
+  /// A constructor where the gain matrix `D` is a square identity matrix of
+  /// size @p size.
   explicit MatrixGain(int size);
 
-  /**
-   * A constructor where the gain matrix `D` is @p D.
-   */
+  /// A constructor where the gain matrix `D` is @p D.
   explicit MatrixGain(const Eigen::MatrixXd& D);
 };
 
