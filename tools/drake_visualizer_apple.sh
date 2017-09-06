@@ -14,6 +14,7 @@ if ! [ -d "external/drake_visualizer" ]; then
     fi
 fi
 
-export PYTHONPATH="drake/bindings/python:drake/lcmtypes:external/drake_visualizer/lib/python2.7/dist-packages:external/lcmtypes_bot2_core/lcmtypes:external/lcmtypes_robotlocomotion/lcmtypes:external${PYTHONPATH:+:$PYTHONPATH}"
+# TODO(jamiesnape): Do not hard code absolute path to vtk@8.0.
+export PYTHONPATH="drake/bindings/python:drake/lcmtypes:external/drake_visualizer/lib/python2.7/dist-packages:external/lcmtypes_bot2_core/lcmtypes:external/lcmtypes_robotlocomotion/lcmtypes:/usr/local/opt/vtk@8.0/lib/python2.7/site-packages:external${PYTHONPATH:+:$PYTHONPATH}"
 
 exec "external/drake_visualizer/bin/drake-visualizer" "$@"

@@ -401,6 +401,16 @@ expat_repository(
 )
 
 pkg_config_package(
+    name = "glew",
+    modname = "glew",
+)
+
+pkg_config_package(
+    name = "liblz4",
+    modname = "liblz4",
+)
+
+pkg_config_package(
     name = "libpng",
     modname = "libpng",
 )
