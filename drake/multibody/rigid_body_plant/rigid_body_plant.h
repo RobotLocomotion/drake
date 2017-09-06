@@ -347,8 +347,7 @@ class RigidBodyPlant : public LeafSystem<T> {
       const std::vector<const DiscreteUpdateEvent<double>*>&,
       DiscreteValues<T>* updates) const override;
 
-  bool DoHasDirectFeedthrough(const SystemSymbolicInspector* sparsity,
-                              int input_port, int output_port) const override;
+  optional<bool> DoHasDirectFeedthrough(int, int) const override;
 
   // TODO(amcastro-tri): provide proper implementations for these methods to
   // track energy conservation.

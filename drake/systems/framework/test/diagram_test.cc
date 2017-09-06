@@ -763,8 +763,7 @@ class Reduce : public LeafSystem<double> {
     output->get_mutable_value() = input_vector->get_value();
   }
 
-  bool DoHasDirectFeedthrough(const SystemSymbolicInspector* sparsity,
-                              int input_port, int output_port) const override {
+  optional<bool> DoHasDirectFeedthrough(int input_port, int) const override {
     return input_port == feedthrough_input_;
   }
 
