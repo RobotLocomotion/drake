@@ -80,20 +80,22 @@ TwistVector<T> KinematicsResults<T>::get_twist_in_world_aligned_body_frame(
 
 template <typename T>
 void KinematicsResults<T>::UpdateFromContext(const Context<T>& context) {
-  // TODO(amcastro-tri): provide nicer accessor to an Eigen representation for
-  // LeafSystems.
-  auto x = dynamic_cast<const BasicVector<T>&>(
-      context.get_continuous_state_vector()).get_value();
-
   const int nq = tree_->get_num_positions();
   const int nv = tree_->get_num_velocities();
 
-  // TODO(amcastro-tri): We would like to compile here with `auto` instead of
-  // `VectorX<T>`. However it seems we get some sort of block from a block which
-  // is not explicitly instantiated in drakeRBM.
-  VectorX<T> q = x.topRows(nq);
-  VectorX<T> v = x.bottomRows(nv);
+  VectorX<T> x;
+  if (context.get_state().get_continuous_state()->size() > 0) {
+    // TODO(amcastro-tri): provide nicer accessor to an Eigen representation for
+    // LeafSystems.
+    x = dynamic_cast<const BasicVector<T>&>(
+        context.get_continuous_state_vector()).get_value();
+  } else {
+    x = dynamic_cast<const BasicVector<T>&>(
+        context.get_discrete_state_vector()).get_value();
+  }
 
+  const auto q = x.topRows(nq);
+  const auto v = x.bottomRows(nv);
   kinematics_cache_.initialize(q, v);
   tree_->doKinematics(kinematics_cache_, false);
 }
