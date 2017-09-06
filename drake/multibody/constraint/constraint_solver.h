@@ -45,9 +45,10 @@ class ConstraintSolver {
   ///           values (after the initial `nc` elements) correspond to the first
   ///           non-sliding contact, the next `r` values correspond to the
   ///           second non-sliding contact, etc. The final ℓ values of @p cf
-  ///           correspond to the forces applied to enforce functions of state
-  ///           variable limits. This packed storage format can be turned into
-  ///           more useful representations through
+  ///           correspond to the forces applied to enforce the generic
+  ///           unilateral constraint functions.
+  ///           This packed storage format can be turned into more useful
+  ///           representations through
   ///           ComputeGeneralizedForceFromConstraintForces() and
   ///           CalcContactForcesInContactFrames(). @p cf will be resized as
   ///           necessary.
@@ -74,9 +75,9 @@ class ConstraintSolver {
   ///           values (after the initial `nc` elements) correspond to the first
   ///           contact, the next `r` values correspond to the second contact,
   ///           etc. The final ℓ values of @p cf correspond to the impulsive
-  ///           forces applied to enforce functions of state variable limits.
-  ///           This packed storage format can be turned into more useful
-  ///           representations through
+  ///           forces applied to enforce the generic unilateral constraint
+  ///           functions, This packed storage format can be turned into more
+  ///           useful representations through
   ///           ComputeGeneralizedImpulseFromConstraintImpulses() and
   ///           CalcImpactForcesInContactFrames(). @p cf will be resized as
   ///           necessary.
@@ -269,6 +270,19 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
   // Initialize contact force vector.
   cf->resize(num_contacts + num_spanning_vectors + num_limits);
 
+  // Look for a second fast exit.
+  const VectorX<T> candidate_accel = problem_data.solve_inertia(
+      problem_data.tau);
+  const VectorX<T> N_eval = problem_data.N_mult(candidate_accel) +
+      problem_data.kN;
+  const VectorX<T> L_eval = problem_data.L_mult(candidate_accel) +
+      problem_data.kL;
+  if ((num_contacts == 0 || N_eval.minCoeff() >= 0) &&
+      (num_limits == 0 || L_eval.minCoeff() >= 0)) {
+    cf->setZero();
+    return;
+  }
+
   // Set up the linear complementarity problem.
   MatrixX<T> MM;
   VectorX<T> qq;
@@ -285,6 +299,7 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
   VectorX<T> zz;
   bool success = lcp_.SolveLcpLemke(MM, qq, &zz, -1, zero_tol);
   VectorX<T> ww = MM * zz + qq;
+  const double max_dot = (zz.array() * ww.array()).abs().maxCoeff();
 
   // NOTE: This LCP might not be solvable due to inconsistent configurations.
   // Check the answer and throw a runtime error if it's no good.
@@ -297,7 +312,8 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
   if (!success || (zz.size() > 0 &&
       (zz.minCoeff() < -num_vars * npivots * zero_tol ||
       ww.minCoeff() < -num_vars * npivots * zero_tol ||
-      abs(zz.dot(ww)) > num_vars * num_vars * npivots * zero_tol))) {
+      max_dot > max(T(1), zz.maxCoeff()) * max(T(1), ww.maxCoeff()) * num_vars *
+          npivots * zero_tol))) {
     throw std::runtime_error("Unable to solve LCP- it may be unsolvable.");
   }
 
@@ -344,10 +360,12 @@ void ConstraintSolver<T>::SolveImpactProblem(
                                                    problem_data.r.end(), 0);
 
   // If no impact, do not apply the impact model.
-  if ((num_contacts == 0 ||
-       problem_data.N_mult(problem_data.v).minCoeff() >= 0) &&
-      (num_limits == 0 ||
-       problem_data.L_mult(problem_data.v).minCoeff() >= 0)) {
+  const VectorX<T> N_eval = problem_data.N_mult(problem_data.v) +
+      problem_data.kN;
+  const VectorX<T> L_eval = problem_data.L_mult(problem_data.v) +
+      problem_data.kL;
+  if ((num_contacts == 0 || N_eval.minCoeff() >= 0) &&
+      (num_limits == 0 || L_eval.minCoeff() >= 0)) {
     cf->setZero(num_contacts + num_spanning_vectors + num_limits);
     return;
   }
@@ -371,6 +389,7 @@ void ConstraintSolver<T>::SolveImpactProblem(
   VectorX<T> zz;
   bool success = lcp_.SolveLcpLemke(MM, qq, &zz, -1, zero_tol);
   VectorX<T> ww = MM * zz + qq;
+  const double max_dot = (zz.array() * ww.array()).abs().maxCoeff();
 
   // NOTE: This LCP should always be solvable.
   // Check the answer and throw a runtime error if it's no good.
@@ -384,7 +403,8 @@ void ConstraintSolver<T>::SolveImpactProblem(
       (zz.size() > 0 &&
        (zz.minCoeff() < -num_vars * npivots * zero_tol ||
         ww.minCoeff() < -num_vars * npivots * zero_tol ||
-        abs(zz.dot(ww)) > num_vars * num_vars * npivots * zero_tol))) {
+        max_dot > max(T(1), zz.maxCoeff()) * max(T(1), ww.maxCoeff()) *
+            num_vars * npivots * zero_tol))) {
     throw std::runtime_error("Unable to solve LCP- more regularization might "
                                  "be necessary.");
   }
@@ -474,8 +494,8 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
   auto L = problem_data.L_mult;
   auto LT = problem_data.L_transpose_mult;
   auto iM = problem_data.solve_inertia;
-  const VectorX<T>& Ndot_times_v = problem_data.Ndot_times_v;
-  const VectorX<T>& Fdot_times_v = problem_data.Fdot_times_v;
+  const VectorX<T>& kN = problem_data.kN;
+  const VectorX<T>& kF = problem_data.kF;
   const VectorX<T>& kL = problem_data.kL;
   const VectorX<T>& mu_non_sliding = problem_data.mu_non_sliding;
 
@@ -576,15 +596,15 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
       MM->block(0, nc + nk + num_non_sliding, nc + nk, nl).transpose().eval();
 
   // Construct the LCP vector:
-  // N⋅M⁻¹⋅fext + dN/dt⋅v
-  // D⋅M⁻¹⋅fext + dD/dt⋅v
+  // N⋅M⁻¹⋅fext + kN
+  // D⋅M⁻¹⋅fext + kD
   // 0
-  // L⋅M⁻¹⋅fext + dL/dt⋅v + kL
-  // where, as above, D is defined as [F -F]
+  // L⋅M⁻¹⋅fext + kL
+  // where, as above, D is defined as [F -F] (and kD is defined as [kF -kF].
   VectorX<T> M_inv_x_f = problem_data.solve_inertia(problem_data.tau);
   qq->resize(num_vars, 1);
-  qq->segment(0, nc) = N(M_inv_x_f) + Ndot_times_v;
-  qq->segment(nc, nr) = F(M_inv_x_f) + Fdot_times_v;
+  qq->segment(0, nc) = N(M_inv_x_f) + kN;
+  qq->segment(nc, nr) = F(M_inv_x_f) + kF;
   qq->segment(nc + nr, num_spanning_vectors) = -qq->segment(nc, nr);
   qq->segment(nc + nk, num_non_sliding).setZero();
   qq->segment(nc + nk + num_non_sliding, num_limits) = L(M_inv_x_f) + kL;
@@ -703,14 +723,14 @@ void ConstraintSolver<T>::FormImpactingConstraintLCP(
       MM->block(0, nc*2 + nk, nc + nk, nl).transpose().eval();
 
   // Construct the LCP vector:
-  // N⋅v
-  // D⋅v
+  // N⋅v + kN
+  // D⋅v + kD
   // 0
-  // L⋅v
-  // where, as above, D is defined as [F -F]
+  // L⋅v + kL
+  // where, as above, D is defined as [F -F] (and kD = [kF -kF]).
   qq->resize(num_vars, 1);
-  qq->segment(0, nc) = N(problem_data.v);
-  qq->segment(nc, nr) = F(problem_data.v);
+  qq->segment(0, nc) = N(problem_data.v) + problem_data.kN;
+  qq->segment(nc, nr) = F(problem_data.v) + problem_data.kF;
   qq->segment(nc + nr, nr) = -qq->segment(nc, nr);
   qq->segment(nc + nk, nc).setZero();
   qq->segment(nc*2 + nk, num_limits) = L(problem_data.v) + problem_data.kL;
