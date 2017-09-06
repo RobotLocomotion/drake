@@ -23,7 +23,7 @@ class CosseratRodPlant : public systems::LeafSystem<T> {
   /// Constructs a Cosserat model for a rod of circular cross section.
   CosseratRodPlant(double length, double radius, double mass,
                    double young_modulus, double shear_modulus,
-                   double damping,
+                   double tau_bending, double tau_twisting,
                    int num_links);
 
   /// Scalar-converting copy constructor.
@@ -63,7 +63,8 @@ class CosseratRodPlant : public systems::LeafSystem<T> {
 
   // Damping coefficient.
   double mass_{0.0};
-  double damping_{0.0};
+  double tau_bending_{0.0};
+  double tau_twisting_{0.0};
 
   // Numerical parameters:
   int num_elements_{0};

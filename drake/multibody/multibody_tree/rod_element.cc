@@ -12,11 +12,13 @@ template <typename T>
 RodElement<T>::RodElement(
     const Body<T>& body1, double length1,
     const Body<T>& body2, double length2,
-    double B1, double B2, double C, double damping) :
+    double B1, double B2, double C,
+    double tau_bending, double tau_twisting) :
     body_i_index_(body1.get_index()), length1_(length1),
     body_ip_index_(body2.get_index()), length2_(length2),
-    B1_(B1), B2_(B2), C_(C), damping_(damping) {
-  length_ip_ = (length1 + length2) / 2.0;
+    B1_(B1), B2_(B2), C_(C),
+    tau_bending_(tau_bending), tau_twisting_(tau_twisting) {
+  length_ih_ = (length1 + length2) / 2.0;
 }
 
 template <typename T>
@@ -64,18 +66,18 @@ void RodElement<T>::DoCalcAndAddForceContribution(
   const Vector3<T> ktilde_Qih = theta * uhat;
 
   // Compute curvature vector approximation at ih = i + 1/2, expressed in Qih.
-  const Vector3<T> k_Qih = ktilde_Qih / length_ip_;
+  const Vector3<T> k_Qih = ktilde_Qih / length_ih_;
 
   // Compute bending moments at the ih = i + 1/2 frame Qih, expressed in
   // Lagrangian frame Qih.
-  Vector3<T> M_Qih;
-  M_Qih(0) = B1_ * k_Qih(0);
-  M_Qih(1) = B2_ * k_Qih(1);
-  M_Qih(2) = C_ * k_Qih(2);
+  const Vector3<T> M_Qih(
+      B1_ * k_Qih(0),
+      B2_ * k_Qih(1),
+      C_ * k_Qih(2));
 
   // Compute the pose of frame Qih using Rodriguez formula to advance to sh,
   // the coordinate right in between Qi and Qip.
-  const T sh = length1_ / length_ip_ / 2.0;
+  const T sh = length1_ / length_ih_ / 2.0;
   const Matrix3<T> Ux = math::VectorToSkewSymmetric(sh * uhat);
   const Matrix3<T> R_QiQih =
       Matrix3<T>::Identity() + sin(theta) * Ux + (1.0 - cos(theta)) * Ux * Ux;
@@ -89,8 +91,23 @@ void RodElement<T>::DoCalcAndAddForceContribution(
   // Bending moment expressed in the world frame.
   const Vector3<T> M_W = R_WQih * M_Qih;
 
+  // Internal dissipation forces.
+  // We approximate the time derivative of curvature in the Lagrangian frame Qih
+  // as: Dt(k_Qih) = Dt(u/ell_ih) = w_QiQip_Qih / ell_ih
+  const Vector3<T>& w_WQi = vc.get_V_WB(node_i).rotational();
+  const Vector3<T>& w_WQip = vc.get_V_WB(node_ip).rotational();
+  const Vector3<T> w_QiQip_Qih = R_WQih.transpose() * (w_WQip - w_WQi);
+  const Vector3<T> kdot_Qih = w_QiQip_Qih / length_ih_;
+
+  // Finally the dissipation moment is:
+  const Vector3<T> Md_Qih(
+      -tau_bending_ * B1_ * kdot_Qih(0),
+      -tau_bending_ * B2_ * kdot_Qih(1),
+      -tau_twisting_ * C_ * kdot_Qih(2));
+  const Vector3<T> Md_W = R_WQih * Md_Qih;
+
   // Spatial force on Bi.
-  const SpatialForce<T> F_Bi_W(M_W, Vector3<T>::Zero());
+  const SpatialForce<T> F_Bi_W(M_W + Md_W, Vector3<T>::Zero());
   F_Bo_W_array->at(node_i) += F_Bi_W;
 
   // Action/reaction on Bip.
@@ -179,7 +196,7 @@ RodElement<T>::DoCloneToScalar(
   const Body<double>& Bi = tree_clone.get_body(body_i_index_);
   const Body<double>& Bip = tree_clone.get_body(body_ip_index_);
   return std::make_unique<RodElement<double>>(
-      Bi, length1_, Bip, length2_, B1_, B2_, C_, damping_);
+      Bi, length1_, Bip, length2_, B1_, B2_, C_, tau_bending_, tau_twisting_);
 }
 
 template <typename T>
@@ -189,7 +206,7 @@ RodElement<T>::DoCloneToScalar(
   const Body<AutoDiffXd>& Bi = tree_clone.get_body(body_i_index_);
   const Body<AutoDiffXd>& Bip = tree_clone.get_body(body_ip_index_);
   return std::make_unique<RodElement<AutoDiffXd>>(
-      Bi, length1_, Bip, length2_, B1_, B2_, C_, damping_);
+      Bi, length1_, Bip, length2_, B1_, B2_, C_, tau_bending_, tau_twisting_);
 }
 
 // Explicitly instantiates on the most common scalar types.

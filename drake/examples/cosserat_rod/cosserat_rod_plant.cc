@@ -30,11 +30,11 @@ template <typename T>
 CosseratRodPlant<T>::CosseratRodPlant(
     double length, double radius, double mass,
     double young_modulus, double shear_modulus,
-    double damping,
+    double tau_bending, double tau_twisting,
     int num_links) :
       length_(length),
       mass_(mass),
-      damping_(damping),
+      tau_bending_(tau_bending), tau_twisting_(tau_twisting),
       num_elements_(num_links) {
 
   // Geometric parameters for a circular cross section:
@@ -98,6 +98,8 @@ const RigidLink<T>& CosseratRodPlant<T>::AddLinkElement(
   const double element_length = length_ / num_elements_;
 
   // Rotational inertia about the material frame Q'com, Qcm, expressed in Q.
+  // TODO: CREATE FACTORY IN UnitInertia FOR THIS SPECIAL CASE OF A PRISM OF
+  // ARBITRARY CROSS SECTION SHAPE.
   const double Ixx = ExtractDoubleOrThrow(moment_of_inertia1_(s) / area_(s)) +
       element_length * element_length / 12.0;
   const double Iyy =
@@ -144,7 +146,7 @@ const RigidLink<T>& CosseratRodPlant<T>::AddLinkElement(
   model.template AddForceElement<RodElement>(
       modeler_.get_link_body(parent), element_length,
       modeler_.get_link_body(link_element), element_length,
-      B1, B2, C, damping_);
+      B1, B2, C, tau_bending_, tau_twisting_);
 
   return link_element;
 }
