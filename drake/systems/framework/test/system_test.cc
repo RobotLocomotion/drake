@@ -349,6 +349,22 @@ TEST_F(SystemTest, GetMemoryObjectName) {
   EXPECT_THAT(name, ::testing::ContainsRegex("/TestSystem@[0-9a-fA-F]{16}$"));
 }
 
+// Tests that by default, transmogrification fails appropriately.
+// (For testing transmogrification success, we rely on leaf_system_test.)
+TEST_F(SystemTest, TransmogrifyNotSupported) {
+  // Use the static method.
+  EXPECT_THROW(System<double>::ToAutoDiffXd<System>(system_), std::exception);
+  EXPECT_THROW(System<double>::ToSymbolic<System>(system_), std::exception);
+
+  // Use the instance method that throws.
+  EXPECT_THROW(system_.ToAutoDiffXd(), std::exception);
+  EXPECT_THROW(system_.ToSymbolic(), std::exception);
+
+  // Use the instance method that returns nullptr.
+  EXPECT_EQ(system_.ToAutoDiffXdMaybe(), nullptr);
+  EXPECT_EQ(system_.ToSymbolicMaybe(), nullptr);
+}
+
 template <typename T>
 using TestTypedVector = MyVector<1, T>;
 

@@ -32,7 +32,7 @@ template <template <typename> class S, typename Callback>
 ::testing::AssertionResult is_autodiffxd_convertible(
      const S<double>& dut, Callback callback) {
   // Check if a proper type came out; return early if not.
-  std::unique_ptr<System<AutoDiffXd>> converted = dut.ToAutoDiffXd();
+  std::unique_ptr<System<AutoDiffXd>> converted = dut.ToAutoDiffXdMaybe();
   ::testing::AssertionResult result =
         is_dynamic_castable<S<AutoDiffXd>>(converted);
   if (!result) { return result; }
@@ -62,7 +62,8 @@ template <template <typename> class S, typename Callback>
 ::testing::AssertionResult is_symbolic_convertible(
      const S<double>& dut, Callback callback) {
   // Check if a proper type came out; return early if not.
-  std::unique_ptr<System<symbolic::Expression>> converted = dut.ToSymbolic();
+  std::unique_ptr<System<symbolic::Expression>> converted =
+      dut.ToSymbolicMaybe();
   ::testing::AssertionResult result =
         is_dynamic_castable<S<symbolic::Expression>>(converted);
   if (!result) { return result; }

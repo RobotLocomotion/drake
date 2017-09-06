@@ -20,7 +20,7 @@ GTEST_TEST(PendulumPlantTest, ToAutoDiff) {
 
   // Transmogrify the plant to autodiff.
   std::unique_ptr<PendulumPlant<AutoDiffXd>> ad_plant =
-      systems::System<double>::ToAutoDiffXd<PendulumPlant>(plant);
+      systems::System<double>::ToAutoDiffXd(plant);
   ASSERT_NE(nullptr, ad_plant);
 
   // Construct a new context based on autodiff.

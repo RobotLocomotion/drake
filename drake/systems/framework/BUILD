@@ -495,6 +495,7 @@ drake_cc_googletest(
         "//drake/systems/analysis:stateless_system",
         "//drake/systems/framework/test_utilities:pack_value",
         "//drake/systems/primitives:adder",
+        "//drake/systems/primitives:constant_value_source",
         "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:gain",
         "//drake/systems/primitives:integrator",
