@@ -12,13 +12,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/pelvis/pelvis.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/pelvis/pelvis.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/pelvis/pelvis.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/pelvis/pelvis.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -31,13 +31,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/torso/torsoyaw.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/torso/torsoyaw.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/torso/torsoyaw.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/torso/torsoyaw.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -50,13 +50,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/torso/torsopitch.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/torso/torsopitch.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/torso/torsopitch.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/torso/torsopitch.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -69,13 +69,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/torso/torso.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/torso/torso.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/torso/torso.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/torso/torso.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -127,13 +127,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/head/neckj1.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/head/neckj1.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/head/neckj1.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/head/neckj1.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -146,13 +146,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/head/neckj2.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/head/neckj2.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/head/neckj2.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/head/neckj2.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -165,13 +165,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/head/head_multisense_no_visor.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/head/head_multisense_no_visor.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/head/head_multisense_no_visor.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/head/head_multisense_no_visor.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -223,13 +223,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/arms/aj1_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/arms/aj1_right.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/arms/aj1_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/arms/aj1_right.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -242,13 +242,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/arms/aj2_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/arms/aj2_right.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/arms/aj2_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/arms/aj2_right.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -261,13 +261,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/arms/aj3_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/arms/aj3_right.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/arms/aj3_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/arms/aj3_right.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -280,13 +280,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/arms/aj4_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/arms/aj4_right.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/arms/aj4_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/arms/aj4_right.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -351,13 +351,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/arms/aj5_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/arms/aj5_right.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/arms/aj5_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/arms/aj5_right.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -370,13 +370,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/arms/aj6_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/arms/aj6_right.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/arms/aj6_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/arms/aj6_right.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -389,13 +389,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/arms/palm_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/arms/palm_right.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/arms/palm_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/arms/palm_right.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -447,13 +447,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/thumbj1_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/thumbj1_right.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/thumbj1_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/thumbj1_right.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -466,13 +466,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/thumbj2_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/thumbj2_right.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/thumbj2_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/thumbj2_right.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -485,13 +485,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/thumbj3_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/thumbj3_right.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/thumbj3_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/thumbj3_right.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -504,13 +504,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/thumbj4_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/thumbj4_right.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/thumbj4_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/thumbj4_right.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -559,13 +559,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/indexj1_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/indexj1_right.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/indexj1_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/indexj1_right.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -578,13 +578,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/indexj2_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/indexj2_right.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/indexj2_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/indexj2_right.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -597,13 +597,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/indexj3_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/indexj3_right.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/indexj3_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/indexj3_right.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -643,13 +643,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/middlej1_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/middlej1_right.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/middlej1_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/middlej1_right.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -662,13 +662,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/middlej2_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/middlej2_right.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/middlej2_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/middlej2_right.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -681,13 +681,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/middlej3_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/middlej3_right.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/middlej3_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/middlej3_right.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -727,13 +727,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/pinkyj1_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/pinkyj1_right.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/pinkyj1_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/pinkyj1_right.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -746,13 +746,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/pinkyj2_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/pinkyj2_right.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/pinkyj2_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/pinkyj2_right.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -765,13 +765,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/pinkyj3_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/pinkyj3_right.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/pinkyj3_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/pinkyj3_right.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -811,13 +811,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/arms/aj1_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/arms/aj1_left.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/arms/aj1_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/arms/aj1_left.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -830,13 +830,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/arms/aj2_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/arms/aj2_left.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/arms/aj2_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/arms/aj2_left.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -849,13 +849,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/arms/aj3_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/arms/aj3_left.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/arms/aj3_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/arms/aj3_left.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -868,13 +868,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/arms/aj4_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/arms/aj4_left.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/arms/aj4_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/arms/aj4_left.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -939,13 +939,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/arms/aj5_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/arms/aj5_left.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/arms/aj5_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/arms/aj5_left.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -958,13 +958,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/arms/aj6_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/arms/aj6_left.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/arms/aj6_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/arms/aj6_left.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -977,13 +977,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/arms/palm_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/arms/palm_left.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/arms/palm_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/arms/palm_left.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -1035,13 +1035,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/thumbj1_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/thumbj1_left.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/thumbj1_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/thumbj1_left.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -1054,13 +1054,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/thumbj2_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/thumbj2_left.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/thumbj2_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/thumbj2_left.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -1073,13 +1073,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/thumbj3_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/thumbj3_left.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/thumbj3_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/thumbj3_left.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -1092,13 +1092,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/thumbj4_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/thumbj4_left.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/thumbj4_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/thumbj4_left.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -1147,13 +1147,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/indexj1_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/indexj1_left.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/indexj1_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/indexj1_left.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -1166,13 +1166,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/indexj2_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/indexj2_left.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/indexj2_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/indexj2_left.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -1185,13 +1185,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/indexj3_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/indexj3_left.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/indexj3_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/indexj3_left.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -1231,13 +1231,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/middlej1_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/middlej1_left.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/middlej1_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/middlej1_left.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -1250,13 +1250,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/middlej2_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/middlej2_left.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/middlej2_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/middlej2_left.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -1269,13 +1269,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/middlej3_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/middlej3_left.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/middlej3_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/middlej3_left.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -1315,13 +1315,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/pinkyj1_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/pinkyj1_left.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/pinkyj1_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/pinkyj1_left.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -1334,13 +1334,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/pinkyj2_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/pinkyj2_left.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/pinkyj2_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/pinkyj2_left.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -1353,13 +1353,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/pinkyj3_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/pinkyj3_left.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/fingers/pinkyj3_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/fingers/pinkyj3_left.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -1399,13 +1399,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/legs/lj1_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/legs/lj1_right.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/legs/lj1_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/legs/lj1_right.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -1418,13 +1418,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/legs/lj2_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/legs/lj2_right.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/legs/lj2_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/legs/lj2_right.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -1437,13 +1437,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/legs/lj3_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/legs/lj3_right.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/legs/lj3_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/legs/lj3_right.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -1456,13 +1456,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/legs/lj4_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/legs/lj4_right.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/legs/lj4_right.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/legs/lj4_right.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -1475,13 +1475,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/legs/lj5.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/legs/lj5.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/legs/lj5.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/legs/lj5.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -1494,7 +1494,7 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/legs/foot.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/legs/foot.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </visual>
@@ -1551,7 +1551,7 @@
       <geometry>
         <sphere radius="0.01"/>
       </geometry>
-    </visual>    
+    </visual>
     <collision group="heel">
       <origin rpy="0 0 0" xyz="-0.038 0.055 -0.09"/>
       <geometry>
@@ -1687,13 +1687,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/legs/lj1_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/legs/lj1_left.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/legs/lj1_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/legs/lj1_left.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -1706,13 +1706,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/legs/lj2_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/legs/lj2_left.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/legs/lj2_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/legs/lj2_left.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -1725,13 +1725,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/legs/lj3_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/legs/lj3_left.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/legs/lj3_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/legs/lj3_left.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -1744,13 +1744,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/legs/lj4_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/legs/lj4_left.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/legs/lj4_left.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/legs/lj4_left.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -1763,13 +1763,13 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/legs/lj5.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/legs/lj5.dae"/>
       </geometry>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/legs/lj5.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/legs/lj5.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
@@ -1782,7 +1782,7 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/legs/foot.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/legs/foot.dae"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </visual>
@@ -1839,7 +1839,7 @@
       <geometry>
         <sphere radius="0.01"/>
       </geometry>
-    </visual>    
+    </visual>
     <collision group="heel">
       <origin rpy="0 0 0" xyz="-0.038 0.055 -0.09"/>
       <geometry>
@@ -2612,7 +2612,7 @@
     <!--     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/multisense/head.dae" />
+        <mesh filename="package://valkyrie/urdf/model/meshes/multisense/head.dae" />
       </geometry>
       <material name="">
         <color rgba="0.9098 0.44314 0.031373 1" />
@@ -2642,7 +2642,7 @@
       <!--origin xyz="0.045 -0.001163 -0.08809" rpy="-0.314 0 0" /-->
       <origin rpy="-0.314 0 0" xyz="0.045 -0.0261018277 -0.08342369"/>
       <geometry>
-        <mesh filename="package://Valkyrie/urdf/model/meshes/multisense/head_camera.dae"/>
+        <mesh filename="package://valkyrie/urdf/model/meshes/multisense/head_camera.dae"/>
       </geometry>
       <material name="">
         <color rgba="0.72941 0.35686 0.023529 1"/>
@@ -2765,10 +2765,10 @@
         </clip>
         <noise>
           <type>gaussian</type>
-          <!-- Noise is sampled independently per pixel on each frame.  
+          <!-- Noise is sampled independently per pixel on each frame.
                That pixel's noise value is added to each of its color
                channels, which at that point lie in the range [0,1].
-               The stddev value of 0.007 is based on experimental data 
+               The stddev value of 0.007 is based on experimental data
                from a camera in a Sandia hand pointed at a static scene
                in a couple of different lighting conditions.  -->
           <mean>0.0</mean>
@@ -2790,10 +2790,10 @@
         </clip>
         <noise>
           <type>gaussian</type>
-          <!-- Noise is sampled independently per pixel on each frame.  
+          <!-- Noise is sampled independently per pixel on each frame.
                That pixel's noise value is added to each of its color
                channels, which at that point lie in the range [0,1].
-               The stddev value of 0.007 is based on experimental data 
+               The stddev value of 0.007 is based on experimental data
                from a camera in a Sandia hand pointed at a static scene
                in a couple of different lighting conditions.  -->
           <mean>0.0</mean>
