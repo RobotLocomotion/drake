@@ -45,6 +45,11 @@ using Vector6 = Eigen::Matrix<Scalar, 6, 1>;
 template <typename Scalar>
 using VectorX = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
 
+/// A vector of dynamic size templated on scalar type, up to a maximum of 6
+/// elements.
+template <typename Scalar>
+using VectorUpTo6 = Eigen::Matrix<Scalar, Eigen::Dynamic, 1, 0, 6, 1>;
+
 /// A matrix of 2 rows and 2 columns, templated on scalar type.
 template <typename Scalar>
 using Matrix2 = Eigen::Matrix<Scalar, 2, 2>;
@@ -99,6 +104,10 @@ using AngleAxis = Eigen::AngleAxis<Scalar>;
 /// An Isometry templated on scalar type.
 template <typename Scalar>
 using Isometry3 = Eigen::Transform<Scalar, 3, Eigen::Isometry>;
+
+/// A translation in 3D templated on scalar type.
+template <typename Scalar>
+using Translation3 = Eigen::Translation<Scalar, 3>;
 
 /// A column vector of dynamic size, up to a maximum of 73 elements.
 using VectorUpTo73d = Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73, 1>;

@@ -80,6 +80,21 @@ Vector2<T> Acrobot<T>::CalcCoriolisVector(
 }
 
 template <typename T>
+Vector2<T> Acrobot<T>::CalcGravityVector(
+    const T& theta1, const T& theta2) const {
+  using std::sin;
+  using std::cos;
+
+  const T s1 = sin(theta1);
+  const T s12 = sin(theta1 + theta2);
+  Vector2<T> C;
+  C(0) = g_ * m1_ * lc1_ * s1 + g_ * m2_ * (l1_ * s1 + lc2_ * s12);
+  C(1) = g_ * m2_ * lc2_ * s12;
+
+  return C;
+}
+
+template <typename T>
 Isometry3<T> Acrobot<T>::CalcLink1PoseInWorldFrame(
     const T& theta1) const {
 
@@ -117,6 +132,19 @@ Isometry3<T> Acrobot<T>::CalcLink2PoseInWorldFrame(
 
   // Transformation to world frame W.
   return X_WD_ * X_DL2;
+}
+
+template <typename T>
+Isometry3<T> Acrobot<T>::CalcElbowOutboardFramePoseInWorldFrame(
+    const T& theta1, const T& theta2) const {
+  // Pose of link2's frame L2cm, at the com, in the world frame.
+  const Isometry3<T> X_WL2cm = CalcLink2PoseInWorldFrame(theta1, theta2);
+  // Pose of the elbow outboard frame Eo in Lcm's frame.
+  // Link 2 is a bar with its axial axis aligned with its frame y-axis.
+  // Therefore the elbow outboard frame is at y = +lc2 from link 2's center of
+  // mass. See this class's documentation for details.
+  const Isometry3<T> X_L2cmEo(Translation3<T>(0.0, lc2_, 0.0));
+  return X_WL2cm * X_L2cmEo;
 }
 
 template <typename T>

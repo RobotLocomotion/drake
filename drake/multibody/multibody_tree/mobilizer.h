@@ -407,23 +407,62 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// @}
 
   /// Returns a const Eigen expression of the vector of generalized velocities
-  /// for `this` mobilizer from a vector of generalized velocities for the
-  /// entire MultibodyTree model.
-  /// @note This same method can be used to access arrays of generalized
-  /// accelerations (v̇) and of generalized forces (τ) since they all have the
-  /// same dimensions and are indexed in the same way.
-  Eigen::VectorBlock<const VectorX<T>> get_velocities_from_array(
-      const VectorX<T>& v) const {
-    return v.segment(topology_.velocities_start_in_v,
-                     topology_.num_velocities);
+  /// for `this` mobilizer from a vector `v_array` of generalized velocities for
+  /// the entire MultibodyTree model.
+  /// This method aborts if the input array is not of size
+  /// MultibodyTree::get_num_velocities().
+  Eigen::VectorBlock<const Eigen::Ref<const VectorX<T>>>
+  get_velocities_from_array(const Eigen::Ref<const VectorX<T>>& v_array) const {
+    DRAKE_DEMAND(
+        v_array.size() == this->get_parent_tree().get_num_velocities());
+    return v_array.segment(topology_.velocities_start_in_v,
+                           topology_.num_velocities);
   }
 
   /// Mutable version of get_velocities_from_array().
-  Eigen::VectorBlock<VectorX<T>> get_mutable_velocities_from_array(
-      VectorX<T>* v) const {
-    DRAKE_DEMAND(v != nullptr);
-    return v->segment(topology_.velocities_start_in_v,
-                      topology_.num_velocities);
+  Eigen::VectorBlock<Eigen::Ref<VectorX<T>>> get_mutable_velocities_from_array(
+      EigenPtr<VectorX<T>> v_array) const {
+    DRAKE_DEMAND(v_array != nullptr);
+    DRAKE_DEMAND(
+        v_array->size() == this->get_parent_tree().get_num_velocities());
+    return v_array->segment(topology_.velocities_start_in_v,
+                           topology_.num_velocities);
+  }
+
+  /// Returns a const Eigen expression of the vector of generalized
+  /// accelerations for `this` mobilizer from a vector `vdot_array` of
+  /// generalized accelerations for the entire MultibodyTree model.
+  /// This method aborts if the input array is not of size
+  /// MultibodyTree::get_num_velocities().
+  Eigen::VectorBlock<const Eigen::Ref<const VectorX<T>>>
+  get_accelerations_from_array(
+      const Eigen::Ref<const VectorX<T>>& vdot_array) const {
+    return get_velocities_from_array(vdot_array);
+  }
+
+  /// Mutable version of get_accelerations_from_array().
+  Eigen::VectorBlock<Eigen::Ref<VectorX<T>>>
+  get_mutable_accelerations_from_array(
+      EigenPtr<VectorX<T>> vdot_array) const {
+    return get_mutable_velocities_from_array(vdot_array);
+  }
+
+  /// Returns a const Eigen expression of the vector of generalized forces
+  /// for `this` mobilizer from a vector of generalized forces for the
+  /// entire MultibodyTree model.
+  /// This method aborts if the input array is not of size
+  /// MultibodyTree::get_num_velocities().
+  Eigen::VectorBlock<const Eigen::Ref<const VectorX<T>>>
+  get_generalized_forces_from_array(
+      const Eigen::Ref<const VectorX<T>>& tau_array) const {
+    return get_velocities_from_array(tau_array);
+  }
+
+  /// Mutable version of get_generalized_forces_from_array().
+  Eigen::VectorBlock<Eigen::Ref<VectorX<T>>>
+  get_mutable_generalized_forces_from_array(
+      EigenPtr<VectorX<T>> tau_array) const {
+    return get_mutable_velocities_from_array(tau_array);
   }
 
   /// NVI to DoCloneToScalar() templated on the scalar type of the new clone to
