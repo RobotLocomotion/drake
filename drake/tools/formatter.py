@@ -55,6 +55,23 @@ class FormatterBase(object):
         """
         return self._working_lines == self._original_lines
 
+    def get_first_differing_original_index(self):
+        """Return the first index from original lines that differs from the
+        working lines, or None if no lines differ.  This is a 0-based index,
+        not a line number.
+        """
+        if self.is_same_as_original():
+            return None
+        lengths = [len(x) for x in [self._working_lines, self._original_lines]]
+        for i in xrange(max(lengths)):
+            if i >= min(lengths):
+                return i
+            if self._working_lines[i] != self._original_lines[i]:
+                return i
+        # The lists appear to be equal, but we've already checked for that;
+        # something is horribly wrong.
+        assert False
+
     def is_permutation_of_original(self):
         """Return whether the working list is a permultation of the original
         file lines read in by (or passed to) the constructor, modulo blank
