@@ -21,7 +21,7 @@ drake_cc_library(
         "rod_element.h",
     ],
     deps = [
-        "//drake/multibody/multibody_tree/modeler:multibody_modeler",
+        "//drake/multibody/multibody_tree",
         "//drake/systems/framework",
     ],
 )

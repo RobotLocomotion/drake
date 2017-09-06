@@ -5,8 +5,10 @@
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/multibody/multibody_tree/modeler/multibody_modeler.h"
 #include "drake/examples/cosserat_rod/rod_element.h"
+#include "drake/multibody/multibody_tree/rigid_body.h"
+#include "drake/multibody/multibody_tree/revolute_mobilizer.h"
+#include "drake/multibody/multibody_tree/multibody_tree.h"
 
 namespace drake {
 namespace examples {
@@ -30,10 +32,6 @@ class CosseratRodPlant : public systems::LeafSystem<T> {
   /// Scalar-converting copy constructor.
   template <typename U>
   explicit CosseratRodPlant(const CosseratRodPlant<U>&);
-
-  const multibody::MultibodyModeler<T>& get_modeler() const {
-    return modeler_;
-  }
 
   double mass() const { return mass_; }
 
@@ -63,11 +61,11 @@ class CosseratRodPlant : public systems::LeafSystem<T> {
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
-  // Helper method to create a link segment and add it to the modeler.
-  const multibody::RigidLink<T>& AddLinkElement(
-      int element_index, const multibody::Link<T>& parent, const T& s);
+  // Helper method to create a body segment and add it to the model.
+  const multibody::RigidBody<T>& AddElement(
+      int element_index, const multibody::Body<T>& element_im, const T& s);
 
-  void BuildMultibodyModeler();
+  void BuildMultibodyModel();
 
   // Geometry parameters:
   double length_{0.0};
@@ -100,11 +98,8 @@ class CosseratRodPlant : public systems::LeafSystem<T> {
   systems::OutputPortIndex state_output_port_index_;
   systems::OutputPortIndex energy_output_port_index_;
 
-  multibody::MultibodyModeler<T> modeler_;
-  std::vector<const multibody::RevoluteJoint<T>*> joints_;
-  //const multibody::Link<T>* link1_{nullptr};
-  const multibody::Link<T>* link2_{nullptr};
-  //const multibody::RevoluteJoint<T>* elbow_{nullptr};
+  multibody::MultibodyTree<T> model_;
+  std::vector<const multibody::RevoluteMobilizer<T>*> mobilizers_;
 };
 
 }  // namespace cosserat_rod

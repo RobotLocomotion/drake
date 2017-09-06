@@ -6,6 +6,7 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/examples/cosserat_rod/rod_element.h"
+#include "drake/multibody/multibody_tree/fixed_offset_frame.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 
@@ -49,18 +50,18 @@ CosseratRodPlant<T>::CosseratRodPlant(
   young_modulus_ = [young_modulus](const T& s) -> T { return young_modulus; };
   shear_modulus_ = [shear_modulus](const T& s) -> T { return shear_modulus; };
 
-  BuildMultibodyModeler();
-  DRAKE_DEMAND(modeler_.get_num_positions() == 3 * num_links);
-  DRAKE_DEMAND(modeler_.get_num_velocities() == 3 * num_links);
-  DRAKE_DEMAND(modeler_.get_num_states() == 6 * num_links);
+  BuildMultibodyModel();
+  DRAKE_DEMAND(model_.get_num_positions() == 3 * num_links);
+  DRAKE_DEMAND(model_.get_num_velocities() == 3 * num_links);
+  DRAKE_DEMAND(model_.get_num_states() == 6 * num_links);
 
   //this->DeclareInputPort(systems::kVectorValued, 1);
   state_output_port_index_ = this->DeclareVectorOutputPort(
-      systems::BasicVector<T>(modeler_.get_num_states()),
+      systems::BasicVector<T>(model_.get_num_states()),
       &CosseratRodPlant::OutputState).get_index();
   this->DeclareContinuousState(
-      modeler_.get_num_positions()  /* num_q */,
-      modeler_.get_num_velocities() /* num_v */,
+      model_.get_num_positions()  /* num_q */,
+      model_.get_num_velocities() /* num_v */,
       0 /* num_z */);
 
   // Energy output port.
@@ -92,8 +93,8 @@ CosseratRodPlant<T>::CosseratRodPlant(
 #endif
 
 template <typename T>
-const RigidLink<T>& CosseratRodPlant<T>::AddLinkElement(
-    int element_index, const multibody::Link<T>& parent, const T& s) {
+const RigidBody<T>& CosseratRodPlant<T>::AddElement(
+    int element_index, const multibody::Body<T>& element_im, const T& s) {
   const double element_mass = mass() / num_elements_;
   const double element_length = length_ / num_elements_;
 
@@ -113,27 +114,30 @@ const RigidLink<T>& CosseratRodPlant<T>::AddLinkElement(
 
   std::stringstream stream;
   stream << "Element_" << element_index;
-  const RigidLink<T>& link_element =
-      modeler_.template AddLink<RigidLink>(stream.str(), M_Qcm);
 
-  // Pose of joint inboard frame F in the parent element frame Qim.
+  // Create and add i-th element.
+  const RigidBody<T>& element_i =
+      model_.template AddBody<RigidBody>(M_Qcm);
+
+  // Pose of joint inboard frame F in the element_im element_i frame Qim.
   Isometry3d X_QimF = Isometry3d::Identity();
   if (element_index != 0) {  // not the world.
     X_QimF = Translation3d(0.0, 0.0, element_length / 2.0);
   }
+  const Frame<T>& inboard_frame_on_Qim =
+      model_.template AddFrame<FixedOffsetFrame>(element_im, X_QimF);
 
-  // Pose of joint outboard frame M in this element's frame Qi.
+  // Pose of joint outboard frame M in this element_i's frame Qi.
   const Isometry3d X_QiM{Translation3d(0.0, 0.0, -element_length / 2.0)};
+  const Frame<T>& outboard_frame_on_Qi =
+      model_.template AddFrame<FixedOffsetFrame>(element_i, X_QiM);
 
   stream.clear();
   stream << "Joint_" << element_index;
-  const RevoluteJoint<T>& joint = modeler_.template AddJoint<RevoluteJoint>(
-      stream.str(),
-      parent, X_QimF, link_element, X_QiM, Vector3d::UnitX());
-  joints_.push_back(&joint);
-
-  // Add force element modelling the rod's internal forces.
-  MultibodyTree<T>& model = modeler_.get_mutable_multibody_tree_model();
+  const RevoluteMobilizer<T>& mobilizer =
+      model_.template AddMobilizer<RevoluteMobilizer>(
+          inboard_frame_on_Qim, outboard_frame_on_Qi, Vector3d::UnitX());
+  mobilizers_.push_back(&mobilizer);
 
   const double B1 =
       ExtractDoubleOrThrow(young_modulus_(s) * moment_of_inertia1_(s));
@@ -142,53 +146,51 @@ const RigidLink<T>& CosseratRodPlant<T>::AddLinkElement(
   const double C =
       ExtractDoubleOrThrow(shear_modulus_(s) * moment_of_inertia3_(s));
 
-  // TODO: change to link_element.get_body() (with proper throw if model has
-  // more than one body.
-  model.template AddForceElement<RodElement>(
-      modeler_.get_link_body(parent), element_length,
-      modeler_.get_link_body(link_element), element_length,
+  model_.template AddForceElement<RodElement>(
+      element_im, element_length,
+      element_i, element_length,
       B1, B2, C, tau_bending_, tau_twisting_);
 
-  return link_element;
+  return element_i;
 }
 
 template <typename T>
-void CosseratRodPlant<T>::BuildMultibodyModeler() {
-  const Link<T>& world = modeler_.get_world_link();
+void CosseratRodPlant<T>::BuildMultibodyModel() {
+  const Body<T>& world = model_.get_world_body();
 
   double element_length = length_ / num_elements_;
 
-  // First attached to the world.
-  const RigidLink<T>* parent_element =
-      &AddLinkElement(0, world, element_length / 2.0);
+  // First element is attached to the world.
+  const RigidBody<T>* parent_element =
+      &AddElement(0, world, element_length / 2.0);
 
   // Add the rest.
   for (int element_index = 1; element_index < num_elements_; ++element_index) {
     const T s = element_index * element_length + element_length / 2.0;
-    parent_element = &AddLinkElement(element_index, *parent_element, s);
+    parent_element = &AddElement(element_index, *parent_element, s);
   }
-  DRAKE_ASSERT(static_cast<int>(joints_.size()) == num_elements_);
+  DRAKE_ASSERT(static_cast<int>(mobilizers_.size()) == num_elements_);
 
-  modeler_.Finalize();
+  model_.Finalize();
 }
 
 template <typename T>
 std::unique_ptr<systems::LeafContext<T>>
 CosseratRodPlant<T>::DoMakeContext() const {
-  return modeler_.CreateDefaultContext();
+  return model_.CreateDefaultContext();
 }
 
 template <typename T>
 void CosseratRodPlant<T>::SetHorizontalCantileverState(
     systems::Context<T>* context) const {
   // The first joint, connecting to the world has angle = -pi/2:
-  joints_[0]->set_angle(context, M_PI / 2);
+  mobilizers_[0]->set_angle(context, M_PI / 2);
 
   // Set the rest to zero angle.
   for (int joint_index(1); joint_index < num_elements_; ++joint_index) {
-    const multibody::RevoluteJoint<T>* joint = joints_[joint_index];
+    const multibody::RevoluteMobilizer<T>* mobilizer = mobilizers_[joint_index];
     const double angle = 0.0;
-    joint->set_angle(context, angle);
+    mobilizer->set_angle(context, angle);
   }
 }
 
@@ -210,13 +212,13 @@ void CosseratRodPlant<T>::DoCalcTimeDerivatives(
       dynamic_cast<const systems::BasicVector<T>&>(
           context.get_continuous_state_vector()).get_value();
 
-  const int nv = modeler_.get_num_velocities();
+  const int nv = model_.get_num_velocities();
 
   MatrixX<T> M(nv, nv);
-  modeler_.CalcMassMatrixViaInverseDynamics(context, M);
+  //modeler_.CalcMassMatrixViaInverseDynamics(context, M);
 
   VectorX<T> C(nv);
-  modeler_.CalcBiasTerm(context, C);
+  //modeler_.CalcBiasTerm(context, C);
 
   auto v = x.bottomRows(nv);
 
@@ -224,7 +226,7 @@ void CosseratRodPlant<T>::DoCalcTimeDerivatives(
   VectorX<T> qdot(nv);
   qdot = v;
 
-  VectorX<T> xdot(modeler_.get_num_states());
+  VectorX<T> xdot(model_.get_num_states());
   xdot << qdot, M.llt().solve(- C);
   derivatives->SetFromVector(xdot);
 }
