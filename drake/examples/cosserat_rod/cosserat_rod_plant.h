@@ -63,6 +63,14 @@ class CosseratRodPlant : public systems::LeafSystem<T> {
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
+  void DoPublish(
+      const systems::Context<T>& context,
+      const std::vector<const systems::PublishEvent<T>*>&) const override;
+
+  void CalcElementPosesOutput(
+      const systems::Context<T>& context,
+      std::vector<Isometry3<T>>* poses) const;
+
   // Helper method to create a body segment and add it to the model.
   const multibody::RigidBody<T>& AddElement(
       int element_index, const multibody::Body<T>& element_im, const T& s);
@@ -99,6 +107,7 @@ class CosseratRodPlant : public systems::LeafSystem<T> {
   // Output ports:
   systems::OutputPortIndex state_output_port_index_;
   systems::OutputPortIndex energy_output_port_index_;
+  systems::OutputPortIndex poses_output_port_index_;
 
   multibody::MultibodyTree<T> model_;
   std::vector<const multibody::RevoluteMobilizer<T>*> mobilizers_;

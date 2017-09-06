@@ -1,6 +1,7 @@
 #include "drake/examples/cosserat_rod/cosserat_rod_plant.h"
 
 #include <cmath>
+#include <fstream>
 #include <vector>
 
 #include "drake/common/drake_throw.h"
@@ -74,6 +75,46 @@ CosseratRodPlant<T>::CosseratRodPlant(
         output->SetAtIndex(0, this->DoCalcKineticEnergy(context));
         output->SetAtIndex(1, this->DoCalcPotentialEnergy(context));
       }).get_index();
+
+  // poses output port.
+  poses_output_port_index_ =
+      this->DeclareAbstractOutputPort(
+          std::vector<Isometry3<T>>(),
+          &CosseratRodPlant::CalcElementPosesOutput).get_index();
+}
+
+template <typename T>
+void CosseratRodPlant<T>::DoPublish(
+    const systems::Context<T>& context,
+    const std::vector<const systems::PublishEvent<T>*>&) const {
+  std::vector<Isometry3<T>> poses;
+  CalcElementPosesOutput(context, &poses);
+
+  std::ofstream fs;
+  fs.open("poses.dat", std::fstream::out | std::fstream::app);
+
+  for (auto& pose : poses) {
+    fs << context.get_time() << " "
+       << pose.translation().transpose() << std::endl;
+  }
+
+  fs.close();
+}
+
+template <typename T>
+void CosseratRodPlant<T>::CalcElementPosesOutput(
+    const systems::Context<T>& context,
+    std::vector<Isometry3<T>>* poses) const {
+  DRAKE_DEMAND(poses != nullptr);
+
+  PositionKinematicsCache<T> pc(model_.get_topology());
+  model_.CalcPositionKinematicsCache(context, &pc);
+
+  poses->clear();
+  for (BodyNodeIndex node_index(0);
+       node_index < model_.get_num_bodies(); ++node_index) {
+    poses->push_back(pc.get_X_WB(node_index));
+  }
 }
 
 #if 0
