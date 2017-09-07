@@ -1,12 +1,13 @@
 #pragma once
 
 #include <memory>
+
+#include <Eigen/Dense>
+
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/perception/dev/neural_network.h"
 #include "drake/systems/framework/leaf_system.h"
-
-#include <Eigen/Dense>
 
 namespace drake {
 namespace perception {
