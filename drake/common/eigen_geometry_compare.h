@@ -25,7 +25,6 @@ namespace drake {
  * rotation matrix cases (using ExpectRotMat) and comparing both transforms
  * as matrices.
  */
-
 ::testing::AssertionResult CompareTransforms(
     const Eigen::Isometry3d &X_expected, const Eigen::Isometry3d &X_actual,
     double tolerance);

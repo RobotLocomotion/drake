@@ -8,8 +8,8 @@ namespace drake {
 namespace manipulation {
 namespace util {
 namespace {
-//
-//int get_dimensions(double) { return 1; }
+
+int get_dimensions(double) { return 1; }
 
 int get_dimensions(VectorX<double> data) { return data.size(); }
 }  // namespace
@@ -43,7 +43,7 @@ T MovingAverageFilter<T>::Update(const T& new_data) {
   return (1.0 / window_.size()) * sum_;
 }
 
-//template class MovingAverageFilter<double>;
+template class MovingAverageFilter<double>;
 template class MovingAverageFilter<VectorX<double>>;
 
 }  // namespace util
