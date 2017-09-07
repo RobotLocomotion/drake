@@ -398,6 +398,14 @@ void ConstraintSolver<T>::DetermineIndependentConstraints(
   }
 }
 
+// Given a matrix `A` of blocks consisting of generalized inertia (`M`) and the
+// Jacobian of bilaterals constraints (`G`):
+// A ≡ | M  -Gᵀ |
+//     | G'  0  |
+// this function sets a function pointer that computes `X` for
+// X = | R 0 | A⁻¹ | B |, given some unknown matrix R
+//                 | 0 |
+// `B` *and* that columns of `R` corresponding to
 template <typename T>
 template <typename ProblemData>
 void ConstraintSolver<T>::DetermineNewPartialInertiaSolveOperator(
@@ -415,22 +423,15 @@ void ConstraintSolver<T>::DetermineNewPartialInertiaSolveOperator(
   *A_solve = [problem_data_ptr, Del_ptr, G_mult, G_transpose_mult,
       indep_constraints_ptr, num_generalized_velocities](const MatrixX<T>& X)
       -> MatrixX<T> {
-    // From a block matrix inversion,
-    // | M  -Gᵀ |⁻¹ | Y | = |  C  E || Y | = | CY + EZ   |
-    // | G'  0  |   | Z |   | -Eᵀ F || Z |   | -EᵀY + FZ |
-    // where C  ≡ M⁻¹ - M⁻¹Gᵀ(GM⁻¹Gᵀ)⁻¹GM⁻¹
-    //       E  ≡ M⁻¹Gᵀ(GM⁻¹Gᵀ)⁻¹
-    //      -Eᵀ ≡ -(GM⁻¹Gᵀ)⁻¹GM⁻¹
-    //       F  ≡ (GM⁻¹Gᵀ)
-    // Compute block inversion.
+    // See block inversion formula from DetermineNewFullInertiaSolveOperator().
 
     // Set the result matrix.
     const int C_rows = num_generalized_velocities;
     const int E_cols = indep_constraints_ptr->size();
     MatrixX<T> result(C_rows + E_cols, X.cols());
 
-    // Begin computation of components of C.
-    // Compute M⁻¹ X
+    // Begin computation of components of C (upper left hand block of inverse
+    // of A): compute M⁻¹ X
     const MatrixX<T> iM_X = problem_data_ptr->solve_inertia(X);
 
     // Compute G M⁻¹ X
@@ -455,6 +456,12 @@ void ConstraintSolver<T>::DetermineNewPartialInertiaSolveOperator(
   };
 }
 
+// Given a matrix `A` of blocks consisting of generalized inertia (`M`) and the
+// Jacobian of bilaterals constraints (`G`):
+// A ≡ | M  -Gᵀ |
+//     | G'  0  |
+// this function sets a function pointer that computes `X` for `AX = B`, given
+// `B`.
 template <typename T>
 template <typename ProblemData>
 void ConstraintSolver<T>::DetermineNewFullInertiaSolveOperator(
@@ -470,7 +477,7 @@ void ConstraintSolver<T>::DetermineNewFullInertiaSolveOperator(
   const Eigen::LLT<MatrixX<T>>* Del_ptr = &Del;
 
   *A_solve = [problem_data_ptr, Del_ptr, G_mult, G_transpose_mult,
-      indep_constraints_ptr, num_generalized_velocities](const MatrixX<T>& X)
+      indep_constraints_ptr, num_generalized_velocities](const MatrixX<T>& B)
       -> MatrixX<T> {
     // From a block matrix inversion,
     // | M  -Gᵀ |⁻¹ | Y | = |  C  E || Y | = | CY + EZ   |
@@ -479,18 +486,19 @@ void ConstraintSolver<T>::DetermineNewFullInertiaSolveOperator(
     //       E  ≡ M⁻¹Gᵀ(GM⁻¹Gᵀ)⁻¹
     //      -Eᵀ ≡ -(GM⁻¹Gᵀ)⁻¹GM⁻¹
     //       F  ≡ (GM⁻¹Gᵀ)
-    // Compute block inversion.
+    //       B  ≡ | Y |
+    //            | Z |
 
-    // Set the result matrix.
+    // Set the result matrix (X).
     const int C_rows = num_generalized_velocities;
     const int E_cols = indep_constraints_ptr->size();
-    MatrixX<T> result(C_rows + E_cols, X.cols());
+    MatrixX<T> X(C_rows + E_cols, B.cols());
 
-    // Name the blocks of X and result.
-    const auto Y = X.block(0, 0, C_rows, X.cols());
-    const auto Z = X.block(C_rows, 0, E_cols, X.cols());
-    auto result_top = result.block(0, 0, C_rows, result.cols());
-    auto result_bot = result.block(C_rows, 0, E_cols, result.cols());
+    // Name the blocks of B and X.
+    const auto Y = B.block(0, 0, C_rows, B.cols());
+    const auto Z = B.block(C_rows, 0, E_cols, B.cols());
+    auto X_top = X.block(0, 0, C_rows, X.cols());
+    auto X_bot = X.block(C_rows, 0, E_cols, X.cols());
 
     // 1. Begin computation of components of C.
     // Compute M⁻¹ Y
@@ -522,13 +530,12 @@ void ConstraintSolver<T>::DetermineNewFullInertiaSolveOperator(
     const MatrixX<T> iM_GT_Del_Z = problem_data_ptr->solve_inertia(GT_Del_Z);
 
     // Set the top block of the result.
-    result_top = problem_data_ptr->solve_inertia(Y) - iM_GT_Del_G_iM_Y +
-        iM_GT_Del_Z;
+    X_top = problem_data_ptr->solve_inertia(Y) - iM_GT_Del_G_iM_Y + iM_GT_Del_Z;
 
     // Set the bottom block of the result.
-    result_bot = Del_ptr->solve(Z) - Del_G_iM_Y;
+    X_bot = Del_ptr->solve(Z) - Del_G_iM_Y;
 
-    return result;
+    return X;
   };
 }
 
@@ -540,10 +547,6 @@ void ConstraintSolver<T>::UpdateProblemDataForUnilateralConstraints(
     ConstraintAccelProblemData<T>** modified_problem_data) const {
   // Verify that the modified problem data points to something.
   DRAKE_DEMAND(modified_problem_data);
-
-  // Get pointers to the objects.
-//  const std::vector<int>* indep_constraints_ptr = &indep_constraints;
-//  const ConstraintAccelProblemData<T>* problem_data_ptr = &problem_data;
 
   // Construct a new problem data.
   if (indep_constraints.empty()) {
@@ -571,78 +574,14 @@ void ConstraintSolver<T>::UpdateProblemDataForUnilateralConstraints(
       new_data.kG[i] = problem_data.kG[indep_constraints[i]];
 
     // Update the function pointers.
-    // (1) Inertia solve operator.
     new_data.solve_inertia = modified_inertia_solve;
-new_data.N_mult = problem_data.N_mult;
-new_data.N_minus_muQ_transpose_mult = problem_data.N_minus_muQ_transpose_mult;
-new_data.F_mult = problem_data.F_mult;
-new_data.F_transpose_mult = problem_data.F_transpose_mult;
-new_data.L_mult = problem_data.L_mult;
-new_data.L_transpose_mult = problem_data.L_transpose_mult;
-new_data.tau = problem_data.tau;
-/*
-    // (2) Contact normal operators.
-    new_data.N_mult =
-        [problem_data_ptr, indep_constraints_ptr](const VectorX<T>& v)
-            -> VectorX<T> {
-          return problem_data_ptr->N_mult(
-              v.segment(0, problem_data_ptr->tau.size()));
-        };
-    new_data.N_minus_muQ_transpose_mult =
-        [problem_data_ptr, indep_constraints_ptr](const VectorX<T>& lambda) ->
-            VectorX<T> {
-          VectorX<T> concat(problem_data_ptr->tau.size() +
-              indep_constraints_ptr->size());
-          concat.setZero();
-          concat.segment(0, problem_data_ptr->tau.size()) =
-              problem_data_ptr->N_minus_muQ_transpose_mult(lambda);
-          return concat;
-        };
-
-    // (3) Contact spanning direction operators.
-    new_data.F_mult =
-        [problem_data_ptr, indep_constraints_ptr](const VectorX<T>& v)
-            -> VectorX<T> {
-          return problem_data_ptr->F_mult(
-              v.segment(0, problem_data_ptr->tau.size()));
-        };
-    new_data.F_transpose_mult =
-        [problem_data_ptr, indep_constraints_ptr](const VectorX<T>& lambda) ->
-            VectorX<T> {
-          VectorX<T> concat(problem_data_ptr->tau.size() +
-              indep_constraints_ptr->size());
-          concat.setZero();
-          concat.segment(0, problem_data_ptr->tau.size()) =
-              problem_data_ptr->F_transpose_mult(lambda);
-          return concat;
-        };
-
-    // (4) Unilateral constraint operators.
-    new_data.L_mult =
-        [problem_data_ptr, indep_constraints_ptr](const VectorX<T>& v)
-            -> VectorX<T> {
-          return problem_data_ptr->L_mult(
-              v.segment(0, problem_data_ptr->tau.size()));
-        };
-    new_data.L_transpose_mult =
-        [problem_data_ptr, indep_constraints_ptr](const VectorX<T>& lambda) ->
-            VectorX<T> {
-          VectorX<T> concat(problem_data_ptr->tau.size() +
-              indep_constraints_ptr->size());
-          concat.setZero();
-          concat.segment(0, problem_data_ptr->tau.size()) =
-              problem_data_ptr->L_transpose_mult(lambda);
-          return concat;
-        };
-
-    // Update tau.
-    new_data.tau.resize(problem_data.tau.size() + indep_constraints.size());
-    new_data.tau.segment(0, problem_data.tau.size()) = problem_data.tau;
-    new_data.tau.segment(
-        problem_data.tau.size(),
-        new_data.tau.size() - problem_data.tau.size()).setZero();
-        */
-  }
+    new_data.N_mult = problem_data.N_mult;
+    new_data.N_minus_muQ_transpose_mult = problem_data.N_minus_muQ_transpose_mult;
+    new_data.F_mult = problem_data.F_mult;
+    new_data.F_transpose_mult = problem_data.F_transpose_mult;
+    new_data.L_mult = problem_data.L_mult;
+    new_data.L_transpose_mult = problem_data.L_transpose_mult;
+    new_data.tau = problem_data.tau;
 }
 
 template <typename T>
@@ -653,10 +592,6 @@ void ConstraintSolver<T>::UpdateProblemDataForUnilateralConstraints(
     ConstraintVelProblemData<T>** modified_problem_data) const {
   // Verify that the modified problem data points to something.
   DRAKE_DEMAND(modified_problem_data);
-
-  // Get pointers to the objects.
-//  const std::vector<int>* indep_constraints_ptr = &indep_constraints;
-//  const ConstraintAccelProblemData<T>* problem_data_ptr = &problem_data;
 
   // Construct a new problem data.
   if (indep_constraints.empty()) {
@@ -681,7 +616,6 @@ void ConstraintSolver<T>::UpdateProblemDataForUnilateralConstraints(
       new_data.kG[i] = problem_data.kG[indep_constraints[i]];
 
     // Update the function pointers.
-    // (1) Inertia solve operator.
     new_data.solve_inertia = modified_inertia_solve;
     new_data.N_mult = problem_data.N_mult;
     new_data.N_transpose_mult = problem_data.N_transpose_mult;
@@ -690,68 +624,6 @@ void ConstraintSolver<T>::UpdateProblemDataForUnilateralConstraints(
     new_data.L_mult = problem_data.L_mult;
     new_data.L_transpose_mult = problem_data.L_transpose_mult;
     new_data.v = problem_data.v;
-/*
-    // (2) Contact normal operators.
-    new_data.N_mult =
-        [problem_data_ptr, indep_constraints_ptr](const VectorX<T>& v)
-            -> VectorX<T> {
-          return problem_data_ptr->N_mult(
-              v.segment(0, problem_data_ptr->tau.size()));
-        };
-    new_data.N_minus_muQ_transpose_mult =
-        [problem_data_ptr, indep_constraints_ptr](const VectorX<T>& lambda) ->
-            VectorX<T> {
-          VectorX<T> concat(problem_data_ptr->tau.size() +
-              indep_constraints_ptr->size());
-          concat.setZero();
-          concat.segment(0, problem_data_ptr->tau.size()) =
-              problem_data_ptr->N_minus_muQ_transpose_mult(lambda);
-          return concat;
-        };
-
-    // (3) Contact spanning direction operators.
-    new_data.F_mult =
-        [problem_data_ptr, indep_constraints_ptr](const VectorX<T>& v)
-            -> VectorX<T> {
-          return problem_data_ptr->F_mult(
-              v.segment(0, problem_data_ptr->tau.size()));
-        };
-    new_data.F_transpose_mult =
-        [problem_data_ptr, indep_constraints_ptr](const VectorX<T>& lambda) ->
-            VectorX<T> {
-          VectorX<T> concat(problem_data_ptr->tau.size() +
-              indep_constraints_ptr->size());
-          concat.setZero();
-          concat.segment(0, problem_data_ptr->tau.size()) =
-              problem_data_ptr->F_transpose_mult(lambda);
-          return concat;
-        };
-
-    // (4) Unilateral constraint operators.
-    new_data.L_mult =
-        [problem_data_ptr, indep_constraints_ptr](const VectorX<T>& v)
-            -> VectorX<T> {
-          return problem_data_ptr->L_mult(
-              v.segment(0, problem_data_ptr->tau.size()));
-        };
-    new_data.L_transpose_mult =
-        [problem_data_ptr, indep_constraints_ptr](const VectorX<T>& lambda) ->
-            VectorX<T> {
-          VectorX<T> concat(problem_data_ptr->tau.size() +
-              indep_constraints_ptr->size());
-          concat.setZero();
-          concat.segment(0, problem_data_ptr->tau.size()) =
-              problem_data_ptr->L_transpose_mult(lambda);
-          return concat;
-        };
-
-    // Update tau.
-    new_data.tau.resize(problem_data.tau.size() + indep_constraints.size());
-    new_data.tau.segment(0, problem_data.tau.size()) = problem_data.tau;
-    new_data.tau.segment(
-        problem_data.tau.size(),
-        new_data.tau.size() - problem_data.tau.size()).setZero();
-        */
   }
 }
 
@@ -1040,14 +912,17 @@ void ConstraintSolver<T>::SolveImpactProblem(
   const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
                                                    problem_data.r.end(), 0);
 
-  // TODO(edrumwri): Fix me to check for correctness in bilateral constraints.
   // If no impact, do not apply the impact model.
   const VectorX<T> N_eval = problem_data.N_mult(problem_data.v) +
       problem_data.kN;
   const VectorX<T> L_eval = problem_data.L_mult(problem_data.v) +
       problem_data.kL;
+  const VectorX<T> G_eval = problem_data.G_mult(problem_data.v) +
+      problem_data.kG;
+
   if ((num_contacts == 0 || N_eval.minCoeff() >= 0) &&
-      (num_limits == 0 || L_eval.minCoeff() >= 0)) {
+      (num_limits == 0 || L_eval.minCoeff() >= 0) &&
+      (num_eq_constraints == 0 || G_eval.minCoeff() >= 0)) {
     cf->setZero(num_contacts + num_spanning_vectors + num_limits);
     return;
   }
