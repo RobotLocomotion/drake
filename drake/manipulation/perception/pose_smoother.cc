@@ -34,8 +34,7 @@ struct InternalState {
 // Computes velocity of the motion from pose_2 to pose_1 taking place in
 // delta_t seconds.
 VectorX<double> ComputeVelocities(const Isometry3d& pose_1,
-                                  const Isometry3d& pose_2,
-                                  double delta_t) {
+                                  const Isometry3d& pose_2, double delta_t) {
   VectorX<double> velocities = VectorX<double>::Zero(6);
 
   Eigen::Vector3d translation_diff =
@@ -44,10 +43,6 @@ VectorX<double> ComputeVelocities(const Isometry3d& pose_1,
 
   Eigen::AngleAxisd angle_axis_diff;
   // Computes angular velocity from the angle difference.
-
-  drake::log()->info("system velocity check poses \n pose 1 rot:\n{}\n "
-                         "pose 2 rot:\n{}", pose_1.linear(), pose_2.linear());
-
   angle_axis_diff =
       Eigen::AngleAxisd(pose_1.linear() * pose_2.linear().inverse());
   velocities.tail<3>() =
@@ -62,32 +57,27 @@ PoseSmoother::PoseSmoother(double max_linear_velocity,
                            double period_sec)
     : PoseSmoother(max_linear_velocity, max_angular_velocity, period_sec,
                    std::make_unique<MovingAverageFilter<VectorX<double>>>(
-          filter_window_size)) {
-}
+                       filter_window_size)) {}
 
 PoseSmoother::PoseSmoother(double max_linear_velocity,
-                           double max_angular_velocity,
-                           double period_sec)
+                           double max_angular_velocity, double period_sec)
     : PoseSmoother(max_linear_velocity, max_angular_velocity, period_sec,
-                   nullptr) {
-}
+                   nullptr) {}
 
 PoseSmoother::PoseSmoother(
-    double max_linear_velocity,
-    double max_angular_velocity,
-    double period_sec,
-    std::unique_ptr<util::MovingAverageFilter<VectorX<double>>> filter) :
-    smoothed_pose_output_port_(
-        this->DeclareAbstractOutputPort(&PoseSmoother::OutputSmoothedPose)
-            .get_index()),
-    smoothed_velocity_output_port_(
-        this->DeclareAbstractOutputPort(&PoseSmoother::OutputSmoothedVelocity)
-            .get_index()),
-    kMaxLinearVelocity(max_linear_velocity),
-    kMaxAngularVelocity(max_angular_velocity),
-    kDiscreteUpdateInSec(period_sec),
-    filter_(std::move(filter)),
-    is_filter_enabled_(filter_!= nullptr) {
+    double max_linear_velocity, double max_angular_velocity, double period_sec,
+    std::unique_ptr<util::MovingAverageFilter<VectorX<double>>> filter)
+    : smoothed_pose_output_port_(
+          this->DeclareAbstractOutputPort(&PoseSmoother::OutputSmoothedPose)
+              .get_index()),
+      smoothed_velocity_output_port_(
+          this->DeclareAbstractOutputPort(&PoseSmoother::OutputSmoothedVelocity)
+              .get_index()),
+      kMaxLinearVelocity(max_linear_velocity),
+      kMaxAngularVelocity(max_angular_velocity),
+      kDiscreteUpdateInSec(period_sec),
+      filter_(std::move(filter)),
+      is_filter_enabled_(filter_ != nullptr) {
   this->set_name("Pose Smoother");
   this->DeclareAbstractState(
       systems::AbstractValue::Make<InternalState>(InternalState()));
@@ -118,7 +108,7 @@ void PoseSmoother::DoCalcUnrestrictedUpdate(
     internal_state.is_first_time_ = false;
     internal_state.pose_ = input_pose;
     internal_state.time_since_last_accepted_pose_ = kDiscreteUpdateInSec;
-    drake::log()->info("First time in system");
+    drake::log()->debug("PoseSmoother initial state set.");
   }
 
   Vector6<double> new_velocity = ComputeVelocities(
@@ -145,17 +135,10 @@ void PoseSmoother::DoCalcUnrestrictedUpdate(
     if (is_filter_enabled_) {
       VectorX<double> temp =
           filter_->Update(Isometry3dToVector(corrected_input));
-//      drake::log()->info("Data out of MAF : {}", temp.transpose());
       accepted_pose = VectorToIsometry3d(temp);
-//      accepted_pose = VectorToIsometry3d(Isometry3dToVector(
-//          corrected_input));
-//      accepted_pose = corrected_input;
     } else {
       accepted_pose = corrected_input;
     }
-    drake::log()->info("*********");
-    drake::log()->info("System Corrected input :\n{}", corrected_input.linear());
-    drake::log()->info("System Accepted pose :\n{}", accepted_pose.linear());
     current_velocity = ComputeVelocities(accepted_pose, current_pose,
                                          time_since_last_accepted_pose);
 
@@ -174,9 +157,6 @@ void PoseSmoother::OutputSmoothedPose(const systems::Context<double>& context,
   const auto internal_state = context.get_abstract_state<InternalState>(0);
   *output = internal_state.pose_;
   output->makeAffine();
-  drake::log()->info("System Accepted pose copied to output:\n{}",
-                     output->linear());
-
 }
 
 void PoseSmoother::OutputSmoothedVelocity(

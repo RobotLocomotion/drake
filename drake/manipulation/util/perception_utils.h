@@ -13,7 +13,7 @@ namespace util {
  * @param pose_vector input pose as a VectorX<double>.
  * @return An Eigen::Isometry3d with the output pose.
  */
-Eigen::Isometry3d VectorToIsometry3d(const VectorX<double> &pose_vector);
+Eigen::Isometry3d VectorToIsometry3d(const VectorX<double>& pose_vector);
 
 /**
  * Converts a pose specified as an Eigen::Isometry3d into a 7 dimensional
