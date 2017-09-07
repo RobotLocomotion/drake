@@ -576,12 +576,14 @@ void ConstraintSolver<T>::UpdateProblemDataForUnilateralConstraints(
     // Update the function pointers.
     new_data.solve_inertia = modified_inertia_solve;
     new_data.N_mult = problem_data.N_mult;
-    new_data.N_minus_muQ_transpose_mult = problem_data.N_minus_muQ_transpose_mult;
+    new_data.N_minus_muQ_transpose_mult =
+        problem_data.N_minus_muQ_transpose_mult;
     new_data.F_mult = problem_data.F_mult;
     new_data.F_transpose_mult = problem_data.F_transpose_mult;
     new_data.L_mult = problem_data.L_mult;
     new_data.L_transpose_mult = problem_data.L_transpose_mult;
     new_data.tau = problem_data.tau;
+  }
 }
 
 template <typename T>
