@@ -19,8 +19,12 @@ GTEST_TEST(SystemConstraintTest, BasicTest) {
       const Context<double>& context, Eigen::VectorXd* value) {
     *value = Vector1d(context.get_continuous_state_vector().GetAtIndex(1));
   };
-  SystemConstraint<double> constraint(calc, Vector1d(-1.0), Vector1d(1.0),
-                                      "test constraint");
+  SystemConstraint<double>::CalcCallback calc2 = [](
+      const Context<double>& context, Eigen::VectorXd* value) {
+    *value =
+        Eigen::Vector2d(context.get_continuous_state_vector().CopyToVector());
+  };
+
   Eigen::VectorXd value;
 
   // Make a (linear) system just to make a valid context.
@@ -29,20 +33,39 @@ GTEST_TEST(SystemConstraintTest, BasicTest) {
                               Eigen::MatrixXd(0, 1));
   auto context = system.CreateDefaultContext();
 
+  // Test equality constraint.
+  SystemConstraint<double> equality_constraint(calc, 1, true,
+                                               "equality constraint");
   context->get_mutable_continuous_state_vector()->SetAtIndex(1, 5.0);
-  constraint.Calc(*context, &value);
+  equality_constraint.Calc(*context, &value);
   EXPECT_EQ(value[0], 5.0);
-  EXPECT_FALSE(constraint.CheckSatisfied(*context));
+  EXPECT_FALSE(equality_constraint.CheckSatisfied(*context));
 
-  context->get_mutable_continuous_state_vector()->SetAtIndex(1, 0.5);
-  constraint.Calc(*context, &value);
-  EXPECT_EQ(value[0], 0.5);
-  EXPECT_TRUE(constraint.CheckSatisfied(*context));
+  context->get_mutable_continuous_state_vector()->SetAtIndex(1, 0.0);
+  equality_constraint.Calc(*context, &value);
+  EXPECT_EQ(value[0], 0.0);
+  EXPECT_TRUE(equality_constraint.CheckSatisfied(*context));
 
-  EXPECT_EQ(constraint.size(), 1);
-  EXPECT_TRUE(CompareMatrices(constraint.lower_bound(), Vector1d(-1.0)));
-  EXPECT_TRUE(CompareMatrices(constraint.upper_bound(), Vector1d(1.0)));
-  EXPECT_EQ(constraint.description(), "test constraint");
+  EXPECT_EQ(equality_constraint.size(), 1);
+  EXPECT_EQ(equality_constraint.description(), "equality constraint");
+
+  // Test inequality constraint.
+  SystemConstraint<double> inequality_constraint(calc2, 2, false,
+                                                 "inequality constraint");
+  context->get_mutable_continuous_state_vector()->SetAtIndex(0, 3.0);
+  context->get_mutable_continuous_state_vector()->SetAtIndex(1, 5.0);
+  inequality_constraint.Calc(*context, &value);
+  EXPECT_EQ(value[0], 3.0);
+  EXPECT_EQ(value[1], 5.0);
+  EXPECT_TRUE(inequality_constraint.CheckSatisfied(*context));
+
+  context->get_mutable_continuous_state_vector()->SetAtIndex(1, -0.5);
+  inequality_constraint.Calc(*context, &value);
+  EXPECT_EQ(value[1], -0.5);
+  EXPECT_FALSE(inequality_constraint.CheckSatisfied(*context));
+
+  EXPECT_EQ(inequality_constraint.size(), 2);
+  EXPECT_EQ(inequality_constraint.description(), "inequality constraint");
 }
 
 }  // namespace

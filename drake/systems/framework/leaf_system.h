@@ -1016,9 +1016,8 @@ class LeafSystem : public System<T> {
   SystemConstraintIndex DeclareEqualityConstraint(
       typename SystemConstraint<T>::CalcCallback calc, int count,
       const std::string& description) {
-    Eigen::VectorXd lower_bound = Eigen::VectorXd::Zero(count);
     return this->AddConstraint(std::make_unique<SystemConstraint<T>>(
-        calc, lower_bound, lower_bound, description));
+        calc, count, true, description));
   }
 
   /// Declares a system constraint of the form
@@ -1067,11 +1066,8 @@ class LeafSystem : public System<T> {
   SystemConstraintIndex DeclareInequalityConstraint(
       typename SystemConstraint<T>::CalcCallback calc, int count,
       const std::string& description) {
-    Eigen::VectorXd lower_bound = Eigen::VectorXd::Zero(count);
-    Eigen::VectorXd upper_bound = Eigen::VectorXd::Constant(
-        count, std::numeric_limits<double>::infinity());
     return this->AddConstraint(std::make_unique<SystemConstraint<T>>(
-        calc, lower_bound, upper_bound, description));
+        calc, count, false, description));
   }
 
   /// Derived-class event handler for all simultaneous publish events
