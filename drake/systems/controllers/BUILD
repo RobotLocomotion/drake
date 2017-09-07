@@ -43,6 +43,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "linear_model_predictive_controller",
+    srcs = ["linear_model_predictive_controller.cc"],
+    hdrs = ["linear_model_predictive_controller.h"],
+    deps = [
+        "//drake/common/trajectories:piecewise_polynomial_trajectory",
+        "//drake/systems/primitives:linear_system",
+        "//drake/systems/trajectory_optimization:direct_transcription",
+    ],
+)
+
+drake_cc_library(
     name = "linear_quadratic_regulator",
     srcs = ["linear_quadratic_regulator.cc"],
     hdrs = ["linear_quadratic_regulator.h"],
@@ -200,6 +211,16 @@ drake_cc_googletest(
         "//drake/common:find_resource",
         "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/multibody/parsers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "linear_model_predictive_controller_test",
+    deps = [
+        ":linear_model_predictive_controller",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/math:discrete_algebraic_riccati_equation",
+        "//drake/systems/analysis:simulator",
     ],
 )
 
