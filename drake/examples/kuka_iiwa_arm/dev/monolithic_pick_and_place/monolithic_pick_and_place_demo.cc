@@ -345,8 +345,8 @@ int DoMain(void) {
   const Vector6<double>& object_velocity = world_state.get_object_velocity();
   Isometry3<double> goal = place_locations.back();
   goal.translation()(2) += kTableTopZInWorld;
-  Eigen::Vector3d object_rpy = math::rotmat2rpy(object_pose.rotation());
-  Eigen::Vector3d goal_rpy = math::rotmat2rpy(goal.rotation());
+  Eigen::Vector3d object_rpy = math::rotmat2rpy(object_pose.linear());
+  Eigen::Vector3d goal_rpy = math::rotmat2rpy(goal.linear());
 
   drake::log()->info("Pose: {} {}",
                      object_pose.translation().transpose(),

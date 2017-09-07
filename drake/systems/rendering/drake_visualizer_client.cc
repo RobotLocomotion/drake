@@ -76,7 +76,7 @@ lcmt_viewer_geometry_data MakeGeometryData(
   Eigen::Map<Eigen::Vector3f> position(geometry_data.position);
   position = transform.translation().cast<float>();
   Eigen::Map<Eigen::Vector4f> quaternion(geometry_data.quaternion);
-  quaternion = math::rotmat2quat(transform.rotation()).cast<float>();
+  quaternion = math::rotmat2quat(transform.linear()).cast<float>();
 
   Eigen::Map<Eigen::Vector4f> color(geometry_data.color);
   color = visual_element.getMaterial().template cast<float>();

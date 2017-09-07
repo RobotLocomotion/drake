@@ -108,12 +108,12 @@ AssertionResult CompareTransforms(
     const Eigen::Isometry3d& X_expected, const Eigen::Isometry3d& X_actual,
     double tolerance) {
   AssertionResult check_R_expected =
-      ExpectRotMat(X_expected.rotation(), tolerance);
+      ExpectRotMat(X_expected.linear(), tolerance);
   if (!check_R_expected) {
     return check_R_expected << "(X_expected)";
   }
   AssertionResult check_R_actual =
-      ExpectRotMat(X_actual.rotation(), tolerance);
+      ExpectRotMat(X_actual.linear(), tolerance);
   if (!check_R_actual) {
     return check_R_actual << "(X_actual)";
   }
@@ -157,8 +157,8 @@ AssertionResult CompareTransformWithoutAxisSign(
     return check_translation;
   }
   // Next, check rotation matrices.
-  return CompareRotMatWithoutAxisSign(X_expected.rotation(),
-                                      X_actual.rotation(), tolerance);
+  return CompareRotMatWithoutAxisSign(X_expected.linear(),
+                                      X_actual.linear(), tolerance);
 }
 
 namespace {
@@ -282,7 +282,7 @@ void PointCloudVisualizer::PublishFrames(
     for (int j = 0; j < 3; ++j) {
       msg.position[i][j] = static_cast<float>(frame.translation()[j]);
     }
-    Quaternion<float> quat(frame.rotation().cast<float>());
+    Quaternion<float> quat(frame.linear().cast<float>());
     msg.quaternion[i][0] = quat.w();
     msg.quaternion[i][1] = quat.x();
     msg.quaternion[i][2] = quat.y();

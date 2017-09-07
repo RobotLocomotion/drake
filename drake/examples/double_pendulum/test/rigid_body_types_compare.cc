@@ -19,9 +19,9 @@ namespace test {
     return ::testing::AssertionFailure()
         << "Element local transforms differ:"
         << " elem1 translation = " << iso1.translation().format(fmt)
-        << " rotation = " << iso1.rotation().format(fmt) << ","
+        << " rotation = " << iso1.linear().format(fmt) << ","
         << " elem2 translation = " << iso2.translation().format(fmt)
-        << " rotation = " << iso2.rotation().format(fmt) << ".";
+        << " rotation = " << iso2.linear().format(fmt) << ".";
   }
   const DrakeShapes::Geometry& geom1 = elem1.getGeometry();
   const DrakeShapes::Geometry& geom2 = elem1.getGeometry();

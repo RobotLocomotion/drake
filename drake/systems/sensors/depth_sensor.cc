@@ -201,7 +201,7 @@ void DepthSensor::CalcPoseOutput(const Context<double>& context,
 
   pose_output->set_translation(
       Eigen::Translation<double, 3>(X_WS.translation()));
-  pose_output->set_rotation(Eigen::Quaternion<double>(X_WS.rotation()));
+  pose_output->set_rotation(Eigen::Quaternion<double>(X_WS.linear()));
 }
 
 std::ostream& operator<<(std::ostream& out, const DepthSensor& sensor) {
