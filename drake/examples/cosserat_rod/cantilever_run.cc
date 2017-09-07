@@ -10,9 +10,10 @@
 //#include "drake/multibody/parsers/urdf_parser.h"
 //#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 //#include "drake/multibody/rigid_body_tree.h"
-#include "drake/systems/analysis/semi_explicit_euler_integrator.h"
+#include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
+#include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -35,8 +36,9 @@ DEFINE_double(realtime_factor, 0.0,
               "Playback speed.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
 
-using drake::systems::SemiExplicitEulerIntegrator;
+using drake::systems::ImplicitEulerIntegrator;
 using drake::systems::RungeKutta2Integrator;
+using drake::systems::SemiExplicitEulerIntegrator;
 
 int do_main(int argc, char* argv[]) {
 
@@ -56,17 +58,19 @@ int do_main(int argc, char* argv[]) {
 
   // Numerical parameters:
   const int num_elements = 10;
-  const double dt = 0.001;  // [sec]
+  const double dt = 0.002;  // [sec]
 
   // Other derived numbers.
   const double mass = rho * area * length;
-  const double T1 = 0.140387;  // First period of osscillation.
+  const double T1 = 0.140387;  // First period of oscillation.
+  const double end_time = 3 * T1;
 
   // TODO: make this constructor to take rho instead.
   auto rod_plant = builder.AddSystem<CosseratRodPlant>(
       length, radius, mass,
       E, G, tau_d, tau_d, num_elements);
   rod_plant->set_name("Cosserat rod");
+  //rod_plant->set_publish_period(end_time / 1000);
 
   auto energy_logger = builder.AddSystem<systems::SignalLogger<double>>(2);
   energy_logger->set_name("Energy Logger");
@@ -91,13 +95,36 @@ int do_main(int argc, char* argv[]) {
 
   simulator.set_target_realtime_rate(FLAGS_realtime_factor);
   simulator.Initialize();
+  simulator.set_publish_at_initialization(false);
+  //simulator.set_publish_every_time_step(false);
   //const double max_step_size = dt;
   //simulator.reset_integrator<systems::SemiExplicitEulerIntegrator<double>>(
     //  *diagram, max_step_size, simulator.get_mutable_context());
-  simulator.get_mutable_integrator()->set_maximum_step_size(dt);
-  PRINT_VAR(simulator.get_integrator()->get_fixed_step_mode());
-  PRINT_VAR(simulator.get_integrator()->supports_error_estimation());
-  simulator.StepTo(5*T1);
+  ImplicitEulerIntegrator<double>* integrator =
+      simulator.reset_integrator<ImplicitEulerIntegrator<double>>(
+          *diagram, simulator.get_mutable_context());
+  //integrator->set_jacobian_computation_scheme(
+  //    ImplicitEulerIntegrator<double>::JacobianComputationScheme::
+  //    kCentralDifference);
+  integrator->set_fixed_step_mode(true);  // Good for steady state calculations.
+  integrator->set_maximum_step_size(dt);
+  PRINT_VAR(integrator->get_fixed_step_mode());
+  PRINT_VAR(integrator->supports_error_estimation());
+  integrator->set_target_accuracy(1.0e-3);
+  PRINT_VAR(integrator->get_target_accuracy());
+
+  // RK3
+  //   default: 1e-3
+  //   loosest (i.e the maximum): 0.1
+
+  // Simulate:
+  simulator.StepTo(end_time);
+
+  PRINT_VAR(integrator->get_num_steps_taken());
+  PRINT_VAR(integrator->get_num_step_shrinkages_from_substep_failures());
+  PRINT_VAR(integrator->get_num_step_shrinkages_from_error_control());
+  PRINT_VAR(simulator.get_integrator()->get_smallest_adapted_step_size_taken());
+  PRINT_VAR(simulator.get_integrator()->get_largest_step_size_taken());
 
   // Write to file logged data.
   {

@@ -192,8 +192,10 @@ const RigidBody<T>& CosseratRodPlant<T>::AddElement(
   const double C =
       ExtractDoubleOrThrow(shear_modulus_(s) * moment_of_inertia3_(s));
 
+  double element_im_length = element_length;
+  if (element_index == 0) element_im_length = 0.0;  // the world, BC.
   model_.template AddForceElement<RodElement>(
-      element_im, element_length,
+      element_im, element_im_length,
       element_i, element_length,
       B1, B2, C, tau_bending_, tau_twisting_);
 

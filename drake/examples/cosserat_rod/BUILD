@@ -34,6 +34,7 @@ drake_cc_binary(
     test_rule_args = ["-realtime_factor=0.0"],
     deps = [
         ":cosserat_rod_plant",
+        "//drake/systems/analysis:implicit_euler_integrator",
         "//drake/systems/analysis:runge_kutta2_integrator",
         "//drake/systems/analysis:semi_explicit_euler_integrator",
         "//drake/systems/analysis:simulator",

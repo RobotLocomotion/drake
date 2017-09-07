@@ -47,6 +47,10 @@ class CosseratRodPlant : public systems::LeafSystem<T> {
 
   void SetHorizontalCantileverState(systems::Context<T>* context) const;
 
+  void set_publish_period(double period) {
+    this->DeclarePeriodicPublish(period);
+  }
+
  protected:
   T DoCalcKineticEnergy(const systems::Context<T>& context) const override;
   T DoCalcPotentialEnergy(const systems::Context<T>& context) const override;
