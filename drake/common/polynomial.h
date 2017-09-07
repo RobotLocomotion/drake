@@ -190,6 +190,7 @@ class Polynomial {
       throw std::runtime_error(
           "this method can only be used for univariate polynomials");
     ProductType value = 0;
+    using std::pow;
     for (typename std::vector<Monomial>::const_iterator iter =
              monomials_.begin();
          iter != monomials_.end(); iter++) {
@@ -197,7 +198,7 @@ class Polynomial {
         value += iter->coefficient;
       else
         value += iter->coefficient *
-                  Pow((ProductType) x,
+                  pow((ProductType) x,
                       (PowerType) iter->terms[0].power);
     }
     return value;
@@ -439,36 +440,6 @@ class Polynomial {
       typename Polynomial<CoefficientType>::PowerType n);
 
  private:
-  //@{
-  /** Local version of pow to deal with autodiff.
-   *
-   * A version of std::pow that uses std::pow for arithmetic types and
-   * recursive multiplication for non-arithmetic types (e.g., autodiff).
-   */
-  template <bool B, typename T = void>
-  using enable_if_t = typename std::enable_if<B, T>::type;
-  template <typename Base>
-  static Base Pow(
-      const enable_if_t<std::is_arithmetic<Base>::value, Base>& base,
-      const PowerType& exponent) {
-    return std::pow(base, exponent);
-  }
-
-  template <typename Base>
-  static Base Pow(const Base& base, const PowerType& exponent) {
-    DRAKE_DEMAND(exponent >= 0);
-    if (exponent == 0) {
-      return Base{1.0};
-    }
-    const Base pow_half{Pow(base, exponent / 2)};
-    if (exponent % 2 == 1) {
-      return base * pow_half * pow_half;  // Odd exponent case.
-    } else {
-      return pow_half * pow_half;  // Even exponent case.
-    }
-  }
-  //@}
-
   /// Sorts through Monomial list and merges any that have the same powers.
   void MakeMonomialsUnique(void);
 };
@@ -476,9 +447,18 @@ class Polynomial {
 /** Provides power function for Polynomial. */
 template <typename CoefficientType>
 Polynomial<CoefficientType> pow(
-    const Polynomial<CoefficientType>& p,
-    typename Polynomial<CoefficientType>::PowerType n) {
-  return Polynomial<CoefficientType>::Pow(p, n);
+    const Polynomial<CoefficientType>& base,
+    typename Polynomial<CoefficientType>::PowerType exponent) {
+  DRAKE_DEMAND(exponent >= 0);
+  if (exponent == 0) {
+    return Polynomial<CoefficientType>{1.0};
+  }
+  const Polynomial<CoefficientType> pow_half{pow(base, exponent / 2)};
+  if (exponent % 2 == 1) {
+    return base * pow_half * pow_half;  // Odd exponent case.
+  } else {
+    return pow_half * pow_half;  // Even exponent case.
+  }
 }
 
 template <typename CoefficientType, int Rows, int Cols>
