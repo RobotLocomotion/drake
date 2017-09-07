@@ -35,6 +35,7 @@ void RodElement<T>::DoCalcAndAddForceContribution(
     const VelocityKinematicsCache<T>& vc,
     std::vector<SpatialForce<T>>* F_Bo_W_array,
     Eigen::Ref<VectorX<T>> tau) const {
+  using std::abs;
   using std::sin;
   using std::cos;
   using std::min;
@@ -56,12 +57,28 @@ void RodElement<T>::DoCalcAndAddForceContribution(
 
   // Compute log(R_QiQip) to obtain an approximation for the curvature vector
   // between body1 and body2.
+  // TODO: make the alternative below work, it should be faster to compute.
+#if 0
+  Matrix3<T> ux = R_QiQip - R_QiQip.transpose();
+  // Assert ux is skew-symmetric.
+  DRAKE_ASSERT((ux + ux.transpose()).norm() < kEpsilon);
+  // Extract theta_u = theta * u from ux:
+  const Vector3<T> theta_u = Vector3<T>(-ux(1, 2), ux(0, 2), -ux(0, 1));
+  const T theta = theta_u.norm();
+  Vector3<T> uhat;
+  if (theta < kEpsilon) {
+    uhat.setZero();
+  } else {
+    uhat = theta_u.normalized();
+  }
+#endif
+
   const T cos_theta = (R_QiQip.trace() - 1.0) / 2.0;
   const T cos_theta_limited = max(-1.0, min(cos_theta, 1.0));
   const T theta = acos(cos_theta_limited);
   // Rotation unit vector in Rodriguez formula.
   Vector3<T> uhat;
-  if (theta < kEpsilon) {
+  if (abs(theta) < kEpsilon) {
     uhat.setZero();
   } else {
     Matrix3<T> ux = R_QiQip - R_QiQip.transpose();
