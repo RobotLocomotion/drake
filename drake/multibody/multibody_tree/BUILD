@@ -69,6 +69,7 @@ drake_cc_library(
 drake_cc_library(
     name = "multibody_tree",
     srcs = [
+        "ball_mobilizer.cc",
         "body.cc",
         "body_node_impl.cc",
         "fixed_offset_frame.cc",
@@ -79,6 +80,7 @@ drake_cc_library(
         "uniform_gravity_field_element.cc",
     ],
     hdrs = [
+        "ball_mobilizer.h",
         "body.h",
         "body_node.h",
         "body_node_impl.h",
@@ -100,6 +102,7 @@ drake_cc_library(
         ":multibody_tree_indexes",
         ":spatial_inertia",
         "//drake/common:autodiff",
+        "//drake/math:geometric_transform",
     ],
 )
 
