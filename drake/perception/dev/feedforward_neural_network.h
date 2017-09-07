@@ -1,12 +1,14 @@
 #pragma once
 
 #include <memory>
+#include <vector>
+
+#include <Eigen/Dense>
+
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/perception/dev/neural_network.h"
 #include "drake/systems/framework/leaf_system.h"
-
-#include <Eigen/Dense>
 
 namespace drake {
 namespace perception {
@@ -91,5 +93,5 @@ class FeedforwardNeuralNetwork : public NeuralNetwork<T> {
   int num_layers_;
 };
 
-}  // namespace automotive
+}  // namespace perception
 }  // namespace drake
