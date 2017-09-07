@@ -373,8 +373,8 @@ void BuildOrUpdateBranchpoints(
   BranchPoint* bp{nullptr};
   auto it = branch_point_map->find(connection->start().id().String());
   if (it == branch_point_map->end()) {
-    bp = road_geometry->NewBranchPoint(
-        {"bp:" + std::to_string(road_geometry->num_branch_points())});
+    bp = road_geometry->NewBranchPoint(api::BranchPointId{
+        "bp:" + std::to_string(road_geometry->num_branch_points())});
     DRAKE_DEMAND(bp != nullptr);
     (*branch_point_map)[connection->start().id().String()] = bp;
   } else {
@@ -385,8 +385,8 @@ void BuildOrUpdateBranchpoints(
   bp = nullptr;
   it = branch_point_map->find(connection->end().id().String());
   if (it == branch_point_map->end()) {
-    bp = road_geometry->NewBranchPoint(
-        {"bp:" + std::to_string(road_geometry->num_branch_points())});
+    bp = road_geometry->NewBranchPoint(api::BranchPointId{
+        "bp:" + std::to_string(road_geometry->num_branch_points())});
     DRAKE_DEMAND(bp != nullptr);
     (*branch_point_map)[connection->end().id().String()] = bp;
   } else {
@@ -593,12 +593,12 @@ std::unique_ptr<const api::RoadGeometry> Builder::Build(
   // Builds a lane per connection and creates their respective BranchPoints.
   for (const auto& it_connection : connections_) {
     // Builds a junction and the segment for related lanes.
-    Junction* junction =
-        road_geometry->NewJunction({std::string("j:") + it_connection.first});
+    Junction* junction = road_geometry->NewJunction(
+        api::JunctionId{std::string("j:") + it_connection.first});
     DRAKE_DEMAND(junction != nullptr);
 
-    Segment* segment =
-        junction->NewSegment({std::string("s:") + it_connection.first});
+    Segment* segment = junction->NewSegment(
+        api::SegmentId{std::string("s:") + it_connection.first});
     DRAKE_DEMAND(segment != nullptr);
 
     for (const auto& connection : it_connection.second) {

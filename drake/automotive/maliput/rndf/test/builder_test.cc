@@ -24,7 +24,7 @@ const double kAngularTolerance = 1e-2 * M_PI;
 int FindJunction(const api::RoadGeometry& road_geometry,
                  const std::string& junction_name) {
   for (int i = 0; i < road_geometry.num_junctions(); i++) {
-    if (road_geometry.junction(i)->id().id == junction_name) {
+    if (road_geometry.junction(i)->id().string() == junction_name) {
       return i;
     }
   }
@@ -63,53 +63,53 @@ GTEST_TEST(RNDFBuilder, ZigZagLane) {
   builder->SetBoundingBox(bounding_box);
   builder->CreateSegmentConnections(1, &connected_lanes);
 
-  auto road_geometry = builder->Build({"ZigZagLane"});
+  auto road_geometry = builder->Build(api::RoadGeometryId{"ZigZagLane"});
   EXPECT_NE(road_geometry, nullptr);
 
   // Checks the junctions, segments and lanes.
   EXPECT_EQ(road_geometry->num_junctions(), 3);
-  EXPECT_EQ(road_geometry->junction(0)->id().id, std::string("j:1-0-0"));
+  EXPECT_EQ(road_geometry->junction(0)->id().string(), std::string("j:1-0-0"));
   EXPECT_EQ(road_geometry->junction(0)->num_segments(), 1);
-  EXPECT_EQ(road_geometry->junction(0)->segment(0)->id().id,
+  EXPECT_EQ(road_geometry->junction(0)->segment(0)->id().string(),
             std::string("s:1-0-0"));
   EXPECT_EQ(road_geometry->junction(0)->segment(0)->num_lanes(), 1);
-  EXPECT_EQ(road_geometry->junction(0)->segment(0)->lane(0)->id().id,
+  EXPECT_EQ(road_geometry->junction(0)->segment(0)->lane(0)->id().string(),
             std::string("l:1.1.1-1.1.2"));
 
-  EXPECT_EQ(road_geometry->junction(1)->id().id, std::string("j:1-0-1"));
+  EXPECT_EQ(road_geometry->junction(1)->id().string(), std::string("j:1-0-1"));
   EXPECT_EQ(road_geometry->junction(1)->num_segments(), 1);
-  EXPECT_EQ(road_geometry->junction(1)->segment(0)->id().id,
+  EXPECT_EQ(road_geometry->junction(1)->segment(0)->id().string(),
             std::string("s:1-0-1"));
   EXPECT_EQ(road_geometry->junction(1)->segment(0)->num_lanes(), 1);
-  EXPECT_EQ(road_geometry->junction(1)->segment(0)->lane(0)->id().id,
+  EXPECT_EQ(road_geometry->junction(1)->segment(0)->lane(0)->id().string(),
             std::string("l:1.1.2-1.1.3"));
 
-  EXPECT_EQ(road_geometry->junction(2)->id().id, std::string("j:1-0-2"));
+  EXPECT_EQ(road_geometry->junction(2)->id().string(), std::string("j:1-0-2"));
   EXPECT_EQ(road_geometry->junction(2)->num_segments(), 1);
-  EXPECT_EQ(road_geometry->junction(2)->segment(0)->id().id,
+  EXPECT_EQ(road_geometry->junction(2)->segment(0)->id().string(),
             std::string("s:1-0-2"));
   EXPECT_EQ(road_geometry->junction(2)->segment(0)->num_lanes(), 1);
-  EXPECT_EQ(road_geometry->junction(2)->segment(0)->lane(0)->id().id,
+  EXPECT_EQ(road_geometry->junction(2)->segment(0)->lane(0)->id().string(),
             std::string("l:1.1.3-1.1.4"));
 
   // Checks the branchpoints.
   EXPECT_EQ(road_geometry->num_branch_points(), 4);
-  EXPECT_EQ(road_geometry->branch_point(0)->id().id,
+  EXPECT_EQ(road_geometry->branch_point(0)->id().string(),
             std::string("bp:") + std::to_string(0));
   EXPECT_EQ(road_geometry->branch_point(0)->GetASide()->size(), 1);
   EXPECT_EQ(road_geometry->branch_point(0)->GetBSide()->size(), 0);
 
-  EXPECT_EQ(road_geometry->branch_point(1)->id().id,
+  EXPECT_EQ(road_geometry->branch_point(1)->id().string(),
             std::string("bp:") + std::to_string(1));
   EXPECT_EQ(road_geometry->branch_point(1)->GetASide()->size(), 1);
   EXPECT_EQ(road_geometry->branch_point(1)->GetBSide()->size(), 1);
 
-  EXPECT_EQ(road_geometry->branch_point(2)->id().id,
+  EXPECT_EQ(road_geometry->branch_point(2)->id().string(),
             std::string("bp:") + std::to_string(2));
   EXPECT_EQ(road_geometry->branch_point(2)->GetASide()->size(), 1);
   EXPECT_EQ(road_geometry->branch_point(2)->GetBSide()->size(), 1);
 
-  EXPECT_EQ(road_geometry->branch_point(3)->id().id,
+  EXPECT_EQ(road_geometry->branch_point(3)->id().string(),
             std::string("bp:") + std::to_string(3));
   EXPECT_EQ(road_geometry->branch_point(3)->GetASide()->size(), 1);
   EXPECT_EQ(road_geometry->branch_point(3)->GetBSide()->size(), 0);
@@ -215,7 +215,7 @@ GTEST_TEST(RNDFBuilder, UShapedLane) {
   builder->SetBoundingBox(bounding_box);
   builder->CreateSegmentConnections(1, &connected_lanes);
 
-  auto road_geometry = builder->Build({"UShapedLane"});
+  auto road_geometry = builder->Build(api::RoadGeometryId{"UShapedLane"});
   EXPECT_NE(road_geometry, nullptr);
 
   // Check junction, segments and lanes. Lane naming implies direction
@@ -250,11 +250,11 @@ GTEST_TEST(RNDFBuilder, UShapedLane) {
     EXPECT_EQ(junction->num_segments(), 1);
     const api::Segment* segment = junction->segment(0);
     EXPECT_TRUE(segment != nullptr);
-    EXPECT_EQ(segment->id().id, segment_name);
+    EXPECT_EQ(segment->id().string(), segment_name);
     EXPECT_EQ(segment->num_lanes(), 1);
     const api::Lane* lane = segment->lane(0);
     EXPECT_TRUE(lane != nullptr);
-    EXPECT_EQ(lane->id().id, lane_name);
+    EXPECT_EQ(lane->id().string(), lane_name);
   }
 }
 
@@ -316,17 +316,17 @@ GTEST_TEST(RNDFBuilder, MultilaneLane) {
   builder->SetBoundingBox(bounding_box);
   builder->CreateSegmentConnections(1, &connected_lanes);
 
-  auto road_geometry = builder->Build({"MultilaneLane"});
+  auto road_geometry = builder->Build(api::RoadGeometryId{"MultilaneLane"});
   EXPECT_NE(road_geometry, nullptr);
 
   // Check road creation, naming, which lane is at both sides and bounds.
   EXPECT_EQ(road_geometry->num_junctions(), 6);
-  EXPECT_EQ(road_geometry->junction(0)->id().id, std::string("j:1-0-0"));
+  EXPECT_EQ(road_geometry->junction(0)->id().string(), std::string("j:1-0-0"));
   EXPECT_EQ(road_geometry->junction(0)->num_segments(), 1);
-  EXPECT_EQ(road_geometry->junction(0)->segment(0)->id().id,
+  EXPECT_EQ(road_geometry->junction(0)->segment(0)->id().string(),
             std::string("s:1-0-0"));
   EXPECT_EQ(road_geometry->junction(0)->segment(0)->num_lanes(), 1);
-  EXPECT_EQ(road_geometry->junction(0)->segment(0)->lane(0)->id().id,
+  EXPECT_EQ(road_geometry->junction(0)->segment(0)->lane(0)->id().string(),
             std::string("l:1.2.1-1.2.2"));
   EXPECT_EQ(road_geometry->junction(0)->segment(0)->lane(0)->to_left(),
             nullptr);
@@ -339,14 +339,14 @@ GTEST_TEST(RNDFBuilder, MultilaneLane) {
       road_geometry->junction(0)->segment(0)->lane(0)->driveable_bounds(0),
       single_lane_bounds, kLinearTolerance));
 
-  EXPECT_EQ(road_geometry->junction(1)->id().id, std::string("j:1-0-1"));
+  EXPECT_EQ(road_geometry->junction(1)->id().string(), std::string("j:1-0-1"));
   EXPECT_EQ(road_geometry->junction(1)->num_segments(), 1);
-  EXPECT_EQ(road_geometry->junction(1)->segment(0)->id().id,
+  EXPECT_EQ(road_geometry->junction(1)->segment(0)->id().string(),
             std::string("s:1-0-1"));
   EXPECT_EQ(road_geometry->junction(1)->segment(0)->num_lanes(), 2);
-  EXPECT_EQ(road_geometry->junction(1)->segment(0)->lane(0)->id().id,
+  EXPECT_EQ(road_geometry->junction(1)->segment(0)->lane(0)->id().string(),
             std::string("l:1.2.2-1.2.3"));
-  EXPECT_EQ(road_geometry->junction(1)->segment(0)->lane(1)->id().id,
+  EXPECT_EQ(road_geometry->junction(1)->segment(0)->lane(1)->id().string(),
             std::string("l:1.1.1-1.1.5"));
   EXPECT_EQ(road_geometry->junction(1)->segment(0)->lane(0)->to_left(),
             road_geometry->junction(1)->segment(0)->lane(1));
@@ -369,14 +369,14 @@ GTEST_TEST(RNDFBuilder, MultilaneLane) {
       road_geometry->junction(1)->segment(0)->lane(1)->driveable_bounds(0),
       two_lane_bounds_right, kLinearTolerance));
 
-  EXPECT_EQ(road_geometry->junction(2)->id().id, std::string("j:1-0-2"));
+  EXPECT_EQ(road_geometry->junction(2)->id().string(), std::string("j:1-0-2"));
   EXPECT_EQ(road_geometry->junction(2)->num_segments(), 1);
-  EXPECT_EQ(road_geometry->junction(2)->segment(0)->id().id,
+  EXPECT_EQ(road_geometry->junction(2)->segment(0)->id().string(),
             std::string("s:1-0-2"));
   EXPECT_EQ(road_geometry->junction(2)->segment(0)->num_lanes(), 2);
-  EXPECT_EQ(road_geometry->junction(2)->segment(0)->lane(0)->id().id,
+  EXPECT_EQ(road_geometry->junction(2)->segment(0)->lane(0)->id().string(),
             std::string("l:1.2.3-1.2.5"));
-  EXPECT_EQ(road_geometry->junction(2)->segment(0)->lane(1)->id().id,
+  EXPECT_EQ(road_geometry->junction(2)->segment(0)->lane(1)->id().string(),
             std::string("l:1.1.5-1.1.2"));
   EXPECT_EQ(road_geometry->junction(2)->segment(0)->lane(0)->to_left(),
             road_geometry->junction(2)->segment(0)->lane(1));
@@ -399,14 +399,14 @@ GTEST_TEST(RNDFBuilder, MultilaneLane) {
       road_geometry->junction(2)->segment(0)->lane(1)->driveable_bounds(0),
       two_lane_bounds_right, kLinearTolerance));
 
-  EXPECT_EQ(road_geometry->junction(3)->id().id, std::string("j:1-0-3"));
+  EXPECT_EQ(road_geometry->junction(3)->id().string(), std::string("j:1-0-3"));
   EXPECT_EQ(road_geometry->junction(3)->num_segments(), 1);
-  EXPECT_EQ(road_geometry->junction(3)->segment(0)->id().id,
+  EXPECT_EQ(road_geometry->junction(3)->segment(0)->id().string(),
             std::string("s:1-0-3"));
   EXPECT_EQ(road_geometry->junction(3)->segment(0)->num_lanes(), 2);
-  EXPECT_EQ(road_geometry->junction(3)->segment(0)->lane(0)->id().id,
+  EXPECT_EQ(road_geometry->junction(3)->segment(0)->lane(0)->id().string(),
             std::string("l:1.2.5-1.2.4"));
-  EXPECT_EQ(road_geometry->junction(3)->segment(0)->lane(1)->id().id,
+  EXPECT_EQ(road_geometry->junction(3)->segment(0)->lane(1)->id().string(),
             std::string("l:1.1.2-1.1.6"));
   EXPECT_EQ(road_geometry->junction(3)->segment(0)->lane(0)->to_left(),
             road_geometry->junction(3)->segment(0)->lane(1));
@@ -429,12 +429,12 @@ GTEST_TEST(RNDFBuilder, MultilaneLane) {
       road_geometry->junction(3)->segment(0)->lane(1)->driveable_bounds(0),
       two_lane_bounds_right, kLinearTolerance));
 
-  EXPECT_EQ(road_geometry->junction(4)->id().id, std::string("j:1-0-4"));
+  EXPECT_EQ(road_geometry->junction(4)->id().string(), std::string("j:1-0-4"));
   EXPECT_EQ(road_geometry->junction(4)->num_segments(), 1);
-  EXPECT_EQ(road_geometry->junction(4)->segment(0)->id().id,
+  EXPECT_EQ(road_geometry->junction(4)->segment(0)->id().string(),
             std::string("s:1-0-4"));
   EXPECT_EQ(road_geometry->junction(4)->segment(0)->num_lanes(), 1);
-  EXPECT_EQ(road_geometry->junction(4)->segment(0)->lane(0)->id().id,
+  EXPECT_EQ(road_geometry->junction(4)->segment(0)->lane(0)->id().string(),
             std::string("l:1.1.6-1.1.3"));
   EXPECT_EQ(road_geometry->junction(4)->segment(0)->lane(0)->to_left(),
             nullptr);
@@ -447,12 +447,12 @@ GTEST_TEST(RNDFBuilder, MultilaneLane) {
       road_geometry->junction(4)->segment(0)->lane(0)->driveable_bounds(0),
       single_lane_bounds, kLinearTolerance));
 
-  EXPECT_EQ(road_geometry->junction(5)->id().id, std::string("j:1-1-0"));
+  EXPECT_EQ(road_geometry->junction(5)->id().string(), std::string("j:1-1-0"));
   EXPECT_EQ(road_geometry->junction(5)->num_segments(), 1);
-  EXPECT_EQ(road_geometry->junction(5)->segment(0)->id().id,
+  EXPECT_EQ(road_geometry->junction(5)->segment(0)->id().string(),
             std::string("s:1-1-0"));
   EXPECT_EQ(road_geometry->junction(5)->segment(0)->num_lanes(), 1);
-  EXPECT_EQ(road_geometry->junction(5)->segment(0)->lane(0)->id().id,
+  EXPECT_EQ(road_geometry->junction(5)->segment(0)->lane(0)->id().string(),
             std::string("l:1.3.1-1.3.2"));
   EXPECT_EQ(road_geometry->junction(5)->segment(0)->lane(0)->to_left(),
             nullptr);
