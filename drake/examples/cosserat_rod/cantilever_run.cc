@@ -57,7 +57,7 @@ int do_main(int argc, char* argv[]) {
   const double tau_d = 0.04469;  // [sec]
 
   // Numerical parameters:
-  const int num_elements = 10;
+  const int num_elements = 50;
   const double dt = 0.002;  // [sec]
 
   // Other derived numbers.
@@ -96,7 +96,7 @@ int do_main(int argc, char* argv[]) {
   simulator.set_target_realtime_rate(FLAGS_realtime_factor);
   simulator.Initialize();
   simulator.set_publish_at_initialization(false);
-  //simulator.set_publish_every_time_step(false);
+  simulator.set_publish_every_time_step(false);
   //const double max_step_size = dt;
   //simulator.reset_integrator<systems::SemiExplicitEulerIntegrator<double>>(
     //  *diagram, max_step_size, simulator.get_mutable_context());
@@ -126,6 +126,7 @@ int do_main(int argc, char* argv[]) {
   PRINT_VAR(simulator.get_integrator()->get_smallest_adapted_step_size_taken());
   PRINT_VAR(simulator.get_integrator()->get_largest_step_size_taken());
 
+#if 0
   // Write to file logged data.
   {
     std::ofstream file("energy.dat");
@@ -174,6 +175,7 @@ int do_main(int argc, char* argv[]) {
     file << time_data;
     file.close();
   }
+#endif
 
 
   return 0;

@@ -331,12 +331,12 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     const Isometry3<T>& X_WP = get_X_WP(pc);
 
     // Orientation (rotation) of frame F with respect to the world frame W.
-    const Matrix3<T> R_WF = X_WP.rotation() * X_PF.rotation();
+    const Matrix3<T> R_WF = X_WP.linear() * X_PF.linear();
 
     // Vector from Mo to Bo expressed in frame F as needed below:
     const Vector3<T> p_MB_F =
         /* p_MB_F = R_FM * p_MB_M */
-        get_X_FM(pc).rotation() * X_MB.translation();
+        get_X_FM(pc).linear() * X_MB.translation();
 
     // Compute V_PB_W = R_WF * V_FM.Shift(p_MoBo_F), Eq. (4).
     // Side note to developers: in operator form for rigid bodies this would be
@@ -356,7 +356,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // CalcPositionKinematicsCache_BaseToTip() and saving the result in the
     // position kinematics cache.
     /* p_PB_W = R_WP * p_PB */
-    Vector3<T> p_PB_W = get_X_WP(pc).rotation() * get_X_PB(pc).translation();
+    Vector3<T> p_PB_W = get_X_WP(pc).linear() * get_X_PB(pc).translation();
 
     // Since we are in a base-to-tip recursion the parent body P's spatial
     // velocity is already available in the cache.
@@ -499,14 +499,14 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // Orientation (rotation) of frame F with respect to the world frame W.
     // TODO(amcastro-tri): consider caching X_WF since also used in velocity
     // kinematics.
-    const Matrix3<T> R_WF = X_WP.rotation() * X_PF.rotation();
+    const Matrix3<T> R_WF = X_WP.linear() * X_PF.linear();
 
     // Vector from Mo to Bo expressed in frame F as needed below:
     // TODO(amcastro-tri): consider caching this since also used in velocity
     // kinematics.
     const Vector3<T> p_MB_F =
         /* p_MB_F = R_FM * p_MB_M */
-        get_X_FM(pc).rotation() * X_MB.translation();
+        get_X_FM(pc).linear() * X_MB.translation();
 
     // Across mobilizer velocity is available from the velocity kinematics.
     const SpatialVelocity<T>& V_FM = get_V_FM(vc);
@@ -542,7 +542,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // CalcPositionKinematicsCache_BaseToTip() and saving the result in the
     // position kinematics cache.
     /* p_PB_W = R_WP * p_PB */
-    Vector3<T> p_PB_W = get_X_WP(pc).rotation() * get_X_PB(pc).translation();
+    Vector3<T> p_PB_W = get_X_WP(pc).linear() * get_X_PB(pc).translation();
 
     get_mutable_A_WB_from_array(&A_WB_array) =
         A_WP.ComposeWithMovingFrameAcceleration(p_PB_W, V_WP.rotational(),
@@ -698,7 +698,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     DRAKE_DEMAND(frame_M.get_body().get_index() == body_B.get_index());
     const Isometry3<T> X_BM = frame_M.CalcPoseInBodyFrame(context);
     const Vector3<T>& p_BoMo_B = X_BM.translation();
-    const Matrix3<T>& R_WB = get_X_WB(pc).rotation();
+    const Matrix3<T>& R_WB = get_X_WB(pc).linear();
     const Vector3<T> p_BoMo_W = R_WB * p_BoMo_B;
 
     // Output spatial force that would need to be exerted by this node's
@@ -721,7 +721,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
 
       // p_CoMc_W:
       const Frame<T>& frame_Mc = child_node->get_outboard_frame();
-      const Matrix3<T>& R_WC = child_node->get_X_WB(pc).rotation();
+      const Matrix3<T>& R_WC = child_node->get_X_WB(pc).linear();
       const Isometry3<T> X_CMc = frame_Mc.CalcPoseInBodyFrame(context);
       const Vector3<T>& p_CoMc_W = R_WC * X_CMc.translation();
 
@@ -757,7 +757,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     const Isometry3<T>& X_WP = get_X_WP(pc);
     // TODO(amcastro-tri): consider caching X_WF since also used in position and
     // velocity kinematics.
-    const Matrix3<T> R_WF = X_WP.rotation() * X_PF.rotation();
+    const Matrix3<T> R_WF = X_WP.linear() * X_PF.linear();
     const SpatialForce<T> F_BMo_F = R_WF * F_BMo_W;
 
     // Generalized velocities and forces use the same indexing.
@@ -1125,7 +1125,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     const Isometry3<T>& X_WB = get_X_WB(pc);
 
     // Orientation of B in W.
-    const Matrix3<T> R_WB = X_WB.rotation();
+    const Matrix3<T> R_WB = X_WB.linear();
 
     // Body spatial velocity in W.
     const SpatialVelocity<T>& V_WB = get_V_WB(vc);
