@@ -24,8 +24,11 @@ using Eigen::Vector3d;
 using multibody::SpatialForce;
 
 #include <iostream>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
+//#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
+//#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
+
+#define PRINT_VAR(a) (void)a;
+#define PRINT_VARn(a) (void)a;
 
 using namespace multibody;
 
@@ -228,7 +231,9 @@ template <typename T>
 void CosseratRodPlant<T>::SetHorizontalCantileverState(
     systems::Context<T>* context) const {
   // The first joint, connecting to the world has angle = -pi/2:
-  mobilizers_[0]->set_angle(context, M_PI / 2);
+  //mobilizers_[0]->set_angle(context, M_PI / 2);
+  // Change these boundary conditions when there is a WeldMobilizer.
+  mobilizers_[0]->set_angle(context, 0.0);
 
   // Set the rest to zero angle.
   for (int joint_index(1); joint_index < num_elements_; ++joint_index) {
@@ -259,25 +264,42 @@ void CosseratRodPlant<T>::DoCalcTimeDerivatives(
 
   const int nv = model_.get_num_velocities();
 
-  // Apply a constant moment at the end link.
-  const T M0 = 0.0;  // Torque in Nm
-  SpatialForce<T> M_W(Vector3<T>(-M0, 0.0, 0.0), Vector3<T>::Zero());
+  PRINT_VAR("CosseratRodPlant<T>::DoCalcTimeDerivatives");
+  PRINT_VAR("CosseratRodPlant<T>::DoCalcTimeDerivatives");
+
+  PositionKinematicsCache<T> pc(model_.get_topology());
+  VelocityKinematicsCache<T> vc(model_.get_topology());
+  model_.CalcPositionKinematicsCache(context, &pc);
+  model_.CalcVelocityKinematicsCache(context, pc, &vc);
+
+  // Add a constant moment at the end link.
   std::vector<SpatialForce<T>> Fapplied_Bo_W_array(model_.get_num_bodies());
   for (auto& F : Fapplied_Bo_W_array) F.SetZero();
-  //Fapplied_Bo_W_array[last_element_->get_node_index()] = M_W;
 
   PRINT_VAR(last_element_->get_node_index());
+
+  MatrixX<T> M(nv, nv);
+  model_.CalcMassMatrixViaInverseDynamics(context, pc, &M);
+
+  PRINT_VARn(M);
+
+  VectorX<T> tau = VectorX<T>::Zero(nv);
+  model_.CalcForceElementsContribution(
+      context, pc, vc,
+      &Fapplied_Bo_W_array, &tau);
+
+  // Add a constant moment at the end link.
+  const T M0 = 50.0;  // Torque in Nm
+  SpatialForce<T> M_W(Vector3<T>(M0, 0.0, 0.0), Vector3<T>::Zero());
+  Fapplied_Bo_W_array[last_element_->get_node_index()] += M_W;
+
+  PRINT_VAR(tau.transpose());
   for (auto& F : Fapplied_Bo_W_array) {
     PRINT_VAR(F);
   }
 
-  MatrixX<T> M(nv, nv);
-  model_.CalcMassMatrixViaInverseDynamics(context, &M);
-
-  PRINT_VARn(M);
-
   VectorX<T> C(nv);
-  model_.CalcBiasTerm(context, Fapplied_Bo_W_array, &C);
+  model_.CalcBiasTerm(context, pc, vc, Fapplied_Bo_W_array, &C);
 
   PRINT_VAR(C.transpose());
 

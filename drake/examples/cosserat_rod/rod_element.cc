@@ -8,6 +8,13 @@
 namespace drake {
 namespace multibody {
 
+#include <iostream>
+//#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
+//#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
+
+#define PRINT_VAR(a) (void)a;
+#define PRINT_VARn(a) (void)a;
+
 template <typename T>
 RodElement<T>::RodElement(
     const Body<T>& body1, double length1,
@@ -30,6 +37,8 @@ void RodElement<T>::DoCalcAndAddForceContribution(
     Eigen::Ref<VectorX<T>> tau) const {
   using std::sin;
   using std::cos;
+  using std::min;
+  using std::max;
   using std::acos;
   const double kEpsilon = 10 * std::numeric_limits<double>::epsilon();
 
@@ -47,7 +56,9 @@ void RodElement<T>::DoCalcAndAddForceContribution(
 
   // Compute log(R_QiQip) to obtain an approximation for the curvature vector
   // between body1 and body2.
-  const T theta = acos(R_QiQip.trace() - 1.0) / 2.0;
+  const T cos_theta = (R_QiQip.trace() - 1.0) / 2.0;
+  const T cos_theta_limited = max(-1.0, min(cos_theta, 1.0));
+  const T theta = acos(cos_theta_limited);
   // Rotation unit vector in Rodriguez formula.
   Vector3<T> uhat;
   if (theta < kEpsilon) {
@@ -58,7 +69,7 @@ void RodElement<T>::DoCalcAndAddForceContribution(
     DRAKE_ASSERT((ux + ux.transpose()).norm() < kEpsilon);
     // Extract u from ux:
     uhat =
-        theta / (2.0 * sin(theta)) * Vector3<T>(-ux(1, 2), ux(0, 2), -ux(0, 1));
+        1.0 / (2.0 * sin(theta)) * Vector3<T>(-ux(1, 2), ux(0, 2), -ux(0, 1));
   }
 
   // Mean integrated curvature at ih = i + 1/2
@@ -67,6 +78,15 @@ void RodElement<T>::DoCalcAndAddForceContribution(
 
   // Compute curvature vector approximation at ih = i + 1/2, expressed in Qih.
   const Vector3<T> k_Qih = ktilde_Qih / length_ih_;
+
+  PRINT_VAR(node_i);
+  PRINT_VARn(R_WQi);
+  PRINT_VAR(node_ip);
+  PRINT_VARn(R_WQip);
+  PRINT_VARn(R_QiQip);
+  PRINT_VAR(theta);
+  PRINT_VAR(uhat.transpose());
+  PRINT_VAR(k_Qih.transpose());
 
   // Compute bending moments at the ih = i + 1/2 frame Qih, expressed in
   // Lagrangian frame Qih.
@@ -82,6 +102,9 @@ void RodElement<T>::DoCalcAndAddForceContribution(
   const Matrix3<T> R_QiQih =
       Matrix3<T>::Identity() + sin(theta) * Ux + (1.0 - cos(theta)) * Ux * Ux;
 
+  PRINT_VAR(sh);
+  PRINT_VARn(R_QiQih)
+
   // Orientation of Qih in the world frame:
   // Note: since R_QiQip = Exp(theta * uhat) then we get the same result for
   // the orientation of Qih computing it from either side. That is:
@@ -90,6 +113,11 @@ void RodElement<T>::DoCalcAndAddForceContribution(
 
   // Bending moment expressed in the world frame.
   const Vector3<T> M_W = R_WQih * M_Qih;
+
+  PRINT_VAR(B1_);
+  PRINT_VAR(B2_);
+  PRINT_VAR(C_);
+  PRINT_VAR(M_W.transpose());
 
   // Internal dissipation forces.
   // We approximate the time derivative of curvature in the Lagrangian frame Qih
@@ -101,10 +129,17 @@ void RodElement<T>::DoCalcAndAddForceContribution(
 
   // Finally the dissipation moment is:
   const Vector3<T> Md_Qih(
-      -tau_bending_ * B1_ * kdot_Qih(0),
-      -tau_bending_ * B2_ * kdot_Qih(1),
-      -tau_twisting_ * C_ * kdot_Qih(2));
+      tau_bending_ * B1_ * kdot_Qih(0),
+      tau_bending_ * B2_ * kdot_Qih(1),
+      tau_twisting_ * C_ * kdot_Qih(2));
   const Vector3<T> Md_W = R_WQih * Md_Qih;
+
+  PRINT_VAR(w_WQi.transpose());
+  PRINT_VAR(w_WQip.transpose());
+  PRINT_VAR(w_QiQip_Qih.transpose());
+  PRINT_VAR(kdot_Qih.transpose());
+  PRINT_VAR(tau_bending_);
+  PRINT_VAR(Md_W.transpose());
 
   // Spatial force on Bi.
   const SpatialForce<T> F_Bi_W(M_W + Md_W, Vector3<T>::Zero());

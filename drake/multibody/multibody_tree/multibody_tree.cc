@@ -335,39 +335,36 @@ void MultibodyTree<T>::CalcForceElementsContribution(
     const PositionKinematicsCache<T>& pc,
     const VelocityKinematicsCache<T>& vc,
     std::vector<SpatialForce<T>>* F_Bo_W_array,
-    Eigen::Ref<VectorX<T>> tau_array) const {
+    EigenPtr<VectorX<T>> tau_array) const {
   DRAKE_DEMAND(F_Bo_W_array != nullptr);
   DRAKE_DEMAND(static_cast<int>(F_Bo_W_array->size()) == get_num_bodies());
-  DRAKE_DEMAND(tau_array.size() == get_num_velocities());
+  DRAKE_DEMAND(tau_array != nullptr);
+  DRAKE_DEMAND(tau_array->size() == get_num_velocities());
 
   const auto& mbt_context =
       dynamic_cast<const MultibodyTreeContext<T>&>(context);
 
   // Zero the arrays before adding contributions.
-  tau_array.setZero();
+  tau_array->setZero();
   for (auto& F : *F_Bo_W_array) F.SetZero();
 
   // Add contributions from force elements.
   for (const auto& force_element : owned_force_elements_) {
     force_element->CalcAndAddForceContribution(
-        mbt_context, pc, vc, F_Bo_W_array, tau_array);
+        mbt_context, pc, vc, F_Bo_W_array, *tau_array);
   }
 }
 
 template <typename T>
 void MultibodyTree<T>::CalcMassMatrixViaInverseDynamics(
     const systems::Context<T>& context,
+    const PositionKinematicsCache<T>& pc,
     EigenPtr<MatrixX<T>> H) const {
   DRAKE_DEMAND(H->rows() == get_num_velocities());
   DRAKE_DEMAND(H->cols() == get_num_velocities());
 
-  PositionKinematicsCache<T> pc(get_topology());
   VelocityKinematicsCache<T> vc(get_topology());
   vc.InitializeToZero();
-
-  // ======================================================================
-  // Compute position kinematics.
-  CalcPositionKinematicsCache(context, &pc);
 
   // ======================================================================
   // Compute one column of the mass matrix via inverse dynamics at a time.
@@ -392,23 +389,14 @@ void MultibodyTree<T>::CalcMassMatrixViaInverseDynamics(
 template <typename T>
 void MultibodyTree<T>::CalcBiasTerm(
     const systems::Context<T>& context,
+    const PositionKinematicsCache<T>& pc,
+    const VelocityKinematicsCache<T>& vc,
     const std::vector<SpatialForce<T>>& Fapplied_Bo_W_array,
     EigenPtr<VectorX<T>> C) const {
   DRAKE_DEMAND(C->size() == get_num_velocities());
 
-  PositionKinematicsCache<T> pc(get_topology());
-  VelocityKinematicsCache<T> vc(get_topology());
-
   const int nv = get_num_velocities();
   C->setZero();
-
-  // ======================================================================
-  // Compute position kinematics.
-  CalcPositionKinematicsCache(context, &pc);
-
-  // ======================================================================
-  // Compute velocity kinematics.
-  CalcVelocityKinematicsCache(context, pc, &vc);
 
   // ======================================================================
   // Compute one column of the mass matrix via inverse dynamics at a time.

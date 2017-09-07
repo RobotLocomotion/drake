@@ -783,10 +783,14 @@ class MultibodyTree {
       EigenPtr<VectorX<T>> tau_array) const;
 
   void CalcMassMatrixViaInverseDynamics(
-      const systems::Context<T>& context, EigenPtr<MatrixX<T>> H) const;
+      const systems::Context<T>& context,
+      const PositionKinematicsCache<T>& pc,
+      EigenPtr<MatrixX<T>> H) const;
 
   void CalcBiasTerm(
       const systems::Context<T>& context,
+      const PositionKinematicsCache<T>& pc,
+      const VelocityKinematicsCache<T>& vc,
       const std::vector<SpatialForce<T>>& Fapplied_Bo_W_array,
       EigenPtr<VectorX<T>> C) const;
 
@@ -836,7 +840,7 @@ class MultibodyTree {
       const PositionKinematicsCache<T>& pc,
       const VelocityKinematicsCache<T>& vc,
       std::vector<SpatialForce<T>>* F_Bo_W_array,
-      Eigen::Ref<VectorX<T>> tau_array) const;
+      EigenPtr<VectorX<T>> tau_array) const;
 
   /// @name Methods to retrieve multibody element variants
   ///

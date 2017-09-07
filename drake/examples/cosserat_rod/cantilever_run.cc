@@ -55,12 +55,12 @@ int do_main(int argc, char* argv[]) {
   const double tau_d = 0.04469;  // [sec]
 
   // Numerical parameters:
-  const int num_elements = 5;
+  const int num_elements = 10;
   const double dt = 0.001;  // [sec]
 
   // Other derived numbers.
   const double mass = rho * area * length;
-  //const double T1 = 0.140387;  // First period of osscillation.
+  const double T1 = 0.140387;  // First period of osscillation.
 
   // TODO: make this constructor to take rho instead.
   auto rod_plant = builder.AddSystem<CosseratRodPlant>(
@@ -91,12 +91,13 @@ int do_main(int argc, char* argv[]) {
 
   simulator.set_target_realtime_rate(FLAGS_realtime_factor);
   simulator.Initialize();
-  const double max_step_size = dt;
-  simulator.reset_integrator<systems::RungeKutta2Integrator<double>>(
-      *diagram, max_step_size, simulator.get_mutable_context());
+  //const double max_step_size = dt;
+  //simulator.reset_integrator<systems::SemiExplicitEulerIntegrator<double>>(
+    //  *diagram, max_step_size, simulator.get_mutable_context());
+  simulator.get_mutable_integrator()->set_maximum_step_size(dt);
   PRINT_VAR(simulator.get_integrator()->get_fixed_step_mode());
   PRINT_VAR(simulator.get_integrator()->supports_error_estimation());
-  simulator.StepTo(3*dt);
+  simulator.StepTo(5*T1);
 
   // Write to file logged data.
   {
