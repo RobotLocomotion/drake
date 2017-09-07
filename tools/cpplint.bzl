@@ -50,8 +50,14 @@ def _add_linter_rules(source_labels, source_filenames, name, data = None):
     size = "small"
     tags = ["cpplint", "lint"]
 
+    # For cpplint, require a top-level config file.  By default, also apply
+    # configs from the current directory and test sub-directory when present.
+    cpplint_cfg = ["//:CPPLINT.cfg"] + native.glob([
+        'CPPLINT.cfg',
+        'test/CPPLINT.cfg',
+    ])
+
     # Google cpplint.
-    cpplint_cfg = ["//:CPPLINT.cfg"] + native.glob(['CPPLINT.cfg'])
     native.py_test(
         name = name + "_cpplint",
         srcs = ["@google_styleguide//:cpplint"],
