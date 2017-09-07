@@ -76,8 +76,11 @@ class PoseSmoother : public systems::LeafSystem<double> {
                               Vector6<double>* output) const;
 
   // Delegated constructor.
-  PoseSmoother(double max_linear_velocity, double max_angular_velocity,
-               double period_sec, std::unique_ptr<util::MovingAverageFilter<VectorX<double>>> filter);
+  PoseSmoother(
+      double max_linear_velocity, double max_angular_velocity,
+      double period_sec,
+      std::unique_ptr<util::MovingAverageFilter<VectorX<double>>> filter);
+
  private:
   const int smoothed_pose_output_port_{0};
   const int smoothed_velocity_output_port_{0};
