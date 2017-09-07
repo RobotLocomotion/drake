@@ -404,7 +404,35 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
       const MultibodyTreeContext<T>& context,
       const SpatialForce<T>& F_Mo_F,
       Eigen::Ref<VectorX<T>> tau) const = 0;
+
+  virtual void MapQDotToVelocity(
+      const MultibodyTreeContext<T>& context,
+      const Eigen::Ref<const VectorX<T>>& v,
+      EigenPtr<VectorX<T>> qdot) const = 0;
   /// @}
+
+  /// Returns a const Eigen expression of the vector of generalized positions
+  /// for `this` mobilizer from a vector `q_array` of generalized positions for
+  /// the entire MultibodyTree model.
+  /// This method aborts if the input array is not of size
+  /// MultibodyTree::get_num_positions().
+  Eigen::VectorBlock<const Eigen::Ref<const VectorX<T>>>
+  get_positions_from_array(const Eigen::Ref<const VectorX<T>>& q_array) const {
+    DRAKE_DEMAND(
+        q_array.size() == this->get_parent_tree().get_num_positions());
+    return q_array.segment(topology_.positions_start,
+                           topology_.num_positions);
+  }
+
+  /// Mutable version of get_positions_from_array().
+  Eigen::VectorBlock<Eigen::Ref<VectorX<T>>> get_mutable_positions_from_array(
+      EigenPtr<VectorX<T>> q_array) const {
+    DRAKE_DEMAND(q_array != nullptr);
+    DRAKE_DEMAND(
+        q_array->size() == this->get_parent_tree().get_num_positions());
+    return q_array->segment(topology_.positions_start,
+                            topology_.num_positions);
+  }
 
   /// Returns a const Eigen expression of the vector of generalized velocities
   /// for `this` mobilizer from a vector `v_array` of generalized velocities for

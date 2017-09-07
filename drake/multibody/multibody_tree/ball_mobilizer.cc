@@ -100,6 +100,23 @@ void BallMobilizer<T>::ProjectSpatialForce(
 }
 
 template <typename T>
+void BallMobilizer<T>::MapQDotToVelocity(
+    const MultibodyTreeContext<T>& context,
+    const Eigen::Ref<const VectorX<T>>& v,
+    EigenPtr<VectorX<T>> qdot) const {
+  DRAKE_ASSERT(v.size() == kNv);
+  DRAKE_ASSERT(qdot != nullptr);
+  DRAKE_ASSERT(qdot->size() == kNq);
+  const Vector3<T> w_FM = get_angular_velocity(context);
+  const Quaternion<T> q_FM = get_quaternion(context);
+  Quaternion<T> qdot_quat =
+      Quaternion<T>(0.0, w_FM(0), w_FM(1), w_FM(2)) * q_FM;
+  using std::abs;
+  DRAKE_ASSERT(abs(qdot_quat.w()) < std::numeric_limits<double>::epsilon());
+  *qdot = 0.5 * qdot_quat.vec();
+}
+
+template <typename T>
 template <typename ToScalar>
 std::unique_ptr<Mobilizer<ToScalar>>
 BallMobilizer<T>::TemplatedDoCloneToScalar(

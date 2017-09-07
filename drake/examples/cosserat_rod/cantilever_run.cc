@@ -96,7 +96,7 @@ int do_main(int argc, char* argv[]) {
   simulator.set_target_realtime_rate(FLAGS_realtime_factor);
   simulator.Initialize();
   simulator.set_publish_at_initialization(false);
-  simulator.set_publish_every_time_step(false);
+  simulator.set_publish_every_time_step(true);
   //const double max_step_size = dt;
   //simulator.reset_integrator<systems::SemiExplicitEulerIntegrator<double>>(
     //  *diagram, max_step_size, simulator.get_mutable_context());

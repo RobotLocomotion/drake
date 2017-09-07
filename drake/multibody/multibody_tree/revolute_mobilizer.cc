@@ -91,6 +91,17 @@ void RevoluteMobilizer<T>::ProjectSpatialForce(
 }
 
 template <typename T>
+void RevoluteMobilizer<T>::MapQDotToVelocity(
+    const MultibodyTreeContext<T>& context,
+    const Eigen::Ref<const VectorX<T>>& v,
+    EigenPtr<VectorX<T>> qdot) const {
+  DRAKE_ASSERT(v.size() == kNv);
+  DRAKE_ASSERT(qdot != nullptr);
+  DRAKE_ASSERT(qdot->size() == kNq);
+  *qdot = v;
+}
+
+template <typename T>
 template <typename ToScalar>
 std::unique_ptr<Mobilizer<ToScalar>>
 RevoluteMobilizer<T>::TemplatedDoCloneToScalar(

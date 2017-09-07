@@ -264,6 +264,7 @@ void CosseratRodPlant<T>::DoCalcTimeDerivatives(
       dynamic_cast<const systems::BasicVector<T>&>(
           context.get_continuous_state_vector()).get_value();
 
+  const int nq = model_.get_num_positions();
   const int nv = model_.get_num_velocities();
 
   PRINT_VAR("CosseratRodPlant<T>::DoCalcTimeDerivatives");
@@ -307,9 +308,8 @@ void CosseratRodPlant<T>::DoCalcTimeDerivatives(
 
   auto v = x.bottomRows(nv);
 
-  // TODO: write MultibodyModeler::MapVelocityToQdot().
-  VectorX<T> qdot(nv);
-  qdot = v;
+  VectorX<T> qdot(nq);
+  model_.MapQDotToVelocity(context, v, &qdot);
 
   VectorX<T> xdot(model_.get_num_states());
   xdot << qdot, M.llt().solve(- C);

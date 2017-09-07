@@ -842,6 +842,11 @@ class MultibodyTree {
       std::vector<SpatialForce<T>>* F_Bo_W_array,
       EigenPtr<VectorX<T>> tau_array) const;
 
+  void MapQDotToVelocity(
+      const systems::Context<T>& context,
+      const Eigen::Ref<const VectorX<T>>& v,
+      EigenPtr<VectorX<T>> qdot) const;
+
   /// @name Methods to retrieve multibody element variants
   ///
   /// Given two variants of the same %MultibodyTree, these methods map an
