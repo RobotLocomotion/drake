@@ -3,7 +3,9 @@
 #include <memory>
 
 #include "drake/common/symbolic.h"
-#include "drake/examples/pendulum/gen/pendulum_state_vector.h"
+#include "drake/examples/pendulum/gen/pendulum_input.h"
+#include "drake/examples/pendulum/gen/pendulum_params.h"
+#include "drake/examples/pendulum/gen/pendulum_state.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -49,24 +51,17 @@ class PendulumPlant : public systems::LeafSystem<T> {
     get_mutable_state(context)->set_thetadot(thetadot);
   }
 
-  /// Pendulum mass in kg
-  T m() const { return m_; }
-  /// Pendulum length in meters
-  T l() const { return l_; }
-  /// Damping torque in kg m^2 / s
-  T b() const { return b_; }
-  /// Gravity in m/s^2
-  T g() const { return g_; }
-
   explicit PendulumPlant(const PendulumPlant& other) = delete;
   PendulumPlant& operator=(const PendulumPlant& other) = delete;
   explicit PendulumPlant(PendulumPlant&& other) = delete;
   PendulumPlant& operator=(PendulumPlant&& other) = delete;
 
+  T CalcTotalEnergy(const MyContext& context) const;
+
  private:
   // This is the calculator method for the state output port.
   void CopyStateOut(const MyContext& context,
-                    PendulumStateVector<T>* output) const;
+                    PendulumState<T>* output) const;
 
   void DoCalcTimeDerivatives(const MyContext& context,
                              MyContinuousState* derivatives) const override;
@@ -75,35 +70,28 @@ class PendulumPlant : public systems::LeafSystem<T> {
     return this->EvalVectorInput(context, 0)->GetAtIndex(0);
   }
 
-  static const PendulumStateVector<T>& get_state(
+  static const PendulumState<T>& get_state(
       const MyContinuousState& cstate) {
-    return dynamic_cast<const PendulumStateVector<T>&>(cstate.get_vector());
+    return dynamic_cast<const PendulumState<T>&>(cstate.get_vector());
   }
 
-  static PendulumStateVector<T>* get_mutable_state(
+  static PendulumState<T>* get_mutable_state(
       MyContinuousState* cstate) {
-    return dynamic_cast<PendulumStateVector<T>*>(cstate->get_mutable_vector());
+    return dynamic_cast<PendulumState<T>*>(cstate->get_mutable_vector());
   }
 
-  static PendulumStateVector<T>* get_mutable_output(MyOutput* output) {
-    return dynamic_cast<PendulumStateVector<T>*>(
+  static PendulumState<T>* get_mutable_output(MyOutput* output) {
+    return dynamic_cast<PendulumState<T>*>(
         output->GetMutableVectorData(0));
   }
 
-  static const PendulumStateVector<T>& get_state(const MyContext& context) {
+  static const PendulumState<T>& get_state(const MyContext& context) {
     return get_state(*context.get_continuous_state());
   }
 
-  static PendulumStateVector<T>* get_mutable_state(MyContext* context) {
+  static PendulumState<T>* get_mutable_state(MyContext* context) {
     return get_mutable_state(context->get_mutable_continuous_state());
   }
-
-  const double m_{1.0};   // kg
-  const double l_{.5};    // m
-  const double b_{0.1};   // kg m^2 /s
-  const double lc_{.5};   // m
-  const double I_{.25};   // m*l^2; % kg*m^2
-  const double g_{9.81};  // m/s^2
 };
 
 }  // namespace pendulum

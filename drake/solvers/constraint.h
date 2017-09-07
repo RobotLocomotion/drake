@@ -95,8 +95,8 @@ class Constraint : public EvaluatorBase {
     return DoCheckSatisfied(x, tol);
   }
 
-  Eigen::VectorXd const& lower_bound() const { return lower_bound_; }
-  Eigen::VectorXd const& upper_bound() const { return upper_bound_; }
+  const Eigen::VectorXd& lower_bound() const { return lower_bound_; }
+  const Eigen::VectorXd& upper_bound() const { return upper_bound_; }
 
   /** Number of rows in the output constraint. */
   // TODO(eric.cousineau): Change return type to `int`.

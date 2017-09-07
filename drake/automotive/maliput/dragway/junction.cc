@@ -13,7 +13,7 @@ Junction::Junction(RoadGeometry* road_geometry,
     double lane_width,
     double shoulder_width,
     double maximum_height)
-  : id_({"Dragway Junction"}),
+  : id_("Dragway Junction"),
     road_geometry_(road_geometry),
     segment_(this, num_lanes, length, lane_width, shoulder_width,
              maximum_height) {

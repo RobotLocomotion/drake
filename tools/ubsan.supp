@@ -8,3 +8,7 @@ shift-base:BulletCollision/BroadphaseCollision/btOverlappingPairCache.h
 # http://llvm.org/viewvc/llvm-project/llvm/trunk/utils/sanitizers/ubsan_blacklist.txt?view=markup&pathrev=291918
 alignment:bits/stl_tree.h
 alignment:bits/stl_pair.h
+
+# Bug in Eigen, has been fixed somewhere after tag 3.3.4.  Present in
+# branches/3.3
+null:external/eigen/Eigen/src/Core/util/BlasUtil.h

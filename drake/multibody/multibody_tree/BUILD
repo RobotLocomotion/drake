@@ -139,6 +139,7 @@ drake_cc_googletest(
     size = "medium",
     deps = [
         ":multibody_tree",
+        "//drake/common:eigen_matrix_compare",
         "//drake/multibody/benchmarks/acrobot",
     ],
 )

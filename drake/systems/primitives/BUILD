@@ -321,6 +321,7 @@ drake_cc_googletest(
         ":affine_linear_test",
         ":linear_system",
         "//drake/common:eigen_matrix_compare",
+        "//drake/examples/pendulum:pendulum_plant",
         "//drake/systems/framework",
         "//drake/systems/framework/test_utilities",
     ],

@@ -221,7 +221,7 @@ std::unique_ptr<const api::RoadGeometry> BuildFrom(YAML::Node node) {
   }
 
   drake::log()->debug("building road geometry {}", mmb["id"].Scalar());
-  return builder.Build({mmb["id"].Scalar()});
+  return builder.Build(api::RoadGeometryId{mmb["id"].Scalar()});
 }
 
 }  // namespace

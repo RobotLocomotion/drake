@@ -406,6 +406,11 @@ class MultibodyTree {
     return topology_.get_num_velocities();
   }
 
+  /// Returns the total size of the state vector in the model.
+  int get_num_states() const {
+    return topology_.get_num_states();
+  }
+
   /// Returns the height of the tree data structure of `this` %MultibodyTree.
   /// That is, the number of bodies in the longest kinematic path between the
   /// world and any other leaf body. For a model that only contains the _world_
@@ -498,7 +503,7 @@ class MultibodyTree {
   // introduction of system's methods to:
   //  - Create a context different from LeafContext, in this case MBTContext.
   //  - Create or request cache entries.
-  std::unique_ptr<systems::Context<T>> CreateDefaultContext() const;
+  std::unique_ptr<systems::LeafContext<T>> CreateDefaultContext() const;
 
   /// Sets default values in the context. For mobilizers, this method sets them
   /// to their _zero_ configuration according to
@@ -616,10 +621,15 @@ class MultibodyTree {
   /// set of generalized forces `tau` that would need to be applied at each
   /// Mobilizer in order to attain the specified generalized accelerations.
   /// Mathematically, this method computes: <pre>
-  ///   tau = M(q) * vdot + C(q, v) * v
+  ///   tau = M(q)v̇ + C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W
   /// </pre>
-  /// where `M(q)` is the %MultibodyTree mass matrix and `C(q, v) * v` is the
-  /// bias term containing Coriolis and gyroscopic effects.
+  /// where `M(q)` is the %MultibodyTree mass matrix, `C(q, v)v` is the bias
+  /// term containing Coriolis and gyroscopic effects and `tau_app` consists
+  /// of a vector applied generalized forces. The last term is a summation over
+  /// all bodies in the model where `Fapp_Bo_W` is an applied spatial force on
+  /// body B at `Bo` which gets projected into the space of generalized forces
+  /// with the geometric Jacobian `J_WB(q)` which maps generalized velocities
+  /// into body B spatial velocity as `V_WB = J_WB(q)v`.
   /// This method does not compute explicit expressions for the mass matrix nor
   /// for the bias term, which would be of at least `O(n²)` complexity, but it
   /// implements an `O(n)` Newton-Euler recursive algorithm, where n is the
@@ -640,9 +650,31 @@ class MultibodyTree {
   ///   `context`.
   /// @param[in] known_vdot
   ///   A vector with the known generalized accelerations `vdot` for the full
-  ///   %MultibodyTree model. Use Mobilizer::get_velocities_from_array() to
+  ///   %MultibodyTree model. Use Mobilizer::get_accelerations_from_array() to
   ///   access entries into this array for a particular Mobilizer. You can use
   ///   the mutable version of this method to write into this array.
+  /// @param[in] Fapplied_Bo_W_array
+  ///   A vector containing the spatial force `Fapplied_Bo_W` applied on each
+  ///   body at the body's frame origin `Bo` and expressed in the world frame W.
+  ///   `Fapplied_Bo_W_array` can have zero size which means there are no
+  ///   applied forces. To apply non-zero forces, `Fapplied_Bo_W_array` must be
+  ///   of size equal to the number of bodies in `this` %MultibodyTree model.
+  ///   This array must be ordered by BodyNodeIndex, which for a given body can
+  ///   be retrieved with Body::get_node_index().
+  ///   This method will abort if provided with an array that does not have a
+  ///   size of either `get_num_bodies()` or zero.
+  /// @param[in] tau_applied_array
+  ///   An array of applied generalized forces for the entire model. For a
+  ///   given mobilizer, entries in this array can be accessed using the method
+  ///   Mobilizer::get_generalized_forces_from_array() while its mutable
+  ///   counterpart, Mobilizer::get_mutable_generalized_forces_from_array(),
+  ///   allows writing into this array.
+  ///   `tau_applied_array` can have zero size, which means there are no applied
+  ///   forces. To apply non-zero forces, `tau_applied_array` must be of size
+  ///   equal to the number to the number of generalized velocities in the
+  ///   model, see MultibodyTree::get_num_velocities().
+  ///   This method will abort if provided with an array that does not have a
+  ///   size of either MultibodyTree::get_num_velocities() or zero.
   /// @param[out] A_WB_array
   ///   A pointer to a valid, non nullptr, vector of spatial accelerations
   ///   containing the spatial acceleration `A_WB` for each body. It must be of
@@ -662,9 +694,28 @@ class MultibodyTree {
   ///   On output, entries will be ordered by BodyNodeIndex.
   ///   To access a mobilizer's reaction force on given body B in this array,
   ///   use the index returned by Body::get_node_index().
+  /// @param[out] tau_array
+  ///   On output this array will contain the generalized forces that must be
+  ///   applied in order to achieve the desired generalized accelerations given
+  ///   by the input argument `known_vdot`. It must not be the nullptr and it
+  ///   must be of size MultibodyTree::get_num_velocities(). Generalized forces
+  ///   for each Mobilizer can be accessed with
+  ///   Mobilizer::get_generalized_forces_from_array().
   ///
-  /// @note There is no mechanism to assert that either `A_WB_array` nor
-  ///   `F_BMo_W_array` are ordered by BodyNodeIndex.
+  /// @warning There is no mechanism to assert that either `A_WB_array` nor
+  ///   `F_BMo_W_array` are ordered by BodyNodeIndex. You can use
+  ///   Body::get_node_index() to obtain the node index for a given body.
+  ///
+  /// @note This method uses `F_BMo_W_array` and `tau_array` as the only local
+  /// temporaries and therefore no additional dynamic memory allocation is
+  /// performed.
+  ///
+  /// @warning `F_BMo_W_array` (`tau_array`) and `Fapplied_Bo_W_array`
+  /// (`tau_applied_array`) can actually be the same
+  /// array in order to reduce memory footprint and/or dynamic memory
+  /// allocations. However the information in `Fapplied_Bo_W_array`
+  /// (`tau_applied_array`) would be overwritten through `F_BMo_W_array`
+  /// (`tau_array`). Make a copy if data must be preserved.
   ///
   /// @pre The position kinematics `pc` must have been previously updated with a
   /// call to CalcPositionKinematicsCache().
@@ -672,16 +723,16 @@ class MultibodyTree {
   /// call to CalcVelocityKinematicsCache().
   ///
   /// @throws std::bad_cast if `context` is not a `MultibodyTreeContext`.
-  // TODO(amcastro-tri): add provision for an array of applied spatial forces
-  // per body. These could contain both external as well as constraint forces.
   void CalcInverseDynamics(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
       const VelocityKinematicsCache<T>& vc,
       const VectorX<T>& known_vdot,
+      const std::vector<SpatialForce<T>>& Fapplied_Bo_W_array,
+      const Eigen::Ref<const VectorX<T>>& tau_applied_array,
       std::vector<SpatialAcceleration<T>>* A_WB_array,
       std::vector<SpatialForce<T>>* F_BMo_W_array,
-      VectorX<T>* tau_array) const;
+      EigenPtr<VectorX<T>> tau_array) const;
 
   /// @name Methods to retrieve multibody element variants
   ///

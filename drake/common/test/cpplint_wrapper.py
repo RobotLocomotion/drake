@@ -9,6 +9,7 @@ import argparse
 import functools
 import multiprocessing
 import os
+import re
 import subprocess
 import sys
 
@@ -101,12 +102,17 @@ def multiprocess_cpplint(cmdline, files, args):
 
 
 def main():
-    # Find cpplint.py.
-    drake_common_test_dir = os.path.dirname(os.path.abspath(__file__))
-    drake_dir = os.path.abspath(os.path.join(drake_common_test_dir, '../..'))
-    drake_distro_dir = os.path.abspath(os.path.join(drake_dir, '..'))
-    default_cpplint = os.path.join(
-        drake_distro_dir, 'externals/google_styleguide/cpplint/cpplint.py')
+    # Find the cpplint binary.
+    # This is the path that works inside of the sandbox.
+    default_cpplint = 'external/google_styleguide/cpplint_binary'
+    if not os.path.exists(default_cpplint):
+        m = re.match('(.*/cpplint_wrapper.runfiles/)', sys.argv[0])
+        if m:
+            # This is the path that works outside of the sandbox.
+            default_cpplint = os.path.join(
+                m.group(1), 'google_styleguide/cpplint_binary')
+    if not os.path.exists(default_cpplint):
+        default_cpplint = None
 
     # Prepare to parse our arguments.
     parser = argparse.ArgumentParser(
@@ -129,7 +135,7 @@ def main():
         '--num-processes', metavar='N', type=int, default=None,
         help='limit to this number of processes (default all CPUs)')
     parser.add_argument(
-        'pathnames', nargs='*', default=[drake_dir],
+        'pathnames', nargs='*', default=['drake'],
         help='list of files and/or directories to check'
         ' (default %(default)s)')
 
@@ -141,6 +147,11 @@ def main():
         extra_args = argv[index + 1:]
         argv[index:] = []
     args = parser.parse_args(argv)
+
+    # Make sure cpplint_binary exists.
+    if not os.path.exists(args.cpplint):
+        print('error: cpplint not found')
+        return 1
 
     # Search our args.pathnames.  For any directories it lists, recursively
     # find every file within that matches args.extensions.  For any files
@@ -162,11 +173,12 @@ def main():
 
     # Invoke cpplint.py.
     cmdline = [
-        sys.executable, args.cpplint,
+        args.cpplint,
         "--extensions='%s'" % ','.join(args.extensions),
         '--output=eclipse',
     ] + extra_args
     return multiprocess_cpplint(cmdline, files, args)
+
 
 if __name__ == '__main__':
     sys.exit(main())

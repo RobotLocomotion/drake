@@ -117,7 +117,7 @@ void MultibodyTree<T>::CreateBodyNode(BodyNodeIndex body_node_index) {
 }
 
 template <typename T>
-std::unique_ptr<systems::Context<T>>
+std::unique_ptr<systems::LeafContext<T>>
 MultibodyTree<T>::CreateDefaultContext() const {
   if (!topology_is_valid()) {
     throw std::logic_error(
@@ -256,10 +256,17 @@ void MultibodyTree<T>::CalcInverseDynamics(
     const PositionKinematicsCache<T>& pc,
     const VelocityKinematicsCache<T>& vc,
     const VectorX<T>& known_vdot,
+    const std::vector<SpatialForce<T>>& Fapplied_Bo_W_array,
+    const Eigen::Ref<const VectorX<T>>& tau_applied_array,
     std::vector<SpatialAcceleration<T>>* A_WB_array,
     std::vector<SpatialForce<T>>* F_BMo_W_array,
-    VectorX<T>* tau_array) const {
+    EigenPtr<VectorX<T>> tau_array) const {
   DRAKE_DEMAND(known_vdot.size() == get_num_velocities());
+  const int Fapplied_size = static_cast<int>(Fapplied_Bo_W_array.size());
+  DRAKE_DEMAND(Fapplied_size == get_num_bodies() || Fapplied_size == 0);
+  const int tau_applied_size = tau_applied_array.size();
+  DRAKE_DEMAND(
+      tau_applied_size == get_num_velocities() || tau_applied_size == 0);
 
   DRAKE_DEMAND(A_WB_array != nullptr);
   DRAKE_DEMAND(static_cast<int>(A_WB_array->size()) == get_num_bodies());
@@ -277,6 +284,14 @@ void MultibodyTree<T>::CalcInverseDynamics(
   // known.
   CalcSpatialAccelerationsFromVdot(context, pc, vc, known_vdot, A_WB_array);
 
+  // Vector of generalized forces per mobilizer.
+  // It has zero size if no forces are applied.
+  VectorUpTo6<T> tau_applied_mobilizer(0);
+
+  // Spatial force applied on B at Bo.
+  // It is left initialized to zero if no forces are applied.
+  SpatialForce<T> Fapplied_Bo_W = SpatialForce<T>::Zero();
+
   // Performs a tip-to-base recursion computing the total spatial force F_BMo_W
   // acting on body B, about point Mo, expressed in the world frame W.
   // This includes the world (depth = 0) so that F_BMo_W_array[world_index()]
@@ -289,10 +304,28 @@ void MultibodyTree<T>::CalcInverseDynamics(
       DRAKE_ASSERT(node.get_topology().level == depth);
       DRAKE_ASSERT(node.get_index() == body_node_index);
 
+      // Make a copy to the total applied forces since the call to
+      // CalcInverseDynamics_TipToBase() below could overwrite the entry for the
+      // current body node if the input applied forces arrays are the same
+      // in-memory object as the output arrays.
+      // This allows users to specify the same input and output arrays if
+      // desired to minimize memory footprint.
+      // Leave them initialized to zero if no applied forces were provided.
+      if (tau_applied_size != 0) {
+        tau_applied_mobilizer =
+            node.get_mobilizer().get_generalized_forces_from_array(
+                tau_applied_array);
+      }
+      if (Fapplied_size != 0) {
+        Fapplied_Bo_W = Fapplied_Bo_W_array[body_node_index];
+      }
+
       // Compute F_BMo_W for the body associated with this node and project it
       // onto the space of generalized forces for the associated mobilizer.
       node.CalcInverseDynamics_TipToBase(
-          mbt_context, pc, vc, *A_WB_array, F_BMo_W_array, tau_array);
+          mbt_context, pc, vc, *A_WB_array,
+          Fapplied_Bo_W, tau_applied_mobilizer,
+          F_BMo_W_array, tau_array);
     }
   }
 }

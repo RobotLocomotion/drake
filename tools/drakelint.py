@@ -31,9 +31,12 @@ def _check_includes(filename):
     """Return 0 if clang-format-includes is a no-op, and 1 otherwise."""
     tool = IncludeFormatter(filename)
     tool.format_includes()
-    if not tool.is_same_as_original():
-        print("error: the #include ordering is incorrect; to fix, run:")
-        print("  bazel-bin/drake/tools/clang-format-includes " + filename)
+    first_difference = tool.get_first_differing_original_index()
+    if first_difference is not None:
+        print("error: " + filename + ":" + str(first_difference + 1) + ": " +
+              "the #include ordering is incorrect")
+        print("note: fix via bazel-bin/drake/tools/clang-format-includes " +
+              filename)
         return 1
     return 0
 
