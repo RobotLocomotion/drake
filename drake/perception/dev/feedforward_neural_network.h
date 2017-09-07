@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 #include <Eigen/Dense>
 
@@ -92,5 +93,5 @@ class FeedforwardNeuralNetwork : public NeuralNetwork<T> {
   int num_layers_;
 };
 
-}  // namespace automotive
+}  // namespace perception
 }  // namespace drake
