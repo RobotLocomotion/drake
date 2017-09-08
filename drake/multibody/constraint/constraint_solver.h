@@ -738,7 +738,7 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
   // (g) M = B - YA⁻¹X
 
   // Our mixed linear complementarity problem takes the specific form:
-  // (1) | M  -Gᵀ  -(Nᵀ-μQᵀ) -Dᵀ  0  -Lᵀ | | v̇ | + |-M f | = | 0 |
+  // (1) | M  -Gᵀ  -(Nᵀ-μQᵀ) -Dᵀ  0  -Lᵀ | | v̇ | + | -f  | = | 0 |
   //     | G   0    0         0   0   0  | | fG | + |  kᴳ | = | 0 |
   //     | N   0    0         0   0   0  | | fN | + |  kᴺ | = | α |
   //     | D   0    0         0   E   0  | | fD | + |  kᴰ | = | β |
@@ -762,7 +762,7 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
 
   // We will assign zero to the components of fG corresponding to the dependent
   // rows of G, which allows casting (1) into a nearly identical form:
-  // (6)  | M  -Ĝᵀ  -(Nᵀ-μQᵀ) -Dᵀ  0  -Lᵀ | | v̇ | + |-M f | = | 0 |
+  // (6)  | M  -Ĝᵀ  -(Nᵀ-μQᵀ) -Dᵀ  0  -Lᵀ | | v̇ | + | -f  | = | 0 |
   //      | Ĝ   0    0         0   0   0  | | fĜ | + |  kᴳ | = | 0 |
   //      | N   0    0         0   0   0  | | fN | + |  kᴺ | = | α |
   //      | D   0    0         0   E   0  | | fD | + |  kᴰ | = | β |
@@ -786,7 +786,8 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
   //     | 0   0 |       |  0  |       | μ   -Eᵀ  0   0  |
   //     | L   0 |       |  kᴸ |       | 0    0   0   0  |
 
-  // Therefore, using Equations (f) and (g), the pure LCP (q,M) is defined as:
+  // Therefore, using Equations (f) and (g) and defining C as the upper left
+  // block of A⁻¹, the pure LCP (q,M) is defined as:
   // M ≡ | NC(Nᵀ-μQᵀ)  NCDᵀ   0   NCLᵀ |
   //     | DC(Nᵀ-μQᵀ)  DCDᵀ   E   DCLᵀ |
   //     | μ          -Eᵀ     0   0    |
@@ -826,7 +827,7 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
       G_transpose_mult, Del, &A_solve);
 
   // Determine a new "inertia" solve operator, using only the upper left block
-  // of A⁻¹ to exploit zeros in common operations.
+  // of A⁻¹ (denoted C above) to exploit zero blocks in common operations.
   std::function<MatrixX<T>(const MatrixX<T>&)> fast_A_solve;
   DetermineNewPartialInertiaSolveOperator(
       problem_data, num_generalized_velocities, indep_constraints, G_mult,
@@ -902,7 +903,7 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
   // q = b - DA⁻¹a
   // M = B - DA⁻¹C
   if (indep_constraints.size() > 0) {
-    // In this case, Xv = -(Nᵀ + μQᵀ)fN - DᵀfD - LᵀfL and a = Mf
+    // In this case, Xv = -(Nᵀ + μQᵀ)fN - DᵀfD - LᵀfL and a = f.
     const VectorX<T> Xv = -data_ptr->N_minus_muQ_transpose_mult(fN)
         -data_ptr->F_transpose_mult(fF)
         -data_ptr->L_transpose_mult(fL);
@@ -968,6 +969,90 @@ void ConstraintSolver<T>::SolveImpactProblem(
   // Initialize contact force vector.
   cf->resize(num_contacts + num_spanning_vectors + num_limits +
       num_eq_constraints);
+
+  // The constraint problem is a mixed linear complementarity problem of the
+  // form:
+  // (a)    Au + Xv + a = 0
+  // (b)    Yu + Bv + b ≥ 0
+  // (c)              v ≥ 0
+  // (d) vᵀ(b + Yu + Bv) = 0
+  // where u are "free" variables. If the matrix A is nonsingular, u can be
+  // solved for:
+  // (e) u = -A⁻¹ (a + Xv)
+  // allowing the mixed LCP to be converted to a "pure" LCP (q, M) by:
+  // (f) q = b - YA⁻¹a
+  // (g) M = B - YA⁻¹X
+
+  // Our mixed linear complementarity problem takes the specific form:
+  // (1) | M  -Gᵀ  -Nᵀ  -Dᵀ  0  -Lᵀ | | v̇ | + |-M v | = | 0 |
+  //     | G   0    0    0   0   0  | | fG | + |  kᴳ | = | 0 |
+  //     | N   0    0    0   0   0  | | fN | + |  kᴺ | = | α |
+  //     | D   0    0    0   E   0  | | fD | + |  kᴰ | = | β |
+  //     | 0   0    μ   -Eᵀ  0   0  | |  λ | + |   0 | = | γ |
+  //     | L   0    0    0   0   0  | | fL | + |  kᴸ | = | δ |
+  // (2) 0 ≤ fN  ⊥  α ≥ 0
+  // (3) 0 ≤ fD  ⊥  β ≥ 0
+  // (4) 0 ≤ λ   ⊥  γ ≥ 0
+  // (5) 0 ≤ fL  ⊥  δ ≥ 0
+
+  // G is generally not of full row rank, making | M  -Gᵀ | singular.
+  //                                             | G   0  |
+  //
+  // Selecting the largest independent subset of rows of G, which we call Ĝ,
+  // addresses this problem. First, note that linear dependence in G implies
+  // Gx = 0 for any vector x that satisfies Ĝx = 0. Now assume that G is a
+  // stacked matrix with independent rows (Ĝ) on top and dependent rows (G̅) on
+  // bottom:
+  // G ≡ | Ĝ  |
+  //     | G̅ |
+
+  // We will assign zero to the components of fG corresponding to the dependent
+  // rows of G, which allows casting (1) into a nearly identical form:
+  // (6)  | M  -Ĝᵀ  -Nᵀ  -Dᵀ  0  -Lᵀ | | v̇ | + |-M v | = | 0 |
+  //      | Ĝ   0    0    0   0   0  | | fĜ | + |  kᴳ | = | 0 |
+  //      | N   0    0    0   0   0  | | fN | + |  kᴺ | = | α |
+  //      | D   0    0    0   E   0  | | fD | + |  kᴰ | = | β |
+  //      | 0   0    μ   -Eᵀ  0   0  | |  λ | + |   0 | = | γ |
+  //      | L   0    0    0   0   0  | | fL | + |  kᴸ | = | δ |
+
+  // It should be clear that any solution to the MLCP (2)-(6) allows solving the
+  // MLCP (1)-(5) by setting fG = | fĜ |
+  //                              |  0 |.
+
+  // --------------------------------------------------------------------------
+  // Converting the MLCP to a pure LCP:
+  // --------------------------------------------------------------------------
+
+  // From the notation above in Equations (a)-(d):
+  // A ≡ | M  -Ĝᵀ|   a ≡ |-M f |   X ≡ |-Nᵀ  -Dᵀ  0  -Lᵀ |
+  //     | Ĝ   0 |       |  kᴳ |       | 0    0   0   0  |
+  //
+  // Y ≡ | N   0 |   b ≡ |  kᴺ |   B ≡ | 0    0   0   0  |
+  //     | D   0 |       |  kᴰ |       | 0    0   E   0  |
+  //     | 0   0 |       |  0  |       | μ   -Eᵀ  0   0  |
+  //     | L   0 |       |  kᴸ |       | 0    0   0   0  |
+
+  // Therefore, using Equations (f) and (g) and defining C as the upper left
+  // block of A⁻¹, the pure LCP (q,M) is defined as:
+  // M ≡ | NCNᵀ  NCDᵀ   0   NCLᵀ |
+  //     | DCNᵀ  DCDᵀ   E   DCLᵀ |
+  //     | μ      -Eᵀ   0   0    |
+  //     | LCNᵀ  LCDᵀ   0   LCLᵀ |
+  //
+  // q ≡ | kᴺ + NCv |
+  //     | kᴰ + DCv |
+  //     |    0     |
+  //     | kᴸ + LCv |
+
+  // --------------------------------------------------------------------------
+  // Using the LCP solution to solve the MLCP.
+  // --------------------------------------------------------------------------
+
+  // From Equation (e) and the solution to the LCP (v), we can solve for u using
+  // the following equations:
+  // Xv + a = | -NᵀfN - DᵀfD - LᵀfL - f |
+  //          |            kᴳ           |
+  //
 
   // Determine the set of linearly independent constraints.
   std::vector<int> indep_constraints;
@@ -1064,12 +1149,20 @@ void ConstraintSolver<T>::SolveImpactProblem(
   // q = b - DA⁻¹a
   // M = B - DA⁻¹C
   if (indep_constraints.size() > 0) {
-    // In this case, Xv = -NᵀfN - DᵀfD -LᵀfL and a = Mf
+    // In this case, Xv = -NᵀfN - DᵀfD -LᵀfL and a = Mv(t).
+    // TODO(edrumwri): Replace this nasty operation by replacing v in problem
+    // data with Mv (generalized momentum).
+    const MatrixX<T> eye = MatrixX<T>::Identity(problem_data.v.size(),
+                                                problem_data.v.size());
+    const MatrixX<T> inv_M = problem_data.solve_inertia(eye);
+    Eigen::LLT<MatrixX<T>> M(inv_M);
+    DRAKE_DEMAND(M.info() == Eigen::Success);
+    VectorX<T> Mvt = M.solve(problem_data.v);
     const VectorX<T> Xv = -data_ptr->N_transpose_mult(fN)
         -data_ptr->F_transpose_mult(fF)
         -data_ptr->L_transpose_mult(fL);
     VectorX<T> aug(Xv.size() + num_eq_constraints);
-    aug.segment(0, Xv.size()) = Xv;
+    aug.segment(0, Xv.size()) = Xv + Mvt;
     aug.segment(Xv.size(), num_eq_constraints) = data_ptr->kG;
     const VectorX<T> u = -A_solve(aug);
     auto lambda = cf->segment(num_contacts + num_spanning_vectors + num_limits,

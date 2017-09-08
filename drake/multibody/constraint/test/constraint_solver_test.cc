@@ -225,6 +225,18 @@ class Constraint2DSolverTest : public ::testing::Test {
     data->kF.setZero(data->non_sliding_contacts.size() *
                                new_friction_directions);
 
+    // Add in empty rows to G, by default, allowing us to verify that no
+    // constraint forces are added (and that solution method is robust to
+    // unnecessary constraints).
+    data->G_mult = [](const VectorX<double>& w) -> VectorX<double> {
+      return VectorX<double>::Zero(1);
+    };
+    data->G_transpose_mult = [ngc](const VectorX<double>& w)
+        -> VectorX<double> {
+      return VectorX<double>::Zero(ngc);
+    };
+    data->kG.setZero(0);
+
     // Check the consistency of the data.
     CheckProblemConsistency(*data, contacts.size());
   }
@@ -296,6 +308,18 @@ class Constraint2DSolverTest : public ::testing::Test {
     // Update r with the new friction directions per contact.
     for (int i = 0; i < static_cast<int>(data->r.size()); ++i)
       data->r[i] = new_friction_directions;
+
+    // Add in empty rows to G, by default, allowing us to verify that no
+    // constraint forces are added (and that solution method is robust to
+    // unnecessary constraints).
+    data->G_mult = [](const VectorX<double>& w) -> VectorX<double> {
+      return VectorX<double>::Zero(1);
+    };
+    data->G_transpose_mult = [ngc](const VectorX<double>& w)
+        -> VectorX<double> {
+      return VectorX<double>::Zero(ngc);
+    };
+    data->kG.setZero(0);
 
     // Check the consistency of the data.
     CheckProblemConsistency(*data, contacts.size());
