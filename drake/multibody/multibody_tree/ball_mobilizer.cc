@@ -117,9 +117,6 @@ void BallMobilizer<T>::ProjectSpatialForce(
     const SpatialForce<T>& F_Mo_F,
     Eigen::Ref<VectorX<T>> tau) const {
   DRAKE_ASSERT(tau.size() == kNv);
-  // Computes tau = H_FMᵀ * F_Mo_F where H_FM ∈ ℝ⁶ is:
-  // H_FM = [axis_Fᵀ; 0ᵀ]ᵀ (see CalcAcrossMobilizerSpatialVelocity().)
-  // Therefore H_FMᵀ * F_Mo_F = axis_F.dot(F_Mo_F.translational()):
   tau = F_Mo_F.rotational();
 }
 
@@ -147,7 +144,7 @@ Eigen::Matrix<T, 4, 3> BallMobilizer<T>::CalcLMatrix(
   const Vector3<T> qv = q_FM.vec();  // The imaginary part.
   const Vector3<T> mqv = -qv;  // minus qv.
   return (Eigen::Matrix<T, 4, 3>() <<
-      mqv,
+      mqv.transpose(),
       qs, qv.z(), mqv.y(),
       mqv.z(), qs, qv.x(),
       qv.y(), mqv.x(), qs).finished();
@@ -156,13 +153,16 @@ Eigen::Matrix<T, 4, 3> BallMobilizer<T>::CalcLMatrix(
 template <typename T>
 Eigen::Matrix<T, 4, 3> BallMobilizer<T>::CalcNMatrix(
     const Quaternion<T>& q_FM) {
-  return CalcLMatrix(Quaternion<T>(q_FM.coeffs() / 2.0));
+  return CalcLMatrix(
+      {q_FM.w() / 2.0, q_FM.x() / 2.0, q_FM.y() / 2.0, q_FM.z() / 2.0});
 };
 
 template <typename T>
 Eigen::Matrix<T, 3, 4> BallMobilizer<T>::CalcNtransposeMatrix(
     const Quaternion<T>& q_FM) {
-  return CalcLMatrix(Quaternion<T>(2.0 * q_FM.coeffs())).transpose();
+  return CalcLMatrix(
+      {2.0 * q_FM.w(), 2.0 * q_FM.x(), 2.0 * q_FM.y(), 2.0 * q_FM.z()}).
+      transpose();
 };
 
 template <typename T>
@@ -173,10 +173,8 @@ void BallMobilizer<T>::MapVelocityToQDot(
   DRAKE_ASSERT(v.size() == kNv);
   DRAKE_ASSERT(qdot != nullptr);
   DRAKE_ASSERT(qdot->size() == kNq);
-  const Vector3<T> w_FM = v;
   const Quaternion<T> q_FM = get_quaternion(context);
-
-  *qdot = CalcNMatrix(q_FM) * w_FM;
+  *qdot = CalcNMatrix(q_FM) * v;
 }
 
 template <typename T>

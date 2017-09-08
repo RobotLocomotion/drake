@@ -10,6 +10,7 @@
 #include "drake/multibody/multibody_tree/ball_mobilizer.h"
 #include "drake/multibody/multibody_tree/fixed_offset_frame.h"
 #include "drake/multibody/multibody_tree/revolute_mobilizer.h"
+#include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 
@@ -209,10 +210,15 @@ const RigidBody<T>& CosseratRodPlant<T>::AddElement(
 
   double element_im_length = element_length;
   if (element_index == 0) element_im_length = 0.0;  // the world, BC.
+#if 0
   model_.template AddForceElement<RodElement>(
       element_im, element_im_length,
       element_i, element_length,
       B1, B2, C, tau_bending_, tau_twisting_);
+#endif
+  (void) B1;
+  (void) B2;
+  (void) C;
 
   return element_i;
 }
@@ -235,6 +241,10 @@ void CosseratRodPlant<T>::BuildMultibodyModel() {
   }
   DRAKE_ASSERT(static_cast<int>(mobilizers_.size()) == num_elements_);
   last_element_ = parent_element;
+
+  model_.template AddForceElement<UniformGravityFieldElement>(
+      Vector3<double>(0.0, -9.81, 0.0));
+
   model_.Finalize();
 }
 
@@ -312,7 +322,7 @@ void CosseratRodPlant<T>::DoCalcTimeDerivatives(
       &Fapplied_Bo_W_array, &tau);
 
   // Add a constant moment at the end link.
-  const T M0 = 50.0;  // Torque in Nm
+  const T M0 = 0.0;  // Torque in Nm
   SpatialForce<T> M_W(Vector3<T>(M0, 0.0, 0.0), Vector3<T>::Zero());
   Fapplied_Bo_W_array[last_element_->get_node_index()] += M_W;
 

@@ -54,19 +54,19 @@ int do_main(int argc, char* argv[]) {
   const double E = 70.0e9;  // [Pa]
   const double nu = 0.5;  // Poission ratio [-]
   const double G = E / (2*(1+nu));  // Shear modulus. E = 2G(1+ν)
-  const double tau_d = 0.04469;  // [sec]
+  const double tau_d = 0.04469 / 50;  // [sec]
 
   // Numerical parameters:
-  const int num_elements = 5;
+  const int num_elements = 2;
   const double dt = 0.002;  // [sec]
 
   // Other derived numbers.
   const double mass = rho * area * length;
   const double T1 = 0.140387;  // First period of oscillation.
-  const double end_time = 3 * T1;
+  const double end_time = 30 * T1;
 
   // TODO: make this constructor to take rho instead.
-  const int num_spatial_dimensions = 3;
+  const int num_spatial_dimensions = 2;
   auto rod_plant = builder.AddSystem<CosseratRodPlant>(
       length, radius, mass,
       E, G, tau_d, tau_d, num_elements, num_spatial_dimensions);
