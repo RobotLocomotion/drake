@@ -598,31 +598,16 @@ void ConstraintSolver<T>::UpdateProblemDataForUnilateralConstraints(
     // pointer.
     ConstraintAccelProblemData<T>& new_data = **modified_problem_data;
 
-    // Copy various data out of the provided problem data unchanged.
-    new_data.mu_sliding = problem_data.mu_sliding;
-    new_data.mu_non_sliding = problem_data.mu_non_sliding;
-    new_data.r = problem_data.r;
-    new_data.non_sliding_contacts = problem_data.non_sliding_contacts;
-    new_data.sliding_contacts = problem_data.sliding_contacts;
-    new_data.kN = problem_data.kN;
-    new_data.kF = problem_data.kF;
-    new_data.kL = problem_data.kL;
+    // Copy most of the data unchanged.
+    new_data = problem_data;
 
     // Update kG.
     new_data.kG.resize(indep_constraints.size());
     for (int i = 0; i < static_cast<int>(indep_constraints.size()); ++i)
       new_data.kG[i] = problem_data.kG[indep_constraints[i]];
 
-    // Update the function pointers.
+    // Update the inertia function pointer.
     new_data.solve_inertia = modified_inertia_solve;
-    new_data.N_mult = problem_data.N_mult;
-    new_data.N_minus_muQ_transpose_mult =
-        problem_data.N_minus_muQ_transpose_mult;
-    new_data.F_mult = problem_data.F_mult;
-    new_data.F_transpose_mult = problem_data.F_transpose_mult;
-    new_data.L_mult = problem_data.L_mult;
-    new_data.L_transpose_mult = problem_data.L_transpose_mult;
-    new_data.tau = problem_data.tau;
   }
 }
 
@@ -645,27 +630,16 @@ void ConstraintSolver<T>::UpdateProblemDataForUnilateralConstraints(
     // pointer.
     ConstraintVelProblemData<T>& new_data = **modified_problem_data;
 
-    // Copy various data out of the provided problem data unchanged.
-    new_data.mu = problem_data.mu;
-    new_data.r = problem_data.r;
-    new_data.kN = problem_data.kN;
-    new_data.kF = problem_data.kF;
-    new_data.kL = problem_data.kL;
+    // Copy most of the data unchanged.
+    new_data = problem_data;
 
     // Update kG.
     new_data.kG.resize(indep_constraints.size());
     for (int i = 0; i < static_cast<int>(indep_constraints.size()); ++i)
       new_data.kG[i] = problem_data.kG[indep_constraints[i]];
 
-    // Update the function pointers.
+    // Update the inertia solve function pointer.
     new_data.solve_inertia = modified_inertia_solve;
-    new_data.N_mult = problem_data.N_mult;
-    new_data.N_transpose_mult = problem_data.N_transpose_mult;
-    new_data.F_mult = problem_data.F_mult;
-    new_data.F_transpose_mult = problem_data.F_transpose_mult;
-    new_data.L_mult = problem_data.L_mult;
-    new_data.L_transpose_mult = problem_data.L_transpose_mult;
-    new_data.v = problem_data.v;
   }
 }
 
