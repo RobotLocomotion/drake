@@ -5,6 +5,10 @@
 
 #include "drake/common/text_logging_gflags.h"
 
+// TODO(SeanCurtis-TRI): Remove this when CLion bazel plug-in no longer executes
+// its debugger with the --gunit_color flag.
+DEFINE_string(gunit_color, "", "");
+
 int main(int argc, char** argv) {
   std::cout << "Using drake/test/drake_cc_googletest_main.cc\n";
 
