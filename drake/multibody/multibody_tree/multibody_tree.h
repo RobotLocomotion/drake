@@ -844,6 +844,11 @@ class MultibodyTree {
 
   void MapQDotToVelocity(
       const systems::Context<T>& context,
+      const Eigen::Ref<const VectorX<T>>& qdot,
+      EigenPtr<VectorX<T>> v) const;
+
+  void MapVelocityToQDot(
+      const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& v,
       EigenPtr<VectorX<T>> qdot) const;
 

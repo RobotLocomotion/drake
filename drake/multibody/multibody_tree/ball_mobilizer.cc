@@ -26,6 +26,21 @@ Quaternion<T> BallMobilizer<T>::get_quaternion(
 }
 
 template <typename T>
+const BallMobilizer<T>& BallMobilizer<T>::set_quaternion(
+    systems::Context<T>* context, const Quaternion<T>& q_FM) const {
+  MultibodyTreeContext<T>& mbt_context =
+      this->GetMutableMultibodyTreeContextOrThrow(context);
+  auto q = this->get_mutable_positions(&mbt_context);
+  DRAKE_ASSERT(q.size() == kNq);
+  // Note: Very important to use the proper constructor here! since as a vector,
+  // q[0] is the "real" part, but for Eigen internally the Vector4
+  // representation contains the "real" part in the last entry.
+  q[0] = q_FM.w();
+  q.template segment<3>(1) = q_FM.vec();
+  return *this;
+}
+
+template <typename T>
 const BallMobilizer<T>& BallMobilizer<T>::SetFromRotationMatrix(
     systems::Context<T>* context, const Matrix3<T>& R_FM) const {
   MultibodyTreeContext<T>& mbt_context =
@@ -58,6 +73,15 @@ const BallMobilizer<T>& BallMobilizer<T>::set_angular_velocity(
   DRAKE_ASSERT(v.size() == kNv);
   v = w_FM;
   return *this;
+}
+
+template <typename T>
+void BallMobilizer<T>::set_zero_configuration(
+    systems::Context<T>* context) const {
+  auto mbt_context = dynamic_cast<MultibodyTreeContext<T>*>(context);
+  DRAKE_DEMAND(mbt_context != nullptr);
+  set_quaternion(context, Quaternion<T>::Identity());
+  set_angular_velocity(context, Vector3<T>::Zero());
 }
 
 template <typename T>
@@ -100,20 +124,71 @@ void BallMobilizer<T>::ProjectSpatialForce(
 }
 
 template <typename T>
-void BallMobilizer<T>::MapQDotToVelocity(
+Eigen::Matrix<T, 4, 3> BallMobilizer<T>::CalcLMatrix(
+    const Quaternion<T>& q_FM) {
+  // See Eq. 5 in Section 9.2 of Paul's book, for the time derivative of the
+  // vector component of the quaternion (Euler parameters):
+  // Notice in the book derivatives are taken in M though the math can be worked
+  // out to get it in F.
+
+  // Notice this is equivalent to:
+  // Dt_F(q) = 1/2 * w_FM.cross(q_FM), with qv_FM expressed in F and w_FM
+  // expressed in F. Dt_F(q) is short for [Dt_F(q)]_F.
+  // The expression above can be writen as:
+  // Dt_F(q) = 1/2 * (-w_FM.dot(qv_F); qs * w_FM + w_FM.cross(qv_F))
+  //         = 1/2 * (-w_FM.dot(qv_F); qs * w_FM - qv_F.cross(w_FM))
+  //         = 1/2 * (-w_FM.dot(qv_F); (qs * Id - [qv_F]x) * w_FM)
+  //         = N(q) * w_FM
+  // That is:
+  //      |         -qv_F     |
+  // Nq = | qs * Id - [qv_F]x |
+
+  const T qs = q_FM.w();  // The scalar part.
+  const Vector3<T> qv = q_FM.vec();  // The imaginary part.
+  const Vector3<T> mqv = -qv;  // minus qv.
+  return (Eigen::Matrix<T, 4, 3>() <<
+      mqv,
+      qs, qv.z(), mqv.y(),
+      mqv.z(), qs, qv.x(),
+      qv.y(), mqv.x(), qs).finished();
+};
+
+template <typename T>
+Eigen::Matrix<T, 4, 3> BallMobilizer<T>::CalcNMatrix(
+    const Quaternion<T>& q_FM) {
+  return CalcLMatrix(Quaternion<T>(q_FM.coeffs() / 2.0));
+};
+
+template <typename T>
+Eigen::Matrix<T, 3, 4> BallMobilizer<T>::CalcNtransposeMatrix(
+    const Quaternion<T>& q_FM) {
+  return CalcLMatrix(Quaternion<T>(2.0 * q_FM.coeffs())).transpose();
+};
+
+template <typename T>
+void BallMobilizer<T>::MapVelocityToQDot(
     const MultibodyTreeContext<T>& context,
     const Eigen::Ref<const VectorX<T>>& v,
     EigenPtr<VectorX<T>> qdot) const {
   DRAKE_ASSERT(v.size() == kNv);
   DRAKE_ASSERT(qdot != nullptr);
   DRAKE_ASSERT(qdot->size() == kNq);
-  const Vector3<T> w_FM = get_angular_velocity(context);
+  const Vector3<T> w_FM = v;
   const Quaternion<T> q_FM = get_quaternion(context);
-  Quaternion<T> qdot_quat =
-      Quaternion<T>(0.0, w_FM(0), w_FM(1), w_FM(2)) * q_FM;
-  using std::abs;
-  DRAKE_ASSERT(abs(qdot_quat.w()) < std::numeric_limits<double>::epsilon());
-  *qdot = 0.5 * qdot_quat.vec();
+
+  *qdot = CalcNMatrix(q_FM) * w_FM;
+}
+
+template <typename T>
+void BallMobilizer<T>::MapQDotToVelocity(
+    const MultibodyTreeContext<T>& context,
+    const Eigen::Ref<const VectorX<T>>& qdot,
+    EigenPtr<VectorX<T>> v) const {
+  DRAKE_ASSERT(qdot.size() == kNq);
+  DRAKE_ASSERT(v != nullptr);
+  DRAKE_ASSERT(v->size() == kNv);
+  const Quaternion<T> q_FM = get_quaternion(context);
+  *v = CalcNtransposeMatrix(q_FM) * qdot;
 }
 
 template <typename T>

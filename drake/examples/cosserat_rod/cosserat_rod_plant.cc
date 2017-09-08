@@ -7,7 +7,9 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/examples/cosserat_rod/rod_element.h"
+#include "drake/multibody/multibody_tree/ball_mobilizer.h"
 #include "drake/multibody/multibody_tree/fixed_offset_frame.h"
+#include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 
@@ -37,7 +39,8 @@ CosseratRodPlant<T>::CosseratRodPlant(
     double length, double radius, double mass,
     double young_modulus, double shear_modulus,
     double tau_bending, double tau_twisting,
-    int num_links) :
+    int num_links, int dimension) :
+      dimension_(dimension),
       length_(length),
       mass_(mass),
       tau_bending_(tau_bending), tau_twisting_(tau_twisting),
@@ -56,10 +59,15 @@ CosseratRodPlant<T>::CosseratRodPlant(
   shear_modulus_ = [shear_modulus](const T& s) -> T { return shear_modulus; };
 
   BuildMultibodyModel();
-  // TODO: updated this to the 3D case.
-  DRAKE_DEMAND(model_.get_num_positions() == num_links);
-  DRAKE_DEMAND(model_.get_num_velocities() == num_links);
-  DRAKE_DEMAND(model_.get_num_states() == 2 * num_links);
+  const int nq = (dimension == 2) ? 1 : 4;
+  const int nv = (dimension == 2) ? 1 : 3;
+  const int nx = nq + nv;
+  DRAKE_DEMAND(model_.get_num_positions() == nq * num_links);
+  DRAKE_DEMAND(model_.get_num_velocities() == nv * num_links);
+  DRAKE_DEMAND(model_.get_num_states() == nx * num_links);
+
+  PRINT_VAR(model_.get_num_positions());
+  PRINT_VAR(model_.get_num_velocities());
 
   //this->DeclareInputPort(systems::kVectorValued, 1);
   state_output_port_index_ = this->DeclareVectorOutputPort(
@@ -180,10 +188,17 @@ const RigidBody<T>& CosseratRodPlant<T>::AddElement(
 
   stream.clear();
   stream << "Joint_" << element_index;
-  const RevoluteMobilizer<T>& mobilizer =
-      model_.template AddMobilizer<RevoluteMobilizer>(
-          inboard_frame_on_Qim, outboard_frame_on_Qi, Vector3d::UnitX());
-  mobilizers_.push_back(&mobilizer);
+  if (dimension_ == 2) {
+    const RevoluteMobilizer<T> &mobilizer =
+        model_.template AddMobilizer<RevoluteMobilizer>(
+            inboard_frame_on_Qim, outboard_frame_on_Qi, Vector3d::UnitX());
+    mobilizers_.push_back(&mobilizer);
+  } else {
+    const BallMobilizer<T>& mobilizer =
+        model_.template AddMobilizer<BallMobilizer>(
+            inboard_frame_on_Qim, outboard_frame_on_Qi);
+    mobilizers_.push_back(&mobilizer);
+  }
 
   const double B1 =
       ExtractDoubleOrThrow(young_modulus_(s) * moment_of_inertia1_(s));
@@ -232,6 +247,10 @@ CosseratRodPlant<T>::DoMakeContext() const {
 template <typename T>
 void CosseratRodPlant<T>::SetHorizontalCantileverState(
     systems::Context<T>* context) const {
+
+  model_.SetDefaults(context);
+
+#if 0
   // The first joint, connecting to the world has angle = -pi/2:
   //mobilizers_[0]->set_angle(context, M_PI / 2);
   // Change these boundary conditions when there is a WeldMobilizer.
@@ -244,6 +263,7 @@ void CosseratRodPlant<T>::SetHorizontalCantileverState(
     mobilizer->set_angle(context, angle);
     mobilizer->set_angular_rate(context, 0.0);
   }
+#endif
 }
 
 template <typename T>
@@ -309,11 +329,45 @@ void CosseratRodPlant<T>::DoCalcTimeDerivatives(
   auto v = x.bottomRows(nv);
 
   VectorX<T> qdot(nq);
-  model_.MapQDotToVelocity(context, v, &qdot);
+  model_.MapVelocityToQDot(context, v, &qdot);
 
   VectorX<T> xdot(model_.get_num_states());
   xdot << qdot, M.llt().solve(- C);
   derivatives->SetFromVector(xdot);
+}
+
+template <typename T>
+void CosseratRodPlant<T>::DoMapVelocityToQDot(
+    const systems::Context<T>& context,
+    const Eigen::Ref<const VectorX<T>>& generalized_velocity,
+    systems::VectorBase<T>* positions_derivative) const {
+  const int nq = model_.get_num_positions();
+  const int nv = model_.get_num_velocities();
+
+  DRAKE_DEMAND(positions_derivative != nullptr);
+  DRAKE_DEMAND(positions_derivative->size() == nq);
+  DRAKE_ASSERT(generalized_velocity.size() == nv);
+
+  VectorX<T> qdot(nq);
+  model_.MapVelocityToQDot(context, generalized_velocity, &qdot);
+  positions_derivative->SetFromVector(qdot);
+}
+
+template <typename T>
+void CosseratRodPlant<T>::DoMapQDotToVelocity(
+    const systems::Context<T>& context,
+    const Eigen::Ref<const VectorX<T>>& configuration_dot,
+    systems::VectorBase<T>* generalized_velocity) const {
+  const int nq = model_.get_num_positions();
+  const int nv = model_.get_num_velocities();
+
+  DRAKE_DEMAND(generalized_velocity != nullptr);
+  DRAKE_DEMAND(generalized_velocity->size() == nv);
+  DRAKE_ASSERT(configuration_dot.size() == nq);
+
+  VectorX<T> v(nv);
+  model_.MapQDotToVelocity(context, configuration_dot, &v);
+  generalized_velocity->SetFromVector(v);
 }
 
 template <typename T>

@@ -65,6 +65,9 @@ class BallMobilizer final : public MobilizerImpl<T, 4, 3> {
   /// @returns q_FM
   Quaternion<T> get_quaternion(const systems::Context<T>& context) const;
 
+  const BallMobilizer<T>& set_quaternion(systems::Context<T>* context,
+                                         const Quaternion<T>& q_FM) const;
+
   /// Sets the `context` so that the generalized coordinate corresponding to the
   /// rotation angle of `this` mobilizer equals `angle`.
   /// @throws std::logic_error if `context` is not a valid
@@ -95,6 +98,8 @@ class BallMobilizer final : public MobilizerImpl<T, 4, 3> {
   /// @returns a constant reference to `this` mobilizer.
   const BallMobilizer<T>& set_angular_velocity(
       systems::Context<T> *context, const Vector3<T>& w_FM) const;
+
+  void set_zero_configuration(systems::Context<T>* context) const override;
 
   /// Computes the across-mobilizer transform `X_FM(q)` between the inboard
   /// frame F and the outboard frame M as a function of the rotation angle
@@ -141,10 +146,20 @@ class BallMobilizer final : public MobilizerImpl<T, 4, 3> {
       const SpatialForce<T>& F_Mo_F,
       Eigen::Ref<VectorX<T>> tau) const override;
 
-  void MapQDotToVelocity(
+  // Computes Dt_F(q) from its generalized velocity state w_FM.
+  // Notice q_FM = (qs; qv_F), where the vector (or imaginary) component is
+  // expressed in the inboard frame F. The time derivative computed by this
+  // method is [Dt_F(qv)]F, or Dt_F(qv) for short.
+  void MapVelocityToQDot(
       const MultibodyTreeContext<T>& context,
       const Eigen::Ref<const VectorX<T>>& v,
       EigenPtr<VectorX<T>> qdot) const override;
+
+  void MapQDotToVelocity(
+      const MultibodyTreeContext<T>& context,
+      const Eigen::Ref<const VectorX<T>>& qdot,
+      EigenPtr<VectorX<T>> v) const override;
+
 
  protected:
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
@@ -163,6 +178,10 @@ class BallMobilizer final : public MobilizerImpl<T, 4, 3> {
   // sized quantities.
   using MobilizerBase::kNq;
   using MobilizerBase::kNv;
+
+  static Eigen::Matrix<T, 4, 3> CalcLMatrix(const Quaternion<T>& q);
+  static Eigen::Matrix<T, 4, 3> CalcNMatrix(const Quaternion<T>& q);
+  static Eigen::Matrix<T, 3, 4> CalcNtransposeMatrix(const Quaternion<T>& q);
 
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>

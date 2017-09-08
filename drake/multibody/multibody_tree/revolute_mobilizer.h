@@ -155,10 +155,15 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
       const SpatialForce<T>& F_Mo_F,
       Eigen::Ref<VectorX<T>> tau) const override;
 
-  void MapQDotToVelocity(
+  void MapVelocityToQDot(
       const MultibodyTreeContext<T>& context,
       const Eigen::Ref<const VectorX<T>>& v,
       EigenPtr<VectorX<T>> qdot) const override;
+
+  void MapQDotToVelocity(
+      const MultibodyTreeContext<T>& context,
+      const Eigen::Ref<const VectorX<T>>& qdot,
+      EigenPtr<VectorX<T>> v) const override;
 
  protected:
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(

@@ -57,7 +57,7 @@ int do_main(int argc, char* argv[]) {
   const double tau_d = 0.04469;  // [sec]
 
   // Numerical parameters:
-  const int num_elements = 50;
+  const int num_elements = 5;
   const double dt = 0.002;  // [sec]
 
   // Other derived numbers.
@@ -66,9 +66,10 @@ int do_main(int argc, char* argv[]) {
   const double end_time = 3 * T1;
 
   // TODO: make this constructor to take rho instead.
+  const int num_spatial_dimensions = 3;
   auto rod_plant = builder.AddSystem<CosseratRodPlant>(
       length, radius, mass,
-      E, G, tau_d, tau_d, num_elements);
+      E, G, tau_d, tau_d, num_elements, num_spatial_dimensions);
   rod_plant->set_name("Cosserat rod");
   //rod_plant->set_publish_period(end_time / 1000);
 

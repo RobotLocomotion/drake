@@ -7,7 +7,6 @@
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/examples/cosserat_rod/rod_element.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
-#include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 
 namespace drake {
@@ -27,7 +26,8 @@ class CosseratRodPlant : public systems::LeafSystem<T> {
   CosseratRodPlant(double length, double radius, double mass,
                    double young_modulus, double shear_modulus,
                    double tau_bending, double tau_twisting,
-                   int num_links);
+                   int num_links,
+                   int dimension = 2);
 
   /// Scalar-converting copy constructor.
   template <typename U>
@@ -67,6 +67,16 @@ class CosseratRodPlant : public systems::LeafSystem<T> {
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
+  void DoMapVelocityToQDot(
+      const systems::Context<T>& context,
+      const Eigen::Ref<const VectorX<T>>& generalized_velocity,
+      systems::VectorBase<T>* positions_derivative) const override;
+
+  void DoMapQDotToVelocity(
+      const systems::Context<T>& context,
+      const Eigen::Ref<const VectorX<T>>& configuration_dot,
+      systems::VectorBase<T>* generalized_velocity) const override;
+
   void DoPublish(
       const systems::Context<T>& context,
       const std::vector<const systems::PublishEvent<T>*>&) const override;
@@ -82,6 +92,7 @@ class CosseratRodPlant : public systems::LeafSystem<T> {
   void BuildMultibodyModel();
 
   // Geometry parameters:
+  int dimension_{2};  // The number of spatial dimensions.
   double length_{0.0};
 
   // Damping coefficient.
@@ -114,7 +125,7 @@ class CosseratRodPlant : public systems::LeafSystem<T> {
   systems::OutputPortIndex poses_output_port_index_;
 
   multibody::MultibodyTree<T> model_;
-  std::vector<const multibody::RevoluteMobilizer<T>*> mobilizers_;
+  std::vector<const multibody::Mobilizer<T>*> mobilizers_;
   const multibody::RigidBody<T>* first_element_{nullptr};
   const multibody::RigidBody<T>* last_element_{nullptr};
 };

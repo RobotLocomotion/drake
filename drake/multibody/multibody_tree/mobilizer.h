@@ -405,10 +405,15 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
       const SpatialForce<T>& F_Mo_F,
       Eigen::Ref<VectorX<T>> tau) const = 0;
 
-  virtual void MapQDotToVelocity(
+  virtual void MapVelocityToQDot(
       const MultibodyTreeContext<T>& context,
       const Eigen::Ref<const VectorX<T>>& v,
       EigenPtr<VectorX<T>> qdot) const = 0;
+
+  virtual void MapQDotToVelocity(
+      const MultibodyTreeContext<T>& context,
+      const Eigen::Ref<const VectorX<T>>& qdot,
+      EigenPtr<VectorX<T>> v) const = 0;
   /// @}
 
   /// Returns a const Eigen expression of the vector of generalized positions
