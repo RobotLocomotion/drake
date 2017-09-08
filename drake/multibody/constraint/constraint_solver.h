@@ -704,9 +704,9 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
     return;
   }
 
-  // TODO(edrumwri): Fix me to check for unmet bilateral constraint
-  // accelerations.
-  // Look for a second fast exit.
+  // Look for a second fast exit. (We avoid this calculation if there are
+  // bilateral constraints because it's too hard to determine a workable
+  // tolerance at this point).
   const VectorX<T> candidate_accel = problem_data.solve_inertia(
       problem_data.tau);
   const VectorX<T> N_eval = problem_data.N_mult(candidate_accel) +
@@ -714,7 +714,8 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
   const VectorX<T> L_eval = problem_data.L_mult(candidate_accel) +
       problem_data.kL;
   if ((num_contacts == 0 || N_eval.minCoeff() >= 0) &&
-      (num_limits == 0 || L_eval.minCoeff() >= 0)) {
+      (num_limits == 0 || L_eval.minCoeff() >= 0) &&
+      (num_eq_constraints == 0)) {
     cf->setZero();
     return;
   }
@@ -723,8 +724,8 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
   cf->resize(num_contacts + num_spanning_vectors + num_limits +
       num_eq_constraints);
 
-  // From [Cottle 1992] (p. 29), the constraint problem is a mixed linear
-  // complementarity problem of the form:
+  // The constraint problem is a mixed linear complementarity problem of the
+  // form:
   // (a)    Au + Xv + a = 0
   // (b)    Yu + Bv + b ≥ 0
   // (c)              v ≥ 0
@@ -736,7 +737,7 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
   // (f) q = b - YA⁻¹a
   // (g) M = B - YA⁻¹X
 
-  // Our mixed linear complementarity problem takes the form:
+  // Our mixed linear complementarity problem takes the specific form:
   // (1) | M  -Gᵀ  -(Nᵀ-μQᵀ) -Dᵀ  0  -Lᵀ | | v̇ | + |-M f | = | 0 |
   //     | G   0    0         0   0   0  | | fG | + |  kᴳ | = | 0 |
   //     | N   0    0         0   0   0  | | fN | + |  kᴺ | = | α |
@@ -748,8 +749,8 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
   // (4) 0 ≤ λ   ⊥  γ ≥ 0
   // (5) 0 ≤ fL  ⊥  δ ≥ 0
 
-  // G is not of full row rank, making | M  -Gᵀ | singular.
-  //                                   | G   0  |
+  // G is generally not of full row rank, making | M  -Gᵀ | singular.
+  //                                             | G   0  |
   //
   // Selecting the largest independent subset of rows of G, which we call Ĝ,
   // addresses this problem. First, note that linear dependence in G implies
@@ -760,19 +761,15 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
   //     | G̅ |
 
   // We will assign zero to the components of fG corresponding to the dependent
-  // rows of G, which allows casting the MCLP into a slightly modified form:
+  // rows of G, which allows casting (1) into a nearly identical form:
   // (6)  | M  -Ĝᵀ  -(Nᵀ-μQᵀ) -Dᵀ  0  -Lᵀ | | v̇ | + |-M f | = | 0 |
   //      | Ĝ   0    0         0   0   0  | | fĜ | + |  kᴳ | = | 0 |
   //      | N   0    0         0   0   0  | | fN | + |  kᴺ | = | α |
   //      | D   0    0         0   E   0  | | fD | + |  kᴰ | = | β |
   //      | 0   0    μ        -Eᵀ  0   0  | |  λ | + |   0 | = | γ |
   //      | L   0    0         0   0   0  | | fL | + |  kᴸ | = | δ |
-  // (7)  0 ≤ fN  ⊥  α ≥ 0
-  // (8)  0 ≤ fD  ⊥  β ≥ 0
-  // (9)  0 ≤ λ   ⊥  γ ≥ 0
-  // (10) 0 ≤ fL  ⊥  δ ≥ 0
 
-  // It should be clear that any solution to this MLCP allows us to solve the
+  // It should be clear that any solution to the MLCP (2)-(6) allows solving the
   // MLCP (1)-(5) by setting fG = | fĜ |
   //                              |  0 |.
 
@@ -954,17 +951,16 @@ void ConstraintSolver<T>::SolveImpactProblem(
   const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
                                                    problem_data.r.end(), 0);
 
-  // If no impact, do not apply the impact model.
+  // If no impact and no bilateral constraints do not apply the impact model.
+  // (We avoid this calculation if there are bilateral constraints because it's
+  // too hard to determine a workable tolerance at this point).
   const VectorX<T> N_eval = problem_data.N_mult(problem_data.v) +
       problem_data.kN;
   const VectorX<T> L_eval = problem_data.L_mult(problem_data.v) +
       problem_data.kL;
-  const VectorX<T> G_eval = problem_data.G_mult(problem_data.v) +
-      problem_data.kG;
-
   if ((num_contacts == 0 || N_eval.minCoeff() >= 0) &&
       (num_limits == 0 || L_eval.minCoeff() >= 0) &&
-      (num_eq_constraints == 0 || G_eval.minCoeff() >= 0)) {
+      (num_eq_constraints == 0)) {
     cf->setZero(num_contacts + num_spanning_vectors + num_limits);
     return;
   }
