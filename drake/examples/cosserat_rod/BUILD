@@ -21,8 +21,11 @@ drake_cc_library(
         "rod_element.h",
     ],
     deps = [
+        "//drake/lcmtypes:viewer",
         "//drake/multibody/multibody_tree",
         "//drake/systems/framework",
+        "//drake/systems/rendering:drake_visualizer_client",
+        "//drake/systems/rendering:pose_bundle",
     ],
 )
 
@@ -34,12 +37,18 @@ drake_cc_binary(
     test_rule_args = ["-realtime_factor=0.0"],
     deps = [
         ":cosserat_rod_plant",
+        "//drake/lcm",
+        "//drake/lcmtypes:viewer",
         "//drake/systems/analysis:implicit_euler_integrator",
         "//drake/systems/analysis:runge_kutta2_integrator",
         "//drake/systems/analysis:semi_explicit_euler_integrator",
         "//drake/systems/analysis:simulator",
         "//drake/systems/framework:diagram",
+        "//drake/systems/lcm",
         "//drake/systems/primitives:signal_logger",
+        "//drake/systems/rendering:drake_visualizer_client",
+        "//drake/systems/rendering:pose_aggregator",
+        "//drake/systems/rendering:pose_bundle_to_draw_message",
         "@com_github_gflags_gflags//:gflags",
     ],
 )

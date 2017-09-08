@@ -19,6 +19,16 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/signal_logger.h"
 
+#include "drake/lcm/drake_lcm.h"
+#include "drake/lcmt_viewer_draw.hpp"
+#include "drake/lcmtypes/drake/lcmt_viewer_load_robot.hpp"
+#include "drake/systems/lcm/lcm_publisher_system.h"
+#include "drake/systems/lcm/lcm_subscriber_system.h"
+#include "drake/systems/lcm/serializer.h"
+#include "drake/systems/rendering/drake_visualizer_client.h"
+#include "drake/systems/rendering/pose_aggregator.h"
+#include "drake/systems/rendering/pose_bundle_to_draw_message.h"
+
 namespace drake {
 namespace examples {
 namespace cosserat_rod {
@@ -32,7 +42,7 @@ namespace {
 // Simple example which simulates the (passive) Acrobot.  Run drake-visualizer
 // to see the animated result.
 
-DEFINE_double(realtime_factor, 0.0,
+DEFINE_double(realtime_factor, 1.0,
               "Playback speed.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
 
@@ -40,9 +50,30 @@ using drake::systems::ImplicitEulerIntegrator;
 using drake::systems::RungeKutta2Integrator;
 using drake::systems::SemiExplicitEulerIntegrator;
 
+using drake::lcm::DrakeLcm;
+using drake::systems::lcm::LcmPublisherSystem;
+using drake::systems::lcm::LcmSubscriberSystem;
+using drake::systems::lcm::Serializer;
+using drake::systems::DiagramBuilder;
+using drake::systems::rendering::PoseAggregator;
+using drake::systems::rendering::PoseBundleToDrawMessage;
+
 int do_main(int argc, char* argv[]) {
 
+  DrakeLcm lcm;
   systems::DiagramBuilder<double> builder;
+  PoseAggregator<double>* aggregator =
+      builder.template AddSystem<PoseAggregator>();
+  aggregator->set_name("aggregator");
+  PoseBundleToDrawMessage* converter =
+      builder.template AddSystem<PoseBundleToDrawMessage>();
+  converter->set_name("converter");
+  LcmPublisherSystem* publisher =
+      builder.template AddSystem<LcmPublisherSystem>(
+          "DRAKE_VIEWER_DRAW",
+  std::make_unique<Serializer<drake::lcmt_viewer_draw>>(), &lcm);
+  publisher->set_name("publisher");
+  publisher->set_publish_period(0.01);
 
   // Geometric parameters:
   const double length = 1.0;  // [m]
@@ -66,7 +97,7 @@ int do_main(int argc, char* argv[]) {
   const double end_time = 30 * T1;
 
   // TODO: make this constructor to take rho instead.
-  const int num_spatial_dimensions = 2;
+  const int num_spatial_dimensions = 3;
   auto rod_plant = builder.AddSystem<CosseratRodPlant>(
       length, radius, mass,
       E, G, tau_d, tau_d, num_elements, num_spatial_dimensions);
@@ -85,6 +116,22 @@ int do_main(int argc, char* argv[]) {
   builder.Connect(rod_plant->get_state_output_port(),
                   state_logger->get_input_port(0));
 
+  // Setup visualization.
+  drake::lcmt_viewer_load_robot message;
+  rod_plant->MakeViewerLoadMessage(&message);
+  // Send a load mesage.
+  const int message_length = message.getEncodedSize();
+  std::vector<uint8_t> message_bytes;
+  message_bytes.resize(message_length);
+  message.encode(message_bytes.data(), 0, message_length);
+  lcm.Publish("DRAKE_VIEWER_LOAD_ROBOT", message_bytes.data(),
+              message_bytes.size());
+
+  builder.Connect(rod_plant->get_poses_output_port(),
+                  aggregator->AddBundleInput("CosseratRodElements",
+                                             num_elements));
+  builder.Connect(*aggregator, *converter);
+  builder.Connect(*converter, *publisher);
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);

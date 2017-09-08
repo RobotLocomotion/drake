@@ -13,6 +13,8 @@
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/rendering/drake_visualizer_client.h"
+#include "drake/systems/rendering/pose_bundle.h"
 
 using std::sin;
 using std::cos;
@@ -89,10 +91,10 @@ CosseratRodPlant<T>::CosseratRodPlant(
       }).get_index();
 
   // poses output port.
-  poses_output_port_index_ =
-      this->DeclareAbstractOutputPort(
-          std::vector<Isometry3<T>>(),
-          &CosseratRodPlant::CalcElementPosesOutput).get_index();
+  poses_output_port_ =
+      &this->DeclareAbstractOutputPort(
+          systems::rendering::PoseBundle<T>(num_elements_),
+          &CosseratRodPlant::CalcElementPosesOutput);
 }
 
 template <typename T>
@@ -100,7 +102,7 @@ void CosseratRodPlant<T>::DoPublish(
     const systems::Context<T>& context,
     const std::vector<const systems::PublishEvent<T>*>&) const {
   std::vector<Isometry3<T>> poses;
-  CalcElementPosesOutput(context, &poses);
+  CalcElementPoses(context, &poses);
 
   std::ofstream fs;
   fs.open("poses.dat", std::fstream::out | std::fstream::app);
@@ -114,7 +116,7 @@ void CosseratRodPlant<T>::DoPublish(
 }
 
 template <typename T>
-void CosseratRodPlant<T>::CalcElementPosesOutput(
+void CosseratRodPlant<T>::CalcElementPoses(
     const systems::Context<T>& context,
     std::vector<Isometry3<T>>* poses) const {
   DRAKE_DEMAND(poses != nullptr);
@@ -122,10 +124,33 @@ void CosseratRodPlant<T>::CalcElementPosesOutput(
   PositionKinematicsCache<T> pc(model_.get_topology());
   model_.CalcPositionKinematicsCache(context, &pc);
 
+  // Skip the world.
   poses->clear();
   for (BodyNodeIndex node_index(0);
        node_index < model_.get_num_bodies(); ++node_index) {
     poses->push_back(pc.get_X_WB(node_index));
+  }
+}
+
+template <typename T>
+void CosseratRodPlant<T>::CalcElementPosesOutput(
+    const systems::Context<T>& context,
+    systems::rendering::PoseBundle<T>* bundle) const {
+  DRAKE_DEMAND(bundle != nullptr);
+  DRAKE_DEMAND(bundle->get_num_poses() == num_elements_);
+
+  PositionKinematicsCache<T> pc(model_.get_topology());
+  model_.CalcPositionKinematicsCache(context, &pc);
+
+  // Skip the world.
+  const int instance_id = 0;
+  for (BodyNodeIndex node_index(1);
+       node_index < model_.get_num_bodies(); ++node_index) {
+    std::stringstream stream;
+    stream << "element_" << node_index;
+    bundle->set_model_instance_id(node_index, instance_id);
+    bundle->set_name(node_index, stream.str());
+    bundle->set_pose(node_index, pc.get_X_WB(node_index));
   }
 }
 
@@ -417,6 +442,35 @@ T CosseratRodPlant<T>::DoCalcPotentialEnergy(
   return -m1_ * g_ * lc1_ * c1 - m2_ * g_ * (l1_ * c1 + lc2_ * c12);
 #endif
   return 0.0;
+}
+
+
+template <typename T>
+void CosseratRodPlant<T>::MakeViewerLoadMessage(
+    drake::lcmt_viewer_load_robot* message) const {
+  DRAKE_DEMAND(message != nullptr);
+
+  // Compute a radius for an equivalent cylindrical shape.
+  const double A = ExtractDoubleOrThrow(area_(0.0));
+  const double radius = std::sqrt(A / M_PI);
+  const double element_length = length_ / num_elements_;
+
+  // Create the rod visualization.
+  DrakeShapes::VisualElement element_vis(
+      DrakeShapes::Cylinder(radius, element_length),
+      Eigen::Isometry3d::Identity(), Eigen::Vector4d(0.7, 0.7, 0.7, 1));
+
+  // Create the load message.
+  message->num_links = num_elements_;
+  message->link.resize(num_elements_);
+  for (int ielement = 0; ielement < num_elements_; ++ielement) {
+    message->link[ielement].name = "rod";
+    message->link[ielement].robot_num = 0;
+    message->link[ielement].num_geom = 1;
+    message->link[ielement].geom.resize(1);
+    message->link[ielement].geom[0] =
+        drake::systems::rendering::MakeGeometryData(element_vis);
+  }
 }
 
 template class CosseratRodPlant<double>;

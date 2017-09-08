@@ -6,8 +6,10 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/examples/cosserat_rod/rod_element.h"
+#include "drake/lcmtypes/drake/lcmt_viewer_load_robot.hpp"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
+#include "drake/systems/rendering/pose_bundle.h"
 
 namespace drake {
 namespace examples {
@@ -51,6 +53,12 @@ class CosseratRodPlant : public systems::LeafSystem<T> {
     this->DeclarePeriodicPublish(period);
   }
 
+  void MakeViewerLoadMessage(drake::lcmt_viewer_load_robot* message) const;
+
+  const systems::OutputPort<T>& get_poses_output_port() const {
+    return *poses_output_port_;
+  }
+
  protected:
   T DoCalcKineticEnergy(const systems::Context<T>& context) const override;
   T DoCalcPotentialEnergy(const systems::Context<T>& context) const override;
@@ -81,9 +89,13 @@ class CosseratRodPlant : public systems::LeafSystem<T> {
       const systems::Context<T>& context,
       const std::vector<const systems::PublishEvent<T>*>&) const override;
 
-  void CalcElementPosesOutput(
+  void CalcElementPoses(
       const systems::Context<T>& context,
       std::vector<Isometry3<T>>* poses) const;
+
+  void CalcElementPosesOutput(
+      const systems::Context<T>& context,
+      systems::rendering::PoseBundle<T>* pose_port_value) const;
 
   // Helper method to create a body segment and add it to the model.
   const multibody::RigidBody<T>& AddElement(
@@ -123,6 +135,8 @@ class CosseratRodPlant : public systems::LeafSystem<T> {
   systems::OutputPortIndex state_output_port_index_;
   systems::OutputPortIndex energy_output_port_index_;
   systems::OutputPortIndex poses_output_port_index_;
+
+  const systems::OutputPort<T>* poses_output_port_{nullptr};
 
   multibody::MultibodyTree<T> model_;
   std::vector<const multibody::Mobilizer<T>*> mobilizers_;
