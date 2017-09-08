@@ -1139,8 +1139,15 @@ class Constraint2DSolverTest : public ::testing::Test {
     VectorX<double> ga;
     solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &ga);
     EXPECT_LT(ga[2], lcp_eps_ * cf.size());
-  }
 
+    // Indicate through modification of the kG term that the system already has
+    // angular velocity (which violates our desire to constrain the
+    // orientation) and solve again.
+    accel_data_->kG[0] = 1.0;    // Indicate a ccw angular motion..
+    solver_.SolveConstraintProblem(cfm_, *accel_data_, &cf);
+    solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &ga);
+    EXPECT_LT(ga[2], -1.0 + lcp_eps_ * cf.size());
+  }
 
   // Tests the rod in an upright sliding and impacting state, with sliding
   // velocity as specified. The rod will be constrained to prevent rotational
@@ -1216,6 +1223,14 @@ class Constraint2DSolverTest : public ::testing::Test {
     VectorX<double> gv;
     solver_.ComputeGeneralizedVelocityChange(*vel_data_, cf, &gv);
     EXPECT_LT((vel_data_->v[2] + gv[2]), lcp_eps_ * cf.size());
+
+    // Indicate through modification of the kG term that the system already has
+    // angular orientation (which violates our desire to keep the rod at
+    // zero rotation) and solve again.
+    vel_data_->kG[0] = 1.0;    // Indicate a ccw orientation..
+    solver_.SolveImpactProblem(cfm_, *vel_data_, &cf);
+    solver_.ComputeGeneralizedVelocityChange(*vel_data_, cf, &gv);
+    EXPECT_LT(vel_data_->v[2] + gv[2], -1.0 + lcp_eps_ * cf.size());
   }
 };
 
