@@ -284,8 +284,18 @@ Formula operator||(const Formula& f, const Variable& v);
 Formula operator||(const Variable& v1, const Variable& v2);
 Formula operator!(const Formula& f);
 Formula operator!(const Variable& v);
+/*
+ * @note This is an exception to the style guide (regarding hash-related
+ * operators) since it does not perform a comparison compatible with
+ * std::equal_to<Expression>.
+ */
 Formula operator==(const Expression& e1, const Expression& e2);
 Formula operator!=(const Expression& e1, const Expression& e2);
+/*
+ * @note This is an exception to the style guide (regarding hash-related
+ * operators) since it does not perform a comparison compatible with
+ * std::less<Expression>.
+ */
 Formula operator<(const Expression& e1, const Expression& e2);
 Formula operator<=(const Expression& e1, const Expression& e2);
 Formula operator>(const Expression& e1, const Expression& e2);
