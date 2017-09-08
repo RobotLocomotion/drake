@@ -21,25 +21,25 @@ namespace constraint {
 ///
 /// This problem can be formulated as a mixed linear complementarity problem
 /// (MLCP)- for 2D problems with Coulomb friction or 3D problems without Coulomb
-/// friction- or a nonlinear complementarity problem (for 3D problems with
+/// friction- or a mixed complementarity problem (for 3D problems with
 /// Coulomb friction). We use a polygonal approximation (of selectable accuracy)
 /// to the friction cone, which yields a MLCP in all cases.
 ///
-/// Existing algorithms
-/// for solving MLCPs, which are based upon algorithms for solving "pure" linear
-/// complementarity problems (LCPs), solving a smaller class of problems than
-/// the corresponding LCP versions. For example, Lemke's Algorithm, which is
-/// provably able to solve the impacting problems covered by this class, can
-/// solve LCPs with copositive matrices [Cottle 1992] but MLCPs with only
-/// positive semi-definite matrices (the latter is a strict subset of the
-/// former) [Sargent 1978].
+/// Existing algorithms for solving MLCPs, which are based upon algorithms for
+/// solving "pure" linear complementarity problems (LCPs), solve smaller classes
+/// of problems than the corresponding LCP versions. For example, Lemke's
+/// Algorithm, which is provably able to solve the impacting problems covered by
+/// this class, can solve LCPs with copositive matrices [Cottle 1992] but MLCPs
+/// with only positive semi-definite matrices (the latter is a strict subset of
+/// the former) [Sargent 1978].
 ///
-/// Rather than using one of these algorithms, we instead transform the problem
-/// into a pure LCP by first solving for the bilateral constraint forces. This
-/// method yields an implication of which the user should be aware. Bilateral
-/// constraint forces are computed before unilateral constraint forces: the
-/// constraint forces will not be evenly distributed between bilateral and
-/// unilateral constraints.
+/// Rather than using one of these MLCP algorithms, we instead transform the
+/// problem into a pure LCP by first solving for the bilateral constraint
+/// forces. This method yields an implication of which the user should be aware.
+/// Bilateral constraint forces are computed before unilateral constraint
+/// forces: the constraint forces will not be evenly distributed between
+/// bilateral and unilateral constraints (assuming such a distribution were even
+/// possible).
 ///
 /// For the normal case of unilateral constraints admitting degrees of
 /// freedom, the solution methods in this class support "softening" of the
@@ -54,7 +54,7 @@ namespace constraint {
 ///                   the Lemke's method for the solution of a generalized
 ///                   linear complementarity problem. In System Modeling and
 ///                   Optimization (Lecture Notes in Control and Information
-///                       Sciences), Springer-Verlag, 1992.
+///                   Sciences), Springer-Verlag, 1992.
 /// - [Lacoursiere 2007]  C. Lacoursiere. Ghosts and Machines: Regularized
 ///                       Variational Methods for Interactive Simulations of
 ///                       Multibodies with Dry Frictional Contacts.
@@ -326,6 +326,8 @@ class ConstraintSolver {
 // Determines the set of linearly independent constraints and new versions of
 // G_mult and G_transpose_mult that use only these linearly independent
 // constraints.
+// @param num_generalized_velocities The dimension of the system generalized
+//        velocities.
 // @param problem_data The constraint problem data.
 // @param[out] indep_constraints On return, contains indices of the independent
 //             constraints.
@@ -333,6 +335,8 @@ class ConstraintSolver {
 //             in place of problem_data.G_mult).
 // @param[out] G_transpose_mult On return, contains the new G_transpose_mult
 //             function (to be used in place of problem_data.G_transpose_mult).
+// @param[out] Del On return, contains the Cholesky factorization of the
+//             Delassus Matrix GM⁻¹Gᵀ.
 template <typename T>
 template <typename ProblemData>
 void ConstraintSolver<T>::DetermineIndependentConstraints(
@@ -371,6 +375,7 @@ void ConstraintSolver<T>::DetermineIndependentConstraints(
   // Determine the set of active constraints.
   MatrixX<T> iM_GT;
   MatrixX<T> tentative_Del;
+  Eigen::LLT<MatrixX<T>> last_successful_Del;
   for (int i = 0; i < problem_data.kG.size(); ++i) {
     // Tentatively add the constraint to the active set of constraints.
     indep_constraints->push_back(i);
@@ -394,18 +399,39 @@ void ConstraintSolver<T>::DetermineIndependentConstraints(
       // If the problem is fully constrained, do not keep looping.
       if (tentative_Del.rows() == num_generalized_velocities)
         break;
+      last_successful_Del = *Del;
     }
+  }
+
+  // See whether we need to recompute the factorization.
+  if (!indep_constraints->empty() && Del->info() != Eigen::Success) {
+    DRAKE_DEMAND(last_successful_Del.info() == Eigen::Success);
+    *Del = last_successful_Del;
   }
 }
 
-// Given a matrix `A` of blocks consisting of generalized inertia (`M`) and the
-// Jacobian of bilaterals constraints (`G`):
+// Given a matrix A of blocks consisting of generalized inertia (M) and the
+// Jacobian of bilaterals constraints (G):
 // A ≡ | M  -Gᵀ |
 //     | G'  0  |
-// this function sets a function pointer that computes `X` for
-// X = | R 0 | A⁻¹ | B |, given some unknown matrix R
-//                 | 0 |
-// `B` *and* that columns of `R` corresponding to
+// this function sets a function pointer that computes X for X = A⁻¹ | B | and
+//                                                                   | 0 |
+// given B *for the case where X will be premultiplied by some matrix | R 0 |,
+// where R is an arbitrary matrix. This odd operation is relatively common, and
+// optimizing for this case allows us to skip some expensive matrix arithmetic.
+// @param num_generalized_velocities The dimension of the system generalized
+//        velocities.
+// @param problem_data The constraint problem data.
+// @param indep_constraints The indices of the independent constraints out of
+//                          the set of the original bilateral constraints.
+// @param G_mult The new G_mult operator that corresponds to the
+//               independent constraints.
+// @param G_transpose_mult The new G_transpose_mult operator that
+//                         corresponds to the independent constraints.
+// @param Del The Cholesky factorization of the Delassus Matrix GM⁻¹Gᵀ,
+//            where G is the constraint Jacobian corresponding to the
+//            independent constraints.
+// @param[out] A_solve The operator for solving AX = B, on return.
 template <typename T>
 template <typename ProblemData>
 void ConstraintSolver<T>::DetermineNewPartialInertiaSolveOperator(
@@ -423,7 +449,9 @@ void ConstraintSolver<T>::DetermineNewPartialInertiaSolveOperator(
   *A_solve = [problem_data_ptr, Del_ptr, G_mult, G_transpose_mult,
       indep_constraints_ptr, num_generalized_velocities](const MatrixX<T>& X)
       -> MatrixX<T> {
-    // See block inversion formula from DetermineNewFullInertiaSolveOperator().
+    // ************************************************************************
+    // See DetermineNewFullInertiaSolveOperator() for block inversion formula.
+    // ************************************************************************
 
     // Set the result matrix.
     const int C_rows = num_generalized_velocities;
@@ -456,12 +484,24 @@ void ConstraintSolver<T>::DetermineNewPartialInertiaSolveOperator(
   };
 }
 
-// Given a matrix `A` of blocks consisting of generalized inertia (`M`) and the
-// Jacobian of bilaterals constraints (`G`):
+// Given a matrix A of blocks consisting of generalized inertia (M) and the
+// Jacobian of bilaterals constraints (G):
 // A ≡ | M  -Gᵀ |
 //     | G'  0  |
-// this function sets a function pointer that computes `X` for `AX = B`, given
-// `B`.
+// this function sets a function pointer that computes X for AX = B, given B.
+// @param num_generalized_velocities The dimension of the system generalized
+//        velocities.
+// @param problem_data The constraint problem data.
+// @param indep_constraints The indices of the independent constraints out of
+//                          the set of the original bilateral constraints.
+// @param G_mult The new G_mult operator that corresponds to the
+//               independent constraints.
+// @param G_transpose_mult The new G_transpose_mult operator that
+//                         corresponds to the independent constraints.
+// @param Del The Cholesky factorization of the Delassus Matrix GM⁻¹Gᵀ,
+//            where G is the constraint Jacobian corresponding to the
+//            independent constraints.
+// @param[out] A_solve The operator for solving AX = B, on return.
 template <typename T>
 template <typename ProblemData>
 void ConstraintSolver<T>::DetermineNewFullInertiaSolveOperator(

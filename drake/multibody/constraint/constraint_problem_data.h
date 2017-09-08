@@ -76,8 +76,8 @@ struct ConstraintAccelProblemData {
   /// acceleration, where the constraint can be formulated as:<pre>
   /// 0 = G(q)⋅v̇ + kᴳ(t,q,v)
   /// </pre>
-  /// which implies the constraint definition c(q,v,v̇) ≡ G(q)⋅v̇ + kᴳ(t,q,v). G
-  /// is defined as the ℝᵇˣᵐ Jacobian matrix that transforms generalized
+  /// which implies the constraint definition c(t,q,v,v̇) ≡ G(q)⋅v̇ + kᴳ(t,q,v).
+  /// G is defined as the ℝᵇˣᵐ Jacobian matrix that transforms generalized
   /// velocities (v ∈ ℝᵐ) into the time derivatives of b bilateral constraint
   /// functions. The class of constraint functions naturally includes holonomic
   /// constraints, which are constraints posable as g(t,q). Such holonomic
@@ -92,7 +92,7 @@ struct ConstraintAccelProblemData {
   /// which can be read as the acceleration at joint j (v̇ⱼ) must equal to `r`
   /// times the acceleration at joint i (v̇ᵢ); `r` is thus the gear ratio.
   /// In this example, the corresponding holonomic constraint function is
-  /// g(q) ≡ qᵢ -rqⱼ, yielding ̈g(q, v, v̇) = -v̇ⱼ + - rv̇ⱼ.
+  /// g(q) ≡ qᵢ - rqⱼ, yielding ̈g(q, v, v̇) = -v̇ⱼ + - rv̇ⱼ.
   /// @{
 
   /// An operator that performs the multiplication G⋅v. The default operator
@@ -301,7 +301,7 @@ struct ConstraintVelProblemData {
   /// velocity, where the constraint can be formulated as:<pre>
   /// 0 = G(q)⋅v + kᴳ(t,q)
   /// </pre>
-  /// which implies the constraint definition c(q,v) ≡ G(q)⋅v + kᴳ(t,q). G
+  /// which implies the constraint definition c(t,q,v) ≡ G(q)⋅v + kᴳ(t,q). G
   /// is defined as the ℝᵇˣᵐ Jacobian matrix that transforms generalized
   /// velocities (v ∈ ℝᵐ) into the time derivatives of b bilateral constraint
   /// functions. The class of constraint functions naturally includes holonomic
