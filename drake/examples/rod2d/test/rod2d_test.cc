@@ -242,12 +242,11 @@ class Rod2DDAETest : public ::testing::Test {
         data.non_sliding_contacts.size());
     EXPECT_EQ(GetOperatorDim(data.N_mult), num_contacts);
     CheckTransOperatorDim(data.N_minus_muQ_transpose_mult, num_contacts);
-    EXPECT_EQ(GetOperatorDim(data.L_mult), data.num_limit_constraints);
-    CheckTransOperatorDim(data.L_transpose_mult, data.num_limit_constraints);
+    EXPECT_EQ(GetOperatorDim(data.L_mult), data.kL.size());
+    CheckTransOperatorDim(data.L_transpose_mult, data.kL.size());
     EXPECT_EQ(data.tau.size(), get_rod_num_coordinates());
     EXPECT_EQ(data.kN.size(), num_contacts);
     EXPECT_EQ(data.kF.size(), data.non_sliding_contacts.size());
-    EXPECT_EQ(data.kL.size(), data.num_limit_constraints);
     EXPECT_EQ(data.mu_non_sliding.size(), data.non_sliding_contacts.size());
     EXPECT_EQ(data.mu_sliding.size(), data.sliding_contacts.size());
     EXPECT_EQ(data.r.size(), data.non_sliding_contacts.size());
@@ -277,9 +276,8 @@ class Rod2DDAETest : public ::testing::Test {
     EXPECT_EQ(GetOperatorDim(data.F_mult), num_contacts);
     CheckTransOperatorDim(data.F_transpose_mult, num_contacts);
     EXPECT_EQ(data.kF.size(), num_contacts);
-    EXPECT_EQ(GetOperatorDim(data.L_mult), data.num_limit_constraints);
-    CheckTransOperatorDim(data.L_transpose_mult, data.num_limit_constraints);
-    EXPECT_EQ(data.kL.size(), data.num_limit_constraints);
+    EXPECT_EQ(GetOperatorDim(data.L_mult), data.kL.size());
+    CheckTransOperatorDim(data.L_transpose_mult, data.kL.size());
   }
 
   std::unique_ptr<Rod2D<double>> dut_;  //< The device under test.
