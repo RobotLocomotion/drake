@@ -134,25 +134,33 @@ struct ConstraintAccelProblemData {
   /// every one of the y non-sliding contacts uses the same "r", the code
   /// imposes no such requirement.
   ///
-  /// Finally, the Jacobian matrix F allows formulating the non-sliding friction
+  /// The Jacobian matrix F allows formulating the non-sliding friction
   /// force constraints as:<pre>
-  /// 0 ≤ F(q)⋅v̇ + kᶠ(t,q,v) + λe + γᶠfᶜ  ⊥  fᶜ ≥ 0
+  /// 0 ≤ F(q)⋅v̇ + kᶠ(t,q,v) + E⋅λ + γᶠfᶜ  ⊥  fᶜ ≥ 0
+  /// 0 ≤ μ⋅fN - Eᵀ⋅fᶜ + γᴱλ ⊥ λ ≥ 0
   /// </pre>
   /// which means that the constraint
   /// c̈(t,q,v,v̇) ≡ F(q)⋅v̇ + kᶠ(t,q,v) λe + γᶠfᶜ is coupled to a force
   /// constraint (fᶜ ≥ 0) and a complementarity constraint
   /// fᶜ⋅(Fv̇ + kᴺ(t,q,v) + λe + γᶠfᶜ) = 0: the constraint can apply no
   /// force if it is inactive (i.e., if c̈(t,q,v,v̇) is strictly greater than
-  /// zero). As above, the factor γᶠfᶜ, where γᶠ ≥ 0 is a user-provided diagonal
-  /// matrix, acts to "soften" the constraint: if γᶠ is nonzero, c̈ will
-  /// require less force to be satisfied. The presence of the λe term is taken
-  /// directly from [Anitescu 1997], where e is a vector of ones and zeros and λ
-  /// corresponds roughly to the tangential acceleration at the contacts. The
+  /// zero). λ can roughly be interpreted as the remaining tangential
+  /// acceleration at the non-sliding contacts after contact forces have been
+  /// applied. E is a binary matrix with blocks of one-vector columns
+  /// (refer to [Anitescu 1997]). Note that the second constraint, which
+  /// represents a linearized friction cone constraint (i.e., it is a constraint
+  /// on the unknown forces), is coupled to a "slack" variable (λ).
+  ///
+  /// The factors γᶠfᶜ and γᴱλ, where γᶠ ≥ 0 and γᴱ ≥ 0 are user-provided
+  /// diagonal matrices, act to "soften" the constraints. If γᶠ is nonzero,
+  /// c̈ will require less force to be satisfied; if γᴱ is nonzero,
+  /// stiction will be treated as satisfied even when some non-zero tangential
+  /// acceleration remains at the non-sliding contacts. The
   /// interested reader should refer to [Anitescu 1997] for a more thorough
-  /// explanation of this constraint; the full constraint equation is presented
-  /// only to elucidate the purpose of the kᶠ term. Analogously to the case of
-  /// kᴺ, kᶠ should be set to dF/dt(q,v)⋅v; also analogously, kᶠ can be used to
-  /// perform constraint stabilization.
+  /// explanation of these constraints; the full constraint equations are
+  /// presented only to elucidate the purpose of the kᶠ, γᶠ, and γᴱ terms.
+  /// Analogously to the case of kᴺ, kᶠ should be set to dF/dt(q,v)⋅v; also
+  /// analogously, kᶠ can be used to perform constraint stabilization.
   /// @{
 
   /// An operator that performs the multiplication F⋅v. The default operator
@@ -336,19 +344,28 @@ struct ConstraintVelProblemData {
   /// than its default zero value. The resulting constraint on the motion will
   /// be:<pre>
   /// 0 ≤ F(q)⋅v + kᶠ(t,q) + eλ + γᶠfᶜ ⊥  fᶜ ≥ 0
+  /// 0 ≤ μ⋅fN - Eᵀ⋅fᶜ + γᴱλ ⊥ λ ≥ 0
   /// </pre>
   /// which means that the constraint ċ(q,v) ≡ F(q)⋅v + kᶠ(t,q) + eλ  + γᶠfᶜ is
   /// coupled to an impulsive force constraint (fᶜ ≥ 0) and a complementarity
   /// constraint fᶜ⋅(Fv + kᶠ(t,q) + eλ + γᶠfᶜ) = 0, meaning that the constraint
   /// can apply no force if it is inactive (i.e., if ċ(q,v) is strictly greater
-  /// than zero). As above, the factor γᶠfᶜ, where γᶠ ≥ 0 is a user-provided
-  /// diagonal matrix, acts to "soften" the constraint: if γᶠ is nonzero, c̈
-  /// will require less force to be satisfied. The presence of the λe term is
-  /// taken directly from [Anitescu 1997], where e is a vector of ones and zeros
-  /// and λ corresponds roughly to the tangential acceleration at the contacts.
-  /// The interested reader should refer to [Anitescu 1997] for a more thorough
-  /// explanation of this constraint; the full constraint equation is presented
-  /// only to elucidate the purpose of the kᶠ term.
+  /// than zero). λ can roughly be interpreted as the remaining tangential
+  /// velocity at the non-sliding contacts after the impulsive forces are
+  /// applied. E is a binary matrix with blocks of one-vector columns
+  /// (refer to [Anitescu 1997]). Note that the second constraint, which
+  /// represents a linearized friction cone constraint (i.e., it is a constraint
+  /// on the unknown forces), is coupled to a "slack" variable (λ).
+  ///
+  /// The factors γᶠfᶜ and γᴱλ, where γᶠ ≥ 0 and γᴱ ≥ 0 are user-provided
+  /// diagonal matrices, act to "soften" the constraints. If γᶠ is nonzero,
+  /// c̈ will require less force to be satisfied; if γᴱ is nonzero,
+  /// stiction will be treated as satisfied even when some non-zero tangential
+  /// velocity remains. The interested reader should refer to [Anitescu 1997]
+  /// for a more thorough explanation of these constraints; the full constraint
+  /// equations are presented only to elucidate the purpose of the kᶠ, γᶠ, and
+  /// γᴱ terms. Analogously to the case of kᴺ, kᶠ can be used to perform
+  /// constraint stabilization.
   /// @{
 
   /// An operator that performs the multiplication F⋅v. The default operator
