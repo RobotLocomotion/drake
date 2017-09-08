@@ -29,11 +29,11 @@ using Eigen::Vector3d;
 using multibody::SpatialForce;
 
 #include <iostream>
-//#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-//#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
+#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
+#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
 
-#define PRINT_VAR(a) (void)a;
-#define PRINT_VARn(a) (void)a;
+//#define PRINT_VAR(a) (void)a;
+//#define PRINT_VARn(a) (void)a;
 
 using namespace multibody;
 
@@ -146,11 +146,17 @@ void CosseratRodPlant<T>::CalcElementPosesOutput(
   const int instance_id = 0;
   for (BodyNodeIndex node_index(1);
        node_index < model_.get_num_bodies(); ++node_index) {
+    const int element_index = node_index - 1;
     std::stringstream stream;
-    stream << "element_" << node_index;
-    bundle->set_model_instance_id(node_index, instance_id);
-    bundle->set_name(node_index, stream.str());
-    bundle->set_pose(node_index, pc.get_X_WB(node_index));
+    stream << "element_" << element_index;
+    bundle->set_model_instance_id(element_index, instance_id);
+    bundle->set_name(element_index, stream.str());
+    Isometry3<T> X_DW = Isometry3<T>::Identity();
+    X_DW.linear() =
+        Eigen::AngleAxis<T>(M_PI/2, Vector3<T>::UnitX()).toRotationMatrix();
+    bundle->set_pose(element_index, X_DW*pc.get_X_WB(node_index));
+    PRINT_VAR(element_index);
+    PRINT_VARn(pc.get_X_WB(node_index).matrix());
   }
 }
 
@@ -464,7 +470,9 @@ void CosseratRodPlant<T>::MakeViewerLoadMessage(
   message->num_links = num_elements_;
   message->link.resize(num_elements_);
   for (int ielement = 0; ielement < num_elements_; ++ielement) {
-    message->link[ielement].name = "rod";
+    std::stringstream stream;
+    stream << "CosseratRodElements::element_" << ielement;
+    message->link[ielement].name = stream.str();
     message->link[ielement].robot_num = 0;
     message->link[ielement].num_geom = 1;
     message->link[ielement].geom.resize(1);
