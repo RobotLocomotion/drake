@@ -571,6 +571,7 @@ void Rod2D<T>::CalcConstraintProblemData(
     Ndot.row(i) =  GetJacobianDotRow(context, points[i], contact_normal);
   const Vector3<T> v = GetRodVelocity(context);
   data->kN = Ndot * v;
+  data->gammaN.setOnes(nc) *= cfm_;
 
   // Form the tangent directions contact Jacobian (F), its time derivative
   // (Fdot), and compute Fdot * v.
@@ -584,6 +585,8 @@ void Rod2D<T>::CalcConstraintProblemData(
         context, points[contact_index], contact_tangent);
   }
   data->kF = Fdot * v;
+  data->gammaF.setOnes(nr) *= cfm_;
+  data->gammaE.setOnes(non_sliding_contacts.size()) *= cfm_;
   data->F_mult = [F](const VectorX<T>& w) -> VectorX<T> { return F * w; };
   data->F_transpose_mult = [F](const VectorX<T>& w) -> VectorX<T> {
     return F.transpose() * w;
@@ -605,6 +608,7 @@ void Rod2D<T>::CalcConstraintProblemData(
   // Set the number of limit constraints and kL.
   data->num_limit_constraints = 0;
   data->kL.resize(0);
+  data->gammaL.resize(0);
 
   // Set external force vector.
   data->tau = ComputeExternalForces(context);
@@ -655,6 +659,7 @@ void Rod2D<T>::CalcImpactProblemData(
   data->N_transpose_mult = [N](const VectorX<T>& w) -> VectorX<T> {
     return N.transpose() * w; };
   data->kN.setZero(num_contacts);
+  data->gammaN.setOnes(num_contacts) *= cfm_;
 
   // Form the tangent directions contact Jacobian (F).
   const int nr = std::accumulate(data->r.begin(), data->r.end(), 0);
@@ -667,9 +672,12 @@ void Rod2D<T>::CalcImpactProblemData(
     return F.transpose() * w;
   };
   data->kF.setZero(nr);
+  data->gammaF.setOnes(nr) *= cfm_;
+  data->gammaE.setOnes(num_contacts) *= cfm_;
 
   // Set the number of limit constraints.
   data->num_limit_constraints = 0;
+  data->gammaL.resize(0);
 }
 
 template <typename T>
