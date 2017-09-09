@@ -88,7 +88,7 @@ int do_main(int argc, char* argv[]) {
   const double tau_d = 0.04469 / 50;  // [sec]
 
   // Numerical parameters:
-  const int num_elements = 2;
+  const int num_elements = 3;
   const double dt = 0.002;  // [sec]
 
   // Other derived numbers.
@@ -154,7 +154,7 @@ int do_main(int argc, char* argv[]) {
   //integrator->set_jacobian_computation_scheme(
   //    ImplicitEulerIntegrator<double>::JacobianComputationScheme::
   //    kCentralDifference);
-  integrator->set_fixed_step_mode(true);  // Good for steady state calculations.
+  integrator->set_fixed_step_mode(false);  // Good for steady state calculations.
   integrator->set_maximum_step_size(dt);
   PRINT_VAR(integrator->get_fixed_step_mode());
   PRINT_VAR(integrator->supports_error_estimation());

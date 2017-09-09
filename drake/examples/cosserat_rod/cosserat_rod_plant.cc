@@ -373,6 +373,17 @@ void CosseratRodPlant<T>::DoCalcTimeDerivatives(
   model_.MapVelocityToQDot(context, v, &qdot);
 
   VectorX<T> xdot(model_.get_num_states());
+
+  // Check if M is symmetric.
+  const T err_sym = (M - M.transpose()).norm();
+  PRINT_VAR(err_sym);
+  //DRAKE_DEMAND(err_sym < 1.0e-6);
+
+  // TODO: this solve M.llt().solve() does not seem to throw an error when M is
+  // not symmetric. Apparently my M is not symmetric when I add those ball
+  // mobilizers.
+  //Eigen::LLT<MatrixX<T>> solver(M);
+
   xdot << qdot, M.llt().solve(- C);
   derivatives->SetFromVector(xdot);
 }
@@ -450,6 +461,23 @@ T CosseratRodPlant<T>::DoCalcPotentialEnergy(
   return 0.0;
 }
 
+template <typename T>
+void CosseratRodPlant<T>::DoProjectQ(systems::Context<T>* context) const {
+  PRINT_VAR("CosseratRodPlant::DoProjectQ()");
+  PRINT_VAR(model_.get_num_positions());
+  PRINT_VAR(model_.get_num_velocities());
+
+  if (dimension_ == 2) return;
+
+  for (auto mobilizer : mobilizers_) {
+    const BallMobilizer<T>* ball =
+        dynamic_cast<const BallMobilizer<T>*>(mobilizer);
+    Quaternion<T> q = ball->get_quaternion(*context);
+    ball->set_quaternion(context, q.normalized());
+    PRINT_VAR(q.norm());
+    PRINT_VAR(ball->get_quaternion(*context).norm());
+  }
+}
 
 template <typename T>
 void CosseratRodPlant<T>::MakeViewerLoadMessage(

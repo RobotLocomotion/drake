@@ -63,6 +63,8 @@ class CosseratRodPlant : public systems::LeafSystem<T> {
   T DoCalcKineticEnergy(const systems::Context<T>& context) const override;
   T DoCalcPotentialEnergy(const systems::Context<T>& context) const override;
 
+  void DoProjectQ(systems::Context<T>* context) const override;
+
  private:
   // Override of context construction so that we can delegate it to
   // MultibodyModeler.

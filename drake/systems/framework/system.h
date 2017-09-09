@@ -31,6 +31,11 @@
 namespace drake {
 namespace systems {
 
+#include <iostream>
+#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
+#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
+
+
 /** @cond */
 // Private helper class for System.
 class SystemImpl {
@@ -439,6 +444,12 @@ class System {
     DRAKE_DEMAND(derivatives != nullptr);
     DRAKE_ASSERT_VOID(CheckValidContext(context));
     DoCalcTimeDerivatives(context, derivatives);
+  }
+
+  void ProjectQ(Context<T>* context) const {
+    DRAKE_DEMAND(context != nullptr);
+    DRAKE_ASSERT_VOID(CheckValidContext(*context));
+    DoProjectQ(context);
   }
 
   /// This method is the public entry point for dispatching all discrete
@@ -1356,6 +1367,17 @@ class System {
     // state. Other Systems must override this method!
     unused(context);
     DRAKE_DEMAND(derivatives->size() == 0);
+  }
+
+  virtual void DoProjectQ(Context<T>* context) const {
+    // This default implementation is only valid for Systems with nothing to
+    // project.
+    unused(context);
+    const int num_positions =
+        context->get_continuous_state()->get_generalized_position().size();
+    const int num_velocities =
+        context->get_continuous_state()->get_generalized_velocity().size();
+    DRAKE_DEMAND(num_positions == num_velocities);
   }
 
   /// Computes the next time at which this System must perform a discrete
