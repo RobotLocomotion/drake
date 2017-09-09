@@ -418,6 +418,9 @@ void MultibodyTree<T>::CalcMassMatrixViaInverseDynamics(
     // take an Eigen::Ref<VectorX<T>> instead of a pointer.
     // auto tau = H.col(j);
     vdot = VectorX<T>::Unit(nv, j);
+    tau.setZero();
+    for (auto& F : F_BMo_W_array) F.SetZero();
+    for (auto& A : A_WB_array) A.SetZero();
     CalcInverseDynamics(context, pc, vc, vdot, {}, VectorX<T>(),
                         &A_WB_array, &F_BMo_W_array, &tau);
     H->col(j) = tau;

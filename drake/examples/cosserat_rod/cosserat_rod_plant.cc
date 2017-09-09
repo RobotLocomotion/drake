@@ -8,6 +8,7 @@
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/examples/cosserat_rod/rod_element.h"
 #include "drake/multibody/multibody_tree/ball_mobilizer.h"
+#include "drake/multibody/multibody_tree/rpy_mobilizer.h"
 #include "drake/multibody/multibody_tree/fixed_offset_frame.h"
 #include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
@@ -62,7 +63,7 @@ CosseratRodPlant<T>::CosseratRodPlant(
   shear_modulus_ = [shear_modulus](const T& s) -> T { return shear_modulus; };
 
   BuildMultibodyModel();
-  const int nq = (dimension == 2) ? 1 : 4;
+  const int nq = (dimension == 2) ? 1 : 3;
   const int nv = (dimension == 2) ? 1 : 3;
   const int nx = nq + nv;
   DRAKE_DEMAND(model_.get_num_positions() == nq * num_links);
@@ -226,8 +227,11 @@ const RigidBody<T>& CosseratRodPlant<T>::AddElement(
             inboard_frame_on_Qim, outboard_frame_on_Qi, Vector3d::UnitX());
     mobilizers_.push_back(&mobilizer);
   } else {
-    const BallMobilizer<T>& mobilizer =
-        model_.template AddMobilizer<BallMobilizer>(
+    //const BallMobilizer<T>& mobilizer =
+    //    model_.template AddMobilizer<BallMobilizer>(
+    //        inboard_frame_on_Qim, outboard_frame_on_Qi);
+    const RollPitchYawMobilizer<T>& mobilizer =
+        model_.template AddMobilizer<RollPitchYawMobilizer>(
             inboard_frame_on_Qim, outboard_frame_on_Qi);
     mobilizers_.push_back(&mobilizer);
   }
@@ -344,6 +348,10 @@ void CosseratRodPlant<T>::DoCalcTimeDerivatives(
 
   MatrixX<T> M(nv, nv);
   model_.CalcMassMatrixViaInverseDynamics(context, pc, &M);
+  // Check if M is symmetric.
+  const T err_sym = (M - M.transpose()).norm();
+  PRINT_VAR(err_sym);
+  //DRAKE_DEMAND(err_sym < 1.0e-6);
 
   PRINT_VARn(M);
 
@@ -373,11 +381,6 @@ void CosseratRodPlant<T>::DoCalcTimeDerivatives(
   model_.MapVelocityToQDot(context, v, &qdot);
 
   VectorX<T> xdot(model_.get_num_states());
-
-  // Check if M is symmetric.
-  const T err_sym = (M - M.transpose()).norm();
-  PRINT_VAR(err_sym);
-  //DRAKE_DEMAND(err_sym < 1.0e-6);
 
   // TODO: this solve M.llt().solve() does not seem to throw an error when M is
   // not symmetric. Apparently my M is not symmetric when I add those ball
@@ -468,7 +471,8 @@ void CosseratRodPlant<T>::DoProjectQ(systems::Context<T>* context) const {
   PRINT_VAR(model_.get_num_velocities());
 
   if (dimension_ == 2) return;
-
+  return;
+#if 0
   for (auto mobilizer : mobilizers_) {
     const BallMobilizer<T>* ball =
         dynamic_cast<const BallMobilizer<T>*>(mobilizer);
@@ -477,6 +481,7 @@ void CosseratRodPlant<T>::DoProjectQ(systems::Context<T>* context) const {
     PRINT_VAR(q.norm());
     PRINT_VAR(ball->get_quaternion(*context).norm());
   }
+#endif
 }
 
 template <typename T>

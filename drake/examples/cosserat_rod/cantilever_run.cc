@@ -97,7 +97,7 @@ int do_main(int argc, char* argv[]) {
   const double end_time = 30 * T1;
 
   // TODO: make this constructor to take rho instead.
-  const int num_spatial_dimensions = 2;
+  const int num_spatial_dimensions = 3;
   auto rod_plant = builder.AddSystem<CosseratRodPlant>(
       length, radius, mass,
       E, G, tau_d, tau_d, num_elements, num_spatial_dimensions);
