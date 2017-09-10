@@ -48,6 +48,7 @@ drake_cc_googletest(
     deps = [
         ":luenberger_observer",
         "//drake/common:eigen_matrix_compare",
+        "//drake/examples/pendulum:pendulum_plant",
         "//drake/systems/primitives:linear_system",
     ],
 )

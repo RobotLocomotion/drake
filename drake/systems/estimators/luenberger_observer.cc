@@ -33,45 +33,36 @@ LuenbergerObserver<T>::LuenbergerObserver(
 
   // Observer state is the (estimated) state of the observed system
   // (returned by overloaded AllocateContinuousState).
-  auto x = observed_system_context_->get_continuous_state();
+  const auto& xc = observed_system_context_->get_continuous_state_vector();
+  this->DeclareContinuousState(xc);
 
   // Output port is the (estimated) state of the observed system.
-  this->DeclareVectorOutputPort(systems::BasicVector<T>(x->size()),
+  // Note: The derived type of the state vector is lost here, because xc
+  // is only guaranteed to be a VectorBase, not a BasicVector.
+  this->DeclareVectorOutputPort(BasicVector<T>(xc.size()),
                                 &LuenbergerObserver::CalcEstimatedState);
-  // TODO(russt): Could overload AllocateContinuousState and AllocateOutput to
-  // call AllocateContinuousState on the observed system so that I can use the
-  // actual derived class types.
 
   // First input port is the output of the observed system.
-  this->DeclareInputPort(systems::kVectorValued,
-                         observed_system_->get_output_port(0).size());
+  // Note: Throws bad_cast if the output is not vector-valued.
+  this->DeclareVectorInputPort(*observed_system_output_->get_vector_data(0));
 
   // Check the size of the gain matrix.
-  DRAKE_DEMAND(observer_gain_.rows() == x->size());
+  DRAKE_DEMAND(observer_gain_.rows() == xc.size());
   DRAKE_DEMAND(observer_gain_.cols() ==
                observed_system_->get_output_port(0).size());
 
   // Second input port is the input to the observed system (if it exists).
   if (observed_system_->get_num_input_ports() > 0) {
-    this->DeclareInputPort(systems::kVectorValued,
-                           observed_system_->get_input_port(0).size());
+    auto input_vec = observed_system_->AllocateInputVector(
+        observed_system_->get_input_port(0));
+    this->DeclareVectorInputPort(*input_vec);
   }
-
-  // State has the same dimensions as the system being observed.
-  const ContinuousState<T>& xc =
-      *observed_system_context_->get_continuous_state();
-  const int num_q = xc.get_generalized_position().size();
-  const int num_v = xc.get_generalized_velocity().size();
-  const int num_z = xc.get_misc_continuous_state().size();
-  this->DeclareContinuousState(num_q, num_v, num_z);
 }
 
 template <typename T>
 void LuenbergerObserver<T>::CalcEstimatedState(
-    const systems::Context<T>& context,
-    systems::BasicVector<T>* output) const {
-  output->set_value(
-      context.get_continuous_state_vector().CopyToVector());
+    const systems::Context<T>& context, systems::BasicVector<T>* output) const {
+  output->set_value(context.get_continuous_state_vector().CopyToVector());
 }
 
 template <typename T>
@@ -107,8 +98,8 @@ void LuenbergerObserver<T>::DoCalcTimeDerivatives(
   auto xdothat = observed_system_derivatives_->get_mutable_vector();
 
   // xdothat = f(xhat,u) + L(y-yhat).
-  derivatives->SetFromVector(
-      xdothat->CopyToVector() + observer_gain_ * (y - yhat));
+  derivatives->SetFromVector(xdothat->CopyToVector() +
+                             observer_gain_ * (y - yhat));
 }
 
 template class LuenbergerObserver<double>;

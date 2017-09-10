@@ -211,6 +211,15 @@ TEST_F(SubvectorTest, PlusEqScaled) {
   EXPECT_EQ(orig_vec.GetAtIndex(1), 446);
 }
 
+// Tests that when Subvector is cloned, its data is preserved.
+TEST_F(SubvectorTest, Clone) {
+  Subvector<double> vec(vector_.get(), 1, 2);
+  std::unique_ptr<VectorBase<double>> clone = vec.Clone();
+
+  EXPECT_TRUE(CompareMatrices(vec.CopyToVector(), clone->CopyToVector()));
+}
+
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake

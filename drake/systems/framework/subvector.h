@@ -55,6 +55,11 @@ class Subvector : public VectorBase<T> {
     return vector_->GetAtIndex(first_element_ + index);
   }
 
+ protected:
+  Subvector<T>* DoClone() const override {
+    return new Subvector<T>(vector_, first_element_, num_elements_);
+  }
+
  private:
   VectorBase<T>* vector_{nullptr};
   int first_element_{0};
