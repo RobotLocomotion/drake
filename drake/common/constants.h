@@ -17,4 +17,15 @@ constexpr int kTwistSize = 6;
 constexpr int kHomogeneousTransformSize = 16;
 
 const int kRotmatSize = kSpaceDimension * kSpaceDimension;
+
+/// Drake supports explicit reasoning about a few carefully chosen random
+/// distributions.
+enum class RandomDistribution {
+  kUniform = 0,   ///< Anticipated vector elements are independent and
+                  /// uniformly distributed ∈ [0,1].
+  kGaussian = 1,  ///< Anticipated vector elements are independent and
+                  /// drawn from a mean-zero, unit-variance normal
+                  /// distribution.
+};
+
 }  // namespace drake

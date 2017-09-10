@@ -830,6 +830,32 @@ GTEST_TEST(PortDependentFeedthroughTest, DetectFeedthrough) {
   EXPECT_TRUE(diagram->HasDirectFeedthrough(0, 0));
 }
 
+// A system with a random source inputs.
+class RandomInputSystem : public LeafSystem<double> {
+ public:
+  RandomInputSystem() {
+    this->DeclareInputPort(kVectorValued, 1);
+    this->DeclareInputPort(kVectorValued, 1,
+                           RandomDistribution::kUniform);
+    this->DeclareInputPort(kVectorValued, 1,
+                           RandomDistribution::kGaussian);
+  }
+};
+
+GTEST_TEST(RandomInputSystemTest, RandomInputTest) {
+  DiagramBuilder<double> builder;
+  auto random = builder.AddSystem<RandomInputSystem>();
+  builder.ExportInput(random->get_input_port(0));
+  builder.ExportInput(random->get_input_port(1));
+  builder.ExportInput(random->get_input_port(2));
+  auto diagram = builder.Build();
+  EXPECT_FALSE(diagram->get_input_port(0).get_random_type());
+  EXPECT_EQ(diagram->get_input_port(1).get_random_type(),
+            RandomDistribution::kUniform);
+  EXPECT_EQ(diagram->get_input_port(2).get_random_type(),
+            RandomDistribution::kGaussian);
+}
+
 // A vector with a scalar configuration and scalar velocity.
 class SecondOrderStateVector : public BasicVector<double> {
  public:
