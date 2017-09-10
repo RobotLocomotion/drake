@@ -50,6 +50,12 @@ class Supervector : public VectorBase<T> {
     return target.first->GetAtIndex(target.second);
   }
 
+ protected:
+  Supervector<T>* DoClone() const override {
+    return new Supervector<T>(vectors_);
+  }
+
+
  private:
   // Given an index into the supervector, returns the subvector that
   // contains that index, and its offset within the subvector. This operation

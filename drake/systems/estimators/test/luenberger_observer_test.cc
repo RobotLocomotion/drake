@@ -7,6 +7,7 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
+#include "drake/examples/pendulum/pendulum_plant.h"
 #include "drake/systems/primitives/linear_system.h"
 
 namespace drake {
@@ -72,6 +73,31 @@ GTEST_TEST(LuenbergerObserverTest, ErrorDynamics) {
   EXPECT_TRUE(CompareMatrices(xhatdot, derivatives->CopyToVector(), tol));
   EXPECT_TRUE(CompareMatrices(
       xhat, output->GetMutableVectorData(0)->CopyToVector(), tol));
+}
+
+// Check that the observer inherits the dynamic types of the pendulum.
+GTEST_TEST(LuenbergerObserverTest, DerivedTypes) {
+  auto plant = std::make_unique<examples::pendulum::PendulumPlant<double>>();
+  auto plant_context = plant->CreateDefaultContext();
+  const Eigen::Matrix2d L = Eigen::Matrix2d::Identity();
+  auto observer =
+      std::make_unique<systems::estimators::LuenbergerObserver<double>>(
+          std::move(plant), std::move(plant_context), L);
+  auto context = observer->CreateDefaultContext();
+
+  // Check the continuous state.
+  EXPECT_TRUE(dynamic_cast<examples::pendulum::PendulumState<double>*>(
+      context->get_mutable_continuous_state_vector()));
+
+  // The first input is the output of the plant.
+  auto input0 = observer->AllocateInputVector(observer->get_input_port(0));
+  EXPECT_TRUE(
+      dynamic_cast<examples::pendulum::PendulumState<double>*>(input0.get()));
+
+  // The second input is the input of the plant.
+  auto input1 = observer->AllocateInputVector(observer->get_input_port(1));
+  EXPECT_TRUE(
+      dynamic_cast<examples::pendulum::PendulumInput<double>*>(input1.get()));
 }
 
 }  // namespace

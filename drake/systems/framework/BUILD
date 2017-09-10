@@ -574,6 +574,7 @@ drake_cc_googletest(
     deps = [
         ":vector",
         "//drake/common",
+        "//drake/common:eigen_matrix_compare",
     ],
 )
 

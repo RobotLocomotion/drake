@@ -133,7 +133,7 @@ class BasicVector : public VectorBase<T> {
   ///
   /// Subclasses of BasicVector must override DoClone to return their covariant
   /// type.
-  virtual BasicVector<T>* DoClone() const {
+  BasicVector<T>* DoClone() const override {
     return new BasicVector<T>(this->size());
   }
 

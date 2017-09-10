@@ -648,7 +648,7 @@ class LeafSystem : public System<T> {
   /// @p model_vector.size() miscellaneous state variables, stored in a
   /// vector Cloned from @p model_vector.  Has no effect if
   /// AllocateContinuousState is overridden.
-  void DeclareContinuousState(const BasicVector<T>& model_vector) {
+  void DeclareContinuousState(const VectorBase<T>& model_vector) {
     const int num_q = 0, num_v = 0;
     const int num_z = model_vector.size();
     DeclareContinuousState(model_vector, num_q, num_v, num_z);
@@ -659,7 +659,7 @@ class LeafSystem : public System<T> {
   /// miscellaneous state variables, stored in a vector Cloned from
   /// @p model_vector. Aborts if @p model_vector has the wrong size. Has no
   /// effect if AllocateContinuousState is overridden.
-  void DeclareContinuousState(const BasicVector<T>& model_vector, int num_q,
+  void DeclareContinuousState(const VectorBase<T>& model_vector, int num_q,
                               int num_v, int num_z) {
     DRAKE_DEMAND(model_vector.size() == num_q + num_v + num_z);
     model_continuous_state_vector_ = model_vector.Clone();
@@ -1370,7 +1370,7 @@ class LeafSystem : public System<T> {
   LeafCompositeEventCollection<T> per_step_events_;
 
   // A model continuous state to be used in AllocateDefaultContext.
-  std::unique_ptr<BasicVector<T>> model_continuous_state_vector_;
+  std::unique_ptr<VectorBase<T>> model_continuous_state_vector_;
   int num_generalized_positions_{0};
   int num_generalized_velocities_{0};
   int num_misc_continuous_states_{0};

@@ -5,6 +5,7 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/vector_base.h"
 
@@ -74,6 +75,15 @@ TEST_F(SupervectorTest, Empty) {
   Supervector<double> supervector(std::vector<VectorBase<double>*>{});
   EXPECT_EQ(0, supervector.size());
 }
+
+// Tests that when Supervector is cloned, its data is preserved.
+TEST_F(SupervectorTest, Clone) {
+  std::unique_ptr<VectorBase<double>> clone = supervector_->Clone();
+
+  EXPECT_TRUE(
+      CompareMatrices(supervector_->CopyToVector(), clone->CopyToVector()));
+}
+
 
 }  // namespace
 }  // namespace systems

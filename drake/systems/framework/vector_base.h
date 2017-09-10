@@ -170,7 +170,26 @@ class VectorBase {
     return norm;
   }
 
+  /// Copies the entire vector to a new VectorBase, with the same concrete
+  /// implementation type.
+  ///
+  /// Uses the Non-Virtual Interface idiom because smart pointers do not have
+  /// type covariance.
+  std::unique_ptr<VectorBase<T>> Clone() const {
+    auto clone = std::unique_ptr<VectorBase<T>>(DoClone());
+    clone->SetFrom(*this);
+    return clone;
+  }
+
  protected:
+  /// Returns a new VectorBase containing a copy of the entire vector.
+  /// Caller must take ownership, and may rely on the NVI wrapper to initialize
+  /// the clone elementwise.
+  ///
+  /// Subclasses of VectorBase must override DoClone to return their covariant
+  /// type.
+  virtual VectorBase<T>* DoClone() const = 0;
+
   VectorBase() {}
 
   /// Adds in multiple scaled vectors to this vector. All vectors
