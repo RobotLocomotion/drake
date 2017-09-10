@@ -392,6 +392,8 @@ class ValueIOTestSystem : public System<T> {
         }));
 
     this->DeclareInputPort(kVectorValued, 1);
+    this->DeclareInputPort(kVectorValued, 1, kUniformRandom);
+    this->DeclareInputPort(kVectorValued, 1, kGaussianRandom);
     this->CreateOutputPort(std::make_unique<LeafOutputPort<T>>(*this,
         1,  // Vector size.
         [](const Context<T>&) {
@@ -428,8 +430,8 @@ class ValueIOTestSystem : public System<T> {
 
   BasicVector<T>* DoAllocateInputVector(
       const InputPortDescriptor<T>& descriptor) const override {
-    // Should only get called for the second input.
-    EXPECT_EQ(descriptor.get_index(), 1);
+    // Should not get called for the first (abstract) input.
+    EXPECT_GE(descriptor.get_index(), 1);
     return new TestTypedVector<T>();
   }
 
@@ -556,7 +558,7 @@ class SystemIOTest : public ::testing::Test {
 TEST_F(SystemIOTest, SystemValueIOTest) {
   test_sys_.CalcOutput(*context_, output_.get());
 
-  EXPECT_EQ(context_->get_num_input_ports(), 2);
+  EXPECT_EQ(context_->get_num_input_ports(), 4);
   EXPECT_EQ(output_->get_num_ports(), 2);
 
   EXPECT_EQ(output_->get_data(0)->GetValue<std::string>(),
@@ -578,6 +580,16 @@ TEST_F(SystemIOTest, SystemValueIOTest) {
   EXPECT_NE(dynamic_cast<const TestTypedVector<double>*>(
                 test_sys_.EvalVectorInput(*context_, 1)),
             nullptr);
+
+  EXPECT_FALSE(test_sys_.get_input_port(0).is_random());
+  EXPECT_FALSE(test_sys_.get_input_port(1).is_random());
+  EXPECT_TRUE(test_sys_.get_input_port(2).is_random());
+  EXPECT_TRUE(test_sys_.get_input_port(3).is_random());
+
+  EXPECT_EQ(test_sys_.get_input_port(0).get_random_type(), kNotRandom);
+  EXPECT_EQ(test_sys_.get_input_port(1).get_random_type(), kNotRandom);
+  EXPECT_EQ(test_sys_.get_input_port(2).get_random_type(), kUniformRandom);
+  EXPECT_EQ(test_sys_.get_input_port(3).get_random_type(), kGaussianRandom);
 }
 
 // Tests that FixInputPortsFrom allocates ports of the same dimension as the

@@ -323,6 +323,11 @@ class DiagramBuilder {
     }
     ThrowIfAlgebraicLoopsExist();
 
+    // TODO(russt): Consider automatically exporting any random input ports
+    // that have not been explicitly exported.  This would be especially
+    // useful if tools like Simulator automatically add RandomSource blocks
+    // to any open random inputs declared on the system.
+
     auto blueprint = std::make_unique<typename Diagram<T>::Blueprint>();
     blueprint->input_port_ids = input_port_ids_;
     blueprint->output_port_ids = output_port_ids_;
