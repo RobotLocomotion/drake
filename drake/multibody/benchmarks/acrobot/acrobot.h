@@ -72,6 +72,11 @@ class Acrobot {
   Vector2<T> CalcCoriolisVector(const T& theta1, const T& theta2,
                                 const T& theta1dot, const T& theta2dot) const;
 
+  /// Computes the effective joint-space torques induced by gravity `G(q)`
+  /// containing the effect of gravity as a function of the configuration of
+  /// the pendulum.
+  Vector2<T> CalcGravityVector(const T& theta1, const T& theta2) const;
+
   /// Computes the pose of the center of mass of link 1 measured and expressed
   /// in the world frame.
   /// @param theta1 The shoulder angle in radians.
@@ -87,6 +92,13 @@ class Acrobot {
   /// @returns X_WL2 the pose of link 2 measured and expressed in the world
   /// frame.
   Isometry3<T> CalcLink2PoseInWorldFrame(
+      const T& theta1, const T& theta2) const;
+
+  /// Computes the pose of the elbow outboard frame `Eo` in the world frame W.
+  /// @param theta1 The shoulder angle in radians.
+  /// @param theta2 The elbow angle in radians.
+  /// @returns X_WEo the pose of the elbow frame Eo in the world frame W.
+  Isometry3<T> CalcElbowOutboardFramePoseInWorldFrame(
       const T& theta1, const T& theta2) const;
 
   /// Computes the spatial velocity of the center of mass of link 1 expressed

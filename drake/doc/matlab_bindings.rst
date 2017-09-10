@@ -4,8 +4,13 @@
 Using Drake from Matlab
 ***********************
 
-We are currently implementing the MATLAB bindings for Drake's new C++ libraries.
-Stay tuned for more information.
+MATLAB code/bindings available in Drake are unit tested on MATLAB R2017a.
+Earlier MATLAB versions may work but are not officially supported.
+
+We are currently experimenting with a few solutions for implementing the
+MATLAB bindings for Drake's new C++ libraries.  You will find minimal
+examples available in master, but most are not available yet.  Stay tuned
+for more information.
 
 In the meantime,
 :ref:`Using Drake from Python <python-bindings>`

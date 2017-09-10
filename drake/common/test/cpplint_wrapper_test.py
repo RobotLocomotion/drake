@@ -11,18 +11,13 @@ import unittest
 
 class TestStringMethods(unittest.TestCase):
 
-    def get_absolute_filename(self, relative_filename):
-        """Return an absolute filename, relative to this test program."""
-        mydir = os.path.dirname(os.path.abspath(__file__))
-        return os.path.join(mydir, relative_filename)
-
     def get_valid_header_filename(self):
         """This header should always exist, and pass cpplint."""
-        return self.get_absolute_filename("../eigen_types.h")
+        return "drake/common/eigen_types.h"
 
     def run_and_expect(self, args, expected_exitcode, expected_regexps=None):
         try:
-            cpplint_wrapper = self.get_absolute_filename("cpplint_wrapper.py")
+            cpplint_wrapper = "drake/common/cpplint_wrapper"
             output = subprocess.check_output(
                 [sys.executable, cpplint_wrapper] + args,
                 stderr=subprocess.STDOUT)
@@ -38,7 +33,7 @@ class TestStringMethods(unittest.TestCase):
 
     def test_help(self):
         self.run_and_expect(
-            ['--help'],
+            ["--help"],
             0,
             ["usage: cpplint_wrapper"])
 
@@ -57,9 +52,8 @@ class TestStringMethods(unittest.TestCase):
 
     def test_true_positive(self):
         # Test that the header is clean by default.
-        filename = self.get_absolute_filename(
-            "../../../"
-            "externals/google_styleguide/cpplint/cpplint_test_header.h")
+        filename = (
+            "external/google_styleguide/cpplint/cpplint_test_header.h")
         self.run_and_expect(
             [filename],
             0,
@@ -76,7 +70,7 @@ class TestStringMethods(unittest.TestCase):
 
     def test_ignored_extension(self):
         self.run_and_expect(
-            [self.get_absolute_filename('cpplint_wrapper_test.py')],
+            ["drake/common/test/cpplint_wrapper_test.py"],
             0,
             [r"Ignoring .*[/\\]cpplint_wrapper_test.py",
              r"TOTAL 0 files"])

@@ -155,6 +155,23 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     return *mobilizer_;
   }
 
+  /// @name Methods to retrieve BodyNode sizes
+  //@{
+
+  /// Returns the number of generalized positions for the Mobilizer in `this`
+  /// node.
+  int get_num_mobilizer_positions() const {
+    return topology_.num_mobilizer_positions;
+  }
+
+  /// Returns the number of generalized velocities for the Mobilizer in `this`
+  /// node.
+  int get_num_mobilizer_velocites() const {
+    return topology_.num_mobilizer_velocities;
+  }
+  //@}
+
+
   /// This method is used by MultibodyTree within a base-to-tip loop to compute
   /// this node's kinematics that only depend on generalized positions.
   /// This method aborts in Debug builds when:
@@ -550,6 +567,18 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   ///   of size equal to the number of bodies in the MultibodyTree and ordered
   ///   by BodyNodeIndex. The calling MultibodyTree method must guarantee these
   ///   conditions are satisfied.
+  /// @param[in] Fapplied_Bo_W
+  ///   Externally applied spatial force on this node's body B at the body's
+  ///   frame origin `Bo`, expressed in the world frame.
+  ///   `Fapplied_Bo_W` **must** not be an entry into `F_BMo_W_array_ptr`, which
+  ///   would result in undefined results.
+  /// @param[in] tau_applied
+  ///   Externally applied generalized force at this node's mobilizer. It can
+  ///   have zero size, implying no generalized forces are applied. Otherwise it
+  ///   must have a size equal to the number of generalized velocities for this
+  ///   node's mobilizer, see get_num_mobilizer_velocites().
+  ///   `tau_applied` **must** not be an entry into `tau_array`, which would
+  ///   result in undefined results.
   /// @param[out] F_BMo_W_array_ptr
   ///   A pointer to a valid, non nullptr, vector of spatial forces
   ///   containing, for each body B, the spatial force `F_BMo_W` corresponding
@@ -588,10 +617,18 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
       const PositionKinematicsCache<T>& pc,
       const VelocityKinematicsCache<T>& vc,
       const std::vector<SpatialAcceleration<T>>& A_WB_array,
+      const SpatialForce<T>& Fapplied_Bo_W,
+      const Eigen::Ref<const VectorX<T>>& tau_applied,
       std::vector<SpatialForce<T>>* F_BMo_W_array_ptr,
-      VectorX<T>* tau_array) const {
+      EigenPtr<VectorX<T>> tau_array) const {
     DRAKE_DEMAND(F_BMo_W_array_ptr != nullptr);
     std::vector<SpatialForce<T>>& F_BMo_W_array = *F_BMo_W_array_ptr;
+    DRAKE_DEMAND(
+        tau_applied.size() == get_num_mobilizer_velocites() ||
+        tau_applied.size() == 0);
+    DRAKE_DEMAND(tau_array != nullptr);
+    DRAKE_DEMAND(tau_array->size() ==
+        this->get_parent_tree().get_num_velocities());
 
     // As a guideline for developers, a summary of the computations performed in
     // this method is provided:
@@ -624,15 +661,18 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // quantities are expressed in the world frame W (though the expressed-in
     // frame is not needed in a coordinate-free form.)
     //
-    // The total spatial force on body B is the combined effect of external
-    // spatial forces and spatial forces induced by its inboard and outboard
-    // mobilizers. On its mobilized frame M, in coordinate-free form:
-    //   Ftot_BMo = Fext_BMo + F_BMo - Σᵢ(F_CiMo)                           (2)
+    // The total spatial force on body B is the combined effect of externally
+    // applied spatial forces Fapp_BMo on body B at Mo and spatial forces
+    // induced by its inboard and outboard mobilizers. On its mobilized frame M,
+    // in coordinate-free form:
+    //   Ftot_BMo = Fapp_BMo + F_BMo - Σᵢ(F_CiMo)                           (2)
     // where F_CiMo is the spatial force on the i-th child body Ci due to its
     // inboard mobilizer which, by action/reaction, applies to body B as
-    // -F_CiMo, hence the negative sign in the summation above.
+    // -F_CiMo, hence the negative sign in the summation above. The applied
+    // spatial force Fapp_BMo at Mo is obtained by shifting the applied force
+    // Fapp_Bo from Bo to Mo as Fapp_BMo.Shift(p_BoMo).
     // Therefore, spatial force F_BMo due to body B's mobilizer is:
-    //   F_BMo = Ftot_BMo + Σᵢ(F_CiMo) - Fext_BMo                           (3)
+    //   F_BMo = Ftot_BMo + Σᵢ(F_CiMo) - Fapp_BMo                           (3)
     // The projection of this force on the motion sub-space of this node's
     // mobilizer corresponds to the generalized force tau:
     //  tau = H_FMᵀ * F_BMo_F                                               (4)
@@ -664,6 +704,10 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // Output spatial force that would need to be exerted by this node's
     // mobilizer in order to attain the prescribed acceleration A_WB.
     SpatialForce<T>& F_BMo_W = F_BMo_W_array[this->get_index()];
+
+    // Ensure this method was not called with an Fapplied_Bo_W being an entry
+    // into F_BMo_W_array, otherwise we would be overwriting Fapplied_Bo_W.
+    DRAKE_DEMAND(&F_BMo_W != &Fapplied_Bo_W);
 
     // Shift spatial force on B to Mo.
     F_BMo_W = Ftot_BBo_W.Shift(p_BoMo_W);
@@ -704,6 +748,8 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
       // applied by this body's mobilizer:
       F_BMo_W += F_CMo_W;
     }
+    // Add applied forces contribution.
+    F_BMo_W -= Fapplied_Bo_W.Shift(p_BoMo_W);
 
     // Re-express F_BMo_W in the inboard frame F before projecting it onto the
     // sub-space generated by H_FM(q).
@@ -715,14 +761,20 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     const SpatialForce<T> F_BMo_F = R_WF * F_BMo_W;
 
     // Generalized velocities and forces use the same indexing.
-    Eigen::VectorBlock<VectorX<T>> tau =
-        get_mutable_forces_from_array(tau_array);
+    auto tau = get_mutable_generalized_forces_from_array(tau_array);
+
+    // Demand that tau_applied is not an entry of tau. It would otherwise get
+    // overwritten.
+    DRAKE_DEMAND(tau.data() != tau_applied.data());
 
     // The generalized forces on the mobilizer correspond to the active
     // components of the spatial force performing work. Therefore we need to
     // project F_BMo along the directions of motion.
     // Project as: tau = H_FMᵀ(q) * F_BMo_F, Eq. (4).
     get_mobilizer().ProjectSpatialForce(context, F_BMo_F, tau);
+
+    // Include the contribution of applied generalized forces.
+    if (tau_applied.size() != 0) tau -= tau_applied;
   }
 
   /// Returns the topology information for this body node.
@@ -932,24 +984,25 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   }
 
   // Mutable version of get_velocities_from_array().
-  Eigen::VectorBlock<VectorX<T>> get_mutable_velocities_from_array(
-      VectorX<T>* v) const {
+  Eigen::VectorBlock<Eigen::Ref<VectorX<T>>> get_mutable_velocities_from_array(
+      EigenPtr<VectorX<T>> v) const {
     DRAKE_ASSERT(v != nullptr);
     return v->segment(topology_.mobilizer_velocities_start_in_v,
-                      topology_.num_mobilizer_velocities);
+                     topology_.num_mobilizer_velocities);
   }
 
   // Helper to get an Eigen expression of the vector of generalized forces
   // from a vector of generalized forces for the entire parent multibody
   // tree.
-  Eigen::VectorBlock<const VectorX<T>> get_forces_from_array(
+  Eigen::VectorBlock<const VectorX<T>> get_generalized_forces_from_array(
       const VectorX<T>& tau) const {
     return get_velocities_from_array(tau);
   }
 
-  // Mutable version of get_forces_from_array()
-  Eigen::VectorBlock<VectorX<T>> get_mutable_forces_from_array(
-      VectorX<T>* tau) const {
+  // Mutable version of get_generalized_forces_from_array()
+  Eigen::VectorBlock<Eigen::Ref<VectorX<T>>>
+  get_mutable_generalized_forces_from_array(
+      EigenPtr<VectorX<T>> tau) const {
     DRAKE_ASSERT(tau != nullptr);
     return get_mutable_velocities_from_array(tau);
   }

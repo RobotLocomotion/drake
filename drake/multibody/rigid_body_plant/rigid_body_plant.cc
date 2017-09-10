@@ -46,11 +46,28 @@ RigidBodyPlant<T>::RigidBodyPlant(std::unique_ptr<const RigidBodyTree<T>> tree,
               KinematicsResults<T>(tree_.get()),
               &RigidBodyPlant::CalcKinematicsResultsOutput)
           .get_index();
+
   // Declares an abstract valued output port for contact information.
-  contact_output_port_index_ =
-      this->DeclareAbstractOutputPort(ContactResults<T>(),
-                                      &RigidBodyPlant::CalcContactResultsOutput)
-          .get_index();
+  contact_output_port_index_ = DeclareContactResultsOutputPort();
+}
+
+template <class T>
+OutputPortIndex RigidBodyPlant<T>::DeclareContactResultsOutputPort() {
+  return this->DeclareAbstractOutputPort(
+      ContactResults<T>(),
+      &RigidBodyPlant::CalcContactResultsOutput).get_index();
+}
+
+template <class T>
+Eigen::VectorBlock<const VectorX<T>> RigidBodyPlant<T>::GetStateVector(
+    const Context<T>& context) const {
+  if (is_state_discrete()) {
+    return dynamic_cast<const BasicVector<T>&>(
+        context.get_discrete_state_vector()).get_value();
+  } else {
+    return dynamic_cast<const BasicVector<T>&>(
+        context.get_continuous_state_vector()).get_value();
+  }
 }
 
 template <typename T>
@@ -170,8 +187,7 @@ void RigidBodyPlant<T>::set_friction_contact_parameters(
 }
 
 template <typename T>
-bool RigidBodyPlant<T>::DoHasDirectFeedthrough(const SystemSymbolicInspector*,
-                                               int, int) const {
+optional<bool> RigidBodyPlant<T>::DoHasDirectFeedthrough(int, int) const {
   return false;
 }
 
@@ -248,7 +264,7 @@ template <typename T>
 void RigidBodyPlant<T>::set_position(Context<T>* context, int position_index,
                                      T position) const {
   DRAKE_ASSERT(context != nullptr);
-  if (timestep_ > 0.0) {
+  if (is_state_discrete()) {
     context->get_mutable_discrete_state(0)->SetAtIndex(position_index,
                                                        position);
   } else {
@@ -262,7 +278,7 @@ template <typename T>
 void RigidBodyPlant<T>::set_velocity(Context<T>* context, int velocity_index,
                                      T velocity) const {
   DRAKE_ASSERT(context != nullptr);
-  if (timestep_ > 0.0) {
+  if (is_state_discrete()) {
     context->get_mutable_discrete_state(0)->SetAtIndex(
         get_num_positions() + velocity_index, velocity);
   } else {
@@ -284,7 +300,7 @@ void RigidBodyPlant<T>::set_state_vector(
     State<T>* state, const Eigen::Ref<const VectorX<T>> x) const {
   DRAKE_ASSERT(state != nullptr);
   DRAKE_ASSERT(x.size() == get_num_states());
-  if (timestep_ > 0.0) {
+  if (is_state_discrete()) {
     auto* xd = state->get_mutable_discrete_state();
     xd->get_mutable_vector(0)->SetFromVector(x);
   } else {
@@ -316,11 +332,12 @@ RigidBodyPlant<T>::model_instance_state_output_port(
 template <typename T>
 std::unique_ptr<ContinuousState<T>> RigidBodyPlant<T>::AllocateContinuousState()
     const {
-  // TODO(amcastro-tri): add z state to track energy conservation.
-  if (timestep_ > 0.0) {
+  if (is_state_discrete()) {
+    // Return an empty continuous state if the plant state is discrete.
     return std::make_unique<ContinuousState<T>>();
   }
 
+  // TODO(amcastro-tri): add z state to track energy conservation.
   return make_unique<ContinuousState<T>>(
       make_unique<BasicVector<T>>(get_num_states()),
       get_num_positions() /* num_q */, get_num_velocities() /* num_v */,
@@ -330,7 +347,8 @@ std::unique_ptr<ContinuousState<T>> RigidBodyPlant<T>::AllocateContinuousState()
 template <typename T>
 std::unique_ptr<DiscreteValues<T>> RigidBodyPlant<T>::AllocateDiscreteState()
     const {
-  if (timestep_ == 0.0) {
+  if (!is_state_discrete()) {
+    // State of the plant is continuous- return an empty discrete state.
     return std::make_unique<DiscreteValues<T>>();
   }
   return make_unique<DiscreteValues<T>>(
@@ -377,8 +395,8 @@ void RigidBodyPlant<T>::CopyStateToOutput(const Context<T>& context,
   // TODO(amcastro-tri): Remove this copy by allowing output ports to be
   // mere pointers to state variables (or cache lines).
   const VectorX<T> state_vector =
-      (timestep_ > 0.0) ? context.get_discrete_state(0)->CopyToVector()
-                        : context.get_continuous_state()->CopyToVector();
+      (is_state_discrete()) ? context.get_discrete_state(0)->CopyToVector()
+                            : context.get_continuous_state()->CopyToVector();
 
   state_output_vector->get_mutable_value() = state_vector;
 }
@@ -390,8 +408,8 @@ void RigidBodyPlant<T>::CalcInstanceOutput(
     BasicVector<T>* instance_output) const {
   // TODO(sherm1) Should reference state rather than copy it here.
   const VectorX<T> state_vector =
-      (timestep_ > 0.0) ? context.get_discrete_state(0)->CopyToVector()
-                        : context.get_continuous_state()->CopyToVector();
+      (is_state_discrete()) ? context.get_discrete_state(0)->CopyToVector()
+                            : context.get_continuous_state()->CopyToVector();
 
   auto values = instance_output->get_mutable_value();
   const auto& instance_positions = position_map_[instance_id];
@@ -422,7 +440,9 @@ void RigidBodyPlant<T>::DoCalcTimeDerivatives(
     const Context<T>& context, ContinuousState<T>* derivatives) const {
   static_assert(std::is_same<double, T>::value,
                 "Only support templating on double for now");
-  if (timestep_ > 0.0) return;
+
+  // No derivatives to compute if state is discrete.
+  if (is_state_discrete()) return;
 
   VectorX<T> u = EvaluateActuatorInputs(context);
 
@@ -529,7 +549,9 @@ void RigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
     drake::systems::DiscreteValues<T>* updates) const {
   static_assert(std::is_same<double, T>::value,
                 "Only support templating on double for now");
-  if (timestep_ == 0.0) return;
+
+  // If plant state is continuous, no discrete state to update.
+  if (!is_state_discrete()) return;
 
   VectorX<T> u = EvaluateActuatorInputs(context);
 
@@ -592,12 +614,16 @@ template <typename T>
 void RigidBodyPlant<T>::DoMapQDotToVelocity(
     const Context<T>& context, const Eigen::Ref<const VectorX<T>>& qdot,
     VectorBase<T>* generalized_velocity) const {
+  // Discrete state does not use this method, since there are no continuous
+  // qdot variables. Verify that, then return silently in this case.
+  if (is_state_discrete()) {
+    DRAKE_DEMAND(qdot.size() == 0);
+    return;
+  }
+
   // TODO(amcastro-tri): provide nicer accessor to an Eigen representation for
   // LeafSystems.
-  auto x =
-      dynamic_cast<const BasicVector<T>&>(context.get_continuous_state_vector())
-          .get_value();
-
+  auto x = GetStateVector(context);
   const int nq = get_num_positions();
   const int nv = get_num_velocities();
   const int nstates = get_num_states();
@@ -626,12 +652,15 @@ void RigidBodyPlant<T>::DoMapVelocityToQDot(
     const Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& generalized_velocity,
     VectorBase<T>* configuration_dot) const {
-  // TODO(amcastro-tri): provide nicer accessor to an Eigen representation for
-  // LeafSystems.
-  auto x =
-      dynamic_cast<const BasicVector<T>&>(context.get_continuous_state_vector())
-          .get_value();
+  // Discrete state does not use this method, since there are no continuous
+  // generalized velocity variables. Verify that, then return silently in this
+  // case.
+  if (is_state_discrete()) {
+    DRAKE_DEMAND(generalized_velocity.size() == 0);
+    return;
+  }
 
+  auto x = GetStateVector(context);
   const int nq = get_num_positions();
   const int nv = get_num_velocities();
   const int nstates = get_num_states();
@@ -685,13 +714,17 @@ void RigidBodyPlant<T>::CalcContactResultsOutput(
     const Context<T>& context, ContactResults<T>* contacts) const {
   DRAKE_ASSERT(contacts != nullptr);
   contacts->Clear();
+
+  // This code should do nothing if the state is discrete because the compliant
+  // contact model will not be used to compute contact forces.
+  if (is_state_discrete())
+    return;
+
   // TODO(SeanCurtis-TRI): This is horribly redundant code that only exists
   // because the data is not properly accessible in the cache.  This is
   // boilerplate drawn from EvalDerivatives.  See that code for further
   // comments
-  auto x =
-      dynamic_cast<const BasicVector<T>&>(context.get_continuous_state_vector())
-          .get_value();
+  auto x = GetStateVector(context);
   const int nq = get_num_positions();
   const int nv = get_num_velocities();
   VectorX<T> q = x.topRows(nq);

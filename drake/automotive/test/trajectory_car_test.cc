@@ -272,7 +272,7 @@ GTEST_TEST(TrajectoryCarTest, ToSymbolic) {
   const TrajectoryCar<double> dut{curve};
 
   // We do not support symbolic form.
-  EXPECT_EQ(dut.ToSymbolic(), nullptr);
+  EXPECT_EQ(dut.ToSymbolicMaybe(), nullptr);
 }
 
 }  // namespace

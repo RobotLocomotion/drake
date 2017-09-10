@@ -337,6 +337,17 @@ drake_cc_binary(
     ],
 )
 
+py_binary(
+    name = "cpplint_wrapper",
+    testonly = 1,
+    srcs = ["test/cpplint_wrapper.py"],
+    data = [
+        "//:CPPLINT.cfg",
+        "@google_styleguide//:cpplint",
+    ],
+    main = "test/cpplint_wrapper.py",
+)
+
 install(
     name = "install",
     targets = [":resource_tool"],
@@ -351,6 +362,17 @@ install(
 )
 
 # === test/ ===
+
+# This is only intended to be used by the drake_cc_googletest() macro.
+drake_cc_library(
+    name = "drake_cc_googletest_main",
+    testonly = 1,
+    srcs = ["test/drake_cc_googletest_main.cc"],
+    deps = [
+        ":text_logging_gflags",
+        "@gtest//:without_main",
+    ],
+)
 
 drake_cc_library(
     name = "random_polynomial_matrix",
@@ -810,6 +832,30 @@ drake_cc_googletest(
     name = "scoped_singleton_test",
     deps = [
         ":scoped_singleton",
+    ],
+)
+
+drake_cc_googletest(
+    name = "drake_cc_googletest_main_test",
+    args = ["--magic_number=1.0"],
+)
+
+# Run test/drake_cc_googletest_main_test.py, a unit test written in Python that
+# covers the test/drake_cc_googletest_main.cc software.
+py_test(
+    name = "drake_cc_googletest_main_test_py",
+    srcs = ["test/drake_cc_googletest_main_test.py"],
+    data = [":drake_cc_googletest_main_test"],
+    main = "test/drake_cc_googletest_main_test.py",
+)
+
+py_test(
+    name = "cpplint_wrapper_test",
+    srcs = ["test/cpplint_wrapper_test.py"],
+    data = [
+        ":cpplint_wrapper",
+        ":eigen_types.h",
+        "@google_styleguide//:cpplint/cpplint_test_header.h",
     ],
 )
 

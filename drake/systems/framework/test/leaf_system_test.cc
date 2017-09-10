@@ -977,8 +977,8 @@ class ManualSparsitySystem : public DefaultFeedthroughSystem {
   }
 
  protected:
-  bool DoHasDirectFeedthrough(const SystemSymbolicInspector* sparsity,
-                              int input_port, int output_port) const override {
+  optional<bool> DoHasDirectFeedthrough(
+      int input_port, int output_port) const override {
     if (input_port == 0 && output_port == 1) {
       return true;
     }
@@ -1063,16 +1063,76 @@ GTEST_TEST(FeedthroughTest, SymbolicSparsity) {
   EXPECT_EQ(feedthrough_pairs, expected);
 }
 
-// Sanity check the default implementation of ToAutoDiffXd.
-GTEST_TEST(AutoDiffTest, ScalarConverter) {
+// Sanity check the default implementation of ToAutoDiffXd, for cases that
+// should succeed.
+GTEST_TEST(LeafSystemScalarConverterTest, AutoDiffYes) {
   SymbolicSparsitySystem<double> dut;
+  dut.set_name("special_name");
 
-  // Convert to AutoDiffXd.
-  std::unique_ptr<System<AutoDiffXd>> autodiff = dut.ToAutoDiffXd();
-  ASSERT_NE(autodiff, nullptr);
-  const auto* const downcast =
-      dynamic_cast<SymbolicSparsitySystem<AutoDiffXd>*>(autodiff.get());
-  ASSERT_NE(downcast, nullptr);
+  // Static method automatically downcasts.
+  std::unique_ptr<SymbolicSparsitySystem<AutoDiffXd>> clone =
+      System<double>::ToAutoDiffXd(dut);
+  ASSERT_NE(clone, nullptr);
+  EXPECT_EQ(clone->get_name(), "special_name");
+
+  // Instance method that reports failures via exception.
+  EXPECT_NE(dut.ToAutoDiffXd(), nullptr);
+
+  // Instance method that reports failures via nullptr.
+  auto maybe = dut.ToAutoDiffXdMaybe();
+  ASSERT_NE(maybe, nullptr);
+  EXPECT_EQ(maybe->get_name(), "special_name");
+}
+
+// Sanity check the default implementation of ToAutoDiffXd, for cases that
+// should fail.
+GTEST_TEST(LeafSystemScalarConverterTest, AutoDiffNo) {
+  TestSystem<double> dut;
+
+  // Static method.
+  EXPECT_THROW(System<double>::ToAutoDiffXd(dut), std::exception);
+
+  // Instance method that reports failures via exception.
+  EXPECT_THROW(dut.ToAutoDiffXd(), std::exception);
+
+  // Instance method that reports failures via nullptr.
+  EXPECT_EQ(dut.ToAutoDiffXdMaybe(), nullptr);
+}
+
+// Sanity check the default implementation of ToSymbolic, for cases that
+// should succeed.
+GTEST_TEST(LeafSystemScalarConverterTest, SymbolicYes) {
+  SymbolicSparsitySystem<double> dut;
+  dut.set_name("special_name");
+
+  // Static method automatically downcasts.
+  std::unique_ptr<SymbolicSparsitySystem<symbolic::Expression>> clone =
+      System<double>::ToSymbolic(dut);
+  ASSERT_NE(clone, nullptr);
+  EXPECT_EQ(clone->get_name(), "special_name");
+
+  // Instance method that reports failures via exception.
+  EXPECT_NE(dut.ToSymbolic(), nullptr);
+
+  // Instance method that reports failures via nullptr.
+  auto maybe = dut.ToSymbolicMaybe();
+  ASSERT_NE(maybe, nullptr);
+  EXPECT_EQ(maybe->get_name(), "special_name");
+}
+
+// Sanity check the default implementation of ToSymbolic, for cases that
+// should fail.
+GTEST_TEST(LeafSystemScalarConverterTest, SymbolicNo) {
+  TestSystem<double> dut;
+
+  // Static method.
+  EXPECT_THROW(System<double>::ToSymbolic(dut), std::exception);
+
+  // Instance method that reports failures via exception.
+  EXPECT_THROW(dut.ToSymbolic(), std::exception);
+
+  // Instance method that reports failures via nullptr.
+  EXPECT_EQ(dut.ToSymbolicMaybe(), nullptr);
 }
 
 GTEST_TEST(GraphvizTest, Attributes) {
@@ -1234,6 +1294,112 @@ GTEST_TEST(CustomContextTest, AllocatedContext) {
   ASSERT_TRUE(is_dynamic_castable<CustomContext<double>>(allocated.get()));
   auto defaulted = system.CreateDefaultContext();
   ASSERT_TRUE(is_dynamic_castable<CustomContext<double>>(defaulted.get()));
+}
+
+class ConstraintTestSystem : public LeafSystem<double> {
+ public:
+  ConstraintTestSystem() { DeclareContinuousState(2); }
+
+  // Expose some protected methods for testing.
+  using LeafSystem<double>::DeclareInequalityConstraint;
+  using LeafSystem<double>::DeclareEqualityConstraint;
+
+  void CalcState0Constraint(const Context<double>& context,
+                            Eigen::VectorXd* value) const {
+    *value = Vector1d(context.get_continuous_state_vector().GetAtIndex(0));
+  }
+  void CalcStateConstraint(const Context<double>& context,
+                           Eigen::VectorXd* value) const {
+    *value = context.get_continuous_state_vector().CopyToVector();
+  }
+
+ private:
+  void DoCalcTimeDerivatives(
+      const Context<double>& context,
+      ContinuousState<double>* derivatives) const override {
+    // xdot = -x.
+    derivatives->SetFromVector(-dynamic_cast<const BasicVector<double>&>(
+                                    context.get_continuous_state_vector())
+                                    .get_value());
+  }
+};
+
+// Tests adding constraints implemented as methods inside the System class.
+GTEST_TEST(SystemConstraintTest, ClassMethodTest) {
+  ConstraintTestSystem dut;
+  EXPECT_EQ(dut.get_num_constraints(), 0);
+
+  EXPECT_EQ(dut.DeclareEqualityConstraint(
+                &ConstraintTestSystem::CalcState0Constraint, 1, "x0"),
+            0);
+  EXPECT_EQ(dut.get_num_constraints(), 1);
+
+  EXPECT_EQ(dut.DeclareInequalityConstraint(
+                &ConstraintTestSystem::CalcStateConstraint, 2, "x"),
+            1);
+  EXPECT_EQ(dut.get_num_constraints(), 2);
+
+  auto context = dut.CreateDefaultContext();
+  context->get_mutable_continuous_state_vector()->SetFromVector(
+      Eigen::Vector2d(5.0, 7.0));
+
+  EXPECT_EQ(dut.get_constraint(SystemConstraintIndex(0)).size(), 1);
+  EXPECT_EQ(dut.get_constraint(SystemConstraintIndex(1)).size(), 2);
+
+  Eigen::VectorXd value;
+  dut.get_constraint(SystemConstraintIndex(0)).Calc(*context, &value);
+  EXPECT_EQ(value.rows(), 1);
+  EXPECT_EQ(value[0], 5.0);
+
+  dut.get_constraint(SystemConstraintIndex(1)).Calc(*context, &value);
+  EXPECT_EQ(value.rows(), 2);
+  EXPECT_EQ(value[0], 5.0);
+  EXPECT_EQ(value[1], 7.0);
+
+  EXPECT_TRUE(
+      dut.get_constraint(SystemConstraintIndex(0)).is_equality_constraint());
+  EXPECT_EQ(dut.get_constraint(SystemConstraintIndex(0)).description(), "x0");
+
+  EXPECT_FALSE(
+      dut.get_constraint(SystemConstraintIndex(1)).is_equality_constraint());
+  EXPECT_EQ(dut.get_constraint(SystemConstraintIndex(1)).description(), "x");
+}
+
+// Tests adding constraints implemented as function handles (lambda functions).
+GTEST_TEST(SystemConstraintTest, FunctionHandleTest) {
+  ConstraintTestSystem dut;
+  EXPECT_EQ(dut.get_num_constraints(), 0);
+
+  SystemConstraint<double>::CalcCallback calc = [](
+      const Context<double>& context, Eigen::VectorXd* value) {
+    *value = Vector1d(context.get_continuous_state_vector().GetAtIndex(1));
+  };
+  EXPECT_EQ(dut.DeclareInequalityConstraint(calc, 1, "x1"), 0);
+  EXPECT_EQ(dut.get_num_constraints(), 1);
+
+  auto context = dut.CreateDefaultContext();
+  context->get_mutable_continuous_state_vector()->SetFromVector(
+      Eigen::Vector2d(5.0, 7.0));
+
+  Eigen::VectorXd value;
+  const SystemConstraint<double>& inequality_constraint =
+      dut.get_constraint(SystemConstraintIndex(0));
+  inequality_constraint.Calc(*context, &value);
+  EXPECT_EQ(value.rows(), 1);
+  EXPECT_EQ(value[0], 7.0);
+  EXPECT_FALSE(inequality_constraint.is_equality_constraint());
+  EXPECT_EQ(inequality_constraint.description(), "x1");
+
+  EXPECT_EQ(dut.DeclareEqualityConstraint(calc, 1, "x1eq"), 1);
+  EXPECT_EQ(dut.get_num_constraints(), 2);
+
+  const SystemConstraint<double>& equality_constraint =
+      dut.get_constraint(SystemConstraintIndex(1));
+  equality_constraint.Calc(*context, &value);
+  EXPECT_EQ(value.rows(), 1);
+  EXPECT_EQ(value[0], 7.0);
+  EXPECT_TRUE(equality_constraint.is_equality_constraint());
+  EXPECT_EQ(equality_constraint.description(), "x1eq");
 }
 
 }  // namespace

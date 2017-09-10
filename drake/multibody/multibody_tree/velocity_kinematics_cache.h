@@ -54,6 +54,17 @@ class VelocityKinematicsCache {
     V_PB_W_pool_[world_index()].SetNaN();  // It must never be used.
   }
 
+  /// Initializes `this` %VelocityKinematicsCache as if all generalized
+  /// velocities of the corresponding MultibodyTree model were zero.
+  void InitializeToZero() {
+    for (BodyNodeIndex body_node_index(0); body_node_index < num_nodes_;
+         ++body_node_index) {
+      V_WB_pool_[body_node_index].SetZero();
+      V_FM_pool_[body_node_index].SetZero();
+      V_PB_W_pool_[body_node_index].SetZero();
+    }
+  }
+
   /// Returns a constant reference to the spatial velocity `V_WB` of the body B
   /// (associated with node `body_node_index`) as measured and expressed in the
   /// world frame W.
