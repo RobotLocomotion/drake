@@ -1405,7 +1405,8 @@ class Diagram : public System<T>,
     // Add this port to our externally visible topology.
     const auto& subsystem_descriptor = sys->get_input_port(port_index);
     this->DeclareInputPort(subsystem_descriptor.get_data_type(),
-                           subsystem_descriptor.size());
+                           subsystem_descriptor.size(),
+                           subsystem_descriptor.get_random_type());
   }
 
   // Exposes the given subsystem output port as an output of the Diagram.

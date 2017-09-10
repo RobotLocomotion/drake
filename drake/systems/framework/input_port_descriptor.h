@@ -1,6 +1,8 @@
 #pragma once
 
+#include "drake/common/constants.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_optional.h"
 #include "drake/systems/framework/system_common.h"
 
 namespace drake {
@@ -24,11 +26,22 @@ class InputPortDescriptor {
   /// @param data_type Whether the port described is vector or abstract valued.
   /// @param size If the port described is vector-valued, the number of
   ///             elements, or kAutoSize if determined by connections.
+  /// @param random_type Input ports may optionally be labeled as random, if the
+  ///                    port is intended to model a random-source "noise" or
+  ///                    "disturbance" input.
   InputPortDescriptor(const System<T>* system, int index,
-                      PortDataType data_type, int size)
-      : system_(system), index_(index), data_type_(data_type), size_(size) {
+                      PortDataType data_type, int size,
+                      const optional<RandomDistribution>& random_type)
+      : system_(system),
+        index_(index),
+        data_type_(data_type),
+        size_(size),
+        random_type_(random_type) {
     if (size_ == kAutoSize) {
       DRAKE_ABORT_MSG("Auto-size ports are not yet implemented.");
+    }
+    if (is_random() && data_type_ != kVectorValued) {
+      DRAKE_ABORT_MSG("Random input ports must be vector valued.");
     }
   }
 
@@ -57,12 +70,15 @@ class InputPortDescriptor {
   int get_index() const { return index_; }
   PortDataType get_data_type() const { return data_type_; }
   int size() const { return size_; }
+  bool is_random() const { return static_cast<bool>(random_type_); }
+  optional<RandomDistribution> get_random_type() const { return random_type_; }
 
  private:
   const System<T>* const system_;
   const int index_;
   const PortDataType data_type_;
   const int size_;
+  const optional<RandomDistribution> random_type_;
 };
 
 }  // namespace systems

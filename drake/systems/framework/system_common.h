@@ -12,5 +12,6 @@ typedef enum {
   kAbstractValued = 1,
 } PortDataType;
 
+
 }  // namespace systems
 }  // namespace drake
