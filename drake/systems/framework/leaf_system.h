@@ -707,13 +707,16 @@ class LeafSystem : public System<T> {
   /// This is the best way to declare LeafSystem input ports that require
   /// subclasses of BasicVector.  The port's size will be model_vector.size(),
   /// and LeafSystem's default implementation of DoAllocateInputVector will be
-  /// model_vector.Clone().
+  /// model_vector.Clone(). If the port is intended to model a random noise or
+  /// disturbance input, @p random_type can (optionally) be used to label it
+  /// as such.
   const InputPortDescriptor<T>& DeclareVectorInputPort(
-      const BasicVector<T>& model_vector) {
+      const BasicVector<T>& model_vector,
+      RandomPortType random_type = kNotRandom) {
     const int size = model_vector.size();
     const int next_index = this->get_num_input_ports();
     model_input_values_.AddVectorModel(next_index, model_vector.Clone());
-    return this->DeclareInputPort(kVectorValued, size);
+    return this->DeclareInputPort(kVectorValued, size, random_type);
   }
 
   // Avoid shadowing out the no-arg DeclareAbstractInputPort().
