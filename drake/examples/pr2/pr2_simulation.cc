@@ -1,5 +1,5 @@
 // Implements a simulation of the Drake-compatible description of the
-// PR2 robot with two tables and an object for gripping. 
+// PR2 robot with two tables and an object for gripping.
 
 #include <gflags/gflags.h>
 
@@ -32,7 +32,8 @@ std::unique_ptr<RigidBodyTree<double>> build_world_tree(
     std::vector<std::string> names, std::vector<std::string> description_paths,
     std::vector<Eigen::Vector3d> poses_xyz,
     std::vector<Eigen::Vector3d> poses_rpy, std::vector<bool> fixed) {
-  auto tree_builder_ = std::make_unique<manipulation::util::WorldSimTreeBuilder<double>>();
+  auto tree_builder_ =
+      std::make_unique<manipulation::util::WorldSimTreeBuilder<double>>();
   for (int index = 0; index < (int)names.size(); index++) {
     tree_builder_->StoreModel(names[index], description_paths[index]);
   }
@@ -69,7 +70,8 @@ int DoMain() {
   names.push_back("table2");
 
   std::vector<std::string> description_paths;
-  const auto pr2_urdf_path = "drake/examples/pr2/models/pr2_description/urdf/pr2_simplified.urdf";
+  const auto pr2_urdf_path =
+      "drake/examples/pr2/models/pr2_description/urdf/pr2_simplified.urdf";
   description_paths.push_back(pr2_urdf_path);
   description_paths.push_back("drake/examples/pr2/models/objects/soda.urdf");
   description_paths.push_back("drake/examples/pr2/models/objects/table.sdf");
@@ -102,28 +104,32 @@ int DoMain() {
   Eigen::Vector3d initial_table2_pose_rpy;
   initial_table2_pose_rpy << 0, 0, 0;
   initial_poses_rpy.push_back(initial_table2_pose_rpy);
-  
+
   std::vector<bool> fixed;
   fixed.push_back(true);
   fixed.push_back(false);
   fixed.push_back(true);
   fixed.push_back(true);
 
-  auto tree_ = build_world_tree(&world_info_, names, description_paths, initial_poses_xyz, initial_poses_rpy, fixed);
+  auto tree_ = build_world_tree(&world_info_, names, description_paths,
+                                initial_poses_xyz, initial_poses_rpy, fixed);
   const auto pr2_instance_id = world_info_[0].instance_id;
 
-  // We expect the number of actuators from the PR2 (and from the whole world) to be 28.
+  // We expect the number of actuators from the PR2 (and from the whole world)
+  // to be 28.
   DRAKE_ASSERT(tree_->get_num_actuators() == 28);
   const int num_actuators = 28;
 
-  // Remove the PR2's collision groups that the PR2 doesn't need to grip with, to speed up the simulation.
-  auto filter = [&](const std::string& group_name){
+  // Remove the PR2's collision groups that the PR2 doesn't need to grip with,
+  // to speed up the simulation.
+  auto filter = [&](const std::string& group_name) {
     return group_name == "non_gripper";
   };
   tree_->removeCollisionGroupsIf(filter);
 
   // Set the plant for the PR2.
-  auto plant_ = diagram_builder.AddSystem<systems::RigidBodyPlant<double>>(std::move(tree_));
+  auto plant_ = diagram_builder.AddSystem<systems::RigidBodyPlant<double>>(
+      std::move(tree_));
   plant_->set_name("plant_");
 
   // Add a plan reciever and interpolator to feed into the PR2's controller.
@@ -132,33 +138,39 @@ int DoMain() {
           "PR2_PLAN", &lcm));
   plan_receiver_->set_name("plan_receiver");
 
-  auto command_injector_ = diagram_builder.AddSystem<manipulation::planner::RobotPlanInterpolator>(
-      drake::FindResourceOrThrow(pr2_urdf_path));
+  auto command_injector_ =
+      diagram_builder.AddSystem<manipulation::planner::RobotPlanInterpolator>(
+          drake::FindResourceOrThrow(pr2_urdf_path));
   command_injector_->set_name("command_injector");
 
   diagram_builder.Connect(
       plant_->model_instance_state_output_port(pr2_instance_id),
       command_injector_->get_state_input_port());
   diagram_builder.Connect(plan_receiver_->get_output_port(0),
-                           command_injector_->get_plan_input_port());
+                          command_injector_->get_plan_input_port());
 
-  // Add a PID controller for the PR2. 
+  // Add a PID controller for the PR2.
   VectorX<double> kp(num_actuators);
-  kp << 1000, 1000, 2500, 400000, 100000, 100000, 50000, 50000, 50000, 50000, 50000, 10000, 10000, 10, 10, 10, 10, 50000, 50000, 50000, 50000, 50000, 10000, 10000, 10, 10, 10, 10; 
+  kp << 1000, 1000, 2500, 400000, 100000, 100000, 50000, 50000, 50000, 50000,
+      50000, 10000, 10000, 10, 10, 10, 10, 50000, 50000, 50000, 50000, 50000,
+      10000, 10000, 10, 10, 10, 10;
   VectorX<double> ki(num_actuators);
-  ki << 0, 0, 5, 20000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0; 
+  ki << 0, 0, 5, 20000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0;
   VectorX<double> kd(num_actuators);
-  kd << 1820, 1820, 750, 0.7, 0.7, 0.7, 80, 190, 20, 40, 10, 5, 5, 0, 0, 0, 0, 80, 190, 20, 40, 10, 5, 5, 0, 0, 0, 0; 
+  kd << 1820, 1820, 750, 0.7, 0.7, 0.7, 80, 190, 20, 40, 10, 5, 5, 0, 0, 0, 0,
+      80, 190, 20, 40, 10, 5, 5, 0, 0, 0, 0;
   auto Binv = plant_->get_rigid_body_tree()
                   .B.block(0, 0, num_actuators, num_actuators)
                   .inverse();
-  auto controller_ = diagram_builder.AddSystem<systems::controllers::PidController<double>>(
-      std::make_unique<systems::controllers::PidController<double>>(
-          MatrixX<double>::Identity(2 * kp.size(), 2 * kp.size()), Binv, kp, ki,
-          kd));
+  auto controller_ =
+      diagram_builder.AddSystem<systems::controllers::PidController<double>>(
+          std::make_unique<systems::controllers::PidController<double>>(
+              MatrixX<double>::Identity(2 * kp.size(), 2 * kp.size()), Binv, kp,
+              ki, kd));
 
   diagram_builder.Connect(command_injector_->get_state_output_port(),
-                           controller_->get_input_port_desired_state());
+                          controller_->get_input_port_desired_state());
   diagram_builder.Connect(
       plant_->model_instance_state_output_port(pr2_instance_id),
       controller_->get_input_port_estimated_state());
@@ -196,30 +208,30 @@ int DoMain() {
   simulator.reset_integrator<systems::SemiExplicitEulerIntegrator<double>>(
       *diagram_, max_step_size, context);
 
-  // Declare the initial pr2 state
-  Eigen::VectorXd initial_pr2_state(num_actuators*2);
-  initial_pr2_state << 0, 0, 0, 0.3, 0, 0, -1.14, 1.11, -1.40, -2.11,
-      -1.33, -1.12, 2.19, 0.2, 0.2, 0.2, 0.2, 2.1, 1.29, 0 - 0.15, 0, -0.1, 0,
-      0.2, 0.2, 0.2, 0.2, VectorX<double>::Zero(num_actuators);
+  // Declare the initial pr2 state.
+  Eigen::VectorXd initial_pr2_state(num_actuators * 2);
+  initial_pr2_state << 0, 0, 0, 0.3, 0, 0, -1.14, 1.11, -1.40, -2.11, -1.33,
+      -1.12, 2.19, 0.2, 0.2, 0.2, 0.2, 2.1, 1.29, 0, -0.15, 0, -0.1, 0, 0.2,
+      0.2, 0.2, 0.2, VectorX<double>::Zero(num_actuators);
 
   // Set the initial joint positions.
   for (int index = 0; index < num_actuators; index++) {
-    plant_->set_position(context, index,
-                         initial_pr2_state[index]);
+    plant_->set_position(context, index, initial_pr2_state[index]);
   }
 
   // Set the initial joint velocities.
   for (int index = 0; index < num_actuators; index++) {
     plant_->set_velocity(context, index,
-                         initial_pr2_state[index+num_actuators]);
+                         initial_pr2_state[index + num_actuators]);
   }
 
   // Initialize the robot plan interpolator.
-  auto& plan_source_context = diagram_->GetMutableSubsystemContext(
-      *command_injector_, context);
-  command_injector_->Initialize(plan_source_context.get_time(),
-                               Eigen::VectorBlock<VectorX<double>, num_actuators>(initial_pr2_state, 0),
-                               plan_source_context.get_mutable_state());
+  auto& plan_source_context =
+      diagram_->GetMutableSubsystemContext(*command_injector_, context);
+  command_injector_->Initialize(
+      plan_source_context.get_time(),
+      Eigen::VectorBlock<VectorX<double>, num_actuators>(initial_pr2_state, 0),
+      plan_source_context.get_mutable_state());
 
   // Start the simulation.
   lcm.StartReceiveThread();
