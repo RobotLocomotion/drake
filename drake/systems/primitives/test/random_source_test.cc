@@ -70,11 +70,9 @@ GTEST_TEST(TestSignalLogger, UniformWhiteNoise) {
 
   const auto& x = logger->data();
 
-  for (double threshold = -1.0; threshold < 1.0; threshold += 0.1) {
+  for (double threshold = 0.0; threshold < 1.0; threshold += 0.1) {
     double count = (x.array() < threshold).cast<double>().matrix().sum();
-    // Probability of x < threshold for this uniform distribution is
-    // (threshold+1)/2.
-    EXPECT_NEAR(count / x.size(), (threshold + 1.0) / 2.0,
+    EXPECT_NEAR(count / x.size(), threshold,
                 0.02);  // Note intentionally very large tolerance.
     // TODO(russt): Tighten tolerance once #4325 is resolved.
   }
