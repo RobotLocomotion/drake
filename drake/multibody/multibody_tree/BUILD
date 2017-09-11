@@ -153,6 +153,16 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "spatial_double_pendulum_test",
+    size = "medium",
+    deps = [
+        ":multibody_tree",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/multibody/benchmarks/acrobot",
+    ],
+)
+
+drake_cc_googletest(
     name = "frames_test",
     deps = [":multibody_tree"],
 )

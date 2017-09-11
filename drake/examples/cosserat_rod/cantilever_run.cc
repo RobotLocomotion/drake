@@ -88,7 +88,7 @@ int do_main(int argc, char* argv[]) {
   const double tau_d = 0.04469 / 50;  // [sec]
 
   // Numerical parameters:
-  const int num_elements = 3;
+  const int num_elements = 2;
   const double dt = 0.002;  // [sec]
 
   // Other derived numbers.
