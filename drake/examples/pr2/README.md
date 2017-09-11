@@ -31,12 +31,14 @@ To use the passive simulation:
 build and launch the drake_visualizer, with the following commands: 
 
 $ bazel build //tools:drake_visualizer 
+
 $ ./bazel-bin/tools/drake_visualizer
 
 2. Open another terminal and navigate to the root of the Drake distribution.
 Then, build and launch the pr2_passive_simulation, with the following commands:
 
-$ bazel build //drake/examples/pr2:pr2_passive_simulation 
+$ bazel build //drake/examples/pr2:pr2_passive_simulation
+
 $ ./bazel-bin/drake/examples/pr2/pr2_passive_simulation 
 
 The seconds (relative to the simulation) that the simulation will run for can 
@@ -50,12 +52,14 @@ To use the controlled simulation:
 build and launch the drake_visualizer, with the following commands: 
 
 $ bazel build //tools:drake_visualizer 
+
 $ ./bazel-bin/tools/drake_visualizer
 
 2. Open another terminal and navigate to the root of the Drake distribution.
 Then, build and launch the pr2_simulation, with the following commands:
 
 $ bazel build //drake/examples/pr2:pr2_simulation 
+
 $ ./bazel-bin/drake/examples/pr2/pr2_simulation 
 
 The seconds (relative to the simulation) that the simulation will run for can 
@@ -67,6 +71,7 @@ Then, build and launch the pr2_arm_stretch_plan_sender, with the following
 commands:
 
 $ bazel build //drake/examples/pr2:pr2_arm_stretch_plan_sender 
+
 $ ./bazel-bin/drake/examples/pr2/pr2_arm_stretch_plan_sender
 
 The pr2_arm_stretch_plan_sender sends a plan over lcm for the PR2 to stretch 
