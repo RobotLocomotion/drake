@@ -25,6 +25,7 @@ purposes.
 out it's right arm.
 
 
+
 To use the passive simulation:
 
 1. Open a terminal and navigate to the root of the Drake distribution. Then,
@@ -44,6 +45,7 @@ $ ./bazel-bin/drake/examples/pr2/pr2_passive_simulation
 The seconds (relative to the simulation) that the simulation will run for can 
 be specified with the argument --simulation_sec=number of seconds to simulate. 
 If this argument is not specified, then the simulation will run forever.
+
 
 
 To use the controlled simulation:
