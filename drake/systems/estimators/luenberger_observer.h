@@ -39,6 +39,7 @@ class LuenbergerObserver : public systems::LeafSystem<T> {
   ///
   /// Note: Takes ownership of the unique_ptrs to the observed_system and the
   /// observed_system_context.
+  /// @throws std::bad_cast if the observed_system output is not vector-valued.
   LuenbergerObserver(
       std::unique_ptr<systems::System<T>> observed_system,
       std::unique_ptr<systems::Context<T>> observed_system_context,
