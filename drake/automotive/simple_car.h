@@ -55,7 +55,7 @@ class SimpleCar final : public systems::LeafSystem<T> {
 
   SimpleCar();
 
-  /// Scalar-converting copy constructor.
+  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
   explicit SimpleCar(const SimpleCar<U>&);
 

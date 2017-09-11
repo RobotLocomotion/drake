@@ -66,7 +66,7 @@ class AcrobotPlant : public systems::LeafSystem<T> {
                double b2 = 0.1,
                double g = 9.81);
 
-  /// Scalar-converting copy constructor.
+  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
   explicit AcrobotPlant(const AcrobotPlant<U>&);
 

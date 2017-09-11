@@ -75,7 +75,7 @@ class PoseAggregator : public LeafSystem<T> {
 
   PoseAggregator();
 
-  /// Scalar-converting copy constructor.
+  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
   explicit PoseAggregator(const PoseAggregator<U>&);
 

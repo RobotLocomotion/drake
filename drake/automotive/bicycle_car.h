@@ -69,7 +69,7 @@ class BicycleCar final : public systems::LeafSystem<T> {
   /// Default constructor.
   BicycleCar();
 
-  /// Scalar-converting copy constructor.
+  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
   explicit BicycleCar(const BicycleCar<U>&);
 
