@@ -83,7 +83,7 @@ class TrajectoryCar final : public systems::LeafSystem<T> {
     this->DeclareNumericParameter(TrajectoryCarParams<T>());
   }
 
-  /// Scalar-converting copy constructor.
+  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
   explicit TrajectoryCar(const TrajectoryCar<U>& other)
       : TrajectoryCar<T>(other.curve_) {}
