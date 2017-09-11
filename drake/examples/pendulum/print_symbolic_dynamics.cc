@@ -11,7 +11,7 @@ namespace examples {
 namespace pendulum {
 namespace {
 
-int do_main() {
+int DoMain() {
   PendulumPlant<symbolic::Expression> system;
 
   auto context = system.CreateDefaultContext();
@@ -36,5 +36,5 @@ int do_main() {
 }  // namespace drake
 
 int main() {
-  return drake::examples::pendulum::do_main();
+  return drake::examples::pendulum::DoMain();
 }

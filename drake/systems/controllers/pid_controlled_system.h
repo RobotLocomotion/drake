@@ -129,6 +129,10 @@ class PidControlledSystem : public Diagram<T> {
     return this->get_input_port(1);
   }
 
+  const OutputPort<T>& get_state_output_port() const {
+    return this->get_output_port(0);
+  }
+
   /// The return type of ConnectController.
   struct ConnectResult {
     /// The feed forward control input.

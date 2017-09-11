@@ -28,26 +28,11 @@ DEFINE_double(target_realtime_rate, 1.0,
               "Playback speed.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
 
-int do_main() {
+int DoMain() {
   systems::DiagramBuilder<double> builder;
 
-  PendulumPlant<double>* pendulum{nullptr};
-  systems::controllers::PidControlledSystem<double>* controller{nullptr};
-
-  {
-    auto pendulum_ptr = std::make_unique<PendulumPlant<double>>();
-    pendulum = pendulum_ptr.get();
-    pendulum->set_name("pendulum");
-
-    // The choices of PidController constants here are fairly arbitrary,
-    // but seem to effectively swing up the pendulum and hold it.
-    controller =
-        builder.AddSystem<systems::controllers::PidControlledSystem<double>>(
-            std::move(pendulum_ptr), 10., 0., 1.);
-    controller->set_name("controller");
-  }
-  DRAKE_DEMAND(pendulum != nullptr);
-  DRAKE_DEMAND(controller != nullptr);
+  auto pendulum = std::make_unique<PendulumPlant<double>>();
+  pendulum->set_name("pendulum");
 
   auto context = pendulum->CreateDefaultContext();
 
@@ -55,31 +40,39 @@ int do_main() {
   const double kMinimumTimeStep = 0.2;
   const double kMaximumSampleTime = 0.5;
   systems::trajectory_optimization::DirectCollocation dircol(
-      pendulum, *context, kNumTimeSamples, kMinimumTimeStep,
+      pendulum.get(), *context, kNumTimeSamples, kMinimumTimeStep,
       kMaximumSampleTime);
 
   dircol.AddEqualTimeIntervalsConstraints();
 
+  // TODO(russt): Add this constraint to PendulumPlant and get it automatically
+  // through DirectCollocation.
   const double kTorqueLimit = 3.0;  // N*m.
   const solvers::VectorXDecisionVariable& u = dircol.input();
   dircol.AddConstraintToAllKnotPoints(-kTorqueLimit <= u(0));
   dircol.AddConstraintToAllKnotPoints(u(0) <= kTorqueLimit);
 
-  const Eigen::Vector2d x0(0, 0);
-  const Eigen::Vector2d xG(M_PI, 0);
-  dircol.AddLinearConstraint(dircol.initial_state() == x0);
-  dircol.AddLinearConstraint(dircol.final_state() == xG);
+  PendulumState<double> initial_state, final_state;
+  initial_state.set_theta(0.0);
+  initial_state.set_thetadot(0.0);
+  final_state.set_theta(M_PI);
+  final_state.set_thetadot(0.0);
+
+  dircol.AddLinearConstraint(dircol.initial_state() ==
+                             initial_state.get_value());
+  dircol.AddLinearConstraint(dircol.final_state() == final_state.get_value());
 
   const double R = 10;  // Cost on input "effort".
   dircol.AddRunningCost((R * u) * u);
 
   const double timespan_init = 4;
-  auto traj_init_x =
-      PiecewisePolynomial<double>::FirstOrderHold({0, timespan_init}, {x0, xG});
+  auto traj_init_x = PiecewisePolynomial<double>::FirstOrderHold(
+      {0, timespan_init}, {initial_state.get_value(), final_state.get_value()});
   dircol.SetInitialTrajectory(PiecewisePolynomial<double>(), traj_init_x);
   SolutionResult result = dircol.Solve();
   if (result != SolutionResult::kSolutionFound) {
-    std::cerr << "Result is an Error" << std::endl;
+    std::cerr << "Failed to solve optimization for the swing-up trajectory"
+              << std::endl;
     return 1;
   }
 
@@ -87,10 +80,21 @@ int do_main() {
       dircol.ReconstructInputTrajectory();
   const PiecewisePolynomialTrajectory pp_xtraj =
       dircol.ReconstructStateTrajectory();
-  auto input_source = builder.AddSystem<systems::TrajectorySource>(pp_traj);
-  input_source->set_name("input");
-  auto state_source = builder.AddSystem<systems::TrajectorySource>(pp_xtraj);
-  state_source->set_name("state");
+  auto input_trajectory = builder.AddSystem<systems::TrajectorySource>(pp_traj);
+  input_trajectory->set_name("input trajectory");
+  auto state_trajectory =
+      builder.AddSystem<systems::TrajectorySource>(pp_xtraj);
+  state_trajectory->set_name("state trajectory");
+
+  // The choices of PidController constants here are fairly arbitrary,
+  // but seem to effectively swing up the pendulum and hold it.
+  const double Kp = 10;
+  const double Ki = 0;
+  const double Kd = 1;
+  auto pid_controlled_pendulum =
+      builder.AddSystem<systems::controllers::PidControlledSystem<double>>(
+          std::move(pendulum), Kp, Ki, Kd);
+  pid_controlled_pendulum->set_name("PID Controlled Pendulum");
 
   lcm::DrakeLcm lcm;
   auto tree = std::make_unique<RigidBodyTree<double>>();
@@ -101,11 +105,12 @@ int do_main() {
   auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
   publisher->set_name("publisher");
 
-  builder.Connect(input_source->get_output_port(),
-                  controller->get_input_port(0));
-  builder.Connect(state_source->get_output_port(),
-                  controller->get_input_port(1));
-  builder.Connect(controller->get_output_port(0), publisher->get_input_port(0));
+  builder.Connect(input_trajectory->get_output_port(),
+                  pid_controlled_pendulum->get_control_input_port());
+  builder.Connect(state_trajectory->get_output_port(),
+                  pid_controlled_pendulum->get_state_input_port());
+  builder.Connect(pid_controlled_pendulum->get_state_output_port(),
+                  publisher->get_input_port(0));
 
   auto diagram = builder.Build();
 
@@ -114,11 +119,12 @@ int do_main() {
   simulator.Initialize();
   simulator.StepTo(pp_xtraj.get_end_time());
 
-  systems::Context<double>& pendulum_context =
-      diagram->GetMutableSubsystemContext(
-          *pendulum, simulator.get_mutable_context());
-  auto state_vec = pendulum_context.get_continuous_state()->CopyToVector();
-  if (!is_approx_equal_abstol(state_vec, xG, 1e-3)) {
+  const auto& pendulum_state =
+      PendulumPlant<double>::get_state(diagram->GetSubsystemContext(
+          *(pid_controlled_pendulum->plant()), simulator.get_context()));
+
+  if (!is_approx_equal_abstol(pendulum_state.get_value(),
+                              final_state.get_value(), 1e-3)) {
     throw std::runtime_error("Did not reach trajectory target.");
   }
   return 0;
@@ -131,5 +137,5 @@ int do_main() {
 
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  return drake::examples::pendulum::do_main();
+  return drake::examples::pendulum::DoMain();
 }

@@ -50,10 +50,10 @@ class PendulumEnergyShapingController : public systems::LeafSystem<T> {
     const T desired_energy =
         1.1 * params.mass() * params.gravity() * params.length();
     // Current total energy (see PendulumPlant::CalcTotalEnergy).
-    const T current_energy = 0.5 * params.mass() * pow(params.length(), 2) *
-                                 state->thetadot() * state->thetadot() -
-                             params.mass() * params.gravity() *
-                                 params.length() * cos(state->theta());
+    const T current_energy =
+        0.5 * params.mass() * pow(params.length() * state->thetadot(), 2) -
+        params.mass() * params.gravity() * params.length() *
+            cos(state->theta());
     const double kEnergyFeedbackGain = .1;
     output->set_tau(params.damping() * state->thetadot() +
                     kEnergyFeedbackGain * state->thetadot() *
@@ -61,7 +61,7 @@ class PendulumEnergyShapingController : public systems::LeafSystem<T> {
   }
 };
 
-int do_main() {
+int DoMain() {
   lcm::DrakeLcm lcm;
   auto tree = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
@@ -77,7 +77,7 @@ int do_main() {
       PendulumParams<double>());
   controller->set_name("controller");
   builder.Connect(pendulum->get_output_port(), controller->get_input_port(0));
-  builder.Connect(controller->get_output_port(0), pendulum->get_tau_port());
+  builder.Connect(controller->get_output_port(0), pendulum->get_input_port());
 
   auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
   publisher->set_name("publisher");
@@ -88,20 +88,24 @@ int do_main() {
   systems::Context<double>& pendulum_context =
       diagram->GetMutableSubsystemContext(*pendulum,
                                           simulator.get_mutable_context());
-  pendulum->set_theta(&pendulum_context, M_PI);
-  pendulum->set_thetadot(&pendulum_context, 0.0);
+  auto state = pendulum->get_mutable_state(&pendulum_context);
 
+  // Desired energy is the total energy when the pendulum is at the upright.
+  state->set_theta(M_PI);
+  state->set_thetadot(0.0);
   const double desired_energy = pendulum->CalcTotalEnergy(pendulum_context);
 
-  pendulum->set_theta(&pendulum_context, 0.1);
-  pendulum->set_thetadot(&pendulum_context, 0.2);
-
+  // Set initial conditions (near the bottom).
+  state->set_theta(0.1);
+  state->set_thetadot(0.2);
   const double initial_energy = pendulum->CalcTotalEnergy(pendulum_context);
 
+  // Run the simulation.
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
   simulator.StepTo(10);
 
+  // Compute the final (total) energy.
   const double final_energy = pendulum->CalcTotalEnergy(pendulum_context);
 
   // Adds a numerical test that we have successfully regulated the energy
@@ -119,5 +123,5 @@ int do_main() {
 
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  return drake::examples::pendulum::do_main();
+  return drake::examples::pendulum::DoMain();
 }

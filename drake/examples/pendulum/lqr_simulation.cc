@@ -28,7 +28,7 @@ DEFINE_double(target_realtime_rate, 1.0,
               "Playback speed.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
 
-int do_main() {
+int DoMain() {
   lcm::DrakeLcm lcm;
 
   auto tree = std::make_unique<RigidBodyTree<double>>();
@@ -42,8 +42,9 @@ int do_main() {
 
   // Prepare to linearize around the vertical equilibrium point (with tau=0)
   auto pendulum_context = pendulum->CreateDefaultContext();
-  pendulum->set_theta(pendulum_context.get(), M_PI);
-  pendulum->set_thetadot(pendulum_context.get(), 0);
+  auto desired_state = pendulum->get_mutable_state(pendulum_context.get());
+  desired_state->set_theta(M_PI);
+  desired_state->set_thetadot(0);
   auto input = std::make_unique<PendulumInput<double>>();
   input->set_tau(0.0);
   pendulum_context->FixInputPort(0, std::move(input));
@@ -62,7 +63,7 @@ int do_main() {
           *pendulum, *pendulum_context, Q, R));
   controller->set_name("controller");
   builder.Connect(pendulum->get_output_port(), controller->get_input_port());
-  builder.Connect(controller->get_output_port(), pendulum->get_tau_port());
+  builder.Connect(controller->get_output_port(), pendulum->get_input_port());
 
   auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
   publisher->set_name("publisher");
@@ -73,20 +74,17 @@ int do_main() {
   systems::Context<double>& sim_pendulum_context =
       diagram->GetMutableSubsystemContext(*pendulum,
                                           simulator.get_mutable_context());
-  pendulum->set_theta(&sim_pendulum_context, M_PI + 0.1);
-  pendulum->set_thetadot(&sim_pendulum_context, 0.2);
+  auto state = pendulum->get_mutable_state(&sim_pendulum_context);
+  state->set_theta(M_PI + 0.1);
+  state->set_thetadot(0.2);
 
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
   simulator.StepTo(10);
 
-  Eigen::Vector2d desired_state =
-      pendulum_context->get_continuous_state_vector().CopyToVector();
-  Eigen::Vector2d final_state =
-      sim_pendulum_context.get_continuous_state_vector().CopyToVector();
-
   // Adds a numerical test to make sure we're stabilizing the fixed point.
-  DRAKE_DEMAND(is_approx_equal_abstol(final_state, desired_state, 1e-3));
+  DRAKE_DEMAND(is_approx_equal_abstol(state->get_value(),
+                                      desired_state->get_value(), 1e-3));
 
   return 0;
 }
@@ -98,5 +96,5 @@ int do_main() {
 
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  return drake::examples::pendulum::do_main();
+  return drake::examples::pendulum::DoMain();
 }
