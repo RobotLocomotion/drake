@@ -1,14 +1,19 @@
+// Sends a plan intended for the PR2 in pr2_simulation.cc. The plan makes the
+// PR2 stretch out it's right arm.
+
 #include "lcm/lcm-cpp.hpp"
 #include "robotlocomotion/robot_plan_t.hpp"
 
-#include "drake/common/find_resource.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/find_resource.h"
 
 namespace drake {
 namespace examples {
 namespace pr2 {
 
 void DoMain() {
+  // Declare the number of actuators and their corresponding joint names, for
+  // the PR2.
   const int num_actuators = 28;
   const std::string actuator_joint_names[num_actuators] = {
       "x",
@@ -40,16 +45,13 @@ void DoMain() {
       "l_gripper_l_finger_tip_joint",
       "l_gripper_r_finger_tip_joint"};
 
-  VectorX<double> initial_pr2_state(num_actuators * 2);
-  initial_pr2_state << 0, 0, 0, 0.3, 0, 0, -1.14, 1.11, -1.40, -2.11, -1.33,
-      -1.12, 2.19, 0.2, 0.2, 0.2, 0.2, 2.1, 1.29, 0, -0.15, 0, -0.1, 0, 0.2,
-      0.2, 0.2, 0.2, VectorX<double>::Zero(num_actuators);
-
-  VectorX<double> q =
-      Eigen::VectorBlock<VectorX<double>, num_actuators>(initial_pr2_state, 0);
-  VectorX<double> v = Eigen::VectorBlock<VectorX<double>, num_actuators>(
-      initial_pr2_state, num_actuators);
-
+  // Create a sequence of joint positions for the PR2's joints to pass through.
+  // This code assumes that the simulated PR2's joint values start at about the
+  // same values as in the initial q below.
+  VectorX<double> q(num_actuators);
+  q << 0, 0, 0, 0.3, 0, 0, -1.14, 1.11, -1.40, -2.11, -1.33, -1.12, 2.19, 0.2,
+      0.2, 0.2, 0.2, 2.1, 1.29, 0, -0.15, 0, -0.1, 0, 0.2, 0.2, 0.2, 0.2,
+      VectorX<double>::Zero(num_actuators);
   std::vector<VectorX<double>> q_sequence;
   q_sequence.push_back(q);
   while (q[6] + 0.15 < 0 || q[7] - 0.15 > 0 || q[8] + 0.15 < 0 ||
@@ -80,6 +82,7 @@ void DoMain() {
     q_sequence.push_back(q);
   }
 
+  // Construct a plan from the sequence of joint positions.
   robotlocomotion::robot_plan_t msg{};
   msg.utime = time(NULL);
   msg.num_states = q_sequence.size();
@@ -103,6 +106,7 @@ void DoMain() {
     }
   }
 
+  // Start lcm and publish the plan.
   lcm::LCM lcm;
   lcm.publish("PR2_PLAN", &msg);
 }
