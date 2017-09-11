@@ -174,9 +174,9 @@ TEST_F(PoseSmootherTest, SmootherTest) {
   EXPECT_NO_THROW(output_state_1 = UpdateStateCalcOutput(input_pose_1));
   CombinedState expected_output_state_1 = Isometry3d::Identity();
 
-  expected_output_state_1.pose_.translation() << 0.01, -5, 10.1, 1;
+  expected_output_state_1.pose_.translation() << 0.01, -5, 10.1;
   expected_output_state_1.pose_.linear() =
-      (MatrixX<double>(3, 3) << 1, 0, 0, 0, 0.67319401200771101,
+      (Eigen::MatrixXd(3, 3) << 1, 0, 0, 0, 0.67319401200771101,
        -0.73922055347988902, 0, 0.73922055347988902, 0.67319401200771101)
           .finished();
 
@@ -196,7 +196,7 @@ TEST_F(PoseSmootherTest, SmootherTest) {
   EXPECT_NO_THROW(output_state_2 = UpdateStateCalcOutput(input_pose_1));
   CombinedState expected_output_state_2 = Isometry3d::Identity();
 
-  expected_output_state_2.pose_.translation() << 0.01, -5, 10.1, 1;
+  expected_output_state_2.pose_.translation() << 0.01, -5, 10.1;
   expected_output_state_2.pose_.linear() =
       (MatrixX<double>(3, 3) << 1, 0, 0, 0, 0.66147703270805791,
        -0.74974268135601596, 0, 0.74974268135601596, 0.66147703270805791)
@@ -212,7 +212,6 @@ TEST_F(PoseSmootherTest, SmootherTest) {
                               MatrixCompareType::absolute));
 
   // Test 3 - Small change in translation
-
   Isometry3d input_pose_3 = Isometry3d::Identity();
   input_pose_3.linear() =
       AngleAxisd(0.28 * M_PI, Eigen::Vector3d::UnitX()).matrix();
@@ -223,7 +222,7 @@ TEST_F(PoseSmootherTest, SmootherTest) {
   EXPECT_NO_THROW(output_state_3 = UpdateStateCalcOutput(input_pose_3));
   CombinedState expected_output_state_3;
   expected_output_state_3 = CombinedState();
-  expected_output_state_3.pose_.translation() << 0.02, -5, 10.1, 1;
+  expected_output_state_3.pose_.translation() << 0.02, -5, 10.1;
   expected_output_state_3.pose_.linear() =
       (MatrixX<double>(3, 3) << 1, 0, 0, 0, 0.63742398974868997,
        -0.77051324277578903, 0, 0.77051324277578903, 0.63742398974868997)
@@ -237,6 +236,32 @@ TEST_F(PoseSmootherTest, SmootherTest) {
 
   EXPECT_TRUE(CompareMatrices(output_state_3.velocity_,
                               expected_output_state_3.velocity_, 1e-3,
+                              MatrixCompareType::absolute));
+
+  // A small additional rotation applied with a sign-inverted quaternion.
+Quaterniond test_pose_quaternion{
+      AngleAxisd(0.28 * M_PI, Eigen::Vector3d::UnitX())};
+  Quaterniond sign_inverted_pose_quaternion(
+      -test_pose_quaternion.w(), -test_pose_quaternion.x(),
+      -test_pose_quaternion.y(), -test_pose_quaternion.z());
+  Isometry3d input_pose_4 = Isometry3d::Identity();
+  input_pose_4.linear() = sign_inverted_pose_quaternion.matrix();
+  input_pose_4.translation() << 0.04, -5.0, 10.10;
+
+  CombinedState output_state_4;
+  EXPECT_NO_THROW(output_state_4 = UpdateStateCalcOutput(input_pose_4));
+  CombinedState expected_output_state_4 = CombinedState();
+expected_output_state_4.pose_.linear() <<
+  (MatrixX<double>(3, 3) << 1, 0, 0, 0, 0.63742398974868986,
+-0.77051324277578914, 0, 0.77051324277578914, 0.63742398974868986).finished();
+  expected_output_state_4.pose_.translation() << 0.03, -5, 10.1;
+  expected_output_state_4.velocity_ <<1.0, 0, 0, 0, 0, 0;
+
+  EXPECT_TRUE(
+  (CompareTransforms(output_state_4.pose_, expected_output_state_4.pose_,
+                     kPoseComparisonTolerance)));
+  EXPECT_TRUE(CompareMatrices(output_state_4.velocity_,
+                              expected_output_state_4.velocity_, 1e-3,
                               MatrixCompareType::absolute));
 }
 
