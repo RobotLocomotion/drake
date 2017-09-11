@@ -18,7 +18,7 @@ for gripping objects.
 
 * A controlled simulation that loads the PR2 description, two of the table
 descriptions, and a soda description, with contact parameters and 
-integrator parameters that are reasonable stable for gripping objects. In 
+integrator parameters that are reasonably stable for gripping objects. In 
 this simulation, most of the PR2 contact geometry is removed for performance
 purposes.
 
