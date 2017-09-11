@@ -212,6 +212,13 @@ def _install_py_actions(ctx, target):
                             rename = ctx.attr.rename)
 
 #------------------------------------------------------------------------------
+# Compute install actions for a script or an executable.
+def _install_runtime_actions(ctx, target):
+    return _install_actions(ctx, [target], ctx.attr.runtime_dest,
+                            ctx.attr.runtime_strip_prefix,
+                            rename = ctx.attr.rename)
+
+#------------------------------------------------------------------------------
 # Generate install code for an install action.
 def _install_code(action):
     return "install(%r, %r)" % (action.src.short_path, action.dst)
@@ -249,6 +256,8 @@ def _install_impl(ctx):
             actions += _install_java_actions(ctx, t)
         elif hasattr(t, "py"):
             actions += _install_py_actions(ctx, t)
+        else:
+            actions += _install_runtime_actions(ctx, t)
 
     # Generate code for install actions.
     script_actions = []

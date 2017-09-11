@@ -126,6 +126,26 @@
       "Location": "@prefix@/share/java/bot2_lcmgl.jar",
       "Requires": ["lcm:lcm-java"]
     },
+    "lcmtypes_bot2-procman": {
+      "Type": "dylib",
+      "Includes": ["@prefix@/include/lcmtypes"],
+      "Location": "@prefix@/lib/liblcmtypes_bot2_procman_c.so",
+      "Requires": ["lcm:lcm-coretypes"]
+    },
+    "lcmtypes_bot2-procman-cpp": {
+      "Type": "interface",
+      "Includes": ["@prefix@/include/lcmtypes"],
+      "Requires": ["lcm:lcm-coretypes"]
+    },
+    "lcmtypes_bot2-procman-java": {
+      "Type": "jar",
+      "Location": "@prefix@/share/java/lcmtypes_bot2_procman.jar",
+      "Requires": ["lcm:lcm-java"]
+    },
+    "bot-procman-deputy": {
+      "Type": "exe",
+      "Location": "@prefix@/bin/bot-procman-deputy"
+    },
     "bot-lcm-logfilter": {
       "Type": "exe",
       "Location": "@prefix@/bin/bot-lcm-logfilter"

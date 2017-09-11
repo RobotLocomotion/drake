@@ -126,6 +126,11 @@ exports_files(
     visibility = ["@libbot//:__pkg__"],
 )
 
+exports_files(
+    ["third_party/libbot/bot-procman-sheriff"],
+    visibility = ["@libbot//:__pkg__"],
+)
+
 exports_create_cps_scripts([
     "bullet",
     "ccd",
