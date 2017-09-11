@@ -7,8 +7,8 @@
 // MotionGenesis Professional Licensee: Toyota Research Institute.
 // -----------------------------------------------------------------------------
 #include "MG_chaotic_babyboot_auto_generated.h"
-#include <cmath>
 
+#include <cmath>
 
 //------------------------------------------------------------------------------
 namespace MotionGenesis {
@@ -225,7 +225,7 @@ double  MGIntegrator::KMIntegrator( double y[], double tStart, double* hEntry )
   if( errorMessageEqns ) AddErrorMessage( errorMessageEqns );
   else AddErrorMessage( "Error: Numerical round-off makes stepsize h too small so (tStart + h == tStart)." );
   static char failureTimeErrorMessage[80];
-  sprintf( failureTimeErrorMessage, "Error: Numerical integration failed at t = %15.8E.\n", tStart );
+  sprintf( failureTimeErrorMessage, "Error: Numerical integration failed at t = %15.8E.", tStart );
   AddErrorMessage( failureTimeErrorMessage );
 
   MGeqns(tStart, y, f0, true);         // Fill for error display.

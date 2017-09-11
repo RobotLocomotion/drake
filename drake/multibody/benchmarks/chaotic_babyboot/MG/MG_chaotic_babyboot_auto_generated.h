@@ -16,7 +16,7 @@
 namespace MotionGenesis {
 namespace MGChaoticBabyboot_ {
 static const int myNumberOfODEs = 4;
-static const int myErrorMessageSize = 7;
+static const int myErrorBufferSize = 9;
 
 
 //------------------------------------------------------------------------------
@@ -34,7 +34,7 @@ class MGIntegrator {
            MGIntegrator() { SetErrorMessagesToNull(); }
   virtual ~MGIntegrator() {};
   bool  IntegrateForwardOrBackward( double varArrayToIntegrate[] );
-  const char*  GetErrorMessage( const int i )  { return i >= 0 && i < myErrorMessageSize ? myErrorMessages[i] : NULL; }
+  const char*  GetErrorMessage( const int i )  { return (i >= 0 && i < myErrorBufferSize) ? myErrorMessages[i] : NULL; }
 
  private:
   // Private numerical integrator methods.
@@ -45,9 +45,9 @@ class MGIntegrator {
   double mySmallestAllowableStepsize, myPreviousStepsize;
 
   // Method and data for error messages.
-  void  SetErrorMessagesToNull()  { for( int i=0; i<myErrorMessageSize;  i++ )  myErrorMessages[i] = NULL; }
-  void  AddErrorMessage( const char* errorMessage )  { for( int i=0; i<myErrorMessageSize;  i++ ) { if( !myErrorMessages[i] ) myErrorMessages[i] = errorMessage; break;} }
-  const char* myErrorMessages[myErrorMessageSize];
+  void  SetErrorMessagesToNull()  { for(int i=0;  i < myErrorBufferSize;  i++)  myErrorMessages[i] = NULL; }
+  void  AddErrorMessage( const char* errorMessage )  { for(int i=0;  i < myErrorBufferSize;  i++) if( !myErrorMessages[i] ) {myErrorMessages[i] = errorMessage; break;} }
+  const char* myErrorMessages[myErrorBufferSize];
 };
 
 

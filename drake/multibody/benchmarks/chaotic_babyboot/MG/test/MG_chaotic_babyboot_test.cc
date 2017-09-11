@@ -1,11 +1,10 @@
-#include "drake/multibody/benchmarks/chaotic_babyboot/MG/MG_chaotic_babyboot_auto_generated.h"
-
 #include <cmath>
 #include <limits>
 
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/benchmarks/chaotic_babyboot/MG/MG_chaotic_babyboot_auto_generated.h"
 
 namespace drake {
 namespace multibody {
@@ -57,15 +56,18 @@ void CompareExpectedSolutionVsActualSolution(
 
 
 // Test accuracy of calculations for chaotic babyboot's angles qA and qB and
-// their time-derivatives to expected (textbook) solution.
+// their time-derivatives to expected solution that was created by running a
+// very high accuracy simulation with MotionGenesis - that kept energy variation
+// to less than -1.2656542480727E-14 (the theoretical difference is 0.0).
 GTEST_TEST(ChaoticBabyboot, ForwardDynamicsA) {
-  const double qA_expected = -6.131271E+01;
-  const double qB_expected = -9.294758E+02;
-  const double qADt_expected = -6.744052E+00;
-  const double qBDt_expected = -2.778562E+00;
-  const double qADDt_expected = 4.113716E+01;
-  const double qBDDt_expected = 1.948305E+01;
-  const double energy_expected = -5.515546E-11;
+  const double degree_to_radian =  0.0174532925199432957692369;
+  const double qA_expected = -61.312983517329 * degree_to_radian;
+  const double qB_expected = -929.47789818494 * degree_to_radian;
+  const double qADt_expected = -6.7440080750248;
+  const double qBDt_expected = -2.7795696971631;
+  const double qADDt_expected =  41.137023170384;
+  const double qBDDt_expected = 19.483647506439;
+  const double energy_expected = 0.0;
 
   CompareExpectedSolutionVsActualSolution(qA_expected, qB_expected,
                                           qADt_expected, qBDt_expected,
