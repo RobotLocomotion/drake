@@ -23,6 +23,25 @@ namespace rndf {
 
 namespace {
 
+using ignition::math::Spline;
+using ignition::math::Vector3d;
+using ignition::rndf::UniqueId;
+
+using std::cos;
+using std::copysign;
+using std::find;
+using std::make_unique;
+using std::map;
+using std::move;
+using std::pair;
+using std::sin;
+using std::sort;
+using std::string;
+using std::to_string;
+using std::tuple;
+using std::unique_ptr;
+using std::vector;
+
 // Let p and q be the position of two RNDF waypoints w1 and w2 which belong
 // to two different RNDF lanes on the same RNDF segment. Let F1 and F2 be the
 // curve functions that parameterizes each lane. In addition, let q' be the
@@ -62,7 +81,7 @@ double HeadingIntoLane(const api::Lane* const lane,
 double ComputeProjectedDistance(const DirectedWaypoint& base,
                                 const DirectedWaypoint& target) {
   return (target.position() - base.position())
-      .Dot(ignition::math::Vector3d(base.tangent()).Normalize());
+      .Dot(Vector3d(base.tangent()).Normalize());
 }
 
 // Builds an ignition::math::Spline from a set of @p waypoints.
@@ -74,9 +93,8 @@ double ComputeProjectedDistance(const DirectedWaypoint& base,
 // account.
 // @pre There must be at least two (2) valid waypoints in @p waypoints.
 // @warning This method will abort if any preconditions are not met.
-std::unique_ptr<ignition::math::Spline> CreateSpline(
-    const std::vector<DirectedWaypoint>& waypoints) {
-  std::vector<ignition::math::Vector3d> positions;
+unique_ptr<Spline> CreateSpline(const vector<DirectedWaypoint>& waypoints) {
+  vector<Vector3d> positions;
   for (const DirectedWaypoint& waypoint : waypoints) {
     if (waypoint.id().Valid()) {
       positions.push_back(waypoint.position());
@@ -87,8 +105,7 @@ std::unique_ptr<ignition::math::Spline> CreateSpline(
   // extents which is not a valid value, so for that specific case, a spline
   // is built directly from provided points.
   if (positions.size() == 2) {
-    std::unique_ptr<ignition::math::Spline> spline =
-        std::make_unique<ignition::math::Spline>();
+    unique_ptr<Spline> spline = make_unique<Spline>();
     spline->AutoCalculate(true);
     spline->AddPoint(positions[0]);
     spline->AddPoint(positions[1]);
@@ -101,11 +118,10 @@ std::unique_ptr<ignition::math::Spline> CreateSpline(
 // applying CreateSpline() with the @p waypoints' positions only.
 // @pre The given @p waypoints collection must not be a nullptr.
 // @warning This method will abort if any preconditions are not met.
-void BuildTangentsForWaypoints(std::vector<DirectedWaypoint>* waypoints) {
+void BuildTangentsForWaypoints(vector<DirectedWaypoint>* waypoints) {
   DRAKE_DEMAND(waypoints != nullptr);
   // Builds a spline to obtain tangent information.
-  const std::unique_ptr<ignition::math::Spline> spline =
-      CreateSpline(*waypoints);
+  const unique_ptr<Spline> spline = CreateSpline(*waypoints);
   for (size_t base_index = 0, index = 0; index < waypoints->size(); index++) {
     if (!waypoints->at(index).id().Valid()) {
       base_index = index;
@@ -127,10 +143,10 @@ void BuildTangentsForWaypoints(std::vector<DirectedWaypoint>* waypoints) {
 // first. When the collection is empty, it means that all the @p connections'
 // waypoints are in line with the @p connections' normal (thus no one comes
 // first).
-std::vector<int> GetInitialConnectionToProcess(
-    const std::vector<Connection>& connections, size_t index) {
+vector<int> GetInitialConnectionToProcess(const vector<Connection>& connections,
+                                          size_t index) {
   // Computes the number of valid distances between connections.
-  std::vector<std::pair<int, int>> index_valid_distances;
+  vector<pair<int, int>> index_valid_distances;
   for (size_t i = 0; i < connections.size(); ++i) {
     int number_of_valid_distances = 0;
     for (size_t j = 0; j < connections.size(); ++j) {
@@ -153,13 +169,13 @@ std::vector<int> GetInitialConnectionToProcess(
   }
   // Sorts the vector by increasing number of valid distances. It gives us as
   // the first items the ids of the Connections to process.
-  std::sort(std::begin(index_valid_distances), std::end(index_valid_distances),
-            [](const std::pair<int, int>& t_a, const std::pair<int, int>& t_b) {
-              return t_a.second > t_b.second;
-            });
+  sort(index_valid_distances.begin(), index_valid_distances.end(),
+       [](const pair<int, int>& t_a, const pair<int, int>& t_b) {
+         return t_a.second > t_b.second;
+       });
   // Creates a vector with all the connection ids that appear first.
-  std::vector<int> ids;
-  for (const std::pair<int, int>& id_zeros : index_valid_distances) {
+  vector<int> ids;
+  for (const pair<int, int>& id_zeros : index_valid_distances) {
     if (id_zeros.second == index_valid_distances[0].second)
       ids.push_back(id_zeros.first);
   }
@@ -178,14 +194,13 @@ std::vector<int> GetInitialConnectionToProcess(
 // waypoints are on the @f$ z = 0 @f$ plane and the torque will always be
 // applied entirely on the z-axis.
 // @return The computed momentum's z-axis component.
-double CalculateMomentum(const ignition::math::Vector3d& center_of_rotation,
+double CalculateMomentum(const Vector3d& center_of_rotation,
                          const DirectedWaypoint& waypoint) {
   // Calculates waypoint W position with respect to the center of rotation R.
-  const ignition::math::Vector3d p_WR =
-      waypoint.position() - center_of_rotation;
+  const Vector3d p_WR = waypoint.position() - center_of_rotation;
   // Computes torque t on waypoint W applied around the center of rotation R.
-  ignition::math::Vector3d f_W = waypoint.tangent().Normalized();
-  const ignition::math::Vector3d t_WR = f_W.Cross(p_WR);
+  Vector3d f_W = waypoint.tangent().Normalized();
+  const Vector3d t_WR = f_W.Cross(p_WR);
   // As all the points should lie on the x-y plane, the cross product should
   // be collinear with the z-axis, thus the only non zero component is z.
   return t_WR.Z();
@@ -195,9 +210,8 @@ double CalculateMomentum(const ignition::math::Vector3d& center_of_rotation,
 // using CalculateMomentum(). This is helpful to determine the relative
 // direction of a given connection with respect to adjacent ones (lanes in
 // a segment).
-double CalculateConnectionMomentum(
-    const ignition::math::Vector3d& center_of_rotation,
-    const std::vector<DirectedWaypoint>& waypoints) {
+double CalculateConnectionMomentum(const Vector3d& center_of_rotation,
+                                   const vector<DirectedWaypoint>& waypoints) {
   double momentum = 0.0;
   for (const DirectedWaypoint& waypoint : waypoints) {
     momentum += CalculateMomentum(center_of_rotation, waypoint);
@@ -213,8 +227,8 @@ double CalculateConnectionMomentum(
 // @pre The given @p connection_groups collection must not be a nullptr.
 // @warning This method will abort execution if any preconditions are not met.
 void GroupConnectionsByDirection(
-    const std::vector<Connection>& connections,
-    std::map<int, std::vector<Connection>>* connection_groups) {
+    const vector<Connection>& connections,
+    map<int, vector<Connection>>* connection_groups) {
   DRAKE_DEMAND(connection_groups != nullptr);
   int connection_group_id = 0;
   bool current_inversion = connections.front().inverse_direction();
@@ -226,7 +240,7 @@ void GroupConnectionsByDirection(
     // Creates an entry for the map if it doesn't exist.
     if (connection_groups->find(connection_group_id) ==
         connection_groups->end()) {
-      (*connection_groups)[connection_group_id] = std::vector<Connection>();
+      (*connection_groups)[connection_group_id] = vector<Connection>();
     }
     // Adds the lane to the group.
     (*connection_groups)[connection_group_id].push_back(connection);
@@ -240,15 +254,15 @@ void GroupConnectionsByDirection(
 // @param ids The collection of ids for each one of the @p connections.
 // @pre The given @p ids collection must not be a nullptr.
 // @warning This method will abort execution if any preconditions are not met.
-void OrderConnectionIds(const std::vector<Connection>& connections,
-                        std::vector<int>* ids) {
+void OrderConnectionIds(const vector<Connection>& connections,
+                        vector<int>* ids) {
   DRAKE_DEMAND(ids != nullptr);
   // Checks for the single connection case, where it is nonsense to compute
   // anything.
   if (ids->size() == 1) return;
   // Fills the id_waypoint_list.
-  std::vector<std::pair<int, DirectedWaypoint>> id_waypoint_list;
-  for (int i = 0; i < static_cast<int>(ids->size()); i++) {
+  vector<pair<int, DirectedWaypoint>> id_waypoint_list;
+  for (size_t i = 0; i < ids->size(); ++i) {
     id_waypoint_list.emplace_back(ids->at(i),
                                   connections.at(i).waypoints().front());
   }
@@ -257,16 +271,14 @@ void OrderConnectionIds(const std::vector<Connection>& connections,
   // direction `n_A`, essentially using a metric that gets larger in the
   // positive numbers as waypoint B is farther to the right of waypoint A
   // (and vice versa).
-  std::sort(id_waypoint_list.begin(), id_waypoint_list.end(),
-            [](const std::pair<int, DirectedWaypoint>& a,
-               const std::pair<int, DirectedWaypoint>& b) {
-              const ignition::math::Vector3d p_ab =
-                  b.second.position() - a.second.position();
-              ignition::math::Vector3d n_a(-a.second.tangent().Y(),
-                                           a.second.tangent().X(), 0.0);
-              n_a.Normalize();
-              return (p_ab.Dot(n_a) > 0.0);
-            });
+  sort(id_waypoint_list.begin(), id_waypoint_list.end(),
+       [](const pair<int, DirectedWaypoint>& a,
+          const pair<int, DirectedWaypoint>& b) {
+         const Vector3d p_ab = b.second.position() - a.second.position();
+         Vector3d n_a(-a.second.tangent().Y(), a.second.tangent().X(), 0.0);
+         n_a.Normalize();
+         return (p_ab.Dot(n_a) > 0.0);
+       });
   ids->clear();
   for (const auto& it : id_waypoint_list) {
     ids->push_back(it.first);
@@ -281,9 +293,8 @@ void OrderConnectionIds(const std::vector<Connection>& connections,
 // @warning This method will abort if preconditions are not met.
 Lane* BuildConnection(const Connection& connection, Segment* segment) {
   DRAKE_DEMAND(segment != nullptr);
-  api::LaneId lane_id{std::string("l:") + connection.id()};
-  std::vector<std::tuple<ignition::math::Vector3d, ignition::math::Vector3d>>
-      points_tangents;
+  api::LaneId lane_id{"l:" + connection.id()};
+  vector<tuple<Vector3d, Vector3d>> points_tangents;
   for (const DirectedWaypoint& directed_waypoint : connection.waypoints()) {
     points_tangents.emplace_back(directed_waypoint.position(),
                                  directed_waypoint.tangent());
@@ -323,8 +334,7 @@ void AttachLaneEndToBranchPoint(const api::LaneEnd::Which end, Lane* lane,
   const double new_h = HeadingIntoLane(lane, end);
   const api::LaneEnd old_le = branch_point->GetASide()->get(0);
   const double old_h = HeadingIntoLane(old_le.lane, old_le.end);
-  if (((std::cos(new_h) * std::cos(old_h)) +
-       (std::sin(new_h) * std::sin(old_h))) > 0.) {
+  if (((cos(new_h) * cos(old_h)) + (sin(new_h) * sin(old_h))) > 0.) {
     branch_point->AddABranch({lane, end});
   } else {
     branch_point->AddBBranch({lane, end});
@@ -345,10 +355,9 @@ void AttachLaneEndToBranchPoint(const api::LaneEnd::Which end, Lane* lane,
 // @pre The given @p branch_point_map must not be a nullptr.
 // @pre The given @p road_geometry must not be a nullptr.
 // @warning This method will abort if preconditions are not met.
-void BuildOrUpdateBranchpoints(
-    Connection* connection, Lane* lane,
-    std::map<std::string, BranchPoint*>* branch_point_map,
-    RoadGeometry* road_geometry) {
+void BuildOrUpdateBranchpoints(Connection* connection, Lane* lane,
+                               map<string, BranchPoint*>* branch_point_map,
+                               RoadGeometry* road_geometry) {
   DRAKE_DEMAND(connection != nullptr);
   DRAKE_DEMAND(lane != nullptr);
   DRAKE_DEMAND(branch_point_map != nullptr);
@@ -358,7 +367,7 @@ void BuildOrUpdateBranchpoints(
   auto it = branch_point_map->find(connection->start().id().String());
   if (it == branch_point_map->end()) {
     bp = road_geometry->NewBranchPoint(api::BranchPointId{
-        "bp:" + std::to_string(road_geometry->num_branch_points())});
+        "bp:" + to_string(road_geometry->num_branch_points())});
     DRAKE_DEMAND(bp != nullptr);
     (*branch_point_map)[connection->start().id().String()] = bp;
   } else {
@@ -370,7 +379,7 @@ void BuildOrUpdateBranchpoints(
   it = branch_point_map->find(connection->end().id().String());
   if (it == branch_point_map->end()) {
     bp = road_geometry->NewBranchPoint(api::BranchPointId{
-        "bp:" + std::to_string(road_geometry->num_branch_points())});
+        "bp:" + to_string(road_geometry->num_branch_points())});
     DRAKE_DEMAND(bp != nullptr);
     (*branch_point_map)[connection->end().id().String()] = bp;
   } else {
@@ -393,19 +402,19 @@ void BuildOrUpdateBranchpoints(
 // interpolation for road geometrical inference.
 // @pre The given @p connections collection must not be a nullptr.
 // @warning This method will abort execution if any preconditions are not met.
-void AddWaypointsIfNecessary(const std::vector<int>& ids,
-                             std::vector<Connection>* connections, int index,
+void AddWaypointsIfNecessary(const vector<int>& ids,
+                             vector<Connection>* connections, size_t index,
                              double linear_tolerance) {
   DRAKE_DEMAND(connections != nullptr);
-  for (int i = 0; i < static_cast<int>(connections->size()); i++) {
+  for (size_t i = 0; i < connections->size(); i++) {
     Connection& connection = connections->at(i);
     // Checks that `i` index is in the ids vector which holds
     // the indexes of connections with reference waypoints.
-    if (std::find(ids.begin(), ids.end(), i) != ids.end()) {
+    if (find(ids.begin(), ids.end(), i) != ids.end()) {
       continue;
     }
 
-    int waypoint_count = static_cast<int>(connection.waypoints().size());
+    size_t waypoint_count = connection.waypoints().size();
     // Checks if we don't have any index on the vector.
     if (ids.size() == 0 && waypoint_count > index) {
       continue;
@@ -423,19 +432,17 @@ void AddWaypointsIfNecessary(const std::vector<int>& ids,
       // caught by the upper if clause.
       DRAKE_DEMAND(index != 0);
       // Adds a waypoint to the projected position of the side lane.
-      std::unique_ptr<ignition::math::Spline> spline =
-          CreateSpline(connections->at(i).waypoints());
-      std::unique_ptr<ArcLengthParameterizedSpline> arc_length_param_spline =
-          std::make_unique<ArcLengthParameterizedSpline>(std::move(spline),
-                                                         linear_tolerance);
+      unique_ptr<Spline> spline = CreateSpline(connections->at(i).waypoints());
+      unique_ptr<ArcLengthParameterizedSpline> arc_length_param_spline =
+          make_unique<ArcLengthParameterizedSpline>(move(spline),
+                                                    linear_tolerance);
       const double s = arc_length_param_spline->FindClosestPointTo(
           connections->at(ids[0]).waypoints()[index].position(), kLinearStep);
       // Builds a new waypoint and adds it to the connection.
       DirectedWaypoint new_wp(
-          ignition::rndf::UniqueId(
-              connections->at(i).waypoints()[index - 1].id().X(),
-              connections->at(i).waypoints()[index - 1].id().Y(),
-              connections->at(i).waypoints().size() + 1),
+          UniqueId(connections->at(i).waypoints()[index - 1].id().X(),
+                   connections->at(i).waypoints()[index - 1].id().Y(),
+                   connections->at(i).waypoints().size() + 1),
           arc_length_param_spline->InterpolateMthDerivative(0, s),
           arc_length_param_spline->InterpolateMthDerivative(1, s), false,
           false);
@@ -457,7 +464,7 @@ void CreateNewControlPointsForConnections(std::vector<Connection>* connections,
   DRAKE_DEMAND(connections != nullptr);
   // Loads the tangents for each of the connections' waypoints.
   for (Connection& connection : *connections) {
-    std::vector<DirectedWaypoint> waypoints(connection.waypoints());
+    vector<DirectedWaypoint> waypoints(connection.waypoints());
     BuildTangentsForWaypoints(&waypoints);
     connection.set_waypoints(waypoints);
   }
@@ -465,7 +472,7 @@ void CreateNewControlPointsForConnections(std::vector<Connection>* connections,
   bool should_continue = true;
   while (should_continue) {
     // Gets the connection ids which appear first.
-    std::vector<int> ids = GetInitialConnectionToProcess(*connections, i);
+    vector<int> ids = GetInitialConnectionToProcess(*connections, i);
     // Checks if we need to add waypoints on other connections and does so
     // if necessary.
     AddWaypointsIfNecessary(ids, connections, i, linear_tolerance);
@@ -491,26 +498,23 @@ void CreateNewControlPointsForConnections(std::vector<Connection>* connections,
 // connections' waypoints are disposed with respect to the first connection.
 // @pre The given @p connections collection must not be a nullptr.
 // @warning This method will abort execution if any preconditions are not met.
-void SetInvertedConnections(
-    const std::pair<ignition::math::Vector3d, ignition::math::Vector3d>&
-        bounding_box,
-    std::vector<Connection>* connections) {
+void SetInvertedConnections(const pair<Vector3d, Vector3d>& bounding_box,
+                            vector<Connection>* connections) {
   DRAKE_DEMAND(connections != nullptr);
   if (connections->size() == 0) {
     return;
   }
   // Creates a center of rotation outside the bounding box, for connection
   // direction estimation by means of "momentum" computations.
-  const ignition::math::Vector3d center_of_rotation =
-      bounding_box.first - ignition::math::Vector3d(1., 1., 0);
+  const Vector3d center_of_rotation = bounding_box.first - Vector3d(1., 1., 0);
   // Gets all the "momentum"s and mark the connections if necessary.
   double momentum = CalculateConnectionMomentum(center_of_rotation,
                                                 connections->at(0).waypoints());
-  const int first_connection_sign_momentum = std::copysign(1.0, momentum);
-  for (int i = 1; i < static_cast<int>(connections->size()); i++) {
+  const int first_connection_sign_momentum = copysign(1.0, momentum);
+  for (size_t i = 1; i < connections->size(); ++i) {
     momentum = CalculateConnectionMomentum(center_of_rotation,
                                            connections->at(i).waypoints());
-    const int other_connection_sign_momentum = std::copysign(1.0, momentum);
+    const int other_connection_sign_momentum = copysign(1.0, momentum);
     if (other_connection_sign_momentum != first_connection_sign_momentum) {
       connections->at(i).set_inverse_direction(true);
     }
@@ -590,7 +594,7 @@ std::unique_ptr<const api::RoadGeometry> Builder::Build(
 
     for (const auto& connection : it_connection.second) {
       // Creates a Lane.
-      drake::maliput::rndf::Lane* lane = BuildConnection(*connection, segment);
+      rndf::Lane* lane = BuildConnection(*connection, segment);
       DRAKE_DEMAND(lane != nullptr);
       // Builds the branch points for the lane if necessary.
       BuildOrUpdateBranchpoints(connection.get(), lane, branch_point_map.get(),
@@ -600,18 +604,18 @@ std::unique_ptr<const api::RoadGeometry> Builder::Build(
   // Checks there is no failure when checking RoadGeometry invariants.
   const std::vector<std::string> failures = road_geometry->CheckInvariants();
   for (const std::string& s : failures) {
-    drake::log()->error(s);
+    log()->error(s);
   }
   DRAKE_THROW_UNLESS(failures.size() == 0);
 
-  return std::move(road_geometry);
+  return move(road_geometry);
 }
 
 void Builder::InsertConnection(const std::string& key_id, double width,
                                const std::vector<DirectedWaypoint>& waypoints) {
   DRAKE_DEMAND(waypoints.size() > 1);
-  const ignition::rndf::UniqueId& start_id = waypoints.front().id();
-  const ignition::rndf::UniqueId& end_id = waypoints.back().id();
+  const UniqueId& start_id = waypoints.front().id();
+  const UniqueId& end_id = waypoints.back().id();
   const std::string name = start_id.String() + "-" + end_id.String();
   if (connections_.find(key_id) == connections_.end()) {
     connections_[key_id] = std::vector<std::unique_ptr<Connection>>();
