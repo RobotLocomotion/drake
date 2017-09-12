@@ -76,30 +76,32 @@ int do_main(int argc, char* argv[]) {
   publisher->set_publish_period(0.01);
 
   // Geometric parameters:
-  const double length = 1.0;  // [m]
+  const double length = 0.7;  // [m]
+  //const double radius = 0.05; // [m]
   const double radius1 = 0.05;
   const double radius2 = 0.02;
 
   // Material parameters (aluminum):
-  const double rho = 2700;  // [Kgr/m^3]
-  const double E = 70.0e9;  // [Pa]
+  const double rho = 1200;  // [Kgr/m^3]
+  const double E = 1.0e6;  // [Pa]
   const double nu = 0.5;  // Poission ratio [-]
   const double G = E / (2*(1+nu));  // Shear modulus. E = 2G(1+ν)
-  const double tau_d = 0.04469 / 50;  // [sec]
+  //const double tau_d = 0.04469 / 10;  // [sec]
+  const double tau_d = 0.38 / 10;  // [sec]
 
   // Numerical parameters:
-  const int num_elements = 2;
-  const double dt = 0.002;  // [sec]
+  const int num_elements = 100;
+  const double dt = 0.004;  // [sec]
 
   // Other derived numbers.
-  const double T1 = 0.140387;  // First period of oscillation.
-  const double end_time = 30 * T1;
   const double volume = M_PI/3.0 *
       (radius1 * radius1 + radius1 * radius2 + radius2 * radius2) * length;
   const double mass = rho * volume;
+  const double T1 = 1.21;  // First period of oscillation.
+  const double end_time = 10 * T1;
 
   // TODO: make this constructor to take rho instead.
-  const int num_spatial_dimensions = 3;
+  const int num_spatial_dimensions = 2;
   auto rod_plant = builder.AddSystem<CosseratRodPlant>(
       length, radius1, radius2, mass,
       E, G, tau_d, tau_d, num_elements, num_spatial_dimensions);
@@ -131,7 +133,7 @@ int do_main(int argc, char* argv[]) {
 
   builder.Connect(rod_plant->get_poses_output_port(),
                   aggregator->AddBundleInput("CosseratRodElements",
-                                             num_elements));
+                                             num_elements + 1));
   builder.Connect(*aggregator, *converter);
   builder.Connect(*converter, *publisher);
   auto diagram = builder.Build();
@@ -141,7 +143,7 @@ int do_main(int argc, char* argv[]) {
       diagram->GetMutableSubsystemContext(*rod_plant,
                                           simulator.get_mutable_context());
 
-  rod_plant->SetHorizontalCantileverState(&rod_context);
+  rod_plant->SetBentState(&rod_context);
 
   simulator.set_target_realtime_rate(FLAGS_realtime_factor);
   simulator.Initialize();
@@ -156,7 +158,7 @@ int do_main(int argc, char* argv[]) {
   //integrator->set_jacobian_computation_scheme(
   //    ImplicitEulerIntegrator<double>::JacobianComputationScheme::
   //    kCentralDifference);
-  integrator->set_fixed_step_mode(false);  // Good for steady state calculations.
+  integrator->set_fixed_step_mode(true);  // Good for steady state calculations.
   integrator->set_maximum_step_size(dt);
   PRINT_VAR(integrator->get_fixed_step_mode());
   PRINT_VAR(integrator->supports_error_estimation());

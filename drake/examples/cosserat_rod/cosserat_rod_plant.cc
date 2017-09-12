@@ -108,7 +108,7 @@ CosseratRodPlant<T>::CosseratRodPlant(
   // poses output port.
   poses_output_port_ =
       &this->DeclareAbstractOutputPort(
-          systems::rendering::PoseBundle<T>(num_elements_),
+          systems::rendering::PoseBundle<T>(num_elements_+1),
           &CosseratRodPlant::CalcElementPosesOutput);
 }
 
@@ -152,7 +152,7 @@ void CosseratRodPlant<T>::CalcElementPosesOutput(
     const systems::Context<T>& context,
     systems::rendering::PoseBundle<T>* bundle) const {
   DRAKE_DEMAND(bundle != nullptr);
-  DRAKE_DEMAND(bundle->get_num_poses() == num_elements_);
+  //DRAKE_DEMAND(bundle->get_num_poses() == num_elements_);
 
   PositionKinematicsCache<T> pc(model_.get_topology());
   model_.CalcPositionKinematicsCache(context, &pc);
@@ -168,11 +168,62 @@ void CosseratRodPlant<T>::CalcElementPosesOutput(
     bundle->set_name(element_index, stream.str());
     Isometry3<T> X_DW = Isometry3<T>::Identity();
     X_DW.linear() =
-        Eigen::AngleAxis<T>(M_PI/2, Vector3<T>::UnitX()).toRotationMatrix();
+        Eigen::AngleAxis<T>(M_PI, Vector3<T>::UnitX()).toRotationMatrix();
     bundle->set_pose(element_index, X_DW*pc.get_X_WB(node_index));
     PRINT_VAR(element_index);
     PRINT_VARn(pc.get_X_WB(node_index).matrix());
   }
+
+  // Poke arrow pose.
+  int element_poke_index;
+  T y_poke = -0.35;
+  T z_poke = 0.35;
+  {
+    const T time = context.get_time();
+    //const T s_poke = 0.5 * length_;
+    element_poke_index = (num_elements_ / 2);
+    if ( time > 2.9 && time < 3.2) {
+      if( time < 3.05)
+        y_poke = -0.35 + 0.35 * (time - 2.9) / 0.15;
+      else
+        y_poke = -0.35 * (time - 3.05) / 0.15;
+    }
+
+    if (time > 4.0 && time < 5.0) {
+      z_poke = 0.35 + (time - 4.0) * 0.3;
+      y_poke = -0.35 + (time - 4.0) * 0.7;
+    }
+    if (time > 5.0) {
+      z_poke = 0.65;
+      y_poke = 0.35;
+    }
+
+    if ( time > 5.9 && time < 6.2) {
+      if( time < 6.05)
+        y_poke = 0.35 - 0.35 * (time - 5.9) / 0.15;
+      else
+        y_poke = 0.35 * (time - 6.05) / 0.15;
+    }
+  }
+  const Isometry3<T> X_WB = pc.get_X_WB(BodyNodeIndex(element_poke_index));
+
+  const int element_index = model_.get_num_bodies() - 1;
+  bundle->set_model_instance_id(element_index, instance_id);
+  bundle->set_name(element_index, "poke");
+  Isometry3<T> X_DW = Isometry3<T>::Identity();
+  X_DW.linear() =
+      Eigen::AngleAxis<T>(M_PI, Vector3<T>::UnitX()).toRotationMatrix();
+
+  Isometry3<T> X_G = Isometry3<T>::Identity();
+  X_G.linear() =
+      Eigen::AngleAxis<T>(M_PI / 2.0, Vector3<T>::UnitX()).toRotationMatrix();
+
+  bundle->set_pose(element_index,
+                   Translation3<T>(Vector3<T>::UnitY() * y_poke) *
+                   X_DW *
+                   Translation3<T>(Vector3<T>(0.0, 0.0, z_poke)) * X_G);
+
+  //Translation3<T>(X_WB.translation())
 }
 
 #if 0
@@ -259,12 +310,12 @@ const RigidBody<T>& CosseratRodPlant<T>::AddElement(
 
   double element_im_length = element_length;
   if (element_index == 0) element_im_length = 0.0;  // the world, BC.
-#if 0
+
   model_.template AddForceElement<RodElement>(
       element_im, element_im_length,
       element_i, element_length,
       B1, B2, C, tau_bending_, tau_twisting_);
-#endif
+
   (void) B1;
   (void) B2;
   (void) C;
@@ -292,7 +343,7 @@ void CosseratRodPlant<T>::BuildMultibodyModel() {
   last_element_ = parent_element;
 
   model_.template AddForceElement<UniformGravityFieldElement>(
-      Vector3<double>(0.0, -9.81, 0.0));
+      Vector3<double>(0.0, 0.0, 9.81));
 
   model_.Finalize();
 }
@@ -413,6 +464,30 @@ void CosseratRodPlant<T>::DoCalcTimeDerivatives(
   const T M0 = 0.0;  // Torque in Nm
   SpatialForce<T> M_W(Vector3<T>(M0, 0.0, 0.0), Vector3<T>::Zero());
   Fapplied_Bo_W_array[last_element_->get_node_index()] += M_W;
+
+  // Apply a poke in the middle
+  {
+    const T time = context.get_time();
+    PRINT_VAR2(context.get_time());
+    //const T s_poke = 0.5 * length_;
+    const BodyNodeIndex mid_element(num_elements_ / 2);
+    const T f_poke = 300.0;  // [N]
+
+    if ( time > 3.0 && time < 3.1) {
+      SpatialForce<T> F_poke(
+          Vector3<T>::Zero(),
+          -f_poke * Vector3<T>::UnitY());
+      Fapplied_Bo_W_array[mid_element] += F_poke;
+    }
+
+    if ( time > 6.0 && time < 6.1) {
+      const BodyNodeIndex last_element(num_elements_);
+      SpatialForce<T> F_poke(
+          Vector3<T>::Zero(),
+          -f_poke /2.0 * Vector3<T>::UnitY());
+      Fapplied_Bo_W_array[last_element] -= F_poke;
+    }
+  }
 
   PRINT_VAR(tau.transpose());
   for (auto& F : Fapplied_Bo_W_array) {
@@ -568,6 +643,19 @@ void CosseratRodPlant<T>::MakeViewerLoadMessage(
     message->link[ielement].geom[0] =
         drake::systems::rendering::MakeGeometryData(element_vis);
   }
+
+  // Add a geometry to visualize a an arrow
+  //DrakeShapes::Cylinder(0.007 /* radius */, 0.05 /* length */),
+  DrakeShapes::VisualElement element_vis(
+      DrakeShapes::Capsule(0.007 /* radius */, 0.05 /* length */),
+      Eigen::Isometry3d::Identity(), Eigen::Vector4d(1.0, 0.0, 0.0, 1));
+  message->link[num_elements_].name = "CosseratRodElements::poke";
+  message->link[num_elements_].robot_num = 0;
+  message->link[num_elements_].num_geom = 1;
+  message->link[num_elements_].geom.resize(1);
+  message->link[num_elements_].geom[0] =
+      drake::systems::rendering::MakeGeometryData(element_vis);
+
 }
 
 template class CosseratRodPlant<double>;
