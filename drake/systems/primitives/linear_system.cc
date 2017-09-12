@@ -194,22 +194,6 @@ std::unique_ptr<LinearSystem<double>> Linearize(
         std::make_unique<FreestandingInputPortValue>(std::move(input_vector)));
   }
 
-  // Set derivatives of all parameters in the context to zero (but with the
-  // correct size).
-  // TODO(russt): This hack should be removed upon resolution of #6944.
-  int num_gradients = std::get<0>(autodiff_args)[0].derivatives().size();
-  for (int i = 0;
-       i < autodiff_context->get_parameters().num_numeric_parameters(); i++) {
-    auto params = autodiff_context->get_mutable_parameters()
-        .get_mutable_numeric_parameter(i)
-        ->get_mutable_value();
-    for (int j = 0; j < params.size(); j++) {
-      auto& derivs = params(j).derivatives();
-      derivs.resize(num_gradients);
-      derivs.setZero();
-    }
-  }
-
   const Eigen::MatrixXd AB =
       MakeStateAndInputMatrices(std::get<0>(autodiff_args),
                                 equilibrium_check_tolerance,
