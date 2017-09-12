@@ -54,15 +54,22 @@ CosseratRodPlant<T>::CosseratRodPlant(
       num_elements_(num_links) {
 
   // Geometric parameters for a circular cross section:
-  const double A1 = M_PI * radius1 * radius1;
-  const double A2 = M_PI * radius2 * radius2;
-  //const double I = A * A / (4 * M_PI);  // I1 = I2 = I, I3 = 2 * I.
+  // I = A * A / (4 * M_PI)
+  // I1 = I2 = I, I3 = 2 * I.
 
-  // Geometry functors:
-  area_= [A1, A2, length](const T& s) -> T {
+  auto radius_s = [radius1, radius2, length](const T& s) -> T {
     const T w1 = 1.0 - (s / length);
     const T w2 = 1.0 - w1;
-    return w1 * A1 + w2 * A2;
+    return w1 * radius1 + w2 * radius2;
+  };
+
+  // Geometry functors:
+  area_= [radius_s](const T& s) -> T {
+    //const T w1 = 1.0 - (s / length);
+    //const T w2 = 1.0 - w1;
+    //return w1 * A1 + w2 * A2;
+    const T r = radius_s(s);
+    return M_PI * r * r;
   };
   moment_of_inertia1_ = [this](const T& s) -> T {
     const T A = this->area_(s);
