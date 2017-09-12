@@ -539,11 +539,11 @@ void SetInvertedConnections(const pair<ignition::math::Vector3d,
 }
 
 // Creates a pair of waypoints based on the given @p exit and @p entry
-// ones, keeping their heading but affecting tangent norms to
-// achieve smooth transitions by making use of cubic Bezier interpolants.
+// ones, keeping their heading but affecting tangent norms to achieve
+// smooth transitions by making use of cubic Bezier interpolants.
 // This is helpful for connecting lanes at intersections.
-// @param exit The start DirectedWaypoint of the lane's reference curve.
-// @param entry The end DirectedWaypoint of the lane's reference curve.
+// @param exit The start DirectedWaypoint of the lane's curve.
+// @param entry The end DirectedWaypoint of the lane's curve.
 // @return A vector with the two (2) waypoints that represent the
 // extents of the connection.
 vector<DirectedWaypoint> CreateDirectedWaypointsForConnections(
