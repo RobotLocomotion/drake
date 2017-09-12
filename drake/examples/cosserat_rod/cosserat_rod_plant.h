@@ -25,7 +25,8 @@ class CosseratRodPlant : public systems::LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CosseratRodPlant)
 
   /// Constructs a Cosserat model for a rod of circular cross section.
-  CosseratRodPlant(double length, double radius1, double radius2, double mass,
+  CosseratRodPlant(double length, double radius1, double radius2,
+                   double rho,
                    double young_modulus, double shear_modulus,
                    double tau_bending, double tau_twisting,
                    int num_links,
@@ -111,8 +112,8 @@ class CosseratRodPlant : public systems::LeafSystem<T> {
   int dimension_{2};  // The number of spatial dimensions.
   double length_{0.0};
 
-  // Damping coefficient.
   double mass_{0.0};
+  double rho_{0.0};
   double tau_bending_{0.0};
   double tau_twisting_{0.0};
 

@@ -100,13 +100,14 @@ int do_main(int argc, char* argv[]) {
   const double T1 = 1.21;  // First period of oscillation.
   const double end_time = 10 * T1;
 
-  // TODO: make this constructor to take rho instead.
   const int num_spatial_dimensions = 2;
   auto rod_plant = builder.AddSystem<CosseratRodPlant>(
-      length, radius1, radius2, mass,
+      length, radius1, radius2, rho,
       E, G, tau_d, tau_d, num_elements, num_spatial_dimensions);
   rod_plant->set_name("Cosserat rod");
   //rod_plant->set_publish_period(end_time / 1000);
+  PRINT_VAR(mass);
+  PRINT_VAR(rod_plant->mass());
 
   auto energy_logger = builder.AddSystem<systems::SignalLogger<double>>(2);
   energy_logger->set_name("Energy Logger");

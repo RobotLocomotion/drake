@@ -42,13 +42,14 @@ using namespace multibody;
 
 template <typename T>
 CosseratRodPlant<T>::CosseratRodPlant(
-    double length, double radius1, double radius2, double mass,
+    double length, double radius1, double radius2,
+    double rho,
     double young_modulus, double shear_modulus,
     double tau_bending, double tau_twisting,
     int num_links, int dimension) :
       dimension_(dimension),
       length_(length),
-      mass_(mass),
+      rho_(rho),
       tau_bending_(tau_bending), tau_twisting_(tau_twisting),
       num_elements_(num_links) {
 
@@ -247,8 +248,14 @@ CosseratRodPlant<T>::CosseratRodPlant(
 template <typename T>
 const RigidBody<T>& CosseratRodPlant<T>::AddElement(
     int element_index, const multibody::Body<T>& element_im, const T& s) {
-  const double element_mass = mass() / num_elements_;
+
+  const double element_area = ExtractDoubleOrThrow(area_(s));
   const double element_length = length_ / num_elements_;
+  const double element_volume = element_area * element_length;
+  const double element_mass = element_volume * rho_;
+
+  // Add element's mass to the total rod's mass:
+  mass_ += element_mass;
 
   // Rotational inertia about the material frame Q'com, Qcm, expressed in Q.
   // TODO: CREATE FACTORY IN UnitInertia FOR THIS SPECIAL CASE OF A PRISM OF
@@ -329,6 +336,7 @@ void CosseratRodPlant<T>::BuildMultibodyModel() {
 
   double element_length = length_ / num_elements_;
 
+  mass_ = 0.0;  // zero mass for to compute the discrete model's mass.
   // First element is attached to the world.
   first_element_ = &AddElement(0, world, element_length / 2.0);
 
