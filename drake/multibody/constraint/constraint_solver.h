@@ -368,7 +368,7 @@ void ConstraintSolver<T>::DetermineIndependentConstraints(
       const VectorX<T>& f) -> VectorX<T> {
     VectorX<T> lambda = VectorX<T>::Zero(problem_data.kG.size());
     for (int i = 0; i < static_cast<int>(indep_constraints->size()); ++i)
-      lambda[i] = f[(*indep_constraints)[i]];
+      lambda[(*indep_constraints)[i]] = f[i];
     return problem_data.G_transpose_mult(lambda);
   };
 
@@ -384,10 +384,10 @@ void ConstraintSolver<T>::DetermineIndependentConstraints(
     iM_GT.resize(num_generalized_velocities, indep_constraints->size());
     ComputeInverseInertiaTimesGT(problem_data.solve_inertia,
                                  *G_transpose_mult,
-                                 problem_data.kG.size(), &iM_GT);
+                                 indep_constraints->size(), &iM_GT);
     tentative_Del.resize(indep_constraints->size(), indep_constraints->size());
     ComputeConstraintSpaceComplianceMatrix(*G_mult,
-                                           problem_data.kG.size(),
+                                           indep_constraints->size(),
                                            iM_GT, tentative_Del);
 
     // Try to do a Cholesky factorization.
@@ -831,7 +831,8 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
   VectorX<T> zz;
   bool success = lcp_.SolveLcpLemke(MM, qq, &zz, -1, zero_tol);
   VectorX<T> ww = MM * zz + qq;
-  const double max_dot = (zz.array() * ww.array()).abs().maxCoeff();
+  const double max_dot = (zz.size() > 0) ?
+                         (zz.array() * ww.array()).abs().maxCoeff() : 0.0;
 
   // NOTE: This LCP might not be solvable due to inconsistent configurations.
   // Check the answer and throw a runtime error if it's no good.
@@ -883,10 +884,12 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
         -data_ptr->L_transpose_mult(fL);
     VectorX<T> aug(Xv.size() + num_eq_constraints);
     aug.segment(0, Xv.size()) = Xv + data_ptr->tau;
-    aug.segment(Xv.size(), num_eq_constraints) = data_ptr->kG;
+    aug.segment(Xv.size(), num_eq_constraints) = problem_data.kG;
     const VectorX<T> u = -A_solve(aug);
-    auto lambda = cf->segment(num_contacts + num_spanning_vectors + num_limits,
-                              indep_constraints.size());
+    auto lambda_full = cf->segment(
+        num_contacts + num_spanning_vectors + num_limits, num_eq_constraints);
+    lambda_full.setZero();
+    auto lambda = lambda_full.segment(0, indep_constraints.size());
     lambda = u.segment(problem_data.tau.size(), indep_constraints.size());
   }
 }
@@ -1077,7 +1080,8 @@ void ConstraintSolver<T>::SolveImpactProblem(
   VectorX<T> zz;
   bool success = lcp_.SolveLcpLemke(MM, qq, &zz, -1, zero_tol);
   VectorX<T> ww = MM * zz + qq;
-  const double max_dot = (zz.array() * ww.array()).abs().maxCoeff();
+  const double max_dot = (zz.size() > 0) ?
+                         (zz.array() * ww.array()).abs().maxCoeff() : 0.0;
 
   // NOTE: This LCP should always be solvable.
   // Check the answer and throw a runtime error if it's no good.
@@ -1137,10 +1141,12 @@ void ConstraintSolver<T>::SolveImpactProblem(
         -data_ptr->L_transpose_mult(fL);
     VectorX<T> aug(Xv.size() + num_eq_constraints);
     aug.segment(0, Xv.size()) = Xv + Mvt;
-    aug.segment(Xv.size(), num_eq_constraints) = data_ptr->kG;
+    aug.segment(Xv.size(), num_eq_constraints) = problem_data.kG;
     const VectorX<T> u = -A_solve(aug);
-    auto lambda = cf->segment(num_contacts + num_spanning_vectors + num_limits,
-                              indep_constraints.size());
+    auto lambda_full = cf->segment(
+        num_contacts + num_spanning_vectors + num_limits, num_eq_constraints);
+    lambda_full.setZero();
+    auto lambda = lambda_full.segment(0, indep_constraints.size());
     lambda = u.segment(problem_data.v.size(), indep_constraints.size());
   }
 }
