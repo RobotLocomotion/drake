@@ -84,6 +84,7 @@ drake_cc_googletest(
         "//drake/multibody/rigid_body_plant",
         "//drake/systems/analysis:simulator",
         "//drake/systems/framework:diagram",
+        "//drake/systems/framework/test_utilities",
         "//drake/systems/primitives:constant_vector_source",
     ],
 )
