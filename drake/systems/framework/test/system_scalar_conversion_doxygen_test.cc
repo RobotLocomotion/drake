@@ -8,6 +8,7 @@ namespace {
 
 using Eigen::MatrixXd;
 using examples::pendulum::PendulumPlant;
+using examples::pendulum::PendulumState;
 using examples::pendulum::PendulumStateIndices;
 
 // N.B. The test code immediately below must be kept in sync with the identical
@@ -18,8 +19,10 @@ GTEST_TEST(SystemScalarConversionDoxygen, PendulumPlantAutodiff) {
   auto plant = std::make_unique<PendulumPlant<double>>();
   auto context = plant->CreateDefaultContext();
   context->FixInputPort(0, Vector1d::Zero());  // tau
-  plant->set_theta(context.get(), 0.1);
-  plant->set_thetadot(context.get(), 0.2);
+  auto* state = dynamic_cast<PendulumState<double>*>(
+      context->get_mutable_continuous_state_vector());
+  state->set_theta(0.1);
+  state->set_thetadot(0.2);
   double energy = plant->CalcTotalEnergy(*context);
   ASSERT_NEAR(energy, -4.875, 0.001);
 
