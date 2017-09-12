@@ -65,9 +65,12 @@ SpringMassStateVector<T>* SpringMassStateVector<T>::DoClone() const {
 }
 
 template <typename T>
-SpringMassSystem<T>::SpringMassSystem(double spring_constant_N_per_m,
-                                      double mass_kg, bool system_is_forced)
-    : LeafSystem<T>(SystemTypeTag<systems::SpringMassSystem>{}),
+SpringMassSystem<T>::SpringMassSystem(
+    SystemScalarConverter converter,
+    double spring_constant_N_per_m,
+    double mass_kg,
+    bool system_is_forced)
+    : LeafSystem<T>(std::move(converter)),
       spring_constant_N_per_m_(spring_constant_N_per_m),
       mass_kg_(mass_kg),
       system_is_forced_(system_is_forced) {
@@ -81,6 +84,17 @@ SpringMassSystem<T>::SpringMassSystem(double spring_constant_N_per_m,
   this->DeclareContinuousState(SpringMassStateVector<T>(),
       1 /* num_q */, 1 /* num_v */, 1 /* num_z */);
 }
+
+template <typename T>
+SpringMassSystem<T>::SpringMassSystem(
+    double spring_constant_N_per_m,
+    double mass_kg,
+    bool system_is_forced)
+    : SpringMassSystem(
+          SystemTypeTag<systems::SpringMassSystem>{},
+          spring_constant_N_per_m,
+          mass_kg,
+          system_is_forced) {}
 
 template <typename T>
 template <typename U>

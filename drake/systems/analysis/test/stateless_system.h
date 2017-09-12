@@ -49,14 +49,22 @@ class ClockWitness : public WitnessFunction<T> {
 
 /// System with no state for testing a simplistic witness function.
 template <class T>
-class StatelessSystem : public LeafSystem<T> {
+class StatelessSystem final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StatelessSystem)
 
-  explicit StatelessSystem(const T& offset,
-      const WitnessFunctionDirection& dir_type) {
+  StatelessSystem(const T& offset, const WitnessFunctionDirection& dir_type)
+      : LeafSystem<T>(SystemTypeTag<analysis_test::StatelessSystem>{}) {
     witness_ = std::make_unique<ClockWitness<T>>(offset, *this, dir_type);
   }
+
+  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  /// @note this function does not transmogrify the publish callback because
+  ///       this is test code for which it is expected that no one will care
+  ///       whether the publish callback survives transmogrification.
+  explicit StatelessSystem(const StatelessSystem<double>& other, int dummy = 0)
+      : StatelessSystem<T>(T{other.witness_->get_trigger_time()},
+                           other.witness_->get_dir_type()) {}
 
   void set_publish_callback(
       std::function<void(const Context<T>&)> callback) {
@@ -64,15 +72,6 @@ class StatelessSystem : public LeafSystem<T> {
   }
 
  protected:
-  /// @note this function does not transmogrify the publish callback because
-  ///       this is test code for which it is expected that no one will care
-  ///       whether the publish callback survives transmogrification.
-  System<AutoDiffXd>* DoToAutoDiffXd() const override {
-    AutoDiffXd trigger_time(witness_->get_trigger_time());
-    return new StatelessSystem<AutoDiffXd>(trigger_time,
-        witness_->get_dir_type());
-  }
-
   void DoGetWitnessFunctions(
       const Context<T>&,
       std::vector<const WitnessFunction<T>*>* w) const override {
@@ -86,10 +85,19 @@ class StatelessSystem : public LeafSystem<T> {
   }
 
  private:
+  // Allow different specializations to access each other's private data.
+  template <typename> friend class StatelessSystem;
+
   std::unique_ptr<ClockWitness<T>> witness_;
   std::function<void(const Context<T>&)> publish_callback_{nullptr};
 };
 
 }  // namespace analysis_test
+
+namespace scalar_conversion {
+template <>
+struct Traits<analysis_test::StatelessSystem> : public FromDoubleTraits {};
+}  // namespace scalar_conversion
+
 }  // namespace systems
 }  // namespace drake
