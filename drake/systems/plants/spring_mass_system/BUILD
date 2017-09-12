@@ -22,6 +22,7 @@ drake_cc_googletest(
     deps = [
         ":spring_mass_system",
         "//drake/common:eigen_matrix_compare",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 
