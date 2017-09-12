@@ -171,6 +171,7 @@ class TrajectoryCar final : public systems::LeafSystem<T> {
   }
 
  private:
+  // Allow different specializations to access each other's private data.
   template <typename> friend class TrajectoryCar;
 
   void ImplCalcOutput(const PositionHeading& raw_pose,

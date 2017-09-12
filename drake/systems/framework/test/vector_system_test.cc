@@ -443,6 +443,7 @@ class OpenScalarTypeSystem : public VectorSystem<T> {
   int get_some_number() const { return some_number_; }
 
  private:
+  // Allow different specializations to access each other's private data.
   template <typename> friend class OpenScalarTypeSystem;
 
   const int some_number_{};

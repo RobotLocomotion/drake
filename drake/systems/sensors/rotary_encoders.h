@@ -58,6 +58,7 @@ class RotaryEncoders final : public VectorSystem<T> {
       const Context<T>& context) const;
 
  private:
+  // Allow different specializations to access each other's private data.
   template <typename> friend class RotaryEncoders;
 
   // Outputs the transformed signal.
