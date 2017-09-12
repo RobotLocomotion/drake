@@ -29,7 +29,7 @@ class PendulumPlant : public systems::LeafSystem<T> {
 
   PendulumPlant();
 
-  /// Scalar-converting copy constructor.
+  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
   explicit PendulumPlant(const PendulumPlant<U>&);
 

@@ -41,7 +41,7 @@ class RotaryEncoders final : public VectorSystem<T> {
                  const std::vector<int>& input_vector_indices,
                  const std::vector<int>& ticks_per_revolution);
 
-  /// Scalar-converting copy constructor.
+  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
   explicit RotaryEncoders(const RotaryEncoders<U>&);
 
