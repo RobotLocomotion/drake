@@ -30,17 +30,19 @@ using Eigen::Vector3d;
 using multibody::SpatialForce;
 
 #include <iostream>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
+//#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
+//#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
 
-//#define PRINT_VAR(a) (void)a;
-//#define PRINT_VARn(a) (void)a;
+#define PRINT_VAR(a) (void)a;
+#define PRINT_VARn(a) (void)a;
+
+#define PRINT_VAR2(a) std::cout << #a": " << a << std::endl;
 
 using namespace multibody;
 
 template <typename T>
 CosseratRodPlant<T>::CosseratRodPlant(
-    double length, double radius, double mass,
+    double length, double radius1, double radius2, double mass,
     double young_modulus, double shear_modulus,
     double tau_bending, double tau_twisting,
     int num_links, int dimension) :
@@ -51,14 +53,26 @@ CosseratRodPlant<T>::CosseratRodPlant(
       num_elements_(num_links) {
 
   // Geometric parameters for a circular cross section:
-  const double A = M_PI * radius * radius;
-  const double I = A * A / (4 * M_PI);  // I1 = I2 = I, I3 = 2 * I.
+  const double A1 = M_PI * radius1 * radius1;
+  const double A2 = M_PI * radius2 * radius2;
+  //const double I = A * A / (4 * M_PI);  // I1 = I2 = I, I3 = 2 * I.
 
   // Geometry functors:
-  area_= [A](const T& s) -> T { return A; };
-  moment_of_inertia1_ = [I](const T& s) -> T { return I; };
-  moment_of_inertia2_ = [I](const T& s) -> T { return I; };
-  moment_of_inertia3_ = [I](const T& s) -> T { return 2 * I; };
+  area_= [A1, A2, length](const T& s) -> T {
+    const T w1 = 1.0 - (s / length);
+    const T w2 = 1.0 - w1;
+    return w1 * A1 + w2 * A2;
+  };
+  moment_of_inertia1_ = [this](const T& s) -> T {
+    const T A = this->area_(s);
+    return A * A / (4 * M_PI);
+  };
+  moment_of_inertia2_ = [this](const T& s) -> T {
+    return this->moment_of_inertia1_(s);
+  };
+  moment_of_inertia3_ = [this](const T& s) -> T {
+    return 2 * this->moment_of_inertia1_(s);
+  };
   young_modulus_ = [young_modulus](const T& s) -> T { return young_modulus; };
   shear_modulus_ = [shear_modulus](const T& s) -> T { return shear_modulus; };
 
@@ -312,6 +326,41 @@ void CosseratRodPlant<T>::SetHorizontalCantileverState(
 }
 
 template <typename T>
+void CosseratRodPlant<T>::SetBentState(
+    systems::Context<T>* context) const {
+  using std::cos;
+  using std::sin;
+
+  model_.SetDefaults(context);
+
+  // Set the rest to zero angle.
+  for (int joint_index(0); joint_index < num_elements_; ++joint_index) {
+    const T element_length = length_ / num_elements_;
+    const T s = joint_index * element_length + element_length / 2.0;
+
+
+    //const T roll = sin(M_PI * s / length_) * 10.0 / 180.0 * M_PI;
+
+    const T roll =
+        20 * sin(2.0 * M_PI * s / length_) * 10.0 / 180.0 * M_PI / num_elements_;
+
+    if (dimension_ == 3) {
+      const multibody::RollPitchYawMobilizer<T>* mobilizer =
+          dynamic_cast<const multibody::RollPitchYawMobilizer<T>*>(
+              mobilizers_[joint_index]);
+      mobilizer->set_rpy(context, Vector3<T>(roll, 0.0, 0.0));
+      mobilizer->set_angular_velocity(context, Vector3<T>::Zero());
+    } else {
+      const multibody::RevoluteMobilizer<T>* mobilizer =
+          dynamic_cast<const multibody::RevoluteMobilizer<T>*>(
+              mobilizers_[joint_index]);
+      mobilizer->set_angle(context, roll);
+      mobilizer->set_angular_rate(context, 0.0);
+    }
+  }
+}
+
+template <typename T>
 void CosseratRodPlant<T>::OutputState(
     const systems::Context<T>& context, 
     systems::BasicVector<T>* state_port_value) const {
@@ -489,20 +538,27 @@ void CosseratRodPlant<T>::MakeViewerLoadMessage(
     drake::lcmt_viewer_load_robot* message) const {
   DRAKE_DEMAND(message != nullptr);
 
+  const double gap_factor = 1.2;
+
   // Compute a radius for an equivalent cylindrical shape.
-  const double A = ExtractDoubleOrThrow(area_(0.0));
-  const double radius = std::sqrt(A / M_PI);
   const double element_length = length_ / num_elements_;
 
   // Create the rod visualization.
-  DrakeShapes::VisualElement element_vis(
-      DrakeShapes::Cylinder(radius, element_length),
-      Eigen::Isometry3d::Identity(), Eigen::Vector4d(0.7, 0.7, 0.7, 1));
+
 
   // Create the load message.
-  message->num_links = num_elements_;
-  message->link.resize(num_elements_);
+  message->num_links = num_elements_ + 1;
+  message->link.resize(message->num_links);
   for (int ielement = 0; ielement < num_elements_; ++ielement) {
+
+    const double s = ielement * element_length + element_length / 2.0;
+    const double A = ExtractDoubleOrThrow(area_(s));
+    const double radius = std::sqrt(A / M_PI);
+
+    DrakeShapes::VisualElement element_vis(
+        DrakeShapes::Cylinder(radius, gap_factor * element_length),
+        Eigen::Isometry3d::Identity(), Eigen::Vector4d(0.7, 0.7, 0.7, 1));
+
     std::stringstream stream;
     stream << "CosseratRodElements::element_" << ielement;
     message->link[ielement].name = stream.str();

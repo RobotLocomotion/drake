@@ -25,7 +25,7 @@ class CosseratRodPlant : public systems::LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CosseratRodPlant)
 
   /// Constructs a Cosserat model for a rod of circular cross section.
-  CosseratRodPlant(double length, double radius, double mass,
+  CosseratRodPlant(double length, double radius1, double radius2, double mass,
                    double young_modulus, double shear_modulus,
                    double tau_bending, double tau_twisting,
                    int num_links,
@@ -48,6 +48,8 @@ class CosseratRodPlant : public systems::LeafSystem<T> {
   }
 
   void SetHorizontalCantileverState(systems::Context<T>* context) const;
+
+  void SetBentState(systems::Context<T>* context) const;
 
   void set_publish_period(double period) {
     this->DeclarePeriodicPublish(period);

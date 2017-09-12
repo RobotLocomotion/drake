@@ -77,8 +77,8 @@ int do_main(int argc, char* argv[]) {
 
   // Geometric parameters:
   const double length = 1.0;  // [m]
-  const double radius = 0.005; // [m]
-  const double area = M_PI * radius * radius;
+  const double radius1 = 0.05;
+  const double radius2 = 0.02;
 
   // Material parameters (aluminum):
   const double rho = 2700;  // [Kgr/m^3]
@@ -92,14 +92,16 @@ int do_main(int argc, char* argv[]) {
   const double dt = 0.002;  // [sec]
 
   // Other derived numbers.
-  const double mass = rho * area * length;
   const double T1 = 0.140387;  // First period of oscillation.
   const double end_time = 30 * T1;
+  const double volume = M_PI/3.0 *
+      (radius1 * radius1 + radius1 * radius2 + radius2 * radius2) * length;
+  const double mass = rho * volume;
 
   // TODO: make this constructor to take rho instead.
   const int num_spatial_dimensions = 3;
   auto rod_plant = builder.AddSystem<CosseratRodPlant>(
-      length, radius, mass,
+      length, radius1, radius2, mass,
       E, G, tau_d, tau_d, num_elements, num_spatial_dimensions);
   rod_plant->set_name("Cosserat rod");
   //rod_plant->set_publish_period(end_time / 1000);
@@ -235,5 +237,6 @@ int do_main(int argc, char* argv[]) {
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   return drake::examples::cosserat_rod::do_main(argc, argv);
 }
