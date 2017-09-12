@@ -486,7 +486,7 @@ void CosseratRodPlant<T>::DoCalcTimeDerivatives(
     PRINT_VAR2(context.get_time());
     //const T s_poke = 0.5 * length_;
     const BodyNodeIndex mid_element(num_elements_ / 2);
-    const T f_poke = 300.0;  // [N]
+    const double f_poke = 300.0;  // [N]
 
     if ( time > 3.0 && time < 3.1) {
       SpatialForce<T> F_poke(
@@ -494,6 +494,15 @@ void CosseratRodPlant<T>::DoCalcTimeDerivatives(
           -f_poke * Vector3<T>::UnitY());
       Fapplied_Bo_W_array[mid_element] += F_poke;
     }
+
+    const double arrow_length = f_poke/600.0;
+    const double head_length = arrow_length / 5.0;
+    const double head_width = head_length / 4.0;
+    const double body_width = head_width / 2.0;
+    bot_lcmgl_color3f(lcmgl, 1.0, 0.0, 0.0);
+    bot_lcmgl_draw_arrow_3d(
+        lcmgl, arrow_length, head_width, head_length, body_width);
+    bot_lcmgl_switch_buffer(lcmgl); // This effectively publishes.
 
     if ( time > 6.0 && time < 6.1) {
       const BodyNodeIndex last_element(num_elements_);

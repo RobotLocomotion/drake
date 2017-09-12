@@ -11,6 +11,9 @@
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/systems/rendering/pose_bundle.h"
 
+#include "drake/lcm/drake_lcm.h"
+#include <bot_lcmgl_client/lcmgl.h>
+
 namespace drake {
 namespace examples {
 namespace cosserat_rod {
@@ -60,6 +63,15 @@ class CosseratRodPlant : public systems::LeafSystem<T> {
 
   const systems::OutputPort<T>& get_poses_output_port() const {
     return *poses_output_port_;
+  }
+
+  void InitLCMGL(drake::lcm::DrakeLcm* drake_lcm) {
+    lcm_t* lcm = drake_lcm->get_lcm_instance()->getUnderlyingLCM();
+    lcmgl = bot_lcmgl_init(lcm, "LCMGL_CHANNEL");
+  }
+
+  ~CosseratRodPlant() {
+    if (lcmgl) bot_lcmgl_destroy(lcmgl);
   }
 
  protected:
@@ -147,6 +159,9 @@ class CosseratRodPlant : public systems::LeafSystem<T> {
   std::vector<const multibody::Mobilizer<T>*> mobilizers_;
   const multibody::RigidBody<T>* first_element_{nullptr};
   const multibody::RigidBody<T>* last_element_{nullptr};
+
+  // LCMGL for debbuging:
+  bot_lcmgl_t* lcmgl{nullptr};
 };
 
 }  // namespace cosserat_rod

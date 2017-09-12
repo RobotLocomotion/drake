@@ -90,7 +90,7 @@ int do_main(int argc, char* argv[]) {
   const double tau_d = 0.38 / 10;  // [sec]
 
   // Numerical parameters:
-  const int num_elements = 100;
+  const int num_elements = 10;
   const double dt = 0.004;  // [sec]
 
   // Other derived numbers.
@@ -105,6 +105,7 @@ int do_main(int argc, char* argv[]) {
       length, radius1, radius2, rho,
       E, G, tau_d, tau_d, num_elements, num_spatial_dimensions);
   rod_plant->set_name("Cosserat rod");
+  rod_plant->InitLCMGL(&lcm);
   //rod_plant->set_publish_period(end_time / 1000);
   PRINT_VAR(mass);
   PRINT_VAR(rod_plant->mass());

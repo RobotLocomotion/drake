@@ -31,11 +31,6 @@
 namespace drake {
 namespace systems {
 
-#include <iostream>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
-
-
 /** @cond */
 // Private helper class for System.
 class SystemImpl {
