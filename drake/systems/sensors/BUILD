@@ -349,6 +349,8 @@ drake_cc_googletest(
     data = [
         ":test_models",
     ],
+    # Mitigate driver-related issues when running under `bazel test` (#7004).
+    local = 1,
     tags = ["manual"],
     deps = [
         ":rgbd_camera",
