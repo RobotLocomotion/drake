@@ -482,27 +482,59 @@ void CosseratRodPlant<T>::DoCalcTimeDerivatives(
 
   // Apply a poke in the middle
   {
+    const double rad2deg = 180.0 / M_PI;
+
     const T time = context.get_time();
     PRINT_VAR2(context.get_time());
     //const T s_poke = 0.5 * length_;
     const BodyNodeIndex mid_element(num_elements_ / 2);
     const double f_poke = 300.0;  // [N]
 
+    const Vector3<T> x_WB =
+        pc.get_X_WB(mid_element).translation();
+    const Matrix3<T> R_WB =
+        pc.get_X_WB(mid_element).linear();
+
+    Vector3<T> x_poke = x_WB + R_WB.col(1) * 0.035;
+
+#if 0
+    bot_lcmgl_push_matrix(lcmgl);
+    {
+      bot_lcmgl_color3f(lcmgl, 1.0, 0.0, 0.0);
+      bot_lcmgl_rotated(lcmgl, rad2deg * M_PI, 1.0, 0.0, 0.0);
+      bot_lcmgl_sphere(lcmgl, x_poke.data(), 0.007 /*radius*/,
+                       20 /*slices*/, 20 /* stacks*/);
+    }
+    bot_lcmgl_pop_matrix(lcmgl);
+#endif
+
     if ( time > 3.0 && time < 3.1) {
       SpatialForce<T> F_poke(
           Vector3<T>::Zero(),
           -f_poke * Vector3<T>::UnitY());
       Fapplied_Bo_W_array[mid_element] += F_poke;
-    }
 
-    const double arrow_length = f_poke/600.0;
-    const double head_length = arrow_length / 5.0;
-    const double head_width = head_length / 4.0;
-    const double body_width = head_width / 2.0;
-    bot_lcmgl_color3f(lcmgl, 1.0, 0.0, 0.0);
-    bot_lcmgl_draw_arrow_3d(
-        lcmgl, arrow_length, head_width, head_length, body_width);
-    bot_lcmgl_switch_buffer(lcmgl); // This effectively publishes.
+      bot_lcmgl_push_matrix(lcmgl);
+      {
+        const double arrow_length = f_poke / 3000.0;
+        const double head_length = arrow_length / 5.0;
+        const double head_width = head_length / 4.0;
+        const double body_width = head_width / 2.0;
+        // X_VW * X_WA
+        // Rotate to drake's visualizer view frame X_VW
+        bot_lcmgl_rotated(lcmgl, rad2deg * M_PI, 1.0, 0.0, 0.0);
+        // Translate a bit out, in the model's world frame.
+        bot_lcmgl_translated(lcmgl, 0.0, arrow_length/2.0, 0.0);
+        // Translate to the application point, in model's world frame.
+        bot_lcmgl_translated(lcmgl, x_poke[0], x_poke[1], x_poke[2]);
+        // Rotate arrow's direction (x-axis) to be model's minus y-axis
+        bot_lcmgl_rotated(lcmgl, -rad2deg * M_PI / 2, 0.0, 0.0, 1.0);
+        bot_lcmgl_color3f(lcmgl, 1.0, 0.0, 0.0);
+        bot_lcmgl_draw_arrow_3d(
+            lcmgl, arrow_length, head_width, head_length, body_width);
+      }
+      bot_lcmgl_pop_matrix(lcmgl);
+    }
 
     if ( time > 6.0 && time < 6.1) {
       const BodyNodeIndex last_element(num_elements_);
@@ -511,6 +543,8 @@ void CosseratRodPlant<T>::DoCalcTimeDerivatives(
           -f_poke /2.0 * Vector3<T>::UnitY());
       Fapplied_Bo_W_array[last_element] -= F_poke;
     }
+
+    bot_lcmgl_switch_buffer(lcmgl); // This effectively publishes.
   }
 
   PRINT_VAR(tau.transpose());
@@ -683,7 +717,7 @@ void CosseratRodPlant<T>::MakeViewerLoadMessage(
 }
 
 template class CosseratRodPlant<double>;
-template class CosseratRodPlant<AutoDiffXd>;
+//template class CosseratRodPlant<AutoDiffXd>;
 
 }  // namespace cosserat_rod
 }  // namespace examples

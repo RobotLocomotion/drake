@@ -90,7 +90,7 @@ int do_main(int argc, char* argv[]) {
   const double tau_d = 0.38 / 10;  // [sec]
 
   // Numerical parameters:
-  const int num_elements = 10;
+  const int num_elements = 50;
   const double dt = 0.004;  // [sec]
 
   // Other derived numbers.
