@@ -16,7 +16,7 @@
 namespace MotionGenesis {
 namespace MGChaoticBabyboot_ {
 static const int myNumberOfODEs = 4;
-static const int myErrorBufferSize = 9;
+static const int myErrorSize = 9;
 
 
 //------------------------------------------------------------------------------
@@ -28,13 +28,12 @@ class MGIntegrator {
  protected:
   // Pure virtual methods that must be overridden in derived class.
   virtual const char*  MGeqns( double t, double VAR[], double VARp[], bool isIntegratorBoundary ) = 0;
-  virtual void  CalculateOutput( double t ) = 0;
 
   // Numerical integration constructor and methods that are only called by derived class.
            MGIntegrator() { SetErrorMessagesToNull(); }
   virtual ~MGIntegrator() {};
-  bool  IntegrateForwardOrBackward( double varArrayToIntegrate[] );
-  const char*  GetErrorMessage( const int i )  { return (i >= 0 && i < myErrorBufferSize) ? myErrorMessages[i] : NULL; }
+  bool  IntegrateForwardOrBackward( double varArrayToIntegrate[], double& t );
+  const char*  GetErrorMessage( int i ) { return (i >= 0 && i < myErrorSize) ? myErrorMessages[i] : NULL; }
 
  private:
   // Private numerical integrator methods.
@@ -45,9 +44,9 @@ class MGIntegrator {
   double mySmallestAllowableStepsize, myPreviousStepsize;
 
   // Method and data for error messages.
-  void  SetErrorMessagesToNull()  { for(int i=0;  i < myErrorBufferSize;  i++)  myErrorMessages[i] = NULL; }
-  void  AddErrorMessage( const char* errorMessage )  { for(int i=0;  i < myErrorBufferSize;  i++) if( !myErrorMessages[i] ) {myErrorMessages[i] = errorMessage; break;} }
-  const char* myErrorMessages[myErrorBufferSize];
+  void  SetErrorMessagesToNull()  { for(int i=0;  i < myErrorSize;  i++)  myErrorMessages[i] = NULL; }
+  void  AddErrorMessage( const char* msg ) { for(int i=0;  i < myErrorSize;  i++) if( !myErrorMessages[i] ) {myErrorMessages[i] = msg; break;} }
+  const char* myErrorMessages[myErrorSize];
 };
 
 
@@ -62,7 +61,10 @@ class MGChaoticBabyboot : public MGIntegrator {
   {
     double varArrayToIntegrate[myNumberOfODEs];
     SetArrayFromVariables( varArrayToIntegrate );
-    return IntegrateForwardOrBackward( varArrayToIntegrate );
+    double t = tInitial;
+    bool isIntegrationOK = IntegrateForwardOrBackward( varArrayToIntegrate, t );
+    CalculateOutput( t );
+    return isIntegrationOK;
   }
 
   // User-defined class data for this simulation.
@@ -74,7 +76,6 @@ class MGChaoticBabyboot : public MGIntegrator {
  protected:
   // Override pure virtual methods in base class MGIntegrator.
   const char*  MGeqns( double t, double VAR[], double VARp[], bool isIntegratorBoundary );
-  void  CalculateOutput( double t );
 
  private:
   // Private methods for simulation.
@@ -83,6 +84,7 @@ class MGChaoticBabyboot : public MGIntegrator {
   void  SetDerivativeArray( double VARp[] );
   void  SetVariablesFromArray( const double VAR[] );
   void  CalculateQuantitiesThatDependOnTXEtc( double t, bool isIntegratorBoundary );
+  void  CalculateOutput( double t );
 
   // Private data for simulation.
   unsigned long myNumberOfCallsToMGeqns;

@@ -20,38 +20,38 @@ const double RADtoDEG = 57.2957795130823208767981548;
 // -----------------------------------------------------------------------------
 void  MGChaoticBabyboot::SetInputValues()
 {
-  g              =  9.81;                   // m/s^2               Constant
-  IAx            =  50;                     // g*cm^2              Constant
-  IBx            =  2500;                   // g*cm^2              Constant
-  IBy            =  500;                    // g*cm^2              Constant
-  IBz            =  2000;                   // g*cm^2              Constant
-  LA             =  7.5;                    // cm                  Constant
-  LB             =  20;                     // cm                  Constant
-  mA             =  10;                     // grams               Constant
-  mB             =  100;                    // grams               Constant
+  g              =  9.81;              // m/s^2    Constant
+  IAx            =  50;                // g*cm^2   Constant
+  IBx            =  2500;              // g*cm^2   Constant
+  IBy            =  500;               // g*cm^2   Constant
+  IBz            =  2000;              // g*cm^2   Constant
+  LA             =  7.5;               // cm       Constant
+  LB             =  20;                // cm       Constant
+  mA             =  10;                // grams    Constant
+  mB             =  100;               // grams    Constant
 
-  qA             =  90;                     // deg                 Initial Value
-  qB             =  1.0;                    // deg                 Initial Value
-  qAp            =  0.0;                    // rad/sec             Initial Value of qA'
-  qBp            =  0.0;                    // rad/sec             Initial Value of qB'
+  qA             =  90;                // deg      Initial Value
+  qB             =  1.0;               // deg      Initial Value
+  qAp            =  0.0;               // rad/sec  Initial Value of qA'
+  qBp            =  0.0;               // rad/sec  Initial Value of qB'
 
-  tInitial       =  0.0;                    // second              Initial time.
-  tFinal         =  10;                     // sec                 Final time.
-  tStepMax       =  0.01;                   // sec                 Maximum integration step.
-  absError       =  1.0E-09;                //                     Absolute error.
-  relError       =  1.0E-09;                //                     Relative error.
+  tInitial       =  0.0;               // sec      Initial time
+  tFinal         =  10;                // sec      Final time
+  tStepMax       =  0.0001;            // sec      Maximum integration step
+  absError       =  1.0E-09;           //          Absolute error
+  relError       =  1.0E-09;           //          Relative error
 
   // Unit conversions to UnitSystem( kilogram, meter, second ).
-  IAx = IAx * 1.0E-07;                      //  Converted from g*cm^2
-  IBx = IBx * 1.0E-07;                      //  Converted from g*cm^2
-  IBy = IBy * 1.0E-07;                      //  Converted from g*cm^2
-  IBz = IBz * 1.0E-07;                      //  Converted from g*cm^2
-  LA = LA * 0.01;                           //  Converted from cm
-  LB = LB * 0.01;                           //  Converted from cm
-  mA = mA * 0.001;                          //  Converted from grams
-  mB = mB * 0.001;                          //  Converted from grams
-  qA = qA * DEGtoRAD;                       //  Converted from deg
-  qB = qB * DEGtoRAD;                       //  Converted from deg
+  IAx *= 1.0E-07;                      //  Converted from g*cm^2
+  IBx *= 1.0E-07;                      //  Converted from g*cm^2
+  IBy *= 1.0E-07;                      //  Converted from g*cm^2
+  IBz *= 1.0E-07;                      //  Converted from g*cm^2
+  LA *= 0.01;                          //  Converted from cm
+  LB *= 0.01;                          //  Converted from cm
+  mA *= 0.001;                         //  Converted from grams
+  mB *= 0.001;                         //  Converted from grams
+  qA *= DEGtoRAD;                      //  Converted from deg
+  qB *= DEGtoRAD;                      //  Converted from deg
 }
 
 
@@ -169,41 +169,41 @@ double  MGIntegrator::KMIntegrator( double y[], double tStart, double* hEntry )
   double f0[myNumberOfODEs], f1[myNumberOfODEs], f2[myNumberOfODEs];
   double y1[myNumberOfODEs], y2[myNumberOfODEs];
   double h = hEntry ? *hEntry : 0;               // Dereferenced local copy.
-  int   i, errorInVarIndex = 0;                  // Variable that failed.
-  const char* errorMessageEqns = NULL;
+  int   i, errorVarIndex = 0;                    // Variable that failed.
+  const char* errorMessage = NULL;
 
   // Always need to calculate derivatives at tStart (always boundary here).
   // If hEntry == NULL, just call method MGeqns at tStart and return.
-  errorMessageEqns = MGeqns(tStart, y, f0, true);  // Integration boundary.
-  if( !errorMessageEqns  &&  hEntry == NULL ) return 1;
+  errorMessage = MGeqns(tStart, y, f0, true);    // Integration boundary.
+  if( !errorMessage  &&  hEntry == NULL ) return 1;
 
-  while( tStart + h != tStart && !errorMessageEqns )  // Avoid round-off.
+  while( tStart + h != tStart && !errorMessage )      // Avoid round-off.
   {
     double h2 = h * 0.5;                              // Half    of h.
     double h3 = h / 3.0;                              // Third   of h.
     double h6 = h / 6.0;                              // Sixth   of h.
     double h8 = h * 0.125;                            // Eighth  of h.
-    for(i=0;  i < myNumberOfODEs;  i++)  y1[i] = y[i] + h3*f0[i];
-    if( (errorMessageEqns = MGeqns(tStart+h3, y1, f1, false)) != NULL ) break;
-    for(i=0;  i < myNumberOfODEs;  i++)  y1[i] = y[i] + h6*(f0[i] + f1[i]);
-    if( (errorMessageEqns = MGeqns(tStart+h3, y1, f1, false)) != NULL ) break;
-    for(i=0;  i < myNumberOfODEs;  i++)  y1[i] = y[i] + h8*(f0[i] + 3*f1[i]);
-    if( (errorMessageEqns = MGeqns(tStart+h2, y1, f2, false)) != NULL ) break;
-    for(i=0;  i < myNumberOfODEs;  i++)  y1[i] = y[i] + h2*(f0[i] - 3*f1[i] + 4*f2[i]);
-    if( (errorMessageEqns = MGeqns(tStart+h,  y1, f1, false)) != NULL)  break;
-    for(i=0;  i < myNumberOfODEs;  i++)  y2[i] = y[i] + h6*(f0[i] + 4*f2[i] + f1[i]);
+    for(i=0; i < myNumberOfODEs; i++)  y1[i] = y[i] + h3*f0[i];
+    if( (errorMessage = MGeqns(tStart+h3, y1, f1, false)) != NULL ) break;
+    for(i=0; i < myNumberOfODEs; i++)  y1[i] = y[i] + h6*(f0[i] + f1[i]);
+    if( (errorMessage = MGeqns(tStart+h3, y1, f1, false)) != NULL ) break;
+    for(i=0; i < myNumberOfODEs; i++)  y1[i] = y[i] + h8*(f0[i] + 3*f1[i]);
+    if( (errorMessage = MGeqns(tStart+h2, y1, f2, false)) != NULL ) break;
+    for(i=0; i < myNumberOfODEs; i++)  y1[i] = y[i] + h2*(f0[i] - 3*f1[i] + 4*f2[i]);
+    if( (errorMessage = MGeqns(tStart+h,  y1, f1, false)) != NULL)  break;
+    for(i=0; i < myNumberOfODEs; i++)  y2[i] = y[i] + h6*(f0[i] + 4*f2[i] + f1[i]);
 
     // Both y1[i] and y2[i] provide estimates to the new value of y.
     // Decide if the relative and absolute error tolerances are met.
     // If they are not, reduce the stepsize and restart the integration.
-    double errorRatioMax = 0;                         // Testing error criterion.
-    for(i=0;  i < myNumberOfODEs;  i++)               // Check all variables.
+    double errorRatioMax = 0;                         // Error criterion.
+    for(i=0; i < myNumberOfODEs; i++)                 // Check all variables.
     {
       double errorInEstimate = 0.2 * fabs( y2[i] - y1[i] );
       double relTest  = fabs( y2[i] ) * relError;
       double largerOfAbsErrOrRelTest = absError > relTest ? absError : relTest;
       double errorRatio = errorInEstimate / largerOfAbsErrOrRelTest;
-      if( errorRatio > errorRatioMax ) { errorRatioMax = errorRatio;  errorInVarIndex = i; }
+      if( errorRatio > errorRatioMax ) { errorRatioMax = errorRatio;  errorVarIndex = i; }
     }
 
     // If the errorRatioMax >= 1, either absError or relTest failed, i.e.,
@@ -211,22 +211,24 @@ double  MGIntegrator::KMIntegrator( double y[], double tStart, double* hEntry )
     if( errorRatioMax >= 1 )
     {
       if( fabs(h=h2) > fabs(mySmallestAllowableStepsize) )  continue;
-      errorMessageEqns = "Error: Stepsize has been cut too many times.";  break;
+      static char stepsizeCutMessage[80];
+      sprintf(stepsizeCutMessage, "Error: Stepsize has been cut too many times for variable %d.", errorVarIndex);
+      errorMessage = stepsizeCutMessage;  break;
     }
 
     // Integration succeeded.  Update the values of y and t before return.
-    for(i=0;  i < myNumberOfODEs;  i++)  y[i] = y2[i];
+    for(i=0; i < myNumberOfODEs; i++)  y[i] = y2[i];
 
     // Return actual stepsize and estimate for next integration stepsize.
     *hEntry = h;   return errorRatioMax < 1.0/64.0 ? h+h : h;
   }
 
-  // Print error messages that numerical integrator failed.
-  if( errorMessageEqns ) AddErrorMessage( errorMessageEqns );
+  // Append error messages that numerical integrator failed.
+  if( errorMessage ) AddErrorMessage( errorMessage );
   else AddErrorMessage( "Error: Numerical round-off makes stepsize h too small so (tStart + h == tStart)." );
-  static char failureTimeErrorMessage[80];
-  sprintf( failureTimeErrorMessage, "Error: Numerical integration failed at t = %15.8E.", tStart );
-  AddErrorMessage( failureTimeErrorMessage );
+  static char failureTimeMessage[80];
+  sprintf( failureTimeMessage, "Error: Numerical integration failed at t = %15.8E.", tStart );
+  AddErrorMessage( failureTimeMessage );
 
   MGeqns(tStart, y, f0, true);         // Fill for error display.
   return hEntry ? (*hEntry = 0) : 0;
@@ -243,21 +245,21 @@ double  MGIntegrator::KMIntegrator( double y[], double tStart, double* hEntry )
 //       t:  Independent variable.                                            **
 //       y:  One-dimensional array whose elements are y(1), ..., y(n).        **
 //   tStep:  Maximum integration stepsize for this step.                      **
-// calcDeriv0OrIntegrate: If false, the method MGeqns is called and dy(i)/dt  **
+//           If isFirstCall = true, the method MGeqns is called and dy(i)/dt  **
 //           (i = 1, ..., n) are evaluated, but no integration is performed.  **
-//           If calcDeriv0OrIntegrate = true, integration is performed.       **
+//           If isFirstCall = false, integration is performed.                **
 //                                                                            **
 // OUTPUT:   The value of  t + tStep  is returned in t.                       **
 //           The values of y(i) at  t + tStep  are returned in y.             **
 //           The return value is false if the algorithm fails.                **
 // -----------------------------------------------------------------------------
-bool  MGIntegrator::IntegratorStep( double y[], double* t, double tStep, bool calcDerivOrIntegrate )
+bool  MGIntegrator::IntegratorStep( double y[], double* t, double tStep, bool isFirstCall )
 {
   double h;                                     // Current stepsize.
   double hAccumulated = 0;                      // How far to tStep.
 
-  // If calcDerivOrIntegrate == false, just call method MGeqns at exactly *t.
-  if( calcDerivOrIntegrate == false ) return (bool)KMIntegrator( y, *t, NULL );
+  // If isFirstCall, just call method MGeqns at exactly *t.
+  if( isFirstCall ) return (bool)KMIntegrator( y, *t, NULL );
 
   // Upon entry, initialize the current stepsize to the stored value of hc.
   if( tStep == 0 || absError==0 ) return false; // Cannot integrate.
@@ -307,27 +309,31 @@ bool  MGIntegrator::IntegratorStep( double y[], double* t, double tStep, bool ca
 // INPUT:    varArrayToIntegrate contains the values of y(1), ... y(n) at     **
 //           t = tInitial (it is a n-dimensional array of initial values).    **
 //                                                                            **
-// OUTPUT:   varArrayToIntegrate contains the values of y(1), ..., y(n) at    **
-//           t = tFinal.  The method returns false if the algorithm fails.    **
+// OUTPUT:   If integration succeeds, varArrayToIntegrate contains the values **
+//           of y(1), ..., y(n) at t = tFinal and the method returns true.    **
+//           If integration fails, varArrayToIntegrate contains the values    **
+//           of y(1), ..., y(n) at the value of t at which integration failed.**
 // -----------------------------------------------------------------------------
-bool  MGIntegrator::IntegrateForwardOrBackward( double varArrayToIntegrate[] )
+bool  MGIntegrator::IntegrateForwardOrBackward( double varArrayToIntegrate[], double& t )
 {
   mySmallestAllowableStepsize = 1.0E-7 * (myPreviousStepsize = tStepMax);
-  double t = tInitial,  tFinalMinusEpsilon = tFinal - mySmallestAllowableStepsize;
-  bool   isIntegrateForward = (tFinal >= tInitial),  calcDerivOrIntegrate = false;
+  double tFinalMinusEpsilon = tFinal - mySmallestAllowableStepsize;
+  const bool isIntegrateForward = (tFinal >= tInitial);
 
-  // Initialize numerical integrator with call at t = tInitial, thereafter integrate.
-  bool isIntegrationOK = true, isIntegrationFinished = false;
+  // Initialize numerical integrator at t = tInitial, thereafter integrate.
+  bool isIntegrationFinished = false, isFirstCall = true, isIntegrationOK = true;
   while( !isIntegrationFinished )
   {
-    const double tStepMaxThisStep = (isIntegrateForward && t+tStepMax > tFinal) || (!isIntegrateForward && t+tStepMax < tFinal)  ?  tFinal - t : tStepMax;
-    isIntegrationOK = IntegratorStep( varArrayToIntegrate, &t, tStepMaxThisStep, calcDerivOrIntegrate );
-    if( !isIntegrationOK ) AddErrorMessage( "Error: Numerical method failed to converge.\n" );
-    isIntegrationFinished = !isIntegrationOK || (isIntegrateForward && t > tFinalMinusEpsilon) || (!isIntegrateForward && t < tFinalMinusEpsilon);
-    calcDerivOrIntegrate = true;
+    const bool isFullStep = (isIntegrateForward && t+tStepMax <= tFinal) ||
+                           (!isIntegrateForward && t+tStepMax >= tFinal);
+    const double tStepMaxThisStep = isFullStep ? tStepMax : tFinal - t;
+    isIntegrationOK = IntegratorStep( varArrayToIntegrate, &t, tStepMaxThisStep, isFirstCall );
+    isIntegrationFinished = !isIntegrationOK || (isIntegrateForward && t > tFinalMinusEpsilon) ||
+                                               (!isIntegrateForward && t < tFinalMinusEpsilon);
+    isFirstCall = false;
   }
 
-  CalculateOutput( t );
+  if( !isIntegrationOK ) AddErrorMessage( "Error: Numerical method failed to converge.\n" );
   return isIntegrationOK;
 }
 
@@ -335,12 +341,4 @@ bool  MGIntegrator::IntegrateForwardOrBackward( double varArrayToIntegrate[] )
 //------------------------------------------------------------------------------
 }        // End of namespace MGChaoticBabyboot_.
 }        // End of namespace MotionGenesis.
-
-
-// -----------------------------------------------------------------------------
-int  main( void )  {
-  MotionGenesis::MGChaoticBabyboot_::MGChaoticBabyboot chaoticBabyboot;
-  return chaoticBabyboot.MGSimulate();
-}
-
 

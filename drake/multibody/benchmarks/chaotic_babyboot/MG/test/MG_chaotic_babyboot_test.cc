@@ -43,30 +43,49 @@ void CompareExpectedSolutionVsActualSolution(
   const double qBDDt = MG_chaotic_babyboot.qBpp;
   const double energy = MG_chaotic_babyboot.Energy;
 
-  // Compare actual results with expected results.
-  constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
-  const double tolerance = 1.0E7 * kEpsilon;
-  Vector7d expected, actual;
-  expected << qA_expected, qB_expected,
-              qADt_expected, qBDt_expected,
-              qADDt_expected, qBDDt_expected, energy_expected;
-  actual << qA, qB, qADt, qBDt, qADDt, qBDDt < energy;
-  EXPECT_TRUE(actual.isApprox(expected, tolerance));
+  // Calculate the absolute value of the difference in results.
+  const double qA_difference = qA - qA_expected;
+  const double qB_difference = qB - qB_expected;
+  const double qADt_difference = qADt - qADt_expected;
+  const double qBDt_difference = qBDt - qBDt_expected;
+  const double qADDt_difference = qADDt - qADDt_expected;
+  const double qBDDt_difference = qBDDt - qBDDt_expected;
+  const double energy_difference = energy - energy_expected;
+
+  // Compare actual results with expected results to within a
+  // multiplier of the integrator's value of absError.
+  // Allowable error is scaled for individual quantities.
+  const double absError = MG_chaotic_babyboot.absError;
+  EXPECT_TRUE(std::abs(qA_difference) <= 1E2 * absError);
+  EXPECT_TRUE(std::abs(qB_difference) <= 1E2 * absError);
+  EXPECT_TRUE(std::abs(qADt_difference) <= 5E2 * absError);
+  EXPECT_TRUE(std::abs(qBDt_difference) <= 5E2 * absError);
+  EXPECT_TRUE(std::abs(qADDt_difference) <= 1E3 * absError);
+  EXPECT_TRUE(std::abs(qBDDt_difference) <= 1E3 * absError);
+  EXPECT_TRUE(std::abs(energy_difference) <= 0.01*absError);
 }
 
 
 // Test accuracy of calculations for chaotic babyboot's angles qA and qB and
-// their time-derivatives to expected solution that was created by running a
-// very high accuracy simulation with MotionGenesis - that kept energy variation
-// to less than -1.2656542480727E-14 (the theoretical difference is 0.0).
+// their time-derivatives.  Compare to expected solution that was created by
+// running two very high accuracy simulation with MotionGenesis - both kept the
+// absolute value of energy variation to less than 6.0E-14 (theoretical is 0.0).
+// For the given initial values, the babyboot is chaotic, so it is difficult
+// (perhaps impossible) to create a perfect test that integrator works.
 GTEST_TEST(ChaoticBabyboot, ForwardDynamicsA) {
   const double degree_to_radian =  0.0174532925199432957692369;
-  const double qA_expected = -61.312983517329 * degree_to_radian;
-  const double qB_expected = -929.47789818494 * degree_to_radian;
-  const double qADt_expected = -6.7440080750248;
-  const double qBDt_expected = -2.7795696971631;
-  const double qADDt_expected =  41.137023170384;
-  const double qBDDt_expected = 19.483647506439;
+  const double qA_expected = -61.312983761859 * degree_to_radian;
+  // Other simulation:       -61.312983517329;
+  const double qB_expected = -929.47789795831 * degree_to_radian;
+  // Other simulation:       -929.47789818494;
+  const double qADt_expected = -6.7440080514955;
+  // Other simulation:         -6.7440080750248;
+  const double qBDt_expected = -2.7795695154087;
+  // Other simulation:         -2.7795696971631;
+  const double qADDt_expected = 41.137023317160;
+  // Other simulation:          41.137023170384;
+  const double qBDDt_expected = 19.483647277708;
+  // Other simulation:          19.483647506439;
   const double energy_expected = 0.0;
 
   CompareExpectedSolutionVsActualSolution(qA_expected, qB_expected,
@@ -82,4 +101,3 @@ GTEST_TEST(ChaoticBabyboot, ForwardDynamicsA) {
 }  // namespace benchmarks
 }  // namespace multibody
 }  // namespace drake
-
