@@ -14,9 +14,15 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-Integrator<T>::Integrator(int size) : VectorSystem<T>(size, size) {
+Integrator<T>::Integrator(int size)
+    : VectorSystem<T>(SystemTypeTag<systems::Integrator>{}, size, size) {
   this->DeclareContinuousState(size);
 }
+
+template <typename T>
+template <typename U>
+Integrator<T>::Integrator(const Integrator<U>& other)
+    : Integrator<T>(other.get_input_port().size()) {}
 
 template <typename T>
 Integrator<T>::~Integrator() {}
@@ -50,16 +56,6 @@ void Integrator<T>::DoCalcVectorOutput(
   // TODO(david-german-tri): Remove this copy by allowing output ports to be
   // mere pointers to state variables (or cache lines).
   *output = state;
-}
-
-template <typename T>
-Integrator<AutoDiffXd>* Integrator<T>::DoToAutoDiffXd() const {
-  return new Integrator<AutoDiffXd>(this->get_input_port().size());
-}
-
-template <typename T>
-Integrator<symbolic::Expression>* Integrator<T>::DoToSymbolic() const {
-  return new Integrator<symbolic::Expression>(this->get_input_port().size());
 }
 
 // Explicitly instantiates on the most common scalar types.
