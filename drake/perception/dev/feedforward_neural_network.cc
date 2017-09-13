@@ -16,12 +16,16 @@ using std::endl;
 
 namespace perception {
 
+// TODO(jwnimmer-tri) The W and b should be typed as doubles, not T.
+// Only items on the Context should be of type T, never member fields.
 template <typename T>
 FeedforwardNeuralNetwork<T>::FeedforwardNeuralNetwork(
     const std::vector<MatrixX<T>>& W, const std::vector<VectorX<T>>& b,
     const std::vector<LayerType>& layers,
     const std::vector<NonlinearityType>& nonlinearities)
-    : input_index_{this->DeclareAbstractInputPort().get_index()},
+    : NeuralNetwork<T>(systems::SystemTypeTag<
+          perception::FeedforwardNeuralNetwork>{}),
+      input_index_{this->DeclareAbstractInputPort().get_index()},
       output_index_{
           this->DeclareVectorOutputPort(BasicVector<T>(W[W.size() - 1].rows()),
                                         &FeedforwardNeuralNetwork::DoCalcOutput)
@@ -59,6 +63,30 @@ FeedforwardNeuralNetwork<T>::FeedforwardNeuralNetwork(
   weights_matrices_ = W;
   bias_vectors_ = b;
 }
+
+namespace {
+// Helper to convert U to T.  This can die once the constructor TODO is fixed.
+template <typename T, typename U, int Rows, int Cols>
+std::vector<Eigen::Matrix<T, Rows, Cols>>
+CastVectorOfEigen(const std::vector<Eigen::Matrix<U, Rows, Cols>>& input) {
+  std::vector<Eigen::Matrix<T, Rows, Cols>> result;
+  result.reserve(input.size());
+  for (const auto& item : input) {
+    result.push_back(item.template cast<T>());
+  }
+  return result;
+}
+}  // namespace
+
+template <typename T>
+template <typename U>
+FeedforwardNeuralNetwork<T>::FeedforwardNeuralNetwork(
+    const FeedforwardNeuralNetwork<U>& other)
+    : FeedforwardNeuralNetwork<T>(
+          CastVectorOfEigen<T>(other.weights_matrices_),
+          CastVectorOfEigen<T>(other.bias_vectors_),
+          other.layers_,
+          other.nonlinearities_) {}
 
 template <typename T>
 void FeedforwardNeuralNetwork<T>::DoCalcOutput(const Context<T>& context,
@@ -107,31 +135,6 @@ VectorX<T> FeedforwardNeuralNetwork<T>::relu(VectorX<T> in) const {
     }
   }
   return result;
-}
-
-template <typename T>
-FeedforwardNeuralNetwork<AutoDiffXd>*
-FeedforwardNeuralNetwork<T>::DoToAutoDiffXd() const {
-  // ?
-  // vector<MatrixX<AutoDiffScalar<MatrixX<T>>>> W_autodiff;
-  // ?
-  vector<MatrixX<AutoDiffXd>> W_autodiff;
-  vector<VectorX<AutoDiffXd>> b_autodiff;
-
-  typedef typename vector<MatrixX<T>>::size_type sz;
-  for (sz i = 0; i < weights_matrices_.size(); i++) {
-    MatrixX<T> this_W = weights_matrices_[i];
-    // ?
-    // W_autodiff.push_back(this_W.template cast<AutoDiffScalar<MatrixX<T>>>());
-    // ?
-    W_autodiff.push_back(this_W.template cast<AutoDiffXd>());
-
-    VectorX<T> this_b = bias_vectors_[i];
-    b_autodiff.push_back(this_b.template cast<AutoDiffXd>());
-  }
-
-  return new FeedforwardNeuralNetwork<AutoDiffXd>(W_autodiff, b_autodiff,
-                                                  layers_, nonlinearities_);
 }
 
 template <typename T>
