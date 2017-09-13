@@ -37,9 +37,9 @@ void  MGChaoticBabyboot::SetInputValues()
 
   tInitial       =  0.0;               // sec      Initial time
   tFinal         =  10;                // sec      Final time
-  tStepMax       =  0.0001;            // sec      Maximum integration step
-  absError       =  1.0E-09;           //          Absolute error
-  relError       =  1.0E-09;           //          Relative error
+  tStepMax       =  0.01;              // sec      Maximum integration step
+  absError       =  1.0E-12;           //          Absolute error
+  relError       =  1.0E-12;           //          Relative error
 
   // Unit conversions to UnitSystem( kilogram, meter, second ).
   IAx *= 1.0E-07;                      //  Converted from g*cm^2
