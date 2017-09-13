@@ -25,7 +25,7 @@ namespace systems {
 /// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 template <typename T>
-class Adder : public LeafSystem<T> {
+class Adder final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Adder)
 
@@ -34,15 +34,13 @@ class Adder : public LeafSystem<T> {
   /// @param size number of elements in each input and output signal.
   Adder(int num_inputs, int size);
 
+  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  template <typename U>
+  explicit Adder(const Adder<U>&);
+
   /// Returns the output port on which the sum is presented.
   const OutputPort<T>& get_output_port() const {
-    DRAKE_ASSERT(output_port_ != nullptr);
-    return *output_port_;
-  }
-
-  /// Returns an Adder<AutoDiffXd> with the same dimensions as this Adder.
-  std::unique_ptr<Adder<AutoDiffXd>> ToAutoDiffXd() const {
-    return std::unique_ptr<Adder<AutoDiffXd>>(DoToAutoDiffXd());
+    return LeafSystem<T>::get_output_port(0);
   }
 
  private:
@@ -50,17 +48,6 @@ class Adder : public LeafSystem<T> {
   // input ports are not the appropriate count or size, std::runtime_error will
   // be thrown.
   void CalcSum(const Context<T>& context, BasicVector<T>* sum) const;
-
-  // System<T> override. Returns an Adder<AutoDiffXd> with the same dimensions
-  // as this Adder.
-  Adder<AutoDiffXd>* DoToAutoDiffXd() const override;
-
-  // System<T> override. Returns an Adder<symbolic::Expression> with the same
-  // dimensions as this Adder.
-  Adder<symbolic::Expression>* DoToSymbolic() const override;
-
-  // This is set in the constructor and can't be nullptr.
-  const OutputPort<T>* output_port_;
 };
 
 }  // namespace systems
