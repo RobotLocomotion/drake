@@ -8,6 +8,7 @@
 #include <Eigen/Dense>
 
 #include "drake/multibody/collision/collision_filter.h"
+#include "drake/multibody/rigid_body_plant/compliant_contact_parameters.h"
 #include "drake/multibody/shapes/drake_shapes.h"
 
 // Forward declaration.
@@ -152,6 +153,15 @@ class Element : public DrakeShapes::Element {
    */
   friend std::ostream& operator<<(std::ostream&, const Element&);
 
+  const systems::CompliantContactParameters& compliant_parameters() const {
+    return compliant_parameters_;
+  }
+
+  void set_compliant_parameters(
+      const systems::CompliantContactParameters& parameters) {
+    compliant_parameters_ = parameters;
+  }
+
  private:
   // Provide a copy constructor for use by our clone() implementation.
   // Delete all of the other operations.
@@ -191,6 +201,9 @@ class Element : public DrakeShapes::Element {
   // collide with. Thus, if the i-th bit is set this element is not checked
   // for collisions with elements in the i-th group.
   drake::multibody::collision::bitmask collision_filter_ignores_{kNoneMask};
+
+  // The compliant contact model parameters for this element.
+  systems::CompliantContactParameters compliant_parameters_;
 
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

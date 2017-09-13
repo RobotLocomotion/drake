@@ -48,8 +48,11 @@ class ContactResultTest : public ContactResultTestCommon {
     // Populate the plant.
     plant_ = make_unique<RigidBodyPlant<double>>(GenerateTestTree(distance));
 
-    plant_->set_normal_contact_parameters(kStiffness, kDissipation);
-    plant_->set_friction_contact_parameters(kStaticFriction, kDynamicFriction,
+    CompliantContactParameters parameters = MakeDefaultMaterialParameters();
+    plant_->set_normal_contact_parameters(parameters.stiffness(),
+                                          parameters.dissipation());
+    plant_->set_friction_contact_parameters(parameters.static_friction(),
+                                            parameters.dynamic_friction(),
                                             kVStictionTolerance);
     context_ = plant_->CreateDefaultContext();
     output_ = plant_->AllocateOutput(*context_);
@@ -118,7 +121,7 @@ TEST_F(ContactResultTest, SingleCollision) {
   // NOTE: Because there is zero velocity, there is no frictional force and no
   // damping on the normal force.  Simply the kx term.  Penetration is twice
   // the offset.
-  double force = kStiffness * offset * 2;
+  double force = kContactStiffness * offset * 2;
   expected_spatial_force << 0, 0, 0, force_sign * force, 0, 0;
   ASSERT_TRUE(
       CompareMatrices(resultant.get_spatial_force(), expected_spatial_force));

@@ -19,8 +19,9 @@ namespace test {
 
 // Utility function to facilitate comparing matrices for equivalency.
 template <typename DerivedA, typename DerivedB>
-bool CompareMatrices(const Eigen::MatrixBase<DerivedA>& m1,
-                     const Eigen::MatrixBase<DerivedB>& m2) {
+::testing::AssertionResult CompareMatrices(
+    const Eigen::MatrixBase<DerivedA>& m1,
+    const Eigen::MatrixBase<DerivedB>& m2) {
   return CompareMatrices(m1, m2, Eigen::NumTraits<double>::dummy_precision(),
                          MatrixCompareType::absolute);
 }
@@ -32,16 +33,42 @@ class ContactResultTestCommon : public ::testing::Test {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContactResultTestCommon)
 
-  // Default constructor.
   ContactResultTestCommon() {}
 
- protected:
-  const double kRadius = 1.0;
-  // Contact parameters
+  /// Computes the default material properties for derived classes to set.
+  CompliantContactParameters MakeDefaultMaterialParameters() {
+    CompliantContactParameters parameters;
+    parameters.set_stiffness(kStiffness);
+    parameters.set_dissipation(kDissipation);
+    parameters.set_friction(kStaticFriction, kDynamicFriction);
+    return parameters;
+  }
+
+ private:
+  // Compliant _material_ parameters applied to each *object*. These are private
+  // to make sure they are not confused as contact parameters in derived tests
+  // (see below).
   const double kStiffness = 150;
   const double kDissipation = 2.0;
   const double kStaticFriction = 0.9;
   const double kDynamicFriction = 0.5;
+
+ protected:
+  const double kRadius = 1.0;
+
+  // The *material* parameters given above are *not* the exact values that
+  // determine the compliant contact force. The actual computation uses net
+  // values derived from material stiffness, dissipation, and friction
+  // coefficients. Generally, the value for the contact will be different than
+  // the per-material values. That said, in these tests we're using the same
+  // materials on all objects. As such, the contact parameters for dissipation,
+  // and friction are the same, but the stiffness is *half*. That is captured
+  // here. This is not generally true for contact between objects with different
+  // compliant material parameters. See contact_model_doxygen.h for details.
+  const double kContactStiffness = 0.5 * kStiffness;
+  const double kContactDissipation = kDissipation;
+  const double kContactStaticFriction = kStaticFriction;
+  const double kConstantDynamicFriction = kDynamicFriction;
   const double kVStictionTolerance = 0.01;
 
   // Places two spheres on the x-y plane mirrored across the x_anchor_ from
@@ -57,8 +84,12 @@ class ContactResultTestCommon : public ::testing::Test {
     body2_ = AddSphere(unique_tree.get(), pos, "sphere2");
 
     unique_tree->compile();
+    DoGenerateTestTree(unique_tree.get());
     return unique_tree;
   }
+
+  // Opportunity for sub-classes to manipulate the tree *after* it is compiled.
+  virtual void DoGenerateTestTree(RigidBodyTree<double>* tree) {}
 
   // Add a sphere with default radius, placed at the given position.
   //  Returns a raw pointer so that tests can use it for result validation.

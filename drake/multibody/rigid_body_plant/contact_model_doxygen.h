@@ -16,6 +16,7 @@
 
  - @ref contact_geometry "properties of the geometric contact techniques",
  - @ref contact_model "details of the contact response model", and
+ - @ref per_object_contact "per-object contact materials"
  - @ref contact_engineering "techniques for teasing out desirable behavior".
 
  @section contact_spec  Definition of contact
@@ -72,9 +73,9 @@
  Given two posed geometric shapes in a common frame, the collision detection
  system is responsible for determining if those shapes are penetrating and
  characterizing that penetration. We won't go into the details of the how and
- why these techniques work the way they do, and, instead, focus on _what_ the
+ why these techniques work the way they do, but, instead, focus on _what_ the
  properties of the results of the _current implementation_ are.  It is worth
- noting that these some of these properties are considered _problems_ yet to be
+ noting that some of these properties are considered _problems_ yet to be
  resolved and should not necessarily be considered desirable.
 
  -# Between any two collision Elements, only a _single_ contact will be
@@ -132,7 +133,7 @@
  Drake uses the Hunt-Crossley model [Hunt 1975] for computing a normal force
  `fₙ` that accounts for both stiffness and dissipation effects. This is a
  continuous model based on Hertz elastic contact theory, which correctly
- reproduces the empirically observed velocity dependence of coefficient of
+ reproduces the empirically observed velocity dependence of the coefficient of
  restitution, where `e=(1-dv)` for (small) impact velocity `v` and a material
  property `d` with units of 1/velocity. In theory, at least, `d` can be
  measured right off the coefficient of restitution-vs.-impact velocity curves:
@@ -141,7 +142,7 @@
  Given a collision between two spheres, or a sphere and a plane, we can generate
  a contact force from this equation `fₙ = kxᵐ(1 + mdẋ)` where `k` is a stiffness
  constant incorporating material properties and geometry (to be defined below),
- `x` is penetration depth and `ẋ` is penetration rate (positive during
+ `x` is penetration depth and `ẋ` is penetration rate (positive for increasing
  penetration and negative during rebound). Exponent `m` depends on the surface
  geometry and captures the change in contact patch area with penetration. For
  Hertz contact where the geometry can be approximated by sphere (or
@@ -285,6 +286,111 @@
 
  Next topic: @ref contact_engineering
 */
+
+/** @defgroup per_object_contact Per-object contact material
+ @ingroup drake_contacts
+
+ Drake supports defining compliant contact material properties on a per
+ collision geometry basis. It has several mechanisms in place to facilitate
+ working with per-object contact materials:
+
+ - Universal default values (all objects default to the universal values if none
+   have been explicitly specified.
+ - Parsing per-collision element properties from URDF and SDF files using
+   extended tags (formatted identically for both source files types).
+ - Runtime access to set the global default values and per-element values.
+
+ @section Material parameters and evaluating contact
+
+ The per-object material properties resemble those of the contact model,
+ consisting of:
+
+ - stiffness (k),
+ - dissipation (d), and
+ - static and dynamic friction (μ_s and μ_d, respectively).
+
+ The parameters outlined in @ref contact_model are derived from the parameter
+ values for the two colliding bodies. Consider two colliding bodies I and J.
+ The contact k, d, μ_s, and μ_d values used to compute the contact force
+ are defined in the following way:
+
+ - sᵢ is the "squish" factor of body I. The two penetrating geometries represent
+   deforming bodies. If bodies I and J represent a steel plate and a foam ball,
+   respectively, body I would experience the entire deformation. It is defined
+   as sᵢ = kⱼ / (kᵢ + kⱼ). With sⱼ = 1 - sᵢ.
+ - k = sᵢkᵢ = sⱼkⱼ. The stiffness of the _contact_ will generally not be the
+   stiffness of either constituent material (unless one were infinite). If
+   kᵢ = kⱼ, then k would be kᵢ/2.
+ - d = sᵢdᵢ + s₂d₂. Again, the dissipation of the contact is simply a linear
+   interpolation of the two bodies' dissipation values.
+ - μ_s (and μ_d) are defined as 2μᵢμⱼ / (μᵢ + μⱼ).
+
+ Finally, the contact point is also defined with respect to the "squish"
+ factors. For penetrating bodies I and J, there is a point on the surface of I
+ that _most_ deeply penetrates into J (and vice versa). We will call those
+ points p_FIc P_FJc (measured and expressed in some common frame F). The contact
+ point is defined in the same frame as p_FC = p_FIc * sⱼ + P_FJc * sᵢ. We draw
+ _particular_ attention to the fact that the point of on I's surface is weighted
+ by J's squish factor and vice versa. That is because, if body I experiences
+ all of the deformation, it will be deformed all the way to the point of
+ deepest penetration _in_ I, which was the definition of P_FJc.
+
+ @section Global default values
+
+ Drake contains hard-coded material parameter values
+ (see compliant_parameters.h). If no specific values are provided for
+ a collision element, it will shadow these global default values. This
+ relationship is _dynamic_. In other words, the default values are copied into
+ an element at instantiation time -- a _relationship_ is. A collision element
+ which uses default parameter values will have its values change as the
+ as the default values change. This allows us to _not_ worry about the order of
+ operations between loading files and setting the defaults.
+
+ To set the default values, use CompliantContactParameters::SetDefaultValues().
+
+ @section Specifying contact parameter values in URDF/SDF.
+
+ We are exploiting the fact that URDF and SDF are XML files and choose to
+ naively extend the specification to include a custom tag. Although there are
+ numerous differences between the two formats, there is remarkable similarity
+ in declaring collision geometries. For simplicity's sake, we expect identically
+ formatted contact material format in both formats that look something like
+ this:
+
+ ```xml
+ ...
+ <collision ...>
+   <geometry ...>
+   </geometry>
+
+   <drake_compliance>
+     <stiffness>##</stiffness>
+     <dissipation>##</dissipation>
+     <static_friction>##</static_friction>
+     <dynamic_friction>##</dynamic_friction>
+   </drake_compliance>
+
+ </collision>
+ ...
+ ```
+
+ Differences between URDF and SDF are dismissed with ellipses. What is
+ significant is that the `<drake_compliance>` tag should be introduced as a
+ child of the `<collision>` tag (common to both formats) and should be
+ formatted as given.
+
+ The following rules are applied for parsing:
+
+ - If no `<drake_compliance>` tag is found, the element uses the global default
+   parameters.
+ - Not all properties are required; explicitly specified properties will be
+   applied to the corresponding element and omitted properties will map to the
+   default values.
+ - Friction values must be defined as a pair, or not at all. When defined as a
+   pair, the `static_friction` value must be greater than or equal to the
+   `dynamic_friction` value. Failure to meet these requirements will cause a
+   parse error.
+ */
 
 /** @defgroup contact_engineering Working with Contacts in Drake
  @ingroup drake_contacts
