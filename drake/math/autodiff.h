@@ -7,8 +7,8 @@
 #include <tuple>
 
 #include <Eigen/Dense>
-#include <unsupported/Eigen/AutoDiff>
 
+#include "drake/common/autodiff_overloads.h"
 #include "drake/common/unused.h"
 
 namespace drake {
