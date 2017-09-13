@@ -7,7 +7,8 @@ set(source_files
     kinematics_results.cc
     point_contact_detail.cc
     rigid_body_plant.cc
-    compliant_contact_model.cc)
+    compliant_contact_model.cc
+    compliant_contact_parameters.cc)
 
 # The following variables are necessary to conditionally include
 # DrakeVisualizer and ViewerDrawTranslator in libdrakeRigidBodyPlant.so if LCM

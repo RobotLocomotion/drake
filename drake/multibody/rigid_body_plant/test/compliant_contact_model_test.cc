@@ -7,6 +7,7 @@
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/multibody/joints/quaternion_floating_joint.h"
+#include "drake/multibody/rigid_body_plant/compliant_contact_parameters.h"
 #include "drake/multibody/rigid_body_plant/test/contact_result_test_common.h"
 #include "drake/multibody/rigid_body_tree.h"
 
@@ -28,6 +29,7 @@ using Eigen::Quaterniond;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
+using drake::multibody::collision::Element;
 using std::make_unique;
 using std::move;
 using std::unique_ptr;
@@ -49,10 +51,10 @@ class CompliantContactModelTest : public ContactResultTestCommon {
     // Populate the CompliantContactModel.
     compliant_contact_model_ =
         make_unique<CompliantContactModel<double>>();
-    compliant_contact_model_->set_normal_contact_parameters(kStiffness,
-                                                            kDissipation);
-    compliant_contact_model_->set_friction_contact_parameters(
-        kStaticFriction, kDynamicFriction, kVStictionTolerance);
+    CompliantContactParameters parameters = MakeDefaultMaterialParameters();
+    compliant_contact_model_->set_default_parameters(parameters);
+    compliant_contact_model_->set_velocity_stiction_tolerance(
+        kVStictionTolerance);
 
     // The state to test is the default state of the tree (0 velocities
     // and default configuration positions of the tree)
@@ -91,7 +93,8 @@ TEST_F(CompliantContactModelTest, ModelTouching) {
   ASSERT_EQ(contact_results.get_num_contacts(), 0);
 }
 
-// Confirms a contact result for two colliding spheres.
+// Confirms a contact result for two colliding spheres with identical contact
+// material and zero relative velocity.
 TEST_F(CompliantContactModelTest, ModelSingleCollision) {
   double offset = 0.1;
   auto& contact_results = RunTest(-offset);
@@ -117,10 +120,7 @@ TEST_F(CompliantContactModelTest, ModelSingleCollision) {
   const auto& resultant = info.get_resultant_force();
   SpatialForce<double> expected_spatial_force;
 
-  // NOTE: Because there is zero velocity, there is no frictional force and no
-  // damping on the normal force.  Simply the kx term.  Penetration is twice
-  // the offset.
-  double force = kStiffness * offset * 2;
+  double force = kContactStiffness * offset * 2;
   expected_spatial_force << 0, 0, 0, force_sign * force, 0, 0;
   ASSERT_TRUE(
       CompareMatrices(resultant.get_spatial_force(), expected_spatial_force));
@@ -132,6 +132,87 @@ TEST_F(CompliantContactModelTest, ModelSingleCollision) {
                               expected_spatial_force));
   Vector3<double> expected_point;
   expected_point << x_anchor_, 0, 0;
+  ASSERT_TRUE(
+      CompareMatrices(detail_force.get_application_point(), expected_point));
+}
+
+// This class introduces heterogeneous compliant material parameters. It does
+// so by wrapping the tree generation and directly setting element contact
+// parameters.
+class CompliantHeterogeneousModelTest : public CompliantContactModelTest {
+ protected:
+  void DoGenerateTestTree(RigidBodyTree<double>*) override {
+    EXPECT_EQ(body1_->get_num_collision_elements(), 1);
+    EXPECT_EQ(body2_->get_num_collision_elements(), 1);
+    Element& element1 = **body1_->collision_elements_begin();
+    Element& element2 = **body2_->collision_elements_begin();
+
+    auto set_params = [this](Element* element, int index) {
+      CompliantContactParameters parameters;
+      parameters.set_stiffness(stiffness_[index]);
+      parameters.set_dissipation(dissipation_[index]);
+      parameters.set_friction(static_friction_[index],
+                              dynamic_friction_[index]);
+      element->set_compliant_parameters(parameters);
+    };
+    set_params(&element1, 0);
+    set_params(&element2, 1);
+  }
+
+  // Per-element contact parameters.
+  double stiffness_[2]{10000, 20000};
+  double dissipation_[2]{2, 3};
+  double static_friction_[2]{1.5, 0.1};
+  double dynamic_friction_[2]{1.0, 0.1};
+};
+
+// Confirms a contact result for two colliding spheres with heterogeneous
+// contact material and zero relative velocity.
+TEST_F(CompliantHeterogeneousModelTest, ModelSingleCollision) {
+  double offset = 0.1;
+  auto& contact_results = RunTest(-offset);
+  ASSERT_EQ(contact_results.get_num_contacts(), 1);
+  const auto info = contact_results.get_contact_info(0);
+
+  // Confirms that the proper bodies are in contact.
+  drake::multibody::collision::ElementId e1 = info.get_element_id_1();
+  drake::multibody::collision::ElementId e2 = info.get_element_id_2();
+  const RigidBody<double>* b1 = unique_tree_->FindBody(e1);
+  const RigidBody<double>* b2 = unique_tree_->FindBody(e2);
+  ASSERT_NE(e1, e2);
+  ASSERT_TRUE((b1 == body1_ && b2 == body2_) || (b1 == body2_ && b2 == body1_));
+
+  // The direction of the force depends on which body is 1 and which is 2. We
+  // assume b1 is body1_, if not, we reverse the sign of the force.
+  double force_sign = -1;
+  double kS1 = stiffness_[1] / (stiffness_[0] + stiffness_[1]);
+  if (b2 == body1_) {
+    force_sign = 1;
+    kS1 = 1 - kS1;
+  }
+
+  // Confirms the contact details are as expected.
+  const auto& resultant = info.get_resultant_force();
+  SpatialForce<double> expected_spatial_force;
+
+  const double kStiffness =
+      stiffness_[0] * stiffness_[1] / (stiffness_[0] + stiffness_[1]);
+  double force = kStiffness * offset * 2;
+  expected_spatial_force << 0, 0, 0, force_sign * force, 0, 0;
+  ASSERT_TRUE(
+      CompareMatrices(resultant.get_spatial_force(), expected_spatial_force));
+
+  const auto& details = info.get_contact_details();
+  ASSERT_EQ(details.size(), 1u);
+  auto detail_force = details[0]->ComputeContactForce();
+  ASSERT_TRUE(CompareMatrices(detail_force.get_spatial_force(),
+                              expected_spatial_force));
+  Vector3<double> expected_point;
+  // Sphere 1 is placed on the left of the anchor point, and Sphere 2 on the
+  // right.
+  const double x_pos =
+      (x_anchor_ - offset) * kS1 + (x_anchor_ + offset) * (1 - kS1);
+  expected_point << x_pos, 0, 0;
   ASSERT_TRUE(
       CompareMatrices(detail_force.get_application_point(), expected_point));
 }
