@@ -138,8 +138,65 @@ The relevant details of the examples are:
 
 <h3>Systems not marked as `final`</h3>
 
-TODO(jwnimmer-tri) Document how to write a class hierarchy of Systems that
-support scalar conversion.
+For a class hierarchy of Systems that support scalar conversion, a slightly
+different pattern is required.
+
+@code
+namespace sample {
+template <typename T>
+class MySystemBase : public LeafSystem<T> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MySystemBase);
+
+  // Constructs a system with the given `gain`.
+  // Subclasses must use the protected constructor, not this one.
+  explicit MySystemBase(double gain)
+    : LeafSystem<T>(SystemTypeTag<sample::MySystemBase>{}), gain_{gain} {}
+
+  // Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  template <typename U>
+  explicit MySystemBase(const MySystemBase<U>& other)
+    : MySystemBase<T>(other.gain()) {}
+
+  // Returns the gain of this system.
+  double gain() const { return gain_; }
+
+ protected:
+  // Constructor that specifies scalar-type conversion support.
+  // @param converter scalar-type conversion support helper (i.e., AutoDiff,
+  // etc.); pass a default-constructed object if such support is not desired.
+  explicit MySystemBase(SystemScalarConverter converter, double gain)
+    : LeafSystem<T>(std::move(converter)), gain_{gain} {}
+
+  ...
+namespace sample {
+template <typename T>
+class MySystemDerived final : public MySystemBase<T> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MySystemDerived);
+
+  // Constructs a system with a gain of 1.0.
+  MySystemDerived() : MySystemBase<T>(
+      SystemTypeTag<sample::MySystemDerived>{},
+      1.0) {}
+
+  // Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  template <typename U>
+  explicit MySystemDerived(const MySystemDerived<U>&) : MySystemDerived<T>() {}
+
+  ...
+@endcode
+
+The relevant details of the examples are:
+- Non-`final` classes like `MySystemBase` must offer a protected constructor
+  that takes a SystemScalarConverter as the first argument.
+- Constructors for derived classes such as `MySystemDerived` must delegate
+  to a base class protected constructor that takes a %SystemScalarConverter,
+  never to a public constructor without one.
+- `MySystemBase` and `MySystemDerived` both have a public scalar-converting copy
+  constructor;
+  - if the base system is abstract (cannot be constructed), then it may omit
+    this constructor.
 
 <h3>Limiting the supported scalar types</h3>
 

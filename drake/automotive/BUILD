@@ -618,6 +618,7 @@ drake_cc_googletest(
     name = "simple_powertrain_test",
     deps = [
         "//drake/automotive:simple_powertrain",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 

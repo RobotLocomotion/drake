@@ -29,6 +29,7 @@ namespace systems {
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
 /// - AutoDiffXd
+/// - symbolic::Expression
 ///
 /// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
@@ -51,11 +52,17 @@ class LinearSystem : public AffineSystem<T> {
   /// | B       | num states  | num inputs  |
   /// | C       | num outputs | num states  |
   /// | D       | num outputs | num inputs  |
+  ///
+  /// Subclasses must use the protected constructor, not this one.
   LinearSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
                const Eigen::Ref<const Eigen::MatrixXd>& B,
                const Eigen::Ref<const Eigen::MatrixXd>& C,
                const Eigen::Ref<const Eigen::MatrixXd>& D,
                double time_period = 0.0);
+
+  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  template <typename U>
+  explicit LinearSystem(const LinearSystem<U>&);
 
   /// Creates a unique pointer to LinearSystem<T> by decomposing @p dynamics and
   /// @p outputs using @p state_vars and @p input_vars.
@@ -68,6 +75,19 @@ class LinearSystem : public AffineSystem<T> {
       const Eigen::Ref<const VectorX<symbolic::Variable>>& state_vars,
       const Eigen::Ref<const VectorX<symbolic::Variable>>& input_vars,
       double time_period = 0.0);
+
+ protected:
+  /// Constructor that specifies scalar-type conversion support.
+  /// @param converter scalar-type conversion support helper (i.e., AutoDiff,
+  /// etc.); pass a default-constructed object if such support is not desired.
+  /// See @ref system_scalar_conversion for detailed background and examples
+  /// related to scalar-type conversion support.
+  LinearSystem(SystemScalarConverter converter,
+               const Eigen::Ref<const Eigen::MatrixXd>& A,
+               const Eigen::Ref<const Eigen::MatrixXd>& B,
+               const Eigen::Ref<const Eigen::MatrixXd>& C,
+               const Eigen::Ref<const Eigen::MatrixXd>& D,
+               double time_period);
 };
 
 /// Takes the first-order Taylor expansion of a System around a nominal
