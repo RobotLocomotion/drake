@@ -758,7 +758,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // TODO(amcastro-tri): consider caching X_WF since also used in position and
     // velocity kinematics.
     const Matrix3<T> R_WF = X_WP.linear() * X_PF.linear();
-    const SpatialForce<T> F_BMo_F = R_WF * F_BMo_W;
+    const SpatialForce<T> F_BMo_F = R_WF.transpose() * F_BMo_W;
 
     // Generalized velocities and forces use the same indexing.
     auto tau = get_mutable_generalized_forces_from_array(tau_array);
