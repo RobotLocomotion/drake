@@ -89,15 +89,13 @@ TEST_F(LinearSystemTest, Output) {
 
 // Tests converting to different scalar types.
 TEST_F(LinearSystemTest, ConvertScalarType) {
-  // TODO(jwnimmer-tri) We would prefer that these are true, but right now,
-  // LinearSystem does not transmogrify correctly.
-  EXPECT_FALSE(is_autodiffxd_convertible(*dut_, [&](const auto& converted) {
+  EXPECT_TRUE(is_autodiffxd_convertible(*dut_, [&](const auto& converted) {
     EXPECT_EQ(converted.A(), A_);
     EXPECT_EQ(converted.B(), B_);
     EXPECT_EQ(converted.C(), C_);
     EXPECT_EQ(converted.D(), D_);
   }));
-  EXPECT_FALSE(is_symbolic_convertible(*dut_, [&](const auto& converted) {
+  EXPECT_TRUE(is_symbolic_convertible(*dut_, [&](const auto& converted) {
     EXPECT_EQ(converted.A(), A_);
     EXPECT_EQ(converted.B(), B_);
     EXPECT_EQ(converted.C(), C_);

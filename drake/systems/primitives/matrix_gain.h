@@ -20,6 +20,7 @@ namespace systems {
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
 /// - AutoDiffXd
+/// - symbolic::Expression
 ///
 /// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
@@ -29,7 +30,7 @@ namespace systems {
 /// @see AffineSystem
 /// @see LinearSystem
 template <typename T>
-class MatrixGain : public LinearSystem<T> {
+class MatrixGain final : public LinearSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MatrixGain)
 
@@ -39,6 +40,10 @@ class MatrixGain : public LinearSystem<T> {
 
   /// A constructor where the gain matrix `D` is @p D.
   explicit MatrixGain(const Eigen::MatrixXd& D);
+
+  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  template <typename U>
+  explicit MatrixGain(const MatrixGain<U>&);
 };
 
 }  // namespace systems

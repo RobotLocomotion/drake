@@ -987,6 +987,9 @@ class System {
   /// scalar type, with a dynamic-sized vector of partial derivatives.  The
   /// result is never nullptr.
   /// @throw exception if this System does not support autodiff
+  ///
+  /// See @ref system_scalar_conversion for detailed background and examples
+  /// related to scalar-type conversion support.
   std::unique_ptr<System<AutoDiffXd>> ToAutoDiffXd() const {
     return System<T>::ToAutoDiffXd(*this);
   }
@@ -1003,6 +1006,9 @@ class System {
   /// @endcode
   ///
   /// @tparam S The specific System type to accept and return.
+  ///
+  /// See @ref system_scalar_conversion for detailed background and examples
+  /// related to scalar-type conversion support.
   template <template <typename> class S = ::drake::systems::System>
   static std::unique_ptr<S<AutoDiffXd>> ToAutoDiffXd(const S<T>& from) {
     using U = AutoDiffXd;
@@ -1010,7 +1016,7 @@ class System {
     std::unique_ptr<System<U>> base_result{from_system.DoToAutoDiffXd()};
     if (!base_result) {
       std::stringstream ss;
-      ss << "The object named [" << from.get_name() << "] of type"
+      ss << "The object named [" << from.get_name() << "] of type "
          << NiceTypeName::Get(from) << " does not support ToAutoDiffXd.";
       throw std::logic_error(ss.str().c_str());
     }
@@ -1051,6 +1057,9 @@ class System {
   /// Creates a deep copy of this System, transmogrified to use the symbolic
   /// scalar type. The result is never nullptr.
   /// @throw exception if this System does not support symbolic
+  ///
+  /// See @ref system_scalar_conversion for detailed background and examples
+  /// related to scalar-type conversion support.
   std::unique_ptr<System<symbolic::Expression>> ToSymbolic() const {
     return System<T>::ToSymbolic(*this);
   }
@@ -1066,6 +1075,9 @@ class System {
   /// @endcode
   ///
   /// @tparam S The specific System pointer type to return.
+  ///
+  /// See @ref system_scalar_conversion for detailed background and examples
+  /// related to scalar-type conversion support.
   template <template <typename> class S = ::drake::systems::System>
   static std::unique_ptr<S<symbolic::Expression>> ToSymbolic(const S<T>& from) {
     using U = symbolic::Expression;
@@ -1073,7 +1085,7 @@ class System {
     std::unique_ptr<System<U>> base_result{from_system.DoToSymbolic()};
     if (!base_result) {
       std::stringstream ss;
-      ss << "The object named [" << from.get_name() << "] of type"
+      ss << "The object named [" << from.get_name() << "] of type "
          << NiceTypeName::Get(from) << " does not support ToSymbolic.";
       throw std::logic_error(ss.str().c_str());
     }

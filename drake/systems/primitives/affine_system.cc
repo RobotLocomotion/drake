@@ -1,5 +1,7 @@
 #include "drake/systems/primitives/affine_system.h"
 
+#include <utility>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
@@ -15,11 +17,11 @@ using std::make_unique;
 using std::unique_ptr;
 
 template <typename T>
-TimeVaryingAffineSystem<T>::TimeVaryingAffineSystem(int num_states,
-                                                    int num_inputs,
-                                                    int num_outputs,
-                                                    double time_period)
-    : num_states_(num_states),
+TimeVaryingAffineSystem<T>::TimeVaryingAffineSystem(
+    SystemScalarConverter converter,
+    int num_states, int num_inputs, int num_outputs, double time_period)
+    : LeafSystem<T>(std::move(converter)),
+      num_states_(num_states),
       num_inputs_(num_inputs),
       num_outputs_(num_outputs),
       time_period_(time_period) {
@@ -155,6 +157,8 @@ void TimeVaryingAffineSystem<T>::DoCalcDiscreteVariableUpdates(
 template class TimeVaryingAffineSystem<double>;
 template class TimeVaryingAffineSystem<AutoDiffXd>;
 
+// Our public constructor declares that our most specific subclass is
+// AffineSystem, and then delegates to our protected constructor.
 template <typename T>
 AffineSystem<T>::AffineSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
                               const Eigen::Ref<const Eigen::MatrixXd>& B,
@@ -163,7 +167,23 @@ AffineSystem<T>::AffineSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
                               const Eigen::Ref<const Eigen::MatrixXd>& D,
                               const Eigen::Ref<const Eigen::VectorXd>& y0,
                               double time_period)
-    : TimeVaryingAffineSystem<T>(f0.size(), D.cols(), D.rows(), time_period),
+    : AffineSystem<T>(
+          SystemTypeTag<systems::AffineSystem>{},
+          A, B, f0, C, D, y0, time_period) {}
+
+// Our protected constructor does all of the real work -- everything else
+// delegates to here.
+template <typename T>
+AffineSystem<T>::AffineSystem(SystemScalarConverter converter,
+                              const Eigen::Ref<const Eigen::MatrixXd>& A,
+                              const Eigen::Ref<const Eigen::MatrixXd>& B,
+                              const Eigen::Ref<const Eigen::VectorXd>& f0,
+                              const Eigen::Ref<const Eigen::MatrixXd>& C,
+                              const Eigen::Ref<const Eigen::MatrixXd>& D,
+                              const Eigen::Ref<const Eigen::VectorXd>& y0,
+                              double time_period)
+    : TimeVaryingAffineSystem<T>(
+          std::move(converter), f0.size(), D.cols(), D.rows(), time_period),
       A_(A),
       B_(B),
       f0_(f0),
@@ -179,6 +199,14 @@ AffineSystem<T>::AffineSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
   DRAKE_DEMAND(this->num_outputs() == C.rows());
   DRAKE_DEMAND(this->num_outputs() == D.rows());
 }
+
+// Our copy constructor delegates to the public constructor; this used only by
+// SystemScalarConverter as known to our public constructor, not by subclasses.
+template <typename T>
+template <typename U>
+AffineSystem<T>::AffineSystem(const AffineSystem<U>& other)
+    : AffineSystem(other.A(), other.B(), other.f0(), other.C(), other.D(),
+                   other.y0(), other.time_period()) {}
 
 template <typename T>
 unique_ptr<AffineSystem<T>> AffineSystem<T>::MakeAffineSystem(
@@ -213,19 +241,6 @@ unique_ptr<AffineSystem<T>> AffineSystem<T>::MakeAffineSystem(
   const auto D = CD.rightCols(num_inputs);
 
   return make_unique<AffineSystem<T>>(A, B, f0, C, D, y0, time_period);
-}
-
-// Setup equivalent system with a different scalar type.
-template <typename T>
-AffineSystem<AutoDiffXd>* AffineSystem<T>::DoToAutoDiffXd() const {
-  return new AffineSystem<AutoDiffXd>(A_, B_, f0_, C_, D_, y0_,
-                                      this->time_period());
-}
-
-template <typename T>
-AffineSystem<symbolic::Expression>* AffineSystem<T>::DoToSymbolic() const {
-  return new AffineSystem<symbolic::Expression>(A_, B_, f0_, C_, D_, y0_,
-                                                this->time_period());
 }
 
 template <typename T>
