@@ -465,6 +465,44 @@ TEST_F(VectorSystemTest, ToSymbolicTest) {
   }));
 }
 
+/// A system that passes a custom SystemScalarConverter object to VectorSystem,
+/// rather than a SystemTypeTag.
+template <typename T>
+class DirectScalarTypeConversionSystem : public VectorSystem<T> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DirectScalarTypeConversionSystem);
+
+  DirectScalarTypeConversionSystem()
+      : VectorSystem<T>(MakeConverter(), 0, 0) {
+    // This will fail at compile-time if T is ever symbolic::Expression.
+    const T neg_one = test::copysign_int_to_non_symbolic_scalar(-1, T{1.0});
+    DRAKE_DEMAND(neg_one == T{-1.0});
+  }
+
+  explicit DirectScalarTypeConversionSystem(
+      const DirectScalarTypeConversionSystem<double>&, int dummy = 0)
+      : DirectScalarTypeConversionSystem<T>() {}
+
+ private:
+  static SystemScalarConverter MakeConverter() {
+    // Only support double => AutoDiffXd.
+    SystemScalarConverter result;
+    result.AddIfSupported<
+      systems::DirectScalarTypeConversionSystem, AutoDiffXd, double>();
+    return result;
+  }
+};
+
+TEST_F(VectorSystemTest, DirectToAutoDiffXdTest) {
+  DirectScalarTypeConversionSystem<double> dut;
+
+  // Convert to AutoDiffXd.
+  EXPECT_TRUE(is_autodiffxd_convertible(dut));
+
+  // Convert to Symbolic (expected fail).
+  EXPECT_EQ(dut.ToSymbolicMaybe(), nullptr);
+}
+
 // This system declares an output and continuous state, but does not define
 // the required methods.
 class MissingMethodsContinuousTimeSystem : public VectorSystem<double> {
