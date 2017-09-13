@@ -19,6 +19,7 @@ drake_cc_library(
     hdrs = [
         "MG_chaotic_babyboot_auto_generated.h",
     ],
+    copts = ["-Wno-unused-parameter"],
     deps = [
     ],
 )
