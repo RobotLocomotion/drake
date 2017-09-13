@@ -33,6 +33,7 @@ using drake::solvers::MatrixXDecisionVariable;
 using drake::solvers::MathematicalProgram;
 using drake::solvers::SolutionResult;
 
+/// @file
 /// NOTE: The contents of this class are for the most part direct ports of
 /// drake/systems/plants/@RigidBodyManipulator/inverseKinBackend.m from Matlab
 /// to C++; many methods and variables follow Matlab conventions and are
