@@ -23,6 +23,8 @@ Argument:
     name: A unique name for this rule.
 """
 
+load("@drake//tools:os.bzl", "determine_os")
+
 VTK_MAJOR_MINOR_VERSION = "8.0"
 
 def _vtk_cc_library(os_name, name, hdrs = None, visibility = None, deps = None,
@@ -75,37 +77,23 @@ cc_library(
     return content
 
 def _impl(repository_ctx):
-    if repository_ctx.os.name == "mac os x":
+    os_result = determine_os(repository_ctx)
+    if os_result.error != None:
+        fail(os_result.error)
+
+    if os_result.is_mac:
         repository_ctx.symlink("/usr/local/opt/vtk@{}/include".format(
             VTK_MAJOR_MINOR_VERSION), "include")
         repository_ctx.file("empty.cc", executable = False)
-
-    elif repository_ctx.os.name == "linux":
-        sed = repository_ctx.which("sed")
-        if sed == None:
-            fail("Could NOT determine Linux distribution information" +
-                 "('sed' is missing?!)", sed)
-        result = repository_ctx.execute([
-            sed,
-            "-n",
-            "/^\(NAME\|VERSION_ID\)=/{s/[^=]*=//;s/\"//g;p}",
-            "/etc/os-release"])
-
-        if result.return_code != 0:
-            fail("Could NOT determine Linux distribution information",
-                 attr = result.stderr)
-
-        distro = [l.strip() for l in result.stdout.strip().split("\n")]
-        distro = " ".join(distro)
-
-        if distro == "Ubuntu 14.04":
+    elif os_result.is_ubuntu:
+        if os_result.ubuntu_release == "14.04":
             archive = "vtk-8.0.1-qt-4.8.6-trusty-x86_64.tar.gz"
             sha256 = "ba58f2fb23a42074ed8f5177f3bc6d4ef8c169a761969f83cfeae32af723b6f1"  # noqa
-        elif distro == "Ubuntu 16.04":
+        elif os_result.ubuntu_release == "16.04":
             archive = "vtk-8.0.1-qt-5.5.1-xenial-x86_64.tar.gz"
             sha256 = "095a88c14c44b8f2655c5932f21ccbfeca840e5815f14b153bc5d5a102940527"  # noqa
         else:
-            fail("Linux distribution is NOT supported", attr = distro)
+            fail("Operating system is NOT supported", attr = os_result)
 
         url = "https://d2mbb5ninhlpdu.cloudfront.net/vtk/{}".format(archive)
         root_path = repository_ctx.path("")
@@ -113,8 +101,7 @@ def _impl(repository_ctx):
         repository_ctx.download_and_extract(url, root_path, sha256 = sha256)
 
     else:
-        fail("Operating system is NOT supported",
-             attr = repository_ctx.os.name)
+        fail("Operating system is NOT supported", attr = os_result)
 
     # Note that we only create library targets for enough of VTK to support
     # those used directly or indirectly by Drake.
@@ -366,7 +353,7 @@ def _impl(repository_ctx):
     )
 
     # Compilation failures with system version of LZ4 on Ubuntu 14.04.
-    if repository_ctx.os.name == "linux" and distro == "Ubuntu 14.04":
+    if os_result.ubuntu_release == "14.04":
         VTKLZ4 = ":vtklz4"
     else:
         VTKLZ4 = "@liblz4"
@@ -549,7 +536,7 @@ def _impl(repository_ctx):
         header_only = True,
     )
 
-    if repository_ctx.os.name == "linux" and distro == "Ubuntu 14.04":
+    if os_result.ubuntu_release == "14.04":
         file_content += _vtk_cc_library(repository_ctx.os.name, "vtklz4")
 
     file_content += _vtk_cc_library(repository_ctx.os.name, "vtkmetaio",

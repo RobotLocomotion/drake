@@ -28,9 +28,14 @@ load(
     "@kythe//tools/build_rules/config:pkg_config.bzl",
     "setup_pkg_config_package",
 )
+load("@drake//tools:os.bzl", "determine_os")
 
 def _impl(repository_ctx):
-    if repository_ctx.os.name == "mac os x":
+    os_result = determine_os(repository_ctx)
+    if os_result.error != None:
+        fail(os_result.error)
+
+    if os_result.is_mac:
         repository_ctx.file("empty.cc", executable = False)
 
         repository_ctx.symlink("/usr/include/expat.h", "include/expat.h")
