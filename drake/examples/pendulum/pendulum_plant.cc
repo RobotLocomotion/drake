@@ -2,8 +2,8 @@
 
 #include <cmath>
 
-#include "drake/common/drake_throw.h"
 #include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/symbolic.h"
 
 namespace drake {
 namespace examples {
@@ -29,8 +29,9 @@ template <typename T>
 PendulumPlant<T>::~PendulumPlant() {}
 
 template <typename T>
-const systems::InputPortDescriptor<T>& PendulumPlant<T>::get_tau_port() const {
-  return this->get_input_port(0);
+const systems::InputPortDescriptor<T>& PendulumPlant<T>::get_input_port()
+    const {
+  return systems::System<T>::get_input_port(0);
 }
 
 template <typename T>
@@ -65,17 +66,15 @@ void PendulumPlant<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
   const PendulumState<T>& state = get_state(context);
-  const PendulumParams<T>& params =
-      this->template GetNumericParameter<PendulumParams>(context, 0);
+  const PendulumParams<T>& params = get_parameters(context);
   PendulumState<T>* derivative_vector = get_mutable_state(derivatives);
 
   derivative_vector->set_theta(state.thetadot());
-  using std::pow;
   derivative_vector->set_thetadot(
       (get_tau(context) -
        params.mass() * params.gravity() * params.length() * sin(state.theta()) -
        params.damping() * state.thetadot()) /
-      (params.mass() * pow(params.length(), 2)));
+      (params.mass() * params.length() * params.length()));
 }
 
 template class PendulumPlant<double>;

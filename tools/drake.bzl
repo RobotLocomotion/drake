@@ -37,8 +37,9 @@ GCC_CC_TEST_FLAGS = [
     "-Wno-unused-parameter",
 ]
 
-def _platform_copts(rule_copts, cc_test = 0):
-    """Returns both the rule_copts, and platform-specific copts.
+def _platform_copts(rule_copts, rule_gcc_copts, cc_test = 0):
+    """Returns both the rule_copts (plus rule_gcc_copts iff under GCC), and
+    platform-specific copts.
 
     When cc_test=1, the GCC_CC_TEST_FLAGS will be added.  It should only be set
     to 1 from cc_test rules or rules that are boil down to cc_test rules.
@@ -47,8 +48,10 @@ def _platform_copts(rule_copts, cc_test = 0):
     if cc_test:
         extra_gcc_flags = GCC_CC_TEST_FLAGS
     return select({
-        "//tools:gcc4.9-linux": GCC_FLAGS + extra_gcc_flags + rule_copts,
-        "//tools:gcc5-linux": GCC_FLAGS + extra_gcc_flags + rule_copts,
+        "//tools:gcc4.9-linux":
+            GCC_FLAGS + extra_gcc_flags + rule_copts + rule_gcc_copts,
+        "//tools:gcc5-linux":
+            GCC_FLAGS + extra_gcc_flags + rule_copts + rule_gcc_copts,
         "//tools:clang3.9-linux": CLANG_FLAGS + rule_copts,
         "//tools:apple": CLANG_FLAGS + rule_copts,
         "//conditions:default": rule_copts,
@@ -81,6 +84,7 @@ def drake_cc_library(
         srcs = None,
         deps = None,
         copts = [],
+        gcc_copts = [],
         linkstatic = 1,
         **kwargs):
     """Creates a rule to declare a C++ library.
@@ -95,7 +99,7 @@ def drake_cc_library(
         hdrs = hdrs,
         srcs = srcs,
         deps = deps,
-        copts = _platform_copts(copts),
+        copts = _platform_copts(copts, gcc_copts),
         linkstatic = linkstatic,
         **kwargs)
 
@@ -105,6 +109,7 @@ def drake_cc_binary(
         srcs = None,
         deps = None,
         copts = [],
+        gcc_copts = [],
         linkstatic = 1,
         testonly = 0,
         add_test_rule = 0,
@@ -127,7 +132,7 @@ def drake_cc_binary(
         hdrs = hdrs,
         srcs = srcs,
         deps = deps,
-        copts = _platform_copts(copts),
+        copts = _platform_copts(copts, gcc_copts),
         testonly = testonly,
         linkstatic = linkstatic,
         **kwargs)
@@ -165,6 +170,7 @@ def drake_cc_test(
         size = None,
         srcs = None,
         copts = [],
+        gcc_copts = [],
         disable_in_compilation_mode_dbg = False,
         **kwargs):
     """Creates a rule to declare a C++ unit test.  Note that for almost all
@@ -189,7 +195,7 @@ def drake_cc_test(
         name = name,
         size = size,
         srcs = srcs,
-        copts = _platform_copts(copts, cc_test = 1),
+        copts = _platform_copts(copts, gcc_copts, cc_test = 1),
         **kwargs)
 
     # Also generate the OS X debug symbol file for this test.

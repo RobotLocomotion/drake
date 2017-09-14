@@ -58,10 +58,18 @@ std::unique_ptr<LuenbergerObserver<double>> SteadyStateKalmanFilter(
     const Eigen::Ref<const Eigen::MatrixXd>& W,
     const Eigen::Ref<const Eigen::MatrixXd>& V);
 
-/// Creates a Luenberger observer system using the optimal steady-state Kalman
-/// filter gain matrix, L, as described above.  The observer design is based on
-/// a linearization of the system about the nominal state defined by the context
-/// argument.
+/// Creates a Luenberger observer system using the steady-state Kalman filter
+/// observer gain.
+///
+/// Assuming @p system has the (continuous-time) dynamics:
+///   dx/dt = f(x,u),
+/// and the output:
+///   y = g(x,u),
+/// then the resulting observer will have the form
+///   dx̂/dt = f(x̂,u) + L(y - g(x̂,u)),
+/// where x̂ is the estimated state and the gain matrix, L, is designed
+/// as a steady-state Kalman filter using a linearization of f(x,u) at @p
+/// context as described above.
 ///
 /// @param system A unique_ptr to a System describing the system to be
 /// observed.  The new observer will take and maintain ownership of this

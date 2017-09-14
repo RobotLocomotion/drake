@@ -197,3 +197,45 @@ Can't find ``jpeglib.h`` when compiling ``bot2-vis`` on Mac
 ===========================================================
 
 Make sure you've installed the xcode command line tools with ``xcode-select --install``, then ``make clean`` and ``make`` again.
+
+.. _faq_opengl_test:
+
+Why do OpenGL-based VTK targets run with ``bazel test`` sometimes fail on Linux?
+================================================================================
+
+Symptom: While the binary works with ``bazel run``, when you run a test using ``bazel test``, such as::
+
+    $ bazel test //drake/systems/sensors:rgbd_camera_test
+
+you encounter a slew of errors from VTK / OpenGL::
+
+    ERROR: In /vtk/Rendering/OpenGL2/vtkXOpenGLRenderWindow.cxx, line 820
+    vtkXOpenGLRenderWindow (0x55880715b760): failed to create offscreen window
+
+    ERROR: In /vtk/Rendering/OpenGL2/vtkOpenGLRenderWindow.cxx, line 816
+    vtkXOpenGLRenderWindow (0x55880715b760): GLEW could not be initialized.
+
+    ERROR: In /vtk/Rendering/OpenGL2/vtkShaderProgram.cxx, line 453
+    vtkShaderProgram (0x5588071d5aa0): Shader object was not initialized, cannot attach it.
+
+    ERROR: In /vtk/Rendering/OpenGL2/vtkOpenGLRenderWindow.cxx, line 1858
+    vtkXOpenGLRenderWindow (0x55880715b760): Hardware does not support the number of textures defined.
+
+Solution: The best workaround is to first mark the test as as `local <https://docs.bazel.build/versions/master/be/general.html#genrule.local>`_ in the ``BUILD`` file, either
+with ``local = 1``, or ``tags = [.., "local"],``. Doing so will make the specific target run without sandboxing, such that it has an environment similar to that of ``bazel run``.
+
+As an example, in ``drake/systems/sensors/BUILD``::
+
+    drake_cc_googletest(
+        name = "rgbd_camera_test",
+        # ...
+        local = 1,
+        # ...
+    )
+
+If this does not work, then try running the test in Bazel without sandboxing::
+
+    $ bazel test --spawn_strategy=standalone //drake/systems/sensors:rgbd_camera_test
+
+Please note that you can possibly add ``--spawn_strategy=standalone`` to your ``~/.bazelrc``, but be aware that this means your development machine
+may have a different environment than other development machines when running the test.

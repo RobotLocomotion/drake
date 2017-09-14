@@ -1,9 +1,13 @@
 #include "drake/perception/dev/feedforward_neural_network.h"
+
 #include <stdlib.h>
+
 #include <iostream>
 #include <memory>
+
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
+
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/systems/framework/basic_vector.h"
 

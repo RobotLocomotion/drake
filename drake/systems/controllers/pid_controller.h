@@ -100,7 +100,7 @@ class PidController : public StateFeedbackControllerInterface<T>,
                 const Eigen::VectorXd& kp, const Eigen::VectorXd& ki,
                 const Eigen::VectorXd& kd);
 
-  /** Scalar-converting copy constructor. */
+  /** Scalar-converting copy constructor.  See @ref system_scalar_conversion. */
   template <typename U>
   explicit PidController(const PidController<U>&);
 
