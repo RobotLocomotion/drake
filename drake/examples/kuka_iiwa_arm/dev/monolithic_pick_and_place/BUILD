@@ -53,6 +53,8 @@ drake_cc_binary(
     ],
 )
 
+# TODO(sam.creasy) Re-enable this test once it is not so sensitive.
+'''
 pick_and_place_test(
     name = "pick_and_place_scenario_1",
     # TODO(sam.creasey) This should be target 1, but that requries
@@ -78,6 +80,7 @@ pick_and_place_test(
     # when #3128 is fixed.
     tags = ["snopt"],
 )
+'''
 
 pick_and_place_test(
     name = "pick_and_place_scenario_2",
