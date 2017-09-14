@@ -37,7 +37,7 @@ namespace rndf {
 /// their distribution akin to a grid (and thus enable index-based operations).
 ///
 /// Since lanes in an RNDF segment may flow in different directions, segment
-/// connections are also grouped by its direction relative to the first
+/// connections are also grouped by their directions relative to the first
 /// connection found in the collection. An arbitrary point outside the bounding
 /// box of the road geometry is selected to be a "center of rotation" and the
 /// sum of all the DirectedWaypoints "momentums" (with normalized tangents) is
@@ -49,11 +49,11 @@ namespace rndf {
 /// all other connections, the "momentum" is computed and compared against the
 /// sign of the reference.
 ///
-/// RNDF zones do not have a direct mapping to Maliput either. Consequently,
-/// fake connections are added between every entry and exit waypoints on these
-/// to keep them driveable. These waypoints' direction is set so as to head
-/// towards the centroid of all the zone perimeter waypoints. There's currently
-/// no support for RNDF zones' parking spots.
+/// RNDF zones also do not have a direct representation in Maliput either.
+/// To model zones, fake connections are added between every pair of entry
+/// and exit waypoints in a zone. The directions of these waypoints are set to
+/// head towards the centroid of all the zone perimeter waypoints. There's
+/// currently no support for RNDF zones' parking spots.
 ///
 /// The resulting RoadGeometry presents the following naming for its composed
 /// entities:
@@ -118,8 +118,9 @@ namespace rndf {
 /// -# Call SetBoundingBox().
 /// -# Call CreateSegmentConnections() for each RNDF segment.
 /// -# Call CreateConnectionsForZones() for each RNDF zone.
-/// -# Call CreateConnection() for each pair of entry-exit in RNDF lanes and
-/// perimeters.
+/// -# Call CreateConnection() for each pair of entry-exit waypoints
+///    between RNDF lanes and zone perimeters (actually connecting
+///    their fake inner lanes to the outer real ones).
 /// -# Call Build() to get the built api::RoadGeometry.
 class Builder {
  public:
@@ -163,29 +164,32 @@ class Builder {
   void CreateSegmentConnections(int segment_id,
                                 std::vector<Connection>* connections);
 
-  /// Creates a collection of Connections between every pair of entry and exit
-  /// waypoints in @p perimeter_waypoints.
+  /// Creates a collection of Connection objects between every pair of entry and
+  /// exit waypoints in @p perimeter_waypoints.
   ///
   /// RNDF defines zones as areas where free-path driving is allowed. Since
-  /// Maliput does not cover this concept, and to avoid having lanes with closed
-  /// ends, every pair of entry and exit waypoints is connected. These
-  /// waypoints' direction is set to head towards the centroid of all
+  /// Maliput does not cover this concept, and to avoid having dead-end lanes,
+  /// every pair of entry and exit waypoints is connected. These waypoints'
+  /// directions are set to head towards the centroid of all
   /// @p perimeter_waypoints.
-  /// @param width The width of this zone's inner connections.
-  /// @param perimeter_waypoints A collection of DirectedWaypoints describing
-  /// the zone perimeter.
+  /// @param width The width of this zone's inner connections (and thus the
+  /// fake inner lanes' lane bounds).
+  /// @param perimeter_waypoints A collection of DirectedWaypoint objects
+  /// describing the zone's perimeter.
   /// @throw std::runtime_error When @p perimeter_waypoints is a nullptr.
-  /// @throw std::runtime_error When @p perimeter_waypoints' is an empty
+  /// @throw std::runtime_error When @p perimeter_waypoints is an empty
   /// collection.
   void CreateConnectionsForZones(
       double width, std::vector<DirectedWaypoint>* perimeter_waypoints);
 
   /// Creates a connection between two RNDF lanes based on a pair of @p exit and
-  /// @p entry ids that map to specific, existing waypoints.
+  /// @p entry ids that map to specific, existing waypoints. This is helpful
+  /// when building intersections.
   /// @param width The connection's width.
   /// @param exit_id The start waypoint ID of the connection.
   /// @param entry_id The end waypoint ID of the connection.
-  /// @throw std::runtime_error When neither @p exit nor @p entry are found.
+  /// @throw std::runtime_error When neither @p exit_id nor @p entry_id are
+  /// found.
   void CreateConnection(double width, const ignition::rndf::UniqueId& exit_id,
                         const ignition::rndf::UniqueId& entry_id);
 
