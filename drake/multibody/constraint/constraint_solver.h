@@ -871,8 +871,9 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
   //     Yu + Bv + b ≥ 0
   //               v ≥ 0
   // vᵀ(b + Yu + Bv) = 0
-  // where u are "free" variables. If the matrix A is nonsingular, u can be
-  // solved for:
+  // where u are "free" variables (corresponding to the time derivative of
+  // velocities concatenated with bilateral constraint forces). If the matrix A
+  // is nonsingular, u can be solved for:
   //      u = -A⁻¹ (a + Xv)
   // allowing the mixed LCP to be converted to a "pure" LCP (q, M) by:
   // q = b - DA⁻¹a
@@ -886,11 +887,13 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
     aug.segment(0, Xv.size()) = Xv + data_ptr->tau;
     aug.segment(Xv.size(), num_eq_constraints) = problem_data.kG;
     const VectorX<T> u = -A_solve(aug);
-    auto lambda_full = cf->segment(
+    auto lambda = cf->segment(
         num_contacts + num_spanning_vectors + num_limits, num_eq_constraints);
-    lambda_full.setZero();
-    auto lambda = lambda_full.segment(0, indep_constraints.size());
-    lambda = u.segment(problem_data.tau.size(), indep_constraints.size());
+    lambda.setZero();
+    for (int i = 0, j = problem_data.tau.size();
+         i < static_cast<int>(indep_constraints.size()); ++i, ++j) {
+      lambda[indep_constraints[i]] = u[j];
+    }
   }
 }
 
@@ -1120,8 +1123,9 @@ void ConstraintSolver<T>::SolveImpactProblem(
   //     Yu + Bv + b ≥ 0
   //               v ≥ 0
   // vᵀ(b + Yu + Bv) = 0
-  // where u are "free" variables. If the matrix A is nonsingular, u can be
-  // solved for:
+  // where u are "free" variables (corresponding to new velocities concatenated
+  // with bilateral constraint impulses). If the matrix A is nonsingular, u can
+  // be solved for:
   //      u = -A⁻¹ (a + Xv)
   // allowing the mixed LCP to be converted to a "pure" LCP (q, M) by:
   // q = b - DA⁻¹a
@@ -1143,11 +1147,13 @@ void ConstraintSolver<T>::SolveImpactProblem(
     aug.segment(0, Xv.size()) = Xv + Mvt;
     aug.segment(Xv.size(), num_eq_constraints) = problem_data.kG;
     const VectorX<T> u = -A_solve(aug);
-    auto lambda_full = cf->segment(
+    auto lambda = cf->segment(
         num_contacts + num_spanning_vectors + num_limits, num_eq_constraints);
-    lambda_full.setZero();
-    auto lambda = lambda_full.segment(0, indep_constraints.size());
-    lambda = u.segment(problem_data.v.size(), indep_constraints.size());
+    lambda.setZero();
+    for (int i = 0, j = problem_data.v.size();
+         i < static_cast<int>(indep_constraints.size()); ++i, ++j) {
+      lambda[indep_constraints[i]] = u[j];
+    }
   }
 }
 
