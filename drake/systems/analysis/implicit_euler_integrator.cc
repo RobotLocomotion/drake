@@ -1,7 +1,7 @@
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/implicit_euler_integrator-inl.h"
 
-#include <unsupported/Eigen/AutoDiff>
+#include "drake/common/autodiff_overloads.h"
 
 namespace drake {
 namespace systems {
