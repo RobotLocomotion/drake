@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/math/orthonormal_basis.h"
 #include "drake/multibody/collision/element.h"
 #include "drake/multibody/rigid_body_plant/contact_resultant_force_calculator.h"
 #include "drake/multibody/rigid_body_plant/contact_results.h"

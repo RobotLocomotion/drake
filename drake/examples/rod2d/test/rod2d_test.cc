@@ -185,7 +185,7 @@ class Rod2DDAETest : public ::testing::Test {
     dut_->GetContactPoints(*context_, &contacts);
 
     // Compute the problem data.
-    dut_->CalcRigidImpactProblemData(*context_, contacts, data);
+    dut_->CalcImpactProblemData(*context_, contacts, data);
   }
 
   // Computes rigid contact data.
@@ -204,7 +204,7 @@ class Rod2DDAETest : public ::testing::Test {
 
   // Models an impact.
   void ModelImpact() {
-    ConstraintVelProblemData<double> data;
+    ConstraintVelProblemData<double> data(3 /* ngc */);
     CalcRigidImpactVelProblemData(&data);
     VectorX<double> cf;
     contact_solver_.SolveImpactProblem(dut_->get_cfm(), data, &cf);
@@ -218,17 +218,36 @@ class Rod2DDAETest : public ::testing::Test {
         ->SetFromVector(data.v + delta_v);
   }
 
+  // Gets the number of generalized coordinates for the rod.
+  int get_rod_num_coordinates() { return 3; }
+
+  // Gets the output dimension of a Jacobian multiplication operator.
+  int GetOperatorDim(std::function<VectorX<double>(const VectorX<double>&)> J) {
+    return J(VectorX<double>(get_rod_num_coordinates())).size();
+  }
+
+  // Checks the consistency of a transpose operator.
+  void CheckTransOperatorDim(
+      std::function<VectorX<double>(const VectorX<double>&)> JT,
+  int num_constraints) {
+    EXPECT_EQ(JT(VectorX<double>(num_constraints)).size(),
+              get_rod_num_coordinates());
+  }
+
   // Checks consistency of rigid contact problem data.
   void CheckProblemConsistency(
       const ConstraintAccelProblemData<double>& data,
       int num_contacts) {
     EXPECT_EQ(num_contacts, data.sliding_contacts.size() +
         data.non_sliding_contacts.size());
-    EXPECT_EQ(data.N_minus_mu_Q.rows(), num_contacts);
-    EXPECT_EQ(data.N.rows(), num_contacts);
-    EXPECT_EQ(data.f.size(), data.N.cols());
-    EXPECT_EQ(data.Fdot_x_v.size(), data.non_sliding_contacts.size());
-    EXPECT_EQ(data.Ndot_x_v.size(), num_contacts);
+    EXPECT_EQ(GetOperatorDim(data.N_mult), num_contacts);
+    CheckTransOperatorDim(data.N_minus_muQ_transpose_mult, num_contacts);
+    EXPECT_EQ(GetOperatorDim(data.L_mult), data.num_limit_constraints);
+    CheckTransOperatorDim(data.L_transpose_mult, data.num_limit_constraints);
+    EXPECT_EQ(data.tau.size(), get_rod_num_coordinates());
+    EXPECT_EQ(data.Fdot_times_v.size(), data.non_sliding_contacts.size());
+    EXPECT_EQ(data.Ndot_times_v.size(), num_contacts);
+    EXPECT_EQ(data.kL.size(), data.num_limit_constraints);
     EXPECT_EQ(data.mu_non_sliding.size(), data.non_sliding_contacts.size());
     EXPECT_EQ(data.mu_sliding.size(), data.sliding_contacts.size());
     EXPECT_EQ(data.r.size(), data.non_sliding_contacts.size());
@@ -239,7 +258,9 @@ class Rod2DDAETest : public ::testing::Test {
                                data.non_sliding_contacts.end()));
 
     // Only true because this problem is 2D.
-    EXPECT_EQ(data.F.rows(), data.non_sliding_contacts.size());
+    EXPECT_EQ(GetOperatorDim(data.F_mult), data.non_sliding_contacts.size());
+    CheckTransOperatorDim(data.F_transpose_mult,
+                          data.non_sliding_contacts.size());
   }
 
   // Checks consistency of rigid impact problem data.
@@ -248,10 +269,15 @@ class Rod2DDAETest : public ::testing::Test {
       int num_contacts) {
     EXPECT_EQ(num_contacts, data.mu.size());
     EXPECT_EQ(num_contacts, data.r.size());
-    EXPECT_EQ(data.N.rows(), num_contacts);
-    EXPECT_EQ(data.v.size(), data.N.cols());
+    EXPECT_EQ(GetOperatorDim(data.N_mult), num_contacts);
+    CheckTransOperatorDim(data.N_transpose_mult, num_contacts);
+    EXPECT_EQ(data.v.size(), get_rod_num_coordinates());
     EXPECT_TRUE(data.solve_inertia);
-    EXPECT_EQ(data.F.rows(), num_contacts);
+    EXPECT_EQ(GetOperatorDim(data.F_mult), num_contacts);
+    CheckTransOperatorDim(data.F_transpose_mult, num_contacts);
+    EXPECT_EQ(GetOperatorDim(data.L_mult), data.num_limit_constraints);
+    CheckTransOperatorDim(data.L_transpose_mult, data.num_limit_constraints);
+    EXPECT_EQ(data.kL.size(), data.num_limit_constraints);
   }
 
   std::unique_ptr<Rod2D<double>> dut_;  //< The device under test.
@@ -969,7 +995,7 @@ TEST_F(Rod2DDAETest, RigidContactProblemDataBallistic) {
   SetBallisticState();
 
   // Compute the problem data.
-  ConstraintAccelProblemData<double> data;
+  ConstraintAccelProblemData<double> data(get_rod_num_coordinates());
   CalcConstraintAccelProblemData(&data);
 
   // Verify that the data has reasonable values.
@@ -984,7 +1010,7 @@ TEST_F(Rod2DDAETest, RigidContactProblemDataHorizontalResting) {
   SetRestingHorizontalConfig();
 
   // Compute the problem data.
-  ConstraintAccelProblemData<double> data;
+  ConstraintAccelProblemData<double> data(3 /* gen. vel. dim */);
   CalcConstraintAccelProblemData(&data);
   const int num_contacts = 2;
   CheckProblemConsistency(data, num_contacts);
@@ -1003,7 +1029,7 @@ TEST_F(Rod2DDAETest, RigidContactProblemDataHorizontalSliding) {
   xc[3] = 1.0;  // horizontal velocity of the rod center-of-mass.
 
   // Compute the problem data.
-  ConstraintAccelProblemData<double> data;
+  ConstraintAccelProblemData<double> data(3 /* gen. vel. dim */);
   CalcConstraintAccelProblemData(&data);
   const int num_contacts = 2;
   CheckProblemConsistency(data, num_contacts);
@@ -1019,7 +1045,7 @@ TEST_F(Rod2DDAETest, RigidContactProblemDataVerticalResting) {
   SetRestingVerticalConfig();
 
   // Compute the problem data.
-  ConstraintAccelProblemData<double> data;
+  ConstraintAccelProblemData<double> data(3 /* gen. vel. dim */);
   CalcConstraintAccelProblemData(&data);
   const int num_contacts = 1;
   CheckProblemConsistency(data, num_contacts);
@@ -1031,10 +1057,7 @@ TEST_F(Rod2DDAETest, RigidContactProblemDataVerticalResting) {
   // N, N - μQ, F, dN/dt⋅v, and dF/dt⋅v.
   // Verify that N has no angular component.
   const double eps = 100 * std::numeric_limits<double>::epsilon();
-  EXPECT_LT(std::fabs(data.N(0, 2)), eps);
-
-  // Verify that N - μQ is equivalent to N, at least in this particular case.
-  EXPECT_LT((data.N - data.N_minus_mu_Q).norm(), eps);
+  EXPECT_NEAR(data.N_mult(Eigen::Vector3d::UnitZ())(0), 0, eps);
 }
 
 // Verifies that the rigid contact problem data has reasonable values when the
@@ -1047,7 +1070,7 @@ TEST_F(Rod2DDAETest, RigidContactProblemDataVerticalSliding) {
   xc[3] = 1.0;
 
   // Compute the problem data.
-  ConstraintAccelProblemData<double> data;
+  ConstraintAccelProblemData<double> data(3 /* gen. vel. dim */);
   CalcConstraintAccelProblemData(&data);
   const int num_contacts = 1;
   CheckProblemConsistency(data, num_contacts);

@@ -1,3 +1,5 @@
+# -*- python -*-
+
 load("@drake//tools:install.bzl", "install")
 
 def install_data(
@@ -26,13 +28,17 @@ def install_data(
     """
     models_extensions = [
         "csv",
-        "json",
-        "stl",
-        "obj",
-        "sdf",
-        "urdf",
-        "xml",
         "dae",
+        "jpg",
+        "json",
+        "obj",
+        "png",
+        "sdf",
+        "stl",
+        "urdf",
+        "vtm",
+        "vtp",
+        "xml",
     ]
     exclude_patterns = ["**/test/*", "**/test*"]
     prod_models_include = ["**/*.{}".format(x) for x in models_extensions]
