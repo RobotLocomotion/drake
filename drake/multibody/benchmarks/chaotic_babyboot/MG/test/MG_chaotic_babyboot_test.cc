@@ -10,7 +10,6 @@ namespace drake {
 namespace multibody {
 namespace benchmarks {
 namespace chaotic_babyboot {
-namespace MG {
 namespace {
 
 //------------------------------------------------------------------------------
@@ -26,10 +25,12 @@ struct ChaoticBabybootData {
   double qA, qB, qADt, qBDt, qADDt, qBDDt, energy;
 };
 
-
+//------------------------------------------------------------------------------
+// Compare an expected solution to an actual MotionGenesis simulation result.
 void CompareExpectedSolutionVsActualSolution(
   const ChaoticBabybootData& babyboot_data_expected ) {
-  // Simulate chaotic babyboot.
+  // Simulate chaotic babyboot with MotionGenesis auto-generated code and
+  // using its Runga-Kutta-Merson numerical integrator.
   MotionGenesis::MGChaoticBabyboot_::MGChaoticBabyboot MG_chaotic_babyboot;
   MG_chaotic_babyboot.MGSimulate();
   const double qA = MG_chaotic_babyboot.qA;
@@ -49,9 +50,11 @@ void CompareExpectedSolutionVsActualSolution(
   const double qBDDt_difference = qBDDt - babyboot_data_expected.qBDDt;
   const double energy_difference = energy - babyboot_data_expected.energy;
 
-  // Compare actual results with expected results to within a
-  // multiplier of the integrator's value of absError.
-  // Allowable error is scaled for individual quantities.
+  // Compare actual results with expected results to within a multiplier of the
+  // MotionGenesis MG_chaotic_babyboot integrator's value for absError.
+  // Notice the allowable tolerances below are scaled for individual quantities.
+  // The multipliers are "fences" (with a buffer) around results obtained by 12+
+  // simulations. The multipliers are experimental (but not arbitrary).
   const double absError = MG_chaotic_babyboot.absError;
   EXPECT_TRUE(std::abs(qA_difference) <= 1E2 * absError);
   EXPECT_TRUE(std::abs(qB_difference) <= 1E2 * absError);
@@ -62,34 +65,68 @@ void CompareExpectedSolutionVsActualSolution(
   EXPECT_TRUE(std::abs(energy_difference) <= 0.1 * absError);
 }
 
-// Test accuracy of calculations for chaotic babyboot simulation.
-// Create expected solution by running three high accuracy simulations with
-// Runga-Kutta-Mersion algorithm, all keeping the absolute value of energy
-// variation to less than 6.0E-14 (theoretical is 0.0).
+// Create expected solution for chaotic babyboot simulation by running many high
+// accuracy simulations with Runga-Kutta-Mersion algorithm (from MotionGenesis)
+// as well as MATLAB's ode45 [based on an explicit Runge-Kutta (4,5) formula,
+// with the Dormand-Prince pair]. Also shown below are values from two related
+// simulations (A, B), run with different (but still high accuracy) absError and
+// tStepMax.  All simulations keep the variation in the absolute value of
+// mechanical energy (sum of potential and kinetic energy) to less than 7.0E-13.
+// Since this system conserves mechanical energy, the theoretical variation in
+// mechanical energy is 0.0.  MATLAB's ode45 had the most energy variation with
+// approximately 7.0E-13 Joules (over 10 seconds) whereas Runga-Kutta-Merson's
+// variation in eenrgy was less 7.0E-14 Joules.
 // For the given initial values, the babyboot is chaotic, so it is difficult
 // (perhaps impossible) to perfectly test the numerical integrator accuracy.
 // Ironically, this is why the chaotic babyboot is a good test of accuracy.
+//
+// Note: The only reason for this test is to ensure that the auto-generated
+// C++ code created by MotionGenesis can be properly integrated into Drake.
+// This test was valuable because it revealed that the BUILD file needed to be
+// modified to pass Continuous Integration (even though it passed local build,
+// test, cpplint, etc).  Specifically, the following was needed in the Bazel
+// BUILD file: copts = ["-Wno-unused-parameter"] to account for unused arguments
+// in MotionGenesis auto-generated code.  Problems encountered with dealing
+// with auto-generated code also motivated fixes to the build system.
+//
+// The next step (not part of this test) is to build a chaotic babyboot in Drake
+// and ensure that its numerical integrators predict the same stability regions
+// and can predict very similar results that conserves mechanical energy.
+//
+// Note: Although this is colloquially called a "chaotic" babyboot, it is more
+// accurately a demonstration of mathematical stability and instability.
+// More information about this problem is in “Mechanical Demonstration of
+// Mathematical Stability and Instability”, International Journal of Engineering
+// Education (Journal of Mechanical Engineering Education), Vol. 2, No. 4, 1974,
+// pp. 45-47, by Thomas R. Kane.
+//------------------------------------------------------------------------------
 GTEST_TEST(ChaoticBabyboot, ForwardDynamicsA) {
   ChaoticBabybootData babyboot_data_expected;
   constexpr double degree_to_radian =  0.0174532925199432957692369;
   babyboot_data_expected.qA =  -61.312983340691 * degree_to_radian;
   // Result from simulation A: -61.312983517329;
-  // Result from simulation B: -61.312983761859
+  // Result from simulation B: -61.312983761859;
+  // Result from MATLAB ode45: -61.3129818234;
   babyboot_data_expected.qB =  -929.47789677244 * degree_to_radian;
   // Result from simulation A: -929.47789818494;
   // Result from simulation B: -929.47789795831;
+  // Result from MATLAB ode45: -929.477885053;
   babyboot_data_expected.qADt = -6.7440081040646;
   // Result from simulation A:  -6.7440080750248;
   // Result from simulation B:  -6.7440080514955;
+  // Result from MATLAB ode45:  -6.74400835033;
   babyboot_data_expected.qBDt = -2.7795690128833;
   // Result from simulation A:  -2.7795696971631;
   // Result from simulation B:  -2.7795695154087;
+  // Result from MATLAB ode45:  -2.77956334901;
   babyboot_data_expected.qADDt = 41.137023263571;
   // Result from simulation A:   41.137023170384;
   // Result from simulation B:   41.137023317160;
+  // Result from MATLAB ode45:   41.1370240118;
   babyboot_data_expected.qBDDt = 19.483647096003;
   // Result from simulation A:   19.483647506439;
   // Result from simulation B:   19.483647277708;
+  // Result from MATLAB ode45:   19.4836437213;
   babyboot_data_expected.energy = 0.0;
 
   CompareExpectedSolutionVsActualSolution(babyboot_data_expected);
@@ -97,7 +134,6 @@ GTEST_TEST(ChaoticBabyboot, ForwardDynamicsA) {
 
 
 }  // namespace
-}  // namespace MG
 }  // namespace chaotic_babyboot
 }  // namespace benchmarks
 }  // namespace multibody
