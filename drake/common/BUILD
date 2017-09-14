@@ -72,6 +72,7 @@ drake_cc_library(
     name = "autodiff",
     hdrs = [
         "autodiff_overloads.h",
+        "autodiffxd.h",
         "eigen_autodiff_types.h",
     ],
     deps = [
@@ -387,6 +388,13 @@ drake_cc_library(
     name = "measure_execution",
     testonly = 1,
     hdrs = ["test/measure_execution.h"],
+)
+
+drake_cc_googletest(
+    name = "autodiffxd_test",
+    deps = [
+        ":autodiff",
+    ],
 )
 
 drake_cc_googletest(

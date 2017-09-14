@@ -2,7 +2,6 @@
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
-#include <unsupported/Eigen/AutoDiff>
 
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/eigen_autodiff_types.h"

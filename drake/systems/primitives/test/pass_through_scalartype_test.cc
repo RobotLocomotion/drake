@@ -6,8 +6,8 @@
 #include <memory>
 
 #include <gtest/gtest.h>
-#include <unsupported/Eigen/AutoDiff>
 
+#include "drake/common/autodiff_overloads.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/input_port_value.h"
 

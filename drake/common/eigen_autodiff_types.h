@@ -8,8 +8,8 @@
 #include <type_traits>
 
 #include <Eigen/Dense>
-#include <unsupported/Eigen/AutoDiff>
 
+#include "drake/common/autodiff_overloads.h"
 #include "drake/common/eigen_autodiff_limits.h"
 #include "drake/common/eigen_types.h"
 
