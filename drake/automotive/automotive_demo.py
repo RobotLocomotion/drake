@@ -77,7 +77,8 @@ class Launcher(object):
             raise RuntimeError(command[0] + " not found")
 
         # Create a new execution environment by copying the current one, but
-        # making sure to use the C locale
+        # making sure to use the C locale, so that obj meshes are properly
+        # parsed.
         command_env = dict(os.environ)
         command_env['LC_ALL'] = 'C'
 
