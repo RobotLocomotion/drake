@@ -919,14 +919,15 @@ class IntegratorBase {
    * - `nz` miscellaneous continuous state variables `z`.
    *
    * Weights on the generalized velocity variables `v (= dꝗ/dt)` are derived
-   * directly from the weights on `ꝗ`, weighted by a characteristic time. Weights
-   * on the actual `nq` generalized coordinates can
+   * directly from the weights on `ꝗ`, weighted by a characteristic time.
+   * Weights on the actual `nq` generalized coordinates can
    * be calculated efficiently from weights on the quasi-coordinates (details
    * below).
    *
    * <h4>How the weights are used</h4>
    *
-   * The errors in the `ꝗ` and `z` variables are weighted by the diagonal elements
+   * The errors in the `ꝗ` and `z` variables are weighted by the diagonal
+   * elements
    * of diagonal weighting matrices Wꝗ and Wz, respectively. (The block-diagonal
    * weighting matrix `Wq` on the original generalized coordinates `q` is
    * calculated from `N` and `Wꝗ`; see below.) In the absence of
@@ -973,8 +974,9 @@ class IntegratorBase {
    * matrix); however, `N N⁺ != I`, as `N` has more rows than columns generally.
    * [Nikravesh 1988] shows how such a matrix `N` can be determined and provides
    * more information. Given this relationship between `N` and `N⁺`, we can
-   * relate weighted errors in configuration coordinates `q` to weighted errors in
-   * generalized quasi-coordinates `ꝗ`, as the following derivation shows: <pre>
+   * relate weighted errors in configuration coordinates `q` to weighted errors
+   * in generalized quasi-coordinates `ꝗ`, as the following derivation shows:
+   * <pre>
    *            v = N⁺ qdot         Inverse kinematic differential equation
    *        dꝗ/dt = N⁺ dq/dt        Use synonyms for v and qdot
    *           dꝗ = N⁺ dq           Change time derivatives to differentials

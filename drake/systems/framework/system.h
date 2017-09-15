@@ -742,7 +742,8 @@ class System {
   // These three methods would ideally be designated as "protected", but
   // Diagram::AllocateForcedXEventCollection() needs to call these methods and,
   // perhaps surprisingly, is not able to access these methods when they are
-  // protected. See: https://stackoverflow.com/questions/16785069/why-cant-a-derived-class-call-protected-member-function-in-this-code.
+  // protected. See:
+  // https://stackoverflow.com/questions/16785069/why-cant-a-derived-class-call-protected-member-function-in-this-code.
   // To address this problem, we keep the methods "public" and
   // (1) Make the overriding methods in LeafSystem and Diagram "final" and
   // (2) Use the doxygen cond/endcond tags so that these methods are hidden
