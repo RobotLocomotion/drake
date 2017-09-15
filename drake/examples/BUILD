@@ -39,24 +39,34 @@ drake_cc_binary(
     ],
 )
 
+# The :prod_models in these packages are installed as part of the Drake release
+# process, and loaded into drake_visualizer's model database by default.
+INSTALLED_MODEL_PACKAGES = [
+    "//drake/examples/acrobot",
+    "//drake/examples/atlas",
+    "//drake/examples/contact_model",
+    "//drake/examples/double_pendulum",
+    "//drake/examples/irb140",
+    "//drake/examples/kuka_iiwa_arm",
+    "//drake/examples/particles",
+    "//drake/examples/pendulum",
+    "//drake/examples/pr2",
+    "//drake/examples/quadrotor",
+    "//drake/examples/simple_four_bar",
+    "//drake/examples/valkyrie",
+    "//drake/examples/zmp",
+]
+
+filegroup(
+    name = "prod_models",
+    data = [package + ":prod_models" for package in INSTALLED_MODEL_PACKAGES],
+    visibility = ["//visibility:public"],
+)
+
 install(
     name = "install_data",
     visibility = ["//visibility:public"],
-    deps = [
-        "//drake/examples/acrobot:install_data",
-        "//drake/examples/atlas:install_data",
-        "//drake/examples/contact_model:install_data",
-        "//drake/examples/double_pendulum:install_data",
-        "//drake/examples/irb140:install_data",
-        "//drake/examples/kuka_iiwa_arm:install_data",
-        "//drake/examples/particles:install_data",
-        "//drake/examples/pendulum:install_data",
-        "//drake/examples/pr2:install_data",
-        "//drake/examples/quadrotor:install_data",
-        "//drake/examples/simple_four_bar:install_data",
-        "//drake/examples/valkyrie:install_data",
-        "//drake/examples/zmp:install_data",
-    ],
+    deps = [package + ":install_data" for package in INSTALLED_MODEL_PACKAGES],
 )
 
 add_lint_tests()
