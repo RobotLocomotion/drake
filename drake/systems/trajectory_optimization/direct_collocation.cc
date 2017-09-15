@@ -48,24 +48,6 @@ class DirectCollocationConstraint : public solvers::Constraint {
 
     context_->SetTimeStateAndParametersFrom(context);
 
-    // Set derivatives of all parameters in the context to zero (but with the
-    // correct size).
-    // TODO(russt): This hack should be removed upon resolution of #6944.
-    int num_gradients = 1 + 2 * num_states_ + 2 * num_inputs_;
-    for (int i = 0; i < context_->get_parameters().num_numeric_parameters();
-         i++) {
-      auto params = context_->get_mutable_parameters()
-                        .get_mutable_numeric_parameter(i)
-                        ->get_mutable_value();
-      for (int j = 0; j < params.size(); j++) {
-        auto& derivs = params(j).derivatives();
-        if (derivs.size() == 0) {
-          derivs.resize(num_gradients);
-          derivs.setZero();
-        }
-      }
-    }
-
     if (context.get_num_input_ports() > 0) {
       // Allocate the input port and keep an alias around.
       input_port_value_ = new FreestandingInputPortValue(
