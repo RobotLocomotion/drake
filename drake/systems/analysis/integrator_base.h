@@ -288,14 +288,14 @@ class IntegratorBase {
    * diagnostic to figure out what aspect of your simulation is requiring small
    * steps. You can set the minimum to what should be a "reasonable" minimum
    * based on what you know about the physical system. You will then get an
-   * std::runtime_error exception thrown at any point in time where your model 
+   * std::runtime_error exception thrown at any point in time where your model
    * behaves unexpectedly (due to, e.g., a discontinuity in the derivative
    * evaluation function).
    *
    * If you disable the exception (via
    * `set_throw_on_minimum_step_size_violation(false)`), the integrator will
    * simply proceed with a step of the minimum size: accuracy is guaranteed
-   * only when the minimum step size is not violated. Beware that there can be 
+   * only when the minimum step size is not violated. Beware that there can be
    * no guarantee about the magnitude of any errors introduced by violating the
    * accuracy "requirements" in this manner, so disabling the exception should
    * be done warily.
@@ -312,8 +312,8 @@ class IntegratorBase {
    * You may request a larger minimum step size `h_min`. Then at every time t,
    * the integrator determines a "working" minimum `h_work=max(h_min,h_floor)`.
    * If the step size selection algorithm determines that a step smaller than
-   * `h_work` is needed to meet accuracy or other needs, then a 
-   * std::runtime_error exception will be thrown and the simulation halted. On 
+   * `h_work` is needed to meet accuracy or other needs, then a
+   * std::runtime_error exception will be thrown and the simulation halted. On
    * the other hand, if you have suppressed the exception (again, via
    * `set_throw_on_minimum_step_size_violation(false)`), the integration
    * will continue, taking a step of size `h_work`.
