@@ -93,7 +93,7 @@ class ConstraintSolver {
   ///           second non-sliding contact, etc. The next `ℓ` values of `cf`
   ///           correspond to the forces applied to enforce generic unilateral
   ///           constraints. The final `b` values of `cf` correspond to the
-  ///           forces applied to enforce generic bilateral constraints. Thi
+  ///           forces applied to enforce generic bilateral constraints. This
   ///           packed storage format can be turned into more useful
   ///           representations through
   ///           ComputeGeneralizedForceFromConstraintForces() and
@@ -308,17 +308,12 @@ class ConstraintSolver {
       const Eigen::LLT<MatrixX<T>>& Del,
       std::function<MatrixX<T>(const MatrixX<T>&)>* A_solve) const;
 
-  void UpdateProblemDataForUnilateralConstraints(
-      const ConstraintAccelProblemData<T>& problem_data,
+  template <typename ProblemData>
+  ProblemData* UpdateProblemDataForUnilateralConstraints(
+      const ProblemData& problem_data,
       const std::vector<int>& indep_constraints,
       std::function<const MatrixX<T>(const MatrixX<T>&)> modified_inertia_solve,
-      ConstraintAccelProblemData<T>** modified_problem_data) const;
-
-  void UpdateProblemDataForUnilateralConstraints(
-      const ConstraintVelProblemData<T>& problem_data,
-      const std::vector<int>& indep_constraints,
-      std::function<const MatrixX<T>(const MatrixX<T>&)> modified_inertia_solve,
-      ConstraintVelProblemData<T>** modified_problem_data) const;
+      ProblemData* modified_problem_data) const;
 
   drake::solvers::MobyLCPSolver<T> lcp_;
 };
@@ -413,7 +408,7 @@ void ConstraintSolver<T>::DetermineIndependentConstraints(
 // Given a matrix A of blocks consisting of generalized inertia (M) and the
 // Jacobian of bilaterals constraints (G):
 // A ≡ | M  -Gᵀ |
-//     | G'  0  |
+//     | G   0  |
 // this function sets a function pointer that computes X for X = A⁻¹ | B | and
 //                                                                   | 0 |
 // given B *for the case where X will be premultiplied by some matrix | R 0 |,
@@ -487,7 +482,7 @@ void ConstraintSolver<T>::DetermineNewPartialInertiaSolveOperator(
 // Given a matrix A of blocks consisting of generalized inertia (M) and the
 // Jacobian of bilaterals constraints (G):
 // A ≡ | M  -Gᵀ |
-//     | G'  0  |
+//     | G   0  |
 // this function sets a function pointer that computes X for AX = B, given B.
 // @param num_generalized_velocities The dimension of the system generalized
 //        velocities.
@@ -525,7 +520,7 @@ void ConstraintSolver<T>::DetermineNewFullInertiaSolveOperator(
     // where C  ≡ M⁻¹ - M⁻¹Gᵀ(GM⁻¹Gᵀ)⁻¹GM⁻¹
     //       E  ≡ M⁻¹Gᵀ(GM⁻¹Gᵀ)⁻¹
     //      -Eᵀ ≡ -(GM⁻¹Gᵀ)⁻¹GM⁻¹
-    //       F  ≡ (GM⁻¹Gᵀ)
+    //       F  ≡ (GM⁻¹Gᵀ)⁻¹
     //       B  ≡ | Y |
     //            | Z |
 
@@ -535,10 +530,10 @@ void ConstraintSolver<T>::DetermineNewFullInertiaSolveOperator(
     MatrixX<T> X(C_rows + E_cols, B.cols());
 
     // Name the blocks of B and X.
-    const auto Y = B.block(0, 0, C_rows, B.cols());
-    const auto Z = B.block(C_rows, 0, E_cols, B.cols());
-    auto X_top = X.block(0, 0, C_rows, X.cols());
-    auto X_bot = X.block(C_rows, 0, E_cols, X.cols());
+    const auto Y = B.topRows(C_rows);
+    const auto Z = B.bottomRows(B.rows() - C_rows);
+    auto X_top = X.topRows(C_rows);
+    auto X_bot = X.bottomRows(X.rows() - C_rows);
 
     // 1. Begin computation of components of C.
     // Compute M⁻¹ Y
@@ -580,23 +575,23 @@ void ConstraintSolver<T>::DetermineNewFullInertiaSolveOperator(
 }
 
 template <typename T>
-void ConstraintSolver<T>::UpdateProblemDataForUnilateralConstraints(
-    const ConstraintAccelProblemData<T>& problem_data,
+template <typename ProblemData>
+ProblemData* ConstraintSolver<T>::UpdateProblemDataForUnilateralConstraints(
+    const ProblemData& problem_data,
     const std::vector<int>& indep_constraints,
     std::function<const MatrixX<T>(const MatrixX<T>&)> modified_inertia_solve,
-    ConstraintAccelProblemData<T>** modified_problem_data) const {
+    ProblemData* modified_problem_data) const {
   // Verify that the modified problem data points to something.
   DRAKE_DEMAND(modified_problem_data);
 
   // Construct a new problem data.
   if (indep_constraints.empty()) {
     // Just point to the original problem data.
-    *modified_problem_data = const_cast<ConstraintAccelProblemData<T>*>(
-        &problem_data);
+    return const_cast<ProblemData*>(&problem_data);
   } else {
     // Alias the modified problem data so that we don't need to change its
     // pointer.
-    ConstraintAccelProblemData<T>& new_data = **modified_problem_data;
+    ProblemData& new_data = *modified_problem_data;
 
     // Copy most of the data unchanged.
     new_data = problem_data;
@@ -608,38 +603,7 @@ void ConstraintSolver<T>::UpdateProblemDataForUnilateralConstraints(
 
     // Update the inertia function pointer.
     new_data.solve_inertia = modified_inertia_solve;
-  }
-}
-
-template <typename T>
-void ConstraintSolver<T>::UpdateProblemDataForUnilateralConstraints(
-    const ConstraintVelProblemData<T>& problem_data,
-    const std::vector<int>& indep_constraints,
-    std::function<const MatrixX<T>(const MatrixX<T>&)> modified_inertia_solve,
-    ConstraintVelProblemData<T>** modified_problem_data) const {
-  // Verify that the modified problem data points to something.
-  DRAKE_DEMAND(modified_problem_data);
-
-  // Construct a new problem data.
-  if (indep_constraints.empty()) {
-    // Just point to the original problem data.
-    *modified_problem_data = const_cast<ConstraintVelProblemData<T>*>(
-        &problem_data);
-  } else {
-    // Alias the modified problem data so that we don't need to change its
-    // pointer.
-    ConstraintVelProblemData<T>& new_data = **modified_problem_data;
-
-    // Copy most of the data unchanged.
-    new_data = problem_data;
-
-    // Update kG.
-    new_data.kG.resize(indep_constraints.size());
-    for (int i = 0; i < static_cast<int>(indep_constraints.size()); ++i)
-      new_data.kG[i] = problem_data.kG[indep_constraints[i]];
-
-    // Update the inertia solve function pointer.
-    new_data.solve_inertia = modified_inertia_solve;
+    return &new_data;
   }
 }
 
@@ -752,7 +716,7 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
   // --------------------------------------------------------------------------
 
   // From the notation above in Equations (a)-(d):
-  // A ≡ | M  -Ĝᵀ|   a ≡ |-M f |   X ≡ |-(Nᵀ-μQᵀ) -Dᵀ  0  -Lᵀ |
+  // A ≡ | M  -Ĝᵀ|   a ≡ | -f  |   X ≡ |-(Nᵀ-μQᵀ) -Dᵀ  0  -Lᵀ |
   //     | Ĝ   0 |       |  kᴳ |       | 0         0   0   0  |
   //
   // Y ≡ | N   0 |   b ≡ |  kᴺ |   B ≡ | 0    0   0   0  |
@@ -762,15 +726,15 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
 
   // Therefore, using Equations (f) and (g) and defining C as the upper left
   // block of A⁻¹, the pure LCP (q,M) is defined as:
-  // M ≡ | NC(Nᵀ-μQᵀ)  NCDᵀ   0   NCLᵀ |
-  //     | DC(Nᵀ-μQᵀ)  DCDᵀ   E   DCLᵀ |
-  //     | μ          -Eᵀ     0   0    |
-  //     | LC(Nᵀ-μQᵀ)  LCDᵀ   0   LCLᵀ |
+  // MM ≡ | NC(Nᵀ-μQᵀ)  NCDᵀ   0   NCLᵀ |
+  //      | DC(Nᵀ-μQᵀ)  DCDᵀ   E   DCLᵀ |
+  //      | μ          -Eᵀ     0   0    |
+  //      | LC(Nᵀ-μQᵀ)  LCDᵀ   0   LCLᵀ |
   //
-  // q ≡ | kᴺ + NCMf |
-  //     | kᴰ + DCMf |
-  //     |     0     |
-  //     | kᴸ + LCMf |
+  // qq ≡ | kᴺ + NA⁻¹a |
+  //      | kᴰ + DA⁻¹a |
+  //      |     0      |
+  //      | kᴸ + LA⁻¹a |
 
   // --------------------------------------------------------------------------
   // Using the LCP solution to solve the MLCP.
@@ -778,8 +742,8 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
 
   // From Equation (e) and the solution to the LCP (v), we can solve for u using
   // the following equations:
-  // Xv + a = | -(Nᵀ-μQᵀ)fN - DᵀfD - LᵀfL - M f |
-  //          |                kᴳ               |
+  // Xv + a = | -(Nᵀ-μQᵀ)fN - DᵀfD - LᵀfL - f |
+  //          |              kᴳ               |
   //
 
   // Determine the set of linearly independent constraints.
@@ -792,7 +756,7 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
 
   // Determine a new "inertia" solve operator, which solves AX = B, where
   // A = | M  -Gᵀ |
-  //     | G'  0  |
+  //     | G   0  |
   // using the newly reduced set of constraints. This will allow transforming
   // the mixed LCP into a pure LCP.
   std::function<MatrixX<T>(const MatrixX<T>&)> A_solve;
@@ -812,8 +776,8 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
   ConstraintAccelProblemData<T> modified_problem_data(
       problem_data.tau.size() + indep_constraints.size());
   ConstraintAccelProblemData<T>* data_ptr = &modified_problem_data;
-  UpdateProblemDataForUnilateralConstraints(
-      problem_data, indep_constraints, fast_A_solve, &data_ptr);
+  data_ptr = UpdateProblemDataForUnilateralConstraints(
+      problem_data, indep_constraints, fast_A_solve, data_ptr);
 
   // Set up the pure linear complementarity problem.
   MatrixX<T> MM;
@@ -964,7 +928,7 @@ void ConstraintSolver<T>::SolveImpactProblem(
   // (g) M = B - YA⁻¹X
 
   // Our mixed linear complementarity problem takes the specific form:
-  // (1) | M  -Gᵀ  -Nᵀ  -Dᵀ  0  -Lᵀ | | v̇ | + |-M v | = | 0 |
+  // (1) | M  -Gᵀ  -Nᵀ  -Dᵀ  0  -Lᵀ | | v⁺ | + |-M v | = | 0 |
   //     | G   0    0    0   0   0  | | fG | + |  kᴳ | = | 0 |
   //     | N   0    0    0   0   0  | | fN | + |  kᴺ | = | α |
   //     | D   0    0    0   E   0  | | fD | + |  kᴰ | = | β |
@@ -1004,7 +968,7 @@ void ConstraintSolver<T>::SolveImpactProblem(
   // --------------------------------------------------------------------------
 
   // From the notation above in Equations (a)-(d):
-  // A ≡ | M  -Ĝᵀ|   a ≡ |-M f |   X ≡ |-Nᵀ  -Dᵀ  0  -Lᵀ |
+  // A ≡ | M  -Ĝᵀ|   a ≡ |-M v |   X ≡ |-Nᵀ  -Dᵀ  0  -Lᵀ |
   //     | Ĝ   0 |       |  kᴳ |       | 0    0   0   0  |
   //
   // Y ≡ | N   0 |   b ≡ |  kᴺ |   B ≡ | 0    0   0   0  |
@@ -1014,15 +978,15 @@ void ConstraintSolver<T>::SolveImpactProblem(
 
   // Therefore, using Equations (f) and (g) and defining C as the upper left
   // block of A⁻¹, the pure LCP (q,M) is defined as:
-  // M ≡ | NCNᵀ  NCDᵀ   0   NCLᵀ |
-  //     | DCNᵀ  DCDᵀ   E   DCLᵀ |
-  //     | μ      -Eᵀ   0   0    |
-  //     | LCNᵀ  LCDᵀ   0   LCLᵀ |
+  // MM ≡ | NCNᵀ  NCDᵀ   0   NCLᵀ |
+  //      | DCNᵀ  DCDᵀ   E   DCLᵀ |
+  //      | μ      -Eᵀ   0   0    |
+  //      | LCNᵀ  LCDᵀ   0   LCLᵀ |
   //
-  // q ≡ | kᴺ + NCv |
-  //     | kᴰ + DCv |
-  //     |    0     |
-  //     | kᴸ + LCv |
+  // qq ≡ | kᴺ + NA⁻¹a |
+  //      | kᴰ + DA⁻¹a |
+  //      |      0     |
+  //      | kᴸ + LA⁻¹a |
 
   // --------------------------------------------------------------------------
   // Using the LCP solution to solve the MLCP.
@@ -1030,8 +994,8 @@ void ConstraintSolver<T>::SolveImpactProblem(
 
   // From Equation (e) and the solution to the LCP (v), we can solve for u using
   // the following equations:
-  // Xv + a = | -NᵀfN - DᵀfD - LᵀfL - f |
-  //          |            kᴳ           |
+  // Xv + a = | -NᵀfN - DᵀfD - LᵀfL - Mv |
+  //          |            kᴳ            |
   //
 
   // Determine the set of linearly independent constraints.
@@ -1044,7 +1008,7 @@ void ConstraintSolver<T>::SolveImpactProblem(
 
   // Determine a new "inertia" solve operator, which solves AX = B, where
   // A = | M  -Gᵀ |
-  //     | G'  0  |
+  //     | G   0  |
   // using the newly reduced set of constraints. This will allow transforming
   // the mixed LCP into a pure LCP.
   std::function<MatrixX<T>(const MatrixX<T>&)> A_solve;
@@ -1064,8 +1028,8 @@ void ConstraintSolver<T>::SolveImpactProblem(
   ConstraintVelProblemData<T> modified_problem_data(
       problem_data.v.size() + indep_constraints.size());
   ConstraintVelProblemData<T>* data_ptr = &modified_problem_data;
-  UpdateProblemDataForUnilateralConstraints(
-      problem_data, indep_constraints, fast_A_solve, &data_ptr);
+  data_ptr = UpdateProblemDataForUnilateralConstraints(
+      problem_data, indep_constraints, fast_A_solve, data_ptr);
 
   // Set up the linear complementarity problem.
   MatrixX<T> MM;

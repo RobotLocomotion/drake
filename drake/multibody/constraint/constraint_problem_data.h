@@ -92,7 +92,7 @@ struct ConstraintAccelProblemData {
   /// which can be read as the acceleration at joint j (v̇ⱼ) must equal to `r`
   /// times the acceleration at joint i (v̇ᵢ); `r` is thus the gear ratio.
   /// In this example, the corresponding holonomic constraint function is
-  /// g(q) ≡ qᵢ - rqⱼ, yielding ̈g(q, v, v̇) = -v̇ⱼ + - rv̇ⱼ.
+  /// g(q) ≡ qᵢ - rqⱼ, yielding ̈g(q, v, v̇) = v̇ⱼ - rv̇ⱼ.
   /// @{
 
   /// An operator that performs the multiplication G⋅v. The default operator
@@ -225,7 +225,7 @@ struct ConstraintAccelProblemData {
   /// and the limiting force cannot be applied if the acceleration at the
   /// joint is not at the limit (i.e., v̇ⱼ < r). In this example, the
   /// corresponding holonomic constraint function is g(t,q) ≡ -qⱼ + rt²,
-  /// yielding  ̈g(q, v, v̇) = -v̇ⱼ + r.
+  /// yielding ̈g(q, v, v̇) = -v̇ⱼ + r.
   /// @{
 
   /// An operator that performs the multiplication L⋅v. The default operator
@@ -317,7 +317,7 @@ struct ConstraintVelProblemData {
   /// which can be read as the velocity at joint j (vⱼ) must equal to `r`
   /// times the velocity at joint i (vᵢ); `r` is thus the gear ratio.
   /// In this example, the corresponding holonomic constraint function is
-  /// g(q) ≡ qᵢ -rqⱼ, yielding ġ(q, v) = -vⱼ + - rvⱼ.
+  /// g(q) ≡ qᵢ - rqⱼ, yielding ġ(q, v) = vⱼ - rvⱼ.
   /// @{
 
   /// An operator that performs the multiplication G⋅v. The default operator

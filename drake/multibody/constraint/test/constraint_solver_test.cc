@@ -1082,7 +1082,7 @@ class Constraint2DSolverTest : public ::testing::Test {
   // specified. The rod will be constrained to prevent rotational acceleration
   // using a bilateral constraint as well.
   void SlidingPlusBilateral(bool sliding_to_right) {
-      SetRodToRestingVerticalConfig();
+    SetRodToRestingVerticalConfig();
     ContinuousState<double>& xc = *context_->
         get_mutable_continuous_state();
     xc[3] = (sliding_to_right) ? 1 : -1;
@@ -1170,7 +1170,7 @@ class Constraint2DSolverTest : public ::testing::Test {
     accel_data_->kG[0] = 1.0;    // Indicate a ccw angular motion..
     solver_.SolveConstraintProblem(cfm_, *accel_data_, &cf);
     solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &ga);
-    EXPECT_LT(ga[2], -1.0 + lcp_eps_ * cf.size());
+    EXPECT_NEAR(ga[2], -accel_data_->kG[0], lcp_eps_ * cf.size());
   }
 
   // Tests the rod in an upright sliding and impacting state, with sliding
@@ -1246,7 +1246,7 @@ class Constraint2DSolverTest : public ::testing::Test {
     // angular velocity..
     VectorX<double> gv;
     solver_.ComputeGeneralizedVelocityChange(*vel_data_, cf, &gv);
-    EXPECT_LT((vel_data_->v[2] + gv[2]), lcp_eps_ * cf.size());
+    EXPECT_NEAR((vel_data_->v[2] + gv[2]), 0, lcp_eps_ * cf.size());
 
     // Indicate through modification of the kG term that the system already has
     // angular orientation (which violates our desire to keep the rod at
@@ -1254,7 +1254,8 @@ class Constraint2DSolverTest : public ::testing::Test {
     vel_data_->kG[0] = 1.0;    // Indicate a ccw orientation..
     solver_.SolveImpactProblem(cfm_, *vel_data_, &cf);
     solver_.ComputeGeneralizedVelocityChange(*vel_data_, cf, &gv);
-    EXPECT_LT(vel_data_->v[2] + gv[2], -1.0 + lcp_eps_ * cf.size());
+    EXPECT_NEAR(vel_data_->v[2] + gv[2], -vel_data_->kG[0],
+                lcp_eps_ * cf.size());
   }
 };
 
