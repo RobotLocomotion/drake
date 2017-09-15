@@ -202,7 +202,8 @@ void approximateIK(RigidBodyTree<double>* model,
     {
       GRBgetcoeff(grb_model, i, j,&J(i, j));
     }
-    GRBgetdblattrarray(grb_model, GRB_DBL_ATTR_RHS, 0, num_gurobi_cnst, rhs.data());
+    GRBgetdblattrarray(grb_model, GRB_DBL_ATTR_RHS, 0, num_gurobi_cnst,
+                       rhs.data());
   }
   */
 

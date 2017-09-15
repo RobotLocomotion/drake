@@ -58,12 +58,28 @@ class DirectTranscription : public MultipleShooting {
   // Implements a running cost at all timesteps.
   void DoAddRunningCost(const symbolic::Expression& e) override;
 
-  // Create AutoDiff versions of the System components (for the constraints).
-  const std::unique_ptr<const System<AutoDiffXd>> system_;
-  const std::unique_ptr<Context<AutoDiffXd>> context_;
-  const std::unique_ptr<DiscreteValues<AutoDiffXd>> discrete_state_;
+  // Attempts to create a symbolic version of the plant, and to add linear
+  // constraints to impose the dynamics if possible.  Returns true iff the
+  // constraints are added.
+  bool AddSymbolicDynamicConstraints(const System<double>* system,
+                                     const Context<double>& context);
+
+  // Attempts to create an autodiff version of the plant, and to impose
+  // the generic (nonlinear) constraints to impose the dynamics.
+  // Aborts if the conversion ToAutoDiffXd fails.
+  void AddAutodiffDynamicConstraints(const System<double>* system,
+                                     const Context<double>& context);
+
+  // AutoDiff versions of the System components (for the constraints).
+  // These values are allocated iff the dynamic constraints are allocated
+  // as DiscreteTimeSystemConstraints, otherwise they are nullptr.
+  std::unique_ptr<const System<AutoDiffXd>> system_;
+  std::unique_ptr<Context<AutoDiffXd>> context_;
+  std::unique_ptr<DiscreteValues<AutoDiffXd>> discrete_state_;
   FreestandingInputPortValue* input_port_value_{
       nullptr};  // Owned by the context.
+
+  const bool discrete_time_system_{false};
 };
 
 }  // namespace trajectory_optimization

@@ -89,8 +89,19 @@ GTEST_TEST(EigenTypesTest, TraitsSFINAE) {
 GTEST_TEST(EigenTypesTest, EigenPtr_Null) {
   EigenPtr<const Matrix3d> null_ptr = nullptr;
   EXPECT_FALSE(null_ptr);
+  EXPECT_FALSE(null_ptr != nullptr);
   EXPECT_TRUE(!null_ptr);
+  EXPECT_TRUE(null_ptr == nullptr);
   EXPECT_THROW(*null_ptr, std::runtime_error);
+
+  Matrix3d X;
+  X.setConstant(0);
+  EigenPtr<const Matrix3d> ptr = &X;
+  EXPECT_TRUE(ptr);
+  EXPECT_TRUE(ptr != nullptr);
+  EXPECT_FALSE(!ptr);
+  EXPECT_FALSE(ptr == nullptr);
+  EXPECT_NO_THROW(*ptr);
 }
 
 bool ptr_optional_arg(EigenPtr<MatrixXd> arg = nullptr) {

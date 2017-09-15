@@ -272,11 +272,6 @@ macro(drake_setup_options)
     DEPENDS "HAVE_LCM\;HAVE_BOT_CORE_LCMTYPES\;NOT DISABLE_PYTHON"
     "VTK-based visualization tool and robot user interface")
 
-  # STRONGLY DEPRECATED.
-  drake_optional_external(GOOGLE_STYLEGUIDE ON
-    DEPENDS "NOT DISABLE_PYTHON"
-    "Google code style tools for cpplint.py style checking" ON)
-
   # IPOPT is currently disabled on Mac when MATLAB is enabled due to MATLAB
   # compatibility issues:
   # https://github.com/RobotLocomotion/drake/issues/2578

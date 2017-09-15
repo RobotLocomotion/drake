@@ -8,6 +8,7 @@
 
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/input_port_value.h"
+#include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
 using std::make_unique;
 
@@ -76,6 +77,14 @@ TEST_F(AdderTest, AdderIsDirectFeedthrough) {
   for (int i = 0; i < adder_->get_num_input_ports(); ++i) {
     EXPECT_TRUE(adder_->HasDirectFeedthrough(i, 0));
   }
+}
+
+TEST_F(AdderTest, ToAutoDiff) {
+  EXPECT_TRUE(is_autodiffxd_convertible(*adder_));
+}
+
+TEST_F(AdderTest, ToSymbolic) {
+  EXPECT_TRUE(is_symbolic_convertible(*adder_));
 }
 
 }  // namespace

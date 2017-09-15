@@ -28,9 +28,9 @@ using systems::controllers::qp_inverse_dynamics::QpInverseDynamicsSystem;
 
 /**
  * A controller for humanoid balancing built on top of HumanoidPlanEvalSystem
- * and QpInverseDynamicsSystemSystem. This diagram does not have any input or output ports.
- * The state and plan inputs and control outputs are sent through LCM messages
- * directly.
+ * and QpInverseDynamicsSystemSystem. This diagram does not have any input or
+ * output ports.  The state and plan inputs and control outputs are sent
+ * through LCM messages directly.
  */
 class ValkyrieController : public systems::Diagram<double> {
  public:

@@ -157,10 +157,7 @@ with the environment you actually want!
 
 **Ubuntu users** will generally get good behavior by default, because ``apt``
 installs binaries in reasonable, standard paths, and because most CLion launch
-mechanisms will have already sourced the ``.bashrc``. Do be careful that
-``ccache`` is not on your ``PATH``, though.  If you launch CLion with ``ccache``
-on your ``PATH``, and then CLion launches a Bazel server, you'll need to quit
-CLion, kill the Bazel server, and run ``bazel clean`` to recover.
+mechanisms will have already sourced the ``.bashrc``.
 
 **OS X users** will get broken behavior by default.  When you run an OS X app
 graphically, the parent process is `launchd` (PID 1), which provides its own
@@ -409,6 +406,50 @@ following values for the fields:
   :Parameters: ``run //tools:drakelint -- $FilePath$``
   :Working directory: ``$Projectpath$``
 
-This tool does not *currently* produce output from which clickable links can be
-made. In the event that it reports a problem with the includes, simply execute
-the ``Clang Format Include Ordering`` external tool on the file.
+In the event of finding a lint problem (e.g., out-of-order include files), the
+CLion output will contain a *single* clickable link. This link is only the
+*first* error encountered in the include section; there may be more. The link
+merely provides a hint to the developer to see the problem area. Rather than
+fixing by hand, we strongly recommend executing the ``Clang Format Include
+Ordering`` external tool on the file.
+
+Alternative linting configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The linting tools have been configured to use the bazel system. The advantage in
+doing so is that it guarantees that the tools are built prior to being used.
+However, bazel only allows one instance of bazel to run at a time. For example,
+if building Drake in a command-line window, it would be impossible to lint files
+at the same time.
+
+The work around is to change the configurations to execute the binaries
+directly. This approach generally works but will fail if the corresponding bazel
+targets have not been built. The tools would need to be built prior to
+execution.
+
+With this warning in place, you can make the following modifications to the
+linting tools to be able to lint and compile simultaneously.
+
+Google style guide linting
+""""""""""""""""""""""""""
+
+Change the following fields in the instructions given above:
+
+  :Program: ``bazel-bin/external/google_styleguide/cpplint_binary``
+  :Parameters: ``--output=eclipse $FilePath$``
+
+Building the google styleguide lint tool:
+
+``bazel build @google_styleguide//:cpplint``
+
+Drake style addenda
+"""""""""""""""""""
+
+Change the following fields in the instructions given above:
+
+  :Program: ``/bazel-bin/tools/drakelint``
+  :Parameters: ``$FilePath$``
+
+Building the drake addenda lint tool:
+
+``bazel build //tools:drakelint``

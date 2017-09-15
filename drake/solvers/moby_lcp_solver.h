@@ -108,7 +108,8 @@ class MobyLCPSolver : public MathematicalProgramSolverInterface {
   /// @param[in,out] z the solution to the LCP on return (if the solver
   ///                succeeds). If the length of z is equal to the length of q,
   ///                the solver will attempt to use z's value as a starting
-  ///                solution.
+  ///                solution. If the solver fails (returns `false`), `z` will
+  ///                be set to the zero vector.
   /// @param[in] zero_tol The tolerance for testing against zero. If the
   ///            tolerance is negative (default) the solver will determine a
   ///            generally reasonable tolerance.
@@ -202,7 +203,8 @@ class MobyLCPSolver : public MathematicalProgramSolverInterface {
   ///                the solver will attempt to use z's value as a starting
   ///                solution. **This warmstarting is generally not
   ///                recommended**: it has a predisposition to lead to a failing
-  ///                pivoting sequence.
+  ///                pivoting sequence. If the solver fails (returns `false`),
+  ///                `z` will be set to the zero vector.
   /// @param[in] zero_tol The tolerance for testing against zero. If the
   ///            tolerance is negative (default) the solver will determine a
   ///            generally reasonable tolerance.

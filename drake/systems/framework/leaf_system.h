@@ -26,6 +26,7 @@
 #include "drake/systems/framework/model_values.h"
 #include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/system.h"
+#include "drake/systems/framework/system_constraint.h"
 #include "drake/systems/framework/system_scalar_converter.h"
 #include "drake/systems/framework/system_symbolic_inspector.h"
 #include "drake/systems/framework/value.h"
@@ -199,11 +200,39 @@ class LeafSystem : public System<T> {
   }
 
   std::multimap<int, int> GetDirectFeedthroughs() const final {
-    auto sparsity = MakeSystemSymbolicInspector();
+    // A helper object that is latch-initialized the first time it is needed,
+    // but not before.  The optional<> wrapper represents whether or not the
+    // latch-init has been attempted; the unique_ptr's non-nullness represents
+    // whether or not symbolic form is supported.
+    optional<std::unique_ptr<SystemSymbolicInspector>> inspector;
+
+    // This predicate answers a feedthrough query using symbolic form, or
+    // returns "true" if symbolic form is unavailable.  It is lazy, in that it
+    // will not create the symbolic form until the first time it is invoked.
+    auto inspect_symbolic_feedthrough = [this, &inspector](int u, int v) {
+      // The very first time we are called, latch-initialize the inspector.
+      if (!inspector) { inspector = MakeSystemSymbolicInspector(); }
+
+      // If we have an inspector, delegate to it.  Otherwise, be conservative.
+      if (SystemSymbolicInspector* inspector_value = inspector.value().get()) {
+        return inspector_value->IsConnectedInputToOutput(u, v);
+      } else {
+        return true;
+      }
+    };
+
+    // Iterate all input-output pairs, populating the map with the "true" terms.
     std::multimap<int, int> pairs;
     for (int u = 0; u < this->get_num_input_ports(); ++u) {
       for (int v = 0; v < this->get_num_output_ports(); ++v) {
-        if (DoHasDirectFeedthrough(sparsity.get(), u, v)) {
+        // Ask our subclass whether it wants to directly express feedthrough.
+        const optional<bool> overridden_feedthrough =
+            DoHasDirectFeedthrough(u, v);
+        // If our subclass didn't provide an answer, use symbolic form instead.
+        const bool direct_feedthrough =
+            overridden_feedthrough ? overridden_feedthrough.value() :
+            inspect_symbolic_feedthrough(u, v);
+        if (direct_feedthrough) {
           pairs.emplace(u, v);
         }
       }
@@ -435,43 +464,36 @@ class LeafSystem : public System<T> {
   }
 
   /// Returns true if there is direct-feedthrough from the given @p input_port
-  /// to the given @p output_port, and false otherwise, according to the given
-  /// @p sparsity.
+  /// to the given @p output_port, false if there is not direct-feedthrough, or
+  /// nullopt if unknown (in which case SystemSymbolicInspector will attempt to
+  /// measure the feedthrough using symbolic form).
   ///
-  /// If @p sparsity is nullptr, returns true, so that by default we assume
-  /// there is direct feedthrough of values from every input to every output.
+  /// By default, %LeafSystem assumes there is direct feedthrough of values
+  /// from every input to every output.
   /// This is a conservative assumption that ensures we detect and can prevent
   /// the formation of algebraic loops (implicit computations) in system
   /// Diagrams. Systems which do not have direct feedthrough may override that
   /// assumption in two ways:
   ///
-  /// - Override DoToSymbolic, allowing this function to infer the sparsity
+  /// - Override DoToSymbolic, allowing %LeafSystem to infer the sparsity
   ///   from the symbolic equations. This method is typically preferred for
   ///   systems that have a symbolic form, but should be avoided in certain
   ///   corner cases where fully descriptive symbolic analysis is impossible,
-  ///   e.g. when the symbolic form depends on C++ native conditionals. For
+  ///   e.g., when the symbolic form depends on C++ native conditionals. For
   ///   additional discussion, consult the documentation for
   ///   SystemSymbolicInspector.
   ///
   /// - Override this function directly, reporting manual sparsity. This method
-  ///   is recommended when ToSymbolic has not been implemented, or when its
+  ///   is recommended when DoToSymbolic has not been implemented, or when
+  ///   creating the symbolic form is too computationally expensive, or when its
   ///   output is not fully descriptive, as discussed above. Manually configured
   ///   sparsity must be conservative: if there is any Context for which an
   ///   input port is direct-feedthrough to an output port, this function must
-  ///   return true for those two ports.
-  virtual bool DoHasDirectFeedthrough(const SystemSymbolicInspector* sparsity,
-                                      int input_port, int output_port) const {
-    DRAKE_ASSERT(input_port >= 0);
-    DRAKE_ASSERT(input_port < this->get_num_input_ports());
-    DRAKE_ASSERT(output_port >= 0);
-    DRAKE_ASSERT(output_port < this->get_num_output_ports());
-
-    // If no symbolic sparsity matrix is available, assume direct feedthrough
-    // by default.
-    if (sparsity == nullptr) {
-      return true;
-    }
-    return sparsity->IsConnectedInputToOutput(input_port, output_port);
+  ///   return either true or nullopt for those two ports.
+  virtual optional<bool> DoHasDirectFeedthrough(
+      int input_port, int output_port) const {
+    unused(input_port, output_port);
+    return nullopt;
   }
 
   // =========================================================================
@@ -667,7 +689,7 @@ class LeafSystem : public System<T> {
   }
 
   /// Declares an abstract state.
-  /// @param abstract_state The abstract state, its ownership is transfered.
+  /// @param abstract_state The abstract state, its ownership is transferred.
   /// @return index of the declared abstract state.
   int DeclareAbstractState(std::unique_ptr<AbstractValue> abstract_state) {
     int index = model_abstract_states_.size();
@@ -948,6 +970,106 @@ class LeafSystem : public System<T> {
   }
   //@}
 
+  /// Declares a system constraint of the form
+  ///   f(context) = 0
+  /// by specifying a member function to use to calculate the (VectorX)
+  /// constraint value with a signature:
+  /// @code
+  /// void MySystem::CalcConstraint(const Context<T>&, VectorX<T>*) const;
+  /// @endcode
+  ///
+  /// @param count is the dimension of the VectorX output.
+  /// @param description should be a human-readable phrase.
+  /// @returns The index of the constraint.
+  /// Template arguments will be deduced and do not need to be specified.
+  ///
+  /// @see SystemConstraint<T> for more information about the meaning of
+  /// these constraints.
+  template <class MySystem>
+  SystemConstraintIndex DeclareEqualityConstraint(
+      void (MySystem::*calc)(const Context<T>&, VectorX<T>*) const,
+      int count, const std::string& description) {
+    auto this_ptr = dynamic_cast<const MySystem*>(this);
+    DRAKE_DEMAND(this_ptr != nullptr);
+    return DeclareEqualityConstraint(
+        [this_ptr, calc](const Context<T>& context, VectorX<T>* value) {
+          DRAKE_DEMAND(value != nullptr);
+          (this_ptr->*calc)(context, value);
+        },
+        count, description);
+  }
+
+  /// Declares a system constraint of the form
+  ///   f(context) = 0
+  /// by specifying a std::function to use to calculate the (Vector) constraint
+  /// value with a signature:
+  /// @code
+  /// void CalcConstraint(const Context<T>&, VectorX<T>*);
+  /// @endcode
+  ///
+  /// @param count is the dimension of the VectorX output.
+  /// @param description should be a human-readable phrase.
+  /// @returns The index of the constraint.
+  ///
+  /// @see SystemConstraint<T> for more information about the meaning of
+  /// these constraints.
+  SystemConstraintIndex DeclareEqualityConstraint(
+      typename SystemConstraint<T>::CalcCallback calc, int count,
+      const std::string& description) {
+    return this->AddConstraint(std::make_unique<SystemConstraint<T>>(
+        calc, count, true, description));
+  }
+
+  /// Declares a system constraint of the form
+  ///   f(context) ≥ 0
+  /// by specifying a member function to use to calculate the (VectorX)
+  /// constraint value with a signature:
+  /// @code
+  /// void MySystem::CalcConstraint(const Context<T>&, VectorX<T>*) const;
+  /// @endcode
+  ///
+  /// @param count is the dimension of the VectorX output.
+  /// @param description should be a human-readable phrase.
+  /// @returns The index of the constraint.
+  /// Template arguments will be deduced and do not need to be specified.
+  ///
+  /// @see SystemConstraint<T> for more information about the meaning of
+  /// these constraints.
+  template <class MySystem>
+  SystemConstraintIndex DeclareInequalityConstraint(
+      void (MySystem::*calc)(const Context<T>&, VectorX<T>*) const,
+      int count, const std::string& description) {
+    auto this_ptr = dynamic_cast<const MySystem*>(this);
+    DRAKE_DEMAND(this_ptr != nullptr);
+    return DeclareInequalityConstraint(
+        [this_ptr, calc](const Context<T>& context, VectorX<T>* value) {
+          DRAKE_DEMAND(value != nullptr);
+          (this_ptr->*calc)(context, value);
+        },
+        count, description);
+  }
+
+  /// Declares a system constraint of the form
+  ///   f(context) ≥ 0
+  /// by specifying a std::function to use to calculate the (Vector) constraint
+  /// value with a signature:
+  /// @code
+  /// void CalcConstraint(const Context<T>&, VectorX<T>*);
+  /// @endcode
+  ///
+  /// @param count is the dimension of the VectorX output.
+  /// @param description should be a human-readable phrase.
+  /// @returns The index of the constraint.
+  ///
+  /// @see SystemConstraint<T> for more information about the meaning of
+  /// these constraints.
+  SystemConstraintIndex DeclareInequalityConstraint(
+      typename SystemConstraint<T>::CalcCallback calc, int count,
+      const std::string& description) {
+    return this->AddConstraint(std::make_unique<SystemConstraint<T>>(
+        calc, count, false, description));
+  }
+
   /// Derived-class event handler for all simultaneous publish events
   /// in @p events. Override this in your derived LeafSystem if your derived
   /// LeafSystem requires a behavior other than the default behavior, which
@@ -1187,7 +1309,7 @@ class LeafSystem : public System<T> {
   // symbolic representation.
   std::unique_ptr<SystemSymbolicInspector> MakeSystemSymbolicInspector() const {
     std::unique_ptr<System<symbolic::Expression>> symbolic_system =
-        this->ToSymbolic();
+        this->ToSymbolicMaybe();
     if (symbolic_system) {
       return std::make_unique<SystemSymbolicInspector>(*symbolic_system);
     } else {

@@ -17,6 +17,7 @@ class TestFormatterBase(unittest.TestCase):
         self.assertTrue(dut.is_same_as_original())
         self.assertTrue(dut.is_permutation_of_original())
         self.assertEqual(dut.get_all_lines(), original_lines)
+        self.assertTrue(dut.get_first_differing_original_index() is None)
 
         # Basic getters.
         self.assertEqual(dut.get_num_lines(), 3)
@@ -27,6 +28,7 @@ class TestFormatterBase(unittest.TestCase):
         dut.set_all_lines(reversed(dut.get_all_lines()))
         self.assertFalse(dut.is_same_as_original())
         self.assertTrue(dut.is_permutation_of_original())
+        self.assertEqual(dut.get_first_differing_original_index(), 0)
 
         # Rebuild it using insertion and removal.
         dut.set_all_lines(['\n'] * 3)
@@ -68,14 +70,16 @@ class TestIncludeFormatter(unittest.TestCase):
         del lines[-1]
         return [line + "\n" for line in lines]
 
-    def _check(self, basename, original, expected):
+    def _check(self, basename, original, expected, first_differing):
         original_lines = self._split(original)
         expected_lines = self._split(expected)
         dut = IncludeFormatter(
             "drake/dummy/" + basename,
             readlines=original_lines)
         dut.format_includes()
-        self.assertEquals(dut.get_all_lines(), expected_lines)
+        self.assertEqual(dut.get_all_lines(), expected_lines)
+        self.assertEqual(dut.get_first_differing_original_index(),
+                         first_differing)
 
     def test_basic(self):
         # A pile of headers gets sorted per cppguide:
@@ -110,14 +114,14 @@ class TestIncludeFormatter(unittest.TestCase):
 #include "drake/common/drake_assert.h"
 #include "drake/dummy/bar.h"
 """
-        self._check("dut.cc", original, expected)
+        self._check("dut.cc", original, expected, 0)
 
     def test_nothing(self):
         # A file with _no_ include statements.
         original = """
 namespace { }
 """
-        self._check("dut.cc", original, original)
+        self._check("dut.cc", original, original, None)
 
     def test_regroup(self):
         # Wrongly grouped whitespace.
@@ -144,7 +148,7 @@ namespace { }
 #include "drake/common/drake_assert.h"
 #include "drake/dummy/bar.h"
 """
-        self._check("dut.cc", original, expected)
+        self._check("dut.cc", original, expected, 2)
 
     def test_format_off(self):
         # "clang-format off".
@@ -163,7 +167,7 @@ namespace { }
 
 #include "drake/common/drake_assert.h"
 """
-        self._check("dut.cc", original, original)
+        self._check("dut.cc", original, original, None)
 
     def test_cc_uses_single_inl(self):
         # Only a single "-inl.h" include.
@@ -172,7 +176,7 @@ namespace { }
 
 namespace { }
 """
-        self._check("dut.cc", original, original)
+        self._check("dut.cc", original, original, None)
 
     def test_cc_uses_inl_and_more(self):
         # Presence of "-inl.h" pattern and other things.
@@ -184,7 +188,7 @@ namespace { }
 
 namespace { }
 """
-        self._check("xxx.cc", original, original)
+        self._check("xxx.cc", original, original, None)
 
     def test_target_is_header(self):
         # A header file.
@@ -201,7 +205,7 @@ namespace { }
 
 namespace { }
 """
-        self._check("dut.h", original, expected)
+        self._check("dut.h", original, expected, 0)
 
     def test_target_is_inl(self):
         # An *-inl.h file.
@@ -212,7 +216,7 @@ namespace { }
 
 namespace { }
 """
-        self._check("dut-inl.h", original, original)
+        self._check("dut-inl.h", original, original, None)
 
     def test_associated_comment(self):
         # A comment prior to a line.
@@ -224,7 +228,7 @@ namespace { }
 
 namespace { }
 """
-        self._check("dut.cc", original, original)
+        self._check("dut.cc", original, original, None)
 
     def test_file_opening_comment(self):
         # A comment atop the file with no blank line.
@@ -235,7 +239,7 @@ namespace { }
 #include <string>
 #include <vector>
 """
-        self._check("dut.cc", original, original)
+        self._check("dut.cc", original, original, None)
 
     def test_internal_related_header(self):
         # Two related headers, guarded by "clang-format off".
@@ -263,10 +267,10 @@ namespace { }
 #include "drake/dummy/drake_assert.h"
 #include "drake/dummy/drake_deprecated.h"
 """
-        self._check("dut.cc", original, expected)
+        self._check("dut.cc", original, expected, 5)
 
     def test_resort_solo_groups(self):
-        # Groups of one, but sorted uncorrectly.
+        # Groups of one, but sorted incorrectly.
         original = """
 #include "drake/dummy/dut.h"
 
@@ -281,7 +285,7 @@ namespace { }
 
 #include "drake/common/drake_assert.h"
 """
-        self._check("dut.cc", original, expected)
+        self._check("dut.cc", original, expected, 2)
 
     def test_nontrivial_reformatting(self):
         # If clang-format changes any lines, we want to fail-fast.

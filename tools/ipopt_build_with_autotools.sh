@@ -28,6 +28,11 @@ configure="$PWD"/external/ipopt/configure
 # totally bog down the machine, while still achieving some parallelism.
 half_the_cores="$[($(getconf _NPROCESSORS_ONLN)+1)/2]"
 
+# Within the Bazel sandbox, ccache does not work, so we should turn it off.
+# (The IPOPT build sniffs the path to find a compiler; it neither knows about
+# nor obeys the Bazel --compiler flag.)
+export CCACHE_DISABLE=1
+
 # Set these to match --with-pic below.
 export ADD_CFLAGS=-fPIC
 export ADD_CXXFLAGS=-fPIC

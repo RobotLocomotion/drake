@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
+#include "drake/examples/pendulum/pendulum_plant.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 #include "drake/systems/primitives/test/affine_linear_test.h"
 
@@ -104,7 +105,8 @@ TEST_F(LinearSystemTest, ConvertScalarType) {
   }));
 }
 
-// Test that linearizing an affine system returns the original A,B,C,D matrices.
+// Test that linearizing a continuous-time affine system returns the original
+// A,B,C,D matrices.
 GTEST_TEST(TestLinearize, FromAffine) {
   Eigen::Matrix3d A;
   Eigen::Matrix<double, 3, 1> B;
@@ -143,6 +145,79 @@ GTEST_TEST(TestLinearize, FromAffine) {
                               MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(D, linearized_system->D(), tol,
                               MatrixCompareType::absolute));
+}
+
+// Test that linearizing a discrete-time affine system returns the original
+// A,B,C,D matrices and time period.
+GTEST_TEST(TestLinearize, FromDiscreteAffine) {
+  Eigen::Matrix3d A;
+  Eigen::Matrix<double, 3, 1> B;
+  Eigen::Vector3d f0;
+  Eigen::Matrix<double, 2, 3> C;
+  Eigen::Vector2d D;
+  Eigen::Vector2d y0;
+  A << 1, 2, 3, 4, 5, 6, 7, 8, 9;
+  B << 10, 11, 12;
+  f0 << 13, 14, 15;
+  C << 16, 17, 18, 19, 20, 21;
+  D << 22, 23;
+  y0 << 24, 25;
+  const double time_period = 0.1;
+  AffineSystem<double> discrete_system(A, B, f0, C, D, y0, time_period);
+  auto context = discrete_system.CreateDefaultContext();
+  Eigen::Vector3d x0(26, 27, 28);
+  systems::BasicVector<double>* xd =
+      context->get_mutable_discrete_state()->get_mutable_vector();
+  xd->SetFromVector(x0);
+  double u0 = 29;
+  context->FixInputPort(0, Vector1d::Constant(u0));
+
+  // This Context is not an equilibrium point.
+  EXPECT_THROW(Linearize(discrete_system, *context), std::runtime_error);
+
+  // Set x0 to the actual equilibrium point.
+  Eigen::Matrix3d eye = Eigen::Matrix3d::Identity();
+  x0 = (eye - A).colPivHouseholderQr().solve(B * u0 + f0);
+  xd->SetFromVector(x0);
+
+  auto linearized_system = Linearize(discrete_system, *context);
+
+  double tol = 1e-10;
+  EXPECT_TRUE(CompareMatrices(A, linearized_system->A(), tol,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(B, linearized_system->B(), tol,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(C, linearized_system->C(), tol,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(D, linearized_system->D(), tol,
+                              MatrixCompareType::absolute));
+  EXPECT_EQ(time_period, linearized_system->time_period());
+}
+
+// A trivial system with discrete state that is not bound to a periodic update
+// cycle.
+class TestNonPeriodicSystem : public LeafSystem<double> {
+ public:
+  TestNonPeriodicSystem() {
+    this->DeclareDiscreteState(1);
+    PublishEvent<double> event(Event<double>::TriggerType::kPerStep);
+    this->DeclarePerStepEvent(event);
+  }
+
+  void DoCalcDiscreteVariableUpdates(
+      const Context<double>& context,
+      const std::vector<const DiscreteUpdateEvent<double>*>&,
+      DiscreteValues<double>* discrete_state) const override {
+    (*discrete_state)[0] = context.get_discrete_state(0)->GetAtIndex(0) + 1;
+  }
+};
+
+// Test that Linearize throws when called on a discrete but non-periodic system.
+GTEST_TEST(TestLinearize, ThrowsWithNonPeriodicDiscreteSystem) {
+  TestNonPeriodicSystem system;
+  auto context = system.CreateDefaultContext();
+
+  EXPECT_THROW(Linearize(system, *context), std::runtime_error);
 }
 
 // Test a few simple systems that are known to be controllable (or not).
@@ -297,6 +372,43 @@ TEST_F(LinearSystemSymbolicTest, MakeLinearSystemException4) {
       LinearSystem<double>::MakeLinearSystem(extra_terms + A_ * x_ + B_ * u_,
                                              C_ * x_ + D_ * u_, x_, u_, 10.0),
       std::runtime_error);
+}
+
+TEST_F(LinearSystemTest, LinearizeSystemWithParameters) {
+  examples::pendulum::PendulumPlant<double> pendulum;
+  auto context = pendulum.CreateDefaultContext();
+  auto input = std::make_unique<examples::pendulum::PendulumInput<double>>();
+  input->set_tau(0.0);
+  context->FixInputPort(0, std::move(input));
+  examples::pendulum::PendulumState<double>* state =
+      dynamic_cast<examples::pendulum::PendulumState<double>*>(
+          context->get_mutable_continuous_state_vector());
+  state->set_theta(0.0);
+  state->set_thetadot(0.0);
+
+  std::unique_ptr<LinearSystem<double>> linearized_pendulum =
+      Linearize(pendulum, *context);
+
+  const auto params =
+      dynamic_cast<const examples::pendulum::PendulumParams<double>*>(
+          context->get_numeric_parameter(0));
+  EXPECT_TRUE(params);
+
+  // Compare against manual linearization of the pendulum dynamics.
+  using std::pow;
+  const double inertia = params->mass() * pow(params->length(), 2.0);
+  Eigen::Matrix2d A;
+  A << 0, 1.0, -params->gravity() / params->length(),
+      -params->damping() / inertia;
+  Eigen::Vector2d B(0.0, 1.0 / inertia);
+  Eigen::Matrix2d C = Eigen::Matrix2d::Identity();
+  Eigen::Vector2d D = Eigen::Vector2d::Zero();
+
+  const double tol = 1e-6;
+  EXPECT_TRUE(CompareMatrices(linearized_pendulum->A(), A, tol));
+  EXPECT_TRUE(CompareMatrices(linearized_pendulum->B(), B, tol));
+  EXPECT_TRUE(CompareMatrices(linearized_pendulum->C(), C, tol));
+  EXPECT_TRUE(CompareMatrices(linearized_pendulum->D(), D, tol));
 }
 
 }  // namespace

@@ -55,7 +55,7 @@ class SimpleCar final : public systems::LeafSystem<T> {
 
   SimpleCar();
 
-  /// Scalar-converting copy constructor.
+  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
   explicit SimpleCar(const SimpleCar<U>&);
 
@@ -79,6 +79,12 @@ class SimpleCar final : public systems::LeafSystem<T> {
                                const SimpleCarState<T>& state,
                                const DrivingCommand<T>& input,
                                SimpleCarState<T>* rates) const;
+
+  void CalcSteeringAngleConstraint(const systems::Context<T>&,
+                                   VectorX<T>*) const;
+  void CalcAccelerationConstraint(const systems::Context<T>&,
+                                  VectorX<T>*) const;
+  void CalcVelocityConstraint(const systems::Context<T>&, VectorX<T>*) const;
 };
 
 }  // namespace automotive

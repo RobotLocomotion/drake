@@ -165,7 +165,6 @@ ignition::math::Vector3d SplineLane::GetPositionToLane(double s,
   const Vector2<double> other_lane_beginning = other_lane->xy_of_s(0.);
   const Vector2<double> other_lane_ending =
       other_lane->xy_of_s(other_lane->do_length());
-
   // Converts the beginning and ending positions of the other lane into
   // ignition::math::Vector3d objects.
   const ignition::math::Vector3d q(other_lane_beginning.x(),

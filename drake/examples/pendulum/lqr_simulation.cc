@@ -1,8 +1,11 @@
 #include <cmath>
 #include <memory>
 
+#include <gflags/gflags.h>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/is_approx_equal_abstol.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/joints/floating_base_types.h"
@@ -21,7 +24,11 @@ namespace examples {
 namespace pendulum {
 namespace {
 
-int do_main() {
+DEFINE_double(target_realtime_rate, 1.0,
+              "Playback speed.  See documentation for "
+              "Simulator::set_target_realtime_rate() for details.");
+
+int DoMain() {
   lcm::DrakeLcm lcm;
 
   auto tree = std::make_unique<RigidBodyTree<double>>();
@@ -35,9 +42,12 @@ int do_main() {
 
   // Prepare to linearize around the vertical equilibrium point (with tau=0)
   auto pendulum_context = pendulum->CreateDefaultContext();
-  pendulum->set_theta(pendulum_context.get(), M_PI);
-  pendulum->set_thetadot(pendulum_context.get(), 0);
-  pendulum_context->FixInputPort(0, Vector1d::Zero());
+  auto desired_state = pendulum->get_mutable_state(pendulum_context.get());
+  desired_state->set_theta(M_PI);
+  desired_state->set_thetadot(0);
+  auto input = std::make_unique<PendulumInput<double>>();
+  input->set_tau(0.0);
+  pendulum_context->FixInputPort(0, std::move(input));
 
   // Set up cost function for LQR: integral of 10*theta^2 + thetadot^2 + tau^2.
   // The factor of 10 is heuristic, but roughly accounts for the unit conversion
@@ -48,12 +58,12 @@ int do_main() {
   Eigen::MatrixXd R(1, 1);
   R << 1;
 
-  auto controller = builder.AddSystem(
-      systems::controllers::LinearQuadraticRegulator(
+  auto controller =
+      builder.AddSystem(systems::controllers::LinearQuadraticRegulator(
           *pendulum, *pendulum_context, Q, R));
   controller->set_name("controller");
   builder.Connect(pendulum->get_output_port(), controller->get_input_port());
-  builder.Connect(controller->get_output_port(), pendulum->get_tau_port());
+  builder.Connect(controller->get_output_port(), pendulum->get_input_port());
 
   auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
   publisher->set_name("publisher");
@@ -64,11 +74,18 @@ int do_main() {
   systems::Context<double>& sim_pendulum_context =
       diagram->GetMutableSubsystemContext(*pendulum,
                                           simulator.get_mutable_context());
-  pendulum->set_theta(&sim_pendulum_context, M_PI + 0.1);
-  pendulum->set_thetadot(&sim_pendulum_context, 0.2);
+  auto state = pendulum->get_mutable_state(&sim_pendulum_context);
+  state->set_theta(M_PI + 0.1);
+  state->set_thetadot(0.2);
 
+  simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
   simulator.StepTo(10);
+
+  // Adds a numerical test to make sure we're stabilizing the fixed point.
+  DRAKE_DEMAND(is_approx_equal_abstol(state->get_value(),
+                                      desired_state->get_value(), 1e-3));
+
   return 0;
 }
 
@@ -77,6 +94,7 @@ int do_main() {
 }  // namespace examples
 }  // namespace drake
 
-int main() {
-  return drake::examples::pendulum::do_main();
+int main(int argc, char* argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  return drake::examples::pendulum::DoMain();
 }

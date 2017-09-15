@@ -1,5 +1,6 @@
 #include "drake/systems/primitives/linear_system.h"
 
+#include <string>
 #include <utility>
 
 #include <Eigen/Dense>
@@ -11,6 +12,8 @@
 #include "drake/common/symbolic_decompose.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/systems/framework/event.h"
+#include "drake/systems/framework/event_collection.h"
 
 namespace drake {
 namespace systems {
@@ -63,13 +66,95 @@ unique_ptr<LinearSystem<T>> LinearSystem<T>::MakeLinearSystem(
 template class LinearSystem<double>;
 template class LinearSystem<AutoDiffXd>;
 
+namespace {
+
+// If the system has discrete states, checks that the sole registered event for
+// the system is periodic, and returns the time_period. A time_period of zero is
+// returned if the system has continuous states.
+double GetTimePeriodIfDiscreteUpdatesArePeriodic(
+    const System<double>& system, const Context<double>& context) {
+  if (!context.has_only_discrete_state()) return 0.;
+
+  std::unique_ptr<CompositeEventCollection<double>> event_info =
+      system.AllocateCompositeEventCollection();
+  const double time_period =
+      system.CalcNextUpdateTime(context, event_info.get()) - context.get_time();
+
+  // Verify that the system has only one discrete, periodic update event.
+  // TODO(jadecastro) Upon resolution of #6878, clean up this implementation and
+  // weed out all illegal systems having a combination of event handlers.
+  DRAKE_THROW_UNLESS(event_info->HasDiscreteUpdateEvents());
+  const auto leaf_info =
+      dynamic_cast<const LeafCompositeEventCollection<double>*>(
+          event_info.get());
+  DRAKE_DEMAND(leaf_info != nullptr);
+  auto discrete_events = leaf_info->get_discrete_update_events().get_events();
+  DRAKE_THROW_UNLESS(discrete_events.size() == 1);
+  DRAKE_THROW_UNLESS(discrete_events.front()->get_trigger_type() ==
+                     Event<double>::TriggerType::kPeriodic);
+  return time_period;
+}
+
+// Builds the A and B matrices of the system's discrete/continuous state
+// equation.
+Eigen::MatrixXd MakeStateAndInputMatrices(
+    const VectorX<AutoDiffXd>& autodiff_x0_vec,
+    double equilibrium_check_tolerance,
+    const System<AutoDiffXd>& autodiff_system,
+    Context<AutoDiffXd>* autodiff_context) {
+  const std::string nonequilibrium_error_msg =
+      "The nominal operating point (x0,u0) is not an equilibrium point of "
+      "the system.  Without additional information, a time-invariant "
+      "linearization of this system is not well defined.";
+  if (autodiff_context->has_only_continuous_state()) {
+    autodiff_context->get_mutable_continuous_state_vector()->SetFromVector(
+        autodiff_x0_vec);
+    std::unique_ptr<ContinuousState<AutoDiffXd>> autodiff_xdot =
+        autodiff_system.AllocateTimeDerivatives();
+    autodiff_system.CalcTimeDerivatives(*autodiff_context,
+                                        autodiff_xdot.get());
+    auto autodiff_xdot_vec = autodiff_xdot->CopyToVector();
+
+    // Ensure that xdot0 = f(x0,u0) == 0.
+    if (!math::autoDiffToValueMatrix(autodiff_xdot_vec)
+        .isZero(equilibrium_check_tolerance)) {
+      throw std::runtime_error(nonequilibrium_error_msg);
+    }
+    return math::autoDiffToGradientMatrix(autodiff_xdot_vec);
+  }
+  auto autodiff_x0 =
+      autodiff_context->get_mutable_discrete_state()->get_mutable_vector();
+  autodiff_x0->SetFromVector(autodiff_x0_vec);
+  std::unique_ptr<DiscreteValues<AutoDiffXd>> autodiff_x1 =
+      autodiff_system.AllocateDiscreteVariables();
+  autodiff_system.CalcDiscreteVariableUpdates(*autodiff_context,
+                                              autodiff_x1.get());
+  auto autodiff_x1_vec = autodiff_x1->get_vector()->CopyToVector();
+
+  // Ensure that x1 = f(x0,u0) == x0.
+  if (!(math::autoDiffToValueMatrix(autodiff_x1_vec) -
+        math::autoDiffToValueMatrix(autodiff_x0_vec)).isZero(
+            equilibrium_check_tolerance)) {
+    throw std::runtime_error(nonequilibrium_error_msg);
+  }
+  return math::autoDiffToGradientMatrix(autodiff_x1_vec);
+}
+
+}  // namespace
+
 std::unique_ptr<LinearSystem<double>> Linearize(
     const System<double>& system, const Context<double>& context,
-    const double equilibrium_check_tolerance) {
+    double equilibrium_check_tolerance) {
   DRAKE_ASSERT_VOID(system.CheckValidContext(context));
 
-  DRAKE_DEMAND(context.is_stateless() || context.has_only_continuous_state());
-  // TODO(russt): handle the discrete time case
+  const bool has_only_discrete_states_contained_in_one_group =
+      context.has_only_discrete_state() &&
+      context.get_num_discrete_state_groups() == 1;
+  DRAKE_DEMAND(context.is_stateless() || context.has_only_continuous_state() ||
+               has_only_discrete_states_contained_in_one_group);
+
+  const double time_period =
+      GetTimePeriodIfDiscreteUpdatesArePeriodic(system, context);
 
   DRAKE_DEMAND(system.get_num_input_ports() <= 1);
   DRAKE_DEMAND(system.get_num_output_ports() <= 1);
@@ -90,19 +175,17 @@ std::unique_ptr<LinearSystem<double>> Linearize(
       autodiff_system->CreateDefaultContext();
   autodiff_context->SetTimeStateAndParametersFrom(context);
 
-  const Eigen::VectorXd x0 =
-      context.get_continuous_state_vector().CopyToVector();
-  const int num_states = x0.size();
-
   Eigen::VectorXd u0 = Eigen::VectorXd::Zero(num_inputs);
   if (num_inputs > 0) {
     u0 = system.EvalEigenVectorInput(context, 0);
   }
 
-  auto autodiff_args = math::initializeAutoDiffTuple(x0, u0);
-  autodiff_context->get_mutable_continuous_state_vector()->SetFromVector(
-      std::get<0>(autodiff_args));
+  const Eigen::VectorXd x0 = (context.has_only_continuous_state())
+      ? context.get_continuous_state_vector().CopyToVector()
+      : context.get_discrete_state(0)->get_value();
+  const int num_states = x0.size();
 
+  auto autodiff_args = math::initializeAutoDiffTuple(x0, u0);
   if (num_inputs > 0) {
     auto input_vector = std::make_unique<BasicVector<AutoDiffXd>>(num_inputs);
     input_vector->SetFromVector(std::get<1>(autodiff_args));
@@ -111,23 +194,28 @@ std::unique_ptr<LinearSystem<double>> Linearize(
         std::make_unique<FreestandingInputPortValue>(std::move(input_vector)));
   }
 
-  std::unique_ptr<ContinuousState<AutoDiffXd>> autodiff_xdot =
-      autodiff_system->AllocateTimeDerivatives();
-  autodiff_system->CalcTimeDerivatives(*autodiff_context, autodiff_xdot.get());
-  auto autodiff_xdot_vec = autodiff_xdot->CopyToVector();
-
-  // Ensure that xdot0 = f(x0,u0) == 0.
-  if (!math::autoDiffToValueMatrix(autodiff_xdot_vec)
-           .isZero(equilibrium_check_tolerance)) {
-    throw std::runtime_error(
-        "The nominal operating point (x0,u0) is not an equilibrium point of "
-        "the system.  Without additional information, a time-invariant "
-        "linearization of this system is not well defined.");
+  // Set derivatives of all parameters in the context to zero (but with the
+  // correct size).
+  // TODO(russt): This hack should be removed upon resolution of #6944.
+  int num_gradients = std::get<0>(autodiff_args)[0].derivatives().size();
+  for (int i = 0;
+       i < autodiff_context->get_parameters().num_numeric_parameters(); i++) {
+    auto params = autodiff_context->get_mutable_parameters()
+        .get_mutable_numeric_parameter(i)
+        ->get_mutable_value();
+    for (int j = 0; j < params.size(); j++) {
+      auto& derivs = params(j).derivatives();
+      derivs.resize(num_gradients);
+      derivs.setZero();
+    }
   }
 
-  Eigen::MatrixXd AB = math::autoDiffToGradientMatrix(autodiff_xdot_vec);
-  Eigen::MatrixXd A = AB.leftCols(num_states);
-  Eigen::MatrixXd B = AB.rightCols(num_inputs);
+  const Eigen::MatrixXd AB =
+      MakeStateAndInputMatrices(std::get<0>(autodiff_args),
+                                equilibrium_check_tolerance,
+                                *autodiff_system, autodiff_context.get());
+  const Eigen::MatrixXd A = AB.leftCols(num_states);
+  const Eigen::MatrixXd B = AB.rightCols(num_inputs);
 
   Eigen::MatrixXd C = Eigen::MatrixXd::Zero(num_outputs, num_states);
   Eigen::MatrixXd D = Eigen::MatrixXd::Zero(num_outputs, num_inputs);
@@ -143,7 +231,7 @@ std::unique_ptr<LinearSystem<double>> Linearize(
     D = CD.rightCols(num_inputs);
   }
 
-  return std::make_unique<LinearSystem<double>>(A, B, C, D);
+  return std::make_unique<LinearSystem<double>>(A, B, C, D, time_period);
 }
 
 /// Returns the controllability matrix:  R = [B, AB, ..., A^{n-1}B].

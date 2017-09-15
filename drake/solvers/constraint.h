@@ -84,19 +84,19 @@ class Constraint : public EvaluatorBase {
    * @param tol A tolerance for bound checking.
    */
   bool CheckSatisfied(const Eigen::Ref<const Eigen::VectorXd>& x,
-                      const double tol = 1E-6) const {
+                      double tol = 1E-6) const {
     DRAKE_ASSERT(x.rows() == num_vars() || num_vars() == Eigen::Dynamic);
     return DoCheckSatisfied(x, tol);
   }
 
   bool CheckSatisfied(const Eigen::Ref<const AutoDiffVecXd>& x,
-                      const double tol = 1E-6) const {
+                      double tol = 1E-6) const {
     DRAKE_ASSERT(x.rows() == num_vars() || num_vars() == Eigen::Dynamic);
     return DoCheckSatisfied(x, tol);
   }
 
-  Eigen::VectorXd const& lower_bound() const { return lower_bound_; }
-  Eigen::VectorXd const& upper_bound() const { return upper_bound_; }
+  const Eigen::VectorXd& lower_bound() const { return lower_bound_; }
+  const Eigen::VectorXd& upper_bound() const { return upper_bound_; }
 
   /** Number of rows in the output constraint. */
   // TODO(eric.cousineau): Change return type to `int`.

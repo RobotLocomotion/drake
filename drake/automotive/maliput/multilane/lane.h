@@ -8,6 +8,8 @@
 #include "drake/automotive/maliput/api/branch_point.h"
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/api/segment.h"
+#include "drake/automotive/maliput/multilane/cubic_polynomial.h"
+#include "drake/automotive/maliput/multilane/road_curve.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
@@ -45,83 +47,6 @@ class Rot3 {
 };
 
 
-/// A cubic polynomial, f(p) = a + b*p + c*p^2 + d*p^3.
-class CubicPolynomial {
- public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CubicPolynomial)
-
-  /// Default constructor, all zero coefficients.
-  CubicPolynomial() : CubicPolynomial(0., 0., 0., 0.) {}
-
-  /// Constructs a cubic polynomial given all four coefficients.
-  CubicPolynomial(double a, double b, double c, double d)
-      : a_(a), b_(b), c_(c), d_(d) {
-    const double df = f_p(1.) - f_p(0.);
-    s_1_ = std::sqrt(1. + (df * df));
-  }
-
-  // Returns the a coefficient.
-  double a() const { return a_; }
-
-  // Returns the b coefficient.
-  double b() const { return b_; }
-
-  // Returns the c coefficient.
-  double c() const { return c_; }
-
-  // Returns the d coefficient.
-  double d() const { return d_; }
-
-  /// Evaluates the polynomial f at @p p.
-  double f_p(double p) const {
-    return a_ + (b_ * p) + (c_ * p * p) + (d_ * p * p * p);
-  }
-
-  /// Evaluates the derivative df/dp at @p p.
-  double f_dot_p(double p) const {
-    return b_ + (2. * c_ * p) + (3. * d_ * p * p);
-  }
-
-  /// Evaluates the double-derivative d^2f/dp^2 at @p p.
-  double f_ddot_p(double p) const {
-    return (2. * c_) + (6. * d_ * p);
-  }
-
-  // TODO(maddog@tri.global)  s_p() and p_s() need to be replaced with a
-  //                          properly integrated path-length parameterization.
-  //                          For the moment, we are calculating the length by
-  //                          approximating the curve with a single linear
-  //                          segment from (0, f(0)) to (1, f(1)), which is
-  //                          not entirely awful for relatively flat curves.
-  /// Returns the path-length s along the curve (p, f(p)) from p = 0 to @p p.
-  double s_p(double p) const {
-    return s_1_ * p;
-  }
-
-  /// Returns the inverse of the path-length parameterization s_p(p).
-  double p_s(double s) const {
-    return s / s_1_;
-  }
-
-  // TODO(maddog@tri.global) Until s(p) is a properly integrated path-length
-  //                         parameterization, we have a need to calculate the
-  //                         derivative of the actual linear function
-  //                         involved in our bogus path-length approximation.
-  double fake_gprime(double p) const {
-    unused(p);
-    // return df;  which is...
-    return f_p(1.) - f_p(0.);
-  }
-
- private:
-  double a_{};
-  double b_{};
-  double c_{};
-  double d_{};
-  double s_1_{};
-};
-
-
 /// Base class for the multilane implementation of api::Lane.
 class Lane : public api::Lane {
  public:
@@ -138,42 +63,8 @@ class Lane : public api::Lane {
   ///        entire reference path
   /// @param elevation_bounds elevation bounds of the lane, uniform along the
   ///        entire driveable surface
-  /// @param p_scale isotropic scale factor for elevation and superelevation
-  /// @param elevation elevation function (see below)
-  /// @param superelevation superelevation function (see below)
-  ///
-  /// This is the base class for subclasses, each of which describe a
-  /// primitive reference curve in the xy ground-plane of the world frame.
-  /// The specific curve is expressed by a subclass's implementations of
-  /// private virtual functions; see the private method xy_of_p().
-  ///
-  /// @p elevation and @p superelevation are cubic-polynomial functions which
-  /// define the elevation and superelevation as a function of position along
-  /// the planar reference curve.  @p elevation specifies the z-component of
-  /// the surface at (r,h) = (0,0).  @p superelevation specifies the angle
-  /// of the r-axis with respect to the horizon, i.e., how the road twists.
-  /// Thus, non-zero @p superelevation contributes to the z-component at
-  /// r != 0.
-  ///
-  /// These two functions (@p elevation and @p superelevation) must be
-  /// isotropically scaled to operate over the domain p in [0, 1], where
-  /// p is linear in the path-length of the planar reference curve,
-  /// p = 0 corresponds to the start and p = 1 to the end.  @p p_scale is
-  /// the scale factor.  In other words...
-  ///
-  /// Given:
-  ///  * a reference curve R(p) parameterized by p in domain [0, 1], which
-  ///    has a path-length q(p) in range [0, q_max], linearly related to p,
-  ///    where q_max is the total path-length of R (in real-world units);
-  ///  * the true elevation function E_true(q), parameterized by the
-  ///    path-length q of R;
-  ///  * the true superelevation function S_true(q), parameterized by the
-  ///    path-length q of R;
-  ///
-  /// then:
-  ///  * @p p_scale is q_max (and p = q / p_scale);
-  ///  * @p elevation is  E_scaled = (1 / p_scale) * E_true(p_scale * p);
-  ///  * @p superelevation is  S_scaled = (1 / p_scale) * S_true(p_scale * p).
+  /// @param road_curve The trajectory of the Lane over parent @p segment's
+  ///        surface.
   ///
   /// N.B. The override Lane::ToLanePosition() is currently restricted to lanes
   /// in which superelevation and elevation change are both zero.
@@ -181,26 +72,27 @@ class Lane : public api::Lane {
        const api::RBounds& lane_bounds,
        const api::RBounds& driveable_bounds,
        const api::HBounds& elevation_bounds,
-       double p_scale,
-       const CubicPolynomial& elevation,
-       const CubicPolynomial& superelevation)
+       const RoadCurve *road_curve)
       : id_(id), segment_(segment),
         lane_bounds_(lane_bounds),
         driveable_bounds_(driveable_bounds),
         elevation_bounds_(elevation_bounds),
-        p_scale_(p_scale),
-        elevation_(elevation),
-        superelevation_(superelevation) {
+        road_curve_(road_curve) {
     DRAKE_DEMAND(lane_bounds_.min() >= driveable_bounds_.min());
     DRAKE_DEMAND(lane_bounds_.max() <= driveable_bounds_.max());
+    DRAKE_DEMAND(road_curve != nullptr);
   }
 
   // TODO(maddog@tri.global)  Allow superelevation to have a center-of-rotation
   //                          which is different from r = 0.
 
-  const CubicPolynomial& elevation() const { return elevation_; }
+  const CubicPolynomial& elevation() const {
+    return road_curve_->elevation();
+  }
 
-  const CubicPolynomial& superelevation() const { return superelevation_; }
+  const CubicPolynomial& superelevation() const {
+    return road_curve_->superelevation();
+  }
 
   void SetStartBp(BranchPoint* bp) { start_bp_ = bp; }
   void SetEndBp(BranchPoint* bp) { end_bp_ = bp; }
@@ -256,29 +148,10 @@ class Lane : public api::Lane {
       const api::LanePosition& position,
       const api::IsoLaneVelocity& velocity) const override;
 
-  // The following virtual methods define a reference curve in the xy-plane
-  // of the world frame (i.e., the Earth ground plane).  The curve is a
-  // parametric curve:
-  //
-  //    F: p --> (x, y)  for p in [0, 1]
-  //
-  // defined such that parameter p is linear in the path-length of the curve.
-
-  // Returns the reference curve itself, F(p).
-  virtual V2 xy_of_p(const double p) const = 0;
-
-  // Returns the derivative of the curve with respect to p, at p,
-  // i.e., F'(p0) = (dx/dp, dy/dp) at p0
-  virtual V2 xy_dot_of_p(const double p) const = 0;
-
-  // Returns the heading of the curve at p, i.e., the angle of the tangent
-  // vector (with respect to x-axis) in the increasing-p direction.
-  virtual double heading_of_p(const double p) const = 0;
-
-  // Returns the derivative of the heading with respect to p,
-  // i.e., d_heading/dp evaluated at p.
-  virtual double heading_dot_of_p(const double p) const = 0;
-
+  api::LanePosition DoToLanePosition(
+      const api::GeoPosition& geo_position,
+      api::GeoPosition* nearest_position,
+      double* distance) const override;
 
   // The geometry here revolves around an abstract "world function"
   //
@@ -310,6 +183,10 @@ class Lane : public api::Lane {
   //
   // The following methods compute various terms derived from the above which
   // see repeated use.
+  //
+  // Note that xy_of_p(), xy_dot_of_p(), heading_of_p() and heading_dot_of_p(),
+  // as well as the reference to the elevation and superelevation objects live
+  // on the RoadCurve object.
 
   // Returns the parametric position p along the reference curve corresponding
   // to longitudinal position @p s along the lane.
@@ -349,9 +226,7 @@ class Lane : public api::Lane {
   const api::RBounds lane_bounds_;
   const api::RBounds driveable_bounds_;
   const api::HBounds elevation_bounds_;
-  const double p_scale_{};
-  const CubicPolynomial elevation_;
-  const CubicPolynomial superelevation_;
+  const RoadCurve* road_curve_{};
 };
 
 

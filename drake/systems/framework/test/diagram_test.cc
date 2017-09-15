@@ -12,6 +12,7 @@
 #include "drake/systems/framework/output_port.h"
 #include "drake/systems/framework/test_utilities/pack_value.h"
 #include "drake/systems/primitives/adder.h"
+#include "drake/systems/primitives/constant_value_source.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/gain.h"
 #include "drake/systems/primitives/integrator.h"
@@ -31,7 +32,7 @@ namespace {
 /// witness functions from its subsystems.
 class ExampleDiagram : public Diagram<double> {
  public:
-  explicit ExampleDiagram(int size) {
+  explicit ExampleDiagram(int size, bool use_abstract = false) {
     DiagramBuilder<double> builder;
 
     adder0_ = builder.AddSystem<Adder<double>>(2 /* inputs */, size);
@@ -65,6 +66,11 @@ class ExampleDiagram : public Diagram<double> {
     builder.ExportOutput(adder1_->get_output_port());
     builder.ExportOutput(adder2_->get_output_port());
     builder.ExportOutput(integrator1_->get_output_port());
+
+    if (use_abstract) {
+      builder.AddSystem<ConstantValueSource<double>>(
+          std::make_unique<Value<int>>(0));
+    }
 
     builder.BuildInto(this);
   }
@@ -335,11 +341,14 @@ TEST_F(DiagramTest, AllocateInputs) {
 /// Tests that a diagram can be transmogrified to AutoDiffXd.
 TEST_F(DiagramTest, ToAutoDiffXd) {
   std::unique_ptr<System<AutoDiffXd>> ad_diagram =
-      System<double>::ToAutoDiffXd(*diagram_);
+      diagram_->ToAutoDiffXd();
   std::unique_ptr<Context<AutoDiffXd>> context =
       ad_diagram->CreateDefaultContext();
   std::unique_ptr<SystemOutput<AutoDiffXd>> output =
       ad_diagram->AllocateOutput(*context);
+
+  // The name was preserved.
+  EXPECT_EQ(diagram_->get_name(), ad_diagram->get_name());
 
   // Set up some inputs, computing gradients with respect to every other input.
   /// adder0_: (input0_ + input1_) -> A
@@ -391,6 +400,11 @@ TEST_F(DiagramTest, ToAutoDiffXd) {
       EXPECT_EQ(0.0, (*output1)[1].derivatives()[i]);
     }
   }
+
+  // If the Diagram contains a System that does not support AutoDiffXd, we
+  // cannot transmogrify the Diagram.
+  auto diagram_with_abstract = std::make_unique<ExampleDiagram>(kSize, true);
+  EXPECT_THROW(diagram_with_abstract->ToAutoDiffXd(), std::exception);
 }
 
 // Tests that the same diagram can be evaluated into the same output with
@@ -749,8 +763,7 @@ class Reduce : public LeafSystem<double> {
     output->get_mutable_value() = input_vector->get_value();
   }
 
-  bool DoHasDirectFeedthrough(const SystemSymbolicInspector* sparsity,
-                              int input_port, int output_port) const override {
+  optional<bool> DoHasDirectFeedthrough(int input_port, int) const override {
     return input_port == feedthrough_input_;
   }
 
@@ -1686,6 +1699,132 @@ GTEST_TEST(MyEventTest, MyEventTestDiagram) {
 
   EXPECT_EQ(sys[4]->get_periodic_count(), 0);
   EXPECT_EQ(sys[4]->get_per_step_count(), 1);
+}
+
+template <typename T>
+class ConstraintTestSystem : public LeafSystem<T> {
+ public:
+  ConstraintTestSystem()
+      : LeafSystem<T>(systems::SystemTypeTag<systems::ConstraintTestSystem>{}) {
+    this->DeclareContinuousState(2);
+    this->DeclareEqualityConstraint(&ConstraintTestSystem::CalcState0Constraint,
+                                    1, "x0");
+    this->DeclareInequalityConstraint(
+        &ConstraintTestSystem::CalcStateConstraint, 2, "x");
+  }
+
+  // Scalar-converting copy constructor.
+  template <typename U>
+  explicit ConstraintTestSystem(const ConstraintTestSystem<U>& system)
+      : ConstraintTestSystem() {}
+
+  // Expose some protected methods for testing.
+  using LeafSystem<T>::DeclareInequalityConstraint;
+  using LeafSystem<T>::DeclareEqualityConstraint;
+
+  void CalcState0Constraint(const Context<T>& context,
+                            VectorX<T>* value) const {
+    *value = Vector1<T>(context.get_continuous_state_vector().GetAtIndex(0));
+  }
+  void CalcStateConstraint(const Context<T>& context, VectorX<T>* value) const {
+    *value = context.get_continuous_state_vector().CopyToVector();
+  }
+
+ private:
+  void DoCalcTimeDerivatives(const Context<T>& context,
+                             ContinuousState<T>* derivatives) const override {
+    // xdot = -x.
+    derivatives->SetFromVector(-dynamic_cast<const BasicVector<T>&>(
+                                    context.get_continuous_state_vector())
+                                    .get_value());
+  }
+};
+
+GTEST_TEST(DiagramConstraintTest, SystemConstraintsTest) {
+  systems::DiagramBuilder<double> builder;
+  auto sys1 = builder.AddSystem<ConstraintTestSystem<double>>();
+  auto sys2 = builder.AddSystem<ConstraintTestSystem<double>>();
+
+  auto diagram = builder.Build();
+  EXPECT_EQ(diagram->get_num_constraints(), 4);  // two from each system
+
+  auto context = diagram->CreateDefaultContext();
+
+  // Set sys1 context.
+  diagram->GetMutableSubsystemContext(*sys1, context.get())
+      .get_mutable_continuous_state_vector()
+      ->SetFromVector(Eigen::Vector2d(5.0, 7.0));
+
+  // Set sys2 context.
+  diagram->GetMutableSubsystemContext(*sys2, context.get())
+      .get_mutable_continuous_state_vector()
+      ->SetFromVector(Eigen::Vector2d(11.0, 12.0));
+
+  Eigen::VectorXd value;
+  // Check system 1's x0 constraint.
+  const SystemConstraint<double>& constraint0 =
+      diagram->get_constraint(SystemConstraintIndex(0));
+  constraint0.Calc(*context, &value);
+  EXPECT_EQ(value.size(), 1);
+  EXPECT_EQ(value[0], 5.0);
+  EXPECT_TRUE(constraint0.is_equality_constraint());
+  std::string description = constraint0.description();
+  // Constraint description should end in the original description.
+  EXPECT_EQ(description.substr(description.size() - 2), "x0");
+
+  // Check system 1's x constraint
+  const SystemConstraint<double>& constraint1 =
+      diagram->get_constraint(SystemConstraintIndex(1));
+  constraint1.Calc(*context, &value);
+  EXPECT_EQ(value.size(), 2);
+  EXPECT_EQ(value[0], 5.0);
+  EXPECT_EQ(value[1], 7.0);
+  EXPECT_FALSE(constraint1.is_equality_constraint());
+  description = constraint1.description();
+  EXPECT_EQ(description.substr(description.size() - 1), "x");
+
+  // Check system 2's x0 constraint.
+  const SystemConstraint<double>& constraint2 =
+      diagram->get_constraint(SystemConstraintIndex(2));
+  constraint2.Calc(*context, &value);
+  EXPECT_EQ(value.size(), 1);
+  EXPECT_EQ(value[0], 11.0);
+  EXPECT_TRUE(constraint2.is_equality_constraint());
+  description = constraint2.description();
+  EXPECT_EQ(description.substr(description.size() - 2), "x0");
+
+  // Check system 2's x constraint
+  const SystemConstraint<double>& constraint3 =
+      diagram->get_constraint(SystemConstraintIndex(3));
+  constraint3.Calc(*context, &value);
+  EXPECT_EQ(value.size(), 2);
+  EXPECT_EQ(value[0], 11.0);
+  EXPECT_EQ(value[1], 12.0);
+  EXPECT_FALSE(constraint3.is_equality_constraint());
+  description = constraint3.description();
+  EXPECT_EQ(description.substr(description.size() - 1), "x");
+
+  // Check that constraints survive ToAutoDiffXd.
+  auto autodiff_diagram = diagram->ToAutoDiffXd();
+  EXPECT_EQ(autodiff_diagram->get_num_constraints(), 4);
+  auto autodiff_context = autodiff_diagram->CreateDefaultContext();
+  autodiff_context->SetTimeStateAndParametersFrom(*context);
+  const SystemConstraint<AutoDiffXd>& autodiff_constraint =
+      autodiff_diagram->get_constraint(SystemConstraintIndex(3));
+  VectorX<AutoDiffXd> autodiff_value;
+  autodiff_constraint.Calc(*autodiff_context, &autodiff_value);
+  EXPECT_EQ(autodiff_value[0].value(), 11.0);
+
+  // Check that constraints survive ToSymbolic.
+  auto symbolic_diagram = diagram->ToSymbolic();
+  EXPECT_EQ(symbolic_diagram->get_num_constraints(), 4);
+  auto symbolic_context = symbolic_diagram->CreateDefaultContext();
+  symbolic_context->SetTimeStateAndParametersFrom(*context);
+  const SystemConstraint<symbolic::Expression>& symbolic_constraint =
+      symbolic_diagram->get_constraint(SystemConstraintIndex(3));
+  VectorX<symbolic::Expression> symbolic_value;
+  symbolic_constraint.Calc(*symbolic_context, &symbolic_value);
+  EXPECT_EQ(symbolic_value[0], 11.0);
 }
 
 // TODO(siyuan) add direct tests for EventCollection

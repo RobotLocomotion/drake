@@ -80,11 +80,6 @@ void CarVisApplicator<T>::CalcPoseBundleOutput(
           input_port_index_)->template GetValue<PoseBundle<T>>();
   DRAKE_ASSERT(vehicle_poses.get_num_poses() == num_cars());
 
-  // Resize the output PoseBundle as necessary.
-  if (visualization_poses->get_num_poses() != num_vis_poses()) {
-    *visualization_poses = PoseBundle<T>(num_vis_poses());
-  }
-
   if (vehicle_poses.get_num_poses() != static_cast<int>(visualizers_.size())) {
     throw std::runtime_error("CarVisApplicator::DoCalcOutput(): Input "
         "PoseBundle has " + std::to_string(vehicle_poses.get_num_poses()) +

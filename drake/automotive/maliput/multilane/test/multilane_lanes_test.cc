@@ -1,7 +1,5 @@
 /* clang-format off to disable clang-format-includes */
-#include "drake/automotive/maliput/multilane/arc_lane.h"
 #include "drake/automotive/maliput/multilane/lane.h"
-#include "drake/automotive/maliput/multilane/line_lane.h"
 /* clang-format on */
 
 #include <cmath>
@@ -9,7 +7,10 @@
 #include <gtest/gtest.h>
 
 #include "drake/automotive/maliput/api/test/maliput_types_compare.h"
+#include "drake/automotive/maliput/multilane/arc_road_curve.h"
 #include "drake/automotive/maliput/multilane/junction.h"
+#include "drake/automotive/maliput/multilane/line_road_curve.h"
+#include "drake/automotive/maliput/multilane/road_curve.h"
 #include "drake/automotive/maliput/multilane/road_geometry.h"
 #include "drake/automotive/maliput/multilane/segment.h"
 #include "drake/common/eigen_matrix_compare.h"
@@ -26,12 +27,12 @@ const double kVeryExact = 1e-11;
 GTEST_TEST(MultilaneLanesTest, Rot3) {
   // Spot-check that Rot3 is behaving as advertised.
   Rot3 rpy90 {M_PI / 2., M_PI / 2., M_PI / 2.};
-  EXPECT_TRUE(CompareMatrices(
-      rpy90.apply({1., 0., 0.}), V3(0., 0., -1.), kVeryExact));
-  EXPECT_TRUE(CompareMatrices(
-      rpy90.apply({0., 1., 0.}), V3(0., 1., 0.), kVeryExact));
-  EXPECT_TRUE(CompareMatrices(
-      rpy90.apply({0., 0., 1.}), V3(1., 0., 0.), kVeryExact));
+  EXPECT_TRUE(CompareMatrices(rpy90.apply({1., 0., 0.}),
+                              Vector3<double>(0., 0., -1.), kVeryExact));
+  EXPECT_TRUE(CompareMatrices(rpy90.apply({0., 1., 0.}),
+                              Vector3<double>(0., 1., 0.), kVeryExact));
+  EXPECT_TRUE(CompareMatrices(rpy90.apply({0., 0., 1.}),
+                              Vector3<double>(1., 0., 0.), kVeryExact));
 }
 
 
@@ -39,19 +40,21 @@ GTEST_TEST(MultilaneLanesTest, FlatLineLane) {
   CubicPolynomial zp {0., 0., 0., 0.};
   const double kHalfWidth = 10.;
   const double kMaxHeight = 5.;
-  RoadGeometry rg({"apple"}, kLinearTolerance, kAngularTolerance);
-  Segment* s1 = rg.NewJunction({"j1"})->NewSegment({"s1"});
-  Lane* l1 = s1->NewLineLane(
-      {"l1"},
-      {100., -75.}, {100., 50.},
-      // lane/driveable/elevation bounds
-      {-5., 5.}, {-kHalfWidth, kHalfWidth}, {0., kMaxHeight},
-      // Zero elevation, zero superelevation == flat.
-      zp, zp);
+  RoadGeometry rg(api::RoadGeometryId{"apple"},
+                  kLinearTolerance, kAngularTolerance);
+  std::unique_ptr<RoadCurve> road_curve_1 = std::make_unique<LineRoadCurve>(
+      Vector2<double>(100., -75.), Vector2<double>(100., 50.), zp, zp);
+  Segment* s1 =
+      rg.NewJunction(api::JunctionId{"j1"})
+      ->NewSegment(api::SegmentId{"s1"}, std::move(road_curve_1));
+  Lane* l1 =
+      s1->NewLane(api::LaneId{"l1"},
+                  // lane/driveable/elevation bounds
+                  {-5., 5.}, {-kHalfWidth, kHalfWidth}, {0., kMaxHeight});
 
   EXPECT_EQ(rg.CheckInvariants(), std::vector<std::string>());
 
-  EXPECT_EQ(l1->id().id, "l1");
+  EXPECT_EQ(l1->id(), api::LaneId("l1"));
   EXPECT_EQ(l1->segment(), s1);
   EXPECT_EQ(l1->index(), 0);
   EXPECT_EQ(l1->to_left(), nullptr);
@@ -122,13 +125,14 @@ GTEST_TEST(MultilaneLanesTest, FlatLineLane) {
   // Case 3: Tests LineLane::ToLanePosition() at a non-zero but flat elevation.
   const double elevation = 10.;
   const double length = std::sqrt(std::pow(100, 2.) + std::pow(50, 2.));
-  Segment* s2 = rg.NewJunction({"j2"})->NewSegment({"s2"});
-  Lane* l1_with_z = s2->NewLineLane(
-      {"l1_with_z"},
-      {100., -75.}, {100., 50.},
-      {-5., 5.}, {-kHalfWidth, kHalfWidth}, {0., kMaxHeight},
-      {elevation / length, 0., 0., 0.} /* constant elevation */,
-      zp /* zero superelevation */);
+  std::unique_ptr<RoadCurve> road_curve_2 = std::make_unique<LineRoadCurve>(
+      Vector2<double>(100., -75.), Vector2<double>(100., 50.),
+      CubicPolynomial(elevation / length, 0.0, 0.0, 0.0), zp);
+  Segment* s2 =
+      rg.NewJunction(api::JunctionId{"j2"})
+      ->NewSegment(api::SegmentId{"s2"}, std::move(road_curve_2));
+  Lane* l1_with_z = s2->NewLane(api::LaneId{"l1_with_z"}, {-5., 5.},
+                                {-kHalfWidth, kHalfWidth}, {0., kMaxHeight});
   EXPECT_TRUE(api::test::IsLanePositionClose(
       l1_with_z->ToLanePosition(point_outside_lane, &nearest_position,
                                 &distance),
@@ -196,25 +200,27 @@ GTEST_TEST(MultilaneLanesTest, FlatLineLane) {
 
 GTEST_TEST(MultilaneLanesTest, FlatArcLane) {
   CubicPolynomial zp {0., 0., 0., 0.};
-  RoadGeometry rg({"apple"}, kLinearTolerance, kAngularTolerance);
+  RoadGeometry rg(api::RoadGeometryId{"apple"},
+                  kLinearTolerance, kAngularTolerance);
   const double theta0 = 0.25 * M_PI;
   const double d_theta = 1.5 * M_PI;
   const double radius = 100.;
-  const V2 center{100., -75.};
+  const Vector2<double> center{100., -75.};
   const double kHalfWidth = 10.;
   const double kMaxHeight = 5.;
-  Segment* s1 = rg.NewJunction({"j1"})->NewSegment({"s1"});
-  Lane* l2 = s1->NewArcLane(
-      {"l2"},
-      center, radius, theta0, d_theta,
-      // lane/driveable/elevation bounds
-      {-5., 5.}, {-kHalfWidth, kHalfWidth}, {0., kMaxHeight},
-      // Zero elevation, zero superelevation == flat.
-      zp, zp);
+  std::unique_ptr<RoadCurve> road_curve_1 =
+      std::make_unique<ArcRoadCurve>(center, radius, theta0, d_theta, zp, zp);
+  Segment* s1 =
+      rg.NewJunction(api::JunctionId{"j1"})
+      ->NewSegment(api::SegmentId{"s1"}, std::move(road_curve_1));
+  Lane* l2 =
+      s1->NewLane(api::LaneId{"l2"},
+                  // lane/driveable/elevation bounds
+                  {-5., 5.}, {-kHalfWidth, kHalfWidth}, {0., kMaxHeight});
 
   EXPECT_EQ(rg.CheckInvariants(), std::vector<std::string>());
 
-  EXPECT_EQ(l2->id().id, "l2");
+  EXPECT_EQ(l2->id(), api::LaneId("l2"));
   EXPECT_EQ(l2->segment(), s1);
   EXPECT_EQ(l2->index(), 0);
   EXPECT_EQ(l2->to_left(), nullptr);
@@ -303,13 +309,14 @@ GTEST_TEST(MultilaneLanesTest, FlatArcLane) {
 
   // Case 3: Tests ArcLane::ToLanePosition() at a non-zero but flat elevation.
   const double elevation = 10.;
-  Segment* s2 = rg.NewJunction({"j2"})->NewSegment({"s2"});
-  Lane* l2_with_z = s2->NewArcLane(
-      {"l2_with_z"},
+  std::unique_ptr<RoadCurve> road_curve_2 = std::make_unique<ArcRoadCurve>(
       center, radius, theta0, d_theta,
-      {-5., 5.}, {-kHalfWidth, kHalfWidth}, {0., kMaxHeight},
-      {elevation / radius / d_theta, 0., 0., 0.} /* constant elevation */,
-      zp /* zero superelevation */);
+      CubicPolynomial(elevation / radius / d_theta, 0.0, 0.0, 0.0), zp);
+  Segment* s2 =
+      rg.NewJunction(api::JunctionId{"j2"})
+      ->NewSegment(api::SegmentId{"s2"}, std::move(road_curve_2));
+  Lane* l2_with_z = s2->NewLane(api::LaneId{"l2_with_z"}, {-5., 5.},
+                                {-kHalfWidth, kHalfWidth}, {0., kMaxHeight});
   EXPECT_TRUE(api::test::IsLanePositionClose(
       l2_with_z->ToLanePosition(point_outside_lane, &nearest_position,
                                 &distance),
@@ -328,18 +335,19 @@ GTEST_TEST(MultilaneLanesTest, FlatArcLane) {
   // Case 4: Tests ArcLane::ToLanePosition() with a lane that overlaps itself.
   // The result should be identical to Case 1.
   const double d_theta_overlap = 3 * M_PI;
-  Segment* s3 = rg.NewJunction({"j3"})->NewSegment({"s3"});
-  Lane* l2_overlapping = s3->NewArcLane(
-      {"l2_overlapping"},
-      center, radius, theta0, d_theta_overlap,
-      {-5., 5.}, {-kHalfWidth, kHalfWidth}, {0., kMaxHeight},
-      // Zero elevation, zero superelevation == flat.
-      zp, zp);
+  std::unique_ptr<RoadCurve> road_curve_3 = std::make_unique<ArcRoadCurve>(
+      center, radius, theta0, d_theta_overlap, zp, zp);
+  Segment* s3 =
+      rg.NewJunction(api::JunctionId{"j3"})
+      ->NewSegment(api::SegmentId{"s3"}, std::move(road_curve_3));
+  Lane* l2_overlapping =
+      s3->NewLane(api::LaneId{"l2_overlapping"},
+                  {-5., 5.}, {-kHalfWidth, kHalfWidth},
+                  {0., kMaxHeight});
   EXPECT_TRUE(api::test::IsLanePositionClose(
       l2_overlapping->ToLanePosition(point_within_lane, &nearest_position,
                                      &distance),
       api::LanePosition(expected_s, expected_r, 0.), kVeryExact));
-
   EXPECT_TRUE(api::test::IsGeoPositionClose(
       nearest_position,
       api::GeoPosition(
@@ -358,13 +366,14 @@ GTEST_TEST(MultilaneLanesTest, FlatArcLane) {
   // in the third quadrant.
   const double theta0_wrap = 1.2 * M_PI;
   const double d_theta_wrap = -0.4 * M_PI;
-  Segment* s4 = rg.NewJunction({"j4"})->NewSegment({"s4"});
-  Lane* l2_wrap = s4->NewArcLane(
-      {"l2_wrap"},
-      center, radius, theta0_wrap, d_theta_wrap,
-      {-5., 5.}, {-kHalfWidth, kHalfWidth}, {0., kMaxHeight},
-      // Zero elevation, zero superelevation == flat.
-      zp, zp);
+  std::unique_ptr<RoadCurve> road_curve_4 = std::make_unique<ArcRoadCurve>(
+      center, radius, theta0_wrap, d_theta_wrap, zp, zp);
+  Segment* s4 =
+      rg.NewJunction(api::JunctionId{"j4"})
+      ->NewSegment(api::SegmentId{"s4"}, std::move(road_curve_4));
+  Lane* l2_wrap = s4->NewLane(api::LaneId{"l2_wrap"},
+                              {-5., 5.}, {-kHalfWidth, kHalfWidth},
+                              {0., kMaxHeight});
   const api::GeoPosition point_in_third_quadrant{
     center(0) - 90., center(1) - 25., 0.};  // θ ~= -0.9π.
   const double expected_s_wrap =
@@ -442,14 +451,15 @@ GTEST_TEST(MultilaneLanesTest, FlatArcLane) {
 GTEST_TEST(MultilaneLanesTest, ArcLaneWithConstantSuperelevation) {
   CubicPolynomial zp {0., 0., 0., 0.};
   const double kTheta = 0.10 * M_PI;  // superelevation
-  RoadGeometry rg({"apple"}, kLinearTolerance, kAngularTolerance);
-  Segment* s1 = rg.NewJunction({"j1"})->NewSegment({"s1"});
-  Lane* l2 = s1->NewArcLane(
-      {"l2"},
-      {100., -75.}, 100., 0.25 * M_PI, 1.5 * M_PI,
-      {-5., 5.}, {-10., 10.}, {0., 5.},  // lane/driveable/elevation bounds
-      zp,
-      { (kTheta) / (100. * 1.5 * M_PI), 0., 0., 0. });
+  RoadGeometry rg(api::RoadGeometryId{"apple"},
+                  kLinearTolerance, kAngularTolerance);
+  std::unique_ptr<RoadCurve> road_curve_1 = std::make_unique<ArcRoadCurve>(
+      Vector2<double>(100., -75.), 100.0, 0.25 * M_PI, 1.5 * M_PI, zp,
+      CubicPolynomial((kTheta) / (100. * 1.5 * M_PI), 0., 0., 0.));
+  Segment* s1 =
+      rg.NewJunction(api::JunctionId{"j1"})
+      ->NewSegment(api::SegmentId{"s1"}, std::move(road_curve_1));
+  Lane* l2 = s1->NewLane(api::LaneId{"l2"}, {-5., 5.}, {-10., 10.}, {0., 5.});
 
   EXPECT_EQ(rg.CheckInvariants(), std::vector<std::string>());
 
@@ -554,8 +564,8 @@ api::LanePosition IntegrateTrivially(const api::Lane* lane,
 
 GTEST_TEST(MultilaneLanesTest, HillIntegration) {
   CubicPolynomial zp {0., 0., 0., 0.};
-  RoadGeometry rg({"apple"}, kLinearTolerance, kAngularTolerance);
-  Segment* s1 = rg.NewJunction({"j1"})->NewSegment({"s1"});
+  RoadGeometry rg(api::RoadGeometryId{"apple"},
+                  kLinearTolerance, kAngularTolerance);
   const double theta0 = 0.25 * M_PI;
   const double d_theta = 0.5 * M_PI;
   const double theta1 = theta0 + d_theta;
@@ -564,16 +574,16 @@ GTEST_TEST(MultilaneLanesTest, HillIntegration) {
   const double z1 = 20.;
   // A cubic polynomial such that:
   //   f(0) = (z0 / p_scale), f(1) = (z1 / p_scale), and f'(0) = f'(1) = 0.
-  const CubicPolynomial kHillPolynomial(z0 / p_scale,
-                                        0.,
+  const CubicPolynomial kHillPolynomial(z0 / p_scale, 0.,
                                         (3. * (z1 - z0) / p_scale),
                                         (-2. * (z1 - z0) / p_scale));
-  Lane* l1 = s1->NewArcLane(
-      {"l2"},
-      {-100., -100.}, 100., theta0, d_theta,
-      {-5., 5.}, {-10., 10.}, {0., 5.},  // lane/driveable/elevation bounds
-      kHillPolynomial,
-      zp);
+  std::unique_ptr<RoadCurve> road_curve_1 =
+      std::make_unique<ArcRoadCurve>(Vector2<double>(-100., -100.), 100.,
+                                     theta0, d_theta, kHillPolynomial, zp);
+  Segment* s1 =
+      rg.NewJunction(api::JunctionId{"j1"})
+      ->NewSegment(api::SegmentId{"s1"}, std::move(road_curve_1));
+  Lane* l1 = s1->NewLane(api::LaneId{"l2"}, {-5., 5.}, {-10., 10.}, {0., 5.});
 
   EXPECT_EQ(rg.CheckInvariants(), std::vector<std::string>());
 

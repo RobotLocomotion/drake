@@ -52,8 +52,10 @@ std::unique_ptr<ignition::math::Spline> CreateSpline(
 // Performs geometric tests over a straight lane.
 GTEST_TEST(RNDFSplineLanesTest, FlatLineLane) {
   const double kWidth = 5.;
-  RoadGeometry rg({"FlatLineLane"}, kPathTolerance, kAngularTolerance);
-  Segment* s1 = rg.NewJunction({"j1"})->NewSegment({"s1"});
+  RoadGeometry rg(api::RoadGeometryId{"FlatLineLane"},
+                  kPathTolerance, kAngularTolerance);
+  Segment* s1 =
+      rg.NewJunction(api::JunctionId{"j1"})->NewSegment(api::SegmentId{"s1"});
   std::vector<std::tuple<ignition::math::Vector3d, ignition::math::Vector3d>>
       control_points;
   control_points.push_back(
@@ -62,7 +64,7 @@ GTEST_TEST(RNDFSplineLanesTest, FlatLineLane) {
   control_points.push_back(
       std::make_tuple(ignition::math::Vector3d(20.0, 0.0, 0.0),
                       ignition::math::Vector3d(10.0, 0.0, 0.0)));
-  const Lane* l1 = s1->NewSplineLane({"l1"}, control_points, kWidth);
+  const Lane* l1 = s1->NewSplineLane(api::LaneId{"l1"}, control_points, kWidth);
   // Checks road geometry invariants.
   EXPECT_EQ(rg.CheckInvariants(), std::vector<std::string>());
   // Checks lane length.
@@ -149,8 +151,10 @@ GTEST_TEST(RNDFSplineLanesTest, FlatLineLane) {
 // Performs geometric tests over a curved lane.
 GTEST_TEST(RNDFSplineLanesTest, CurvedLineLane) {
   const double kWidth = 5.;
-  RoadGeometry rg({"CurvedLineLane"}, kPathTolerance, kAngularTolerance);
-  Segment* s1 = rg.NewJunction({"j1"})->NewSegment({"s1"});
+  RoadGeometry rg(api::RoadGeometryId{"CurvedLineLane"},
+                  kPathTolerance, kAngularTolerance);
+  Segment* s1 =
+      rg.NewJunction(api::JunctionId{"j1"})->NewSegment(api::SegmentId{"s1"});
   std::vector<std::tuple<ignition::math::Vector3d, ignition::math::Vector3d>>
       control_points;
   control_points.push_back(
@@ -159,7 +163,7 @@ GTEST_TEST(RNDFSplineLanesTest, CurvedLineLane) {
   control_points.push_back(
       std::make_tuple(ignition::math::Vector3d(20.0, 20.0, 0.0),
                       ignition::math::Vector3d(0, 10.0, 0.0)));
-  const Lane* l1 = s1->NewSplineLane({"l1"}, control_points, kWidth);
+  const Lane* l1 = s1->NewSplineLane(api::LaneId{"l1"}, control_points, kWidth);
   // Checks road geometry invariants.
   EXPECT_EQ(rg.CheckInvariants(), std::vector<std::string>());
   // Creates a spline to check the internal values.
@@ -289,13 +293,14 @@ GTEST_TEST(RNDFSplineLanesTest, Constructor) {
       std::make_tuple(ignition::math::Vector3d(0.0, 0.0, 0.0),
                       ignition::math::Vector3d(10.0, 0.0, 0.0)));
   // Check the constraint in size of control_points.
-  EXPECT_THROW(SplineLane({"l:1"}, nullptr, control_points, 5.0, 1),
+  EXPECT_THROW(SplineLane(api::LaneId{"l:1"}, nullptr, control_points, 5.0, 1),
                std::runtime_error);
   // Adding a second control_point should pass.
   control_points.push_back(
       std::make_tuple(ignition::math::Vector3d(20.0, 20.0, 0.0),
                       ignition::math::Vector3d(0, 10.0, 0.0)));
-  EXPECT_NO_THROW(SplineLane({"l:1"}, nullptr, control_points, 5.0, 1));
+  EXPECT_NO_THROW(
+      SplineLane(api::LaneId{"l:1"}, nullptr, control_points, 5.0, 1));
 }
 
 // Tests the ComputeLength computation.
@@ -331,8 +336,10 @@ GTEST_TEST(RNDFSplineLanesTest, ComputeLength) {
 // +--------------+   <-- y = -2.5
 GTEST_TEST(RNDFSplineLanesTest, TwoFlatLineLanesBoundChecks) {
   const double kWidth = 5.;
-  RoadGeometry rg({"TwoFlatLineLanes"}, kPathTolerance, kAngularTolerance);
-  Segment* s1 = rg.NewJunction({"j1"})->NewSegment({"s1"});
+  RoadGeometry rg(api::RoadGeometryId{"TwoFlatLineLanes"},
+                  kPathTolerance, kAngularTolerance);
+  Segment* s1 =
+      rg.NewJunction(api::JunctionId{"j1"})->NewSegment(api::SegmentId{"s1"});
   std::vector<std::tuple<ignition::math::Vector3d, ignition::math::Vector3d>>
       control_points;
   control_points.push_back(
@@ -341,7 +348,7 @@ GTEST_TEST(RNDFSplineLanesTest, TwoFlatLineLanesBoundChecks) {
   control_points.push_back(
       std::make_tuple(ignition::math::Vector3d(10.0, 0.0, 0.0),
                       ignition::math::Vector3d(1.0, 0.0, 0.0)));
-  const Lane* l1 = s1->NewSplineLane({"l1"}, control_points, kWidth);
+  const Lane* l1 = s1->NewSplineLane(api::LaneId{"l1"}, control_points, kWidth);
 
   control_points.clear();
   control_points.push_back(
@@ -350,7 +357,7 @@ GTEST_TEST(RNDFSplineLanesTest, TwoFlatLineLanesBoundChecks) {
   control_points.push_back(
       std::make_tuple(ignition::math::Vector3d(10.0, 10.0, 0.0),
                       ignition::math::Vector3d(10.0, 0.0, 0.0)));
-  const Lane* l2 = s1->NewSplineLane({"l2"}, control_points, kWidth);
+  const Lane* l2 = s1->NewSplineLane(api::LaneId{"l2"}, control_points, kWidth);
   // Checks road geometry invariants.
   EXPECT_EQ(rg.CheckInvariants(), std::vector<std::string>());
   // Checks bounds.

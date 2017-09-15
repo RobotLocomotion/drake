@@ -15,7 +15,7 @@ class PurePursuitTest : public ::testing::Test {
   void SetUp() override {
     // Create a straight road with one lane.
     road_.reset(new maliput::dragway::RoadGeometry(
-        maliput::api::RoadGeometryId({"Single-Lane Dragway"}),
+        maliput::api::RoadGeometryId("Single-Lane Dragway"),
         1 /* num_lanes */, 100 /* length */, 4. /* lane_width */,
         0. /* shoulder_width */,
         5. /* maximum_height */,

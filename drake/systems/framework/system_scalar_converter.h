@@ -21,6 +21,8 @@ namespace systems {
 /// Helper class to convert a System<U> into a System<T>, intended for internal
 /// use by the System framework, not directly by users.
 ///
+/// For user-facing documentation see @ref system_scalar_conversion.
+///
 /// Because it is not templated on a System subclass, this class can be used by
 /// LeafSystem without any direct knowledge of the subtypes being converted.
 /// In other words, it enables a runtime flavor of the CRTP.
@@ -52,8 +54,8 @@ class SystemScalarConverter {
   /// specifically:
   ///
   /// - double
-  /// - AutoDiffXd
-  /// - symbolic::Expression
+  /// - drake::AutoDiffXd
+  /// - drake::symbolic::Expression
   ///
   /// By default, all non-identity pairs (pairs where T and U differ) drawn
   /// from the above list can be used for T and U.  Systems may specialize
@@ -62,6 +64,8 @@ class SystemScalarConverter {
   /// object to enable support for additional custom types.
   ///
   /// @tparam S is the System type to convert
+  ///
+  /// See @ref system_scalar_conversion for additional overview documentation.
   template <template <typename> class S>
   explicit SystemScalarConverter(SystemTypeTag<S>) : SystemScalarConverter() {
     using Expression = symbolic::Expression;
