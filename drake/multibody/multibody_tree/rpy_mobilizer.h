@@ -14,20 +14,36 @@
 namespace drake {
 namespace multibody {
 
-/// This Mobilizer allows two frames to rotate relatively to one another around
-/// an axis that is constant when measured in either this mobilizer's inboard or
-/// outboard frames, while the distance between the two frames does not vary.
-/// To fully specify this mobilizer a user must provide the inboard frame F,
-/// the outboard (or "mobilized") frame M and the axis `axis_F` (expressed in
-/// frame F) about which frame M rotates with respect to F.
-/// The single generalized coordinate q introduced by this mobilizer
-/// corresponds to the rotation angle in radians of frame M with respect to
-/// frame F about the rotation axis `axis_F`. When `q = 0`, frames F and M are
-/// coincident. The rotation angle is defined to be positive according to the
-/// right-hand-rule with the thumb aligned in the direction of the `axis_F`.
-/// Notice that the components of the rotation axis as expressed in
-/// either frame F or M are constant. That is, `axis_F` and `axis_M` remain
-/// unchanged w.r.t. both frames by this mobilizer's motion.
+/// This mobilizer models a ball joint between an inboard frame F and an
+/// outboard frame M that allows frame M to rotate freely with respect to F. No
+/// translational motion of M in F is allowed and the inboard frame origin `Fo`
+/// and the outboard frame origin `Mo` are coincident at all times.
+///
+/// The orientation `R_FM` of the outboard frame M in F is parametrized with
+/// body `z-y-x` Euler angles (also known as intrinsic angles). That is, the
+/// generalized coordinates for this mobilizer correspond to
+/// yaw, pitch and roll angles of successive rotations about the z, y and x
+/// axes solidary with frame M, respectively. Mathematically,
+/// rotation `R_FM` is given in terms of the yaw (y), pitch (p) and roll (r)
+/// angles by: <pre>
+///   R_FM(q) = Rz(y) * Ry(p) * Rx(r)
+/// </pre>
+/// where `Rx(θ)`, `Ry(θ)` and `Rz(θ)` correspond to the elemental rotations in
+/// amount of θ about the x, y and z axes respectively.
+/// Zero roll, pitch and yaw define the "zero configuration" wich corresponds
+/// to frames F and M being coincident, see set_zero_configuration().
+/// The roll, pitch and yaw angles are defined to be positive according to the
+/// right-hand-rule with the thumb aligned in the direction of their respective
+/// axes.
+///
+/// The generalized velocities for this mobilizer corresond to the angular
+/// velocity `w_FM` of frame M in F, expressed in frame F.
+/// MapVelocityToQDot() maps the angular velocity `w_FM` to Euler angles's rates
+/// while MapQDotToVelocity() maps Euler angles's rates to angular velocity
+/// `w_FM`.
+///
+/// @note Body `z-y-x` angles (intrinsic) are equivalent to space `x-y-z`
+/// angles (extrinsic).
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 ///
@@ -42,61 +58,85 @@ class RollPitchYawMobilizer final : public MobilizerImpl<T, 3, 3> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RollPitchYawMobilizer)
 
-  /// Constructor for a %RollPitchYawMobilizer between the inboard frame F
-  /// `inboard_frame_F` and the outboard frame M `outboard_frame_F` granting a
-  /// single rotational degree of freedom about axis `axis_F` expressed in the
-  /// inboard frame F.
-  /// @pre axis_F must be a unit vector within at least 1.0e-6. This rather
-  /// loose tolerance (at least for simulation) allows users to provide "near
-  /// unity" axis vectors originated, for
-  /// instance, during the parsing of a
-  /// file with limited precision. Internally, we re-normalize the axis to
-  /// within machine precision.
-  /// @throws std::runtime_error if the provided rotational axis is not a unit
-  /// vector.
+  /// Constructor for a %RollPitchYawMobilizer between an inboard frame F
+  /// `inboard_frame_F` and an outboard frame M `outboard_frame_M` granting
+  /// three rotational degree of freedom corresponding to the three roll, pitch
+  /// and yaw body z-y-x (space x-y-z) Euler angles.
   RollPitchYawMobilizer(const Frame<T>& inboard_frame_F,
                         const Frame<T>& outboard_frame_M) :
       MobilizerBase(inboard_frame_F, outboard_frame_M) {}
 
-  /// Gets the rotation angle of `this` mobilizer from `context`. See class
-  /// documentation for sign convention.
+  /// Retrieves the roll, pitch and yaw angles for `this` mobilizer stored in
+  /// `context`. See this class's documentation for the Euler angles definition
+  /// and, axes and sign conventions.
+  ///
+  /// @param[in] context
+  ///   The context of the MultibodyTree this mobilizer belongs to.
+  /// @retval rpy
+  ///   A vector in ℝ³ which contains the roll, pitch and yaw angles at entries
+  ///   `rpy(0)`, `rpy(1)` and `rpy(2)`, respectively.
+  ///
   /// @throws std::logic_error if `context` is not a valid MultibodyTreeContext.
-  /// @param[in] context The context of the MultibodyTree this mobilizer
-  ///                    belongs to.
-  /// @returns q_FM
   Vector3<T> get_rpy(const systems::Context<T>& context) const;
 
+  /// Sets in `context` the state for `this` mobilizer to have the yaw, pitch
+  /// and roll angles provided in the input vector `rpy`.
+  ///
+  /// @param[out] context
+  ///   The context of the MultibodyTree this mobilizer belongs to.
+  /// @param[in] rpy
+  ///   A vector in ℝ³ which must contain roll, pitch and yaw angles at entries
+  ///   `rpy(0)`, `rpy(1)` and `rpy(2)`, respectively.
+  /// @returns a constant reference to `this` mobilizer.
+  ///
+  /// @throws std::logic_error if `context` is not a valid MultibodyTreeContext.
   const RollPitchYawMobilizer<T>& set_rpy(
       systems::Context<T>* context,
       const Vector3<T>& rpy) const;
 
-  /// Sets the `context` so that the generalized coordinate corresponding to the
-  /// rotation angle of `this` mobilizer equals `angle`.
-  /// @throws std::logic_error if `context` is not a valid
-  /// MultibodyTreeContext.
-  /// @param[in] context The context of the MultibodyTree this mobilizer
-  ///                    belongs to.
-  /// @param[in] angle The desired angle in radians.
+  /// Given a desired orientation `R_FM` of frame M in F as a rotation matrix,
+  /// This method sets `context` so that the generalized coordinates
+  /// corresponding to the roll-pitch-yaw angles of `this` mobilizer represent
+  /// this rotation.
+  ///
+  /// @param[in] context
+  ///   The context of the MultibodyTree this mobilizer belongs to.
+  /// @param[in] R_FM
+  ///   The desired pose of M in F. A valid element of `SO(3)`.
   /// @returns a constant reference to `this` mobilizer.
+  ///
+  /// @warning Ideally, `R_FM` would correspond to a valid rotation in the
+  /// special orthogonal group `SO(3)`. To eliminate possible round-off errors
+  /// in the input matrix `R_FM` this method performs a projection of `R_FM`
+  /// into its closest element in `SO(3)` and then computes the roll-pitch-yaw
+  /// angles that correspond to this rotation.
+  /// See math::ProjectMatToOrthonormalMat().
+  ///
+  /// @throws std::logic_error if `context` is not a valid MultibodyTreeContext.
+  /// @throws std::logic_error if an improper rotation results after projection
+  /// of `R_FM`, that is, if the projected matrix's determinan is `-1`.
   const RollPitchYawMobilizer<T>& SetFromRotationMatrix(
       systems::Context<T>* context, const Matrix3<T>& R_FM) const;
 
-  /// Gets the rate of change, in radians per second, of `this` mobilizer's
-  /// angle (see get_angle()) from `context`. See class documentation for the
-  /// angle sign convention.
-  /// @param[in] context The context of the MultibodyTree this mobilizer
-  ///                    belongs to.
-  /// @returns w_FM
+  /// Retrieves from `context` the angular velocity `w_FM` of the outboard frame
+  /// M in the inboard frame F, expressed in F.
+  ///
+  /// @param[in] context
+  ///   The context of the MultibodyTree this mobilizer belongs to.
+  /// @retval w_FM
+  ///   Angular velocity of the outboard frame M in the inboard frame F,
+  ///   expressed in F.
+  ///
+  /// @throws std::logic_error if `context` is not a valid MultibodyTreeContext.
   Vector3<T> get_angular_velocity(const systems::Context<T> &context) const;
 
-  /// Sets the rate of change, in radians per second, of this `this` mobilizer's
-  /// angle to `theta_dot`. The new rate of change `theta_dot` gets stored in
-  /// `context`.
-  /// See class documentation for the angle sign convention.
-  /// @param[in] context The context of the MultibodyTree this mobilizer
-  ///                    belongs to.
-  /// @param[in] theta_dot The desired rate of change of `this` mobilizer's
-  /// angle in radians per second.
+  /// Sets in `context` the state for `this` mobilizer so that the angular
+  /// velocity of the outboard frame M in the inboard frame F is `w_FM`.
+  /// @param[out] context
+  ///   The context of the MultibodyTree this mobilizer belongs to.
+  /// @param[in] w_FM
+  ///   The desired angular velocity of the outboard frame M in the inboard
+  ///   frame F, expressed in F.
   /// @returns a constant reference to `this` mobilizer.
   const RollPitchYawMobilizer<T>& set_angular_velocity(
       systems::Context<T> *context, const Vector3<T>& w_FM) const;

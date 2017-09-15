@@ -36,10 +36,14 @@ const RollPitchYawMobilizer<T>& RollPitchYawMobilizer<T>::SetFromRotationMatrix(
       this->GetMutableMultibodyTreeContextOrThrow(context);
   auto q = this->get_mutable_positions(&mbt_context);
   DRAKE_ASSERT(q.size() == kNq);
-  DRAKE_ABORT_MSG("Review implementation before using!");
-  // TODO: review if this is space xyz or body zyx.
-  Vector3<T> rpy = math::rotmat2rpy(R_FM);
-  q = rpy;
+  // Project matrix to closest orthonormal matrix in case the user provides a
+  // rotation matrix with round-off errors.
+  Matrix3<T> Rproj_FM = math::ProjectMatToOrthonormalMat(R_FM);
+  if (Rproj_FM.determinant() < 0.0) {  // Case where determinant equals -1.
+    throw std::logic_error(
+        "Input matrix doest not represent to a valid rotation.");
+  }
+  q = math::rotmat2rpy(Rproj_FM);
   return *this;
 }
 
@@ -157,6 +161,19 @@ void RollPitchYawMobilizer<T>::MapQDotToVelocity(
   // w_FM
   *v = Vector3<T>(q0 + s1*q2, c0*q1 - s0*c1q2, s0*q1 + c0*c1q2 );
 }
+
+#if 0
+Matrix3<typename Derived::Scalar> R;
+  R.row(0) <<
+      c(2) * c(1),
+      c(2) * s(1) * s(0) - s(2) * c(0),
+      c(2) * s(1) * c(0) + s(2) * s(0);
+  R.row(1) <<
+      s(2) * c(1),
+      s(2) * s(1) * s(0) + c(2) * c(0),
+      s(2) * s(1) * c(0) - c(2) * s(0);
+  R.row(2) << -s(1), c(1) * s(0), c(1) * c(0);
+#endif
 
 template <typename T>
 Matrix3<T> RollPitchYawMobilizer<T>::RollPitchYawToRotationMatrix(
