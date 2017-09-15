@@ -53,6 +53,33 @@ drake_cc_binary(
     ],
 )
 
+# TODO(sam.creasy) Re-enable this test once it is not so sensitive.
+pick_and_place_test(
+    name = "pick_and_place_scenario_1",
+    # TODO(sam.creasey) This should be target 1, but that requries
+    # offsetting the gripper location to deal with the larger box,
+    # which isn't currently supported.
+    args = [
+        "--target=2",
+        "--orientation=1.57",
+        "--start-position=0",
+        "--end-position=2",
+        # TODO(sam.creasey) This is an artisanally crafted timestep
+        # intended to dodge sensitive dependence on initial conditions
+        # in the IK planner.  Depending on slight changes in the arm's
+        # configration after lifting the item from the pick, the IK
+        # planner (particularly when running under SNOPT) can produce
+        # radically different results.  This value produces usable
+        # (but different!) results on Mac vs. Linux builds.  See #6811
+        # for more information.
+        "--dt 6e-4",
+    ],
+    # TODO(sam.creasey) IPOPT doesn't find a reasonable solution for
+    # one of the steps in this demo.  We should see if this improves
+    # when #3128 is fixed.
+    tags = ["snopt", "manual"],
+)
+
 pick_and_place_test(
     name = "pick_and_place_scenario_2",
     args = [
