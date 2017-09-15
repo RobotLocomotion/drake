@@ -263,6 +263,26 @@ void SetVariableNames(const std::string& name, int rows, int cols,
 }
 }  // namespace internal
 
+namespace detail {
+/**
+ * Template condition to only catch when Constraints are inadvertently passed
+ * as an argument. If the class is binding-compatible with a Constraint, then
+ * this will provide a static assertion to enable easier debugging of which
+ * type failed.
+ * @tparam F The type to be tested.
+ * @see http://stackoverflow.com/a/13366183/7829525
+ */
+template <typename F>
+struct assert_if_is_constraint {
+  static constexpr bool value = is_binding_compatible<F, Constraint>::value;
+  // Use deferred evaluation
+  static_assert(
+      !value,
+      "You cannot pass a Constraint to create a Cost object from a function. "
+      "Please ensure you are passing a Cost.");
+};
+}  // namespace detail
+
 class MathematicalProgram {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MathematicalProgram)
