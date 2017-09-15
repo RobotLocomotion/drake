@@ -77,7 +77,10 @@ pick_and_place_test(
     # TODO(sam.creasey) IPOPT doesn't find a reasonable solution for
     # one of the steps in this demo.  We should see if this improves
     # when #3128 is fixed.
-    tags = ["snopt", "manual"],
+    tags = [
+        "manual",
+        "snopt",
+    ],
 )
 
 pick_and_place_test(
