@@ -6,8 +6,8 @@
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
-#include <unsupported/Eigen/AutoDiff>
 
+#include "drake/common/autodiff_overloads.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/text_logging.h"

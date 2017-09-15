@@ -160,6 +160,7 @@ drake_cc_library(
     hdrs = ["jacobian.h"],
     deps = [
         "//drake/common",
+        "//drake/common:autodiff",
     ],
 )
 
