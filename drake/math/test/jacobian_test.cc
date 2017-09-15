@@ -2,8 +2,8 @@
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
-#include <unsupported/Eigen/AutoDiff>
 
+#include "drake/common/autodiff_overloads.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/autodiff_gradient.h"
