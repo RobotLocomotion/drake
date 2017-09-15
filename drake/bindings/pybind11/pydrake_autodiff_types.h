@@ -1,6 +1,7 @@
 #include <Eigen/Core>
 #include <pybind11/pybind11.h>
-#include <unsupported/Eigen/AutoDiff>
+
+#include "drake/common/autodiff_overloads.h"
 
 typedef Eigen::AutoDiffScalar<Eigen::VectorXd> AutoDiffXd;
 PYBIND11_NUMPY_OBJECT_DTYPE(AutoDiffXd);
