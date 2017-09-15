@@ -274,9 +274,11 @@ class ConstraintSolver {
 
   void FormImpactingConstraintLCP(
       const ConstraintVelProblemData<T>& problem_data,
+      const VectorX<T>& invA_a,
       MatrixX<T>* MM, VectorX<T>* qq) const;
   void FormSustainedConstraintLCP(
       const ConstraintAccelProblemData<T>& problem_data,
+      const VectorX<T>& invA_a,
       MatrixX<T>* MM, VectorX<T>* qq) const;
 
   template <typename ProblemData>
@@ -763,6 +765,8 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
   DetermineNewFullInertiaSolveOperator(
       problem_data, num_generalized_velocities, indep_constraints, G_mult,
       G_transpose_mult, Del, &A_solve);
+  if (indep_constraints.empty())
+    A_solve = problem_data.solve_inertia;
 
   // Determine a new "inertia" solve operator, using only the upper left block
   // of A⁻¹ (denoted C above) to exploit zero blocks in common operations.
@@ -779,10 +783,17 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
   data_ptr = UpdateProblemDataForUnilateralConstraints(
       problem_data, indep_constraints, fast_A_solve, data_ptr);
 
+  // Compute a and A⁻¹a.
+  VectorX<T> a(problem_data.tau.size() + indep_constraints.size());
+  a.head(problem_data.tau.size()) = -problem_data.tau;
+  a.tail(indep_constraints.size()) = data_ptr->kG;
+  const VectorX<T> invA_a = A_solve(a);
+  const VectorX<T> trunc_invA_a = invA_a.head(problem_data.tau.size());
+
   // Set up the pure linear complementarity problem.
   MatrixX<T> MM;
   VectorX<T> qq;
-  FormSustainedConstraintLCP(*data_ptr, &MM, &qq);
+  FormSustainedConstraintLCP(*data_ptr, trunc_invA_a, &MM, &qq);
 
   // Regularize the LCP matrix as necessary.
   const int num_vars = qq.size();
@@ -843,13 +854,13 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
   // q = b - DA⁻¹a
   // M = B - DA⁻¹C
   if (indep_constraints.size() > 0) {
-    // In this case, Xv = -(Nᵀ + μQᵀ)fN - DᵀfD - LᵀfL and a = f.
+    // In this case, Xv = -(Nᵀ + μQᵀ)fN - DᵀfD - LᵀfL and a = | -f |.
+    //                                                        | kG |
     const VectorX<T> Xv = -data_ptr->N_minus_muQ_transpose_mult(fN)
         -data_ptr->F_transpose_mult(fF)
         -data_ptr->L_transpose_mult(fL);
-    VectorX<T> aug(Xv.size() + num_eq_constraints);
-    aug.segment(0, Xv.size()) = Xv + data_ptr->tau;
-    aug.segment(Xv.size(), num_eq_constraints) = problem_data.kG;
+    VectorX<T> aug = a;
+    aug.head(Xv.size()) += Xv;
     const VectorX<T> u = -A_solve(aug);
     auto lambda = cf->segment(
         num_contacts + num_spanning_vectors + num_limits, num_eq_constraints);
@@ -983,10 +994,10 @@ void ConstraintSolver<T>::SolveImpactProblem(
   //      | μ      -Eᵀ   0   0    |
   //      | LCNᵀ  LCDᵀ   0   LCLᵀ |
   //
-  // qq ≡ | kᴺ + NA⁻¹a |
-  //      | kᴰ + DA⁻¹a |
+  // qq ≡ | kᴺ - NA⁻¹a |
+  //      | kᴰ - DA⁻¹a |
   //      |      0     |
-  //      | kᴸ + LA⁻¹a |
+  //      | kᴸ - LA⁻¹a |
 
   // --------------------------------------------------------------------------
   // Using the LCP solution to solve the MLCP.
@@ -1015,6 +1026,8 @@ void ConstraintSolver<T>::SolveImpactProblem(
   DetermineNewFullInertiaSolveOperator(
       problem_data, num_generalized_velocities, indep_constraints, G_mult,
       G_transpose_mult, Del, &A_solve);
+  if (indep_constraints.empty())
+    A_solve = problem_data.solve_inertia;
 
   // Determine a new "inertia" solve operator, using only the upper left block
   // of A⁻¹ to exploit zeros in common operations.
@@ -1031,10 +1044,25 @@ void ConstraintSolver<T>::SolveImpactProblem(
   data_ptr = UpdateProblemDataForUnilateralConstraints(
       problem_data, indep_constraints, fast_A_solve, data_ptr);
 
+  // Compute a and A⁻¹a.
+  // TODO(edrumwri): Replace this nasty operation by replacing v in problem
+  // data with Mv (generalized momentum).
+  const MatrixX<T> eye = MatrixX<T>::Identity(problem_data.v.size(),
+                                              problem_data.v.size());
+  const MatrixX<T> inv_M = problem_data.solve_inertia(eye);
+  Eigen::LLT<MatrixX<T>> M(inv_M);
+  DRAKE_DEMAND(M.info() == Eigen::Success);
+  VectorX<T> Mvt = M.solve(problem_data.v);
+  VectorX<T> a(problem_data.v.size() + indep_constraints.size());
+  a.head(problem_data.v.size()) = -Mvt;
+  a.tail(indep_constraints.size()) = data_ptr->kG;
+  const VectorX<T> invA_a = A_solve(a);
+  const VectorX<T> trunc_invA_a = invA_a.head(problem_data.v.size());
+
   // Set up the linear complementarity problem.
   MatrixX<T> MM;
   VectorX<T> qq;
-  FormImpactingConstraintLCP(problem_data, &MM, &qq);
+  FormImpactingConstraintLCP(problem_data, trunc_invA_a, &MM, &qq);
 
   // Regularize the LCP matrix as necessary.
   const int num_vars = qq.size();
@@ -1095,21 +1123,13 @@ void ConstraintSolver<T>::SolveImpactProblem(
   // q = b - DA⁻¹a
   // M = B - DA⁻¹C
   if (indep_constraints.size() > 0) {
-    // In this case, Xv = -NᵀfN - DᵀfD -LᵀfL and a = Mv(t).
-    // TODO(edrumwri): Replace this nasty operation by replacing v in problem
-    // data with Mv (generalized momentum).
-    const MatrixX<T> eye = MatrixX<T>::Identity(problem_data.v.size(),
-                                                problem_data.v.size());
-    const MatrixX<T> inv_M = problem_data.solve_inertia(eye);
-    Eigen::LLT<MatrixX<T>> M(inv_M);
-    DRAKE_DEMAND(M.info() == Eigen::Success);
-    VectorX<T> Mvt = M.solve(problem_data.v);
+    // In this case, Xv = -NᵀfN - DᵀfD -LᵀfL and a = | -Mv(t) |.
+    //                                               |   kG   |
     const VectorX<T> Xv = -data_ptr->N_transpose_mult(fN)
         -data_ptr->F_transpose_mult(fF)
         -data_ptr->L_transpose_mult(fL);
-    VectorX<T> aug(Xv.size() + num_eq_constraints);
-    aug.segment(0, Xv.size()) = Xv + Mvt;
-    aug.segment(Xv.size(), num_eq_constraints) = problem_data.kG;
+    VectorX<T> aug = a;
+    aug.head(Xv.size()) += Xv;
     const VectorX<T> u = -A_solve(aug);
     auto lambda = cf->segment(
         num_contacts + num_spanning_vectors + num_limits, num_eq_constraints);
@@ -1173,6 +1193,7 @@ void ConstraintSolver<T>::ComputeInverseInertiaTimesGT(
 template <class T>
 void ConstraintSolver<T>::FormSustainedConstraintLCP(
     const ConstraintAccelProblemData<T>& problem_data,
+    const VectorX<T>& invA_a,
     MatrixX<T>* MM, VectorX<T>* qq) const {
   DRAKE_DEMAND(MM);
   DRAKE_DEMAND(qq);
@@ -1299,18 +1320,17 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
       MM->block(0, nc + nk + num_non_sliding, nc + nk, nl).transpose().eval();
 
   // Construct the LCP vector:
-  // N⋅M⁻¹⋅fext + kN
-  // D⋅M⁻¹⋅fext + kD
+  // N⋅A⁻¹⋅a + kN
+  // D⋅A⁻¹⋅a + kD
   // 0
-  // L⋅M⁻¹⋅fext + kL
+  // L⋅A⁻¹⋅a + kL
   // where, as above, D is defined as [F -F] (and kD is defined as [kF -kF].
-  VectorX<T> M_inv_x_f = problem_data.solve_inertia(problem_data.tau);
   qq->resize(num_vars, 1);
-  qq->segment(0, nc) = N(M_inv_x_f) + kN;
-  qq->segment(nc, nr) = F(M_inv_x_f) + kF;
+  qq->segment(0, nc) = -N(invA_a) + kN;
+  qq->segment(nc, nr) = -F(invA_a) + kF;
   qq->segment(nc + nr, nr) = -qq->segment(nc, nr);
   qq->segment(nc + nk, num_non_sliding).setZero();
-  qq->segment(nc + nk + num_non_sliding, num_limits) = L(M_inv_x_f) + kL;
+  qq->segment(nc + nk + num_non_sliding, num_limits) = -L(invA_a) + kL;
 }
 
 // Forms the LCP matrix and vector, which is used to determine the collisional
@@ -1318,6 +1338,7 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
 template <class T>
 void ConstraintSolver<T>::FormImpactingConstraintLCP(
     const ConstraintVelProblemData<T>& problem_data,
+    const VectorX<T>& invA_a,
     MatrixX<T>* MM, VectorX<T>* qq) const {
   DRAKE_DEMAND(MM);
   DRAKE_DEMAND(qq);
@@ -1426,17 +1447,17 @@ void ConstraintSolver<T>::FormImpactingConstraintLCP(
       MM->block(0, nc*2 + nk, nc + nk, nl).transpose().eval();
 
   // Construct the LCP vector:
-  // N⋅v + kN
-  // D⋅v + kD
+  // NA⁻¹a + kN
+  // DA⁻¹a + kD
   // 0
-  // L⋅v + kL
+  // LA⁻¹a + kL
   // where, as above, D is defined as [F -F] (and kD = [kF -kF]).
   qq->resize(num_vars, 1);
-  qq->segment(0, nc) = N(problem_data.v) + problem_data.kN;
-  qq->segment(nc, nr) = F(problem_data.v) + problem_data.kF;
+  qq->segment(0, nc) = -N(invA_a) + problem_data.kN;
+  qq->segment(nc, nr) = -F(invA_a) + problem_data.kF;
   qq->segment(nc + nr, nr) = -qq->segment(nc, nr);
   qq->segment(nc + nk, nc).setZero();
-  qq->segment(nc*2 + nk, num_limits) = L(problem_data.v) + problem_data.kL;
+  qq->segment(nc*2 + nk, num_limits) = -L(invA_a) + problem_data.kL;
 }
 
 template <class T>
