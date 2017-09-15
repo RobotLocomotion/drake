@@ -13,7 +13,7 @@ namespace math {
 namespace {
 
 // Checks that the axes are set correctly.
-void CheckBasisOrthogonality(const Matrix3<double>& R) {
+void CheckBasisOrthonomality(const Matrix3<double>& R) {
   const double tol = 10 * std::numeric_limits<double>::epsilon();
   const Vector3d a = R.col(0);
   const Vector3d b = R.col(1);
@@ -31,7 +31,7 @@ void CheckBasisOrthogonality(const Matrix3<double>& R) {
 // 3x3 matrix is set.
 void CheckBasis(int axis_index, const Vector3<double>& axis) {
   Matrix3<double> R = ComputeBasisFromAxis(axis_index, axis);
-  CheckBasisOrthogonality(R);
+  CheckBasisOrthonomality(R);
 
   // Verify that the vector ends up in the correct column.
   const double eps = 10 * std::numeric_limits<double>::epsilon();
@@ -44,11 +44,11 @@ GTEST_TEST(ComputeBasisFromAxisTest, RightHandOrthogonal) {
   for (int i = 0; i < 3; ++i) {
     // Check a non-unit vector.
     Vector3d v(1, 1, 1);
-    CheckBasisOrthogonality(ComputeBasisFromAxis(i, v));
+    CheckBasisOrthonomality(ComputeBasisFromAxis(i, v));
 
     // Check a zero vector.
     v.setZero();
-    EXPECT_THROW(CheckBasisOrthogonality(ComputeBasisFromAxis(i, v)),
+    EXPECT_THROW(CheckBasisOrthonomality(ComputeBasisFromAxis(i, v)),
                  std::logic_error);
 
     // Check the x-, y- and z-axes.
