@@ -14,6 +14,7 @@ namespace py = pybind11;
 PYBIND11_PLUGIN(_pydrake_rbtree) {
   py::module m("_pydrake_rbtree", "Bindings for the RigidBodyTree class");
 
+  using drake::AutoDiffXd;
   using drake::multibody::joints::FloatingBaseType;
   using drake::parsers::PackageMap;
 
