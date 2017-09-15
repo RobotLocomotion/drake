@@ -42,12 +42,13 @@ namespace {
 // Simple example which simulates the (passive) Acrobot.  Run drake-visualizer
 // to see the animated result.
 
-DEFINE_double(realtime_factor, 1.0,
+DEFINE_double(realtime_factor, 0.0,
               "Playback speed.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
 
 using drake::systems::ImplicitEulerIntegrator;
 using drake::systems::RungeKutta2Integrator;
+using drake::systems::RungeKutta3Integrator;
 using drake::systems::SemiExplicitEulerIntegrator;
 
 using drake::lcm::DrakeLcm;
@@ -76,10 +77,13 @@ int do_main(int argc, char* argv[]) {
   publisher->set_publish_period(0.01);
 
   // Geometric parameters:
-  const double length = 0.7;  // [m]
-  //const double radius = 0.05; // [m]
-  const double radius1 = 0.05;
-  const double radius2 = 0.02;
+  //const double length = 0.7;  // [m]
+  //const double radius1 = 0.05;
+  //const double radius2 = 0.02;
+
+  const double length = 2.0;  // [m]
+  const double radius1 = 0.005;
+  const double radius2 = 0.005;
 
   // Material parameters (aluminum):
   const double rho = 1200;  // [Kgr/m^3]
@@ -87,20 +91,20 @@ int do_main(int argc, char* argv[]) {
   const double nu = 0.5;  // Poission ratio [-]
   const double G = E / (2*(1+nu));  // Shear modulus. E = 2G(1+ν)
   //const double tau_d = 0.04469 / 10;  // [sec]
-  const double tau_d = 0.38 / 10;  // [sec]
+  const double T1 = 12.38;  // First period of oscillation.
+  const double tau_d = T1 / 10;  // [sec]
 
   // Numerical parameters:
   const int num_elements = 50;
-  const double dt = 0.004;  // [sec]
+  const double dt = T1/1000;  // [sec]
+  const double end_time = T1;
 
   // Other derived numbers.
   const double volume = M_PI/3.0 *
       (radius1 * radius1 + radius1 * radius2 + radius2 * radius2) * length;
   const double mass = rho * volume;
-  const double T1 = 1.21;  // First period of oscillation.
-  const double end_time = 10 * T1;
 
-  const int num_spatial_dimensions = 2;
+  const int num_spatial_dimensions = 3;
   auto rod_plant = builder.AddSystem<CosseratRodPlant>(
       length, radius1, radius2, rho,
       E, G, tau_d, tau_d, num_elements, num_spatial_dimensions);
@@ -146,26 +150,33 @@ int do_main(int argc, char* argv[]) {
                                           simulator.get_mutable_context());
 
   rod_plant->SetBentState(&rod_context);
+  //rod_plant->SetHorizontalCantileverState(&rod_context);
 
   simulator.set_target_realtime_rate(FLAGS_realtime_factor);
   simulator.Initialize();
   simulator.set_publish_at_initialization(false);
   simulator.set_publish_every_time_step(true);
   //const double max_step_size = dt;
-  //simulator.reset_integrator<systems::SemiExplicitEulerIntegrator<double>>(
-    //  *diagram, max_step_size, simulator.get_mutable_context());
+  //RungeKutta3Integrator<double>* integrator =
+  //        simulator.reset_integrator<RungeKutta3Integrator<double>>(
+  //        *diagram, simulator.get_mutable_context());
+  //SemiExplicitEulerIntegrator<double>* integrator =
+  //    simulator.reset_integrator<SemiExplicitEulerIntegrator<double>>(
+  //    *diagram, dt, simulator.get_mutable_context());
   ImplicitEulerIntegrator<double>* integrator =
       simulator.reset_integrator<ImplicitEulerIntegrator<double>>(
           *diagram, simulator.get_mutable_context());
   //integrator->set_jacobian_computation_scheme(
   //    ImplicitEulerIntegrator<double>::JacobianComputationScheme::
   //    kCentralDifference);
-  integrator->set_fixed_step_mode(true);  // Good for steady state calculations.
+  integrator->set_fixed_step_mode(false);  // Good for steady state calculations.
   integrator->set_maximum_step_size(dt);
   PRINT_VAR(integrator->get_fixed_step_mode());
   PRINT_VAR(integrator->supports_error_estimation());
   integrator->set_target_accuracy(1.0e-3);
   PRINT_VAR(integrator->get_target_accuracy());
+  PRINT_VAR(integrator->get_num_jacobian_evaluations());
+  PRINT_VAR(integrator->get_num_iteration_matrix_factorizations());
 
   // RK3
   //   default: 1e-3

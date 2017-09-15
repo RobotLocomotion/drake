@@ -357,8 +357,8 @@ void CosseratRodPlant<T>::BuildMultibodyModel() {
   DRAKE_ASSERT(static_cast<int>(mobilizers_.size()) == num_elements_);
   last_element_ = parent_element;
 
-  model_.template AddForceElement<UniformGravityFieldElement>(
-      Vector3<double>(0.0, 0.0, 9.81));
+  //model_.template AddForceElement<UniformGravityFieldElement>(
+    //  Vector3<double>(0.0, 0.0, 9.81));
 
   model_.Finalize();
 }
@@ -408,7 +408,7 @@ void CosseratRodPlant<T>::SetBentState(
     //const T roll = sin(M_PI * s / length_) * 10.0 / 180.0 * M_PI;
 
     const T roll =
-        20 * sin(2.0 * M_PI * s / length_) * 10.0 / 180.0 * M_PI / num_elements_;
+        2 * cos(2.0 * M_PI * s / length_) * 10.0 / 180.0 * M_PI / num_elements_;
 
     if (dimension_ == 3) {
       const multibody::RollPitchYawMobilizer<T>* mobilizer =
@@ -476,10 +476,24 @@ void CosseratRodPlant<T>::DoCalcTimeDerivatives(
       &Fapplied_Bo_W_array, &tau);
 
   // Add a constant moment at the end link.
-  const T M0 = 0.0;  // Torque in Nm
-  SpatialForce<T> M_W(Vector3<T>(M0, 0.0, 0.0), Vector3<T>::Zero());
-  Fapplied_Bo_W_array[last_element_->get_node_index()] += M_W;
+  const T M0 = 0.005;  // Torque in Nm
+  SpatialForce<T> M_B(Vector3<T>(0.0, 0.0, M0), Vector3<T>::Zero());
+  const Matrix3<T> R_WB = pc.get_X_WB(last_element_->get_node_index()).linear();
+  Fapplied_Bo_W_array[last_element_->get_node_index()] += R_WB * M_B;
 
+  const Vector3<T> p_WB =
+      pc.get_X_WB(last_element_->get_node_index()).translation();
+  const Vector3<T> p0_WB = Vector3<T>(0.0, 0.0, length_);
+  const T k_spring = 100;  // N/m
+  Vector3<T> fspring_W = -k_spring * (p_WB - p0_WB);
+  fspring_W(2) = 0.008; // a constant pull in z.
+  Fapplied_Bo_W_array[last_element_->get_node_index()] +=
+      SpatialForce<T>(Vector3<T>::Zero(), fspring_W);
+  //const T f0 = 0.010;
+  //SpatialForce<T> F_W(Vector3<T>::Zero(), Vector3<T>(0.0, 0.0, -f0));
+  //Fapplied_Bo_W_array[last_element_->get_node_index()] += F_W;
+
+#if 0
   // Apply a poke in the middle
   {
     const double rad2deg = 180.0 / M_PI;
@@ -546,6 +560,7 @@ void CosseratRodPlant<T>::DoCalcTimeDerivatives(
 
     bot_lcmgl_switch_buffer(lcmgl); // This effectively publishes.
   }
+#endif
 
   PRINT_VAR(tau.transpose());
   for (auto& F : Fapplied_Bo_W_array) {
@@ -696,17 +711,27 @@ void CosseratRodPlant<T>::MakeViewerLoadMessage(
     stream << "CosseratRodElements::element_" << ielement;
     message->link[ielement].name = stream.str();
     message->link[ielement].robot_num = 0;
-    message->link[ielement].num_geom = 1;
-    message->link[ielement].geom.resize(1);
+    int num_geom = 1;
+    if (ielement == num_elements_-1) num_geom = 2;
+    message->link[ielement].num_geom = num_geom;
+    message->link[ielement].geom.resize(num_geom);
     message->link[ielement].geom[0] =
         drake::systems::rendering::MakeGeometryData(element_vis);
+
+    if (num_geom == 2) {
+      DrakeShapes::VisualElement end_effector_vis(
+          DrakeShapes::Box({0.10, 0.04, 0.005}),
+      Eigen::Isometry3d::Identity(), Eigen::Vector4d(1.0, 0.0, 0.0, 1));
+      message->link[ielement].geom[1] =
+          drake::systems::rendering::MakeGeometryData(end_effector_vis);
+    }
   }
 
   // Add a geometry to visualize a an arrow
   //DrakeShapes::Cylinder(0.007 /* radius */, 0.05 /* length */),
   DrakeShapes::VisualElement element_vis(
       DrakeShapes::Capsule(0.007 /* radius */, 0.05 /* length */),
-      Eigen::Isometry3d::Identity(), Eigen::Vector4d(1.0, 0.0, 0.0, 1));
+      Eigen::Isometry3d::Identity(), Eigen::Vector4d(0.0, 0.0, 0.0, 0));
   message->link[num_elements_].name = "CosseratRodElements::poke";
   message->link[num_elements_].robot_num = 0;
   message->link[num_elements_].num_geom = 1;
