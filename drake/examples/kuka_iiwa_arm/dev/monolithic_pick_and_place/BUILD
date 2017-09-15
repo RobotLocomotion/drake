@@ -78,7 +78,7 @@ pick_and_place_test(
     # one of the steps in this demo.  We should see if this improves
     # when #3128 is fixed.
     tags = [
-        "manual", # Disables this brittle test from being run in CI.
+        "manual",  # Disables this brittle test from being run in CI.
         "snopt",
     ],
 )
