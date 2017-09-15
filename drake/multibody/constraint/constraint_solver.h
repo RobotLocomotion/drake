@@ -733,10 +733,10 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
   //      | μ          -Eᵀ     0   0    |
   //      | LC(Nᵀ-μQᵀ)  LCDᵀ   0   LCLᵀ |
   //
-  // qq ≡ | kᴺ + NA⁻¹a |
-  //      | kᴰ + DA⁻¹a |
-  //      |     0      |
-  //      | kᴸ + LA⁻¹a |
+  // qq ≡ | kᴺ + |N 0|A⁻¹a |
+  //      | kᴰ + |D 0|A⁻¹a |
+  //      |       0        |
+  //      | kᴸ + |L 0|A⁻¹a |
 
   // --------------------------------------------------------------------------
   // Using the LCP solution to solve the MLCP.
@@ -788,12 +788,12 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
   a.head(problem_data.tau.size()) = -problem_data.tau;
   a.tail(indep_constraints.size()) = data_ptr->kG;
   const VectorX<T> invA_a = A_solve(a);
-  const VectorX<T> trunc_invA_a = invA_a.head(problem_data.tau.size());
+  const VectorX<T> trunc_neg_invA_a = -invA_a.head(problem_data.tau.size());
 
   // Set up the pure linear complementarity problem.
   MatrixX<T> MM;
   VectorX<T> qq;
-  FormSustainedConstraintLCP(*data_ptr, trunc_invA_a, &MM, &qq);
+  FormSustainedConstraintLCP(*data_ptr, trunc_neg_invA_a, &MM, &qq);
 
   // Regularize the LCP matrix as necessary.
   const int num_vars = qq.size();
@@ -994,10 +994,10 @@ void ConstraintSolver<T>::SolveImpactProblem(
   //      | μ      -Eᵀ   0   0    |
   //      | LCNᵀ  LCDᵀ   0   LCLᵀ |
   //
-  // qq ≡ | kᴺ - NA⁻¹a |
-  //      | kᴰ - DA⁻¹a |
-  //      |      0     |
-  //      | kᴸ - LA⁻¹a |
+  // qq ≡ | kᴺ - |N 0|A⁻¹a |
+  //      | kᴰ - |D 0|A⁻¹a |
+  //      |       0        |
+  //      | kᴸ - |L 0|A⁻¹a |
 
   // --------------------------------------------------------------------------
   // Using the LCP solution to solve the MLCP.
@@ -1057,12 +1057,12 @@ void ConstraintSolver<T>::SolveImpactProblem(
   a.head(problem_data.v.size()) = -Mvt;
   a.tail(indep_constraints.size()) = data_ptr->kG;
   const VectorX<T> invA_a = A_solve(a);
-  const VectorX<T> trunc_invA_a = invA_a.head(problem_data.v.size());
+  const VectorX<T> trunc_neg_invA_a = -invA_a.head(problem_data.v.size());
 
   // Set up the linear complementarity problem.
   MatrixX<T> MM;
   VectorX<T> qq;
-  FormImpactingConstraintLCP(problem_data, trunc_invA_a, &MM, &qq);
+  FormImpactingConstraintLCP(problem_data, trunc_neg_invA_a, &MM, &qq);
 
   // Regularize the LCP matrix as necessary.
   const int num_vars = qq.size();
@@ -1193,7 +1193,7 @@ void ConstraintSolver<T>::ComputeInverseInertiaTimesGT(
 template <class T>
 void ConstraintSolver<T>::FormSustainedConstraintLCP(
     const ConstraintAccelProblemData<T>& problem_data,
-    const VectorX<T>& invA_a,
+    const VectorX<T>& trunc_neg_invA_a,
     MatrixX<T>* MM, VectorX<T>* qq) const {
   DRAKE_DEMAND(MM);
   DRAKE_DEMAND(qq);
@@ -1326,11 +1326,11 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
   // L⋅A⁻¹⋅a + kL
   // where, as above, D is defined as [F -F] (and kD is defined as [kF -kF].
   qq->resize(num_vars, 1);
-  qq->segment(0, nc) = -N(invA_a) + kN;
-  qq->segment(nc, nr) = -F(invA_a) + kF;
+  qq->segment(0, nc) = N(trunc_neg_invA_a) + kN;
+  qq->segment(nc, nr) = F(trunc_neg_invA_a) + kF;
   qq->segment(nc + nr, nr) = -qq->segment(nc, nr);
   qq->segment(nc + nk, num_non_sliding).setZero();
-  qq->segment(nc + nk + num_non_sliding, num_limits) = -L(invA_a) + kL;
+  qq->segment(nc + nk + num_non_sliding, num_limits) = L(trunc_neg_invA_a) + kL;
 }
 
 // Forms the LCP matrix and vector, which is used to determine the collisional
@@ -1338,7 +1338,7 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
 template <class T>
 void ConstraintSolver<T>::FormImpactingConstraintLCP(
     const ConstraintVelProblemData<T>& problem_data,
-    const VectorX<T>& invA_a,
+    const VectorX<T>& trunc_neg_invA_a,
     MatrixX<T>* MM, VectorX<T>* qq) const {
   DRAKE_DEMAND(MM);
   DRAKE_DEMAND(qq);
@@ -1453,11 +1453,11 @@ void ConstraintSolver<T>::FormImpactingConstraintLCP(
   // LA⁻¹a + kL
   // where, as above, D is defined as [F -F] (and kD = [kF -kF]).
   qq->resize(num_vars, 1);
-  qq->segment(0, nc) = -N(invA_a) + problem_data.kN;
-  qq->segment(nc, nr) = -F(invA_a) + problem_data.kF;
+  qq->segment(0, nc) = N(trunc_neg_invA_a) + problem_data.kN;
+  qq->segment(nc, nr) = F(trunc_neg_invA_a) + problem_data.kF;
   qq->segment(nc + nr, nr) = -qq->segment(nc, nr);
   qq->segment(nc + nk, nc).setZero();
-  qq->segment(nc*2 + nk, num_limits) = -L(invA_a) + problem_data.kL;
+  qq->segment(nc*2 + nk, num_limits) = L(trunc_neg_invA_a) + problem_data.kL;
 }
 
 template <class T>

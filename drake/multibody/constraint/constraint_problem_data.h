@@ -89,10 +89,10 @@ struct ConstraintAccelProblemData {
   /// function is the transmission (gearing) constraint below:<pre>
   /// 0 = v̇ᵢ - rv̇ⱼ
   /// </pre>
-  /// which can be read as the acceleration at joint j (v̇ⱼ) must equal to `r`
-  /// times the acceleration at joint i (v̇ᵢ); `r` is thus the gear ratio.
+  /// which can be read as the acceleration at joint i (v̇ᵢ) must equal to `r`
+  /// times the acceleration at joint j (v̇ⱼ); `r` is thus the gear ratio.
   /// In this example, the corresponding holonomic constraint function is
-  /// g(q) ≡ qᵢ - rqⱼ, yielding ̈g(q, v, v̇) = v̇ⱼ - rv̇ⱼ.
+  /// g(q) ≡ qᵢ - rqⱼ, yielding ̈g(q, v, v̇) = v̇ᵢ - rv̇ⱼ.
   /// @{
 
   /// An operator that performs the multiplication G⋅v. The default operator
@@ -314,10 +314,10 @@ struct ConstraintVelProblemData {
   /// function is the transmission (gearing) constraint below:<pre>
   /// 0 = vᵢ - rvⱼ
   /// </pre>
-  /// which can be read as the velocity at joint j (vⱼ) must equal to `r`
-  /// times the velocity at joint i (vᵢ); `r` is thus the gear ratio.
+  /// which can be read as the velocity at joint i (vᵢ) must equal to `r`
+  /// times the velocity at joint j (vⱼ); `r` is thus the gear ratio.
   /// In this example, the corresponding holonomic constraint function is
-  /// g(q) ≡ qᵢ - rqⱼ, yielding ġ(q, v) = vⱼ - rvⱼ.
+  /// g(q) ≡ qᵢ - rqⱼ, yielding ġ(q, v) = vᵢ - rvⱼ.
   /// @{
 
   /// An operator that performs the multiplication G⋅v. The default operator
