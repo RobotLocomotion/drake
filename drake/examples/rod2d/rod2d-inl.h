@@ -602,7 +602,6 @@ void Rod2D<T>::CalcConstraintProblemData(
   data->N_minus_muQ_transpose_mult = [N_minus_mu_Q](const VectorX<T>& w) ->
       VectorX<T> { return N_minus_mu_Q.transpose() * w; };
 
-  // Set kL.
   data->kL.resize(0);
 
   // Set external force vector.

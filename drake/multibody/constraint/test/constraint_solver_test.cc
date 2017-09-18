@@ -1243,7 +1243,7 @@ class Constraint2DSolverTest : public ::testing::Test {
     EXPECT_NEAR(fF, sign * mv * rod_->get_mu_coulomb(), lcp_eps_);
 
     // Get the change in generalized velocity and verify that there is no
-    // angular velocity..
+    // angular velocity.
     VectorX<double> gv;
     solver_.ComputeGeneralizedVelocityChange(*vel_data_, cf, &gv);
     EXPECT_NEAR((vel_data_->v[2] + gv[2]), 0, lcp_eps_ * cf.size());
