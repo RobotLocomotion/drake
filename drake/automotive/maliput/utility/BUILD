@@ -38,6 +38,27 @@ drake_cc_binary(
     ],
 )
 
+drake_cc_binary(
+    name = "rndf_to_obj",
+    srcs = ["rndf_to_obj.cc"],
+    add_test_rule = 1,
+    data = [
+        "//drake/automotive/maliput/rndf:test_maps",
+    ],
+    test_rule_args = [
+        "-rndf_file",
+        "drake/automotive/maliput/rndf/test/maps/t_intersection.rndf",
+        "-obj_file",
+        "t_intersection",
+    ],
+    test_rule_size = "small",
+    deps = [
+        ":utility",
+        "//drake/automotive/maliput/rndf",
+        "//drake/common:text_logging_gflags",
+    ],
+)
+
 # === test/ ===
 
 filegroup(
