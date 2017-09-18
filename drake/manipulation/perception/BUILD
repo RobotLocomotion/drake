@@ -26,9 +26,8 @@ drake_cc_library(
     hdrs = ["pose_smoother.h"],
     deps = [
         "//drake/manipulation/util:moving_average_filter",
-        "//drake/manipulation/util:perception_utils",
         "//drake/math:geometric_transform",
-        "//drake/systems/framework",
+        "//drake/systems/framework:leaf_system",
     ],
 )
 
@@ -48,7 +47,6 @@ drake_cc_googletest(
         "//drake/common:eigen_geometry_compare",
         "//drake/common:eigen_matrix_compare",
         "//drake/manipulation/util:moving_average_filter",
-        "//drake/manipulation/util:perception_utils",
         "//drake/systems/framework",
     ],
 )

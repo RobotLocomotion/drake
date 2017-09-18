@@ -105,19 +105,6 @@ drake_cc_library(
     deps = ["//drake/common:essential"],
 )
 
-# TODO(naveenoid) : This library is currently jointly tested
-# with the pose smoother. Add independent unit tests for
-# it.
-drake_cc_library(
-    name = "perception_utils",
-    srcs = ["perception_utils.cc"],
-    hdrs = ["perception_utils.h"],
-    deps = [
-        "//drake/common",
-        "//drake/math:geometric_transform",
-    ],
-)
-
 # === test/ ===
 
 drake_cc_googletest(

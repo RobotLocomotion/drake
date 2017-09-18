@@ -8,7 +8,6 @@
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
 #include "drake/manipulation/util/moving_average_filter.h"
-#include "drake/manipulation/util/perception_utils.h"
 #include "drake/math/quaternion.h"
 
 namespace drake {
@@ -19,38 +18,29 @@ namespace {
 using Eigen::Isometry3d;
 using Eigen::Quaterniond;
 using Eigen::AngleAxisd;
-using util::VectorToIsometry3d;
-using util::Isometry3dToVector;
 
 struct CombinedState {
-  CombinedState(const Isometry3d& pose = Isometry3d::Identity(),
-                const Vector6<double>& velocity = Vector6<double>::Zero()) {
-    pose_ = pose;
-    velocity_ = velocity;
+  CombinedState(
+      const Isometry3d& default_pose = Isometry3d::Identity(),
+      const Vector6<double>& default_velocity = Vector6<double>::Zero()) {
+    pose = default_pose;
+    velocity = default_velocity;
   }
-  Isometry3d pose_;
-  Vector6<double> velocity_;
+  Isometry3d pose;
+  Vector6<double> velocity;
 };
 
 const int kMovingAverageWindowSize = 3;
-const double kOptitrackLcmStatusPeriod = 0.01;
+const double kPoseSmootherPeriod = 0.01;
 const double kPoseComparisonTolerance = 1e-6;
 
 class PoseSmootherTest : public ::testing::Test {
  public:
   void Initialize(double max_linear_velocity, double max_angular_velocity,
                   int filter_window_size = 0) {
-    if (filter_window_size == 0) {
-      // Pose Smoother with only outlier rejection.
       dut_ = std::make_unique<PoseSmoother>(
           max_linear_velocity, max_angular_velocity,
-          kOptitrackLcmStatusPeriod /* optitrack_lcm_status_period */);
-    } else {
-      // Pose Smoother with both outlier rejection and smoothing.
-      dut_ = std::make_unique<PoseSmoother>(
-          max_linear_velocity, max_angular_velocity, filter_window_size,
-          kOptitrackLcmStatusPeriod /* optitrack_lcm_status_period */);
-    }
+          kPoseSmootherPeriod, filter_window_size);
 
     context_ = dut_->CreateDefaultContext();
     output_ = dut_->AllocateOutput(*context_);
@@ -59,11 +49,13 @@ class PoseSmootherTest : public ::testing::Test {
     EXPECT_EQ(dut_->get_num_output_ports(), 2);
   }
 
-  CombinedState UpdateStateCalcOutput(const Isometry3d input_pose) {
+  CombinedState UpdateStateCalcOutput(
+      const Isometry3d& input_pose, double input_time) {
     std::unique_ptr<systems::AbstractValue> input(
         systems::AbstractValue::Make(Isometry3<double>::Identity()));
     input->SetValue(input_pose);
     context_->FixInputPort(0 /* input port ID*/, std::move(input));
+    context_->set_time(input_time);
 
     dut_->CalcUnrestrictedUpdate(*context_, context_->get_mutable_state());
     dut_->CalcOutput(*context_, output_.get());
@@ -89,17 +81,21 @@ class PoseSmootherTest : public ::testing::Test {
 TEST_F(PoseSmootherTest, OutlierRejectionTest) {
   Initialize(1.0, 0.5 * M_PI);
 
+  double test_time = 0;
+
   Isometry3d input_pose_0 = Isometry3d::Identity();
   input_pose_0.linear() =
       AngleAxisd(0.25 * M_PI, Eigen::Vector3d::UnitX()).matrix();
   input_pose_0.translation() << 0.01, -5.0, 10.10;
 
   CombinedState output_state_0;
-  EXPECT_NO_THROW(output_state_0 = UpdateStateCalcOutput(input_pose_0));
-  EXPECT_TRUE(CompareTransforms(output_state_0.pose_, input_pose_0,
+  EXPECT_NO_THROW(output_state_0 = UpdateStateCalcOutput(input_pose_0,
+                                                         test_time));
+  test_time += kPoseSmootherPeriod;
+  EXPECT_TRUE(CompareTransforms(output_state_0.pose, input_pose_0,
                                 kPoseComparisonTolerance));
 
-  EXPECT_TRUE(CompareMatrices(output_state_0.velocity_, Vector6<double>::Zero(),
+  EXPECT_TRUE(CompareMatrices(output_state_0.velocity, Vector6<double>::Zero(),
                               1e-3, MatrixCompareType::absolute));
 
   // Input which will be rejected due to large rotational velocity.
@@ -108,32 +104,33 @@ TEST_F(PoseSmootherTest, OutlierRejectionTest) {
       AngleAxisd(0.35 * M_PI, Eigen::Vector3d::UnitX()).matrix();
   input_pose_1.translation() << 0.01, -5.0, 10.10;
   CombinedState output_state_1;
-  EXPECT_NO_THROW(output_state_1 = UpdateStateCalcOutput(input_pose_1));
+  output_state_1 = UpdateStateCalcOutput(input_pose_1, test_time);
+  test_time += kPoseSmootherPeriod;
   // Since input_pose_1 is expected to be rejected, the posesmoother output does
   // not match its input.
-  EXPECT_FALSE(CompareTransforms(output_state_1.pose_, input_pose_1,
+  EXPECT_FALSE(CompareTransforms(output_state_1.pose, input_pose_1,
                                  kPoseComparisonTolerance));
   // Since the current input was rejected, the posesmoother is expected to
   // output
   // the previous input instead.
-  EXPECT_TRUE(CompareTransforms(output_state_1.pose_, input_pose_0,
+  EXPECT_TRUE(CompareTransforms(output_state_1.pose, input_pose_0,
                                 kPoseComparisonTolerance));
 
   // Input which will be rejected due to large translational velocity.
   Isometry3d input_pose_2;
-  input_pose_1.linear() =
+  input_pose_2.linear() =
       Eigen::AngleAxisd(0.25 * M_PI, Eigen::Vector3d::UnitX()).matrix();
-  input_pose_1.translation() << 0.51, -5.0, 10.10;
+  input_pose_2.translation() << 0.51, -5.0, 10.10;
   CombinedState output_state_2;
-  EXPECT_NO_THROW(output_state_2 = UpdateStateCalcOutput(input_pose_2));
+  output_state_2 = UpdateStateCalcOutput(input_pose_2, test_time);
   // Since input_pose_2 is expected to be rejected, the posesmoother output does
   // not match its input.
-  EXPECT_FALSE(CompareTransforms(output_state_2.pose_, input_pose_2,
+  EXPECT_FALSE(CompareTransforms(output_state_2.pose, input_pose_2,
                                  kPoseComparisonTolerance));
   // Since the current input was rejected, the posesmoother is expected to
   // output
   // the previous accepted input instead.
-  EXPECT_TRUE(CompareTransforms(output_state_2.pose_, input_pose_0,
+  EXPECT_TRUE(CompareTransforms(output_state_2.pose, input_pose_0,
                                 kPoseComparisonTolerance));
 }
 
@@ -141,7 +138,7 @@ TEST_F(PoseSmootherTest, SmootherTest) {
   // Initializing with large outlier thresholds (this test only checks
   // the output of smoothing).
   Initialize(100.0, 10.0 * M_PI, kMovingAverageWindowSize);
-
+  double test_time = 0.0;
   // Test smoothing with an initial pose.
   Isometry3d input_pose_0 = Isometry3d::Identity();
   input_pose_0.linear() =
@@ -149,19 +146,22 @@ TEST_F(PoseSmootherTest, SmootherTest) {
   input_pose_0.translation() << 0.01, -5.0, 10.10;
 
   CombinedState output_state_0;
-  EXPECT_NO_THROW(output_state_0 = UpdateStateCalcOutput(input_pose_0));
+
+  output_state_0 = UpdateStateCalcOutput(input_pose_0, test_time);
+  test_time += kPoseSmootherPeriod;
+
   CombinedState expected_output_state_0;
   // Since filter has just been initialised, expected output is that of the
   // input.
-  expected_output_state_0.pose_ = input_pose_0;
-  expected_output_state_0.velocity_ = Vector6<double>::Zero();
+  expected_output_state_0.pose = input_pose_0;
+  expected_output_state_0.velocity = Vector6<double>::Zero();
 
-  EXPECT_TRUE(CompareTransforms(output_state_0.pose_,
-                                expected_output_state_0.pose_,
+  EXPECT_TRUE(CompareTransforms(output_state_0.pose,
+                                expected_output_state_0.pose,
                                 kPoseComparisonTolerance));
 
-  EXPECT_TRUE(CompareMatrices(output_state_0.velocity_,
-                              expected_output_state_0.velocity_, 1e-3,
+  EXPECT_TRUE(CompareMatrices(output_state_0.velocity,
+                              expected_output_state_0.velocity, 1e-3,
                               MatrixCompareType::absolute));
 
   // A small additional rotation applied in the next input.
@@ -171,44 +171,47 @@ TEST_F(PoseSmootherTest, SmootherTest) {
   input_pose_1.translation() << 0.01, -5.0, 10.10;
 
   CombinedState output_state_1;
-  EXPECT_NO_THROW(output_state_1 = UpdateStateCalcOutput(input_pose_1));
+  output_state_1 = UpdateStateCalcOutput(input_pose_1, test_time);
+
+  test_time += kPoseSmootherPeriod;
   CombinedState expected_output_state_1 = Isometry3d::Identity();
 
-  expected_output_state_1.pose_.translation() << 0.01, -5, 10.1;
-  expected_output_state_1.pose_.linear() =
+  expected_output_state_1.pose.translation() << 0.01, -5, 10.1;
+  expected_output_state_1.pose.linear() =
       (Eigen::MatrixXd(3, 3) << 1, 0, 0, 0, 0.67319401200771101,
        -0.73922055347988902, 0, 0.73922055347988902, 0.67319401200771101)
           .finished();
 
-  expected_output_state_1.velocity_ << 0, 0, 0, 4.670903542103451, 0, 0;
-  EXPECT_TRUE(CompareTransforms(output_state_1.pose_,
-                                expected_output_state_1.pose_,
+  expected_output_state_1.velocity << 0, 0, 0, 4.670903542103451, 0, 0;
+  EXPECT_TRUE(CompareTransforms(output_state_1.pose,
+                                expected_output_state_1.pose,
                                 kPoseComparisonTolerance));
 
-  EXPECT_TRUE(CompareMatrices(output_state_1.velocity_,
-                              expected_output_state_1.velocity_, 1e-3,
+  EXPECT_TRUE(CompareMatrices(output_state_1.velocity,
+                              expected_output_state_1.velocity, 1e-3,
                               MatrixCompareType::absolute));
 
   // Test 2 - identical pose as test 1 to ensure rotational velocities drop
   // averaged
   // by window size. Resulting output pose is averaged across previous 3.
   CombinedState output_state_2;
-  EXPECT_NO_THROW(output_state_2 = UpdateStateCalcOutput(input_pose_1));
+  output_state_2 = UpdateStateCalcOutput(input_pose_1, test_time);
+  test_time += kPoseSmootherPeriod;
   CombinedState expected_output_state_2 = Isometry3d::Identity();
 
-  expected_output_state_2.pose_.translation() << 0.01, -5, 10.1;
-  expected_output_state_2.pose_.linear() =
+  expected_output_state_2.pose.translation() << 0.01, -5, 10.1;
+  expected_output_state_2.pose.linear() =
       (MatrixX<double>(3, 3) << 1, 0, 0, 0, 0.66147703270805791,
        -0.74974268135601596, 0, 0.74974268135601596, 0.66147703270805791)
           .finished();
 
-  expected_output_state_2.velocity_ << 0, 0, 0, 1.5751117688894509, 0, 0;
-  EXPECT_TRUE(CompareTransforms(output_state_2.pose_,
-                                expected_output_state_2.pose_,
+  expected_output_state_2.velocity << 0, 0, 0, 1.5751117688894509, 0, 0;
+  EXPECT_TRUE(CompareTransforms(output_state_2.pose,
+                                expected_output_state_2.pose,
                                 kPoseComparisonTolerance));
 
-  EXPECT_TRUE(CompareMatrices(output_state_2.velocity_,
-                              expected_output_state_2.velocity_, 1e-3,
+  EXPECT_TRUE(CompareMatrices(output_state_2.velocity,
+                              expected_output_state_2.velocity, 1e-3,
                               MatrixCompareType::absolute));
 
   // Test 3 - Small change in translation
@@ -219,27 +222,28 @@ TEST_F(PoseSmootherTest, SmootherTest) {
 
   // A small additional translation applied in the next input.
   CombinedState output_state_3;
-  EXPECT_NO_THROW(output_state_3 = UpdateStateCalcOutput(input_pose_3));
+  output_state_3 = UpdateStateCalcOutput(input_pose_3, test_time);
+  test_time += kPoseSmootherPeriod;
   CombinedState expected_output_state_3;
   expected_output_state_3 = CombinedState();
-  expected_output_state_3.pose_.translation() << 0.02, -5, 10.1;
-  expected_output_state_3.pose_.linear() =
+  expected_output_state_3.pose.translation() << 0.02, -5, 10.1;
+  expected_output_state_3.pose.linear() =
       (MatrixX<double>(3, 3) << 1, 0, 0, 0, 0.63742398974868997,
        -0.77051324277578903, 0, 0.77051324277578903, 0.63742398974868997)
           .finished();
-  expected_output_state_3.pose_.makeAffine();
-  expected_output_state_3.velocity_ << 1.0, 0, 0, 3.1786156325620212, 0, 0;
+  expected_output_state_3.pose.makeAffine();
+  expected_output_state_3.velocity << 1.0, 0, 0, 3.1786156325620212, 0, 0;
 
   EXPECT_TRUE(
-      (CompareTransforms(output_state_3.pose_, expected_output_state_3.pose_,
+      (CompareTransforms(output_state_3.pose, expected_output_state_3.pose,
                          kPoseComparisonTolerance)));
 
-  EXPECT_TRUE(CompareMatrices(output_state_3.velocity_,
-                              expected_output_state_3.velocity_, 1e-3,
+  EXPECT_TRUE(CompareMatrices(output_state_3.velocity,
+                              expected_output_state_3.velocity, 1e-3,
                               MatrixCompareType::absolute));
 
   // A small additional rotation applied with a sign-inverted quaternion.
-Quaterniond test_pose_quaternion{
+  Quaterniond test_pose_quaternion{
       AngleAxisd(0.28 * M_PI, Eigen::Vector3d::UnitX())};
   Quaterniond sign_inverted_pose_quaternion(
       -test_pose_quaternion.w(), -test_pose_quaternion.x(),
@@ -249,19 +253,21 @@ Quaterniond test_pose_quaternion{
   input_pose_4.translation() << 0.04, -5.0, 10.10;
 
   CombinedState output_state_4;
-  EXPECT_NO_THROW(output_state_4 = UpdateStateCalcOutput(input_pose_4));
+  output_state_4 = UpdateStateCalcOutput(input_pose_4, test_time);
+  test_time += kPoseSmootherPeriod;
   CombinedState expected_output_state_4 = CombinedState();
-expected_output_state_4.pose_.linear() <<
-  (MatrixX<double>(3, 3) << 1, 0, 0, 0, 0.63742398974868986,
--0.77051324277578914, 0, 0.77051324277578914, 0.63742398974868986).finished();
-  expected_output_state_4.pose_.translation() << 0.03, -5, 10.1;
-  expected_output_state_4.velocity_ <<1.0, 0, 0, 0, 0, 0;
+  expected_output_state_4.pose.linear() << (
+      MatrixX<double>(3, 3) << 1, 0, 0, 0, 0.63742398974868986,
+          -0.77051324277578914, 0, 0.77051324277578914,
+          0.63742398974868986).finished();
+  expected_output_state_4.pose.translation() << 0.03, -5, 10.1;
+  expected_output_state_4.velocity <<1.0, 0, 0, 0, 0, 0;
 
   EXPECT_TRUE(
-  (CompareTransforms(output_state_4.pose_, expected_output_state_4.pose_,
+  (CompareTransforms(output_state_4.pose, expected_output_state_4.pose,
                      kPoseComparisonTolerance)));
-  EXPECT_TRUE(CompareMatrices(output_state_4.velocity_,
-                              expected_output_state_4.velocity_, 1e-3,
+  EXPECT_TRUE(CompareMatrices(output_state_4.velocity,
+                              expected_output_state_4.velocity, 1e-3,
                               MatrixCompareType::absolute));
 }
 

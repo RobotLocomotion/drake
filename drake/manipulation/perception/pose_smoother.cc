@@ -3,36 +3,40 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/text_logging.h"
 #include "drake/manipulation/util/moving_average_filter.h"
-#include "drake/manipulation/util/perception_utils.h"
 #include "drake/math/quaternion.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
 
-using systems::Context;
-using systems::DiscreteValues;
 using systems::BasicVector;
 using Eigen::Quaterniond;
 using Eigen::Isometry3d;
 namespace manipulation {
 
 using util::MovingAverageFilter;
-using util::Isometry3dToVector;
-using util::VectorToIsometry3d;
 namespace perception {
 namespace {
 struct InternalState {
-  Isometry3<double> pose_{Isometry3d::Identity()};
-  Vector6<double> velocity_{Vector6<double>::Zero()};
-  double time_since_last_accepted_pose_{0.0};
-  bool is_first_time_{true};
+  explicit InternalState(int filter_window_size = 0) :
+      filter(filter_window_size > 1?
+             std::make_unique<MovingAverageFilter<VectorX<double>>>(
+                 filter_window_size) : nullptr) {}
+
+  Isometry3<double> pose{Isometry3d::Identity()};
+  Vector6<double> velocity{Vector6<double>::Zero()};
+  double time_at_last_accepted_pose{0.0};
+  bool is_first_time{true};
+  copyable_unique_ptr<util::MovingAverageFilter<VectorX<double>>> filter;
 };
 
-// Computes velocity of the motion from pose_2 to pose_1 taking place in
-// delta_t seconds.
+/*
+ * Computes velocity of the motion from pose_2 to pose_1 taking place in
+ * delta_t seconds.
+ */
 VectorX<double> ComputeVelocities(const Isometry3d& pose_1,
                                   const Isometry3d& pose_2, double delta_t) {
   VectorX<double> velocities = VectorX<double>::Zero(6);
@@ -50,23 +54,44 @@ VectorX<double> ComputeVelocities(const Isometry3d& pose_1,
 
   return velocities;
 }
+/*
+ * Converts a 7 dimensional VectorX<double> describing a pose (composed by
+ * positions in the first 3 dimensions and orientation in quaternions in the
+ * next 4) into an Eigen::Isometry3d object.
+ */
+Isometry3<double> VectorToIsometry3d(const VectorX<double>& pose_vector) {
+  Isometry3<double> pose = Isometry3<double>::Identity();
+  pose.linear() = Quaterniond(pose_vector(3), pose_vector(4), pose_vector(5),
+                              pose_vector(6))
+      .toRotationMatrix();
+  pose.translation() = pose_vector.head<3>();
+  pose.makeAffine();
+  return pose;
+}
+
+/*
+ * Converts a pose specified as an Eigen::Isometry3d into a 7 dimensional
+ * VectorX<double> (composed by positions in the first 3 dimensions and
+ * orientation in quaternions in the next 4).
+ */
+VectorX<double> Isometry3dToVector(const Isometry3<double>& pose) {
+  VectorX<double> pose_vector = VectorX<double>::Zero(7);
+  pose_vector.head<3>() = pose.translation();
+  Quaterniond return_quat = Quaterniond(pose.linear());
+  return_quat = math::QuaternionToCanonicalForm(return_quat);
+
+  pose_vector.tail<4>() = (VectorX<double>(4) << return_quat.w(),
+      return_quat.x(), return_quat.y(), return_quat.z())
+      .finished();
+
+  return pose_vector;
+}
+
 }  // namespace
 
 PoseSmoother::PoseSmoother(double max_linear_velocity,
-                           double max_angular_velocity, int filter_window_size,
-                           double period_sec)
-    : PoseSmoother(max_linear_velocity, max_angular_velocity, period_sec,
-                   std::make_unique<MovingAverageFilter<VectorX<double>>>(
-                       filter_window_size)) {}
-
-PoseSmoother::PoseSmoother(double max_linear_velocity,
-                           double max_angular_velocity, double period_sec)
-    : PoseSmoother(max_linear_velocity, max_angular_velocity, period_sec,
-                   nullptr) {}
-
-PoseSmoother::PoseSmoother(
-    double max_linear_velocity, double max_angular_velocity, double period_sec,
-    std::unique_ptr<util::MovingAverageFilter<VectorX<double>>> filter)
+                           double max_angular_velocity,
+                           double period_sec, int filter_window_size)
     : smoothed_pose_output_port_(
           this->DeclareAbstractOutputPort(&PoseSmoother::OutputSmoothedPose)
               .get_index()),
@@ -76,11 +101,11 @@ PoseSmoother::PoseSmoother(
       kMaxLinearVelocity(max_linear_velocity),
       kMaxAngularVelocity(max_angular_velocity),
       kDiscreteUpdateInSec(period_sec),
-      filter_(std::move(filter)),
-      is_filter_enabled_(filter_ != nullptr) {
+      is_filter_enabled_(filter_window_size > 1) {
   this->set_name("Pose Smoother");
   this->DeclareAbstractState(
-      systems::AbstractValue::Make<InternalState>(InternalState()));
+      systems::AbstractValue::Make<InternalState>(
+          InternalState(filter_window_size)));
   this->DeclareAbstractInputPort();
   this->DeclarePeriodicUnrestrictedUpdate(period_sec, 0);
 }
@@ -93,26 +118,27 @@ void PoseSmoother::DoCalcUnrestrictedUpdate(
   InternalState& internal_state =
       state->get_mutable_abstract_state<InternalState>(0);
 
-  Isometry3d& current_pose = internal_state.pose_;
-  double& time_since_last_accepted_pose =
-      internal_state.time_since_last_accepted_pose_;
-  Vector6<double>& current_velocity = internal_state.velocity_;
+  Isometry3d& current_pose = internal_state.pose;
+  double& time_at_last_accepted_pose =
+      internal_state.time_at_last_accepted_pose;
+  Vector6<double>& current_velocity = internal_state.velocity;
 
   // Update world state from inputs.
   const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
   const auto& input_pose = input->GetValue<Isometry3d>();
+  double current_time = context.get_time();
 
   // Set the initial state of the smoother.
-  if (internal_state.is_first_time_) {
-    internal_state.is_first_time_ = false;
-    internal_state.pose_ = input_pose;
-    internal_state.time_since_last_accepted_pose_ = kDiscreteUpdateInSec;
+  if (internal_state.is_first_time) {
+    internal_state.is_first_time = false;
+    internal_state.pose = input_pose;
+    internal_state.time_at_last_accepted_pose = kDiscreteUpdateInSec;
     drake::log()->debug("PoseSmoother initial state set.");
   }
 
   Vector6<double> new_velocity = ComputeVelocities(
-      input_pose, current_pose, time_since_last_accepted_pose);
+      input_pose, current_pose, current_time - time_at_last_accepted_pose);
 
   bool accept_data_point = true;
   for (int i = 0; i < 3; ++i) {
@@ -134,35 +160,32 @@ void PoseSmoother::DoCalcUnrestrictedUpdate(
     // If the smoother is enabled.
     if (is_filter_enabled_) {
       VectorX<double> temp =
-          filter_->Update(Isometry3dToVector(corrected_input));
+          internal_state.filter->Update(Isometry3dToVector(corrected_input));
       accepted_pose = VectorToIsometry3d(temp);
     } else {
       accepted_pose = corrected_input;
     }
-    current_velocity = ComputeVelocities(accepted_pose, current_pose,
-                                         time_since_last_accepted_pose);
-
-    time_since_last_accepted_pose = kDiscreteUpdateInSec;
+    current_velocity = ComputeVelocities(
+        accepted_pose, current_pose, current_time -
+            time_at_last_accepted_pose);
+    time_at_last_accepted_pose = current_time;
     current_pose = accepted_pose;
   } else {
     drake::log()->debug("Data point rejected");
-    // Since the current sample has been rejected, the time since the last
-    // sample must be incremented suitably.
-    time_since_last_accepted_pose += kDiscreteUpdateInSec;
   }
 }
 
 void PoseSmoother::OutputSmoothedPose(const systems::Context<double>& context,
                                       Isometry3d* output) const {
   const auto internal_state = context.get_abstract_state<InternalState>(0);
-  *output = internal_state.pose_;
+  *output = internal_state.pose;
   output->makeAffine();
 }
 
 void PoseSmoother::OutputSmoothedVelocity(
     const systems::Context<double>& context, Vector6<double>* output) const {
   const auto internal_state = context.get_abstract_state<InternalState>(0);
-  *output = internal_state.velocity_;
+  *output = internal_state.velocity;
 }
 }  // namespace perception
 }  // namespace manipulation
