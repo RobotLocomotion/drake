@@ -12,7 +12,7 @@ namespace manipulation {
 namespace perception {
 /**
  * This class accepts the pose of a rigid body (composed by a
- * Isometry3<double>) and returns a smoothed pose by performing either the first
+ * Eigen::Isometry3d) and returns a smoothed pose by performing either the first
  * or both of these processes :
  *  i. Rejecting outliers on the basis of user-defined linear/angular velocity
  *  thresholds on consecutive pose data values.
@@ -33,14 +33,6 @@ namespace perception {
 class PoseSmoother : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PoseSmoother)
-  /**
-   * Constructs a PoseSmoother without averaging - i.e. performs outlier
-   * rejection but no smoothing of the input pose.
-   * @param period_sec The period for the internal update
-   * (sec). This must be set to a value greater than 0.
-   */
-  PoseSmoother(double max_linear_velocity, double max_angular_velocity,
-               double period_sec);
 
   /**
    * Constructs the pose smoother with averaging - i.e. performs outlier
@@ -48,12 +40,12 @@ class PoseSmoother : public systems::LeafSystem<double> {
    * @param max_linear_velocity Upper threshold on linear velocity (m/sec).
    * @param max_angular_velocity Upper threshold on angular velocity
    * (rad/sec).
+   * @param period_sec The period for the internal update (sec).
+   * This must be set to a value greater than 0.
    * @param filter_window_size Window size for the moving average smoothing.
-   * @param period_sec The period for the internal update
-   * (sec). This must be set to a value greater than 0.
    */
   PoseSmoother(double max_linear_velocity, double max_angular_velocity,
-               int filter_window_size, double period_sec);
+               double period_sec, int filter_window_size);
 
   const systems::OutputPort<double>& get_smoothed_pose_output_port() const {
     return this->get_output_port(smoothed_pose_output_port_);
@@ -70,16 +62,10 @@ class PoseSmoother : public systems::LeafSystem<double> {
       systems::State<double>* state) const override;
 
   void OutputSmoothedPose(const systems::Context<double>& context,
-                          Isometry3<double>* output) const;
+                          Eigen::Isometry3d* output) const;
 
   void OutputSmoothedVelocity(const systems::Context<double>& context,
                               Vector6<double>* output) const;
-
-  // Delegated constructor.
-  PoseSmoother(
-      double max_linear_velocity, double max_angular_velocity,
-      double period_sec,
-      std::unique_ptr<util::MovingAverageFilter<VectorX<double>>> filter);
 
  private:
   const int smoothed_pose_output_port_{0};
@@ -87,8 +73,6 @@ class PoseSmoother : public systems::LeafSystem<double> {
   const double kMaxLinearVelocity{0.0};
   const double kMaxAngularVelocity{0.0};
   const double kDiscreteUpdateInSec{0};
-  const std::unique_ptr<util::MovingAverageFilter<VectorX<double>>> filter_{
-      nullptr};
   const bool is_filter_enabled_{false};
 };
 

@@ -14,8 +14,8 @@ namespace drake {
  * @param tolerance  The tolerance for determining equivalence for
  * the orthonormal and right-hand rule cases.
  */
-::testing::AssertionResult ExpectRotMat(const Eigen::Matrix3d& R,
-                             double tolerance);
+::testing::AssertionResult ExpectRotMat(
+    const Eigen::Matrix3d& R, double tolerance);
 
 /**
  * Compares two SE(3) Transforms.
