@@ -1368,11 +1368,13 @@ class System {
     // This default implementation is only valid for Systems with nothing to
     // project.
     unused(context);
+#if 0
     const int num_positions =
         context->get_continuous_state()->get_generalized_position().size();
     const int num_velocities =
         context->get_continuous_state()->get_generalized_velocity().size();
     DRAKE_DEMAND(num_positions == num_velocities);
+#endif
   }
 
   /// Computes the next time at which this System must perform a discrete

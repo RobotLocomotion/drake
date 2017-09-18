@@ -17,6 +17,20 @@ filegroup(
     ]),
 )
 
+drake_cc_library(
+    name = "torque_free_cylinder_exact_solution",
+    srcs = [
+        "torque_free_cylinder_exact_solution.cc",
+    ],
+    hdrs = [
+        "torque_free_cylinder_exact_solution.h",
+    ],
+    deps = [
+        "//drake/common",
+        "//drake/math:geometric_transform",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -24,6 +38,7 @@ drake_cc_googletest(
     size = "medium",
     data = [":models"],
     deps = [
+        ":torque_free_cylinder_exact_solution",
         "//drake/common:eigen_matrix_compare",
         "//drake/common:find_resource",
         "//drake/math:autodiff",

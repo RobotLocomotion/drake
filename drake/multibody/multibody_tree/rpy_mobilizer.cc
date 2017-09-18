@@ -68,15 +68,6 @@ const RollPitchYawMobilizer<T>& RollPitchYawMobilizer<T>::set_angular_velocity(
 }
 
 template <typename T>
-void RollPitchYawMobilizer<T>::set_zero_configuration(
-    systems::Context<T>* context) const {
-  auto mbt_context = dynamic_cast<MultibodyTreeContext<T>*>(context);
-  DRAKE_DEMAND(mbt_context != nullptr);
-  set_rpy(context, Vector3<T>::Zero());
-  set_angular_velocity(context, Vector3<T>::Zero());
-}
-
-template <typename T>
 Isometry3<T> RollPitchYawMobilizer<T>::CalcAcrossMobilizerTransform(
     const MultibodyTreeContext<T>& context) const {
   const auto& rpy = this->get_positions(context);
