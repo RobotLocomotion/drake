@@ -304,6 +304,7 @@ drake_cc_googletest(
         "//drake/common:eigen_matrix_compare",
         "//drake/common:symbolic",
         "//drake/systems/framework",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 
