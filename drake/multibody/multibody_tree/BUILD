@@ -141,6 +141,30 @@ drake_cc_library(
 
 # === test/ ===
 
+drake_cc_library(
+    name = "free_body_plant",
+    testonly = 1,
+    srcs = ["test/free_body_plant.cc"],
+    hdrs = ["test/free_body_plant.h"],
+    deps = [
+        "//drake/multibody/multibody_tree",
+        "//drake/systems/framework",
+    ],
+)
+
+drake_cc_googletest(
+    name = "ball_joint_test",
+    size = "small",
+    srcs = [
+        "test/ball_joint_test.cc",
+    ],
+    deps = [
+        ":free_body_plant",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/multibody/benchmarks/cylinder_torque_free_analytical_solution:torque_free_cylinder_exact_solution",
+    ],
+)
+
 drake_cc_googletest(
     name = "double_pendulum_test",
     # Presently times out in valgrind + debug with default size, "small".
