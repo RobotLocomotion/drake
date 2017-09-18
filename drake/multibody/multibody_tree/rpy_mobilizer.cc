@@ -6,6 +6,7 @@
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 
 namespace drake {
@@ -81,7 +82,9 @@ Isometry3<T> RollPitchYawMobilizer<T>::CalcAcrossMobilizerTransform(
   const auto& rpy = this->get_positions(context);
   DRAKE_ASSERT(rpy.size() == kNq);
   Isometry3<T> X_FM = Isometry3<T>::Identity();
-  X_FM.linear() = RollPitchYawToRotationMatrix(rpy);
+  // Notice math::rpy2rotmat(rpy) assumes entries rpy(0), rpy(1) and rpy(2)
+  // correspond to roll, pitch and yaw angles respectively.
+  X_FM.linear() = math::rpy2rotmat(rpy);
   return X_FM;
 }
 
@@ -123,18 +126,30 @@ void RollPitchYawMobilizer<T>::MapVelocityToQDot(
   using std::sin;
   using std::cos;
 
+  // The linear map from v to q̇ is given by the inverse of E_F(q):
+  //                     [          cos(y),          sin(y),      0]
+  // Einv_F = cos⁻¹(p) * [-cos(p) * sin(y), cos(p) * cos(y),      0]
+  //                     [ sin(p) * cos(y), sin(p) * sin(y), cos(p)]
+  //
+  // q̇ = Einv_F(q) * w_FM; q̇ = [ṙ, ṗ, ẏ]ᵀ
+  //
+  // Notice Einv_F is singular for p = π/2 + kπ, ∀ k ∈ ℤ.
+
   const Vector3<T> rpy = get_rpy(context);
+  const T& w0 = v[0];
+  const T& w1 = v[1];
+  const T& w2 = v[2];
 
-  const Vector2<T> sinxy(sin(rpy[0]), sin(rpy[1]));
-  const Vector2<T> cosxy(cos(rpy[0]), cos(rpy[1]));
-  const T oocosy = 1.0 / cos(rpy[2]);
+  const T sp = sin(rpy[1]);
+  const T cp = cos(rpy[1]);
+  const T sy = sin(rpy[2]);
+  const T cy = cos(rpy[2]);
+  const T cpi = 1.0 / cp;
+  const T t = (cy * w0 + sy * w1) * cpi;  // Common factor.
 
-  const T s0 = sinxy[0], c0 = cosxy[0];
-  const T s1 = sinxy[1];
-  const T w0 = v[0], w1 = v[1], w2 = v[2];
-
-  const T t = (s0*w1-c0*w2)*oocosy;
-  *qdot =  Vector3<T>(w0 + t*s1, c0*w1 + s0*w2, -t );
+  // Compute the product q̇ = Einv_F * w_FM directly since it's cheaper than
+  // explicitly forming Einf_F and then multiplying with v.
+  *qdot =  Vector3<T>(t, -sy * w0 + cy * w1, sp *  t + w2);
 }
 
 template <typename T>
@@ -148,51 +163,31 @@ void RollPitchYawMobilizer<T>::MapQDotToVelocity(
   using std::sin;
   using std::cos;
 
+  // The linear map between q̇ and v is given by matrix E_F(q) defined by:
+  //          [ cos(y) * cos(p), -sin(y), 0]
+  // E_F(q) = [ sin(y) * cos(p),  cos(y), 0]
+  //          [         -sin(p),       0, 1]
+  //
+  // w_FM = E_F(q) * q̇; q̇ = [ṙ, ṗ, ẏ]ᵀ
+
   const Vector3<T> rpy = get_rpy(context);
+  const T& rdot = qdot[0];
+  const T& pdot = qdot[1];
+  const T& ydot = qdot[2];
 
-  const Vector2<T> sinxy(sin(rpy[0]), sin(rpy[1]));
-  const Vector2<T> cosxy(cos(rpy[0]), cos(rpy[1]));
+  const T sp = sin(rpy[1]);
+  const T cp = cos(rpy[1]);
+  const T sy = sin(rpy[2]);
+  const T cy = cos(rpy[2]);
+  const T cp_x_rdot = cp * rdot;
 
-  const T s0 = sinxy[0], c0 = cosxy[0];
-  const T s1 = sinxy[1], c1 = cosxy[1];
-  const T q0 = qdot[0], q1 = qdot[1], q2 = qdot[2];
-  const T c1q2 = c1*q2;
-
-  // w_FM
-  *v = Vector3<T>(q0 + s1*q2, c0*q1 - s0*c1q2, s0*q1 + c0*c1q2 );
+  // Compute the product w_FM = E_W * q̇ directly since it's cheaper than
+  // explicitly forming E_F and then multiplying with q̇.
+  *v = Vector3<T>(
+      cy * cp_x_rdot  -  sy * pdot, /*+ 0 * ydot*/
+      sy * cp_x_rdot  +  cy * pdot, /*+ 0 * ydot*/
+          -sp * rdot/*+   0 * pdot */ +     ydot );
 }
-
-#if 0
-Matrix3<typename Derived::Scalar> R;
-  R.row(0) <<
-      c(2) * c(1),
-      c(2) * s(1) * s(0) - s(2) * c(0),
-      c(2) * s(1) * c(0) + s(2) * s(0);
-  R.row(1) <<
-      s(2) * c(1),
-      s(2) * s(1) * s(0) + c(2) * c(0),
-      s(2) * s(1) * c(0) - c(2) * s(0);
-  R.row(2) << -s(1), c(1) * s(0), c(1) * c(0);
-#endif
-
-template <typename T>
-Matrix3<T> RollPitchYawMobilizer<T>::RollPitchYawToRotationMatrix(
-    const Vector3<T>& rpy) {
-  auto rpy_array = rpy.array();
-  auto s = rpy_array.sin();
-  auto c = rpy_array.cos();
-  Matrix3<T> R;
-
-  const T s0s1 = s[0]*s[1], s2c0 = s[2]*c[0], c0c2 = c[0]*c[2], nc1= -c[1];
-
-  R <<
-    c[1]*c[2]             ,         s[2]*nc1       ,    s[1]  ,
-    s2c0 + s0s1*c[2]      ,     c0c2 - s0s1*s[2]   , s[0]*nc1 ,
-    s[0]*s[2] - s[1]*c0c2 ,  s[0]*c[2] + s[1]*s2c0 , c[0]*c[1];
-
-  return R;
-}
-
 
 template <typename T>
 template <typename ToScalar>
@@ -214,7 +209,8 @@ std::unique_ptr<Mobilizer<double>> RollPitchYawMobilizer<T>::DoCloneToScalar(
 }
 
 template <typename T>
-std::unique_ptr<Mobilizer<AutoDiffXd>> RollPitchYawMobilizer<T>::DoCloneToScalar(
+std::unique_ptr<Mobilizer<AutoDiffXd>>
+RollPitchYawMobilizer<T>::DoCloneToScalar(
     const MultibodyTree<AutoDiffXd>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
 }

@@ -141,57 +141,51 @@ class RollPitchYawMobilizer final : public MobilizerImpl<T, 3, 3> {
   const RollPitchYawMobilizer<T>& set_angular_velocity(
       systems::Context<T> *context, const Vector3<T>& w_FM) const;
 
-  void set_zero_configuration(systems::Context<T>* context) const override;
-
   /// Computes the across-mobilizer transform `X_FM(q)` between the inboard
-  /// frame F and the outboard frame M as a function of the rotation angle
-  /// about this mobilizer's axis (@see get_revolute_axis().)
-  /// The generalized coordinate q for `this` mobilizer (the rotation angle) is
-  /// stored in `context`.
-  /// This method aborts in Debug builds if `v.size()` is not one.
+  /// frame F and the outboard frame M as a function of the roll, pitch and yaw
+  /// angles stored in `context`.
   Isometry3<T> CalcAcrossMobilizerTransform(
       const MultibodyTreeContext<T>& context) const override;
 
   /// Computes the across-mobilizer velocity `V_FM(q, v)` of the outboard frame
-  /// M measured and expressed in frame F as a function of the rotation angle
-  /// and input angular velocity `v` about this mobilizer's axis
-  /// (@see get_revolute_axis()).
-  /// The generalized coordinate q for `this` mobilizer (the rotation angle) is
-  /// stored in `context`.
-  /// This method aborts in Debug builds if `v.size()` is not one.
+  /// M measured and expressed in frame F as a function of the roll, pitch and
+  /// yaw angles stored in `context` and of the input generalized velocity v
+  /// which contains the components of the angular velocity `w_FM` expressd in
+  /// frame F.
   SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(
       const MultibodyTreeContext<T>& context,
       const Eigen::Ref<const VectorX<T>>& v) const override;
 
   /// Computes the across-mobilizer acceleration `A_FM(q, v, v̇)` of the
   /// outboard frame M in the inboard frame F.
-  /// By definition `A_FM = d_F(V_FM)/dt = H_FM(q) * v̇ + Ḣ_FM * v`.
-  /// The acceleration `A_FM` will be a function of the rotation angle q, its
-  /// rate of change v for the current state in `context` and of the input
-  /// generalized acceleration `v̇ = dv/dt`, the rate of change of v.
-  /// See class documentation for the angle sign convention.
-  /// This method aborts in Debug builds if `vdot.size()` is not one.
+  /// The acceleration `A_FM` will be a function of the generalized positions q
+  /// (roll, pitch and yaw) stored in `context`, of the generalized velocities
+  /// v (angular velocity `w_FM`) also stored in `context` and of the supplied
+  /// generalized accelerations `vdot`, which in this case correspond to angular
+  /// acceleration of M in F `alpha_FM = Dt_F(w_FM)` (see
+  /// @ref Dt_multibody_quantities for our notation of time derivatives in
+  /// different reference frames).
   SpatialAcceleration<T> CalcAcrossMobilizerSpatialAcceleration(
       const MultibodyTreeContext<T>& context,
       const Eigen::Ref<const VectorX<T>>& vdot) const override;
 
-  /// Projects the spatial force `F_Mo_F` on `this` mobilizer's outboard
-  /// frame M onto its rotation axis (@see get_revolute_axis().) Mathematically:
-  /// <pre>
-  ///    tau = F_Mo_F.rotational().dot(axis_F)
-  /// </pre>
-  /// Therefore, the result of this method is the scalar value of the torque at
-  /// the axis of `this` mobilizer.
-  /// This method aborts in Debug builds if `tau.size()` is not one.
+  /// Implements Mobilizer::ProjectSpatialForce().
   void ProjectSpatialForce(
       const MultibodyTreeContext<T>& context,
       const SpatialForce<T>& F_Mo_F,
       Eigen::Ref<VectorX<T>> tau) const override;
 
-  // Computes Dt_F(q) from its generalized velocity state w_FM.
-  // Notice q_FM = (qs; qv_F), where the vector (or imaginary) component is
-  // expressed in the inboard frame F. The time derivative computed by this
-  // method is [Dt_F(qv)]F, or Dt_F(qv) for short.
+  /// Maps the generalized velocity v, which correspond to the angular velocity
+  /// `w_FM`, to time derivatives of the roll, pitch and yaw angles.
+  ///
+  /// @param[in] context
+  ///   The context of the MultibodyTree this mobilizer belongs to.
+  /// @param[in] v
+  ///   A vector of generalized velocities for this Mobilizer which should
+  ///   correspond to an angular velocity `w_FM` of M in F.
+  /// @param[out] qdot
+  ///   A vector containing the time derivatives of the roll, pitch and yaw
+  ///   angles in `qdot(0)`, `qdot(1)` and `qdot(2)`, respectively.
   void MapVelocityToQDot(
       const MultibodyTreeContext<T>& context,
       const Eigen::Ref<const VectorX<T>>& v,
@@ -220,8 +214,6 @@ class RollPitchYawMobilizer final : public MobilizerImpl<T, 3, 3> {
   // sized quantities.
   using MobilizerBase::kNq;
   using MobilizerBase::kNv;
-
-  static Matrix3<T> RollPitchYawToRotationMatrix(const Vector3<T>& rpy);
 
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
