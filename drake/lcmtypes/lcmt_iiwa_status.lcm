@@ -9,6 +9,7 @@ struct lcmt_iiwa_status {
   // TODO(sam.creasey) add link to documentation(if I can) for what
   // these values are.
   double joint_position_measured[num_joints];
+  double joint_velocity_estimated[num_joints];
   double joint_position_commanded[num_joints];
   double joint_position_ipo[num_joints];
   double joint_torque_measured[num_joints];
