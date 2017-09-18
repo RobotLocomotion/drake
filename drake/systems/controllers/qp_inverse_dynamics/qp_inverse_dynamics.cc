@@ -1,5 +1,7 @@
 #include "drake/systems/controllers/qp_inverse_dynamics/qp_inverse_dynamics.h"
 
+#include "drake/common/text_logging.h"
+
 namespace drake {
 namespace systems {
 namespace controllers {
@@ -57,6 +59,12 @@ void QpInverseDynamics::SetTempMatricesToZero() {
   inequality_linear_.setZero();
 
   JB_.setZero();
+}
+
+QpInverseDynamics::QpInverseDynamics() {
+  if (!solver_.available()) {
+    throw std::runtime_error("Gurobi solver not available.");
+  }
 }
 
 bool QpInverseDynamics::HasFloatingBase(
@@ -346,7 +354,7 @@ int QpInverseDynamics::Control(const RobotKinematicState<double>& rs,
   const KinematicsCache<double>& cache = rs.get_cache();
 
   if (!input.is_valid(robot.get_num_velocities())) {
-    std::cerr << "input is invalid\n";
+    drake::log()->warn("Invalid QpInput.");
     return -1;
   }
 
@@ -609,13 +617,9 @@ int QpInverseDynamics::Control(const RobotKinematicState<double>& rs,
 
   ////////////////////////////////////////////////////////////////////
   // Call solver.
-  if (!solver_.available()) {
-    std::cerr << "Solver not available.\n";
-    return -1;
-  }
   solvers::SolutionResult result = solver_.Solve(*(prog_.get()));
   if (result != solvers::SolutionResult::kSolutionFound) {
-    std::cerr << "solution not found\n";
+    drake::log()->warn("Solution not found.");
     return -1;
   }
   solution_ = prog_->GetSolution(prog_->decision_variables());
@@ -775,13 +779,14 @@ int QpInverseDynamics::Control(const RobotKinematicState<double>& rs,
           (ref_point - rs.get_com()).cross(contact_wrench.tail<3>());
     }
     if (!(net_wrench - Ld).isZero(1e-5)) {
-      std::cerr << "change in centroidal momentum != net external wrench\n";
+      drake::log()->warn(
+          "Change in centroidal momentum != net external wrench.");
       return -1;
     }
   }
 
   if (!output->is_valid(robot.get_num_velocities())) {
-    std::cerr << "output is invalid\n";
+    drake::log()->warn("Invalid output.");
     return -1;
   }
 
