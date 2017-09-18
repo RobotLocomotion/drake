@@ -1,4 +1,5 @@
 #/bin/bash
+# Unit test for lcm_vector_gen.py.
 # This test should only be run via Bazel, never directly on the command line.
 
 set -ex
@@ -7,13 +8,13 @@ set -ex
 find .
 
 # TODO(jwnimmer-tri) De-duplicate this with lcm_vector_gen.sh.
-if [ -z "$CLANG_FORMAT" ]; then
+if [[ -z "${CLANG_FORMAT}" ]]; then
   CLANG_FORMAT="/usr/bin/clang-format-3.9"  # Preferred choice.
-  if [ ! -x "$CLANG_FORMAT" ]; then
+  if [[ ! -x "${CLANG_FORMAT}" ]]; then
     CLANG_FORMAT=clang-format
   fi
 fi
-if ! type -p $CLANG_FORMAT > /dev/null ; then
+if ! type -p "${CLANG_FORMAT}" > /dev/null ; then
   cat <<EOF
 Cannot find $CLANG_FORMAT ; see installation instructions at:
 http://drake.mit.edu/code_style_tools.html
@@ -22,9 +23,10 @@ EOF
 fi
 
 # Move the originals (which are symlinks) out of the way.
-tool_outputs="lcmt_sample_t.lcm sample.cc sample.h sample_translator.cc sample_translator.h"
+tool_outputs="lcmt_sample_t.lcm sample.cc sample.h sample_translator.cc 
+  sample_translator.h"
 for item in $tool_outputs; do
-  mv drake/tools/test/gen/"$item"{,.orig}
+  mv drake/tools/test/gen/"${item}"{,.orig}
 done
 
 # Run the code generator.
@@ -42,15 +44,15 @@ find drake/tools/test/gen
 
 # Re-format the code.
 for item in $tool_outputs; do
-  if [ $item == "lcmt_sample_t.lcm" ]; then
+  if [[ "${item}" == "lcmt_sample_t.lcm" ]]; then
     continue
   fi
-  $CLANG_FORMAT --style=file -i drake/tools/test/gen/"$item"
+  "${CLANG_FORMAT}" --style=file -i drake/tools/test/gen/"${item}"
 done
 
 # Insist that the generated output matches the current copy in git.
 for item in $tool_outputs; do
-  diff --unified=20 drake/tools/test/gen/"$item"{.orig,}
+  diff --unified=20 drake/tools/test/gen/"${item}"{.orig,}
 done
 
 echo "PASS"
