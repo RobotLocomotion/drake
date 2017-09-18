@@ -42,11 +42,14 @@ find drake/tools/test/gen
 
 # Re-format the code.
 for item in $tool_outputs; do
+    if [ $item == "lcmt_sample_t.lcm" ]; then
+        continue
+    fi
     $CLANG_FORMAT --style=file -i drake/tools/test/gen/"$item"
 done
 
 # Insist that the generated output matches the current copy in git.
-for item in ; do
+for item in $tool_outputs; do
     diff --unified=20 drake/tools/test/gen/"$item"{.orig,}
 done
 
