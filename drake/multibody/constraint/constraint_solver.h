@@ -329,9 +329,13 @@ class ConstraintSolver {
 // @param[out] indep_constraints On return, contains indices of the independent
 //             constraints.
 // @param[out] G_mult On return, contains the new G_mult function (to be used
-//             in place of problem_data.G_mult).
+//             in place of problem_data.G_mult). The resulting G_mult function
+//             should not be used beyond the life of `problem_data` or
+//             `indep_constraints`.
 // @param[out] G_transpose_mult On return, contains the new G_transpose_mult
 //             function (to be used in place of problem_data.G_transpose_mult).
+//             The resulting `G_transpose_mult` function should not be used
+//             beyond the life of `problem_data` or `indep_constraints`.
 // @param[out] Del On return, contains the Cholesky factorization of the
 //             Delassus Matrix GM⁻¹Gᵀ.
 template <typename T>
@@ -748,6 +752,11 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
   //          |              kᴳ               |
   //
 
+  // @TODO(edrumwri): Consider checking whether or not the constraints are
+  // satisfied to a user-specified tolerance; a set of constraint equations that
+  // are dependent upon time (e.g., prescribed motion constraints) might not be
+  // fully satisfiable.
+
   // Determine the set of linearly independent constraints.
   std::vector<int> indep_constraints;
   Eigen::LLT<MatrixX<T>> Del;
@@ -1009,6 +1018,11 @@ void ConstraintSolver<T>::SolveImpactProblem(
   //          |            kᴳ            |
   //
 
+  // @TODO(edrumwri): Consider checking whether or not the constraints are
+  // satisfied to a user-specified tolerance; a set of constraint equations that
+  // are dependent upon time (e.g., prescribed motion constraints) might not be
+  // fully satisfiable.
+  
   // Determine the set of linearly independent constraints.
   std::vector<int> indep_constraints;
   Eigen::LLT<MatrixX<T>> Del;
