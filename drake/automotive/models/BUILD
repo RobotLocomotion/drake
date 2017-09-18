@@ -21,22 +21,8 @@ genrule(
     tools = ["//drake/automotive/maliput/utility:yaml_to_obj"],
 )
 
-filegroup(
-    name = "all_models",
-    srcs = glob(["**"]) + [
-        "speed_bump/speed_bump.mtl",
-        "speed_bump/speed_bump.obj",
-    ],
-    visibility = ["//visibility:public"],
-)
-
-install_data()
-
-install(
-    name = "install_speed_bump",
-    data = [
-        "speed_bump/speed_bump.mtl",
-        "speed_bump/speed_bump.obj",
-    ],
-    visibility = ["//visibility:public"],
+install_data(additional_prod_models = [
+                 "speed_bump/speed_bump.mtl",
+                 "speed_bump/speed_bump.obj",
+             ]
 )

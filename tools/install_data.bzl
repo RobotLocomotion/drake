@@ -6,6 +6,7 @@ def install_data(
     name = "models",
     prod_models_prefix = "prod_",
     test_models_prefix = "test_",
+    additional_prod_models = [],
 ):
     """Install data
 
@@ -50,7 +51,7 @@ def install_data(
         srcs = native.glob(
             include = prod_models_include,
             exclude = exclude_patterns,
-        ),
+        ) + additional_prod_models,
         visibility = ["//visibility:public"],
     )
 
