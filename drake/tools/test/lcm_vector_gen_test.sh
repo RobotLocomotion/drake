@@ -26,6 +26,7 @@ fi
 tool_outputs="lcmt_sample_t.lcm sample.cc sample.h sample_translator.cc 
   sample_translator.h"
 for item in $tool_outputs; do
+  test -L drake/tools/test/gen/"$item"  # Fail-fast if not under Bazel.
   mv drake/tools/test/gen/"${item}"{,.orig}
 done
 
