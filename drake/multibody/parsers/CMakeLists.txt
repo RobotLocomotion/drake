@@ -8,6 +8,7 @@ add_library_with_exports(LIB_NAME drakeMultibodyParsers SOURCE_FILES
 target_link_libraries(drakeMultibodyParsers
     drakeCommon
     drakeRBM
+    drakeRigidBodyPlant
     Eigen3::Eigen
     spruce
     tinyxml2)

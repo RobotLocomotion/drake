@@ -64,7 +64,12 @@ class ContactFormulaTest : public ::testing::Test {
     velocities->SetFromVector(target_velocities);
 
     SetContactParameters();
-    plant_->set_normal_contact_parameters(stiffness_, dissipation_);
+    // This sets default *material* properties. However, for *contact*
+    // properties for objects with identical material parameters, the resultant
+    // contact stiffness is half the material value. All other values are the
+    // same for homogeneous materials. See contact_model_doxygen.h
+    // @ref per_object_contact for details.
+    plant_->set_normal_contact_parameters(2.0 * stiffness_, dissipation_);
     plant_->set_friction_contact_parameters(static_friction_, dynamic_friction_,
                                             v_stiction_tolerance_);
 
@@ -73,7 +78,7 @@ class ContactFormulaTest : public ::testing::Test {
         output_->get_data(port_index)->GetValue<ContactResults<double>>();
   }
 
-  // Specifies the values to use as the rigid body plant's global contact
+  // Specifies the values to use as the rigid body plant's global _contact_
   // parameters.
   // TODO(SeanCurtis-TRI): Modify this as materials come into play.
   virtual void SetContactParameters() {

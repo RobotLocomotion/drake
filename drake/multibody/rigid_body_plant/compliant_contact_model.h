@@ -35,45 +35,48 @@ class CompliantContactModel {
       const KinematicsCache<T>& kinsol,
       ContactResults<T>* contacts = nullptr) const;
 
-  // TODO(SeanCurtis-TRI): Link to documentation explaining these parameters
-  // in detail.  To come in a subsequent PR.
-  // TODO(Naveenoid): The following two methods both have argument lists with
-  // the same type. This needs resolution in the future GeometryWorld
-  // architecture.
-  /// Sets only the parameters for *normal* contact.  This is a convenience
-  /// function to allow for more targeted parameter tuning.
-  void set_normal_contact_parameters(double penetration_stiffness,
-                                     double dissipation);
+  /// Defines the default parameter values for the model (and all elements with
+  /// default-configured values). This can be invoked before or after parsing
+  /// SDF/URDF files; all fields that were left unspecified will default to
+  /// these values.
+  /// See @ref drake_contact and CompliantContactParameters for elaboration on
+  /// these values.
+  void set_default_parameters(const CompliantContactParameters& parameters);
 
-  /// Sets only the parameters for *friction* contact.  This is a convenience
-  /// function to allow for more targeted parameter tuning.
-  void set_friction_contact_parameters(double static_friction_coef,
-                                       double dynamic_friction_coef,
-                                       double v_stiction_tolerance);
+  /// Configures the velocity stiction tolerance for the model. See @ref
+  /// drake_contact for discussion of this value.
+  void set_velocity_stiction_tolerance(double tolerance);
 
  private:
   // Computes the friction coefficient based on the relative tangential
   // *speed* of the contact point on Ac relative to B (expressed in B), v_BAc.
   //
   // See contact_model_doxygen.h @section tangent_force for details.
-  T ComputeFrictionCoefficient(const T& v_tangent_BAc) const;
+  T ComputeFrictionCoefficient(
+      const T& v_tangent_BAc,
+      const CompliantContactParameters& parameters) const;
 
   // Evaluates an S-shaped quintic curve, f(x), mapping the domain [0, 1] to the
   // range [0, 1] where the f''(0) = f''(1) = f'(0) = f'(1) = 0.
   static T step5(const T& x);
 
-  // Some parameters defining the contact.
-  // TODO(amcastro-tri): Implement contact materials for the RBT engine.
-  // These default values are all semi-arbitrary.  They seem to produce,
-  // generally, plausible results. They are in *no* way universally valid or
-  // meaningful.
-  T penetration_stiffness_{10000.0};
-  T dissipation_{2};
+  // Given two collision elements (with their own defined compliant material
+  // properties, computes the _derived_ parameters for the _contact_. Returns
+  // The portion of the squish attributable to Element `a` (sₐ). Element `b`'s
+  // squish factor is simply 1 - sₐ. See contact_model_doxygen.h for details.
+  // @param[in] a            The first element in the contact.
+  // @param[in] b            The second element in the contact.
+  // @param[out] parameters  The net _contact_ parameters.
+  // @retval sₐ  The "squish" factor of Element `a` -- the fraction of the full
+  //             penetration deformation that `a` experiences.
+  double CalcContactParameters(
+      const multibody::collision::Element& a,
+      const multibody::collision::Element& b,
+      CompliantContactParameters* parameters) const;
+
   // Note: this is the *inverse* of the v_stiction_tolerance parameter to
   // optimize for the division.
   T inv_v_stiction_tolerance_{100};  // inverse of 1 cm/s.
-  T static_friction_coef_{0.9};
-  T dynamic_friction_coef_{0.5};
 };
 
 }  // namespace systems

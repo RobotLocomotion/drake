@@ -1,6 +1,9 @@
 drake_add_cc_test(xml_util_test)
 target_link_libraries(xml_util_test drakeMultibodyParsers)
 
+drake_add_cc_test(compliant_parameters_parse_test)
+target_link_libraries(compliant_parameters_parse_test drakeMultibodyParsers)
+
 add_subdirectory(package_map_test)
 add_subdirectory(parser_common_test)
 add_subdirectory(parsers_frames_test)

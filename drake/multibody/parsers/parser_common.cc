@@ -12,6 +12,7 @@
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/joints/quaternion_floating_joint.h"
 #include "drake/multibody/joints/roll_pitch_yaw_floating_joint.h"
+#include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
 
 using std::runtime_error;
 using std::string;
@@ -25,6 +26,8 @@ using drake::multibody::joints::FloatingBaseType;
 using drake::multibody::joints::kFixed;
 using drake::multibody::joints::kRollPitchYaw;
 using drake::multibody::joints::kQuaternion;
+using drake::systems::CompliantContactParameters;
+using tinyxml2::XMLElement;
 
 const char* const FloatingJointConstants::kFloatingJointName = "base";
 const char* const FloatingJointConstants::kWeldJointName = "weld";
@@ -230,6 +233,65 @@ int AddFloatingJoint(
   }
 
   return num_floating_joints_added;
+}
+
+CompliantContactParameters ParseCollisionCompliance(XMLElement* node) {
+  CompliantContactParameters parameters;
+  // TODO(SeanCurtis-TRI): Incomplete validation. This parsing allows redundant
+  // declarations of parameters. Confirm proper validation via an XSD.
+  XMLElement* compliant_node = node->FirstChildElement("drake_compliance");
+  if (compliant_node) {
+    double static_friction{-1};
+    double dynamic_friction{-1};
+    // Encode the friction values read via bit-masking; 0 = none, 1 = static,
+    // 2 = dynamic, 3 = both.
+    int friction_values_read = 0;
+    for (XMLElement* child = compliant_node->FirstChildElement(); child;
+         child = child->NextSiblingElement()) {
+      const std::string name(child->Value());
+      double value;
+      if (child->FirstChild()) {
+        // NOTE: This is copied-and-pasted from xml_util.cc. I didn't want the
+        // dependency on parsers to do this.
+        const std::string string_value(child->FirstChild()->Value());
+        std::size_t num_chars = 0;
+        value = std::stod(string_value, &num_chars);
+
+        // Verifies that there are no additional characters after the double
+        // value.
+        if (string_value.size() != num_chars) {
+          throw std::runtime_error(
+              "ERROR: Double value contained additional characters after the "
+                  "number.");
+        }
+      } else {
+        throw std::runtime_error("Drake compliant parameter \"" + name +
+            "\" contains no value.");
+      }
+      if (name == "stiffness") {
+        parameters.set_stiffness(value);
+      } else if (name == "dissipation") {
+        parameters.set_dissipation(value);
+      } else if (name == "static_friction") {
+        static_friction = value;
+        friction_values_read |= 1;
+      } else if (name == "dynamic_friction") {
+        dynamic_friction = value;
+        friction_values_read |= 2;
+      }
+      // TODO(SeanCurtis-TRI): Log warnings on unrecognized parameter names.
+    }
+    // Handle friction
+    if (friction_values_read) {
+      if (friction_values_read < 3) {
+        throw std::runtime_error(
+            "When specifying coefficient of friction, "
+                "both static and dynamic coefficients must be defined");
+      }
+      parameters.set_friction(static_friction, dynamic_friction);
+    }
+  }
+  return parameters;
 }
 
 }  // namespace parsers

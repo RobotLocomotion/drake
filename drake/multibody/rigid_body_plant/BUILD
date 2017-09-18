@@ -7,9 +7,8 @@ load("//tools:lint.bzl", "add_lint_tests")
 package(default_visibility = ["//visibility:public"])
 
 drake_cc_library(
-    name = "compliant_contact_model",
+    name = "contact_results",
     srcs = [
-        "compliant_contact_model.cc",
         "contact_detail.cc",
         "contact_force.cc",
         "contact_info.cc",
@@ -18,7 +17,6 @@ drake_cc_library(
         "point_contact_detail.cc",
     ],
     hdrs = [
-        "compliant_contact_model.h",
         "contact_detail.h",
         "contact_force.h",
         "contact_info.h",
@@ -31,6 +29,28 @@ drake_cc_library(
         "//drake/common",
         "//drake/common:copyable_unique_ptr",
         "//drake/math:orthonormal_basis",
+        "//drake/multibody:rigid_body_tree",
+    ],
+)
+
+drake_cc_library(
+    name = "compliant_contact_parameters",
+    srcs = ["compliant_contact_parameters.cc"],
+    hdrs = ["compliant_contact_parameters.h"],
+    deps = [
+        "//drake/common",
+    ],
+)
+
+drake_cc_library(
+    name = "compliant_contact_model",
+    srcs = ["compliant_contact_model.cc"],
+    hdrs = ["compliant_contact_model.h"],
+    deps = [
+        ":compliant_contact_parameters",
+        ":contact_results",
+        "//drake/common",
+        "//drake/common:copyable_unique_ptr",
         "//drake/multibody:rigid_body_tree",
     ],
 )
@@ -191,6 +211,11 @@ drake_cc_googletest(
         "//drake/common:eigen_matrix_compare",
         "//drake/multibody:rigid_body_tree",
     ],
+)
+
+drake_cc_googletest(
+    name = "compliant_contact_parameters_test",
+    deps = [":compliant_contact_parameters"],
 )
 
 drake_cc_googletest(

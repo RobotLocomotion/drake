@@ -28,6 +28,11 @@ if(Bullet_FOUND)
           spruce
           )
 
+  drake_add_cc_test(compliant_contact_parameters_test)
+  target_link_libraries(compliant_contact_parameters_test
+      drakeRigidBodyPlant
+      )
+
   drake_add_cc_test(contact_force_formula_test)
   target_link_libraries(contact_force_formula_test
       drakeRigidBodyPlant
