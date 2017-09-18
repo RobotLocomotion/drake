@@ -369,6 +369,14 @@ void ConstraintSolver<T>::DetermineIndependentConstraints(
     return problem_data->G_transpose_mult(lambda);
   };
 
+  typedef VectorX<T> (*Op)(const VectorX<T>&);
+  DRAKE_ASSERT(!problem_data->G_mult.template target<Op>() ||
+      *G_mult->template target<Op>() !=
+          *problem_data->G_mult.template target<Op>());
+  DRAKE_ASSERT(!problem_data->G_transpose_mult.template target<Op>() ||
+      *G_transpose_mult->template target<Op>() !=
+          *problem_data->G_transpose_mult.template target<Op>());
+
   // Determine the set of active constraints.
   MatrixX<T> iM_GT;
   MatrixX<T> tentative_Del;
