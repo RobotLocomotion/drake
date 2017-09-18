@@ -37,6 +37,8 @@
   <a href="http://www.generic-programming.org/languages/cpp/techniques.php">
   learn more about generic programming</a>.</p>
 
+<p>Drake requires a compiler running in C++14 mode or greater.</p>
+
 <h3>How do I document the code I am contributing?</h3>
 
 <p>
