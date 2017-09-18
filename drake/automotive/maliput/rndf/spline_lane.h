@@ -137,7 +137,7 @@ class SplineLane : public Lane {
 
   // TODO(@agalbachicar) Not implemented yet.
   api::HBounds do_elevation_bounds(double, double) const override {
-    return api::HBounds(0., 0.);
+    return api::HBounds(0., 20.);
   }
 
   // Computes the lane_bounds taking into account the Lane::width. Based
