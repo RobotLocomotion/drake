@@ -6,6 +6,7 @@
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
+#include "drake/multibody/multibody_tree/rpy_mobilizer.h"
 
 namespace drake {
 namespace multibody {
@@ -61,9 +62,18 @@ class FreeBodyPlant : public systems::LeafSystem<T> {
 
   double get_mass() const { return 1.0; }
 
+  void set_angular_velocity(
+      systems::Context<T>* context, const Vector3<T>& w_WB) const;
+
+  Isometry3<T> CalcPoseInWorldFrame(
+      const systems::Context<T>& context) const;
+
+  SpatialVelocity<T> CalcSpatialVelocityInWorldFrame(
+      const systems::Context<T>& context) const;
+
  protected:
-  T DoCalcKineticEnergy(const systems::Context<T> &context) const override;
-  T DoCalcPotentialEnergy(const systems::Context<T> &context) const override;
+  T DoCalcKineticEnergy(const systems::Context<T>& context) const override;
+  T DoCalcPotentialEnergy(const systems::Context<T>& context) const override;
 
  private:
   // Override of context construction so that we can delegate it to
@@ -83,6 +93,7 @@ class FreeBodyPlant : public systems::LeafSystem<T> {
   double J_{0};
   MultibodyTree<T> model_;
   const RigidBody<T>* body_{nullptr};
+  const RollPitchYawMobilizer<T>* mobilizer_{nullptr};
 };
 
 }  // namespace test

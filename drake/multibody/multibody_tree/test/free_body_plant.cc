@@ -44,8 +44,9 @@ void FreeBodyPlant<T>::BuildMultibodyTreeModel() {
 
   body_ = &model_.template AddBody<RigidBody>(M_Bcm);
 
-  model_.template AddMobilizer<RollPitchYawMobilizer>(
-      model_.get_world_frame(), body_->get_body_frame());
+  mobilizer_ =
+      &model_.template AddMobilizer<RollPitchYawMobilizer>(
+          model_.get_world_frame(), body_->get_body_frame());
 
   model_.Finalize();
 }
@@ -100,6 +101,30 @@ void FreeBodyPlant<T>::DoCalcTimeDerivatives(
 
   xdot << qdot, M.llt().solve(-C);
   derivatives->SetFromVector(xdot);
+}
+
+template<typename T>
+void FreeBodyPlant<T>::set_angular_velocity(
+    systems::Context<T>* context, const Vector3<T>& w_WB) const {
+  mobilizer_->set_angular_velocity(context, w_WB);
+}
+
+template<typename T>
+Isometry3<T> FreeBodyPlant<T>::CalcPoseInWorldFrame(
+    const systems::Context<T>& context) const {
+  PositionKinematicsCache<T> pc(model_.get_topology());
+  model_.CalcPositionKinematicsCache(context, &pc);
+  return pc.get_X_WB(body_->get_node_index());
+}
+
+template<typename T>
+SpatialVelocity<T> FreeBodyPlant<T>::CalcSpatialVelocityInWorldFrame(
+    const systems::Context<T>& context) const {
+  PositionKinematicsCache<T> pc(model_.get_topology());
+  model_.CalcPositionKinematicsCache(context, &pc);
+  VelocityKinematicsCache<T> vc(model_.get_topology());
+  model_.CalcVelocityKinematicsCache(context, pc, &vc);
+  return vc.get_V_WB(body_->get_node_index());
 }
 
 template<typename T>

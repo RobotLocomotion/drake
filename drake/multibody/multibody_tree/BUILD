@@ -162,6 +162,7 @@ drake_cc_googletest(
         ":free_body_plant",
         "//drake/common:eigen_matrix_compare",
         "//drake/multibody/benchmarks/cylinder_torque_free_analytical_solution:torque_free_cylinder_exact_solution",
+        "//drake/systems/analysis:simulator",
     ],
 )
 
