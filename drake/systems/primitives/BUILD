@@ -291,6 +291,7 @@ drake_cc_googletest(
         ":first_order_low_pass_filter",
         "//drake/common:unused",
         "//drake/systems/framework",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 
