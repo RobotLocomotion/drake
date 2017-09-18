@@ -21,8 +21,9 @@ genrule(
     tools = ["//drake/automotive/maliput/utility:yaml_to_obj"],
 )
 
-install_data(additional_prod_models = [
-                 "speed_bump/speed_bump.mtl",
-                 "speed_bump/speed_bump.obj",
-             ]
+install_data(
+    extra_prod_models = [
+        "speed_bump/speed_bump.mtl",
+        "speed_bump/speed_bump.obj",
+    ]
 )
