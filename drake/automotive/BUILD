@@ -287,7 +287,7 @@ drake_cc_library(
         ":lane_direction",
         ":monolane_onramp_merge",
         "//drake/automotive/maliput/api",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common:unused",
         "//drake/common/trajectories:piecewise_polynomial",
         "//drake/common/trajectories/qp_spline:spline_generation",
@@ -618,6 +618,7 @@ drake_cc_googletest(
     name = "simple_powertrain_test",
     deps = [
         "//drake/automotive:simple_powertrain",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 
@@ -625,7 +626,7 @@ drake_cc_googletest(
     name = "calc_smooth_acceleration_test",
     deps = [
         "//drake/automotive:calc_smooth_acceleration",
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 

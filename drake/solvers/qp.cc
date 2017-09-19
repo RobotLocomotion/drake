@@ -361,8 +361,9 @@ int myGRBaddconstrs(GRBmodel* model, MatrixBase<DerivedA> const& A,
     // todo: it seems like I should just be able to do something like this:
     SparseMatrix<double, RowMajor> sparseAeq(Aeq.sparseView());
     sparseAeq.makeCompressed();
-    error =
-    GRBaddconstrs(model, nq_con, sparseAeq.nonZeros(), sparseAeq.InnerIndices(), sparseAeq.OuterStarts(), sparseAeq.Values(), beq.data(), NULL);
+    error = GRBaddconstrs(
+        model, nq_con, sparseAeq.nonZeros(), sparseAeq.InnerIndices(),
+        sparseAeq.OuterStarts(), sparseAeq.Values(), beq.data(), NULL);
   */
 
   int* cind = new int[A.cols()];

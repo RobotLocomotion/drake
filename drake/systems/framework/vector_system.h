@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
@@ -77,40 +78,37 @@ class VectorSystem : public LeafSystem<T> {
 
  protected:
   /// Creates a system with one input port and one output port of the given
-  /// sizes.  Does not declare any state -- subclasses may optionally declare
-  /// continuous or discrete state, but not both.
+  /// sizes, when the sizes are non-zero.  Either size can be zero, in which
+  /// case no input (or output) port is created.
+  ///
+  /// Does *not* declare scalar-type conversion support (AutoDiff, etc.).  To
+  /// enable AutoDiff support, use the SystemScalarConverter-based constructor.
+  /// (For that, see @ref system_scalar_conversion at the example titled
+  /// "Example using drake::systems::VectorSystem as the base class".)
   VectorSystem(int input_size, int output_size)
-      : LeafSystem<T>() {
-    DoConstructorBody(input_size, output_size);
-  }
+      : VectorSystem(SystemScalarConverter{}, input_size, output_size) {}
 
-  /// Like VectorSystem(int, int), but also declares that this System object is
-  /// of dynamic type S, which enables conversion to other scalar-types such as
-  /// AutoDiff or symbolic form.  Subclasses that wish to support conversion to
-  /// other scalar types should use this constructor.
+  /// Creates a system with one input port and one output port of the given
+  /// sizes, when the sizes are non-zero.  Either size can be zero, in which
+  /// case no input (or output) port is created.  This constructor allows
+  /// subclasses to declare scalar-type conversion support (AutoDiff, etc.).
   ///
-  /// Example:
+  /// The scalar-type conversion support will use @p converter.
+  /// To enable scalar-type conversion support, pass a `SystemTypeTag<S>{}`
+  /// where `S` must be the exact class of `this` being constructed.
   ///
-  /// @code
-  /// namespace sample {
-  /// template <typename T>
-  /// class MySystem : public VectorSystem<T> {
-  ///  public:
-  ///   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MySystem);
-  ///
-  ///   /// Default constructor.
-  ///   MySystem() : VectorSystem<T>(SystemTypeTag<sample::MySystem>{}, 1, 1) {}
-  ///
-  ///   /// Scalar-converting copy constructor.
-  ///   template <typename U>
-  ///   explicit MySystem(const MySystem<U>&) : MySystem<T>() {}
-  ///
-  ///   ...
-  /// @endcode
-  template <template <typename> class S>
-  VectorSystem(SystemTypeTag<S> tag, int input_size, int output_size)
-      : LeafSystem<T>(tag) {
-    DoConstructorBody(input_size, output_size);
+  /// See @ref system_scalar_conversion for detailed background and examples
+  /// related to scalar-type conversion support, especially the example titled
+  /// "Example using drake::systems::VectorSystem as the base class".
+  VectorSystem(SystemScalarConverter converter, int input_size, int output_size)
+      : LeafSystem<T>(std::move(converter)) {
+    if (input_size > 0) {
+      this->DeclareInputPort(kVectorValued, input_size);
+    }
+    if (output_size > 0) {
+      this->DeclareVectorOutputPort(BasicVector<T>(output_size),
+                                    &VectorSystem::CalcVectorOutput);
+    }
   }
 
   /// Causes the vector-valued input port to become up-to-date, and returns
@@ -287,22 +285,6 @@ class VectorSystem : public LeafSystem<T> {
       Eigen::VectorBlock<VectorX<T>>* next_state) const {
     unused(context, input, state);
     DRAKE_THROW_UNLESS(next_state->size() == 0);
-  }
-
- private:
-  // All constructors should call this method immediately after invoking the
-  // base class constructor, as if this were using constructor delegation.
-  ///
-  // We cannot use C++'s constructor delegation, because we need to invoke a
-  // different LeafSystem constructor from each of our constructors.
-  void DoConstructorBody(int input_size, int output_size) {
-    if (input_size > 0) {
-      this->DeclareInputPort(kVectorValued, input_size);
-    }
-    if (output_size > 0) {
-      this->DeclareVectorOutputPort(BasicVector<T>(output_size),
-                                    &VectorSystem::CalcVectorOutput);
-    }
   }
 };
 

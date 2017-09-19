@@ -22,9 +22,7 @@
 #include <cmath>
 #include <limits>
 
-#include <Eigen/Dense>
-#include <unsupported/Eigen/AutoDiff>
-
+#include "drake/common/autodiffxd.h"
 #include "drake/common/cond.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/dummy_value.h"
@@ -92,15 +90,20 @@ double copysign(double x, const Eigen::AutoDiffScalar<DerType>& y) {
 /// Overloads pow for an AutoDiffScalar base and exponent, implementing the
 /// chain rule.
 template <typename DerTypeA, typename DerTypeB>
-Eigen::AutoDiffScalar<typename DerTypeA::PlainObject> pow(
-    const Eigen::AutoDiffScalar<DerTypeA>& base,
+Eigen::AutoDiffScalar<
+    typename internal::remove_all<DerTypeA>::type::PlainObject>
+pow(const Eigen::AutoDiffScalar<DerTypeA>& base,
     const Eigen::AutoDiffScalar<DerTypeB>& exponent) {
   // The two AutoDiffScalars being exponentiated must have the same matrix
   // type. This includes, but is not limited to, the same scalar type and
   // the same dimension.
-  static_assert(std::is_same<typename DerTypeA::PlainObject,
-                             typename DerTypeB::PlainObject>::value,
-                "The derivative types must match.");
+  static_assert(
+      std::is_same<
+          typename internal::remove_all<DerTypeA>::type::PlainObject,
+          typename internal::remove_all<DerTypeB>::type::PlainObject>::value,
+      "The derivative types must match.");
+
+  internal::make_coherent(base.derivatives(), exponent.derivatives());
 
   const auto& x = base.value();
   const auto& xgrad = base.derivatives();

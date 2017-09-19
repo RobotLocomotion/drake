@@ -53,6 +53,7 @@ drake_cc_binary(
     ],
 )
 
+# TODO(sam.creasy) Re-enable this test once it is not so sensitive.
 pick_and_place_test(
     name = "pick_and_place_scenario_1",
     # TODO(sam.creasey) This should be target 1, but that requries
@@ -76,7 +77,10 @@ pick_and_place_test(
     # TODO(sam.creasey) IPOPT doesn't find a reasonable solution for
     # one of the steps in this demo.  We should see if this improves
     # when #3128 is fixed.
-    tags = ["snopt"],
+    tags = [
+        "manual",  # Disables this brittle test from being run in CI.
+        "snopt",
+    ],
 )
 
 pick_and_place_test(

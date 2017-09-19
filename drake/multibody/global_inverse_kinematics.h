@@ -138,7 +138,8 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
    * <pre>
    *    trace(R1ᵀ * R2) = 2 * cos(θ) + 1
    * </pre>
-   * as in http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToAngle/
+   * as in
+   * http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToAngle/
    * To constraint `θ < angle_tol`, we can impose the following constraint
    * <pre>
    *    2 * cos(angle_tol) + 1 <= trace(R1ᵀ * R2) <= 3

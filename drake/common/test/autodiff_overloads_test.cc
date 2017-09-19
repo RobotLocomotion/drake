@@ -4,9 +4,9 @@
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
-#include <unsupported/Eigen/AutoDiff>
 
 #include "drake/common/cond.h"
+#include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/extract_double.h"
@@ -104,7 +104,9 @@ GTEST_TEST(AutodiffOverloadsTest, Pow) {
   // The derivative of x with respect to y is x = 1.1.
   EXPECT_DOUBLE_EQ(1.1, x.derivatives()[1]);
 
-  auto z = pow(x, y);
+  // The following should be the same as `pow(x, y)`, but we want to test this
+  // one to check Drake's pow(ADS<DerType&>, ADS<DerType&>) works.
+  auto z = pow(x + 0.0, y + 0.0);
   // z is x^y = 4.95^2.5 ~= 54.51.
   EXPECT_DOUBLE_EQ(std::pow(4.95, 2.5), z.value());
   // ∂z/∂x is y*x^(y-1) = 2.5 * 4.95^1.5 ~= 27.53.

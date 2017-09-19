@@ -82,7 +82,7 @@ drake_cc_library(
     srcs = ["setpoint.cc"],
     hdrs = ["setpoint.h"],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/math:geometric_transform",
     ],
 )
@@ -92,7 +92,7 @@ drake_cc_library(
     srcs = ["controlUtil.cpp"],
     hdrs = ["controlUtil.h"],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common/trajectories:piecewise_polynomial",
         "//drake/math:autodiff",
         "//drake/math:expmap",
@@ -108,7 +108,7 @@ drake_cc_library(
     hdrs = ["QPCommon.h"],
     deps = [
         ":control_util",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/multibody:rigid_body_tree",
         "//drake/systems/robotInterfaces:side",
         "//drake/util",
@@ -120,7 +120,7 @@ drake_cc_library(
     srcs = ["zmp_planner.cc"],
     hdrs = ["zmp_planner.h"],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common/trajectories:piecewise_polynomial",
         "//drake/systems/controllers:linear_quadratic_regulator",
     ],
@@ -149,7 +149,7 @@ drake_cc_library(
     deps = [
         ":control_util",
         ":qp_common",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common:find_resource",
         "//drake/common:is_approx_equal_abstol",
         "//drake/lcmtypes:qp_controller_input",
