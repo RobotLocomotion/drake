@@ -596,25 +596,14 @@ optional<T> Simulator<T>::GetCurrentWitnessTimeIsolation() const {
   const double characteristic_time = 1.0;
 
   // Get the accuracy setting.
-  const optional<double> accuracy = get_context().get_accuracy();
-
-  // Hack necessary to get around error:
-  // "error `accuracy` may be used uninitialized in this function"
-  // " [-Werror=maybe-uninitialized]"
-  #ifdef __GNUG__
-  #ifndef __clang__
-  #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-  #endif
-  #endif
+  const optional<double>& accuracy = get_context().get_accuracy();
 
   // Determine the length of the isolation interval.
   if (integrator_->get_fixed_step_mode()) {
-    // Look for accuracy information. value_or(999) trick necessary because
-    // OS X currently fails to build using value().
+    // Look for accuracy information.
     if (accuracy) {
       return max(integrator_->get_working_minimum_step_size(),
-                 T(iso_scale_factor * accuracy.value_or(999) *
+                 T(iso_scale_factor * accuracy.value() *
                      integrator_->get_maximum_step_size()));
     } else {
       return optional<T>();
@@ -631,12 +620,7 @@ optional<T> Simulator<T>::GetCurrentWitnessTimeIsolation() const {
   // ineffectual to attempt to isolate intervals smaller than the current time
   // in the context can allow.
   return max(integrator_->get_working_minimum_step_size(),
-             iso_scale_factor * accuracy.value_or(999) * characteristic_time);
-  #ifdef __GNUG__
-  #ifndef __clang__
-  #pragma GCC diagnostic pop
-  #endif
-  #endif
+             iso_scale_factor * accuracy.value() * characteristic_time);
 }
 
 // Isolates the first time at one or more witness functions triggered (in the

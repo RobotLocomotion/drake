@@ -22,7 +22,7 @@ drake_cc_library(
     deps = [
         ":body_motion_data",
         ":side",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common:unused",
         "//drake/common/trajectories:piecewise_polynomial",
         "//drake/common/trajectories/qp_spline:spline_generation",

@@ -43,7 +43,7 @@ void PoseBundleToDrawMessage::CalcViewerDrawMessage(
     message.position[i][1] = t.y();
     message.position[i][2] = t.z();
 
-    Eigen::Quaternion<double> q(poses.get_pose(i).rotation());
+    Eigen::Quaternion<double> q(poses.get_pose(i).linear());
     message.quaternion[i].resize(4);
     message.quaternion[i][0] = q.w();
     message.quaternion[i][1] = q.x();

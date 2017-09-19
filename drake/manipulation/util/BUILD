@@ -52,7 +52,7 @@ drake_cc_library(
     srcs = ["simple_tree_visualizer.cc"],
     hdrs = ["simple_tree_visualizer.h"],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/lcm",
         "//drake/lcmtypes:viewer",
         "//drake/multibody/rigid_body_plant:create_load_robot_message",
@@ -86,7 +86,7 @@ drake_cc_binary(
     test_rule_args = ["--num_configurations=1"],
     deps = [
         ":simple_tree_visualizer",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common:find_resource",
         "//drake/lcm",
         "//drake/multibody/parsers",
@@ -99,7 +99,7 @@ drake_cc_library(
     name = "moving_average_filter",
     srcs = ["moving_average_filter.cc"],
     hdrs = ["moving_average_filter.h"],
-    deps = ["//drake/common"],
+    deps = ["//drake/common:essential"],
 )
 
 # === test/ ===
@@ -136,8 +136,8 @@ drake_cc_googletest(
     srcs = ["test/moving_average_filter_test.cc"],
     deps = [
         ":moving_average_filter",
-        "//drake/common",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:essential",
     ],
 )
 

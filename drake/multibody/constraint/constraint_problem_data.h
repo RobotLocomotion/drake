@@ -85,14 +85,14 @@ struct ConstraintAccelProblemData {
   /// an acceleration-level formulation (i.e., g̈(t, q, v, v̇), for the
   /// aforementioned definition of g(t,q)). That differentiation yields
   /// g̈ = G⋅v̇ + dG/dt⋅v, which is consistent with the constraint class under
-  /// the definition kᴳ(t,q,v) ≡ dG/dt⋅v. An example such holonomic constraint
+  /// the definition kᴳ(t,q,v) ≡ dG/dt⋅v. An example such (holonomic) constraint
   /// function is the transmission (gearing) constraint below:<pre>
   /// 0 = v̇ᵢ - rv̇ⱼ
   /// </pre>
-  /// which can be read as the acceleration at joint j (v̇ⱼ) must equal to `r`
-  /// times the acceleration at joint i (v̇ᵢ); `r` is thus the gear ratio.
+  /// which can be read as the acceleration at joint i (v̇ᵢ) must equal to `r`
+  /// times the acceleration at joint j (v̇ⱼ); `r` is thus the gear ratio.
   /// In this example, the corresponding holonomic constraint function is
-  /// g(q) ≡ qᵢ - rqⱼ, yielding ̈g(q, v, v̇) = -v̇ⱼ + - rv̇ⱼ.
+  /// g(q) ≡ qᵢ - rqⱼ, yielding ̈g(q, v, v̇) = v̇ᵢ - rv̇ⱼ.
   /// @{
 
   /// An operator that performs the multiplication G⋅v. The default operator

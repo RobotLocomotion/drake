@@ -118,7 +118,7 @@ TEST_F(OptitrackPoseTest, PoseComparisonTest) {
                               MatrixCompareType::absolute));
 
   // Compare quaternions.
-  EXPECT_TRUE(CompareMatrices(extracted_pose.rotation(), test_pose.rotation(),
+  EXPECT_TRUE(CompareMatrices(extracted_pose.linear(), test_pose.linear(),
                               1e-3, MatrixCompareType::absolute));
 }
 

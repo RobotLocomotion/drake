@@ -9,6 +9,7 @@
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/symbolic.h"
 #include "drake/common/symbolic_decompose.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
@@ -27,8 +28,27 @@ LinearSystem<T>::LinearSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
                               const Eigen::Ref<const Eigen::MatrixXd>& C,
                               const Eigen::Ref<const Eigen::MatrixXd>& D,
                               double time_period)
-    : AffineSystem<T>(A, B, Eigen::VectorXd::Zero(A.rows()), C, D,
-                      Eigen::VectorXd::Zero(C.rows()), time_period) {}
+    : LinearSystem<T>(
+          SystemTypeTag<systems::LinearSystem>{},
+          A, B, C, D, time_period) {}
+
+template <typename T>
+template <typename U>
+LinearSystem<T>::LinearSystem(const LinearSystem<U>& other)
+    : LinearSystem<T>(
+          other.A(), other.B(), other.C(), other.D(), other.time_period()) {}
+
+template <typename T>
+LinearSystem<T>::LinearSystem(SystemScalarConverter converter,
+                              const Eigen::Ref<const Eigen::MatrixXd>& A,
+                              const Eigen::Ref<const Eigen::MatrixXd>& B,
+                              const Eigen::Ref<const Eigen::MatrixXd>& C,
+                              const Eigen::Ref<const Eigen::MatrixXd>& D,
+                              double time_period)
+    : AffineSystem<T>(
+          std::move(converter),
+          A, B, Eigen::VectorXd::Zero(A.rows()), C, D,
+          Eigen::VectorXd::Zero(C.rows()), time_period) {}
 
 template <typename T>
 unique_ptr<LinearSystem<T>> LinearSystem<T>::MakeLinearSystem(
@@ -65,6 +85,7 @@ unique_ptr<LinearSystem<T>> LinearSystem<T>::MakeLinearSystem(
 
 template class LinearSystem<double>;
 template class LinearSystem<AutoDiffXd>;
+template class LinearSystem<symbolic::Expression>;
 
 namespace {
 
@@ -192,22 +213,6 @@ std::unique_ptr<LinearSystem<double>> Linearize(
     autodiff_context->SetInputPortValue(
         0,
         std::make_unique<FreestandingInputPortValue>(std::move(input_vector)));
-  }
-
-  // Set derivatives of all parameters in the context to zero (but with the
-  // correct size).
-  // TODO(russt): This hack should be removed upon resolution of #6944.
-  int num_gradients = std::get<0>(autodiff_args)[0].derivatives().size();
-  for (int i = 0;
-       i < autodiff_context->get_parameters().num_numeric_parameters(); i++) {
-    auto params = autodiff_context->get_mutable_parameters()
-        .get_mutable_numeric_parameter(i)
-        ->get_mutable_value();
-    for (int j = 0; j < params.size(); j++) {
-      auto& derivs = params(j).derivatives();
-      derivs.resize(num_gradients);
-      derivs.setZero();
-    }
   }
 
   const Eigen::MatrixXd AB =

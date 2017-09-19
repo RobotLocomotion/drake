@@ -13,7 +13,7 @@ drake_cc_library(
         "drake_lcm_message_handler_interface.h",
     ],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -39,7 +39,7 @@ drake_cc_library(
     ],
     deps = [
         ":interface",
-        "//drake/common",
+        "//drake/common:essential",
         "@lcm",
     ],
 )
@@ -50,7 +50,7 @@ drake_cc_library(
     srcs = ["lcmt_drake_signal_utils.cc"],
     hdrs = ["lcmt_drake_signal_utils.h"],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/lcmtypes:drake_signal",
     ],
 )
@@ -61,7 +61,7 @@ drake_cc_library(
         "translator_base.h",
     ],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common:unused",
     ],
 )

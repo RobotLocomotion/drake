@@ -573,7 +573,7 @@ class PendulumKinematicTests : public PendulumTests {
             -link2_mass_ * acceleration_of_gravity_ * Vector3d::UnitY());
     // Obtain the position of the lower link's center of mass.
     const Isometry3d& X_WL = get_body_pose_in_world(pc, *lower_link_);
-    const Matrix3d R_WL = X_WL.rotation();
+    const Matrix3d R_WL = X_WL.linear();
     const Vector3d p_LoLcm_L = lower_link_->get_default_com();
     const Vector3d p_LoLcm_W = R_WL * p_LoLcm_L;
     const SpatialForce<double> F_L_W = F_Lcm_W.Shift(-p_LoLcm_W);
@@ -848,7 +848,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
       // spatial velocity and acceleration to the center of mass frame for
       // comparison with the benchmark.
       const Isometry3d& X_WL = get_body_pose_in_world(pc, *lower_link_);
-      const Matrix3d R_WL = X_WL.rotation();
+      const Matrix3d R_WL = X_WL.linear();
       const Vector3d p_LoLcm_L = lower_link_->get_default_com();
       const Vector3d p_LoLcm_W = R_WL * p_LoLcm_L;
 

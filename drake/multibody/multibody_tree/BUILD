@@ -105,8 +105,8 @@ drake_cc_library(
     srcs = ["rotational_inertia.cc"],
     hdrs = ["rotational_inertia.h"],
     deps = [
-        "//drake/common",
         "//drake/common:autodiff",
+        "//drake/common:essential",
         "//drake/common:extract_double",
     ],
 )

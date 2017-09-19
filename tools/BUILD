@@ -31,8 +31,10 @@ sh_binary(
     }),
     data = [
         "//drake/bindings:pydrake",
+        "//drake/examples:prod_models",
         "//drake/lcmtypes:lcmtypes_py",
         "@drake_visualizer",
+        "@optitrack_driver//lcmtypes:py_optitrack_lcmtypes",
     ],
 )
 

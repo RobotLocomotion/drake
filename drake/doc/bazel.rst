@@ -94,6 +94,8 @@ Cheat sheet for operating on specific portions of the project::
   bazel build -c dbg common:polynomial_test && \
     gdb ../bazel-bin/drake/common/polynomial_test      # Run one test under gdb.
 
+  bazel test --config lint //...                       # Only run style checks; don't build or test anything else.
+
 - The "``:``" syntax separates target names from the directory path of the
   ``BUILD`` file they appear in.  In this case, for example,
   ``drake/commmon/BUILD`` specifies ``cc_test(name = "polynomial_test")``.

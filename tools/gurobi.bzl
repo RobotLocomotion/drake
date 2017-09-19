@@ -2,10 +2,16 @@
 # This is a Bazel repository_rule for the Gurobi solver.  See
 # https://www.bazel.io/versions/master/docs/skylark/repository_rules.html
 
+load("@drake//tools:os.bzl", "determine_os")
+
 # Ubuntu only: GUROBI_PATH should be the linux64 directory in the Gurobi 7.0.2
 # release.
 def _gurobi_impl(repository_ctx):
-    if repository_ctx.os.name == "mac os x":
+    os_result = determine_os(repository_ctx)
+    if os_result.error != None:
+        fail(os_result.error)
+
+    if os_result.is_mac:
         gurobi_path = "/Library/gurobi702/mac64"
         repository_ctx.symlink(gurobi_path, "gurobi-distro")
         warning = "Gurobi 7.0.2 is not installed."

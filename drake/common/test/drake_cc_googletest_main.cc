@@ -5,6 +5,14 @@
 
 #include "drake/common/text_logging_gflags.h"
 
+// TODO(SeanCurtis-TRI): Remove this when CLion bazel plug-in no longer executes
+// its debugger with the --gunit_color flag. Most recent versions known to be
+// an issue:
+//    CLion: 2017.1.3
+//    Bazel plugin: 2017.07.05.0.2
+// Related issue: https://github.com/bazelbuild/intellij/issues/131
+DEFINE_string(gunit_color, "", "");
+
 int main(int argc, char** argv) {
   std::cout << "Using drake/test/drake_cc_googletest_main.cc\n";
 

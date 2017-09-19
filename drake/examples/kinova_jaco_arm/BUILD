@@ -55,7 +55,10 @@ drake_cc_binary(
     data = [
         "//drake/manipulation/models/jaco_description:models",
     ],
-    tags = ["snopt"],
+    # It's not clear why this test takes so much longer than
+    # run_controlled_jaco_demo under memcheck, but it does, so it's
+    # disabled in that configuration.
+    tags = ["no_memcheck"],
     test_rule_args = ["--simulation_sec=0.1"],
     deps = [
         ":jaco_common",
@@ -78,7 +81,6 @@ drake_cc_binary(
     data = [
         "//drake/manipulation/models/jaco_description:models",
     ],
-    tags = ["snopt"],
     test_rule_args = ["--simulation_sec=0.1"],
     deps = [
         ":jaco_common",

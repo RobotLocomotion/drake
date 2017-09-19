@@ -17,7 +17,7 @@ drake_cc_library(
     srcs = ["valkyrie_constants.cc"],
     hdrs = ["valkyrie_constants.h"],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -64,7 +64,7 @@ drake_cc_library(
     deps = [
         ":robot_state_decoder",
         ":valkyrie_constants",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common:find_resource",
         "//drake/lcm",
         "//drake/multibody:kinematics_cache",

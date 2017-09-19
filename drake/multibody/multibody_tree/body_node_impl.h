@@ -26,8 +26,8 @@ namespace internal {
 template <typename T, int  num_positions, int num_velocities>
 class BodyNodeImpl : public BodyNode<T> {
  public:
-  // static constexpr int i = 42; discouraged.
-  // See answer in: http://stackoverflow.com/questions/37259807/static-constexpr-int-vs-old-fashioned-enum-when-and-why
+  // static constexpr int i = 42; discouraged.  See answer in:
+  // http://stackoverflow.com/questions/37259807/static-constexpr-int-vs-old-fashioned-enum-when-and-why
   enum : int {nq = num_positions, nv = num_velocities};
 
   /// Given a body and its inboard mobilizer in a MultibodyTree this constructor
