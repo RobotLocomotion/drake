@@ -27,9 +27,9 @@ def install_data(
     Test files (files contained in a `test` subfolder or named `*test*`) are
     not installed.
 
-    Extra files to be installed that are not in the direct subdirectories of the
-    rule may be specified by using `extra_prod_models`.  One use of this is to
-    install generated files alongside the static files.
+    Extra files to be installed that are not in the direct subdirectories of
+    the rule may be specified by using `extra_prod_models`.  One use of this is
+    to install generated files alongside the static files.
     """
     models_extensions = [
         "csv",

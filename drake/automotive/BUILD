@@ -455,7 +455,10 @@ py_binary(
 genrule(
     name = "speed_bump_genrule",
     srcs = ["models/speed_bump/speed_bump.yaml"],
-    outs = ["models/speed_bump/speed_bump.obj", "models/speed_bump/speed_bump.mtl"],
+    outs = [
+        "models/speed_bump/speed_bump.obj",
+        "models/speed_bump/speed_bump.mtl",
+    ],
     cmd = " ".join([
         "$(location //drake/automotive/maliput/utility:yaml_to_obj)",
         "--yaml_file '$<'",
@@ -469,7 +472,7 @@ install_data(
     extra_prod_models = [
         "models/speed_bump/speed_bump.mtl",
         "models/speed_bump/speed_bump.obj",
-    ]
+    ],
 )
 
 # === test/ ===
