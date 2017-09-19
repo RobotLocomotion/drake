@@ -81,6 +81,16 @@ void CompareExpectedSolutionVsActualSolution(
 // test the numerical integrator accuracy.
 // Ironically, this is why the chaotic babyboot is a good test of accuracy.
 //
+// Provided below are four different simulation results for each angle and its
+// time-derivatives.  Each simulation uses integration parameters and/or
+// integrators that are different from each other (e.g., Kutta-Merson vs.
+// MATLAB's ode45).  It is important to note that these four different
+// simulations produce final values for angles qA and qB that are equal to 7
+// significant digits, produce final values for angles qADt and qBDt that are
+// equal to 6 significant digits, and produce final values for qADDt and qBDDt
+// that are equal to 7 significant digits.  In other words, the results are
+// predictable with a well-constructed, relatively high-accuracy integrator.
+//
 // Note: One reason for this test is to ensure that the MotionGenesis auto-
 // generated C++ code could be properly integrated into Drake.  This test has to
 // be continually re-verified since code changes might break it.
