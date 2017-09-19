@@ -11,7 +11,7 @@ drake_cc_library(
     srcs = ["continuity_constraint.cc"],
     hdrs = ["continuity_constraint.h"],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -41,7 +41,7 @@ drake_cc_library(
     srcs = ["value_constraint.cc"],
     hdrs = ["value_constraint.h"],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 

@@ -56,7 +56,7 @@ drake_cc_library(
     ],
     deps = [
         ":robot_kinematic_state",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/math:gradient",
         "//drake/multibody:rigid_body_tree",
         "//drake/solvers:mathematical_program",

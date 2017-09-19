@@ -11,7 +11,7 @@ drake_cc_library(
     name = "trajectory",
     hdrs = ["trajectory.h"],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -20,7 +20,7 @@ drake_cc_library(
     srcs = ["piecewise_function.cc"],
     hdrs = ["piecewise_function.h"],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -38,7 +38,7 @@ drake_cc_library(
     ],
     deps = [
         ":piecewise_function",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common:polynomial",
     ],
 )
@@ -50,7 +50,7 @@ drake_cc_library(
     deps = [
         ":piecewise_polynomial",
         ":trajectory",
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -60,7 +60,7 @@ drake_cc_library(
     hdrs = ["piecewise_quaternion.h"],
     deps = [
         ":piecewise_function",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/math:geometric_transform",
     ],
 )

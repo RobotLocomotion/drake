@@ -63,7 +63,7 @@ drake_cc_test(
     data = ["//drake/multibody:models"],
     tags = mosek_test_tags(),
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common:find_resource",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/collision",

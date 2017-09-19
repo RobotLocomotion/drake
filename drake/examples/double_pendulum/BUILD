@@ -20,7 +20,7 @@ drake_cc_library(
         "sdf_helpers.h",
     ],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/multibody:rigid_body_tree",
         "@eigen",
         "@sdformat",
@@ -38,7 +38,7 @@ drake_cc_binary(
     ],
     deps = [
         ":sdf_helpers",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common:find_resource",
         "//drake/common:text_logging_gflags",
         "//drake/lcm",

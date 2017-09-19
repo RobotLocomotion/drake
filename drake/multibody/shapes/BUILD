@@ -20,7 +20,7 @@ drake_cc_library(
         "visual_element.h",
     ],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common:unused",
         "//drake/thirdParty:spruce",
         "@tinyobjloader",

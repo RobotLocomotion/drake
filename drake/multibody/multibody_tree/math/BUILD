@@ -17,7 +17,7 @@ drake_cc_library(
     srcs = [],
     hdrs = ["spatial_vector.h"],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -27,7 +27,7 @@ drake_cc_library(
     hdrs = ["spatial_velocity.h"],
     deps = [
         ":spatial_vector",
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -37,7 +37,7 @@ drake_cc_library(
     hdrs = ["spatial_acceleration.h"],
     deps = [
         ":spatial_vector",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/math:vector3_util",
     ],
 )
@@ -48,7 +48,7 @@ drake_cc_library(
     hdrs = ["spatial_force.h"],
     deps = [
         ":spatial_vector",
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -61,7 +61,7 @@ drake_cc_library(
         ":spatial_force",
         ":spatial_vector",
         ":spatial_velocity",
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
