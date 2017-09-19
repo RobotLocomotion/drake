@@ -230,10 +230,15 @@ void GetObjectTestSetup(ObjectTestType type, ObjectTestSetup *setup) {
       //   print(f.transform)
       Isometry3d X_WmB;
       X_WmB.setIdentity();
-      X_WmB.linear() <<
-        0.147663, 0.642632, -0.751811,
-        0.988952, -0.10596, 0.103667,
+      Matrix3d R_WmB;
+      R_WmB <<
+         0.147663,  0.642632, -0.751811,
+         0.988952, -0.105960,  0.103667,
         -0.013042, -0.758812, -0.651179;
+      // R_WmB does not precisely belong to O(3) given that its entries are
+      // only specified with 6 digits of precision. Therefore we project it
+      // onto O(3) before using it:
+      X_WmB.linear() = math::ProjectMatToOrthonormalMat(R_WmB);
       X_WmB.translation() << -0.026111, 0.0496843, 0.548844;
 
       setup->X_WB = X_WmB;
