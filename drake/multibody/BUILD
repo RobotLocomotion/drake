@@ -440,7 +440,7 @@ drake_cc_googletest(
     srcs = ["test/rigid_body_tree/rigid_body_tree_clone_test.cc"],
     data = [
         ":test_models",
-        "//drake/automotive/models:prod_models",
+        "//drake/automotive:prod_models",
         "//drake/examples/atlas:models",
         "//drake/examples/pendulum:models",
         "//drake/examples/valkyrie:models",
