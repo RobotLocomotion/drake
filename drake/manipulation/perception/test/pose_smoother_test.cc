@@ -81,7 +81,7 @@ class PoseSmootherTest : public ::testing::Test {
 TEST_F(PoseSmootherTest, OutlierRejectionTest) {
   Initialize(1.0, 0.5 * M_PI);
 
-  double test_time = 0;
+  double test_time = kPoseSmootherPeriod;
 
   Isometry3d input_pose_0 = Isometry3d::Identity();
   input_pose_0.linear() =
@@ -137,7 +137,7 @@ TEST_F(PoseSmootherTest, SmootherTest) {
   // Initializing with large outlier thresholds (this test only checks
   // the output of smoothing).
   Initialize(100.0, 10.0 * M_PI, kMovingAverageWindowSize);
-  double test_time = 0.0;
+  double test_time = kPoseSmootherPeriod;
   // Test smoothing with an initial pose.
   Isometry3d input_pose_0 = Isometry3d::Identity();
   input_pose_0.linear() =

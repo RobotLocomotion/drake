@@ -40,17 +40,22 @@ VectorX<double> ComputeVelocities(const Isometry3d& pose_1,
                                   const Isometry3d& pose_2, double delta_t) {
   VectorX<double> velocities = VectorX<double>::Zero(6);
 
-  Eigen::Vector3d translation_diff =
-      pose_1.translation() - pose_2.translation();
-  velocities.head<3>() = (translation_diff / delta_t).matrix();
+  // Since the condition delta_t = 0 can only occur at the first instance of
+  // calling DoCalcUnrestrictedUpdate, it is sufficient to simply return a
+  // velocity of VectorX<double>::Zero(6) under this condition. Otherwise,
+  // compute the actual velocities from the poses.
+  if (delta_t > 0) {
+    Eigen::Vector3d translation_diff =
+        pose_1.translation() - pose_2.translation();
+    velocities.head<3>() = (translation_diff / delta_t).matrix();
 
-  Eigen::AngleAxisd angle_axis_diff;
-  // Computes angular velocity from the angle difference.
-  angle_axis_diff =
-      Eigen::AngleAxisd(pose_1.linear() * pose_2.linear().inverse());
-  velocities.tail<3>() =
-      angle_axis_diff.axis() * angle_axis_diff.angle() / delta_t;
-
+    Eigen::AngleAxisd angle_axis_diff;
+    // Computes angular velocity from the angle difference.
+    angle_axis_diff =
+        Eigen::AngleAxisd(pose_1.linear() * pose_2.linear().inverse());
+    velocities.tail<3>() =
+        angle_axis_diff.axis() * angle_axis_diff.angle() / delta_t;
+  }
   return velocities;
 }
 // TODO(naveenoid) : Replace the usage of these methods eventually with
@@ -99,9 +104,8 @@ PoseSmoother::PoseSmoother(double desired_max_linear_velocity,
       smoothed_velocity_output_port_(
           this->DeclareAbstractOutputPort(&PoseSmoother::OutputSmoothedVelocity)
               .get_index()),
-      max_linear_velocity(desired_max_linear_velocity),
-      max_angular_velocity(desired_max_angular_velocity),
-      discrete_update_in_sec(period_sec),
+      max_linear_velocity_(desired_max_linear_velocity),
+      max_angular_velocity_(desired_max_angular_velocity),
       is_filter_enabled_(filter_window_size > 1) {
   this->set_name("Pose Smoother");
   this->DeclareAbstractState(
@@ -119,32 +123,33 @@ void PoseSmoother::DoCalcUnrestrictedUpdate(
   InternalState& internal_state =
       state->get_mutable_abstract_state<InternalState>(0);
 
-  Isometry3d& current_pose = internal_state.pose;
-  double& time_at_last_accepted_pose =
-      internal_state.time_at_last_accepted_pose;
-  Vector6<double>& current_velocity = internal_state.velocity;
-
   // Update world state from inputs.
   const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
   const auto& input_pose = input->GetValue<Isometry3d>();
+
   double current_time = context.get_time();
 
   // Set the initial state of the smoother.
   if (internal_state.is_first_time) {
     internal_state.is_first_time = false;
     internal_state.pose = input_pose;
-    internal_state.time_at_last_accepted_pose = discrete_update_in_sec;
+    internal_state.time_at_last_accepted_pose = current_time;
     drake::log()->debug("PoseSmoother initial state set.");
   }
+
+  Isometry3d& current_pose = internal_state.pose;
+  double& time_at_last_accepted_pose =
+      internal_state.time_at_last_accepted_pose;
+  Vector6<double>& current_velocity = internal_state.velocity;
 
   Vector6<double> new_velocity = ComputeVelocities(
       input_pose, current_pose, current_time - time_at_last_accepted_pose);
 
   bool accept_data_point = true;
   for (int i = 0; i < 3; ++i) {
-    if (new_velocity(i) >= max_linear_velocity ||
-        new_velocity(3 + i) >= max_angular_velocity) {
+    if (new_velocity(i) >= max_linear_velocity_ ||
+        new_velocity(3 + i) >= max_angular_velocity_) {
       accept_data_point = false;
       break;
     }

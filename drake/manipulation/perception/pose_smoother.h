@@ -73,9 +73,8 @@ class PoseSmoother : public systems::LeafSystem<double> {
  private:
   const int smoothed_pose_output_port_{0};
   const int smoothed_velocity_output_port_{0};
-  const double max_linear_velocity{0.0};
-  const double max_angular_velocity{0.0};
-  const double discrete_update_in_sec{0};
+  const double max_linear_velocity_{0.0};
+  const double max_angular_velocity_{0.0};
   const bool is_filter_enabled_{false};
 };
 

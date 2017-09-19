@@ -8,6 +8,9 @@ load(
 )
 load("//tools:lint.bzl", "add_lint_tests")
 
+# TODO(naveenoid) : Merge all of the following with drake/perception and remove
+# current folder.
+
 drake_cc_library(
     name = "optitrack_pose_extractor",
     srcs = ["optitrack_pose_extractor.cc"],
@@ -19,8 +22,6 @@ drake_cc_library(
     ],
 )
 
-# TODO(naveenoid) : Merge all of the following with drake/perception and remove
-# current folder.
 drake_cc_library(
     name = "pose_smoother",
     srcs = ["pose_smoother.cc"],
