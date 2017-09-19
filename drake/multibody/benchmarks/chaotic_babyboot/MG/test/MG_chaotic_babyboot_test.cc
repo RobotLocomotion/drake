@@ -17,7 +17,7 @@ namespace {
 // qA      |  Chaotic babyboot's pendulum angle (rigid body A).
 // qB      |  Chaotic babyboot's plate angle (rigid body B).
 // qADt    |  1st-time-derivative of angle qA (a.k.a. qAdot).
-// qADt    |  1st-time-derivative of angle qB (a.k.a. qBdot).
+// qBDt    |  1st-time-derivative of angle qB (a.k.a. qBdot).
 // qADDt   |  2nd-time-derivative of angle qA (a.k.a. qAddot).
 // qBDDt   |  2nd-time-derivative of angle qB (a.k.a. qBddot).
 // energy  |  Sum of kinetic plus potential energy.
@@ -76,22 +76,18 @@ void CompareExpectedSolutionVsActualSolution(
 // mechanical energy is 0.0.  MATLAB's ode45 had the most energy variation with
 // approximately 7.0E-13 Joules (over 10 seconds) whereas Runga-Kutta-Merson's
 // variation in eenrgy was less 7.0E-14 Joules.
-// For the given initial values, the babyboot is chaotic, so it is difficult
-// (perhaps impossible) to perfectly test the numerical integrator accuracy.
+// For the given initial values, the babyboot is unstable (in a bounded-input,
+// bounded-output sense) so it is difficult (perhaps impossible) to perfectly
+// test the numerical integrator accuracy.
 // Ironically, this is why the chaotic babyboot is a good test of accuracy.
 //
-// Note: The only reason for this test is to ensure that the auto-generated
-// C++ code created by MotionGenesis can be properly integrated into Drake.
-// This test was valuable because it revealed that the BUILD file needed to be
-// modified to pass Continuous Integration (even though it passed local build,
-// test, cpplint, etc).  Specifically, the following was needed in the Bazel
-// BUILD file: copts = ["-Wno-unused-parameter"] to account for unused arguments
-// in MotionGenesis auto-generated code.  Problems encountered with dealing
-// with auto-generated code also motivated fixes to the build system.
+// Note: One reason for this test is to ensure that the MotionGenesis auto-
+// generated C++ code could be properly integrated into Drake.  This test has to
+// be continually re-verified since code changes might break it.
 //
-// The next step (not part of this test) is to build a chaotic babyboot in Drake
-// and ensure that its numerical integrators predict the same stability regions
-// and can predict very similar results that conserves mechanical energy.
+// TODO(@mitiguy) Build this chaotic babyboot in Drake and ensure its numerical
+// integrators predict similar stability regions, similar results for angles
+// and their time derivatives, and predict conservation of mechanical energy.
 //
 // Note: Although this is colloquially called a "chaotic" babyboot, it is more
 // accurately a demonstration of mathematical stability and instability.
