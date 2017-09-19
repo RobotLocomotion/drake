@@ -232,7 +232,6 @@ drake_cc_library(
     testonly = 1,
     hdrs = ["eigen_matrix_compare.h"],
     deps = [
-        ":common",
         ":essential",
         "@gtest//:without_main",
     ],
@@ -244,8 +243,8 @@ drake_cc_library(
     srcs = ["eigen_geometry_compare.cc"],
     hdrs = ["eigen_geometry_compare.h"],
     deps = [
-        ":common",
         ":eigen_matrix_compare",
+        ":essential",
         "@gtest//:without_main",
     ],
 )
@@ -372,15 +371,15 @@ py_binary(
 
 install(
     name = "install",
-    allowed_externals = [DRAKE_RESOURCE_SENTINEL],
-    data_dest = "share/drake",
-    guess_data = "WORKSPACE",
+    targets = [":resource_tool"],
     # TODO(jwnimmer-tri) The install rule should offer more specific options
     # for putting programs into libexec and including the workspace and/or
     # package name in the installed path.  For now, we'll just specify it
     # manually.
     runtime_dest = "libexec/drake/drake/common",
-    targets = [":resource_tool"],
+    data_dest = "share/drake",
+    guess_data = "WORKSPACE",
+    allowed_externals = [DRAKE_RESOURCE_SENTINEL],
 )
 
 # === test/ ===
