@@ -548,7 +548,7 @@ GTEST_TEST(RNDFBuilder, MultilaneLaneCross) {
   builder->CreateConnection(kLaneWidth, ignition::rndf::UniqueId(2, 1, 2),
                             ignition::rndf::UniqueId(1, 1, 3));
 
-  auto road_geometry =
+  const auto road_geometry =
       builder->Build(api::RoadGeometryId{"MultilaneLaneCross"});
   ASSERT_TRUE(road_geometry != nullptr);
 

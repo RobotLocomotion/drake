@@ -60,11 +60,11 @@ const double kLinearStep = 1e-2;
 // Let S be a cubic Bezier spline, with control points p0, p1, p2 and p3.
 //          c
 //         / \        Define a critical point c where lines (p1-p0)*t + p0
-//        /   \       and (p2-p3)*w + p3 meet, t and w being real scalars.
+//        /   \       and (p2-p3)*w + p3 meet, where t and w are real scalars.
 //       /     \      To prevent loops and cusps, it is sufficient to ensure
 //      p1 --- p2     that control points p1 and p2 lie in the region bounded
 //      /        \    by the line segments (c - p0)*u + p0 and (c - p3)*v + p3,
-//     p0         \   u and v being real scalars.
+//     p0         \   where u and v are real scalars.
 //                p3
 // Here we make u = v = kBezierScaling. Note that a unitary scaling will place
 // inner control points p1 = (c - p0)*u + p0 and p2 = (c - p3)*v + p3 at the
@@ -440,7 +440,7 @@ void AddWaypointsIfNecessary(const vector<int>& ids,
       // valid waypoints in the connection.
       connection.AddWaypoint(DirectedWaypoint(), waypoint_count);
     } else if (connection.waypoints()[index].id().Z() == 1) {
-      // As the waypoint is at the beggining of the connection's vector, it
+      // As the waypoint is at the beginning of the connection's vector, it
       // adds an invalid one before the first waypoint.
       connection.AddWaypoint(DirectedWaypoint(), 0);
     } else {
