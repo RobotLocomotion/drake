@@ -1,7 +1,7 @@
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator-inl.h"
 
-#include "drake/common/autodiff_overloads.h"
+#include <unsupported/Eigen/AutoDiff>
 
 namespace drake {
 namespace systems {

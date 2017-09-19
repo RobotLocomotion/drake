@@ -9,8 +9,6 @@ namespace py = pybind11;
 using std::sin;
 using std::cos;
 
-using drake::AutoDiffXd;
-
 /**
  * Force Eigen to evaluate an autodiff expression. We need this function
  * because, for example, adding two Eigen::AutoDiffXd values produces an
