@@ -73,6 +73,7 @@ drake_cc_library(
     deps = [
         "//drake/common/trajectories:piecewise_polynomial",
         "//drake/common/trajectories:piecewise_quaternion",
+        "//drake/math:geometric_transform",
     ],
 )
 
@@ -95,6 +96,7 @@ drake_cc_binary(
     ],
 )
 
+# TODO(naveenoid) : Move the moving_average_filter to within drake/perception.
 drake_cc_library(
     name = "moving_average_filter",
     srcs = ["moving_average_filter.cc"],

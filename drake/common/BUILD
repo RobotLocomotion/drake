@@ -233,6 +233,19 @@ drake_cc_library(
     hdrs = ["eigen_matrix_compare.h"],
     deps = [
         ":essential",
+        "@gtest//:without_main",
+    ],
+)
+
+drake_cc_library(
+    name = "eigen_geometry_compare",
+    testonly = 1,
+    srcs = ["eigen_geometry_compare.cc"],
+    hdrs = ["eigen_geometry_compare.h"],
+    deps = [
+        ":eigen_matrix_compare",
+        ":essential",
+        "@gtest//:without_main",
     ],
 )
 
