@@ -482,6 +482,7 @@ cc_binary(
         "bot2-procman/src/deputy/signal_pipe.h",
     ],
     copts = ["-std=gnu99"],
+    linkopts = ["-lutil"],
     deps = [
         ":lcmtypes_bot2_procman_c",
         "@glib",
@@ -496,7 +497,7 @@ py_library(
     name = "bot_procman",
     srcs = glob(
         ["bot2-procman/python/src/bot_procman/**/*.py"],
-        exclude=["*_t.py"],
+        exclude=["**/*_t.py", "**/__init__.py"],
     ),
     data = BOT2_PROCMAN_DATA,
     imports = ["bot2-procman/python/src"],
@@ -623,16 +624,23 @@ install(
     },
 )
 
+filegroup(
+    name = "bot-procman-sheriff",
+    srcs = ["@drake//tools:third_party/libbot/bot-procman-sheriff"],
+)
+
 install(
     name = "install_bot2_procman",
     targets = [
         ":bot_procman",
         ":bot-procman-deputy",
+        ":bot-procman-sheriff",
     ],
     data = BOT2_PROCMAN_DATA,
     data_dest = "share/bot_procman",
     data_strip_prefix = ["bot2-procman/python"],
     py_strip_prefix = ["bot2-procman/python/src"],
+    runtime_strip_prefix = ["bot2-procman/python/scripts"],  # for bot-procman-sheriff
 )
 
 install(
