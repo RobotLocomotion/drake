@@ -26,7 +26,7 @@ drake_cc_library(
     hdrs = ["call_matlab.h"],
     deps = [
         ":matlab_rpc",
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 

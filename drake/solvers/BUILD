@@ -28,8 +28,8 @@ drake_cc_library(
     hdrs = ["evaluator_base.h"],
     deps = [
         ":function",
-        "//drake/common",
         "//drake/common:autodiff",
+        "//drake/common:essential",
         "//drake/common:polynomial",
         "//drake/math:matrix_util",
     ],
@@ -41,8 +41,8 @@ drake_cc_library(
     hdrs = ["constraint.h"],
     deps = [
         ":evaluator_base",
-        "//drake/common",
         "//drake/common:autodiff",
+        "//drake/common:essential",
         "//drake/common:polynomial",
         "//drake/math:matrix_util",
     ],
@@ -54,8 +54,8 @@ drake_cc_library(
     hdrs = ["cost.h"],
     deps = [
         ":evaluator_base",
-        "//drake/common",
         "//drake/common:autodiff",
+        "//drake/common:essential",
         "//drake/common:polynomial",
         "//drake/math:matrix_util",
     ],
@@ -67,8 +67,8 @@ drake_cc_library(
     hdrs = ["symbolic_extraction.h"],
     deps = [
         ":decision_variable",
-        "//drake/common",
         "//drake/common:autodiff",
+        "//drake/common:essential",
         "//drake/common:number_traits",
         "//drake/common:polynomial",
         "//drake/common:symbolic",
@@ -83,7 +83,7 @@ drake_cc_library(
         ":binding",
         ":constraint",
         ":symbolic_extraction",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common:polynomial",
         "//drake/common:symbolic",
     ],
@@ -97,7 +97,7 @@ drake_cc_library(
         ":binding",
         ":cost",
         ":symbolic_extraction",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common:polynomial",
         "//drake/common:symbolic",
         "//drake/common:unused",
@@ -118,7 +118,7 @@ drake_cc_library(
     srcs = [],
     hdrs = ["function.h"],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -132,7 +132,7 @@ drake_cc_library(
     srcs = ["solver_id.cc"],
     hdrs = ["solver_id.h"],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common:reinit_after_move",
     ],
 )
@@ -163,7 +163,7 @@ drake_cc_library(
         ":snopt_solver",
         ":solver_id",
         ":solver_type",
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -191,8 +191,8 @@ drake_cc_library(
         ":snopt_solver",
         ":solver_id",
         ":symbolic_extraction",
-        "//drake/common",
         "//drake/common:autodiff",
+        "//drake/common:essential",
         "//drake/common:number_traits",
         "//drake/common:polynomial",
         "//drake/common:symbolic",
@@ -224,8 +224,8 @@ drake_cc_library(
     hdrs = ["system_identification.h"],
     deps = [
         ":mathematical_program",
-        "//drake/common",
         "//drake/common:autodiff",
+        "//drake/common:essential",
         "//drake/common:polynomial",
     ],
 )
@@ -361,8 +361,8 @@ drake_cc_library(
         ":function",
         ":indeterminate",
         ":solver_id",
-        "//drake/common",
         "//drake/common:autodiff",
+        "//drake/common:essential",
         "//drake/common:number_traits",
         "//drake/common:polynomial",
     ],
@@ -376,7 +376,7 @@ drake_cc_library(
     hdrs = ["equality_constrained_qp_solver.h"],
     deps = [
         ":mathematical_program_api",
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -386,7 +386,7 @@ drake_cc_library(
     hdrs = ["linear_system_solver.h"],
     deps = [
         ":mathematical_program_api",
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -396,7 +396,7 @@ drake_cc_library(
     hdrs = ["moby_lcp_solver.h"],
     deps = [
         ":mathematical_program_api",
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -409,7 +409,7 @@ drake_cc_library(
     hdrs = ["dreal_solver.h"],
     deps = [
         ":mathematical_program_api",
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 

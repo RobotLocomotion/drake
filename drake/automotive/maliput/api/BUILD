@@ -22,7 +22,7 @@ drake_cc_library(
         "type_specific_identifier.h",
     ],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/math:geometric_transform",
     ],
 )
@@ -57,7 +57,7 @@ drake_cc_library(
     hdrs = ["test/maliput_types_compare.h"],
     deps = [
         ":api",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/math:geometric_transform",
         "@gtest//:without_main",
     ],
