@@ -19,7 +19,8 @@ drake_cc_library(
     ],
 )
 
-# TODO(naveenoid) : Move this block to within drake/perception.
+# TODO(naveenoid) : Merge all of the following with drake/perception and remove
+# current folder.
 drake_cc_library(
     name = "pose_smoother",
     srcs = ["pose_smoother.cc"],

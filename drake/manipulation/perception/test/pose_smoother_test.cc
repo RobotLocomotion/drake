@@ -89,8 +89,7 @@ TEST_F(PoseSmootherTest, OutlierRejectionTest) {
   input_pose_0.translation() << 0.01, -5.0, 10.10;
 
   CombinedState output_state_0;
-  EXPECT_NO_THROW(output_state_0 = UpdateStateCalcOutput(input_pose_0,
-                                                         test_time));
+  output_state_0 = UpdateStateCalcOutput(input_pose_0, test_time);
   test_time += kPoseSmootherPeriod;
   EXPECT_TRUE(CompareTransforms(output_state_0.pose, input_pose_0,
                                 kPoseComparisonTolerance));
@@ -106,8 +105,8 @@ TEST_F(PoseSmootherTest, OutlierRejectionTest) {
   CombinedState output_state_1;
   output_state_1 = UpdateStateCalcOutput(input_pose_1, test_time);
   test_time += kPoseSmootherPeriod;
-  // Since input_pose_1 is expected to be rejected, the posesmoother output does
-  // not match its input.
+  // Since input_pose_1 is expected to be rejected, the posesmoother output
+  // does not match its input.
   EXPECT_FALSE(CompareTransforms(output_state_1.pose, input_pose_1,
                                  kPoseComparisonTolerance));
   // Since the current input was rejected, the posesmoother is expected to
