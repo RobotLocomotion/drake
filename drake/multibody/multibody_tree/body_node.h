@@ -1106,10 +1106,10 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   //   2. b_Bo = 0 when w_WB = 0.
   //   3. b_Bo.translational() = 0 when Bo = Bcm (p_BoBcm = 0).
   void CalcBodySpatialForceGivenItsSpatialAcceleration(
-      const MultibodyTreeContext<T> &context,
-      const PositionKinematicsCache<T> &pc,
-      const VelocityKinematicsCache<T> &vc,
-      const SpatialAcceleration<T> &A_WB, SpatialForce<T> *Ftot_BBo_W_ptr)
+      const MultibodyTreeContext<T>& context,
+      const PositionKinematicsCache<T>& pc,
+      const VelocityKinematicsCache<T>& vc,
+      const SpatialAcceleration<T>& A_WB, SpatialForce<T>* Ftot_BBo_W_ptr)
   const {
     DRAKE_DEMAND(Ftot_BBo_W_ptr != nullptr);
     // TODO(amcastro-tri): add argument for flexible body generalized
