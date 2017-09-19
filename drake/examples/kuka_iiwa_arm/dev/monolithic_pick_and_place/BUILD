@@ -53,7 +53,7 @@ drake_cc_binary(
     ],
 )
 
-# TODO(sam.creasy) Re-enable this test once it is not so sensitive.
+# TODO(sam.creasey) Re-enable this test once it is not so sensitive.
 pick_and_place_test(
     name = "pick_and_place_scenario_1",
     # TODO(sam.creasey) This should be target 1, but that requries
@@ -133,7 +133,7 @@ pick_and_place_test(
     ],
 )
 
-# TODO(sam.creasy) Re-enable this test once it is not so sensitive.
+# TODO(sam.creasey) Re-enable this test once it is not so sensitive.
 pick_and_place_test(
     name = "pick_and_place_scenario_5",
     # TODO(sam.creasey) This should be a smaller cylindrical target,
