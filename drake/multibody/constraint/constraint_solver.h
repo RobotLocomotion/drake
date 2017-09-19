@@ -1022,7 +1022,7 @@ void ConstraintSolver<T>::SolveImpactProblem(
   // satisfied to a user-specified tolerance; a set of constraint equations that
   // are dependent upon time (e.g., prescribed motion constraints) might not be
   // fully satisfiable.
-  
+
   // Determine the set of linearly independent constraints.
   std::vector<int> indep_constraints;
   Eigen::LLT<MatrixX<T>> Del;
