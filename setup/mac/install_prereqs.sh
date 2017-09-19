@@ -32,6 +32,7 @@ doxygen
 gcc
 glew
 glib
+ipopt
 libyaml
 lz4
 numpy

@@ -115,7 +115,7 @@ exports_files(
 
 exports_files(
     ["ipopt_build_with_autotools.sh"],
-    visibility = ["@ipopt//:__pkg__"],
+    visibility = ["@ipopt_robotlocomotion//:__pkg__"],
 )
 
 exports_files(
@@ -136,7 +136,6 @@ exports_create_cps_scripts([
     "fmt",
     "ignition_math",
     "ignition_rndf",
-    "ipopt",
     "lcm",
     "nlopt",
     "octomap",
@@ -299,9 +298,10 @@ config_setting(
 )
 
 # IPOPT is an open-source solver, and is included in the Drake build by
-# default. The IPOPT build is fragile, so we provide a hidden switch to shut it
-# off for developers who don't actually need it.  This is not a supported
-# configuration. Use at your own risk: --define=NO_IPOPT=ON
+# default. The IPOPT solver is irrelvant to some users of MathematicalProgram,
+# so we provide a hidden switch to shut it off for developers who don't
+# actually need it.  This is not a supported configuration. Use at your own
+# risk: --define=NO_IPOPT=ON
 config_setting(
     name = "no_ipopt",
     values = {"define": "NO_IPOPT=ON"},
