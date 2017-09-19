@@ -16,6 +16,7 @@
 
  - @ref contact_geometry "properties of the geometric contact techniques",
  - @ref contact_model "details of the contact response model", and
+ - @ref per_object_contact "per-object contact materials"
  - @ref contact_engineering "techniques for teasing out desirable behavior".
 
  @section contact_spec  Definition of contact
@@ -72,9 +73,9 @@
  Given two posed geometric shapes in a common frame, the collision detection
  system is responsible for determining if those shapes are penetrating and
  characterizing that penetration. We won't go into the details of the how and
- why these techniques work the way they do, and, instead, focus on _what_ the
+ why these techniques work the way they do, but, instead, focus on _what_ the
  properties of the results of the _current implementation_ are.  It is worth
- noting that these some of these properties are considered _problems_ yet to be
+ noting that some of these properties are considered _problems_ yet to be
  resolved and should not necessarily be considered desirable.
 
  -# Between any two collision Elements, only a _single_ contact will be
@@ -132,7 +133,7 @@
  Drake uses the Hunt-Crossley model [Hunt 1975] for computing a normal force
  `fₙ` that accounts for both stiffness and dissipation effects. This is a
  continuous model based on Hertz elastic contact theory, which correctly
- reproduces the empirically observed velocity dependence of coefficient of
+ reproduces the empirically observed velocity dependence of the coefficient of
  restitution, where `e=(1-dv)` for (small) impact velocity `v` and a material
  property `d` with units of 1/velocity. In theory, at least, `d` can be
  measured right off the coefficient of restitution-vs.-impact velocity curves:
@@ -141,7 +142,7 @@
  Given a collision between two spheres, or a sphere and a plane, we can generate
  a contact force from this equation `fₙ = kxᵐ(1 + mdẋ)` where `k` is a stiffness
  constant incorporating material properties and geometry (to be defined below),
- `x` is penetration depth and `ẋ` is penetration rate (positive during
+ `x` is penetration depth and `ẋ` is penetration rate (positive for increasing
  penetration and negative during rebound). Exponent `m` depends on the surface
  geometry and captures the change in contact patch area with penetration. For
  Hertz contact where the geometry can be approximated by sphere (or
@@ -176,6 +177,32 @@
  - [Hunt 1975] K. H. Hunt and F. R. E. Crossley, "Coefficient of Restitution
    Interpreted as Damping in Vibroimpact," ASME Journal of Applied Mechanics,
    pp. 440-445, June 1975. http://dx.doi.org/10.1115/1.3423596
+
+ The units for stiffness k are stress/strain (force/area/strain or N/m²·strain).
+ The units for dissipation d are 1/velocity. At first glance, if we consider
+ the equation `fₙ = kx(1 + dẋ)` and examine the units, it _appears_ that we
+ are _not_ producing forces. Of the three factors, k's units are N/m²·strain,
+ x is m, and (1 + dẋ) is unitless. The product produces a value with the
+ apparent units N/m·strain. How is this a force?
+
+ More generally, we can define `fₙ = kg(x)` (omitting the unitless dissipation
+ effects for simplicity). `g(x)` must have units of m²·strain. To that end,
+ we can consider a decomposition of `g(q) = A(q)·ε(q)` where `q` is the
+ contact configuration, the details of which depend on how the contact is
+ characterized, `A(q)` is a function that captures the area of the contact and
+ `ε(q)` captures the strain (guaranteeing our units are correct). In Drake's
+ current contact model `q` is the simply the penetration depth at a single
+ point (`x`). It assumes that the contact area is independent of the depth
+ _and_, further, that it is a constant 1 m². So, `A(x) = 1 m²`. The strain
+ function makes a similar unit assumption as `ε(x) = x /1 m`. Therefore,
+ `g(x) = A(q)·ε(q) = 1 m²·x /1 m = x` (with units m²·strain). These simplifying
+ assumptions lead to artifacts. See @ref contact_engineering for details.
+
+ These are meaningful parameters for compliant contact, and the relationship
+ fₙ(q) = k·A(q)·ε(q) is a reasonable characterization of compliant response.
+ However our current model is overly simplistic. Future
+ implementations will replace the current implementation with more physically
+ plausible models.
 
  @section tangent_force Stribeck Friction Tangential Force
 
@@ -286,6 +313,135 @@
  Next topic: @ref contact_engineering
 */
 
+/** @defgroup per_object_contact Per-object contact material
+ @ingroup drake_contacts
+
+ Drake supports defining compliant contact material properties on a per
+ collision geometry basis. It has several mechanisms in place to facilitate
+ working with per-object contact materials:
+
+ - Universal default values (all objects default to the universal values if none
+   have been explicitly specified.
+ - Parsing per-collision element properties from URDF and SDF files using
+   extended tags (formatted identically for both source files types).
+ - Runtime access to set the global default values and per-element values.
+
+ @section Material parameters and evaluating contact
+
+ The per-object material properties resemble those of the contact model,
+ consisting of:
+
+ - stiffness (k) with units of stress/strain,
+ - dissipation (d) with units of 1/velocity, and
+ - static and dynamic friction (unitless μ_s and μ_d, respectively).
+
+ The parameters outlined in @ref contact_model are derived from the parameter
+ values for the two colliding bodies. Consider two colliding bodies I and J.
+ The contact values k, d, μ_s, and μ_d used to compute the contact force
+ are defined in the following way:
+
+ - sᵢ ∈ [0, 1] is the "squish" factor of body I. It represents the amount of
+   total deformation is experienced by body I. Consider contact between a steel
+   body and foam ball; the foam ball would experience the entire deformation and
+   the squish factors for the foam ball and steel plate would be 1 and 0,
+   respectively. The squish value is defined as sᵢ = kⱼ / (kᵢ + kⱼ), with
+   sⱼ = 1 - sᵢ.
+ - k = sᵢkᵢ = sⱼkⱼ. The stiffness of the _contact_ will generally not be the
+   stiffness of either constituent material (unless one were infinite). If
+   kᵢ = kⱼ, then k would be kᵢ/2.
+ - d = sᵢdᵢ + s₂d₂. Again, the dissipation of the contact is simply a linear
+   interpolation of the two bodies' dissipation values.
+ - μ_s (and μ_d) are defined as 2μᵢμⱼ / (μᵢ + μⱼ).
+
+ Finally, the contact point is also defined with respect to the "squish"
+ factors. For penetrating bodies I and J, there is a point on the surface of I
+ that _most_ deeply penetrates into J (and vice versa). We will call those
+ points p_FIc and p_FJc (measured and expressed in some common frame F). The
+ contact point, defined in the same frame, is p_FC = p_FIc * sⱼ + P_FJc * sᵢ.
+ We draw _particular_ attention to the fact that the point on I's surface is
+ weighted by J's squish factor and vice versa. That is because, if body I
+ experiences all of the deformation, it will be deformed all the way to the
+ point of deepest penetration _in_ I, which was the definition of p_FJc.
+
+ @section Global default values
+
+ Drake contains hard-coded material parameter values
+ (see compliant_parameters.h). If no specific values are provided for
+ a collision element, it will _shadow_ these global default values. This
+ relationship is _dynamic_. In other words, the default _values_ are not copied
+ into an element at instantiation time, just a _relationship_. A collision
+ element configured to use default parameter values will report different values
+ as the default values are changed. The implication is the order of operations
+ between instantiating collision elements which use default values and setting
+ default values is irrelevant.
+
+ To set the default values, use CompliantContactParameters::SetDefaultValues().
+
+ __A word of warning__
+
+ It might be tempting to write code akin to this pseudo-code:
+
+ ```C++
+ CompliantContactParameters my_defaults;
+ my_defaults.set_stiffness(10);
+ CompliantContactParameters::SetDefaultValues(my_defaults);
+ ParseUrdf("my_robot.urdf");
+ my_defaults.set_stiffness(15);
+ CompliantContactParameters::SetDefaultValues(my_defaults);
+ ParseUrdf("other_robot.urdf");
+ ```
+
+ Assume that the collision elements in both `my_robot.urdf` and
+ `other_robot.urdf` have no specified contact parameters; they use the default
+ values. At first glance, one might be inclined to believe that the first
+ robot's collision elements have a stiffness value of 10 and the second robot
+ has a stiffness value of 15. This is _not_ the case. Both robots use the
+ single global default value and so both have stiffness values of 15.
+
+ @section Specifying contact parameter values in URDF/SDF.
+
+ We are exploiting the fact that URDF and SDF are XML files and choose to
+ naively extend the specification to include a custom tag. Although there are
+ numerous differences between the two formats, there is remarkable similarity
+ in declaring collision geometries. For simplicity's sake, we expect identically
+ formatted contact material format in both formats that look something like
+ this:
+
+ ```xml
+ ...
+ <collision ...>
+   <geometry ...>
+   </geometry>
+
+   <drake_compliance>
+     <stiffness>##</stiffness>
+     <dissipation>##</dissipation>
+     <static_friction>##</static_friction>
+     <dynamic_friction>##</dynamic_friction>
+   </drake_compliance>
+
+ </collision>
+ ...
+ ```
+
+ Differences between URDF and SDF are dismissed with ellipses. What is
+ significant is that the `<drake_compliance>` tag should be introduced as a
+ child of the `<collision>` tag (common to both formats) and should be
+ formatted as shown.
+
+ The following rules are applied for parsing:
+
+ - If no `<drake_compliance>` tag is found, the element uses the global default
+   parameters.
+ - Not all properties are required; explicitly specified properties will be
+   applied to the corresponding element and omitted properties will map to the
+   default values.
+ - Friction values must be defined as a pair, or not at all. When defined as a
+   pair, the `static_friction` value must be greater than or equal to the
+   `dynamic_friction` value. Failure to meet these requirements will cause a
+   runtime exception.
+ */
+
 /** @defgroup contact_engineering Working with Contacts in Drake
  @ingroup drake_contacts
 
@@ -319,7 +475,7 @@
  - **Picking values for the other contact parameters**
 
    The contact model provides five parameters:
-     - Stiffness `k` in N/m,
+     - Stiffness `k` in units of stress/strain,
      - dissipation `d` in s/m (1/velocity),
      - static coefficient of friction `μs`, unitless,
      - dynamic (kinetic) coefficient of friction `μd`, unitless,
@@ -327,31 +483,42 @@
 
    In a compliant model, deformation (which appears as
    penetration of the undeformed geometry) is part of the stable equilibrium
-   state. Imagine a box sitting on a half plane.
+   state. Imagine a box sitting on a plane.
    The stable penetration depth will, in principle, be equal to the box's weight
-   divided by the stiffness. Appropriate stiffness for a 1 kg box is not the
-   same as for a 1000 kg car. (In fact, with a small stiffness, the car will
+   divided by the stiffness. Appropriate stiffness for a 1-kg box is not the
+   same as for a 1000-kg car. (In fact, with a small stiffness, the car will
    pass right through the ground while attempting to find the equilibrium
-   distance.) Stiffness is the most important parameter for capturing realistic
-   deformation of softer materials. The parameter `k` is used to capture both
-   the surface material's inherent stiffness per unit area, and the area of
-   contact. The dissipation `d` is significant primarily for impacts, where
-   there are rapid changes in deformation.
+   distance.) Stiffness is the most important parameter for capturing the
+   relationship between object in equilibrium. The dissipation `d` is
+   significant primarily for impacts, where there are rapid changes in
+   deformation.
 
-   Simulation speed using an explicit integrator is likely to be most affected
-   by `k` and `vₛ`. In cases where more penetration is acceptable, you can
-   soften `k` and get better performance in exchange for less-realistic
+   Simulation performance using an explicit integrator is likely to be most
+   affected by `k` and `vₛ`. In cases where more penetration is acceptable, you
+   can soften `k` and get better performance in exchange for less-realistic
    deformation. The total contact force at equilibrium is not very sensitive
    to `k` since the penetration will be adjusted as necessary to achieve
    force balance. For stiction behavior, increasing the coefficients of friction
-   to unrealistic levels seems counterintuitively to degrade the results. The
+   to unrealistic levels seems, counterintuitively, to degrade the results. The
    previous note discusses the importance of `vₛ`.
 
- - **Global contact parameters**
+ - ** Stiffness and model limitations **
 
-   In its current incarnation, Drake does _not_ support per-object mechanical
-   material properties. That means whatever parameter values you select will
-   be the same for all contacts in the world.
+   As indicated earlier, the _current_ contact model generates a contact force
+   by assuming `A(x) = 1 m²` and `ε(x) = x / 1 m`. The implication is that the
+   forces acting on bodies in contact are not purely a function of stiffness and
+   degree of penetration but also of the _number_ of contact points reported,
+   since each contact point ostensibly represents some fraction of the contact
+   area. Selecting a stiffness value from a reference table may not produce
+   the desired result. The simulated material may appear significantly softer.
+   As the number of contact points increase, we sample the contact manifold at a
+   higher density and get a truer representation of the area of contact and,
+   therefore, a more meaningful contact force. This is particularly significant
+   when considering the next point.
+
+   Until this model changes, it may be necessary to tune the stiffness to a
+   higher value than one that is reported as being physically accurate. When
+   the underlying model is changed, this issue will be removed.
 
  - **Surface-on-surface contacts**
 
@@ -371,18 +538,6 @@
    only the contact points make contact, providing reliable points of contact.
    However, for arbitrary configurations contact with the box will provide
    more general contact.
-
- - **Contact samples**
-
-   Because of weaknesses in the current implementation of contact detection and
-   characterization, we get best numerical performance when explicitly
-   enumerating contact points on a body (see previous issue). However, each of
-   those contact points are processed without any knowledge of the others.
-   Thus, for a fixed contact force between two objects, increasing the number
-   of explicit contact points reduces the amount of penetration needed to
-   generate that force. If you use this technique be sure to consider that each
-   explicit point represents a fraction of the contact area, and adjust the
-   point-contact stiffness to reflect that.
 
  - **Choice of integrator**
 
