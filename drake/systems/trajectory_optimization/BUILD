@@ -11,7 +11,7 @@ drake_cc_library(
     srcs = ["multiple_shooting.cc"],
     hdrs = ["multiple_shooting.h"],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common/trajectories:piecewise_polynomial_trajectory",
         "//drake/solvers:mathematical_program",
         "//drake/systems/framework",

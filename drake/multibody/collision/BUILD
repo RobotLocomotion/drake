@@ -20,8 +20,8 @@ drake_cc_library(
         "point_pair.h",
     ],
     deps = [
-        "//drake/common",
         "//drake/common:autodiff",
+        "//drake/common:essential",
         "//drake/common:sorted_vectors_have_intersection",
         "//drake/multibody/shapes",
     ],

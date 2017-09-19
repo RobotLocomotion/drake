@@ -14,7 +14,7 @@ drake_cc_library(
         "ball-inl.h",
     ],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/systems/framework:leaf_system",
     ],
 )
@@ -28,7 +28,7 @@ drake_cc_library(
     ],
     deps = [
         ":ball",
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 

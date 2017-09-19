@@ -45,7 +45,7 @@ drake_cc_library(
         "pixel_types.h",
     ],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common:reinit_after_move",
     ],
 )
@@ -60,7 +60,7 @@ drake_cc_library(
     ],
     deps = [
         ":image",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/systems/framework",
         "@lcmtypes_robotlocomotion",
         "@zlib",
@@ -150,7 +150,7 @@ drake_cc_library(
     srcs = ["vtk_util.cc"],
     hdrs = ["vtk_util.h"],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "@eigen",
         "@vtk//:vtkCommonCore",
         "@vtk//:vtkCommonTransforms",
@@ -225,7 +225,7 @@ drake_cc_library(
     ],
     deps = [
         ":accelerometer",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common:find_resource",
         "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant:drake_visualizer",

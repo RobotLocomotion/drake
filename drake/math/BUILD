@@ -11,8 +11,8 @@ drake_cc_library(
     srcs = ["autodiff.cc"],
     hdrs = ["autodiff.h"],
     deps = [
-        "//drake/common",
         "//drake/common:autodiff",
+        "//drake/common:essential",
         "//drake/common:unused",
     ],
 )
@@ -22,7 +22,7 @@ drake_cc_library(
     srcs = ["continuous_algebraic_riccati_equation.cc"],
     hdrs = ["continuous_algebraic_riccati_equation.h"],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common:is_approx_equal_abstol",
     ],
 )
@@ -33,7 +33,7 @@ drake_cc_library(
     hdrs = ["discrete_algebraic_riccati_equation.h"],
     deps = [
         ":autodiff",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common:is_approx_equal_abstol",
     ],
 )
@@ -58,7 +58,7 @@ drake_cc_library(
         "rotation_matrix.h",
     ],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common:is_approx_equal_abstol",
     ],
 )
@@ -68,7 +68,7 @@ drake_cc_library(
     srcs = ["orthonormal_basis.cc"],
     hdrs = ["orthonormal_basis.h"],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -80,7 +80,7 @@ drake_cc_library(
         "cross_product.h",
     ],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -102,7 +102,7 @@ drake_cc_library(
     deps = [
         ":autodiff",
         ":vector3_util",
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -111,7 +111,7 @@ drake_cc_library(
     srcs = ["matrix_util.cc"],
     hdrs = ["matrix_util.h"],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common:number_traits",
     ],
 )
@@ -123,7 +123,7 @@ drake_cc_library(
     srcs = ["eigen_sparse_triplet.cc"],
     hdrs = ["eigen_sparse_triplet.h"],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -140,7 +140,7 @@ drake_cc_library(
     hdrs = ["expmap.h"],
     deps = [
         ":gradient",
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -149,7 +149,7 @@ drake_cc_library(
     srcs = ["gray_code.cc"],
     hdrs = ["gray_code.h"],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "@eigen",
     ],
 )
@@ -159,8 +159,8 @@ drake_cc_library(
     srcs = ["jacobian.cc"],
     hdrs = ["jacobian.h"],
     deps = [
-        "//drake/common",
         "//drake/common:autodiff",
+        "//drake/common:essential",
     ],
 )
 
@@ -169,7 +169,7 @@ drake_cc_library(
     srcs = [],
     hdrs = ["saturate.h"],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         # TODO(jwnimmer-tri) Remove once cond() no longer requires it.
         "//drake/common:autodiff",
         "//drake/common:cond",

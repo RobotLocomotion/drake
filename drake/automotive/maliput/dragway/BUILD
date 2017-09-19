@@ -29,7 +29,7 @@ drake_cc_library(
     ],
     deps = [
         "//drake/automotive/maliput/api",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common:unused",
         "//drake/math:saturate",
     ],
@@ -41,7 +41,7 @@ drake_cc_binary(
     deps = [
         ":dragway",
         "//drake/automotive/maliput/utility",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common:text_logging_gflags",
         "//drake/thirdParty:spruce",
         "@com_github_gflags_gflags//:gflags",

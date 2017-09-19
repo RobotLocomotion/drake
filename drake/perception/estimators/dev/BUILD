@@ -16,7 +16,7 @@ drake_cc_library(
     srcs = ["pose_closed_form.cc"],
     hdrs = ["pose_closed_form.h"],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/math:geometric_transform",
     ],
 )
@@ -59,8 +59,8 @@ drake_cc_library(
     hdrs = ["test/test_util.h"],
     data = [":test_models"],
     deps = [
-        "//drake/common",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:essential",
         "//drake/lcm",
         "//drake/lcmtypes:viewer",
         "//drake/math:geometric_transform",
