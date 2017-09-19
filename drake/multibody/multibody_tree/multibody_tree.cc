@@ -376,13 +376,27 @@ void MultibodyTree<T>::DoCalcMassMatrixViaInverseDynamics(
 
 template <typename T>
 void MultibodyTree<T>::CalcBiasTerm(
+    const systems::Context<T>& context, EigenPtr<VectorX<T>> C) const {
+  DRAKE_DEMAND(C != nullptr);
+  DRAKE_DEMAND(C->rows() == get_num_velocities());
+  DRAKE_DEMAND(C->cols() == 1);
+
+  // TODO(amcastro-tri): Eval PositionKinematicsCache when caching lands.
+  PositionKinematicsCache<T> pc(get_topology());
+  CalcPositionKinematicsCache(context, &pc);
+  // TODO(amcastro-tri): Eval VelocityKinematicsCache when caching lands.
+  VelocityKinematicsCache<T> vc(get_topology());
+  CalcVelocityKinematicsCache(context, pc, &vc);
+
+  DoCalcBiasTerm(context, pc, vc, C);
+}
+
+template <typename T>
+void MultibodyTree<T>::DoCalcBiasTerm(
     const systems::Context<T>& context,
     const PositionKinematicsCache<T>& pc,
     const VelocityKinematicsCache<T>& vc,
-    const std::vector<SpatialForce<T>>& Fapplied_Bo_W_array,
     EigenPtr<VectorX<T>> C) const {
-  DRAKE_DEMAND(C->size() == get_num_velocities());
-
   const int nv = get_num_velocities();
   C->setZero();
 
@@ -398,7 +412,7 @@ void MultibodyTree<T>::CalcBiasTerm(
   VectorX<T> tau(nv);
 
   // TODO(amcastro-tri): provide specific API for when vdot = 0.
-  CalcInverseDynamics(context, pc, vc, vdot, Fapplied_Bo_W_array, VectorX<T>(),
+  CalcInverseDynamics(context, pc, vc, vdot, {}, VectorX<T>(),
                       &A_WB_array, &F_BMo_W_array, &tau);
   *C = tau;
 }

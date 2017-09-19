@@ -484,7 +484,6 @@ class PendulumKinematicTests : public PendulumTests {
   /// drake::multibody::benchmarks::Acrobot.
   void VerifyMassMatrixViaInverseDynamics(
       double shoulder_angle, double elbow_angle) {
-
     shoulder_mobilizer_->set_angle(context_.get(), shoulder_angle);
     elbow_mobilizer_->set_angle(context_.get(), elbow_angle);
 
@@ -500,21 +499,48 @@ class PendulumKinematicTests : public PendulumTests {
   /// implementation in drake::multibody::benchmarks::Acrobot.
   void VerifyCoriolisTermViaInverseDynamics(
       double shoulder_angle, double elbow_angle) {
-    Vector2d q(shoulder_angle, elbow_angle);
-    Vector2d v;
-    Vector2d vdot = Vector2d::Zero();
+    shoulder_mobilizer_->set_angle(context_.get(), shoulder_angle);
+    elbow_mobilizer_->set_angle(context_.get(), elbow_angle);
 
-    v = Vector2d::Zero();  // C(q, v) = 0 for v = 0.
-    VerifyInverseDynamics(q, v, vdot);
+    double shoulder_rate, elbow_rate;
+    Vector2d C;
+    Vector2d C_expected;
 
-    v = Vector2d::UnitX();  // First column of C(q, e_1) times e_1.
-    VerifyInverseDynamics(q, v, vdot);
+    // C(q, v) = 0 for v = 0.
+    shoulder_rate = 0.0;
+    elbow_rate = 0.0;
+    shoulder_mobilizer_->set_angular_rate(context_.get(), shoulder_rate);
+    elbow_mobilizer_->set_angular_rate(context_.get(), elbow_rate);
+    model_->CalcBiasTerm(*context_, &C);
+    C_expected = acrobot_benchmark_.CalcCoriolisVector(
+            shoulder_angle, elbow_angle, shoulder_rate, elbow_rate);
 
-    v = Vector2d::UnitY();  // Second column of C(q, e_2) times e_2.
-    VerifyInverseDynamics(q, v, vdot);
+    // First column of C(q, e_1) times e_1.
+    shoulder_rate = 1.0;
+    elbow_rate = 0.0;
+    shoulder_mobilizer_->set_angular_rate(context_.get(), shoulder_rate);
+    elbow_mobilizer_->set_angular_rate(context_.get(), elbow_rate);
+    model_->CalcBiasTerm(*context_, &C);
+    C_expected = acrobot_benchmark_.CalcCoriolisVector(
+        shoulder_angle, elbow_angle, shoulder_rate, elbow_rate);
 
-    v = Vector2d::Ones();  // Both velocities are non-zero.
-    VerifyInverseDynamics(q, v, vdot);
+    // Second column of C(q, e_2) times e_2.
+    shoulder_rate = 0.0;
+    elbow_rate = 1.0;
+    shoulder_mobilizer_->set_angular_rate(context_.get(), shoulder_rate);
+    elbow_mobilizer_->set_angular_rate(context_.get(), elbow_rate);
+    model_->CalcBiasTerm(*context_, &C);
+    C_expected = acrobot_benchmark_.CalcCoriolisVector(
+        shoulder_angle, elbow_angle, shoulder_rate, elbow_rate);
+
+    // Both velocities are non-zero.
+    shoulder_rate = 1.0;
+    elbow_rate = 1.0;
+    shoulder_mobilizer_->set_angular_rate(context_.get(), shoulder_rate);
+    elbow_mobilizer_->set_angular_rate(context_.get(), elbow_rate);
+    model_->CalcBiasTerm(*context_, &C);
+    C_expected = acrobot_benchmark_.CalcCoriolisVector(
+        shoulder_angle, elbow_angle, shoulder_rate, elbow_rate);
   }
 
   /// This method verifies the correctness of

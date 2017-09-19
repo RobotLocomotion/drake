@@ -750,11 +750,10 @@ class MultibodyTree {
   /// @param[in] context
   ///   The context containing the state of the %MultibodyTree model.
   /// @param[out] H
-  ///   A valid (non-null) pointer to a squared matrix in `ℛⁿ` with n the
+  ///   A valid (non-null) pointer to a squared matrix in `ℛⁿˣⁿ` with n the
   ///   number of generalized velocities (get_num_velocities()) of the model.
-  ///
-  /// This method aborts if H is the nullptr of if it does not have the proper
-  /// size.
+  ///   This method aborts if H is the nullptr or if it does not have the proper
+  ///   size.
   ///
   /// The algorithm used to build `M(q)` consists in computing one column of
   /// `M(q)` at a time using inverse dynamics. The result from inverse dynamics,
@@ -778,12 +777,27 @@ class MultibodyTree {
       const systems::Context<T>& context,
       EigenPtr<MatrixX<T>> H) const;
 
+  /// Computes the bias term `C(q, v)v` containing Coriolis and gyroscopic
+  /// effects of the multibody equations of motion: <pre>
+  ///   M(q)v̇ + C(q, v)v = tau_app + ∑ J_WBᵀ(q) Fapp_Bo_W
+  /// </pre>
+  /// where `M(q)` is the multibody model's mass matrix and `tau_app` consists
+  /// of a vector applied generalized forces. The last term is a summation over
+  /// all bodies in the model where `Fapp_Bo_W` is an applied spatial force on
+  /// body B at `Bo` which gets projected into the space of generalized forces
+  /// with the geometric Jacobian `J_WB(q)` which maps generalized velocities
+  /// into body B spatial velocity as `V_WB = J_WB(q)v`.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the %MultibodyTree model. It stores
+  ///   the generalized positions q and the generalized velocities v.
+  /// @param[out] C
+  ///   A valid (non-null) pointer to a column vector in `ℛⁿ` with n the
+  ///   number of generalized velocities (get_num_velocities()) of the model.
+  ///   This method aborts if C is the nullptr or if it does not have the proper
+  ///   size.
   void CalcBiasTerm(
-      const systems::Context<T>& context,
-      const PositionKinematicsCache<T>& pc,
-      const VelocityKinematicsCache<T>& vc,
-      const std::vector<SpatialForce<T>>& Fapplied_Bo_W_array,
-      EigenPtr<VectorX<T>> C) const;
+      const systems::Context<T>& context, EigenPtr<VectorX<T>> C) const;
 
   /// @name Methods to retrieve multibody element variants
   ///
@@ -934,6 +948,20 @@ class MultibodyTree {
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
       EigenPtr<MatrixX<T>> H) const;
+
+  // Implementation of CalcBiasTerm().
+  // It assumes:
+  //  - The position kinematics cache object is already updated to be in sync
+  //    with `context`.
+  //  - The velocity kinematics cache object is already updated to be in sync
+  //    with `context`.
+  //  - C is not the nullptr.
+  //  - C has storage for a vector of size get_num_velocities().
+  void DoCalcBiasTerm(
+      const systems::Context<T>& context,
+      const PositionKinematicsCache<T>& pc,
+      const VelocityKinematicsCache<T>& vc,
+      EigenPtr<VectorX<T>> C) const;
 
   void CreateBodyNode(BodyNodeIndex body_node_index);
 
