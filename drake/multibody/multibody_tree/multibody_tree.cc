@@ -332,11 +332,22 @@ void MultibodyTree<T>::CalcInverseDynamics(
 template <typename T>
 void MultibodyTree<T>::CalcMassMatrixViaInverseDynamics(
     const systems::Context<T>& context,
-    const PositionKinematicsCache<T>& pc,
     EigenPtr<MatrixX<T>> H) const {
+  DRAKE_DEMAND(H != nullptr);
   DRAKE_DEMAND(H->rows() == get_num_velocities());
   DRAKE_DEMAND(H->cols() == get_num_velocities());
 
+  // TODO(amcastro-tri): Eval PositionKinematicsCache when caching lands.
+  PositionKinematicsCache<T> pc(get_topology());
+  CalcPositionKinematicsCache(context, &pc);
+  DoCalcMassMatrixViaInverseDynamics(context, pc, H);
+}
+
+template <typename T>
+void MultibodyTree<T>::DoCalcMassMatrixViaInverseDynamics(
+    const systems::Context<T>& context,
+    const PositionKinematicsCache<T>& pc,
+    EigenPtr<MatrixX<T>> H) const {
   VelocityKinematicsCache<T> vc(get_topology());
   vc.InitializeToZero();
 

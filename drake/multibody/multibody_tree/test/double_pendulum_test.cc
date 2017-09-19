@@ -484,17 +484,12 @@ class PendulumKinematicTests : public PendulumTests {
   /// drake::multibody::benchmarks::Acrobot.
   void VerifyMassMatrixViaInverseDynamics(
       double shoulder_angle, double elbow_angle) {
-    Vector2d q(shoulder_angle, elbow_angle);
-    Vector2d v = Vector2d::Zero();
-    Vector2d vdot;
+
+    shoulder_mobilizer_->set_angle(context_.get(), shoulder_angle);
+    elbow_mobilizer_->set_angle(context_.get(), elbow_angle);
 
     Matrix2d H;
-
-    vdot = Vector2d::UnitX();  // First column of M(q).
-    H.col(0) = VerifyInverseDynamics(q, v, vdot);
-
-    vdot = Vector2d::UnitY();  // Second column of M(q).
-    H.col(1) = VerifyInverseDynamics(q, v, vdot);
+    model_->CalcMassMatrixViaInverseDynamics(*context_, &H);
 
     Matrix2d H_expected = acrobot_benchmark_.CalcMassMatrix(elbow_angle);
     EXPECT_TRUE(H.isApprox(H_expected, 5 * kEpsilon));

@@ -743,9 +743,39 @@ class MultibodyTree {
       std::vector<SpatialForce<T>>* F_BMo_W_array,
       EigenPtr<VectorX<T>> tau_array) const;
 
+  /// Performs the computation of the mass matrix `M(q)` of the model using
+  /// inverse dynamics, where the generalized positions q are stored in
+  /// `context`. See CalcInverseDynamics().
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the %MultibodyTree model.
+  /// @param[out] H
+  ///   A valid (non-null) pointer to a squared matrix in `ℛⁿ` with n the
+  ///   number of generalized velocities (get_num_velocities()) of the model.
+  ///
+  /// This method aborts if H is the nullptr of if it does not have the proper
+  /// size.
+  ///
+  /// The algorithm used to build `M(q)` consists in computing one column of
+  /// `M(q)` at a time using inverse dynamics. The result from inverse dynamics,
+  /// with no applied forces, is the vector of generalized forces: <pre>
+  ///   tau = M(q)v̇ + C(q, v)v
+  /// </pre>
+  /// where q and v are the generalized positions and velocities, respectively.
+  /// When `v = 0` the Coriolis and gyroscopic forces term `C(q, v)v` is zero.
+  /// Therefore the `i-th` column of `M(q)` can be obtained performing inverse
+  /// dynamics with an acceleration vector `v̇ = eᵢ`, with `eᵢ` the standard
+  /// (or natural) basis of `ℛⁿ` with n the number of generalized velocities.
+  /// We write this as: <pre>
+  ///   H.ᵢ(q) = M(q) * e_i
+  /// </pre>
+  /// where `H.ᵢ(q)` (notice the dot for the rows index) denotes the `i-th`
+  /// column in M(q).
+  ///
+  /// @warning This is an O(n²) algorithm. Avoid the explicit computation of the
+  /// mass matrix whenever possible.
   void CalcMassMatrixViaInverseDynamics(
       const systems::Context<T>& context,
-      const PositionKinematicsCache<T>& pc,
       EigenPtr<MatrixX<T>> H) const;
 
   void CalcBiasTerm(
@@ -893,6 +923,17 @@ class MultibodyTree {
   // This method will throw a std::logic_error if FinalizeTopology() was not
   // previously called on this tree.
   void FinalizeInternals();
+
+  // Implementation for CalcMassMatrixViaInverseDynamics().
+  // It assumes:
+  //  - The position kinematics cache object is already updated to be in sync
+  //    with `context`.
+  //  - H is not the nullptr.
+  //  - H has storage for a square matrix of size get_num_velocities().
+  void DoCalcMassMatrixViaInverseDynamics(
+      const systems::Context<T>& context,
+      const PositionKinematicsCache<T>& pc,
+      EigenPtr<MatrixX<T>> H) const;
 
   void CreateBodyNode(BodyNodeIndex body_node_index);
 
