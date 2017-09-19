@@ -666,9 +666,6 @@ void Rod2D<T>::CalcImpactProblemData(
   };
   data->kF.setZero(nr);
 
-  // Indicate no equality constraints.
-
-
   // Set the number of limit constraints.
   data->kL.resize(0);
 }

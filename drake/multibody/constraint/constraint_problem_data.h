@@ -85,7 +85,7 @@ struct ConstraintAccelProblemData {
   /// an acceleration-level formulation (i.e., g̈(t, q, v, v̇), for the
   /// aforementioned definition of g(t,q)). That differentiation yields
   /// g̈ = G⋅v̇ + dG/dt⋅v, which is consistent with the constraint class under
-  /// the definition kᴳ(t,q,v) ≡ dG/dt⋅v. An example such holonomic constraint
+  /// the definition kᴳ(t,q,v) ≡ dG/dt⋅v. An example such (holonomic) constraint
   /// function is the transmission (gearing) constraint below:<pre>
   /// 0 = v̇ᵢ - rv̇ⱼ
   /// </pre>

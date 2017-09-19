@@ -373,6 +373,7 @@ void ConstraintSolver<T>::DetermineIndependentConstraints(
     return problem_data->G_transpose_mult(lambda);
   };
 
+  // Verify that we did indeed change the G_mult and G_transpose_mult operators.
   typedef VectorX<T> (*Op)(const VectorX<T>&);
   DRAKE_ASSERT(!problem_data->G_mult.template target<Op>() ||
       *G_mult->template target<Op>() !=
@@ -483,7 +484,7 @@ void ConstraintSolver<T>::DetermineNewPartialInertiaSolveOperator(
         GT_Del_G_iM_X);
 
     // Compute the result
-    result = problem_data->solve_inertia(X) - iM_GT_Del_G_iM_X;
+    result = iM_X - iM_GT_Del_G_iM_X;
 
     return result;
   };
@@ -1018,7 +1019,7 @@ void ConstraintSolver<T>::SolveImpactProblem(
   //          |            kᴳ            |
   //
 
-  // @TODO(edrumwri): Consider checking whether or not the constraints are
+  // @TODO(edrumwri) Consider checking whether or not the constraints are
   // satisfied to a user-specified tolerance; a set of constraint equations that
   // are dependent upon time (e.g., prescribed motion constraints) might not be
   // fully satisfiable.
@@ -1064,11 +1065,11 @@ void ConstraintSolver<T>::SolveImpactProblem(
   const MatrixX<T> eye = MatrixX<T>::Identity(problem_data.v.size(),
                                               problem_data.v.size());
   const MatrixX<T> inv_M = problem_data.solve_inertia(eye);
-  Eigen::LLT<MatrixX<T>> M(inv_M);
-  DRAKE_DEMAND(M.info() == Eigen::Success);
-  VectorX<T> Mvt = M.solve(problem_data.v);
+  Eigen::LLT<MatrixX<T>> inv_M_llt(inv_M);
+  DRAKE_DEMAND(inv_M_llt.info() == Eigen::Success);
+  VectorX<T> Mv = inv_M_llt.solve(problem_data.v);
   VectorX<T> a(problem_data.v.size() + indep_constraints.size());
-  a.head(problem_data.v.size()) = -Mvt;
+  a.head(problem_data.v.size()) = -Mv;
   a.tail(indep_constraints.size()) = data_ptr->kG;
   const VectorX<T> invA_a = A_solve(a);
   const VectorX<T> trunc_neg_invA_a = -invA_a.head(problem_data.v.size());

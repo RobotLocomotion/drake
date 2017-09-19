@@ -58,6 +58,10 @@ class Constraint2DSolverTest : public ::testing::Test {
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<ConstraintAccelProblemData<double>> accel_data_;
   std::unique_ptr<ConstraintVelProblemData<double>> vel_data_;
+  const bool kForceAppliedToLeft = false;
+  const bool kForceAppliedToRight = true;
+  const bool kSlideLeft = false;
+  const bool kSlideRight = true;
 
   // Gets the frame for a sliding contact.
   Matrix2<double> GetSlidingContactFrameToWorldTransform(
@@ -1262,66 +1266,66 @@ class Constraint2DSolverTest : public ::testing::Test {
 // Tests the rod in single-point sticking configurations.
 TEST_F(Constraint2DSolverTest, SinglePointStickingBothSigns) {
   // Test sticking with applied force to the right (true) and the left (false).
-  SinglePointSticking(true /* applied force to the right */);
-  SinglePointSticking(false /* applied force to the left */);
+  SinglePointSticking(kForceAppliedToRight);
+  SinglePointSticking(kForceAppliedToLeft);
 }
 
 // Tests the rod in a two-point sticking configurations.
 TEST_F(Constraint2DSolverTest, TwoPointStickingSign) {
   // Test sticking with applied force to the right (true) and the left (false).
-  TwoPointSticking(true /* applied force to the right */);
-  TwoPointSticking(false /* applied force to the left */);
+  TwoPointSticking(kForceAppliedToRight);
+  TwoPointSticking(kForceAppliedToLeft);
 }
 
 // Tests the rod in two-point non-sliding configurations that will transition
 // to sliding.
 TEST_F(Constraint2DSolverTest, TwoPointNonSlidingToSlidingSign) {
   // Test sticking with applied force to the right (true) and the left (false).
-  TwoPointNonSlidingToSliding(true);
-  TwoPointNonSlidingToSliding(false);
+  TwoPointNonSlidingToSliding(kForceAppliedToRight);
+  TwoPointNonSlidingToSliding(kForceAppliedToLeft);
 }
 
 // Tests the rod in a two-point impact which is insufficient to put the rod
 // into stiction, with pre-impact velocity in two directions (right = true,
 // left = false).
 TEST_F(Constraint2DSolverTest, TwoPointImpactNoTransitionToStictionTest) {
-  TwoPointImpactNoTransitionToStiction(true);
-  TwoPointImpactNoTransitionToStiction(false);
+  TwoPointImpactNoTransitionToStiction(kSlideRight);
+  TwoPointImpactNoTransitionToStiction(kSlideLeft);
 }
 
 // Tests the rod in a two-point impacting and sticking configuration with
 // pre-impact velocity to the right (true) or left (false).
 TEST_F(Constraint2DSolverTest, TwoPointImpactingAndStickingTest) {
-  TwoPointImpactingAndSticking(true);
-  TwoPointImpactingAndSticking(false);
+  TwoPointImpactingAndSticking(kSlideRight);
+  TwoPointImpactingAndSticking(kSlideLeft);
 }
 
 // Tests the rod in a two-point sliding configuration, both to the right
 // and to the left.
 TEST_F(Constraint2DSolverTest, TwoPointSlidingTest) {
-  Sliding(true /* slide to the right */, false /* not upright */);
-  Sliding(false /* slide to the left */, false /* not upright */);
+  Sliding(kSlideRight, false /* not upright */);
+  Sliding(kSlideLeft, false /* not upright */);
 }
 
 // Tests the rod in a single point sliding configuration, with sliding both
 // to the right and to the left.
 TEST_F(Constraint2DSolverTest, SinglePointSlidingTest) {
-  Sliding(true /* slide to the right */, true /* upright */);
-  Sliding(false /* slide to the left */, true /* upright */);
+  Sliding(kSlideRight, true /* upright */);
+  Sliding(kSlideLeft, true /* upright */);
 }
 
 // Tests the rod in a single point sliding configuration, with sliding both
 // to the right and to the left, and with a bilateral constraint imposed.
 TEST_F(Constraint2DSolverTest, SinglePointSlidingPlusBilateralTest) {
-  SlidingPlusBilateral(true /* slide to the right */);
-  SlidingPlusBilateral(false /* slide to the left */);
+  SlidingPlusBilateral(kSlideRight);
+  SlidingPlusBilateral(kSlideLeft);
 }
 
 // Tests the rod in a single point impacting configuration, with sliding both
 // to the right and to the left, and with a bilateral constraint imposed.
 TEST_F(Constraint2DSolverTest, SinglePointSlidingImpactPlusBilateralTest) {
-  SlidingPlusBilateralImpact(true /* slide to the right */);
-  SlidingPlusBilateralImpact(false /* slide to the left */);
+  SlidingPlusBilateralImpact(kSlideRight);
+  SlidingPlusBilateralImpact(kSlideLeft);
 }
 
 // Tests the rod in a two-point configuration, in a situation where a force
