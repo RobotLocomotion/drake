@@ -96,8 +96,7 @@ drake_cc_binary(
     ],
 )
 
-# TODO(naveenoid) : Move the moving_average_filter and the
-# perception_utils to within drake/perception.
+# TODO(naveenoid) : Move the moving_average_filter to within drake/perception.
 drake_cc_library(
     name = "moving_average_filter",
     srcs = ["moving_average_filter.cc"],
@@ -141,18 +140,6 @@ drake_cc_googletest(
         ":moving_average_filter",
         "//drake/common:eigen_matrix_compare",
         "//drake/common:essential",
-    ],
-)
-
-drake_cc_googletest(
-    name = "perception_utils_test",
-    srcs = ["test/perception_utils_test.cc"],
-    deps = [
-        ":perception_utils",
-        "//drake/common",
-        "//drake/common:eigen_geometry_compare",
-        "//drake/common:eigen_matrix_compare",
-        "//drake/math:geometric_transform",
     ],
 )
 

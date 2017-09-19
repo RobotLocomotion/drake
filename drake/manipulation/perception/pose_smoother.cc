@@ -12,7 +12,6 @@
 
 namespace drake {
 
-using systems::BasicVector;
 using Eigen::Quaterniond;
 using Eigen::Isometry3d;
 namespace manipulation {
@@ -54,6 +53,8 @@ VectorX<double> ComputeVelocities(const Isometry3d& pose_1,
 
   return velocities;
 }
+// TODO(naveenoid) : Replace the usage of these methods eventually with
+// PoseVector or a similar future variant.
 /*
  * Converts a 7 dimensional VectorX<double> describing a pose (composed by
  * positions in the first 3 dimensions and orientation in quaternions in the
@@ -89,8 +90,8 @@ VectorX<double> Isometry3dToVector(const Isometry3<double>& pose) {
 
 }  // namespace
 
-PoseSmoother::PoseSmoother(double max_linear_velocity,
-                           double max_angular_velocity,
+PoseSmoother::PoseSmoother(double desired_max_linear_velocity,
+                           double desired_max_angular_velocity,
                            double period_sec, int filter_window_size)
     : smoothed_pose_output_port_(
           this->DeclareAbstractOutputPort(&PoseSmoother::OutputSmoothedPose)
@@ -98,9 +99,9 @@ PoseSmoother::PoseSmoother(double max_linear_velocity,
       smoothed_velocity_output_port_(
           this->DeclareAbstractOutputPort(&PoseSmoother::OutputSmoothedVelocity)
               .get_index()),
-      kMaxLinearVelocity(max_linear_velocity),
-      kMaxAngularVelocity(max_angular_velocity),
-      kDiscreteUpdateInSec(period_sec),
+      max_linear_velocity(desired_max_linear_velocity),
+      max_angular_velocity(desired_max_angular_velocity),
+      discrete_update_in_sec(period_sec),
       is_filter_enabled_(filter_window_size > 1) {
   this->set_name("Pose Smoother");
   this->DeclareAbstractState(
@@ -133,7 +134,7 @@ void PoseSmoother::DoCalcUnrestrictedUpdate(
   if (internal_state.is_first_time) {
     internal_state.is_first_time = false;
     internal_state.pose = input_pose;
-    internal_state.time_at_last_accepted_pose = kDiscreteUpdateInSec;
+    internal_state.time_at_last_accepted_pose = discrete_update_in_sec;
     drake::log()->debug("PoseSmoother initial state set.");
   }
 
@@ -142,8 +143,8 @@ void PoseSmoother::DoCalcUnrestrictedUpdate(
 
   bool accept_data_point = true;
   for (int i = 0; i < 3; ++i) {
-    if (new_velocity(i) >= kMaxLinearVelocity ||
-        new_velocity(3 + i) >= kMaxAngularVelocity) {
+    if (new_velocity(i) >= max_linear_velocity ||
+        new_velocity(3 + i) >= max_angular_velocity) {
       accept_data_point = false;
       break;
     }

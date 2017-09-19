@@ -35,16 +35,19 @@ class PoseSmoother : public systems::LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PoseSmoother)
 
   /**
-   * Constructs the pose smoother with averaging - i.e. performs outlier
-   * rejection and smoothing of the input pose.
-   * @param max_linear_velocity Upper threshold on linear velocity (m/sec).
-   * @param max_angular_velocity Upper threshold on angular velocity
+   * Constructs the pose smoother with or without averaging - i.e. performs
+   * outlier rejection and smoothing of the input pose. Smoothing is disabled
+   * for a window size lesser than 1.
+   * @param desired_max_linear_velocity Upper threshold on linear velocity (m/sec).
+   * @param desired_max_angular_velocity Upper threshold on angular velocity
    * (rad/sec).
    * @param period_sec The period for the internal update (sec).
    * This must be set to a value greater than 0.
-   * @param filter_window_size Window size for the moving average smoothing.
+   * @param filter_window_size Window size for the moving average smoothing. Must
+   * be set to a value greater than 1 to enable averaging (smoothing).
    */
-  PoseSmoother(double max_linear_velocity, double max_angular_velocity,
+  PoseSmoother(double desired_max_linear_velocity,
+               double desired_max_angular_velocity,
                double period_sec, int filter_window_size);
 
   const systems::OutputPort<double>& get_smoothed_pose_output_port() const {
@@ -70,9 +73,9 @@ class PoseSmoother : public systems::LeafSystem<double> {
  private:
   const int smoothed_pose_output_port_{0};
   const int smoothed_velocity_output_port_{0};
-  const double kMaxLinearVelocity{0.0};
-  const double kMaxAngularVelocity{0.0};
-  const double kDiscreteUpdateInSec{0};
+  const double max_linear_velocity{0.0};
+  const double max_angular_velocity{0.0};
+  const double discrete_update_in_sec{0};
   const bool is_filter_enabled_{false};
 };
 
