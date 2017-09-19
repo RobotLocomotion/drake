@@ -132,6 +132,11 @@ GTEST_TEST(RollPitchYawTest, TimeDerivatives) {
 
   EXPECT_TRUE((R_WB - R_WB_exact).norm() < kAccuracy);
   EXPECT_TRUE((w_WB_W - w_WB_W_exact).norm() < kAccuracy * w0_WB.norm());
+
+  // TODO(amcastro-tri): For the PR, verify angular momentum is conserved.
+  
+  // TODO(amcastro-tri): For the PR, verify total energy (kinetic) is conserved.
+
 }
 
 }  // namespace
