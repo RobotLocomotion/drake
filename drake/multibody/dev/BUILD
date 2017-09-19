@@ -44,6 +44,28 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
+    name = "quadrotor_test",
+    srcs = ["test/quadrotor_test.cc"],
+    deps = [
+	":time_stepping_rigid_body_plant",
+        "//drake/common:find_resource",
+        "//drake/examples/quadrotor:quadrotor_plant",
+        "//drake/lcm",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/multibody:rigid_body_tree_construction",
+        "//drake/multibody/parsers",
+        "//drake/multibody/rigid_body_plant",
+        "//drake/multibody/rigid_body_plant:drake_visualizer",
+        "//drake/systems/analysis:semi_explicit_euler_integrator",
+        "//drake/systems/analysis:simulator",
+        "//drake/systems/framework:diagram",
+        "//drake/systems/primitives:constant_vector_source",
+        "@com_github_gflags_gflags//:gflags",
+    ],
+    data = ["//drake/examples/quadrotor:models"],
+)
+
+drake_cc_googletest(
     name = "global_inverse_kinematics_test",
     size = "medium",
     srcs = ["test/global_inverse_kinematics_test.cc"],

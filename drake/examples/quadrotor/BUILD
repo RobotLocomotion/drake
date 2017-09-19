@@ -10,6 +10,12 @@ load(
 load("//tools:install_data.bzl", "install_data")
 load("//tools:lint.bzl", "add_lint_tests")
 
+package(
+    default_visibility = [
+        "//visibility:public",
+    ],
+)
+
 drake_cc_library(
     name = "quadrotor_plant",
     srcs = ["quadrotor_plant.cc"],

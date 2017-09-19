@@ -18,7 +18,7 @@
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
-#include "drake/systems/analysis/runge_kutta2_integrator.h"
+#include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -56,7 +56,7 @@ class Quadrotor : public systems::Diagram<T> {
 
     systems::DiagramBuilder<T> builder;
 
-    if (dt > 0.0) {
+    if (dt == 0.0) {
       plant_ = builder.template AddSystem<RigidBodyPlant<T>>(
           std::move(tree));
     } else {
@@ -99,6 +99,8 @@ class Quadrotor : public systems::Diagram<T> {
     plant_->set_state_vector(&plant_state, x0);
   }
 
+ const systems::RigidBodyPlant<T>& get_plant() const { return *plant_; }
+
  private:
   systems::RigidBodyPlant<T>* plant_{};
   lcm::DrakeLcm lcm_;
@@ -107,7 +109,10 @@ class Quadrotor : public systems::Diagram<T> {
 // Verifies that the output of the time stepping rigid body plant and the
 // continuous rigid body plant are equal with 
 GTEST_TEST(QuadrotorTest, Equality) {
-  //  Set the step size.
+  // Set the simulation duration.
+  const double duration = 1.0;
+
+  // Set the step size.
   const double step_size = 1e-3;
 
   // Construct the two models.
@@ -131,10 +136,8 @@ GTEST_TEST(QuadrotorTest, Equality) {
   discrete_sim.StepTo(duration);
 
   // Compare the states.
-  auto continuous_state = continuous_model.GetStateVector(
-      continuous_sim.get_context());
-  auto discrete_state = discrete_model.GetStateVector(
-      discrete_sim.get_context());
+  auto& continuous_state = continuous_sim.get_context().get_continuous_state_vector();
+  auto& discrete_state = discrete_sim.get_context().get_discrete_state_vector();
   ASSERT_EQ(continuous_state.size(), discrete_state.size());
   for (int i = 0; i < discrete_state.size(); ++i) {
     EXPECT_NEAR(discrete_state[i], continuous_state[i],
