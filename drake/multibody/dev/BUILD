@@ -10,6 +10,20 @@ load("//tools:gurobi.bzl", "gurobi_test_tags")
 load("//tools:lint.bzl", "add_lint_tests")
 
 drake_cc_library(
+    name = "time_stepping_rigid_body_plant",
+    hdrs = [
+        "time_stepping_rigid_body_plant.h",
+    ],
+    srcs = ["time_stepping_rigid_body_plant.cc"],
+    deps = [
+        "//drake/common",
+	"//drake/multibody/rigid_body_plant",
+	"//drake/multibody/constraint",
+	"//drake/multibody/constraint:constraint_solver",
+    ],
+)
+
+drake_cc_library(
     name = "global_inverse_kinematics_test_util",
     testonly = 1,
     srcs = [

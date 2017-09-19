@@ -35,6 +35,9 @@ class TimeSteppingRigidBodyPlant : public RigidBodyPlant<T> {
   TimeSteppingRigidBodyPlant(std::unique_ptr<const RigidBodyTree<T>> tree,
                           double timestep);
 
+  /// The default Coulomb friction coefficient.
+  double mu_{0.1};
+
   /// Sets the ERP parameter. Aborts if not in the range [0,1]. Default value
   /// is 0.1.
   void set_erp(double erp) { DRAKE_DEMAND(erp >= 0 && erp <= 1); erp_ = erp; }
@@ -66,6 +69,10 @@ class TimeSteppingRigidBodyPlant : public RigidBodyPlant<T> {
     T error{0};
   };
 
+  void CalcContactStiffnessAndDamping(
+      const drake::multibody::collision::PointPair& contact,
+      double* stiffness,
+      double* damping) const;
   Vector3<T> CalcRelTranslationalVelocity(
       const KinematicsCache<T>& kcache, int body_a_index, int body_b_index,
       const Vector3<T>& p_W) const;

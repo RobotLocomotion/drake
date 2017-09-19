@@ -42,6 +42,14 @@ TimeSteppingRigidBodyPlant<T>::TimeSteppingRigidBodyPlant(
   this->DeclarePeriodicDiscreteUpdate(timestep);
 }
 
+template <class T>
+void TimeSteppingRigidBodyPlant<T>::CalcContactStiffnessAndDamping(
+    const drake::multibody::collision::PointPair& contact,
+    double* stiffness,
+    double* damping) const {
+  DRAKE_DEMAND("CalcContactStiffnessAndDamping() not yet implemented.");
+}
+
 // Gets A's translational velocity relative to B's translational velocity at a
 // point common to the two rigid bodies.
 // @param p_W The point of contact (defined in the world frame).
@@ -51,6 +59,7 @@ Vector3<T> TimeSteppingRigidBodyPlant<T>::CalcRelTranslationalVelocity(
     const KinematicsCache<T>& kcache, int body_a_index, int body_b_index,
     const Vector3<T>& p_W) const {
   DRAKE_DEMAND("CalcRelTranslationalVelocity() not yet implemented.");
+  return Vector3<T>::Zero();
 }
 
 // Updates a generalized force from a force of f (expressed in the world frame)
@@ -273,7 +282,7 @@ void TimeSteppingRigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   data.kN.resize(contacts.size());
   for (int i = 0; i < static_cast<int>(contacts.size()); ++i) {
     double stiffness, damping;
-    CalcStiffnessAndDamping(contacts[i], &stiffness, &damping);
+    CalcContactStiffnessAndDamping(contacts[i], &stiffness, &damping);
     const double denom = dt * stiffness + damping;
     double contact_cfm = 1.0 / denom;
     double contact_erp = dt * stiffness / denom;
