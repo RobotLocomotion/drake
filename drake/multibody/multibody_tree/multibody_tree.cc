@@ -361,13 +361,8 @@ void MultibodyTree<T>::DoCalcMassMatrixViaInverseDynamics(
   std::vector<SpatialForce<T>> F_BMo_W_array(get_num_bodies());
 
   for (int j = 0; j < nv; ++j) {
-    // TODO(amcastro-tri): make next line to work by making CalcInverseDynamics
-    // take an Eigen::Ref<VectorX<T>> instead of a pointer.
-    // auto tau = H.col(j);
     vdot = VectorX<T>::Unit(nv, j);
     tau.setZero();
-    for (auto& F : F_BMo_W_array) F.SetZero();
-    for (auto& A : A_WB_array) A.SetZero();
     CalcInverseDynamics(context, pc, vc, vdot, {}, VectorX<T>(),
                         &A_WB_array, &F_BMo_W_array, &tau);
     H->col(j) = tau;
