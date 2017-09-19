@@ -1,13 +1,12 @@
 #include <Eigen/Core>
 #include <pybind11/pybind11.h>
+#include <unsupported/Eigen/AutoDiff>
 
-#include "drake/common/autodiff_overloads.h"
-#include "drake/common/eigen_autodiff_types.h"
+typedef Eigen::AutoDiffScalar<Eigen::VectorXd> AutoDiffXd;
+PYBIND11_NUMPY_OBJECT_DTYPE(AutoDiffXd);
 
-PYBIND11_NUMPY_OBJECT_DTYPE(drake::AutoDiffXd);
+typedef Eigen::Matrix<AutoDiffXd, Eigen::Dynamic, 1> VectorXAutoDiffXd;
 
-typedef Eigen::Matrix<drake::AutoDiffXd, Eigen::Dynamic, 1> VectorXAutoDiffXd;
+typedef Eigen::Matrix<AutoDiffXd, 3, Eigen::Dynamic> Matrix3XAutoDiffXd;
 
-typedef Eigen::Matrix<drake::AutoDiffXd, 3, Eigen::Dynamic> Matrix3XAutoDiffXd;
-
-typedef Eigen::Matrix<drake::AutoDiffXd, 4, 4> Matrix44AutoDiffXd;
+typedef Eigen::Matrix<AutoDiffXd, 4, 4> Matrix44AutoDiffXd;

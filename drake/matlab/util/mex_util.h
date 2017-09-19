@@ -10,8 +10,7 @@
 
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
-
-#include "drake/common/autodiff_overloads.h"
+#include <unsupported/Eigen/AutoDiff>
 
 DLL_EXPORT_SYM bool isa(const mxArray* mxa, const char* class_str);
 
