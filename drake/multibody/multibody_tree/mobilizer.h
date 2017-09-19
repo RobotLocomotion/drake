@@ -406,29 +406,6 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
       Eigen::Ref<VectorX<T>> tau) const = 0;
   /// @}
 
-  /// Returns a const Eigen expression of the vector of generalized positions
-  /// for `this` mobilizer from a vector `q_array` of generalized positions for
-  /// the entire MultibodyTree model.
-  /// This method aborts if the input array is not of size
-  /// MultibodyTree::get_num_positions().
-  Eigen::VectorBlock<const Eigen::Ref<const VectorX<T>>>
-  get_positions_from_array(const Eigen::Ref<const VectorX<T>>& q_array) const {
-    DRAKE_DEMAND(
-        q_array.size() == this->get_parent_tree().get_num_positions());
-    return q_array.segment(topology_.positions_start,
-                           topology_.num_positions);
-  }
-
-  /// Mutable version of get_positions_from_array().
-  Eigen::VectorBlock<Eigen::Ref<VectorX<T>>> get_mutable_positions_from_array(
-      EigenPtr<VectorX<T>> q_array) const {
-    DRAKE_DEMAND(q_array != nullptr);
-    DRAKE_DEMAND(
-        q_array->size() == this->get_parent_tree().get_num_positions());
-    return q_array->segment(topology_.positions_start,
-                            topology_.num_positions);
-  }
-
   /// Returns a const Eigen expression of the vector of generalized velocities
   /// for `this` mobilizer from a vector `v_array` of generalized velocities for
   /// the entire MultibodyTree model.
@@ -485,24 +462,6 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   Eigen::VectorBlock<Eigen::Ref<VectorX<T>>>
   get_mutable_generalized_forces_from_array(
       EigenPtr<VectorX<T>> tau_array) const {
-    return get_mutable_velocities_from_array(tau_array);
-  }
-
-  /// Returns a const Eigen expression of the vector of generalized velocities
-  /// for `this` mobilizer from a vector of generalized velocities for the
-  /// entire MultibodyTree model.
-  /// @note This same method can be used to access arrays of generalized
-  /// accelerations (v̇) and of generalized forces (τ) since they all have the
-  /// same dimensions and are indexed in the same way.
-  Eigen::VectorBlock<const VectorX<T>> get_generalized_forces_from_array(
-      const VectorX<T>& tau_array) const {
-    return get_velocities_from_array(tau_array);
-  }
-
-  /// Mutable version of get_velocities_from_array().
-  Eigen::VectorBlock<Eigen::Ref<VectorX<T>>>
-  get_mutable_generalized_forces_from_array(
-      Eigen::Ref<VectorX<T>> tau_array) const {
     return get_mutable_velocities_from_array(tau_array);
   }
 
