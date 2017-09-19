@@ -1,12 +1,14 @@
 #pragma once
 
 #include <memory>
+#include <vector>
+
+#include <Eigen/Dense>
+
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/perception/dev/neural_network.h"
 #include "drake/systems/framework/leaf_system.h"
-
-#include <Eigen/Dense>
 
 namespace drake {
 namespace perception {
@@ -15,7 +17,7 @@ enum class LayerType { FullyConnected, Convolutional, Dropout };
 enum class NonlinearityType { Relu, Sigmoid, Atan };
 
 template <typename T>
-class FeedforwardNeuralNetwork : public NeuralNetwork<T> {
+class FeedforwardNeuralNetwork final : public NeuralNetwork<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FeedforwardNeuralNetwork)
 
@@ -26,9 +28,12 @@ class FeedforwardNeuralNetwork : public NeuralNetwork<T> {
                            const std::vector<LayerType>& layers,
                            const std::vector<NonlinearityType>& nonlinearities);
 
+  /// Scalar-converting copy constructor.
+  template <typename U>
+  explicit FeedforwardNeuralNetwork(const FeedforwardNeuralNetwork<U>&);
+
   std::unique_ptr<FeedforwardNeuralNetwork<AutoDiffXd>> ToAutoDiffXd() const {
-    return std::unique_ptr<FeedforwardNeuralNetwork<AutoDiffXd>>(
-        DoToAutoDiffXd());
+    return systems::LeafSystem<T>::ToAutoDiffXd(*this);
   }
 
   const systems::InputPortDescriptor<T>& input() const;
@@ -47,14 +52,15 @@ class FeedforwardNeuralNetwork : public NeuralNetwork<T> {
       int rows, int cols, const systems::BasicVector<T>& vector) const;
 
  private:
+  // Allow different specializations to access each other's private data.
+  template <typename> friend class FeedforwardNeuralNetwork;
+
   void DoCalcOutput(const systems::Context<T>& context,
                     systems::BasicVector<T>* output) const;
   VectorX<T> EvaluateLayer(const VectorX<T>& layerInput, MatrixX<T> Weights,
                            VectorX<T> bias, LayerType layer,
                            NonlinearityType nonlinearity) const;
   VectorX<T> relu(VectorX<T> in) const;
-
-  FeedforwardNeuralNetwork<AutoDiffXd>* DoToAutoDiffXd() const override;
 
   // TODO(nikos-tri)
   // FeedforwardNeuralNetwork<symbolic::Expression>* DoToSymbolic() const
@@ -69,8 +75,8 @@ class FeedforwardNeuralNetwork : public NeuralNetwork<T> {
   std::vector<LayerType> layers_;
   std::vector<NonlinearityType> nonlinearities_;
 
-  // Copies of weights and biases, as passed to the constructor
-  // Need to store these because they are needed by DoToAutoDiffXd
+  // Copies of weights and biases, as passed to the constructor.  We need to
+  // store these because they are needed by the scalar-converting copy ctor.
   std::vector<MatrixX<T>> weights_matrices_;
   std::vector<VectorX<T>> bias_vectors_;
   // Need these for coding and decoding into BasicVector
@@ -91,5 +97,14 @@ class FeedforwardNeuralNetwork : public NeuralNetwork<T> {
   int num_layers_;
 };
 
-}  // namespace automotive
+}  // namespace perception
+
+// Limit ToAutoDiff to only go double -> AutoDiff, not the other way around.
+namespace systems {
+namespace scalar_conversion {
+template <> struct Traits<perception::FeedforwardNeuralNetwork>
+    : public FromDoubleTraits {};
+}  // namespace scalar_conversion
+}  // namespace systems
+
 }  // namespace drake

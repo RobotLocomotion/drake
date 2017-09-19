@@ -103,25 +103,19 @@ int do_main(int argc, char* argv[]) {
   builder.Connect(controller->get_output_port(), observer->get_input_port(1));
 
   // Log the true state and the estimated state.
-  auto x_logger = builder.AddSystem<systems::SignalLogger<double>>(4);
+  auto x_logger = LogOutput(acrobot_w_encoder->get_output_port(1), &builder);
   x_logger->set_name("x_logger");
-  builder.Connect(acrobot_w_encoder->get_output_port(1),
-                  x_logger->get_input_port(0));
-  auto xhat_logger = builder.AddSystem<systems::SignalLogger<double>>(4);
+  auto xhat_logger = LogOutput(observer->get_output_port(0), &builder);
   xhat_logger->set_name("xhat_logger");
-  builder.Connect(observer->get_output_port(0), xhat_logger->get_input_port(0));
 
   // Build the system/simulator.
   auto diagram = builder.Build();
   systems::Simulator<double> simulator(*diagram);
 
   // Set an initial condition near the upright fixed point.
-  auto x0 = dynamic_cast<AcrobotStateVector<double>*>(
-      dynamic_cast<systems::DiagramContext<double>*>(
-          &diagram->GetMutableSubsystemContext(*acrobot_w_encoder,
-                                              simulator.get_mutable_context()))
-          ->GetMutableSubsystemContext(0)
-          .get_mutable_continuous_state_vector());
+  auto x0 = acrobot_w_encoder->get_mutable_acrobot_state(
+      &(diagram->GetMutableSubsystemContext(*acrobot_w_encoder,
+                                            simulator.get_mutable_context())));
   DRAKE_DEMAND(x0 != nullptr);
   x0->set_theta1(M_PI + 0.1);
   x0->set_theta2(-.1);
@@ -150,16 +144,15 @@ int do_main(int argc, char* argv[]) {
   using common::CallMatlab;
   CallMatlab("figure", 1);
   CallMatlab("plot", x_logger->sample_times(),
-                (x_logger->data().row(0).array() - M_PI).matrix(),
-                x_logger->sample_times(), x_logger->data().row(1));
+             (x_logger->data().row(0).array() - M_PI).matrix(),
+             x_logger->sample_times(), x_logger->data().row(1));
   CallMatlab("legend", "theta1 - PI", "theta2");
   CallMatlab("axis", "tight");
 
   CallMatlab("figure", 2);
   CallMatlab("plot", x_logger->sample_times(),
-                (x_logger->data().array() - xhat_logger->data().array())
-                    .matrix()
-                    .transpose());
+             (x_logger->data().array() - xhat_logger->data().array())
+                 .matrix().transpose());
   CallMatlab("ylabel", "error");
   CallMatlab("legend", "theta1", "theta2", "theta1dot", "theta2dot");
   CallMatlab("axis", "tight");

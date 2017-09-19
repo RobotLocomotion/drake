@@ -9,6 +9,7 @@ namespace automotive {
 // simple_powertrain.h.
 template class SimplePowertrain<double>;
 template class SimplePowertrain<AutoDiffXd>;
+template class SimplePowertrain<symbolic::Expression>;
 
 }  // namespace automotive
 }  // namespace drake

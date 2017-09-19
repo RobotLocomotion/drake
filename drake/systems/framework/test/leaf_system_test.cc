@@ -1356,13 +1356,12 @@ GTEST_TEST(SystemConstraintTest, ClassMethodTest) {
   EXPECT_EQ(value[0], 5.0);
   EXPECT_EQ(value[1], 7.0);
 
-  EXPECT_EQ(dut.get_constraint(SystemConstraintIndex(0)).lower_bound()[0], 0.0);
-  EXPECT_EQ(dut.get_constraint(SystemConstraintIndex(0)).upper_bound()[0], 0.0);
+  EXPECT_TRUE(
+      dut.get_constraint(SystemConstraintIndex(0)).is_equality_constraint());
   EXPECT_EQ(dut.get_constraint(SystemConstraintIndex(0)).description(), "x0");
 
-  EXPECT_EQ(dut.get_constraint(SystemConstraintIndex(1)).lower_bound()[1], 0.0);
-  EXPECT_EQ(dut.get_constraint(SystemConstraintIndex(1)).upper_bound()[1],
-            std::numeric_limits<double>::infinity());
+  EXPECT_FALSE(
+      dut.get_constraint(SystemConstraintIndex(1)).is_equality_constraint());
   EXPECT_EQ(dut.get_constraint(SystemConstraintIndex(1)).description(), "x");
 }
 
@@ -1388,9 +1387,7 @@ GTEST_TEST(SystemConstraintTest, FunctionHandleTest) {
   inequality_constraint.Calc(*context, &value);
   EXPECT_EQ(value.rows(), 1);
   EXPECT_EQ(value[0], 7.0);
-  EXPECT_EQ(inequality_constraint.lower_bound()[0], 0.0);
-  EXPECT_EQ(inequality_constraint.upper_bound()[0],
-            std::numeric_limits<double>::infinity());
+  EXPECT_FALSE(inequality_constraint.is_equality_constraint());
   EXPECT_EQ(inequality_constraint.description(), "x1");
 
   EXPECT_EQ(dut.DeclareEqualityConstraint(calc, 1, "x1eq"), 1);
@@ -1401,8 +1398,7 @@ GTEST_TEST(SystemConstraintTest, FunctionHandleTest) {
   equality_constraint.Calc(*context, &value);
   EXPECT_EQ(value.rows(), 1);
   EXPECT_EQ(value[0], 7.0);
-  EXPECT_EQ(equality_constraint.lower_bound()[0], 0.0);
-  EXPECT_EQ(equality_constraint.upper_bound()[0], 0.0);
+  EXPECT_TRUE(equality_constraint.is_equality_constraint());
   EXPECT_EQ(equality_constraint.description(), "x1eq");
 }
 

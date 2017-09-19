@@ -16,15 +16,17 @@ namespace quadrotor {
 /// Quadrotor is implemented to match the dynamics of the plant specified in
 /// the `quadrotor.urdf` model file.
 template <typename T>
-class QuadrotorPlant : public systems::LeafSystem<T> {
+class QuadrotorPlant final : public systems::LeafSystem<T> {
  public:
   QuadrotorPlant();
-  QuadrotorPlant(double m_arg, double L_arg, const Matrix3<T>& I_arg,
+  QuadrotorPlant(double m_arg, double L_arg, const Eigen::Matrix3d& I_arg,
                  double kF_arg, double kM_arg);
 
-  ~QuadrotorPlant() override;
+  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  template <typename U>
+  explicit QuadrotorPlant(const QuadrotorPlant<U>&);
 
-  QuadrotorPlant<AutoDiffXd>* DoToAutoDiffXd() const override;
+  ~QuadrotorPlant() override;
 
   int get_input_size() const { return kInputDimension; }
 
@@ -38,12 +40,12 @@ class QuadrotorPlant : public systems::LeafSystem<T> {
   double g() const { return g_; }
 
  protected:
-  void CopyStateOut(const systems::Context<T> &context,
-                    systems::BasicVector<T> *output) const;
+  void CopyStateOut(const systems::Context<T>& context,
+                    systems::BasicVector<T>* output) const;
 
   void DoCalcTimeDerivatives(
-      const systems::Context<T> &context,
-      systems::ContinuousState<T> *derivatives) const override;
+      const systems::Context<T>& context,
+      systems::ContinuousState<T>* derivatives) const override;
 
   /// Declares that the system has no direct feedthrough from any input to any
   /// output.
@@ -57,18 +59,19 @@ class QuadrotorPlant : public systems::LeafSystem<T> {
   }
 
  private:
+  // Allow different specializations to access each other's private data.
+  template <typename> friend class QuadrotorPlant;
+
   static constexpr int kStateDimension{12};
   static constexpr int kInputDimension{4};
 
   // TODO(naveenoid): Declare these as parameters in the context.
-  const double g_{9.81};     // Gravitational acceleration (m/s^2).
-  const double m_{0.5};      // Mass of the robot (kg).
-  const double L_{0.175};    // Length of the arms (m).
-  const double kF_{1.0};     // Force input constant.
-  const double kM_{0.0245};  // Moment input constant.
-  const Matrix3<T> I_{
-      ((Eigen::Matrix3d() << 0.0023, 0, 0, 0, 0.0023, 0, 0, 0, 0.0040)
-           .finished())};  // Moment of Inertia about the Center of Mass
+  const double g_;           // Gravitational acceleration (m/s^2).
+  const double m_;           // Mass of the robot (kg).
+  const double L_;           // Length of the arms (m).
+  const double kF_;          // Force input constant.
+  const double kM_;          // Moment input constant.
+  const Eigen::Matrix3d I_;  // Moment of Inertia about the Center of Mass
 };
 
 /// Generates an LQR controller to move to @p nominal_position. Internally

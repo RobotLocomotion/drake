@@ -64,6 +64,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "orthonormal_basis",
+    srcs = ["orthonormal_basis.cc"],
+    hdrs = ["orthonormal_basis.h"],
+    deps = [
+        "//drake/common",
+    ],
+)
+
+drake_cc_library(
     name = "vector3_util",
     srcs = ["cross_product.cc"],
     hdrs = [
@@ -151,6 +160,7 @@ drake_cc_library(
     hdrs = ["jacobian.h"],
     deps = [
         "//drake/common",
+        "//drake/common:autodiff",
     ],
 )
 
@@ -271,6 +281,14 @@ drake_cc_googletest(
     name = "normalize_vector_test",
     deps = [
         ":gradient",
+        "//drake/common:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "orthonormal_basis_test",
+    deps = [
+        ":orthonormal_basis",
         "//drake/common:eigen_matrix_compare",
     ],
 )

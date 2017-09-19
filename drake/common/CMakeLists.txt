@@ -37,6 +37,7 @@ set(sources
 # are available elsewhere via #include "drake/common/xxx.h".
 set(installed_headers
   autodiff_overloads.h
+  autodiffxd.h
   cond.h
   constants.h
   copyable_unique_ptr.h

@@ -74,6 +74,8 @@ For CMake builds, the "Unix Makefiles" and "Ninja" CMake generators are
 supported. MATLAB is only supported for CMake builds on Ubuntu operating
 systems.
 
+Drake requires a compiler running in C++14 mode or greater.
+
 +-----------------------------+---------------+-----------------+------------+-------------------+--------+
 | Operating System            | Build System  | C/C++ Compiler  | Java       | MATLAB (Optional) | Python |
 +=============================+===============+=================+============+===================+========+

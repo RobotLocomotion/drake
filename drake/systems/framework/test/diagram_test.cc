@@ -1767,8 +1767,7 @@ GTEST_TEST(DiagramConstraintTest, SystemConstraintsTest) {
   constraint0.Calc(*context, &value);
   EXPECT_EQ(value.size(), 1);
   EXPECT_EQ(value[0], 5.0);
-  EXPECT_EQ(constraint0.lower_bound()[0], 0.0);
-  EXPECT_EQ(constraint0.upper_bound()[0], 0.0);
+  EXPECT_TRUE(constraint0.is_equality_constraint());
   std::string description = constraint0.description();
   // Constraint description should end in the original description.
   EXPECT_EQ(description.substr(description.size() - 2), "x0");
@@ -1780,9 +1779,7 @@ GTEST_TEST(DiagramConstraintTest, SystemConstraintsTest) {
   EXPECT_EQ(value.size(), 2);
   EXPECT_EQ(value[0], 5.0);
   EXPECT_EQ(value[1], 7.0);
-  EXPECT_EQ(constraint1.lower_bound()[1], 0.0);
-  EXPECT_EQ(constraint1.upper_bound()[1],
-            std::numeric_limits<double>::infinity());
+  EXPECT_FALSE(constraint1.is_equality_constraint());
   description = constraint1.description();
   EXPECT_EQ(description.substr(description.size() - 1), "x");
 
@@ -1792,8 +1789,7 @@ GTEST_TEST(DiagramConstraintTest, SystemConstraintsTest) {
   constraint2.Calc(*context, &value);
   EXPECT_EQ(value.size(), 1);
   EXPECT_EQ(value[0], 11.0);
-  EXPECT_EQ(constraint2.lower_bound()[0], 0.0);
-  EXPECT_EQ(constraint2.upper_bound()[0], 0.0);
+  EXPECT_TRUE(constraint2.is_equality_constraint());
   description = constraint2.description();
   EXPECT_EQ(description.substr(description.size() - 2), "x0");
 
@@ -1804,9 +1800,7 @@ GTEST_TEST(DiagramConstraintTest, SystemConstraintsTest) {
   EXPECT_EQ(value.size(), 2);
   EXPECT_EQ(value[0], 11.0);
   EXPECT_EQ(value[1], 12.0);
-  EXPECT_EQ(constraint3.lower_bound()[1], 0.0);
-  EXPECT_EQ(constraint3.upper_bound()[1],
-            std::numeric_limits<double>::infinity());
+  EXPECT_FALSE(constraint3.is_equality_constraint());
   description = constraint3.description();
   EXPECT_EQ(description.substr(description.size() - 1), "x");
 

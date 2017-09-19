@@ -4,6 +4,8 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/systems/framework/test_utilities/scalar_conversion.h"
+
 using std::make_unique;
 
 namespace drake {
@@ -37,6 +39,14 @@ TEST_F(SimplePowertrainTest, SystemMatrices) {
   EXPECT_EQ(Vector1<double>(-1. / kPowertrainTimeConstant), dut_->A());
   EXPECT_EQ(Vector1<double>(kPowertrainGain), dut_->B());
   EXPECT_EQ(Vector1<double>(1. / kPowertrainTimeConstant), dut_->C());
+}
+
+TEST_F(SimplePowertrainTest, ToAutoDiff) {
+  EXPECT_TRUE(is_autodiffxd_convertible(*dut_));
+}
+
+TEST_F(SimplePowertrainTest, ToSymbolic) {
+  EXPECT_TRUE(is_symbolic_convertible(*dut_));
 }
 
 }  // namespace

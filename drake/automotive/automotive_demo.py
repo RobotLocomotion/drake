@@ -75,10 +75,19 @@ class Launcher(object):
             sys.stdout.flush()
             subprocess.call(["/usr/bin/find", "-L", "."])
             raise RuntimeError(command[0] + " not found")
+
+        # Create a new execution environment by copying the current one, but
+        # making sure to use the C locale, so that obj meshes are properly
+        # parsed.
+        command_env = dict(os.environ)
+        command_env['LC_ALL'] = 'C'
+
         process = subprocess.Popen(
             command,
             stdin=self.devnull,
-            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            env=command_env)
         flags = fcntl.fcntl(process.stdout, fcntl.F_GETFL)
         fcntl.fcntl(process.stdout, fcntl.F_SETFL, flags | os.O_NONBLOCK)
         self.children.append(TrackedProcess(label, process))
