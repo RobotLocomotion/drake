@@ -276,19 +276,20 @@ void TimeSteppingRigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
     return result;
   };
 
-  // Set the stabilization and softening terms for contact normal direction 
-  // (kN and gammaN), contact tangent directions (kF and gammaF, gammaE),
-  // joint limit constraints (kL and gammaL).
+  // 1. Set the stabilization term for contact normal direction (kN)
   data.kN.resize(contacts.size());
   for (int i = 0; i < static_cast<int>(contacts.size()); ++i) {
     double stiffness, damping;
     CalcContactStiffnessAndDamping(contacts[i], &stiffness, &damping);
     const double denom = dt * stiffness + damping;
-    double contact_cfm = 1.0 / denom;
     double contact_erp = dt * stiffness / denom;
     data.kN[i] = contact_erp * contacts[i].distance / dt;
   }
+
+  // 2. Set the stabilization term for contact tangent directions (kF).
   data.kF.setZero(total_friction_cone_edges);
+
+  // 3. Set the stabilization term for joint limit constraints (kL). 
   data.kL.resize(limits.size());
   for (int i = 0; i < static_cast<int>(limits.size()); ++i)
     data.kL[i] = erp_ * limits[i].error / dt;
