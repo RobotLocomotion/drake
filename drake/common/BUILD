@@ -15,7 +15,7 @@ package(default_visibility = ["//visibility:public"])
 # A library of things that EVERYONE should want and MUST EAT.
 # Be appropriately hesitant when adding new things here.
 drake_cc_library(
-    name = "common",
+    name = "essential",
     srcs = [
         "drake_assert_and_throw.cc",
         "text_logging.cc",
@@ -39,6 +39,13 @@ drake_cc_library(
         "@eigen",
         "@spdlog",
     ],
+)
+
+# The library :common is a soon-to-be-deprecated alias for :essential.
+# Please use //drake/common:essential in all new code.
+alias(
+    name = "common",
+    actual = ":essential",
 )
 
 # Specific traits and operators that are relevant to all ScalarTypes.
