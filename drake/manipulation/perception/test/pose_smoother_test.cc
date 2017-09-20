@@ -116,7 +116,7 @@ TEST_F(PoseSmootherTest, OutlierRejectionTest) {
                                 kPoseComparisonTolerance));
 
   // Input which will be rejected due to large translational velocity.
-  Isometry3d input_pose_2;
+  Isometry3d input_pose_2 = Isometry3d::Identity();
   input_pose_2.linear() =
       Eigen::AngleAxisd(0.25 * M_PI, Eigen::Vector3d::UnitX()).matrix();
   input_pose_2.translation() << 0.51, -5.0, 10.10;
