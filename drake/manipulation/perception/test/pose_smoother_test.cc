@@ -4,9 +4,9 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/eigen_geometry_compare.h"
-#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/test_utilities/eigen_geometry_compare.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/manipulation/util/moving_average_filter.h"
 #include "drake/math/quaternion.h"
 

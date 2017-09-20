@@ -37,7 +37,7 @@ drake_cc_googletest(
     name = "optitrack_pose_extractor_test",
     deps = [
         ":optitrack_pose_extractor",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/systems/framework",
     ],
 )
@@ -46,8 +46,8 @@ drake_cc_googletest(
     name = "pose_smoother_test",
     deps = [
         ":pose_smoother",
-        "//drake/common:eigen_geometry_compare",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_geometry_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/manipulation/util:moving_average_filter",
         "//drake/systems/framework",
     ],

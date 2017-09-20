@@ -9,7 +9,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/hash.h"
 #include "drake/common/symbolic.h"
-#include "drake/common/test/symbolic_test_util.h"
+#include "drake/common/test_utilities/symbolic_test_util.h"
 
 using std::map;
 using std::ostringstream;
