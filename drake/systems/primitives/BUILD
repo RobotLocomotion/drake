@@ -413,6 +413,7 @@ drake_cc_googletest(
         ":zero_order_hold",
         "//drake/common:eigen_matrix_compare",
         "//drake/systems/framework",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 
