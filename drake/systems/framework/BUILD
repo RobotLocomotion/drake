@@ -526,6 +526,7 @@ drake_cc_googletest(
     name = "leaf_system_test",
     deps = [
         ":leaf_system",
+        "//drake/common:eigen_matrix_compare",
         "//drake/common:essential",
         "//drake/common:is_dynamic_castable",
         "//drake/systems/framework/test_utilities",
