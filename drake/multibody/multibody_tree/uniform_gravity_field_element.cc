@@ -22,8 +22,10 @@ void UniformGravityFieldElement<T>::DoCalcAndAddForceContribution(
   // Skip the world.
   const MultibodyTree<T>& model = this->get_parent_tree();
   const int num_bodies = model.get_num_bodies();
-  for (BodyNodeIndex node_index(1); node_index < num_bodies; ++node_index) {
-    const Body<T>& body = model.get_body(node_index);
+  // Skip the "world" body.
+  for (BodyIndex body_index(1); body_index < num_bodies; ++body_index) {
+    const Body<T>& body = model.get_body(body_index);
+    BodyNodeIndex node_index = body.get_node_index();
 
     // TODO(amcastro-tri): Replace this CalcXXX() calls by GetXXX() calls once
     // caching is in place.
@@ -49,14 +51,15 @@ T UniformGravityFieldElement<T>::CalcPotentialEnergy(
   const MultibodyTree<T>& model = this->get_parent_tree();
   const int num_bodies = model.get_num_bodies();
   T TotalPotentialEnergy = 0.0;
-  for (BodyNodeIndex node_index(1); node_index < num_bodies; ++node_index) {
-    const Body<T>& body = model.get_body(node_index);
+  // Skip the "world" body.
+  for (BodyIndex body_index(1); body_index < num_bodies; ++body_index) {
+    const Body<T>& body = model.get_body(body_index);
 
     // TODO(amcastro-tri): Replace this CalcXXX() calls by GetXXX() calls once
     // caching is in place.
     const T mass = body.CalcMass(context);
     const Vector3<T> p_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
-    const Isometry3<T>& X_WB = pc.get_X_WB(node_index);
+    const Isometry3<T>& X_WB = pc.get_X_WB(body.get_node_index());
     const Matrix3<T> R_WB = X_WB.rotation();
     const Vector3<T> p_WBo = X_WB.translation();
     // TODO(amcastro-tri): Consider caching p_BoBcm_W and/or p_WBcm.
@@ -78,19 +81,20 @@ T UniformGravityFieldElement<T>::CalcConservativePower(
   const MultibodyTree<T>& model = this->get_parent_tree();
   const int num_bodies = model.get_num_bodies();
   T TotalConservativePower = 0.0;
-  for (BodyNodeIndex node_index(1); node_index < num_bodies; ++node_index) {
-    const Body<T>& body = model.get_body(node_index);
+  // Skip the "world" body.
+  for (BodyIndex body_index(1); body_index < num_bodies; ++body_index) {
+    const Body<T>& body = model.get_body(body_index);
 
     // TODO(amcastro-tri): Replace this CalcXXX() calls by GetXXX() calls once
     // caching is in place.
     const T mass = body.CalcMass(context);
     const Vector3<T> p_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
-    const Isometry3<T>& X_WB = pc.get_X_WB(node_index);
+    const Isometry3<T>& X_WB = pc.get_X_WB(body.get_node_index());
     const Matrix3<T> R_WB = X_WB.rotation();
     // TODO(amcastro-tri): Consider caching p_BoBcm_W.
     const Vector3<T> p_BoBcm_W = R_WB * p_BoBcm_B;
 
-    const SpatialVelocity<T>& V_WB = vc.get_V_WB(node_index);
+    const SpatialVelocity<T>& V_WB = vc.get_V_WB(body.get_node_index());
     const SpatialVelocity<T> V_WBcm = V_WB.Shift(p_BoBcm_W);
     const Vector3<T>& v_WBcm = V_WBcm.translational();
 

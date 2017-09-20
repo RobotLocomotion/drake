@@ -479,15 +479,6 @@ class MultibodyTree {
     return *owned_bodies_[body_index];
   }
 
-  /// Returns a constant reference to the body belonging to the body node
-  /// identified with unique index `node_index`.
-  /// This method aborts in Debug builds when `node_index` does not correspond
-  /// to a node in this multibody tree.
-  const Body<T>& get_body(BodyNodeIndex node_index) const {
-    DRAKE_ASSERT(node_index < get_num_bodies());
-    return body_nodes_[node_index]->get_body();
-  }
-
   /// Returns a constant reference to the frame with unique index `frame_index`.
   /// This method aborts in Debug builds when `frame_index` does not correspond
   /// to a frame in `this` multibody tree.
@@ -812,8 +803,9 @@ class MultibodyTree {
   ///   use the index returned by Body::get_node_index().
   /// @param[out] tau_array
   ///   On output this array will contain the generalized forces contribution
-  ///   applied by the force elements in `this` model. It must be of size
-  ///   MultibodyTree::get_num_velocities() or this method will abort.
+  ///   applied by the force elements in `this` model. It must not be nullptr
+  ///   and it must be of size MultibodyTree::get_num_velocities() or this
+  ///   method will abort.
   ///   Generalized forces for each Mobilizer can be accessed with
   ///   Mobilizer::get_generalized_forces_from_array().
   ///

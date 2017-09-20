@@ -64,12 +64,13 @@ class ForceElement : public
   ///   To access a mobilizer's reaction force on given body B in this array,
   ///   use the index returned by Body::get_node_index().
   /// @param[out] tau_array
-  ///   On output `this` force element must add its contribution to the total
+  ///   On output `this` force element adds its contribution to the total
   ///   generalized forces. Typically used to model generalized forces that
   ///   are best formulated as generalized forces rather than as spatial forces.
   ///   For instance, damping on a RevoluteMobilizer's angular velocity.
-  ///   `tau_array` must have size MultibodyTree::get_num_velocities() or this
-  ///   method will abort. Generalized forces for each Mobilizer can be accessed
+  ///   `tau_array` must not be nullptr and must have size
+  ///   MultibodyTree::get_num_velocities() or this method will abort.
+  ///   Generalized forces for each Mobilizer can be accessed
   ///   with Mobilizer::get_generalized_forces_from_array().
   ///
   /// @pre The position kinematics `pc` must have been previously updated with a

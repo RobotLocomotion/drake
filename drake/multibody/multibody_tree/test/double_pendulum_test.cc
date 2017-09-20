@@ -40,10 +40,6 @@ using std::unique_ptr;
 using std::vector;
 using systems::Context;
 
-#include <iostream>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-
-
 // Set of MultibodyTree tests for a double pendulum model.
 // This double pendulum is similar to the acrobot model described in Section 3.1
 // of the Underactuated Robotics notes available online at
