@@ -43,4 +43,34 @@ drake_cc_binary(
     ],
 )
 
+drake_cc_library(
+    name = "solar_system",
+    srcs = ["solar_system.cc"],
+    hdrs = ["solar_system.h"],
+    deps = [
+        "//drake/geometry:geometry_ids",
+        "//drake/geometry:geometry_system",
+        "//drake/math:geometric_transform",
+        "//drake/systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_binary(
+    name = "solar_system_run_dynamics",
+    testonly = 1,
+    srcs = ["solar_system_run_dynamics.cc"],
+    add_test_rule = 1,
+    deps = [
+        ":solar_system",
+        "//drake/geometry:geometry_system",
+        "//drake/geometry:geometry_visualization",
+        "//drake/systems/analysis:simulator",
+        "//drake/systems/framework:diagram",
+        "//drake/systems/lcm",
+        "//drake/systems/primitives:constant_vector_source",
+        "//drake/systems/primitives:signal_logger",
+        "//drake/systems/rendering:pose_bundle_to_draw_message",
+    ],
+)
+
 add_lint_tests()
