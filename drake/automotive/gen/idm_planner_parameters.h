@@ -166,6 +166,20 @@ class IdmPlannerParameters : public systems::BasicVector<T> {
     result = result && (scan_ahead_distance() >= T(0.0));
     return result;
   }
+
+  // VectorBase override.
+  void CalcInequalityConstraint(VectorX<T>* value) const override {
+    value->resize(9);
+    (*value)[0] = v_ref() - T(0.0);
+    (*value)[1] = a() - T(0.0);
+    (*value)[2] = b() - T(0.0);
+    (*value)[3] = s_0() - T(0.0);
+    (*value)[4] = time_headway() - T(0.0);
+    (*value)[5] = delta() - T(0.0);
+    (*value)[6] = bloat_diameter() - T(0.0);
+    (*value)[7] = distance_lower_limit() - T(0.0);
+    (*value)[8] = scan_ahead_distance() - T(0.0);
+  }
 };
 
 }  // namespace automotive

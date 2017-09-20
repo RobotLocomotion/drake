@@ -98,6 +98,15 @@ class MobilPlannerParameters : public systems::BasicVector<T> {
     result = result && (max_deceleration() >= T(0.0));
     return result;
   }
+
+  // VectorBase override.
+  void CalcInequalityConstraint(VectorX<T>* value) const override {
+    value->resize(4);
+    (*value)[0] = p() - T(0.0);
+    (*value)[1] = T(1.0) - p();
+    (*value)[2] = threshold() - T(0.0);
+    (*value)[3] = max_deceleration() - T(0.0);
+  }
 };
 
 }  // namespace automotive
