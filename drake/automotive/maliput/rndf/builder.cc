@@ -553,13 +553,13 @@ void SetInvertedConnections(const pair<ignition::math::Vector3d,
 vector<DirectedWaypoint> CreateDirectedWaypointsForConnection(
     const DirectedWaypoint& exit, const DirectedWaypoint& entry) {
   // Converts points and tangents into Bezier control points.
-  const vector<ignition::math::Vector3d>& bezier_points = SplineToBezier(
+  const vector<ignition::math::Vector3d> bezier_points = SplineToBezier(
       exit.position(), exit.tangent(), entry.position(), entry.tangent());
   // Adjusts these controls points to prevent loops and cusps.
-  const vector<ignition::math::Vector3d>& adapted_bezier_points =
+  const vector<ignition::math::Vector3d> adapted_bezier_points =
       MakeBezierCurveMonotonic(bezier_points, kBezierScaling);
   // Converts those Bezier control points to Hermite control points.
-  const vector<ignition::math::Vector3d>& hermite_points =
+  const vector<ignition::math::Vector3d> hermite_points =
       BezierToSpline(adapted_bezier_points[0], adapted_bezier_points[1],
                      adapted_bezier_points[2], adapted_bezier_points[3]);
   // Creates a pair of DirectedWaypoints and returns them.

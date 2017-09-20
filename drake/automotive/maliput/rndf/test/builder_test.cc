@@ -630,8 +630,8 @@ GTEST_TEST(RNDFBuilder, MultilaneLaneCross) {
 
   for (const auto& values : branch_point_truth_table) {
     std::string junction_name;
-    api::LaneEnd::Which lane_end;
-    int a_side_count, b_side_count;
+    int a_side_count = 0, b_side_count = 0;
+    api::LaneEnd::Which lane_end = api::LaneEnd::kStart;
     std::tie(junction_name, a_side_count, b_side_count, lane_end) = values;
 
     const int junction_id = FindJunction(*road_geometry, junction_name);
