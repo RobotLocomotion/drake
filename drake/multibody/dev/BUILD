@@ -11,15 +11,15 @@ load("//tools:lint.bzl", "add_lint_tests")
 
 drake_cc_library(
     name = "time_stepping_rigid_body_plant",
+    srcs = ["time_stepping_rigid_body_plant.cc"],
     hdrs = [
         "time_stepping_rigid_body_plant.h",
     ],
-    srcs = ["time_stepping_rigid_body_plant.cc"],
     deps = [
         "//drake/common",
-	"//drake/multibody/rigid_body_plant",
-	"//drake/multibody/constraint",
-	"//drake/multibody/constraint:constraint_solver",
+        "//drake/multibody/constraint",
+        "//drake/multibody/constraint:constraint_solver",
+        "//drake/multibody/rigid_body_plant",
     ],
 )
 
@@ -46,8 +46,9 @@ drake_cc_library(
 drake_cc_googletest(
     name = "quadrotor_test",
     srcs = ["test/quadrotor_test.cc"],
+    data = ["//drake/examples/quadrotor:models"],
     deps = [
-	":time_stepping_rigid_body_plant",
+        ":time_stepping_rigid_body_plant",
         "//drake/common:find_resource",
         "//drake/examples/quadrotor:quadrotor_plant",
         "//drake/lcm",
@@ -62,7 +63,6 @@ drake_cc_googletest(
         "//drake/systems/primitives:constant_vector_source",
         "@com_github_gflags_gflags//:gflags",
     ],
-    data = ["//drake/examples/quadrotor:models"],
 )
 
 drake_cc_googletest(

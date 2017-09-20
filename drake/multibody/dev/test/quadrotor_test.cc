@@ -42,7 +42,7 @@ namespace {
 template <typename T>
 class Quadrotor : public systems::Diagram<T> {
  public:
-  Quadrotor(double dt) {
+  explicit Quadrotor(double dt) {
     this->set_name("Quadrotor");
 
     auto tree = std::make_unique<RigidBodyTree<T>>();
@@ -74,14 +74,16 @@ class Quadrotor : public systems::Diagram<T> {
     builder.BuildInto(this);
   }
 
- const systems::RigidBodyPlant<T>& get_plant() const { return *plant_; }
+  const systems::RigidBodyPlant<T>& get_plant() const { return *plant_; }
 
  private:
   systems::RigidBodyPlant<T>* plant_{};
 };
 
 // Verifies that the output of the time stepping rigid body plant and the
-// continuous rigid body plant are equal with 
+// continuous rigid body plant are equal (assuming that both use the same
+// "integration scheme" (the discrete system is updated using a semi-explicit
+// update rule, hence the quotes).
 GTEST_TEST(QuadrotorTest, Equality) {
   // Set the step size.
   const double step_size = 2.5e-4;
@@ -106,12 +108,12 @@ GTEST_TEST(QuadrotorTest, Equality) {
   continuous_sim.Initialize();
   discrete_sim.Initialize();
 
-  // Set the initial conditions for the continuous plant. We modify the height
-  // so that there are no contact forces.
+  // Set the initial conditions for the continuous plant. We set the initial
+  // height so that there will be no contact forces.
   const int kQuadrotorStateDim = 12;
   VectorX<double> x0(kQuadrotorStateDim);
   for (int i = 0; i < kQuadrotorStateDim; ++i)
-    x0[i] = i + 1; 
+    x0[i] = i + 1;
   auto& continuous_context = continuous_model.GetMutableSubsystemContext(
     continuous_plant, continuous_sim.get_mutable_context());
   continuous_context.get_mutable_continuous_state()->SetFromVector(x0);
@@ -123,24 +125,24 @@ GTEST_TEST(QuadrotorTest, Equality) {
       SetFromVector(x0);
 
   // Step both forward by one step into the future.
-  const double duration = step_size; 
+  const double duration = step_size;
   continuous_sim.StepTo(duration);
   discrete_sim.StepTo(duration);
 
   // Compare the states.
-  auto& continuous_state = continuous_sim.get_context().get_continuous_state_vector();
-  auto& discrete_state = *discrete_sim.get_context().get_discrete_state()->get_data().front();
+  auto& continuous_state = continuous_sim.get_context().
+      get_continuous_state_vector();
+  auto& discrete_state = *discrete_sim.get_context().
+      get_discrete_state()->get_data().front();
 
+  // Compare solutions using the tightest tolerance for which tests pass.
+  const double tol = 1e3 * std::numeric_limits<double>::epsilon();
   ASSERT_EQ(continuous_state.size(), discrete_state.size());
-
-  // Compare solutions.
-  for (int i = 0; i < discrete_state.size(); ++i) {
-    EXPECT_NEAR(discrete_state[i], continuous_state[i],
-      1e3 * std::numeric_limits<double>::epsilon());
-  }
+  for (int i = 0; i < discrete_state.size(); ++i)
+    EXPECT_NEAR(discrete_state[i], continuous_state[i], tol);
 }
 
 }  // namespace
-}  // namespace multibody 
+}  // namespace multibody
 }  // namespace drake
 

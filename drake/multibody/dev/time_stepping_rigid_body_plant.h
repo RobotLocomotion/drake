@@ -8,10 +8,10 @@
 #include <Eigen/Geometry>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/multibody/constraint/constraint_solver.h"
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree.h"
-#include "drake/multibody/constraint/constraint_solver.h"
 
 namespace drake {
 namespace systems {

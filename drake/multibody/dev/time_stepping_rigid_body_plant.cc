@@ -184,7 +184,7 @@ void TimeSteppingRigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   data.mu.resize(contacts.size());
   data.r.resize(contacts.size());
   for (int i = 0; i < data.mu.rows(); ++i) {
-    // TODO(edrumwri): Replace this with parsed mu once #7016 lands. 
+    // TODO(edrumwri): Replace this with parsed mu once #7016 lands.
     data.mu[i] = mu_;
     data.r[i] = half_cone_edges_;
   }
@@ -265,7 +265,7 @@ void TimeSteppingRigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
     return result;
   };
 
-  // Set the unilateral constraint operator (for evaluating effect of forces 
+  // Set the unilateral constraint operator (for evaluating effect of forces
   // at joint limits on generalized forces).
   data.L_transpose_mult = [this, &v, &limits](const VectorX<T>& lambda) {
     VectorX<T> result = VectorX<T>::Zero(v.size());
@@ -289,7 +289,7 @@ void TimeSteppingRigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   // 2. Set the stabilization term for contact tangent directions (kF).
   data.kF.setZero(total_friction_cone_edges);
 
-  // 3. Set the stabilization term for joint limit constraints (kL). 
+  // 3. Set the stabilization term for joint limit constraints (kL).
   data.kL.resize(limits.size());
   for (int i = 0; i < static_cast<int>(limits.size()); ++i)
     data.kL[i] = erp_ * limits[i].error / dt;
