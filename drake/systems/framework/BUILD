@@ -6,22 +6,36 @@ load("//tools:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
+# This should encompass every non-testonly cc_library in this package.
 drake_cc_library(
     name = "framework",
     srcs = [],
     deps = [
+        ":abstract_values",
         ":cache",
         ":context",
+        ":continuous_state",
         ":diagram",
         ":diagram_builder",
         ":diagram_context",
+        ":diagram_continuous_state",
+        ":discrete_values",
+        ":event_collection",
+        ":input_port_descriptor",
+        ":input_port_evaluator_interface",
+        ":input_port_value",
         ":leaf_context",
+        ":leaf_output_port",
         ":leaf_system",
+        ":output_port_listener_interface",
+        ":output_port_value",
         ":parameters",
         ":single_output_vector_source",
         ":state",
         ":system",
+        ":system_common",
         ":system_constraint",
+        ":system_scalar_converter",
         ":system_symbolic_inspector",
         ":value",
         ":vector",
