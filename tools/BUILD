@@ -127,7 +127,10 @@ exports_files(
 )
 
 exports_files(
-    ["third_party/libbot/bot-procman-sheriff"],
+    [
+        "install/libbot/bot-procman-sheriff",
+        "install/libbot/build_prefix.py",
+    ],
     visibility = ["@libbot//:__pkg__"],
 )
 

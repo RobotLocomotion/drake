@@ -13,6 +13,11 @@ load(
     "lcm_java_library",
     "lcm_py_library",
 )
+load(
+    "@drake//tools:drake.bzl",
+    "drake_generate_file",
+    "drake_java_binary",
+)
 
 package(default_visibility = ["//visibility:public"])
 
@@ -43,9 +48,10 @@ java_library(
     ],
 )
 
-java_binary(
+drake_java_binary(
     name = "bot-spy",
     main_class = "lcm.spy.Spy",
+    visibility = ["//visibility:private"],
     runtime_deps = [":lcmspy_plugins_bot2"],
 )
 
@@ -426,7 +432,6 @@ py_library(
 
 # bot2-procman
 
-
 BOT2_PROCMAN_LCM_SRCS = glob(["bot2-procman/lcmtypes/*.lcm"])
 
 BOT2_PROCMAN_LCM_STRUCTS = [
@@ -475,9 +480,9 @@ cc_binary(
         "bot2-procman/src/deputy/lcm_util.h",
         "bot2-procman/src/deputy/procinfo.c",
         "bot2-procman/src/deputy/procinfo.h",
-        "bot2-procman/src/deputy/procman_deputy.c",
         "bot2-procman/src/deputy/procman.c",
         "bot2-procman/src/deputy/procman.h",
+        "bot2-procman/src/deputy/procman_deputy.c",
         "bot2-procman/src/deputy/signal_pipe.c",
         "bot2-procman/src/deputy/signal_pipe.h",
     ],
@@ -497,7 +502,7 @@ py_library(
     name = "bot_procman",
     srcs = glob(
         ["bot2-procman/python/src/bot_procman/**/*.py"],
-        exclude=["**/*_t.py", "**/__init__.py"],
+        exclude = ["**/*_t.py"],
     ),
     data = BOT2_PROCMAN_DATA,
     imports = ["bot2-procman/python/src"],
@@ -556,6 +561,7 @@ install(
         "share/java/liblcmtypes_bot2_lcmgl_java.jar": "lcmtypes_bot2_lcmgl.jar",  # noqa
         "share/java/liblcmtypes_bot2_param_java.jar": "lcmtypes_bot2_param.jar",  # noqa
         "share/java/liblcmtypes_bot2_procman_java.jar": "lcmtypes_bot2_procman.jar",  # noqa
+        "lib/python2.7/site-packages/bot_procman/__init__.py": "__init__.py.lcmtypes",  # noqa
     },
 )
 
@@ -565,6 +571,8 @@ install(
     name = "install_bot2_core",
     targets = [
         ":bot2_core",
+        ":bot-spy",
+        ":bot-spy-launcher",
         ":lcmspy_plugins_bot2",
     ],
     hdrs = BOT2_CORE_PUBLIC_HDRS,
@@ -572,7 +580,12 @@ install(
     hdr_strip_prefix = ["bot2-core/src"],
     rename = {
         "share/java/liblcmspy_plugins_bot2.jar": "lcmspy_plugins_bot2.jar",
+        "bin/bot-spy-launcher.sh": "bot-spy",
     },
+    deps = [
+        "@lcm//:install",
+        "@lcmtypes_bot2_core//:install",
+    ],
 )
 
 install(
@@ -626,21 +639,36 @@ install(
 
 filegroup(
     name = "bot-procman-sheriff",
-    srcs = ["@drake//tools:third_party/libbot/bot-procman-sheriff"],
+    srcs = ["@drake//tools:install/libbot/bot-procman-sheriff"],
+)
+
+filegroup(
+    name = "build_prefix",
+    srcs = ["@drake//tools:install/libbot/build_prefix.py"],
+)
+
+install(
+    name = "install_build_prefix",
+    targets = [
+        ":build_prefix",
+    ],
+    runtime_dest = "lib/python2.7/site-packages/bot_procman",
 )
 
 install(
     name = "install_bot2_procman",
+    data_strip_prefix = ["bot2-procman/python"],
     targets = [
         ":bot_procman",
         ":bot-procman-deputy",
         ":bot-procman-sheriff",
     ],
+    # for bot-procman-sheriff
+    runtime_strip_prefix = ["bot2-procman/python/scripts"],
+    py_strip_prefix = ["bot2-procman/python/src"],
     data = BOT2_PROCMAN_DATA,
     data_dest = "share/bot_procman",
-    data_strip_prefix = ["bot2-procman/python"],
-    py_strip_prefix = ["bot2-procman/python/src"],
-    runtime_strip_prefix = ["bot2-procman/python/scripts"],  # for bot-procman-sheriff
+    deps = [":install_build_prefix"],
 )
 
 install(

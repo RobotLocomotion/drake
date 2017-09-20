@@ -146,6 +146,10 @@
       "Type": "exe",
       "Location": "@prefix@/bin/bot-procman-deputy"
     },
+    "bot-procman-sheriff": {
+      "Type": "exe",
+      "Location": "@prefix@/bin/bot-procman-sheriff"
+    },
     "bot-lcm-logfilter": {
       "Type": "exe",
       "Location": "@prefix@/bin/bot-lcm-logfilter"
