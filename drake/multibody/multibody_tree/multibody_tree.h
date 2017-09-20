@@ -13,6 +13,7 @@
 #include "drake/multibody/multibody_tree/body_node.h"
 #include "drake/multibody/multibody_tree/force_element.h"
 #include "drake/multibody/multibody_tree/frame.h"
+#include "drake/multibody/multibody_tree/joints/joint.h"
 #include "drake/multibody/multibody_tree/mobilizer.h"
 #include "drake/multibody/multibody_tree/multibody_tree_context.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
@@ -404,6 +405,14 @@ class MultibodyTree {
                   "ForceElement<T>.");
     return AddForceElement(
         std::make_unique<ForceElementType<T>>(std::forward<Args>(args)...));
+  }
+
+  template<template<typename Scalar> class JointType, typename... Args>
+  const JointType<T>& AddJoint(Args&&... args) {
+    static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
+                  "JointType must be a sub-class of Joint<T>.");
+    return AddJoint(
+        std::make_unique<JointType<T>>(std::forward<Args>(args)...));
   }
   /// @}
   // Closes Doxygen section.
@@ -985,6 +994,31 @@ class MultibodyTree {
   // private methods from MultibodyTree<T>.
   template <typename> friend class MultibodyTree;
 
+  template <template<typename Scalar> class JointType>
+  const JointType<T>& AddJoint(
+      std::unique_ptr<JointType<T>> joint) {
+    static_assert(std::is_convertible<JointType<T>*, Joint<T>*>::value,
+                  "JointType must be a sub-class of Joint<T>.");
+    if (topology_is_valid()) {
+      throw std::logic_error("This MultibodyTree is finalized already. "
+                             "Therefore adding more joints is not allowed. "
+                             "See documentation for Finalize() for details.");
+    }
+    if (joint == nullptr) {
+      throw std::logic_error("Input joint is a nullptr.");
+    }
+    const JointIndex joint_index(owned_joints_.size());
+
+    // Parent tree MUST be set before the call to MakeModelAndAdd().
+    // Do not move them around!!!.
+    joint->set_parent_tree(this, joint_index);
+    joint->MakeModelAndAdd(this);
+
+    JointType<T>* raw_joint_ptr = joint.get();
+    owned_joints_.push_back(std::move(joint));
+    return *raw_joint_ptr;
+  }
+
   // Finalizes the MultibodyTreeTopology of this tree.
   void FinalizeTopology();
 
@@ -1134,6 +1168,8 @@ class MultibodyTree {
   std::vector<std::unique_ptr<Mobilizer<T>>> owned_mobilizers_;
   std::vector<std::unique_ptr<ForceElement<T>>> owned_force_elements_;
   std::vector<std::unique_ptr<internal::BodyNode<T>>> body_nodes_;
+
+  std::vector<std::unique_ptr<Joint<T>>> owned_joints_;
 
   // List of all frames in the system ordered by their FrameIndex.
   // This vector contains a pointer to all frames in owned_frames_ as well as a
