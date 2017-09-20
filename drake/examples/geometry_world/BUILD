@@ -30,9 +30,7 @@ drake_cc_library(
 
 drake_cc_binary(
     name = "bouncing_ball_run_dynamics",
-    testonly = 1,
     srcs = ["bouncing_ball_run_dynamics.cc"],
-    add_test_rule = 1,
     deps = [
         ":bouncing_ball_plant",
         "//drake/systems/analysis:simulator",
@@ -40,6 +38,34 @@ drake_cc_binary(
         "//drake/systems/lcm",
         "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:signal_logger",
+    ],
+)
+
+drake_cc_library(
+    name = "solar_system",
+    srcs = ["solar_system.cc"],
+    hdrs = ["solar_system.h"],
+    deps = [
+        "//drake/geometry:geometry_ids",
+        "//drake/geometry:geometry_system",
+        "//drake/math:geometric_transform",
+        "//drake/systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_binary(
+    name = "solar_system_run_dynamics",
+    srcs = ["solar_system_run_dynamics.cc"],
+    deps = [
+        ":solar_system",
+        "//drake/geometry:geometry_system",
+        "//drake/geometry:geometry_visualization",
+        "//drake/systems/analysis:simulator",
+        "//drake/systems/framework:diagram",
+        "//drake/systems/lcm",
+        "//drake/systems/primitives:constant_vector_source",
+        "//drake/systems/primitives:signal_logger",
+        "//drake/systems/rendering:pose_bundle_to_draw_message",
     ],
 )
 
