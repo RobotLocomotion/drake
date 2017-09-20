@@ -13,12 +13,10 @@ using Eigen::AutoDiffScalar;
 
 template <typename T>
 Acrobot<T>::Acrobot(const Vector3<T>& normal, const Vector3<T>& up,
-                    int axis,
                     double m1, double m2, double l1, double l2,
                     double lc1, double lc2, double Ic1, double Ic2,
                     double b1, double b2, double g)
-    : axis_(axis),
-      m1_(m1),
+    : m1_(m1),
       m2_(m2),
       l1_(l1),
       l2_(l2),
@@ -110,10 +108,9 @@ Isometry3<T> Acrobot<T>::CalcLink1PoseInWorldFrame(
   Isometry3<T> X_DL1;
   X_DL1.linear() = Matrix3<T>(AngleAxis<T>(theta1, Vector3<T>::UnitZ()));
   X_DL1.translation() = xcm1_D;
-  X_DL1.makeAffine();
 
   // Transformation to world frame W.
-  return ChangeToAxis(X_DL1);
+  return X_WD_ * X_DL1;
 }
 
 template <typename T>
@@ -132,10 +129,9 @@ Isometry3<T> Acrobot<T>::CalcLink2PoseInWorldFrame(
   X_DL2.linear() =
       Matrix3<T>(AngleAxis<T>(theta1 + theta2, Vector3<T>::UnitZ()));
   X_DL2.translation() = xcm2_D;
-  X_DL2.makeAffine();
 
   // Transformation to world frame W.
-  return ChangeToAxis(X_DL2);
+  return X_WD_ * X_DL2;
 }
 
 template <typename T>

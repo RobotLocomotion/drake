@@ -14,6 +14,7 @@
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/benchmarks/acrobot/acrobot.h"
 #include "drake/multibody/multibody_tree/fixed_offset_frame.h"
+#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
@@ -156,6 +157,15 @@ class PendulumTests : public ::testing::Test {
         &model_->AddFrame<FixedOffsetFrame>(
             upper_link_->get_body_frame(), X_USo_);
 
+    // Adds the shoulder and elbow mobilizers of the pendulum.
+    // Using:
+    //  const Mobilizer& AddMobilizer(std::unique_ptr<MobilizerType> mobilizer).
+    shoulder_mobilizer_ =
+        &model_->AddMobilizer(
+            make_unique<RevoluteMobilizer<double>>(
+                *shoulder_inboard_frame_, *shoulder_outboard_frame_,
+                Vector3d::UnitZ() /*revolute axis*/));
+
     // The elbow is the mobilizer that connects upper and lower links.
     // Below we will create inboard and outboard frames associated with the
     // pendulum's elbow.
@@ -166,26 +176,24 @@ class PendulumTests : public ::testing::Test {
     // In this case we create a frame using the FixedOffsetFrame::Create()
     // method taking a Body, i.e., creating a frame with a fixed offset from the
     // upper link body frame.
-    elbow_inboard_frame_ =
-        &model_->AddFrame<FixedOffsetFrame>(*upper_link_, X_UEi_);
-
     // To make this test a bit more interesting, we define the lower link's
     // frame L to be coincident with the elbow's outboard frame. Therefore,
     // Lo != Lcm.
-    elbow_outboard_frame_ = &lower_link_->get_body_frame();
 
-    // Adds the shoulder and elbow mobilizers of the pendulum.
-    // Using:
-    //  const Mobilizer& AddMobilizer(std::unique_ptr<MobilizerType> mobilizer).
-    shoulder_mobilizer_ =
-        &model_->AddMobilizer(
-            make_unique<RevoluteMobilizer<double>>(
-                *shoulder_inboard_frame_, *shoulder_outboard_frame_,
-                Vector3d::UnitZ() /*revolute axis*/));
-    // Using: const MobilizerType<T>& AddMobilizer(Args&&... args)
-    elbow_mobilizer_ = &model_->AddMobilizer<RevoluteMobilizer>(
-        *elbow_inboard_frame_, *elbow_outboard_frame_,
+    // Instead of creating inboard/outboard frames by hand, we'll create a
+    // Joint<T> object that takes care of that for us:
+    elbow_joint_ = &model_->AddJoint<RevoluteJoint>(
+        "ElbowJoint",
+        *upper_link_, X_UEi_, *lower_link_, Isometry3d::Identity(),
         Vector3d::UnitZ() /*revolute axis*/);
+    elbow_inboard_frame_ = &elbow_joint_->get_inboard_frame();
+    elbow_outboard_frame_ = &elbow_joint_->get_outboard_frame();
+    elbow_mobilizer_ = &elbow_joint_->get_mobilizer();
+
+    // Assert that indeed the elbow joint's outboard frame IS the lower link
+    // frame.
+    ASSERT_EQ(elbow_outboard_frame_->get_index(),
+              lower_link_->get_body_frame().get_index());
 
     // Add force element for a constant gravity.
     model_->AddForceElement<UniformGravityFieldElement>(
@@ -241,8 +249,6 @@ class PendulumTests : public ::testing::Test {
     pc->get_mutable_X_WB(BodyNodeIndex(1)) = X_WL_;
   }
 
-  TestAxis plane_axis_;
-
   std::unique_ptr<MultibodyTree<double>> model_;
   const Body<double>* world_body_;
   // Bodies:
@@ -251,11 +257,13 @@ class PendulumTests : public ::testing::Test {
   // Frames:
   const BodyFrame<double>* shoulder_inboard_frame_;
   const FixedOffsetFrame<double>* shoulder_outboard_frame_;
-  const FixedOffsetFrame<double>* elbow_inboard_frame_;
+  const Frame<double>* elbow_inboard_frame_;
   const Frame<double>* elbow_outboard_frame_;
   // Mobilizers:
   const RevoluteMobilizer<double>* shoulder_mobilizer_;
   const RevoluteMobilizer<double>* elbow_mobilizer_;
+  // Joints:
+  const RevoluteJoint<double>* elbow_joint_;
   // Pendulum parameters:
   const double link1_length_ = 1.0;
   const double link1_mass_ = 1.0;
