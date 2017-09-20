@@ -502,12 +502,21 @@ class LeafSystem : public System<T> {
   /// the best way to declare LeafSystem numeric parameters.  LeafSystem's
   /// default implementation of AllocateParameters uses model_vector.Clone(),
   /// and the default implementation of SetDefaultParameters() will reset
-  /// parameters to their model vectors.  Returns the index of the new
-  /// parameter.
+  /// parameters to their model vectors.  If the @p model_vector declares any
+  /// VectorBase::CalcInequalityConstraint() constraints, they will be
+  /// re-declared as inequality constraints on this system (see
+  /// DeclareInequalityConstraint()).  Returns the index of the new parameter.
   int DeclareNumericParameter(const BasicVector<T>& model_vector) {
-    const int next_index = model_numeric_parameters_.size();
-    model_numeric_parameters_.AddVectorModel(next_index, model_vector.Clone());
-    return next_index;
+    const int index = model_numeric_parameters_.size();
+    model_numeric_parameters_.AddVectorModel(index, model_vector.Clone());
+    MaybeDeclareVectorBaseInequalityConstraint(
+        "parameter " + std::to_string(index), model_vector,
+        [index](const Context<T>& context) -> const VectorBase<T>& {
+          const BasicVector<T>* result = context.get_numeric_parameter(index);
+          DRAKE_DEMAND(result != nullptr);
+          return *result;
+        });
+    return index;
   }
 
   /// Extracts the numeric parameters of type U from the @p context at @p index.
@@ -657,7 +666,10 @@ class LeafSystem : public System<T> {
   /// generalized positions, @p num_v generalized velocities, and @p num_z
   /// miscellaneous state variables, stored in a vector Cloned from
   /// @p model_vector. Aborts if @p model_vector has the wrong size. Has no
-  /// effect if AllocateContinuousState is overridden.
+  /// effect if AllocateContinuousState is overridden. If the @p model_vector
+  /// declares any VectorBase::CalcInequalityConstraint() constraints, they
+  /// will be re-declared as inequality constraints on this system (see
+  /// DeclareInequalityConstraint()).
   void DeclareContinuousState(const BasicVector<T>& model_vector, int num_q,
                               int num_v, int num_z) {
     DRAKE_DEMAND(model_vector.size() == num_q + num_v + num_z);
@@ -665,6 +677,13 @@ class LeafSystem : public System<T> {
     num_generalized_positions_ = num_q;
     num_generalized_velocities_ = num_v;
     num_misc_continuous_states_ = num_z;
+    MaybeDeclareVectorBaseInequalityConstraint(
+        "continuous state", model_vector,
+        [](const Context<T>& context) -> const VectorBase<T>& {
+          const ContinuousState<T>* state = context.get_continuous_state();
+          DRAKE_DEMAND(state != nullptr);
+          return state->get_vector();
+        });
   }
 
   /// Declares that this System should reserve continuous state with @p num_q
@@ -706,12 +725,22 @@ class LeafSystem : public System<T> {
   /// This is the best way to declare LeafSystem input ports that require
   /// subclasses of BasicVector.  The port's size will be model_vector.size(),
   /// and LeafSystem's default implementation of DoAllocateInputVector will be
-  /// model_vector.Clone().
+  /// model_vector.Clone().  If the @p model_vector declares any
+  /// VectorBase::CalcInequalityConstraint() constraints, they will be
+  /// re-declared as inequality constraints on this system (see
+  /// DeclareInequalityConstraint()).
   const InputPortDescriptor<T>& DeclareVectorInputPort(
       const BasicVector<T>& model_vector) {
     const int size = model_vector.size();
-    const int next_index = this->get_num_input_ports();
-    model_input_values_.AddVectorModel(next_index, model_vector.Clone());
+    const int index = this->get_num_input_ports();
+    model_input_values_.AddVectorModel(index, model_vector.Clone());
+    MaybeDeclareVectorBaseInequalityConstraint(
+        "input " + std::to_string(index), model_vector,
+        [this, index](const Context<T>& context) -> const VectorBase<T>& {
+          const BasicVector<T>* input = this->EvalVectorInput(context, index);
+          DRAKE_DEMAND(input != nullptr);
+          return *input;
+        });
     return this->DeclareInputPort(kVectorValued, size);
   }
 
@@ -1357,6 +1386,31 @@ class LeafSystem : public System<T> {
     return [model = std::move(owned_model)](const Context<T>&) {
       return model->Clone();
     };
+  }
+
+  // If @p model_vector's CalcInequalityConstraint provides any constraints,
+  // then declares inequality constraints on `this` using a calc function that
+  // obtains a VectorBase from a Context using @p get_vector_from_context and
+  // then delegates to the VectorBase::CalcInequalityConstraint.  Note that the
+  // model vector is only used to determine how many constraints will appear;
+  // it is not part of the ongoing constraint computations.
+  void MaybeDeclareVectorBaseInequalityConstraint(
+      const std::string& kind,
+      const VectorBase<T>& model_vector,
+      const std::function<const VectorBase<T>&(const Context<T>&)>&
+        get_vector_from_context) {
+    VectorX<T> dummy_value;
+    model_vector.CalcInequalityConstraint(&dummy_value);
+    const int count = dummy_value.size();
+    if (count == 0) {
+      return;
+    }
+    this->DeclareInequalityConstraint(
+        [get_vector_from_context](const Context<T>& con, VectorX<T>* value) {
+          get_vector_from_context(con).CalcInequalityConstraint(value);
+        },
+        count,
+        kind + " of type " + NiceTypeName::Get(model_vector));
   }
 
   // Periodic Update or Publish events registered on this system.
