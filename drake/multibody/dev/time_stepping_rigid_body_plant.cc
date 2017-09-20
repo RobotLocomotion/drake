@@ -46,9 +46,9 @@ TimeSteppingRigidBodyPlant<T>::TimeSteppingRigidBodyPlant(
 // geometries.
 template <class T>
 void TimeSteppingRigidBodyPlant<T>::CalcContactStiffnessAndDamping(
-    const drake::multibody::collision::PointPair& contact,
-    double* stiffness,
-    double* damping) const {
+    const drake::multibody::collision::PointPair&,
+    double*,
+    double*) const {
   DRAKE_DEMAND("CalcContactStiffnessAndDamping() not yet implemented.");
 }
 
@@ -58,8 +58,8 @@ void TimeSteppingRigidBodyPlant<T>::CalcContactStiffnessAndDamping(
 // @returns the relative velocity at p_W expressed in the world frame.
 template <class T>
 Vector3<T> TimeSteppingRigidBodyPlant<T>::CalcRelTranslationalVelocity(
-    const KinematicsCache<T>& kcache, int body_a_index, int body_b_index,
-    const Vector3<T>& p_W) const {
+    const KinematicsCache<T>&, int, int,
+    const Vector3<T>&) const {
   DRAKE_DEMAND("CalcRelTranslationalVelocity() not yet implemented.");
   return Vector3<T>::Zero();
 }
@@ -68,8 +68,8 @@ Vector3<T> TimeSteppingRigidBodyPlant<T>::CalcRelTranslationalVelocity(
 // applied at point p (defined in the global frame).
 template <class T>
 void TimeSteppingRigidBodyPlant<T>::UpdateGeneralizedForce(
-    const KinematicsCache<T>& kcache, int body_a_index, int body_b_index,
-    const Vector3<T>& p_W, const Vector3<T>& f, VectorX<T>* gf) const {
+    const KinematicsCache<T>&, int, int,
+    const Vector3<T>&, const Vector3<T>&, VectorX<T>*) const {
   DRAKE_DEMAND("UpdateGeneralizedForce() not yet implemented.");
 }
 
@@ -77,9 +77,9 @@ void TimeSteppingRigidBodyPlant<T>::UpdateGeneralizedForce(
 // contact normals.
 template <class T>
 VectorX<T> TimeSteppingRigidBodyPlant<T>::N_mult(
-    const std::vector<drake::multibody::collision::PointPair>& contacts,
-    const VectorX<T>& q,
-    const VectorX<T>& v) const {
+    const std::vector<drake::multibody::collision::PointPair>&,
+    const VectorX<T>&,
+    const VectorX<T>&) const {
   DRAKE_DEMAND("N_mult() not yet implemented.");
   return VectorX<T>::Zero(contacts.size());
 }
@@ -88,10 +88,10 @@ VectorX<T> TimeSteppingRigidBodyPlant<T>::N_mult(
 // effect out on the generalized forces.
 template <class T>
 VectorX<T> TimeSteppingRigidBodyPlant<T>::N_transpose_mult(
-    const std::vector<drake::multibody::collision::PointPair>& contacts,
-    const VectorX<T>& q,
-    const VectorX<T>& v,
-    const VectorX<T>& f) const {
+    const std::vector<drake::multibody::collision::PointPair>&,
+    const VectorX<T>&,
+    const VectorX<T>&,
+    const VectorX<T>&) const {
   DRAKE_DEMAND("N_transpose_mult() not yet implemented.");
   return VectorX<T>::Zero(v.size());
 }
@@ -100,9 +100,9 @@ VectorX<T> TimeSteppingRigidBodyPlant<T>::N_transpose_mult(
 // contact tangent directions.
 template <class T>
 VectorX<T> TimeSteppingRigidBodyPlant<T>::F_mult(
-    const std::vector<drake::multibody::collision::PointPair>& contacts,
-    const VectorX<T>& q,
-    const VectorX<T>& v) const {
+    const std::vector<drake::multibody::collision::PointPair>&,
+    const VectorX<T>&,
+    const VectorX<T>&) const {
   DRAKE_DEMAND("F_mult() not yet implemented.");
   return VectorX<T>::Zero(contacts.size() * half_cone_edges_);
 }
@@ -111,10 +111,10 @@ VectorX<T> TimeSteppingRigidBodyPlant<T>::F_mult(
 // the effect out on the generalized forces.
 template <class T>
 VectorX<T> TimeSteppingRigidBodyPlant<T>::F_transpose_mult(
-    const std::vector<drake::multibody::collision::PointPair>& contacts,
-    const VectorX<T>& q,
-    const VectorX<T>& v,
-    const VectorX<T>& f) const {
+    const std::vector<drake::multibody::collision::PointPair>&,
+    const VectorX<T>&,
+    const VectorX<T>&,
+    const VectorX<T>&) const {
   DRAKE_DEMAND("F_transpose_mult() not yet implemented.");
   return VectorX<T>::Zero(v.size());
 }
