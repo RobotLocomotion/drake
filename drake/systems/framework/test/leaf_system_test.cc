@@ -7,6 +7,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/test/is_dynamic_castable.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -1301,8 +1302,11 @@ class ConstraintTestSystem : public LeafSystem<double> {
   ConstraintTestSystem() { DeclareContinuousState(2); }
 
   // Expose some protected methods for testing.
-  using LeafSystem<double>::DeclareInequalityConstraint;
+  using LeafSystem<double>::DeclareContinuousState;
   using LeafSystem<double>::DeclareEqualityConstraint;
+  using LeafSystem<double>::DeclareInequalityConstraint;
+  using LeafSystem<double>::DeclareNumericParameter;
+  using LeafSystem<double>::DeclareVectorInputPort;
 
   void CalcState0Constraint(const Context<double>& context,
                             Eigen::VectorXd* value) const {
@@ -1400,6 +1404,82 @@ GTEST_TEST(SystemConstraintTest, FunctionHandleTest) {
   EXPECT_EQ(value[0], 7.0);
   EXPECT_TRUE(equality_constraint.is_equality_constraint());
   EXPECT_EQ(equality_constraint.description(), "x1eq");
+}
+
+/// Specializes BasicVector to add inequality constraints.
+template <typename T, int bias>
+class ConstraintBasicVector final : public BasicVector<T> {
+ public:
+  static constexpr int kSize = 3;
+  ConstraintBasicVector() : BasicVector<T>(VectorX<T>::Zero(kSize)) {}
+  BasicVector<T>* DoClone() const override { return new ConstraintBasicVector; }
+
+  // Declare a single constraint `this[0] >= bias`.
+  void CalcInequalityConstraint(VectorX<T>* value) const override {
+    value->resize(1);
+    (*value)[0] = (*this)[0] - T{bias};
+  }
+};
+
+// Tests constraints implied by BasicVector subtypes.
+GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
+  ConstraintTestSystem dut;
+  EXPECT_EQ(dut.get_num_constraints(), 0);
+
+  // Declaring a constrained model vector parameter should add constraints.
+  // We want `vec[0] >= 11` on the parameter vector.
+  using ParameterVector = ConstraintBasicVector<double, 11>;
+  dut.DeclareNumericParameter(ParameterVector{});
+  ASSERT_EQ(dut.get_num_constraints(), 1);
+  using Index = SystemConstraintIndex;
+  const SystemConstraint<double>& constraint0 = dut.get_constraint(Index{0});
+  EXPECT_FALSE(constraint0.is_equality_constraint());
+  EXPECT_THAT(constraint0.description(), ::testing::ContainsRegex(
+      "^parameter 0 of type .*ConstraintBasicVector<double,11>$"));
+
+  // Declaring constrained model continuous state should add constraints.
+  // We want `vec[0] >= 22` on the state vector.
+  using StateVector = ConstraintBasicVector<double, 22>;
+  dut.DeclareContinuousState(StateVector{}, 0, 0, StateVector::kSize);
+  EXPECT_EQ(dut.get_num_constraints(), 2);
+  const SystemConstraint<double>& constraint1 = dut.get_constraint(Index{1});
+  EXPECT_FALSE(constraint1.is_equality_constraint());
+  EXPECT_THAT(constraint1.description(), ::testing::ContainsRegex(
+      "^continuous state of type .*ConstraintBasicVector<double,22>$"));
+
+  // Declaring a constrained model vector input should add constraints.
+  // We want `vec[0] >= 33` on the input vector.
+  using InputVector = ConstraintBasicVector<double, 33>;
+  dut.DeclareVectorInputPort(InputVector{});
+  EXPECT_EQ(dut.get_num_constraints(), 3);
+  const SystemConstraint<double>& constraint2 = dut.get_constraint(Index{2});
+  EXPECT_FALSE(constraint2.is_equality_constraint());
+  EXPECT_THAT(constraint2.description(), ::testing::ContainsRegex(
+      "^input 0 of type .*ConstraintBasicVector<double,33>$"));
+
+  // We'll work through the Calc results all at the end, so that we don't
+  // change the shape of the System and Context while we're Calc'ing.
+  auto context = dut.CreateDefaultContext();
+
+  // `param0[0] >= 11.0` with `param0[0] == 1.0` produces `-10.0 >= 0.0`.
+  context->get_mutable_numeric_parameter(0)->SetAtIndex(0, 1.0);
+  Eigen::VectorXd value0;
+  constraint0.Calc(*context, &value0);
+  EXPECT_TRUE(CompareMatrices(value0, Vector1<double>::Constant(-10.0)));
+
+  // `xc[0] >= 22.0` with `xc[0] == 2.0` produces `-20.0 >= 0.0`.
+  context->get_mutable_continuous_state_vector()->SetAtIndex(0, 2.0);
+  Eigen::VectorXd value1;
+  constraint1.Calc(*context, &value1);
+  EXPECT_TRUE(CompareMatrices(value1, Vector1<double>::Constant(-20.0)));
+
+  // `u0[0] >= 33.0` with `u0[0] == 3.0` produces `-30.0 >= 0.0`.
+  auto input = std::make_unique<InputVector>();
+  input->SetAtIndex(0, 3.0);
+  context->FixInputPort(0, std::move(input));
+  Eigen::VectorXd value2;
+  constraint2.Calc(*context, &value2);
+  EXPECT_TRUE(CompareMatrices(value2, Vector1<double>::Constant(-30.0)));
 }
 
 }  // namespace
