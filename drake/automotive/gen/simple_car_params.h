@@ -136,6 +136,17 @@ class SimpleCarParams : public systems::BasicVector<T> {
     result = result && (velocity_limit_kp() >= T(0.0));
     return result;
   }
+
+  // VectorBase override.
+  void CalcInequalityConstraint(VectorX<T>* value) const override {
+    value->resize(6);
+    (*value)[0] = wheelbase() - T(0.0);
+    (*value)[1] = track() - T(0.0);
+    (*value)[2] = max_abs_steering_angle() - T(0.0);
+    (*value)[3] = max_velocity() - T(0.0);
+    (*value)[4] = max_acceleration() - T(0.0);
+    (*value)[5] = velocity_limit_kp() - T(0.0);
+  }
 };
 
 }  // namespace automotive
