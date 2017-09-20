@@ -80,11 +80,12 @@ class ForceElement : public
                                    const PositionKinematicsCache<T>& pc,
                                    const VelocityKinematicsCache<T>& vc,
                                    std::vector<SpatialForce<T>>* F_B_W_array,
-                                   Eigen::Ref<VectorX<T>> tau_array) const {
+                                   EigenPtr<VectorX<T>> tau_array) const {
     DRAKE_DEMAND(F_B_W_array != nullptr);
     DRAKE_DEMAND(static_cast<int>(F_B_W_array->size()) ==
         this->get_parent_tree().get_num_bodies());
-    DRAKE_DEMAND(tau_array.size() ==
+    DRAKE_DEMAND(tau_array != nullptr);
+    DRAKE_DEMAND(tau_array->size() ==
         this->get_parent_tree().get_num_velocities());
     DoCalcAndAddForceContribution(context, pc, vc, F_B_W_array, tau_array);
   }
@@ -173,7 +174,7 @@ class ForceElement : public
       const PositionKinematicsCache<T>& pc,
       const VelocityKinematicsCache<T>& vc,
       std::vector<SpatialForce<T>>* F_B_W,
-      Eigen::Ref<VectorX<T>> tau) const = 0;
+      EigenPtr<VectorX<T>> tau) const = 0;
 
   /// @name Methods to make a clone templated on different scalar types.
   /// @{

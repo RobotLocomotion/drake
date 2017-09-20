@@ -17,7 +17,7 @@ void UniformGravityFieldElement<T>::DoCalcAndAddForceContribution(
     const PositionKinematicsCache<T>& pc,
     const VelocityKinematicsCache<T>& vc,
     std::vector<SpatialForce<T>>* F_Bo_W_array,
-    Eigen::Ref<VectorX<T>> tau) const {
+    EigenPtr<VectorX<T>>) const {
   // Add the force of gravity contribution for each body in the model.
   // Skip the world.
   const MultibodyTree<T>& model = this->get_parent_tree();

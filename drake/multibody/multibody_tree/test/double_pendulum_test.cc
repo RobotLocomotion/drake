@@ -571,9 +571,9 @@ class PendulumKinematicTests : public PendulumTests {
     // The force of gravity gets included in this call since we have
     // UniformGravityFieldElement in the model.
     VectorXd tau_applied(model_->get_num_velocities());
-    vector<SpatialForce<double>> F_Bo_W_array(model_->get_num_bodies());
+    vector<SpatialForce<double>> Fapplied_Bo_W_array(model_->get_num_bodies());
     model_->CalcForceElementsContribution(
-        *context_, pc, vc, &F_Bo_W_array, tau_applied);
+        *context_, pc, vc, &Fapplied_Bo_W_array, &tau_applied);
 
     // ======================================================================
     // To get generalized forces, compute inverse dynamics applying the forces
@@ -593,9 +593,9 @@ class PendulumKinematicTests : public PendulumTests {
 
     // ======================================================================
     // Notice that we do not need to allocate extra memory since both
-    // F_Bo_W_array and tau can be used as input and output arguments. However,
-    // the data given at input is lost on output. A user might choose then to
-    // have separate input/output arrays.
+    // Fapplied_Bo_W_array and tau can be used as input and output arguments.
+    // However, the data given at input is lost on output. A user might choose
+    // then to have separate input/output arrays.
 
     const VectorXd vdot = VectorXd::Zero(model_->get_num_velocities());
     vector<SpatialAcceleration<double>> A_WB_array(model_->get_num_bodies());
@@ -605,17 +605,17 @@ class PendulumKinematicTests : public PendulumTests {
     tau.setConstant(std::numeric_limits<double>::quiet_NaN());
     tau_applied.setZero();
     model_->CalcInverseDynamics(
-        *context_, pc, vc, vdot, F_Bo_W_array, tau_applied,
+        *context_, pc, vc, vdot, Fapplied_Bo_W_array, tau_applied,
         &A_WB_array, &F_BMo_W_array, &tau);
     // The result from inverse dynamics must be tau = -G(q).
     EXPECT_TRUE(tau.isApprox(-G_expected, kTolerance));
 
-    // Now try using the same arrays for input/output (input data F_Bo_W_array
-    // will get overwritten through the output argument).
+    // Now try using the same arrays for input/output (input data
+    // Fapplied_Bo_W_array will get overwritten through the output argument).
     tau_applied.setZero();  // This will now get overwritten.
     model_->CalcInverseDynamics(
-        *context_, pc, vc, vdot, F_Bo_W_array, tau_applied,
-        &A_WB_array, &F_Bo_W_array, &tau_applied);
+        *context_, pc, vc, vdot, Fapplied_Bo_W_array, tau_applied,
+        &A_WB_array, &Fapplied_Bo_W_array, &tau_applied);
     // The result from inverse dynamics must be tau = -G(q).
     EXPECT_TRUE(tau.isApprox(-G_expected, kTolerance));
 
