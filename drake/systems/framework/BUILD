@@ -450,9 +450,9 @@ drake_cc_googletest(
     deps = [
         ":vector",
         "//drake/common:autodiff",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:essential",
         "//drake/common:symbolic",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -490,8 +490,8 @@ drake_cc_googletest(
     name = "diagram_context_test",
     deps = [
         ":diagram_context",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:essential",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/systems/framework/test_utilities:pack_value",
         "//drake/systems/primitives:adder",
         "//drake/systems/primitives:constant_vector_source",
@@ -505,7 +505,7 @@ drake_cc_googletest(
     deps = [
         ":diagram",
         "//drake/common:essential",
-        "//drake/common:is_dynamic_castable",
+        "//drake/common/test_utilities:is_dynamic_castable",
         "//drake/systems/analysis:stateless_system",
         "//drake/systems/framework/test_utilities:pack_value",
         "//drake/systems/primitives:adder",
@@ -529,9 +529,9 @@ drake_cc_googletest(
     name = "leaf_context_test",
     deps = [
         ":leaf_context",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:essential",
-        "//drake/common:is_dynamic_castable",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/common/test_utilities:is_dynamic_castable",
         "//drake/systems/framework/test_utilities",
     ],
 )
@@ -540,9 +540,9 @@ drake_cc_googletest(
     name = "leaf_system_test",
     deps = [
         ":leaf_system",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:essential",
-        "//drake/common:is_dynamic_castable",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/common/test_utilities:is_dynamic_castable",
         "//drake/systems/framework/test_utilities",
     ],
 )
@@ -579,8 +579,8 @@ drake_cc_googletest(
     name = "subvector_test",
     deps = [
         ":vector",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:essential",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -681,7 +681,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "system_constraint_test",
     deps = [
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/systems/primitives:linear_system",
     ],
 )

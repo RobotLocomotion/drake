@@ -5,7 +5,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/systems/primitives/linear_system.h"
 
 namespace drake {

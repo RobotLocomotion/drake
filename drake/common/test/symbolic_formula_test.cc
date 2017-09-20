@@ -14,8 +14,8 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/symbolic.h"
-#include "drake/common/test/is_memcpy_movable.h"
-#include "drake/common/test/symbolic_test_util.h"
+#include "drake/common/test_utilities/is_memcpy_movable.h"
+#include "drake/common/test_utilities/symbolic_test_util.h"
 
 namespace drake {
 

@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/output_port_value.h"

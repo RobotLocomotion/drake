@@ -7,8 +7,8 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
-#include "drake/common/eigen_matrix_compare.h"
-#include "drake/common/test/random_polynomial_matrix.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/random_polynomial_matrix.h"
 
 using Eigen::VectorXd;
 using std::default_random_engine;

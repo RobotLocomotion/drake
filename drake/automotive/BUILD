@@ -492,7 +492,7 @@ drake_cc_googletest(
     name = "bicycle_car_test",
     deps = [
         "//drake/automotive:bicycle_car",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/systems/framework/test_utilities",
     ],
 )
@@ -501,7 +501,7 @@ drake_cc_googletest(
     name = "box_car_vis_test",
     deps = [
         ":box_car_vis",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/systems/rendering:pose_vector",
     ],
 )
@@ -510,7 +510,7 @@ drake_cc_googletest(
     name = "car_vis_applicator_test",
     deps = [
         ":car_vis_applicator",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/math:geometric_transform",
     ],
 )
@@ -529,7 +529,7 @@ drake_cc_googletest(
         "//drake/automotive/maliput/api",
         "//drake/automotive/maliput/dragway",
         "//drake/automotive/maliput/monolane",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/math:geometric_transform",
     ],
 )
@@ -546,7 +546,7 @@ drake_cc_googletest(
     name = "simple_car_test",
     deps = [
         "//drake/automotive:simple_car",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/systems/framework/test_utilities",
     ],
 )
@@ -587,7 +587,7 @@ drake_cc_googletest(
     name = "prius_vis_test",
     deps = [
         ":prius_vis",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/math:geometric_transform",
     ],
 )
@@ -598,7 +598,7 @@ drake_cc_googletest(
         ":road_path",
         "//drake/automotive/maliput/dragway",
         "//drake/automotive/maliput/monolane",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -652,8 +652,8 @@ drake_cc_googletest(
     tags = ["snopt"],
     deps = [
         ":simple_car",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common/proto:call_matlab",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/systems/trajectory_optimization:direct_collocation",
     ],
 )

@@ -7,7 +7,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/rigid_body_plant/point_contact_detail.h"
 #include "drake/util/drakeGeometryUtil.h"
 

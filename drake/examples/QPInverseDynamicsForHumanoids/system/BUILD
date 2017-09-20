@@ -138,8 +138,8 @@ drake_cc_googletest(
     tags = gurobi_test_tags(),
     deps = [
         ":humanoid_plan_eval_system",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:find_resource",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/examples/valkyrie:valkyrie_constants",
         "//drake/multibody/parsers",
         "//drake/systems/analysis:simulator",
@@ -162,8 +162,8 @@ drake_cc_googletest(
     tags = gurobi_test_tags(),
     deps = [
         ":manipulator_inverse_dynamics_controller",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:find_resource",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/multibody/parsers",
         "//drake/systems/analysis:simulator",
         "//drake/systems/controllers:inverse_dynamics_controller",
@@ -180,8 +180,8 @@ drake_cc_googletest(
     ],
     deps = [
         ":atlas_joint_level_controller_system",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:find_resource",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/multibody/parsers",
         "//drake/systems/framework",
     ],

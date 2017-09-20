@@ -53,7 +53,6 @@ set(installed_headers
   dummy_value.h
   eigen_autodiff_limits.h
   eigen_autodiff_types.h
-  eigen_matrix_compare.h
   eigen_stl_types.h
   eigen_types.h
   extract_double.h
