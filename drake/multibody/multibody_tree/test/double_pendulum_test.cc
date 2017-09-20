@@ -40,6 +40,10 @@ using std::unique_ptr;
 using std::vector;
 using systems::Context;
 
+#include <iostream>
+#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
+
+
 // Set of MultibodyTree tests for a double pendulum model.
 // This double pendulum is similar to the acrobot model described in Section 3.1
 // of the Underactuated Robotics notes available online at
@@ -187,7 +191,8 @@ class PendulumTests : public ::testing::Test {
         *elbow_inboard_frame_, *elbow_outboard_frame_,
         Vector3d::UnitZ() /*revolute axis*/);
 
-    // Add force element for a constant gravity.
+    // Add force element for a constant gravity pointing downwards, that is, in
+    // the minus y-axis direction.
     model_->AddForceElement<UniformGravityFieldElement>(
         Vector3d(0.0, -acceleration_of_gravity_, 0.0));
   }
@@ -602,7 +607,8 @@ class PendulumKinematicTests : public PendulumTests {
     model_->CalcInverseDynamics(
         *context_, pc, vc, vdot, F_Bo_W_array, tau_applied,
         &A_WB_array, &F_BMo_W_array, &tau);
-    EXPECT_TRUE(tau.isApprox(G_expected, kTolerance));
+    // The result from inverse dynamics must be tau = -G(q).
+    EXPECT_TRUE(tau.isApprox(-G_expected, kTolerance));
 
     // Now try using the same arrays for input/output (input data F_Bo_W_array
     // will get overwritten through the output argument).
@@ -610,7 +616,9 @@ class PendulumKinematicTests : public PendulumTests {
     model_->CalcInverseDynamics(
         *context_, pc, vc, vdot, F_Bo_W_array, tau_applied,
         &A_WB_array, &F_Bo_W_array, &tau_applied);
-    EXPECT_TRUE(tau.isApprox(G_expected, kTolerance));
+    // The result from inverse dynamics must be tau = -G(q).
+    EXPECT_TRUE(tau.isApprox(-G_expected, kTolerance));
+
     return tau;
   }
 

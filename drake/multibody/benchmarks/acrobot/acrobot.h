@@ -75,6 +75,9 @@ class Acrobot {
   /// Computes the effective joint-space torques induced by gravity `G(q)`
   /// containing the effect of gravity as a function of the configuration of
   /// the pendulum.
+  /// Unlike http://underactuated.mit.edu/underactuated.html?chapter=3, cited in
+  /// this class's documentation, we define `G(q)` to be on the right hand side
+  /// of the equations of motion, that is, `Mv̇ + C(q, v)v = G(q)`.
   Vector2<T> CalcGravityVector(const T& theta1, const T& theta2) const;
 
   /// Computes the pose of the center of mass of link 1 measured and expressed

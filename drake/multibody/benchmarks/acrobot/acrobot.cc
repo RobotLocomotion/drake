@@ -87,11 +87,15 @@ Vector2<T> Acrobot<T>::CalcGravityVector(
 
   const T s1 = sin(theta1);
   const T s12 = sin(theta1 + theta2);
-  Vector2<T> C;
-  C(0) = g_ * m1_ * lc1_ * s1 + g_ * m2_ * (l1_ * s1 + lc2_ * s12);
-  C(1) = g_ * m2_ * lc2_ * s12;
+  Vector2<T> G;
+  G(0) = g_ * m1_ * lc1_ * s1 + g_ * m2_ * (l1_ * s1 + lc2_ * s12);
+  G(1) = g_ * m2_ * lc2_ * s12;
 
-  return C;
+  // Unlike http://underactuated.mit.edu/underactuated.html?chapter=3, we define
+  // G(q) to be on the right hand side of the equations of motion, that is,
+  // Mv̇ + C(q, v)v = G(q).
+  // Therefore we invert the sign before returning.
+  return -G;
 }
 
 template <typename T>
