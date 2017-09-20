@@ -42,6 +42,8 @@ TimeSteppingRigidBodyPlant<T>::TimeSteppingRigidBodyPlant(
   this->DeclarePeriodicDiscreteUpdate(timestep);
 }
 
+// Retrieves contact stiffness and damping coefficients for a pair of
+// geometries.
 template <class T>
 void TimeSteppingRigidBodyPlant<T>::CalcContactStiffnessAndDamping(
     const drake::multibody::collision::PointPair& contact,
@@ -123,7 +125,6 @@ void TimeSteppingRigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
     const std::vector<const drake::systems::DiscreteUpdateEvent<double>*>&,
     drake::systems::DiscreteValues<T>* updates) const {
   using std::abs;
-  std::vector<JointLimit> limits;
 
   static_assert(std::is_same<double, T>::value,
                 "Only support templating on double for now");
@@ -177,56 +178,11 @@ void TimeSteppingRigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
       const_cast<RigidBodyTree<T>*>(&tree)->ComputeMaximumDepthCollisionPoints(
           kcache, true);
 
+  // TODO(edrumwri): Relax this assumption to allow contact constraints.
+  DRAKE_DEMAND(contacts.empty());
+
   // Verify the friction directions are set correctly.
   DRAKE_DEMAND(half_cone_edges_ >= 2);
-
-  // Set the coefficients of friction.
-  data.mu.resize(contacts.size());
-  data.r.resize(contacts.size());
-  for (int i = 0; i < data.mu.rows(); ++i) {
-    // TODO(edrumwri): Replace this with parsed mu once #7016 lands.
-    data.mu[i] = mu_;
-    data.r[i] = half_cone_edges_;
-  }
-  const int total_friction_cone_edges = std::accumulate(
-      data.r.begin(), data.r.end(), 0);
-
-  // Set the joint range of motion limits.
-  for (auto const& b : tree.bodies) {
-    if (!b->has_parent_body()) continue;
-    auto const& joint = b->getJoint();
-
-    // Joint limit forces are only implemented for single-axis joints.
-    if (joint.get_num_positions() == 1 && joint.get_num_velocities() == 1) {
-      const T qmin = joint.getJointLimitMin()(0);
-      const T qmax = joint.getJointLimitMax()(0);
-      DRAKE_DEMAND(qmin < qmax);
-
-      // Get the current joint position and velocity.
-      const T& qjoint = q(b->get_position_start_index());
-      const T& vjoint = v(b->get_velocity_start_index());
-
-      // See whether the joint is beyond its limit or whether the *current*
-      // joint velocity might lead to a limit violation.
-      if (qjoint < qmin || qjoint + vjoint * dt < qmin) {
-        // Institute a lower limit.
-        limits.push_back(JointLimit());
-        limits.back().v_index = b->get_velocity_start_index();
-        limits.back().error = (qjoint - qmin);
-        limits.back().lower_limit = true;
-      }
-      if (qjoint > qmax || qjoint + vjoint * dt > qmax) {
-        // Institute an upper limit.
-        limits.push_back(JointLimit());
-        limits.back().v_index = b->get_velocity_start_index();
-        limits.back().error = (qmax - qjoint);
-        limits.back().lower_limit = false;
-      }
-    }
-  }
-
-  // Set the number of generic unilateral constraint functions.
-  data.num_limit_constraints = limits.size();
 
   // Set up the N multiplication operator (projected velocity along the contact
   // normals).
@@ -254,45 +210,21 @@ void TimeSteppingRigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
     return F_transpose_mult(contacts, q, v, f);
   };
 
-  // Set the unilateral constraint operator (for evaluating joint velocities
-  // at joint limit constraints).
-  data.L_mult = [this, &limits](const VectorX<T>& w) -> VectorX<T> {
-    VectorX<T> result(limits.size());
-    for (int i = 0; static_cast<size_t>(i) < limits.size(); ++i) {
-      const int index = limits[i].v_index;
-      result[i] = (limits[i].lower_limit) ? w[index] : -w[index];
-    }
-    return result;
-  };
-
-  // Set the unilateral constraint operator (for evaluating effect of forces
-  // at joint limits on generalized forces).
-  data.L_transpose_mult = [this, &v, &limits](const VectorX<T>& lambda) {
-    VectorX<T> result = VectorX<T>::Zero(v.size());
-    for (int i = 0; static_cast<size_t>(i) < limits.size(); ++i) {
-      const int index = limits[i].v_index;
-      result[index] = (limits[i].lower_limit) ? lambda[i] : -lambda[i];
-    }
-    return result;
-  };
-
   // 1. Set the stabilization term for contact normal direction (kN)
   data.kN.resize(contacts.size());
   for (int i = 0; i < static_cast<int>(contacts.size()); ++i) {
     double stiffness, damping;
     CalcContactStiffnessAndDamping(contacts[i], &stiffness, &damping);
-    const double denom = dt * stiffness + damping;
-    double contact_erp = dt * stiffness / denom;
-    data.kN[i] = contact_erp * contacts[i].distance / dt;
   }
 
   // 2. Set the stabilization term for contact tangent directions (kF).
+  // TODO(edrumwri): Update 'total_friction_cone_edges' once contact constraints
+  // supported.
+  const int total_friction_cone_edges = 0;
   data.kF.setZero(total_friction_cone_edges);
 
   // 3. Set the stabilization term for joint limit constraints (kL).
-  data.kL.resize(limits.size());
-  for (int i = 0; i < static_cast<int>(limits.size()); ++i)
-    data.kL[i] = erp_ * limits[i].error / dt;
+  data.kL.resize(0);
 
   // Integrate the forces into the velocity.
   data.v = v + data.solve_inertia(right_hand_side) * dt;

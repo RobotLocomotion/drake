@@ -54,21 +54,6 @@ class TimeSteppingRigidBodyPlant : public RigidBodyPlant<T> {
   multibody::constraint::ConstraintSolver<T> constraint_solver_;
 
  private:
-  // Structure for storing joint limit data for time stepping.
-  struct JointLimit {
-    // The index for the joint limit.
-    int v_index{-1};
-
-    // Whether the limit is a lower limit or upper limit.
-    bool lower_limit{false};
-
-    // Gets the "error", meaning the amount over the limit (if the error is
-    // positive) or under the limit (if the error is negative). Negative error
-    // is not error per se, but rather a way to limit the movement of a joint
-    // by the step into the future.
-    T error{0};
-  };
-
   void CalcContactStiffnessAndDamping(
       const drake::multibody::collision::PointPair& contact,
       double* stiffness,

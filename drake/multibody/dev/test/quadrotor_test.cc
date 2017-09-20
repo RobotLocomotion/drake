@@ -42,14 +42,13 @@ namespace {
 template <typename T>
 class Quadrotor : public systems::Diagram<T> {
  public:
-  explicit Quadrotor(double dt) {
+  explicit Quadrotor(double dt = 0.0) {
     this->set_name("Quadrotor");
 
     auto tree = std::make_unique<RigidBodyTree<T>>();
     ModelInstanceIdTable model_id_table = AddModelInstanceFromUrdfFileToWorld(
         FindResourceOrThrow("drake/examples/quadrotor/quadrotor.urdf"),
         kRollPitchYaw, tree.get());
-    const int quadrotor_id = model_id_table.at("quadrotor");
     AddModelInstancesFromSdfFile(
         FindResourceOrThrow("drake/examples/quadrotor/warehouse.sdf"),
         kFixed, nullptr /* weld to frame */, tree.get());
@@ -66,11 +65,6 @@ class Quadrotor : public systems::Diagram<T> {
     }
 
     plant_->set_name("plant");
-
-    // Verifies that the quadrotor has no actuators.
-    DRAKE_DEMAND(plant_->get_num_actuators() == 0);
-    DRAKE_DEMAND(plant_->get_num_actuators(quadrotor_id) == 0);
-
     builder.BuildInto(this);
   }
 
@@ -89,7 +83,7 @@ GTEST_TEST(QuadrotorTest, Equality) {
   const double step_size = 2.5e-4;
 
   // Construct the two models.
-  Quadrotor<double> continuous_model(0.0);
+  Quadrotor<double> continuous_model;
   Quadrotor<double> discrete_model(step_size);
 
   // Get the two RigidBodyPlant refs.
@@ -129,13 +123,11 @@ GTEST_TEST(QuadrotorTest, Equality) {
   continuous_sim.StepTo(duration);
   discrete_sim.StepTo(duration);
 
-  // Compare the states.
+  // Compare solutions using the tightest tolerance for which tests pass.
   auto& continuous_state = continuous_sim.get_context().
       get_continuous_state_vector();
   auto& discrete_state = *discrete_sim.get_context().
       get_discrete_state()->get_data().front();
-
-  // Compare solutions using the tightest tolerance for which tests pass.
   const double tol = 1e3 * std::numeric_limits<double>::epsilon();
   ASSERT_EQ(continuous_state.size(), discrete_state.size());
   for (int i = 0; i < discrete_state.size(); ++i)
