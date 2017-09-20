@@ -216,6 +216,15 @@ GTEST_TEST(BasicVectorTest, ZeroLengthStringStream) {
 }
 
 
+// Tests the default set of inequality constraints (empty).
+GTEST_TEST(BasicVectorTest, DefaultCalcInequalityConstraint) {
+  VectorX<double> value = VectorX<double>::Ones(22);
+  BasicVector<double> vec(1);
+  vec.CalcInequalityConstraint(&value);
+  EXPECT_EQ(value.size(), 0);
+}
+
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake
