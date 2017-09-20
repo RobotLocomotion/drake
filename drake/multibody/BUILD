@@ -98,8 +98,8 @@ drake_cc_library(
         "kinematics_cache-inl.h",
     ],
     deps = [
-        "//drake/common",
         "//drake/common:autodiff",
+        "//drake/common:essential",
         "//drake/multibody/joints",
     ],
 )
@@ -109,8 +109,8 @@ drake_cc_library(
     srcs = ["rigid_body.cc"],
     hdrs = ["rigid_body.h"],
     deps = [
-        "//drake/common",
         "//drake/common:autodiff",
+        "//drake/common:essential",
         "//drake/multibody/collision",
         "//drake/multibody/joints",
         "//drake/util",
@@ -123,7 +123,7 @@ drake_cc_library(
     hdrs = ["rigid_body_actuator.h"],
     deps = [
         ":rigid_body",
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -133,8 +133,8 @@ drake_cc_library(
     hdrs = ["rigid_body_frame.h"],
     deps = [
         ":rigid_body",
-        "//drake/common",
         "//drake/common:autodiff",
+        "//drake/common:essential",
         "//drake/math:geometric_transform",
     ],
 )
@@ -145,8 +145,8 @@ drake_cc_library(
     hdrs = ["rigid_body_loop.h"],
     deps = [
         ":rigid_body_frame",
-        "//drake/common",
         "//drake/common:autodiff",
+        "//drake/common:essential",
     ],
 )
 
@@ -161,7 +161,7 @@ drake_cc_library(
     ],
     visibility = [],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -179,8 +179,8 @@ drake_cc_library(
         ":rigid_body_frame",
         ":rigid_body_loop",
         ":rigid_body_tree_datatypes",
-        "//drake/common",
         "//drake/common:autodiff",
+        "//drake/common:essential",
         "//drake/math:geometric_transform",
         "//drake/math:gradient",
         "//drake/multibody/collision",
@@ -204,8 +204,8 @@ drake_cc_library(
         ":rigid_body_frame",
         ":rigid_body_loop",
         ":rigid_body_tree_datatypes",
-        "//drake/common",
         "//drake/common:autodiff",
+        "//drake/common:essential",
         "//drake/math:geometric_transform",
         "//drake/multibody/collision",
         "//drake/multibody/joints",
@@ -290,7 +290,7 @@ drake_cc_library(
     deps = [
         ":rigid_body_tree",
         ":rigid_body_tree_alias_groups_proto",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common/proto:protobuf",
     ],
 )
@@ -440,7 +440,7 @@ drake_cc_googletest(
     srcs = ["test/rigid_body_tree/rigid_body_tree_clone_test.cc"],
     data = [
         ":test_models",
-        "//drake/automotive:models",
+        "//drake/automotive:prod_models",
         "//drake/examples/atlas:models",
         "//drake/examples/pendulum:models",
         "//drake/examples/valkyrie:models",

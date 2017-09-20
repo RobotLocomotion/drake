@@ -69,8 +69,8 @@ class MobilizerImpl : public Mobilizer<T> {
 
  protected:
   // Handy enum to grant specific implementations compile time sizes.
-  // static constexpr int i = 42; discouraged.
-  // See answer in: http://stackoverflow.com/questions/37259807/static-constexpr-int-vs-old-fashioned-enum-when-and-why
+  // static constexpr int i = 42; discouraged.  See answer in:
+  // http://stackoverflow.com/questions/37259807/static-constexpr-int-vs-old-fashioned-enum-when-and-why
   enum : int {kNq = num_positions, kNv = num_velocities};
 
   /// @name Helper methods to retrieve entries from MultibodyTreeContext.

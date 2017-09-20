@@ -48,6 +48,8 @@ drake_cc_googletest(
     deps = [
         ":luenberger_observer",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:is_dynamic_castable",
+        "//drake/examples/pendulum:pendulum_plant",
         "//drake/systems/primitives:linear_system",
     ],
 )
@@ -61,7 +63,7 @@ drake_cc_test(
     data = ["//drake/multibody:models"],
     tags = mosek_test_tags(),
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common:find_resource",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/collision",

@@ -139,7 +139,7 @@ github_archive(
     name = "lcm",
     repository = "lcm-proj/lcm",
     commit = "c0a0093a950fc83e12e8d5918a0319b590356e7e",
-    sha256 = "d5bb1a0153b9c1526590e7d65be8ca79e4f5e9bf4ce58178c992eaca49d17fb0",  # noqa
+    sha256 = "f967e74e639ea56318242e93c77a15a504345c8200791cab70d9dad86aa969b2",  # noqa
     build_file = "tools/lcm.BUILD",
 )
 
@@ -181,7 +181,7 @@ github_archive(
     name = "fcl",
     repository = "flexible-collision-library/fcl",
     commit = "06d48b3b6f3605b8caf119d5208d8156eb64fe0d",
-    sha256 = "0a5652cac609cca58f85d68c08298e177867188ad730e78c8c9ac97eea8d32b4",  # noqa
+    sha256 = "da86ed593a908d075657a305abec1670b895278a99ba76632b7afb6e678a9978",  # noqa
     build_file = "tools/fcl.BUILD",
 )
 
@@ -189,7 +189,7 @@ github_archive(
     name = "ipopt",
     repository = "RobotLocomotion/ipopt-mirror",
     commit = "aecf5abd3913eebf1b99167c0edd4e65a6b414bc",
-    sha256 = "4ddde882913b9edc91f281edcdffccdd5343a8b6f1bc42b541188f49159e9768",  # noqa
+    sha256 = "d88ea1b6b34c5678ef32ced22a6e9cb00f76a490f233d0b2d56270609eb94e3e",  # noqa
     build_file = "tools/ipopt.BUILD",
 )
 
@@ -274,7 +274,7 @@ github_archive(
     name = "yaml_cpp",
     repository = "jbeder/yaml-cpp",
     commit = "85af926ddc5f3c8fb438001743e65ec3a039ceec",
-    sha256 = "d94cdb84f346ce4d9f1f891505ed257796103f70ce56590bdd02e025c8503b16",  # noqa
+    sha256 = "907fb42a502e1448a73959f9a648771b070d6d8513f16d74149f775fc56550ef",  # noqa
     build_file = "tools/yaml_cpp.BUILD",
 )
 
@@ -324,7 +324,7 @@ github_archive(
     name = "protobuf",
     repository = "google/protobuf",
     commit = "v3.1.0",
-    sha256 = "0a0ae63cbffc274efb573bdde9a253e3f32e458c41261df51c5dbc5ad541e8f7",  # noqa
+    sha256 = "fb2a314f4be897491bb2446697be693d489af645cb0e165a85e7e64e07eb134d",  # noqa
 )
 
 pypi_archive(
@@ -398,6 +398,16 @@ load("//tools:expat.bzl", "expat_repository")
 
 expat_repository(
     name = "expat",
+)
+
+pkg_config_package(
+    name = "glew",
+    modname = "glew",
+)
+
+pkg_config_package(
+    name = "liblz4",
+    modname = "liblz4",
 )
 
 pkg_config_package(

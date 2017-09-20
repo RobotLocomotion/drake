@@ -25,6 +25,7 @@
 #include "drake/systems/framework/input_port_evaluator_interface.h"
 #include "drake/systems/framework/output_port.h"
 #include "drake/systems/framework/output_port_value.h"
+#include "drake/systems/framework/system_constraint.h"
 #include "drake/systems/framework/witness_function.h"
 
 namespace drake {
@@ -741,7 +742,8 @@ class System {
   // These three methods would ideally be designated as "protected", but
   // Diagram::AllocateForcedXEventCollection() needs to call these methods and,
   // perhaps surprisingly, is not able to access these methods when they are
-  // protected. See: https://stackoverflow.com/questions/16785069/why-cant-a-derived-class-call-protected-member-function-in-this-code.
+  // protected. See:
+  // https://stackoverflow.com/questions/16785069/why-cant-a-derived-class-call-protected-member-function-in-this-code.
   // To address this problem, we keep the methods "public" and
   // (1) Make the overriding methods in LeafSystem and Diagram "final" and
   // (2) Use the doxygen cond/endcond tags so that these methods are hidden
@@ -828,6 +830,25 @@ class System {
           std::to_string(get_num_output_ports()) + " output ports.");
     }
     return *output_ports_[port_index];
+  }
+
+  /// Returns the number of constraints specified for the system.
+  int get_num_constraints() const {
+    return static_cast<int>(constraints_.size());
+  }
+
+  /// Returns the constraint at index @p constraint_index.
+  /// @throws std::out_of_range for an invalid constraint_index.
+  const SystemConstraint<T>& get_constraint(
+      SystemConstraintIndex constraint_index) const {
+    if (constraint_index < 0 || constraint_index >= get_num_constraints()) {
+      throw std::out_of_range("System " + get_name() + ": Constraint index " +
+                              std::to_string(constraint_index) +
+                              " is out of range. There are only " +
+                              std::to_string(get_num_constraints()) +
+                              " constraints.");
+    }
+    return *constraints_[constraint_index];
   }
 
   /// Returns the total dimension of all of the input ports (as if they were
@@ -963,42 +984,64 @@ class System {
   //@{
 
   /// Creates a deep copy of this System, transmogrified to use the autodiff
-  /// scalar type, with a dynamic-sized vector of partial derivatives.
-  /// Concrete Systems may shadow this with a more specific return type.
+  /// scalar type, with a dynamic-sized vector of partial derivatives.  The
+  /// result is never nullptr.
+  /// @throw exception if this System does not support autodiff
+  ///
+  /// See @ref system_scalar_conversion for detailed background and examples
+  /// related to scalar-type conversion support.
   std::unique_ptr<System<AutoDiffXd>> ToAutoDiffXd() const {
-    System<AutoDiffXd>* sys = DoToAutoDiffXd();
-    if (sys != nullptr) {
-      sys->set_name(this->get_name());
-    }
-    return std::unique_ptr<System<AutoDiffXd>>(sys);
+    return System<T>::ToAutoDiffXd(*this);
   }
 
-  /// Creates a deep copy of `from`, transmogrified to use the autodiff
-  /// scalar type, with a dynamic-sized vector of partial derivatives. Returns
-  /// `nullptr` if the template parameter `S` is not the type of the concrete
-  /// system, or a superclass thereof.
+  /// Creates a deep copy of `from`, transmogrified to use the autodiff scalar
+  /// type, with a dynamic-sized vector of partial derivatives.  The result is
+  /// never nullptr.
+  /// @throw exception if `from` does not support autodiff
   ///
   /// Usage: @code
   ///   MySystem<double> plant;
   ///   std::unique_ptr<MySystem<AutoDiffXd>> ad_plant =
-  ///       systems::System<double>::ToAutoDiffXd<MySystem>(plant);
+  ///       systems::System<double>::ToAutoDiffXd(plant);
   /// @endcode
   ///
-  /// @tparam S The specific System pointer type to return.
+  /// @tparam S The specific System type to accept and return.
+  ///
+  /// See @ref system_scalar_conversion for detailed background and examples
+  /// related to scalar-type conversion support.
   template <template <typename> class S = ::drake::systems::System>
-  static std::unique_ptr<S<AutoDiffXd>> ToAutoDiffXd(
-      const System<double>& from) {
-    // Capture the copy as System<AutoDiffXd>.
-    std::unique_ptr<System<AutoDiffXd>> clone(from.DoToAutoDiffXd());
-    // Attempt to downcast to S<AutoDiffXd>.
-    S<AutoDiffXd>* downcast = dynamic_cast<S<AutoDiffXd>*>(clone.get());
-    // If the downcast fails, return nullptr, letting the copy be deleted.
-    if (downcast == nullptr) {
-      return nullptr;
+  static std::unique_ptr<S<AutoDiffXd>> ToAutoDiffXd(const S<T>& from) {
+    using U = AutoDiffXd;
+    const System<T>& from_system = from;  // Upcast to unlock protected methods.
+    std::unique_ptr<System<U>> base_result{from_system.DoToAutoDiffXd()};
+    if (!base_result) {
+      std::stringstream ss;
+      ss << "The object named [" << from.get_name() << "] of type "
+         << NiceTypeName::Get(from) << " does not support ToAutoDiffXd.";
+      throw std::logic_error(ss.str().c_str());
     }
-    // If the downcast succeeds, redo it, taking ownership this time.
-    return std::unique_ptr<S<AutoDiffXd>>(
-        dynamic_cast<S<AutoDiffXd>*>(clone.release()));
+
+    // Downcast to the derived type S (throwing on error), and then transfer
+    // ownership to a correctly-typed unique_ptr.
+    // NOLINTNEXTLINE(runtime/casting)
+    std::unique_ptr<S<U>> result{&dynamic_cast<S<U>&>(*base_result)};
+    base_result.release();
+
+    // Match the result's name to its originator.
+    result->set_name(from.get_name());
+    return result;
+  }
+
+  /// Creates a deep copy of this system exactly like ToAutoDiffXd(), but
+  /// returns nullptr if this System does not support autodiff, instead of
+  /// throwing an exception.
+  std::unique_ptr<System<AutoDiffXd>> ToAutoDiffXdMaybe() const {
+    std::unique_ptr<System<AutoDiffXd>> result{DoToAutoDiffXd()};
+    if (result) {
+      // Match the result's name to its originator.
+      result->set_name(this->get_name());
+    }
+    return result;
   }
   //@}
 
@@ -1012,44 +1055,62 @@ class System {
   //@{
 
   /// Creates a deep copy of this System, transmogrified to use the symbolic
-  /// scalar type. Returns `nullptr` if DoToSymbolic has not been implemented.
+  /// scalar type. The result is never nullptr.
+  /// @throw exception if this System does not support symbolic
   ///
-  /// Concrete Systems may shadow this with a more specific return type.
+  /// See @ref system_scalar_conversion for detailed background and examples
+  /// related to scalar-type conversion support.
   std::unique_ptr<System<symbolic::Expression>> ToSymbolic() const {
-    System<symbolic::Expression>* sys = DoToSymbolic();
-    if (sys != nullptr) {
-      sys->set_name(this->get_name());
-    }
-    return std::unique_ptr<System<symbolic::Expression>>(sys);
+    return System<T>::ToSymbolic(*this);
   }
 
-  /// Creates a deep copy of `from`, transmogrified to use the symbolic
-  /// scalar type. Returns `nullptr` if the template parameter `S` is not the
-  /// type of the concrete system, or a superclass thereof. Returns `nullptr`
-  /// if DoToSymbolic has not been implemented.
+  /// Creates a deep copy of `from`, transmogrified to use the symbolic scalar
+  /// type. The result is never nullptr.
+  /// @throw exception if this System does not support symbolic
   ///
   /// Usage: @code
   ///   MySystem<double> plant;
-  ///   std::unique_ptr<MySystem<symbolic::Expression>> ad_plant =
-  ///       systems::System<double>::ToSymbolic<MySystem>(plant);
+  ///   std::unique_ptr<MySystem<symbolic::Expression>> sym_plant =
+  ///       systems::System<double>::ToSymbolic(plant);
   /// @endcode
   ///
   /// @tparam S The specific System pointer type to return.
+  ///
+  /// See @ref system_scalar_conversion for detailed background and examples
+  /// related to scalar-type conversion support.
   template <template <typename> class S = ::drake::systems::System>
-  static std::unique_ptr<S<symbolic::Expression>> ToSymbolic(
-      const System<double>& from) {
-    // Capture the copy as System<symbolic::Expression>.
-    std::unique_ptr<System<symbolic::Expression>> clone(from.DoToSymbolic());
-    // Attempt to downcast to S<symbolic::Expression>.
-    S<symbolic::Expression>* downcast =
-        dynamic_cast<S<symbolic::Expression>*>(clone.get());
-    // If the downcast fails, return nullptr, letting the copy be deleted.
-    if (downcast == nullptr) {
-      return nullptr;
+  static std::unique_ptr<S<symbolic::Expression>> ToSymbolic(const S<T>& from) {
+    using U = symbolic::Expression;
+    const System<T>& from_system = from;  // Upcast to unlock protected methods.
+    std::unique_ptr<System<U>> base_result{from_system.DoToSymbolic()};
+    if (!base_result) {
+      std::stringstream ss;
+      ss << "The object named [" << from.get_name() << "] of type "
+         << NiceTypeName::Get(from) << " does not support ToSymbolic.";
+      throw std::logic_error(ss.str().c_str());
     }
-    // If the downcast succeeds, redo it, taking ownership this time.
-    return std::unique_ptr<S<symbolic::Expression>>(
-        dynamic_cast<S<symbolic::Expression>*>(clone.release()));
+
+    // Downcast to the derived type S (throwing on error), and then transfer
+    // ownership to a correctly-typed unique_ptr.
+    // NOLINTNEXTLINE(runtime/casting)
+    std::unique_ptr<S<U>> result{&dynamic_cast<S<U>&>(*base_result)};
+    base_result.release();
+
+    // Match the result's name to its originator.
+    result->set_name(from.get_name());
+    return result;
+  }
+
+  /// Creates a deep copy of this system exactly like ToSymbolic(), but returns
+  /// nullptr if this System does not support symbolic, instead of throwing an
+  /// exception.
+  std::unique_ptr<System<symbolic::Expression>> ToSymbolicMaybe() const {
+    std::unique_ptr<System<symbolic::Expression>> result{DoToSymbolic()};
+    if (result) {
+      // Match the result's name to its originator.
+      result->set_name(this->get_name());
+    }
+    return result;
   }
   //@}
 
@@ -1243,6 +1304,15 @@ class System {
     output_ports_.push_back(std::move(port));
   }
   //@}
+
+  /// Adds an already-created constraint to the list of constraints for this
+  /// System.  Ownership of the SystemConstraint is transferred to this system.
+  SystemConstraintIndex AddConstraint(
+      std::unique_ptr<SystemConstraint<T>> constraint) {
+    DRAKE_DEMAND(constraint != nullptr);
+    constraints_.push_back(std::move(constraint));
+    return SystemConstraintIndex(constraints_.size() - 1);
+  }
 
   //----------------------------------------------------------------------------
   /// @name               Virtual methods for input allocation
@@ -1454,34 +1524,14 @@ class System {
     qdot->SetFromVector(generalized_velocity);
   }
 
-  /// NVI implementation of ToAutoDiffXd. Caller takes ownership of the returned
-  /// pointer. Overrides should return a more specific covariant type.
-  /// Templated overrides may assume that they are subclasses of System<double>.
-  ///
-  /// No default implementation is provided in LeafSystem, since the member data
-  /// of a particular concrete leaf system is not knowable to the framework.
-  /// A default implementation is provided in Diagram, which Diagram subclasses
-  /// with member data should override.
-  virtual System<AutoDiffXd>* DoToAutoDiffXd() const {
-    std::stringstream ss;
-    ss << "Override DoToAutoDiffXd for object named [" << this->get_name()
-       << "] of type " << NiceTypeName::Get(*this)
-       << " before using ToAutoDiffXd.";
-    DRAKE_ABORT_MSG(ss.str().c_str());
-    return nullptr;
-  }
+  /// NVI implementation of ToAutoDiffXdMaybe. Caller takes ownership of the
+  /// returned pointer.
+  /// @return nullptr if this System does not support autodiff
+  virtual System<AutoDiffXd>* DoToAutoDiffXd() const { return nullptr; }
 
-  /// NVI implementation of ToSymbolic. Caller takes ownership of the returned
-  /// pointer. Overrides should return a more specific covariant type.
-  /// Templated overrides may assume that they are subclasses of System<double>.
-  ///
-  /// Returns `nullptr` by default.  Direct-feedthrough detection relies on
-  /// this behavior.
-  ///
-  /// No default implementation is provided in LeafSystem, since the member data
-  /// of a particular concrete leaf system is not knowable to the framework.
-  /// A default implementation is provided in Diagram, which Diagram subclasses
-  /// with member data should override.
+  /// NVI implementation of ToSymbolicMaybe. Caller takes ownership of the
+  /// returned pointer.
+  /// @return nullptr if this System does not support symbolic form
   virtual System<symbolic::Expression>* DoToSymbolic() const { return nullptr; }
   //@}
 
@@ -1627,6 +1677,8 @@ class System {
   std::vector<std::unique_ptr<InputPortDescriptor<T>>> input_ports_;
   std::vector<std::unique_ptr<OutputPort<T>>> output_ports_;
   const detail::InputPortEvaluatorInterface<T>* parent_{nullptr};
+
+  std::vector<std::unique_ptr<SystemConstraint<T>>> constraints_;
 
   // These are only used to dispatch forced event handling. For a LeafSystem,
   // all of these have exactly one kForced triggered event. For a Diagram, they

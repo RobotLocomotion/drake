@@ -82,7 +82,8 @@ namespace geometry {
  @code
     using AId = Identifier<class ATag>;
     using BId = Identifier<class BTag>;
-    AId a1;                              // Compiler error. There is no default constructor.
+    AId a1;                              // Compiler error; there is no
+                                         //   default constructor.
     AId a2 = AId::get_new_id();          // Ok.
     AId a3(a2);                          // Ok.
     AId a4 = AId::get_new_id();          // Ok.

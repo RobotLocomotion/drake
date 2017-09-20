@@ -17,7 +17,7 @@ drake_cc_library(
         "drakeUtil.h",
     ],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/math:geometric_transform",
         "//drake/math:gradient",
     ],
@@ -28,7 +28,7 @@ drake_cc_library(
     srcs = ["convexHull.cpp"],
     hdrs = ["convexHull.h"],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -54,7 +54,7 @@ drake_cc_library(
     srcs = ["yaml/yamlUtil.cpp"],
     hdrs = ["yaml/yamlUtil.h"],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/systems/controllers:qp_common",
         "@yaml_cpp",
     ],

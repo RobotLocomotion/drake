@@ -18,7 +18,7 @@
 #if !defined(STX_NO_STD_OPTIONAL) && defined(__APPLE__)
 // This header is empty on C++ but defines _LIBCPP_VERSION for us
 #include <ciso646>
-#if defined(_LIBCPP_VERSION) && (_LIBCPP_VERSION <= 3800)
+#if defined(_LIBCPP_VERSION) && (_LIBCPP_VERSION <= 4000)
 #define STX_NO_STD_OPTIONAL
 #endif // _LIBCPP_VERSION
 #endif // __APPLE__

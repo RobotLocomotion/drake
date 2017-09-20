@@ -55,6 +55,21 @@ class FormatterBase(object):
         """
         return self._working_lines == self._original_lines
 
+    def get_first_differing_original_index(self):
+        """Return the first index from original lines that differs from the
+        working lines, or None if no lines differ.  This is a 0-based index,
+        not a line number.
+        """
+        if self.is_same_as_original():
+            return None
+        min_common_line_count = min(
+            len(self._working_lines), len(self._original_lines))
+        for i in xrange(min_common_line_count):
+            if self._working_lines[i] != self._original_lines[i]:
+                return i
+        # One file is a prefix of the other.
+        return min_common_line_count
+
     def is_permutation_of_original(self):
         """Return whether the working list is a permultation of the original
         file lines read in by (or passed to) the constructor, modulo blank

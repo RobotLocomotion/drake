@@ -570,7 +570,7 @@ void Rod2D<T>::CalcConstraintProblemData(
   for (int i = 0; i < nc; ++i)
     Ndot.row(i) =  GetJacobianDotRow(context, points[i], contact_normal);
   const Vector3<T> v = GetRodVelocity(context);
-  data->Ndot_times_v = Ndot * v;
+  data->kN = Ndot * v;
 
   // Form the tangent directions contact Jacobian (F), its time derivative
   // (Fdot), and compute Fdot * v.
@@ -583,7 +583,7 @@ void Rod2D<T>::CalcConstraintProblemData(
     Fdot.row(i) = GetJacobianDotRow(
         context, points[contact_index], contact_tangent);
   }
-  data->Fdot_times_v = Fdot * v;
+  data->kF = Fdot * v;
   data->F_mult = [F](const VectorX<T>& w) -> VectorX<T> { return F * w; };
   data->F_transpose_mult = [F](const VectorX<T>& w) -> VectorX<T> {
     return F.transpose() * w;
@@ -602,8 +602,6 @@ void Rod2D<T>::CalcConstraintProblemData(
   data->N_minus_muQ_transpose_mult = [N_minus_mu_Q](const VectorX<T>& w) ->
       VectorX<T> { return N_minus_mu_Q.transpose() * w; };
 
-  // Set the number of limit constraints and kL.
-  data->num_limit_constraints = 0;
   data->kL.resize(0);
 
   // Set external force vector.
@@ -654,6 +652,7 @@ void Rod2D<T>::CalcImpactProblemData(
   data->N_mult = [N](const VectorX<T>& w) -> VectorX<T> { return N * w; };
   data->N_transpose_mult = [N](const VectorX<T>& w) -> VectorX<T> {
     return N.transpose() * w; };
+  data->kN.setZero(num_contacts);
 
   // Form the tangent directions contact Jacobian (F).
   const int nr = std::accumulate(data->r.begin(), data->r.end(), 0);
@@ -665,9 +664,10 @@ void Rod2D<T>::CalcImpactProblemData(
   data->F_transpose_mult = [F](const VectorX<T>& w) -> VectorX<T> {
     return F.transpose() * w;
   };
+  data->kF.setZero(nr);
 
   // Set the number of limit constraints.
-  data->num_limit_constraints = 0;
+  data->kL.resize(0);
 }
 
 template <typename T>

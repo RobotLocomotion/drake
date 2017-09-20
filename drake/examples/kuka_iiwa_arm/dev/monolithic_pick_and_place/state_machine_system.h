@@ -44,8 +44,7 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
       const override;
 
   // This kind of a system is not a direct feedthrough.
-  bool DoHasDirectFeedthrough(const systems::SystemSymbolicInspector*,
-                              int, int) const final {
+  optional<bool> DoHasDirectFeedthrough(int, int) const final {
     return false;
   }
 

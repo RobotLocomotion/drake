@@ -260,7 +260,7 @@ void MultibodyTree<T>::CalcInverseDynamics(
     const Eigen::Ref<const VectorX<T>>& tau_applied_array,
     std::vector<SpatialAcceleration<T>>* A_WB_array,
     std::vector<SpatialForce<T>>* F_BMo_W_array,
-    Eigen::Ref<VectorX<T>> tau_array) const {
+    EigenPtr<VectorX<T>> tau_array) const {
   DRAKE_DEMAND(known_vdot.size() == get_num_velocities());
   const int Fapplied_size = static_cast<int>(Fapplied_Bo_W_array.size());
   DRAKE_DEMAND(Fapplied_size == get_num_bodies() || Fapplied_size == 0);
@@ -274,7 +274,8 @@ void MultibodyTree<T>::CalcInverseDynamics(
   DRAKE_DEMAND(F_BMo_W_array != nullptr);
   DRAKE_DEMAND(static_cast<int>(F_BMo_W_array->size()) == get_num_bodies());
 
-  DRAKE_DEMAND(tau_array.size() == get_num_velocities());
+  DRAKE_DEMAND(tau_array != nullptr);
+  DRAKE_DEMAND(tau_array->size() == get_num_velocities());
 
   const auto& mbt_context =
       dynamic_cast<const MultibodyTreeContext<T>&>(context);
@@ -284,12 +285,12 @@ void MultibodyTree<T>::CalcInverseDynamics(
   CalcSpatialAccelerationsFromVdot(context, pc, vc, known_vdot, A_WB_array);
 
   // Vector of generalized forces per mobilizer.
-  VectorUpTo6<T> tau_applied_mobilizer;
-  tau_applied_mobilizer.setZero();
+  // It has zero size if no forces are applied.
+  VectorUpTo6<T> tau_applied_mobilizer(0);
 
   // Spatial force applied on B at Bo.
-  SpatialForce<T> Fapplied_Bo_W;
-  Fapplied_Bo_W.SetZero();
+  // It is left initialized to zero if no forces are applied.
+  SpatialForce<T> Fapplied_Bo_W = SpatialForce<T>::Zero();
 
   // Performs a tip-to-base recursion computing the total spatial force F_BMo_W
   // acting on body B, about point Mo, expressed in the world frame W.
@@ -316,7 +317,7 @@ void MultibodyTree<T>::CalcInverseDynamics(
                 tau_applied_array);
       }
       if (Fapplied_size != 0) {
-        Fapplied_Bo_W = (*F_BMo_W_array)[body_node_index];
+        Fapplied_Bo_W = Fapplied_Bo_W_array[body_node_index];
       }
 
       // Compute F_BMo_W for the body associated with this node and project it

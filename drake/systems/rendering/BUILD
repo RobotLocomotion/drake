@@ -13,8 +13,8 @@ drake_cc_library(
     deps = [
         ":pose_bundle",
         ":pose_vector",
-        "//drake/common",
         "//drake/common:autodiff",
+        "//drake/common:essential",
         "//drake/systems/framework:leaf_system",
     ],
 )
@@ -25,7 +25,7 @@ drake_cc_library(
     hdrs = ["pose_bundle_to_draw_message.h"],
     deps = [
         ":pose_bundle",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/lcmtypes:viewer",
         "//drake/systems/framework:leaf_system",
     ],
@@ -37,7 +37,7 @@ drake_cc_library(
     hdrs = ["pose_stamped_t_pose_vector_translator.h"],
     deps = [
         ":pose_vector",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/systems/lcm:translator",
         "@lcmtypes_robotlocomotion",
     ],
@@ -70,8 +70,8 @@ drake_cc_library(
     hdrs = ["pose_bundle.h"],
     deps = [
         ":frame_velocity",
-        "//drake/common",
         "//drake/common:autodiff",
+        "//drake/common:essential",
         "//drake/common:symbolic",
     ],
 )

@@ -175,7 +175,7 @@ PiecewisePolynomialTrajectory DirectTranscription::ReconstructStateTrajectory()
 
 bool DirectTranscription::AddSymbolicDynamicConstraints(
     const System<double>* system, const Context<double>& context) {
-  const auto symbolic_system = system->ToSymbolic();
+  const auto symbolic_system = system->ToSymbolicMaybe();
   if (!symbolic_system) {
     return false;
   }
@@ -217,23 +217,6 @@ void DirectTranscription::AddAutodiffDynamicConstraints(
   discrete_state_ = system_->AllocateDiscreteVariables();
 
   context_->SetTimeStateAndParametersFrom(context);
-
-  // Set derivatives of all parameters in the context to zero (but with the
-  // correct size).
-  int num_gradients = 2 * num_states() + num_inputs();
-  for (int i = 0; i < context_->get_parameters().num_numeric_parameters();
-       i++) {
-    auto params = context_->get_mutable_parameters()
-                      .get_mutable_numeric_parameter(i)
-                      ->get_mutable_value();
-    for (int j = 0; j < params.size(); j++) {
-      auto& derivs = params(j).derivatives();
-      if (derivs.size() == 0) {
-        derivs.resize(num_gradients);
-        derivs.setZero();
-      }
-    }
-  }
 
   if (context_->get_num_input_ports() > 0) {
     // Allocate the input port and keep an alias around.

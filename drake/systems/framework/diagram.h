@@ -22,6 +22,7 @@
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/subvector.h"
 #include "drake/systems/framework/system.h"
+#include "drake/systems/framework/system_constraint.h"
 
 namespace drake {
 namespace systems {
@@ -903,28 +904,32 @@ class Diagram : public System<T>,
   }
 
   /// Creates a deep copy of this Diagram<double>, converting the scalar type
-  /// to AutoDiffXd, and preserving all internal structure. Subclasses
-  /// may wish to override to initialize additional member data, or to return a
-  /// more specific covariant type.
+  /// to AutoDiffXd, and preserving all internal structure. Subclasses may wish
+  /// to override to initialize additional member data. If any contained
+  /// subsystem does not support ToAutoDiffXd, then this result is nullptr.
   /// This is the NVI implementation of ToAutoDiffXd.
   Diagram<AutoDiffXd>* DoToAutoDiffXd() const override {
     using FromType = System<double>;
     using ToType = std::unique_ptr<System<AutoDiffXd>>;
     std::function<ToType(const FromType&)> subsystem_converter{
-        [](const FromType& subsystem) { return subsystem.ToAutoDiffXd(); }};
+        [](const FromType& subsystem) {
+          return subsystem.ToAutoDiffXdMaybe();
+        }};
     return ConvertScalarType<AutoDiffXd>(subsystem_converter).release();
   }
 
   /// Creates a deep copy of this Diagram<double>, converting the scalar type
-  /// to symbolic::Expression, and preserving all internal structure. Subclasses
-  /// may wish to override to initialize additional member data, or to return a
-  /// more specific covariant type.
-  /// This is the NVI implementation of ToSymbolic.
+  /// to symbolic::Expression, and preserving all internal structure.
+  /// Subclasses may wish to override to initialize additional member data.
+  /// If any contained subsystem does not support ToSymbolic, then this
+  /// result is nullptr. This is the NVI implementation of ToSymbolic.
   Diagram<symbolic::Expression>* DoToSymbolic() const override {
     using FromType = System<double>;
     using ToType = std::unique_ptr<System<symbolic::Expression>>;
     std::function<ToType(const FromType&)> subsystem_converter{
-        [](const FromType& subsystem) { return subsystem.ToSymbolic(); }};
+        [](const FromType& subsystem) {
+          return subsystem.ToSymbolicMaybe();
+        }};
     return ConvertScalarType<symbolic::Expression>(subsystem_converter)
         .release();
   }
@@ -1181,6 +1186,10 @@ class Diagram : public System<T>,
     std::map<const System<T1>*, const System<NewType>*> old_to_new_map;
     for (const auto& old_system : registered_systems_) {
       new_systems.push_back(converter(*old_system));
+      if (!new_systems.back().get()) {
+        // A subsystem could not support the conversion.
+        return nullptr;
+      }
       old_to_new_map[old_system.get()] = new_systems.back().get();
     }
 
@@ -1343,6 +1352,22 @@ class Diagram : public System<T>,
     for (int i = 0; i < num_subsystems(); ++i) {
       system_index_map_[registered_systems_[i].get()] = i;
       registered_systems_[i]->set_parent(this);
+    }
+
+    // Generate constraints for the diagram from the constraints on the
+    // subsystems.
+    for (int i = 0; i < num_subsystems(); ++i) {
+      const auto sys = registered_systems_[i].get();
+      for (SystemConstraintIndex j(0); j < sys->get_num_constraints(); ++j) {
+        const auto c = &(sys->get_constraint(j));
+        typename SystemConstraint<T>::CalcCallback diagram_calc =
+            [this, sys, c](const Context<T>& context, VectorX<T>* value) {
+              c->Calc(this->GetSubsystemContext(*sys, context), value);
+            };
+        this->AddConstraint(std::make_unique<SystemConstraint<T>>(
+            diagram_calc, c->size(), c->is_equality_constraint(),
+            sys->get_name() + ":" + c->description()));
+      }
     }
 
     // Every system must appear exactly once.

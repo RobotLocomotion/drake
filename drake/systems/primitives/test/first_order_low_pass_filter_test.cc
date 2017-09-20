@@ -6,6 +6,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
 namespace drake {
 namespace systems {
@@ -114,6 +115,22 @@ TEST_F(FirstOrderLowPassFilterTest, Derivatives) {
 TEST_F(FirstOrderLowPassFilterTest, FilterIsNotDirectFeedthrough) {
   SetUpSingleTimeConstantFilter();
   EXPECT_FALSE(filter_->HasAnyDirectFeedthrough());
+}
+
+TEST_F(FirstOrderLowPassFilterTest, ToAutoDiff) {
+  SetUpMultipleTimeConstantsFilter();
+  EXPECT_TRUE(is_autodiffxd_convertible(*filter_, [&](const auto& converted) {
+    EXPECT_EQ(kSignalSize, converted.get_input_port().size());
+    EXPECT_EQ(kSignalSize, converted.get_output_port().size());
+    EXPECT_EQ(
+        Vector3<double>(4.0, 3.5, 3.0),
+        converted.get_time_constants_vector());
+  }));
+}
+
+TEST_F(FirstOrderLowPassFilterTest, ToSymbolic) {
+  SetUpMultipleTimeConstantsFilter();
+  EXPECT_TRUE(is_symbolic_convertible(*filter_));
 }
 
 }  // namespace

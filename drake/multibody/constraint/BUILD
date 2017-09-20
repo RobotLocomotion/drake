@@ -17,7 +17,7 @@ drake_cc_library(
         "constraint_problem_data.h",
     ],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 

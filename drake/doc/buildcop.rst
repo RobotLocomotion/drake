@@ -66,10 +66,10 @@ author, and include the following template in the PR description.
 
  Dear $AUTHOR,
 
- The on-call build cop, $BUILD_COP, believes that your PR $NUMBER may have broken
- Drake's continuous integration build [1]. It is possible to break the build
- even if your PR passed continuous integration pre-merge, because additional
- platforms and tests are built post-merge.
+ The on-call build cop, $BUILD_COP, believes that your PR $NUMBER may have
+ broken one or more of Drake's continuous integration builds [1,2]. It is
+ possible to break a build even if your PR passed continuous integration
+ pre-merge because additional platforms and tests are built post-merge.
 
  The specific build failures under investigation are:
  $LINK_TO_BROKEN_BUILD_ON_JENKINS
@@ -91,13 +91,14 @@ author, and include the following template in the PR description.
  reverted, please review and LGTM this PR. This allows the build cop to merge
  without waiting for CI results.
 
- For advice on how to handle a build cop revert, see [2].
+ For advice on how to handle a build cop revert, see [3].
 
  Thanks!
  Your Friendly Oncall Buildcop
 
- [1] CI Dashboard: https://drake-jenkins.csail.mit.edu/view/Continuous/
- [2] http://drake.mit.edu/buildcop.html#workflow-for-handling-a-build-cop-revert
+ [1] CI Continuous Production Dashboard: https://drake-jenkins.csail.mit.edu/view/Continuous%20Production/
+ [2] CI Nightly Production Dashboard: https://drake-jenkins.csail.mit.edu/view/Nightly%20Production/
+ [3] http://drake.mit.edu/buildcop.html#workflow-for-handling-a-build-cop-revert
 
 .. _handling_a_build_cop_revert:
 
@@ -230,6 +231,11 @@ definitely looking at an infrastructure flake, and no further action is
 required. If you believe the rate of a particular infrastructure flake has
 increased, alert Kitware by assigning a GitHub issue to both @BetsyMcPhail and
 @jamiesnape.
+
+Note that "slow read" warnings during Bazel builds are due to the relative
+slowness of the remote storage used by the CI infrastructure when compared to
+storage connected to the local bus on a local developer workstation build and
+can be safely ignored.
 
 If you see "All nodes of label <label> are offline", this should disappear
 eventually and the build should run, once Jenkins gets a node booted up.

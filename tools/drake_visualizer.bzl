@@ -6,7 +6,7 @@ Downloads and unpacks a precompiled version of drake-visualizer (a subset of
 Director) and makes it available to be used as a dependency of shell scripts.
 
 Archive naming convention:
-    dv-<version>-g<commit>-qt-<qt version>-<platform>-<arch>.tar.gz
+    dv-<version>-g<commit>-qt-<qt version>-vtk-<vtk version>-<platform>-<arch>
 
 Build configuration:
     BUILD_SHARED_LIBS=OFF
@@ -32,43 +32,26 @@ Argument:
     name: A unique name for this rule.
 """
 
+load("@drake//tools:os.bzl", "determine_os")
+
 # TODO(jamiesnape): Publish scripts used to create binaries. There will be a CI
 # job for developers to build new binaries on demand.
 def _impl(repository_ctx):
-    if repository_ctx.os.name == "mac os x":
-        archive = "dv-0.1.0-173-g6e49220-qt-5.9.1-mac-x86_64.tar.gz"
-        sha256 = "2ccb47729095a3edbe27b08693f825246ed7a96554453a19a6ab30fdf5332f0b"  # noqa
-    elif repository_ctx.os.name == "linux":
-        sed = repository_ctx.which("sed")
+    os_result = determine_os(repository_ctx)
+    if os_result.error != None:
+        fail(os_result.error)
 
-        if not sed:
-            fail("Could NOT determine Linux distribution information because" +
-                 " sed is missing")
-
-        result = repository_ctx.execute([
-            sed,
-            "-n",
-            "/^\(NAME\|VERSION_ID\)=/{s/[^=]*=//;s/\"//g;p}",
-            "/etc/os-release"])
-
-        if result.return_code != 0:
-            fail("Could NOT determine Linux distribution information",
-                 attr = result.stderr)
-
-        distro = [l.strip() for l in result.stdout.strip().split("\n")]
-        distro = " ".join(distro)
-
-        if distro == "Ubuntu 14.04":
-            archive = "dv-0.1.0-173-g6e49220-qt-4.8.6-trusty-x86_64.tar.gz"
-            sha256 = "c227652e4c27e5bf6ab91b74e991299cd01f536aef762c19b9e2bccd08e03ff2"  # noqa
-        elif distro == "Ubuntu 16.04":
-            archive = "dv-0.1.0-173-g6e49220-qt-5.5.1-xenial-x86_64.tar.gz"
-            sha256 = "157323d2f7a22ad488bfd75923612685c1d7cbf2b321c61155110ca19666dd85"  # noqa
-        else:
-            fail("Linux distribution is NOT supported", attr = distro)
+    if os_result.is_mac:
+        archive = "dv-0.1.0-173-g6e49220-qt-5.9.1-vtk-8.0.1-mac-x86_64.tar.gz"
+        sha256 = "65b78914327c82bb8fd7cf2182dedc2a45edeafc44fc229415528ee2180bf9a4"  # noqa
+    elif os_result.ubuntu_release == "14.04":
+        archive = "dv-0.1.0-173-g6e49220-qt-4.8.6-vtk-8.0.1-trusty-x86_64.tar.gz"  # noqa
+        sha256 = "a9b03955cc22803f418fc712d98b3b0f83411d480ed63c6544e6ddfa141e92d5"  # noqa
+    elif os_result.ubuntu_release == "16.04":
+        archive = "dv-0.1.0-173-g6e49220-qt-5.5.1-vtk-8.0.1-xenial-x86_64.tar.gz"  # noqa
+        sha256 = "57ebe3cef758b42bdc1affb50e371a1e5224e73e3c2ebe25dcbba7697b66d24d"  # noqa
     else:
-        fail("Operating system is NOT supported",
-             attr = repository_ctx.os.name)
+        fail("Operating system is NOT supported", attr = os_result)
 
     url = "https://d2mbb5ninhlpdu.cloudfront.net/director/{}".format(archive)
     root_path = repository_ctx.path("")

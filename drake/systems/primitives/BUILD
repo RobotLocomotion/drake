@@ -238,6 +238,7 @@ drake_cc_googletest(
         ":adder",
         "//drake/common:eigen_matrix_compare",
         "//drake/systems/framework",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 
@@ -277,6 +278,7 @@ drake_cc_googletest(
         ":demultiplexer",
         "//drake/common:eigen_matrix_compare",
         "//drake/systems/framework",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 
@@ -289,6 +291,7 @@ drake_cc_googletest(
         ":first_order_low_pass_filter",
         "//drake/common:unused",
         "//drake/systems/framework",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 
@@ -303,6 +306,7 @@ drake_cc_googletest(
         "//drake/common:eigen_matrix_compare",
         "//drake/common:symbolic",
         "//drake/systems/framework",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 
@@ -312,6 +316,7 @@ drake_cc_googletest(
         ":integrator",
         "//drake/common:eigen_matrix_compare",
         "//drake/systems/framework",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 
@@ -321,6 +326,7 @@ drake_cc_googletest(
         ":affine_linear_test",
         ":linear_system",
         "//drake/common:eigen_matrix_compare",
+        "//drake/examples/pendulum:pendulum_plant",
         "//drake/systems/framework",
         "//drake/systems/framework/test_utilities",
     ],
@@ -358,6 +364,7 @@ drake_cc_googletest(
         ":pass_through",
         "//drake/common:eigen_matrix_compare",
         "//drake/systems/framework",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 

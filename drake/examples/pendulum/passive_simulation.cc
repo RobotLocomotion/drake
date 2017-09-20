@@ -1,5 +1,7 @@
 #include <memory>
 
+#include <gflags/gflags.h>
+
 #include "drake/common/find_resource.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
 #include "drake/lcm/drake_lcm.h"
@@ -17,36 +19,49 @@ namespace examples {
 namespace pendulum {
 namespace {
 
-int do_main() {
+DEFINE_double(target_realtime_rate, 1.0,
+              "Playback speed.  See documentation for "
+              "Simulator::set_target_realtime_rate() for details.");
+
+int DoMain() {
   lcm::DrakeLcm lcm;
   auto tree = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"),
       multibody::joints::kFixed, tree.get());
 
-  Eigen::VectorXd tau = Eigen::VectorXd::Zero(1);
+  PendulumInput<double> input;
+  input.set_tau(0.0);
 
   systems::DiagramBuilder<double> builder;
-  auto source = builder.AddSystem<systems::ConstantVectorSource>(tau);
+  auto source = builder.AddSystem<systems::ConstantVectorSource>(input);
   source->set_name("tau");
   auto pendulum = builder.AddSystem<PendulumPlant>();
   pendulum->set_name("pendulum");
-  auto publisher =
-      builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
+  auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
   publisher->set_name("publisher");
-  builder.Connect(source->get_output_port(), pendulum->get_tau_port());
+  builder.Connect(source->get_output_port(), pendulum->get_input_port());
   builder.Connect(pendulum->get_output_port(), publisher->get_input_port(0));
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);
   systems::Context<double>& pendulum_context =
-      diagram->GetMutableSubsystemContext(
-          *pendulum, simulator.get_mutable_context());
-  pendulum->set_theta(&pendulum_context, 1.);
-  pendulum->set_thetadot(&pendulum_context, 0.);
+      diagram->GetMutableSubsystemContext(*pendulum,
+                                          simulator.get_mutable_context());
+  PendulumState<double>* state = pendulum->get_mutable_state(&pendulum_context);
+  state->set_theta(1.);
+  state->set_thetadot(0.);
 
+  const double initial_energy = pendulum->CalcTotalEnergy(pendulum_context);
+
+  simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
   simulator.StepTo(10);
+
+  const double final_energy = pendulum->CalcTotalEnergy(pendulum_context);
+
+  // Adds a numerical sanity test on total energy.
+  DRAKE_DEMAND(initial_energy > 2.0 * final_energy);
   return 0;
 }
 
@@ -55,6 +70,7 @@ int do_main() {
 }  // namespace examples
 }  // namespace drake
 
-int main() {
-  return drake::examples::pendulum::do_main();
+int main(int argc, char* argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  return drake::examples::pendulum::DoMain();
 }

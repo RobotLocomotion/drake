@@ -43,7 +43,7 @@ void GenerateUrdfFile(const api::RoadGeometry* road_geometry,
   </link>
 </robot>
 )X",
-             road_geometry->id().id,
+             road_geometry->id().string(),
              obj_filename);
 }
 

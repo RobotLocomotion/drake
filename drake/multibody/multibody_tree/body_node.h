@@ -155,6 +155,23 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     return *mobilizer_;
   }
 
+  /// @name Methods to retrieve BodyNode sizes
+  //@{
+
+  /// Returns the number of generalized positions for the Mobilizer in `this`
+  /// node.
+  int get_num_mobilizer_positions() const {
+    return topology_.num_mobilizer_positions;
+  }
+
+  /// Returns the number of generalized velocities for the Mobilizer in `this`
+  /// node.
+  int get_num_mobilizer_velocites() const {
+    return topology_.num_mobilizer_velocities;
+  }
+  //@}
+
+
   /// This method is used by MultibodyTree within a base-to-tip loop to compute
   /// this node's kinematics that only depend on generalized positions.
   /// This method aborts in Debug builds when:
@@ -314,12 +331,12 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     const Isometry3<T>& X_WP = get_X_WP(pc);
 
     // Orientation (rotation) of frame F with respect to the world frame W.
-    const Matrix3<T> R_WF = X_WP.rotation() * X_PF.rotation();
+    const Matrix3<T> R_WF = X_WP.linear() * X_PF.linear();
 
     // Vector from Mo to Bo expressed in frame F as needed below:
     const Vector3<T> p_MB_F =
         /* p_MB_F = R_FM * p_MB_M */
-        get_X_FM(pc).rotation() * X_MB.translation();
+        get_X_FM(pc).linear() * X_MB.translation();
 
     // Compute V_PB_W = R_WF * V_FM.Shift(p_MoBo_F), Eq. (4).
     // Side note to developers: in operator form for rigid bodies this would be
@@ -339,7 +356,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // CalcPositionKinematicsCache_BaseToTip() and saving the result in the
     // position kinematics cache.
     /* p_PB_W = R_WP * p_PB */
-    Vector3<T> p_PB_W = get_X_WP(pc).rotation() * get_X_PB(pc).translation();
+    Vector3<T> p_PB_W = get_X_WP(pc).linear() * get_X_PB(pc).translation();
 
     // Since we are in a base-to-tip recursion the parent body P's spatial
     // velocity is already available in the cache.
@@ -482,14 +499,14 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // Orientation (rotation) of frame F with respect to the world frame W.
     // TODO(amcastro-tri): consider caching X_WF since also used in velocity
     // kinematics.
-    const Matrix3<T> R_WF = X_WP.rotation() * X_PF.rotation();
+    const Matrix3<T> R_WF = X_WP.linear() * X_PF.linear();
 
     // Vector from Mo to Bo expressed in frame F as needed below:
     // TODO(amcastro-tri): consider caching this since also used in velocity
     // kinematics.
     const Vector3<T> p_MB_F =
         /* p_MB_F = R_FM * p_MB_M */
-        get_X_FM(pc).rotation() * X_MB.translation();
+        get_X_FM(pc).linear() * X_MB.translation();
 
     // Across mobilizer velocity is available from the velocity kinematics.
     const SpatialVelocity<T>& V_FM = get_V_FM(vc);
@@ -525,7 +542,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // CalcPositionKinematicsCache_BaseToTip() and saving the result in the
     // position kinematics cache.
     /* p_PB_W = R_WP * p_PB */
-    Vector3<T> p_PB_W = get_X_WP(pc).rotation() * get_X_PB(pc).translation();
+    Vector3<T> p_PB_W = get_X_WP(pc).linear() * get_X_PB(pc).translation();
 
     get_mutable_A_WB_from_array(&A_WB_array) =
         A_WP.ComposeWithMovingFrameAcceleration(p_PB_W, V_WP.rotational(),
@@ -550,6 +567,18 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   ///   of size equal to the number of bodies in the MultibodyTree and ordered
   ///   by BodyNodeIndex. The calling MultibodyTree method must guarantee these
   ///   conditions are satisfied.
+  /// @param[in] Fapplied_Bo_W
+  ///   Externally applied spatial force on this node's body B at the body's
+  ///   frame origin `Bo`, expressed in the world frame.
+  ///   `Fapplied_Bo_W` **must** not be an entry into `F_BMo_W_array_ptr`, which
+  ///   would result in undefined results.
+  /// @param[in] tau_applied
+  ///   Externally applied generalized force at this node's mobilizer. It can
+  ///   have zero size, implying no generalized forces are applied. Otherwise it
+  ///   must have a size equal to the number of generalized velocities for this
+  ///   node's mobilizer, see get_num_mobilizer_velocites().
+  ///   `tau_applied` **must** not be an entry into `tau_array`, which would
+  ///   result in undefined results.
   /// @param[out] F_BMo_W_array_ptr
   ///   A pointer to a valid, non nullptr, vector of spatial forces
   ///   containing, for each body B, the spatial force `F_BMo_W` corresponding
@@ -591,9 +620,15 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
       const SpatialForce<T>& Fapplied_Bo_W,
       const Eigen::Ref<const VectorX<T>>& tau_applied,
       std::vector<SpatialForce<T>>* F_BMo_W_array_ptr,
-      Eigen::Ref<VectorX<T>> tau_array) const {
+      EigenPtr<VectorX<T>> tau_array) const {
     DRAKE_DEMAND(F_BMo_W_array_ptr != nullptr);
     std::vector<SpatialForce<T>>& F_BMo_W_array = *F_BMo_W_array_ptr;
+    DRAKE_DEMAND(
+        tau_applied.size() == get_num_mobilizer_velocites() ||
+        tau_applied.size() == 0);
+    DRAKE_DEMAND(tau_array != nullptr);
+    DRAKE_DEMAND(tau_array->size() ==
+        this->get_parent_tree().get_num_velocities());
 
     // As a guideline for developers, a summary of the computations performed in
     // this method is provided:
@@ -663,12 +698,16 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     DRAKE_DEMAND(frame_M.get_body().get_index() == body_B.get_index());
     const Isometry3<T> X_BM = frame_M.CalcPoseInBodyFrame(context);
     const Vector3<T>& p_BoMo_B = X_BM.translation();
-    const Matrix3<T>& R_WB = get_X_WB(pc).rotation();
+    const Matrix3<T>& R_WB = get_X_WB(pc).linear();
     const Vector3<T> p_BoMo_W = R_WB * p_BoMo_B;
 
     // Output spatial force that would need to be exerted by this node's
     // mobilizer in order to attain the prescribed acceleration A_WB.
     SpatialForce<T>& F_BMo_W = F_BMo_W_array[this->get_index()];
+
+    // Ensure this method was not called with an Fapplied_Bo_W being an entry
+    // into F_BMo_W_array, otherwise we would be overwriting Fapplied_Bo_W.
+    DRAKE_DEMAND(&F_BMo_W != &Fapplied_Bo_W);
 
     // Shift spatial force on B to Mo.
     F_BMo_W = Ftot_BBo_W.Shift(p_BoMo_W);
@@ -682,7 +721,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
 
       // p_CoMc_W:
       const Frame<T>& frame_Mc = child_node->get_outboard_frame();
-      const Matrix3<T>& R_WC = child_node->get_X_WB(pc).rotation();
+      const Matrix3<T>& R_WC = child_node->get_X_WB(pc).linear();
       const Isometry3<T> X_CMc = frame_Mc.CalcPoseInBodyFrame(context);
       const Vector3<T>& p_CoMc_W = R_WC * X_CMc.translation();
 
@@ -718,11 +757,15 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     const Isometry3<T>& X_WP = get_X_WP(pc);
     // TODO(amcastro-tri): consider caching X_WF since also used in position and
     // velocity kinematics.
-    const Matrix3<T> R_WF = X_WP.rotation() * X_PF.rotation();
+    const Matrix3<T> R_WF = X_WP.linear() * X_PF.linear();
     const SpatialForce<T> F_BMo_F = R_WF * F_BMo_W;
 
     // Generalized velocities and forces use the same indexing.
-    auto tau = get_mutable_forces_from_array(tau_array);
+    auto tau = get_mutable_generalized_forces_from_array(tau_array);
+
+    // Demand that tau_applied is not an entry of tau. It would otherwise get
+    // overwritten.
+    DRAKE_DEMAND(tau.data() != tau_applied.data());
 
     // The generalized forces on the mobilizer correspond to the active
     // components of the spatial force performing work. Therefore we need to
@@ -731,7 +774,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     get_mobilizer().ProjectSpatialForce(context, F_BMo_F, tau);
 
     // Include the contribution of applied generalized forces.
-    tau -= tau_applied;
+    if (tau_applied.size() != 0) tau -= tau_applied;
   }
 
   /// Returns the topology information for this body node.
@@ -942,22 +985,25 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
 
   // Mutable version of get_velocities_from_array().
   Eigen::VectorBlock<Eigen::Ref<VectorX<T>>> get_mutable_velocities_from_array(
-      Eigen::Ref<VectorX<T>> v) const {
-    return v.segment(topology_.mobilizer_velocities_start_in_v,
-                     topology_.num_mobilizer_velocities);
+      EigenPtr<VectorX<T>> v) const {
+    DRAKE_ASSERT(v != nullptr);
+    return v->segment(topology_.mobilizer_velocities_start_in_v,
+                      topology_.num_mobilizer_velocities);
   }
 
   // Helper to get an Eigen expression of the vector of generalized forces
   // from a vector of generalized forces for the entire parent multibody
   // tree.
-  Eigen::VectorBlock<const VectorX<T>> get_forces_from_array(
+  Eigen::VectorBlock<const VectorX<T>> get_generalized_forces_from_array(
       const VectorX<T>& tau) const {
     return get_velocities_from_array(tau);
   }
 
-  // Mutable version of get_forces_from_array()
-  Eigen::VectorBlock<Eigen::Ref<VectorX<T>>> get_mutable_forces_from_array(
-      Eigen::Ref<VectorX<T>> tau) const {
+  // Mutable version of get_generalized_forces_from_array()
+  Eigen::VectorBlock<Eigen::Ref<VectorX<T>>>
+  get_mutable_generalized_forces_from_array(
+      EigenPtr<VectorX<T>> tau) const {
+    DRAKE_ASSERT(tau != nullptr);
     return get_mutable_velocities_from_array(tau);
   }
 
@@ -1079,7 +1125,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     const Isometry3<T>& X_WB = get_X_WB(pc);
 
     // Orientation of B in W.
-    const Matrix3<T> R_WB = X_WB.rotation();
+    const Matrix3<T> R_WB = X_WB.linear();
 
     // Body spatial velocity in W.
     const SpatialVelocity<T>& V_WB = get_V_WB(vc);

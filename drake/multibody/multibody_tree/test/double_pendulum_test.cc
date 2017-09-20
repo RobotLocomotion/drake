@@ -114,24 +114,18 @@ class PendulumTests : public ::testing::Test {
   // Sets up the MultibodyTree model for a double pendulum. See this unit test's
   // class description for details.
   void CreatePendulumModel() {
-    // TODO(amcastro-tri): Create unit inertias using a specific factory.
-    // Either AxiallySymmetric() or ThinRod() once implemented.
-
     // Spatial inertia of the upper link about its frame U and expressed in U.
     Vector3d link1_com_U = Vector3d::Zero();  // U is at the link's COM.
-    // For a thin rod in the x-y plane, the inertia bout the y axis can be
-    // neglected. Therefore we make Iyy = 0.
-    UnitInertia<double> G_U(
-        link1_Ic_ /* Ixx */, 0.0 /* Iyy */, link1_Ic_ /* Izz */);
+    // Inertia for a thin rod with moment of inertia link1_Ic_ about the y axis.
+    UnitInertia<double> G_U =
+        UnitInertia<double>::StraightLine(link1_Ic_, Vector3d::UnitY());
     SpatialInertia<double> M_U(link1_mass_, link1_com_U, G_U);
 
     // Spatial inertia of the lower link about its frame L and expressed in L.
     Vector3d link2_com_L = Vector3d::Zero();  // L is at the link's COM.
-    // For a thin rod in the x-y plane, the inertia bout the y axis can be
-    // neglected. Therefore we make Iyy = 0.
-    // Unit inertia about L's center of mass Lcm.
-    UnitInertia<double> G_Lcm(
-        link2_Ic_ /* Ixx */, 0.0 /* Iyy */, link2_Ic_ /* Izz */);
+    // Inertia for a thin rod with moment of inertia link2_Ic_ about the y axis.
+    UnitInertia<double> G_Lcm =
+        UnitInertia<double>::StraightLine(link2_Ic_, Vector3d::UnitY());
     // Spatial inertia about L's center of mass Lcm.
     SpatialInertia<double> M_Lcm(link2_mass_, link2_com_L, G_Lcm);
     // Since L's frame origin Lo is not at the the lower link's center of mass
@@ -271,6 +265,7 @@ class PendulumTests : public ::testing::Test {
   const double link2_Ic_ = .33;
   const double half_link1_length_ = link1_length_ / 2;
   const double half_link2_length_ = link2_length_ / 2;
+  // Acceleration of gravity at Earth's surface.
   const double acceleration_of_gravity_ = 9.81;
   // Poses:
   // Desired pose of the lower link frame L in the world frame W.
@@ -568,30 +563,53 @@ class PendulumKinematicTests : public PendulumTests {
     model_->CalcPositionKinematicsCache(*context_, &pc);
 
     // ======================================================================
-    // Compute inverse dynamics.
-    VectorXd tau(model_->get_num_velocities());
+    // The force of gravity gets included in this call since we have
+    // UniformGravityFieldElement in the model.
+    VectorXd tau_applied(model_->get_num_velocities());
     vector<SpatialForce<double>> F_Bo_W_array(model_->get_num_bodies());
     model_->CalcForceElementsContribution(
-        *context_, pc, vc, &F_Bo_W_array, tau);
+        *context_, pc, vc, &F_Bo_W_array, tau_applied);
 
     // ======================================================================
     // To get generalized forces, compute inverse dynamics applying the forces
     // computed by CalcForceElementsContribution().
-    // Notice that we do not need to allocate extra memory since both
-    // F_Bo_W_array and tau can be used as input and output arguments. However,
-    // the data given at input is lost on output. A user might choose then to
-    // have separate input/output arrays.
-    VectorXd vdot(model_->get_num_velocities());
-    vector<SpatialAcceleration<double>> A_WB_array(model_->get_num_bodies());
-    model_->CalcInverseDynamics(
-        *context_, pc, vc, vdot, F_Bo_W_array, tau,
-        &A_WB_array, &F_Bo_W_array, tau);
+
+    // Output vector of generalized forces.
+    VectorXd tau(model_->get_num_velocities());
+
+    // Output vector of spatial forces for each body B at their inboard
+    // frame Mo, expressed in the world W.
+    vector<SpatialForce<double>> F_BMo_W_array(model_->get_num_bodies());
 
     // ======================================================================
     // Compute expected values using the acrobot benchmark.
     const Vector2d G_expected = acrobot_benchmark_.CalcGravityVector(
         shoulder_angle, elbow_angle);
 
+    // ======================================================================
+    // Notice that we do not need to allocate extra memory since both
+    // F_Bo_W_array and tau can be used as input and output arguments. However,
+    // the data given at input is lost on output. A user might choose then to
+    // have separate input/output arrays.
+
+    const VectorXd vdot = VectorXd::Zero(model_->get_num_velocities());
+    vector<SpatialAcceleration<double>> A_WB_array(model_->get_num_bodies());
+
+    // Try first using different arrays for input/ouput:
+    // Initialize output to garbage, it should not affect the results.
+    tau.setConstant(std::numeric_limits<double>::quiet_NaN());
+    tau_applied.setZero();
+    model_->CalcInverseDynamics(
+        *context_, pc, vc, vdot, F_Bo_W_array, tau_applied,
+        &A_WB_array, &F_BMo_W_array, &tau);
+    EXPECT_TRUE(tau.isApprox(G_expected, kTolerance));
+
+    // Now try using the same arrays for input/output (input data F_Bo_W_array
+    // will get overwritten through the output argument).
+    tau_applied.setZero();  // This will now get overwritten.
+    model_->CalcInverseDynamics(
+        *context_, pc, vc, vdot, F_Bo_W_array, tau_applied,
+        &A_WB_array, &F_Bo_W_array, &tau_applied);
     EXPECT_TRUE(tau.isApprox(G_expected, kTolerance));
     return tau;
   }
@@ -677,7 +695,7 @@ class PendulumKinematicTests : public PendulumTests {
     vector<SpatialAcceleration<double>> A_WB_array(model_->get_num_bodies());
     vector<SpatialForce<double>> F_BMo_W_array(model_->get_num_bodies());
     model_->CalcInverseDynamics(*context_, pc, vc, vdot, {}, VectorXd(),
-                                &A_WB_array, &F_BMo_W_array, tau);
+                                &A_WB_array, &F_BMo_W_array, &tau);
 
     // ======================================================================
     // Compute acceleration kinematics.
@@ -685,16 +703,16 @@ class PendulumKinematicTests : public PendulumTests {
     model_->CalcAccelerationKinematicsCache(*context_, pc, vc, vdot, &ac);
 
     // From acceleration kinematics.
-    const SpatialAcceleration<double>& A_WU_ac =
+    const SpatialAcceleration<double>& A_WUcm_ac =
         get_body_spatial_acceleration_in_world(ac, *upper_link_);
     const SpatialAcceleration<double>& A_WL_ac =
         get_body_spatial_acceleration_in_world(ac, *lower_link_);
     // From inverse dynamics.
-    const SpatialAcceleration<double>& A_WU_id =
+    const SpatialAcceleration<double>& A_WUcm_id =
         A_WB_array[upper_link_->get_node_index()];
     const SpatialAcceleration<double>& A_WL_id =
         A_WB_array[lower_link_->get_node_index()];
-    EXPECT_TRUE(A_WU_id.IsApprox(A_WU_ac, kTolerance));
+    EXPECT_TRUE(A_WUcm_id.IsApprox(A_WUcm_ac, kTolerance));
     EXPECT_TRUE(A_WL_id.IsApprox(A_WL_ac, kTolerance));
 
     // ======================================================================
@@ -821,7 +839,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
       // spatial velocity and acceleration to the center of mass frame for
       // comparison with the benchmark.
       const Isometry3d& X_WL = get_body_pose_in_world(pc, *lower_link_);
-      const Matrix3d R_WL = X_WL.rotation();
+      const Matrix3d R_WL = X_WL.linear();
       const Vector3d p_LoLcm_L = lower_link_->get_default_com();
       const Vector3d p_LoLcm_W = R_WL * p_LoLcm_L;
 
@@ -844,7 +862,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
       model_->CalcVelocityKinematicsCache(*context_, pc, &vc);
 
       // Retrieve body spatial velocities from velocity kinematics cache.
-      const SpatialVelocity<double>& V_WU =
+      const SpatialVelocity<double>& V_WUcm =
           get_body_spatial_velocity_in_world(vc, *upper_link_);
       const SpatialVelocity<double>& V_WL =
           get_body_spatial_velocity_in_world(vc, *lower_link_);
@@ -852,16 +870,16 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
       // shifting V_WL:
       const SpatialVelocity<double> V_WLcm = V_WL.Shift(p_LoLcm_W);
 
-      const SpatialVelocity<double> V_WU_expected(
+      const SpatialVelocity<double> V_WUcm_expected(
           acrobot_benchmark_.CalcLink1SpatialVelocityInWorldFrame(
               shoulder_angle, shoulder_angle_rate));
-      const SpatialVelocity<double> V_WL_expected(
+      const SpatialVelocity<double> V_WLcm_expected(
           acrobot_benchmark_.CalcLink2SpatialVelocityInWorldFrame(
               shoulder_angle, elbow_angle,
               shoulder_angle_rate, elbow_angle_rate));
 
-      EXPECT_TRUE(V_WU.IsApprox(V_WU_expected, kTolerance));
-      EXPECT_TRUE(V_WLcm.IsApprox(V_WL_expected, kTolerance));
+      EXPECT_TRUE(V_WUcm.IsApprox(V_WUcm_expected, kTolerance));
+      EXPECT_TRUE(V_WLcm.IsApprox(V_WLcm_expected, kTolerance));
 
       // ======================================================================
       // Compute acceleration kinematics
@@ -873,7 +891,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
       model_->CalcAccelerationKinematicsCache(*context_, pc, vc, vdot, &ac);
 
       // Retrieve body spatial accelerations from acceleration kinematics cache.
-      SpatialAcceleration<double> A_WU =
+      SpatialAcceleration<double> A_WUcm =
           get_body_spatial_acceleration_in_world(ac, *upper_link_);
       SpatialAcceleration<double> A_WL =
           get_body_spatial_acceleration_in_world(ac, *lower_link_);
@@ -882,46 +900,51 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
       const Vector3d& w_WL = V_WL.rotational();
       SpatialAcceleration<double> A_WLcm = A_WL.Shift(p_LoLcm_W, w_WL);
 
-      SpatialAcceleration<double> A_WU_expected(
+      SpatialAcceleration<double> A_WUcm_expected(
           acrobot_benchmark_.CalcLink1SpatialAccelerationInWorldFrame(
               shoulder_angle, shoulder_angle_rate, vdot(0)));
 
-      SpatialAcceleration<double> A_WL_expected(
+      SpatialAcceleration<double> A_WLcm_expected(
           acrobot_benchmark_.CalcLink2SpatialAccelerationInWorldFrame(
               shoulder_angle, elbow_angle,
               shoulder_angle_rate, elbow_angle_rate,
               vdot(0), vdot(1)));
 
-      EXPECT_TRUE(A_WU.IsApprox(A_WU_expected, kTolerance));
-      EXPECT_TRUE(A_WLcm.IsApprox(A_WL_expected, kTolerance));
+      EXPECT_TRUE(A_WUcm.IsApprox(A_WUcm_expected, kTolerance));
+      EXPECT_TRUE(A_WLcm.IsApprox(A_WLcm_expected, kTolerance));
 
       // For a non-zero vdot [rad/sec^2]:
-      shoulder_mobilizer_->get_mutable_velocities_from_array(vdot)(0) = -1.0;
-      elbow_mobilizer_->get_mutable_velocities_from_array(vdot)(0) = 2.0;
-      EXPECT_EQ(shoulder_mobilizer_->get_velocities_from_array(vdot).size(), 1);
-      EXPECT_EQ(shoulder_mobilizer_->get_velocities_from_array(vdot)(0), -1.0);
-      EXPECT_EQ(elbow_mobilizer_->get_velocities_from_array(vdot).size(), 1);
-      EXPECT_EQ(elbow_mobilizer_->get_velocities_from_array(vdot)(0), 2.0);
+      shoulder_mobilizer_->get_mutable_accelerations_from_array(
+          &vdot)(0) = -1.0;
+      elbow_mobilizer_->get_mutable_accelerations_from_array(&vdot)(0) = 2.0;
+      EXPECT_EQ(
+          shoulder_mobilizer_->get_accelerations_from_array(vdot).size(), 1);
+      EXPECT_EQ(
+          shoulder_mobilizer_->get_accelerations_from_array(vdot)(0), -1.0);
+      EXPECT_EQ(
+          elbow_mobilizer_->get_accelerations_from_array(vdot).size(), 1);
+      EXPECT_EQ(
+          elbow_mobilizer_->get_accelerations_from_array(vdot)(0), 2.0);
 
       model_->CalcAccelerationKinematicsCache(*context_, pc, vc, vdot, &ac);
 
       // Retrieve body spatial accelerations from acceleration kinematics cache.
-      A_WU = get_body_spatial_acceleration_in_world(ac, *upper_link_);
+      A_WUcm = get_body_spatial_acceleration_in_world(ac, *upper_link_);
       A_WL = get_body_spatial_acceleration_in_world(ac, *lower_link_);
       A_WLcm = A_WL.Shift(p_LoLcm_W, w_WL);
 
-      A_WU_expected = SpatialAcceleration<double>(
+      A_WUcm_expected = SpatialAcceleration<double>(
           acrobot_benchmark_.CalcLink1SpatialAccelerationInWorldFrame(
               shoulder_angle, shoulder_angle_rate, vdot(0)));
 
-      A_WL_expected = SpatialAcceleration<double>(
+      A_WLcm_expected = SpatialAcceleration<double>(
           acrobot_benchmark_.CalcLink2SpatialAccelerationInWorldFrame(
               shoulder_angle, elbow_angle,
               shoulder_angle_rate, elbow_angle_rate,
               vdot(0), vdot(1)));
 
-      EXPECT_TRUE(A_WU.IsApprox(A_WU_expected, kTolerance));
-      EXPECT_TRUE(A_WLcm.IsApprox(A_WL_expected, kTolerance));
+      EXPECT_TRUE(A_WUcm.IsApprox(A_WUcm_expected, kTolerance));
+      EXPECT_TRUE(A_WLcm.IsApprox(A_WLcm_expected, kTolerance));
     }
   }
 }
@@ -965,7 +988,7 @@ TEST_F(PendulumKinematicTests, MassMatrix) {
   VerifyMassMatrixViaInverseDynamics(M_PI / 3.0, M_PI / 4.0);
 }
 
-// Compute the mass matrix using the inverse dynamics method.
+// A test to compute generalized forces due to gravity.
 TEST_F(PendulumKinematicTests, GravityTerm) {
   // A list of conditions used for testing.
   std::vector<Vector2d> test_matrix;
@@ -1096,7 +1119,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
           X_WL_dot.resize(4, 4);
 
           // Convert transformations' time derivatives to spatial velocities.
-          SpatialVelocity<double> V_WU =
+          SpatialVelocity<double> V_WUcm =
               ComputeSpatialVelocityFromXdot(X_WU_value, X_WU_dot);
           SpatialVelocity<double> V_WL =
               ComputeSpatialVelocityFromXdot(X_WL_value, X_WL_dot);
@@ -1104,15 +1127,15 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
           // shifting V_WL:
           const SpatialVelocity<double> V_WLcm = V_WL.Shift(p_LoLcm_W);
 
-          const SpatialVelocity<double> V_WU_expected(
+          const SpatialVelocity<double> V_WUcm_expected(
               acrobot_benchmark_.CalcLink1SpatialVelocityInWorldFrame(
                   shoulder_angle.value(), w_WU));
-          const SpatialVelocity<double> V_WL_expected(
+          const SpatialVelocity<double> V_WLcm_expected(
               acrobot_benchmark_.CalcLink2SpatialVelocityInWorldFrame(
                   shoulder_angle.value(), elbow_angle.value(), w_WU, w_UL));
 
-          EXPECT_TRUE(V_WU.IsApprox(V_WU_expected, kTolerance));
-          EXPECT_TRUE(V_WLcm.IsApprox(V_WL_expected, kTolerance));
+          EXPECT_TRUE(V_WUcm.IsApprox(V_WUcm_expected, kTolerance));
+          EXPECT_TRUE(V_WLcm.IsApprox(V_WLcm_expected, kTolerance));
         }  // ielbow
       }  // ishoulder
     }  // iw_elbow

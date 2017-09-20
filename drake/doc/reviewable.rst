@@ -68,3 +68,33 @@ the left of the line of code.
 Reviewers should click the eye-shaped buttons to indicate that they have
 reviewed a file.  Reviewable will remember the revisions at which the file
 was reviewed, and mark them with an eye icon in the file history.
+
+.. _curate_commits_before_merging:
+
+Curated Commits
+===============
+
+Each commit on Drake master should pass all unit tests and lint checks, should
+be logically cohesive (should not require other commits to make sense), and
+should have a meaningful commit message.
+
+The label ``status: curate commits before merging`` on a PR indicates that (at
+the time the label was added) the commits pushed to the PR do not meet those
+criteria, usually because the commits contain "work-in-progress" checkpoints or
+scattered "fix review comments" adjustments.
+
+When applied to a PR, this label will prevent a PR with more than one commit
+from being merged.
+
+The author of a PR has three choices for how to resolve this defect:
+
+* Remove the label and then immediately use the "squash and merge" button to
+  merge the PR, being careful to tweak the the commit message in the github
+  edit box to be a sensible description of the change.
+* Locally (rebase and) squash the PR down to a single commit, and force-push
+  that commit into the PR.  This will automatically remove the merge
+  impediment: even though the label still exists, it is a no-op when there is
+  only one commit in the PR.
+* Locally (rebase and) squash the PR to contain more than one commit, but where
+  each individual commit meets the above recommendations, and then remove the
+  label.

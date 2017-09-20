@@ -27,7 +27,7 @@ drake_cc_library(
         "translator_system.h",
     ],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/lcm:translator_base",
         "//drake/systems/framework",
     ],

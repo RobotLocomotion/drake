@@ -25,24 +25,20 @@ drake_cc_library(
 drake_cc_library(
     name = "lanes",
     srcs = [
-        "arc_lane.cc",
         "arc_road_curve.cc",
         "branch_point.cc",
         "junction.cc",
         "lane.cc",
-        "line_lane.cc",
         "line_road_curve.cc",
         "road_geometry.cc",
         "segment.cc",
     ],
     hdrs = [
-        "arc_lane.h",
         "arc_road_curve.h",
         "branch_point.h",
         "cubic_polynomial.h",
         "junction.h",
         "lane.h",
-        "line_lane.h",
         "line_road_curve.h",
         "road_curve.h",
         "road_geometry.h",
@@ -50,7 +46,7 @@ drake_cc_library(
     ],
     deps = [
         "//drake/automotive/maliput/api",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common:unused",
         "//drake/math:geometric_transform",
         "//drake/math:saturate",

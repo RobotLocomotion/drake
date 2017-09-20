@@ -52,8 +52,8 @@ bool PlanStraightLineMotion(const VectorX<double>& q_current,
                                             X_WEndEffector1.translation()};
   drake::log()->debug(
       "Planning straight line from {} {} to {} {}",
-      pos[0].transpose(), math::rotmat2rpy(X_WEndEffector0.rotation()),
-      pos[1].transpose(), math::rotmat2rpy(X_WEndEffector1.rotation()));
+      pos[0].transpose(), math::rotmat2rpy(X_WEndEffector0.linear()),
+      pos[1].transpose(), math::rotmat2rpy(X_WEndEffector1.linear()));
 
   PiecewiseQuaternionSlerp<double> rot_traj({0, duration}, quats);
   PiecewisePolynomial<double> pos_traj =
@@ -73,7 +73,7 @@ bool PlanStraightLineMotion(const VectorX<double>& q_current,
     drake::log()->debug(
         "via ({}/{}): {} {}", i, num_via_points,
         waypoints[i].pose.translation().transpose(),
-        math::rotmat2rpy(waypoints[i].pose.rotation()).transpose());
+        math::rotmat2rpy(waypoints[i].pose.linear()).transpose());
     if (i != num_via_points) {
       waypoints[i].pos_tol = via_points_pos_tolerance;
       waypoints[i].rot_tol = via_points_rot_tolerance;

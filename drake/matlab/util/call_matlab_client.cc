@@ -48,6 +48,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   }
 
   google::protobuf::io::FileInputStream raw_input(file_descriptor);
+  raw_input.SetCloseOnDelete(true);
   google::protobuf::io::CodedInputStream input(&raw_input);
 
   // TODO(russt): Document use of mkfifo?
@@ -64,10 +65,10 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     // Parse the message.
     drake::common::MatlabRPC message;
     if (!message.MergePartialFromCodedStream(&input)) {
-      mexErrMsgTxt("Failed to read from coded stream");
+      return;
     }
     if (!input.ConsumedEntireMessage()) {
-      mexErrMsgTxt("Failed to consume entire message");
+      return;
     }
 
     // Release the limit.

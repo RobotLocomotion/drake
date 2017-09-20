@@ -3,7 +3,9 @@
 #include <memory>
 
 #include "drake/common/symbolic.h"
-#include "drake/examples/pendulum/gen/pendulum_state_vector.h"
+#include "drake/examples/pendulum/gen/pendulum_input.h"
+#include "drake/examples/pendulum/gen/pendulum_params.h"
+#include "drake/examples/pendulum/gen/pendulum_state.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -23,87 +25,67 @@ namespace pendulum {
 template <typename T>
 class PendulumPlant : public systems::LeafSystem<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PendulumPlant);
+
   PendulumPlant();
 
-  /// Scalar-converting copy constructor.
+  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
   explicit PendulumPlant(const PendulumPlant<U>&);
 
   ~PendulumPlant() override;
 
-  using MyContext = systems::Context<T>;
-  using MyContinuousState = systems::ContinuousState<T>;
-  using MyOutput = systems::SystemOutput<T>;
-
   /// Returns the input port to the externally applied force.
-  const systems::InputPortDescriptor<T>& get_tau_port() const;
+  const systems::InputPortDescriptor<T>& get_input_port() const;
 
   /// Returns the port to output state.
   const systems::OutputPort<T>& get_output_port() const;
 
-  void set_theta(MyContext* context, const T& theta) const {
-    get_mutable_state(context)->set_theta(theta);
-  }
+  /// Calculates the kinetic + potential energy.
+  T CalcTotalEnergy(const systems::Context<T>& context) const;
 
-  void set_thetadot(MyContext* context, const T& thetadot) const {
-    get_mutable_state(context)->set_thetadot(thetadot);
-  }
-
-  /// Pendulum mass in kg
-  T m() const { return m_; }
-  /// Pendulum length in meters
-  T l() const { return l_; }
-  /// Damping torque in kg m^2 / s
-  T b() const { return b_; }
-  /// Gravity in m/s^2
-  T g() const { return g_; }
-
-  explicit PendulumPlant(const PendulumPlant& other) = delete;
-  PendulumPlant& operator=(const PendulumPlant& other) = delete;
-  explicit PendulumPlant(PendulumPlant&& other) = delete;
-  PendulumPlant& operator=(PendulumPlant&& other) = delete;
-
- private:
-  // This is the calculator method for the state output port.
-  void CopyStateOut(const MyContext& context,
-                    PendulumStateVector<T>* output) const;
-
-  void DoCalcTimeDerivatives(const MyContext& context,
-                             MyContinuousState* derivatives) const override;
-
-  T get_tau(const MyContext& context) const {
+  /// Evaluates the input port and returns the scalar value
+  /// of the commanded torque.
+  T get_tau(const systems::Context<T>& context) const {
     return this->EvalVectorInput(context, 0)->GetAtIndex(0);
   }
 
-  static const PendulumStateVector<T>& get_state(
-      const MyContinuousState& cstate) {
-    return dynamic_cast<const PendulumStateVector<T>&>(cstate.get_vector());
+  static const PendulumState<T>& get_state(
+      const systems::ContinuousState<T>& cstate) {
+    return dynamic_cast<const PendulumState<T>&>(cstate.get_vector());
   }
 
-  static PendulumStateVector<T>* get_mutable_state(
-      MyContinuousState* cstate) {
-    return dynamic_cast<PendulumStateVector<T>*>(cstate->get_mutable_vector());
-  }
-
-  static PendulumStateVector<T>* get_mutable_output(MyOutput* output) {
-    return dynamic_cast<PendulumStateVector<T>*>(
-        output->GetMutableVectorData(0));
-  }
-
-  static const PendulumStateVector<T>& get_state(const MyContext& context) {
+  static const PendulumState<T>& get_state(const systems::Context<T>& context) {
     return get_state(*context.get_continuous_state());
   }
 
-  static PendulumStateVector<T>* get_mutable_state(MyContext* context) {
+  static PendulumState<T>* get_mutable_state(
+      systems::ContinuousState<T>* cstate) {
+    return dynamic_cast<PendulumState<T>*>(cstate->get_mutable_vector());
+  }
+
+  static PendulumState<T>* get_mutable_state(systems::Context<T>* context) {
     return get_mutable_state(context->get_mutable_continuous_state());
   }
 
-  const double m_{1.0};   // kg
-  const double l_{.5};    // m
-  const double b_{0.1};   // kg m^2 /s
-  const double lc_{.5};   // m
-  const double I_{.25};   // m*l^2; % kg*m^2
-  const double g_{9.81};  // m/s^2
+  static PendulumState<T>* get_mutable_output(
+      systems::SystemOutput<T>* output) {
+    return dynamic_cast<PendulumState<T>*>(output->GetMutableVectorData(0));
+  }
+
+  const PendulumParams<T>& get_parameters(
+      const systems::Context<T>& context) const {
+    return this->template GetNumericParameter<PendulumParams>(context, 0);
+  }
+
+ private:
+  // This is the calculator method for the state output port.
+  void CopyStateOut(const systems::Context<T>& context,
+                    PendulumState<T>* output) const;
+
+  void DoCalcTimeDerivatives(
+      const systems::Context<T>& context,
+      systems::ContinuousState<T>* derivatives) const override;
 };
 
 }  // namespace pendulum

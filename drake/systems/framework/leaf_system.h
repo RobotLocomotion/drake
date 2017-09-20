@@ -26,6 +26,7 @@
 #include "drake/systems/framework/model_values.h"
 #include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/system.h"
+#include "drake/systems/framework/system_constraint.h"
 #include "drake/systems/framework/system_scalar_converter.h"
 #include "drake/systems/framework/system_symbolic_inspector.h"
 #include "drake/systems/framework/value.h"
@@ -199,11 +200,39 @@ class LeafSystem : public System<T> {
   }
 
   std::multimap<int, int> GetDirectFeedthroughs() const final {
-    auto sparsity = MakeSystemSymbolicInspector();
+    // A helper object that is latch-initialized the first time it is needed,
+    // but not before.  The optional<> wrapper represents whether or not the
+    // latch-init has been attempted; the unique_ptr's non-nullness represents
+    // whether or not symbolic form is supported.
+    optional<std::unique_ptr<SystemSymbolicInspector>> inspector;
+
+    // This predicate answers a feedthrough query using symbolic form, or
+    // returns "true" if symbolic form is unavailable.  It is lazy, in that it
+    // will not create the symbolic form until the first time it is invoked.
+    auto inspect_symbolic_feedthrough = [this, &inspector](int u, int v) {
+      // The very first time we are called, latch-initialize the inspector.
+      if (!inspector) { inspector = MakeSystemSymbolicInspector(); }
+
+      // If we have an inspector, delegate to it.  Otherwise, be conservative.
+      if (SystemSymbolicInspector* inspector_value = inspector.value().get()) {
+        return inspector_value->IsConnectedInputToOutput(u, v);
+      } else {
+        return true;
+      }
+    };
+
+    // Iterate all input-output pairs, populating the map with the "true" terms.
     std::multimap<int, int> pairs;
     for (int u = 0; u < this->get_num_input_ports(); ++u) {
       for (int v = 0; v < this->get_num_output_ports(); ++v) {
-        if (DoHasDirectFeedthrough(sparsity.get(), u, v)) {
+        // Ask our subclass whether it wants to directly express feedthrough.
+        const optional<bool> overridden_feedthrough =
+            DoHasDirectFeedthrough(u, v);
+        // If our subclass didn't provide an answer, use symbolic form instead.
+        const bool direct_feedthrough =
+            overridden_feedthrough ? overridden_feedthrough.value() :
+            inspect_symbolic_feedthrough(u, v);
+        if (direct_feedthrough) {
           pairs.emplace(u, v);
         }
       }
@@ -213,9 +242,22 @@ class LeafSystem : public System<T> {
 
  protected:
   /// Default constructor that declares no inputs, outputs, state, parameters,
-  /// events, nor scalar-type conversion support (i.e., AutoDiff, etc.).  To
-  /// enable AutoDiff support, use the constructor that takes a SystemTypeTag.
-  LeafSystem() {
+  /// events, nor scalar-type conversion support (AutoDiff, etc.).  To enable
+  /// AutoDiff support, use the SystemScalarConverter-based constructor.
+  LeafSystem() : LeafSystem(SystemScalarConverter{}) {}
+
+  /// Constructor that declares no inputs, outputs, state, parameters, or
+  /// events, but allows subclasses to declare scalar-type conversion support
+  /// (AutoDiff, etc.).
+  ///
+  /// The scalar-type conversion support will use @p converter.
+  /// To enable scalar-type conversion support, pass a `SystemTypeTag<S>{}`
+  /// where `S` must be the exact class of `this` being constructed.
+  ///
+  /// See @ref system_scalar_conversion for detailed background and examples
+  /// related to scalar-type conversion support.
+  explicit LeafSystem(SystemScalarConverter converter)
+      : system_scalar_converter_(std::move(converter)) {
     this->set_forced_publish_events(
         LeafEventCollection<PublishEvent<T>>::MakeForcedEventCollection());
     this->set_forced_discrete_update_events(
@@ -224,20 +266,6 @@ class LeafSystem : public System<T> {
     this->set_forced_unrestricted_update_events(
         LeafEventCollection<
             UnrestrictedUpdateEvent<T>>::MakeForcedEventCollection());
-  }
-
-  /// Constructor that declares no inputs, outputs, state, parameters, events,
-  /// but *does* declare scalar-type conversion support (i.e., AutoDiff, etc.).
-  ///
-  /// The scalar-type conversion support will use `S` as the system type to
-  /// construct when changing the scalar type.  Systems may specialize their
-  /// scalar_conversion::Traits<S> to govern the supported scalar types; by
-  /// default, both AutoDiff and symbolic types are enabled.
-  ///
-  /// @tparam S must be the most-derived concrete System subclass of `this`.
-  template <template <typename> class S>
-  explicit LeafSystem(SystemTypeTag<S>) : LeafSystem() {
-    system_scalar_converter_ = SystemScalarConverter(SystemTypeTag<S>{});
   }
 
   System<AutoDiffXd>* DoToAutoDiffXd() const override {
@@ -435,43 +463,36 @@ class LeafSystem : public System<T> {
   }
 
   /// Returns true if there is direct-feedthrough from the given @p input_port
-  /// to the given @p output_port, and false otherwise, according to the given
-  /// @p sparsity.
+  /// to the given @p output_port, false if there is not direct-feedthrough, or
+  /// nullopt if unknown (in which case SystemSymbolicInspector will attempt to
+  /// measure the feedthrough using symbolic form).
   ///
-  /// If @p sparsity is nullptr, returns true, so that by default we assume
-  /// there is direct feedthrough of values from every input to every output.
+  /// By default, %LeafSystem assumes there is direct feedthrough of values
+  /// from every input to every output.
   /// This is a conservative assumption that ensures we detect and can prevent
   /// the formation of algebraic loops (implicit computations) in system
   /// Diagrams. Systems which do not have direct feedthrough may override that
   /// assumption in two ways:
   ///
-  /// - Override DoToSymbolic, allowing this function to infer the sparsity
+  /// - Override DoToSymbolic, allowing %LeafSystem to infer the sparsity
   ///   from the symbolic equations. This method is typically preferred for
   ///   systems that have a symbolic form, but should be avoided in certain
   ///   corner cases where fully descriptive symbolic analysis is impossible,
-  ///   e.g. when the symbolic form depends on C++ native conditionals. For
+  ///   e.g., when the symbolic form depends on C++ native conditionals. For
   ///   additional discussion, consult the documentation for
   ///   SystemSymbolicInspector.
   ///
   /// - Override this function directly, reporting manual sparsity. This method
-  ///   is recommended when ToSymbolic has not been implemented, or when its
+  ///   is recommended when DoToSymbolic has not been implemented, or when
+  ///   creating the symbolic form is too computationally expensive, or when its
   ///   output is not fully descriptive, as discussed above. Manually configured
   ///   sparsity must be conservative: if there is any Context for which an
   ///   input port is direct-feedthrough to an output port, this function must
-  ///   return true for those two ports.
-  virtual bool DoHasDirectFeedthrough(const SystemSymbolicInspector* sparsity,
-                                      int input_port, int output_port) const {
-    DRAKE_ASSERT(input_port >= 0);
-    DRAKE_ASSERT(input_port < this->get_num_input_ports());
-    DRAKE_ASSERT(output_port >= 0);
-    DRAKE_ASSERT(output_port < this->get_num_output_ports());
-
-    // If no symbolic sparsity matrix is available, assume direct feedthrough
-    // by default.
-    if (sparsity == nullptr) {
-      return true;
-    }
-    return sparsity->IsConnectedInputToOutput(input_port, output_port);
+  ///   return either true or nullopt for those two ports.
+  virtual optional<bool> DoHasDirectFeedthrough(
+      int input_port, int output_port) const {
+    unused(input_port, output_port);
+    return nullopt;
   }
 
   // =========================================================================
@@ -481,12 +502,21 @@ class LeafSystem : public System<T> {
   /// the best way to declare LeafSystem numeric parameters.  LeafSystem's
   /// default implementation of AllocateParameters uses model_vector.Clone(),
   /// and the default implementation of SetDefaultParameters() will reset
-  /// parameters to their model vectors.  Returns the index of the new
-  /// parameter.
+  /// parameters to their model vectors.  If the @p model_vector declares any
+  /// VectorBase::CalcInequalityConstraint() constraints, they will be
+  /// re-declared as inequality constraints on this system (see
+  /// DeclareInequalityConstraint()).  Returns the index of the new parameter.
   int DeclareNumericParameter(const BasicVector<T>& model_vector) {
-    const int next_index = model_numeric_parameters_.size();
-    model_numeric_parameters_.AddVectorModel(next_index, model_vector.Clone());
-    return next_index;
+    const int index = model_numeric_parameters_.size();
+    model_numeric_parameters_.AddVectorModel(index, model_vector.Clone());
+    MaybeDeclareVectorBaseInequalityConstraint(
+        "parameter " + std::to_string(index), model_vector,
+        [index](const Context<T>& context) -> const VectorBase<T>& {
+          const BasicVector<T>* result = context.get_numeric_parameter(index);
+          DRAKE_DEMAND(result != nullptr);
+          return *result;
+        });
+    return index;
   }
 
   /// Extracts the numeric parameters of type U from the @p context at @p index.
@@ -636,7 +666,10 @@ class LeafSystem : public System<T> {
   /// generalized positions, @p num_v generalized velocities, and @p num_z
   /// miscellaneous state variables, stored in a vector Cloned from
   /// @p model_vector. Aborts if @p model_vector has the wrong size. Has no
-  /// effect if AllocateContinuousState is overridden.
+  /// effect if AllocateContinuousState is overridden. If the @p model_vector
+  /// declares any VectorBase::CalcInequalityConstraint() constraints, they
+  /// will be re-declared as inequality constraints on this system (see
+  /// DeclareInequalityConstraint()).
   void DeclareContinuousState(const BasicVector<T>& model_vector, int num_q,
                               int num_v, int num_z) {
     DRAKE_DEMAND(model_vector.size() == num_q + num_v + num_z);
@@ -644,6 +677,13 @@ class LeafSystem : public System<T> {
     num_generalized_positions_ = num_q;
     num_generalized_velocities_ = num_v;
     num_misc_continuous_states_ = num_z;
+    MaybeDeclareVectorBaseInequalityConstraint(
+        "continuous state", model_vector,
+        [](const Context<T>& context) -> const VectorBase<T>& {
+          const ContinuousState<T>* state = context.get_continuous_state();
+          DRAKE_DEMAND(state != nullptr);
+          return state->get_vector();
+        });
   }
 
   /// Declares that this System should reserve continuous state with @p num_q
@@ -667,7 +707,7 @@ class LeafSystem : public System<T> {
   }
 
   /// Declares an abstract state.
-  /// @param abstract_state The abstract state, its ownership is transfered.
+  /// @param abstract_state The abstract state, its ownership is transferred.
   /// @return index of the declared abstract state.
   int DeclareAbstractState(std::unique_ptr<AbstractValue> abstract_state) {
     int index = model_abstract_states_.size();
@@ -685,12 +725,22 @@ class LeafSystem : public System<T> {
   /// This is the best way to declare LeafSystem input ports that require
   /// subclasses of BasicVector.  The port's size will be model_vector.size(),
   /// and LeafSystem's default implementation of DoAllocateInputVector will be
-  /// model_vector.Clone().
+  /// model_vector.Clone().  If the @p model_vector declares any
+  /// VectorBase::CalcInequalityConstraint() constraints, they will be
+  /// re-declared as inequality constraints on this system (see
+  /// DeclareInequalityConstraint()).
   const InputPortDescriptor<T>& DeclareVectorInputPort(
       const BasicVector<T>& model_vector) {
     const int size = model_vector.size();
-    const int next_index = this->get_num_input_ports();
-    model_input_values_.AddVectorModel(next_index, model_vector.Clone());
+    const int index = this->get_num_input_ports();
+    model_input_values_.AddVectorModel(index, model_vector.Clone());
+    MaybeDeclareVectorBaseInequalityConstraint(
+        "input " + std::to_string(index), model_vector,
+        [this, index](const Context<T>& context) -> const VectorBase<T>& {
+          const BasicVector<T>* input = this->EvalVectorInput(context, index);
+          DRAKE_DEMAND(input != nullptr);
+          return *input;
+        });
     return this->DeclareInputPort(kVectorValued, size);
   }
 
@@ -948,6 +998,106 @@ class LeafSystem : public System<T> {
   }
   //@}
 
+  /// Declares a system constraint of the form
+  ///   f(context) = 0
+  /// by specifying a member function to use to calculate the (VectorX)
+  /// constraint value with a signature:
+  /// @code
+  /// void MySystem::CalcConstraint(const Context<T>&, VectorX<T>*) const;
+  /// @endcode
+  ///
+  /// @param count is the dimension of the VectorX output.
+  /// @param description should be a human-readable phrase.
+  /// @returns The index of the constraint.
+  /// Template arguments will be deduced and do not need to be specified.
+  ///
+  /// @see SystemConstraint<T> for more information about the meaning of
+  /// these constraints.
+  template <class MySystem>
+  SystemConstraintIndex DeclareEqualityConstraint(
+      void (MySystem::*calc)(const Context<T>&, VectorX<T>*) const,
+      int count, const std::string& description) {
+    auto this_ptr = dynamic_cast<const MySystem*>(this);
+    DRAKE_DEMAND(this_ptr != nullptr);
+    return DeclareEqualityConstraint(
+        [this_ptr, calc](const Context<T>& context, VectorX<T>* value) {
+          DRAKE_DEMAND(value != nullptr);
+          (this_ptr->*calc)(context, value);
+        },
+        count, description);
+  }
+
+  /// Declares a system constraint of the form
+  ///   f(context) = 0
+  /// by specifying a std::function to use to calculate the (Vector) constraint
+  /// value with a signature:
+  /// @code
+  /// void CalcConstraint(const Context<T>&, VectorX<T>*);
+  /// @endcode
+  ///
+  /// @param count is the dimension of the VectorX output.
+  /// @param description should be a human-readable phrase.
+  /// @returns The index of the constraint.
+  ///
+  /// @see SystemConstraint<T> for more information about the meaning of
+  /// these constraints.
+  SystemConstraintIndex DeclareEqualityConstraint(
+      typename SystemConstraint<T>::CalcCallback calc, int count,
+      const std::string& description) {
+    return this->AddConstraint(std::make_unique<SystemConstraint<T>>(
+        calc, count, true, description));
+  }
+
+  /// Declares a system constraint of the form
+  ///   f(context) ≥ 0
+  /// by specifying a member function to use to calculate the (VectorX)
+  /// constraint value with a signature:
+  /// @code
+  /// void MySystem::CalcConstraint(const Context<T>&, VectorX<T>*) const;
+  /// @endcode
+  ///
+  /// @param count is the dimension of the VectorX output.
+  /// @param description should be a human-readable phrase.
+  /// @returns The index of the constraint.
+  /// Template arguments will be deduced and do not need to be specified.
+  ///
+  /// @see SystemConstraint<T> for more information about the meaning of
+  /// these constraints.
+  template <class MySystem>
+  SystemConstraintIndex DeclareInequalityConstraint(
+      void (MySystem::*calc)(const Context<T>&, VectorX<T>*) const,
+      int count, const std::string& description) {
+    auto this_ptr = dynamic_cast<const MySystem*>(this);
+    DRAKE_DEMAND(this_ptr != nullptr);
+    return DeclareInequalityConstraint(
+        [this_ptr, calc](const Context<T>& context, VectorX<T>* value) {
+          DRAKE_DEMAND(value != nullptr);
+          (this_ptr->*calc)(context, value);
+        },
+        count, description);
+  }
+
+  /// Declares a system constraint of the form
+  ///   f(context) ≥ 0
+  /// by specifying a std::function to use to calculate the (Vector) constraint
+  /// value with a signature:
+  /// @code
+  /// void CalcConstraint(const Context<T>&, VectorX<T>*);
+  /// @endcode
+  ///
+  /// @param count is the dimension of the VectorX output.
+  /// @param description should be a human-readable phrase.
+  /// @returns The index of the constraint.
+  ///
+  /// @see SystemConstraint<T> for more information about the meaning of
+  /// these constraints.
+  SystemConstraintIndex DeclareInequalityConstraint(
+      typename SystemConstraint<T>::CalcCallback calc, int count,
+      const std::string& description) {
+    return this->AddConstraint(std::make_unique<SystemConstraint<T>>(
+        calc, count, false, description));
+  }
+
   /// Derived-class event handler for all simultaneous publish events
   /// in @p events. Override this in your derived LeafSystem if your derived
   /// LeafSystem requires a behavior other than the default behavior, which
@@ -1187,7 +1337,7 @@ class LeafSystem : public System<T> {
   // symbolic representation.
   std::unique_ptr<SystemSymbolicInspector> MakeSystemSymbolicInspector() const {
     std::unique_ptr<System<symbolic::Expression>> symbolic_system =
-        this->ToSymbolic();
+        this->ToSymbolicMaybe();
     if (symbolic_system) {
       return std::make_unique<SystemSymbolicInspector>(*symbolic_system);
     } else {
@@ -1238,6 +1388,31 @@ class LeafSystem : public System<T> {
     };
   }
 
+  // If @p model_vector's CalcInequalityConstraint provides any constraints,
+  // then declares inequality constraints on `this` using a calc function that
+  // obtains a VectorBase from a Context using @p get_vector_from_context and
+  // then delegates to the VectorBase::CalcInequalityConstraint.  Note that the
+  // model vector is only used to determine how many constraints will appear;
+  // it is not part of the ongoing constraint computations.
+  void MaybeDeclareVectorBaseInequalityConstraint(
+      const std::string& kind,
+      const VectorBase<T>& model_vector,
+      const std::function<const VectorBase<T>&(const Context<T>&)>&
+        get_vector_from_context) {
+    VectorX<T> dummy_value;
+    model_vector.CalcInequalityConstraint(&dummy_value);
+    const int count = dummy_value.size();
+    if (count == 0) {
+      return;
+    }
+    this->DeclareInequalityConstraint(
+        [get_vector_from_context](const Context<T>& con, VectorX<T>* value) {
+          get_vector_from_context(con).CalcInequalityConstraint(value);
+        },
+        count,
+        kind + " of type " + NiceTypeName::Get(model_vector));
+  }
+
   // Periodic Update or Publish events registered on this system.
   std::vector<std::pair<typename Event<T>::PeriodicAttribute,
                         std::unique_ptr<Event<T>>>>
@@ -1266,7 +1441,7 @@ class LeafSystem : public System<T> {
   detail::ModelValues model_numeric_parameters_;
 
   // Functions to convert this system to use alternative scalar types.
-  SystemScalarConverter system_scalar_converter_;
+  const SystemScalarConverter system_scalar_converter_;
 };
 
 }  // namespace systems

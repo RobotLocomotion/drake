@@ -9,11 +9,8 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_library(
     name = "api",
     srcs = [
-        "junction.cc",
-        "lane.cc",
         "lane_data.cc",
         "road_geometry.cc",
-        "segment.cc",
     ],
     hdrs = [
         "branch_point.h",
@@ -22,9 +19,10 @@ drake_cc_library(
         "lane_data.h",
         "road_geometry.h",
         "segment.h",
+        "type_specific_identifier.h",
     ],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/math:geometric_transform",
     ],
 )
@@ -32,7 +30,6 @@ drake_cc_library(
 # === test/ ===
 drake_cc_googletest(
     name = "lane_data_test",
-    srcs = ["test/lane_data_test.cc"],
     deps = [
         ":api",
         "//drake/common:eigen_matrix_compare",
@@ -41,7 +38,13 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "maliput_test",
-    srcs = ["test/maliput_test.cc"],
+    deps = [
+        ":api",
+    ],
+)
+
+drake_cc_googletest(
+    name = "type_specific_identifier_test",
     deps = [
         ":api",
     ],
@@ -54,7 +57,7 @@ drake_cc_library(
     hdrs = ["test/maliput_types_compare.h"],
     deps = [
         ":api",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/math:geometric_transform",
         "@gtest//:without_main",
     ],

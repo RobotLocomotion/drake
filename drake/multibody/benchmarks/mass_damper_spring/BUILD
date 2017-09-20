@@ -11,7 +11,7 @@ drake_cc_library(
     srcs = ["mass_damper_spring_analytical_solution.cc"],
     hdrs = ["mass_damper_spring_analytical_solution.h"],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/math:autodiff",
     ],
 )

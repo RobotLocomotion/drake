@@ -20,7 +20,7 @@ drake_cc_library(
         "utilities.h",
     ],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/systems/framework:leaf_system",
         "//drake/systems/primitives:matrix_gain",
     ],

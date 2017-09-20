@@ -3,10 +3,11 @@
 #include <memory>
 
 #include <gtest/gtest.h>
-#include <unsupported/Eigen/AutoDiff>
 
+#include "drake/common/autodiff_overloads.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/input_port_value.h"
+#include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
 using Eigen::AutoDiffScalar;
 using Eigen::Vector2d;
@@ -105,6 +106,23 @@ TEST_F(DemultiplexerTest, DirectFeedthrough) {
   for (int i = 0; i < demux_->get_num_output_ports(); ++i) {
     EXPECT_TRUE(demux_->HasDirectFeedthrough(0, i));
   }
+}
+
+// Tests converting to different scalar types.
+TEST_F(DemultiplexerTest, ToAutoDiff) {
+  EXPECT_TRUE(is_autodiffxd_convertible(*demux_, [&](const auto& converted) {
+    EXPECT_EQ(1, converted.get_num_input_ports());
+    EXPECT_EQ(3, converted.get_num_output_ports());
+
+    EXPECT_EQ(3, converted.get_input_port(0).size());
+    EXPECT_EQ(1, converted.get_output_port(0).size());
+    EXPECT_EQ(1, converted.get_output_port(1).size());
+    EXPECT_EQ(1, converted.get_output_port(2).size());
+  }));
+}
+
+TEST_F(DemultiplexerTest, ToSymbolic) {
+  EXPECT_TRUE(is_symbolic_convertible(*demux_));
 }
 
 }  // namespace

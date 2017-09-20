@@ -137,11 +137,14 @@ Isometry3<T> Acrobot<T>::CalcLink2PoseInWorldFrame(
 template <typename T>
 Isometry3<T> Acrobot<T>::CalcElbowOutboardFramePoseInWorldFrame(
     const T& theta1, const T& theta2) const {
-  // Pose of link2's frame Lcm, a the com, in the world frame.
-  const Isometry3<T> X_WLcm = CalcLink2PoseInWorldFrame(theta1, theta2);
+  // Pose of link2's frame L2cm, at the com, in the world frame.
+  const Isometry3<T> X_WL2cm = CalcLink2PoseInWorldFrame(theta1, theta2);
   // Pose of the elbow outboard frame Eo in Lcm's frame.
-  const Isometry3<T> X_LcmEo(Translation3<T>(0.0, lc2_, 0.0));
-  return X_WLcm * X_LcmEo;
+  // Link 2 is a bar with its axial axis aligned with its frame y-axis.
+  // Therefore the elbow outboard frame is at y = +lc2 from link 2's center of
+  // mass. See this class's documentation for details.
+  const Isometry3<T> X_L2cmEo(Translation3<T>(0.0, lc2_, 0.0));
+  return X_WL2cm * X_L2cmEo;
 }
 
 template <typename T>

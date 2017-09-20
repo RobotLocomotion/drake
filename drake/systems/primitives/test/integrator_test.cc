@@ -9,6 +9,7 @@
 
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/input_port_value.h"
+#include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
 namespace drake {
 namespace systems {
@@ -135,6 +136,14 @@ TEST_F(SymbolicIntegratorTest, Derivatives) {
   EXPECT_EQ("u0", xcdot[0].to_string());
   EXPECT_EQ("u1", xcdot[1].to_string());
   EXPECT_EQ("u2", xcdot[2].to_string());
+}
+
+TEST_F(IntegratorTest, ToAutoDiff) {
+  EXPECT_TRUE(is_autodiffxd_convertible(*integrator_));
+}
+
+TEST_F(IntegratorTest, ToSymbolic) {
+  EXPECT_TRUE(is_symbolic_convertible(*integrator_));
 }
 
 }  // namespace

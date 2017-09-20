@@ -30,7 +30,7 @@ drake_cc_library(
     srcs = ["humanoid_status.cc"],
     hdrs = ["humanoid_status.h"],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody:rigid_body_tree_alias_groups",
         "//drake/systems/controllers/qp_inverse_dynamics:robot_kinematic_state",  # noqa

@@ -3,10 +3,12 @@
 #include <cmath>
 #include <memory>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/symbolic.h"
+#include "drake/systems/framework/system_constraint.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
 namespace drake {
@@ -385,6 +387,65 @@ TEST_F(SimpleCarTest, TransmogrifySymbolic) {
     other_dut.CalcOutput(*other_context, other_output.get());
     other_dut.CalcTimeDerivatives(*other_context, other_derivatives.get());
   }));
+}
+
+TEST_F(SimpleCarTest, TestConstraints) {
+  using systems::SystemConstraint;
+  using systems::SystemConstraintIndex;
+
+  SimpleCarParams<double>* params = dynamic_cast<SimpleCarParams<double>*>(
+      context_->get_mutable_numeric_parameter(0));
+  EXPECT_TRUE(params);
+  SimpleCarState<double>* state = continuous_state();
+
+  ASSERT_EQ(dut_->get_num_constraints(), 4);
+  const SystemConstraint<double>& params_constraint =
+      dut_->get_constraint(SystemConstraintIndex(0));
+  const SystemConstraint<double>& steering_constraint =
+      dut_->get_constraint(SystemConstraintIndex(1));
+  const SystemConstraint<double>& acceleration_constraint =
+      dut_->get_constraint(SystemConstraintIndex(2));
+  const SystemConstraint<double>& velocity_constraint =
+      dut_->get_constraint(SystemConstraintIndex(3));
+
+  // Merely confirm the presence of the parameters constraint; we rely on the
+  // framework test coverage to ensure the the details are correct.
+  EXPECT_THAT(params_constraint.description(), ::testing::HasSubstr(
+      "SimpleCarParams"));
+
+  // Test steering constraint.
+  EXPECT_EQ(steering_constraint.description(), "steering angle limit");
+
+  SetInputValue(0.0, 1.0);
+  EXPECT_TRUE(steering_constraint.CheckSatisfied(*context_));
+  SetInputValue(1.1 * params->max_abs_steering_angle(), 1.0);
+  EXPECT_FALSE(steering_constraint.CheckSatisfied(*context_));
+  SetInputValue(-1.1 * params->max_abs_steering_angle(), 1.0);
+  EXPECT_FALSE(steering_constraint.CheckSatisfied(*context_));
+  params->set_max_abs_steering_angle(1.2 * params->max_abs_steering_angle());
+  EXPECT_TRUE(steering_constraint.CheckSatisfied(*context_));
+
+  // Test acceleration constraint.
+  EXPECT_EQ(acceleration_constraint.description(), "acceleration limit");
+
+  SetInputValue(0.0, 0.5);  // Note that the second argument is normalized.
+  EXPECT_TRUE(acceleration_constraint.CheckSatisfied(*context_));
+  SetInputValue(0.0, 1.5);
+  EXPECT_FALSE(acceleration_constraint.CheckSatisfied(*context_));
+  SetInputValue(0.0, -0.5);
+  EXPECT_TRUE(acceleration_constraint.CheckSatisfied(*context_));
+  SetInputValue(0.0, -1.5);
+  EXPECT_FALSE(acceleration_constraint.CheckSatisfied(*context_));
+
+  // Test velocity constraint.
+  EXPECT_EQ(velocity_constraint.description(), "velocity limit");
+
+  state->set_velocity(params->max_velocity() / 2.0);
+  EXPECT_TRUE(velocity_constraint.CheckSatisfied(*context_));
+  state->set_velocity(-0.1);
+  EXPECT_FALSE(velocity_constraint.CheckSatisfied(*context_));
+  state->set_velocity(1.1 * params->max_velocity());
+  EXPECT_FALSE(velocity_constraint.CheckSatisfied(*context_));
 }
 
 }  // namespace

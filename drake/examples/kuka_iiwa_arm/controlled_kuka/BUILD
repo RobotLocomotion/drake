@@ -17,7 +17,6 @@ drake_cc_binary(
         "//drake/examples/kuka_iiwa_arm:models",
         "//drake/manipulation/models/iiwa_description:models",
     ],
-    tags = ["snopt"],
     deps = [
         "//drake/common:find_resource",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",

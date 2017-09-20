@@ -20,7 +20,7 @@ GTEST_TEST(PendulumPlantTest, ToAutoDiff) {
 
   // Transmogrify the plant to autodiff.
   std::unique_ptr<PendulumPlant<AutoDiffXd>> ad_plant =
-      systems::System<double>::ToAutoDiffXd<PendulumPlant>(plant);
+      systems::System<double>::ToAutoDiffXd(plant);
   ASSERT_NE(nullptr, ad_plant);
 
   // Construct a new context based on autodiff.
@@ -37,6 +37,38 @@ GTEST_TEST(PendulumPlantTest, ToAutoDiff) {
 GTEST_TEST(PendulumPlantTest, DirectFeedthrough) {
   PendulumPlant<double> plant;
   EXPECT_FALSE(plant.HasAnyDirectFeedthrough());
+}
+
+GTEST_TEST(PendulumPlantTest, CalcTotalEnergy) {
+  PendulumPlant<double> plant;
+  const auto context = plant.CreateDefaultContext();
+
+  const auto params = dynamic_cast<const PendulumParams<double>*>(
+      context->get_numeric_parameter(0));
+  EXPECT_TRUE(params);
+
+  auto* state = dynamic_cast<PendulumState<double>*>(
+      context->get_mutable_continuous_state_vector());
+  EXPECT_TRUE(state);
+
+  const double kTol = 1e-6;
+  // Energy at the bottom is -mgl.
+  state->set_theta(0.0);
+  state->set_thetadot(0.0);
+  EXPECT_NEAR(plant.CalcTotalEnergy(*context),
+              -params->mass() * params->gravity() * params->length(), kTol);
+
+  // Energy at the top is mgl.
+  state->set_theta(M_PI);
+  state->set_thetadot(0.0);
+  EXPECT_NEAR(plant.CalcTotalEnergy(*context),
+              params->mass() * params->gravity() * params->length(), kTol);
+
+  // Energy at horizontal is 1/2 m v^2.
+  state->set_theta(M_PI_2);
+  state->set_thetadot(1.0);
+  EXPECT_NEAR(plant.CalcTotalEnergy(*context),
+              0.5 * params->mass() * std::pow(params->length(), 2), kTol);
 }
 
 }  // namespace
