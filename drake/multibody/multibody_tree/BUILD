@@ -183,4 +183,13 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "rigid_body_test",
+    deps = [
+        ":multibody_tree",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/multibody/benchmarks/acrobot",
+    ],
+)
+
 add_lint_tests()

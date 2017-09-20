@@ -67,14 +67,36 @@ class RigidBody : public Body<T> {
   /// state associated with flexible deformations.
   int get_num_flexible_velocities() const final { return 0; }
 
-  /// Returns the default value of this body's center of mass as measured and
-  /// expressed in this body's frame. This value is initially supplied at
+  /// Returns the default value of this body's mass.  This value is initially
+  /// supplied at construction when specifying this body's SpatialInertia.
+  /// @returns This body's default mass.
+  double get_default_mass() const {
+    return default_spatial_inertia_.get_mass();
+  }
+
+  /// Returns the default value of this rigid body's center of mass as measured
+  /// and expressed in this body's frame. This value is initially supplied at
   /// construction when specifying this body's SpatialInertia.
-  /// @retval p_BoBcm_B The position of this body's center of mass `Bcm`
-  /// measured from this body's frame origin `Bo` and expressed in this
-  /// body's frame B.
+  /// @retval p_BoBcm_B The position of this rigid body B's center of mass `Bcm`
+  /// measured from Bo (B's frame origin) and expressed in B (body B's frame).
   const Vector3<double>& get_default_com() const {
     return default_spatial_inertia_.get_com();
+  }
+
+  /// Returns the default value of this body B's unit inertia about Bo (body B's
+  /// origin), expressed in B (this body's frame). This value is initially
+  /// supplied at construction when specifying this body's SpatialInertia.
+  /// @retval G_BBo_B rigid body B's unit inertia about Bo, expressed in B.
+  const UnitInertia<double>& get_default_unit_inertia() const {
+    return default_spatial_inertia_.get_unit_inertia();
+  }
+
+  /// Calculates the default value of this body B's rotational inertia about Bo
+  /// (B's origin), expressed in B (this body's frame). This value is calculated
+  /// from the SpatialInertia supplied at construction of this body.
+  /// @retval I_BBo_B body B's rotational inertia about Bo, expressed in B.
+  RotationalInertia<double> CalcDefaultRotationalInertiaAboutBo() const {
+    return default_spatial_inertia_.CalcRotationalInertia();
   }
 
   SpatialInertia<T> CalcSpatialInertiaInBodyFrame(
