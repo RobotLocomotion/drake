@@ -12,6 +12,40 @@ load("//tools:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
+# This should encompass every non-testonly cc_library in this package,
+# except for items that should only ever be linked into main() programs.
+drake_cc_library(
+    name = "common",
+    srcs = [],
+    deps = [
+        ":autodiff",
+        ":cond",
+        ":copyable_unique_ptr",
+        ":double",
+        ":drake_path",
+        ":dummy_value",
+        ":eigen_autodiff_limits",
+        ":essential",
+        ":extract_double",
+        ":find_resource",
+        ":hash",
+        ":is_approx_equal_abstol",
+        ":is_cloneable",
+        ":nice_type_name",
+        ":number_traits",
+        ":polynomial",
+        ":reinit_after_move",
+        ":scoped_singleton",
+        ":sorted_vectors_have_intersection",
+        ":symbolic",
+        ":symbolic_decompose",
+        ":type_safe_index",
+        ":unused",
+    ],
+    # Intentionally excluded items:
+    # - text_logging_gflags
+)
+
 # A library of things that EVERYONE should want and MUST EAT.
 # Be appropriately hesitant when adding new things here.
 drake_cc_library(
@@ -39,13 +73,6 @@ drake_cc_library(
         "@eigen",
         "@spdlog",
     ],
-)
-
-# The library :common is a soon-to-be-deprecated alias for :essential.
-# Please use //drake/common:essential in all new code.
-alias(
-    name = "common",
-    actual = ":essential",
 )
 
 # Specific traits and operators that are relevant to all ScalarTypes.
