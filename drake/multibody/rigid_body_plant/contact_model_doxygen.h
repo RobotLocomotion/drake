@@ -140,22 +140,22 @@
  it is the negated slope at low impact velocities.
 
  Given a collision between two spheres, or a sphere and a plane, we can generate
- a contact force from this equation `fₙ = kxᵐ(1 + 3/2⋅d⋅ẋ)` where `k` is a
+ a contact force from this equation `fₙ = kxᵐ(1 + ³/₂⋅d⋅ẋ)` where `k` is a
  stiffness constant incorporating material properties and geometry
- (to be defined below), `x` is penetration depth and `ẋ` is penetration rate
+ (to be defined below), `x` is penetration depth, and `ẋ` is penetration rate
  (positive for increasing penetration and negative during rebound). Exponent `m`
  depends on the surface geometry and captures not only the functional form of
  the contact pressure (normal stress) with penetration, but also the change in
  contact patch area with penetration.
  For the contact between two surfaces with radii of curvature R₁ and R₂, the
  Hertz contact (normal) force can be written in terms of an effective radius of
- curvature R defined as `1/R = 1/R₁ + 1/R₂`. Similarly, an effective Young
+ curvature R defined as `1/R = 1/R₁ + 1/R₂`. Similarly, an effective Young's
  modulus E is defined from the modulii E₁ and E₂ and the Poisson's ratios of
  each surface material as `1/E = (1-ν₁²)/E₁ + (1-ν₂²)/E₂`.
  With these definitions, Hertz model predicts:
- - Contact between two spheres (this includes the plane by taing the limit
-   to infinity on one of the radius):
-   `m = 3/2`, `k = 4/3 E R½`, or `fₙ = 4/3 E R² (x/R)ᵐ`.
+ - Contact between two spheres (this includes the plane by taking the limit
+   to infinity on one of the radii):
+   `m = 3/2`, `k = ⁴/₃ E √R`, or `fₙ = ⁴/₃ E R² (x/R)ᵐ`.
    The contact radius is given by `a = Sqrt(R x)`.
  - Two crossed cylinders of equal radii R: Same as for sphere of radius R and a
    plane.
@@ -170,16 +170,18 @@
    `fₙ = C⋅E⋅L²⋅(x/R)ᵐ⋅(1 + d⋅ẋ)`,
 
  where L is a reference length that represents an _effective_ radius of
- curvature, E is the effective Young modulues defined above, and C is a
+ curvature, E is the effective Young's modulus defined above, and C is a
  dimensionless scaling constant.
 
- For Drake, we liberally extend the application of this model to point contact
- and (somewhat implausibly) take `m=1`. The model implemented in Drake currently
- does not estimate the local contact curvature, but it arbitrarily takes
- `L = 1 m`. A further improvement to this model would entail computing a local
- effective radius of curvature R and making `L = R`.
- Since the dimensionless constant C is in general a funcion of the particular
- geometric configuration of the impact, we simply take it to be `C = 1`.
+ Drake's _current_ compliant model implementation makes aggressive simplifying
+ assumptions. Although, C and L are related to the contacting geometries, the
+ current model simply assumes `C = 1` and `L = 1 m` (leading to issues
+ documented below, see @ref contact_engineering for details).
+
+ // TODO(SeanCurtis-TRI): We'll be changing these constants to some *other*
+ // constants that admit the possibility of meaningful physical values for E
+ // (on the order of giga-pascals). It's still coarse approximations and won't
+ // change the quality of the output, it just scales the algebra.
 
  Please note, `d` is not a _damping_ coefficient (which would have units of
  force/velocity), but is a _dissipation_ factor, with units of 1/velocity,
