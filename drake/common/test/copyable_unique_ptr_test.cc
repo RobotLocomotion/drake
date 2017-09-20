@@ -6,7 +6,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/test/is_dynamic_castable.h"
+#include "drake/common/test_utilities/is_dynamic_castable.h"
 
 namespace drake {
 namespace  {

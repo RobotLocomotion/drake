@@ -4,8 +4,8 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/lcm/drake_mock_lcm.h"
 #include "drake/math/roll_pitch_yaw_not_using_quaternion.h"
 #include "drake/multibody/joints/floating_base_types.h"

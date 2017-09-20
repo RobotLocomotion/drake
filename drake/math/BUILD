@@ -183,7 +183,7 @@ drake_cc_googletest(
     deps = [
         ":autodiff",
         ":gradient",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -191,7 +191,7 @@ drake_cc_googletest(
     name = "continuous_algebraic_riccati_equation_test",
     deps = [
         ":continuous_algebraic_riccati_equation",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -199,7 +199,7 @@ drake_cc_googletest(
     name = "cross_product_test",
     deps = [
         ":vector3_util",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -207,7 +207,7 @@ drake_cc_googletest(
     name = "convert_time_derivative_test",
     deps = [
         ":vector3_util",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -215,7 +215,7 @@ drake_cc_googletest(
     name = "discrete_algebraic_riccati_equation_test",
     deps = [
         ":discrete_algebraic_riccati_equation",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -223,7 +223,7 @@ drake_cc_googletest(
     name = "evenly_distributed_pts_on_sphere_test",
     deps = [
         ":evenly_distributed_pts_on_sphere",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -231,7 +231,7 @@ drake_cc_googletest(
     name = "expmap_test",
     deps = [
         ":expmap",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -239,7 +239,7 @@ drake_cc_googletest(
     name = "eigen_sparse_triplet_test",
     deps = [
         ":eigen_sparse_triplet",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -248,7 +248,7 @@ drake_cc_googletest(
     deps = [
         ":gradient",
         ":jacobian",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -256,7 +256,7 @@ drake_cc_googletest(
     name = "gradient_util_test",
     deps = [
         ":gradient",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -264,7 +264,7 @@ drake_cc_googletest(
     name = "gray_code_test",
     deps = [
         ":gray_code",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -272,8 +272,8 @@ drake_cc_googletest(
     name = "matrix_util_test",
     deps = [
         ":matrix_util",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:symbolic",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -281,7 +281,7 @@ drake_cc_googletest(
     name = "normalize_vector_test",
     deps = [
         ":gradient",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -289,7 +289,7 @@ drake_cc_googletest(
     name = "orthonormal_basis_test",
     deps = [
         ":orthonormal_basis",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -297,7 +297,7 @@ drake_cc_googletest(
     name = "quaternion_test",
     deps = [
         ":geometric_transform",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/math:autodiff",
     ],
 )
@@ -306,7 +306,7 @@ drake_cc_googletest(
     name = "rotation_matrix_test",
     deps = [
         ":geometric_transform",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -315,7 +315,7 @@ drake_cc_googletest(
     deps = [
         ":geometric_transform",
         ":gradient",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 

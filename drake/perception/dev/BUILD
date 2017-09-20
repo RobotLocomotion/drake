@@ -43,7 +43,7 @@ drake_cc_googletest(
     srcs = ["test/feedforward_neural_network_test.cc"],
     deps = [
         ":feedforward_neural_network",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 

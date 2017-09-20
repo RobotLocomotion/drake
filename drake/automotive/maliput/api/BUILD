@@ -32,7 +32,7 @@ drake_cc_googletest(
     name = "lane_data_test",
     deps = [
         ":api",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
