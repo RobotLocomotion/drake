@@ -134,31 +134,65 @@
  `fₙ` that accounts for both stiffness and dissipation effects. This is a
  continuous model based on Hertz elastic contact theory, which correctly
  reproduces the empirically observed velocity dependence of the coefficient of
- restitution, where `e=(1-dv)` for (small) impact velocity `v` and a material
+ restitution, where `e=(1-d⋅v)` for (small) impact velocity `v` and a material
  property `d` with units of 1/velocity. In theory, at least, `d` can be
  measured right off the coefficient of restitution-vs.-impact velocity curves:
  it is the negated slope at low impact velocities.
 
  Given a collision between two spheres, or a sphere and a plane, we can generate
- a contact force from this equation `fₙ = kxᵐ(1 + mdẋ)` where `k` is a stiffness
- constant incorporating material properties and geometry (to be defined below),
- `x` is penetration depth and `ẋ` is penetration rate (positive for increasing
- penetration and negative during rebound). Exponent `m` depends on the surface
- geometry and captures the change in contact patch area with penetration. For
- Hertz contact where the geometry can be approximated by sphere (or
- sphere-plane) interactions, `m=3/2`. For contact geometry where the patch area
- is independent of penetration depth, `m=1`.
+ a contact force from this equation `fₙ = kxᵐ(1 + 3/2⋅d⋅ẋ)` where `k` is a
+ stiffness constant incorporating material properties and geometry
+ (to be defined below), `x` is penetration depth and `ẋ` is penetration rate
+ (positive for increasing penetration and negative during rebound). Exponent `m`
+ depends on the surface geometry and captures not only the functional form of
+ the contact pressure (normal stress) with penetration, but also the change in
+ contact patch area with penetration.
+ For the contact between two surfaces with radii of curvature R₁ and R₂, the
+ Hertz contact (normal) force can be written in terms of an effective radius of
+ curvature R defined as `1/R = 1/R₁ + 1/R₂`. Similarly, an effective Young
+ modulus E is defined from the modulii E₁ and E₂ and the Poisson's ratios of
+ each surface material as `1/E = (1-ν₁²)/E₁ + (1-ν₂²)/E₂`.
+ With these definitions, Hertz model predicts:
+ - Contact between two spheres (this includes the plane by taing the limit
+   to infinity on one of the radius):
+   `m = 3/2`, `k = 4/3 E R½`, or `fₙ = 4/3 E R² (x/R)ᵐ`.
+   The contact radius is given by `a = Sqrt(R x)`.
+ - Two crossed cylinders of equal radii R: Same as for sphere of radius R and a
+   plane.
+ - Vertical cylinder of radius R and a plane:
+   `m = 1`, `k = 2 E R x`, or `fₙ = 2 E R² (x/R)`.
+ - Two cylinders of radii R₁ and R₂, length L and with parallel axes:
+   `m = 1`, `k = π/4 E L`, or `fₙ = π/4 E R² (R/L) (x/R)`.
+
+ These few examples with analytical solution lead us to generalize to an
+ expression of the contact normal force of the from:
+
+   `fₙ = C⋅E⋅L²⋅(x/R)ᵐ⋅(1 + d⋅ẋ)`,
+
+ where L is a reference length that represents an _effective_ radius of
+ curvature, E is the effective Young modulues defined above, and C is a
+ dimensionless scaling constant.
 
  For Drake, we liberally extend the application of this model to point contact
- and (somewhat implausibly) take `m=1`. So, for Drake, the normal component of
- the contact force is currently:
+ and (somewhat implausibly) take `m=1`. The model implemented in Drake currently
+ does not estimate the local contact curvature, but it arbitrarily takes
+ `L = 1 m`. A further improvement to this model would entail computing a local
+ effective radius of curvature R and making `L = R`.
+ Since the dimensionless constant C is in general a funcion of the particular
+ geometric configuration of the impact, we simply take it to be `C = 1`.
 
-   `fₙ = kx(1 + dẋ)`,
+ Please note, `d` is not a _damping_ coefficient (which would have units of
+ force/velocity), but is a _dissipation_ factor, with units of 1/velocity,
+ modeling power loss as a rate-dependent fraction of the conservative
+ deformation-dependent force. For steel, bronze or ivory, [Hunt 1975] reports
+ values of d between 0.08-0.32 sec/m.
 
- where `k > 0` and `d > 0`. Please note, `d` is not a _damping_ coefficient
- (which would have units of force/velocity), but is a _dissipation_ factor,
- with units of 1/velocity, modeling power loss as a rate-dependent fraction
- of the conservative deformation-dependent force.
+ // TODO(amcastro-tri): See if possible to estimate d in terms of a
+ // dimensionless damping ratio (with =1 critically damped, <1 underdamped,
+ // >1 overdamped).
+ // Therefore users would only need to provide E (material tables) and a
+ // dimensionless damping ratio, ad-hoc estimation, but at least in the range
+ // 0 to O(1).
 
  By definition `fₙ` should always be positive, so that the contact force is
  a repulsive force. Mathematically, for arbitrary x and ẋ, it is possible for
@@ -178,31 +212,62 @@
    Interpreted as Damping in Vibroimpact," ASME Journal of Applied Mechanics,
    pp. 440-445, June 1975. http://dx.doi.org/10.1115/1.3423596
 
- The units for stiffness k are stress/strain (force/area/strain or N/m²·strain).
- The units for dissipation d are 1/velocity. At first glance, if we consider
- the equation `fₙ = kx(1 + dẋ)` and examine the units, it _appears_ that we
- are _not_ producing forces. Of the three factors, k's units are N/m²·strain,
- x is m, and (1 + dẋ) is unitless. The product produces a value with the
- apparent units N/m·strain. How is this a force?
+ The units for spring-like stiffness k in the Hunt-Crossley model are N/m
+ (force/length). The units for dissipation d are sec/m (1/velocity). Therefore,
+ the units in the equation `fₙ = kx(1 + dẋ)` are, leading to a result with units
+ of force, or N in SI.
 
- More generally, we can define `fₙ = kg(x)` (omitting the unitless dissipation
- effects for simplicity). `g(x)` must have units of m²·strain. To that end,
- we can consider a decomposition of `g(q) = A(q)·ε(q)` where `q` is the
- contact configuration, the details of which depend on how the contact is
- characterized, `A(q)` is a function that captures the area of the contact and
- `ε(q)` captures the strain (guaranteeing our units are correct). In Drake's
- current contact model `q` is the simply the penetration depth at a single
- point (`x`). It assumes that the contact area is independent of the depth
- _and_, further, that it is a constant 1 m². So, `A(x) = 1 m²`. The strain
- function makes a similar unit assumption as `ε(x) = x /1 m`. Therefore,
- `g(x) = A(q)·ε(q) = 1 m²·x /1 m = x` (with units m²·strain). These simplifying
+ More generally, we can write
+
+   `fₙ = p(q)·A(q)`
+
+ where `A(q)` is the contact patch area, `p(q)` is the average contact pressure
+ on that patch and q is the contact configuration, the details of which depend
+ on how the contact is characterized (for instance, it could be the penetration
+ depth, and the approaching speed). Notice there is no approximation in
+ `fₙ = p(q)·A(q)`, this is always true since this equation _is_ the definition
+ of the average contact pressure `p(q)`.
+ Using dimensional analysis we write this expression in terms of a dimensionless
+ pressure `p*(q)` and a dimensionless area `A*(q)` as:
+
+   `fₙ = E·L²·p*(q)·A*(q)`
+
+ where L is an appropriate reference length for the particular contact
+ configuration.
+ Lets attempt to recast the analytical results mentioned above in these terms:
+ - Contact between two spheres (this includes the plane by taing the limit
+   to infinity on one of the radius):
+   A(q) = π a² = π R x,
+   p(q) = 4/(3π) E (x/R)½
+ - Two cylinders of radii R₁ and R₂, length L and with parallel axes:
+   A(q) = π a L = L (R x)½,
+   p(q) = π/4 E (x/R)½
+ - Vertical cylinder of radius R and a plane:
+   A(q) = π R²,
+   p(q) = 2/π E (x/R)
+
+ Interestingly, even when the functional form for the contact patch area for
+ two very distintct cases of sphere-on-sphere and cylinder-on-cylinder are
+ different (linear vs ½ power with penetration depth), the average pressure
+ scales with the same power.
+ Of course this result could not be generalized and for a case with planar
+ surfaces like a vertical cylinder on a plane, the average pressure has a
+ different functional form with penetration depth.
+
+ In Drake's current contact model the contact configuration is described by
+ `q = [x; ẋ]` where x is the simply the penetration depth at a single point and
+ ẋ is the rate of change of this depth. Similar to the case of a vertical
+ cylinder contacting on a planar surface, it assumes that the contact area is
+ independent of the depth and that pressure is proportional to the penetration
+ depth leading to the simple model `fₙ = C⋅E⋅L²⋅(x/R)ᵐ⋅(1 + d⋅ẋ)`, taking
+ `L = 1 m` for the reference length and `C = 1`. These simplifying
  assumptions lead to artifacts. See @ref contact_engineering for details.
 
- These are meaningful parameters for compliant contact, and the relationship
- fₙ(q) = k·A(q)·ε(q) is a reasonable characterization of compliant response.
- However our current model is overly simplistic. Future
- implementations will replace the current implementation with more physically
- plausible models.
+ Therefore, Drake's current model properly scales contact force with the
+ materials's stiffness, namely the Young modulus, however it fails to include
+ the more complex functional forms on penetraion depth introduced by the
+ particulars of the contact geometries. Future implementations will replace the
+ current implementation with more physically plausible models.
 
  @section tangent_force Stribeck Friction Tangential Force
 
