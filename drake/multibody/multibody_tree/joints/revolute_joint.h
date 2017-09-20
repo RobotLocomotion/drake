@@ -4,19 +4,11 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_optional.h"
 #include "drake/multibody/multibody_tree/joints/joint.h"
-#include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
 #include "drake/multibody/multibody_tree/revolute_mobilizer.h"
-#include "drake/multibody/multibody_tree/rigid_body.h"
-#include "drake/systems/framework/context.h"
 
 namespace drake {
 namespace multibody {
-
-#include <iostream>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
 
 template <typename T>
 class RevoluteJoint final : public Joint<T> {

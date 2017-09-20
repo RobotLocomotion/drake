@@ -189,6 +189,7 @@ class PendulumTests : public ::testing::Test {
     elbow_inboard_frame_ = &elbow_joint_->get_inboard_frame();
     elbow_outboard_frame_ = &elbow_joint_->get_outboard_frame();
     elbow_mobilizer_ = &elbow_joint_->get_mobilizer();
+    EXPECT_EQ(elbow_joint_->get_name(), "ElbowJoint");
 
     // Assert that indeed the elbow joint's outboard frame IS the lower link
     // frame.
@@ -366,6 +367,9 @@ TEST_F(PendulumTests, Indexes) {
   EXPECT_EQ(shoulder_outboard_frame_->get_index(), FrameIndex(3));
   EXPECT_EQ(elbow_inboard_frame_->get_index(), FrameIndex(4));
   EXPECT_EQ(elbow_outboard_frame_->get_index(), FrameIndex(2));
+  // Verifies the elbow's outboard frame IS the lower link's frame.
+  EXPECT_EQ(elbow_outboard_frame_->get_index(),
+            lower_link_->get_body_frame().get_index());
 }
 
 // Asserts that the Finalize() stage is successful and that re-finalization is
@@ -569,7 +573,7 @@ class PendulumKinematicTests : public PendulumTests {
     // ======================================================================
     // Compute position kinematics.
     shoulder_mobilizer_->set_angle(context_.get(), shoulder_angle);
-    elbow_mobilizer_->set_angle(context_.get(), elbow_angle);
+    elbow_joint_->set_angle(context_.get(), elbow_angle);
     model_->CalcPositionKinematicsCache(*context_, &pc);
 
     // ======================================================================
@@ -715,13 +719,13 @@ class PendulumKinematicTests : public PendulumTests {
     // ======================================================================
     // Compute position kinematics.
     shoulder_mobilizer_->set_angle(context_.get(), shoulder_angle);
-    elbow_mobilizer_->set_angle(context_.get(), elbow_angle);
+    elbow_joint_->set_angle(context_.get(), elbow_angle);
     model_->CalcPositionKinematicsCache(*context_, &pc);
 
     // ======================================================================
     // Compute velocity kinematics.
     shoulder_mobilizer_->set_angular_rate(context_.get(), shoulder_angle_rate);
-    elbow_mobilizer_->set_angular_rate(context_.get(), elbow_angle_rate);
+    elbow_joint_->set_angular_rate(context_.get(), elbow_angle_rate);
     model_->CalcVelocityKinematicsCache(*context_, pc, &vc);
 
     // ======================================================================
@@ -775,7 +779,7 @@ TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
   // By default CreateDefaultContext() sets mobilizer to their zero
   // configuration.
   EXPECT_EQ(shoulder_mobilizer_->get_angle(*context_), 0.0);
-  EXPECT_EQ(elbow_mobilizer_->get_angle(*context_), 0.0);
+  EXPECT_EQ(elbow_joint_->get_angle(*context_), 0.0);
 
   // Test mobilizer's setter/getters.
   shoulder_mobilizer_->set_angle(context_.get(), M_PI);
@@ -794,8 +798,8 @@ TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
 
       shoulder_mobilizer_->set_angle(context_.get(), shoulder_angle);
       EXPECT_EQ(shoulder_mobilizer_->get_angle(*context_), shoulder_angle);
-      elbow_mobilizer_->set_angle(context_.get(), elbow_angle);
-      EXPECT_EQ(elbow_mobilizer_->get_angle(*context_), elbow_angle);
+      elbow_joint_->set_angle(context_.get(), elbow_angle);
+      EXPECT_EQ(elbow_joint_->get_angle(*context_), elbow_angle);
 
       // Verify this matches the corresponding entries in the context.
       EXPECT_EQ(mbt_context_->get_positions()(0), shoulder_angle);
@@ -867,7 +871,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
       // ======================================================================
       // Compute position kinematics.
       shoulder_mobilizer_->set_angle(context_.get(), shoulder_angle);
-      elbow_mobilizer_->set_angle(context_.get(), elbow_angle);
+      elbow_joint_->set_angle(context_.get(), elbow_angle);
       model_->CalcPositionKinematicsCache(*context_, &pc);
 
       // Obtain the lower link center of mass to later shift its computed
@@ -890,10 +894,8 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
 
       // Set the elbow's angular velocity.
       const double elbow_angle_rate = -0.5;
-      elbow_mobilizer_->set_angular_rate(context_.get(),
-                                         elbow_angle_rate);
-      EXPECT_EQ(elbow_mobilizer_->get_angular_rate(*context_),
-                elbow_angle_rate);
+      elbow_joint_->set_angular_rate(context_.get(), elbow_angle_rate);
+      EXPECT_EQ(elbow_joint_->get_angular_rate(*context_), elbow_angle_rate);
       model_->CalcVelocityKinematicsCache(*context_, pc, &vc);
 
       // Retrieve body spatial velocities from velocity kinematics cache.
