@@ -34,6 +34,7 @@ using parsers::sdf::AddModelInstancesFromSdfFile;
 using systems::InputPortDescriptor;
 using systems::RigidBodyPlant;
 using systems::TimeSteppingRigidBodyPlant;
+using systems::Context;
 
 namespace multibody {
 namespace {
@@ -70,54 +71,28 @@ class Quadrotor : public systems::Diagram<T> {
     DRAKE_DEMAND(plant_->get_num_actuators() == 0);
     DRAKE_DEMAND(plant_->get_num_actuators(quadrotor_id) == 0);
 
-    VectorX<T> hover_input(plant_->get_input_size());
-    hover_input.setZero();
-
-    systems::DrakeVisualizer* publisher =
-        builder.template AddSystem<systems::DrakeVisualizer>(
-            plant_->get_rigid_body_tree(), &lcm_);
-
-    builder.Connect(plant_->get_output_port(0), publisher->get_input_port(0));
-
     builder.BuildInto(this);
-  }
-
-  void SetDefaultState(const systems::Context<T>& context,
-                       systems::State<T>* state) const override {
-    DRAKE_DEMAND(state != nullptr);
-    systems::Diagram<T>::SetDefaultState(context, state);
-    systems::State<T>& plant_state =
-        this->GetMutableSubsystemState(*plant_, state);
-    VectorX<T> x0(plant_->get_num_states());
-    x0.setZero();
-    /* x0 is the initial state where
-     * x0(0), x0(1), x0(2) are the quadrotor's x, y, z -states
-     * x0(3), x0(4), x0(5) are the quedrotor's Euler angles phi, theta, psi
-     */
-    x0(2) = 0.2;  // Sets arbitrary z-position. This is the initial height of
-                  // the quadrotor in the world frame.
-    plant_->set_state_vector(&plant_state, x0);
   }
 
  const systems::RigidBodyPlant<T>& get_plant() const { return *plant_; }
 
  private:
   systems::RigidBodyPlant<T>* plant_{};
-  lcm::DrakeLcm lcm_;
 };
 
 // Verifies that the output of the time stepping rigid body plant and the
 // continuous rigid body plant are equal with 
 GTEST_TEST(QuadrotorTest, Equality) {
-  // Set the simulation duration.
-  const double duration = 1.0;
-
   // Set the step size.
-  const double step_size = 1e-3;
+  const double step_size = 2.5e-4;
 
   // Construct the two models.
   Quadrotor<double> continuous_model(0.0);
   Quadrotor<double> discrete_model(step_size);
+
+  // Get the two RigidBodyPlant refs.
+  const RigidBodyPlant<double>& continuous_plant = continuous_model.get_plant();
+  const RigidBodyPlant<double>& discrete_plant = discrete_model.get_plant();
 
   // Construct two simulators for those models.
   systems::Simulator<double> continuous_sim(continuous_model);
@@ -131,17 +106,37 @@ GTEST_TEST(QuadrotorTest, Equality) {
   continuous_sim.Initialize();
   discrete_sim.Initialize();
 
-  // Step both forward by ten seconds (i.e., a long time into the future).
+  // Set the initial conditions for the continuous plant. We modify the height
+  // so that there are no contact forces.
+  const int kQuadrotorStateDim = 12;
+  VectorX<double> x0(kQuadrotorStateDim);
+  for (int i = 0; i < kQuadrotorStateDim; ++i)
+    x0[i] = i + 1; 
+  auto& continuous_context = continuous_model.GetMutableSubsystemContext(
+    continuous_plant, continuous_sim.get_mutable_context());
+  continuous_context.get_mutable_continuous_state()->SetFromVector(x0);
+
+  // Set the initial conditions for the discrete plant.
+  Context<double>& discrete_context = discrete_model.GetMutableSubsystemContext(
+      discrete_plant, discrete_sim.get_mutable_context());
+  discrete_context.get_mutable_discrete_state()->get_mutable_vector()->
+      SetFromVector(x0);
+
+  // Step both forward by one step into the future.
+  const double duration = step_size; 
   continuous_sim.StepTo(duration);
   discrete_sim.StepTo(duration);
 
   // Compare the states.
   auto& continuous_state = continuous_sim.get_context().get_continuous_state_vector();
-  auto& discrete_state = discrete_sim.get_context().get_discrete_state_vector();
+  auto& discrete_state = *discrete_sim.get_context().get_discrete_state()->get_data().front();
+
   ASSERT_EQ(continuous_state.size(), discrete_state.size());
+
+  // Compare solutions.
   for (int i = 0; i < discrete_state.size(); ++i) {
     EXPECT_NEAR(discrete_state[i], continuous_state[i],
-      10 * std::numeric_limits<double>::epsilon());
+      1e3 * std::numeric_limits<double>::epsilon());
   }
 }
 
