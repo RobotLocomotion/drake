@@ -268,13 +268,12 @@ class LeafSystem : public System<T> {
             UnrestrictedUpdateEvent<T>>::MakeForcedEventCollection());
   }
 
-  System<AutoDiffXd>* DoToAutoDiffXd() const override {
-    return system_scalar_converter_.Convert<AutoDiffXd, T>(*this).release();
+  std::unique_ptr<System<AutoDiffXd>> DoToAutoDiffXd() const override {
+    return system_scalar_converter_.Convert<AutoDiffXd, T>(*this);
   }
 
-  System<symbolic::Expression>* DoToSymbolic() const override {
-    return system_scalar_converter_.Convert<symbolic::Expression, T>(*this).
-        release();
+  std::unique_ptr<System<symbolic::Expression>> DoToSymbolic() const override {
+    return system_scalar_converter_.Convert<symbolic::Expression, T>(*this);
   }
 
   /// Provides a new instance of the leaf context for this system. Derived

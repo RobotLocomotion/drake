@@ -908,14 +908,14 @@ class Diagram : public System<T>,
   /// to override to initialize additional member data. If any contained
   /// subsystem does not support ToAutoDiffXd, then this result is nullptr.
   /// This is the NVI implementation of ToAutoDiffXd.
-  Diagram<AutoDiffXd>* DoToAutoDiffXd() const override {
+  std::unique_ptr<System<AutoDiffXd>> DoToAutoDiffXd() const override {
     using FromType = System<double>;
     using ToType = std::unique_ptr<System<AutoDiffXd>>;
     std::function<ToType(const FromType&)> subsystem_converter{
         [](const FromType& subsystem) {
           return subsystem.ToAutoDiffXdMaybe();
         }};
-    return ConvertScalarType<AutoDiffXd>(subsystem_converter).release();
+    return ConvertScalarType<AutoDiffXd>(subsystem_converter);
   }
 
   /// Creates a deep copy of this Diagram<double>, converting the scalar type
@@ -923,15 +923,14 @@ class Diagram : public System<T>,
   /// Subclasses may wish to override to initialize additional member data.
   /// If any contained subsystem does not support ToSymbolic, then this
   /// result is nullptr. This is the NVI implementation of ToSymbolic.
-  Diagram<symbolic::Expression>* DoToSymbolic() const override {
+  std::unique_ptr<System<symbolic::Expression>> DoToSymbolic() const override {
     using FromType = System<double>;
     using ToType = std::unique_ptr<System<symbolic::Expression>>;
     std::function<ToType(const FromType&)> subsystem_converter{
         [](const FromType& subsystem) {
           return subsystem.ToSymbolicMaybe();
         }};
-    return ConvertScalarType<symbolic::Expression>(subsystem_converter)
-        .release();
+    return ConvertScalarType<symbolic::Expression>(subsystem_converter);
   }
 
   BasicVector<T>* DoAllocateInputVector(
