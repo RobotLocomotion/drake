@@ -56,17 +56,17 @@ void CompareExpectedSolutionVsActualSolution(
   // The multipliers are "fences" (with a buffer) around results obtained by 12+
   // simulations. The multipliers are experimental (but not arbitrary).
   // Note: After passing pre-merge CI (continuous integration) and merging this
-  // test to master, the test failed post-merge CI on a Macintosh build.  Hence
-  // the multipliers were made significantly less strict.
+  // test to master, the test failed post-merge CI on a Macintosh build (for
+  // qBDt), so the qADt and qBDt multipliers were made less strict.
   const double absError = MG_chaotic_babyboot.absError;
-  const double multiplier = 7.0E3;
-  EXPECT_TRUE(std::abs(qA_difference) <= multiplier * absError);
-  EXPECT_TRUE(std::abs(qB_difference) <= multiplier * absError);
-  EXPECT_TRUE(std::abs(qADt_difference) <= multiplier * absError);
-  EXPECT_TRUE(std::abs(qBDt_difference) <= multiplier * absError);
-  EXPECT_TRUE(std::abs(qADDt_difference) <= multiplier * absError);
-  EXPECT_TRUE(std::abs(qBDDt_difference) <= multiplier * absError);
-  EXPECT_TRUE(std::abs(energy_difference) <= 10 * absError);
+  const double macintosh_scale_factor = 15;
+  EXPECT_LE(std::abs(qA_difference), 1E2 * absError);
+  EXPECT_LE(std::abs(qB_difference), 1E2 * absError);
+  EXPECT_LE(std::abs(qADt_difference), 5E2 * absError * macintosh_scale_factor);
+  EXPECT_LE(std::abs(qBDt_difference), 5E2 * absError * macintosh_scale_factor);
+  EXPECT_LE(std::abs(qADDt_difference), 1E3 * absError);
+  EXPECT_LE(std::abs(qBDDt_difference), 1E3 * absError);
+  EXPECT_LE(std::abs(energy_difference), 0.5 * absError);
 }
 
 // Create expected solution for chaotic babyboot simulation by running many high
