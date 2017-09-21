@@ -77,7 +77,7 @@ void TimeSteppingRigidBodyPlant<T>::UpdateGeneralizedForce(
 // contact normals.
 template <class T>
 VectorX<T> TimeSteppingRigidBodyPlant<T>::N_mult(
-    const std::vector<drake::multibody::collision::PointPair>& contacts.size(),
+    const std::vector<drake::multibody::collision::PointPair>& contacts,
     const VectorX<T>&,
     const VectorX<T>&) const {
   DRAKE_DEMAND("N_mult() not yet implemented.");
