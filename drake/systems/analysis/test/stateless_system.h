@@ -20,8 +20,10 @@ class StatelessSystem;
 template <class T>
 class ClockWitness : public WitnessFunction<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ClockWitness)
+
   explicit ClockWitness(
-      const T& trigger_time,
+      double trigger_time,
       const System<T>& system,
       const WitnessFunctionDirection& dir_type) :
         WitnessFunction<T>(system, dir_type),
@@ -29,7 +31,7 @@ class ClockWitness : public WitnessFunction<T> {
   }
 
   /// Get the time at which this witness triggers.
-  T get_trigger_time() const { return trigger_time_; }
+  double get_trigger_time() const { return trigger_time_; }
 
  protected:
   // The witness function is the time value itself plus the offset value.
@@ -44,19 +46,28 @@ class ClockWitness : public WitnessFunction<T> {
 
  private:
   // The time at which the witness function is to trigger.
-  T trigger_time_{0};
+  const double trigger_time_;
 };
 
 /// System with no state for testing a simplistic witness function.
 template <class T>
-class StatelessSystem : public LeafSystem<T> {
+class StatelessSystem final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StatelessSystem)
 
-  explicit StatelessSystem(const T& offset,
-      const WitnessFunctionDirection& dir_type) {
+  StatelessSystem(double offset, const WitnessFunctionDirection& dir_type)
+      : LeafSystem<T>(SystemTypeTag<analysis_test::StatelessSystem>{}) {
     witness_ = std::make_unique<ClockWitness<T>>(offset, *this, dir_type);
   }
+
+  /// Scalar-converting copy constructor. See @ref system_scalar_conversion.
+  /// @note This function does not preserve the publish callback because
+  ///       this is test code for which it is expected that no one will care
+  ///       whether the publish callback survives transmogrification.
+  template <typename U>
+  explicit StatelessSystem(const StatelessSystem<U>& other)
+      : StatelessSystem<T>(other.witness_->get_trigger_time(),
+                           other.witness_->get_dir_type()) {}
 
   void set_publish_callback(
       std::function<void(const Context<T>&)> callback) {
@@ -64,15 +75,6 @@ class StatelessSystem : public LeafSystem<T> {
   }
 
  protected:
-  /// @note this function does not transmogrify the publish callback because
-  ///       this is test code for which it is expected that no one will care
-  ///       whether the publish callback survives transmogrification.
-  System<AutoDiffXd>* DoToAutoDiffXd() const override {
-    AutoDiffXd trigger_time(witness_->get_trigger_time());
-    return new StatelessSystem<AutoDiffXd>(trigger_time,
-        witness_->get_dir_type());
-  }
-
   void DoGetWitnessFunctions(
       const Context<T>&,
       std::vector<const WitnessFunction<T>*>* w) const override {
@@ -86,6 +88,9 @@ class StatelessSystem : public LeafSystem<T> {
   }
 
  private:
+  // Allow different specializations to access each other's private data.
+  template <typename> friend class StatelessSystem;
+
   std::unique_ptr<ClockWitness<T>> witness_;
   std::function<void(const Context<T>&)> publish_callback_{nullptr};
 };
