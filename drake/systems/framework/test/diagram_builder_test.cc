@@ -60,8 +60,8 @@ class ConstAndEcho : public LeafSystem<T> {
     echo->get_mutable_value() = input_vector->get_value();
   }
 
-  ConstAndEcho<symbolic::Expression>* DoToSymbolic() const override {
-    return new ConstAndEcho<symbolic::Expression>();
+  std::unique_ptr<System<symbolic::Expression>> DoToSymbolic() const override {
+    return std::make_unique<ConstAndEcho<symbolic::Expression>>();
   }
 };
 
