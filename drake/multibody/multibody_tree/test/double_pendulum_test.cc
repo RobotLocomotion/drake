@@ -1067,8 +1067,9 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
 
   const RevoluteMobilizer<AutoDiffXd>& shoulder_mobilizer_autodiff =
       model_autodiff->get_variant(*shoulder_mobilizer_);
-  const RevoluteMobilizer<AutoDiffXd>& elbow_mobilizer_autodiff =
-      model_autodiff->get_variant(*elbow_mobilizer_);
+
+  const RevoluteJoint<AutoDiffXd>& elbow_joint_autodiff =
+      model_autodiff->get_variant(*elbow_joint_);
 
   const RigidBody<AutoDiffXd>& upper_link_autodiff =
       model_autodiff->get_variant(*upper_link_);
@@ -1111,8 +1112,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
           // Update position kinematics.
           shoulder_mobilizer_autodiff.set_angle(context_autodiff.get(),
                                                 shoulder_angle);
-          elbow_mobilizer_autodiff.set_angle(context_autodiff.get(),
-                                             elbow_angle);
+          elbow_joint_autodiff.set_angle(context_autodiff.get(), elbow_angle);
           model_autodiff->CalcPositionKinematicsCache(*context_autodiff, &pc);
 
           // Retrieve body poses from position kinematics cache.

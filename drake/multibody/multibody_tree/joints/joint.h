@@ -51,7 +51,7 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   }
 
   const Frame<T>& get_outboard_frame() const {
-    // If a joint is added with MultibodyTree::AddJoint(), inboard_frame_ is
+    // If a joint is added with MultibodyTree::AddJoint(), outboard_frame_ is
     // guaranteed to be a valid pointer. This is here to avoid users from, for
     // instance, calling this method on stack allocated objects (not allowed).
     DRAKE_DEMAND(outboard_frame_ != nullptr);
@@ -61,6 +61,16 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   optional<Isometry3<double>> get_X_PF() const { return X_PF_; }
 
   optional<Isometry3<double>> get_X_BM() const { return X_BM_; }
+
+  Isometry3<double> get_inboard_frame_pose() const {
+    if (X_PF_) return *X_PF_;
+    else return Isometry3<double>::Identity();
+  }
+
+  Isometry3<double> get_outboard_frame_pose() const {
+    if (X_PF_) return *X_PF_;
+    else return Isometry3<double>::Identity();
+  }
 
   virtual const Mobilizer<T>& get_mobilizer() const = 0;
 
@@ -91,8 +101,14 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
     DoMakeModelAndAdd(tree);
   }
 
-  // TODO: see other uses of @cond, eg. ForceElement cloning I think.
-
+  // NVI to DoCloneToScalar() templated on the scalar type of the new clone to
+  // be created. This method is intended to be called by
+  // MultibodyTree::CloneToScalar().
+  template <typename ToScalar>
+  std::unique_ptr<Joint<ToScalar>> CloneToScalar(
+      const MultibodyTree<ToScalar>& cloned_tree) const {
+    return DoCloneToScalar(cloned_tree);
+  }
   /// @endcond
 
  protected:
@@ -102,6 +118,17 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
 
   // Implements MakeModelAndAdd() NVI.
   virtual void DoMakeModelAndAdd(MultibodyTree<T>* tree) = 0;
+
+  /// @name Methods to make a clone templated on different scalar types.
+  /// @{
+  /// Clones this %Joint (templated on T) to a joint templated on `double`.
+  virtual std::unique_ptr<Joint<double>> DoCloneToScalar(
+      const MultibodyTree<double>& tree_clone) const = 0;
+
+  /// Clones this %Joint (templated on T) to a joint templated on AutoDiffXd.
+  virtual std::unique_ptr<Joint<AutoDiffXd>> DoCloneToScalar(
+      const MultibodyTree<AutoDiffXd>& tree_clone) const = 0;
+  /// @}
 
  private:
   std::string name_;

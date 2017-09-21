@@ -87,7 +87,23 @@ class RevoluteJoint final : public Joint<T> {
         this->get_inboard_frame(), this->get_outboard_frame(), axis_);
   }
 
+  std::unique_ptr<Joint<double>> DoCloneToScalar(
+      const MultibodyTree<double>& tree_clone) const;
+
+  std::unique_ptr<Joint<AutoDiffXd>> DoCloneToScalar(
+      const MultibodyTree<AutoDiffXd>& tree_clone) const;
+
  private:
+  // Make RevoluteJoint templated on every other scalar type a friend of
+  // RevoluteJoint<T> so that CloneToScalar<ToAnyOtherScalar>() can access
+  // private members of RevoluteJoint<T>.
+  template <typename> friend class RevoluteJoint;
+
+  // Helper method to make a clone templated on ToScalar.
+  template <typename ToScalar>
+  std::unique_ptr<Joint<ToScalar>> TemplatedDoCloneToScalar(
+      const MultibodyTree<ToScalar>& tree_clone) const;
+
   // This is the joint's axis expressed in either M or F since axis_M = axis_F.
   Vector3<double> axis_;
   const RevoluteMobilizer<T>* mobilizer_{nullptr};

@@ -429,6 +429,9 @@ class MultibodyTree {
   /// body. Therefore the minimum number of bodies in a MultibodyTree is one.
   int get_num_bodies() const { return static_cast<int>(owned_bodies_.size()); }
 
+  /// Returns the number of joints in the %MultibodyTree.
+  int get_num_joints() const { return static_cast<int>(owned_joints_.size()); }
+
   /// Returns the number of mobilizers in the %MultibodyTree. Since the world
   /// has no Mobilizer, the number of mobilizers equals the number of bodies
   /// minus one, i.e. get_num_mobilizers() returns get_num_bodies() - 1.
@@ -921,6 +924,14 @@ class MultibodyTree {
       const MultibodyElement<Scalar>& element) const {
     return get_mobilizer_variant(element);
   }
+
+  /// SFINAE overload for Joint<T> elements.
+  template <template <typename> class MultibodyElement, typename Scalar>
+  std::enable_if_t<std::is_base_of<Joint<T>, MultibodyElement<T>>::value,
+                   const MultibodyElement<T>&> get_variant(
+      const MultibodyElement<Scalar>& element) const {
+    return get_joint_variant(element);
+  }
   /// @}
 
   /// Creates a deep copy of `this` %MultibodyTree templated on the same
@@ -980,6 +991,14 @@ class MultibodyTree {
 
     for (const auto& force_element : owned_force_elements_) {
       tree_clone->CloneForceElementAndAdd(*force_element);
+    }
+
+    // Since Joint<T> objects are modeled from basic element objects like Body,
+    // Mobilizer, ForceElement and Constraint, they are cloned last so that they
+    // can grab their already cloned implementation.
+    // DO NOT change this order!!!
+    for (const auto& joint : owned_joints_) {
+      tree_clone->CloneJointAndAdd(*joint);
     }
 
     // We can safely make a deep copy here since the original multibody tree is
@@ -1094,6 +1113,17 @@ class MultibodyTree {
     return raw_mobilizer_clone_ptr;
   }
 
+  // Helper method to create a clone of `joint` and add it to `this` tree.
+  template <typename FromScalar>
+  Joint<T>* CloneJointAndAdd(const Joint<FromScalar>& joint) {
+    JointIndex joint_index = joint.get_index();
+    auto joint_clone = joint.CloneToScalar(*this);
+    joint_clone->set_parent_tree(this, joint_index);
+    Joint<T>* raw_joint_clone_ptr = joint_clone.get();
+    owned_joints_.push_back(std::move(joint_clone));
+    return raw_joint_clone_ptr;
+  }
+
   // Helper method to create a clone of `force_element` and add it to `this`
   // tree.
   template <typename FromScalar>
@@ -1160,6 +1190,24 @@ class MultibodyTree {
             owned_mobilizers_[mobilizer_index].get());
     DRAKE_DEMAND(mobilizer_variant != nullptr);
     return *mobilizer_variant;
+  }
+
+  // Helper method to retrieve the corresponding Joint<T> variant to a Joint
+  // in a MultibodyTree variant templated on Scalar.
+  template <template <typename> class JointType, typename Scalar>
+  const JointType<T>& get_joint_variant(const JointType<Scalar>& joint) const {
+    static_assert(std::is_convertible<JointType<T>*, Joint<T>*>::value,
+                  "JointType must be a sub-class of Joint<T>.");
+    // TODO(amcastro-tri):
+    //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
+    //   MultibodyTree. That will require the tree to have some sort of id.
+    JointIndex joint_index = joint.get_index();
+    DRAKE_DEMAND(joint_index < get_num_joints());
+    const JointType<T>* joint_variant =
+        dynamic_cast<const JointType<T>*>(
+            owned_joints_[joint_index].get());
+    DRAKE_DEMAND(joint_variant != nullptr);
+    return *joint_variant;
   }
 
   // TODO(amcastro-tri): In future PR's adding MBT computational methods, write
