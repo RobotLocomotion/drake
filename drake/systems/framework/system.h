@@ -1524,15 +1524,17 @@ class System {
     qdot->SetFromVector(generalized_velocity);
   }
 
-  /// NVI implementation of ToAutoDiffXdMaybe. Caller takes ownership of the
-  /// returned pointer.
+  /// NVI implementation of ToAutoDiffXdMaybe.
   /// @return nullptr if this System does not support autodiff
-  virtual System<AutoDiffXd>* DoToAutoDiffXd() const { return nullptr; }
+  virtual std::unique_ptr<System<AutoDiffXd>> DoToAutoDiffXd() const {
+    return nullptr;
+  }
 
-  /// NVI implementation of ToSymbolicMaybe. Caller takes ownership of the
-  /// returned pointer.
+  /// NVI implementation of ToSymbolicMaybe.
   /// @return nullptr if this System does not support symbolic form
-  virtual System<symbolic::Expression>* DoToSymbolic() const { return nullptr; }
+  virtual std::unique_ptr<System<symbolic::Expression>> DoToSymbolic() const {
+    return nullptr;
+  }
   //@}
 
 //----------------------------------------------------------------------------

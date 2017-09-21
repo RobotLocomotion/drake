@@ -27,8 +27,8 @@ void FindCoefficientAndFill(const Polynomial::MapType& map, const Monomial& m,
   // Here, we use const_cast hack. See
   // https://eigen.tuxfamily.org/dox/TopicFunctionTakingEigenTypes.html for
   // details.
-  Eigen::MatrixBase<Derived>& M_dummy{
-      const_cast<Eigen::MatrixBase<Derived>&>(M)};
+  Eigen::MatrixBase<Derived>& M_dummy =
+      const_cast<Eigen::MatrixBase<Derived>&>(M);
   if (it != map.end()) {
     // m should have a constant coefficient.
     if (!is_constant(it->second)) {
