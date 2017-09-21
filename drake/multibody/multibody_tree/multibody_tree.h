@@ -372,6 +372,13 @@ class MultibodyTree {
         std::make_unique<MobilizerType<T>>(std::forward<Args>(args)...));
   }
 
+  template<template<typename Scalar> class JointType, typename... Args>
+  const JointType<T>& AddJoint(Args&&... args) {
+    static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
+                  "JointType must be a sub-class of Joint<T>.");
+    return AddJoint(
+        std::make_unique<JointType<T>>(std::forward<Args>(args)...));
+  }
   /// @}
   // Closes Doxygen section.
 
