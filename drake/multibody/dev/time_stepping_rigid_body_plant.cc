@@ -32,6 +32,9 @@ TimeSteppingRigidBodyPlant<T>::TimeSteppingRigidBodyPlant(
     std::unique_ptr<const RigidBodyTree<T>> tree, double timestep)
     : RigidBodyPlant<T>(std::move(tree), timestep) {
 
+  static_assert(std::is_same<double, T>::value,
+                "Only support templating on double for now");
+
   // Verify that the time-step is strictly positive.
   if (timestep <= 0.0) {
     throw std::logic_error("TimeSteppingRigidBodyPlant requires a positive "
@@ -49,7 +52,7 @@ void TimeSteppingRigidBodyPlant<T>::CalcContactStiffnessAndDamping(
     const drake::multibody::collision::PointPair&,
     double*,
     double*) const {
-  DRAKE_DEMAND("CalcContactStiffnessAndDamping() not yet implemented.");
+  DRAKE_ABORT("CalcContactStiffnessAndDamping() not yet implemented.");
 }
 
 // Gets A's translational velocity relative to B's translational velocity at a
@@ -60,7 +63,7 @@ template <class T>
 Vector3<T> TimeSteppingRigidBodyPlant<T>::CalcRelTranslationalVelocity(
     const KinematicsCache<T>&, int, int,
     const Vector3<T>&) const {
-  DRAKE_DEMAND("CalcRelTranslationalVelocity() not yet implemented.");
+  DRAKE_ABORT("CalcRelTranslationalVelocity() not yet implemented.");
   return Vector3<T>::Zero();
 }
 
@@ -70,7 +73,7 @@ template <class T>
 void TimeSteppingRigidBodyPlant<T>::UpdateGeneralizedForce(
     const KinematicsCache<T>&, int, int,
     const Vector3<T>&, const Vector3<T>&, VectorX<T>*) const {
-  DRAKE_DEMAND("UpdateGeneralizedForce() not yet implemented.");
+  DRAKE_ABORT("UpdateGeneralizedForce() not yet implemented.");
 }
 
 // Evaluates the relative velocities between two bodies projected along the
@@ -80,7 +83,7 @@ VectorX<T> TimeSteppingRigidBodyPlant<T>::N_mult(
     const std::vector<drake::multibody::collision::PointPair>&,
     const VectorX<T>&,
     const VectorX<T>&) const {
-  DRAKE_DEMAND("N_mult() not yet implemented.");
+  DRAKE_ABORT("N_mult() not yet implemented.");
   return VectorX<T>::Zero(contacts.size());
 }
 
@@ -92,7 +95,7 @@ VectorX<T> TimeSteppingRigidBodyPlant<T>::N_transpose_mult(
     const VectorX<T>&,
     const VectorX<T>&,
     const VectorX<T>&) const {
-  DRAKE_DEMAND("N_transpose_mult() not yet implemented.");
+  DRAKE_ABORT("N_transpose_mult() not yet implemented.");
   return VectorX<T>::Zero(v.size());
 }
 
@@ -103,7 +106,7 @@ VectorX<T> TimeSteppingRigidBodyPlant<T>::F_mult(
     const std::vector<drake::multibody::collision::PointPair>&,
     const VectorX<T>&,
     const VectorX<T>&) const {
-  DRAKE_DEMAND("F_mult() not yet implemented.");
+  DRAKE_ABORT("F_mult() not yet implemented.");
   return VectorX<T>::Zero(contacts.size() * half_cone_edges_);
 }
 
@@ -115,7 +118,7 @@ VectorX<T> TimeSteppingRigidBodyPlant<T>::F_transpose_mult(
     const VectorX<T>&,
     const VectorX<T>&,
     const VectorX<T>&) const {
-  DRAKE_DEMAND("F_transpose_mult() not yet implemented.");
+  DRAKE_ABORT("F_transpose_mult() not yet implemented.");
   return VectorX<T>::Zero(v.size());
 }
 
@@ -125,9 +128,6 @@ void TimeSteppingRigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
     const std::vector<const drake::systems::DiscreteUpdateEvent<double>*>&,
     drake::systems::DiscreteValues<T>* updates) const {
   using std::abs;
-
-  static_assert(std::is_same<double, T>::value,
-                "Only support templating on double for now");
 
   // Get the time step.
   double dt = this->get_time_step();
@@ -215,6 +215,7 @@ void TimeSteppingRigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   for (int i = 0; i < static_cast<int>(contacts.size()); ++i) {
     double stiffness, damping;
     CalcContactStiffnessAndDamping(contacts[i], &stiffness, &damping);
+    // TODO(edrumwri): Use this to set cfm and erp parameters for contacts.
   }
 
   // 2. Set the stabilization term for contact tangent directions (kF).
@@ -235,7 +236,7 @@ void TimeSteppingRigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   constraint_solver_.ComputeGeneralizedVelocityChange(data, cf, &vnew);
   vnew += data.v;
 
-  // qn = q + h*qdot.
+  // qn = q + dt*qdot.
   VectorX<T> xn(this->get_num_states());
   xn << q + dt * tree.transformVelocityToQDot(kcache, vnew), vnew;
   updates->get_mutable_vector(0)->SetFromVector(xn);

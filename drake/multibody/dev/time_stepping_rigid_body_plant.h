@@ -17,7 +17,9 @@ namespace drake {
 namespace systems {
 
 /// This class provides a System interface around a multibody dynamics model
-/// of the world represented by a RigidBodyTree.
+/// of the world represented by a RigidBodyTree, implemented as a first order
+/// discretization of rigid body dynamics and constraint equations, without
+/// stepping to event times.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 /// @ingroup rigid_body_systems
@@ -32,11 +34,9 @@ class TimeSteppingRigidBodyPlant : public RigidBodyPlant<T> {
   /// @param[in] tree the dynamic model to use with this plant.
   /// @param[in] timestep a strictly positive, floating point value specifying
   /// the update period of the model (in seconds).
+  /// @throws std::logic_error when timestep is non-positive.
   TimeSteppingRigidBodyPlant(std::unique_ptr<const RigidBodyTree<T>> tree,
                           double timestep);
-
-  /// The default Coulomb friction coefficient.
-  double mu_{0.1};
 
   /// Sets the ERP parameter. Aborts if not in the range [0,1]. Default value
   /// is 0.1.
@@ -85,7 +85,11 @@ class TimeSteppingRigidBodyPlant : public RigidBodyPlant<T> {
 
   // Half of the number of edges in the friction cone approximation for
   // contacts in 3D. Must be no fewer than 2 (equates to a friction pyramid).
+  // TODO(edrumwri): Make this user settable.
   int half_cone_edges_{2};
+
+  /// The default Coulomb friction coefficient.
+  double mu_{0.1};
 
   // The "error reduction parameter" (ERP), first seen in CM Labs' Vortex and
   // Open Dynamics Engine, and formulated from [Lacoursiere 2007], which
