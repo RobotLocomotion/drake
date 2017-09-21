@@ -10,11 +10,14 @@
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/rendering/pose_bundle.h"
 
 namespace drake {
 namespace geometry {
 
 class GeometryInstance;
+
+template <typename T> class GeometryContext;
 
 /** GeometrySystem serves as a system-level wrapper for GeometryWorld. It serves
  as the nexus for all geometry (and geometry-based operations) in a Diagram.
@@ -80,7 +83,7 @@ class GeometryInstance;
 
  @section geom_sys_outputs Outputs
 
- %GeometrySystem has a single output port.
+ %GeometrySystem has two output ports:
 
  __query port__: An abstract-valued port containing an instance of QueryHandle.
  It provides a "ticket" for downstream LeafSystem instances to perform geometric
@@ -90,6 +93,12 @@ class GeometryInstance;
  GeometrySystem::ComputeContact()). This assumes that the querying system has
  access to a const pointer to the connected %GeometrySystem instance. Use
  get_query_output_port() to acquire the output port for the query handle.
+
+ __lcm visualization port__: An abstract-valued port containing an instance of
+ PoseBundle. This is a convenience port designed to feed LCM update messages to
+ drake_visualizer for the purpose of visualizing the state of the world's
+ geometry. Additional uses of this port are strongly discouraged; instead, use
+ an appropriate geometric query to obtain the state of the world's geometry.
 
  @section geom_sys_workflow Working with GeometrySystem
 
@@ -232,6 +241,12 @@ class GeometrySystem : public systems::LeafSystem<T> {
    frames.
    @throws  std::logic_error if the source_id is _not_ recognized. */
   const systems::InputPortDescriptor<T>& get_source_pose_port(SourceId id);
+
+  /** Returns the output port which produces the PoseBundle for LCM
+   communication to drake visualizer. */
+  const systems::OutputPort<T>& get_pose_bundle_output_port() const {
+    return systems::System<T>::get_output_port(bundle_port_index_);
+  }
 
   /** Returns the output port which produces the QueryHandle for performing
    geometric queries. */
@@ -424,6 +439,9 @@ class GeometrySystem : public systems::LeafSystem<T> {
   // Friend class to facilitate testing.
   friend class GeometrySystemTester;
 
+  // Allow the load dispatch to peek into GeometrySystem.
+  friend void DispatchLoadMessage(const GeometrySystem<double>&);
+
   // Constructs a QueryHandle for OutputPort allocation.
   QueryHandle<T> MakeQueryHandle(const systems::Context<T>& context) const;
 
@@ -432,9 +450,22 @@ class GeometrySystem : public systems::LeafSystem<T> {
   void CalcQueryHandle(const systems::Context<T>& context,
                       QueryHandle<T>* output) const;
 
+  // Constructs a PoseBundle of length equal to the concatenation of all inputs.
+  // This is the method used by the allocator for the output port.
+  systems::rendering::PoseBundle<T> MakePoseBundle(
+      const systems::Context<T>& context) const;
+
+  // Aggregates the input poses into the output PoseBundle, in the same order as
+  // was used in allocation. Aborts if any inputs have a _different_ size than
+  // expected.
+  void CalcPoseBundle(const systems::Context<T>& context,
+                      systems::rendering::PoseBundle<T>* output) const;
+
+  // Updates the state of geometry world from *all* the inputs.
+  void FullPoseUpdate(const GeometryContext<T>& context) const;
+
   // Override of construction to account for
-  //    - instantiating a GeometryContext instance (as opposed to LeafContext)
-  //      -- NOTE: This is coming in a subsequent PR -- and
+  //    - instantiating a GeometryContext instance (as opposed to LeafContext),
   //    - to detect allocation in support of the topology semantics described
   //      above.
   std::unique_ptr<systems::LeafContext<T>> DoMakeContext() const override;
@@ -459,6 +490,9 @@ class GeometrySystem : public systems::LeafSystem<T> {
   // that id.
   std::unordered_map<SourceId, SourcePorts> input_source_ids_;
 
+  // The index of the output port with the PoseBundle abstract value.
+  int bundle_port_index_{-1};
+
   // The index of the output port with the QueryHandle abstract value.
   int query_port_index_{-1};
 
@@ -470,6 +504,9 @@ class GeometrySystem : public systems::LeafSystem<T> {
   // This is mutable so that it can be cleared in the const method
   // AllocateContext().
   mutable GeometryState<T>* initial_state_;
+
+  // The index of the geometry state in the context's abstract state.
+  int geometry_state_index_{-1};
 };
 
 }  // namespace geometry

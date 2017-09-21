@@ -15,7 +15,7 @@ drake_cc_library(
     srcs = [],
     hdrs = ["penetration_as_point_pair.h"],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/geometry:geometry_ids",
     ],
 )

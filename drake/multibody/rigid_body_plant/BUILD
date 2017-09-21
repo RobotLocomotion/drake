@@ -28,8 +28,8 @@ drake_cc_library(
         "point_contact_detail.h",
     ],
     deps = [
-        "//drake/common",
         "//drake/common:copyable_unique_ptr",
+        "//drake/common:essential",
         "//drake/math:orthonormal_basis",
         "//drake/multibody:rigid_body_tree",
     ],
@@ -47,8 +47,8 @@ drake_cc_library(
     ],
     deps = [
         ":compliant_contact_model",
-        "//drake/common",
         "//drake/common:copyable_unique_ptr",
+        "//drake/common:essential",
         "//drake/multibody:rigid_body_tree",
         "//drake/solvers:mathematical_program",
         "//drake/systems/framework",

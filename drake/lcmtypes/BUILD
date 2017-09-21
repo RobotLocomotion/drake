@@ -303,6 +303,7 @@ java_binary(
         "@libbot//:lcmtypes_bot2_frames_java",
         "@libbot//:lcmtypes_bot2_lcmgl_java",
         "@libbot//:lcmtypes_bot2_param_java",
+        "@optitrack_driver//lcmtypes:lcmtypes_optitrack",
     ],
 )
 

@@ -16,7 +16,7 @@ drake_cc_library(
     name = "schunk_wsg_constants",
     hdrs = ["schunk_wsg_constants.h"],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -50,7 +50,7 @@ drake_cc_library(
     deps = [
         ":schunk_wsg_constants",
         ":schunk_wsg_lcm",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/systems/controllers:pid_controller",
         "//drake/systems/framework:diagram",
         "//drake/systems/framework:diagram_builder",

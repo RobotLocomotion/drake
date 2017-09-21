@@ -12,7 +12,7 @@ drake_cc_library(
     srcs = ["atlasUtil.cpp"],
     hdrs = ["atlasUtil.h"],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 

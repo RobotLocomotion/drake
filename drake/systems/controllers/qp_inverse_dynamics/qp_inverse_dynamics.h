@@ -20,6 +20,14 @@ namespace qp_inverse_dynamics {
 
 class QpInverseDynamics {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QpInverseDynamics)
+
+  /**
+   * Constructor for QpInverseDynamics.
+   * @throws std::runtime_error if gurobi solver is not available.
+   */
+  QpInverseDynamics();
+
   /**
    * Computes the generalized acceleration, joint torque and contact wrenches
    * that best tracks the input given the current robot configuration.

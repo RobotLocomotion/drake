@@ -5,8 +5,10 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/geometry/geometry_context.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
+#include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/query_handle.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/geometry/test/expect_error_message.h"
@@ -36,16 +38,18 @@ class QueryHandleTester {
     return QueryHandle<double>(nullptr, 0);
   }
   static void set_context(QueryHandle<double>* handle,
-                          const Context<double>* context) {
+                          const GeometryContext<double>* context) {
     handle->context_ = context;
     // NOTE: This does not set the hash because these tests do not depend on it
     // yet.
+    // TODO(SeanCurtis-TRI): Set guard value. *Test* guard value.
   }
 };
 
 // Friend class for accessing GeometrySystem protected/private functionality.
 class GeometrySystemTester {
  public:
+  GeometrySystemTester() = delete;
   static QueryHandle<double> MakeHandle(
       const GeometrySystem<double>& system,
       const Context<double>* context) {
@@ -55,6 +59,10 @@ class GeometrySystemTester {
                                    int input_port, int output_port) {
     return system.DoHasDirectFeedthrough(
         input_port, output_port).value_or(true);
+  }
+  static void FullPoseUpdate(const GeometrySystem<double>& system,
+                             const GeometryContext<double>& context) {
+    system.FullPoseUpdate(context);
   }
 };
 
@@ -75,13 +83,15 @@ class GeometrySystemTest : public ::testing::Test {
     // TODO(SeanCurtis-TRI): This will probably have to be moved into an
     // explicit call so it can be run *after* topology has been set.
     context_ = system_.AllocateContext();
-    QueryHandleTester::set_context(&query_handle_, context_.get());
+    geom_context_ = dynamic_cast<GeometryContext<double>*>(context_.get());
+    ASSERT_NE(geom_context_, nullptr);
+    QueryHandleTester::set_context(&query_handle_, geom_context_);
   }
 
   const QueryHandle<double>& get_query_handle() const {
     // The `AllocateContext()` method must have been called *prior* to this
     // method.
-    if (!context_)
+    if (!geom_context_)
       throw std::runtime_error("Must call AllocateContext() first.");
     return query_handle_;
   }
@@ -95,6 +105,8 @@ class GeometrySystemTest : public ::testing::Test {
   GeometrySystem<double> system_;
   // Ownership of context.
   unique_ptr<Context<double>> context_;
+  // Direct access to a pre-cast, geometry-context-typed version of context_.
+  GeometryContext<double>* geom_context_{nullptr};
 
  private:
   // Keep this private so tests must access it through the getter so we can
@@ -266,6 +278,191 @@ TEST_F(GeometrySystemTest, DirectFeedThrough) {
 // tested with *that* class. The tests included here, even those that currently
 // only throw exceptions, will change when meaningful functionality is given to
 // GeometrySystem.
+
+// Test the functionality that accumulates the values from the input ports.
+
+// Simple, toy case: there are no geometry sources; evaluate of pose update
+// should be, essentially a no op.
+TEST_F(GeometrySystemTest, FullPoseUpdateEmpty) {
+  AllocateContext();
+  EXPECT_NO_THROW(GeometrySystemTester::FullPoseUpdate(system_,
+                                                       *geom_context_));
+}
+
+// Test case where there are only anchored geometries -- same as the empty case;
+// no geometry to update.
+TEST_F(GeometrySystemTest, FullPoseUpdateAnchoredOnly) {
+  SourceId s_id = system_.RegisterSource();
+  system_.RegisterAnchoredGeometry(s_id, make_sphere_instance());
+  AllocateContext();
+  EXPECT_NO_THROW(GeometrySystemTester::FullPoseUpdate(system_,
+                                                       *geom_context_));
+}
+
+// Dummy system to serve as geometry source.
+class GeometrySourceSystem : public systems::LeafSystem<double> {
+ public:
+  explicit GeometrySourceSystem(GeometrySystem<double>* geometry_system)
+      : systems::LeafSystem<double>(), geometry_system_(geometry_system) {
+    // Register with GeometrySystem.
+    source_id_ = geometry_system->RegisterSource();
+    FrameId f_id = geometry_system->RegisterFrame(
+        source_id_, GeometryFrame("frame", Isometry3<double>::Identity()));
+    frame_ids_.push_back(f_id);
+    // Set up output ports
+    this->DeclareAbstractOutputPort(
+        &GeometrySourceSystem::AllocateFrameIdOutput,
+        &GeometrySourceSystem::CalcFrameIdOutput);
+    this->DeclareAbstractOutputPort(
+        &GeometrySourceSystem::AllocateFramePoseOutput,
+        &GeometrySourceSystem::CalcFramePoseOutput);
+  }
+  SourceId get_source_id() const { return source_id_; }
+  const systems::OutputPort<double>& get_id_output_port() const {
+    return systems::System<double>::get_output_port(0);
+  }
+  const systems::OutputPort<double>& get_pose_output_port() const {
+    return systems::System<double>::get_output_port(1);
+  }
+  // Method used to bring frame ids and poses out of sync. Adds a frame that
+  // will *not* automatically get a pose.
+  void add_extra_frame(bool add_to_output = true) {
+    FrameId frame_id = geometry_system_->RegisterFrame(
+        source_id_, GeometryFrame("frame", Isometry3<double>::Identity()));
+    if (add_to_output) extra_frame_ids_.push_back(frame_id);
+  }
+  // Method used to bring frame ids and poses out of sync. Adds a pose in
+  // addition to all of the default poses.
+  void add_extra_pose() {
+    extra_poses_.push_back(Isometry3<double>());
+  }
+
+ private:
+  // Frame id output allocation and calculation.
+  FrameIdVector AllocateFrameIdOutput(
+      const Context<double>& context) const {
+    FrameIdVector ids(source_id_, frame_ids_);
+    ids.AddFrameIds(extra_frame_ids_);
+    return ids;
+  }
+  // Frame ids never change after allocation.
+  void CalcFrameIdOutput(const Context<double> &context,
+                                               FrameIdVector *) const {}
+  // Frame pose output allocation.
+  FramePoseVector<double> AllocateFramePoseOutput(
+  const Context<double>& context) const {
+    FramePoseVector<double> poses(source_id_);
+    for (size_t i = 0; i < frame_ids_.size(); ++i) {
+      poses.mutable_vector().push_back(Isometry3<double>::Identity());
+    }
+    for (const auto& extra_pose : extra_poses_) {
+      poses.mutable_vector().push_back(extra_pose);
+    }
+    return poses;
+  }
+  // For test purposes, no changes are required.
+  void CalcFramePoseOutput(const Context<double>& context,
+                           FramePoseVector<double>* pose_set) const {}
+
+  GeometrySystem<double>* geometry_system_{nullptr};
+  SourceId source_id_;
+  std::vector<FrameId> frame_ids_;
+  std::vector<FrameId> extra_frame_ids_;
+  std::vector<Isometry3<double>> extra_poses_;
+};
+
+// Simple test case; system registers frames and provides correct connections.
+GTEST_TEST(GeometrySystemConnectionTest, FullPoseUpdateUnconnectedId) {
+  // Build a fully connected system.
+  systems::DiagramBuilder<double> builder;
+  auto geometry_system = builder.AddSystem<GeometrySystem<double>>();
+  geometry_system->set_name("geometry_system");
+  auto source_system = builder.AddSystem<GeometrySourceSystem>(geometry_system);
+  source_system->set_name("source_system");
+  SourceId source_id = source_system->get_source_id();
+  builder.Connect(source_system->get_id_output_port(),
+                  geometry_system->get_source_frame_id_port(source_id));
+  builder.Connect(source_system->get_pose_output_port(),
+                  geometry_system->get_source_pose_port(source_id));
+  auto diagram = builder.Build();
+
+  auto diagram_context = diagram->AllocateContext();
+  diagram->SetDefaults(diagram_context.get());
+  auto& geometry_context = dynamic_cast<GeometryContext<double>&>(
+      diagram->GetMutableSubsystemContext(*geometry_system,
+                                          diagram_context.get()));
+  EXPECT_NO_THROW(
+      GeometrySystemTester::FullPoseUpdate(*geometry_system, geometry_context));
+}
+
+// Adversarial test case: Missing id port connection.
+GTEST_TEST(GeometrySystemConnectionTest, FullPoseUpdateNoIdConnection) {
+  // Build a fully connected system.
+  systems::DiagramBuilder<double> builder;
+  auto geometry_system = builder.AddSystem<GeometrySystem<double>>();
+  geometry_system->set_name("geometry_system");
+  auto source_system = builder.AddSystem<GeometrySourceSystem>(geometry_system);
+  source_system->set_name("source_system");
+  SourceId source_id = source_system->get_source_id();
+  builder.Connect(source_system->get_pose_output_port(),
+                  geometry_system->get_source_pose_port(source_id));
+  auto diagram = builder.Build();
+  auto diagram_context = diagram->AllocateContext();
+  diagram->SetDefaults(diagram_context.get());
+  auto& geometry_context = dynamic_cast<GeometryContext<double>&>(
+      diagram->GetMutableSubsystemContext(*geometry_system,
+                                          diagram_context.get()));
+  EXPECT_ERROR_MESSAGE(
+      GeometrySystemTester::FullPoseUpdate(*geometry_system, geometry_context),
+      std::logic_error,
+      "Source \\d+ has registered frames but does not provide id values on "
+          "the input port.");
+}
+
+// Adversarial test case: Missing pose port connection.
+GTEST_TEST(GeometrySystemConnectionTest, FullPoseUpdateNoPoseConnection) {
+  // Build a fully connected system.
+  systems::DiagramBuilder<double> builder;
+  auto geometry_system = builder.AddSystem<GeometrySystem<double>>();
+  geometry_system->set_name("geometry_system");
+  auto source_system = builder.AddSystem<GeometrySourceSystem>(geometry_system);
+  source_system->set_name("source_system");
+  SourceId source_id = source_system->get_source_id();
+  builder.Connect(source_system->get_id_output_port(),
+                  geometry_system->get_source_frame_id_port(source_id));
+  auto diagram = builder.Build();
+  auto diagram_context = diagram->AllocateContext();
+  diagram->SetDefaults(diagram_context.get());
+  auto& geometry_context = dynamic_cast<GeometryContext<double>&>(
+      diagram->GetMutableSubsystemContext(*geometry_system,
+                                          diagram_context.get()));
+  EXPECT_ERROR_MESSAGE(
+      GeometrySystemTester::FullPoseUpdate(*geometry_system, geometry_context),
+      std::logic_error,
+      "Source \\d+ has registered frames but does not provide pose values on "
+          "the input port.");
+}
+
+// Adversarial test case: Missing all port connections.
+GTEST_TEST(GeometrySystemConnectionTest, FullPoseUpdateNoConnections) {
+  // Build a fully connected system.
+  systems::DiagramBuilder<double> builder;
+  auto geometry_system = builder.AddSystem<GeometrySystem<double>>();
+  geometry_system->set_name("geometry_system");
+  auto source_system = builder.AddSystem<GeometrySourceSystem>(geometry_system);
+  source_system->set_name("source_system");
+  auto diagram = builder.Build();
+  auto diagram_context = diagram->AllocateContext();
+  diagram->SetDefaults(diagram_context.get());
+  auto& geometry_context = dynamic_cast<GeometryContext<double>&>(
+      diagram->GetMutableSubsystemContext(*geometry_system,
+                                          diagram_context.get()));
+  EXPECT_ERROR_MESSAGE(
+      GeometrySystemTester::FullPoseUpdate(*geometry_system, geometry_context),
+      std::logic_error,
+      "Source \\d+ has registered frames but does not provide id values on "
+          "the input port.");
+}
 
 }  // namespace
 }  // namespace geometry

@@ -15,7 +15,7 @@ package(default_visibility = ["//visibility:public"])
 # A library of things that EVERYONE should want and MUST EAT.
 # Be appropriately hesitant when adding new things here.
 drake_cc_library(
-    name = "common",
+    name = "essential",
     srcs = [
         "drake_assert_and_throw.cc",
         "text_logging.cc",
@@ -39,6 +39,13 @@ drake_cc_library(
         "@eigen",
         "@spdlog",
     ],
+)
+
+# The library :common is a soon-to-be-deprecated alias for :essential.
+# Please use //drake/common:essential in all new code.
+alias(
+    name = "common",
+    actual = ":essential",
 )
 
 # Specific traits and operators that are relevant to all ScalarTypes.
@@ -76,10 +83,10 @@ drake_cc_library(
         "eigen_autodiff_types.h",
     ],
     deps = [
-        ":common",
         ":cond",
         ":dummy_value",
         ":eigen_autodiff_limits",
+        ":essential",
     ],
 )
 
@@ -92,7 +99,7 @@ drake_cc_library(
     name = "extract_double",
     hdrs = ["extract_double.h"],
     deps = [
-        ":common",
+        ":essential",
         ":nice_type_name",
         ":number_traits",
     ],
@@ -102,7 +109,7 @@ drake_cc_library(
     name = "hash",
     hdrs = ["hash.h"],
     deps = [
-        ":common",
+        ":essential",
     ],
 )
 
@@ -115,7 +122,7 @@ drake_cc_library(
     ],
     deps = [
         ":autodiff",
-        ":common",
+        ":essential",
     ],
 )
 
@@ -152,9 +159,9 @@ drake_cc_library(
         "symbolic.h",
     ],
     deps = [
-        ":common",
         ":cond",
         ":dummy_value",
+        ":essential",
         ":hash",
         ":number_traits",
         ":polynomial",
@@ -198,7 +205,7 @@ drake_cc_library(
         DRAKE_RESOURCE_SENTINEL,
     ],
     deps = [
-        ":common",
+        ":essential",
         "//drake/thirdParty:spruce",
     ],
 )
@@ -212,7 +219,7 @@ drake_cc_library(
     ],
     visibility = ["//drake:__pkg__"],
     deps = [
-        ":common",
+        ":essential",
         ":find_resource",
         "//drake/thirdParty:spruce",
     ],
@@ -225,7 +232,20 @@ drake_cc_library(
     testonly = 1,
     hdrs = ["eigen_matrix_compare.h"],
     deps = [
-        ":common",
+        ":essential",
+        "@gtest//:without_main",
+    ],
+)
+
+drake_cc_library(
+    name = "eigen_geometry_compare",
+    testonly = 1,
+    srcs = ["eigen_geometry_compare.cc"],
+    hdrs = ["eigen_geometry_compare.h"],
+    deps = [
+        ":eigen_matrix_compare",
+        ":essential",
+        "@gtest//:without_main",
     ],
 )
 
@@ -233,7 +253,7 @@ drake_cc_library(
     name = "is_approx_equal_abstol",
     hdrs = ["is_approx_equal_abstol.h"],
     deps = [
-        ":common",
+        ":essential",
     ],
 )
 
@@ -257,7 +277,7 @@ drake_cc_library(
     srcs = ["nice_type_name.cc"],
     hdrs = ["nice_type_name.h"],
     deps = [
-        ":common",
+        ":essential",
     ],
 )
 
@@ -283,7 +303,7 @@ drake_cc_library(
     name = "sorted_vectors_have_intersection",
     hdrs = ["sorted_vectors_have_intersection.h"],
     deps = [
-        ":common",
+        ":essential",
     ],
 )
 
@@ -298,7 +318,7 @@ drake_cc_library(
         "//conditions:default": [],
     }),
     deps = [
-        ":common",
+        ":essential",
         "@com_github_gflags_gflags//:gflags",
     ],
 )
@@ -307,7 +327,7 @@ drake_cc_library(
     name = "type_safe_index",
     hdrs = ["type_safe_index.h"],
     deps = [
-        ":common",
+        ":essential",
         ":nice_type_name",
     ],
 )
@@ -316,7 +336,7 @@ drake_cc_library(
     name = "unused",
     hdrs = ["unused.h"],
     deps = [
-        ":common",
+        ":essential",
     ],
 )
 
@@ -324,7 +344,7 @@ drake_cc_library(
     name = "scoped_singleton",
     hdrs = ["scoped_singleton.h"],
     deps = [
-        ":common",
+        ":essential",
     ],
 )
 
@@ -332,7 +352,7 @@ drake_cc_binary(
     name = "resource_tool",
     srcs = ["resource_tool.cc"],
     deps = [
-        ":common",
+        ":essential",
         ":find_resource",
         ":text_logging_gflags",
     ],
@@ -401,8 +421,8 @@ drake_cc_googletest(
     name = "autodiff_overloads_test",
     deps = [
         ":autodiff",
-        ":common",
         ":eigen_matrix_compare",
+        ":essential",
         ":extract_double",
     ],
 )
@@ -424,9 +444,9 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "double_overloads_test",
     deps = [
-        ":common",
         ":cond",
         ":double",
+        ":essential",
     ],
 )
 
@@ -434,7 +454,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "drake_assert_test",
     deps = [
-        ":common",
+        ":essential",
     ],
 )
 
@@ -447,7 +467,7 @@ drake_cc_googletest(
         "-UDRAKE_DISABLE_ASSERTS",
     ],
     deps = [
-        ":common",
+        ":essential",
     ],
 )
 
@@ -460,7 +480,7 @@ drake_cc_googletest(
         "-DDRAKE_DISABLE_ASSERTS",
     ],
     deps = [
-        ":common",
+        ":essential",
     ],
 )
 
@@ -468,7 +488,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "drake_assert_test_compile",
     deps = [
-        ":common",
+        ":essential",
         ":unused",
     ],
 )
@@ -515,21 +535,21 @@ drake_cc_googletest(
     # Remove spurious warnings from the default build output.
     copts = ["-Wno-deprecated-declarations"],
     deps = [
-        ":common",
+        ":essential",
     ],
 )
 
 drake_cc_googletest(
     name = "drake_optional_test",
     deps = [
-        ":common",
+        ":essential",
     ],
 )
 
 drake_cc_googletest(
     name = "drake_throw_test",
     deps = [
-        ":common",
+        ":essential",
     ],
 )
 
@@ -543,22 +563,22 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "eigen_matrix_compare_test",
     deps = [
-        ":common",
         ":eigen_matrix_compare",
+        ":essential",
     ],
 )
 
 drake_cc_googletest(
     name = "eigen_stl_types_test",
     deps = [
-        ":common",
+        ":essential",
     ],
 )
 
 drake_cc_googletest(
     name = "eigen_types_test",
     deps = [
-        ":common",
+        ":essential",
         ":nice_type_name",
     ],
 )
@@ -566,7 +586,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "extract_double_test",
     deps = [
-        ":common",
+        ":essential",
         ":extract_double",
     ],
 )
@@ -584,7 +604,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "is_approx_equal_abstol_test",
     deps = [
-        ":common",
+        ":essential",
         ":is_approx_equal_abstol",
     ],
 )
@@ -592,7 +612,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "symbolic_monomial_test",
     deps = [
-        ":common",
+        ":essential",
         ":symbolic",
         ":symbolic_test_util",
     ],
@@ -601,7 +621,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "never_destroyed_test",
     deps = [
-        ":common",
+        ":essential",
     ],
 )
 
@@ -609,7 +629,7 @@ drake_cc_googletest(
     name = "nice_type_name_test",
     deps = [
         ":autodiff",
-        ":common",
+        ":essential",
         ":nice_type_name",
     ],
 )
@@ -631,8 +651,8 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "polynomial_test",
     deps = [
-        ":common",
         ":eigen_matrix_compare",
+        ":essential",
         ":random_polynomial_matrix",
     ],
 )
@@ -640,7 +660,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "sorted_vectors_have_intersection_test",
     deps = [
-        ":common",
+        ":essential",
         ":sorted_vectors_have_intersection",
     ],
 )
@@ -648,7 +668,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "symbolic_decompose_test",
     deps = [
-        ":common",
+        ":essential",
         ":symbolic",
         ":symbolic_decompose",
     ],
@@ -657,7 +677,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "symbolic_environment_test",
     deps = [
-        ":common",
+        ":essential",
         ":symbolic",
     ],
 )
@@ -665,7 +685,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "symbolic_expansion_test",
     deps = [
-        ":common",
+        ":essential",
         ":symbolic",
         ":symbolic_test_util",
     ],
@@ -674,7 +694,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "symbolic_expression_test",
     deps = [
-        ":common",
+        ":essential",
         ":is_memcpy_movable",
         ":symbolic",
         ":symbolic_test_util",
@@ -684,7 +704,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "symbolic_expression_differentiation_test",
     deps = [
-        ":common",
+        ":essential",
         ":symbolic",
         ":symbolic_test_util",
     ],
@@ -693,7 +713,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "symbolic_expression_jacobian_test",
     deps = [
-        ":common",
+        ":essential",
         ":symbolic",
         ":symbolic_test_util",
     ],
@@ -702,7 +722,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "symbolic_expression_array_test",
     deps = [
-        ":common",
+        ":essential",
         ":symbolic",
         ":symbolic_test_util",
     ],
@@ -711,7 +731,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "symbolic_expression_matrix_test",
     deps = [
-        ":common",
+        ":essential",
         ":symbolic",
         ":symbolic_test_util",
     ],
@@ -720,7 +740,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "symbolic_expression_transform_test",
     deps = [
-        ":common",
+        ":essential",
         ":symbolic",
         "//drake/math:geometric_transform",
     ],
@@ -729,7 +749,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "symbolic_mixing_scalar_types_test",
     deps = [
-        ":common",
+        ":essential",
         ":symbolic",
     ],
 )
@@ -747,7 +767,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "symbolic_polynomial_matrix_test",
     deps = [
-        ":common",
+        ":essential",
         ":symbolic",
         ":symbolic_test_util",
     ],
@@ -756,7 +776,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "symbolic_substitution_test",
     deps = [
-        ":common",
+        ":essential",
         ":symbolic",
         ":symbolic_test_util",
     ],
@@ -765,7 +785,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "symbolic_variable_overloading_test",
     deps = [
-        ":common",
+        ":essential",
         ":symbolic",
         ":symbolic_test_util",
     ],
@@ -774,7 +794,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "symbolic_formula_test",
     deps = [
-        ":common",
+        ":essential",
         ":is_memcpy_movable",
         ":symbolic",
         ":symbolic_test_util",
@@ -784,7 +804,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "symbolic_formula_visitor_test",
     deps = [
-        ":common",
+        ":essential",
         ":symbolic",
         ":symbolic_test_util",
     ],
@@ -793,7 +813,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "symbolic_variable_test",
     deps = [
-        ":common",
+        ":essential",
         ":is_memcpy_movable",
         ":symbolic",
         ":symbolic_test_util",
@@ -803,7 +823,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "symbolic_variables_test",
     deps = [
-        ":common",
+        ":essential",
         ":symbolic",
     ],
 )
@@ -811,14 +831,14 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "text_logging_test",
     deps = [
-        ":common",
+        ":essential",
     ],
 )
 
 drake_cc_googletest(
     name = "trig_poly_test",
     deps = [
-        ":common",
+        ":essential",
         ":polynomial",
     ],
 )

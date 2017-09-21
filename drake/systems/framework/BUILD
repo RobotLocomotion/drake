@@ -44,9 +44,9 @@ drake_cc_library(
         "vector_base.h",
     ],
     deps = [
-        "//drake/common",
         "//drake/common:autodiff",
         "//drake/common:dummy_value",
+        "//drake/common:essential",
         "//drake/common:symbolic",
     ],
 )
@@ -57,8 +57,8 @@ drake_cc_library(
     hdrs = ["value.h"],
     deps = [
         ":vector",
-        "//drake/common",
         "//drake/common:copyable_unique_ptr",
+        "//drake/common:essential",
         "//drake/common:is_cloneable",
     ],
 )
@@ -70,7 +70,7 @@ drake_cc_library(
     visibility = [":__subpackages__"],
     deps = [
         ":value",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common:nice_type_name",
     ],
 )
@@ -81,7 +81,7 @@ drake_cc_library(
     hdrs = ["cache.h"],
     deps = [
         ":value",
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -91,8 +91,8 @@ drake_cc_library(
     hdrs = ["abstract_values.h"],
     deps = [
         ":value",
-        "//drake/common",
         "//drake/common:autodiff",
+        "//drake/common:essential",
     ],
 )
 
@@ -102,8 +102,8 @@ drake_cc_library(
     hdrs = ["continuous_state.h"],
     deps = [
         ":vector",
-        "//drake/common",
         "//drake/common:autodiff",
+        "//drake/common:essential",
     ],
 )
 
@@ -114,8 +114,8 @@ drake_cc_library(
     deps = [
         ":value",
         ":vector",
-        "//drake/common",
         "//drake/common:autodiff",
+        "//drake/common:essential",
     ],
 )
 
@@ -129,8 +129,8 @@ drake_cc_library(
         ":discrete_values",
         ":value",
         ":vector",
-        "//drake/common",
         "//drake/common:autodiff",
+        "//drake/common:essential",
     ],
 )
 
@@ -147,8 +147,8 @@ drake_cc_library(
         ":abstract_values",
         ":context",
         ":value",
-        "//drake/common",
         "//drake/common:autodiff",
+        "//drake/common:essential",
     ],
 )
 
@@ -159,7 +159,7 @@ drake_cc_library(
     deps = [
         ":abstract_values",
         ":discrete_values",
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -183,7 +183,7 @@ drake_cc_library(
     ],
     deps = [
         ":system_common",
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -192,7 +192,7 @@ drake_cc_library(
     srcs = ["output_port_listener_interface.cc"],
     hdrs = ["output_port_listener_interface.h"],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -205,7 +205,7 @@ drake_cc_library(
         ":value",
         ":value_checker",
         ":vector",
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -216,7 +216,7 @@ drake_cc_library(
     deps = [
         ":input_port_descriptor",
         ":output_port_value",
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -227,7 +227,7 @@ drake_cc_library(
     deps = [
         ":input_port_evaluator_interface",
         ":vector",
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -240,7 +240,7 @@ drake_cc_library(
         ":input_port_value",
         ":parameters",
         ":state",
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -253,7 +253,7 @@ drake_cc_library(
         ":context",
         ":parameters",
         ":vector",
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -276,8 +276,8 @@ drake_cc_library(
         ":system_common",
         ":system_constraint",
         ":value",
-        "//drake/common",
         "//drake/common:autodiff",
+        "//drake/common:essential",
         "//drake/common:symbolic",
         "//drake/common:type_safe_index",
         "//drake/common:unused",
@@ -292,7 +292,7 @@ drake_cc_library(
         ":system",
         ":value",
         ":vector",
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -304,7 +304,7 @@ drake_cc_library(
     deps = [
         ":value",
         ":vector",
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -320,7 +320,7 @@ drake_cc_library(
     ],
     deps = [
         ":system",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common:hash",
     ],
 )
@@ -337,7 +337,7 @@ drake_cc_library(
         ":system_scalar_converter",
         ":system_symbolic_inspector",
         ":value_checker",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common:number_traits",
         "//drake/common:unused",
     ],
@@ -349,7 +349,7 @@ drake_cc_library(
     hdrs = ["diagram_continuous_state.h"],
     deps = [
         ":state",
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -361,7 +361,7 @@ drake_cc_library(
         ":context",
         ":diagram_continuous_state",
         ":vector",
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -373,7 +373,7 @@ drake_cc_library(
         ":cache",
         ":diagram_context",
         ":system",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common:number_traits",
     ],
 )
@@ -384,7 +384,7 @@ drake_cc_library(
     hdrs = ["diagram_builder.h"],
     deps = [
         ":diagram",
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -393,7 +393,7 @@ drake_cc_library(
     srcs = ["system_constraint.cc"],
     hdrs = ["system_constraint.h"],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common:symbolic",
         "//drake/common:type_safe_index",
     ],
@@ -435,9 +435,9 @@ drake_cc_googletest(
     name = "basic_vector_test",
     deps = [
         ":vector",
-        "//drake/common",
         "//drake/common:autodiff",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:essential",
         "//drake/common:symbolic",
     ],
 )
@@ -446,7 +446,7 @@ drake_cc_googletest(
     name = "cache_test",
     deps = [
         ":cache",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/systems/framework/test_utilities",
     ],
 )
@@ -455,7 +455,7 @@ drake_cc_googletest(
     name = "continuous_state_test",
     deps = [
         ":continuous_state",
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -463,7 +463,7 @@ drake_cc_googletest(
     name = "diagram_builder_test",
     deps = [
         ":diagram_builder",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/systems/primitives:adder",
         "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:demultiplexer",
@@ -476,8 +476,8 @@ drake_cc_googletest(
     name = "diagram_context_test",
     deps = [
         ":diagram_context",
-        "//drake/common",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:essential",
         "//drake/systems/framework/test_utilities:pack_value",
         "//drake/systems/primitives:adder",
         "//drake/systems/primitives:constant_vector_source",
@@ -490,7 +490,7 @@ drake_cc_googletest(
     name = "diagram_test",
     deps = [
         ":diagram",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common:is_dynamic_castable",
         "//drake/systems/analysis:stateless_system",
         "//drake/systems/framework/test_utilities:pack_value",
@@ -507,7 +507,7 @@ drake_cc_googletest(
     name = "discrete_values_test",
     deps = [
         ":discrete_values",
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -515,8 +515,8 @@ drake_cc_googletest(
     name = "leaf_context_test",
     deps = [
         ":leaf_context",
-        "//drake/common",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:essential",
         "//drake/common:is_dynamic_castable",
         "//drake/systems/framework/test_utilities",
     ],
@@ -526,7 +526,8 @@ drake_cc_googletest(
     name = "leaf_system_test",
     deps = [
         ":leaf_system",
-        "//drake/common",
+        "//drake/common:eigen_matrix_compare",
+        "//drake/common:essential",
         "//drake/common:is_dynamic_castable",
         "//drake/systems/framework/test_utilities",
     ],
@@ -546,7 +547,7 @@ drake_cc_googletest(
     name = "abstract_values_test",
     deps = [
         ":abstract_values",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/systems/framework/test_utilities",
     ],
 )
@@ -555,7 +556,7 @@ drake_cc_googletest(
     name = "parameters_test",
     deps = [
         ":parameters",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/systems/framework/test_utilities",
     ],
 )
@@ -564,8 +565,8 @@ drake_cc_googletest(
     name = "subvector_test",
     deps = [
         ":vector",
-        "//drake/common",
         "//drake/common:eigen_matrix_compare",
+        "//drake/common:essential",
     ],
 )
 
@@ -573,7 +574,7 @@ drake_cc_googletest(
     name = "supervector_test",
     deps = [
         ":vector",
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -581,7 +582,7 @@ drake_cc_googletest(
     name = "input_port_value_test",
     deps = [
         ":input_port_value",
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -589,7 +590,7 @@ drake_cc_googletest(
     name = "output_port_value_test",
     deps = [
         ":output_port_value",
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -598,7 +599,7 @@ drake_cc_googletest(
     deps = [
         ":leaf_context",
         ":system",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/systems/framework/test_utilities",
         "//drake/systems/primitives:constant_vector_source",
     ],
@@ -610,7 +611,7 @@ drake_cc_googletest(
         ":leaf_context",
         ":leaf_output_port",
         ":system",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/systems/framework/test_utilities",
     ],
 )
@@ -619,7 +620,7 @@ drake_cc_googletest(
     name = "value_test",
     deps = [
         ":value",
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 

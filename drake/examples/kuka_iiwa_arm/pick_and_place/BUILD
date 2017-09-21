@@ -25,7 +25,7 @@ drake_cc_library(
         "world_state.h",
     ],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common/trajectories:piecewise_polynomial",
         "//drake/common/trajectories:piecewise_quaternion",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",

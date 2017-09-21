@@ -120,6 +120,17 @@ class BicycleCarParameters : public systems::BasicVector<T> {
     result = result && (Cr() >= T(0.0));
     return result;
   }
+
+  // VectorBase override.
+  void CalcInequalityConstraint(VectorX<T>* value) const override {
+    value->resize(6);
+    (*value)[0] = mass() - T(0.0);
+    (*value)[1] = lf() - T(0.0);
+    (*value)[2] = lr() - T(0.0);
+    (*value)[3] = Iz() - T(0.0);
+    (*value)[4] = Cf() - T(0.0);
+    (*value)[5] = Cr() - T(0.0);
+  }
 };
 
 }  // namespace automotive

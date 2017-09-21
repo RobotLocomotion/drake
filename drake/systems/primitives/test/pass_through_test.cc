@@ -7,6 +7,7 @@
 #include "drake/common/autodiff_overloads.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/input_port_value.h"
+#include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
 using Eigen::AutoDiffScalar;
 using Eigen::Vector2d;
@@ -62,6 +63,14 @@ TEST_F(PassThroughTest, PassThroughIsStateless) {
 
 TEST_F(PassThroughTest, DirectFeedthrough) {
   EXPECT_TRUE(pass_through_->HasAnyDirectFeedthrough());
+}
+
+TEST_F(PassThroughTest, ToAutoDiff) {
+  EXPECT_TRUE(is_autodiffxd_convertible(*pass_through_));
+}
+
+TEST_F(PassThroughTest, ToSymbolic) {
+  EXPECT_TRUE(is_symbolic_convertible(*pass_through_));
 }
 
 }  // namespace
