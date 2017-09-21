@@ -20,7 +20,7 @@ using internal::BodyNodeWelded;
 template <typename T>
 MultibodyTree<T>::MultibodyTree() {
   // Adds a "world" body to MultibodyTree having a NaN SpatialInertia.
-  AddBody<RigidBody>(SpatialInertia<double>());
+  world_body_ = &AddBody<RigidBody>(SpatialInertia<double>());
 }
 
 template <typename T>

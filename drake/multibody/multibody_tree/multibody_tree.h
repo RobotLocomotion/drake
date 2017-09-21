@@ -471,8 +471,11 @@ class MultibodyTree {
   }
 
   /// Returns a constant reference to the *world* body.
-  const Body<T>& get_world_body() const {
-    return *owned_bodies_[world_index()];
+  const RigidBody<T>& get_world_body() const {
+    // world_body_ is set at construction. So this assert is here only to verify
+    // future constructors do not mess that up.
+    DRAKE_ASSERT(world_body_ != nullptr);
+    return *world_body_;
   }
 
   /// Returns a constant reference to the *world* frame.
@@ -1163,6 +1166,7 @@ class MultibodyTree {
   // a method that verifies the state of the topology with a signature similar
   // to RoadGeometry::CheckInvariants().
 
+  const RigidBody<T>* world_body_{nullptr};
   std::vector<std::unique_ptr<Body<T>>> owned_bodies_;
   std::vector<std::unique_ptr<Frame<T>>> owned_frames_;
   std::vector<std::unique_ptr<Mobilizer<T>>> owned_mobilizers_;
