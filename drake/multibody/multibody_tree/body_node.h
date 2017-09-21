@@ -554,7 +554,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// the vector of generalized forces `tau` that would correspond with a known
   /// set of spatial accelerations `A_WB` for each body in the MultibodyTree.
   ///
-  /// This method aborts in Debug builds when `F_BMo_W_array` is the nullptr.
+  /// This method aborts in Debug builds when `F_BMo_W_array` is nullptr.
   ///
   /// @param[in] context The context with the state of the MultibodyTree model.
   /// @param[in] pc

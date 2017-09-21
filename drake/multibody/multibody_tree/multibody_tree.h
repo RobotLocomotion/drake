@@ -520,7 +520,7 @@ class MultibodyTree {
   /// - Body specific quantities such as `com_W` and `M_Bo_W`.
   ///
   /// @throws std::bad_cast if `context` is not a `MultibodyTreeContext`.
-  /// Aborts if `pc` is the nullptr.
+  /// Aborts if `pc` is nullptr.
   void CalcPositionKinematicsCache(
       const systems::Context<T>& context,
       PositionKinematicsCache<T>* pc) const;
@@ -537,7 +537,7 @@ class MultibodyTree {
   /// call to CalcPositionKinematicsCache().
   ///
   /// @throws std::bad_cast if `context` is not a `MultibodyTreeContext`.
-  /// Aborts if `vc` is the nullptr.
+  /// Aborts if `vc` is nullptr.
   void CalcVelocityKinematicsCache(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
@@ -563,7 +563,7 @@ class MultibodyTree {
   ///   model.
   /// @param[out] ac
   ///   A pointer to a valid, non nullptr, acceleration kinematics cache. This
-  ///   method aborts if `ac` is the nullptr.
+  ///   method aborts if `ac` is nullptr.
   ///
   /// @pre The position kinematics `pc` must have been previously updated with a
   /// call to CalcPositionKinematicsCache().
@@ -697,7 +697,7 @@ class MultibodyTree {
   /// @param[out] tau_array
   ///   On output this array will contain the generalized forces that must be
   ///   applied in order to achieve the desired generalized accelerations given
-  ///   by the input argument `known_vdot`. It must not be the nullptr and it
+  ///   by the input argument `known_vdot`. It must not be nullptr and it
   ///   must be of size MultibodyTree::get_num_velocities(). Generalized forces
   ///   for each Mobilizer can be accessed with
   ///   Mobilizer::get_generalized_forces_from_array().
@@ -743,7 +743,7 @@ class MultibodyTree {
   /// @param[out] H
   ///   A valid (non-null) pointer to a squared matrix in `ℛⁿˣⁿ` with n the
   ///   number of generalized velocities (get_num_velocities()) of the model.
-  ///   This method aborts if H is the nullptr or if it does not have the proper
+  ///   This method aborts if H is nullptr or if it does not have the proper
   ///   size.
   ///
   /// The algorithm used to build `M(q)` consists in computing one column of
@@ -765,8 +765,7 @@ class MultibodyTree {
   /// @warning This is an O(n²) algorithm. Avoid the explicit computation of the
   /// mass matrix whenever possible.
   void CalcMassMatrixViaInverseDynamics(
-      const systems::Context<T>& context,
-      EigenPtr<MatrixX<T>> H) const;
+      const systems::Context<T>& context, EigenPtr<MatrixX<T>> H) const;
 
   /// Computes the bias term `C(q, v)v` containing Coriolis and gyroscopic
   /// effects of the multibody equations of motion: <pre>
@@ -786,7 +785,7 @@ class MultibodyTree {
   ///   On output, `Cv` will contain the product `C(q, v)v`. It must be a valid
   ///   (non-null) pointer to a column vector in `ℛⁿ` with n the number of
   ///   generalized velocities (get_num_velocities()) of the model.
-  ///   This method aborts if Cv is the nullptr or if it does not have the
+  ///   This method aborts if Cv is nullptr or if it does not have the
   ///   proper size.
   void CalcBiasTerm(
       const systems::Context<T>& context, EigenPtr<VectorX<T>> Cv) const;
@@ -934,7 +933,7 @@ class MultibodyTree {
   // It assumes:
   //  - The position kinematics cache object is already updated to be in sync
   //    with `context`.
-  //  - H is not the nullptr.
+  //  - H is not nullptr.
   //  - H has storage for a square matrix of size get_num_velocities().
   void DoCalcMassMatrixViaInverseDynamics(
       const systems::Context<T>& context,
@@ -947,7 +946,7 @@ class MultibodyTree {
   //    with `context`.
   //  - The velocity kinematics cache object is already updated to be in sync
   //    with `context`.
-  //  - Cv is not the nullptr.
+  //  - Cv is not nullptr.
   //  - Cv has storage for a vector of size get_num_velocities().
   void DoCalcBiasTerm(
       const systems::Context<T>& context,

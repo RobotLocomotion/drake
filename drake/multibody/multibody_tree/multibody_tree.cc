@@ -331,8 +331,7 @@ void MultibodyTree<T>::CalcInverseDynamics(
 
 template <typename T>
 void MultibodyTree<T>::CalcMassMatrixViaInverseDynamics(
-    const systems::Context<T>& context,
-    EigenPtr<MatrixX<T>> H) const {
+    const systems::Context<T>& context, EigenPtr<MatrixX<T>> H) const {
   DRAKE_DEMAND(H != nullptr);
   DRAKE_DEMAND(H->rows() == get_num_velocities());
   DRAKE_DEMAND(H->cols() == get_num_velocities());
@@ -353,7 +352,6 @@ void MultibodyTree<T>::DoCalcMassMatrixViaInverseDynamics(
   VelocityKinematicsCache<T> vc(get_topology());
   vc.InitializeToZero();
 
-  // ======================================================================
   // Compute one column of the mass matrix via inverse dynamics at a time.
   const int nv = get_num_velocities();
   VectorX<T> vdot(nv);
