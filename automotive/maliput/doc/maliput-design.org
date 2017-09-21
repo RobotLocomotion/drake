@@ -16,7 +16,7 @@
 
 #+TITLE: maliput: Modeling Road Networks for Simulation
 #+AUTHOR: Matt Marjanović (maddog@tri.global)
-#+DATE: June 14, 2018
+#+DATE: September 24, 2018
 
 This document describes =maliput=, a model of road networks for use in
 agent and traffic simulations.  At the core of =maliput= is a
@@ -188,9 +188,9 @@ a 4-tuple of parameters $(L,s,r,h)$ in which:
  * $L$ is an identifier which uniquely names a =Lane=;
  * $(s,r,h)$ are =Lane=-frame coordinates understood in the context
    of =Lane= $L$.
-One can construct a map $M: {(L,s,r,h)} \to \mathbb{R}^3$ from the
+One can construct a map $W: {(L,s,r,h)} \to \mathbb{R}^3$ from the
 road manifold into the =World=, as a union of the per- =Lane= maps.
-This $M$ is technically an /immersion/ and not an /embedding/ because
+This $W$ is technically an /immersion/ and not an /embedding/ because
 it is not necessarily 1-to-1.  As described later on, multiple =Lanes=
 in the same =Segment= will double-cover the same region of the
 $\mathbb{R}^3$ world frame.  Also, due to our representation of
@@ -206,19 +206,20 @@ surface/volume parameterizations in the future to complete the picture.
 
 *** Lanes as =Lanes=
 
-A =Lane= represents a lane of travel in a road network.  As discussed above,
-it defines a map from curvilinear coordinates to the =World=-frame:
+A =Lane= represents a lane of travel in a road network.  As discussed
+above, a =Lane=, identified by $L$, defines a map $W_L$ from curvilinear
+coordinates to the =World=-frame:
 \[
-G_L: (s,r,h) \to (x,y,z), \text{ for } s \in [0, s_\text{max}]
+W_L: (s,r,h) \to (x,y,z), \text{ for } s \in [0, s_\text{max}]
 \]
-The curve traced out by $G_L$ along longitudinal coordinate $s$ (while $r$
-and $h$ are fixed to zero) is called the /centerline/ of the =Lane=.
+The curve traced out by $W_L$ along longitudinal coordinate $s$ (while $r$
+and $h$ are fixed to zero) is called the /centerline/ of the =Lane=:
 \[
 C_L: (s) \to (x,y,z), = G_L(s,0,0) \text{ for } s \in [0, s_\text{max}]
 \]
 The centerline is nominally the ideal trajectory of a vehicle travelling
 in the lane (and it is not necessarily in the geometric center of the lane,
-despite the name).  $G_L$ is required to be $G^1$ continuous, and
+despite the name).  $W_L$ is required to be $G^1$ continuous, and
 $C_L$ is further required to be $C^1$ continuous.
 
 The space of the =Lane= is bounded in $s$ by $s \in [0,
@@ -359,9 +360,9 @@ on =Lanes= in a =Segment=:  they must be oriented and shaped such
 that there is a consistent "right-to-left" ordering in terms of
 increasing $r$.  In other words:
  * A =Lane= $K$ is considered "left of" =Lane= $J$ if and only if
-   there exists a point on the centerline $C_{LK}$ of $K$ that has a
+   there exists a point on the centerline $C_{K}$ of $K$ that has a
    position with $r > 0$ in the =Lane=-frame of $J$.  $K$ is "right
-   of" $J$ if and only if a point exists on $C_{LK}$ with position
+   of" $J$ if and only if a point exists on $C_{K}$ with position
    $r < 0$ in the frame of $J$.
  * If =Lane= $K$ is to the left of =Lane= $J$, then $J$ must be to
    the right of $K$.
@@ -428,13 +429,13 @@ joins those two end-to-end (resulting in three independent =Junctions=).
       $B_\text{driveable}: (s) \to [r_\text{min}, r_\text{max}]$
     * driveable $h$ bounds,
       $H_\text{driveable}: (s,r) \to [h_\text{min}, h_\text{max}]$
-    * embedding $G_L: (s,r,h) \to (x,y,z)$
-    * inverse $G_L^{-1}: (x,y,z) \to (s,r,h)$
+    * embedding $W_L: (s,r,h) \to (x,y,z)$
+    * inverse $W_L^{-1}: (x,y,z) \to (s,r,h)$
     * =Lane=-frame orientation
       $Q: (s,r,h) \to \text{orientation of }(\hat{s},\hat{r},\hat{h})$
     * isotropic scale factors
       $S: (s,r,h) \to (\frac{ds}{d\sigma},\frac{dr}{d\rho},\frac{dh}{d\eta})$
-    * derivatives of $G_L$ (to compute fictitious forces)
+    * derivatives of $W_L$ (to compute fictitious forces)
     * accessors for parent =Segment=, associated =BranchPoints=,
       and left/right =Lanes=, to traverse the object graph.
 *** =BranchPoint=
@@ -443,11 +444,347 @@ joins those two end-to-end (resulting in three independent =Junctions=).
     * accessor for the set of ongoing =Lanes= for a given =Lane=
     * accessor for the default branch (ongoing =Lane=) for a given =Lane=
     * accessor for parent =RoadGeometry=
-** Concrete Implementation: =maliput::monolane=
- * /TODO:/  Reference to =maliput::api= doxygen.
- * /TODO:/  Basics of geometric primitives
- * /TODO:/  Basics of Builder
- * /TODO:/  Basics of yaml format
+** Concrete Implementation: =maliput::multilane=
+=multilane=[fn::So-named because it admits multiple =Lanes= per
+=Segment=, an advance over its predecessor (=monolane=) which only
+admitted a single =Lane= per =Segment=.]  is an implementations of the
+=maliput= geometry API which synthesizes a road network from planar
+geometric primitives, mimicking techniques used in the geometric
+design of real roads.  The basic geometry of a =Segment= is derived
+from the composition of a planar ($xy$) primitive curve, an elevation
+function, and a superelevation function, combined together to define a
+ruled surface.  A =Lane= of a =Segment= is defined via a constant
+lateral offset along the surface from the $r=0$ reference curve of the
+=Segment=.
+
+Three coordinate frames are involved in the following discussion:
+ * $(x,y,z)$ is a position in the =World=-frame.
+ * $(s,r,h)_\text{LANE}$ is a position in a =Lane=-frame, as discussed
+   in Section [[=World= Frame versus =Lane= Frame]].
+ * $(p,r,h)_\text{SEG}$ is a position in a curvilinear reference frame of
+   the =Segment=, analogous to $(s,r,h)_\text{LANE}$ for a =Lane=.
+   The parameter $p_\text{SEG} \in [0, 1]$ spans the =Segment= longitudinally.
+   $r_\text{SEG}$ is a lateral offset from the =Segment='s reference curve,
+   along the =Segment= surface.  $h_\text{SEG}$ is height above the surface.
+When describing a single component, parentheses may be dropped for
+brevity; e.g., $p_\text{SEG} \equiv (p)_\text{SEG}$.
+
+*** =Segment= Geometry
+The geometry of a =Segment= is completely derived from its world transform
+\[
+W: (p,r,h)_\text{SEG} \to (x,y,z)
+\]
+which is itself composed from three fundamental functions, $G_\text{xy}$,
+$G_z$, and $\Theta$.
+
+The first fundamental function defines a two dimensional
+/planar primitive curve/ in the $xy$ -plane:
+\[
+G_{xy}: p_\text{SEG} \to (x,y).
+\]
+This curve establishes the basic geometric primitive of the =Segment=
+(e.g., "constant-radius arc").
+We define $l$ as a path-length along this plane curve, in the range
+$[0, l_\text{max}]$, where $l_\text{max}$ is the total path-length
+of the curve.  $G_{xy}$ is specifically parameterized such that
+\[
+p_\text{SEG} = \frac{l}{l_\text{max}};
+\]
+in other words, $p_\text{SEG}$ is linear in path-length along the planar
+primitive curve.
+
+The second fundamental function specifies elevation above the \(xy\)-plane
+(albeit with a peculiar scale factor):
+\[
+G_z: p_\text{SEG} \to \frac{1}{l_\text{max}}z.
+\]
+Taking $G_{xy} = (\begin{smallmatrix}G_x\\G_y\end{smallmatrix})$
+and $G_z$ together,
+# \[
+# \left(\begin{array}{c} G_{xy}\\ l_\text{max}G_z \end{array}\right):
+#  p_\text{SEG} \to
+# \left(\begin{array}{c}x\\y\\z\end{array}\right)
+# \]
+\[
+\left(\begin{array}{c}x\\y\\z\end{array}\right) =
+W(p)_\text{SEG} =
+\left(\begin{array}{c} G_x(p)_\text{SEG}\\
+                       G_y(p)_\text{SEG}\\
+                       l_\text{max}G_z(p)_\text{SEG} \end{array}\right)
+\]
+defines the three dimensional /reference curve/ $W(p)_\text{SEG}$
+for the =Segment= and establishes the
+basis vector $\hat{p}_\text{SEG}$ as tangent to that curve.
+$G_z$ is constructed with the scale factor of $1/l_\text{max}$ specifically
+so that:
+\begin{eqnarray*}
+      z & = & l_\text{max} G_z(p)_\text{SEG}\\
+        & = & l_\text{max} G_z\left(\frac{l}{l_\text{max}}\right)\\
+\dot{z} & = & \frac{dz}{dl} = \frac{d}{dp_\text{SEG}}G_z(p)_\text{SEG}
+\end{eqnarray*}
+This allows us to derive the first derivative of $G_z$ directly from
+the =World=-frame slope $\dot{z} = \frac{dz}{dl}$ of the segment
+surface along its reference curve.  This is convenient because $\dot{z}$
+is what a road designer would nominally specify as the "slope of the road"
+or the "grade of the road".
+
+The third fundamental function specifies the superelevation of the =Segment=
+surface:
+\[
+\Theta: p_\text{SEG} \to \frac{1}{l_\text{max}}\theta
+\]
+Superelevation $\theta$ is the "twist" in a road, given as the angle
+of rotation of the $\hat{r}_\text{SEG}$ basis vector around the
+$\hat{p}_\text{SEG}$ basis vector.  Zero superelevation leaves
+$\hat{r}_\text{SEG}$ in the $xy$ plane.[fn::Note that superelevation
+becomes ambiguous when $\hat{p}_\text{SEG} = \hat{z}$.]  As with
+$G_z$, $\Theta$ is scaled so that:
+\begin{eqnarray*}
+      \theta & = & l_\text{max} \Theta\left(\frac{l}{l_\text{max}}\right)\\
+\dot{\theta} & = &
+              \frac{d\theta}{dl} = \frac{d}{dp_\text{SEG}}\Theta(p)_\text{SEG}
+\end{eqnarray*}
+
+With the three fundamental functions in hand, we can express the orientation
+of the $(\hat{p},\hat{r},\hat{h})_\text{SEG}$ frame along the reference curve,
+with respect to the =World=-frame, as a roll/pitch/yaw rotation:
+\begin{align*}
+\mathbf{R}(p)_\text{SEG} &=
+ \mathbf{R}_{\gamma(p_\text{SEG})}
+ \mathbf{R}_{\beta(p_\text{SEG})} \mathbf{R}_{\alpha(p_\text{SEG})}
+\end{align*}
+where
+\begin{align*}
+\mathbf{R}_{\gamma(p_\text{SEG})} &=
+\left(\begin{array}{rrr}
+\cos\gamma & -\sin\gamma & 0 \\
+\sin\gamma &  \cos\gamma & 0 \\
+         0 &           0 & 1
+\end{array}\right) & \text{(yaw)}\\
+%
+\mathbf{R}_{\beta(p_\text{SEG})}  &=
+\left(\begin{array}{rrr}
+ \cos\beta & 0 & \sin\beta \\
+         0 & 1 &         0 \\
+-\sin\beta & 0 & \cos\beta
+\end{array}\right) & \text{(pitch)} \\
+%
+\mathbf{R}_{\alpha(p_\text{SEG})} &=
+\left(\begin{array}{rrr}
+1 &          0 &           0 \\
+0 & \cos\alpha & -\sin\alpha \\
+0 & \sin\alpha &  \cos\alpha
+\end{array}\right) & \text{(roll)}
+\end{align*}
+and
+\begin{align*}
+\gamma(p_\text{SEG}) &=
+  \mathrm{atan2}\negthickspace\left(\frac{dG_y}{dp_\text{SEG}},
+                      \frac{dG_x}{dp_\text{SEG}}\right) & \text{(yaw)}\\
+\beta(p_\text{SEG})  &=
+  \mathrm{atan}\negthickspace\left(\frac{dG_z}
+                                        {dp_\text{SEG}}\right)
+& \text{(pitch)} \\
+\alpha(p_\text{SEG}) &= l_\text{max}\Theta(p_\text{SEG}) & \text{(roll)}
+\end{align*}
+# Note that $\hat{p}_\text{SEG}$ is solely determined by $W(p)_\text{SEG}$,
+# and as expected,
+# $\hat{p}_\text{SEG} = \frac{W'(p)_\text{SEG}}{\lVert W'(p)_\text{SEG}\rVert}$.
+
+With $\mathbf{R}(p)_\text{SEG}$, we now define the =Segment= /surface/
+$W(p,r)_\text{SEG}$ as:
+\begin{align*}
+\left(\begin{array}{c}x\\y\\z\end{array}\right) = W(p,r)_\text{SEG} = \left(
+\begin{array}{c}
+   G_{xy}(p)_\text{SEG}\\
+   l_\text{max} G_z(p)_\text{SEG}
+\end{array} \right) +
+\mathbf{R}(p)_\text{SEG}\negthickspace
+\begin{pmatrix}
+0\\ r_\text{SEG} \\ 0 \end{pmatrix}.
+\end{align*}
+This is a /ruled surface/.  For any $p_\text{SEG}$,
+$W(p,r)_\text{SEG}$ is linear $r_\text{SEG}$ and motion long
+$r_\text{SEG}$ is in a straight line.
+
+Now that we have the surface embedding $W(p,r)_\text{SEG}$, we can derive
+the basis vectors $(\hat{p}, \hat{r}, \hat{h})_\text{SEG}$ along the surface
+and the corresponding orientation $\mathbf{R}(p,r)_\text{SEG}$:
+\begin{align*}
+\mathbf{R}(p,r)_\text{SEG} &=
+                     \begin{pmatrix}\hat{p} & \hat{r} & \hat{h}\end{pmatrix}\\
+\hat{p}_\text{SEG} &=
+ \frac{\partial_p W(p,r)_\text{SEG}}{\lVert\partial_p W(p,r)_\text{SEG}\rVert}\\
+\hat{r}_\text{SEG} &=
+ \frac{\partial_r W(p,r)_\text{SEG}}{\lVert\partial_r W(p,r)_\text{SEG}\rVert}\\
+\hat{h}_\text{SEG} &= \hat{p} \times \hat{r}
+\end{align*}
+
+A few things are worth noting at this point:
+ 1. $\hat{r}_\text{SEG} = \mathbf{R}(p)_\text{SEG}
+    \left(\begin{smallmatrix} 0\\1\\0 \end{smallmatrix}\right)$.  Thus,
+    $\hat{r}_\text{SEG}$ is independent of $r_\text{SEG}$.
+ 1. $\mathbf{R}(p,r)_\text{SEG} = \mathbf{R}(p)_\text{SEG}$ along
+    $r_\text{SEG} = 0$ just as it should be; the orientation along the
+    =Segment='s reference curve is consistent in both expressions.
+ 1. $\hat{p}_\text{SEG}$ is /not necessarily/ independent of
+    $r_\text{SEG}$.  Consequently, $\mathbf{R}(p,r)_\text{SEG}$ is not
+    necessarily equal to $\mathbf{R}(p_\text{SEG})$ for
+    $r_\text{SEG}\ne 0$.  This will become important when we try to
+    join =Segments= end-to-end preserving $G^1$ continuity, discussed in
+    Section [[Ensuring $G^1$ Continuity]].
+
+/Finally/, with $\mathbf{R}(p,r)_\text{SEG}$ in hand (and points 1 and
+2 above), we can define the complete volumetric world transform
+$W(p,r,h)_\text{SEG}$ for a =Segment='s geometry:
+\begin{align*}
+\begin{pmatrix}x\\y\\z\end{pmatrix} = W(p,r,h)_\text{SEG} = \left(
+\begin{array}{c}
+   G_x(p_\text{SEG})\\
+   G_y(p_\text{SEG})\\
+   l_\text{max} G_z(p_\text{SEG})
+\end{array} \right) +
+\mathbf{R}(p,r)_\text{SEG}\negthickspace
+\begin{pmatrix}
+0\\ r_\text{SEG} \\ h_\text{SEG} \end{pmatrix}.
+\end{align*}
+This is simply $W(p,r)_\text{SEG}$ displaced by $h_\text{SEG}$ along
+the surface normal $\hat{h}_\text{SEG}$.
+
+
+*** =Lane= Geometry
+
+A =Lane= derives its geometry from its =Segment=.  In =multilane=, the
+centerline of a =Lane= is a parallel curve with a constant lateral
+offset $r_0$ from the reference curve (at $r_\text{SEG} = 0$) of the
+=Segment=.  We can express this relationship as a transform between
+$(s,r,h)_\text{LANE}$ (=Lane=-frame) and $(p,r,h)_\text{SEG}$
+(=Segment=-frame):
+\begin{align*}
+\begin{pmatrix} p_\text{SEG}\\
+                r_\text{SEG}\\
+                h_\text{SEG} \end{pmatrix}
+&= \begin{pmatrix}    P(s_\text{LANE})\\
+                   r_\text{LANE} + r_0\\
+                         h_\text{LANE} \end{pmatrix}
+\end{align*}
+The tricky part here is $P:s_\text{LANE} \to p_\text{SEG}$, which relates
+$s_\text{LANE}$ to $p_\text{SEG}$, and involves the
+path-length integral over $W(p,r)_\text{SEG}$.
+
+=maliput= defines $s_\text{LANE}$ as the path-length along a =Lane='s
+centerline, and in =multilane= a centerline is a curve with constant
+$r_\text{SEG} = r_0$.  Thus:
+\begin{align*}
+s_\text{LANE} = S(p_\text{SEG}) &=
+ \left. \int \left\lVert \partial_{p_\text{SEG}}W(p, r)_\text{SEG}
+ \right\rVert dp_\text{SEG} \right\rvert_{r_\text{SEG} = r_0}.
+\end{align*}
+The function $P$ that we are need is the inverse of the path-integral $S$.
+
+Unfortunately, there is generally no closed-form solution for either
+$S$ or $P$, particularly if the surface is not flat.  =multilane= will
+compute $P(s_\text{LANE})$ and $S(p_\text{SEG})$ analytically if
+possible (e.g., for some flat surfaces) and otherwise will use more costly
+numerical methods to ensure accurate results.[fn::Which makes us
+wonder, perhaps the =Lane=-frame of =maliput= would be better off
+using an arbitrary longitudinal parameter $p_\text{LANE}$ which could
+be converted to a distance $s_\text{LANE}$ on demand, instead of the other
+way around.]
+
+ * /TODO:/ Derivation of orientation at arbitrary $(s,r,h)_\text{LANE}$ point.
+ * /TODO:/ Derivation of motion-derivatives.
+ * /TODO:/ Derivation of surface/path curvatures.
+
+*** Available Implementations of $G_\text{xy}$, $G_z$, and $\Theta$
+
+=multilane= currently implements one form for each of $G_{xy}$,
+$G_z$, and $\Theta$.  $G_{xy}$ is implemented for a constant curvature
+arc (which includes zero curvature, i.e., straight line segments).
+Elevation $G_z$ and superelevation $\Theta$ are implemented for cubic
+polynomials.  These forms were chosen because they provide the smallest,
+simplest set of primitives that allow for the assembly of fully
+three-dimensional road networks that maintain $G^1$ continuity across
+segment boundaries.
+
+The exact form that $G_{xy}$ takes is:
+\begin{align*}
+\begin{pmatrix} x\\ y \end{pmatrix} = G_\text{xy}(p_\text{SEG}) &=
+    \begin{pmatrix}x_0\\ y_0\end{pmatrix} +
+\begin{cases} %\left\lbrace\begin{matrix}
+ \frac{1}{\kappa}\begin{pmatrix}
+\cos(\kappa l_\text{max} p_\text{SEG} + \gamma_0 - \frac{\pi}{2}) - \cos(\gamma_0 - \frac{\pi}{2})\\
+\sin(\kappa l_\text{max} p_\text{SEG} + \gamma_0 - \frac{\pi}{2}) - \sin(\gamma_0 - \frac{\pi}{2})
+\end{pmatrix} & \text{for }\kappa > 0\\
+%
+ l_\text{max} p_\text{SEG}
+    \begin{pmatrix}\cos{\gamma_0}\\ \sin{\gamma_0}\end{pmatrix}
+    & \text{for }\kappa = 0\\
+%
+ \frac{1}{\kappa}\begin{pmatrix}
+\cos(\kappa l_\text{max} p_\text{SEG} + \gamma_0 + \frac{\pi}{2}) - \cos(\gamma_0 + \frac{\pi}{2})\\
+\sin(\kappa l_\text{max} p_\text{SEG} + \gamma_0 + \frac{\pi}{2}) - \sin(\gamma_0 + \frac{\pi}{2})
+\end{pmatrix} & \text{for }\kappa < 0\\
+\end{cases} %\end{matrix}
+\end{align*}
+where $\kappa$ is the signed curvature (positive is
+counterclockwise/leftward), $l_\text{max}$ is the arc length,
+$\left(\begin{smallmatrix}x_0\\y_0\end{smallmatrix}\right)$ is the
+starting point of the arc, and $\gamma_0$ is the initial yaw of the
+(tangent) of the arc (with $\gamma_0 = 0$ in the $+\hat{x}$
+direction).  Note that the $\kappa = 0$ expression is simply a line
+segment of length $l_\text{max}$, and it is the limit of the $\kappa
+\neq 0$ expressions as $\kappa \to 0$.
+
+With regards to geometric road design, a constant curvature
+$G_\text{xy}$ does not provide a complete toolkit.  Most road designs
+involve clothoid spirals, which are plane curves with curvature that
+is /linear/ in path length.[fn::This is so that vehicles can navigate
+roads using continuous changes in steering angle, and, likewise, so that
+their occupants will experience continuous changes in radial acceleration.]
+=multilane= is expected to extend support for clothoid $G_\text{xy}$
+in the future.
+
+For $G_z$ and $\Theta$, a cubic polynomial is the lowest-degree polynomial
+which allows for independently specifying the value and the first derivative
+at both endpoints.  Thus, $G_z$ takes the form:
+\begin{align*}
+\begin{split}
+\frac{1}{l_\text{max}}z = G_z(p_\text{SEG}) &=
+ \frac{z_0}{l_\text{max}} +
+ \dot{z_0} p_\text{SEG} +
+ \left(\frac{3(z_1 - z_0)}{l_\text{max}} - 2\dot{z_0} - \dot{z_1}\right)
+   p_\text{SEG}^2 \\
+ &\quad + \left(\dot{z_0} + \dot{z_1} - \frac{2(z_1 - z_0)}{l_\text{max}}\right)
+   p_\text{SEG}^3
+\end{split}
+\end{align*}
+where $z_0$ and $z_1$ are the initial and final elevation
+respectively, and $\dot{z_0}$ and $\dot{z_1}$ are the initial and
+final $\frac{dz}{dl}$, which is simply the slope of the road as
+measured by the intuitive "rise over run".  $\Theta$ has an identical
+expression, with every $z$ replaced by $\theta$.  Note that
+$\dot{\theta} = \frac{d\theta}{dl}$, the rate of twisting of the road,
+is not particularly intuitive, but that's ok because in general
+$\dot{\theta_0}$ and $\dot{\theta_1}$ will be set by =multilane= and
+not by the road designer, as we will see in Section [[Ensuring $G^1$
+Continuity]].
+
+*** Ensuring $G^1$ Continuity
+
+/TODO:  Tell me more!/
+
+*** =Builder= helper interface
+Users are not expected to assemble a =multilane::RoadGeometry= by
+constructing individual instances of =multilane::Lane=, etc, by hand.
+Instead, =multilane= provides a =Builder= interface which handles
+many of the constraints involved in constructing a valid =RoadGeometry=.
+
+/TODO:  Tell me more!/
+
+*** YAML file format
+
+/TODO:  Tell me more!/
 
 * Rules and Features Databases
 ** Rules of the Road: =RoadRulebook=
@@ -930,7 +1267,7 @@ and stripes are indicators for rules of the road).
    * potholes
 
 * Formatting                                                       :noexport:
-#+OPTIONS: toc:2
+#+OPTIONS: toc:2 H:4
 #+LATEX_CLASS: article
 #+LATEX_CLASS_OPTIONS: [12pt]
 #+LATEX_HEADER: \usepackage[scaled=0.85]{helvet}
