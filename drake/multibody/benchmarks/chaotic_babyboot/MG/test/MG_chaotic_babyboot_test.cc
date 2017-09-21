@@ -59,12 +59,13 @@ void CompareExpectedSolutionVsActualSolution(
   // test to master, the test failed post-merge CI on a Macintosh build.  Hence
   // the multipliers were made significantly less strict.
   const double absError = MG_chaotic_babyboot.absError;
-  EXPECT_TRUE(std::abs(qA_difference) <= 7E3 * absError);
-  EXPECT_TRUE(std::abs(qB_difference) <= 7E3 * absError);
-  EXPECT_TRUE(std::abs(qADt_difference) <= 7E3 * absError);
-  EXPECT_TRUE(std::abs(qBDt_difference) <= 7E3 * absError);
-  EXPECT_TRUE(std::abs(qADDt_difference) <= 7E3 * absError);
-  EXPECT_TRUE(std::abs(qBDDt_difference) <= 7E3 * absError);
+  const double multiplier = 7.0E3;
+  EXPECT_TRUE(std::abs(qA_difference) <= multiplier * absError);
+  EXPECT_TRUE(std::abs(qB_difference) <= multiplier * absError);
+  EXPECT_TRUE(std::abs(qADt_difference) <= multiplier * absError);
+  EXPECT_TRUE(std::abs(qBDt_difference) <= multiplier * absError);
+  EXPECT_TRUE(std::abs(qADDt_difference) <= multiplier * absError);
+  EXPECT_TRUE(std::abs(qBDDt_difference) <= multiplier * absError);
   EXPECT_TRUE(std::abs(energy_difference) <= 10 * absError);
 }
 
@@ -109,9 +110,6 @@ void CompareExpectedSolutionVsActualSolution(
 // Education (Journal of Mechanical Engineering Education), Vol. 2, No. 4, 1974,
 // pp. 45-47, by Thomas R. Kane.
 //------------------------------------------------------------------------------
-//
-// TODO(liang.fok) Re-enable this test. This test was disabled because it was
-// causing the Mac CI pipelines to fail. See #7056.
 GTEST_TEST(ChaoticBabyboot, ForwardDynamicsA) {
   ChaoticBabybootData babyboot_data_expected;
   constexpr double degree_to_radian =  M_PI / 180;
