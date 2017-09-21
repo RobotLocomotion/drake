@@ -409,16 +409,6 @@ class Diagram : public System<T>,
     }
   }
 
-  void DoProjectQ(Context<T>* context) const override {
-    auto diagram_context = dynamic_cast<DiagramContext<T>*>(context);
-    DRAKE_DEMAND(diagram_context != nullptr);
-    // Project the positions of each constituent system.
-    for (int i = 0; i < num_subsystems(); ++i) {
-      Context<T>& subcontext = diagram_context->GetMutableSubsystemContext(i);
-      registered_systems_[i]->ProjectQ(&subcontext);
-    }
-  }
-
   /// Retrieves the state derivatives for a particular subsystem from the
   /// derivatives for the entire diagram. Aborts if @p subsystem is not
   /// actually a subsystem of this diagram. Returns nullptr if @p subsystem

@@ -69,7 +69,6 @@ drake_cc_library(
 drake_cc_library(
     name = "multibody_tree",
     srcs = [
-        "ball_mobilizer.cc",
         "body.cc",
         "body_node_impl.cc",
         "fixed_offset_frame.cc",
@@ -78,17 +77,13 @@ drake_cc_library(
         "multibody_tree.cc",
         "revolute_mobilizer.cc",
         "rigid_body.cc",
-        "rpy_mobilizer.cc",
-        "uniform_gravity_field_element.cc",
     ],
     hdrs = [
-        "ball_mobilizer.h",
         "body.h",
         "body_node.h",
         "body_node_impl.h",
         "body_node_welded.h",
         "fixed_offset_frame.h",
-        "force_element.h",
         "frame.h",
         "frame_base.h",
         "joints/joint.h",
@@ -98,8 +93,6 @@ drake_cc_library(
         "multibody_tree.h",
         "revolute_mobilizer.h",
         "rigid_body.h",
-        "rpy_mobilizer.h",
-        "uniform_gravity_field_element.h",
     ],
     deps = [
         ":multibody_tree_context",
@@ -107,7 +100,6 @@ drake_cc_library(
         ":multibody_tree_indexes",
         ":spatial_inertia",
         "//drake/common:autodiff",
-        "//drake/math:geometric_transform",
     ],
 )
 
@@ -144,44 +136,9 @@ drake_cc_library(
 
 # === test/ ===
 
-drake_cc_library(
-    name = "free_body_plant",
-    testonly = 1,
-    srcs = ["test/free_body_plant.cc"],
-    hdrs = ["test/free_body_plant.h"],
-    deps = [
-        "//drake/multibody/multibody_tree",
-        "//drake/systems/framework",
-    ],
-)
-
-drake_cc_googletest(
-    name = "ball_joint_test",
-    size = "small",
-    srcs = [
-        "test/ball_joint_test.cc",
-    ],
-    deps = [
-        ":free_body_plant",
-        "//drake/common:eigen_matrix_compare",
-        "//drake/multibody/benchmarks/cylinder_torque_free_analytical_solution:torque_free_cylinder_exact_solution",
-        "//drake/systems/analysis:simulator",
-    ],
-)
-
 drake_cc_googletest(
     name = "double_pendulum_test",
     # Presently times out in valgrind + debug with default size, "small".
-    size = "medium",
-    deps = [
-        ":multibody_tree",
-        "//drake/common:eigen_matrix_compare",
-        "//drake/multibody/benchmarks/acrobot",
-    ],
-)
-
-drake_cc_googletest(
-    name = "spatial_double_pendulum_test",
     size = "medium",
     deps = [
         ":multibody_tree",

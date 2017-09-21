@@ -17,7 +17,6 @@
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
-#include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -195,10 +194,6 @@ class PendulumTests : public ::testing::Test {
     // frame.
     ASSERT_EQ(elbow_outboard_frame_->get_index(),
               lower_link_->get_body_frame().get_index());
-
-    // Add force element for a constant gravity.
-    model_->AddForceElement<UniformGravityFieldElement>(
-        Vector3d(0.0, -acceleration_of_gravity_, 0.0));
   }
 
   // Helper method to extract a pose from the position kinematics.
@@ -577,17 +572,6 @@ class PendulumKinematicTests : public PendulumTests {
     model_->CalcPositionKinematicsCache(*context_, &pc);
 
     // ======================================================================
-    // Compute inverse dynamics.
-#if 0
-    VectorXd tau(model_->get_num_velocities());
-    vector<SpatialForce<double>> F_Bo_W_array(model_->get_num_bodies());
-    model_->CalcForceElementsContribution(
-        *context_, pc, vc, &F_Bo_W_array, tau);
-#endif
-
-    // ======================================================================
-    // To get generalized forces, compute inverse dynamics applying the forces
-    // computed by CalcForceElementsContribution().
     // Compute inverse dynamics. Add applied forces due to gravity.
 
     // Spatial force on the upper link due to gravity.
@@ -679,7 +663,7 @@ class PendulumKinematicTests : public PendulumTests {
       Vector3d::UnitZ() /* Plane normal */, Vector3d::UnitY() /* Up vector */,
       link1_mass_, link2_mass_,
       link1_length_, link2_length_, half_link1_length_, half_link2_length_,
-      link1_Ic_, link2_Ic_, 0.0, 0.0, acceleration_of_gravity_};
+      link1_Ic_, link2_Ic_};
 
  private:
   // This method verifies the correctness of

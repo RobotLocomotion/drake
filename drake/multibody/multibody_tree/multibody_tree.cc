@@ -274,6 +274,7 @@ void MultibodyTree<T>::CalcInverseDynamics(
   DRAKE_DEMAND(F_BMo_W_array != nullptr);
   DRAKE_DEMAND(static_cast<int>(F_BMo_W_array->size()) == get_num_bodies());
 
+  DRAKE_DEMAND(tau_array != nullptr);
   DRAKE_DEMAND(tau_array->size() == get_num_velocities());
 
   const auto& mbt_context =
@@ -327,133 +328,6 @@ void MultibodyTree<T>::CalcInverseDynamics(
           F_BMo_W_array, tau_array);
     }
   }
-}
-
-template <typename T>
-void MultibodyTree<T>::CalcForceElementsContribution(
-    const systems::Context<T>& context,
-    const PositionKinematicsCache<T>& pc,
-    const VelocityKinematicsCache<T>& vc,
-    std::vector<SpatialForce<T>>* F_Bo_W_array,
-    EigenPtr<VectorX<T>> tau_array) const {
-  DRAKE_DEMAND(F_Bo_W_array != nullptr);
-  DRAKE_DEMAND(static_cast<int>(F_Bo_W_array->size()) == get_num_bodies());
-  DRAKE_DEMAND(tau_array != nullptr);
-  DRAKE_DEMAND(tau_array->size() == get_num_velocities());
-
-  const auto& mbt_context =
-      dynamic_cast<const MultibodyTreeContext<T>&>(context);
-
-  // Zero the arrays before adding contributions.
-  tau_array->setZero();
-  for (auto& F : *F_Bo_W_array) F.SetZero();
-
-  // Add contributions from force elements.
-  for (const auto& force_element : owned_force_elements_) {
-    force_element->CalcAndAddForceContribution(
-        mbt_context, pc, vc, F_Bo_W_array, *tau_array);
-  }
-}
-
-template <typename T>
-void MultibodyTree<T>::MapQDotToVelocity(
-    const systems::Context<T>& context,
-    const Eigen::Ref<const VectorX<T>>& qdot,
-    EigenPtr<VectorX<T>> v) const {
-  DRAKE_DEMAND(qdot.size() == get_num_positions());
-  DRAKE_DEMAND(v != nullptr);
-  DRAKE_DEMAND(v->size() == get_num_velocities());
-  const auto& mbt_context =
-      dynamic_cast<const MultibodyTreeContext<T>&>(context);
-  VectorUpTo6<T> v_mobilizer;
-  for (const auto& mobilizer : owned_mobilizers_) {
-    const auto qdot_mobilizer = mobilizer->get_positions_from_array(qdot);
-    v_mobilizer.resize(mobilizer->get_num_velocities());
-    mobilizer->MapQDotToVelocity(mbt_context, qdot_mobilizer, &v_mobilizer);
-    mobilizer->get_mutable_velocities_from_array(v) = v_mobilizer;
-  }
-}
-
-template <typename T>
-void MultibodyTree<T>::MapVelocityToQDot(
-    const systems::Context<T>& context,
-    const Eigen::Ref<const VectorX<T>>& v,
-    EigenPtr<VectorX<T>> qdot) const {
-  DRAKE_DEMAND(v.size() == get_num_velocities());
-  DRAKE_DEMAND(qdot != nullptr);
-  DRAKE_DEMAND(qdot->size() == get_num_positions());
-  const auto& mbt_context =
-      dynamic_cast<const MultibodyTreeContext<T>&>(context);
-  VectorUpTo6<T> qdot_mobilizer;
-  for (const auto& mobilizer : owned_mobilizers_) {
-    const auto v_mobilizer = mobilizer->get_velocities_from_array(v);
-    qdot_mobilizer.resize(mobilizer->get_num_positions());
-    mobilizer->MapVelocityToQDot(mbt_context, v_mobilizer, &qdot_mobilizer);
-    mobilizer->get_mutable_positions_from_array(qdot) = qdot_mobilizer;
-  }
-}
-
-template <typename T>
-void MultibodyTree<T>::CalcMassMatrixViaInverseDynamics(
-    const systems::Context<T>& context,
-    const PositionKinematicsCache<T>& pc,
-    EigenPtr<MatrixX<T>> H) const {
-  DRAKE_DEMAND(H->rows() == get_num_velocities());
-  DRAKE_DEMAND(H->cols() == get_num_velocities());
-
-  VelocityKinematicsCache<T> vc(get_topology());
-  vc.InitializeToZero();
-
-  // ======================================================================
-  // Compute one column of the mass matrix via inverse dynamics at a time.
-  const int nv = get_num_velocities();
-  VectorX<T> vdot(nv);
-  VectorX<T> tau(nv);
-  // Auxiliary arrays used by inverse dynamics.
-  std::vector<SpatialAcceleration<T>> A_WB_array(get_num_bodies());
-  std::vector<SpatialForce<T>> F_BMo_W_array(get_num_bodies());
-
-  for (int j = 0; j < nv; ++j) {
-    // TODO(amcastro-tri): make next line to work by making CalcInverseDynamics
-    // take an Eigen::Ref<VectorX<T>> instead of a pointer.
-    // auto tau = H.col(j);
-    vdot = VectorX<T>::Unit(nv, j);
-    tau.setZero();
-    for (auto& F : F_BMo_W_array) F.SetZero();
-    for (auto& A : A_WB_array) A.SetZero();
-    CalcInverseDynamics(context, pc, vc, vdot, {}, VectorX<T>(),
-                        &A_WB_array, &F_BMo_W_array, &tau);
-    H->col(j) = tau;
-  }
-}
-
-template <typename T>
-void MultibodyTree<T>::CalcBiasTerm(
-    const systems::Context<T>& context,
-    const PositionKinematicsCache<T>& pc,
-    const VelocityKinematicsCache<T>& vc,
-    const std::vector<SpatialForce<T>>& Fapplied_Bo_W_array,
-    EigenPtr<VectorX<T>> C) const {
-  DRAKE_DEMAND(C->size() == get_num_velocities());
-
-  const int nv = get_num_velocities();
-  C->setZero();
-
-  // ======================================================================
-  // Compute one column of the mass matrix via inverse dynamics at a time.
-  const VectorX<T> vdot = VectorX<T>::Zero(nv);
-  // Auxiliary arrays used by inverse dynamics.
-  std::vector<SpatialAcceleration<T>> A_WB_array(get_num_bodies());
-  std::vector<SpatialForce<T>> F_BMo_W_array(get_num_bodies());
-
-  // TODO(amcastro-tri): make next line to work by makcing CalcInverseDynamics
-  // take an Eigen::Ref<VectorX<T>> instead of a pointer.
-  VectorX<T> tau(nv);
-
-  // TODO(amcastro-tri): provide specific API for when vdot = 0.
-  CalcInverseDynamics(context, pc, vc, vdot, Fapplied_Bo_W_array, VectorX<T>(),
-                      &A_WB_array, &F_BMo_W_array, &tau);
-  *C = tau;
 }
 
 // Explicitly instantiates on the most common scalar types.
