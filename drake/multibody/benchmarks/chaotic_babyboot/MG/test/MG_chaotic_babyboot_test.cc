@@ -58,6 +58,8 @@ void CompareExpectedSolutionVsActualSolution(
   // Note: After passing pre-merge CI (continuous integration) and merging this
   // test to master, the test failed post-merge CI on a Macintosh build (for
   // qBDt), so the qADt and qBDt multipliers were made less strict.
+  // TODO(@mitiguy) Remove macintosh_scale_factor if Macintosh passes this
+  // test without scaling.
   const double absError = MG_chaotic_babyboot.absError;
   const double macintosh_scale_factor = 15;
   EXPECT_LE(std::abs(qA_difference), 1E2 * absError);
