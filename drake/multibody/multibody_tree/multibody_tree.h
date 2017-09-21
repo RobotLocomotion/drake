@@ -782,13 +782,14 @@ class MultibodyTree {
   /// @param[in] context
   ///   The context containing the state of the %MultibodyTree model. It stores
   ///   the generalized positions q and the generalized velocities v.
-  /// @param[out] C
-  ///   A valid (non-null) pointer to a column vector in `ℛⁿ` with n the
-  ///   number of generalized velocities (get_num_velocities()) of the model.
-  ///   This method aborts if C is the nullptr or if it does not have the proper
-  ///   size.
+  /// @param[out] Cv
+  ///   On output, `Cv` will contain the product `C(q, v)v`. It must be a valid
+  ///   (non-null) pointer to a column vector in `ℛⁿ` with n the number of
+  ///   generalized velocities (get_num_velocities()) of the model.
+  ///   This method aborts if Cv is the nullptr or if it does not have the
+  ///   proper size.
   void CalcBiasTerm(
-      const systems::Context<T>& context, EigenPtr<VectorX<T>> C) const;
+      const systems::Context<T>& context, EigenPtr<VectorX<T>> Cv) const;
 
   /// @name Methods to retrieve multibody element variants
   ///
@@ -946,13 +947,13 @@ class MultibodyTree {
   //    with `context`.
   //  - The velocity kinematics cache object is already updated to be in sync
   //    with `context`.
-  //  - C is not the nullptr.
-  //  - C has storage for a vector of size get_num_velocities().
+  //  - Cv is not the nullptr.
+  //  - Cv has storage for a vector of size get_num_velocities().
   void DoCalcBiasTerm(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
       const VelocityKinematicsCache<T>& vc,
-      EigenPtr<VectorX<T>> C) const;
+      EigenPtr<VectorX<T>> Cv) const;
 
   void CreateBodyNode(BodyNodeIndex body_node_index);
 

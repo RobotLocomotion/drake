@@ -373,10 +373,10 @@ void MultibodyTree<T>::DoCalcMassMatrixViaInverseDynamics(
 
 template <typename T>
 void MultibodyTree<T>::CalcBiasTerm(
-    const systems::Context<T>& context, EigenPtr<VectorX<T>> C) const {
-  DRAKE_DEMAND(C != nullptr);
-  DRAKE_DEMAND(C->rows() == get_num_velocities());
-  DRAKE_DEMAND(C->cols() == 1);
+    const systems::Context<T>& context, EigenPtr<VectorX<T>> Cv) const {
+  DRAKE_DEMAND(Cv != nullptr);
+  DRAKE_DEMAND(Cv->rows() == get_num_velocities());
+  DRAKE_DEMAND(Cv->cols() == 1);
 
   // TODO(amcastro-tri): Eval PositionKinematicsCache when caching lands.
   PositionKinematicsCache<T> pc(get_topology());
@@ -385,7 +385,7 @@ void MultibodyTree<T>::CalcBiasTerm(
   VelocityKinematicsCache<T> vc(get_topology());
   CalcVelocityKinematicsCache(context, pc, &vc);
 
-  DoCalcBiasTerm(context, pc, vc, C);
+  DoCalcBiasTerm(context, pc, vc, Cv);
 }
 
 template <typename T>
@@ -393,7 +393,7 @@ void MultibodyTree<T>::DoCalcBiasTerm(
     const systems::Context<T>& context,
     const PositionKinematicsCache<T>& pc,
     const VelocityKinematicsCache<T>& vc,
-    EigenPtr<VectorX<T>> C) const {
+    EigenPtr<VectorX<T>> Cv) const {
   const int nv = get_num_velocities();
   const VectorX<T> vdot = VectorX<T>::Zero(nv);
 
@@ -403,7 +403,7 @@ void MultibodyTree<T>::DoCalcBiasTerm(
 
   // TODO(amcastro-tri): provide specific API for when vdot = 0.
   CalcInverseDynamics(context, pc, vc, vdot, {}, VectorX<T>(),
-                      &A_WB_array, &F_BMo_W_array, C);
+                      &A_WB_array, &F_BMo_W_array, Cv);
 }
 
 // Explicitly instantiates on the most common scalar types.
