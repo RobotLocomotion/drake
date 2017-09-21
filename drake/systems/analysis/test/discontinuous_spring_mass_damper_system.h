@@ -20,32 +20,39 @@ namespace implicit_integrator_test {
 // such discontinuities.
 
 template <class T>
-class DiscontinuousSpringMassDamperSystem : public SpringMassDamperSystem<T> {
+class DiscontinuousSpringMassDamperSystem final
+    : public SpringMassDamperSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiscontinuousSpringMassDamperSystem);
+
   DiscontinuousSpringMassDamperSystem(double spring_constant_N_per_m,
                                       double damping_constant_Ns_per_m,
                                       double mass_kg,
-                                      double constant_force) :
-      SpringMassDamperSystem<T>(spring_constant_N_per_m,
-                                damping_constant_Ns_per_m,
-                                mass_kg),
+                                      double constant_force)
+      : SpringMassDamperSystem<T>(
+            SystemTypeTag<implicit_integrator_test::
+                DiscontinuousSpringMassDamperSystem>{},
+            spring_constant_N_per_m,
+            damping_constant_Ns_per_m,
+            mass_kg),
       constant_force_(constant_force) {
     DRAKE_ASSERT(constant_force >= 0.0);
   }
+
+  /// Scalar-converting copy constructor. See @ref system_scalar_conversion.
+  template <typename U>
+  explicit DiscontinuousSpringMassDamperSystem(
+      const DiscontinuousSpringMassDamperSystem<U>& other)
+      : DiscontinuousSpringMassDamperSystem(
+            other.get_spring_constant(),
+            other.get_damping_constant(),
+            other.get_mass(),
+            other.get_constant_force()) {}
 
   /// Gets the magnitude of the constant force acting on the system.
   double get_constant_force() const { return constant_force_; }
 
  protected:
-  System <AutoDiffXd>* DoToAutoDiffXd() const override {
-    return new DiscontinuousSpringMassDamperSystem<AutoDiffXd>(
-        this->get_spring_constant(),
-        this->get_damping_constant(),
-        this->get_mass(),
-        get_constant_force());
-  }
-
   void DoCalcTimeDerivatives(const Context <T>& context,
                              ContinuousState <T>* derivatives) const override {
     // Get the current state of the spring.

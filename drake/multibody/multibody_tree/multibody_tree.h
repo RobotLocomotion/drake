@@ -520,7 +520,7 @@ class MultibodyTree {
   /// - Body specific quantities such as `com_W` and `M_Bo_W`.
   ///
   /// @throws std::bad_cast if `context` is not a `MultibodyTreeContext`.
-  /// Aborts if `pc` is the nullptr.
+  /// Aborts if `pc` is nullptr.
   void CalcPositionKinematicsCache(
       const systems::Context<T>& context,
       PositionKinematicsCache<T>* pc) const;
@@ -537,7 +537,7 @@ class MultibodyTree {
   /// call to CalcPositionKinematicsCache().
   ///
   /// @throws std::bad_cast if `context` is not a `MultibodyTreeContext`.
-  /// Aborts if `vc` is the nullptr.
+  /// Aborts if `vc` is nullptr.
   void CalcVelocityKinematicsCache(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
@@ -563,7 +563,7 @@ class MultibodyTree {
   ///   model.
   /// @param[out] ac
   ///   A pointer to a valid, non nullptr, acceleration kinematics cache. This
-  ///   method aborts if `ac` is the nullptr.
+  ///   method aborts if `ac` is nullptr.
   ///
   /// @pre The position kinematics `pc` must have been previously updated with a
   /// call to CalcPositionKinematicsCache().
@@ -697,7 +697,7 @@ class MultibodyTree {
   /// @param[out] tau_array
   ///   On output this array will contain the generalized forces that must be
   ///   applied in order to achieve the desired generalized accelerations given
-  ///   by the input argument `known_vdot`. It must not be the nullptr and it
+  ///   by the input argument `known_vdot`. It must not be nullptr and it
   ///   must be of size MultibodyTree::get_num_velocities(). Generalized forces
   ///   for each Mobilizer can be accessed with
   ///   Mobilizer::get_generalized_forces_from_array().
@@ -733,6 +733,62 @@ class MultibodyTree {
       std::vector<SpatialAcceleration<T>>* A_WB_array,
       std::vector<SpatialForce<T>>* F_BMo_W_array,
       EigenPtr<VectorX<T>> tau_array) const;
+
+  /// Performs the computation of the mass matrix `M(q)` of the model using
+  /// inverse dynamics, where the generalized positions q are stored in
+  /// `context`. See CalcInverseDynamics().
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the %MultibodyTree model.
+  /// @param[out] H
+  ///   A valid (non-null) pointer to a squared matrix in `ℛⁿˣⁿ` with n the
+  ///   number of generalized velocities (get_num_velocities()) of the model.
+  ///   This method aborts if H is nullptr or if it does not have the proper
+  ///   size.
+  ///
+  /// The algorithm used to build `M(q)` consists in computing one column of
+  /// `M(q)` at a time using inverse dynamics. The result from inverse dynamics,
+  /// with no applied forces, is the vector of generalized forces: <pre>
+  ///   tau = M(q)v̇ + C(q, v)v
+  /// </pre>
+  /// where q and v are the generalized positions and velocities, respectively.
+  /// When `v = 0` the Coriolis and gyroscopic forces term `C(q, v)v` is zero.
+  /// Therefore the `i-th` column of `M(q)` can be obtained performing inverse
+  /// dynamics with an acceleration vector `v̇ = eᵢ`, with `eᵢ` the standard
+  /// (or natural) basis of `ℛⁿ` with n the number of generalized velocities.
+  /// We write this as: <pre>
+  ///   H.ᵢ(q) = M(q) * e_i
+  /// </pre>
+  /// where `H.ᵢ(q)` (notice the dot for the rows index) denotes the `i-th`
+  /// column in M(q).
+  ///
+  /// @warning This is an O(n²) algorithm. Avoid the explicit computation of the
+  /// mass matrix whenever possible.
+  void CalcMassMatrixViaInverseDynamics(
+      const systems::Context<T>& context, EigenPtr<MatrixX<T>> H) const;
+
+  /// Computes the bias term `C(q, v)v` containing Coriolis and gyroscopic
+  /// effects of the multibody equations of motion: <pre>
+  ///   M(q)v̇ + C(q, v)v = tau_app + ∑ J_WBᵀ(q) Fapp_Bo_W
+  /// </pre>
+  /// where `M(q)` is the multibody model's mass matrix and `tau_app` consists
+  /// of a vector applied generalized forces. The last term is a summation over
+  /// all bodies in the model where `Fapp_Bo_W` is an applied spatial force on
+  /// body B at `Bo` which gets projected into the space of generalized forces
+  /// with the geometric Jacobian `J_WB(q)` which maps generalized velocities
+  /// into body B spatial velocity as `V_WB = J_WB(q)v`.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the %MultibodyTree model. It stores
+  ///   the generalized positions q and the generalized velocities v.
+  /// @param[out] Cv
+  ///   On output, `Cv` will contain the product `C(q, v)v`. It must be a valid
+  ///   (non-null) pointer to a column vector in `ℛⁿ` with n the number of
+  ///   generalized velocities (get_num_velocities()) of the model.
+  ///   This method aborts if Cv is nullptr or if it does not have the
+  ///   proper size.
+  void CalcBiasTerm(
+      const systems::Context<T>& context, EigenPtr<VectorX<T>> Cv) const;
 
   /// @name Methods to retrieve multibody element variants
   ///
@@ -872,6 +928,31 @@ class MultibodyTree {
   // This method will throw a std::logic_error if FinalizeTopology() was not
   // previously called on this tree.
   void FinalizeInternals();
+
+  // Implementation for CalcMassMatrixViaInverseDynamics().
+  // It assumes:
+  //  - The position kinematics cache object is already updated to be in sync
+  //    with `context`.
+  //  - H is not nullptr.
+  //  - H has storage for a square matrix of size get_num_velocities().
+  void DoCalcMassMatrixViaInverseDynamics(
+      const systems::Context<T>& context,
+      const PositionKinematicsCache<T>& pc,
+      EigenPtr<MatrixX<T>> H) const;
+
+  // Implementation of CalcBiasTerm().
+  // It assumes:
+  //  - The position kinematics cache object is already updated to be in sync
+  //    with `context`.
+  //  - The velocity kinematics cache object is already updated to be in sync
+  //    with `context`.
+  //  - Cv is not nullptr.
+  //  - Cv has storage for a vector of size get_num_velocities().
+  void DoCalcBiasTerm(
+      const systems::Context<T>& context,
+      const PositionKinematicsCache<T>& pc,
+      const VelocityKinematicsCache<T>& vc,
+      EigenPtr<VectorX<T>> Cv) const;
 
   void CreateBodyNode(BodyNodeIndex body_node_index);
 

@@ -17,12 +17,19 @@ using implicit_integrator_test::DiscontinuousSpringMassDamperSystem;
 
 /// System with no state evolution for testing numerical differentiation.
 template <class T>
-class StationarySystem : public LeafSystem<T> {
+class StationarySystem final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StationarySystem)
-  StationarySystem() {
+
+  StationarySystem()
+      : LeafSystem<T>(SystemTypeTag<systems::StationarySystem>{}) {
     this->DeclareContinuousState(1 /* num q */, 1 /* num v */, 0 /* num z */);
   }
+
+  /// Scalar-converting copy constructor. See @ref system_scalar_conversion.
+  template <typename U>
+  explicit StationarySystem(const StationarySystem<U>&)
+      : StationarySystem<T>() {}
 
  protected:
   void DoCalcTimeDerivatives(const Context<T>& context,
@@ -30,10 +37,6 @@ class StationarySystem : public LeafSystem<T> {
     // State does not evolve.
     derivatives->get_mutable_vector()->SetAtIndex(0, 0.0);
     derivatives->get_mutable_vector()->SetAtIndex(1, 0.0);
-  }
-
-  System<AutoDiffXd>* DoToAutoDiffXd() const override {
-    return new StationarySystem<AutoDiffXd>();
   }
 };
 

@@ -6,11 +6,8 @@
 #include <memory>
 #include <vector>
 
-// TODO(sam.creasey) figure out how to get the real pkgconfig cflags
-#define HAVE_CSTDDEF
 #include <IpIpoptApplication.hpp>
 #include <IpTNLP.hpp>
-#undef HAVE_CSTDDEF
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/never_destroyed.h"

@@ -11,6 +11,7 @@
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/input_port_value.h"
 #include "drake/systems/framework/output_port_value.h"
+#include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
 namespace drake {
 namespace systems {
@@ -194,6 +195,14 @@ TEST_P(ZeroOrderHoldTest, Update) {
     value = state->get_abstract_state<SimpleAbstractType>(0).value();
   }
   EXPECT_EQ(input_value_, value);
+}
+
+TEST_P(ZeroOrderHoldTest, ToAutoDiff) {
+  EXPECT_TRUE(is_autodiffxd_convertible(*hold_));
+}
+
+TEST_P(ZeroOrderHoldTest, ToSymbolic) {
+  EXPECT_TRUE(is_symbolic_convertible(*hold_));
 }
 
 // Instantiate parameterized test cases for is_abstract_ = {false, true}

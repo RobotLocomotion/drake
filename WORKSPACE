@@ -18,6 +18,7 @@ workspace(name = "drake")
 
 load("//tools:bitbucket.bzl", "bitbucket_archive")
 load("//tools:github.bzl", "github_archive")
+load("//tools:os.bzl", "os_specific_alias_repository")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 local_repository(
@@ -185,8 +186,35 @@ github_archive(
     build_file = "tools/fcl.BUILD",
 )
 
-github_archive(
+# For IPOPT, we will either use pkg-config or compile it ourselves, depending
+# on which OS we are using.
+# TODO(jwnimmer-tri) Once we no longer support Ubuntu 14.04 Trusty, we will no
+# longer need to support @robotlocomotion_ipopt; at that point we should remove
+# it from the WORKSPACE and then also remove this alias mapping, instead just
+# using pkg_config_package(name = "ipopt") directly.
+os_specific_alias_repository(
     name = "ipopt",
+    mapping = {
+        "default": [
+            "ipopt=@ipopt_pkgconfig",
+        ],
+        "Ubuntu 14.04": [
+            "ipopt=@ipopt_robotlocomotion//:ipopt",
+        ],
+    },
+)
+
+# Find an IPOPT using pkg-config; this is conditionally aliased into @ipopt
+# above, or else ends up unused (will not produce "not found" errors).
+pkg_config_package(
+    name = "ipopt_pkgconfig",
+    modname = "ipopt",
+)
+
+# Build our own IPOPT; this is conditionally aliased into @ipopt above, or else
+# ends up unused (will not be compiled).
+github_archive(
+    name = "ipopt_robotlocomotion",
     repository = "RobotLocomotion/ipopt-mirror",
     commit = "aecf5abd3913eebf1b99167c0edd4e65a6b414bc",
     sha256 = "d88ea1b6b34c5678ef32ced22a6e9cb00f76a490f233d0b2d56270609eb94e3e",  # noqa

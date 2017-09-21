@@ -12,6 +12,7 @@
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/subvector.h"
 #include "drake/systems/framework/system.h"
+#include "drake/systems/framework/test_utilities/scalar_conversion.h"
 #include "drake/systems/framework/vector_base.h"
 
 using std::make_unique;
@@ -496,6 +497,14 @@ TEST_F(SpringMassSystemTest, IntegrateConservativePower) {
     // Take a step of size h.
     StepSemiExplicitEuler(h, *system_, *derivs, *context);
   }
+}
+
+TEST_F(SpringMassSystemTest, ToAutoDiff) {
+  EXPECT_TRUE(is_autodiffxd_convertible(*system_));
+}
+
+TEST_F(SpringMassSystemTest, ToSymbolic) {
+  EXPECT_TRUE(is_symbolic_convertible(*system_));
 }
 
 }  // namespace

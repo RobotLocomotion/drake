@@ -1,2 +1,0 @@
-drake_add_cc_test(spring_mass_system_test)
-target_link_libraries(spring_mass_system_test drakeSpringMassSystemPlant drakeSystemFramework)
