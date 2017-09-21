@@ -21,6 +21,20 @@
 
 namespace drake {
 namespace multibody {
+
+// Friend class for accessing Joint<T> protected/private internals.
+class JointTester {
+ public:
+  JointTester() = delete;
+  // For these tests we do know that a RevoluteJoint is implemented with a
+  // RevoluteMobilizer.
+  static const RevoluteMobilizer<double>* get_mobilizer(
+      const RevoluteJoint<double>& joint) {
+    return dynamic_cast<const RevoluteMobilizer<double>*>(
+        joint.Joint<double>::get_mobilizer());
+  }
+};
+
 namespace {
 
 const double kEpsilon = std::numeric_limits<double>::epsilon();
@@ -187,7 +201,6 @@ class PendulumTests : public ::testing::Test {
         Vector3d::UnitZ() /*revolute axis*/);
     elbow_inboard_frame_ = &elbow_joint_->get_inboard_frame();
     elbow_outboard_frame_ = &elbow_joint_->get_outboard_frame();
-    elbow_mobilizer_ = &elbow_joint_->get_mobilizer();
     EXPECT_EQ(elbow_joint_->get_name(), "ElbowJoint");
 
     // Assert that indeed the elbow joint's outboard frame IS the lower link
@@ -295,7 +308,8 @@ TEST_F(PendulumTests, CreateModelBasics) {
   // Verifies the number of multibody elements is correct.
   EXPECT_EQ(model_->get_num_bodies(), 3);
   EXPECT_EQ(model_->get_num_frames(), 5);
-  EXPECT_EQ(model_->get_num_mobilizers(), 2);
+  // Joint has no implementation before finalize.
+  EXPECT_EQ(model_->get_num_mobilizers(), 1);
 
   // Check that frames are associated with the correct bodies.
   EXPECT_EQ(
@@ -304,45 +318,58 @@ TEST_F(PendulumTests, CreateModelBasics) {
   EXPECT_EQ(
       shoulder_outboard_frame_->get_body().get_index(),
       upper_link_->get_index());
-  EXPECT_EQ(
-      elbow_inboard_frame_->get_body().get_index(), upper_link_->get_index());
-  EXPECT_EQ(
-      elbow_outboard_frame_->get_body().get_index(), lower_link_->get_index());
 
   // Checks that mobilizers connect the right frames.
   EXPECT_EQ(shoulder_mobilizer_->get_inboard_frame().get_index(),
             world_body_->get_body_frame().get_index());
   EXPECT_EQ(shoulder_mobilizer_->get_outboard_frame().get_index(),
             shoulder_outboard_frame_->get_index());
-  EXPECT_EQ(elbow_mobilizer_->get_inboard_frame().get_index(),
-            elbow_inboard_frame_->get_index());
-  EXPECT_EQ(elbow_mobilizer_->get_outboard_frame().get_index(),
-            elbow_outboard_frame_->get_index());
 
   // Checks that mobilizers connect the right bodies.
   EXPECT_EQ(shoulder_mobilizer_->get_inboard_body().get_index(),
             world_body_->get_index());
   EXPECT_EQ(shoulder_mobilizer_->get_outboard_body().get_index(),
             upper_link_->get_index());
-  EXPECT_EQ(elbow_mobilizer_->get_inboard_body().get_index(),
-            upper_link_->get_index());
-  EXPECT_EQ(elbow_mobilizer_->get_outboard_body().get_index(),
-            lower_link_->get_index());
 
   // Checks we can retrieve the body associated with a frame.
   EXPECT_EQ(&shoulder_inboard_frame_->get_body(), world_body_);
   EXPECT_EQ(&shoulder_outboard_frame_->get_body(), upper_link_);
-  EXPECT_EQ(&elbow_inboard_frame_->get_body(), upper_link_);
-  EXPECT_EQ(&elbow_outboard_frame_->get_body(), lower_link_);
 
   // Checks we can request inboard/outboard bodies to a mobilizer.
   EXPECT_EQ(&shoulder_mobilizer_->get_inboard_body(), world_body_);
   EXPECT_EQ(&shoulder_mobilizer_->get_outboard_body(), upper_link_);
-  EXPECT_EQ(&elbow_mobilizer_->get_inboard_body(), upper_link_);
-  EXPECT_EQ(&elbow_mobilizer_->get_outboard_body(), lower_link_);
 
   // Request revolute mobilizers' axes.
   EXPECT_EQ(shoulder_mobilizer_->get_revolute_axis(), Vector3d::UnitZ());
+
+  // Before need to Finalize() our model before testing the elbow mobilizer was
+  // created correctly. Joint implementations are created at Finalize().
+  ASSERT_NO_THROW(model_->Finalize());
+  elbow_mobilizer_ = JointTester::get_mobilizer(*elbow_joint_);
+
+  EXPECT_EQ(model_->get_num_mobilizers(), 2);
+  // Check that frames are associated with the correct bodies.
+  EXPECT_EQ(
+      elbow_inboard_frame_->get_body().get_index(), upper_link_->get_index());
+  EXPECT_EQ(
+      elbow_outboard_frame_->get_body().get_index(), lower_link_->get_index());
+  // Checks that mobilizers connect the right frames.
+  EXPECT_EQ(elbow_mobilizer_->get_inboard_frame().get_index(),
+            elbow_inboard_frame_->get_index());
+  EXPECT_EQ(elbow_mobilizer_->get_outboard_frame().get_index(),
+            elbow_outboard_frame_->get_index());
+  // Checks that mobilizers connect the right bodies.
+  EXPECT_EQ(elbow_mobilizer_->get_inboard_body().get_index(),
+            upper_link_->get_index());
+  EXPECT_EQ(elbow_mobilizer_->get_outboard_body().get_index(),
+            lower_link_->get_index());
+  // Checks we can retrieve the body associated with a frame.
+  EXPECT_EQ(&elbow_inboard_frame_->get_body(), upper_link_);
+  EXPECT_EQ(&elbow_outboard_frame_->get_body(), lower_link_);
+  // Checks we can request inboard/outboard bodies to a mobilizer.
+  EXPECT_EQ(&elbow_mobilizer_->get_inboard_body(), upper_link_);
+  EXPECT_EQ(&elbow_mobilizer_->get_outboard_body(), lower_link_);
+  // Request revolute mobilizers' axes.
   EXPECT_EQ(elbow_mobilizer_->get_revolute_axis(), Vector3d::UnitZ());
 }
 

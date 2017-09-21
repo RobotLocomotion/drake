@@ -911,7 +911,14 @@ class MultibodyTree {
     // Parent tree MUST be set before the call to MakeModelAndAdd().
     // Do not move them around!!!.
     joint->set_parent_tree(this, joint_index);
-    joint->MakeModelAndAdd(this);
+
+    // MultibodyTree creates the inboard/outboard frames now, since the
+    // information to do so is already available. Also, that allows users to
+    // call Joint<T>::get_inboard_frame() and/or Joint<T>::get_outboard_frame()
+    // if they need to.
+    joint->MakeInOutFramesAndAdd(this);
+    // At this point, joint has no implementation (that is, mobilizers, force
+    // elements, etc.). This will get created at Finalize().
 
     JointType<T>* raw_joint_ptr = joint.get();
     owned_joints_.push_back(std::move(joint));

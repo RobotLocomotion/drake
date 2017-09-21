@@ -48,7 +48,7 @@ class RevoluteJoint final : public Joint<T> {
   ///                    belongs to.
   /// @returns The angle coordinate of `this` mobilizer in the `context`.
   const T& get_angle(const Context<T>& context) const {
-    return get_mobilizer().get_angle(context);
+    return get_mobilizer()->get_angle(context);
   }
 
   /// Sets the `context` so that the generalized coordinate corresponding to the
@@ -61,25 +61,25 @@ class RevoluteJoint final : public Joint<T> {
   /// @returns a constant reference to `this` mobilizer.
   const RevoluteJoint<T>& set_angle(
       Context<T>* context, const T& angle) const {
-    get_mobilizer().set_angle(context, angle);
+    get_mobilizer()->set_angle(context, angle);
     return *this;
   }
 
   const T& get_angular_rate(const Context<T>& context) const {
-    return get_mobilizer().get_angular_rate(context);
+    return get_mobilizer()->get_angular_rate(context);
   }
 
   const RevoluteJoint<T>& set_angular_rate(
       Context<T>* context, const T& angle) const {
-    get_mobilizer().set_angular_rate(context, angle);
+    get_mobilizer()->set_angular_rate(context, angle);
     return *this;
   }
 
   // Notice the covariant return.
-  const RevoluteMobilizer<T>& get_mobilizer() const {
-    DRAKE_DEMAND(mobilizer_ != nullptr);
-    return *mobilizer_;
-  }
+  //const RevoluteMobilizer<T>& get_mobilizer() const {
+//    DRAKE_DEMAND(mobilizer_ != nullptr);
+  //  return *mobilizer_;
+  //}
 
  protected:
   void DoMakeModelAndAdd(MultibodyTree<T>* tree) {
@@ -98,6 +98,12 @@ class RevoluteJoint final : public Joint<T> {
   // RevoluteJoint<T> so that CloneToScalar<ToAnyOtherScalar>() can access
   // private members of RevoluteJoint<T>.
   template <typename> friend class RevoluteJoint;
+
+  // Used mostly for testing through Joint's friend JointTester.
+  virtual const RevoluteMobilizer<T>* get_mobilizer() const {
+    DRAKE_DEMAND(mobilizer_ != nullptr);
+    return mobilizer_;
+  }
 
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>

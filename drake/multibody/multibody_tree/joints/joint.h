@@ -54,12 +54,14 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   const Isometry3<double>& get_outboard_frame_pose() const {
     return X_BM_;
   }
-
-  virtual const Mobilizer<T>& get_mobilizer() const = 0;
-
   /// @cond
+
   // For internal use only.
-  void MakeModelAndAdd(MultibodyTree<T>* tree) {
+  // This is called from MultibodyTree::AddJoint() to make and add the
+  // inboard/outboard frames for this Joint object.
+  // Therefore public API's get_inboard_frame()/get_outboard_frame() are
+  // available immediately with no side effects.
+  void MakeInOutFramesAndAdd(MultibodyTree<T>* tree) {
     // Assert this joint is an element of the input tree.
     // This is to avoid users attempting to call this method by hand.
     this->HasThisParentTreeOrThrow(tree);
@@ -85,6 +87,19 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
       outboard_frame_ = &tree->template AddFrame<FixedOffsetFrame>(
           get_outboard_body(), get_outboard_frame_pose());
     }
+  }
+
+  // For internal use only.
+  void MakeModelAndAdd(MultibodyTree<T>* tree) {
+    // Assert this joint is an element of the input tree.
+    // This is to avoid users attempting to call this method by hand.
+    this->HasThisParentTreeOrThrow(tree);
+
+    // These should pass if MakeInOutFramesAndAdd() was already called from
+    // within MultibodyTree::AddJoint() (which by the way is the only allowed
+    // mechanism to add joints).
+    DRAKE_DEMAND(inboard_frame_ != nullptr);
+    DRAKE_DEMAND(outboard_frame_ != nullptr);
 
     // Add joint subclass specific model.
     DoMakeModelAndAdd(tree);
@@ -120,6 +135,20 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   /// @}
 
  private:
+  // Friend class to facilitate testing.
+  friend class JointTester;
+
+  // Returns the mobilizer implementing this joint when the Joint<T> object is
+  // implemented with a single mobilizer. Otherwise it returns nullptr.
+  // In general it should not be called since we do not know a priori what the
+  // implementaion is. Used mostly for testing together with friend class
+  // JointTester.
+  virtual const Mobilizer<T>* get_mobilizer() const {
+    // calling this method with other uses than testing most likely would mean
+    // something is wrong. Therefore the default is to return nullptr.
+    return nullptr;
+  }
+
   std::string name_;
   const RigidBody<T>& inboard_body_;
   const RigidBody<T>& outboard_body_;

@@ -81,6 +81,11 @@ void MultibodyTree<T>::FinalizeInternals() {
 
 template <typename T>
 void MultibodyTree<T>::Finalize() {
+  // Create Joint objects's implementation.
+  // This must happen before FinalizeTopology() so that the model is complete.
+  for (auto& joint : owned_joints_) {
+    joint->MakeModelAndAdd(this);
+  }
   FinalizeTopology();
   FinalizeInternals();
 }
