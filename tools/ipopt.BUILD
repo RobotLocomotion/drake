@@ -1,11 +1,5 @@
 # -*- python -*-
 
-load(
-    "@drake//tools:install.bzl",
-    "cmake_config",
-    "install",
-    "install_cmake_config",
-)
 load("@drake//tools:python_lint.bzl", "python_lint")
 
 package(default_visibility = ["//visibility:public"])
@@ -131,29 +125,14 @@ cc_library(
     name = "ipopt",
     srcs = IPOPT_LIBS,
     hdrs = IPOPT_HDRS,
+    defines = [
+        # TODO(sam.creasey) Figure out how to get the real pkgconfig cflags.
+        "HAVE_CSTDDEF",
+    ],
     includes = ["include/coin"],
     linkstatic = 1,
     deps = ["@gfortran"],
     alwayslink = 1,
-)
-
-cmake_config(
-    package = "IPOPT",
-    script = "@drake//tools:ipopt-create-cps.py",
-    version_file = "Ipopt/src/Common/config_ipopt_default.h",
-)
-
-install_cmake_config(package = "IPOPT")  # Creates rule :install_cmake_config.
-
-# TODO(jamiesnape): At the moment libipopt.a has gone AWOL.
-install(
-    name = "install",
-    targets = [":ipopt"],
-    hdr_dest = "include/ipopt",
-    hdr_strip_prefix = ["include/coin"],
-    guess_hdrs = "PACKAGE",
-    docs = glob(["**/LICENSE"]),
-    deps = [":install_cmake_config"],
 )
 
 python_lint()
