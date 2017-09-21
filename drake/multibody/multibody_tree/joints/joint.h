@@ -4,7 +4,6 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_optional.h"
 #include "drake/multibody/multibody_tree/fixed_offset_frame.h"
 #include "drake/multibody/multibody_tree/mobilizer.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
@@ -14,10 +13,6 @@
 namespace drake {
 namespace multibody {
 
-#include <iostream>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
-
 template <typename T>
 class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
  public:
@@ -26,14 +21,8 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   Joint(const std::string& name,
         const RigidBody<T>& iboard_body, const Isometry3<double> X_PF,
         const RigidBody<T>& outboard_body, const Isometry3<double> X_BM) :
-      name_(name), inboard_body_(iboard_body), outboard_body_(outboard_body) {
-    if (!X_PF.matrix().isIdentity(std::numeric_limits<double>::epsilon())) {
-      X_PF_ = X_PF;
-    }
-    if (!X_BM.matrix().isIdentity(std::numeric_limits<double>::epsilon())) {
-      X_BM_ = X_BM;
-    }
-  }
+      name_(name), inboard_body_(iboard_body), outboard_body_(outboard_body),
+      X_PF_(X_PF), X_BM_(X_BM) {}
 
   virtual ~Joint() {}
 
@@ -58,18 +47,12 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
     return *outboard_frame_;
   }
 
-  optional<Isometry3<double>> get_X_PF() const { return X_PF_; }
-
-  optional<Isometry3<double>> get_X_BM() const { return X_BM_; }
-
-  Isometry3<double> get_inboard_frame_pose() const {
-    if (X_PF_) return *X_PF_;
-    else return Isometry3<double>::Identity();
+  const Isometry3<double>& get_inboard_frame_pose() const {
+    return X_PF_;
   }
 
-  Isometry3<double> get_outboard_frame_pose() const {
-    if (X_PF_) return *X_PF_;
-    else return Isometry3<double>::Identity();
+  const Isometry3<double>& get_outboard_frame_pose() const {
+    return X_BM_;
   }
 
   virtual const Mobilizer<T>& get_mobilizer() const = 0;
@@ -81,20 +64,26 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
     // This is to avoid users attempting to call this method by hand.
     this->HasThisParentTreeOrThrow(tree);
 
+    const double kEpsilon = std::numeric_limits<double>::epsilon();
+
     // Define the joint's inboard frame.
-    if (this->get_X_PF()) {
-      inboard_frame_ = &tree->template AddFrame<FixedOffsetFrame>(
-          get_inboard_body(), *get_X_PF());
-    } else {
+    // If X_PF is the identity transformation, then the user meant to say that
+    // the inboard frame F IS the inboard body frame P.
+    if (get_inboard_frame_pose().matrix().isIdentity(kEpsilon)) {
       inboard_frame_ = &get_inboard_body().get_body_frame();
+    } else {
+      inboard_frame_ = &tree->template AddFrame<FixedOffsetFrame>(
+          get_inboard_body(), get_inboard_frame_pose());
     }
 
     // Define the joint's outboard frame.
-    if (this->get_X_BM()) {
-      outboard_frame_ = &tree->template AddFrame<FixedOffsetFrame>(
-          get_outboard_body(), *get_X_BM());
-    } else {
+    // If X_BM is the identity transformation, then the user meant to say that
+    // the outboard frame M IS the outboard body frame B.
+    if (get_outboard_frame_pose().matrix().isIdentity(kEpsilon)) {
       outboard_frame_ = &get_outboard_body().get_body_frame();
+    } else {
+      outboard_frame_ = &tree->template AddFrame<FixedOffsetFrame>(
+          get_outboard_body(), get_outboard_frame_pose());
     }
 
     // Add joint subclass specific model.
@@ -140,13 +129,11 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   const Frame<T>* inboard_frame_{nullptr};
   const Frame<T>* outboard_frame_{nullptr};
 
-  // The pose of the inboard frame F rigidly attached to body P is optional,
-  // meaning that when absent F = P.
-  optional<Isometry3<double>> X_PF_;
+  // The pose of the inboard frame F rigidly attached to body P.
+  Isometry3<double> X_PF_;
 
-  // The pose of the outboard frame M rigidly attached to body B is optional,
-  // meaning that when absent M = B.
-  optional<Isometry3<double>> X_BM_;
+  // The pose of the outboard frame M rigidly attached to body B.
+  Isometry3<double> X_BM_;
 };
 
 }  // namespace multibody
