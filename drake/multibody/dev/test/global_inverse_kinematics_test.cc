@@ -1,4 +1,4 @@
-#include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/dev/test/global_inverse_kinematics_test_util.h"
 #include "drake/solvers/gurobi_solver.h"
 

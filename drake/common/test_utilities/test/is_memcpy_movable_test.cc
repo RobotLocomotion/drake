@@ -1,4 +1,4 @@
-#include "drake/common/test/is_memcpy_movable.h"
+#include "drake/common/test_utilities/is_memcpy_movable.h"
 
 #include <memory>
 #include <string>

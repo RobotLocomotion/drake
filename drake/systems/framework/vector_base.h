@@ -170,6 +170,15 @@ class VectorBase {
     return norm;
   }
 
+  /// Populates a vector @p value suitable for a SystemConstraint inequality
+  /// constraint. For all indices `i` in the result vector, the validity
+  /// constraint is `result[i] >= 0`. For a given subclass type, the size of
+  /// the result must not vary over time. The %VectorBase default
+  /// implementation sets the @p value to be empty (no constraints).
+  virtual void CalcInequalityConstraint(VectorX<T>* value) const {
+    value->resize(0);
+  }
+
  protected:
   VectorBase() {}
 

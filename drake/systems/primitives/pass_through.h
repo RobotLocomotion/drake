@@ -26,23 +26,28 @@ namespace systems {
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
-/// This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
+/// This class uses Drake's `-inl.h` pattern. When seeing linker errors from
 /// this class, please refer to http://drake.mit.edu/cxx_inl.html.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
 /// - AutoDiffXd
+/// - symbolic::Expression
 ///
 /// They are already available to link against in the containing library.
 /// @ingroup primitive_systems
 template <typename T>
-class PassThrough : public VectorSystem<T> {
+class PassThrough final : public VectorSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PassThrough)
 
   /// Constructs a pass thorough system (`y = u`).
   /// @param size number of elements in the signal to be processed.
   explicit PassThrough(int size);
+
+  /// Scalar-converting copy constructor. See @ref system_scalar_conversion.
+  template <typename U>
+  explicit PassThrough(const PassThrough<U>&);
 
   // TODO(eric.cousineau): Ensure that this system can also handle
   // AbstractValue's akin to ZeroOrderHold (#6491).
@@ -54,10 +59,6 @@ class PassThrough : public VectorSystem<T> {
       const Eigen::VectorBlock<const VectorX<T>>& input,
       const Eigen::VectorBlock<const VectorX<T>>& state,
       Eigen::VectorBlock<VectorX<T>>* output) const override;
-
-  /// Returns an PassThrough<symbolic::Expression> with the same dimensions as
-  /// this PassThrough.
-  PassThrough<symbolic::Expression>* DoToSymbolic() const override;
 };
 
 }  // namespace systems

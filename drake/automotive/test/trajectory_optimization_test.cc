@@ -4,8 +4,8 @@
 #include <gtest/gtest.h>
 
 #include "drake/automotive/simple_car.h"
-#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/proto/call_matlab.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/systems/trajectory_optimization/direct_collocation.h"
 
 namespace drake {

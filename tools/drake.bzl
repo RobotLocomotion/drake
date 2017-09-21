@@ -229,9 +229,9 @@ def drake_cc_googletest(
     if deps == None:
         deps = []
     if use_default_main:
-        deps = deps + ["//drake/common:drake_cc_googletest_main"]
+        deps += ["//drake/common/test_utilities:drake_cc_googletest_main"]
     else:
-        deps = deps + ["@gtest//:without_main"]
+        deps += ["@gtest//:without_main"]
     drake_cc_test(
         name = name,
         deps = deps,

@@ -6,22 +6,36 @@ load("//tools:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
+# This should encompass every non-testonly cc_library in this package.
 drake_cc_library(
     name = "framework",
     srcs = [],
     deps = [
+        ":abstract_values",
         ":cache",
         ":context",
+        ":continuous_state",
         ":diagram",
         ":diagram_builder",
         ":diagram_context",
+        ":diagram_continuous_state",
+        ":discrete_values",
+        ":event_collection",
+        ":input_port_descriptor",
+        ":input_port_evaluator_interface",
+        ":input_port_value",
         ":leaf_context",
+        ":leaf_output_port",
         ":leaf_system",
+        ":output_port_listener_interface",
+        ":output_port_value",
         ":parameters",
         ":single_output_vector_source",
         ":state",
         ":system",
+        ":system_common",
         ":system_constraint",
+        ":system_scalar_converter",
         ":system_symbolic_inspector",
         ":value",
         ":vector",
@@ -436,9 +450,9 @@ drake_cc_googletest(
     deps = [
         ":vector",
         "//drake/common:autodiff",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:essential",
         "//drake/common:symbolic",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -476,8 +490,8 @@ drake_cc_googletest(
     name = "diagram_context_test",
     deps = [
         ":diagram_context",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:essential",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/systems/framework/test_utilities:pack_value",
         "//drake/systems/primitives:adder",
         "//drake/systems/primitives:constant_vector_source",
@@ -491,7 +505,7 @@ drake_cc_googletest(
     deps = [
         ":diagram",
         "//drake/common:essential",
-        "//drake/common:is_dynamic_castable",
+        "//drake/common/test_utilities:is_dynamic_castable",
         "//drake/systems/analysis:stateless_system",
         "//drake/systems/framework/test_utilities:pack_value",
         "//drake/systems/primitives:adder",
@@ -515,9 +529,9 @@ drake_cc_googletest(
     name = "leaf_context_test",
     deps = [
         ":leaf_context",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:essential",
-        "//drake/common:is_dynamic_castable",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/common/test_utilities:is_dynamic_castable",
         "//drake/systems/framework/test_utilities",
     ],
 )
@@ -527,7 +541,8 @@ drake_cc_googletest(
     deps = [
         ":leaf_system",
         "//drake/common:essential",
-        "//drake/common:is_dynamic_castable",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/common/test_utilities:is_dynamic_castable",
         "//drake/systems/framework/test_utilities",
     ],
 )
@@ -564,8 +579,8 @@ drake_cc_googletest(
     name = "subvector_test",
     deps = [
         ":vector",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:essential",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -666,7 +681,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "system_constraint_test",
     deps = [
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/systems/primitives:linear_system",
     ],
 )

@@ -11,7 +11,7 @@
 #include "drake/automotive/maliput/dragway/road_geometry.h"
 #include "drake/automotive/maliput/monolane/builder.h"
 #include "drake/automotive/monolane_onramp_merge.h"
-#include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 
 namespace drake {
 namespace automotive {

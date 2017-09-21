@@ -4,9 +4,9 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/eigen_geometry_compare.h"
-#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/test_utilities/eigen_geometry_compare.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/manipulation/util/moving_average_filter.h"
 #include "drake/math/quaternion.h"
 
@@ -116,7 +116,7 @@ TEST_F(PoseSmootherTest, OutlierRejectionTest) {
                                 kPoseComparisonTolerance));
 
   // Input which will be rejected due to large translational velocity.
-  Isometry3d input_pose_2;
+  Isometry3d input_pose_2 = Isometry3d::Identity();
   input_pose_2.linear() =
       Eigen::AngleAxisd(0.25 * M_PI, Eigen::Vector3d::UnitX()).matrix();
   input_pose_2.translation() << 0.51, -5.0, 10.10;

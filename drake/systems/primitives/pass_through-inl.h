@@ -14,7 +14,13 @@ namespace systems {
 // TODO(amcastro-tri): remove the size parameter from the constructor once
 // #3109 supporting automatic sizes is resolved.
 template <typename T>
-PassThrough<T>::PassThrough(int size) : VectorSystem<T>(size, size) { }
+PassThrough<T>::PassThrough(int size)
+    : VectorSystem<T>(SystemTypeTag<systems::PassThrough>{}, size, size) {}
+
+template <typename T>
+template <typename U>
+PassThrough<T>::PassThrough(const PassThrough<U>& other)
+    : PassThrough<T>(other.get_input_port().size()) {}
 
 template <typename T>
 void PassThrough<T>::DoCalcVectorOutput(
@@ -24,11 +30,6 @@ void PassThrough<T>::DoCalcVectorOutput(
     Eigen::VectorBlock<VectorX<T>>* output) const {
   unused(state);
   *output = input;
-}
-
-template <typename T>
-PassThrough<symbolic::Expression>* PassThrough<T>::DoToSymbolic() const {
-  return new PassThrough<symbolic::Expression>(this->get_input_port().size());
 }
 
 }  // namespace systems

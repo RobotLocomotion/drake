@@ -6,6 +6,7 @@ def install_data(
     name = "models",
     prod_models_prefix = "prod_",
     test_models_prefix = "test_",
+    extra_prod_models = [],
 ):
     """Install data
 
@@ -25,6 +26,10 @@ def install_data(
     {install_dir}/share/drake/drake/examples/acrobot/Acrobot_no_collision.urdf
     Test files (files contained in a `test` subfolder or named `*test*`) are
     not installed.
+
+    Extra files to be installed that are not in the direct subdirectories of
+    the rule may be specified by using `extra_prod_models`.  One use of this is
+    to install generated files alongside the static files.
     """
     models_extensions = [
         "csv",
@@ -50,7 +55,7 @@ def install_data(
         srcs = native.glob(
             include = prod_models_include,
             exclude = exclude_patterns,
-        ),
+        ) + extra_prod_models,
         visibility = ["//visibility:public"],
     )
 

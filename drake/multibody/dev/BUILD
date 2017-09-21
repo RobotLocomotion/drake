@@ -19,8 +19,8 @@ drake_cc_library(
         "test/global_inverse_kinematics_test_util.h",
     ],
     deps = [
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:find_resource",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/multibody:global_inverse_kinematics",
         "//drake/multibody:inverse_kinematics",
         "//drake/multibody:rigid_body_tree_construction",

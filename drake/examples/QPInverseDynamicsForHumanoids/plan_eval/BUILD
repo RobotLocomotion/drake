@@ -60,8 +60,8 @@ drake_cc_googletest(
     deps = [
         ":manipulator_plans",
         ":test_common",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:find_resource",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
     ],
@@ -117,8 +117,8 @@ drake_cc_googletest(
     deps = [
         ":generic_plan",
         ":test_common",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:find_resource",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
     ],

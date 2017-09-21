@@ -204,8 +204,8 @@ drake_cc_googletest(
     data = [":models"],
     deps = [
         ":acrobot_plant",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:find_resource",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/multibody/joints",
         "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant",

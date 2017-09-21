@@ -5,8 +5,8 @@
 #include <vtkSmartPointer.h>
 #include <vtkXMLPolyDataReader.h>
 
-#include "drake/common/eigen_geometry_compare.h"
-#include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/eigen_geometry_compare.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/lcmtypes/drake/lcmt_viewer_draw.hpp"
 #include "drake/math/roll_pitch_yaw.h"
 

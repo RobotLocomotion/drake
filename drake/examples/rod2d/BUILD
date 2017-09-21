@@ -54,8 +54,8 @@ drake_cc_googletest(
     name = "rod2d_test",
     deps = [
         ":rod2d",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:essential",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/multibody/constraint:constraint_solver",
         "//drake/systems/analysis",
     ],

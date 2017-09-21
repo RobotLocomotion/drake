@@ -6,7 +6,7 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
-#include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/roll_pitch_yaw.h"
 
 using Eigen::Vector3d;

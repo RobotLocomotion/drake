@@ -6,9 +6,9 @@
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
-#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/joints/prismatic_joint.h"
 #include "drake/multibody/joints/quaternion_floating_joint.h"

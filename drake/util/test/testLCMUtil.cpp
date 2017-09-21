@@ -4,8 +4,8 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/eigen_matrix_compare.h"
-#include "drake/common/test/random_polynomial_matrix.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/random_polynomial_matrix.h"
 #include "drake/common/trajectories/test/random_piecewise_polynomial.h"
 #include "drake/math/random_rotation.h"
 

@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/gray_code.h"
 #include "drake/solvers/gurobi_solver.h"
 

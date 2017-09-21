@@ -10,8 +10,8 @@
 
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/eigen_autodiff_types.h"
-#include "drake/common/eigen_matrix_compare.h"
-#include "drake/common/test/is_dynamic_castable.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/input_port_value.h"
 #include "drake/systems/framework/test_utilities/pack_value.h"

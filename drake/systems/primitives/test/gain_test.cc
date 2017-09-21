@@ -7,6 +7,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/input_port_value.h"
+#include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
 using Eigen::Vector3d;
 using std::make_unique;
@@ -99,6 +100,19 @@ GTEST_TEST(GainDeathTest, GainAccessorTest) {
   EXPECT_THROW(gain_system->get_gain(), std::runtime_error);
 }
 
+GTEST_TEST(GainTest, ToAutoDiff) {
+  const Gain<double> gain(2.0, 3);
+  EXPECT_TRUE(is_autodiffxd_convertible(gain, [&](const auto& converted) {
+    EXPECT_EQ(1, converted.get_num_input_ports());
+    EXPECT_EQ(1, converted.get_num_output_ports());
+    EXPECT_EQ(Vector3d::Constant(2.0), converted.get_gain_vector());
+  }));
+}
+
+GTEST_TEST(GainTest, ToSymbolic) {
+  const Gain<double> gain(2.0, 3);
+  EXPECT_TRUE(is_symbolic_convertible(gain));
+}
 
 }  // namespace
 }  // namespace systems

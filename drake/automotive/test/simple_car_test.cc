@@ -3,10 +3,11 @@
 #include <cmath>
 #include <memory>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/symbolic.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/systems/framework/system_constraint.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
@@ -389,19 +390,30 @@ TEST_F(SimpleCarTest, TransmogrifySymbolic) {
 }
 
 TEST_F(SimpleCarTest, TestConstraints) {
+  using systems::SystemConstraint;
+  using systems::SystemConstraintIndex;
+
   SimpleCarParams<double>* params = dynamic_cast<SimpleCarParams<double>*>(
       context_->get_mutable_numeric_parameter(0));
   EXPECT_TRUE(params);
   SimpleCarState<double>* state = continuous_state();
 
-  EXPECT_EQ(dut_->get_num_constraints(), 3);
+  ASSERT_EQ(dut_->get_num_constraints(), 4);
+  const SystemConstraint<double>& params_constraint =
+      dut_->get_constraint(SystemConstraintIndex(0));
+  const SystemConstraint<double>& steering_constraint =
+      dut_->get_constraint(SystemConstraintIndex(1));
+  const SystemConstraint<double>& acceleration_constraint =
+      dut_->get_constraint(SystemConstraintIndex(2));
+  const SystemConstraint<double>& velocity_constraint =
+      dut_->get_constraint(SystemConstraintIndex(3));
 
-  using systems::SystemConstraint;
-  using systems::SystemConstraintIndex;
+  // Merely confirm the presence of the parameters constraint; we rely on the
+  // framework test coverage to ensure the the details are correct.
+  EXPECT_THAT(params_constraint.description(), ::testing::HasSubstr(
+      "SimpleCarParams"));
 
   // Test steering constraint.
-  const SystemConstraint<double>& steering_constraint =
-      dut_->get_constraint(SystemConstraintIndex(0));
   EXPECT_EQ(steering_constraint.description(), "steering angle limit");
 
   SetInputValue(0.0, 1.0);
@@ -414,8 +426,6 @@ TEST_F(SimpleCarTest, TestConstraints) {
   EXPECT_TRUE(steering_constraint.CheckSatisfied(*context_));
 
   // Test acceleration constraint.
-  const SystemConstraint<double>& acceleration_constraint =
-      dut_->get_constraint(SystemConstraintIndex(1));
   EXPECT_EQ(acceleration_constraint.description(), "acceleration limit");
 
   SetInputValue(0.0, 0.5);  // Note that the second argument is normalized.
@@ -428,8 +438,6 @@ TEST_F(SimpleCarTest, TestConstraints) {
   EXPECT_FALSE(acceleration_constraint.CheckSatisfied(*context_));
 
   // Test velocity constraint.
-  const SystemConstraint<double>& velocity_constraint =
-      dut_->get_constraint(SystemConstraintIndex(2));
   EXPECT_EQ(velocity_constraint.description(), "velocity limit");
 
   state->set_velocity(params->max_velocity() / 2.0);

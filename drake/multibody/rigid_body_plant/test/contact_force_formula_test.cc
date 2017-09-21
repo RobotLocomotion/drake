@@ -6,7 +6,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/joints/quaternion_floating_joint.h"
 
 // This tests the *formula* for generating forces from contact. The current

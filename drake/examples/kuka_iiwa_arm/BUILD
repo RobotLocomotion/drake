@@ -162,7 +162,7 @@ drake_cc_googletest(
     name = "iiwa_lcm_test",
     deps = [
         ":iiwa_lcm",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/systems/framework",
     ],
 )

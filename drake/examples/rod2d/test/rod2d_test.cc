@@ -4,7 +4,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/constraint/constraint_problem_data.h"
 #include "drake/multibody/constraint/constraint_solver.h"
 #include "drake/systems/analysis/simulator.h"

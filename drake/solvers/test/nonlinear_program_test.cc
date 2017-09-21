@@ -11,9 +11,9 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/polynomial.h"
-#include "drake/common/test/is_dynamic_castable.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/mathematical_program.h"

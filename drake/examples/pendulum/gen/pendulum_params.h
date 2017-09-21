@@ -99,6 +99,15 @@ class PendulumParams : public systems::BasicVector<T> {
     result = result && (gravity() >= T(0.0));
     return result;
   }
+
+  // VectorBase override.
+  void CalcInequalityConstraint(VectorX<T>* value) const override {
+    value->resize(4);
+    (*value)[0] = mass() - T(0.0);
+    (*value)[1] = length() - T(0.0);
+    (*value)[2] = damping() - T(0.0);
+    (*value)[3] = gravity() - T(0.0);
+  }
 };
 
 }  // namespace pendulum

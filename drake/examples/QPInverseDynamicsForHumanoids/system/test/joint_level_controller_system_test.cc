@@ -5,8 +5,8 @@
 #include <gtest/gtest.h>
 #include "bot_core/atlas_command_t.hpp"
 
-#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/system/atlas_joint_level_controller_system.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
