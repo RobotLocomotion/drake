@@ -17,6 +17,25 @@ namespace multibody {
 using internal::BodyNode;
 using internal::BodyNodeWelded;
 
+namespace internal {
+template <typename T>
+class JointModelBuilder {
+ public:
+  JointModelBuilder() = delete;
+  static void BuildJointModel(Joint<T>* joint, MultibodyTree<T>* tree) {
+    std::unique_ptr<JointBluePrint> blue_print = joint->MakeModelBlueprint();
+    auto model = std::make_unique<JointModel>(*blue_print);
+    // For now only allow models to have a single mobilizer.
+    DRAKE_DEMAND(static_cast<int>(model->mobilizers_.size()) == 1);
+    tree->AddMobilizer(std::move(blue_print->mobilizers_[0]));
+    joint->OwnModel(std::move(model));
+  }
+ private:
+  typedef typename Joint<T>::BluePrint JointBluePrint;
+  typedef typename Joint<T>::JointModel JointModel;
+};
+}
+
 template <typename T>
 MultibodyTree<T>::MultibodyTree() {
   // Adds a "world" body to MultibodyTree having a NaN SpatialInertia.
@@ -86,7 +105,7 @@ void MultibodyTree<T>::Finalize() {
   // basic MBT elements such as frames, bodies, mobilizers, force elements and
   // constraints, is complete.
   for (auto& joint : owned_joints_) {
-    joint->MakeModelAndAdd(this);
+    internal::JointModelBuilder<T>::BuildJointModel(joint.get(), this);
   }
   FinalizeTopology();
   FinalizeInternals();

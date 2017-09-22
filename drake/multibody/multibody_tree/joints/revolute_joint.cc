@@ -19,13 +19,14 @@ RevoluteJoint<T>::TemplatedDoCloneToScalar(
   const RigidBody<ToScalar>& outboard_body_clone =
       tree_clone.get_variant(this->get_child_body());
 
-  auto joint = std::make_unique<RevoluteJoint<ToScalar>>(
+  // Make the Joint<T> clone.
+  auto joint_clone = std::make_unique<RevoluteJoint<ToScalar>>(
       this->get_name(),
       inboard_body_clone, this->get_frame_on_parent_pose(),
       outboard_body_clone, this->get_frame_on_child_pose(),
       this->get_revolute_axis());
-  joint->mobilizer_ = &tree_clone.get_variant(*mobilizer_);
-  return std::move(joint);
+
+  return std::move(joint_clone);
 }
 
 template <typename T>

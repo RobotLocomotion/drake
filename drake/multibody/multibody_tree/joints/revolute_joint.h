@@ -76,16 +76,20 @@ class RevoluteJoint final : public Joint<T> {
   }
 
  protected:
-  void DoMakeModelAndAdd(MultibodyTree<T>* tree) {
-    mobilizer_ = &tree->template AddMobilizer<RevoluteMobilizer>(
-        this->get_frame_on_parent(), this->get_frame_on_child(), axis_);
+  std::unique_ptr<typename Joint<T>::BluePrint>
+  MakeModelBlueprint() const override {
+    auto blue_print = std::make_unique<typename Joint<T>::BluePrint>();
+    blue_print->mobilizers_.push_back(
+        std::make_unique<RevoluteMobilizer<T>>(
+            this->get_frame_on_parent(), this->get_frame_on_child(), axis_));
+    return std::move(blue_print);
   }
 
   std::unique_ptr<Joint<double>> DoCloneToScalar(
-      const MultibodyTree<double>& tree_clone) const;
+      const MultibodyTree<double>& tree_clone) const override;
 
   std::unique_ptr<Joint<AutoDiffXd>> DoCloneToScalar(
-      const MultibodyTree<AutoDiffXd>& tree_clone) const;
+      const MultibodyTree<AutoDiffXd>& tree_clone) const override;
 
  private:
   // Make RevoluteJoint templated on every other scalar type a friend of
@@ -97,9 +101,16 @@ class RevoluteJoint final : public Joint<T> {
   friend class JointTester;
 
   // Returns the mobilizer implementing this joint.
+  // The intrnal implementation (model) of this joint could change in a future
+  // version. However its public API should remain intact.
   const RevoluteMobilizer<T>* get_mobilizer() const {
-    DRAKE_DEMAND(mobilizer_ != nullptr);
-    return mobilizer_;
+    // This model should only have one mobilizer.
+    DRAKE_DEMAND(this->get_model().get_num_mobilizers() == 1);
+    const RevoluteMobilizer<T>* mobilizer =
+        dynamic_cast<const RevoluteMobilizer<T>*>(
+            this->get_model().mobilizers_[0]);
+    DRAKE_DEMAND(mobilizer != nullptr);
+    return mobilizer;
   }
 
   // Helper method to make a clone templated on ToScalar.
@@ -109,9 +120,6 @@ class RevoluteJoint final : public Joint<T> {
 
   // This is the joint's axis expressed in either M or F since axis_M = axis_F.
   Vector3<double> axis_;
-
-  // This Joint object's implementation.
-  const RevoluteMobilizer<T>* mobilizer_{nullptr};
 };
 
 }  // namespace multibody

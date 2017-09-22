@@ -13,6 +13,11 @@
 namespace drake {
 namespace multibody {
 
+namespace internal {
+template <typename T>
+class JointModelBuilder;
+}
+
 template <typename T>
 class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
  public:
@@ -89,39 +94,54 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
     }
   }
 
-  // For internal use only.
-  void MakeModelAndAdd(MultibodyTree<T>* tree) {
-    // Assert this joint is an element of the input tree.
-    // This is to avoid users attempting to call this method by hand.
-    this->HasThisParentTreeOrThrow(tree);
-
-    // These should pass if MakeInOutFramesAndAdd() was already called from
-    // within MultibodyTree::AddJoint() (which by the way is the only allowed
-    // mechanism to add joints).
-    DRAKE_DEMAND(inboard_frame_ != nullptr);
-    DRAKE_DEMAND(outboard_frame_ != nullptr);
-
-    // Add joint subclass specific model.
-    DoMakeModelAndAdd(tree);
-  }
-
   // NVI to DoCloneToScalar() templated on the scalar type of the new clone to
   // be created. This method is intended to be called by
   // MultibodyTree::CloneToScalar().
   template <typename ToScalar>
   std::unique_ptr<Joint<ToScalar>> CloneToScalar(
-      const MultibodyTree<ToScalar>& cloned_tree) const {
-    return DoCloneToScalar(cloned_tree);
+      const MultibodyTree<ToScalar>& tree_clone) const {
+    std::unique_ptr<Joint<ToScalar>> joint_clone = DoCloneToScalar(tree_clone);
+
+    // Make the JointModel clone.
+    auto model_clone = std::make_unique<typename Joint<ToScalar>::JointModel>();
+    const Mobilizer<ToScalar>* mobilizer_clone =
+        &tree_clone.get_variant(*this->get_model().mobilizers_[0]);
+    model_clone->mobilizers_.push_back(mobilizer_clone);
+    joint_clone->OwnModel(std::move(model_clone));
+
+    return std::move(joint_clone);
   }
   /// @endcond
 
  protected:
+  // JointModelBuilder is a friend so that it can access the
+  // Joint<T>::BluePrint and protected method MakeModelBlueprint().
+  friend class internal::JointModelBuilder<T>;
+  struct BluePrint {
+    std::vector<std::unique_ptr<Mobilizer<T>>> mobilizers_;
+  };
+
+  // Make any other Joint<U> a friend of Joint<T> so they can make
+  // Joint<ToScalar>::JointModel from CloneToScalar<ToScalar>().
+  template <typename> friend class Joint;
+  // The model does not own the MBT elements, it just keeps references to them.
+  struct JointModel {
+    JointModel() {}
+    JointModel(const BluePrint& blue_print) {
+      // For now only allow models to have a single mobilizer.
+      DRAKE_DEMAND(static_cast<int>(blue_print.mobilizers_.size()) == 1);
+      mobilizers_.push_back(blue_print.mobilizers_[0].get());
+    }
+
+    int get_num_mobilizers() const { return mobilizers_.size(); }
+
+    std::vector<const Mobilizer<T>*> mobilizers_;
+    // TODO(amcastro-tri): add force elements, constraints, bodies, etc.
+  };
+
   // Implements MultibodyTreeElement::DoSetTopology(). Joints have no topology
   // though we could require them to have one in the future.
   void DoSetTopology(const MultibodyTreeTopology& tree) {}
-
-  // Implements MakeModelAndAdd() NVI.
-  virtual void DoMakeModelAndAdd(MultibodyTree<T>* tree) = 0;
 
   /// @name Methods to make a clone templated on different scalar types.
   /// @{
@@ -133,6 +153,12 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   virtual std::unique_ptr<Joint<AutoDiffXd>> DoCloneToScalar(
       const MultibodyTree<AutoDiffXd>& tree_clone) const = 0;
   /// @}
+
+  virtual std::unique_ptr<BluePrint> MakeModelBlueprint() const = 0;
+  void OwnModel(std::unique_ptr<JointModel> model) {
+    model_ = std::move(model);
+  }
+  const JointModel& get_model() const { return *model_; }
 
  private:
   std::string name_;
@@ -149,6 +175,9 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
 
   // The pose of the outboard frame M rigidly attached to body B.
   Isometry3<double> X_BM_;
+
+  // The Joint<T> implementation:
+  std::unique_ptr<JointModel> model_;
 };
 
 }  // namespace multibody
