@@ -26,10 +26,10 @@ class RevoluteJoint final : public Joint<T> {
   ///   `axis_F` (or `axis_M`) is the eigenvector of `R_FM` with eigenvalue
   ///   equal to one.
   RevoluteJoint(const std::string& name,
-                const RigidBody<T>& inboard_body, const Isometry3<double> X_PF,
-                const RigidBody<T>& outboard_body, const Isometry3<double> X_BM,
+                const RigidBody<T>& parent_body, const Isometry3<double>& X_PF,
+                const RigidBody<T>& child_body, const Isometry3<double>& X_BM,
                 const Vector3<double>& axis) :
-      Joint<T>(name, inboard_body, X_PF, outboard_body, X_BM) {
+      Joint<T>(name, parent_body, X_PF, child_body, X_BM) {
     // DRAKE_DEMAND axis is not the zero vector!!!
     axis_ = axis.normalized();
   }
@@ -75,16 +75,10 @@ class RevoluteJoint final : public Joint<T> {
     return *this;
   }
 
-  // Notice the covariant return.
-  //const RevoluteMobilizer<T>& get_mobilizer() const {
-//    DRAKE_DEMAND(mobilizer_ != nullptr);
-  //  return *mobilizer_;
-  //}
-
  protected:
   void DoMakeModelAndAdd(MultibodyTree<T>* tree) {
     mobilizer_ = &tree->template AddMobilizer<RevoluteMobilizer>(
-        this->get_inboard_frame(), this->get_outboard_frame(), axis_);
+        this->get_frame_on_parent(), this->get_frame_on_child(), axis_);
   }
 
   std::unique_ptr<Joint<double>> DoCloneToScalar(
@@ -115,6 +109,8 @@ class RevoluteJoint final : public Joint<T> {
 
   // This is the joint's axis expressed in either M or F since axis_M = axis_F.
   Vector3<double> axis_;
+
+  // This Joint object's implementation.
   const RevoluteMobilizer<T>* mobilizer_{nullptr};
 };
 

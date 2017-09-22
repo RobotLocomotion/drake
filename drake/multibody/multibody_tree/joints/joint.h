@@ -19,19 +19,19 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Joint)
 
   Joint(const std::string& name,
-        const RigidBody<T>& iboard_body, const Isometry3<double> X_PF,
-        const RigidBody<T>& outboard_body, const Isometry3<double> X_BM) :
-      name_(name), inboard_body_(iboard_body), outboard_body_(outboard_body),
+        const RigidBody<T>& parent_body, const Isometry3<double>& X_PF,
+        const RigidBody<T>& child_body, const Isometry3<double>& X_BM) :
+      name_(name), parent_body_(parent_body), child_body_(child_body),
       X_PF_(X_PF), X_BM_(X_BM) {}
 
   virtual ~Joint() {}
 
   const std::string& get_name() const { return name_; }
 
-  const RigidBody<T>& get_inboard_body() const { return inboard_body_; }
-  const RigidBody<T>& get_outboard_body() const { return outboard_body_; }
+  const RigidBody<T>& get_parent_body() const { return parent_body_; }
+  const RigidBody<T>& get_child_body() const { return child_body_; }
 
-  const Frame<T>& get_inboard_frame() const {
+  const Frame<T>& get_frame_on_parent() const {
     // If a joint is added with MultibodyTree::AddJoint(), inboard_frame_ is
     // guaranteed to be a valid pointer. This is here to avoid users from, for
     // instance, calling this method on stack allocated objects (not allowed).
@@ -39,7 +39,7 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
     return *inboard_frame_;
   }
 
-  const Frame<T>& get_outboard_frame() const {
+  const Frame<T>& get_frame_on_child() const {
     // If a joint is added with MultibodyTree::AddJoint(), outboard_frame_ is
     // guaranteed to be a valid pointer. This is here to avoid users from, for
     // instance, calling this method on stack allocated objects (not allowed).
@@ -47,19 +47,19 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
     return *outboard_frame_;
   }
 
-  const Isometry3<double>& get_inboard_frame_pose() const {
+  const Isometry3<double>& get_frame_on_parent_pose() const {
     return X_PF_;
   }
 
-  const Isometry3<double>& get_outboard_frame_pose() const {
+  const Isometry3<double>& get_frame_on_child_pose() const {
     return X_BM_;
   }
-  /// @cond
 
+  /// @cond
   // For internal use only.
   // This is called from MultibodyTree::AddJoint() to make and add the
   // inboard/outboard frames for this Joint object.
-  // Therefore public API's get_inboard_frame()/get_outboard_frame() are
+  // Therefore public API's get_frame_on_parent()/get_frame_on_child() are
   // available immediately with no side effects.
   void MakeInOutFramesAndAdd(MultibodyTree<T>* tree) {
     // Assert this joint is an element of the input tree.
@@ -71,21 +71,21 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
     // Define the joint's inboard frame.
     // If X_PF is the identity transformation, then the user meant to say that
     // the inboard frame F IS the inboard body frame P.
-    if (get_inboard_frame_pose().matrix().isIdentity(kEpsilon)) {
-      inboard_frame_ = &get_inboard_body().get_body_frame();
+    if (get_frame_on_parent_pose().matrix().isIdentity(kEpsilon)) {
+      inboard_frame_ = &get_parent_body().get_body_frame();
     } else {
       inboard_frame_ = &tree->template AddFrame<FixedOffsetFrame>(
-          get_inboard_body(), get_inboard_frame_pose());
+          get_parent_body(), get_frame_on_parent_pose());
     }
 
     // Define the joint's outboard frame.
     // If X_BM is the identity transformation, then the user meant to say that
     // the outboard frame M IS the outboard body frame B.
-    if (get_outboard_frame_pose().matrix().isIdentity(kEpsilon)) {
-      outboard_frame_ = &get_outboard_body().get_body_frame();
+    if (get_frame_on_child_pose().matrix().isIdentity(kEpsilon)) {
+      outboard_frame_ = &get_child_body().get_body_frame();
     } else {
       outboard_frame_ = &tree->template AddFrame<FixedOffsetFrame>(
-          get_outboard_body(), get_outboard_frame_pose());
+          get_child_body(), get_frame_on_child_pose());
     }
   }
 
@@ -136,8 +136,8 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
 
  private:
   std::string name_;
-  const RigidBody<T>& inboard_body_;
-  const RigidBody<T>& outboard_body_;
+  const RigidBody<T>& parent_body_;
+  const RigidBody<T>& child_body_;
 
   // Inboard/outboard frame pointers are set by Joint::MakeAndAddModel() called
   // from within MultibodyTree::AddJoint().

@@ -15,14 +15,14 @@ std::unique_ptr<Joint<ToScalar>>
 RevoluteJoint<T>::TemplatedDoCloneToScalar(
     const MultibodyTree<ToScalar>& tree_clone) const {
   const RigidBody<ToScalar>& inboard_body_clone =
-      tree_clone.get_variant(this->get_inboard_body());
+      tree_clone.get_variant(this->get_parent_body());
   const RigidBody<ToScalar>& outboard_body_clone =
-      tree_clone.get_variant(this->get_outboard_body());
+      tree_clone.get_variant(this->get_child_body());
 
   auto joint = std::make_unique<RevoluteJoint<ToScalar>>(
       this->get_name(),
-      inboard_body_clone, this->get_inboard_frame_pose(),
-      outboard_body_clone, this->get_outboard_frame_pose(),
+      inboard_body_clone, this->get_frame_on_parent_pose(),
+      outboard_body_clone, this->get_frame_on_child_pose(),
       this->get_revolute_axis());
   joint->mobilizer_ = &tree_clone.get_variant(*mobilizer_);
   return std::move(joint);

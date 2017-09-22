@@ -914,7 +914,7 @@ class MultibodyTree {
 
     // MultibodyTree creates the inboard/outboard frames now, since the
     // information to do so is already available. Also, that allows users to
-    // call Joint<T>::get_inboard_frame() and/or Joint<T>::get_outboard_frame()
+    // call Joint<T>::get_frame_on_parent() and/or Joint<T>::get_frame_on_child()
     // if they need to.
     joint->MakeInOutFramesAndAdd(this);
     // At this point, joint has no implementation (that is, mobilizers, force
