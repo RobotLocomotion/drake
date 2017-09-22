@@ -6,8 +6,9 @@ load(
     "//tools:drake.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
+    "drake_cc_binary",
 )
-load("//tools:lint.bzl", "add_lint_tests")
+load("//tools:python_lint.bzl", "python_lint")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -34,4 +35,3 @@ drake_cc_googletest(
           ],
 )
 
-add_lint_tests()
