@@ -85,6 +85,28 @@ class SystemScalarConverter {
     AddIfSupported<S, AutoDiffXd, Expression>();
   }
 
+  /// An configuration option for our constructor, controlling whether or not
+  /// the Convert implementation requires that the System subclass type is
+  /// preserved.
+  enum class SubtypeChecking {
+    /// The argument to Convert must be of the exact type S that was used to
+    /// populate the SystemScalarConverter.
+    kEnabled,
+    /// The argument to Convert must only be a subtype of the type S that was
+    /// used to populate the SystemScalarConverter.  This permits subtype
+    /// information to be lost across conversion.
+    kDisabled,
+  };
+
+  /// Creates an object that uses S's scalar-type converting copy constructor.
+  /// Behaves exactly like SystemScalarConverter(SystemTypeTag<S>), but with
+  /// the additional option to turn off exact subtype checking.
+  template <template <typename> class S>
+  SystemScalarConverter(SystemTypeTag<S> tag, SubtypeChecking checking)
+      : SystemScalarConverter(tag) {
+    subtype_checking_ = (checking == SubtypeChecking::kEnabled);
+  }
+
   /// A std::function used to convert a System<U> into a System<T>.
   template <typename T, typename U>
   using ConverterFunction =
@@ -145,6 +167,9 @@ class SystemScalarConverter {
 
   // Maps from {T, U} to the function that converts from U into T.
   std::unordered_map<Key, ErasedConverterFunc, KeyHasher> funcs_;
+
+  // True iff our SubtypeChecking is enabled.
+  bool subtype_checking_{true};
 };
 
 #if !defined(DRAKE_DOXYGEN_CXX)
@@ -185,10 +210,11 @@ namespace system_scalar_converter_detail {
 // When Traits says that conversion is supported.
 template <template <typename> class S, typename T, typename U>
 static std::unique_ptr<System<T>> Make(
-    const System<U>& other, std::true_type) {
+    bool subtype_checking, const System<U>& other, std::true_type) {
   // We require that system scalar conversion maintain the exact system type.
   // Fail fast if `other` is not of exact type S<U>.
-  if (std::type_index{typeid(other)} != std::type_index{typeid(S<U>)}) {
+  if (subtype_checking &&
+      (std::type_index{typeid(other)} != std::type_index{typeid(S<U>)})) {
     std::ostringstream msg;
     msg << "SystemScalarConverter::Convert was configured to convert a "
         << NiceTypeName::Get<S<U>>() << " into a "
@@ -202,7 +228,7 @@ static std::unique_ptr<System<T>> Make(
 // When Traits says not to convert.
 template <template <typename> class S, typename T, typename U>
 static std::unique_ptr<System<T>> Make(
-    const System<U>&, std::false_type) {
+    bool, const System<U>&, std::false_type) {
   // AddIfSupported is guaranteed not to call us, but we *will* be compiled,
   // so we have to have some kind of function body.
   DRAKE_ABORT();
@@ -214,11 +240,12 @@ void SystemScalarConverter::AddIfSupported() {
   using supported =
       typename scalar_conversion::Traits<S>::template supported<T, U>;
   if (supported::value) {
-    const ConverterFunction<T, U> func = [](const System<U>& other) {
+    const ConverterFunction<T, U> func = [this](const System<U>& other) {
       // Dispatch to an overload based on whether S<U> ==> S<T> is supported.
       // (At runtime, this block is only executed for supported conversions,
       // but at compile time, Make will be instantiated unconditionally.)
-      return system_scalar_converter_detail::Make<S, T, U>(other, supported{});
+      return system_scalar_converter_detail::Make<S, T, U>(
+          this->subtype_checking_, other, supported{});
     };
     Add(func);
   }
