@@ -10,8 +10,116 @@ namespace drake {
 namespace multibody {
 namespace constraint {
 
-/// Structure for holding constraint data for computing constraint forces
-/// at the acceleration-level.
+/// Structure for holding constraint data for computing forces due to
+/// constraints and the resulting multibody accelerations.
+///
+/// The Newton-Euler equations (essentially F = ma) coupled with constraints
+/// on the positional coordinates c(q) yields an Index-3 DAE
+/// (see [Hairer 1996]), and generally makes initial value problems hard to
+/// solve, computationally speaking; coupling the Newton-Euler equations with
+/// the second time derivative of such constraint equations (i.e., c̈(q,v,v̇))
+/// yields a far more manageable Index-1 DAE, again with regard to computation.
+/// This structure stores problem data for computing dynamics under such
+/// acceleration-level constraints.
+///
+/// <h3>Bilateral and unilateral constraints</h3>
+/// Constraints can be categorized as either bilateral (movement and/or force
+/// is constrained in two directions for each equation) or unilateral
+/// (movement and/or force is constrained in one direction for each equation).
+/// Constraints may be defined at the position level:<pre>
+/// c(t,q,λ)
+/// </pre>
+/// at the velocity level:<pre>
+/// ċ(t,q,v,λ)
+/// </pre>
+/// or at the acceleration level:<pre>
+/// c̈(t,q,v,v̇,λ)
+/// </pre>
+/// This document and class does not generally attempt (or need) to distinguish
+/// between equations that are posable at the position level but are
+/// differentiated once with respect to time (i.e., holonomic constraints) to
+/// yield a velocity-level constraint vs. equations that *must* be formulated at
+/// at the velocity-level (i.e., nonholonomic constraints). The section below
+/// on constraint stabilization will provide the lone exception to this rule.
+///
+/// At the acceleration level, a bilateral constraint equation takes the form:
+/// <pre>
+/// c̈(q,v,t;v̇,λ) = 0
+/// </pre>
+/// where λ, which is the same dimension as c̈, is a vector of force magnitudes
+/// used to enforce the constraint; note the semicolon, which separates general
+/// constraint dependencies (q,v,t) from variables that must be determined using
+/// the constraints (v̇,λ). Each unilateral constraint at the acceleration level
+/// comprises a triplet of equations:<pre>
+/// c̈(q,v,t;v̇,λ) ≥ 0
+/// λ ≥ 0
+/// c̈(q,v,t;v̇,λ)⋅λ = 0
+/// </pre>
+/// which we will typically write in the common shorthand notation:<pre>
+/// 0 ≤ c̈  ⊥  λ ≥ 0
+/// </pre>
+/// Interpreting this triplet of constraint equations, two conditions become
+/// apparent: (1) when the constraint is inactive (c̈ > 0), the constraint force
+/// must be zero (λ = 0) and (2) the constraint force can only act in one
+/// direction (λ ≥ 0). This triplet is known as a *complementarity constraint*.
+///
+/// <h3>Constraint softening</h3>
+/// It can be both numerically advantageous and a desirable modeling feature to
+/// soften otherwise "rigid" constraints. For example, consider modifying the
+/// unilateral complementarity constraint above to:<pre>
+/// 0 ≤ c̈(q,v,t;v̇,λ) + γλ  ⊥  λ ≥ 0
+/// </pre>
+/// where γ is a non-negative scalar (alternatively, it can represent a diagonal
+/// matrix with the same number of rows/columns as the dimension of c̈ and λ).
+/// With γλ > 0, it becomes easier to satisfy the constraint
+/// c̈(q,v,t;v̇,λ) + γλ ≥ 0, though the resulting v̇ and λ will not quite
+/// satisfy c̈ = 0 (i.e., c̈ will be slightly negative). As hinted above,
+/// softening grants two benefits. First, the complementarity problems resulting
+/// from the softened unilateral constraints are regularized, and any
+/// complementarity problem becomes solvable given sufficient regularization
+/// [Cottle 1992]. Second (in concert with constraint stabilization), constraint
+/// softening introduces (coarse) compliant effects, e.g., at joint stops and
+/// between contacting bodies; such effects are often desirable for effecting
+/// robotic manipulation, for example; see [Catto 2004] for an accessible
+/// description of soft constraints. Note that Drake does not soften bilateral
+/// constraints.
+///
+/// <h3>Constraint stabilization</h3>
+/// Truncation and rounding errors can prevent constraints from being satisfied.
+/// For example, consider the bilateral constraint equation c(t,q) = 0. Even if
+/// c(t₀,q(t₀)) = ċ(t₀,q(t₀),v(t₀)) = c̈(t₀,q(t₀),v(t₀),v̇(t₀)) = 0, c(t₁,q(t₁))
+/// is unlikely to be zero for sufficiently large Δt = t₁ - t₀. Consequently,
+/// we can modify unilateral constraints to:<pre>
+/// 0 ≤ c̈ + αċ + βc + γλ ⊥  λ ≥ 0
+/// </pre>
+/// and bilateral constraints to:<pre>
+/// c̈ + αċ + βc = 0
+/// </pre>
+/// for non-negative scalars α and β (like λ, α and β can also represent
+/// diagonal matrices).
+///
+/// <h3>Definition of variables used within this documentation:</h3>
+/// - b ∈ ℕ   The number of bilateral constraint equations.
+/// - k ∈ ℕ   The number of edges in a polygonal approximation to a friction
+///           cone. Note that k = 2r.
+/// - m ∈ ℕ   The number of non-interpenetration constraint equations
+/// - n ∈ ℕ   The dimension of the system generalized velocity / force
+/// - r ∈ ℕ   *Half* the number of edges in a polygonal approximation to a
+///           friction cone. Note that k = 2r.
+/// - s ∈ ℕ   The number of contacts at which sliding is occurring. Note
+///           that m = s + y.
+/// - u ∈ ℕ   The number of "generic" (non-contact related) unilateral
+///           constraint equations.
+/// - v ∈ ℝⁿ  The generalized velocity vector of the system.
+/// - y ∈ ℕ   The number of contacts at which sliding is not occurring. Note
+///           that m = s + y.
+/// - α ∈ ℝ₀⁺ A scalar used to correct position-level constraint errors
+///           (i.e., "stabilize" the position constraints) via an error
+///           feedback process (Baumgarte Stabilization).
+/// - β ∈ ℝ₀⁺ A scalar used to correct velocity-level constraint errors via the
+///           same error feedback process (Baumgarte Stabilization) that uses α.
+/// - γ ∈ ℝ₀⁺ A scalar used to soften an otherwise perfectly "rigid" constraint.
+///
 template <class T>
 struct ConstraintAccelProblemData {
   /// Constructs acceleration problem data for a system with a @p gv_dim
@@ -78,7 +186,7 @@ struct ConstraintAccelProblemData {
   /// </pre>
   /// which implies the constraint definition c(t,q,v,v̇) ≡ G(q)⋅v̇ + kᴳ(t,q,v).
   /// G is defined as the ℝᵇˣⁿ Jacobian matrix that transforms generalized
-  /// velocities (v ∈ ℝⁿ) into the time derivatives of b bilateral constraint
+  /// velocities into the time derivatives of b bilateral constraint
   /// functions. The class of constraint functions naturally includes holonomic
   /// constraints, which are constraints posable as g(t,q). Such holonomic
   /// constraints must be twice differentiated with respect to time to yield
@@ -119,24 +227,18 @@ struct ConstraintAccelProblemData {
   /// points to the contact surface as the bodies move, one can introduce the
   /// constraint c(q) ≡ n(q)ᵀ(pᵢ(q) - pⱼ(q)), where n(q) is the
   /// surface normal expressed in the world frame. Differentiating c(q) once
-  /// with respect to time yields ċ(q,v) ≡ n(q)ᵀ(ṗᵢ(q,v) - ṗⱼ(q,v)) +
-  /// ṅ(q,v)ᵀ(pᵢ(q) - pⱼ(q)); one more differentiation with respect to time
-  /// yields c̈(q,v,v̇) ≡ n(q)ᵀ(p̈ᵢ(q) - p̈ⱼ(q)) + ṅ(q,v)ᵀ(ṗᵢ(q,v) - ṗⱼ(q,v)) +
-  /// n̈(q,v,v̇)ᵀ(pᵢ(q) - pⱼ(q)). By collecting terms and using the
-  /// to-be-defined Jacobian matrix N(q), we can introduce equivalent equations:
-  /// ċ(q,v) ≡ N⋅v + ṅ(q,v)ᵀ(pᵢ(q) - pⱼ(q)) and
-  /// c̈(q,v,v̇) ≡ N⋅v̇ + dN/dt⋅v + n̈(q,v,v̇)ᵀ(pᵢ(q) - pⱼ(q)).
+  /// with respect to time yields ċ(q,v) ≡ nᵀ(ṗᵢ - ṗⱼ) + ṅᵀ(pᵢ - pⱼ); one more
+  /// differentiation with respect to time yields
+  /// c̈(q,v,v̇) ≡ nᵀ(p̈ᵢ - p̈ⱼ) + ṅᵀ(ṗᵢ - ṗⱼ) + n̈ᵀ(pᵢ - pⱼ). By collecting
+  /// terms and using the to-be-defined Jacobian matrix N(q), we can introduce
+  /// equivalent equations:<pre>
+  /// ċ(q,v) ≡ N⋅v + ṅᵀ⋅(pᵢ - pⱼ)</pre>
+  /// and:<pre>
+  /// c̈(q,v,v̇) ≡ N⋅v̇ + Ndot⋅v + n̈ᵀ(pᵢ - pⱼ).
+  /// </pre>
   ///
-  /// The Newton-Euler equations (essentially F = ma) coupled with the c(q)
-  /// constraint above yields an Index-3 DAE (see [Hairer 1996]), generally
-  /// makes the initial value problem hard to solve, computationally speaking;
-  /// coupling the Newton-Euler equations with the constraint equation
-  /// c̈(q,v,v̇) and the initial conditions c(q) = ċ(q,v) = 0 yields a far more
-  /// manageable Index-1 DAE, again with regard to computation. Note that the
-  /// assumption c(q) = 0, yielding pᵢ(q) - pⱼ(q) = 0, implies that
-  /// ṅ(q,v)ᵀ(pᵢ(q) - pⱼ(q)) (in ċ(q,v)) and n̈(q,v,v̇)ᵀ(pᵢ(q) - pⱼ(q)) (in
-  /// c̈(q,v,v̇)) are both zero.
-  ///
+  /// The non-negativity condition on the constraint force magnitudes (λ ≥ 0)
+  /// keeps the contact force along the contact normal compressive, as desired.
   /// With this background in mind, N is the ℝᵐˣⁿ Jacobian matrix that
   /// transforms generalized velocities (v ∈ ℝⁿ) into velocities projected along
   /// the contact normals at the m point contacts. The problem data also must
@@ -144,28 +246,14 @@ struct ConstraintAccelProblemData {
   /// velocities (n is the dimension of generalized velocity) into velocities
   /// projected along the directions of sliding at the s *sliding* contact
   /// points (rows of Q that correspond to non-sliding contacts should be zero).
-  /// Finally, we introduce a new catch-all term k̅ᴺ(t,q,v) to reformulate
-  /// c̈(q,v,v̇) and two other coupled vector constraint equations:<pre>
-  /// 0 ≤ N(q)⋅v̇ + k̅ᴺ(t,q,v)  ⊥  fᴺ ≥ 0
-  /// </pre>
-  /// which means that c̈(q,v,v̇) is coupled to a force constraint that requires
-  /// the force to be compressive (fᴺ ≥ 0) and a complementarity constraint
-  /// fᴺ⋅(Nv̇ + k̅ᴺ(t,q,v)) = 0, meaning that the constraint can apply no
-  /// force if it is inactive (i.e., if c̈(q,v,v̇) is strictly greater than
-  /// zero).
   ///
-  /// For reasons both numerical (hard constraints are computationally more
-  /// challenging to solve to high precision) and qualitative (contact between
-  /// bodies is never truly rigid [Lacoursiere 2007]), the problem data permits
-  /// solving a a stabilized and softened version of c̈(q,v,v̇):<pre>
-  /// c̈ₛ(q,v,v̇) ≡ N(q)⋅v̇ + kᴺ(t,q,v) + γᴺfᴺ
-  /// </pre>
-  /// where kᴺ(t,q,v) ≡ k̅(t,q,v) + αċ(q,v) + βc(q), for α ≥ 0 and β ≥ 0,
-  /// combines k̅(t,q,v) with constraint stabilization terms, thereby allowing
-  /// one to reduce ||ċ(q,v)|| and ||c(q)||. The factor γᴺfᴺ, where γᴺ ≥ 0 is a
-  /// user-provided diagonal matrix, acts to "soften" the  constraint: if γᴺ is
-  /// nonzero, less force will be required to satisfy c̈ₛ.
-  /// </pre>
+  /// Given these descriptions, the user needs to define operators for computing
+  /// N⋅w (w ∈ ℝⁿ is an arbitrary vector) and (Nᵀ-μQᵀ)⋅f (f ∈ ℝᵐ is an arbitrary
+  /// vector). The user also needs to provide γᴺ ∈ ℝᵐ, a vector of non-negative
+  /// entries used to soften the non-interpenetration constraints, and kᴺ ∈ ℝᵐ,
+  /// the vector Ndot⋅v + αċ(q,v) + βc(q). There currently exist no guidelines
+  /// for setting α, β, and γ to effect a particular damping ratio and
+  /// oscillation frequency at the acceleration level.
   /// @{
 
   /// An operator that performs the multiplication N⋅v.
@@ -190,42 +278,82 @@ struct ConstraintAccelProblemData {
   /// @name Data for non-sliding contact friction constraints
   /// Problem data for constraining the tangential acceleration of two bodies
   /// projected along the contact surface tangents, for m point contacts.
-  /// These data center around the Jacobian matrix, F ∈ ℝʸʳˣⁿ, that
-  /// transforms generalized velocities (v ∈ ℝⁿ) into velocities projected
-  /// along the r vectors that span the contact tangents at the y *non-sliding*
-  /// point contacts. For contact problems in two dimensions, r would be one.
-  /// For a friction pyramid in three dimensions, r would be two. While the
-  /// definition of the dimension of the Jacobian matrix above indicates that
-  /// every one of the y non-sliding contacts uses the same "r", the code
-  /// imposes no such requirement.
   ///
-  /// The Jacobian matrix F allows formulating the non-sliding friction
-  /// force constraints as:<pre>
-  /// 0 ≤ F(q)⋅v̇ + kᶠ(t,q,v) + E⋅Λ + γᶠfᶜ  ⊥  fᶜ ≥ 0
-  /// 0 ≤ μ⋅fN - Eᵀ⋅fᶜ + γᴱΛ ⊥ Λ ≥ 0
+  /// Non-sliding constraints can be dichotomized into two types: kinematic
+  /// constraints on tangential motion and frictional force constraints.
+  /// One of these constraint sets in 3D looks like:<pre>
+  /// (0) ⁰g ≡ μ⋅fᴺ - ||fˢ fᵗ|| ≥ 0
+  /// (1) ¹g ≡ ((pᵢ - pⱼ)ᵀbₛ)² + ((pᵢ - pⱼ)ᵀbₜ)² = 0
   /// </pre>
-  /// which means that the constraint
-  /// c̈(t,q,v,v̇) ≡ F(q)⋅v̇ + kᶠ(t,q,v) + E⋅Λ + γᶠfᶜ is coupled to a force
-  /// constraint (fᶜ ≥ 0) and a complementarity constraint
-  /// fᶜ⋅(Fv̇ + kᴺ(t,q,v) + E⋅Λ + γᶠfᶜ) = 0: the constraint can apply no
-  /// force if it is inactive (i.e., if c̈(t,q,v,v̇) is strictly greater than
-  /// zero). Λ can roughly be interpreted as the remaining tangential
-  /// acceleration at the non-sliding contacts after contact forces have been
-  /// applied. E is a binary matrix with blocks of one-vector columns
-  /// (refer to [Anitescu 1997]). Note that the second constraint, which
-  /// represents a linearized friction cone constraint (i.e., it is a constraint
-  /// on the unknown forces), is coupled to a "slack" variable (Λ).
+  /// where bₛ and bₜ are basis vectors in ℝ³ that span the contact tangent
+  /// plane, pᵢ, pⱼ ∈ ℝ³ represent a point of contact between bodies i and j,
+  /// μ is the coefficient of sticking friction, fᴺ is the magnitude of the
+  /// force applied along the contact normal, and fˢ and fᵗ are scalars
+  /// corresponding to the frictional forces applied along the basis vectors.
+  /// Since nonlinear equations are typically challenging to solve, ⁰g and ¹g
+  /// are often transformed to linear approximations:<pre>
+  /// (0')     g̅₀ ≡ μ⋅fᴺ - 1ᵀfᵇ
+  /// (1')     g̅₁ ≡ (pᵢ - pⱼ)ᵀb₁
+  /// ...
+  /// (r')     g̅ᵣ ≡ (pᵢ - pⱼ)ᵀbᵣ
+  /// (r+1') g̅ᵣ₊₁ ≡ -(pᵢ - pⱼ)ᵀb₁
+  /// ...
+  /// (k')     g̅k ≡ -(pᵢ - pⱼ)ᵀbᵣ
+  /// </pre>
+  /// where b₁,...,bᵣ ∈ ℝ³ (k = 2r) are a set of spanning vectors in the contact
+  /// tangent plane (the more vectors, the better the approximation to the
+  /// nonlinear friction cone), and fᵇ ≥ 0 (which will conveniently allow us
+  /// to pose these constraints within the linear complementarity problem
+  /// framework), where fᵇ ∈ ℝᵏ are non-negative scalars that represent the
+  /// frictional force along the spanning vectors and the negated spanning
+  /// vectors. Equations 0'-k' cannot generally be satisfied simultaneously:
+  /// maximizing fᵇ (i.e., fᵇ = μ⋅fᴺ) may be insufficient to keep the relative
+  /// tangential movement at the point of contact zero. Accordingly, we
+  /// transform Equations 0'-k' to the following:<pre>
+  /// (0*)     c₀ ≡ μ⋅fᴺ - 1ᵀfᵇ
+  /// (1*)     c₁ ≡ (pᵢ - pⱼ)ᵀb₁ - Λ
+  /// ...
+  /// (r*)     cᵣ ≡ (pᵢ - pⱼ)ᵀbᵣ - Λ
+  /// (r+1*) cᵣ₊₁ ≡ -(pᵢ - pⱼ)ᵀb₁ - Λ
+  /// ...
+  /// (k*)     cₖ ≡ -(pᵢ - pⱼ)ᵀbᵣ - Λ
+  /// </pre>
+  /// which lead to the following complementarity conditions:<pre>
+  /// 0 ≤ c₀    ⊥      Λ ≥ 0
+  /// 0 ≤ c₁    ⊥    fᵇ₁ ≥ 0
+  /// ...
+  /// 0 ≤ cᵣ    ⊥    fᵇᵣ ≥ 0
+  /// 0 ≤ cᵣ₊₁  ⊥  fᵇᵣ₊₁ ≥ 0
+  /// 0 ≤ cₖ    ⊥    fᵇₖ ≥ 0
+  /// </pre>
+  /// where Λ is roughly interpretable as the remaining tangential acceleration
+  /// at the contact after constraint forces have been applied.  From this
+  /// construction, the frictional force to be applied along direction
+  /// i will be equal to fᵇᵢ - fᵇᵣ₊ᵢ. Given the descriptions of c(.) and the
+  /// Jacobian matrix F (defined in the following paragraph), the user needs to
+  /// define operators for computing F⋅w (w ∈ ℝⁿ is an arbitrary vector) and
+  /// Fᵀ⋅f (f ∈ ℝʸʳ is an arbitrary vector). The user also needs to provide
+  /// γᶠ ∈ ℝʸʳ (a vector of non-negative entries used to relax the sticking
+  /// constraints), γᴱ ∈ ℝᵐ (a vector of non-negative entries used to relax the
+  /// linearized Coulomb friction cone constraint, i.e., Equation 0* above),
+  /// and kᶠ ∈ ℝʸʳ, the vector Fdot⋅v + αċ(q,v) + βc(q) (where c(q) is the
+  /// collection of Equations 1*-k*). Unlike with general constraint
+  /// softening, γᶠ and γᴱ are useful primarily as regularization parameters for
+  /// the numerical solution process: one typically selects these parameters to
+  /// be as small as possible while still permitting the resulting
+  /// complementarity problems to be solved reliably. The resulting stiction
+  /// drift should be so small that no constraint stabilization (i.e., setting
+  /// α = β = 0) should be sufficient for most applications.
   ///
-  /// The factors γᶠfᶜ and γᴱΛ, where γᶠ ≥ 0 and γᴱ ≥ 0 are user-provided
-  /// diagonal matrices, act to "soften" the constraints. If γᶠ is nonzero,
-  /// c̈ will require less force to be satisfied; if γᴱ is nonzero,
-  /// stiction will be treated as satisfied even when some non-zero tangential
-  /// acceleration remains at the non-sliding contacts. The
-  /// interested reader should refer to [Anitescu 1997] for a more thorough
-  /// explanation of these constraints; the full constraint equations are
-  /// presented only to elucidate the purpose of the kᶠ, γᶠ, and γᴱ terms.
-  /// Analogously to the case of kᴺ, kᶠ should be set to dF/dt(q,v)⋅v; also
-  /// analogously, kᶠ can be used to perform constraint stabilization.
+  /// As noted above, the user must define operators based on the Jacobian
+  /// matrix, F ∈ ℝʸʳˣⁿ, that transforms generalized velocities (v ∈ ℝⁿ) into
+  /// velocities projected along the r vectors that span the contact tangents at
+  /// the y *non-sliding* point contacts; the iᵗʰ set of r rows in F corresponds
+  /// to the iᵗʰ non-sliding point contact. For contact problems in two
+  /// dimensions, r would be one. For a friction pyramid in three dimensions, r
+  /// would be two. While the definition of the dimension of the Jacobian matrix
+  /// above indicates that every one of the y non-sliding contacts uses the same
+  /// "r", the code imposes no such requirement.
   /// @{
 
   /// An operator that performs the multiplication F⋅v. The default operator
@@ -256,8 +384,8 @@ struct ConstraintAccelProblemData {
   /// is coupled to a force constraint (fᶜ ≥ 0) and a complementarity constraint
   /// fᶜ⋅(L⋅v̇ + kᴸ(t,q,v) + γᴸfᶜ) = 0, meaning that the constraint can apply no
   /// force if it is inactive (i.e., if c(q,v,v̇) is strictly greater than zero).
-  /// L is defined as the ℝˢˣⁿ Jacobian matrix that transforms generalized
-  /// velocities (v ∈ ℝⁿ) into the time derivatives of s unilateral constraint
+  /// L is defined as the ℝᵘˣⁿ Jacobian matrix that transforms generalized
+  /// velocities (v ∈ ℝⁿ) into the time derivatives of u unilateral constraint
   /// functions. The factor γᴸfᶜ, where γᴸ ≥ 0 is a user-provided diagonal
   /// matrix, acts to "soften" the constraint: if γᴸ is nonzero, c̈ will
   /// be satisfiable with a smaller fᶜ.
