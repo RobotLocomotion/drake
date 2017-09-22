@@ -96,9 +96,9 @@ class TimeSteppingRigidBodyPlant : public RigidBodyPlant<T> {
   // outside of the range [0,1] are invalid, and will cause assertion failures).
   // Since Lacoursiere's constraint stabilization process assumes that the
   // constraint function is approximately linear in position, values of ERP
-  // smaller than unity are generally recommended. A generally safe value of 0.1
-  // is the the default, and can be increased as desired to mitigate constraint
-  // error.
+  // strictly smaller than unity are generally recommended. A generally safe
+  // value of 0.1 is the the default, and can be increased as desired to
+  // mitigate constraint error.
   double erp_{0.1};
 
   // The "constraint force mixing" (CFM) parameter, first seen in CM Labs'

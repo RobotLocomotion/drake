@@ -161,7 +161,7 @@ void TimeSteppingRigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   DRAKE_DEMAND(ldlt.info() == Eigen::Success);
 
   // Set the inertia matrix solver.
-  data.solve_inertia = [this, &ldlt](const MatrixX<T>& m) {
+  data.solve_inertia = [&ldlt](const MatrixX<T>& m) {
     return ldlt.solve(m);
   };
 
