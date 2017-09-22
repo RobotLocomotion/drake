@@ -18,15 +18,15 @@ namespace automotive {
 /// It is time-triggered, and signals "green" for half of its period and "red"
 /// for the other half.
 ///
-/// At this time, the only supported value of T is double.
-// TODO(nikos-tri): Support AutoDiffXd and Symbolic.
+/// At this time, the only supported value of T is double
+// TODO(nikos-tri): Support AutoDiffXd and Symbolic
 
 template <typename T>
 class TrafficLight : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TrafficLight)
 
-  /// Positions and radius are in meters, period is in seconds.
+  /// Positions and radius are in meters, period is in seconds
   TrafficLight(T x_position, T y_position, T radius, T period);
 
   /// No input port, because this system is time-triggered.
@@ -46,5 +46,5 @@ class TrafficLight : public systems::LeafSystem<T> {
                    systems::BasicVector<T>* output) const;
 };
 
-}  // namespace automotive
 }  // namespace drake
+}  // namespace automotive

@@ -12,25 +12,26 @@ load("//tools:lint.bzl", "add_lint_tests")
 package(default_visibility = ["//visibility:public"])
 
 drake_cc_library(
-    name = "traffic_light",
-    srcs = [
-        "traffic_light.cc",
-    ],
-    hdrs = [
-        "traffic_light.h",
-    ],
-    deps = [
-        "//drake/systems/framework",
-    ],
+  name = "traffic_light",
+  srcs = [
+          "traffic_light.cc",
+  ],
+  hdrs = [
+          "traffic_light.h",
+  ],
+  deps = [
+          "//drake/systems/framework",
+  ],
 )
+
 
 # === test/ ===
 drake_cc_googletest(
-    name = "traffic_light_test",
-    srcs = ["test/traffic_light_test.cc"],
-    deps = [
-        ":traffic_light",
-    ],
+  name = "traffic_light_test",
+  srcs = ["test/traffic_light_test.cc"],
+  deps = [
+          ":traffic_light",
+  ],
 )
 
 add_lint_tests()
