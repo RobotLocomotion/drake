@@ -44,6 +44,10 @@ drake_cc_googletest(
     data = [
         "//drake/manipulation/models/iiwa_description:models",
     ],
+    # TODO(eric.cousineau): Remove this tag once #3128 or the IK redux lands.
+    # On some CI machines without SNOPT, system IPOPT is used, and exceeds time
+    # limits under memcheck with -c dbg.
+    tags = ["no_memcheck"],
     deps = [
         ":pick_and_place",
         "//drake/common:find_resource",
