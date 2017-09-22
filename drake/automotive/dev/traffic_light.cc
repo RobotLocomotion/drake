@@ -16,7 +16,12 @@ TrafficLight<T>::TrafficLight(T x_position, T y_position, T radius, T period)
                                                   &TrafficLight::DoCalcOutput)
                         .get_index()} {
   // Register parameters.
-  const Vector4<T> parameters(x_position, y_position, radius, period);
+  VectorX<T> parameters(4);
+  parameters(0) = x_position;
+  parameters(1) = y_position;
+  parameters(2) = radius;
+  parameters(3) = period;
+
   const BasicVector<T> p(parameters);
   parameters_index_ = this->DeclareNumericParameter(p);
 }
@@ -45,7 +50,11 @@ void TrafficLight<T>::DoCalcOutput(const systems::Context<T>& context,
     signal = 1;
   }
 
-  const Vector4<T> signal_data(x_position, y_position, radius, signal);
+  VectorX<T> signal_data(4);
+  signal_data(0) = x_position;
+  signal_data(1) = y_position;
+  signal_data(2) = radius;
+  signal_data(3) = signal;
   WriteOutput(signal_data, output);
 }
 

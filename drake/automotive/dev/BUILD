@@ -15,13 +15,13 @@ drake_cc_library(
   name = "traffic_light",
   srcs = [
           "traffic_light.cc",
-  ],
+          ],
   hdrs = [
           "traffic_light.h",
-  ],
+          ],
   deps = [
           "//drake/systems/framework",
-  ],
+         ],
 )
 
 
@@ -31,7 +31,7 @@ drake_cc_googletest(
   srcs = ["test/traffic_light_test.cc"],
   deps = [
           ":traffic_light",
-  ],
+          ],
 )
 
 add_lint_tests()

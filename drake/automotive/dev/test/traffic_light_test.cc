@@ -7,11 +7,16 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include "drake/systems/framework/basic_vector.h"
+
 namespace drake {
+using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
+using std::abs;
 using std::unique_ptr;
 
+using systems::BasicVector;
 using systems::Context;
 using systems::SystemOutput;
 
@@ -19,13 +24,22 @@ namespace automotive {
 namespace {
 
 GTEST_TEST(TrafficLightTest, BasicTest) {
-  const TrafficLight<double> traffic_light(0, 0, 1, 6);
+  TrafficLight<double> traffic_light(0, 0, 1, 6);
   unique_ptr<Context<double>> context = traffic_light.CreateDefaultContext();
   unique_ptr<SystemOutput<double>> output =
       traffic_light.AllocateOutput(*context);
 
-  const Eigen::Vector4d signal_open(0, 0, 1, 0);
-  const Eigen::Vector4d signal_closed(0, 0, 1, 1);
+  VectorXd signal_open(4);
+  signal_open(0) = 0;
+  signal_open(1) = 0;
+  signal_open(2) = 1;
+  signal_open(3) = 0;
+
+  VectorXd signal_closed(4);
+  signal_closed(0) = 0;
+  signal_closed(1) = 0;
+  signal_closed(2) = 1;
+  signal_closed(3) = 1;
 
   // This sequence increases time and watches the signal change.
   traffic_light.CalcOutput(*context, output.get());
