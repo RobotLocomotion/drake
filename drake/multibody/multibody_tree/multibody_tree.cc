@@ -36,7 +36,7 @@ class JointModelBuilder {
   typedef typename Joint<T>::BluePrint JointBluePrint;
   typedef typename Joint<T>::JointModel JointModel;
 };
-}
+}  // namespace internal
 
 template <typename T>
 MultibodyTree<T>::MultibodyTree() {

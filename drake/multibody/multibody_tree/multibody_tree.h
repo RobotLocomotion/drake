@@ -372,6 +372,35 @@ class MultibodyTree {
         std::make_unique<MobilizerType<T>>(std::forward<Args>(args)...));
   }
 
+  /// Creates and adds to `this` %MultibodyTree (which retains ownership) a new
+  /// Joint member with the specific type `JointType`. The arguments to this
+  /// method `args` are forwarded to `JointType`'s constructor.
+  ///
+  /// The newly created `JointType` object will be specialized on the scalar
+  /// type T of this %MultibodyTree.
+  ///
+  /// Example of usage:
+  /// @code
+  ///   MultibodyTree<T> model;
+  ///   // ... Code to define a parent body P and a child body B.
+  ///   const Body<double>& parent_body =
+  ///     model.AddBody<RigidBody>(SpatialInertia<double>(...));
+  ///   const Body<double>& child_body =
+  ///     model.AddBody<RigidBody>(SpatialInertia<double>(...));
+  ///   // Define the pose X_PF of a frame F rigidly atached to parent body P.
+  ///   // Define the pose X_BM of a frame M rigidly atached to child body B.
+  ///   const RevoluteJoint<double>& pin =
+  ///     model.AddJoint<RevoluteJoint>(
+  ///       "PinJoint",             /* joint name */
+  ///       model.get_world_body(), /* parent body */
+  ///       Isometry3d::Identity(), /* frame F IS the world frame W */
+  ///       pendulum,               /* child body, the pendulum */
+  ///       X_BM,                   /* pose of frame M in the body frame B */
+  ///       Vector3d::UnitZ()       /* revolute axis in this case */));
+  /// @endcode
+  ///
+  /// @see The Joint class's documentation for further details on how to define
+  /// a joint.
   template<template<typename Scalar> class JointType, typename... Args>
   const JointType<T>& AddJoint(Args&&... args) {
     static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
@@ -914,8 +943,8 @@ class MultibodyTree {
 
     // MultibodyTree creates the inboard/outboard frames now, since the
     // information to do so is already available. Also, that allows users to
-    // call Joint<T>::get_frame_on_parent() and/or Joint<T>::get_frame_on_child()
-    // if they need to.
+    // call Joint<T>::get_frame_on_parent() and/or
+    // Joint<T>::get_frame_on_child() if they need to.
     joint->MakeInOutFramesAndAdd(this);
     // At this point, joint has no implementation (that is, mobilizers, force
     // elements, etc.). This will get created at Finalize().
