@@ -268,11 +268,11 @@ class LeafSystem : public System<T> {
             UnrestrictedUpdateEvent<T>>::MakeForcedEventCollection());
   }
 
-  std::unique_ptr<System<AutoDiffXd>> DoToAutoDiffXd() const override {
+  std::unique_ptr<System<AutoDiffXd>> DoToAutoDiffXd() const final {
     return system_scalar_converter_.Convert<AutoDiffXd, T>(*this);
   }
 
-  std::unique_ptr<System<symbolic::Expression>> DoToSymbolic() const override {
+  std::unique_ptr<System<symbolic::Expression>> DoToSymbolic() const final {
     return system_scalar_converter_.Convert<symbolic::Expression, T>(*this);
   }
 
