@@ -135,20 +135,6 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   /// @}
 
  private:
-  // Friend class to facilitate testing.
-  friend class JointTester;
-
-  // Returns the mobilizer implementing this joint when the Joint<T> object is
-  // implemented with a single mobilizer. Otherwise it returns nullptr.
-  // In general it should not be called since we do not know a priori what the
-  // implementaion is. Used mostly for testing together with friend class
-  // JointTester.
-  virtual const Mobilizer<T>* get_mobilizer() const {
-    // calling this method with other uses than testing most likely would mean
-    // something is wrong. Therefore the default is to return nullptr.
-    return nullptr;
-  }
-
   std::string name_;
   const RigidBody<T>& inboard_body_;
   const RigidBody<T>& outboard_body_;

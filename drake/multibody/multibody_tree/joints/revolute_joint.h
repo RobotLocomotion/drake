@@ -99,8 +99,11 @@ class RevoluteJoint final : public Joint<T> {
   // private members of RevoluteJoint<T>.
   template <typename> friend class RevoluteJoint;
 
-  // Used mostly for testing through Joint's friend JointTester.
-  virtual const RevoluteMobilizer<T>* get_mobilizer() const {
+  // Friend class to facilitate testing.
+  friend class JointTester;
+
+  // Returns the mobilizer implementing this joint.
+  const RevoluteMobilizer<T>* get_mobilizer() const {
     DRAKE_DEMAND(mobilizer_ != nullptr);
     return mobilizer_;
   }

@@ -908,7 +908,7 @@ class MultibodyTree {
     }
     const JointIndex joint_index(owned_joints_.size());
 
-    // Parent tree MUST be set before the call to MakeModelAndAdd().
+    // Parent tree MUST be set before the call to MakeInOutFramesAndAdd().
     // Do not move them around!!!.
     joint->set_parent_tree(this, joint_index);
 

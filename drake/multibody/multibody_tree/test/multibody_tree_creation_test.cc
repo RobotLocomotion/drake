@@ -10,13 +10,29 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 
+#include<iostream>
+#define PRINT_VAR(a) std::cout << #a": " << std::endl;
+
 namespace drake {
 namespace multibody {
+
+// Friend class for accessing Joint<T> protected/private internals.
+class JointTester {
+ public:
+  JointTester() = delete;
+  static const Mobilizer<double>* get_mobilizer(
+      const RevoluteJoint<double>& joint) {
+    return joint.get_mobilizer();
+  }
+};
+
 namespace {
 
+using Eigen::Isometry3d;
 using Eigen::Vector3d;
 using std::make_unique;
 using std::set;
@@ -224,7 +240,7 @@ class TreeTopologyTests : public ::testing::Test {
     ConnectBodies(*bodies_[5], *bodies_[3]);  // mob. 3
     ConnectBodies(*bodies_[0], *bodies_[5]);  // mob. 4
     ConnectBodies(*bodies_[4], *bodies_[1]);  // mob. 5
-    ConnectBodies(*bodies_[0], *bodies_[4]);  // mob. 6
+    ConnectBodies(*bodies_[0], *bodies_[4], true);  // mob. 6
   }
 
   const RigidBody<double>* AddTestBody() {
@@ -236,14 +252,34 @@ class TreeTopologyTests : public ::testing::Test {
     return body;
   }
 
-  const Mobilizer<double>* ConnectBodies(
-      const Body<double>& inboard, const Body<double>& outboard) {
-    const Mobilizer<double>* mobilizer =
-        &model_->AddMobilizer<RevoluteMobilizer>(
-            inboard.get_body_frame(), outboard.get_body_frame(),
-            Vector3d::UnitZ());
-    mobilizers_.push_back(mobilizer);
-    return mobilizer;
+  void ConnectBodies(
+      const RigidBody<double>& inboard, const RigidBody<double>& outboard,
+      bool use_joint = false) {
+    if( use_joint ) {
+       const auto* joint = &model_->AddJoint<RevoluteJoint>(
+           "FooJoint",
+           inboard, Isometry3d::Identity(), outboard, Isometry3d::Identity(),
+           Vector3d::UnitZ());
+      joints_.push_back(joint);
+    }else {
+      const Mobilizer<double> *mobilizer =
+          &model_->AddMobilizer<RevoluteMobilizer>(
+              inboard.get_body_frame(), outboard.get_body_frame(),
+              Vector3d::UnitZ());
+      mobilizers_.push_back(mobilizer);
+    }
+  }
+
+  void FinalizeModel() {
+    model_->Finalize();
+
+    // For testing, collect all mobilizer models introduced by Joint objects.
+    // These are only available after Finalize().
+    for (const RevoluteJoint<double>* joint : joints_) {
+      const auto* mobilizer = JointTester::get_mobilizer(*joint);
+      PRINT_VAR(mobilizer);
+      mobilizers_.push_back(mobilizer);
+    }
   }
 
   // Performs a number of tests on the BodyNodeTopology corresponding to the
@@ -351,9 +387,11 @@ class TreeTopologyTests : public ::testing::Test {
  protected:
   std::unique_ptr<MultibodyTree<double>> model_;
   // Bodies:
-  std::vector<const Body<double>*> bodies_;
+  std::vector<const RigidBody<double>*> bodies_;
   // Mobilizers:
   std::vector<const Mobilizer<double>*> mobilizers_;
+  // Joints:
+  std::vector<const RevoluteJoint<double>*> joints_;
 };
 
 // This unit tests verifies that the multibody topology is properly compiled.
@@ -372,7 +410,7 @@ TEST_F(TreeTopologyTests, Finalize) {
 // This unit tests verifies the correct number of generalized positions and
 // velocities as well as the start indexes into the state vector.
 TEST_F(TreeTopologyTests, SizesAndIndexing) {
-  model_->Finalize();
+  FinalizeModel();
   EXPECT_EQ(model_->get_num_bodies(), 8);
   EXPECT_EQ(model_->get_num_mobilizers(), 7);
 

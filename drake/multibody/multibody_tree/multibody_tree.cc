@@ -82,7 +82,9 @@ void MultibodyTree<T>::FinalizeInternals() {
 template <typename T>
 void MultibodyTree<T>::Finalize() {
   // Create Joint objects's implementation.
-  // This must happen before FinalizeTopology() so that the model is complete.
+  // This must happen before FinalizeTopology() so that the model, in terms of
+  // basic MBT elements such as frames, bodies, mobilizers, force elements and
+  // constraints, is complete.
   for (auto& joint : owned_joints_) {
     joint->MakeModelAndAdd(this);
   }
