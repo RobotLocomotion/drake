@@ -1,3 +1,5 @@
+#pragma once
+
 #include <string>
 
 #include "drake/examples/QPInverseDynamicsForHumanoids/plan_eval/generic_plan.h"
