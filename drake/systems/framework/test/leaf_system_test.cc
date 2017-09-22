@@ -1083,6 +1083,12 @@ GTEST_TEST(LeafSystemScalarConverterTest, AutoDiffYes) {
   auto maybe = dut.ToAutoDiffXdMaybe();
   ASSERT_NE(maybe, nullptr);
   EXPECT_EQ(maybe->get_name(), "special_name");
+
+  // Spot check the specific converter object.
+  EXPECT_TRUE((
+      dut.get_system_scalar_converter().IsConvertible<AutoDiffXd, double>()));
+  EXPECT_FALSE((
+      dut.get_system_scalar_converter().IsConvertible<double, double>()));
 }
 
 // Sanity check the default implementation of ToAutoDiffXd, for cases that
