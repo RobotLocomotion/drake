@@ -596,7 +596,7 @@ class MosekSolver::License {
 
     // Acquire the license for the base MOSEK system so that we can
     // fail fast if the license file is missing or the server is
-    // unavailable.  Any additional features should be checked out
+    // unavailable. Any additional features should be checked out
     // later by MSK_optimizetrm if needed (so there's still the
     // possiblity of later failure at that stage if the desired
     // feature is unavailable or another error occurs).
@@ -614,6 +614,7 @@ class MosekSolver::License {
   MSKenv_t mosek_env() const {
     return mosek_env_;
   }
+
  private:
   MSKenv_t mosek_env_{nullptr};
 };
