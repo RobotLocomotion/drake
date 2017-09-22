@@ -677,6 +677,7 @@ drake_cc_googletest(
     deps = [
         ":leaf_system",
         ":system_scalar_converter",
+        "//drake/common/test_utilities",
         "//drake/systems/framework/test_utilities:scalar_conversion",
     ],
 )

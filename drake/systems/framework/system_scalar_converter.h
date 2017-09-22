@@ -103,6 +103,10 @@ class SystemScalarConverter {
   template <template <typename> class S, typename T, typename U>
   void AddIfSupported();
 
+  /// Removes from this converter all pairs where `other.IsConvertible<T, U>`
+  /// is false.  The subtype `S` need not be the same between this and `other`.
+  void RemoveUnlessAlsoSupportedBy(const SystemScalarConverter& other);
+
   /// Returns true iff this object can convert a System<U> into a System<T>,
   /// i.e., whether Convert() will return non-null.
   ///
