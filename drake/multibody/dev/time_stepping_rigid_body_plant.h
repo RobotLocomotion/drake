@@ -45,7 +45,7 @@ class TimeSteppingRigidBodyPlant : public RigidBodyPlant<T> {
   /// Sets the CFM parameter. Aborts if negative. Default value is 1e-12.
   void set_cfm(double cfm) { DRAKE_DEMAND(cfm >= 0); cfm_ = cfm; }
 
- protected:
+ private:
   void DoCalcDiscreteVariableUpdates(const Context<T>& context,
       const std::vector<const DiscreteUpdateEvent<double>*>&,
       DiscreteValues<T>* updates) const override;
@@ -53,7 +53,6 @@ class TimeSteppingRigidBodyPlant : public RigidBodyPlant<T> {
   // Pointer to the class that performs all constraint computations.
   multibody::constraint::ConstraintSolver<T> constraint_solver_;
 
- private:
   void CalcContactStiffnessAndDamping(
       const drake::multibody::collision::PointPair& contact,
       double* stiffness,
