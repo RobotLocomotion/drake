@@ -2,6 +2,7 @@ add_library_with_exports(LIB_NAME drakeMultibodyTree SOURCE_FILES
   body.cc
   body_node_impl.cc
   fixed_offset_frame.cc
+  joints/revolute_joint.cc
   mobilizer_impl.cc
   multibody_tree.cc
   multibody_tree_context.cc
@@ -19,6 +20,8 @@ drake_install_libraries(drakeMultibodyTree)
 drake_install_headers(
   body.h
   fixed_offset_frame.h
+  joints/joint.h
+  joints/revolute_joint.h
   multibody_tree.h
   multibody_tree_element.h
   multibody_tree_context.h
