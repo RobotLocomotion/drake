@@ -38,5 +38,19 @@ const SystemScalarConverter::ErasedConverterFunc* SystemScalarConverter::Find(
   }
 }
 
+void SystemScalarConverter::RemoveUnlessAlsoSupportedBy(
+    const SystemScalarConverter& other) {
+  // Remove the items from `funcs_` whose key is absent from `other`.
+  // (This would use erase_if, if we had it.)
+  for (auto iter = funcs_.begin(); iter != funcs_.end(); ) {
+    const Key& our_key = iter->first;
+    if (other.funcs_.count(our_key) == 0) {
+      iter = funcs_.erase(iter);
+    } else {
+      ++iter;
+    }
+  }
+}
+
 }  // namespace systems
 }  // namespace drake
