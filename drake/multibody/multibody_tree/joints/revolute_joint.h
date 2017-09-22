@@ -1,7 +1,9 @@
 #pragma once
 
 #include <limits>
+#include <memory>
 #include <string>
+#include <utility>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/multibody_tree/joints/joint.h"
@@ -10,6 +12,23 @@
 namespace drake {
 namespace multibody {
 
+/// This Joint allows two rigid bodies to rotate relatively to one another
+/// around a common axis.
+/// That is, given a frame F rigidly attached to the parent body P and a frame M
+/// rigidly attached to the child body B (see the Joint class's documentation),
+/// This Joint allows frames F and M to rotate with respect to each other about
+/// an axis â that is constant when measured in either frame F or M. In
+/// addition, this axis â has the same measures in frame F and M, that is,
+/// `â_F = â_M`.
+///
+/// @tparam T The scalar type. Must be a valid Eigen scalar.
+///
+/// Instantiated templates for the following kinds of T's are provided:
+/// - double
+/// - AutoDiffXd
+///
+/// They are already available to link against in the containing library.
+/// No other values for T are currently supported.
 template <typename T>
 class RevoluteJoint final : public Joint<T> {
  public:
@@ -18,6 +37,14 @@ class RevoluteJoint final : public Joint<T> {
   template<typename Scalar>
   using Context = systems::Context<Scalar>;
 
+  /// Constructor to create a revolute joint between two rigid bodies so that
+  /// frame F rigidly attached to the parent body P and frame
+  /// M rigidly attached to the child body B, rotate relatively to one another
+  /// about a common axis. See this class's documentation for further details on
+  /// the definition of these frames.
+  /// The first five argument to this constructor are those of the Joint class
+  /// constructor. See the Joint class's documentation for details.
+  /// The additional parameter `axis` is:
   /// @param[in] axis
   ///   A vector in ℝ³ specifying the axis of revolution for this joint. Given
   ///   that frame M only rotates with respect to F and their origins are
@@ -25,50 +52,70 @@ class RevoluteJoint final : public Joint<T> {
   ///   are exactly the same, that is, `axis_F = axis_M`. In other words,
   ///   `axis_F` (or `axis_M`) is the eigenvector of `R_FM` with eigenvalue
   ///   equal to one.
+  ///   This vector can have any length, only the direction is used. This method
+  ///   aborts if `axis` is the zero vector.
   RevoluteJoint(const std::string& name,
                 const RigidBody<T>& parent_body, const Isometry3<double>& X_PF,
                 const RigidBody<T>& child_body, const Isometry3<double>& X_BM,
                 const Vector3<double>& axis) :
       Joint<T>(name, parent_body, X_PF, child_body, X_BM) {
-    // DRAKE_DEMAND axis is not the zero vector!!!
+    const kEpsilon = std::numeric_limits<double>::epsilon();
+    DRAKE_DEMAND(!axis.isZero(kEpsilon));
     axis_ = axis.normalized();
   }
 
-  /// Returns the axis of revolution of `this` joint as a unit vector expressed
-  /// in the frame `Jp` attached on the parent body P.
+  /// Returns the axis of revolution of `this` joint as a unit vector.
+  /// Since the measures of this axis in either frame F or M are the same (see
+  /// this class's documentation for frames's definitions) then,
+  /// `axis = axis_F = axis_M`.
   const Vector3<double>& get_revolute_axis() const {
     return axis_;
   }
 
-  /// Gets the rotation angle of `this` mobilizer from `context`. See class
-  /// documentation for sign convention.
+  /// Gets the rotation angle of `this` mobilizer from `context`.
   /// @throws std::logic_error if the parent MultibodyModeler of `this` joint
   /// was not finalized, @see MultibodyModeler::Finalize().
-  /// @param[in] context The context of the MultibodyTree this mobilizer
-  ///                    belongs to.
-  /// @returns The angle coordinate of `this` mobilizer in the `context`.
+  /// @param[in] context
+  ///   The context of the MultibodyTree this joint belongs to.
+  /// @returns The angle coordinate of `this` joint stored in the `context`.
   const T& get_angle(const Context<T>& context) const {
     return get_mobilizer()->get_angle(context);
   }
 
   /// Sets the `context` so that the generalized coordinate corresponding to the
-  /// rotation angle of `this` mobilizer equals `angle`.
+  /// rotation angle of `this` joint equals `angle`.
   /// @throws std::logic_error if `context` is not a valid
   /// MultibodyTreeContext.
-  /// @param[in] context The context of the MultibodyTree this mobilizer
-  ///                    belongs to.
-  /// @param[in] angle The desired angle in radians.
-  /// @returns a constant reference to `this` mobilizer.
+  /// @param[in] context
+  ///   The context of the MultibodyTree this joint belongs to.
+  /// @param[in] angle
+  ///   The desired angle in radians to be stored in `context`.
+  /// @returns a constant reference to `this` joint.
   const RevoluteJoint<T>& set_angle(
       Context<T>* context, const T& angle) const {
     get_mobilizer()->set_angle(context, angle);
     return *this;
   }
 
+  /// Gets the rate of change, in radians per second, of `this` joint's
+  /// angle (see get_angle()) from `context`.
+  /// @param[in] context
+  ///   The context of the MultibodyTree this joint belongs to.
+  /// @returns The rate of change of `this` joint's angle as stored in the
+  /// `context`.
   const T& get_angular_rate(const Context<T>& context) const {
     return get_mobilizer()->get_angular_rate(context);
   }
 
+  /// Sets the rate of change, in radians per second, of this `this` joint's
+  /// angle to `theta_dot`. The new rate of change `theta_dot` gets stored in
+  /// `context`.
+  /// @param[in] context
+  ///   The context of the MultibodyTree this joint belongs to.
+  /// @param[in] theta_dot
+  ///   The desired rate of change of `this` joints's angle in radians per
+  ///   second.
+  /// @returns a constant reference to `this` joint.
   const RevoluteJoint<T>& set_angular_rate(
       Context<T>* context, const T& angle) const {
     get_mobilizer()->set_angular_rate(context, angle);
@@ -76,6 +123,7 @@ class RevoluteJoint final : public Joint<T> {
   }
 
  protected:
+  // Joint<T> overrides:
   std::unique_ptr<typename Joint<T>::BluePrint>
   MakeModelBlueprint() const override {
     auto blue_print = std::make_unique<typename Joint<T>::BluePrint>();
