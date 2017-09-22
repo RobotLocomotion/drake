@@ -257,7 +257,7 @@ class LeafSystem : public System<T> {
   /// See @ref system_scalar_conversion for detailed background and examples
   /// related to scalar-type conversion support.
   explicit LeafSystem(SystemScalarConverter converter)
-      : system_scalar_converter_(std::move(converter)) {
+      : System<T>(std::move(converter)) {
     this->set_forced_publish_events(
         LeafEventCollection<PublishEvent<T>>::MakeForcedEventCollection());
     this->set_forced_discrete_update_events(
@@ -269,11 +269,11 @@ class LeafSystem : public System<T> {
   }
 
   std::unique_ptr<System<AutoDiffXd>> DoToAutoDiffXd() const final {
-    return system_scalar_converter_.Convert<AutoDiffXd, T>(*this);
+    return System<T>::DoToAutoDiffXd();
   }
 
   std::unique_ptr<System<symbolic::Expression>> DoToSymbolic() const final {
-    return system_scalar_converter_.Convert<symbolic::Expression, T>(*this);
+    return System<T>::DoToSymbolic();
   }
 
   /// Provides a new instance of the leaf context for this system. Derived
@@ -1438,9 +1438,6 @@ class LeafSystem : public System<T> {
 
   // Model outputs to be used in AllocateParameters.
   detail::ModelValues model_numeric_parameters_;
-
-  // Functions to convert this system to use alternative scalar types.
-  const SystemScalarConverter system_scalar_converter_;
 };
 
 }  // namespace systems

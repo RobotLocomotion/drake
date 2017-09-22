@@ -289,6 +289,7 @@ drake_cc_library(
         ":event_collection",
         ":system_common",
         ":system_constraint",
+        ":system_scalar_converter",
         ":value",
         "//drake/common:autodiff",
         "//drake/common:essential",
