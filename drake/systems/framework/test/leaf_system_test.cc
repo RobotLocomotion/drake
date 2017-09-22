@@ -381,6 +381,10 @@ class DeclaredModelPortsSystem : public LeafSystem<double> {
     this->DeclareInputPort(kVectorValued, 1);
     this->DeclareVectorInputPort(MyVector2d());
     this->DeclareAbstractInputPort(Value<int>(22));
+    this->DeclareVectorInputPort(MyVector2d(),
+                                 RandomDistribution::kUniform);
+    this->DeclareVectorInputPort(MyVector2d(),
+                                 RandomDistribution::kGaussian);
 
     // Output port 0 uses a BasicVector base class model.
     this->DeclareVectorOutputPort(BasicVector<double>(3),
@@ -444,12 +448,14 @@ class DeclaredModelPortsSystem : public LeafSystem<double> {
 GTEST_TEST(ModelLeafSystemTest, ModelPortsTopology) {
   DeclaredModelPortsSystem dut;
 
-  ASSERT_EQ(dut.get_num_input_ports(), 3);
+  ASSERT_EQ(dut.get_num_input_ports(), 5);
   ASSERT_EQ(dut.get_num_output_ports(), 4);
 
   const InputPortDescriptor<double>& in0 = dut.get_input_port(0);
   const InputPortDescriptor<double>& in1 = dut.get_input_port(1);
   const InputPortDescriptor<double>& in2 = dut.get_input_port(2);
+  const InputPortDescriptor<double>& in3 = dut.get_input_port(3);
+  const InputPortDescriptor<double>& in4 = dut.get_input_port(4);
 
   const OutputPort<double>& out0 = dut.get_output_port(0);
   const OutputPort<double>& out1 = dut.get_output_port(1);
@@ -459,6 +465,8 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsTopology) {
   EXPECT_EQ(in0.get_data_type(), kVectorValued);
   EXPECT_EQ(in1.get_data_type(), kVectorValued);
   EXPECT_EQ(in2.get_data_type(), kAbstractValued);
+  EXPECT_EQ(in3.get_data_type(), kVectorValued);
+  EXPECT_EQ(in4.get_data_type(), kVectorValued);
 
   EXPECT_EQ(out0.get_data_type(), kVectorValued);
   EXPECT_EQ(out1.get_data_type(), kVectorValued);
@@ -467,10 +475,24 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsTopology) {
 
   EXPECT_EQ(in0.size(), 1);
   EXPECT_EQ(in1.size(), 2);
+  EXPECT_EQ(in3.size(), 2);
+  EXPECT_EQ(in4.size(), 2);
 
   EXPECT_EQ(out0.size(), 3);
   EXPECT_EQ(out1.size(), 4);
   EXPECT_EQ(out3.size(), 2);
+
+  EXPECT_FALSE(in0.is_random());
+  EXPECT_FALSE(in1.is_random());
+  EXPECT_FALSE(in2.is_random());
+  EXPECT_TRUE(in3.is_random());
+  EXPECT_TRUE(in4.is_random());
+
+  EXPECT_FALSE(in0.get_random_type());
+  EXPECT_FALSE(in1.get_random_type());
+  EXPECT_FALSE(in2.get_random_type());
+  EXPECT_EQ(in3.get_random_type(), RandomDistribution::kUniform);
+  EXPECT_EQ(in4.get_random_type(), RandomDistribution::kGaussian);
 }
 
 // Tests that the model values specified in Declare{...} are actually used by

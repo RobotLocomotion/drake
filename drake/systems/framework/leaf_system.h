@@ -763,12 +763,15 @@ class LeafSystem : public System<T> {
   /// This is the best way to declare LeafSystem input ports that require
   /// subclasses of BasicVector.  The port's size will be model_vector.size(),
   /// and LeafSystem's default implementation of DoAllocateInputVector will be
-  /// model_vector.Clone().  If the @p model_vector declares any
+  /// model_vector.Clone(). If the port is intended to model a random noise or
+  /// disturbance input, @p random_type can (optionally) be used to label it
+  /// as such.  If the @p model_vector declares any
   /// VectorBase::CalcInequalityConstraint() constraints, they will be
   /// re-declared as inequality constraints on this system (see
   /// DeclareInequalityConstraint()).
   const InputPortDescriptor<T>& DeclareVectorInputPort(
-      const BasicVector<T>& model_vector) {
+      const BasicVector<T>& model_vector,
+      optional<RandomDistribution> random_type = nullopt) {
     const int size = model_vector.size();
     const int index = this->get_num_input_ports();
     model_input_values_.AddVectorModel(index, model_vector.Clone());
@@ -779,7 +782,7 @@ class LeafSystem : public System<T> {
           DRAKE_DEMAND(input != nullptr);
           return *input;
         });
-    return this->DeclareInputPort(kVectorValued, size);
+    return this->DeclareInputPort(kVectorValued, size, random_type);
   }
 
   // Avoid shadowing out the no-arg DeclareAbstractInputPort().
