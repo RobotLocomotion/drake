@@ -14,9 +14,6 @@
 #include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 
-#include<iostream>
-#define PRINT_VAR(a) std::cout << #a": " << std::endl;
-
 namespace drake {
 namespace multibody {
 
@@ -277,7 +274,6 @@ class TreeTopologyTests : public ::testing::Test {
     // These are only available after Finalize().
     for (const RevoluteJoint<double>* joint : joints_) {
       const auto* mobilizer = JointTester::get_mobilizer(*joint);
-      PRINT_VAR(mobilizer);
       mobilizers_.push_back(mobilizer);
     }
   }

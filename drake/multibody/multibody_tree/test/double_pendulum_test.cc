@@ -31,7 +31,7 @@ class JointTester {
   static const RevoluteMobilizer<double>* get_mobilizer(
       const RevoluteJoint<double>& joint) {
     return dynamic_cast<const RevoluteMobilizer<double>*>(
-        joint.Joint<double>::get_mobilizer());
+        joint.get_mobilizer());
   }
 };
 
@@ -342,7 +342,7 @@ TEST_F(PendulumTests, CreateModelBasics) {
   // Request revolute mobilizers' axes.
   EXPECT_EQ(shoulder_mobilizer_->get_revolute_axis(), Vector3d::UnitZ());
 
-  // Before need to Finalize() our model before testing the elbow mobilizer was
+  // We need to Finalize() our model before testing the elbow mobilizer was
   // created correctly. Joint implementations are created at Finalize().
   ASSERT_NO_THROW(model_->Finalize());
   elbow_mobilizer_ = JointTester::get_mobilizer(*elbow_joint_);
@@ -504,6 +504,9 @@ class PendulumKinematicTests : public PendulumTests {
     PendulumTests::SetUp();
     CreatePendulumModel();
     model_->Finalize();
+    // Only for testing, in this case we do know our Joint model IS a
+    // RevoluteMobilizer.
+    elbow_mobilizer_ = JointTester::get_mobilizer(*elbow_joint_);
     context_ = model_->CreateDefaultContext();
     mbt_context_ =
         dynamic_cast<MultibodyTreeContext<double>*>(context_.get());
