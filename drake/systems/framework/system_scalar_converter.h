@@ -110,7 +110,7 @@ class SystemScalarConverter {
   SystemScalarConverter(
       SystemTypeTag<S> tag, GuaranteedSubtypePreservation subtype_preservation)
       : SystemScalarConverter(tag) {
-    subtype_preservation_ =
+    *subtype_preservation_ =
         (subtype_preservation == GuaranteedSubtypePreservation::kEnabled);
   }
 
@@ -176,7 +176,9 @@ class SystemScalarConverter {
   std::unordered_map<Key, ErasedConverterFunc, KeyHasher> funcs_;
 
   // True iff our GuaranteedSubtypePreservation is enabled.
-  bool subtype_preservation_{true};
+  // TODO(jwnimmer-tri) This is gross; find another way to manage lifetime of
+  // this setting.
+  std::shared_ptr<bool> subtype_preservation_ = std::make_shared<bool>(true);
 };
 
 #if !defined(DRAKE_DOXYGEN_CXX)
@@ -247,12 +249,16 @@ void SystemScalarConverter::AddIfSupported() {
   using supported =
       typename scalar_conversion::Traits<S>::template supported<T, U>;
   if (supported::value) {
-    const ConverterFunction<T, U> func = [this](const System<U>& other) {
+    // We capture the shared_ptr's target address in our lambda, because it has
+    // to survive copies and moves of the SystemScalarConverter.
+    const bool* const subtype_preservation_ptr = subtype_preservation_.get();
+    const ConverterFunction<T, U> func =
+        [subtype_preservation_ptr](const System<U>& other) {
       // Dispatch to an overload based on whether S<U> ==> S<T> is supported.
       // (At runtime, this block is only executed for supported conversions,
       // but at compile time, Make will be instantiated unconditionally.)
       return system_scalar_converter_detail::Make<S, T, U>(
-          this->subtype_preservation_, other, supported{});
+          *subtype_preservation_ptr, other, supported{});
     };
     Add(func);
   }
