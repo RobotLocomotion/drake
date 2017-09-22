@@ -14,10 +14,56 @@ namespace drake {
 namespace multibody {
 
 namespace internal {
+// This is a class used by MultibodyTree internal's to create the internal
+// representation, or model, for a particular joint object.
 template <typename T>
 class JointModelBuilder;
 }
 
+/// A %Joint allows to model a kinematical condition that restricts the relative
+/// motion between two rigid bodies.
+/// The two rigid bodies connected by a %Joint object are refered to as the
+/// _parent_ and _child_ bodies, though a %Joint object does not introduce any
+/// particular parent/child relationship. That is, the parent (child) body is
+/// not neccessarily the inboard (outboard) body in a MultibodyTree model.
+/// A %Joint is a model of a physical kinematic contraint between two rigid
+/// bodies, a constraint that in the real physical system does not even allude
+/// to the ordering of the bodies.
+///
+/// In Drake we define a frame F rigidly attached to the parent body P with pose
+/// `X_PF` and a frame M rigidly attached to the child body B with pose `X_BM`.
+/// A %Joint object specifies a kinematic relation between frames F and M,
+/// which in turns imposes a kinematic relation between bodies P and B.
+///
+/// Typical joints include the ball joint, to allow unrestricted rotations about
+/// a given point, the revolute joint, that constraints two bodies to rotate
+/// about a given common axis, among others.
+///
+/// Consider the following example to build a simple pendulum system:
+///
+/// @code
+/// MultibodyTree<double> model;
+/// // ... Code here to setup quantities below as mass, com, X_BP, etc. ...
+/// const Body<double>& pendulum =
+///   model.AddBody<RigidBody>(SpatialInertia<double>(mass, com, unit_inertia));
+/// // We will connect the pendulum body to the world using a RevoluteJoint.
+/// // In this simple case the parent body P is the model's world body and frame
+/// // F coincides with the world frame, i.e. X_PF is the identity
+/// // transformation.
+/// // Additionally, wee need to specify the pose of frame M on the pendulum's
+/// // body frame B.
+/// // Say we declared and initialized X_BM...
+/// const RevoluteJoint<double>& pin =
+///   model.AddJoint<RevoluteJoint>(
+///     "PinJoint",             /* joint name */
+///     model.get_world_body(), /* parent body */
+///     Isometry3d::Identity(), /* frame F IS the world frame W */
+///     pendulum,               /* child body, the pendulum */
+///     X_BM,                   /* pose of frame M in the body frame B */
+///     Vector3d::UnitZ()       /* revolute axis in this case */));
+/// @endcode
+///
+/// @tparam T The scalar type. Must be a valid Eigen scalar.
 template <typename T>
 class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
  public:
