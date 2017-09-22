@@ -659,7 +659,7 @@ class Diagram : public System<T>,
  protected:
   /// Constructs an uninitialized Diagram. Subclasses that use this constructor
   /// are obligated to call DiagramBuilder::BuildInto(this).
-  Diagram() {}
+  Diagram() : System<T>(SystemScalarConverter{}) {}
 
   /// For the subsystem associated with @p witness_func, gets its subcontext
   /// from @p context, passes the subcontext to @p witness_func' Evaulate
@@ -1329,7 +1329,7 @@ class Diagram : public System<T>,
   // Constructs a Diagram from the Blueprint that a DiagramBuilder produces.
   // This constructor is private because only DiagramBuilder calls it. The
   // constructor takes the systems from the blueprint.
-  explicit Diagram(std::unique_ptr<Blueprint> blueprint) {
+  explicit Diagram(std::unique_ptr<Blueprint> blueprint) : Diagram() {
     Initialize(std::move(blueprint));
   }
 

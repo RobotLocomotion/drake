@@ -25,7 +25,7 @@ const int kSize = 3;
 // A shell System to test the default implementations.
 class TestSystem : public System<double> {
  public:
-  TestSystem() {
+  TestSystem() : System<double>(SystemScalarConverter{}) {
     this->set_forced_publish_events(
         this->AllocateForcedPublishEventCollection());
     this->set_forced_discrete_update_events(
@@ -363,6 +363,10 @@ TEST_F(SystemTest, TransmogrifyNotSupported) {
   // Use the instance method that returns nullptr.
   EXPECT_EQ(system_.ToAutoDiffXdMaybe(), nullptr);
   EXPECT_EQ(system_.ToSymbolicMaybe(), nullptr);
+
+  // Spot check the specific converter object.
+  EXPECT_FALSE((
+      system_.get_system_scalar_converter().IsConvertible<double, double>()));
 }
 
 template <typename T>
@@ -376,7 +380,7 @@ class ValueIOTestSystem : public System<T> {
   // The first input / output pair are abstract type, but assumed to be
   // std::string.
   // The second input / output pair are vector type with length 1.
-  ValueIOTestSystem() {
+  ValueIOTestSystem() : System<T>(SystemScalarConverter{}) {
     this->set_forced_publish_events(
         this->AllocateForcedPublishEventCollection());
     this->set_forced_discrete_update_events(

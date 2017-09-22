@@ -26,6 +26,7 @@
 #include "drake/systems/framework/output_port.h"
 #include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/system_constraint.h"
+#include "drake/systems/framework/system_scalar_converter.h"
 #include "drake/systems/framework/witness_function.h"
 
 namespace drake {
@@ -1156,6 +1157,13 @@ class System {
     }
   }
 
+  /// (Advanced) Returns the SystemScalarConverter for this object.  This is an
+  /// expert-level API intended for framework authors.  Most users should
+  /// prefer the convenience helpers such as System::ToAutoDiffXd.
+  const SystemScalarConverter& get_system_scalar_converter() const {
+    return system_scalar_converter_;
+  }
+
   //@}
 
   /// Gets the witness functions active at the beginning of a continuous time
@@ -1276,8 +1284,13 @@ class System {
   /// Authors of derived %Systems can use these methods in the constructor
   /// for those %Systems.
   //@{
-  /// Constructs an empty %System base class object.
-  System() {}
+  /// Constructs an empty %System base class object, possibly supporting
+  /// scalar-type conversion support (AutoDiff, etc.) using @p converter.
+  ///
+  /// See @ref system_scalar_conversion for detailed background and examples
+  /// related to scalar-type conversion support.
+  explicit System(SystemScalarConverter converter)
+      : system_scalar_converter_(std::move(converter)) {}
 
   /// Adds a port with the specified @p type and @p size to the input topology.
   /// @return descriptor of declared port.
@@ -1527,13 +1540,13 @@ class System {
   /// NVI implementation of ToAutoDiffXdMaybe.
   /// @return nullptr if this System does not support autodiff
   virtual std::unique_ptr<System<AutoDiffXd>> DoToAutoDiffXd() const {
-    return nullptr;
+    return system_scalar_converter_.Convert<AutoDiffXd, T>(*this);
   }
 
   /// NVI implementation of ToSymbolicMaybe.
   /// @return nullptr if this System does not support symbolic form
   virtual std::unique_ptr<System<symbolic::Expression>> DoToSymbolic() const {
-    return nullptr;
+    return system_scalar_converter_.Convert<symbolic::Expression, T>(*this);
   }
   //@}
 
@@ -1691,6 +1704,9 @@ class System {
       forced_discrete_update_{nullptr};
   std::unique_ptr<EventCollection<UnrestrictedUpdateEvent<T>>>
       forced_unrestricted_update_{nullptr};
+
+  // Functions to convert this system to use alternative scalar types.
+  const SystemScalarConverter system_scalar_converter_;
 
   // TODO(sherm1) Replace these fake cache entries with real cache asap.
   // These are temporaries and hence uninitialized.
