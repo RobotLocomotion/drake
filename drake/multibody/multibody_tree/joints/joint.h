@@ -1,7 +1,10 @@
 #pragma once
 
 #include <limits>
+#include <memory>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/multibody_tree/fixed_offset_frame.h"
@@ -69,6 +72,23 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Joint)
 
+  /// Creates a joint between two bodies which imposes a given kinematic
+  /// relation between frame F rigidly attached with the parent body P and frame
+  /// M rigidly attached with the child body B. See this class's documentation
+  /// for further details.
+  ///
+  /// @param[in] name
+  ///   A string with a name identifying `this` joint.
+  /// @param[in] parent_body
+  ///   One of the rigid bodies connected by this joint.
+  /// @param[in] X_PF
+  ///   The pose of frame F rigidly attached to the parent body, measured in
+  ///   the frame P of that body.
+  /// @param[in] child_body
+  ///   One of the rigid bodies connected by this joint.
+  /// @param[in] X_BM
+  ///   The pose of frame M rigidly attached to the child body, measured in
+  ///   the frame B of that body.
   Joint(const std::string& name,
         const RigidBody<T>& parent_body, const Isometry3<double>& X_PF,
         const RigidBody<T>& child_body, const Isometry3<double>& X_BM) :
@@ -77,11 +97,16 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
 
   virtual ~Joint() {}
 
+  /// Returns the name of this joint.
   const std::string& get_name() const { return name_; }
 
+  /// Returns a const reference to the parent body P.
   const RigidBody<T>& get_parent_body() const { return parent_body_; }
+
+  /// Returns a const reference to the child body B.
   const RigidBody<T>& get_child_body() const { return child_body_; }
 
+  /// Returns a const reference to the frame F attached on the parent body P.
   const Frame<T>& get_frame_on_parent() const {
     // If a joint is added with MultibodyTree::AddJoint(), inboard_frame_ is
     // guaranteed to be a valid pointer. This is here to avoid users from, for
@@ -90,6 +115,7 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
     return *inboard_frame_;
   }
 
+  /// Returns a const reference to the frame M attached on the child body B.
   const Frame<T>& get_frame_on_child() const {
     // If a joint is added with MultibodyTree::AddJoint(), outboard_frame_ is
     // guaranteed to be a valid pointer. This is here to avoid users from, for
@@ -98,10 +124,14 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
     return *outboard_frame_;
   }
 
+  /// Returns the pose `X_PF` of the frame F attached on the parent body, as
+  /// measured in that body's frame P.
   const Isometry3<double>& get_frame_on_parent_pose() const {
     return X_PF_;
   }
 
+  /// Returns the pose `X_BM` of the frame M attached on the child body, as
+  /// measured in that body's frame B.
   const Isometry3<double>& get_frame_on_child_pose() const {
     return X_BM_;
   }
@@ -111,12 +141,14 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   // This is called from MultibodyTree::AddJoint() to make and add the
   // inboard/outboard frames for this Joint object.
   // Therefore public API's get_frame_on_parent()/get_frame_on_child() are
-  // available immediately with no side effects.
+  // available immediately after joint creation.
   void MakeInOutFramesAndAdd(MultibodyTree<T>* tree) {
     // Assert this joint is an element of the input tree.
     // This is to avoid users attempting to call this method by hand.
     this->HasThisParentTreeOrThrow(tree);
 
+    // If the pose X_PF (X_BM) of frame F (M) is kEpsilon within being the
+    // identity transform, this method defines frame F (M) to be frame P (B).
     const double kEpsilon = std::numeric_limits<double>::epsilon();
 
     // Define the joint's inboard frame.
@@ -165,6 +197,7 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   friend class internal::JointModelBuilder<T>;
   struct BluePrint {
     std::vector<std::unique_ptr<Mobilizer<T>>> mobilizers_;
+    // TODO(amcastro-tri): add force elements, constraints, bodies.
   };
 
   // Make any other Joint<U> a friend of Joint<T> so they can make
@@ -172,15 +205,24 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   template <typename> friend class Joint;
   // The model does not own the MBT elements, it just keeps references to them.
   struct JointModel {
+    /// Default constructor to create an empty model. Used by
+    /// Joint::CloneToScalar().
     JointModel() {}
-    JointModel(const BluePrint& blue_print) {
-      // For now only allow models to have a single mobilizer.
-      DRAKE_DEMAND(static_cast<int>(blue_print.mobilizers_.size()) == 1);
-      mobilizers_.push_back(blue_print.mobilizers_[0].get());
+
+    /// This constructor creates a model for `this` joint from the blueprint
+    /// provided.
+    explicit JointModel(const BluePrint& blue_print) {
+      DRAKE_DEMAND(static_cast<int>(blue_print.mobilizers_.size()) != 0);
+      for (const auto& mobilizer : blue_print.mobilizers_) {
+        mobilizers_.push_back(mobilizer.get());
+      }
     }
 
+    /// Returns the number of mobilizers in this model.
     int get_num_mobilizers() const { return mobilizers_.size(); }
 
+    /// References (raw pointers) to the mobilizers that make part of this
+    /// model.
     std::vector<const Mobilizer<T>*> mobilizers_;
     // TODO(amcastro-tri): add force elements, constraints, bodies, etc.
   };
@@ -200,13 +242,28 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
       const MultibodyTree<AutoDiffXd>& tree_clone) const = 0;
   /// @}
 
+  /// This method must be implemented by derived classes in order to provide
+  /// JointModelBuilder a BluePring of their internal implementation,
+  /// JointModel.
   virtual std::unique_ptr<BluePrint> MakeModelBlueprint() const = 0;
+
+  /// Returns a const reference to the internal model of `this` joint.
+  /// @warning The MultibodyTree model must have already been finalized, or
+  /// this method will abort.
+  const JointModel& get_model() const {
+    // The MultibodyTree must have been finalized for the model to be valid.
+    DRAKE_DEMAND(this->get_parent_tree().topology_is_valid());
+    return *model_;
+  }
+
+ private:
+  // When a model is created, either by JointModelBuilder or
+  // Joint::CloneToScalar(), this method is called to take ownership of the
+  // model.
   void OwnModel(std::unique_ptr<JointModel> model) {
     model_ = std::move(model);
   }
-  const JointModel& get_model() const { return *model_; }
 
- private:
   std::string name_;
   const RigidBody<T>& parent_body_;
   const RigidBody<T>& child_body_;

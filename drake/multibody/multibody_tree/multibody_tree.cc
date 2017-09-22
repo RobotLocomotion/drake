@@ -25,9 +25,11 @@ class JointModelBuilder {
   static void BuildJointModel(Joint<T>* joint, MultibodyTree<T>* tree) {
     std::unique_ptr<JointBluePrint> blue_print = joint->MakeModelBlueprint();
     auto model = std::make_unique<JointModel>(*blue_print);
-    // For now only allow models to have a single mobilizer.
-    DRAKE_DEMAND(static_cast<int>(model->mobilizers_.size()) == 1);
-    tree->AddMobilizer(std::move(blue_print->mobilizers_[0]));
+    DRAKE_DEMAND(static_cast<int>(model->mobilizers_.size()) != 0);
+    for (auto& mobilizer : blue_print->mobilizers_) {
+      tree->AddMobilizer(std::move(mobilizer));
+    }
+    // TODO(amcastro-tri): add force elements, bodies, constraints, etc.
     joint->OwnModel(std::move(model));
   }
  private:
