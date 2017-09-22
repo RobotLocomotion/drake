@@ -118,6 +118,13 @@ class DrakeKukaIIwaRobot {
     context_ = model_->CreateDefaultContext();
   }
 
+  /// This method sets Earth's (or astronomical body's) uniform gravitational
+  /// acceleration ("little g").  By default, little g is initialized to
+  /// 0.0 m/s² (not 9.81 m/s²).  Right-handed orthogonal unit vectors Nx, Ny, Nz
+  /// are fixed in N (Earth) with Nz vertically upward (so gravity is in -Nz).
+  /// @param[in] gravity Earth's gravitational acceleration in m/s².
+  void set_gravity(double gravity) {gravity_ = gravity;}
+
   /// This method calculates kinematic properties of the end-effector (herein
   /// denoted as rigid body G) of a 7-DOF KUKA LBR iiwa robot (14 kg payload).
   /// Right-handed orthogonal unit vectors Nx, Ny, Nz are fixed in N (Earth)
@@ -152,17 +159,17 @@ class DrakeKukaIIwaRobot {
 
     // Retrieve end-effector pose from position kinematics cache.
     model_->CalcPositionKinematicsCache(*context_, &pc);
-    const Eigen::Isometry3d& X_NG = get_body_pose_in_world(pc, *linkG_);
+    const Eigen::Isometry3d& X_NG = linkG_->get_pose_in_world(pc);
 
     // Retrieve end-effector spatial velocity from velocity kinematics cache.
     model_->CalcVelocityKinematicsCache(*context_, pc, &vc);
     const SpatialVelocity<double>& V_NG_N =
-        get_body_spatial_velocity_in_world(vc, *linkG_);
+        linkG_->get_spatial_velocity_in_world_expressed_in_world(vc);
 
     // Retrieve end-effector spatial acceleration from acceleration cache.
     model_->CalcAccelerationKinematicsCache(*context_, pc, vc, qDDt, &ac);
     const SpatialAcceleration<double>& A_NG_N =
-        get_body_spatial_acceleration_in_world(ac, *linkG_);
+        linkG_->get_spatial_acceleration_in_world_expressed_in_world(ac);
 
     // Create tuple to return results.
     const Eigen::Matrix3d R_NG = X_NG.linear();
@@ -173,6 +180,31 @@ class DrakeKukaIIwaRobot {
     const Eigen::Vector3d a_NG_N = A_NG_N.translational();
     return std::make_tuple(R_NG, p_NoGo_N, w_NG_N, v_NGo_N, alpha_NG_N, a_NG_N);
   }
+
+  // This method calculates Drake's joint forces/torques.
+  // This is done by creating a vector of the aforementioned 7 spatial
+  // forces and then calls a method to fill this vector of spatial forces.
+  // Consider a generic body B whose inboard frame (welded to B) is M with
+  // origin Mo.  The spatial force on B at Mo expressed in W (world) is F_BMo_W.
+  /// @param[in,out] F_BMo_W_array vector of aforementioned 7 spatial forces
+  ///                to be filled with calculated results.
+  ///
+  /// @returns values defined below through F_BMo_array.
+  /// -----------|-------------------------------------------------
+  /// F_Ao_Na    | Spatial force on Ao from N, expressed in frame W (world).
+  /// F_Bo_Ab    | Spatial force on Bo from A, expressed in frame W (world).
+  /// F_Co_Bc    | Spatial force on Co from B, expressed in frame W (world).
+  /// F_Do_Cd    | Spatial force on Do from C, expressed in frame W (world).
+  /// F_Eo_De    | Spatial force on Eo from D, expressed in frame W (world).
+  /// F_Fo_Ef    | Spatial force on Fo from E, expressed in frame W (world).
+  /// F_Go_Fg    | Spatial force on Go from F, expressed in frame W (world).
+#if 0
+  CalcJointReactionSpatialForces(vector<SpatialForce<double>>& F_BMo_W_array) {
+    model_->CalcInverseDynamics(
+        *context_, pc, vc, vdot, F_Bo_W_array, tau_applied,
+        &A_WB_array, &F_BMo_W_array, &tau);
+  }
+#endif
 
  private:
   // Method to add revolute joint (mobilizer) from Body A to Body B.
@@ -226,39 +258,6 @@ class DrakeKukaIIwaRobot {
     return AddRevoluteMobilizer(A, X_AAb, B, X_BBa, revolute_unit_vector);
   }
 
-  // Helper method to extract a pose from the position kinematics.
-  // TODO(amcastro-tri): When cache entries are placed in the context, replace
-  // by method Body<T>::get_pose_in_world(const systems::Context<T>&).
-  const Eigen::Isometry3d& get_body_pose_in_world(
-      const PositionKinematicsCache<double>& pc,
-      const Body<double>& body) const {
-    const MultibodyTreeTopology& topology = model_->get_topology();
-    // Cache entries are accessed by BodyNodeIndex for fast traversals.
-    return pc.get_X_WB(topology.get_body(body.get_index()).body_node);
-  }
-
-  // Helper method to extract a SpatialVelocity from the velocity kinematics.
-  // TODO(amcastro-tri): When cache entries are placed in context, replace by
-  // method Body<T>::get_spatial_velocity_in_world(const systems::Context<T>&).
-  const SpatialVelocity<double>& get_body_spatial_velocity_in_world(
-      const VelocityKinematicsCache<double>& vc,
-      const Body<double>& body) const {
-    const MultibodyTreeTopology& topology = model_->get_topology();
-    // Cache entries are accessed by BodyNodeIndex for fast traversals.
-    return vc.get_V_WB(topology.get_body(body.get_index()).body_node);
-  }
-
-  // Helper method to extract SpatialAcceleration from acceleration kinematics.
-  // TODO(amcastro-tri): When cache entries are placed in context, replace by
-  // method Body<T>::get_spatial_acceleration_in_world(const Context<T>&).
-  const SpatialAcceleration<double>& get_body_spatial_acceleration_in_world(
-      const AccelerationKinematicsCache<double>& ac,
-      const Body<double>& body) const {
-    const MultibodyTreeTopology& topology = model_->get_topology();
-    // Cache entries are accessed by BodyNodeIndex for fast traversals.
-    return ac.get_A_WB(topology.get_body(body.get_index()).body_node);
-  }
-
   // This method sets the Kuka joint angles and their 1st and 2nd derivatives.
   // @param[in] q robot's joint angles (generalized coordinates).
   // @param[in] qDt 1st-time-derivative of q (q̇).
@@ -305,6 +304,9 @@ class DrakeKukaIIwaRobot {
   const RevoluteMobilizer<double>* DE_mobilizer_;
   const RevoluteMobilizer<double>* EF_mobilizer_;
   const RevoluteMobilizer<double>* FG_mobilizer_;
+
+  // Earth's (or astronomical body's) gravitational acceleration.
+  double gravity_ = 0.0;
 
   // After model is finalized, create default context.
   std::unique_ptr<systems::Context<double>> context_;
