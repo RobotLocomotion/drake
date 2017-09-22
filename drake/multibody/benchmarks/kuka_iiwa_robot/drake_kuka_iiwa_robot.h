@@ -181,31 +181,6 @@ class DrakeKukaIIwaRobot {
     return std::make_tuple(R_NG, p_NoGo_N, w_NG_N, v_NGo_N, alpha_NG_N, a_NG_N);
   }
 
-  // This method calculates Drake's joint forces/torques.
-  // This is done by creating a vector of the aforementioned 7 spatial
-  // forces and then calls a method to fill this vector of spatial forces.
-  // Consider a generic body B whose inboard frame (welded to B) is M with
-  // origin Mo.  The spatial force on B at Mo expressed in W (world) is F_BMo_W.
-  /// @param[in,out] F_BMo_W_array vector of aforementioned 7 spatial forces
-  ///                to be filled with calculated results.
-  ///
-  /// @returns values defined below through F_BMo_array.
-  /// -----------|-------------------------------------------------
-  /// F_Ao_Na    | Spatial force on Ao from N, expressed in frame W (world).
-  /// F_Bo_Ab    | Spatial force on Bo from A, expressed in frame W (world).
-  /// F_Co_Bc    | Spatial force on Co from B, expressed in frame W (world).
-  /// F_Do_Cd    | Spatial force on Do from C, expressed in frame W (world).
-  /// F_Eo_De    | Spatial force on Eo from D, expressed in frame W (world).
-  /// F_Fo_Ef    | Spatial force on Fo from E, expressed in frame W (world).
-  /// F_Go_Fg    | Spatial force on Go from F, expressed in frame W (world).
-#if 0
-  CalcJointReactionSpatialForces(vector<SpatialForce<double>>& F_BMo_W_array) {
-    model_->CalcInverseDynamics(
-        *context_, pc, vc, vdot, F_Bo_W_array, tau_applied,
-        &A_WB_array, &F_BMo_W_array, &tau);
-  }
-#endif
-
  private:
   // Method to add revolute joint (mobilizer) from Body A to Body B.
   // @param[in] A     Mobilizer's inboard  body (frame Ab will be welded to A).
