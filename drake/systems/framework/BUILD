@@ -333,9 +333,11 @@ drake_cc_library(
         "system_type_tag.h",
     ],
     deps = [
-        ":system",
+        "//drake/common:autodiff",
         "//drake/common:essential",
         "//drake/common:hash",
+        "//drake/common:nice_type_name",
+        "//drake/common:symbolic",
     ],
 )
 
