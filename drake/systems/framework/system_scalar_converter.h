@@ -13,11 +13,12 @@
 #include "drake/common/nice_type_name.h"
 #include "drake/common/symbolic.h"
 #include "drake/systems/framework/scalar_conversion_traits.h"
-#include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_type_tag.h"
 
 namespace drake {
 namespace systems {
+
+template <typename T> class System;
 
 /// Helper class to convert a System<U> into a System<T>, intended for internal
 /// use by the System framework, not directly by users.

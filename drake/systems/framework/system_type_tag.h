@@ -1,9 +1,9 @@
 #pragma once
 
-#include "drake/systems/framework/system.h"
-
 namespace drake {
 namespace systems {
+
+template <typename T> class System;
 
 /// A tag object that denotes a System subclass `S` in function signatures.
 ///
