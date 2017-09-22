@@ -59,7 +59,7 @@ class RevoluteJoint final : public Joint<T> {
                 const RigidBody<T>& child_body, const Isometry3<double>& X_BM,
                 const Vector3<double>& axis) :
       Joint<T>(name, parent_body, X_PF, child_body, X_BM) {
-    const kEpsilon = std::numeric_limits<double>::epsilon();
+    const double kEpsilon = std::numeric_limits<double>::epsilon();
     DRAKE_DEMAND(!axis.isZero(kEpsilon));
     axis_ = axis.normalized();
   }
