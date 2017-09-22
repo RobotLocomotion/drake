@@ -35,6 +35,45 @@
 namespace drake {
 namespace systems {
 
+/** @cond */
+// Private helper functions for LeafSystem.
+namespace leaf_system_detail {
+
+// Returns the next sample time for the given @p attribute.
+template <typename T>
+static T GetNextSampleTime(
+    const typename Event<T>::PeriodicAttribute& attribute,
+    const T& current_time_sec) {
+  const double period = attribute.period_sec;
+  DRAKE_ASSERT(period > 0);
+  const double offset = attribute.offset_sec;
+  DRAKE_ASSERT(offset >= 0);
+
+  // If the first sample time hasn't arrived yet, then that is the next
+  // sample time.
+  if (current_time_sec < offset) {
+    return offset;
+  }
+
+  // NOLINTNEXTLINE(build/namespaces): Needed for ADL of floor and ceil.
+  using namespace std;
+
+  // Compute the index in the sequence of samples for the next time to sample,
+  // which should be greater than the present time.
+  const T offset_time = current_time_sec - offset;
+  const int64_t next_k = static_cast<int64_t>(ceil(offset_time / period));
+  T next_t = offset + next_k * period;
+  if (next_t <= current_time_sec) {
+    next_t = offset + (next_k + 1) * period;
+  }
+  DRAKE_ASSERT(next_t > current_time_sec);
+  return next_t;
+}
+
+}  // namespace leaf_system_detail
+/** @endcond */
+
+
 /// A superclass template that extends System with some convenience utilities
 /// that are not applicable to Diagrams.
 ///
@@ -1284,7 +1323,8 @@ class LeafSystem : public System<T> {
       const typename Event<T1>::PeriodicAttribute& attribute =
           event_pair.first;
       const Event<T>* const event = event_pair.second.get();
-      T1 t = GetNextSampleTime(attribute, context.get_time());
+      const T1 t = leaf_system_detail::GetNextSampleTime(
+          attribute, context.get_time());
       if (t < min_time) {
         min_time = t;
         next_events = {event};
@@ -1299,36 +1339,6 @@ class LeafSystem : public System<T> {
     for (const Event<T1>* event : next_events) {
       event->add_to_composite(events);
     }
-  }
-
-  // Returns the next sample time for the given @p attribute.
-  static T GetNextSampleTime(
-      const typename Event<T>::PeriodicAttribute& attribute,
-      const T& current_time_sec) {
-    const double period = attribute.period_sec;
-    DRAKE_ASSERT(period > 0);
-    const double offset = attribute.offset_sec;
-    DRAKE_ASSERT(offset >= 0);
-
-    // If the first sample time hasn't arrived yet, then that is the next
-    // sample time.
-    if (current_time_sec < offset) {
-      return offset;
-    }
-
-    // NOLINTNEXTLINE(build/namespaces): Needed for ADL of floor and ceil.
-    using namespace std;
-
-    // Compute the index in the sequence of samples for the next time to sample,
-    // which should be greater than the present time.
-    const T offset_time = current_time_sec - offset;
-    const int64_t next_k = static_cast<int64_t>(ceil(offset_time / period));
-    T next_t = offset + next_k * period;
-    if (next_t <= current_time_sec) {
-      next_t = offset + (next_k + 1) * period;
-    }
-    DRAKE_ASSERT(next_t > current_time_sec);
-    return next_t;
   }
 
   // Returns a SystemSymbolicInspector for this system, or nullptr if a
