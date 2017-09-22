@@ -52,7 +52,7 @@ void TimeSteppingRigidBodyPlant<T>::CalcContactStiffnessAndDamping(
     const drake::multibody::collision::PointPair&,
     double*,
     double*) const {
-  DRAKE_ABORT("CalcContactStiffnessAndDamping() not yet implemented.");
+  DRAKE_ABORT_MSG("CalcContactStiffnessAndDamping() not yet implemented.");
 }
 
 // Gets A's translational velocity relative to B's translational velocity at a
@@ -63,7 +63,7 @@ template <class T>
 Vector3<T> TimeSteppingRigidBodyPlant<T>::CalcRelTranslationalVelocity(
     const KinematicsCache<T>&, int, int,
     const Vector3<T>&) const {
-  DRAKE_ABORT("CalcRelTranslationalVelocity() not yet implemented.");
+  DRAKE_ABORT_MSG("CalcRelTranslationalVelocity() not yet implemented.");
   return Vector3<T>::Zero();
 }
 
@@ -73,7 +73,7 @@ template <class T>
 void TimeSteppingRigidBodyPlant<T>::UpdateGeneralizedForce(
     const KinematicsCache<T>&, int, int,
     const Vector3<T>&, const Vector3<T>&, VectorX<T>*) const {
-  DRAKE_ABORT("UpdateGeneralizedForce() not yet implemented.");
+  DRAKE_ABORT_MSG("UpdateGeneralizedForce() not yet implemented.");
 }
 
 // Evaluates the relative velocities between two bodies projected along the
@@ -81,9 +81,10 @@ void TimeSteppingRigidBodyPlant<T>::UpdateGeneralizedForce(
 template <class T>
 VectorX<T> TimeSteppingRigidBodyPlant<T>::N_mult(
     const std::vector<drake::multibody::collision::PointPair>& contacts,
-    const VectorX<T>&,
+    const KinematicsCache<T>&,
     const VectorX<T>&) const {
-  DRAKE_ABORT("N_mult() not yet implemented.");
+  if (!contacts.empty())
+    DRAKE_ABORT_MSG("N_mult() not yet implemented.");
   return VectorX<T>::Zero(contacts.size());
 }
 
@@ -91,12 +92,12 @@ VectorX<T> TimeSteppingRigidBodyPlant<T>::N_mult(
 // effect out on the generalized forces.
 template <class T>
 VectorX<T> TimeSteppingRigidBodyPlant<T>::N_transpose_mult(
-    const std::vector<drake::multibody::collision::PointPair>&,
-    const VectorX<T>&,
-    const VectorX<T>& v,
+    const std::vector<drake::multibody::collision::PointPair>& contacts,
+    const KinematicsCache<T>& kcache,
     const VectorX<T>&) const {
-  DRAKE_ABORT("N_transpose_mult() not yet implemented.");
-  return VectorX<T>::Zero(v.size());
+  if (!contacts.empty())
+    DRAKE_ABORT_MSG("N_transpose_mult() not yet implemented.");
+  return VectorX<T>::Zero(kcache.getV().size());
 }
 
 // Evaluates the relative velocities between two bodies projected along the
@@ -104,9 +105,10 @@ VectorX<T> TimeSteppingRigidBodyPlant<T>::N_transpose_mult(
 template <class T>
 VectorX<T> TimeSteppingRigidBodyPlant<T>::F_mult(
     const std::vector<drake::multibody::collision::PointPair>& contacts,
-    const VectorX<T>&,
+    const KinematicsCache<T>&,
     const VectorX<T>&) const {
-  DRAKE_ABORT("F_mult() not yet implemented.");
+  if (!contacts.empty())
+    DRAKE_ABORT_MSG("F_mult() not yet implemented.");
   return VectorX<T>::Zero(contacts.size() * half_cone_edges_);
 }
 
@@ -114,12 +116,12 @@ VectorX<T> TimeSteppingRigidBodyPlant<T>::F_mult(
 // the effect out on the generalized forces.
 template <class T>
 VectorX<T> TimeSteppingRigidBodyPlant<T>::F_transpose_mult(
-    const std::vector<drake::multibody::collision::PointPair>&,
-    const VectorX<T>&,
-    const VectorX<T>& v,
+    const std::vector<drake::multibody::collision::PointPair>& contacts,
+    const KinematicsCache<T>& kcache,
     const VectorX<T>&) const {
-  DRAKE_ABORT("F_transpose_mult() not yet implemented.");
-  return VectorX<T>::Zero(v.size());
+  if (!contacts.empty())
+    DRAKE_ABORT_MSG("F_transpose_mult() not yet implemented.");
+  return VectorX<T>::Zero(kcache.getV().size());
 }
 
 template <typename T>
@@ -186,28 +188,28 @@ void TimeSteppingRigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
 
   // Set up the N multiplication operator (projected velocity along the contact
   // normals).
-  data.N_mult = [this, &contacts, &q](const VectorX<T>& w) -> VectorX<T> {
-    return N_mult(contacts, q, w);
+  data.N_mult = [this, &contacts, &kcache](const VectorX<T>& w) -> VectorX<T> {
+    return N_mult(contacts, kcache, w);
   };
 
   // Set up the N' multiplication operator (effect of contact normal forces
   // on generalized forces).
-  data.N_transpose_mult = [this, &contacts, &q, &v](const VectorX<T>& f) ->
+  data.N_transpose_mult = [this, &contacts, &kcache](const VectorX<T>& f) ->
       VectorX<T> {
-    return N_transpose_mult(contacts, q, v, f);
+    return N_transpose_mult(contacts, kcache, f);
   };
 
   // Set up the F multiplication operator (projected velocity along the contact
   // tangent directions).
-  data.F_mult = [this, &contacts, &q](const VectorX<T>& w) -> VectorX<T> {
-    return F_mult(contacts, q, w);
+  data.F_mult = [this, &contacts, &kcache](const VectorX<T>& w) -> VectorX<T> {
+    return F_mult(contacts, kcache, w);
   };
 
   // Set up the F' multiplication operator (effect of contact frictional forces
   // on generalized forces).
-  data.F_transpose_mult = [this, &contacts, &q, &v](const VectorX<T>& f) ->
+  data.F_transpose_mult = [this, &contacts, &kcache](const VectorX<T>& f) ->
       VectorX<T> {
-    return F_transpose_mult(contacts, q, v, f);
+    return F_transpose_mult(contacts, kcache, f);
   };
 
   // 1. Set the stabilization term for contact normal direction (kN)

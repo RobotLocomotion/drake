@@ -1,8 +1,8 @@
 /// @file
 ///
-/// This demo sets up a passive Quadrotor plant in a world described by the
-/// warehouse model. The robot simply rests on the floor within the walls
-/// of the warehouse.
+/// This example cross-checks the TimeSteppingRigidBodyPlant (using discrete
+/// state) dynamics against those of a rigid body model using RigidBodyPlant
+/// with continuous state.
 
 #include <gflags/gflags.h>
 #include <gtest/gtest.h>
@@ -49,9 +49,6 @@ class Quadrotor : public systems::Diagram<T> {
     ModelInstanceIdTable model_id_table = AddModelInstanceFromUrdfFileToWorld(
         FindResourceOrThrow("drake/examples/quadrotor/quadrotor.urdf"),
         kRollPitchYaw, tree.get());
-    AddModelInstancesFromSdfFile(
-        FindResourceOrThrow("drake/examples/quadrotor/warehouse.sdf"),
-        kFixed, nullptr /* weld to frame */, tree.get());
     drake::multibody::AddFlatTerrainToWorld(tree.get());
 
     systems::DiagramBuilder<T> builder;

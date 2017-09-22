@@ -66,21 +66,19 @@ class TimeSteppingRigidBodyPlant : public RigidBodyPlant<T> {
       const Vector3<T>& p, const Vector3<T>& f, VectorX<T>* gf) const;
   VectorX<T> N_mult(
       const std::vector<drake::multibody::collision::PointPair>& contacts,
-      const VectorX<T>& q,
-      const VectorX<T>& v) const;
+      const KinematicsCache<T>& kcache,
+      const VectorX<T>& w) const;
   VectorX<T> N_transpose_mult(
       const std::vector<drake::multibody::collision::PointPair>& contacts,
-      const VectorX<T>& q,
-      const VectorX<T>& v,
+      const KinematicsCache<T>& kcache,
       const VectorX<T>& f) const;
   VectorX<T> F_mult(
       const std::vector<drake::multibody::collision::PointPair>& contacts,
-      const VectorX<T>& q,
-      const VectorX<T>& v) const;
+      const KinematicsCache<T>& kcache,
+      const VectorX<T>& w) const;
   VectorX<T> F_transpose_mult(
       const std::vector<drake::multibody::collision::PointPair>& contacts,
-      const VectorX<T>& q,
-      const VectorX<T>& v,
+      const KinematicsCache<T>& kcache,
       const VectorX<T>& f) const;
 
   // Half of the number of edges in the friction cone approximation for
