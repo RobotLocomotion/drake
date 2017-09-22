@@ -216,7 +216,7 @@ void RobotPlanInterpolator::DoCalcUnrestrictedUpdate(
 
       const Eigen::MatrixXd knot_dot =
           Eigen::MatrixXd::Zero(tree_.get_num_velocities(), 1);
-      switch(interp_type_) {
+      switch (interp_type_) {
         case InterpolatorType::ZeroOrderHold :
           plan.pp = PiecewisePolynomial<double>::ZeroOrderHold(
               input_time, knots);
