@@ -89,6 +89,14 @@ class Sample : public systems::BasicVector<T> {
     result = result && (absone() <= T(1.0));
     return result;
   }
+
+  // VectorBase override.
+  void CalcInequalityConstraint(VectorX<T>* value) const override {
+    value->resize(3);
+    (*value)[0] = x() - T(0.0);
+    (*value)[1] = absone() - T(-1.0);
+    (*value)[2] = T(1.0) - absone();
+  }
 };
 
 }  // namespace test

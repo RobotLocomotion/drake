@@ -21,12 +21,23 @@ template <class T>
 class SpringMassDamperSystem : public SpringMassSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SpringMassDamperSystem);
+
+  /// Constructs an unforced spring-mass-damper system.
+  /// Subclasses must use the protected constructor, not this one.
   SpringMassDamperSystem(double spring_constant_N_per_m,
                          double damping_constant_Ns_per_m,
-                         double mass_kg) :
-      SpringMassSystem<T>(spring_constant_N_per_m, mass_kg,
-                          false /* unforced */),
-      damping_constant_Ns_per_m_(damping_constant_Ns_per_m) {}
+                         double mass_kg)
+      : SpringMassDamperSystem<T>(
+            SystemTypeTag<implicit_integrator_test::SpringMassDamperSystem>{},
+            spring_constant_N_per_m, damping_constant_Ns_per_m, mass_kg) {}
+
+  /// Scalar-converting copy constructor. See @ref system_scalar_conversion.
+  template <typename U>
+  explicit SpringMassDamperSystem(const SpringMassDamperSystem<U>& other)
+      : SpringMassDamperSystem(
+            other.get_spring_constant(),
+            other.get_damping_constant(),
+            other.get_mass()) {}
 
   /// Returns the damping constant that was provided at construction in Ns/m
   double get_damping_constant() const { return damping_constant_Ns_per_m_; }
@@ -92,11 +103,15 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
   }
 
  protected:
-  System <AutoDiffXd>* DoToAutoDiffXd() const override {
-    return new SpringMassDamperSystem<AutoDiffXd>(this->get_spring_constant(),
-                                                  get_damping_constant(),
-                                                  this->get_mass());
-  }
+  /// Constructor that specifies @ref system_scalar_conversion support.
+  SpringMassDamperSystem(SystemScalarConverter converter,
+                         double spring_constant_N_per_m,
+                         double damping_constant_Ns_per_m,
+                         double mass_kg) :
+      SpringMassSystem<T>(std::move(converter),
+                          spring_constant_N_per_m, mass_kg,
+                          false /* unforced */),
+      damping_constant_Ns_per_m_(damping_constant_Ns_per_m) {}
 
   void DoCalcTimeDerivatives(const Context <T>& context,
                              ContinuousState <T>* derivatives) const override {

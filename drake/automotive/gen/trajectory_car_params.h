@@ -84,6 +84,13 @@ class TrajectoryCarParams : public systems::BasicVector<T> {
     result = result && (speed_limit_kp() >= T(0.0));
     return result;
   }
+
+  // VectorBase override.
+  void CalcInequalityConstraint(VectorX<T>* value) const override {
+    value->resize(2);
+    (*value)[0] = max_speed() - T(0.0);
+    (*value)[1] = speed_limit_kp() - T(0.0);
+  }
 };
 
 }  // namespace automotive

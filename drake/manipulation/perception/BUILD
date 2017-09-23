@@ -8,6 +8,9 @@ load(
 )
 load("//tools:lint.bzl", "add_lint_tests")
 
+# TODO(naveenoid) : Merge all of the following with drake/perception and remove
+# current folder.
+
 drake_cc_library(
     name = "optitrack_pose_extractor",
     srcs = ["optitrack_pose_extractor.cc"],
@@ -19,11 +22,33 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "pose_smoother",
+    srcs = ["pose_smoother.cc"],
+    hdrs = ["pose_smoother.h"],
+    deps = [
+        "//drake/manipulation/util:moving_average_filter",
+        "//drake/math:geometric_transform",
+        "//drake/systems/framework:leaf_system",
+    ],
+)
+
 drake_cc_googletest(
     name = "optitrack_pose_extractor_test",
     deps = [
         ":optitrack_pose_extractor",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/systems/framework",
+    ],
+)
+
+drake_cc_googletest(
+    name = "pose_smoother_test",
+    deps = [
+        ":pose_smoother",
+        "//drake/common/test_utilities:eigen_geometry_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/manipulation/util:moving_average_filter",
         "//drake/systems/framework",
     ],
 )

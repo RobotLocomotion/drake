@@ -8,9 +8,9 @@
 
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/eigen_autodiff_types.h"
-#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 
 namespace drake {
 namespace systems {
@@ -213,6 +213,15 @@ GTEST_TEST(BasicVectorTest, ZeroLengthStringStream) {
   std::stringstream s;
   s << "foo " << vec << " bar";
   EXPECT_EQ(s.str(), "foo [] bar");
+}
+
+
+// Tests the default set of inequality constraints (empty).
+GTEST_TEST(BasicVectorTest, DefaultCalcInequalityConstraint) {
+  VectorX<double> value = VectorX<double>::Ones(22);
+  BasicVector<double> vec(1);
+  vec.CalcInequalityConstraint(&value);
+  EXPECT_EQ(value.size(), 0);
 }
 
 

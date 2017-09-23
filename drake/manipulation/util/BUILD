@@ -73,6 +73,7 @@ drake_cc_library(
     deps = [
         "//drake/common/trajectories:piecewise_polynomial",
         "//drake/common/trajectories:piecewise_quaternion",
+        "//drake/math:geometric_transform",
     ],
 )
 
@@ -95,6 +96,7 @@ drake_cc_binary(
     ],
 )
 
+# TODO(naveenoid) : Move the moving_average_filter to within drake/perception.
 drake_cc_library(
     name = "moving_average_filter",
     srcs = ["moving_average_filter.cc"],
@@ -115,8 +117,8 @@ drake_cc_googletest(
     ],
     deps = [
         ":robot_state_msg_translator",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:find_resource",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/math:geometric_transform",
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/parsers",
@@ -127,7 +129,7 @@ drake_cc_googletest(
     name = "trajectory_utils_test",
     deps = [
         ":trajectory_utils",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -136,8 +138,8 @@ drake_cc_googletest(
     srcs = ["test/moving_average_filter_test.cc"],
     deps = [
         ":moving_average_filter",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:essential",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -149,7 +151,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":sim_diagram_builder",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/lcm",
         "//drake/manipulation/util:world_sim_tree_builder",
         "//drake/multibody/rigid_body_plant",

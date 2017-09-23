@@ -29,14 +29,18 @@ GTEST_TEST(DiagramBuilderTest, Empty) {
 // system *has* feedthrough, but a cycle in the diagram graph does not imply
 // an algebraic loop.
 template <typename T>
-class ConstAndEcho : public LeafSystem<T> {
+class ConstAndEcho final : public LeafSystem<T> {
  public:
-  ConstAndEcho() {
+  ConstAndEcho() : LeafSystem<T>(SystemTypeTag<systems::ConstAndEcho>{}) {
     this->DeclareInputPort(kVectorValued, 1);
     this->DeclareVectorOutputPort(BasicVector<T>(1), &ConstAndEcho::CalcEcho);
     this->DeclareVectorOutputPort(BasicVector<T>(1),
                                   &ConstAndEcho::CalcConstant);
   }
+
+  // Scalar-converting copy constructor.
+  template <typename U>
+  explicit ConstAndEcho(const ConstAndEcho<U>&) : ConstAndEcho() {}
 
   const systems::InputPortDescriptor<T>& get_vec_input_port() {
     return this->get_input_port(0);
@@ -58,10 +62,6 @@ class ConstAndEcho : public LeafSystem<T> {
   void CalcEcho(const Context<T>& context, BasicVector<T>* echo) const {
     const BasicVector<T>* input_vector = this->EvalVectorInput(context, 0);
     echo->get_mutable_value() = input_vector->get_value();
-  }
-
-  ConstAndEcho<symbolic::Expression>* DoToSymbolic() const override {
-    return new ConstAndEcho<symbolic::Expression>();
   }
 };
 

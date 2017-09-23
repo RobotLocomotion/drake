@@ -72,6 +72,12 @@ class PurePursuitParams : public systems::BasicVector<T> {
     result = result && (s_lookahead() >= T(0.0));
     return result;
   }
+
+  // VectorBase override.
+  void CalcInequalityConstraint(VectorX<T>* value) const override {
+    value->resize(1);
+    (*value)[0] = s_lookahead() - T(0.0);
+  }
 };
 
 }  // namespace automotive

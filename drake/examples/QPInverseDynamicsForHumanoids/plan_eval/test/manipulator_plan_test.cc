@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
-#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/plan_eval/manipulator_move_end_effector_plan.h"
 #include "drake/examples/QPInverseDynamicsForHumanoids/plan_eval/test/test_common.h"
 #include "drake/lcmt_manipulator_plan_move_end_effector.hpp"

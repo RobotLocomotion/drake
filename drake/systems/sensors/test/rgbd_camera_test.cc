@@ -11,8 +11,8 @@
 #include <vtkVersion.h>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/unused.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"

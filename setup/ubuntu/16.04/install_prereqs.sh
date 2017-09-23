@@ -62,6 +62,7 @@ apt install --no-install-recommends $(tr '\n' ' ' <<EOF
 
 bash-completion
 binutils
+coinor-libipopt-dev
 doxygen
 g++
 g++-5
@@ -75,6 +76,7 @@ gfortran-5
 gfortran-5-multilib
 git
 graphviz
+libblas-dev
 libboost-dev
 libexpat1-dev
 libfreetype6
@@ -83,6 +85,7 @@ libglu1-mesa-dev
 libhdf5-10
 libjpeg8
 libjsoncpp1
+liblapack-dev
 liblz4-dev
 libnetcdf-c++4
 libnetcdf11
@@ -103,6 +106,7 @@ openjdk-8-jdk
 patchutils
 pkg-config
 python-dev
+python-gtk2
 python-lxml
 python-numpy
 python-pygame
