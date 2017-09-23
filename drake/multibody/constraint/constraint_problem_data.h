@@ -23,17 +23,22 @@ namespace constraint {
 /// acceleration-level constraints.
 ///
 /// <h3>Bilateral and unilateral constraints</h3>
-/// Constraints can be categorized as either bilateral (movement and/or force
-/// is constrained in two directions for each equation) or unilateral
-/// (movement and/or force is constrained in one direction for each equation).
+/// Constraints can be categorized as either bilateral or unilateral, which
+/// roughly can be translated to equality (e.g., c(q) = 0) or inequality
+/// constraints (e.g., c(q) ≥ 0). The former can be realized through the
+/// latter through a pair of inequality constraints, c(q) ≥ 0 and -c(q) ≥ 0;
+/// the problem structure distinguishes the two types to maximize
+/// computational efficiency in the solution algorithms. *We assume hereafter
+/// that c() are vector equations.*
+///
 /// Constraints may be defined at the position level:<pre>
 /// c(t,q,λ)
 /// </pre>
 /// at the velocity level:<pre>
-/// ċ(t,q,v,λ)
+/// c(t,q,v,λ)
 /// </pre>
 /// or at the acceleration level:<pre>
-/// c̈(t,q,v,v̇,λ)
+/// c(t,q,v,v̇,λ)
 /// </pre>
 /// This document and class does not generally attempt (or need) to distinguish
 /// between equations that are posable at the position level but are
@@ -44,22 +49,22 @@ namespace constraint {
 ///
 /// At the acceleration level, a bilateral constraint equation takes the form:
 /// <pre>
-/// c̈(q,v,t;v̇,λ) = 0
+/// c(t,q,v;v̇,λ) = 0
 /// </pre>
-/// where λ, which is the same dimension as c̈, is a vector of force magnitudes
+/// where λ, which is the same dimension as c, is a vector of force magnitudes
 /// used to enforce the constraint; note the semicolon, which separates general
 /// constraint dependencies (q,v,t) from variables that must be determined using
 /// the constraints (v̇,λ). Each unilateral constraint at the acceleration level
 /// comprises a triplet of equations:<pre>
-/// c̈(q,v,t;v̇,λ) ≥ 0
+/// c(t,q,v;v̇,λ) ≥ 0
 /// λ ≥ 0
-/// c̈(q,v,t;v̇,λ)⋅λ = 0
+/// c(t,q,v;v̇,λ)⋅λ = 0
 /// </pre>
 /// which we will typically write in the common shorthand notation:<pre>
-/// 0 ≤ c̈  ⊥  λ ≥ 0
+/// 0 ≤ c  ⊥  λ ≥ 0
 /// </pre>
 /// Interpreting this triplet of constraint equations, two conditions become
-/// apparent: (1) when the constraint is inactive (c̈ > 0), the constraint force
+/// apparent: (1) when the constraint is inactive (c > 0), the constraint force
 /// must be zero (λ = 0) and (2) the constraint force can only act in one
 /// direction (λ ≥ 0). This triplet is known as a *complementarity constraint*.
 ///
@@ -67,13 +72,14 @@ namespace constraint {
 /// It can be both numerically advantageous and a desirable modeling feature to
 /// soften otherwise "rigid" constraints. For example, consider modifying the
 /// unilateral complementarity constraint above to:<pre>
-/// 0 ≤ c̈(q,v,t;v̇,λ) + γλ  ⊥  λ ≥ 0
+/// 0 ≤ c(q,v,t;v̇,λ) + γλ  ⊥  λ ≥ 0
 /// </pre>
-/// where γ is a non-negative scalar (alternatively, it can represent a diagonal
-/// matrix with the same number of rows/columns as the dimension of c̈ and λ).
+/// where γ is a non-negative scalar; alternatively, it can represent a diagonal
+/// matrix with the same number of rows/columns as the dimension of c̈ and λ,
+/// permitting different coefficients for each constraint equation.
 /// With γλ > 0, it becomes easier to satisfy the constraint
-/// c̈(q,v,t;v̇,λ) + γλ ≥ 0, though the resulting v̇ and λ will not quite
-/// satisfy c̈ = 0 (i.e., c̈ will be slightly negative). As hinted above,
+/// c(q,v,t;v̇,λ) + γλ ≥ 0, though the resulting v̇ and λ will not quite
+/// satisfy c = 0 (i.e., c will be slightly negative). As hinted above,
 /// softening grants two benefits. First, the complementarity problems resulting
 /// from the softened unilateral constraints are regularized, and any
 /// complementarity problem becomes solvable given sufficient regularization
