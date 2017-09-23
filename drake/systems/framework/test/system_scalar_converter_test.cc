@@ -272,16 +272,6 @@ GTEST_TEST(SystemScalarConverterTest, SubclassMismatch) {
       }
     }), std::runtime_error);
   }
-
-  // However, if subtype checking is off, the conversion is allowed to upcast.
-  {
-    SystemScalarConverter dut(
-        SystemTypeTag<AnyToAnySystem>{},
-        SystemScalarConverter::GuaranteedSubtypePreservation::kDisabled);
-    const SubclassOfAnyToAnySystem<double> original;
-    EXPECT_TRUE(is_dynamic_castable<AnyToAnySystem<AutoDiffXd>>(
-        dut.Convert<AutoDiffXd, double>(original)));
-  }
 }
 
 GTEST_TEST(SystemScalarConverterTest, RemoveUnlessAlsoSupportedBy) {
