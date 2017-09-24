@@ -281,7 +281,8 @@ class Context {
   /// Throws std::bad_cast if the port is not vector-valued.
   /// Aborts if the port does not exist.
   ///
-  /// This is a framework implementation detail.  User code should not call it.
+  /// This is a framework implementation detail.  User code should not call it;
+  /// consider calling System::EvalVectorInput instead.
   const BasicVector<T>* EvalVectorInput(
       const detail::InputPortEvaluatorInterface<T>* evaluator,
       const InputPortDescriptor<T>& descriptor) const {
@@ -298,7 +299,8 @@ class Context {
   /// Returns nullptr if the port is not connected.
   /// Aborts if the port does not exist.
   ///
-  /// This is a framework implementation detail.  User code should not call it.
+  /// This is a framework implementation detail.  User code should not call it;
+  /// consider calling System::EvalAbstractInput instead.
   const AbstractValue* EvalAbstractInput(
       const detail::InputPortEvaluatorInterface<T>* evaluator,
       const InputPortDescriptor<T>& descriptor) const {
@@ -315,7 +317,8 @@ class Context {
   /// Throws std::bad_cast if the port does not have type V.
   /// Aborts if the port does not exist.
   ///
-  /// This is a framework implementation detail.  User code should not call it.
+  /// This is a framework implementation detail.  User code should not call it;
+  /// consider calling System::EvalInputValue instead.
   ///
   /// @tparam V The type of data expected.
   template <typename V>
