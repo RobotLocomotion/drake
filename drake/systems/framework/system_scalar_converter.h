@@ -10,13 +10,15 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/nice_type_name.h"
 #include "drake/common/symbolic.h"
 #include "drake/systems/framework/scalar_conversion_traits.h"
-#include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_type_tag.h"
 
 namespace drake {
 namespace systems {
+
+template <typename T> class System;
 
 /// Helper class to convert a System<U> into a System<T>, intended for internal
 /// use by the System framework, not directly by users.
@@ -100,6 +102,10 @@ class SystemScalarConverter {
   /// constructor.
   template <template <typename> class S, typename T, typename U>
   void AddIfSupported();
+
+  /// Removes from this converter all pairs where `other.IsConvertible<T, U>`
+  /// is false.  The subtype `S` need not be the same between this and `other`.
+  void RemoveUnlessAlsoSupportedBy(const SystemScalarConverter& other);
 
   /// Returns true iff this object can convert a System<U> into a System<T>,
   /// i.e., whether Convert() will return non-null.

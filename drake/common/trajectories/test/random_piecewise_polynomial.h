@@ -4,7 +4,7 @@
 
 #include <Eigen/Core>
 
-#include "drake/common/test/random_polynomial_matrix.h"
+#include "drake/common/test_utilities/random_polynomial_matrix.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 
 namespace drake {

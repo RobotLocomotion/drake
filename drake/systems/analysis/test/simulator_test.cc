@@ -10,7 +10,7 @@
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/test/is_dynamic_castable.h"
+#include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/analysis/explicit_euler_integrator.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"

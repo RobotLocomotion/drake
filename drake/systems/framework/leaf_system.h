@@ -35,6 +35,45 @@
 namespace drake {
 namespace systems {
 
+/** @cond */
+// Private helper functions for LeafSystem.
+namespace leaf_system_detail {
+
+// Returns the next sample time for the given @p attribute.
+template <typename T>
+static T GetNextSampleTime(
+    const typename Event<T>::PeriodicAttribute& attribute,
+    const T& current_time_sec) {
+  const double period = attribute.period_sec;
+  DRAKE_ASSERT(period > 0);
+  const double offset = attribute.offset_sec;
+  DRAKE_ASSERT(offset >= 0);
+
+  // If the first sample time hasn't arrived yet, then that is the next
+  // sample time.
+  if (current_time_sec < offset) {
+    return offset;
+  }
+
+  // NOLINTNEXTLINE(build/namespaces): Needed for ADL of floor and ceil.
+  using namespace std;
+
+  // Compute the index in the sequence of samples for the next time to sample,
+  // which should be greater than the present time.
+  const T offset_time = current_time_sec - offset;
+  const int64_t next_k = static_cast<int64_t>(ceil(offset_time / period));
+  T next_t = offset + next_k * period;
+  if (next_t <= current_time_sec) {
+    next_t = offset + (next_k + 1) * period;
+  }
+  DRAKE_ASSERT(next_t > current_time_sec);
+  return next_t;
+}
+
+}  // namespace leaf_system_detail
+/** @endcond */
+
+
 /// A superclass template that extends System with some convenience utilities
 /// that are not applicable to Diagrams.
 ///
@@ -257,7 +296,7 @@ class LeafSystem : public System<T> {
   /// See @ref system_scalar_conversion for detailed background and examples
   /// related to scalar-type conversion support.
   explicit LeafSystem(SystemScalarConverter converter)
-      : system_scalar_converter_(std::move(converter)) {
+      : System<T>(std::move(converter)) {
     this->set_forced_publish_events(
         LeafEventCollection<PublishEvent<T>>::MakeForcedEventCollection());
     this->set_forced_discrete_update_events(
@@ -268,13 +307,12 @@ class LeafSystem : public System<T> {
             UnrestrictedUpdateEvent<T>>::MakeForcedEventCollection());
   }
 
-  System<AutoDiffXd>* DoToAutoDiffXd() const override {
-    return system_scalar_converter_.Convert<AutoDiffXd, T>(*this).release();
+  std::unique_ptr<System<AutoDiffXd>> DoToAutoDiffXd() const final {
+    return System<T>::DoToAutoDiffXd();
   }
 
-  System<symbolic::Expression>* DoToSymbolic() const override {
-    return system_scalar_converter_.Convert<symbolic::Expression, T>(*this).
-        release();
+  std::unique_ptr<System<symbolic::Expression>> DoToSymbolic() const final {
+    return System<T>::DoToSymbolic();
   }
 
   /// Provides a new instance of the leaf context for this system. Derived
@@ -725,12 +763,15 @@ class LeafSystem : public System<T> {
   /// This is the best way to declare LeafSystem input ports that require
   /// subclasses of BasicVector.  The port's size will be model_vector.size(),
   /// and LeafSystem's default implementation of DoAllocateInputVector will be
-  /// model_vector.Clone().  If the @p model_vector declares any
+  /// model_vector.Clone(). If the port is intended to model a random noise or
+  /// disturbance input, @p random_type can (optionally) be used to label it
+  /// as such.  If the @p model_vector declares any
   /// VectorBase::CalcInequalityConstraint() constraints, they will be
   /// re-declared as inequality constraints on this system (see
   /// DeclareInequalityConstraint()).
   const InputPortDescriptor<T>& DeclareVectorInputPort(
-      const BasicVector<T>& model_vector) {
+      const BasicVector<T>& model_vector,
+      optional<RandomDistribution> random_type = nullopt) {
     const int size = model_vector.size();
     const int index = this->get_num_input_ports();
     model_input_values_.AddVectorModel(index, model_vector.Clone());
@@ -741,7 +782,7 @@ class LeafSystem : public System<T> {
           DRAKE_DEMAND(input != nullptr);
           return *input;
         });
-    return this->DeclareInputPort(kVectorValued, size);
+    return this->DeclareInputPort(kVectorValued, size, random_type);
   }
 
   // Avoid shadowing out the no-arg DeclareAbstractInputPort().
@@ -825,6 +866,19 @@ class LeafSystem : public System<T> {
           auto typed_result = dynamic_cast<BasicVectorSubtype*>(result);
           DRAKE_DEMAND(typed_result != nullptr);
           (this_ptr->*calc)(context, typed_result);
+        });
+    MaybeDeclareVectorBaseInequalityConstraint(
+        "output " + std::to_string(int{port.get_index()}), model_vector,
+        [&port, storage = std::shared_ptr<AbstractValue>{}](
+            const Context<T>& context) mutable -> const VectorBase<T>& {
+          // Because we must return a VectorBase by const reference, our lambda
+          // object needs a member field to maintain storage for our result.
+          // We must use a shared_ptr not because we share storage, but because
+          // our lambda must be copyable.  This will go away once Eval works.
+          storage = port.Allocate(context);
+          // TODO(jwnimmer-tri) We should use port.Eval(), once it works.
+          port.Calc(context, storage.get());
+          return storage->GetValue<BasicVector<T>>();
         });
     return port;
   }
@@ -1285,7 +1339,8 @@ class LeafSystem : public System<T> {
       const typename Event<T1>::PeriodicAttribute& attribute =
           event_pair.first;
       const Event<T>* const event = event_pair.second.get();
-      T1 t = GetNextSampleTime(attribute, context.get_time());
+      const T1 t = leaf_system_detail::GetNextSampleTime(
+          attribute, context.get_time());
       if (t < min_time) {
         min_time = t;
         next_events = {event};
@@ -1300,36 +1355,6 @@ class LeafSystem : public System<T> {
     for (const Event<T1>* event : next_events) {
       event->add_to_composite(events);
     }
-  }
-
-  // Returns the next sample time for the given @p attribute.
-  static T GetNextSampleTime(
-      const typename Event<T>::PeriodicAttribute& attribute,
-      const T& current_time_sec) {
-    const double period = attribute.period_sec;
-    DRAKE_ASSERT(period > 0);
-    const double offset = attribute.offset_sec;
-    DRAKE_ASSERT(offset >= 0);
-
-    // If the first sample time hasn't arrived yet, then that is the next
-    // sample time.
-    if (current_time_sec < offset) {
-      return offset;
-    }
-
-    // NOLINTNEXTLINE(build/namespaces): Needed for ADL of floor and ceil.
-    using namespace std;
-
-    // Compute the index in the sequence of samples for the next time to sample,
-    // which should be greater than the present time.
-    const T offset_time = current_time_sec - offset;
-    const int64_t next_k = static_cast<int64_t>(ceil(offset_time / period));
-    T next_t = offset + next_k * period;
-    if (next_t <= current_time_sec) {
-      next_t = offset + (next_k + 1) * period;
-    }
-    DRAKE_ASSERT(next_t > current_time_sec);
-    return next_t;
   }
 
   // Returns a SystemSymbolicInspector for this system, or nullptr if a
@@ -1439,9 +1464,6 @@ class LeafSystem : public System<T> {
 
   // Model outputs to be used in AllocateParameters.
   detail::ModelValues model_numeric_parameters_;
-
-  // Functions to convert this system to use alternative scalar types.
-  const SystemScalarConverter system_scalar_converter_;
 };
 
 }  // namespace systems

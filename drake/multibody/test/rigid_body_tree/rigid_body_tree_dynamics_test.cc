@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_autodiff_types.h"
-#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/jacobian.h"

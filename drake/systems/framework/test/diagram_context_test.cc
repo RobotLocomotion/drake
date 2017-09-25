@@ -6,7 +6,7 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
-#include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/input_port_value.h"
 #include "drake/systems/framework/leaf_context.h"
@@ -119,7 +119,8 @@ class DiagramContextTest : public ::testing::Test {
   // connected to @p context at @p index.
   static const BasicVector<double>* ReadVectorInputPort(
       const Context<double>& context, int index) {
-    InputPortDescriptor<double> descriptor(nullptr, index, kVectorValued, 0);
+    InputPortDescriptor<double> descriptor(nullptr, index, kVectorValued, 0,
+                                           nullopt);
     return context.EvalVectorInput(nullptr, descriptor);
   }
 

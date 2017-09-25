@@ -21,7 +21,7 @@ echo "*******************************************************************" 1>&2
 # Check if everything we need exists.
 [ -x "$cdexec" ] || die 'Missing $cdexec'
 [ -n "$top_builddir" ] || die 'Missing $top_builddir'
-configure="$PWD"/external/ipopt/configure
+configure="$PWD"/external/ipopt_robotlocomotion/configure
 [ -x "$configure" ] || die 'Missing configure'
 
 # How many cores to use while building.  This is a compromise in order to not

@@ -99,8 +99,8 @@ drake_cc_googletest(
     data = [":test_models"],
     deps = [
         ":collision",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:find_resource",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 

@@ -89,7 +89,7 @@ drake_cc_googletest(
         "no_tsan",
     ],
     deps = [
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/lcm",
         "//drake/lcmtypes:drake_signal",
         "//drake/systems/framework",
