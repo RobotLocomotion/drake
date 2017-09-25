@@ -252,13 +252,13 @@ class TreeTopologyTests : public ::testing::Test {
   void ConnectBodies(
       const RigidBody<double>& inboard, const RigidBody<double>& outboard,
       bool use_joint = false) {
-    if( use_joint ) {
+    if ( use_joint ) {
        const auto* joint = &model_->AddJoint<RevoluteJoint>(
            "FooJoint",
            inboard, Isometry3d::Identity(), outboard, Isometry3d::Identity(),
            Vector3d::UnitZ());
       joints_.push_back(joint);
-    }else {
+    } else {
       const Mobilizer<double> *mobilizer =
           &model_->AddMobilizer<RevoluteMobilizer>(
               inboard.get_body_frame(), outboard.get_body_frame(),
