@@ -5,9 +5,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/vector_base.h"
 
 namespace drake {

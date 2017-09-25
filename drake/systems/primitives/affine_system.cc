@@ -8,7 +8,6 @@
 #include "drake/common/symbolic.h"
 #include "drake/common/symbolic_decompose.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/leaf_context.h"
 
 namespace drake {
 namespace systems {

@@ -1,8 +1,5 @@
 #pragma once
 
-#include <memory>
-#include <utility>
-
 /// @file
 /// Template method implementations for constant_value_source.h.
 /// Most users should only include that file, not this one.
@@ -10,11 +7,8 @@
 
 #include "drake/systems/primitives/constant_value_source.h"
 
-#include <stdexcept>
-#include <string>
-
-#include "drake/common/drake_assert.h"
-#include "drake/systems/framework/leaf_context.h"
+#include <memory>
+#include <utility>
 
 namespace drake {
 namespace systems {

@@ -9,7 +9,6 @@
 
 #include <sstream>
 
-#include "drake/common/drake_assert.h"
 #include "drake/common/unused.h"
 
 namespace drake {

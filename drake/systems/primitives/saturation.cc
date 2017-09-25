@@ -1,11 +1,9 @@
 #include "drake/systems/primitives/saturation.h"
 
-#include <algorithm>
 #include <limits>
 
 #include "drake/common/eigen_types.h"
 #include "drake/math/saturate.h"
-#include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 namespace systems {

@@ -7,7 +7,6 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/systems/framework/input_port_value.h"
-#include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/subvector.h"

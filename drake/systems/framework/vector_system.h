@@ -13,7 +13,6 @@
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/framework/output_port_value.h"
 
 namespace drake {
 namespace systems {
