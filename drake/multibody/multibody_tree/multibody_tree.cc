@@ -25,7 +25,7 @@ class JointModelBuilder {
   static void Build(Joint<T> *joint, MultibodyTree<T> *tree) {
     std::unique_ptr<JointBluePrint> blue_print = joint->MakeModelBlueprint();
     auto model = std::make_unique<JointModel>(*blue_print);
-    DRAKE_DEMAND(static_cast<int>(model->mobilizers_.size()) != 0);
+    DRAKE_DEMAND(model->get_num_mobilizers() != 0);
     for (auto& mobilizer : blue_print->mobilizers_) {
       tree->AddMobilizer(std::move(mobilizer));
     }
@@ -102,10 +102,17 @@ void MultibodyTree<T>::FinalizeInternals() {
 
 template <typename T>
 void MultibodyTree<T>::Finalize() {
-  // Create Joint objects's implementation.
-  // This must happen before FinalizeTopology() so that the model, in terms of
-  // basic MBT elements such as frames, bodies, mobilizers, force elements and
-  // constraints, is complete.
+  // Create Joint objects's model. Joints are modeled using a combination of
+  // MultibodyTree's building blocks such as Body, Mobilizer, ForceElement and
+  // Constraint. For a same physical Joint, several mathematical models could be
+  // implemented (for instance, a Constraint instead of a Mobilizer). The
+  // decision on what model to implement is performed by MultibodyTree at
+  // Finalize() time. Then, JointModelBuilder below can request MultibodyTree
+  // for these choices when building the Joint model.
+  // Since a Joint's model is built upon MultibodyTree's building blocks, notice
+  // that creating a Joint's model will therefore change the tree topology.
+  // Since topology changes are NOT allowed after Finalize(), joint models MUST
+  // be assembled BEFORE the tree's topology is finalized.
   for (auto& joint : owned_joints_) {
     internal::JointModelBuilder<T>::Build(joint.get(), this);
   }

@@ -396,15 +396,15 @@ class MultibodyTree {
   ///       Isometry3d::Identity(), /* frame F IS the world frame W */
   ///       pendulum,               /* child body, the pendulum */
   ///       X_BM,                   /* pose of frame M in the body frame B */
-  ///       Vector3d::UnitZ()       /* revolute axis in this case */));
+  ///       Vector3d::UnitZ());     /* revolute axis in this case */
   /// @endcode
   ///
   /// @see The Joint class's documentation for further details on how to define
   /// a joint.
-  template<template<typename Scalar> class JointType, typename... Args>
+  template<template<typename> class JointType, typename... Args>
   const JointType<T>& AddJoint(Args&&... args) {
     static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
-                  "JointType must be a sub-class of Joint<T>.");
+                  "JointType<T> must be a sub-class of Joint<T>.");
     return AddJoint(
         std::make_unique<JointType<T>>(std::forward<Args>(args)...));
   }
@@ -464,8 +464,8 @@ class MultibodyTree {
 
   /// Returns a constant reference to the *world* body.
   const RigidBody<T>& get_world_body() const {
-    // world_body_ is set at construction. So this assert is here only to verify
-    // future constructors do not mess that up.
+    // world_body_ is set in the constructor. So this assert is here only to
+    // verify future constructors do not mess that up.
     DRAKE_ASSERT(world_body_ != nullptr);
     return *world_body_;
   }
@@ -900,8 +900,8 @@ class MultibodyTree {
     }
 
     // Since Joint<T> objects are modeled from basic element objects like Body,
-    // Mobilizer, ForceElement and Constraint, they are cloned last so that they
-    // can grab their already cloned implementation.
+    // Mobilizer, ForceElement and Constraint, they are cloned last so that the
+    // clones of their dependencies are guaranteed to be available.
     // DO NOT change this order!!!
     for (const auto& joint : owned_joints_) {
       tree_clone->CloneJointAndAdd(*joint);
@@ -1032,17 +1032,16 @@ class MultibodyTree {
     JointIndex joint_index = joint.get_index();
     auto joint_clone = joint.CloneToScalar(*this);
     joint_clone->set_parent_tree(this, joint_index);
-    Joint<T>* raw_joint_clone_ptr = joint_clone.get();
     owned_joints_.push_back(std::move(joint_clone));
-    return raw_joint_clone_ptr;
+    return owned_joints_.back().get();
   }
 
   // Helper method to retrieve the corresponding Frame<T> variant to a Frame in
   // a MultibodyTree variant templated on Scalar.
   template <template <typename> class FrameType, typename Scalar>
   const FrameType<T>& get_frame_variant(const FrameType<Scalar>& frame) const {
-    static_assert(std::is_convertible<FrameType<T>*, Frame<T>*>::value,
-                  "FrameType must be a sub-class of Frame<T>.");
+    static_assert(std::is_base_of<Frame<T>, FrameType<T>>::value,
+                  "FrameType<T> must be a sub-class of Frame<T>.");
     // TODO(amcastro-tri):
     //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
     //   MultibodyTree. That will require the tree to have some sort of id.
@@ -1058,8 +1057,8 @@ class MultibodyTree {
   // MultibodyTree variant templated on Scalar.
   template <template <typename> class BodyType, typename Scalar>
   const BodyType<T>& get_body_variant(const BodyType<Scalar>& body) const {
-    static_assert(std::is_convertible<BodyType<T>*, Body<T>*>::value,
-                  "BodyType must be a sub-class of Body<T>.");
+    static_assert(std::is_base_of<Body<T>, BodyType<T>>::value,
+                  "BodyType<T> must be a sub-class of Body<T>.");
     // TODO(amcastro-tri):
     //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
     //   MultibodyTree. That will require the tree to have some sort of id.
@@ -1077,8 +1076,8 @@ class MultibodyTree {
   template <template <typename> class MobilizerType, typename Scalar>
   const MobilizerType<T>& get_mobilizer_variant(
       const MobilizerType<Scalar>& mobilizer) const {
-    static_assert(std::is_convertible<MobilizerType<T>*, Mobilizer<T>*>::value,
-                  "MobilizerType must be a sub-class of Mobilizer<T>.");
+    static_assert(std::is_base_of<Mobilizer<T>, MobilizerType<T>>::value,
+                  "MobilizerType<T> must be a sub-class of Mobilizer<T>.");
     // TODO(amcastro-tri):
     //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
     //   MultibodyTree. That will require the tree to have some sort of id.
@@ -1095,8 +1094,8 @@ class MultibodyTree {
   // in a MultibodyTree variant templated on Scalar.
   template <template <typename> class JointType, typename Scalar>
   const JointType<T>& get_joint_variant(const JointType<Scalar>& joint) const {
-    static_assert(std::is_convertible<JointType<T>*, Joint<T>*>::value,
-                  "JointType must be a sub-class of Joint<T>.");
+    static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
+                  "JointType<T> must be a sub-class of Joint<T>.");
     // TODO(amcastro-tri):
     //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
     //   MultibodyTree. That will require the tree to have some sort of id.
