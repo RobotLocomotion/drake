@@ -29,12 +29,13 @@
 ///
 /// #include "drake/common/default_scalars.h"
 ///
-/// DRAKE_DEFINE_CLASS_TEMPLATE_INSTIATIONS_ON_DEFAULT_SCALARS(
+/// DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
 ///     class ::sample::MySystem)
 /// @endcode
 ///
 /// See also @ref system_scalar_conversion.
-#define DRAKE_DEFINE_CLASS_TEMPLATE_INSTIATIONS_ON_DEFAULT_SCALARS(SomeType) \
+#define DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS( \
+    SomeType) \
 template SomeType<double>; \
 template SomeType<::drake::AutoDiffXd>; \
 template SomeType<::drake::symbolic::Expression>;
