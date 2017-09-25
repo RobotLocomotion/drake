@@ -679,49 +679,50 @@ GTEST_TEST(DiagramPublishTest, Publish) {
 // FeedbackDiagram is a diagram containing a feedback loop of two
 // constituent diagrams, an Integrator and a Gain. The Integrator is not
 // direct-feedthrough, so there is no algebraic loop.
-class FeedbackDiagram : public Diagram<double> {
+template <typename T>
+class FeedbackDiagram : public Diagram<T> {
  public:
-  FeedbackDiagram() : Diagram<double>() {
-    DiagramBuilder<double> builder;
+  FeedbackDiagram() : Diagram<T>() {
+    constexpr int kSize = 1;
 
-    DiagramBuilder<double> integrator_builder;
-    integrator_ = integrator_builder.AddSystem<Integrator>(1 /* size */);
-    integrator_->set_name("integrator");
-    integrator_builder.ExportInput(integrator_->get_input_port());
-    integrator_builder.ExportOutput(integrator_->get_output_port());
-    integrator_diagram_ = builder.AddSystem(integrator_builder.Build());
-    integrator_diagram_->set_name("integrator_diagram");
+    DiagramBuilder<T> builder;
 
-    DiagramBuilder<double> gain_builder;
-    gain_ = gain_builder.AddSystem<Gain>(1.0 /* gain */, 1 /* length */);
-    gain_->set_name("gain");
-    gain_builder.ExportInput(gain_->get_input_port());
-    gain_builder.ExportOutput(gain_->get_output_port());
-    gain_diagram_ = builder.AddSystem(gain_builder.Build());
-    gain_diagram_->set_name("gain_diagram");
+    DiagramBuilder<T> integrator_builder;
+    Integrator<T>* const integrator =
+        integrator_builder.template AddSystem<Integrator>(kSize);
+    integrator->set_name("integrator");
+    integrator_builder.ExportInput(integrator->get_input_port());
+    integrator_builder.ExportOutput(integrator->get_output_port());
+    Diagram<T>* const integrator_diagram =
+        builder.AddSystem(integrator_builder.Build());
+    integrator_diagram->set_name("integrator_diagram");
 
-    builder.Connect(*integrator_diagram_, *gain_diagram_);
-    builder.Connect(*gain_diagram_, *integrator_diagram_);
+    DiagramBuilder<T> gain_builder;
+    Gain<T>* const gain =
+        gain_builder.template AddSystem<Gain>(1.0 /* gain */, kSize);
+    gain->set_name("gain");
+    gain_builder.ExportInput(gain->get_input_port());
+    gain_builder.ExportOutput(gain->get_output_port());
+    Diagram<T>* const gain_diagram =
+        builder.AddSystem(gain_builder.Build());
+    gain_diagram->set_name("gain_diagram");
+
+    builder.Connect(*integrator_diagram, *gain_diagram);
+    builder.Connect(*gain_diagram, *integrator_diagram);
     builder.BuildInto(this);
   }
-
- private:
-  Integrator<double>* integrator_ = nullptr;
-  Gain<double>* gain_ = nullptr;
-  Diagram<double>* integrator_diagram_ = nullptr;
-  Diagram<double>* gain_diagram_ = nullptr;
 };
 
 // Tests that since there are no outputs, there is no direct feedthrough.
 GTEST_TEST(FeedbackDiagramTest, HasDirectFeedthrough) {
-  FeedbackDiagram diagram;
+  FeedbackDiagram<double> diagram;
   EXPECT_FALSE(diagram.HasAnyDirectFeedthrough());
 }
 
 // Tests that a FeedbackDiagram's context can be deleted without accessing
 // already-freed memory. https://github.com/RobotLocomotion/drake/issues/3349
 GTEST_TEST(FeedbackDiagramTest, DeletionIsMemoryClean) {
-  FeedbackDiagram diagram;
+  FeedbackDiagram<double> diagram;
   auto context = diagram.CreateDefaultContext();
   EXPECT_NO_THROW(context.reset());
 }
