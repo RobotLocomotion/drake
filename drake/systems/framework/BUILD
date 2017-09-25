@@ -59,6 +59,7 @@ drake_cc_library(
     ],
     deps = [
         "//drake/common:autodiff",
+        "//drake/common:default_scalars",
         "//drake/common:dummy_value",
         "//drake/common:essential",
         "//drake/common:symbolic",
@@ -117,6 +118,7 @@ drake_cc_library(
     deps = [
         ":vector",
         "//drake/common:autodiff",
+        "//drake/common:default_scalars",
         "//drake/common:essential",
     ],
 )
@@ -129,6 +131,7 @@ drake_cc_library(
         ":value",
         ":vector",
         "//drake/common:autodiff",
+        "//drake/common:default_scalars",
         "//drake/common:essential",
     ],
 )
@@ -144,6 +147,7 @@ drake_cc_library(
         ":value",
         ":vector",
         "//drake/common:autodiff",
+        "//drake/common:default_scalars",
         "//drake/common:essential",
     ],
 )
@@ -162,6 +166,7 @@ drake_cc_library(
         ":context",
         ":value",
         "//drake/common:autodiff",
+        "//drake/common:default_scalars",
         "//drake/common:essential",
     ],
 )
@@ -173,6 +178,7 @@ drake_cc_library(
     deps = [
         ":abstract_values",
         ":discrete_values",
+        "//drake/common:default_scalars",
         "//drake/common:essential",
     ],
 )
@@ -197,6 +203,7 @@ drake_cc_library(
     ],
     deps = [
         ":system_common",
+        "//drake/common:default_scalars",
         "//drake/common:essential",
     ],
 )
@@ -206,6 +213,7 @@ drake_cc_library(
     srcs = ["output_port_listener_interface.cc"],
     hdrs = ["output_port_listener_interface.h"],
     deps = [
+        "//drake/common:default_scalars",
         "//drake/common:essential",
     ],
 )
@@ -219,6 +227,7 @@ drake_cc_library(
         ":value",
         ":value_checker",
         ":vector",
+        "//drake/common:default_scalars",
         "//drake/common:essential",
     ],
 )
@@ -254,6 +263,7 @@ drake_cc_library(
         ":input_port_value",
         ":parameters",
         ":state",
+        "//drake/common:default_scalars",
         "//drake/common:essential",
     ],
 )
@@ -267,6 +277,7 @@ drake_cc_library(
         ":context",
         ":parameters",
         ":vector",
+        "//drake/common:default_scalars",
         "//drake/common:essential",
     ],
 )
@@ -292,6 +303,7 @@ drake_cc_library(
         ":system_scalar_converter",
         ":value",
         "//drake/common:autodiff",
+        "//drake/common:default_scalars",
         "//drake/common:essential",
         "//drake/common:symbolic",
         "//drake/common:type_safe_index",
@@ -307,6 +319,7 @@ drake_cc_library(
         ":system",
         ":value",
         ":vector",
+        "//drake/common:default_scalars",
         "//drake/common:essential",
     ],
 )
@@ -354,6 +367,7 @@ drake_cc_library(
         ":system_scalar_converter",
         ":system_symbolic_inspector",
         ":value_checker",
+        "//drake/common:default_scalars",
         "//drake/common:essential",
         "//drake/common:number_traits",
         "//drake/common:unused",
@@ -366,6 +380,7 @@ drake_cc_library(
     hdrs = ["diagram_continuous_state.h"],
     deps = [
         ":state",
+        "//drake/common:default_scalars",
         "//drake/common:essential",
     ],
 )
@@ -378,6 +393,7 @@ drake_cc_library(
         ":context",
         ":diagram_continuous_state",
         ":vector",
+        "//drake/common:default_scalars",
         "//drake/common:essential",
     ],
 )
@@ -390,6 +406,7 @@ drake_cc_library(
         ":cache",
         ":diagram_context",
         ":system",
+        "//drake/common:default_scalars",
         "//drake/common:essential",
         "//drake/common:number_traits",
     ],
@@ -401,6 +418,7 @@ drake_cc_library(
     hdrs = ["diagram_builder.h"],
     deps = [
         ":diagram",
+        "//drake/common:default_scalars",
         "//drake/common:essential",
     ],
 )
@@ -410,6 +428,7 @@ drake_cc_library(
     srcs = ["system_constraint.cc"],
     hdrs = ["system_constraint.h"],
     deps = [
+        "//drake/common:default_scalars",
         "//drake/common:essential",
         "//drake/common:symbolic",
         "//drake/common:type_safe_index",
@@ -433,6 +452,7 @@ drake_cc_library(
     hdrs = ["single_output_vector_source.h"],
     deps = [
         ":leaf_system",
+        "//drake/common:default_scalars",
     ],
 )
 
@@ -442,6 +462,7 @@ drake_cc_library(
     hdrs = ["vector_system.h"],
     deps = [
         ":leaf_system",
+        "//drake/common:default_scalars",
         "//drake/common:unused",
     ],
 )
