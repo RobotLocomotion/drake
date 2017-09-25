@@ -139,5 +139,5 @@ template class OutputPort<Eigen::AutoDiffScalar<Eigen::Vector3d>>;
 }  // namespace systems
 }  // namespace drake
 
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTIATIONS_ON_DEFAULT_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::systems::OutputPort)
