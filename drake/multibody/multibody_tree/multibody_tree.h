@@ -372,6 +372,13 @@ class MultibodyTree {
         std::make_unique<MobilizerType<T>>(std::forward<Args>(args)...));
   }
 
+  /// Creates and adds to `this` %MultibodyTree (which retains ownership) a new
+  /// `ForceElement` member with the specific type `ForceElementType`. The
+  /// arguments to this method `args` are forwarded to `ForceElementType`'s
+  /// constructor.
+  ///
+  /// The newly created `ForceElementType` object will be specialized on the
+  /// scalar type T of this %MultibodyTree.
   template <template<typename Scalar> class ForceElementType>
   const ForceElementType<T>& AddForceElement(
       std::unique_ptr<ForceElementType<T>> force_element) {
@@ -778,7 +785,7 @@ class MultibodyTree {
   /// generalized forces, depending on the ForceElement model. Therefore this
   /// method provides outputs for both spatial forces per body (with
   /// `F_Bo_W_array`) and generalized forces (with `tau_array`).
-  /// ForceElement contributions are a function of the state only.
+  /// ForceElement contributions are a function of the state and time only.
   /// The output from this method can immediately be used as input to
   /// CalcInverseDynamics() to include the effect of applied forces by force
   /// elements.
@@ -1111,15 +1118,12 @@ class MultibodyTree {
   // Helper method to create a clone of `force_element` and add it to `this`
   // tree.
   template <typename FromScalar>
-  ForceElement<T>* CloneForceElementAndAdd(
+  void CloneForceElementAndAdd(
       const ForceElement<FromScalar>& force_element) {
     ForceElementIndex force_element_index = force_element.get_index();
     auto force_element_clone = force_element.CloneToScalar(*this);
     force_element_clone->set_parent_tree(this, force_element_index);
-
-    ForceElement<T>* raw_force_element_clone_ptr = force_element_clone.get();
     owned_force_elements_.push_back(std::move(force_element_clone));
-    return raw_force_element_clone_ptr;
   }
 
   // Helper method to retrieve the corresponding Frame<T> variant to a Frame in

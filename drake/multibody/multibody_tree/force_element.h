@@ -15,10 +15,10 @@
 namespace drake {
 namespace multibody {
 
-/// A %ForceElement allows to model state dependent forces in a MultibodyTree
-/// model. Examples of such forces are springs, dampers, drag and gravity.
-/// Forces that depend on accelerations such as virtual mass cannot be modeled
-/// with a %ForceElement.
+/// A %ForceElement allows modeling state and time dependent forces in a
+/// MultibodyTree model. Examples of such forces are springs, dampers, drag and
+/// gravity. Forces that depend on accelerations such as virtual mass cannot be
+/// modeled with a %ForceElement.
 /// This abstract class provides an API that all force elements subclasses must
 /// implement in order to be fully defined. These are:
 /// - CalcAndAddForceContribution(): computes the force contribution of a force
@@ -65,9 +65,10 @@ class ForceElement : public
   ///   use the index returned by Body::get_node_index().
   /// @param[out] tau_array
   ///   On output `this` force element adds its contribution to the total
-  ///   generalized forces. Typically used to model generalized forces that
-  ///   are best formulated as generalized forces rather than as spatial forces.
-  ///   For instance, damping on a RevoluteMobilizer's angular velocity.
+  ///   generalized forces. Typically used to model forces that are best
+  ///   formulated as generalized forces rather than as spatial forces.
+  ///   For instance, damping on a RevoluteMobilizer's angular velocity is best
+  ///   modeled as a generalized force.
   ///   `tau_array` must not be nullptr and must have size
   ///   MultibodyTree::get_num_velocities() or this method will abort.
   ///   Generalized forces for each Mobilizer can be accessed
@@ -134,7 +135,8 @@ class ForceElement : public
   /// or zero if `this` force element is non-conservative. This quantity is
   /// defined to be positive when the potential energy is decreasing. In other
   /// words, if `PE` is the potential energy as defined by
-  /// CalcPotentialEnergy(), then the conservative power is `Pc = -d(PE)/dt`.
+  /// CalcPotentialEnergy(), then the conservative power, `Pc`, is
+  /// `Pc = -d(PE)/dt`.
   ///
   /// @see CalcPotentialEnergy(), CalcNonConservativePower()
   virtual T CalcConservativePower(
@@ -170,6 +172,13 @@ class ForceElement : public
   /// @endcond
 
  protected:
+  /// Implementation of NVI CalcAndAddForceContribution().
+  /// It assumes both `F_B_W` and `tau` are valid pointers with appropriate
+  /// sizes already checked by CalcAndAddForceContribution().
+  /// @pre The position kinematics `pc` must have been previously updated with a
+  /// call to CalcPositionKinematicsCache().
+  /// @pre The velocity kinematics `vc` must have been previously updated with a
+  /// call to CalcVelocityKinematicsCache().
   virtual void DoCalcAndAddForceContribution(
       const MultibodyTreeContext<T>& context,
       const PositionKinematicsCache<T>& pc,

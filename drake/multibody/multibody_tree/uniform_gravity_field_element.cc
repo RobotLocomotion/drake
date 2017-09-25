@@ -35,7 +35,7 @@ void UniformGravityFieldElement<T>::DoCalcAndAddForceContribution(
     // TODO(amcastro-tri): Consider caching p_BoBcm_W.
     const Vector3<T> p_BoBcm_W = R_WB * p_BoBcm_B;
 
-    const Vector3<T> f_Bcm_W = mass * g_W();
+    const Vector3<T> f_Bcm_W = mass * gravity_vector();
     const SpatialForce<T> F_Bo_W(p_BoBcm_W.cross(f_Bcm_W), f_Bcm_W);
     F_Bo_W_array->at(node_index) += F_Bo_W;
   }
@@ -66,7 +66,7 @@ T UniformGravityFieldElement<T>::CalcPotentialEnergy(
     const Vector3<T> p_BoBcm_W = R_WB * p_BoBcm_B;
     const Vector3<T> p_WBcm = p_WBo + p_BoBcm_W;
 
-    TotalPotentialEnergy -= (mass * p_WBcm.dot(g_W()));
+    TotalPotentialEnergy -= (mass * p_WBcm.dot(gravity_vector()));
   }
   return TotalPotentialEnergy;
 }
@@ -100,7 +100,7 @@ T UniformGravityFieldElement<T>::CalcConservativePower(
 
     // The conservative power is defined to be positive when the potential
     // energy decreases.
-    TotalConservativePower += (mass * v_WBcm.dot(g_W()));
+    TotalConservativePower += (mass * v_WBcm.dot(gravity_vector()));
   }
   return TotalConservativePower;
 }
@@ -118,14 +118,15 @@ template <typename T>
 std::unique_ptr<ForceElement<double>>
 UniformGravityFieldElement<T>::DoCloneToScalar(
     const MultibodyTree<double>&) const {
-  return std::make_unique<UniformGravityFieldElement<double>>(g_W());
+  return std::make_unique<UniformGravityFieldElement<double>>(gravity_vector());
 }
 
 template <typename T>
 std::unique_ptr<ForceElement<AutoDiffXd>>
 UniformGravityFieldElement<T>::DoCloneToScalar(
     const MultibodyTree<AutoDiffXd>&) const {
-  return std::make_unique<UniformGravityFieldElement<AutoDiffXd>>(g_W());
+  return std::make_unique<UniformGravityFieldElement<AutoDiffXd>>(
+      gravity_vector());
 }
 
 // Explicitly instantiates on the most common scalar types.
