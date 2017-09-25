@@ -77,6 +77,20 @@
     fun:MSKP_optimizeconic
 }
 
+# Similar to <mosek-4>, but specific to calling MSK_checkoutlicense via
+# MosekSolver::AcquireLicense().
+{
+   <mosek-7>
+   Memcheck:Cond
+   fun:__intel_sse2_strcpy
+   fun:MSKP_strdupenv
+   fun:checkout_from_flexlm
+   fun:MSK_ehajakopr
+   fun:MSK_checkoutlicense
+   ...
+   fun:_ZN5drake7solvers11MosekSolver14AcquireLicenseEv
+}
+
 # Started happening when Gurobi got updated to 7.0.2. PR 6332.
 {
     <gurobi-1>
