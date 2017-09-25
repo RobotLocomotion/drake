@@ -158,7 +158,6 @@ drake_cc_library(
         "pass_through-inl.h",
     ],
     deps = [
-        "//drake/common:unused",
         "//drake/systems/framework",
     ],
 )
@@ -197,7 +196,8 @@ drake_cc_library(
     srcs = ["signal_log.cc"],
     hdrs = ["signal_log.h"],
     deps = [
-        "//drake/systems/framework",
+        "//drake/common:autodiff",
+        "//drake/common:essential",
     ],
 )
 
@@ -219,7 +219,6 @@ drake_cc_library(
         "zero_order_hold-inl.h",
     ],
     deps = [
-        "//drake/common:unused",
         "//drake/systems/framework",
     ],
 )

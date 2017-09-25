@@ -9,7 +9,6 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/unused.h"
 #include "drake/systems/primitives/zero_order_hold.h"
 
 namespace drake {
