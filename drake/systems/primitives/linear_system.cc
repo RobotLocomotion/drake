@@ -7,6 +7,7 @@
 #include <Eigen/LU>
 
 #include "drake/common/autodiff_overloads.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
@@ -82,10 +83,6 @@ unique_ptr<LinearSystem<T>> LinearSystem<T>::MakeLinearSystem(
 
   return make_unique<LinearSystem<T>>(A, B, C, D, time_period);
 }
-
-template class LinearSystem<double>;
-template class LinearSystem<AutoDiffXd>;
-template class LinearSystem<symbolic::Expression>;
 
 namespace {
 
@@ -287,3 +284,6 @@ bool IsObservable(const LinearSystem<double>& sys, double threshold) {
 
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::LinearSystem)

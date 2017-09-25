@@ -2,7 +2,7 @@
 
 #include <limits>
 
-#include "drake/common/eigen_types.h"
+#include "drake/common/default_scalars.h"
 #include "drake/math/saturate.h"
 
 namespace drake {
@@ -97,7 +97,8 @@ void Saturation<T>::CalcSaturatedOutput(const Context<T>& context,
   }
 }
 
-template class Saturation<double>;
-template class Saturation<AutoDiffXd>;
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::Saturation)

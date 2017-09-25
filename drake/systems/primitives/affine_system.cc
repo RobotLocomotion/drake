@@ -2,8 +2,8 @@
 
 #include <utility>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
-#include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
 #include "drake/common/symbolic_decompose.h"
@@ -153,9 +153,6 @@ void TimeVaryingAffineSystem<T>::DoCalcDiscreteVariableUpdates(
   updates->get_mutable_vector()->SetFromVector(xn);
 }
 
-template class TimeVaryingAffineSystem<double>;
-template class TimeVaryingAffineSystem<AutoDiffXd>;
-
 // Our public constructor declares that our most specific subclass is
 // AffineSystem, and then delegates to our protected constructor.
 template <typename T>
@@ -303,8 +300,12 @@ void AffineSystem<T>::DoCalcDiscreteVariableUpdates(
   updates->get_mutable_vector()->SetFromVector(xnext);
 }
 
-template class AffineSystem<double>;
-template class AffineSystem<AutoDiffXd>;
 
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::TimeVaryingAffineSystem)
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::AffineSystem)

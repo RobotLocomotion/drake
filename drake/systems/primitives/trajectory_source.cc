@@ -47,7 +47,6 @@ void TrajectorySource<T>::DoCalcVectorOutput(
   }
 }
 
-// Explicitly instantiates on the most common scalar types.
 template class TrajectorySource<double>;
 
 }  // namespace systems

@@ -1,5 +1,7 @@
 #include "drake/systems/primitives/signal_logger.h"
 
+#include "drake/common/default_scalars.h"
+
 namespace drake {
 namespace systems {
 
@@ -23,8 +25,8 @@ const {
   return System<T>::get_input_port(0);
 }
 
-template class SignalLogger<double>;
-template class SignalLogger<AutoDiffXd>;
-
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::SignalLogger)

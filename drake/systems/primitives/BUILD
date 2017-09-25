@@ -196,7 +196,7 @@ drake_cc_library(
     srcs = ["signal_log.cc"],
     hdrs = ["signal_log.h"],
     deps = [
-        "//drake/common:autodiff",
+        "//drake/common:default_scalars",
         "//drake/common:essential",
     ],
 )

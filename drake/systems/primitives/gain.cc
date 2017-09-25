@@ -1,15 +1,7 @@
 // NOLINTNEXTLINE(build/include) False positive on inl file.
 #include "drake/systems/primitives/gain-inl.h"
 
-#include "drake/common/autodiff_overloads.h"
-#include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/default_scalars.h"
 
-namespace drake {
-namespace systems {
-
-template class Gain<double>;
-template class Gain<AutoDiffXd>;
-template class Gain<symbolic::Expression>;
-
-}  // namespace systems
-}  // namespace drake
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::Gain)

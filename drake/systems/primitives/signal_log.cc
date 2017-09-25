@@ -1,7 +1,7 @@
 #include "drake/systems/primitives/signal_log.h"
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
-#include "drake/common/eigen_autodiff_types.h"
 
 namespace drake {
 namespace systems {
@@ -37,8 +37,8 @@ void SignalLog<T>::AddData(T time, VectorX<T> sample) {
   data_.col(num_samples_ - 1) = sample;
 }
 
-template class SignalLog<double>;
-template class SignalLog<AutoDiffXd>;
-
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::SignalLog)
