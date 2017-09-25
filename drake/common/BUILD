@@ -209,6 +209,17 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "default_scalars",
+    srcs = [],
+    hdrs = ["default_scalars.h"],
+    deps = [
+        ":autodiff",
+        ":essential",
+        ":symbolic",
+    ],
+)
+
 # Miscellaneous utilities.
 
 DRAKE_RESOURCE_SENTINEL = "//:.drake-resource-sentinel"
