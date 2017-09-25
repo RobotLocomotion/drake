@@ -104,10 +104,11 @@ class RigidBody : public Body<T> {
     return default_spatial_inertia_.cast<T>();
   }
 
-  /// @name Methods to access position kinematics quantities.  The input
-  /// PositionKinematicsCache to these methods must be in sync with context,
-  /// and the API to these methods will be deprecated when caching arrives.
+  /// @name Methods to access position kinematics quantities.
+  /// The input PositionKinematicsCache to these methods must be in sync with
+  /// context.  These method's APIs will be deprecated when caching arrives.
   ///@{
+
   /// Extract this body's pose in world (from the position kinematics).
   /// @param[in] pc position kinematics cache.
   /// @retval X_WB pose of rigid body B in world frame W.
@@ -138,10 +139,11 @@ class RigidBody : public Body<T> {
   }
   ///@}
 
-  /// @name Methods to access velocity kinematics quantities.  The input
-  /// VelocityKinematicsCache to these methods must be in sync with context,
-  /// and the API to these methods will be deprecated when caching arrives.
+  /// @name Methods to access velocity kinematics quantities.
+  /// The input VelocityKinematicsCache to these methods must be in sync with
+  /// context.  These method's APIs will be deprecated when caching arrives.
   ///@{
+
   /// Extract this body spatial velocity in world, expressed in world.
   /// @param[in] vc velocity kinematics cache.
   /// @retval V_WB_W rigid body B's spatial velocity in world W, expressed in W.
@@ -170,10 +172,11 @@ class RigidBody : public Body<T> {
   }
   ///@}
 
-  /// @name Methods to access acceleration kinematics quantities.  The input
-  /// AccelerationKinematicsCache to these methods must be in sync with context,
-  /// and the API to these methods will be deprecated when caching arrives.
+  /// @name Methods to access acceleration kinematics quantities.
+  /// The input AccelerationKinematicsCache to these methods must be in sync
+  /// with context.  These method APIs will be deprecated when caching arrives.
   ///@{
+
   /// Extract this body spatial acceleration in world, expressed in world.
   /// @param[in] ac acceleration kinematics cache.
   /// @retval A_WB_W body B's spatial acceleration in world W, expressed in W.
