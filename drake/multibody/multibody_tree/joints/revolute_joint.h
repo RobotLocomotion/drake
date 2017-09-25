@@ -16,7 +16,7 @@ namespace multibody {
 /// around a common axis.
 /// That is, given a frame F rigidly attached to the parent body P and a frame M
 /// rigidly attached to the child body B (see the Joint class's documentation),
-/// This Joint allows frames F and M to rotate with respect to each other about
+/// this Joint allows frames F and M to rotate with respect to each other about
 /// an axis â that is constant when measured in either frame F or M. In
 /// addition, this axis â has the same measures in frame F and M, that is,
 /// `â_F = â_M`.
@@ -84,8 +84,7 @@ class RevoluteJoint final : public Joint<T> {
 
   /// Sets the `context` so that the generalized coordinate corresponding to the
   /// rotation angle of `this` joint equals `angle`.
-  /// @throws std::logic_error if `context` is not a valid
-  /// MultibodyTreeContext.
+  /// @throws std::logic_error if `context` is not a valid MultibodyTreeContext.
   /// @param[in] context
   ///   The context of the MultibodyTree this joint belongs to.
   /// @param[in] angle
@@ -149,7 +148,7 @@ class RevoluteJoint final : public Joint<T> {
   friend class JointTester;
 
   // Returns the mobilizer implementing this joint.
-  // The intrnal implementation (model) of this joint could change in a future
+  // The internal implementation (model) of this joint could change in a future
   // version. However its public API should remain intact.
   const RevoluteMobilizer<T>* get_mobilizer() const {
     // This model should only have one mobilizer.
