@@ -133,8 +133,8 @@ drake_cc_googletest(
     deps = [
         ":robot_state_decoder",
         ":robot_state_encoder",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:find_resource",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/math:geometric_transform",
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/parsers",
@@ -151,8 +151,8 @@ drake_cc_googletest(
     data = [":models"],
     deps = [
         ":robot_command_to_desired_effort_converter",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:find_resource",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/multibody/parsers",
         "//drake/systems/framework:diagram",
         "//drake/systems/primitives:constant_value_source",

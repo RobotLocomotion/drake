@@ -8,8 +8,8 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_autodiff_types.h"
-#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/benchmarks/acrobot/acrobot.h"
@@ -527,17 +527,11 @@ class PendulumKinematicTests : public PendulumTests {
   /// drake::multibody::benchmarks::Acrobot.
   void VerifyMassMatrixViaInverseDynamics(
       double shoulder_angle, double elbow_angle) {
-    Vector2d q(shoulder_angle, elbow_angle);
-    Vector2d v = Vector2d::Zero();
-    Vector2d vdot;
+    shoulder_mobilizer_->set_angle(context_.get(), shoulder_angle);
+    elbow_mobilizer_->set_angle(context_.get(), elbow_angle);
 
     Matrix2d H;
-
-    vdot = Vector2d::UnitX();  // First column of M(q).
-    H.col(0) = VerifyInverseDynamics(q, v, vdot);
-
-    vdot = Vector2d::UnitY();  // Second column of M(q).
-    H.col(1) = VerifyInverseDynamics(q, v, vdot);
+    model_->CalcMassMatrixViaInverseDynamics(*context_, &H);
 
     Matrix2d H_expected = acrobot_benchmark_.CalcMassMatrix(elbow_angle);
     EXPECT_TRUE(H.isApprox(H_expected, 5 * kEpsilon));
@@ -548,21 +542,58 @@ class PendulumKinematicTests : public PendulumTests {
   /// implementation in drake::multibody::benchmarks::Acrobot.
   void VerifyCoriolisTermViaInverseDynamics(
       double shoulder_angle, double elbow_angle) {
-    Vector2d q(shoulder_angle, elbow_angle);
-    Vector2d v;
-    Vector2d vdot = Vector2d::Zero();
+    const double kTolerance = 5 * kEpsilon;
 
-    v = Vector2d::Zero();  // C(q, v) = 0 for v = 0.
-    VerifyInverseDynamics(q, v, vdot);
+    shoulder_mobilizer_->set_angle(context_.get(), shoulder_angle);
+    elbow_mobilizer_->set_angle(context_.get(), elbow_angle);
 
-    v = Vector2d::UnitX();  // First column of C(q, e_1) times e_1.
-    VerifyInverseDynamics(q, v, vdot);
+    double shoulder_rate, elbow_rate;
+    Vector2d C;
+    Vector2d C_expected;
 
-    v = Vector2d::UnitY();  // Second column of C(q, e_2) times e_2.
-    VerifyInverseDynamics(q, v, vdot);
+    // C(q, v) = 0 for v = 0.
+    shoulder_rate = 0.0;
+    elbow_rate = 0.0;
+    shoulder_mobilizer_->set_angular_rate(context_.get(), shoulder_rate);
+    elbow_mobilizer_->set_angular_rate(context_.get(), elbow_rate);
+    model_->CalcBiasTerm(*context_, &C);
+    C_expected = acrobot_benchmark_.CalcCoriolisVector(
+            shoulder_angle, elbow_angle, shoulder_rate, elbow_rate);
+    EXPECT_TRUE(CompareMatrices(
+        C, C_expected, kTolerance, MatrixCompareType::relative));
 
-    v = Vector2d::Ones();  // Both velocities are non-zero.
-    VerifyInverseDynamics(q, v, vdot);
+    // First column of C(q, e_1) times e_1.
+    shoulder_rate = 1.0;
+    elbow_rate = 0.0;
+    shoulder_mobilizer_->set_angular_rate(context_.get(), shoulder_rate);
+    elbow_mobilizer_->set_angular_rate(context_.get(), elbow_rate);
+    model_->CalcBiasTerm(*context_, &C);
+    C_expected = acrobot_benchmark_.CalcCoriolisVector(
+        shoulder_angle, elbow_angle, shoulder_rate, elbow_rate);
+    EXPECT_TRUE(CompareMatrices(
+        C, C_expected, kTolerance, MatrixCompareType::relative));
+
+    // Second column of C(q, e_2) times e_2.
+    shoulder_rate = 0.0;
+    elbow_rate = 1.0;
+    shoulder_mobilizer_->set_angular_rate(context_.get(), shoulder_rate);
+    elbow_mobilizer_->set_angular_rate(context_.get(), elbow_rate);
+    model_->CalcBiasTerm(*context_, &C);
+    C_expected = acrobot_benchmark_.CalcCoriolisVector(
+        shoulder_angle, elbow_angle, shoulder_rate, elbow_rate);
+    EXPECT_TRUE(CompareMatrices(
+        C, C_expected, kTolerance, MatrixCompareType::relative));
+
+    // Both velocities are non-zero.
+    shoulder_rate = 1.0;
+    elbow_rate = 1.0;
+    shoulder_mobilizer_->set_angular_rate(context_.get(), shoulder_rate);
+    elbow_mobilizer_->set_angular_rate(context_.get(), elbow_rate);
+    model_->CalcBiasTerm(*context_, &C);
+    C_expected = acrobot_benchmark_.CalcCoriolisVector(
+        shoulder_angle, elbow_angle, shoulder_rate, elbow_rate);
+    EXPECT_TRUE(CompareMatrices(
+        C, C_expected, kTolerance, MatrixCompareType::relative));
   }
 
   /// This method verifies the correctness of

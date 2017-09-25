@@ -312,6 +312,9 @@ class DiagramBuilder {
     }
   }
 
+  // TODO(russt): Implement AddRandomSources method to wire up all dangling
+  // random input ports with a compatible RandomSource system.
+
   // Produces the Blueprint that has been described by the calls to
   // Connect, ExportInput, and ExportOutput. Throws std::logic_error if the
   // graph is empty or contains algebraic loops.

@@ -57,6 +57,20 @@ const double kWaypointDistancePhase = 2.0;
 // affecting the accuracy of the approximation.
 const double kLinearStep = 1e-2;
 
+// Let S be a cubic Bezier spline, with control points p0, p1, p2 and p3.
+//          c
+//         / \        Define a critical point c where lines (p1-p0)*t + p0
+//        /   \       and (p2-p3)*w + p3 meet, where t and w are real scalars.
+//       /     \      To prevent loops and cusps, it is sufficient to ensure
+//      p1 --- p2     that control points p1 and p2 lie in the region bounded
+//      /        \    by the line segments (c - p0)*u + p0 and (c - p3)*v + p3,
+//     p0         \   where u and v are real scalars.
+//                p3
+// Here we make u = v = kBezierScaling. Note that a unitary scaling will place
+// inner control points p1 = (c - p0)*u + p0 and p2 = (c - p3)*v + p3 at the
+// critical point c.
+const double kBezierScaling = 1.0;
+
 // Determines the heading (in xy-plane) along the centerline when traveling
 // towards/into the @p lane, from the specified @p end.
 double HeadingIntoLane(const api::Lane* const lane,
@@ -130,7 +144,7 @@ void BuildTangentsForWaypoints(vector<DirectedWaypoint>* waypoints) {
 }
 
 // Identifies the @p connections that come first in the direction the whole
-// collection of connections flows, by computing the projection of every
+// collection of connections flow, by computing the projection of every
 // waypoint at @p index onto every other waypoint's tangent at @p index so
 // as to identify those that have the most projections ahead of them in the
 // relative direction sense.
@@ -165,8 +179,7 @@ vector<int> GetInitialConnectionToProcess(const vector<Connection>& connections,
     }
     index_valid_distances.emplace_back(i, number_of_valid_distances);
   }
-  // Sorts the vector by increasing number of valid distances. It gives us as
-  // the first items the ids of the Connections to process.
+  // Sorts the vector by increasing number of valid distances.
   sort(index_valid_distances.begin(), index_valid_distances.end(),
        [](const pair<int, int>& t_a, const pair<int, int>& t_b) {
          return t_a.second > t_b.second;
@@ -177,8 +190,8 @@ vector<int> GetInitialConnectionToProcess(const vector<Connection>& connections,
     if (id_zeros.second == index_valid_distances[0].second)
       ids.push_back(id_zeros.first);
   }
-  // In case we have all the lane ids, no one is the first, all are on the same
-  // line.
+  // In case we have all the connection ids, no one is the first, all
+  // are on the same line.
   if (ids.size() == index_valid_distances.size()) {
     ids.clear();
   }
@@ -198,7 +211,7 @@ double CalculateMomentum(const ignition::math::Vector3d& center_of_rotation,
   const ignition::math::Vector3d p_WR =
       waypoint.position() - center_of_rotation;
   // Computes torque t on waypoint W applied around the center of rotation R.
-  ignition::math::Vector3d f_W = waypoint.tangent().Normalized();
+  const ignition::math::Vector3d f_W = waypoint.tangent().Normalized();
   const ignition::math::Vector3d t_WR = f_W.Cross(p_WR);
   // As all the points should lie on the x-y plane, the cross product should
   // be collinear with the z-axis, thus the only non zero component is z.
@@ -295,7 +308,7 @@ void OrderConnectionIds(const vector<Connection>& connections,
 // @warning This method will abort if preconditions are not met.
 Lane* BuildConnection(const Connection& connection, Segment* segment) {
   DRAKE_DEMAND(segment != nullptr);
-  api::LaneId lane_id{"l:" + connection.id()};
+  const api::LaneId lane_id{"l:" + connection.id()};
   vector<tuple<ignition::math::Vector3d, ignition::math::Vector3d>>
       points_tangents;
   for (const DirectedWaypoint& directed_waypoint : connection.waypoints()) {
@@ -345,7 +358,7 @@ void AttachLaneEndToBranchPoint(const api::LaneEnd::Which end, Lane* lane,
 }
 
 // Builds or updates a BranchPoint given a @p connection and the corresponding
-// @p lane. The former provides the start and end waypoints of the lane,
+// @p lane. The former provides the start and end waypoints of the latter,
 // which are necessary to lookup the branch points in the @p branch_point_map.
 // @param connection The Connection that provides the start and end waypoints.
 // @param lane The Lane to be attached to the right corresponding
@@ -391,7 +404,7 @@ void BuildOrUpdateBranchpoints(Connection* connection, Lane* lane,
   AttachLaneEndToBranchPoint(api::LaneEnd::kFinish, lane, bp);
 }
 
-// Adds either invalid or interpolated extra waypoints on those @p connections
+// Adds either invalid or interpolated extra waypoints on those connections
 // not listed in the @p ids of the @p connections that come first for the
 // given @p index, as computed by GetInitialConnectionToProcess(), to
 // make all waypoints at @p index lie in line with @p connections's normal.
@@ -401,8 +414,8 @@ void BuildOrUpdateBranchpoints(Connection* connection, Lane* lane,
 // @param connections A collection of Connections to add waypoints to if
 // necessary.
 // @param index The index of the @p connection's waypoints to look at.
-// @param linear_tolearance The tolerance for connections' waypoints spline
-// interpolation for road geometrical inference.
+// @param linear_tolerance The tolerance for spline interpolation of
+// connection waypoints.
 // @pre The given @p connections collection must not be a nullptr.
 // @warning This method will abort execution if any preconditions are not met.
 void AddWaypointsIfNecessary(const vector<int>& ids,
@@ -412,12 +425,12 @@ void AddWaypointsIfNecessary(const vector<int>& ids,
   for (size_t i = 0; i < connections->size(); i++) {
     Connection& connection = connections->at(i);
     // Checks that `i` index is in the ids vector which holds
-    // the indexes of connections with reference waypoints.
+    // the indexes of connections.
     if (find(ids.begin(), ids.end(), i) != ids.end()) {
       continue;
     }
 
-    size_t waypoint_count = connection.waypoints().size();
+    const size_t waypoint_count = connection.waypoints().size();
     // Checks if we don't have any index on the vector.
     if (ids.size() == 0 && waypoint_count > index) {
       continue;
@@ -427,8 +440,8 @@ void AddWaypointsIfNecessary(const vector<int>& ids,
       // valid waypoints in the connection.
       connection.AddWaypoint(DirectedWaypoint(), waypoint_count);
     } else if (connection.waypoints()[index].id().Z() == 1) {
-      // As the waypoint is at the top of the connection's vector, it adds an
-      // invalid one before the first waypoint.
+      // As the waypoint is at the beginning of the connection's vector, it
+      // adds an invalid one before the first waypoint.
       connection.AddWaypoint(DirectedWaypoint(), 0);
     } else {
       // Index cannot ever be zero, as every first waypoint would be
@@ -443,7 +456,7 @@ void AddWaypointsIfNecessary(const vector<int>& ids,
       const double s = arc_length_param_spline->FindClosestPointTo(
           connections->at(ids[0]).waypoints()[index].position(), kLinearStep);
       // Builds a new waypoint and adds it to the connection.
-      DirectedWaypoint new_wp(
+      const DirectedWaypoint new_wp(
           ignition::rndf::UniqueId(
               connections->at(i).waypoints()[index - 1].id().X(),
               connections->at(i).waypoints()[index - 1].id().Y(),
@@ -456,12 +469,13 @@ void AddWaypointsIfNecessary(const vector<int>& ids,
   }
 }
 
-// Adds waypoints to the given @p connections so as to ensure that their
-// spatial distribution is akin to a grid (thus enabling index operations).
+// Adds waypoints to the given @p connections to ensure that their spatial
+// distribution is such that for every index all valid waypoints share the same
+// s coordinate on the reference lane curve frame.
 // @param connections A collection of Connections to create waypoints into
 // if necessary.
-// @param linear_tolearance The tolerance for connections' waypoints spline
-// interpolation for road geometrical inference.
+// @param linear_tolerance The tolerance for spline interpolation of
+// connection waypoints.
 // @pre The given @p connections collection must not be a nullptr.
 // @warning This method will abort execution if any preconditions are not met.
 void CreateNewControlPointsForConnections(std::vector<Connection>* connections,
@@ -497,7 +511,7 @@ void CreateNewControlPointsForConnections(std::vector<Connection>* connections,
 //
 // To do this, it checks the connection momentum as computed by
 // CalculateConnectionMomentum() and looks for successive sign changes
-// with respect to a reference set with the first connection.
+// with respect to a reference set by the first connection.
 // @param bounding_box The bounding box for all given @p connections.
 // @param connections A collection of Connections to compare the way
 // connections' waypoints are disposed with respect to the first connection.
@@ -528,7 +542,83 @@ void SetInvertedConnections(const pair<ignition::math::Vector3d,
   }
 }
 
+// Creates a pair of waypoints based on the given @p exit and @p entry,
+// keeping their heading but affecting tangent norms to achieve smooth
+// transitions by making use of cubic Bezier interpolants. This is helpful
+// for connecting lanes at intersections.
+// @param exit The start waypoint of the lane's curve.
+// @param entry The end waypoint of the lane's curve.
+// @return A vector with the two (2) waypoints that represent the
+// extents of the connection.
+vector<DirectedWaypoint> CreateDirectedWaypointsForConnection(
+    const DirectedWaypoint& exit, const DirectedWaypoint& entry) {
+  // Converts points and tangents into Bezier control points.
+  const vector<ignition::math::Vector3d> bezier_points = SplineToBezier(
+      exit.position(), exit.tangent(), entry.position(), entry.tangent());
+  // Adjusts these controls points to prevent loops and cusps.
+  const vector<ignition::math::Vector3d> adapted_bezier_points =
+      MakeBezierCurveMonotonic(bezier_points, kBezierScaling);
+  // Converts those Bezier control points to Hermite control points.
+  const vector<ignition::math::Vector3d> hermite_points =
+      BezierToSpline(adapted_bezier_points[0], adapted_bezier_points[1],
+                     adapted_bezier_points[2], adapted_bezier_points[3]);
+  // Creates a pair of DirectedWaypoints and returns them.
+  vector<DirectedWaypoint> waypoints;
+  waypoints.push_back(DirectedWaypoint(exit.id(), hermite_points[0],
+                                       hermite_points[1], true, false));
+  waypoints.push_back(DirectedWaypoint(entry.id(), hermite_points[2],
+                                       hermite_points[3], false, true));
+  return waypoints;
+}
+
 }  // namespace
+
+void Builder::CreateConnection(double width,
+                               const ignition::rndf::UniqueId& exit_id,
+                               const ignition::rndf::UniqueId& entry_id) {
+  const auto& exit_it = directed_waypoints_.find(exit_id.String());
+  const auto& entry_it = directed_waypoints_.find(entry_id.String());
+  DRAKE_THROW_UNLESS(exit_it != directed_waypoints_.end());
+  DRAKE_THROW_UNLESS(entry_it != directed_waypoints_.end());
+
+  const std::vector<DirectedWaypoint> waypoints =
+      CreateDirectedWaypointsForConnection(exit_it->second, entry_it->second);
+  const std::string key_id = exit_id.String() + "-" + entry_id.String();
+  InsertConnection(key_id, width, waypoints);
+}
+
+void Builder::CreateConnectionsForZones(
+    double width, std::vector<DirectedWaypoint>* perimeter_waypoints) {
+  DRAKE_THROW_UNLESS(perimeter_waypoints != nullptr);
+  DRAKE_THROW_UNLESS(perimeter_waypoints->size() > 0);
+  // Computes the mean coordinates of all the perimeter waypoints.
+  ignition::math::Vector3d center(0., 0., 0.);
+  for (const DirectedWaypoint& waypoint : *perimeter_waypoints) {
+    center += waypoint.position();
+  }
+  center /= static_cast<double>(perimeter_waypoints->size());
+  // Fills the tangents for the entries and exits pointing to center.
+  std::vector<DirectedWaypoint> entries, exits;
+  for (DirectedWaypoint& waypoint : *perimeter_waypoints) {
+    if (waypoint.is_entry()) {
+      waypoint.set_tangent((center - waypoint.position()).Normalize());
+      entries.push_back(waypoint);
+      directed_waypoints_[waypoint.id().String()] = waypoint;
+    } else if (waypoint.is_exit()) {
+      waypoint.set_tangent((waypoint.position() - center).Normalize());
+      exits.push_back(waypoint);
+      directed_waypoints_[waypoint.id().String()] = waypoint;
+    }
+  }
+  // Creates connections that join exit waypoints with entry waypoints.
+  for (const DirectedWaypoint& entry : entries) {
+    for (const DirectedWaypoint& exit : exits) {
+      const std::vector<DirectedWaypoint> control_points{entry, exit};
+      const std::string key_id = exit.id().String() + "-" + entry.id().String();
+      InsertConnection(key_id, width, control_points);
+    }
+  }
+}
 
 void Builder::CreateSegmentConnections(int segment_id,
                                        std::vector<Connection>* connections) {

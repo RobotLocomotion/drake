@@ -659,7 +659,7 @@ class Diagram : public System<T>,
  protected:
   /// Constructs an uninitialized Diagram. Subclasses that use this constructor
   /// are obligated to call DiagramBuilder::BuildInto(this).
-  Diagram() {}
+  Diagram() : System<T>(SystemScalarConverter{}) {}
 
   /// For the subsystem associated with @p witness_func, gets its subcontext
   /// from @p context, passes the subcontext to @p witness_func' Evaulate
@@ -908,14 +908,14 @@ class Diagram : public System<T>,
   /// to override to initialize additional member data. If any contained
   /// subsystem does not support ToAutoDiffXd, then this result is nullptr.
   /// This is the NVI implementation of ToAutoDiffXd.
-  Diagram<AutoDiffXd>* DoToAutoDiffXd() const override {
+  std::unique_ptr<System<AutoDiffXd>> DoToAutoDiffXd() const override {
     using FromType = System<double>;
     using ToType = std::unique_ptr<System<AutoDiffXd>>;
     std::function<ToType(const FromType&)> subsystem_converter{
         [](const FromType& subsystem) {
           return subsystem.ToAutoDiffXdMaybe();
         }};
-    return ConvertScalarType<AutoDiffXd>(subsystem_converter).release();
+    return ConvertScalarType<AutoDiffXd>(subsystem_converter);
   }
 
   /// Creates a deep copy of this Diagram<double>, converting the scalar type
@@ -923,15 +923,14 @@ class Diagram : public System<T>,
   /// Subclasses may wish to override to initialize additional member data.
   /// If any contained subsystem does not support ToSymbolic, then this
   /// result is nullptr. This is the NVI implementation of ToSymbolic.
-  Diagram<symbolic::Expression>* DoToSymbolic() const override {
+  std::unique_ptr<System<symbolic::Expression>> DoToSymbolic() const override {
     using FromType = System<double>;
     using ToType = std::unique_ptr<System<symbolic::Expression>>;
     std::function<ToType(const FromType&)> subsystem_converter{
         [](const FromType& subsystem) {
           return subsystem.ToSymbolicMaybe();
         }};
-    return ConvertScalarType<symbolic::Expression>(subsystem_converter)
-        .release();
+    return ConvertScalarType<symbolic::Expression>(subsystem_converter);
   }
 
   BasicVector<T>* DoAllocateInputVector(
@@ -1330,7 +1329,7 @@ class Diagram : public System<T>,
   // Constructs a Diagram from the Blueprint that a DiagramBuilder produces.
   // This constructor is private because only DiagramBuilder calls it. The
   // constructor takes the systems from the blueprint.
-  explicit Diagram(std::unique_ptr<Blueprint> blueprint) {
+  explicit Diagram(std::unique_ptr<Blueprint> blueprint) : Diagram() {
     Initialize(std::move(blueprint));
   }
 
@@ -1406,7 +1405,8 @@ class Diagram : public System<T>,
     // Add this port to our externally visible topology.
     const auto& subsystem_descriptor = sys->get_input_port(port_index);
     this->DeclareInputPort(subsystem_descriptor.get_data_type(),
-                           subsystem_descriptor.size());
+                           subsystem_descriptor.size(),
+                           subsystem_descriptor.get_random_type());
   }
 
   // Exposes the given subsystem output port as an output of the Diagram.

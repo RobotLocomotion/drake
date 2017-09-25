@@ -57,7 +57,7 @@ GTEST_TEST(RNDFBuilder, ZigZagLane) {
   waypoints[2].set_position(ignition::math::Vector3d(0.0, -20.0, 0.0));
   waypoints[3].set_id(ignition::rndf::UniqueId(1, 1, 4));
   waypoints[3].set_position(ignition::math::Vector3d(10.0, -30.0, 0.0));
-  Connection connection(std::to_string(1), waypoints, kLaneWidth, false);
+  const Connection connection("1", waypoints, kLaneWidth, false);
 
   std::vector<Connection> connected_lanes = {connection};
 
@@ -178,8 +178,7 @@ GTEST_TEST(RNDFBuilder, UShapedLane) {
     waypoints[7].set_position(ignition::math::Vector3d(20.0, 40.0, 0.0));
     waypoints[8].set_id(ignition::rndf::UniqueId(1, 1, 9));
     waypoints[8].set_position(ignition::math::Vector3d(20.0, 50.0, 0.0));
-    connected_lanes.push_back(
-        Connection(std::to_string(1), waypoints, kLaneWidth, false));
+    connected_lanes.push_back(Connection("1", waypoints, kLaneWidth, false));
   }
 
   {
@@ -206,8 +205,7 @@ GTEST_TEST(RNDFBuilder, UShapedLane) {
     waypoints[9].set_position(ignition::math::Vector3d(-40.0, 40.0, 0.0));
     waypoints[10].set_id(ignition::rndf::UniqueId(1, 2, 11));
     waypoints[10].set_position(ignition::math::Vector3d(-40.0, 50.0, 0.0));
-    connected_lanes.push_back(
-        Connection(std::to_string(2), waypoints, kLaneWidth, false));
+    connected_lanes.push_back(Connection("2", waypoints, kLaneWidth, false));
   }
 
   const auto bounding_box =
@@ -221,30 +219,33 @@ GTEST_TEST(RNDFBuilder, UShapedLane) {
 
   // Checks junction, segments and lanes. Lane naming implies direction
   // so checking for correct naming implies proper direction inference.
-  std::vector<std::tuple<std::string, std::string, std::string> > name_set = {
-      std::make_tuple("j:1-0-0", "s:1-0-0", "l:1.1.1-1.1.2"),
-      std::make_tuple("j:1-0-1", "s:1-0-1", "l:1.1.2-1.1.3"),
-      std::make_tuple("j:1-0-2", "s:1-0-2", "l:1.1.3-1.1.4"),
-      std::make_tuple("j:1-0-3", "s:1-0-3", "l:1.1.4-1.1.5"),
-      std::make_tuple("j:1-0-4", "s:1-0-4", "l:1.1.5-1.1.6"),
-      std::make_tuple("j:1-0-5", "s:1-0-5", "l:1.1.6-1.1.7"),
-      std::make_tuple("j:1-0-6", "s:1-0-6", "l:1.1.7-1.1.8"),
-      std::make_tuple("j:1-0-7", "s:1-0-7", "l:1.1.8-1.1.9"),
-      std::make_tuple("j:1-1-0", "s:1-1-0", "l:1.2.1-1.2.2"),
-      std::make_tuple("j:1-1-1", "s:1-1-1", "l:1.2.2-1.2.3"),
-      std::make_tuple("j:1-1-2", "s:1-1-2", "l:1.2.3-1.2.4"),
-      std::make_tuple("j:1-1-3", "s:1-1-3", "l:1.2.4-1.2.5"),
-      std::make_tuple("j:1-1-4", "s:1-1-4", "l:1.2.5-1.2.6"),
-      std::make_tuple("j:1-1-5", "s:1-1-5", "l:1.2.6-1.2.7"),
-      std::make_tuple("j:1-1-6", "s:1-1-6", "l:1.2.7-1.2.8"),
-      std::make_tuple("j:1-1-7", "s:1-1-7", "l:1.2.8-1.2.9"),
-      std::make_tuple("j:1-1-8", "s:1-1-8", "l:1.2.9-1.2.10"),
-      std::make_tuple("j:1-1-9", "s:1-1-9", "l:1.2.10-1.2.11")};
+  const std::vector<std::tuple<std::string, std::string, std::string>>
+      name_truth_table{
+          // Tuple elements are, in order: junction name, segment name and lane
+          // name.
+          std::make_tuple("j:1-0-0", "s:1-0-0", "l:1.1.1-1.1.2"),
+          std::make_tuple("j:1-0-1", "s:1-0-1", "l:1.1.2-1.1.3"),
+          std::make_tuple("j:1-0-2", "s:1-0-2", "l:1.1.3-1.1.4"),
+          std::make_tuple("j:1-0-3", "s:1-0-3", "l:1.1.4-1.1.5"),
+          std::make_tuple("j:1-0-4", "s:1-0-4", "l:1.1.5-1.1.6"),
+          std::make_tuple("j:1-0-5", "s:1-0-5", "l:1.1.6-1.1.7"),
+          std::make_tuple("j:1-0-6", "s:1-0-6", "l:1.1.7-1.1.8"),
+          std::make_tuple("j:1-0-7", "s:1-0-7", "l:1.1.8-1.1.9"),
+          std::make_tuple("j:1-1-0", "s:1-1-0", "l:1.2.1-1.2.2"),
+          std::make_tuple("j:1-1-1", "s:1-1-1", "l:1.2.2-1.2.3"),
+          std::make_tuple("j:1-1-2", "s:1-1-2", "l:1.2.3-1.2.4"),
+          std::make_tuple("j:1-1-3", "s:1-1-3", "l:1.2.4-1.2.5"),
+          std::make_tuple("j:1-1-4", "s:1-1-4", "l:1.2.5-1.2.6"),
+          std::make_tuple("j:1-1-5", "s:1-1-5", "l:1.2.6-1.2.7"),
+          std::make_tuple("j:1-1-6", "s:1-1-6", "l:1.2.7-1.2.8"),
+          std::make_tuple("j:1-1-7", "s:1-1-7", "l:1.2.8-1.2.9"),
+          std::make_tuple("j:1-1-8", "s:1-1-8", "l:1.2.9-1.2.10"),
+          std::make_tuple("j:1-1-9", "s:1-1-9", "l:1.2.10-1.2.11")};
 
-  std::string junction_name, segment_name, lane_name;
-  for (const auto& names : name_set) {
+  for (const auto& names : name_truth_table) {
+    std::string junction_name, segment_name, lane_name;
     std::tie(junction_name, segment_name, lane_name) = names;
-    int junction_id = FindJunction(*road_geometry, junction_name);
+    const int junction_id = FindJunction(*road_geometry, junction_name);
     ASSERT_NE(junction_id, -1);
     const api::Junction* junction = road_geometry->junction(junction_id);
     ASSERT_TRUE(junction != nullptr);
@@ -289,7 +290,7 @@ GTEST_TEST(RNDFBuilder, MultilaneLane) {
     waypoints[2].set_position(ignition::math::Vector3d(15.0, 0.0, 0.0));
     waypoints[3].set_id(ignition::rndf::UniqueId(1, 2, 4));
     waypoints[3].set_position(ignition::math::Vector3d(25.0, 0.0, 0.0));
-    Connection connection(std::to_string(1), waypoints, kLaneWidth, false);
+    const Connection connection("1", waypoints, kLaneWidth, false);
     connected_lanes.push_back(connection);
   }
 
@@ -301,7 +302,7 @@ GTEST_TEST(RNDFBuilder, MultilaneLane) {
     waypoints[1].set_position(ignition::math::Vector3d(20.0, 10.0, 0.0));
     waypoints[2].set_id(ignition::rndf::UniqueId(1, 1, 3));
     waypoints[2].set_position(ignition::math::Vector3d(30.0, 10.0, 0.0));
-    Connection connection(std::to_string(1), waypoints, kLaneWidth, false);
+    const Connection connection("1", waypoints, kLaneWidth, false);
     connected_lanes.push_back(connection);
   }
 
@@ -311,7 +312,7 @@ GTEST_TEST(RNDFBuilder, MultilaneLane) {
     waypoints[0].set_position(ignition::math::Vector3d(40., -10.0, 0.0));
     waypoints[1].set_id(ignition::rndf::UniqueId(1, 3, 2));
     waypoints[1].set_position(ignition::math::Vector3d(5.0, -10.0, 0.0));
-    Connection connection(std::to_string(1), waypoints, kLaneWidth, false);
+    const Connection connection("1", waypoints, kLaneWidth, false);
     connected_lanes.push_back(connection);
   }
 
@@ -464,6 +465,185 @@ GTEST_TEST(RNDFBuilder, MultilaneLane) {
   EXPECT_TRUE(api::test::IsRBoundsClose(
       road_geometry->junction(5)->segment(0)->lane(0)->driveable_bounds(0),
       single_lane_bounds, kLinearTolerance));
+}
+
+//               1.1.1      1.2.3
+//                     *   *
+//                     v   ^
+//               1.1.2 v   ^
+//    2.2.2    2.2.1  /*   *
+//     * < < < < < < * v  /^ 1.2.2
+//    2.1.1    2.1.2   v / ^           2.1.3
+//     * > > > > > > * > > > > > > > *
+//                   | v   ^
+//               1.1.3 *   ^
+//                     v   ^
+//                     v   ^
+//               1.1.4 *   * 1.2.1
+// For reference:
+//   -'^', 'v', '<' and '>' represent lane's direction.
+//   -'|' and '/' represent crossing intersections.
+//   - '*' represents a lane's waypoint.
+GTEST_TEST(RNDFBuilder, MultilaneLaneCross) {
+  auto builder = std::make_unique<Builder>(kLinearTolerance, kAngularTolerance);
+  const auto bounding_box =
+      std::make_pair(ignition::math::Vector3d(0., 0., 0.),
+                     ignition::math::Vector3d(40., 50., 0.));
+  builder->SetBoundingBox(bounding_box);
+
+  std::vector<Connection> connected_lanes;
+  {
+    std::vector<DirectedWaypoint> waypoints(4, DirectedWaypoint());
+    waypoints[0].set_id(ignition::rndf::UniqueId(1, 1, 1));
+    waypoints[0].set_position(ignition::math::Vector3d(20., 50.0, 0.0));
+    waypoints[1].set_id(ignition::rndf::UniqueId(1, 1, 2));
+    waypoints[1].set_position(ignition::math::Vector3d(20.0, 40.0, 0.0));
+    waypoints[2].set_id(ignition::rndf::UniqueId(1, 1, 3));
+    waypoints[2].set_position(ignition::math::Vector3d(20.0, 10.0, 0.0));
+    waypoints[3].set_id(ignition::rndf::UniqueId(1, 1, 4));
+    waypoints[3].set_position(ignition::math::Vector3d(20.0, 0.0, 0.0));
+    const Connection connection("1", waypoints, kLaneWidth, false);
+    connected_lanes.push_back(connection);
+  }
+  {
+    std::vector<DirectedWaypoint> waypoints(3, DirectedWaypoint());
+    waypoints[0].set_id(ignition::rndf::UniqueId(1, 2, 1));
+    waypoints[0].set_position(ignition::math::Vector3d(30., 0.0, 0.0));
+    waypoints[1].set_id(ignition::rndf::UniqueId(1, 2, 2));
+    waypoints[1].set_position(ignition::math::Vector3d(30.0, 30.0, 0.0));
+    waypoints[2].set_id(ignition::rndf::UniqueId(1, 2, 3));
+    waypoints[2].set_position(ignition::math::Vector3d(30.0, 50.0, 0.0));
+    const Connection connection("1", waypoints, kLaneWidth, false);
+    connected_lanes.push_back(connection);
+  }
+  builder->CreateSegmentConnections(1, &connected_lanes);
+
+  connected_lanes.clear();
+  {
+    std::vector<DirectedWaypoint> waypoints(3, DirectedWaypoint());
+    waypoints[0].set_id(ignition::rndf::UniqueId(2, 1, 1));
+    waypoints[0].set_position(ignition::math::Vector3d(0., 20.0, 0.0));
+    waypoints[1].set_id(ignition::rndf::UniqueId(2, 1, 2));
+    waypoints[1].set_position(ignition::math::Vector3d(10.0, 20.0, 0.0));
+    waypoints[2].set_id(ignition::rndf::UniqueId(2, 1, 3));
+    waypoints[2].set_position(ignition::math::Vector3d(40.0, 20.0, 0.0));
+    const Connection connection("2", waypoints, kLaneWidth, false);
+    connected_lanes.push_back(connection);
+  }
+  {
+    std::vector<DirectedWaypoint> waypoints(2, DirectedWaypoint());
+    waypoints[0].set_id(ignition::rndf::UniqueId(2, 2, 1));
+    waypoints[0].set_position(ignition::math::Vector3d(10., 30.0, 0.0));
+    waypoints[1].set_id(ignition::rndf::UniqueId(2, 2, 2));
+    waypoints[1].set_position(ignition::math::Vector3d(0.0, 30.0, 0.0));
+    const Connection connection("2", waypoints, kLaneWidth, false);
+    connected_lanes.push_back(connection);
+  }
+  builder->CreateSegmentConnections(2, &connected_lanes);
+
+  builder->CreateConnection(kLaneWidth, ignition::rndf::UniqueId(1, 1, 2),
+                            ignition::rndf::UniqueId(2, 2, 1));
+  builder->CreateConnection(kLaneWidth, ignition::rndf::UniqueId(2, 1, 2),
+                            ignition::rndf::UniqueId(1, 2, 2));
+  builder->CreateConnection(kLaneWidth, ignition::rndf::UniqueId(2, 1, 2),
+                            ignition::rndf::UniqueId(1, 1, 3));
+
+  const auto road_geometry =
+      builder->Build(api::RoadGeometryId{"MultilaneLaneCross"});
+  ASSERT_TRUE(road_geometry != nullptr);
+
+  // Checks lane creation, naming, and bound coordinates.
+  ASSERT_EQ(road_geometry->num_junctions(), 11);
+
+  const std::vector<std::tuple<std::string, std::string, std::string,
+                               api::GeoPosition, api::GeoPosition>>
+      lane_truth_table{
+          // Tuple elements are, in order: junction name, segment name, lane
+          // name, lane start api::GeoPosition and lane end api::GeoPosition.
+          std::make_tuple("j:1-0-0", "s:1-0-0", "l:1.1.1-1.1.2",
+                          api::GeoPosition(20.0, 50.0, 0.0),
+                          api::GeoPosition(20.0, 40.0, 0.0)),
+          std::make_tuple("j:1-0-1", "s:1-0-1", "l:1.1.2-1.1.3",
+                          api::GeoPosition(20.0, 40.0, 0.0),
+                          api::GeoPosition(20.0, 10.0, 0.0)),
+          std::make_tuple("j:1-0-2", "s:1-0-2", "l:1.1.3-1.1.4",
+                          api::GeoPosition(20.0, 10.0, 0.0),
+                          api::GeoPosition(20.0, 0.0, 0.0)),
+          std::make_tuple("j:1-1-0", "s:1-1-0", "l:1.2.1-1.2.2",
+                          api::GeoPosition(30.0, 0.0, 0.0),
+                          api::GeoPosition(30.0, 30.0, 0.0)),
+          std::make_tuple("j:1-1-1", "s:1-1-1", "l:1.2.2-1.2.3",
+                          api::GeoPosition(30.0, 30.0, 0.0),
+                          api::GeoPosition(30.0, 50.0, 0.0)),
+          std::make_tuple("j:2-0-0", "s:2-0-0", "l:2.1.1-2.1.2",
+                          api::GeoPosition(0.0, 20.0, 0.0),
+                          api::GeoPosition(10.0, 20.0, 0.0)),
+          std::make_tuple("j:2-0-1", "s:2-0-1", "l:2.1.2-2.1.3",
+                          api::GeoPosition(10.0, 20.0, 0.0),
+                          api::GeoPosition(40.0, 20.0, 0.0)),
+          std::make_tuple("j:2-1-0", "s:2-1-0", "l:2.2.1-2.2.2",
+                          api::GeoPosition(10.0, 30.0, 0.0),
+                          api::GeoPosition(0.0, 30.0, 0.0)),
+          std::make_tuple("j:1.1.2-2.2.1", "s:1.1.2-2.2.1", "l:1.1.2-2.2.1",
+                          api::GeoPosition(20.0, 40.0, 0.0),
+                          api::GeoPosition(10.0, 30.0, 0.0)),
+          std::make_tuple("j:2.1.2-1.2.2", "s:2.1.2-1.2.2", "l:2.1.2-1.2.2",
+                          api::GeoPosition(10.0, 20.0, 0.0),
+                          api::GeoPosition(30.0, 30.0, 0.0)),
+          std::make_tuple("j:2.1.2-1.1.3", "s:2.1.2-1.1.3", "l:2.1.2-1.1.3",
+                          api::GeoPosition(10.0, 20.0, 0.0),
+                          api::GeoPosition(20.0, 10.0, 0.0))};
+
+  for (const auto& values : lane_truth_table) {
+    std::string junction_name, segment_name, lane_name;
+    api::GeoPosition start_position, end_position;
+    std::tie(junction_name, segment_name, lane_name, start_position,
+             end_position) = values;
+
+    const int junction_id = FindJunction(*road_geometry, junction_name);
+    ASSERT_NE(junction_id, -1);
+    ASSERT_EQ(road_geometry->junction(junction_id)->num_segments(), 1);
+    EXPECT_EQ(road_geometry->junction(junction_id)->segment(0)->id().string(),
+              segment_name);
+    ASSERT_EQ(road_geometry->junction(junction_id)->segment(0)->num_lanes(), 1);
+    const api::Lane* lane =
+        road_geometry->junction(junction_id)->segment(0)->lane(0);
+    EXPECT_EQ(lane->id().string(), lane_name);
+    EXPECT_TRUE(api::test::IsGeoPositionClose(
+        lane->ToGeoPosition(api::LanePosition(0.0, 0.0, 0.0)), start_position,
+        kLinearTolerance));
+    EXPECT_TRUE(api::test::IsGeoPositionClose(
+        lane->ToGeoPosition(api::LanePosition(lane->length(), 0.0, 0.0)),
+        end_position, kLinearTolerance));
+  }
+
+  // Checks branch point creation.
+  ASSERT_EQ(road_geometry->num_branch_points(), 12);
+
+  const std::vector<std::tuple<std::string, int, int, api::LaneEnd::Which>>
+      branch_point_truth_table{
+          // Tuple items are, in order: junction name, branch point A side lane
+          // count, branch point B side lane count and api::LaneEnd::Which type.
+          std::make_tuple("j:1-0-0", 1, 2, api::LaneEnd::kFinish),
+          std::make_tuple("j:1-0-1", 2, 1, api::LaneEnd::kFinish),
+          std::make_tuple("j:1-1-1", 2, 1, api::LaneEnd::kStart)};
+
+  for (const auto& values : branch_point_truth_table) {
+    std::string junction_name;
+    int a_side_count = 0, b_side_count = 0;
+    api::LaneEnd::Which lane_end = api::LaneEnd::kStart;
+    std::tie(junction_name, a_side_count, b_side_count, lane_end) = values;
+
+    const int junction_id = FindJunction(*road_geometry, junction_name);
+    ASSERT_NE(junction_id, -1);
+    const api::BranchPoint* branch_point = road_geometry->junction(junction_id)
+                                               ->segment(0)
+                                               ->lane(0)
+                                               ->GetBranchPoint(lane_end);
+    ASSERT_TRUE(branch_point != nullptr);
+    EXPECT_EQ(branch_point->GetASide()->size(), a_side_count);
+    EXPECT_EQ(branch_point->GetBSide()->size(), b_side_count);
+  }
 }
 
 }  // namespace

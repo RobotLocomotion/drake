@@ -1,3 +1,5 @@
+#pragma once
+
 #include <Eigen/Core>
 #include <pybind11/pybind11.h>
 

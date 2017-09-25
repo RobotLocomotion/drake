@@ -7,9 +7,9 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/test/is_dynamic_castable.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_context.h"
@@ -381,6 +381,10 @@ class DeclaredModelPortsSystem : public LeafSystem<double> {
     this->DeclareInputPort(kVectorValued, 1);
     this->DeclareVectorInputPort(MyVector2d());
     this->DeclareAbstractInputPort(Value<int>(22));
+    this->DeclareVectorInputPort(MyVector2d(),
+                                 RandomDistribution::kUniform);
+    this->DeclareVectorInputPort(MyVector2d(),
+                                 RandomDistribution::kGaussian);
 
     // Output port 0 uses a BasicVector base class model.
     this->DeclareVectorOutputPort(BasicVector<double>(3),
@@ -444,12 +448,14 @@ class DeclaredModelPortsSystem : public LeafSystem<double> {
 GTEST_TEST(ModelLeafSystemTest, ModelPortsTopology) {
   DeclaredModelPortsSystem dut;
 
-  ASSERT_EQ(dut.get_num_input_ports(), 3);
+  ASSERT_EQ(dut.get_num_input_ports(), 5);
   ASSERT_EQ(dut.get_num_output_ports(), 4);
 
   const InputPortDescriptor<double>& in0 = dut.get_input_port(0);
   const InputPortDescriptor<double>& in1 = dut.get_input_port(1);
   const InputPortDescriptor<double>& in2 = dut.get_input_port(2);
+  const InputPortDescriptor<double>& in3 = dut.get_input_port(3);
+  const InputPortDescriptor<double>& in4 = dut.get_input_port(4);
 
   const OutputPort<double>& out0 = dut.get_output_port(0);
   const OutputPort<double>& out1 = dut.get_output_port(1);
@@ -459,6 +465,8 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsTopology) {
   EXPECT_EQ(in0.get_data_type(), kVectorValued);
   EXPECT_EQ(in1.get_data_type(), kVectorValued);
   EXPECT_EQ(in2.get_data_type(), kAbstractValued);
+  EXPECT_EQ(in3.get_data_type(), kVectorValued);
+  EXPECT_EQ(in4.get_data_type(), kVectorValued);
 
   EXPECT_EQ(out0.get_data_type(), kVectorValued);
   EXPECT_EQ(out1.get_data_type(), kVectorValued);
@@ -467,10 +475,24 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsTopology) {
 
   EXPECT_EQ(in0.size(), 1);
   EXPECT_EQ(in1.size(), 2);
+  EXPECT_EQ(in3.size(), 2);
+  EXPECT_EQ(in4.size(), 2);
 
   EXPECT_EQ(out0.size(), 3);
   EXPECT_EQ(out1.size(), 4);
   EXPECT_EQ(out3.size(), 2);
+
+  EXPECT_FALSE(in0.is_random());
+  EXPECT_FALSE(in1.is_random());
+  EXPECT_FALSE(in2.is_random());
+  EXPECT_TRUE(in3.is_random());
+  EXPECT_TRUE(in4.is_random());
+
+  EXPECT_FALSE(in0.get_random_type());
+  EXPECT_FALSE(in1.get_random_type());
+  EXPECT_FALSE(in2.get_random_type());
+  EXPECT_EQ(in3.get_random_type(), RandomDistribution::kUniform);
+  EXPECT_EQ(in4.get_random_type(), RandomDistribution::kGaussian);
 }
 
 // Tests that the model values specified in Declare{...} are actually used by
@@ -1083,6 +1105,12 @@ GTEST_TEST(LeafSystemScalarConverterTest, AutoDiffYes) {
   auto maybe = dut.ToAutoDiffXdMaybe();
   ASSERT_NE(maybe, nullptr);
   EXPECT_EQ(maybe->get_name(), "special_name");
+
+  // Spot check the specific converter object.
+  EXPECT_TRUE((
+      dut.get_system_scalar_converter().IsConvertible<AutoDiffXd, double>()));
+  EXPECT_FALSE((
+      dut.get_system_scalar_converter().IsConvertible<double, double>()));
 }
 
 // Sanity check the default implementation of ToAutoDiffXd, for cases that
@@ -1297,6 +1325,21 @@ GTEST_TEST(CustomContextTest, AllocatedContext) {
   ASSERT_TRUE(is_dynamic_castable<CustomContext<double>>(defaulted.get()));
 }
 
+// Specializes BasicVector to add inequality constraints.
+template <typename T, int bias>
+class ConstraintBasicVector final : public BasicVector<T> {
+ public:
+  static constexpr int kSize = 3;
+  ConstraintBasicVector() : BasicVector<T>(VectorX<T>::Zero(kSize)) {}
+  BasicVector<T>* DoClone() const override { return new ConstraintBasicVector; }
+
+  // Declare a single constraint `this[0] >= bias`.
+  void CalcInequalityConstraint(VectorX<T>* value) const override {
+    value->resize(1);
+    (*value)[0] = (*this)[0] - T{bias};
+  }
+};
+
 class ConstraintTestSystem : public LeafSystem<double> {
  public:
   ConstraintTestSystem() { DeclareContinuousState(2); }
@@ -1307,6 +1350,7 @@ class ConstraintTestSystem : public LeafSystem<double> {
   using LeafSystem<double>::DeclareInequalityConstraint;
   using LeafSystem<double>::DeclareNumericParameter;
   using LeafSystem<double>::DeclareVectorInputPort;
+  using LeafSystem<double>::DeclareVectorOutputPort;
 
   void CalcState0Constraint(const Context<double>& context,
                             Eigen::VectorXd* value) const {
@@ -1315,6 +1359,12 @@ class ConstraintTestSystem : public LeafSystem<double> {
   void CalcStateConstraint(const Context<double>& context,
                            Eigen::VectorXd* value) const {
     *value = context.get_continuous_state_vector().CopyToVector();
+  }
+
+  void CalcOutput(
+      const Context<double>& context,
+      ConstraintBasicVector<double, 44>* output) const {
+    output->SetFromVector(Eigen::VectorXd::Constant(output->size(), 4.0));
   }
 
  private:
@@ -1406,21 +1456,6 @@ GTEST_TEST(SystemConstraintTest, FunctionHandleTest) {
   EXPECT_EQ(equality_constraint.description(), "x1eq");
 }
 
-/// Specializes BasicVector to add inequality constraints.
-template <typename T, int bias>
-class ConstraintBasicVector final : public BasicVector<T> {
- public:
-  static constexpr int kSize = 3;
-  ConstraintBasicVector() : BasicVector<T>(VectorX<T>::Zero(kSize)) {}
-  BasicVector<T>* DoClone() const override { return new ConstraintBasicVector; }
-
-  // Declare a single constraint `this[0] >= bias`.
-  void CalcInequalityConstraint(VectorX<T>* value) const override {
-    value->resize(1);
-    (*value)[0] = (*this)[0] - T{bias};
-  }
-};
-
 // Tests constraints implied by BasicVector subtypes.
 GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   ConstraintTestSystem dut;
@@ -1457,6 +1492,15 @@ GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   EXPECT_THAT(constraint2.description(), ::testing::ContainsRegex(
       "^input 0 of type .*ConstraintBasicVector<double,33>$"));
 
+  // Declaring a constrained model vector output should add constraints.
+  // We want `vec[0] >= 44` on the output vector.
+  dut.DeclareVectorOutputPort(&ConstraintTestSystem::CalcOutput);
+  EXPECT_EQ(dut.get_num_constraints(), 4);
+  const SystemConstraint<double>& constraint3 = dut.get_constraint(Index{3});
+  EXPECT_FALSE(constraint3.is_equality_constraint());
+  EXPECT_THAT(constraint3.description(), ::testing::ContainsRegex(
+      "^output 0 of type .*ConstraintBasicVector<double,44>$"));
+
   // We'll work through the Calc results all at the end, so that we don't
   // change the shape of the System and Context while we're Calc'ing.
   auto context = dut.CreateDefaultContext();
@@ -1480,6 +1524,11 @@ GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   Eigen::VectorXd value2;
   constraint2.Calc(*context, &value2);
   EXPECT_TRUE(CompareMatrices(value2, Vector1<double>::Constant(-30.0)));
+
+  // `y0[0] >= 44.0` with `y0[0] == 4.0` produces `-40.0 >= 0.0`.
+  Eigen::VectorXd value3;
+  constraint3.Calc(*context, &value3);
+  EXPECT_TRUE(CompareMatrices(value3, Vector1<double>::Constant(-40.0)));
 }
 
 }  // namespace

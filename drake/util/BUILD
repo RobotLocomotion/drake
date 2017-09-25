@@ -75,7 +75,7 @@ drake_cc_googletest(
     srcs = ["test/testDrakeGeometryUtil.cpp"],
     deps = [
         ":util",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -84,8 +84,8 @@ drake_cc_googletest(
     srcs = ["test/testLCMUtil.cpp"],
     deps = [
         ":lcm_util",
-        "//drake/common:eigen_matrix_compare",
-        "//drake/common:random_polynomial_matrix",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/common/test_utilities:random_polynomial_matrix",
         "//drake/common/trajectories:random_piecewise_polynomial",
     ],
 )

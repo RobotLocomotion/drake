@@ -40,7 +40,7 @@ def _check_licenses_for_label(label):
     # Look for file(s) that appear to be license(s) in the install actions.
     has_license = False
     for a in label[InstallInfo].install_actions:
-        if _is_license_file(a.src.basename):
+        if hasattr(a, "src") and _is_license_file(a.src.basename):
             has_license = True
 
     # If no license found, return the failing label.
