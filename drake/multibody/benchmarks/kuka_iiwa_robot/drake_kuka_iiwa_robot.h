@@ -164,12 +164,12 @@ class DrakeKukaIIwaRobot {
     // Retrieve end-effector spatial velocity from velocity kinematics cache.
     model_->CalcVelocityKinematicsCache(*context_, pc, &vc);
     const SpatialVelocity<double>& V_NG_N =
-        linkG_->get_spatial_velocity_in_world_expressed_in_world(vc);
+        linkG_->get_spatial_velocity_in_world(vc);
 
     // Retrieve end-effector spatial acceleration from acceleration cache.
     model_->CalcAccelerationKinematicsCache(*context_, pc, vc, qDDt, &ac);
     const SpatialAcceleration<double>& A_NG_N =
-        linkG_->get_spatial_acceleration_in_world_expressed_in_world(ac);
+        linkG_->get_spatial_acceleration_in_world(ac);
 
     // Create tuple to return results.
     const Eigen::Matrix3d R_NG = X_NG.linear();

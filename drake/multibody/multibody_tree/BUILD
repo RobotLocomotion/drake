@@ -187,7 +187,6 @@ drake_cc_googletest(
     name = "rigid_body_test",
     deps = [
         ":multibody_tree",
-        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
