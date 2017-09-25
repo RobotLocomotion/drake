@@ -1,15 +1,8 @@
 #include "drake/automotive/simple_powertrain.h"
 
-#include "drake/common/symbolic.h"
-
-namespace drake {
-namespace automotive {
+#include "drake/common/default_scalars.h"
 
 // These instantiations must match the API documentation in
 // simple_powertrain.h.
-template class SimplePowertrain<double>;
-template class SimplePowertrain<AutoDiffXd>;
-template class SimplePowertrain<symbolic::Expression>;
-
-}  // namespace automotive
-}  // namespace drake
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::automotive::SimplePowertrain)

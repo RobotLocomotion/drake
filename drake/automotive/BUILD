@@ -154,7 +154,7 @@ drake_cc_library(
     hdrs = ["idm_planner.h"],
     deps = [
         ":generated_vectors",
-        "//drake/common:symbolic",
+        "//drake/common:default_scalars",
     ],
 )
 

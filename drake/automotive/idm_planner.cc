@@ -2,9 +2,8 @@
 
 #include <cmath>
 
-#include "drake/common/autodiff_overloads.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
-#include "drake/common/symbolic.h"
 
 namespace drake {
 namespace automotive {
@@ -43,10 +42,9 @@ const T IdmPlanner<T>::Evaluate(const IdmPlannerParameters<T>& params,
   return a * (1. - accel_free_road - accel_interaction);
 }
 
-// These instantiations must match the API documentation in idm_planner.h.
-template class IdmPlanner<double>;
-template class IdmPlanner<drake::AutoDiffXd>;
-template class IdmPlanner<drake::symbolic::Expression>;
-
 }  // namespace automotive
 }  // namespace drake
+
+// These instantiations must match the API documentation in idm_planner.h.
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::automotive::IdmPlanner)
