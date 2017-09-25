@@ -260,13 +260,11 @@ drake_cc_library(
 
 drake_cc_library(
     name = "is_cloneable",
-    srcs = [],
     hdrs = ["is_cloneable.h"],
 )
 
 drake_cc_library(
     name = "copyable_unique_ptr",
-    srcs = [],
     hdrs = ["copyable_unique_ptr.h"],
     deps = [":is_cloneable"],
 )
