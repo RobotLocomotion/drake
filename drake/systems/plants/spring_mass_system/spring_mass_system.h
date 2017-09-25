@@ -1,12 +1,11 @@
 #pragma once
 
-#include <memory>
-#include <string>
+#include <cmath>
+#include <stdexcept>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/framework/vector_base.h"
 
 namespace drake {
 namespace systems {
