@@ -22,7 +22,7 @@ template <typename T>
 class JointModelBuilder {
  public:
   JointModelBuilder() = delete;
-  static void BuildJointModel(Joint<T>* joint, MultibodyTree<T>* tree) {
+  static void Build(Joint<T> *joint, MultibodyTree<T> *tree) {
     std::unique_ptr<JointBluePrint> blue_print = joint->MakeModelBlueprint();
     auto model = std::make_unique<JointModel>(*blue_print);
     DRAKE_DEMAND(static_cast<int>(model->mobilizers_.size()) != 0);
@@ -107,7 +107,7 @@ void MultibodyTree<T>::Finalize() {
   // basic MBT elements such as frames, bodies, mobilizers, force elements and
   // constraints, is complete.
   for (auto& joint : owned_joints_) {
-    internal::JointModelBuilder<T>::BuildJointModel(joint.get(), this);
+    internal::JointModelBuilder<T>::Build(joint.get(), this);
   }
   FinalizeTopology();
   FinalizeInternals();
