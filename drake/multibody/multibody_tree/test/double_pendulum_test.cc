@@ -1063,7 +1063,7 @@ TEST_F(PendulumKinematicTests, GravityTerm) {
 TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
   // This is the minimum factor of the machine precision within which these
   // tests pass.
-  const int kEpsilonFactor = 20;
+  const int kEpsilonFactor = 100;
   const double kTolerance = kEpsilonFactor * kEpsilon;
 
   std::unique_ptr<MultibodyTree<AutoDiffXd>> model_autodiff =
@@ -1177,6 +1177,32 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
 
           EXPECT_TRUE(V_WUcm.IsApprox(V_WUcm_expected, kTolerance));
           EXPECT_TRUE(V_WLcm.IsApprox(V_WLcm_expected, kTolerance));
+
+          // Compute potential energy, and its time derivative.
+          const AutoDiffXd V =
+              model_autodiff->CalcPotentialEnergy(*context_autodiff);
+          const double V_value = V.value();
+          const double V_expected =
+              acrobot_benchmark_.CalcPotentialEnergy(
+                  shoulder_angle.value(), elbow_angle.value());
+          EXPECT_NEAR(V_value, V_expected, kTolerance);
+
+          // Since in this case the only force is that of gravity, the time
+          // derivative of the total potential energy must equal the total
+          // conservative power.
+          shoulder_mobilizer_->set_angle(
+              context_.get(), shoulder_angle.value());
+          shoulder_mobilizer_->set_angular_rate(
+              context_.get(), shoulder_angle.derivatives()[0]);
+          elbow_mobilizer_->set_angle(
+              context_.get(), elbow_angle.value());
+          elbow_mobilizer_->set_angular_rate(
+              context_.get(), elbow_angle.derivatives()[0]);
+          const double Pc = model_->CalcConservativePower(*context_);
+
+          // Notice we define Pc = -d(Pc)/dt.
+          const double Pc_from_autodiff = -V.derivatives()[0];
+          EXPECT_NEAR(Pc, Pc_from_autodiff, kTolerance);
         }  // ielbow
       }  // ishoulder
     }  // iw_elbow

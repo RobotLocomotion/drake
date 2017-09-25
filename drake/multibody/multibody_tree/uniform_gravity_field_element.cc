@@ -31,7 +31,7 @@ void UniformGravityFieldElement<T>::DoCalcAndAddForceContribution(
     // caching is in place.
     const T mass = body.CalcMass(context);
     const Vector3<T> p_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
-    const Matrix3<T> R_WB = pc.get_X_WB(node_index).rotation();
+    const Matrix3<T> R_WB = pc.get_X_WB(node_index).linear();
     // TODO(amcastro-tri): Consider caching p_BoBcm_W.
     const Vector3<T> p_BoBcm_W = R_WB * p_BoBcm_B;
 
@@ -59,7 +59,7 @@ T UniformGravityFieldElement<T>::CalcPotentialEnergy(
     const T mass = body.CalcMass(context);
     const Vector3<T> p_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
     const Isometry3<T>& X_WB = pc.get_X_WB(body.get_node_index());
-    const Matrix3<T> R_WB = X_WB.rotation();
+    const Matrix3<T> R_WB = X_WB.linear();
     const Vector3<T> p_WBo = X_WB.translation();
     // TODO(amcastro-tri): Consider caching p_BoBcm_W and/or p_WBcm.
     const Vector3<T> p_BoBcm_W = R_WB * p_BoBcm_B;
@@ -89,7 +89,7 @@ T UniformGravityFieldElement<T>::CalcConservativePower(
     const T mass = body.CalcMass(context);
     const Vector3<T> p_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
     const Isometry3<T>& X_WB = pc.get_X_WB(body.get_node_index());
-    const Matrix3<T> R_WB = X_WB.rotation();
+    const Matrix3<T> R_WB = X_WB.linear();
     // TODO(amcastro-tri): Consider caching p_BoBcm_W.
     const Vector3<T> p_BoBcm_W = R_WB * p_BoBcm_B;
 

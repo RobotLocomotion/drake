@@ -454,6 +454,35 @@ T MultibodyTree<T>::DoCalcPotentialEnergy(
   return potential_energy;
 }
 
+template <typename T>
+T MultibodyTree<T>::CalcConservativePower(
+    const systems::Context<T>& context) const {
+  // TODO(amcastro-tri): Eval PositionKinematicsCache when caching lands.
+  PositionKinematicsCache<T> pc(get_topology());
+  CalcPositionKinematicsCache(context, &pc);
+  // TODO(amcastro-tri): Eval VelocityKinematicsCache when caching lands.
+  VelocityKinematicsCache<T> vc(get_topology());
+  CalcVelocityKinematicsCache(context, pc, &vc);
+  return DoCalcConservativePower(context, pc, vc);
+}
+
+template <typename T>
+T MultibodyTree<T>::DoCalcConservativePower(
+    const systems::Context<T>& context,
+    const PositionKinematicsCache<T>& pc,
+    const VelocityKinematicsCache<T>& vc) const {
+  const auto& mbt_context =
+      dynamic_cast<const MultibodyTreeContext<T>&>(context);
+
+  T conservative_power = 0.0;
+  // Add contributions from force elements.
+  for (const auto& force_element : owned_force_elements_) {
+    conservative_power +=
+        force_element->CalcConservativePower(mbt_context, pc, vc);
+  }
+  return conservative_power;
+}
+
 // Explicitly instantiates on the most common scalar types.
 template class MultibodyTree<double>;
 template class MultibodyTree<AutoDiffXd>;
