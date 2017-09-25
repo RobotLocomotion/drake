@@ -829,6 +829,13 @@ class MultibodyTree {
       std::vector<SpatialForce<T>>* F_Bo_W_array,
       EigenPtr<VectorX<T>> tau_array) const;
 
+  /// Computes the total potential energy stored in `this` multibody model for
+  /// the configuration given by `context`.
+  /// @param[in] context
+  ///   The context containing the state of the %MultibodyTree model.
+  /// @returns The total potential energy stored in `this` multibody model.
+  T CalcPotentialEnergy(const systems::Context<T>& context) const;
+
   /// Performs the computation of the mass matrix `M(q)` of the model using
   /// inverse dynamics, where the generalized positions q are stored in
   /// `context`. See CalcInverseDynamics().
@@ -1052,6 +1059,9 @@ class MultibodyTree {
       const PositionKinematicsCache<T>& pc,
       const VelocityKinematicsCache<T>& vc,
       EigenPtr<VectorX<T>> Cv) const;
+
+  T DoCalcPotentialEnergy(const systems::Context<T>& context,
+                          const PositionKinematicsCache<T>& pc) const;
 
   void CreateBodyNode(BodyNodeIndex body_node_index);
 

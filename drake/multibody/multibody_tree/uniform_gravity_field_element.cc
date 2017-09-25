@@ -44,8 +44,7 @@ void UniformGravityFieldElement<T>::DoCalcAndAddForceContribution(
 template <typename T>
 T UniformGravityFieldElement<T>::CalcPotentialEnergy(
     const MultibodyTreeContext<T>& context,
-    const PositionKinematicsCache<T>& pc,
-    const VelocityKinematicsCache<T>&) const {
+    const PositionKinematicsCache<T>& pc) const {
   // Add the potential energy due to gravity for each body in the model.
   // Skip the world.
   const MultibodyTree<T>& model = this->get_parent_tree();

@@ -430,6 +430,30 @@ void MultibodyTree<T>::DoCalcBiasTerm(
                       &A_WB_array, &F_BMo_W_array, Cv);
 }
 
+template <typename T>
+T MultibodyTree<T>::CalcPotentialEnergy(
+    const systems::Context<T>& context) const {
+  // TODO(amcastro-tri): Eval PositionKinematicsCache when caching lands.
+  PositionKinematicsCache<T> pc(get_topology());
+  CalcPositionKinematicsCache(context, &pc);
+  return DoCalcPotentialEnergy(context, pc);
+}
+
+template <typename T>
+T MultibodyTree<T>::DoCalcPotentialEnergy(
+    const systems::Context<T>& context,
+    const PositionKinematicsCache<T>& pc) const {
+  const auto& mbt_context =
+      dynamic_cast<const MultibodyTreeContext<T>&>(context);
+
+  T potential_energy = 0.0;
+  // Add contributions from force elements.
+  for (const auto& force_element : owned_force_elements_) {
+    potential_energy += force_element->CalcPotentialEnergy(mbt_context, pc);
+  }
+  return potential_energy;
+}
+
 // Explicitly instantiates on the most common scalar types.
 template class MultibodyTree<double>;
 template class MultibodyTree<AutoDiffXd>;

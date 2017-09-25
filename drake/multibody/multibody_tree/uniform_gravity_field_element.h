@@ -37,8 +37,7 @@ class UniformGravityFieldElement : public ForceElement<T> {
 
   T CalcPotentialEnergy(
       const MultibodyTreeContext<T>& context,
-      const PositionKinematicsCache<T>& pc,
-      const VelocityKinematicsCache<T>& vc) const final;
+      const PositionKinematicsCache<T>& pc) const final;
 
   T CalcConservativePower(
       const MultibodyTreeContext<T>& context,

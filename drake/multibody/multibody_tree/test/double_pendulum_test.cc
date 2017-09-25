@@ -573,7 +573,7 @@ class PendulumKinematicTests : public PendulumTests {
     // This is the minimum factor of the machine precision within which these
     // tests pass. This factor incorporates an additional factor of two (2) to
     // be on the safe side on other architectures (particularly in Macs).
-    const int kEpsilonFactor = 5;
+    const int kEpsilonFactor = 20;
     const double kTolerance = kEpsilonFactor * kEpsilon;
 
     const double shoulder_angle =  q(0);
@@ -645,6 +645,12 @@ class PendulumKinematicTests : public PendulumTests {
         &A_WB_array, &Fapplied_Bo_W_array, &tau_applied);
     // The result from inverse dynamics must be tau = -G(q).
     EXPECT_TRUE(tau.isApprox(-G_expected, kTolerance));
+
+    // Compute the system's potential energy:
+    const double V_expected =
+        acrobot_benchmark_.CalcPotentialEnergy(shoulder_angle, elbow_angle);
+    const double V = model_->CalcPotentialEnergy(*context_);
+    EXPECT_NEAR(V, V_expected, kTolerance);
 
     return tau;
   }

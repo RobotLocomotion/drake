@@ -245,6 +245,15 @@ Vector6<T> Acrobot<T>::CalcLink2SpatialAccelerationInWorldFrame(
   return A_WL2;
 }
 
+template <typename T>
+T Acrobot<T>::CalcPotentialEnergy(const T& theta1, const T& theta2) const {
+  const Isometry3<T> X_WL1cm = CalcLink1PoseInWorldFrame(theta1);
+  const Isometry3<T> X_WL2cm = CalcLink2PoseInWorldFrame(theta1, theta2);
+  const Vector3<T> p_WL1cm = X_WL1cm.translation();
+  const Vector3<T> p_WL2cm = X_WL2cm.translation();
+  return (m1_ * p_WL1cm.y() + m2_ * p_WL2cm.y()) * g_;
+}
+
 template class Acrobot<double>;
 template class Acrobot<AutoDiffXd>;
 

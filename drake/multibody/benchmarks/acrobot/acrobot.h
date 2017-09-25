@@ -161,6 +161,11 @@ class Acrobot {
       const T& theta1dot, const T& theta2dot,
       const T& theta1dotdot, const T& theta2dotdot) const;
 
+  /// Computes the total potential energy due to gravity of the acrobot system
+  /// for the state given by angles `theta1` and `theta2`.
+  /// The zero potential energy is defined for `y = 0`.
+  T CalcPotentialEnergy(const T& theta1, const T& theta2) const;
+
  private:
   const T
       m1_{1.0},    // Mass of link 1 (kg).
