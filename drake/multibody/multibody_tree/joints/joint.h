@@ -229,7 +229,7 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
 
   // Implements MultibodyTreeElement::DoSetTopology(). Joints have no topology
   // though we could require them to have one in the future.
-  void DoSetTopology(const MultibodyTreeTopology& tree) {}
+  void DoSetTopology(const MultibodyTreeTopology&) {}
 
   /// @name Methods to make a clone templated on different scalar types.
   /// @{
