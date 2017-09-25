@@ -21,7 +21,7 @@ namespace multibody {
 class JointTester {
  public:
   JointTester() = delete;
-  static const Mobilizer<double>* get_mobilizer(
+  static const RevoluteMobilizer<double>* get_mobilizer(
       const RevoluteJoint<double>& joint) {
     return joint.get_mobilizer();
   }

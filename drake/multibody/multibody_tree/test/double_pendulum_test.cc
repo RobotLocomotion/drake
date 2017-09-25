@@ -30,8 +30,7 @@ class JointTester {
   // RevoluteMobilizer.
   static const RevoluteMobilizer<double>* get_mobilizer(
       const RevoluteJoint<double>& joint) {
-    return dynamic_cast<const RevoluteMobilizer<double>*>(
-        joint.get_mobilizer());
+    return joint.get_mobilizer();
   }
 };
 
