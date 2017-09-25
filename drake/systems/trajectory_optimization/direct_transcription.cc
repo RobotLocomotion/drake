@@ -186,20 +186,24 @@ bool DirectTranscription::AddSymbolicDynamicConstraints(
     return false;
   }
 
-  // TODO(russt): Substitute parameter values from Context<double>.
-  unused(context);
+  symbolic::Substitution sub;
+  for (int i = 0; i < context.num_numeric_parameters(); i++) {
+    const auto& params = context.get_numeric_parameter(i)->get_value();
+    for (int j = 0; j < params.size(); j++) {
+      sub.emplace(inspector->numeric_parameters(i)[j], params[j]);
+    }
+  }
 
   for (int i = 0; i < N() - 1; i++) {
     VectorX<symbolic::Expression> update = inspector->discrete_update(0);
-    symbolic::Substitution sub;
-    sub.emplace(inspector->time(), i * fixed_timestep());
+    sub[inspector->time()] = i * fixed_timestep();
     // TODO(russt/soonho): Can we make a cleaner way to do substitutions
     // with Vectors to avoid these loops appearing everywhere? #6925
     for (int j = 0; j < num_states(); j++) {
-      sub.emplace(inspector->discrete_state(0)[j], state(i)[j]);
+      sub[inspector->discrete_state(0)[j]] = state(i)[j];
     }
     for (int j = 0; j < num_inputs(); j++) {
-      sub.emplace(inspector->input(0)[j], input(i)[j]);
+      sub[inspector->input(0)[j]] = input(i)[j];
     }
     for (int j = 0; j < num_states(); j++) {
       update(j) = update(j).Substitute(sub);

@@ -18,7 +18,7 @@ namespace systems {
 /// sparsity, along with many others.
 ///
 /// A SystemSymbolicInspector is only interesting if the Context contains purely
-/// vector-valued elements. If any abstract-valued elements are present, the
+/// vector-valued elements.  If any abstract-valued elements are present, the
 /// SystemSymbolicInspector will not be able to parse the governing equations
 /// reliably.
 ///
@@ -93,6 +93,15 @@ class SystemSymbolicInspector {
         discrete_state_variables_[i].rows());
   }
 
+  /// Returns a reference to the symbolic representation of the numeric
+  /// parameters.
+  /// @param i The numeric parameter group number.
+  Eigen::VectorBlock<const VectorX<symbolic::Variable>> numeric_parameters(
+      int i) const {
+    DRAKE_DEMAND(i >= 0 && i < static_cast<int>(numeric_parameters_.size()));
+    return numeric_parameters_[i].head(numeric_parameters_[i].rows());
+  }
+
   /// Returns a copy of the symbolic representation of the continuous-time
   /// dynamics.
   VectorX<symbolic::Expression> derivatives() const {
@@ -104,7 +113,7 @@ class SystemSymbolicInspector {
   /// @param i The discrete state group number.
   Eigen::VectorBlock<const VectorX<symbolic::Expression>> discrete_update(
       int i) const {
-    DRAKE_DEMAND(i >= 0 && i < context_->get_num_discrete_state_groups());
+    DRAKE_DEMAND(i >= 0 && i < static_cast<int>(discrete_updates_->size()));
     return discrete_updates_->get_vector(i)->get_value();
   }
 
@@ -128,21 +137,28 @@ class SystemSymbolicInspector {
   void InitializeContinuousState();
   // Populates the discrete state in the context_ with symbolic variables.
   void InitializeDiscreteState();
+  // Populates the parameters in the context_ with symbolic variables.
+  void InitializeParameters();
 
   // Returns true if any field in the @p context is abstract-valued.
   static bool IsAbstract(const System<symbolic::Expression>& system,
                          const Context<symbolic::Expression>& context);
 
   const std::unique_ptr<Context<symbolic::Expression>> context_;
-  const std::unique_ptr<SystemOutput<symbolic::Expression>> output_;
-  const std::unique_ptr<ContinuousState<symbolic::Expression>> derivatives_;
-  const std::unique_ptr<DiscreteValues<symbolic::Expression>> discrete_updates_;
-
-  // The symbolic expression attached to each input port in the `context_`.
+  // Rather than maintain a Context of symbolic::Variables (which are not a
+  // proper Eigen scalar type, since they are not closed under the basic vector
+  // operations), we maintain member variables for the supported elements of the
+  // Context here.  Internal methods must keep these in sync with context_.
   symbolic::Variable time_;
   std::vector<VectorX<symbolic::Variable>> input_variables_;
   VectorX<symbolic::Variable> continuous_state_variables_;
   std::vector<VectorX<symbolic::Variable>> discrete_state_variables_;
+  std::vector<VectorX<symbolic::Variable>> numeric_parameters_;
+
+  // Maintains symbolic representations of the primary system methods.
+  const std::unique_ptr<SystemOutput<symbolic::Expression>> output_;
+  const std::unique_ptr<ContinuousState<symbolic::Expression>> derivatives_;
+  const std::unique_ptr<DiscreteValues<symbolic::Expression>> discrete_updates_;
   std::set<symbolic::Formula> constraints_;
 
   // The types of the output ports.
