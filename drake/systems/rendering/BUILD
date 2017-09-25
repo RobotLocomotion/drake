@@ -13,7 +13,7 @@ drake_cc_library(
     deps = [
         ":pose_bundle",
         ":pose_vector",
-        "//drake/common:autodiff",
+        "//drake/common:default_scalars",
         "//drake/common:essential",
         "//drake/systems/framework:leaf_system",
     ],
@@ -49,7 +49,7 @@ drake_cc_library(
     srcs = ["pose_vector.cc"],
     hdrs = ["pose_vector.h"],
     deps = [
-        "//drake/math:geometric_transform",
+        "//drake/common:default_scalars",
         "//drake/systems/framework:vector",
     ],
 )
@@ -59,6 +59,7 @@ drake_cc_library(
     srcs = ["frame_velocity.cc"],
     hdrs = ["frame_velocity.h"],
     deps = [
+        "//drake/common:default_scalars",
         "//drake/multibody/multibody_tree/math:spatial_velocity",
         "//drake/systems/framework:vector",
     ],
@@ -70,9 +71,8 @@ drake_cc_library(
     hdrs = ["pose_bundle.h"],
     deps = [
         ":frame_velocity",
-        "//drake/common:autodiff",
+        "//drake/common:default_scalars",
         "//drake/common:essential",
-        "//drake/common:symbolic",
     ],
 )
 
