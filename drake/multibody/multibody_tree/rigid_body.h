@@ -77,12 +77,12 @@ class RigidBody : public Body<T> {
     return default_spatial_inertia_.get_com();
   }
 
-  T CalcMass(const MultibodyTreeContext<T>& context) const final {
+  T CalcMass(const MultibodyTreeContext<T>&) const final {
     return default_spatial_inertia_.get_mass();
   }
 
   const Vector3<T> CalcCenterOfMassInBodyFrame(
-      const MultibodyTreeContext<T>& context) const final {
+      const MultibodyTreeContext<T>&) const final {
     return get_default_com().template cast<T>();
   }
 

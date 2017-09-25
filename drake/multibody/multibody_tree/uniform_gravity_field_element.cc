@@ -15,7 +15,7 @@ template <typename T>
 void UniformGravityFieldElement<T>::DoCalcAndAddForceContribution(
     const MultibodyTreeContext<T>& context,
     const PositionKinematicsCache<T>& pc,
-    const VelocityKinematicsCache<T>& vc,
+    const VelocityKinematicsCache<T>&,
     std::vector<SpatialForce<T>>* F_Bo_W_array,
     EigenPtr<VectorX<T>>) const {
   // Add the force of gravity contribution for each body in the model.
@@ -45,7 +45,7 @@ template <typename T>
 T UniformGravityFieldElement<T>::CalcPotentialEnergy(
     const MultibodyTreeContext<T>& context,
     const PositionKinematicsCache<T>& pc,
-    const VelocityKinematicsCache<T>& vc) const {
+    const VelocityKinematicsCache<T>&) const {
   // Add the potential energy due to gravity for each body in the model.
   // Skip the world.
   const MultibodyTree<T>& model = this->get_parent_tree();
@@ -107,9 +107,9 @@ T UniformGravityFieldElement<T>::CalcConservativePower(
 
 template <typename T>
 T UniformGravityFieldElement<T>::CalcNonConservativePower(
-    const MultibodyTreeContext<T>& context,
-    const PositionKinematicsCache<T>& pc,
-    const VelocityKinematicsCache<T>& vc) const {
+    const MultibodyTreeContext<T>&,
+    const PositionKinematicsCache<T>&,
+    const VelocityKinematicsCache<T>&) const {
   // A uniform gravity field is conservative. Therefore return zero power.
   return 0.0;
 }
@@ -117,14 +117,14 @@ T UniformGravityFieldElement<T>::CalcNonConservativePower(
 template <typename T>
 std::unique_ptr<ForceElement<double>>
 UniformGravityFieldElement<T>::DoCloneToScalar(
-    const MultibodyTree<double>& tree_clone) const {
+    const MultibodyTree<double>&) const {
   return std::make_unique<UniformGravityFieldElement<double>>(g_W());
 }
 
 template <typename T>
 std::unique_ptr<ForceElement<AutoDiffXd>>
 UniformGravityFieldElement<T>::DoCloneToScalar(
-    const MultibodyTree<AutoDiffXd>& tree_clone) const {
+    const MultibodyTree<AutoDiffXd>&) const {
   return std::make_unique<UniformGravityFieldElement<AutoDiffXd>>(g_W());
 }
 

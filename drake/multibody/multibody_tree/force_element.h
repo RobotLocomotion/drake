@@ -195,7 +195,7 @@ class ForceElement : public
   // Implementation for MultibodyTreeElement::DoSetTopology().
   // At MultibodyTree::Finalize() time, each force element retrieves its
   // topology from the parent MultibodyTree.
-  void DoSetTopology(const MultibodyTreeTopology& tree_topology) final {}
+  void DoSetTopology(const MultibodyTreeTopology&) final {}
 };
 
 }  // namespace multibody
