@@ -1,11 +1,6 @@
 #include "drake/systems/framework/input_port_evaluator_interface.h"
 
-namespace drake {
-namespace systems {
-namespace detail {
+#include "drake/common/default_scalars.h"
 
-template class InputPortEvaluatorInterface<double>;
-
-}  // namespace detail
-}  // namespace systems
-}  // namespace drake
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::detail::InputPortEvaluatorInterface)

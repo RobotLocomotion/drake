@@ -5,9 +5,9 @@
 #include <typeinfo>
 
 #include "drake/common/autodiff_overloads.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/nice_type_name.h"
-#include "drake/common/symbolic.h"
 #include "drake/systems/framework/system.h"
 
 namespace drake {
@@ -133,12 +133,11 @@ void OutputPort<T>::CheckValidBasicVector(
 
 // The Vector2/3 instantiations here are for the benefit of some
 // older unit tests but are not otherwise advertised.
-
-template class OutputPort<double>;
-template class OutputPort<AutoDiffXd>;
-template class OutputPort<symbolic::Expression>;
 template class OutputPort<Eigen::AutoDiffScalar<Eigen::Vector2d>>;
 template class OutputPort<Eigen::AutoDiffScalar<Eigen::Vector3d>>;
 
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::OutputPort)

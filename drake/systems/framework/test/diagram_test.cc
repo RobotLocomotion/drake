@@ -1,6 +1,7 @@
 #include "drake/systems/framework/diagram.h"
 
 #include <Eigen/Dense>
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
@@ -11,6 +12,7 @@
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/output_port.h"
 #include "drake/systems/framework/test_utilities/pack_value.h"
+#include "drake/systems/framework/test_utilities/scalar_conversion.h"
 #include "drake/systems/primitives/adder.h"
 #include "drake/systems/primitives/constant_value_source.h"
 #include "drake/systems/primitives/constant_vector_source.h"
@@ -21,6 +23,12 @@
 namespace drake {
 namespace systems {
 namespace {
+
+class DoubleOnlySystem : public LeafSystem<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DoubleOnlySystem);
+  DoubleOnlySystem() = default;
+};
 
 /// A stateless system that can set an arbitrary periodic discrete update.
 template <class T>
@@ -176,7 +184,8 @@ GTEST_TEST(EmptySystemDiagramTest, CheckPeriodicTriggerDiscreteUpdate) {
 /// witness functions from its subsystems.
 class ExampleDiagram : public Diagram<double> {
  public:
-  explicit ExampleDiagram(int size, bool use_abstract = false) {
+  explicit ExampleDiagram(
+      int size, bool use_abstract = false, bool use_double_only = false) {
     DiagramBuilder<double> builder;
 
     adder0_ = builder.AddSystem<Adder<double>>(2 /* inputs */, size);
@@ -214,6 +223,9 @@ class ExampleDiagram : public Diagram<double> {
     if (use_abstract) {
       builder.AddSystem<ConstantValueSource<double>>(
           std::make_unique<Value<int>>(0));
+    }
+    if (use_double_only) {
+      builder.AddSystem<DoubleOnlySystem>();
     }
 
     builder.BuildInto(this);
@@ -545,10 +557,27 @@ TEST_F(DiagramTest, ToAutoDiffXd) {
     }
   }
 
-  // If the Diagram contains a System that does not support AutoDiffXd, we
-  // cannot transmogrify the Diagram.
-  auto diagram_with_abstract = std::make_unique<ExampleDiagram>(kSize, true);
-  EXPECT_THROW(diagram_with_abstract->ToAutoDiffXd(), std::exception);
+  // When the Diagram contains a System that does not support AutoDiffXd,
+  // we cannot transmogrify the Diagram to AutoDiffXd.
+  const bool use_abstract = false;
+  const bool use_double_only = true;
+  auto diagram_with_double_only = std::make_unique<ExampleDiagram>(
+      kSize, use_abstract, use_double_only);
+  EXPECT_THROW(diagram_with_double_only->ToAutoDiffXd(), std::exception);
+}
+
+/// Tests that a diagram can be transmogrified to symbolic.
+TEST_F(DiagramTest, ToSymbolic) {
+  // We manually specify the template argument so that is_symbolic_convertible
+  // asserts the result is merely a Diagram, not an ExampleDiagram.
+  EXPECT_TRUE(is_symbolic_convertible<systems::Diagram>(*diagram_));
+
+  // No symbolic support when one of the subsystems does not declare support.
+  const bool use_abstract = false;
+  const bool use_double_only = true;
+  auto diagram_with_double_only = std::make_unique<ExampleDiagram>(
+      kSize, use_abstract, use_double_only);
+  EXPECT_THROW(diagram_with_double_only->ToSymbolic(), std::exception);
 }
 
 // Tests that the same diagram can be evaluated into the same output with
@@ -823,51 +852,93 @@ GTEST_TEST(DiagramPublishTest, Publish) {
 // FeedbackDiagram is a diagram containing a feedback loop of two
 // constituent diagrams, an Integrator and a Gain. The Integrator is not
 // direct-feedthrough, so there is no algebraic loop.
-class FeedbackDiagram : public Diagram<double> {
+//
+// (N.B. Normally a class that supports scalar conversion, but does not offer a
+// SystemScalarConverter-accepting constructor would be marked `final`, but we
+// leave the `final` off here to test what happens during wrong-subclassing.)
+template <typename T>
+class FeedbackDiagram : public Diagram<T> {
  public:
-  FeedbackDiagram() : Diagram<double>() {
-    DiagramBuilder<double> builder;
+  FeedbackDiagram()
+      // We choose this constructor from our parent class so that we have a
+      // useful Diagram for the SubclassTransmogrificationTest.
+      : Diagram<T>(SystemTypeTag<systems::FeedbackDiagram>{}) {
+    constexpr int kSize = 1;
 
-    DiagramBuilder<double> integrator_builder;
-    integrator_ = integrator_builder.AddSystem<Integrator>(1 /* size */);
-    integrator_->set_name("integrator");
-    integrator_builder.ExportInput(integrator_->get_input_port());
-    integrator_builder.ExportOutput(integrator_->get_output_port());
-    integrator_diagram_ = builder.AddSystem(integrator_builder.Build());
-    integrator_diagram_->set_name("integrator_diagram");
+    DiagramBuilder<T> builder;
 
-    DiagramBuilder<double> gain_builder;
-    gain_ = gain_builder.AddSystem<Gain>(1.0 /* gain */, 1 /* length */);
-    gain_->set_name("gain");
-    gain_builder.ExportInput(gain_->get_input_port());
-    gain_builder.ExportOutput(gain_->get_output_port());
-    gain_diagram_ = builder.AddSystem(gain_builder.Build());
-    gain_diagram_->set_name("gain_diagram");
+    DiagramBuilder<T> integrator_builder;
+    Integrator<T>* const integrator =
+        integrator_builder.template AddSystem<Integrator>(kSize);
+    integrator->set_name("integrator");
+    integrator_builder.ExportInput(integrator->get_input_port());
+    integrator_builder.ExportOutput(integrator->get_output_port());
+    Diagram<T>* const integrator_diagram =
+        builder.AddSystem(integrator_builder.Build());
+    integrator_diagram->set_name("integrator_diagram");
 
-    builder.Connect(*integrator_diagram_, *gain_diagram_);
-    builder.Connect(*gain_diagram_, *integrator_diagram_);
+    DiagramBuilder<T> gain_builder;
+    Gain<T>* const gain =
+        gain_builder.template AddSystem<Gain>(1.0 /* gain */, kSize);
+    gain->set_name("gain");
+    gain_builder.ExportInput(gain->get_input_port());
+    gain_builder.ExportOutput(gain->get_output_port());
+    Diagram<T>* const gain_diagram =
+        builder.AddSystem(gain_builder.Build());
+    gain_diagram->set_name("gain_diagram");
+
+    builder.Connect(*integrator_diagram, *gain_diagram);
+    builder.Connect(*gain_diagram, *integrator_diagram);
     builder.BuildInto(this);
   }
 
- private:
-  Integrator<double>* integrator_ = nullptr;
-  Gain<double>* gain_ = nullptr;
-  Diagram<double>* integrator_diagram_ = nullptr;
-  Diagram<double>* gain_diagram_ = nullptr;
+  // Scalar-converting copy constructor.
+  template <typename U>
+  explicit FeedbackDiagram(const FeedbackDiagram<U>& other)
+      : Diagram<T>(other) {}
 };
 
 // Tests that since there are no outputs, there is no direct feedthrough.
 GTEST_TEST(FeedbackDiagramTest, HasDirectFeedthrough) {
-  FeedbackDiagram diagram;
+  FeedbackDiagram<double> diagram;
   EXPECT_FALSE(diagram.HasAnyDirectFeedthrough());
 }
 
 // Tests that a FeedbackDiagram's context can be deleted without accessing
 // already-freed memory. https://github.com/RobotLocomotion/drake/issues/3349
 GTEST_TEST(FeedbackDiagramTest, DeletionIsMemoryClean) {
-  FeedbackDiagram diagram;
+  FeedbackDiagram<double> diagram;
   auto context = diagram.CreateDefaultContext();
   EXPECT_NO_THROW(context.reset());
+}
+
+// If a SystemScalarConverter is passed into the Diagram constructor, then
+// transmogrification will preserve the subtype.
+TEST_F(DiagramTest, SubclassTransmogrificationTest) {
+  const FeedbackDiagram<double> dut;
+  EXPECT_TRUE(is_autodiffxd_convertible(dut, [](const auto& converted) {
+    EXPECT_FALSE(converted.HasAnyDirectFeedthrough());
+  }));
+  EXPECT_TRUE(is_symbolic_convertible(dut, [](const auto& converted) {
+    EXPECT_FALSE(converted.HasAnyDirectFeedthrough());
+  }));
+
+  // Diagram subclasses that declare a specific SystemTypeTag but then use a
+  // subclass at runtime will fail-fast.
+  class SubclassOfFeedbackDiagram : public FeedbackDiagram<double> {};
+  const SubclassOfFeedbackDiagram subclass_dut;
+  EXPECT_THROW(({
+    try {
+      subclass_dut.ToAutoDiffXd();
+    } catch (const std::runtime_error& e) {
+      EXPECT_THAT(
+          std::string(e.what()),
+          testing::MatchesRegex(
+              ".*convert a .*::FeedbackDiagram<double>.* called with a"
+              ".*::SubclassOfFeedbackDiagram at runtime"));
+      throw;
+    }
+  }), std::runtime_error);
 }
 
 // A simple class that consumes *two* inputs and passes one input through. The

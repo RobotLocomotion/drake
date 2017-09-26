@@ -1,5 +1,7 @@
 #include "drake/systems/framework/output_port_value.h"
 
+#include "drake/common/default_scalars.h"
+
 namespace drake {
 namespace systems {
 
@@ -27,9 +29,11 @@ void OutputPortValue::InvalidateAndIncrement() {
   }
 }
 
-template class SystemOutput<double>;
-
-template class LeafSystemOutput<double>;
-
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::SystemOutput)
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::LeafSystemOutput)

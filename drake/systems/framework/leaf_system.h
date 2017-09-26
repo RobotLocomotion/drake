@@ -892,6 +892,19 @@ class LeafSystem : public System<T> {
           DRAKE_DEMAND(typed_result != nullptr);
           (this_ptr->*calc)(context, typed_result);
         });
+    MaybeDeclareVectorBaseInequalityConstraint(
+        "output " + std::to_string(int{port.get_index()}), model_vector,
+        [&port, storage = std::shared_ptr<AbstractValue>{}](
+            const Context<T>& context) mutable -> const VectorBase<T>& {
+          // Because we must return a VectorBase by const reference, our lambda
+          // object needs a member field to maintain storage for our result.
+          // We must use a shared_ptr not because we share storage, but because
+          // our lambda must be copyable.  This will go away once Eval works.
+          storage = port.Allocate(context);
+          // TODO(jwnimmer-tri) We should use port.Eval(), once it works.
+          port.Calc(context, storage.get());
+          return storage->GetValue<BasicVector<T>>();
+        });
     return port;
   }
 

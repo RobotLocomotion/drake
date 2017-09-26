@@ -209,6 +209,16 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "default_scalars",
+    hdrs = ["default_scalars.h"],
+    deps = [
+        ":autodiff",
+        ":essential",
+        ":symbolic",
+    ],
+)
+
 # Miscellaneous utilities.
 
 DRAKE_RESOURCE_SENTINEL = "//:.drake-resource-sentinel"
@@ -260,13 +270,11 @@ drake_cc_library(
 
 drake_cc_library(
     name = "is_cloneable",
-    srcs = [],
     hdrs = ["is_cloneable.h"],
 )
 
 drake_cc_library(
     name = "copyable_unique_ptr",
-    srcs = [],
     hdrs = ["copyable_unique_ptr.h"],
     deps = [":is_cloneable"],
 )

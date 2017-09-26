@@ -1335,6 +1335,21 @@ GTEST_TEST(CustomContextTest, AllocatedContext) {
   ASSERT_TRUE(is_dynamic_castable<CustomContext<double>>(defaulted.get()));
 }
 
+// Specializes BasicVector to add inequality constraints.
+template <typename T, int bias>
+class ConstraintBasicVector final : public BasicVector<T> {
+ public:
+  static constexpr int kSize = 3;
+  ConstraintBasicVector() : BasicVector<T>(VectorX<T>::Zero(kSize)) {}
+  BasicVector<T>* DoClone() const override { return new ConstraintBasicVector; }
+
+  // Declare a single constraint `this[0] >= bias`.
+  void CalcInequalityConstraint(VectorX<T>* value) const override {
+    value->resize(1);
+    (*value)[0] = (*this)[0] - T{bias};
+  }
+};
+
 class ConstraintTestSystem : public LeafSystem<double> {
  public:
   ConstraintTestSystem() { DeclareContinuousState(2); }
@@ -1345,6 +1360,7 @@ class ConstraintTestSystem : public LeafSystem<double> {
   using LeafSystem<double>::DeclareInequalityConstraint;
   using LeafSystem<double>::DeclareNumericParameter;
   using LeafSystem<double>::DeclareVectorInputPort;
+  using LeafSystem<double>::DeclareVectorOutputPort;
 
   void CalcState0Constraint(const Context<double>& context,
                             Eigen::VectorXd* value) const {
@@ -1353,6 +1369,12 @@ class ConstraintTestSystem : public LeafSystem<double> {
   void CalcStateConstraint(const Context<double>& context,
                            Eigen::VectorXd* value) const {
     *value = context.get_continuous_state_vector().CopyToVector();
+  }
+
+  void CalcOutput(
+      const Context<double>& context,
+      ConstraintBasicVector<double, 44>* output) const {
+    output->SetFromVector(Eigen::VectorXd::Constant(output->size(), 4.0));
   }
 
  private:
@@ -1444,21 +1466,6 @@ GTEST_TEST(SystemConstraintTest, FunctionHandleTest) {
   EXPECT_EQ(equality_constraint.description(), "x1eq");
 }
 
-/// Specializes BasicVector to add inequality constraints.
-template <typename T, int bias>
-class ConstraintBasicVector final : public BasicVector<T> {
- public:
-  static constexpr int kSize = 3;
-  ConstraintBasicVector() : BasicVector<T>(VectorX<T>::Zero(kSize)) {}
-  BasicVector<T>* DoClone() const override { return new ConstraintBasicVector; }
-
-  // Declare a single constraint `this[0] >= bias`.
-  void CalcInequalityConstraint(VectorX<T>* value) const override {
-    value->resize(1);
-    (*value)[0] = (*this)[0] - T{bias};
-  }
-};
-
 // Tests constraints implied by BasicVector subtypes.
 GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   ConstraintTestSystem dut;
@@ -1495,6 +1502,15 @@ GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   EXPECT_THAT(constraint2.description(), ::testing::ContainsRegex(
       "^input 0 of type .*ConstraintBasicVector<double,33>$"));
 
+  // Declaring a constrained model vector output should add constraints.
+  // We want `vec[0] >= 44` on the output vector.
+  dut.DeclareVectorOutputPort(&ConstraintTestSystem::CalcOutput);
+  EXPECT_EQ(dut.get_num_constraints(), 4);
+  const SystemConstraint<double>& constraint3 = dut.get_constraint(Index{3});
+  EXPECT_FALSE(constraint3.is_equality_constraint());
+  EXPECT_THAT(constraint3.description(), ::testing::ContainsRegex(
+      "^output 0 of type .*ConstraintBasicVector<double,44>$"));
+
   // We'll work through the Calc results all at the end, so that we don't
   // change the shape of the System and Context while we're Calc'ing.
   auto context = dut.CreateDefaultContext();
@@ -1518,6 +1534,11 @@ GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   Eigen::VectorXd value2;
   constraint2.Calc(*context, &value2);
   EXPECT_TRUE(CompareMatrices(value2, Vector1<double>::Constant(-30.0)));
+
+  // `y0[0] >= 44.0` with `y0[0] == 4.0` produces `-40.0 >= 0.0`.
+  Eigen::VectorXd value3;
+  constraint3.Calc(*context, &value3);
+  EXPECT_TRUE(CompareMatrices(value3, Vector1<double>::Constant(-40.0)));
 }
 
 }  // namespace

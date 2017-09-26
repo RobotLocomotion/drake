@@ -8,7 +8,6 @@
 #include <memory>
 #include <utility>
 
-#include "drake/common/unused.h"
 #include "drake/systems/primitives/pass_through.h"
 
 namespace drake {

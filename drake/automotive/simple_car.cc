@@ -8,12 +8,10 @@
 #include <Eigen/Geometry>
 
 #include "drake/automotive/calc_smooth_acceleration.h"
-#include "drake/common/autodiff_overloads.h"
 #include "drake/common/cond.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/double_overloads.h"
 #include "drake/common/drake_assert.h"
-#include "drake/common/eigen_autodiff_types.h"
-#include "drake/common/symbolic.h"
 #include "drake/math/saturate.h"
 #include "drake/systems/framework/vector_base.h"
 
@@ -238,10 +236,9 @@ void SimpleCar<T>::CalcVelocityConstraint(const systems::Context<T>& context,
       Vector2<T>(params.max_velocity() - state.velocity(), state.velocity());
 }
 
-// These instantiations must match the API documentation in simple_car.h.
-template class SimpleCar<double>;
-template class SimpleCar<drake::AutoDiffXd>;
-template class SimpleCar<drake::symbolic::Expression>;
-
 }  // namespace automotive
 }  // namespace drake
+
+// These instantiations must match the API documentation in simple_car.h.
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::automotive::SimpleCar)

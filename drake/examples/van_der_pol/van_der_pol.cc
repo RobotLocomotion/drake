@@ -1,7 +1,6 @@
 #include "drake/examples/van_der_pol/van_der_pol.h"
 
-#include "drake/common/eigen_autodiff_types.h"
-#include "drake/common/symbolic_expression.h"
+#include "drake/common/default_scalars.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/system_constraint.h"
 
@@ -66,10 +65,9 @@ void VanDerPolOscillator<T>::CopyFullStateToOutput(
   output->SetFromVector(context.get_continuous_state_vector().CopyToVector());
 }
 
-template class VanDerPolOscillator<double>;
-template class VanDerPolOscillator<AutoDiffXd>;
-template class VanDerPolOscillator<symbolic::Expression>;
-
 }  // namespace van_der_pol
 }  // namespace examples
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::examples::van_der_pol::VanDerPolOscillator)

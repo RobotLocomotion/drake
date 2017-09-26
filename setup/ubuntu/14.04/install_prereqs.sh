@@ -71,6 +71,7 @@ oracle-java8-installer
 patchutils
 pkg-config
 python-dev
+python-gtk2
 python-lxml
 python-numpy
 python-pygame

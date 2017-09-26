@@ -41,6 +41,22 @@ class SystemImpl {
 
   // The implementation of System<T>::GetMemoryObjectName.
   static std::string GetMemoryObjectName(const std::string&, int64_t);
+
+ private:
+  // Attorney-Client idiom to expose a subset of private elements of System.
+  // We are the attorney.  These are the clients that can access our private
+  // members, and thus access some subset of System's private members.
+  template <typename> friend class Diagram;
+
+  // Return a mutable reference to the System's SystemScalarConverter.  Diagram
+  // needs this in order to withdraw support for certain scalar type conversion
+  // operations once it learns about what its subsystems support.
+  template <typename T>
+  static SystemScalarConverter& get_mutable_system_scalar_converter(
+      System<T>* system) {
+    DRAKE_DEMAND(system != nullptr);
+    return system->system_scalar_converter_;
+  }
 };
 /** @endcond */
 
@@ -1036,8 +1052,7 @@ class System {
   template <template <typename> class S = ::drake::systems::System>
   static std::unique_ptr<S<AutoDiffXd>> ToAutoDiffXd(const S<T>& from) {
     using U = AutoDiffXd;
-    const System<T>& from_system = from;  // Upcast to unlock protected methods.
-    std::unique_ptr<System<U>> base_result{from_system.DoToAutoDiffXd()};
+    std::unique_ptr<System<U>> base_result = from.ToAutoDiffXdMaybe();
     if (!base_result) {
       std::stringstream ss;
       ss << "The object named [" << from.get_name() << "] of type "
@@ -1051,8 +1066,6 @@ class System {
     std::unique_ptr<S<U>> result{&dynamic_cast<S<U>&>(*base_result)};
     base_result.release();
 
-    // Match the result's name to its originator.
-    result->set_name(from.get_name());
     return result;
   }
 
@@ -1060,7 +1073,8 @@ class System {
   /// returns nullptr if this System does not support autodiff, instead of
   /// throwing an exception.
   std::unique_ptr<System<AutoDiffXd>> ToAutoDiffXdMaybe() const {
-    std::unique_ptr<System<AutoDiffXd>> result{DoToAutoDiffXd()};
+    std::unique_ptr<System<AutoDiffXd>> result =
+        system_scalar_converter_.Convert<AutoDiffXd, T>(*this);
     if (result) {
       // Match the result's name to its originator.
       result->set_name(this->get_name());
@@ -1105,8 +1119,7 @@ class System {
   template <template <typename> class S = ::drake::systems::System>
   static std::unique_ptr<S<symbolic::Expression>> ToSymbolic(const S<T>& from) {
     using U = symbolic::Expression;
-    const System<T>& from_system = from;  // Upcast to unlock protected methods.
-    std::unique_ptr<System<U>> base_result{from_system.DoToSymbolic()};
+    std::unique_ptr<System<U>> base_result = from.ToSymbolicMaybe();
     if (!base_result) {
       std::stringstream ss;
       ss << "The object named [" << from.get_name() << "] of type "
@@ -1120,8 +1133,6 @@ class System {
     std::unique_ptr<S<U>> result{&dynamic_cast<S<U>&>(*base_result)};
     base_result.release();
 
-    // Match the result's name to its originator.
-    result->set_name(from.get_name());
     return result;
   }
 
@@ -1129,7 +1140,8 @@ class System {
   /// nullptr if this System does not support symbolic, instead of throwing an
   /// exception.
   std::unique_ptr<System<symbolic::Expression>> ToSymbolicMaybe() const {
-    std::unique_ptr<System<symbolic::Expression>> result{DoToSymbolic()};
+    std::unique_ptr<System<symbolic::Expression>> result =
+        system_scalar_converter_.Convert<symbolic::Expression, T>(*this);
     if (result) {
       // Match the result's name to its originator.
       result->set_name(this->get_name());
@@ -1584,18 +1596,6 @@ class System {
     DRAKE_THROW_UNLESS(qdot->size() == n);
     qdot->SetFromVector(generalized_velocity);
   }
-
-  /// NVI implementation of ToAutoDiffXdMaybe.
-  /// @return nullptr if this System does not support autodiff
-  virtual std::unique_ptr<System<AutoDiffXd>> DoToAutoDiffXd() const {
-    return system_scalar_converter_.Convert<AutoDiffXd, T>(*this);
-  }
-
-  /// NVI implementation of ToSymbolicMaybe.
-  /// @return nullptr if this System does not support symbolic form
-  virtual std::unique_ptr<System<symbolic::Expression>> DoToSymbolic() const {
-    return system_scalar_converter_.Convert<symbolic::Expression, T>(*this);
-  }
   //@}
 
 //----------------------------------------------------------------------------
@@ -1734,6 +1734,10 @@ class System {
   }
 
  private:
+  // Attorney-Client idiom to expose a subset of private elements of System.
+  // Refer to SystemImpl comments for details.
+  friend class SystemImpl;
+
   std::string name_;
   // input_ports_ and output_ports_ are vectors of unique_ptr so that references
   // to the descriptors will remain valid even if the vector is resized.
@@ -1754,7 +1758,7 @@ class System {
       forced_unrestricted_update_{nullptr};
 
   // Functions to convert this system to use alternative scalar types.
-  const SystemScalarConverter system_scalar_converter_;
+  SystemScalarConverter system_scalar_converter_;
 
   // TODO(sherm1) Replace these fake cache entries with real cache asap.
   // These are temporaries and hence uninitialized.

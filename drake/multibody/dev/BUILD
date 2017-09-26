@@ -10,6 +10,20 @@ load("//tools:gurobi.bzl", "gurobi_test_tags")
 load("//tools:lint.bzl", "add_lint_tests")
 
 drake_cc_library(
+    name = "time_stepping_rigid_body_plant",
+    srcs = ["time_stepping_rigid_body_plant.cc"],
+    hdrs = [
+        "time_stepping_rigid_body_plant.h",
+    ],
+    deps = [
+        "//drake/common",
+        "//drake/multibody/constraint",
+        "//drake/multibody/constraint:constraint_solver",
+        "//drake/multibody/rigid_body_plant",
+    ],
+)
+
+drake_cc_library(
     name = "global_inverse_kinematics_test_util",
     testonly = 1,
     srcs = [
@@ -26,6 +40,28 @@ drake_cc_library(
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/parsers",
         "@gtest//:without_main",
+    ],
+)
+
+drake_cc_googletest(
+    name = "quadrotor_test",
+    srcs = ["test/quadrotor_test.cc"],
+    data = ["//drake/examples/quadrotor:models"],
+    deps = [
+        ":time_stepping_rigid_body_plant",
+        "//drake/common:find_resource",
+        "//drake/examples/quadrotor:quadrotor_plant",
+        "//drake/lcm",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/multibody:rigid_body_tree_construction",
+        "//drake/multibody/parsers",
+        "//drake/multibody/rigid_body_plant",
+        "//drake/multibody/rigid_body_plant:drake_visualizer",
+        "//drake/systems/analysis:semi_explicit_euler_integrator",
+        "//drake/systems/analysis:simulator",
+        "//drake/systems/framework:diagram",
+        "//drake/systems/primitives:constant_vector_source",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 

@@ -128,6 +128,14 @@ exports_files(
     visibility = ["@libbot//:__pkg__"],
 )
 
+exports_files(
+    [
+        "install/libbot/bot-procman-sheriff",
+        "install/libbot/build_prefix.py",
+    ],
+    visibility = ["@libbot//:__pkg__"],
+)
+
 exports_create_cps_scripts([
     "bullet",
     "ccd",

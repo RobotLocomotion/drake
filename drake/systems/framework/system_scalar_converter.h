@@ -74,18 +74,8 @@ class SystemScalarConverter {
   /// See @ref system_scalar_conversion for additional overview documentation.
   template <template <typename> class S>
   // NOLINTNEXTLINE(runtime/explicit)
-  SystemScalarConverter(SystemTypeTag<S>) : SystemScalarConverter() {
-    using Expression = symbolic::Expression;
-    // From double to all other types.
-    AddIfSupported<S, AutoDiffXd, double>();
-    AddIfSupported<S, Expression, double>();
-    // From AutoDiffXd to all other types.
-    AddIfSupported<S, double,     AutoDiffXd>();
-    AddIfSupported<S, Expression, AutoDiffXd>();
-    // From Expression to all other types.
-    AddIfSupported<S, double,     Expression>();
-    AddIfSupported<S, AutoDiffXd, Expression>();
-  }
+  SystemScalarConverter(SystemTypeTag<S> tag)
+      : SystemScalarConverter(tag, GuaranteedSubtypePreservation::kEnabled) {}
 
   /// A configuration option for our constructor, controlling whether or not
   /// the Convert implementation requires that the System subclass type is
@@ -101,17 +91,25 @@ class SystemScalarConverter {
     kDisabled,
   };
 
-  /// (Advanced.)  Creates using S's scalar-type converting copy constructor.
+  /// (Advanced)  Creates using S's scalar-type converting copy constructor.
   /// Behaves exactly like SystemScalarConverter(SystemTypeTag<S>), but with
   /// the additional option to turn off guaranteed subtype preservation of the
   /// System being converted.  In general, subtype preservation is an important
   /// invariant during scalar conversion, so be cautious about disabling it.
   template <template <typename> class S>
   SystemScalarConverter(
-      SystemTypeTag<S> tag, GuaranteedSubtypePreservation subtype_preservation)
-      : SystemScalarConverter(tag) {
-    subtype_preservation_ =
-        (subtype_preservation == GuaranteedSubtypePreservation::kEnabled);
+      SystemTypeTag<S>, GuaranteedSubtypePreservation subtype_preservation)
+      : SystemScalarConverter() {
+    using Expression = symbolic::Expression;
+    // From double to all other types.
+    AddIfSupported<S, AutoDiffXd, double>(subtype_preservation);
+    AddIfSupported<S, Expression, double>(subtype_preservation);
+    // From AutoDiffXd to all other types.
+    AddIfSupported<S, double,     AutoDiffXd>(subtype_preservation);
+    AddIfSupported<S, Expression, AutoDiffXd>(subtype_preservation);
+    // From Expression to all other types.
+    AddIfSupported<S, double,     Expression>(subtype_preservation);
+    AddIfSupported<S, AutoDiffXd, Expression>(subtype_preservation);
   }
 
   /// A std::function used to convert a System<U> into a System<T>.
@@ -128,7 +126,9 @@ class SystemScalarConverter {
   /// says its supported.  The converter uses S's scalar-type converting copy
   /// constructor.
   template <template <typename> class S, typename T, typename U>
-  void AddIfSupported();
+  void AddIfSupported() {
+    AddIfSupported<S, T, U>(GuaranteedSubtypePreservation::kEnabled);
+  }
 
   /// Removes from this converter all pairs where `other.IsConvertible<T, U>`
   /// is false.  The subtype `S` need not be the same between this and `other`.
@@ -162,6 +162,10 @@ class SystemScalarConverter {
     size_t operator()(const Key&) const;
   };
 
+  // An overload of AddIfSupported that offers to disable subtype preservation.
+  template <template <typename> class S, typename T, typename U>
+  void AddIfSupported(GuaranteedSubtypePreservation subtype_preservation);
+
   // Given typeid(T), typeid(U), returns a converter.  If no converter has been
   // added yet, returns nullptr.
   const ErasedConverterFunc* Find(
@@ -174,9 +178,6 @@ class SystemScalarConverter {
 
   // Maps from {T, U} to the function that converts from U into T.
   std::unordered_map<Key, ErasedConverterFunc, KeyHasher> funcs_;
-
-  // True iff our GuaranteedSubtypePreservation is enabled.
-  bool subtype_preservation_{true};
 };
 
 #if !defined(DRAKE_DOXYGEN_CXX)
@@ -218,8 +219,8 @@ namespace system_scalar_converter_detail {
 template <template <typename> class S, typename T, typename U>
 static std::unique_ptr<System<T>> Make(
     bool subtype_preservation, const System<U>& other, std::true_type) {
-  // We require that system scalar conversion maintain the exact system type.
-  // Fail fast if `other` is not of exact type S<U>.
+  // We conditionally require that system scalar conversion maintain the exact
+  // system type.  Fail fast if `other` is not of exact type S<U>.
   if (subtype_preservation &&
       (std::type_index{typeid(other)} != std::type_index{typeid(S<U>)})) {
     std::ostringstream msg;
@@ -243,16 +244,19 @@ static std::unique_ptr<System<T>> Make(
 }  // namespace system_scalar_converter_detail
 
 template <template <typename> class S, typename T, typename U>
-void SystemScalarConverter::AddIfSupported() {
+void SystemScalarConverter::AddIfSupported(
+    GuaranteedSubtypePreservation subtype_preservation) {
   using supported =
       typename scalar_conversion::Traits<S>::template supported<T, U>;
   if (supported::value) {
-    const ConverterFunction<T, U> func = [this](const System<U>& other) {
+    const ConverterFunction<T, U> func = [subtype_preservation](
+        const System<U>& other) {
       // Dispatch to an overload based on whether S<U> ==> S<T> is supported.
       // (At runtime, this block is only executed for supported conversions,
       // but at compile time, Make will be instantiated unconditionally.)
       return system_scalar_converter_detail::Make<S, T, U>(
-          this->subtype_preservation_, other, supported{});
+          (subtype_preservation == GuaranteedSubtypePreservation::kEnabled),
+          other, supported{});
     };
     Add(func);
   }

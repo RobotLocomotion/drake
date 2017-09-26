@@ -1,9 +1,6 @@
 #include "drake/systems/primitives/matrix_gain.h"
 
-#include "drake/common/autodiff_overloads.h"
-#include "drake/common/eigen_autodiff_types.h"
-#include "drake/common/eigen_types.h"
-#include "drake/common/symbolic.h"
+#include "drake/common/default_scalars.h"
 
 namespace drake {
 namespace systems {
@@ -31,9 +28,8 @@ template <typename U>
 MatrixGain<T>::MatrixGain(const MatrixGain<U>& other)
     : MatrixGain<T>(other.D()) {}
 
-template class MatrixGain<double>;
-template class MatrixGain<AutoDiffXd>;
-template class MatrixGain<symbolic::Expression>;
-
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::MatrixGain)

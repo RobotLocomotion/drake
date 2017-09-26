@@ -123,6 +123,19 @@ class SystemSymbolicInspectorTest : public ::testing::Test {
   std::unique_ptr<SystemSymbolicInspector> inspector_;
 };
 
+class PendulumInspectorTest : public ::testing::Test {
+ public:
+  PendulumInspectorTest() : system_() {}
+
+ protected:
+  void SetUp() override {
+    inspector_ = std::make_unique<SystemSymbolicInspector>(system_);
+  }
+
+  examples::pendulum::PendulumPlant<symbolic::Expression> system_;
+  std::unique_ptr<SystemSymbolicInspector> inspector_;
+};
+
 // Tests that the SystemSymbolicInspector infers, from the symbolic equations of
 // the System, that input 1 does not affect output 0.
 TEST_F(SystemSymbolicInspectorTest, InputToOutput) {
@@ -166,22 +179,47 @@ TEST_F(SystemSymbolicInspectorTest, ConstraintTest) {
 TEST_F(SystemSymbolicInspectorTest, IsTimeInvariant) {
   // The derivatives depends on t.
   EXPECT_FALSE(inspector_->IsTimeInvariant());
+}
 
-  examples::pendulum::PendulumPlant<symbolic::Expression> pendulum;
-  const auto pendulum_inspector =
-      std::make_unique<SystemSymbolicInspector>(pendulum);
-
-  EXPECT_TRUE(pendulum_inspector->IsTimeInvariant());
+TEST_F(PendulumInspectorTest, IsTimeInvariant) {
+  EXPECT_TRUE(inspector_->IsTimeInvariant());
 }
 
 TEST_F(SystemSymbolicInspectorTest, HasAffineDynamics) {
   EXPECT_TRUE(inspector_->HasAffineDynamics());
+}
 
-  examples::pendulum::PendulumPlant<symbolic::Expression> pendulum;
-  const auto pendulum_inspector =
-      std::make_unique<SystemSymbolicInspector>(pendulum);
+TEST_F(PendulumInspectorTest, HasAffineDynamics) {
+  EXPECT_FALSE(inspector_->HasAffineDynamics());
+}
 
-  EXPECT_FALSE(pendulum_inspector->HasAffineDynamics());
+TEST_F(PendulumInspectorTest, SymbolicParameters) {
+  auto params = inspector_->numeric_parameters(0);
+
+  using examples::pendulum::PendulumParamsIndices;
+  EXPECT_EQ(params.size(), PendulumParamsIndices::kNumCoordinates);
+
+  // Test that the damping parameter appears with the correct order in the
+  // derivatives and output methods.
+  symbolic::Variables v({params[PendulumParamsIndices::kDamping]});
+
+  auto derivatives = inspector_->derivatives();
+  EXPECT_EQ(symbolic::Polynomial(derivatives[0], v).TotalDegree(), 0);
+
+  EXPECT_FALSE(derivatives[1].is_polynomial());
+  // Set theta, mass, and length so the remaining derivatives are polynomial.
+  // TODO(soonho): remove the substitution pending resolution of #7089.
+  symbolic::Substitution sub;
+  sub.emplace(inspector_->continuous_state()[0], 1.0);
+  sub.emplace(inspector_->numeric_parameters(0)[0], 2.0);
+  sub.emplace(inspector_->numeric_parameters(0)[1], 3.0);
+  derivatives[1] = derivatives[1].Substitute(sub);
+  EXPECT_TRUE(derivatives[1].is_polynomial());
+  EXPECT_EQ(symbolic::Polynomial(derivatives[1], v).TotalDegree(), 1);
+
+  auto output = inspector_->output(0);
+  EXPECT_EQ(symbolic::Polynomial(output[0], v).TotalDegree(), 0);
+  EXPECT_EQ(symbolic::Polynomial(output[1], v).TotalDegree(), 0);
 }
 
 }  // namespace

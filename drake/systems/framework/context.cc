@@ -1,11 +1,9 @@
 #include "drake/systems/framework/context.h"
 
-namespace drake {
-namespace systems {
+#include "drake/common/default_scalars.h"
 
-template struct StepInfo<double>;
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    struct ::drake::systems::StepInfo)
 
-template class Context<double>;
-
-}  // namespace systems
-}  // namespace drake
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::Context)

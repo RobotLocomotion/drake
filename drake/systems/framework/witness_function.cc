@@ -1,6 +1,6 @@
 #include "drake/systems/framework/witness_function.h"
 
-#include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/default_scalars.h"
 #include "drake/systems/framework/system.h"
 
 namespace drake {
@@ -12,11 +12,13 @@ T WitnessFunction<T>::Evaluate(const Context<T>& context) const {
   return DoEvaluate(context);
 }
 
-template class WitnessFunction<double>;
-template class WitnessFunction<AutoDiffXd>;
+// The Vector2/3 instantiations here are for the benefit of some
+// older unit tests but are not otherwise advertised.
 template class WitnessFunction<Eigen::AutoDiffScalar<Eigen::Vector2d>>;
 template class WitnessFunction<Eigen::AutoDiffScalar<Eigen::Vector3d>>;
-template class WitnessFunction<symbolic::Expression>;
 
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::WitnessFunction)
