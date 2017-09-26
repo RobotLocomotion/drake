@@ -22,6 +22,145 @@ namespace drake {
 namespace systems {
 namespace {
 
+/// An empty system that can set an arbitrary periodic discrete update.
+template <class T>
+class EmptySystem : public LeafSystem<T> {
+ public:
+  ~EmptySystem() override {}
+
+  // Adds an arbitrary periodic discrete update.
+  void AddPeriodicDiscreteUpdate() {
+    const double default_period = 1.0;
+    const double default_offset = 2.0;
+    this->DeclarePeriodicDiscreteUpdate(default_period, default_offset);
+  }
+};
+
+/// A diagram of purely empty systems used for testing that diagram
+/// mechanics are working for periodic discrete update events.
+class EmptySystemDiagram : public Diagram<double> {
+ public:
+  enum UpdateType {
+    kTwoUpdatesPerLevel,
+    kOneUpdatePerLevelSys1,
+    kOneUpdatePerLevelSys2,
+    kOneUpdateAtLastLevelSys1,
+    kOneUpdateAtLastLevelSys2,
+    kTwoUpdatesAtLastLevel,
+  };
+
+  EmptySystemDiagram(UpdateType num_periodic_discrete_updates,
+                     int recursion_depth) {
+    DiagramBuilder<double> builder;
+
+    // Add in two empty systems.
+    auto sys1 = builder.AddSystem<EmptySystem<double>>();
+    auto sys2 = builder.AddSystem<EmptySystem<double>>();
+
+    switch (num_periodic_discrete_updates) {
+      case kTwoUpdatesPerLevel:
+        sys1->AddPeriodicDiscreteUpdate();
+        sys2->AddPeriodicDiscreteUpdate();
+        break;
+
+      case kOneUpdatePerLevelSys1:
+        sys1->AddPeriodicDiscreteUpdate();
+        break;
+
+      case kOneUpdatePerLevelSys2:
+        sys2->AddPeriodicDiscreteUpdate();
+        break;
+
+      case kOneUpdateAtLastLevelSys1:
+        if (recursion_depth == 0)
+          sys1->AddPeriodicDiscreteUpdate();
+        break;
+
+      case kOneUpdateAtLastLevelSys2:
+        if (recursion_depth == 0)
+          sys2->AddPeriodicDiscreteUpdate();
+        break;
+
+      case kTwoUpdatesAtLastLevel:
+        if (recursion_depth == 0) {
+          sys1->AddPeriodicDiscreteUpdate();
+          sys2->AddPeriodicDiscreteUpdate();
+        }
+        break;
+    }
+
+    // Now add a sub-StatelessDiagram with one less recursion depth (if the
+    // recursion depth is not zero).
+    if (recursion_depth > 0) {
+      builder.AddSystem<EmptySystemDiagram>(
+        num_periodic_discrete_updates,
+        recursion_depth - 1);
+    }
+    builder.BuildInto(this);
+  }
+};
+
+void CheckPeriodAndOffset(double update_period_sec, double update_offset_sec) {
+  EXPECT_EQ(update_period_sec, 1.0);
+  EXPECT_EQ(update_offset_sec, 2.0);
+}
+
+// Tests whether the diagram exhibits the correct behavior for
+// GetNumPeriodicDiscreteUpdates()
+GTEST_TEST(EmptySystemDiagramTest, CheckPeriodicTriggerDiscreteUpdate) {
+  // Check diagrams with no recursion.
+  double update_period_sec, update_offset_sec;
+  EmptySystemDiagram d_sys2upd_zero(
+      EmptySystemDiagram::kOneUpdatePerLevelSys1, 0);
+  EmptySystemDiagram d_sys1upd_zero(
+      EmptySystemDiagram::kOneUpdatePerLevelSys2, 0);
+  EmptySystemDiagram d_bothupd_zero(EmptySystemDiagram::kTwoUpdatesPerLevel, 0);
+  EXPECT_EQ(d_sys2upd_zero.GetNumPeriodicDiscreteUpdates(
+      &update_period_sec, &update_offset_sec), 1);
+  CheckPeriodAndOffset(update_period_sec, update_offset_sec);
+  EXPECT_EQ(d_sys1upd_zero.GetNumPeriodicDiscreteUpdates(
+      &update_period_sec, &update_offset_sec), 1);
+  CheckPeriodAndOffset(update_period_sec, update_offset_sec);
+  EXPECT_EQ(d_bothupd_zero.GetNumPeriodicDiscreteUpdates(
+      &update_period_sec, &update_offset_sec), 2);
+
+  // Check systems with up to three levels of recursion.
+  for (int i = 1; i <= 3; ++i) {
+    // Create the systems.
+    EmptySystemDiagram d_sys1upd(
+        EmptySystemDiagram::kOneUpdatePerLevelSys1, i);
+    EmptySystemDiagram d_sys2upd(
+        EmptySystemDiagram::kOneUpdatePerLevelSys2, i);
+    EmptySystemDiagram d_bothupd(
+        EmptySystemDiagram::kTwoUpdatesPerLevel, i);
+    EmptySystemDiagram d_sys1_last(
+        EmptySystemDiagram::kOneUpdateAtLastLevelSys1, i);
+    EmptySystemDiagram d_sys2_last(
+        EmptySystemDiagram::kOneUpdateAtLastLevelSys2, i);
+    EmptySystemDiagram d_both_last(
+        EmptySystemDiagram::kTwoUpdatesAtLastLevel, i);
+
+    // Most of these should return 'false'; chech those.
+    EXPECT_EQ(d_sys1upd.GetNumPeriodicDiscreteUpdates(
+        &update_period_sec, &update_offset_sec), i + 1);
+    EXPECT_EQ(d_sys2upd.GetNumPeriodicDiscreteUpdates(
+        &update_period_sec, &update_offset_sec), i + 1);
+    EXPECT_EQ(d_bothupd.GetNumPeriodicDiscreteUpdates(
+        &update_period_sec, &update_offset_sec), 2 * (i + 1));
+    EXPECT_EQ(d_both_last.GetNumPeriodicDiscreteUpdates(
+        &update_period_sec, &update_offset_sec), 2);
+
+    // The ones with the one update per level are the only ones that should
+    // return `true`.
+    EXPECT_EQ(d_sys1_last.GetNumPeriodicDiscreteUpdates(
+        &update_period_sec, &update_offset_sec), 1);
+    CheckPeriodAndOffset(update_period_sec, update_offset_sec);
+    EXPECT_EQ(d_sys2_last.GetNumPeriodicDiscreteUpdates(
+        &update_period_sec, &update_offset_sec), 1);
+    CheckPeriodAndOffset(update_period_sec, update_offset_sec);
+  }
+}
+
 /// ExampleDiagram has the following structure:
 /// adder0_: (input0_ + input1_) -> A
 /// adder1_: (A + input2_)       -> B, output 0
@@ -979,7 +1118,12 @@ const double kTestPublishPeriod = 19.0;
 
 class TestPublishingSystem : public LeafSystem<double> {
  public:
-  TestPublishingSystem() { this->DeclarePeriodicPublish(kTestPublishPeriod); }
+  TestPublishingSystem() {
+    this->DeclarePeriodicPublish(kTestPublishPeriod);
+    double dummy_period, dummy_offset;
+    EXPECT_EQ(this->GetNumPeriodicDiscreteUpdates(
+        &dummy_period, &dummy_offset), false);
+  }
 
   ~TestPublishingSystem() override {}
 
@@ -1142,6 +1286,9 @@ class SystemWithAbstractState : public LeafSystem<double> {
  public:
   SystemWithAbstractState(int id, double update_period) : id_(id) {
     DeclarePeriodicUnrestrictedUpdate(update_period, 0);
+    double dummy_period, dummy_offset;
+    EXPECT_EQ(this->GetNumPeriodicDiscreteUpdates(
+        &dummy_period, &dummy_offset), false);
   }
 
   ~SystemWithAbstractState() override {}
@@ -1624,6 +1771,9 @@ class MyEventTestSystem : public LeafSystem<double> {
   MyEventTestSystem(const std::string& name, double p) {
     if (p > 0) {
       DeclarePeriodicPublish(p);
+      double dummy_period, dummy_offset;
+      EXPECT_EQ(this->GetNumPeriodicDiscreteUpdates(
+          &dummy_period, &dummy_offset), false);
     } else {
       DeclarePerStepEvent<PublishEvent<double>>(
           PublishEvent<double>(Event<double>::TriggerType::kPerStep));

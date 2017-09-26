@@ -37,11 +37,21 @@ class TestSystem : public LeafSystem<T> {
     const double period = 10.0;
     const double offset = 5.0;
     this->DeclarePeriodicDiscreteUpdate(period, offset);
+    double update_period, update_offset;
+    EXPECT_EQ(this->GetNumPeriodicDiscreteUpdates
+      (&update_period, &update_offset), true);
+    EXPECT_EQ(update_period, period);
+    EXPECT_EQ(update_offset, offset);
   }
 
   void AddPeriodicUpdate(double period) {
     const double offset = 0.0;
     this->DeclarePeriodicDiscreteUpdate(period, offset);
+    double update_period, update_offset;
+    EXPECT_EQ(this->GetNumPeriodicDiscreteUpdates
+      (&update_period, &update_offset), true);
+    EXPECT_EQ(update_period, period);
+    EXPECT_EQ(update_offset, 0.0);
   }
 
   void AddPeriodicUnrestrictedUpdate(double period, double offset) {

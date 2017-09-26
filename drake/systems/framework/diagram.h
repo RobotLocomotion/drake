@@ -1295,6 +1295,29 @@ class Diagram : public System<T>,
     }
   }
 
+  int DoGetNumPeriodicDiscreteUpdates(
+      double* unique_update_period_sec,
+      double* unique_update_offset_sec) const override {
+    DRAKE_DEMAND(unique_update_period_sec);
+    DRAKE_DEMAND(unique_update_offset_sec);
+    double dummy_update_period_sec, dummy_update_offset_sec;
+    int return_count = 0;
+    for (int i = 0; i < num_subsystems(); ++i) {
+      // We do not just pass in the update_period_sec and update_offset_sec
+      // directly, because GetNumPeriodicDiscreteUpdates
+      // is not required to leave those values untouched on `false` return.
+      return_count += registered_systems_[i]->
+          GetNumPeriodicDiscreteUpdates(
+              &dummy_update_period_sec, &dummy_update_offset_sec);
+      if (return_count == 1) {
+        *unique_update_period_sec = dummy_update_period_sec;
+        *unique_update_offset_sec = dummy_update_offset_sec;
+      }
+    }
+
+    return return_count;
+  }
+
   void DoGetPerStepEvents(
       const Context<T>& context,
       CompositeEventCollection<T>* event_info) const override {

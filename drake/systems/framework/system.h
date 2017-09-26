@@ -552,6 +552,31 @@ class System {
     DoGetPerStepEvents(context, events);
   }
 
+  /// Gets the number of periodic triggers mapping to discrete update events
+  /// and returns the unique period and offset parameters, if there is exactly
+  /// one such trigger. Thus, this method can be used (1) as a test to
+  /// determine whether a system's dynamics are at least partially governed by
+  /// difference equations and (2) to obtain the difference equation update
+  /// times.
+  /// @param[out] unique_update_period_sec Contains the update period (in
+  ///             seconds) on return of `1` from this function (undefined on
+  ///             other return values). Validated to be non-null by
+  ///             GetSinglePeriodicTriggerWithDiscreteUpdateAttribute().
+  /// @param[out] unique_update_offset_sec Contains the update offset (in
+  ///             seconds) on return of `1` from this function (undefined on
+  ///             other return values). Validated to be non-null by
+  ///             GetSinglePeriodicTriggerWithDiscreteUpdateAttribute().
+  /// @returns The number of periodic triggers mapping to discrete update
+  ///          events.
+  virtual int GetNumPeriodicDiscreteUpdates(
+      double* unique_update_period_sec,
+      double* unique_update_offset_sec) const {
+    DRAKE_DEMAND(unique_update_period_sec);
+    DRAKE_DEMAND(unique_update_offset_sec);
+    return DoGetNumPeriodicDiscreteUpdates(
+        unique_update_period_sec, unique_update_offset_sec);
+  }
+
   /// Utility method that computes for _every_ output port i the value y(i) that
   /// should result from the current contents of the given Context. Note that
   /// individual output port values can be calculated using
@@ -1408,6 +1433,23 @@ class System {
                                     T* time) const {
     unused(context, events);
     *time = std::numeric_limits<T>::infinity();
+  }
+
+  /// Implement this method to return the attributes of the single periodic
+  /// trigger that activates discrete update events, or otherwise indicate
+  /// that no such triggers or multiple such triggers exist. Method must
+  /// return the number of periodic triggers mapping to discrete updates in
+  /// any case. `update_period_sec` and `update_offset_sec` must be populated
+  /// with the period and offset of the only such periodic trigger / discrete
+  /// update pair on return.
+  /// @see GetNumPeriodicDiscreteUpdates() for description of function
+  ///      parameters and output, which are identical.
+  /// @note The default implementation returns zero and does not touch the
+  ///       output parameters.
+  virtual int DoGetNumPeriodicDiscreteUpdates(
+      double* update_period_sec,
+      double* update_offset_sec) const {
+    return 0;
   }
 
   /// Implement this method to return any events to be handled before the

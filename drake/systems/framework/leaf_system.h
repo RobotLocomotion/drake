@@ -307,6 +307,31 @@ class LeafSystem : public System<T> {
             UnrestrictedUpdateEvent<T>>::MakeForcedEventCollection());
   }
 
+  int DoGetNumPeriodicDiscreteUpdates(
+      double* update_period_sec,
+      double* update_offset_sec) const override {
+    // If there are no periodic events, can do an early exit.
+    if (periodic_events_.empty())
+      return 0;
+
+    // Count the number of periodic triggers.
+    int discrete_update_count = 0;
+    for (auto& periodic_event : periodic_events_) {
+      // If the event is not a discrete update event, continue looping.
+      if (!dynamic_cast<DiscreteUpdateEvent<T>*>(periodic_event.second.get()))
+        continue;
+
+      const typename Event<T>::PeriodicAttribute& period_info =
+          periodic_event.first;
+      if (discrete_update_count++ == 0) {
+        *update_period_sec = period_info.period_sec;
+        *update_offset_sec = period_info.offset_sec;
+      }
+    }
+
+    return discrete_update_count;
+  }
+
   std::unique_ptr<System<AutoDiffXd>> DoToAutoDiffXd() const final {
     return System<T>::DoToAutoDiffXd();
   }
