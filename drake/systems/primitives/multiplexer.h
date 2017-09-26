@@ -16,6 +16,8 @@ namespace systems {
 ///
 /// Instantiated templates for the following `T` values are provided:
 /// - double
+/// - AutoDiffXd
+/// - symbolic::Expression
 ///
 /// They are already available to link against in the containing library.
 /// Currently, no other values for `T` are supported.
