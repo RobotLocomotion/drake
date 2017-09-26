@@ -7,7 +7,7 @@ load(
     "drake_cc_binary",
     "drake_cc_googletest",
 )
-load("//tools:install_data.bzl", "install_data")
+load("//tools:install_data.bzl", "install", "install_data")
 load("//tools:lint.bzl", "add_lint_tests")
 
 package(
@@ -172,6 +172,12 @@ drake_cc_googletest(
     deps = [
         "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
     ],
+)
+
+install(
+    name = "install",
+    visibility = ["//visibility:public"],
+    targets = [":kuka_plan_runner"]
 )
 
 install_data()

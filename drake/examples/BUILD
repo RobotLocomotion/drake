@@ -63,10 +63,18 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
+INSTALLED_EXAMPLES = [
+    "//drake/examples/kuka_iiwa_arm"
+]
+
 install(
-    name = "install_data",
+    name = "install",
     visibility = ["//visibility:public"],
-    deps = [package + ":install_data" for package in INSTALLED_MODEL_PACKAGES],
+    deps = [
+            package + ":install_data" for package in INSTALLED_MODEL_PACKAGES
+           ] + [
+            package + ":install" for package in INSTALLED_EXAMPLES
+           ],
 )
 
 add_lint_tests()
