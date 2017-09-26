@@ -563,7 +563,7 @@ class PendulumKinematicTests : public PendulumTests {
   /// MultibodyTree::CalcForceElementsContribution() to compute the vector of
   /// generalized forces due to gravity.
   /// Generalized forces due to gravity are a function of positions only and are
-  /// denoted by G(q).
+  /// denoted by tau_g(q).
   /// The solution is verified against the independent benchmark from
   /// drake::multibody::benchmarks::Acrobot.
   Vector2d VerifyGravityTerm(
@@ -581,11 +581,11 @@ class PendulumKinematicTests : public PendulumTests {
 
     PositionKinematicsCache<double> pc(model_->get_topology());
     VelocityKinematicsCache<double> vc(model_->get_topology());
-    // Even though G(q) only depends on positions, other velocity dependent
+    // Even though tau_g(q) only depends on positions, other velocity dependent
     // forces (for instance damping) could depend on velocities. Therefore we
-    // set the velocity kinematics cache entries to zero so that only G(q) gets
-    // computed (at least for this pendulum model that only includes gravity
-    // and damping).
+    // set the velocity kinematics cache entries to zero so that only tau_g(q)
+    // gets computed (at least for this pendulum model that only includes
+    // gravity and damping).
     vc.InitializeToZero();
 
     // ======================================================================
@@ -615,7 +615,7 @@ class PendulumKinematicTests : public PendulumTests {
 
     // ======================================================================
     // Compute expected values using the acrobot benchmark.
-    const Vector2d G_expected = acrobot_benchmark_.CalcGravityVector(
+    const Vector2d tau_g_expected = acrobot_benchmark_.CalcGravityVector(
         shoulder_angle, elbow_angle);
 
     // ======================================================================
@@ -634,8 +634,8 @@ class PendulumKinematicTests : public PendulumTests {
     model_->CalcInverseDynamics(
         *context_, pc, vc, vdot, Fapplied_Bo_W_array, tau_applied,
         &A_WB_array, &F_BMo_W_array, &tau);
-    // The result from inverse dynamics must be tau = -G(q).
-    EXPECT_TRUE(tau.isApprox(-G_expected, kTolerance));
+    // The result from inverse dynamics must be tau = -tau_g(q).
+    EXPECT_TRUE(tau.isApprox(-tau_g_expected, kTolerance));
 
     // Now try using the same arrays for input/output (input data
     // Fapplied_Bo_W_array will get overwritten through the output argument).
@@ -643,8 +643,8 @@ class PendulumKinematicTests : public PendulumTests {
     model_->CalcInverseDynamics(
         *context_, pc, vc, vdot, Fapplied_Bo_W_array, tau_applied,
         &A_WB_array, &Fapplied_Bo_W_array, &tau_applied);
-    // The result from inverse dynamics must be tau = -G(q).
-    EXPECT_TRUE(tau.isApprox(-G_expected, kTolerance));
+    // The result from inverse dynamics must be tau = -tau_g(q).
+    EXPECT_TRUE(tau.isApprox(-tau_g_expected, kTolerance));
 
     // Compute the system's potential energy:
     const double V_expected =
