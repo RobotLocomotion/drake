@@ -30,7 +30,7 @@ class JointModelBuilder;
 /// sometimes used synonymously to describe the relationship between inboard and
 /// outboard bodies in multibody models, this usage is wholly unrelated and
 /// implies nothing about the inboard-outboard relationship between the bodies.
-/// A %Joint is a model of a physical kinematic contraint between two rigid
+/// A %Joint is a model of a physical kinematic constraint between two rigid
 /// bodies, a constraint that in the real physical system does not even allude
 /// to the ordering of the bodies.
 ///
@@ -69,7 +69,7 @@ class JointModelBuilder;
 ///
 /// @warning Do not ever attempt to instantiate and manipulate %Joint objects
 /// on the stack; it will fail. Add joints to your model using the provided API
-/// MultibodyTree::AddJoint() as in the axample above.
+/// MultibodyTree::AddJoint() as in the example above.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 template <typename T>
@@ -85,14 +85,14 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   /// @param[in] name
   ///   A string with a name identifying `this` joint.
   /// @param[in] parent_body
-  ///   One of the rigid bodies connected by this joint.
+  ///   The parent body connected to this joint.
   /// @param[in] X_PF
   ///   The pose of frame F rigidly attached to the parent body, measured in
   ///   the frame P of that body. `X_PF` equal to the identity transform implies
   ///   frame F _is_ the same frame P. If that is intended, provide
   ///   `Isometry3<T>::Identity()` as your input.
   /// @param[in] child_body
-  ///   One of the rigid bodies connected by this joint.
+  ///   The child body connected to this joint.
   /// @param[in] X_BM
   ///   The pose of frame M rigidly attached to the child body, measured in
   ///   the frame B of that body. `X_BM` equal to the identity transform implies
@@ -287,7 +287,7 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   }
 
  private:
-  // Make any other Joint<U> a friend of Joint<T> so they can make
+  // Make all other Joint<U> objects a friend of Joint<T> so they can make
   // Joint<ToScalar>::JointModel from CloneToScalar<ToScalar>().
   template <typename> friend class Joint;
 

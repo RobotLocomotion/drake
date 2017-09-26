@@ -22,7 +22,7 @@ template <typename T>
 class JointModelBuilder {
  public:
   JointModelBuilder() = delete;
-  static void Build(Joint<T> *joint, MultibodyTree<T> *tree) {
+  static void Build(Joint<T>* joint, MultibodyTree<T>* tree) {
     std::unique_ptr<JointBluePrint> blue_print = joint->MakeModelBlueprint();
     auto model = std::make_unique<JointModel>(*blue_print);
     DRAKE_DEMAND(model->get_num_mobilizers() != 0);

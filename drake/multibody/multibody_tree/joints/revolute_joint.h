@@ -72,9 +72,13 @@ class RevoluteJoint final : public Joint<T> {
     return axis_;
   }
 
+  /// @name Context-dependent value access
+  ///
+  /// These methods require the provided context to be an instance of
+  /// MultibodyTreeContext. Failure to do so leads to a std::logic_error.
+  /// @{
+
   /// Gets the rotation angle of `this` mobilizer from `context`.
-  /// @throws std::logic_error if the parent MultibodyModeler of `this` joint
-  /// was not finalized, @see MultibodyModeler::Finalize().
   /// @param[in] context
   ///   The context of the MultibodyTree this joint belongs to.
   /// @returns The angle coordinate of `this` joint stored in the `context`.
@@ -84,7 +88,6 @@ class RevoluteJoint final : public Joint<T> {
 
   /// Sets the `context` so that the generalized coordinate corresponding to the
   /// rotation angle of `this` joint equals `angle`.
-  /// @throws std::logic_error if `context` is not a valid MultibodyTreeContext.
   /// @param[in] context
   ///   The context of the MultibodyTree this joint belongs to.
   /// @param[in] angle
@@ -120,6 +123,8 @@ class RevoluteJoint final : public Joint<T> {
     get_mobilizer()->set_angular_rate(context, angle);
     return *this;
   }
+
+  /// @}
 
  protected:
   // Joint<T> overrides:
