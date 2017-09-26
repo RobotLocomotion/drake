@@ -1,6 +1,8 @@
 #include "traffic_light_aware_controller.h"
 
 namespace drake {
+using std::cout;
+using std::endl;
 using std::pow;
 using systems::BasicVector;
 using systems::Context;
@@ -8,12 +10,13 @@ using systems::System;
 
 namespace automotive {
 
+
 template <typename T>
 TrafficLightAwareController<T>::TrafficLightAwareController()
    : car_state_input_index_{ this->DeclareAbstractInputPort().get_index() },
      acceleration_input_index_{ this->DeclareAbstractInputPort().get_index() },
      traffic_light_input_index_{ this->DeclareAbstractInputPort().get_index() },
-     output_index_{ this->DeclareVectorOutputPort( BasicVector<T>(1),
+     output_index_{ this->DeclareVectorOutputPort( BasicVector<T>(2),
                     &TrafficLightAwareController::DoCalcOutput).get_index() }
 
  {
@@ -56,29 +59,17 @@ void TrafficLightAwareController<T>::DoCalcOutput( const systems::Context<T>& co
 	if ( (traffic_light_signal(3) == 0)
        || ( pow(signal_x - car_x, 2) + pow(signal_y - car_y, 2) > pow(signal_radius, 2) )
   ) {
-		// Either we can go through or we are too far to worry about it, carry on
-    //WriteOutput( other_acceleration, output );
+		// Either we can go through or we are too far to worry about it, continue.
     output->SetFromVector( other_acceleration );
 	} else { 
-		// slam on the brakes
-    DrivingCommand<T> driving_command;
-    driving_command.set_steering_angle( other_acceleration(0) );
-    driving_command.set_acceleration( -100 ); // make it stop
-		WriteOutput( driving_command, output );
+		// Slam on the brakes.
+    DrivingCommand<T> braking_command;
+    braking_command.set_steering_angle( other_acceleration(0) );
+    // TODO(nikos-tri) Replace this with a more sophisticated braking controller
+    braking_command.set_acceleration( -100 ); 
+    output->set_value( braking_command.get_value()  );
 	}
 
-}
-
-template <typename T>
-void TrafficLightAwareController<T>::WriteOutput( const VectorX<T>& value,
-                                                  systems::BasicVector<T>* output ) const {
-  output->set_value( value );
-}
-
-template <typename T>
-void TrafficLightAwareController<T>::WriteOutput( const VectorX<T>& value,
-                                                  systems::BasicVector<T>* output ) const {
-  output->set_value( value );
 }
 
 template <typename T>
