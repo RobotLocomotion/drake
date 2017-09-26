@@ -17,6 +17,7 @@
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
+#include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -198,6 +199,7 @@ class PendulumTests : public ::testing::Test {
         "ElbowJoint",
         *upper_link_, X_UEi_, *lower_link_, Isometry3d::Identity(),
         Vector3d::UnitZ() /*revolute axis*/);
+
     elbow_inboard_frame_ = &elbow_joint_->get_frame_on_parent();
     elbow_outboard_frame_ = &elbow_joint_->get_frame_on_child();
     EXPECT_EQ(elbow_joint_->get_name(), "ElbowJoint");
@@ -206,6 +208,11 @@ class PendulumTests : public ::testing::Test {
     // frame.
     ASSERT_EQ(elbow_outboard_frame_->get_index(),
               lower_link_->get_body_frame().get_index());
+
+    // Add force element for a constant gravity pointing downwards, that is, in
+    // the minus y-axis direction.
+    model_->AddForceElement<UniformGravityFieldElement>(
+        Vector3d(0.0, -acceleration_of_gravity_, 0.0));
   }
 
   // Helper method to extract a pose from the position kinematics.
@@ -600,7 +607,7 @@ class PendulumKinematicTests : public PendulumTests {
   /// MultibodyTree::CalcForceElementsContribution() to compute the vector of
   /// generalized forces due to gravity.
   /// Generalized forces due to gravity are a function of positions only and are
-  /// denoted by G(q).
+  /// denoted by tau_g(q).
   /// The solution is verified against the independent benchmark from
   /// drake::multibody::benchmarks::Acrobot.
   Vector2d VerifyGravityTerm(
@@ -610,7 +617,7 @@ class PendulumKinematicTests : public PendulumTests {
     // This is the minimum factor of the machine precision within which these
     // tests pass. This factor incorporates an additional factor of two (2) to
     // be on the safe side on other architectures (particularly in Macs).
-    const int kEpsilonFactor = 5;
+    const int kEpsilonFactor = 20;
     const double kTolerance = kEpsilonFactor * kEpsilon;
 
     const double shoulder_angle =  q(0);
@@ -618,11 +625,11 @@ class PendulumKinematicTests : public PendulumTests {
 
     PositionKinematicsCache<double> pc(model_->get_topology());
     VelocityKinematicsCache<double> vc(model_->get_topology());
-    // Even though G(q) only depends on positions, other velocity dependent
+    // Even though tau_g(q) only depends on positions, other velocity dependent
     // forces (for instance damping) could depend on velocities. Therefore we
-    // set the velocity kinematics cache entries to zero so that only G(q) gets
-    // computed (at least for this pendulum model that only includes gravity
-    // and damping).
+    // set the velocity kinematics cache entries to zero so that only tau_g(q)
+    // gets computed (at least for this pendulum model that only includes
+    // gravity and damping).
     vc.InitializeToZero();
 
     // ======================================================================
@@ -632,34 +639,19 @@ class PendulumKinematicTests : public PendulumTests {
     model_->CalcPositionKinematicsCache(*context_, &pc);
 
     // ======================================================================
-    // Compute inverse dynamics. Add applied forces due to gravity.
+    // The force of gravity gets included in this call since we have
+    // UniformGravityFieldElement in the model.
+    VectorXd tau_applied(model_->get_num_velocities());
+    vector<SpatialForce<double>> Fapplied_Bo_W_array(model_->get_num_bodies());
+    model_->CalcForceElementsContribution(
+        *context_, pc, vc, &Fapplied_Bo_W_array, &tau_applied);
 
-    // Spatial force on the upper link due to gravity.
-    const SpatialForce<double> F_U_W =
-        SpatialForce<double>(
-            Vector3d::Zero(),
-            -link1_mass_ * acceleration_of_gravity_ * Vector3d::UnitY());
-
-    // Spatial force on the lower link due to gravity.
-    const SpatialForce<double> F_Lcm_W =
-        SpatialForce<double>(
-            Vector3d::Zero(),
-            -link2_mass_ * acceleration_of_gravity_ * Vector3d::UnitY());
-    // Obtain the position of the lower link's center of mass.
-    const Isometry3d& X_WL = get_body_pose_in_world(pc, *lower_link_);
-    const Matrix3d R_WL = X_WL.linear();
-    const Vector3d p_LoLcm_L = lower_link_->get_default_com();
-    const Vector3d p_LoLcm_W = R_WL * p_LoLcm_L;
-    const SpatialForce<double> F_L_W = F_Lcm_W.Shift(-p_LoLcm_W);
+    // ======================================================================
+    // To get generalized forces, compute inverse dynamics applying the forces
+    // computed by CalcForceElementsContribution().
 
     // Output vector of generalized forces.
     VectorXd tau(model_->get_num_velocities());
-    // Input vector of applied generalized forces.
-    VectorXd tau_applied(model_->get_num_velocities());
-
-    vector<SpatialForce<double>> F_Bo_W_array(model_->get_num_bodies());
-    F_Bo_W_array[upper_link_->get_node_index()] = F_U_W;
-    F_Bo_W_array[lower_link_->get_node_index()] = F_L_W;
 
     // Output vector of spatial forces for each body B at their inboard
     // frame Mo, expressed in the world W.
@@ -667,14 +659,15 @@ class PendulumKinematicTests : public PendulumTests {
 
     // ======================================================================
     // Compute expected values using the acrobot benchmark.
-    const Vector2d G_expected = acrobot_benchmark_.CalcGravityVector(
+    const Vector2d tau_g_expected = acrobot_benchmark_.CalcGravityVector(
         shoulder_angle, elbow_angle);
 
     // ======================================================================
     // Notice that we do not need to allocate extra memory since both
-    // F_Bo_W_array and tau can be used as input and output arguments. However,
-    // the data given at input is lost on output. A user might choose then to
-    // have separate input/output arrays.
+    // Fapplied_Bo_W_array and tau can be used as input and output arguments.
+    // However, the data given at input is lost on output. A user might choose
+    // then to have separate input/output arrays.
+
     const VectorXd vdot = VectorXd::Zero(model_->get_num_velocities());
     vector<SpatialAcceleration<double>> A_WB_array(model_->get_num_bodies());
 
@@ -683,17 +676,26 @@ class PendulumKinematicTests : public PendulumTests {
     tau.setConstant(std::numeric_limits<double>::quiet_NaN());
     tau_applied.setZero();
     model_->CalcInverseDynamics(
-        *context_, pc, vc, vdot, F_Bo_W_array, tau_applied,
+        *context_, pc, vc, vdot, Fapplied_Bo_W_array, tau_applied,
         &A_WB_array, &F_BMo_W_array, &tau);
-    EXPECT_TRUE(tau.isApprox(G_expected, kTolerance));
+    // The result from inverse dynamics must be tau = -tau_g(q).
+    EXPECT_TRUE(tau.isApprox(-tau_g_expected, kTolerance));
 
-    // Now try using the same arrays for input/output (input data F_Bo_W_array
-    // will get overwritten through the output argument).
+    // Now try using the same arrays for input/output (input data
+    // Fapplied_Bo_W_array will get overwritten through the output argument).
     tau_applied.setZero();  // This will now get overwritten.
     model_->CalcInverseDynamics(
-        *context_, pc, vc, vdot, F_Bo_W_array, tau_applied,
-        &A_WB_array, &F_Bo_W_array, &tau_applied);
-    EXPECT_TRUE(tau.isApprox(G_expected, kTolerance));
+        *context_, pc, vc, vdot, Fapplied_Bo_W_array, tau_applied,
+        &A_WB_array, &Fapplied_Bo_W_array, &tau_applied);
+    // The result from inverse dynamics must be tau = -tau_g(q).
+    EXPECT_TRUE(tau.isApprox(-tau_g_expected, kTolerance));
+
+    // Compute the system's potential energy:
+    const double V_expected =
+        acrobot_benchmark_.CalcPotentialEnergy(shoulder_angle, elbow_angle);
+    const double V = model_->CalcPotentialEnergy(*context_);
+    EXPECT_NEAR(V, V_expected, kTolerance);
+
     return tau;
   }
 
@@ -723,7 +725,7 @@ class PendulumKinematicTests : public PendulumTests {
       Vector3d::UnitZ() /* Plane normal */, Vector3d::UnitY() /* Up vector */,
       link1_mass_, link2_mass_,
       link1_length_, link2_length_, half_link1_length_, half_link2_length_,
-      link1_Ic_, link2_Ic_};
+      link1_Ic_, link2_Ic_, 0.0, 0.0, acceleration_of_gravity_};
 
  private:
   // This method verifies the correctness of
@@ -1103,7 +1105,7 @@ TEST_F(PendulumKinematicTests, GravityTerm) {
 TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
   // This is the minimum factor of the machine precision within which these
   // tests pass.
-  const int kEpsilonFactor = 20;
+  const int kEpsilonFactor = 100;
   const double kTolerance = kEpsilonFactor * kEpsilon;
 
   std::unique_ptr<MultibodyTree<AutoDiffXd>> model_autodiff =
@@ -1217,6 +1219,32 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
 
           EXPECT_TRUE(V_WUcm.IsApprox(V_WUcm_expected, kTolerance));
           EXPECT_TRUE(V_WLcm.IsApprox(V_WLcm_expected, kTolerance));
+
+          // Compute potential energy, and its time derivative.
+          const AutoDiffXd V =
+              model_autodiff->CalcPotentialEnergy(*context_autodiff);
+          const double V_value = V.value();
+          const double V_expected =
+              acrobot_benchmark_.CalcPotentialEnergy(
+                  shoulder_angle.value(), elbow_angle.value());
+          EXPECT_NEAR(V_value, V_expected, kTolerance);
+
+          // Since in this case the only force is that of gravity, the time
+          // derivative of the total potential energy must equal the total
+          // conservative power.
+          shoulder_mobilizer_->set_angle(
+              context_.get(), shoulder_angle.value());
+          shoulder_mobilizer_->set_angular_rate(
+              context_.get(), shoulder_angle.derivatives()[0]);
+          elbow_mobilizer_->set_angle(
+              context_.get(), elbow_angle.value());
+          elbow_mobilizer_->set_angular_rate(
+              context_.get(), elbow_angle.derivatives()[0]);
+          const double Pc = model_->CalcConservativePower(*context_);
+
+          // Notice we define Pc = -d(Pc)/dt.
+          const double Pc_from_autodiff = -V.derivatives()[0];
+          EXPECT_NEAR(Pc, Pc_from_autodiff, kTolerance);
         }  // ielbow
       }  // ishoulder
     }  // iw_elbow

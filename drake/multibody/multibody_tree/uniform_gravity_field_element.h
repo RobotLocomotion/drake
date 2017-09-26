@@ -10,7 +10,8 @@
 namespace drake {
 namespace multibody {
 
-/// This ForceElement allows to model the effect of a uniform gravity field.
+/// This ForceElement allows modeling the effect of a uniform gravity field as
+/// felt by bodies on the surface of the Earth.
 /// This gravity fields acts on all bodies in the MultibodyTree model.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
@@ -32,12 +33,11 @@ class UniformGravityFieldElement : public ForceElement<T> {
 
   /// Returns the acceleration of gravity vector, expressed in the world frame
   /// W.
-  const Vector3<double>& g_W() const { return g_W_; }
+  const Vector3<double>& gravity_vector() const { return g_W_; }
 
   T CalcPotentialEnergy(
       const MultibodyTreeContext<T>& context,
-      const PositionKinematicsCache<T>& pc,
-      const VelocityKinematicsCache<T>& vc) const final;
+      const PositionKinematicsCache<T>& pc) const final;
 
   T CalcConservativePower(
       const MultibodyTreeContext<T>& context,
@@ -55,7 +55,7 @@ class UniformGravityFieldElement : public ForceElement<T> {
       const PositionKinematicsCache<T>& pc,
       const VelocityKinematicsCache<T>& vc,
       std::vector<SpatialForce<T>>* F_B_W,
-      Eigen::Ref<VectorX<T>> tau) const final;
+      EigenPtr<VectorX<T>> tau) const final;
 
   std::unique_ptr<ForceElement<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const override;
