@@ -563,7 +563,7 @@ class System {
   ///             other return values). Function aborts if null.
   /// @param[out] unique_update_offset_sec Contains the update offset (in
   ///             seconds) on return of `1` from this function (undefined on
-  ///             other return values). Function aborts if null. 
+  ///             other return values). Function aborts if null.
   /// @returns The number of periodic triggers mapping to discrete update
   ///          events.
   virtual int GetNumPeriodicDiscreteUpdates(
@@ -1437,7 +1437,7 @@ class System {
   /// to discrete update events and return attributes of the single periodic
   /// trigger if only one such trigger is present. `unique_update_period_sec`
   /// and `unique_update_offset_sec` must be populated with the period and
-  /// offset of the only such periodic trigger / discrete update pair on 
+  /// offset of the only such periodic trigger / discrete update pair on
   /// return value of `1`.
   /// @see GetNumPeriodicDiscreteUpdates() for description of function
   ///      parameters and output, which are identical to those of this method.
