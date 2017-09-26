@@ -1309,7 +1309,7 @@ class Diagram : public System<T>,
       // greater than one.
       return_count += registered_systems_[i]->
           GetNumPeriodicDiscreteUpdates(
-              &dummy_update_period_sec, &dummy_update_offset_sec);
+              &update_period_sec, &update_offset_sec);
       if (return_count == 1) {
         *unique_update_period_sec = update_period_sec;
         *unique_update_offset_sec = update_offset_sec;
