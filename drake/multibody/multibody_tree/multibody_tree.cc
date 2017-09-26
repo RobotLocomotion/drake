@@ -17,10 +17,32 @@ namespace multibody {
 using internal::BodyNode;
 using internal::BodyNodeWelded;
 
+namespace internal {
+template <typename T>
+class JointImplementationBuilder {
+ public:
+  JointImplementationBuilder() = delete;
+  static void Build(Joint<T>* joint, MultibodyTree<T>* tree) {
+    std::unique_ptr<JointBluePrint> blue_print =
+        joint->MakeImplementationBlueprint();
+    auto implementation = std::make_unique<JointImplementation>(*blue_print);
+    DRAKE_DEMAND(implementation->get_num_mobilizers() != 0);
+    for (auto& mobilizer : blue_print->mobilizers_) {
+      tree->AddMobilizer(std::move(mobilizer));
+    }
+    // TODO(amcastro-tri): add force elements, bodies, constraints, etc.
+    joint->OwnImplementation(std::move(implementation));
+  }
+ private:
+  typedef typename Joint<T>::BluePrint JointBluePrint;
+  typedef typename Joint<T>::JointImplementation JointImplementation;
+};
+}  // namespace internal
+
 template <typename T>
 MultibodyTree<T>::MultibodyTree() {
   // Adds a "world" body to MultibodyTree having a NaN SpatialInertia.
-  AddBody<RigidBody>(SpatialInertia<double>());
+  world_body_ = &AddBody<RigidBody>(SpatialInertia<double>());
 }
 
 template <typename T>
@@ -81,6 +103,21 @@ void MultibodyTree<T>::FinalizeInternals() {
 
 template <typename T>
 void MultibodyTree<T>::Finalize() {
+  // Create Joint objects's implementation. Joints are implemented using a
+  // combination of MultibodyTree's building blocks such as Body, Mobilizer,
+  // ForceElement and Constraint. For a same physical Joint, several
+  // implementations could be created (for instance, a Constraint instead of a
+  // Mobilizer). The decision on what implementation to create is performed by
+  // MultibodyTree at Finalize() time. Then, JointImplementationBuilder below
+  // can request MultibodyTree for these choices when building the Joint
+  // implementation. Since a Joint's implementation is built upon
+  // MultibodyTree's building blocks, notice that creating a Joint's
+  // implementation will therefore change the tree topology. Since topology
+  // changes are NOT allowed after Finalize(), joint implementations MUST be
+  // assembled BEFORE the tree's topology is finalized.
+  for (auto& joint : owned_joints_) {
+    internal::JointImplementationBuilder<T>::Build(joint.get(), this);
+  }
   FinalizeTopology();
   FinalizeInternals();
 }
@@ -458,6 +495,10 @@ void MultibodyTree<T>::DoCalcBiasTerm(
     EigenPtr<VectorX<T>> Cv) const {
   const int nv = get_num_velocities();
   const VectorX<T> vdot = VectorX<T>::Zero(nv);
+<<<<<<< HEAD
+=======
+
+>>>>>>> mbt_joint
   // Auxiliary arrays used by inverse dynamics.
   std::vector<SpatialAcceleration<T>> A_WB_array(get_num_bodies());
   std::vector<SpatialForce<T>> F_BMo_W_array(get_num_bodies());
