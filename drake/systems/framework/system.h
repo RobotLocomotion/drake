@@ -41,6 +41,22 @@ class SystemImpl {
 
   // The implementation of System<T>::GetMemoryObjectName.
   static std::string GetMemoryObjectName(const std::string&, int64_t);
+
+ private:
+  // Attorney-Client idiom to expose a subset of private elements of System.
+  // We are the attorney.  These are the clients that can access our private
+  // members, and thus access some subset of System's private members.
+  template <typename> friend class Diagram;
+
+  // Return a mutable reference to the System's SystemScalarConverter.  Diagram
+  // needs this in order to withdraw support for certain scalar type conversion
+  // operations once it learns about what its subsystems support.
+  template <typename T>
+  static SystemScalarConverter& get_mutable_system_scalar_converter(
+      System<T>* system) {
+    DRAKE_DEMAND(system != nullptr);
+    return system->system_scalar_converter_;
+  }
 };
 /** @endcond */
 
@@ -1693,6 +1709,10 @@ class System {
   }
 
  private:
+  // Attorney-Client idiom to expose a subset of private elements of System.
+  // Refer to SystemImpl comments for details.
+  friend class SystemImpl;
+
   std::string name_;
   // input_ports_ and output_ports_ are vectors of unique_ptr so that references
   // to the descriptors will remain valid even if the vector is resized.
@@ -1713,7 +1733,7 @@ class System {
       forced_unrestricted_update_{nullptr};
 
   // Functions to convert this system to use alternative scalar types.
-  const SystemScalarConverter system_scalar_converter_;
+  SystemScalarConverter system_scalar_converter_;
 
   // TODO(sherm1) Replace these fake cache entries with real cache asap.
   // These are temporaries and hence uninitialized.
