@@ -174,7 +174,8 @@ class ForceElement : public
   /// This method is called only from the public non-virtual
   /// CalcAndAddForceContributions() which will already have error-checked
   /// the parameters so you don't have to. Refer to the documentation for
-  /// CalcAndAddForceContribution() for details.
+  /// CalcAndAddForceContribution() for details describing the purpose and
+  /// parameters of this method.
   /// It assumes both `F_B_W` and `tau` are valid pointers with appropriate
   /// sizes already checked by CalcAndAddForceContribution().
   /// @pre The position kinematics `pc` must have been previously updated with a
@@ -192,7 +193,9 @@ class ForceElement : public
   ///
   /// Specific force element subclasses must implement these to support scalar
   /// conversion to other types. These methods are only called from
-  /// MultibodyTree::CloneToScalar(); users _must_ not call these explicitly.
+  /// MultibodyTree::CloneToScalar(); users _must_ not call these explicitly
+  /// since there is no external mechanism to ensure the argument `tree_clone`
+  /// is in a valid stage of cloning. In contrast,
   /// MultibodyTree::CloneToScalar() guarantees that by when
   /// ForceElement::CloneToScalar() is called, all Body, Frame and Mobilizer
   /// objects in the original tree (templated on T) to which `this`
@@ -230,6 +233,10 @@ class ForceElement : public
   ///
   /// MultibodyTree::get_variant() methods are available to retrieve cloned
   /// variants from `tree_clone`, and are overloaded on different element types.
+  ///
+  /// For examples on how a MultibodyTree model can be converted to other
+  /// scalar types, please refer to the documentation for
+  /// MultibodyTree::CloneToScalar().
   /// @{
 
   /// Clones this %ForceElement (templated on T) to a mobilizer templated on

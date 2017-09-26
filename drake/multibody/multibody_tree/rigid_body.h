@@ -77,7 +77,7 @@ class RigidBody : public Body<T> {
     return default_spatial_inertia_.get_com();
   }
 
-  T CalcMass(const MultibodyTreeContext<T>&) const final {
+  T get_mass(const MultibodyTreeContext<T>&) const final {
     return default_spatial_inertia_.get_mass();
   }
 
