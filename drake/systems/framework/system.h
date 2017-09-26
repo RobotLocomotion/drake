@@ -1447,7 +1447,7 @@ class System {
   virtual int DoGetNumPeriodicDiscreteUpdates(
       double* update_period_sec,
       double* update_offset_sec) const {
-    unused(update_period_sec, unused_offset_sec);
+    unused(update_period_sec, update_offset_sec);
     return 0;
   }
 
