@@ -307,14 +307,6 @@ class LeafSystem : public System<T> {
             UnrestrictedUpdateEvent<T>>::MakeForcedEventCollection());
   }
 
-  std::unique_ptr<System<AutoDiffXd>> DoToAutoDiffXd() const final {
-    return System<T>::DoToAutoDiffXd();
-  }
-
-  std::unique_ptr<System<symbolic::Expression>> DoToSymbolic() const final {
-    return System<T>::DoToSymbolic();
-  }
-
   /// Provides a new instance of the leaf context for this system. Derived
   /// leaf systems with custom derived leaf system contexts should override this
   /// to provide a context of the appropriate type. The returned context should
