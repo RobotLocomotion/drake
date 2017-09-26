@@ -183,6 +183,46 @@ class ForceElement : public
       EigenPtr<VectorX<T>> tau) const = 0;
 
   /// @name Methods to make a clone templated on different scalar types.
+  ///
+  /// Specific force element subclasses must implement these to support scalar
+  /// conversion to other types. These methods are only called from
+  /// MultibodyTree::CloneToScalar(), users _must_ not call these explicitely.
+  /// MultibodyTree::CloneToScalar() guarantees that by when
+  /// ForceElement::CloneToScalar() is called, all Body, Frame and Mobilizer
+  /// objects in the original tree (templated on T) to which `this`
+  /// %ForceElement<T> belongs, have a corresponding clone in the cloned tree
+  /// (argument `tree_clone` for these methods). Therefore, implementations of
+  /// ForceElement::DoCloneToScalar() can retrieve clones from `tree_clone` as
+  /// needed.
+  /// Consider the following example for a `SpringElement<T>`:
+  /// @code
+  ///   template <typename T>
+  ///   class SpringElement {
+  ///    public:
+  ///     // Class's constructor.
+  ///     SpringElement(
+  ///       const Body<T>& body1, const Body<T>& body2, double stiffness);
+  ///     // Get the first body to which this spring is connected.
+  ///     const Body<T>& get_body1() const;
+  ///     // Get the second body to which this spring is connected.
+  ///     const Body<T>& get_body2() const;
+  ///     // Get the spring stiffness constant.
+  ///     double get_stiffness() const;
+  ///    protected:
+  ///     // Implementation of the scalar conversion from T to double.
+  ///     std::unique_ptr<ForceElement<double>> DoCloneToScalar(
+  ///       const MultibodyTree<double>& tree_clone) const) {
+  ///         const Body<ToScalar>& body1_clone =
+  ///           tree_clone.get_variant(get_body1());
+  ///         const Body<ToScalar>& body2_clone =
+  ///           tree_clone.get_variant(get_body2());
+  ///         return std::make_unique<SpringElement<double>>(
+  ///           body1_clone, body2_clone, get_stiffness());
+  ///     }
+  /// @endcode
+  ///
+  /// MultibodyTree::get_variant() methods are available to retrieve cloned
+  /// variants from `tree_clone`, and are overloaded on different element types.
   /// @{
 
   /// Clones this %ForceElement (templated on T) to a mobilizer templated on
