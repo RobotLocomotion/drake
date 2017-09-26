@@ -168,6 +168,15 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
     return topology_.body_node;
   }
 
+  /// Returns the mass of this body stored in `context`.
+  virtual T get_mass(const MultibodyTreeContext<T> &context) const = 0;
+
+  /// Computes the center of mass `p_BoBcm_B` (or `p_Bcm` for short) of this
+  /// body measured from this body's frame origin `Bo` and expressed in the body
+  /// frame B.
+  virtual const Vector3<T> CalcCenterOfMassInBodyFrame(
+      const MultibodyTreeContext<T>& context) const = 0;
+
   /// Computes the SpatialInertia `I_BBo_B` of `this` body about its frame
   /// origin `Bo` (not necessarily its center of mass) and expressed in its body
   /// frame `B`.

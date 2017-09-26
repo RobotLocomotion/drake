@@ -77,6 +77,15 @@ class RigidBody : public Body<T> {
     return default_spatial_inertia_.get_com();
   }
 
+  T get_mass(const MultibodyTreeContext<T>&) const final {
+    return default_spatial_inertia_.get_mass();
+  }
+
+  const Vector3<T> CalcCenterOfMassInBodyFrame(
+      const MultibodyTreeContext<T>&) const final {
+    return get_default_com().template cast<T>();
+  }
+
   SpatialInertia<T> CalcSpatialInertiaInBodyFrame(
       const MultibodyTreeContext<T>&) const override {
     return default_spatial_inertia_.cast<T>();

@@ -330,6 +330,32 @@ void MultibodyTree<T>::CalcInverseDynamics(
 }
 
 template <typename T>
+void MultibodyTree<T>::CalcForceElementsContribution(
+    const systems::Context<T>& context,
+    const PositionKinematicsCache<T>& pc,
+    const VelocityKinematicsCache<T>& vc,
+    std::vector<SpatialForce<T>>* F_Bo_W_array,
+    EigenPtr<VectorX<T>> tau_array) const {
+  DRAKE_DEMAND(F_Bo_W_array != nullptr);
+  DRAKE_DEMAND(static_cast<int>(F_Bo_W_array->size()) == get_num_bodies());
+  DRAKE_DEMAND(tau_array != nullptr);
+  DRAKE_DEMAND(tau_array->size() == get_num_velocities());
+
+  const auto& mbt_context =
+      dynamic_cast<const MultibodyTreeContext<T>&>(context);
+
+  // Zero the arrays before adding contributions.
+  tau_array->setZero();
+  for (auto& F : *F_Bo_W_array) F.SetZero();
+
+  // Add contributions from force elements.
+  for (const auto& force_element : owned_force_elements_) {
+    force_element->CalcAndAddForceContribution(
+        mbt_context, pc, vc, F_Bo_W_array, tau_array);
+  }
+}
+
+template <typename T>
 void MultibodyTree<T>::CalcMassMatrixViaInverseDynamics(
     const systems::Context<T>& context, EigenPtr<MatrixX<T>> H) const {
   DRAKE_DEMAND(H != nullptr);
@@ -402,6 +428,59 @@ void MultibodyTree<T>::DoCalcBiasTerm(
   // TODO(amcastro-tri): provide specific API for when vdot = 0.
   CalcInverseDynamics(context, pc, vc, vdot, {}, VectorX<T>(),
                       &A_WB_array, &F_BMo_W_array, Cv);
+}
+
+template <typename T>
+T MultibodyTree<T>::CalcPotentialEnergy(
+    const systems::Context<T>& context) const {
+  // TODO(amcastro-tri): Eval PositionKinematicsCache when caching lands.
+  PositionKinematicsCache<T> pc(get_topology());
+  CalcPositionKinematicsCache(context, &pc);
+  return DoCalcPotentialEnergy(context, pc);
+}
+
+template <typename T>
+T MultibodyTree<T>::DoCalcPotentialEnergy(
+    const systems::Context<T>& context,
+    const PositionKinematicsCache<T>& pc) const {
+  const auto& mbt_context =
+      dynamic_cast<const MultibodyTreeContext<T>&>(context);
+
+  T potential_energy = 0.0;
+  // Add contributions from force elements.
+  for (const auto& force_element : owned_force_elements_) {
+    potential_energy += force_element->CalcPotentialEnergy(mbt_context, pc);
+  }
+  return potential_energy;
+}
+
+template <typename T>
+T MultibodyTree<T>::CalcConservativePower(
+    const systems::Context<T>& context) const {
+  // TODO(amcastro-tri): Eval PositionKinematicsCache when caching lands.
+  PositionKinematicsCache<T> pc(get_topology());
+  CalcPositionKinematicsCache(context, &pc);
+  // TODO(amcastro-tri): Eval VelocityKinematicsCache when caching lands.
+  VelocityKinematicsCache<T> vc(get_topology());
+  CalcVelocityKinematicsCache(context, pc, &vc);
+  return DoCalcConservativePower(context, pc, vc);
+}
+
+template <typename T>
+T MultibodyTree<T>::DoCalcConservativePower(
+    const systems::Context<T>& context,
+    const PositionKinematicsCache<T>& pc,
+    const VelocityKinematicsCache<T>& vc) const {
+  const auto& mbt_context =
+      dynamic_cast<const MultibodyTreeContext<T>&>(context);
+
+  T conservative_power = 0.0;
+  // Add contributions from force elements.
+  for (const auto& force_element : owned_force_elements_) {
+    conservative_power +=
+        force_element->CalcConservativePower(mbt_context, pc, vc);
+  }
+  return conservative_power;
 }
 
 // Explicitly instantiates on the most common scalar types.

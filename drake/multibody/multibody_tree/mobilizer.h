@@ -426,7 +426,7 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
     DRAKE_DEMAND(
         v_array->size() == this->get_parent_tree().get_num_velocities());
     return v_array->segment(topology_.velocities_start_in_v,
-                           topology_.num_velocities);
+                            topology_.num_velocities);
   }
 
   /// Returns a const Eigen expression of the vector of generalized

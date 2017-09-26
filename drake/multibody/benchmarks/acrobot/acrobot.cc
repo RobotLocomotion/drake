@@ -87,11 +87,15 @@ Vector2<T> Acrobot<T>::CalcGravityVector(
 
   const T s1 = sin(theta1);
   const T s12 = sin(theta1 + theta2);
-  Vector2<T> C;
-  C(0) = g_ * m1_ * lc1_ * s1 + g_ * m2_ * (l1_ * s1 + lc2_ * s12);
-  C(1) = g_ * m2_ * lc2_ * s12;
+  Vector2<T> tau_g;
+  tau_g(0) = g_ * m1_ * lc1_ * s1 + g_ * m2_ * (l1_ * s1 + lc2_ * s12);
+  tau_g(1) = g_ * m2_ * lc2_ * s12;
 
-  return C;
+  // Unlike http://underactuated.mit.edu/underactuated.html?chapter=3, we define
+  // tau_g(q) to be on the right hand side of the equations of motion, that is,
+  // Mv̇ + C(q, v)v = tau_g(q).
+  // Therefore we invert the sign before returning.
+  return -tau_g;
 }
 
 template <typename T>
@@ -239,6 +243,15 @@ Vector6<T> Acrobot<T>::CalcLink2SpatialAccelerationInWorldFrame(
   A_WL2.template topRows<3>() = X_WD_.linear() * alphacm2_D;
   A_WL2.template bottomRows<3>() = X_WD_.linear() * acm2_D;
   return A_WL2;
+}
+
+template <typename T>
+T Acrobot<T>::CalcPotentialEnergy(const T& theta1, const T& theta2) const {
+  const Isometry3<T> X_WL1cm = CalcLink1PoseInWorldFrame(theta1);
+  const Isometry3<T> X_WL2cm = CalcLink2PoseInWorldFrame(theta1, theta2);
+  const Vector3<T> p_WL1cm = X_WL1cm.translation();
+  const Vector3<T> p_WL2cm = X_WL2cm.translation();
+  return (m1_ * p_WL1cm.y() + m2_ * p_WL2cm.y()) * g_;
 }
 
 template class Acrobot<double>;
