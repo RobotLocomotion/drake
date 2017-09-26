@@ -782,7 +782,7 @@ TEST_F(DiagramTest, SubclassTransmogrificationTest) {
   // Diagram subclasses that declare a specific SystemTypeTag but then use a
   // subclass at runtime will fail-fast.
   class SubclassOfFeedbackDiagram : public FeedbackDiagram<double> {};
-  const SubclassOfFeedbackDiagram subclass_dut;
+  const SubclassOfFeedbackDiagram subclass_dut{};
   EXPECT_THROW(({
     try {
       subclass_dut.ToAutoDiffXd();
