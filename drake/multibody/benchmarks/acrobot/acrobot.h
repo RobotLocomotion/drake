@@ -50,7 +50,6 @@ class Acrobot {
   ///   - b2: damping coefficient of the elbow joint.
   ///   - g: acceleration of gavity.
   Acrobot(const Vector3<T>& normal, const Vector3<T>& up,
-          int axis = 2,
           double m1 = 1.0,
           double m2 = 1.0,
           double l1 = 1.0,
@@ -159,30 +158,7 @@ class Acrobot {
       const T& theta1dot, const T& theta2dot,
       const T& theta1dotdot, const T& theta2dotdot) const;
 
-  Isometry3<T> get_X_WD() const { return X_WD_; }
-
  private:
-
-  Isometry3<T> ChangeToAxis(const Isometry3<T>& X) const {
-    if (axis_ == 0) {
-      Isometry3<T> X2 = Isometry3<T>::Identity();
-      auto R = X2.linear();
-      R.col(0) = Vector3<T>::UnitX();
-      const Matrix3<T> R_WD = X_WD_.linear();
-      R.col(1) = R_WD * X.linear().col(1);
-      R.col(2) = -R_WD * X.linear().col(0);
-      auto p = X2.translation();
-      p[2] = -X.translation()[0];
-      p[1] = X.translation()[1];
-      p[0] = X.translation()[2];
-      X2.makeAffine();
-      return X2;
-    }
-    return X; // axis == 2
-  }
-
-  int axis_;
-
   const T
       m1_{1.0},    // Mass of link 1 (kg).
       m2_{1.0},    // Mass of link 2 (kg).

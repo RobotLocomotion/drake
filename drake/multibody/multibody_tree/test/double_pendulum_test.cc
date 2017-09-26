@@ -241,8 +241,6 @@ class PendulumTests : public ::testing::Test {
     pc->get_mutable_X_WB(BodyNodeIndex(1)) = X_WL_;
   }
 
-  TestAxis plane_axis_;
-
   std::unique_ptr<MultibodyTree<double>> model_;
   const Body<double>* world_body_;
   // Bodies:
