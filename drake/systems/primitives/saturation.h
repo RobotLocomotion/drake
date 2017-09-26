@@ -20,6 +20,7 @@ namespace systems {
 /// Instantiated templates for the following scalar types @p T are provided:
 /// - double
 /// - AutoDiffXd
+/// - symbolic::Expression
 ///
 /// Note that @f$ u_{min} @f$, and @f$ u_{max} @f$, and @f$ u @f$ are all
 /// vectors of same dimension, and the following condition holds elementwise in
