@@ -11,8 +11,8 @@
 #include "drake/multibody/multibody_tree/acceleration_kinematics_cache.h"
 #include "drake/multibody/multibody_tree/body.h"
 #include "drake/multibody/multibody_tree/body_node.h"
-#include "drake/multibody/multibody_tree/force_element.h"
 #include "drake/multibody/multibody_tree/frame.h"
+#include "drake/multibody/multibody_tree/joints/joint.h"
 #include "drake/multibody/multibody_tree/mobilizer.h"
 #include "drake/multibody/multibody_tree/multibody_tree_context.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
@@ -372,38 +372,41 @@ class MultibodyTree {
         std::make_unique<MobilizerType<T>>(std::forward<Args>(args)...));
   }
 
-  template <template<typename Scalar> class ForceElementType>
-  const ForceElementType<T>& AddForceElement(
-      std::unique_ptr<ForceElementType<T>> force_element) {
-    static_assert(
-        std::is_convertible<ForceElementType<T>*, ForceElement<T>*>::value,
-        "ForceElementType<T> must be a sub-class of ForceElement<T>.");
-    if (topology_is_valid()) {
-      throw std::logic_error(
-          "This MultiforceTree is finalized already. Therefore adding more "
-          "force elements is not allowed. "
-          "See documentation for Finalize() for details.");
-    }
-    if (force_element == nullptr) {
-      throw std::logic_error("Input force element is a nullptr.");
-    }
-    ForceElementIndex force_element_index = topology_.add_force_element();
-    // This test MUST be performed BEFORE owned_force_elements_.push_back()
-    // below. Do not move it around!
-    DRAKE_ASSERT(force_element_index == get_num_force_elements());
-    force_element->set_parent_tree(this, force_element_index);
-    ForceElementType<T>* raw_force_element_ptr = force_element.get();
-    owned_force_elements_.push_back(std::move(force_element));
-    return *raw_force_element_ptr;
-  }
-
-  template<template<typename Scalar> class ForceElementType, typename... Args>
-  const ForceElementType<T>& AddForceElement(Args&&... args) {
-    static_assert(std::is_base_of<ForceElement<T>, ForceElementType<T>>::value,
-                  "ForceElementType<T> must be a sub-class of "
-                  "ForceElement<T>.");
-    return AddForceElement(
-        std::make_unique<ForceElementType<T>>(std::forward<Args>(args)...));
+  /// Creates and adds to `this` %MultibodyTree (which retains ownership) a new
+  /// Joint member with the specific type `JointType`. The arguments to this
+  /// method `args` are forwarded to `JointType`'s constructor.
+  ///
+  /// The newly created `JointType` object will be specialized on the scalar
+  /// type T of this %MultibodyTree.
+  ///
+  /// Example of usage:
+  /// @code
+  ///   MultibodyTree<T> model;
+  ///   // ... Code to define a parent body P and a child body B.
+  ///   const Body<double>& parent_body =
+  ///     model.AddBody<RigidBody>(SpatialInertia<double>(...));
+  ///   const Body<double>& child_body =
+  ///     model.AddBody<RigidBody>(SpatialInertia<double>(...));
+  ///   // Define the pose X_PF of a frame F rigidly atached to parent body P.
+  ///   // Define the pose X_BM of a frame M rigidly atached to child body B.
+  ///   const RevoluteJoint<double>& pin =
+  ///     model.AddJoint<RevoluteJoint>(
+  ///       "PinJoint",             /* joint name */
+  ///       model.get_world_body(), /* parent body */
+  ///       Isometry3d::Identity(), /* frame F IS the world frame W */
+  ///       pendulum,               /* child body, the pendulum */
+  ///       X_BM,                   /* pose of frame M in the body frame B */
+  ///       Vector3d::UnitZ());     /* revolute axis in this case */
+  /// @endcode
+  ///
+  /// @see The Joint class's documentation for further details on how to define
+  /// a joint.
+  template<template<typename> class JointType, typename... Args>
+  const JointType<T>& AddJoint(Args&&... args) {
+    static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
+                  "JointType<T> must be a sub-class of Joint<T>.");
+    return AddJoint(
+        std::make_unique<JointType<T>>(std::forward<Args>(args)...));
   }
   /// @}
   // Closes Doxygen section.
@@ -420,6 +423,9 @@ class MultibodyTree {
   /// body. Therefore the minimum number of bodies in a MultibodyTree is one.
   int get_num_bodies() const { return static_cast<int>(owned_bodies_.size()); }
 
+  /// Returns the number of joints in the %MultibodyTree.
+  int get_num_joints() const { return static_cast<int>(owned_joints_.size()); }
+
   /// Returns the number of mobilizers in the %MultibodyTree. Since the world
   /// has no Mobilizer, the number of mobilizers equals the number of bodies
   /// minus one, i.e. get_num_mobilizers() returns get_num_bodies() - 1.
@@ -428,11 +434,6 @@ class MultibodyTree {
   // model.
   int get_num_mobilizers() const {
     return static_cast<int>(owned_mobilizers_.size());
-  }
-
-  /// Returns the number of ForceElement objects in the MultibodyTree.
-  int get_num_force_elements() const {
-    return static_cast<int>(owned_force_elements_.size());
   }
 
   /// Returns the number of generalized positions of the model.
@@ -462,8 +463,11 @@ class MultibodyTree {
   }
 
   /// Returns a constant reference to the *world* body.
-  const Body<T>& get_world_body() const {
-    return *owned_bodies_[world_index()];
+  const RigidBody<T>& get_world_body() const {
+    // world_body_ is set in the constructor. So this assert is here only to
+    // verify future constructors do not mess that up.
+    DRAKE_ASSERT(world_body_ != nullptr);
+    return *world_body_;
   }
 
   /// Returns a constant reference to the *world* frame.
@@ -477,15 +481,6 @@ class MultibodyTree {
   const Body<T>& get_body(BodyIndex body_index) const {
     DRAKE_ASSERT(body_index < get_num_bodies());
     return *owned_bodies_[body_index];
-  }
-
-  /// Returns a constant reference to the body belonging to the body node
-  /// identified with unique index `node_index`.
-  /// This method aborts in Debug builds when `node_index` does not correspond
-  /// to a node in this multibody tree.
-  const Body<T>& get_body(BodyNodeIndex node_index) const {
-    DRAKE_ASSERT(node_index < get_num_bodies());
-    return body_nodes_[node_index]->get_body();
   }
 
   /// Returns a constant reference to the frame with unique index `frame_index`.
@@ -953,6 +948,14 @@ class MultibodyTree {
       const MultibodyElement<Scalar>& element) const {
     return get_mobilizer_variant(element);
   }
+
+  /// SFINAE overload for Joint<T> elements.
+  template <template <typename> class MultibodyElement, typename Scalar>
+  std::enable_if_t<std::is_base_of<Joint<T>, MultibodyElement<T>>::value,
+                   const MultibodyElement<T>&> get_variant(
+      const MultibodyElement<Scalar>& element) const {
+    return get_joint_variant(element);
+  }
   /// @}
 
   /// Creates a deep copy of `this` %MultibodyTree templated on the same
@@ -1010,8 +1013,12 @@ class MultibodyTree {
       tree_clone->CloneMobilizerAndAdd(*mobilizer);
     }
 
-    for (const auto& force_element : owned_force_elements_) {
-      tree_clone->CloneForceElementAndAdd(*force_element);
+    // Since Joint<T> objects are implemented from basic element objects like
+    // Body, Mobilizer, ForceElement and Constraint, they are cloned last so
+    // that the clones of their dependencies are guaranteed to be available.
+    // DO NOT change this order!!!
+    for (const auto& joint : owned_joints_) {
+      tree_clone->CloneJointAndAdd(*joint);
     }
 
     // We can safely make a deep copy here since the original multibody tree is
@@ -1028,6 +1035,38 @@ class MultibodyTree {
   // MultibodyTree<T> so that CloneToScalar<ToAnyOtherScalar>() can access
   // private methods from MultibodyTree<T>.
   template <typename> friend class MultibodyTree;
+
+  template <template<typename Scalar> class JointType>
+  const JointType<T>& AddJoint(
+      std::unique_ptr<JointType<T>> joint) {
+    static_assert(std::is_convertible<JointType<T>*, Joint<T>*>::value,
+                  "JointType must be a sub-class of Joint<T>.");
+    if (topology_is_valid()) {
+      throw std::logic_error("This MultibodyTree is finalized already. "
+                             "Therefore adding more joints is not allowed. "
+                             "See documentation for Finalize() for details.");
+    }
+    if (joint == nullptr) {
+      throw std::logic_error("Input joint is a nullptr.");
+    }
+    const JointIndex joint_index(owned_joints_.size());
+
+    // Parent tree MUST be set before the call to MakeInOutFramesAndAdd().
+    // Do not move them around!!!.
+    joint->set_parent_tree(this, joint_index);
+
+    // MultibodyTree creates the inboard/outboard frames now, since the
+    // information to do so is already available. Also, that allows users to
+    // call Joint<T>::get_frame_on_parent() and/or
+    // Joint<T>::get_frame_on_child() if they need to.
+    joint->MakeInOutFramesAndAdd(this);
+    // At this point, joint has no implementation (that is, mobilizers, force
+    // elements, etc.). This will get created at Finalize().
+
+    JointType<T>* raw_joint_ptr = joint.get();
+    owned_joints_.push_back(std::move(joint));
+    return *raw_joint_ptr;
+  }
 
   // Finalizes the MultibodyTreeTopology of this tree.
   void FinalizeTopology();
@@ -1126,26 +1165,22 @@ class MultibodyTree {
     return raw_mobilizer_clone_ptr;
   }
 
-  // Helper method to create a clone of `force_element` and add it to `this`
-  // tree.
+  // Helper method to create a clone of `joint` and add it to `this` tree.
   template <typename FromScalar>
-  ForceElement<T>* CloneForceElementAndAdd(
-      const ForceElement<FromScalar>& force_element) {
-    ForceElementIndex force_element_index = force_element.get_index();
-    auto force_element_clone = force_element.CloneToScalar(*this);
-    force_element_clone->set_parent_tree(this, force_element_index);
-
-    ForceElement<T>* raw_force_element_clone_ptr = force_element_clone.get();
-    owned_force_elements_.push_back(std::move(force_element_clone));
-    return raw_force_element_clone_ptr;
+  Joint<T>* CloneJointAndAdd(const Joint<FromScalar>& joint) {
+    JointIndex joint_index = joint.get_index();
+    auto joint_clone = joint.CloneToScalar(*this);
+    joint_clone->set_parent_tree(this, joint_index);
+    owned_joints_.push_back(std::move(joint_clone));
+    return owned_joints_.back().get();
   }
 
   // Helper method to retrieve the corresponding Frame<T> variant to a Frame in
   // a MultibodyTree variant templated on Scalar.
   template <template <typename> class FrameType, typename Scalar>
   const FrameType<T>& get_frame_variant(const FrameType<Scalar>& frame) const {
-    static_assert(std::is_convertible<FrameType<T>*, Frame<T>*>::value,
-                  "FrameType must be a sub-class of Frame<T>.");
+    static_assert(std::is_base_of<Frame<T>, FrameType<T>>::value,
+                  "FrameType<T> must be a sub-class of Frame<T>.");
     // TODO(amcastro-tri):
     //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
     //   MultibodyTree. That will require the tree to have some sort of id.
@@ -1161,8 +1196,8 @@ class MultibodyTree {
   // MultibodyTree variant templated on Scalar.
   template <template <typename> class BodyType, typename Scalar>
   const BodyType<T>& get_body_variant(const BodyType<Scalar>& body) const {
-    static_assert(std::is_convertible<BodyType<T>*, Body<T>*>::value,
-                  "BodyType must be a sub-class of Body<T>.");
+    static_assert(std::is_base_of<Body<T>, BodyType<T>>::value,
+                  "BodyType<T> must be a sub-class of Body<T>.");
     // TODO(amcastro-tri):
     //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
     //   MultibodyTree. That will require the tree to have some sort of id.
@@ -1180,8 +1215,8 @@ class MultibodyTree {
   template <template <typename> class MobilizerType, typename Scalar>
   const MobilizerType<T>& get_mobilizer_variant(
       const MobilizerType<Scalar>& mobilizer) const {
-    static_assert(std::is_convertible<MobilizerType<T>*, Mobilizer<T>*>::value,
-                  "MobilizerType must be a sub-class of Mobilizer<T>.");
+    static_assert(std::is_base_of<Mobilizer<T>, MobilizerType<T>>::value,
+                  "MobilizerType<T> must be a sub-class of Mobilizer<T>.");
     // TODO(amcastro-tri):
     //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
     //   MultibodyTree. That will require the tree to have some sort of id.
@@ -1194,15 +1229,35 @@ class MultibodyTree {
     return *mobilizer_variant;
   }
 
+  // Helper method to retrieve the corresponding Joint<T> variant to a Joint
+  // in a MultibodyTree variant templated on Scalar.
+  template <template <typename> class JointType, typename Scalar>
+  const JointType<T>& get_joint_variant(const JointType<Scalar>& joint) const {
+    static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
+                  "JointType<T> must be a sub-class of Joint<T>.");
+    // TODO(amcastro-tri):
+    //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
+    //   MultibodyTree. That will require the tree to have some sort of id.
+    JointIndex joint_index = joint.get_index();
+    DRAKE_DEMAND(joint_index < get_num_joints());
+    const JointType<T>* joint_variant =
+        dynamic_cast<const JointType<T>*>(
+            owned_joints_[joint_index].get());
+    DRAKE_DEMAND(joint_variant != nullptr);
+    return *joint_variant;
+  }
+
   // TODO(amcastro-tri): In future PR's adding MBT computational methods, write
   // a method that verifies the state of the topology with a signature similar
   // to RoadGeometry::CheckInvariants().
 
+  const RigidBody<T>* world_body_{nullptr};
   std::vector<std::unique_ptr<Body<T>>> owned_bodies_;
   std::vector<std::unique_ptr<Frame<T>>> owned_frames_;
   std::vector<std::unique_ptr<Mobilizer<T>>> owned_mobilizers_;
-  std::vector<std::unique_ptr<ForceElement<T>>> owned_force_elements_;
   std::vector<std::unique_ptr<internal::BodyNode<T>>> body_nodes_;
+
+  std::vector<std::unique_ptr<Joint<T>>> owned_joints_;
 
   // List of all frames in the system ordered by their FrameIndex.
   // This vector contains a pointer to all frames in owned_frames_ as well as a

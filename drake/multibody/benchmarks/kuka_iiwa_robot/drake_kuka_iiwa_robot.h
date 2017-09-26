@@ -3,13 +3,14 @@
 #include <cmath>
 #include <functional>
 #include <memory>
+#include <string>
 #include <tuple>
 
 #include "drake/common/eigen_types.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/multibody_tree/fixed_offset_frame.h"
+#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
-#include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/systems/framework/context.h"
 
@@ -78,36 +79,43 @@ class DrakeKukaIIwaRobot {
     // second and third arguments in the following method, namely with SpaceXYZ
     // angles and a position vector. Alternately, frame An is regarded as
     // coincident with linkA.
-    NA_mobilizer_ = &AddRevoluteMobilizerFromSpaceXYZAnglesAndXYZ(
+    NA_joint_ = &AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
+        "NA_joint",
         *linkN_, Vector3d(0, 0, 0), Vector3d(0, 0, 0.1575),
         *linkA_, Eigen::Vector3d::UnitZ());
 
     // Create a revolute joint between linkA and linkB.
-    AB_mobilizer_ = &AddRevoluteMobilizerFromSpaceXYZAnglesAndXYZ(
+    AB_joint_ = &AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
+        "AB_joint",
         *linkA_, Vector3d(M_PI_2, 0, M_PI), Vector3d(0, 0, 0.2025),
         *linkB_, Eigen::Vector3d::UnitZ());
 
     // Create a revolute joint between linkB and linkC.
-    BC_mobilizer_ = &AddRevoluteMobilizerFromSpaceXYZAnglesAndXYZ(
+    BC_joint_ = &AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
+        "BC_joint",
         *linkB_, Vector3d(M_PI_2, 0, M_PI), Vector3d(0, 0.2045, 0),
         *linkC_, Eigen::Vector3d::UnitZ());
 
     // Create a revolute joint between linkB and linkC.
-    CD_mobilizer_ = &AddRevoluteMobilizerFromSpaceXYZAnglesAndXYZ(
+    CD_joint_ = &AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
+        "CD_joint",
         *linkC_, Vector3d(M_PI_2, 0, 0), Vector3d(0, 0, 0.2155),
         *linkD_, Eigen::Vector3d::UnitZ());
 
     // Create a revolute joint between linkD and linkE.
-    DE_mobilizer_ = &AddRevoluteMobilizerFromSpaceXYZAnglesAndXYZ(
+    DE_joint_ = &AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
+        "DE_joint",
         *linkD_, Vector3d(-M_PI_2, M_PI, 0), Vector3d(0, 0.1845, 0),
         *linkE_, Eigen::Vector3d::UnitZ());
     // Create a revolute joint between linkE and linkF.
-    EF_mobilizer_ = &AddRevoluteMobilizerFromSpaceXYZAnglesAndXYZ(
+    EF_joint_ = &AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
+        "EF_joint",
         *linkE_, Vector3d(M_PI_2, 0, 0), Vector3d(0, 0, 0.2155),
         *linkF_, Eigen::Vector3d::UnitZ());
 
     // Create a revolute joint between linkE and linkF.
-    FG_mobilizer_ = &AddRevoluteMobilizerFromSpaceXYZAnglesAndXYZ(
+    FG_joint_ = &AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
+        "FG_joint",
         *linkF_, Vector3d(-M_PI_2, M_PI, 0), Vector3d(0, 0.081, 0),
         *linkG_, Eigen::Vector3d::UnitZ());
 
@@ -177,31 +185,6 @@ class DrakeKukaIIwaRobot {
  private:
   // Method to add revolute joint (mobilizer) from Body A to Body B.
   // @param[in] A     Mobilizer's inboard  body (frame Ab will be welded to A).
-  // @param[in] X_AAb Transform relating body A to frame Ab.
-  // @param[in] B     Mobilizer's outboard body (frame Ba will be welded to B).
-  // @param[in] X_BBa Transform relating body B to frame Ba.
-  // @param[in] revolute_unit_vector  Unit vector expressed in frame Ab that
-  //         characterizes a positive rotation of Ba from Ab (right-hand-rule).
-  // @return RevoluteMobilizer from frame Ab on Body A to frame Ba on Body B.
-  const RevoluteMobilizer<double>& AddRevoluteMobilizer(
-      const Body<double>& A, const Eigen::Isometry3d& X_AAb,
-      const Body<double>& B, const Eigen::Isometry3d& X_BBa,
-      const Eigen::Vector3d& revolute_unit_vector) {
-    // Add a FixedOffsetFrame Ab to Body A (Ab is mobilizer's inboard frame).
-    const FixedOffsetFrame<double>& Ab =
-        model_->AddFrame<FixedOffsetFrame>(A, X_AAb);
-
-    // Add a FixedOffsetFrame Ba to Body B (Ba is mobilizer's outboard frame).
-    const FixedOffsetFrame<double>& Ba =
-        model_->AddFrame<FixedOffsetFrame>(B, X_BBa);
-
-    // Return a new RevoluteMobilizer between inboard frame and outboard frame.
-    return model_->AddMobilizer<RevoluteMobilizer>(Ab, Ba,
-                                                   revolute_unit_vector);
-  }
-
-  // Method to add revolute joint (mobilizer) from Body A to Body B.
-  // @param[in] A     Mobilizer's inboard  body (frame Ab will be welded to A).
   // @param[in] q123A SpaceXYZ angles describing the rotation matrix relating
   //                  unit vectors Ax, Ay, Az to soon-to-be created frame Ab.
   // @param[in] xyzA  Ax, Ay, Az measures of the position from Ao to Abo.
@@ -211,10 +194,11 @@ class DrakeKukaIIwaRobot {
   //                  the outboard body B.
   // @param[in] revolute_unit_vector  Unit vector expressed in frame Ab that
   //         characterizes a positive rotation of Ba from Ab (right-hand-rule).
-  // @return RevoluteMobilizer from frame Ab on Body A to frame Ba on Body B.
-  const RevoluteMobilizer<double>& AddRevoluteMobilizerFromSpaceXYZAnglesAndXYZ(
-      const Body<double>& A, const Vector3d& q123A, const Vector3d& xyzA,
-      const Body<double>& B, const Vector3d& revolute_unit_vector) {
+  // @return RevoluteJoint from frame Ab on Body A to frame Ba on Body B.
+  const RevoluteJoint<double>& AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
+      const std::string& joint_name,
+      const RigidBody<double>& A, const Vector3d& q123A, const Vector3d& xyzA,
+      const RigidBody<double>& B, const Vector3d& revolute_unit_vector) {
     // Create transform from inboard body A to mobilizer inboard frame Ab.
     const Eigen::Isometry3d X_AAb = MakeIsometry3d(math::rpy2rotmat(q123A),
                                                    xyzA);
@@ -223,7 +207,9 @@ class DrakeKukaIIwaRobot {
     const Eigen::Isometry3d X_BBa = MakeIsometry3d(Eigen::Matrix3d::Identity(),
                                                    Vector3d(0, 0, 0));
 
-    return AddRevoluteMobilizer(A, X_AAb, B, X_BBa, revolute_unit_vector);
+    return model_->AddJoint<RevoluteJoint>(
+        joint_name,
+        A, X_AAb, B, X_BBa, revolute_unit_vector);
   }
 
   // Helper method to extract a pose from the position kinematics.
@@ -266,27 +252,27 @@ class DrakeKukaIIwaRobot {
                                        const double qDt[7]) {
     systems::Context<double> *context = context_.get();
 
-    NA_mobilizer_->set_angle(context, q[0]);
-    AB_mobilizer_->set_angle(context, q[1]);
-    BC_mobilizer_->set_angle(context, q[2]);
-    CD_mobilizer_->set_angle(context, q[3]);
-    DE_mobilizer_->set_angle(context, q[4]);
-    EF_mobilizer_->set_angle(context, q[5]);
-    FG_mobilizer_->set_angle(context, q[6]);
+    NA_joint_->set_angle(context, q[0]);
+    AB_joint_->set_angle(context, q[1]);
+    BC_joint_->set_angle(context, q[2]);
+    CD_joint_->set_angle(context, q[3]);
+    DE_joint_->set_angle(context, q[4]);
+    EF_joint_->set_angle(context, q[5]);
+    FG_joint_->set_angle(context, q[6]);
 
-    NA_mobilizer_->set_angular_rate(context, qDt[0]);
-    AB_mobilizer_->set_angular_rate(context, qDt[1]);
-    BC_mobilizer_->set_angular_rate(context, qDt[2]);
-    CD_mobilizer_->set_angular_rate(context, qDt[3]);
-    DE_mobilizer_->set_angular_rate(context, qDt[4]);
-    EF_mobilizer_->set_angular_rate(context, qDt[5]);
-    FG_mobilizer_->set_angular_rate(context, qDt[6]);
+    NA_joint_->set_angular_rate(context, qDt[0]);
+    AB_joint_->set_angular_rate(context, qDt[1]);
+    BC_joint_->set_angular_rate(context, qDt[2]);
+    CD_joint_->set_angular_rate(context, qDt[3]);
+    DE_joint_->set_angular_rate(context, qDt[4]);
+    EF_joint_->set_angular_rate(context, qDt[5]);
+    FG_joint_->set_angular_rate(context, qDt[6]);
   }
 
   // This model's MultibodyTree always has a built-in "world" body.
   // Newtonian reference frame (linkN) is the world body.
   std::unique_ptr<MultibodyTree<double>> model_;
-  const Body<double>* linkN_;
+  const RigidBody<double>* linkN_;
 
   // Rigid bodies (robot links).
   const RigidBody<double>* linkA_;
@@ -297,14 +283,14 @@ class DrakeKukaIIwaRobot {
   const RigidBody<double>* linkF_;
   const RigidBody<double>* linkG_;
 
-  // Joints (mobilizers).
-  const RevoluteMobilizer<double>* NA_mobilizer_;
-  const RevoluteMobilizer<double>* AB_mobilizer_;
-  const RevoluteMobilizer<double>* BC_mobilizer_;
-  const RevoluteMobilizer<double>* CD_mobilizer_;
-  const RevoluteMobilizer<double>* DE_mobilizer_;
-  const RevoluteMobilizer<double>* EF_mobilizer_;
-  const RevoluteMobilizer<double>* FG_mobilizer_;
+  // Joints.
+  const RevoluteJoint<double>* NA_joint_;
+  const RevoluteJoint<double>* AB_joint_;
+  const RevoluteJoint<double>* BC_joint_;
+  const RevoluteJoint<double>* CD_joint_;
+  const RevoluteJoint<double>* DE_joint_;
+  const RevoluteJoint<double>* EF_joint_;
+  const RevoluteJoint<double>* FG_joint_;
 
   // After model is finalized, create default context.
   std::unique_ptr<systems::Context<double>> context_;
