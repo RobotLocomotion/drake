@@ -227,7 +227,7 @@ void RobotPlanInterpolator::DoCalcUnrestrictedUpdate(
           break;
         case InterpolatorType::Pchip :
           plan.pp = PiecewisePolynomial<double>::Pchip(
-              input_time, knots);
+              input_time, knots, true);
           break;
         case InterpolatorType::Cubic :
           plan.pp = PiecewisePolynomial<double>::Cubic(

@@ -135,10 +135,10 @@ void DoTrajectoryTest(InterpolatorType interp_type) {
       break;
     case InterpolatorType::Pchip :
       interp_str = "Pchip";
-      cases.push_back(TrajectoryTestCase{0.5, 0.573, 1.021, -0.584});
+      cases.push_back(TrajectoryTestCase{0.5, 0.417, 1.333, 0.666});
       cases.push_back(TrajectoryTestCase{1.5, 1.333, 0.583, -0.666});
       cases.push_back(TrajectoryTestCase{2.7, 1.5, 0, 0});
-      cases.push_back(TrajectoryTestCase{3.5, 1.344, -0.563, -0.750});
+      cases.push_back(TrajectoryTestCase{3.5, 1.250, -0.75, 0});
       break;
     case InterpolatorType::Cubic :
       interp_str = "Cubic";
