@@ -31,7 +31,7 @@ namespace qp_inverse_dynamics {
  * tracking in Cartesian space, freeze if unexpected is sensed can be
  * implemented by different plan eval modules.
  */
-class ManipulatorMoveJointController
+class ManipulatorJointSpaceController
     : public systems::controllers::StateFeedbackControllerInterface<double>,
       public systems::Diagram<double> {
  public:
@@ -46,7 +46,7 @@ class ManipulatorMoveJointController
    * @param dt Time step
    * @param world_offset RigidBodyFrame X_WB, where B is the base of the robot.
    */
-  ManipulatorMoveJointController(
+  ManipulatorJointSpaceController(
       const std::string& model_path, const std::string& alias_group_path,
       const std::string& controller_config_path, double dt,
       std::shared_ptr<RigidBodyFrame<double>> world_offset = nullptr);

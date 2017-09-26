@@ -1,4 +1,4 @@
-#include "drake/examples/qp_inverse_dynamics/manipulator_move_joint_controller.h"
+#include "drake/examples/qp_inverse_dynamics/manipulator_joint_space_controller.h"
 
 #include <gtest/gtest.h>
 
@@ -21,11 +21,11 @@ using systems::controllers::qp_inverse_dynamics::ConstraintType;
 using systems::controllers::qp_inverse_dynamics::ParamSet;
 using systems::controllers::qp_inverse_dynamics::QpInput;
 
-// Builds a test diagram that gives a ManipulatorMoveJointController and
+// Builds a test diagram that gives a ManipulatorJointSpaceController and
 // a systems::InverseDynamicsController the exact same inputs (estimated state,
 // desired state and desired acceleration), and expects their outputs (torque)
 // to be the same assuming the computed torques are within the torque limits.
-class ManipulatorMoveJointControllerTest : public ::testing::Test {
+class ManipulatorJointSpaceControllerTest : public ::testing::Test {
  protected:
   void SetUp() override {
     const std::string kModelPath = FindResourceOrThrow(
@@ -65,7 +65,7 @@ class ManipulatorMoveJointControllerTest : public ::testing::Test {
     // Makes a diagram for testing.
     systems::DiagramBuilder<double> builder;
     auto qp_id_controller =
-        builder.AddSystem<ManipulatorMoveJointController>(
+        builder.AddSystem<ManipulatorJointSpaceController>(
             kModelPath, kAliasGroupsPath, kControlConfigPath, 0.02);
     qp_id_controller->set_name("qp_id_controller");
     params_ = &qp_id_controller->get_paramset();
@@ -136,13 +136,13 @@ class ManipulatorMoveJointControllerTest : public ::testing::Test {
     std::unique_ptr<systems::State<double>> state = context_->CloneState();
 
     // Generates QpInput from the plan eval block within
-    // ManipulatorMoveJointController.
+    // ManipulatorJointSpaceController.
     diagram_->CalcUnrestrictedUpdate(
         *context_, events->get_unrestricted_update_events(), state.get());
     context_->get_mutable_state()->CopyFrom(*state);
 
     // Generates QpOuput from the inverse dynamics block within
-    // ManipulatorMoveJointController.
+    // ManipulatorJointSpaceController.
     diagram_->CalcUnrestrictedUpdate(
          *context_, events->get_unrestricted_update_events(), state.get());
     context_->get_mutable_state()->CopyFrom(*state);
@@ -172,7 +172,7 @@ class ManipulatorMoveJointControllerTest : public ::testing::Test {
 // Tests QpInput from the plan eval component. The desired generalized
 // acceleration should equal to expected_vd_d_, and various modes and weights
 // should be specified by params_ loaded from kControlConfigPath.
-TEST_F(ManipulatorMoveJointControllerTest, PlanEvalTest) {
+TEST_F(ManipulatorJointSpaceControllerTest, PlanEvalTest) {
   const QpInput& qp_input =
       output_->get_data(plan_eval_output_index_)->GetValue<QpInput>();
 
@@ -210,9 +210,9 @@ TEST_F(ManipulatorMoveJointControllerTest, PlanEvalTest) {
   }
 }
 
-// The torque outputs from ManipulatorMoveJointController and
+// The torque outputs from ManipulatorJointSpaceController and
 // systems::InverseDynamicsController should be the same for this simple case.
-TEST_F(ManipulatorMoveJointControllerTest,
+TEST_F(ManipulatorJointSpaceControllerTest,
        CompareWithBasicInverseDyanmics) {
   EXPECT_EQ(context_->get_time(), 0);
   VectorX<double> qp_output =

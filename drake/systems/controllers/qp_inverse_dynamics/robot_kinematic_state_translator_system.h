@@ -10,7 +10,7 @@ namespace controllers {
 namespace qp_inverse_dynamics {
 
 /**
- * A simple translator class from a state vector to RobotKinematicState.
+ * Provides transformation from a state vector to RobotKinematicState.
  */
 template <typename T>
 class RobotKinematicStateTranslatorSystem : public LeafSystem<T> {
@@ -39,7 +39,7 @@ class RobotKinematicStateTranslatorSystem : public LeafSystem<T> {
   }
 
   /**
-   * Returns the input port for a state vector.
+   * Returns the input port for the state vector.
    */
   const InputPortDescriptor<T>& get_input_port() const {
     return System<T>::get_input_port(0);

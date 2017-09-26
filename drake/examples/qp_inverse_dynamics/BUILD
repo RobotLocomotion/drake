@@ -20,9 +20,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "manipulator_move_joint_controller",
-    srcs = ["manipulator_move_joint_controller.cc"],
-    hdrs = ["manipulator_move_joint_controller.h"],
+    name = "manipulator_joint_space_controller",
+    srcs = ["manipulator_joint_space_controller.cc"],
+    hdrs = ["manipulator_joint_space_controller.h"],
     deps = [
         ":manipulator_move_joint_plan_eval_system",
         "//drake/multibody/parsers",
@@ -37,8 +37,8 @@ drake_cc_library(
 # === test/ ===
 
 drake_cc_googletest(
-    name = "manipulator_move_joint_controller_test",
-    srcs = ["test/manipulator_move_joint_controller_test.cc"],
+    name = "manipulator_joint_space_controller_test",
+    srcs = ["test/manipulator_joint_space_controller_test.cc"],
     data = [
         "//drake/manipulation/models/iiwa_description:models",
         "//drake/systems/controllers/qp_inverse_dynamics:test/iiwa.alias_groups",  # noqa
@@ -46,7 +46,7 @@ drake_cc_googletest(
     ],
     tags = gurobi_test_tags(),
     deps = [
-        ":manipulator_move_joint_controller",
+        ":manipulator_joint_space_controller",
         "//drake/common:find_resource",
         "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/multibody/parsers",

@@ -1,4 +1,4 @@
-#include "drake/examples/qp_inverse_dynamics/manipulator_move_joint_controller.h"
+#include "drake/examples/qp_inverse_dynamics/manipulator_joint_space_controller.h"
 
 #include <memory>
 #include <string>
@@ -20,7 +20,7 @@ using systems::controllers::qp_inverse_dynamics::QpOutputTranslatorSystem;
 using systems::controllers::qp_inverse_dynamics::
     RobotKinematicStateTranslatorSystem;
 
-ManipulatorMoveJointController::ManipulatorMoveJointController(
+ManipulatorJointSpaceController::ManipulatorJointSpaceController(
     const std::string& model_path, const std::string& alias_group_path,
     const std::string& controller_config_path, double dt,
     std::shared_ptr<RigidBodyFrame<double>> world_offset) {
@@ -31,7 +31,7 @@ ManipulatorMoveJointController::ManipulatorMoveJointController(
 
   const RigidBodyTree<double>& robot = *robot_for_control_;
 
-  this->set_name("ManipulatorMoveJointController");
+  this->set_name("ManipulatorJointSpaceController");
 
   systems::DiagramBuilder<double> builder;
 
@@ -103,7 +103,7 @@ ManipulatorMoveJointController::ManipulatorMoveJointController(
   builder.BuildInto(this);
 }
 
-void ManipulatorMoveJointController::Initialize(
+void ManipulatorJointSpaceController::Initialize(
     systems::Context<double>* context) {
   systems::Context<double>& plan_eval_context =
       GetMutableSubsystemContext(*plan_eval_, context);
