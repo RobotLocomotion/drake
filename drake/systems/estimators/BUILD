@@ -29,6 +29,7 @@ drake_cc_library(
     srcs = ["luenberger_observer.cc"],
     hdrs = ["luenberger_observer.h"],
     deps = [
+        "//drake/common:default_scalars",
         "//drake/systems/framework",
     ],
 )
