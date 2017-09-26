@@ -105,6 +105,9 @@ class ForceElement : public
   /// All of these methods have the same signature. Refer to the documentation
   /// for CalcPotentialEnergy() for a detailed description of the input
   /// arguments of the methods in this group.
+  ///
+  // TODO(amcastro-tri): make this methods DoCalcXXX() when caching gets in and
+  // make the public API's to only take a Context.
   //@{
 
   /// Calculates the potential energy currently stored given the configuration
@@ -168,7 +171,10 @@ class ForceElement : public
   /// @endcond
 
  protected:
-  /// Implementation of NVI CalcAndAddForceContribution().
+  /// This method is called only from the public non-virtual
+  /// CalcAndAddForceContributions() which will already have error-checked
+  /// the parameters so you don't have to. Refer to the documentation for
+  /// CalcAndAddForceContribution() for details.
   /// It assumes both `F_B_W` and `tau` are valid pointers with appropriate
   /// sizes already checked by CalcAndAddForceContribution().
   /// @pre The position kinematics `pc` must have been previously updated with a
@@ -186,7 +192,7 @@ class ForceElement : public
   ///
   /// Specific force element subclasses must implement these to support scalar
   /// conversion to other types. These methods are only called from
-  /// MultibodyTree::CloneToScalar(), users _must_ not call these explicitely.
+  /// MultibodyTree::CloneToScalar(); users _must_ not call these explicitly.
   /// MultibodyTree::CloneToScalar() guarantees that by when
   /// ForceElement::CloneToScalar() is called, all Body, Frame and Mobilizer
   /// objects in the original tree (templated on T) to which `this`
@@ -194,7 +200,8 @@ class ForceElement : public
   /// (argument `tree_clone` for these methods). Therefore, implementations of
   /// ForceElement::DoCloneToScalar() can retrieve clones from `tree_clone` as
   /// needed.
-  /// Consider the following example for a `SpringElement<T>`:
+  /// Consider the following example for a `SpringElement<T>` used to model
+  /// an elastic spring between two bodies:
   /// @code
   ///   template <typename T>
   ///   class SpringElement {
