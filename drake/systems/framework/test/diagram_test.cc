@@ -1,6 +1,7 @@
 #include "drake/systems/framework/diagram.h"
 
 #include <Eigen/Dense>
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
@@ -11,6 +12,7 @@
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/output_port.h"
 #include "drake/systems/framework/test_utilities/pack_value.h"
+#include "drake/systems/framework/test_utilities/scalar_conversion.h"
 #include "drake/systems/primitives/adder.h"
 #include "drake/systems/primitives/constant_value_source.h"
 #include "drake/systems/primitives/constant_vector_source.h"
@@ -401,10 +403,22 @@ TEST_F(DiagramTest, ToAutoDiffXd) {
     }
   }
 
-  // If the Diagram contains a System that does not support AutoDiffXd, we
-  // cannot transmogrify the Diagram.
+  // When the Diagram contains a System that does not support AutoDiffXd,
+  // we cannot transmogrify the Diagram to AutoDiffXd.
   auto diagram_with_abstract = std::make_unique<ExampleDiagram>(kSize, true);
   EXPECT_THROW(diagram_with_abstract->ToAutoDiffXd(), std::exception);
+}
+
+/// Tests that a diagram can be transmogrified to symbolic.
+TEST_F(DiagramTest, ToSymbolic) {
+  // Upcast to `Diagram&` so that is_symbolic_convertible asserts the
+  // transmogrification result is merely a Diagram, not an ExampleDiagram.
+  const Diagram<double>& dut = *diagram_;
+  EXPECT_TRUE(is_symbolic_convertible(dut));
+
+  // No symbolic support when one of the subsystems does not declare support.
+  auto diagram_with_abstract = std::make_unique<ExampleDiagram>(kSize, true);
+  EXPECT_THROW(diagram_with_abstract->ToSymbolic(), std::exception);
 }
 
 // Tests that the same diagram can be evaluated into the same output with
@@ -679,10 +693,14 @@ GTEST_TEST(DiagramPublishTest, Publish) {
 // FeedbackDiagram is a diagram containing a feedback loop of two
 // constituent diagrams, an Integrator and a Gain. The Integrator is not
 // direct-feedthrough, so there is no algebraic loop.
+//
+// (N.B. Normally a class that supports scalar conversion, but does not offer a
+// SystemScalarConverter-accepting constructor would be marked `final`, but we
+// leave the `final` off here to test what happens during wrong-subclassing.)
 template <typename T>
 class FeedbackDiagram : public Diagram<T> {
  public:
-  FeedbackDiagram() : Diagram<T>() {
+  FeedbackDiagram() : Diagram<T>(SystemTypeTag<systems::FeedbackDiagram>{}) {
     constexpr int kSize = 1;
 
     DiagramBuilder<T> builder;
@@ -711,6 +729,11 @@ class FeedbackDiagram : public Diagram<T> {
     builder.Connect(*gain_diagram, *integrator_diagram);
     builder.BuildInto(this);
   }
+
+  // Scalar-converting copy constructor.
+  template <typename U>
+  explicit FeedbackDiagram(const FeedbackDiagram<U>& other)
+      : Diagram<T>(other) {}
 };
 
 // Tests that since there are no outputs, there is no direct feedthrough.
@@ -725,6 +748,35 @@ GTEST_TEST(FeedbackDiagramTest, DeletionIsMemoryClean) {
   FeedbackDiagram<double> diagram;
   auto context = diagram.CreateDefaultContext();
   EXPECT_NO_THROW(context.reset());
+}
+
+// If a SystemScalarConverter is passed into the Diagram constructor, then
+// transmogrification will preserve the subtype.
+TEST_F(DiagramTest, SubclassTransmogrificationTest) {
+  const FeedbackDiagram<double> dut;
+  EXPECT_TRUE(is_autodiffxd_convertible(dut, [](const auto& converted) {
+    EXPECT_FALSE(converted.HasAnyDirectFeedthrough());
+  }));
+  EXPECT_TRUE(is_symbolic_convertible(dut, [](const auto& converted) {
+    EXPECT_FALSE(converted.HasAnyDirectFeedthrough());
+  }));
+
+  // Diagram subclasses that declare a specific SystemTypeTag but then use a
+  // subclass at runtime will fail-fast.
+  class SubclassOfFeedbackDiagram : public FeedbackDiagram<double> {};
+  const SubclassOfFeedbackDiagram subclass_dut;
+  EXPECT_THROW(({
+    try {
+      subclass_dut.ToAutoDiffXd();
+    } catch (const std::runtime_error& e) {
+      EXPECT_THAT(
+          std::string(e.what()),
+          testing::MatchesRegex(
+              ".*convert a .*::FeedbackDiagram<double>.* called with a"
+              ".*::SubclassOfFeedbackDiagram at runtime"));
+      throw;
+    }
+  }), std::runtime_error);
 }
 
 // A simple class that consumes *two* inputs and passes one input through. The
