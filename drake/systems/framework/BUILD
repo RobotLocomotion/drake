@@ -531,7 +531,7 @@ drake_cc_googletest(
         "//drake/common:essential",
         "//drake/common/test_utilities:is_dynamic_castable",
         "//drake/systems/analysis:stateless_system",
-        "//drake/systems/framework/test_utilities:pack_value",
+        "//drake/systems/framework/test_utilities",
         "//drake/systems/primitives:adder",
         "//drake/systems/primitives:constant_value_source",
         "//drake/systems/primitives:constant_vector_source",
