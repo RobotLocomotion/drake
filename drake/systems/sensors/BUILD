@@ -45,7 +45,7 @@ drake_cc_library(
         "pixel_types.h",
     ],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common:reinit_after_move",
     ],
 )
@@ -60,7 +60,7 @@ drake_cc_library(
     ],
     deps = [
         ":image",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/systems/framework",
         "@lcmtypes_robotlocomotion",
         "@zlib",
@@ -150,7 +150,7 @@ drake_cc_library(
     srcs = ["vtk_util.cc"],
     hdrs = ["vtk_util.h"],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "@eigen",
         "@vtk//:vtkCommonCore",
         "@vtk//:vtkCommonTransforms",
@@ -225,7 +225,7 @@ drake_cc_library(
     ],
     deps = [
         ":accelerometer",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common:find_resource",
         "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant:drake_visualizer",
@@ -256,7 +256,7 @@ drake_cc_googletest(
     name = "camera_info_test",
     deps = [
         ":camera_info",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -271,8 +271,8 @@ drake_cc_googletest(
     name = "rotary_encoders_test",
     deps = [
         ":rotary_encoders",
-        "//drake/common:eigen_matrix_compare",
-        "//drake/common:symbolic_test_util",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/common/test_utilities:symbolic_test_util",
         "//drake/systems/framework/test_utilities",
     ],
 )
@@ -287,8 +287,8 @@ drake_cc_googletest(
     ],
     deps = [
         ":accelerometer_example_diagram",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:find_resource",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/lcm:mock",
         "//drake/systems/analysis:simulator",
     ],
@@ -299,7 +299,7 @@ drake_cc_googletest(
     srcs = ["test/depth_sensor_test.cc"],
     deps = [
         ":depth_sensor",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -320,8 +320,8 @@ drake_cc_googletest(
     ],
     deps = [
         ":gyroscope",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:find_resource",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/multibody/parsers",
     ],
 )
@@ -354,8 +354,8 @@ drake_cc_googletest(
     tags = ["manual"],
     deps = [
         ":rgbd_camera",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:find_resource",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant",

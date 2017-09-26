@@ -5,7 +5,8 @@
 #include <vtkSmartPointer.h>
 #include <vtkXMLPolyDataReader.h>
 
-#include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/eigen_geometry_compare.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/lcmtypes/drake/lcmt_viewer_draw.hpp"
 #include "drake/math/roll_pitch_yaw.h"
 
@@ -90,36 +91,6 @@ Matrix3Xd GenerateBoxPointCloud(double space, Bounds box) {
   return pts;
 }
 
-AssertionResult ExpectRotMat(const Eigen::Matrix3d& R,
-                             double tolerance) {
-  // Don't have access to common EXPECT_NEAR low-level macros :(
-  const double det = R.determinant();
-  const double det_err = fabs(det - 1);
-  if (det_err > tolerance) {
-    return AssertionFailure()
-           << "Determinant of R = " << det << " != 1 by an error of "
-           << det_err << "\nR = " << R;
-  }
-  return CompareMatrices(Matrix3d::Identity(), R.transpose() * R, tolerance)
-         << "Rotation matrix is non-orthonormal";
-}
-
-AssertionResult CompareTransforms(
-    const Eigen::Isometry3d& X_expected, const Eigen::Isometry3d& X_actual,
-    double tolerance) {
-  AssertionResult check_R_expected =
-      ExpectRotMat(X_expected.rotation(), tolerance);
-  if (!check_R_expected) {
-    return check_R_expected << "(X_expected)";
-  }
-  AssertionResult check_R_actual =
-      ExpectRotMat(X_actual.rotation(), tolerance);
-  if (!check_R_actual) {
-    return check_R_actual << "(X_actual)";
-  }
-  return CompareMatrices(X_expected.matrix(), X_actual.matrix(), tolerance);
-}
-
 AssertionResult CompareRotMatWithoutAxisSign(
     const Matrix3d& R_expected, const Matrix3d& R_actual, double tolerance) {
   // First, ensure both are rotation matrices.
@@ -157,8 +128,8 @@ AssertionResult CompareTransformWithoutAxisSign(
     return check_translation;
   }
   // Next, check rotation matrices.
-  return CompareRotMatWithoutAxisSign(X_expected.rotation(),
-                                      X_actual.rotation(), tolerance);
+  return CompareRotMatWithoutAxisSign(X_expected.linear(),
+                                      X_actual.linear(), tolerance);
 }
 
 namespace {
@@ -230,10 +201,15 @@ void GetObjectTestSetup(ObjectTestType type, ObjectTestSetup *setup) {
       //   print(f.transform)
       Isometry3d X_WmB;
       X_WmB.setIdentity();
-      X_WmB.linear() <<
-        0.147663, 0.642632, -0.751811,
-        0.988952, -0.10596, 0.103667,
+      Matrix3d R_WmB;
+      R_WmB <<
+         0.147663,  0.642632, -0.751811,
+         0.988952, -0.105960,  0.103667,
         -0.013042, -0.758812, -0.651179;
+      // R_WmB does not precisely belong to O(3) given that its entries are
+      // only specified with 6 digits of precision. Therefore we project it
+      // onto O(3) before using it:
+      X_WmB.linear() = math::ProjectMatToOrthonormalMat(R_WmB);
       X_WmB.translation() << -0.026111, 0.0496843, 0.548844;
 
       setup->X_WB = X_WmB;
@@ -282,7 +258,7 @@ void PointCloudVisualizer::PublishFrames(
     for (int j = 0; j < 3; ++j) {
       msg.position[i][j] = static_cast<float>(frame.translation()[j]);
     }
-    Quaternion<float> quat(frame.rotation().cast<float>());
+    Quaternion<float> quat(frame.linear().cast<float>());
     msg.quaternion[i][0] = quat.w();
     msg.quaternion[i][1] = quat.x();
     msg.quaternion[i][2] = quat.y();

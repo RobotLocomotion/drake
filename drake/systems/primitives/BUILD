@@ -158,7 +158,6 @@ drake_cc_library(
         "pass_through-inl.h",
     ],
     deps = [
-        "//drake/common:unused",
         "//drake/systems/framework",
     ],
 )
@@ -197,7 +196,8 @@ drake_cc_library(
     srcs = ["signal_log.cc"],
     hdrs = ["signal_log.h"],
     deps = [
-        "//drake/systems/framework",
+        "//drake/common:default_scalars",
+        "//drake/common:essential",
     ],
 )
 
@@ -219,7 +219,6 @@ drake_cc_library(
         "zero_order_hold-inl.h",
     ],
     deps = [
-        "//drake/common:unused",
         "//drake/systems/framework",
     ],
 )
@@ -236,7 +235,7 @@ drake_cc_googletest(
     name = "adder_test",
     deps = [
         ":adder",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/systems/framework",
         "//drake/systems/framework/test_utilities",
     ],
@@ -247,7 +246,7 @@ drake_cc_googletest(
     deps = [
         ":affine_linear_test",
         ":affine_system",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/systems/framework",
         "//drake/systems/framework/test_utilities",
     ],
@@ -257,7 +256,7 @@ drake_cc_googletest(
     name = "constant_value_source_test",
     deps = [
         ":constant_value_source",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/systems/framework",
     ],
 )
@@ -266,7 +265,7 @@ drake_cc_googletest(
     name = "constant_vector_source_test",
     deps = [
         ":constant_vector_source",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/systems/framework",
         "//drake/systems/framework/test_utilities:my_vector",
     ],
@@ -276,8 +275,9 @@ drake_cc_googletest(
     name = "demultiplexer_test",
     deps = [
         ":demultiplexer",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/systems/framework",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 
@@ -290,6 +290,7 @@ drake_cc_googletest(
         ":first_order_low_pass_filter",
         "//drake/common:unused",
         "//drake/systems/framework",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 
@@ -301,9 +302,10 @@ drake_cc_googletest(
     ],
     deps = [
         ":gain",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:symbolic",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/systems/framework",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 
@@ -311,7 +313,7 @@ drake_cc_googletest(
     name = "integrator_test",
     deps = [
         ":integrator",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/systems/framework",
         "//drake/systems/framework/test_utilities",
     ],
@@ -322,7 +324,7 @@ drake_cc_googletest(
     deps = [
         ":affine_linear_test",
         ":linear_system",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/examples/pendulum:pendulum_plant",
         "//drake/systems/framework",
         "//drake/systems/framework/test_utilities",
@@ -334,7 +336,7 @@ drake_cc_googletest(
     deps = [
         ":affine_linear_test",
         ":matrix_gain",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/systems/framework",
         "//drake/systems/framework/test_utilities",
     ],
@@ -344,8 +346,8 @@ drake_cc_googletest(
     name = "multiplexer_test",
     deps = [
         ":multiplexer",
-        "//drake/common:eigen_matrix_compare",
-        "//drake/common:is_dynamic_castable",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/common/test_utilities:is_dynamic_castable",
         "//drake/systems/framework",
         "//drake/systems/framework/test_utilities:my_vector",
     ],
@@ -359,8 +361,9 @@ drake_cc_googletest(
     ],
     deps = [
         ":pass_through",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/systems/framework",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 
@@ -369,7 +372,7 @@ drake_cc_googletest(
     deps = [
         ":random_source",
         ":signal_logger",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/systems/analysis",
     ],
 )
@@ -387,7 +390,7 @@ drake_cc_googletest(
         ":affine_system",
         ":linear_system",
         ":signal_logger",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/systems/analysis:simulator",
         "//drake/systems/framework",
     ],
@@ -397,7 +400,7 @@ drake_cc_googletest(
     name = "trajectory_source_test",
     deps = [
         ":trajectory_source",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/common/trajectories:piecewise_polynomial_trajectory",
         "//drake/systems/framework",
     ],
@@ -407,8 +410,9 @@ drake_cc_googletest(
     name = "zero_order_hold_test",
     deps = [
         ":zero_order_hold",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/systems/framework",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 

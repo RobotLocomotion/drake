@@ -2,10 +2,7 @@
 
 #include <utility>
 
-#include "drake/common/autodiff_overloads.h"
-#include "drake/common/eigen_autodiff_types.h"
-#include "drake/common/symbolic.h"
-#include "drake/systems/framework/basic_vector.h"
+#include "drake/common/default_scalars.h"
 
 namespace drake {
 namespace systems {
@@ -65,9 +62,12 @@ SpringMassStateVector<T>* SpringMassStateVector<T>::DoClone() const {
 }
 
 template <typename T>
-SpringMassSystem<T>::SpringMassSystem(double spring_constant_N_per_m,
-                                      double mass_kg, bool system_is_forced)
-    : LeafSystem<T>(SystemTypeTag<systems::SpringMassSystem>{}),
+SpringMassSystem<T>::SpringMassSystem(
+    SystemScalarConverter converter,
+    double spring_constant_N_per_m,
+    double mass_kg,
+    bool system_is_forced)
+    : LeafSystem<T>(std::move(converter)),
       spring_constant_N_per_m_(spring_constant_N_per_m),
       mass_kg_(mass_kg),
       system_is_forced_(system_is_forced) {
@@ -81,6 +81,17 @@ SpringMassSystem<T>::SpringMassSystem(double spring_constant_N_per_m,
   this->DeclareContinuousState(SpringMassStateVector<T>(),
       1 /* num_q */, 1 /* num_v */, 1 /* num_z */);
 }
+
+template <typename T>
+SpringMassSystem<T>::SpringMassSystem(
+    double spring_constant_N_per_m,
+    double mass_kg,
+    bool system_is_forced)
+    : SpringMassSystem(
+          SystemTypeTag<systems::SpringMassSystem>{},
+          spring_constant_N_per_m,
+          mass_kg,
+          system_is_forced) {}
 
 template <typename T>
 template <typename U>
@@ -182,12 +193,12 @@ void SpringMassSystem<T>::DoCalcTimeDerivatives(
       this->CalcConservativePower(context));
 }
 
-template class SpringMassStateVector<double>;
-template class SpringMassStateVector<AutoDiffXd>;
-template class SpringMassStateVector<symbolic::Expression>;
-template class SpringMassSystem<double>;
-template class SpringMassSystem<AutoDiffXd>;
-template class SpringMassSystem<symbolic::Expression>;
 
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::SpringMassStateVector)
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::SpringMassSystem)

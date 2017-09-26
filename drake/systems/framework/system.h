@@ -26,6 +26,7 @@
 #include "drake/systems/framework/output_port.h"
 #include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/system_constraint.h"
+#include "drake/systems/framework/system_scalar_converter.h"
 #include "drake/systems/framework/witness_function.h"
 
 namespace drake {
@@ -40,6 +41,22 @@ class SystemImpl {
 
   // The implementation of System<T>::GetMemoryObjectName.
   static std::string GetMemoryObjectName(const std::string&, int64_t);
+
+ private:
+  // Attorney-Client idiom to expose a subset of private elements of System.
+  // We are the attorney.  These are the clients that can access our private
+  // members, and thus access some subset of System's private members.
+  template <typename> friend class Diagram;
+
+  // Return a mutable reference to the System's SystemScalarConverter.  Diagram
+  // needs this in order to withdraw support for certain scalar type conversion
+  // operations once it learns about what its subsystems support.
+  template <typename T>
+  static SystemScalarConverter& get_mutable_system_scalar_converter(
+      System<T>* system) {
+    DRAKE_DEMAND(system != nullptr);
+    return system->system_scalar_converter_;
+  }
 };
 /** @endcond */
 
@@ -1018,8 +1035,7 @@ class System {
   template <template <typename> class S = ::drake::systems::System>
   static std::unique_ptr<S<AutoDiffXd>> ToAutoDiffXd(const S<T>& from) {
     using U = AutoDiffXd;
-    const System<T>& from_system = from;  // Upcast to unlock protected methods.
-    std::unique_ptr<System<U>> base_result{from_system.DoToAutoDiffXd()};
+    std::unique_ptr<System<U>> base_result = from.ToAutoDiffXdMaybe();
     if (!base_result) {
       std::stringstream ss;
       ss << "The object named [" << from.get_name() << "] of type "
@@ -1033,8 +1049,6 @@ class System {
     std::unique_ptr<S<U>> result{&dynamic_cast<S<U>&>(*base_result)};
     base_result.release();
 
-    // Match the result's name to its originator.
-    result->set_name(from.get_name());
     return result;
   }
 
@@ -1042,7 +1056,8 @@ class System {
   /// returns nullptr if this System does not support autodiff, instead of
   /// throwing an exception.
   std::unique_ptr<System<AutoDiffXd>> ToAutoDiffXdMaybe() const {
-    std::unique_ptr<System<AutoDiffXd>> result{DoToAutoDiffXd()};
+    std::unique_ptr<System<AutoDiffXd>> result =
+        system_scalar_converter_.Convert<AutoDiffXd, T>(*this);
     if (result) {
       // Match the result's name to its originator.
       result->set_name(this->get_name());
@@ -1087,8 +1102,7 @@ class System {
   template <template <typename> class S = ::drake::systems::System>
   static std::unique_ptr<S<symbolic::Expression>> ToSymbolic(const S<T>& from) {
     using U = symbolic::Expression;
-    const System<T>& from_system = from;  // Upcast to unlock protected methods.
-    std::unique_ptr<System<U>> base_result{from_system.DoToSymbolic()};
+    std::unique_ptr<System<U>> base_result = from.ToSymbolicMaybe();
     if (!base_result) {
       std::stringstream ss;
       ss << "The object named [" << from.get_name() << "] of type "
@@ -1102,8 +1116,6 @@ class System {
     std::unique_ptr<S<U>> result{&dynamic_cast<S<U>&>(*base_result)};
     base_result.release();
 
-    // Match the result's name to its originator.
-    result->set_name(from.get_name());
     return result;
   }
 
@@ -1111,7 +1123,8 @@ class System {
   /// nullptr if this System does not support symbolic, instead of throwing an
   /// exception.
   std::unique_ptr<System<symbolic::Expression>> ToSymbolicMaybe() const {
-    std::unique_ptr<System<symbolic::Expression>> result{DoToSymbolic()};
+    std::unique_ptr<System<symbolic::Expression>> result =
+        system_scalar_converter_.Convert<symbolic::Expression, T>(*this);
     if (result) {
       // Match the result's name to its originator.
       result->set_name(this->get_name());
@@ -1160,6 +1173,13 @@ class System {
         DRAKE_ABORT_MSG("Unknown descriptor type.");
       }
     }
+  }
+
+  /// (Advanced) Returns the SystemScalarConverter for this object.  This is an
+  /// expert-level API intended for framework authors.  Most users should
+  /// prefer the convenience helpers such as System::ToAutoDiffXd.
+  const SystemScalarConverter& get_system_scalar_converter() const {
+    return system_scalar_converter_;
   }
 
   //@}
@@ -1282,15 +1302,27 @@ class System {
   /// Authors of derived %Systems can use these methods in the constructor
   /// for those %Systems.
   //@{
-  /// Constructs an empty %System base class object.
-  System() {}
+  /// Constructs an empty %System base class object, possibly supporting
+  /// scalar-type conversion support (AutoDiff, etc.) using @p converter.
+  ///
+  /// See @ref system_scalar_conversion for detailed background and examples
+  /// related to scalar-type conversion support.
+  explicit System(SystemScalarConverter converter)
+      : system_scalar_converter_(std::move(converter)) {}
 
   /// Adds a port with the specified @p type and @p size to the input topology.
+  /// If the port is intended to model a random noise or disturbance input,
+  /// @p random_type can (optionally) be used to label it as such; doing so
+  /// enables algorithms for design and analysis (e.g. state estimation) to
+  /// reason explicitly about randomness at the system level.  All random input
+  /// ports are assumed to be statistically independent.
   /// @return descriptor of declared port.
-  const InputPortDescriptor<T>& DeclareInputPort(PortDataType type, int size) {
+  const InputPortDescriptor<T>& DeclareInputPort(
+      PortDataType type, int size,
+      optional<RandomDistribution> random_type = nullopt) {
     int port_index = get_num_input_ports();
-    input_ports_.push_back(
-        std::make_unique<InputPortDescriptor<T>>(this, port_index, type, size));
+    input_ports_.push_back(std::make_unique<InputPortDescriptor<T>>(
+        this, port_index, type, size, random_type));
     return *input_ports_.back();
   }
 
@@ -1542,16 +1574,6 @@ class System {
     DRAKE_THROW_UNLESS(qdot->size() == n);
     qdot->SetFromVector(generalized_velocity);
   }
-
-  /// NVI implementation of ToAutoDiffXdMaybe. Caller takes ownership of the
-  /// returned pointer.
-  /// @return nullptr if this System does not support autodiff
-  virtual System<AutoDiffXd>* DoToAutoDiffXd() const { return nullptr; }
-
-  /// NVI implementation of ToSymbolicMaybe. Caller takes ownership of the
-  /// returned pointer.
-  /// @return nullptr if this System does not support symbolic form
-  virtual System<symbolic::Expression>* DoToSymbolic() const { return nullptr; }
   //@}
 
 //----------------------------------------------------------------------------
@@ -1690,6 +1712,10 @@ class System {
   }
 
  private:
+  // Attorney-Client idiom to expose a subset of private elements of System.
+  // Refer to SystemImpl comments for details.
+  friend class SystemImpl;
+
   std::string name_;
   // input_ports_ and output_ports_ are vectors of unique_ptr so that references
   // to the descriptors will remain valid even if the vector is resized.
@@ -1708,6 +1734,9 @@ class System {
       forced_discrete_update_{nullptr};
   std::unique_ptr<EventCollection<UnrestrictedUpdateEvent<T>>>
       forced_unrestricted_update_{nullptr};
+
+  // Functions to convert this system to use alternative scalar types.
+  SystemScalarConverter system_scalar_converter_;
 
   // TODO(sherm1) Replace these fake cache entries with real cache asap.
   // These are temporaries and hence uninitialized.

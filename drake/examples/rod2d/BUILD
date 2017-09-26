@@ -18,7 +18,7 @@ drake_cc_binary(
     test_rule_args = [" --sim_duration=0.01"],
     deps = [
         ":rod2d",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common:text_logging_gflags",
         "//drake/lcm",
         "//drake/lcmtypes:viewer",
@@ -40,7 +40,7 @@ drake_cc_library(
         "rod2d-inl.h",
     ],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/multibody/constraint",
         "//drake/solvers:mathematical_program",
         "//drake/systems/framework:leaf_system",
@@ -54,8 +54,8 @@ drake_cc_googletest(
     name = "rod2d_test",
     deps = [
         ":rod2d",
-        "//drake/common",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common:essential",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/multibody/constraint:constraint_solver",
         "//drake/systems/analysis",
     ],

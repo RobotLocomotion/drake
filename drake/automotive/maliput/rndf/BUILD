@@ -26,7 +26,7 @@ drake_cc_library(
     deps = [
         ":lanes",
         "//drake/automotive/maliput/api",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common/trajectories:piecewise_polynomial",
         "//drake/math:geometric_transform",
         "//drake/math:saturate",
@@ -57,7 +57,7 @@ drake_cc_library(
     ],
     deps = [
         "//drake/automotive/maliput/api",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common/trajectories:piecewise_polynomial",
         "//drake/math:geometric_transform",
         "//drake/math:saturate",

@@ -554,7 +554,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// the vector of generalized forces `tau` that would correspond with a known
   /// set of spatial accelerations `A_WB` for each body in the MultibodyTree.
   ///
-  /// This method aborts in Debug builds when `F_BMo_W_array` is the nullptr.
+  /// This method aborts in Debug builds when `F_BMo_W_array` is nullptr.
   ///
   /// @param[in] context The context with the state of the MultibodyTree model.
   /// @param[in] pc
@@ -1106,10 +1106,10 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   //   2. b_Bo = 0 when w_WB = 0.
   //   3. b_Bo.translational() = 0 when Bo = Bcm (p_BoBcm = 0).
   void CalcBodySpatialForceGivenItsSpatialAcceleration(
-      const MultibodyTreeContext<T> &context,
-      const PositionKinematicsCache<T> &pc,
-      const VelocityKinematicsCache<T> &vc,
-      const SpatialAcceleration<T> &A_WB, SpatialForce<T> *Ftot_BBo_W_ptr)
+      const MultibodyTreeContext<T>& context,
+      const PositionKinematicsCache<T>& pc,
+      const VelocityKinematicsCache<T>& vc,
+      const SpatialAcceleration<T>& A_WB, SpatialForce<T>* Ftot_BBo_W_ptr)
   const {
     DRAKE_DEMAND(Ftot_BBo_W_ptr != nullptr);
     // TODO(amcastro-tri): add argument for flexible body generalized

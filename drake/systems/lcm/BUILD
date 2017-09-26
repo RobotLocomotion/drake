@@ -27,7 +27,7 @@ drake_cc_library(
         "translator_system.h",
     ],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/lcm:translator_base",
         "//drake/systems/framework",
     ],
@@ -89,7 +89,7 @@ drake_cc_googletest(
         "no_tsan",
     ],
     deps = [
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/lcm",
         "//drake/lcmtypes:drake_signal",
         "//drake/systems/framework",

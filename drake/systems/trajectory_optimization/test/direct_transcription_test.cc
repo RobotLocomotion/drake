@@ -6,8 +6,8 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff.h"
 #include "drake/systems/primitives/linear_system.h"
 
@@ -40,7 +40,8 @@ class CubicPolynomialSystem final : public systems::LeafSystem<T> {
       : systems::LeafSystem<T>(
             systems::SystemTypeTag<
                 trajectory_optimization::CubicPolynomialSystem>{}),
-        timestep_(timestep) {       // Zero inputs, zero outputs.
+        timestep_(timestep) {
+    // Zero inputs, zero outputs.
     this->DeclareDiscreteState(1);  // One state variable.
     this->DeclarePeriodicDiscreteUpdate(timestep);
   }
@@ -60,10 +61,40 @@ class CubicPolynomialSystem final : public systems::LeafSystem<T> {
       DiscreteValues<T>* discrete_state) const final {
     using std::pow;
     discrete_state->get_mutable_vector(0)->SetAtIndex(
-        0, pow(context.get_discrete_state(0)->get_value()[0], 3.0));
+        0, pow(context.get_discrete_state(0)->GetAtIndex(0), 3.0));
   }
 
   const double timestep_{0.0};
+};
+
+template <typename T>
+class LinearSystemWParams final : public systems::LeafSystem<T> {
+ public:
+  LinearSystemWParams()
+      : systems::LeafSystem<T>(
+            systems::SystemTypeTag<
+                trajectory_optimization::LinearSystemWParams>{}) {
+    // Zero inputs, zero outputs.
+    this->DeclareDiscreteState(1);                     // One state variable.
+    this->DeclareNumericParameter(BasicVector<T>(1));  // One parameter.
+    this->DeclarePeriodicDiscreteUpdate(1.0);
+  }
+
+  // Scalar-converting copy constructor.
+  template <typename U>
+  explicit LinearSystemWParams(const LinearSystemWParams<U>& system)
+      : LinearSystemWParams() {}
+
+ private:
+  // x[n+1] = p0 * x[n]
+  void DoCalcDiscreteVariableUpdates(
+      const Context<T>& context,
+      const std::vector<const DiscreteUpdateEvent<T>*>&,
+      DiscreteValues<T>* discrete_state) const final {
+    discrete_state->get_mutable_vector(0)->SetAtIndex(
+        0, context.get_numeric_parameter(0)->GetAtIndex(0) *
+               context.get_discrete_state(0)->GetAtIndex(0));
+  }
 };
 
 }  // namespace
@@ -169,6 +200,34 @@ GTEST_TEST(DirectTranscriptionTest, AddRunningCostTest) {
 
   // Cost is x[N] + \sum_{0...N-1} h*x[i]
   EXPECT_NEAR(prog.GetOptimalCost(), kTimeStep * (kNumSamples - 1) + 1, 1e-6);
+}
+
+// Check symbolic dynamics with parameters.
+GTEST_TEST(DirectTranscriptionTest, LinearSystemWParamsTest) {
+  LinearSystemWParams<double> system;
+
+  const auto context = system.CreateDefaultContext();
+  const double kGain = -1.0;
+  context->get_mutable_numeric_parameter(0)->SetAtIndex(0, kGain);
+  const int kNumSampleTimes = 3;
+  DirectTranscription prog(&system, *context, kNumSampleTimes);
+
+  // Sets all decision variables to trivial known values (1,2,3,...).
+  prog.SetDecisionVariableValues(
+      Eigen::VectorXd::LinSpaced(prog.num_vars(), 1, prog.num_vars()));
+
+  // Constructor should add dynamic constraints, and these are the
+  // only generic constraints that should be in the program so far.
+  const std::vector<solvers::Binding<solvers::LinearEqualityConstraint>>&
+      dynamic_constraints = prog.linear_equality_constraints();
+  EXPECT_EQ(dynamic_constraints.size(), kNumSampleTimes - 1);
+
+  for (int i = 0; i < (kNumSampleTimes - 1); i++) {
+    // Checks that x[n+1] = kGain*x[n].
+    EXPECT_EQ(prog.EvalBindingAtSolution(dynamic_constraints[i])[0],
+              prog.GetSolution(prog.state(i + 1)[0]) -
+                  kGain * prog.GetSolution(prog.state(i)[0]));
+  }
 }
 
 // TODO(russt): Add tests for ReconstructTrajectory methods once their output is

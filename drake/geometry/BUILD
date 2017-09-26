@@ -22,7 +22,17 @@ drake_cc_library(
     ],
     deps = [
         ":geometry_ids",
-        "//drake/common",
+        "//drake/common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "geometry_context",
+    srcs = ["geometry_context.cc"],
+    hdrs = ["geometry_context.h"],
+    deps = [
+        ":geometry_state",
+        "//drake/systems/framework:leaf_context",
     ],
 )
 
@@ -30,7 +40,7 @@ drake_cc_library(
     name = "geometry_frame",
     srcs = [],
     hdrs = ["geometry_frame.h"],
-    deps = ["//drake/common"],
+    deps = ["//drake/common:essential"],
 )
 
 drake_cc_library(
@@ -53,8 +63,8 @@ drake_cc_library(
     hdrs = ["geometry_instance.h"],
     deps = [
         ":shape_specification",
-        "//drake/common",
         "//drake/common:copyable_unique_ptr",
+        "//drake/common:essential",
     ],
 )
 
@@ -81,12 +91,25 @@ drake_cc_library(
         "query_handle.h",
     ],
     deps = [
-        ":geometry_frame",
-        ":geometry_instance",
+        ":geometry_context",
         ":geometry_state",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/geometry/query_results:penetration_as_point_pair",
         "//drake/systems/framework",
+        "//drake/systems/rendering:pose_bundle",
+    ],
+)
+
+drake_cc_library(
+    name = "geometry_visualization",
+    srcs = ["geometry_visualization.cc"],
+    hdrs = ["geometry_visualization.h"],
+    deps = [
+        ":geometry_state",
+        ":geometry_system",
+        "//drake/lcm",
+        "//drake/lcmtypes:viewer",
+        "//drake/math:geometric_transform",
     ],
 )
 
@@ -97,7 +120,7 @@ drake_cc_library(
     deps = [
         ":geometry_ids",
         ":geometry_index",
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -109,8 +132,8 @@ drake_cc_library(
         ":geometry_ids",
         ":geometry_index",
         ":shape_specification",
-        "//drake/common",
         "//drake/common:copyable_unique_ptr",
+        "//drake/common:essential",
     ],
 )
 
@@ -118,14 +141,14 @@ drake_cc_library(
     name = "identifier",
     srcs = [],
     hdrs = ["identifier.h"],
-    deps = ["//drake/common"],
+    deps = ["//drake/common:essential"],
 )
 
 drake_cc_library(
     name = "shape_specification",
     srcs = ["shape_specification.cc"],
     hdrs = ["shape_specification.h"],
-    deps = ["//drake/common"],
+    deps = ["//drake/common:essential"],
 )
 
 # -----------------------------------------------------
@@ -148,7 +171,7 @@ drake_cc_googletest(
     name = "frame_kinematics_vector_test",
     deps = [
         ":frame_kinematics",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -165,7 +188,7 @@ drake_cc_googletest(
     deps = [
         ":expect_error_message",
         ":geometry_state",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -174,6 +197,7 @@ drake_cc_googletest(
     deps = [
         ":expect_error_message",
         ":geometry_system",
+        ":geometry_visualization",
     ],
 )
 
@@ -186,8 +210,8 @@ drake_cc_googletest(
     name = "shape_specification_test",
     deps = [
         ":shape_specification",
-        "//drake/common:eigen_matrix_compare",
-        "//drake/common:is_dynamic_castable",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/common/test_utilities:is_dynamic_castable",
     ],
 )
 

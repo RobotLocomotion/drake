@@ -1,26 +1,18 @@
 #include "drake/systems/framework/event_collection.h"
 
-#include "drake/common/autodiff_overloads.h"
-#include "drake/common/drake_assert.h"
-#include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/default_scalars.h"
 
-namespace drake {
-namespace systems {
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::PublishEvent)
 
-template class PublishEvent<double>;
-template class PublishEvent<AutoDiffXd>;
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::DiscreteUpdateEvent)
 
-template class DiscreteUpdateEvent<double>;
-template class DiscreteUpdateEvent<AutoDiffXd>;
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::UnrestrictedUpdateEvent)
 
-template class UnrestrictedUpdateEvent<double>;
-template class UnrestrictedUpdateEvent<AutoDiffXd>;
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::LeafCompositeEventCollection)
 
-template class LeafCompositeEventCollection<double>;
-template class LeafCompositeEventCollection<AutoDiffXd>;
-
-template class DiagramCompositeEventCollection<double>;
-template class DiagramCompositeEventCollection<AutoDiffXd>;
-
-}  // namespace systems
-}  // namespace drake
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::DiagramCompositeEventCollection)

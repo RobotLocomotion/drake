@@ -16,7 +16,7 @@ drake_cc_library(
     srcs = ["pose_closed_form.cc"],
     hdrs = ["pose_closed_form.h"],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/math:geometric_transform",
     ],
 )
@@ -59,8 +59,9 @@ drake_cc_library(
     hdrs = ["test/test_util.h"],
     data = [":test_models"],
     deps = [
-        "//drake/common",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common:essential",
+        "//drake/common/test_utilities:eigen_geometry_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/lcm",
         "//drake/lcmtypes:viewer",
         "//drake/math:geometric_transform",
@@ -76,6 +77,7 @@ drake_cc_googletest(
     deps = [
         ":pose_closed_form",
         ":test_util",
+        "//drake/common/test_utilities:eigen_geometry_compare",
     ],
 )
 
@@ -89,6 +91,7 @@ drake_cc_googletest(
         ":test_util",
         "//drake/common:find_resource",
         "//drake/lcmtypes:viewer",
+        "//drake/math:geometric_transform",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/parsers",

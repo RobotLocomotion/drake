@@ -96,3 +96,62 @@ def determine_os(repository_ctx):
         return _determine_linux(repository_ctx)
     else:
         return _make_result(error = "unknown or unsupported OS '%s'" % os_name)
+
+def os_specific_alias(repository_ctx, mapping):
+    """
+    A repository_rule helper function that creates a BUILD file with alias()
+    declarations based on which supported OS version we are targeting.
+
+    Argument:
+        repository_ctx: The context passed to the repository_rule calling this.
+        mapping: dict(str, list(str)) where the keys match the OS, and the list
+            of values are of the form name=actual as in alias(name, actual).
+
+    The keys of mapping are searched in the following preferential order:
+    - Exact release, via e.g., "Ubuntu 16.04"
+    - Any release, via "Ubuntu default" or "Mac default"
+    - Anything else, via "default"
+    """
+
+    os_result = determine_os(repository_ctx)
+    if os_result.error != None:
+        fail(os_result.error)
+
+    # Find the best match in the mapping dict for our OS.
+    keys = []
+    if os_result.ubuntu_release:
+        keys = [
+            "Ubuntu " + os_result.ubuntu_release,
+            "Ubuntu default",
+            "default",
+        ]
+    elif os_result.is_mac:
+        keys = [
+            "Mac default",
+            "default",
+        ]
+    found_items = None
+    for key in keys:
+        if key in mapping:
+            found_items = mapping[key]
+            break
+    if not found_items:
+        fail("Unsupported os_result " + repr(os_result))
+
+    # Emit the list of aliases.
+    file_content = "package(default_visibility = ['//visibility:public'])\n"
+    for item in found_items:
+        name, actual = item.split("=")
+        file_content += 'alias(name = "{}", actual = "{}")\n'.format(
+            name, actual)
+    repository_ctx.file("BUILD", content = file_content, executable = False)
+
+def _os_specific_alias_impl(repository_ctx):
+    os_specific_alias(repository_ctx, repository_ctx.attr.mapping)
+
+os_specific_alias_repository = repository_rule(
+    attrs = {
+        "mapping": attr.string_list_dict(mandatory = True),
+    },
+    implementation = _os_specific_alias_impl,
+)

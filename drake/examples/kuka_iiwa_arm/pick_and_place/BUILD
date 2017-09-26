@@ -25,7 +25,7 @@ drake_cc_library(
         "world_state.h",
     ],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common/trajectories:piecewise_polynomial",
         "//drake/common/trajectories:piecewise_quaternion",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
@@ -44,6 +44,10 @@ drake_cc_googletest(
     data = [
         "//drake/manipulation/models/iiwa_description:models",
     ],
+    # TODO(eric.cousineau): Remove this tag once #3128 or the IK redux lands.
+    # On some CI machines without SNOPT, system IPOPT is used, and exceeds time
+    # limits under memcheck with -c dbg.
+    tags = ["no_memcheck"],
     deps = [
         ":pick_and_place",
         "//drake/common:find_resource",
@@ -57,8 +61,8 @@ drake_cc_googletest(
     ],
     deps = [
         ":pick_and_place",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:find_resource",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 

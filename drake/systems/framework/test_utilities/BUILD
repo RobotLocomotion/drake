@@ -34,7 +34,7 @@ drake_cc_library(
     srcs = [],
     hdrs = ["my_vector.h"],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/systems/framework:vector",
     ],
 )
@@ -45,7 +45,7 @@ drake_cc_library(
     srcs = [],
     hdrs = ["scalar_conversion.h"],
     deps = [
-        "//drake/common:is_dynamic_castable",
+        "//drake/common/test_utilities:is_dynamic_castable",
     ],
 )
 

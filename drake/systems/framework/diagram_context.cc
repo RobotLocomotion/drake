@@ -1,12 +1,9 @@
 #include "drake/systems/framework/diagram_context.h"
 
-namespace drake {
-namespace systems {
+#include "drake/common/default_scalars.h"
 
-template class DiagramState<double>;
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::DiagramState)
 
-template class DiagramContext<double>;
-
-}  // namespace systems
-}  // namespace drake
-
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::DiagramContext)

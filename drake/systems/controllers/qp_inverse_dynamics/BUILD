@@ -56,7 +56,7 @@ drake_cc_library(
     ],
     deps = [
         ":robot_kinematic_state",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/math:gradient",
         "//drake/multibody:rigid_body_tree",
         "//drake/solvers:mathematical_program",
@@ -103,8 +103,8 @@ drake_cc_googletest(
     ],
     deps = [
         ":lcm_utils",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:find_resource",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/multibody/parsers",
     ],
 )
@@ -119,8 +119,8 @@ drake_cc_googletest(
     ],
     deps = [
         ":param_parser",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:find_resource",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/multibody:rigid_body_tree_alias_groups",
         "//drake/multibody/parsers",
     ],
@@ -138,8 +138,8 @@ drake_cc_googletest(
     deps = [
         ":param_parser",
         ":qp_inverse_dynamics",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:find_resource",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/multibody/parsers",
         "//drake/systems/controllers:setpoint",
     ],
@@ -156,8 +156,8 @@ drake_cc_googletest(
     tags = gurobi_test_tags(),
     deps = [
         ":qp_inverse_dynamics_system",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:find_resource",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/multibody/parsers",
         "//drake/systems/analysis:simulator",
         "//drake/systems/controllers:setpoint",

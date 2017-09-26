@@ -28,8 +28,8 @@ drake_cc_library(
         "point_contact_detail.h",
     ],
     deps = [
-        "//drake/common",
         "//drake/common:copyable_unique_ptr",
+        "//drake/common:essential",
         "//drake/math:orthonormal_basis",
         "//drake/multibody:rigid_body_tree",
     ],
@@ -47,8 +47,8 @@ drake_cc_library(
     ],
     deps = [
         ":compliant_contact_model",
-        "//drake/common",
         "//drake/common:copyable_unique_ptr",
+        "//drake/common:essential",
         "//drake/multibody:rigid_body_tree",
         "//drake/solvers:mathematical_program",
         "//drake/systems/framework",
@@ -139,7 +139,7 @@ drake_cc_googletest(
     name = "contact_force_test",
     deps = [
         ":rigid_body_plant",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -147,7 +147,7 @@ drake_cc_googletest(
     name = "contact_force_formula_test",
     deps = [
         ":rigid_body_plant",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -163,7 +163,7 @@ drake_cc_googletest(
     deps = [
         ":contact_result_test_common",
         ":rigid_body_plant",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -178,7 +178,7 @@ drake_cc_googletest(
     deps = [
         ":contact_result_test_common",
         ":rigid_body_plant",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/multibody:rigid_body_tree",
     ],
 )
@@ -188,7 +188,7 @@ drake_cc_googletest(
     deps = [
         ":compliant_contact_model",
         ":contact_result_test_common",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/multibody:rigid_body_tree",
     ],
 )
@@ -222,8 +222,8 @@ drake_cc_googletest(
     data = ["//drake/multibody:test_models"],
     deps = [
         ":rigid_body_plant",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:find_resource",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/multibody/parsers",
     ],
 )
@@ -238,8 +238,8 @@ drake_cc_googletest(
     ],
     deps = [
         ":rigid_body_plant",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:find_resource",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/multibody/parsers",
     ],
 )

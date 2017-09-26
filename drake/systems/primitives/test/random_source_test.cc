@@ -4,8 +4,8 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -33,17 +33,36 @@ GTEST_TEST(TestSignalLogger, GaussianWhiteNoise) {
       0, 0.0);
 
   simulator.Initialize();
-  simulator.StepTo(5);
+  simulator.StepTo(20);
 
   const auto& x = logger->data();
 
-  for (double threshold = -2.0; threshold < 2.0; threshold += 0.5) {
-    double count = (x.array() < threshold).cast<double>().matrix().sum();
-    // Probability of x < threshold for a Gaussian can be computed with erf:
-    EXPECT_NEAR(count / x.size(),
-                .5 + std::erf(threshold / std::sqrt(2.0)) / 2.0,
-                0.02);  // Note intentionally very large tolerance.
-    // TODO(russt): Tighten tolerance once #4325 is resolved.
+  // Cumulative distribution function of the standard normal distribution.
+  auto Phi = [](double z) { return 0.5 * std::erfc(-z / std::sqrt(2.0)); };
+
+  const double h = 0.1;
+  const int N = x.size();
+  // Evaluate all subintervals (a,a+h) in (-2,2).
+  for (double a = -2.0; a <= 2.0 - h; a += h) {
+    // Counts the number of samples in (a,a+h).
+    const double count =
+        (x.array() >= a && x.array() <= a + h).cast<double>().matrix().sum();
+
+    // Basic confidence interval statistics.  See, for instance,
+    //    Simulation and the Monte Carlo Method (Third Edition)
+    //      by Rubinstein and Kroese, 2017
+    //    page 108,
+    // where I've used Y as the indicator function of a ≤ X ≤ a+h,
+    // E[Y] = Phi(a+h)-Phi(a), Var(Y) = E[Y]-E[Y]², since E[Y²]=E[Y],
+    // and Phi(x) is the cdf of the standard normal distribution.
+    // We expect a perfect sampler to obtain a value
+    //    count/N = E[Y] ± 1.645 √(Var(Y)/N)
+    // with 95% confidence.  Checks that our pseudo-random sampler
+    // accomplishes this bound within a factor of tol.
+    const double EY = Phi(a + h) - Phi(a);
+    const double VarY = EY - EY * EY;
+    const double tol = 2.0;
+    EXPECT_NEAR(count / N, EY, tol * 1.645 * std::sqrt(VarY / N));
   }
 }
 
@@ -66,17 +85,28 @@ GTEST_TEST(TestSignalLogger, UniformWhiteNoise) {
       0, 0.0);
 
   simulator.Initialize();
-  simulator.StepTo(5);
+  simulator.StepTo(20);
 
   const auto& x = logger->data();
 
-  for (double threshold = -1.0; threshold < 1.0; threshold += 0.1) {
-    double count = (x.array() < threshold).cast<double>().matrix().sum();
-    // Probability of x < threshold for this uniform distribution is
-    // (threshold+1)/2.
-    EXPECT_NEAR(count / x.size(), (threshold + 1.0) / 2.0,
-                0.02);  // Note intentionally very large tolerance.
-    // TODO(russt): Tighten tolerance once #4325 is resolved.
+  const double h = 0.1;
+  const int N = x.size();
+  // Evaluate all subintervals (a,a+h) in (0,1).
+  for (double a = 0.0; a <= 1.0 - h; a += h) {
+    // Counts the number of samples in (a,a+h).
+    const double count =
+        (x.array() >= a && x.array() <= a + h).cast<double>().matrix().sum();
+
+    // Basic confidence interval statistics.  See, for instance,
+    //    Simulation and the Monte Carlo Method (Third Edition)
+    //      by Rubinstein and Kroese, 2017
+    //    page 108,
+    // where I've used Y as the indicator function of a ≤ X ≤ a+h,
+    // E[Y] = h, Var(Y) = h-h². We expect a perfect sampler to obtain
+    // a value
+    //   count/N = E[Y] ± 1.645 √(Var(Y)/N)
+    // with 95% confidence.
+    EXPECT_NEAR(count / N, h, 1.645 * std::sqrt((h - h * h) / N));
   }
 }
 

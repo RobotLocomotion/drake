@@ -43,6 +43,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "linear_model_predictive_controller",
+    srcs = ["linear_model_predictive_controller.cc"],
+    hdrs = ["linear_model_predictive_controller.h"],
+    deps = [
+        "//drake/common/trajectories:piecewise_polynomial_trajectory",
+        "//drake/systems/primitives:linear_system",
+        "//drake/systems/trajectory_optimization:direct_transcription",
+    ],
+)
+
+drake_cc_library(
     name = "linear_quadratic_regulator",
     srcs = ["linear_quadratic_regulator.cc"],
     hdrs = ["linear_quadratic_regulator.h"],
@@ -82,7 +93,7 @@ drake_cc_library(
     srcs = ["setpoint.cc"],
     hdrs = ["setpoint.h"],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/math:geometric_transform",
     ],
 )
@@ -92,7 +103,7 @@ drake_cc_library(
     srcs = ["controlUtil.cpp"],
     hdrs = ["controlUtil.h"],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common/trajectories:piecewise_polynomial",
         "//drake/math:autodiff",
         "//drake/math:expmap",
@@ -108,7 +119,7 @@ drake_cc_library(
     hdrs = ["QPCommon.h"],
     deps = [
         ":control_util",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/multibody:rigid_body_tree",
         "//drake/systems/robotInterfaces:side",
         "//drake/util",
@@ -120,7 +131,7 @@ drake_cc_library(
     srcs = ["zmp_planner.cc"],
     hdrs = ["zmp_planner.h"],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common/trajectories:piecewise_polynomial",
         "//drake/systems/controllers:linear_quadratic_regulator",
     ],
@@ -149,7 +160,7 @@ drake_cc_library(
     deps = [
         ":control_util",
         ":qp_common",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common:find_resource",
         "//drake/common:is_approx_equal_abstol",
         "//drake/lcmtypes:qp_controller_input",
@@ -184,8 +195,8 @@ drake_cc_googletest(
     ],
     deps = [
         ":inverse_dynamics",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:find_resource",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/multibody/parsers",
     ],
 )
@@ -197,9 +208,19 @@ drake_cc_googletest(
     ],
     deps = [
         ":inverse_dynamics_controller",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:find_resource",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/multibody/parsers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "linear_model_predictive_controller_test",
+    deps = [
+        ":linear_model_predictive_controller",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/math:discrete_algebraic_riccati_equation",
+        "//drake/systems/analysis:simulator",
     ],
 )
 
@@ -207,7 +228,7 @@ drake_cc_googletest(
     name = "linear_quadratic_regulator_test",
     deps = [
         ":linear_quadratic_regulator",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -215,7 +236,7 @@ drake_cc_googletest(
     name = "pid_controlled_system_test",
     deps = [
         ":pid_controlled_system",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -223,7 +244,7 @@ drake_cc_googletest(
     name = "pid_controller_test",
     deps = [
         ":pid_controller",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -232,7 +253,7 @@ drake_cc_googletest(
     srcs = ["test/setpoint_test.cc"],
     deps = [
         ":setpoint",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -240,7 +261,7 @@ drake_cc_googletest(
     name = "zmp_planner_test",
     deps = [
         ":zmp_test_util",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 

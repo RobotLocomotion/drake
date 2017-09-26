@@ -1,26 +1,18 @@
 #include "drake/systems/framework/diagram.h"
 
-#include "drake/common/autodiff_overloads.h"
-#include "drake/common/eigen_autodiff_types.h"
-#include "drake/common/symbolic.h"
+#include "drake/common/default_scalars.h"
 
-namespace drake {
-namespace systems {
-namespace internal {
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::internal::DiagramOutputPort)
 
-template class DiagramOutputPort<double>;
-template class DiagramOutputPort<AutoDiffXd>;
-template class DiagramOutputPort<symbolic::Expression>;
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::internal::DiagramOutput)
 
-template class DiagramOutput<double>;
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::internal::DiagramTimeDerivatives)
 
-template class DiagramTimeDerivatives<double>;
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::internal::DiagramDiscreteVariables)
 
-template class DiagramDiscreteVariables<double>;
-
-}  // namespace internal
-
-template class Diagram<double>;
-
-}  // namespace systems
-}  // namespace drake
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::Diagram)

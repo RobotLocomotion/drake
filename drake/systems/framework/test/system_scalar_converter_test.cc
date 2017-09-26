@@ -3,6 +3,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
@@ -271,6 +272,53 @@ GTEST_TEST(SystemScalarConverterTest, SubclassMismatch) {
       }
     }), std::runtime_error);
   }
+
+  // However, if subtype checking is off, the conversion is allowed to upcast.
+  {
+    SystemScalarConverter dut(
+        SystemTypeTag<AnyToAnySystem>{},
+        SystemScalarConverter::GuaranteedSubtypePreservation::kDisabled);
+    const SubclassOfAnyToAnySystem<double> original;
+    EXPECT_TRUE(is_dynamic_castable<AnyToAnySystem<AutoDiffXd>>(
+        dut.Convert<AutoDiffXd, double>(original)));
+  }
+}
+
+GTEST_TEST(SystemScalarConverterTest, RemoveUnlessAlsoSupportedBy) {
+  SystemScalarConverter dut(SystemTypeTag<AnyToAnySystem>{});
+  const SystemScalarConverter non_symbolic(SystemTypeTag<NonSymbolicSystem>{});
+  const SystemScalarConverter from_double(SystemTypeTag<FromDoubleSystem>{});
+
+  // These are the defaults per TestAnyToAnySystem above.
+  EXPECT_TRUE((dut.IsConvertible<double,     AutoDiffXd>()));
+  EXPECT_TRUE((dut.IsConvertible<double,     Expression>()));
+  EXPECT_TRUE((dut.IsConvertible<AutoDiffXd, double    >()));
+  EXPECT_TRUE((dut.IsConvertible<AutoDiffXd, Expression>()));
+  EXPECT_TRUE((dut.IsConvertible<Expression, double    >()));
+  EXPECT_TRUE((dut.IsConvertible<Expression, AutoDiffXd>()));
+
+  // We remove symbolic support.  Only double <=> AutoDiff remains.
+  dut.RemoveUnlessAlsoSupportedBy(non_symbolic);
+  EXPECT_TRUE((dut.IsConvertible< double,     AutoDiffXd>()));
+  EXPECT_TRUE((dut.IsConvertible< AutoDiffXd, double    >()));
+  EXPECT_FALSE((dut.IsConvertible<double,     Expression>()));
+  EXPECT_FALSE((dut.IsConvertible<AutoDiffXd, Expression>()));
+  EXPECT_FALSE((dut.IsConvertible<Expression, double    >()));
+  EXPECT_FALSE((dut.IsConvertible<Expression, AutoDiffXd>()));
+
+  // We remove from-AutoDiff support.  Only AutoDiff <= double remains.
+  dut.RemoveUnlessAlsoSupportedBy(from_double);
+  EXPECT_TRUE((dut.IsConvertible< AutoDiffXd, double    >()));
+  EXPECT_FALSE((dut.IsConvertible<double,     AutoDiffXd>()));
+  EXPECT_FALSE((dut.IsConvertible<double,     Expression>()));
+  EXPECT_FALSE((dut.IsConvertible<AutoDiffXd, Expression>()));
+  EXPECT_FALSE((dut.IsConvertible<Expression, double    >()));
+  EXPECT_FALSE((dut.IsConvertible<Expression, AutoDiffXd>()));
+
+  // The conversion still actually works.
+  const AnyToAnySystem<double> system{22};
+  EXPECT_TRUE(is_dynamic_castable<AnyToAnySystem<AutoDiffXd>>(
+      dut.Convert<AutoDiffXd, double>(system)));
 }
 
 }  // namespace

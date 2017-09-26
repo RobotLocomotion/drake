@@ -12,7 +12,6 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/rendering/pose_vector.h"
 #include "drake/systems/sensors/depth_sensor_output.h"
 
@@ -201,7 +200,7 @@ void DepthSensor::CalcPoseOutput(const Context<double>& context,
 
   pose_output->set_translation(
       Eigen::Translation<double, 3>(X_WS.translation()));
-  pose_output->set_rotation(Eigen::Quaternion<double>(X_WS.rotation()));
+  pose_output->set_rotation(Eigen::Quaternion<double>(X_WS.linear()));
 }
 
 std::ostream& operator<<(std::ostream& out, const DepthSensor& sensor) {

@@ -6,8 +6,8 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/internal_frame.h"
@@ -503,6 +503,18 @@ TEST_F(GeometryStateTest, RemoveFrame) {
             (kFrameCount -1)* kGeometryCount);
   ExpectSourceDoesNotHaveFrame(s_id, frames_[0]);
   EXPECT_EQ(gs_tester_.get_frame_parent_poses().size(), frames_.size() - 1);
+}
+
+// Tests the frame iterator, confirming that it iterates through all frames.
+TEST_F(GeometryStateTest, FrameIdRange) {
+  SetUpSingleSourceTree();
+  std::unordered_set<FrameId> all_frames(frames_.begin(), frames_.end());
+  for (FrameId id : geometry_state_.get_frame_ids()) {
+    // This should remove exactly one element.
+    EXPECT_EQ(all_frames.erase(id), 1);
+  }
+  // There shouldn't be any left over.
+  EXPECT_EQ(all_frames.size(), 0);
 }
 
 // Tests the removal of a frame that has other frames hanging on it.
@@ -1163,6 +1175,52 @@ TEST_F(GeometryStateTest, SetFramePoses) {
         world_poses[i].matrix().block<3, 4>(0, 0),
         (offset * offset * X_FG_[i].matrix()).block<3, 4>(0, 0)));
   }
+}
+
+// Test various frame property queries.
+TEST_F(GeometryStateTest, QueryFrameProperties) {
+  SourceId s_id = SetUpSingleSourceTree();
+
+  // Query frame group.
+  EXPECT_EQ(geometry_state_.get_frame_group(frames_[0]), 0);
+  EXPECT_ERROR_MESSAGE(geometry_state_.get_frame_group(FrameId::get_new_id()),
+                       std::logic_error,
+                       "No frame group available for invalid frame id: \\d+");
+
+  // Query frame name.
+  EXPECT_EQ(geometry_state_.get_frame_name(frames_[0]), "f0");
+  EXPECT_ERROR_MESSAGE(geometry_state_.get_frame_name(FrameId::get_new_id()),
+                       std::logic_error,
+                       "No frame name available for invalid frame id: \\d+");
+
+  // Set the frame poses to query geometry and frame poses.
+  FrameIdVector ids(s_id, frames_);
+  FramePoseVector<double> poses(s_id, X_PF_);
+  gs_tester_.SetFramePoses(ids, poses);
+
+  EXPECT_TRUE(
+      CompareMatrices(geometry_state_.get_pose_in_world(frames_[0]).matrix(),
+                      X_WF_[0].matrix()));
+  EXPECT_ERROR_MESSAGE(geometry_state_.get_pose_in_world(FrameId::get_new_id()),
+                       std::logic_error,
+                       "No world pose available for invalid frame id: \\d+");
+
+  // This assumes that geometry parent belongs to frame 0.
+  Isometry3<double> geometry_pose = X_WF_[0] * X_FG_[0];
+  EXPECT_TRUE(CompareMatrices(
+      geometry_state_.get_pose_in_world(geometries_[0]).matrix(),
+      geometry_pose.matrix()));
+  EXPECT_ERROR_MESSAGE(
+      geometry_state_.get_pose_in_world(GeometryId::get_new_id()),
+      std::logic_error,
+      "No world pose available for invalid geometry id: \\d+");
+
+  EXPECT_TRUE(CompareMatrices(
+      geometry_state_.get_pose_in_parent(frames_[0]).matrix(),
+      X_PF_[0].matrix()));
+  EXPECT_ERROR_MESSAGE(
+      geometry_state_.get_pose_in_parent(FrameId::get_new_id()),
+      std::logic_error, "No pose available for invalid frame id: \\d+");
 }
 
 }  // namespace

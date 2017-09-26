@@ -46,7 +46,7 @@ drake_cc_library(
     ],
     deps = [
         "//drake/automotive/maliput/api",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/common:unused",
         "//drake/math:geometric_transform",
         "//drake/math:saturate",
@@ -92,7 +92,7 @@ drake_cc_googletest(
     srcs = ["test/multilane_arc_road_curve_test.cc"],
     deps = [
         ":lanes",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -112,7 +112,7 @@ drake_cc_googletest(
     deps = [
         ":lanes",
         "//drake/automotive/maliput/api:maliput_types_compare",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -122,7 +122,7 @@ drake_cc_googletest(
     srcs = ["test/multilane_line_road_curve_test.cc"],
     deps = [
         ":lanes",
-        "//drake/common:eigen_matrix_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 

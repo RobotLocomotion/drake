@@ -1,14 +1,11 @@
 #pragma once
 
-#include <memory>
-#include <string>
+#include <cmath>
+#include <stdexcept>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/framework/output_port_value.h"
-#include "drake/systems/framework/vector_base.h"
 
 namespace drake {
 namespace systems {
@@ -79,8 +76,8 @@ class SpringMassSystem : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SpringMassSystem)
 
-  /// Construct a spring-mass system with a fixed spring constant and given
-  /// mass.
+  /// Constructs a spring-mass system with a fixed spring constant and given
+  /// mass. Subclasses must use the protected constructor, not this one.
   /// @param[in] spring_constant_N_per_m The spring constant in N/m.
   /// @param[in] mass_Kg The actual value in Kg of the mass attached to the
   /// spring.
@@ -89,7 +86,7 @@ class SpringMassSystem : public LeafSystem<T> {
   SpringMassSystem(double spring_constant_N_per_m, double mass_kg,
                    bool system_is_forced = false);
 
-  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  /// Scalar-converting copy constructor. See @ref system_scalar_conversion.
   template <typename U>
   explicit SpringMassSystem(const SpringMassSystem<U>&);
 
@@ -242,6 +239,14 @@ class SpringMassSystem : public LeafSystem<T> {
     *xf = c1*cos(omega*tf) + c2*sin(omega*tf);
     *vf = -c1*sin(omega*tf)*omega + c2*cos(omega*tf)*omega;
   }
+
+ protected:
+  /// Constructor that specifies @ref system_scalar_conversion support.
+  SpringMassSystem(
+      SystemScalarConverter converter,
+      double spring_constant_N_per_m,
+      double mass_kg,
+      bool system_is_forced);
 
  private:
   // This is the calculator method for the output port.

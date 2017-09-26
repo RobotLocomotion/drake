@@ -2,8 +2,8 @@
 
 #include <sstream>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
-#include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/unused.h"
 
 namespace drake {
@@ -11,19 +11,26 @@ namespace systems {
 
 template <typename T>
 FirstOrderLowPassFilter<T>::FirstOrderLowPassFilter(
-    double time_constant, int size) :
-    FirstOrderLowPassFilter(VectorX<double>::Ones(size) * time_constant) {
-}
+    double time_constant, int size)
+    : FirstOrderLowPassFilter(VectorX<double>::Ones(size) * time_constant) {}
 
 template <typename T>
 FirstOrderLowPassFilter<T>::FirstOrderLowPassFilter(
     const VectorX<double>& time_constants)
-    : VectorSystem<T>(time_constants.size(), time_constants.size()),
+    : VectorSystem<T>(
+          SystemTypeTag<systems::FirstOrderLowPassFilter>{},
+          time_constants.size(), time_constants.size()),
       time_constants_(time_constants) {
   DRAKE_ASSERT(time_constants.size() > 0);
   DRAKE_ASSERT((time_constants.array() > 0).all());
   this->DeclareContinuousState(time_constants.size());
 }
+
+template <typename T>
+template <typename U>
+FirstOrderLowPassFilter<T>::FirstOrderLowPassFilter(
+    const FirstOrderLowPassFilter<U>& other)
+    : FirstOrderLowPassFilter<T>(other.get_time_constants_vector()) {}
 
 template <typename T>
 double FirstOrderLowPassFilter<T>::get_time_constant() const {
@@ -71,17 +78,8 @@ void FirstOrderLowPassFilter<T>::DoCalcVectorOutput(
   *output = state;
 }
 
-template <typename T>
-FirstOrderLowPassFilter<symbolic::Expression>*
-FirstOrderLowPassFilter<T>::DoToSymbolic() const {
-  return new FirstOrderLowPassFilter<symbolic::Expression>(
-      this->get_time_constants_vector());
-}
-
-// Explicitly instantiates on the most common scalar types.
-template class FirstOrderLowPassFilter<double>;
-template class FirstOrderLowPassFilter<AutoDiffXd>;
-template class FirstOrderLowPassFilter<symbolic::Expression>;
-
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::FirstOrderLowPassFilter)

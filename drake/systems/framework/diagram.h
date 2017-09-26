@@ -234,6 +234,11 @@ class Diagram : public System<T>,
 
   typedef typename std::pair<const System<T>*, int> PortIdentifier;
 
+  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  template <typename U>
+  explicit Diagram(const Diagram<U>& other)
+      : Diagram(other.template ConvertScalarType<T>()) {}
+
   ~Diagram() override {}
 
   /// Returns the list of contained Systems.
@@ -668,8 +673,25 @@ class Diagram : public System<T>,
 
  protected:
   /// Constructs an uninitialized Diagram. Subclasses that use this constructor
-  /// are obligated to call DiagramBuilder::BuildInto(this).
-  Diagram() {}
+  /// are obligated to call DiagramBuilder::BuildInto(this).  Provides scalar-
+  /// type conversion support only if every contained subsystem provides the
+  /// same support.
+  Diagram() : System<T>(
+      SystemScalarConverter(
+          SystemTypeTag<systems::Diagram>{},
+          SystemScalarConverter::GuaranteedSubtypePreservation::kDisabled)) {}
+
+  /// (Advanced) Constructs an uninitialized Diagram.  Subclasses that use this
+  /// constructor are obligated to call DiagramBuilder::BuildInto(this).
+  ///
+  /// Declares scalar-type conversion support using @p converter.  Support for
+  /// a given pair of types `T, U` to convert from and to will be enabled only
+  /// if every contained subsystem supports that pair.
+  ///
+  /// See @ref system_scalar_conversion for detailed background and examples
+  /// related to scalar-type conversion support.
+  explicit Diagram(SystemScalarConverter converter)
+      : System<T>(std::move(converter)) {}
 
   /// For the subsystem associated with @p witness_func, gets its subcontext
   /// from @p context, passes the subcontext to @p witness_func' Evaulate
@@ -913,37 +935,6 @@ class Diagram : public System<T>,
     DoCalcNextUpdateTimeImpl(context, event_info, time);
   }
 
-  /// Creates a deep copy of this Diagram<double>, converting the scalar type
-  /// to AutoDiffXd, and preserving all internal structure. Subclasses may wish
-  /// to override to initialize additional member data. If any contained
-  /// subsystem does not support ToAutoDiffXd, then this result is nullptr.
-  /// This is the NVI implementation of ToAutoDiffXd.
-  Diagram<AutoDiffXd>* DoToAutoDiffXd() const override {
-    using FromType = System<double>;
-    using ToType = std::unique_ptr<System<AutoDiffXd>>;
-    std::function<ToType(const FromType&)> subsystem_converter{
-        [](const FromType& subsystem) {
-          return subsystem.ToAutoDiffXdMaybe();
-        }};
-    return ConvertScalarType<AutoDiffXd>(subsystem_converter).release();
-  }
-
-  /// Creates a deep copy of this Diagram<double>, converting the scalar type
-  /// to symbolic::Expression, and preserving all internal structure.
-  /// Subclasses may wish to override to initialize additional member data.
-  /// If any contained subsystem does not support ToSymbolic, then this
-  /// result is nullptr. This is the NVI implementation of ToSymbolic.
-  Diagram<symbolic::Expression>* DoToSymbolic() const override {
-    using FromType = System<double>;
-    using ToType = std::unique_ptr<System<symbolic::Expression>>;
-    std::function<ToType(const FromType&)> subsystem_converter{
-        [](const FromType& subsystem) {
-          return subsystem.ToSymbolicMaybe();
-        }};
-    return ConvertScalarType<symbolic::Expression>(subsystem_converter)
-        .release();
-  }
-
   BasicVector<T>* DoAllocateInputVector(
       const InputPortDescriptor<T>& descriptor) const override {
     // Ask the subsystem to perform the allocation.
@@ -1179,28 +1170,29 @@ class Diagram : public System<T>,
     return nullptr;
   }
 
-  /// Uses this Diagram<double> to manufacture a Diagram<NewType>, given a
-  /// @p converter for subsystems from System<double> to System<NewType>.
-  /// SFINAE overload for std::is_same<T, double>.
+  /// Uses this Diagram<T> to manufacture a Diagram<NewType>::Blueprint,
+  /// using system scalar conversion.
   ///
   /// @tparam NewType The scalar type to which to convert.
-  /// @tparam T1 SFINAE boilerplate.
-  template <typename NewType, typename T1 = T>
-  std::unique_ptr<Diagram<NewType>> ConvertScalarType(
-      std::function<std::unique_ptr<System<NewType>>(
-          const System<
-              std::enable_if_t<std::is_same<T1, double>::value, double>>&)>
-          converter) const {
+  template <typename NewType>
+  std::unique_ptr<typename Diagram<NewType>::Blueprint> ConvertScalarType()
+      const {
     std::vector<std::unique_ptr<System<NewType>>> new_systems;
     // Recursively convert all the subsystems.
-    std::map<const System<T1>*, const System<NewType>*> old_to_new_map;
+    std::map<const System<T>*, const System<NewType>*> old_to_new_map;
     for (const auto& old_system : registered_systems_) {
-      new_systems.push_back(converter(*old_system));
-      if (!new_systems.back().get()) {
-        // A subsystem could not support the conversion.
-        return nullptr;
-      }
-      old_to_new_map[old_system.get()] = new_systems.back().get();
+      // Convert old_system to new_system using the old_system's converter.
+      std::unique_ptr<System<NewType>> new_system =
+          old_system->get_system_scalar_converter().
+          template Convert<NewType>(*old_system);
+      DRAKE_DEMAND(new_system != nullptr);
+
+      // Match the result's name to its originator.
+      new_system->set_name(old_system->get_name());
+
+      // Update our mapping and take ownership.
+      old_to_new_map[old_system.get()] = new_system.get();
+      new_systems.push_back(std::move(new_system));
     }
 
     // Set up the blueprint.
@@ -1235,24 +1227,7 @@ class Diagram : public System<T>,
     // Move the new systems into the blueprint.
     blueprint->systems = std::move(new_systems);
 
-    // Construct a new Diagram of type NewType from the blueprint.
-    std::unique_ptr<Diagram<NewType>> new_diagram(
-        new Diagram<NewType>(std::move(blueprint)));
-    return std::move(new_diagram);
-  }
-
-  /// Aborts at runtime.
-  /// SFINAE overload for !std::is_same<T, double>.
-  ///
-  /// @tparam NewType The scalar type to which to convert.
-  /// @tparam T1 SFINAE boilerplate.
-  template <typename NewType, typename T1 = T>
-  std::unique_ptr<Diagram<NewType>> ConvertScalarType(
-      std::function<std::unique_ptr<System<NewType>>(
-          const System<std::enable_if_t<!std::is_same<T1, double>::value,
-                                        double>>&)>) const {
-    DRAKE_ABORT_MSG(
-        "Scalar type conversion is only supported from Diagram<double>.");
+    return blueprint;
   }
 
   // Aborts for scalar types that are not numeric, since there is no reasonable
@@ -1340,7 +1315,7 @@ class Diagram : public System<T>,
   // Constructs a Diagram from the Blueprint that a DiagramBuilder produces.
   // This constructor is private because only DiagramBuilder calls it. The
   // constructor takes the systems from the blueprint.
-  explicit Diagram(std::unique_ptr<Blueprint> blueprint) {
+  explicit Diagram(std::unique_ptr<Blueprint> blueprint) : Diagram() {
     Initialize(std::move(blueprint));
   }
 
@@ -1395,6 +1370,15 @@ class Diagram : public System<T>,
       ExportOutput(id);
     }
 
+    // Identify the intersection of the subsystems' scalar conversion support.
+    // Remove all conversions that at least one subsystem did not support.
+    SystemScalarConverter& this_scalar_converter =
+        SystemImpl::get_mutable_system_scalar_converter(this);
+    for (const auto& system : registered_systems_) {
+      this_scalar_converter.RemoveUnlessAlsoSupportedBy(
+          system->get_system_scalar_converter());
+    }
+
     this->set_forced_publish_events(
         AllocateForcedEventCollection<PublishEvent<T>>(
             &System<T>::AllocateForcedPublishEventCollection));
@@ -1416,7 +1400,8 @@ class Diagram : public System<T>,
     // Add this port to our externally visible topology.
     const auto& subsystem_descriptor = sys->get_input_port(port_index);
     this->DeclareInputPort(subsystem_descriptor.get_data_type(),
-                           subsystem_descriptor.size());
+                           subsystem_descriptor.size(),
+                           subsystem_descriptor.get_random_type());
   }
 
   // Exposes the given subsystem output port as an output of the Diagram.
@@ -1549,10 +1534,10 @@ class Diagram : public System<T>,
   // builder can set the internal state correctly.
   friend class DiagramBuilder<T>;
 
-  // For all T, Diagram<T> considers Diagram<double> a friend, so that
-  // Diagram<double> can provide transmogrification methods to more flavorful
-  // scalar types.  See Diagram<T>::ConvertScalarType.
-  friend class Diagram<double>;
+  // For any T1 & T2, Diagram<T1> considers Diagram<T2> a friend, so that
+  // Diagram can provide transmogrification methods across scalar types.
+  // See Diagram<T>::ConvertScalarType.
+  template <typename> friend class Diagram;
 };
 
 }  // namespace systems

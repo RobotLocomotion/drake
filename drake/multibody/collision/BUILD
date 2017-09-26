@@ -20,8 +20,8 @@ drake_cc_library(
         "point_pair.h",
     ],
     deps = [
-        "//drake/common",
         "//drake/common:autodiff",
+        "//drake/common:essential",
         "//drake/common:sorted_vectors_have_intersection",
         "//drake/multibody/shapes",
     ],
@@ -99,8 +99,8 @@ drake_cc_googletest(
     data = [":test_models"],
     deps = [
         ":collision",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:find_resource",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 

@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/eigen_geometry_compare.h"
 #include "drake/common/text_logging.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/perception/estimators/dev/test/test_util.h"

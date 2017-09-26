@@ -25,7 +25,7 @@ const int kSize = 3;
 // A shell System to test the default implementations.
 class TestSystem : public System<double> {
  public:
-  TestSystem() {
+  TestSystem() : System<double>(SystemScalarConverter{}) {
     this->set_forced_publish_events(
         this->AllocateForcedPublishEventCollection());
     this->set_forced_discrete_update_events(
@@ -363,6 +363,10 @@ TEST_F(SystemTest, TransmogrifyNotSupported) {
   // Use the instance method that returns nullptr.
   EXPECT_EQ(system_.ToAutoDiffXdMaybe(), nullptr);
   EXPECT_EQ(system_.ToSymbolicMaybe(), nullptr);
+
+  // Spot check the specific converter object.
+  EXPECT_FALSE((
+      system_.get_system_scalar_converter().IsConvertible<double, double>()));
 }
 
 template <typename T>
@@ -376,7 +380,7 @@ class ValueIOTestSystem : public System<T> {
   // The first input / output pair are abstract type, but assumed to be
   // std::string.
   // The second input / output pair are vector type with length 1.
-  ValueIOTestSystem() {
+  ValueIOTestSystem() : System<T>(SystemScalarConverter{}) {
     this->set_forced_publish_events(
         this->AllocateForcedPublishEventCollection());
     this->set_forced_discrete_update_events(
@@ -392,7 +396,12 @@ class ValueIOTestSystem : public System<T> {
         }));
 
     this->DeclareInputPort(kVectorValued, 1);
-    this->CreateOutputPort(std::make_unique<LeafOutputPort<T>>(*this,
+    this->DeclareInputPort(kVectorValued, 1,
+                           RandomDistribution::kUniform);
+    this->DeclareInputPort(kVectorValued, 1,
+                           RandomDistribution::kGaussian);
+    this->CreateOutputPort(std::make_unique<LeafOutputPort<T>>(
+        *this,
         1,  // Vector size.
         [](const Context<T>&) {
           return std::make_unique<Value<BasicVector<T>>>(1);
@@ -428,8 +437,8 @@ class ValueIOTestSystem : public System<T> {
 
   BasicVector<T>* DoAllocateInputVector(
       const InputPortDescriptor<T>& descriptor) const override {
-    // Should only get called for the second input.
-    EXPECT_EQ(descriptor.get_index(), 1);
+    // Should not get called for the first (abstract) input.
+    EXPECT_GE(descriptor.get_index(), 1);
     return new TestTypedVector<T>();
   }
 
@@ -556,7 +565,7 @@ class SystemIOTest : public ::testing::Test {
 TEST_F(SystemIOTest, SystemValueIOTest) {
   test_sys_.CalcOutput(*context_, output_.get());
 
-  EXPECT_EQ(context_->get_num_input_ports(), 2);
+  EXPECT_EQ(context_->get_num_input_ports(), 4);
   EXPECT_EQ(output_->get_num_ports(), 2);
 
   EXPECT_EQ(output_->get_data(0)->GetValue<std::string>(),
@@ -566,7 +575,7 @@ TEST_F(SystemIOTest, SystemValueIOTest) {
   // Test AllocateInput*
   // Second input is not (yet) a TestTypedVector, since I haven't called the
   // Allocate methods directly yet.
-  EXPECT_EQ(dynamic_cast<const TestTypedVector<double>*>(
+  EXPECT_EQ(dynamic_cast<const TestTypedVector<double> *>(
                 test_sys_.EvalVectorInput(*context_, 1)),
             nullptr);
   // Now allocate.
@@ -575,9 +584,24 @@ TEST_F(SystemIOTest, SystemValueIOTest) {
   EXPECT_EQ(test_sys_.EvalAbstractInput(*context_, 0)->GetValue<std::string>(),
             "");
   // Second input should now be of type TestTypedVector.
-  EXPECT_NE(dynamic_cast<const TestTypedVector<double>*>(
+  EXPECT_NE(dynamic_cast<const TestTypedVector<double> *>(
                 test_sys_.EvalVectorInput(*context_, 1)),
             nullptr);
+}
+
+// Checks that the input ports randomness labels were set as expected.
+TEST_F(SystemIOTest, RandomInputPortTest) {
+  EXPECT_FALSE(test_sys_.get_input_port(0).is_random());
+  EXPECT_FALSE(test_sys_.get_input_port(1).is_random());
+  EXPECT_TRUE(test_sys_.get_input_port(2).is_random());
+  EXPECT_TRUE(test_sys_.get_input_port(3).is_random());
+
+  EXPECT_FALSE(test_sys_.get_input_port(0).get_random_type());
+  EXPECT_FALSE(test_sys_.get_input_port(1).get_random_type());
+  EXPECT_EQ(test_sys_.get_input_port(2).get_random_type(),
+            RandomDistribution::kUniform);
+  EXPECT_EQ(test_sys_.get_input_port(3).get_random_type(),
+            RandomDistribution::kGaussian);
 }
 
 // Tests that FixInputPortsFrom allocates ports of the same dimension as the

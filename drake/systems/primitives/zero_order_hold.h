@@ -5,7 +5,6 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/symbolic.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -24,19 +23,26 @@ class ZeroOrderHold : public LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ZeroOrderHold)
 
   /// Constructs a ZeroOrderHold system with the given @p period_sec, over a
-  /// vector-valued input of size @p size. The default initial value for this
-  /// system will be zero.
-  ZeroOrderHold(double period_sec, int size);
+  /// vector-valued input of size `vector_size`. The default initial
+  /// value for this system will be zero.
+  ZeroOrderHold(double period_sec, int vector_size)
+      : ZeroOrderHold(period_sec, vector_size, nullptr) {}
 
   /// Constructs a ZeroOrderHold system with the given @p period_sec, over a
-  /// abstract-valued input @p model_value. The default initial value for this
-  /// system will be @p model_value.
-  ZeroOrderHold(double period_sec, const AbstractValue& model_value);
+  /// abstract-valued input `abstract_model_value`. The default initial value
+  /// for this system will be `abstract_model_value`.
+  ZeroOrderHold(double period_sec, const AbstractValue& abstract_model_value)
+      : ZeroOrderHold(period_sec, -1, abstract_model_value.Clone()) {}
+
+  /// Scalar-type converting copy constructor.
+  /// See @ref system_scalar_conversion.
+  template <typename U>
+  explicit ZeroOrderHold(const ZeroOrderHold<U>& other);
 
   ~ZeroOrderHold() override {}
 
-  // TODO(eric.cousineau): Create a SisoSystem that is type-agnostic, and
-  // have both this and SisoVectorSystem inherit from it (#6490).
+  // TODO(eric.cousineau): Possibly share single port interface with
+  // PassThrough (#6490).
 
   /// Returns the sole input port.
   const InputPortDescriptor<T>& get_input_port() const {
@@ -60,24 +66,17 @@ class ZeroOrderHold : public LeafSystem<T> {
   optional<bool> DoHasDirectFeedthrough(
       int input_port, int output_port) const override;
 
-  // System<T> override.  Returns a ZeroOrderHold<symbolic::Expression> with
-  // the same dimensions as this ZeroOrderHold.
-  ZeroOrderHold<symbolic::Expression>* DoToSymbolic() const override;
-
-  /// Sets the output port value to the vector value that is currently
-  /// latched in the zero-order hold.
+  // Sets the output port value to the vector value that is currently
+  // latched in the zero-order hold.
   void DoCalcVectorOutput(
       const Context<T>& context,
       BasicVector<T>* output) const;
 
-  /// Latches the input port into the discrete vector-valued state.
+  // Latches the input port into the discrete vector-valued state.
   void DoCalcDiscreteVariableUpdates(
       const Context<T>& context,
       const std::vector<const DiscreteUpdateEvent<T>*>& events,
       DiscreteValues<T>* discrete_state) const override;
-
-  // Return a cloned copy of the initial abstract value.
-  std::unique_ptr<AbstractValue> AllocateAbstractValue(const Context<T>&) const;
 
   // Same as `DoCalcVectorOutput`, but for abstract values.
   void DoCalcAbstractOutput(
@@ -93,8 +92,14 @@ class ZeroOrderHold : public LeafSystem<T> {
  private:
   bool is_abstract() const { return abstract_model_value_ != nullptr; }
 
-  const double period_sec_{};
-  const std::unique_ptr<const AbstractValue> abstract_model_value_;
+  ZeroOrderHold(double period_sec, int vector_size,
+                std::unique_ptr<const AbstractValue> model_value);
+
+  // Allow different specializations to access each other's private data.
+  template <typename U> friend class ZeroOrderHold;
+
+  double period_sec_{};
+  std::unique_ptr<const AbstractValue> abstract_model_value_;
 };
 
 }  // namespace systems

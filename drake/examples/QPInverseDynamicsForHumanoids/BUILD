@@ -30,7 +30,7 @@ drake_cc_library(
     srcs = ["humanoid_status.cc"],
     hdrs = ["humanoid_status.h"],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody:rigid_body_tree_alias_groups",
         "//drake/systems/controllers/qp_inverse_dynamics:robot_kinematic_state",  # noqa
@@ -52,8 +52,8 @@ drake_cc_googletest(
     tags = gurobi_test_tags(),
     deps = [
         ":humanoid_status",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:find_resource",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/examples/valkyrie:valkyrie_constants",
         "//drake/multibody/parsers",
         "//drake/systems/controllers:setpoint",

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <memory>
-
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/vector_system.h"
@@ -19,6 +17,7 @@ namespace systems {
 /// Instantiated templates for the following scalar types @p T are provided:
 /// - double
 /// - AutoDiffXd
+/// - symbolic::Expression
 ///
 /// They are already available to link against in the containing library.
 ///
@@ -27,7 +26,7 @@ namespace systems {
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 /// @ingroup primitive_systems
 template <typename T>
-class Gain : public VectorSystem<T> {
+class Gain final : public VectorSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Gain)
 
@@ -45,6 +44,10 @@ class Gain : public VectorSystem<T> {
   /// subscript `i` indicates the i-th element of the vector.
   explicit Gain(const Eigen::VectorXd& k);
 
+  /// Scalar-converting copy constructor. See @ref system_scalar_conversion.
+  template <typename U>
+  explicit Gain(const Gain<U>&);
+
   /// Returns the gain constant. This method should only be called if the gain
   /// can be represented as a scalar value, i.e., every element in the gain
   /// vector is the same. It will abort if the gain cannot be represented as a
@@ -60,10 +63,6 @@ class Gain : public VectorSystem<T> {
       const Eigen::VectorBlock<const VectorX<T>>& input,
       const Eigen::VectorBlock<const VectorX<T>>& state,
       Eigen::VectorBlock<VectorX<T>>* output) const override;
-
-  // System<T> override.  Returns a Gain<symbolic::Expression> with the
-  // same dimensions as this Gain.
-  Gain<symbolic::Expression>* DoToSymbolic() const override;
 
   const Eigen::VectorXd k_;
 };

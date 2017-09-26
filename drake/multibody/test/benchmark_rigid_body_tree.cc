@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
-#include "drake/common/test/measure_execution.h"
+#include "drake/common/test_utilities/measure_execution.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/gradient_util.h"

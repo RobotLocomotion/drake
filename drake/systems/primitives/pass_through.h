@@ -3,8 +3,7 @@
 #include <memory>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/symbolic.h"
-#include "drake/systems/framework/vector_system.h"
+#include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 namespace systems {
@@ -26,38 +25,83 @@ namespace systems {
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
-/// This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
+/// This class uses Drake's `-inl.h` pattern. When seeing linker errors from
 /// this class, please refer to http://drake.mit.edu/cxx_inl.html.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
 /// - AutoDiffXd
+/// - symbolic::Expression
 ///
 /// They are already available to link against in the containing library.
 /// @ingroup primitive_systems
 template <typename T>
-class PassThrough : public VectorSystem<T> {
+class PassThrough final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PassThrough)
 
-  /// Constructs a pass thorough system (`y = u`).
-  /// @param size number of elements in the signal to be processed.
-  explicit PassThrough(int size);
+  /// Constructs a pass through system (`y = u`).
+  /// @param vector_size number of elements in the signal to be processed.
+  explicit PassThrough(int vector_size)
+      : PassThrough(vector_size, nullptr) {}
 
-  // TODO(eric.cousineau): Ensure that this system can also handle
-  // AbstractValue's akin to ZeroOrderHold (#6491).
+  /// Constructs a pass through system (`y = u`).
+  /// @param abstract_model_value A model abstract value.
+  explicit PassThrough(const AbstractValue& abstract_model_value)
+      : PassThrough(-1, abstract_model_value.Clone()) {}
+
+  /// Scalar-type converting copy constructor.
+  /// See @ref system_scalar_conversion.
+  template <typename U>
+  explicit PassThrough(const PassThrough<U>&);
+
+  virtual ~PassThrough() {}
+
+  // TODO(eric.cousineau): Possibly share single port interface with
+  // ZeroOrderHold (#6490).
+
+  /// Returns the sole input port.
+  const InputPortDescriptor<T>& get_input_port() const {
+    return LeafSystem<T>::get_input_port(0);
+  }
+
+  // Don't use the indexed get_input_port when calling this system directly.
+  void get_input_port(int) = delete;
+
+  /// Returns the sole output port.
+  const OutputPort<T>& get_output_port() const {
+    return LeafSystem<T>::get_output_port(0);
+  }
+
+  // Don't use the indexed get_output_port when calling this system directly.
+  void get_output_port(int) = delete;
 
  protected:
   /// Sets the output port to equal the input port.
   void DoCalcVectorOutput(
       const Context<T>& context,
-      const Eigen::VectorBlock<const VectorX<T>>& input,
-      const Eigen::VectorBlock<const VectorX<T>>& state,
-      Eigen::VectorBlock<VectorX<T>>* output) const override;
+      BasicVector<T>* output) const;
 
-  /// Returns an PassThrough<symbolic::Expression> with the same dimensions as
-  /// this PassThrough.
-  PassThrough<symbolic::Expression>* DoToSymbolic() const override;
+  // Same as `DoCalcVectorOutput`, but for abstract values.
+  void DoCalcAbstractOutput(
+      const Context<T>& context,
+      AbstractValue* output) const;
+
+  // Override feedthrough detection to avoid the need for `DoToSymbolic()`.
+  optional<bool> DoHasDirectFeedthrough(
+      int input_port, int output_port) const override;
+
+ private:
+  bool is_abstract() const { return abstract_model_value_ != nullptr; }
+
+  // Delegated constructor so that we may clone properly at run-time.
+  PassThrough(int vector_size,
+              std::unique_ptr<const AbstractValue> abstract_model_value);
+
+  // Allow different specializations to access each other's private data.
+  template <typename U> friend class PassThrough;
+
+  const std::unique_ptr<const AbstractValue> abstract_model_value_;
 };
 
 }  // namespace systems

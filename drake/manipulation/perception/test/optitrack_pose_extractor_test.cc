@@ -5,8 +5,8 @@
 #include <gtest/gtest.h>
 #include "optitrack/optitrack_frame_t.hpp"
 
-#include "drake/common/eigen_matrix_compare.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/input_port_value.h"
 #include "drake/systems/framework/system.h"
@@ -118,7 +118,7 @@ TEST_F(OptitrackPoseTest, PoseComparisonTest) {
                               MatrixCompareType::absolute));
 
   // Compare quaternions.
-  EXPECT_TRUE(CompareMatrices(extracted_pose.rotation(), test_pose.rotation(),
+  EXPECT_TRUE(CompareMatrices(extracted_pose.linear(), test_pose.linear(),
                               1e-3, MatrixCompareType::absolute));
 }
 

@@ -6,7 +6,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/solvers/mathematical_program.h"
 
@@ -85,7 +85,7 @@ GTEST_TEST(MultipleShootingTest, VariableTimestepTest) {
   EXPECT_THROW(prog.fixed_timestep(), std::runtime_error);
 
   EXPECT_EQ(prog.num_vars(), 7);
-  EXPECT_EQ(prog.Solve(), solvers::SolutionResult::kSolutionFound);
+  ASSERT_EQ(prog.Solve(), solvers::SolutionResult::kSolutionFound);
   const Eigen::VectorXd times = prog.GetSampleTimes();
   EXPECT_EQ(times.size(), 2);
   EXPECT_NEAR(times[0], 0.0, kSolverTolerance);
@@ -148,7 +148,7 @@ GTEST_TEST(MultipleShootingTest, TimeIntervalBoundsTest) {
                        kMaxTimeStep);
 
   prog.AddTimeIntervalBounds(.5, .5);
-  EXPECT_EQ(prog.Solve(), solvers::SolutionResult::kSolutionFound);
+  ASSERT_EQ(prog.Solve(), solvers::SolutionResult::kSolutionFound);
   EXPECT_TRUE(CompareMatrices(prog.GetSolution(prog.h_vars()),
                               Eigen::Vector2d(0.5, 0.5), 1e-6));
 }
@@ -167,7 +167,7 @@ GTEST_TEST(MultipleShootingTest, EqualTimeIntervalsTest) {
   prog.SetInitialGuess(prog.timestep(0), Vector1d(.1));
   prog.SetInitialGuess(prog.timestep(1), Vector1d(.2));
 
-  EXPECT_EQ(prog.Solve(), solvers::SolutionResult::kSolutionFound);
+  ASSERT_EQ(prog.Solve(), solvers::SolutionResult::kSolutionFound);
   EXPECT_NEAR(prog.GetSolution(prog.timestep(0).coeff(0)),
               prog.GetSolution(prog.timestep(1).coeff(0)), kSolverTolerance);
 }
@@ -190,7 +190,7 @@ GTEST_TEST(MultipleShootingTest, DurationConstraintTest) {
   prog.AddConstraintToAllKnotPoints(prog.state() <= Vector1d(1));
   prog.AddConstraintToAllKnotPoints(prog.state() >= Vector1d(0));
 
-  EXPECT_EQ(prog.Solve(), solvers::SolutionResult::kSolutionFound);
+  ASSERT_EQ(prog.Solve(), solvers::SolutionResult::kSolutionFound);
   EXPECT_NEAR(prog.GetSolution(prog.h_vars()).sum(), .5, 1e-6);
 }
 
@@ -206,7 +206,7 @@ GTEST_TEST(MultipleShootingTest, ConstraintAllKnotsTest) {
   const Eigen::Vector2d state_value(4.0, 5.0);
   prog.AddConstraintToAllKnotPoints(prog.state() == state_value);
 
-  EXPECT_EQ(prog.Solve(), solvers::SolutionResult::kSolutionFound);
+  ASSERT_EQ(prog.Solve(), solvers::SolutionResult::kSolutionFound);
   for (int i = 0; i < kNumSampleTimes; i++) {
     EXPECT_TRUE(
         CompareMatrices(prog.GetSolution(prog.state(i)), state_value, 1e-6));
@@ -215,7 +215,7 @@ GTEST_TEST(MultipleShootingTest, ConstraintAllKnotsTest) {
   const solvers::VectorDecisionVariable<1>& t = prog.time();
   const solvers::VectorXDecisionVariable& u = prog.input();
   prog.AddConstraintToAllKnotPoints(u == t);
-  EXPECT_EQ(prog.Solve(), solvers::SolutionResult::kSolutionFound);
+  ASSERT_EQ(prog.Solve(), solvers::SolutionResult::kSolutionFound);
   // u(0) = 0.
   EXPECT_NEAR(prog.GetSolution(prog.input(0).coeff(0)), 0.0, 1e-6);
   // u(1) = h(0).
@@ -238,7 +238,7 @@ GTEST_TEST(MultipleShootingTest, FinalCostTest) {
   const auto error = prog.state() - desired_state;
 
   prog.AddFinalCost(error.dot(error));
-  EXPECT_EQ(prog.Solve(), solvers::SolutionResult::kSolutionFound);
+  ASSERT_EQ(prog.Solve(), solvers::SolutionResult::kSolutionFound);
   EXPECT_NEAR(prog.GetOptimalCost(), 0.0, kSolverTolerance);
   EXPECT_TRUE(CompareMatrices(prog.GetSolution(prog.state(1)), desired_state,
                               kSolverTolerance));

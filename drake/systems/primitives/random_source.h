@@ -100,23 +100,10 @@ class RandomSource : public LeafSystem<double> {
   Seed seed_{RandomState::default_seed};
 };
 
-namespace internal {
-/// Defines a version of the std::uniform_real_distribution that uses the
-/// interval [-1,1] with the default parameters.  This is a more natural
-/// distribution for random signals.
-class mean_zero_uniform_real_distribution
-    : public std::uniform_real_distribution<double> {
- public:
-  mean_zero_uniform_real_distribution()
-      : std::uniform_real_distribution<double>(-1.0, 1.0) {}
-};
-
-}  // namespace internal
-
-/// Generates uniformly distributed random numbers in the interval [-1,1].
+/// Generates uniformly distributed random numbers in the interval [0,1].
 ///
 /// @ingroup primitive_systems
-typedef RandomSource<internal::mean_zero_uniform_real_distribution>
+typedef RandomSource<std::uniform_real_distribution<double>>
     UniformRandomSource;
 
 /// Generates uniformly distributed random numbers with mean zero and unit

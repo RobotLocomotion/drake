@@ -1,10 +1,6 @@
 #pragma once
 
-#include <cstdint>
-#include <memory>
-
 #include "drake/common/drake_copyable.h"
-#include "drake/common/symbolic.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/vector_system.h"
 

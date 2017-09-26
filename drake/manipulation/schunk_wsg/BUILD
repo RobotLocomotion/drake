@@ -16,7 +16,7 @@ drake_cc_library(
     name = "schunk_wsg_constants",
     hdrs = ["schunk_wsg_constants.h"],
     deps = [
-        "//drake/common",
+        "//drake/common:essential",
     ],
 )
 
@@ -50,7 +50,7 @@ drake_cc_library(
     deps = [
         ":schunk_wsg_constants",
         ":schunk_wsg_lcm",
-        "//drake/common",
+        "//drake/common:essential",
         "//drake/systems/controllers:pid_controller",
         "//drake/systems/framework:diagram",
         "//drake/systems/framework:diagram_builder",
@@ -69,8 +69,8 @@ drake_cc_googletest(
     ],
     deps = [
         ":schunk_wsg_constants",
-        "//drake/common:eigen_matrix_compare",
         "//drake/common:find_resource",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
     ],

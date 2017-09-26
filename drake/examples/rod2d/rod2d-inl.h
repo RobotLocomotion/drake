@@ -602,8 +602,6 @@ void Rod2D<T>::CalcConstraintProblemData(
   data->N_minus_muQ_transpose_mult = [N_minus_mu_Q](const VectorX<T>& w) ->
       VectorX<T> { return N_minus_mu_Q.transpose() * w; };
 
-  // Set the number of limit constraints and kL.
-  data->num_limit_constraints = 0;
   data->kL.resize(0);
 
   // Set external force vector.
@@ -669,7 +667,7 @@ void Rod2D<T>::CalcImpactProblemData(
   data->kF.setZero(nr);
 
   // Set the number of limit constraints.
-  data->num_limit_constraints = 0;
+  data->kL.resize(0);
 }
 
 template <typename T>

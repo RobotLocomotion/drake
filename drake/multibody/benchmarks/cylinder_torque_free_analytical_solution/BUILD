@@ -41,6 +41,7 @@ drake_cc_googletest(
         ":torque_free_cylinder_exact_solution",
         "//drake/common:eigen_matrix_compare",
         "//drake/common:find_resource",
+        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/math:autodiff",
         "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant",

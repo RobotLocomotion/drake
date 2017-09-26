@@ -24,6 +24,7 @@ struct ConstraintAccelProblemData {
     N_mult = zero_fn;
     F_mult = zero_fn;
     L_mult = zero_fn;
+    G_mult = zero_fn;
 
     // Set default for transpose operators - returns the appropriately sized
     // zero vector.
@@ -33,6 +34,7 @@ struct ConstraintAccelProblemData {
     N_minus_muQ_transpose_mult = zero_gv_dim_fn;
     F_transpose_mult = zero_gv_dim_fn;
     L_transpose_mult = zero_gv_dim_fn;
+    G_transpose_mult = zero_gv_dim_fn;
   }
 
   /// The indices of the sliding contacts (those contacts at which there is
@@ -68,6 +70,43 @@ struct ConstraintAccelProblemData {
   /// is the number of sliding contacts). The size of this vector should be
   /// equal to `non_sliding_contacts.size()`.
   VectorX<T> mu_non_sliding;
+
+  /// @name Data for bilateral constraints at the acceleration level
+  /// Problem data for bilateral constraints of functions of system
+  /// acceleration, where the constraint can be formulated as:<pre>
+  /// 0 = G(q)⋅v̇ + kᴳ(t,q,v)
+  /// </pre>
+  /// which implies the constraint definition c(t,q,v,v̇) ≡ G(q)⋅v̇ + kᴳ(t,q,v).
+  /// G is defined as the ℝᵇˣᵐ Jacobian matrix that transforms generalized
+  /// velocities (v ∈ ℝᵐ) into the time derivatives of b bilateral constraint
+  /// functions. The class of constraint functions naturally includes holonomic
+  /// constraints, which are constraints posable as g(t,q). Such holonomic
+  /// constraints must be twice differentiated with respect to time to yield
+  /// an acceleration-level formulation (i.e., g̈(t, q, v, v̇), for the
+  /// aforementioned definition of g(t,q)). That differentiation yields
+  /// g̈ = G⋅v̇ + dG/dt⋅v, which is consistent with the constraint class under
+  /// the definition kᴳ(t,q,v) ≡ dG/dt⋅v. An example such (holonomic) constraint
+  /// function is the transmission (gearing) constraint below:<pre>
+  /// 0 = v̇ᵢ - rv̇ⱼ
+  /// </pre>
+  /// which can be read as the acceleration at joint i (v̇ᵢ) must equal to `r`
+  /// times the acceleration at joint j (v̇ⱼ); `r` is thus the gear ratio.
+  /// In this example, the corresponding holonomic constraint function is
+  /// g(q) ≡ qᵢ - rqⱼ, yielding ̈g(q, v, v̇) = v̇ᵢ - rv̇ⱼ.
+  /// @{
+
+  /// An operator that performs the multiplication G⋅v. The default operator
+  /// returns an empty vector.
+  std::function<VectorX<T>(const VectorX<T>&)> G_mult;
+
+  /// An operator that performs the multiplication Gᵀ⋅f where f ∈ ℝᵇ are the
+  /// magnitudes of the constraint forces. The default operator returns a
+  /// zero vector of dimension equal to that of the generalized forces.
+  std::function<VectorX<T>(const VectorX<T>&)> G_transpose_mult;
+
+  /// This ℝᵇ vector is the vector kᴳ(t,q,v) defined above.
+  VectorX<T> kG;
+  /// @}
 
   /// @name Data for constraints on accelerations along the contact normal
   /// Problem data for constraining the acceleration of two bodies projected
@@ -172,10 +211,10 @@ struct ConstraintAccelProblemData {
   /// is defined as the ℝˢˣᵐ Jacobian matrix that transforms generalized
   /// velocities (v ∈ ℝᵐ) into the time derivatives of s unilateral constraint
   /// functions. The class of constraint functions naturally includes holonomic
-  /// constraints, which are constraints posable as g(q,t). Such holonomic
+  /// constraints, which are constraints posable as g(t,q). Such holonomic
   /// constraints must be twice differentiated with respect to time to yield
   /// an acceleration-level formulation (i.e., g̈(q, v, v̇, t), for the
-  /// aforementioned definition of g(q,t)). That differentiation yields
+  /// aforementioned definition of g(t,q)). That differentiation yields
   /// g̈ = L⋅v̇ + dL/dt⋅v, which is consistent with the constraint class under
   /// the definition kᴸ(t,q,v) ≡ dL/dt⋅v. An example such holonomic constraint
   /// function is a joint acceleration limit:<pre>
@@ -185,13 +224,9 @@ struct ConstraintAccelProblemData {
   /// than r, the force must be applied to limit the acceleration at the joint,
   /// and the limiting force cannot be applied if the acceleration at the
   /// joint is not at the limit (i.e., v̇ⱼ < r). In this example, the
-  /// corresponding holonomic constraint function is g(q,t) ≡ qⱼ + rt²,
+  /// corresponding holonomic constraint function is g(t,q) ≡ -qⱼ + rt²,
   /// yielding ̈g(q, v, v̇) = -v̇ⱼ + r.
   /// @{
-
-  /// The number of limit constraints. Must equal `s`, i.e., the
-  /// number of columns of L.
-  int num_limit_constraints{0};
 
   /// An operator that performs the multiplication L⋅v. The default operator
   /// returns an empty vector.
@@ -233,6 +268,7 @@ struct ConstraintVelProblemData {
     N_mult = zero_fn;
     F_mult = zero_fn;
     L_mult = zero_fn;
+    G_mult = zero_fn;
 
     // Set default for transpose operators - returns the appropriately sized
     // zero vector.
@@ -241,6 +277,7 @@ struct ConstraintVelProblemData {
     N_transpose_mult = zero_gv_dim_fn;
     F_transpose_mult = zero_gv_dim_fn;
     L_transpose_mult = zero_gv_dim_fn;
+    G_transpose_mult = zero_gv_dim_fn;
   }
 
   /// The number of spanning vectors in the contact tangents (used to linearize
@@ -258,6 +295,43 @@ struct ConstraintVelProblemData {
   /// Coefficients of friction for the n contacts. This problem specification
   /// does not distinguish between static and dynamic friction coefficients.
   VectorX<T> mu;
+
+  /// @name Data for bilateral constraints at the velocity level
+  /// Problem data for bilateral constraints of functions of system
+  /// velocity, where the constraint can be formulated as:<pre>
+  /// 0 = G(q)⋅v + kᴳ(t,q)
+  /// </pre>
+  /// which implies the constraint definition c(t,q,v) ≡ G(q)⋅v + kᴳ(t,q). G
+  /// is defined as the ℝᵇˣᵐ Jacobian matrix that transforms generalized
+  /// velocities (v ∈ ℝᵐ) into the time derivatives of b bilateral constraint
+  /// functions. The class of constraint functions naturally includes holonomic
+  /// constraints, which are constraints posable as g(t,q). Such holonomic
+  /// constraints must be differentiated with respect to time to yield
+  /// a velocity-level formulation (i.e., ġ(t, q, v), for the
+  /// aforementioned definition of g(t,q)). That differentiation yields
+  /// ġ = G⋅v, which is consistent with the constraint class under
+  /// the definition kᴳ(t,q) ≡ 0. An example such holonomic constraint
+  /// function is the transmission (gearing) constraint below:<pre>
+  /// 0 = vᵢ - rvⱼ
+  /// </pre>
+  /// which can be read as the velocity at joint i (vᵢ) must equal to `r`
+  /// times the velocity at joint j (vⱼ); `r` is thus the gear ratio.
+  /// In this example, the corresponding holonomic constraint function is
+  /// g(q) ≡ qᵢ - rqⱼ, yielding ġ(q, v) = vᵢ - rvⱼ.
+  /// @{
+
+  /// An operator that performs the multiplication G⋅v. The default operator
+  /// returns an empty vector.
+  std::function<VectorX<T>(const VectorX<T>&)> G_mult;
+
+  /// An operator that performs the multiplication Gᵀ⋅f where f ∈ ℝᵇ are the
+  /// magnitudes of the constraint forces. The default operator returns a
+  /// zero vector of dimension equal to that of the generalized forces.
+  std::function<VectorX<T>(const VectorX<T>&)> G_transpose_mult;
+
+  /// This ℝᵇ vector is the vector kᴳ(t,q) defined above.
+  VectorX<T> kG;
+  /// @}
 
   /// @name Data for constraints on velocities along the contact normal
   /// Problem data for constraining the velocity of two bodies projected
@@ -359,12 +433,8 @@ struct ConstraintVelProblemData {
   /// r, the impulsive force must be applied to limit the acceleration at the
   /// joint, and the limiting force cannot be applied if the velocity at the
   /// joint is not at the limit (i.e., vⱼ < r). In this example, the constraint
-  /// function is g(q,t) ≡ qⱼ + rt, yielding ġ(q, v) = -vⱼ + r.
+  /// function is g(t,q) ≡ qⱼ + rt, yielding ġ(q, v) = -vⱼ + r.
   /// @{
-
-  /// The number of limit constraints. Must be equivalent to the dimension of
-  /// the output of L_mult (defined below).
-  int num_limit_constraints{0};
 
   /// An operator that performs the multiplication L⋅v. The default operator
   /// returns an empty vector.
