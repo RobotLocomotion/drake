@@ -2,10 +2,7 @@
 
 #include <utility>
 
-#include "drake/common/autodiff_overloads.h"
-#include "drake/common/eigen_autodiff_types.h"
-#include "drake/common/symbolic.h"
-#include "drake/systems/framework/basic_vector.h"
+#include "drake/common/default_scalars.h"
 
 namespace drake {
 namespace systems {
@@ -196,12 +193,12 @@ void SpringMassSystem<T>::DoCalcTimeDerivatives(
       this->CalcConservativePower(context));
 }
 
-template class SpringMassStateVector<double>;
-template class SpringMassStateVector<AutoDiffXd>;
-template class SpringMassStateVector<symbolic::Expression>;
-template class SpringMassSystem<double>;
-template class SpringMassSystem<AutoDiffXd>;
-template class SpringMassSystem<symbolic::Expression>;
 
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::SpringMassStateVector)
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::SpringMassSystem)
