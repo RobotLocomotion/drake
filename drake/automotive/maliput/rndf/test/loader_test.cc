@@ -95,7 +95,8 @@ TEST_P(SingleLaneRNDFLoaderTest, LoadTest) {
 // Returns a collection of single lane RNDF map descriptions for
 // testing parameterization.
 std::vector<SingleLaneRNDFDescription> GetSingleLaneRNDFsToTest() {
-  return std::vector<SingleLaneRNDFDescription>{
+  std::vector<SingleLaneRNDFDescription> maps;
+  maps.push_back(
       {// T intersection map description
        //
        // 1.1.1  2.1.3      1.1.3
@@ -146,7 +147,8 @@ std::vector<SingleLaneRNDFDescription> GetSingleLaneRNDFsToTest() {
            std::make_tuple(api::LaneId{"l:2.1.2-1.1.2"},
                            api::LaneId{"l:1.1.2-1.1.3"}),
        },
-       "drake/automotive/maliput/rndf/test/maps/t_intersection.rndf"},
+       "drake/automotive/maliput/rndf/test/maps/t_intersection.rndf"});
+  maps.push_back(
       {// Cross map description
        //
        //               * 2.1.4
@@ -219,7 +221,8 @@ std::vector<SingleLaneRNDFDescription> GetSingleLaneRNDFsToTest() {
            std::make_tuple(api::LaneId{"l:2.1.2-1.1.3"},
                            api::LaneId{"l:1.1.3-1.1.4"}),
        },
-       "drake/automotive/maliput/rndf/test/maps/cross.rndf"}};
+       "drake/automotive/maliput/rndf/test/maps/cross.rndf"});
+  return maps;
 }
 
 INSTANTIATE_TEST_CASE_P(ParameterizedSingleLaneRNDFLoaderTest,
@@ -230,7 +233,7 @@ INSTANTIATE_TEST_CASE_P(ParameterizedSingleLaneRNDFLoaderTest,
 //
 // 1.2.1       1.2.2       1.2.3
 //   * > > > > > * > > > > > *
-//                            \
+//                            |
 //               * > > > > > > * > > > > > *
 //             1.1.1         1.1.2        1.1.3
 //
