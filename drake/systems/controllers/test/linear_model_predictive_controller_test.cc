@@ -133,9 +133,6 @@ class CubicPolynomialSystem final : public LeafSystem<T> {
   const double time_step_{0.};
 };
 
-template class CubicPolynomialSystem<double>;
-template class CubicPolynomialSystem<AutoDiffXd>;
-
 }  // namespace
 
 class TestMpcWithCubicSystem : public ::testing::Test {
