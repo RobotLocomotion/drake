@@ -955,9 +955,9 @@ class MultibodyTree {
       tree_clone->CloneMobilizerAndAdd(*mobilizer);
     }
 
-    // Since Joint<T> objects are modeled from basic element objects like Body,
-    // Mobilizer, ForceElement and Constraint, they are cloned last so that the
-    // clones of their dependencies are guaranteed to be available.
+    // Since Joint<T> objects are implemented from basic element objects like
+    // Body, Mobilizer, ForceElement and Constraint, they are cloned last so
+    // that the clones of their dependencies are guaranteed to be available.
     // DO NOT change this order!!!
     for (const auto& joint : owned_joints_) {
       tree_clone->CloneJointAndAdd(*joint);

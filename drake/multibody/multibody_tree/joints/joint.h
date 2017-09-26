@@ -18,9 +18,9 @@ namespace multibody {
 
 namespace internal {
 // This is a class used by MultibodyTree internal's to create the internal
-// representation, or model, for a particular joint object.
+// representation, or implementation, for a particular joint object.
 template <typename T>
-class JointModelBuilder;
+class JointImplementationBuilder;
 }  // namespace internal
 
 /// A %Joint models the kinematical relationship which characterizes the
@@ -189,9 +189,10 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
       const MultibodyTree<ToScalar>& tree_clone) const {
     std::unique_ptr<Joint<ToScalar>> joint_clone = DoCloneToScalar(tree_clone);
 
-    std::unique_ptr<typename Joint<ToScalar>::JointModel> model_clone =
-        this->get_model().template CloneToScalar<ToScalar>(tree_clone);
-    joint_clone->OwnModel(std::move(model_clone));
+    std::unique_ptr<typename Joint<ToScalar>::JointImplementation>
+        implementation_clone =
+        this->get_implementation().template CloneToScalar<ToScalar>(tree_clone);
+    joint_clone->OwnImplementation(std::move(implementation_clone));
 
     return std::move(joint_clone);
   }
@@ -200,35 +201,36 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
 
  protected:
   /// (Advanced) Structure containing all the information needed to build the
-  /// MultibodyTree model for a %Joint. At MultibodyTree::Finalize() a %Joint
-  /// creates a BluePrint of its model with MakeModelBlueprint() so that
-  /// MultibodyTree can build a model for it.
+  /// MultibodyTree implementation for a %Joint. At MultibodyTree::Finalize() a
+  /// %Joint creates a BluePrint of its implementation with MakeModelBlueprint()
+  /// so that MultibodyTree can build an implementation for it.
   struct BluePrint {
     std::vector<std::unique_ptr<Mobilizer<T>>> mobilizers_;
     // TODO(amcastro-tri): add force elements, constraints, bodies.
   };
 
-  /// (Advanced) A Joint is modeled in terms of MultibodyTree elements such as
-  /// bodies, mobilizers, force elements and constraints. This object contains
-  /// the internal details of the MultibodyTree model for a joint.
-  /// The model does not own the MBT elements, it just keeps references to them.
+  /// (Advanced) A Joint is implemented in terms of MultibodyTree elements such
+  /// as bodies, mobilizers, force elements and constraints. This object
+  /// contains the internal details of the MultibodyTree implementation for a
+  /// joint. The implementation does not own the MBT elements, it just keeps
+  /// references to them.
   /// This is intentionally made a protected member so that derived classes have
   /// access to its definition.
-  struct JointModel {
-    /// Default constructor to create an empty model. Used by
+  struct JointImplementation {
+    /// Default constructor to create an empty implementation. Used by
     /// Joint::CloneToScalar().
-    JointModel() {}
+    JointImplementation() {}
 
-    /// This constructor creates a model for `this` joint from the blueprint
-    /// provided.
-    explicit JointModel(const BluePrint& blue_print) {
+    /// This constructor creates an implementation for `this` joint from the
+    /// blueprint provided.
+    explicit JointImplementation(const BluePrint& blue_print) {
       DRAKE_DEMAND(static_cast<int>(blue_print.mobilizers_.size()) != 0);
       for (const auto& mobilizer : blue_print.mobilizers_) {
         mobilizers_.push_back(mobilizer.get());
       }
     }
 
-    /// Returns the number of mobilizers in this model.
+    /// Returns the number of mobilizers in this implementation.
     int get_num_mobilizers() const {
       return static_cast<int>(mobilizers_.size());
     }
@@ -236,24 +238,24 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
     // Hide the following section from Doxygen.
 #ifndef DRAKE_DOXYGEN_CXX
     // Helper method to be called within Joint::CloneToScalar() to clone its
-    // model to the appropriate scalar type.
+    // implementation to the appropriate scalar type.
     template <typename ToScalar>
-    std::unique_ptr<typename Joint<ToScalar>::JointModel> CloneToScalar(
-        const MultibodyTree<ToScalar>& tree_clone) const {
-      auto model_clone =
-          std::make_unique<typename Joint<ToScalar>::JointModel>();
+    std::unique_ptr<typename Joint<ToScalar>::JointImplementation>
+    CloneToScalar(const MultibodyTree<ToScalar>& tree_clone) const {
+      auto implementation_clone =
+          std::make_unique<typename Joint<ToScalar>::JointImplementation>();
       for (const Mobilizer<T>* mobilizer : mobilizers_) {
         const Mobilizer<ToScalar>* mobilizer_clone =
             &tree_clone.get_variant(*mobilizer);
-        model_clone->mobilizers_.push_back(mobilizer_clone);
+        implementation_clone->mobilizers_.push_back(mobilizer_clone);
       }
-      return std::move(model_clone);
+      return std::move(implementation_clone);
     }
 #endif
     // End of hidden Doxygen section.
 
     /// References (raw pointers) to the mobilizers that make part of this
-    /// model.
+    /// implementation.
     std::vector<const Mobilizer<T>*> mobilizers_;
     // TODO(amcastro-tri): add force elements, constraints, bodies, etc.
   };
@@ -274,32 +276,34 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   /// @}
 
   /// This method must be implemented by derived classes in order to provide
-  /// JointModelBuilder a BluePrint of their internal implementation JointModel.
-  virtual std::unique_ptr<BluePrint> MakeModelBlueprint() const = 0;
+  /// JointImplementationBuilder a BluePrint of their internal implementation
+  /// JointImplementation.
+  virtual std::unique_ptr<BluePrint> MakeImplementationBlueprint() const = 0;
 
-  /// Returns a const reference to the internal model of `this` joint.
+  /// Returns a const reference to the internal implementation of `this` joint.
   /// @warning The MultibodyTree model must have already been finalized, or
   /// this method will abort.
-  const JointModel& get_model() const {
-    // The MultibodyTree must have been finalized for the model to be valid.
+  const JointImplementation& get_implementation() const {
+    // The MultibodyTree must have been finalized for the implementation to be
+    // valid.
     DRAKE_DEMAND(this->get_parent_tree().topology_is_valid());
-    return *model_;
+    return *implementation_;
   }
 
  private:
   // Make all other Joint<U> objects a friend of Joint<T> so they can make
-  // Joint<ToScalar>::JointModel from CloneToScalar<ToScalar>().
+  // Joint<ToScalar>::JointImplementation from CloneToScalar<ToScalar>().
   template <typename> friend class Joint;
 
-  // JointModelBuilder is a friend so that it can access the
-  // Joint<T>::BluePrint and protected method MakeModelBlueprint().
-  friend class internal::JointModelBuilder<T>;
+  // JointImplementationBuilder is a friend so that it can access the
+  // Joint<T>::BluePrint and protected method MakeImplementationBlueprint().
+  friend class internal::JointImplementationBuilder<T>;
 
-  // When a model is created, either by internal::JointModelBuilder or
-  // Joint::CloneToScalar(), this method is called to pass ownership of a model
-  // to the Joint.
-  void OwnModel(std::unique_ptr<JointModel> model) {
-    model_ = std::move(model);
+  // When an implementation is created, either by
+  // internal::JointImplementationBuilder or by Joint::CloneToScalar(), this
+  // method is called to pass ownership of an implementation to the Joint.
+  void OwnImplementation(std::unique_ptr<JointImplementation> implementation) {
+    implementation_ = std::move(implementation);
   }
 
   std::string name_;
@@ -318,7 +322,7 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   Isometry3<double> X_BM_;
 
   // The Joint<T> implementation:
-  std::unique_ptr<JointModel> model_;
+  std::unique_ptr<JointImplementation> implementation_;
 };
 
 }  // namespace multibody

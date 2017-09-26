@@ -129,7 +129,7 @@ class RevoluteJoint final : public Joint<T> {
  protected:
   // Joint<T> overrides:
   std::unique_ptr<typename Joint<T>::BluePrint>
-  MakeModelBlueprint() const override {
+  MakeImplementationBlueprint() const override {
     auto blue_print = std::make_unique<typename Joint<T>::BluePrint>();
     blue_print->mobilizers_.push_back(
         std::make_unique<RevoluteMobilizer<T>>(
@@ -153,14 +153,14 @@ class RevoluteJoint final : public Joint<T> {
   friend class JointTester;
 
   // Returns the mobilizer implementing this joint.
-  // The internal implementation (model) of this joint could change in a future
-  // version. However its public API should remain intact.
+  // The internal implementation of this joint could change in a future version.
+  // However its public API should remain intact.
   const RevoluteMobilizer<T>* get_mobilizer() const {
-    // This model should only have one mobilizer.
-    DRAKE_DEMAND(this->get_model().get_num_mobilizers() == 1);
+    // This implementation should only have one mobilizer.
+    DRAKE_DEMAND(this->get_implementation().get_num_mobilizers() == 1);
     const RevoluteMobilizer<T>* mobilizer =
         dynamic_cast<const RevoluteMobilizer<T>*>(
-            this->get_model().mobilizers_[0]);
+            this->get_implementation().mobilizers_[0]);
     DRAKE_DEMAND(mobilizer != nullptr);
     return mobilizer;
   }
