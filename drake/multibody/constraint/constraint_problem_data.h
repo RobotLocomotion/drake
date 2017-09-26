@@ -28,8 +28,8 @@ namespace constraint {
 /// constraints (e.g., c(q) ≥ 0). The former can be realized through the
 /// latter through a pair of inequality constraints, c(q) ≥ 0 and -c(q) ≥ 0;
 /// the problem structure distinguishes the two types to maximize
-/// computational efficiency in the solution algorithms. *We assume hereafter
-/// that c() are vector equations.*
+/// computational efficiency in the solution algorithms. We assume hereafter
+/// that c() are vector equations.
 ///
 /// Constraints may be defined at the position level:<pre>
 /// c(t,q,λ)
@@ -116,18 +116,22 @@ namespace constraint {
 /// Jacobian matrices as the partial derivatives of the constraint equations
 /// taken with respect to the quasi-coordinates (see "Methods for weighting
 /// state variable errors" in IntegratorBase); using the notation there for
-/// quasi-coordinates means we write the Jacobian as ∂c/∂q̅. Fortunately, for
-/// constraints defined strictly in the form c(q), the Jacobians are described
-/// completely by the equation ċ = ∂c/∂q̅⋅v, where v are the generalized
-/// velocities of the system. Since the problem data specifically requires
-/// operators that compute (∂c/∂q̅⋅v), one can simply evaluate ċ.
+/// quasi-coordinates means we write the Jacobian as ∂c/∂q̅ (quasi-coordinates
+/// possess the property that ∂q̅/∂v = Iₙₓₙ (the n × n identity matrix).
+/// Fortunately, for constraints defined strictly in the form c(q), the
+/// Jacobians are described completely by the equation ċ = ∂c/∂q̅⋅v, where v are
+/// the generalized velocities of the system. Since the problem data
+/// specifically requires operators that compute (∂c/∂q̅⋅v), one can simply
+/// evaluate ċ.
 ///
 /// <h3>Definition of variables used within this documentation:</h3>
 /// - b ∈ ℕ   The number of bilateral constraint equations.
 /// - k ∈ ℕ   The number of edges in a polygonal approximation to a friction
 ///           cone. Note that k = 2r.
 /// - p ∈ ℕ   The number of non-interpenetration constraint equations
-/// - n ∈ ℕ   The dimension of the system generalized velocity / force
+/// - q ∈ ℝⁿ' The generalized coordinate vector of the system.
+/// - n ∈ ℕ   The dimension of the system generalized velocity / force.
+/// - n' ∈ ℕ  The dimension of the system generalized coordinates.
 /// - r ∈ ℕ   *Half* the number of edges in a polygonal approximation to a
 ///           friction cone. Note that k = 2r.
 /// - s ∈ ℕ   The number of contacts at which sliding is occurring. Note
@@ -135,7 +139,8 @@ namespace constraint {
 /// - t ∈ ℝ₀⁺ The system time variable.
 /// - u ∈ ℕ   The number of "generic" (non-contact related) unilateral
 ///           constraint equations.
-/// - v ∈ ℝⁿ  The generalized velocity vector of the system.
+/// - v ∈ ℝⁿ  The generalized velocity vector of the system, which is equivalent
+///           to the time derivative of the system quasi-coordinates.
 /// - y ∈ ℕ   The number of contacts at which sliding is not occurring. Note
 ///           that p = s + y.
 /// - α ∈ ℝ₀⁺ A scalar used to correct position-level constraint errors
