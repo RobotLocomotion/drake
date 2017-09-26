@@ -174,7 +174,8 @@ void DoTrajectoryTest(InterpolatorType interp_type) {
   // Check that the final knot point has zero acceleration and
   // velocity.
   if (interp_type == InterpolatorType::Cubic ||
-      interp_type == InterpolatorType::ZeroOrderHold) {
+      interp_type == InterpolatorType::ZeroOrderHold ||
+      interp_type == InterpolatorType::Pchip) {
     context->set_time(t.back() + 0.01);
     dut.CalcUnrestrictedUpdate(*context, context->get_mutable_state());
     dut.CalcOutput(*context, output.get());
