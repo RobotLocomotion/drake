@@ -560,12 +560,10 @@ class System {
   /// times.
   /// @param[out] unique_update_period_sec Contains the update period (in
   ///             seconds) on return of `1` from this function (undefined on
-  ///             other return values). Validated to be non-null by
-  ///             GetSinglePeriodicTriggerWithDiscreteUpdateAttribute().
+  ///             other return values). Function aborts if null.
   /// @param[out] unique_update_offset_sec Contains the update offset (in
   ///             seconds) on return of `1` from this function (undefined on
-  ///             other return values). Validated to be non-null by
-  ///             GetSinglePeriodicTriggerWithDiscreteUpdateAttribute().
+  ///             other return values). Function aborts if null. 
   /// @returns The number of periodic triggers mapping to discrete update
   ///          events.
   virtual int GetNumPeriodicDiscreteUpdates(
@@ -1435,17 +1433,17 @@ class System {
     *time = std::numeric_limits<T>::infinity();
   }
 
-  /// Implement this method to return the attributes of the single periodic
-  /// trigger that activates discrete update events, or otherwise indicate
-  /// that no such triggers or multiple such triggers exist. Method must
-  /// return the number of periodic triggers mapping to discrete updates in
-  /// any case. `update_period_sec` and `update_offset_sec` must be populated
-  /// with the period and offset of the only such periodic trigger / discrete
-  /// update pair on return.
+  /// Implement this method to return the number of periodic triggers mapping
+  /// to discrete update events and return attributes of the single periodic
+  /// trigger if only one such trigger is present. `unique_update_period_sec`
+  /// and `unique_update_offset_sec` must be populated with the period and
+  /// offset of the only such periodic trigger / discrete update pair on 
+  /// return value of `1`.
   /// @see GetNumPeriodicDiscreteUpdates() for description of function
-  ///      parameters and output, which are identical.
+  ///      parameters and output, which are identical to those of this method.
   /// @note The default implementation returns zero and does not touch the
   ///       output parameters.
+  /// @note Parameters are validated by GetNumPeriodicDiscreteUpdates().
   virtual int DoGetNumPeriodicDiscreteUpdates(
       double* update_period_sec,
       double* update_offset_sec) const {

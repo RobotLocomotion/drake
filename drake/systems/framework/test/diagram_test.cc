@@ -22,7 +22,7 @@ namespace drake {
 namespace systems {
 namespace {
 
-/// An empty system that can set an arbitrary periodic discrete update.
+/// A stateless system that can set an arbitrary periodic discrete update.
 template <class T>
 class EmptySystem : public LeafSystem<T> {
  public:
@@ -36,10 +36,12 @@ class EmptySystem : public LeafSystem<T> {
   }
 };
 
-/// A diagram of purely empty systems used for testing that diagram
+/// A recursive diagram of purely empty systems used for testing that diagram
 /// mechanics are working for periodic discrete update events.
 class EmptySystemDiagram : public Diagram<double> {
  public:
+  // Enum for how many periodic discrete updates are performed at each level
+  // of the diagram.
   enum UpdateType {
     kTwoUpdatesPerLevel,
     kOneUpdatePerLevelSys1,
@@ -49,6 +51,9 @@ class EmptySystemDiagram : public Diagram<double> {
     kTwoUpdatesAtLastLevel,
   };
 
+  // Creates a diagram of "empty" systems with the specified recursion depth.
+  // A recursion depth of zero will create two empty systems only; Otherwise,
+  // 2*`recursion_depth` empty systems will be created.
   EmptySystemDiagram(UpdateType num_periodic_discrete_updates,
                      int recursion_depth) {
     DiagramBuilder<double> builder;
@@ -150,8 +155,8 @@ GTEST_TEST(EmptySystemDiagramTest, CheckPeriodicTriggerDiscreteUpdate) {
     EXPECT_EQ(d_both_last.GetNumPeriodicDiscreteUpdates(
         &update_period_sec, &update_offset_sec), 2);
 
-    // The ones with the one update per level are the only ones that should
-    // return `true`.
+    // The ones with the one update at the last level are the only ones that
+    // should yield testable parameters.
     EXPECT_EQ(d_sys1_last.GetNumPeriodicDiscreteUpdates(
         &update_period_sec, &update_offset_sec), 1);
     CheckPeriodAndOffset(update_period_sec, update_offset_sec);
@@ -1120,6 +1125,8 @@ class TestPublishingSystem : public LeafSystem<double> {
  public:
   TestPublishingSystem() {
     this->DeclarePeriodicPublish(kTestPublishPeriod);
+
+    // Verify that no periodic discrete updates are registered.
     double dummy_period, dummy_offset;
     EXPECT_EQ(this->GetNumPeriodicDiscreteUpdates(
         &dummy_period, &dummy_offset), false);
@@ -1286,6 +1293,8 @@ class SystemWithAbstractState : public LeafSystem<double> {
  public:
   SystemWithAbstractState(int id, double update_period) : id_(id) {
     DeclarePeriodicUnrestrictedUpdate(update_period, 0);
+
+    // Verify that no periodic discrete updates are registered.
     double dummy_period, dummy_offset;
     EXPECT_EQ(this->GetNumPeriodicDiscreteUpdates(
         &dummy_period, &dummy_offset), false);
@@ -1771,6 +1780,8 @@ class MyEventTestSystem : public LeafSystem<double> {
   MyEventTestSystem(const std::string& name, double p) {
     if (p > 0) {
       DeclarePeriodicPublish(p);
+
+      // Verify that no periodic discrete updates are registered.
       double dummy_period, dummy_offset;
       EXPECT_EQ(this->GetNumPeriodicDiscreteUpdates(
           &dummy_period, &dummy_offset), false);

@@ -1300,18 +1300,19 @@ class Diagram : public System<T>,
       double* unique_update_offset_sec) const override {
     DRAKE_DEMAND(unique_update_period_sec);
     DRAKE_DEMAND(unique_update_offset_sec);
-    double dummy_update_period_sec, dummy_update_offset_sec;
+    double update_period_sec, update_offset_sec;
     int return_count = 0;
     for (int i = 0; i < num_subsystems(); ++i) {
       // We do not just pass in the update_period_sec and update_offset_sec
-      // directly, because GetNumPeriodicDiscreteUpdates
-      // is not required to leave those values untouched on `false` return.
+      // directly, because subsystem GetNumPeriodicDiscreteUpdates() calls
+      // are not required to leave those values untouched on a return value
+      // greater than one.
       return_count += registered_systems_[i]->
           GetNumPeriodicDiscreteUpdates(
               &dummy_update_period_sec, &dummy_update_offset_sec);
       if (return_count == 1) {
-        *unique_update_period_sec = dummy_update_period_sec;
-        *unique_update_offset_sec = dummy_update_offset_sec;
+        *unique_update_period_sec = update_period_sec;
+        *unique_update_offset_sec = update_offset_sec;
       }
     }
 

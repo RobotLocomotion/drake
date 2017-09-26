@@ -308,8 +308,8 @@ class LeafSystem : public System<T> {
   }
 
   int DoGetNumPeriodicDiscreteUpdates(
-      double* update_period_sec,
-      double* update_offset_sec) const override {
+      double* unique_update_period_sec,
+      double* unique_update_offset_sec) const override {
     // If there are no periodic events, can do an early exit.
     if (periodic_events_.empty())
       return 0;
@@ -324,8 +324,8 @@ class LeafSystem : public System<T> {
       const typename Event<T>::PeriodicAttribute& period_info =
           periodic_event.first;
       if (discrete_update_count++ == 0) {
-        *update_period_sec = period_info.period_sec;
-        *update_offset_sec = period_info.offset_sec;
+        *unique_update_period_sec = period_info.period_sec;
+        *unique_update_offset_sec = period_info.offset_sec;
       }
     }
 
