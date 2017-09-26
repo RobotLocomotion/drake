@@ -16,27 +16,27 @@ drake_cc_library(
   name = "traffic_light",
   srcs = [
           "traffic_light.cc",
-          ],
+  ],
   hdrs = [
           "traffic_light.h",
-          ],
+  ],
   deps = [
           "//drake/systems/framework",
-         ],
+  ],
 )
 
 drake_cc_library(
   name = "traffic_light_aware_controller",
   srcs = [
           "traffic_light_aware_controller.cc",
-          ],
+  ],
   hdrs = [
           "traffic_light_aware_controller.h",
-          ],
+  ],
   deps = [
           "//drake/systems/framework",
           "//drake/automotive:generated_vectors",
-         ],
+  ],
 )
 
 
@@ -46,7 +46,7 @@ drake_cc_googletest(
   srcs = ["test/traffic_light_test.cc"],
   deps = [
           ":traffic_light",
-          ],
+  ],
 )
 
 drake_cc_googletest(
@@ -54,6 +54,6 @@ drake_cc_googletest(
   srcs = ["test/traffic_light_aware_controller_test.cc"],
   deps = [
           ":traffic_light_aware_controller",
-          ],
+  ],
 )
 

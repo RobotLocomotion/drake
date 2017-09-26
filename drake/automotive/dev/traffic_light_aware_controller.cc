@@ -57,19 +57,26 @@ void TrafficLightAwareController<T>::DoCalcOutput( const systems::Context<T>& co
        || ( pow(signal_x - car_x, 2) + pow(signal_y - car_y, 2) > pow(signal_radius, 2) )
   ) {
 		// Either we can go through or we are too far to worry about it, carry on
-    WriteOutput( other_acceleration, output );
+    //WriteOutput( other_acceleration, output );
+    output->SetFromVector( other_acceleration );
 	} else { 
 		// slam on the brakes
     DrivingCommand<T> driving_command;
     driving_command.set_steering_angle( other_acceleration(0) );
     driving_command.set_acceleration( -100 ); // make it stop
-		WriteOutput( driving_command );
+		WriteOutput( driving_command, output );
 	}
 
 }
 
 template <typename T>
-void TrafficLightAwareController<T>::WriteOutput( const VectorX<T> value,
+void TrafficLightAwareController<T>::WriteOutput( const VectorX<T>& value,
+                                                  systems::BasicVector<T>* output ) const {
+  output->set_value( value );
+}
+
+template <typename T>
+void TrafficLightAwareController<T>::WriteOutput( const VectorX<T>& value,
                                                   systems::BasicVector<T>* output ) const {
   output->set_value( value );
 }
@@ -82,6 +89,8 @@ const VectorX<T> TrafficLightAwareController<T>::ReadInput( const Context<T>& co
   DRAKE_ASSERT((input != nullptr));
   return input->get_value();
 }
+
+template class TrafficLightAwareController<double>;
 
 
 } // namespace automotive

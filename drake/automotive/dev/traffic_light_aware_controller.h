@@ -43,7 +43,9 @@ class TrafficLightAwareController : public systems::LeafSystem<T> {
 
 		VectorX<T> ReadParameters( const systems::Context<T>& context ) const;
 		const VectorX<T> ReadInput( const systems::Context<T>& context, int input_index ) const;
-	  void WriteOutput( const VectorX<T> value,
+	  void WriteOutput( const VectorX<T>& value,
+	                    systems::BasicVector<T>* output ) const;
+	  void WriteOutput( const systems::BasicVector<T>& value,
 	                    systems::BasicVector<T>* output ) const;
 }; 
 
