@@ -265,4 +265,55 @@ we have:
   explicit MySystem(const MySystem<U>& other) : MySystem<T>(other.gain()) {}
 @endcode
 
+
+<h2>How to create a Diagram that supports scalar conversion</h2>
+
+In the typical case, no special effort is needed to create a Diagram that
+support scalar-type conversion.  The Diagram does not even need to be templated
+on a scalar type `T`.
+
+Example using DiagramBuilder::BuildInto:
+@code
+namespace sample {
+class MyDiagram : public Diagram<double> {
+ public:
+  MyDiagram() {
+    DiagramBuilder<double> builder;
+    const auto* integrator = builder.AddSystem<Integrator<double>>(1);
+    builder.ExportInput(integrator->get_input_port());
+    builder.ExportOutput(integrator->get_output_port());
+    builder.BuildInto(this);
+  }
+};
+@endcode
+
+In this example, `MyDiagram` will support the same scalar types as the
+Integrator.  If any sub-system had been added that did not support, e.g.,
+symbolic form, then the Diagram would also not support symbolic form.
+
+By default, even subclasses of a `Diagram<U>` will convert to a `Diagram<T>`,
+discarding the diagram subclass details.  For example, in the above sample
+code, `MyDiagram::ToAutoDiffXd()` will return an object of runtime type
+`Diagram<AutoDiffXd>`, not type `MyDiagram<AutoDiffXd>`.  (There is no such
+class as `MyDiagram<AutoDiffXd>` anyway, because `MyDiagram` is not templated.)
+
+In the unusual case that the Diagram's subclass must be preserved during
+conversion, a ::drake::systems::SystemTypeTag should be used:
+
+Example using DiagramBuilder::BuildInto along with a `SystemTypeTag`:
+@code
+namespace sample {
+template <typename T>
+class SpecialDiagram<T> final : public Diagram<T> {
+ public:
+  SpecialDiagram() : Diagram<T>(SystemTypeTag<sample::SpecialDiagram>{}) {
+    DiagramBuilder<T> builder;
+    const auto* integrator = builder.template AddSystem<Integrator<T>>(1);
+    builder.ExportInput(integrator->get_input_port());
+    builder.ExportOutput(integrator->get_output_port());
+    builder.BuildInto(this);
+  }
+};
+@endcode
+
 */
