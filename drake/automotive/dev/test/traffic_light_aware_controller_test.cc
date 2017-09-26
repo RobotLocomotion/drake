@@ -44,14 +44,15 @@ GTEST_TEST(TrafficLightAwareControllerTest, BasicTest) {
   // Set up the controller for testing.
   const TrafficLightAwareController<double> controller;
   unique_ptr<Context<double>> context = controller.CreateDefaultContext();
-  unique_ptr<SystemOutput<double>> output_port = controller.AllocateOutput(*context);
+  unique_ptr<SystemOutput<double>> output_port =
+      controller.AllocateOutput(*context);
   VectorXd controller_output;
 
   // Feed it a signal closed, but car is too far to worry.
   FeedInput(signal_closed, controller.traffic_light_input(), context);
   FeedInput(car_far, controller.car_state(), context);
   FeedInput(go, controller.other_controller_acceleration(), context);
-  controller.CalcOutput( *context, output_port.get() );
+  controller.CalcOutput(*context, output_port.get());
   controller_output = ReadOutput(controller, *output_port);
   EXPECT_EQ(controller_output, go);
 
@@ -60,7 +61,7 @@ GTEST_TEST(TrafficLightAwareControllerTest, BasicTest) {
   FeedInput(signal_closed, controller.traffic_light_input(), context);
   FeedInput(car_near, controller.car_state(), context);
   FeedInput(go, controller.other_controller_acceleration(), context);
-  controller.CalcOutput( *context, output_port.get() );
+  controller.CalcOutput(*context, output_port.get());
   controller_output = ReadOutput(controller, *output_port);
   EXPECT_EQ(controller_output, stop);
 
@@ -68,7 +69,7 @@ GTEST_TEST(TrafficLightAwareControllerTest, BasicTest) {
   FeedInput(signal_open, controller.traffic_light_input(), context);
   FeedInput(car_near, controller.car_state(), context);
   FeedInput(go, controller.other_controller_acceleration(), context);
-  controller.CalcOutput( *context, output_port.get() );
+  controller.CalcOutput(*context, output_port.get());
   controller_output = ReadOutput(controller, *output_port);
   EXPECT_EQ(controller_output, go);
 }
