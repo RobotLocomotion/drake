@@ -1029,8 +1029,7 @@ class System {
   template <template <typename> class S = ::drake::systems::System>
   static std::unique_ptr<S<AutoDiffXd>> ToAutoDiffXd(const S<T>& from) {
     using U = AutoDiffXd;
-    const System<T>& from_system = from;  // Upcast to unlock protected methods.
-    std::unique_ptr<System<U>> base_result{from_system.DoToAutoDiffXd()};
+    std::unique_ptr<System<U>> base_result = from.ToAutoDiffXdMaybe();
     if (!base_result) {
       std::stringstream ss;
       ss << "The object named [" << from.get_name() << "] of type "
@@ -1044,8 +1043,6 @@ class System {
     std::unique_ptr<S<U>> result{&dynamic_cast<S<U>&>(*base_result)};
     base_result.release();
 
-    // Match the result's name to its originator.
-    result->set_name(from.get_name());
     return result;
   }
 
@@ -1053,7 +1050,8 @@ class System {
   /// returns nullptr if this System does not support autodiff, instead of
   /// throwing an exception.
   std::unique_ptr<System<AutoDiffXd>> ToAutoDiffXdMaybe() const {
-    std::unique_ptr<System<AutoDiffXd>> result{DoToAutoDiffXd()};
+    std::unique_ptr<System<AutoDiffXd>> result =
+        system_scalar_converter_.Convert<AutoDiffXd, T>(*this);
     if (result) {
       // Match the result's name to its originator.
       result->set_name(this->get_name());
@@ -1098,8 +1096,7 @@ class System {
   template <template <typename> class S = ::drake::systems::System>
   static std::unique_ptr<S<symbolic::Expression>> ToSymbolic(const S<T>& from) {
     using U = symbolic::Expression;
-    const System<T>& from_system = from;  // Upcast to unlock protected methods.
-    std::unique_ptr<System<U>> base_result{from_system.DoToSymbolic()};
+    std::unique_ptr<System<U>> base_result = from.ToSymbolicMaybe();
     if (!base_result) {
       std::stringstream ss;
       ss << "The object named [" << from.get_name() << "] of type "
@@ -1113,8 +1110,6 @@ class System {
     std::unique_ptr<S<U>> result{&dynamic_cast<S<U>&>(*base_result)};
     base_result.release();
 
-    // Match the result's name to its originator.
-    result->set_name(from.get_name());
     return result;
   }
 
@@ -1122,7 +1117,8 @@ class System {
   /// nullptr if this System does not support symbolic, instead of throwing an
   /// exception.
   std::unique_ptr<System<symbolic::Expression>> ToSymbolicMaybe() const {
-    std::unique_ptr<System<symbolic::Expression>> result{DoToSymbolic()};
+    std::unique_ptr<System<symbolic::Expression>> result =
+        system_scalar_converter_.Convert<symbolic::Expression, T>(*this);
     if (result) {
       // Match the result's name to its originator.
       result->set_name(this->get_name());
@@ -1558,18 +1554,6 @@ class System {
     // You need to override System<T>::DoMapVelocityToQDot!
     DRAKE_THROW_UNLESS(qdot->size() == n);
     qdot->SetFromVector(generalized_velocity);
-  }
-
-  /// NVI implementation of ToAutoDiffXdMaybe.
-  /// @return nullptr if this System does not support autodiff
-  virtual std::unique_ptr<System<AutoDiffXd>> DoToAutoDiffXd() const {
-    return system_scalar_converter_.Convert<AutoDiffXd, T>(*this);
-  }
-
-  /// NVI implementation of ToSymbolicMaybe.
-  /// @return nullptr if this System does not support symbolic form
-  virtual std::unique_ptr<System<symbolic::Expression>> DoToSymbolic() const {
-    return system_scalar_converter_.Convert<symbolic::Expression, T>(*this);
   }
   //@}
 
