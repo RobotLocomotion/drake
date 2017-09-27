@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_optional.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/multibody/multibody_tree/acceleration_kinematics_cache.h"
 #include "drake/multibody/multibody_tree/body.h"
@@ -389,9 +390,9 @@ class MultibodyTree {
   ///     model.AddBody<RigidBody>(SpatialInertia<double>(...));
   ///   // Define the pose X_PF of a frame F rigidly atached to parent body P.
   ///   // Define the pose X_BM of a frame M rigidly atached to child body B.
-  ///   const RevoluteJoint<double>& pin =
+  ///   const RevoluteJoint<double>& elbow =
   ///     model.AddJoint<RevoluteJoint>(
-  ///       "PinJoint",             /* joint name */
+  ///       "Elbow",                /* joint name */
   ///       model.get_world_body(), /* parent body */
   ///       Isometry3d::Identity(), /* frame F IS the world frame W */
   ///       pendulum,               /* child body, the pendulum */
@@ -404,61 +405,30 @@ class MultibodyTree {
   template<template<typename> class JointType, typename... Args>
   const JointType<T>& AddJoint(
       const std::string& name,
-      const Body<T>& parent, const Isometry3<T>& X_PF,
-      const Body<T>& child, const Isometry3<T>& X_BM,
+      const Body<T>& parent, const optional<Isometry3<double>>& X_PF,
+      const Body<T>& child, const optional<Isometry3<double>>& X_BM,
       Args&&... args) {
     static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
                   "JointType<T> must be a sub-class of Joint<T>.");
 
-    const FixedOffsetFrame<T>& frame_on_parent =
-        this->AddFrame<FixedOffsetFrame>(parent, X_PF);
-    const FixedOffsetFrame<T>& frame_on_child =
-        this->AddFrame<FixedOffsetFrame>(child, X_BM);
+    const Frame<T>* frame_on_parent;
+    if (X_PF) {
+      frame_on_parent = &this->AddFrame<FixedOffsetFrame>(parent, *X_PF);
+    } else {
+      frame_on_parent = &parent.get_body_frame();
+    }
+
+    const Frame<T>* frame_on_child;
+    if (X_BM) {
+      frame_on_child = &this->AddFrame<FixedOffsetFrame>(child, *X_BM);
+    } else {
+      frame_on_child = &child.get_body_frame();
+    }
 
     return AddJoint(
         std::make_unique<JointType<T>>(
             name,
-            frame_on_parent, frame_on_child,
-            std::forward<Args>(args)...));
-  }
-
-  template<template<typename> class JointType, typename... Args>
-  const JointType<T>& AddJoint(
-      const std::string& name,
-      const Body<T>& parent,
-      const Body<T>& child, const Isometry3<T>& X_BM,
-      Args&&... args) {
-    static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
-                  "JointType<T> must be a sub-class of Joint<T>.");
-
-    const Frame<T>& frame_on_parent = parent.get_body_frame();
-    const FixedOffsetFrame<T>& frame_on_child =
-        this->AddFrame<FixedOffsetFrame>(child, X_BM);
-
-    return AddJoint(
-        std::make_unique<JointType<T>>(
-            name,
-            frame_on_parent, frame_on_child,
-            std::forward<Args>(args)...));
-  }
-
-  template<template<typename> class JointType, typename... Args>
-  const JointType<T>& AddJoint(
-      const std::string& name,
-      const Body<T>& parent, const Isometry3<T>& X_PF,
-      const Body<T>& child,
-      Args&&... args) {
-    static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
-                  "JointType<T> must be a sub-class of Joint<T>.");
-
-    const FixedOffsetFrame<T>& frame_on_parent =
-        this->AddFrame<FixedOffsetFrame>(parent, X_PF);
-    const Frame<T>& frame_on_child = child.get_body_frame();
-
-    return AddJoint(
-        std::make_unique<JointType<T>>(
-            name,
-            frame_on_parent, frame_on_child,
+            *frame_on_parent, *frame_on_child,
             std::forward<Args>(args)...));
   }
 

@@ -253,10 +253,16 @@ class TreeTopologyTests : public ::testing::Test {
       const RigidBody<double>& inboard, const RigidBody<double>& outboard,
       bool use_joint = false) {
     if ( use_joint ) {
-       const auto* joint = &model_->AddJoint<RevoluteJoint>(
-           "FooJoint",
-           inboard, Isometry3d::Identity(), outboard, Isometry3d::Identity(),
-           Vector3d::UnitZ());
+      // Just for fun, here we explicitly state that the frame on body
+      // "inboard" (frame P) IS the joint frame F, done by passing the empty
+      // curly braces {}.
+      // We DO want the model to have a frame M on body "outbaord" (frame B)
+      // with a pose X_BM = Identity. We therefore pass the identity transform.
+      const auto* joint = &model_->AddJoint<RevoluteJoint>(
+          "FooJoint",
+          inboard, {}, /* Model does not create frame F, and makes F = P.  */
+          outboard, Isometry3d::Identity(), /* Model does creates frame M. */
+          Vector3d::UnitZ());
       joints_.push_back(joint);
     } else {
       const Mobilizer<double> *mobilizer =
@@ -409,6 +415,7 @@ TEST_F(TreeTopologyTests, SizesAndIndexing) {
   FinalizeModel();
   EXPECT_EQ(model_->get_num_bodies(), 8);
   EXPECT_EQ(model_->get_num_mobilizers(), 7);
+  EXPECT_EQ(model_->get_num_joints(), 1);
 
   const MultibodyTreeTopology& topology = model_->get_topology();
   EXPECT_EQ(topology.get_num_body_nodes(), model_->get_num_bodies());
