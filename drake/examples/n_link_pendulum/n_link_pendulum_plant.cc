@@ -31,12 +31,16 @@ using geometry::Sphere;
 using multibody::PositionKinematicsCache;
 using multibody::RevoluteJoint;
 using multibody::RigidBody;
+using multibody::SpatialAcceleration;
+using multibody::SpatialForce;
 using multibody::SpatialInertia;
 using multibody::UniformGravityFieldElement;
 using multibody::UnitInertia;
 using multibody::VelocityKinematicsCache;
 using systems::BasicVector;
 using systems::Context;
+using systems::OutputPort;
+using systems::State;
 
 template<typename T>
 NLinkPendulumPlant<T>::NLinkPendulumPlant(
@@ -58,7 +62,6 @@ NLinkPendulumPlant<T>::NLinkPendulumPlant(
   //   - This is being invoked from the scalar-conversion constructor.
   if (geometry_system != nullptr) {
     // Build the GeometrySystem model of this plant.
-    source_id_ = geometry_system->RegisterSource("n_link_pendulum");
     geometry_id_port_ =
         this->DeclareAbstractOutputPort(
                 &NLinkPendulumPlant::AllocateFrameIdOutput,
@@ -114,6 +117,18 @@ void NLinkPendulumPlant<T>::CalcFramePoseOutput(
   }
 }
 
+template <typename T>
+const OutputPort<T>& NLinkPendulumPlant<T>::get_geometry_id_output_port()
+const {
+  return systems::System<T>::get_output_port(geometry_id_port_);
+}
+
+template <typename T>
+const OutputPort<T>& NLinkPendulumPlant<T>::get_geometry_pose_output_port()
+const {
+  return systems::System<T>::get_output_port(geometry_pose_port_);
+}
+
 template<typename T>
 template<typename U>
 NLinkPendulumPlant<T>::NLinkPendulumPlant(
@@ -141,7 +156,10 @@ void NLinkPendulumPlant<T>::BuildMultibodyTreeModel(
           get_radius(), link_length, Vector3<double>::UnitY());
   SpatialInertia<double> M_Bcm(link_mass, Vector3<double>::Zero(), G_Bcm);
 
-  body_ids_.reserve(get_num_links());
+  if (geometry_system != nullptr) {
+    body_ids_.reserve(get_num_links());
+    source_id_ = geometry_system->RegisterSource("n_link_pendulum");
+  }
 
   // A pointer to the last added link.
   const RigidBody<T>* previous_link = &model_.get_world_body();
@@ -166,9 +184,13 @@ void NLinkPendulumPlant<T>::BuildMultibodyTreeModel(
 
     // Define the geometry for each link
     if (geometry_system != nullptr) {
+      stream.clear();
+      stream << "Frame_" << link_index;
+
       // Earth - Earth's frame is at the center of the sun.
       FrameId link_frame_id = geometry_system->RegisterFrame(
-          source_id_, GeometryFrame("Earth", Isometry3<double>::Identity()));
+          source_id_, GeometryFrame(
+              stream.str(), Isometry3<double>::Identity()));
       body_ids_.push_back(link_frame_id);
 
       // The geometry is right at the frame's origin.
@@ -205,6 +227,9 @@ void NLinkPendulumPlant<T>::DoCalcTimeDerivatives(
           context.get_continuous_state_vector()).get_value();
   const int nv = model_.get_num_velocities();
 
+  PositionKinematicsCache<T> pc(model_.get_topology());
+  VelocityKinematicsCache<T> vc(model_.get_topology());
+
   MatrixX<T> M(nv, nv);
   model_.CalcMassMatrixViaInverseDynamics(context, &M);
 
@@ -212,14 +237,36 @@ void NLinkPendulumPlant<T>::DoCalcTimeDerivatives(
   const T err_sym = (M - M.transpose()).norm();
   DRAKE_DEMAND(err_sym < 10 * std::numeric_limits<double>::epsilon());
 
+  model_.CalcPositionKinematicsCache(context, &pc);
+  model_.CalcVelocityKinematicsCache(context, pc, &vc);
+
+  // Compute applied forces.
+  std::vector<SpatialForce<T>> Fapplied_Bo_W_array(model_.get_num_bodies());
+  VectorX<T> tau_applied(model_.get_num_velocities());
+  model_.CalcForceElementsContribution(
+      context, pc, vc, &Fapplied_Bo_W_array, &tau_applied);
+  std::vector<SpatialAcceleration<T>> A_WB_array(model_.get_num_bodies());
+
+  VectorX<T> vdot = VectorX<T>::Zero(nv);
   VectorX<T> C(nv);
-  model_.CalcBiasTerm(context, &C);
+  model_.CalcInverseDynamics(
+      context, pc, vc, vdot, Fapplied_Bo_W_array, tau_applied,
+      &A_WB_array, &Fapplied_Bo_W_array, &C);
 
   auto v = x.bottomRows(nv);
 
   VectorX<T> xdot(model_.get_num_states());
   xdot << v, M.llt().solve(-C);
   derivatives->SetFromVector(xdot);
+}
+
+template<typename T>
+void NLinkPendulumPlant<T>::SetStraightAtAnAngle(
+    Context<T>* context, const T& angle) const {
+  joints_[0]->set_angle(context, angle);
+  //for (const RevoluteJoint<T>* joint : joints_) {
+  //  joint->set_angle(context, angle);
+  //}
 }
 
 template<typename T>

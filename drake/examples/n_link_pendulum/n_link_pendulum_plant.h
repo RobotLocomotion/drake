@@ -69,8 +69,13 @@ class NLinkPendulumPlant : public systems::LeafSystem<T> {
 
   double get_num_links() const { return num_links_; }
 
-  void SetDefaultState(const systems::Context<T>&,
-                       systems::State<T>*) const override;
+  geometry::SourceId source_id() const { return source_id_; }
+
+  const systems::OutputPort<T>& get_geometry_id_output_port() const;
+
+  const systems::OutputPort<T>& get_geometry_pose_output_port() const;
+
+  void SetStraightAtAnAngle(systems::Context<T>*, const T& angle) const;
 
  protected:
   // No inputs implies no feedthrough; this makes it explicit.
