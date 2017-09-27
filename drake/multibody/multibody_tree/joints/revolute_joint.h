@@ -55,10 +55,9 @@ class RevoluteJoint final : public Joint<T> {
   ///   This vector can have any length, only the direction is used. This method
   ///   aborts if `axis` is the zero vector.
   RevoluteJoint(const std::string& name,
-                const RigidBody<T>& parent_body, const Isometry3<double>& X_PF,
-                const RigidBody<T>& child_body, const Isometry3<double>& X_BM,
+                const Frame<T>& frame_on_parent, const Frame<T>& frame_on_child,
                 const Vector3<double>& axis) :
-      Joint<T>(name, parent_body, X_PF, child_body, X_BM) {
+      Joint<T>(name, frame_on_parent, frame_on_child) {
     const double kEpsilon = std::numeric_limits<double>::epsilon();
     DRAKE_DEMAND(!axis.isZero(kEpsilon));
     axis_ = axis.normalized();

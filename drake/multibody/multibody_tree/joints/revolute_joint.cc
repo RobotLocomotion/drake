@@ -14,16 +14,15 @@ template <typename ToScalar>
 std::unique_ptr<Joint<ToScalar>>
 RevoluteJoint<T>::TemplatedDoCloneToScalar(
     const MultibodyTree<ToScalar>& tree_clone) const {
-  const RigidBody<ToScalar>& inboard_body_clone =
-      tree_clone.get_variant(this->get_parent_body());
-  const RigidBody<ToScalar>& outboard_body_clone =
-      tree_clone.get_variant(this->get_child_body());
+  const Frame<ToScalar>& frame_on_parent_body_clone =
+      tree_clone.get_variant(this->get_frame_on_parent());
+  const Frame<ToScalar>& frame_on_child_body_clone =
+      tree_clone.get_variant(this->get_frame_on_child());
 
   // Make the Joint<T> clone.
   auto joint_clone = std::make_unique<RevoluteJoint<ToScalar>>(
       this->get_name(),
-      inboard_body_clone, this->get_pose_of_frame_on_parent(),
-      outboard_body_clone, this->get_pose_of_frame_on_child(),
+      frame_on_parent_body_clone, frame_on_child_body_clone,
       this->get_revolute_axis());
 
   return std::move(joint_clone);

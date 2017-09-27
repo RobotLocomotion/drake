@@ -99,10 +99,9 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   ///   frame M _is_ the same frame B. If that is intended, provide
   ///   `Isometry3<T>::Identity()` as your input.
   Joint(const std::string& name,
-        const RigidBody<T>& parent_body, const Isometry3<double>& X_PF,
-        const RigidBody<T>& child_body, const Isometry3<double>& X_BM) :
-      name_(name), parent_body_(parent_body), child_body_(child_body),
-      X_PF_(X_PF), X_BM_(X_BM) {}
+        const Frame<T>& frame_on_parent, const Frame<T>& frame_on_child) :
+      name_(name),
+      frame_on_parent_(frame_on_parent), frame_on_child_(frame_on_child) {}
 
   virtual ~Joint() {}
 
@@ -110,77 +109,27 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   const std::string& get_name() const { return name_; }
 
   /// Returns a const reference to the parent body P.
-  const RigidBody<T>& get_parent_body() const { return parent_body_; }
+  const Body<T>& get_parent_body() const {
+    return frame_on_parent_.get_body();
+  }
 
   /// Returns a const reference to the child body B.
-  const RigidBody<T>& get_child_body() const { return child_body_; }
+  const Body<T>& get_child_body() const {
+    return frame_on_child_.get_body();
+  }
 
   /// Returns a const reference to the frame F attached on the parent body P.
   const Frame<T>& get_frame_on_parent() const {
-    // If a joint is added with MultibodyTree::AddJoint(), inboard_frame_ is
-    // guaranteed to be a valid pointer. This is here to avoid users from, for
-    // instance, calling this method on stack allocated objects (not allowed).
-    DRAKE_DEMAND(inboard_frame_ != nullptr);
-    return *inboard_frame_;
+    return frame_on_parent_;
   }
 
   /// Returns a const reference to the frame M attached on the child body B.
   const Frame<T>& get_frame_on_child() const {
-    // If a joint is added with MultibodyTree::AddJoint(), outboard_frame_ is
-    // guaranteed to be a valid pointer. This is here to avoid users from, for
-    // instance, calling this method on stack allocated objects (not allowed).
-    DRAKE_DEMAND(outboard_frame_ != nullptr);
-    return *outboard_frame_;
-  }
-
-  /// Returns the pose `X_PF` of the frame F attached on the parent body, as
-  /// measured in that body's frame P.
-  const Isometry3<double>& get_pose_of_frame_on_parent() const {
-    return X_PF_;
-  }
-
-  /// Returns the pose `X_BM` of the frame M attached on the child body, as
-  /// measured in that body's frame B.
-  const Isometry3<double>& get_pose_of_frame_on_child() const {
-    return X_BM_;
+    return frame_on_child_;
   }
 
   // Hide the following section from Doxygen.
 #ifndef DRAKE_DOXYGEN_CXX
-  // For internal use only.
-  // This is called from MultibodyTree::AddJoint() to make and add the
-  // inboard/outboard frames for this Joint object.
-  // Therefore public API's get_frame_on_parent()/get_frame_on_child() are
-  // available immediately after joint creation.
-  void MakeInOutFramesAndAdd(MultibodyTree<T>* tree) {
-    // Assert this joint is an element of the input tree.
-    this->HasThisParentTreeOrThrow(tree);
-
-    // If the pose X_PF (X_BM) of frame F (M) is kEpsilon within being the
-    // identity transform, this method defines frame F (M) to be frame P (B).
-    const double kEpsilon = std::numeric_limits<double>::epsilon();
-
-    // Define the joint's inboard frame.
-    // If X_PF is the identity transformation, then the user meant to say that
-    // the inboard frame F IS the inboard body frame P.
-    if (get_pose_of_frame_on_parent().matrix().isIdentity(kEpsilon)) {
-      inboard_frame_ = &get_parent_body().get_body_frame();
-    } else {
-      inboard_frame_ = &tree->template AddFrame<FixedOffsetFrame>(
-          get_parent_body(), get_pose_of_frame_on_parent());
-    }
-
-    // Define the joint's outboard frame.
-    // If X_BM is the identity transformation, then the user meant to say that
-    // the outboard frame M IS the outboard body frame B.
-    if (get_pose_of_frame_on_child().matrix().isIdentity(kEpsilon)) {
-      outboard_frame_ = &get_child_body().get_body_frame();
-    } else {
-      outboard_frame_ = &tree->template AddFrame<FixedOffsetFrame>(
-          get_child_body(), get_pose_of_frame_on_child());
-    }
-  }
-
   // NVI to DoCloneToScalar() templated on the scalar type of the new clone to
   // be created. This method is intended to be called by
   // MultibodyTree::CloneToScalar().
@@ -307,19 +256,8 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   }
 
   std::string name_;
-  const RigidBody<T>& parent_body_;
-  const RigidBody<T>& child_body_;
-
-  // Inboard/outboard frame pointers are set by Joint::MakeInOutFramesAndAdd()
-  // called from within MultibodyTree::AddJoint().
-  const Frame<T>* inboard_frame_{nullptr};
-  const Frame<T>* outboard_frame_{nullptr};
-
-  // The pose of the inboard frame F rigidly attached to body P.
-  Isometry3<double> X_PF_;
-
-  // The pose of the outboard frame M rigidly attached to body B.
-  Isometry3<double> X_BM_;
+  const Frame<T>& frame_on_parent_;
+  const Frame<T>& frame_on_child_;
 
   // The Joint<T> implementation:
   std::unique_ptr<JointImplementation> implementation_;

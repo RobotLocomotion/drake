@@ -402,12 +402,66 @@ class MultibodyTree {
   /// @see The Joint class's documentation for further details on how to define
   /// a joint.
   template<template<typename> class JointType, typename... Args>
-  const JointType<T>& AddJoint(Args&&... args) {
+  const JointType<T>& AddJoint(
+      const std::string& name,
+      const Body<T>& parent, const Isometry3<T>& X_PF,
+      const Body<T>& child, const Isometry3<T>& X_BM,
+      Args&&... args) {
     static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
                   "JointType<T> must be a sub-class of Joint<T>.");
+
+    const FixedOffsetFrame<T>& frame_on_parent =
+        this->AddFrame<FixedOffsetFrame>(parent, X_PF);
+    const FixedOffsetFrame<T>& frame_on_child =
+        this->AddFrame<FixedOffsetFrame>(child, X_BM);
+
     return AddJoint(
-        std::make_unique<JointType<T>>(std::forward<Args>(args)...));
+        std::make_unique<JointType<T>>(
+            name,
+            frame_on_parent, frame_on_child,
+            std::forward<Args>(args)...));
   }
+
+  template<template<typename> class JointType, typename... Args>
+  const JointType<T>& AddJoint(
+      const std::string& name,
+      const Body<T>& parent,
+      const Body<T>& child, const Isometry3<T>& X_BM,
+      Args&&... args) {
+    static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
+                  "JointType<T> must be a sub-class of Joint<T>.");
+
+    const Frame<T>& frame_on_parent = parent.get_body_frame();
+    const FixedOffsetFrame<T>& frame_on_child =
+        this->AddFrame<FixedOffsetFrame>(child, X_BM);
+
+    return AddJoint(
+        std::make_unique<JointType<T>>(
+            name,
+            frame_on_parent, frame_on_child,
+            std::forward<Args>(args)...));
+  }
+
+  template<template<typename> class JointType, typename... Args>
+  const JointType<T>& AddJoint(
+      const std::string& name,
+      const Body<T>& parent, const Isometry3<T>& X_PF,
+      const Body<T>& child,
+      Args&&... args) {
+    static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
+                  "JointType<T> must be a sub-class of Joint<T>.");
+
+    const FixedOffsetFrame<T>& frame_on_parent =
+        this->AddFrame<FixedOffsetFrame>(parent, X_PF);
+    const Frame<T>& frame_on_child = child.get_body_frame();
+
+    return AddJoint(
+        std::make_unique<JointType<T>>(
+            name,
+            frame_on_parent, frame_on_child,
+            std::forward<Args>(args)...));
+  }
+
   /// @}
   // Closes Doxygen section.
 
@@ -992,19 +1046,7 @@ class MultibodyTree {
       throw std::logic_error("Input joint is a nullptr.");
     }
     const JointIndex joint_index(owned_joints_.size());
-
-    // Parent tree MUST be set before the call to MakeInOutFramesAndAdd().
-    // Do not move them around!!!.
     joint->set_parent_tree(this, joint_index);
-
-    // MultibodyTree creates the inboard/outboard frames now, since the
-    // information to do so is already available. Also, that allows users to
-    // call Joint<T>::get_frame_on_parent() and/or
-    // Joint<T>::get_frame_on_child() if they need to.
-    joint->MakeInOutFramesAndAdd(this);
-    // At this point, joint has no implementation (that is, mobilizers, force
-    // elements, etc.). This will get created at Finalize().
-
     JointType<T>* raw_joint_ptr = joint.get();
     owned_joints_.push_back(std::move(joint));
     return *raw_joint_ptr;
