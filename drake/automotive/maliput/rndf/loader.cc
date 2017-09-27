@@ -33,13 +33,13 @@ namespace rndf {
 namespace {
 
 // Converts the given @p position in UTM (latitude/longitude) coordinates
-// to ENU (cartesian) coordinates whose frame is located at @p origin.
-// @remarks As the underlying implementation is essentially planar, the
-// elevation coordinate will be forced to 0.
+// to ENU (Cartesian) coordinates whose frame is located at @p origin.
+// @remarks As the underlying implementation is planar, the elevation
+// coordinate will be forced to 0.
 // @param origin frame origin in latitude / longitude coordinates.
 // @param position position in latitude / longitude coordinates to
 // be transformed into @p origin's frame.
-// @return @p position at @p origin frame in cartesian coordinates.
+// @return @p position at @p origin frame in Cartesian coordinates.
 ignition::math::Vector3d ToGlobalCoordinates(
     const ignition::math::SphericalCoordinates& origin,
     const ignition::math::SphericalCoordinates& position) {
@@ -55,9 +55,9 @@ ignition::math::Vector3d ToGlobalCoordinates(
 
 // Computes the lower left and upper right corners' coordinates of the
 // bounding box @p bbox that comprises the whole @p rndf_info map. Coordinates
-// are expresed in the cartesian frame located at @p origin.
+// are expresed in the Cartesian frame located at @p origin.
 // @param segments The Segment collection to compute a bounding box for.
-// @param origin The global cartesian frame location in latitude / longitude
+// @param origin The global Cartesian frame location in latitude / longitude
 // coordinates.
 // @param bbox The computed bounding box for the given segments.
 // @pre The given @p bbox is not a nullptr.
@@ -84,10 +84,10 @@ void BuildBoundingBox(
 
 // Extracts RNDF @p segment_lanes from @p segment, using the given
 // @p road_characteristics as needed (i.e. to determine the default width
-// for lanes). Coordinates are expressed in the global cartesian frame at
+// for lanes). Coordinates are expressed in the global Cartesian frame at
 // @p origin.
 // @param segment The RNDF segment to extract data from.
-// @param origin The global cartesian frame location in latitude / longitude
+// @param origin The global Cartesian frame location in latitude / longitude
 // coordinates.
 // @param default_width The default width for segment lanes, if no nonzero width
 // was specified.
@@ -118,9 +118,9 @@ void ExtractSegmentLanes(const ignition::rndf::Segment& segment,
 }
 
 // Extracts RNDF zone @p perimeter_waypoints from @p zone as @p. Coordinates
-// are expressed in the global cartesian frame at @p origin.
+// are expressed in the global Cartesian frame at @p origin.
 // @param zone The RNDF zone to extract data from.
-// @param origin The global cartesian frame location in latitude / longitude
+// @param origin The global Cartesian frame location in latitude / longitude
 // coordinates.
 // @param perimeter_waypoints The RNDF zone perimeter waypoints.
 // @pre The given @p perimeter_waypoints collection is not a nullptr.
@@ -131,7 +131,7 @@ void ExtractZonePerimeters(const ignition::rndf::Zone& zone,
   DRAKE_DEMAND(perimeter_waypoints != nullptr);
   // Figures out what's the exit lane width.
   const ignition::rndf::Perimeter& perimeter = zone.Perimeter();
-  // Retrieves all perimeter waypoints in the global cartesian frame.
+  // Retrieves all perimeter waypoints in the global Cartesian frame.
   for (const ignition::rndf::Waypoint& waypoint : perimeter.Points()) {
     const ignition::math::Vector3d global_location =
         ToGlobalCoordinates(origin, waypoint.Location());
@@ -233,14 +233,20 @@ void ComputeZoneLaneWidths(const ignition::rndf::RNDF& rndf_info,
 
 }  // namespace
 
-std::unique_ptr<const api::RoadGeometry> Loader::LoadFile(
-    const std::string& filepath) const {
+std::unique_ptr<const api::RoadGeometry> LoadFile(const std::string& filepath) {
+  RoadCharacteristics road_characteristics{};
+  return LoadFile(filepath, road_characteristics);
+}
+
+std::unique_ptr<const api::RoadGeometry> LoadFile(
+    const std::string& filepath,
+    const RoadCharacteristics& road_characteristics) {
   // Attempts to load the given file as an RNDF.
   const ignition::rndf::RNDF rndf_info(filepath);
   DRAKE_THROW_UNLESS(rndf_info.Valid());
 
-  Builder builder(road_characteristics_.linear_tolerance,
-                  road_characteristics_.angular_tolerance);
+  Builder builder(road_characteristics.linear_tolerance,
+                  road_characteristics.angular_tolerance);
 
   // Gets the segments in the given RNDF.
   const std::vector<ignition::rndf::Segment>& segments = rndf_info.Segments();
@@ -249,7 +255,7 @@ std::unique_ptr<const api::RoadGeometry> Loader::LoadFile(
   DRAKE_THROW_UNLESS(segments[0].Lanes()[0].Waypoints().size() > 0);
 
   // Gets the location of the first waypoint on the first lane of the first
-  // segment and uses it as the origin for Maliput's RoadGeometry cartesian
+  // segment and uses it as the origin for Maliput's api::RoadGeometry Cartesian
   // frame.
   const ignition::math::SphericalCoordinates& origin_location =
       segments[0].Lanes()[0].Waypoints()[0].Location();
@@ -263,13 +269,13 @@ std::unique_ptr<const api::RoadGeometry> Loader::LoadFile(
   for (const ignition::rndf::Segment& segment : rndf_info.Segments()) {
     std::vector<Connection> segment_lanes;
     ExtractSegmentLanes(segment, origin_location,
-                        road_characteristics_.default_width, &segment_lanes);
+                        road_characteristics.default_width, &segment_lanes);
     builder.CreateSegmentConnections(segment.Id(), &segment_lanes);
   }
 
   // Computes each zone's fake inner lanes.
   std::map<int, double> lane_width_per_zone;
-  ComputeZoneLaneWidths(rndf_info, road_characteristics_.default_width,
+  ComputeZoneLaneWidths(rndf_info, road_characteristics.default_width,
                         &lane_width_per_zone);
   // Extracts zone perimeter's waypoints and creates fake inner lanes between
   // every entry and exit waypoint.
@@ -287,12 +293,12 @@ std::unique_ptr<const api::RoadGeometry> Loader::LoadFile(
       for (const ignition::rndf::Exit& exit : lane.Exits()) {
         const double width =
             ComputeIntersectionWidth(rndf_info, exit.EntryId(), exit.ExitId(),
-                                     road_characteristics_.default_width);
+                                     road_characteristics.default_width);
         builder.CreateConnection(width, exit.ExitId(), exit.EntryId());
       }
     }
   }
-  // Builds and returns the RoadGeometry for the given RNDF description.
+  // Builds and returns the api::RoadGeometry for the given RNDF description.
   return builder.Build(api::RoadGeometryId{rndf_info.Name()});
 }
 
