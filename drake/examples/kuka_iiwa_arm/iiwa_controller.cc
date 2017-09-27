@@ -27,12 +27,15 @@
 using robotlocomotion::robot_plan_t;
 
 DEFINE_string(urdf, "", "Name of urdf to load");
+DEFINE_string(interp_type, "Cubic",
+              "Robot plan interpolation type. Can be {ZOH, FOH, Cubic, Pchip}");
 
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 using manipulation::planner::RobotPlanInterpolator;
+using manipulation::planner::InterpolatorType;
 
 const char* const kIiwaUrdf =
     "drake/manipulation/models/iiwa_description/urdf/"
@@ -54,7 +57,24 @@ int DoMain() {
 
   const std::string urdf =
       (!FLAGS_urdf.empty() ? FLAGS_urdf : FindResourceOrThrow(kIiwaUrdf));
-  auto plan_source = builder.AddSystem<RobotPlanInterpolator>(urdf);
+
+  // Sets the robot plan interpolation type.
+  RobotPlanInterpolator* plan_source;
+  if (FLAGS_interp_type == "ZOH") {
+    plan_source = builder.AddSystem<RobotPlanInterpolator>(
+        urdf, InterpolatorType::ZeroOrderHold);
+  } else if (FLAGS_interp_type == "FOH") {
+    plan_source = builder.AddSystem<RobotPlanInterpolator>(
+        urdf, InterpolatorType::FirstOrderHold);
+  } else if (FLAGS_interp_type == "Cubic") {
+    plan_source = builder.AddSystem<RobotPlanInterpolator>(
+        urdf, InterpolatorType::Cubic);
+  } else if (FLAGS_interp_type == "Pchip") {
+    plan_source = builder.AddSystem<RobotPlanInterpolator>(
+        urdf, InterpolatorType::Pchip);
+  } else {
+    DRAKE_ABORT_MSG("Robot plan interpolation type not recognized.");
+  }
   plan_source->set_name("plan_source");
   const int num_joints = plan_source->tree().get_num_positions();
 
