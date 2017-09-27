@@ -12,10 +12,10 @@
 namespace drake {
 namespace multibody {
 
-/// This Joint allows two rigid bodies to rotate relatively to one another
-/// around a common axis.
-/// That is, given a frame F rigidly attached to the parent body P and a frame M
-/// rigidly attached to the child body B (see the Joint class's documentation),
+/// This Joint allows two bodies to rotate relatively to one another around a
+/// common axis.
+/// That is, given a frame F attached to the parent body P and a frame M
+/// attached to the child body B (see the Joint class's documentation),
 /// this Joint allows frames F and M to rotate with respect to each other about
 /// an axis â. The rotation angle is defined to be positive according to the
 /// right-hand-rule with the thumb aligned in the direction of the axis â.
@@ -38,11 +38,11 @@ class RevoluteJoint final : public Joint<T> {
   template<typename Scalar>
   using Context = systems::Context<Scalar>;
 
-  /// Constructor to create a revolute joint between two rigid bodies so that
-  /// frame F rigidly attached to the parent body P and frame
-  /// M rigidly attached to the child body B, rotate relatively to one another
-  /// about a common axis. See this class's documentation for further details on
-  /// the definition of these frames.
+  /// Constructor to create a revolute joint between two bodies so that
+  /// frame F attached to the parent body P and frame M attached to the child
+  /// body B, rotate relatively to one another about a common axis. See this
+  /// class's documentation for further details on the definition of these
+  /// frames and rotation angle.
   /// The first three arguments to this constructor are those of the Joint class
   /// constructor. See the Joint class's documentation for details.
   /// The additional parameter `axis` is:

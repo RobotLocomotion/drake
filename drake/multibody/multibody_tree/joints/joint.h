@@ -24,15 +24,15 @@ class JointImplementationBuilder;
 }  // namespace internal
 
 /// A %Joint models the kinematical relationship which characterizes the
-/// possible relative motion between two rigid bodies.
-/// The two rigid bodies connected by a %Joint object are referred to as the
+/// possible relative motion between two bodies.
+/// The two bodies connected by a %Joint object are referred to as the
 /// _parent_ and _child_ bodies. Although the terms _parent_ and _child_ are
 /// sometimes used synonymously to describe the relationship between inboard and
 /// outboard bodies in multibody models, this usage is wholly unrelated and
 /// implies nothing about the inboard-outboard relationship between the bodies.
-/// A %Joint is a model of a physical kinematic constraint between two rigid
-/// bodies, a constraint that in the real physical system does not even allude
-/// to the ordering of the bodies.
+/// A %Joint is a model of a physical kinematic constraint between two bodies,
+/// a constraint that in the real physical system does not even allude to the
+/// ordering of the bodies.
 ///
 /// In Drake we define a frame F rigidly attached to the parent body P with pose
 /// `X_PF` and a frame M rigidly attached to the child body B with pose `X_BM`.
@@ -52,8 +52,7 @@ class JointImplementationBuilder;
 ///   model.AddBody<RigidBody>(SpatialInertia<double>(mass, com, unit_inertia));
 /// // We will connect the pendulum body to the world using a RevoluteJoint.
 /// // In this simple case the parent body P is the model's world body and frame
-/// // F coincides with the world frame, i.e. X_PF is the identity
-/// // transformation.
+/// // F IS the world frame.
 /// // Additionally, we need to specify the pose of frame M on the pendulum's
 /// // body frame B.
 /// // Say we declared and initialized X_BM...
@@ -61,7 +60,7 @@ class JointImplementationBuilder;
 ///   model.AddJoint<RevoluteJoint>(
 ///     "Elbow",                /* joint name */
 ///     model.get_world_body(), /* parent body */
-///     Isometry3d::Identity(), /* frame F IS the world frame W */
+///     {},                     /* frame F IS the world frame W */
 ///     pendulum,               /* child body, the pendulum */
 ///     X_BM,                   /* pose of frame M in the body frame B */
 ///     Vector3d::UnitZ());     /* revolute axis in this case */
@@ -77,27 +76,17 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Joint)
 
-  /// Creates a joint between two bodies which imposes a given kinematic
-  /// relation between frame F rigidly attached with the parent body P and frame
-  /// M rigidly attached with the child body B. See this class's documentation
-  /// for further details.
+  /// Creates a joint between two Frame objects which imposes a given kinematic
+  /// relation between frame F attached on the parent body P and frame M
+  /// attached on the child body B. See this class's documentation for further
+  /// details.
   ///
   /// @param[in] name
   ///   A string with a name identifying `this` joint.
-  /// @param[in] parent_body
-  ///   The parent body connected to this joint.
-  /// @param[in] X_PF
-  ///   The pose of frame F rigidly attached to the parent body, measured in
-  ///   the frame P of that body. `X_PF` equal to the identity transform implies
-  ///   frame F _is_ the same frame P. If that is intended, provide
-  ///   `Isometry3<T>::Identity()` as your input.
-  /// @param[in] child_body
-  ///   The child body connected to this joint.
-  /// @param[in] X_BM
-  ///   The pose of frame M rigidly attached to the child body, measured in
-  ///   the frame B of that body. `X_BM` equal to the identity transform implies
-  ///   frame M _is_ the same frame B. If that is intended, provide
-  ///   `Isometry3<T>::Identity()` as your input.
+  /// @param[in] frame_on_parent
+  ///   The frame F attached on the parent body connected by this joint.
+  /// @param[in] frame_on_child
+  ///   The frame M attached on the child body connected by this joint.
   Joint(const std::string& name,
         const Frame<T>& frame_on_parent, const Frame<T>& frame_on_child) :
       name_(name),
