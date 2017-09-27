@@ -1346,16 +1346,6 @@ class MultibodyTree {
     return raw_mobilizer_clone_ptr;
   }
 
-  // Helper method to create a clone of `joint` and add it to `this` tree.
-  template <typename FromScalar>
-  Joint<T>* CloneJointAndAdd(const Joint<FromScalar>& joint) {
-    JointIndex joint_index = joint.get_index();
-    auto joint_clone = joint.CloneToScalar(*this);
-    joint_clone->set_parent_tree(this, joint_index);
-    owned_joints_.push_back(std::move(joint_clone));
-    return owned_joints_.back().get();
-  }
-
   // Helper method to create a clone of `force_element` and add it to `this`
   // tree.
   template <typename FromScalar>
