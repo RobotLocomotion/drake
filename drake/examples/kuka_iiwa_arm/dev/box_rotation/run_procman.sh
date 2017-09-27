@@ -1,10 +1,18 @@
 #!/bin/bash
 
-# path to drake distro
-export DRAKE_DISTRO=/home/rickcory/dev/drake-distro
-export PROCMAN_PATH=/home/rickcory/dev/spartan/build/install/bin
+# This helper script runs the box rotation demo using the program 
+# `bot-procman-sherriff`. We assume the following environment 
+# variables are defined, e.g., by running the following commands: 
+# export DRAKE_DISTRO=/home/<user>/<path-to-drake-distro>
+# export PROCMAN_PATH=/home/<user>/<path-to-bot-procman-sheriff>
+#
+# The environment variables `DRAKE_DISTRO` and `URDF` are used in
+# the procman-sheriff configuration file `iiwa_dual_box_rot.pmd`.
 
-# === CHOOSE THE COLLISION MODEL TYPE ==
+# === UNCOMMENT THE URDF MODEL TO USE IN THIS SIMULATION ==
+# Note: These various models can be helpful in visualization
+#	and analysis of the box rotation simulation.
+#
 #export URDF=dual_iiwa14_primitive_cylinder_visual_collision.urdf
 #export URDF=dual_iiwa14_primitive_cylinder_collision_only.urdf
 #export URDF=dual_iiwa14_primitive_sphere_collision_only.urdf
