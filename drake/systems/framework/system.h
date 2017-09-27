@@ -1050,13 +1050,7 @@ class System {
   /// returns nullptr if this System does not support autodiff, instead of
   /// throwing an exception.
   std::unique_ptr<System<AutoDiffXd>> ToAutoDiffXdMaybe() const {
-    std::unique_ptr<System<AutoDiffXd>> result =
-        system_scalar_converter_.Convert<AutoDiffXd, T>(*this);
-    if (result) {
-      // Match the result's name to its originator.
-      result->set_name(this->get_name());
-    }
-    return result;
+    return system_scalar_converter_.Convert<AutoDiffXd, T>(*this);
   }
   //@}
 
@@ -1117,13 +1111,7 @@ class System {
   /// nullptr if this System does not support symbolic, instead of throwing an
   /// exception.
   std::unique_ptr<System<symbolic::Expression>> ToSymbolicMaybe() const {
-    std::unique_ptr<System<symbolic::Expression>> result =
-        system_scalar_converter_.Convert<symbolic::Expression, T>(*this);
-    if (result) {
-      // Match the result's name to its originator.
-      result->set_name(this->get_name());
-    }
-    return result;
+    return system_scalar_converter_.Convert<symbolic::Expression, T>(*this);
   }
   //@}
 

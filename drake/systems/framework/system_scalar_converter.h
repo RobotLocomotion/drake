@@ -231,7 +231,12 @@ static std::unique_ptr<System<T>> Make(
     throw std::runtime_error(msg.str());
   }
   const S<U>& my_other = dynamic_cast<const S<U>&>(other);
-  return std::make_unique<S<T>>(my_other);
+  auto result = std::make_unique<S<T>>(my_other);
+  // We manually propagate the name from the old System to the new.  The name
+  // is the only extrinsic property of the System and LeafSystem base classes
+  // that is stored within the System itself.
+  result->set_name(other.get_name());
+  return std::move(result);
 }
 // When Traits says not to convert.
 template <template <typename> class S, typename T, typename U>
