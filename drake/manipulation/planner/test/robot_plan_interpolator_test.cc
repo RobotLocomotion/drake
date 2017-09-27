@@ -62,7 +62,7 @@ struct TrajectoryTestCase {
         accel(accel_in) {}
 
   const double time{};
-  const double position {};
+  const double position{};
   const double velocity{};
   const double accel{};
 };

@@ -14,7 +14,7 @@ namespace manipulation {
 namespace planner {
 
 /// This enum specifies the type of interpolator to use in constructing
-/// the piece-wise polynomial
+/// the piece-wise polynomial.
 enum class InterpolatorType {
   ZeroOrderHold,
   FirstOrderHold,
