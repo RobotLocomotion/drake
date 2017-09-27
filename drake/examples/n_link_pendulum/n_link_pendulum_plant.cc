@@ -84,7 +84,7 @@ void NLinkPendulumPlant<T>::BuildMultibodyTreeModel() {
   UnitInertia<double> G_Bcm =
       UnitInertia<double>::SolidCylinder(
           get_radius(), link_length, Vector3<double>::UnitY());
-  SpatialInertia<double> M_Bcm(get_mass(), Vector3<double>::Zero(), G_Bcm);
+  SpatialInertia<double> M_Bcm(link_mass, Vector3<double>::Zero(), G_Bcm);
 
   // A pointer to the last added link.
   const RigidBody<T>* previous_link = &model_.get_world_body();
@@ -93,25 +93,27 @@ void NLinkPendulumPlant<T>::BuildMultibodyTreeModel() {
 
   // Add rigid bodies for each link.
   for (int link_index = 0; link_index < get_num_links(); ++link_index) {
-    const RigidBody<T>& link = model_.AddBody(M_Bcm);
+    const RigidBody<T>& link = model_.template AddBody<RigidBody>(M_Bcm);
     // Create a joint name.
     stream.clear();
     stream << "Joint_" << link_index;
     // Pose of F frame attached on previous link P, measured in P.
-    Isometry3d X_PF = Translation3d(0.0, -link_length / 2.0, 0.0);
+    Isometry3d X_PF(Translation3d(0.0, -link_length / 2.0, 0.0));
     // Pose of M frame attached on the new link B, measured in B.
-    Isometry3d X_BM = Translation3d(0.0, link_length / 2.0, 0.0);
+    Isometry3d X_BM(Translation3d(0.0, link_length / 2.0, 0.0));
 
     const RevoluteJoint<T>& joint =
-        model_.AddJoint<RevoluteJoint>(stream.str(),
+        model_.template AddJoint<RevoluteJoint>(stream.str(),
         *previous_link, X_PF, link, X_BM, Vector3d::UnitZ());
+    joints_.push_back(&joint);
 
     previous_link = &link;
   }
   DRAKE_ASSERT(model_.get_num_bodies() == get_num_links());
   DRAKE_ASSERT(model_.get_num_joints() == get_num_links());
 
-  model_.AddForceElement<UniformGravityFieldElement>(Vector3d(0.0, -9.81, 0.0));
+  model_.template AddForceElement<UniformGravityFieldElement>(
+      Vector3d(0.0, -9.81, 0.0));
 
   model_.Finalize();
 }
@@ -129,7 +131,6 @@ void NLinkPendulumPlant<T>::DoCalcTimeDerivatives(
   const auto x =
       dynamic_cast<const systems::BasicVector<T>&>(
           context.get_continuous_state_vector()).get_value();
-  const int nq = model_.get_num_positions();
   const int nv = model_.get_num_velocities();
 
   MatrixX<T> M(nv, nv);

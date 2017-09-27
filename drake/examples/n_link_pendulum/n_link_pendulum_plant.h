@@ -99,6 +99,7 @@ class NLinkPendulumPlant : public systems::LeafSystem<T> {
   double radius_;
   int num_links_;
   multibody::MultibodyTree<T> model_;
+  std::vector<const multibody::RevoluteJoint<T>*> joints_;
 
   // Geometry source identifier for this system to interact with geometry system
   geometry::SourceId source_id_{};
