@@ -46,7 +46,7 @@ install(
         "share/java/liblcmtypes_optitrack.jar": "lcmtypes_optitrack.jar",
     },
     allowed_externals = OPTITRACK_LICENSE_DOCS + OPTITRACK_TARGETS,
-    visibility = ["//:__pkg__"],
+    visibility = ["//:__subpackages__"],
     deps = [":install_cmake_config"],
 )
 
