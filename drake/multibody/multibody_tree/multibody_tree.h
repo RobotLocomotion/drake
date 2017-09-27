@@ -391,8 +391,8 @@ class MultibodyTree {
     if (topology_is_valid()) {
       throw std::logic_error(
           "This MultibodyTree is finalized already. Therefore adding more "
-              "force elements is not allowed. "
-              "See documentation for Finalize() for details.");
+          "force elements is not allowed. "
+          "See documentation for Finalize() for details.");
     }
     if (force_element == nullptr) {
       throw std::logic_error("Input force element is a nullptr.");
@@ -411,7 +411,7 @@ class MultibodyTree {
   const ForceElementType<T>& AddForceElement(Args&&... args) {
     static_assert(std::is_base_of<ForceElement<T>, ForceElementType<T>>::value,
                   "ForceElementType<T> must be a sub-class of "
-                      "ForceElement<T>.");
+                  "ForceElement<T>.");
     return AddForceElement(
         std::make_unique<ForceElementType<T>>(std::forward<Args>(args)...));
   }
