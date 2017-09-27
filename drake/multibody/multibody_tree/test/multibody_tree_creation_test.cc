@@ -13,6 +13,7 @@
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
+#include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 
 namespace drake {
 namespace multibody {
@@ -238,6 +239,9 @@ class TreeTopologyTests : public ::testing::Test {
     ConnectBodies(*bodies_[0], *bodies_[5]);  // mob. 4
     ConnectBodies(*bodies_[4], *bodies_[1]);  // mob. 5
     ConnectBodies(*bodies_[0], *bodies_[4], true);  // mob. 6
+
+    // Adds a force element for a uniform gravity field.
+    model_->AddForceElement<UniformGravityFieldElement>(g_);
   }
 
   const RigidBody<double>* AddTestBody() {
@@ -344,6 +348,7 @@ class TreeTopologyTests : public ::testing::Test {
 
     EXPECT_EQ(topology.get_num_bodies(), kNumBodies);
     EXPECT_EQ(topology.get_num_mobilizers(), 7);
+    EXPECT_EQ(topology.get_num_force_elements(), 1);
     EXPECT_EQ(topology.get_num_body_nodes(), kNumBodies);
     EXPECT_EQ(topology.get_tree_height(), 4);
 
@@ -394,6 +399,8 @@ class TreeTopologyTests : public ::testing::Test {
   std::vector<const Mobilizer<double>*> mobilizers_;
   // Joints:
   std::vector<const RevoluteJoint<double>*> joints_;
+  // The acceleration of gravity vector.
+  Vector3d g_{0.0, 0.0, -9.81};
 };
 
 // This unit tests verifies that the multibody topology is properly compiled.
@@ -468,11 +475,13 @@ TEST_F(TreeTopologyTests, Clone) {
   model_->Finalize();
   EXPECT_EQ(model_->get_num_bodies(), 8);
   EXPECT_EQ(model_->get_num_mobilizers(), 7);
+  EXPECT_EQ(model_->get_num_force_elements(), 1);
   const MultibodyTreeTopology& topology = model_->get_topology();
 
   auto cloned_model = model_->Clone();
   EXPECT_EQ(cloned_model->get_num_bodies(), 8);
   EXPECT_EQ(cloned_model->get_num_mobilizers(), 7);
+  EXPECT_EQ(cloned_model->get_num_force_elements(), 1);
   const MultibodyTreeTopology& clone_topology = cloned_model->get_topology();
 
   // Verify the cloned topology actually is a different object.

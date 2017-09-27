@@ -1,13 +1,7 @@
 #include "drake/systems/primitives/adder.h"
 
-#include <stdexcept>
-#include <string>
-
-#include "drake/common/autodiff_overloads.h"
-#include "drake/common/drake_assert.h"
-#include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/default_scalars.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/leaf_context.h"
 
 namespace drake {
 namespace systems {
@@ -42,10 +36,8 @@ void Adder<T>::CalcSum(const Context<T>& context,
   }
 }
 
-// Explicitly instantiates on the most common scalar types.
-template class Adder<double>;
-template class Adder<AutoDiffXd>;
-template class Adder<symbolic::Expression>;
-
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::Adder)

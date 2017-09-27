@@ -1,14 +1,8 @@
 #include "drake/systems/primitives/integrator.h"
 
-#include <stdexcept>
-#include <string>
-
-#include "drake/common/autodiff_overloads.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
-#include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/unused.h"
-#include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/leaf_context.h"
 
 namespace drake {
 namespace systems {
@@ -58,10 +52,8 @@ void Integrator<T>::DoCalcVectorOutput(
   *output = state;
 }
 
-// Explicitly instantiates on the most common scalar types.
-template class Integrator<double>;
-template class Integrator<AutoDiffXd>;
-template class Integrator<symbolic::Expression>;
-
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::Integrator)

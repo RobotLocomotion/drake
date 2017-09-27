@@ -6,9 +6,8 @@
 #include <numeric>
 #include <vector>
 
-#include "drake/common/autodiff_overloads.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/symbolic.h"
 #include "drake/common/unused.h"
 #include "drake/systems/framework/basic_vector.h"
 
@@ -128,10 +127,9 @@ Eigen::VectorBlock<const VectorX<T>> RotaryEncoders<T>::get_calibration_offsets(
   return this->template GetNumericParameter(context, 0).get_value();
 }
 
-template class RotaryEncoders<double>;
-template class RotaryEncoders<AutoDiffXd>;
-template class RotaryEncoders<symbolic::Expression>;
-
 }  // namespace sensors
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::sensors::RotaryEncoders)

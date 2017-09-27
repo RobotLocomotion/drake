@@ -1,13 +1,6 @@
 #include "drake/automotive/trajectory_car.h"
 
-#include "drake/common/autodiff_overloads.h"
-#include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/default_scalars.h"
 
-namespace drake {
-namespace automotive {
-
-template class TrajectoryCar<double>;
-template class TrajectoryCar<AutoDiffXd>;
-
-}  // namespace automotive
-}  // namespace drake
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::automotive::TrajectoryCar)

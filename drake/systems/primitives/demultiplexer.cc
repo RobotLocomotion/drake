@@ -1,8 +1,8 @@
 #include "drake/systems/primitives/demultiplexer.h"
 
 #include "drake/common/autodiff_overloads.h"
-#include "drake/common/eigen_autodiff_types.h"
-#include "drake/common/symbolic.h"
+#include "drake/common/default_scalars.h"
+#include "drake/common/drake_assert.h"
 
 namespace drake {
 namespace systems {
@@ -47,9 +47,8 @@ void Demultiplexer<T>::CopyToOutput(const Context<T>& context,
   out_vector = in_vector.segment(port_index * out_size, out_size);
 }
 
-template class Demultiplexer<double>;
-template class Demultiplexer<AutoDiffXd>;
-template class Demultiplexer<symbolic::Expression>;
-
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::Demultiplexer)

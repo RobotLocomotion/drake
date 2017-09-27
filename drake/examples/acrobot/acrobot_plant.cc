@@ -3,8 +3,8 @@
 #include <cmath>
 #include <vector>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_throw.h"
-#include "drake/common/eigen_autodiff_types.h"
 #include "drake/systems/controllers/linear_quadratic_regulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -164,9 +164,6 @@ T AcrobotPlant<T>::DoCalcPotentialEnergy(
   return -m1_ * g_ * lc1_ * c1 - m2_ * g_ * (l1_ * c1 + lc2_ * c12);
 }
 
-template class AcrobotPlant<double>;
-template class AcrobotPlant<AutoDiffXd>;
-
 template <typename T>
 AcrobotWEncoder<T>::AcrobotWEncoder(bool acrobot_state_as_second_output) {
   systems::DiagramBuilder<T> builder;
@@ -195,9 +192,6 @@ AcrobotStateVector<T>* AcrobotWEncoder<T>::get_mutable_acrobot_state(
   DRAKE_DEMAND(x != nullptr);
   return x;
 }
-
-template class AcrobotWEncoder<double>;
-template class AcrobotWEncoder<AutoDiffXd>;
 
 std::unique_ptr<systems::AffineSystem<double>> BalancingLQRController(
     const AcrobotPlant<double>& acrobot) {
@@ -230,3 +224,9 @@ std::unique_ptr<systems::AffineSystem<double>> BalancingLQRController(
 }  // namespace acrobot
 }  // namespace examples
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::examples::acrobot::AcrobotPlant)
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::examples::acrobot::AcrobotWEncoder)
