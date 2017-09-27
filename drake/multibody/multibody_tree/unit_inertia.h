@@ -275,10 +275,12 @@ class UnitInertia : public RotationalInertia<T> {
   /// oriented along the z-axis computed about its center.
   /// @param[in] r The radius of the cylinder.
   /// @param[in] L The length of the cylinder.
-  static UnitInertia<T> SolidCylinder(const T& r, const T& L) {
+  static UnitInertia<T> SolidCylinder(
+      const T& r, const T& L,
+      const Vector3<T>& b_E = Vector3<T>::UnitZ()) {
     const T Iz = r * r / T(2);
     const T Ix = (T(3) * r * r + L * L) / T(12);
-    return UnitInertia(Ix, Ix, Iz);
+    return AxiallySymmetric(Iz, Ix, b_E);
   }
 
   /// Computes the unit inertia for a unit-mass cylinder of uniform density

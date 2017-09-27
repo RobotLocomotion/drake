@@ -2,16 +2,16 @@
 
 #include <memory>
 
+#include "drake/geometry/geometry_system.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
-#include "drake/multibody/multibody_tree/rpy_mobilizer.h"
 
 namespace drake {
-namespace multibody {
-namespace multibody_tree {
-namespace test {
+namespace examples {
+namespace n_link_pendulum {
 
 /// The Acrobot - a canonical underactuated system as described in <a
 /// href="http://underactuated.mit.edu/underactuated.html?chapter=3">Chapter 3
@@ -50,26 +50,33 @@ namespace test {
 /// - double
 /// - AutoDiffXd
 template<typename T>
-class FreeBodyPlant : public systems::LeafSystem<T> {
+class NLinkPendulumPlant : public systems::LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FreeBodyPlant)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NLinkPendulumPlant)
 
-  FreeBodyPlant(double I, double J);
+  NLinkPendulumPlant(double mass, double length, double radius, int num_links,
+                     geometry::GeometrySystem<T>* geometry_system);
 
   /// Scalar-converting copy constructor.
   template <typename U>
-  explicit FreeBodyPlant(const FreeBodyPlant<U>&);
+  explicit NLinkPendulumPlant(const NLinkPendulumPlant<U>&);
 
-  double get_mass() const { return 1.0; }
+  double get_mass() const { return mass_; }
 
-  void set_angular_velocity(
-      systems::Context<T>* context, const Vector3<T>& w_WB) const;
+  double get_length() const { return length_; }
 
-  Isometry3<T> CalcPoseInWorldFrame(
-      const systems::Context<T>& context) const;
+  double get_radius() const { return radius_; }
 
-  SpatialVelocity<T> CalcSpatialVelocityInWorldFrame(
-      const systems::Context<T>& context) const;
+  double get_num_links() const { return num_links_; }
+
+  void SetDefaultState(const systems::Context<T>&,
+                       systems::State<T>*) const override;
+
+ protected:
+  // No inputs implies no feedthrough; this makes it explicit.
+  optional<bool> DoHasDirectFeedthrough(int, int) const override {
+    return false;
+  }
 
  protected:
   T DoCalcKineticEnergy(const systems::Context<T>& context) const override;
@@ -80,23 +87,29 @@ class FreeBodyPlant : public systems::LeafSystem<T> {
   // MultibodyTree.
   std::unique_ptr<systems::LeafContext<T>> DoMakeContext() const override;
 
-  void OutputState(const systems::Context<T> &context,
-                   systems::BasicVector<T> *state_port_value) const;
-
   void DoCalcTimeDerivatives(
       const systems::Context<T> &context,
       systems::ContinuousState<T> *derivatives) const override;
 
+  // Helper method to build the MultibodyTree model of the system.
   void BuildMultibodyTreeModel();
 
-  double I_{0};
-  double J_{0};
-  MultibodyTree<T> model_;
-  const RigidBody<T>* body_{nullptr};
-  const RollPitchYawMobilizer<T>* mobilizer_{nullptr};
+  double mass_;
+  double length_;
+  double radius_;
+  int num_links_;
+  multibody::MultibodyTree<T> model_;
+
+  // Geometry source identifier for this system to interact with geometry system
+  geometry::SourceId source_id_{};
+  // The id in GeometrySystem for each link's frame.
+  std::vector<geometry::FrameId> body_ids_;
+
+  // Port handles
+  int geometry_id_port_{-1};
+  int geometry_pose_port_{-1};
 };
 
-}  // namespace test
-}  // namespace multibody_tree
-}  // namespace multibody
+}  // namespace n_link_pendulum
+}  // namespace examples
 }  // namespace drake
