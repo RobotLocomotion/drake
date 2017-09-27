@@ -1,3 +1,14 @@
+
+# This command assumes drake_visualizer was built using: `bazel build //tools:drake_visualizer`
+# This version may have issues displaying contact information. Anecdotally I've found the `cmake`
+# version of `drake-visualizer` to work with contact vis (see alternate command below). 
+#
+#cmd "0.drake_visualizer" {
+#    exec = "${DRAKE_DISTRO}/bazel-bin/tools/drake_visualizer --script ${DRAKE_DISTRO}/drake/multibody/rigid_body_plant/visualization/contact_viz.py --script ${DRAKE_DISTRO}/drake/multibody/rigid_body_plant/visualization/show_time.py";
+#    host = "localhost";
+#}
+
+# The `cmake` version of drake-visualizer
 cmd "0.drake_visualizer" {
     exec = "${DRAKE_DISTRO}/build/install/bin/drake-visualizer --script ${DRAKE_DISTRO}/drake/multibody/rigid_body_plant/visualization/contact_viz.py --script ${DRAKE_DISTRO}/drake/multibody/rigid_body_plant/visualization/show_time.py";
     host = "localhost";
@@ -19,9 +30,7 @@ cmd "3.iiwa_box_demo" {
 	host = "localhost";
 }
 
-
 cmd "4.lcm-spy" {
     exec = "${DRAKE_DISTRO}/bazel-bin/drake/lcmtypes/drake-lcm-spy";
     host = "localhost";
 }
-
