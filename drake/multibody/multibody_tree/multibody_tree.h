@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -373,12 +374,42 @@ class MultibodyTree {
         std::make_unique<MobilizerType<T>>(std::forward<Args>(args)...));
   }
 
-  /// Creates and adds to `this` %MultibodyTree (which retains ownership) a new
-  /// Joint member with the specific type `JointType`. The arguments to this
-  /// method `args` are forwarded to `JointType`'s constructor.
+  /// This method helps to create a Joint of type `JointType` between two
+  /// bodies.
+  /// The two bodies connected by this Joint object are referred to as the
+  /// _parent_ and _child_ bodies. Although the terms _parent_ and _child_ are
+  /// sometimes used synonymously to describe the relationship between inboard
+  /// and outboard bodies in multibody models, this usage is wholly unrelated
+  /// and implies nothing about the inboard-outboard relationship between the
+  /// bodies.
+  /// As explained in the Joint class's documentation, in Drake we define a
+  /// frame F attached to the parent body P with pose `X_PF` and a frame M
+  /// attached to the child body B with pose `X_BM`. This method helps creating
+  /// a joint between two bodies with fixed poses `X_PF` and `X_BM`.
+  /// Refer to the Joint class's documentation for more details.
   ///
-  /// The newly created `JointType` object will be specialized on the scalar
-  /// type T of this %MultibodyTree.
+  /// The arguments to this method `args` are forwarded to `JointType`'s
+  /// constructor. The newly created `JointType` object will be specialized on
+  /// the scalar type T of this %MultibodyTree.
+  ///
+  /// @param name
+  ///   The name of the joint.
+  /// @param[in] parent
+  ///   The parent body connected by the new joint.
+  /// @param[in] X_PF
+  ///   The fixed pose of frame F attached to the parent body, measured in
+  ///   the frame P of that body. `X_PF` is an optional parameter; empty curly
+  ///   braces `{}` imply that frame F **is** the same body frame P. If instead
+  ///   your intention is to make a frame F with pose `X_PF`, provide
+  ///   `Isometry3<double>::Identity()` as your input.
+  /// @param[in] child
+  ///   The child body connected by the new joint.
+  /// @param[in] X_BM
+  ///   The fixed pose of frame M attached to the child body, measured in
+  ///   the frame B of that body. `X_BM` is an optional parameter; empty curly
+  ///   braces `{}` imply that frame M **is** the same body frame B. If instead
+  ///   your intention is to make a frame F with pose `X_PF`, provide
+  ///   `Isometry3<double>::Identity()` as your input.
   ///
   /// Example of usage:
   /// @code
@@ -388,20 +419,19 @@ class MultibodyTree {
   ///     model.AddBody<RigidBody>(SpatialInertia<double>(...));
   ///   const Body<double>& child_body =
   ///     model.AddBody<RigidBody>(SpatialInertia<double>(...));
-  ///   // Define the pose X_PF of a frame F rigidly atached to parent body P.
   ///   // Define the pose X_BM of a frame M rigidly atached to child body B.
   ///   const RevoluteJoint<double>& elbow =
   ///     model.AddJoint<RevoluteJoint>(
   ///       "Elbow",                /* joint name */
   ///       model.get_world_body(), /* parent body */
-  ///       Isometry3d::Identity(), /* frame F IS the world frame W */
+  ///       {},                     /* frame F IS the parent body frame P */
   ///       pendulum,               /* child body, the pendulum */
   ///       X_BM,                   /* pose of frame M in the body frame B */
   ///       Vector3d::UnitZ());     /* revolute axis in this case */
   /// @endcode
   ///
-  /// @see The Joint class's documentation for further details on how to define
-  /// a joint.
+  /// @see The Joint class's documentation for further details on how a Joint
+  /// is defined.
   template<template<typename> class JointType, typename... Args>
   const JointType<T>& AddJoint(
       const std::string& name,
