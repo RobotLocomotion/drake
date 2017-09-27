@@ -14,6 +14,7 @@ drake_cc_library(
         "ball-inl.h",
     ],
     deps = [
+        "//drake/common:default_scalars",
         "//drake/common:essential",
         "//drake/systems/framework:leaf_system",
     ],
@@ -28,6 +29,7 @@ drake_cc_library(
     ],
     deps = [
         ":ball",
+        "//drake/common:default_scalars",
         "//drake/common:essential",
     ],
 )
