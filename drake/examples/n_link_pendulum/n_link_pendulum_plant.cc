@@ -1,4 +1,4 @@
-#include "drake/examples/n_link_pendulum/free_body_plant.h"
+#include "drake/examples/n_link_pendulum/n_link_pendulum_plant.h"
 
 #include <cmath>
 #include <vector>
