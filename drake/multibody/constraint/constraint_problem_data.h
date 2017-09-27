@@ -131,7 +131,8 @@ namespace constraint {
 /// - k ∈ ℕ   The number of edges in a polygonal approximation to a friction
 ///           cone. Note that k = 2r.
 /// - p ∈ ℕ   The number of non-interpenetration constraint equations
-/// - q ∈ ℝⁿ' The generalized coordinate vector of the system.
+/// - q ∈ ℝⁿ' The generalized coordinate vector of the system. n' is at least
+///           as large as n.
 /// - n ∈ ℕ   The dimension of the system generalized velocity / force.
 /// - n' ∈ ℕ  The dimension of the system generalized coordinates.
 /// - r ∈ ℕ   *Half* the number of edges in a polygonal approximation to a
@@ -151,7 +152,7 @@ namespace constraint {
 /// - β ∈ ℝ   A non-negative scalar used to correct velocity-level constraint
 ///           errors via the same error feedback process (Baumgarte
 ///           Stabilization) that uses α.
-/// - γ ∈ ℝ   A non-negative scalar used to soften an otherwise perfectly 
+/// - γ ∈ ℝ   A non-negative scalar used to soften an otherwise perfectly
 ///           "rigid" constraint.
 template <class T>
 struct ConstraintAccelProblemData {
@@ -234,7 +235,12 @@ struct ConstraintAccelProblemData {
   /// which can be read as the acceleration at joint i (v̇ᵢ) must equal to `r`
   /// times the acceleration at joint j (v̇ⱼ); `r` is thus the gear ratio.
   /// In this example, the corresponding holonomic constraint function is
-  /// g(q) ≡ qᵢ - rqⱼ, yielding ̈g(q,v;v̇) = v̇ᵢ - rv̇ⱼ.
+  /// g(q) ≡ qᵢ - rqⱼ, yielding  ̈g(q,v;v̇) = v̇ᵢ - rv̇ⱼ.
+  ///
+  /// Given these descriptions, the user needs to define operators for computing
+  /// G⋅w (w ∈ ℝⁿ is an arbitrary vector) and Gᵀ⋅f (f ∈ ℝᵇ is an arbitrary
+  /// vector). The user also needs to provide kᴳ ∈ ℝᵇ, which should be set to
+  /// the vector Gdot⋅v + 2αċ + β²c.
   /// @{
 
   /// An operator that performs the multiplication G⋅v. The default operator
@@ -431,9 +437,9 @@ struct ConstraintAccelProblemData {
   /// constraints must be twice differentiated with respect to time to yield
   /// an acceleration-level formulation (i.e., g̈(t,q,v;v̇,λ), for the
   /// aforementioned definition of g(t,q)). That differentiation yields
-  /// g̈ = L⋅v̇ + dL/dt⋅v + ∂²g/∂t² (notice the absence of the softening term),
+  /// g̈ = L⋅v̇ + Ldot⋅v + ∂²g/∂t² (notice the absence of the softening term),
   /// which is consistent with the constraint class under the definition
-  /// kᴸ(t,q,v) ≡ dL/dt⋅v + ∂²g/∂t². An example such (holonomic) constraint
+  /// kᴸ(t,q,v) ≡ Ldot⋅v + ∂²g/∂t². An example such (holonomic) constraint
   /// function is a joint acceleration limit:<pre>
   /// 0 ≤ -v̇ⱼ  ⊥  λⱼ ≥ 0
   /// </pre>
@@ -446,6 +452,14 @@ struct ConstraintAccelProblemData {
   /// v̇(t₀) such that ̈g(q(t₀), v(t₀), v̇(t₀)) = 0 will naturally allow one to
   /// determine (through integration) q(t₁) that satisfies g(q(t₁)) = 0 for
   /// t₁ > t₀ and t₁ ≈ t₀, assuming that g(q(t₀)) = 0 and ġ(q(t₀),v(t₀)) = 0.
+  ///
+  /// Given the description above, the user must define operators for computing
+  /// L⋅w (w ∈ ℝⁿ is an arbitrary vector) and Lᵀ⋅f (f ∈ ℝᵘ is an arbitrary
+  /// vector). The user also needs to provide γᴸ ∈ ℝᵘ, a vector of non-negative
+  /// entries used to soften the unilateral constraints, and kᴸ ∈ ℝᵘ,
+  /// the vector Ldot⋅v + αċ + β²c. There currently exist no guidelines
+  /// for setting α, β, and γ to effect a particular damping ratio and
+  /// oscillation frequency at the acceleration level.
   /// @{
 
   /// An operator that performs the multiplication L⋅v. The default operator
@@ -496,7 +510,7 @@ struct ConstraintAccelProblemData {
 /// c(t,q;v,λ)
 /// </pre>
 /// where λ, which is the same dimension as c, is a vector of impulsive force
-/// magnitudes used to enforce the constraint; note the semicolon, which 
+/// magnitudes used to enforce the constraint; note the semicolon, which
 /// separates general constraint dependencies (t,q) from variables that must be
 /// determined using the constraints (v,λ).
 ///
@@ -563,7 +577,8 @@ struct ConstraintAccelProblemData {
 /// - k ∈ ℕ   The number of edges in a polygonal approximation to a friction
 ///           cone. Note that k = 2r.
 /// - p ∈ ℕ   The number of non-interpenetration constraint equations
-/// - q ∈ ℝⁿ' The generalized coordinate vector of the system.
+/// - q ∈ ℝⁿ' The generalized coordinate vector of the system. n' is at least
+///           as large as n.
 /// - n ∈ ℕ   The dimension of the system generalized velocity / force.
 /// - n' ∈ ℕ  The dimension of the system generalized coordinates.
 /// - r ∈ ℕ   *Half* the number of edges in a polygonal approximation to a
@@ -576,8 +591,9 @@ struct ConstraintAccelProblemData {
 /// - ζ ∈ ℝ   A non-negative scalar used to correct position-level constraint
 ///           errors (i.e., "stabilize" the position constraints) via an error
 ///           feedback process (Baumgarte Stabilization).
-/// - γ ∈ ℝ   A non-negative scalar used to soften an otherwise perfectly 
+/// - γ ∈ ℝ   A non-negative scalar used to soften an otherwise perfectly
 ///           "rigid" constraint.template <class T>
+template <class T>
 struct ConstraintVelProblemData {
   /// Constructs velocity problem data for a system with a `gv_dim` dimensional
   /// generalized velocity.
@@ -624,11 +640,11 @@ struct ConstraintVelProblemData {
   /// </pre>
   /// which implies the constraint definition c(t,q,v) ≡ G(q)⋅v + kᴳ(t,q). G
   /// is defined as the ℝᵇˣⁿ Jacobian matrix of the partial derivatives of c()
-  /// taken with respect to the quasi-coordinates (see section Jacobians in this
-  /// class documentation). The class of constraint functions naturally includes
-  /// holonomic constraints, which are constraints posable as g(t,q). Such
-  /// holonomic constraints must be differentiated with respect to time to yield
-  /// a velocity-level formulation (i.e., ġ(t,q;v), for the
+  /// taken with respect to the quasi-coordinates (see **Jacobians** section in
+  /// ConstraintAccelProblemData). The class of constraint functions naturally
+  /// includes holonomic constraints, which are constraints posable as g(t,q).
+  /// Such holonomic constraints must be differentiated with respect to time to
+  /// yield a velocity-level formulation (i.e., ġ(t,q;v), for the
   /// aforementioned definition of g(t,q)). That differentiation yields
   /// ġ = G⋅v + ∂g/∂t, which is consistent with the constraint class under
   /// the definition kᴳ(t,q) ≡ ∂g/∂t. An example such holonomic constraint
@@ -638,7 +654,12 @@ struct ConstraintVelProblemData {
   /// which can be read as the velocity at joint j (vⱼ) must equal to `r`
   /// times the velocity at joint i (vᵢ); `r` is thus the gear ratio.
   /// In this example, the corresponding holonomic constraint function is
-  /// g(q) ≡ qᵢ -rqⱼ, yielding ġ(q, v) = -vⱼ + - rvⱼ.
+  /// g(q) ≡ qᵢ -rqⱼ, yielding ġ(q, v) = vⱼ - rvⱼ.
+  ///
+  /// Given these descriptions, the user needs to define operators for computing
+  /// G⋅w (w ∈ ℝⁿ is an arbitrary vector) and Gᵀ⋅f (f ∈ ℝᵇ is an arbitrary
+  /// vector). The user also needs to provide kᴳ ∈ ℝᵇ, which should be set to
+  /// the vector ζc.
   /// @{
 
   /// An operator that performs the multiplication G⋅v. The default operator
@@ -675,14 +696,15 @@ struct ConstraintVelProblemData {
   /// keeps the contact force along the contact normal compressive, as desired.
   /// With this background in mind, N is the ℝᵖˣⁿ Jacobian matrix that
   /// transforms generalized velocities (v ∈ ℝⁿ) into velocities projected along
-  /// the contact normals at the p point contacts. 
+  /// the contact normals at the p point contacts.
   ///
   /// Given this description, the user needs to define operators for computing
   /// N⋅w (w ∈ ℝⁿ is an arbitrary vector) and Nᵀ⋅f (f ∈ ℝᵖ is an arbitrary
   /// vector). The user also needs to provide γᴺ ∈ ℝᵖ, a vector of non-negative
   /// entries used to soften the non-interpenetration constraints, and kᴺ ∈ ℝᵖ,
   /// the vector ζc(q). Guidelines for setting ζ and γ to effect a particular
-  /// damping ratio and oscillation frequency are described in [Catto 2004]. 
+  /// damping ratio and oscillation frequency are described in [Catto 2004];
+  /// the parameters are known as "ERP" and "CFM" in that context.
   /// @{
 
   /// An operator that performs the multiplication N⋅v. The default operator
@@ -703,6 +725,7 @@ struct ConstraintVelProblemData {
   VectorX<T> gammaN;
   /// @}
 
+  /// @name Data for contact friction constraints
   /// Problem data for constraining the tangential velocity of two bodies
   /// projected along the contact surface tangents, for p point contacts.
   ///
@@ -753,7 +776,7 @@ struct ConstraintVelProblemData {
   /// 0 ≤ cᵣ₊₁  ⊥  fᵇᵣ₊₁ ≥ 0
   /// 0 ≤ cₖ    ⊥    fᵇₖ ≥ 0
   /// </pre>
-  /// where Λ is roughly interpretable as the remaining tangential velocity 
+  /// where Λ is roughly interpretable as the remaining tangential velocity
   /// at the contact after constraint impulses have been applied.  From this
   /// construction, the frictional impulse to be applied along direction
   /// i will be equal to fᵇᵢ - fᵇᵣ₊ᵢ. Given the descriptions of c(.) and the
@@ -840,6 +863,14 @@ struct ConstraintVelProblemData {
   /// v(t₀) such that ġ(q(t₀), v(t₀)) = 0 will naturally allow one to
   /// determine (through integration) q(t₁) that satisfies g(q(t₁)) = 0 for
   /// t₁ > t₀ and t₁ ≈ t₀, assuming that g(q(t₀)) = 0.
+  ///
+  /// Given the description above, the user must define operators for computing
+  /// L⋅w (w ∈ ℝⁿ is an arbitrary vector) and Lᵀ⋅f (f ∈ ℝᵘ is an arbitrary
+  /// vector). The user also needs to provide γᴸ ∈ ℝᵘ, a vector of non-negative
+  /// entries used to soften the unilateral constraints, and kᴸ ∈ ℝᵘ,
+  /// the vector ζc(q). Guidelines for setting ζ and γ to effect a particular
+  /// damping ratio and oscillation frequency are described in [Catto 2004];
+  /// the parameters are known as "ERP" and "CFM" in that context.
   /// @{
 
   /// An operator that performs the multiplication L⋅v. The default operator
