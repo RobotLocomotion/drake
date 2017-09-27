@@ -56,6 +56,8 @@ class HumanoidController : public systems::Diagram<double> {
         std::make_unique<QpInverseDynamicsSystem>(robot_.get(), kControlDt));
     qp_con->set_name("qp_con");
 
+    // TODO(siyuan): bot_core::atlas_command_t is very specific to the Atlas
+    // humanoid. Consider switch to another more generic message type.
     AtlasCommandTranslatorSystem* joint_con =
         builder.AddSystem<AtlasCommandTranslatorSystem>(*robot_);
     joint_con->set_name("joint_con");
