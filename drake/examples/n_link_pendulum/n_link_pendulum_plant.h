@@ -97,10 +97,19 @@ class NLinkPendulumPlant : public systems::LeafSystem<T> {
   // Allocate the id output.
   geometry::FrameIdVector AllocateFrameIdOutput(
       const systems::Context<T>& context) const;
+
   // Calculate the id output.
   void CalcFrameIdOutput(
       const systems::Context<T>& context,
       geometry::FrameIdVector* id_set) const;
+
+  // Allocate the frame pose set output port value.
+  geometry::FramePoseVector<T> AllocateFramePoseOutput(
+      const systems::Context<T>& context) const;
+
+  // Calculate the frame pose set output port value.
+  void CalcFramePoseOutput(const systems::Context<T>& context,
+                           geometry::FramePoseVector<T>* poses) const;
 
   double mass_;
   double length_;

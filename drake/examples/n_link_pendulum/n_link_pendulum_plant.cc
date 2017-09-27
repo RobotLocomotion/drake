@@ -11,6 +11,7 @@
 #include "drake/geometry/geometry_instance.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
+#include "drake/systems/rendering/pose_bundle.h"
 
 namespace drake {
 namespace examples {
@@ -34,6 +35,7 @@ using multibody::SpatialInertia;
 using multibody::UniformGravityFieldElement;
 using multibody::UnitInertia;
 using multibody::VelocityKinematicsCache;
+using systems::BasicVector;
 using systems::Context;
 
 template<typename T>
@@ -61,15 +63,10 @@ NLinkPendulumPlant<T>::NLinkPendulumPlant(
         this->DeclareAbstractOutputPort(
                 &NLinkPendulumPlant::AllocateFrameIdOutput,
                 &NLinkPendulumPlant::CalcFrameIdOutput).get_index();
-
-#if 0
     geometry_pose_port_ =
-        this->DeclareAbstractOutputPort(&NLinkPendulumPlant::AllocateFramePoseOutput,
-                                        &NLinkPendulumPlant::CalcFramePoseOutput)
-            .get_index();
-
-    AllocateGeometry(geometry_system);
-#endif
+        this->DeclareAbstractOutputPort(
+                &NLinkPendulumPlant::AllocateFramePoseOutput,
+                &NLinkPendulumPlant::CalcFramePoseOutput).get_index();
   }
 }
 
@@ -89,6 +86,33 @@ void NLinkPendulumPlant<T>::CalcFrameIdOutput(
   // no topology changes.
 }
 
+template <typename T>
+FramePoseVector<T> NLinkPendulumPlant<T>::AllocateFramePoseOutput(
+    const Context<T>&) const {
+  DRAKE_DEMAND(source_id_.is_valid());
+  FramePoseVector<T> poses(source_id_);
+  poses.mutable_vector().resize(get_num_links());
+  return poses;
+}
+
+template <typename T>
+void NLinkPendulumPlant<T>::CalcFramePoseOutput(
+    const Context<T>& context, FramePoseVector<T>* poses) const {
+  // TODO: add MBT suggar for this based off MultibodyTreeContext.
+  DRAKE_ASSERT(poses->vector().size() == get_num_links());
+
+  PositionKinematicsCache<T> pc(model_.get_topology());
+  model_.CalcPositionKinematicsCache(context, &pc);
+
+  std::vector<Isometry3<T>>& pose_data = poses->mutable_vector();
+  for (int link_index{0}; link_index < get_num_links(); ++link_index) {
+    // TODO: clean this up. Most likely use Paul's new API's and save a vector
+    // of bodies. You'd need to save the link_index (frameid per, Body).
+    // Essentially the mapping FrameId to BodyIndex (or viceversa).
+    pose_data[link_index] = pc.get_X_WB(
+        multibody::BodyNodeIndex(link_index + 1));
+  }
+}
 
 template<typename T>
 template<typename U>
