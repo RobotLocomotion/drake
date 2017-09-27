@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) {
     return 1;
   }
   drake::log()->info("Loading '{}'.", FLAGS_rndf_file);
-  const auto road_geometry = rndf::Loader().LoadFile(FLAGS_rndf_file);
+  const auto road_geometry = rndf::LoadFile(FLAGS_rndf_file);
   const std::vector<std::string> failures = road_geometry->CheckInvariants();
 
   if (!failures.empty()) {

@@ -25,16 +25,29 @@ struct SingleLaneRNDFDescription {
   // are: global position at the start of the lane,
   // global position at the end of the lane and lane
   // bounds of the lane.
-  std::map<api::LaneId,
-           std::tuple<api::GeoPosition, api::GeoPosition, api::RBounds>>
-      lane_table{};
-  // A collection of tuples whose elements describe A-to-B
-  // branch connections between lanes.
-  std::vector<std::tuple<api::LaneId, api::LaneId>> branch_list{};
+  typedef std::map<api::LaneId, std::tuple<api::GeoPosition,
+                                           api::GeoPosition,
+                                           api::RBounds>> LaneTable;
+
+  // A collection of tuples whose elements describe A-to-B branch
+  // connections between lanes.
+  typedef std::vector<std::tuple<api::LaneId, api::LaneId>> BranchList;
+
+  SingleLaneRNDFDescription(const std::string& file_path_in,
+                            const LaneTable& lane_table_in,
+                            const BranchList& branch_list_in)
+      : file_path(file_path_in),
+        lane_table(lane_table_in),
+        branch_list(branch_list_in) {}
+
   // A relative path to the map file, relative to Drake's
   // repository root (so that drake::common::FindResource() can
   // find it).
   std::string file_path{};
+  // A table describing the map's lane layout.
+  LaneTable lane_table{};
+  // A list of the map's lane interconnections.
+  BranchList branch_list{};
 };
 
 // RNDF test fixture parameterized on map description.
@@ -45,7 +58,7 @@ class SingleLaneRNDFLoaderTest
 TEST_P(SingleLaneRNDFLoaderTest, LoadTest) {
   const SingleLaneRNDFDescription& map_description = GetParam();
   const std::string file_path = FindResourceOrThrow(map_description.file_path);
-  const auto road_geometry = Loader().LoadFile(file_path);
+  const auto road_geometry = LoadFile(file_path);
   ASSERT_EQ(road_geometry->num_junctions(), map_description.lane_table.size());
   std::map<api::LaneId, std::vector<api::LaneId>> ongoing_lanes_per_lane;
   for (int i = 0; i < road_geometry->num_junctions(); ++i) {
@@ -95,133 +108,133 @@ TEST_P(SingleLaneRNDFLoaderTest, LoadTest) {
 // Returns a collection of single lane RNDF map descriptions for
 // testing parameterization.
 std::vector<SingleLaneRNDFDescription> GetSingleLaneRNDFsToTest() {
-  std::vector<SingleLaneRNDFDescription> maps;
-  maps.push_back(
-      {// T intersection map description
-       //
-       // 1.1.1  2.1.3      1.1.3
-       //   * > > * > * > > > *
-       //         ^  / 1.1.2
-       //         ^ /
-       //         ^/
-       //         * 2.1.2
-       //         ^
-       //         ^
-       //         ^
-       //         * 2.1.1
-       //
-       // For reference:
-       //   -'^' and '>' represent lane's direction.
-       //   -'/' represents crossing intersections.
-       //   - '*' represents a lane's waypoint.
-       {
-           {api::LaneId{"l:1.1.1-1.1.2"},
-            std::make_tuple(
-                api::GeoPosition(0.0, 0.0, 0.0),
-                api::GeoPosition(103.938, 0.000149, 0.0),
-                api::RBounds(-3.9624 / 2, 3.9624 / 2))},  // 13 feet wide
-           {api::LaneId{"l:1.1.2-1.1.3"},
-            std::make_tuple(
-                api::GeoPosition(103.938, 0.000149, 0.0),
-                api::GeoPosition(199.982, 0.000553, 0.0),
-                api::RBounds(-3.9624 / 2, 3.9624 / 2))},  // 13 feet wide
-           {api::LaneId{"l:2.1.1-2.1.2"},
-            std::make_tuple(
-                api::GeoPosition(99.9914, -99.9893, 0.0),
-                api::GeoPosition(99.9911, -3.98174, 0.0),
-                api::RBounds(-3.9624 / 2, 3.9624 / 2))},  // 13 feet wide
-           {api::LaneId{"l:2.1.2-2.1.3"},
-            std::make_tuple(
-                api::GeoPosition(99.9911, -3.98174, 0.0),
-                api::GeoPosition(99.9911, 0.000138, 0.0),
-                api::RBounds(-3.9624 / 2, 3.9624 / 2))},  // 13 feet wide
-           {api::LaneId{"l:2.1.2-1.1.2"},
-            std::make_tuple(
-                api::GeoPosition(99.9911, -3.98174, 0.0),
-                api::GeoPosition(103.938, 0.000149, 0.0),
-                api::RBounds(-3.9624 / 2, 3.9624 / 2))}  // 13 feet wide
-       },
-       {
-           std::make_tuple(api::LaneId{"l:2.1.1-2.1.2"},
-                           api::LaneId{"l:2.1.2-1.1.2"}),
-           std::make_tuple(api::LaneId{"l:2.1.2-1.1.2"},
-                           api::LaneId{"l:1.1.2-1.1.3"}),
-       },
-       "drake/automotive/maliput/rndf/test/maps/t_intersection.rndf"});
-  maps.push_back(
-      {// Cross map description
-       //
-       //               * 2.1.4
-       //               ^
-       //               ^
-       //               ^
-       //               * 2.1.3
-       //             / ^
-       // 1.1.1      /  ^  1.1.3
-       //   * > > > * > > > * > > > *
-       //        1.1.2  ^  /       1.1.4
-       //               * /
-       //               ^ 2.1.2
-       //               ^
-       //               ^
-       //               * 2.1.1
-       // For reference:
-       //   -'^' and '>' represent lane's direction.
-       //   - '/' represents crossing intersections.
-       //   - '*' represents a lane's waypoint.
-       {
-           {api::LaneId{"l:1.1.1-1.1.2"},
-            std::make_tuple(
-                api::GeoPosition(0.0, 0.0, 0.0),
-                api::GeoPosition(96.0441, 0.000127, 0.0),
-                api::RBounds(-3.9624 / 2, 3.9624 / 2))},  // 13 feet wide
-           {api::LaneId{"l:1.1.2-1.1.3"},
-            std::make_tuple(
-                api::GeoPosition(96.0441, 0.000127, 0.0),
-                api::GeoPosition(103.938, 0.000149, 0.0),
-                api::RBounds(-3.9624 / 2, 3.9624 / 2))},  // 13 feet wide
-           {api::LaneId{"l:1.1.3-1.1.4"},
-            std::make_tuple(
-                api::GeoPosition(103.938, 0.000149, 0.0),
-                api::GeoPosition(199.982, 0.000553, 0.0),
-                api::RBounds(-3.9624 / 2, 3.9624 / 2))},  // 13 feet wide
-           {api::LaneId{"l:2.1.1-2.1.2"},
-            std::make_tuple(
-                api::GeoPosition(99.9908, 99.9896, 0.0),
-                api::GeoPosition(99.9911, 3.98202, 0.0),
-                api::RBounds(-3.9624 / 2, 3.9624 / 2))},  // 13 feet wide
-           {api::LaneId{"l:2.1.2-2.1.3"},
-            std::make_tuple(
-                api::GeoPosition(99.9911, 3.98202, 0.0),
-                api::GeoPosition(99.9911, -3.98174, 0.0),
-                api::RBounds(-3.9624 / 2, 3.9624 / 2))},  // 13 feet wide
-           {api::LaneId{"l:2.1.3-2.1.4"},
-            std::make_tuple(
-                api::GeoPosition(99.9911, -3.98174, 0.0),
-                api::GeoPosition(99.9914, -99.9893, 0.0),
-                api::RBounds(-3.9624 / 2, 3.9624 / 2))},  // 13 feet wide
-           {api::LaneId{"l:1.1.2-2.1.3"},
-            std::make_tuple(
-                api::GeoPosition(96.0441, 0.000127, 0.0),
-                api::GeoPosition(99.9911, -3.98174, 0.0),
-                api::RBounds(-3.9624 / 2, 3.9624 / 2))},  // 13 feet wide
-           {api::LaneId{"l:2.1.2-1.1.3"},
-            std::make_tuple(
-                api::GeoPosition(99.9911, 3.98202, 0.0),
-                api::GeoPosition(103.938, 0.000149, 0.0),
-                api::RBounds(-3.9624 / 2, 3.9624 / 2))}  // 13 feet wide
-       },
-       {
-           std::make_tuple(api::LaneId{"l:1.1.1-1.1.2"},
-                           api::LaneId{"l:1.1.2-2.1.3"}),
-           std::make_tuple(api::LaneId{"l:1.1.2-2.1.3"},
-                           api::LaneId{"l:2.1.3-2.1.4"}),
-           std::make_tuple(api::LaneId{"l:2.1.1-2.1.2"},
-                           api::LaneId{"l:2.1.2-1.1.3"}),
-           std::make_tuple(api::LaneId{"l:2.1.2-1.1.3"},
-                           api::LaneId{"l:1.1.3-1.1.4"}),
-       },
-       "drake/automotive/maliput/rndf/test/maps/cross.rndf"});
+  std::vector<SingleLaneRNDFDescription> maps{
+      SingleLaneRNDFDescription{
+          // T intersection map description
+          //
+          // 1.1.1  2.1.3      1.1.3
+          //   * > > * > * > > > *
+          //         ^  / 1.1.2
+          //         ^ /
+          //         ^/
+          //         * 2.1.2
+          //         ^
+          //         ^
+          //         ^
+          //         * 2.1.1
+          //
+          // For reference:
+          //   -'^' and '>' represent lane's direction.
+          //   -'/' represents crossing intersections.
+          //   - '*' represents a lane's waypoint.
+          "drake/automotive/maliput/rndf/test/maps/t_intersection.rndf",
+          {
+              {api::LaneId{"l:1.1.1-1.1.2"},
+               std::make_tuple(
+                   api::GeoPosition(0.0, 0.0, 0.0),
+                   api::GeoPosition(103.938, 0.000149, 0.0),
+                   api::RBounds(-3.9624 / 2, 3.9624 / 2))},  // 13 feet wide
+              {api::LaneId{"l:1.1.2-1.1.3"},
+               std::make_tuple(
+                   api::GeoPosition(103.938, 0.000149, 0.0),
+                   api::GeoPosition(199.982, 0.000553, 0.0),
+                   api::RBounds(-3.9624 / 2, 3.9624 / 2))},  // 13 feet wide
+              {api::LaneId{"l:2.1.1-2.1.2"},
+               std::make_tuple(
+                   api::GeoPosition(99.9914, -99.9893, 0.0),
+                   api::GeoPosition(99.9911, -3.98174, 0.0),
+                   api::RBounds(-3.9624 / 2, 3.9624 / 2))},  // 13 feet wide
+              {api::LaneId{"l:2.1.2-2.1.3"},
+               std::make_tuple(
+                   api::GeoPosition(99.9911, -3.98174, 0.0),
+                   api::GeoPosition(99.9911, 0.000138, 0.0),
+                   api::RBounds(-3.9624 / 2, 3.9624 / 2))},  // 13 feet wide
+              {api::LaneId{"l:2.1.2-1.1.2"},
+               std::make_tuple(
+                   api::GeoPosition(99.9911, -3.98174, 0.0),
+                   api::GeoPosition(103.938, 0.000149, 0.0),
+                   api::RBounds(-3.9624 / 2, 3.9624 / 2))}  // 13 feet wide
+          },
+          {
+              std::make_tuple(api::LaneId{"l:2.1.1-2.1.2"},
+                              api::LaneId{"l:2.1.2-1.1.2"}),
+              std::make_tuple(api::LaneId{"l:2.1.2-1.1.2"},
+                              api::LaneId{"l:1.1.2-1.1.3"}),
+          }},
+      SingleLaneRNDFDescription{
+          // Cross map description
+          //
+          //               * 2.1.4
+          //               ^
+          //               ^
+          //               ^
+          //               * 2.1.3
+          //             / ^
+          // 1.1.1      /  ^  1.1.3
+          //   * > > > * > > > * > > > *
+          //        1.1.2  ^  /       1.1.4
+          //               * /
+          //               ^ 2.1.2
+          //               ^
+          //               ^
+          //               * 2.1.1
+          // For reference:
+          //   -'^' and '>' represent lane's direction.
+          //   - '/' represents crossing intersections.
+          //   - '*' represents a lane's waypoint.
+          "drake/automotive/maliput/rndf/test/maps/cross.rndf",
+          {
+              {api::LaneId{"l:1.1.1-1.1.2"},
+               std::make_tuple(
+                   api::GeoPosition(0.0, 0.0, 0.0),
+                   api::GeoPosition(96.0441, 0.000127, 0.0),
+                   api::RBounds(-3.9624 / 2, 3.9624 / 2))},  // 13 feet wide
+              {api::LaneId{"l:1.1.2-1.1.3"},
+               std::make_tuple(
+                   api::GeoPosition(96.0441, 0.000127, 0.0),
+                   api::GeoPosition(103.938, 0.000149, 0.0),
+                   api::RBounds(-3.9624 / 2, 3.9624 / 2))},  // 13 feet wide
+              {api::LaneId{"l:1.1.3-1.1.4"},
+               std::make_tuple(
+                   api::GeoPosition(103.938, 0.000149, 0.0),
+                   api::GeoPosition(199.982, 0.000553, 0.0),
+                   api::RBounds(-3.9624 / 2, 3.9624 / 2))},  // 13 feet wide
+              {api::LaneId{"l:2.1.1-2.1.2"},
+               std::make_tuple(
+                   api::GeoPosition(99.9908, 99.9896, 0.0),
+                   api::GeoPosition(99.9911, 3.98202, 0.0),
+                   api::RBounds(-3.9624 / 2, 3.9624 / 2))},  // 13 feet wide
+              {api::LaneId{"l:2.1.2-2.1.3"},
+               std::make_tuple(
+                   api::GeoPosition(99.9911, 3.98202, 0.0),
+                   api::GeoPosition(99.9911, -3.98174, 0.0),
+                   api::RBounds(-3.9624 / 2, 3.9624 / 2))},  // 13 feet wide
+              {api::LaneId{"l:2.1.3-2.1.4"},
+               std::make_tuple(
+                   api::GeoPosition(99.9911, -3.98174, 0.0),
+                   api::GeoPosition(99.9914, -99.9893, 0.0),
+                   api::RBounds(-3.9624 / 2, 3.9624 / 2))},  // 13 feet wide
+              {api::LaneId{"l:1.1.2-2.1.3"},
+               std::make_tuple(
+                   api::GeoPosition(96.0441, 0.000127, 0.0),
+                   api::GeoPosition(99.9911, -3.98174, 0.0),
+                   api::RBounds(-3.9624 / 2, 3.9624 / 2))},  // 13 feet wide
+              {api::LaneId{"l:2.1.2-1.1.3"},
+               std::make_tuple(
+                   api::GeoPosition(99.9911, 3.98202, 0.0),
+                   api::GeoPosition(103.938, 0.000149, 0.0),
+                   api::RBounds(-3.9624 / 2, 3.9624 / 2))}  // 13 feet wide
+          },
+          {
+              std::make_tuple(api::LaneId{"l:1.1.1-1.1.2"},
+                              api::LaneId{"l:1.1.2-2.1.3"}),
+              std::make_tuple(api::LaneId{"l:1.1.2-2.1.3"},
+                              api::LaneId{"l:2.1.3-2.1.4"}),
+              std::make_tuple(api::LaneId{"l:2.1.1-2.1.2"},
+                              api::LaneId{"l:2.1.2-1.1.3"}),
+              std::make_tuple(api::LaneId{"l:2.1.2-1.1.3"},
+                              api::LaneId{"l:1.1.3-1.1.4"}),
+          }}};
   return maps;
 }
 
@@ -245,7 +258,7 @@ GTEST_TEST(MultiLaneRNDFLoaderTest, LoadTest) {
       "drake/automotive/maliput/rndf/test/maps/two_lane.rndf";
   static const double kLaneWidth = 3.9624;
   const std::string file_path = FindResourceOrThrow(kTwoLaneRNDFPath);
-  const auto road_geometry = Loader().LoadFile(file_path);
+  const auto road_geometry = LoadFile(file_path);
   ASSERT_EQ(road_geometry->num_junctions(), 4);
 
   {
@@ -361,12 +374,12 @@ GTEST_TEST(RNDFLoaderFailureTests, ZonesOnlyRNDFTest) {
   static const char* const kZonesRNDFPath =
       "drake/automotive/maliput/rndf/test/maps/zones.rndf";
   const std::string file_path = FindResourceOrThrow(kZonesRNDFPath);
-  ASSERT_THROW(Loader().LoadFile(file_path), std::runtime_error);
+  ASSERT_THROW(LoadFile(file_path), std::runtime_error);
 }
 
 // Tests that the Loader throws upon loading an invalid RNDF.
 GTEST_TEST(RNDFLoaderFailureTests, InvalidRNDFTest) {
-  ASSERT_THROW(Loader().LoadFile("not-a-valid-rndf-path"), std::runtime_error);
+  ASSERT_THROW(LoadFile("not-a-valid-rndf-path"), std::runtime_error);
 }
 
 }  // namespace
