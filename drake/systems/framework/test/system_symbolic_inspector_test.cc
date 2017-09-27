@@ -205,16 +205,6 @@ TEST_F(PendulumInspectorTest, SymbolicParameters) {
 
   auto derivatives = inspector_->derivatives();
   EXPECT_EQ(symbolic::Polynomial(derivatives[0], v).TotalDegree(), 0);
-
-  EXPECT_FALSE(derivatives[1].is_polynomial());
-  // Set theta, mass, and length so the remaining derivatives are polynomial.
-  // TODO(soonho): remove the substitution pending resolution of #7089.
-  symbolic::Substitution sub;
-  sub.emplace(inspector_->continuous_state()[0], 1.0);
-  sub.emplace(inspector_->numeric_parameters(0)[0], 2.0);
-  sub.emplace(inspector_->numeric_parameters(0)[1], 3.0);
-  derivatives[1] = derivatives[1].Substitute(sub);
-  EXPECT_TRUE(derivatives[1].is_polynomial());
   EXPECT_EQ(symbolic::Polynomial(derivatives[1], v).TotalDegree(), 1);
 
   auto output = inspector_->output(0);
