@@ -193,12 +193,14 @@ class PendulumTests : public ::testing::Test {
     // frame L to be coincident with the elbow's outboard frame. Therefore,
     // Lo != Lcm.
 
-    // Instead of creating inboard/outboard frames by hand, we'll create a
-    // Joint<T> object that takes care of that for us:
+    // Instead of creating an elbow inboard frame (Ei), an elbow outboard
+    // frame (Eo) and connecting them with a Joint, we'll let the
+    // MultibodyTree::AddJoint() method do that for us:
     elbow_joint_ = &model_->AddJoint<RevoluteJoint>(
         "ElbowJoint",
-        *upper_link_, X_UEi_, *lower_link_, Isometry3d::Identity(),
-        Vector3d::UnitZ() /*revolute axis*/);
+        *upper_link_, X_UEi_, /* Pose of Ei in U. */
+        *lower_link_, {},     /* No pose provided, frame Eo IS frame L. */
+        Vector3d::UnitZ()     /* revolute axis */);
 
     elbow_inboard_frame_ = &elbow_joint_->get_frame_on_parent();
     elbow_outboard_frame_ = &elbow_joint_->get_frame_on_child();

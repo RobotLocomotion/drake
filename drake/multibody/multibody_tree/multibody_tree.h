@@ -1,12 +1,14 @@
 #pragma once
 
 #include <memory>
+#include <string>
 #include <tuple>
 #include <type_traits>
 #include <utility>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_optional.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/multibody/multibody_tree/acceleration_kinematics_cache.h"
 #include "drake/multibody/multibody_tree/body.h"
@@ -449,6 +451,94 @@ class MultibodyTree {
     return AddForceElement(
         std::make_unique<ForceElementType<T>>(std::forward<Args>(args)...));
   }
+
+  /// This method helps to create a Joint of type `JointType` between two
+  /// bodies.
+  /// The two bodies connected by this Joint object are referred to as the
+  /// _parent_ and _child_ bodies. Although the terms _parent_ and _child_ are
+  /// sometimes used synonymously to describe the relationship between inboard
+  /// and outboard bodies in multibody models, this usage is wholly unrelated
+  /// and implies nothing about the inboard-outboard relationship between the
+  /// bodies.
+  /// As explained in the Joint class's documentation, in Drake we define a
+  /// frame F attached to the parent body P with pose `X_PF` and a frame M
+  /// attached to the child body B with pose `X_BM`. This method helps creating
+  /// a joint between two bodies with fixed poses `X_PF` and `X_BM`.
+  /// Refer to the Joint class's documentation for more details.
+  ///
+  /// The arguments to this method `args` are forwarded to `JointType`'s
+  /// constructor. The newly created `JointType` object will be specialized on
+  /// the scalar type T of this %MultibodyTree.
+  ///
+  /// @param name
+  ///   The name of the joint.
+  /// @param[in] parent
+  ///   The parent body connected by the new joint.
+  /// @param[in] X_PF
+  ///   The fixed pose of frame F attached to the parent body, measured in
+  ///   the frame P of that body. `X_PF` is an optional parameter; empty curly
+  ///   braces `{}` imply that frame F **is** the same body frame P. If instead
+  ///   your intention is to make a frame F with pose `X_PF`, provide
+  ///   `Isometry3<double>::Identity()` as your input.
+  /// @param[in] child
+  ///   The child body connected by the new joint.
+  /// @param[in] X_BM
+  ///   The fixed pose of frame M attached to the child body, measured in
+  ///   the frame B of that body. `X_BM` is an optional parameter; empty curly
+  ///   braces `{}` imply that frame M **is** the same body frame B. If instead
+  ///   your intention is to make a frame F with pose `X_PF`, provide
+  ///   `Isometry3<double>::Identity()` as your input.
+  ///
+  /// Example of usage:
+  /// @code
+  ///   MultibodyTree<T> model;
+  ///   // ... Code to define a parent body P and a child body B.
+  ///   const Body<double>& parent_body =
+  ///     model.AddBody<RigidBody>(SpatialInertia<double>(...));
+  ///   const Body<double>& child_body =
+  ///     model.AddBody<RigidBody>(SpatialInertia<double>(...));
+  ///   // Define the pose X_BM of a frame M rigidly atached to child body B.
+  ///   const RevoluteJoint<double>& elbow =
+  ///     model.AddJoint<RevoluteJoint>(
+  ///       "Elbow",                /* joint name */
+  ///       model.get_world_body(), /* parent body */
+  ///       {},                     /* frame F IS the parent body frame P */
+  ///       pendulum,               /* child body, the pendulum */
+  ///       X_BM,                   /* pose of frame M in the body frame B */
+  ///       Vector3d::UnitZ());     /* revolute axis in this case */
+  /// @endcode
+  ///
+  /// @see The Joint class's documentation for further details on how a Joint
+  /// is defined.
+  template<template<typename> class JointType, typename... Args>
+  const JointType<T>& AddJoint(
+      const std::string& name,
+      const Body<T>& parent, const optional<Isometry3<double>>& X_PF,
+      const Body<T>& child, const optional<Isometry3<double>>& X_BM,
+      Args&&... args) {
+    static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
+                  "JointType<T> must be a sub-class of Joint<T>.");
+
+    const Frame<T>* frame_on_parent;
+    if (X_PF) {
+      frame_on_parent = &this->AddFrame<FixedOffsetFrame>(parent, *X_PF);
+    } else {
+      frame_on_parent = &parent.get_body_frame();
+    }
+
+    const Frame<T>* frame_on_child;
+    if (X_BM) {
+      frame_on_child = &this->AddFrame<FixedOffsetFrame>(child, *X_BM);
+    } else {
+      frame_on_child = &child.get_body_frame();
+    }
+
+    return AddJoint(
+        std::make_unique<JointType<T>>(
+            name,
+            *frame_on_parent, *frame_on_child,
+            std::forward<Args>(args)...));
+  }
   /// @}
   // Closes Doxygen section.
 
@@ -464,7 +554,7 @@ class MultibodyTree {
   /// body. Therefore the minimum number of bodies in a MultibodyTree is one.
   int get_num_bodies() const { return static_cast<int>(owned_bodies_.size()); }
 
-  /// Returns the number of joints in the %MultibodyTree.
+  /// Returns the number of joints added with AddJoint() to the %MultibodyTree.
   int get_num_joints() const { return static_cast<int>(owned_joints_.size()); }
 
   /// Returns the number of mobilizers in the %MultibodyTree. Since the world
@@ -1140,19 +1230,7 @@ class MultibodyTree {
       throw std::logic_error("Input joint is a nullptr.");
     }
     const JointIndex joint_index(owned_joints_.size());
-
-    // Parent tree MUST be set before the call to MakeInOutFramesAndAdd().
-    // Do not move them around!!!.
     joint->set_parent_tree(this, joint_index);
-
-    // MultibodyTree creates the inboard/outboard frames now, since the
-    // information to do so is already available. Also, that allows users to
-    // call Joint<T>::get_frame_on_parent() and/or
-    // Joint<T>::get_frame_on_child() if they need to.
-    joint->MakeInOutFramesAndAdd(this);
-    // At this point, joint has no implementation (that is, mobilizers, force
-    // elements, etc.). This will get created at Finalize().
-
     JointType<T>* raw_joint_ptr = joint.get();
     owned_joints_.push_back(std::move(joint));
     return *raw_joint_ptr;
@@ -1287,6 +1365,16 @@ class MultibodyTree {
     auto force_element_clone = force_element.CloneToScalar(*this);
     force_element_clone->set_parent_tree(this, force_element_index);
     owned_force_elements_.push_back(std::move(force_element_clone));
+  }
+
+  // Helper method to create a clone of `joint` and add it to `this` tree.
+  template <typename FromScalar>
+  Joint<T>* CloneJointAndAdd(const Joint<FromScalar>& joint) {
+    JointIndex joint_index = joint.get_index();
+    auto joint_clone = joint.CloneToScalar(*this);
+    joint_clone->set_parent_tree(this, joint_index);
+    owned_joints_.push_back(std::move(joint_clone));
+    return owned_joints_.back().get();
   }
 
   // Helper method to retrieve the corresponding Frame<T> variant to a Frame in

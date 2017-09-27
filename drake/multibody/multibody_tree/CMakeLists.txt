@@ -21,12 +21,9 @@ drake_install_libraries(drakeMultibodyTree)
 drake_install_headers(
   body.h
   fixed_offset_frame.h
-<<<<<<< HEAD
   joints/joint.h
   joints/revolute_joint.h
-=======
   force_element.h
->>>>>>> master
   multibody_tree.h
   multibody_tree_element.h
   multibody_tree_context.h
