@@ -82,7 +82,9 @@ def _guess_files(target, candidates, scope, attr_name):
         fail(msg_fmt % (attr_name, scope), scope)
 
 #------------------------------------------------------------------------------
-def _install_action(ctx, artifact, dests, strip_prefixes = [], rename = {}):
+def _install_action(
+    ctx, artifact, dests, strip_prefixes = [], rename = {}, warn_foreign = True
+):
     """Compute install action for a single file.
 
     This takes a single file artifact and returns the appropriate install
@@ -103,14 +105,15 @@ def _install_action(ctx, artifact, dests, strip_prefixes = [], rename = {}):
     else:
         strip_prefix = strip_prefixes
 
-    file_dest = join_paths(dest, _output_path(ctx, artifact, strip_prefix))
+    file_dest = join_paths(
+        dest, _output_path(ctx, artifact, strip_prefix, warn_foreign))
     file_dest = _rename(file_dest, rename)
 
     return struct(src = artifact, dst = file_dest)
 
 #------------------------------------------------------------------------------
 def _install_actions(ctx, file_labels, dests, strip_prefixes = [],
-                     excluded_files = [], rename = {}):
+                     excluded_files = [], rename = {}, warn_foreign = True):
     """Compute install actions for files.
 
     This takes a list of labels (targets or files) and computes the install
@@ -150,7 +153,9 @@ def _install_actions(ctx, file_labels, dests, strip_prefixes = [],
                 continue
 
             actions.append(
-                _install_action(ctx, a, dests, strip_prefixes, rename))
+                _install_action(ctx, a, dests, strip_prefixes,
+                                rename, warn_foreign)
+            )
 
     return actions
 
@@ -247,8 +252,8 @@ def _install_java_launcher_actions(
     actions = []
 
     for jar in target[MainClassInfo].classpath:
-        jar_install = _install_action(ctx, jar, java_dest,
-                                      java_strip_prefix, rename)
+        jar_install = _install_action(ctx, jar, java_dest, java_strip_prefix,
+                                      rename, warn_foreign = False)
         # Adding double quotes around the generated scripts to avoid
         # white-space problems when running the generated shell script. This
         # string is used in a "for-loop" in the script.
@@ -332,10 +337,9 @@ def _install_impl(ctx):
         if a.dst not in installed_files:
             if src:
                 script_actions.append(_install_code(a))
-                installed_files[a.dst] = src
             else:
                 script_actions.append(_java_launcher_code(a))
-                installed_files[a.dst] = a.dst
+            installed_files[a.dst] = src
         elif src != installed_files[a.dst]:
             fail("Install conflict detected:\n" +
                  "\n  src1 = " + repr(installed_files[a.dst]) +
@@ -450,7 +454,9 @@ Note:
     configured to generate them, but no file other than the install script is
     created at build time. Java binary launchers rely on a target containing
     a ``MainClassInfo`` provider that contains all the required information to
-    generate the launcher.
+    generate the launcher. Do not forget to provide as dependencies the install
+    targets that rename files. This will be necessary to use the appropriate
+    jar file name when creating the java launcher.
 
     MainClassInfo(
             main_class = Name of main class to run ("name.class.main")
