@@ -9,13 +9,17 @@ balance. This demo involves three executables:
     * drake/examples/humanoid_controller/send_manipulation_plan_demo.cc
 
 The dummy plan generator takes 1 command line argument, and uses it to offset
-the right should pitch joint from its nominal position. The offset in in
+the right shoulder pitch joint from its nominal position. The offset in in
 radians. If no argument is supplied, it resets to the nominal posture.
 
 All three components communicate using LCM messages. To properly run this demo,
 you need to have Gurobi installed and have access to a fixed-license.
 See [the Drake Bazel documentation](http://drake.mit.edu/bazel.html?highlight=gurobi)
 for more details about building with Gurobi enabled.
+
+To build: (assuming in drake's root directory)
+
+    `$ bazel build --config gurobi //...`
 
 To run the demo: (assuming in drake's root directory)
 
@@ -33,7 +37,7 @@ To run the demo: (assuming in drake's root directory)
 
 4. Execute a dummy manipulation plan:
 
-    `$ ./bazel-bin/drake/examples/humanoid_controller/send_manipulation_plan_demo -1`
+    `$ ./bazel-bin/drake/examples/humanoid_controller/send_manipulation_plan_demo -r_shy_offset -1`
 
 Note that you can repeatedly send new plans, the controller will start executing
 the new plan as soon as it receives it.

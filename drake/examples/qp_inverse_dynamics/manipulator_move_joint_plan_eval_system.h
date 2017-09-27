@@ -19,9 +19,9 @@ namespace qp_inverse_dynamics {
  * instantaneous generalized position, velocity and acceleration.
  * Assuming no external contacts, the control law is:
  * <pre>
- *   vd_output = Kp(q* - q) + Kd(v* - v) + vd*,
+ *   vdot_output = Kp(q* - q) + Kd(v* - v) + vdot*,
  * </pre>
- * where Kp and Kd are the position and velocity gains, and q*, v*, and vd* are
+ * where Kp and Kd are the position and velocity gains, and q*, v*, and vdot* are
  * the nominal generalized position, velocity and acceleration.
  * This system assumes that |q| = |v|, and model being controlled contains no
  * floating base joints.

@@ -24,8 +24,8 @@ GTEST_TEST(QpOutputTranslatorTest, QpOutputTranslatorTest) {
   // Use this model because the dof order and actuator order are different.
   parsers::urdf::AddModelInstanceFromUrdfFile(
       FindResourceOrThrow(
-        "drake/examples/valkyrie/urdf/urdf/"
-        "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf"),
+          "drake/examples/valkyrie/urdf/urdf/"
+          "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf"),
       drake::multibody::joints::kQuaternion, nullptr /* weld to frame */,
       robot.get());
 
@@ -42,7 +42,7 @@ GTEST_TEST(QpOutputTranslatorTest, QpOutputTranslatorTest) {
 
   auto input = systems::AbstractValue::Make<QpOutput>(*qp_output);
   context->FixInputPort(dut->get_input_port_qp_output().get_index(),
-      std::move(input));
+                        std::move(input));
 
   dut->CalcOutput(*context, output.get());
 

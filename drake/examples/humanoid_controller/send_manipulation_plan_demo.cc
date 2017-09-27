@@ -4,6 +4,8 @@
  * has most of the joints set to the nominal configuration except the right
  * shoulder joint, which can be commanded from a single command line argument.
  */
+#include <gflags/gflags.h>
+
 #include "lcm/lcm-cpp.hpp"
 #include "robotlocomotion/robot_plan_t.hpp"
 
@@ -13,6 +15,9 @@
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
 
+DEFINE_double(r_shy_offset, 0,
+              "Right shoulder pitch offset [rad].");
+
 using std::default_random_engine;
 
 namespace drake {
@@ -20,7 +25,7 @@ namespace examples {
 namespace humanoid_controller {
 namespace {
 
-void send_manip_message(double right_shoulder_pitch_offset) {
+void send_manip_message() {
   RigidBodyTree<double> robot;
   drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       "drake/examples/valkyrie/urdf/urdf/"
@@ -56,7 +61,7 @@ void send_manip_message(double right_shoulder_pitch_offset) {
   msg.plan_info.resize(msg.num_states, 1);
 
   // right shoulder pitch
-  q[10] += right_shoulder_pitch_offset;
+  q[10] += FLAGS_r_shy_offset;
   translator.InitializeMessage(&(msg.plan[0]));
   translator.EncodeMessageKinematics(q, v, &(msg.plan[0]));
   msg.plan[0].utime = 1e6;
@@ -73,11 +78,7 @@ void send_manip_message(double right_shoulder_pitch_offset) {
 }  // namespace drake
 
 int main(int argc, char** argv) {
-  double right_shoulder_pitch_offset = 0;
-  if (argc == 2) {
-    right_shoulder_pitch_offset = std::atof(argv[1]);
-  }
-  drake::examples::humanoid_controller::send_manip_message(
-      right_shoulder_pitch_offset);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  drake::examples::humanoid_controller::send_manip_message();
   return 0;
 }
