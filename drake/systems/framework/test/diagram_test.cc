@@ -436,6 +436,35 @@ TEST_F(DiagramTest, ToSymbolic) {
   EXPECT_THROW(diagram_with_double_only->ToSymbolic(), std::exception);
 }
 
+GTEST_TEST(DiagramTest2, ToAutoDiffDefaultName) {
+  DiagramBuilder<double> builder;
+  const auto* integrator = builder.AddSystem<Integrator<double>>(1);
+  builder.ExportInput(integrator->get_input_port());
+  builder.ExportOutput(integrator->get_output_port());
+  std::unique_ptr<Diagram<double>> diagram = builder.Build();
+
+  // The integrator was assigned a default name.
+  const std::string original_name = integrator->get_name();
+  EXPECT_EQ(original_name, integrator->GetMemoryObjectName());
+  EXPECT_NE(original_name, "");
+
+  // Convert to a new scalar type, and find the Integrator.
+  std::unique_ptr<System<AutoDiffXd>> new_system = diagram->ToAutoDiffXd();
+  const auto& new_diagram =
+      dynamic_cast<const Diagram<AutoDiffXd>&>(*new_system);
+  auto new_subsystems = new_diagram.GetSystems();
+  ASSERT_EQ(new_subsystems.size(), 1);
+  const System<AutoDiffXd>* new_subsystem = new_subsystems.front();
+  const auto& new_integrator =
+      dynamic_cast<const Integrator<AutoDiffXd>&>(*new_subsystem);
+
+  // After transmogrification, the integrator has a different name.
+  const std::string new_name = new_integrator.get_name();
+  EXPECT_NE(new_name, original_name);
+  EXPECT_EQ(new_name, new_integrator.GetMemoryObjectName());
+  EXPECT_NE(new_name, "");
+}
+
 // Tests that the same diagram can be evaluated into the same output with
 // different contexts interchangeably.
 TEST_F(DiagramTest, Clone) {
