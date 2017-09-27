@@ -12,7 +12,7 @@ $ ./bazel-bin/drake/examples/kuka_iiwa_arm/dev/box_rotation/iiwa_box_simulation
 
 tty2:
 ```
-$ ./bazel-bin/drake/examples/kuka_iiwa_arm/iiwa_controller --urdf drake/examples/kuka_iiwa_arm/dev/box_rotation/models/dual_iiwa14_primitive_sphere_visual_collision.urdf 
+$ ./bazel-bin/drake/examples/kuka_iiwa_arm/iiwa_controller --interp_type FOH --urdf drake/examples/kuka_iiwa_arm/dev/box_rotation/models/dual_iiwa14_primitive_sphere_visual_collision.urdf 
 ```
 
 tty3:

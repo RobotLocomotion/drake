@@ -20,7 +20,7 @@ cmd "1.iiwa-sim" {
 }
 
 cmd "2.iiwa_controller" {
-        exec = "${DRAKE_DISTRO}/bazel-bin/drake/examples/kuka_iiwa_arm/iiwa_controller --urdf ${DRAKE_DISTRO}/drake/examples/kuka_iiwa_arm/dev/box_rotation/models/${URDF}";
+        exec = "${DRAKE_DISTRO}/bazel-bin/drake/examples/kuka_iiwa_arm/iiwa_controller --interp_type FOH --urdf ${DRAKE_DISTRO}/drake/examples/kuka_iiwa_arm/dev/box_rotation/models/${URDF}";
         host = "localhost";
 
 }
