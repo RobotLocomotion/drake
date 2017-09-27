@@ -260,7 +260,7 @@ TEST_F(DiagramTest, Graphviz) {
       "_" + id + "_y2[color=green, label=\"y2\"")) << dot;
   // Check that subsystem records appear.
   EXPECT_NE(std::string::npos, dot.find(
-      "[shape=record, label=\"adder1|{{<u0>u0|<u1>u1} | {<y0>y0}}\"]")) << dot;
+      "[shape=record, label=\"adder1|")) << dot;
   // Check that internal edges appear.
   const std::string adder1_id = std::to_string(
       reinterpret_cast<int64_t>(diagram_->adder1()));
@@ -449,7 +449,6 @@ GTEST_TEST(DiagramTest2, ToAutoDiffDefaultName) {
   // The integrator1 was assigned a default name.
   // The integrator2's name remained intact.
   const std::string original_name1 = integrator1->get_name();
-  EXPECT_EQ(original_name1, integrator1->GetMemoryObjectName());
   EXPECT_EQ(integrator2->get_name(), "integrator2");
 
   // Convert to a new scalar type, and find the Integrators.
@@ -465,11 +464,8 @@ GTEST_TEST(DiagramTest2, ToAutoDiffDefaultName) {
   const auto& new_integrator2 =
       dynamic_cast<const Integrator<AutoDiffXd>&>(*new_subsystem2);
 
-  // After transmogrification, the integrator1 has a different name, but
-  // integrator2 stays the same.
-  const std::string new_name1 = new_integrator1.get_name();
-  EXPECT_NE(new_name1, original_name1);
-  EXPECT_EQ(new_name1, new_integrator1.GetMemoryObjectName());
+  // After transmogrification, both have the same name.
+  EXPECT_EQ(new_integrator1.get_name(), original_name1);
   EXPECT_EQ(new_integrator2.get_name(), "integrator2");
 }
 
@@ -1583,17 +1579,6 @@ GTEST_TEST(NonUniqueNamesTest, DefaultEmptyNames) {
   builder.AddSystem<Adder<double>>(kInputs, kSize);
   builder.AddSystem<Adder<double>>(kInputs, kSize);
   EXPECT_NO_THROW(builder.Build());
-}
-
-// Tests that an exception is thrown if a system is reset to an empty name
-// *after* being added to the diagram builder.
-GTEST_TEST(NonUniqueNamesTest, ForcedEmptyNames) {
-  DiagramBuilder<double> builder;
-  const int kInputs = 2;
-  const int kSize = 1;
-  builder.AddSystem<Adder<double>>(kInputs, kSize);
-  builder.AddSystem<Adder<double>>(kInputs, kSize)->set_name("");
-  EXPECT_THROW(builder.Build(), std::runtime_error);
 }
 
 // A system for testing per step actions.

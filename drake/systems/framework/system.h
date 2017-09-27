@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <functional>
 #include <limits>
 #include <map>
@@ -41,6 +42,9 @@ class SystemImpl {
 
   // The implementation of System<T>::GetMemoryObjectName.
   static std::string GetMemoryObjectName(const std::string&, int64_t);
+
+  // Returns some random default name to assign to Systems upon construction.
+  static std::string MakeRandomName();
 
  private:
   // Attorney-Client idiom to expose a subset of private elements of System.
@@ -779,16 +783,16 @@ class System {
   /// @name                      Utility methods
   //@{
 
-  /// Sets the name of the system. It is recommended that the name not include
-  /// the character ':', since the path delimiter is "::". When creating a
-  /// Diagram, names of sibling subsystems should be unique.
-  void set_name(const std::string& name) { name_ = name; }
+  /// Sets the name of the system. Names must not be empty. It is recommended
+  /// that the name not include the character ':', since the path delimiter is
+  /// "::".  When creating a Diagram, names of sibling subsystems must be
+  /// unique.
+  void set_name(const std::string& name) {
+    DRAKE_THROW_UNLESS(!name.empty());
+    name_ = name;
+  }
 
-  /// Returns the name last supplied to set_name(), or empty if set_name() was
-  /// never called.  Systems created through transmogrification have by default
-  /// an identical name to the system they were created from.  Systems with an
-  /// empty name that are added to a Diagram will have a default name
-  /// automatically assigned; that name might change during transmogrification.
+  /// Returns the name of this system.
   std::string get_name() const { return name_; }
 
   /// Returns a name for this %System based on a stringification of its type
@@ -809,7 +813,7 @@ class System {
     if (parent_ != nullptr) {
       parent_->GetPath(output);
     }
-    *output << "::" << (get_name().empty() ? "_" : get_name());
+    *output << "::" << get_name();
   }
 
   // Returns the full path of the System in the tree of Systems.
@@ -1292,7 +1296,8 @@ class System {
   /// See @ref system_scalar_conversion for detailed background and examples
   /// related to scalar-type conversion support.
   explicit System(SystemScalarConverter converter)
-      : system_scalar_converter_(std::move(converter)) {}
+      : name_(SystemImpl::MakeRandomName()),
+        system_scalar_converter_(std::move(converter)) {}
 
   /// Adds a port with the specified @p type and @p size to the input topology.
   /// If the port is intended to model a random noise or disturbance input,

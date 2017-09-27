@@ -69,6 +69,8 @@ PidController<T>::PidController(const MatrixX<double>& state_projection,
 
   input_index_desired_state_ =
       this->DeclareInputPort(kVectorValued, 2 * num_controlled_q_).get_index();
+
+  this->set_name("PID Controller");
 }
 
 template <typename T>
@@ -123,10 +125,7 @@ void PidController<T>::CalcControl(const Context<T>& context,
 // Adds a simple record-based representation of the PID controller to @p dot.
 template <typename T>
 void PidController<T>::GetGraphvizFragment(std::stringstream* dot) const {
-  std::string name = this->get_name();
-  if (name.empty()) {
-    name = "PID Controller";
-  }
+  const std::string name = this->get_name();
   *dot << this->GetGraphvizId() << " [shape=record, label=\"" << name;
   *dot << " | { {<u0> x |<u1> x_d} |<y0> y}";
   *dot << "\"];" << std::endl;

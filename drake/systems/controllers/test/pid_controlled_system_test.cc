@@ -154,18 +154,6 @@ class PidControlledSystemTest : public ::testing::Test {
   std::unique_ptr<Diagram<double>> diagram_;
 };
 
-// Tests that the PidController assigns default names to the plant.
-TEST_F(PidControlledSystemTest, DefaultNamesAssigned) {
-  auto plant = std::make_unique<TestPlantWithMinOutputs>();
-  auto plant_ptr = plant.get();
-  const int state_size = plant->get_output_port(0).size();
-
-  PidControlledSystem<double> controller(
-      std::move(plant), MatrixX<double>::Identity(state_size, state_size),
-      Kp_, Ki_, Kd_);
-  EXPECT_EQ("plant", plant_ptr->get_name());
-}
-
 // Tests that the PidController preserves the names of the plant.
 TEST_F(PidControlledSystemTest, ExistingNamesRespected) {
   auto plant = std::make_unique<TestPlantWithMinOutputs>();
