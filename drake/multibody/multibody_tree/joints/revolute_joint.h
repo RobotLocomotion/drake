@@ -17,9 +17,10 @@ namespace multibody {
 /// That is, given a frame F rigidly attached to the parent body P and a frame M
 /// rigidly attached to the child body B (see the Joint class's documentation),
 /// this Joint allows frames F and M to rotate with respect to each other about
-/// an axis â that is constant when measured in either frame F or M. In
-/// addition, this axis â has the same measures in frame F and M, that is,
-/// `â_F = â_M`.
+/// an axis â. The rotation angle is defined to be positive according to the
+/// right-hand-rule with the thumb aligned in the direction of the axis â.
+/// Axis â is constant and has the same measures in both frames F and M, that
+/// is, `â_F = â_M`.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 ///
@@ -42,7 +43,7 @@ class RevoluteJoint final : public Joint<T> {
   /// M rigidly attached to the child body B, rotate relatively to one another
   /// about a common axis. See this class's documentation for further details on
   /// the definition of these frames.
-  /// The first five argument to this constructor are those of the Joint class
+  /// The first three arguments to this constructor are those of the Joint class
   /// constructor. See the Joint class's documentation for details.
   /// The additional parameter `axis` is:
   /// @param[in] axis
@@ -125,7 +126,7 @@ class RevoluteJoint final : public Joint<T> {
 
   /// @}
 
- protected:
+ private:
   // Joint<T> overrides:
   std::unique_ptr<typename Joint<T>::BluePrint>
   MakeImplementationBlueprint() const override {
@@ -142,7 +143,6 @@ class RevoluteJoint final : public Joint<T> {
   std::unique_ptr<Joint<AutoDiffXd>> DoCloneToScalar(
       const MultibodyTree<AutoDiffXd>& tree_clone) const override;
 
- private:
   // Make RevoluteJoint templated on every other scalar type a friend of
   // RevoluteJoint<T> so that CloneToScalar<ToAnyOtherScalar>() can access
   // private members of RevoluteJoint<T>.

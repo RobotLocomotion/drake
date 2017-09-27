@@ -17,8 +17,8 @@ namespace drake {
 namespace multibody {
 
 namespace internal {
-// This is a class used by MultibodyTree internal's to create the internal
-// representation, or implementation, for a particular joint object.
+// This is a class used by MultibodyTree internals to create the implementation
+// for a particular joint object.
 template <typename T>
 class JointImplementationBuilder;
 }  // namespace internal
@@ -54,12 +54,12 @@ class JointImplementationBuilder;
 /// // In this simple case the parent body P is the model's world body and frame
 /// // F coincides with the world frame, i.e. X_PF is the identity
 /// // transformation.
-/// // Additionally, wee need to specify the pose of frame M on the pendulum's
+/// // Additionally, we need to specify the pose of frame M on the pendulum's
 /// // body frame B.
 /// // Say we declared and initialized X_BM...
-/// const RevoluteJoint<double>& pin =
+/// const RevoluteJoint<double>& elbow =
 ///   model.AddJoint<RevoluteJoint>(
-///     "PinJoint",             /* joint name */
+///     "Elbow",                /* joint name */
 ///     model.get_world_body(), /* parent body */
 ///     Isometry3d::Identity(), /* frame F IS the world frame W */
 ///     pendulum,               /* child body, the pendulum */

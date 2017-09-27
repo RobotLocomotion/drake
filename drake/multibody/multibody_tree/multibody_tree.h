@@ -477,7 +477,7 @@ class MultibodyTree {
   /// body. Therefore the minimum number of bodies in a MultibodyTree is one.
   int get_num_bodies() const { return static_cast<int>(owned_bodies_.size()); }
 
-  /// Returns the number of joints in the %MultibodyTree.
+  /// Returns the number of joints added with AddJoint() to the %MultibodyTree.
   int get_num_joints() const { return static_cast<int>(owned_joints_.size()); }
 
   /// Returns the number of mobilizers in the %MultibodyTree. Since the world
