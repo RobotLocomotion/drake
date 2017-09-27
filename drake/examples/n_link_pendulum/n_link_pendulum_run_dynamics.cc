@@ -4,6 +4,10 @@
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_viewer_draw.hpp"
 #include "drake/systems/analysis/simulator.h"
+//#include "drake/systems/analysis/implicit_euler_integrator.h"
+#include "drake/systems/analysis/runge_kutta2_integrator.h"
+#include "drake/systems/analysis/runge_kutta3_integrator.h"
+#include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/serializer.h"
@@ -18,9 +22,12 @@ using geometry::GeometrySystem;
 using geometry::SourceId;
 using lcm::DrakeLcm;
 using systems::DiagramContext;
-using systems::rendering::PoseBundleToDrawMessage;
 using systems::lcm::LcmPublisherSystem;
 using systems::lcm::Serializer;
+using systems::rendering::PoseBundleToDrawMessage;
+using systems::RungeKutta2Integrator;
+using systems::RungeKutta3Integrator;
+using systems::SemiExplicitEulerIntegrator;
 
 int do_main() {
   systems::DiagramBuilder<double> builder;
@@ -32,6 +39,7 @@ int do_main() {
   const double length = 0.7;    // [m]
   const double radius = 0.015;  // [m]
   const double num_links = 20;
+  const double time_step = 0.01;
   
   auto pendulum = builder.AddSystem<NLinkPendulumPlant>(
       mass, length, radius, num_links, geometry_system);
@@ -71,7 +79,21 @@ int do_main() {
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
 
-  simulator.get_mutable_integrator()->set_maximum_step_size(0.002);
+//  SemiExplicitEulerIntegrator<double>* integrator =
+  //    simulator.reset_integrator<SemiExplicitEulerIntegrator<double>>(
+    //  *diagram, time_step, simulator.get_mutable_context());
+
+  //RungeKutta2Integrator<double>* integrator =
+    //      simulator.reset_integrator<RungeKutta2Integrator<double>>(
+      //    *diagram, time_step, simulator.get_mutable_context());
+
+  RungeKutta3Integrator<double>* integrator =
+      simulator.reset_integrator<RungeKutta3Integrator<double>>(
+          *diagram, simulator.get_mutable_context());
+
+  integrator->set_maximum_step_size(time_step);
+  integrator->set_target_accuracy(0.01);
+
   simulator.set_publish_every_time_step(false);
   simulator.set_target_realtime_rate(1.f);
   simulator.Initialize();
