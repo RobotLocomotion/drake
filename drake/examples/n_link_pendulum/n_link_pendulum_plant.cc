@@ -5,6 +5,10 @@
 
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_autodiff_types.h"
+#include "drake/geometry/frame_id_vector.h"
+#include "drake/geometry/frame_kinematics_vector.h"
+#include "drake/geometry/geometry_frame.h"
+#include "drake/geometry/geometry_instance.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 
@@ -16,6 +20,13 @@ using Eigen::Isometry3d;
 using Eigen::Translation3d;
 using Eigen::Vector3d;
 
+using geometry::FrameId;
+using geometry::FrameIdVector;
+using geometry::FramePoseVector;
+using geometry::GeometryFrame;
+using geometry::GeometryInstance;
+using geometry::GeometrySystem;
+using geometry::Sphere;
 using multibody::PositionKinematicsCache;
 using multibody::RevoluteJoint;
 using multibody::RigidBody;
@@ -23,6 +34,7 @@ using multibody::SpatialInertia;
 using multibody::UniformGravityFieldElement;
 using multibody::UnitInertia;
 using multibody::VelocityKinematicsCache;
+using systems::Context;
 
 template<typename T>
 NLinkPendulumPlant<T>::NLinkPendulumPlant(
@@ -30,7 +42,7 @@ NLinkPendulumPlant<T>::NLinkPendulumPlant(
     geometry::GeometrySystem<T>* geometry_system) :
     mass_(mass), length_(length), radius_(radius), num_links_(num_links) {
   // Build the MultibodyTree model of this plant.
-  BuildMultibodyTreeModel();
+  BuildMultibodyTreeModel(geometry_system);
   DRAKE_DEMAND(model_.get_num_positions() == num_links);
   DRAKE_DEMAND(model_.get_num_velocities() == num_links);
   DRAKE_DEMAND(model_.get_num_states() == 2 * num_links);
@@ -45,11 +57,12 @@ NLinkPendulumPlant<T>::NLinkPendulumPlant(
   if (geometry_system != nullptr) {
     // Build the GeometrySystem model of this plant.
     source_id_ = geometry_system->RegisterSource("n_link_pendulum");
-#if 0
     geometry_id_port_ =
-        this->DeclareAbstractOutputPort(&NLinkPendulumPlant::AllocateFrameIdOutput,
-                                        &NLinkPendulumPlant::CalcFrameIdOutput)
-            .get_index();
+        this->DeclareAbstractOutputPort(
+                &NLinkPendulumPlant::AllocateFrameIdOutput,
+                &NLinkPendulumPlant::CalcFrameIdOutput).get_index();
+
+#if 0
     geometry_pose_port_ =
         this->DeclareAbstractOutputPort(&NLinkPendulumPlant::AllocateFramePoseOutput,
                                         &NLinkPendulumPlant::CalcFramePoseOutput)
@@ -59,6 +72,23 @@ NLinkPendulumPlant<T>::NLinkPendulumPlant(
 #endif
   }
 }
+
+template <typename T>
+FrameIdVector NLinkPendulumPlant<T>::AllocateFrameIdOutput(
+    const Context<T>&) const {
+  DRAKE_DEMAND(source_id_.is_valid());
+  FrameIdVector ids(source_id_);
+  ids.AddFrameIds(body_ids_);
+  return ids;
+}
+
+template <typename T>
+void NLinkPendulumPlant<T>::CalcFrameIdOutput(
+    const Context<T>&, FrameIdVector*) const {
+  // NOTE: This only needs to do work if the topology changes. This system makes
+  // no topology changes.
+}
+
 
 template<typename T>
 template<typename U>
@@ -74,7 +104,8 @@ NLinkPendulumPlant<T>::NLinkPendulumPlant(
 }
 
 template<typename T>
-void NLinkPendulumPlant<T>::BuildMultibodyTreeModel() {
+void NLinkPendulumPlant<T>::BuildMultibodyTreeModel(
+    geometry::GeometrySystem<T>* geometry_system) {
 
   // Evenly distribute mass across the n-links.
   double link_mass = get_mass() / get_num_links();
@@ -85,6 +116,8 @@ void NLinkPendulumPlant<T>::BuildMultibodyTreeModel() {
       UnitInertia<double>::SolidCylinder(
           get_radius(), link_length, Vector3<double>::UnitY());
   SpatialInertia<double> M_Bcm(link_mass, Vector3<double>::Zero(), G_Bcm);
+
+  body_ids_.reserve(get_num_links());
 
   // A pointer to the last added link.
   const RigidBody<T>* previous_link = &model_.get_world_body();
@@ -107,6 +140,21 @@ void NLinkPendulumPlant<T>::BuildMultibodyTreeModel() {
         *previous_link, X_PF, link, X_BM, Vector3d::UnitZ());
     joints_.push_back(&joint);
 
+    // Define the geometry for each link
+    if (geometry_system != nullptr) {
+      // Earth - Earth's frame is at the center of the sun.
+      FrameId link_frame_id = geometry_system->RegisterFrame(
+          source_id_, GeometryFrame("Earth", Isometry3<double>::Identity()));
+      body_ids_.push_back(link_frame_id);
+
+      // The geometry is right at the frame's origin.
+      geometry_system->RegisterGeometry(
+          source_id_, link_frame_id,
+          std::make_unique<GeometryInstance>(
+              Isometry3<double>::Identity(),
+              std::make_unique<Sphere>(get_radius())));
+    }
+
     previous_link = &link;
   }
   DRAKE_ASSERT(model_.get_num_bodies() == get_num_links());
@@ -126,8 +174,8 @@ NLinkPendulumPlant<T>::DoMakeContext() const {
 
 template<typename T>
 void NLinkPendulumPlant<T>::DoCalcTimeDerivatives(
-    const systems::Context<T> &context,
-    systems::ContinuousState<T> *derivatives) const {
+    const systems::Context<T>& context,
+    systems::ContinuousState<T>* derivatives) const {
   const auto x =
       dynamic_cast<const systems::BasicVector<T>&>(
           context.get_continuous_state_vector()).get_value();
@@ -174,7 +222,7 @@ T NLinkPendulumPlant<T>::DoCalcPotentialEnergy(
 }
 
 template class NLinkPendulumPlant<double>;
-//template class NLinkPendulumPlant<AutoDiffXd>;
+template class NLinkPendulumPlant<AutoDiffXd>;
 
 }  // namespace n_link_pendulum
 }  // namespace examples

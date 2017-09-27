@@ -88,11 +88,19 @@ class NLinkPendulumPlant : public systems::LeafSystem<T> {
   std::unique_ptr<systems::LeafContext<T>> DoMakeContext() const override;
 
   void DoCalcTimeDerivatives(
-      const systems::Context<T> &context,
-      systems::ContinuousState<T> *derivatives) const override;
+      const systems::Context<T>& context,
+      systems::ContinuousState<T>* derivatives) const override;
 
   // Helper method to build the MultibodyTree model of the system.
-  void BuildMultibodyTreeModel();
+  void BuildMultibodyTreeModel(geometry::GeometrySystem<T>* geometry_system);
+
+  // Allocate the id output.
+  geometry::FrameIdVector AllocateFrameIdOutput(
+      const systems::Context<T>& context) const;
+  // Calculate the id output.
+  void CalcFrameIdOutput(
+      const systems::Context<T>& context,
+      geometry::FrameIdVector* id_set) const;
 
   double mass_;
   double length_;
