@@ -6,7 +6,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/automotive/maliput/api/test/maliput_types_compare.h"
+#include "drake/automotive/maliput/api/test_utilities/maliput_types_compare.h"
 #include "drake/automotive/maliput/multilane/arc_road_curve.h"
 #include "drake/automotive/maliput/multilane/junction.h"
 #include "drake/automotive/maliput/multilane/line_road_curve.h"

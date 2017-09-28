@@ -1,4 +1,4 @@
-#include "drake/automotive/maliput/rndf/test/ignition_types_compare.h"
+#include "drake/automotive/maliput/rndf/test_utilities/ignition_types_compare.h"
 
 #include <cmath>
 #include <string>
