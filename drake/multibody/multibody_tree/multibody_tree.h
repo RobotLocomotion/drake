@@ -375,6 +375,7 @@ class MultibodyTree {
         std::make_unique<MobilizerType<T>>(std::forward<Args>(args)...));
   }
 
+  /// Creates and adds to `this` %MultibodyTree (which retains ownership) a new
   /// `ForceElement` member with the specific type `ForceElementType`. The
   /// arguments to this method `args` are forwarded to `ForceElementType`'s
   /// constructor.
@@ -996,16 +997,6 @@ class MultibodyTree {
   ///   proper size.
   void CalcBiasTerm(
       const systems::Context<T>& context, EigenPtr<VectorX<T>> Cv) const;
-
-  void MapQDotToVelocity(
-      const systems::Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& qdot,
-      EigenPtr<VectorX<T>> v) const;
-
-  void MapVelocityToQDot(
-      const systems::Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& v,
-      EigenPtr<VectorX<T>> qdot) const;
 
   /// @name Methods to retrieve multibody element variants
   ///

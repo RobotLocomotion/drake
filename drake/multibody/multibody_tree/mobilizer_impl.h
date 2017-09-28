@@ -60,7 +60,6 @@ class MobilizerImpl : public Mobilizer<T> {
     auto mbt_context = dynamic_cast<MultibodyTreeContext<T>*>(context);
     DRAKE_DEMAND(mbt_context != nullptr);
     get_mutable_positions(mbt_context).setZero();
-    get_mutable_velocities(mbt_context).setZero();
   }
 
   /// For MultibodyTree internal use only.

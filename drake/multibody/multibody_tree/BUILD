@@ -103,7 +103,6 @@ drake_cc_library(
         ":multibody_tree_indexes",
         ":spatial_inertia",
         "//drake/common:autodiff",
-        "//drake/math:geometric_transform",
     ],
 )
 
@@ -140,31 +139,6 @@ drake_cc_library(
 
 # === test/ ===
 
-drake_cc_library(
-    name = "free_body_plant",
-    testonly = 1,
-    srcs = ["test/free_body_plant.cc"],
-    hdrs = ["test/free_body_plant.h"],
-    deps = [
-        "//drake/multibody/multibody_tree",
-        "//drake/systems/framework",
-    ],
-)
-
-drake_cc_googletest(
-    name = "ball_joint_test",
-    size = "small",
-    srcs = [
-        "test/ball_joint_test.cc",
-    ],
-    deps = [
-        ":free_body_plant",
-        "//drake/common:eigen_matrix_compare",
-        "//drake/multibody/benchmarks/cylinder_torque_free_analytical_solution:torque_free_cylinder_exact_solution",
-        "//drake/systems/analysis:simulator",
-    ],
-)
-
 drake_cc_googletest(
     name = "double_pendulum_test",
     # Presently times out in valgrind + debug with default size, "small".
@@ -172,16 +146,6 @@ drake_cc_googletest(
     deps = [
         ":multibody_tree",
         "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/multibody/benchmarks/acrobot",
-    ],
-)
-
-drake_cc_googletest(
-    name = "spatial_double_pendulum_test",
-    size = "medium",
-    deps = [
-        ":multibody_tree",
-        "//drake/common:eigen_matrix_compare",
         "//drake/multibody/benchmarks/acrobot",
     ],
 )
