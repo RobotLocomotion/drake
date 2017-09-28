@@ -4,7 +4,3 @@ target_include_directories(spruce
 
 drake_install_headers(spruce.hh)
 drake_install_libraries(spruce)
-
-drake_install_pkg_config_file(spruce
-  TARGET spruce
-  LIBS -lspruce)

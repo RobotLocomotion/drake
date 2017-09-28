@@ -1,3 +1,0 @@
-
-drake_add_cc_test(kalman_filter_test)
-target_link_libraries(kalman_filter_test drakeEstimators)

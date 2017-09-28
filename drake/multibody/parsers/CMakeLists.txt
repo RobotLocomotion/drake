@@ -1,4 +1,4 @@
-add_library_with_exports(LIB_NAME drakeMultibodyParsers SOURCE_FILES
+add_library(drakeMultibodyParsers
     model_instance_id_table.cc
     package_map.cc
     parser_common.cc
@@ -19,14 +19,6 @@ drake_install_headers(
     sdf_parser.h
     urdf_parser.h
     xml_util.h)
-drake_install_pkg_config_file(drake-multibody-parsers
-    TARGET drakeMultibodyParsers
-    LIBS -ldrakeMultibodyParsers
-    REQUIRES
-        drake-rbm
-        eigen3
-        spruce
-        tinyxml2)
 
 if(BUILD_TESTING)
   add_subdirectory(test)
