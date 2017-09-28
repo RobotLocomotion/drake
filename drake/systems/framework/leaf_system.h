@@ -385,27 +385,26 @@ class LeafSystem : public System<T> {
   /// records. For instance, a leaf system with 2 inputs and 1 output is:
   ///
   /// @verbatim
-  /// 123456 [shape= record, label="name | {<u0> 0 |<y0> 0} | {<u1> 1 | }"];
+  /// 123456 [shape=record,
+  ///   label="name | type | {<u0> 0 |<y0> 0} | {<u1> 1 | }"];
   /// @endverbatim
   ///
   /// which looks like:
   ///
   /// @verbatim
-  /// +------------+----+
-  /// | name  | u0 | u1 |
-  /// |       | y0 |    |
-  /// +-------+----+----+
+  /// +------+------+----+----+
+  /// | name | type | u0 | u1 |
+  /// |      |      | y0 |    |
+  /// +------+------+----+----+
   /// @endverbatim
   void GetGraphvizFragment(std::stringstream* dot) const override {
     // Use the this pointer as a unique ID for the node in the dotfile.
     const int64_t id = this->GetGraphvizId();
-    std::string name = this->get_name();
-    if (name.empty()) {
-      name = this->GetMemoryObjectName();
-    }
 
     // Open the attributes and label.
-    *dot << id << " [shape=record, label=\"" << name << "|{";
+    *dot << id << " [shape=record, label=\""
+         << this->get_name() << "|"
+         << this->GetMemoryObjectName() << "|{";
 
     // Append input ports to the label.
     // TODO(david-german-tri): Provide a way to customize port names.
