@@ -95,10 +95,6 @@ class AcrobotPlant : public systems::LeafSystem<T> {
   double b2() const { return b2_; }
   double g() const { return g_; }
 
-  const systems::OutputPort<T>& get_energy_port() const {
-    return this->get_output_port(energy_port_index_);
-  }
-
  protected:
   T DoCalcKineticEnergy(const systems::Context<T>& context) const override;
   T DoCalcPotentialEnergy(const systems::Context<T>& context) const override;
@@ -118,8 +114,6 @@ class AcrobotPlant : public systems::LeafSystem<T> {
   const double I1_ = Ic1_ + m1_ * lc1_ * lc1_;
   const double I2_ = Ic2_ + m2_ * lc2_ * lc2_;
   const double m2l1lc2_ = m2_ * l1_ * lc2_;
-
-  systems::OutputPortIndex energy_port_index_;
 };
 
 /// Constructs the Acrobot with (only) encoder outputs.

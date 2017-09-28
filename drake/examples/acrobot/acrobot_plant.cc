@@ -40,17 +40,6 @@ AcrobotPlant<T>::AcrobotPlant(double m1, double m2, double l1, double l2,
       g_(g) {
   this->DeclareInputPort(systems::kVectorValued, 1);
   this->DeclareVectorOutputPort(&AcrobotPlant::OutputState);
-
-  // Energy output port.
-  energy_port_index_ =
-      this->DeclareVectorOutputPort(
-          systems::BasicVector<T>(2),
-          [this](const systems::Context<T>& context,
-             systems::BasicVector<T>* output) {
-            output->SetAtIndex(0, this->DoCalcKineticEnergy(context));
-            output->SetAtIndex(1, this->DoCalcPotentialEnergy(context));
-          }).get_index();
-
   static_assert(AcrobotStateVectorIndices::kNumCoordinates == kNumDOF * 2, "");
   this->DeclareContinuousState(
       AcrobotStateVector<T>(),

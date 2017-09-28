@@ -1309,9 +1309,6 @@ class IntegratorBase {
   bool Step(const T& dt) {
     if (!DoStep(dt))
       return false;
-
-    // This effectively modifies the context through positions.
-    system_.ProjectQ(get_mutable_context());
     return true;
   }
 

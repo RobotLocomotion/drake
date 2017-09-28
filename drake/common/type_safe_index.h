@@ -446,14 +446,3 @@ class TypeSafeIndex {
 };
 
 }  // namespace drake
-
-namespace std {
-/// Enables use of the TypeSafeIndex to serve as a key in STL containers.
-template <typename Tag>
-struct hash<drake::TypeSafeIndex<Tag>> {
-  size_t operator()(const drake::TypeSafeIndex<Tag>& index) const {
-    return hash<int>()(index);
-  }
-};
-
-}  // namespace std
