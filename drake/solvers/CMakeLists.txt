@@ -39,6 +39,7 @@ list(APPEND optimization_files
   snopt_solver_common.cc
   solver_id.cc
   solver_type_converter.cc
+  sos_util.cc
   symbolic_extraction.cc
   system_identification.cc
   )
@@ -72,6 +73,7 @@ drake_install_headers(
   mathematical_program_solver_interface.h
   decision_variable.h
   indeterminate.h
+  sos_util.h
   symbolic_extraction.h
   system_identification.h
   )

@@ -138,6 +138,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "sos_util",
+    srcs = ["sos_util.cc"],
+    hdrs = ["sos_util.h"],
+    deps = [
+        "//drake/common",
+        "//drake/common:symbolic",
+    ],
+)
+
+drake_cc_library(
     name = "indeterminate",
     srcs = ["indeterminate.cc"],
     hdrs = ["indeterminate.h"],
@@ -190,6 +200,7 @@ drake_cc_library(
         ":nlopt_solver",
         ":snopt_solver",
         ":solver_id",
+        ":sos_util",
         ":symbolic_extraction",
         "//drake/common:autodiff",
         "//drake/common:essential",
@@ -663,6 +674,13 @@ drake_cc_googletest(
     tags = ["snopt"],
     deps = [
         ":mathematical_program",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sos_util_test",
+    deps = [
+        ":sos_util",
     ],
 )
 
