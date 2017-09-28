@@ -16,7 +16,6 @@
 
 namespace drake {
 namespace multibody {
-namespace multibody_plant {
 
 using Eigen::Isometry3d;
 using Eigen::Translation3d;
@@ -52,15 +51,17 @@ MultibodyPlant<T>::MultibodyPlant(
   model_ = std::move(model);
   DRAKE_DEMAND(get_num_positions() != 0);
   DRAKE_DEMAND(get_num_velocities() != 0);
-  set_name(name);
+  this->set_name(name);
 
   DeclareState();
   DeclareOutputPortsForGeometrySystem(geometry_system);
+  // TODO: add output ports for kinetic, potential and total energy.
+  // See CosseratRodPlant for an example passing down lambdas.
 }
 
 template<typename T>
 MultibodyPlant<T>::MultibodyPlant(const std::string& name) {
-  set_name(name);
+  this->set_name(name);
   model_ = std::make_unique<MultibodyTree<T>>();
 }
 
@@ -68,6 +69,7 @@ template<typename T>
 void MultibodyPlant<T>::Init(geometry::GeometrySystem<T>* geometry_system) {
   BuildMultibodyModel(model_.get());
   RegisterGeometrySystemFrames(geometry_system);
+  RegisterGeometry(geometry_system);
   // Ensures sub-classes didn't forget to Finalize() the model.
   if (!model_->topology_is_valid()) model_->Finalize();
   // Demand a non-empty model.
@@ -81,7 +83,7 @@ template<typename T>
 void MultibodyPlant<T>::RegisterGeometrySystemFrames(
     geometry::GeometrySystem<T>* geometry_system) {
   if (geometry_system != nullptr) {
-    source_id_ = geometry_system->RegisterSource(get_name());
+    source_id_ = geometry_system->RegisterSource(this->get_name());
 
     // TODO(amcastro-tri): get names from bodies. Make sure they are unique!
     // Since these name frames that must be unique at least for visualization.
@@ -108,8 +110,8 @@ template <typename T>
 void MultibodyPlant<T>::RegisterGeometry(
     const Body<T>& body, const Isometry3<double>& X_BG,
     std::unique_ptr<geometry::Shape> shape,
-    geometry::GeometrySystem<T>* geometry_system) {
-  body.HasThisParentTreeOrThrow(model_->get());
+    geometry::GeometrySystem<T>* geometry_system) const {
+  body.HasThisParentTreeOrThrow(model_.get());
   // The geometry is right at the frame's origin.
   FrameId frame_id = body_index_to_frame_id_map_[body.get_index()];
   geometry_system->RegisterGeometry(
@@ -198,7 +200,8 @@ FramePoseVector<T> MultibodyPlant<T>::AllocateFramePoseOutput(
 template <typename T>
 void MultibodyPlant<T>::CalcFramePoseOutput(
     const Context<T>& context, FramePoseVector<T>* poses) const {
-  DRAKE_ASSERT(poses->vector().size() == get_num_bodies() - 1);
+  DRAKE_ASSERT(
+      static_cast<int>(poses->vector().size()) == get_num_bodies() - 1);
 
   // TODO(amcastro-tri): move this to the cache.
   PositionKinematicsCache<T> pc(model_->get_topology());
@@ -232,8 +235,8 @@ template<typename T>
 template<typename U>
 MultibodyPlant<T>::MultibodyPlant(
     const MultibodyPlant<U>& other) :
-    MultibodyPlant<T>(get_name()) {
-  model_ = other.model_->CloneToScalar<T>();
+    MultibodyPlant<T>(this->get_name()) {
+  model_ = other.model_->template CloneToScalar<T>();
   source_id_ = other.source_id_;
   body_index_to_frame_id_map_ = other.body_index_to_frame_id_map_;
   body_index_to_frame_index_map_ = other.body_index_to_frame_index_map_;
@@ -315,8 +318,7 @@ T MultibodyPlant<T>::DoCalcPotentialEnergy(
 }
 
 template class MultibodyPlant<double>;
-template class MultibodyPlant<AutoDiffXd>;
+//template class MultibodyPlant<AutoDiffXd>;
 
-}  // namespace multibody_plant
 }  // namespace multibody
 }  // namespace drake

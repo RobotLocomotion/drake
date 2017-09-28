@@ -11,7 +11,6 @@
 
 namespace drake {
 namespace multibody {
-namespace multibody_plant {
 
 template<typename T>
 class MultibodyPlant : public systems::LeafSystem<T> {
@@ -46,10 +45,12 @@ class MultibodyPlant : public systems::LeafSystem<T> {
 
   const systems::OutputPort<T>& get_geometry_pose_output_port() const;
 
+  const MultibodyTree<T>& get_model() const { return *model_; }
+
   void RegisterGeometry(
       const Body<T>& body, const Isometry3<double>& X_BG,
       std::unique_ptr<geometry::Shape> shape,
-      geometry::GeometrySystem<T>* geometry_system);
+      geometry::GeometrySystem<T>* geometry_system) const;
 
  protected:
   // Constructor for subclasses wanting to programatically create their model.
@@ -70,7 +71,17 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// Sub-classes MUST call this method from their constructor.
   void Init(geometry::GeometrySystem<T>* geometry_system);
 
+  /// Sub-classes that want to register geometry with GeometrySystem MUST
+  /// override this method.
+  /// No-op by default.
+  virtual void DoRegisterGeometry(
+      geometry::GeometrySystem<T>* geometry_system) const {}
+
  private:
+  void RegisterGeometry(geometry::GeometrySystem<T>* geometry_system) {
+    if (geometry_system != nullptr) DoRegisterGeometry(geometry_system);
+  }
+
   // Method the state of this plant consistent with the Multibody model.
   // TODO(amcastro-tri): possibly make pure virtual or provide some mechanism
   // for supporting continuous and time-stepping plants.
@@ -135,6 +146,5 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   int geometry_pose_port_{-1};
 };
 
-}  // namespace multibody_plant
 }  // namespace multibody
 }  // namespace drake

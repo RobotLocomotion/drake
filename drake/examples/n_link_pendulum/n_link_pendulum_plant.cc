@@ -28,6 +28,10 @@ using geometry::GeometryFrame;
 using geometry::GeometryInstance;
 using geometry::GeometrySystem;
 using geometry::Sphere;
+using multibody::Body;
+using multibody::BodyIndex;
+using multibody::MultibodyTree;
+using multibody::MultibodyPlant;
 using multibody::PositionKinematicsCache;
 using multibody::RevoluteJoint;
 using multibody::RigidBody;
@@ -46,89 +50,14 @@ template<typename T>
 NLinkPendulumPlant<T>::NLinkPendulumPlant(
     double mass, double length, double radius, int num_links,
     geometry::GeometrySystem<T>* geometry_system) :
+    MultibodyPlant<T>("NLinkPendulumPlant"),
     mass_(mass), length_(length), radius_(radius), num_links_(num_links) {
-  // Build the MultibodyTree model of this plant.
-  BuildMultibodyTreeModel(geometry_system);
-  DRAKE_DEMAND(model_.get_num_positions() == num_links);
-  DRAKE_DEMAND(model_.get_num_velocities() == num_links);
-  DRAKE_DEMAND(model_.get_num_states() == 2 * num_links);
-
-  this->DeclareContinuousState(
-      model_.get_num_positions(),
-      model_.get_num_velocities(), 0 /* num_z */);
-
-  // The geometry system pointer can be nullptr to signify:
-  //   - we are not interested in visualization and/or geometric queries.
-  //   - This is being invoked from the scalar-conversion constructor.
-  if (geometry_system != nullptr) {
-    // Build the GeometrySystem model of this plant.
-    geometry_id_port_ =
-        this->DeclareAbstractOutputPort(
-                &NLinkPendulumPlant::AllocateFrameIdOutput,
-                &NLinkPendulumPlant::CalcFrameIdOutput).get_index();
-    geometry_pose_port_ =
-        this->DeclareAbstractOutputPort(
-                &NLinkPendulumPlant::AllocateFramePoseOutput,
-                &NLinkPendulumPlant::CalcFramePoseOutput).get_index();
-  }
+    this->Init(geometry_system);
 }
 
-template <typename T>
-FrameIdVector NLinkPendulumPlant<T>::AllocateFrameIdOutput(
-    const Context<T>&) const {
-  DRAKE_DEMAND(source_id_.is_valid());
-  FrameIdVector ids(source_id_);
-  ids.AddFrameIds(body_ids_);
-  return ids;
-}
-
-template <typename T>
-void NLinkPendulumPlant<T>::CalcFrameIdOutput(
-    const Context<T>&, FrameIdVector*) const {
-  // NOTE: This only needs to do work if the topology changes. This system makes
-  // no topology changes.
-}
-
-template <typename T>
-FramePoseVector<T> NLinkPendulumPlant<T>::AllocateFramePoseOutput(
-    const Context<T>&) const {
-  DRAKE_DEMAND(source_id_.is_valid());
-  FramePoseVector<T> poses(source_id_);
-  poses.mutable_vector().resize(get_num_links());
-  return poses;
-}
-
-template <typename T>
-void NLinkPendulumPlant<T>::CalcFramePoseOutput(
-    const Context<T>& context, FramePoseVector<T>* poses) const {
-  // TODO: add MBT suggar for this based off MultibodyTreeContext.
-  DRAKE_ASSERT(poses->vector().size() == get_num_links());
-
-  PositionKinematicsCache<T> pc(model_.get_topology());
-  model_.CalcPositionKinematicsCache(context, &pc);
-
-  std::vector<Isometry3<T>>& pose_data = poses->mutable_vector();
-  for (int link_index{0}; link_index < get_num_links(); ++link_index) {
-    // TODO: clean this up. Most likely use Paul's new API's and save a vector
-    // of bodies. You'd need to save the link_index (frameid per, Body).
-    // Essentially the mapping FrameId to BodyIndex (or viceversa).
-    pose_data[link_index] = pc.get_X_WB(
-        multibody::BodyNodeIndex(link_index + 1));
-  }
-}
-
-template <typename T>
-const OutputPort<T>& NLinkPendulumPlant<T>::get_geometry_id_output_port()
-const {
-  return systems::System<T>::get_output_port(geometry_id_port_);
-}
-
-template <typename T>
-const OutputPort<T>& NLinkPendulumPlant<T>::get_geometry_pose_output_port()
-const {
-  return systems::System<T>::get_output_port(geometry_pose_port_);
-}
-
+// TODO: read scalar conversion's doc on how to do this for non-final systems
+// like MultibodyPlant.
+#if 0
 template<typename T>
 template<typename U>
 NLinkPendulumPlant<T>::NLinkPendulumPlant(
@@ -138,13 +67,12 @@ NLinkPendulumPlant<T>::NLinkPendulumPlant(
         other.get_length(),
         other.get_radius(),
         other.get_num_links(), nullptr) {
-  // Make a copy of GeometrySystem-specific info.
-  source_id_ = other.source_id_;
 }
+#endif
 
 template<typename T>
-void NLinkPendulumPlant<T>::BuildMultibodyTreeModel(
-    geometry::GeometrySystem<T>* geometry_system) {
+void NLinkPendulumPlant<T>::BuildMultibodyModel(
+    multibody::MultibodyTree<T>* model) {
 
   // Evenly distribute mass across the n-links.
   double link_mass = get_mass() / get_num_links();
@@ -156,19 +84,14 @@ void NLinkPendulumPlant<T>::BuildMultibodyTreeModel(
           get_radius(), link_length, Vector3<double>::UnitY());
   SpatialInertia<double> M_Bcm(link_mass, Vector3<double>::Zero(), G_Bcm);
 
-  if (geometry_system != nullptr) {
-    body_ids_.reserve(get_num_links());
-    source_id_ = geometry_system->RegisterSource("n_link_pendulum");
-  }
-
   // A pointer to the last added link.
-  const RigidBody<T>* previous_link = &model_.get_world_body();
+  const RigidBody<T>* previous_link = &model->get_world_body();
 
   std::stringstream stream;
 
   // Add rigid bodies for each link.
   for (int link_index = 0; link_index < get_num_links(); ++link_index) {
-    const RigidBody<T>& link = model_.template AddBody<RigidBody>(M_Bcm);
+    const RigidBody<T>& link = model->template AddBody<RigidBody>(M_Bcm);
     // Create a joint name.
     stream.clear();
     stream << "Joint_" << link_index;
@@ -178,86 +101,34 @@ void NLinkPendulumPlant<T>::BuildMultibodyTreeModel(
     Isometry3d X_BM(Translation3d(0.0, link_length / 2.0, 0.0));
 
     const RevoluteJoint<T>& joint =
-        model_.template AddJoint<RevoluteJoint>(stream.str(),
+        model->template AddJoint<RevoluteJoint>(stream.str(),
         *previous_link, X_PF, link, X_BM, Vector3d::UnitZ());
     joints_.push_back(&joint);
 
-    // Define the geometry for each link
-    if (geometry_system != nullptr) {
-      stream.clear();
-      stream << "Frame_" << link_index;
-
-      // Earth - Earth's frame is at the center of the sun.
-      FrameId link_frame_id = geometry_system->RegisterFrame(
-          source_id_, GeometryFrame(
-              stream.str(), Isometry3<double>::Identity()));
-      body_ids_.push_back(link_frame_id);
-
-      // The geometry is right at the frame's origin.
-      geometry_system->RegisterGeometry(
-          source_id_, link_frame_id,
-          std::make_unique<GeometryInstance>(
-              Isometry3<double>::Identity(),
-              std::make_unique<Sphere>(get_radius())));
-    }
-
     previous_link = &link;
   }
-  DRAKE_ASSERT(model_.get_num_bodies() == get_num_links());
-  DRAKE_ASSERT(model_.get_num_joints() == get_num_links());
+  DRAKE_ASSERT(model->get_num_bodies() == get_num_links() + 1);
+  DRAKE_ASSERT(model->get_num_joints() == get_num_links());
 
-  model_.template AddForceElement<UniformGravityFieldElement>(
+  model->template AddForceElement<UniformGravityFieldElement>(
       Vector3d(0.0, -9.81, 0.0));
 
-  model_.Finalize();
+  model->Finalize();
 }
 
 template<typename T>
-std::unique_ptr<systems::LeafContext<T>>
-NLinkPendulumPlant<T>::DoMakeContext() const {
-  return model_.CreateDefaultContext();
-}
-
-template<typename T>
-void NLinkPendulumPlant<T>::DoCalcTimeDerivatives(
-    const systems::Context<T>& context,
-    systems::ContinuousState<T>* derivatives) const {
-  const auto x =
-      dynamic_cast<const systems::BasicVector<T>&>(
-          context.get_continuous_state_vector()).get_value();
-  const int nv = model_.get_num_velocities();
-
-  PositionKinematicsCache<T> pc(model_.get_topology());
-  VelocityKinematicsCache<T> vc(model_.get_topology());
-
-  MatrixX<T> M(nv, nv);
-  model_.CalcMassMatrixViaInverseDynamics(context, &M);
-
-  // Check if M is symmetric.
-  const T err_sym = (M - M.transpose()).norm();
-  DRAKE_DEMAND(err_sym < 10 * std::numeric_limits<double>::epsilon());
-
-  model_.CalcPositionKinematicsCache(context, &pc);
-  model_.CalcVelocityKinematicsCache(context, pc, &vc);
-
-  // Compute applied forces.
-  std::vector<SpatialForce<T>> Fapplied_Bo_W_array(model_.get_num_bodies());
-  VectorX<T> tau_applied(model_.get_num_velocities());
-  model_.CalcForceElementsContribution(
-      context, pc, vc, &Fapplied_Bo_W_array, &tau_applied);
-  std::vector<SpatialAcceleration<T>> A_WB_array(model_.get_num_bodies());
-
-  VectorX<T> vdot = VectorX<T>::Zero(nv);
-  VectorX<T> C(nv);
-  model_.CalcInverseDynamics(
-      context, pc, vc, vdot, Fapplied_Bo_W_array, tau_applied,
-      &A_WB_array, &Fapplied_Bo_W_array, &C);
-
-  auto v = x.bottomRows(nv);
-
-  VectorX<T> xdot(model_.get_num_states());
-  xdot << v, M.llt().solve(-C);
-  derivatives->SetFromVector(xdot);
+void NLinkPendulumPlant<T>::DoRegisterGeometry(
+    geometry::GeometrySystem<T>* geometry_system) const {
+  // skip the world.
+  for (BodyIndex body_index(1);
+       body_index < this->get_num_bodies(); ++body_index) {
+    const Body<T>& body = this->get_model().get_body(body_index);
+    this->RegisterGeometry(
+        body,
+        /* pose of the geometry in the body frame. */
+        Isometry3<double>::Identity(),
+        std::make_unique<Sphere>(get_radius()),geometry_system);
+  }
 }
 
 template<typename T>
@@ -269,31 +140,8 @@ void NLinkPendulumPlant<T>::SetStraightAtAnAngle(
   //}
 }
 
-template<typename T>
-T NLinkPendulumPlant<T>::DoCalcKineticEnergy(
-    const systems::Context<T>& context) const {
-  // TODO: make this an MBT method.
-  // Use it also in DoCalcTimeDerivatives()
-  const auto& mbt_context =
-      dynamic_cast<const multibody::MultibodyTreeContext<T>&>(context);
-  Eigen::VectorBlock<const VectorX<T>> v = mbt_context.get_velocities();
-
-  const int nv = model_.get_num_velocities();
-
-  MatrixX<T> M(nv, nv);
-  model_.CalcMassMatrixViaInverseDynamics(context, &M);
-
-  return 0.5 * v.transpose() * M * v;
-}
-
-template<typename T>
-T NLinkPendulumPlant<T>::DoCalcPotentialEnergy(
-    const systems::Context<T>& context) const {
-  return model_.CalcPotentialEnergy(context);
-}
-
 template class NLinkPendulumPlant<double>;
-template class NLinkPendulumPlant<AutoDiffXd>;
+//template class NLinkPendulumPlant<AutoDiffXd>;
 
 }  // namespace n_link_pendulum
 }  // namespace examples
