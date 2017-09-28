@@ -7,26 +7,27 @@
 /// KUKA iiwa driver and the actual robot hardware.
 ///
 
-
 #include <memory>
 
 #include <gflags/gflags.h>
 
+#include "drake/common/find_resource.h"
+#include "drake/examples/kuka_iiwa_arm/dev/box_rotation/iiwa_box_diagram_factory.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
-#include "drake/examples/kuka_iiwa_arm/dev/box_rotation/iiwa_box_diagram_factory.h"
-#include "drake/manipulation/util/world_sim_tree_builder.h"
 #include "drake/examples/kuka_iiwa_arm/oracular_state_estimator.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
 #include "drake/lcmtypes/drake/lcmt_contact_results_for_viz.hpp"
-#include "drake/multibody/rigid_body_plant/contact_results_to_lcm.h"
+#include "drake/manipulation/util/world_sim_tree_builder.h"
 #include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/rigid_body_plant/contact_results_to_lcm.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
-#include "drake/systems/analysis/simulator.h"
+#include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
+#include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -35,8 +36,6 @@
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/matrix_gain.h"
 #include "drake/util/drakeGeometryUtil.h"
-#include "drake/systems/analysis/implicit_euler_integrator.h"
-#include "drake/common/find_resource.h"
 
 DEFINE_string(urdf, "", "Name of urdf file to load");
 DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
@@ -84,24 +83,27 @@ std::unique_ptr<RigidBodyPlant<T>> BuildCombinedPlant(
   tree_builder->StoreModel("table",
                            "drake/examples/kuka_iiwa_arm/models/table/"
                            "extra_heavy_duty_table_surface_only_collision.sdf");
-  tree_builder->StoreModel("large_table",
-                           "drake/examples/kuka_iiwa_arm/dev/box_rotation/models/"
-                           "large_extra_heavy_duty_table_surface_only_collision.sdf");
+  tree_builder->StoreModel(
+      "large_table", "drake/examples/kuka_iiwa_arm/dev/box_rotation/models/"
+      "large_extra_heavy_duty_table_surface_only_collision.sdf");
   tree_builder->StoreModel("box",
-                           "drake/examples/kuka_iiwa_arm/dev/box_rotation/models/"
-                           "box.urdf");
+                           "drake/examples/kuka_iiwa_arm/dev/box_rotation/"""
+                           "models/box.urdf");
 
   // Build a world with three fixed tables.  A box is placed one on
   // table, and the iiwa arms are fixed to the other two tables.
-  tree_builder->AddFixedModelInstance("table", /* right arm */
-                                      Eigen::Vector3d(0.243716, 0.625087, 0) /* xyz */,
-                                      Eigen::Vector3d::Zero() /* rpy */);
-  tree_builder->AddFixedModelInstance("table", /* left arm */
-                                      Eigen::Vector3d(0.243716, 0.9 + 0.625087, 0) /* xyz */,
-                                      Eigen::Vector3d::Zero() /* rpy */);
-  tree_builder->AddFixedModelInstance("large_table", /* box */
-                                      Eigen::Vector3d(0.72, 0.9/2,0) /* xyz */,
-                                      Eigen::Vector3d::Zero() /* rpy */);
+  tree_builder->AddFixedModelInstance(
+      "table", /* right arm */
+      Eigen::Vector3d(0.243716, 0.625087, 0) /* xyz */,
+      Eigen::Vector3d::Zero() /* rpy */);
+  tree_builder->AddFixedModelInstance(
+      "table", /* left arm */
+      Eigen::Vector3d(0.243716, 0.9 + 0.625087, 0) /* xyz */,
+      Eigen::Vector3d::Zero() /* rpy */);
+  tree_builder->AddFixedModelInstance(
+      "large_table", /* box */
+      Eigen::Vector3d(0.72, 0.9/2, 0) /* xyz */,
+      Eigen::Vector3d::Zero() /* rpy */);
 
   tree_builder->AddGround();
 
