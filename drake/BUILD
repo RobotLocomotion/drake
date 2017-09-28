@@ -255,7 +255,6 @@ _LIBDRAKE_COMPONENTS = [
     "//drake/systems/robotInterfaces:qp_locomotion_plan",
     "//drake/systems/robotInterfaces:side",
     "//drake/systems/sensors:accelerometer",
-    "//drake/systems/sensors:accelerometer_example_diagram",
     "//drake/systems/sensors:camera_info",
     "//drake/systems/sensors:depth_sensor",
     "//drake/systems/sensors:depth_sensor_to_lcm_point_cloud_message",
