@@ -1,9 +1,5 @@
 #include "drake/examples/kuka_iiwa_arm/dev/box_rotation/iiwa_box_diagram_factory.h"
 
-#include <map>
-#include <memory>
-#include <set>
-#include <string>
 #include <utility>
 
 #include "drake/examples/kuka_iiwa_arm/oracular_state_estimator.h"
@@ -12,12 +8,10 @@
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
-#include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/primitives/constant_vector_source.h"
-#include "drake/systems/primitives/matrix_gain.h"
 #include "drake/util/drakeGeometryUtil.h"
+#include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 
 namespace drake {
 
@@ -35,33 +29,28 @@ namespace box_rotation {
 template<typename T>
 IiwaAndBoxPlantWithStateEstimator<T>::IiwaAndBoxPlantWithStateEstimator(
     std::unique_ptr<RigidBodyPlant<T>> combined_plant,
-    const manipulation::util::ModelInstanceInfo<T> &iiwa_info,
-    const manipulation::util::ModelInstanceInfo<T> &box_info) {
+    const manipulation::util::ModelInstanceInfo<T>& iiwa_info,
+    const manipulation::util::ModelInstanceInfo<T>& box_info) {
   this->set_name("IiwaAndBoxPlantWithStateEstimator");
 
   manipulation::util::SimDiagramBuilder<T> builder;
-  DiagramBuilder<T> *base_builder = builder.get_mutable_builder();
+  DiagramBuilder<T>* base_builder = builder.get_mutable_builder();
 
   plant_ = builder.AddPlant(std::move(combined_plant));
   plant_->set_name("IiwaAndBoxCombinedPlant");
 
-  const auto &iiwa_output_port =
+  const auto& iiwa_output_port =
       plant_->model_instance_state_output_port(iiwa_info.instance_id);
 
   VectorX<double> iiwa_kp, iiwa_kd, iiwa_ki;
 
   SetPositionControlledGains(&iiwa_kp, &iiwa_ki, &iiwa_kd);
-  // Uses integral gains to deal with the added mass from the grasped object.
-  // iiwa_ki << 1, 1, 1, 1, 1, 1, 1;
 
-  // Exposing feedforward acceleration. Should help with more dynamic
-  // motions.
   auto single_arm = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFile(
       iiwa_info.model_path, multibody::joints::kFixed, iiwa_info.world_offset,
       single_arm.get());
 
-  const int kIiwaArmNumJoints = 7;
   DRAKE_DEMAND(single_arm->get_num_positions() % kIiwaArmNumJoints == 0);
   for (int offset = kIiwaArmNumJoints; offset < single_arm->get_num_positions();
        offset += kIiwaArmNumJoints) {

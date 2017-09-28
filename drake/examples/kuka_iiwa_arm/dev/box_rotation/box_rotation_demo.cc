@@ -48,15 +48,6 @@ MatrixX<double> get_posture(const std::string& name) {
 void RunBoxRotationDemo() {
   lcm::LCM lcm;
 
-  typedef std::function<void(
-      const robotlocomotion::robot_plan_t*)> IiwaPublishCallback;
-
-  // creates the publisher
-  IiwaPublishCallback iiwa_callback =
-      ([&](const robotlocomotion::robot_plan_t* plan) {
-        lcm.publish("COMMITTED_ROBOT_PLAN", plan);
-      });
-
   const std::string iiwa_path =
       (!FLAGS_urdf.empty() ? FLAGS_urdf : FindResourceOrThrow(kIiwaUrdf));
 
@@ -94,8 +85,8 @@ void RunBoxRotationDemo() {
   std::vector<int> info(times.size(), 1);
   robotlocomotion::robot_plan_t plan{};
 
-  *(&plan) = EncodeKeyFrames(iiwa, times, info, keyframes);
-  iiwa_callback(&plan);
+  plan = EncodeKeyFrames(iiwa, times, info, keyframes);
+  lcm.publish("COMMITTED_ROBOT_PLAN", &plan);
 }
 
 }  // namespace

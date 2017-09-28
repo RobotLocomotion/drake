@@ -27,9 +27,6 @@ drake_cc_binary(
     deps = [
         "//drake/common:find_resource",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
-        "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
-        "//drake/examples/kuka_iiwa_arm/pick_and_place",
-        "//drake/util:lcm_util",
         "@com_github_gflags_gflags//:gflags",
     ],
 )
@@ -50,11 +47,8 @@ drake_cc_library(
         "//drake/manipulation/util:world_sim_tree_builder",
         "//drake/multibody/rigid_body_plant",
         "//drake/systems/controllers:inverse_dynamics_controller",
-        "//drake/systems/controllers:pid_controller",
         "//drake/systems/framework:diagram",
         "//drake/systems/framework:diagram_builder",
-        "//drake/systems/primitives:constant_vector_source",
-        "//drake/systems/primitives:matrix_gain",
     ],
 )
 
@@ -81,10 +75,7 @@ drake_cc_binary(
         "//drake/multibody/rigid_body_plant",
         "//drake/multibody/rigid_body_plant:contact_results_to_lcm",
         "//drake/systems/analysis",
-        "//drake/systems/controllers:inverse_dynamics_controller",
-        "//drake/systems/controllers:pid_controller",
         "//drake/systems/primitives:constant_vector_source",
-        "//drake/systems/primitives:matrix_gain",
         "//drake/util:lcm_util",
         "@com_github_gflags_gflags//:gflags",
         "@lcmtypes_bot2_core",

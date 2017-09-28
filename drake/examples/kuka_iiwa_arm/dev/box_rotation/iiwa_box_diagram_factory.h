@@ -6,20 +6,16 @@
 #include "drake/manipulation/util/world_sim_tree_builder.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
-#include "drake/systems/controllers/pid_controller.h"
-#include "drake/systems/framework/diagram.h"
-#include "drake/systems/primitives/pass_through.h"
 
 namespace drake {
-using systems::PassThrough;
 namespace examples {
 namespace kuka_iiwa_arm {
 namespace box_rotation {
 
 /// A custom `systems::Diagram` composed of a `systems::RigidBodyPlant`, and a
-/// `systems::InverseDynamicsController`, `systems::PidController`, and two
+/// `systems::InverseDynamicsController`, and two
 /// `OracularStateEstimation` systems. The `systems::RigidBodyPlant` must be
-/// generate from a `RigidBodyTree` containing two Kuka IIWAs and a box
+/// generated from a `RigidBodyTree` containing two Kuka IIWAs and a box
 /// `RigidBody`. The `OracularStateEstimation` systems are coupled with the
 /// output of the `systems::RigidBodyPlant`. The resulting diagram exposes input
 /// ports for the IIWA state and acceleration (for the
@@ -41,58 +37,57 @@ class IiwaAndBoxPlantWithStateEstimator : public systems::Diagram<T> {
   /// respectively.
   IiwaAndBoxPlantWithStateEstimator(
       std::unique_ptr<systems::RigidBodyPlant<T>> combined_plant,
-      const manipulation::util::ModelInstanceInfo<T> &iiwa_info,
-      const manipulation::util::ModelInstanceInfo<T> &box_info);
+      const manipulation::util::ModelInstanceInfo<T>& iiwa_info,
+      const manipulation::util::ModelInstanceInfo<T>& box_info);
 
-  const systems::RigidBodyPlant<T> &get_plant() const { return *plant_; }
+  const systems::RigidBodyPlant<T>& get_plant() const { return *plant_; }
 
-  const RigidBodyTree<T> &get_tree() const {
+  const RigidBodyTree<T>& get_tree() const {
     return plant_->get_rigid_body_tree();
   }
 
-  const systems::InputPortDescriptor<T> &get_input_port_iiwa_state_command()
+  const systems::InputPortDescriptor<T>& get_input_port_iiwa_state_command()
   const {
     return this->get_input_port(input_port_iiwa_state_command_);
   }
 
-  const systems::InputPortDescriptor<T> &
+  const systems::InputPortDescriptor<T>&
   get_input_port_iiwa_acceleration_command() const {
     return this->get_input_port(input_port_iiwa_acceleration_command_);
   }
 
-  const systems::OutputPort<T> &get_output_port_iiwa_state() const {
+  const systems::OutputPort<T>& get_output_port_iiwa_state() const {
     return this->get_output_port(output_port_iiwa_state_);
   }
 
-  const systems::OutputPort<T> &get_output_port_plant_state() const {
+  const systems::OutputPort<T>& get_output_port_plant_state() const {
     return this->get_output_port(output_port_plant_state_);
   }
 
-  const systems::OutputPort<T> &get_output_port_iiwa_robot_state_msg()
+  const systems::OutputPort<T>& get_output_port_iiwa_robot_state_msg()
   const {
     return this->get_output_port(output_port_iiwa_robot_state_t_);
   }
 
-  const systems::OutputPort<T> &get_output_port_box_robot_state_msg()
+  const systems::OutputPort<T>& get_output_port_box_robot_state_msg()
   const {
     return this->get_output_port(output_port_box_robot_state_t_);
   }
 
-  const systems::OutputPort<T> &get_output_port_contact_results()
+  const systems::OutputPort<T>& get_output_port_contact_results()
   const {
     return this->get_output_port(output_port_contact_results_t_);
   }
 
-  void SetPositionControlledGains(Eigen::VectorXd* Kp,
-                                      Eigen::VectorXd* Ki,
-                                      Eigen::VectorXd* Kd);
+  void SetPositionControlledGains(Eigen::VectorXd* Kp, Eigen::VectorXd* Ki,
+                                  Eigen::VectorXd* Kd);
 
  private:
-  OracularStateEstimation<T> *iiwa_state_est_{nullptr};
-  OracularStateEstimation<T> *box_state_est_{nullptr};
+  OracularStateEstimation<T>* iiwa_state_est_{nullptr};
+  OracularStateEstimation<T>* box_state_est_{nullptr};
   std::unique_ptr<RigidBodyTree<T>> object_{nullptr};
-  systems::controllers::InverseDynamicsController<T> *iiwa_controller_{nullptr};
-  systems::RigidBodyPlant<T> *plant_{nullptr};
+  systems::controllers::InverseDynamicsController<T>* iiwa_controller_{nullptr};
+  systems::RigidBodyPlant<T>* plant_{nullptr};
 
   int input_port_iiwa_state_command_{-1};
   int input_port_iiwa_acceleration_command_{-1};

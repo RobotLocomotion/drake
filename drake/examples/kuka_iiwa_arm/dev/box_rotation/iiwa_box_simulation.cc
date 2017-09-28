@@ -34,7 +34,6 @@
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/primitives/constant_vector_source.h"
-#include "drake/systems/primitives/matrix_gain.h"
 #include "drake/util/drakeGeometryUtil.h"
 
 DEFINE_string(urdf, "", "Name of urdf file to load");
@@ -114,7 +113,7 @@ std::unique_ptr<RigidBodyPlant<T>> BuildCombinedPlant(
   // 0.736 + 0.057 / 2.
   const double kTableTopZInWorld = 0.736 + 0.057 / 2;
 
-  // Coordinates for the right robot arm, which is centered at x=0,y=0
+  // Coordinates for the right robot arm, which is centered at x=0, y=0
   // The left arm is 0.9m away from the right arm in the y-axis (specified
   // in the urdf).
   // TODO(rcory): Could I grab the arm distance from the URDF directly?
@@ -154,13 +153,13 @@ int DoMain() {
           std::move(model_ptr), iiwa_instance, box_instance);
   model->set_name("plant_with_state_estimator");
 
-  const RigidBodyTree<double> &tree = model->get_plant().get_rigid_body_tree();
+  const RigidBodyTree<double>& tree = model->get_plant().get_rigid_body_tree();
 
   drake::lcm::DrakeLcm lcm;
 
   if (FLAGS_use_visualizer) {
-    DrakeVisualizer
-        *visualizer = builder.AddSystem<DrakeVisualizer>(tree, &lcm);
+    DrakeVisualizer*
+        visualizer = builder.AddSystem<DrakeVisualizer>(tree, &lcm);
     visualizer->set_name("visualizer");
     builder.Connect(model->get_output_port_plant_state(),
                     visualizer->get_input_port(0));
@@ -228,7 +227,7 @@ int DoMain() {
   box_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
 
 
-// Add contact viz.
+  // Add contact viz.
   if (FLAGS_use_visualizer) {
     auto contact_viz =
         builder.template AddSystem<systems::ContactResultsToLcmSystem<double>>(
@@ -253,6 +252,7 @@ int DoMain() {
   simulator.reset_integrator<systems::RungeKutta2Integrator<double>>(
       *sys, 1e-3, simulator.get_mutable_context());
 
+  // TODO(rcory): Explore other integration schemes here.
 //  simulator.reset_integrator<systems::ImplicitEulerIntegrator<double>>(
 //      *sys, simulator.get_mutable_context());
 //  simulator.get_mutable_integrator()->set_target_accuracy(1e-2);
