@@ -158,7 +158,7 @@ drake_cc_googletest(
     deps = [
         ":loader",
         "//drake/automotive/maliput/api",
-        "//drake/automotive/maliput/api:maliput_types_compare",
+        "//drake/automotive/maliput/api/test_utilities",
         "//drake/common:find_resource",
     ],
 )
