@@ -260,14 +260,14 @@ struct ConstraintAccelProblemData {
   /// Problem data for constraining the acceleration of two bodies projected
   /// along the contact surface normal, for p point contacts.
   ///
-  /// Consider two rigid bodies i and j making contact at a single point, p(q),
-  /// which is defined such that pᵢ(q(t₀)) = pⱼ(q(t₀)); in other words, a point
-  /// defined on each rigid body (and expressed in the world frame) is defined
-  /// such that the points coincide at some particular time t₀. To limit the
-  /// motion of the points to the contact surface as the bodies move, one can
-  /// introduce the constraint c(q) ≡ n(q)ᵀ(pᵢ(q) - pⱼ(q)), where n(q) is the
-  /// common surface normal expressed in the world frame. Differentiating c(q)
-  /// once with respect to time yields ċ(q,v) ≡ nᵀ(ṗᵢ - ṗⱼ) + ṅᵀ(pᵢ - pⱼ); one
+  /// Consider two points pᵢ and pⱼ on rigid bodies i and j, respectively, and
+  /// assume that at a certain configuration of the two bodies, ᶜq, the two
+  /// points are coincident, i.e., contacting, at a single location in space,
+  /// p(ᶜq). To constrain the motion of pᵢ and pⱼ to the contact
+  /// surface as the bodies move, one can introduce the constraint
+  /// c(q) ≡ n(q)ᵀ(pᵢ(q) - pⱼ(q)), where n(q) is the common surface normal
+  /// expressed in the world frame. Differentiating c(q) once with respect to
+  /// time yields ċ(q,v) ≡ nᵀ(ṗᵢ - ṗⱼ) + ṅᵀ(pᵢ - pⱼ); one
   /// more differentiation with respect to time yields
   /// c̈(q,v,v̇) ≡ nᵀ(p̈ᵢ - p̈ⱼ) + ṅᵀ(ṗᵢ - ṗⱼ) + n̈ᵀ(pᵢ - pⱼ). By collecting
   /// terms and using the to-be-defined Jacobian matrix N(q), we can introduce
@@ -679,14 +679,14 @@ struct ConstraintVelProblemData {
   /// Problem data for constraining the velocity of two bodies projected
   /// along the contact surface normal, for p point contacts.
   ///
-  /// Consider two rigid bodies i and j making contact at a single point, p(q),
-  /// which is defined such that pᵢ(q(t₀)) = pⱼ(q(t₀)); in other words, a point
-  /// defined on each rigid body (and expressed in the world frame) is defined
-  /// such that the points coincide at some particular time t₀. To limit the
-  /// motion of the points to the contact surface as the bodies move, one can
-  /// introduce the constraint c(q) ≡ n(q)ᵀ(pᵢ(q) - pⱼ(q)), where n(q) is the
-  /// common surface normal expressed in the world frame. Differentiating c(q)
-  /// once with respect to time yields ċ(q,v) ≡ nᵀ(ṗᵢ - ṗⱼ) + ṅᵀ(pᵢ - pⱼ).
+  /// Consider two points pᵢ and pⱼ on rigid bodies i and j, respectively, and
+  /// assume that at a certain configuration of the two bodies, ᶜq, the two
+  /// points are coincident, i.e., contacting, at a single location in space,
+  /// p(ᶜq). To constrain the motion of pᵢ and pⱼ to the contact
+  /// surface as the bodies move, one can introduce the constraint
+  /// c(q) ≡ n(q)ᵀ(pᵢ(q) - pⱼ(q)), where n(q) is the common surface normal
+  /// expressed in the world frame. Differentiating c(q) once with
+  /// respect to time yields ċ(q,v) ≡ nᵀ(ṗᵢ - ṗⱼ) + ṅᵀ(pᵢ - pⱼ).
   /// By collecting terms and using the to-be-defined Jacobian matrix N(q), we
   /// can introduce an equivalent equation:<pre>
   /// ċ(q,v) ≡ N⋅v + ṅᵀ⋅(pᵢ - pⱼ)</pre>
