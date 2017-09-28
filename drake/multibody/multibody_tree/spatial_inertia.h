@@ -318,6 +318,32 @@ class SpatialInertia {
     return SpatialInertia(*this).ShiftInPlace(p_PQ_E);
   }
 
+  /// Creates a spatial inertia for a physical body or composite body S about a
+  /// point P from a given mass, center of mass, and central rotational inertia.
+  /// This method is useful for creating a SpatialInertia from information in
+  /// a .urdf file that provides a body's mass, center of mass location from the
+  /// body's origin, and rotational inertia about the body's center of mass.
+  ///
+  /// This method checks for the physical validity of the resulting
+  /// %SpatialInertia with IsPhysicallyValid() and throws a std::runtime_error
+  /// exception in the event the provided input parameters lead to a
+  /// non-physically viable spatial inertia.
+  ///
+  /// @param[in] mass The mass of the body or composite body S.
+  /// @param[in] p_PScm_E The position vector from a point P to point `Scm`
+  ///                     (S's center of mass), expressed in a frame E.
+  /// @param[in] I_SScm_E S's RotationalInertia about Scm, expressed in frame E.
+  /// @retval M_SP_E, S's spatial inertia about point P, expressed in frame E.
+  static SpatialInertia MakeFromCentralInertia(const T& mass,
+      const Vector3<T>& p_PScm_E, const RotationalInertia<T>& I_SScm_E) {
+    const RotationalInertia<T> I_SP_E =
+        I_SScm_E.ShiftFromCenterOfMass(mass, p_PScm_E);
+    UnitInertia<T> G_SP_E;
+    G_SP_E.SetFromRotationalInertia(I_SP_E, mass);
+    return SpatialInertia(mass, p_PScm_E, G_SP_E);
+  }
+
+
   /// Multiplies `this` spatial inertia `M_Bo_E` of a body B about its frame
   /// origin `Bo` by the spatial acceleration of the body frame B in a frame W.
   /// Mathematically: <pre>
