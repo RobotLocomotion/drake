@@ -178,13 +178,6 @@ class PidController : public StateFeedbackControllerInterface<T>,
   }
 
  protected:
-  /**
-   * Appends to @p dot a simplified Graphviz representation of the PID
-   * controller, since the internal wiring is unimportant and hard for human
-   * viewers to parse.
-   */
-  void GetGraphvizFragment(std::stringstream* dot) const override;
-
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* derivatives) const override;
 

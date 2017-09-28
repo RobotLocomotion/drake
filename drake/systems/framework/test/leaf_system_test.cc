@@ -1166,15 +1166,17 @@ GTEST_TEST(LeafSystemScalarConverterTest, SymbolicNo) {
 
 GTEST_TEST(GraphvizTest, Attributes) {
   DefaultFeedthroughSystem system;
+  system.set_name("GraphvizTestAttributes");
   // Check that the ID is the memory address.
   ASSERT_EQ(reinterpret_cast<int64_t>(&system), system.GetGraphvizId());
   const std::string dot = system.GetGraphvizString();
   // Check that left-to-right ranking is imposed.
   EXPECT_THAT(dot, ::testing::HasSubstr("rankdir=LR"));
-  // Check that NiceTypeName is used to compute the label.
+  // Check that the name and NiceTypeName are used to compute the label.
   EXPECT_THAT(
-      dot, ::testing::HasSubstr(
-               "label=\"drake/systems/(anonymous)/DefaultFeedthroughSystem@"));
+      dot, ::testing::MatchesRegex(
+          ".*label=\"GraphvizTestAttributes\\|"
+          "drake/systems/[^/]*/DefaultFeedthroughSystem@.*"));
 }
 
 GTEST_TEST(GraphvizTest, Ports) {
