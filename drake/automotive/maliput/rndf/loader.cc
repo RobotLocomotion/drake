@@ -4,7 +4,6 @@
 #include <cmath>
 #include <limits>
 #include <map>
-#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -25,6 +24,7 @@
 #include "drake/automotive/maliput/rndf/connection.h"
 #include "drake/automotive/maliput/rndf/directed_waypoint.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_throw.h"
 
 namespace drake {
 namespace maliput {
@@ -62,11 +62,9 @@ ignition::math::Vector3d ToGlobalCoordinates(
 // @param bbox The computed bounding box for the given segments.
 // @pre The given @p bbox is not a nullptr.
 // @warning This function will abort if preconditions are not met.
-void BuildBoundingBox(
+std::pair<ignition::math::Vector3d, ignition::math::Vector3d> BuildBoundingBox(
     const std::vector<ignition::rndf::Segment>& segments,
-    const ignition::math::SphericalCoordinates& origin,
-    std::pair<ignition::math::Vector3d, ignition::math::Vector3d>* bbox) {
-  DRAKE_DEMAND(bbox != nullptr);
+    const ignition::math::SphericalCoordinates& origin) {
   std::vector<DirectedWaypoint> waypoints;
   for (const ignition::rndf::Segment& segment : segments) {
     for (const ignition::rndf::Lane& lane : segment.Lanes()) {
@@ -79,26 +77,22 @@ void BuildBoundingBox(
       }
     }
   }
-  *bbox = DirectedWaypoint::CalculateBoundingBox(waypoints);
+  return DirectedWaypoint::CalculateBoundingBox(waypoints);
 }
 
-// Extracts RNDF @p segment_lanes from @p segment, using the given
-// @p road_characteristics as needed (i.e. to determine the default width
-// for lanes). Coordinates are expressed in the global Cartesian frame at
-// @p origin.
+// Extracts RNDF @p segment_lanes from @p segment, using the given lane @p
+// default_width when either it's not specified or it's zero. Coordinates
+// are expressed in the global Cartesian frame at @p origin.
 // @param segment The RNDF segment to extract data from.
 // @param origin The global Cartesian frame location in latitude / longitude
 // coordinates.
-// @param default_width The default width for segment lanes, if no nonzero width
-// was specified.
-// @param segment_lanes The output vector of Connections.
-// @pre The given @p segment_lanes collection is not a nullptr.
-// @warning This function will abort if preconditions are not met.
-void ExtractSegmentLanes(const ignition::rndf::Segment& segment,
-                         const ignition::math::SphericalCoordinates& origin,
-                         double default_width,
-                         std::vector<Connection>* segment_lanes) {
-  DRAKE_DEMAND(segment_lanes != nullptr);
+// @param default_width The default width for segment lanes if a positive width
+// is not specified.
+// @return The collection of segment lanes as a vector of Connections.
+std::vector<Connection> ExtractSegmentLanes(
+    const ignition::rndf::Segment& segment,
+    const ignition::math::SphericalCoordinates& origin, double default_width) {
+  std::vector<Connection> segment_lanes;
   for (const ignition::rndf::Lane& lane : segment.Lanes()) {
     std::vector<DirectedWaypoint> lane_waypoints;
     for (const ignition::rndf::Waypoint& waypoint : lane.Waypoints()) {
@@ -113,33 +107,32 @@ void ExtractSegmentLanes(const ignition::rndf::Segment& segment,
     if (width == 0.0) width = default_width;
     const std::string id =
         (std::to_string(segment.Id()) + "." + std::to_string(lane.Id()));
-    segment_lanes->push_back(Connection(id, lane_waypoints, width, false));
+    segment_lanes.push_back(Connection(id, lane_waypoints, width, false));
   }
+  return segment_lanes;
 }
 
-// Extracts RNDF zone @p perimeter_waypoints from @p zone as @p. Coordinates
-// are expressed in the global Cartesian frame at @p origin.
+// Extracts RNDF zone perimeter_waypoints from @p zone. Coordinates are
+// expressed in the global Cartesian frame at @p origin.
 // @param zone The RNDF zone to extract data from.
 // @param origin The global Cartesian frame location in latitude / longitude
 // coordinates.
-// @param perimeter_waypoints The RNDF zone perimeter waypoints.
-// @pre The given @p perimeter_waypoints collection is not a nullptr.
-// @warning This method will abort if preconditions are not met.
-void ExtractZonePerimeter(const ignition::rndf::Zone& zone,
-                          const ignition::math::SphericalCoordinates& origin,
-                          std::vector<DirectedWaypoint>* perimeter_waypoints) {
-  DRAKE_DEMAND(perimeter_waypoints != nullptr);
-  // Figures out what's the exit lane width.
+// @return The RNDF zone perimeter waypoints as a vector of DirectedWaypoints..
+std::vector<DirectedWaypoint> ExtractZonePerimeter(
+    const ignition::rndf::Zone& zone,
+    const ignition::math::SphericalCoordinates& origin) {
+  std::vector<DirectedWaypoint> perimeter_waypoints;
   const ignition::rndf::Perimeter& perimeter = zone.Perimeter();
   // Retrieves all perimeter waypoints in the global Cartesian frame.
   for (const ignition::rndf::Waypoint& waypoint : perimeter.Points()) {
     const ignition::math::Vector3d global_location =
         ToGlobalCoordinates(origin, waypoint.Location());
     const ignition::rndf::UniqueId id(zone.Id(), 0, waypoint.Id());
-    perimeter_waypoints->push_back(
+    perimeter_waypoints.push_back(
         DirectedWaypoint(id, global_location, ignition::math::Vector3d::Zero,
                          waypoint.IsEntry(), waypoint.IsExit()));
   }
+  return perimeter_waypoints;
 }
 
 // Computes the minimum Lane width for an intersection given the @p entry_id
@@ -185,14 +178,12 @@ double ComputeIntersectionWidth(const ignition::rndf::RNDF& rndf_info,
 // @param rndf_info The RNDF map description.
 // @param default_width The default width for zone lanes, if no nonzero width
 // was specified.
-// @param lane_width_per_zone The mapping from RNDF zones uid to zone widths.
+// @return The mapping from RNDF zones uids to zone widths.
 // @pre The given @p entry_id is a valid lane waypoint uid within @p rndf_info.
-// @pre The given @p lane_width_per_zone mapping is not a nullptr.
 // @warning This method will abort if preconditions are not met.
-void ComputeZoneLaneWidths(const ignition::rndf::RNDF& rndf_info,
-                           double default_width,
-                           std::map<int, double>* lane_width_per_zone) {
-  DRAKE_DEMAND(lane_width_per_zone != nullptr);
+std::map<int, double> ComputeZoneLaneWidths(
+    const ignition::rndf::RNDF& rndf_info, double default_width) {
+  std::map<int, double> lane_width_per_zone;
   // Looks up the width of all the lanes that exit into zones.
   for (const ignition::rndf::Segment& segment : rndf_info.Segments()) {
     for (const ignition::rndf::Lane& lane : segment.Lanes()) {
@@ -201,10 +192,10 @@ void ComputeZoneLaneWidths(const ignition::rndf::RNDF& rndf_info,
         DRAKE_DEMAND(node != nullptr);
         if (node->Zone() != nullptr) {
           double width = lane.Width();
-          if (lane_width_per_zone->count(node->Zone()->Id()) != 0) {
-            width = std::min(width, (*lane_width_per_zone)[node->Zone()->Id()]);
+          if (lane_width_per_zone.count(node->Zone()->Id()) != 0) {
+            width = std::min(width, lane_width_per_zone[node->Zone()->Id()]);
           }
-          (*lane_width_per_zone)[node->Zone()->Id()] = width;
+          lane_width_per_zone[node->Zone()->Id()] = width;
         }
       }
     }
@@ -219,16 +210,17 @@ void ComputeZoneLaneWidths(const ignition::rndf::RNDF& rndf_info,
         DRAKE_DEMAND(node != nullptr);
         DRAKE_DEMAND(node->Lane() != nullptr);
         double width = node->Lane()->Width();
-        if (lane_width_per_zone->count(zone.Id()) != 0) {
-          width = std::min(width, (*lane_width_per_zone)[zone.Id()]);
+        if (lane_width_per_zone.count(zone.Id()) != 0) {
+          width = std::min(width, lane_width_per_zone[zone.Id()]);
         }
-        (*lane_width_per_zone)[zone.Id()] = width;
+        lane_width_per_zone[zone.Id()] = width;
       }
     }
-    if (lane_width_per_zone->count(zone.Id()) == 0) {
-      (*lane_width_per_zone)[zone.Id()] = default_width;
+    if (lane_width_per_zone.count(zone.Id()) == 0) {
+      lane_width_per_zone[zone.Id()] = default_width;
     }
   }
+  return lane_width_per_zone;
 }
 
 }  // namespace
@@ -259,35 +251,33 @@ std::unique_ptr<const api::RoadGeometry> LoadFile(
   // frame.
   const ignition::math::SphericalCoordinates& origin_location =
       segments[0].Lanes()[0].Waypoints()[0].Location();
-  std::pair<ignition::math::Vector3d, ignition::math::Vector3d> bounding_box;
-  BuildBoundingBox(segments, origin_location, &bounding_box);
+  const std::pair<ignition::math::Vector3d, ignition::math::Vector3d>
+      bounding_box = BuildBoundingBox(segments, origin_location);
   builder.SetBoundingBox(bounding_box);
 
   // Extracts all segments' lanes and creates the corresponding connections. All
-  // segments are built first, zones afterwards, so that all waypoints are
+  // segments are built first, followed by zones, so that all waypoints are
   // known to the Builder before going into further lane connections.
   for (const ignition::rndf::Segment& segment : rndf_info.Segments()) {
-    std::vector<Connection> segment_lanes;
-    ExtractSegmentLanes(segment, origin_location,
-                        road_characteristics.default_width, &segment_lanes);
+    std::vector<Connection> segment_lanes = ExtractSegmentLanes(
+        segment, origin_location, road_characteristics.default_width);
     builder.CreateSegmentConnections(segment.Id(), &segment_lanes);
   }
 
   // Computes each zone's fake inner lanes.
-  std::map<int, double> lane_width_per_zone;
-  ComputeZoneLaneWidths(rndf_info, road_characteristics.default_width,
-                        &lane_width_per_zone);
+  std::map<int, double> lane_width_per_zone =
+      ComputeZoneLaneWidths(rndf_info, road_characteristics.default_width);
   // Extracts zone perimeter's waypoints and creates fake inner lanes between
   // every entry and exit waypoint. Also connects the zone with the outgoing
   // lanes.
   for (const ignition::rndf::Zone& zone : rndf_info.Zones()) {
-    std::vector<DirectedWaypoint> perimeter_waypoints;
-    ExtractZonePerimeter(zone, origin_location, &perimeter_waypoints);
+    std::vector<DirectedWaypoint> perimeter_waypoints =
+        ExtractZonePerimeter(zone, origin_location);
     builder.CreateConnectionsForZones(lane_width_per_zone[zone.Id()],
                                       &perimeter_waypoints);
     for (const ignition::rndf::Exit& exit : zone.Perimeter().Exits()) {
-      builder.CreateConnection(lane_width_per_zone[zone.Id()],
-                               exit.ExitId(), exit.EntryId());
+      builder.CreateConnection(lane_width_per_zone[zone.Id()], exit.ExitId(),
+                               exit.EntryId());
     }
   }
 

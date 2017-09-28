@@ -20,20 +20,21 @@ const double kTolerance = 1e-3;
 
 // A passive data structure to hold all RNDF related
 // information that tests require.
-struct SingleLaneRNDFDescription {
+struct SingleLaneRndfDescription {
   // A mapping from LaneIds to a tuple whose elements
   // are: global position at the start of the lane,
   // global position at the end of the lane and lane
   // bounds of the lane.
-  typedef std::map<api::LaneId, std::tuple<api::GeoPosition,
-                                           api::GeoPosition,
-                                           api::RBounds>> LaneTable;
+  typedef std::map<
+    api::LaneId, std::tuple<api::GeoPosition,
+                            api::GeoPosition,
+                            api::RBounds>> LaneTable;
 
   // A collection of tuples whose elements describe A-to-B branch
   // connections between lanes.
   typedef std::vector<std::tuple<api::LaneId, api::LaneId>> BranchList;
 
-  SingleLaneRNDFDescription(const std::string& file_path_in,
+  SingleLaneRndfDescription(const std::string& file_path_in,
                             const LaneTable& lane_table_in,
                             const BranchList& branch_list_in)
       : file_path(file_path_in),
@@ -52,11 +53,11 @@ struct SingleLaneRNDFDescription {
 
 // RNDF test fixture parameterized on map description.
 class SingleLaneRNDFLoaderTest
-    : public ::testing::TestWithParam<SingleLaneRNDFDescription> {};
+    : public ::testing::TestWithParam<SingleLaneRndfDescription> {};
 
 // Tests that the loaded lanes match the RNDF description.
 TEST_P(SingleLaneRNDFLoaderTest, LoadTest) {
-  const SingleLaneRNDFDescription& map_description = GetParam();
+  const SingleLaneRndfDescription& map_description = GetParam();
   const std::string file_path = FindResourceOrThrow(map_description.file_path);
   const auto road_geometry = LoadFile(file_path);
   ASSERT_EQ(road_geometry->num_junctions(), map_description.lane_table.size());
@@ -107,9 +108,9 @@ TEST_P(SingleLaneRNDFLoaderTest, LoadTest) {
 
 // Returns a collection of single lane RNDF map descriptions for
 // testing parameterization.
-std::vector<SingleLaneRNDFDescription> GetSingleLaneRNDFsToTest() {
-  std::vector<SingleLaneRNDFDescription> maps{
-      SingleLaneRNDFDescription{
+std::vector<SingleLaneRndfDescription> GetSingleLaneRNDFsToTest() {
+  std::vector<SingleLaneRndfDescription> maps{
+      SingleLaneRndfDescription{
           // T intersection map description
           //
           // 1.1.1  2.1.3      1.1.3
@@ -161,7 +162,7 @@ std::vector<SingleLaneRNDFDescription> GetSingleLaneRNDFsToTest() {
               std::make_tuple(api::LaneId{"l:2.1.2-1.1.2"},
                               api::LaneId{"l:1.1.2-1.1.3"}),
           }},
-      SingleLaneRNDFDescription{
+      SingleLaneRndfDescription{
           // Cross map description
           //
           //               * 2.1.4
@@ -262,7 +263,8 @@ GTEST_TEST(MultiLaneRNDFLoaderTest, LoadTest) {
   ASSERT_EQ(road_geometry->num_junctions(), 4);
 
   {
-    // Check first lane
+    // Checks the first segment, that holds a single lane (pictured on the
+    // left side).
     const api::Junction* junction = road_geometry->junction(0);
     ASSERT_EQ(junction->num_segments(), 1);
     const api::Segment* segment = junction->segment(0);
@@ -283,6 +285,7 @@ GTEST_TEST(MultiLaneRNDFLoaderTest, LoadTest) {
   }
 
   {
+    // Checks the second segment, that holds two lanes (pictured in the middle).
     const api::Junction* junction = road_geometry->junction(1);
     ASSERT_EQ(junction->num_segments(), 1);
     const api::Segment* segment = junction->segment(0);
@@ -318,6 +321,8 @@ GTEST_TEST(MultiLaneRNDFLoaderTest, LoadTest) {
   }
 
   {
+    // Checks the third segment, that holds a single lane (pictured on the
+    // right).
     const api::Junction* junction = road_geometry->junction(2);
     ASSERT_EQ(junction->num_segments(), 1);
     const api::Segment* segment = junction->segment(0);
@@ -338,6 +343,7 @@ GTEST_TEST(MultiLaneRNDFLoaderTest, LoadTest) {
   }
 
   {
+    // Checks the intersection segment, that holds a single lane.
     const api::Junction* junction = road_geometry->junction(3);
     ASSERT_EQ(junction->num_segments(), 1);
     const api::Segment* segment = junction->segment(0);
