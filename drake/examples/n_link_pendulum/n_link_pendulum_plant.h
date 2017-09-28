@@ -14,6 +14,10 @@ namespace drake {
 namespace examples {
 namespace n_link_pendulum {
 
+/// An N-link pendulum in the x-y plane. Gravity points down in the minus y-axis
+/// direction.
+/// Each body registers a spherical geometry located at its com (in the lack of
+/// cylinder or box shapes :-( ).
 template<typename T>
 class NLinkPendulumPlant final : public multibody::MultibodyPlant<T> {
  public:
