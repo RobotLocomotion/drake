@@ -356,7 +356,7 @@ std::vector<ignition::math::Vector3d> MakeBezierCurveMonotonic(
     critical_point = p0 - l;
   }
 
-  // TODO(@hidmic) Dinamically optimize scales to meet geometrical constraints
+  // TODO(@hidmic) Dynamically optimize scales to meet geometrical constraints
   // in the non convex curve case. Current adjustment factor is the result of
   // a manual optimization to achieve the best results with the models we've
   // dealt with so far (i.e. OSM-based RNDFs).

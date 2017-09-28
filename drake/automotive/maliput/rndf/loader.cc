@@ -125,9 +125,9 @@ void ExtractSegmentLanes(const ignition::rndf::Segment& segment,
 // @param perimeter_waypoints The RNDF zone perimeter waypoints.
 // @pre The given @p perimeter_waypoints collection is not a nullptr.
 // @warning This method will abort if preconditions are not met.
-void ExtractZonePerimeters(const ignition::rndf::Zone& zone,
-                           const ignition::math::SphericalCoordinates& origin,
-                           std::vector<DirectedWaypoint>* perimeter_waypoints) {
+void ExtractZonePerimeter(const ignition::rndf::Zone& zone,
+                          const ignition::math::SphericalCoordinates& origin,
+                          std::vector<DirectedWaypoint>* perimeter_waypoints) {
   DRAKE_DEMAND(perimeter_waypoints != nullptr);
   // Figures out what's the exit lane width.
   const ignition::rndf::Perimeter& perimeter = zone.Perimeter();
@@ -278,12 +278,17 @@ std::unique_ptr<const api::RoadGeometry> LoadFile(
   ComputeZoneLaneWidths(rndf_info, road_characteristics.default_width,
                         &lane_width_per_zone);
   // Extracts zone perimeter's waypoints and creates fake inner lanes between
-  // every entry and exit waypoint.
+  // every entry and exit waypoint. Also connects the zone with the outgoing
+  // lanes.
   for (const ignition::rndf::Zone& zone : rndf_info.Zones()) {
     std::vector<DirectedWaypoint> perimeter_waypoints;
-    ExtractZonePerimeters(zone, origin_location, &perimeter_waypoints);
+    ExtractZonePerimeter(zone, origin_location, &perimeter_waypoints);
     builder.CreateConnectionsForZones(lane_width_per_zone[zone.Id()],
                                       &perimeter_waypoints);
+    for (const ignition::rndf::Exit& exit : zone.Perimeter().Exits()) {
+      builder.CreateConnection(lane_width_per_zone[zone.Id()],
+                               exit.ExitId(), exit.EntryId());
+    }
   }
 
   // Iterates over each lane exit and creates the intersection lane that
