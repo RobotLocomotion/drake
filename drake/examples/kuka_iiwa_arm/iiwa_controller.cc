@@ -76,7 +76,9 @@ int DoMain() {
     plan_source = builder.AddSystem<RobotPlanInterpolator>(
         urdf, InterpolatorType::Pchip);
   } else {
-    DRAKE_ABORT_MSG("Robot plan interpolation type not recognized.");
+    DRAKE_ABORT_MSG("Robot plan interpolation type not recognized. "
+                    "Use the gflag --helpshort to display "
+                    "flag options for interpolator type.");
   }
   plan_source->set_name("plan_source");
   const int num_joints = plan_source->tree().get_num_positions();
