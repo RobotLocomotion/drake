@@ -15,11 +15,11 @@ struct RoadCharacteristics {
   RoadCharacteristics() = default;
 
   /// Constructor for custom geometry characteristics.
-  /// @param default_width The default lane width, used when either no lane
+  /// @param default_width_in The default lane width, used when either no lane
   /// width or zero lane width was specified in the RNDF (as lane widths are
   /// an optional non negative quantity in the RNDF format).
-  /// @param linear_tolerance The linear tolerance for lane geometries.
-  /// @param angular_tolerance The angular tolerance for lane geometries.
+  /// @param linear_tolerance_in The linear tolerance for lane geometries.
+  /// @param angular_tolerance_in The angular tolerance for lane geometries.
   explicit RoadCharacteristics(double default_width_in,
                                double linear_tolerance_in,
                                double angular_tolerance_in)

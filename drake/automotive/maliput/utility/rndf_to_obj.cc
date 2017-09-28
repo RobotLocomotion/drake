@@ -1,7 +1,7 @@
 /// @file rndf_to_obj.cc
 ///
-/// Take a RNDF file as input, build the resulting RNDF road geometry, and
-/// render the road surface to a WaveFront OBJ output file.
+/// Takes a RNDF file as input, builds the resulting RNDF road geometry and
+/// renders the road surface, saved as a WaveFront OBJ output file.
 #include <gflags/gflags.h>
 
 #include "drake/automotive/maliput/rndf/loader.h"
@@ -23,7 +23,6 @@ DEFINE_double(min_grid_resolution, utility::ObjFeatures().min_grid_resolution,
               " direction in the rendered mesh covering the road surface");
 
 int main(int argc, char* argv[]) {
-  drake::log()->debug("main()");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   drake::logging::HandleSpdlogGflags();
 
@@ -37,7 +36,7 @@ int main(int argc, char* argv[]) {
   }
 
   drake::log()->info("Loading road geometry.");
-  const auto road_geometry = rndf::Loader().LoadFile(FLAGS_rndf_file);
+  const auto road_geometry = rndf::LoadFile(FLAGS_rndf_file);
 
   utility::ObjFeatures features;
   features.max_grid_unit = FLAGS_max_grid_unit;
