@@ -2,6 +2,7 @@
 
 #include <utility>
 
+#include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/oracular_state_estimator.h"
 #include "drake/manipulation/util/sim_diagram_builder.h"
 #include "drake/manipulation/util/world_sim_tree_builder.h"
@@ -11,7 +12,6 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/util/drakeGeometryUtil.h"
-#include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 
 namespace drake {
 
