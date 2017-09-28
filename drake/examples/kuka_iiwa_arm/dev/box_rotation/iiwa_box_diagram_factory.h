@@ -2,8 +2,8 @@
 
 #include <memory>
 
-#include "drake/manipulation/util/world_sim_tree_builder.h"
 #include "drake/examples/kuka_iiwa_arm/oracular_state_estimator.h"
+#include "drake/manipulation/util/world_sim_tree_builder.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/controllers/pid_controller.h"
@@ -103,7 +103,7 @@ class IiwaAndBoxPlantWithStateEstimator : public systems::Diagram<T> {
   int output_port_contact_results_t_{-1};
 };
 
-}  // box_rotation
+}  // namespace box_rotation
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
 }  // namespace drake

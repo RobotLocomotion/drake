@@ -2,17 +2,17 @@
  * @file This file implements the box rotation demo.
  */
 
+#include <fstream>
 #include <iostream>
 #include <list>
 #include <memory>
-#include <fstream>
-#include <gflags/gflags.h>
 
+#include <gflags/gflags.h>
 #include <lcm/lcm-cpp.hpp>
 
+#include "drake/common/find_resource.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/common/find_resource.h"
 
 DEFINE_string(keyframes, "", "Name of keyframe file to load");
 DEFINE_string(urdf, "", "Name of keyframe file to load");
@@ -23,13 +23,13 @@ namespace kuka_iiwa_arm {
 namespace box_rotation {
 namespace {
 
-const char* const kKeyFramePath = "drake/examples/kuka_iiwa_arm/dev/box_rotation/"
-    "robot_keyframes.txt";
+const char* const kKeyFramePath = "drake/examples/kuka_iiwa_arm/dev/"
+    "box_rotation/robot_keyframes.txt";
 const char* const kIiwaUrdf =
     "drake/examples/kuka_iiwa_arm/dev/box_rotation/"
         "models/dual_iiwa14_primitive_sphere_visual_collision.urdf";
 
-const int kNumKeyFrames=26;
+const int kNumKeyFrames = 26;
 
 MatrixX<double> get_posture(const std::string& name) {
   std::fstream fs;
@@ -75,12 +75,14 @@ void RunBoxRotationDemo() {
   MatrixX<double> allKeyFrames = get_posture(framesFile);
 
   // extract left and right arm keyframes
-  MatrixX<double>  keyframes(kNumKeyFrames,14);
-  keyframes.block<kNumKeyFrames,7>(0,0) = allKeyFrames.block<kNumKeyFrames,7>(0,1);
-  keyframes.block<kNumKeyFrames,7>(0,7) = allKeyFrames.block<kNumKeyFrames,7>(0,8);
+  MatrixX<double>  keyframes(kNumKeyFrames, 14);
+  keyframes.block<kNumKeyFrames, 7>(0, 0) =
+      allKeyFrames.block<kNumKeyFrames, 7>(0, 1);
+  keyframes.block<kNumKeyFrames, 7>(0, 7) =
+      allKeyFrames.block<kNumKeyFrames, 7>(0, 8);
   keyframes.transposeInPlace();
 
-  const int N = (int)allKeyFrames.rows();
+  const int N = static_cast<int>(allKeyFrames.rows());
   std::vector<double> times((ulong)N);
   for (int i = 0; i < N; ++i) {
     if (i == 0)
@@ -94,7 +96,6 @@ void RunBoxRotationDemo() {
 
   *(&plan) = EncodeKeyFrames(iiwa, times, info, keyframes);
   iiwa_callback(&plan);
-
 }
 
 }  // namespace

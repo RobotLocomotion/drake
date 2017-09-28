@@ -6,9 +6,9 @@
 #include <string>
 #include <utility>
 
-#include "drake/manipulation/util/world_sim_tree_builder.h"
 #include "drake/examples/kuka_iiwa_arm/oracular_state_estimator.h"
 #include "drake/manipulation/util/sim_diagram_builder.h"
+#include "drake/manipulation/util/world_sim_tree_builder.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
@@ -52,7 +52,7 @@ IiwaAndBoxPlantWithStateEstimator<T>::IiwaAndBoxPlantWithStateEstimator(
 
   SetPositionControlledGains(&iiwa_kp, &iiwa_ki, &iiwa_kd);
   // Uses integral gains to deal with the added mass from the grasped object.
-  //iiwa_ki << 1, 1, 1, 1, 1, 1, 1;
+  // iiwa_ki << 1, 1, 1, 1, 1, 1, 1;
 
   // Exposing feedforward acceleration. Should help with more dynamic
   // motions.
@@ -144,7 +144,7 @@ void IiwaAndBoxPlantWithStateEstimator<T>::SetPositionControlledGains(
   *Ki = Eigen::VectorXd::Zero(7);
 }
 
-}  // box_rotation
+}  // namespace box_rotation
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
 }  // namespace drake
