@@ -29,7 +29,7 @@ namespace constraint {
 /// latter through a pair of inequality constraints, c(q) ≥ 0 and -c(q) ≥ 0;
 /// the problem structure distinguishes the two types to maximize
 /// computational efficiency in the solution algorithms. We assume hereafter
-/// that c() are vector equations.
+/// that c() are vector functions.
 ///
 /// Constraints may be defined at the position level:<pre>
 /// c(t,q)
@@ -42,12 +42,12 @@ namespace constraint {
 /// </pre>
 /// where λ, which is the same dimension as c, is a vector of force magnitudes
 /// used to enforce the constraint; note the semicolon, which separates general
-/// constraint dependencies (q,v,t) from variables that must be determined using
+/// constraint dependencies (t,q,v) from variables that must be determined using
 /// the constraints (v̇,λ).
 ///
-/// This document and class does not generally attempt (or need) to distinguish
-/// between equations that are posable at the position level but are
-/// differentiated once with respect to time (i.e., holonomic constraints) to
+/// This class does not generally attempt (or need) to distinguish
+/// between equations that are posable at the position level (i.e., holonomic
+/// constraints) but are differentiated once with respect to time to
 /// yield a velocity-level constraint vs. equations that *must* be formulated at
 /// at the velocity-level (i.e., nonholonomic constraints). The section below
 /// on constraint stabilization will provide the lone exception to this rule.
@@ -77,7 +77,7 @@ namespace constraint {
 /// 0 ≤ c(t,q,v;v̇,λ) + γλ  ⊥  λ ≥ 0
 /// </pre>
 /// where γ is a non-negative scalar; alternatively, it can represent a diagonal
-/// matrix with the same number of rows/columns as the dimension of c̈ and λ,
+/// matrix with the same number of rows/columns as the dimension of c and λ,
 /// permitting different coefficients for each constraint equation.
 /// With γλ > 0, it becomes easier to satisfy the constraint
 /// c(t,q,v;v̇,λ) + γλ ≥ 0, though the resulting v̇ and λ will not quite
@@ -107,6 +107,7 @@ namespace constraint {
 /// diagonal matrices). α and β, which both have units of 1/sec (i.e., the
 /// reciprocal of unit time) are described more fully in [Baumgarte 1972].
 ///
+/// @ref accel_jacobians
 /// <h3>Jacobian matrices</h3>
 /// Much of the problem data in this class refers to particular Jacobian
 /// matrices. If the time derivatives of the system's generalized coordinates
@@ -116,15 +117,14 @@ namespace constraint {
 /// coordinates (i.e., ∂c/∂q). The two kinds of coordinates need not be equal,
 /// which leads to a general, albeit harder to describe definition of the
 /// Jacobian matrices as the partial derivatives of the constraint equations
-/// taken with respect to the quasi-coordinates (see "Methods for weighting
-/// state variable errors" in IntegratorBase); using the notation there for
-/// quasi-coordinates means we write the Jacobian as ∂c/∂q̅ (quasi-coordinates
-/// possess the property that ∂q̅/∂v = Iₙₓₙ (the n × n identity matrix).
-/// Fortunately, for constraints defined strictly in the form c(q), the
-/// Jacobians are described completely by the equation ċ = ∂c/∂q̅⋅v, where v are
-/// the generalized velocities of the system. Since the problem data
-/// specifically requires operators that compute (∂c/∂q̅⋅v), one can simply
-/// evaluate ċ.
+/// taken with respect to the quasi-coordinates (see @ref quasi_coordinates);
+/// using the notation there for quasi-coordinates means we write the Jacobian
+/// as ∂c/∂q̅ (quasi-coordinates possess the property that ∂q̅/∂v = Iₙₓₙ, i.e.,
+/// the n × n identity matrix). Fortunately, for constraints defined strictly
+/// in the form c(q), the Jacobians are described completely by the equation
+/// ċ = ∂c/∂q̅⋅v, where v are the generalized velocities of the system. Since the
+/// problem data specifically requires operators that compute (∂c/∂q̅⋅v), one
+/// can simply evaluate ċ.
 ///
 /// <h3>Definition of variables used within this documentation:</h3>
 /// - b ∈ ℕ   The number of bilateral constraint equations.
@@ -146,10 +146,10 @@ namespace constraint {
 ///           to the time derivative of the system quasi-coordinates.
 /// - y ∈ ℕ   The number of contacts at which sliding is not occurring. Note
 ///           that p = s + y.
-/// - α ∈ ℝ   A non-negative scalar used to correct position-level constraint
+/// - α ∈ ℝ   A non-negative scalar used to correct velocity-level constraint
 ///           errors (i.e., "stabilize" the position constraints) via an error
 ///           feedback process (Baumgarte Stabilization).
-/// - β ∈ ℝ   A non-negative scalar used to correct velocity-level constraint
+/// - β ∈ ℝ   A non-negative scalar used to correct position-level constraint
 ///           errors via the same error feedback process (Baumgarte
 ///           Stabilization) that uses α.
 /// - γ ∈ ℝ   A non-negative scalar used to soften an otherwise perfectly
@@ -220,14 +220,14 @@ struct ConstraintAccelProblemData {
   /// </pre>
   /// which implies the constraint definition c(t,q,v;v̇) ≡ G(q)⋅v̇ + kᴳ(t,q,v).
   /// G is defined as the ℝᵇˣⁿ Jacobian matrix of the partial derivatives of c()
-  /// taken with respect to the quasi-coordinates (see section Jacobians in this
-  /// class documentation). The class of constraint functions naturally includes
-  /// holonomic constraints, which are constraints posable as g(t,q). Such
+  /// taken with respect to the quasi-coordinates (see @ref quasi_coordinates).
+  /// The class of constraint functions naturally includes
+  /// holonomic constraints, which are constraints posable as c(t,q). Such
   /// holonomic constraints must be twice differentiated with respect to time to
-  /// yield an acceleration-level formulation (i.e., g̈(t,q,v;v̇), for the
-  /// aforementioned definition of g(t,q)). That differentiation yields
-  /// g̈ = G⋅v̇ + Gdot⋅v + ∂g/∂t, which is consistent with the constraint class
-  /// under the definition kᴳ(t,q,v) ≡ Gdot⋅v + ∂²g/∂t². An example such
+  /// yield an acceleration-level formulation (i.e., c̈(t,q,v;v̇), for the
+  /// aforementioned definition of c(t,q)). That differentiation yields
+  /// c̈ = G⋅v̇ + Gdot⋅v + ∂c/∂t, which is consistent with the constraint class
+  /// under the definition kᴳ(t,q,v) ≡ Gdot⋅v + ∂²c/∂t². An example such
   /// (holonomic) constraint function is the transmission (gearing) constraint
   /// below:<pre>
   /// 0 = v̇ᵢ - rv̇ⱼ
@@ -235,7 +235,7 @@ struct ConstraintAccelProblemData {
   /// which can be read as the acceleration at joint i (v̇ᵢ) must equal to `r`
   /// times the acceleration at joint j (v̇ⱼ); `r` is thus the gear ratio.
   /// In this example, the corresponding holonomic constraint function is
-  /// g(q) ≡ qᵢ - rqⱼ, yielding  ̈g(q,v;v̇) = v̇ᵢ - rv̇ⱼ.
+  /// c(q) ≡ qᵢ - rqⱼ, yielding c̈(q,v;v̇) = v̇ᵢ - rv̇ⱼ.
   ///
   /// Given these descriptions, the user needs to define operators for computing
   /// G⋅w (w ∈ ℝⁿ is an arbitrary vector) and Gᵀ⋅f (f ∈ ℝᵇ is an arbitrary
@@ -426,20 +426,20 @@ struct ConstraintAccelProblemData {
   /// λ⋅(L⋅v̇ + kᴸ(t,q,v) + γᴸλ) = 0, meaning that the constraint can apply no
   /// force if it is inactive (i.e., if c(t,q,v;v̇,λ) is strictly greater than
   /// zero). L is defined as the ℝᵘˣⁿ Jacobian matrix of the partial derivatives
-  /// of c() taken with respect to the quasi-coordinates (see the section on
-  /// Jacobians in this class documentation). As described in the section on
+  /// of c() taken with respect to the quasi-coordinates (see
+  /// @ref quasi_coordinates). As described in the section on
   /// constraint softening, the factor γᴸλ, where γᴸ ≥ 0 is a user-provided
   /// diagonal matrix, acts to "soften" the constraint: if γᴸ is nonzero, c will
   /// be satisfiable with a smaller λ.
   ///
   /// The class of constraint functions naturally includes holonomic
-  /// constraints, which are constraints posable as g(t,q). Such holonomic
+  /// constraints, which are constraints posable as c(t,q). Such holonomic
   /// constraints must be twice differentiated with respect to time to yield
-  /// an acceleration-level formulation (i.e., g̈(t,q,v;v̇,λ), for the
-  /// aforementioned definition of g(t,q)). That differentiation yields
-  /// g̈ = L⋅v̇ + Ldot⋅v + ∂²g/∂t² (notice the absence of the softening term),
+  /// an acceleration-level formulation (i.e., c̈(t,q,v;v̇,λ), for the
+  /// aforementioned definition of c(t,q)). That differentiation yields
+  /// c̈ = L⋅v̇ + Ldot⋅v + ∂²c/∂t² (notice the absence of the softening term),
   /// which is consistent with the constraint class under the definition
-  /// kᴸ(t,q,v) ≡ Ldot⋅v + ∂²g/∂t². An example such (holonomic) constraint
+  /// kᴸ(t,q,v) ≡ Ldot⋅v + ∂²c/∂t². An example such (holonomic) constraint
   /// function is a joint acceleration limit:<pre>
   /// 0 ≤ -v̇ⱼ  ⊥  λⱼ ≥ 0
   /// </pre>
@@ -447,11 +447,11 @@ struct ConstraintAccelProblemData {
   /// than zero, the force must be applied to limit the acceleration at the
   /// joint, and the limiting force cannot be applied if the acceleration at the
   /// joint is not at the limit (i.e., v̇ⱼ < 0). In this example, a
-  /// corresponding holonomic constraint function would be g(q) ≡ r - qⱼ (where
-  /// r is the range of motion limit)  yielding ̈g(q,v,v̇) = -v̇ⱼ. Solving for
-  /// v̇(t₀) such that ̈g(q(t₀), v(t₀), v̇(t₀)) = 0 will naturally allow one to
-  /// determine (through integration) q(t₁) that satisfies g(q(t₁)) = 0 for
-  /// t₁ > t₀ and t₁ ≈ t₀, assuming that g(q(t₀)) = 0 and ġ(q(t₀),v(t₀)) = 0.
+  /// corresponding holonomic constraint function would be c(q) ≡ r - qⱼ (where
+  /// r is the range of motion limit)  yielding ċ(q,v,v̇) = -v̇ⱼ. Solving for
+  /// v̇(t₀) such that ċ(q(t₀), v(t₀), v̇(t₀)) = 0 will naturally allow one to
+  /// determine (through integration) q(t₁) that satisfies c(q(t₁)) = 0 for
+  /// t₁ > t₀ and t₁ ≈ t₀, assuming that c(q(t₀)) = 0 and ċ(q(t₀),v(t₀)) = 0.
   ///
   /// Given the description above, the user must define operators for computing
   /// L⋅w (w ∈ ℝⁿ is an arbitrary vector) and Lᵀ⋅f (f ∈ ℝᵘ is an arbitrary
@@ -501,7 +501,7 @@ struct ConstraintAccelProblemData {
 /// latter through a pair of inequality constraints, c(q) ≥ 0 and -c(q) ≥ 0;
 /// the problem structure distinguishes the two types to maximize
 /// computational efficiency in the solution algorithms. We assume hereafter
-/// that c() are vector equations.
+/// that c() are vector functions.
 ///
 /// Constraints may be defined at the position level:<pre>
 /// c(t,q)
@@ -515,8 +515,8 @@ struct ConstraintAccelProblemData {
 /// determined using the constraints (v,λ).
 ///
 /// This document and class does not generally attempt (or need) to distinguish
-/// between equations that are posable at the position level but are
-/// differentiated once with respect to time (i.e., holonomic constraints) to
+/// between equations that are posable at the position level (i.e., holonomic
+/// constraints) but are differentiated once with respect to time to
 /// yield a velocity-level constraint vs. equations that *must* be formulated at
 /// at the velocity-level (i.e., nonholonomic constraints). The section below
 /// on constraint stabilization will provide the lone exception to this rule.
@@ -640,21 +640,21 @@ struct ConstraintVelProblemData {
   /// </pre>
   /// which implies the constraint definition c(t,q,v) ≡ G(q)⋅v + kᴳ(t,q). G
   /// is defined as the ℝᵇˣⁿ Jacobian matrix of the partial derivatives of c()
-  /// taken with respect to the quasi-coordinates (see **Jacobians** section in
-  /// ConstraintAccelProblemData). The class of constraint functions naturally
-  /// includes holonomic constraints, which are constraints posable as g(t,q).
+  /// taken with respect to the quasi-coordinates (see @ref accel_jacobians).
+  /// The class of constraint functions naturally
+  /// includes holonomic constraints, which are constraints posable as c(t,q).
   /// Such holonomic constraints must be differentiated with respect to time to
-  /// yield a velocity-level formulation (i.e., ġ(t,q;v), for the
-  /// aforementioned definition of g(t,q)). That differentiation yields
-  /// ġ = G⋅v + ∂g/∂t, which is consistent with the constraint class under
-  /// the definition kᴳ(t,q) ≡ ∂g/∂t. An example such holonomic constraint
+  /// yield a velocity-level formulation (i.e., ċ(t,q;v), for the
+  /// aforementioned definition of c(t,q)). That differentiation yields
+  /// ċ = G⋅v + ∂c/∂t, which is consistent with the constraint class under
+  /// the definition kᴳ(t,q) ≡ ∂c/∂t. An example such holonomic constraint
   /// function is the transmission (gearing) constraint below:<pre>
   /// 0 = vᵢ - rvⱼ
   /// </pre>
   /// which can be read as the velocity at joint j (vⱼ) must equal to `r`
   /// times the velocity at joint i (vᵢ); `r` is thus the gear ratio.
   /// In this example, the corresponding holonomic constraint function is
-  /// g(q) ≡ qᵢ -rqⱼ, yielding ġ(q, v) = vⱼ - rvⱼ.
+  /// c(q) ≡ qᵢ -rqⱼ, yielding ċ(q, v) = vⱼ - rvⱼ.
   ///
   /// Given these descriptions, the user needs to define operators for computing
   /// G⋅w (w ∈ ℝⁿ is an arbitrary vector) and Gᵀ⋅f (f ∈ ℝᵇ is an arbitrary
@@ -837,20 +837,20 @@ struct ConstraintVelProblemData {
   /// λ⋅(L⋅v + kᴸ(t,q) + γᴸλ) = 0, meaning that the constraint can apply no
   /// impulse if it is inactive (i.e., if c(t,q;v,λ) is strictly greater than
   /// zero). L is defined as the ℝᵘˣⁿ Jacobian matrix of the partial derivatives
-  /// of c() taken with respect to the quasi-coordinates (see the section on
-  /// Jacobians in this class documentation). As described in the section on
+  /// of c() taken with respect to the quasi-coordinates (see
+  /// @ref accel_jacobians). As described in the section on
   /// constraint softening, the factor γᴸλ, where γᴸ ≥ 0 is a user-provided
   /// diagonal matrix, acts to "soften" the constraint: if γᴸ is nonzero, c will
   /// be satisfiable with a smaller λ.
   ///
   /// The class of constraint functions naturally includes holonomic
-  /// constraints, which are constraints posable as g(t,q). Such holonomic
+  /// constraints, which are constraints posable as c(t,q). Such holonomic
   /// constraints must be differentiated with respect to time to yield
-  /// a velocity-level formulation (i.e., ġ(t,q;v,λ), for the
-  /// aforementioned definition of g(t,q)). That differentiation yields
-  /// ġ = L⋅v + ∂g/∂t (notice the absence of the softening term),
+  /// a velocity-level formulation (i.e., ċ(t,q;v,λ), for the
+  /// aforementioned definition of c(t,q)). That differentiation yields
+  /// ċ = L⋅v + ∂c/∂t (notice the absence of the softening term),
   /// which is consistent with the constraint class under the definition
-  /// kᴸ(t,q) ≡ ∂g/∂t. An example such (holonomic) constraint
+  /// kᴸ(t,q) ≡ ∂c/∂t. An example such (holonomic) constraint
   /// function is a joint velocity limit:<pre>
   /// 0 ≤ -vⱼ  ⊥  λⱼ ≥ 0
   /// </pre>
@@ -858,11 +858,11 @@ struct ConstraintVelProblemData {
   /// than zero, the impulsive force must be applied to limit the velocity at
   /// the joint, and the limiting force cannot be applied if the velocity at the
   /// joint is not at the limit (i.e., vⱼ < 0). In this example, a
-  /// corresponding holonomic constraint function would be g(q) ≡ r - qⱼ (where
-  /// r is the range of motion limit), yielding ġ(q,v) = -vⱼ. Solving for
-  /// v(t₀) such that ġ(q(t₀), v(t₀)) = 0 will naturally allow one to
-  /// determine (through integration) q(t₁) that satisfies g(q(t₁)) = 0 for
-  /// t₁ > t₀ and t₁ ≈ t₀, assuming that g(q(t₀)) = 0.
+  /// corresponding holonomic constraint function would be c(q) ≡ r - qⱼ (where
+  /// r is the range of motion limit), yielding ċ(q,v) = -vⱼ. Solving for
+  /// v(t₀) such that ċ(q(t₀), v(t₀)) = 0 will naturally allow one to
+  /// determine (through integration) q(t₁) that satisfies c(q(t₁)) = 0 for
+  /// t₁ > t₀ and t₁ ≈ t₀, assuming that c(q(t₀)) = 0.
   ///
   /// Given the description above, the user must define operators for computing
   /// L⋅w (w ∈ ℝⁿ is an arbitrary vector) and Lᵀ⋅f (f ∈ ℝᵘ is an arbitrary
