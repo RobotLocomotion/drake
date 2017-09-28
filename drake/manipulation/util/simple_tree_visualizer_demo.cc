@@ -18,6 +18,7 @@ DEFINE_int32(num_configurations, 10,
 
 namespace drake {
 namespace manipulation {
+namespace util {
 namespace {
 
 int DoMain() {
@@ -54,10 +55,11 @@ int DoMain() {
 }
 
 }  // namespace
+}  // namespace util
 }  // namespace manipulation
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  return drake::manipulation::DoMain();
+  return drake::manipulation::util::DoMain();
 }

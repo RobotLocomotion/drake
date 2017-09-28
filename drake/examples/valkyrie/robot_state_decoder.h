@@ -34,7 +34,7 @@ class RobotStateDecoder : public LeafSystem<double> {
   void OutputKinematics(const Context<double>& context,
                         KinematicsCache<double>* output) const;
 
-  const manipulation::RobotStateLcmMessageTranslator translator_;
+  const manipulation::util::RobotStateLcmMessageTranslator translator_;
   const int robot_state_message_port_index_;
 };
 

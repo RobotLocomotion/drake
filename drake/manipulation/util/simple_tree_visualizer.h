@@ -5,6 +5,7 @@
 
 namespace drake {
 namespace manipulation {
+namespace util {
 
 /**
  * A utility to render a `RigidBodyTree` in a specified configuration.
@@ -40,5 +41,6 @@ class SimpleTreeVisualizer {
   lcm::DrakeLcmInterface* lcm_{nullptr};
 };
 
+}  // namespace util
 }  // namespace manipulation
 }  // namespace drake

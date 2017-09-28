@@ -173,7 +173,8 @@ class GenericPlan {
    * Returns a map of all Cartesian trajectories.
    */
   const std::unordered_map<const RigidBody<T>*,
-                           manipulation::PiecewiseCartesianTrajectory<T>>&
+                           manipulation::util::PiecewiseCartesianTrajectory<
+                               T>>&
   get_body_trajectories() const {
     return body_trajectories_;
   }
@@ -181,7 +182,8 @@ class GenericPlan {
   /**
    * Returns the Cartesian trajectory for @p body.
    */
-  const manipulation::PiecewiseCartesianTrajectory<T>& get_body_trajectory(
+  const manipulation::util::PiecewiseCartesianTrajectory<T>&
+  get_body_trajectory(
       const RigidBody<T>* body) const {
     return body_trajectories_.at(body);
   }
@@ -189,7 +191,8 @@ class GenericPlan {
   /**
    * Returns trajectory for all degrees of freedom.
    */
-  const manipulation::PiecewiseCubicTrajectory<T>& get_dof_trajectory() const {
+  const manipulation::util::PiecewiseCubicTrajectory<T>&
+  get_dof_trajectory() const {
     return dof_trajectory_;
   }
 
@@ -296,7 +299,7 @@ class GenericPlan {
    */
   void set_body_trajectory(
       const RigidBody<T>* body,
-      const manipulation::PiecewiseCartesianTrajectory<T>& traj) {
+      const manipulation::util::PiecewiseCartesianTrajectory<T>& traj) {
     auto it = body_trajectories_.find(body);
     if (it != body_trajectories_.end()) {
       body_trajectories_.erase(it);
@@ -315,7 +318,7 @@ class GenericPlan {
    * Sets dof trajectory to @p traj.
    */
   void set_dof_trajectory(
-      const manipulation::PiecewiseCubicTrajectory<T>& traj) {
+      const manipulation::util::PiecewiseCubicTrajectory<T>& traj) {
     dof_trajectory_ = traj;
   }
 
@@ -342,10 +345,10 @@ class GenericPlan {
   // Planned set of bodies that are in contact.
   ContactState contact_state_;
   // Trajectory for all dof.
-  manipulation::PiecewiseCubicTrajectory<T> dof_trajectory_;
+  manipulation::util::PiecewiseCubicTrajectory<T> dof_trajectory_;
   // Trajectories for all bodies that have Cartesian tracking objectives.
   std::unordered_map<const RigidBody<T>*,
-                     manipulation::PiecewiseCartesianTrajectory<T>>
+                     manipulation::util::PiecewiseCartesianTrajectory<T>>
       body_trajectories_;
 };
 

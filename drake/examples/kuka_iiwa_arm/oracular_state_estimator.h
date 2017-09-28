@@ -84,7 +84,7 @@ class OracularStateEstimation : public systems::LeafSystem<T> {
 
  private:
   const RigidBodyTree<T>& robot_;
-  const manipulation::RobotStateLcmMessageTranslator translator_;
+  const manipulation::util::RobotStateLcmMessageTranslator translator_;
 
   int input_port_index_state_{0};
   int output_port_index_msg_{0};

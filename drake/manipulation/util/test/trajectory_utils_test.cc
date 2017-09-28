@@ -6,6 +6,7 @@
 
 namespace drake {
 namespace manipulation {
+namespace util {
 
 class PiecewiseCubicTrajectoryTest : public ::testing::Test {
  protected:
@@ -246,5 +247,6 @@ TEST_F(PiecewiseCartesianTrajectoryTest, TestIsApprox) {
   }
 }
 
+}  // namespace util
 }  // namespace manipulation
 }  // namespace drake

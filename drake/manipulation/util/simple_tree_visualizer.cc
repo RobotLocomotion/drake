@@ -14,6 +14,7 @@
 
 namespace drake {
 namespace manipulation {
+namespace util {
 
 SimpleTreeVisualizer::SimpleTreeVisualizer(const RigidBodyTreed& tree,
                                            lcm::DrakeLcmInterface* lcm)
@@ -51,5 +52,6 @@ void SimpleTreeVisualizer::visualize(const VectorX<double>& position_vector) {
                 message_bytes.size());
 }
 
+}  // namespace util
 }  // namespace manipulation
 }  // namespace drake
