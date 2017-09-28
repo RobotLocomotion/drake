@@ -117,7 +117,6 @@ drake_cc_binary(
         "//drake/multibody/rigid_body_plant:drake_visualizer",
         "//drake/systems/analysis:simulator",
         "//drake/systems/framework:diagram",
-        "//drake/systems/primitives:signal_logger",
         "@com_github_gflags_gflags//:gflags",
     ],
 )
