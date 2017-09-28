@@ -8,6 +8,14 @@ load("@protobuf//:protobuf.bzl", "cc_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
+exports_files(
+    ["test/iiwa.alias_groups"],
+)
+
+exports_files(
+    ["test/iiwa.id_controller_config"],
+)
+
 cc_proto_library(
     name = "id_controller_config",
     srcs = [
@@ -94,6 +102,29 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "qp_output_translator_system",
+    srcs = ["qp_output_translator_system.cc"],
+    hdrs = ["qp_output_translator_system.h"],
+    deps = [
+        "//drake/multibody:rigid_body_tree",
+        "//drake/systems/controllers/qp_inverse_dynamics",
+        "//drake/systems/framework:leaf_system",
+        "@lcmtypes_bot2_core",
+    ],
+)
+
+drake_cc_library(
+    name = "robot_kinematic_state_translator_system",
+    srcs = ["robot_kinematic_state_translator_system.cc"],
+    hdrs = ["robot_kinematic_state_translator_system.h"],
+    deps = [
+        ":robot_kinematic_state",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/systems/framework:leaf_system",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -164,6 +195,42 @@ drake_cc_googletest(
         "//drake/systems/controllers/qp_inverse_dynamics:param_parser",
         "//drake/systems/framework",
         "//drake/systems/primitives:constant_value_source",
+    ],
+)
+
+drake_cc_googletest(
+    name = "qp_output_translator_system_test",
+    srcs = ["test/qp_output_translator_system_test.cc"],
+    data = [
+        "//drake/examples/valkyrie:models",
+    ],
+    deps = [
+        ":qp_output_translator_system",
+        "//drake/common:find_resource",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/multibody/parsers",
+        "//drake/systems/framework",
+    ],
+)
+
+drake_cc_googletest(
+    name = "valkyrie_balancing_test",
+    size = "medium",
+    srcs = ["test/valkyrie_balancing_test.cc"],
+    data = [
+        "test/valkyrie.alias_groups",
+        "test/valkyrie.id_controller_config",
+        "//drake/examples/valkyrie:models",
+    ],
+    tags = gurobi_test_tags(),
+    deps = [
+        "//drake/common:find_resource",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/examples/valkyrie:valkyrie_constants",
+        "//drake/multibody/parsers",
+        "//drake/systems/controllers:setpoint",
+        "//drake/systems/controllers/qp_inverse_dynamics",
+        "//drake/systems/controllers/qp_inverse_dynamics:param_parser",
     ],
 )
 
