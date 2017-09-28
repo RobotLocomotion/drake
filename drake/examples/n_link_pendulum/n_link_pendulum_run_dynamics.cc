@@ -4,7 +4,7 @@
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_viewer_draw.hpp"
 #include "drake/systems/analysis/simulator.h"
-//#include "drake/systems/analysis/implicit_euler_integrator.h"
+#include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/semi_explicit_euler_integrator.h"
@@ -12,6 +12,10 @@
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/serializer.h"
 #include "drake/systems/rendering/pose_bundle_to_draw_message.h"
+
+#include <iostream>
+#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
+#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
 
 namespace drake {
 namespace examples {
@@ -24,6 +28,7 @@ using lcm::DrakeLcm;
 using systems::DiagramContext;
 using systems::lcm::LcmPublisherSystem;
 using systems::lcm::Serializer;
+using systems::ImplicitEulerIntegrator;
 using systems::rendering::PoseBundleToDrawMessage;
 using systems::RungeKutta2Integrator;
 using systems::RungeKutta3Integrator;
@@ -40,6 +45,8 @@ int do_main() {
   const double radius = 0.015;  // [m]
   const double num_links = 20;
   const double time_step = 0.01;
+  const std::string integrator_type = "ImplicitEuler";
+  //const std::string integrator_type = "RungeKutta3";
   
   auto pendulum = builder.AddSystem<NLinkPendulumPlant>(
       mass, length, radius, num_links, geometry_system);
@@ -87,17 +94,35 @@ int do_main() {
     //      simulator.reset_integrator<RungeKutta2Integrator<double>>(
       //    *diagram, time_step, simulator.get_mutable_context());
 
-  RungeKutta3Integrator<double>* integrator =
-      simulator.reset_integrator<RungeKutta3Integrator<double>>(
-          *diagram, simulator.get_mutable_context());
+  systems::IntegratorBase<double>* integrator;
+  if (integrator_type == "ImplicitEuler") {
+    integrator =
+        simulator.reset_integrator<ImplicitEulerIntegrator<double>>(
+            *diagram, simulator.get_mutable_context());
+  } else if (integrator_type == "RungeKutta3") {
+    integrator =
+        simulator.reset_integrator<RungeKutta3Integrator<double>>(
+            *diagram, simulator.get_mutable_context());
+  } else {
+    throw std::logic_error("Other integrator types are unstable for this case");
+  }
 
   integrator->set_maximum_step_size(time_step);
-  integrator->set_target_accuracy(0.01);
+  integrator->set_target_accuracy(0.1);
 
   simulator.set_publish_every_time_step(false);
   simulator.set_target_realtime_rate(1.f);
   simulator.Initialize();
-  simulator.StepTo(13);
+  simulator.StepTo(2.0);
+
+  PRINT_VAR(integrator->get_num_steps_taken());
+  PRINT_VAR(integrator->get_num_derivative_evaluations());
+  PRINT_VAR(integrator->get_num_step_shrinkages_from_error_control());
+  PRINT_VAR(integrator->get_num_step_shrinkages_from_substep_failures());
+  PRINT_VAR(integrator->get_num_substep_failures());
+  PRINT_VAR(integrator->get_largest_step_size_taken());
+  PRINT_VAR(integrator->get_smallest_adapted_step_size_taken());
+
 
   return 0;
 }

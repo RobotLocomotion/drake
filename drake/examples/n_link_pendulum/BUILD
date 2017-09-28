@@ -29,6 +29,7 @@ drake_cc_binary(
         ":n_link_pendulum_plant",
         "//drake/geometry:geometry_system",
         "//drake/geometry:geometry_visualization",
+        "//drake/systems/analysis:implicit_euler_integrator",
         "//drake/systems/analysis:runge_kutta2_integrator",
         "//drake/systems/analysis:runge_kutta3_integrator",
         "//drake/systems/analysis:semi_explicit_euler_integrator",
