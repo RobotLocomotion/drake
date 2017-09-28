@@ -27,8 +27,8 @@
 using robotlocomotion::robot_plan_t;
 
 DEFINE_string(urdf, "", "Name of urdf to load");
-DEFINE_string(interp_type, "Cubic",
-              "Robot plan interpolation type. Can be {ZOH, FOH, Cubic, Pchip}");
+DEFINE_string(interp_type, "cubic",
+              "Robot plan interpolation type. Can be {zoh, foh, cubic, pchip}");
 
 namespace drake {
 namespace examples {
@@ -60,16 +60,19 @@ int DoMain() {
 
   // Sets the robot plan interpolation type.
   RobotPlanInterpolator* plan_source;
-  if (FLAGS_interp_type == "ZOH") {
+  std::string interp_str(FLAGS_interp_type);
+  std::transform(interp_str.begin(), interp_str.end(),
+                 interp_str.begin(), ::tolower);
+  if (interp_str == "zoh") {
     plan_source = builder.AddSystem<RobotPlanInterpolator>(
         urdf, InterpolatorType::ZeroOrderHold);
-  } else if (FLAGS_interp_type == "FOH") {
+  } else if (interp_str == "foh") {
     plan_source = builder.AddSystem<RobotPlanInterpolator>(
         urdf, InterpolatorType::FirstOrderHold);
-  } else if (FLAGS_interp_type == "Cubic") {
+  } else if (interp_str == "cubic") {
     plan_source = builder.AddSystem<RobotPlanInterpolator>(
         urdf, InterpolatorType::Cubic);
-  } else if (FLAGS_interp_type == "Pchip") {
+  } else if (interp_str == "pchip") {
     plan_source = builder.AddSystem<RobotPlanInterpolator>(
         urdf, InterpolatorType::Pchip);
   } else {
