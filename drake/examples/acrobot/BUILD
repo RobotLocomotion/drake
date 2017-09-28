@@ -37,6 +37,7 @@ drake_cc_library(
     hdrs = ["acrobot_plant.h"],
     deps = [
         ":acrobot_state_vector",
+        "//drake/common:default_scalars",
         "//drake/systems/controllers:linear_quadratic_regulator",
         "//drake/systems/framework",
         "//drake/systems/sensors:rotary_encoders",

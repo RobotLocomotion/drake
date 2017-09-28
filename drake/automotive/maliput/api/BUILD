@@ -28,6 +28,7 @@ drake_cc_library(
 )
 
 # === test/ ===
+
 drake_cc_googletest(
     name = "lane_data_test",
     deps = [
@@ -47,19 +48,6 @@ drake_cc_googletest(
     name = "type_specific_identifier_test",
     deps = [
         ":api",
-    ],
-)
-
-drake_cc_library(
-    name = "maliput_types_compare",
-    testonly = 1,
-    srcs = ["test/maliput_types_compare.cc"],
-    hdrs = ["test/maliput_types_compare.h"],
-    deps = [
-        ":api",
-        "//drake/common:essential",
-        "//drake/math:geometric_transform",
-        "@gtest//:without_main",
     ],
 )
 

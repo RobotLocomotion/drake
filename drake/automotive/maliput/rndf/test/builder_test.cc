@@ -9,7 +9,7 @@
 #include <ignition/math/Vector3.hh>
 #include <ignition/rndf/UniqueId.hh>
 
-#include "drake/automotive/maliput/api/test/maliput_types_compare.h"
+#include "drake/automotive/maliput/api/test_utilities/maliput_types_compare.h"
 #include "drake/common/drake_throw.h"
 
 namespace drake {

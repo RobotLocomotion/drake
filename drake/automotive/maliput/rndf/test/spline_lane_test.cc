@@ -12,7 +12,7 @@
 #include "ignition/math/Vector3.hh"
 
 #include "drake/automotive/maliput/api/lane_data.h"
-#include "drake/automotive/maliput/api/test/maliput_types_compare.h"
+#include "drake/automotive/maliput/api/test_utilities/maliput_types_compare.h"
 #include "drake/automotive/maliput/rndf/junction.h"
 #include "drake/automotive/maliput/rndf/lane.h"
 #include "drake/automotive/maliput/rndf/road_geometry.h"

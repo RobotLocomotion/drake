@@ -229,6 +229,7 @@ drake_cc_library(
     name = "affine_linear_test",
     testonly = 1,
     hdrs = ["test/affine_linear_test.h"],
+    visibility = ["//visibility:private"],
 )
 
 drake_cc_googletest(

@@ -41,7 +41,7 @@ cc_library(
 java_library(
     name = "lcmspy_plugins_bot2",
     srcs = glob(["bot2-core/java/src/bot2_spy/*.java"]),
-    visibility = ["//visibility:private"],
+    visibility = ["//visibility:public"],
     deps = [
         "@lcm//:lcm-java",
         "@lcmtypes_bot2_core//:lcmtypes_bot2_core_java",

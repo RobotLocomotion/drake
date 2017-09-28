@@ -69,7 +69,7 @@ install(
         "//drake/automotive:install_data",
         "//drake/bindings:install",
         "//drake/common:install",
-        "//drake/examples:install_data",
+        "//drake/examples:install",
         "//drake/lcmtypes:install",
         "//drake/manipulation/models:install_data",
         "//tools:install",

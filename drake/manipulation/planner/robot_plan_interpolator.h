@@ -13,6 +13,15 @@ namespace drake {
 namespace manipulation {
 namespace planner {
 
+/// This enum specifies the type of interpolator to use in constructing
+/// the piece-wise polynomial.
+enum class InterpolatorType {
+  ZeroOrderHold,
+  FirstOrderHold,
+  Pchip,
+  Cubic
+};
+
 /// This class implements a source of joint positions for a robot.
 /// It has two input ports, one for robot_plan_t messages containing a
 /// plan to follow, and another vector-valued port which expects the
@@ -28,6 +37,7 @@ class RobotPlanInterpolator : public systems::LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RobotPlanInterpolator)
 
   RobotPlanInterpolator(const std::string& model_path,
+                        const InterpolatorType = InterpolatorType::Cubic,
                         double update_interval = kDefaultPlanUpdateInterval);
   ~RobotPlanInterpolator() override;
 
@@ -90,6 +100,7 @@ class RobotPlanInterpolator : public systems::LeafSystem<double> {
   int state_output_port_{-1};
   int acceleration_output_port_{-1};
   RigidBodyTree<double> tree_;
+  const InterpolatorType interp_type_;
 };
 
 }  // namespace planner

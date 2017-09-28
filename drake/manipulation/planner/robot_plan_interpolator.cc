@@ -46,8 +46,10 @@ struct RobotPlanInterpolator::PlanData {
 };
 
 RobotPlanInterpolator::RobotPlanInterpolator(
-    const std::string& model_path, double update_interval)
-    : plan_input_port_(this->DeclareAbstractInputPort().get_index()) {
+    const std::string& model_path, const InterpolatorType interp_type,
+    double update_interval)
+    : plan_input_port_(this->DeclareAbstractInputPort().get_index()),
+      interp_type_(interp_type) {
   this->set_name("RobotPlanInterpolator");
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       model_path, multibody::joints::kFixed, &tree_);
@@ -214,8 +216,24 @@ void RobotPlanInterpolator::DoCalcUnrestrictedUpdate(
 
       const Eigen::MatrixXd knot_dot =
           Eigen::MatrixXd::Zero(tree_.get_num_velocities(), 1);
-      plan.pp = PiecewisePolynomial<double>::Cubic(
-          input_time, knots, knot_dot, knot_dot);
+      switch (interp_type_) {
+        case InterpolatorType::ZeroOrderHold :
+          plan.pp = PiecewisePolynomial<double>::ZeroOrderHold(
+              input_time, knots);
+          break;
+        case InterpolatorType::FirstOrderHold :
+          plan.pp = PiecewisePolynomial<double>::FirstOrderHold(
+              input_time, knots);
+          break;
+        case InterpolatorType::Pchip :
+          plan.pp = PiecewisePolynomial<double>::Pchip(
+              input_time, knots, true);
+          break;
+        case InterpolatorType::Cubic :
+          plan.pp = PiecewisePolynomial<double>::Cubic(
+              input_time, knots, knot_dot, knot_dot);
+          break;
+      }
       plan.pp_deriv = plan.pp.derivative();
       plan.pp_double_deriv = plan.pp_deriv.derivative();
     }

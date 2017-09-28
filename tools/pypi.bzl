@@ -91,7 +91,7 @@ def pypi_archive(
     urls = [
         "https://files.pythonhosted.org/packages/source/{0}/{1}/{1}-{2}.tar.gz".format(  # noqa
             package[:1], package, version),
-        "https://d2tbce6hkathzp.cloudfront.net/pypi/{0}/{0}-{1}.tar.gz".format(
+        "https://drake-mirror.csail.mit.edu/pypi/{0}/{0}-{1}.tar.gz".format(
             package, version),
         "https://s3.amazonaws.com/drake-mirror/pypi/{0}/{0}-{1}.tar.gz".format(
             package, version),

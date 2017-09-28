@@ -41,7 +41,7 @@ def github_archive(
     # Packages are mirrored from GitHub to CloudFront backed by an S3 bucket.
     mirrors = [
         "https://github.com/%s/archive/%s.tar.gz",
-        "https://d2tbce6hkathzp.cloudfront.net/github/%s/%s.tar.gz",
+        "https://drake-mirror.csail.mit.edu/github/%s/%s.tar.gz",
         "https://s3.amazonaws.com/drake-mirror/github/%s/%s.tar.gz",
     ]
     urls = [mirror % (repository, commit) for mirror in mirrors]

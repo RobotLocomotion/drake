@@ -7,7 +7,7 @@
 #include <ignition/math/Vector3.hh>
 #include <ignition/rndf/UniqueId.hh>
 
-#include "drake/automotive/maliput/rndf/test/ignition_types_compare.h"
+#include "drake/automotive/maliput/rndf/test_utilities/ignition_types_compare.h"
 
 namespace drake {
 namespace maliput {

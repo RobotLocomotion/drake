@@ -3,6 +3,8 @@
 #include <cmath>
 #include <utility>
 
+#include "drake/common/default_scalars.h"
+
 namespace drake {
 namespace systems {
 namespace estimators {
@@ -106,9 +108,9 @@ void LuenbergerObserver<T>::DoCalcTimeDerivatives(
                              observer_gain_ * (y - yhat));
 }
 
-template class LuenbergerObserver<double>;
-template class LuenbergerObserver<AutoDiffXd>;
-
 }  // namespace estimators
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::systems::estimators::LuenbergerObserver)

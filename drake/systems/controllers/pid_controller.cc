@@ -2,9 +2,7 @@
 
 #include <string>
 
-#include "drake/common/autodiff_overloads.h"
-#include "drake/common/eigen_autodiff_types.h"
-#include "drake/common/symbolic.h"
+#include "drake/common/default_scalars.h"
 
 namespace drake {
 namespace systems {
@@ -134,10 +132,9 @@ void PidController<T>::GetGraphvizFragment(std::stringstream* dot) const {
   *dot << "\"];" << std::endl;
 }
 
-template class PidController<double>;
-template class PidController<AutoDiffXd>;
-template class PidController<symbolic::Expression>;
-
 }  // namespace controllers
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::controllers::PidController)

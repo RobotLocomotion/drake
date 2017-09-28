@@ -1,13 +1,7 @@
 // NOLINTNEXTLINE(build/include) False positive on inl file.
 #include "drake/examples/bouncing_ball/ball-inl.h"
 
-#include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/default_scalars.h"
 
-namespace drake {
-namespace bouncing_ball {
-
-template class Ball<double>;
-template class Ball<AutoDiffXd>;
-
-}  // namespace bouncing_ball
-}  // namespace drake
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::bouncing_ball::Ball)

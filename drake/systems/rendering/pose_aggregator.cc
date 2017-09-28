@@ -2,9 +2,8 @@
 
 #include <string>
 
-#include "drake/common/autodiff_overloads.h"
-#include "drake/common/eigen_autodiff_types.h"
-#include "drake/common/symbolic.h"
+#include "drake/common/default_scalars.h"
+#include "drake/common/drake_assert.h"
 #include "drake/systems/rendering/pose_vector.h"
 
 using std::to_string;
@@ -195,10 +194,9 @@ PoseAggregator<T>::DeclareInput(const InputRecord& record) {
   DRAKE_ABORT_MSG("Invariant failure");
 }
 
-template class PoseAggregator<double>;
-template class PoseAggregator<AutoDiffXd>;
-template class PoseAggregator<symbolic::Expression>;
-
 }  // namespace rendering
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::rendering::PoseAggregator)

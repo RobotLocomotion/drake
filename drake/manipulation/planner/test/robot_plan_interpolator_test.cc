@@ -54,19 +54,21 @@ GTEST_TEST(RobotPlanInterpolatorTest, DualInstanceTest) {
 }
 
 struct TrajectoryTestCase {
-  TrajectoryTestCase(double time_in, double velocity_sign_in,
-                     double accel_sign_in)
+  TrajectoryTestCase(double time_in, double position_in, double velocity_in,
+                     double accel_in)
       : time(time_in),
-        velocity_sign(velocity_sign_in),
-        accel_sign(accel_sign_in) {}
+        position(position_in),
+        velocity(velocity_in),
+        accel(accel_in) {}
 
   const double time{};
-  const double velocity_sign{};
-  const double accel_sign{};
+  const double position{};
+  const double velocity{};
+  const double accel{};
 };
 
-GTEST_TEST(RobotPlanInterpolatorTest, TrajectoryTest) {
-  RobotPlanInterpolator dut(FindResourceOrThrow(kIiwaUrdf));
+void DoTrajectoryTest(InterpolatorType interp_type) {
+  RobotPlanInterpolator dut(FindResourceOrThrow(kIiwaUrdf), interp_type);
 
   std::vector<double> t{0, 1, 2, 3, 4};
   Eigen::MatrixXd q = Eigen::MatrixXd::Zero(kNumJoints, t.size());
@@ -76,7 +78,7 @@ GTEST_TEST(RobotPlanInterpolatorTest, TrajectoryTest) {
   q(0, 3) = 1.5;
   q(0, 4) = 1;
 
-    std::vector<int> info(t.size(), 1);
+  std::vector<int> info(t.size(), 1);
 
   const int num_time_steps = q.cols();
 
@@ -113,30 +115,67 @@ GTEST_TEST(RobotPlanInterpolatorTest, TrajectoryTest) {
   dut.CalcUnrestrictedUpdate(*context, context->get_mutable_state());
 
   // Test we're running the plan through time by watching the
-  // velocities and acceleration change.
+  // positions, velocities, and acceleration change.
   std::vector<TrajectoryTestCase> cases;
-  cases.push_back(TrajectoryTestCase{0.5, 1, 1});
-  cases.push_back(TrajectoryTestCase{1.5, 1, -1});
-  cases.push_back(TrajectoryTestCase{2.7, -1, -1});
-  cases.push_back(TrajectoryTestCase{3.5, -1, 1});
+  std::string interp_str;
+  switch (interp_type) {
+    case InterpolatorType::ZeroOrderHold :
+      interp_str = "Zero Order Hold";
+      cases.push_back(TrajectoryTestCase{0.5, 0, 0, 0});
+      cases.push_back(TrajectoryTestCase{1.5, 1, 0, 0});
+      cases.push_back(TrajectoryTestCase{2.7, 1.5, 0, 0});
+      cases.push_back(TrajectoryTestCase{3.5, 1.5, 0, 0});
+      break;
+    case InterpolatorType::FirstOrderHold :
+      interp_str = "First Order Hold";
+      cases.push_back(TrajectoryTestCase{0.5, 0.5, 1, 0});
+      cases.push_back(TrajectoryTestCase{1.5, 1.25, 0.5, 0});
+      cases.push_back(TrajectoryTestCase{2.7, 1.5, 0, 0});
+      cases.push_back(TrajectoryTestCase{3.5, 1.25, -0.5, 0});
+      break;
+    case InterpolatorType::Pchip :
+      interp_str = "Pchip";
+      cases.push_back(TrajectoryTestCase{0.5, 0.417, 1.333, 0.666});
+      cases.push_back(TrajectoryTestCase{1.5, 1.333, 0.583, -0.666});
+      cases.push_back(TrajectoryTestCase{2.7, 1.5, 0, 0});
+      cases.push_back(TrajectoryTestCase{3.5, 1.250, -0.75, 0});
+      break;
+    case InterpolatorType::Cubic :
+      interp_str = "Cubic";
+      cases.push_back(TrajectoryTestCase{0.5, 0.3661, 1.232, 1.071});
+      cases.push_back(TrajectoryTestCase{1.5, 1.357, 0.429, -0.857});
+      cases.push_back(TrajectoryTestCase{2.7, 1.577, -0.101, -0.900});
+      cases.push_back(TrajectoryTestCase{3.5, 1.196, -0.642, 0.429});
+      break;
+  }
 
   for (const TrajectoryTestCase& kase : cases) {
     context->set_time(kase.time);
     dut.CalcUnrestrictedUpdate(*context, context->get_mutable_state());
     dut.CalcOutput(*context, output.get());
+    const double position =
+        output->get_vector_data(dut.get_state_output_port().get_index())
+            ->GetAtIndex(0);
     const double velocity =
         output->get_vector_data(dut.get_state_output_port().get_index())
             ->GetAtIndex(kNumJoints);
     const double accel =
         output->get_vector_data(dut.get_acceleration_output_port().get_index())
             ->GetAtIndex(0);
-    EXPECT_GT(velocity * kase.velocity_sign, 0);
-    EXPECT_GT(accel * kase.accel_sign, 0);
+    const double err_tol = 1e-3;
+    EXPECT_NEAR(position, kase.position, err_tol)
+              << "Failed at interpolator type: " << interp_str;
+    EXPECT_NEAR(velocity, kase.velocity, err_tol)
+              << "Failed at interpolator type: " << interp_str;
+    EXPECT_NEAR(accel, kase.accel, err_tol)
+              << "Failed at interpolator type: " << interp_str;
   }
 
   // Check that the final knot point has zero acceleration and
   // velocity.
-  {
+  if (interp_type == InterpolatorType::Cubic ||
+      interp_type == InterpolatorType::ZeroOrderHold ||
+      interp_type == InterpolatorType::Pchip) {
     context->set_time(t.back() + 0.01);
     dut.CalcUnrestrictedUpdate(*context, context->get_mutable_state());
     dut.CalcOutput(*context, output.get());
@@ -146,8 +185,10 @@ GTEST_TEST(RobotPlanInterpolatorTest, TrajectoryTest) {
     const double accel =
         output->get_vector_data(dut.get_acceleration_output_port().get_index())
             ->GetAtIndex(0);
-    EXPECT_FLOAT_EQ(velocity, 0);
-    EXPECT_FLOAT_EQ(accel, 0);
+    EXPECT_FLOAT_EQ(velocity, 0)
+              << "Failed at interpolator type: " << interp_str;
+    EXPECT_FLOAT_EQ(accel, 0)
+              << "Failed at interpolator type: " << interp_str;
   }
 
   // Check that sending an empty plan causes us to continue to output
@@ -158,7 +199,8 @@ GTEST_TEST(RobotPlanInterpolatorTest, TrajectoryTest) {
   double position =
       output->get_vector_data(dut.get_state_output_port().get_index())
           ->GetAtIndex(0);
-  EXPECT_DOUBLE_EQ(1, position);
+  EXPECT_DOUBLE_EQ(1, position)
+            << "Failed at interpolator type: " << interp_str;
 
   plan.num_states = 0;
   plan.plan.clear();
@@ -167,8 +209,26 @@ GTEST_TEST(RobotPlanInterpolatorTest, TrajectoryTest) {
   dut.CalcUnrestrictedUpdate(*context, context->get_mutable_state());
   dut.CalcOutput(*context, output.get());
   position = output->get_vector_data(
-        dut.get_state_output_port().get_index())->GetAtIndex(0);
-  EXPECT_DOUBLE_EQ(1, position);
+      dut.get_state_output_port().get_index())->GetAtIndex(0);
+  EXPECT_DOUBLE_EQ(1, position)
+            << "Failed at interpolator type: " << interp_str;
+}
+
+
+class TrajectoryTestClass : public testing::TestWithParam<InterpolatorType> {
+ public:
+  virtual void SetUp() {}
+  virtual void TearDown() {}
+};
+
+INSTANTIATE_TEST_CASE_P(InstantiationName, TrajectoryTestClass,
+                        ::testing::Values(InterpolatorType::ZeroOrderHold,
+                                          InterpolatorType::FirstOrderHold,
+                                          InterpolatorType::Pchip,
+                                          InterpolatorType::Cubic));
+
+TEST_P(TrajectoryTestClass, TrajectoryTest) {
+  DoTrajectoryTest(GetParam());
 }
 
 }  // namespace

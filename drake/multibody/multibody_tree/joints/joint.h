@@ -90,7 +90,10 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   Joint(const std::string& name,
         const Frame<T>& frame_on_parent, const Frame<T>& frame_on_child) :
       name_(name),
-      frame_on_parent_(frame_on_parent), frame_on_child_(frame_on_child) {}
+      frame_on_parent_(frame_on_parent), frame_on_child_(frame_on_child) {
+    // Notice `this` joint references `frame_on_parent` and `frame_on_child` and
+    // therefore they must outlive it.
+  }
 
   virtual ~Joint() {}
 

@@ -17,8 +17,9 @@ namespace multibody {
 /// That is, given a frame F attached to the parent body P and a frame M
 /// attached to the child body B (see the Joint class's documentation),
 /// this Joint allows frames F and M to rotate with respect to each other about
-/// an axis â. The rotation angle is defined to be positive according to the
-/// right-hand-rule with the thumb aligned in the direction of the axis â.
+/// an axis â. The rotation angle's sign is defined such that child body B
+/// rotates about axis â according to the right hand rule, with thumb aligned in
+/// the axis direction.
 /// Axis â is constant and has the same measures in both frames F and M, that
 /// is, `â_F = â_M`.
 ///

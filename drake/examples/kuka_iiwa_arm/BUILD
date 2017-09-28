@@ -7,7 +7,7 @@ load(
     "drake_cc_binary",
     "drake_cc_googletest",
 )
-load("//tools:install_data.bzl", "install_data")
+load("//tools:install_data.bzl", "install", "install_data")
 load("//tools:lint.bzl", "add_lint_tests")
 
 package(
@@ -172,6 +172,23 @@ drake_cc_googletest(
     deps = [
         "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
     ],
+)
+
+# TODO(fbudin69500) Remove this script when FindResource supports install
+# directory (PR #6772).
+filegroup(
+    name = "kuka_plan_runner_script",
+    srcs = ["//tools:install/kuka_plan_runner/kuka_plan_runner.sh"],
+)
+
+# This examples needs to be install for external projects such as Spartan.
+install(
+    name = "install",
+    targets = [
+        ":kuka_plan_runner_script",
+        ":kuka_plan_runner",
+    ],
+    visibility = ["//visibility:public"],
 )
 
 install_data()

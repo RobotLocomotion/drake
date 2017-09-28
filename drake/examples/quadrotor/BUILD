@@ -21,6 +21,7 @@ drake_cc_library(
     srcs = ["quadrotor_plant.cc"],
     hdrs = ["quadrotor_plant.h"],
     deps = [
+        "//drake/common:default_scalars",
         "//drake/math:geometric_transform",
         "//drake/math:gradient",
         "//drake/systems/controllers:linear_quadratic_regulator",

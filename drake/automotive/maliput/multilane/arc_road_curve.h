@@ -47,6 +47,14 @@ class ArcRoadCurve : public RoadCurve {
 
   ~ArcRoadCurve() override = default;
 
+  /// @throws std::runtime_error When `r` makes the effective radius to be
+  /// negative or zero.
+  double p_from_s(double s, double r) const override;
+
+  /// @throws std::runtime_error When `r` makes the effective radius to be
+  /// negative or zero.
+  double s_from_p(double p, double r) const override;
+
   Vector2<double> xy_of_p(double p) const override {
     // The result will be computed with the following function:
     //      [x;y] = center + [radius * cos(θ); radius * sin(θ)]
@@ -96,25 +104,26 @@ class ArcRoadCurve : public RoadCurve {
 
   Vector3<double> ToCurveFrame(
       const Vector3<double>& geo_coordinate,
-      const api::RBounds& lateral_bounds,
+      double r_min, double r_max,
       const api::HBounds& height_bounds) const override;
 
-  /// Evaluates extrema in superelevation polynomial to verify that for the
-  /// given @p lateral_bounds the surface do not fold over itself.
-  /// @param lateral_bounds An api::RBounds object that represents the lateral
-  /// bounds of the surface mapping.
-  /// @param height_bounds An api::HBounds object that represents the elevation
-  /// bounds of the surface mapping.
-  /// @return True.
-  bool IsValid(
-      const api::RBounds& lateral_bounds,
-      const api::HBounds& height_bounds) const override;
+  bool IsValid(double r_min, double r_max,
+               const api::HBounds& height_bounds) const override;
 
  private:
   // Computes the absolute position along reference arc as an angle in
   // range [theta0_, (theta0 + d_theta_)],
   // as a function of parameter @p p (in domain [0, 1]).
   double theta_of_p(double p) const { return theta0_ + (p * d_theta_); }
+
+  // Computes the radius of the reference arc offset at a distance @p r.
+  // Uses d_theta_'s sign (see ArcRoadCurve() for more details)  to add or
+  // or subtract @p r distance.
+  // @param r Lateral offset of the reference curve over the z=0 plane.
+  // @return The reference arc offset radius.
+  double offset_radius(double r) const {
+    return radius_ - std::copysign(1., d_theta_) * r;
+  }
 
   // Center of rotation in z=0 plane, world coordinates, for the arc reference
   // curve.

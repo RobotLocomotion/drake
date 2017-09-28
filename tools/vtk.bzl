@@ -95,10 +95,13 @@ def _impl(repository_ctx):
         else:
             fail("Operating system is NOT supported", attr = os_result)
 
-        url = "https://d2mbb5ninhlpdu.cloudfront.net/vtk/{}".format(archive)
+        urls = [
+            "https://drake-packages.csail.mit.edu/vtk/{}".format(archive),
+            "https://s3.amazonaws.com/drake-packages/vtk/{}".format(archive),
+        ]
         root_path = repository_ctx.path("")
 
-        repository_ctx.download_and_extract(url, root_path, sha256 = sha256)
+        repository_ctx.download_and_extract(urls, root_path, sha256 = sha256)
 
     else:
         fail("Operating system is NOT supported", attr = os_result)
