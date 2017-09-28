@@ -1,4 +1,0 @@
-body_group {
-  name: "flange"
-  member: "iiwa_link_ee"
-}
