@@ -212,7 +212,8 @@ GTEST_TEST(DiscreteAffineSystemTest, DiscreteTime) {
                               C * x0 + D * u0 + y0));
 }
 
-// xdot = rotmat(t)*x, y = x;
+// [ẋ₁, ẋ₂]ᵀ = rotmat(t)*[x₁, x₂]ᵀ + u*[1, 1]ᵀ,
+// [y₁, y₂] = [x₁, x₂] + (u + 1)*[1, 1].
 class SimpleTimeVaryingAffineSystem : public TimeVaryingAffineSystem<double> {
  public:
   static constexpr int kNumStates = 2;

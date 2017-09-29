@@ -100,6 +100,51 @@ TEST_F(LinearSystemTest, ConvertScalarType) {
   }));
 }
 
+// [ẋ₁, ẋ₂]ᵀ = rotmat(t)*[x₁, x₂]ᵀ + u*[1, 1]ᵀ,
+// [y₁, y₂] = [x₁, x₂] + u*[1, 1].
+class SimpleTimeVaryingLinearSystem final
+    : public TimeVaryingLinearSystem<double> {
+ public:
+  static constexpr int kNumStates = 2;
+  static constexpr int kNumInputs = 1;
+  static constexpr int kNumOutputs = 2;
+
+  SimpleTimeVaryingLinearSystem()
+      : TimeVaryingLinearSystem<double>(SystemScalarConverter{},  // BR
+                                        kNumStates, kNumInputs, kNumOutputs,
+                                        0.0 /* continuous-time */) {}
+
+  ~SimpleTimeVaryingLinearSystem() override {}
+
+  Eigen::MatrixXd A(const double& t) const override {
+    using std::cos;
+    using std::sin;
+    Eigen::Matrix<double, kNumOutputs, kNumStates> mat;
+    mat << cos(t), -sin(t), sin(t), cos(t);
+    return mat;
+  }
+  Eigen::MatrixXd B(const double& t) const override {
+    return Eigen::Matrix<double, kNumOutputs, kNumInputs>::Ones();
+  }
+  Eigen::MatrixXd C(const double& t) const override {
+    return Eigen::Matrix<double, kNumStates, kNumStates>::Identity();
+  }
+  Eigen::MatrixXd D(const double& t) const override {
+    return Eigen::Matrix<double, kNumOutputs, kNumInputs>::Ones();
+  }
+};
+
+GTEST_TEST(SimpleTimeVaryingLinearSystemTest, ConstructorTest) {
+  SimpleTimeVaryingLinearSystem sys;
+
+  EXPECT_EQ(sys.get_num_output_ports(), 1);
+  EXPECT_EQ(sys.get_num_input_ports(), 1);
+  EXPECT_TRUE(CompareMatrices(sys.A(0.), Eigen::Matrix2d::Identity()));
+  EXPECT_TRUE(CompareMatrices(sys.B(0.), Eigen::Matrix<double, 2, 1>::Ones()));
+  EXPECT_TRUE(CompareMatrices(sys.C(0.), Eigen::Matrix2d::Identity()));
+  EXPECT_TRUE(CompareMatrices(sys.D(0.), Eigen::Matrix<double, 2, 1>::Ones()));
+}
+
 class TestLinearizeFromAffine : public ::testing::Test {
  protected:
   void SetUp() {
