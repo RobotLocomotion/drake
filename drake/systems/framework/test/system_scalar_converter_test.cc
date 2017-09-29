@@ -172,13 +172,15 @@ GTEST_TEST(SystemScalarConverterTest, TestAnyToAnySystem) {
   TestConversionFail<AnyToAnySystem, AutoDiffXd, AutoDiffXd>();
   TestConversionFail<AnyToAnySystem, Expression, Expression>();
 
-  // We support all remaining combinations of standard types.
+  // We support most remaining combinations of standard types.
   TestConversionPass<AnyToAnySystem, double,     AutoDiffXd, 1>();
   TestConversionPass<AnyToAnySystem, double,     Expression, 2>();
   TestConversionPass<AnyToAnySystem, AutoDiffXd, double,     3>();
-  TestConversionPass<AnyToAnySystem, AutoDiffXd, Expression, 4>();
-  TestConversionPass<AnyToAnySystem, Expression, double,     5>();
-  TestConversionPass<AnyToAnySystem, Expression, AutoDiffXd, 6>();
+  TestConversionPass<AnyToAnySystem, Expression, double,     4>();
+  TestConversionPass<AnyToAnySystem, Expression, AutoDiffXd, 5>();
+
+  // These seem too obscure to be worth supporting.
+  TestConversionFail<AnyToAnySystem, AutoDiffXd, Expression>();
 }
 
 GTEST_TEST(SystemScalarConverterTest, TestNonSymbolicSystem) {
@@ -293,7 +295,6 @@ GTEST_TEST(SystemScalarConverterTest, RemoveUnlessAlsoSupportedBy) {
   EXPECT_TRUE((dut.IsConvertible<double,     AutoDiffXd>()));
   EXPECT_TRUE((dut.IsConvertible<double,     Expression>()));
   EXPECT_TRUE((dut.IsConvertible<AutoDiffXd, double    >()));
-  EXPECT_TRUE((dut.IsConvertible<AutoDiffXd, Expression>()));
   EXPECT_TRUE((dut.IsConvertible<Expression, double    >()));
   EXPECT_TRUE((dut.IsConvertible<Expression, AutoDiffXd>()));
 
@@ -302,7 +303,6 @@ GTEST_TEST(SystemScalarConverterTest, RemoveUnlessAlsoSupportedBy) {
   EXPECT_TRUE((dut.IsConvertible< double,     AutoDiffXd>()));
   EXPECT_TRUE((dut.IsConvertible< AutoDiffXd, double    >()));
   EXPECT_FALSE((dut.IsConvertible<double,     Expression>()));
-  EXPECT_FALSE((dut.IsConvertible<AutoDiffXd, Expression>()));
   EXPECT_FALSE((dut.IsConvertible<Expression, double    >()));
   EXPECT_FALSE((dut.IsConvertible<Expression, AutoDiffXd>()));
 
@@ -311,7 +311,6 @@ GTEST_TEST(SystemScalarConverterTest, RemoveUnlessAlsoSupportedBy) {
   EXPECT_TRUE((dut.IsConvertible< AutoDiffXd, double    >()));
   EXPECT_FALSE((dut.IsConvertible<double,     AutoDiffXd>()));
   EXPECT_FALSE((dut.IsConvertible<double,     Expression>()));
-  EXPECT_FALSE((dut.IsConvertible<AutoDiffXd, Expression>()));
   EXPECT_FALSE((dut.IsConvertible<Expression, double    >()));
   EXPECT_FALSE((dut.IsConvertible<Expression, AutoDiffXd>()));
 
