@@ -27,7 +27,6 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "lcm",
     "lcmtypes_bot2_core",
     "lcmtypes_robotlocomotion",
-    "libbot",
     "octomap",
     "pybind11",
     "scs",
