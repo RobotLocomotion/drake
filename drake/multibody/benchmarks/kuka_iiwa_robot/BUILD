@@ -31,13 +31,4 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest(
-    name = "kuka_iiwa_robot_inverse_dynamics_test",
-    size = "small",
-    deps = [
-        ":kuka_iiwa_robot_library",
-        "//drake/multibody/benchmarks/kuka_iiwa_robot/MG:MG_kuka_robot_lib",
-    ],
-)
-
 add_lint_tests()

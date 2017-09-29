@@ -53,8 +53,9 @@ class RigidBody : public Body<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RigidBody)
 
   /// Constructs a %RigidBody with the given default SpatialInertia.
-  /// @param[in] M_BBo_B Spatial inertia of `this` body B about the frame's
-  ///            origin `Bo`, expressed in the body frame B.
+  /// @param[in] M_BBo_B
+  ///   Spatial inertia of `this` body B about the frame's origin `Bo` and
+  ///   expressed in the body frame B.
   /// @note See @ref multibody_spatial_inertia for details on the monogram
   /// notation used for spatial inertia quantities.
   explicit RigidBody(const SpatialInertia<double> M_BBo_B);
@@ -93,7 +94,7 @@ class RigidBody : public Body<T> {
     return default_spatial_inertia_.get_unit_inertia();
   }
 
-  /// Calculates the default value of this body B's rotational inertia about Bo
+  /// Gets the default value of this body B's rotational inertia about Bo
   /// (B's origin), expressed in B (this body's frame). This value is calculated
   /// from the SpatialInertia supplied at construction of this body.
   /// @retval I_BBo_B body B's rotational inertia about Bo, expressed in B.
@@ -170,7 +171,7 @@ class RigidBody : public Body<T> {
   /// Extract this body angular velocity in world, expressed in world.
   /// @param[in] vc velocity kinematics cache.
   /// @retval w_WB_W rigid body B's angular velocity in world W, expressed in W.
-  const Vector3<T>& get_angular_velocity_in_world_expressed_in_world(
+  const Vector3<T>& get_angular_velocity_in_world(
       const VelocityKinematicsCache<T>& vc) const {
     return get_spatial_velocity_in_world(vc).rotational();
   }
@@ -203,7 +204,7 @@ class RigidBody : public Body<T> {
   /// Extract this body's angular acceleration in world, expressed in world.
   /// @param[in] ac velocity kinematics cache.
   /// @retval alpha_WB_W B's angular acceleration in world W, expressed in W.
-  const Vector3<T>& get_angular_acceleration_in_world_expressed_in_world(
+  const Vector3<T>& get_angular_acceleration_in_world(
       const AccelerationKinematicsCache<T>& ac) const {
     return get_spatial_acceleration_in_world(ac).rotational();
   }
