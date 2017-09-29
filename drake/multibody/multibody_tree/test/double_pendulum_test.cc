@@ -14,6 +14,7 @@
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/benchmarks/acrobot/acrobot.h"
 #include "drake/multibody/multibody_tree/fixed_offset_frame.h"
+#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
@@ -21,6 +22,19 @@
 
 namespace drake {
 namespace multibody {
+
+// Friend class for accessing Joint<T> protected/private internals.
+class JointTester {
+ public:
+  JointTester() = delete;
+  // For these tests we do know that a RevoluteJoint is implemented with a
+  // RevoluteMobilizer.
+  static const RevoluteMobilizer<double>* get_mobilizer(
+      const RevoluteJoint<double>& joint) {
+    return joint.get_mobilizer();
+  }
+};
+
 namespace {
 
 const double kEpsilon = std::numeric_limits<double>::epsilon();
@@ -156,6 +170,15 @@ class PendulumTests : public ::testing::Test {
         &model_->AddFrame<FixedOffsetFrame>(
             upper_link_->get_body_frame(), X_USo_);
 
+    // Adds the shoulder and elbow mobilizers of the pendulum.
+    // Using:
+    //  const Mobilizer& AddMobilizer(std::unique_ptr<MobilizerType> mobilizer).
+    shoulder_mobilizer_ =
+        &model_->AddMobilizer(
+            make_unique<RevoluteMobilizer<double>>(
+                *shoulder_inboard_frame_, *shoulder_outboard_frame_,
+                Vector3d::UnitZ() /*revolute axis*/));
+
     // The elbow is the mobilizer that connects upper and lower links.
     // Below we will create inboard and outboard frames associated with the
     // pendulum's elbow.
@@ -166,26 +189,26 @@ class PendulumTests : public ::testing::Test {
     // In this case we create a frame using the FixedOffsetFrame::Create()
     // method taking a Body, i.e., creating a frame with a fixed offset from the
     // upper link body frame.
-    elbow_inboard_frame_ =
-        &model_->AddFrame<FixedOffsetFrame>(*upper_link_, X_UEi_);
-
     // To make this test a bit more interesting, we define the lower link's
     // frame L to be coincident with the elbow's outboard frame. Therefore,
     // Lo != Lcm.
-    elbow_outboard_frame_ = &lower_link_->get_body_frame();
 
-    // Adds the shoulder and elbow mobilizers of the pendulum.
-    // Using:
-    //  const Mobilizer& AddMobilizer(std::unique_ptr<MobilizerType> mobilizer).
-    shoulder_mobilizer_ =
-        &model_->AddMobilizer(
-            make_unique<RevoluteMobilizer<double>>(
-                *shoulder_inboard_frame_, *shoulder_outboard_frame_,
-                Vector3d::UnitZ() /*revolute axis*/));
-    // Using: const MobilizerType<T>& AddMobilizer(Args&&... args)
-    elbow_mobilizer_ = &model_->AddMobilizer<RevoluteMobilizer>(
-        *elbow_inboard_frame_, *elbow_outboard_frame_,
-        Vector3d::UnitZ() /*revolute axis*/);
+    // Instead of creating an elbow inboard frame (Ei), an elbow outboard
+    // frame (Eo) and connecting them with a Joint, we'll let the
+    // MultibodyTree::AddJoint() method do that for us:
+    elbow_joint_ = &model_->AddJoint<RevoluteJoint>(
+        "ElbowJoint",
+        *upper_link_, X_UEi_, /* Pose of Ei in U. */
+        *lower_link_, {},     /* No pose provided, frame Eo IS frame L. */
+        Vector3d::UnitZ()     /* revolute axis */);
+    elbow_inboard_frame_ = &elbow_joint_->get_frame_on_parent();
+    elbow_outboard_frame_ = &elbow_joint_->get_frame_on_child();
+    EXPECT_EQ(elbow_joint_->get_name(), "ElbowJoint");
+
+    // Assert that indeed the elbow joint's outboard frame IS the lower link
+    // frame.
+    ASSERT_EQ(elbow_outboard_frame_->get_index(),
+              lower_link_->get_body_frame().get_index());
 
     // Add force element for a constant gravity pointing downwards, that is, in
     // the minus y-axis direction.
@@ -250,11 +273,13 @@ class PendulumTests : public ::testing::Test {
   // Frames:
   const BodyFrame<double>* shoulder_inboard_frame_;
   const FixedOffsetFrame<double>* shoulder_outboard_frame_;
-  const FixedOffsetFrame<double>* elbow_inboard_frame_;
+  const Frame<double>* elbow_inboard_frame_;
   const Frame<double>* elbow_outboard_frame_;
   // Mobilizers:
   const RevoluteMobilizer<double>* shoulder_mobilizer_;
   const RevoluteMobilizer<double>* elbow_mobilizer_;
+  // Joints:
+  const RevoluteJoint<double>* elbow_joint_;
   // Pendulum parameters:
   const double link1_length_ = 1.0;
   const double link1_mass_ = 1.0;
@@ -290,7 +315,8 @@ TEST_F(PendulumTests, CreateModelBasics) {
   // Verifies the number of multibody elements is correct.
   EXPECT_EQ(model_->get_num_bodies(), 3);
   EXPECT_EQ(model_->get_num_frames(), 5);
-  EXPECT_EQ(model_->get_num_mobilizers(), 2);
+  // Joint has no implementation before finalize.
+  EXPECT_EQ(model_->get_num_mobilizers(), 1);
 
   // Check that frames are associated with the correct bodies.
   EXPECT_EQ(
@@ -299,45 +325,58 @@ TEST_F(PendulumTests, CreateModelBasics) {
   EXPECT_EQ(
       shoulder_outboard_frame_->get_body().get_index(),
       upper_link_->get_index());
-  EXPECT_EQ(
-      elbow_inboard_frame_->get_body().get_index(), upper_link_->get_index());
-  EXPECT_EQ(
-      elbow_outboard_frame_->get_body().get_index(), lower_link_->get_index());
 
   // Checks that mobilizers connect the right frames.
   EXPECT_EQ(shoulder_mobilizer_->get_inboard_frame().get_index(),
             world_body_->get_body_frame().get_index());
   EXPECT_EQ(shoulder_mobilizer_->get_outboard_frame().get_index(),
             shoulder_outboard_frame_->get_index());
-  EXPECT_EQ(elbow_mobilizer_->get_inboard_frame().get_index(),
-            elbow_inboard_frame_->get_index());
-  EXPECT_EQ(elbow_mobilizer_->get_outboard_frame().get_index(),
-            elbow_outboard_frame_->get_index());
 
   // Checks that mobilizers connect the right bodies.
   EXPECT_EQ(shoulder_mobilizer_->get_inboard_body().get_index(),
             world_body_->get_index());
   EXPECT_EQ(shoulder_mobilizer_->get_outboard_body().get_index(),
             upper_link_->get_index());
-  EXPECT_EQ(elbow_mobilizer_->get_inboard_body().get_index(),
-            upper_link_->get_index());
-  EXPECT_EQ(elbow_mobilizer_->get_outboard_body().get_index(),
-            lower_link_->get_index());
 
   // Checks we can retrieve the body associated with a frame.
   EXPECT_EQ(&shoulder_inboard_frame_->get_body(), world_body_);
   EXPECT_EQ(&shoulder_outboard_frame_->get_body(), upper_link_);
-  EXPECT_EQ(&elbow_inboard_frame_->get_body(), upper_link_);
-  EXPECT_EQ(&elbow_outboard_frame_->get_body(), lower_link_);
 
   // Checks we can request inboard/outboard bodies to a mobilizer.
   EXPECT_EQ(&shoulder_mobilizer_->get_inboard_body(), world_body_);
   EXPECT_EQ(&shoulder_mobilizer_->get_outboard_body(), upper_link_);
-  EXPECT_EQ(&elbow_mobilizer_->get_inboard_body(), upper_link_);
-  EXPECT_EQ(&elbow_mobilizer_->get_outboard_body(), lower_link_);
 
   // Request revolute mobilizers' axes.
   EXPECT_EQ(shoulder_mobilizer_->get_revolute_axis(), Vector3d::UnitZ());
+
+  // We need to Finalize() our model before testing the elbow mobilizer was
+  // created correctly. Joint implementations are created at Finalize().
+  ASSERT_NO_THROW(model_->Finalize());
+  elbow_mobilizer_ = JointTester::get_mobilizer(*elbow_joint_);
+
+  EXPECT_EQ(model_->get_num_mobilizers(), 2);
+  // Check that frames are associated with the correct bodies.
+  EXPECT_EQ(
+      elbow_inboard_frame_->get_body().get_index(), upper_link_->get_index());
+  EXPECT_EQ(
+      elbow_outboard_frame_->get_body().get_index(), lower_link_->get_index());
+  // Checks that mobilizers connect the right frames.
+  EXPECT_EQ(elbow_mobilizer_->get_inboard_frame().get_index(),
+            elbow_inboard_frame_->get_index());
+  EXPECT_EQ(elbow_mobilizer_->get_outboard_frame().get_index(),
+            elbow_outboard_frame_->get_index());
+  // Checks that mobilizers connect the right bodies.
+  EXPECT_EQ(elbow_mobilizer_->get_inboard_body().get_index(),
+            upper_link_->get_index());
+  EXPECT_EQ(elbow_mobilizer_->get_outboard_body().get_index(),
+            lower_link_->get_index());
+  // Checks we can retrieve the body associated with a frame.
+  EXPECT_EQ(&elbow_inboard_frame_->get_body(), upper_link_);
+  EXPECT_EQ(&elbow_outboard_frame_->get_body(), lower_link_);
+  // Checks we can request inboard/outboard bodies to a mobilizer.
+  EXPECT_EQ(&elbow_mobilizer_->get_inboard_body(), upper_link_);
+  EXPECT_EQ(&elbow_mobilizer_->get_outboard_body(), lower_link_);
+  // Request revolute mobilizers' axes.
   EXPECT_EQ(elbow_mobilizer_->get_revolute_axis(), Vector3d::UnitZ());
 }
 
@@ -357,6 +396,9 @@ TEST_F(PendulumTests, Indexes) {
   EXPECT_EQ(shoulder_outboard_frame_->get_index(), FrameIndex(3));
   EXPECT_EQ(elbow_inboard_frame_->get_index(), FrameIndex(4));
   EXPECT_EQ(elbow_outboard_frame_->get_index(), FrameIndex(2));
+  // Verifies the elbow's outboard frame IS the lower link's frame.
+  EXPECT_EQ(elbow_outboard_frame_->get_index(),
+            lower_link_->get_body_frame().get_index());
 }
 
 // Asserts that the Finalize() stage is successful and that re-finalization is
@@ -469,6 +511,9 @@ class PendulumKinematicTests : public PendulumTests {
     PendulumTests::SetUp();
     CreatePendulumModel();
     model_->Finalize();
+    // Only for testing, in this case we do know our Joint model IS a
+    // RevoluteMobilizer.
+    elbow_mobilizer_ = JointTester::get_mobilizer(*elbow_joint_);
     context_ = model_->CreateDefaultContext();
     mbt_context_ =
         dynamic_cast<MultibodyTreeContext<double>*>(context_.get());
@@ -591,7 +636,7 @@ class PendulumKinematicTests : public PendulumTests {
     // ======================================================================
     // Compute position kinematics.
     shoulder_mobilizer_->set_angle(context_.get(), shoulder_angle);
-    elbow_mobilizer_->set_angle(context_.get(), elbow_angle);
+    elbow_joint_->set_angle(context_.get(), elbow_angle);
     model_->CalcPositionKinematicsCache(*context_, &pc);
 
     // ======================================================================
@@ -721,13 +766,13 @@ class PendulumKinematicTests : public PendulumTests {
     // ======================================================================
     // Compute position kinematics.
     shoulder_mobilizer_->set_angle(context_.get(), shoulder_angle);
-    elbow_mobilizer_->set_angle(context_.get(), elbow_angle);
+    elbow_joint_->set_angle(context_.get(), elbow_angle);
     model_->CalcPositionKinematicsCache(*context_, &pc);
 
     // ======================================================================
     // Compute velocity kinematics.
     shoulder_mobilizer_->set_angular_rate(context_.get(), shoulder_angle_rate);
-    elbow_mobilizer_->set_angular_rate(context_.get(), elbow_angle_rate);
+    elbow_joint_->set_angular_rate(context_.get(), elbow_angle_rate);
     model_->CalcVelocityKinematicsCache(*context_, pc, &vc);
 
     // ======================================================================
@@ -781,7 +826,7 @@ TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
   // By default CreateDefaultContext() sets mobilizer to their zero
   // configuration.
   EXPECT_EQ(shoulder_mobilizer_->get_angle(*context_), 0.0);
-  EXPECT_EQ(elbow_mobilizer_->get_angle(*context_), 0.0);
+  EXPECT_EQ(elbow_joint_->get_angle(*context_), 0.0);
 
   // Test mobilizer's setter/getters.
   shoulder_mobilizer_->set_angle(context_.get(), M_PI);
@@ -800,8 +845,8 @@ TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
 
       shoulder_mobilizer_->set_angle(context_.get(), shoulder_angle);
       EXPECT_EQ(shoulder_mobilizer_->get_angle(*context_), shoulder_angle);
-      elbow_mobilizer_->set_angle(context_.get(), elbow_angle);
-      EXPECT_EQ(elbow_mobilizer_->get_angle(*context_), elbow_angle);
+      elbow_joint_->set_angle(context_.get(), elbow_angle);
+      EXPECT_EQ(elbow_joint_->get_angle(*context_), elbow_angle);
 
       // Verify this matches the corresponding entries in the context.
       EXPECT_EQ(mbt_context_->get_positions()(0), shoulder_angle);
@@ -873,7 +918,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
       // ======================================================================
       // Compute position kinematics.
       shoulder_mobilizer_->set_angle(context_.get(), shoulder_angle);
-      elbow_mobilizer_->set_angle(context_.get(), elbow_angle);
+      elbow_joint_->set_angle(context_.get(), elbow_angle);
       model_->CalcPositionKinematicsCache(*context_, &pc);
 
       // Obtain the lower link center of mass to later shift its computed
@@ -896,10 +941,8 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
 
       // Set the elbow's angular velocity.
       const double elbow_angle_rate = -0.5;
-      elbow_mobilizer_->set_angular_rate(context_.get(),
-                                         elbow_angle_rate);
-      EXPECT_EQ(elbow_mobilizer_->get_angular_rate(*context_),
-                elbow_angle_rate);
+      elbow_joint_->set_angular_rate(context_.get(), elbow_angle_rate);
+      EXPECT_EQ(elbow_joint_->get_angular_rate(*context_), elbow_angle_rate);
       model_->CalcVelocityKinematicsCache(*context_, pc, &vc);
 
       // Retrieve body spatial velocities from velocity kinematics cache.
@@ -1071,8 +1114,9 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
 
   const RevoluteMobilizer<AutoDiffXd>& shoulder_mobilizer_autodiff =
       model_autodiff->get_variant(*shoulder_mobilizer_);
-  const RevoluteMobilizer<AutoDiffXd>& elbow_mobilizer_autodiff =
-      model_autodiff->get_variant(*elbow_mobilizer_);
+
+  const RevoluteJoint<AutoDiffXd>& elbow_joint_autodiff =
+      model_autodiff->get_variant(*elbow_joint_);
 
   const RigidBody<AutoDiffXd>& upper_link_autodiff =
       model_autodiff->get_variant(*upper_link_);
@@ -1115,8 +1159,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
           // Update position kinematics.
           shoulder_mobilizer_autodiff.set_angle(context_autodiff.get(),
                                                 shoulder_angle);
-          elbow_mobilizer_autodiff.set_angle(context_autodiff.get(),
-                                             elbow_angle);
+          elbow_joint_autodiff.set_angle(context_autodiff.get(), elbow_angle);
           model_autodiff->CalcPositionKinematicsCache(*context_autodiff, &pc);
 
           // Retrieve body poses from position kinematics cache.

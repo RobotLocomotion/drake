@@ -43,7 +43,7 @@ def bitbucket_archive(
     # bucket.
     mirrors = [
         "https://bitbucket.org/%s/get/%s.tar.gz",
-        "https://d2tbce6hkathzp.cloudfront.net/bitbucket/%s/%s.tar.gz",
+        "https://drake-mirror.csail.mit.edu/bitbucket/%s/%s.tar.gz",
         "https://s3.amazonaws.com/drake-mirror/bitbucket/%s/%s.tar.gz",
     ]
     urls = [mirror % (repository, commit) for mirror in mirrors]

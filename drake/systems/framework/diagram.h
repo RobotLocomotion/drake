@@ -1177,13 +1177,6 @@ class Diagram : public System<T>,
           template Convert<NewType>(*old_system);
       DRAKE_DEMAND(new_system != nullptr);
 
-      // Scalar conversion preserves the name; however, if DiagramBuilder
-      // assigned a default name that includes the memory address, we will
-      // update it here to reflect the new memory address.
-      if (old_system->get_name() == old_system->GetMemoryObjectName()) {
-        new_system->set_name(new_system->GetMemoryObjectName());
-      }
-
       // Update our mapping and take ownership.
       old_to_new_map[old_system.get()] = new_system.get();
       new_systems.push_back(std::move(new_system));

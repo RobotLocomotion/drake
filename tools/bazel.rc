@@ -73,15 +73,6 @@ build:everything --define=WITH_SNOPT=ON
 build:unsupported_crosstool --crosstool_top=//external:cc_toolchain
 build:unsupported_crosstool --action_env=CCACHE_DISABLE=1
 
-### git submodules
-# If a CMake build is performed from the same source tree, it will checkout git
-# submodules, and if they have BUILD files then `bazel build //...` will find
-# them and complain that the paths don't line up correctly anymore.  Here, we
-# manually list out all git submodule externals' BUILD files.
-#
-# TODO(jwnimmer-tri) Remove this once git submodules are no longer used.
-build --deleted_packages=externals/protobuf,externals/protobuf/util/python,externals/gflags
-
 ### Lint. ###
 # Run the tests for code style compliance, but not any functional (unit) tests.
 test:lint --build_tests_only

@@ -21,6 +21,9 @@ using BodyNodeIndex = TypeSafeIndex<class BodyNodeTag>;
 /// system.
 using ForceElementIndex = TypeSafeIndex<class ForceElementTag>;
 
+/// Type used to identify joints by index within a multibody tree system.
+using JointIndex = TypeSafeIndex<class JointElementTag>;
+
 /// For every MultibodyTree the **world** body _always_ has this unique index
 /// and it is always zero.
 // Note:
