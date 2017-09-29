@@ -103,93 +103,170 @@ TEST_F(LinearSystemTest, ConvertScalarType) {
   }));
 }
 
+class TestLinearizeFromAffine : public ::testing::Test {
+ protected:
+  void SetUp() {
+    A_ << 1, 2, 3, 4, 5, 6, 7, 8, 9;
+    B_ << 10, 11, 12;
+    f0_ << 13, 14, 15;
+    C_ << 16, 17, 18, 19, 20, 21;
+    D_ << 22, 23;
+    y0_ << 24, 25;
+
+    continuous_system_.reset(new AffineSystem<double>(
+        A_, B_, f0_, C_, D_, y0_));
+    discrete_system_.reset(new AffineSystem<double>(
+        A_, B_, f0_, C_, D_, y0_, time_period_));
+  }
+
+  Eigen::Matrix3d A_;
+  Eigen::Matrix<double, 3, 1> B_;
+  Eigen::Vector3d f0_;
+  Eigen::Matrix<double, 2, 3> C_;
+  Eigen::Vector2d D_;
+  Eigen::Vector2d y0_;
+
+  Eigen::Vector3d x0_{26, 27, 28};
+  double u0_{29};
+
+  const double time_period_ = 0.1;
+
+  std::unique_ptr<AffineSystem<double>> continuous_system_;
+  std::unique_ptr<AffineSystem<double>> discrete_system_;
+};
+
 // Test that linearizing a continuous-time affine system returns the original
 // A,B,C,D matrices.
-GTEST_TEST(TestLinearize, FromAffine) {
-  Eigen::Matrix3d A;
-  Eigen::Matrix<double, 3, 1> B;
-  Eigen::Vector3d f0;
-  Eigen::Matrix<double, 2, 3> C;
-  Eigen::Vector2d D;
-  Eigen::Vector2d y0;
-  A << 1, 2, 3, 4, 5, 6, 7, 8, 9;
-  B << 10, 11, 12;
-  f0 << 13, 14, 15;
-  C << 16, 17, 18, 19, 20, 21;
-  D << 22, 23;
-  y0 << 24, 25;
-  AffineSystem<double> system(A, B, f0, C, D, y0);
-  auto context = system.CreateDefaultContext();
-  Eigen::Vector3d x0(26, 27, 28);
-  context->get_mutable_continuous_state_vector()->SetFromVector(x0);
-  double u0 = 29;
-  context->FixInputPort(0, Vector1d::Constant(u0));
-
-  // This Context is not an equilibrium point.
-  EXPECT_THROW(Linearize(system, *context), std::runtime_error);
+TEST_F(TestLinearizeFromAffine, ContinuousAtEquilibrium) {
+  auto context = continuous_system_->CreateDefaultContext();
+  context->FixInputPort(0, Vector1d::Constant(u0_));
 
   // Set x0 to the actual equilibrium point.
-  x0 = A.colPivHouseholderQr().solve(-B * u0 - f0);
+  const Eigen::Vector3d x0 = A_.colPivHouseholderQr().solve(-B_ * u0_ - f0_);
   context->get_mutable_continuous_state_vector()->SetFromVector(x0);
 
-  auto linearized_system = Linearize(system, *context);
+  auto linearized_system = Linearize(*continuous_system_, *context);
 
   double tol = 1e-10;
-  EXPECT_TRUE(CompareMatrices(A, linearized_system->A(), tol,
+  EXPECT_TRUE(CompareMatrices(A_, linearized_system->A(), tol,
                               MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(B, linearized_system->B(), tol,
+  EXPECT_TRUE(CompareMatrices(B_, linearized_system->B(), tol,
                               MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(C, linearized_system->C(), tol,
+  EXPECT_TRUE(CompareMatrices(C_, linearized_system->C(), tol,
                               MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(D, linearized_system->D(), tol,
+  EXPECT_TRUE(CompareMatrices(D_, linearized_system->D(), tol,
+                              MatrixCompareType::absolute));
+
+  std::unique_ptr<AffineSystem<double>> affine_system =
+      LinearizeAtNonequilibrium(*continuous_system_, *context);
+  // Verify that the affine term f0 is in fact zero.
+  EXPECT_TRUE(CompareMatrices(Eigen::Vector3d::Zero(), affine_system->f0(), tol,
+                              MatrixCompareType::absolute));
+  // Verify that the affine term y0 is just the original output equation.
+  EXPECT_TRUE(CompareMatrices(C_ * x0 + D_ * u0_ + y0_,
+                              affine_system->y0(), tol,
                               MatrixCompareType::absolute));
 }
 
-// Test that linearizing a discrete-time affine system returns the original
-// A,B,C,D matrices and time period.
-GTEST_TEST(TestLinearize, FromDiscreteAffine) {
-  Eigen::Matrix3d A;
-  Eigen::Matrix<double, 3, 1> B;
-  Eigen::Vector3d f0;
-  Eigen::Matrix<double, 2, 3> C;
-  Eigen::Vector2d D;
-  Eigen::Vector2d y0;
-  A << 1, 2, 3, 4, 5, 6, 7, 8, 9;
-  B << 10, 11, 12;
-  f0 << 13, 14, 15;
-  C << 16, 17, 18, 19, 20, 21;
-  D << 22, 23;
-  y0 << 24, 25;
-  const double time_period = 0.1;
-  AffineSystem<double> discrete_system(A, B, f0, C, D, y0, time_period);
-  auto context = discrete_system.CreateDefaultContext();
-  Eigen::Vector3d x0(26, 27, 28);
+// Test that linearizing a continuous-time affine system about a point that is
+// not at equilibrium returns the original A,B,C,D matrices and affine terms.
+TEST_F(TestLinearizeFromAffine, ContinuousAtNonEquilibrium) {
+  auto context = continuous_system_->CreateDefaultContext();
+  context->FixInputPort(0, Vector1d::Constant(u0_));
+  context->get_mutable_continuous_state_vector()->SetFromVector(x0_);
+
+  // This Context is not an equilibrium point.
+  EXPECT_THROW(Linearize(*continuous_system_, *context), std::runtime_error);
+
+  // Obtain a linearization at this nonequilibrium condition.
+  std::unique_ptr<AffineSystem<double>> affine_system =
+      LinearizeAtNonequilibrium(*continuous_system_, *context);
+
+  double tol = 1e-10;
+  EXPECT_TRUE(CompareMatrices(A_, affine_system->A(), tol,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(B_, affine_system->B(), tol,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(C_, affine_system->C(), tol,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(D_, affine_system->D(), tol,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(A_ * x0_ + B_ * u0_ + f0_,
+                              affine_system->f0(), tol,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(C_ * x0_ + D_ * u0_ + y0_,
+                              affine_system->y0(), tol,
+                              MatrixCompareType::absolute));
+}
+
+TEST_F(TestLinearizeFromAffine, DiscreteAtEquilibrium) {
+  auto context = discrete_system_->CreateDefaultContext();
+  context->FixInputPort(0, Vector1d::Constant(u0_));
+
+  // Set x0 to the actual equilibrium point.
+  const Eigen::Matrix3d eye = Eigen::Matrix3d::Identity();
+  const Eigen::Vector3d x0 =
+      (eye - A_).colPivHouseholderQr().solve(B_ * u0_ + f0_);
   systems::BasicVector<double>* xd =
       context->get_mutable_discrete_state()->get_mutable_vector();
   xd->SetFromVector(x0);
-  double u0 = 29;
-  context->FixInputPort(0, Vector1d::Constant(u0));
 
-  // This Context is not an equilibrium point.
-  EXPECT_THROW(Linearize(discrete_system, *context), std::runtime_error);
-
-  // Set x0 to the actual equilibrium point.
-  Eigen::Matrix3d eye = Eigen::Matrix3d::Identity();
-  x0 = (eye - A).colPivHouseholderQr().solve(B * u0 + f0);
-  xd->SetFromVector(x0);
-
-  auto linearized_system = Linearize(discrete_system, *context);
+  auto linearized_system = Linearize(*discrete_system_, *context);
 
   double tol = 1e-10;
-  EXPECT_TRUE(CompareMatrices(A, linearized_system->A(), tol,
+  EXPECT_TRUE(CompareMatrices(A_, linearized_system->A(), tol,
                               MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(B, linearized_system->B(), tol,
+  EXPECT_TRUE(CompareMatrices(B_, linearized_system->B(), tol,
                               MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(C, linearized_system->C(), tol,
+  EXPECT_TRUE(CompareMatrices(C_, linearized_system->C(), tol,
                               MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(D, linearized_system->D(), tol,
+  EXPECT_TRUE(CompareMatrices(D_, linearized_system->D(), tol,
                               MatrixCompareType::absolute));
-  EXPECT_EQ(time_period, linearized_system->time_period());
+  EXPECT_EQ(time_period_, linearized_system->time_period());
+
+  std::unique_ptr<AffineSystem<double>> affine_system =
+      LinearizeAtNonequilibrium(*discrete_system_, *context);
+  // Verify that the affine term f0 is in fact zero.
+  EXPECT_TRUE(CompareMatrices(Eigen::Vector3d::Zero(), affine_system->f0(), tol,
+                              MatrixCompareType::absolute));
+  // Verify that the affine term y0 is just the original output equation.
+  EXPECT_TRUE(CompareMatrices(C_ * x0 + D_ * u0_ + y0_,
+                              affine_system->y0(), tol,
+                              MatrixCompareType::absolute));
+}
+
+// Test that linearizing a discrete-time affine system about a point that is not
+// at equilibrium returns the original A,B,C,D matrices and affine terms.
+TEST_F(TestLinearizeFromAffine, DiscreteAtNonEquilibrium) {
+  auto context = discrete_system_->CreateDefaultContext();
+  context->FixInputPort(0, Vector1d::Constant(u0_));
+  systems::BasicVector<double>* xd =
+      context->get_mutable_discrete_state()->get_mutable_vector();
+  xd->SetFromVector(x0_);
+
+  // This Context is not an equilibrium point.
+  EXPECT_THROW(Linearize(*discrete_system_, *context), std::runtime_error);
+
+  // Obtain a linearization at this nonequilibrium condition.
+  std::unique_ptr<AffineSystem<double>> affine_system =
+      LinearizeAtNonequilibrium(*discrete_system_, *context);
+
+  double tol = 1e-10;
+  EXPECT_TRUE(CompareMatrices(A_, affine_system->A(), tol,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(B_, affine_system->B(), tol,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(C_, affine_system->C(), tol,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(D_, affine_system->D(), tol,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(A_ * x0_ + B_ * u0_ + f0_ - x0_,
+                              affine_system->f0(), tol,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(C_ * x0_ + D_ * u0_ + y0_,
+                              affine_system->y0(), tol,
+                              MatrixCompareType::absolute));
+  EXPECT_EQ(time_period_, affine_system->time_period());
 }
 
 // A trivial system with discrete state that is not bound to a periodic update
