@@ -12,18 +12,17 @@ set(installed_headers
   protobuf.h
   )
 
-add_library_with_exports(LIB_NAME drakeCommonProto
-  SOURCE_FILES ${sources} ${installed_headers})
+add_library(drakeCommonProto ${sources} ${installed_headers})
 target_include_directories(drakeCommonProto PUBLIC ${PROTOBUF_INCLUDE_DIRS})
 target_link_libraries(drakeCommonProto
   ${PROTOBUF_LIBRARIES}
   drakeCommon
   Eigen3::Eigen
   )
-set(drakeCommonProto_CFLAGS)
-set(drakeCommonProto_REQUIRES)
 
 drake_install_headers(${installed_headers})
 drake_install_libraries(drakeCommonProto)
 
-# N.B. The tests are not built with CMake.
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()
