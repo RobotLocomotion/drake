@@ -27,6 +27,7 @@ drake_cc_library(
         ":saturation",
         ":signal_log",
         ":signal_logger",
+        ":time_varying_linear_system",
         ":trajectory_source",
         ":zero_order_hold",
     ],
@@ -198,6 +199,19 @@ drake_cc_library(
     deps = [
         "//drake/common:default_scalars",
         "//drake/common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "time_varying_linear_system",
+    srcs = ["time_varying_linear_system.cc"],
+    hdrs = ["time_varying_linear_system.h"],
+    deps = [
+        ":affine_system",
+        "//drake/common:default_scalars",
+        "//drake/common:essential",
+        "//drake/common:extract_double",
+        "//drake/common/trajectories:piecewise_polynomial_trajectory",
     ],
 )
 
@@ -394,6 +408,16 @@ drake_cc_googletest(
         "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/systems/analysis:simulator",
         "//drake/systems/framework",
+    ],
+)
+
+drake_cc_googletest(
+    name = "time_varying_linear_system_test",
+    deps = [
+        ":time_varying_linear_system",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/systems/framework",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 

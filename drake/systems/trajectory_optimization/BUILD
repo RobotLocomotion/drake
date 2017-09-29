@@ -45,6 +45,8 @@ drake_cc_library(
         ":multiple_shooting",
         "//drake/math:autodiff",
         "//drake/math:gradient",
+        "//drake/systems/primitives:linear_system",
+        "//drake/systems/primitives:time_varying_linear_system",
     ],
 )
 
@@ -81,6 +83,7 @@ drake_cc_googletest(
         "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/common/trajectories:piecewise_polynomial",
         "//drake/systems/primitives:linear_system",
+        "//drake/systems/primitives:time_varying_linear_system",
     ],
 )
 
