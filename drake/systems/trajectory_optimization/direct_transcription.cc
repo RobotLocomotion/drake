@@ -1,6 +1,8 @@
 #include "drake/systems/trajectory_optimization/direct_transcription.h"
 
+#include <algorithm>
 #include <cstddef>
+#include <limits>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -103,34 +105,59 @@ DirectTranscription::DirectTranscription(const System<double>* system,
                        0.1),  // TODO(russt): Replace this with the actual
                               // sample time of the discrete update (#6878).
       discrete_time_system_(true) {
-  // This is the constructor for discrete-time systems.  For continuous-time
-  // systems, you must use a different constructor that specifies the
-  // timesteps.
-  DRAKE_THROW_UNLESS(context.has_only_discrete_state());
-
-  // TODO(russt): Check that the system has ONLY simple periodic updates
-  // (#6878).
-
-  DRAKE_DEMAND(context.get_num_discrete_state_groups() == 1);
-  DRAKE_DEMAND(num_states() == context.get_discrete_state(0)->size());
-  DRAKE_DEMAND(system->get_num_input_ports() <= 1);
-  DRAKE_DEMAND(num_inputs() == (context.get_num_input_ports() > 0
-                                    ? system->get_input_port(0).size()
-                                    : 0));
+  ValidateSystem(*system, context);
 
   // First try symbolic dynamics.
   if (!AddSymbolicDynamicConstraints(system, context)) {
     AddAutodiffDynamicConstraints(system, context);
   }
+  AddInputConstraintAtFinalTime();
+}
 
-  // Constrain the final input to match the penultimate, otherwise the final
-  // input is unconstrained.
-  // (Note that it might be more ideal to have less decision variables
-  // allocated
-  // for this specific case, but this is a reasonable work-around).
-  if (num_inputs() > 0) {
-    AddLinearConstraint(input(N() - 2) == input(N() - 1));
+DirectTranscription::DirectTranscription(const LinearSystem<double>* system,
+                                         const Context<double>& context,
+                                         int num_time_samples)
+    : MultipleShooting(system->get_num_total_inputs(),
+                       context.get_num_total_states(), num_time_samples,
+                       std::max(system->time_period(),
+                                std::numeric_limits<double>::epsilon())
+                       /* N.B. Ensures that MultipleShooting is well-formed */),
+      discrete_time_system_(true) {
+  ValidateSystem(*system, context);
+
+  for (int i = 0; i < N() - 1; i++) {
+    Eigen::MatrixXd Aeq =
+        Eigen::MatrixXd::Zero(num_states(), 2 * num_states() + num_inputs());
+    Aeq << -system->A(), -system->B(),
+        Eigen::MatrixXd::Identity(num_states(), num_states());
+    AddLinearEqualityConstraint(Aeq, Eigen::VectorXd::Zero(num_states()),
+                                {state(i), input(i), state(i+1)});
   }
+  AddInputConstraintAtFinalTime();
+}
+
+DirectTranscription::DirectTranscription(
+    const TimeVaryingLinearSystem<double>* system,
+    const Context<double>& context, int num_time_samples)
+    : MultipleShooting(system->get_num_total_inputs(),
+                       context.get_num_total_states(), num_time_samples,
+                       std::max(system->time_period(),
+                                std::numeric_limits<double>::epsilon())
+                       /* N.B. Ensures that MultipleShooting is well-formed */),
+      discrete_time_system_(true) {
+  ValidateSystem(*system, context);
+
+  for (int i = 0; i < N() - 1; i++) {
+    const double t = system->time_period() * i;
+    Eigen::MatrixXd Aeq =
+        Eigen::MatrixXd::Zero(num_states(), 2 * num_states() + num_inputs());
+    Aeq << -system->A(t), -system->B(t),
+        Eigen::MatrixXd::Identity(num_states(), num_states());
+    AddLinearEqualityConstraint(Aeq, Eigen::VectorXd::Zero(num_states()),
+                                {state(i), input(i), state(i+1)});
+  }
+
+  AddInputConstraintAtFinalTime();
 }
 
 void DirectTranscription::DoAddRunningCost(const symbolic::Expression& g) {
@@ -240,6 +267,12 @@ void DirectTranscription::AddAutodiffDynamicConstraints(
         num_states(), num_inputs(), i * fixed_timestep());
 
     AddConstraint(constraint, {input(i), state(i), state(i + 1)});
+  }
+}
+
+void DirectTranscription::AddInputConstraintAtFinalTime() {
+  if (num_inputs() > 0) {
+    AddLinearConstraint(input(N() - 2) == input(N() - 1));
   }
 }
 

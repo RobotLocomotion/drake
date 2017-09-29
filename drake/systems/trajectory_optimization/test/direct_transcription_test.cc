@@ -10,6 +10,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff.h"
 #include "drake/systems/primitives/linear_system.h"
+#include "drake/systems/primitives/time_varying_linear_system.h"
 
 namespace drake {
 namespace systems {
@@ -97,6 +98,17 @@ class LinearSystemWParams final : public systems::LeafSystem<T> {
   }
 };
 
+std::unique_ptr<AffineSystem<double>> MakeAffineSystem(const double time_step) {
+  // x[n+1] = 1.
+  const Eigen::Matrix<double, 1, 1> A(0.0);
+  const Eigen::Matrix<double, 1, 0> B;
+  const Vector1d f0(1.0);
+  const Eigen::Matrix<double, 0, 1> C;
+  const Eigen::Matrix<double, 0, 0> D;
+  const Eigen::Matrix<double, 0, 1> y0;
+  return std::make_unique<AffineSystem<double>>(A, B, f0, C, D, y0, time_step);
+}
+
 }  // namespace
 
 // This example will NOT use the symbolic constraints.
@@ -131,6 +143,38 @@ GTEST_TEST(DirectTranscriptionTest, DiscreteTimeConstraintTest) {
 
 // This example WILL use the symbolic constraints.
 GTEST_TEST(DirectTranscriptionTest, DiscreteTimeSymbolicConstraintTest) {
+  const double kTimeStep = 0.1;
+  std::unique_ptr<AffineSystem<double>> system = MakeAffineSystem(kTimeStep);
+
+  const auto context = system->CreateDefaultContext();
+  int kNumSampleTimes = 3;
+  DirectTranscription prog(system.get(), *context, kNumSampleTimes);
+
+  // TODO(russt):  Uncomment this upon resolution of #6878.
+  // EXPECT_EQ(prog.fixed_timestep(),kTimeStep);
+
+  // Sets all decision variables to trivial known values (1,2,3,...).
+  prog.SetDecisionVariableValues(
+      Eigen::VectorXd::LinSpaced(prog.num_vars(), 1, prog.num_vars()));
+
+  // Constructor should add dynamic constraints, and these should have been
+  // added as linear equality constraints. (There is also one linear
+  // equality constraint for the control input).
+  const std::vector<solvers::Binding<solvers::LinearEqualityConstraint>>&
+      dynamic_constraints = prog.linear_equality_constraints();
+  EXPECT_EQ(dynamic_constraints.size(), kNumSampleTimes - 1);
+  // Check that there are no nonlinear constraints in the program.
+  EXPECT_EQ(prog.generic_constraints().size(), 0);
+
+  for (int i = 0; i < (kNumSampleTimes - 1); i++) {
+    EXPECT_TRUE(
+        CompareMatrices(prog.EvalBindingAtSolution(dynamic_constraints[i]),
+                        prog.GetSolution(prog.state(i + 1))));
+  }
+}
+
+// This example tests the LinearSystem specialization of the constructor.
+GTEST_TEST(DirectTranscriptionTest, DiscreteTimeLinearSystemTest) {
   Eigen::Matrix2d A, B;
   // clang-format off
   A << 1, 2,
@@ -171,21 +215,82 @@ GTEST_TEST(DirectTranscriptionTest, DiscreteTimeSymbolicConstraintTest) {
   }
 }
 
-GTEST_TEST(DirectTranscriptionTest, AddRunningCostTest) {
-  // x[n+1] = 1.
-  const Eigen::Matrix<double, 1, 1> A(0.0);
-  const Eigen::Matrix<double, 1, 0> B;
-  const Vector1d f0(1.0);
-  const Eigen::Matrix<double, 0, 1> C;
-  const Eigen::Matrix<double, 0, 0> D;
-  const Eigen::Matrix<double, 0, 1> y0;
-  const double kTimeStep = 0.1;
-  AffineSystem<double> system(A, B, f0, C, D, y0, kTimeStep);
+// This example tests the TimeVaryingLinearSystem specialization of the
+// constructor.
+GTEST_TEST(DirectTranscriptionTest, TimeVaryingLinearSystemTest) {
+  const std::vector<double> times {0., 1.};
+  std::vector<Eigen::MatrixXd> Avec(times.size());
+  std::vector<Eigen::MatrixXd> Bvec(times.size());
+  std::vector<Eigen::MatrixXd> Cvec(times.size());
+  std::vector<Eigen::MatrixXd> Dvec(times.size());
+  Eigen::Matrix2d A0;
+  A0 << 1, 2, 3, 4;
+  Eigen::Matrix2d B0;
+  B0 << 5, 6, 7, 8;
+  Eigen::Matrix2d C0;
+  C0 << 9, 10, 11, 12;
+  Eigen::Matrix2d D0;
+  D0 << 13, 14, 15, 16;
+  for (int i{0}; i < static_cast<int>(times.size()); ++i) {
+    Avec[i] = A0 + i * Eigen::Matrix2d::Ones();
+    Bvec[i] = B0 + i * Eigen::Matrix2d::Ones();
+    Cvec[i] = C0 + i * Eigen::Matrix2d::Ones();
+    Dvec[i] = D0 + i * Eigen::Matrix2d::Ones();
+  }
+  const auto Apoly =
+      PiecewisePolynomial<double>::FirstOrderHold(times, Avec);
+  const auto Bpoly =
+      PiecewisePolynomial<double>::FirstOrderHold(times, Bvec);
+  const auto Cpoly =
+      PiecewisePolynomial<double>::FirstOrderHold(times, Cvec);
+  const auto Dpoly =
+      PiecewisePolynomial<double>::FirstOrderHold(times, Dvec);
+  const PiecewisePolynomialTrajectory A(Apoly);
+  const PiecewisePolynomialTrajectory B(Bpoly);
+  const PiecewisePolynomialTrajectory C(Cpoly);
+  const PiecewisePolynomialTrajectory D(Dpoly);
+
+  const double kTimeStep = .1;
+  TimeVaryingLinearSystem<double> system(A, B, C, D, kTimeStep);
 
   const auto context = system.CreateDefaultContext();
+  int kNumSampleTimes = 3;
+  DirectTranscription prog(&system, *context, kNumSampleTimes);
+
+  // TODO(russt):  Uncomment this upon resolution of #6878.
+  // EXPECT_EQ(prog.fixed_timestep(),kTimeStep);
+
+  // Sets all decision variables to trivial known values (1,2,3,...).
+  prog.SetDecisionVariableValues(
+      Eigen::VectorXd::LinSpaced(prog.num_vars(), 1, prog.num_vars()));
+
+  // Constructor should add dynamic constraints, and these should have been
+  // added as linear equality constraints. (There is also one linear
+  // equality constraint for the control input).
+  const std::vector<solvers::Binding<solvers::LinearEqualityConstraint>>&
+      dynamic_constraints = prog.linear_equality_constraints();
+  EXPECT_EQ(dynamic_constraints.size(), kNumSampleTimes);
+  // Check that there are no nonlinear constraints in the program.
+  EXPECT_EQ(prog.generic_constraints().size(), 0);
+
+  for (int i = 0; i < (kNumSampleTimes - 1); i++) {
+    const double t = system.time_period() * i;
+    EXPECT_TRUE(
+        CompareMatrices(prog.EvalBindingAtSolution(dynamic_constraints[i]),
+                        prog.GetSolution(prog.state(i + 1)) -
+                        A.value(t) * prog.GetSolution(prog.state(i)) -
+                        B.value(t) * prog.GetSolution(prog.input(i))));
+  }
+}
+
+GTEST_TEST(DirectTranscriptionTest, AddRunningCostTest) {
+  const double kTimeStep = 0.1;
+  std::unique_ptr<AffineSystem<double>> system = MakeAffineSystem(kTimeStep);
+
+  const auto context = system->CreateDefaultContext();
   const int kNumSamples{5};
 
-  DirectTranscription prog(&system, *context, kNumSamples);
+  DirectTranscription prog(system.get(), *context, kNumSamples);
 
   // Check that there are no nonlinear constraints in the program.
   EXPECT_EQ(prog.generic_constraints().size(), 0);
