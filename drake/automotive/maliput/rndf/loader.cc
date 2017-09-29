@@ -55,7 +55,7 @@ ignition::math::Vector3d ToGlobalCoordinates(
 
 // Computes the lower left and upper right corners' coordinates of the
 // bounding box that comprises all the given @p segments. Coordinates
-// are expresed in the global Cartesian frame located at @p origin.
+// are expressed in the global Cartesian frame located at @p origin.
 // @param segments The Segment collection to compute a bounding box for.
 // @param origin The global Cartesian frame location in latitude / longitude
 // coordinates.
