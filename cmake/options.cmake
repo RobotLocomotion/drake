@@ -217,15 +217,18 @@ macro(drake_setup_options)
   # BEGIN "system" dependencies
 
   # These are packages that we can build, but which we allow the user to use
-  # their own copy (usually provided by the system) if preferred. Some of these
-  # may be required.
+  # their own copy (usually provided by the system) if preferred.
 
   drake_system_dependency(
-    EIGEN REQUIRES Eigen3 VERSION 3.2.92
+    EIGEN REQUIRES Eigen3 VERSION 3.3.3
     "Eigen C++ matrix library")
 
   drake_system_dependency(
-    GOOGLETEST REQUIRES GTest
+    FMT REQUIRES fmt VERSION 3.0.1
+    "Open-source formatting library for C++")
+
+  drake_system_dependency(
+    GOOGLETEST REQUIRES GTest VERSION 1.8
     "Google testing framework")
 
   drake_system_dependency(
@@ -233,17 +236,20 @@ macro(drake_setup_options)
     "Google command-line flags processing library")
 
   drake_system_dependency(
-    PYBIND11 OPTIONAL REQUIRES pybind11
-    DEPENDS "NOT DISABLE_PYTHON"
+    NLOPT REQUIRES NLopt
+    "Non-linear optimization solver")
+
+  drake_system_dependency(
+    PYBIND11 REQUIRES pybind11
     "Python/C++11 interoperability tool")
 
   drake_system_dependency(
-    PROTOBUF REQUIRES Protobuf
+    PROTOBUF REQUIRES Protobuf VERSION 3.1
     "Google protocol buffers")
 
   drake_system_dependency(
-    TINYOBJLOADER REQUIRES tinyobjloader
-    "library for reading wavefront mesh files")
+    TINYOBJLOADER REQUIRES tinyobjloader VERSION 1.0.6
+    "Library for reading wavefront mesh files")
 
   # END "system" dependencies
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -253,10 +259,8 @@ macro(drake_setup_options)
   # compatibility issues:
   # https://github.com/RobotLocomotion/drake/issues/2578
   drake_optional_external(IPOPT ON
-    DEPENDS "NOT APPLE OR NOT Matlab_FOUND\;NOT DISABLE_FORTRAN"
+    DEPENDS "NOT APPLE OR NOT Matlab_FOUND"
     "Interior Point Optimizer, for solving non-linear optimizations")
-
-  drake_optional_external(NLOPT ON "Non-linear optimization solver")
 
   # END external projects that are ON by default
 endmacro()
