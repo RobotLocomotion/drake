@@ -100,37 +100,82 @@ TEST_F(LinearSystemTest, ConvertScalarType) {
   }));
 }
 
-class TestLinearizeFromAffine : public ::testing::Test {
- protected:
-  void SetUp() {
-    A_ << 1, 2, 3, 4, 5, 6, 7, 8, 9;
-    B_ << 10, 11, 12;
-    f0_ << 13, 14, 15;
-    C_ << 16, 17, 18, 19, 20, 21;
-    D_ << 22, 23;
-    y0_ << 24, 25;
+// [ẋ₁, ẋ₂]ᵀ = rotmat(t)*[x₁, x₂]ᵀ + u*[1, 1]ᵀ,
+// [y₁, y₂] = [x₁, x₂] + u*[1, 1].
+class SimpleTimeVaryingLinearSystem final
+    : public TimeVaryingLinearSystem<double> {
+ public:
+  static constexpr int kNumStates = 2;
+  static constexpr int kNumInputs = 1;
+  static constexpr int kNumOutputs = 2;
 
-    continuous_system_.reset(new AffineSystem<double>(
-        A_, B_, f0_, C_, D_, y0_));
-    discrete_system_.reset(new AffineSystem<double>(
-        A_, B_, f0_, C_, D_, y0_, time_period_));
+  SimpleTimeVaryingLinearSystem()
+      : TimeVaryingLinearSystem<double>(SystemScalarConverter{},  // BR
+                                        kNumStates, kNumInputs, kNumOutputs,
+                                        0.0 /* continuous-time */) {}
+
+  ~SimpleTimeVaryingLinearSystem() override {}
+
+  Eigen::MatrixXd A(const double& t) const override {
+    using std::cos;
+    using std::sin;
+    Eigen::Matrix<double, kNumOutputs, kNumStates> mat;
+    mat << cos(t), -sin(t), sin(t), cos(t);
+    return mat;
   }
-
-  Eigen::Matrix3d A_;
-  Eigen::Matrix<double, 3, 1> B_;
-  Eigen::Vector3d f0_;
-  Eigen::Matrix<double, 2, 3> C_;
-  Eigen::Vector2d D_;
-  Eigen::Vector2d y0_;
-
-  Eigen::Vector3d x0_{26, 27, 28};
-  double u0_{29};
-
-  const double time_period_ = 0.1;
-
-  std::unique_ptr<AffineSystem<double>> continuous_system_;
-  std::unique_ptr<AffineSystem<double>> discrete_system_;
+  Eigen::MatrixXd B(const double& t) const override {
+    return Eigen::Matrix<double, kNumOutputs, kNumInputs>::Ones();
+  }
+  Eigen::MatrixXd C(const double& t) const override {
+    return Eigen::Matrix<double, kNumStates, kNumStates>::Identity();
+  }
+  Eigen::MatrixXd D(const double& t) const override {
+    return Eigen::Matrix<double, kNumOutputs, kNumInputs>::Ones();
+  }
 };
+
+GTEST_TEST(SimpleTimeVaryingLinearSystemTest, ConstructorTest) {
+  SimpleTimeVaryingLinearSystem sys;
+
+  EXPECT_EQ(sys.get_num_output_ports(), 1);
+  EXPECT_EQ(sys.get_num_input_ports(), 1);
+  EXPECT_TRUE(CompareMatrices(sys.A(0.), Eigen::Matrix2d::Identity()));
+  EXPECT_TRUE(CompareMatrices(sys.B(0.), Eigen::Matrix<double, 2, 1>::Ones()));
+  EXPECT_TRUE(CompareMatrices(sys.C(0.), Eigen::Matrix2d::Identity()));
+  EXPECT_TRUE(CompareMatrices(sys.D(0.), Eigen::Matrix<double, 2, 1>::Ones()));
+}
+
+    class TestLinearizeFromAffine : public ::testing::Test {
+    protected:
+        void SetUp() {
+            A_ << 1, 2, 3, 4, 5, 6, 7, 8, 9;
+            B_ << 10, 11, 12;
+            f0_ << 13, 14, 15;
+            C_ << 16, 17, 18, 19, 20, 21;
+            D_ << 22, 23;
+            y0_ << 24, 25;
+            
+            continuous_system_.reset(new AffineSystem<double>(
+                                                              A_, B_, f0_, C_, D_, y0_));
+            discrete_system_.reset(new AffineSystem<double>(
+                                                            A_, B_, f0_, C_, D_, y0_, time_period_));
+        }
+        
+        Eigen::Matrix3d A_;
+        Eigen::Matrix<double, 3, 1> B_;
+        Eigen::Vector3d f0_;
+        Eigen::Matrix<double, 2, 3> C_;
+        Eigen::Vector2d D_;
+        Eigen::Vector2d y0_;
+        
+        Eigen::Vector3d x0_{26, 27, 28};
+        double u0_{29};
+        
+        const double time_period_ = 0.1;
+        
+        std::unique_ptr<AffineSystem<double>> continuous_system_;
+        std::unique_ptr<AffineSystem<double>> discrete_system_;
+    };
 
 // Test that linearizing a continuous-time affine system returns the original
 // A,B,C,D matrices.
