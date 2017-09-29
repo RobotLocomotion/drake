@@ -1,12 +1,14 @@
 #include "drake/common/find_resource.h"
 
 #include <cstdlib>
+#include <memory>
 #include <utility>
 #include <vector>
 
 #include <spruce.hh>
 
 #include "drake/common/drake_throw.h"
+#include "drake/common/scoped_singleton.h"
 
 using std::string;
 
@@ -130,7 +132,6 @@ optional<string> check_candidate_dir(const spruce::path& candidate_dir) {
   if (candidate_file.isFile()) {
     return candidate_dir.getStr();
   }
-
   return nullopt;
 }
 
@@ -141,14 +142,20 @@ optional<string> find_sentinel_dir() {
   while (true) {
     DRAKE_THROW_UNLESS(num_attempts < 1000);  // Insanity fail-fast.
     ++num_attempts;
-
     // If we fall off the end of the world somehow, stop.
     if (!candidate_dir.isDir()) {
       return nullopt;
     }
-
     // If we found the sentinel, we win.
     optional<string> result = check_candidate_dir(candidate_dir);
+    if (result) {
+      return result;
+    }
+
+    // Check the subdirectory 'share/drake' in case we are in the install tree
+    spruce::path candidate_subdir;
+    candidate_subdir.setStr(candidate_dir.getStr() + "/share/drake");
+    result = check_candidate_dir(candidate_subdir);
     if (result) {
       return result;
     }
@@ -163,6 +170,17 @@ optional<string> find_sentinel_dir() {
 const char* const kDrakeResourceRootEnvironmentVariableName =
     "DRAKE_RESOURCE_ROOT";
 
+namespace {
+  std::shared_ptr<string> root_directory_;
+}
+
+void AddResourceSearchPath(string root_directory) {
+  if (!root_directory_) {
+    root_directory_ = GetScopedSingleton<string>();
+  }
+  GetScopedSingleton<string>()->assign(root_directory);
+}
+
 Result FindResource(string resource_path) {
   // Check if resource_path is well-formed.
   if (!is_relative_path(resource_path)) {
@@ -174,17 +192,21 @@ Result FindResource(string resource_path) {
   // Collect a list of (priority-ordered) directories to check.
   std::vector<optional<string>> candidate_dirs;
 
-  // (1) Search the environment variable first; if it works, it should always
-  // win.  TODO(jwnimmer-tri) Should we split on colons, making this a PATH?
+  // (1) Any programmatically provided search paths. Try this first
+  // if it is non-empty. If it works, it should always win.
+  auto rd = GetScopedSingleton<string>();
+  if (!rd->empty()) {
+    candidate_dirs.emplace_back(*rd);
+  }
+
+  // (2) Search the environment variable next.
+  // TODO(jwnimmer-tri) Should we split on colons, making this a PATH?
   candidate_dirs.emplace_back(getenv_optional(
       kDrakeResourceRootEnvironmentVariableName));
 
-  // (2) Search in cwd (and its parent, grandparent, etc.) to find Drake's
+  // (3) Search in cwd (and its parent, grandparent, etc.) to find Drake's
   // resource-root sentinel file.
   candidate_dirs.emplace_back(find_sentinel_dir());
-
-  // TODO(jwnimmer-tri) Add more search heuristics for installed copies of
-  // Drake resources.
 
   // See which (if any) candidate contains the requested resource.
   for (const auto& candidate_dir : candidate_dirs) {
@@ -200,7 +222,8 @@ Result FindResource(string resource_path) {
 }
 
 std::string FindResourceOrThrow(std::string resource_path) {
-  return FindResource(std::move(resource_path)).get_absolute_path_or_throw();
+  return FindResource(
+      std::move(resource_path)).get_absolute_path_or_throw();
 }
 
 }  // namespace drake

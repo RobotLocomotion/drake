@@ -55,6 +55,22 @@ GTEST_TEST(FindResourceTest, NotFound) {
   EXPECT_THROW(FindResourceOrThrow(relpath), std::runtime_error);
 }
 
+GTEST_TEST(FindResourceTest, AlternativeDirectory) {
+  // Use std::tmpname/std::ofstream until std::tmpfile has a cross
+  // platform way of extracting the filename.
+  // TODO(stonier) Add such a cross-platform capability to spruce
+  const std::string absolute_path = std::tmpnam(nullptr);
+  std::ofstream output(absolute_path.c_str(), std::ios::out);
+  output.close();
+  const std::string candidate_filename = absolute_path.substr(
+      absolute_path.find_last_of("/\\") + 1);
+  const std::string candidate_directory = absolute_path.substr(
+      0, absolute_path.find_last_of("\\/"));
+  AddResourceSearchPath(candidate_directory);
+  EXPECT_NO_THROW(drake::FindResourceOrThrow(
+      candidate_filename));
+}
+
 GTEST_TEST(FindResourceTest, FoundDeclaredData) {
   const string relpath = "drake/common/test/find_resource_test_data.txt";
   const auto& result = FindResource(relpath);

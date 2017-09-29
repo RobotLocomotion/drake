@@ -71,15 +71,21 @@ class FindResourceResult {
   optional<std::string> error_message_;
 };
 
+
+/// Adds an additional path in which Drake resources are searched. This
+/// addition is persistent. To remove it, one can simply call this function
+/// again with an empty string.
+void AddResourceSearchPath(std::string root_directory);
+
 /// Attempts to locate a Drake resource named by the given @p resource_path.
 /// The @p resource_path refers to the relative path within the Drake
 /// repository, e.g., `drake/examples/pendulum/Pendulum.urdf`.
 ///
-/// When called from within a source code workspace (i.e., what a Drake
-/// developer would use), this finds the resource within the current workspace.
-///
-/// When called from an installed binary build of Drake, this is intended to
-/// find the installed resource, but that feature is not yet implemented.
+/// The search scans for the resource in the following places and in
+/// the following order: 1) the specified @p root_directory
+/// 2) the DRAKE_RESOURCE_ROOT environment variable and 3) in the drake source
+/// workspace. If all of these are unavailable, or do not have the
+/// then it will return a failed result.
 FindResourceResult FindResource(std::string resource_path);
 
 /// Convenient wrapper for querying FindResource(resource_path) followed by
