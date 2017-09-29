@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <utility>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/symbolic.h"
@@ -90,6 +91,8 @@ class LinearSystem : public AffineSystem<T> {
                double time_period);
 };
 
+enum WhichAction { DoLinearize, DoThrow };
+
 /// Takes the first-order Taylor expansion of a System around a nominal
 /// operating point (defined by the Context).
 ///
@@ -119,6 +122,26 @@ class LinearSystem : public AffineSystem<T> {
 std::unique_ptr<LinearSystem<double>> Linearize(
     const System<double>& system, const Context<double>& context,
     double equilibrium_check_tolerance = 1e-6);
+
+/// A general implementation of Linearize() that lifts the usual restriction
+/// that the linearized system represents dynamics in the neighborhood of an
+/// equilibrium point of @p system.  When linearized at a nonequilibrium point,
+/// the system is represented either of the form:
+///   @f[ \dot{x} - \dot{x0} = A (x - x0) + B (u - u0), @f]
+/// for continuous time, or
+///   @f[ x[n+1] - x0[n+1] = A (x[n] - x0[n]) + B (u[n] - u0[n]), @f]
+/// for discrete time.  But, since @f$ \dot{x} = f0 @f$ (in CT) and
+/// @f$ x0[n+1] = f0 @f$ (in DT), the system is represented as an affine system.
+///
+/// @param system The system or subsystem to linearize.
+/// @param context Defines the nominal operating point about which the system
+/// should be linearized.
+/// @returns An AffineSystem at this linearization point.
+///
+/// @ingroup primitive_systems
+///
+std::unique_ptr<AffineSystem<double>> LinearizeAtNonequilibrium(
+    const System<double>& system, const Context<double>& context);
 
 /// Returns the controllability matrix:  R = [B, AB, ..., A^{n-1}B].
 /// @ingroup control_systems
