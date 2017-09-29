@@ -54,14 +54,13 @@ ignition::math::Vector3d ToGlobalCoordinates(
 }
 
 // Computes the lower left and upper right corners' coordinates of the
-// bounding box @p bbox that comprises the whole @p rndf_info map. Coordinates
-// are expresed in the Cartesian frame located at @p origin.
+// bounding box that comprises all the given @p segments. Coordinates
+// are expresed in the global Cartesian frame located at @p origin.
 // @param segments The Segment collection to compute a bounding box for.
 // @param origin The global Cartesian frame location in latitude / longitude
 // coordinates.
-// @param bbox The computed bounding box for the given segments.
-// @pre The given @p bbox is not a nullptr.
-// @warning This function will abort if preconditions are not met.
+// @return The computed bounding box as the pair of its minimum and maximum
+// coordinates in the global Cartesian frame.
 std::pair<ignition::math::Vector3d, ignition::math::Vector3d> BuildBoundingBox(
     const std::vector<ignition::rndf::Segment>& segments,
     const ignition::math::SphericalCoordinates& origin) {
@@ -80,8 +79,8 @@ std::pair<ignition::math::Vector3d, ignition::math::Vector3d> BuildBoundingBox(
   return DirectedWaypoint::CalculateBoundingBox(waypoints);
 }
 
-// Extracts RNDF @p segment_lanes from @p segment, using the given lane @p
-// default_width when either it's not specified or it's zero. Coordinates
+// Extracts RNDF segment_lanes from @p segment, using the given lane
+// @p default_width when either it's not specified or it's zero. Coordinates
 // are expressed in the global Cartesian frame at @p origin.
 // @param segment The RNDF segment to extract data from.
 // @param origin The global Cartesian frame location in latitude / longitude
@@ -265,7 +264,7 @@ std::unique_ptr<const api::RoadGeometry> LoadFile(
   }
 
   // Computes each zone's fake inner lanes.
-  std::map<int, double> lane_width_per_zone =
+  const std::map<int, double> lane_width_per_zone =
       ComputeZoneLaneWidths(rndf_info, road_characteristics.default_width);
   // Extracts zone perimeter's waypoints and creates fake inner lanes between
   // every entry and exit waypoint. Also connects the zone with the outgoing
@@ -273,10 +272,10 @@ std::unique_ptr<const api::RoadGeometry> LoadFile(
   for (const ignition::rndf::Zone& zone : rndf_info.Zones()) {
     std::vector<DirectedWaypoint> perimeter_waypoints =
         ExtractZonePerimeter(zone, origin_location);
-    builder.CreateConnectionsForZones(lane_width_per_zone[zone.Id()],
+    builder.CreateConnectionsForZones(lane_width_per_zone.at(zone.Id()),
                                       &perimeter_waypoints);
     for (const ignition::rndf::Exit& exit : zone.Perimeter().Exits()) {
-      builder.CreateConnection(lane_width_per_zone[zone.Id()], exit.ExitId(),
+      builder.CreateConnection(lane_width_per_zone.at(zone.Id()), exit.ExitId(),
                                exit.EntryId());
     }
   }

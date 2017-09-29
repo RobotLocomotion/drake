@@ -25,10 +25,9 @@ struct SingleLaneRndfDescription {
   // are: global position at the start of the lane,
   // global position at the end of the lane and lane
   // bounds of the lane.
-  typedef std::map<
-    api::LaneId, std::tuple<api::GeoPosition,
-                            api::GeoPosition,
-                            api::RBounds>> LaneTable;
+  typedef std::map<api::LaneId,
+                   std::tuple<api::GeoPosition, api::GeoPosition, api::RBounds>>
+      LaneTable;
 
   // A collection of tuples whose elements describe A-to-B branch
   // connections between lanes.
@@ -263,7 +262,7 @@ GTEST_TEST(MultiLaneRNDFLoaderTest, LoadTest) {
   ASSERT_EQ(road_geometry->num_junctions(), 4);
 
   {
-    // Checks the first segment, that holds a single lane (pictured on the
+    // Checks the first segment, which holds a single lane (pictured on the
     // left side).
     const api::Junction* junction = road_geometry->junction(0);
     ASSERT_EQ(junction->num_segments(), 1);
@@ -285,7 +284,8 @@ GTEST_TEST(MultiLaneRNDFLoaderTest, LoadTest) {
   }
 
   {
-    // Checks the second segment, that holds two lanes (pictured in the middle).
+    // Checks the second segment, which holds two lanes (pictured in the
+    // middle).
     const api::Junction* junction = road_geometry->junction(1);
     ASSERT_EQ(junction->num_segments(), 1);
     const api::Segment* segment = junction->segment(0);
@@ -321,7 +321,7 @@ GTEST_TEST(MultiLaneRNDFLoaderTest, LoadTest) {
   }
 
   {
-    // Checks the third segment, that holds a single lane (pictured on the
+    // Checks the third segment, which holds a single lane (pictured on the
     // right).
     const api::Junction* junction = road_geometry->junction(2);
     ASSERT_EQ(junction->num_segments(), 1);
