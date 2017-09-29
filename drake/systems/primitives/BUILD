@@ -23,6 +23,7 @@ drake_cc_library(
         ":matrix_gain",
         ":multiplexer",
         ":pass_through",
+        ":piecewise_polynomial_linear_system",
         ":random_source",
         ":saturation",
         ":signal_log",
@@ -159,6 +160,19 @@ drake_cc_library(
     ],
     deps = [
         "//drake/systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "piecewise_polynomial_linear_system",
+    srcs = ["piecewise_polynomial_linear_system.cc"],
+    hdrs = ["piecewise_polynomial_linear_system.h"],
+    deps = [
+        ":linear_system",
+        "//drake/common:default_scalars",
+        "//drake/common:essential",
+        "//drake/common:extract_double",
+        "//drake/common/trajectories:piecewise_polynomial_trajectory",
     ],
 )
 
@@ -398,6 +412,16 @@ drake_cc_googletest(
         "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/systems/analysis:simulator",
         "//drake/systems/framework",
+    ],
+)
+
+drake_cc_googletest(
+    name = "piecewise_polynomial_linear_system_test",
+    deps = [
+        ":piecewise_polynomial_linear_system",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/systems/framework",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 
