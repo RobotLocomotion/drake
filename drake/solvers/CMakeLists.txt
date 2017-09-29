@@ -31,6 +31,7 @@ list(APPEND optimization_files
   moby_lcp_solver.cc
   mosek_solver_common.cc
   nlopt_solver_common.cc
+  nlopt_solver.cc
   no_dreal.cc
   no_gurobi.cc
   no_mosek.cc
@@ -45,11 +46,6 @@ if(ipopt_FOUND)
  list(APPEND optimization_files ipopt_solver.cc)
 else()
   list(APPEND optimization_files no_ipopt.cc)
-endif()
-if(NLopt_FOUND)
-  list(APPEND optimization_files nlopt_solver.cc)
-else()
-  list(APPEND optimization_files no_nlopt.cc)
 endif()
 
 add_library(drakeOptimization ${optimization_files})
@@ -93,11 +89,11 @@ if(ipopt_FOUND)
       "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-Bsymbolic -Wl,-Bsymbolic-functions")
   endif()
 endif()
-if(NLopt_FOUND)
-  # TODO(jamiesnape): Fix imported target upstream.
-  target_include_directories(drakeOptimization PUBLIC ${NLOPT_INCLUDE_DIRS})
-  target_link_libraries(drakeOptimization nlopt)
-endif()
+
+# TODO(jamiesnape): Fix imported target upstream.
+target_include_directories(drakeOptimization PUBLIC ${NLOPT_INCLUDE_DIRS})
+target_link_libraries(drakeOptimization nlopt)
+
 
 if(BUILD_TESTING)
   add_subdirectory(test)
