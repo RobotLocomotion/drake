@@ -110,6 +110,7 @@ py_library(
         "python/pydrake/autodiffutils.py",
         "python/pydrake/common.py",
         "python/pydrake/forwarddiff.py",
+        "python/pydrake/pydrake_path.py",
         "python/pydrake/rbtree.py",
         "python/pydrake/solvers/__init__.py",
         "python/pydrake/solvers/ik.py",

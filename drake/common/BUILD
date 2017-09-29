@@ -232,6 +232,7 @@ drake_cc_library(
     ],
     deps = [
         ":essential",
+        ":scoped_singleton",
         "//drake/thirdParty:spruce",
     ],
 )
