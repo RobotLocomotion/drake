@@ -159,6 +159,11 @@ class System {
   virtual void SetDefaultState(const Context<T>& context,
                                State<T>* state) const = 0;
 
+  /// Assigns default values to all parameters. Overrides must not
+  /// change the number of parameters.
+  virtual void SetDefaultParameters(const Context<T>& context,
+                                    Parameters<T>* parameters) const = 0;
+
   // Sets Context fields to their default values.  User code should not
   // override.
   void SetDefaultContext(Context<T> *context) const {

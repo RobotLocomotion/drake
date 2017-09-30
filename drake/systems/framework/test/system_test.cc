@@ -56,7 +56,8 @@ class TestSystem : public System<double> {
   void SetDefaultState(const Context<double>& context,
                        State<double>* state) const override {}
 
-  void SetDefaultContext(Context<double> *context) const override {}
+  void SetDefaultParameters(const Context<double>& context,
+                            Parameters<double>* params) const override {}
 
   std::unique_ptr<SystemOutput<double>> AllocateOutput(
       const Context<double>& context) const override {
@@ -470,7 +471,8 @@ class ValueIOTestSystem : public System<T> {
   void SetDefaultState(const Context<T>& context,
                        State<T>* state) const override {}
 
-  void SetDefaultContext(Context<T> *context) const override {}
+  void SetDefaultParameters(const Context<T>& context,
+                            Parameters<T>* params) const override {}
 
   std::multimap<int, int> GetDirectFeedthroughs() const override {
     std::multimap<int, int> pairs;

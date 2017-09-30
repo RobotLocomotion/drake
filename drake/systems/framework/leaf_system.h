@@ -183,8 +183,8 @@ class LeafSystem : public System<T> {
   /// given to DeclareNumericParameter, or else if no model was provided sets
   /// the numeric parameter to one.  It makes no attempt to set abstract
   /// parameter values.  Overrides must not change the number of parameters.
-  virtual void SetDefaultParameters(const LeafContext<T>& context,
-                                    Parameters<T>* parameters) const {
+  void SetDefaultParameters(const Context<T>& context,
+                            Parameters<T>* parameters) const override {
     unused(context);
     for (int i = 0; i < parameters->num_numeric_parameters(); i++) {
       BasicVector<T>* p = parameters->get_mutable_numeric_parameter(i);
@@ -195,35 +195,6 @@ class LeafSystem : public System<T> {
         p->SetFromVector(VectorX<T>::Constant(p->size(), 1.0));
       }
     }
-  }
-
-  // Sets Context fields to their default values.
-  void SetDefaultContext(Context<T> *context) const final {
-    systems::LeafContext<T>* leaf_context =
-        dynamic_cast<systems::LeafContext<T>*>(context);
-    DRAKE_DEMAND(leaf_context != nullptr);
-
-    // Set the default state, checking that the number of state variables does
-    // not change.
-    const int n_xc = context->get_continuous_state()->size();
-    const int n_xd = context->get_num_discrete_state_groups();
-    const int n_xa = context->get_num_abstract_state_groups();
-
-    SetDefaultState(*context, context->get_mutable_state());
-
-    DRAKE_DEMAND(n_xc == context->get_continuous_state()->size());
-    DRAKE_DEMAND(n_xd == context->get_num_discrete_state_groups());
-    DRAKE_DEMAND(n_xa == context->get_num_abstract_state_groups());
-
-    // Set the default parameters, checking that the number of parameters does
-    // not change.
-    const int num_params = leaf_context->num_numeric_parameters();
-    SetDefaultParameters(*leaf_context,
-                         &leaf_context->get_mutable_parameters());
-    DRAKE_DEMAND(num_params == leaf_context->num_numeric_parameters());
-
-    // Verify that this context satisfies all of the constraints.
-    DRAKE_ASSERT(this->CheckSystemConstraints(*context));
   }
 
   std::unique_ptr<SystemOutput<T>> AllocateOutput(
