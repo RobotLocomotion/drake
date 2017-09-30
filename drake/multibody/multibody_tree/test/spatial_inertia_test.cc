@@ -336,6 +336,7 @@ GTEST_TEST(SpatialInertia, MakeFromCentralInertia) {
   EXPECT_TRUE(M_BBo_B.get_com().isApprox(p_BoBcm_B, kEpsilon));
 
   // Check spatial inertia for proper moments/products of inertia.
+  // Note: The values below for Ixx, Iyy, Izz were calculated by MotionGenesis.
   const RotationalInertia<double> I_BBo_B = M_BBo_B.CalcRotationalInertia();
   const Vector3d moments  = I_BBo_B.get_moments();
   const double Ixx = 88, Iyy = 75,  Izz = 58;
@@ -344,6 +345,7 @@ GTEST_TEST(SpatialInertia, MakeFromCentralInertia) {
   EXPECT_NEAR(moments(2), Izz, kEpsilon);
 
   // Check spatial inertia for proper moments/products of inertia.
+  // Note: The values below for Ixy, Ixz, Iyz were calculated by MotionGenesis.
   const Vector3d products = I_BBo_B.get_products();
   const double Ixy = -24, Ixz = -30, Iyz = -40;
   EXPECT_NEAR(products(0), Ixy, kEpsilon);

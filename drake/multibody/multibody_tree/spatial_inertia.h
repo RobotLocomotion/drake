@@ -100,10 +100,10 @@ class SpatialInertia {
   /// non-physically viable spatial inertia.
   ///
   /// @param[in] mass The mass of the body or composite body S.
-  /// @param[in] p_PScm_E The position vector from a point P to point `Scm`
+  /// @param[in] p_PScm_E The position vector from point P to point `Scm`
   ///                     (S's center of mass), expressed in a frame E.
   /// @param[in] I_SScm_E S's RotationalInertia about Scm, expressed in frame E.
-  /// @retval M_SP_E, S's spatial inertia about point P, expressed in frame E.
+  /// @retval M_SP_E S's spatial inertia about point P, expressed in frame E.
   static SpatialInertia MakeFromCentralInertia(const T& mass,
       const Vector3<T>& p_PScm_E, const RotationalInertia<T>& I_SScm_E) {
     const RotationalInertia<T> I_SP_E =
@@ -124,6 +124,11 @@ class SpatialInertia {
   /// to the center of mass point `Scm`, expressed in a frame E.
   /// The rotational inertia is provided as the UnitInertia `G_SP_E` of the body
   /// or composite body S computed about point P and expressed in frame E.
+  ///
+  /// @note The third argument of this constructor is unusual in that it is an
+  /// UnitInertia (not a traditional RotationalInertia) and its inertia is about
+  /// the arbitrary point P (not Scm -- S's center of mass).
+  /// @see MakeFromCentralInertia a factory method with traditional utility.
   ///
   /// This constructor checks for the physical validity of the resulting
   /// %SpatialInertia with IsPhysicallyValid() and throws a std::runtime_error

@@ -3,14 +3,13 @@
 #include <cmath>
 #include <functional>
 #include <memory>
-#include <string>
 #include <tuple>
 
 #include "drake/common/eigen_types.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/multibody_tree/fixed_offset_frame.h"
-#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
+#include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/systems/framework/context.h"
 
@@ -22,22 +21,22 @@ namespace kuka_iiwa_robot {
 using Eigen::Vector3d;
 
 /// Utility struct to assist with returning joint torques/forces.
-/// -----------|-------------------------------------------------
-/// F_Ao_Na    | Spatial force on Ao from N, expressed in frame W (world).
-/// F_Bo_Ab    | Spatial force on Bo from A, expressed in frame W (world).
-/// F_Co_Bc    | Spatial force on Co from B, expressed in frame W (world).
-/// F_Do_Cd    | Spatial force on Do from C, expressed in frame W (world).
-/// F_Eo_De    | Spatial force on Eo from D, expressed in frame W (world).
-/// F_Fo_Ef    | Spatial force on Fo from E, expressed in frame W (world).
-/// F_Go_Fg    | Spatial force on Go from F, expressed in frame W (world).
+/// --------|----------------------------------------------------------
+/// F_Ao_W  | Spatial force on Ao from W, expressed in frame W (world).
+/// F_Bo_W  | Spatial force on Bo from A, expressed in frame W (world).
+/// F_Co_W  | Spatial force on Co from B, expressed in frame W (world).
+/// F_Do_W  | Spatial force on Do from C, expressed in frame W (world).
+/// F_Eo_W  | Spatial force on Eo from D, expressed in frame W (world).
+/// F_Fo_W  | Spatial force on Fo from E, expressed in frame W (world).
+/// F_Go_W  | Spatial force on Go from F, expressed in frame W (world).
 struct KukaRobotJointReactionForces {
-  SpatialForce<double> F_Ao_Na;
-  SpatialForce<double> F_Bo_Ab;
-  SpatialForce<double> F_Co_Bc;
-  SpatialForce<double> F_Do_Cd;
-  SpatialForce<double> F_Eo_De;
-  SpatialForce<double> F_Fo_Ef;
-  SpatialForce<double> F_Go_Fg;
+  SpatialForce<double> F_Ao_W;
+  SpatialForce<double> F_Bo_W;
+  SpatialForce<double> F_Co_W;
+  SpatialForce<double> F_Do_W;
+  SpatialForce<double> F_Eo_W;
+  SpatialForce<double> F_Fo_W;
+  SpatialForce<double> F_Go_W;
 };
 
 
@@ -79,36 +78,36 @@ class DrakeKukaIIwaRobot {
 
     // Create SpatialInertia for each link in this robot. M_Bo_B designates a
     // rigid body B's spatial inertia about Bo (B's origin), expressed in B.
-    const SpatialInertia<double> M_Ao_A =
+    const SpatialInertia<double> M_AAo_A =
         SpatialInertia<double>::MakeFromCentralInertia(massA_, p_AoAcm_A_,
-                                                       I_Acm_A_);
-    const SpatialInertia<double> M_Bo_B =
+                                                       I_AAcm_A_);
+    const SpatialInertia<double> M_BBo_B =
         SpatialInertia<double>::MakeFromCentralInertia(massB_, p_BoBcm_B_,
-                                                       I_Bcm_B_);
-    const SpatialInertia<double> M_Co_C =
+                                                       I_BBcm_B_);
+    const SpatialInertia<double> M_CCo_C =
         SpatialInertia<double>::MakeFromCentralInertia(massC_, p_CoCcm_C_,
-                                                       I_Ccm_C_);
-    const SpatialInertia<double> M_Do_D =
+                                                       I_CCcm_C_);
+    const SpatialInertia<double> M_DDo_D =
         SpatialInertia<double>::MakeFromCentralInertia(massD_, p_DoDcm_D_,
-                                                       I_Dcm_D_);
-    const SpatialInertia<double> M_Eo_E =
+                                                       I_DDcm_D_);
+    const SpatialInertia<double> M_EEo_E =
         SpatialInertia<double>::MakeFromCentralInertia(massE_, p_EoEcm_E_,
-                                                       I_Ecm_E_);
-    const SpatialInertia<double> M_Fo_F =
+                                                       I_EEcm_E_);
+    const SpatialInertia<double> M_FFo_F =
         SpatialInertia<double>::MakeFromCentralInertia(massF_, p_FoFcm_F_,
-                                                       I_Fcm_F_);
-    const SpatialInertia<double> M_Go_G =
+                                                       I_FFcm_F_);
+    const SpatialInertia<double> M_GGo_G =
         SpatialInertia<double>::MakeFromCentralInertia(massG_, p_GoGcm_G_,
-                                                       I_Gcm_G_);
+                                                       I_GGcm_G_);
 
     // Add this robot's seven links.
-    linkA_ = &(model_->AddBody<RigidBody>(M_Ao_A));
-    linkB_ = &(model_->AddBody<RigidBody>(M_Bo_B));
-    linkC_ = &(model_->AddBody<RigidBody>(M_Co_C));
-    linkD_ = &(model_->AddBody<RigidBody>(M_Do_D));
-    linkE_ = &(model_->AddBody<RigidBody>(M_Eo_E));
-    linkF_ = &(model_->AddBody<RigidBody>(M_Fo_F));
-    linkG_ = &(model_->AddBody<RigidBody>(M_Go_G));
+    linkA_ = &(model_->AddBody<RigidBody>(M_AAo_A));
+    linkB_ = &(model_->AddBody<RigidBody>(M_BBo_B));
+    linkC_ = &(model_->AddBody<RigidBody>(M_CCo_C));
+    linkD_ = &(model_->AddBody<RigidBody>(M_DDo_D));
+    linkE_ = &(model_->AddBody<RigidBody>(M_EEo_E));
+    linkF_ = &(model_->AddBody<RigidBody>(M_FFo_F));
+    linkG_ = &(model_->AddBody<RigidBody>(M_GGo_G));
 
     // Create a revolute joint between linkN (Newtonian frame/world) and linkA
     // using two joint-frames, namely "Na" and "An".  The "inboard frame" Na is
@@ -117,43 +116,36 @@ class DrakeKukaIIwaRobot {
     // second and third arguments in the following method, namely with SpaceXYZ
     // angles and a position vector. Alternately, frame An is regarded as
     // coincident with linkA.
-    NA_joint_ = &AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
-        "NA_joint",
+    NA_mobilizer_ = &AddRevoluteMobilizerFromSpaceXYZAnglesAndXYZ(
         *linkN_, Vector3d(0, 0, 0), Vector3d(0, 0, 0.1575),
         *linkA_, Eigen::Vector3d::UnitZ());
 
     // Create a revolute joint between linkA and linkB.
-    AB_joint_ = &AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
-        "AB_joint",
+    AB_mobilizer_ = &AddRevoluteMobilizerFromSpaceXYZAnglesAndXYZ(
         *linkA_, Vector3d(M_PI_2, 0, M_PI), Vector3d(0, 0, 0.2025),
         *linkB_, Eigen::Vector3d::UnitZ());
 
     // Create a revolute joint between linkB and linkC.
-    BC_joint_ = &AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
-        "BC_joint",
+    BC_mobilizer_ = &AddRevoluteMobilizerFromSpaceXYZAnglesAndXYZ(
         *linkB_, Vector3d(M_PI_2, 0, M_PI), Vector3d(0, 0.2045, 0),
         *linkC_, Eigen::Vector3d::UnitZ());
 
     // Create a revolute joint between linkB and linkC.
-    CD_joint_ = &AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
-        "CD_joint",
+    CD_mobilizer_ = &AddRevoluteMobilizerFromSpaceXYZAnglesAndXYZ(
         *linkC_, Vector3d(M_PI_2, 0, 0), Vector3d(0, 0, 0.2155),
         *linkD_, Eigen::Vector3d::UnitZ());
 
     // Create a revolute joint between linkD and linkE.
-    DE_joint_ = &AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
-        "DE_joint",
+    DE_mobilizer_ = &AddRevoluteMobilizerFromSpaceXYZAnglesAndXYZ(
         *linkD_, Vector3d(-M_PI_2, M_PI, 0), Vector3d(0, 0.1845, 0),
         *linkE_, Eigen::Vector3d::UnitZ());
     // Create a revolute joint between linkE and linkF.
-    EF_joint_ = &AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
-        "EF_joint",
+    EF_mobilizer_ = &AddRevoluteMobilizerFromSpaceXYZAnglesAndXYZ(
         *linkE_, Vector3d(M_PI_2, 0, 0), Vector3d(0, 0, 0.2155),
         *linkF_, Eigen::Vector3d::UnitZ());
 
     // Create a revolute joint between linkE and linkF.
-    FG_joint_ = &AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
-        "FG_joint",
+    FG_mobilizer_ = &AddRevoluteMobilizerFromSpaceXYZAnglesAndXYZ(
         *linkF_, Vector3d(-M_PI_2, M_PI, 0), Vector3d(0, 0.081, 0),
         *linkG_, Eigen::Vector3d::UnitZ());
 
@@ -241,14 +233,14 @@ class DrakeKukaIIwaRobot {
   /// @param[in] qDDt 2nd-time-derivative of q.
   ///
   /// @returns a structure holding the quantities defined below.
-  /// -----------|-------------------------------------------------
-  /// F_Ao_Na    | Spatial force on Ao from N, expressed in frame W (world).
-  /// F_Bo_Ab    | Spatial force on Bo from A, expressed in frame W (world).
-  /// F_Co_Bc    | Spatial force on Co from B, expressed in frame W (world).
-  /// F_Do_Cd    | Spatial force on Do from C, expressed in frame W (world).
-  /// F_Eo_De    | Spatial force on Eo from D, expressed in frame W (world).
-  /// F_Fo_Ef    | Spatial force on Fo from E, expressed in frame W (world).
-  /// F_Go_Fg    | Spatial force on Go from F, expressed in frame W (world).
+  /// --------|----------------------------------------------------------
+  /// F_Ao_W  | Spatial force on Ao from W, expressed in frame W (world).
+  /// F_Bo_W  | Spatial force on Bo from A, expressed in frame W (world).
+  /// F_Co_W  | Spatial force on Co from B, expressed in frame W (world).
+  /// F_Do_W  | Spatial force on Do from C, expressed in frame W (world).
+  /// F_Eo_W  | Spatial force on Eo from D, expressed in frame W (world).
+  /// F_Fo_W  | Spatial force on Fo from E, expressed in frame W (world).
+  /// F_Go_W  | Spatial force on Go from F, expressed in frame W (world).
   const KukaRobotJointReactionForces
       CalcJointReactionForces(const Eigen::Ref<const VectorX<double>>& q,
                               const Eigen::Ref<const VectorX<double>>& qDt,
@@ -263,20 +255,45 @@ class DrakeKukaIIwaRobot {
     model_->CalcVelocityKinematicsCache(*context_, pc, &vc);
     model_->CalcAccelerationKinematicsCache(*context_, pc, vc, qDDt, &ac);
 
-    // TODO(@mitiguy) Properly calculate joint reaction forces.
+    // TODO(mitiguy) Properly calculate joint reaction forces.
     KukaRobotJointReactionForces forces;
-    forces.F_Ao_Na = SpatialForce<double>(Vector3d::Zero(), Vector3d::Zero());
-    forces.F_Bo_Ab = SpatialForce<double>(Vector3d::Zero(), Vector3d::Zero());
-    forces.F_Co_Bc = SpatialForce<double>(Vector3d::Zero(), Vector3d::Zero());
-    forces.F_Do_Cd = SpatialForce<double>(Vector3d::Zero(), Vector3d::Zero());
-    forces.F_Eo_De = SpatialForce<double>(Vector3d::Zero(), Vector3d::Zero());
-    forces.F_Fo_Ef = SpatialForce<double>(Vector3d::Zero(), Vector3d::Zero());
-    forces.F_Go_Fg = SpatialForce<double>(Vector3d::Zero(), Vector3d::Zero());
+    forces.F_Ao_W = SpatialForce<double>(Vector3d::Zero(), Vector3d::Zero());
+    forces.F_Bo_W = SpatialForce<double>(Vector3d::Zero(), Vector3d::Zero());
+    forces.F_Co_W = SpatialForce<double>(Vector3d::Zero(), Vector3d::Zero());
+    forces.F_Do_W = SpatialForce<double>(Vector3d::Zero(), Vector3d::Zero());
+    forces.F_Eo_W = SpatialForce<double>(Vector3d::Zero(), Vector3d::Zero());
+    forces.F_Fo_W = SpatialForce<double>(Vector3d::Zero(), Vector3d::Zero());
+    forces.F_Go_W = SpatialForce<double>(Vector3d::Zero(), Vector3d::Zero());
     return forces;
   }
 
 
  private:
+  // Method to add revolute joint (mobilizer) from Body A to Body B.
+  // @param[in] A     Mobilizer's inboard  body (frame Ab will be welded to A).
+  // @param[in] X_AAb Transform relating body A to frame Ab.
+  // @param[in] B     Mobilizer's outboard body (frame Ba will be welded to B).
+  // @param[in] X_BBa Transform relating body B to frame Ba.
+  // @param[in] revolute_unit_vector  Unit vector expressed in frame Ab that
+  //         characterizes a positive rotation of Ba from Ab (right-hand-rule).
+  // @return RevoluteMobilizer from frame Ab on Body A to frame Ba on Body B.
+  const RevoluteMobilizer<double>& AddRevoluteMobilizer(
+      const Body<double>& A, const Eigen::Isometry3d& X_AAb,
+      const Body<double>& B, const Eigen::Isometry3d& X_BBa,
+      const Eigen::Vector3d& revolute_unit_vector) {
+    // Add a FixedOffsetFrame Ab to Body A (Ab is mobilizer's inboard frame).
+    const FixedOffsetFrame<double>& Ab =
+        model_->AddFrame<FixedOffsetFrame>(A, X_AAb);
+
+    // Add a FixedOffsetFrame Ba to Body B (Ba is mobilizer's outboard frame).
+    const FixedOffsetFrame<double>& Ba =
+        model_->AddFrame<FixedOffsetFrame>(B, X_BBa);
+
+    // Return a new RevoluteMobilizer between inboard frame and outboard frame.
+    return model_->AddMobilizer<RevoluteMobilizer>(Ab, Ba,
+                                                   revolute_unit_vector);
+  }
+
   // Method to add revolute joint (mobilizer) from Body A to Body B.
   // @param[in] A     Mobilizer's inboard  body (frame Ab will be welded to A).
   // @param[in] q123A SpaceXYZ angles describing the rotation matrix relating
@@ -288,11 +305,10 @@ class DrakeKukaIIwaRobot {
   //                  the outboard body B.
   // @param[in] revolute_unit_vector  Unit vector expressed in frame Ab that
   //         characterizes a positive rotation of Ba from Ab (right-hand-rule).
-  // @return RevoluteJoint from frame Ab on Body A to frame Ba on Body B.
-  const RevoluteJoint<double>& AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
-      const std::string& joint_name,
-      const RigidBody<double>& A, const Vector3d& q123A, const Vector3d& xyzA,
-      const RigidBody<double>& B, const Vector3d& revolute_unit_vector) {
+  // @return RevoluteMobilizer from frame Ab on Body A to frame Ba on Body B.
+  const RevoluteMobilizer<double>& AddRevoluteMobilizerFromSpaceXYZAnglesAndXYZ(
+      const Body<double>& A, const Vector3d& q123A, const Vector3d& xyzA,
+      const Body<double>& B, const Vector3d& revolute_unit_vector) {
     // Create transform from inboard body A to mobilizer inboard frame Ab.
     const Eigen::Isometry3d X_AAb = MakeIsometry3d(math::rpy2rotmat(q123A),
                                                    xyzA);
@@ -301,9 +317,7 @@ class DrakeKukaIIwaRobot {
     const Eigen::Isometry3d X_BBa = MakeIsometry3d(Eigen::Matrix3d::Identity(),
                                                    Vector3d(0, 0, 0));
 
-    return model_->AddJoint<RevoluteJoint>(
-        joint_name,
-        A, X_AAb, B, X_BBa, revolute_unit_vector);
+    return AddRevoluteMobilizer(A, X_AAb, B, X_BBa, revolute_unit_vector);
   }
 
   // This method sets the Kuka joint angles and their 1st and 2nd derivatives.
@@ -313,27 +327,27 @@ class DrakeKukaIIwaRobot {
                                        const double qDt[7]) {
     systems::Context<double> *context = context_.get();
 
-    NA_joint_->set_angle(context, q[0]);
-    AB_joint_->set_angle(context, q[1]);
-    BC_joint_->set_angle(context, q[2]);
-    CD_joint_->set_angle(context, q[3]);
-    DE_joint_->set_angle(context, q[4]);
-    EF_joint_->set_angle(context, q[5]);
-    FG_joint_->set_angle(context, q[6]);
+    NA_mobilizer_->set_angle(context, q[0]);
+    AB_mobilizer_->set_angle(context, q[1]);
+    BC_mobilizer_->set_angle(context, q[2]);
+    CD_mobilizer_->set_angle(context, q[3]);
+    DE_mobilizer_->set_angle(context, q[4]);
+    EF_mobilizer_->set_angle(context, q[5]);
+    FG_mobilizer_->set_angle(context, q[6]);
 
-    NA_joint_->set_angular_rate(context, qDt[0]);
-    AB_joint_->set_angular_rate(context, qDt[1]);
-    BC_joint_->set_angular_rate(context, qDt[2]);
-    CD_joint_->set_angular_rate(context, qDt[3]);
-    DE_joint_->set_angular_rate(context, qDt[4]);
-    EF_joint_->set_angular_rate(context, qDt[5]);
-    FG_joint_->set_angular_rate(context, qDt[6]);
+    NA_mobilizer_->set_angular_rate(context, qDt[0]);
+    AB_mobilizer_->set_angular_rate(context, qDt[1]);
+    BC_mobilizer_->set_angular_rate(context, qDt[2]);
+    CD_mobilizer_->set_angular_rate(context, qDt[3]);
+    DE_mobilizer_->set_angular_rate(context, qDt[4]);
+    EF_mobilizer_->set_angular_rate(context, qDt[5]);
+    FG_mobilizer_->set_angular_rate(context, qDt[6]);
   }
 
   // This model's MultibodyTree always has a built-in "world" body.
   // Newtonian reference frame (linkN) is the world body.
   std::unique_ptr<MultibodyTree<double>> model_;
-  const RigidBody<double>* linkN_;
+  const Body<double>* linkN_;
 
   // Rigid bodies (robot links).
   const RigidBody<double>* linkA_;
@@ -344,14 +358,14 @@ class DrakeKukaIIwaRobot {
   const RigidBody<double>* linkF_;
   const RigidBody<double>* linkG_;
 
-  // Joints.
-  const RevoluteJoint<double>* NA_joint_;
-  const RevoluteJoint<double>* AB_joint_;
-  const RevoluteJoint<double>* BC_joint_;
-  const RevoluteJoint<double>* CD_joint_;
-  const RevoluteJoint<double>* DE_joint_;
-  const RevoluteJoint<double>* EF_joint_;
-  const RevoluteJoint<double>* FG_joint_;
+  // Joints (mobilizers).
+  const RevoluteMobilizer<double>* NA_mobilizer_;
+  const RevoluteMobilizer<double>* AB_mobilizer_;
+  const RevoluteMobilizer<double>* BC_mobilizer_;
+  const RevoluteMobilizer<double>* CD_mobilizer_;
+  const RevoluteMobilizer<double>* DE_mobilizer_;
+  const RevoluteMobilizer<double>* EF_mobilizer_;
+  const RevoluteMobilizer<double>* FG_mobilizer_;
 
   // Mass of each link (in kg).
   const double massA_ = 5.76;
@@ -376,13 +390,13 @@ class DrakeKukaIIwaRobot {
   // Inertia matrix of each body about its center of mass, expressed in body.
   // Example: For a body B with center of mass Bcm, I_Bcm_B is B's inertia
   // matrix about Bcm, expressed in terms of Bx, By, Bz (in kg * meters^2).
-  const RotationalInertia<double> I_Acm_A_{0.033,  0.0333, 0.0123};
-  const RotationalInertia<double> I_Bcm_B_{0.0305, 0.0304, 0.011};
-  const RotationalInertia<double> I_Ccm_C_{0.025,  0.0238, 0.0076};
-  const RotationalInertia<double> I_Dcm_D_{0.017,  0.0164, 0.006};
-  const RotationalInertia<double> I_Ecm_E_{0.01,   0.0087, 0.00449};
-  const RotationalInertia<double> I_Fcm_F_{0.0049, 0.0047, 0.0036};
-  const RotationalInertia<double> I_Gcm_G_{0.001,  0.001,  0.001};
+  const RotationalInertia<double> I_AAcm_A_{0.033,  0.0333, 0.0123};
+  const RotationalInertia<double> I_BBcm_B_{0.0305, 0.0304, 0.011};
+  const RotationalInertia<double> I_CCcm_C_{0.025,  0.0238, 0.0076};
+  const RotationalInertia<double> I_DDcm_D_{0.017,  0.0164, 0.006};
+  const RotationalInertia<double> I_EEcm_E_{0.01,   0.0087, 0.00449};
+  const RotationalInertia<double> I_FFcm_F_{0.0049, 0.0047, 0.0036};
+  const RotationalInertia<double> I_GGcm_G_{0.001,  0.001,  0.001};
 
   // Earth's (or astronomical body's) gravitational acceleration.
   double gravity_ = 0.0;

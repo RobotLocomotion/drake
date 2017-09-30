@@ -34,8 +34,7 @@ GTEST_TEST(RigidBody, RigidBodyConstructor) {
 
   // Test that RigidBody class properly calculates rotational inertia.
   const RotationalInertia<double> I_BBo_B_expected = mass * U_BBo_B;
-  const RotationalInertia<double> I_BBo_B =
-     B.get_default_rotational_inertia_in_body_frame();
+  const RotationalInertia<double> I_BBo_B = B.get_default_rotational_inertia();
   EXPECT_TRUE(I_BBo_B.IsNearlyEqualTo(I_BBo_B_expected, 4.0*kEpsilon));
 }
 
