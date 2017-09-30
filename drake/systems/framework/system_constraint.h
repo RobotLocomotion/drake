@@ -18,6 +18,11 @@ class Context;
 
 using SystemConstraintIndex = TypeSafeIndex<class SystemConstraintTag>;
 
+enum class SystemConstraintType {
+  kEquality = 0,    ///< The constraint is of the form f(x)=0.
+  kInequality = 1,  ///< The constraint is of the form f(x)≥0.
+};
+
 /// A SystemConstraint is a generic base-class for constraints on Systems.
 ///
 /// A SystemConstraint is a means to inform our algorithms *about*
@@ -62,14 +67,13 @@ class SystemConstraint {
   /// Constructs the SystemConstraint.
   ///
   /// @param count the number of constraints (size of the value vector).
-  /// @param is_equality_constraint true implies that the constraint is of the
-  /// form f(x)=0, false implies an inequality constraint of the form f(x)≥0.
+  /// @param type the SystemConstraintType.
   /// @param description a human-readable description useful for debugging.
   SystemConstraint(CalcCallback calc_function, int count,
-                   bool is_equality_constraint, const std::string& description)
+                   SystemConstraintType type, const std::string& description)
       : calc_function_(std::move(calc_function)),
         count_(count),
-        is_equality_constraint_(is_equality_constraint),
+        type_(type),
         description_(description) {
     DRAKE_DEMAND(count_ >= 0);
   }
@@ -94,7 +98,7 @@ class SystemConstraint {
     DRAKE_DEMAND(tol >= 0.0);
     VectorX<T> value(count_);
     Calc(context, &value);
-    if (is_equality_constraint_) {
+    if (type_ == SystemConstraintType::kEquality) {
       return (value.template lpNorm<Eigen::Infinity>() <= tol);
     } else {
       return (value.array() >= -tol).all();
@@ -103,13 +107,16 @@ class SystemConstraint {
 
   // Accessor methods.
   int size() const { return count_; }
-  bool is_equality_constraint() const { return is_equality_constraint_; }
+  SystemConstraintType type() const { return type_; }
+  bool is_equality_constraint() const {
+    return (type_ == SystemConstraintType::kEquality);
+  }
   const std::string& description() const { return description_; }
 
  private:
   const CalcCallback calc_function_;
   const int count_{0};
-  const bool is_equality_constraint_{false};
+  const SystemConstraintType type_;
   const std::string description_;
 };
 

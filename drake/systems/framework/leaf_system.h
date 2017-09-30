@@ -1091,7 +1091,7 @@ class LeafSystem : public System<T> {
       typename SystemConstraint<T>::CalcCallback calc, int count,
       const std::string& description) {
     return this->AddConstraint(std::make_unique<SystemConstraint<T>>(
-        calc, count, true, description));
+        calc, count, SystemConstraintType::kEquality, description));
   }
 
   /// Declares a system constraint of the form
@@ -1141,7 +1141,7 @@ class LeafSystem : public System<T> {
       typename SystemConstraint<T>::CalcCallback calc, int count,
       const std::string& description) {
     return this->AddConstraint(std::make_unique<SystemConstraint<T>>(
-        calc, count, false, description));
+        calc, count, SystemConstraintType::kInequality, description));
   }
 
   /// Derived-class event handler for all simultaneous publish events
