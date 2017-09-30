@@ -146,10 +146,10 @@ class System {
   }
 
   /// This convenience method allocates a context using AllocateContext() and
-  /// sets its default values using SetDefaults().
+  /// sets its default values using SetDefaultContext().
   std::unique_ptr<Context<T>> CreateDefaultContext() const {
     std::unique_ptr<Context<T>> context = AllocateContext();
-    SetDefaults(context.get());
+    SetDefaultContext(context.get());
     return context;
   }
 
@@ -160,7 +160,7 @@ class System {
 
   // Sets Context fields to their default values.  User code should not
   // override.
-  virtual void SetDefaults(Context<T>* context) const = 0;
+  virtual void SetDefaultContext(Context<T> *context) const = 0;
 
   /// For each input port, allocates a freestanding input of the concrete type
   /// that this System requires, and binds it to the port, disconnecting any
