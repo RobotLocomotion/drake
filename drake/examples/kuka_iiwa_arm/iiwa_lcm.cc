@@ -5,6 +5,9 @@
 #include "drake/common/drake_assert.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
+#include "drake/multibody/rigid_body_plant/kinematics_results.h"
+#include "drake/manipulation/perception/optitrack_sim.h"
+#include "external/optitrack_driver/lcmtypes/optitrack/optitrack_rigid_body_t.hpp"
 
 namespace drake {
 namespace examples {
@@ -217,6 +220,48 @@ void IiwaStatusSender::OutputStatus(
   }
 }
 
+
+/// optitrack stuff
+using drake::manipulation::perception::TrackedObject;
+
+OptitrackFrameSender::OptitrackFrameSender(unsigned int num_rigid_bodies)
+    : num_rigid_bodies_(num_rigid_bodies) {
+  this->DeclareAbstractInputPort(); // of type std::vector<TrackedObjects>
+  this->DeclareAbstractOutputPort(&OptitrackFrameSender::MakeOutputStatus,
+                                  &OptitrackFrameSender::OutputStatus);
+}
+
+optitrack::optitrack_frame_t OptitrackFrameSender::MakeOutputStatus() const {
+  optitrack::optitrack_frame_t msg{};
+
+  msg.num_rigid_bodies = num_rigid_bodies_;
+  msg.rigid_bodies.resize(num_rigid_bodies_);
+
+  return msg;
+}
+
+void OptitrackFrameSender::OutputStatus(
+    const Context<double>& context, optitrack::optitrack_frame_t* output) const {
+  optitrack::optitrack_frame_t& status = *output;
+
+  status.utime = context.get_time() * 1e6;
+
+  const std::vector<TrackedObject>* mocap_objects =
+      this->EvalInputValue<std::vector<TrackedObject>>(context,0);
+
+  for (size_t i = 0; i < mocap_objects->size(); ++i) {
+    status.rigid_bodies[i].id = (*mocap_objects)[i].optitrack_id;
+
+    status.rigid_bodies[i].xyz[0] = (float) (*mocap_objects)[i].translation[0];
+    status.rigid_bodies[i].xyz[1] = (float) (*mocap_objects)[i].translation[1];
+    status.rigid_bodies[i].xyz[2] = (float) (*mocap_objects)[i].translation[2];
+
+    status.rigid_bodies[i].quat[0] = (float) (*mocap_objects)[i].rotation.x();
+    status.rigid_bodies[i].quat[1] = (float) (*mocap_objects)[i].rotation.y();
+    status.rigid_bodies[i].quat[2] = (float) (*mocap_objects)[i].rotation.z();
+    status.rigid_bodies[i].quat[3] = (float) (*mocap_objects)[i].rotation.w();
+  }
+}
 
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
