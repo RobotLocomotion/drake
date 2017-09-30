@@ -325,14 +325,14 @@ class Diagram : public System<T>,
     }
   }
 
-  void SetDefaults(Context<T>* context) const final {
+  void SetDefaultContext(Context<T> *context) const final {
     auto diagram_context = dynamic_cast<DiagramContext<T>*>(context);
     DRAKE_DEMAND(diagram_context != nullptr);
 
     // Set defaults of each constituent system.
     for (int i = 0; i < num_subsystems(); ++i) {
       auto& subcontext = diagram_context->GetMutableSubsystemContext(i);
-      registered_systems_[i]->SetDefaults(&subcontext);
+      registered_systems_[i]->SetDefaultContext(&subcontext);
     }
   }
 

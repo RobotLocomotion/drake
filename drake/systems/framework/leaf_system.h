@@ -191,7 +191,7 @@ class LeafSystem : public System<T> {
   }
 
   // Sets Context fields to their default values.
-  void SetDefaults(Context<T>* context) const final {
+  void SetDefaultContext(Context<T> *context) const final {
     systems::LeafContext<T>* leaf_context =
         dynamic_cast<systems::LeafContext<T>*>(context);
     DRAKE_DEMAND(leaf_context != nullptr);
