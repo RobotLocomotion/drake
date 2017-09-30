@@ -651,7 +651,7 @@ class MultibodyTree {
   /// Sets default values in the context. For mobilizers, this method sets them
   /// to their _zero_ configuration according to
   /// Mobilizer::set_zero_configuration().
-  void SetDefaults(systems::Context<T>* context) const;
+  void SetDefaultContext(systems::Context<T> *context) const;
 
   /// Computes into the position kinematics `pc` all the kinematic quantities
   /// that depend on the generalized positions only. These include:

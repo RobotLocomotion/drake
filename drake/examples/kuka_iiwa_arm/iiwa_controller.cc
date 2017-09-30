@@ -137,7 +137,7 @@ int DoMain() {
   systems::Context<double>* diagram_context = loop.get_mutable_context();
   systems::Context<double>& status_sub_context =
       diagram->GetMutableSubsystemContext(*status_sub, diagram_context);
-  status_sub->SetDefaults(&status_sub_context);
+  status_sub->SetDefaultContext(&status_sub_context);
 
   // Explicit initialization.
   diagram_context->set_time(msg_time);
