@@ -33,6 +33,19 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "optitrack_sim",
+    srcs = ["optitrack_sim.cc"],
+    hdrs = ["optitrack_sim.h"],
+    visibility = ["//drake/examples/kuka_iiwa_arm:__subpackages__"],
+    deps = [
+        "//drake/multibody:rigid_body_tree",
+        "//drake/multibody/rigid_body_plant",
+        "//drake/systems/framework:leaf_system",
+        "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
+    ],
+)
+
 drake_cc_googletest(
     name = "optitrack_pose_extractor_test",
     deps = [

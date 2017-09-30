@@ -12,6 +12,7 @@
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
 #include "drake/systems/framework/leaf_system.h"
+#include "external/optitrack_driver/lcmtypes/optitrack/optitrack_frame_t.hpp"
 
 namespace drake {
 namespace examples {
@@ -170,6 +171,33 @@ class IiwaStatusSender : public systems::LeafSystem<double> {
                     lcmt_iiwa_status* output) const;
 
   const int num_joints_;
+};
+
+
+/// Create and outputs optitrack_frame_t messages.
+class OptitrackFrameSender : public systems::LeafSystem<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OptitrackFrameSender)
+
+  explicit OptitrackFrameSender(unsigned int num_rigid_bodies);
+
+  const systems::InputPortDescriptor<double> &get_optitrack_input_port() const {
+    return this->get_input_port(0);
+  }
+
+  const systems::OutputPort<double> &get_lcm_output_port() const {
+    return this->get_output_port(0);
+  }
+
+ private:
+  // This is the method to use for the output port allocator.
+  optitrack::optitrack_frame_t MakeOutputStatus() const;
+
+  // This is the calculator method for the output port.
+  void OutputStatus(const systems::Context<double> &context,
+                    optitrack::optitrack_frame_t *output) const;
+
+  const unsigned int num_rigid_bodies_;
 };
 
 }  // namespace kuka_iiwa_arm

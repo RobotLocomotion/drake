@@ -42,9 +42,11 @@ drake_cc_library(
         ":iiwa_common",
         "//drake/common/trajectories:piecewise_polynomial_trajectory",
         "//drake/lcmtypes:iiwa",
+        "//drake/manipulation/perception:optitrack_sim",
         "//drake/multibody:inverse_kinematics",
         "//drake/multibody:rigid_body_tree",
         "//drake/systems/framework:leaf_system",
+        "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
     ],
 )
 
