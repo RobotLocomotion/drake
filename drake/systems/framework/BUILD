@@ -432,6 +432,7 @@ drake_cc_library(
         "//drake/common:essential",
         "//drake/common:symbolic",
         "//drake/common:type_safe_index",
+        "//drake/common:unused",
     ],
 )
 
@@ -650,6 +651,7 @@ drake_cc_googletest(
         ":leaf_output_port",
         ":system",
         "//drake/common:essential",
+        "//drake/common:unused",
         "//drake/systems/framework/test_utilities",
     ],
 )

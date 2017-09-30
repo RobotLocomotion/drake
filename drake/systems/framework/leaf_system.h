@@ -156,15 +156,22 @@ class LeafSystem : public System<T> {
     return std::move(context);
   }
 
-  /// Default implementation: sets all continuous and discrete state variables
-  /// to zero.  It makes no attempt to set abstract state values. Overrides
-  /// must not change the number of state variables.
+  /// Default implementation: sets all continuous state to the model vector
+  /// given in DeclareContinousState (or zero if no model vector was given) and
+  /// discrete states to zero.  This method makes no attempt to set abstract
+  /// state values. Overrides must not change the number of state variables.
+  // TODO(sherm/russt): Initialize the discrete state from the model vector
+  // pending resolution of #7147.
   void SetDefaultState(const Context<T>& context,
                        State<T>* state) const override {
     unused(context);
     DRAKE_DEMAND(state != nullptr);
     ContinuousState<T>* xc = state->get_mutable_continuous_state();
-    xc->SetFromVector(VectorX<T>::Zero(xc->size()));
+    if (model_continuous_state_vector_ != nullptr) {
+      xc->SetFromVector(model_continuous_state_vector_->get_value());
+    } else {
+      xc->SetFromVector(VectorX<T>::Zero(xc->size()));
+    }
     DiscreteValues<T>* xd = state->get_mutable_discrete_state();
     for (int i = 0; i < xd->num_groups(); i++) {
       BasicVector<T>* s = xd->get_mutable_vector(i);
@@ -214,6 +221,9 @@ class LeafSystem : public System<T> {
     SetDefaultParameters(*leaf_context,
                          &leaf_context->get_mutable_parameters());
     DRAKE_DEMAND(num_params == leaf_context->num_numeric_parameters());
+
+    // Verify that this context satisfies all of the constraints.
+    DRAKE_ASSERT(this->CheckSystemConstraints(*context));
   }
 
   std::unique_ptr<SystemOutput<T>> AllocateOutput(
@@ -679,7 +689,8 @@ class LeafSystem : public System<T> {
   /// is overridden.
   void DeclareContinuousState(int num_q, int num_v, int num_z) {
     const int n = num_q + num_v + num_z;
-    DeclareContinuousState(BasicVector<T>(n), num_q, num_v, num_z);
+    DeclareContinuousState(BasicVector<T>(VectorX<T>::Zero(n)), num_q, num_v,
+                           num_z);
   }
 
   /// Declares that this System should reserve continuous state with
