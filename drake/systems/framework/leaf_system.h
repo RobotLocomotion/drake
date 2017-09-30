@@ -214,6 +214,9 @@ class LeafSystem : public System<T> {
     SetDefaultParameters(*leaf_context,
                          &leaf_context->get_mutable_parameters());
     DRAKE_DEMAND(num_params == leaf_context->num_numeric_parameters());
+
+    // Verify that this context satisfies all of the constraints.
+    DRAKE_ASSERT(this->CheckSystemConstraints(*context));
   }
 
   std::unique_ptr<SystemOutput<T>> AllocateOutput(

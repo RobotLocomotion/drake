@@ -8,6 +8,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/unused.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_context.h"
@@ -323,11 +324,10 @@ TEST_F(SystemTest, SystemConstraintTest) {
   EXPECT_THROW(system_.get_constraint(SystemConstraintIndex(0)),
                std::out_of_range);
 
-  // Note: This method won't even get evaluated... we're only testing the
-  // management of constraints here.
   SystemConstraint<double>::CalcCallback calc = [](
       const Context<double>& context, Eigen::VectorXd* value) {
-    *value = Vector1d(context.get_continuous_state_vector().GetAtIndex(1));
+    unused(context);
+    (*value)[0] = 1.0;
   };
   SystemConstraintIndex test_constraint =
       system_.AddConstraint(std::make_unique<SystemConstraint<double>>(
@@ -336,6 +336,16 @@ TEST_F(SystemTest, SystemConstraintTest) {
 
   EXPECT_NO_THROW(system_.get_constraint(test_constraint));
   EXPECT_EQ(system_.get_constraint(test_constraint).description(), "test");
+
+  EXPECT_TRUE(system_.CheckSystemConstraints(context_));
+  SystemConstraint<double>::CalcCallback calc_false = [](
+      const Context<double>& context, Eigen::VectorXd* value) {
+    unused(context);
+    (*value)[0] = -1.0;
+  };
+  system_.AddConstraint(std::make_unique<SystemConstraint<double>>(
+          calc_false, 1, false, "bad constraint"));
+  EXPECT_FALSE(system_.CheckSystemConstraints(context_));
 }
 
 // Tests GetMemoryObjectName.

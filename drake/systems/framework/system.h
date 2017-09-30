@@ -870,6 +870,19 @@ class System {
     return *constraints_[constraint_index];
   }
 
+  /// Returns true if @p context satisfies all of the registered
+  /// SystemConstraints with tolerance @p tol.
+  bool CheckSystemConstraints(const Context<T>& context,
+                              double tol = 1E-6) const {
+    DRAKE_DEMAND(tol >= 0.0);
+    for (const auto& constraint : constraints_) {
+      if (!constraint->CheckSatisfied(context, tol)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   /// Returns the total dimension of all of the input ports (as if they were
   /// muxed).
   int get_num_total_inputs() const {
