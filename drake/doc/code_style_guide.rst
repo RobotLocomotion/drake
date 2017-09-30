@@ -99,7 +99,7 @@ Clarifications
   ``drake/foo/test/bar_test.cc``.
   (`#2182 <https://github.com/RobotLocomotion/drake/issues/2182>`_)
 * When using `Integer Types
-  <https://google.github.io/styleguide/cppguide.html#Integer>`_
+  <https://google.github.io/styleguide/cppguide.html#Integer_Types>`_
   within Drake, unsigned types are forbidden, with the following exceptions
   (per `#2514 <https://github.com/RobotLocomotion/drake/issues/2514>`_):
 
@@ -110,7 +110,7 @@ Clarifications
     below zero is obviously not at risk.
 
 * When using `Integer Types
-  <https://google.github.io/styleguide/cppguide.html#Integer>`_
+  <https://google.github.io/styleguide/cppguide.html#Integer_Types>`_
   within Drake, `ptrdiff_t` is forbidden, with the following exceptions
   (per `#2514 <https://github.com/RobotLocomotion/drake/issues/2514>`_):
 
