@@ -64,7 +64,7 @@ class TestSystem : public LeafSystem<T> {
     return std::make_unique<Parameters<T>>(std::make_unique<BasicVector<T>>(2));
   }
 
-  void SetDefaultParameters(const LeafContext<T>& context,
+  void SetDefaultParameters(const Context<T>& context,
                             Parameters<T>* params) const override {
     BasicVector<T>* param = params->get_mutable_numeric_parameter(0);
     Vector2<T> p0;
