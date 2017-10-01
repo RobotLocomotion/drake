@@ -58,6 +58,8 @@ RotaryEncoders<T>::RotaryEncoders(int input_port_size,
   DRAKE_ASSERT(ticks_per_revolution_.empty() ||
                *std::min_element(ticks_per_revolution_.begin(),
                                  ticks_per_revolution_.end()) >= 0);
+  this->DeclareNumericParameter(
+      BasicVector<T>(VectorX<T>::Zero(num_encoders_)));
 }
 
 template <typename T>
@@ -94,20 +96,6 @@ void RotaryEncoders<T>::DoCalcVectorOutput(
       y(i) = floor(y(i) * ticks_per_radian) / ticks_per_radian;
     }
   }
-}
-
-template <typename T>
-std::unique_ptr<Parameters<T>> RotaryEncoders<T>::AllocateParameters() const {
-  // Use parameters for the (unnamed) calibration offsets.
-  return std::make_unique<Parameters<T>>(
-      std::make_unique<BasicVector<T>>(num_encoders_));
-}
-
-template <typename T>
-void RotaryEncoders<T>::SetDefaultParameters(
-    const LeafContext<T>&,
-    Parameters<T>* params) const {
-  params->get_mutable_numeric_parameter(0)->SetZero();
 }
 
 template <typename T>

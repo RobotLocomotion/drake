@@ -17,6 +17,7 @@
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/symbolic.h"
+#include "drake/common/text_logging.h"
 #include "drake/common/unused.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/context.h"
@@ -146,10 +147,10 @@ class System {
   }
 
   /// This convenience method allocates a context using AllocateContext() and
-  /// sets its default values using SetDefaults().
+  /// sets its default values using SetDefaultContext().
   std::unique_ptr<Context<T>> CreateDefaultContext() const {
     std::unique_ptr<Context<T>> context = AllocateContext();
-    SetDefaults(context.get());
+    SetDefaultContext(context.get());
     return context;
   }
 
@@ -158,9 +159,32 @@ class System {
   virtual void SetDefaultState(const Context<T>& context,
                                State<T>* state) const = 0;
 
+  /// Assigns default values to all parameters. Overrides must not
+  /// change the number of parameters.
+  virtual void SetDefaultParameters(const Context<T>& context,
+                                    Parameters<T>* parameters) const = 0;
+
   // Sets Context fields to their default values.  User code should not
   // override.
-  virtual void SetDefaults(Context<T>* context) const = 0;
+  void SetDefaultContext(Context<T> *context) const {
+    // Set the default state, checking that the number of state variables does
+    // not change.
+    const int n_xc = context->get_continuous_state()->size();
+    const int n_xd = context->get_num_discrete_state_groups();
+    const int n_xa = context->get_num_abstract_state_groups();
+
+    SetDefaultState(*context, context->get_mutable_state());
+
+    DRAKE_DEMAND(n_xc == context->get_continuous_state()->size());
+    DRAKE_DEMAND(n_xd == context->get_num_discrete_state_groups());
+    DRAKE_DEMAND(n_xa == context->get_num_abstract_state_groups());
+
+    // Set the default parameters, checking that the number of parameters does
+    // not change.
+    const int num_params = context->num_numeric_parameters();
+    SetDefaultParameters(*context, &context->get_mutable_parameters());
+    DRAKE_DEMAND(num_params == context->num_numeric_parameters());
+  }
 
   /// For each input port, allocates a freestanding input of the concrete type
   /// that this System requires, and binds it to the port, disconnecting any
@@ -868,6 +892,22 @@ class System {
                               " constraints.");
     }
     return *constraints_[constraint_index];
+  }
+
+  /// Returns true if @p context satisfies all of the registered
+  /// SystemConstraints with tolerance @p tol.
+  bool CheckSystemConstraints(const Context<T>& context,
+                              double tol = 1E-6) const {
+    DRAKE_DEMAND(tol >= 0.0);
+    for (const auto& constraint : constraints_) {
+      if (!constraint->CheckSatisfied(context, tol)) {
+        SPDLOG_DEBUG(drake::log(),
+                     "Context fails to satisfy SystemConstraint {}",
+                     constraint->description());
+        return false;
+      }
+    }
+    return true;
   }
 
   /// Returns the total dimension of all of the input ports (as if they were
