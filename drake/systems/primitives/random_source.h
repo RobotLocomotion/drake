@@ -5,13 +5,15 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/unused.h"
+#include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 namespace systems {
 
 /// State for a given random distribution and generator. This owns both the
-/// distrubtion and the generator.
+/// distribution and the generator.
 template <typename Distribution, typename Generator = std::mt19937>
 class RandomState {
  public:
@@ -67,7 +69,8 @@ class RandomSource : public LeafSystem<double> {
     this->DeclareAbstractState(AbstractValue::Make(RandomState(seed_)));
   }
 
-  /// Initializes the random number generator.
+  /// Initializes the random number generator.  This must be set before
+  /// the (abstract) state is allocated to take effect.
   void set_random_seed(Seed seed) { seed_ = seed; }
 
  private:
@@ -76,6 +79,8 @@ class RandomSource : public LeafSystem<double> {
       const Context<double>& context,
       const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
       State<double>* state) const override {
+    unused(context);
+    unused(events);
     auto& random_state =
         state->template get_mutable_abstract_state<RandomState>(0);
     auto* updates = state->get_mutable_discrete_state();
@@ -117,6 +122,16 @@ typedef RandomSource<std::normal_distribution<double>> GaussianRandomSource;
 /// @ingroup primitive_systems
 typedef RandomSource<std::exponential_distribution<double>>
     ExponentialRandomSource;
+
+/// For each subsystem input port in @p builder that is (a) not yet connected
+/// and (b) labeled as random in the InputPortDescriptor, this method will Add a
+/// new RandomSource system of the appropriate type and Connect it to the
+/// subsystem input port.
+///
+/// @param sampling_interval_sec interval to be used for all new sources.
+/// @returns the total number of RandomSource systems added.
+int AddRandomInputs(double sampling_interval_sec,
+                    DiagramBuilder<double>* builder);
 
 }  // namespace systems
 }  // namespace drake

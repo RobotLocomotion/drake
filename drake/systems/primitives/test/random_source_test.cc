@@ -9,6 +9,7 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/signal_logger.h"
 
 namespace drake {
@@ -117,6 +118,62 @@ GTEST_TEST(RandomSourceTest, ExponentialWhiteNoise) {
   const double fudge_factor = 2.0;
   CheckStatistics(Phi, min_value, max_value, h, fudge_factor,
                   std::move(random_source));
+}
+
+class TestSystem : public LeafSystem<double> {
+ public:
+  // Make methods available.
+  using LeafSystem::DeclareInputPort;
+  using LeafSystem::EvalVectorInput;
+};
+
+GTEST_TEST(RandomSourceTest, AddToDiagramBuilderTest) {
+  DiagramBuilder<double> builder;
+
+  auto sys1 = builder.AddSystem<TestSystem>();
+  sys1->DeclareInputPort(kVectorValued, 3, RandomDistribution::kUniform);
+  sys1->DeclareInputPort(kVectorValued, 2, RandomDistribution::kExponential);
+
+  auto sys2 = builder.AddSystem<TestSystem>();
+  sys2->DeclareInputPort(kVectorValued, 5, RandomDistribution::kGaussian);
+  sys2->DeclareInputPort(kVectorValued, 2, RandomDistribution::kGaussian);
+  sys2->DeclareInputPort(kVectorValued, 1, RandomDistribution::kGaussian);
+
+  // Export input 1.
+  builder.ExportInput(sys2->get_input_port(1));
+
+  // Connect input 2 to a different block.
+  auto constant_input = builder.AddSystem<ConstantVectorSource<double>>(14.0);
+  builder.Connect(constant_input->get_output_port(), sys2->get_input_port(2));
+
+  EXPECT_EQ(AddRandomInputs(1e-3, &builder), 3);
+
+  auto diagram = builder.Build();
+  auto context = diagram->CreateDefaultContext();
+
+  // Check that new Uniform source was created properly.
+  EXPECT_NE(
+      sys1->EvalVectorInput(diagram->GetSubsystemContext(*sys1, *context), 0),
+      nullptr);
+
+  // Check that new Exponential source was created properly.
+  EXPECT_NE(
+      sys1->EvalVectorInput(diagram->GetSubsystemContext(*sys1, *context), 1),
+      nullptr);
+
+  // Check that new Gaussian source was created properly.
+  EXPECT_NE(
+      sys2->EvalVectorInput(diagram->GetSubsystemContext(*sys2, *context), 0),
+      nullptr);
+
+  // Check that the exported input remained exported.
+  EXPECT_EQ(diagram->get_num_input_ports(), 1);
+  EXPECT_EQ(diagram->get_input_port(0).size(), 2);
+
+  // Check that the previously connected input remained connected.
+  EXPECT_EQ(sys2->EvalEigenVectorInput(
+                diagram->GetSubsystemContext(*sys2, *context), 2)[0],
+            14.0);
 }
 
 }  // namespace
