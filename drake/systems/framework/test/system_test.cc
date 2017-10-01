@@ -56,7 +56,8 @@ class TestSystem : public System<double> {
   void SetDefaultState(const Context<double>& context,
                        State<double>* state) const override {}
 
-  void SetDefaultContext(Context<double> *context) const override {}
+  void SetDefaultParameters(const Context<double>& context,
+                            Parameters<double>* params) const override {}
 
   std::unique_ptr<SystemOutput<double>> AllocateOutput(
       const Context<double>& context) const override {
@@ -324,8 +325,6 @@ TEST_F(SystemTest, SystemConstraintTest) {
   EXPECT_THROW(system_.get_constraint(SystemConstraintIndex(0)),
                std::out_of_range);
 
-  // Note: This method won't even get evaluated... we're only testing the
-  // management of constraints here.
   SystemConstraint<double>::CalcCallback calc = [](
       const Context<double>& context, Eigen::VectorXd* value) {
     unused(context);
@@ -339,7 +338,8 @@ TEST_F(SystemTest, SystemConstraintTest) {
   EXPECT_NO_THROW(system_.get_constraint(test_constraint));
   EXPECT_EQ(system_.get_constraint(test_constraint).description(), "test");
 
-  EXPECT_TRUE(system_.CheckSystemConstraints(context_));
+  const double tol = 1e-6;
+  EXPECT_TRUE(system_.CheckSystemConstraintsSatisfied(context_, tol));
   SystemConstraint<double>::CalcCallback calc_false = [](
       const Context<double>& context, Eigen::VectorXd* value) {
     unused(context);
@@ -347,7 +347,7 @@ TEST_F(SystemTest, SystemConstraintTest) {
   };
   system_.AddConstraint(std::make_unique<SystemConstraint<double>>(
       calc_false, 1, SystemConstraintType::kInequality, "bad constraint"));
-  EXPECT_FALSE(system_.CheckSystemConstraints(context_));
+  EXPECT_FALSE(system_.CheckSystemConstraintsSatisfied(context_, tol));
 }
 
 // Tests GetMemoryObjectName.
@@ -472,7 +472,8 @@ class ValueIOTestSystem : public System<T> {
   void SetDefaultState(const Context<T>& context,
                        State<T>* state) const override {}
 
-  void SetDefaultContext(Context<T> *context) const override {}
+  void SetDefaultParameters(const Context<T>& context,
+                            Parameters<T>* params) const override {}
 
   std::multimap<int, int> GetDirectFeedthroughs() const override {
     std::multimap<int, int> pairs;
