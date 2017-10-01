@@ -12,6 +12,11 @@
 namespace drake {
 namespace systems {
 
+namespace internal {
+
+template <typename Generator = std::mt19937>
+typename Generator::result_type generate_unique_seed();
+
 /// State for a given random distribution and generator. This owns both the
 /// distribution and the generator.
 template <typename Distribution, typename Generator = std::mt19937>
@@ -20,8 +25,7 @@ class RandomState {
   typedef typename Generator::result_type Seed;
   static constexpr Seed default_seed = Generator::default_seed;
 
-  explicit RandomState(Seed seed = Generator::default_seed)
-      : generator_(seed) {}
+  explicit RandomState(Seed seed) : generator_(seed) {}
 
   /// Generate the next random value with the given distribution.
   double GetNextValue() { return distribution_(generator_); }
@@ -55,13 +59,14 @@ class RandomSource : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RandomSource)
 
-  typedef systems::RandomState<Distribution, Generator> RandomState;
+  typedef internal::RandomState<Distribution, Generator> RandomState;
   typedef typename RandomState::Seed Seed;
 
   /// Constructs the RandomSource system.
   /// @param num_outputs The dimension of the (single) vector output port.
   /// @param sampling_interval_sec The sampling interval in seconds.
-  RandomSource(int num_outputs, double sampling_interval_sec) {
+  RandomSource(int num_outputs, double sampling_interval_sec)
+      : seed_(generate_unique_seed()) {
     this->DeclarePeriodicUnrestrictedUpdate(sampling_interval_sec, 0.);
     this->DeclareVectorOutputPort(BasicVector<double>(num_outputs),
                                   &RandomSource::CopyStateToOutput);
@@ -76,11 +81,9 @@ class RandomSource : public LeafSystem<double> {
  private:
   // Computes a random number and stores it in the discrete state.
   void DoCalcUnrestrictedUpdate(
-      const Context<double>& context,
-      const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
+      const Context<double>&,
+      const std::vector<const UnrestrictedUpdateEvent<double>*>&,
       State<double>* state) const override {
-    unused(context);
-    unused(events);
     auto& random_state =
         state->template get_mutable_abstract_state<RandomState>(0);
     auto* updates = state->get_mutable_discrete_state();
@@ -104,28 +107,31 @@ class RandomSource : public LeafSystem<double> {
   Seed seed_{RandomState::default_seed};
 };
 
+}  // namespace internal
+
 /// Generates uniformly distributed random numbers in the interval [0,1].
 ///
 /// @ingroup primitive_systems
-typedef RandomSource<std::uniform_real_distribution<double>>
+typedef internal::RandomSource<std::uniform_real_distribution<double>>
     UniformRandomSource;
 
 /// Generates normally distributed random numbers with mean zero and unit
 /// covariance.
 ///
 /// @ingroup primitive_systems
-typedef RandomSource<std::normal_distribution<double>> GaussianRandomSource;
+typedef internal::RandomSource<std::normal_distribution<double>>
+    GaussianRandomSource;
 
 /// Generates exponentially distributed random numbers with mean, standard
 /// deviation, and scale parameter (aka 1/λ) set to one.
 ///
 /// @ingroup primitive_systems
-typedef RandomSource<std::exponential_distribution<double>>
+typedef internal::RandomSource<std::exponential_distribution<double>>
     ExponentialRandomSource;
 
 /// For each subsystem input port in @p builder that is (a) not yet connected
-/// and (b) labeled as random in the InputPortDescriptor, this method will Add a
-/// new RandomSource system of the appropriate type and Connect it to the
+/// and (b) labeled as random in the InputPortDescriptor, this method will add a
+/// new RandomSource system of the appropriate type and connect it to the
 /// subsystem input port.
 ///
 /// @param sampling_interval_sec interval to be used for all new sources.
