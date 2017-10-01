@@ -9,6 +9,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/number_traits.h"
 #include "drake/common/type_safe_index.h"
+#include "drake/common/unused.h"
 
 namespace drake {
 namespace systems {
@@ -99,6 +100,16 @@ class SystemConstraint {
     } else {
       return (value.array() >= -tol).all();
     }
+  }
+
+  /// Supports CheckSatisfied calls for non-numeric scalar types by simply
+  /// returning true.
+  template <typename T1 = T>
+  typename std::enable_if<!is_numeric<T1>::value, bool>::type CheckSatisfied(
+      const Context<T1>& context, double tol = 1E-6) const {
+    DRAKE_DEMAND(tol >= 0.0);
+    unused(context);
+    return true;
   }
 
   // Accessor methods.
