@@ -3,6 +3,17 @@
 namespace drake {
 namespace systems {
 
+namespace internal {
+template<typename Generator>
+typename Generator::result_type generate_unique_seed() {
+  static typename Generator::result_type seed = Generator::default_seed;
+  return seed++;
+}
+
+template std::mt19937::result_type generate_unique_seed<std::mt19937>();
+
+}  // namespace internal
+
 int AddRandomInputs(double sampling_interval_sec,
                     DiagramBuilder<double>* builder) {
   int count = 0;
@@ -54,3 +65,4 @@ int AddRandomInputs(double sampling_interval_sec,
 
 }  // namespace systems
 }  // namespace drake
+

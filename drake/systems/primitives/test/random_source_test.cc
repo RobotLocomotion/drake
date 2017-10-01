@@ -24,9 +24,9 @@ template <typename Distribution, typename Generator>
 void CheckStatistics(
     const std::function<double(double)>& cumulative_distribution,
     double min_value, double max_value, double h, double fudge_factor,
-    std::unique_ptr<RandomSource<Distribution, Generator>>
+    std::unique_ptr<internal::RandomSource<Distribution, Generator>>
         random_source_system) {
-  systems::DiagramBuilder<double> builder;
+  DiagramBuilder<double> builder;
 
   auto source = builder.AddSystem(std::move(random_source_system));
   source->set_name("source");
@@ -174,6 +174,40 @@ GTEST_TEST(RandomSourceTest, AddToDiagramBuilderTest) {
   EXPECT_EQ(sys2->EvalEigenVectorInput(
                 diagram->GetSubsystemContext(*sys2, *context), 2)[0],
             14.0);
+}
+
+GTEST_TEST(RandomSourceTest, CorrelationTest) {
+  // Tests that two separate input ports, with the default seeds, are
+  // uncorrelated.
+
+  DiagramBuilder<double> builder;
+  const int kSize = 1;
+  const double kSampleTime = 0.0025;
+  auto random1 = builder.AddSystem<GaussianRandomSource>(kSize, kSampleTime);
+  auto log1 = LogOutput(random1->get_output_port(0), &builder);
+
+  auto random2 = builder.AddSystem<GaussianRandomSource>(kSize, kSampleTime);
+  auto log2 = LogOutput(random2->get_output_port(0), &builder);
+
+  auto diagram = builder.Build();
+
+  systems::Simulator<double> simulator(*diagram);
+  simulator.Initialize();
+  simulator.StepTo(20);
+
+  const auto& x1 = log1->data();
+  const auto& x2 = log2->data();
+
+  EXPECT_EQ(x1.size(), x2.size());
+  const int N = static_cast<int>(x1.size()) / 2;
+  for (int i = 0; i < N; i++) {
+    // Compute cross-correlation
+    const double xcorr =
+        (x1.middleCols(0, N).array() * x2.middleCols(i, N).array()).sum();
+    // Note: The threshold doesn't need to be small.  Any correlations due to
+    // using the same seed will lead to numbers ≊ 1.
+    EXPECT_LE(xcorr/N, 0.1);
+  }
 }
 
 }  // namespace
