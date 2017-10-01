@@ -167,6 +167,7 @@ drake_cc_library(
     srcs = ["random_source.cc"],
     hdrs = ["random_source.h"],
     deps = [
+        "//drake/common:essential",
         "//drake/common:unused",
         "//drake/systems/framework:diagram_builder",
         "//drake/systems/framework:leaf_system",
