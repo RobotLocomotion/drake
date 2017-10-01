@@ -416,36 +416,37 @@ TEST_F(SimpleCarTest, TestConstraints) {
   // Test steering constraint.
   EXPECT_EQ(steering_constraint.description(), "steering angle limit");
 
+  const double tol = 1e-6;
   SetInputValue(0.0, 1.0);
-  EXPECT_TRUE(steering_constraint.CheckSatisfied(*context_));
+  EXPECT_TRUE(steering_constraint.CheckSatisfied(*context_, tol));
   SetInputValue(1.1 * params->max_abs_steering_angle(), 1.0);
-  EXPECT_FALSE(steering_constraint.CheckSatisfied(*context_));
+  EXPECT_FALSE(steering_constraint.CheckSatisfied(*context_, tol));
   SetInputValue(-1.1 * params->max_abs_steering_angle(), 1.0);
-  EXPECT_FALSE(steering_constraint.CheckSatisfied(*context_));
+  EXPECT_FALSE(steering_constraint.CheckSatisfied(*context_, tol));
   params->set_max_abs_steering_angle(1.2 * params->max_abs_steering_angle());
-  EXPECT_TRUE(steering_constraint.CheckSatisfied(*context_));
+  EXPECT_TRUE(steering_constraint.CheckSatisfied(*context_, tol));
 
   // Test acceleration constraint.
   EXPECT_EQ(acceleration_constraint.description(), "acceleration limit");
 
   SetInputValue(0.0, 0.5);  // Note that the second argument is normalized.
-  EXPECT_TRUE(acceleration_constraint.CheckSatisfied(*context_));
+  EXPECT_TRUE(acceleration_constraint.CheckSatisfied(*context_, tol));
   SetInputValue(0.0, 1.5);
-  EXPECT_FALSE(acceleration_constraint.CheckSatisfied(*context_));
+  EXPECT_FALSE(acceleration_constraint.CheckSatisfied(*context_, tol));
   SetInputValue(0.0, -0.5);
-  EXPECT_TRUE(acceleration_constraint.CheckSatisfied(*context_));
+  EXPECT_TRUE(acceleration_constraint.CheckSatisfied(*context_, tol));
   SetInputValue(0.0, -1.5);
-  EXPECT_FALSE(acceleration_constraint.CheckSatisfied(*context_));
+  EXPECT_FALSE(acceleration_constraint.CheckSatisfied(*context_, tol));
 
   // Test velocity constraint.
   EXPECT_EQ(velocity_constraint.description(), "velocity limit");
 
   state->set_velocity(params->max_velocity() / 2.0);
-  EXPECT_TRUE(velocity_constraint.CheckSatisfied(*context_));
+  EXPECT_TRUE(velocity_constraint.CheckSatisfied(*context_, tol));
   state->set_velocity(-0.1);
-  EXPECT_FALSE(velocity_constraint.CheckSatisfied(*context_));
+  EXPECT_FALSE(velocity_constraint.CheckSatisfied(*context_, tol));
   state->set_velocity(1.1 * params->max_velocity());
-  EXPECT_FALSE(velocity_constraint.CheckSatisfied(*context_));
+  EXPECT_FALSE(velocity_constraint.CheckSatisfied(*context_, tol));
 }
 
 }  // namespace
