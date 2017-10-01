@@ -91,7 +91,7 @@ class SystemConstraint {
   // gen scripts call this IsValid, but Constraint calls it CheckSatisfied.
   template <typename T1 = T>
   typename std::enable_if<is_numeric<T1>::value, bool>::type CheckSatisfied(
-      const Context<T1>& context, double tol = 1E-6) const {
+      const Context<T1>& context, double tol) const {
     DRAKE_DEMAND(tol >= 0.0);
     VectorX<T> value(count_);
     Calc(context, &value);
@@ -106,7 +106,7 @@ class SystemConstraint {
   /// returning true.
   template <typename T1 = T>
   typename std::enable_if<!is_numeric<T1>::value, bool>::type CheckSatisfied(
-      const Context<T1>& context, double tol = 1E-6) const {
+      const Context<T1>& context, double tol) const {
     DRAKE_DEMAND(tol >= 0.0);
     unused(context);
     return true;
