@@ -56,7 +56,8 @@ class TestSystem : public System<double> {
   void SetDefaultState(const Context<double>& context,
                        State<double>* state) const override {}
 
-  void SetDefaultContext(Context<double> *context) const override {}
+  void SetDefaultParameters(const Context<double>& context,
+                            Parameters<double>* params) const override {}
 
   std::unique_ptr<SystemOutput<double>> AllocateOutput(
       const Context<double>& context) const override {
@@ -324,15 +325,14 @@ TEST_F(SystemTest, SystemConstraintTest) {
   EXPECT_THROW(system_.get_constraint(SystemConstraintIndex(0)),
                std::out_of_range);
 
-  // Note: This method won't even get evaluated... we're only testing the
-  // management of constraints here.
   SystemConstraint<double>::CalcCallback calc = [](
       const Context<double>& context, Eigen::VectorXd* value) {
     unused(context);
     (*value)[0] = 1.0;
   };
-  SystemConstraintIndex test_constraint = system_.AddConstraint(
-      std::make_unique<SystemConstraint<double>>(calc, 1, false, "test"));
+  SystemConstraintIndex test_constraint =
+      system_.AddConstraint(std::make_unique<SystemConstraint<double>>(
+          calc, 1, false, "test"));
   EXPECT_EQ(test_constraint, 0);
 
   EXPECT_NO_THROW(system_.get_constraint(test_constraint));
@@ -345,7 +345,7 @@ TEST_F(SystemTest, SystemConstraintTest) {
     (*value)[0] = -1.0;
   };
   system_.AddConstraint(std::make_unique<SystemConstraint<double>>(
-      calc_false, 1, false, "bad constraint"));
+          calc_false, 1, false, "bad constraint"));
   EXPECT_FALSE(system_.CheckSystemConstraints(context_));
 }
 
@@ -471,7 +471,8 @@ class ValueIOTestSystem : public System<T> {
   void SetDefaultState(const Context<T>& context,
                        State<T>* state) const override {}
 
-  void SetDefaultContext(Context<T> *context) const override {}
+  void SetDefaultParameters(const Context<T>& context,
+                            Parameters<T>* params) const override {}
 
   std::multimap<int, int> GetDirectFeedthroughs() const override {
     std::multimap<int, int> pairs;
