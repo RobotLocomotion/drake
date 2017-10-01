@@ -118,17 +118,6 @@ macro(drake_add_cmake_external PROJECT)
     CMAKE_INSTALL_RPATH
     CMAKE_INSTALL_RPATH_USE_LINK_PATH)
 
-  if(_ext_FORTRAN)
-    list(APPEND _ext_PROPAGATE_CACHE_VARS
-      CMAKE_Fortran_COMPILER
-      CMAKE_Fortran_FLAGS)
-
-    if(NOT _ext_GENERATOR STREQUAL "Unix Makefiles")
-      # Ninja and Xcode may not support Fortran.
-      set(_ext_GENERATOR "Unix Makefiles")
-    endif()
-  endif()
-
   if(_ext_MATLAB AND Matlab_FOUND)
     list(APPEND _ext_PROPAGATE_CACHE_VARS
       Matlab_ROOT_DIR
@@ -279,7 +268,6 @@ endmacro()
 #   CMAKE     - External uses CMake
 #   AUTOTOOLS - External uses Autotools
 #   ALWAYS    - External is always built
-#   FORTRAN   - External uses Fortran
 #   MATLAB    - External uses MATLAB
 #   PYTHON    - External uses Python
 #
@@ -333,7 +321,6 @@ function(drake_add_external PROJECT)
     CMAKE
     AUTOTOOLS
     ALWAYS
-    FORTRAN
     MATLAB
     PYTHON
   )

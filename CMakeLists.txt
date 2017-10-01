@@ -49,29 +49,6 @@ drake_add_external(googletest CMAKE
     -DBUILD_SHARED_LIBS=ON
     -DCMAKE_INSTALL_NAME_DIR=${CMAKE_INSTALL_PREFIX}/lib)
 
-# ipopt
-if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  # Work around horrific clang* = clang, */cl* = msvc bug in BuildTools/coin.m4
-  get_filename_component(IPOPT_C_COMPILER "${CMAKE_C_COMPILER}" NAME)
-  get_filename_component(IPOPT_CXX_COMPILER "${CMAKE_CXX_COMPILER}" NAME)
-else()
-  set(IPOPT_C_COMPILER "${CMAKE_C_COMPILER}")
-  set(IPOPT_CXX_COMPILER "${CMAKE_CXX_COMPILER}")
-endif()
-
-drake_add_external(ipopt AUTOTOOLS FORTRAN
-  URL https://github.com/RobotLocomotion/ipopt-mirror/archive/aecf5abd3913eebf1b99167c0edd4e65a6b414bc.tar.gz
-  URL_HASH SHA256=d88ea1b6b34c5678ef32ced22a6e9cb00f76a490f233d0b2d56270609eb94e3e
-  AUTOTOOLS_ENV
-    CC=${IPOPT_C_COMPILER}
-    CXX=${IPOPT_CXX_COMPILER}
-  AUTOTOOLS_CONFIGURE_ARGS
-    --disable-shared
-    --includedir=${CMAKE_INSTALL_PREFIX}/include/ipopt
-    --with-blas=BUILD
-    --with-lapack=BUILD
-    --with-pic)
-
 # nlopt
 drake_add_external(nlopt CMAKE ALWAYS
   URL https://github.com/stevengj/nlopt/archive/45553da97c890ef58f95e7ef73c5409d2169e824.tar.gz
@@ -122,7 +99,6 @@ drake_add_external(drake LOCAL CMAKE ALWAYS MATLAB PYTHON
     fmt
     gflags
     googletest
-    ipopt
     nlopt
     protobuf
     pybind11
