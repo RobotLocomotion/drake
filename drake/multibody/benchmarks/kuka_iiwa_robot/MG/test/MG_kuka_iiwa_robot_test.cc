@@ -205,7 +205,7 @@ GTEST_TEST(KukaIIwaRobot, TorqueMotorA) {
 
   // Redo test now adding Earth's uniform gravitational forces (little g).
   const double g = 9.81;  // (in m/s^2).
-  MG_kuka_robot.set_surface_gravity(g);
+  MG_kuka_robot.set_gravity(g);
 
   // MotionGenesis (MG) solution for the motor torques to hold the robot static.
   zTorques = MG_kuka_robot.CalcRevoluteMotorZTorques(q, q_Dt, q_DDt);
