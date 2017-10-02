@@ -2,8 +2,6 @@
 
 #include <type_traits>
 
-#include "drake/common/drake_compat.h"
-
 namespace drake {
 namespace systems {
 namespace scalar_conversion {

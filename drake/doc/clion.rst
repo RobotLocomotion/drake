@@ -62,24 +62,14 @@ directory as described in the :ref:`installation instructions <getting_drake>`.
 6. Browse to ``Build, Execution, Deployment > CMake``.
 7. Under ``CMake Options``, fill in
    ``-DCMAKE_INSTALL_PREFIX=/absolute_path_to_your/drake-distro/build/install``.
-8. [This step only for Ubuntu 14.04 - Trusty]. Under ``CMake Options``
-   expand the tab ``Pass system
-   environment``. Add the following environment variables.  (You can copy these
-   from this documentation one at a time and click on the ``paste`` button at
-   the right of the environment variables dialog.)
-
-   * ``CC=gcc-4.9``
-   * ``CXX=g++-4.9``
-   * ``FC=gfortran-4.9``
-
-9. Click OK. CLion will take about a minute to reload the CMake Project. If
+8. Click OK. CLion will take about a minute to reload the CMake Project. If
    everything is in order, there should be no errors or warnings. For fun,
    check out the `cache pane
    <https://www.jetbrains.com/help/clion/2016.1/cmake-cache.html>`_ in the
    `CMake tool window
    <https://www.jetbrains.com/help/clion/2016.1/cmake.html>`_ (the CMake icon
    in the lower left corner of the workspace); it's pretty handy.
-10. If CLion asks you about unregistered VCS roots, you can just add them.
+9. If CLion asks you about unregistered VCS roots, you can just add them.
 
 Building
 --------
@@ -351,13 +341,13 @@ find such issues. We'll define two tools:
 
 These tools produce reports. In some cases, the reports can be automatically
 converted into clickable links so that you can click on a messsage and be taken
-to the file and line indicated in the message. The configuration instructions 
+to the file and line indicated in the message. The configuration instructions
 include the details of how to configure these clickable links.
 
 You can also set the general coding style for CLion through the following steps
 
 1. Go to ``File`` > ``Settings`` > ``Editor`` > ``Code Style``
-2. On the right panel, Go to ``Default Options`` > ``Right margin (columns)``: 
+2. On the right panel, Go to ``Default Options`` > ``Right margin (columns)``:
    Set it to 80
 3. Go to ``File`` > ``Settings`` > ``Editor`` > ``Code Style`` > ``C/C++``
 4. On the right panel, choose ``Set from`` > ``Predefined Style`` > ``Google``

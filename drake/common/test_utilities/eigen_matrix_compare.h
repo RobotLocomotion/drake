@@ -7,7 +7,6 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_compat.h"
 #include "drake/common/text_logging.h"
 
 namespace drake {

@@ -6,11 +6,6 @@ The simplest way to create a .png from the .svg file is to use Inkscape.
 
 To install: `sudo apt-get install inkscape`
 
-The version of inkscape will depend on which version of ubuntu you are running.
-There are differences between Trusty (14.04) and Xenial (16.04).  These
-differences manifest themselves in some of the relevant GUI.  In those cases,
-the two options will be shown as [Trusty|Xenial].
-
 The following steps will re-create the png:
 
 1. Launch inkscape

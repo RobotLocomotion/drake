@@ -3,10 +3,10 @@
 
 """
 Makes a system-installed Expat XML parser headers and library available to be
-used as a C/C++ dependency. On Ubuntu Trusty and Xenial, pkg-config is used to
-locate the Expat headers and library. On macOS and OS X, no pkg-config expat.pc
-file is installed, but the Expat headers and library are always located in
-/usr/include and /usr/lib, respectively.
+used as a C/C++ dependency. On Ubuntu Xenial, pkg-config is used to locate the
+Expat headers and library. On macOS and OS X, no pkg-config expat.pc file is
+installed, but the Expat headers and library are always located in /usr/include
+and /usr/lib, respectively.
 
 Example:
     WORKSPACE:

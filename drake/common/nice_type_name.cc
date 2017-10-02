@@ -48,18 +48,6 @@ string drake::NiceTypeName::Demangle(const char* typeid_name) {
 // indpendence. We'll remove Microsoft's "class ", "struct ", etc.
 // designations, and get rid of all unnecessary spaces.
 string drake::NiceTypeName::Canonicalize(const string& demangled) {
-// Tests for GCC < 4.9 and not clang. This is necessary because GCC 4.8's
-// implementation of std::regex is incompatible with the regular expressiones
-// defined below and results in a "std::regex_error: regex_error" being thrown.
-#define GCC_VERSION (__GNUC__ * 10000 \
-                     + __GNUC_MINOR__ * 100 \
-                     + __GNUC_PATCHLEVEL__)
-#if GCC_VERSION < 40900 && !defined __clang__
-  throw std::runtime_error("drake::NiceTypeName::Canonicalize() is not "
-      "compatible with gcc < 4.9 due to its use of std::regex.");
-#endif
-#undef GCC_VERSION
-
   using SPair = std::pair<std::regex, string>;
   using SPairList = std::initializer_list<SPair>;
   // These are applied in this order.

@@ -5,7 +5,7 @@ Bazel build system
 ******************
 
 The Bazel build system is officially supported for a subset of Drake on
-Ubuntu Xenial, Ubuntu Trusty, and OS X.
+Ubuntu Xenial and OS X.
 For more information, see:
 
  * https://bazel.build/
@@ -47,7 +47,6 @@ Cheat sheet for operating on the entire project::
   cd /path/to/drake-distro
   bazel build //...                     # Build the entire project.
   bazel test //...                      # Build and test the entire project.
-  bazel build --compiler=gcc-4.9 //...  # Build using gcc 4.9 on Trusty.
   bazel build --compiler=gcc-5 //...    # Build using gcc 5.x on Xenial.
 
 - The "``//``" means "starting from the root of the project".

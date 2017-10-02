@@ -1,6 +1,5 @@
 #pragma once
 
-#include "drake/common/drake_compat.h"
 #include "drake/thirdParty/boost/tcbrindle_cpp17_headers/stx/optional.hpp"
 
 /// @file
