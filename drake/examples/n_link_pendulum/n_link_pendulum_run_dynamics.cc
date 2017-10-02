@@ -86,14 +86,6 @@ int do_main() {
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
 
-//  SemiExplicitEulerIntegrator<double>* integrator =
-  //    simulator.reset_integrator<SemiExplicitEulerIntegrator<double>>(
-    //  *diagram, time_step, simulator.get_mutable_context());
-
-  //RungeKutta2Integrator<double>* integrator =
-    //      simulator.reset_integrator<RungeKutta2Integrator<double>>(
-      //    *diagram, time_step, simulator.get_mutable_context());
-
   systems::IntegratorBase<double>* integrator;
   if (integrator_type == "ImplicitEuler") {
     integrator =
