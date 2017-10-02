@@ -124,6 +124,13 @@ void FclModel::DoAddElement(const Element& element) {
   fcl_collision_objects_.insert(std::make_pair(id, move(fcl_object)));
 }
 
+void FclModel::DoRemoveElement(ElementId id) {
+  const auto& itr = fcl_collision_objects_.find(id);
+  if (itr != fcl_collision_objects_.end()) {
+    broadphase_manager_.unregisterObject(itr->second.get());
+  }
+}
+
 void FclModel::UpdateModel() { broadphase_manager_.update(); }
 
 bool FclModel::UpdateElementWorldTransform(ElementId id,
