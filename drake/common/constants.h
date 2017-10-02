@@ -1,7 +1,5 @@
 #pragma once
 
-#include "drake/common/drake_compat.h"
-
 namespace drake {
 
 constexpr int kQuaternionSize = 4;

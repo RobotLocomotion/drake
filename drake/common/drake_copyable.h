@@ -1,7 +1,5 @@
 #pragma once
 
-#include "drake/common/drake_compat.h"
-
 // ============================================================================
 // N.B. The spelling of the macro names between doc/Doxyfile_CXX.in and this
 // file must be kept in sync!

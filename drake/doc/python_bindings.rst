@@ -17,8 +17,8 @@ With your Python path configured appropriately, you should be able to import pyd
 
 
     $ python
-    Python 2.7.6 (default, Oct 26 2016, 20:30:19)
-    [GCC 4.8.4] on linux2
+    Python 2.7.12 (default, Nov 19 2016, 06:48:10)
+    [GCC 5.4.0 20160609] on linux2
     Type "help", "copyright", "credits" or "license" for more information.
     >>> import pydrake
     >>>
