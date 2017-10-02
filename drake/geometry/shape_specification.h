@@ -87,6 +87,22 @@ class Sphere final : public Shape {
   double radius_{};
 };
 
+/** Definition of a cylinder. It is centered in its canonical frame with the
+ length of the cylinder parallel with the frame's z-axis. */
+class Cylinder final : public Shape {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Cylinder)
+
+  explicit Cylinder(double radius, double length);
+
+  double get_radius() const { return radius_; }
+  double get_length() const { return length_; }
+
+ private:
+  double radius_{};
+  double length_{};
+};
+
 /** Definition of a half space. In its canonical frame, the plane defining the
  boundary of the half space is that frame's z = 0 plane. By implication, the
  plane's normal points in the +z direction and the origin lies on the plane.
@@ -126,6 +142,7 @@ class ShapeReifier {
  public:
   virtual ~ShapeReifier() {}
   virtual void ImplementGeometry(const Sphere& sphere) = 0;
+  virtual void ImplementGeometry(const Cylinder& cylinder) = 0;
   virtual void ImplementGeometry(const HalfSpace& half_space) = 0;
 };
 

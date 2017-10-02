@@ -12,6 +12,11 @@ std::unique_ptr<Shape> Shape::Clone() const { return cloner_(*this); }
 Sphere::Sphere(double radius)
     : Shape(static_cast<Sphere*>(nullptr)), radius_(radius) {}
 
+Cylinder::Cylinder(double radius, double length)
+    : Shape(static_cast<Cylinder*>(nullptr)),
+      radius_(radius),
+      length_(length) {}
+
 HalfSpace::HalfSpace() : Shape(static_cast<HalfSpace*>(nullptr)) {}
 
 Isometry3<double> HalfSpace::MakePose(const Vector3<double>& normal_F,

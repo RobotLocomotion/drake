@@ -56,7 +56,16 @@ class ShapeToLcm : public ShapeReifier {
     geometry_data_.type = geometry_data_.SPHERE;
     geometry_data_.num_float_data = 1;
     geometry_data_.float_data.push_back(static_cast<float>(
-                                           sphere.get_radius()));
+                                            sphere.get_radius()));
+  }
+
+  void ImplementGeometry(const Cylinder& cylinder) override {
+    geometry_data_.type = geometry_data_.CYLINDER;
+    geometry_data_.num_float_data = 2;
+    geometry_data_.float_data.push_back(static_cast<float>(
+                                            cylinder.get_radius()));
+    geometry_data_.float_data.push_back(static_cast<float>(
+                                            cylinder.get_length()));
   }
 
   void ImplementGeometry(const HalfSpace&) override {
