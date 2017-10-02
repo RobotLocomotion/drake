@@ -11,9 +11,7 @@ Files named `*.bzl` are Skylark extensions.
 
 `drake.cps` is the Common Package Specification for Drake, that provides the
 necessary information for Drake to be consumed by other projects. Right now it
-is hand edited; the list of includes should match the list of folders in
-package_drake.sh's include/external folder. This is also used to generate
-`drake-config.cmake` via `cps2cmake`.
+is hand edited. This is used to generate `drake-config.cmake` via `cps2cmake`.
   https://mwoehlke.github.io/cps/
   https://github.com/mwoehlke/pycps/
 
