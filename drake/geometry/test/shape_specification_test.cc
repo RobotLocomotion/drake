@@ -18,10 +18,13 @@ using std::unique_ptr;
 
 class ReifierTest : public ShapeReifier, public ::testing::Test {
  public:
-  void ImplementGeometry(const Sphere &sphere) override {
+  void ImplementGeometry(const Sphere& sphere) override {
     sphere_made_ = true;
   }
-  void ImplementGeometry(const HalfSpace &half_space) override {
+  void ImplementGeometry(const Cylinder& cylinder) override {
+    cylinder_made_ = true;
+  }
+  void ImplementGeometry(const HalfSpace& half_space) override {
     half_space_made_ = true;
   }
   void Reset() {
@@ -30,6 +33,7 @@ class ReifierTest : public ShapeReifier, public ::testing::Test {
   }
  protected:
   bool sphere_made_{false};
+  bool cylinder_made_{false};
   bool half_space_made_{false};
 };
 
@@ -39,6 +43,7 @@ TEST_F(ReifierTest, ReificationDifferentiation) {
   s.Reify(this);
   ASSERT_TRUE(sphere_made_);
   ASSERT_FALSE(half_space_made_);
+  ASSERT_FALSE(cylinder_made_);
 
   Reset();
 
@@ -46,6 +51,7 @@ TEST_F(ReifierTest, ReificationDifferentiation) {
   hs.Reify(this);
   ASSERT_FALSE(sphere_made_);
   ASSERT_TRUE(half_space_made_);
+  ASSERT_FALSE(cylinder_made_);
 
   // NOTE: Because of the implementation of the Shape class, as long as new
   // shape specifications inherit from Shape, this test does *not* need to
@@ -59,6 +65,8 @@ TEST_F(ReifierTest, CloningShapes) {
   ASSERT_TRUE(is_dynamic_castable<Sphere>(s.Clone().get()));
   HalfSpace h;
   ASSERT_TRUE(is_dynamic_castable<HalfSpace>(h.Clone().get()));
+  Cylinder c(0.5, 2.0);
+  ASSERT_TRUE(is_dynamic_castable<Cylinder>(c.Clone().get()));
 
   // Confirms clone independence. The idea that a clone can outlive its
   // source and there aren't any unintentional bindings between the two.
@@ -74,6 +82,7 @@ TEST_F(ReifierTest, CloningShapes) {
   cloned_shape->Reify(this);
   ASSERT_TRUE(sphere_made_);
   ASSERT_FALSE(half_space_made_);
+  ASSERT_FALSE(cylinder_made_);
 }
 
 
