@@ -332,8 +332,8 @@ GTEST_TEST(SpatialInertia, MakeFromCentralInertia) {
   EXPECT_TRUE(M_BBo_B.IsPhysicallyValid());
 
   // Check spatial inertia for proper value for mass and center of mass.
-  EXPECT_NEAR(M_BBo_B.get_mass(), mass, kEpsilon);
-  EXPECT_TRUE(M_BBo_B.get_com().isApprox(p_BoBcm_B, kEpsilon));
+  EXPECT_EQ(M_BBo_B.get_mass(), mass);
+  EXPECT_EQ(M_BBo_B.get_com(), p_BoBcm_B);
 
   // Check spatial inertia for proper moments/products of inertia.
   // Note: The values below for Ixx, Iyy, Izz were calculated by MotionGenesis.

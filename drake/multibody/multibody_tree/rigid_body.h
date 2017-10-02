@@ -146,7 +146,7 @@ class RigidBody : public Body<T> {
   /// @param[in] pc position kinematics cache.
   /// @retval p_WoBo_W position vector from Wo (world origin) to
   ///         Bo (this body's origin) expressed in W (world).
-  const Vector3<T> get_position_from_world_origin(
+  const Vector3<T> get_origin_position_in_world(
       const PositionKinematicsCache<T>& pc) const {
     return get_pose_in_world(pc).translation();
   }

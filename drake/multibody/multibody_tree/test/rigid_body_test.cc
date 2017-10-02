@@ -2,13 +2,12 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/test_utilities/eigen_matrix_compare.h"
+// #include "drake/common/test_utilities/eigen_matrix_compare.h"
 
 namespace drake {
 namespace multibody {
-namespace math {
+namespace multibody_tree {
 namespace {
 
 using Eigen::Vector3d;
@@ -39,6 +38,6 @@ GTEST_TEST(RigidBody, RigidBodyConstructor) {
 }
 
 }  // namespace
-}  // namespace math
+}  // namespace multibody_tree
 }  // namespace multibody
 }  // namespace drake
