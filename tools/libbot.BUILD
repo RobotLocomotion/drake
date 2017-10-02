@@ -675,7 +675,7 @@ install(
     name = "install",
     docs = [
         "LICENSE",
-        "@drake//tools:third_party/libbot/LICENSE.ldpc",
+        "@drake//third_party:com_github_robotlocomotion_libbot2/LICENSE.ldpc",
     ],
     deps = [
         ":install_bot2_core",

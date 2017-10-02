@@ -19,7 +19,7 @@ cmake_config(
 
 install_cmake_config(package = CMAKE_PACKAGE)
 
-JCHART_LICENSE_DOCS = ["//tools:third_party/jchart2d/LICENSE"]
+JCHART_LICENSE_DOCS = ["//third_party:net_sf_jchart2d_jchart2d/LICENSE"]
 
 JCHART_TARGETS = [
     "@com_jidesoft_jide_oss//jar",
