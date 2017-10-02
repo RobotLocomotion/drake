@@ -58,7 +58,6 @@ drake_cc_library(
         "constants.h",
         "drake_assert.h",
         "drake_assertion_error.h",
-        "drake_compat.h",
         "drake_copyable.h",
         "drake_deprecated.h",
         "drake_optional.h",
@@ -469,7 +468,6 @@ sh_test(
     data = [
         "capture_cc.env",
         "drake_assert.h",
-        "drake_compat.h",
         "test/drake_assert_test_compile.cc",
         "unused.h",
         "//tools:third_party/bazel/tools/cpp/osx_cc_wrapper.sh",

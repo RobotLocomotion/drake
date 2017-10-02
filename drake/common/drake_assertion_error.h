@@ -3,8 +3,6 @@
 #include <stdexcept>
 #include <string>
 
-#include "drake/common/drake_compat.h"
-
 namespace drake {
 namespace detail {
 

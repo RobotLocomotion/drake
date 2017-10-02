@@ -64,8 +64,8 @@ def _determine_linux(repository_ctx):
     lines = [line.strip() for line in sed.stdout.strip().split("\n")]
     distro = " ".join([x for x in lines if len(x) > 0])
 
-    # Match supported Ubuntu releases.
-    for ubuntu_release in ["14.04", "16.04"]:
+    # Match supported Ubuntu release(s).
+    for ubuntu_release in ["16.04"]:
         if distro == "Ubuntu " + ubuntu_release:
             return _make_result(ubuntu_release = ubuntu_release)
 

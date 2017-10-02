@@ -14,8 +14,6 @@
 #include <Eigen/Core>
 #include <Eigen/StdVector>
 
-#include "drake/common/drake_compat.h"
-
 namespace drake {
 
 /// A std::map that uses Eigen::aligned_allocator so that the
