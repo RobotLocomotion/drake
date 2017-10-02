@@ -9,8 +9,8 @@ using std::string;
 using drake::systems::KinematicsResults;
 
 OptitrackSim::OptitrackSim(const RigidBodyTree<double>& tree,
-                           std::map<std::string, int> body_name_to_id_map)
-                           : body_name_to_id_map_(body_name_to_id_map) {
+                           std::map<RigidBodyFrame<double>, int> body_frame_to_id_map)
+                           : body_frame_to_id_map_(body_frame_to_id_map) {
 
   /// Abstract input port of type KinematicsResults
   kinematics_input_port_index_ = this->DeclareAbstractInputPort().get_index();
@@ -19,20 +19,20 @@ OptitrackSim::OptitrackSim(const RigidBodyTree<double>& tree,
   tracked_objects_output_port_index_ = this->DeclareAbstractOutputPort(
       &OptitrackSim::MakeOutputStatus, &OptitrackSim::OutputStatus).get_index();
 
-  for (auto it = body_name_to_id_map_.begin(); it != body_name_to_id_map_.end(); ++it) {
-    id_to_body_index_map_[it->second] = tree.FindBodyIndex(it->first);
+  for (auto it = body_frame_to_id_map_.begin(); it != body_frame_to_id_map_.end(); ++it) {
+    id_to_body_index_map_[it->second] = tree.FindBodyIndex(it->first.get_rigid_body().get_name());
   }
 }
 
 std::vector<TrackedObject> OptitrackSim::MakeOutputStatus() const {
-  std::vector<TrackedObject> optitrack_objects(body_name_to_id_map_.size());
+  std::vector<TrackedObject> optitrack_objects(body_frame_to_id_map_.size());
   return optitrack_objects;
 }
 
 void OptitrackSim::OutputStatus(const systems::Context<double>& context,
                   std::vector<TrackedObject>* output) const {
 
-  std::vector<TrackedObject>& optitrack_objectss = *output;
+  std::vector<TrackedObject>& optitrack_objects = *output;
 
   // in here we extract the input port for KinematicsResults object
   // get the transformation of the bodies we care about
@@ -40,21 +40,19 @@ void OptitrackSim::OutputStatus(const systems::Context<double>& context,
   const KinematicsResults<double>* kres =
       this->EvalInputValue<KinematicsResults<double>>(context, kinematics_input_port_index_);
 
-  DRAKE_DEMAND(optitrack_objectss.size() == body_name_to_id_map_.size());
+  DRAKE_DEMAND(optitrack_objects.size() == body_frame_to_id_map_.size());
   int mocap_obj_index = 0;
-  for (auto it = body_name_to_id_map_.begin(); it != body_name_to_id_map_.end();
+  for (auto it = body_frame_to_id_map_.begin(); it != body_frame_to_id_map_.end();
        ++mocap_obj_index, ++it) {
 
-    optitrack_objectss[mocap_obj_index].link_name = it->first;
-    optitrack_objectss[mocap_obj_index].optitrack_id = it->second;
+    optitrack_objects[mocap_obj_index].frame_name = it->first.get_name();
+    optitrack_objects[mocap_obj_index].optitrack_id = it->second;
 
-    optitrack_objectss[mocap_obj_index].rotation = kres->get_body_orientation(
-        id_to_body_index_map_.at(it->second));
+    auto T_WB = kres->get_body_orientation(id_to_body_index_map_.at(it->second));
+    auto T_BF = it->first.get_transform_to_body();
 
-    optitrack_objectss[mocap_obj_index].translation = kres->get_body_position(
-        id_to_body_index_map_.at(it->second));
+    optitrack_objects[mocap_obj_index].T_WF = T_WB*T_BF;
   }
-
 }
 
 }  // namespace perception

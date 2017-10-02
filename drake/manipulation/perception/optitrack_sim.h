@@ -7,6 +7,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/multibody/rigid_body_tree.h"
+#include "drake/multibody/rigid_body.h"
 
 namespace drake {
 namespace manipulation {
@@ -15,9 +16,8 @@ namespace perception {
 /// The info required for tracking an object
 struct TrackedObject {
   int optitrack_id;
-  std::string link_name;
-  Eigen::Quaterniond rotation;
-  Eigen::Vector3d translation;
+  std::string frame_name;
+  Eigen::Isometry3d T_WF;
 };
 
 /**
@@ -28,14 +28,12 @@ class OptitrackSim : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OptitrackSim)
   /**
-   * Constructs the OptitrackSim.
+   * Constructs an OptitrackSim object from a list of body names
    * @param tree The RigidBodyTree
-   * @param name_to_id_map A mapping of body names (from urdf) to Motive ID's
-   * @param optitrack_lcm_status_period The discrete update period of the
-   * OptitrackSim.
+   * @param body_frame_to_id_map A mapping of RB frames to Motive ID's
    */
   OptitrackSim(const RigidBodyTree<double>& tree,
-               std::map<std::string, int> link_name_to_id_map);
+               std::map<RigidBodyFrame<double>, int> body_frame_to_id_map);
 
   const systems::InputPortDescriptor<double>& get_kinematics_input_port() const {
     return this->get_input_port(0);
@@ -53,7 +51,7 @@ class OptitrackSim : public systems::LeafSystem<double> {
 
   int kinematics_input_port_index_;
   int tracked_objects_output_port_index_;
-  std::map<std::string, int> body_name_to_id_map_; // maps urdf link name to Optitrack ID
+  std::map<RigidBodyFrame<double>, int> body_frame_to_id_map_; // maps urdf body name to Optitrack ID
   std::map<int, int> id_to_body_index_map_; // maps Optitrack id to body index in the RBT
 };
 
