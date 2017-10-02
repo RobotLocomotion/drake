@@ -252,14 +252,17 @@ void OptitrackFrameSender::OutputStatus(
   for (size_t i = 0; i < mocap_objects->size(); ++i) {
     status.rigid_bodies[i].id = (*mocap_objects)[i].optitrack_id;
 
-    status.rigid_bodies[i].xyz[0] = (float) (*mocap_objects)[i].translation[0];
-    status.rigid_bodies[i].xyz[1] = (float) (*mocap_objects)[i].translation[1];
-    status.rigid_bodies[i].xyz[2] = (float) (*mocap_objects)[i].translation[2];
+    Eigen::Vector3d trans = (*mocap_objects)[i].T_WF.translation();
+    Eigen::Quaternion rot = Eigen::Quaternion((*mocap_objects)[i].T_WF.linear());
 
-    status.rigid_bodies[i].quat[0] = (float) (*mocap_objects)[i].rotation.x();
-    status.rigid_bodies[i].quat[1] = (float) (*mocap_objects)[i].rotation.y();
-    status.rigid_bodies[i].quat[2] = (float) (*mocap_objects)[i].rotation.z();
-    status.rigid_bodies[i].quat[3] = (float) (*mocap_objects)[i].rotation.w();
+    status.rigid_bodies[i].xyz[0] = (float) trans[0];
+    status.rigid_bodies[i].xyz[1] = (float) trans[1];
+    status.rigid_bodies[i].xyz[2] = (float) trans[2];
+
+    status.rigid_bodies[i].quat[0] = (float) rot.x();
+    status.rigid_bodies[i].quat[1] = (float) rot.y();
+    status.rigid_bodies[i].quat[2] = (float) rot.z();
+    status.rigid_bodies[i].quat[3] = (float) rot.w();
   }
 }
 
