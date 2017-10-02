@@ -1177,9 +1177,6 @@ class Diagram : public System<T>,
           template Convert<NewType>(*old_system);
       DRAKE_DEMAND(new_system != nullptr);
 
-      // Match the result's name to its originator.
-      new_system->set_name(old_system->get_name());
-
       // Update our mapping and take ownership.
       old_to_new_map[old_system.get()] = new_system.get();
       new_systems.push_back(std::move(new_system));

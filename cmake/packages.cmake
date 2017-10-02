@@ -149,23 +149,21 @@ macro(drake_find_packages)
   set_property(TARGET GMock::GMock APPEND PROPERTY
     INTERFACE_COMPILE_DEFINITIONS ${GTEST_DEFINITIONS})
 
+  drake_find_package(NLopt CONFIG REQUIRED)
   drake_find_package(Protobuf MODULE REQUIRED)
+
+  drake_find_package(pybind11 CONFIG REQUIRED COMPONENTS NumPy)
+  if(NUMPY_VERSION VERSION_LESS 1.7)
+    message(FATAL_ERROR "NumPy version 1.7 or above NOT found")
+  endif()
+
   drake_find_package(tinyobjloader CONFIG REQUIRED)
 
   # END required packages
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # BEGIN optional packages
 
-  drake_find_package(bot2-core CONFIG)
-  drake_find_package(bot2-lcmgl-client PKG_CONFIG)
-  drake_find_package(Bullet MODULE)
   drake_find_package(ipopt PKG_CONFIG)
-  drake_find_package(lcm CONFIG)
-  drake_find_package(NLopt CONFIG)
-  drake_find_package(pybind11 CONFIG COMPONENTS NumPy)
-  drake_find_package(robotlocomotion-lcmtypes CONFIG)
-  drake_find_package(spdlog CONFIG)
-  drake_find_package(yaml-cpp CONFIG)
 
   # END optional packages
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

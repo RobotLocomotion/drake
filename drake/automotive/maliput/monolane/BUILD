@@ -100,7 +100,7 @@ drake_cc_googletest(
     srcs = ["test/monolane_lanes_test.cc"],
     deps = [
         ":lanes",
-        "//drake/automotive/maliput/api:maliput_types_compare",
+        "//drake/automotive/maliput/api/test_utilities",
         "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
@@ -111,7 +111,7 @@ drake_cc_googletest(
     srcs = ["test/monolane_road_geometry_test.cc"],
     deps = [
         ":builder",
-        "//drake/automotive/maliput/api:maliput_types_compare",
+        "//drake/automotive/maliput/api/test_utilities",
     ],
 )
 

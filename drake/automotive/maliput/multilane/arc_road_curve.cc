@@ -9,6 +9,35 @@
 namespace drake {
 namespace maliput {
 namespace multilane {
+
+double ArcRoadCurve::p_from_s(double s, double r) const {
+  // TODO(@maddog-tri) We should take care of the superelevation() scale that
+  //                   will modify curve's path length.
+  DRAKE_DEMAND(r == 0. || (superelevation().a() == 0. &&
+               superelevation().b() == 0. && superelevation().c() == 0. &&
+               superelevation().d() == 0.));
+  const double effective_radius = offset_radius(r);
+  DRAKE_THROW_UNLESS(effective_radius > 0.0);
+  const double elevation_domain = effective_radius / radius_;
+  return s / (p_scale() * std::sqrt(elevation_domain * elevation_domain +
+                                    elevation().fake_gprime(1.) *
+                                        elevation().fake_gprime(1.)));
+}
+
+double ArcRoadCurve::s_from_p(double p, double r) const {
+  // TODO(@maddog-tri) We should take care of the superelevation() scale that
+  //                   will modify curve's path length.
+  DRAKE_DEMAND(r == 0. || (superelevation().a() == 0. &&
+               superelevation().b() == 0. && superelevation().c() == 0. &&
+               superelevation().d() == 0.));
+  const double effective_radius = offset_radius(r);
+  DRAKE_THROW_UNLESS(effective_radius > 0.0);
+  const double elevation_domain = effective_radius / radius_;
+  return p * p_scale() * std::sqrt(elevation_domain * elevation_domain +
+                                   elevation().fake_gprime(p) *
+                                       elevation().fake_gprime(p));
+}
+
 namespace {
 
 // Wraps the input angle θ, casting it onto the range [-π, π].
@@ -64,20 +93,21 @@ double saturate_on_wrapped_bounds(double theta, double theta_min,
 
 Vector3<double> ArcRoadCurve::ToCurveFrame(
     const Vector3<double>& geo_coordinate,
-    const api::RBounds& lateral_bounds,
+    double r_min, double r_max,
     const api::HBounds& height_bounds) const {
+  DRAKE_DEMAND(r_min <= r_max);
   // TODO(jadecastro): Lift the zero superelevation and zero elevation gradient
   // restriction.
-  const Vector2<double> p(geo_coordinate.x(), geo_coordinate.y());
-  DRAKE_DEMAND(p != center_);
+  const Vector2<double> q(geo_coordinate.x(), geo_coordinate.y());
+  DRAKE_DEMAND(q != center_);
 
-  // Define a vector from p to the center of the arc.
-  const Vector2<double> v = p - center_;
+  // Define a vector from q to the center of the arc.
+  const Vector2<double> v = q - center_;
 
   const double theta_min = std::min(theta0_, d_theta_ + theta0_);
   const double theta_max = std::max(theta0_, d_theta_ + theta0_);
 
-  // First, find a saturated theta that is nearest to point p.
+  // First, find a saturated theta that is nearest to point q.
   const double theta_nearest =
       saturate_on_wrapped_bounds(std::atan2(v(1), v(0)), theta_min, theta_max);
   // Find the angle swept from the beginning of the lane (s = 0) to
@@ -89,14 +119,12 @@ Vector3<double> ArcRoadCurve::ToCurveFrame(
   const double d_theta_nearest_unwrapped =
       (d_theta_nearest < 0.) ? d_theta_nearest + 2. * M_PI : d_theta_nearest;
   // Convert this angular displacement to arc length (s).
-  const double s = radius_ * d_theta_nearest_unwrapped;
-
+  const double p = d_theta_nearest_unwrapped / std::abs(d_theta_);
   // Compute r (its direction depends on the direction of the +s-coordinate)
   const double r_unsaturated = (d_theta_ >= 0.) ?
                                radius_ - v.norm() : v.norm() - radius_;
   // Saturate r within drivable bounds.
-  const double r = math::saturate(r_unsaturated, lateral_bounds.min(),
-                                  lateral_bounds.max());
+  const double r = math::saturate(r_unsaturated, r_min, r_max);
 
   // Calculate the (uniform) road elevation.
   // N.B. h is the geo z-coordinate referenced against the lane elevation (whose
@@ -104,12 +132,11 @@ Vector3<double> ArcRoadCurve::ToCurveFrame(
   const double h_unsaturated = geo_coordinate.z() - elevation().a() * p_scale();
   const double h = math::saturate(h_unsaturated, height_bounds.min(),
                                   height_bounds.max());
-  return Vector3<double>(s, r, h);
+  return Vector3<double>(p, r, h);
 }
 
-bool ArcRoadCurve::IsValid(
-    const api::RBounds& lateral_bounds,
-    const api::HBounds& height_bounds) const {
+bool ArcRoadCurve::IsValid(double r_min, double r_max,
+                           const api::HBounds& height_bounds) const {
   // TODO(@agalbachicar)      There is no check on height constraints. When the
   //                          curve bends over itself, if it does, it must do it
   //                          with a difference in height greater than
@@ -121,11 +148,13 @@ bool ArcRoadCurve::IsValid(
   // TODO(maddog@tri.global)  Check for self-intersecting volumes (e.g., when
   //                          arc angle >= 2π).
   unused(height_bounds);
+  DRAKE_DEMAND(r_min <= r_max);
   // Whether or not user code pays attention to driveable_bounds, at least
   // ensure that bounds are sane.  Given the singularity at the center of
   // the arc, it is not well-defined to consider parallel curves offset
-  // from the reference by a distance greater than or equal to the radius
-  // radius_.
+  // from the reference by a distance greater than or equal to the
+  // effective_radius (it takes into account r displacement with respect to the
+  // reference radius radius_).
   //
   // In the presence of superelevation, the bounds are effectively scaled
   // by cos(superelevation) (the more tilted the road, the narrower the
@@ -181,9 +210,9 @@ bool ArcRoadCurve::IsValid(
   // TODO(maddog@tri.global)  When you have nothing better to do, handle the
   //                          improbable case of superelevation >= 90 deg, too.
   if (d_theta_ > 0.) {
-    return ((lateral_bounds.max() * max_cos_theta) < radius_);
+    return (offset_radius(r_max * max_cos_theta) > 0.);
   } else {
-    return ((lateral_bounds.min() * max_cos_theta) > -radius_);
+    return (offset_radius(r_min * max_cos_theta) > 0.);
   }
   return true;
 }

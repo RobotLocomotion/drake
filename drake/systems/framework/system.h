@@ -785,8 +785,10 @@ class System {
   void set_name(const std::string& name) { name_ = name; }
 
   /// Returns the name last supplied to set_name(), or empty if set_name() was
-  /// never called.  Systems created through transmogrification have by default
-  /// an identical name to the system they were created from.
+  /// never called.  Systems with an empty name that are added to a Diagram
+  /// will have a default name automatically assigned.  Systems created through
+  /// transmogrification have by default an identical name to the system they
+  /// were created from.
   std::string get_name() const { return name_; }
 
   /// Returns a name for this %System based on a stringification of its type
@@ -1050,13 +1052,7 @@ class System {
   /// returns nullptr if this System does not support autodiff, instead of
   /// throwing an exception.
   std::unique_ptr<System<AutoDiffXd>> ToAutoDiffXdMaybe() const {
-    std::unique_ptr<System<AutoDiffXd>> result =
-        system_scalar_converter_.Convert<AutoDiffXd, T>(*this);
-    if (result) {
-      // Match the result's name to its originator.
-      result->set_name(this->get_name());
-    }
-    return result;
+    return system_scalar_converter_.Convert<AutoDiffXd, T>(*this);
   }
   //@}
 
@@ -1117,13 +1113,7 @@ class System {
   /// nullptr if this System does not support symbolic, instead of throwing an
   /// exception.
   std::unique_ptr<System<symbolic::Expression>> ToSymbolicMaybe() const {
-    std::unique_ptr<System<symbolic::Expression>> result =
-        system_scalar_converter_.Convert<symbolic::Expression, T>(*this);
-    if (result) {
-      // Match the result's name to its originator.
-      result->set_name(this->get_name());
-    }
-    return result;
+    return system_scalar_converter_.Convert<symbolic::Expression, T>(*this);
   }
   //@}
 
