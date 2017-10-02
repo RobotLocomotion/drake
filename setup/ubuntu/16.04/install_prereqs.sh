@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Prerequisite set-up script for Drake on Ubuntu 16.04.
+# Prerequisite set-up script for Drake with Bazel on Ubuntu 16.04.
 
 set -euo pipefail
 
@@ -41,21 +41,6 @@ while true; do
   esac
 done
 
-# The CI scripts require a newer version of CMake than apt installs.
-# Only install CMake if it's not installed or older than 3.5.1.
-install_cmake=true
-if command -v cmake &>/dev/null; then
-  cmake_version=$(cmake --version) &>/dev/null
-  cmake_version=${cmake_version:14:5}
-  if dpkg --compare-versions $cmake_version ge 3.5.1; then
-    echo "CMake is already installed ($cmake_version)"
-    install_cmake=false
-  fi
-fi
-if $install_cmake; then
-  apt install --no-install-recommends cmake cmake-curses-gui
-fi
-
 # Install the APT dependencies.
 apt update -y
 apt install --no-install-recommends $(tr '\n' ' ' <<EOF
@@ -71,9 +56,6 @@ gcc
 gcc-5
 gcc-5-multilib
 gdb
-gfortran
-gfortran-5
-gfortran-5-multilib
 git
 graphviz
 libblas-dev
@@ -100,7 +82,6 @@ libtinyxml-dev
 libtool
 libxml2
 libxt6
-make
 mesa-common-dev
 openjdk-8-jdk
 patchutils
@@ -134,22 +115,3 @@ rm /tmp/bazel_0.5.2-linux-x86_64.deb
 if [ -L /usr/lib/ccache/bazel ]; then
   apt purge ccache-bazel-wrapper
 fi
-
-# TODO(david-german-tri): Do we need to munge the MATLAB C++ libraries?
-# http://drake.mit.edu/ubuntu.html#matlab
-
-# TODO(jamiesnape): Remove the below legacy dependencies when CMake support
-# is removed.
-
-apt install --no-install-recommends $(tr '\n' ' ' <<EOF
-
-libqt4-dev
-libqt4-opengl-dev
-libvtk-java
-libvtk5-dev
-libvtk5-qt4-dev
-ninja-build
-python-vtk
-
-EOF
-    )
