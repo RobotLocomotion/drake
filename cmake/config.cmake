@@ -164,38 +164,6 @@ macro(drake_setup_java)
 endmacro()
 
 #------------------------------------------------------------------------------
-# Find and set up Fortran.
-#------------------------------------------------------------------------------
-macro(drake_setup_fortran)
-  option(DISABLE_FORTRAN "Do not use Fortran even if it is supported" OFF)
-  mark_as_advanced(DISABLE_FORTRAN)
-
-  if(NOT DISABLE_FORTRAN)
-    if(CMAKE_GENERATOR STREQUAL "Unix Makefiles")
-      enable_language(Fortran)
-
-      if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" AND CMAKE_Fortran_COMPILER_VERSION VERSION_LESS "4.9")
-        message(FATAL_ERROR "GNU Fortran compiler version must be at least 4.9 \
-                             (detected version ${CMAKE_Fortran_COMPILER_VERSION})")
-      endif()
-    else()
-      # Ninja may not support Fortran, so manually find the Fortran
-      # compiler and set any flags passed in by environment variable
-      find_program(CMAKE_Fortran_COMPILER
-        NAMES "$ENV{FC}" gfortran-6 gfortran-5 gfortran-4.9 gfortran-4 gfortran
-        DOC "Fortran compiler")
-      if(CMAKE_Fortran_COMPILER)
-        message(STATUS "Found Fortran compiler: ${CMAKE_Fortran_COMPILER}")
-      else()
-        message(FATAL_ERROR "Could NOT find Fortran compiler")
-      endif()
-      set(CMAKE_Fortran_FLAGS "$ENV{FFLAGS}" CACHE STRING
-        "Flags for Fortran compiler")
-    endif()
-  endif()
-endmacro()
-
-#------------------------------------------------------------------------------
 # Set up Python.
 #------------------------------------------------------------------------------
 macro(drake_setup_python)
@@ -273,9 +241,6 @@ macro(drake_setup_superbuild)
       "Prefix for installation of sub-packages (note: required during build!)"
       FORCE)
   endif()
-
-  # Drake itself does not contain Fortran code.
-  drake_setup_fortran()
 endmacro()
 
 ###############################################################################

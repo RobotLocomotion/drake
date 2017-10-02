@@ -34,14 +34,6 @@ target_link_libraries(_pydrake_mathematicalprogram PRIVATE drakeOptimization Eig
 target_compile_options(_pydrake_mathematicalprogram PRIVATE "-fvisibility=default")
 install(TARGETS _pydrake_mathematicalprogram DESTINATION ${PYDRAKE_INSTALL_DIR}/solvers)
 
-if(ipopt_FOUND)
-  pybind11_add_module(_pydrake_ipopt pydrake_ipopt.cc)
-  target_link_libraries(_pydrake_ipopt PRIVATE drakeOptimization)
-  set_target_properties(_pydrake_ipopt PROPERTIES OUTPUT_NAME "ipopt")
-  target_compile_options(_pydrake_ipopt PRIVATE "-fvisibility=default")
-  install(TARGETS _pydrake_ipopt DESTINATION ${PYDRAKE_INSTALL_DIR}/solvers)
-endif()
-
 pybind11_add_module(_pydrake_parsers pydrake_parsers.cc)
 target_link_libraries(_pydrake_parsers PRIVATE drakeMultibodyParsers)
 set_target_properties(_pydrake_parsers PROPERTIES OUTPUT_NAME "parsers")

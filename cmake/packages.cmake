@@ -128,9 +128,6 @@ endfunction()
 # Find external packages.
 #------------------------------------------------------------------------------
 macro(drake_find_packages)
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # BEGIN required packages
-
   drake_find_package(Eigen3 CONFIG REQUIRED)
   set_property(TARGET Eigen3::Eigen APPEND PROPERTY
     INTERFACE_COMPILE_DEFINITIONS EIGEN_MPL2_ONLY)  # Per #4065.
@@ -158,13 +155,4 @@ macro(drake_find_packages)
   endif()
 
   drake_find_package(tinyobjloader CONFIG REQUIRED)
-
-  # END required packages
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # BEGIN optional packages
-
-  drake_find_package(ipopt PKG_CONFIG)
-
-  # END optional packages
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 endmacro()
