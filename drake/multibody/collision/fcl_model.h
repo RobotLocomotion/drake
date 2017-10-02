@@ -24,6 +24,7 @@ class FclModel : public Model {
   virtual ~FclModel() {}
 
   void DoAddElement(const Element& element) override;
+  void DoRemoveElement(ElementId id) override;
   bool ClosestPointsAllToAll(const std::vector<ElementId>& ids_to_check,
                              bool use_margins,
                              std::vector<PointPair>* closest_points) override;
