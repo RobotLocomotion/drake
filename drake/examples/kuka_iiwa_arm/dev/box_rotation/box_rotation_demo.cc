@@ -6,6 +6,7 @@
 #include <iostream>
 #include <list>
 #include <memory>
+#include <string>
 
 #include <gflags/gflags.h>
 #include <lcm/lcm-cpp.hpp>
@@ -74,7 +75,7 @@ void RunBoxRotationDemo() {
   keyframes.transposeInPlace();
 
   const int N = static_cast<int>(allKeyFrames.rows());
-  std::vector<double> times((ulong)N);
+  std::vector<double> times(static_cast<size_t>(N));
   for (int i = 0; i < N; ++i) {
     if (i == 0)
       times[i] = allKeyFrames(i, 0);
