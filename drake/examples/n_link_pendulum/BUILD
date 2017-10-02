@@ -14,10 +14,12 @@ drake_cc_library(
     srcs = ["n_link_pendulum_plant.cc"],
     hdrs = ["n_link_pendulum_plant.h"],
     deps = [
+        "//drake/common:default_scalars",
         "//drake/geometry:geometry_ids",
         "//drake/geometry:geometry_system",
         "//drake/math:geometric_transform",
         "//drake/multibody/multibody_tree",
+        "//drake/systems/framework",
         "//drake/systems/framework:leaf_system",
     ],
 )
@@ -39,6 +41,15 @@ drake_cc_binary(
         "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:signal_logger",
         "//drake/systems/rendering:pose_bundle_to_draw_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "n_link_pendulum_to_autodiff",
+    deps = [
+        ":n_link_pendulum_plant",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/systems/primitives:linear_system",
     ],
 )
 

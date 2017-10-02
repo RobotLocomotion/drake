@@ -8,6 +8,7 @@
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
+#include "drake/systems/framework/scalar_conversion_traits.h"
 
 namespace drake {
 namespace examples {
@@ -26,8 +27,10 @@ class NLinkPendulumPlant : public systems::LeafSystem<T> {
       geometry::SourceId source_id,
       const std::vector<geometry::FrameId>& body_index_to_frame_id_map);
 
+  /// Constructor that registers this model's geometry for visualization
+  /// purposes only.
   NLinkPendulumPlant(double mass, double length, double radius, int num_links,
-                     geometry::GeometrySystem<T>* geometry_system);
+                     geometry::GeometrySystem<double>* geometry_system);
 
   /// Scalar-converting copy constructor.
   template <typename U>
@@ -60,6 +63,10 @@ class NLinkPendulumPlant : public systems::LeafSystem<T> {
   T DoCalcPotentialEnergy(const systems::Context<T>& context) const override;
 
  private:
+  // Allow different specializations to access each other's private data for
+  // scalar conversion.
+  template <typename U> friend class NLinkPendulumPlant;
+
   // Override of context construction so that we can delegate it to
   // MultibodyTree.
   std::unique_ptr<systems::LeafContext<T>> DoMakeContext() const override;
@@ -71,7 +78,7 @@ class NLinkPendulumPlant : public systems::LeafSystem<T> {
   // Helper method to build the MultibodyTree model of the system.
   void BuildMultibodyTreeModel();
 
-  void RegisterGeometry(geometry::GeometrySystem<T>* geometry_system);
+  void RegisterGeometry(geometry::GeometrySystem<double>* geometry_system);
 
   // Allocate the id output.
   geometry::FrameIdVector AllocateFrameIdOutput(
@@ -112,4 +119,15 @@ class NLinkPendulumPlant : public systems::LeafSystem<T> {
 
 }  // namespace n_link_pendulum
 }  // namespace examples
+}  // namespace drake
+
+// Disable support for symbolic evaluation.
+namespace drake {
+namespace systems {
+namespace scalar_conversion {
+template <>
+struct Traits<drake::examples::n_link_pendulum::NLinkPendulumPlant> :
+    public NonSymbolicTraits {};
+}  // namespace scalar_conversion
+}  // namespace systems
 }  // namespace drake

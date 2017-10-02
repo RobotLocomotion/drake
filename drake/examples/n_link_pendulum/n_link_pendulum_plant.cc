@@ -3,6 +3,7 @@
 #include <cmath>
 #include <vector>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/geometry/frame_id_vector.h"
@@ -12,6 +13,7 @@
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 #include "drake/systems/rendering/pose_bundle.h"
+#include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 namespace examples {
@@ -56,6 +58,8 @@ NLinkPendulumPlant<T>::NLinkPendulumPlant(
     double mass, double length, double radius, int num_links,
     geometry::SourceId source_id,
     const std::vector<geometry::FrameId>& body_index_to_frame_id_map) :
+    systems::LeafSystem<T>(systems::SystemTypeTag<
+        drake::examples::n_link_pendulum::NLinkPendulumPlant>()),
     mass_(mass), length_(length), radius_(radius), num_links_(num_links),
     source_id_(source_id),
     body_index_to_frame_id_map_(body_index_to_frame_id_map) {
@@ -87,7 +91,7 @@ NLinkPendulumPlant<T>::NLinkPendulumPlant(
 template<typename T>
 NLinkPendulumPlant<T>::NLinkPendulumPlant(
     double mass, double length, double radius, int num_links,
-    geometry::GeometrySystem<T>* geometry_system) :
+    geometry::GeometrySystem<double>* geometry_system) :
     NLinkPendulumPlant(mass, length, radius, num_links) {
   DRAKE_DEMAND(geometry_system != nullptr);
 
@@ -129,8 +133,14 @@ void NLinkPendulumPlant<T>::CalcFrameIdOutput(
 template <typename T>
 FramePoseVector<T> NLinkPendulumPlant<T>::AllocateFramePoseOutput(
     const Context<T>&) const {
+  DRAKE_ABORT_MSG("There is no implementation for T != double.");
+}
+
+template <>
+FramePoseVector<double> NLinkPendulumPlant<double>::AllocateFramePoseOutput(
+    const Context<double>&) const {
   DRAKE_DEMAND(source_id_.is_valid());
-  FramePoseVector<T> poses(source_id_);
+  FramePoseVector<double> poses(source_id_);
   poses.mutable_vector().resize(get_num_links());
   return poses;
 }
@@ -138,12 +148,18 @@ FramePoseVector<T> NLinkPendulumPlant<T>::AllocateFramePoseOutput(
 template <typename T>
 void NLinkPendulumPlant<T>::CalcFramePoseOutput(
     const Context<T>& context, FramePoseVector<T>* poses) const {
+  DRAKE_ABORT_MSG("There is no implementation for T != double.");
+}
+
+template <>
+void NLinkPendulumPlant<double>::CalcFramePoseOutput(
+    const Context<double>& context, FramePoseVector<double>* poses) const {
   DRAKE_ASSERT(static_cast<int>(poses->vector().size()) == get_num_links());
 
-  PositionKinematicsCache<T> pc(model_.get_topology());
+  PositionKinematicsCache<double> pc(model_.get_topology());
   model_.CalcPositionKinematicsCache(context, &pc);
 
-  std::vector<Isometry3<T>>& pose_data = poses->mutable_vector();
+  std::vector<Isometry3<double>>& pose_data = poses->mutable_vector();
   for (int frame_index{0}; frame_index < get_num_links(); ++frame_index) {
     const BodyIndex body_index(frame_index + 1);
     pose_data[frame_index] =
@@ -221,7 +237,7 @@ void NLinkPendulumPlant<T>::BuildMultibodyTreeModel() {
 
 template<typename T>
 void NLinkPendulumPlant<T>::RegisterGeometry(
-    geometry::GeometrySystem<T>* geometry_system) {
+    geometry::GeometrySystem<double>* geometry_system) {
   DRAKE_DEMAND(geometry_system != nullptr);
 
   std::stringstream stream;
@@ -327,9 +343,9 @@ T NLinkPendulumPlant<T>::DoCalcPotentialEnergy(
   return model_.CalcPotentialEnergy(context);
 }
 
-template class NLinkPendulumPlant<double>;
-template class NLinkPendulumPlant<AutoDiffXd>;
-
 }  // namespace n_link_pendulum
 }  // namespace examples
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::examples::n_link_pendulum::NLinkPendulumPlant)
