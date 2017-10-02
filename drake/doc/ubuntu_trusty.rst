@@ -7,9 +7,6 @@ Ubuntu 14.04 LTS (Trusty)
 The following instructions are written for Ubuntu 14.04 LTS, which is a
 supported Drake platform.
 
-Using the Bazel Build System
-============================
-
 Prerequisite setup is automated. Simply run::
 
     sudo ./setup/ubuntu/14.04/install_prereqs.sh
@@ -18,32 +15,10 @@ You may need to respond to interactive prompts to confirm that you agree to add
 various `apt` repositories to your system and that you agree to the license
 conditions of certain software therein.
 
-After running the script, return to :doc:`from_source` to complete and test your
-installation.
-
 Using the Legacy CMake Build System
 ===================================
 
-C++ Compiler
-------------
-
-A compiler supporting C++14 or higher is required. Choose Clang or GCC:
-
-GCC 4.9::
-
-    sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
-    sudo apt-get update
-    sudo apt-get upgrade
-    sudo apt-get install g++-4.9-multilib gfortran-4.9 gfortran
-
-Clang 3.9::
-
-    sudo apt-get install --no-install-recommends lsb-core software-properties-common wget
-    wget -q -O - http://llvm.org/apt/llvm-snapshot.gpg.key | sudo apt-key add -
-    sudo add-apt-repository -y "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-3.9 main"
-    sudo apt-get update
-    sudo apt-get upgrade
-    sudo apt-get install clang-3.9 clang-format-3.9 gfortran
+To use the legacy CMake build, you must also complete the following steps.
 
 .. _cmake:
 
@@ -65,55 +40,6 @@ then modifies `~/.bashrc` with the new ``PATH`` environment variable::
     echo "export PATH=`pwd`:\$PATH" >> ~/.bashrc
 
 .. _`CMake Download Page`: https://cmake.org/download/
-
-JDK 8
------
-As OpenJDK 8 is not available on Trusty, install Oracle JDK 8::
-
-    sudo add-apt-repository ppa:webupd8team/java
-    sudo apt-get update
-    sudo apt-get install oracle-java8-installer
-
-Bazel
------
-
-Bazel is required.  Install Bazel using the instructions at
-https://bazel.build/versions/master/docs/install-ubuntu.html.
-Be sure to install a version that is consistent with Drake's
-:ref:`Supported Configurations <supported-configurations>`.
-
-Here's a short recipe that summarizes the instructions on that page::
-
-    wget https://github.com/bazelbuild/bazel/releases/download/0.5.2/bazel_0.5.2-linux-x86_64.deb
-    echo "b14c8773dab078d3422fe4082f3ab4d9e14f02313c3b3eb4b5b40c44ce29ed59  bazel_0.5.2-linux-x86_64.deb" > bazel_0.5.2-linux-x86_64.deb.sha256
-    sha256sum --check bazel_0.5.2-linux-x86_64.deb.sha256 && sudo dpkg -i bazel_0.5.2-linux-x86_64.deb
-
-
-Other Prerequisites
--------------------
-
-Other prerequisites may be installed as follows::
-
-    sudo apt-get update
-    sudo apt-get install --no-install-recommends \
-      autoconf automake bison doxygen freeglut3-dev git graphviz libboost-dev \
-      libgtk2.0-dev libjpeg-dev libmpfr-dev libpng-dev libtinyxml-dev libtool \
-      libvtk5-dev make ninja-build patchutils perl pkg-config python-bs4 \
-      python-dev python-gtk2 python-html5lib python-numpy python-pip \
-      python-sphinx python-yaml unzip valgrind
-
-If you will be building/using Director, some additional prerequisites may be
-installed as follows::
-
-    sudo apt-get update
-    sudo apt-get install --no-install-recommends \
-      libqt4-dev libqt4-opengl-dev libqwt-dev libvtk-java libvtk5-qt4-dev \
-      python-lxml python-scipy python-vtk
-
-Note that the above installs an old version of VTK that is required by Drake. If
-a different version needs to be installed, Drake's build system can be
-configured to use its own version as described
-:ref:`here <faq_cmake_vtk_version_crash>`.
 
 Environment
 -----------
@@ -153,16 +79,6 @@ To work around this issue, the symbolic link for the standard C++ library provid
 
 Update the symbolic link in MATLAB to point to the version that was installed earlier into ``/usr/lib``.  An example for MATLAB R2016a is shown below::
 
-    cd /usr/local/MATLAB/R2016a/sys/os/glnxa64
+    cd /usr/local/MATLAB/R2017a/sys/os/glnxa64
     sudo rm libstdc++.so.6
     sudo ln -s /usr/lib/gcc/x86_64-linux-gnu/4.9/libstdc++.so libstdc++.so.6
-
-Return to Generic Instructions
-==============================
-
-When these platform-specific steps are completed,
-return to :doc:`from_source` to complete and test the installation.
-
-Note that, from now on, when running Drake commands (including the
-ones in the linked instructions, such as ``make`` or ``make test``),
-proper `Environment`_ must always be established.
