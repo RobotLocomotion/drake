@@ -225,7 +225,6 @@ If you're using ``make`` or ``ninja``, execute::
 
     cd drake-distro
     rm -rf build
-    rm -rf externals
     git clean -fdx
     git reset --hard HEAD
 
