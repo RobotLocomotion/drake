@@ -1,5 +1,6 @@
 #include "drake/lcm/drake_lcm_log.h"
 #include "drake/common/drake_assert.h"
+#include <iostream>
 
 namespace drake {
 namespace lcm {
@@ -10,7 +11,7 @@ DrakeLcmLog::DrakeLcmLog(const std::string& file_name, bool is_write)
     log_ = std::make_unique<::lcm::LogFile>(file_name, "w");
   else {
     log_ = std::make_unique<::lcm::LogFile>(file_name, "r");
-    AdvanceLog();
+    next_event_ = log_->readNextEvent();
   }
 }
 
@@ -47,22 +48,6 @@ void DrakeLcmLog::Subscribe(const std::string& channel,
   }
 }
 
-void DrakeLcmLog::DispatchMessageToAllSubscribers() const {
-  // Reached end of log.
-  if (next_event_ == nullptr)
-    return;
-
-  auto it = subscriptions_.find(next_event_->channel);
-  if (it == subscriptions_.end())
-    return;
-
-  for (DrakeLcmMessageHandlerInterface* handler : it->second) {
-    handler->HandleMessage(next_event_->channel,
-                           next_event_->data,
-                           next_event_->datalen);
-  }
-}
-
 double DrakeLcmLog::GetNextMessageTime() const {
   if (is_write_) {
     throw std::logic_error("GetNextMessageTime is only available for log playback.");
@@ -70,13 +55,35 @@ double DrakeLcmLog::GetNextMessageTime() const {
   if (next_event_ == nullptr) {
     return std::numeric_limits<double>::infinity();
   }
-  return static_cast<double>(next_event_->timestamp) / 1e6;
+  return timestamp_to_second(next_event_->timestamp);
 }
 
-void DrakeLcmLog::AdvanceLog() {
+void DrakeLcmLog::DispatchMessageAndAdvanceLog(double current_time) {
   if (is_write_) {
-    throw std::logic_error("AdvanceLog is only available for log playback.");
+    throw std::logic_error("DispatchMessageAndAdvanceLog is only available for log playback.");
   }
+
+  // End of log, do nothing.
+  if (next_event_ == nullptr)
+    return;
+
+  // Has already called this function on the same tick, do nothing.
+  if (current_time != timestamp_to_second(next_event_->timestamp)) {
+    std::cout << current_time << " already called\n";
+    return;
+  }
+
+  // Dispatch message if necessary.
+  auto it = subscriptions_.find(next_event_->channel);
+  if (it != subscriptions_.end()) {
+    for (DrakeLcmMessageHandlerInterface* handler : it->second) {
+      handler->HandleMessage(next_event_->channel,
+          next_event_->data,
+          next_event_->datalen);
+    }
+  }
+
+  // Advance log.
   next_event_ = log_->readNextEvent();
 }
 

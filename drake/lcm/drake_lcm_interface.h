@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <string>
 
 #include "drake/common/drake_copyable.h"
@@ -62,6 +63,9 @@ class DrakeLcmInterface {
    */
   virtual void Subscribe(const std::string& channel,
                          DrakeLcmMessageHandlerInterface* handler) = 0;
+
+  virtual void DispatchMessageAndAdvanceLog(double current_time) {}
+  virtual double GetNextMessageTime() const { return std::numeric_limits<double>::infinity(); }
 };
 
 }  // namespace lcm

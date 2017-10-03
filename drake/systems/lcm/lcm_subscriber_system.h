@@ -216,6 +216,8 @@ class LcmSubscriberSystem : public LeafSystem<double>,
 
   // A message counter that's incremented every time the handler is called.
   int received_message_count_{0};
+
+  drake::lcm::DrakeLcmInterface* lcm_interface_;
 };
 
 }  // namespace lcm

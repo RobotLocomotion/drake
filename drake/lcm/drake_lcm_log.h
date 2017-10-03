@@ -29,18 +29,20 @@ class DrakeLcmLog : public DrakeLcmInterface {
   void Subscribe(const std::string& channel,
                  DrakeLcmMessageHandlerInterface* handler) override;
 
-  // Only valid in log playing mode.
-  // Dispatch NextMessage to every DrakeLcmMessageHandlerInterface that's
-  // listening to NextMessage's channel.
-  void DispatchMessageToAllSubscribers() const;
-
   // Returns the next msg's time, or infinity if we run out of msg.
-  double GetNextMessageTime() const;
-
-  // Advance the log to the next msg.
-  void AdvanceLog();
+  double GetNextMessageTime() const override;
 
   bool is_write_only() const;
+
+  void DispatchMessageAndAdvanceLog(double current_time) override;
+
+  static double timestamp_to_second(uint64_t timestamp, uint64_t offset = 0) {
+    return static_cast<double>(timestamp + offset) / 1e6;
+  }
+
+  static double second_to_timestamp(double sec, double offset = 0) {
+    return static_cast<uint64_t>((sec + offset) * 1e6);
+  }
 
  private:
   const bool is_write_;

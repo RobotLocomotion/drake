@@ -45,7 +45,7 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "log",
+    name = "lcm_log",
     srcs = [
         "drake_lcm_log.cc",
     ],
@@ -96,7 +96,7 @@ drake_cc_googletest(
     name = "drake_lcm_log_test",
     local = 1,
     deps = [
-        ":log",
+        ":lcm_log",
         ":lcmt_drake_signal_utils",
     ],
 )

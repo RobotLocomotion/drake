@@ -37,7 +37,8 @@ LcmSubscriberSystem::LcmSubscriberSystem(
     drake::lcm::DrakeLcmInterface* lcm)
     : channel_(channel),
       translator_(translator),
-      serializer_(std::move(serializer)) {
+      serializer_(std::move(serializer)),
+      lcm_interface_(lcm) {
   DRAKE_DEMAND((translator_ != nullptr) != (serializer_ != nullptr));
   DRAKE_DEMAND(lcm);
 
@@ -165,8 +166,28 @@ void LcmSubscriberSystem::DoCalcNextUpdateTime(
               Event<double>::TriggerType::kTimed));
     }
   } else {
-    // Use base class' implementation.
-    LeafSystem<double>::DoCalcNextUpdateTime(context, events, time);
+    *time = lcm_interface_->GetNextMessageTime();
+    DRAKE_DEMAND(*time > context.get_time());
+    if (std::isinf(*time)) {
+      return;
+    }
+
+    EventCollection<PublishEvent<double>>& pub_events =
+      events->get_mutable_publish_events();
+
+    PublishEvent<double>::PublishCallback callback =
+      [this](const Context<double>& c, const PublishEvent<double>&) {
+        // Want to keep polling from the event queue, if they happen
+        // to be occur at the exact same time.
+        while (lcm_interface_->GetNextMessageTime() == c.get_time()) {
+          lcm_interface_->DispatchMessageAndAdvanceLog(c.get_time());
+        }
+      };
+
+    pub_events.add_event(
+        std::make_unique<systems::PublishEvent<double>>(
+          Event<double>::TriggerType::kTimed,
+          callback));
   }
 }
 
