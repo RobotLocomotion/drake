@@ -204,12 +204,10 @@ install_cmake_config(
 # former.
 #
 # On Linux, we support --compiler strings "clang-3.9", "gcc-4.9", and "gcc-5",
-# each of which does exactly what you would expect. "clang-3.9" is the default
-# for convenience, because the Drake install instructions provide it on both
-# Trusty and Xenial. No wrapper script is needed for any of these compilers, so
-# the cc_toolchain rule does not provide one. Support for "gcc-6" is
-# experimental without any guarantees. Note that it is not in our supported
-# configurations yet. See
+# each of which does exactly what you would expect. "clang-3.9" is the default.
+# No wrapper script is needed for any of these compilers, so the cc_toolchain
+# rule does not provide one. Support for "gcc-6" is experimental without any
+# guarantees. Note that it is not in our supported configurations yet. See
 # http://drake.mit.edu/developers.html#supported-configurations for more
 # information.
 cc_toolchain_suite(
@@ -217,7 +215,6 @@ cc_toolchain_suite(
     toolchains = {
         "darwin|compiler": "cc_toolchain_apple",
         "k8|clang-3.9": "cc_toolchain_linux",
-        "k8|gcc-4.9": "cc_toolchain_linux",
         "k8|gcc-5": "cc_toolchain_linux",
         "k8|gcc-6": "cc_toolchain_linux",
     },

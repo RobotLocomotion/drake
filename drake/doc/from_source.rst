@@ -54,7 +54,6 @@ setup steps:
     :maxdepth: 1
 
     mac
-    ubuntu_trusty
     ubuntu_xenial
 
 See :ref:`supported configurations <supported-configurations>`
