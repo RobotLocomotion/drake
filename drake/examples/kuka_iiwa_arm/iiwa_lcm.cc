@@ -253,7 +253,7 @@ void OptitrackFrameSender::OutputStatus(
     status.rigid_bodies[i].id = (*mocap_objects)[i].optitrack_id;
 
     Eigen::Vector3d trans = (*mocap_objects)[i].T_WF.translation();
-    Eigen::Quaternion rot = Eigen::Quaternion((*mocap_objects)[i].T_WF.linear());
+    Eigen::Quaterniond rot = Eigen::Quaterniond((*mocap_objects)[i].T_WF.linear());
 
     status.rigid_bodies[i].xyz[0] = (float) trans[0];
     status.rigid_bodies[i].xyz[1] = (float) trans[1];
