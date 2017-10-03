@@ -23,6 +23,7 @@ using Eigen::Isometry3d;
 using Eigen::Translation3d;
 using Eigen::Vector3d;
 
+using geometry::Cylinder;
 using geometry::FrameId;
 using geometry::FrameIdVector;
 using geometry::FramePoseVector;
@@ -226,21 +227,26 @@ void MultibodyPendulumPlant<T>::RegisterGeometry(
   const Vector3<double> p_BoBcm_B = -get_length() * Vector3<double>::UnitZ();
   const Isometry3<double> X_BG{Translation3<double>(p_BoBcm_B)};
 
-  // TODO(amcastro-tri): Add a rod between the rotation axis and the point mass
-  // when Shean's Cylinders PR lands.
+  // A sphere at the world's origin.
+  geometry_system->RegisterGeometry(
+      source_id_, frame_id_,
+      std::make_unique<GeometryInstance>(
+          Isometry3d::Identity(), /* Geometry pose in link's frame */
+          std::make_unique<Sphere>(get_length() / 8)));
+
+  // A rod (massless in the multibody model) between the revolute pin and the
+  // point mass.
+  geometry_system->RegisterGeometry(
+      source_id_, frame_id_,
+      std::make_unique<GeometryInstance>(
+          Isometry3d{Translation3d(p_BoBcm_B / 2.0)},
+          std::make_unique<Cylinder>(get_length() / 15, get_length())));
 
   // A sphere at the point mass:
   geometry_system->RegisterGeometry(
       source_id_, frame_id_,
       std::make_unique<GeometryInstance>(
           X_BG, /* Geometry pose in link's frame */
-          std::make_unique<Sphere>(get_length() / 5)));
-
-  // A sphere at the world's origin.
-  geometry_system->RegisterGeometry(
-      source_id_, frame_id_,
-      std::make_unique<GeometryInstance>(
-          Isometry3d::Identity(), /* Geometry pose in link's frame */
           std::make_unique<Sphere>(get_length() / 5)));
 }
 
