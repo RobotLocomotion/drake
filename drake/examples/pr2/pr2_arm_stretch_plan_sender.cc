@@ -88,7 +88,7 @@ void DoMain() {
   msg.num_states = q_sequence.size();
   msg.plan.resize(msg.num_states);
   msg.plan_info.resize(msg.num_states, 1);
-  for (int index = 0; index < (int)q_sequence.size(); index++) {
+  for (int index = 0; index < static_cast<int>(q_sequence.size()); index++) {
     msg.plan[index].utime = 1e5 + index * 1e5;
     msg.plan[index].num_joints = num_actuators;
     msg.plan[index].joint_name.resize(num_actuators);

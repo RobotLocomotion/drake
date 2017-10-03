@@ -10,9 +10,9 @@
 #include "drake/manipulation/planner/robot_plan_interpolator.h"
 #include "drake/manipulation/util/world_sim_tree_builder.h"
 #include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
-#include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/pid_controller.h"
@@ -34,10 +34,10 @@ std::unique_ptr<RigidBodyTree<double>> build_world_tree(
     std::vector<Eigen::Vector3d> poses_rpy, std::vector<bool> fixed) {
   auto tree_builder_ =
       std::make_unique<manipulation::util::WorldSimTreeBuilder<double>>();
-  for (int index = 0; index < (int)names.size(); index++) {
+  for (int index = 0; index < static_cast<int>(names.size()); index++) {
     tree_builder_->StoreModel(names[index], description_paths[index]);
   }
-  for (int index = 0; index < (int)names.size(); index++) {
+  for (int index = 0; index < static_cast<int>(names.size()); index++) {
     if (fixed[index]) {
       int object_id = tree_builder_->AddFixedModelInstance(
           names[index], poses_xyz[index], poses_rpy[index]);
