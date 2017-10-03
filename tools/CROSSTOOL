@@ -325,7 +325,7 @@ toolchain {
   tool_path {name: "objcopy" path: "/usr/bin/objcopy" }
   tool_path {name: "objdump" path: "/usr/bin/objdump" }
   tool_path {name: "strip" path: "/usr/bin/strip" }
-  tool_path {name: "gcc" path: "third_party/bazel/tools/cpp/osx_cc_wrapper.sh" }
+  tool_path {name: "gcc" path: "osx_cc_wrapper.sh" }
   tool_path {name: "ar" path: "/usr/bin/libtool" }
 
   compilation_mode_flags {

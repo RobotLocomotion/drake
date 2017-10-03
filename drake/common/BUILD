@@ -470,7 +470,8 @@ sh_test(
         "drake_assert.h",
         "test/drake_assert_test_compile.cc",
         "unused.h",
-        "//tools:third_party/bazel/tools/cpp/osx_cc_wrapper.sh",
+        "//third_party:com_github_bazelbuild_bazel/tools/cpp/osx_cc_wrapper.sh",  # noqa
+        "//tools:osx_cc_wrapper.sh",
     ],
 )
 

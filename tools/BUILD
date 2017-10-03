@@ -119,16 +119,6 @@ exports_files(
 )
 
 exports_files(
-    ["third_party/jchart2d/LICENSE"],
-    visibility = ["//tools/install/jchart2d:__pkg__"],
-)
-
-exports_files(
-    ["third_party/libbot/LICENSE.ldpc"],
-    visibility = ["@libbot//:__pkg__"],
-)
-
-exports_files(
     [
         "install/libbot/bot-procman-sheriff",
         "install/libbot/build_prefix.py",
@@ -238,7 +228,10 @@ filegroup(
 # A compiler wrapper script that adjusts linker paths on OS X.
 filegroup(
     name = "osx_cc_wrapper",
-    srcs = ["third_party/bazel/tools/cpp/osx_cc_wrapper.sh"],
+    srcs = [
+        "osx_cc_wrapper.sh",
+        "//third_party:com_github_bazelbuild_bazel/tools/cpp/osx_cc_wrapper.sh",  # noqa
+    ],
     visibility = ["//visibility:private"],
 )
 
