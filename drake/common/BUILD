@@ -350,7 +350,7 @@ py_binary(
     srcs = ["test/cpplint_wrapper.py"],
     data = [
         "//:CPPLINT.cfg",
-        "@google_styleguide//:cpplint",
+        "@styleguide//:cpplint",
     ],
     main = "test/cpplint_wrapper.py",
 )
@@ -821,7 +821,7 @@ py_test(
     data = [
         ":cpplint_wrapper",
         ":eigen_types.h",
-        "@google_styleguide//:cpplint/cpplint_test_header.h",
+        "@styleguide//:cpplint/cpplint_test_header.h",
     ],
 )
 

@@ -69,11 +69,11 @@ github_archive(
 )
 
 github_archive(
-    name = "google_styleguide",
-    repository = "google/styleguide",
-    commit = "159b4c81bbca97a9ca00f1195a37174388398a67",
-    sha256 = "3ed86946e6e637f0fe21749c0323b086e62c4b8b93694d6cedad615cdc584512",  # noqa
-    build_file = "tools/google_styleguide.BUILD",
+    name = "styleguide",
+    repository = "RobotLocomotion/styleguide",
+    commit = "8d38c5909a5ab38824d7f4566b3f3c6ae4557826",
+    sha256 = "09baa2280a63b9d2efe5c07d08f4674339b5b2a0424f71c429c33ac1783a4cd8",  # noqa
+    build_file = "tools/styleguide.BUILD",
 )
 
 github_archive(
