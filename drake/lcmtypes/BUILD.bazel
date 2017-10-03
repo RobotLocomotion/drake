@@ -249,6 +249,15 @@ lcm_cc_library(
     ],
 )
 
+lcm_cc_library(
+    name = "jaco",
+    lcm_package = "drake",
+    lcm_srcs = [
+        "lcmt_jaco_command.lcm",
+        "lcmt_jaco_status.lcm",
+    ],
+)
+
 # TODO(jwnimmer-tri) Many more C++ messages are missing ...
 
 lcm_py_library(
@@ -284,6 +293,7 @@ DRAKE_LCMTYPES = [
     ":drake_signal",
     ":iiwa",
     ":inverse_dynamics_debug_info",
+    ":jaco",
     ":joint_pd_override",
     ":manipulator_plan_move_end_effector",
     ":piecewise_polynomial",
