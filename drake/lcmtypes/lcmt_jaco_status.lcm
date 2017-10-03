@@ -1,0 +1,23 @@
+package drake;
+
+// The current status of a Kinova Jaco arm.  All angular
+// positions/velocites are expressed in radians.
+struct lcmt_jaco_status
+{
+  // The timestamp in microseconds.
+  int64_t utime;
+
+  int32_t num_joints;
+
+  double joint_position[num_joints];
+  double joint_velocity[num_joints];
+  double joint_force[num_joints];
+  double joint_current[num_joints];
+
+  int32_t num_fingers;
+  double finger_position[num_fingers];
+  double finger_velocity[num_fingers];
+  double finger_force[num_fingers];
+  double finger_current[num_fingers];
+
+}
