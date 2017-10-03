@@ -23,7 +23,7 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 local_repository(
     name = "kythe",
-    path = "tools/third_party/kythe",
+    path = "third_party/com_github_google_kythe",
 )
 
 load("@kythe//tools/build_rules/config:pkg_config.bzl", "pkg_config_package")
@@ -186,39 +186,9 @@ github_archive(
     build_file = "tools/fcl.BUILD",
 )
 
-# For IPOPT, we will either use pkg-config or compile it ourselves, depending
-# on which OS we are using.
-# TODO(jwnimmer-tri) Once we no longer support Ubuntu 14.04 Trusty, we will no
-# longer need to support @robotlocomotion_ipopt; at that point we should remove
-# it from the WORKSPACE and then also remove this alias mapping, instead just
-# using pkg_config_package(name = "ipopt") directly.
-os_specific_alias_repository(
-    name = "ipopt",
-    mapping = {
-        "default": [
-            "ipopt=@ipopt_pkgconfig",
-        ],
-        "Ubuntu 14.04": [
-            "ipopt=@ipopt_robotlocomotion//:ipopt",
-        ],
-    },
-)
-
-# Find an IPOPT using pkg-config; this is conditionally aliased into @ipopt
-# above, or else ends up unused (will not produce "not found" errors).
 pkg_config_package(
-    name = "ipopt_pkgconfig",
+    name = "ipopt",
     modname = "ipopt",
-)
-
-# Build our own IPOPT; this is conditionally aliased into @ipopt above, or else
-# ends up unused (will not be compiled).
-github_archive(
-    name = "ipopt_robotlocomotion",
-    repository = "RobotLocomotion/ipopt-mirror",
-    commit = "aecf5abd3913eebf1b99167c0edd4e65a6b414bc",
-    sha256 = "d88ea1b6b34c5678ef32ced22a6e9cb00f76a490f233d0b2d56270609eb94e3e",  # noqa
-    build_file = "tools/ipopt.BUILD",
 )
 
 github_archive(
@@ -232,8 +202,8 @@ github_archive(
 github_archive(
     name = "optitrack_driver",
     repository = "RobotLocomotion/optitrack-driver",
-    commit = "a3528bdbf0f4b5cd78aaa0685e545ec8af25e789",
-    sha256 = "b910faf16a0ac8bbcb44404e1b47bf25988811e9ed5667cb28c586e3f7dd113f",  # noqa
+    commit = "3c53cefbe16b3fcb0747034d2435cef7f9892265",
+    sha256 = "d09882fd6a9296b020a3e258ec943b8db03ed80c795e7613dac56acbc289c7a4",  # noqa
 )
 
 github_archive(

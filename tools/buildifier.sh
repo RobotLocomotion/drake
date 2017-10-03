@@ -92,6 +92,10 @@ else
           -name '*.BUILD' -o \
           -name '*.bzl' \) -print |
       xargs -t "$buildifier" -mode=fix -add_tables="$tables"
+  # TODO(jwnimmer-tri) The find misses this; within third_party, we want the
+  # direct child files, but nothing within a sub-folder.  We should unify the
+  # source finding for cpplint, clang-format-includes, and buildifier.
+  "$buildifier" -mode=fix -add_tables="$tables" third_party/BUILD.bazel
 fi
 
 echo "... done"

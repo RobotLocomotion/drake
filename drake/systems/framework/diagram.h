@@ -1337,7 +1337,7 @@ class Diagram : public System<T>,
               c->Calc(this->GetSubsystemContext(*sys, context), value);
             };
         this->AddConstraint(std::make_unique<SystemConstraint<T>>(
-            diagram_calc, c->size(), c->is_equality_constraint(),
+            diagram_calc, c->size(), c->type(),
             sys->get_name() + ":" + c->description()));
       }
     }

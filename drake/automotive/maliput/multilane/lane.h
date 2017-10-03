@@ -30,6 +30,8 @@ class Lane : public api::Lane {
   /// @param id the ID
   /// @param segment the Segment to which this Lane will belong, which must
   ///        remain valid for the lifetime of this class
+  /// @param index Lane's index to identify it when querying parent @p segment.
+  ///        It must be positive.
   /// @param lane_bounds nominal bounds of the lane, uniform along the entire
   ///        reference path, which must be a subset of @p driveable_bounds
   /// @param driveable_bounds driveable bounds of the lane, uniform along the
@@ -44,17 +46,20 @@ class Lane : public api::Lane {
   /// N.B. The override Lane::ToLanePosition() is currently restricted to lanes
   /// in which superelevation and elevation change are both zero.
   Lane(const api::LaneId& id, const api::Segment* segment,
+       int index,
        const api::RBounds& lane_bounds,
        const api::RBounds& driveable_bounds,
        const api::HBounds& elevation_bounds,
        const RoadCurve* road_curve,
        double r0)
       : id_(id), segment_(segment),
+        index_(index),
         lane_bounds_(lane_bounds),
         driveable_bounds_(driveable_bounds),
         elevation_bounds_(elevation_bounds),
         road_curve_(road_curve),
         r0_(r0) {
+    DRAKE_DEMAND(index_ >= 0);
     DRAKE_DEMAND(lane_bounds_.min() >= driveable_bounds_.min());
     DRAKE_DEMAND(lane_bounds_.max() <= driveable_bounds_.max());
     DRAKE_DEMAND(road_curve != nullptr);
@@ -71,6 +76,8 @@ class Lane : public api::Lane {
     return road_curve_->superelevation();
   }
 
+  double r0() const { return r0_; }
+
   void SetStartBp(BranchPoint* bp) { start_bp_ = bp; }
   void SetEndBp(BranchPoint* bp) { end_bp_ = bp; }
 
@@ -85,11 +92,23 @@ class Lane : public api::Lane {
 
   const api::Segment* do_segment() const override;
 
-  int do_index() const override { return 0; }  // Only one lane per segment!
+  int do_index() const override { return index_; }
 
-  const api::Lane* do_to_left() const override { return nullptr; }
+  const api::Lane* do_to_left() const override {
+    if (index_ == (segment_->num_lanes() - 1)) {
+      return nullptr;
+    } else {
+      return segment_->lane(index_ + 1);
+    }
+  }
 
-  const api::Lane* do_to_right() const override { return nullptr; }
+  const api::Lane* do_to_right() const override {
+    if (index_ == 0) {
+      return nullptr;
+    } else {
+      return segment_->lane(index_ - 1);
+    }
+  }
 
   const api::BranchPoint* DoGetBranchPoint(
       const api::LaneEnd::Which which_end) const override;
@@ -132,6 +151,7 @@ class Lane : public api::Lane {
 
   const api::LaneId id_;
   const api::Segment* segment_{};
+  const int index_{};
   BranchPoint* start_bp_{};
   BranchPoint* end_bp_{};
 

@@ -1,8 +1,11 @@
 #pragma once
 
+#include <memory>
+#include <unordered_map>
 #include <vector>
 
 #include <Eigen/Dense>
+#include <fcl/fcl.h>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/collision/element.h"
@@ -21,6 +24,7 @@ class FclModel : public Model {
   virtual ~FclModel() {}
 
   void DoAddElement(const Element& element) override;
+  void DoRemoveElement(ElementId id) override;
   bool ClosestPointsAllToAll(const std::vector<ElementId>& ids_to_check,
                              bool use_margins,
                              std::vector<PointPair>* closest_points) override;
@@ -44,6 +48,13 @@ class FclModel : public Model {
       const Eigen::Matrix3Xd& points, bool use_margins,
       std::vector<PointPair>* closest_points) override;
   void UpdateModel() override;
+  bool UpdateElementWorldTransform(
+      ElementId, const Eigen::Isometry3d& T_local_to_world) override;
+
+ private:
+  fcl::DynamicAABBTreeCollisionManager<double> broadphase_manager_;
+  std::unordered_map<ElementId, std::unique_ptr<fcl::CollisionObject<double>>>
+      fcl_collision_objects_;
 };
 
 }  // namespace collision

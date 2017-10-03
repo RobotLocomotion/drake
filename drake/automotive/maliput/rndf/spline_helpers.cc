@@ -356,6 +356,12 @@ std::vector<ignition::math::Vector3d> MakeBezierCurveMonotonic(
     critical_point = p0 - l;
   }
 
+  // TODO(hidmic) Dynamically optimize scales to meet geometrical constraints
+  // in the non convex curve case. Current adjustment factor is the result of
+  // a manual optimization to achieve the best results with the models we've
+  // dealt with so far (i.e. OSM-based RNDFs).
+  const double kNonConvexCurveFactor = 0.1;
+
   // Computes if the resulting Bezier curve will preserve convexity.
   const ignition::math::Vector3d diff_to_p0 = (critical_point - p0);
   const ignition::math::Vector3d diff_to_p3 = (p3 - critical_point);
@@ -363,13 +369,17 @@ std::vector<ignition::math::Vector3d> MakeBezierCurveMonotonic(
   // intermediate control points will be set to produce the desired geometry.
   if (diff_to_p3.Normalized().Dot(norm_t3) < kAlmostZero) {
     result.push_back(p0);
-    result.push_back(p0 + scale * (critical_point - p0));
-    result.push_back(p3 + (-scale) * (critical_point - p3));
+    result.push_back(
+        p0 + kNonConvexCurveFactor * scale * (critical_point - p0));
+    result.push_back(
+        p3 + (-kNonConvexCurveFactor) * scale * (critical_point - p3));
     result.push_back(p3);
   } else if (diff_to_p0.Normalized().Dot(norm_t0) < kAlmostZero) {
     result.push_back(p0);
-    result.push_back(p0 + (-scale) * (critical_point - p0));
-    result.push_back(p3 + scale * (critical_point - p3));
+    result.push_back(
+        p0 + (-kNonConvexCurveFactor) * scale * (critical_point - p0));
+    result.push_back(
+        p3 + kNonConvexCurveFactor * scale * (critical_point - p3));
     result.push_back(p3);
   } else {
     result.push_back(p0);

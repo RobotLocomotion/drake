@@ -500,12 +500,12 @@ GTEST_TEST(RNDFMakeBezierCurveMonotonicTest, CaseObliqueNonConvexConnection) {
                                             p0,
                                             kLinearTolerance));
   EXPECT_TRUE(test::IsIgnitionVector3dClose(output_bezier_points[1],
-                                            ignition::math::Vector3d(5.0,
-                                              5.0,
+                                            ignition::math::Vector3d(0.5,
+                                              9.5,
                                               0.0),
                                             kLinearTolerance));
   EXPECT_TRUE(test::IsIgnitionVector3dClose(output_bezier_points[2],
-                                            ignition::math::Vector3d(-5.0,
+                                            ignition::math::Vector3d(-0.5,
                                               0.0,
                                               0.0),
                                             kLinearTolerance));

@@ -24,7 +24,7 @@ class RoadGeometry;
 /// network.
 ///
 /// multilane is a simple road-network implementation:
-///  - single lane per segment;
+///  - multiple lanes per segment;
 ///  - constant lane_bounds, driveable_bounds, and elevation_bounds,
 ///    same for all lanes;
 ///  - only linear and constant-curvature-arc primitives in XY-plane;

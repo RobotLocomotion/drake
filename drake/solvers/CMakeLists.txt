@@ -34,6 +34,7 @@ list(APPEND optimization_files
   nlopt_solver.cc
   no_dreal.cc
   no_gurobi.cc
+  no_ipopt.cc
   no_mosek.cc
   no_snopt.cc
   snopt_solver_common.cc
@@ -42,11 +43,6 @@ list(APPEND optimization_files
   symbolic_extraction.cc
   system_identification.cc
   )
-if(ipopt_FOUND)
- list(APPEND optimization_files ipopt_solver.cc)
-else()
-  list(APPEND optimization_files no_ipopt.cc)
-endif()
 
 add_library(drakeOptimization ${optimization_files})
 target_link_libraries(drakeOptimization
@@ -69,26 +65,6 @@ drake_install_headers(
   system_identification.h
   )
 drake_install_libraries(drakeOptimization)
-
-if(ipopt_FOUND)
-  target_link_libraries(drakeOptimization ipopt)
-  # IPOPT builds its own version of BLAS during compilation, and links
-  # it into the output library.  On (at least some) ELF systems, you
-  # wind up with a symbol name collision between IPOPT's BLAS and
-  # other BLAS implementations in other dynamic libraries (MATLAB, I'm
-  # looking in your direction...)  Since the actual implementations
-  # are incompatible, this does not end well.  Linking with the
-  # -Bsymbolic flags causes the internal references to these symbols
-  # inside libdrakeOptimization to be handled at compile time, and
-  # prevents the dynamic linker from hijacking IPOPT's calls into
-  # BLAS.
-  #
-  # This should probably be a test for the GNU linker instead of a platform.
-  if(NOT APPLE)
-    set(CMAKE_SHARED_LINKER_FLAGS
-      "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-Bsymbolic -Wl,-Bsymbolic-functions")
-  endif()
-endif()
 
 # TODO(jamiesnape): Fix imported target upstream.
 target_include_directories(drakeOptimization PUBLIC ${NLOPT_INCLUDE_DIRS})

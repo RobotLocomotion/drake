@@ -213,9 +213,6 @@ endfunction()
 # Set up options
 #------------------------------------------------------------------------------
 macro(drake_setup_options)
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # BEGIN "system" dependencies
-
   # These are packages that we can build, but which we allow the user to use
   # their own copy (usually provided by the system) if preferred.
 
@@ -250,17 +247,4 @@ macro(drake_setup_options)
   drake_system_dependency(
     TINYOBJLOADER REQUIRES tinyobjloader VERSION 1.0.6
     "Library for reading wavefront mesh files")
-
-  # END "system" dependencies
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # BEGIN external projects that are ON by default
-
-  # IPOPT is currently disabled on Mac when MATLAB is enabled due to MATLAB
-  # compatibility issues:
-  # https://github.com/RobotLocomotion/drake/issues/2578
-  drake_optional_external(IPOPT ON
-    DEPENDS "NOT APPLE OR NOT Matlab_FOUND"
-    "Interior Point Optimizer, for solving non-linear optimizations")
-
-  # END external projects that are ON by default
 endmacro()
