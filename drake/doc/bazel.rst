@@ -159,7 +159,7 @@ Install on OSX
 
 To confirm that your setup was successful, run the tests that require Gurobi.
 
-  ``bazel test --config gurobi --test_tag_filters=gurobi ...``
+  ``bazel test --config gurobi --test_tag_filters=gurobi //...``
 
 The default value of ``--test_tag_filters`` in Drake's ``bazel.rc`` excludes
 these tests. If you will be developing with Gurobi regularly, you may wish
@@ -175,7 +175,7 @@ installation is required. Please obtain and save a license file at
 
 To confirm that your setup was successful, run the tests that require MOSEK.
 
-  ``bazel test --config mosek --test_tag_filters=mosek ...``
+  ``bazel test --config mosek --test_tag_filters=mosek //...``
 
 The default value of ``--test_tag_filters`` in Drake's ``bazel.rc`` excludes
 these tests. If you will be developing with MOSEK regularly, you may wish
@@ -190,7 +190,7 @@ SNOPT
 
 To confirm that your setup was successful, run the tests that require SNOPT.
 
-  ``bazel test --config snopt --test_tag_filters=snopt ...``
+  ``bazel test --config snopt --test_tag_filters=snopt //...``
 
 The default value of ``--test_tag_filters`` in Drake's ``bazel.rc`` excludes
 these tests. If you will be developing with SNOPT regularly, you may wish
