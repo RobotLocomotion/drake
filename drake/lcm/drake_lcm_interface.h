@@ -49,7 +49,7 @@ class DrakeLcmInterface {
    * @param[in] data_size The length of @data in bytes.
    */
   virtual void Publish(const std::string& channel, const void* data,
-                       int data_size) = 0;
+                       int data_size, uint64_t timestamp = 0) = 0;
 
   /**
    * Subscribes to an LCM channel without automatic message decoding. The
