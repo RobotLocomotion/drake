@@ -468,6 +468,20 @@ void MultibodyTree<T>::DoCalcBiasTerm(
 }
 
 template <typename T>
+void MultibodyTree<T>::EvalBodyPosesInWorld(
+    const systems::Context<T>& context,
+    std::vector<Isometry3<T>>* X_WB_array) const {
+  DRAKE_DEMAND(X_WB_array != nullptr);
+  DRAKE_DEMAND(static_cast<int>(X_WB_array->size()) == get_num_bodies());
+  PositionKinematicsCache<T> pc(get_topology());
+  for (const auto& body : owned_bodies_) {
+    BodyIndex body_index = body->get_index();
+    BodyNodeIndex node_index = body->get_node_index();
+    X_WB_array->at(body_index) = pc.get_X_WB(node_index);
+  }
+}
+
+template <typename T>
 T MultibodyTree<T>::CalcPotentialEnergy(
     const systems::Context<T>& context) const {
   // TODO(amcastro-tri): Eval PositionKinematicsCache when caching lands.

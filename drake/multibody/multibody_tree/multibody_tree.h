@@ -998,6 +998,9 @@ class MultibodyTree {
   void CalcBiasTerm(
       const systems::Context<T>& context, EigenPtr<VectorX<T>> Cv) const;
 
+  void EvalBodyPosesInWorld(const systems::Context<T>& context,
+                            std::vector<Isometry3<T>>* X_WB_array) const;
+
   /// @name Methods to retrieve multibody element variants
   ///
   /// Given two variants of the same %MultibodyTree, these methods map an
