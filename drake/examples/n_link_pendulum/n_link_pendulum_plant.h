@@ -44,11 +44,17 @@ class NLinkPendulumPlant : public systems::LeafSystem<T> {
 
   double get_num_links() const { return num_links_; }
 
+  const multibody::MultibodyTree<T>& get_multibody_model() const {
+    return model_;
+  }
+
   geometry::SourceId source_id() const { return source_id_; }
 
   const systems::OutputPort<T>& get_geometry_id_output_port() const;
 
   const systems::OutputPort<T>& get_geometry_pose_output_port() const;
+
+  const systems::OutputPort<T>& get_end_pose_output_port() const;
 
   void SetStraightAtAnAngle(systems::Context<T>*, const T& angle) const;
 
@@ -97,6 +103,13 @@ class NLinkPendulumPlant : public systems::LeafSystem<T> {
   void CalcFramePoseOutput(const systems::Context<T>& context,
                            geometry::FramePoseVector<T>* poses) const;
 
+  // Allocates the pendulum's end pose output port value.
+  Isometry3<T> AllocateEndPoseOutput(const systems::Context<T>& context) const;
+
+  // Calculates the pendulum's end pose.
+  void CalcEndPoseOutput(
+      const systems::Context<T>& context, Isometry3<T>* end_pose) const;
+
   double mass_;
   double length_;
   double radius_;
@@ -115,6 +128,7 @@ class NLinkPendulumPlant : public systems::LeafSystem<T> {
   // Port handles
   int geometry_id_port_{-1};
   int geometry_pose_port_{-1};
+  int end_pose_port_{-1};
 };
 
 }  // namespace n_link_pendulum

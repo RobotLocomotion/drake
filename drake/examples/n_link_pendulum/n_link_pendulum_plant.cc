@@ -85,6 +85,9 @@ NLinkPendulumPlant<T>::NLinkPendulumPlant(
         this->DeclareAbstractOutputPort(
             &NLinkPendulumPlant::AllocateFramePoseOutput,
             &NLinkPendulumPlant::CalcFramePoseOutput).get_index();
+    end_pose_port_ = this->DeclareAbstractOutputPort(
+        &NLinkPendulumPlant::AllocateEndPoseOutput,
+        &NLinkPendulumPlant::CalcEndPoseOutput).get_index();
   }
 }
 
@@ -168,6 +171,33 @@ void NLinkPendulumPlant<double>::CalcFramePoseOutput(
 }
 
 template <typename T>
+Isometry3<T> NLinkPendulumPlant<T>::AllocateEndPoseOutput(
+    const Context<T>&) const {
+  return Isometry3<T>();
+}
+
+template <typename T>
+void NLinkPendulumPlant<T>::CalcEndPoseOutput(
+    const Context<T>& context, Isometry3<T>* end_pose) const {
+  std::vector<Isometry3<T>> X_WB_array(model_.get_num_bodies());
+  model_.EvalBodyPosesInWorld(context, &X_WB_array);
+  const T link_length = get_num_links() / get_num_links();
+
+  // Position of the pendulums end Eo from the end link's com Ecm, expressed in
+  // the end link's frame E. In the end link's frame this position is constant.
+  const Vector3<T> p_EcmEo_E = -link_length / 2.0 * Vector3<T>::UnitY();
+
+  // Pose of the end link in world.
+  const Isometry3<T> X_WEcm = X_WB_array[get_num_links()];
+
+  // Pose of the pendulum's end Eo in the end link's frame Ecm.
+  const Isometry3<T> X_EcmEo{Translation3<T>(p_EcmEo_E)};
+
+  // X_WEo = X_WEcm * X_EcmEo;
+  *end_pose = X_WEcm * X_EcmEo;
+}
+
+template <typename T>
 const OutputPort<T>& NLinkPendulumPlant<T>::get_geometry_id_output_port()
 const {
   return systems::System<T>::get_output_port(geometry_id_port_);
@@ -177,6 +207,11 @@ template <typename T>
 const OutputPort<T>& NLinkPendulumPlant<T>::get_geometry_pose_output_port()
 const {
   return systems::System<T>::get_output_port(geometry_pose_port_);
+}
+
+template <typename T>
+const OutputPort<T>& NLinkPendulumPlant<T>::get_end_pose_output_port() const {
+  return systems::System<T>::get_output_port(end_pose_port_);
 }
 
 template<typename T>
@@ -226,7 +261,7 @@ void NLinkPendulumPlant<T>::BuildMultibodyTreeModel() {
 
     previous_link = &link;
   }
-  DRAKE_ASSERT(model_.get_num_bodies() == get_num_links());
+  DRAKE_ASSERT(model_.get_num_bodies() == get_num_links() + 1);
   DRAKE_ASSERT(model_.get_num_joints() == get_num_links());
 
   model_.template AddForceElement<UniformGravityFieldElement>(
