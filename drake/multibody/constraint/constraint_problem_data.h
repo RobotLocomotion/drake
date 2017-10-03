@@ -80,7 +80,7 @@ namespace constraint {
 /// matrix with the same number of rows/columns as the dimension of c and λ,
 /// permitting different coefficients for each constraint equation.
 /// With γλ > 0, it becomes easier to satisfy the constraint
-/// c(t,q,v;v̇,λ) + γλ ≥ 0, though the resulting v̇ and λ will not quite
+/// c() + γλ ≥ 0, though the resulting v̇ and λ will not quite
 /// satisfy c = 0 (i.e., c will be slightly negative). As hinted above,
 /// softening grants two benefits. First, the complementarity problems resulting
 /// from the softened unilateral constraints are regularized, and any
@@ -97,7 +97,8 @@ namespace constraint {
 /// For example, consider the bilateral constraint equation c(t,q) = 0. Even if
 /// c(t₀,q(t₀)) = ċ(t₀,q(t₀),v(t₀)) = c̈(t₀,q(t₀),v(t₀),v̇(t₀)) = 0, c(t₁,q(t₁))
 /// is unlikely to be zero for sufficiently large Δt = t₁ - t₀. Consequently,
-/// we can modify unilateral constraints to:<pre>
+/// we can modify unilateral constraints c() that have been differentiated twice
+/// with respect to time (yielding c̈) to:<pre>
 /// 0 ≤ c̈ + 2αċ + β²c + γλ ⊥  λ ≥ 0
 /// </pre>
 /// and bilateral constraints to:<pre>
@@ -106,6 +107,8 @@ namespace constraint {
 /// for non-negative scalars α and β (like λ, α and β can also represent
 /// diagonal matrices). α and β, which both have units of 1/sec (i.e., the
 /// reciprocal of unit time) are described more fully in [Baumgarte 1972].
+/// Note that the unilateral constraint has been softened for illustrative
+/// purposes.
 ///
 /// @ref accel_jacobians
 /// <h3>Jacobian matrices</h3>
@@ -241,7 +244,7 @@ struct ConstraintAccelProblemData {
   /// G is defined as the ℝᵇˣⁿ Jacobian matrix of the partial derivatives of c()
   /// taken with respect to the quasi-coordinates (see @ref quasi_coordinates).
   /// For holonomic constraints posable as c(t,q), two differentiations with
-  /// respect to time can be formulated as c̈ = G⋅v̇ + Gdot⋅v + ∂c/∂t, which is
+  /// respect to time can be formulated as c̈ = G⋅v̇ + Gdot⋅v + ∂²c/∂t², which is
   /// consistent with our problem structure requirement by defining
   /// kᴳ(t,q,v) ≡ Gdot⋅v + ∂²c/∂t².
   ///
@@ -425,7 +428,7 @@ struct ConstraintAccelProblemData {
   /// @}
 
   /// @name Data for unilateral constraints at the acceleration level
-  /// Problem data for unilateral constrains at the acceleration level.
+  /// Problem data for unilateral constraints at the acceleration level.
   /// The constraint functions supported includes, among others,
   /// holonomic constraints, which are constraints posable as c(t, q). Such
   /// holonomic constraints must be twice differentiated with respect to time to
@@ -453,7 +456,7 @@ struct ConstraintAccelProblemData {
   /// of c() taken with respect to the quasi-coordinates (see
   /// @ref quasi_coordinates). For holonomic constraints posable as c(t,q),
   /// two differentiations of c() with respect to time can be formulated as
-  /// c̈ = L⋅v̇ + Ldot⋅v + ∂c/∂t, which is consistent with our problem structure
+  /// c̈ = L⋅v̇ + Ldot⋅v + ∂²c/∂t², which is consistent with our problem structure
   /// requirement by defining kᴸ(t,q,v) ≡ Ldot⋅v + ∂²c/∂t². Note that any
   /// constraint softening- which would be effected through positive γᴸ- is
   /// simply "mixed in" to the constraint; it does not emerge through any
@@ -569,15 +572,17 @@ struct ConstraintAccelProblemData {
 /// For example, consider the bilateral constraint equation c(t,q) = 0. Even if
 /// c(t₀,q(t₀)) = ċ(t₀,q(t₀),v(t₀)) = 0, c(t₁,q(t₁))
 /// is unlikely to be zero for sufficiently large Δt = t₁ - t₀. Consequently,
-/// we can modify unilateral constraints to:<pre>
+/// we can modify unilateral constraints c() that have been differentiated once
+/// with respect to time (yielding ċ()) to:<pre>
 /// 0 ≤ ċ + ζc + γλ  ⊥  λ ≥ 0
 /// </pre>
 /// and bilateral constraints to:<pre>
 /// ċ + ζc = 0
 /// </pre>
-/// for non-negative scalar ζ (like λ, ζ can also represent
-/// a diagonal matrix). ζ has units of 1/sec (i.e., the
-/// reciprocal of unit time).
+/// for non-negative scalar ζ (like λ, ζ can also represent a diagonal matrix).
+/// ζ has units of 1/sec (i.e., the reciprocal of unit time). Note that the
+/// unilateral constraint has been softened for illustrative purposes.
+
 ///
 /// The combination of ζ and γ nicely correspond to a generalized
 /// spring-damper system (c̈ + bċ + kc = 0, where b is a viscous damping term
@@ -652,32 +657,41 @@ struct ConstraintVelProblemData {
   VectorX<T> mu;
 
   /// @name Data for bilateral constraints at the velocity level
-  /// Problem data for bilateral constraints of functions of system
-  /// velocity, where the constraint can be formulated as:<pre>
+  /// Problem data for bilateral constraints at the velocity level.
+  /// The constraint functions supported includes, among others,
+  /// holonomic constraints, which are constraints posable as c(t, q). Such
+  /// holonomic constraints must be differentiated with respect to time to
+  /// yield a velocity-level formulation (i.e., ċ(t,q;v)). An example
+  /// such holonomic constraint function is the transmission (gearing)
+  /// constraint:<pre>
+  /// c(q) = 0
+  /// </pre> where
+  /// c(q) ≡ qᵢ - rqⱼ
+  /// </pre>
+  /// and where `r` is the gear ratio (for simplicity, this equation does not
+  /// incorporate a constant angular offset between the rotational joints).
+  /// The derivative of this function with respect to time,
+  /// ċ(q;v) = vᵢ - rvⱼ
+  /// </pre>
+  /// can be read as the velocity at joint i (vᵢ) must equal to `r`
+  /// times the velocity at joint j (vⱼ).
+  ///
+  /// The problem structure requires separating the constraint function inputs
+  /// such that the constraint is in the form:<pre>
   /// 0 = G(q)⋅v + kᴳ(t,q)
   /// </pre>
-  /// which implies the constraint definition c(t,q,v) ≡ G(q)⋅v + kᴳ(t,q). G
-  /// is defined as the ℝᵇˣⁿ Jacobian matrix of the partial derivatives of c()
-  /// taken with respect to the quasi-coordinates (see @ref accel_jacobians).
-  /// The class of constraint functions naturally
-  /// includes holonomic constraints, which are constraints posable as c(t,q).
-  /// Such holonomic constraints must be differentiated with respect to time to
-  /// yield a velocity-level formulation (i.e., ċ(t,q;v), for the
-  /// aforementioned definition of c(t,q)). That differentiation yields
-  /// ċ = G⋅v + ∂c/∂t, which is consistent with the constraint class under
-  /// the definition kᴳ(t,q) ≡ ∂c/∂t. An example such holonomic constraint
-  /// function is the transmission (gearing) constraint below:<pre>
-  /// 0 = vᵢ - rvⱼ
-  /// </pre>
-  /// which can be read as the velocity at joint j (vⱼ) must equal to `r`
-  /// times the velocity at joint i (vᵢ); `r` is thus the gear ratio.
-  /// In this example, the corresponding holonomic constraint function is
-  /// c(q) ≡ qᵢ -rqⱼ, yielding ċ(q, v) = vⱼ - rvⱼ.
+  /// which implies the constraint definition c(t,q;v) ≡ G(q)⋅v + kᴳ(t,q).
+  /// G is defined as the ℝᵇˣⁿ Jacobian matrix of the partial derivatives of c()
+  /// taken with respect to the quasi-coordinates (see @ref quasi_coordinates).
+  /// For holonomic constraints posable as c(t,q), differentiation with
+  /// respect to time can be formulated as ċ = G⋅v + ∂c/∂t, which is
+  /// consistent with our problem structure requirement by defining
+  /// kᴳ(t,q) ≡ ∂c/∂t.
   ///
   /// Given these descriptions, the user needs to define operators for computing
   /// G⋅w (w ∈ ℝⁿ is an arbitrary vector) and Gᵀ⋅f (f ∈ ℝᵇ is an arbitrary
   /// vector). The user also needs to provide kᴳ ∈ ℝᵇ, which should be set to
-  /// the vector ζc.
+  /// the vector ∂c/∂t + ζc.
   /// @{
 
   /// An operator that performs the multiplication G⋅v. The default operator
@@ -846,49 +860,49 @@ struct ConstraintVelProblemData {
   /// @}
 
   /// @name Data for unilateral constraints at the velocity level
-  /// Problem data for unilateral constraints of functions of system
-  /// velocity, where the constraint can be formulated as:<pre>
-  /// 0 ≤ L(q)⋅v + kᴸ(t,q) + γᴸλ  ⊥  λ ≥ 0
+  /// Problem data for unilateral constraints at the velocity level.
+  /// The constraint functions supported includes, among others,
+  /// holonomic constraints, which are constraints posable as c(t, q). Such
+  /// holonomic constraints must be twice differentiated with respect to time to
+  /// yield an acceleration-level formulation (i.e., ċ(t,q;v)). An example
+  /// such unilateral holonomic constraint function is a joint range-of-motion
+  /// limit:<pre>
+  /// 0 ≤ c(q)  ⊥  λⱼ ≥ 0
+  /// </pre> where
+  /// c(q) ≡ qᵢ.
   /// </pre>
-  /// which means that the constraint c(t,q;v,λ) ≡ L(q)⋅v + kᴸ(t,q) + γᴸλ
-  /// is coupled to a force constraint (λ ≥ 0) and a complementarity constraint
-  /// λ⋅(L⋅v + kᴸ(t,q) + γᴸλ) = 0, meaning that the constraint can apply no
-  /// impulse if it is inactive (i.e., if c(t,q;v,λ) is strictly greater than
-  /// zero). L is defined as the ℝᵘˣⁿ Jacobian matrix of the partial derivatives
+  /// This limit range of motion limit requires joint qᵢ to be non-negative.
+  /// The force limit requires the applied force to also be non-negative (i.e.,
+  /// it acts to push against any force that would attempt to make c(q)
+  /// negative). And, the complementarity constraint c(q)λⱼ = 0 means that
+  /// force can only be applied when the joint is at the limit.
+  ///
+  /// The problem structure requires separating the constraint function inputs
+  /// such that the constraint is in the form:<pre>
+  /// 0 ≤ L(q)⋅v + kᴸ(t,q) + γᴸλ
+  /// </pre>
+  /// which implies the constraint definition<pre>
+  /// c(t,q;v) ≡ L(q)⋅v + kᴸ(t,q) + γᴸλ
+  /// </pre>
+  /// where L is defined as the ℝᵘˣⁿ Jacobian matrix of the partial derivatives
   /// of c() taken with respect to the quasi-coordinates (see
-  /// @ref accel_jacobians). As described in the section on
-  /// constraint softening, the factor γᴸλ, where γᴸ ≥ 0 is a user-provided
-  /// diagonal matrix, acts to "soften" the constraint: if γᴸ is nonzero, c will
-  /// be satisfiable with a smaller λ.
+  /// @ref quasi_coordinates). For holonomic constraints posable as c(t,q),
+  /// differentiation of c() with respect to time can be formulated as
+  /// ċ = L⋅v + ∂c/∂t, which is consistent with our problem structure
+  /// requirement by defining kᴸ(t,q) ≡ ∂c/∂t. Note that any
+  /// constraint softening- which would be effected through positive γᴸ- is
+  /// simply "mixed in" to the constraint; it does not emerge through
+  /// differentiation of the original holonomic constraint.
   ///
-  /// The class of constraint functions naturally includes holonomic
-  /// constraints, which are constraints posable as c(t,q). Such holonomic
-  /// constraints must be differentiated with respect to time to yield
-  /// a velocity-level formulation (i.e., ċ(t,q;v,λ), for the
-  /// aforementioned definition of c(t,q)). That differentiation yields
-  /// ċ = L⋅v + ∂c/∂t (notice the absence of the softening term),
-  /// which is consistent with the constraint class under the definition
-  /// kᴸ(t,q) ≡ ∂c/∂t. An example such (holonomic) constraint
-  /// function is a joint velocity limit:<pre>
-  /// 0 ≤ -vⱼ  ⊥  λⱼ ≥ 0
-  /// </pre>
-  /// which can be read as the velocity at joint j (vⱼ) must be no larger
-  /// than zero, the impulsive force must be applied to limit the velocity at
-  /// the joint, and the limiting force cannot be applied if the velocity at the
-  /// joint is not at the limit (i.e., vⱼ < 0). In this example, a
-  /// corresponding holonomic constraint function would be c(q) ≡ r - qⱼ (where
-  /// r is the range of motion limit), yielding ċ(q,v) = -vⱼ. Solving for
-  /// v(t₀) such that ċ(q(t₀), v(t₀)) = 0 will naturally allow one to
-  /// determine (through integration) q(t₁) that satisfies c(q(t₁)) = 0 for
-  /// t₁ > t₀ and t₁ ≈ t₀, assuming that c(q(t₀)) = 0.
-  ///
-  /// Given the description above, the user must define operators for computing
+  /// Given these descriptions, the user needs to define operators for computing
   /// L⋅w (w ∈ ℝⁿ is an arbitrary vector) and Lᵀ⋅f (f ∈ ℝᵘ is an arbitrary
-  /// vector). The user also needs to provide γᴸ ∈ ℝᵘ, a vector of non-negative
-  /// entries used to soften the unilateral constraints, and kᴸ ∈ ℝᵘ,
-  /// the vector ζc(q). Guidelines for setting ζ and γ to effect a particular
-  /// damping ratio and oscillation frequency are described in [Catto 2004];
-  /// the parameters are known as "ERP" and "CFM" in that context.
+  /// vector). The user also needs to provide kᴸ ∈ ℝᵘ, which should be set to
+  /// the vector ∂c/∂t + ζc, and the vector γᴸ ≥ 0, which
+  /// corresponds to a diagonal matrix that acts to "soften" the constraint
+  /// (see the section on constraint softening). Guidelines for setting ζ and γ
+  /// to effect a particular damping ratio and oscillation frequency are
+  /// described in [Catto 2004]; the parameters are known as "ERP" and "CFM",
+  /// respectively, in that context.
   /// @{
 
   /// An operator that performs the multiplication L⋅v. The default operator
