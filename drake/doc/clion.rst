@@ -361,7 +361,7 @@ following values for the fields:
   :Name: ``Cpplint File``
   :Description: ``Apply cpplint to the current file``
   :Program: ``bazel``
-  :Parameters: ``run @google_styleguide//:cpplint -- --output=eclipse
+  :Parameters: ``run @styleguide//:cpplint -- --output=eclipse
                  $FilePath$``
   :Working directory: ``$Projectpath$``
 
@@ -425,12 +425,12 @@ Google style guide linting
 
 Change the following fields in the instructions given above:
 
-  :Program: ``bazel-bin/external/google_styleguide/cpplint_binary``
+  :Program: ``bazel-bin/external/styleguide/cpplint_binary``
   :Parameters: ``--output=eclipse $FilePath$``
 
 Building the google styleguide lint tool:
 
-``bazel build @google_styleguide//:cpplint``
+``bazel build @styleguide//:cpplint``
 
 Drake style addenda
 """""""""""""""""""

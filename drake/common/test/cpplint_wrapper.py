@@ -104,13 +104,13 @@ def multiprocess_cpplint(cmdline, files, args):
 def main():
     # Find the cpplint binary.
     # This is the path that works inside of the sandbox.
-    default_cpplint = 'external/google_styleguide/cpplint_binary'
+    default_cpplint = 'external/styleguide/cpplint_binary'
     if not os.path.exists(default_cpplint):
         m = re.match('(.*/cpplint_wrapper.runfiles/)', sys.argv[0])
         if m:
             # This is the path that works outside of the sandbox.
             default_cpplint = os.path.join(
-                m.group(1), 'google_styleguide/cpplint_binary')
+                m.group(1), 'styleguide/cpplint_binary')
     if not os.path.exists(default_cpplint):
         default_cpplint = None
 
