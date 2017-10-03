@@ -3,31 +3,58 @@
 #include <memory>
 
 #include "drake/geometry/geometry_system.h"
-#include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/leaf_system.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
+#include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/scalar_conversion_traits.h"
 
 namespace drake {
 namespace examples {
 namespace multibody_pendulum {
 
+/// A model of an idealized pendulum with a point mass on the end of a massless
+/// cord.
+/// The pendulum oscillates in the x-z plane with its revolute axis coincident
+/// with the y-axis. Gravity points downwards in the -z axis direction.
+///
+/// The parameters of the plant are:
+/// - mass: the mass of the idealized point mass.
+/// - length: the length of the massless cord on which the mass is suspended.
+/// - gravity: the acceleration of gravity.
+///
+/// @tparam T The scalar type. Must be a valid Eigen scalar.
+///
+/// Instantiated templates for the following kinds of T's are provided:
+/// - double
+/// - AutoDiffXd
+///
+/// They are already available to link against in the containing library.
+/// No other values for T are currently supported.
 template<typename T>
 class MultibodyPendulumPlant final : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyPendulumPlant)
 
-  /// Constructs an n-link pendulum plant with no GeometrySystem model.
+  /// Constructs a model of an idealized pendulum of a given `mass` and
+  /// suspended by a massless cord with a given `length`. Gravity points in the
+  /// `-z` axis direction with the acceleration constant `gravity`.
   MultibodyPendulumPlant(double mass, double length, double gravity);
 
+  /// Constructs a plant given a SourceId to communicate with a GeometrySystem.
+  /// FrameId identifies the body frame of `this` pendulum in that
+  /// GeometrySystem.
+  /// See this class's documentation for a description of the physical
+  /// parameters.
   MultibodyPendulumPlant(
       double mass, double length, double gravity,
       geometry::SourceId source_id, geometry::FrameId frame_id);
 
-  /// Constructor that registers this model's geometry for visualization
-  /// purposes only.
+  /// This constructor registers `this` plant as a source for `geometry_system`.
+  /// The constructor will registrate frames and geometry for visualization with
+  /// GeometrySystem.
+  /// See this class's documentation for a description of the physical
+  /// parameters.
   MultibodyPendulumPlant(
       double mass, double length, double gravity,
       geometry::GeometrySystem<double>* geometry_system);
@@ -44,18 +71,16 @@ class MultibodyPendulumPlant final : public systems::LeafSystem<T> {
 
   geometry::SourceId get_source_id() const { return source_id_; }
 
-  const multibody::MultibodyTree<T>& get_multibody_model() const {
-    return *model_;
-  }
-
   const systems::OutputPort<T>& get_geometry_id_output_port() const;
 
   const systems::OutputPort<T>& get_geometry_pose_output_port() const;
 
+  /// Sets the state for this system in `context` to be that of `this` pendulum
+  /// at a given `angle`. Mainly used to set initial conditions.
   void SetAngle(systems::Context<T>*, const T& angle) const;
 
   /// Computes the period for the small oscillations of a simple pendulum.
-  /// The solution assumes no damping.
+  /// The solution assumes no damping. Useful to compute a reference time scale.
   static T SimplePendulumPeriod(const T& length, const T& gravity) {
     DRAKE_DEMAND(length > 0);
     DRAKE_DEMAND(gravity > 0);

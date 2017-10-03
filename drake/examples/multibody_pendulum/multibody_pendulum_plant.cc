@@ -60,7 +60,6 @@ MultibodyPendulumPlant<T>::MultibodyPendulumPlant(
         drake::examples::multibody_pendulum::MultibodyPendulumPlant>()),
     mass_(mass), length_(length), gravity_(gravity),
     source_id_(source_id), frame_id_(frame_id) {
-
   // Build the MultibodyTree model for this plant.
   BuildMultibodyTreeModel();
 
@@ -227,8 +226,8 @@ void MultibodyPendulumPlant<T>::RegisterGeometry(
   const Vector3<double> p_BoBcm_B = -get_length() * Vector3<double>::UnitZ();
   const Isometry3<double> X_BG{Translation3<double>(p_BoBcm_B)};
 
-  // TODO: Add a rod between the rotation axis and the point mass when Shean's
-  // Cylinders PR lands.
+  // TODO(amcastro-tri): Add a rod between the rotation axis and the point mass
+  // when Shean's Cylinders PR lands.
 
   // A sphere at the point mass:
   geometry_system->RegisterGeometry(
@@ -265,10 +264,6 @@ void MultibodyPendulumPlant<T>::DoCalcTimeDerivatives(
 
   MatrixX<T> M(nv, nv);
   model_->CalcMassMatrixViaInverseDynamics(context, &M);
-
-  // Check if M is symmetric.
-  const T err_sym = (M - M.transpose()).norm();
-  DRAKE_DEMAND(err_sym < 10 * std::numeric_limits<double>::epsilon());
 
   model_->CalcPositionKinematicsCache(context, &pc);
   model_->CalcVelocityKinematicsCache(context, pc, &vc);
