@@ -2,7 +2,9 @@
 
 #include <memory>
 #include <utility>
+
 #include <gtest/gtest.h>
+
 #include "drake/lcmt_drake_signal.hpp"
 
 namespace drake {
@@ -15,15 +17,13 @@ class TestHandler : public DrakeLcmMessageHandlerInterface {
 
   explicit TestHandler(const std::string& name) : name_(name) {}
 
-  void HandleMessage(const std::string& channel,
-      const void* buffer, int size) override {
+  void HandleMessage(const std::string& channel, const void* buffer,
+                     int size) override {
     EXPECT_EQ(channel, name_);
     msg_.decode(buffer, 0, size);
   }
 
-  const MsgType& get_msg() const {
-    return msg_;
-  }
+  const MsgType& get_msg() const { return msg_; }
 
  private:
   const std::string name_;
@@ -52,13 +52,14 @@ GTEST_TEST(LcmLogTest, LcmLogTestSaveAndRead) {
 
   std::vector<std::unique_ptr<TestHandler<drake::lcmt_drake_signal>>> handlers;
   for (int i = 0; i < 3; i++) {
-    handlers.emplace_back(std::make_unique<TestHandler<drake::lcmt_drake_signal>>(channel_name));
+    handlers.emplace_back(
+        std::make_unique<TestHandler<drake::lcmt_drake_signal>>(channel_name));
     r_log->Subscribe(channel_name, handlers.back().get());
   }
 
   double r_time = r_log->GetNextMessageTime();
   EXPECT_EQ(r_time * 1e6, static_cast<double>(log_timestamp));
-  r_log->DispatchMessageToAllSubscribers();
+  r_log->DispatchMessageAndAdvanceLog(r_time);
 
   for (const auto& handler : handlers) {
     const drake::lcmt_drake_signal& decoded_msg = handler->get_msg();

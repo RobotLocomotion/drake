@@ -48,9 +48,11 @@ class DrakeLcmInterface {
    * publish.
    *
    * @param[in] data_size The length of @data in bytes.
+   *
+   * @param[in] time_sec Time in seconds when the publish event occurred.
    */
   virtual void Publish(const std::string& channel, const void* data,
-                       int data_size, uint64_t timestamp = 0) = 0;
+                       int data_size, double time_sec = 0) = 0;
 
   /**
    * Subscribes to an LCM channel without automatic message decoding. The
@@ -64,8 +66,21 @@ class DrakeLcmInterface {
   virtual void Subscribe(const std::string& channel,
                          DrakeLcmMessageHandlerInterface* handler) = 0;
 
+  /**
+   * Only used for supporting Lcm Log playback interface. Defaults
+   * implementation is no-op.
+   * @see DrakeLcmLog::DispatchMessageAndAdvanceLog
+   */
   virtual void DispatchMessageAndAdvanceLog(double current_time) {}
-  virtual double GetNextMessageTime() const { return std::numeric_limits<double>::infinity(); }
+
+  /**
+   * Only used for supporting Lcm Log playback interface. Defaults
+   * implementation returns infinity.
+   * @see DrakeLcmLog::GetNextMessageTime
+   */
+  virtual double GetNextMessageTime() const {
+    return std::numeric_limits<double>::infinity();
+  }
 };
 
 }  // namespace lcm

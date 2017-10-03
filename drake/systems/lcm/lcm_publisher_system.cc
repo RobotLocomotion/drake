@@ -102,9 +102,8 @@ void LcmPublisherSystem::DoPublish(const Context<double>& context,
   }
 
   // Publishes onto the specified LCM channel.
-  uint64_t timestamp = context.get_time() * 1e6;
   lcm_->Publish(channel_, message_bytes.data(), message_bytes.size(),
-                timestamp);
+                context.get_time());
 }
 
 const LcmAndVectorBaseTranslator& LcmPublisherSystem::get_translator() const {
