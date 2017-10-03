@@ -1,3 +1,5 @@
+#include <gflags/gflags.h>
+
 #include "drake/examples/multibody_pendulum/multibody_pendulum_plant.h"
 #include "drake/geometry/geometry_system.h"
 #include "drake/geometry/geometry_visualization.h"
@@ -22,6 +24,14 @@ namespace examples {
 namespace multibody_pendulum {
 namespace {
 
+DEFINE_double(target_realtime_rate, 1.0,
+              "Playback speed.  See documentation for "
+              "Simulator::set_target_realtime_rate() for details.");
+
+DEFINE_string(integration_scheme, "runge_kutta3",
+              "Integration scheme to be used. Available options are:"
+              "'runge_kutta3','implicit_euler'");
+
 using geometry::GeometrySystem;
 using geometry::SourceId;
 using lcm::DrakeLcm;
@@ -40,19 +50,20 @@ int do_main() {
   auto geometry_system = builder.AddSystem<GeometrySystem<double>>();
   geometry_system->set_name("geometry_system");
 
+  // Define plant's parameters:
   const double mass = 0.5;      // [Kgr], about a pound.
   const double length = 0.7;    // [m]
   const double gravity = 9.81;  // [m/s²]
+
+  // Define simulation parameters:
   // Compute a reference time scale to set reasonable values for time step and
   // simulation time.
   const double reference_time_scale =
       MultibodyPendulumPlant<double>::SimplePendulumPeriod(length, gravity);
   const double time_step = reference_time_scale / 100;
   const double simulation_time = 5.0 * reference_time_scale;
+  const double target_accuracy = 0.001;
 
-  //const std::string integrator_type = "ImplicitEuler";
-  const std::string integrator_type = "RungeKutta3";
-  
   auto pendulum = builder.AddSystem<MultibodyPendulumPlant>(
       mass, length, gravity, geometry_system);
   pendulum->set_name("Pendulum");
@@ -92,23 +103,24 @@ int do_main() {
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
 
   systems::IntegratorBase<double>* integrator;
-  if (integrator_type == "ImplicitEuler") {
+  if (FLAGS_integration_scheme == "implicit_euler") {
     integrator =
         simulator.reset_integrator<ImplicitEulerIntegrator<double>>(
             *diagram, simulator.get_mutable_context());
-  } else if (integrator_type == "RungeKutta3") {
+  } else if (FLAGS_integration_scheme == "runge_kutta3") {
     integrator =
         simulator.reset_integrator<RungeKutta3Integrator<double>>(
             *diagram, simulator.get_mutable_context());
   } else {
-    throw std::logic_error("Other integrator types are unstable for this case");
+    throw std::logic_error(
+        "Integration scheme not supported for this example.");
   }
 
   integrator->set_maximum_step_size(time_step);
-  integrator->set_target_accuracy(0.001);
+  integrator->set_target_accuracy(target_accuracy);
 
   simulator.set_publish_every_time_step(false);
-  simulator.set_target_realtime_rate(1.f);
+  simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
   simulator.StepTo(simulation_time);
 
@@ -129,4 +141,7 @@ int do_main() {
 }  // namespace examples
 }  // namespace drake
 
-int main() { return drake::examples::multibody_pendulum::do_main(); }
+int main(int argc, char* argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  return drake::examples::multibody_pendulum::do_main();
+}

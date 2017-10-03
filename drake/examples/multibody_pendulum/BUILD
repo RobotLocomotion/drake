@@ -27,6 +27,8 @@ drake_cc_library(
 drake_cc_binary(
     name = "multibody_pendulum_run_dynamics",
     srcs = ["multibody_pendulum_run_dynamics.cc"],
+    add_test_rule = 1,
+    test_rule_args = ["--target_realtime_rate=0.0"],
     deps = [
         ":multibody_pendulum",
         "//drake/geometry:geometry_system",
@@ -41,15 +43,7 @@ drake_cc_binary(
         "//drake/systems/primitives:constant_vector_source",
         "//drake/systems/primitives:signal_logger",
         "//drake/systems/rendering:pose_bundle_to_draw_message",
-    ],
-)
-
-drake_cc_googletest(
-    name = "multibody_pendulum_to_autodiff",
-    deps = [
-        ":multibody_pendulum_plant",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/systems/primitives:linear_system",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 
