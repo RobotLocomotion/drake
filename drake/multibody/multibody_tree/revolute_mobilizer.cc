@@ -92,7 +92,7 @@ void RevoluteMobilizer<T>::ProjectSpatialForce(
 
 template <typename T>
 void RevoluteMobilizer<T>::MapVelocityToQDot(
-    const MultibodyTreeContext<T>& context,
+    const MultibodyTreeContext<T>&,
     const Eigen::Ref<const VectorX<T>>& v,
     EigenPtr<VectorX<T>> qdot) const {
   DRAKE_ASSERT(v.size() == kNv);
@@ -103,7 +103,7 @@ void RevoluteMobilizer<T>::MapVelocityToQDot(
 
 template <typename T>
 void RevoluteMobilizer<T>::MapQDotToVelocity(
-    const MultibodyTreeContext<T>& context,
+    const MultibodyTreeContext<T>&,
     const Eigen::Ref<const VectorX<T>>& qdot,
     EigenPtr<VectorX<T>> v) const {
   DRAKE_ASSERT(qdot.size() == kNq);

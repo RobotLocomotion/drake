@@ -86,7 +86,7 @@ class TorqueFreeCylinderExactSolution{
         { v_NBcm_B_initial_ = v_NBcm_B_initial; }
   void  SetUniformGravityExpressedInWorld(const Vector3d& gravity)
         { uniform_gravity_expressed_in_world_ = gravity; }
-  
+
   /// Calculates exact solutions for quaternion and angular velocity expressed
   /// in body-frame, and their time derivatives for torque-free rotational
   /// motion of axis-symmetric rigid body B (uniform cylinder) in Newtonian
@@ -114,8 +114,8 @@ class TorqueFreeCylinderExactSolution{
   /// w_NB_B     | B's angular velocity in N, expressed in B.
   /// wDt_NB_B   | B's angular acceleration in N, expressed in B.
   ///
-  /// - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York, 1983.
-  ///   (with P. W. Likins and D. A. Levinson).  Available for free .pdf
+  /// - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York,
+  ///   1983. (with P. W. Likins and D. A. Levinson).  Available for free .pdf
   ///   download: https:///ecommons.cornell.edu/handle/1813/637
   std::tuple<Quaterniond, Vector4d, Vector3d, Vector3d>
   CalculateExactRotationalSolutionNB(const double t) const;
