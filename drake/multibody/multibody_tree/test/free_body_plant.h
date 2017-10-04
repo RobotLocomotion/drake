@@ -13,75 +13,54 @@ namespace multibody {
 namespace multibody_tree {
 namespace test {
 
-/// The Acrobot - a canonical underactuated system as described in <a
-/// href="http://underactuated.mit.edu/underactuated.html?chapter=3">Chapter 3
-/// of Underactuated Robotics</a>.
+/// This plant models the rotational motion of a free body in space.
+/// This body is axially symmetric with rotational inertia about its axis of
+/// revolution J and with a rotational inertia I about any axis perpendicular to
+/// its axis of revolution.
 ///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
-/// @param m1 Mass of link 1 (kg).
-/// @param m2 Mass of link 2 (kg).
-/// @param l1 Length of link 1 (m).
-/// @param l2 Length of link 2 (m).
-/// @param lc1 Vertical distance from shoulder joint to center of mass of
-/// link 1 (m).
-/// @param lc2 Vertical distance from elbow joint to center of mass of
-/// link 2 (m).
-/// @param Ic1 Inertia of link 1 about the center of mass of link 1
-/// (kg*m^2).
-/// @param Ic2 Inertia of link 2 about the center of mass of link 2
-/// (kg*m^2).
-/// @param b1 Damping coefficient of the shoulder joint (kg*m^2/s).
-/// @param b2 Damping coefficient of the elbow joint (kg*m^2/s).
-/// @param g Gravitational constant (m/s^2).
-///
-/// The parameters are defaulted to values in Spong's paper (see
-/// acrobot_spong_controller.cc for more details). Alternatively, an instance
-/// of AcrobotMultibodyPlant using parameters of MIT lab's acrobot can be created by
-/// calling the static method CreateAcrobotMIT();
-///
-/// Note that the Spong controller behaves differently on these two sets of
-/// parameters. The controller works well on the first set of parameters,
-/// which Spong used in his paper. In contrast, it is difficult to find a
-/// functional set of gains to stabilize the robot about its upright fixed
-/// point using the second set of parameters, which represent a real robot.
-/// This difference illustrates limitations of the Spong controller.
+/// @tparam T The scalar type. Must be a valid Eigen scalar.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
 /// - AutoDiffXd
+///
+/// They are already available to link against in the containing library.
+/// No other values for T are currently supported.
 template<typename T>
 class FreeBodyPlant final : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FreeBodyPlant)
 
+  /// Constructor from known rotational inertia values.
+  /// Rotational inertia values have units of kg⋅m².
+  /// @param J
+  ///   rotational inertia about the axis of revolution of the body.
+  /// @param I
+  ///   rotational inertia about any axis perpendicular to the axis of
+  ///   revolution of the body.
   FreeBodyPlant(double I, double J);
 
   /// Scalar-converting copy constructor.
   template <typename U>
   explicit FreeBodyPlant(const FreeBodyPlant<U>&);
 
-  double get_mass() const { return 1.0; }
-
+  /// Stores in `context` the value of the angular velocity `w_WB` of the body
+  /// in the world frame W.
   void set_angular_velocity(
       systems::Context<T>* context, const Vector3<T>& w_WB) const;
 
+  /// Computes the pose `X_WB` of the body in the world frame.
   Isometry3<T> CalcPoseInWorldFrame(
       const systems::Context<T>& context) const;
 
+  /// Computes the spatial velocity `V_WB` of the body in the world frame.
   SpatialVelocity<T> CalcSpatialVelocityInWorldFrame(
       const systems::Context<T>& context) const;
-
- protected:
-  T DoCalcKineticEnergy(const systems::Context<T>& context) const override;
-  T DoCalcPotentialEnergy(const systems::Context<T>& context) const override;
 
  private:
   // Override of context construction so that we can delegate it to
   // MultibodyTree.
   std::unique_ptr<systems::LeafContext<T>> DoMakeContext() const override;
-
-  void OutputState(const systems::Context<T> &context,
-                   systems::BasicVector<T> *state_port_value) const;
 
   void DoCalcTimeDerivatives(
       const systems::Context<T> &context,
@@ -97,6 +76,7 @@ class FreeBodyPlant final : public systems::LeafSystem<T> {
       const Eigen::Ref<const VectorX<T>>& generalized_velocity,
       systems::VectorBase<T>* qdot) const override;
 
+  // Helper method to build the MultibodyTree model for this plant.
   void BuildMultibodyTreeModel();
 
   double I_{0};

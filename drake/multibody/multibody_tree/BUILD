@@ -150,6 +150,7 @@ drake_cc_library(
     srcs = ["test/free_body_plant.cc"],
     hdrs = ["test/free_body_plant.h"],
     deps = [
+        "//drake/common:default_scalars",
         "//drake/multibody/multibody_tree",
         "//drake/systems/framework",
     ],
