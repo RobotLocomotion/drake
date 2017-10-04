@@ -163,7 +163,7 @@ drake_cc_googletest(
     deps = [
         ":free_body_plant",
         "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/multibody/benchmarks/cylinder_torque_free_analytical_solution:torque_free_cylinder_exact_solution",
+        "//drake/multibody/benchmarks/cylinder_torque_free_analytical_solution:torque_free_cylinder_exact_solution",  # noqa
         "//drake/systems/analysis:simulator",
     ],
 )
