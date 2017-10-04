@@ -126,9 +126,14 @@ Please use the "``buildifier``" tool to format edits to ``BUILD`` files (in the
 same spirit as ``clang-format`` formatting C++ code)::
 
   cd /path/to/drake-distro
-  tools/buildifier.sh                     # By default, reformats all BUILD files.
-  tools/buildifier.sh drake/common/BUILD  # Only reformat one file.
+  bazel-bin/tools/lint/buildifier --all               # Reformat all Bazel files.
+  bazel-bin/tools/lint/buildifier drake/common/BUILD  # Only reformat one file.
 
+In most cases the ``bazel-bin/tools/lint/buildifier`` will already be compiled
+by the time you need it.  In case it's absent, you can compile it via::
+
+  cd /path/to/drake-distro
+  bazel build //tools/lint:buildifier
 
 Proprietary Solvers
 ===================
