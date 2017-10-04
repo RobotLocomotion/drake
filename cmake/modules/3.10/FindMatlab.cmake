@@ -5,6 +5,10 @@
 # source code. This copy has been modified to incorporate similar improvements
 # without depending on the newer version of CMake.
 #=============================================================================
+
+# Distributed under the OSI-approved BSD 3-Clause License.  See accompanying
+# file Copyright.txt or https://cmake.org/licensing for details.
+
 #.rst:
 # FindMatlab
 # ----------
@@ -215,19 +219,6 @@
 #   Matlab are installed. The priority is set according to the ordering in
 #   this list.
 
-#=============================================================================
-# Copyright 2014-2015 Raffi Enficiaud, Max Planck Society
-#
-# Distributed under the OSI-approved BSD License (the "License");
-# see accompanying file Copyright.txt for details.
-#
-# This software is distributed WITHOUT ANY WARRANTY; without even the
-# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the License for more information.
-#=============================================================================
-# (To distribute this file outside of CMake, substitute the full
-#  License text for the above reference.)
-
 set(_FindMatlab_SELF_DIR "${CMAKE_CURRENT_LIST_DIR}")
 
 include(FindPackageHandleStandardArgs)
@@ -242,6 +233,9 @@ if(NOT MATLAB_ADDITIONAL_VERSIONS)
 endif()
 
 set(MATLAB_VERSIONS_MAPPING
+  "R2017b=9.3"
+  "R2017a=9.2"
+  "R2016b=9.1"
   "R2016a=9.0"
   "R2015b=8.6"
   "R2015a=8.5"
@@ -251,7 +245,6 @@ set(MATLAB_VERSIONS_MAPPING
   "R2013a=8.1"
   "R2012b=8.0"
   "R2012a=7.14"
-
   "R2011b=7.13"
   "R2011a=7.12"
   "R2010b=7.11"
@@ -696,12 +689,12 @@ function(matlab_get_version_from_matlab_run matlab_binary_program matlab_list_ve
 
     string(SUBSTRING ${_matlab_version_from_cmd} ${index} -1 substring_ans)
     string(
-      REGEX MATCHALL "ans[\r\n\t ]*=[\r\n\t ]*([0-9]+(\\.[0-9]+)?)"
+      REGEX MATCHALL "ans[\r\n\t ]*=[\r\n\t ]*'?([0-9]+(\\.[0-9]+)?)"
       matlab_versions_regex
       ${substring_ans})
     foreach(match IN LISTS matlab_versions_regex)
       string(
-        REGEX MATCH "ans[\r\n\t ]*=[\r\n\t ]*(([0-9]+)(\\.([0-9]+))?)"
+        REGEX MATCH "ans[\r\n\t ]*=[\r\n\t ]*'?(([0-9]+)(\\.([0-9]+))?)"
         current_match ${match})
 
       list(APPEND matlab_list_of_all_versions_tmp ${CMAKE_MATCH_1})
@@ -736,7 +729,7 @@ endfunction()
 #     matlab_add_unit_test(
 #         NAME <name>
 #         UNITTEST_FILE matlab_file_containing_unittest.m
-#         [CUSTOM_MATLAB_COMMAND matlab_command_to_run_as_test]
+#         [CUSTOM_TEST_COMMAND matlab_command_to_run_as_test]
 #         [UNITTEST_PRECOMMAND matlab_command_to_run]
 #         [TIMEOUT timeout]
 #         [ADDITIONAL_PATH path1 [path2 ...]]
@@ -752,11 +745,11 @@ endfunction()
 #   ``UNITTEST_FILE``
 #     the matlab unittest file. Its path will be automatically
 #     added to the Matlab path.
-#   ``CUSTOM_MATLAB_COMMAND``
+#   ``CUSTOM_TEST_COMMAND``
 #     Matlab script command to run as the test.
-#     IIf this is not set, then the following is run:
-#     "runtests('matlab_file_name'), exit(max([ans(1,:).Failed]))
-#     matlab_file_name comes from UNITTEST_FILE without the .m.
+#     If this is not set, then the following is run:
+#     ``runtests('matlab_file_name'), exit(max([ans(1,:).Failed]))``
+#     where ``matlab_file_name`` is the ``UNITTEST_FILE`` without the extension.
 #   ``UNITTEST_PRECOMMAND``
 #     Matlab script command to be ran before the file
 #     containing the test (eg. GPU device initialisation based on CMake
@@ -770,7 +763,7 @@ endfunction()
 #   ``MATLAB_ADDITIONAL_STARTUP_OPTIONS``
 #     a list of additional option in order
 #     to run Matlab from the command line.
-#     -nosplash -nodesktop -nodisplay are always added.
+#     ``-nosplash -nodesktop -nodisplay`` are always added.
 #   ``TEST_ARGS``
 #     Additional options provided to the add_test command. These
 #     options are added to the default options (eg. "CONFIGURATIONS Release")
@@ -780,7 +773,7 @@ endfunction()
 #   ``WORKING_DIRECTORY``
 #     This will be the working directory for the test. If specified it will
 #     also be the output directory used for the log file of the test run.
-#     If not specifed the temporary directory ${CMAKE_BINARY_DIR}/Matlab will
+#     If not specifed the temporary directory ``${CMAKE_BINARY_DIR}/Matlab`` will
 #     be used as the working directory and the log location.
 #
 function(matlab_add_unit_test)
@@ -791,18 +784,22 @@ function(matlab_add_unit_test)
 
   set(options NO_UNITTEST_FRAMEWORK)
   set(oneValueArgs NAME UNITTEST_FILE TIMEOUT WORKING_DIRECTORY)
+  # The arguments UNITTEST_PRECOMMAND and CUSTOM_TEST_COMMAND are one-valued
+  # upstream.
   set(multiValueArgs ADDITIONAL_PATH MATLAB_ADDITIONAL_STARTUP_OPTIONS TEST_ARGS
     UNITTEST_PRECOMMAND CUSTOM_TEST_COMMAND)
 
   set(prefix _matlab_unittest_prefix)
+  # Modified from upstream since PARSE_ARGV argument was not added to
+  # cmake_parse_arguments until CMake 3.7.
   cmake_parse_arguments(${prefix} "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
   if(NOT ${prefix}_NAME)
     message(FATAL_ERROR "[MATLAB] The Matlab test name cannot be empty")
   endif()
 
-  # Escape MATLAB commands so they can be passed to add_test and to
-  # cmake -P script.
+  # Modified from upstream. Escape MATLAB commands so they can be passed to
+  # add_test and to cmake -P script.
   string(REPLACE "\"" "" custom_test_cmd_clean "${${prefix}_CUSTOM_TEST_COMMAND}")
   string(REPLACE ";" "\\;" custom_test_cmd_clean "${custom_test_cmd_clean}")
   string(REPLACE "\"" "" unittest_precmd_clean "${${prefix}_UNITTEST_PRECOMMAND}")
@@ -819,7 +816,7 @@ function(matlab_add_unit_test)
             -Dworking_directory=${${prefix}_WORKING_DIRECTORY}
             -DMatlab_PROGRAM=${Matlab_MAIN_PROGRAM}
             -Dno_unittest_framework=${${prefix}_NO_UNITTEST_FRAMEWORK}
-            -DMatlab_ADDITIONNAL_STARTUP_OPTIONS=${${prefix}_MATLAB_ADDITIONAL_STARTUP_OPTIONS}
+            -DMatlab_ADDITIONAL_STARTUP_OPTIONS=${${prefix}_MATLAB_ADDITIONAL_STARTUP_OPTIONS}
             -Dunittest_file_to_run=${${prefix}_UNITTEST_FILE}
             -Dcustom_Matlab_test_command=${custom_test_cmd_clean}
             -Dcmd_to_run_before_test=${unittest_precmd_clean}
@@ -870,7 +867,6 @@ endfunction()
 #     the same folder without any processing, with the same name as the final
 #     mex file, and with extension `.m`. In that case, typing ``help <name>``
 #     in Matlab prints the documentation contained in this file.
-#
 #   ``MODULE`` or ``SHARED`` may be given to specify the type of library to be
 #     created. ``EXECUTABLE`` may be given to create an executable instead of
 #     a library. If no type is given explicitly, the type is ``SHARED``.
@@ -1159,7 +1155,14 @@ else()
 
     # testing if we are able to extract the needed information from the registry
     set(_matlab_versions_from_registry)
-    matlab_extract_all_installed_versions_from_registry(CMAKE_CL_64 _matlab_versions_from_registry)
+
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+      set(_matlab_win64 ON)
+    else()
+      set(_matlab_win64 OFF)
+    endif()
+
+    matlab_extract_all_installed_versions_from_registry(_matlab_win64 _matlab_versions_from_registry)
 
     # the returned list is empty, doing the search on all known versions
     if(NOT _matlab_versions_from_registry)
@@ -1272,8 +1275,8 @@ if(_numbers_of_matlab_roots GREATER 0)
 endif()
 
 
-# check if the root changed against the previous defined one, if so
-# clear all the cached variables
+# check if the root changed wrt. the previous defined one, if so
+# clear all the cached variables for being able to reconfigure properly
 if(DEFINED Matlab_ROOT_DIR_LAST_CACHED)
 
   if(NOT Matlab_ROOT_DIR_LAST_CACHED STREQUAL Matlab_ROOT_DIR)
@@ -1286,6 +1289,7 @@ if(DEFINED Matlab_ROOT_DIR_LAST_CACHED)
         Matlab_ENG_LIBRARY
         Matlab_MAT_LIBRARY
         Matlab_MEX_EXTENSION
+        Matlab_SIMULINK_INCLUDE_DIR
 
         # internal
         Matlab_MEXEXTENSIONS_PROG
