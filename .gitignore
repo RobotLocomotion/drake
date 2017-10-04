@@ -19,7 +19,6 @@
 *.nav
 *~
 uname.err
-!externals/install_prereqs.sh
 drake/util/drake_config.mat
 drake/doc/derivations/elib.bib
 drake/.python

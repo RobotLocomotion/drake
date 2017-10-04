@@ -79,7 +79,7 @@ void ComputeRegionOfAttraction() {
   const Polynomial lambda{prog.NewSosPolynomial({x}, 4).first};
 
   // TODO(soonho): Remove the explicit cast to Polynomial below.
-  prog.AddSosConstraint((V - rho_poly) * Polynomial{x * x} - lambda * Vdot);
+  prog.AddSosConstraint((V - rho_poly) * Polynomial(x * x) - lambda * Vdot);
   prog.AddCost(-rho);
   const solvers::SolutionResult result{prog.Solve()};
   DRAKE_DEMAND(result == solvers::SolutionResult::kSolutionFound);

@@ -201,7 +201,6 @@ class PendulumTests : public ::testing::Test {
         *upper_link_, X_UEi_, /* Pose of Ei in U. */
         *lower_link_, {},     /* No pose provided, frame Eo IS frame L. */
         Vector3d::UnitZ()     /* revolute axis */);
-
     elbow_inboard_frame_ = &elbow_joint_->get_frame_on_parent();
     elbow_outboard_frame_ = &elbow_joint_->get_frame_on_child();
     EXPECT_EQ(elbow_joint_->get_name(), "ElbowJoint");

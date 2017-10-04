@@ -6,6 +6,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
+#include "drake/examples/pendulum/pendulum_plant.h"
 #include "drake/systems/analysis/test/stateless_system.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -782,7 +783,7 @@ TEST_F(DiagramTest, SubclassTransmogrificationTest) {
   // Diagram subclasses that declare a specific SystemTypeTag but then use a
   // subclass at runtime will fail-fast.
   class SubclassOfFeedbackDiagram : public FeedbackDiagram<double> {};
-  const SubclassOfFeedbackDiagram subclass_dut;
+  const SubclassOfFeedbackDiagram subclass_dut{};
   EXPECT_THROW(({
     try {
       subclass_dut.ToAutoDiffXd();
@@ -1922,6 +1923,47 @@ GTEST_TEST(DiagramConstraintTest, SystemConstraintsTest) {
   VectorX<symbolic::Expression> symbolic_value;
   symbolic_constraint.Calc(*symbolic_context, &symbolic_value);
   EXPECT_EQ(symbolic_value[0], 11.0);
+}
+
+GTEST_TEST(DiagramParametersTest, ParameterTest) {
+  // Construct a diagram with multiple subsytems that have parameters.
+  systems::DiagramBuilder<double> builder;
+  auto pendulum1 =
+      builder.AddSystem<examples::pendulum::PendulumPlant<double>>();
+  auto pendulum2 =
+      builder.AddSystem<examples::pendulum::PendulumPlant<double>>();
+  auto constant_torque =
+      builder.AddSystem<ConstantVectorSource<double>>(Vector1d(1.0));
+  builder.Cascade(*constant_torque, *pendulum1);
+  builder.Cascade(*constant_torque, *pendulum2);
+  auto diagram = builder.Build();
+
+  auto context = diagram->CreateDefaultContext();
+
+  // Get pointers to the parameters.
+  auto params1 = dynamic_cast<examples::pendulum::PendulumParams<double>*>(
+      diagram->GetMutableSubsystemContext(*pendulum1, context.get())
+          .get_mutable_numeric_parameter(0));
+  auto params2 = dynamic_cast<examples::pendulum::PendulumParams<double>*>(
+      diagram->GetMutableSubsystemContext(*pendulum2, context.get())
+          .get_mutable_numeric_parameter(0));
+
+  const double original_damping = params1->damping();
+  const double new_damping = 5.0*original_damping;
+  EXPECT_EQ(params2->damping(), original_damping);
+
+  params1->set_damping(new_damping);
+  // Check that I didn't change params2.
+  EXPECT_EQ(params2->damping(), original_damping);
+
+  diagram->SetDefaultContext(context.get());
+  // Check that the original value is restored.
+  EXPECT_EQ(params1->damping(), original_damping);
+
+  params2->set_damping(new_damping);
+  diagram->SetDefaultParameters(*context, &context->get_mutable_parameters());
+  // Check that the original value is restored.
+  EXPECT_EQ(params2->damping(), original_damping);
 }
 
 // TODO(siyuan) add direct tests for EventCollection

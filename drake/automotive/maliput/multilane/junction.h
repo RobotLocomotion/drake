@@ -27,12 +27,18 @@ class Junction : public api::Junction {
   Junction(const api::JunctionId& id, api::RoadGeometry* road_geometry)
       : id_(id), road_geometry_(road_geometry) {}
 
-  /// Creates and adds a new Segment with the specified @p id and @p road_curve.
+  /// Creates and adds a new Segment.
   /// @param id Segment's ID.
   /// @param road_curve Reference trajectory over the Segment's surface.
+  /// @param r_min Lateral distance to the minimum extent of road_curve's curve
+  /// from where Segment's surface starts.
+  /// @param r_max Lateral distance to the maximum extent of road_curve's curve
+  /// from where Segment's surface ends.
+  /// @param elevation_bounds The height bounds over the segment' surface.
   /// @return A Segment object.
-  Segment* NewSegment(api::SegmentId id,
-                      std::unique_ptr<RoadCurve> road_curve);
+  Segment* NewSegment(const api::SegmentId& id,
+                      std::unique_ptr<RoadCurve> road_curve, double r_min,
+                      double r_max, const api::HBounds& elevation_bounds);
 
   ~Junction() override = default;
 

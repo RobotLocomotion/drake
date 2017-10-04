@@ -25,14 +25,6 @@ target_link_libraries(constraint_test drakeOptimization drakeCommon)
 drake_add_cc_test(cost_test)
 target_link_libraries(cost_test drakeOptimization drakeCommon)
 
-drake_add_cc_test(bilinear_product_util_test)
-target_link_libraries(bilinear_product_util_test drakeBilinearProductUtil)
-
-if (ipopt_FOUND)
-  drake_add_cc_test(integer_optimization_util_test)
-  target_link_libraries(integer_optimization_util_test drakeIntegerOptimizationUtil)
-endif()
-
 set(drakeOptimizationTestSources
         add_solver_util.cc
         optimization_examples.cc
@@ -46,22 +38,13 @@ set(drakeOptimizationHeaders
         quadratic_program_examples.h
         mathematical_program_test_util.h
         generic_trivial_costs.h)
-add_library_with_exports(LIB_NAME drakeOptimizationTest
-        SOURCE_FILES ${drakeOptimizationTestSources} ${drakeOptimizationHeaders})
+add_library(drakeOptimizationTest STATIC
+    ${drakeOptimizationTestSources} ${drakeOptimizationHeaders})
 target_link_libraries(drakeOptimizationTest
         Eigen3::Eigen
         gflags
         GTest::GTest
         drakeOptimization)
-
-if (lcm_FOUND)
-add_library_with_exports(LIB_NAME drakeRotationConstraintVisualization SOURCE_FILES rotation_constraint_visualization.cc)
-target_link_libraries(drakeRotationConstraintVisualization
-        drakeCommonProto
-        drakeRotationConstraint
-        drakeLcm
-        drakeLCMTypes)
-endif()
 
 drake_add_cc_test(convex_optimization_test)
 target_link_libraries(convex_optimization_test drakeCommon drakeOptimizationTest)
@@ -78,23 +61,8 @@ target_link_libraries(linear_system_solver_test drakeCommon drakeOptimizationTes
 drake_add_cc_test(mixed_integer_optimization_test)
 target_link_libraries(mixed_integer_optimization_test drakeCommon drakeOptimizationTest)
 
-drake_add_cc_test(gurobi_solver_test)
-target_link_libraries(gurobi_solver_test drakeCommon drakeOptimizationTest)
-
-drake_add_cc_test(mosek_solver_test)
-target_link_libraries(mosek_solver_test drakeCommon drakeOptimizationTest)
-
-drake_add_cc_test(mixed_integer_optimization_util_test)
-target_link_libraries(mixed_integer_optimization_util_test drakeCommon drakeMixedIntegerOptimizationUtil)
-
 drake_add_cc_test(linear_complementary_problem_test)
 target_link_libraries(linear_complementary_problem_test drakeOptimization)
-
-drake_add_cc_test(ipopt_solver_test)
-target_link_libraries(ipopt_solver_test drakeOptimizationTest)
-
-drake_add_cc_test(snopt_solver_test)
-target_link_libraries(snopt_solver_test drakeOptimizationTest)
 
 drake_add_cc_test(solver_id_test)
 target_link_libraries(solver_id_test drakeOptimization)
@@ -102,19 +70,3 @@ target_link_libraries(solver_id_test drakeOptimization)
 drake_add_cc_test(solver_type_converter_test)
 target_link_libraries(solver_type_converter_test drakeOptimization)
 
-if (lcm_FOUND)
-  add_executable(plot_feasible_rotation_matrices plot_feasible_rotation_matrices.cc)
-  target_link_libraries(plot_feasible_rotation_matrices
-    drakeCommonProto
-    drakeOptimization
-    drakeRotationConstraint
-    drakeLCMTypes
-    drakeLcm)
-
-  add_executable(plot_rotation_mccormick_envelope plot_rotation_mccormick_envelope.cc)
-  target_link_libraries(plot_rotation_mccormick_envelope
-          drakeCommonProto
-          drakeOptimization
-          drakeRotationConstraint
-          drakeRotationConstraintVisualization)
-endif()

@@ -229,4 +229,11 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "rigid_body_test",
+    deps = [
+        ":multibody_tree",
+    ],
+)
+
 add_lint_tests()

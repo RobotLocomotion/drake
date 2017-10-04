@@ -1,7 +1,5 @@
 include(ExternalProject)
 
-find_package(Git REQUIRED)
-
 if(CMAKE_GENERATOR STREQUAL "Unix Makefiles")
   set(MAKE_COMMAND "$(MAKE)") # so we can pass through command line arguments
 else()
@@ -10,32 +8,6 @@ else()
     message(WARNING "Couldn't find make; non-CMake externals may fail to build")
   endif()
 endif()
-
-#------------------------------------------------------------------------------
-# Initialize a submodule and set the commands to download and update the same.
-#------------------------------------------------------------------------------
-function(drake_add_submodule PATH DOWNLOAD_COMMAND_VAR UPDATE_COMMAND_VAR)
-  # Initialize the submodule configuration now so parallel downloads do not
-  # conflict later
-  execute_process(
-    COMMAND ${GIT_EXECUTABLE} submodule init -- ${PATH}
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
-
-  # Download externals as Git submodules
-  set(_sm_DOWNLOAD_COMMAND
-    ${GIT_EXECUTABLE} submodule update --init --recursive -- ${PATH})
-
-  if(AUTO_UPDATE_EXTERNALS)
-    set(_sm_UPDATE_COMMAND
-      ${CMAKE_COMMAND} -E chdir ${PROJECT_SOURCE_DIR}
-      ${_sm_DOWNLOAD_COMMAND})
-  else()
-    set(_sm_UPDATE_COMMAND "")
-  endif()
-
-  set(${DOWNLOAD_COMMAND_VAR} ${_sm_DOWNLOAD_COMMAND} PARENT_SCOPE)
-  set(${UPDATE_COMMAND_VAR} ${_sm_UPDATE_COMMAND} PARENT_SCOPE)
-endfunction()
 
 #------------------------------------------------------------------------------
 # Fixup command arguments given to an external project. This expands delayed
@@ -97,40 +69,6 @@ function(drake_compute_dependencies OUTVAR)
 endfunction()
 
 #------------------------------------------------------------------------------
-# Set up git submodule synchronization for an external project.
-#------------------------------------------------------------------------------
-function(drake_forceupdate PROJECT)
-  if(AUTO_UPDATE_EXTERNALS)
-    # CMake < 3.6 forgets to mark the update step as "ALWAYS" when an explicit
-    # UPDATE_COMMAND is used. Add our own "ALWAYS" step to force updates.
-    if(CMAKE_VERSION VERSION_LESS 3.6)
-      ExternalProject_Add_Step(${PROJECT} forceupdate
-        DEPENDEES download
-        DEPENDERS update
-        ALWAYS 1
-        )
-    endif()
-  endif()
-
-  # TODO Once we require CMake 3.7, replace calls to drake_forceupdate with
-  # drake_add_submodule_sync_dependency
-  drake_add_submodule_sync_dependency(${PROJECT})
-endfunction()
-
-#------------------------------------------------------------------------------
-# Add a dependency on synchronizing submodules
-#------------------------------------------------------------------------------
-function(drake_add_submodule_sync_dependency PROJECT)
-  if(AUTO_UPDATE_EXTERNALS)
-    foreach(_step_target ${PROJECT} ${PROJECT}-update)
-      if(TARGET ${_step_target})
-        add_dependencies(${_step_target} submodule-sync)
-      endif()
-    endforeach()
-  endif()
-endfunction()
-
-#------------------------------------------------------------------------------
 # Internal helper to set up a CMake external project.
 #------------------------------------------------------------------------------
 macro(drake_add_cmake_external PROJECT)
@@ -178,19 +116,7 @@ macro(drake_add_cmake_external PROJECT)
     CMAKE_JAVA_COMPILE_FLAGS
     CMAKE_MACOSX_RPATH
     CMAKE_INSTALL_RPATH
-    CMAKE_INSTALL_RPATH_USE_LINK_PATH
-    LIB_SUFFIX)
-
-  if(_ext_FORTRAN)
-    list(APPEND _ext_PROPAGATE_CACHE_VARS
-      CMAKE_Fortran_COMPILER
-      CMAKE_Fortran_FLAGS)
-
-    if(NOT _ext_GENERATOR STREQUAL "Unix Makefiles")
-      # Ninja and Xcode may not support Fortran.
-      set(_ext_GENERATOR "Unix Makefiles")
-    endif()
-  endif()
+    CMAKE_INSTALL_RPATH_USE_LINK_PATH)
 
   if(_ext_MATLAB AND Matlab_FOUND)
     list(APPEND _ext_PROPAGATE_CACHE_VARS
@@ -205,11 +131,6 @@ macro(drake_add_cmake_external PROJECT)
       PYTHON_LIBRARY)
   endif()
 
-  if(_ext_QT)
-    find_package(Qt 4.8 REQUIRED)
-    list(APPEND _ext_PROPAGATE_CACHE_VARS QT_QMAKE_EXECUTABLE)
-  endif()
-
   drake_build_cache_args(_ext_PROPAGATE_CACHE ${_ext_LIST_SEPARATOR}
     ${_ext_PROPAGATE_CACHE_VARS})
 
@@ -218,6 +139,7 @@ macro(drake_add_cmake_external PROJECT)
     LIST_SEPARATOR "${_ext_LIST_SEPARATOR}"
     URL ${_ext_URL}
     URL_HASH ${_ext_URL_HASH}
+    TLS_VERIFY 1
     SOURCE_SUBDIR ${_ext_SOURCE_SUBDIR}
     SOURCE_DIR ${_ext_SOURCE_DIR}
     BINARY_DIR ${_ext_BINARY_DIR}
@@ -234,11 +156,6 @@ macro(drake_add_cmake_external PROJECT)
       ${_ext_VERBOSE}
       ${_ext_PROPAGATE_CACHE}
       ${_ext_CMAKE_ARGS})
-
-  if(_ext_TEST)
-    file(APPEND ${CMAKE_BINARY_DIR}/CTestExternals.cmake
-      "subdirs(\"${_ext_BINARY_DIR}\")\n")
-  endif()
 endmacro()
 
 
@@ -330,12 +247,10 @@ macro(drake_add_foreign_external PROJECT)
   ExternalProject_Add(${PROJECT}
     URL ${_ext_URL}
     URL_HASH ${_ext_URL_HASH}
+    TLS_VERIFY 1
     SOURCE_DIR ${_ext_SOURCE_DIR}
     BINARY_DIR ${_ext_BINARY_DIR}
     DOWNLOAD_DIR ${_ext_DOWNLOAD_DIR}
-    DOWNLOAD_COMMAND "${_ext_DOWNLOAD_COMMAND}"
-    UPDATE_COMMAND "${_ext_UPDATE_COMMAND}"
-    PATCH_COMMAND "${_ext_PATCH_COMMAND}"
     CONFIGURE_COMMAND "${_ext_CONFIGURE_COMMAND}"
     BUILD_COMMAND "${_ext_BUILD_COMMAND}"
     INSTALL_COMMAND "${_ext_INSTALL_COMMAND}"
@@ -349,16 +264,12 @@ endmacro()
 # Add an external project.
 #
 # Arguments:
-#   LOCAL     - External is local to the source tree (i.e. not a submodule)
-#   PUBLIC    - External is public
+#   LOCAL     - External is local to the source tree
 #   CMAKE     - External uses CMake
 #   AUTOTOOLS - External uses Autotools
 #   ALWAYS    - External is always built
-#   TEST      - External's tests should be included in the superbuild's tests
-#   FORTRAN   - External uses Fortran
 #   MATLAB    - External uses MATLAB
 #   PYTHON    - External uses Python
-#   QT        - External uses Qt
 #
 #   REQUIRES <deps...>
 #       List of packages (checked via `find_package`) that are required to
@@ -374,7 +285,6 @@ endmacro()
 #   BINARY_DIR <dir> - Override default BINARY_DIR for external
 #   GENERATOR <gen> - Override default CMAKE_GENERATOR for external
 #
-#   PATCH_COMMAND <args...>
 #   CONFIGURE_COMMAND <args...>
 #   BUILD_COMMAND <args...>
 #   INSTALL_COMMAND <args...>
@@ -403,21 +313,17 @@ endmacro()
 function(drake_add_external PROJECT)
   # Parse arguments
   set(_ext_extra_commands
-    PATCH_COMMAND
     CONFIGURE_COMMAND
     BUILD_COMMAND
     INSTALL_COMMAND)
   set(_ext_flags
     LOCAL
-    PUBLIC
     CMAKE
     AUTOTOOLS
     ALWAYS
-    TEST
-    FORTRAN
     MATLAB
     PYTHON
-    QT)
+  )
   set(_ext_sv_args
     SOURCE_SUBDIR
     SOURCE_DIR
@@ -455,7 +361,7 @@ function(drake_add_external PROJECT)
   if(DEFINED ${_ext_project_option})
     if(${_ext_project_option})
       # Project is explicitly enabled
-    elseif(WITH_ALL_PUBLIC_EXTERNALS AND DEFINED _ext_PUBLIC)
+    elseif(WITH_ALL_PUBLIC_EXTERNALS)
       # Project is public and all public externals are requested
     elseif(WITH_ALL_SUPPORTED_EXTERNALS)
       # All supported externals are requested
@@ -498,7 +404,7 @@ function(drake_add_external PROJECT)
     set(_ext_SOURCE_SUBDIR .)
   endif()
   if(DEFINED _ext_URL)
-    set(_ext_DOWNLOAD_DIR ${PROJECT_BINARY_DIR})
+    set(_ext_DOWNLOAD_DIR ${PROJECT_BINARY_DIR}/${PROJECT}-download)
   else()
     set(_ext_DOWNLOAD_DIR ${PROJECT_SOURCE_DIR})
   endif()
@@ -513,17 +419,8 @@ function(drake_add_external PROJECT)
       "Preparing to build ${PROJECT} with dependencies ${_ext_deps}")
   endif()
 
-  # Manage updates to the submodule
-  if(NOT _ext_LOCAL AND NOT DEFINED _ext_URL)
-    # Compute the path to the submodule for this external
-    file(RELATIVE_PATH _ext_GIT_SUBMODULE_PATH
-      ${PROJECT_SOURCE_DIR} ${_ext_SOURCE_DIR})
-
-    # Set up submodule and commands for synchronizing submodule
-    drake_add_submodule(${_ext_GIT_SUBMODULE_PATH}
-      _ext_DOWNLOAD_COMMAND _ext_UPDATE_COMMAND)
-  elseif(_ext_LOCAL)
-    # Local "externals" have no download or update step
+  # Local "externals" have no download or update step
+  if(_ext_LOCAL)
     set(_ext_DOWNLOAD_COMMAND "")
     set(_ext_UPDATE_COMMAND "")
   endif()
@@ -536,22 +433,6 @@ function(drake_add_external PROJECT)
     drake_add_autotools_external(${PROJECT})
   else()
     drake_add_foreign_external(${PROJECT})
-  endif()
-
-  if(NOT _ext_LOCAL AND NOT DEFINED _ext_URL)
-    # Set up build step to ensure project is updated before build
-    drake_forceupdate(${PROJECT})
-
-    # Add external to download dependencies
-    add_dependencies(download-all ${PROJECT}-update)
-  elseif(CMAKE_GENERATOR STREQUAL "Ninja" AND CMAKE_VERSION VERSION_LESS 3.7)
-    # Due to a quirk of how the CMake Ninja generator computes dependencies,
-    # all targets that contain a submodule update command, or depend on a
-    # target that does, need to depend on the submodule-sync target, or the
-    # direct dependency will be lost.
-    #
-    # TODO remove when we require CMake 3.7
-    drake_add_submodule_sync_dependency(${PROJECT})
   endif()
 
   # Check if project is build-skipped
@@ -583,12 +464,6 @@ function(drake_add_external PROJECT)
     endif()
   endforeach()
 
-  # Add extra per-project targets
-  add_custom_target(status-${PROJECT}
-    COMMAND ${GIT_EXECUTABLE} status
-    WORKING_DIRECTORY ${_ext_SOURCE_DIR})
-  add_dependencies(status status-${PROJECT})
-
   # Register project in list of external projects
   list(APPEND EXTERNAL_PROJECTS ${PROJECT})
   set(EXTERNAL_PROJECTS ${EXTERNAL_PROJECTS} PARENT_SCOPE)
@@ -596,33 +471,15 @@ endfunction()
 
 ###############################################################################
 
-# Options controlling external dependencies
-option(AUTO_UPDATE_EXTERNALS
-  "Update external projects to their tag revision on compile"
-  ON)
-
+# DEPRECATED.
 option(WITH_ALL_PUBLIC_EXTERNALS
-  "Enable all externals available to public academic users"
+  "Enable all externals"
   OFF)
 
+# DEPRECATED.
 option(WITH_ALL_SUPPORTED_EXTERNALS
-  "Enable all externals available for your platform (includes private git repositories)"
+  "Enable all externals"
   OFF)
-
-# Special targets
-add_custom_target(download-all)
-add_custom_target(status)
-
-if(AUTO_UPDATE_EXTERNALS)
-  # Set up a special target to synchronize all submodules. We do this
-  # separately to avoid conflicting updates that could result if we tried to
-  # synchronize multiple submodules in parallel.
-  add_custom_target(submodule-sync
-    COMMAND ${GIT_EXECUTABLE} submodule --quiet sync --
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
-endif()
-
-# TODO: add a custom target for release_filelist
 
 # List of all enabled external projects
 set(EXTERNAL_PROJECTS)

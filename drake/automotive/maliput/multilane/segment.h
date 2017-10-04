@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include "drake/automotive/maliput/api/junction.h"
 #include "drake/automotive/maliput/api/lane.h"
@@ -26,34 +27,49 @@ class Segment : public api::Segment {
 
   /// Constructs a new Segment.
   ///
-  /// The Segment is not fully initialized until NewLane() is called exactly
-  /// once. @p junction must remain valid for the lifetime of this class.
-  /// @param id ID of the segment.
+  /// The Segment is not fully initialized until NewLane() is called at least
+  /// once. `junction` must remain valid for the lifetime of this class.
+  /// @param id Segment's ID.
   /// @param junction Parent junction.
   /// @param road_curve A curve that defines the reference trajectory over the
   /// segment. A child Lane object will be constructed from an offset of the
-  /// road_curve. Offset distance is set to zero as the segment is able to
-  /// create only one Lane.
-  Segment(const api::SegmentId& id,
-          api::Junction* junction,
-          std::unique_ptr<RoadCurve> road_curve)
-      : id_(id), junction_(junction), road_curve_(std::move(road_curve)) {
+  /// road_curve's reference curve.
+  /// @param r_min Lateral distance to the minimum extent of road_curve's curve
+  /// from where Segment's surface starts. It must be smaller or equal than
+  /// `r_max`.
+  /// @param r_max Lateral distance to the maximum extent of road_curve's curve
+  /// from where Segment's surface ends. It should be greater or equal than
+  /// `r_min`.
+  /// @param elevation_bounds The height bounds over the segment' surface.
+  Segment(const api::SegmentId& id, api::Junction* junction,
+          std::unique_ptr<RoadCurve> road_curve, double r_min, double r_max,
+          const api::HBounds& elevation_bounds)
+      : id_(id),
+        junction_(junction),
+        road_curve_(std::move(road_curve)),
+        r_min_(r_min),
+        r_max_(r_max),
+        elevation_bounds_(elevation_bounds) {
     DRAKE_DEMAND(road_curve_.get() != nullptr);
+    DRAKE_DEMAND(r_min <= r_max);
+    DRAKE_DEMAND(road_curve_->IsValid(r_min_, r_max_, elevation_bounds_));
   }
 
   /// Creates a new Lane object.
-  /// This method should be called only once in the lifespan of the object. The
-  /// Segment class only supports one Lane.
+  ///
+  /// Driveable bounds of the lane will be derived based on the lateral offset
+  /// of it so as to reach `r_min` and `r_max` distances (see class constructor
+  /// for more details).
   /// @param id Lane's ID.
-  /// @param lane_bounds Lateral extents of the Lane's frame in which the car is
-  /// supposed to be inside the lane.
-  /// @param driveable_bounds Lateral extents of the Lane's frame in which the
-  /// car is supposed to be inside the segment.
-  /// @param elevation_bounds Height extents of the Lane's frame.
-  Lane* NewLane(api::LaneId id,
-                const api::RBounds& lane_bounds,
-                const api::RBounds& driveable_bounds,
-                const api::HBounds& elevation_bounds);
+  /// @param r0 Lateral displacement of the Lane with respect to segment
+  /// RoadCurve's reference curve. It must be greater than `r_min` and smaller
+  /// than `r_max`, and be greater than the last lane's r0 displacement (if
+  /// any).
+  /// @param lane_bounds Nominal bounds of the lane, uniform along the entire
+  /// reference path. It must fit inside segments bounds when those are
+  /// translated to `r0` offset distance.
+  /// @return A Lane object.
+  Lane* NewLane(api::LaneId id, double r0, const api::RBounds& lane_bounds);
 
   ~Segment() override = default;
 
@@ -62,7 +78,7 @@ class Segment : public api::Segment {
 
   const api::Junction* do_junction() const override;
 
-  int do_num_lanes() const override { return 1; }
+  int do_num_lanes() const override { return lanes_.size(); }
 
   const api::Lane* do_lane(int index) const override;
 
@@ -70,10 +86,18 @@ class Segment : public api::Segment {
   api::SegmentId id_;
   // Parent junction.
   api::Junction* junction_{};
-  // Child Lane pointer.
-  std::unique_ptr<Lane> lane_;
+  // Child Lane vector.
+  std::vector<std::unique_ptr<Lane>> lanes_;
   // Reference trajectory over the Segment's surface.
   std::unique_ptr<RoadCurve> road_curve_;
+  // Lateral distance to the minimum extent of road_curve_'s curve from where
+  // Segment's surface starts.
+  const double r_min_{};
+  // Lateral distance to the maximum extent of road_curve_'s curve from where
+  // Segment's surface ends.
+  const double r_max_{};
+  // Elevation bounds over the Segment's surface.
+  const api::HBounds elevation_bounds_;
 };
 
 }  // namespace multilane

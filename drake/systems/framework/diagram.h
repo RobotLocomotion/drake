@@ -325,14 +325,52 @@ class Diagram : public System<T>,
     }
   }
 
-  void SetDefaults(Context<T>* context) const final {
-    auto diagram_context = dynamic_cast<DiagramContext<T>*>(context);
+  void SetDefaultParameters(const Context<T>& context,
+                            Parameters<T>* params) const override {
+    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context != nullptr);
 
-    // Set defaults of each constituent system.
+    int numeric_parameter_offset = 0;
+    int abstract_parameter_offset = 0;
+
+    // Set default parameters of each constituent system.
     for (int i = 0; i < num_subsystems(); ++i) {
-      auto& subcontext = diagram_context->GetMutableSubsystemContext(i);
-      registered_systems_[i]->SetDefaults(&subcontext);
+      auto& subcontext = diagram_context->GetSubsystemContext(i);
+
+      if (!subcontext.num_numeric_parameters() &&
+          !subcontext.num_abstract_parameters()) {
+        // Then there is no work to do for this subcontext.
+        continue;
+      }
+
+      // Make a new Parameters<T> structure with pointers to the mutable
+      // subsystem parameter values.  This does not make a copy of the
+      // underlying data.
+      // TODO(russt): Consider implementing a DiagramParameters, analogous to
+      // DiagramState, to avoid these dynamic allocations if they prove
+      // expensive.
+
+      std::vector<BasicVector<T>*> numeric_params;
+      for (int j = 0; j < subcontext.num_numeric_parameters(); ++j) {
+        numeric_params.push_back(params->get_mutable_numeric_parameter(
+            numeric_parameter_offset + j));
+      }
+      numeric_parameter_offset += subcontext.num_numeric_parameters();
+
+      std::vector<AbstractValue*> abstract_params;
+      for (int j = 0; j < subcontext.num_abstract_parameters(); ++j) {
+        abstract_params.push_back(&params->get_mutable_abstract_parameter(
+            abstract_parameter_offset + j));
+      }
+      abstract_parameter_offset += subcontext.num_abstract_parameters();
+
+      Parameters<T> subparameters;
+      subparameters.set_numeric_parameters(
+          std::make_unique<DiscreteValues<T>>(numeric_params));
+      subparameters.set_abstract_parameters(
+          std::make_unique<AbstractValues>(abstract_params));
+
+      registered_systems_[i]->SetDefaultParameters(subcontext, &subparameters);
     }
   }
 
@@ -1187,9 +1225,6 @@ class Diagram : public System<T>,
           template Convert<NewType>(*old_system);
       DRAKE_DEMAND(new_system != nullptr);
 
-      // Match the result's name to its originator.
-      new_system->set_name(old_system->get_name());
-
       // Update our mapping and take ownership.
       old_to_new_map[old_system.get()] = new_system.get();
       new_systems.push_back(std::move(new_system));
@@ -1350,7 +1385,7 @@ class Diagram : public System<T>,
               c->Calc(this->GetSubsystemContext(*sys, context), value);
             };
         this->AddConstraint(std::make_unique<SystemConstraint<T>>(
-            diagram_calc, c->size(), c->is_equality_constraint(),
+            diagram_calc, c->size(), c->type(),
             sys->get_name() + ":" + c->description()));
       }
     }
