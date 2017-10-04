@@ -157,10 +157,10 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
-    name = "ball_joint_test",
+    name = "free_body_test",
     size = "small",
     srcs = [
-        "test/ball_joint_test.cc",
+        "test/free_body_test.cc",
     ],
     deps = [
         ":free_body_plant",
