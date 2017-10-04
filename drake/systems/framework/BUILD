@@ -432,6 +432,7 @@ drake_cc_library(
         "//drake/common:essential",
         "//drake/common:symbolic",
         "//drake/common:type_safe_index",
+        "//drake/common:unused",
     ],
 )
 
@@ -530,6 +531,7 @@ drake_cc_googletest(
         ":diagram",
         "//drake/common:essential",
         "//drake/common/test_utilities:is_dynamic_castable",
+        "//drake/examples/pendulum:pendulum_plant",
         "//drake/systems/analysis:stateless_system",
         "//drake/systems/framework/test_utilities",
         "//drake/systems/primitives:adder",
@@ -650,6 +652,7 @@ drake_cc_googletest(
         ":leaf_output_port",
         ":system",
         "//drake/common:essential",
+        "//drake/common:unused",
         "//drake/systems/framework/test_utilities",
     ],
 )

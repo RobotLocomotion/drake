@@ -537,10 +537,10 @@ GTEST_TEST(rigid_body_plant_test, BasicTimeSteppingTest) {
   RigidBodyPlant<double> time_stepping_plant(move(tree_ptr), timestep);
 
   auto continuous_context = continuous_plant.AllocateContext();
-  continuous_plant.SetDefaults(continuous_context.get());
+  continuous_plant.SetDefaultContext(continuous_context.get());
 
   auto time_stepping_context = time_stepping_plant.AllocateContext();
-  time_stepping_plant.SetDefaults(time_stepping_context.get());
+  time_stepping_plant.SetDefaultContext(time_stepping_context.get());
 
   // Check that the time-stepping model has the same states as the continuous,
   // but as discrete state.
