@@ -143,7 +143,7 @@ FramePoseVector<double> MultibodyPendulumPlant<double>::AllocateFramePoseOutput(
 
 template <typename T>
 void MultibodyPendulumPlant<T>::CalcFramePoseOutput(
-    const Context<T>& context, FramePoseVector<T>* poses) const {
+    const Context<T>&, FramePoseVector<T>*) const {
   DRAKE_ABORT_MSG("There is no implementation for T != double.");
 }
 
