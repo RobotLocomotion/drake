@@ -32,7 +32,7 @@ def bitbucket_archive(
         fail("Missing repository=")
     if commit == None:
         fail("Missing commit=")
-    if sha256 == None:
+    if len(sha256) == 0 or sha256 == None:
         # This is mostly-required, but we fallback to a wrong-default value to
         # allow the first attempt to fail and print the correct sha256.
         sha256 = "0" * 64
