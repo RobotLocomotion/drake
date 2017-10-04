@@ -19,11 +19,13 @@ namespace multibody {
 namespace constraint {
 namespace {
 
-class Constraint2DSolverTest : public ::testing::Test {
+class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
  protected:
   void SetUp() override {
+    cfm_ = GetParam();
     rod_ = std::make_unique<Rod2D<double>>(
         Rod2D<double>::SimulationType::kPiecewiseDAE, 0);
+    rod_->set_cfm(cfm_);
     context_ = rod_->CreateDefaultContext();
 
     // Use a non-unit mass.
@@ -47,7 +49,7 @@ class Constraint2DSolverTest : public ::testing::Test {
     // Set epsilon for quantities dependent on an LCP solve. Tests will fail
     // without epsilon being this large, apparently due to the rounding error
     // introduced by LCP solver pivoting.
-    lcp_eps_ = 250 * std::max(std::numeric_limits<double>::epsilon(), cfm_);
+    lcp_eps_ = 300 * std::max(std::numeric_limits<double>::epsilon(), cfm_);
   }
 
   // Zero tolerance for results depending on LCP solve (< 0 indicates not set).
@@ -225,9 +227,12 @@ class Constraint2DSolverTest : public ::testing::Test {
     for (int i = 0; i < static_cast<int>(data->r.size()); ++i)
       data->r[i] = new_friction_directions;
 
-    // Resize kF (recall the vector always is zero for this 2D problem).
+    // Resize kF (recall the vector always is zero for this 2D problem), gammaF,
+    // and gammaE.
     data->kF.setZero(data->non_sliding_contacts.size() *
                                new_friction_directions);
+    data->gammaF.setZero(data->kF.size());
+    data->gammaE.setZero(data->non_sliding_contacts.size());
 
     // Add in empty rows to G, by default, allowing us to verify that no
     // constraint forces are added (and that solution method is robust to
@@ -306,8 +311,11 @@ class Constraint2DSolverTest : public ::testing::Test {
       return F.transpose() * w;
     };
 
-    // Resize kF (recall the vector always is zero for this 2D problem).
+    // Resize kF (recall the vector always is zero for this 2D problem),
+    // gammaF, and gammaE.
     data->kF.setZero(contacts.size() * new_friction_directions);
+    data->gammaF.setZero(contacts.size() * new_friction_directions);
+    data->gammaE.setZero(contacts.size());
 
     // Update r with the new friction directions per contact.
     for (int i = 0; i < static_cast<int>(data->r.size()); ++i)
@@ -372,9 +380,14 @@ class Constraint2DSolverTest : public ::testing::Test {
     CheckTransOperatorDim(data.L_transpose_mult, data.kL.size());
     EXPECT_EQ(data.tau.size(), ngc);
     EXPECT_EQ(data.kN.size(), num_contacts);
+    EXPECT_EQ(data.gammaN.size(), num_contacts);
     EXPECT_EQ(data.kF.size(), num_fdir);
+    EXPECT_EQ(data.gammaF.size(), num_fdir);
+    EXPECT_EQ(data.gammaE.size(), data.non_sliding_contacts.size());
+    EXPECT_EQ(data.gammaL.size(), data.kL.size());
     EXPECT_EQ(data.mu_non_sliding.size(), data.non_sliding_contacts.size());
     EXPECT_EQ(data.mu_sliding.size(), data.sliding_contacts.size());
+    EXPECT_EQ(data.r.size(), data.non_sliding_contacts.size());
     EXPECT_TRUE(data.solve_inertia);
     EXPECT_TRUE(std::is_sorted(data.sliding_contacts.begin(),
                                data.sliding_contacts.end()));
@@ -395,6 +408,10 @@ class Constraint2DSolverTest : public ::testing::Test {
     CheckTransOperatorDim(data.F_transpose_mult, num_spanning_directions);
     EXPECT_EQ(GetOperatorDim(data.L_mult), data.kL.size());
     CheckTransOperatorDim(data.L_transpose_mult, data.kL.size());
+    EXPECT_EQ(data.gammaN.size(), num_contacts);
+    EXPECT_EQ(data.gammaF.size(), num_spanning_directions);
+    EXPECT_EQ(data.gammaE.size(), num_contacts);
+    EXPECT_EQ(data.gammaL.size(), data.kL.size());
     EXPECT_EQ(data.v.size(), ngc);
     EXPECT_EQ(data.mu.size(), num_contacts);
     EXPECT_EQ(data.r.size(), num_contacts);
@@ -447,14 +464,14 @@ class Constraint2DSolverTest : public ::testing::Test {
 
         // Compute the contact forces.
         VectorX<double> cf;
-        solver_.SolveConstraintProblem(cfm_, *accel_data_, &cf);
+        solver_.SolveConstraintProblem(*accel_data_, &cf);
 
         // Verify that no forces are applied.
         EXPECT_LT(cf.norm(), std::numeric_limits<double>::epsilon());
 
         // Zero stabilization term and recompute the contact forces.
         accel_data_->kN.setZero();
-        solver_.SolveConstraintProblem(cfm_, *accel_data_, &cf);
+        solver_.SolveConstraintProblem(*accel_data_, &cf);
 
         // Construct the contact frame.
         std::vector<Matrix2<double>> frames;
@@ -493,7 +510,7 @@ class Constraint2DSolverTest : public ::testing::Test {
         accel_data_->kN.setOnes() *= -std::fabs(grav_accel);
 
         // Recompute the contact forces.
-        solver_.SolveConstraintProblem(cfm_, *accel_data_, &cf);
+        solver_.SolveConstraintProblem(*accel_data_, &cf);
 
         // These tests preclude friction direction duplication because
         // CalcContactForcesInContactFrames() would throw an exception.
@@ -561,14 +578,14 @@ class Constraint2DSolverTest : public ::testing::Test {
 
         // Compute the contact forces.
         VectorX<double> cf;
-        solver_.SolveConstraintProblem(cfm_, *accel_data_, &cf);
+        solver_.SolveConstraintProblem(*accel_data_, &cf);
 
         // Verify that no forces are applied.
         EXPECT_LT(cf.norm(), std::numeric_limits<double>::epsilon());
 
         // Zero stabilization term and recompute the contact forces.
         accel_data_->kN.setZero();
-        solver_.SolveConstraintProblem(cfm_, *accel_data_, &cf);
+        solver_.SolveConstraintProblem(*accel_data_, &cf);
 
         // Construct the contact frames.
         std::vector<Matrix2<double>> frames;
@@ -618,7 +635,7 @@ class Constraint2DSolverTest : public ::testing::Test {
         accel_data_->kN.setOnes() *= -std::fabs(grav_accel);
 
         // Recompute the contact forces.
-        solver_.SolveConstraintProblem(cfm_, *accel_data_, &cf);
+        solver_.SolveConstraintProblem(*accel_data_, &cf);
 
         // These tests preclude friction direction duplication because
         // CalcContactForcesInContactFrames() would throw an exception.
@@ -687,14 +704,14 @@ class Constraint2DSolverTest : public ::testing::Test {
 
         // Compute the contact forces.
         VectorX<double> cf;
-        solver_.SolveConstraintProblem(cfm_, *accel_data_, &cf);
+        solver_.SolveConstraintProblem(*accel_data_, &cf);
 
         // Verify that no forces are applied.
         EXPECT_LT(cf.norm(), std::numeric_limits<double>::epsilon());
 
         // Zero stabilization term and recompute the contact forces.
         accel_data_->kN.setZero();
-        solver_.SolveConstraintProblem(cfm_, *accel_data_, &cf);
+        solver_.SolveConstraintProblem(*accel_data_, &cf);
 
         // Construct the contact frames.
         std::vector<Matrix2<double>> frames;
@@ -740,7 +757,7 @@ class Constraint2DSolverTest : public ::testing::Test {
         accel_data_->kN.setOnes() *= -std::fabs(grav_accel);
 
         // Recompute the contact forces.
-        solver_.SolveConstraintProblem(cfm_, *accel_data_, &cf);
+        solver_.SolveConstraintProblem(*accel_data_, &cf);
 
         // These tests preclude friction direction duplication because
         // CalcContactForcesInContactFrames() would throw an exception.
@@ -809,14 +826,14 @@ class Constraint2DSolverTest : public ::testing::Test {
 
         // Compute the contact impulses.
         VectorX<double> cf;
-        solver_.SolveImpactProblem(cfm_, *vel_data_, &cf);
+        solver_.SolveImpactProblem(*vel_data_, &cf);
 
         // Verify that no impulses are applied.
         EXPECT_LT(cf.norm(), std::numeric_limits<double>::epsilon());
 
         // Zero stabilization term and recompute the contact impulses.
         vel_data_->kN.setZero();
-        solver_.SolveImpactProblem(cfm_, *vel_data_, &cf);
+        solver_.SolveImpactProblem(*vel_data_, &cf);
 
         // Construct the contact frames.
         std::vector<Matrix2<double>> frames;
@@ -860,7 +877,7 @@ class Constraint2DSolverTest : public ::testing::Test {
         vel_data_->kN.setOnes() *= vert_vel;
 
         // Recompute the contact impulses.
-        solver_.SolveImpactProblem(cfm_, *vel_data_, &cf);
+        solver_.SolveImpactProblem(*vel_data_, &cf);
 
         // Get the impact forces expressed in the contact frames if the
         // friction directions are not duplicated.
@@ -927,14 +944,14 @@ class Constraint2DSolverTest : public ::testing::Test {
 
         // Compute the contact impulses.
         VectorX<double> cf;
-        solver_.SolveImpactProblem(cfm_, *vel_data_, &cf);
+        solver_.SolveImpactProblem(*vel_data_, &cf);
 
         // Verify that no impulses are applied.
         EXPECT_LT(cf.norm(), std::numeric_limits<double>::epsilon());
 
         // Zero stabilization term and recompute the contact impulses.
         vel_data_->kN.setZero();
-        solver_.SolveImpactProblem(cfm_, *vel_data_, &cf);
+        solver_.SolveImpactProblem(*vel_data_, &cf);
 
         // Construct the contact frames.
         std::vector<Matrix2<double>> frames;
@@ -980,7 +997,7 @@ class Constraint2DSolverTest : public ::testing::Test {
         vel_data_->kN.setOnes() *= vert_vel;
 
         // Recompute the contact impulses.
-        solver_.SolveImpactProblem(cfm_, *vel_data_, &cf);
+        solver_.SolveImpactProblem(*vel_data_, &cf);
 
         // Verify that all components of the generalized velocity of the rod
         // except that corresponding to the vertical motion are equal to zero;
@@ -1021,14 +1038,14 @@ class Constraint2DSolverTest : public ::testing::Test {
 
     // Compute the contact forces.
     VectorX<double> cf;
-    solver_.SolveConstraintProblem(cfm_, *accel_data_, &cf);
+    solver_.SolveConstraintProblem(*accel_data_, &cf);
 
     // Verify that no forces were applied.
     EXPECT_LT(cf.norm(), lcp_eps_);
 
     // Zero out the kN term and try again.
     accel_data_->kN.setZero();
-    solver_.SolveConstraintProblem(cfm_, *accel_data_, &cf);
+    solver_.SolveConstraintProblem(*accel_data_, &cf);
 
     // Get the contact tangent velocities.
     std::vector<Vector2d> contacts;
@@ -1073,7 +1090,7 @@ class Constraint2DSolverTest : public ::testing::Test {
     // Now, set the kN term to indicate that the rod is accelerating downward
     // with twice the gravitational acceleration.
     accel_data_->kN.setOnes() *= grav_accel;
-    solver_.SolveConstraintProblem(cfm_, *accel_data_, &cf);
+    solver_.SolveConstraintProblem(*accel_data_, &cf);
 
     // Verify that the normal component of the generalized acceleration is now
     // equal to the negated gravitational acceleration.
@@ -1086,7 +1103,7 @@ class Constraint2DSolverTest : public ::testing::Test {
   // specified. The rod will be constrained to prevent rotational acceleration
   // using a bilateral constraint as well.
   void SlidingPlusBilateral(bool sliding_to_right) {
-    SetRodToRestingVerticalConfig();
+      SetRodToRestingVerticalConfig();
     ContinuousState<double>& xc = *context_->
         get_mutable_continuous_state();
     xc[3] = (sliding_to_right) ? 1 : -1;
@@ -1121,7 +1138,7 @@ class Constraint2DSolverTest : public ::testing::Test {
 
     // Compute the contact forces.
     VectorX<double> cf;
-    solver_.SolveConstraintProblem(cfm_, *accel_data_, &cf);
+    solver_.SolveConstraintProblem(*accel_data_, &cf);
 
     // Get the contact tangent velocities.
     std::vector<Vector2d> contacts;
@@ -1172,7 +1189,7 @@ class Constraint2DSolverTest : public ::testing::Test {
     // angular velocity (which violates our desire to constrain the
     // orientation) and solve again.
     accel_data_->kG[0] = 1.0;    // Indicate a ccw angular motion..
-    solver_.SolveConstraintProblem(cfm_, *accel_data_, &cf);
+    solver_.SolveConstraintProblem(*accel_data_, &cf);
     solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &ga);
     EXPECT_NEAR(ga[2], -accel_data_->kG[0], lcp_eps_ * cf.size());
   }
@@ -1212,7 +1229,7 @@ class Constraint2DSolverTest : public ::testing::Test {
 
     // Compute the impact forces.
     VectorX<double> cf;
-    solver_.SolveImpactProblem(cfm_, *vel_data_, &cf);
+    solver_.SolveImpactProblem(*vel_data_, &cf);
 
     // Construct the contact frame(s).
     std::vector<Matrix2<double>> frames;
@@ -1250,13 +1267,13 @@ class Constraint2DSolverTest : public ::testing::Test {
     // angular velocity.
     VectorX<double> gv;
     solver_.ComputeGeneralizedVelocityChange(*vel_data_, cf, &gv);
-    EXPECT_NEAR((vel_data_->v[2] + gv[2]), 0, lcp_eps_ * cf.size());
+    EXPECT_LT((vel_data_->v[2] + gv[2]), lcp_eps_ * cf.size());
 
     // Indicate through modification of the kG term that the system already has
     // angular orientation (which violates our desire to keep the rod at
     // zero rotation) and solve again.
     vel_data_->kG[0] = 1.0;    // Indicate a ccw orientation..
-    solver_.SolveImpactProblem(cfm_, *vel_data_, &cf);
+    solver_.SolveImpactProblem(*vel_data_, &cf);
     solver_.ComputeGeneralizedVelocityChange(*vel_data_, cf, &gv);
     EXPECT_NEAR(vel_data_->v[2] + gv[2], -vel_data_->kG[0],
                 lcp_eps_ * cf.size());
@@ -1264,22 +1281,22 @@ class Constraint2DSolverTest : public ::testing::Test {
 };
 
 // Tests the rod in single-point sticking configurations.
-TEST_F(Constraint2DSolverTest, SinglePointStickingBothSigns) {
+TEST_P(Constraint2DSolverTest, SinglePointStickingBothSigns) {
   // Test sticking with applied force to the right (true) and the left (false).
   SinglePointSticking(kForceAppliedToRight);
   SinglePointSticking(kForceAppliedToLeft);
 }
 
 // Tests the rod in a two-point sticking configurations.
-TEST_F(Constraint2DSolverTest, TwoPointStickingSign) {
-  // Test sticking with applied force to the right (true) and the left (false).
+TEST_P(Constraint2DSolverTest, TwoPointStickingSign) {
+  // Test sticking with applied force to the right (+1) and the left (-1).
   TwoPointSticking(kForceAppliedToRight);
   TwoPointSticking(kForceAppliedToLeft);
 }
 
 // Tests the rod in two-point non-sliding configurations that will transition
 // to sliding.
-TEST_F(Constraint2DSolverTest, TwoPointNonSlidingToSlidingSign) {
+TEST_P(Constraint2DSolverTest, TwoPointNonSlidingToSlidingSign) {
   // Test sticking with applied force to the right (true) and the left (false).
   TwoPointNonSlidingToSliding(kForceAppliedToRight);
   TwoPointNonSlidingToSliding(kForceAppliedToLeft);
@@ -1288,49 +1305,49 @@ TEST_F(Constraint2DSolverTest, TwoPointNonSlidingToSlidingSign) {
 // Tests the rod in a two-point impact which is insufficient to put the rod
 // into stiction, with pre-impact velocity in two directions (right = true,
 // left = false).
-TEST_F(Constraint2DSolverTest, TwoPointImpactNoTransitionToStictionTest) {
+TEST_P(Constraint2DSolverTest, TwoPointImpactNoTransitionToStictionTest) {
   TwoPointImpactNoTransitionToStiction(kSlideRight);
   TwoPointImpactNoTransitionToStiction(kSlideLeft);
 }
 
 // Tests the rod in a two-point impacting and sticking configuration with
 // pre-impact velocity to the right (true) or left (false).
-TEST_F(Constraint2DSolverTest, TwoPointImpactingAndStickingTest) {
+TEST_P(Constraint2DSolverTest, TwoPointImpactingAndStickingTest) {
   TwoPointImpactingAndSticking(kSlideRight);
   TwoPointImpactingAndSticking(kSlideLeft);
 }
 
 // Tests the rod in a two-point sliding configuration, both to the right
 // and to the left.
-TEST_F(Constraint2DSolverTest, TwoPointSlidingTest) {
+TEST_P(Constraint2DSolverTest, TwoPointSlidingTest) {
   Sliding(kSlideRight, false /* not upright */);
   Sliding(kSlideLeft, false /* not upright */);
 }
 
 // Tests the rod in a single point sliding configuration, with sliding both
 // to the right and to the left.
-TEST_F(Constraint2DSolverTest, SinglePointSlidingTest) {
+TEST_P(Constraint2DSolverTest, SinglePointSlidingTest) {
   Sliding(kSlideRight, true /* upright */);
   Sliding(kSlideLeft, true /* upright */);
 }
 
 // Tests the rod in a single point sliding configuration, with sliding both
 // to the right and to the left, and with a bilateral constraint imposed.
-TEST_F(Constraint2DSolverTest, SinglePointSlidingPlusBilateralTest) {
+TEST_P(Constraint2DSolverTest, SinglePointSlidingPlusBilateralTest) {
   SlidingPlusBilateral(kSlideRight);
   SlidingPlusBilateral(kSlideLeft);
 }
 
 // Tests the rod in a single point impacting configuration, with sliding both
 // to the right and to the left, and with a bilateral constraint imposed.
-TEST_F(Constraint2DSolverTest, SinglePointSlidingImpactPlusBilateralTest) {
+TEST_P(Constraint2DSolverTest, SinglePointSlidingImpactPlusBilateralTest) {
   SlidingPlusBilateralImpact(kSlideRight);
   SlidingPlusBilateralImpact(kSlideLeft);
 }
 
 // Tests the rod in a two-point configuration, in a situation where a force
 // pulls the rod upward (and no contact forces should be applied).
-TEST_F(Constraint2DSolverTest, TwoPointPulledUpward) {
+TEST_P(Constraint2DSolverTest, TwoPointPulledUpward) {
   // Duplicate contact points up to two times and the friction directions up
   // to three times.
   for (int contact_dup = 0; contact_dup < 3; ++contact_dup) {
@@ -1347,7 +1364,7 @@ TEST_F(Constraint2DSolverTest, TwoPointPulledUpward) {
 
       // Compute the contact forces.
       VectorX<double> cf;
-      solver_.SolveConstraintProblem(cfm_, *accel_data_, &cf);
+      solver_.SolveConstraintProblem(*accel_data_, &cf);
 
       // Verify that the contact forces are zero.
       EXPECT_LT(cf.norm(), lcp_eps_);
@@ -1357,7 +1374,7 @@ TEST_F(Constraint2DSolverTest, TwoPointPulledUpward) {
 
 // Tests the rod in a two-point configuration, in a situation where the rod
 // is moving upward, so no impulsive forces should be applied.
-TEST_F(Constraint2DSolverTest, NoImpactImpliesNoImpulses) {
+TEST_P(Constraint2DSolverTest, NoImpactImpliesNoImpulses) {
   // Duplicate contact points up to two times and the friction directions up
   // to three times.
   for (int contact_dup = 0; contact_dup < 3; ++contact_dup) {
@@ -1371,7 +1388,7 @@ TEST_F(Constraint2DSolverTest, NoImpactImpliesNoImpulses) {
 
       // Compute the contact forces.
       VectorX<double> cf;
-      solver_.SolveImpactProblem(cfm_, *vel_data_, &cf);
+      solver_.SolveImpactProblem(*vel_data_, &cf);
 
       // Verify that the impact forces are zero.
       EXPECT_LT(cf.norm(), lcp_eps_);
@@ -1382,9 +1399,7 @@ TEST_F(Constraint2DSolverTest, NoImpactImpliesNoImpulses) {
 // Tests the rod in a one-point sliding contact configuration with a second
 // constraint that prevents horizontal acceleration. This test tests the
 // interaction between contact and limit constraints.
-TEST_F(Constraint2DSolverTest, OnePointPlusLimit) {
-  const double grav_accel = rod_->get_gravitational_acceleration();
-
+TEST_P(Constraint2DSolverTest, OnePointPlusLimit) {
   // Set the state of the rod to vertically-at-rest and sliding to the left.
   // Set the state of the rod to resting on its side with horizontal velocity.
   SetRodToRestingHorizontalConfig();
@@ -1394,6 +1409,9 @@ TEST_F(Constraint2DSolverTest, OnePointPlusLimit) {
 
   // Set the coefficient of friction to somewhat small (to limit sliding force)
   rod_->set_mu_coulomb(1e-1);
+
+  // Get the gravitational acceleration.
+  const double grav_accel = rod_->get_gravitational_acceleration();
 
   // First, construct the acceleration-level problem data as normal to set
   // inertia solver and external forces.
@@ -1419,7 +1437,9 @@ TEST_F(Constraint2DSolverTest, OnePointPlusLimit) {
     return N.row(0) * v;
   };
   accel_data_->kN.setZero(1);
+  accel_data_->gammaN.setZero(1);
   accel_data_->kL.setZero(1);
+  accel_data_->gammaL.setZero(1);
   accel_data_->N_minus_muQ_transpose_mult =
       [&N_minus_muQ_transpose](const VectorX<double>& l) {
     return N_minus_muQ_transpose.col(0) * l;
@@ -1444,13 +1464,13 @@ TEST_F(Constraint2DSolverTest, OnePointPlusLimit) {
 
   // Compute the constraint forces and verify that none are applied.
   VectorX<double> cf;
-  solver_.SolveConstraintProblem(cfm_, *accel_data_, &cf);
+  solver_.SolveConstraintProblem(*accel_data_, &cf);
   EXPECT_LT(cf.norm(), lcp_eps_);
 
   // Reset kN and kL and recompute constraint forces.
   accel_data_->kN.setZero();
   accel_data_->kL.setZero();
-  solver_.SolveConstraintProblem(cfm_, *accel_data_, &cf);
+  solver_.SolveConstraintProblem(*accel_data_, &cf);
 
   // Verify the size of cf is as expected.
   const int num_contacts = 1;
@@ -1461,13 +1481,13 @@ TEST_F(Constraint2DSolverTest, OnePointPlusLimit) {
   // be zero. Note that μQᵀ will not have any effect here.
   VectorX<double> vdot;
   solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &vdot);
-  EXPECT_NEAR(vdot[1], 0, 10 * std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(vdot[1], 0, lcp_eps_);
 
   // Set kN and kL terms to effectively double gravity, which should cause the
   // rod to accelerate upward.
   accel_data_->kN.setOnes() *= grav_accel;
   accel_data_->kL.setOnes() *= grav_accel;
-  solver_.SolveConstraintProblem(cfm_, *accel_data_, &cf);
+  solver_.SolveConstraintProblem(*accel_data_, &cf);
   solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &vdot);
   EXPECT_NEAR(vdot[1], -grav_accel, lcp_eps_);
 }
@@ -1476,7 +1496,7 @@ TEST_F(Constraint2DSolverTest, OnePointPlusLimit) {
 // sliding contacts. This test tests that the cross-term interaction between
 // sliding friction forces and non-sliding friction forces constraints is
 // correct.
-TEST_F(Constraint2DSolverTest, TwoPointContactCrossTerms) {
+TEST_P(Constraint2DSolverTest, TwoPointContactCrossTerms) {
   // Set the state of the rod to resting.
   SetRodToRestingHorizontalConfig();
 
@@ -1507,7 +1527,7 @@ TEST_F(Constraint2DSolverTest, TwoPointContactCrossTerms) {
   // Compute the constraint forces. Note that we increase cfm to prevent the
   // occasional "failure to solve LCP" exception.
   VectorX<double> cf;
-  solver_.SolveConstraintProblem(cfm_, *accel_data_, &cf);
+  solver_.SolveConstraintProblem(*accel_data_, &cf);
 
   // Verify the size of cf is as expected.
   EXPECT_EQ(cf.size(), accel_data_->sliding_contacts.size() +
@@ -1519,14 +1539,14 @@ TEST_F(Constraint2DSolverTest, TwoPointContactCrossTerms) {
   // computed properly, this acceleration might not be zero.
   VectorX<double> vdot;
   solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &vdot);
-  EXPECT_NEAR(vdot[0], 0, 10 * std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(vdot[0], 0, lcp_eps_);
 }
 
 // Tests the rod in a two-point contacting configuration *realized through
 // a configuration limit constraint*. No frictional forces are applied, so
 // any velocity projections along directions other than the contact normal
 // will be irrelevant.
-TEST_F(Constraint2DSolverTest, TwoPointAsLimit) {
+TEST_P(Constraint2DSolverTest, TwoPointAsLimit) {
   // Set the state of the rod to resting on its side.
   SetRodToRestingHorizontalConfig();
 
@@ -1546,6 +1566,7 @@ TEST_F(Constraint2DSolverTest, TwoPointAsLimit) {
     return VectorX<double>(0);
   };
   accel_data_->kN.resize(0);
+  accel_data_->gammaN.resize(0);
   accel_data_->F_mult = [](const VectorX<double>&) {
     return VectorX<double>(0);
   };
@@ -1553,7 +1574,10 @@ TEST_F(Constraint2DSolverTest, TwoPointAsLimit) {
     return VectorX<double>::Zero(ngc);
   };
   accel_data_->kF.resize(0);
+  accel_data_->gammaF.resize(0);
+  accel_data_->gammaE.resize(0);
   accel_data_->kL.resize(1);
+  accel_data_->gammaL.setZero(1);
   accel_data_->N_minus_muQ_transpose_mult = [ngc](const VectorX<double>&) {
     return VectorX<double>::Zero(ngc);
   };
@@ -1575,7 +1599,7 @@ TEST_F(Constraint2DSolverTest, TwoPointAsLimit) {
 
   // Compute the constraint forces.
   VectorX<double> cf;
-  solver_.SolveConstraintProblem(cfm_, *accel_data_, &cf);
+  solver_.SolveConstraintProblem(*accel_data_, &cf);
 
   // Verify the size of cf is as expected.
   EXPECT_EQ(cf.size(), 1);
@@ -1583,7 +1607,7 @@ TEST_F(Constraint2DSolverTest, TwoPointAsLimit) {
   // Verify that the normal force exactly opposes gravity.
   const double mg = std::fabs(rod_->get_gravitational_acceleration()) *
       rod_->get_rod_mass();
-  EXPECT_NEAR(cf[0], mg, 10 * std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(cf[0], mg, lcp_eps_);
 
   // Set the Jacobian entry- in this case, the limit is an upper limit on the
   // second coordinate (vertical position).
@@ -1598,21 +1622,21 @@ TEST_F(Constraint2DSolverTest, TwoPointAsLimit) {
   // rod, one will need to compute Lᵀcf[0] to obtain the generalized force;
   // this is how we can handle upper and lower limits with only non-negativity
   // constraints.
-  solver_.SolveConstraintProblem(cfm_, *accel_data_, &cf);
+  solver_.SolveConstraintProblem(*accel_data_, &cf);
   EXPECT_EQ(cf.size(), 1);
-  EXPECT_NEAR(cf[0], mg, 10 * std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(cf[0], mg, lcp_eps_);
 
   // Verify that the vertical acceleration is zero.
   VectorX<double> vdot;
   solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &vdot);
-  EXPECT_NEAR(vdot[1], 0, 10 * std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(vdot[1], 0, lcp_eps_);
 }
 
 // Tests the rod in a two-point configuration *realized through a configuration
 // limit constraint*, velocity-level version. No frictional forces are applied,
 // so any velocity projections along directions other than the contact normal
 // will be irrelevant.
-TEST_F(Constraint2DSolverTest, TwoPointImpactAsLimit) {
+TEST_P(Constraint2DSolverTest, TwoPointImpactAsLimit) {
   // Set the state of the rod to impacting on its side.
   SetRodToSlidingImpactingHorizontalConfig(true /* moving to the right */);
   ContinuousState<double>& xc = *context_->
@@ -1635,17 +1659,20 @@ TEST_F(Constraint2DSolverTest, TwoPointImpactAsLimit) {
     return VectorX<double>::Zero(ngc);
   };
   vel_data_->kN.resize(0);
-  vel_data_->kF.resize(0);
+  vel_data_->gammaN.resize(0);
   vel_data_->F_mult = [](const VectorX<double>&) {
     return VectorX<double>(0);
   };
   vel_data_->F_transpose_mult = [ngc](const VectorX<double>&) {
     return VectorX<double>::Zero(ngc);
   };
-  const int num_limits = 1;
+  vel_data_->kF.resize(0);
+  vel_data_->gammaF.resize(0);
+  vel_data_->gammaE.resize(0);
 
   // Set the Jacobian entry- in this case, the limit is a lower limit on the
   // second coordinate (vertical position).
+  const int num_limits = 1;
   MatrixX<double> L(num_limits, ngc);
   L.setZero();
   L(0, 1) = 1;
@@ -1657,17 +1684,18 @@ TEST_F(Constraint2DSolverTest, TwoPointImpactAsLimit) {
     return L.transpose() * v;
   };
   vel_data_->kL.setZero(num_limits);
+  vel_data_->gammaL.setZero(num_limits);
 
   // Compute the constraint impulses.
   VectorX<double> cf;
-  solver_.SolveImpactProblem(cfm_, *vel_data_, &cf);
+  solver_.SolveImpactProblem(*vel_data_, &cf);
 
   // Verify the size of cf is as expected.
   EXPECT_EQ(cf.size(), 1);
 
   // Verify that the normal force exactly opposes the momentum.
   const double mv = std::fabs(vert_vel) * rod_->get_rod_mass();
-  EXPECT_NEAR(cf[0], mv, 10 * std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(cf[0], mv, lcp_eps_);
 
   // Set the Jacobian entry- in this case, the limit is an upper limit on the
   // second coordinate (vertical position).
@@ -1682,15 +1710,15 @@ TEST_F(Constraint2DSolverTest, TwoPointImpactAsLimit) {
   // rod, one will need to compute Lᵀcf[0] to obtain the generalized impulse;
   // this is how we can handle upper and lower limits with only non-negativity
   // constraints.
-  solver_.SolveImpactProblem(cfm_, *vel_data_, &cf);
+  solver_.SolveImpactProblem(*vel_data_, &cf);
   EXPECT_EQ(cf.size(), 1);
-  EXPECT_NEAR(cf[0], mv, 10 * std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(cf[0], mv, lcp_eps_);
 
   // Verify that the vertical velocity is zero.
   VectorX<double> vnew;
   solver_.ComputeGeneralizedVelocityChange(*vel_data_, cf, &vnew);
   EXPECT_NEAR(vel_data_->v[1] + vnew[1], 0,
-              10 * std::numeric_limits<double>::epsilon());
+              lcp_eps_);
 
   // Now test whether constraint stabilization works by trying to get the rod to
   // move downward as fast as it's currently moving upward
@@ -1700,10 +1728,16 @@ TEST_F(Constraint2DSolverTest, TwoPointImpactAsLimit) {
 
   // Recompute the constraint impulses, and verify that they're now equal to
   // twice the momentum.
-  solver_.SolveImpactProblem(cfm_, *vel_data_, &cf);
+  solver_.SolveImpactProblem(*vel_data_, &cf);
   EXPECT_EQ(cf.size(), 1);
-  EXPECT_NEAR(cf[0], mv*2, 10 * std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(cf[0], mv*2, lcp_eps_);
 }
+
+// Instantiate the value-parameterized tests to run with a range of CFM values
+// (i.e., constraint softening applied uniformly over all mathematical
+// programming variables).
+INSTANTIATE_TEST_CASE_P(Blank, Constraint2DSolverTest,
+                        testing::Values(0, 1e-15, 1e-11, 1e-7, 1e-3));
 
 }  // namespace
 }  // namespace constraint

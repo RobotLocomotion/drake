@@ -234,7 +234,7 @@ void TimeSteppingRigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
 
   // Solve the rigid impact problem.
   VectorX<T> vnew, cf;
-  constraint_solver_.SolveImpactProblem(cfm_, data, &cf);
+  constraint_solver_.SolveImpactProblem(data, &cf);
   constraint_solver_.ComputeGeneralizedVelocityChange(data, cf, &vnew);
   vnew += data.v;
 
