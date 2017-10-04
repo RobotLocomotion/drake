@@ -216,6 +216,7 @@ drake_cc_library(
         ":lane_direction",
         ":road_odometry",
         "//drake/automotive/maliput/api",
+        "//drake/common:extract_double",
         "//drake/systems/rendering:pose_bundle",
         "//drake/systems/rendering:pose_vector",
     ],
@@ -553,6 +554,7 @@ drake_cc_googletest(
         "//drake/automotive:pose_selector",
         "//drake/automotive/maliput/dragway",
         "//drake/automotive/maliput/monolane:builder",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -580,6 +582,7 @@ drake_cc_googletest(
     deps = [
         "//drake/automotive:pure_pursuit",
         "//drake/automotive/maliput/dragway",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -588,6 +591,7 @@ drake_cc_googletest(
     deps = [
         "//drake/automotive:pure_pursuit_controller",
         "//drake/automotive/maliput/dragway",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 

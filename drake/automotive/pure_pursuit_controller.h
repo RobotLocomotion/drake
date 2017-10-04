@@ -40,6 +40,12 @@ class PurePursuitController : public systems::LeafSystem<T> {
 
   /// Constructor.
   PurePursuitController();
+
+  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  template <typename U>
+  explicit PurePursuitController(const PurePursuitController<U>&)
+      : PurePursuitController<T>() {}
+
   ~PurePursuitController() override;
 
   /// Returns the port to the individual input/output ports.
@@ -49,7 +55,7 @@ class PurePursuitController : public systems::LeafSystem<T> {
 
  private:
   void OutputSteeringCommand(const systems::Context<T>& context,
-                            systems::BasicVector<T>* output) const;
+                             systems::BasicVector<T>* output) const;
 
   void CalcSteeringCommand(const PurePursuitParams<T>& pp_params,
                            const SimpleCarParams<T>& car_params,
@@ -64,4 +70,13 @@ class PurePursuitController : public systems::LeafSystem<T> {
 };
 
 }  // namespace automotive
+
+namespace systems {
+namespace scalar_conversion {
+// Disable symbolic support, because we use ExtractDoubleOrThrow.
+template <>
+struct Traits<automotive::PurePursuitController> : public NonSymbolicTraits {};
+}  // namespace scalar_conversion
+}  // namespace systems
+
 }  // namespace drake
