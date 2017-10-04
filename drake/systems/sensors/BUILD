@@ -17,53 +17,10 @@ drake_cc_library(
     hdrs = [],
     deps = [
         ":accelerometer",
-        ":beam_model",
         ":camera_info",
         ":depth_sensor",
         ":rgbd_camera",
         ":rotary_encoders",
-    ],
-)
-
-drake_cc_library(
-    name = "accelerometer",
-    srcs = [
-        "accelerometer.cc",
-        "accelerometer_output.cc",
-    ],
-    hdrs = [
-        "accelerometer.h",
-        "accelerometer_output.h",
-    ],
-    deps = [
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/rigid_body_plant",
-        "//drake/systems/framework",
-    ],
-)
-
-drake_cc_library(
-    name = "beam_model_params",
-    srcs = [
-        "gen/beam_model_params.cc",
-    ],
-    hdrs = [
-        "gen/beam_model_params.h",
-    ],
-    deps = [
-        "//drake/systems/framework:vector",
-    ],
-)
-
-drake_cc_library(
-    name = "beam_model",
-    srcs = ["beam_model.cc"],
-    hdrs = ["beam_model.h"],
-    deps = [
-        ":beam_model_params",
-        ":depth_sensor",
-        "//drake/common:unused",
-        "//drake/systems/framework",
     ],
 )
 
@@ -107,6 +64,33 @@ drake_cc_library(
         "//drake/systems/framework",
         "@lcmtypes_robotlocomotion",
         "@zlib",
+    ],
+)
+
+drake_cc_library(
+    name = "rotary_encoders",
+    srcs = ["rotary_encoders.cc"],
+    hdrs = ["rotary_encoders.h"],
+    deps = [
+        "//drake/common:unused",
+        "//drake/systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "accelerometer",
+    srcs = [
+        "accelerometer.cc",
+        "accelerometer_output.cc",
+    ],
+    hdrs = [
+        "accelerometer.h",
+        "accelerometer_output.h",
+    ],
+    deps = [
+        "//drake/multibody:rigid_body_tree",
+        "//drake/multibody/rigid_body_plant",
+        "//drake/systems/framework",
     ],
 )
 
@@ -225,16 +209,6 @@ drake_cc_binary(
 )
 
 drake_cc_library(
-    name = "rotary_encoders",
-    srcs = ["rotary_encoders.cc"],
-    hdrs = ["rotary_encoders.h"],
-    deps = [
-        "//drake/common:unused",
-        "//drake/systems/framework",
-    ],
-)
-
-drake_cc_library(
     name = "accelerometer_example_diagram",
     testonly = 1,
     srcs = [
@@ -282,6 +256,31 @@ drake_cc_binary(
 # === test/ ===
 
 drake_cc_googletest(
+    name = "camera_info_test",
+    deps = [
+        ":camera_info",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "image_test",
+    deps = [
+        ":image",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rotary_encoders_test",
+    deps = [
+        ":rotary_encoders",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/common/test_utilities:symbolic_test_util",
+        "//drake/systems/framework/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
     name = "accelerometer_test",
     srcs = [
         "test/accelerometer_test/accelerometer_test.cc",
@@ -295,33 +294,6 @@ drake_cc_googletest(
         "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/lcm:mock",
         "//drake/systems/analysis:simulator",
-    ],
-)
-
-drake_cc_googletest(
-    name = "beam_model_test",
-    deps = [
-        ":beam_model",
-        "//drake/common/proto:call_matlab",
-        "//drake/systems/analysis:simulator",
-        "//drake/systems/primitives:constant_vector_source",
-        "//drake/systems/primitives:random_source",
-        "//drake/systems/primitives:signal_logger",
-    ],
-)
-
-drake_cc_googletest(
-    name = "camera_info_test",
-    deps = [
-        ":camera_info",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
-drake_cc_googletest(
-    name = "image_test",
-    deps = [
-        ":image",
     ],
 )
 
@@ -406,16 +378,6 @@ sh_test(
         ":test_models",
     ],
     tags = ["manual"],
-)
-
-drake_cc_googletest(
-    name = "rotary_encoders_test",
-    deps = [
-        ":rotary_encoders",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/common/test_utilities:symbolic_test_util",
-        "//drake/systems/framework/test_utilities",
-    ],
 )
 
 drake_cc_googletest(
