@@ -166,11 +166,6 @@ exports_files(
     visibility = ["@lcmtypes_robotlocomotion//:__pkg__"],
 )
 
-alias(
-    name = "buildifier",
-    actual = "@com_github_bazelbuild_buildtools//buildifier",
-)
-
 cmake_config(
     cps_file_name = "drake.cps",
     package = "drake",

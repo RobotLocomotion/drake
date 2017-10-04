@@ -49,10 +49,15 @@ class Polynomial {
 
   /// Constructs a polynomial from an expression @p e. Note that all variables
   /// in `e` are considered as indeterminates.
+  ///
+  /// @throws std::runtime_error if @p e is not a polynomial.
   explicit Polynomial(const Expression& e);
 
   /// Constructs a polynomial from an expression @p e by decomposing it with
   /// respect to @p indeterminates.
+  ///
+  /// @throws std::runtime_error if @p e is not a polynomial in @p
+  /// indeterminates.
   Polynomial(const Expression& e, const Variables& indeterminates);
 
   /// Returns the indeterminates of this polynomial.

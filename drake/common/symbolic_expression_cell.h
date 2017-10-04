@@ -25,6 +25,15 @@
 namespace drake {
 namespace symbolic {
 
+// Checks if @p v contains an integer value.
+bool is_integer(double v);
+
+// Checks if @p v contains a positive integer value.
+bool is_positive_integer(double v);
+
+// Checks if @p v contains a non-negative integer value.
+bool is_non_negative_integer(double v);
+
 /** Represents an abstract class which is the base of concrete
  * symbolic-expression classes.
  *

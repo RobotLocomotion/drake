@@ -167,7 +167,10 @@ drake_cc_library(
     srcs = ["random_source.cc"],
     hdrs = ["random_source.h"],
     deps = [
-        "//drake/systems/framework",
+        "//drake/common:essential",
+        "//drake/common:unused",
+        "//drake/systems/framework:diagram_builder",
+        "//drake/systems/framework:leaf_system",
     ],
 )
 
@@ -371,6 +374,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "random_source_test",
     deps = [
+        ":constant_vector_source",
         ":random_source",
         ":signal_logger",
         "//drake/common/test_utilities:eigen_matrix_compare",

@@ -97,8 +97,9 @@ void IdmController<T>::ImplCalcAcceleration(
   using std::max;
 
   DRAKE_DEMAND(idm_params.IsValid());
+  Isometry3<T> ego_pose_isometry = ego_pose.get_isometry();
+  const auto translation = ego_pose_isometry.translation();
 
-  const auto translation = ego_pose.get_isometry().translation();
   const maliput::api::GeoPosition geo_position(translation.x(), translation.y(),
                                                translation.z());
   const RoadPosition ego_position =

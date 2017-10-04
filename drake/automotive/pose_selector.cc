@@ -125,7 +125,9 @@ T PoseSelector<T>::GetSigmaVelocity(const RoadOdometry<T>& road_odometry) {
   DRAKE_DEMAND(IsWithinLane(road_odometry.pos, road_odometry.lane));
   const maliput::api::Rotation rot =
       road_odometry.lane->GetOrientation(road_odometry.pos);
-  const Vector3<T>& vel = road_odometry.vel.get_velocity().translational();
+  multibody::SpatialVelocity<T> road_odometry_velocity =
+      road_odometry.vel.get_velocity();
+  const Vector3<T>& vel = road_odometry_velocity.translational();
   return vel(0) * std::cos(rot.yaw()) + vel(1) * std::sin(rot.yaw());
 }
 

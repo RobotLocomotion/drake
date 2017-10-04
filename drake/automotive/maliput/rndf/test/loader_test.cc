@@ -1,5 +1,7 @@
 #include "drake/automotive/maliput/rndf/loader.h"
 
+#include <ostream>
+
 #include <gtest/gtest.h>
 
 #include "drake/automotive/maliput/api/branch_point.h"
@@ -51,6 +53,16 @@ struct SingleLaneRndfDescription {
   // A list of the map's lane interconnections.
   BranchList branch_list{};
 };
+
+// Stream insertion operator overload for SingleLaneRndfDescription
+// instances. Necessary for gtest printouts that would otherwise fail
+// at properly printing the struct's bytes (its default behavior when
+// no stream insertion operator overload is present) and trigger Valgrind
+// errors.
+std::ostream& operator<<(std::ostream& stream,
+                         const SingleLaneRndfDescription& description) {
+  return stream << "SingleLaneRndfDescription(" << description.file_path << ")";
+}
 
 // RNDF test fixture parameterized on map description.
 class SingleLaneRNDFLoaderTest
