@@ -28,12 +28,23 @@ class OptitrackSim : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OptitrackSim)
   /**
-   * Constructs an OptitrackSim object from a list of body names
+   * Constructs an OptitrackSim object from a map of RigidBodyFrames and
+   * corresponding optitrack (Motive) IDs.
    * @param tree The RigidBodyTree
-   * @param body_frame_to_id_map A mapping of RB frames to Motive ID's
+   * @param body_frame_to_id_map A mapping of RigidBodyFrames to Motive ID's
    */
   OptitrackSim(const RigidBodyTree<double>& tree,
-               std::map<RigidBodyFrame<double>, int> body_frame_to_id_map);
+               std::map<RigidBodyFrame<double>*, int> body_frame_to_id_map);
+
+  /**
+   * Constructs an OptitrackSim object from a list of body names
+   * @param tree The RigidBodyTree
+   * @param body_name_to_id_map A mapping of body names to Motive ID's
+   * @param frame_pose The frame's pose relative to the parent body
+   */
+  OptitrackSim(const RigidBodyTree<double>& tree,
+               std::map<std::string, int> body_name_to_id_map,
+               Eigen::Isometry3d frame_pose = Eigen::Isometry3d::Identity());
 
   const systems::InputPortDescriptor<double>& get_kinematics_input_port() const {
     return this->get_input_port(0);
@@ -46,13 +57,15 @@ class OptitrackSim : public systems::LeafSystem<double> {
  private:
   std::vector<TrackedObject> MakeOutputStatus() const;
 
+  void Init(const RigidBodyTree<double>& tree);
+
   void OutputStatus(const systems::Context<double>& context,
                     std::vector<TrackedObject>* output) const;
 
-  int kinematics_input_port_index_;
-  int tracked_objects_output_port_index_;
-  std::map<RigidBodyFrame<double>, int> body_frame_to_id_map_; // maps urdf body name to Optitrack ID
-  std::map<int, int> id_to_body_index_map_; // maps Optitrack id to body index in the RBT
+  int kinematics_input_port_index_{-1};
+  int tracked_objects_output_port_index_{-1};
+  std::map<RigidBodyFrame<double>*, int> body_frame_to_id_map_; // maps urdf body name to Optitrack ID
+  std::map<int, const RigidBody<double>*> id_to_body_map_;
 };
 
 }  // namespace perception

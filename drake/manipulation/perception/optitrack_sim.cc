@@ -9,19 +9,38 @@ using std::string;
 using drake::systems::KinematicsResults;
 
 OptitrackSim::OptitrackSim(const RigidBodyTree<double>& tree,
-                           std::map<RigidBodyFrame<double>, int> body_frame_to_id_map)
+                           std::map<RigidBodyFrame<double>*, int> body_frame_to_id_map)
                            : body_frame_to_id_map_(body_frame_to_id_map) {
 
-  /// Abstract input port of type KinematicsResults
-  kinematics_input_port_index_ = this->DeclareAbstractInputPort().get_index();
+  OptitrackSim::Init(tree);
+}
 
-  /// Abstract output port of type vector<TrackedObjects>
-  tracked_objects_output_port_index_ = this->DeclareAbstractOutputPort(
-      &OptitrackSim::MakeOutputStatus, &OptitrackSim::OutputStatus).get_index();
+OptitrackSim::OptitrackSim(const RigidBodyTree<double>& tree,
+                           std::map<std::string, int> body_name_to_id_map, Eigen::Isometry3d frame_pose) {
 
-  for (auto it = body_frame_to_id_map_.begin(); it != body_frame_to_id_map_.end(); ++it) {
-    id_to_body_index_map_[it->second] = tree.FindBodyIndex(it->first.get_rigid_body().get_name());
+  /// create and store the related frames
+  //std::map<RigidBodyFrame<double>*, int> body_frame_to_id_map;
+  //Eigen::Isometry3d frame_pose = Eigen::Isometry3d::Identity();
+  for (auto it = body_name_to_id_map.begin(); it != body_name_to_id_map.end(); ++it) {
+    RigidBody<double>* body = tree.FindBody(it->first);
+    body_frame_to_id_map_[new RigidBodyFrame<double>(it->first, body, frame_pose)] = it->second;
   }
+
+  OptitrackSim::Init(tree);
+}
+
+void OptitrackSim::Init(const RigidBodyTree<double>& tree) {
+
+    /// Abstract input port of type KinematicsResults
+    kinematics_input_port_index_ = this->DeclareAbstractInputPort().get_index();
+
+    /// Abstract output port of type vector<TrackedObjects>
+    tracked_objects_output_port_index_ = this->DeclareAbstractOutputPort(
+        &OptitrackSim::MakeOutputStatus, &OptitrackSim::OutputStatus).get_index();
+
+    for (auto it = body_frame_to_id_map_.begin(); it != body_frame_to_id_map_.end(); ++it) {
+      id_to_body_map_[it->second] = &(it->first->get_rigid_body());
+    }
 }
 
 std::vector<TrackedObject> OptitrackSim::MakeOutputStatus() const {
@@ -45,13 +64,14 @@ void OptitrackSim::OutputStatus(const systems::Context<double>& context,
   for (auto it = body_frame_to_id_map_.begin(); it != body_frame_to_id_map_.end();
        ++mocap_obj_index, ++it) {
 
-    optitrack_objects[mocap_obj_index].frame_name = it->first.get_name();
+    optitrack_objects[mocap_obj_index].frame_name = it->first->get_name();
     optitrack_objects[mocap_obj_index].optitrack_id = it->second;
 
-    auto T_WB = kres->get_body_orientation(id_to_body_index_map_.at(it->second));
-    auto T_BF = it->first.get_transform_to_body();
+    //auto T_WB = kres->get_body_orientation(id_to_body_index_map_.at(it->second));
+    auto T_WB = kres->get_pose_in_world(*(id_to_body_map_.at(it->second)));
+    auto T_BF = it->first->get_transform_to_body();
 
-    optitrack_objects[mocap_obj_index].T_WF = T_WB*T_BF;
+    optitrack_objects[mocap_obj_index].T_WF = T_WB;//T_WB*T_BF;
   }
 }
 
