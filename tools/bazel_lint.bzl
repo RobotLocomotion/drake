@@ -9,26 +9,26 @@ def _bazel_lint(name, files, ignore):
         if ignore:
             ignore = ["--ignore=" + ",".join(["E%s" % e for e in ignore])]
 
+        locations = ["$(location %s)" % f for f in files]
+
         native.py_test(
             name = name + "_codestyle",
             size = "small",
             srcs = ["@drake//tools:bzlcodestyle"],
             data = files,
-            args = ignore + ["$(location %s)" % f for f in files],
+            args = ignore + locations,
             main = "@drake//tools:bzlcodestyle.py",
             srcs_version = "PY2AND3",
             tags = ["bzlcodestyle", "lint"],
         )
 
-        native.sh_test(
+        native.py_test(
             name = name + "_buildifier",
             size = "small",
-            srcs = ["@drake//tools:buildifier-test.sh"],
-            data = files + [
-                "@drake//tools:buildifier",
-                "@drake//tools:buildifier-tables.json",
-            ],
-            args = ["$(location %s)" % f for f in files],
+            srcs = ["@drake//tools/lint:buildifier"],
+            data = files,
+            args = ["-mode=check"] + locations,
+            main = "@drake//tools/lint:buildifier.py",
             tags = ["buildifier", "lint"],
         )
 
