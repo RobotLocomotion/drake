@@ -495,6 +495,7 @@ void MultibodyTree<T>::DoCalcBiasTerm(
     EigenPtr<VectorX<T>> Cv) const {
   const int nv = get_num_velocities();
   const VectorX<T> vdot = VectorX<T>::Zero(nv);
+
   // Auxiliary arrays used by inverse dynamics.
   std::vector<SpatialAcceleration<T>> A_WB_array(get_num_bodies());
   std::vector<SpatialForce<T>> F_BMo_W_array(get_num_bodies());

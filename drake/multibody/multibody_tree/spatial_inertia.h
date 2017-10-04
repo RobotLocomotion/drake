@@ -216,15 +216,13 @@ class SpatialInertia {
   /// condition when performed on a rotational inertia about a body's center of
   /// mass.
   /// @see RotationalInertia::CouldBePhysicallyValid().
-  bool IsPhysicallyValid(std::vector<std::string>* failures) const {
+  bool IsPhysicallyValid() const {
     if (IsNaN()) return false;
     if (mass_ < T(0)) return false;
     // The tests in RotationalInertia become a sufficient condition when
     // performed on a rotational inertia computed about a body's center of mass.
     const UnitInertia<T> G_SScm_E = G_SP_E_.ShiftToCenterOfMass(p_PScm_E_);
-    if (!G_SScm_E.CouldBePhysicallyValid(failures)) {
-      return false;
-    }
+    if (!G_SScm_E.CouldBePhysicallyValid()) return false;
     return true;  // All tests passed.
   }
 
@@ -410,12 +408,7 @@ class SpatialInertia {
   // exception if not. This is mostly used in Debug builds to throw an
   // appropriate exception.
   void CheckInvariants() const {
-    std::vector<std::string> failures;
-    if (!IsPhysicallyValid(&failures)) {
-      for (const auto& s : failures) {
-        std::cout << s << std::endl;
-        //drake::log()->error(s);
-      }
+    if (!IsPhysicallyValid()) {
       throw std::runtime_error(
           "The resulting spatial inertia is not physically valid. "
               "See SpatialInertia::IsPhysicallyValid()");

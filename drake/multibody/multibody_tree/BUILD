@@ -69,7 +69,6 @@ drake_cc_library(
 drake_cc_library(
     name = "multibody_tree",
     srcs = [
-        "ball_mobilizer.cc",
         "body.cc",
         "body_node_impl.cc",
         "fixed_offset_frame.cc",
@@ -82,7 +81,6 @@ drake_cc_library(
         "uniform_gravity_field_element.cc",
     ],
     hdrs = [
-        "ball_mobilizer.h",
         "body.h",
         "body_node.h",
         "body_node_impl.h",
@@ -177,16 +175,6 @@ drake_cc_googletest(
     deps = [
         ":multibody_tree",
         "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/multibody/benchmarks/acrobot",
-    ],
-)
-
-drake_cc_googletest(
-    name = "spatial_double_pendulum_test",
-    size = "medium",
-    deps = [
-        ":multibody_tree",
-        "//drake/common:eigen_matrix_compare",
         "//drake/multibody/benchmarks/acrobot",
     ],
 )
