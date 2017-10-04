@@ -19,6 +19,7 @@ namespace automotive {
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
+/// - AutoDiffXd
 ///
 /// They are already available to link against in the containing library.
 ///
@@ -40,6 +41,12 @@ class PurePursuitController : public systems::LeafSystem<T> {
 
   /// Constructor.
   PurePursuitController();
+
+  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  template <typename U>
+  explicit PurePursuitController(const PurePursuitController<U>&)
+      : PurePursuitController<T>() {}
+
   ~PurePursuitController() override;
 
   /// Returns the port to the individual input/output ports.
@@ -49,7 +56,7 @@ class PurePursuitController : public systems::LeafSystem<T> {
 
  private:
   void OutputSteeringCommand(const systems::Context<T>& context,
-                            systems::BasicVector<T>* output) const;
+                             systems::BasicVector<T>* output) const;
 
   void CalcSteeringCommand(const PurePursuitParams<T>& pp_params,
                            const SimpleCarParams<T>& car_params,
@@ -64,4 +71,14 @@ class PurePursuitController : public systems::LeafSystem<T> {
 };
 
 }  // namespace automotive
+
+namespace systems {
+namespace scalar_conversion {
+// Disables symbolic support, because maliput's LanePositionT <-> GeoPositionT
+// conversion (used in pure_pursuit.cc) is not symbolic-supported.
+template <>
+struct Traits<automotive::PurePursuitController> : public NonSymbolicTraits {};
+}  // namespace scalar_conversion
+}  // namespace systems
+
 }  // namespace drake
