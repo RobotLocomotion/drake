@@ -18,6 +18,7 @@
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput/api/segment.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/hash.h"
 
 namespace drake {
 namespace maliput {
@@ -70,10 +71,10 @@ class GeoVertex {
   // A hasher operation suitable for std::unordered_map.
   struct Hash {
     size_t operator()(const GeoVertex& gv) const {
-      const size_t hx(std::hash<double>()(gv.v().x()));
-      const size_t hy(std::hash<double>()(gv.v().y()));
-      const size_t hz(std::hash<double>()(gv.v().z()));
-      return hx ^ (hy << 1) ^ (hz << 2);
+      return hash_combine(0,
+                          gv.v().x(),
+                          gv.v().y(),
+                          gv.v().z());
     }
   };
 
@@ -101,10 +102,10 @@ class GeoNormal {
   // A hasher operation suitable for std::unordered_map.
   struct Hash {
     size_t operator()(const GeoNormal& gn) const {
-      const size_t hx(std::hash<double>()(gn.n().x()));
-      const size_t hy(std::hash<double>()(gn.n().y()));
-      const size_t hz(std::hash<double>()(gn.n().z()));
-      return hx ^ (hy << 1) ^ (hz << 2);
+      return hash_combine(0,
+                          gn.n().x(),
+                          gn.n().y(),
+                          gn.n().z());
     }
   };
 
