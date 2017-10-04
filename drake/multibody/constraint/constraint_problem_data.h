@@ -207,7 +207,7 @@ struct ConstraintAccelProblemData {
   VectorX<T> gammaF;
 
   // TODO(edrumwri): define this quantity properly (documentation forthcoming).
-  /// This ℝᴺ vector represents the diagonal matrix γᴺ.
+  /// This ℝᴺ vector represents the diagonal matrix γᴱ.
   VectorX<T> gammaE;
   /// @}
 
@@ -253,7 +253,7 @@ struct ConstraintAccelProblemData {
   VectorX<T> kL;
 
   // TODO(edrumwri): define this quantity properly (documentation forthcoming).
-  /// This ℝˢ vector represents the diagonal matrix γˢ.
+  /// This ℝˢ vector represents the diagonal matrix γᴸ.
   VectorX<T> gammaL;
   /// @}
 
@@ -433,7 +433,7 @@ struct ConstraintVelProblemData {
   VectorX<T> gammaF;
 
   // TODO(edrumwri): define this quantity properly (documentation forthcoming).
-  /// This ℝᴺ vector represents the diagonal matrix γᴺ.
+  /// This ℝʸ vector represents the diagonal matrix γᴱ.
   VectorX<T> gammaE;
 
   /// @}
@@ -479,7 +479,7 @@ struct ConstraintVelProblemData {
   VectorX<T> kL;
 
   // TODO(edrumwri): define this quantity properly (documentation forthcoming).
-  /// This ℝˢ vector represents the diagonal matrix γˢ.
+  /// This ℝˢ vector represents the diagonal matrix γᴸ.
   VectorX<T> gammaL;
   /// @}
 
