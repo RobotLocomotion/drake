@@ -77,20 +77,15 @@ void FreeBodyPlant<T>::DoCalcTimeDerivatives(
   const int nq = model_.get_num_positions();
   const int nv = model_.get_num_velocities();
 
-  PositionKinematicsCache<T> pc(model_.get_topology());
-  VelocityKinematicsCache<T> vc(model_.get_topology());
-  model_.CalcPositionKinematicsCache(context, &pc);
-  model_.CalcVelocityKinematicsCache(context, pc, &vc);
-
   MatrixX<T> M(nv, nv);
-  model_.CalcMassMatrixViaInverseDynamics(context, pc, &M);
+  model_.CalcMassMatrixViaInverseDynamics(context, &M);
 
   // Check if M is symmetric.
   const T err_sym = (M - M.transpose()).norm();
   DRAKE_DEMAND(err_sym < 10 * std::numeric_limits<double>::epsilon());
 
   VectorX<T> C(nv);
-  model_.CalcBiasTerm(context, pc, vc, {}, &C);
+  model_.CalcBiasTerm(context, &C);
 
   auto v = x.bottomRows(nv);
 
@@ -136,11 +131,8 @@ T FreeBodyPlant<T>::DoCalcKineticEnergy(
 
   const int nv = model_.get_num_velocities();
 
-  PositionKinematicsCache<T> pc(model_.get_topology());
-  model_.CalcPositionKinematicsCache(context, &pc);
-
   MatrixX<T> M(nv, nv);
-  model_.CalcMassMatrixViaInverseDynamics(context, pc, &M);
+  model_.CalcMassMatrixViaInverseDynamics(context, &M);
 
   return 0.5 * v.transpose() * M * v;
 }
