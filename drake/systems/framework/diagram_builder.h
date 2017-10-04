@@ -351,6 +351,8 @@ class DiagramBuilder {
   std::unordered_set<const System<T>*> systems_;
   // The Systems in this DiagramBuilder, in the order they were registered.
   std::vector<std::unique_ptr<System<T>>> registered_systems_;
+
+  friend int AddRandomInputs(double, systems::DiagramBuilder<double>*);
 };
 
 }  // namespace systems
