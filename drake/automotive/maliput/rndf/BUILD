@@ -12,6 +12,35 @@ load("//tools:lint.bzl", "add_lint_tests")
 package(default_visibility = ["//visibility:public"])
 
 drake_cc_library(
+    name = "rndf",
+    srcs = [],
+    hdrs = [],
+    deps = [
+        ":builder",
+        ":lanes",
+        ":loader",
+    ],
+)
+
+drake_cc_library(
+    name = "loader",
+    srcs = [
+        "loader.cc",
+    ],
+    hdrs = [
+        "loader.h",
+    ],
+    deps = [
+        ":builder",
+        ":lanes",
+        "//drake/automotive/maliput/api",
+        "//drake/common",
+        "@ignition_math",
+        "@ignition_rndf",
+    ],
+)
+
+drake_cc_library(
     name = "builder",
     srcs = [
         "builder.cc",
@@ -67,11 +96,30 @@ drake_cc_library(
 
 # === test/ ===
 
+drake_cc_binary(
+    name = "rndf_load",
+    testonly = 1,
+    srcs = ["test/rndf_load.cc"],
+    add_test_rule = 1,
+    data = [
+        ":test_maps",
+    ],
+    test_rule_args = [
+        "-rndf_file",
+        "drake/automotive/maliput/rndf/test/maps/cross.rndf",
+    ],
+    test_rule_size = "small",
+    deps = [
+        ":loader",
+        "//drake/common:text_logging_gflags",
+    ],
+)
+
 drake_cc_googletest(
     name = "connection_test",
     deps = [
         ":builder",
-        ":ignition_types_compare",
+        "//drake/automotive/maliput/rndf/test_utilities",
         "@ignition_math",
         "@ignition_rndf",
     ],
@@ -81,7 +129,7 @@ drake_cc_googletest(
     name = "directed_waypoint_test",
     deps = [
         ":builder",
-        ":ignition_types_compare",
+        "//drake/automotive/maliput/rndf/test_utilities",
         "@ignition_math",
         "@ignition_rndf",
     ],
@@ -91,24 +139,33 @@ drake_cc_googletest(
     name = "builder_test",
     deps = [
         ":builder",
-        "//drake/automotive/maliput/api:maliput_types_compare",
+        "//drake/automotive/maliput/api/test_utilities",
+    ],
+)
+
+filegroup(
+    name = "test_maps",
+    srcs = glob([
+        "test/maps/*.rndf",
+    ]),
+)
+
+drake_cc_googletest(
+    name = "loader_test",
+    data = [
+        ":test_maps",
+    ],
+    deps = [
+        ":loader",
+        "//drake/automotive/maliput/api",
+        "//drake/automotive/maliput/api/test_utilities",
+        "//drake/common:find_resource",
     ],
 )
 
 drake_cc_googletest(
     name = "ignition_rndf_test",
     deps = [
-        "@ignition_rndf",
-    ],
-)
-
-drake_cc_library(
-    name = "ignition_types_compare",
-    testonly = 1,
-    srcs = ["test/ignition_types_compare.cc"],
-    hdrs = ["test/ignition_types_compare.h"],
-    deps = [
-        "@gtest//:without_main",
         "@ignition_rndf",
     ],
 )
@@ -138,15 +195,15 @@ drake_cc_googletest(
     name = "spline_lane_test",
     deps = [
         ":lanes",
-        "//drake/automotive/maliput/api:maliput_types_compare",
+        "//drake/automotive/maliput/api/test_utilities",
     ],
 )
 
 drake_cc_googletest(
     name = "spline_helpers_test",
     deps = [
-        ":ignition_types_compare",
         ":lanes",
+        "//drake/automotive/maliput/rndf/test_utilities",
     ],
 )
 

@@ -72,10 +72,12 @@ drake_cc_library(
         "body.cc",
         "body_node_impl.cc",
         "fixed_offset_frame.cc",
+        "joints/revolute_joint.cc",
         "mobilizer_impl.cc",
         "multibody_tree.cc",
         "revolute_mobilizer.cc",
         "rigid_body.cc",
+        "uniform_gravity_field_element.cc",
     ],
     hdrs = [
         "body.h",
@@ -83,13 +85,17 @@ drake_cc_library(
         "body_node_impl.h",
         "body_node_welded.h",
         "fixed_offset_frame.h",
+        "force_element.h",
         "frame.h",
         "frame_base.h",
+        "joints/joint.h",
+        "joints/revolute_joint.h",
         "mobilizer.h",
         "mobilizer_impl.h",
         "multibody_tree.h",
         "revolute_mobilizer.h",
         "rigid_body.h",
+        "uniform_gravity_field_element.h",
     ],
     deps = [
         ":multibody_tree_context",
@@ -180,6 +186,13 @@ drake_cc_googletest(
     deps = [
         ":unit_inertia",
         "//drake/math:gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rigid_body_test",
+    deps = [
+        ":multibody_tree",
     ],
 )
 

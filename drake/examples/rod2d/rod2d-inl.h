@@ -594,8 +594,9 @@ void Rod2D<T>::CalcConstraintProblemData(
   Vector3<T> Qrow;
   for (int i = 0; i < static_cast<int>(sliding_contacts.size()); ++i) {
     const int contact_index = sliding_contacts[i];
-    const auto& sliding_dir = GetSlidingContactFrameToWorldTransform(
-        tangent_vels[contact_index]).col(1);
+    Matrix2<T> sliding_contract_frame = GetSlidingContactFrameToWorldTransform(
+        tangent_vels[contact_index]);
+    const auto& sliding_dir = sliding_contract_frame.col(1);
     Qrow = GetJacobianRow(context, points[contact_index], sliding_dir);
     N_minus_mu_Q.row(contact_index) -= data->mu_sliding[i] * Qrow;
   }

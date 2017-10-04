@@ -17,7 +17,6 @@
 #include <utility>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_compat.h"
 #include "drake/common/hash.h"
 #include "drake/common/symbolic.h"
 
@@ -42,7 +41,6 @@ using std::shared_ptr;
 using std::static_pointer_cast;
 using std::string;
 
-namespace {
 bool is_integer(const double v) {
   // v should be in [int_min, int_max].
   if (!((numeric_limits<int>::lowest() <= v) &&
@@ -54,9 +52,13 @@ bool is_integer(const double v) {
   return modf(v, &intpart) == 0.0;
 }
 
+bool is_positive_integer(const double v) { return (v > 0) && is_integer(v); }
+
 bool is_non_negative_integer(const double v) {
   return (v >= 0) && is_integer(v);
 }
+
+namespace {
 
 // Determines if the summation represented by term_to_coeff_map is
 // polynomial-convertible or not. This function is used in the

@@ -988,7 +988,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
       EigenPtr<VectorX<T>> v) const {
     DRAKE_ASSERT(v != nullptr);
     return v->segment(topology_.mobilizer_velocities_start_in_v,
-                     topology_.num_mobilizer_velocities);
+                      topology_.num_mobilizer_velocities);
   }
 
   // Helper to get an Eigen expression of the vector of generalized forces

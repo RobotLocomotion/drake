@@ -11,8 +11,7 @@ Archive naming convention:
 Build configuration:
     BUILD_SHARED_LIBS=OFF
     CMAKE_BUILD_TYPE=Release
-    DD_QT_VERSION=4 (Trusty)
-    DD_QT_VERSION=5 (Mac and Xenial)
+    DD_QT_VERSION=5
     USE_LCM=ON
     USE_SYSTEM_VTK=ON
 
@@ -44,19 +43,19 @@ def _impl(repository_ctx):
     if os_result.is_mac:
         archive = "dv-0.1.0-173-g6e49220-qt-5.9.1-vtk-8.0.1-mac-x86_64.tar.gz"
         sha256 = "65b78914327c82bb8fd7cf2182dedc2a45edeafc44fc229415528ee2180bf9a4"  # noqa
-    elif os_result.ubuntu_release == "14.04":
-        archive = "dv-0.1.0-173-g6e49220-qt-4.8.6-vtk-8.0.1-trusty-x86_64.tar.gz"  # noqa
-        sha256 = "a9b03955cc22803f418fc712d98b3b0f83411d480ed63c6544e6ddfa141e92d5"  # noqa
     elif os_result.ubuntu_release == "16.04":
         archive = "dv-0.1.0-173-g6e49220-qt-5.5.1-vtk-8.0.1-xenial-x86_64.tar.gz"  # noqa
         sha256 = "57ebe3cef758b42bdc1affb50e371a1e5224e73e3c2ebe25dcbba7697b66d24d"  # noqa
     else:
         fail("Operating system is NOT supported", attr = os_result)
 
-    url = "https://d2mbb5ninhlpdu.cloudfront.net/director/{}".format(archive)
+    urls = [
+        "https://drake-packages.csail.mit.edu/director/{}".format(archive),
+        "https://s3.amazonaws.com/drake-packages/director/{}".format(archive),
+    ]
     root_path = repository_ctx.path("")
 
-    repository_ctx.download_and_extract(url, root_path, sha256 = sha256)
+    repository_ctx.download_and_extract(urls, root_path, sha256 = sha256)
 
     file_content = """
 filegroup(

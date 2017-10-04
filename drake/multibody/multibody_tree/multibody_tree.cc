@@ -17,10 +17,32 @@ namespace multibody {
 using internal::BodyNode;
 using internal::BodyNodeWelded;
 
+namespace internal {
+template <typename T>
+class JointImplementationBuilder {
+ public:
+  JointImplementationBuilder() = delete;
+  static void Build(Joint<T>* joint, MultibodyTree<T>* tree) {
+    std::unique_ptr<JointBluePrint> blue_print =
+        joint->MakeImplementationBlueprint();
+    auto implementation = std::make_unique<JointImplementation>(*blue_print);
+    DRAKE_DEMAND(implementation->get_num_mobilizers() != 0);
+    for (auto& mobilizer : blue_print->mobilizers_) {
+      tree->AddMobilizer(std::move(mobilizer));
+    }
+    // TODO(amcastro-tri): add force elements, bodies, constraints, etc.
+    joint->OwnImplementation(std::move(implementation));
+  }
+ private:
+  typedef typename Joint<T>::BluePrint JointBluePrint;
+  typedef typename Joint<T>::JointImplementation JointImplementation;
+};
+}  // namespace internal
+
 template <typename T>
 MultibodyTree<T>::MultibodyTree() {
   // Adds a "world" body to MultibodyTree having a NaN SpatialInertia.
-  AddBody<RigidBody>(SpatialInertia<double>());
+  world_body_ = &AddBody<RigidBody>(SpatialInertia<double>());
 }
 
 template <typename T>
@@ -81,6 +103,21 @@ void MultibodyTree<T>::FinalizeInternals() {
 
 template <typename T>
 void MultibodyTree<T>::Finalize() {
+  // Create Joint objects's implementation. Joints are implemented using a
+  // combination of MultibodyTree's building blocks such as Body, Mobilizer,
+  // ForceElement and Constraint. For a same physical Joint, several
+  // implementations could be created (for instance, a Constraint instead of a
+  // Mobilizer). The decision on what implementation to create is performed by
+  // MultibodyTree at Finalize() time. Then, JointImplementationBuilder below
+  // can request MultibodyTree for these choices when building the Joint
+  // implementation. Since a Joint's implementation is built upon
+  // MultibodyTree's building blocks, notice that creating a Joint's
+  // implementation will therefore change the tree topology. Since topology
+  // changes are NOT allowed after Finalize(), joint implementations MUST be
+  // assembled BEFORE the tree's topology is finalized.
+  for (auto& joint : owned_joints_) {
+    internal::JointImplementationBuilder<T>::Build(joint.get(), this);
+  }
   FinalizeTopology();
   FinalizeInternals();
 }
@@ -126,12 +163,12 @@ MultibodyTree<T>::CreateDefaultContext() const {
         "to create a context.");
   }
   auto context = std::make_unique<MultibodyTreeContext<T>>(topology_);
-  SetDefaults(context.get());
+  SetDefaultContext(context.get());
   return std::move(context);
 }
 
 template <typename T>
-void MultibodyTree<T>::SetDefaults(systems::Context<T>* context) const {
+void MultibodyTree<T>::SetDefaultContext(systems::Context<T> *context) const {
   for (const auto& mobilizer : owned_mobilizers_) {
     mobilizer->set_zero_configuration(context);
   }
@@ -330,6 +367,32 @@ void MultibodyTree<T>::CalcInverseDynamics(
 }
 
 template <typename T>
+void MultibodyTree<T>::CalcForceElementsContribution(
+    const systems::Context<T>& context,
+    const PositionKinematicsCache<T>& pc,
+    const VelocityKinematicsCache<T>& vc,
+    std::vector<SpatialForce<T>>* F_Bo_W_array,
+    EigenPtr<VectorX<T>> tau_array) const {
+  DRAKE_DEMAND(F_Bo_W_array != nullptr);
+  DRAKE_DEMAND(static_cast<int>(F_Bo_W_array->size()) == get_num_bodies());
+  DRAKE_DEMAND(tau_array != nullptr);
+  DRAKE_DEMAND(tau_array->size() == get_num_velocities());
+
+  const auto& mbt_context =
+      dynamic_cast<const MultibodyTreeContext<T>&>(context);
+
+  // Zero the arrays before adding contributions.
+  tau_array->setZero();
+  for (auto& F : *F_Bo_W_array) F.SetZero();
+
+  // Add contributions from force elements.
+  for (const auto& force_element : owned_force_elements_) {
+    force_element->CalcAndAddForceContribution(
+        mbt_context, pc, vc, F_Bo_W_array, tau_array);
+  }
+}
+
+template <typename T>
 void MultibodyTree<T>::CalcMassMatrixViaInverseDynamics(
     const systems::Context<T>& context, EigenPtr<MatrixX<T>> H) const {
   DRAKE_DEMAND(H != nullptr);
@@ -402,6 +465,59 @@ void MultibodyTree<T>::DoCalcBiasTerm(
   // TODO(amcastro-tri): provide specific API for when vdot = 0.
   CalcInverseDynamics(context, pc, vc, vdot, {}, VectorX<T>(),
                       &A_WB_array, &F_BMo_W_array, Cv);
+}
+
+template <typename T>
+T MultibodyTree<T>::CalcPotentialEnergy(
+    const systems::Context<T>& context) const {
+  // TODO(amcastro-tri): Eval PositionKinematicsCache when caching lands.
+  PositionKinematicsCache<T> pc(get_topology());
+  CalcPositionKinematicsCache(context, &pc);
+  return DoCalcPotentialEnergy(context, pc);
+}
+
+template <typename T>
+T MultibodyTree<T>::DoCalcPotentialEnergy(
+    const systems::Context<T>& context,
+    const PositionKinematicsCache<T>& pc) const {
+  const auto& mbt_context =
+      dynamic_cast<const MultibodyTreeContext<T>&>(context);
+
+  T potential_energy = 0.0;
+  // Add contributions from force elements.
+  for (const auto& force_element : owned_force_elements_) {
+    potential_energy += force_element->CalcPotentialEnergy(mbt_context, pc);
+  }
+  return potential_energy;
+}
+
+template <typename T>
+T MultibodyTree<T>::CalcConservativePower(
+    const systems::Context<T>& context) const {
+  // TODO(amcastro-tri): Eval PositionKinematicsCache when caching lands.
+  PositionKinematicsCache<T> pc(get_topology());
+  CalcPositionKinematicsCache(context, &pc);
+  // TODO(amcastro-tri): Eval VelocityKinematicsCache when caching lands.
+  VelocityKinematicsCache<T> vc(get_topology());
+  CalcVelocityKinematicsCache(context, pc, &vc);
+  return DoCalcConservativePower(context, pc, vc);
+}
+
+template <typename T>
+T MultibodyTree<T>::DoCalcConservativePower(
+    const systems::Context<T>& context,
+    const PositionKinematicsCache<T>& pc,
+    const VelocityKinematicsCache<T>& vc) const {
+  const auto& mbt_context =
+      dynamic_cast<const MultibodyTreeContext<T>&>(context);
+
+  T conservative_power = 0.0;
+  // Add contributions from force elements.
+  for (const auto& force_element : owned_force_elements_) {
+    conservative_power +=
+        force_element->CalcConservativePower(mbt_context, pc, vc);
+  }
+  return conservative_power;
 }
 
 // Explicitly instantiates on the most common scalar types.

@@ -13,7 +13,6 @@ package(default_visibility = ["//visibility:public"])
 
 cc_proto_library(
     name = "matlab_rpc",
-    testonly = 1,
     srcs = [
         "matlab_rpc.proto",
     ],

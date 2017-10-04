@@ -225,6 +225,30 @@ struct MobilizerTopology {
   int velocities_start_in_v{0};
 };
 
+/// Data structure to store the topological information associated with a
+/// ForceElement.
+struct ForceElementTopology {
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ForceElementTopology);
+
+  /// Default construction to an invalid configuration. This only exists to
+  /// satisfy demands of working with various container classes.
+  ForceElementTopology() {}
+
+  /// Constructs a force element topology with index `force_element_index`.
+  explicit ForceElementTopology(ForceElementIndex force_element_index) :
+      index(force_element_index) {}
+
+  /// Returns `true` if all members of `this` topology are exactly equal to the
+  /// members of `other`.
+  bool operator==(const ForceElementTopology& other) const {
+    if (index != other.index) return false;
+    return true;
+  }
+
+  /// Unique index in the MultibodyTree.
+  ForceElementIndex index{0};
+};
+
 /// Data structure to store the topological information associated with a tree
 /// node. A tree node essentially consists of a body and its inboard mobilizer.
 /// A body node is in charge of the computations associated to that body and
@@ -396,6 +420,11 @@ class MultibodyTreeTopology {
     return static_cast<int>(body_nodes_.size());
   }
 
+  /// Returns the number of force elements in the multibody tree.
+  int get_num_force_elements() const {
+    return static_cast<int>(force_elements_.size());
+  }
+
   /// Returns the number of tree levels in the topology.
   int get_tree_height() const {
     return tree_height_;
@@ -544,6 +573,25 @@ class MultibodyTreeTopology {
                              inboard_body, outboard_body,
                              num_positions, num_velocities);
     return mobilizer_index;
+  }
+
+  /// Creates and adds a new ForceElementTopology, associated with the given
+  /// force_index, to this MultibodyTreeTopology.
+  ///
+  /// @throws std::logic_error if Finalize() was already called on `this`
+  /// topology.
+  ///
+  /// @returns The ForceElementIndex assigned to the new ForceElementTopology.
+  ForceElementIndex add_force_element() {
+    if (is_valid()) {
+      throw std::logic_error(
+          "This MultibodyTreeTopology is finalized already. "
+              "Therefore adding more force elements is not allowed. "
+              "See documentation for Finalize() for details.");
+    }
+    ForceElementIndex force_index(get_num_force_elements());
+    force_elements_.emplace_back(force_index);
+    return force_index;
   }
 
   /// This method must be called by MultibodyTree::Finalize() after all
@@ -738,6 +786,7 @@ class MultibodyTreeTopology {
   std::vector<FrameTopology> frames_;
   std::vector<BodyTopology> bodies_;
   std::vector<MobilizerTopology> mobilizers_;
+  std::vector<ForceElementTopology> force_elements_;
   std::vector<BodyNodeTopology> body_nodes_;
 
   // Total number of generalized positions and velocities in the MultibodyTree

@@ -2,8 +2,6 @@
 
 #include <type_traits>
 
-#include "drake/common/drake_compat.h"
-
 /// @file
 /// Provides Drake's assertion implementation.  This is intended to be used
 /// both within Drake and by other software.  Drake's asserts can be armed

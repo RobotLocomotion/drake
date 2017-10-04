@@ -10,9 +10,14 @@ void Shape::Reify(ShapeReifier* reifier) const { reifier_(*this, reifier); }
 std::unique_ptr<Shape> Shape::Clone() const { return cloner_(*this); }
 
 Sphere::Sphere(double radius)
-    : Shape(static_cast<Sphere*>(nullptr)), radius_(radius) {}
+    : Shape(ShapeTag<Sphere>()), radius_(radius) {}
 
-HalfSpace::HalfSpace() : Shape(static_cast<HalfSpace*>(nullptr)) {}
+Cylinder::Cylinder(double radius, double length)
+    : Shape(ShapeTag<Cylinder>()),
+      radius_(radius),
+      length_(length) {}
+
+HalfSpace::HalfSpace() : Shape(ShapeTag<HalfSpace>()) {}
 
 Isometry3<double> HalfSpace::MakePose(const Vector3<double>& normal_F,
                                       const Vector3<double>& r_FP) {

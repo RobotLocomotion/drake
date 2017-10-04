@@ -47,8 +47,6 @@ macro(drake_setup_matlab)
       unset(_matlab_realpath)
       unset(_matlab_bindir)
 
-      set(MATLAB_ADDITIONAL_VERSIONS "R2017a=9.2" "R2016b=9.1")
-
       find_package(Matlab MODULE
         COMPONENTS
           MAIN_PROGRAM
@@ -150,7 +148,7 @@ endmacro()
 macro(drake_setup_java)
   # Require Java at the super-build level since libbot cannot configure without
   # finding Java
-  find_package(Java 1.6 REQUIRED)
+  find_package(Java 1.8 REQUIRED)
   include(UseJava)
 
   # If matlab is in use, try to determine its JVM version, as we need to build
@@ -164,52 +162,10 @@ macro(drake_setup_java)
 endmacro()
 
 #------------------------------------------------------------------------------
-# Find and set up Fortran.
-#------------------------------------------------------------------------------
-macro(drake_setup_fortran)
-  option(DISABLE_FORTRAN "Do not use Fortran even if it is supported" OFF)
-  mark_as_advanced(DISABLE_FORTRAN)
-
-  if(NOT DISABLE_FORTRAN)
-    if(CMAKE_GENERATOR STREQUAL "Unix Makefiles")
-      enable_language(Fortran)
-
-      if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" AND CMAKE_Fortran_COMPILER_VERSION VERSION_LESS "4.9")
-        message(FATAL_ERROR "GNU Fortran compiler version must be at least 4.9 \
-                             (detected version ${CMAKE_Fortran_COMPILER_VERSION})")
-      endif()
-    else()
-      # Ninja and Xcode may not support Fortran, so manually find the Fortran
-      # compiler and set any flags passed in by environment variable
-      find_program(CMAKE_Fortran_COMPILER
-        NAMES "$ENV{FC}" gfortran-6 gfortran-5 gfortran-4.9 gfortran-4 gfortran
-        DOC "Fortran compiler")
-      if(CMAKE_Fortran_COMPILER)
-        message(STATUS "Found Fortran compiler: ${CMAKE_Fortran_COMPILER}")
-      else()
-        message(FATAL_ERROR "Could NOT find Fortran compiler")
-      endif()
-      set(CMAKE_Fortran_FLAGS "$ENV{FFLAGS}" CACHE STRING
-        "Flags for Fortran compiler")
-    endif()
-  endif()
-endmacro()
-
-#------------------------------------------------------------------------------
 # Set up Python.
 #------------------------------------------------------------------------------
 macro(drake_setup_python)
-  option(DISABLE_PYTHON "Do not use Python even if it is supported" OFF)
-  mark_as_advanced(DISABLE_PYTHON)
-
-  # Choose your python (major) version
-  option(WITH_PYTHON_3 "Force Drake to use Python 3 instead of Python 2" OFF)
-
-  if(WITH_PYTHON_3)
-    find_package(Python 3 MODULE REQUIRED)
-  else()
-    find_package(Python 2.7 MODULE REQUIRED)
-  endif()
+  find_package(Python 2.7 MODULE REQUIRED)
 endmacro()
 
 #------------------------------------------------------------------------------
@@ -247,11 +203,6 @@ macro(drake_setup_platform)
   # Ensure that find_package() searches in the install directory first.
   list(APPEND CMAKE_PREFIX_PATH "${CMAKE_INSTALL_PREFIX}")
 
-  # Set default lib directory name suffix
-  set(LIB_SUFFIX "" CACHE STRING
-    "Suffix of library install directory, e.g. '64'")
-  mark_as_advanced(LIB_SUFFIX)
-
   # Set RPATH for installed binaries
   set(CMAKE_MACOSX_RPATH ON)
   set(CMAKE_INSTALL_RPATH
@@ -282,27 +233,12 @@ endmacro()
 # Set up properties for the Drake superbuild.
 #------------------------------------------------------------------------------
 macro(drake_setup_superbuild)
-  enable_testing()
-  set_property(DIRECTORY PROPERTY TEST_INCLUDE_FILE
-    ${CMAKE_BINARY_DIR}/CTestExternals.cmake)
-  file(REMOVE ${CMAKE_BINARY_DIR}/CTestExternals.cmake)
-
   # Set default install prefix
   if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE STRING
       "Prefix for installation of sub-packages (note: required during build!)"
       FORCE)
   endif()
-  message(STATUS CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX})
-
-  # Drake itself does not contain Fortran code.
-  drake_setup_fortran()
-
-  # Add homebrew path for VTK
-  if(APPLE)
-    list(APPEND CMAKE_PREFIX_PATH /usr/local/opt/vtk5)
-  endif()
-
 endmacro()
 
 ###############################################################################

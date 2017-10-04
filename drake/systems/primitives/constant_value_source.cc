@@ -4,7 +4,6 @@
 namespace drake {
 namespace systems {
 
-// Explicitly instantiates on the most common scalar types.
 template class ConstantValueSource<double>;
 
 }  // namespace systems

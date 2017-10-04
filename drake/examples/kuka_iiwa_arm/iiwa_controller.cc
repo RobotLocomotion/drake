@@ -27,12 +27,15 @@
 using robotlocomotion::robot_plan_t;
 
 DEFINE_string(urdf, "", "Name of urdf to load");
+DEFINE_string(interp_type, "cubic",
+              "Robot plan interpolation type. Can be {zoh, foh, cubic, pchip}");
 
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 using manipulation::planner::RobotPlanInterpolator;
+using manipulation::planner::InterpolatorType;
 
 const char* const kIiwaUrdf =
     "drake/manipulation/models/iiwa_description/urdf/"
@@ -54,7 +57,29 @@ int DoMain() {
 
   const std::string urdf =
       (!FLAGS_urdf.empty() ? FLAGS_urdf : FindResourceOrThrow(kIiwaUrdf));
-  auto plan_source = builder.AddSystem<RobotPlanInterpolator>(urdf);
+
+  // Sets the robot plan interpolation type.
+  RobotPlanInterpolator* plan_source;
+  std::string interp_str(FLAGS_interp_type);
+  std::transform(interp_str.begin(), interp_str.end(),
+                 interp_str.begin(), ::tolower);
+  if (interp_str == "zoh") {
+    plan_source = builder.AddSystem<RobotPlanInterpolator>(
+        urdf, InterpolatorType::ZeroOrderHold);
+  } else if (interp_str == "foh") {
+    plan_source = builder.AddSystem<RobotPlanInterpolator>(
+        urdf, InterpolatorType::FirstOrderHold);
+  } else if (interp_str == "cubic") {
+    plan_source = builder.AddSystem<RobotPlanInterpolator>(
+        urdf, InterpolatorType::Cubic);
+  } else if (interp_str == "pchip") {
+    plan_source = builder.AddSystem<RobotPlanInterpolator>(
+        urdf, InterpolatorType::Pchip);
+  } else {
+    DRAKE_ABORT_MSG("Robot plan interpolation type not recognized. "
+                    "Use the gflag --helpshort to display "
+                    "flag options for interpolator type.");
+  }
   plan_source->set_name("plan_source");
   const int num_joints = plan_source->tree().get_num_positions();
 
@@ -112,7 +137,7 @@ int DoMain() {
   systems::Context<double>* diagram_context = loop.get_mutable_context();
   systems::Context<double>& status_sub_context =
       diagram->GetMutableSubsystemContext(*status_sub, diagram_context);
-  status_sub->SetDefaults(&status_sub_context);
+  status_sub->SetDefaultContext(&status_sub_context);
 
   // Explicit initialization.
   diagram_context->set_time(msg_time);
