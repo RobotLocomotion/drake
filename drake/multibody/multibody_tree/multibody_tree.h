@@ -998,37 +998,11 @@ class MultibodyTree {
   void CalcBiasTerm(
       const systems::Context<T>& context, EigenPtr<VectorX<T>> Cv) const;
 
-  /// Transforms the time derivative `qdot` of the generalized positions vector
-  /// `q` (stored in `context`) to generalized velocities `v`. `v` and `q̇`
-  /// are related linearly by `q̇ = N(q)⋅v`, where `N(q)` is a block
-  /// diagonal matrix, see Mobilizer::MapVelocityToQDot(). In a multibody model
-  /// there will be one block of `N(q)` per Mobilizer.
-  ///
-  /// @param[in] context
-  ///   The context containing the state of the %MultibodyTree model.
-  /// @param[in] qdot
-  ///   A vector containing the time derivatives of the generalized positions.
-  /// @param[out] v
-  ///   A valid (non-null) pointer to a vector in `ℛⁿ` with n the number of
-  ///   generalized velocities. This method aborts if v is nullptr or if it
-  ///   does not have the proper size.
-  ///
-  /// @see MapVelocityToQDot()
-  void MapQDotToVelocity(
-      const systems::Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& qdot,
-      EigenPtr<VectorX<T>> v) const;
-
   /// Transforms generalized velocities v to time derivatives `qdot` of the
   /// generalized positions vector `q` (stored in `context`). `v` and `qdot`
   /// are related linearly by `q̇ = N(q)⋅v`, where `N(q)` is a block
-  /// diagonal matrix, see Mobilizer::MapVelocityToQDot(). In a multibody model
-  /// there will be one block of `N(q)` per Mobilizer. Although `N(q)` is not
-  /// necessarily square, its left pseudo-inverse `N⁺(q)` can be used to
-  /// invert that relationship without residual error, provided that `qdot` is
-  /// in the range space of `N(q)` (that is, if it *could* have been produced as
-  /// `q̇ = N(q)⋅v` for some `v`). Using the configuration `q` from the given
-  /// `context` this method calculates `v = N⁺(q)⋅q̇`.
+  /// diagonal matrix. In a multibody model there will be one block of `N(q)`
+  /// per Mobilizer, see Mobilizer::MapVelocityToQDot().
   ///
   /// @param[in] context
   ///   The context containing the state of the %MultibodyTree model.
@@ -1044,6 +1018,33 @@ class MultibodyTree {
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& v,
       EigenPtr<VectorX<T>> qdot) const;
+
+  /// Transforms the time derivative `qdot` of the generalized positions vector
+  /// `q` (stored in `context`) to generalized velocities `v`. `v` and `q̇`
+  /// are related linearly by `q̇ = N(q)⋅v`, where `N(q)` is a block
+  /// diagonal matrix, see MapVelocityToQDot(). In a multibody model
+  /// there will be one block of `N(q)` per Mobilizer. Although `N(q)` is not
+  /// necessarily square, its left pseudo-inverse `N⁺(q)` can be used to
+  /// invert that relationship without residual error, provided that `qdot` is
+  /// in the range space of `N(q)` (that is, if it *could* have been produced as
+  /// `q̇ = N(q)⋅v` for some `v`), see Mobilizer::MapQDotToVelocity(). Using the
+  /// configuration `q` from the given `context` this method calculates
+  /// `v = N⁺(q)⋅q̇`.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the %MultibodyTree model.
+  /// @param[in] qdot
+  ///   A vector containing the time derivatives of the generalized positions.
+  /// @param[out] v
+  ///   A valid (non-null) pointer to a vector in `ℛⁿ` with n the number of
+  ///   generalized velocities. This method aborts if v is nullptr or if it
+  ///   does not have the proper size.
+  ///
+  /// @see MapVelocityToQDot()
+  void MapQDotToVelocity(
+      const systems::Context<T>& context,
+      const Eigen::Ref<const VectorX<T>>& qdot,
+      EigenPtr<VectorX<T>> v) const;
 
   /// @name Methods to retrieve multibody element variants
   ///

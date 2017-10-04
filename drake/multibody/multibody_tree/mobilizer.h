@@ -114,7 +114,14 @@ template<typename T> class BodyNode;
 /// - N(q):
 ///     The kinematic coupling matrix describing the relationship between the
 ///     rate of change of generalized coordinates and the generalized velocities
-///     by `q̇ = N(q) * v`, [Seth 2010]. N(q) is an `nq x nv` matrix.
+///     by `q̇ = N(q)⋅v`, [Seth 2010]. N(q) is an `nq x nv` matrix. A
+///     %Mobilizer implements this application in MapVelocityToQDot().
+/// - N⁺(q):
+///     The left pseudo-inverse of `N(q)`. `N⁺(q)` can be used to invert the
+///     relationship `q̇ = N(q)⋅v` without residual error, provided that `q̇` is
+///     in the range space of `N(q)` (that is, if it *could* have been produced
+///     as `q̇ = N(q)⋅v` for some `v`). The application `v = N⁺(q)⋅q̇` is
+///     implemented in MapQDotToVelocity().
 ///
 /// In general, `nv != nq`. As an example, consider a quaternion mobilizer that
 /// would allow frame M to move freely with respect to frame F. For such a
@@ -405,11 +412,18 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
       const SpatialForce<T>& F_Mo_F,
       Eigen::Ref<VectorX<T>> tau) const = 0;
 
+  /// Implements the kinematic coupling `q̇ = N(q)⋅v` between generalized
+  /// velocities v and time derivatives of the generalized positions `qdot`.
+  /// The generalized positions vector is stored in `context`.
   virtual void MapVelocityToQDot(
       const MultibodyTreeContext<T>& context,
       const Eigen::Ref<const VectorX<T>>& v,
       EigenPtr<VectorX<T>> qdot) const = 0;
 
+  /// Implements the mapping `v = N⁺(q)⋅q̇` from time derivatives of the
+  /// generalized positions `qdot` to generalized velocities v, where `N⁺(q)` is
+  /// the left pseudo-inverse of `N(q)` defined by MapVelocityToQDot().
+  /// The generalized positions vector is stored in `context`.
   virtual void MapQDotToVelocity(
       const MultibodyTreeContext<T>& context,
       const Eigen::Ref<const VectorX<T>>& qdot,
