@@ -68,6 +68,7 @@ _LIBDRAKE_COMPONENTS = [
     "//drake/common:sorted_vectors_have_intersection",
     "//drake/common:symbolic",
     "//drake/common:text_logging_gflags",
+    "//drake/common/proto:matlab_rpc",
     "//drake/common/proto:protobuf",
     "//drake/common/trajectories:piecewise_function",
     "//drake/common/trajectories:piecewise_polynomial",
