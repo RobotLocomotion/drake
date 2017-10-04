@@ -47,8 +47,8 @@ GTEST_TEST(LcmLogTest, LcmLogTestSaveAndRead) {
   EXPECT_EQ(msg.encode(&buffer[0], 0, msg.getEncodedSize()),
             msg.getEncodedSize());
 
-  const uint16_t log_timestamp = 111;
-  w_log->Publish(channel_name, buffer.data(), buffer.size(), log_timestamp);
+  const double log_time = 111;
+  w_log->Publish(channel_name, buffer.data(), buffer.size(), log_time);
   // Finish writing.
   w_log.reset();
 
@@ -63,7 +63,7 @@ GTEST_TEST(LcmLogTest, LcmLogTestSaveAndRead) {
   }
 
   double r_time = r_log->GetNextMessageTime();
-  EXPECT_EQ(r_time * 1e6, static_cast<double>(log_timestamp));
+  EXPECT_NEAR(r_time, log_time, 1e-12);
   r_log->DispatchMessageAndAdvanceLog(r_time);
 
   for (const auto& handler : handlers) {

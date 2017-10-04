@@ -71,7 +71,7 @@ class DrakeLcmInterface {
    * Only used for supporting Lcm log playback. Default implementation is no-op.
    * @see DrakeLcmLog::DispatchMessageAndAdvanceLog
    */
-  virtual void DispatchMessageAndAdvanceLog(double current_time) {}
+  virtual void DispatchMessageAndAdvanceLog(double) {}
 
   /**
    * Only used for supporting Lcm log playback. Default implementation returns
