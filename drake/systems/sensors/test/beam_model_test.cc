@@ -173,7 +173,7 @@ GTEST_TEST(BeamModelTest, TestProbabilityDensity) {
                              .matrix()
                              .sum();
 
-    EXPECT_NEAR(count / N, probability_density_function(a + h / 2) * h, 1e-2);
+    EXPECT_NEAR(count / N, probability_density_function(a + h / 2) * h, 1.5e-2);
     CallMatlab("plot", a + h / 2, count / N / h, "r.");
   }
 
