@@ -15,9 +15,12 @@
 namespace drake {
 namespace lcm {
 
+// TODO(siyuan):
+
 /**
- * A Lcm interface for writing to Lcm log or playing back from a existing
- * log.
+ * A Lcm interface for logging Lcm messages to a file or playing back from a
+ * existing log. Note the user is responsible for synchronizing the clock used
+ * to generate the log and the clock used for playback.
  */
 class DrakeLcmLog : public DrakeLcmInterface {
  public:
@@ -29,12 +32,10 @@ class DrakeLcmLog : public DrakeLcmInterface {
    * @param is_write If false, this instance reads from the Lcm log
    * identified by @p file_name. If true, this instance writes to the Lcm log
    * whose name is given by @p file_name.
-   * @param starting_time An arbitrary time shift used to shift the Lcm log's
-   * time. In read-only mode, all messages occurred before @p starting_time
-   * are discarded.
+   *
+   * @throws std::runtime_error if unable to open file.
    */
-  explicit DrakeLcmLog(const std::string& file_name, bool is_write,
-                       double starting_time = 0);
+  explicit DrakeLcmLog(const std::string& file_name, bool is_write);
 
   /**
    * Writes an entry occurred at @p timestamp with content @p data to the log
@@ -42,8 +43,7 @@ class DrakeLcmLog : public DrakeLcmInterface {
    * @param channel Channel name.
    * @param data Pointer to raw bytes.
    * @param data_size Number of bytes in @p data.
-   * @param second Time in seconds when the message is published. @p second is
-   * relative to the start time passed to this instance's constructor. Since
+   * @param second Time in seconds when the message is published. Since
    * messages are save to the log file in the order of Publish calls, this
    * function should only be called with non-decreasing @p second.
    *
@@ -65,8 +65,7 @@ class DrakeLcmLog : public DrakeLcmInterface {
 
   /**
    * Returns the time in seconds for the next logged message's occurrence time
-   * relative to the starting time passed to the constructor or infinity if
-   * there are no more messages in the current log.
+   * or infinity if there are no more messages in the current log.
    *
    * @throws std::logic_error if this instance is not constructed in read-only
    * mode.
@@ -74,15 +73,15 @@ class DrakeLcmLog : public DrakeLcmInterface {
   double GetNextMessageTime() const override;
 
   /**
-   * Let `MSG` be the next message event in the log, if @p current_time relative
-   * to the starting time matches `MSG`'s timestamp, for every
-   * DrakeLcmMessageHandlerInterface `sub` that's registered to `MSG`'s channel,
-   * invoke `sub`'s HandleMessage method. Then, advances the log by exactly one
-   * message.
-   * This function does nothing if `MSG` is null or @p current_time relative
-   * to the starting time does not match `MSG`'s timestamp.
+   * Let `MSG` be the next message event in the log, if @p current_time matches
+   * `MSG`'s timestamp, for every DrakeLcmMessageHandlerInterface `sub` that's
+   * subscribed to `MSG`'s channel, invoke `sub`'s HandleMessage method. Then,
+   * this function advances the log by exactly one message. This function does
+   * nothing if `MSG` is null (end of log) or @p current_time does not match
+   * `MSG`'s timestamp.
    *
-   * @throws std::logic_error if this instance is not constructed in read-only mode.
+   * @throws std::logic_error if this instance is not constructed in read-only
+   * mode.
    */
   void DispatchMessageAndAdvanceLog(double current_time) override;
 
@@ -92,16 +91,11 @@ class DrakeLcmLog : public DrakeLcmInterface {
   bool is_write_only() const { return is_write_; }
 
   /**
-   * Returns the starting time passed to the constructor.
-   */
-  double get_starting_time() const { return starting_time_; }
-
-  /**
    * Converts @p timestamp (in microseconds) to time (in seconds) relative to
    * the starting time passed to the constructor.
    */
   double timestamp_to_second(uint64_t timestamp) const {
-    return static_cast<double>(timestamp) / 1e6 + starting_time_;
+    return static_cast<double>(timestamp) / 1e6;
   }
 
   /**
@@ -109,7 +103,7 @@ class DrakeLcmLog : public DrakeLcmInterface {
    * constructor to a timestamp in microseconds.
    */
   uint64_t second_to_timestamp(double sec) const {
-    return static_cast<uint64_t>((sec - starting_time_) * 1e6);
+    return static_cast<uint64_t>(sec * 1e6);
   }
 
   void StartReceiveThread() override {}
@@ -117,7 +111,6 @@ class DrakeLcmLog : public DrakeLcmInterface {
 
  private:
   const bool is_write_;
-  const double starting_time_;
 
   std::map<std::string, std::vector<DrakeLcmMessageHandlerInterface*>>
       subscriptions_;

@@ -9,6 +9,7 @@
 
 namespace drake {
 namespace lcm {
+namespace {
 
 template <typename MsgType>
 class TestHandler : public DrakeLcmMessageHandlerInterface {
@@ -30,6 +31,8 @@ class TestHandler : public DrakeLcmMessageHandlerInterface {
   MsgType msg_;
 };
 
+// Generates a log file using the write-only interface, then plays it back
+// and check message content with a subscriber.
 GTEST_TEST(LcmLogTest, LcmLogTestSaveAndRead) {
   auto w_log = std::make_unique<DrakeLcmLog>("test.log", true);
   const std::string channel_name("test_channel");
@@ -46,10 +49,12 @@ GTEST_TEST(LcmLogTest, LcmLogTestSaveAndRead) {
 
   const uint16_t log_timestamp = 111;
   w_log->Publish(channel_name, buffer.data(), buffer.size(), log_timestamp);
+  // Finish writing.
   w_log.reset();
 
-  auto r_log = std::make_unique<DrakeLcmLog>("test.log", false);
 
+  auto r_log = std::make_unique<DrakeLcmLog>("test.log", false);
+  // Add multiple subscribers to the same channel.
   std::vector<std::unique_ptr<TestHandler<drake::lcmt_drake_signal>>> handlers;
   for (int i = 0; i < 3; i++) {
     handlers.emplace_back(
@@ -72,5 +77,6 @@ GTEST_TEST(LcmLogTest, LcmLogTestSaveAndRead) {
   }
 }
 
+}  // namespace
 }  // namespace lcm
 }  // namespace drake

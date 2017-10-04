@@ -9,21 +9,16 @@ namespace drake {
 namespace lcm {
 
 DrakeLcmLog::DrakeLcmLog(
-    const std::string& file_name, bool is_write, double starting_time)
-    : is_write_(is_write), starting_time_(starting_time) {
+    const std::string& file_name, bool is_write)
+    : is_write_(is_write) {
   if (is_write) {
     log_ = std::make_unique<::lcm::LogFile>(file_name, "w");
   } else {
     log_ = std::make_unique<::lcm::LogFile>(file_name, "r");
-    while (true) {
-      next_event_ = log_->readNextEvent();
-      if (next_event_ == nullptr) {
-        break;
-      } else {
-        if (timestamp_to_second(next_event_->timestamp) >= 0)
-          break;
-      }
-    }
+    next_event_ = log_->readNextEvent();
+  }
+  if (!log_->good()) {
+    throw std::runtime_error("Failed to open log file: " + file_name);
   }
 }
 
@@ -41,8 +36,7 @@ void DrakeLcmLog::Publish(const std::string& channel, const void* data,
   log_event.datalen = data_size;
   log_event.data = const_cast<void*>(data);
 
-  std::cout << log_event.timestamp << "\n";
-
+  // TODO(siyuan): should make cache this or thread write this.
   if (log_->writeEvent(&log_event) != 0) {
     throw std::runtime_error("Publish failed to write to log file.");
   }

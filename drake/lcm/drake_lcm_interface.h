@@ -49,7 +49,8 @@ class DrakeLcmInterface {
    *
    * @param[in] data_size The length of @data in bytes.
    *
-   * @param[in] time_sec Time in seconds when the publish event occurred.
+   * @param[in] time_sec Time in seconds when the publish event occurred. Note
+   * that this argument is only used when generating a Lcm log.
    */
   virtual void Publish(const std::string& channel, const void* data,
                        int data_size, double time_sec = 0) = 0;
@@ -67,15 +68,14 @@ class DrakeLcmInterface {
                          DrakeLcmMessageHandlerInterface* handler) = 0;
 
   /**
-   * Only used for supporting Lcm Log playback interface. Defaults
-   * implementation is no-op.
+   * Only used for supporting Lcm log playback. Default implementation is no-op.
    * @see DrakeLcmLog::DispatchMessageAndAdvanceLog
    */
   virtual void DispatchMessageAndAdvanceLog(double current_time) {}
 
   /**
-   * Only used for supporting Lcm Log playback interface. Defaults
-   * implementation returns infinity.
+   * Only used for supporting Lcm log playback. Default implementation returns
+   * infinity.
    * @see DrakeLcmLog::GetNextMessageTime
    */
   virtual double GetNextMessageTime() const {
