@@ -50,7 +50,7 @@ namespace test {
 /// - double
 /// - AutoDiffXd
 template<typename T>
-class FreeBodyPlant : public systems::LeafSystem<T> {
+class FreeBodyPlant final : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FreeBodyPlant)
 
@@ -86,6 +86,16 @@ class FreeBodyPlant : public systems::LeafSystem<T> {
   void DoCalcTimeDerivatives(
       const systems::Context<T> &context,
       systems::ContinuousState<T> *derivatives) const override;
+
+  void DoMapQDotToVelocity(
+      const systems::Context<T>& context,
+      const Eigen::Ref<const VectorX<T>>& qdot,
+      systems::VectorBase<T>* generalized_velocity) const override;
+
+  void DoMapVelocityToQDot(
+      const systems::Context<T>& context,
+      const Eigen::Ref<const VectorX<T>>& generalized_velocity,
+      systems::VectorBase<T>* qdot) const override;
 
   void BuildMultibodyTreeModel();
 

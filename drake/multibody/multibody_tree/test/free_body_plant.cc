@@ -99,6 +99,40 @@ void FreeBodyPlant<T>::DoCalcTimeDerivatives(
 }
 
 template<typename T>
+void FreeBodyPlant<T>::DoMapQDotToVelocity(
+    const systems::Context<T>& context,
+    const Eigen::Ref<const VectorX<T>>& qdot,
+    systems::VectorBase<T>* generalized_velocity) const {
+  const int nq = model_.get_num_positions();
+  const int nv = model_.get_num_velocities();
+
+  DRAKE_ASSERT(qdot.size() == nq);
+  DRAKE_DEMAND(generalized_velocity != nullptr);
+  DRAKE_DEMAND(generalized_velocity->size() == nv);
+
+  VectorX<T> v(nv);
+  model_.MapQDotToVelocity(context, qdot, &v);
+  generalized_velocity->SetFromVector(v);
+}
+
+template<typename T>
+void FreeBodyPlant<T>::DoMapVelocityToQDot(
+    const systems::Context<T>& context,
+    const Eigen::Ref<const VectorX<T>>& generalized_velocity,
+    systems::VectorBase<T>* positions_derivative) const {
+  const int nq = model_.get_num_positions();
+  const int nv = model_.get_num_velocities();
+
+  DRAKE_ASSERT(generalized_velocity.size() == nv);
+  DRAKE_DEMAND(positions_derivative != nullptr);
+  DRAKE_DEMAND(positions_derivative->size() == nq);
+
+  VectorX<T> qdot(nq);
+  model_.MapVelocityToQDot(context, generalized_velocity, &qdot);
+  positions_derivative->SetFromVector(qdot);
+}
+
+template<typename T>
 void FreeBodyPlant<T>::set_angular_velocity(
     systems::Context<T>* context, const Vector3<T>& w_WB) const {
   mobilizer_->set_angular_velocity(context, w_WB);
