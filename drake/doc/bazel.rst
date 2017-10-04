@@ -126,8 +126,8 @@ Please use the "``buildifier``" tool to format edits to ``BUILD`` files (in the
 same spirit as ``clang-format`` formatting C++ code)::
 
   cd /path/to/drake-distro
-  tools/buildifier.sh                     # By default, reformats all BUILD files.
-  tools/buildifier.sh drake/common/BUILD  # Only reformat one file.
+  bazel-bin/tools/lint/buildifier --all               # Reformat all Bazel files.
+  bazel-bin/tools/lint/buildifier drake/common/BUILD  # Only reformat one file.
 
 
 Proprietary Solvers

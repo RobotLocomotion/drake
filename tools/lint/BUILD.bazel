@@ -1,0 +1,55 @@
+# -*- python -*-
+
+package(default_visibility = ["//visibility:public"])
+
+load("//tools:lint.bzl", "add_lint_tests")
+
+# TODO(jwnimmer-tri) This probably deserves to live in drake/common, since it
+# should probably be widely used, but we'll wait until we have more evidence
+# before promoting it.
+py_library(
+    name = "find_data",
+    srcs = ["find_data.py"],
+)
+
+py_library(
+    name = "util",
+    srcs = ["util.py"],
+    data = ["//:.drake-resource-sentinel"],
+    visibility = ["//visibility:private"],
+)
+
+py_binary(
+    name = "buildifier",
+    srcs = ["buildifier.py"],
+    data = [
+        ":buildifier-tables.json",
+        "@com_github_bazelbuild_buildtools//buildifier",
+    ],
+    deps = [
+        ":find_data",
+        ":util",
+    ],
+)
+
+# === test ===
+
+py_test(
+    name = "find_data_test",
+    srcs = ["test/find_data_test.py"],
+    data = ["test/find_data_test.txt"],
+    deps = [":find_data"],
+)
+
+py_test(
+    name = "util_test",
+    srcs = ["test/util_test.py"],
+    tags = [
+        # This test looks outside the sandbox.
+        "external",
+        "local",
+    ],
+    deps = [":util"],
+)
+
+add_lint_tests()
