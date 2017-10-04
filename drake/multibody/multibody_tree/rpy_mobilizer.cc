@@ -5,8 +5,8 @@
 
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
-#include "drake/math/rotation_matrix.h"
 #include "drake/math/roll_pitch_yaw.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 
 namespace drake {
@@ -177,7 +177,7 @@ void RollPitchYawMobilizer<T>::MapQDotToVelocity(
   *v = Vector3<T>(
       cy * cp_x_rdot  -  sy * pdot, /*+ 0 * ydot*/
       sy * cp_x_rdot  +  cy * pdot, /*+ 0 * ydot*/
-          -sp * rdot/*+   0 * pdot */ +     ydot );
+          -sp * rdot/*+   0 * pdot */ +     ydot);
 }
 
 template <typename T>
