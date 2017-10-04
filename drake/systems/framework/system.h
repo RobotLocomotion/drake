@@ -482,12 +482,6 @@ class System {
     DoCalcTimeDerivatives(context, derivatives);
   }
 
-  void ProjectQ(Context<T>* context) const {
-    DRAKE_DEMAND(context != nullptr);
-    DRAKE_ASSERT_VOID(CheckValidContext(*context));
-    DoProjectQ(context);
-  }
-
   /// This method is the public entry point for dispatching all discrete
   /// variable update event handlers. Using all the discrete update handlers in
   /// @p events, the method calculates the update `xd(n+1)` to discrete
@@ -1438,19 +1432,6 @@ class System {
     // state. Other Systems must override this method!
     unused(context);
     DRAKE_DEMAND(derivatives->size() == 0);
-  }
-
-  virtual void DoProjectQ(Context<T>* context) const {
-    // This default implementation is only valid for Systems with nothing to
-    // project.
-    unused(context);
-#if 0
-    const int num_positions =
-        context->get_continuous_state()->get_generalized_position().size();
-    const int num_velocities =
-        context->get_continuous_state()->get_generalized_velocity().size();
-    DRAKE_DEMAND(num_positions == num_velocities);
-#endif
   }
 
   /// Computes the next time at which this System must perform a discrete
