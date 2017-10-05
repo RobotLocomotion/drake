@@ -83,12 +83,9 @@ Drake requires a compiler running in C++14 mode or greater.
 | Ubuntu 16.04 LTS ("Xenial") | | Bazel 0.5.2 | | Clang 3.9     | OpenJDK 8  | R2017a            | 2.7.11 |
 |                             | | CMake 3.5.1 | | GCC 5.4       |            |                   |        |
 +-----------------------------+---------------+-----------------+------------+-------------------+--------+
-| OS X 10.11 ("El Capitan")   | | Bazel 0.5.2 | Apple Clang 7.0 | Oracle 1.8 | Not Supported     | 2.7.13 |
-|                             | | CMake 3.5.2 |                 |            |                   |        |
-|                             +---------------+-----------------+            |                   |        |
-|                             | Bazel 0.5.2   | Apple Clang 8.0 |            |                   |        |
+| OS X 10.11 ("El Capitan")   | Bazel 0.5.2   | Apple Clang 8.0 | Oracle 1.8 | Not Supported     | 2.7.14 |
 +-----------------------------+---------------+-----------------+------------+-------------------+--------+
-| macOS 10.12 ("Sierra")      | Bazel 0.5.2   | Apple Clang 8.1 | Oracle 1.8 | Not Supported     | 2.7.13 |
+| macOS 10.12 ("Sierra")      | Bazel 0.5.2   | Apple Clang 9.0 | Oracle 1.8 | Not Supported     | 2.7.14 |
 +-----------------------------+---------------+-----------------+------------+-------------------+--------+
 
 Code Review
