@@ -238,34 +238,51 @@ github_archive(
     build_file = "tools/tinyobjloader.BUILD",
 )
 
-# Necessary for buildifier.
-github_archive(
-    name = "io_bazel_rules_go",
-    repository = "bazelbuild/rules_go",
-    commit = "0.4.4",
-    sha256 = "afec53d875013de6cebe0e51943345c587b41263fdff36df5ff651fbf03c1c08",  # noqa
-)
-
-# Necessary for buildifier.
-load("@io_bazel_rules_go//go:def.bzl", "go_repositories", "new_go_repository")
-
-# Necessary for buildifier.
-go_repositories()
-
-# Necessary for buildifier.
-new_go_repository(
-    name = "org_golang_x_tools",
-    commit = "3d92dd60033c312e3ae7cac319c792271cf67e37",
-    importpath = "golang.org/x/tools",
-)
-
+# This definition must be before the loading of @io_bazel_rules_go//go:def.bzl.
 github_archive(
     name = "com_github_bazelbuild_buildtools",
     repository = "bazelbuild/buildtools",
     # TODO(mwoehlke-kitware): Bump this commit to a release tag once it is
     # incorporated in a released version.
-    commit = "7ce605fb1585076ed681e37d82d0ef529244b23a",
-    sha256 = "c6210992d328212a7752a2c888a15f5c597dbf31f03ac0d59457ceff2928a30b",  # noqa
+    commit = "a05406a1a855c6d8ebfc368555ace7638d83c0d9",
+    sha256 = "23a01faf60500f2f3e22a95f426277c3650903a86a7d3380cc5296a26a59eeed",  # noqa
+)
+
+# Necessary for com_github_bazelbuild_buildtools.
+github_archive(
+    name = "io_bazel_rules_go",
+    repository = "bazelbuild/rules_go",
+    commit = "71cdb6fd5f887d215bdbe0e4d1eb137278b09c39",
+    sha256 = "51bc38fd56e61ffd83f455e3083858ca3cc307d76fa1387b2ae2baae379afcc2",  # noqa
+)
+
+# Necessary for com_github_bazelbuild_buildtools.
+load(
+    "@io_bazel_rules_go//go:def.bzl",
+    "go_register_toolchains",
+    "go_repository",
+    "go_rules_dependencies",
+)
+
+# Necessary for com_github_bazelbuild_buildtools.
+go_rules_dependencies()
+
+# Necessary for com_github_bazelbuild_buildtools.
+go_register_toolchains()
+
+# Necessary for com_github_bazelbuild_buildtools.
+github_archive(
+    name = "io_bazel",
+    repository = "bazelbuild/bazel",
+    commit = "0.6.0",
+    sha256 = "a56f53504282a500171be84d0b9d79b085eddf0d3782c79c34f642e48377b366",  # noqa
+)
+
+# Necessary for com_github_bazelbuild_buildtools.
+go_repository(
+    name = "org_golang_x_tools",
+    commit = "3d92dd60033c312e3ae7cac319c792271cf67e37",
+    importpath = "golang.org/x/tools",
 )
 
 github_archive(
