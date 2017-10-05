@@ -24,7 +24,7 @@ py_binary(
     srcs = ["buildifier.py"],
     data = [
         ":buildifier-tables.json",
-        "@com_github_bazelbuild_buildtools//buildifier",
+        "@buildifier",
     ],
     deps = [
         ":find_data",
