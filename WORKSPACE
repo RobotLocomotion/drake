@@ -238,42 +238,18 @@ github_archive(
     build_file = "tools/tinyobjloader.BUILD",
 )
 
-# Necessary for buildifier.
-github_archive(
-    name = "io_bazel_rules_go",
-    repository = "bazelbuild/rules_go",
-    commit = "0.4.4",
-    sha256 = "afec53d875013de6cebe0e51943345c587b41263fdff36df5ff651fbf03c1c08",  # noqa
-)
-
-# Necessary for buildifier.
-load("@io_bazel_rules_go//go:def.bzl", "go_repositories", "new_go_repository")
-
-# Necessary for buildifier.
-go_repositories()
-
-# Necessary for buildifier.
-new_go_repository(
-    name = "org_golang_x_tools",
-    commit = "3d92dd60033c312e3ae7cac319c792271cf67e37",
-    importpath = "golang.org/x/tools",
-)
-
-github_archive(
-    name = "com_github_bazelbuild_buildtools",
-    repository = "bazelbuild/buildtools",
-    # TODO(mwoehlke-kitware): Bump this commit to a release tag once it is
-    # incorporated in a released version.
-    commit = "7ce605fb1585076ed681e37d82d0ef529244b23a",
-    sha256 = "c6210992d328212a7752a2c888a15f5c597dbf31f03ac0d59457ceff2928a30b",  # noqa
-)
-
 github_archive(
     name = "yaml_cpp",
     repository = "jbeder/yaml-cpp",
     commit = "85af926ddc5f3c8fb438001743e65ec3a039ceec",
     sha256 = "907fb42a502e1448a73959f9a648771b070d6d8513f16d74149f775fc56550ef",  # noqa
     build_file = "tools/yaml_cpp.BUILD",
+)
+
+load("//tools:buildifier.bzl", "buildifier_repository")
+
+buildifier_repository(
+    name = "buildifier",
 )
 
 load("//tools:gurobi.bzl", "gurobi_repository")
