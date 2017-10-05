@@ -86,9 +86,7 @@ if(DISABLE_MATLAB AND Matlab_FOUND) # Set by drake_setup_platform
   unset(Matlab_FOUND)
 endif()
 
-enable_testing()
 include(CTest)
-set(GTEST_ROOT ${CMAKE_INSTALL_PREFIX})
 
 add_subdirectory(thirdParty/boost/tcbrindle_cpp17_headers/stx)
 add_subdirectory(thirdParty/bsd/spruce)

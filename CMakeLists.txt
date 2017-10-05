@@ -41,14 +41,6 @@ drake_add_external(gflags CMAKE ALWAYS
     -DBUILD_SHARED_LIBS=ON
     -DGFLAGS_BUILD_gflags_nothreads_LIB=OFF)
 
-# googletest
-drake_add_external(googletest CMAKE
-  URL https://github.com/google/googletest/archive/release-1.8.0.tar.gz
-  URL_HASH SHA256=58a6f4277ca2bc8565222b3bbd58a177609e9c488e8a72649359ba51450db7d8
-  CMAKE_ARGS
-    -DBUILD_SHARED_LIBS=ON
-    -DCMAKE_INSTALL_NAME_DIR=${CMAKE_INSTALL_PREFIX}/lib)
-
 # nlopt
 drake_add_external(nlopt CMAKE ALWAYS
   URL https://github.com/stevengj/nlopt/archive/45553da97c890ef58f95e7ef73c5409d2169e824.tar.gz
@@ -91,14 +83,11 @@ drake_add_external(tinyobjloader CMAKE ALWAYS
 drake_add_external(drake LOCAL CMAKE ALWAYS MATLAB PYTHON
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake
   BINARY_DIR ${PROJECT_BINARY_DIR}/drake
-  CMAKE_ARGS
-    -DDISABLE_MATLAB:BOOL=${DISABLE_MATLAB}
-    -DWITH_IPOPT:BOOL=${WITH_IPOPT}
+  CMAKE_ARGS -DDISABLE_MATLAB:BOOL=${DISABLE_MATLAB}
   DEPENDS
     eigen
     fmt
     gflags
-    googletest
     nlopt
     protobuf
     pybind11

@@ -10,7 +10,3 @@ target_link_libraries(drakeGeometryUtil
   Eigen3::Eigen)
 drake_install_libraries(drakeGeometryUtil)
 drake_install_headers(drakeGeometryUtil.h)
-
-if(BUILD_TESTING)
-  add_subdirectory(test)
-endif()

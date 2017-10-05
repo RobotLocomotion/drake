@@ -1,5 +1,0 @@
-add_library(drakeJointCompareToClone STATIC joint_compare_to_clone.cc)
-target_link_libraries(drakeJointCompareToClone drakeJoints)
-
-drake_add_cc_test(joint_test)
-target_link_libraries(joint_test drakeJointCompareToClone)

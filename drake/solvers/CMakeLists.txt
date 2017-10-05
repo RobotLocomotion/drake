@@ -69,8 +69,3 @@ drake_install_libraries(drakeOptimization)
 # TODO(jamiesnape): Fix imported target upstream.
 target_include_directories(drakeOptimization PUBLIC ${NLOPT_INCLUDE_DIRS})
 target_link_libraries(drakeOptimization nlopt)
-
-
-if(BUILD_TESTING)
-  add_subdirectory(test)
-endif()
