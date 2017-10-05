@@ -154,6 +154,10 @@ struct ConstraintAccelProblemData {
 
   /// This ℝⁿ vector is the vector kᴺ(t,q,v) defined above.
   VectorX<T> kN;
+
+  // TODO(edrumwri): define this quantity properly (documentation forthcoming).
+  /// This ℝⁿ vector represents the diagonal matrix γᴺ.
+  VectorX<T> gammaN;
   /// @}
 
   /// @name Data for non-sliding contact friction constraints
@@ -197,6 +201,14 @@ struct ConstraintAccelProblemData {
 
   /// This ℝʸʳ vector is the vector kᶠ(t,q,v) defined above.
   VectorX<T> kF;
+
+  // TODO(edrumwri): define this quantity properly (documentation forthcoming).
+  /// This ℝʸʳ vector represents the diagonal matrix γᶠ.
+  VectorX<T> gammaF;
+
+  // TODO(edrumwri): define this quantity properly (documentation forthcoming).
+  /// This ℝᴺ vector represents the diagonal matrix γᴱ.
+  VectorX<T> gammaE;
   /// @}
 
   /// @name Data for unilateral constraints at the acceleration level
@@ -239,6 +251,10 @@ struct ConstraintAccelProblemData {
 
   /// This ℝˢ vector is the vector kᴸ(t,q,v) defined above.
   VectorX<T> kL;
+
+  // TODO(edrumwri): define this quantity properly (documentation forthcoming).
+  /// This ℝˢ vector represents the diagonal matrix γᴸ.
+  VectorX<T> gammaL;
   /// @}
 
   /// The ℝᵐ vector tau, the generalized external force vector that
@@ -365,6 +381,10 @@ struct ConstraintVelProblemData {
 
   /// This ℝⁿ vector is the vector kᴺ(t,q,v) defined above.
   VectorX<T> kN;
+
+  // TODO(edrumwri): define this quantity properly (documentation forthcoming).
+  /// This ℝⁿ vector represents the diagonal matrix γᴺ.
+  VectorX<T> gammaN;
   /// @}
 
   /// @name Data for constraints on contact friction
@@ -407,6 +427,15 @@ struct ConstraintVelProblemData {
 
   /// This ℝʸʳ vector is the vector kᶠ(t,q,v) defined above.
   VectorX<T> kF;
+
+  // TODO(edrumwri): define this quantity properly (documentation forthcoming).
+  /// This ℝʸʳ vector represents the diagonal matrix γᶠ.
+  VectorX<T> gammaF;
+
+  // TODO(edrumwri): define this quantity properly (documentation forthcoming).
+  /// This ℝʸ vector represents the diagonal matrix γᴱ.
+  VectorX<T> gammaE;
+
   /// @}
 
   /// @name Data for unilateral constraints at the velocity level
@@ -448,6 +477,10 @@ struct ConstraintVelProblemData {
 
   /// This ℝˢ vector is the vector kᴸ(t,q) defined above.
   VectorX<T> kL;
+
+  // TODO(edrumwri): define this quantity properly (documentation forthcoming).
+  /// This ℝˢ vector represents the diagonal matrix γᴸ.
+  VectorX<T> gammaL;
   /// @}
 
   /// The ℝᵐ vector v, the generalized velocity immediately before any impulsive
