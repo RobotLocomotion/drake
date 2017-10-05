@@ -6,6 +6,7 @@
 #include <string>
 
 #include <gtest/gtest.h>
+#include <spruce.hh>
 
 using std::string;
 
@@ -53,6 +54,24 @@ GTEST_TEST(FindResourceTest, NotFound) {
 
   // Sugar works the same way.
   EXPECT_THROW(FindResourceOrThrow(relpath), std::runtime_error);
+}
+
+GTEST_TEST(FindResourceTest, AlternativeDirectory) {
+  // Test `AddResourceSearchPath()` and `GetResourceSearchPaths()` by creating
+  // an empty file in a scratch directory. Bazel tests are run in a
+  // scratch directory, so we don't need to remove anything manually.
+  const std::string test_directory = "find_resource_test_scratch";
+  spruce::dir::mkdir(test_directory);
+  const std::string candidate_filename = "candidate.ext";
+  const std::string absolute_path = test_directory + "/" + candidate_filename;
+  std::ofstream output(absolute_path.c_str(), std::ios::out);
+  output.close();
+  AddResourceSearchPath(test_directory);
+  EXPECT_EQ(GetResourceSearchPaths()[0].value(), test_directory);
+  EXPECT_NO_THROW(drake::FindResourceOrThrow(candidate_filename));
+  // Check that `ClearResourceSearchPath()` empties the persistent variable.
+  ClearResourceSearchPaths();
+  EXPECT_THROW(drake::FindResourceOrThrow(candidate_filename), std::exception);
 }
 
 GTEST_TEST(FindResourceTest, FoundDeclaredData) {

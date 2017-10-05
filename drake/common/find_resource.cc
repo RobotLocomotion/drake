@@ -7,6 +7,7 @@
 #include <spruce.hh>
 
 #include "drake/common/drake_throw.h"
+#include "drake/common/never_destroyed.h"
 
 using std::string;
 
@@ -163,6 +164,33 @@ optional<string> find_sentinel_dir() {
 const char* const kDrakeResourceRootEnvironmentVariableName =
     "DRAKE_RESOURCE_ROOT";
 
+// Saves search directorys path in a persistent variable.
+// This function is only accessible from this file and should not
+// be used outside of `GetResourceSearchPaths()` and
+// `AddResourceSearchPath()`.
+namespace {
+std::vector<optional<string>>& GetMutableResourceSearchPaths() {
+  static never_destroyed<std::vector<optional<string>>> search_paths;
+  return search_paths.access();
+}
+}  // namespace
+
+// Get vector of resource search paths.
+std::vector<optional<string>> GetResourceSearchPaths() {
+  std::vector<optional<string>> search_paths(GetMutableResourceSearchPaths());
+  return search_paths;
+}
+
+// Append a new resource search path to current vector of search paths.
+void AddResourceSearchPath(string search_path) {
+  GetMutableResourceSearchPaths().push_back(search_path);
+}
+
+// Clear additional resource search path.
+void ClearResourceSearchPaths() {
+  GetMutableResourceSearchPaths().clear();
+}
+
 Result FindResource(string resource_path) {
   // Check if resource_path is well-formed.
   if (!is_relative_path(resource_path)) {
@@ -178,14 +206,19 @@ Result FindResource(string resource_path) {
   // win.  TODO(jwnimmer-tri) Should we split on colons, making this a PATH?
   candidate_dirs.emplace_back(getenv_optional(
       kDrakeResourceRootEnvironmentVariableName));
+  // (2) Add the list of paths given programmatically.
+  std::vector<optional<string>>& search_paths = GetMutableResourceSearchPaths();
+  // At worst we have candidate_dirs.size() + search_paths.size() elements
+  candidate_dirs.reserve(candidate_dirs.size() + search_paths.size());
+  for (const auto& search_path : search_paths) {
+    if (search_path) {
+      candidate_dirs.emplace_back(search_path);
+    }
+  }
 
-  // (2) Search in cwd (and its parent, grandparent, etc.) to find Drake's
+  // (3) Search in cwd (and its parent, grandparent, etc.) to find Drake's
   // resource-root sentinel file.
   candidate_dirs.emplace_back(find_sentinel_dir());
-
-  // TODO(jwnimmer-tri) Add more search heuristics for installed copies of
-  // Drake resources.
-
   // See which (if any) candidate contains the requested resource.
   for (const auto& candidate_dir : candidate_dirs) {
     if (candidate_dir && file_exists(*candidate_dir, resource_path)) {
