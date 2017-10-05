@@ -1,13 +1,6 @@
 #include "drake/systems/framework/discrete_values.h"
 
-#include "drake/common/autodiff_overloads.h"
-#include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/default_scalars.h"
 
-namespace drake {
-namespace systems {
-
-template class DiscreteValues<double>;
-template class DiscreteValues<AutoDiffXd>;
-
-}  // namespace systems
-}  // namespace drake
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::DiscreteValues)

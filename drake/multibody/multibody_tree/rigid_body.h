@@ -6,8 +6,11 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/unused.h"
+#include "drake/multibody/multibody_tree/acceleration_kinematics_cache.h"
 #include "drake/multibody/multibody_tree/body.h"
+#include "drake/multibody/multibody_tree/position_kinematics_cache.h"
 #include "drake/multibody/multibody_tree/spatial_inertia.h"
+#include "drake/multibody/multibody_tree/velocity_kinematics_cache.h"
 
 namespace drake {
 namespace multibody {
@@ -67,20 +70,153 @@ class RigidBody : public Body<T> {
   /// state associated with flexible deformations.
   int get_num_flexible_velocities() const final { return 0; }
 
-  /// Returns the default value of this body's center of mass as measured and
-  /// expressed in this body's frame. This value is initially supplied at
+  /// Returns the default value of this body's mass.  This value is initially
+  /// supplied at construction when specifying this body's SpatialInertia.
+  /// @returns This body's default mass.
+  double get_default_mass() const {
+    return default_spatial_inertia_.get_mass();
+  }
+
+  /// Returns the default value of this rigid body's center of mass as measured
+  /// and expressed in this body's frame. This value is initially supplied at
   /// construction when specifying this body's SpatialInertia.
-  /// @retval p_BoBcm_B The position of this body's center of mass `Bcm`
-  /// measured from this body's frame origin `Bo` and expressed in this
-  /// body's frame B.
+  /// @retval p_BoBcm_B The position of this rigid body B's center of mass `Bcm`
+  /// measured from Bo (B's frame origin) and expressed in B (body B's frame).
   const Vector3<double>& get_default_com() const {
     return default_spatial_inertia_.get_com();
+  }
+
+  /// Returns the default value of this body B's unit inertia about Bo (body B's
+  /// origin), expressed in B (this body's frame). This value is initially
+  /// supplied at construction when specifying this body's SpatialInertia.
+  /// @retval G_BBo_B rigid body B's unit inertia about Bo, expressed in B.
+  const UnitInertia<double>& get_default_unit_inertia() const {
+    return default_spatial_inertia_.get_unit_inertia();
+  }
+
+  /// Gets the default value of this body B's rotational inertia about Bo
+  /// (B's origin), expressed in B (this body's frame). This value is calculated
+  /// from the SpatialInertia supplied at construction of this body.
+  /// @retval I_BBo_B body B's rotational inertia about Bo, expressed in B.
+  RotationalInertia<double> get_default_rotational_inertia()
+      const {
+    return default_spatial_inertia_.CalcRotationalInertia();
+  }
+
+  T get_mass(const MultibodyTreeContext<T>&) const final {
+    return default_spatial_inertia_.get_mass();
+  }
+
+  const Vector3<T> CalcCenterOfMassInBodyFrame(
+      const MultibodyTreeContext<T>&) const final {
+    return get_default_com().template cast<T>();
   }
 
   SpatialInertia<T> CalcSpatialInertiaInBodyFrame(
       const MultibodyTreeContext<T>&) const override {
     return default_spatial_inertia_.cast<T>();
   }
+
+  /// @name Methods to access position kinematics quantities.
+  /// The input PositionKinematicsCache to these methods must be in sync with
+  /// context.  These method's APIs will be deprecated when caching arrives.
+  ///@{
+
+  /// Extract this body's pose in world (from the position kinematics).
+  /// @param[in] pc position kinematics cache.
+  /// @retval X_WB pose of rigid body B in world frame W.
+  // TODO(amcastro-tri) When cache entries are in the context, replace this
+  // method by Body<T>::get_pose_in_world(const Context<T>&).
+  //----------------------------------------------------------------------------
+  const Isometry3<T>& get_pose_in_world(
+      const PositionKinematicsCache<T>& pc) const {
+    return pc.get_X_WB(this->get_node_index());
+  }
+
+  /// Extract the rotation matrix relating the world frame to this body's frame.
+  /// @param[in] pc position kinematics cache.
+  /// @retval R_WB rotation matrix relating rigid body B in world frame W.
+  const Matrix3<T> get_body_orientation_in_world(
+      const PositionKinematicsCache<T>& pc) const {
+    return get_pose_in_world(pc).linear();
+  }
+
+  /// Extract the position vector from world origin to this body's origin,
+  /// expressed in world.
+  /// @param[in] pc position kinematics cache.
+  /// @retval p_WoBo_W position vector from Wo (world origin) to
+  ///         Bo (this body's origin) expressed in W (world).
+  const Vector3<T> get_origin_position_in_world(
+      const PositionKinematicsCache<T>& pc) const {
+    return get_pose_in_world(pc).translation();
+  }
+  ///@}
+
+  /// @name Methods to access velocity kinematics quantities.
+  /// The input VelocityKinematicsCache to these methods must be in sync with
+  /// context.  These method's APIs will be deprecated when caching arrives.
+  ///@{
+
+  /// Extract this body spatial velocity in world, expressed in world.
+  /// @param[in] vc velocity kinematics cache.
+  /// @retval V_WB_W rigid body B's spatial velocity in world W, expressed in W.
+  // TODO(amcastro-tri) When cache entries are in the context, replace this
+  // method by Body<T>::get_spatial_velocity_in_world(const Context<T>&).
+  //----------------------------------------------------------------------------
+  const SpatialVelocity<T>& get_spatial_velocity_in_world(
+      const VelocityKinematicsCache<T>& vc) const {
+    return vc.get_V_WB(this->get_node_index());
+  }
+
+  /// Extract this body angular velocity in world, expressed in world.
+  /// @param[in] vc velocity kinematics cache.
+  /// @retval w_WB_W rigid body B's angular velocity in world W, expressed in W.
+  const Vector3<T>& get_angular_velocity_in_world(
+      const VelocityKinematicsCache<T>& vc) const {
+    return get_spatial_velocity_in_world(vc).rotational();
+  }
+
+  /// Extract the velocity of this body's origin in world, expressed in world.
+  /// @param[in] vc velocity kinematics cache.
+  /// @retval v_WBo_W velocity of Bo (body origin) in world W, expressed in W.
+  const Vector3<T>& get_origin_velocity_in_world(
+      const VelocityKinematicsCache<T>& vc) const {
+    return get_spatial_velocity_in_world(vc).translational();
+  }
+  ///@}
+
+  /// @name Methods to access acceleration kinematics quantities.
+  /// The input AccelerationKinematicsCache to these methods must be in sync
+  /// with context.  These method APIs will be deprecated when caching arrives.
+  ///@{
+
+  /// Extract this body spatial acceleration in world, expressed in world.
+  /// @param[in] ac acceleration kinematics cache.
+  /// @retval A_WB_W body B's spatial acceleration in world W, expressed in W.
+  // TODO(amcastro-tri) When cache entries are in the context, replace this
+  // method by Body<T>::get_spatial_acceleration_in_world(const Context<T>&).
+  //----------------------------------------------------------------------------
+  const SpatialAcceleration<T>& get_spatial_acceleration_in_world(
+      const AccelerationKinematicsCache<T>& ac) const {
+    return ac.get_A_WB(this->get_node_index());
+  }
+
+  /// Extract this body's angular acceleration in world, expressed in world.
+  /// @param[in] ac velocity kinematics cache.
+  /// @retval alpha_WB_W B's angular acceleration in world W, expressed in W.
+  const Vector3<T>& get_angular_acceleration_in_world(
+      const AccelerationKinematicsCache<T>& ac) const {
+    return get_spatial_acceleration_in_world(ac).rotational();
+  }
+
+  /// Extract acceleration of this body's origin in world, expressed in world.
+  /// @param[in] vc velocity kinematics cache.
+  /// @retval a_WBo_W acceleration of body origin Bo in world W, expressed in W.
+  const Vector3<T>& get_origin_acceleration_in_world(
+      const AccelerationKinematicsCache<T>& ac) const {
+    return get_spatial_acceleration_in_world(ac).translational();
+  }
+  ///@}
 
  protected:
   std::unique_ptr<Body<double>> DoCloneToScalar(
@@ -102,7 +238,6 @@ class RigidBody : public Body<T> {
     return std::make_unique<RigidBody<ToScalar>>(default_spatial_inertia_);
   }
 
- private:
   // Spatial inertia about the body frame origin Bo, expressed in B.
   SpatialInertia<double> default_spatial_inertia_;
 };

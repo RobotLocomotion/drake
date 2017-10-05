@@ -3,6 +3,7 @@
 
 package(default_visibility = ["//visibility:public"])
 
+load("@drake//tools:drake.bzl", "drake_java_binary")
 load("@drake//tools:install.bzl", "install")
 load("//tools:lcm.bzl", "lcm_cc_library", "lcm_py_library", "lcm_java_library")
 load("//tools:lint.bzl", "add_lint_tests")
@@ -293,16 +294,19 @@ DRAKE_LCMTYPES = [
 
 # This rule should list every LCM type that is known to Drake or its external
 # dependencies.
-java_binary(
+drake_java_binary(
     name = "drake-lcm-spy",
     main_class = "lcm.spy.Spy",
+    visibility = ["//visibility:private"],
     runtime_deps = [
         ":lcmtypes_drake_java",
         "@lcmtypes_bot2_core//:lcmtypes_bot2_core_java",
         "@lcmtypes_robotlocomotion//:lcmtypes_robotlocomotion_java",
+        "@libbot//:lcmspy_plugins_bot2",
         "@libbot//:lcmtypes_bot2_frames_java",
         "@libbot//:lcmtypes_bot2_lcmgl_java",
         "@libbot//:lcmtypes_bot2_param_java",
+        "@libbot//:lcmtypes_bot2_procman_java",
         "@optitrack_driver//lcmtypes:lcmtypes_optitrack",
     ],
 )
@@ -310,12 +314,23 @@ java_binary(
 install(
     name = "install",
     targets = DRAKE_LCMTYPES + [
+        ":drake-lcm-spy-launcher",
+        ":drake-lcm-spy",
         ":lcmtypes_drake_java",
         ":lcmtypes_py",
     ],
     hdr_dest = "include/drake/lcmtypes",
     guess_hdrs = "PACKAGE",
-    rename = {"share/java/liblcmtypes_drake_java.jar": "lcmtypes_drake.jar"},
+    rename = {
+        "share/java/liblcmtypes_drake_java.jar": "lcmtypes_drake.jar",
+        "bin/drake-lcm-spy-launcher.sh": "drake-lcm-spy",
+    },
+    deps = [
+        "//tools/install/optitrack_driver:install",
+        "@lcmtypes_robotlocomotion//:install",
+        "@libbot//:install_bot2_core",
+        "@libbot//:install_lcmtypes",
+    ],
 )
 
 # === test/ ===

@@ -32,7 +32,7 @@ def bitbucket_archive(
         fail("Missing repository=")
     if commit == None:
         fail("Missing commit=")
-    if sha256 == None:
+    if sha256 == None or len(sha256) == 0:
         # This is mostly-required, but we fallback to a wrong-default value to
         # allow the first attempt to fail and print the correct sha256.
         sha256 = "0" * 64
@@ -43,7 +43,7 @@ def bitbucket_archive(
     # bucket.
     mirrors = [
         "https://bitbucket.org/%s/get/%s.tar.gz",
-        "https://d2tbce6hkathzp.cloudfront.net/bitbucket/%s/%s.tar.gz",
+        "https://drake-mirror.csail.mit.edu/bitbucket/%s/%s.tar.gz",
         "https://s3.amazonaws.com/drake-mirror/bitbucket/%s/%s.tar.gz",
     ]
     urls = [mirror % (repository, commit) for mirror in mirrors]

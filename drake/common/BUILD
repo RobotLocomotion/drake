@@ -58,7 +58,6 @@ drake_cc_library(
         "constants.h",
         "drake_assert.h",
         "drake_assertion_error.h",
-        "drake_compat.h",
         "drake_copyable.h",
         "drake_deprecated.h",
         "drake_optional.h",
@@ -209,6 +208,16 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "default_scalars",
+    hdrs = ["default_scalars.h"],
+    deps = [
+        ":autodiff",
+        ":essential",
+        ":symbolic",
+    ],
+)
+
 # Miscellaneous utilities.
 
 DRAKE_RESOURCE_SENTINEL = "//:.drake-resource-sentinel"
@@ -260,13 +269,11 @@ drake_cc_library(
 
 drake_cc_library(
     name = "is_cloneable",
-    srcs = [],
     hdrs = ["is_cloneable.h"],
 )
 
 drake_cc_library(
     name = "copyable_unique_ptr",
-    srcs = [],
     hdrs = ["copyable_unique_ptr.h"],
     deps = [":is_cloneable"],
 )
@@ -461,10 +468,10 @@ sh_test(
     data = [
         "capture_cc.env",
         "drake_assert.h",
-        "drake_compat.h",
         "test/drake_assert_test_compile.cc",
         "unused.h",
-        "//tools:third_party/bazel/tools/cpp/osx_cc_wrapper.sh",
+        "//third_party:com_github_bazelbuild_bazel/tools/cpp/osx_cc_wrapper.sh",  # noqa
+        "//tools:osx_cc_wrapper.sh",
     ],
 )
 

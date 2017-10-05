@@ -33,7 +33,7 @@ def github_archive(
         fail("Missing repository=")
     if commit == None:
         fail("Missing commit=")
-    if sha256 == None:
+    if sha256 == None or len(sha256) == 0:
         # This is mostly-required, but we fallback to a wrong-default value to
         # allow the first attempt to fail and print the correct sha256.
         sha256 = "0" * 64
@@ -41,7 +41,7 @@ def github_archive(
     # Packages are mirrored from GitHub to CloudFront backed by an S3 bucket.
     mirrors = [
         "https://github.com/%s/archive/%s.tar.gz",
-        "https://d2tbce6hkathzp.cloudfront.net/github/%s/%s.tar.gz",
+        "https://drake-mirror.csail.mit.edu/github/%s/%s.tar.gz",
         "https://s3.amazonaws.com/drake-mirror/github/%s/%s.tar.gz",
     ]
     urls = [mirror % (repository, commit) for mirror in mirrors]

@@ -25,7 +25,8 @@ install_cmake_config(package = "protobuf")  # Creates :install_cmake_config
 #   `find . -type f | sort > header.list`
 # The resulting two lists of files can be compared with `diff` and updated to
 # contain the path of the headers in the source directory by prepending
-# src/google/protobuf/ to the header file paths.
+# src/google/protobuf/ to the header file paths. However, be sure not to
+# exclude operating-system-specific headers.
 excluded_headers = [
     "src/google/protobuf/compiler/cpp/cpp_enum_field.h",
     "src/google/protobuf/compiler/cpp/cpp_enum.h",
@@ -119,7 +120,6 @@ excluded_headers = [
     "src/google/protobuf/map_test_util_impl.h",
     "src/google/protobuf/package_info.h",
     "src/google/protobuf/reflection_internal.h",
-    "src/google/protobuf/stubs/atomicops_internals_macosx.h",
     "src/google/protobuf/stubs/atomicops_internals_pnacl.h",
     "src/google/protobuf/stubs/int128.h",
     "src/google/protobuf/stubs/map_util.h",

@@ -5,7 +5,7 @@ Bazel build system
 ******************
 
 The Bazel build system is officially supported for a subset of Drake on
-Ubuntu Xenial, Ubuntu Trusty, and OS X.
+Ubuntu Xenial and OS X.
 For more information, see:
 
  * https://bazel.build/
@@ -47,7 +47,6 @@ Cheat sheet for operating on the entire project::
   cd /path/to/drake-distro
   bazel build //...                     # Build the entire project.
   bazel test //...                      # Build and test the entire project.
-  bazel build --compiler=gcc-4.9 //...  # Build using gcc 4.9 on Trusty.
   bazel build --compiler=gcc-5 //...    # Build using gcc 5.x on Xenial.
 
 - The "``//``" means "starting from the root of the project".
@@ -127,9 +126,14 @@ Please use the "``buildifier``" tool to format edits to ``BUILD`` files (in the
 same spirit as ``clang-format`` formatting C++ code)::
 
   cd /path/to/drake-distro
-  tools/buildifier.sh                     # By default, reformats all BUILD files.
-  tools/buildifier.sh drake/common/BUILD  # Only reformat one file.
+  bazel-bin/tools/lint/buildifier --all               # Reformat all Bazel files.
+  bazel-bin/tools/lint/buildifier drake/common/BUILD  # Only reformat one file.
 
+In most cases the ``bazel-bin/tools/lint/buildifier`` will already be compiled
+by the time you need it.  In case it's absent, you can compile it via::
+
+  cd /path/to/drake-distro
+  bazel build //tools/lint:buildifier
 
 Proprietary Solvers
 ===================
@@ -160,7 +164,7 @@ Install on OSX
 
 To confirm that your setup was successful, run the tests that require Gurobi.
 
-  ``bazel test --config gurobi --test_tag_filters=gurobi ...``
+  ``bazel test --config gurobi --test_tag_filters=gurobi //...``
 
 The default value of ``--test_tag_filters`` in Drake's ``bazel.rc`` excludes
 these tests. If you will be developing with Gurobi regularly, you may wish
@@ -176,7 +180,7 @@ installation is required. Please obtain and save a license file at
 
 To confirm that your setup was successful, run the tests that require MOSEK.
 
-  ``bazel test --config mosek --test_tag_filters=mosek ...``
+  ``bazel test --config mosek --test_tag_filters=mosek //...``
 
 The default value of ``--test_tag_filters`` in Drake's ``bazel.rc`` excludes
 these tests. If you will be developing with MOSEK regularly, you may wish
@@ -191,7 +195,7 @@ SNOPT
 
 To confirm that your setup was successful, run the tests that require SNOPT.
 
-  ``bazel test --config snopt --test_tag_filters=snopt ...``
+  ``bazel test --config snopt --test_tag_filters=snopt //...``
 
 The default value of ``--test_tag_filters`` in Drake's ``bazel.rc`` excludes
 these tests. If you will be developing with SNOPT regularly, you may wish

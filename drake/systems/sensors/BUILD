@@ -210,6 +210,7 @@ drake_cc_binary(
 
 drake_cc_library(
     name = "accelerometer_example_diagram",
+    testonly = 1,
     srcs = [
         "test/accelerometer_test/accelerometer_example_diagram.cc",
         "test/accelerometer_test/accelerometer_test_logger.cc",
@@ -223,6 +224,7 @@ drake_cc_library(
     data = [
         "//drake/examples/pendulum:models",
     ],
+    visibility = ["//visibility:private"],
     deps = [
         ":accelerometer",
         "//drake/common:essential",
@@ -238,6 +240,7 @@ drake_cc_library(
 
 drake_cc_binary(
     name = "accelerometer_example",
+    testonly = 1,
     srcs = [
         "test/accelerometer_test/accelerometer_example.cc",
     ],

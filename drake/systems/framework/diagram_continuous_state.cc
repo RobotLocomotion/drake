@@ -1,10 +1,6 @@
 #include "drake/systems/framework/diagram_continuous_state.h"
 
-namespace drake {
-namespace systems {
+#include "drake/common/default_scalars.h"
 
-template class DiagramContinuousState<double>;
-
-}  // namespace systems
-}  // namespace drake
-
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::DiagramContinuousState)

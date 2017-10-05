@@ -3,7 +3,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/automotive/maliput/api/test/maliput_types_compare.h"
+#include "drake/automotive/maliput/api/test_utilities/maliput_types_compare.h"
 #include "drake/automotive/maliput/dragway/branch_point.h"
 #include "drake/automotive/maliput/dragway/junction.h"
 #include "drake/automotive/maliput/dragway/lane.h"

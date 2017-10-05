@@ -1,7 +1,5 @@
 #pragma once
 
-#include "drake/common/drake_compat.h"
-
 namespace drake {
 
 /// Documents the argument(s) as unused, placating GCC's -Wunused-parameter

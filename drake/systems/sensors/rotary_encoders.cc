@@ -6,9 +6,8 @@
 #include <numeric>
 #include <vector>
 
-#include "drake/common/autodiff_overloads.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/symbolic.h"
 #include "drake/common/unused.h"
 #include "drake/systems/framework/basic_vector.h"
 
@@ -59,6 +58,8 @@ RotaryEncoders<T>::RotaryEncoders(int input_port_size,
   DRAKE_ASSERT(ticks_per_revolution_.empty() ||
                *std::min_element(ticks_per_revolution_.begin(),
                                  ticks_per_revolution_.end()) >= 0);
+  this->DeclareNumericParameter(
+      BasicVector<T>(VectorX<T>::Zero(num_encoders_)));
 }
 
 template <typename T>
@@ -98,20 +99,6 @@ void RotaryEncoders<T>::DoCalcVectorOutput(
 }
 
 template <typename T>
-std::unique_ptr<Parameters<T>> RotaryEncoders<T>::AllocateParameters() const {
-  // Use parameters for the (unnamed) calibration offsets.
-  return std::make_unique<Parameters<T>>(
-      std::make_unique<BasicVector<T>>(num_encoders_));
-}
-
-template <typename T>
-void RotaryEncoders<T>::SetDefaultParameters(
-    const LeafContext<T>&,
-    Parameters<T>* params) const {
-  params->get_mutable_numeric_parameter(0)->SetZero();
-}
-
-template <typename T>
 void RotaryEncoders<T>::set_calibration_offsets(
     Context<T>* context,
     const Eigen::Ref<VectorX<T>>& calibration_offsets) const {
@@ -128,10 +115,9 @@ Eigen::VectorBlock<const VectorX<T>> RotaryEncoders<T>::get_calibration_offsets(
   return this->template GetNumericParameter(context, 0).get_value();
 }
 
-template class RotaryEncoders<double>;
-template class RotaryEncoders<AutoDiffXd>;
-template class RotaryEncoders<symbolic::Expression>;
-
 }  // namespace sensors
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::sensors::RotaryEncoders)

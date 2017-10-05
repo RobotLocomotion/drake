@@ -72,9 +72,12 @@ class Acrobot {
   Vector2<T> CalcCoriolisVector(const T& theta1, const T& theta2,
                                 const T& theta1dot, const T& theta2dot) const;
 
-  /// Computes the effective joint-space torques induced by gravity `G(q)`
+  /// Computes the effective joint-space torques induced by gravity `tau_g(q)`
   /// containing the effect of gravity as a function of the configuration of
   /// the pendulum.
+  /// Unlike http://underactuated.mit.edu/underactuated.html?chapter=3, cited in
+  /// this class's documentation, we define `tau_g(q)` to be on the right hand
+  /// side of the equations of motion, that is, `Mv̇ + C(q, v)v = tau_g(q)`.
   Vector2<T> CalcGravityVector(const T& theta1, const T& theta2) const;
 
   /// Computes the pose of the center of mass of link 1 measured and expressed
@@ -157,6 +160,11 @@ class Acrobot {
       const T& theta1, const T& theta2,
       const T& theta1dot, const T& theta2dot,
       const T& theta1dotdot, const T& theta2dotdot) const;
+
+  /// Computes the total potential energy due to gravity of the acrobot system
+  /// for the state given by angles `theta1` and `theta2`.
+  /// The zero potential energy is defined for `y = 0`.
+  T CalcPotentialEnergy(const T& theta1, const T& theta2) const;
 
  private:
   const T

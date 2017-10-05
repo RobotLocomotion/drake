@@ -98,9 +98,8 @@ class ConstraintSolver {
   /// @throws a std::runtime_error if the constraint forces cannot be computed
   ///         (due to, e.g., an "inconsistent" rigid contact configuration).
   /// @throws a std::logic_error if `cf` is null.
-  void SolveConstraintProblem(
-      const ConstraintAccelProblemData<T>& problem_data,
-      VectorX<T>* cf) const;
+  void SolveConstraintProblem(const ConstraintAccelProblemData<T>& problem_data,
+                              VectorX<T>* cf) const;
 
   /// Solves the appropriate impact problem at the velocity level.
   /// @param problem_data The data used to compute the impulsive constraint
@@ -125,7 +124,7 @@ class ConstraintSolver {
   /// @throws a std::runtime_error if the constraint forces cannot be computed
   ///         (due to, e.g., the effects of roundoff error in attempting to
   ///         solve a complementarity problem); in such cases, it is
-  ///         recommended to increase cfm and attempt again.
+  ///         recommended to increase regularization and attempt again.
   /// @throws a std::logic_error if `cf` is null.
   void SolveImpactProblem(const ConstraintVelProblemData<T>& problem_data,
                           VectorX<T>* cf) const;
@@ -1314,8 +1313,14 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
   MM->block(nc + nk + num_non_sliding, 0, nl, nc + nk) =
       MM->block(0, nc + nk + num_non_sliding, nc + nk, nl).transpose().eval();
 
+  // Verify that all gamma vectors are either empty or non-negative.
+  DRAKE_DEMAND(gammaN.size() == 0 || gammaN.minCoeff() >= 0);
+  DRAKE_DEMAND(gammaF.size() == 0 || gammaF.minCoeff() >= 0);
+  DRAKE_DEMAND(gammaE.size() == 0 || gammaE.minCoeff() >= 0);
+  DRAKE_DEMAND(gammaL.size() == 0 || gammaL.minCoeff() >= 0);
+
   // Regularize the LCP matrix.
-  MM->block(0, 0, nc, nc) += Eigen::DiagonalMatrix<T, Eigen::Dynamic>(gammaN);
+  MM->topLeftCorner(nc, nc) += Eigen::DiagonalMatrix<T, Eigen::Dynamic>(gammaN);
   MM->block(nc, nc, nr, nr) += Eigen::DiagonalMatrix<T, Eigen::Dynamic>(gammaF);
   MM->block(nc + nr, nc + nr, nr, nr) +=
       Eigen::DiagonalMatrix<T, Eigen::Dynamic>(gammaF);
@@ -1330,7 +1335,6 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
   // 0
   // L⋅A⁻¹⋅a + kL
   // where, as above, D is defined as [F -F] (and kD is defined as [kF -kF].
-  VectorX<T> M_inv_x_f = problem_data.solve_inertia(problem_data.tau);
   qq->resize(num_vars, 1);
   qq->segment(0, nc) = N(trunc_neg_invA_a) + kN;
   qq->segment(nc, nr) = F(trunc_neg_invA_a) + kF;
@@ -1456,8 +1460,14 @@ void ConstraintSolver<T>::FormImpactingConstraintLCP(
   MM->block(nc * 2 + nk, 0, nl, nc + nk) =
       MM->block(0, nc * 2 + nk, nc + nk, nl).transpose().eval();
 
+  // Verify that all gamma vectors are either empty or non-negative.
+  DRAKE_DEMAND(gammaN.size() == 0 || gammaN.minCoeff() >= 0);
+  DRAKE_DEMAND(gammaF.size() == 0 || gammaF.minCoeff() >= 0);
+  DRAKE_DEMAND(gammaE.size() == 0 || gammaE.minCoeff() >= 0);
+  DRAKE_DEMAND(gammaL.size() == 0 || gammaL.minCoeff() >= 0);
+
   // Regularize the LCP matrix.
-  MM->block(0, 0, nc, nc) += Eigen::DiagonalMatrix<T, Eigen::Dynamic>(gammaN);
+  MM->topLeftCorner(nc, nc) += Eigen::DiagonalMatrix<T, Eigen::Dynamic>(gammaN);
   MM->block(nc, nc, nr, nr) += Eigen::DiagonalMatrix<T, Eigen::Dynamic>(gammaF);
   MM->block(nc + nr, nc + nr, nr, nr) +=
       Eigen::DiagonalMatrix<T, Eigen::Dynamic>(gammaF);

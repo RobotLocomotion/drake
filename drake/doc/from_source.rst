@@ -54,7 +54,6 @@ setup steps:
     :maxdepth: 1
 
     mac
-    ubuntu_trusty
     ubuntu_xenial
 
 See :ref:`supported configurations <supported-configurations>`
@@ -225,7 +224,6 @@ If you're using ``make`` or ``ninja``, execute::
 
     cd drake-distro
     rm -rf build
-    rm -rf externals
     git clean -fdx
     git reset --hard HEAD
 
@@ -277,10 +275,3 @@ To work on the bleeding edge, do::
 This is especially useful if you are ready to contribute your work back to the
 main repository with a
 `pull request <https://help.github.com/articles/using-pull-requests/>`_.
-
-Troubleshooting
-===============
-
-If you're unable to launch ``drake-visualizer`` due to a
-"No module named vtkCommonCorePython" error, see
-:ref:`this FAQ <faq_drake_visualizer_no_module_named_vtk_common_core_python>`.

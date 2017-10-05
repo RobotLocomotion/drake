@@ -213,19 +213,19 @@ endfunction()
 # Set up options
 #------------------------------------------------------------------------------
 macro(drake_setup_options)
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # BEGIN "system" dependencies
-
   # These are packages that we can build, but which we allow the user to use
-  # their own copy (usually provided by the system) if preferred. Some of these
-  # may be required.
+  # their own copy (usually provided by the system) if preferred.
 
   drake_system_dependency(
-    EIGEN REQUIRES Eigen3 VERSION 3.2.92
+    EIGEN REQUIRES Eigen3 VERSION 3.3.3
     "Eigen C++ matrix library")
 
   drake_system_dependency(
-    GOOGLETEST REQUIRES GTest
+    FMT REQUIRES fmt VERSION 3.0.1
+    "Open-source formatting library for C++")
+
+  drake_system_dependency(
+    GOOGLETEST REQUIRES GTest VERSION 1.8
     "Google testing framework")
 
   drake_system_dependency(
@@ -233,76 +233,18 @@ macro(drake_setup_options)
     "Google command-line flags processing library")
 
   drake_system_dependency(
-    PYBIND11 OPTIONAL REQUIRES pybind11
-    DEPENDS "NOT DISABLE_PYTHON"
+    NLOPT REQUIRES NLopt
+    "Non-linear optimization solver")
+
+  drake_system_dependency(
+    PYBIND11 REQUIRES pybind11
     "Python/C++11 interoperability tool")
 
   drake_system_dependency(
-    LCM OPTIONAL REQUIRES lcm
-    "Lightweight Communications and Marshaling IPC suite")
-
-  drake_system_dependency(
-    BOT_CORE_LCMTYPES OPTIONAL REQUIRES bot2-core
-    DEPENDS "HAVE_LCM"
-    "libbot2 robotics suite LCM types")
-
-  drake_system_dependency(
-    PROTOBUF REQUIRES Protobuf
+    PROTOBUF REQUIRES Protobuf VERSION 3.1
     "Google protocol buffers")
 
   drake_system_dependency(
-    ROBOTLOCOMOTION_LCMTYPES OPTIONAL REQUIRES robotlocomotion-lcmtypes
-    DEPENDS "HAVE_BOT_CORE_LCMTYPES"
-    "robotlocomotion LCM types")
-
-  drake_system_dependency(
-    TINYOBJLOADER REQUIRES tinyobjloader
-    "library for reading wavefront mesh files")
-
-  drake_system_dependency(YAML_CPP OPTIONAL REQUIRES yaml-cpp
-    "C++ library for reading and writing YAML configuration files")
-
-  # END "system" dependencies
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # BEGIN external projects that are ON by default
-
-  drake_optional_external(BULLET ON "Bullet library for collision detection")
-
-  drake_optional_external(DIRECTOR ON
-    DEPENDS "HAVE_LCM\;HAVE_BOT_CORE_LCMTYPES\;NOT DISABLE_PYTHON"
-    "VTK-based visualization tool and robot user interface")
-
-  # IPOPT is currently disabled on Mac when MATLAB is enabled due to MATLAB
-  # compatibility issues:
-  # https://github.com/RobotLocomotion/drake/issues/2578
-  drake_optional_external(IPOPT ON
-    DEPENDS "NOT APPLE OR NOT Matlab_FOUND\;NOT DISABLE_FORTRAN"
-    "Interior Point Optimizer, for solving non-linear optimizations")
-
-  drake_optional_external(LIBBOT ON
-    "libbot2 robotics suite\;"
-    "used for its simple open-gl visualizer + lcmgl for director")
-
-  drake_optional_external(NLOPT ON "Non-linear optimization solver")
-
-  drake_optional_external(SPDLOG ON
-    "Fast C++ text logging facility\; disabling will turn off text logging")
-
-  # END external projects that are ON by default
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # BEGIN external projects that are OFF by default
-
-  # END external projects that are OFF by default
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # BEGIN indirectly optional external projects
-
-  # The following projects are enabled iff their related externals are enabled.
-  drake_dependent_external(CTK_PYTHON_CONSOLE
-    "WITH_DIRECTOR OR WITH_SIGNALSCOPE")
-  drake_dependent_external(PYTHONQT
-    "WITH_DIRECTOR OR WITH_SIGNALSCOPE")
-  drake_dependent_external(QT_PROPERTY_BROWSER
-    "WITH_DIRECTOR")
-
-  # END indirectly optional external projects
+    TINYOBJLOADER REQUIRES tinyobjloader VERSION 1.0.6
+    "Library for reading wavefront mesh files")
 endmacro()

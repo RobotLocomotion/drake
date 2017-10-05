@@ -158,7 +158,6 @@ drake_cc_library(
         "pass_through-inl.h",
     ],
     deps = [
-        "//drake/common:unused",
         "//drake/systems/framework",
     ],
 )
@@ -168,7 +167,10 @@ drake_cc_library(
     srcs = ["random_source.cc"],
     hdrs = ["random_source.h"],
     deps = [
-        "//drake/systems/framework",
+        "//drake/common:essential",
+        "//drake/common:unused",
+        "//drake/systems/framework:diagram_builder",
+        "//drake/systems/framework:leaf_system",
     ],
 )
 
@@ -197,7 +199,8 @@ drake_cc_library(
     srcs = ["signal_log.cc"],
     hdrs = ["signal_log.h"],
     deps = [
-        "//drake/systems/framework",
+        "//drake/common:default_scalars",
+        "//drake/common:essential",
     ],
 )
 
@@ -219,7 +222,6 @@ drake_cc_library(
         "zero_order_hold-inl.h",
     ],
     deps = [
-        "//drake/common:unused",
         "//drake/systems/framework",
     ],
 )
@@ -230,6 +232,7 @@ drake_cc_library(
     name = "affine_linear_test",
     testonly = 1,
     hdrs = ["test/affine_linear_test.h"],
+    visibility = ["//visibility:private"],
 )
 
 drake_cc_googletest(
@@ -371,6 +374,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "random_source_test",
     deps = [
+        ":constant_vector_source",
         ":random_source",
         ":signal_logger",
         "//drake/common/test_utilities:eigen_matrix_compare",

@@ -14,12 +14,27 @@
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/benchmarks/acrobot/acrobot.h"
 #include "drake/multibody/multibody_tree/fixed_offset_frame.h"
+#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
+#include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
 namespace multibody {
+
+// Friend class for accessing Joint<T> protected/private internals.
+class JointTester {
+ public:
+  JointTester() = delete;
+  // For these tests we do know that a RevoluteJoint is implemented with a
+  // RevoluteMobilizer.
+  static const RevoluteMobilizer<double>* get_mobilizer(
+      const RevoluteJoint<double>& joint) {
+    return joint.get_mobilizer();
+  }
+};
+
 namespace {
 
 const double kEpsilon = std::numeric_limits<double>::epsilon();
@@ -155,6 +170,15 @@ class PendulumTests : public ::testing::Test {
         &model_->AddFrame<FixedOffsetFrame>(
             upper_link_->get_body_frame(), X_USo_);
 
+    // Adds the shoulder and elbow mobilizers of the pendulum.
+    // Using:
+    //  const Mobilizer& AddMobilizer(std::unique_ptr<MobilizerType> mobilizer).
+    shoulder_mobilizer_ =
+        &model_->AddMobilizer(
+            make_unique<RevoluteMobilizer<double>>(
+                *shoulder_inboard_frame_, *shoulder_outboard_frame_,
+                Vector3d::UnitZ() /*revolute axis*/));
+
     // The elbow is the mobilizer that connects upper and lower links.
     // Below we will create inboard and outboard frames associated with the
     // pendulum's elbow.
@@ -165,26 +189,31 @@ class PendulumTests : public ::testing::Test {
     // In this case we create a frame using the FixedOffsetFrame::Create()
     // method taking a Body, i.e., creating a frame with a fixed offset from the
     // upper link body frame.
-    elbow_inboard_frame_ =
-        &model_->AddFrame<FixedOffsetFrame>(*upper_link_, X_UEi_);
-
     // To make this test a bit more interesting, we define the lower link's
     // frame L to be coincident with the elbow's outboard frame. Therefore,
     // Lo != Lcm.
-    elbow_outboard_frame_ = &lower_link_->get_body_frame();
 
-    // Adds the shoulder and elbow mobilizers of the pendulum.
-    // Using:
-    //  const Mobilizer& AddMobilizer(std::unique_ptr<MobilizerType> mobilizer).
-    shoulder_mobilizer_ =
-        &model_->AddMobilizer(
-            make_unique<RevoluteMobilizer<double>>(
-                *shoulder_inboard_frame_, *shoulder_outboard_frame_,
-                Vector3d::UnitZ() /*revolute axis*/));
-    // Using: const MobilizerType<T>& AddMobilizer(Args&&... args)
-    elbow_mobilizer_ = &model_->AddMobilizer<RevoluteMobilizer>(
-        *elbow_inboard_frame_, *elbow_outboard_frame_,
-        Vector3d::UnitZ() /*revolute axis*/);
+    // Instead of creating an elbow inboard frame (Ei), an elbow outboard
+    // frame (Eo) and connecting them with a Joint, we'll let the
+    // MultibodyTree::AddJoint() method do that for us:
+    elbow_joint_ = &model_->AddJoint<RevoluteJoint>(
+        "ElbowJoint",
+        *upper_link_, X_UEi_, /* Pose of Ei in U. */
+        *lower_link_, {},     /* No pose provided, frame Eo IS frame L. */
+        Vector3d::UnitZ()     /* revolute axis */);
+    elbow_inboard_frame_ = &elbow_joint_->get_frame_on_parent();
+    elbow_outboard_frame_ = &elbow_joint_->get_frame_on_child();
+    EXPECT_EQ(elbow_joint_->get_name(), "ElbowJoint");
+
+    // Assert that indeed the elbow joint's outboard frame IS the lower link
+    // frame.
+    ASSERT_EQ(elbow_outboard_frame_->get_index(),
+              lower_link_->get_body_frame().get_index());
+
+    // Add force element for a constant gravity pointing downwards, that is, in
+    // the minus y-axis direction.
+    model_->AddForceElement<UniformGravityFieldElement>(
+        Vector3d(0.0, -acceleration_of_gravity_, 0.0));
   }
 
   // Helper method to extract a pose from the position kinematics.
@@ -244,11 +273,13 @@ class PendulumTests : public ::testing::Test {
   // Frames:
   const BodyFrame<double>* shoulder_inboard_frame_;
   const FixedOffsetFrame<double>* shoulder_outboard_frame_;
-  const FixedOffsetFrame<double>* elbow_inboard_frame_;
+  const Frame<double>* elbow_inboard_frame_;
   const Frame<double>* elbow_outboard_frame_;
   // Mobilizers:
   const RevoluteMobilizer<double>* shoulder_mobilizer_;
   const RevoluteMobilizer<double>* elbow_mobilizer_;
+  // Joints:
+  const RevoluteJoint<double>* elbow_joint_;
   // Pendulum parameters:
   const double link1_length_ = 1.0;
   const double link1_mass_ = 1.0;
@@ -284,7 +315,8 @@ TEST_F(PendulumTests, CreateModelBasics) {
   // Verifies the number of multibody elements is correct.
   EXPECT_EQ(model_->get_num_bodies(), 3);
   EXPECT_EQ(model_->get_num_frames(), 5);
-  EXPECT_EQ(model_->get_num_mobilizers(), 2);
+  // Joint has no implementation before finalize.
+  EXPECT_EQ(model_->get_num_mobilizers(), 1);
 
   // Check that frames are associated with the correct bodies.
   EXPECT_EQ(
@@ -293,45 +325,58 @@ TEST_F(PendulumTests, CreateModelBasics) {
   EXPECT_EQ(
       shoulder_outboard_frame_->get_body().get_index(),
       upper_link_->get_index());
-  EXPECT_EQ(
-      elbow_inboard_frame_->get_body().get_index(), upper_link_->get_index());
-  EXPECT_EQ(
-      elbow_outboard_frame_->get_body().get_index(), lower_link_->get_index());
 
   // Checks that mobilizers connect the right frames.
   EXPECT_EQ(shoulder_mobilizer_->get_inboard_frame().get_index(),
             world_body_->get_body_frame().get_index());
   EXPECT_EQ(shoulder_mobilizer_->get_outboard_frame().get_index(),
             shoulder_outboard_frame_->get_index());
-  EXPECT_EQ(elbow_mobilizer_->get_inboard_frame().get_index(),
-            elbow_inboard_frame_->get_index());
-  EXPECT_EQ(elbow_mobilizer_->get_outboard_frame().get_index(),
-            elbow_outboard_frame_->get_index());
 
   // Checks that mobilizers connect the right bodies.
   EXPECT_EQ(shoulder_mobilizer_->get_inboard_body().get_index(),
             world_body_->get_index());
   EXPECT_EQ(shoulder_mobilizer_->get_outboard_body().get_index(),
             upper_link_->get_index());
-  EXPECT_EQ(elbow_mobilizer_->get_inboard_body().get_index(),
-            upper_link_->get_index());
-  EXPECT_EQ(elbow_mobilizer_->get_outboard_body().get_index(),
-            lower_link_->get_index());
 
   // Checks we can retrieve the body associated with a frame.
   EXPECT_EQ(&shoulder_inboard_frame_->get_body(), world_body_);
   EXPECT_EQ(&shoulder_outboard_frame_->get_body(), upper_link_);
-  EXPECT_EQ(&elbow_inboard_frame_->get_body(), upper_link_);
-  EXPECT_EQ(&elbow_outboard_frame_->get_body(), lower_link_);
 
   // Checks we can request inboard/outboard bodies to a mobilizer.
   EXPECT_EQ(&shoulder_mobilizer_->get_inboard_body(), world_body_);
   EXPECT_EQ(&shoulder_mobilizer_->get_outboard_body(), upper_link_);
-  EXPECT_EQ(&elbow_mobilizer_->get_inboard_body(), upper_link_);
-  EXPECT_EQ(&elbow_mobilizer_->get_outboard_body(), lower_link_);
 
   // Request revolute mobilizers' axes.
   EXPECT_EQ(shoulder_mobilizer_->get_revolute_axis(), Vector3d::UnitZ());
+
+  // We need to Finalize() our model before testing the elbow mobilizer was
+  // created correctly. Joint implementations are created at Finalize().
+  ASSERT_NO_THROW(model_->Finalize());
+  elbow_mobilizer_ = JointTester::get_mobilizer(*elbow_joint_);
+
+  EXPECT_EQ(model_->get_num_mobilizers(), 2);
+  // Check that frames are associated with the correct bodies.
+  EXPECT_EQ(
+      elbow_inboard_frame_->get_body().get_index(), upper_link_->get_index());
+  EXPECT_EQ(
+      elbow_outboard_frame_->get_body().get_index(), lower_link_->get_index());
+  // Checks that mobilizers connect the right frames.
+  EXPECT_EQ(elbow_mobilizer_->get_inboard_frame().get_index(),
+            elbow_inboard_frame_->get_index());
+  EXPECT_EQ(elbow_mobilizer_->get_outboard_frame().get_index(),
+            elbow_outboard_frame_->get_index());
+  // Checks that mobilizers connect the right bodies.
+  EXPECT_EQ(elbow_mobilizer_->get_inboard_body().get_index(),
+            upper_link_->get_index());
+  EXPECT_EQ(elbow_mobilizer_->get_outboard_body().get_index(),
+            lower_link_->get_index());
+  // Checks we can retrieve the body associated with a frame.
+  EXPECT_EQ(&elbow_inboard_frame_->get_body(), upper_link_);
+  EXPECT_EQ(&elbow_outboard_frame_->get_body(), lower_link_);
+  // Checks we can request inboard/outboard bodies to a mobilizer.
+  EXPECT_EQ(&elbow_mobilizer_->get_inboard_body(), upper_link_);
+  EXPECT_EQ(&elbow_mobilizer_->get_outboard_body(), lower_link_);
+  // Request revolute mobilizers' axes.
   EXPECT_EQ(elbow_mobilizer_->get_revolute_axis(), Vector3d::UnitZ());
 }
 
@@ -351,6 +396,9 @@ TEST_F(PendulumTests, Indexes) {
   EXPECT_EQ(shoulder_outboard_frame_->get_index(), FrameIndex(3));
   EXPECT_EQ(elbow_inboard_frame_->get_index(), FrameIndex(4));
   EXPECT_EQ(elbow_outboard_frame_->get_index(), FrameIndex(2));
+  // Verifies the elbow's outboard frame IS the lower link's frame.
+  EXPECT_EQ(elbow_outboard_frame_->get_index(),
+            lower_link_->get_body_frame().get_index());
 }
 
 // Asserts that the Finalize() stage is successful and that re-finalization is
@@ -463,6 +511,9 @@ class PendulumKinematicTests : public PendulumTests {
     PendulumTests::SetUp();
     CreatePendulumModel();
     model_->Finalize();
+    // Only for testing, in this case we do know our Joint model IS a
+    // RevoluteMobilizer.
+    elbow_mobilizer_ = JointTester::get_mobilizer(*elbow_joint_);
     context_ = model_->CreateDefaultContext();
     mbt_context_ =
         dynamic_cast<MultibodyTreeContext<double>*>(context_.get());
@@ -557,7 +608,7 @@ class PendulumKinematicTests : public PendulumTests {
   /// MultibodyTree::CalcForceElementsContribution() to compute the vector of
   /// generalized forces due to gravity.
   /// Generalized forces due to gravity are a function of positions only and are
-  /// denoted by G(q).
+  /// denoted by tau_g(q).
   /// The solution is verified against the independent benchmark from
   /// drake::multibody::benchmarks::Acrobot.
   Vector2d VerifyGravityTerm(
@@ -567,7 +618,7 @@ class PendulumKinematicTests : public PendulumTests {
     // This is the minimum factor of the machine precision within which these
     // tests pass. This factor incorporates an additional factor of two (2) to
     // be on the safe side on other architectures (particularly in Macs).
-    const int kEpsilonFactor = 5;
+    const int kEpsilonFactor = 20;
     const double kTolerance = kEpsilonFactor * kEpsilon;
 
     const double shoulder_angle =  q(0);
@@ -575,48 +626,33 @@ class PendulumKinematicTests : public PendulumTests {
 
     PositionKinematicsCache<double> pc(model_->get_topology());
     VelocityKinematicsCache<double> vc(model_->get_topology());
-    // Even though G(q) only depends on positions, other velocity dependent
+    // Even though tau_g(q) only depends on positions, other velocity dependent
     // forces (for instance damping) could depend on velocities. Therefore we
-    // set the velocity kinematics cache entries to zero so that only G(q) gets
-    // computed (at least for this pendulum model that only includes gravity
-    // and damping).
+    // set the velocity kinematics cache entries to zero so that only tau_g(q)
+    // gets computed (at least for this pendulum model that only includes
+    // gravity and damping).
     vc.InitializeToZero();
 
     // ======================================================================
     // Compute position kinematics.
     shoulder_mobilizer_->set_angle(context_.get(), shoulder_angle);
-    elbow_mobilizer_->set_angle(context_.get(), elbow_angle);
+    elbow_joint_->set_angle(context_.get(), elbow_angle);
     model_->CalcPositionKinematicsCache(*context_, &pc);
 
     // ======================================================================
-    // Compute inverse dynamics. Add applied forces due to gravity.
+    // The force of gravity gets included in this call since we have
+    // UniformGravityFieldElement in the model.
+    VectorXd tau_applied(model_->get_num_velocities());
+    vector<SpatialForce<double>> Fapplied_Bo_W_array(model_->get_num_bodies());
+    model_->CalcForceElementsContribution(
+        *context_, pc, vc, &Fapplied_Bo_W_array, &tau_applied);
 
-    // Spatial force on the upper link due to gravity.
-    const SpatialForce<double> F_U_W =
-        SpatialForce<double>(
-            Vector3d::Zero(),
-            -link1_mass_ * acceleration_of_gravity_ * Vector3d::UnitY());
-
-    // Spatial force on the lower link due to gravity.
-    const SpatialForce<double> F_Lcm_W =
-        SpatialForce<double>(
-            Vector3d::Zero(),
-            -link2_mass_ * acceleration_of_gravity_ * Vector3d::UnitY());
-    // Obtain the position of the lower link's center of mass.
-    const Isometry3d& X_WL = get_body_pose_in_world(pc, *lower_link_);
-    const Matrix3d R_WL = X_WL.linear();
-    const Vector3d p_LoLcm_L = lower_link_->get_default_com();
-    const Vector3d p_LoLcm_W = R_WL * p_LoLcm_L;
-    const SpatialForce<double> F_L_W = F_Lcm_W.Shift(-p_LoLcm_W);
+    // ======================================================================
+    // To get generalized forces, compute inverse dynamics applying the forces
+    // computed by CalcForceElementsContribution().
 
     // Output vector of generalized forces.
     VectorXd tau(model_->get_num_velocities());
-    // Input vector of applied generalized forces.
-    VectorXd tau_applied(model_->get_num_velocities());
-
-    vector<SpatialForce<double>> F_Bo_W_array(model_->get_num_bodies());
-    F_Bo_W_array[upper_link_->get_node_index()] = F_U_W;
-    F_Bo_W_array[lower_link_->get_node_index()] = F_L_W;
 
     // Output vector of spatial forces for each body B at their inboard
     // frame Mo, expressed in the world W.
@@ -624,14 +660,15 @@ class PendulumKinematicTests : public PendulumTests {
 
     // ======================================================================
     // Compute expected values using the acrobot benchmark.
-    const Vector2d G_expected = acrobot_benchmark_.CalcGravityVector(
+    const Vector2d tau_g_expected = acrobot_benchmark_.CalcGravityVector(
         shoulder_angle, elbow_angle);
 
     // ======================================================================
     // Notice that we do not need to allocate extra memory since both
-    // F_Bo_W_array and tau can be used as input and output arguments. However,
-    // the data given at input is lost on output. A user might choose then to
-    // have separate input/output arrays.
+    // Fapplied_Bo_W_array and tau can be used as input and output arguments.
+    // However, the data given at input is lost on output. A user might choose
+    // then to have separate input/output arrays.
+
     const VectorXd vdot = VectorXd::Zero(model_->get_num_velocities());
     vector<SpatialAcceleration<double>> A_WB_array(model_->get_num_bodies());
 
@@ -640,17 +677,26 @@ class PendulumKinematicTests : public PendulumTests {
     tau.setConstant(std::numeric_limits<double>::quiet_NaN());
     tau_applied.setZero();
     model_->CalcInverseDynamics(
-        *context_, pc, vc, vdot, F_Bo_W_array, tau_applied,
+        *context_, pc, vc, vdot, Fapplied_Bo_W_array, tau_applied,
         &A_WB_array, &F_BMo_W_array, &tau);
-    EXPECT_TRUE(tau.isApprox(G_expected, kTolerance));
+    // The result from inverse dynamics must be tau = -tau_g(q).
+    EXPECT_TRUE(tau.isApprox(-tau_g_expected, kTolerance));
 
-    // Now try using the same arrays for input/output (input data F_Bo_W_array
-    // will get overwritten through the output argument).
+    // Now try using the same arrays for input/output (input data
+    // Fapplied_Bo_W_array will get overwritten through the output argument).
     tau_applied.setZero();  // This will now get overwritten.
     model_->CalcInverseDynamics(
-        *context_, pc, vc, vdot, F_Bo_W_array, tau_applied,
-        &A_WB_array, &F_Bo_W_array, &tau_applied);
-    EXPECT_TRUE(tau.isApprox(G_expected, kTolerance));
+        *context_, pc, vc, vdot, Fapplied_Bo_W_array, tau_applied,
+        &A_WB_array, &Fapplied_Bo_W_array, &tau_applied);
+    // The result from inverse dynamics must be tau = -tau_g(q).
+    EXPECT_TRUE(tau.isApprox(-tau_g_expected, kTolerance));
+
+    // Compute the system's potential energy:
+    const double V_expected =
+        acrobot_benchmark_.CalcPotentialEnergy(shoulder_angle, elbow_angle);
+    const double V = model_->CalcPotentialEnergy(*context_);
+    EXPECT_NEAR(V, V_expected, kTolerance);
+
     return tau;
   }
 
@@ -680,7 +726,7 @@ class PendulumKinematicTests : public PendulumTests {
       Vector3d::UnitZ() /* Plane normal */, Vector3d::UnitY() /* Up vector */,
       link1_mass_, link2_mass_,
       link1_length_, link2_length_, half_link1_length_, half_link2_length_,
-      link1_Ic_, link2_Ic_};
+      link1_Ic_, link2_Ic_, 0.0, 0.0, acceleration_of_gravity_};
 
  private:
   // This method verifies the correctness of
@@ -720,13 +766,13 @@ class PendulumKinematicTests : public PendulumTests {
     // ======================================================================
     // Compute position kinematics.
     shoulder_mobilizer_->set_angle(context_.get(), shoulder_angle);
-    elbow_mobilizer_->set_angle(context_.get(), elbow_angle);
+    elbow_joint_->set_angle(context_.get(), elbow_angle);
     model_->CalcPositionKinematicsCache(*context_, &pc);
 
     // ======================================================================
     // Compute velocity kinematics.
     shoulder_mobilizer_->set_angular_rate(context_.get(), shoulder_angle_rate);
-    elbow_mobilizer_->set_angular_rate(context_.get(), elbow_angle_rate);
+    elbow_joint_->set_angular_rate(context_.get(), elbow_angle_rate);
     model_->CalcVelocityKinematicsCache(*context_, pc, &vc);
 
     // ======================================================================
@@ -780,7 +826,7 @@ TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
   // By default CreateDefaultContext() sets mobilizer to their zero
   // configuration.
   EXPECT_EQ(shoulder_mobilizer_->get_angle(*context_), 0.0);
-  EXPECT_EQ(elbow_mobilizer_->get_angle(*context_), 0.0);
+  EXPECT_EQ(elbow_joint_->get_angle(*context_), 0.0);
 
   // Test mobilizer's setter/getters.
   shoulder_mobilizer_->set_angle(context_.get(), M_PI);
@@ -799,8 +845,8 @@ TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
 
       shoulder_mobilizer_->set_angle(context_.get(), shoulder_angle);
       EXPECT_EQ(shoulder_mobilizer_->get_angle(*context_), shoulder_angle);
-      elbow_mobilizer_->set_angle(context_.get(), elbow_angle);
-      EXPECT_EQ(elbow_mobilizer_->get_angle(*context_), elbow_angle);
+      elbow_joint_->set_angle(context_.get(), elbow_angle);
+      EXPECT_EQ(elbow_joint_->get_angle(*context_), elbow_angle);
 
       // Verify this matches the corresponding entries in the context.
       EXPECT_EQ(mbt_context_->get_positions()(0), shoulder_angle);
@@ -872,7 +918,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
       // ======================================================================
       // Compute position kinematics.
       shoulder_mobilizer_->set_angle(context_.get(), shoulder_angle);
-      elbow_mobilizer_->set_angle(context_.get(), elbow_angle);
+      elbow_joint_->set_angle(context_.get(), elbow_angle);
       model_->CalcPositionKinematicsCache(*context_, &pc);
 
       // Obtain the lower link center of mass to later shift its computed
@@ -895,10 +941,8 @@ TEST_F(PendulumKinematicTests, CalcVelocityAndAccelerationKinematics) {
 
       // Set the elbow's angular velocity.
       const double elbow_angle_rate = -0.5;
-      elbow_mobilizer_->set_angular_rate(context_.get(),
-                                         elbow_angle_rate);
-      EXPECT_EQ(elbow_mobilizer_->get_angular_rate(*context_),
-                elbow_angle_rate);
+      elbow_joint_->set_angular_rate(context_.get(), elbow_angle_rate);
+      EXPECT_EQ(elbow_joint_->get_angular_rate(*context_), elbow_angle_rate);
       model_->CalcVelocityKinematicsCache(*context_, pc, &vc);
 
       // Retrieve body spatial velocities from velocity kinematics cache.
@@ -1062,7 +1106,7 @@ TEST_F(PendulumKinematicTests, GravityTerm) {
 TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
   // This is the minimum factor of the machine precision within which these
   // tests pass.
-  const int kEpsilonFactor = 20;
+  const int kEpsilonFactor = 100;
   const double kTolerance = kEpsilonFactor * kEpsilon;
 
   std::unique_ptr<MultibodyTree<AutoDiffXd>> model_autodiff =
@@ -1070,8 +1114,9 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
 
   const RevoluteMobilizer<AutoDiffXd>& shoulder_mobilizer_autodiff =
       model_autodiff->get_variant(*shoulder_mobilizer_);
-  const RevoluteMobilizer<AutoDiffXd>& elbow_mobilizer_autodiff =
-      model_autodiff->get_variant(*elbow_mobilizer_);
+
+  const RevoluteJoint<AutoDiffXd>& elbow_joint_autodiff =
+      model_autodiff->get_variant(*elbow_joint_);
 
   const RigidBody<AutoDiffXd>& upper_link_autodiff =
       model_autodiff->get_variant(*upper_link_);
@@ -1114,8 +1159,7 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
           // Update position kinematics.
           shoulder_mobilizer_autodiff.set_angle(context_autodiff.get(),
                                                 shoulder_angle);
-          elbow_mobilizer_autodiff.set_angle(context_autodiff.get(),
-                                             elbow_angle);
+          elbow_joint_autodiff.set_angle(context_autodiff.get(), elbow_angle);
           model_autodiff->CalcPositionKinematicsCache(*context_autodiff, &pc);
 
           // Retrieve body poses from position kinematics cache.
@@ -1176,6 +1220,32 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
 
           EXPECT_TRUE(V_WUcm.IsApprox(V_WUcm_expected, kTolerance));
           EXPECT_TRUE(V_WLcm.IsApprox(V_WLcm_expected, kTolerance));
+
+          // Compute potential energy, and its time derivative.
+          const AutoDiffXd V =
+              model_autodiff->CalcPotentialEnergy(*context_autodiff);
+          const double V_value = V.value();
+          const double V_expected =
+              acrobot_benchmark_.CalcPotentialEnergy(
+                  shoulder_angle.value(), elbow_angle.value());
+          EXPECT_NEAR(V_value, V_expected, kTolerance);
+
+          // Since in this case the only force is that of gravity, the time
+          // derivative of the total potential energy must equal the total
+          // conservative power.
+          shoulder_mobilizer_->set_angle(
+              context_.get(), shoulder_angle.value());
+          shoulder_mobilizer_->set_angular_rate(
+              context_.get(), shoulder_angle.derivatives()[0]);
+          elbow_mobilizer_->set_angle(
+              context_.get(), elbow_angle.value());
+          elbow_mobilizer_->set_angular_rate(
+              context_.get(), elbow_angle.derivatives()[0]);
+          const double Pc = model_->CalcConservativePower(*context_);
+
+          // Notice we define Pc = -d(Pc)/dt.
+          const double Pc_from_autodiff = -V.derivatives()[0];
+          EXPECT_NEAR(Pc, Pc_from_autodiff, kTolerance);
         }  // ielbow
       }  // ishoulder
     }  // iw_elbow

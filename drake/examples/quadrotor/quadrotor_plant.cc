@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/common/default_scalars.h"
 #include "drake/math/gradient.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/systems/controllers/linear_quadratic_regulator.h"
@@ -120,9 +121,6 @@ constexpr int QuadrotorPlant<T>::kStateDimension;
 template <typename T>
 constexpr int QuadrotorPlant<T>::kInputDimension;
 
-template class QuadrotorPlant<double>;
-template class QuadrotorPlant<AutoDiffXd>;
-
 std::unique_ptr<systems::AffineSystem<double>> StabilizingLQRController(
     const QuadrotorPlant<double>* quadrotor_plant,
     Eigen::Vector3d nominal_position) {
@@ -152,3 +150,6 @@ std::unique_ptr<systems::AffineSystem<double>> StabilizingLQRController(
 }  // namespace quadrotor
 }  // namespace examples
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::examples::quadrotor::QuadrotorPlant)

@@ -1,9 +1,6 @@
 #include "drake/systems/framework/single_output_vector_source.h"
 
-namespace drake {
-namespace systems {
+#include "drake/common/default_scalars.h"
 
-template class SingleOutputVectorSource<double>;
-
-}  // namespace systems
-}  // namespace drake
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::SingleOutputVectorSource)
