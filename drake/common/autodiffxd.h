@@ -1,5 +1,3 @@
-#pragma once
-
 // This file is a modification of Eigen-3.3.3's AutoDiffScalar.h file which is
 // available at
 // https://bitbucket.org/eigen/eigen/raw/67e894c6cd8f5f1f604b27d37ed47fdf012674ff/unsupported/Eigen/src/AutoDiff/AutoDiffScalar.h
@@ -11,11 +9,17 @@
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+#pragma once
+
+#ifndef DRAKE_COMMON_AUTODIFF_HEADER
+// TODO(soonho-tri): Change to #error.
+#warning Do not directly include this file. Include "drake/common/autodiff.h".
+#endif
+
 #include <cmath>
 #include <ostream>
 
 #include <Eigen/Dense>
-#include <unsupported/Eigen/AutoDiff>
 
 namespace Eigen {
 

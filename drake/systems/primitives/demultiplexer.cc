@@ -1,6 +1,6 @@
 #include "drake/systems/primitives/demultiplexer.h"
 
-#include "drake/common/autodiff_overloads.h"
+#include "drake/common/autodiff.h"
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 

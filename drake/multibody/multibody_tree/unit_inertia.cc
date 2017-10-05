@@ -1,6 +1,6 @@
 #include "drake/multibody/multibody_tree/unit_inertia.h"
 
-#include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/autodiff.h"
 
 namespace drake {
 namespace multibody {

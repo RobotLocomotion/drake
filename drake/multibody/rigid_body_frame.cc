@@ -3,7 +3,7 @@
 #include <memory>
 #include <utility>
 
-#include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/autodiff.h"
 #include "drake/math/roll_pitch_yaw.h"
 
 template <typename T>

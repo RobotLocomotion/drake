@@ -2,7 +2,7 @@
 
 #include <Eigen/Core>
 
-#include "drake/common/autodiff_overloads.h"
+#include "drake/common/autodiff.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {

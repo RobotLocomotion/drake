@@ -2,7 +2,7 @@
 
 #include <stdexcept>
 
-#include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/autodiff.h"
 #include "drake/common/text_logging.h"
 #include "drake/util/drakeGeometryUtil.h"
 

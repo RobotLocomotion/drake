@@ -4,7 +4,7 @@
 #include <memory>
 
 #include "drake/automotive/maliput/api/lane.h"
-#include "drake/common/autodiff_overloads.h"
+#include "drake/common/autodiff.h"
 #include "drake/common/cond.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/symbolic.h"
