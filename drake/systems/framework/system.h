@@ -1469,8 +1469,8 @@ class System {
 
   /// Implement this method to return all periodic triggered events.
   /// @see GetPeriodicEvents() for a detailed description of the returned
-  ///      variable. 
-  /// @note The default implementation returns an empty map. 
+  ///      variable.
+  /// @note The default implementation returns an empty map.
   virtual std::map<typename Event<T>::PeriodicAttribute, std::vector<Event<T>*>>
     DoGetPeriodicEvents() const {
     return std::map<typename Event<T>::PeriodicAttribute,
