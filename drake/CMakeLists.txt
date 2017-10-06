@@ -1,9 +1,6 @@
 cmake_minimum_required(VERSION 3.5.1)
 project(drake)
 
-cmake_policy(SET CMP0025 NEW)
-cmake_policy(SET CMP0042 NEW)
-
 include(../cmake/config.cmake)
 include(../cmake/install.cmake)
 include(../cmake/packages.cmake)
@@ -13,24 +10,6 @@ include(../cmake/mex.cmake)
 drake_setup_platform()
 drake_find_packages()
 
-# Create a cache variable that contains the
-# max number of concurent link jobs that can be run
-# in a Ninja build, if the value is 0 then let Ninja
-# use as many as it wants.
-set(CMAKE_NINJA_LINK_POOL_SIZE 0 CACHE STRING
-  "Number of concurent link jobs that can be run with Ninja build tool")
-# if the link pool is non-zero then set the property
-# on all the targets in drake
-if(CMAKE_NINJA_LINK_POOL_SIZE GREATER 0)
-  # Ninja: Configure a job pool to limit simultaneous linking.
-  set_property(GLOBAL PROPERTY JOB_POOLS link_pool=${CMAKE_NINJA_LINK_POOL_SIZE})
-  # Ninja: Assign all linking to our link job pool.
-  set(CMAKE_JOB_POOL_LINK link_pool)
-endif()
-
-# options
-option(LONG_RUNNING_TESTS "some tests should be run nightly for coverage, but are too slow for CI" OFF)
-
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # This makes all of our #include "drake/..." statements work.
@@ -39,22 +18,7 @@ include_directories(BEFORE ${PROJECT_SOURCE_DIR}/..)
 # To find generated protobuf headers.
 include_directories(BEFORE ${PROJECT_BINARY_DIR}/..)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=all -Werror=ignored-qualifiers -Werror=overloaded-virtual")
-if(NOT CMAKE_CXX_FLAGS MATCHES "-fsanitize=") # sanitizers are extremely brittle without lazy linking
-  if(APPLE)
-    set(CMAKE_SHARED_LINKER_FLAGS "-Wl,-undefined -Wl,error ${CMAKE_SHARED_LINKER_FLAGS}")
-    set(CMAKE_MODULE_LINKER_FLAGS "-Wl,-undefined -Wl,error ${CMAKE_MODULE_LINKER_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS "-Wl,-undefined -Wl,error ${CMAKE_EXE_LINKER_FLAGS}")
-  else()
-    set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--no-undefined ${CMAKE_SHARED_LINKER_FLAGS}")
-    set(CMAKE_MODULE_LINKER_FLAGS "-Wl,--no-undefined ${CMAKE_MODULE_LINKER_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS "-Wl,--no-undefined ${CMAKE_EXE_LINKER_FLAGS}")
-  endif()
-endif()
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  # TODO(#2852) Turn on shadow checking for g++ once we use a version that fixes
-  # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57709
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=shadow")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=inconsistent-missing-override")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=sign-compare")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=return-stack-address")
@@ -70,11 +34,7 @@ else()
   # in CMake since there is not an easy mechanism to enable this only for
   # tests.
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-parameter")
-  # TODO(#2852) Turn on shadow checking for g++ once we use a version that
-  # fixes https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57709
 endif()
-set(CXX_FLAGS_NO_ERROR_SHADOW -Wno-error=shadow -Wno-shadow)
-set(CXX_FLAGS_NO_SIGN_COMPARE -Wno-sign-compare)
 
 include(CTest)
 

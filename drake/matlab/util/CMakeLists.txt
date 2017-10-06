@@ -12,4 +12,4 @@ target_link_libraries(call_matlab_client
 
 if(BUILD_TESTING)
   add_subdirectory(test)
-endif(BUILD_TESTING)
+endif()
