@@ -263,6 +263,7 @@ build:ubsan_everything --define=WITH_MOSEK=ON
 build:ubsan_everything --define=WITH_SNOPT=ON
 build:ubsan_everything --copt -g
 build:ubsan_everything --copt -fsanitize=undefined
+build:ubsan_everything --copt -fno-sanitize=float-divide-by-zero
 build:ubsan_everything --copt -O1
 build:ubsan_everything --copt -fno-omit-frame-pointer
 build:ubsan_everything --linkopt -fsanitize=undefined
