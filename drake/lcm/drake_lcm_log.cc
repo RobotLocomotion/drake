@@ -8,9 +8,11 @@
 namespace drake {
 namespace lcm {
 
-DrakeLcmLog::DrakeLcmLog(
-    const std::string& file_name, bool is_write)
-    : is_write_(is_write) {
+DrakeLcmLog::DrakeLcmLog(const std::string& file_name, bool is_write,
+                         bool overwrite_publish_time_with_system_clock)
+    : is_write_(is_write),
+      overwrite_publish_time_with_system_clock_(
+          overwrite_publish_time_with_system_clock) {
   if (is_write) {
     log_ = std::make_unique<::lcm::LogFile>(file_name, "w");
   } else {
@@ -31,7 +33,14 @@ void DrakeLcmLog::Publish(const std::string& channel, const void* data,
   std::lock_guard<std::mutex> lock(mutex_);
 
   ::lcm::LogEvent log_event;
-  log_event.timestamp = second_to_timestamp(second);
+  if (!overwrite_publish_time_with_system_clock_) {
+    log_event.timestamp = second_to_timestamp(second);
+  } else {
+    struct timespec tv;
+    clock_gettime(CLOCK_REALTIME, &tv);
+    log_event.timestamp = static_cast<uint64_t>(tv.tv_sec) * 1000000 +
+                          static_cast<uint64_t>(tv.tv_nsec) * 1000;
+  }
   log_event.channel = channel;
   log_event.datalen = data_size;
   log_event.data = const_cast<void*>(data);
