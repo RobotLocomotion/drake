@@ -13,7 +13,7 @@ namespace drake {
 namespace manipulation {
 namespace perception {
 
-/// The info required for tracking an object
+// The info required for tracking an object
 struct TrackedObject {
   int optitrack_id;
   std::string frame_name;
@@ -25,8 +25,22 @@ struct TrackedObject {
 };
 
 /**
- * Outputs a vector of type OptitrackSim::TrackedObject from an input of type
- * KinematicsResults<double>.
+ * Implements an interface for defining frames that are to be treated as
+ * Optitrack rigid bodies. This is useful when implementing systems that are
+ * meant to interface with actual Optitrack hardware, but are to be tested in
+ * simulation. This interface provides a description of each tracked object that
+ * is less complete than what Motive would provide. Namely, each tracked object
+ * in this interface is described by its Optitrack ID, it's name, and it's pose
+ * w.r.t. the world. No information about markers, marker sets, etc. is
+ * provided in this interface.
+ * Optitrack bodies can be created in one of two ways: (1) by providing the
+ * name of each RigidBody (in the RigidBodyTree) to be tracked, or (2) by
+ * providing a set of RigidBodyFrames directly. The former simply searches the
+ * RigidBodyTree and assigns a RigidBodyFrame to the specified body. Frame pose
+ * w.r.t. the RigidBody can also be specified.
+ * This system takes an abstract value input of type KinematicResults<double>
+ * and generates an abstract value output of type
+ * std::vector<OptitrackSim::TrackedObject>
  */
 class OptitrackSim : public systems::LeafSystem<double> {
  public:
@@ -65,10 +79,12 @@ class OptitrackSim : public systems::LeafSystem<double> {
   }
 
  private:
-  std::vector<TrackedObject> MakeOutputStatus() const;
-
   void Init(const RigidBodyTree<double>& tree,
             double optitrack_lcm_status_period);
+
+  bool CheckValidId(const int id);
+
+  std::vector<TrackedObject> MakeOutputStatus() const;
 
   void OutputStatus(const systems::Context<double>& context,
                     std::vector<TrackedObject>* output) const;

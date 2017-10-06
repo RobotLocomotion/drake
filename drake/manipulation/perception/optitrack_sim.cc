@@ -61,12 +61,26 @@ void OptitrackSim::Init(const RigidBodyTree<double>& tree,
       if (body == nullptr) {
         throw std::runtime_error("OptitrackSim::Init: ERROR: found nullptr to "
                                  "RigidBody in RigidBodyFrame object.");
+      } else if (!CheckValidId(it->second)){
+        throw std::runtime_error("OptitrackSim::Init: ERROR: found invalid "
+                                 "body frame id.");
       } else {
         id_to_body_map_[it->second] = body;
       }
     }
 
   this->DeclarePeriodicUnrestrictedUpdate(optitrack_lcm_status_period, 0);
+}
+
+bool OptitrackSim::CheckValidId(const int id) {
+  auto it = std::find_if(id_to_body_map_.begin(), id_to_body_map_.end(),
+                             [&id](const std::pair<int, const RigidBody<double>*>& pair)
+                             {return pair.first == id;});
+  if (it != id_to_body_map_.end()) {
+    return false;
+  } else {
+    return (id >= 0);
+  }
 }
 
 std::vector<TrackedObject> OptitrackSim::MakeOutputStatus() const {
