@@ -114,7 +114,10 @@ drake_cc_googletest(
     data = [
         "//drake/manipulation/models/iiwa_description:models",
     ],
-    tags = gurobi_test_tags() + ["no_tsan"],
+    tags = gurobi_test_tags() + [
+        "no_asan",
+        "no_tsan",
+    ],
     deps = [
         ":global_inverse_kinematics_test_util",
     ],
