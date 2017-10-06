@@ -19,7 +19,3 @@ drake_install_headers(
     sdf_parser.h
     urdf_parser.h
     xml_util.h)
-
-if(BUILD_TESTING)
-  add_subdirectory(test)
-endif()

@@ -19,4 +19,3 @@ if(Matlab_FOUND)
     add_subdirectory(test)
   endif(BUILD_TESTING)
 endif()
-

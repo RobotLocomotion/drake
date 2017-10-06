@@ -25,7 +25,3 @@ drake_install_headers(
         revolute_joint.h
         roll_pitch_yaw_floating_joint.h
         floating_base_types.h)
-
-if(BUILD_TESTING)
-  add_subdirectory(test)
-endif()
