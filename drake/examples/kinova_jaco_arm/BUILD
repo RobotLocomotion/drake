@@ -6,7 +6,7 @@ load(
     "drake_cc_library",
     "drake_cc_binary",
 )
-load("//tools:lint.bzl", "add_lint_tests")
+load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(
     default_visibility = [":__subpackages__"],
