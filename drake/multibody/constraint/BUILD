@@ -37,6 +37,8 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "constraint_solver_test",
+    # Test size increased to not timeout when run with Valgrind.
+    size = "medium",
     deps = [
         ":constraint_solver",
         "//drake/examples/rod2d",
