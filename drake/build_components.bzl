@@ -2,20 +2,11 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 # Should include everything any consumer of Drake would ever need.
+#
+# Do not update this list by hand; instead, run build_components_refresh.py.
+#
 # When adding new components to the package, please also add the licenses for
 # any new external dependencies to :external_licenses.
-#
-# This is the *sorted* output of the following Bazel query:
-# bazel query 'kind("cc_library",
-# visible("//drake:libdrake.so", "//drake/..."))
-# except("//drake/examples/...")
-# except(attr("testonly", "1", "//drake/..."))
-# except("//drake/lcmtypes/...")
-# except("//drake:libdrake_headers")
-# except("//drake:drake_shared_library")'
-#
-# TODO(jwnimmer-tri) The list *should* be the output of the above query, but
-# nothing is keeping the two in sync.  We should add in the missing items.
 LIBDRAKE_COMPONENTS = [
     "//drake/automotive/maliput/api:api",
     "//drake/automotive/maliput/dragway:dragway",
