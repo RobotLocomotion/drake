@@ -316,9 +316,17 @@ int DoMain(void) {
 
   auto& plan_source_context = sys->GetMutableSubsystemContext(
       *iiwa_trajectory_generator, simulator.get_mutable_context());
+  // NOTE: Because the IK calculation is seeded with the *current* arm
+  // configuration, we want to avoid the zero configuration. The Jacobian has a
+  // singularity at the zero configuration which leads to all sorts of mad and
+  // unstable results in response to small perturbations of the simulation.
+  // This is a simple hack to solve the problem -- the more robust solution is
+  // to dig deeper and make sure the IK solver doesn't use the
+  // zero-configuration, regardless of the arm's current state. But for these
+  // scenarios, this is sufficient.
   iiwa_trajectory_generator->Initialize(
       plan_source_context.get_time(),
-      Eigen::VectorXd::Zero(7),
+      Eigen::VectorXd::Ones(7) * 0.01,
       plan_source_context.get_mutable_state());
 
   // Step the simulator in some small increment.  Between steps, check
