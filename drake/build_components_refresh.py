@@ -9,6 +9,7 @@ import subprocess
 import sys
 
 
+# TODO(jwnimmer-tri) This should exclude sources under `dev`.
 def _find_libdrake_components():
     query_string = ' '.join([
         'kind("cc_library", visible("//drake:libdrake.so", "//drake/..."))',
