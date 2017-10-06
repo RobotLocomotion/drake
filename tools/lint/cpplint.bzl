@@ -71,10 +71,10 @@ def _add_linter_rules(source_labels, source_filenames, name, data = None):
     # Additional Drake lint.
     native.py_test(
         name = name + "_drake_lint",
-        srcs = ["//tools:drakelint"],
+        srcs = ["//tools/lint:drakelint"],
         data = data + source_labels,
         args = source_filenames,
-        main = "//tools:drakelint.py",
+        main = "//tools/lint:drakelint.py",
         size = size,
         tags = tags,
     )

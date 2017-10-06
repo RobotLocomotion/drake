@@ -1,5 +1,6 @@
 # Import some helper configurations.
 import %workspace%/tools/dynamic_analysis/bazel.rc
+import %workspace%/tools/lint/bazel.rc
 
 # Default to an optimized build.
 build -c opt
@@ -75,11 +76,6 @@ build:everything --define=WITH_SNOPT=ON
 # This may be useful for developers with unsupported workstation configurations.
 build:unsupported_crosstool --crosstool_top=//external:cc_toolchain
 build:unsupported_crosstool --action_env=CCACHE_DISABLE=1
-
-### Lint. ###
-# Run the tests for code style compliance, but not any functional (unit) tests.
-test:lint --build_tests_only
-test:lint --test_tag_filters=lint
 
 ### Debug symbols on OS X. ###
 # See https://github.com/bazelbuild/bazel/issues/2537
