@@ -230,6 +230,12 @@ build:tsan_everything --copt -g
 build:tsan_everything --copt -fsanitize=thread
 build:tsan_everything --copt -O1
 build:tsan_everything --copt -fno-omit-frame-pointer
+# From Tsan documentation for Clang-3.9:
+# fsanitize=thread flag will cause Clang to act as though the -fPIE flag
+# had been supplied if compiling without -fPIC, and as though the
+# -pie flag had been supplied if linking an executable
+# Bug in GCC: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=67308
+build:tsan_everything --noforce_pic
 build:tsan_everything --linkopt -fsanitize=thread
 
 test:tsan_everything --test_env=GRB_LICENSE_FILE
