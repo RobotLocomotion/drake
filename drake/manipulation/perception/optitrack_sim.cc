@@ -9,27 +9,44 @@ using std::string;
 using drake::systems::KinematicsResults;
 
 OptitrackSim::OptitrackSim(const RigidBodyTree<double>& tree,
-                           std::map<RigidBodyFrame<double>*, int> body_frame_to_id_map)
+                           std::map<RigidBodyFrame<double>*, int> body_frame_to_id_map,
+                           double optitrack_lcm_status_period)
                            : body_frame_to_id_map_(body_frame_to_id_map) {
 
-  OptitrackSim::Init(tree);
+  OptitrackSim::Init(tree, optitrack_lcm_status_period);
 }
 
 OptitrackSim::OptitrackSim(const RigidBodyTree<double>& tree,
-                           std::map<std::string, int> body_name_to_id_map, Eigen::Isometry3d frame_pose) {
+                           std::map<std::string, int> body_name_to_id_map,
+                           std::vector<Eigen::Isometry3d> frame_poses,
+                           double optitrack_lcm_status_period) {
 
-  /// create and store the related frames
-  //std::map<RigidBodyFrame<double>*, int> body_frame_to_id_map;
-  //Eigen::Isometry3d frame_pose = Eigen::Isometry3d::Identity();
-  for (auto it = body_name_to_id_map.begin(); it != body_name_to_id_map.end(); ++it) {
-    RigidBody<double>* body = tree.FindBody(it->first);
-    body_frame_to_id_map_[new RigidBodyFrame<double>(it->first, body, frame_pose)] = it->second;
+  // If the frame vector is empty, set all frames poses to be identity
+  if (frame_poses.empty()) {
+    frame_poses = std::vector<Eigen::Isometry3d>(body_name_to_id_map.size(),
+                                                 Eigen::Isometry3d::Identity());
   }
 
-  OptitrackSim::Init(tree);
+  DRAKE_DEMAND(body_name_to_id_map.size() == frame_poses.size());
+
+  /// create and store the related frames
+  auto m_it = body_name_to_id_map.begin();
+  auto v_it = frame_poses.begin();
+  while (m_it != body_name_to_id_map.end() && v_it != frame_poses.end()) {
+    // should throw exception if no body is found
+    RigidBody<double>* body = tree.FindBody(m_it->first);
+    body_frame_to_id_map_[
+        new RigidBodyFrame<double>(m_it->first + "_f", body, *v_it)] =
+        m_it->second;
+    ++m_it;
+    ++v_it;
+  }
+
+  OptitrackSim::Init(tree, optitrack_lcm_status_period);
 }
 
-void OptitrackSim::Init(const RigidBodyTree<double>& tree) {
+void OptitrackSim::Init(const RigidBodyTree<double>& tree,
+                        double optitrack_lcm_status_period) {
 
     /// Abstract input port of type KinematicsResults
     kinematics_input_port_index_ = this->DeclareAbstractInputPort().get_index();
@@ -38,9 +55,18 @@ void OptitrackSim::Init(const RigidBodyTree<double>& tree) {
     tracked_objects_output_port_index_ = this->DeclareAbstractOutputPort(
         &OptitrackSim::MakeOutputStatus, &OptitrackSim::OutputStatus).get_index();
 
-    for (auto it = body_frame_to_id_map_.begin(); it != body_frame_to_id_map_.end(); ++it) {
-      id_to_body_map_[it->second] = &(it->first->get_rigid_body());
+    for (auto it = body_frame_to_id_map_.begin();
+         it != body_frame_to_id_map_.end(); ++it) {
+      RigidBody<double>* body = it->first->get_mutable_rigid_body();
+      if (body == nullptr) {
+        throw std::runtime_error("OptitrackSim::Init: ERROR: found nullptr to "
+                                 "RigidBody in RigidBodyFrame object.");
+      } else {
+        id_to_body_map_[it->second] = body;
+      }
     }
+
+  this->DeclarePeriodicUnrestrictedUpdate(optitrack_lcm_status_period, 0);
 }
 
 std::vector<TrackedObject> OptitrackSim::MakeOutputStatus() const {
@@ -55,7 +81,7 @@ void OptitrackSim::OutputStatus(const systems::Context<double>& context,
 
   // in here we extract the input port for KinematicsResults object
   // get the transformation of the bodies we care about
-  // and fill in the optitrack_objectss vector for sending out
+  // and fill in the optitrack_objects vector for sending out
   const KinematicsResults<double>* kres =
       this->EvalInputValue<KinematicsResults<double>>(context, kinematics_input_port_index_);
 
@@ -67,12 +93,13 @@ void OptitrackSim::OutputStatus(const systems::Context<double>& context,
     optitrack_objects[mocap_obj_index].frame_name = it->first->get_name();
     optitrack_objects[mocap_obj_index].optitrack_id = it->second;
 
-    //auto T_WB = kres->get_body_orientation(id_to_body_index_map_.at(it->second));
     auto T_WB = kres->get_pose_in_world(*(id_to_body_map_.at(it->second)));
     auto T_BF = it->first->get_transform_to_body();
 
-    optitrack_objects[mocap_obj_index].T_WF = T_WB;//T_WB*T_BF;
+    optitrack_objects[mocap_obj_index].T_WF = T_WB*T_BF;
   }
+  // Sort the tracked objects by Optitrack body ID
+  std::sort(optitrack_objects.begin(), optitrack_objects.end());
 }
 
 }  // namespace perception
