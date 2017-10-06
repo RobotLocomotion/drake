@@ -6,7 +6,7 @@ load(
     "drake_cc_binary",
     "drake_cc_library",
 )
-load("//tools:lint.bzl", "add_lint_tests")
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load(":pick_and_place_test.bzl", "pick_and_place_test")
 
 drake_cc_library(
