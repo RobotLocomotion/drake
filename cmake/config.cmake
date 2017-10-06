@@ -24,14 +24,6 @@ function(drake_check_compiler NAME VERSION)
 endfunction()
 
 #------------------------------------------------------------------------------
-# Find MATLAB.
-#------------------------------------------------------------------------------
-macro(drake_setup_matlab)
-  find_package(Matlab MODULE REQUIRED
-    COMPONENTS MAIN_PROGRAM MEX_COMPILER MX_LIBRARY)
-endmacro()
-
-#------------------------------------------------------------------------------
 # Verify minimum required compiler version and set compile options.
 #------------------------------------------------------------------------------
 macro(drake_setup_compiler)
@@ -47,13 +39,6 @@ macro(drake_setup_compiler)
   # Set compiler language standard level
   set(CMAKE_CXX_STANDARD 14)
   set(CMAKE_CXX_STANDARD_REQUIRED ON)
-endmacro()
-
-#------------------------------------------------------------------------------
-# Set up Python.
-#------------------------------------------------------------------------------
-macro(drake_setup_python)
-  find_package(Python 2.7 MODULE REQUIRED)
 endmacro()
 
 #------------------------------------------------------------------------------
@@ -101,8 +86,6 @@ macro(drake_setup_platform)
   list(REMOVE_DUPLICATES CMAKE_INSTALL_RPATH)
 
   drake_setup_compiler()
-  drake_setup_matlab()
-  drake_setup_python()
 
   # Set default build type
   if(NOT CMAKE_BUILD_TYPE)

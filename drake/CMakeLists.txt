@@ -33,9 +33,6 @@ option(LONG_RUNNING_TESTS "some tests should be run nightly for coverage, but ar
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-find_package(Doxygen MODULE)
-find_package(Threads MODULE REQUIRED)
-
 # This makes all of our #include "drake/..." statements work.
 include_directories(BEFORE ${PROJECT_SOURCE_DIR}/..)
 

@@ -78,7 +78,7 @@ drake_add_external(tinyobjloader
     -DTINYOBJLOADER_COMPILATION_SHARED=ON
   )
 
-drake_add_external(drake LOCAL MATLAB PYTHON
+drake_add_external(drake LOCAL
   SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake
   BINARY_DIR ${PROJECT_BINARY_DIR}/drake
   CMAKE_ARGS -DDISABLE_MATLAB:BOOL=${DISABLE_MATLAB}

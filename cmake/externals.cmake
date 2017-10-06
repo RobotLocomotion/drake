@@ -60,19 +60,6 @@ macro(drake_add_cmake_external PROJECT)
     CMAKE_INSTALL_RPATH
     CMAKE_INSTALL_RPATH_USE_LINK_PATH)
 
-  if(_ext_MATLAB)
-    list(APPEND _ext_PROPAGATE_CACHE_VARS
-      Matlab_ROOT_DIR
-      MATLAB_ADDITIONAL_VERSIONS)
-  endif()
-
-  if(_ext_PYTHON)
-    list(APPEND _ext_PROPAGATE_CACHE_VARS
-      PYTHON_EXECUTABLE
-      PYTHON_INCLUDE_DIR
-      PYTHON_LIBRARY)
-  endif()
-
   drake_build_cache_args(_ext_PROPAGATE_CACHE ${_ext_LIST_SEPARATOR}
     ${_ext_PROPAGATE_CACHE_VARS})
 
@@ -127,8 +114,6 @@ function(drake_add_external PROJECT)
   # Parse arguments
   set(_ext_flags
     LOCAL
-    MATLAB
-    PYTHON
   )
   set(_ext_sv_args
     SOURCE_SUBDIR
