@@ -9,7 +9,7 @@ load(
     "drake_cc_test",
 )
 load("//tools:gurobi.bzl", "gurobi_test_tags")
-load("//tools:lint.bzl", "add_lint_tests")
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load("@protobuf//:protobuf.bzl", "cc_proto_library")
 
 package(default_visibility = ["//visibility:public"])

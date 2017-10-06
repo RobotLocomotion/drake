@@ -7,7 +7,7 @@ load(
     "drake_cc_library",
 )
 load("//tools:gurobi.bzl", "gurobi_test_tags")
-load("//tools:lint.bzl", "add_lint_tests")
+load("//tools/lint:lint.bzl", "add_lint_tests")
 
 drake_cc_library(
     name = "time_stepping_rigid_body_plant",

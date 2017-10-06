@@ -6,7 +6,7 @@ load(
     "drake_cc_library",
     "drake_cc_binary",
 )
-load("//tools:lint.bzl", "add_lint_tests")
+load("//tools/lint:lint.bzl", "add_lint_tests")
 
 drake_cc_library(
     name = "van_der_pol",

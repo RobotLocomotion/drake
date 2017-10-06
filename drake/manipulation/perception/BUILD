@@ -6,7 +6,7 @@ load(
     "drake_cc_library",
     "drake_cc_googletest",
 )
-load("//tools:lint.bzl", "add_lint_tests")
+load("//tools/lint:lint.bzl", "add_lint_tests")
 
 # TODO(naveenoid) : Merge all of the following with drake/perception and remove
 # current folder.

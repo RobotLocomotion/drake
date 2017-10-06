@@ -6,7 +6,7 @@
 
 load("//tools:check_licenses.bzl", "check_licenses")
 load("@drake//tools:install.bzl", "install", "install_files")
-load("//tools:lint.bzl", "add_lint_tests")
+load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(
     default_visibility = ["//visibility:public"],
