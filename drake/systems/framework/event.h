@@ -108,6 +108,12 @@ class Event {
      * The time after zero when this event should first occur.
      */
     double offset_sec{0.0};
+
+    bool operator<(const PeriodicAttribute& p) const {
+      if (period_sec == p.period_sec)
+        return offset_sec < p.offset_sec;
+      return period_sec < p.period_sec;
+    }
   };
 
   virtual ~Event() {}

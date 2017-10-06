@@ -37,21 +37,26 @@ class TestSystem : public LeafSystem<T> {
     const double period = 10.0;
     const double offset = 5.0;
     this->DeclarePeriodicDiscreteUpdate(period, offset);
-    double update_period, update_offset;
-    EXPECT_EQ(this->GetNumPeriodicDiscreteUpdates
-      (&update_period, &update_offset), true);
-    EXPECT_EQ(update_period, period);
-    EXPECT_EQ(update_offset, offset);
+    typename Event<T>::PeriodicAttribute periodic_attr;
+    EXPECT_EQ(this->GetUniquePeriodicDiscreteUpdateAttribute
+      (&periodic_attr), true);
+    EXPECT_EQ(periodic_attr.period_sec, period);
+    EXPECT_EQ(periodic_attr.offset_sec, offset);
   }
 
   void AddPeriodicUpdate(double period) {
     const double offset = 0.0;
     this->DeclarePeriodicDiscreteUpdate(period, offset);
-    double update_period, update_offset;
-    EXPECT_EQ(this->GetNumPeriodicDiscreteUpdates
-      (&update_period, &update_offset), true);
-    EXPECT_EQ(update_period, period);
-    EXPECT_EQ(update_offset, 0.0);
+    Event<double>::PeriodicAttribute periodic_attr;
+    EXPECT_EQ(this->GetUniquePeriodicDiscreteUpdateAttribute
+      (&periodic_attr), true);
+    EXPECT_EQ(periodic_attr.period_sec, period);
+    EXPECT_EQ(periodic_attr.offset_sec, offset);
+  }
+
+  void AddPeriodicUpdate(double period, double offset) {
+    this->DeclarePeriodicDiscreteUpdate(period, offset);
+    Event<double>::PeriodicAttribute periodic_attr;
   }
 
   void AddPeriodicUnrestrictedUpdate(double period, double offset) {
@@ -115,6 +120,30 @@ TEST_F(LeafSystemTest, NoUpdateEvents) {
   EXPECT_EQ(std::numeric_limits<double>::infinity(), time);
   EXPECT_TRUE(!leaf_info_->HasEvents());
 }
+
+// Tests that multiple periodic updates with the same periodic attribute are
+// identified as unique.
+TEST_F(LeafSystemTest, MultipleUniquePeriods) {
+  system_.AddPeriodicUpdate();
+  system_.AddPeriodicUpdate();
+
+  // Verify the size of the periodic events mapping.
+  auto mapping = system_.GetPeriodicEvents();
+  ASSERT_EQ(mapping.size(), 1);
+  EXPECT_EQ(mapping.begin()->second.size(), 2);
+}
+
+// Tests that periodic updates with different periodic attributes are
+// identified as non-unique.
+TEST_F(LeafSystemTest, MultipleNonUniquePeriods) {
+  system_.AddPeriodicUpdate(1.0, 2.0);
+  system_.AddPeriodicUpdate(2.0, 3.0);
+
+  // Verify the size of the periodic events mapping.
+  auto mapping = system_.GetPeriodicEvents();
+  ASSERT_EQ(mapping.size(), 2);
+}
+
 
 // Tests that if the current time is smaller than the offset, the next
 // update time is the offset.

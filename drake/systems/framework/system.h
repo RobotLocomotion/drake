@@ -568,27 +568,47 @@ class System {
     DoGetPerStepEvents(context, events);
   }
 
-  /// Gets the number of periodic triggers mapping to discrete update events
-  /// and returns the unique period and offset parameters, if there is exactly
-  /// one such trigger. Thus, this method can be used (1) as a test to
+  /// Gets whether there exists a unique periodic attribute that triggers
+  /// one or more discrete update events (and, if so, returns that unique
+  /// periodic attribute). Thus, this method can be used (1) as a test to
   /// determine whether a system's dynamics are at least partially governed by
   /// difference equations and (2) to obtain the difference equation update
   /// times.
-  /// @param[out] unique_update_period_sec Contains the update period (in
-  ///             seconds) on return of `1` from this function (undefined on
-  ///             other return values). Function aborts if null.
-  /// @param[out] unique_update_offset_sec Contains the update offset (in
-  ///             seconds) on return of `1` from this function (undefined on
-  ///             other return values). Function aborts if null.
-  /// @returns The number of periodic triggers mapping to discrete update
-  ///          events.
-  virtual int GetNumPeriodicDiscreteUpdates(
-      double* unique_update_period_sec,
-      double* unique_update_offset_sec) const {
-    DRAKE_DEMAND(unique_update_period_sec);
-    DRAKE_DEMAND(unique_update_offset_sec);
-    return DoGetNumPeriodicDiscreteUpdates(
-        unique_update_period_sec, unique_update_offset_sec);
+  /// @param[out] periodic_attr Contains the periodic trigger attributes
+  ///             on return of `true` from this function; the value will be
+  ///             changed on return value `false`. Function aborts if null.
+  /// @returns `true` if there exists a unique periodic attribute that triggers
+  ///          one or more discrete update events and `false` otherwise.
+  bool GetUniquePeriodicDiscreteUpdateAttribute(
+      typename Event<T>::PeriodicAttribute* periodic_attr) const {
+    DRAKE_DEMAND(periodic_attr);
+    bool discrete_update_found = false;
+    typename Event<T>::PeriodicAttribute saved_attr;
+    auto periodic_events = GetPeriodicEvents();
+    for (const auto& saved_attr_and_vector : periodic_events) {
+      bool found_in_vector = false;
+      for (const auto& event : saved_attr_and_vector.second) {
+        if (dynamic_cast<DiscreteUpdateEvent<T>*>(event)) {
+          if (discrete_update_found)
+            return false;
+          found_in_vector = true;
+          saved_attr = saved_attr_and_vector.first;
+          break;
+        }
+      }
+      if (found_in_vector)
+        discrete_update_found = true;
+    }
+
+    if (discrete_update_found)
+      *periodic_attr = saved_attr;
+    return discrete_update_found;
+  }
+
+  /// Gets all periodic triggered events for a system.
+  std::map<typename Event<T>::PeriodicAttribute, std::vector<Event<T>*>>
+    GetPeriodicEvents() const {
+    return DoGetPeriodicEvents();
   }
 
   /// Utility method that computes for _every_ output port i the value y(i) that
@@ -1456,11 +1476,10 @@ class System {
   /// @note The default implementation returns zero and does not touch the
   ///       output parameters.
   /// @note Parameters are validated by GetNumPeriodicDiscreteUpdates().
-  virtual int DoGetNumPeriodicDiscreteUpdates(
-      double* update_period_sec,
-      double* update_offset_sec) const {
-    unused(update_period_sec, update_offset_sec);
-    return 0;
+  virtual std::map<typename Event<T>::PeriodicAttribute, std::vector<Event<T>*>>
+    DoGetPeriodicEvents() const {
+    return std::map<typename Event<T>::PeriodicAttribute,
+      std::vector<Event<T>*>>();
   }
 
   /// Implement this method to return any events to be handled before the

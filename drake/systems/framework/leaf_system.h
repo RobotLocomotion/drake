@@ -307,37 +307,14 @@ class LeafSystem : public System<T> {
             UnrestrictedUpdateEvent<T>>::MakeForcedEventCollection());
   }
 
-  int DoGetNumPeriodicDiscreteUpdates(
-      double* unique_update_period_sec,
-      double* unique_update_offset_sec) const override {
-    // If there are no periodic events, can do an early exit.
-    if (periodic_events_.empty())
-      return 0;
-
-    // Count the number of periodic triggers.
-    int discrete_update_count = 0;
-    for (auto& periodic_event : periodic_events_) {
-      // If the event is not a discrete update event, continue looping.
-      if (!dynamic_cast<DiscreteUpdateEvent<T>*>(periodic_event.second.get()))
-        continue;
-
-      const typename Event<T>::PeriodicAttribute& period_info =
-          periodic_event.first;
-      if (discrete_update_count++ == 0) {
-        *unique_update_period_sec = period_info.period_sec;
-        *unique_update_offset_sec = period_info.offset_sec;
-      }
+  std::map<typename Event<T>::PeriodicAttribute, std::vector<Event<T>*>>
+      DoGetPeriodicEvents() const override {
+    std::map<typename Event<T>::PeriodicAttribute,
+        std::vector<Event<T>*>> periodic_events_map;
+    for (const auto& i : periodic_events_) {
+      periodic_events_map[i.first].push_back(i.second.get());
     }
-
-    return discrete_update_count;
-  }
-
-  std::unique_ptr<System<AutoDiffXd>> DoToAutoDiffXd() const final {
-    return System<T>::DoToAutoDiffXd();
-  }
-
-  std::unique_ptr<System<symbolic::Expression>> DoToSymbolic() const final {
-    return System<T>::DoToSymbolic();
+    return periodic_events_map;
   }
 
   /// Provides a new instance of the leaf context for this system. Derived
