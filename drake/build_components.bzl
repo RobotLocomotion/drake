@@ -8,7 +8,6 @@
 # When adding new components to the package, please also add the licenses for
 # any new external dependencies to :external_licenses.
 LIBDRAKE_COMPONENTS = [
-    "//drake/automotive/dev:traffic_light",
     "//drake/automotive/maliput/api:api",
     "//drake/automotive/maliput/dragway:dragway",
     "//drake/automotive/maliput/monolane:builder",
@@ -170,11 +169,6 @@ LIBDRAKE_COMPONENTS = [
     "//drake/multibody:rigid_body_tree_alias_groups",
     "//drake/multibody:rigid_body_tree_alias_groups_proto",
     "//drake/multibody:rigid_body_tree_construction",
-    "//drake/perception/dev:feedforward_neural_network",
-    "//drake/perception/dev:neural_network",
-    "//drake/perception/estimators/dev:articulated_icp",
-    "//drake/perception/estimators/dev:pose_closed_form",
-    "//drake/perception/estimators/dev:scene",
     "//drake/perception:point_cloud",
     "//drake/perception:point_cloud_flags",
     "//drake/solvers:bilinear_product_util",
