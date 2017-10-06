@@ -60,7 +60,7 @@ macro(drake_add_cmake_external PROJECT)
     CMAKE_INSTALL_RPATH
     CMAKE_INSTALL_RPATH_USE_LINK_PATH)
 
-  if(_ext_MATLAB AND Matlab_FOUND)
+  if(_ext_MATLAB)
     list(APPEND _ext_PROPAGATE_CACHE_VARS
       Matlab_ROOT_DIR
       MATLAB_ADDITIONAL_VERSIONS)

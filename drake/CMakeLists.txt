@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5.1)
-project(drake VERSION 0.0.0)
+project(drake)
 
 cmake_policy(SET CMP0025 NEW)
 cmake_policy(SET CMP0042 NEW)
@@ -8,6 +8,7 @@ include(../cmake/config.cmake)
 include(../cmake/install.cmake)
 include(../cmake/packages.cmake)
 include(../cmake/test.cmake)
+include(../cmake/mex.cmake)
 
 drake_setup_platform()
 drake_find_packages()
@@ -78,14 +79,6 @@ endif()
 set(CXX_FLAGS_NO_ERROR_SHADOW -Wno-error=shadow -Wno-shadow)
 set(CXX_FLAGS_NO_SIGN_COMPARE -Wno-sign-compare)
 
-# set up matlab build
-include(../cmake/mex.cmake)
-if(DISABLE_MATLAB AND Matlab_FOUND) # Set by drake_setup_platform
-  message(STATUS "MATLAB is disabled because the CMake option DISABLE_MATLAB is set to ON.")
-  unset(MATLAB_EXECUTABLE CACHE)
-  unset(Matlab_FOUND)
-endif()
-
 include(CTest)
 
 add_subdirectory(thirdParty/boost/tcbrindle_cpp17_headers/stx)
@@ -100,9 +93,7 @@ add_subdirectory(solvers)
 add_subdirectory(bindings/python)
 add_subdirectory(bindings/pybind11)
 
-if(Matlab_FOUND)
-  add_subdirectory(matlab)
-endif()
+add_subdirectory(matlab)
 
 option(ENABLE_DOCUMENTATION "Enable build target for Doxygen and Sphinx documentation." ON)
 
