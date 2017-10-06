@@ -1,1 +1,1 @@
-drake_add_matlab_test(NAME matlab/solvers/test/testMathematicalProgram COMMAND testMathematicalProgram)
+drake_add_matlab_test(NAME drake/matlab/solvers:mathematical_program_test COMMAND mathematical_program_test)
