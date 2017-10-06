@@ -2,6 +2,13 @@
 # Find external packages.
 #------------------------------------------------------------------------------
 macro(drake_find_packages)
+  find_package(Matlab MODULE REQUIRED
+    COMPONENTS MAIN_PROGRAM MEX_COMPILER MX_LIBRARY)
+  find_package(Python 2.7 MODULE REQUIRED)
+
+  find_package(Doxygen MODULE)
+  find_package(Threads MODULE REQUIRED)
+
   find_package(Eigen3 CONFIG REQUIRED)
   set_property(TARGET Eigen3::Eigen APPEND PROPERTY
     INTERFACE_COMPILE_DEFINITIONS EIGEN_MPL2_ONLY)  # Per #4065.
