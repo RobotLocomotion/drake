@@ -605,7 +605,9 @@ class System {
     return discrete_update_found;
   }
 
-  /// Gets all periodic triggered events for a system.
+  /// Gets all periodic triggered events for a system. Each periodic attribute
+  /// (offset and period, in seconds) is mapped to one or more update events
+  /// that are to be triggered at the proper times.
   std::map<typename Event<T>::PeriodicAttribute, std::vector<Event<T>*>>
     GetPeriodicEvents() const {
     return DoGetPeriodicEvents();
@@ -1465,17 +1467,10 @@ class System {
     *time = std::numeric_limits<T>::infinity();
   }
 
-  /// Implement this method to return the number of periodic triggers mapping
-  /// to discrete update events and return attributes of the single periodic
-  /// trigger if only one such trigger is present. `unique_update_period_sec`
-  /// and `unique_update_offset_sec` must be populated with the period and
-  /// offset of the only such periodic trigger / discrete update pair on
-  /// return value of `1`.
-  /// @see GetNumPeriodicDiscreteUpdates() for description of function
-  ///      parameters and output, which are identical to those of this method.
-  /// @note The default implementation returns zero and does not touch the
-  ///       output parameters.
-  /// @note Parameters are validated by GetNumPeriodicDiscreteUpdates().
+  /// Implement this method to return all periodic triggered events.
+  /// @see GetPeriodicEvents() for a detailed description of the returned
+  ///      variable. 
+  /// @note The default implementation returns an empty map. 
   virtual std::map<typename Event<T>::PeriodicAttribute, std::vector<Event<T>*>>
     DoGetPeriodicEvents() const {
     return std::map<typename Event<T>::PeriodicAttribute,
