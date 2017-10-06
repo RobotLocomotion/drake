@@ -66,4 +66,18 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "optitrack_sim_test",
+    data = ["//drake/manipulation/models/iiwa_description:models"],
+    deps = [
+        ":optitrack_sim",
+        "//drake/common:find_resource",
+        "//drake/common/test_utilities:eigen_geometry_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/multibody/parsers",
+        "//drake/systems/framework",
+    ],
+)
+
 add_lint_tests()

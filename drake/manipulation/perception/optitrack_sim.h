@@ -18,11 +18,15 @@ struct TrackedObject {
   int optitrack_id;
   std::string frame_name;
   Eigen::Isometry3d T_WF;
+
+  bool operator < (const TrackedObject obj) const {
+    return (optitrack_id < obj.optitrack_id);
+  }
 };
 
 /**
- * Creates an vector of TrackedObject for a set of RigidBodies, to send out
- * via LCM on the channel OPTITRACK_FRAMES_T
+ * Outputs a vector of type OptitrackSim::TrackedObject from an input of type
+ * KinematicsResults<double>.
  */
 class OptitrackSim : public systems::LeafSystem<double> {
  public:
@@ -34,17 +38,23 @@ class OptitrackSim : public systems::LeafSystem<double> {
    * @param body_frame_to_id_map A mapping of RigidBodyFrames to Motive ID's
    */
   OptitrackSim(const RigidBodyTree<double>& tree,
-               std::map<RigidBodyFrame<double>*, int> body_frame_to_id_map);
+               std::map<RigidBodyFrame<double>*, int> body_frame_to_id_map,
+               double optitrack_lcm_status_period = 1/120);
 
   /**
    * Constructs an OptitrackSim object from a list of body names
    * @param tree The RigidBodyTree
    * @param body_name_to_id_map A mapping of body names to Motive ID's
-   * @param frame_pose The frame's pose relative to the parent body
+   * @param frame_poses A vector containing each frame's pose relative to the
+   *        parent body. If this vector is empty, it assumes identity for all
+   *        poses.
+   * @param optitrack_lcm_status_period The publish period of the lcm message.
    */
   OptitrackSim(const RigidBodyTree<double>& tree,
                std::map<std::string, int> body_name_to_id_map,
-               Eigen::Isometry3d frame_pose = Eigen::Isometry3d::Identity());
+               std::vector<Eigen::Isometry3d> frame_poses =
+               std::vector<Eigen::Isometry3d>(),
+               double optitrack_lcm_status_period = 1/120);
 
   const systems::InputPortDescriptor<double>& get_kinematics_input_port() const {
     return this->get_input_port(0);
@@ -57,7 +67,8 @@ class OptitrackSim : public systems::LeafSystem<double> {
  private:
   std::vector<TrackedObject> MakeOutputStatus() const;
 
-  void Init(const RigidBodyTree<double>& tree);
+  void Init(const RigidBodyTree<double>& tree,
+            double optitrack_lcm_status_period);
 
   void OutputStatus(const systems::Context<double>& context,
                     std::vector<TrackedObject>* output) const;
