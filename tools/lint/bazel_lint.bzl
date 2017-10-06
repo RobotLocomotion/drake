@@ -14,10 +14,10 @@ def _bazel_lint(name, files, ignore):
         native.py_test(
             name = name + "_codestyle",
             size = "small",
-            srcs = ["@drake//tools:bzlcodestyle"],
+            srcs = ["@drake//tools/lint:bzlcodestyle"],
             data = files,
             args = ignore + locations,
-            main = "@drake//tools:bzlcodestyle.py",
+            main = "@drake//tools/lint:bzlcodestyle.py",
             srcs_version = "PY2AND3",
             tags = ["bzlcodestyle", "lint"],
         )
@@ -46,7 +46,7 @@ def bazel_lint(name = "bazel", ignore = None):
 
     Example:
         BUILD:
-            load("//tools:bazel_lint.bzl", "bazel_lint")
+            load("//tools/lint:bazel_lint.bzl", "bazel_lint")
 
             bazel_lint()
     """

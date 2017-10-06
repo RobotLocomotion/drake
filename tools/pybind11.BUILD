@@ -7,7 +7,7 @@ load(
     "install_cmake_config",
     "install_files",
 )
-load("@drake//tools:python_lint.bzl", "python_lint")
+load("@drake//tools/lint:python_lint.bzl", "python_lint")
 
 package(default_visibility = ["//visibility:public"])
 

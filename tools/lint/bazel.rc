@@ -1,0 +1,4 @@
+### Lint. ###
+# Run the tests for code style compliance, but not any functional (unit) tests.
+test:lint --build_tests_only
+test:lint --test_tag_filters=lint

@@ -4,7 +4,7 @@
 # See http://bazel.io/ .
 
 load("//tools:drake.bzl", "drake_cc_library")
-load("//tools:bazel_lint.bzl", "bazel_lint")
+load("//tools/lint:bazel_lint.bzl", "bazel_lint")
 
 package(default_visibility = ["//visibility:public"])
 

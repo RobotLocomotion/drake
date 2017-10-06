@@ -37,7 +37,7 @@ def python_lint(existing_rules = None, ignore = None, exclude = None,
 
     Example:
         BUILD:
-            load("//tools:python_lint.bzl", "python_lint")
+            load("//tools/lint:python_lint.bzl", "python_lint")
 
             py_library(
                 name = "foo",
