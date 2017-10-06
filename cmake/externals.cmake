@@ -347,36 +347,6 @@ function(drake_add_external PROJECT)
     set(_ext_GENERATOR "${CMAKE_GENERATOR}")
   endif()
 
-  string(TOUPPER WITH_${PROJECT} _ext_project_option)
-  if(_ext_ALWAYS)
-    # Project is "always" enabled, but add a hidden option to turn it off; this
-    # is useful for the CI to "build" just google_styleguide in order to run
-    # cpplint on the code.
-    cmake_dependent_option(
-      ${_ext_project_option} "Enable ${PROJECT} (internal)" ON
-      "NOT ${_ext_project_option}" ON)
-  endif()
-
-  # Determine if this project is enabled
-  if(DEFINED ${_ext_project_option})
-    if(${_ext_project_option})
-      # Project is explicitly enabled
-    elseif(WITH_ALL_PUBLIC_EXTERNALS)
-      # Project is public and all public externals are requested
-    elseif(WITH_ALL_SUPPORTED_EXTERNALS)
-      # All supported externals are requested
-    else()
-      # Project is NOT enabled; skip it
-      message(STATUS
-        "Skipping ${PROJECT} - Please see drake_optional_external (cmake/options.cmake) for "
-        "how to enable it.")
-      return()
-    endif()
-  else()
-    # Project is not supported on this platform; skip it
-    return()
-  endif()
-
   # Check external dependencies of project
   set(_ext_reqs_found TRUE)
   foreach(_ext_req IN LISTS _ext_REQUIRES)
@@ -470,16 +440,6 @@ function(drake_add_external PROJECT)
 endfunction()
 
 ###############################################################################
-
-# DEPRECATED.
-option(WITH_ALL_PUBLIC_EXTERNALS
-  "Enable all externals"
-  OFF)
-
-# DEPRECATED.
-option(WITH_ALL_SUPPORTED_EXTERNALS
-  "Enable all externals"
-  OFF)
 
 # List of all enabled external projects
 set(EXTERNAL_PROJECTS)

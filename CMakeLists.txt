@@ -5,11 +5,9 @@ include(CTest)
 
 include(cmake/config.cmake)
 include(cmake/externals.cmake)
-include(cmake/options.cmake)
 
 drake_setup_superbuild()
 drake_setup_platform()
-drake_setup_options()
 
 ###############################################################################
 # BEGIN external projects
