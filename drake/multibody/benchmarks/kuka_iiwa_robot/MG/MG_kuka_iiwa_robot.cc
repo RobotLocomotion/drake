@@ -8,6 +8,7 @@ namespace MG {
 
 using Eigen::Map;
 using Eigen::Matrix;
+using Vector6d = Eigen::Matrix<double, 6, 1>;
 
 template<typename T>
 void MGKukaIIwaRobot<T>::PrepareMGOutput(
@@ -79,8 +80,14 @@ MGKukaIIwaRobot<T>::CalcJointReactionForces(
   const SpatialForced F_G_Fg(Vector3d(MG_kuka_auto_generated_.tG),
                              Vector3d(MG_kuka_auto_generated_.fG));
 
-  return std::make_tuple(F_A_Na, F_B_Ab, F_C_Bc, F_D_Cd,
-                         F_E_De, F_F_Ef, F_G_Fg);
+  const SpatialForced F_A_W(Vector6d(MG_kuka_auto_generated_.SpatialForce_A_N));
+  const SpatialForced F_B_W(Vector6d(MG_kuka_auto_generated_.SpatialForce_B_N));
+  const SpatialForced F_C_W(Vector6d(MG_kuka_auto_generated_.SpatialForce_C_N));
+  const SpatialForced F_D_W(Vector6d(MG_kuka_auto_generated_.SpatialForce_D_N));
+  const SpatialForced F_E_W(Vector6d(MG_kuka_auto_generated_.SpatialForce_E_N));
+  const SpatialForced F_F_W(Vector6d(MG_kuka_auto_generated_.SpatialForce_F_N));
+  const SpatialForced F_G_W(Vector6d(MG_kuka_auto_generated_.SpatialForce_G_N));
+  return std::make_tuple(F_A_W, F_B_W, F_C_W, F_D_W, F_E_W, F_F_W, F_G_W);
 }
 
 

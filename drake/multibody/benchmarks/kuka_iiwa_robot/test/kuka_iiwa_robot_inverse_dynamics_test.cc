@@ -14,6 +14,7 @@ using Eigen::Matrix3d;
 using SpatialForced = SpatialForce<double>;
 using Vector7d = Eigen::Matrix<double, 7, 1>;
 
+
 // Compare Drake's MultibodyTree forces and motion with MotionGenesis solution.
 void TestKukaArmInverseDynamics(const Eigen::Ref<const VectorX<double>> &q,
                                 const Eigen::Ref<const VectorX<double>> &qDt,
@@ -26,11 +27,8 @@ void TestKukaArmInverseDynamics(const Eigen::Ref<const VectorX<double>> &q,
   // v_NGo_N    | Go's velocity in N, expressed in N.
   // alpha_NG_N | G's angular acceleration in N, expressed in N.
   // a_NGo_N    | Go's acceleration in N, expressed in N.
-  DrakeKukaIIwaRobot drake_kuka_robot;
-  drake_kuka_robot.set_gravity(gravity);
-  Matrix3d R_NG;
-  Vector3d p_NoGo_N, w_NG_N, v_NGo_N, alpha_NG_N, a_NGo_N;
-  std::tie(R_NG, p_NoGo_N, w_NG_N, v_NGo_N, alpha_NG_N, a_NGo_N) =
+  DrakeKukaIIwaRobot drake_kuka_robot(gravity);
+  const RigidBodyKinematics<double> kinematics =
       drake_kuka_robot.CalcEndEffectorKinematics(q, qDt, qDDt);
 
   // Kinematics: Get corresponding MotionGenesis information.
@@ -45,29 +43,28 @@ void TestKukaArmInverseDynamics(const Eigen::Ref<const VectorX<double>> &q,
 
   // Kinematics: Compare Drake results with MotionGenesis (expected) results.
   constexpr double kEpsilon = 10 * std::numeric_limits<double>::epsilon();
-  EXPECT_TRUE(R_NG.isApprox(R_NG_true, kEpsilon));
-  EXPECT_TRUE(p_NoGo_N.isApprox(p_NoGo_N_true, kEpsilon));
-  EXPECT_TRUE(w_NG_N.isApprox(w_NG_N_true, kEpsilon));
-  EXPECT_TRUE(v_NGo_N.isApprox(v_NGo_N_true, kEpsilon));
-  EXPECT_TRUE(alpha_NG_N.isApprox(alpha_NG_N_true, kEpsilon));
-  EXPECT_TRUE(a_NGo_N.isApprox(a_NGo_N_true, kEpsilon));
+  EXPECT_TRUE(kinematics.R_NB.isApprox(R_NG_true, kEpsilon));
+  EXPECT_TRUE(kinematics.p_NoBo_N.isApprox(p_NoGo_N_true, kEpsilon));
+  EXPECT_TRUE(kinematics.w_NB_N.isApprox(w_NG_N_true, kEpsilon));
+  EXPECT_TRUE(kinematics.v_NBo_N.isApprox(v_NGo_N_true, kEpsilon));
+  EXPECT_TRUE(kinematics.alpha_NB_N.isApprox(alpha_NG_N_true, kEpsilon));
+  EXPECT_TRUE(kinematics.a_NBo_N.isApprox(a_NGo_N_true, kEpsilon));
 
   // Inverse dynamics: Get Drake's joint forces/torques, including:
-  // -----------|-------------------------------------------------
-  // F_Ao_Na    | Spatial force on Ao from N, expressed in frame W (world).
-  // F_Bo_Ab    | Spatial force on Bo from A, expressed in frame W (world).
-  // F_Co_Bc    | Spatial force on Co from B, expressed in frame W (world).
-  // F_Do_Cd    | Spatial force on Do from C, expressed in frame W (world).
-  // F_Eo_De    | Spatial force on Eo from D, expressed in frame W (world).
-  // F_Fo_Ef    | Spatial force on Fo from E, expressed in frame W (world).
-  // F_Go_Fg    | Spatial force on Go from F, expressed in frame W (world).
+  // --------|-------------------------------------------------
+  // F_Ao_W  | Spatial force on Ao from N, expressed in frame W (world).
+  // F_Bo_W  | Spatial force on Bo from A, expressed in frame W (world).
+  // F_Co_W  | Spatial force on Co from B, expressed in frame W (world).
+  // F_Do_W  | Spatial force on Do from C, expressed in frame W (world).
+  // F_Eo_W  | Spatial force on Eo from D, expressed in frame W (world).
+  // F_Fo_W  | Spatial force on Fo from E, expressed in frame W (world).
+  // F_Go_W  | Spatial force on Go from F, expressed in frame W (world).
   // In Drake, this is done by creating a vector of the aforementioned 7 spatial
   // forces and then calls a method to fill this vector of spatial forces.
   // Consider a generic body B whose inboard frame (welded to B) is M with
   // origin Mo.  The spatial force on B at Mo expressed in W (world) if F_BMo_W.
   const int number_of_links = drake_kuka_robot.get_number_of_rigid_bodies();
   std::vector<SpatialForce<double>> F_BMo_W_array(number_of_links);
-
   const KukaRobotJointReactionForces forces =
       drake_kuka_robot.CalcJointReactionForces(q, qDt, qDDt);
 
@@ -79,13 +76,14 @@ void TestKukaArmInverseDynamics(const Eigen::Ref<const VectorX<double>> &q,
   // Inverse dynamics: Compare Drake results with expected results.
   // TODO(@mitiguy) Fix this.
   const double tolerance = 40 * kEpsilon;
-  EXPECT_TRUE(F_Ao_Na.IsApprox(forces.F_Ao_Na, tolerance) || true);
-  EXPECT_TRUE(F_Bo_Ab.IsApprox(forces.F_Bo_Ab, tolerance) || true);
-  EXPECT_TRUE(F_Co_Bc.IsApprox(forces.F_Co_Bc, tolerance) || true);
-  EXPECT_TRUE(F_Do_Cd.IsApprox(forces.F_Do_Cd, tolerance) || true);
-  EXPECT_TRUE(F_Eo_De.IsApprox(forces.F_Eo_De, tolerance) || true);
-  EXPECT_TRUE(F_Fo_Ef.IsApprox(forces.F_Fo_Ef, tolerance) || true);
+  EXPECT_TRUE(F_Ao_Na.IsApprox(forces.F_Ao_W, tolerance));
+  EXPECT_TRUE(F_Bo_Ab.IsApprox(forces.F_Bo_W, tolerance) || true);
+  EXPECT_TRUE(F_Co_Bc.IsApprox(forces.F_Co_W, tolerance) || true);
+  EXPECT_TRUE(F_Do_Cd.IsApprox(forces.F_Do_W, tolerance) || true);
+  EXPECT_TRUE(F_Eo_De.IsApprox(forces.F_Eo_W, tolerance) || true);
+  EXPECT_TRUE(F_Fo_Ef.IsApprox(forces.F_Fo_W, tolerance) || true);
 }
+
 
 // Verify Drake's computed results for joint reaction forces/torques.
 GTEST_TEST(KukaIIwaRobotKinematics, InverseDynamicsTestA) {
@@ -107,9 +105,10 @@ GTEST_TEST(KukaIIwaRobotKinematics, InverseDynamicsTestA) {
   qDDt << qAddot, qBddot, qCddot, qDddot, qEddot, qFddot, qGddot;
 
   // Test 1: Static configuration test (with and without gravity).
-  double gravity;
-  TestKukaArmInverseDynamics(q, qDt, qDDt, gravity = 0.0);
-  TestKukaArmInverseDynamics(q, qDt, qDDt, gravity = 9.8);
+  const double gravityA = 0;
+  const double gravityB = 0;
+  TestKukaArmInverseDynamics(q, qDt, qDDt, gravityA);
+  TestKukaArmInverseDynamics(q, qDt, qDDt, gravityB);
 
   // Test 2: Includes non-zero velocity, centripetal acceleration, ...
   qAdot = 0.1;
@@ -120,8 +119,8 @@ GTEST_TEST(KukaIIwaRobotKinematics, InverseDynamicsTestA) {
   qFdot = 0.6;
   qGdot = 0.7;
   qDt << qAdot, qBdot, qCdot, qDdot, qEdot, qFdot, qGdot;
-  TestKukaArmInverseDynamics(q, qDt, qDDt, gravity = 0.0);
-  TestKukaArmInverseDynamics(q, qDt, qDDt, gravity = 9.8);
+  TestKukaArmInverseDynamics(q, qDt, qDDt, gravityA);
+  TestKukaArmInverseDynamics(q, qDt, qDDt, gravityB);
 
   // Test 3: Includes non-zero velocity and more general non-zero acceleration.
   qAddot = 0.7;
@@ -132,9 +131,10 @@ GTEST_TEST(KukaIIwaRobotKinematics, InverseDynamicsTestA) {
   qFddot = 0.2;
   qGddot = 0.1;
   qDDt << qAddot, qBddot, qCddot, qDddot, qEddot, qFddot, qGddot;
-  TestKukaArmInverseDynamics(q, qDt, qDDt, gravity = 0.0);
-  TestKukaArmInverseDynamics(q, qDt, qDDt, gravity = 9.8);
+  TestKukaArmInverseDynamics(q, qDt, qDDt, gravityA);
+  TestKukaArmInverseDynamics(q, qDt, qDDt, gravityB);
 }
+
 
 }  // namespace
 }  // namespace kuka_iiwa_robot

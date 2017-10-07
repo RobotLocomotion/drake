@@ -4,6 +4,7 @@
 #include <functional>
 #include <memory>
 #include <tuple>
+#include <vector>
 
 #include "drake/common/eigen_types.h"
 #include "drake/math/roll_pitch_yaw.h"
@@ -11,6 +12,7 @@
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
+#include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -39,6 +41,27 @@ struct KukaRobotJointReactionForces {
   SpatialForce<double> F_Go_W;
 };
 
+/// Utility struct that defines the kinematics of a generic rigid frame B (e.g.,
+/// a rigid body frame) in another arbitrary rigid frame N (e.g., the world).
+/// Herein, Bo and No denote the origins of rigid frame B and N, respectively.
+/// Right-handed sets of orthogonal unit vectors Bx, By, Bz and Nx, Ny, Nz are
+/// fixed in rigid frames B and N, respectively.
+/// -----------|----------------------------------------------------------------
+/// R_NB       | Rotation matrix relating Nx, Ny, Nz to Bx, By, Bz.
+/// p_NoBo_N   | Position vector from No to Bo, expressed in frame N.
+/// w_NB_N     | B's angular velocity in N, expressed in N.
+/// v_NBo_N    | Bo's velocity in N, expressed in N.
+/// alpha_NB_N | B's angular acceleration in N, expressed in N.
+/// a_NBo_N    | Bo's acceleration in N, expressed in N.
+template <typename T>
+struct RigidBodyKinematics {
+  Matrix3<T> R_NB;
+  Vector3<T> p_NoBo_N;
+  Vector3<T> w_NB_N;
+  Vector3<T> v_NBo_N;
+  Vector3<T> alpha_NB_N;
+  Vector3<T> a_NBo_N;
+};
 
 /// Utility method for creating a transform from frame A to frame B.
 /// @param[in] R_AB Rotation matrix relating Ax, Ay, Az to Bx, By, Bz.
@@ -70,7 +93,7 @@ class DrakeKukaIIwaRobot {
 
   /// Construct a 7-DOF Kuka iiwa robot arm (from file kuka_iiwa_robot.urdf).
   /// The robot is constructed with 7 revolute joints.
-  DrakeKukaIIwaRobot() {
+  explicit DrakeKukaIIwaRobot(double gravity) {
     // Create a mostly empty MultibodyTree (it has a built-in "world" body).
     // Newtonian reference frame (linkN) is the world body.
     model_ = std::make_unique<MultibodyTree<double>>();
@@ -149,23 +172,23 @@ class DrakeKukaIIwaRobot {
         *linkF_, Vector3d(-M_PI_2, M_PI, 0), Vector3d(0, 0.081, 0),
         *linkG_, Eigen::Vector3d::UnitZ());
 
+    // Add force element for a constant gravity pointing downwards, that is, in
+    // the minus y-axis direction.
+    set_gravity(gravity);
+    const Eigen::Vector3d gravity_vector = gravity_ * Eigen::Vector3d::UnitZ();
+    model_->AddForceElement<UniformGravityFieldElement>(gravity_vector);
+
     // Finalize() stage sets the topology (model is built).
     model_->Finalize();
 
     // After Finalize() method has been called, Context can be created.
     context_ = model_->CreateDefaultContext();
+    mbt_context_ = dynamic_cast<MultibodyTreeContext<double>*>(context_.get());
   }
 
   /// This method gets the number of rigid bodies in this robot.
   /// @returns the number of rigid bodies in this robot.
   int get_number_of_rigid_bodies() const  {return model_->get_num_bodies();}
-
-  /// This method sets Earth's (or astronomical body's) uniform gravitational
-  /// acceleration ("little g").  By default, little g is initialized to
-  /// 0.0 m/s² (not 9.81 m/s²).  Right-handed orthogonal unit vectors Nx, Ny, Nz
-  /// are fixed in N (Earth) with Nz vertically upward (so gravity is in -Nz).
-  /// @param[in] gravity Earth's gravitational acceleration in m/s².
-  void set_gravity(double gravity) {gravity_ = gravity;}
 
   /// This method calculates kinematic properties of the end-effector (herein
   /// denoted as rigid body G) of a 7-DOF KUKA LBR iiwa robot (14 kg payload).
@@ -178,17 +201,8 @@ class DrakeKukaIIwaRobot {
   /// @param[in] qDt 1st-time-derivative of q.
   /// @param[in] qDDt 2nd-time-derivative of q.
   ///
-  /// @returns values defined below.
-  ///
-  /// std::tuple | Description
-  /// -----------|-------------------------------------------------
-  /// R_NG       | Rotation matrix relating Nx, Ny, Nz to Gx, Gy, Gz.
-  /// p_NoGo_N   | Go's position from No, expressed in N.
-  /// w_NG_N     | G's angular velocity in N, expressed in N.
-  /// v_NGo_N    | Go's velocity in N, expressed in N.
-  /// alpha_NG_N | G's angular acceleration in N, expressed in N.
-  /// a_NGo_N    | Go's acceleration in N, expressed in N.
-  std::tuple<Eigen::Matrix3d, Vector3d, Vector3d, Vector3d, Vector3d, Vector3d>
+  /// @returns G's kinematics in N, expressed in N.
+  RigidBodyKinematics<double>
   CalcEndEffectorKinematics(const Eigen::Ref<const VectorX<double>>& q,
                             const Eigen::Ref<const VectorX<double>>& qDt,
                             const Eigen::Ref<const VectorX<double>>& qDDt) {
@@ -214,14 +228,15 @@ class DrakeKukaIIwaRobot {
     const SpatialAcceleration<double>& A_NG_N =
         linkG_->get_spatial_acceleration_in_world(ac);
 
-    // Create tuple to return results.
-    const Eigen::Matrix3d R_NG = X_NG.linear();
-    const Eigen::Vector3d p_NoGo_N = X_NG.translation();
-    const Eigen::Vector3d w_NG_N = V_NG_N.rotational();
-    const Eigen::Vector3d v_NGo_N = V_NG_N.translational();
-    const Eigen::Vector3d alpha_NG_N = A_NG_N.rotational();
-    const Eigen::Vector3d a_NG_N = A_NG_N.translational();
-    return std::make_tuple(R_NG, p_NoGo_N, w_NG_N, v_NGo_N, alpha_NG_N, a_NG_N);
+    // Create a RigidBodyKinematics struct to return results.
+    RigidBodyKinematics<double> kinematics;
+    kinematics.R_NB = X_NG.linear();
+    kinematics.p_NoBo_N = X_NG.translation();
+    kinematics.w_NB_N = V_NG_N.rotational();
+    kinematics.v_NBo_N = V_NG_N.translational();
+    kinematics.alpha_NB_N = A_NG_N.rotational();
+    kinematics.a_NBo_N = A_NG_N.translational();
+    return kinematics;
   }
 
 
@@ -255,15 +270,48 @@ class DrakeKukaIIwaRobot {
     model_->CalcVelocityKinematicsCache(*context_, pc, &vc);
     model_->CalcAccelerationKinematicsCache(*context_, pc, vc, qDDt, &ac);
 
-    // TODO(mitiguy) Properly calculate joint reaction forces.
+    // Input vector of generalized forces for known applied force/torques,
+    // e.g., gravity, known models of visous friction, etc.
+    const int number_of_generalized_speeds = model_->get_num_velocities();
+    Eigen::VectorXd generalized_force_applied(number_of_generalized_speeds);
+
+    // Input vector of spatial forces for known applied force/torques,
+    // e.g., gravity, known models of visous friction, etc.
+    const int number_of_bodies = get_number_of_rigid_bodies();
+    std::vector<SpatialForce<double>> Fapplied_Bo_W_array(number_of_bodies);
+
+    // Fill arrays generalized_force_applied and F_Bo_W_array using the fact
+    // that gravity was included earlier in the model via:
+    // model_->AddForceElement<UniformGravityFieldElement>(gravity_vector);
+    model_->CalcForceElementsContribution(*context_, pc, vc,
+                          &Fapplied_Bo_W_array, &generalized_force_applied);
+
+    // Output vector of generalized forces for calculated motor torques
+    // required to drive the Kuka robot at its specified rate.
+    Eigen::VectorXd generalized_force_output(number_of_generalized_speeds);
+
+    // Output vector of spatial forces for joint reaction force/torques for
+    // each body B at their inboard frame Mo, expressed in the world W.
+    std::vector<SpatialForce<double>> F_BMo_W_array(number_of_bodies);
+
+    // Output vector of generalized forces associated with the motor torques
+    // required to drive the Kuka robot at its specified rate.
+    std::vector<SpatialAcceleration<double>> A_WB_array(number_of_bodies);
+
+    // Calculate inverse dynamics on this robot.
+    model_->CalcInverseDynamics(*context_, pc, vc, qDDt,
+                Fapplied_Bo_W_array, generalized_force_applied,
+                &A_WB_array, &F_BMo_W_array, &generalized_force_output);
+
+    // Put joint reaction forces into return struct.
     KukaRobotJointReactionForces forces;
-    forces.F_Ao_W = SpatialForce<double>(Vector3d::Zero(), Vector3d::Zero());
-    forces.F_Bo_W = SpatialForce<double>(Vector3d::Zero(), Vector3d::Zero());
-    forces.F_Co_W = SpatialForce<double>(Vector3d::Zero(), Vector3d::Zero());
-    forces.F_Do_W = SpatialForce<double>(Vector3d::Zero(), Vector3d::Zero());
-    forces.F_Eo_W = SpatialForce<double>(Vector3d::Zero(), Vector3d::Zero());
-    forces.F_Fo_W = SpatialForce<double>(Vector3d::Zero(), Vector3d::Zero());
-    forces.F_Go_W = SpatialForce<double>(Vector3d::Zero(), Vector3d::Zero());
+    forces.F_Ao_W = F_BMo_W_array[linkA_->get_node_index()];
+    forces.F_Bo_W = F_BMo_W_array[linkB_->get_node_index()];
+    forces.F_Co_W = F_BMo_W_array[linkC_->get_node_index()];
+    forces.F_Do_W = F_BMo_W_array[linkD_->get_node_index()];
+    forces.F_Eo_W = F_BMo_W_array[linkE_->get_node_index()];
+    forces.F_Fo_W = F_BMo_W_array[linkF_->get_node_index()];
+    forces.F_Go_W = F_BMo_W_array[linkG_->get_node_index()];
     return forces;
   }
 
@@ -344,6 +392,13 @@ class DrakeKukaIIwaRobot {
     FG_mobilizer_->set_angular_rate(context, qDt[6]);
   }
 
+  // This method sets Earth's (or astronomical body's) uniform gravitational
+  // acceleration ("little g").  By default, little g is initialized to
+  // 0.0 m/s² (not 9.81 m/s²).  Right-handed orthogonal unit vectors Nx, Ny, Nz
+  // are fixed in N (Earth) with Nz vertically upward (so gravity is in -Nz).
+  // @param[in] gravity Earth's gravitational acceleration in m/s².
+  void set_gravity(double gravity) {gravity_ = gravity;}
+
   // This model's MultibodyTree always has a built-in "world" body.
   // Newtonian reference frame (linkN) is the world body.
   std::unique_ptr<MultibodyTree<double>> model_;
@@ -403,6 +458,7 @@ class DrakeKukaIIwaRobot {
 
   // After model is finalized, create default context.
   std::unique_ptr<systems::Context<double>> context_;
+  MultibodyTreeContext<double>* mbt_context_;
 };
 
 }  // namespace kuka_iiwa_robot
