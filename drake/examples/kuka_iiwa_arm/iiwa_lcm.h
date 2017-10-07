@@ -6,13 +6,14 @@
 #include <memory>
 #include <vector>
 
+#include "external/optitrack_driver/lcmtypes/optitrack/optitrack_frame_t.hpp"
+
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
 #include "drake/systems/framework/leaf_system.h"
-#include "external/optitrack_driver/lcmtypes/optitrack/optitrack_frame_t.hpp"
 
 namespace drake {
 namespace examples {
@@ -175,6 +176,16 @@ class IiwaStatusSender : public systems::LeafSystem<double> {
 
 
 /// Create and outputs optitrack_frame_t messages.
+///
+/// This system has one abstract-valued input ports and one abstract-valued
+/// output port. The abstract input port is a templated on a std::vector of type
+/// OptitrackSim::TrackedObject, and the abstract output port value is templated
+/// on type `optitrack_frame_t`.
+///
+/// Note that this system does not actually send this message on an LCM channel.
+/// To send the message, the output of this system should be connected to an
+/// input port of a systems::Value objected templated on type
+/// `optitrack_frame_t`.
 class OptitrackFrameSender : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OptitrackFrameSender)
