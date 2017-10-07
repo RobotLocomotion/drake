@@ -28,7 +28,7 @@ void TestEndEffectorKinematics(const Eigen::Ref<const VectorX<double>> &q,
       drake_kuka_robot.CalcEndEffectorKinematics(q, qDt, qDDt);
 
   // Get corresponding MotionGenesis information.
-  MG::MGKukaIIwaRobot<double> MG_kuka_robot;
+  MG::MGKukaIIwaRobot<double> MG_kuka_robot(0);
   Matrix3d R_NG_true;
   Vector3d p_NoGo_N_true, w_NG_N_true, v_NGo_N_true;
   Vector3d alpha_NG_N_true, a_NGo_N_true;

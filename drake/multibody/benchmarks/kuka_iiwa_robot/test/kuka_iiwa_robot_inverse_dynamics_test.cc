@@ -32,8 +32,7 @@ void TestKukaArmInverseDynamics(const Eigen::Ref<const VectorX<double>> &q,
       drake_kuka_robot.CalcEndEffectorKinematics(q, qDt, qDDt);
 
   // Kinematics: Get corresponding MotionGenesis information.
-  MG::MGKukaIIwaRobot<double> MG_kuka_robot;
-  MG_kuka_robot.set_gravity(gravity);
+  MG::MGKukaIIwaRobot<double> MG_kuka_robot(gravity);
   Matrix3d R_NG_true;
   Vector3d p_NoGo_N_true, w_NG_N_true, v_NGo_N_true;
   Vector3d alpha_NG_N_true, a_NGo_N_true;
@@ -69,19 +68,18 @@ void TestKukaArmInverseDynamics(const Eigen::Ref<const VectorX<double>> &q,
       drake_kuka_robot.CalcJointReactionForces(q, qDt, qDDt);
 
   // Inverse dynamics: Get corresponding MotionGenesis information.
-  SpatialForced F_Ao_Na, F_Bo_Ab, F_Co_Bc, F_Do_Cd, F_Eo_De, F_Fo_Ef, F_Go_Fg;
-  std::tie(F_Ao_Na, F_Bo_Ab, F_Co_Bc, F_Do_Cd, F_Eo_De, F_Fo_Ef, F_Go_Fg) =
-      MG_kuka_robot.CalcJointReactionForces(q, qDt, qDDt);
+  SpatialForced F_Ao_W, F_Bo_W, F_Co_W, F_Do_W, F_Eo_W, F_Fo_W, F_Go_W;
+  std::tie(F_Ao_W, F_Bo_W, F_Co_W, F_Do_W, F_Eo_W, F_Fo_W, F_Go_W) =
+      MG_kuka_robot.CalcJointReactionForcesExpressedInWorld(q, qDt, qDDt);
 
   // Inverse dynamics: Compare Drake results with expected results.
-  // TODO(@mitiguy) Fix this.
   const double tolerance = 40 * kEpsilon;
-  EXPECT_TRUE(F_Ao_Na.IsApprox(forces.F_Ao_W, tolerance));
-  EXPECT_TRUE(F_Bo_Ab.IsApprox(forces.F_Bo_W, tolerance) || true);
-  EXPECT_TRUE(F_Co_Bc.IsApprox(forces.F_Co_W, tolerance) || true);
-  EXPECT_TRUE(F_Do_Cd.IsApprox(forces.F_Do_W, tolerance) || true);
-  EXPECT_TRUE(F_Eo_De.IsApprox(forces.F_Eo_W, tolerance) || true);
-  EXPECT_TRUE(F_Fo_Ef.IsApprox(forces.F_Fo_W, tolerance) || true);
+  EXPECT_TRUE(F_Ao_W.IsApprox(forces.F_Ao_W, tolerance));
+  EXPECT_TRUE(F_Bo_W.IsApprox(forces.F_Bo_W, tolerance));
+  EXPECT_TRUE(F_Co_W.IsApprox(forces.F_Co_W, tolerance));
+  EXPECT_TRUE(F_Do_W.IsApprox(forces.F_Do_W, tolerance));
+  EXPECT_TRUE(F_Eo_W.IsApprox(forces.F_Eo_W, tolerance));
+  EXPECT_TRUE(F_Fo_W.IsApprox(forces.F_Fo_W, tolerance));
 }
 
 
@@ -105,8 +103,9 @@ GTEST_TEST(KukaIIwaRobotKinematics, InverseDynamicsTestA) {
   qDDt << qAddot, qBddot, qCddot, qDddot, qEddot, qFddot, qGddot;
 
   // Test 1: Static configuration test (with and without gravity).
+  // TODO(@mitiguy) Check why setting gravityB = 9.8 does not work.
   const double gravityA = 0;
-  const double gravityB = 0;
+  const double gravityB = 0*9.8;
   TestKukaArmInverseDynamics(q, qDt, qDDt, gravityA);
   TestKukaArmInverseDynamics(q, qDt, qDDt, gravityB);
 

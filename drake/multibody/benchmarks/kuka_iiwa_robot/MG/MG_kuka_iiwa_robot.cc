@@ -57,7 +57,7 @@ MGKukaIIwaRobot<T>::CalcEndEffectorKinematics(
 template<typename T>
 std::tuple<SpatialForced, SpatialForced, SpatialForced, SpatialForced,
            SpatialForced, SpatialForced, SpatialForced>
-MGKukaIIwaRobot<T>::CalcJointReactionForces(
+MGKukaIIwaRobot<T>::CalcJointReactionForcesExpressedInMobilizer(
     const Eigen::Ref<const VectorX<T>>& q,
     const Eigen::Ref<const VectorX<T>>& qDt,
     const Eigen::Ref<const VectorX<T>>& qDDt) const {
@@ -80,6 +80,22 @@ MGKukaIIwaRobot<T>::CalcJointReactionForces(
   const SpatialForced F_G_Fg(Vector3d(MG_kuka_auto_generated_.tG),
                              Vector3d(MG_kuka_auto_generated_.fG));
 
+  return std::make_tuple(F_A_Na, F_B_Ab, F_C_Bc, F_D_Cd,
+                         F_E_De, F_F_Ef, F_G_Fg);
+}
+
+
+template<typename T>
+std::tuple<SpatialForced, SpatialForced, SpatialForced, SpatialForced,
+           SpatialForced, SpatialForced, SpatialForced>
+MGKukaIIwaRobot<T>::CalcJointReactionForcesExpressedInWorld(
+    const Eigen::Ref<const VectorX<T>>& q,
+    const Eigen::Ref<const VectorX<T>>& qDt,
+    const Eigen::Ref<const VectorX<T>>& qDDt) const {
+  // Calculate joint reaction torque/forces with MotionGenesis.
+  PrepareMGOutput(q, qDt, qDDt);
+
+  // Convert MotionGenesis standard C++ matrices to Eigen matrices.
   const SpatialForced F_A_W(Vector6d(MG_kuka_auto_generated_.SpatialForce_A_N));
   const SpatialForced F_B_W(Vector6d(MG_kuka_auto_generated_.SpatialForce_B_N));
   const SpatialForced F_C_W(Vector6d(MG_kuka_auto_generated_.SpatialForce_C_N));
