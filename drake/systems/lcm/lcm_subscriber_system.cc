@@ -37,7 +37,8 @@ LcmSubscriberSystem::LcmSubscriberSystem(
     drake::lcm::DrakeLcmInterface* lcm)
     : channel_(channel),
       translator_(translator),
-      serializer_(std::move(serializer)) {
+      serializer_(std::move(serializer)),
+      lcm_interface_(lcm) {
   DRAKE_DEMAND((translator_ != nullptr) != (serializer_ != nullptr));
   DRAKE_DEMAND(lcm);
 
@@ -165,8 +166,40 @@ void LcmSubscriberSystem::DoCalcNextUpdateTime(
               Event<double>::TriggerType::kTimed));
     }
   } else {
-    // Use base class' implementation.
-    LeafSystem<double>::DoCalcNextUpdateTime(context, events, time);
+    // Special code to support LCM log playback. For the normal and mock LCM
+    // interfaces, this always returns inf and returns.
+    *time = lcm_interface_->GetNextMessageTime();
+    DRAKE_DEMAND(*time > context.get_time());
+    if (std::isinf(*time)) {
+      return;
+    }
+
+    // Schedule a publish event at the next message time. We use a publish
+    // event here because we only want to generate a side effect to dispatch
+    // the message properly to all the subscribers, not mutating this system's
+    // context.)
+    // Note that for every LCM subscriber in the diagram, they will all schedule
+    // this event for themselves. However, only the first subscriber executing
+    // the callback will advance the log and do the message dispatch. This is
+    // because once the first callback is executed, the front of the log will
+    // have a different timestamp than the context's time (scheduled callback
+    // time).
+    EventCollection<PublishEvent<double>>& pub_events =
+      events->get_mutable_publish_events();
+
+    PublishEvent<double>::PublishCallback callback =
+      [this](const Context<double>& c, const PublishEvent<double>&) {
+        // Want to keep polling from the message queue, if they happen
+        // to be occur at the exact same time.
+        while (lcm_interface_->GetNextMessageTime() == c.get_time()) {
+          lcm_interface_->DispatchMessageAndAdvanceLog(c.get_time());
+        }
+      };
+
+    pub_events.add_event(
+        std::make_unique<systems::PublishEvent<double>>(
+          Event<double>::TriggerType::kTimed,
+          callback));
   }
 }
 

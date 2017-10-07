@@ -48,6 +48,7 @@ drake_cc_library(
     deps = [
         ":translator",
         "//drake/lcm:interface",
+        "//drake/lcm:lcm_log",
         "//drake/systems/framework",
     ],
 )
@@ -105,6 +106,16 @@ drake_cc_googletest(
         ":lcmt_drake_signal_translator",
         "//drake/lcm:lcmt_drake_signal_utils",
         "//drake/lcm:mock",
+        "//drake/systems/analysis",
+    ],
+)
+
+drake_cc_googletest(
+    name = "lcm_log_playback_test",
+    deps = [
+        ":lcm",
+        "//drake/lcm:lcm_log",
+        "//drake/lcmtypes:drake_signal",
         "//drake/systems/analysis",
     ],
 )

@@ -45,6 +45,21 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "lcm_log",
+    srcs = [
+        "drake_lcm_log.cc",
+    ],
+    hdrs = [
+        "drake_lcm_log.h",
+    ],
+    deps = [
+        ":interface",
+        "//drake/common:essential",
+        "@lcm",
+    ],
+)
+
+drake_cc_library(
     name = "lcmt_drake_signal_utils",
     testonly = 1,
     srcs = ["lcmt_drake_signal_utils.cc"],
@@ -73,6 +88,15 @@ drake_cc_googletest(
     local = 1,
     deps = [
         ":lcm",
+        ":lcmt_drake_signal_utils",
+    ],
+)
+
+drake_cc_googletest(
+    name = "drake_lcm_log_test",
+    local = 1,
+    deps = [
+        ":lcm_log",
         ":lcmt_drake_signal_utils",
     ],
 )
