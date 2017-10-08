@@ -77,7 +77,6 @@ drake_cc_library(
         "multibody_tree.cc",
         "revolute_mobilizer.cc",
         "rigid_body.cc",
-        "rpy_mobilizer.cc",
         "uniform_gravity_field_element.cc",
     ],
     hdrs = [
@@ -96,7 +95,6 @@ drake_cc_library(
         "multibody_tree.h",
         "revolute_mobilizer.h",
         "rigid_body.h",
-        "rpy_mobilizer.h",
         "uniform_gravity_field_element.h",
     ],
     deps = [
@@ -105,7 +103,6 @@ drake_cc_library(
         ":multibody_tree_indexes",
         ":spatial_inertia",
         "//drake/common:autodiff",
-        "//drake/math:geometric_transform",
     ],
 )
 
@@ -141,32 +138,6 @@ drake_cc_library(
 )
 
 # === test/ ===
-
-drake_cc_library(
-    name = "free_body_plant",
-    testonly = 1,
-    srcs = ["test/free_body_plant.cc"],
-    hdrs = ["test/free_body_plant.h"],
-    deps = [
-        "//drake/common:default_scalars",
-        "//drake/multibody/multibody_tree",
-        "//drake/systems/framework",
-    ],
-)
-
-drake_cc_googletest(
-    name = "free_body_test",
-    size = "small",
-    srcs = [
-        "test/free_body_test.cc",
-    ],
-    deps = [
-        ":free_body_plant",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/multibody/benchmarks/free_body",
-        "//drake/systems/analysis:simulator",
-    ],
-)
 
 drake_cc_googletest(
     name = "double_pendulum_test",
