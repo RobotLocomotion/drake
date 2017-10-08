@@ -145,11 +145,12 @@ int LcmSubscriberSystem::GetMessageCount(const Context<double>& context) const {
 void LcmSubscriberSystem::DoCalcNextUpdateTime(
     const Context<double>& context,
     systems::CompositeEventCollection<double>* events, double* time) const {
-  int last_message_count = GetMessageCount(context);
-
+  const int last_message_count = GetMessageCount(context);
   std::unique_lock<std::mutex> lock(received_message_mutex_);
+  const int received_message_count = received_message_count_;
+  lock.unlock();
   // Has a new message. Schedule an update event.
-  if (last_message_count != received_message_count_) {
+  if (last_message_count != received_message_count) {
     // TODO(siyuan): should be context.get_time() once #5725 is resolved.
     *time = context.get_time() + 0.0001;
     if (translator_ == nullptr) {

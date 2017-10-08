@@ -1,5 +1,6 @@
 #include "drake/lcm/drake_lcm_log.h"
 
+#include <chrono>
 #include <iostream>
 #include <limits>
 
@@ -36,10 +37,8 @@ void DrakeLcmLog::Publish(const std::string& channel, const void* data,
   if (!overwrite_publish_time_with_system_clock_) {
     log_event.timestamp = second_to_timestamp(second);
   } else {
-    struct timespec tv;
-    clock_gettime(CLOCK_REALTIME, &tv);
-    log_event.timestamp = static_cast<uint64_t>(tv.tv_sec) * 1000000 +
-                          static_cast<uint64_t>(tv.tv_nsec) * 1000;
+    log_event.timestamp = std::chrono::steady_clock::now().time_since_epoch() /
+                          std::chrono::microseconds(1);
   }
   log_event.channel = channel;
   log_event.datalen = data_size;
