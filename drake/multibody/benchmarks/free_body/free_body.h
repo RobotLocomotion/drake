@@ -15,10 +15,10 @@ using Eigen::Vector4d;
 using Eigen::VectorXd;
 using Eigen::Quaterniond;
 
-/// The purpose of the TorqueFreeCylinderExactSolution class is to provide the
-/// data (initial values and gravity) and methods for calculating the exact
-/// analytical solution for the translational and rotational motion of an axis-
-/// symmetric rigid body B (uniform cylinder) in a Newtonian frame (World) N.
+/// The purpose of the %FreeBody class is to provide the data (initial values
+/// and gravity) and methods for calculating the exact analytical solution for
+/// the translational and rotational motion of a free axis-symmetric rigid body
+/// B (uniform cylinder) in a Newtonian frame (World) N.
 /// Since the only external forces on B are uniform gravitational forces, there
 /// exists an exact closed-form analytical solution for B's motion. The closed-
 /// form rotational solution is available since B is "torque-free", i.e., the
