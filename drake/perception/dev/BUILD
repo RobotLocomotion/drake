@@ -6,7 +6,7 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
 )
-load("//tools:lint.bzl", "add_lint_tests")
+load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 

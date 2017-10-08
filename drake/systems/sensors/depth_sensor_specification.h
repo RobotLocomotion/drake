@@ -83,8 +83,8 @@ class DepthSensorSpecification {
   void set_max_yaw(double max_yaw);
   void set_min_pitch(double min_pitch);
   void set_max_pitch(double max_pitch);
-  void set_num_yaw_values(double num_yaw_values);
-  void set_num_pitch_values(double num_yaw_values);
+  void set_num_yaw_values(int num_yaw_values);
+  void set_num_pitch_values(int num_pitch_values);
   void set_min_range(double min_range);
   void set_max_range(double max_range);
 

@@ -110,8 +110,4 @@ drake_install_libraries(drakeCommon)
 add_executable(resource_tool resource_tool.cc)
 target_link_libraries(resource_tool drakeCommon)
 
-if(BUILD_TESTING)
-  add_subdirectory(test)
-endif()
-
 add_subdirectory(proto)

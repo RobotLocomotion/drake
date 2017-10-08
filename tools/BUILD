@@ -6,7 +6,7 @@ load(
     "exports_create_cps_scripts",
     "install_cmake_config",
 )
-load("//tools:lint.bzl", "add_lint_tests")
+load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -15,12 +15,6 @@ package(default_visibility = ["//visibility:public"])
 filegroup(
     name = "clang-format",
     srcs = ["//:.clang-format"],
-)
-
-sh_binary(
-    name = "asan",
-    srcs = ["asan.sh"],
-    data = ["asan.supp"],
 )
 
 sh_binary(
@@ -38,63 +32,9 @@ sh_binary(
     ],
 )
 
-sh_binary(
-    name = "lsan",
-    srcs = ["lsan.sh"],
-    data = ["lsan.supp"],
-)
-
-sh_binary(
-    name = "msan",
-    srcs = ["msan.sh"],
-    data = ["msan.supp"],
-)
-
-sh_binary(
-    name = "tsan",
-    srcs = ["tsan.sh"],
-    data = ["tsan.supp"],
-)
-
-sh_binary(
-    name = "ubsan",
-    srcs = ["ubsan.sh"],
-    data = ["ubsan.supp"],
-)
-
-sh_binary(
-    name = "valgrind",
-    srcs = ["valgrind.sh"],
-    data = ["valgrind.supp"],
-)
-
-sh_binary(
-    name = "kcov",
-    srcs = ["kcov.sh"],
-)
-
 py_binary(
     name = "cmake_configure_file",
     srcs = ["cmake_configure_file.py"],
-)
-
-py_binary(
-    name = "drakelint",
-    srcs = ["drakelint.py"],
-    # The clang-format-includes binary is not used by drakelint, because
-    # drakelint imports the formatter library directly.  However, we add
-    # clang-format-includes here as a data dependency because the formatter
-    # asks the user to run bazel-bin/drake/tools/clang-format-includes for
-    # fixups, and this ensures it always is freshly compiled and available.
-    data = ["//drake/tools:clang-format-includes"],
-    deps = ["//drake/tools:formatter"],
-)
-
-py_binary(
-    name = "bzlcodestyle",
-    srcs = ["bzlcodestyle.py"],
-    main = "bzlcodestyle.py",
-    deps = ["@pycodestyle//:pycodestyle"],
 )
 
 py_library(

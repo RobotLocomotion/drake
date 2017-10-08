@@ -374,6 +374,70 @@ class Diagram : public System<T>,
     }
   }
 
+  void SetRandomState(const Context<T>& context, State<T>* state,
+                      RandomGenerator* generator) const override {
+    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
+    DRAKE_DEMAND(diagram_context != nullptr);
+
+    auto diagram_state = dynamic_cast<DiagramState<T>*>(state);
+    DRAKE_DEMAND(diagram_state != nullptr);
+
+    // Set state of each constituent system.
+    for (int i = 0; i < num_subsystems(); ++i) {
+      auto& subcontext = diagram_context->GetSubsystemContext(i);
+      auto& substate = diagram_state->get_mutable_substate(i);
+      registered_systems_[i]->SetRandomState(subcontext, &substate, generator);
+    }
+  }
+
+  void SetRandomParameters(const Context<T>& context, Parameters<T>* params,
+                           RandomGenerator* generator) const override {
+    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
+    DRAKE_DEMAND(diagram_context != nullptr);
+
+    int numeric_parameter_offset = 0;
+    int abstract_parameter_offset = 0;
+
+    // Set parameters of each constituent system.
+    for (int i = 0; i < num_subsystems(); ++i) {
+      auto& subcontext = diagram_context->GetSubsystemContext(i);
+
+      if (!subcontext.num_numeric_parameters() &&
+          !subcontext.num_abstract_parameters()) {
+        // Then there is no work to do for this subcontext.
+        continue;
+      }
+
+      // Make a new Parameters<T> structure with pointers to the mutable
+      // subsystem parameter values.  This does not make a copy of the
+      // underlying data.
+      // TODO(russt): This code is duplicated from SetDefaultParameters.
+      // Consider extracting it to a helper method (waiting for the rule of
+      // three).
+
+      std::vector<BasicVector<T>*> numeric_params;
+      std::vector<AbstractValue*> abstract_params;
+      for (int j = 0; j < subcontext.num_numeric_parameters(); ++j) {
+        numeric_params.push_back(params->get_mutable_numeric_parameter(
+            numeric_parameter_offset + j));
+      }
+      numeric_parameter_offset += subcontext.num_numeric_parameters();
+      for (int j = 0; j < subcontext.num_abstract_parameters(); ++j) {
+        abstract_params.push_back(&params->get_mutable_abstract_parameter(
+            abstract_parameter_offset + j));
+      }
+      abstract_parameter_offset += subcontext.num_abstract_parameters();
+      Parameters<T> subparameters;
+      subparameters.set_numeric_parameters(
+          std::make_unique<DiscreteValues<T>>(numeric_params));
+      subparameters.set_abstract_parameters(
+          std::make_unique<AbstractValues>(abstract_params));
+
+      registered_systems_[i]->SetRandomParameters(subcontext, &subparameters,
+                                                  generator);
+    }
+  }
+
   std::unique_ptr<SystemOutput<T>> AllocateOutput(
       const Context<T>& context) const override {
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);

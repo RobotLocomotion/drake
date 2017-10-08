@@ -393,7 +393,7 @@ following values for the fields:
   :Name: ``Drake Lint File``
   :Description: ``Apply drake lint to the current file``
   :Program: ``bazel``
-  :Parameters: ``run //tools:drakelint -- $FilePath$``
+  :Parameters: ``run //tools/lint:drakelint -- $FilePath$``
   :Working directory: ``$Projectpath$``
 
 In the event of finding a lint problem (e.g., out-of-order include files), the
@@ -437,9 +437,9 @@ Drake style addenda
 
 Change the following fields in the instructions given above:
 
-  :Program: ``/bazel-bin/tools/drakelint``
+  :Program: ``/bazel-bin/tools/lint/drakelint``
   :Parameters: ``$FilePath$``
 
 Building the drake addenda lint tool:
 
-``bazel build //tools:drakelint``
+``bazel build //tools/lint:drakelint``

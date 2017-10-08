@@ -61,6 +61,14 @@ class SystemImpl {
 };
 /** @endcond */
 
+/// Defines the implementation of the stdc++ concept UniformRandomBitGenerator
+/// to be used by the Systems classes.  This is provided as a work-around to
+/// enable the use of the generator in virtual methods (which cannot be
+/// templated on the generator type).
+// TODO(russt): As discussed with sammy-tri, we could replace this with a
+// a templated class that exposes the required methods from the concept.
+typedef std::mt19937 RandomGenerator;
+
 /// A superclass template for systems that receive input, maintain state, and
 /// produce output of a given mathematical type T.
 ///
@@ -183,6 +191,60 @@ class System {
     // not change.
     const int num_params = context->num_numeric_parameters();
     SetDefaultParameters(*context, &context->get_mutable_parameters());
+    DRAKE_DEMAND(num_params == context->num_numeric_parameters());
+  }
+
+  /// Assigns random values to all elements of the state.
+  /// This default implementation calls SetDefaultState; override this method to
+  /// provide random initial conditions using the stdc++ random library, e.g.:
+  /// @code
+  ///   std::normal_distribution<T> gaussian();
+  ///   state->get_mutable_continuous_state()->get_mutable_vector()
+  ///        ->SetAtIndex(0, gaussian(*generator));
+  /// @endcode
+  /// Overrides must not change the number of state variables.
+  virtual void SetRandomState(const Context<T>& context, State<T>* state,
+                              RandomGenerator* generator) const {
+    unused(generator);
+    SetDefaultState(context, state);
+  }
+
+  /// Assigns random values to all parameters.
+  /// This default implementation calls SetDefaultParameters; override this
+  /// method to provide random parameters using the stdc++ random library, e.g.:
+  /// @code
+  ///   std::uniform_real_distribution<T> uniform();
+  ///   parameters->get_mutable_numeric_parameter(0)
+  ///             ->SetAtIndex(0, uniform(*generator));
+  /// @endcode
+  /// Overrides must not change the number of state variables.
+  virtual void SetRandomParameters(const Context<T>& context,
+                                   Parameters<T>* parameters,
+                                   RandomGenerator* generator) const {
+    unused(generator);
+    SetDefaultParameters(context, parameters);
+  }
+
+  // Sets Context fields to random values.  User code should not
+  // override.
+  void SetRandomContext(Context<T>* context, RandomGenerator* generator) const {
+    // Set the default state, checking that the number of state variables does
+    // not change.
+    const int n_xc = context->get_continuous_state()->size();
+    const int n_xd = context->get_num_discrete_state_groups();
+    const int n_xa = context->get_num_abstract_state_groups();
+
+    SetRandomState(*context, context->get_mutable_state(), generator);
+
+    DRAKE_DEMAND(n_xc == context->get_continuous_state()->size());
+    DRAKE_DEMAND(n_xd == context->get_num_discrete_state_groups());
+    DRAKE_DEMAND(n_xa == context->get_num_abstract_state_groups());
+
+    // Set the default parameters, checking that the number of parameters does
+    // not change.
+    const int num_params = context->num_numeric_parameters();
+    SetRandomParameters(*context, &context->get_mutable_parameters(),
+                        generator);
     DRAKE_DEMAND(num_params == context->num_numeric_parameters());
   }
 

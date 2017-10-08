@@ -2,7 +2,7 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:drake.bzl", "drake_cc_binary")
-load("//tools:lint.bzl", "add_lint_tests")
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load("@drake//tools:install.bzl", "install")
 
 exports_files([

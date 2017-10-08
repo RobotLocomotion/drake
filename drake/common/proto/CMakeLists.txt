@@ -22,7 +22,3 @@ target_link_libraries(drakeCommonProto
 
 drake_install_headers(${installed_headers})
 drake_install_libraries(drakeCommonProto)
-
-if(BUILD_TESTING)
-  add_subdirectory(test)
-endif()

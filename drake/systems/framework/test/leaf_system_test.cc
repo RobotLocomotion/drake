@@ -1531,6 +1531,78 @@ GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   EXPECT_TRUE(CompareMatrices(value3, Vector1<double>::Constant(-40.0)));
 }
 
+// Note: this class is duplicated in diagram_test.
+class RandomContextTestSystem : public LeafSystem<double> {
+ public:
+  RandomContextTestSystem() {
+    this->DeclareContinuousState(
+        BasicVector<double>(Eigen::Vector2d(-1.0, -2.0)));
+    this->DeclareNumericParameter(
+        BasicVector<double>(Eigen::Vector3d(1.0, 2.0, 3.0)));
+  }
+
+  void SetRandomState(const Context<double>& context, State<double>* state,
+                      RandomGenerator* generator) const override {
+    std::normal_distribution<double> normal;
+    for (int i = 0; i < context.get_continuous_state_vector().size(); i++) {
+      state->get_mutable_continuous_state()->get_mutable_vector()->SetAtIndex(
+          i, normal(*generator));
+    }
+  }
+  void SetRandomParameters(const Context<double>& context,
+                           Parameters<double>* params,
+                           RandomGenerator* generator) const override {
+    std::uniform_real_distribution<double> uniform;
+    for (int i = 0; i < context.get_numeric_parameter(0)->size(); i++) {
+      params->get_mutable_numeric_parameter(0)->SetAtIndex(i,
+                                                           uniform(*generator));
+    }
+  }
+};
+
+GTEST_TEST(RandomContextTest, SetRandomTest) {
+  RandomContextTestSystem system;
+
+  auto context = system.CreateDefaultContext();
+
+  // Back-up the numeric context values.
+  Eigen::Vector2d state = context->get_continuous_state_vector().CopyToVector();
+  Eigen::Vector3d params = context->get_numeric_parameter(0)->CopyToVector();
+
+  // Should return the (same) original values.
+  system.SetDefaultContext(context.get());
+  EXPECT_TRUE((state.array() ==
+               context->get_continuous_state_vector().CopyToVector().array())
+                  .all());
+  EXPECT_TRUE(
+      (params.array() == context->get_numeric_parameter(0)->get_value().array())
+          .all());
+
+  RandomGenerator generator;
+
+  // Should return different values.
+  system.SetRandomContext(context.get(), &generator);
+  EXPECT_TRUE((state.array() !=
+               context->get_continuous_state_vector().CopyToVector().array())
+                  .all());
+  EXPECT_TRUE(
+      (params.array() != context->get_numeric_parameter(0)->get_value().array())
+          .all());
+
+  // Update backup.
+  state = context->get_continuous_state_vector().CopyToVector();
+  params = context->get_numeric_parameter(0)->CopyToVector();
+
+  // Should return different values (again).
+  system.SetRandomContext(context.get(), &generator);
+  EXPECT_TRUE((state.array() !=
+               context->get_continuous_state_vector().CopyToVector().array())
+                  .all());
+  EXPECT_TRUE(
+      (params.array() != context->get_numeric_parameter(0)->get_value().array())
+          .all());
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake
