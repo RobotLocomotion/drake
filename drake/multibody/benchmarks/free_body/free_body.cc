@@ -1,4 +1,4 @@
-#include "drake/multibody/benchmarks/cylinder_torque_free_analytical_solution/torque_free_cylinder_exact_solution.h"
+#include "drake/multibody/benchmarks/free_body/free_body.h"
 
 #include <cmath>
 #include <tuple>
@@ -8,7 +8,7 @@
 
 namespace drake {
 namespace benchmarks {
-namespace cylinder_torque_free_analytical_solution {
+namespace free_body {
 
 using Eigen::Vector3d;
 using Eigen::Vector4d;
@@ -16,7 +16,7 @@ using Eigen::VectorXd;
 using Eigen::Quaterniond;
 
 std::tuple<Quaterniond, Vector3d, Vector3d>
-TorqueFreeCylinderExactSolution::
+FreeBody::
 CalculateExactRotationalSolutionABInitiallyAligned(const double t) const {
   // Constant values of moments of inertia.
   const double I = get_I();
@@ -73,8 +73,7 @@ CalculateExactRotationalSolutionABInitiallyAligned(const double t) const {
 }
 
 std::tuple<Quaterniond, Vector4d, Vector3d, Vector3d>
-TorqueFreeCylinderExactSolution::CalculateExactRotationalSolutionNB(
-                                 const double t) const {
+FreeBody::CalculateExactRotationalSolutionNB(const double t) const {
   // Kane's analytical solution is for quaternion quat_AB that relates A to B,
   // where A is another set Ax, Ay, Az of right-handed orthogonal unit vectors
   // which are fixed in N (Newtonian frame) but initially aligned to Bx, By, Bz.
@@ -107,8 +106,7 @@ TorqueFreeCylinderExactSolution::CalculateExactRotationalSolutionNB(
 }
 
 std::tuple<Vector3d, Vector3d, Vector3d>
-TorqueFreeCylinderExactSolution::CalculateExactTranslationalSolution(
-                                 const double t) const {
+FreeBody::CalculateExactTranslationalSolution(const double t) const {
   // Initial values of x, y, z and ẋ, ẏ, ż.
   const Vector3d& xyz_initial = get_p_NoBcm_N_initial();
   const Vector3d& xyzDt_initial =
@@ -150,6 +148,6 @@ TorqueFreeCylinderExactSolution::CalculateExactTranslationalSolution(
   return returned_tuple;
 }
 
-}  // namespace cylinder_torque_free_analytical_solution
+}  // namespace free_body
 }  // namespace benchmarks
 }  // namespace drake

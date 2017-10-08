@@ -18,12 +18,12 @@ filegroup(
 )
 
 drake_cc_library(
-    name = "torque_free_cylinder_exact_solution",
+    name = "free_body",
     srcs = [
-        "torque_free_cylinder_exact_solution.cc",
+        "free_body.cc",
     ],
     hdrs = [
-        "torque_free_cylinder_exact_solution.h",
+        "free_body.h",
     ],
     deps = [
         "//drake/common",
@@ -34,11 +34,11 @@ drake_cc_library(
 # === test/ ===
 
 drake_cc_googletest(
-    name = "cylinder_torque_free_analytical_solution",
+    name = "rigid_body_plant_free_body_test",
     size = "medium",
     data = [":models"],
     deps = [
-        ":torque_free_cylinder_exact_solution",
+        ":free_body",
         "//drake/common:find_resource",
         "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/math:autodiff",

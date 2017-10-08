@@ -13,7 +13,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/quaternion.h"
-#include "drake/multibody/benchmarks/cylinder_torque_free_analytical_solution/torque_free_cylinder_exact_solution.h"
+#include "drake/multibody/benchmarks/free_body/free_body.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
@@ -21,7 +21,7 @@
 
 namespace drake {
 namespace benchmarks {
-namespace cylinder_torque_free_analytical_solution {
+namespace free_body {
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
@@ -43,7 +43,7 @@ using Eigen::Quaterniond;
   void TestDrakeSolutionVsExactSolutionForTorqueFreeCylinder(
        const drake::systems::RigidBodyPlant<double>& rigid_body_plant,
        const drake::systems::Context<double>& context,
-       const TorqueFreeCylinderExactSolution& torque_free_cylinder_solution,
+       const FreeBody& torque_free_cylinder_solution,
        const double tolerance,
        drake::systems::ContinuousState<double>* stateDt_drake) {
   DRAKE_DEMAND(stateDt_drake != NULL);
@@ -164,7 +164,7 @@ void  IntegrateForwardWithVariableStepRungeKutta3(
           const drake::systems::RigidBodyPlant<double>& rigid_body_plant,
           const double dt_max, const double t_final,
           const double maximum_absolute_error_per_integration_step,
-          const TorqueFreeCylinderExactSolution& torque_free_cylinder_solution,
+          const FreeBody& torque_free_cylinder_solution,
           drake::systems::Context<double>* context,
           drake::systems::ContinuousState<double>* stateDt_drake) {
   DRAKE_DEMAND(context != NULL  &&  stateDt_drake != NULL  &&  dt_max >= 0.0);
@@ -217,7 +217,7 @@ void  IntegrateForwardWithVariableStepRungeKutta3(
  */
 void  TestDrakeSolutionForSpecificInitialValue(
     const drake::systems::RigidBodyPlant<double>& rigid_body_plant,
-    const TorqueFreeCylinderExactSolution& torque_free_cylinder_solution,
+    const FreeBody& torque_free_cylinder_solution,
     const bool should_numerically_integrate,
     drake::systems::Context<double>* context,
     drake::systems::ContinuousState<double>* stateDt_drake) {
@@ -311,7 +311,7 @@ void  TestDrakeSolutionForVariousInitialValues(
   const Vector3d v_NBcm_B_initial(-4.2, 5.5, 6.1);
   const RigidBodyTree<double>& tree = rigid_body_plant.get_rigid_body_tree();
   const Vector3d gravity = tree.a_grav.tail<3>();
-  TorqueFreeCylinderExactSolution torque_free_cylinder_exact(quat_NB_initial,
+  FreeBody torque_free_cylinder_exact(quat_NB_initial,
                  w_NB_B_initial, p_NoBcm_N_initial, v_NBcm_B_initial, gravity);
 
   // Test a variety of initial normalized quaternions.
@@ -359,7 +359,7 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   // Create path to .urdf file containing mass/inertia and geometry properties.
   const std::string urdf_name = "uniform_solid_cylinder.urdf";
   const std::string urdf_dir = "drake/multibody/benchmarks/"
-      "cylinder_torque_free_analytical_solution/";
+      "free_body/";
   const std::string urdf_dir_file_name = FindResourceOrThrow(
       urdf_dir + urdf_name);
 
@@ -394,6 +394,6 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
                                            stateDt_drake.get());
 }
 
-}  // namespace cylinder_torque_free_analytical_solution
+}  // namespace free_body
 }  // namespace benchmarks
 }  // namespace drake

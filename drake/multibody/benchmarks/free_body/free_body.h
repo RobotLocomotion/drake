@@ -8,7 +8,7 @@
 
 namespace drake {
 namespace benchmarks {
-namespace cylinder_torque_free_analytical_solution {
+namespace free_body {
 
 using Eigen::Vector3d;
 using Eigen::Vector4d;
@@ -31,11 +31,11 @@ using Eigen::Quaterniond;
 /// - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York, 1983.
 ///   (with P. W. Likins and D. A. Levinson).  Available for free .pdf download:
 ///   https:///ecommons.cornell.edu/handle/1813/637
-class TorqueFreeCylinderExactSolution{
+class FreeBody{
  public:
   // Constructors and destructor.
-  TorqueFreeCylinderExactSolution() = delete;
-  TorqueFreeCylinderExactSolution(const Quaterniond& quat_NB_initial,
+  FreeBody() = delete;
+  FreeBody(const Quaterniond& quat_NB_initial,
                                   const Vector3d& w_NB_B_initial,
                                   const Vector3d& p_NoBcm_N_initial,
                                   const Vector3d& v_NBcm_B_initial,
@@ -46,7 +46,7 @@ class TorqueFreeCylinderExactSolution{
     set_v_NBcm_B_initial(v_NBcm_B_initial);
     SetUniformGravityExpressedInWorld(gravity_N);
   }
-  ~TorqueFreeCylinderExactSolution() {}
+  ~FreeBody() {}
 
   /// Returns cylinder's moment of inertia about an axis perpendicular to its
   /// axis of rotation and passing through its center of mass.
@@ -188,6 +188,6 @@ class TorqueFreeCylinderExactSolution{
   Vector3d uniform_gravity_expressed_in_world_;
 };
 
-}  // namespace cylinder_torque_free_analytical_solution
+}  // namespace free_body
 }  // namespace benchmarks
 }  // namespace drake

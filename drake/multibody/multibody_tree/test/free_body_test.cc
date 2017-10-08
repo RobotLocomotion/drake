@@ -1,8 +1,9 @@
+#include "drake/multibody/benchmarks/free_body/free_body.h"
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/multibody/benchmarks/cylinder_torque_free_analytical_solution/torque_free_cylinder_exact_solution.h"
 #include "drake/multibody/multibody_tree/test/free_body_plant.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/simulator.h"
@@ -14,8 +15,7 @@ namespace multibody_tree {
 namespace test {
 namespace {
 
-using benchmarks::
-cylinder_torque_free_analytical_solution::TorqueFreeCylinderExactSolution;
+using benchmarks::free_body::FreeBody;
 using Eigen::Isometry3d;
 using Eigen::Matrix3d;
 using Eigen::Quaterniond;
@@ -44,7 +44,7 @@ GTEST_TEST(RollPitchYawTest, TimeDerivatives) {
 
   // Instantiate a benchmark object with analytical solution for comparison with
   // our numerical solution.
-  TorqueFreeCylinderExactSolution benchmark_(
+  FreeBody benchmark_(
       Quaterniond::Identity(), w0_WB,
       p0_WBcm, v0_WBcm, gravity_W);
 
