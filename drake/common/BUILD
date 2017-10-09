@@ -24,7 +24,6 @@ drake_cc_library(
         ":double",
         ":drake_path",
         ":dummy_value",
-        ":eigen_autodiff_limits",
         ":essential",
         ":extract_double",
         ":find_resource",
@@ -104,21 +103,17 @@ drake_cc_library(
 drake_cc_library(
     name = "autodiff",
     hdrs = [
+        "autodiff.h",
         "autodiff_overloads.h",
         "autodiffxd.h",
+        "eigen_autodiff_limits.h",
         "eigen_autodiff_types.h",
     ],
     deps = [
         ":cond",
         ":dummy_value",
-        ":eigen_autodiff_limits",
         ":essential",
     ],
-)
-
-drake_cc_library(
-    name = "eigen_autodiff_limits",
-    hdrs = ["eigen_autodiff_limits.h"],
 )
 
 drake_cc_library(
