@@ -168,14 +168,14 @@ GTEST_TEST(EmptySystemDiagramTest, CheckPeriodicTriggerDiscreteUpdateUnique) {
       EmptySystemDiagram::kOneUpdatePerLevelSys2, 0, true);
   EmptySystemDiagram d_bothupd_zero(EmptySystemDiagram::kTwoUpdatesPerLevel, 0,
       true);
-  EXPECT_EQ(d_sys2upd_zero.GetUniquePeriodicDiscreteUpdateAttribute(
-      &periodic_attr), true);
+  EXPECT_TRUE(d_sys2upd_zero.GetUniquePeriodicDiscreteUpdateAttribute(
+      &periodic_attr));
   CheckPeriodAndOffset<double>(periodic_attr);
-  EXPECT_EQ(d_sys1upd_zero.GetUniquePeriodicDiscreteUpdateAttribute(
-      &periodic_attr), true);
+  EXPECT_TRUE(d_sys1upd_zero.GetUniquePeriodicDiscreteUpdateAttribute(
+      &periodic_attr));
   CheckPeriodAndOffset<double>(periodic_attr);
-  EXPECT_EQ(d_bothupd_zero.GetUniquePeriodicDiscreteUpdateAttribute(
-      &periodic_attr), true);
+  EXPECT_TRUE(d_bothupd_zero.GetUniquePeriodicDiscreteUpdateAttribute(
+      &periodic_attr));
 
   // Check systems with up to three levels of recursion.
   for (int i = 1; i <= 3; ++i) {
@@ -194,23 +194,23 @@ GTEST_TEST(EmptySystemDiagramTest, CheckPeriodicTriggerDiscreteUpdateUnique) {
         EmptySystemDiagram::kTwoUpdatesAtLastLevel, i, true);
 
     // All of these should return "true". Check them.
-    EXPECT_EQ(d_sys1upd.GetUniquePeriodicDiscreteUpdateAttribute(
-        &periodic_attr), true);
+    EXPECT_TRUE(d_sys1upd.GetUniquePeriodicDiscreteUpdateAttribute(
+        &periodic_attr));
     CheckPeriodAndOffset<double>(periodic_attr);
-    EXPECT_EQ(d_sys2upd.GetUniquePeriodicDiscreteUpdateAttribute(
-        &periodic_attr), true);
+    EXPECT_TRUE(d_sys2upd.GetUniquePeriodicDiscreteUpdateAttribute(
+        &periodic_attr));
     CheckPeriodAndOffset<double>(periodic_attr);
-    EXPECT_EQ(d_bothupd.GetUniquePeriodicDiscreteUpdateAttribute(
-        &periodic_attr), true);
+    EXPECT_TRUE(d_bothupd.GetUniquePeriodicDiscreteUpdateAttribute(
+        &periodic_attr));
     CheckPeriodAndOffset<double>(periodic_attr);
-    EXPECT_EQ(d_both_last.GetUniquePeriodicDiscreteUpdateAttribute(
-        &periodic_attr), true);
+    EXPECT_TRUE(d_both_last.GetUniquePeriodicDiscreteUpdateAttribute(
+        &periodic_attr));
     CheckPeriodAndOffset<double>(periodic_attr);
-    EXPECT_EQ(d_sys1_last.GetUniquePeriodicDiscreteUpdateAttribute(
-        &periodic_attr), true);
+    EXPECT_TRUE(d_sys1_last.GetUniquePeriodicDiscreteUpdateAttribute(
+        &periodic_attr));
     CheckPeriodAndOffset<double>(periodic_attr);
-    EXPECT_EQ(d_sys2_last.GetUniquePeriodicDiscreteUpdateAttribute(
-        &periodic_attr), true);
+    EXPECT_TRUE(d_sys2_last.GetUniquePeriodicDiscreteUpdateAttribute(
+        &periodic_attr));
     CheckPeriodAndOffset<double>(periodic_attr);
   }
 }
@@ -249,21 +249,27 @@ GTEST_TEST(EmptySystemDiagramTest, CheckPeriodicTriggerDiscreteUpdate) {
     EmptySystemDiagram d_both_last(
         EmptySystemDiagram::kTwoUpdatesAtLastLevel, i, false);
 
-    // All of these should return "false". Check them.
-    EXPECT_EQ(d_sys1upd.GetUniquePeriodicDiscreteUpdateAttribute(
-        &periodic_attr), false);
-    EXPECT_EQ(d_sys2upd.GetUniquePeriodicDiscreteUpdateAttribute(
-        &periodic_attr), false);
-    EXPECT_EQ(d_bothupd.GetUniquePeriodicDiscreteUpdateAttribute(
-        &periodic_attr), false);
-    EXPECT_EQ(d_both_last.GetUniquePeriodicDiscreteUpdateAttribute(
-        &periodic_attr), false);
+    // None of these should have a unique periodic event.
+    EXPECT_FALSE(d_sys1upd.GetUniquePeriodicDiscreteUpdateAttribute(
+        &periodic_attr));
+    EXPECT_EQ(d_sys1upd.GetPeriodicEvents().size(), i + 1);
+    EXPECT_FALSE(d_sys2upd.GetUniquePeriodicDiscreteUpdateAttribute(
+        &periodic_attr));
+    EXPECT_EQ(d_sys2upd.GetPeriodicEvents().size(), i + 1);
+    EXPECT_FALSE(d_bothupd.GetUniquePeriodicDiscreteUpdateAttribute(
+        &periodic_attr));
+    EXPECT_EQ(d_bothupd.GetPeriodicEvents().size(), 2 * (i + 1));
+    EXPECT_FALSE(d_both_last.GetUniquePeriodicDiscreteUpdateAttribute(
+        &periodic_attr));
+    EXPECT_EQ(d_both_last.GetPeriodicEvents().size(), 2);
 
-    // These should return "true".
-    EXPECT_EQ(d_sys1_last.GetUniquePeriodicDiscreteUpdateAttribute(
-        &periodic_attr), true);
-    EXPECT_EQ(d_sys2_last.GetUniquePeriodicDiscreteUpdateAttribute(
-        &periodic_attr), true);
+    // All of these should have a unique periodic event.
+    EXPECT_TRUE(d_sys1_last.GetUniquePeriodicDiscreteUpdateAttribute(
+        &periodic_attr));
+    EXPECT_EQ(d_sys1_last.GetPeriodicEvents().size(), 1);
+    EXPECT_TRUE(d_sys2_last.GetUniquePeriodicDiscreteUpdateAttribute(
+        &periodic_attr));
+    EXPECT_EQ(d_sys2_last.GetPeriodicEvents().size(), 1);
   }
 }
 

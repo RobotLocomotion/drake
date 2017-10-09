@@ -307,16 +307,6 @@ class LeafSystem : public System<T> {
             UnrestrictedUpdateEvent<T>>::MakeForcedEventCollection());
   }
 
-  std::map<typename Event<T>::PeriodicAttribute, std::vector<Event<T>*>>
-      DoGetPeriodicEvents() const override {
-    std::map<typename Event<T>::PeriodicAttribute,
-        std::vector<Event<T>*>> periodic_events_map;
-    for (const auto& i : periodic_events_) {
-      periodic_events_map[i.first].push_back(i.second.get());
-    }
-    return periodic_events_map;
-  }
-
   /// Provides a new instance of the leaf context for this system. Derived
   /// leaf systems with custom derived leaf system contexts should override this
   /// to provide a context of the appropriate type. The returned context should
@@ -1247,6 +1237,16 @@ class LeafSystem : public System<T> {
   }
 
  private:
+  std::map<typename Event<T>::PeriodicAttribute, std::vector<Event<T>*>>
+      DoGetPeriodicEvents() const override {
+    std::map<typename Event<T>::PeriodicAttribute,
+        std::vector<Event<T>*>> periodic_events_map;
+    for (const auto& i : periodic_events_) {
+      periodic_events_map[i.first].push_back(i.second.get());
+    }
+    return periodic_events_map;
+  }
+
   // Calls DoPublish.
   // Assumes @param events is an instance of LeafEventCollection, throws
   // std::bad_cast otherwise.
