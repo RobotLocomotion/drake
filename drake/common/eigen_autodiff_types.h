@@ -5,12 +5,15 @@
 /// AutoDiffScalar that are commonly used in Drake.
 /// @see also eigen_types.h
 
+#ifndef DRAKE_COMMON_AUTODIFF_HEADER
+// TODO(soonho-tri): Change to #error.
+#warning Do not directly include this file. Include "drake/common/autodiff.h".
+#endif
+
 #include <type_traits>
 
 #include <Eigen/Dense>
 
-#include "drake/common/autodiff_overloads.h"
-#include "drake/common/eigen_autodiff_limits.h"
 #include "drake/common/eigen_types.h"
 
 namespace drake {

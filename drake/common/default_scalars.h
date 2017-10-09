@@ -1,6 +1,6 @@
 #pragma once
 
-#include "drake/common/autodiff_overloads.h"
+#include "drake/common/autodiff.h"
 #include "drake/common/symbolic.h"
 
 /// A macro that defines explicit class template instantiations for Drake's

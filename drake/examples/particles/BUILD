@@ -7,7 +7,7 @@ load(
     "drake_cc_binary",
 )
 load("//tools:install_data.bzl", "install_data")
-load("//tools:lint.bzl", "add_lint_tests")
+load("//tools/lint:lint.bzl", "add_lint_tests")
 
 drake_cc_library(
     name = "particles",

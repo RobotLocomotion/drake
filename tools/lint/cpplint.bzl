@@ -60,10 +60,10 @@ def _add_linter_rules(source_labels, source_filenames, name, data = None):
     # Google cpplint.
     native.py_test(
         name = name + "_cpplint",
-        srcs = ["@google_styleguide//:cpplint"],
+        srcs = ["@styleguide//:cpplint"],
         data = data + cpplint_cfg + source_labels,
         args = _EXTENSIONS_ARGS + source_filenames,
-        main = "@google_styleguide//:cpplint/cpplint.py",
+        main = "@styleguide//:cpplint/cpplint.py",
         size = size,
         tags = tags,
     )
@@ -71,10 +71,10 @@ def _add_linter_rules(source_labels, source_filenames, name, data = None):
     # Additional Drake lint.
     native.py_test(
         name = name + "_drake_lint",
-        srcs = ["//tools:drakelint"],
+        srcs = ["//tools/lint:drakelint"],
         data = data + source_labels,
         args = source_filenames,
-        main = "//tools:drakelint.py",
+        main = "//tools/lint:drakelint.py",
         size = size,
         tags = tags,
     )

@@ -42,6 +42,9 @@ class LcmPublisherSystem : public LeafSystem<double> {
         channel, std::make_unique<Serializer<LcmMessage>>(), lcm);
   }
 
+  // TODO(siyuan): add multiple DrakeLcmInterface, so you can publish to a log
+  // and real lcm at the same time.
+
   /**
    * A constructor for an %LcmPublisherSystem that takes LCM message objects on
    * its sole abstract-valued input port. The LCM message type is determined by

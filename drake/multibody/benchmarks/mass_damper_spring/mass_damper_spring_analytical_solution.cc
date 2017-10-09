@@ -2,8 +2,8 @@
 
 #include <limits>
 
+#include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
-#include "drake/common/eigen_autodiff_types.h"
 
 namespace drake {
 namespace multibody {

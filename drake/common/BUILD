@@ -8,7 +8,7 @@ load(
     "drake_cc_library",
 )
 load("@drake//tools:install.bzl", "install")
-load("//tools:lint.bzl", "add_lint_tests")
+load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -24,7 +24,6 @@ drake_cc_library(
         ":double",
         ":drake_path",
         ":dummy_value",
-        ":eigen_autodiff_limits",
         ":essential",
         ":extract_double",
         ":find_resource",
@@ -104,21 +103,17 @@ drake_cc_library(
 drake_cc_library(
     name = "autodiff",
     hdrs = [
+        "autodiff.h",
         "autodiff_overloads.h",
         "autodiffxd.h",
+        "eigen_autodiff_limits.h",
         "eigen_autodiff_types.h",
     ],
     deps = [
         ":cond",
         ":dummy_value",
-        ":eigen_autodiff_limits",
         ":essential",
     ],
-)
-
-drake_cc_library(
-    name = "eigen_autodiff_limits",
-    hdrs = ["eigen_autodiff_limits.h"],
 )
 
 drake_cc_library(
@@ -350,7 +345,7 @@ py_binary(
     srcs = ["test/cpplint_wrapper.py"],
     data = [
         "//:CPPLINT.cfg",
-        "@google_styleguide//:cpplint",
+        "@styleguide//:cpplint",
     ],
     main = "test/cpplint_wrapper.py",
 )
@@ -821,7 +816,7 @@ py_test(
     data = [
         ":cpplint_wrapper",
         ":eigen_types.h",
-        "@google_styleguide//:cpplint/cpplint_test_header.h",
+        "@styleguide//:cpplint/cpplint_test_header.h",
     ],
 )
 

@@ -8,7 +8,7 @@ load(
     "drake_cc_binary",
 )
 load("//tools:install_data.bzl", "install_data")
-load("//tools:lint.bzl", "add_lint_tests")
+load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(
     default_visibility = [
@@ -36,7 +36,10 @@ drake_cc_binary(
     srcs = ["run_quadrotor_dynamics.cc"],
     add_test_rule = 1,
     data = [":models"],
-    test_rule_args = ["--duration=1.0"],
+    test_rule_args = [
+        "--duration=0.1",
+        "--initial_height=0.051",
+    ],
     test_rule_size = "medium",
     deps = [
         ":quadrotor_plant",

@@ -34,7 +34,3 @@ add_subdirectory(collision)
 add_subdirectory(joints)
 add_subdirectory(parsers)
 add_subdirectory(shapes)
-
-if(BUILD_TESTING)
-  add_subdirectory(test)
-endif()

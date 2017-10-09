@@ -76,11 +76,6 @@ class ConstraintSolver {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConstraintSolver)
 
   /// Solves the appropriate constraint problem at the acceleration level.
-  /// @param cfm The non-negative regularization factor to apply to the
-  ///            constraint problem (i.e., the underlying complementarity
-  ///            problem or linear system- the latter for problems with only
-  ///            bilateral constraints), also known as the "constraint force
-  ///            mixing" parameter.
   /// @param problem_data The data used to compute the constraint forces.
   /// @param cf The computed constraint forces, on return, in a packed storage
   ///           format. The first `nc` elements of `cf` correspond to the
@@ -102,15 +97,11 @@ class ConstraintSolver {
   /// @pre Constraint data has been computed.
   /// @throws a std::runtime_error if the constraint forces cannot be computed
   ///         (due to, e.g., an "inconsistent" rigid contact configuration).
-  /// @throws a std::logic_error if `cf` is null or `cfm` is negative.
-  void SolveConstraintProblem(double cfm,
-      const ConstraintAccelProblemData<T>& problem_data,
-      VectorX<T>* cf) const;
+  /// @throws a std::logic_error if `cf` is null.
+  void SolveConstraintProblem(const ConstraintAccelProblemData<T>& problem_data,
+                              VectorX<T>* cf) const;
 
   /// Solves the appropriate impact problem at the velocity level.
-  /// @param cfm The non-negative regularization factor to apply to the impact
-  ///            problem (i.e., the underlying complementarity problem), also
-  ///            known as the "constraint force mixing" parameter.
   /// @param problem_data The data used to compute the impulsive constraint
   ///            forces.
   /// @param cf The computed impulsive forces, on return, in a packed storage
@@ -133,10 +124,9 @@ class ConstraintSolver {
   /// @throws a std::runtime_error if the constraint forces cannot be computed
   ///         (due to, e.g., the effects of roundoff error in attempting to
   ///         solve a complementarity problem); in such cases, it is
-  ///         recommended to increase `cfm` and attempt again.
-  /// @throws a std::logic_error if `cf` is null or `cfm` is negative.
-  void SolveImpactProblem(double cfm,
-                          const ConstraintVelProblemData<T>& problem_data,
+  ///         recommended to increase regularization and attempt again.
+  /// @throws a std::logic_error if `cf` is null.
+  void SolveImpactProblem(const ConstraintVelProblemData<T>& problem_data,
                           VectorX<T>* cf) const;
 
   /// Computes the generalized force on the system from the constraint forces
@@ -615,7 +605,7 @@ ProblemData* ConstraintSolver<T>::UpdateProblemDataForUnilateralConstraints(
 }
 
 template <typename T>
-void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
+void ConstraintSolver<T>::SolveConstraintProblem(
     const ConstraintAccelProblemData<T>& problem_data,
     VectorX<T>* cf) const {
   using std::max;
@@ -623,10 +613,6 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
 
   if (!cf)
     throw std::logic_error("cf (output parameter) is null.");
-  if (cfm < 0.0) {
-    throw std::logic_error("Constraint force mixing (CFM) parameter is "
-                               "negative.");
-  }
 
   // Alias problem data.
   const std::vector<int>& sliding_contacts = problem_data.sliding_contacts;
@@ -805,12 +791,8 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
   VectorX<T> qq;
   FormSustainedConstraintLCP(*data_ptr, trunc_neg_invA_a, &MM, &qq);
 
-  // Regularize the LCP matrix as necessary.
-  const int num_vars = qq.size();
-  MM += MatrixX<T>::Identity(num_vars, num_vars) * cfm;
-
   // Get the zero tolerance for solving the LCP.
-  const T zero_tol = max(cfm, lcp_.ComputeZeroTolerance(MM));
+  const T zero_tol = lcp_.ComputeZeroTolerance(MM);
 
   // Solve the LCP and compute the values of the slack variables.
   VectorX<T> zz;
@@ -826,6 +808,7 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
   // operation), we must compensate for the number of pivoting operations and
   // the problem size. zzᵀww must use a looser tolerance to account for the
   // num_vars multiplies.
+  const int num_vars = qq.size();
   const int npivots = std::max(1, lcp_.get_num_pivots());
   if (!success || (zz.size() > 0 &&
       (zz.minCoeff() < -num_vars * npivots * zero_tol ||
@@ -884,7 +867,6 @@ void ConstraintSolver<T>::SolveConstraintProblem(double cfm,
 
 template <typename T>
 void ConstraintSolver<T>::SolveImpactProblem(
-    double cfm,
     const ConstraintVelProblemData<T>& problem_data,
     VectorX<T>* cf) const {
   using std::max;
@@ -892,10 +874,6 @@ void ConstraintSolver<T>::SolveImpactProblem(
 
   if (!cf)
     throw std::logic_error("cf (output parameter) is null.");
-  if (cfm < 0.0) {
-    throw std::logic_error("Constraint force mixing (CFM) parameter is "
-                               "negative.");
-  }
 
   // Get number of contacts and limits.
   const int num_contacts = problem_data.mu.size();
@@ -1079,12 +1057,8 @@ void ConstraintSolver<T>::SolveImpactProblem(
   VectorX<T> qq;
   FormImpactingConstraintLCP(problem_data, trunc_neg_invA_a, &MM, &qq);
 
-  // Regularize the LCP matrix as necessary.
-  const int num_vars = qq.size();
-  MM += MatrixX<T>::Identity(num_vars, num_vars) * cfm;
-
   // Get the tolerance for zero used by the LCP solver.
-  const T zero_tol = max(cfm, lcp_.ComputeZeroTolerance(MM));
+  const T zero_tol = lcp_.ComputeZeroTolerance(MM);
 
   // Solve the LCP and compute the values of the slack variables.
   VectorX<T> zz;
@@ -1100,6 +1074,7 @@ void ConstraintSolver<T>::SolveImpactProblem(
   // operation), we must compensate for the number of pivoting operations and
   // the problem size. zzᵀww must use a looser tolerance to account for the
   // num_vars multiplies.
+  const int num_vars = qq.size();
   const int npivots = std::max(lcp_.get_num_pivots(), 1);
   if (!success ||
       (zz.size() > 0 &&
@@ -1237,6 +1212,10 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
   const VectorX<T>& kF = problem_data.kF;
   const VectorX<T>& kL = problem_data.kL;
   const VectorX<T>& mu_non_sliding = problem_data.mu_non_sliding;
+  const VectorX<T>& gammaN = problem_data.gammaN;
+  const VectorX<T>& gammaF = problem_data.gammaF;
+  const VectorX<T>& gammaE = problem_data.gammaE;
+  const VectorX<T>& gammaL = problem_data.gammaL;
 
   // Construct a matrix similar to E in [Anitescu 1997]. This matrix will be
   // used to specify the constraints (adapted from [Anitescu 1997] Eqn 2.7):
@@ -1334,6 +1313,22 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
   MM->block(nc + nk + num_non_sliding, 0, nl, nc + nk) =
       MM->block(0, nc + nk + num_non_sliding, nc + nk, nl).transpose().eval();
 
+  // Verify that all gamma vectors are either empty or non-negative.
+  DRAKE_DEMAND(gammaN.size() == 0 || gammaN.minCoeff() >= 0);
+  DRAKE_DEMAND(gammaF.size() == 0 || gammaF.minCoeff() >= 0);
+  DRAKE_DEMAND(gammaE.size() == 0 || gammaE.minCoeff() >= 0);
+  DRAKE_DEMAND(gammaL.size() == 0 || gammaL.minCoeff() >= 0);
+
+  // Regularize the LCP matrix.
+  MM->topLeftCorner(nc, nc) += Eigen::DiagonalMatrix<T, Eigen::Dynamic>(gammaN);
+  MM->block(nc, nc, nr, nr) += Eigen::DiagonalMatrix<T, Eigen::Dynamic>(gammaF);
+  MM->block(nc + nr, nc + nr, nr, nr) +=
+      Eigen::DiagonalMatrix<T, Eigen::Dynamic>(gammaF);
+  MM->block(nc + nk, nc + nk, num_non_sliding, num_non_sliding) +=
+      Eigen::DiagonalMatrix<T, Eigen::Dynamic>(gammaE);
+  MM->block(nc + nk + num_non_sliding, nc + nk + num_non_sliding, nl, nl) +=
+      Eigen::DiagonalMatrix<T, Eigen::Dynamic>(gammaL);
+
   // Construct the LCP vector:
   // N⋅A⁻¹⋅a + kN
   // D⋅A⁻¹⋅a + kD
@@ -1378,6 +1373,10 @@ void ConstraintSolver<T>::FormImpactingConstraintLCP(
   const auto LT = problem_data.L_transpose_mult;
   auto iM = problem_data.solve_inertia;
   const VectorX<T>& mu = problem_data.mu;
+  const VectorX<T>& gammaN = problem_data.gammaN;
+  const VectorX<T>& gammaF = problem_data.gammaF;
+  const VectorX<T>& gammaE = problem_data.gammaE;
+  const VectorX<T>& gammaL = problem_data.gammaL;
 
   // Construct the matrix E in [Anitscu 1997]. This matrix will be used to
   // specify the constraints:
@@ -1458,8 +1457,24 @@ void ConstraintSolver<T>::FormImpactingConstraintLCP(
 
   // Construct the last row block, which provides the generic unilateral
   // constraints.
-  MM->block(nc*2 + nk, 0, nl, nc + nk) =
-      MM->block(0, nc*2 + nk, nc + nk, nl).transpose().eval();
+  MM->block(nc * 2 + nk, 0, nl, nc + nk) =
+      MM->block(0, nc * 2 + nk, nc + nk, nl).transpose().eval();
+
+  // Verify that all gamma vectors are either empty or non-negative.
+  DRAKE_DEMAND(gammaN.size() == 0 || gammaN.minCoeff() >= 0);
+  DRAKE_DEMAND(gammaF.size() == 0 || gammaF.minCoeff() >= 0);
+  DRAKE_DEMAND(gammaE.size() == 0 || gammaE.minCoeff() >= 0);
+  DRAKE_DEMAND(gammaL.size() == 0 || gammaL.minCoeff() >= 0);
+
+  // Regularize the LCP matrix.
+  MM->topLeftCorner(nc, nc) += Eigen::DiagonalMatrix<T, Eigen::Dynamic>(gammaN);
+  MM->block(nc, nc, nr, nr) += Eigen::DiagonalMatrix<T, Eigen::Dynamic>(gammaF);
+  MM->block(nc + nr, nc + nr, nr, nr) +=
+      Eigen::DiagonalMatrix<T, Eigen::Dynamic>(gammaF);
+  MM->block(nc + nk, nc + nk, nc, nc) +=
+      Eigen::DiagonalMatrix<T, Eigen::Dynamic>(gammaE);
+  MM->block(nc * 2 + nk, nc * 2 + nk, nl, nl) +=
+      Eigen::DiagonalMatrix<T, Eigen::Dynamic>(gammaL);
 
   // Construct the LCP vector:
   // NA⁻¹a + kN

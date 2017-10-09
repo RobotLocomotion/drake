@@ -8,7 +8,7 @@ load(
     "drake_cc_library",
 )
 load("//tools:gurobi.bzl", "gurobi_test_tags")
-load("//tools:lint.bzl", "add_lint_tests")
+load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools:mosek.bzl", "mosek_test_tags")
 
 package(default_visibility = ["//visibility:public"])
@@ -839,8 +839,12 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "rotation_constraint_test",
     size = "large",
-    # Excluding because an assertion fails in LLVM code. Issue #6179.
-    tags = gurobi_test_tags() + mosek_test_tags() + ["no_tsan"],
+    tags = gurobi_test_tags() + mosek_test_tags() + [
+        # Excluding asan because it is unreasonably slow (> 30 minutes).
+        "no_asan",
+        # Excluding tsan because an assertion fails in LLVM code. Issue #6179.
+        "no_tsan",
+    ],
     deps = [
         ":gurobi_solver",
         ":mathematical_program",
@@ -875,7 +879,7 @@ drake_cc_binary(
 drake_cc_googletest(
     name = "rotation_constraint_limit_test",
     size = "large",
-    # Excluding because an assertion fails in LLVM code. Issue #6179.
+    # Excluding tsan because an assertion fails in LLVM code. Issue #6179.
     tags = gurobi_test_tags() + ["no_tsan"],
     deps = [
         ":gurobi_solver",
