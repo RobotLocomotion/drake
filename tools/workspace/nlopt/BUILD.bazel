@@ -1,0 +1,9 @@
+# -*- python -*-
+
+exports_files(
+    [
+        "nlopt-gen-hpp.sh",
+        "nlopt-create-cps.py",
+    ],
+    visibility = ["@nlopt//:__pkg__"],
+)

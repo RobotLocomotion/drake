@@ -1,0 +1,6 @@
+# -*- python -*-
+
+exports_files(
+    ["lcm-create-cps.py"],
+    visibility = ["@lcm//:__pkg__"],
+)

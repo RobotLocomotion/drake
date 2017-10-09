@@ -1,0 +1,6 @@
+# -*- python -*-
+
+exports_files(
+    ["spdlog-create-cps.py"],
+    visibility = ["@spdlog//:__pkg__"],
+)
