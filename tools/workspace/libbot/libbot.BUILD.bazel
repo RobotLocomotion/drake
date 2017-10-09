@@ -6,6 +6,7 @@ load(
     "install",
     "install_cmake_config",
 )
+load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 load(
     "@drake//tools/workspace/lcm:lcm.bzl",
     "lcm_c_library",
@@ -13,11 +14,7 @@ load(
     "lcm_java_library",
     "lcm_py_library",
 )
-load(
-    "@drake//tools:drake.bzl",
-    "drake_generate_file",
-    "drake_java_binary",
-)
+load("@drake//tools:drake.bzl", "drake_java_binary")
 
 package(default_visibility = ["//visibility:public"])
 
