@@ -79,6 +79,7 @@ libqt5x11extras5
 libtheora0
 libtiff5
 libtinyxml-dev
+libtinyxml2-dev
 libtool
 libxml2
 libxt6
