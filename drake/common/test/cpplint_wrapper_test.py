@@ -53,7 +53,7 @@ class TestStringMethods(unittest.TestCase):
     def test_true_positive(self):
         # Test that the header is clean by default.
         filename = (
-            "external/google_styleguide/cpplint/cpplint_test_header.h")
+            "external/styleguide/cpplint/cpplint_test_header.h")
         self.run_and_expect(
             [filename],
             0,
