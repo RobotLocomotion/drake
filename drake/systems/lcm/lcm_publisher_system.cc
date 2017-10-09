@@ -102,8 +102,7 @@ void LcmPublisherSystem::DoPublish(const Context<double>& context,
   }
 
   // Publishes onto the specified LCM channel.
-  lcm_->Publish(channel_, message_bytes.data(), message_bytes.size(),
-                context.get_time());
+  lcm_->Publish(channel_, message_bytes.data(), message_bytes.size());
 }
 
 const LcmAndVectorBaseTranslator& LcmPublisherSystem::get_translator() const {
