@@ -575,20 +575,6 @@ Args:
 #BEGIN macros
 
 #------------------------------------------------------------------------------
-def exports_create_cps_scripts(packages):
-    """Export scripts that create CPS files to other packages.
-
-    Args:
-        packages (:obj:`list` of :obj:`str`): Bazel package names.
-    """
-
-    for package in packages:
-        native.exports_files(
-            ["{}-create-cps.py".format(package)],
-            visibility = ["@{}//:__pkg__".format(package)],
-        )
-
-#------------------------------------------------------------------------------
 def cmake_config(
     package,
     script = None,
@@ -629,7 +615,8 @@ def cmake_config(
             visibility = ["//visibility:public"],
         )
     elif not cps_file_name:
-        cps_file_name = "@drake//tools:{}.cps".format(package)
+        cps_file_name = "@drake//tools/workspace/{}:{}.cps".format(
+            package, package)
 
     package_lower = package.lower()
 

@@ -1,0 +1,6 @@
+# -*- python -*-
+
+exports_files(
+    ["bullet-create-cps.py"],
+    visibility = ["@bullet//:__pkg__"],
+)

@@ -1,0 +1,6 @@
+# -*- python -*-
+
+exports_files(
+    ["ipopt_build_with_autotools.sh"],
+    visibility = ["@ipopt_robotlocomotion//:__pkg__"],
+)

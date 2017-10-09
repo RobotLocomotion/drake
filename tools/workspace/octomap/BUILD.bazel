@@ -1,0 +1,6 @@
+# -*- python -*-
+
+exports_files(
+    ["octomap-create-cps.py"],
+    visibility = ["@octomap//:__pkg__"],
+)

@@ -1,0 +1,6 @@
+# -*- python -*-
+
+exports_files(
+    ["ignition_math-create-cps.py"],
+    visibility = ["@ignition_math//:__pkg__"],
+)
