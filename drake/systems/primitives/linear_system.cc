@@ -6,9 +6,8 @@
 #include <Eigen/Dense>
 #include <Eigen/LU>
 
-#include "drake/common/autodiff_overloads.h"
+#include "drake/common/autodiff.h"
 #include "drake/common/default_scalars.h"
-#include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
 #include "drake/common/symbolic_decompose.h"

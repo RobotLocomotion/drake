@@ -1,7 +1,7 @@
 #pragma once
 
 // TODO(jwnimmer-tri): Figure out how to remove this include.
-#include "drake/common/autodiff_overloads.h"
+#include "drake/common/autodiff.h"
 #include "drake/common/cond.h"
 #include "drake/common/drake_assert.h"
 

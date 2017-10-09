@@ -4,9 +4,8 @@
 #include <sstream>
 #include <typeinfo>
 
-#include "drake/common/autodiff_overloads.h"
+#include "drake/common/autodiff.h"
 #include "drake/common/default_scalars.h"
-#include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/systems/framework/system.h"
 

@@ -3,8 +3,8 @@
 #include <memory>
 #include <vector>
 
+#include "drake/common/autodiff.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/eigen_autodiff_types.h"
 #include "drake/multibody/multibody_tree/force_element.h"
 
 namespace drake {

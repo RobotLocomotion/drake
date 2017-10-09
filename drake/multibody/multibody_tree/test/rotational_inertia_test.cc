@@ -6,7 +6,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/autodiff.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 

@@ -1,6 +1,6 @@
 #include "drake/multibody/multibody_tree/acceleration_kinematics_cache.h"
 
-#include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/autodiff.h"
 
 namespace drake {
 namespace multibody {
