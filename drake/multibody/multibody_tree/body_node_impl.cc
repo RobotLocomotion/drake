@@ -1,6 +1,6 @@
 #include "drake/multibody/multibody_tree/body_node_impl.h"
 
-#include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/autodiff.h"
 
 namespace drake {
 namespace multibody {

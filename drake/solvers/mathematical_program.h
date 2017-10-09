@@ -17,11 +17,11 @@
 
 #include <Eigen/Core>
 
+#include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_optional.h"
-#include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic.h"

@@ -63,7 +63,6 @@ LIBDRAKE_COMPONENTS = [
     "//drake/common:double",
     "//drake/common:drake_path",
     "//drake/common:dummy_value",
-    "//drake/common:eigen_autodiff_limits",
     "//drake/common:essential",
     "//drake/common:extract_double",
     "//drake/common:find_resource",
