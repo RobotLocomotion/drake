@@ -8,7 +8,7 @@ load(
     "drake_cc_test",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools:mosek.bzl", "mosek_test_tags")
+load("//tools/workspace/mosek:mosek.bzl", "mosek_test_tags")
 
 package(default_visibility = ["//visibility:public"])
 
