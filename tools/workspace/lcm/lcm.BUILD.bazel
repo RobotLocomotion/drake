@@ -1,6 +1,6 @@
 # -*- python -*-
 
-load("@drake//tools:drake.bzl", "drake_generate_file")
+load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 load(
     "@drake//tools/workspace:generate_export_header.bzl",
     "generate_export_header",
@@ -158,7 +158,7 @@ cc_binary(
 # To repair this, we provide our own init file at the root of the sandbox that
 # overrides the Bazel empty default.  Its implementation just delegates to the
 # lcm-python init file.
-drake_generate_file(
+generate_file(
     name = "init_genrule",
     out = "__init__.py",
     content = "execfile(__path__[0] + \"/lcm-python/lcm/__init__.py\")",
