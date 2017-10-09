@@ -1,8 +1,9 @@
 /// @file
 ///
 /// This demo sets up a passive Quadrotor plant in a world described by the
-/// warehouse model. The robot simply rests on the floor within the walls
-/// of the warehouse.
+/// warehouse model. The robot simply passively falls to the floor within the
+/// walls of the warehouse, falling from the initial_height command line
+/// argument.
 
 #include <gflags/gflags.h>
 
@@ -15,6 +16,7 @@
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
+#include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -33,7 +35,8 @@ namespace examples {
 namespace quadrotor {
 namespace {
 
-DEFINE_double(duration, 3, "Total duration of simulation.");
+DEFINE_double(duration, 0.5, "Total duration of simulation.");
+DEFINE_double(initial_height, 0.051, "Initial height of the Quadrotor.");
 
 template <typename T>
 class Quadrotor : public systems::Diagram<T> {
@@ -61,9 +64,6 @@ class Quadrotor : public systems::Diagram<T> {
     DRAKE_DEMAND(plant_->get_num_actuators() == 0);
     DRAKE_DEMAND(plant_->get_num_actuators(quadrotor_id) == 0);
 
-    VectorX<T> hover_input(plant_->get_input_size());
-    hover_input.setZero();
-
     systems::DrakeVisualizer* publisher =
         builder.template AddSystem<systems::DrakeVisualizer>(
             plant_->get_rigid_body_tree(), &lcm_);
@@ -83,10 +83,9 @@ class Quadrotor : public systems::Diagram<T> {
     x0.setZero();
     /* x0 is the initial state where
      * x0(0), x0(1), x0(2) are the quadrotor's x, y, z -states
-     * x0(3), x0(4), x0(5) are the quedrotor's Euler angles phi, theta, psi
+     * x0(3), x0(4), x0(5) are the quadrotor's Euler angles phi, theta, psi
      */
-    x0(2) = 0.2;  // Sets arbitrary z-position. This is the initial height of
-                  // the quadrotor in the world frame.
+    x0(2) = FLAGS_initial_height;  // Sets arbitrary z-position.
     plant_->set_state_vector(&plant_state, x0);
   }
 
@@ -101,6 +100,12 @@ int do_main(int argc, char* argv[]) {
   Quadrotor<double> model;
   systems::Simulator<double> simulator(model);
 
+  // Same as the nominal step size, since we're using a fixed step integrator.
+  const double max_step_size = 1e-3;
+  simulator.Initialize();
+  simulator.reset_integrator<systems::RungeKutta2Integrator<double>>(
+      model, max_step_size, simulator.get_mutable_context());
+  simulator.Initialize();
   simulator.StepTo(FLAGS_duration);
   return 0;
 }
