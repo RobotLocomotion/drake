@@ -145,11 +145,15 @@ int LcmSubscriberSystem::GetMessageCount(const Context<double>& context) const {
 void LcmSubscriberSystem::DoCalcNextUpdateTime(
     const Context<double>& context,
     systems::CompositeEventCollection<double>* events, double* time) const {
-  int last_message_count = GetMessageCount(context);
+  const int last_message_count = GetMessageCount(context);
 
-  std::unique_lock<std::mutex> lock(received_message_mutex_);
+  const int received_message_count = [this]() {
+    std::unique_lock<std::mutex> lock(received_message_mutex_);
+    return received_message_count_;
+  }();
+
   // Has a new message. Schedule an update event.
-  if (last_message_count != received_message_count_) {
+  if (last_message_count != received_message_count) {
     // TODO(siyuan): should be context.get_time() once #5725 is resolved.
     *time = context.get_time() + 0.0001;
     if (translator_ == nullptr) {
@@ -185,21 +189,19 @@ void LcmSubscriberSystem::DoCalcNextUpdateTime(
     // have a different timestamp than the context's time (scheduled callback
     // time).
     EventCollection<PublishEvent<double>>& pub_events =
-      events->get_mutable_publish_events();
+        events->get_mutable_publish_events();
 
-    PublishEvent<double>::PublishCallback callback =
-      [this](const Context<double>& c, const PublishEvent<double>&) {
-        // Want to keep polling from the message queue, if they happen
-        // to be occur at the exact same time.
-        while (lcm_interface_->GetNextMessageTime() == c.get_time()) {
-          lcm_interface_->DispatchMessageAndAdvanceLog(c.get_time());
-        }
-      };
+    PublishEvent<double>::PublishCallback callback = [this](
+        const Context<double>& c, const PublishEvent<double>&) {
+      // Want to keep polling from the message queue, if they happen
+      // to be occur at the exact same time.
+      while (lcm_interface_->GetNextMessageTime() == c.get_time()) {
+        lcm_interface_->DispatchMessageAndAdvanceLog(c.get_time());
+      }
+    };
 
-    pub_events.add_event(
-        std::make_unique<systems::PublishEvent<double>>(
-          Event<double>::TriggerType::kTimed,
-          callback));
+    pub_events.add_event(std::make_unique<systems::PublishEvent<double>>(
+        Event<double>::TriggerType::kTimed, callback));
   }
 }
 
@@ -242,7 +244,6 @@ std::string LcmSubscriberSystem::make_name(const std::string& channel) {
 const std::string& LcmSubscriberSystem::get_channel_name() const {
   return channel_;
 }
-
 
 // This is only called if our output port is vector-valued, because we are
 // using a translator.
