@@ -3,7 +3,7 @@
 
 load("//tools:drake.bzl", "drake_cc_binary")
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools:mosek.bzl", "mosek_test_tags")
+load("//tools/workspace/mosek:mosek.bzl", "mosek_test_tags")
 
 drake_cc_binary(
     name = "region_of_attraction",
