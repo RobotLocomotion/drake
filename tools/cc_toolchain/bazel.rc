@@ -1,0 +1,19 @@
+# Use one of Drake's pre-selected compilers.
+build --crosstool_top=//tools/cc_toolchain:default-toolchain
+
+### Unsupported Crosstool ###
+# Use the default Bazel-generated CROSSTOOL.
+# This may be useful for developers with unsupported workstation configurations.
+build:unsupported_crosstool --crosstool_top=//external:cc_toolchain
+build:unsupported_crosstool --action_env=CCACHE_DISABLE=1
+
+### Debug symbols on OS X. ###
+# See https://github.com/bazelbuild/bazel/issues/2537
+build:apple_debug --spawn_strategy=standalone
+build:apple_debug --genrule_strategy=standalone
+build:apple_debug --compilation_mode=dbg
+
+# We don't actually use APPLE_DEBUG in code. It's just here to invalidate any
+# sandboxed .o files that might be in cache if a developer tried to build
+# with --compilation_mode=dbg instead of --config=apple_debug.
+build:apple_debug --copt="-DAPPLE_DEBUG"

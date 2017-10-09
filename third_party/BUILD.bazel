@@ -8,7 +8,7 @@ exports_files(
     ["com_github_bazelbuild_bazel/tools/cpp/osx_cc_wrapper.sh"],
     visibility = [
         "//drake/common:__pkg__",
-        "//tools:__pkg__",
+        "//tools/cc_toolchain:__pkg__",
     ],
 )
 

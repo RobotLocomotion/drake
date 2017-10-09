@@ -11,6 +11,12 @@ package(
     default_visibility = ["//visibility:public"],
 )
 
+config_setting(
+    name = "linux",
+    values = {"cpu": "k8"},
+    visibility = ["//visibility:private"],
+)
+
 cc_library(
     name = "spdlog",
     hdrs = glob(["include/spdlog/**"]),
@@ -20,7 +26,7 @@ cc_library(
     ],
     includes = ["include"],
     linkopts = select({
-        "@drake//tools:linux": ["-pthread"],
+        ":linux": ["-pthread"],
         # This is a bazel-default rule, and does not need @drake//
         "@//conditions:default": [],
     }),

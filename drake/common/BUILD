@@ -298,7 +298,7 @@ drake_cc_library(
     # out what's going on.  Definitely don't let "-pthread" get copy-pasta'd
     # throughout our code.
     linkopts = select({
-        "//tools:linux": ["-pthread"],
+        "//tools/cc_toolchain:linux": ["-pthread"],
         "//conditions:default": [],
     }),
     deps = [
@@ -471,7 +471,7 @@ sh_test(
         "test/drake_assert_test_compile.cc",
         "unused.h",
         "//third_party:com_github_bazelbuild_bazel/tools/cpp/osx_cc_wrapper.sh",  # noqa
-        "//tools:osx_cc_wrapper.sh",
+        "//tools/cc_toolchain:osx_cc_wrapper.sh",
     ],
 )
 
