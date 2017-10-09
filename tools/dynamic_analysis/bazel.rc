@@ -174,6 +174,9 @@ test:ubsan --run_under=//tools/dynamic_analysis:ubsan
 test:ubsan --test_env=UBSAN_OPTIONS
 test:ubsan --test_tag_filters=-gurobi,-mosek,-snopt,-no_ubsan
 test:ubsan --test_lang_filters=-py
+# Typical slowdown introduced by UBSan is 1.2x, increasing timeouts to 2x.
+# See https://developer.apple.com/documentation/code_diagnostics/undefined_behavior_sanitizer
+test:ubsan --test_timeout=120,600,1800,7200
 
 ### UBSan everything build. ###
 build:ubsan_everything --define=WITH_GUROBI=ON
@@ -194,6 +197,9 @@ test:ubsan_everything --test_tag_filters=-no_ubsan
 test:ubsan_everything --run_under=//tools/dynamic_analysis:ubsan
 test:ubsan_everything --test_env=UBSAN_OPTIONS
 test:ubsan_everything --test_lang_filters=-py
+# Typical slowdown introduced by UBSan is 1.2x, increasing timeouts to 2x.
+# See https://developer.apple.com/documentation/code_diagnostics/undefined_behavior_sanitizer
+test:ubsan_everything --test_timeout=120,600,1800,7200
 
 ### Memcheck build. ###
 build:memcheck --copt -g
