@@ -206,6 +206,7 @@ drake_cc_library(
     deps = [
         ":camera_info",
         ":image",
+        ":rgbd_renderer",
         ":vtk_util",
         "//drake/math:geometric_transform",
         "//drake/multibody:rigid_body_frame",
