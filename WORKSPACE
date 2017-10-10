@@ -53,6 +53,11 @@ new_local_repository(
     path = __workspace_dir__ + "/third_party/com_github_tcbrindle_cpp17_headers",  # noqa
 )
 
+local_repository(
+    name = "protobuf",
+    path = "third_party/com_github_google_protobuf",
+)
+
 load("@kythe//tools/build_rules/config:pkg_config.bzl", "pkg_config_package")
 
 pkg_config_package(
@@ -63,6 +68,11 @@ pkg_config_package(
 pkg_config_package(
     name = "gthread",
     modname = "gthread-2.0",
+)
+
+pkg_config_package(
+    name = "systemprotobuf",
+    modname = "protobuf",
 )
 
 load("//tools/workspace/python:python.bzl", "python_repository")
@@ -311,15 +321,6 @@ pypi_archive(
 bind(
     name = "six",
     actual = "@six_archive//:six",
-)
-
-# When updating the version of protobuf,
-# update tools/install/protobuf/protobuf.cps
-github_archive(
-    name = "protobuf",
-    repository = "google/protobuf",
-    commit = "v3.1.0",
-    sha256 = "fb2a314f4be897491bb2446697be693d489af645cb0e165a85e7e64e07eb134d",  # noqa
 )
 
 pypi_archive(

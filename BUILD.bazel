@@ -16,21 +16,6 @@ exports_files([
     ".drake-resource-sentinel",
 ])
 
-alias(
-    name = "protoc",
-    actual = "@protobuf//:protoc",
-)
-
-alias(
-    name = "protobuf",
-    actual = "@protobuf//:protobuf",
-)
-
-alias(
-    name = "protobuf_python",
-    actual = "@protobuf//:protobuf_python",
-)
-
 install(
     name = "install",
     docs = ["LICENSE.TXT"],
