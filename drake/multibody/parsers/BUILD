@@ -33,7 +33,7 @@ drake_cc_library(
         "//drake/multibody:rigid_body_tree",
         "//drake/thirdParty:spruce",
         "//drake/thirdParty:tinydir",
-        "//drake/thirdParty:tinyxml2",
+        "@tinyxml2",
     ],
 )
 
