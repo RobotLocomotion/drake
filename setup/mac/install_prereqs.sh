@@ -37,6 +37,7 @@ clang-format
 cmake
 diffstat
 doxygen
+dreal/dreal/dreal
 glew
 glib
 graphviz

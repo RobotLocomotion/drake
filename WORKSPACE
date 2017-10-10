@@ -47,6 +47,11 @@ new_local_repository(
 load("@kythe//tools/build_rules/config:pkg_config.bzl", "pkg_config_package")
 
 pkg_config_package(
+    name = "dreal",
+    modname = "dreal",
+)
+
+pkg_config_package(
     name = "glib",
     modname = "glib-2.0",
 )
