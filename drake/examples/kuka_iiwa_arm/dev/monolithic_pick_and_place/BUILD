@@ -45,6 +45,7 @@ drake_cc_binary(
         "//drake/lcmtypes:iiwa",
         "//drake/manipulation/planner:robot_plan_interpolator",
         "//drake/manipulation/schunk_wsg:schunk_wsg_controller",
+        "//drake/manipulation/sensors:xtion",
         "//drake/manipulation/util:world_sim_tree_builder",
         "//drake/multibody/rigid_body_plant:contact_results_to_lcm",
         "//drake/systems/analysis:simulator",
@@ -146,6 +147,18 @@ pick_and_place_test(
     ],
     tags = [
         "manual",  # Disables this brittle test from being run in CI.
+    ],
+)
+
+# Small test using the camera.
+# TODO(eric.cousineau): Remove "manual" tag once #5227 is resolved.
+pick_and_place_test(
+    name = "pick_and_place_camera",
+    args = [
+        "--with_camera",
+    ],
+    tags = [
+        "manual",
     ],
 )
 
