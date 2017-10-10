@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include <tinyxml2.h>
 #include "spruce.hh"
 
 #include "drake/common/eigen_types.h"
@@ -18,7 +19,6 @@
 #include "drake/multibody/parsers/parser_common.h"
 #include "drake/multibody/parsers/xml_util.h"
 #include "drake/multibody/rigid_body_tree.h"
-#include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
 
 // from
 // http://stackoverflow.com/questions/478898/how-to-execute-a-command-and-get-output-of-command-within-c

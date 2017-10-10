@@ -40,7 +40,6 @@ include(CTest)
 
 add_subdirectory(thirdParty/boost/tcbrindle_cpp17_headers/stx)
 add_subdirectory(thirdParty/bsd/spruce)
-add_subdirectory(thirdParty/zlib/tinyxml2)
 add_subdirectory(common)
 add_subdirectory(math)
 add_subdirectory(multibody)

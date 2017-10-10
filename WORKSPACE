@@ -394,6 +394,11 @@ pkg_config_package(
     modname = "tinyxml",
 )
 
+pkg_config_package(
+    name = "tinyxml2",
+    modname = "tinyxml2",
+)
+
 load("//tools/workspace/zlib:zlib.bzl", "zlib_repository")
 
 zlib_repository(
