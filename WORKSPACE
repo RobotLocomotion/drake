@@ -52,6 +52,18 @@ new_local_repository(
     path = __workspace_dir__ + "/third_party/com_github_tcbrindle_cpp17_headers",  # noqa
 )
 
+# This local repository imports the protobuf build rules for Bazel (based on
+# the upstream protobuf.bzl build rules).  The protobuf runtime is loaded
+# into "systemprotobuf" via pkg-config below.
+local_repository(
+    name = "protobuf",
+    # TODO(clalancette) Per https://github.com/RobotLocomotion/drake/pull/7361
+    # this should use an absolute path (so this should be prepended by
+    # __workspace_dir__).  However, in a clean build, this did not work.  We
+    # should investigate that and fix it.
+    path = "third_party/com_github_google_protobuf",
+)
+
 load("@kythe//tools/build_rules/config:pkg_config.bzl", "pkg_config_package")
 
 pkg_config_package(
@@ -62,6 +74,13 @@ pkg_config_package(
 pkg_config_package(
     name = "gthread",
     modname = "gthread-2.0",
+)
+
+# Load in the paths and flags to the system version of the protobuf runtime;
+# the Bazel build rules are loaded into "protobuf" via local_repository above.
+pkg_config_package(
+    name = "systemprotobuf",
+    modname = "protobuf",
 )
 
 load("//tools/workspace/python:python.bzl", "python_repository")
@@ -307,15 +326,6 @@ pypi_archive(
 bind(
     name = "six",
     actual = "@six_archive//:six",
-)
-
-# When updating the version of protobuf,
-# update tools/install/protobuf/protobuf.cps
-github_archive(
-    name = "protobuf",
-    repository = "google/protobuf",
-    commit = "v3.1.0",
-    sha256 = "fb2a314f4be897491bb2446697be693d489af645cb0e165a85e7e64e07eb134d",  # noqa
 )
 
 pypi_archive(
