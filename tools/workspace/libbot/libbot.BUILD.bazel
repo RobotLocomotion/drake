@@ -13,11 +13,7 @@ load(
     "lcm_java_library",
     "lcm_py_library",
 )
-load(
-    "@drake//tools:drake.bzl",
-    "drake_generate_file",
-    "drake_java_binary",
-)
+load("@drake//tools:drake.bzl", "drake_java_binary")
 
 package(default_visibility = ["//visibility:public"])
 
