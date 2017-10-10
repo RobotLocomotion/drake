@@ -8,7 +8,7 @@ load(
     "drake_cc_test",
 )
 load(
-    "@drake//tools/skylark:drake_proto.bzl",
+    "@protobuf//:protobuf.bzl",
     "drake_cc_proto_library",
 )
 load("//tools/workspace/gurobi:gurobi.bzl", "gurobi_test_tags")
