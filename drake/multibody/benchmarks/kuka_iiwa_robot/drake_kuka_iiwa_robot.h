@@ -93,6 +93,10 @@ class DrakeKukaIIwaRobot {
 
   /// Construct a 7-DOF Kuka iiwa robot arm (from file kuka_iiwa_robot.urdf).
   /// The robot is constructed with 7 revolute joints.
+  /// @param[in] gravity Earth's gravitational acceleration in m/s².  The world
+  /// z-unit vector is vertically upward.  If a gravity value of 9.8 is passed
+  /// to this constructor, it means the gravity vector is directed opposite the
+  /// world upward z-unit vector (which is correct -- gravity is downward).
   explicit DrakeKukaIIwaRobot(double gravity) {
     // Create a mostly empty MultibodyTree (it has a built-in "world" body).
     // Newtonian reference frame (linkN) is the world body.
@@ -173,9 +177,9 @@ class DrakeKukaIIwaRobot {
         *linkG_, Eigen::Vector3d::UnitZ());
 
     // Add force element for a constant gravity pointing downwards, that is, in
-    // the minus y-axis direction.
+    // the negative z-axis direction.
     set_gravity(gravity);
-    const Eigen::Vector3d gravity_vector = gravity_ * Eigen::Vector3d::UnitZ();
+    const Eigen::Vector3d gravity_vector = -gravity_ * Eigen::Vector3d::UnitZ();
     model_->AddForceElement<UniformGravityFieldElement>(gravity_vector);
 
     // Finalize() stage sets the topology (model is built).

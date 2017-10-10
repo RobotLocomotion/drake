@@ -56,6 +56,10 @@ class MGKukaIIwaRobot {
   /// Constructs an object that serves as Drake's interface to a Motion Genesis
   /// model of the aforementioned KUKA robot.  All model parameters are from:
   /// drake/multibody/benchmarks/kuka_iiwa_robot/kuka_iiwa_robot.urdf
+  /// @param[in] gravity Earth's gravitational acceleration in m/s².  The world
+  /// z-unit vector is vertically upward.  If a gravity value of 9.8 is passed
+  /// to this constructor, it means the gravity vector is directed opposite the
+  /// world upward z-unit vector (which is correct -- gravity is downward).
   explicit MGKukaIIwaRobot(double gravity) {
     static_assert(std::is_same<T, double>::value,
                   "This class only supports T = double.");

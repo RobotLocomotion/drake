@@ -103,9 +103,8 @@ GTEST_TEST(KukaIIwaRobotKinematics, InverseDynamicsTestA) {
   qDDt << qAddot, qBddot, qCddot, qDddot, qEddot, qFddot, qGddot;
 
   // Test 1: Static configuration test (with and without gravity).
-  // TODO(@mitiguy) Check why setting gravityB = 9.8 does not work.
   const double gravityA = 0;
-  const double gravityB = 0*9.8;
+  const double gravityB = 9.8;
   TestKukaArmInverseDynamics(q, qDt, qDDt, gravityA);
   TestKukaArmInverseDynamics(q, qDt, qDDt, gravityB);
 
