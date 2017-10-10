@@ -101,7 +101,7 @@ TEST_F(OptitrackSimTest, InvalidFrameTest) {
   auto body_frame_to_id_map = body_frame_to_id_map_;
   body_frame_to_id_map[new RigidBodyFrame<double>()] = 4;
   EXPECT_EQ(body_frame_to_id_map.size(), 4);
-  EXPECT_ANY_THROW(OptitrackSim(*tree_.get(), body_frame_to_id_map));
+  EXPECT_ANY_THROW(OptitrackSim(body_frame_to_id_map, 1.0/120.0));
 }
 
 TEST_F(OptitrackSimTest, ValidBodyNameTest) {
@@ -134,7 +134,7 @@ TEST_F(OptitrackSimTest, ValidBodyNameTest) {
 }
 
 TEST_F(OptitrackSimTest, ValidFramePoseTest) {
-  OptitrackSim dut(*tree_.get(), body_frame_to_id_map_);
+  OptitrackSim dut(body_frame_to_id_map_);
 
   // Update the input, calculate the output, and compare it with expected pose.
   KinematicsResults<double> kres(tree_.get());
