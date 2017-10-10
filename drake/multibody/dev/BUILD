@@ -72,8 +72,12 @@ drake_cc_googletest(
     data = [
         "//drake/manipulation/models/iiwa_description:models",
     ],
-    # Excluding because an assertion fails in LLVM code. Issue #6179.
-    tags = gurobi_test_tags() + ["no_tsan"],
+    tags = gurobi_test_tags() + [
+        # Takes too long (~2300 s) to run with Valgrind.
+        "no_memcheck",
+        # Excluding because an assertion fails in LLVM code. Issue #6179.
+        "no_tsan",
+    ],
     deps = [
         ":global_inverse_kinematics_test_util",
     ],
@@ -86,8 +90,12 @@ drake_cc_googletest(
     data = [
         "//drake/manipulation/models/iiwa_description:models",
     ],
-    # Excluding because an assertion fails in LLVM code. Issue #6179.
-    tags = gurobi_test_tags() + ["no_tsan"],
+    tags = gurobi_test_tags() + [
+        # Takes too long (~7500 s) to run with Valgrind.
+        "no_memcheck",
+        # Excluding because an assertion fails in LLVM code. Issue #6179.
+        "no_tsan",
+    ],
     deps = [
         ":global_inverse_kinematics_test_util",
     ],
@@ -100,8 +108,12 @@ drake_cc_googletest(
     data = [
         "//drake/manipulation/models/iiwa_description:models",
     ],
-    # Excluding because an assertion fails in LLVM code. Issue #6179.
-    tags = gurobi_test_tags() + ["no_tsan"],
+    tags = gurobi_test_tags() + [
+        # Takes too long (~3200 s) to run with Valgrind.
+        "no_memcheck",
+        # Excluding because an assertion fails in LLVM code. Issue #6179.
+        "no_tsan",
+    ],
     deps = [
         ":global_inverse_kinematics_test_util",
     ],
@@ -116,6 +128,8 @@ drake_cc_googletest(
     ],
     tags = gurobi_test_tags() + [
         "no_asan",
+        # Times out with Valgrind
+        "no_memcheck",
         "no_tsan",
     ],
     deps = [

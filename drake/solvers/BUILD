@@ -842,6 +842,8 @@ drake_cc_googletest(
     tags = gurobi_test_tags() + mosek_test_tags() + [
         # Excluding asan because it is unreasonably slow (> 30 minutes).
         "no_asan",
+        # Times out with Valgrind
+        "no_memcheck",
         # Excluding tsan because an assertion fails in LLVM code. Issue #6179.
         "no_tsan",
     ],
@@ -879,8 +881,12 @@ drake_cc_binary(
 drake_cc_googletest(
     name = "rotation_constraint_limit_test",
     size = "large",
-    # Excluding tsan because an assertion fails in LLVM code. Issue #6179.
-    tags = gurobi_test_tags() + ["no_tsan"],
+    tags = gurobi_test_tags() + [
+        # Times out with Valgrind
+        "no_memcheck",
+        # Excluding tsan because an assertion fails in LLVM code. Issue #6179.
+        "no_tsan",
+    ],
     deps = [
         ":gurobi_solver",
         ":mathematical_program",
