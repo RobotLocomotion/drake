@@ -175,6 +175,29 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "rgbd_renderer",
+    srcs = ["rgbd_renderer.cc"],
+    hdrs = ["color_palette.h",
+            "rgbd_renderer.h",
+    ],
+    deps = [
+        ":image",
+        ":vtk_util",
+        "//drake/multibody/shapes:shapes",
+        "@eigen",
+        "@vtk//:vtkCommonCore",
+        "@vtk//:vtkCommonDataModel",
+        "@vtk//:vtkCommonTransforms",
+        "@vtk//:vtkFiltersGeneral",
+        "@vtk//:vtkFiltersSources",
+        "@vtk//:vtkIOGeometry",
+        "@vtk//:vtkIOImage",
+        "@vtk//:vtkRenderingCore",
+        "@vtk//:vtkRenderingOpenGL2",
+    ],
+)
+
+drake_cc_library(
     name = "rgbd_camera",
     srcs = ["rgbd_camera.cc"],
     hdrs = ["rgbd_camera.h"],
@@ -186,7 +209,6 @@ drake_cc_library(
         "//drake/multibody:rigid_body_frame",
         "//drake/multibody:rigid_body_tree",
         "//drake/systems/framework",
-        "//drake/systems/framework:diagram_builder",
         "//drake/systems/primitives",
         "//drake/systems/rendering:pose_vector",
         "@eigen",
@@ -390,6 +412,22 @@ drake_cc_googletest(
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rgbd_renderer_test",
+    data = [
+        ":test_models",
+    ],
+    # Mitigate driver-related issues when running under `bazel test` (#7004).
+    local = 1,
+    tags = ["manual"],
+    deps = [
+        ":rgbd_renderer",
+        "//drake/common:find_resource",
+        "//drake/math:geometric_transform",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
