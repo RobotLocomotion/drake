@@ -4,6 +4,8 @@
 #include <memory>
 #include <string>
 
+#include <tinyxml2.h>
+
 #include "drake/common/drake_deprecated.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/model_instance_id_table.h"
@@ -12,7 +14,6 @@
 #include "drake/multibody/parsers/xml_util.h"
 #include "drake/multibody/rigid_body_frame.h"
 #include "drake/multibody/rigid_body_tree.h"
-#include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
 
 namespace drake {
 namespace parsers {
