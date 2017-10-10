@@ -57,6 +57,17 @@ void Throw(const char* condition, const char* func, const char* file,
   throw assertion_error(what.str().c_str());
 }
 
+// Declared in drake_throw.h.
+void ThrowCompare(
+    const char* condition,
+    const std::string& value1, const std::string& value2,
+    const char* func, const char* file, int line) {
+  std::ostringstream what;
+  PrintFailureDetailTo(what, condition, func, file, line);
+  what << " Operands were '" << value1 << "' and '"  << value2 << "'.";
+  throw assertion_error(what.str().c_str());
+}
+
 // Declared in drake_assert.h.
 void AssertionFailed(const char* condition, const char* func, const char* file,
                      int line) {

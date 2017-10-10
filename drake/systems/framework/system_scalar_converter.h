@@ -57,8 +57,10 @@ class SystemScalarConverter {
   ///
   /// - double
   /// - drake::AutoDiffXd
+  /// - drake::AutoDiff6d
   /// - drake::symbolic::Expression
   ///
+  /// XXX explain the changes to the defaults
   /// By default, all non-identity pairs (pairs where T and U differ) drawn
   /// from the above list can be used for T and U.  Systems may specialize
   /// scalar_conversion::Traits to disable support for some or all of these
@@ -101,15 +103,17 @@ class SystemScalarConverter {
       SystemTypeTag<S>, GuaranteedSubtypePreservation subtype_preservation)
       : SystemScalarConverter() {
     using Expression = symbolic::Expression;
-    // From double to all other types.
-    AddIfSupported<S, AutoDiffXd, double>(subtype_preservation);
+    // From double to all other types; this is the common case for users.
     AddIfSupported<S, Expression, double>(subtype_preservation);
-    // From AutoDiffXd to all other types.
-    AddIfSupported<S, double,     AutoDiffXd>(subtype_preservation);
+    AddIfSupported<S, AutoDiffXd, double>(subtype_preservation);
+    AddIfSupported<S, AutoDiff6d, double>(subtype_preservation);
+    // From all other types to symbolic, to support inferred sparsity.
     AddIfSupported<S, Expression, AutoDiffXd>(subtype_preservation);
-    // From Expression to all other types.
+    AddIfSupported<S, Expression, AutoDiff6d>(subtype_preservation);
+    // From all other types back to double, as a convenience.
     AddIfSupported<S, double,     Expression>(subtype_preservation);
-    AddIfSupported<S, AutoDiffXd, Expression>(subtype_preservation);
+    AddIfSupported<S, double,     AutoDiffXd>(subtype_preservation);
+    AddIfSupported<S, double,     AutoDiff6d>(subtype_preservation);
   }
 
   /// A std::function used to convert a System<U> into a System<T>.

@@ -30,6 +30,10 @@ using AutoDiffXd = Eigen::AutoDiffScalar<Eigen::VectorXd>;
 template <int num_vars>
 using AutoDiffd = Eigen::AutoDiffScalar<Eigen::Matrix<double, num_vars, 1> >;
 
+/// An autodiff variable with 6 partials.  (This is exactly the size of one x86
+/// cache line, and aligns the partials on a 16-byte boundary.)
+using AutoDiff6d = AutoDiffd<6>;
+
 /// A vector of `rows` autodiff variables, each with `num_vars` partials.
 template <int num_vars, int rows>
 using AutoDiffVecd = Eigen::Matrix<AutoDiffd<num_vars>, rows, 1>;

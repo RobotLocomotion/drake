@@ -186,14 +186,14 @@ AffineSystem<T>::AffineSystem(SystemScalarConverter converter,
       C_(C),
       D_(D),
       y0_(y0) {
-  DRAKE_DEMAND(this->num_states() == A.rows());
-  DRAKE_DEMAND(this->num_states() == A.cols());
-  DRAKE_DEMAND(this->num_states() == B.rows());
-  DRAKE_DEMAND(this->num_states() == C.cols());
-  DRAKE_DEMAND(this->num_inputs() == B.cols());
-  DRAKE_DEMAND(this->num_inputs() == D.cols());
-  DRAKE_DEMAND(this->num_outputs() == C.rows());
-  DRAKE_DEMAND(this->num_outputs() == D.rows());
+  DRAKE_THROW_UNLESS_EQ(this->num_states(), A.rows());
+  DRAKE_THROW_UNLESS_EQ(this->num_states(), A.cols());
+  DRAKE_THROW_UNLESS_EQ(this->num_states(), B.rows());
+  DRAKE_THROW_UNLESS_EQ(this->num_states(), C.cols());
+  DRAKE_THROW_UNLESS_EQ(this->num_inputs(), B.cols());
+  DRAKE_THROW_UNLESS_EQ(this->num_inputs(), D.cols());
+  DRAKE_THROW_UNLESS_EQ(this->num_outputs(), C.rows());
+  DRAKE_THROW_UNLESS_EQ(this->num_outputs(), D.rows());
 }
 
 // Our copy constructor delegates to the public constructor; this used only by

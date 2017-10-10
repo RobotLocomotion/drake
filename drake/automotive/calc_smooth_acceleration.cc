@@ -58,6 +58,11 @@ template AutoDiffXd calc_smooth_acceleration<AutoDiffXd>(
     const AutoDiffXd& current_velocity,
     const AutoDiffXd& max_velocity,
     const AutoDiffXd& velocity_limit_kp);
+template AutoDiff6d calc_smooth_acceleration<AutoDiff6d>(
+    const AutoDiff6d& desired_acceleration,
+    const AutoDiff6d& current_velocity,
+    const AutoDiff6d& max_velocity,
+    const AutoDiff6d& velocity_limit_kp);
 template Expression calc_smooth_acceleration<Expression>(
     const Expression& desired_acceleration,
     const Expression& current_velocity,
