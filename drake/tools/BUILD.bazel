@@ -26,6 +26,7 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 drake_py_proto_library(
     name = "named_vector",
     srcs = ["named_vector.proto"],
+    tags = ["nolint"],
 )
 
 drake_py_binary(
