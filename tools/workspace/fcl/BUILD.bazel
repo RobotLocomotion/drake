@@ -1,0 +1,6 @@
+# -*- python -*-
+
+exports_files(
+    ["fcl-create-cps.py"],
+    visibility = ["@fcl//:__pkg__"],
+)

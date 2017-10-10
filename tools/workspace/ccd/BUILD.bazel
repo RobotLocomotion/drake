@@ -1,0 +1,6 @@
+# -*- python -*-
+
+exports_files(
+    ["ccd-create-cps.py"],
+    visibility = ["@ccd//:__pkg__"],
+)
