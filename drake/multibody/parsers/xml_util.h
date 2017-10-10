@@ -4,9 +4,9 @@
 #include <string>
 
 #include <Eigen/Dense>
+#include <tinyxml2.h>
 
 #include "drake/multibody/pose_map.h"
-#include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
 
 template <typename Scalar>
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
