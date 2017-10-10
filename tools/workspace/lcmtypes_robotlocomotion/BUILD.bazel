@@ -1,0 +1,6 @@
+# -*- python -*-
+
+exports_files(
+    ["robotlocomotion-lcmtypes.cps"],
+    visibility = ["@lcmtypes_robotlocomotion//:__pkg__"],
+)

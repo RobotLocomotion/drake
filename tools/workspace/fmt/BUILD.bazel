@@ -1,0 +1,6 @@
+# -*- python -*-
+
+exports_files(
+    ["fmt-create-cps.py"],
+    visibility = ["@fmt//:__pkg__"],
+)

@@ -1,0 +1,6 @@
+# -*- python -*-
+
+exports_files(
+    ["bot2-core-lcmtypes.cps"],
+    visibility = ["@lcmtypes_bot2_core//:__pkg__"],
+)

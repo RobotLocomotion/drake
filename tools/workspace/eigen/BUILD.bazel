@@ -1,0 +1,6 @@
+# -*- python -*-
+
+exports_files(
+    ["eigen-create-cps.py"],
+    visibility = ["@eigen//:__pkg__"],
+)

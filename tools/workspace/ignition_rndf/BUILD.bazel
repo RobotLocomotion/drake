@@ -1,0 +1,6 @@
+# -*- python -*-
+
+exports_files(
+    ["ignition_rndf-create-cps.py"],
+    visibility = ["@ignition_rndf//:__pkg__"],
+)
