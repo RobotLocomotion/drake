@@ -6,7 +6,7 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
 )
-load("//tools:gurobi.bzl", "gurobi_test_tags")
+load("//tools/workspace/gurobi:gurobi.bzl", "gurobi_test_tags")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 drake_cc_library(

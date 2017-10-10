@@ -1,10 +1,10 @@
 # -*- python -*-
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools:gurobi.bzl", "gurobi_test_tags")
+load("//tools/workspace/gurobi:gurobi.bzl", "gurobi_test_tags")
 load("@drake//tools:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools:mosek.bzl", "mosek_test_tags")
+load("//tools/workspace/mosek:mosek.bzl", "mosek_test_tags")
 load(":pybind.bzl", "drake_pybind_cc_binary")
 
 package(default_visibility = ["//visibility:private"])

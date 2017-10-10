@@ -3,7 +3,6 @@
 load(
     "@drake//tools:install.bzl",
     "cmake_config",
-    "exports_create_cps_scripts",
     "install_cmake_config",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
@@ -21,10 +20,10 @@ sh_binary(
     name = "drake_visualizer",
     srcs = select({
         "//tools/cc_toolchain:apple": [
-            "drake_visualizer_apple.sh",
+            "//tools/workspace/drake_visualizer:drake_visualizer_apple.sh",
         ],
         "//conditions:default": [
-            "drake_visualizer_linux.sh",
+            "//tools/workspace/drake_visualizer:drake_visualizer_linux.sh",
         ],
     }),
     data = [
@@ -36,11 +35,6 @@ sh_binary(
     ],
 )
 
-py_binary(
-    name = "cmake_configure_file",
-    srcs = ["cmake_configure_file.py"],
-)
-
 py_library(
     name = "cpsutils",
     srcs = ["cpsutils.py"],
@@ -50,16 +44,6 @@ py_library(
 exports_files(
     ["install.py.in"],
     visibility = ["//visibility:public"],
-)
-
-exports_files(
-    ["nlopt-gen-hpp.sh"],
-    visibility = ["@nlopt//:__pkg__"],
-)
-
-exports_files(
-    ["ipopt_build_with_autotools.sh"],
-    visibility = ["@ipopt_robotlocomotion//:__pkg__"],
 )
 
 exports_files(
@@ -75,39 +59,6 @@ exports_files(
         "install/kuka_plan_runner/kuka_plan_runner.sh",
     ],
     visibility = ["//drake/examples/kuka_iiwa_arm:__pkg__"],
-)
-
-exports_create_cps_scripts([
-    "bullet",
-    "ccd",
-    "eigen",
-    "fcl",
-    "fmt",
-    "ignition_math",
-    "ignition_rndf",
-    "lcm",
-    "nlopt",
-    "octomap",
-    "pybind11",
-    "sdformat",
-    "spdlog",
-    "tinyobjloader",
-    "yaml_cpp",
-])
-
-exports_files(
-    ["bot2-core-lcmtypes.cps"],
-    visibility = ["@lcmtypes_bot2_core//:__pkg__"],
-)
-
-exports_files(
-    ["libbot.cps"],
-    visibility = ["@libbot//:__pkg__"],
-)
-
-exports_files(
-    ["robotlocomotion-lcmtypes.cps"],
-    visibility = ["@lcmtypes_robotlocomotion//:__pkg__"],
 )
 
 cmake_config(

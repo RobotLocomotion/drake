@@ -1,0 +1,6 @@
+# -*- python -*-
+
+exports_files(
+    ["yaml_cpp-create-cps.py"],
+    visibility = ["@yaml_cpp//:__pkg__"],
+)

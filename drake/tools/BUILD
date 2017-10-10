@@ -5,7 +5,7 @@ package(default_visibility = ["//visibility:public"])
 
 load("@protobuf//:protobuf.bzl", "py_proto_library")
 load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
-load("//tools:lcm.bzl", "lcm_cc_library")
+load("//tools/workspace/lcm:lcm.bzl", "lcm_cc_library")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 py_proto_library(

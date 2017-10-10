@@ -1,0 +1,6 @@
+# -*- python -*-
+
+exports_files(
+    ["sdformat-create-cps.py"],
+    visibility = ["@sdformat//:__pkg__"],
+)
