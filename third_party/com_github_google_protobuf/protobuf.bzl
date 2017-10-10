@@ -48,7 +48,8 @@ def _proto_gen_impl(ctx):
   deps += ctx.files.srcs
   gen_dir = _GenDir(ctx)
   if gen_dir:
-    import_flags = ["-I" + gen_dir, "-I" + ctx.var["GENDIR"] + "/" + gen_dir]
+    gendirflag = "-I" + ctx.var["GENDIR"] + "/" + gen_dir
+    import_flags = ["-I" + gen_dir, gendirflag]
   else:
     import_flags = ["-I."]
 
@@ -77,12 +78,13 @@ def _proto_gen_impl(ctx):
     args += ["--%s_out=%s" % (lang, outdir)]
 
   if args:
+    paths = [s.path for s in srcs]
+    cmdlist = ["$(which protoc)"] + args + import_flags + paths
     ctx.action(
-        inputs=srcs + deps,
-        outputs=ctx.outputs.outs,
-        arguments=args + import_flags + [s.path for s in srcs],
-        executable=ctx.executable.protoc,
-        mnemonic="ProtoCompile",
+        inputs = srcs + deps,
+        outputs = ctx.outputs.outs,
+        command = ' '.join(cmdlist),
+        mnemonic = "ProtoCompile",
     )
 
   return struct(
@@ -98,12 +100,6 @@ proto_gen = rule(
         "srcs": attr.label_list(allow_files = True),
         "deps": attr.label_list(providers = ["proto"]),
         "includes": attr.string_list(),
-        "protoc": attr.label(
-            cfg = "host",
-            executable = True,
-            single_file = True,
-            mandatory = True,
-        ),
         "plugin": attr.label(
             cfg = "host",
             allow_files = True,
@@ -121,34 +117,31 @@ proto_gen = rule(
 """Generates codes from Protocol Buffers definitions.
 
 This rule helps you to implement Skylark macros specific to the target
-language. You should prefer more specific `cc_proto_library `,
-`py_proto_library` and others unless you are adding such wrapper macros.
+language. You should prefer more specific `drake_cc_proto_library `,
+`drake_py_proto_library` and others unless you are adding such wrapper macros.
 
 Args:
   srcs: Protocol Buffers definition files (.proto) to run the protocol compiler
     against.
   deps: a list of dependency labels; must be other proto libraries.
   includes: a list of include paths to .proto files.
-  protoc: the label of the protocol compiler to generate the sources.
   plugin: the label of the protocol compiler plugin to be passed to the protocol
     compiler.
   plugin_language: the language of the generated sources
   plugin_options: a list of options to be passed to the plugin
-  gen_cc: generates C++ sources in addition to the ones from the plugin. 
+  gen_cc: generates C++ sources in addition to the ones from the plugin.
   gen_py: generates Python sources in addition to the ones from the plugin.
   outs: a list of labels of the expected outputs from the protocol compiler.
 """
 
-def cc_proto_library(
+def drake_cc_proto_library(
         name,
         srcs=[],
         deps=[],
         cc_libs=[],
         include=None,
-        protoc="//:protoc",
         internal_bootstrap_hack=False,
         use_grpc_plugin=False,
-        default_runtime="//:protobuf",
         **kargs):
   """Bazel rule to create a C++ protobuf library from proto source files
 
@@ -157,21 +150,18 @@ def cc_proto_library(
   the native rule.
 
   Args:
-    name: the name of the cc_proto_library.
-    srcs: the .proto files of the cc_proto_library.
-    deps: a list of dependency labels; must be cc_proto_library.
+    name: the name of the drake_cc_proto_library.
+    srcs: the .proto files of the drake_cc_proto_library.
+    deps: a list of dependency labels; must be drake_cc_proto_library.
     cc_libs: a list of other cc_library targets depended by the generated
         cc_library.
     include: a string indicating the include path of the .proto files.
-    protoc: the label of the protocol compiler to generate the sources.
-    internal_bootstrap_hack: a flag indicate the cc_proto_library is used only
+    internal_bootstrap_hack: a flag indicate the drake_cc_proto_library is used only
         for bootstraping. When it is set to True, no files will be generated.
         The rule will simply be a provider for .proto files, so that other
-        cc_proto_library can depend on it.
+        drake_cc_proto_library can depend on it.
     use_grpc_plugin: a flag to indicate whether to call the grpc C++ plugin
         when processing the proto files.
-    default_runtime: the implicitly default runtime which will be depended on by
-        the generated cc_library target.
     **kargs: other keyword arguments that are passed to cc_library.
 
   """
@@ -188,7 +178,6 @@ def cc_proto_library(
         srcs=srcs,
         deps=[s + "_genproto" for s in deps],
         includes=includes,
-        protoc=protoc,
         visibility=["//visibility:public"],
     )
     # An empty cc_library to make rule dependency consistent.
@@ -208,7 +197,6 @@ def cc_proto_library(
       srcs=srcs,
       deps=[s + "_genproto" for s in deps],
       includes=includes,
-      protoc=protoc,
       plugin=grpc_cpp_plugin,
       plugin_language="grpc",
       gen_cc=1,
@@ -216,15 +204,13 @@ def cc_proto_library(
       visibility=["//visibility:public"],
   )
 
-  if default_runtime and not default_runtime in cc_libs:
-    cc_libs += [default_runtime]
   if use_grpc_plugin:
     cc_libs += ["//external:grpc_lib"]
 
   native.cc_library(
       name=name,
       srcs=outs,
-      deps=cc_libs + deps,
+      deps=cc_libs + deps + ["@systemprotobuf"],
       includes=includes,
       **kargs)
 
@@ -256,7 +242,7 @@ def internal_gen_well_known_protos_java(srcs):
 def internal_copied_filegroup(name, srcs, strip_prefix, dest, **kwargs):
   """Macro to copy files to a different directory and then create a filegroup.
 
-  This is used by the //:protobuf_python py_proto_library target to work around
+  This is used by the //:protobuf_python drake_py_proto_library target to work around
   an issue caused by Python source files that are part of the same Python
   package being in separate directories.
 
@@ -283,15 +269,13 @@ def internal_copied_filegroup(name, srcs, strip_prefix, dest, **kwargs):
       **kwargs)
 
 
-def py_proto_library(
+def drake_py_proto_library(
         name,
         srcs=[],
         deps=[],
         py_libs=[],
         py_extra_srcs=[],
         include=None,
-        default_runtime="//:protobuf_python",
-        protoc="//:protoc",
         **kargs):
   """Bazel rule to create a Python protobuf library from proto source files
 
@@ -300,17 +284,14 @@ def py_proto_library(
   the native rule.
 
   Args:
-    name: the name of the py_proto_library.
-    srcs: the .proto files of the py_proto_library.
-    deps: a list of dependency labels; must be py_proto_library.
+    name: the name of the drake_py_proto_library.
+    srcs: the .proto files of the drake_py_proto_library.
+    deps: a list of dependency labels; must be drake_py_proto_library.
     py_libs: a list of other py_library targets depended by the generated
         py_library.
     py_extra_srcs: extra source files that will be added to the output
         py_library. This attribute is used for internal bootstrapping.
     include: a string indicating the include path of the .proto files.
-    default_runtime: the implicitly default runtime which will be depended on by
-        the generated py_library target.
-    protoc: the label of the protocol compiler to generate the sources.
     **kargs: other keyword arguments that are passed to cc_library.
 
   """
@@ -325,14 +306,10 @@ def py_proto_library(
       srcs=srcs,
       deps=[s + "_genproto" for s in deps],
       includes=includes,
-      protoc=protoc,
       gen_py=1,
       outs=outs,
       visibility=["//visibility:public"],
   )
-
-  if default_runtime and not default_runtime in py_libs + deps:
-    py_libs += [default_runtime]
 
   native.py_library(
       name=name,
