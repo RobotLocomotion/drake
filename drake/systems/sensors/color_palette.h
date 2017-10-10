@@ -57,7 +57,7 @@ class ColorPalette {
   ///
   /// @param no_body_id The id to express pixels that have no body. This will be
   ///  used in label image.
-  explicit ColorPalette(int num_colors, int terrain_id, int no_body_id) {
+  ColorPalette(int num_colors, int terrain_id, int no_body_id) {
     const int num = std::ceil(num_colors / 6.);
     DRAKE_DEMAND(num < 256);  // The maximum number of uint8_t.
 
@@ -108,7 +108,7 @@ class ColorPalette {
   /// The pixel range of returned color is [0, 1].
   ///
   /// @param index An index that corresponds to the color to be returned.
-  const ColorD get_normalized_color(int index) const {
+  ColorD get_normalized_color(int index) const {
     ColorD color = Normalize(get_color(index));
     return color;
   }
@@ -116,13 +116,13 @@ class ColorPalette {
 
   /// Returns the color of type ColorI which corresponds to sky.
   /// The pixel range of returned color is [0, 255].
-  const ColorI get_sky_color() const {
+  const ColorI& get_sky_color() const {
     return kSkyColor;
   }
 
   /// Returns the color of type ColorI which corresponds to flat terrain.
   /// The pixel range of returned color is [0, 255].
-  const ColorI get_terrain_color() const {
+  const ColorI& get_terrain_color() const {
     return kTerrainColor;
   }
 
@@ -143,7 +143,7 @@ class ColorPalette {
   const ColorI kTerrainColor{255, 229, 204};
   const ColorI kSkyColor{204, 229, 255};
   std::vector<ColorI> colors_;
-  std::unordered_map<const ColorI, int, ColorHash> color_id_map_;
+  std::unordered_map<ColorI, int, ColorHash> color_id_map_;
 };
 
 }  // namespace sensors

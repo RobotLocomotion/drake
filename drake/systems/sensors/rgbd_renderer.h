@@ -178,20 +178,20 @@ class RgbdRenderer final : private ModuleInitVtkRenderingOpenGL2 {
   void RenderLabelImage(ImageLabel16I* label_image_out) const;
 
   /// Returns the image width.
-  double width() const { return width_; };
+  double width() const { return width_; }
 
   /// Returns the image height.
-  double height() const { return height_; };
+  double height() const { return height_; }
 
   /// Returns the renderer's vertical field of view.
-  double fov_y() const { return fov_y_; };
+  double fov_y() const { return fov_y_; }
 
   /// Returns sky's color in RGB image.
-  const ColorI get_sky_color() const {
+  const ColorI& get_sky_color() const {
     return color_palette_.get_sky_color(); }
 
   /// Returns flat terrain's color in RGB image.
-  const ColorI get_flat_terrain_color() const {
+  const ColorI& get_flat_terrain_color() const {
     return color_palette_.get_terrain_color(); }
 
  private:
