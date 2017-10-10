@@ -1,5 +1,10 @@
 # -*- python -*-
 
+config_setting(
+    name = "linux",
+    values = {"cpu": "k8"},
+)
+
 cc_library(
     name = "without_main",
     testonly = 1,
@@ -33,7 +38,7 @@ cc_library(
         "googletest/include",
     ],
     linkopts = select({
-        "@drake//tools:linux": ["-pthread"],
+        ":linux": ["-pthread"],
         # This is a bazel-default rule, and does not need @drake//
         "@//conditions:default": [],
     }),
