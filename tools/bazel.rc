@@ -1,4 +1,5 @@
 # Import some helper configurations.
+import %workspace%/tools/cc_toolchain/bazel.rc
 import %workspace%/tools/dynamic_analysis/bazel.rc
 import %workspace%/tools/lint/bazel.rc
 
@@ -8,7 +9,6 @@ build -c opt
 # Default build options.
 build --force_pic
 build --strip=never
-build --crosstool_top=//tools:default-toolchain
 # Only show warnings from Drake, not from externals.
 build --output_filter="^//"
 
@@ -70,20 +70,3 @@ build:everything --define=WITH_MOSEK=ON
 test:everything --test_env=HOME
 # -- Options for SNOPT.
 build:everything --define=WITH_SNOPT=ON
-
-### Unsupported Crosstool ###
-# Use the default Bazel-generated CROSSTOOL.
-# This may be useful for developers with unsupported workstation configurations.
-build:unsupported_crosstool --crosstool_top=//external:cc_toolchain
-build:unsupported_crosstool --action_env=CCACHE_DISABLE=1
-
-### Debug symbols on OS X. ###
-# See https://github.com/bazelbuild/bazel/issues/2537
-build:apple_debug --spawn_strategy=standalone
-build:apple_debug --genrule_strategy=standalone
-build:apple_debug --compilation_mode=dbg
-
-# We don't actually use APPLE_DEBUG in code. It's just here to invalidate any
-# sandboxed .o files that might be in cache if a developer tried to build
-# with --compilation_mode=dbg instead of --config=apple_debug.
-build:apple_debug --copt="-DAPPLE_DEBUG"
