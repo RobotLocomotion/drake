@@ -1,6 +1,6 @@
 # -*- python -*-
 
-load("@drake//tools:drake.bzl", "drake_generate_file")
+load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -19,7 +19,7 @@ package(default_visibility = ["//visibility:public"])
 # Instead, we repair this situation by creating a custom __init__.py that
 # overrides the Bazel empty default and imports the contents of the "real"
 # module.
-drake_generate_file(
+generate_file(
     name = "init_genrule",
     out = "__init__.py",
     content = "from .pycodestyle import *",
