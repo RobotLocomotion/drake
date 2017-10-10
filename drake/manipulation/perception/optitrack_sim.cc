@@ -13,17 +13,17 @@ using std::string;
 using drake::systems::KinematicsResults;
 
 OptitrackSim::OptitrackSim(
-    const RigidBodyTree<double>& tree,
-    std::map<RigidBodyFrame<double>*, int> body_frame_to_id_map,
+    const std::map<RigidBodyFrame<double>*, int>& body_frame_to_id_map,
     double optitrack_lcm_status_period)
     : body_frame_to_id_map_(body_frame_to_id_map) {
-  OptitrackSim::Init(tree, optitrack_lcm_status_period);
+  OptitrackSim::Init(optitrack_lcm_status_period);
 }
 
-OptitrackSim::OptitrackSim(const RigidBodyTree<double>& tree,
-                           std::map<std::string, int> body_name_to_id_map,
-                           std::vector<Eigen::Isometry3d> frame_poses,
-                           double optitrack_lcm_status_period) {
+OptitrackSim::OptitrackSim(
+    const RigidBodyTree<double>& tree,
+    const std::map<std::string, int>& body_name_to_id_map,
+    std::vector<Eigen::Isometry3d>& frame_poses,
+    double optitrack_lcm_status_period) {
   // If the frame vector is empty, set all frames poses to identity.
   if (frame_poses.empty()) {
     frame_poses = std::vector<Eigen::Isometry3d>(body_name_to_id_map.size(),
@@ -43,11 +43,10 @@ OptitrackSim::OptitrackSim(const RigidBodyTree<double>& tree,
     ++v_it;
   }
 
-  OptitrackSim::Init(tree, optitrack_lcm_status_period);
+  OptitrackSim::Init(optitrack_lcm_status_period);
 }
 
-void OptitrackSim::Init(const RigidBodyTree<double>& tree,
-                        double optitrack_lcm_status_period) {
+void OptitrackSim::Init(double optitrack_lcm_status_period) {
   // Abstract input port of type KinematicsResults
   kinematics_input_port_index_ = this->DeclareAbstractInputPort().get_index();
 
@@ -63,7 +62,7 @@ void OptitrackSim::Init(const RigidBodyTree<double>& tree,
       throw std::runtime_error(
           "OptitrackSim::Init: ERROR: found nullptr to "
           "RigidBody in RigidBodyFrame object.");
-    } else if (!CheckValidId(it->second)) {
+    } else if (!CheckIdValidity(it->second)) {
       throw std::runtime_error(
           "OptitrackSim::Init: ERROR: found invalid "
           "body frame id.");
@@ -75,7 +74,7 @@ void OptitrackSim::Init(const RigidBodyTree<double>& tree,
   this->DeclarePeriodicUnrestrictedUpdate(optitrack_lcm_status_period, 0);
 }
 
-bool OptitrackSim::CheckValidId(const int id) {
+bool OptitrackSim::CheckIdValidity(const int id) {
   auto it =
       std::find_if(id_to_body_map_.begin(), id_to_body_map_.end(),
                    [&id](const std::pair<int, const RigidBody<double>*>& pair) {
