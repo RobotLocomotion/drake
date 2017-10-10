@@ -59,7 +59,7 @@ gdb
 git
 graphviz
 libblas-dev
-libboost-dev
+libboost-all-dev
 libexpat1-dev
 libfreetype6
 libglib2.0-dev
