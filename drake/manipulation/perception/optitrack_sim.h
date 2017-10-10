@@ -14,6 +14,8 @@ namespace drake {
 namespace manipulation {
 namespace perception {
 
+constexpr double kLcmStatusPeriod = 1.0/120.0;
+
 /**
  * A structure used to store the attributes of a tracked rigid body frame. These
  * are a subset of the complete set of attributes which the real Optitrack
@@ -64,7 +66,7 @@ class OptitrackSim : public systems::LeafSystem<double> {
    */
   OptitrackSim(
       const std::map<RigidBodyFrame<double>*, int>& body_frame_to_id_map,
-      double optitrack_lcm_status_period = 1.0/120.0);
+      double optitrack_lcm_publish_period = kLcmStatusPeriod);
 
   /**
    * Constructs an OptitrackSim object from body names that exist in the
@@ -75,13 +77,13 @@ class OptitrackSim : public systems::LeafSystem<double> {
    * @param frame_poses A vector containing each frame's pose relative to the
    *        parent body. If this vector is empty, it assumes identity for all
    *        poses.
-   * @param optitrack_lcm_status_period The publish period of the lcm message.
+   * @param optitrack_lcm_publish_period The publish period of the lcm message.
    */
   OptitrackSim(const RigidBodyTree<double>& tree,
                const std::map<std::string, int>& body_name_to_id_map,
                std::vector<Eigen::Isometry3d>& frame_poses =
                *(new std::vector<Eigen::Isometry3d>()),
-               double optitrack_lcm_status_period = 1/120);
+               double optitrack_lcm_publish_period = kLcmStatusPeriod);
 
   /**
    * This InputPortDescriptor represents an abstract valued input port of type
@@ -101,7 +103,7 @@ class OptitrackSim : public systems::LeafSystem<double> {
   }
 
  private:
-  void Init(double optitrack_lcm_status_period);
+  void Init(double optitrack_lcm_publish_period);
 
   // Checks whether the Optitrack ID is valid, i.e., is greater than zero
   // and not repeated.
