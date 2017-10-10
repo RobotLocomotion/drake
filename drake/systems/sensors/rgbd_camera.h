@@ -1,6 +1,5 @@
 #pragma once
 
-#include <limits>
 #include <memory>
 #include <string>
 
@@ -14,6 +13,7 @@
 #include "drake/systems/rendering/pose_vector.h"
 #include "drake/systems/sensors/camera_info.h"
 #include "drake/systems/sensors/image.h"
+#include "drake/systems/sensors/rgbd_renderer.h"
 
 namespace drake {
 namespace systems {
@@ -23,7 +23,7 @@ namespace sensors {
 /// RgbdCamera uses [VTK](https://github.com/Kitware/VTK) as the rendering
 /// backend.
 /// Its image resolution is fixed at VGA (640 x 480 pixels) for all three
-/// images. The depth sensing range is 0.5 m to 5.0 m.
+/// images. The default depth sensing range is 0.5 m to 5.0 m.
 ///
 /// Let `W` be the world coordinate system. In addition to `W`, there are three
 /// more coordinate systems that are associated with an RgbdCamera. They are
@@ -61,16 +61,16 @@ namespace sensors {
 ///     respectively.
 ///
 /// @ingroup sensor_systems
-class RgbdCamera : public LeafSystem<double> {
+class RgbdCamera final : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RgbdCamera)
 
   /// Converts a depth image obtained from RgbdCamera to a point cloud.  If a
   /// pixel in the depth image has NaN depth value, all the `(x, y, z)` values
   /// in the converted point will be NaN.
-  /// Similarly, if a pixel has either InvalidDepth::kTooFar or
-  /// InvalidDepth::kTooClose, the converted point will be
-  /// InvalidDepth::kTooFar.
+  /// Similarly, if a pixel has either RgbdRenderer::InvalidDepth::kTooFar or
+  /// RgbdRenderer::InvalidDepth::kTooClose, the converted point will be
+  /// RgbdRenderer::InvalidDepth::kTooFar.
   /// Note that this matches the convention used by the Point Cloud Library
   /// (PCL).
   ///
@@ -82,35 +82,6 @@ class RgbdCamera : public LeafSystem<double> {
   static void ConvertDepthImageToPointCloud(const ImageDepth32F& depth_image,
                                             const CameraInfo& camera_info,
                                             Eigen::Matrix3Xf* point_cloud);
-
-  /// Set of constants used to represent invalid depth values.
-  /// Note that if a depth is not measurable, NaN will be set.
-  class InvalidDepth {
-   public:
-    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InvalidDepth)
-    /// The depth value when the max sensing range is exceeded.
-    static constexpr float kTooFar{std::numeric_limits<float>::infinity()};
-
-    /// The depth value when the min sensing range is violated because the
-    /// object being sensed is too close. Note that this
-    /// <a href="http://www.ros.org/reps/rep-0117.html">differs from ROS</a>,
-    /// which uses negative infinity in this scenario. Drake uses zero because
-    /// it results in less devastating bugs when users fail to check for the
-    /// lower limit being hit and using negative infinity does not prevent users
-    /// from writing bad code.
-    static constexpr float kTooClose{0.f};
-  };
-
-  /// Set of labels used for label image.
-  class Label {
-   public:
-    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Label)
-    /// The label used for pixels correspond to nothing.
-    static constexpr int16_t kNoBody{std::numeric_limits<int16_t>::max()};
-    /// The label used for pixels correspond to the flat terrain.
-    static constexpr int16_t kFlatTerrain{
-      std::numeric_limits<int16_t>::max() - 1};
-  };
 
   /// A constructor for %RgbdCamera that defines `B` using Euler angles.
   /// The pose of %RgbdCamera will be fixed to the world coordinate system
@@ -131,10 +102,10 @@ class RgbdCamera : public LeafSystem<double> {
   /// @param orientation The roll-pitch-yaw orientation of `B` in `W`. This
   /// defines the orientation component of `X_WB`.
   ///
-  /// @param depth_range_near The minimum depth distance RgbdCamera can measure.
+  /// @param z_near The minimum depth distance RgbdCamera can measure.
   /// The default is 0.5 meters.
   ///
-  /// @param depth_range_far The maximum depth distance RgbdCamera can measure.
+  /// @param z_far The maximum depth distance RgbdCamera can measure.
   /// The default is 5 meters.
   ///
   /// @param fov_y The RgbdCamera's vertical field of view.
@@ -147,8 +118,8 @@ class RgbdCamera : public LeafSystem<double> {
              const RigidBodyTree<double>& tree,
              const Eigen::Vector3d& position,
              const Eigen::Vector3d& orientation,
-             double depth_range_near = 0.5,
-             double depth_range_far = 5.0,
+             double z_near = 0.5,
+             double z_far = 5.0,
              double fov_y = M_PI_4,
              bool show_window = true);
 
@@ -167,10 +138,10 @@ class RgbdCamera : public LeafSystem<double> {
   ///
   /// @param frame The frame in @tree to which this camera is attached.
   ///
-  /// @param depth_range_near The minimum depth distance RgbdCamera can measure.
+  /// @param z_near The minimum depth distance RgbdCamera can measure.
   /// The default is 0.5 meters.
   ///
-  /// @param depth_range_far The maximum depth distance RgbdCamera can measure.
+  /// @param z_far The maximum depth distance RgbdCamera can measure.
   /// The default is 5 meters.
   ///
   /// @param fov_y The RgbdCamera's vertical field of view.
@@ -182,30 +153,34 @@ class RgbdCamera : public LeafSystem<double> {
   RgbdCamera(const std::string& name,
              const RigidBodyTree<double>& tree,
              const RigidBodyFrame<double>& frame,
-             double depth_range_near = 0.5,
-             double depth_range_far = 5.0,
+             double z_near = 0.5,
+             double z_far = 5.0,
              double fov_y = M_PI_4,
              bool show_window = true);
 
-  ~RgbdCamera();
+  ~RgbdCamera() = default;
 
   /// Reterns the color sensor's info.
-  const CameraInfo& color_camera_info() const;
+  const CameraInfo& color_camera_info() const { return color_camera_info_; }
 
   /// Reterns the depth sensor's info.
-  const CameraInfo& depth_camera_info() const;
+  const CameraInfo& depth_camera_info() const { return depth_camera_info_; }
 
   /// Returns `X_BC`.
-  const Eigen::Isometry3d& color_camera_optical_pose() const;
+  const Eigen::Isometry3d& color_camera_optical_pose() const { return X_BC_; }
 
   /// Returns `X_BD`.
-  const Eigen::Isometry3d& depth_camera_optical_pose() const;
+  const Eigen::Isometry3d& depth_camera_optical_pose() const { return X_BD_; }
 
   /// Returns the RigidBodyFrame to which this RgbdCamera is attached.
-  const RigidBodyFrame<double>& frame() const;
+  const RigidBodyFrame<double>& frame() const {
+    if (camera_fixed_)
+      throw std::runtime_error("Invalid access to the ungiven frame.");
+    return frame_;
+  }
 
   /// Returns the RigidBodyTree to which this RgbdCamera is attached.
-  const RigidBodyTree<double>& tree() const;
+  const RigidBodyTree<double>& tree() const { return tree_; }
 
   /// Returns a descriptor of the vector valued input port that takes a vector
   /// of `q, v` corresponding to the positions and velocities associated with
@@ -239,20 +214,34 @@ class RgbdCamera : public LeafSystem<double> {
   void OutputPoseVector(const Context<double>& context,
                         rendering::PoseVector<double>* pose_vector) const;
 
+  // TODO(sherm1) This should be the calculator for a cache entry containing
+  // the VTK update that must be valid before outputting any image info. For
+  // now it has to be repeated before each image output port calculation.
+  void UpdateModelPoses(const BasicVector<double>& input_vector) const;
+
   const OutputPort<double>* color_image_port_{};
   const OutputPort<double>* depth_image_port_{};
   const OutputPort<double>* label_image_port_{};
   const OutputPort<double>* camera_base_pose_port_{};
 
-  class Impl;
-  std::unique_ptr<Impl> impl_;
+  const RigidBodyTree<double>& tree_;
+  const RigidBodyFrame<double> frame_;
+
+  const bool camera_fixed_;
+  const CameraInfo color_camera_info_;
+  const CameraInfo depth_camera_info_;
+  const Eigen::Isometry3d X_WB_initial_;
+  const Eigen::Isometry3d X_BC_;
+  const Eigen::Isometry3d X_BD_;
+
+  std::unique_ptr<RgbdRenderer> renderer_;
 };
 
 /**
  * Wraps a continuous RgbdCamera with zero order holds to have it function as
  * a discrete sensor.
  */
-class RgbdCameraDiscrete : public systems::Diagram<double> {
+class RgbdCameraDiscrete final : public systems::Diagram<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RgbdCameraDiscrete);
 

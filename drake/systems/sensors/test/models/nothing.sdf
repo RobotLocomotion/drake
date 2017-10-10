@@ -1,30 +1,12 @@
 <?xml version="1.0" ?>
 <sdf version="1.4">
   <model name='foo'>
-    <!-- This box is placed 10 m underground and is thus expected to not be
-    visible. -->
-    <pose>0 0 -10 0 0 0</pose>
+    <pose>0 0 0 0 0 0</pose>
     <link name='link'>
       <pose>0 0 0 0 0 0</pose>
         <inertial>
           <mass>1.</mass>
         </inertial>
-        <visual name='foo'>
-          <pose>0 0 0 0 0 0</pose>
-          <geometry>
-            <box>
-              <size>1. 1. 1.</size>
-            </box>
-          </geometry>
-          <material/>
-        </visual>
-        <collision name='foo'>
-          <geometry>
-            <box>
-              <size>1. 1. 1.</size>
-            </box>
-          </geometry>
-        </collision>
     </link>
     <static>1</static>
   </model>
