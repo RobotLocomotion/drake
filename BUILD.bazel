@@ -17,21 +17,6 @@ exports_files([
     ".drake-resource-sentinel",
 ])
 
-alias(
-    name = "protoc",
-    actual = "@protobuf//:protoc",
-)
-
-alias(
-    name = "protobuf",
-    actual = "@protobuf//:protobuf",
-)
-
-alias(
-    name = "protobuf_python",
-    actual = "@protobuf//:protobuf_python",
-)
-
 DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "bullet",
     "ccd",
@@ -60,7 +45,6 @@ DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "gflags",
     "jchart2d",
     "optitrack_driver",
-    "protobuf",
 ]]
 
 install(
