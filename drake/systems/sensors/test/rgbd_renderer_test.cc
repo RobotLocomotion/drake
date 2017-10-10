@@ -32,13 +32,13 @@ struct UV {
   int v;
 };
 
-void CompareColor(const uint8_t* image,
+void CompareColor(const uint8_t* pixel,
                   const sensors::ColorI& color,
                   int alpha) {
-  ASSERT_NEAR(image[0], color.r, kColorPixelTolerance);
-  ASSERT_NEAR(image[1], color.g, kColorPixelTolerance);
-  ASSERT_NEAR(image[2], color.b, kColorPixelTolerance);
-  ASSERT_EQ(image[3], alpha);
+  ASSERT_NEAR(pixel[0], color.r, kColorPixelTolerance);
+  ASSERT_NEAR(pixel[1], color.g, kColorPixelTolerance);
+  ASSERT_NEAR(pixel[2], color.b, kColorPixelTolerance);
+  ASSERT_EQ(pixel[3], alpha);
 }
 
 
@@ -46,19 +46,11 @@ void CompareColor(const uint8_t* image,
 class RgbdRendererTest : public ::testing::Test {
  public:
   RgbdRendererTest() :
-      kDefaultVisualColor({179u, 179u, 179u}),
-      kInlier(320, 240),
       color_(kWidth, kHeight), depth_(kWidth, kHeight), label_(kWidth, kHeight),
       // Looking strait down from 3m above the ground.
       X_WR_(Eigen::Translation3d(0, 0, kDefaultDistance) *
             Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitY()) *
             Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitZ())) {}
-
-  const sensors::ColorI kDefaultVisualColor;
-  const float kDefaultDistance{3.f};
-  UV kInlier;
-  std::array<UV, 4> kOutliers{{
-      UV(10, 10), UV(10, 470), UV(630, 10), UV(630, 470)}};
 
  protected:
   void Render() {
@@ -114,6 +106,12 @@ class RgbdRendererTest : public ::testing::Test {
     if (add_terrain)
       renderer_->AddFlatTerrain();
   }
+
+  const sensors::ColorI kDefaultVisualColor = {179u, 179u, 179u};
+  const float kDefaultDistance{3.f};
+  const UV kInlier = {320, 240};
+  const std::array<UV, 4> kOutliers{{
+      UV(10, 10), UV(10, 470), UV(630, 10), UV(630, 470)}};
 
   ImageRgba8U color_;
   ImageDepth32F depth_;
@@ -334,9 +332,10 @@ TEST_F(RgbdRendererTest, MeshTest) {
   ASSERT_EQ(label_.at(u, v)[0], kBodyID);
 }
 
-// TODO Move DepthImageToPointCloudConversionTest here from rgbd_camera_test.
+// TODO(kunimatsu-tri) Move DepthImageToPointCloudConversionTest here from
+// rgbd_camera_test.
 
 }  // anonymous namespace
-}  // sensors
-}  // systems
-}  // drake
+}  // namespace sensors
+}  // namespace systems
+}  // namespace drake
