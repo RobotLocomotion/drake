@@ -22,14 +22,14 @@ class UtilTest(unittest.TestCase):
         self.assertTrue('.drake-resource-sentinel' in relpaths)
         self.assertTrue('setup/ubuntu/16.04/install_prereqs.sh' in relpaths)
         THIRD_PARTY_SOURCES_ALLOWED_TO_BE_FOUND = [
-            "third_party",
             "third_party/BUILD.bazel",
         ]
         for one_relpath in relpaths:
             self.assertTrue(".git/" not in one_relpath, one_relpath)
-            if one_relpath in THIRD_PARTY_SOURCES_ALLOWED_TO_BE_FOUND:
-                continue
-            self.assertTrue("third_party" not in one_relpath, one_relpath)
+            if "third_party/" in one_relpath:
+                self.assertTrue(
+                    one_relpath in THIRD_PARTY_SOURCES_ALLOWED_TO_BE_FOUND or
+                    one_relpath.startswith("."))
 
 
 # TODO(jwnimmer-tri) Omitting or mistyping these lines means that no tests get
