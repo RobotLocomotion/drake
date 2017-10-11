@@ -75,7 +75,7 @@ drake_cc_googletest(
     deps = [
         ":utility",
         "//drake/automotive/maliput/monolane",
-        "//drake/thirdParty:spruce",
+        "@spruce",
     ],
 )
 
@@ -84,7 +84,7 @@ drake_cc_googletest(
     deps = [
         ":utility",
         "//drake/automotive/maliput/monolane",
-        "//drake/thirdParty:spruce",
+        "@spruce",
     ],
 )
 

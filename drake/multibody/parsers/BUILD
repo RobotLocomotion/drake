@@ -31,7 +31,7 @@ drake_cc_library(
     ],
     deps = [
         "//drake/multibody:rigid_body_tree",
-        "//drake/thirdParty:spruce",
+        "@spruce",
         "@tinydir",
         "@tinyxml2",
     ],

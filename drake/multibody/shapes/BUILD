@@ -22,7 +22,7 @@ drake_cc_library(
     deps = [
         "//drake/common:essential",
         "//drake/common:unused",
-        "//drake/thirdParty:spruce",
+        "@spruce",
         "@tinyobjloader",
     ],
 )

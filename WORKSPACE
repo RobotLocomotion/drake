@@ -32,6 +32,12 @@ new_local_repository(
     path = "third_party/com_github_cxong_tinydir",
 )
 
+new_local_repository(
+    name = "spruce",
+    build_file = "tools/workspace/spruce/spruce.BUILD.bazel",
+    path = "third_party/josephdavisco_spruce",
+)
+
 load("@kythe//tools/build_rules/config:pkg_config.bzl", "pkg_config_package")
 
 pkg_config_package(

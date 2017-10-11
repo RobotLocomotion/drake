@@ -8,8 +8,8 @@
 #include <utility>
 #include <vector>
 
+#include <spruce.hh>
 #include <tinyxml2.h>
-#include "spruce.hh"
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/text_logging.h"

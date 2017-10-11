@@ -44,8 +44,15 @@ target_include_directories(tinydir PUBLIC ../third_party/com_github_cxong_tinydi
 set_target_properties(tinydir PROPERTIES LINKER_LANGUAGE CXX)
 drake_install_libraries(tinydir)
 
+# spruce (via third_party)
+add_library(spruce
+  ../third_party/josephdavisco_spruce/spruce.hh
+  ../third_party/josephdavisco_spruce/spruce.cc)
+target_include_directories(spruce
+  PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../third_party/josephdavisco_spruce>)
+drake_install_libraries(spruce)
+
 add_subdirectory(thirdParty/boost/tcbrindle_cpp17_headers/stx)
-add_subdirectory(thirdParty/bsd/spruce)
 add_subdirectory(common)
 add_subdirectory(math)
 add_subdirectory(multibody)
