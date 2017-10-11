@@ -51,30 +51,11 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "humanoid_manipulation_plan",
-    srcs = [
-        "dev/humanoid_manipulation_plan.cc",
-    ],
-    hdrs = [
-        "dev/humanoid_manipulation_plan.h",
-    ],
-    deps = [
-        "//drake/manipulation/util:robot_state_msg_translator",
-        "//drake/systems/controllers:zmp_planner",
-        "//drake/systems/controllers/plan_eval:generic_plan",
-        "//drake/systems/controllers/qp_inverse_dynamics:lcm_utils",
-        "//drake/util",
-        "@lcmtypes_bot2_core",
-        "@lcmtypes_robotlocomotion",
-    ],
-)
-
-drake_cc_library(
     name = "humanoid_plan_eval_system",
     srcs = ["humanoid_plan_eval_system.cc"],
     hdrs = ["humanoid_plan_eval_system.h"],
     deps = [
-        ":humanoid_manipulation_plan",
+        "//drake/examples/humanoid_controller/dev:humanoid_manipulation_plan",
         "//drake/systems/controllers/plan_eval:plan_eval_base_system",
     ],
 )
