@@ -1,4 +1,5 @@
 set(DRAKE_DOCUMENTATION_OUTPUTS "")
+set(DRAKE_DOCUMENTATION_DIR "${CMAKE_INSTALL_PREFIX}/share/doc/drake")
 
 find_program(SPHINX_EXECUTABLE
   NAMES sphinx-build
