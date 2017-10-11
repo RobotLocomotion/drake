@@ -5,10 +5,8 @@ load(
     "//tools:drake.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
-    "drake_cc_test",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools/workspace/mosek:mosek.bzl", "mosek_test_tags")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -52,26 +50,6 @@ drake_cc_googletest(
         "//drake/common/test_utilities:is_dynamic_castable",
         "//drake/examples/pendulum:pendulum_plant",
         "//drake/systems/primitives:linear_system",
-    ],
-)
-
-drake_cc_test(
-    name = "pose_estimation_test",
-    srcs = [
-        "dev/pose_estimation_test.cc",
-        "dev/rotation.h",
-    ],
-    data = ["//drake/multibody:models"],
-    tags = mosek_test_tags(),
-    deps = [
-        "//drake/common:essential",
-        "//drake/common:find_resource",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/collision",
-        "//drake/multibody/parsers",
-        "//drake/solvers:mathematical_program",
-        "@lcm",
-        "@lcmtypes_bot2_core",
     ],
 )
 
