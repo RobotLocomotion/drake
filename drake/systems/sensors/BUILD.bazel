@@ -315,6 +315,7 @@ drake_cc_library(
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/rigid_body_plant",
         "//drake/systems/framework:leaf_system",
+        "//drake/systems/rendering:pose_bundle",
         "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
     ],
 )

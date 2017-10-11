@@ -9,10 +9,13 @@
 #include "drake/multibody/rigid_body.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/rendering/pose_bundle.h"
 
 namespace drake {
 namespace systems {
 namespace sensors {
+
+using systems::rendering::PoseBundle;
 
 constexpr double kLcmStatusPeriod = 1.0/120.0;
 
@@ -91,7 +94,20 @@ class FramePoseExtractor : public systems::LeafSystem<double> {
    */
   const systems::InputPortDescriptor<double>& get_kinematics_input_port()
   const {
-    return this->get_input_port(0);
+    return this->get_input_port(kinematics_input_port_index_);
+  }
+
+  int get_kinematics_input_port_index() const {
+    return this->kinematics_input_port_index_;
+  }
+
+
+  /**
+   * This OutputPort represents an abstract valued output port of type
+   * systems::rendering::PoseBundle.
+   */
+  const systems::OutputPort<double>& get_pose_bundle_output_port() const {
+    return this->get_output_port(0);
   }
 
   /**
@@ -99,7 +115,15 @@ class FramePoseExtractor : public systems::LeafSystem<double> {
    * manipulation::perception::TrackedObject.
    */
   const systems::OutputPort<double>& get_optitrack_output_port() const {
-    return this->get_output_port(0);
+    return this->get_output_port(1);
+  }
+
+  int get_pose_bundle_output_port_index() const {
+    return this->pose_bundle_output_port_index_;
+  }
+
+  int get_optitrack_output_port_index() const {
+    return this->tracked_objects_output_port_index_;
   }
 
  private:
@@ -109,13 +133,19 @@ class FramePoseExtractor : public systems::LeafSystem<double> {
   // and not repeated.
   bool CheckIdValidity(const int id);
 
-  std::vector<TrackedObject> MakeOutputStatus() const;
+  PoseBundle<double> MakeOutputStatus() const;
 
   void OutputStatus(const systems::Context<double>& context,
-                    std::vector<TrackedObject>* output) const;
+                    PoseBundle<double>* output) const;
+
+  std::vector<TrackedObject> MakeOutputStatusOT() const;
+
+  void OutputStatusOT(const systems::Context<double>& context,
+                      std::vector<TrackedObject>* output) const;
 
   int kinematics_input_port_index_{-1};
   int tracked_objects_output_port_index_{-1};
+  int pose_bundle_output_port_index_{-1};
   std::map<RigidBodyFrame<double>*, int> body_frame_to_id_map_;
   std::map<int, const RigidBody<double>*> id_to_body_map_;
 };
