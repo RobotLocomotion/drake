@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <unordered_map>
 #include <vector>
 
@@ -10,11 +11,14 @@ namespace drake {
 namespace systems {
 namespace sensors {
 
+/// Holds r, g, b values to represent a color pixel.
+///
+/// @tparam T A type for each color channel.
 template <typename T>
 struct Color {
-  T r;  // Red
-  T g;  // Green
-  T b;  // Blue
+  T r;  /// Red.
+  T g;  /// Green.
+  T b;  /// Blue.
 
   bool operator==(const Color<T>& other) const {
     return this->r == other.r && this->g == other.g && this->b == other.b;
@@ -32,7 +36,7 @@ using ColorD = Color<double>;
 // Defines a hash function for unordered_map that takes Color as the key.
 struct ColorHash {
   std::size_t operator()(const ColorI& key) const {
-    return (key.r * 256 + key.g) * 256 + key.b;
+    return std::hash<int>{}((key.r * 256 + key.g) * 256 + key.b);
   }
 };
 
@@ -52,11 +56,11 @@ class ColorPalette {
   /// @param num_colors The number of colors that you want ColorPalette to hold.
   /// We assume this will be the number of rigid bodies in rendering scene.
   ///
-  /// @param terrain_id The id to express pixels correspond to flat terrain.
-  /// This will be used in label image.
+  /// @param terrain_id The id to express pixels which correspond to flat
+  /// terrain. This will be used in the label image.
   ///
   /// @param no_body_id The id to express pixels that have no body. This will be
-  ///  used in label image.
+  ///  used in the label image.
   ColorPalette(int num_colors, int terrain_id, int no_body_id) {
     const int num = std::ceil(num_colors / 6.);
     DRAKE_DEMAND(num < 256);  // The maximum number of uint8_t.
@@ -100,7 +104,7 @@ class ColorPalette {
   ///
   /// @param index An index that corresponds to the color to be returned.
   const ColorI& get_color(int index) const {
-    DRAKE_DEMAND(index < static_cast<int>(colors_.size()));
+    DRAKE_DEMAND(0 <= index && index < static_cast<int>(colors_.size()));
     return colors_[index];
   }
 
@@ -113,7 +117,6 @@ class ColorPalette {
     return color;
   }
 
-
   /// Returns the color of type ColorI which corresponds to sky.
   /// The pixel range of returned color is [0, 255].
   const ColorI& get_sky_color() const {
@@ -125,7 +128,6 @@ class ColorPalette {
   const ColorI& get_terrain_color() const {
     return kTerrainColor;
   }
-
 
   /// Looks up an ID which corresponds to the given color.
   ///

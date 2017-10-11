@@ -56,7 +56,7 @@ const double kB = -kA * kClippingPlaneNear;
 std::string RemoveFileExtension(const std::string& filepath) {
   const size_t last_dot = filepath.find_last_of(".");
   if (last_dot == std::string::npos) {
-    DRAKE_DEMAND(false);
+    DRAKE_ABORT_MSG("File has no extention.");
   }
   return filepath.substr(0, last_dot);
 }
@@ -88,7 +88,6 @@ void SetModelTransformMatrixToVtkCamera(
 }
 
 }  // namespace
-
 
 RgbdRenderer::RgbdRenderer(const Eigen::Isometry3d& X_WC,
                            int width, int height,
@@ -158,7 +157,6 @@ RgbdRenderer::RgbdRenderer(const Eigen::Isometry3d& X_WC,
   }
 }
 
-
 void RgbdRenderer::RegisterVisual(
     const DrakeShapes::VisualElement& visual, int body_id) {
   // Initializes containers in id_object_maps_ if it's not done.
@@ -216,7 +214,7 @@ void RgbdRenderer::RegisterVisual(
       break;
     }
     case DrakeShapes::MESH: {
-      const auto mesh_filename = dynamic_cast<const DrakeShapes::Mesh&>(
+      const auto* mesh_filename = dynamic_cast<const DrakeShapes::Mesh&>(
           geometry).resolved_filename_.c_str();
 
       // TODO(kunimatsu-tri) Add support for other file formats.
@@ -289,7 +287,6 @@ void RgbdRenderer::RegisterVisual(
   }
 }
 
-
 void RgbdRenderer::AddFlatTerrain() {
   vtkSmartPointer<vtkPlaneSource> plane =
       vtk_util::CreateSquarePlane(kTerrainSize);
@@ -319,7 +316,6 @@ void RgbdRenderer::UpdateViewpoint(const Eigen::Isometry3d& X_WR) const {
   }
 }
 
-
 void RgbdRenderer::UpdateVisualPose(
     const Eigen::Isometry3d& X_WV, int body_id, int visual_id) const {
   vtkSmartPointer<vtkTransform> vtk_X_WV = ConvertToVtkTransform(X_WV);
@@ -332,13 +328,11 @@ void RgbdRenderer::UpdateVisualPose(
   }
 }
 
-
 void RgbdRenderer::RenderColorImage(ImageRgba8U* color_image_out) const {
   // TODO(sherm1) Should evaluate VTK cache entry.
   PerformVTKUpdate(color_depth_render_window_, color_filter_, color_exporter_);
   color_exporter_->Export(color_image_out->at(0, 0));
 }
-
 
 void RgbdRenderer::RenderDepthImage(ImageDepth32F* depth_image_out) const {
   // TODO(sherm1) Should evaluate VTK cache entry.
@@ -353,7 +347,6 @@ void RgbdRenderer::RenderDepthImage(ImageDepth32F* depth_image_out) const {
     }
   }
 }
-
 
 void RgbdRenderer::RenderLabelImage(ImageLabel16I* label_image_out) const {
   // TODO(sherm1) Should evaluate VTK cache entry.
@@ -374,11 +367,10 @@ void RgbdRenderer::RenderLabelImage(ImageLabel16I* label_image_out) const {
   }
 }
 
-
 float RgbdRenderer::CheckRangeAndConvertToMeters(float z_buffer_value) const {
   float z;
-  // When the depth is either closer than `z_near_` or further than `z_far_`,
-  // `z_buffer_value` becomes `1.f`.
+  // When the depth is either closer than `kClippingPlaneNear` or farther than
+  // `kClippingPlaneFar`, `z_buffer_value` becomes `1.f`.
   if (z_buffer_value == 1.f) {
     z = std::numeric_limits<float>::quiet_NaN();
   } else {
@@ -393,7 +385,6 @@ float RgbdRenderer::CheckRangeAndConvertToMeters(float z_buffer_value) const {
 
   return z;
 }
-
 
 constexpr float RgbdRenderer::InvalidDepth::kTooFar;
 constexpr float RgbdRenderer::InvalidDepth::kTooClose;

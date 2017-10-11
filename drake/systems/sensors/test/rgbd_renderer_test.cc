@@ -26,6 +26,9 @@ const bool kShowWindow = true;
 const double kColorPixelTolerance = 1.001;
 const double kDepthTolerance = 1e-4;
 
+// Holds `(u, v)` indices of the pixel coordinate system where the ranges of `u`
+// and `v` are [0, kWidth) and [0, kHeight) respectively. See CameraInfo's
+// documentation for more detail.
 struct UV {
   UV(int x, int y) : u(x), v(y) {}
   int u;
@@ -40,7 +43,6 @@ void CompareColor(const uint8_t* pixel,
   ASSERT_NEAR(pixel[2], color.b, kColorPixelTolerance);
   ASSERT_EQ(pixel[3], alpha);
 }
-
 
 // This suite tests RgbdRenderer.
 class RgbdRendererTest : public ::testing::Test {
@@ -59,7 +61,7 @@ class RgbdRendererTest : public ::testing::Test {
     renderer_->RenderLabelImage(&label_);
   }
 
-  void VerifyColor(const sensors::ColorI& pixel, int alpha) {
+  void VerifyUniformColor(const sensors::ColorI& pixel, int alpha) {
     for (int v = 0; v < kHeight; ++v) {
       for (int u = 0; u < kWidth; ++u) {
         CompareColor(color_.at(u, v), pixel, alpha);
@@ -67,7 +69,7 @@ class RgbdRendererTest : public ::testing::Test {
     }
   }
 
-  void VerifyLabel(int16_t label) {
+  void VerifyUniformLabel(int16_t label) {
     for (int v = 0; v < kHeight; ++v) {
       for (int u = 0; u < kWidth; ++u) {
         ASSERT_EQ(label_.at(u, v)[0], label);
@@ -75,7 +77,7 @@ class RgbdRendererTest : public ::testing::Test {
     }
   }
 
-  void VerifyDepth(float depth) {
+  void VerifyUniformDepth(float depth) {
     for (int v = 0; v < kHeight; ++v) {
       for (int u = 0; u < kWidth; ++u) {
         ASSERT_NEAR(depth_.at(u, v)[0], depth, kDepthTolerance);
@@ -83,11 +85,12 @@ class RgbdRendererTest : public ::testing::Test {
     }
   }
 
+  // Verifies the chosen pixels, i.e. `kOutliers`, belong to the ground.
   void VerifyOutliers() {
     const auto& kTerrain = renderer_->get_flat_terrain_color();
-    for (const auto& pixcord : kOutliers) {
-      const int u = pixcord.u;
-      const int v = pixcord.v;
+    for (const auto& pix_coord : kOutliers) {
+      const int u = pix_coord.u;
+      const int v = pix_coord.v;
       // Color
       CompareColor(color_.at(u, v), kTerrain, 255u);
       // Depth
@@ -99,6 +102,7 @@ class RgbdRendererTest : public ::testing::Test {
 
   void SetUp() override {}
 
+  // All tests on this class must invoke this first.
   void SetUp(const Eigen::Isometry3d& X_WR, bool add_terrain = false) {
     renderer_ = std::make_unique<RgbdRenderer>(
         X_WR, kWidth, kHeight, kZNear, kZFar, kFovY, kShowWindow);
@@ -109,7 +113,11 @@ class RgbdRendererTest : public ::testing::Test {
 
   const sensors::ColorI kDefaultVisualColor = {179u, 179u, 179u};
   const float kDefaultDistance{3.f};
+  // `kInlier` is chosen to point to a pixel representing an object in the
+  // test scene.
   const UV kInlier = {320, 240};
+  // The outliers are chosen to point to pixels representing the ground,
+  // not objects in the test scene.
   const std::array<UV, 4> kOutliers{{
       UV(10, 10), UV(10, 470), UV(630, 10), UV(630, 470)}};
 
@@ -121,7 +129,6 @@ class RgbdRendererTest : public ::testing::Test {
   std::unique_ptr<RgbdRenderer> renderer_;
 };
 
-
 TEST_F(RgbdRendererTest, InstantiationTest) {
   SetUp(Isometry3d::Identity());
 
@@ -130,13 +137,12 @@ TEST_F(RgbdRendererTest, InstantiationTest) {
   EXPECT_EQ(renderer_->fov_y(), kFovY);
 }
 
-
 TEST_F(RgbdRendererTest, NoBodyTest) {
   SetUp(Isometry3d::Identity());
   Render();
 
-  VerifyColor(renderer_->get_sky_color(), 0u);
-  VerifyLabel(RgbdRenderer::Label::kNoBody);
+  VerifyUniformColor(renderer_->get_sky_color(), 0u);
+  VerifyUniformLabel(RgbdRenderer::Label::kNoBody);
   // Verifies depth.
   for (int v = 0; v < kHeight; ++v) {
     for (int u = 0; u < kWidth; ++u) {
@@ -145,52 +151,53 @@ TEST_F(RgbdRendererTest, NoBodyTest) {
   }
 }
 
-
 TEST_F(RgbdRendererTest, TerrainTest) {
   SetUp(X_WR_, true);
 
   const auto& kTerrain = renderer_->get_flat_terrain_color();
   // At two different distances.
-  for (auto distance : std::array<float, 2>({{2.f, 5.f}})) {
-    X_WR_.translation().z() = distance;
+  for (auto depth : std::array<float, 2>({{2.f, 5.f}})) {
+    X_WR_.translation().z() = depth;
     renderer_->UpdateViewpoint(X_WR_);
     Render();
-    VerifyColor(kTerrain, 255u);
-    VerifyLabel(RgbdRenderer::Label::kFlatTerrain);
-    VerifyDepth(distance);
+    VerifyUniformColor(kTerrain, 255u);
+    VerifyUniformLabel(RgbdRenderer::Label::kFlatTerrain);
+    VerifyUniformDepth(depth);
   }
 
   // Closer than kZNear.
   X_WR_.translation().z() = kZNear - 1e-5;
   renderer_->UpdateViewpoint(X_WR_);
   Render();
-  VerifyColor(kTerrain, 255u);
-  VerifyLabel(RgbdRenderer::Label::kFlatTerrain);
-  VerifyDepth(RgbdRenderer::InvalidDepth::kTooClose);
+  VerifyUniformColor(kTerrain, 255u);
+  VerifyUniformLabel(RgbdRenderer::Label::kFlatTerrain);
+  VerifyUniformDepth(RgbdRenderer::InvalidDepth::kTooClose);
 
-  // Further than kZFar.
+  // Farther than kZFar.
   X_WR_.translation().z() = kZFar + 1e-3;
   renderer_->UpdateViewpoint(X_WR_);
   Render();
-  VerifyColor(kTerrain, 255u);
-  VerifyLabel(RgbdRenderer::Label::kFlatTerrain);
+  VerifyUniformColor(kTerrain, 255u);
+  VerifyUniformLabel(RgbdRenderer::Label::kFlatTerrain);
   // Verifies depth.
   for (int v = 0; v < kHeight; ++v) {
     for (int u = 0; u < kWidth; ++u) {
-      ASSERT_TRUE(std::isinf(depth_.at(u, v)[0]));
+      ASSERT_EQ(RgbdRenderer::InvalidDepth::kTooFar, depth_.at(u, v)[0]);
     }
   }
 }
 
 TEST_F(RgbdRendererTest, HorizonTest) {
-  // Looking at horizon with the ray direction parallel to the ground.
+  // Camera at the origin, pointing in a direction parallel to the ground.
   Isometry3d X_WR =
       Eigen::Translation3d(0, 0, 0) *
       Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitX()) *
       Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY());
   SetUp(X_WR, true);
 
-  // Returns v index of horizon location in image coordinate system.
+  // Returns v in [0, kHeight / 2], index of horizon location in image
+  // coordinate system under two assumptions: 1) the gound plane is not clipped
+  // by `kClippingPlaneFar`, 2) camera is located above the ground.
   auto CalcHorizon = [](double z) {
     const double kTerrainSize = 50.;
     const double kFocalLength = kHeight * 0.5 / std::tan(0.5 * kFovY);
@@ -204,17 +211,15 @@ TEST_F(RgbdRendererTest, HorizonTest) {
     renderer_->UpdateViewpoint(X_WR);
     Render();
 
+    const auto& kTerrain = renderer_->get_flat_terrain_color();
     int actual_horizon{0};
-    std::array<uint8_t, 4> a_pixel{{0u, 0u, 0u, 0u}};
     for (int v = 0; v < kHeight; ++v) {
-      if ((a_pixel[0] != color_.at(0, v)[0]) ||
-          (a_pixel[1] != color_.at(0, v)[1]) ||
-          (a_pixel[2] != color_.at(0, v)[2]) ||
-          (a_pixel[3] != color_.at(0, v)[3])) {
-        for (int ch = 0; ch < color_.kNumChannels; ++ch) {
-          a_pixel[ch] = color_.at(0, v)[ch];
-        }
-        actual_horizon = v;
+      // Looking for the boundary between the sky and the ground.
+      if ((static_cast<uint8_t>(kTerrain.r == color_.at(0, v)[0])) &&
+	  (static_cast<uint8_t>(kTerrain.g == color_.at(0, v)[1])) &&
+	  (static_cast<uint8_t>(kTerrain.b == color_.at(0, v)[2]))) {
+	actual_horizon = v;
+	break;
       }
     }
 
@@ -223,7 +228,6 @@ TEST_F(RgbdRendererTest, HorizonTest) {
   }
 }
 
-
 TEST_F(RgbdRendererTest, BoxTest) {
   SetUp(X_WR_, true);
 
@@ -231,8 +235,8 @@ TEST_F(RgbdRendererTest, BoxTest) {
   Isometry3d X_WV = Isometry3d::Identity();
   X_WV.translation().z() = 0.5;
   DrakeShapes::VisualElement visual(X_WV);
-  Eigen::Vector3d xyz(1, 1, 1);
-  visual.setGeometry(DrakeShapes::Box(xyz));
+  Eigen::Vector3d box_size(1, 1, 1);
+  visual.setGeometry(DrakeShapes::Box(box_size));
   const int kBodyID = 0;
   renderer_->RegisterVisual(visual, kBodyID);
   renderer_->UpdateVisualPose(X_WV, kBodyID, 0);
@@ -250,7 +254,6 @@ TEST_F(RgbdRendererTest, BoxTest) {
   // Label
   ASSERT_EQ(label_.at(u, v)[0], kBodyID);
 }
-
 
 TEST_F(RgbdRendererTest, SphereTest) {
   SetUp(X_WR_, true);
@@ -278,7 +281,6 @@ TEST_F(RgbdRendererTest, SphereTest) {
   ASSERT_EQ(label_.at(u, v)[0], kBodyID);
 }
 
-
 TEST_F(RgbdRendererTest, CylinderTest) {
   SetUp(X_WR_, true);
 
@@ -304,7 +306,6 @@ TEST_F(RgbdRendererTest, CylinderTest) {
   // Label
   ASSERT_EQ(label_.at(u, v)[0], kBodyID);
 }
-
 
 TEST_F(RgbdRendererTest, MeshTest) {
   SetUp(X_WR_, true);
