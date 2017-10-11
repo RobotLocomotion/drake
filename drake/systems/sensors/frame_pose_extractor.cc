@@ -1,4 +1,4 @@
-#include "drake/manipulation/perception/optitrack_sim.h"
+#include "drake/systems/sensors/frame_pose_extractor.h"
 
 #include <algorithm>
 #include <utility>
@@ -6,20 +6,20 @@
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
 
 namespace drake {
-namespace manipulation {
-namespace perception {
+namespace systems {
+namespace sensors {
 
 using std::string;
 using drake::systems::KinematicsResults;
 
-OptitrackSim::OptitrackSim(
+FramePoseExtractor::FramePoseExtractor(
     const std::map<RigidBodyFrame<double>*, int>& body_frame_to_id_map,
     double optitrack_lcm_publish_period)
     : body_frame_to_id_map_(body_frame_to_id_map) {
-  OptitrackSim::Init(optitrack_lcm_publish_period);
+  FramePoseExtractor::Init(optitrack_lcm_publish_period);
 }
 
-OptitrackSim::OptitrackSim(
+FramePoseExtractor::FramePoseExtractor(
     const RigidBodyTree<double>& tree,
     const std::map<std::string, int>& body_name_to_id_map,
     std::vector<Eigen::Isometry3d>& frame_poses,
@@ -43,28 +43,28 @@ OptitrackSim::OptitrackSim(
     ++v_it;
   }
 
-  OptitrackSim::Init(optitrack_lcm_publish_period);
+  FramePoseExtractor::Init(optitrack_lcm_publish_period);
 }
 
-void OptitrackSim::Init(double optitrack_lcm_publish_period) {
+void FramePoseExtractor::Init(double optitrack_lcm_publish_period) {
   // Abstract input port of type KinematicsResults
   kinematics_input_port_index_ = this->DeclareAbstractInputPort().get_index();
 
   // Abstract output port of type vector<TrackedObjects>
   tracked_objects_output_port_index_ =
-      this->DeclareAbstractOutputPort(&OptitrackSim::MakeOutputStatus,
-                                      &OptitrackSim::OutputStatus).get_index();
+      this->DeclareAbstractOutputPort(&FramePoseExtractor::MakeOutputStatus,
+                                      &FramePoseExtractor::OutputStatus).get_index();
 
   for (auto it = body_frame_to_id_map_.begin();
        it != body_frame_to_id_map_.end(); ++it) {
     RigidBody<double>* body = it->first->get_mutable_rigid_body();
     if (body == nullptr) {
       throw std::runtime_error(
-          "OptitrackSim::Init: ERROR: found nullptr to "
+          "FramePoseExtractor::Init: ERROR: found nullptr to "
           "RigidBody in RigidBodyFrame object.");
     } else if (!CheckIdValidity(it->second)) {
       throw std::runtime_error(
-          "OptitrackSim::Init: ERROR: found invalid "
+          "FramePoseExtractor::Init: ERROR: found invalid "
           "body frame id.");
     } else {
       id_to_body_map_[it->second] = body;
@@ -74,7 +74,7 @@ void OptitrackSim::Init(double optitrack_lcm_publish_period) {
   this->DeclarePeriodicUnrestrictedUpdate(optitrack_lcm_publish_period, 0);
 }
 
-bool OptitrackSim::CheckIdValidity(const int id) {
+bool FramePoseExtractor::CheckIdValidity(const int id) {
   auto it =
       std::find_if(id_to_body_map_.begin(), id_to_body_map_.end(),
                    [&id](const std::pair<int, const RigidBody<double>*>& pair) {
@@ -87,12 +87,12 @@ bool OptitrackSim::CheckIdValidity(const int id) {
   }
 }
 
-std::vector<TrackedObject> OptitrackSim::MakeOutputStatus() const {
+std::vector<TrackedObject> FramePoseExtractor::MakeOutputStatus() const {
   std::vector<TrackedObject> optitrack_objects(body_frame_to_id_map_.size());
   return optitrack_objects;
 }
 
-void OptitrackSim::OutputStatus(const systems::Context<double>& context,
+void FramePoseExtractor::OutputStatus(const systems::Context<double>& context,
                                 std::vector<TrackedObject>* output) const {
   std::vector<TrackedObject>& optitrack_objects = *output;
 
@@ -119,6 +119,6 @@ void OptitrackSim::OutputStatus(const systems::Context<double>& context,
   std::sort(optitrack_objects.begin(), optitrack_objects.end());
 }
 
-}  // namespace perception
-}  // namespace manipulation
 }  // namespace drake
+}  // namespace systems
+}  // namespace sensors

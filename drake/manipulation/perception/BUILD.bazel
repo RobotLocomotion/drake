@@ -33,22 +33,6 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
-    name = "optitrack_sim",
-    srcs = ["optitrack_sim.cc"],
-    hdrs = ["optitrack_sim.h"],
-    visibility = [
-        "//drake/examples/kuka_iiwa_arm:__subpackages__",
-        "//drake/systems/sensors:__subpackages__",
-    ],
-    deps = [
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/rigid_body_plant",
-        "//drake/systems/framework:leaf_system",
-        "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
-    ],
-)
-
 drake_cc_googletest(
     name = "optitrack_pose_extractor_test",
     deps = [
@@ -65,20 +49,6 @@ drake_cc_googletest(
         "//drake/common/test_utilities:eigen_geometry_compare",
         "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/manipulation/util:moving_average_filter",
-        "//drake/systems/framework",
-    ],
-)
-
-drake_cc_googletest(
-    name = "optitrack_sim_test",
-    data = ["//drake/manipulation/models/iiwa_description:models"],
-    deps = [
-        ":optitrack_sim",
-        "//drake/common:find_resource",
-        "//drake/common/test_utilities:eigen_geometry_compare",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/parsers",
         "//drake/systems/framework",
     ],
 )

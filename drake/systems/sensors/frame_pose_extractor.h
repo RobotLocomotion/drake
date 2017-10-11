@@ -11,8 +11,8 @@
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
-namespace manipulation {
-namespace perception {
+namespace systems {
+namespace sensors {
 
 constexpr double kLcmStatusPeriod = 1.0/120.0;
 
@@ -56,20 +56,20 @@ struct TrackedObject {
  * connected to an OptitrackFrameSender system which populates an
  * optitrack_frame_t object.
  */
-class OptitrackSim : public systems::LeafSystem<double> {
+class FramePoseExtractor : public systems::LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OptitrackSim)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FramePoseExtractor)
   /**
-   * Constructs an OptitrackSim object that tracks a set of RigidBodyFrames.
+   * Constructs a FramePoseExtractor object that tracks a set of RigidBodyFrames.
    * Each RigidBodyFrame has an associated Optitrack ID.
    * @param body_frame_to_id_map A mapping of RigidBodyFrames to Motive ID's.
    */
-  OptitrackSim(
+  FramePoseExtractor(
       const std::map<RigidBodyFrame<double>*, int>& body_frame_to_id_map,
       double optitrack_lcm_publish_period = kLcmStatusPeriod);
 
   /**
-   * Constructs an OptitrackSim object from body names that exist in the
+   * Constructs a FramePoseExtractor object from body names that exist in the
    * @p tree.
    *
    * @param tree The RigidBodyTree containing the named bodies.
@@ -79,7 +79,7 @@ class OptitrackSim : public systems::LeafSystem<double> {
    *        poses.
    * @param optitrack_lcm_publish_period The publish period of the lcm message.
    */
-  OptitrackSim(const RigidBodyTree<double>& tree,
+  FramePoseExtractor(const RigidBodyTree<double>& tree,
                const std::map<std::string, int>& body_name_to_id_map,
                std::vector<Eigen::Isometry3d>& frame_poses =
                *(new std::vector<Eigen::Isometry3d>()),
@@ -120,6 +120,6 @@ class OptitrackSim : public systems::LeafSystem<double> {
   std::map<int, const RigidBody<double>*> id_to_body_map_;
 };
 
-}  // namespace perception
-}  // namespace manipulation
+}  // namespace sensors
+}  // namespace systems
 }  // namespace drake
