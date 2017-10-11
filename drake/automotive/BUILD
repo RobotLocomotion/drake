@@ -8,7 +8,6 @@ load(
     "drake_cc_binary",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools:install_data.bzl", "install_data")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -229,7 +228,7 @@ drake_cc_library(
     name = "prius_vis",
     srcs = ["prius_vis.cc"],
     hdrs = ["prius_vis.h"],
-    data = ["//drake/automotive:prod_models"],
+    data = ["//drake/automotive/models:prod_models"],
     deps = [
         ":car_vis",
         "//drake/common:find_resource",
@@ -387,7 +386,7 @@ drake_cc_binary(
         "create_trajectory_params.h",
     ],
     data = [
-        "//drake/automotive:prod_models",
+        "//drake/automotive/models:prod_models",
     ],
     deps = [
         ":automotive_simulator",
@@ -406,7 +405,7 @@ drake_cc_binary(
     ],
     add_test_rule = 1,
     data = [
-        "//drake/automotive:prod_models",
+        "//drake/automotive/models:prod_models",
     ],
     test_rule_args = [" --simulation_sec=0.01"],
     deps = [
@@ -452,34 +451,11 @@ py_binary(
     ],
 )
 
-genrule(
-    name = "speed_bump_genrule",
-    srcs = ["models/speed_bump/speed_bump.yaml"],
-    outs = [
-        "models/speed_bump/speed_bump.obj",
-        "models/speed_bump/speed_bump.mtl",
-    ],
-    cmd = " ".join([
-        "$(location //drake/automotive/maliput/utility:yaml_to_obj)",
-        "--yaml_file '$<'",
-        "--obj_dir $(@D)/models/speed_bump",
-        "--obj_file speed_bump",
-    ]),
-    tools = ["//drake/automotive/maliput/utility:yaml_to_obj"],
-)
-
-install_data(
-    extra_prod_models = [
-        "models/speed_bump/speed_bump.mtl",
-        "models/speed_bump/speed_bump.obj",
-    ],
-)
-
 # === test/ ===
 
 drake_cc_googletest(
     name = "automotive_simulator_test",
-    data = ["//drake/automotive:prod_models"],
+    data = ["//drake/automotive/models:prod_models"],
     local = 1,
     deps = [
         "//drake/automotive:automotive_simulator",
