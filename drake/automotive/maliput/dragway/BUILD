@@ -43,8 +43,8 @@ drake_cc_binary(
         "//drake/automotive/maliput/utility",
         "//drake/common:essential",
         "//drake/common:text_logging_gflags",
-        "//drake/thirdParty:spruce",
         "@com_github_gflags_gflags//:gflags",
+        "@spruce",
     ],
 )
 

@@ -6,13 +6,13 @@
 #include <utility>
 #include <vector>
 
+#include <spruce.hh>
+#include <tinydir.h>
 #include <tinyxml2.h>
-#include "spruce.hh"
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/text_logging.h"
-#include "drake/thirdParty/bsd/tinydir/tinydir.h"
 
 using std::cerr;
 using std::endl;

@@ -9,18 +9,6 @@ load("//tools/lint:bazel_lint.bzl", "bazel_lint")
 package(default_visibility = ["//visibility:public"])
 
 drake_cc_library(
-    name = "spruce",
-    srcs = ["bsd/spruce/spruce.cc"],
-    hdrs = ["bsd/spruce/spruce.hh"],
-    includes = ["bsd/spruce"],
-)
-
-drake_cc_library(
-    name = "tinydir",
-    hdrs = ["bsd/tinydir/tinydir.h"],
-)
-
-drake_cc_library(
     name = "stx",
     hdrs = ["boost/tcbrindle_cpp17_headers/stx/optional.hpp"],
 )

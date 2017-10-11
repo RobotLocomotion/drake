@@ -226,7 +226,7 @@ drake_cc_library(
     ],
     deps = [
         ":essential",
-        "//drake/thirdParty:spruce",
+        "@spruce",
     ],
 )
 
@@ -241,7 +241,7 @@ drake_cc_library(
     deps = [
         ":essential",
         ":find_resource",
-        "//drake/thirdParty:spruce",
+        "@spruce",
     ],
 )
 
