@@ -1,4 +1,4 @@
-#include "drake/manipulation/perception/optitrack_sim.h"
+#include "drake/systems/sensors/frame_pose_extractor.h"
 
 #include <gtest/gtest.h>
 
@@ -9,8 +9,8 @@
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
 
 namespace drake {
-namespace manipulation {
-namespace perception {
+namespace systems {
+namespace sensors {
 
 using drake::systems::KinematicsResults;
 
@@ -18,7 +18,7 @@ const char* const kIiwaUrdf =
     "drake/manipulation/models/iiwa_description/urdf/"
     "iiwa14_polytope_collision.urdf";
 
-class OptitrackSimTest : public ::testing::Test {
+class FramePoseExtractorTest : public ::testing::Test {
  protected:
   virtual void SetUp() {
     // Create the tree.
@@ -54,7 +54,7 @@ class OptitrackSimTest : public ::testing::Test {
   }
 
   std::vector<TrackedObject> UpdateInputCalcOutput(
-      const OptitrackSim& dut, const KinematicsResults<double>& input_results) {
+      const FramePoseExtractor& dut, const KinematicsResults<double>& input_results) {
     std::unique_ptr<systems::AbstractValue> input(
         new systems::Value<KinematicsResults<double>>(tree_.get()));
     input->SetValue(input_results);
@@ -76,37 +76,37 @@ class OptitrackSimTest : public ::testing::Test {
   Eigen::Isometry3d T_BF_;
 
  private:
-  std::unique_ptr<OptitrackSim> dut_;
+  std::unique_ptr<FramePoseExtractor> dut_;
   std::unique_ptr<systems::Context<double>> context_;
   std::unique_ptr<systems::SystemOutput<double>> output_;
 };
 
-TEST_F(OptitrackSimTest, InvalidBodyIdTest) {
+TEST_F(FramePoseExtractorTest, InvalidBodyIdTest) {
   auto body_name_to_id_map = body_name_to_id_map_;
   body_name_to_id_map["iiwa_link_0"] = 2;  // adds an invalid (repeated) id
-  EXPECT_ANY_THROW(OptitrackSim(*tree_.get(), body_name_to_id_map));
+  EXPECT_ANY_THROW(FramePoseExtractor(*tree_.get(), body_name_to_id_map));
 
   body_name_to_id_map["iiwa_link_0"] = -1;  // adds an invalid (negative) id
-  EXPECT_ANY_THROW(OptitrackSim(*tree_.get(), body_name_to_id_map));
+  EXPECT_ANY_THROW(FramePoseExtractor(*tree_.get(), body_name_to_id_map));
 }
 
-TEST_F(OptitrackSimTest, InvalidBodyNameTest) {
+TEST_F(FramePoseExtractorTest, InvalidBodyNameTest) {
   auto body_name_to_id_map = body_name_to_id_map_;
   body_name_to_id_map["invalid_body"] = 4;
-  EXPECT_ANY_THROW(OptitrackSim(*tree_.get(), body_name_to_id_map));
+  EXPECT_ANY_THROW(FramePoseExtractor(*tree_.get(), body_name_to_id_map));
 }
 
-TEST_F(OptitrackSimTest, InvalidFrameTest) {
+TEST_F(FramePoseExtractorTest, InvalidFrameTest) {
   // Adds an invalid RigidBodyFrame object with no associated RigidBody
   auto body_frame_to_id_map = body_frame_to_id_map_;
   body_frame_to_id_map[new RigidBodyFrame<double>()] = 4;
   EXPECT_EQ(body_frame_to_id_map.size(), 4);
-  EXPECT_ANY_THROW(OptitrackSim(body_frame_to_id_map, 1.0/120.0));
+  EXPECT_ANY_THROW(FramePoseExtractor(body_frame_to_id_map, 1.0/120.0));
 }
 
-TEST_F(OptitrackSimTest, ValidBodyNameTest) {
+TEST_F(FramePoseExtractorTest, ValidBodyNameTest) {
   std::vector<Eigen::Isometry3d> frame_poses(3, T_BF_);
-  OptitrackSim dut(*tree_.get(), body_name_to_id_map_, frame_poses);
+  FramePoseExtractor dut(*tree_.get(), body_name_to_id_map_, frame_poses);
 
   // Update the input, calculate the output, and compare it with expected pose.
   KinematicsResults<double> kres(tree_.get());
@@ -133,8 +133,8 @@ TEST_F(OptitrackSimTest, ValidBodyNameTest) {
   }
 }
 
-TEST_F(OptitrackSimTest, ValidFramePoseTest) {
-  OptitrackSim dut(body_frame_to_id_map_);
+TEST_F(FramePoseExtractorTest, ValidFramePoseTest) {
+  FramePoseExtractor dut(body_frame_to_id_map_);
 
   // Update the input, calculate the output, and compare it with expected pose.
   KinematicsResults<double> kres(tree_.get());
@@ -164,6 +164,6 @@ TEST_F(OptitrackSimTest, ValidFramePoseTest) {
   }
 }
 
-}  // namespace perception
-}  // namespace manipulation
+}  // namespace sensors
+}  // namespace systems
 }  // namespace drake
