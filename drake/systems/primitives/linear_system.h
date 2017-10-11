@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <utility>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/symbolic.h"
@@ -119,6 +120,37 @@ class LinearSystem : public AffineSystem<T> {
 std::unique_ptr<LinearSystem<double>> Linearize(
     const System<double>& system, const Context<double>& context,
     double equilibrium_check_tolerance = 1e-6);
+
+/// A first-order Taylor series approximation to a @p system in the neighborhood
+/// of an arbitrary point.  When Taylor-expanding a system at a non-equilibrium
+/// point, it may be represented either of the form:
+///   @f[ \dot{x} - \dot{x0} = A (x - x0) + B (u - u0), @f]
+/// for continuous time, or
+///   @f[ x[n+1] - x0[n+1] = A (x[n] - x0[n]) + B (u[n] - u0[n]), @f]
+/// for discrete time.  As above, we denote x0, u0 to be the nominal state and
+/// input at the provided @p context.  The system description is affine when the
+/// terms @f$ \dot{x0} - A x0 - B u0 @f$ and @f$ x0[n+1] - A x0[n] - B u0[n] @f$
+/// are nonzero.
+///
+/// More precisely, let x be a state and u be an input.  This function returns
+/// an AffineSystem of the form:
+///   @f[ \dot{x} = A x + B u + f0, @f] (CT)
+///   @f[ x[n+1] = A x[n] + B u[n] + f0, @f] (DT)
+/// where @f$ f0 = \dot{x0} - A x0 - B u0 @f$ (CT) and
+/// @f$ f0 = x0[n+1] - A x[n] - B u[n] @f$ (DT).
+///
+/// @param system The system or subsystem to linearize.
+/// @param context Defines the nominal operating point about which the system
+/// should be linearized.
+/// @returns An AffineSystem at this linearization point.
+///
+/// Note that x, u and y are in the same coordinate system as the original
+/// @p system, since the terms involving x0, u0 reside in f0.
+///
+/// @ingroup primitive_systems
+///
+std::unique_ptr<AffineSystem<double>> FirstOrderTaylorApproximation(
+    const System<double>& system, const Context<double>& context);
 
 /// Returns the controllability matrix:  R = [B, AB, ..., A^{n-1}B].
 /// @ingroup control_systems
