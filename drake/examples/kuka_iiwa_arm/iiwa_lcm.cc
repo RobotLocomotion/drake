@@ -2,13 +2,9 @@
 
 #include <vector>
 
-#include "external/optitrack_driver/lcmtypes/optitrack/optitrack_rigid_body_t.hpp"
-
 #include "drake/common/drake_assert.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
-#include "drake/manipulation/perception/optitrack_sim.h"
-#include "drake/multibody/rigid_body_plant/kinematics_results.h"
 
 namespace drake {
 namespace examples {
@@ -20,7 +16,6 @@ using systems::DiscreteValues;
 using systems::State;
 using systems::SystemOutput;
 using systems::DiscreteUpdateEvent;
-using drake::manipulation::perception::TrackedObject;
 
 // This value is chosen to match the value in getSendPeriodMilliSec()
 // when initializing the FRI configuration on the iiwa's control
@@ -219,51 +214,6 @@ void IiwaStatusSender::OutputStatus(
     status.joint_position_measured[i] = state->GetAtIndex(i);
     status.joint_velocity_estimated[i] = state->GetAtIndex(i + num_joints_);
     status.joint_position_commanded[i] = command->GetAtIndex(i);
-  }
-}
-
-OptitrackFrameSender::OptitrackFrameSender(unsigned int num_rigid_bodies)
-    : num_rigid_bodies_(num_rigid_bodies) {
-  this->DeclareAbstractInputPort();
-  this->DeclareAbstractOutputPort(&OptitrackFrameSender::MakeOutputStatus,
-                                  &OptitrackFrameSender::OutputStatus);
-}
-
-optitrack::optitrack_frame_t OptitrackFrameSender::MakeOutputStatus() const {
-  optitrack::optitrack_frame_t msg{};
-
-  msg.num_rigid_bodies = num_rigid_bodies_;
-  msg.rigid_bodies.resize(num_rigid_bodies_);
-
-  return msg;
-}
-
-void OptitrackFrameSender::OutputStatus(
-    const Context<double>& context,
-    optitrack::optitrack_frame_t* output) const {
-
-  optitrack::optitrack_frame_t& status = *output;
-
-  status.utime = context.get_time() * 1e6;
-
-  const std::vector<TrackedObject>* mocap_objects =
-      this->EvalInputValue<std::vector<TrackedObject>>(context, 0);
-
-  for (size_t i = 0; i < mocap_objects->size(); ++i) {
-    status.rigid_bodies[i].id = (*mocap_objects)[i].optitrack_id;
-
-    Eigen::Vector3d trans = (*mocap_objects)[i].T_WF.translation();
-    Eigen::Quaterniond rot = Eigen::Quaterniond(
-        (*mocap_objects)[i].T_WF.linear());
-
-    status.rigid_bodies[i].xyz[0] = static_cast<float>(trans[0]);
-    status.rigid_bodies[i].xyz[1] = static_cast<float>(trans[1]);
-    status.rigid_bodies[i].xyz[2] = static_cast<float>(trans[2]);
-
-    status.rigid_bodies[i].quat[0] = static_cast<float>(rot.x());
-    status.rigid_bodies[i].quat[1] = static_cast<float>(rot.y());
-    status.rigid_bodies[i].quat[2] = static_cast<float>(rot.z());
-    status.rigid_bodies[i].quat[3] = static_cast<float>(rot.w());
   }
 }
 
