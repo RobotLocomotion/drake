@@ -10,6 +10,7 @@ target_link_libraries(drakeMultibodyParsers
     drakeRBM
     Eigen3::Eigen
     spruce
+    tinydir
     tinyxml2)
 drake_install_libraries(drakeMultibodyParsers)
 drake_install_headers(

@@ -317,7 +317,6 @@ LIBDRAKE_COMPONENTS = [
     "//drake/systems/trajectory_optimization:multiple_shooting",
     "//drake/thirdParty:spruce",
     "//drake/thirdParty:stx",
-    "//drake/thirdParty:tinydir",
     "//drake/util:convex_hull",
     "//drake/util:lcm_util",
     "//drake/util:util",

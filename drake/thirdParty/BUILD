@@ -16,11 +16,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "tinydir",
-    hdrs = ["bsd/tinydir/tinydir.h"],
-)
-
-drake_cc_library(
     name = "stx",
     hdrs = ["boost/tcbrindle_cpp17_headers/stx/optional.hpp"],
 )

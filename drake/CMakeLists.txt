@@ -38,6 +38,12 @@ endif()
 
 include(CTest)
 
+# tinydir (via third_party)
+add_library(tinydir ../third_party/com_github_cxong_tinydir/tinydir.h)
+target_include_directories(tinydir PUBLIC ../third_party/com_github_cxong_tinydir)
+set_target_properties(tinydir PROPERTIES LINKER_LANGUAGE CXX)
+drake_install_libraries(tinydir)
+
 add_subdirectory(thirdParty/boost/tcbrindle_cpp17_headers/stx)
 add_subdirectory(thirdParty/bsd/spruce)
 add_subdirectory(common)

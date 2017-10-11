@@ -26,6 +26,12 @@ local_repository(
     path = "third_party/com_github_google_kythe",
 )
 
+new_local_repository(
+    name = "tinydir",
+    build_file = "tools/workspace/tinydir/tinydir.BUILD.bazel",
+    path = "third_party/com_github_cxong_tinydir",
+)
+
 load("@kythe//tools/build_rules/config:pkg_config.bzl", "pkg_config_package")
 
 pkg_config_package(
