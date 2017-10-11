@@ -22,24 +22,12 @@ namespace constraint {
 /// This structure stores problem data for computing dynamics under such
 /// acceleration-level constraints.
 ///
-/// <h3>Definition of variables used within this specific class:</h3>
+/// <h3>Definition of variables specific to this class</h3>
+/// (See @ref variable_definitions) for the more general set of definitions).
 /// - s ∈ ℕ   The number of contacts at which sliding is occurring. Note
-///           that p = s + y.
-/// - t ∈ ℝ   The system time variable (t ≥ 0).
-/// - u ∈ ℕ   The number of "generic" (non-contact related) unilateral
-///           constraint equations.
-/// - v ∈ ℝⁿ  The generalized velocity vector of the system, which is equivalent
-///           to the time derivative of the system quasi-coordinates.
+///           that p = s + y, where p is the number of points of contact.
 /// - y ∈ ℕ   The number of contacts at which sliding is not occurring. Note
 ///           that p = s + y.
-/// - α ∈ ℝ   A non-negative scalar used to correct position-level constraint
-///           errors (i.e., "stabilize" the position constraints) via an error
-///           feedback process (Baumgarte Stabilization).
-/// - β ∈ ℝ   A non-negative scalar used to correct velocity-level constraint
-///           errors via the same error feedback process (Baumgarte
-///           Stabilization) that uses α.
-/// - γ ∈ ℝ   A non-negative scalar used to soften an otherwise perfectly
-///           "rigid" constraint.
 template <class T>
 struct ConstraintAccelProblemData {
   /// Constructs acceleration problem data for a system with a @p gv_dim
@@ -67,13 +55,13 @@ struct ConstraintAccelProblemData {
 
   /// The indices of the sliding contacts (those contacts at which there is
   /// non-zero relative velocity between bodies in the plane tangent to the
-  /// point of contact), out of the set of all contact indices (0...m-1).
+  /// point of contact), out of the set of all contact indices (0...p-1).
   /// This vector must be in sorted order.
   std::vector<int> sliding_contacts;
 
   /// The indices of the non-sliding contacts (those contacts at which there
   /// is zero relative velocity between bodies in the plane tangent to the
-  /// point of contact), out of the set of all contact indices (0...m-1).
+  /// point of contact), out of the set of all contact indices (0...p-1).
   /// This vector must be in sorted order.
   std::vector<int> non_sliding_contacts;
 
@@ -137,26 +125,14 @@ struct ConstraintAccelProblemData {
   /// Problem data for constraining the acceleration of two bodies projected
   /// along the contact surface normal, for p point contacts.
   ///
-  /// Consider two rigid bodies i and j making contact at a single point, p(q),
-  /// which is defined such that pᵢ(q(t₀)) = pⱼ(q(t₀)); in other words, a point
-  /// defined on each rigid body (and expressed in the world frame) is defined
-  /// such that the points coincide at some particular time t₀. To limit the
-  /// motion of the points to the contact surface as the bodies move, one can
-  /// introduce the constraint c(q) ≡ n(q)ᵀ(pᵢ(q) - pⱼ(q)), where n(q) is the
-  /// common surface normal expressed in the world frame. Differentiating c(q)
-  /// once with respect to time yields ċ(q,v) ≡ nᵀ(ṗᵢ - ṗⱼ) + ṅᵀ(pᵢ - pⱼ); one
-  /// more differentiation with respect to time yields
-  /// c̈(q,v,v̇) ≡ nᵀ(p̈ᵢ - p̈ⱼ) + ṅᵀ(ṗᵢ - ṗⱼ) + n̈ᵀ(pᵢ - pⱼ). By collecting
-  /// terms and using the to-be-defined Jacobian matrix N(q), we can introduce
-  /// equivalent equations:<pre>
+  /// Starting from the equations in @ref noninterpenetration_constraints,
+  /// then collecting terms and using the to-be-defined Jacobian matrix N(q),
+  /// we now introduce equivalent equations:<pre>
   /// ċ(q,v) ≡ N⋅v + ṅᵀ⋅(pᵢ - pⱼ)</pre>
   /// and:<pre>
   /// c̈(q,v,v̇) ≡ N⋅v̇ + Ndot⋅v + n̈ᵀ(pᵢ - pⱼ).
   /// </pre>
-  ///
-  /// The non-negativity condition on the constraint force magnitudes (λ ≥ 0)
-  /// keeps the contact force along the contact normal compressive, as desired.
-  /// With this background in mind, N is the ℝᵖˣⁿ Jacobian matrix that
+  /// N is the ℝᵖˣⁿ Jacobian matrix that
   /// transforms generalized velocities (v ∈ ℝⁿ) into velocities projected along
   /// the contact normals at the p point contacts. The problem data also must
   /// consider Q ∈ ℝᵖˣⁿ, the Jacobian matrix that transforms generalized
@@ -169,10 +145,8 @@ struct ConstraintAccelProblemData {
   /// vector). The user also needs to provide γᴺ ∈ ℝᵖ, a vector of non-negative
   /// entries used to soften the non-interpenetration constraints, and kᴺ ∈ ℝᵖ,
   /// the vector Ndot⋅v (without Baumgarte Stabilization) or
-  /// Ndot⋅v + 2αċ + β²c (with Baumgarte Stabilization, see 
-  /// @ref constraint_stabilization). There currently exist no guidelines
-  /// for setting α, β, and γ to effect a particular damping ratio and
-  /// oscillation frequency at the acceleration level.
+  /// Ndot⋅v + 2αċ + β²c (with Baumgarte Stabilization, see
+  /// @ref constraint_stabilization).
   /// @{
 
   /// An operator that performs the multiplication N⋅v.
@@ -199,15 +173,17 @@ struct ConstraintAccelProblemData {
   /// projected along the contact surface tangents, for p *non-sliding* point
   /// contacts.
   ///
-  /// Given the descriptions of c(.) and the
+  /// Given the descriptions of c(.) (in @ref frictional_constraints) and the
   /// Jacobian matrix F (defined in the following paragraph), the user needs to
   /// define operators for computing F⋅w (w ∈ ℝⁿ is an arbitrary vector) and
   /// Fᵀ⋅f (f ∈ ℝʸʳ is an arbitrary vector). The user also needs to provide
   /// γᶠ ∈ ℝʸʳ (a vector of non-negative entries used to relax the sticking
   /// constraints), γᴱ ∈ ℝʸ (a vector of non-negative entries used to relax the
-  /// linearized Coulomb friction cone constraint, i.e., Equation 0* above),
+  /// linearized Coulomb friction cone constraint, i.e., Equation 0*),
   /// and kᶠ ∈ ℝʸʳ, the vector Fdot⋅v + 2αċ(q,v) + β²c(q) (where c(q) is the
-  /// collection of Equations 1*-k*). Unlike with general constraint
+  /// collection of Equations 1*-k*).
+  ///
+  /// Unlike with general constraint
   /// softening, γᶠ and γᴱ are useful primarily as regularization parameters for
   /// the numerical solution process: one typically selects these parameters to
   /// be as small as possible while still permitting the resulting
@@ -252,10 +228,11 @@ struct ConstraintAccelProblemData {
   /// 0 ≤ L(q)⋅v̇ + kᴸ(t,q,v) + γᴸλ
   /// </pre>
   /// which implies the constraint definition<pre>
-  /// c(t,q,v;v̇) ≡ L(q)⋅v̇ + kᴸ(t,q,v) + γᴸλ
+  /// c(t,q,v;v̇) ≡ L(q)⋅v̇ + kᴸ(t,q,v)
   /// </pre>
   /// where L is defined as the ℝᵘˣⁿ Jacobian matrix of the partial derivatives
-  /// of c() taken with respect to the quasi-coordinates (see
+  /// of the constraint functions c() (see @ref generic_unilateral) taken with
+  /// respect to the quasi-coordinates (see
   /// @ref quasi_coordinates). For holonomic constraints posable as c(t,q),
   /// two differentiations of c() with respect to time can be formulated as
   /// c̈ = L⋅v̇ + Ldot⋅v + ∂²c/∂t², which is consistent with our problem structure
@@ -269,10 +246,7 @@ struct ConstraintAccelProblemData {
   /// vector). The user also needs to provide kᴸ ∈ ℝᵘ, which should be set to
   /// the vector Ldot⋅v + ∂²c/∂t² + 2αċ + β²c, and the vector γᴸ ≥ 0, which
   /// corresponds to a diagonal matrix that acts to "soften" the constraint
-  /// (see the section on constraint softening). There currently exist no
-  /// guidelines for setting α, β, and γ to effect a particular damping ratio
-  /// and oscillation frequency of unilateral constraints at the acceleration
-  /// level.
+  /// (see @ref constraint_softening).
   /// @{
 
   /// An operator that performs the multiplication L⋅v. The default operator
@@ -306,118 +280,6 @@ struct ConstraintAccelProblemData {
 
 /// Structure for holding constraint data for computing constraint forces
 /// at the velocity-level (i.e., impact problems).
-///
-/// <h3>Bilateral and unilateral constraints</h3>
-/// Constraints can be categorized as either bilateral or unilateral, which
-/// roughly can be translated to equality (e.g., c(q) = 0) or inequality
-/// constraints (e.g., c(q) ≥ 0). The former can be realized through the
-/// latter through a pair of inequality constraints, c(q) ≥ 0 and -c(q) ≥ 0;
-/// the problem structure distinguishes the two types to maximize
-/// computational efficiency in the solution algorithms. We assume hereafter
-/// that c() are vector functions.
-///
-/// Constraints may be defined at the position level:<pre>
-/// c(t,q)
-/// </pre>
-/// at the velocity level:<pre>
-/// c(t,q;v,λ)
-/// </pre>
-/// where λ, which is the same dimension as c, is a vector of impulsive force
-/// magnitudes used to enforce the constraint; contrast the meaning of λ here
-/// with its meaning in ConstraintAccelProblemData, where λ refers to a
-/// *non*-impulsive force. Also, note the semicolon in the c() examples. The
-/// semicolon separates general constraint dependencies (t,q) from variables
-/// that must be determined using the constraints (v,λ).
-///
-/// This document and class does not generally attempt (or need) to distinguish
-/// between equations that are posable at the position level (i.e., holonomic
-/// constraints) but are differentiated once with respect to time to
-/// yield a velocity-level constraint vs. equations that *must* be formulated at
-/// at the velocity-level (i.e., nonholonomic constraints). The section below
-/// on constraint stabilization will provide the lone exception to this rule.
-///
-/// At the velocity level, a bilateral constraint equation takes the form:
-/// <pre>
-/// c(t,q;v,λ) = 0
-/// </pre>
-/// Each unilateral constraint at the acceleration level
-/// comprises a triplet of equations, for example:<pre>
-/// c(t,q;v,λ) ≥ 0
-/// λ ≥ 0
-/// c(t,q;v,λ)⋅λ = 0
-/// </pre>
-/// which we will typically write in the common shorthand notation:<pre>
-/// 0 ≤ c  ⊥  λ ≥ 0
-/// </pre>
-/// Interpreting this triplet of constraint equations, two conditions become
-/// apparent: (1) when the constraint is inactive (c > 0), the constraint force
-/// must be zero (λ = 0) and (2) the constraint force can only act in one
-/// direction (λ ≥ 0). This triplet is known as a *complementarity constraint*.
-///
-/// <h3>Constraint softening</h3>
-/// It can be both numerically advantageous and a desirable modeling feature to
-/// soften otherwise "rigid" constraints. For example, consider modifying the
-/// unilateral complementarity constraint above to:<pre>
-/// 0 ≤ c(t,q;v,λ) + γλ  ⊥  λ ≥ 0
-/// </pre>
-/// where γ is a non-negative scalar; alternatively, it can represent a diagonal
-/// matrix with the same number of rows/columns as the dimension of ċ and λ,
-/// permitting different coefficients for each constraint equation.
-/// With γλ > 0, it becomes easier to satisfy the constraint
-/// c(t,q;v,λ) + γλ ≥ 0, though the resulting v and λ will not quite
-/// satisfy c = 0 (i.e., c will be slightly negative). See the **Constraint
-/// softening** section in ConstraintAccelProblemData for more details about
-/// softening.
-///
-/// <h3>Constraint stabilization</h3>
-/// Truncation and rounding errors can prevent constraints from being satisfied.
-/// For example, consider the bilateral constraint equation c(t,q) = 0. Even if
-/// c(t₀,q(t₀)) = ċ(t₀,q(t₀),v(t₀)) = 0, c(t₁,q(t₁))
-/// is unlikely to be zero for sufficiently large Δt = t₁ - t₀. Consequently,
-/// we can modify unilateral constraints c() that have been differentiated once
-/// with respect to time (yielding ċ()) to:<pre>
-/// 0 ≤ ċ + ζc + γλ  ⊥  λ ≥ 0
-/// </pre>
-/// and bilateral constraints to:<pre>
-/// ċ + ζc = 0
-/// </pre>
-/// for non-negative scalar ζ (like λ, ζ can also represent a diagonal matrix).
-/// ζ has units of 1/sec (i.e., the reciprocal of unit time). Note that the
-/// unilateral constraint has been softened for illustrative purposes.
-
-///
-/// The combination of ζ and γ nicely correspond to a generalized
-/// spring-damper system (c̈ + bċ + kc = 0, where b is a viscous damping term
-/// and k is a stiffness coefficient) when these velocity-level constraint
-/// equations are used as the backbone of a particular, first-order
-/// discretization of the continuous time system. Assuming time is discretized
-/// to the quantum Δt, selecting γ = 1 / (b + kΔt) and ζ = kΔt / (b + kΔt)
-/// will effect the desired oscillatory and damping behavior at the constraint.
-///
-/// <h3>Jacobian matrices</h3>
-/// See the section **Jacobian matrices** in ConstraintAccelProblemData.
-///
-/// <h3>Definition of variables used within this documentation:</h3>
-/// - b ∈ ℕ   The number of bilateral constraint equations.
-/// - k ∈ ℕ   The number of edges in a polygonal approximation to a friction
-///           cone. Note that k = 2r.
-/// - p ∈ ℕ   The number of non-interpenetration constraint equations
-/// - q ∈ ℝⁿ' The generalized coordinate vector of the system. n' is at least
-///           as large as n.
-/// - n ∈ ℕ   The dimension of the system generalized velocity / force.
-/// - n' ∈ ℕ  The dimension of the system generalized coordinates.
-/// - r ∈ ℕ   *Half* the number of edges in a polygonal approximation to a
-///           friction cone. Note that k = 2r.
-/// - t ∈ ℝ   The system time variable (t ≥ 0).
-/// - u ∈ ℕ   The number of "generic" (non-contact related) unilateral
-///           constraint equations.
-/// - v ∈ ℝⁿ  The generalized velocity vector of the system, which is equivalent
-///           to the time derivative of the system quasi-coordinates.
-/// - ζ ∈ ℝ   A non-negative scalar used to correct position-level constraint
-///           errors (i.e., "stabilize" the position constraints) via an error
-///           feedback process (Baumgarte Stabilization).
-/// - γ ∈ ℝ   A non-negative scalar used to soften an otherwise perfectly
-///           "rigid" constraint.template <class T>
 template <class T>
 struct ConstraintVelProblemData {
   /// Constructs velocity problem data for a system with a `gv_dim` dimensional
@@ -458,28 +320,10 @@ struct ConstraintVelProblemData {
   /// does not distinguish between static and dynamic friction coefficients.
   VectorX<T> mu;
 
+
   /// @name Data for bilateral constraints at the velocity level
   /// Problem data for bilateral constraints at the velocity level.
-  /// The constraint functions supported includes, among others,
-  /// holonomic constraints, which are constraints posable as c(t, q). Such
-  /// holonomic constraints must be differentiated with respect to time to
-  /// yield a velocity-level formulation (i.e., ċ(t,q;v)). An example
-  /// such holonomic constraint function is the transmission (gearing)
-  /// constraint:<pre>
-  /// c(q) = 0
-  /// </pre> where
-  /// c(q) ≡ qᵢ - rqⱼ
-  /// </pre>
-  /// and where `r` is the gear ratio (for simplicity, this equation does not
-  /// incorporate a constant angular offset between the rotational joints).
-  /// The derivative of this function with respect to time,
-  /// ċ(q;v) = vᵢ - rvⱼ
-  /// </pre>
-  /// can be read as the velocity at joint i (vᵢ) must equal to `r`
-  /// times the velocity at joint j (vⱼ).
-  ///
-  /// The problem structure requires separating the constraint function inputs
-  /// such that the constraint is in the form:<pre>
+  /// The problem structure uses the constraint form:<pre>
   /// 0 = G(q)⋅v + kᴳ(t,q)
   /// </pre>
   /// which implies the constraint definition c(t,q;v) ≡ G(q)⋅v + kᴳ(t,q).
@@ -493,7 +337,9 @@ struct ConstraintVelProblemData {
   /// Given these descriptions, the user needs to define operators for computing
   /// G⋅w (w ∈ ℝⁿ is an arbitrary vector) and Gᵀ⋅f (f ∈ ℝᵇ is an arbitrary
   /// vector). The user also needs to provide kᴳ ∈ ℝᵇ, which should be set to
-  /// the vector ∂c/∂t + ζc.
+  /// the vector ∂c/∂t (without Baumgarte stabilization) or
+  /// ∂c/∂t + βc (with Baumgarte stabilization); see
+  /// @ref constraint_stabilization for further details.
   /// @{
 
   /// An operator that performs the multiplication G⋅v. The default operator
@@ -513,22 +359,12 @@ struct ConstraintVelProblemData {
   /// Problem data for constraining the velocity of two bodies projected
   /// along the contact surface normal, for p point contacts.
   ///
-  /// Consider two points pᵢ and pⱼ on rigid bodies i and j, respectively, and
-  /// assume that at a certain configuration of the two bodies, ᶜq, the two
-  /// points are coincident, i.e., contacting, at a single location in space,
-  /// p(ᶜq). To constrain the motion of pᵢ and pⱼ to the contact
-  /// surface as the bodies move, one can introduce the constraint
-  /// c(q) ≡ n(q)ᵀ(pᵢ(q) - pⱼ(q)), where n(q) is the common surface normal
-  /// expressed in the world frame. Differentiating c(q) once with
-  /// respect to time yields ċ(q,v) ≡ nᵀ(ṗᵢ - ṗⱼ) + ṅᵀ(pᵢ - pⱼ).
-  /// By collecting terms and using the to-be-defined Jacobian matrix N(q), we
-  /// can introduce an equivalent equation:<pre>
-  /// ċ(q,v) ≡ N⋅v + ṅᵀ⋅(pᵢ - pⱼ)</pre>
+  /// Starting from the equations in @ref noninterpenetration_constraints,
+  /// then collecting terms and using the to-be-defined Jacobian matrix N(q),
+  /// we now introduce an equivalent equation:<pre>
+  /// ċ(q,v) ≡ N⋅v + ṅᵀ⋅(pᵢ - pⱼ)
   /// </pre>
-  ///
-  /// The non-negativity condition on the constraint impulse magnitudes (λ ≥ 0)
-  /// keeps the contact force along the contact normal compressive, as desired.
-  /// With this background in mind, N is the ℝᵖˣⁿ Jacobian matrix that
+  /// N is the ℝᵖˣⁿ Jacobian matrix that
   /// transforms generalized velocities (v ∈ ℝⁿ) into velocities projected along
   /// the contact normals at the p point contacts.
   ///
@@ -536,9 +372,7 @@ struct ConstraintVelProblemData {
   /// N⋅w (w ∈ ℝⁿ is an arbitrary vector) and Nᵀ⋅f (f ∈ ℝᵖ is an arbitrary
   /// vector). The user also needs to provide γᴺ ∈ ℝᵖ, a vector of non-negative
   /// entries used to soften the non-interpenetration constraints, and kᴺ ∈ ℝᵖ,
-  /// the vector ζc(q). Guidelines for setting ζ and γ to effect a particular
-  /// damping ratio and oscillation frequency are described in [Catto 2004];
-  /// the parameters are known as "ERP" and "CFM" in that context.
+  /// the vector βc(q).
   /// @{
 
   /// An operator that performs the multiplication N⋅v. The default operator
@@ -563,71 +397,23 @@ struct ConstraintVelProblemData {
   /// Problem data for constraining the tangential velocity of two bodies
   /// projected along the contact surface tangents, for p point contacts.
   ///
-  /// These frictional constraints can be dichotomized into two types: kinematic
-  /// constraints on tangential motion and frictional force constraints.
-  /// One of these constraint sets in 3D looks like:<pre>
-  /// (0) ⁰g ≡ μ⋅fᴺ - ||fˢ fᵗ|| ≥ 0
-  /// (1) ¹g ≡ ((pᵢ - pⱼ)ᵀbₛ)² + ((pᵢ - pⱼ)ᵀbₜ)² = 0
-  /// </pre>
-  /// where bₛ and bₜ are basis vectors in ℝ³ that span the contact tangent
-  /// plane, pᵢ, pⱼ ∈ ℝ³ represent a point of contact between bodies i and j,
-  /// μ is the coefficient of sticking friction, fᴺ is the magnitude of the
-  /// force applied along the contact normal, and fˢ and fᵗ are scalars
-  /// corresponding to the frictional forces applied along the basis vectors.
-  /// Since nonlinear equations are typically challenging to solve, ⁰g and ¹g
-  /// are often transformed to linear approximations:<pre>
-  /// (0')     g̅₀ ≡ μ⋅fᴺ - 1ᵀfᵇ
-  /// (1')     g̅₁ ≡ (pᵢ - pⱼ)ᵀb₁
-  /// ...
-  /// (r')     g̅ᵣ ≡ (pᵢ - pⱼ)ᵀbᵣ
-  /// (r+1') g̅ᵣ₊₁ ≡ -(pᵢ - pⱼ)ᵀb₁
-  /// ...
-  /// (k')     g̅k ≡ -(pᵢ - pⱼ)ᵀbᵣ
-  /// </pre>
-  /// where b₁,...,bᵣ ∈ ℝ³ (k = 2r) are a set of spanning vectors in the contact
-  /// tangent plane (the more vectors, the better the approximation to the
-  /// nonlinear friction cone), and fᵇ ≥ 0 (which will conveniently allow us
-  /// to pose these constraints within the linear complementarity problem
-  /// framework), where fᵇ ∈ ℝᵏ are non-negative scalars that represent the
-  /// frictional force along the spanning vectors and the negated spanning
-  /// vectors. Equations 0'-k' cannot generally be satisfied simultaneously:
-  /// maximizing fᵇ (i.e., fᵇ = μ⋅fᴺ) may be insufficient to keep the relative
-  /// tangential movement at the point of contact zero. Accordingly, we
-  /// transform Equations 0'-k' to the following:<pre>
-  /// (0*)     c₀ ≡ μ⋅fᴺ - 1ᵀfᵇ
-  /// (1*)     c₁ ≡ (pᵢ - pⱼ)ᵀb₁ - Λ
-  /// ...
-  /// (r*)     cᵣ ≡ (pᵢ - pⱼ)ᵀbᵣ - Λ
-  /// (r+1*) cᵣ₊₁ ≡ -(pᵢ - pⱼ)ᵀb₁ - Λ
-  /// ...
-  /// (k*)     cₖ ≡ -(pᵢ - pⱼ)ᵀbᵣ - Λ
-  /// </pre>
-  /// which lead to the following complementarity conditions:<pre>
-  /// 0 ≤ c₀    ⊥      Λ ≥ 0
-  /// 0 ≤ c₁    ⊥    fᵇ₁ ≥ 0
-  /// ...
-  /// 0 ≤ cᵣ    ⊥    fᵇᵣ ≥ 0
-  /// 0 ≤ cᵣ₊₁  ⊥  fᵇᵣ₊₁ ≥ 0
-  /// 0 ≤ cₖ    ⊥    fᵇₖ ≥ 0
-  /// </pre>
-  /// where Λ is roughly interpretable as the remaining tangential velocity
-  /// at the contact after constraint impulses have been applied.  From this
-  /// construction, the frictional impulse to be applied along direction
-  /// i will be equal to fᵇᵢ - fᵇᵣ₊ᵢ. Given the descriptions of c(.) and the
+  /// Given the descriptions of c(.) (in @ref frictional_constraints) and the
   /// Jacobian matrix F (defined in the following paragraph), the user needs to
   /// define operators for computing F⋅w (w ∈ ℝⁿ is an arbitrary vector) and
-  /// Fᵀ⋅f (f ∈ ℝᵖʳ is an arbitrary vector). The user also needs to provide
+  /// Fᵀ⋅f (f ∈ ℝʸʳ is an arbitrary vector). The user also needs to provide
   /// γᶠ ∈ ℝʸʳ (a vector of non-negative entries used to relax the sticking
-  /// constraints), γᴱ ∈ ℝᵖ (a vector of non-negative entries used to relax the
-  /// linearized Coulomb friction cone constraint, i.e., Equation 0* above),
-  /// and kᶠ ∈ ℝᵖʳ, the vector ζc(q) (where c(q) is the
-  /// collection of Equations 1*-k*). Unlike with general constraint
+  /// constraints), γᴱ ∈ ℝʸ (a vector of non-negative entries used to relax the
+  /// linearized Coulomb friction cone constraint, i.e., Equation 0⁺ above),
+  /// and kᶠ ∈ ℝʸʳ, the vector βc(q) (where c(q) is the
+  /// collection of Equations 1⁺-k⁺).
+  ///
+  /// Unlike with general constraint
   /// softening, γᶠ and γᴱ are useful primarily as regularization parameters for
   /// the numerical solution process: one typically selects these parameters to
   /// be as small as possible while still permitting the resulting
   /// complementarity problems to be solved reliably. The resulting stiction
   /// drift should be so small that no constraint stabilization (i.e., setting
-  /// ζ = 0) should be sufficient for most applications.
+  /// β = 0) should be sufficient for most applications.
   ///
   /// As noted above, the user must define operators based on the Jacobian
   /// matrix, F ∈ ℝᵖʳˣⁿ, that transforms generalized velocities (v ∈ ℝⁿ) into
@@ -663,28 +449,12 @@ struct ConstraintVelProblemData {
 
   /// @name Data for unilateral constraints at the velocity level
   /// Problem data for unilateral constraints at the velocity level.
-  /// The constraint functions supported includes, among others,
-  /// holonomic constraints, which are constraints posable as c(t, q). Such
-  /// holonomic constraints must be twice differentiated with respect to time to
-  /// yield an acceleration-level formulation (i.e., ċ(t,q;v)). An example
-  /// such unilateral holonomic constraint function is a joint range-of-motion
-  /// limit:<pre>
-  /// 0 ≤ c(q)  ⊥  λⱼ ≥ 0
-  /// </pre> where
-  /// c(q) ≡ qᵢ.
-  /// </pre>
-  /// This limit range of motion limit requires joint qᵢ to be non-negative.
-  /// The force limit requires the applied force to also be non-negative (i.e.,
-  /// it acts to push against any force that would attempt to make c(q)
-  /// negative). And, the complementarity constraint c(q)λⱼ = 0 means that
-  /// force can only be applied when the joint is at the limit.
   ///
-  /// The problem structure requires separating the constraint function inputs
-  /// such that the constraint is in the form:<pre>
+  /// The problem structure uses the constraint form:<pre>
   /// 0 ≤ L(q)⋅v + kᴸ(t,q) + γᴸλ
   /// </pre>
   /// which implies the constraint definition<pre>
-  /// c(t,q;v) ≡ L(q)⋅v + kᴸ(t,q) + γᴸλ
+  /// c(t,q;v) ≡ L(q)⋅v + kᴸ(t,q)
   /// </pre>
   /// where L is defined as the ℝᵘˣⁿ Jacobian matrix of the partial derivatives
   /// of c() taken with respect to the quasi-coordinates (see
@@ -699,12 +469,9 @@ struct ConstraintVelProblemData {
   /// Given these descriptions, the user needs to define operators for computing
   /// L⋅w (w ∈ ℝⁿ is an arbitrary vector) and Lᵀ⋅f (f ∈ ℝᵘ is an arbitrary
   /// vector). The user also needs to provide kᴸ ∈ ℝᵘ, which should be set to
-  /// the vector ∂c/∂t + ζc, and the vector γᴸ ≥ 0, which
+  /// the vector ∂c/∂t + βc, and the vector γᴸ ≥ 0, which
   /// corresponds to a diagonal matrix that acts to "soften" the constraint
-  /// (see the section on constraint softening). Guidelines for setting ζ and γ
-  /// to effect a particular damping ratio and oscillation frequency are
-  /// described in [Catto 2004]; the parameters are known as "ERP" and "CFM",
-  /// respectively, in that context.
+  /// (see @ref constraint_softening).
   /// @{
 
   /// An operator that performs the multiplication L⋅v. The default operator
