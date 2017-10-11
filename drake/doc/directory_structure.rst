@@ -27,6 +27,11 @@ author or on-call build cop cannot trivially resolve them, a GitHub issue will
 be assigned to the author of the code. If the issue is not resolved within 24
 hours, the core development team may disable the offending targets.
 
+The ``BUILD.bazel`` rules for special directories must live within the
+directory itself, not a parent directory.  (For example, ``foo/BUILD.bazel``
+must **not** say ``srcs = ["dev/bar.cc"],``; instead, ``foo/dev/BUILD.bazel``
+must exist and must say ``srcs = ["bar.cc"],``.)  This ensures that all ``dev``
+code has a package name that clearly denotes it as such.
 
 .. _directory_structure_controlling_dependencies:
 
