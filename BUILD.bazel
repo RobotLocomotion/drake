@@ -66,7 +66,7 @@ install(
     docs = ["LICENSE.TXT"],
     deps = [
         "//drake:install",
-        "//drake/automotive:install_data",
+        "//drake/automotive/models:install_data",
         "//drake/bindings:install",
         "//drake/common:install",
         "//drake/examples:install",
