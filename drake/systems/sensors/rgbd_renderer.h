@@ -103,15 +103,15 @@ class RgbdRenderer final : private ModuleInitVtkRenderingOpenGL2 {
   ///
   /// @param height The height of the image to be rendered in pixels.
   ///
-  /// @param z_near The minimum depth distance RgbdRenderer can output. Note
-  /// that this is different from renderer's clipping range where all the
-  /// objects outside the range are not rendered even in RGB image while this
-  /// only affects depth image.
+  /// @param z_near The minimum depth RgbdRenderer can output. Note that
+  /// this is different from renderer's clipping range where all the objects
+  /// outside the range are not rendered even in RGB image while this only
+  /// affects depth image.
   ///
-  /// @param z_far The maximum depth distance RgbdRenderer can output. Note
-  /// that this is different from renderer's clipping range where all the
-  /// objects outside the range are not rendered even in RGB image while this
-  /// only affects depth image.
+  /// @param z_far The maximum depth RgbdRenderer can output. Note that
+  /// this is different from renderer's clipping range where all the objects
+  /// outside the range are not rendered even in RGB image while this only
+  /// affects depth image.
   ///
   /// @param fov_y The RgbdRenderer's vertical field of view in radians.
   ///
@@ -178,10 +178,10 @@ class RgbdRenderer final : private ModuleInitVtkRenderingOpenGL2 {
   void RenderLabelImage(ImageLabel16I* label_image_out) const;
 
   /// Returns the image width.
-  double width() const { return width_; }
+  int width() const { return width_; }
 
   /// Returns the image height.
-  double height() const { return height_; }
+  int height() const { return height_; }
 
   /// Returns the renderer's vertical field of view.
   double fov_y() const { return fov_y_; }

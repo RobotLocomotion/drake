@@ -21,6 +21,7 @@ drake_cc_library(
         ":camera_info",
         ":depth_sensor",
         ":rgbd_camera",
+        ":rgbd_renderer",
         ":rotary_encoders",
     ],
 )
@@ -177,8 +178,9 @@ drake_cc_library(
 drake_cc_library(
     name = "rgbd_renderer",
     srcs = ["rgbd_renderer.cc"],
-    hdrs = ["color_palette.h",
-            "rgbd_renderer.h",
+    hdrs = [
+        "color_palette.h",
+        "rgbd_renderer.h",
     ],
     deps = [
         ":image",
@@ -402,7 +404,8 @@ drake_cc_googletest(
     data = [
         ":test_models",
     ],
-    # Mitigate driver-related issues when running under `bazel test` (#7004).
+    # Mitigates driver-related issues when running under `bazel test`. For more
+    # information, see #7004.
     local = 1,
     tags = ["manual"],
     deps = [
@@ -420,14 +423,15 @@ drake_cc_googletest(
     data = [
         ":test_models",
     ],
-    # Mitigate driver-related issues when running under `bazel test` (#7004).
+    # Mitigates driver-related issues when running under `bazel test`. For more
+    # information, see #7004.
     local = 1,
     tags = ["manual"],
     deps = [
         ":rgbd_renderer",
         "//drake/common:find_resource",
-        "//drake/math:geometric_transform",
         "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/math:geometric_transform",
     ],
 )
 
