@@ -2,8 +2,10 @@
 
 #include <algorithm>
 #include <utility>
+#include <cstddef>
 
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
+#include "drake/systems/rendering/pose_bundle.h"
 
 namespace drake {
 namespace systems {
@@ -11,6 +13,7 @@ namespace sensors {
 
 using std::string;
 using drake::systems::KinematicsResults;
+using systems::rendering::PoseBundle;
 
 FramePoseExtractor::FramePoseExtractor(
     const std::map<RigidBodyFrame<double>*, int>& body_frame_to_id_map,
@@ -24,7 +27,7 @@ FramePoseExtractor::FramePoseExtractor(
     const std::map<std::string, int>& body_name_to_id_map,
     std::vector<Eigen::Isometry3d>& frame_poses,
     double optitrack_lcm_publish_period) {
-  // If the frame vector is empty, set all frames poses to identity.
+  // If the frame vector is empty, set all frame poses to the identity pose.
   if (frame_poses.empty()) {
     frame_poses = std::vector<Eigen::Isometry3d>(body_name_to_id_map.size(),
                                                  Eigen::Isometry3d::Identity());
@@ -50,10 +53,15 @@ void FramePoseExtractor::Init(double optitrack_lcm_publish_period) {
   // Abstract input port of type KinematicsResults
   kinematics_input_port_index_ = this->DeclareAbstractInputPort().get_index();
 
-  // Abstract output port of type vector<TrackedObjects>
-  tracked_objects_output_port_index_ =
+  // Abstract output port of type systems::rendering::PoseBundle
+  pose_bundle_output_port_index_ =
       this->DeclareAbstractOutputPort(&FramePoseExtractor::MakeOutputStatus,
                                       &FramePoseExtractor::OutputStatus).get_index();
+
+  // Abstract output port of type vector<TrackedObjects>
+  tracked_objects_output_port_index_ =
+      this->DeclareAbstractOutputPort(&FramePoseExtractor::MakeOutputStatusOT,
+                                      &FramePoseExtractor::OutputStatusOT).get_index();
 
   for (auto it = body_frame_to_id_map_.begin();
        it != body_frame_to_id_map_.end(); ++it) {
@@ -87,12 +95,45 @@ bool FramePoseExtractor::CheckIdValidity(const int id) {
   }
 }
 
-std::vector<TrackedObject> FramePoseExtractor::MakeOutputStatus() const {
+PoseBundle<double> FramePoseExtractor::MakeOutputStatus() const {
+  PoseBundle<double> frame_pose_bundle(static_cast<int>(body_frame_to_id_map_.size()));
+  return frame_pose_bundle;
+}
+
+void FramePoseExtractor::OutputStatus(const systems::Context<double>& context,
+                                        PoseBundle<double>* output) const {
+  PoseBundle<double>& frame_pose_bundle = *output;
+
+  // Extract the input port for the KinematicsResults object, get the
+  // transformation of the bodies we care about, and fill in the
+  // frame_pose_bundle object.
+  const KinematicsResults<double>* kres =
+      this->EvalInputValue<KinematicsResults<double>>(
+          context, kinematics_input_port_index_);
+
+  DRAKE_DEMAND(frame_pose_bundle.get_num_poses() == static_cast<int>(body_frame_to_id_map_.size()));
+  int mocap_obj_index = 0;
+  for (auto it = body_frame_to_id_map_.begin();
+       it != body_frame_to_id_map_.end(); ++mocap_obj_index, ++it) {
+    frame_pose_bundle.set_name(mocap_obj_index, it->first->get_name());
+
+    // TODO(rcory): add lines to record (1) the model instance id and (2) the velocities.
+
+    auto T_WB = kres->get_pose_in_world(*(id_to_body_map_.at(it->second)));
+    auto T_BF = it->first->get_transform_to_body();
+
+    frame_pose_bundle.set_pose(mocap_obj_index, T_WB * T_BF);
+  }
+  // Sort the tracked objects by Optitrack body ID
+  // std::sort(optitrack_objects.begin(), optitrack_objects.end());
+}
+
+std::vector<TrackedObject> FramePoseExtractor::MakeOutputStatusOT() const {
   std::vector<TrackedObject> optitrack_objects(body_frame_to_id_map_.size());
   return optitrack_objects;
 }
 
-void FramePoseExtractor::OutputStatus(const systems::Context<double>& context,
+void FramePoseExtractor::OutputStatusOT(const systems::Context<double>& context,
                                 std::vector<TrackedObject>* output) const {
   std::vector<TrackedObject>& optitrack_objects = *output;
 

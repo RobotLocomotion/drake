@@ -61,11 +61,11 @@ class FramePoseExtractorTest : public ::testing::Test {
 
     context_ = dut.CreateDefaultContext();
     output_ = dut.AllocateOutput(*context_);
-    context_->FixInputPort(0 /* input port ID*/, std::move(input));
+    context_->FixInputPort(dut.get_kinematics_input_port_index() /* input port ID*/, std::move(input));
 
     dut.CalcUnrestrictedUpdate(*context_, context_->get_mutable_state());
     dut.CalcOutput(*context_, output_.get());
-    auto output_value = output_->get_data(0);
+    auto output_value = output_->get_data(dut.get_optitrack_output_port_index());
 
     return output_value->GetValue<std::vector<TrackedObject>>();
   }
