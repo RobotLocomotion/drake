@@ -156,6 +156,18 @@ drake_cc_binary(
     ],
 )
 
+alias(
+    name = "models",
+    actual = "//drake/examples/kuka_iiwa_arm/models:models",
+    visibility = ["//visibility:public"],
+)
+
+alias(
+    name = "prod_models",
+    actual = "//drake/examples/kuka_iiwa_arm/models:prod_models",
+    visibility = ["//visibility:public"],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -191,6 +203,12 @@ install(
     visibility = ["//visibility:public"],
 )
 
-install_data()
+install(
+    name = "install_data",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//drake/examples/kuka_iiwa_arm/models:install_data",
+    ],
+)
 
 add_lint_tests()
