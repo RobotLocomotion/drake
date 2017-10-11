@@ -63,11 +63,11 @@ drake_cc_binary(
     ],
     test_rule_args = ["--simulation_sec=0.01"],
     deps = [
+        ":iiwa_box_diagram_factory",
         "//drake/common:find_resource",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
         "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
         "//drake/examples/kuka_iiwa_arm:oracular_state_estimator",
-        "//drake/examples/kuka_iiwa_arm/dev/box_rotation:iiwa_box_diagram_factory",  # noqa
         "//drake/lcm",
         "//drake/lcmtypes:contact_info_for_viz",
         "//drake/lcmtypes:contact_results_for_viz",
