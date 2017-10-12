@@ -282,12 +282,6 @@ mosek_repository(
     name = "mosek",
 )
 
-load("//tools/workspace/gfortran:gfortran.bzl", "gfortran_repository")
-
-gfortran_repository(
-    name = "gfortran",
-)
-
 git_repository(
     name = "snopt",
     remote = "git@github.com:RobotLocomotion/snopt.git",
