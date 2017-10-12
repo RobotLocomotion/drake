@@ -101,7 +101,7 @@ class HumanoidStatus final
    * lifespan of this obejct.
    */
   HumanoidStatus(const RigidBodyTree<double>* robot,
-                 const RigidBodyTreeAliasGroups<double>& alias_group);
+                 const RigidBodyTreeAliasGroups<double>& alias_groups);
 
   /**
    * Do kinematics and compute useful information based on kinematics and

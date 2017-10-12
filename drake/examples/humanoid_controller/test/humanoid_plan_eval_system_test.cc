@@ -9,6 +9,8 @@
 #include "drake/examples/valkyrie/valkyrie_constants.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/rigid_body_tree_alias_groups_loader.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/param_parser_loader.h"
 #include "drake/systems/controllers/qp_inverse_dynamics/qp_inverse_dynamics_system.h"
 #include "drake/systems/controllers/setpoint.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -24,6 +26,7 @@ using systems::controllers::qp_inverse_dynamics::QpInverseDynamicsSystem;
 using systems::controllers::qp_inverse_dynamics::QpInput;
 using systems::controllers::qp_inverse_dynamics::QpOutput;
 using systems::controllers::qp_inverse_dynamics::RobotKinematicState;
+using systems::controllers::qp_inverse_dynamics::ParamSetLoadFromFile;
 
 // Makes a diagram of HumanoidPlanEvalSystem + QpInverseDynamicsSystem. The
 // controller is initialized to track a desired q (a nominal standing pose for
@@ -54,9 +57,6 @@ class HumanoidPlanEvalAndQpInverseDynamicsTest : public ::testing::Test {
     parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
         kModelPath, multibody::joints::kRollPitchYaw, &robot);
 
-    RigidBodyTreeAliasGroups<double> alias_groups(&robot);
-    alias_groups.LoadFromFile(kAliasGroupsPath);
-
     // Desired state.
     VectorX<double> q =
         valkyrie::RPYValkyrieFixedPointState().head(valkyrie::kRPYValkyrieDof);
@@ -66,13 +66,17 @@ class HumanoidPlanEvalAndQpInverseDynamicsTest : public ::testing::Test {
     // Makes a diagram for testing.
     systems::DiagramBuilder<double> builder;
     const double kControlDt = 0.02;
+    auto alias_groups = RigidBodyTreeAliasGroupsLoadFromFile(
+        &robot, kAliasGroupsPath);
+    auto paramset = ParamSetLoadFromFile(
+        kControlConfigPath, *alias_groups);
     auto plan_eval = builder.AddSystem<HumanoidPlanEvalSystem>(
-        &robot, kAliasGroupsPath, kControlConfigPath, kControlDt);
+        &robot, &alias_groups, &paramset, kControlDt);
     auto controller =
         builder.AddSystem<QpInverseDynamicsSystem>(&robot, kControlDt);
 
     // Estimated state source, also set to use the desired q and v.
-    HumanoidStatus robot_status(&robot, alias_groups);
+    HumanoidStatus robot_status(&robot, *alias_groups);
     robot_status.UpdateKinematics(0, q, v);
     auto state_source = builder.AddSystem<systems::ConstantValueSource<double>>(
         systems::AbstractValue::Make<RobotKinematicState<double>>(

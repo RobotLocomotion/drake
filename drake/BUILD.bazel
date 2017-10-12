@@ -5,7 +5,11 @@ package(default_visibility = ["//visibility:public"])
 load("@drake//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/install:transitive_hdrs.bzl", "transitive_hdrs_library")
-load(":build_components.bzl", "LIBDRAKE_COMPONENTS")
+load(
+    ":build_components.bzl",
+    "LIBDRAKE_COMPONENTS",
+    "LIBDRAKE_LOADER_COMPONENTS",
+)
 
 # The Drake binary package. libdrake.so contains all the symbols from all the
 # LIBDRAKE_COMPONENTS and all the Drake externals. We use linkstatic=1 so
@@ -18,11 +22,21 @@ cc_binary(
     deps = LIBDRAKE_COMPONENTS,
 )
 
+cc_binary(
+    name = "libdrake-loader.so",
+    linkshared = 1,
+    linkstatic = 1,
+    deps = LIBDRAKE_LOADER_COMPONENTS,
+)
+
 # Install libdrake.so along with all transitive headers in the same workspace
 # (i.e. in Drake itself; not externals).
 install(
     name = "install",
-    targets = ["libdrake.so"],
+    targets = [
+        "libdrake.so",
+        "libdrake-loader.so",
+    ],
     hdr_dest = "include/drake",
     guess_hdrs = "WORKSPACE",
 )

@@ -107,15 +107,15 @@ class DummyPlanTest : public GenericPlanTest {
   }
 
   void CheckIncompatibleAndThrow() {
-    EXPECT_THROW(dut_->Initialize(*robot_status_, *params_, *alias_groups_),
+    EXPECT_THROW(dut_->Initialize(*robot_status_, *paramset_, *alias_groups_),
                  std::logic_error);
-    EXPECT_THROW(dut_->ModifyPlan(*robot_status_, *params_, *alias_groups_),
+    EXPECT_THROW(dut_->ModifyPlan(*robot_status_, *paramset_, *alias_groups_),
                  std::logic_error);
-    EXPECT_THROW(dut_->HandlePlan(*robot_status_, *params_, *alias_groups_,
+    EXPECT_THROW(dut_->HandlePlan(*robot_status_, *paramset_, *alias_groups_,
                                   systems::Value<int>(10)),
                  std::logic_error);
     QpInput qp_input;
-    EXPECT_THROW(dut_->UpdateQpInput(*robot_status_, *params_, *alias_groups_,
+    EXPECT_THROW(dut_->UpdateQpInput(*robot_status_, *paramset_, *alias_groups_,
                                      &qp_input),
                  std::logic_error);
   }
@@ -125,7 +125,7 @@ class DummyPlanTest : public GenericPlanTest {
 // contacts, no tracked bodies, and holds all dof at where the plan was
 // initialized.
 TEST_F(DummyPlanTest, TestInitialize) {
-  dut_->Initialize(*robot_status_, *params_, *alias_groups_);
+  dut_->Initialize(*robot_status_, *paramset_, *alias_groups_);
 
   EXPECT_TRUE(dut_->get_planned_contact_state().empty());
   EXPECT_TRUE(dut_->get_body_trajectories().empty());
@@ -157,13 +157,13 @@ TEST_F(DummyPlanTest, TestInitialize) {
 
 // Tests if the cloned fields are the same as the original.
 TEST_F(DummyPlanTest, TestClone) {
-  dut_->Initialize(*robot_status_, *params_, *alias_groups_);
+  dut_->Initialize(*robot_status_, *paramset_, *alias_groups_);
   TestGenericClone();
 }
 
 // Checks the generated QpInput vs expected.
 TEST_F(DummyPlanTest, TestUpdateQpInput) {
-  dut_->Initialize(*robot_status_, *params_, *alias_groups_);
+  dut_->Initialize(*robot_status_, *paramset_, *alias_groups_);
 
   QpInput qp_input;
 
@@ -178,7 +178,7 @@ TEST_F(DummyPlanTest, TestUpdateQpInput) {
                                   0.4 * robot_status_->get_cache().getV());
 
   // Computes QpInput.
-  dut_->UpdateQpInput(*robot_status_, *params_, *alias_groups_, &qp_input);
+  dut_->UpdateQpInput(*robot_status_, *paramset_, *alias_groups_, &qp_input);
 
   // The expected dof acceleration should only contain the position and
   // velocity terms.

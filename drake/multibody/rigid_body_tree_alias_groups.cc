@@ -2,11 +2,6 @@
 
 #include <set>
 
-#include "google/protobuf/text_format.h"
-
-#include "drake/common/proto/protobuf.h"
-#include "drake/multibody/alias_groups.pb.h"
-
 template <typename T>
 constexpr char RigidBodyTreeAliasGroups<T>::kBodyGroupsKeyword[];
 template <typename T>
@@ -97,22 +92,6 @@ void RigidBodyTreeAliasGroups<T>::AddJointGroup(
                                        &position_groups_);
   InsertOrMergeVectorWithoutDuplicates(group_name, v_indices,
                                        &velocity_groups_);
-}
-
-template <typename T>
-void RigidBodyTreeAliasGroups<T>::LoadFromFile(const std::string& file_path) {
-  drake::rigid_body_tree::AliasGroups alias_groups;
-  auto istream = drake::MakeFileInputStreamOrThrow(file_path);
-  google::protobuf::TextFormat::Parse(istream.get(), &alias_groups);
-
-  for (const auto& group : alias_groups.body_group()) {
-    AddBodyGroup(group.name(), std::vector<std::string>(group.member().begin(),
-                                                        group.member().end()));
-  }
-  for (const auto& group : alias_groups.joint_group()) {
-    AddJointGroup(group.name(), std::vector<std::string>(group.member().begin(),
-                                                         group.member().end()));
-  }
 }
 
 template class RigidBodyTreeAliasGroups<double>;

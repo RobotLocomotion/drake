@@ -29,8 +29,9 @@ class RobotStateMsgToHumanoidStatusSystem : public systems::LeafSystem<double> {
    * @param alias_group_path Path to the alias groups file. Used to construct
    * HumanoidStatus.
    */
-  RobotStateMsgToHumanoidStatusSystem(const RigidBodyTree<double>* robot,
-                                      const std::string& alias_group_path);
+  RobotStateMsgToHumanoidStatusSystem(
+      const RigidBodyTree<double>* robot,
+      const RigidBodyTreeAliasGroups<double>& alias_groups);
   /**
    * Returns input port for bot_core::robot_state_t.
    */

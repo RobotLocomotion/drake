@@ -6,7 +6,9 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/rigid_body_tree_alias_groups_loader.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/param_parser_loader.h"
 #include "drake/systems/controllers/setpoint.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
@@ -20,6 +22,8 @@ using systems::controllers::VectorSetpoint;
 using systems::controllers::qp_inverse_dynamics::ConstraintType;
 using systems::controllers::qp_inverse_dynamics::ParamSet;
 using systems::controllers::qp_inverse_dynamics::QpInput;
+using systems::controllers::qp_inverse_dynamics::ParamSetLoadFromFile;
+using systems::controllers::qp_inverse_dynamics::ParamSet;
 
 // Builds a test diagram that gives a ManipulatorJointSpaceController and
 // a systems::InverseDynamicsController the exact same inputs (estimated state,
@@ -40,7 +44,7 @@ class ManipulatorJointSpaceControllerTest : public ::testing::Test {
         "drake/systems/controllers/qp_inverse_dynamics/test/"
         "iiwa.id_controller_config");
 
-    auto robot = std::make_unique<RigidBodyTree<double>>();
+    auto robot = std::make_shared<RigidBodyTree<double>>();
     parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
         kModelPath, multibody::joints::kFixed, robot.get());
 
@@ -64,17 +68,19 @@ class ManipulatorJointSpaceControllerTest : public ::testing::Test {
 
     // Makes a diagram for testing.
     systems::DiagramBuilder<double> builder;
+    auto alias_groups = RigidBodyTreeAliasGroupsLoadFromFile(
+        robot.get(), kAliasGroupsPath);
+    paramset_ = ParamSetLoadFromFile(kControlConfigPath, *alias_groups);
     auto qp_id_controller =
         builder.AddSystem<ManipulatorJointSpaceController>(
-            kModelPath, kAliasGroupsPath, kControlConfigPath, 0.02);
-    params_ = &qp_id_controller->get_paramset();
+            kModelPath, &alias_groups, robot, &paramset_, 0.02);
 
     // Use the same kp kd gains from qp_id_controller.
     VectorX<double> kp, kd;
-    params_->LookupDesiredDofMotionGains(&kp, &kd);
+    paramset_->LookupDesiredDofMotionGains(&kp, &kd);
     auto vanilla_id_controller =
         builder.AddSystem<systems::controllers::InverseDynamicsController>(
-            std::move(robot), kp, VectorX<double>::Zero(7), kd, true);
+            robot, kp, VectorX<double>::Zero(7), kd, true);
 
     // Estimated state source.
     auto estimated_state_source =
@@ -155,7 +161,7 @@ class ManipulatorJointSpaceControllerTest : public ::testing::Test {
   std::unique_ptr<systems::Context<double>> context_{nullptr};
   std::unique_ptr<systems::SystemOutput<double>> output_{nullptr};
 
-  const ParamSet* params_;
+  std::unique_ptr<ParamSet> paramset_;
 
   VectorX<double> expected_vd_d_;
 
@@ -175,12 +181,13 @@ TEST_F(ManipulatorJointSpaceControllerTest, PlanEvalTest) {
   EXPECT_TRUE(drake::CompareMatrices(
       expected_vd_d_, qp_input.desired_dof_motions().values(), 1e-12,
       drake::MatrixCompareType::absolute));
-  VectorX<double> expected_weights = params_->MakeDesiredDofMotions().weights();
+  VectorX<double> expected_weights = paramset_->MakeDesiredDofMotions().
+    weights();
   EXPECT_TRUE(drake::CompareMatrices(
       expected_weights, qp_input.desired_dof_motions().weights(), 1e-12,
       drake::MatrixCompareType::absolute));
   std::vector<ConstraintType> expected_constraint_type =
-      params_->MakeDesiredDofMotions().constraint_types();
+      paramset_->MakeDesiredDofMotions().constraint_types();
   for (size_t i = 0; i < expected_constraint_type.size(); ++i) {
     EXPECT_EQ(qp_input.desired_dof_motions().constraint_type(i),
               expected_constraint_type[i]);
@@ -188,7 +195,8 @@ TEST_F(ManipulatorJointSpaceControllerTest, PlanEvalTest) {
 
   // Contact force basis regularization weight is irrelevant here since there
   // is not contacts, but its value should match params'.
-  EXPECT_EQ(qp_input.w_basis_reg(), params_->get_basis_regularization_weight());
+  EXPECT_EQ(qp_input.w_basis_reg(),
+            paramset_->get_basis_regularization_weight());
 
   // Not tracking Cartesian motions.
   EXPECT_TRUE(qp_input.desired_body_motions().empty());

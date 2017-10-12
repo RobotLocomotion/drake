@@ -59,7 +59,7 @@ class InverseDynamicsController : public StateFeedbackControllerInterface<T>,
    * input port for `vd*`. If false, `vd*` is treated as zero, and no extra
    * input port is declared.
    */
-  InverseDynamicsController(std::unique_ptr<RigidBodyTree<T>> robot,
+  InverseDynamicsController(std::shared_ptr<RigidBodyTree<T>> robot,
                             const VectorX<double>& kp,
                             const VectorX<double>& ki,
                             const VectorX<double>& kd,
@@ -113,7 +113,7 @@ class InverseDynamicsController : public StateFeedbackControllerInterface<T>,
   void SetUp(const VectorX<double>& kp,
       const VectorX<double>& ki, const VectorX<double>& kd);
 
-  std::unique_ptr<RigidBodyTree<T>> robot_for_control_{nullptr};
+  std::shared_ptr<RigidBodyTree<T>> robot_for_control_{nullptr};
   PidController<T>* pid_{nullptr};
   const bool has_reference_acceleration_{false};
   int input_port_index_estimated_state_{-1};

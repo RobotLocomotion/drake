@@ -19,32 +19,34 @@ using systems::controllers::qp_inverse_dynamics::QpInverseDynamicsSystem;
 using systems::controllers::qp_inverse_dynamics::QpOutputTranslatorSystem;
 using systems::controllers::qp_inverse_dynamics::
     RobotKinematicStateTranslatorSystem;
+using systems::controllers::qp_inverse_dynamics::ParamSet;
 
 ManipulatorJointSpaceController::ManipulatorJointSpaceController(
-    const std::string& model_path, const std::string& alias_group_path,
-    const std::string& controller_config_path, double dt,
-    std::shared_ptr<RigidBodyFrame<double>> world_offset) {
-  robot_for_control_ = std::make_unique<RigidBodyTree<double>>();
+    const std::string& model_path,
+    std::unique_ptr<RigidBodyTreeAliasGroups<double>>* alias_groups,
+    std::shared_ptr<RigidBodyTree<double>> robot_for_control,
+    std::unique_ptr<ParamSet>* paramset,
+    double dt, std::shared_ptr<RigidBodyFrame<double>> world_offset) {
+  robot_for_control_ = robot_for_control;
   parsers::urdf::AddModelInstanceFromUrdfFile(
       model_path, multibody::joints::kFixed, world_offset,
       robot_for_control_.get());
-
-  const RigidBodyTree<double>& robot = *robot_for_control_;
 
   systems::DiagramBuilder<double> builder;
 
   // Converts raw state to humanoid status.
   RobotKinematicStateTranslatorSystem<double>* rs_wrapper =
-      builder.AddSystem<RobotKinematicStateTranslatorSystem<double>>(&robot);
+      builder.AddSystem<RobotKinematicStateTranslatorSystem<double>>(
+          robot_for_control.get());
   // Converts qp output to raw torque.
   QpOutputTranslatorSystem* joint_level_controller =
-      builder.AddSystem<QpOutputTranslatorSystem>(robot);
+      builder.AddSystem<QpOutputTranslatorSystem>(*robot_for_control);
   // Generates qp_input from desired q and v vd.
   plan_eval_ = builder.AddSystem<ManipulatorMoveJointPlanEvalSystem>(
-      &robot, alias_group_path, controller_config_path, dt);
+      robot_for_control.get(), alias_groups, paramset, dt);
   // Inverse dynamics controller
   QpInverseDynamicsSystem* id_controller =
-      builder.AddSystem<QpInverseDynamicsSystem>(&robot, dt);
+      builder.AddSystem<QpInverseDynamicsSystem>(robot_for_control.get(), dt);
 
   // Connects state translator to plan eval.
   builder.Connect(rs_wrapper->get_output_port(),

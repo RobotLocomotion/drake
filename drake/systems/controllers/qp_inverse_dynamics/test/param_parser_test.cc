@@ -8,6 +8,8 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/rigid_body_tree_alias_groups_loader.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/param_parser_loader.h"
 
 namespace drake {
 namespace systems {
@@ -32,16 +34,15 @@ class ParamParserTests : public ::testing::Test {
     parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
         urdf_name, multibody::joints::kRollPitchYaw, robot_.get());
 
-    rbt_alias_ =
-        std::make_unique<RigidBodyTreeAliasGroups<double>>(robot_.get());
-    rbt_alias_->LoadFromFile(alias_groups_config_name);
+    rbt_alias_ = RigidBodyTreeAliasGroupsLoadFromFile(
+        robot_.get(), alias_groups_config_name);
 
-    paramset_.LoadFromFile(controller_config_name, *rbt_alias_);
+    paramset_ = ParamSetLoadFromFile(controller_config_name, *rbt_alias_);
   }
 
   std::unique_ptr<RigidBodyTree<double>> robot_;
   std::unique_ptr<RigidBodyTreeAliasGroups<double>> rbt_alias_;
-  ParamSet paramset_;
+  std::unique_ptr<ParamSet> paramset_;
 
   const double kTolerance = 1e-20;
 };
@@ -66,7 +67,7 @@ TEST_F(ParamParserTests, ContactInformation) {
   //     num_basis_per_contact_point: 5
   //     weight: -1
   std::unordered_map<std::string, ContactInformation> contacts =
-      paramset_.MakeContactInformation("feet", *rbt_alias_);
+      paramset_->MakeContactInformation("feet", *rbt_alias_);
   {
     // "left_foot" is specified, should match exactly.
     const ContactInformation& contact = contacts.at("leftFoot");
@@ -112,7 +113,7 @@ TEST_F(ParamParserTests, ContactInformation) {
 
   // "NO_SUCH_BODY_GROUP" is not a valid group name, so lookup returns empty.
   EXPECT_TRUE(
-      paramset_.MakeContactInformation("NO_SUCH_BODY_GROUP", *rbt_alias_)
+      paramset_->MakeContactInformation("NO_SUCH_BODY_GROUP", *rbt_alias_)
           .empty());
 }
 
@@ -154,33 +155,33 @@ TEST_F(ParamParserTests, BodyMotionParams) {
   // Tests for MakeDesiredBodyMotion.
   const RigidBody<double>* body = robot_->FindBody("pelvis");
   DesiredBodyMotion motion =
-      paramset_.MakeDesiredBodyMotion("pelvis", *rbt_alias_).at("pelvis");
+      paramset_->MakeDesiredBodyMotion("pelvis", *rbt_alias_).at("pelvis");
   Vector6<double> weights;
   weights << 1, 1, 1, 0, 0, 0;
   TestDesiredBodyMotion(motion, body, weights, kTolerance);
 
   // Unspecified, uses "default".
   body = robot_->FindBody("rightFoot");
-  motion = paramset_.MakeDesiredBodyMotion(*body);
+  motion = paramset_->MakeDesiredBodyMotion(*body);
   weights = Vector6<double>::Constant(1e-2);
   TestDesiredBodyMotion(motion, body, weights, kTolerance);
 
   // Partially specified.
   body = robot_->FindBody("leftFoot");
-  motion = paramset_.MakeDesiredBodyMotion(*body);
+  motion = paramset_->MakeDesiredBodyMotion(*body);
   weights << 1, 1, 1, 1, 1, 2;
   TestDesiredBodyMotion(motion, body, weights, kTolerance);
 
   // "NO_SUCH_BODY_GROUP" is not a valid group name, so this returns emtpy.
-  EXPECT_TRUE(paramset_.MakeDesiredBodyMotion("NO_SUCH_BODY_GROUP", *rbt_alias_)
-                  .empty());
+  EXPECT_TRUE(paramset_->MakeDesiredBodyMotion("NO_SUCH_BODY_GROUP",
+      *rbt_alias_).empty());
 
   // Tests for LookupDesiredBodyMotionGains.
   std::vector<Vector6<double>> Kp_vec(1), Kd_vec(1);
   Vector6<double> Kp_expected, Kd_expected;
 
-  paramset_.LookupDesiredBodyMotionGains(*robot_->FindBody("pelvis"),
-                                         &(Kp_vec[0]), &(Kd_vec[0]));
+  paramset_->LookupDesiredBodyMotionGains(*robot_->FindBody("pelvis"),
+                                          &(Kp_vec[0]), &(Kd_vec[0]));
   Kp_expected << 20, 20, 20, 0, 0, 0;
   Kd_expected << 8, 8, 8, 0, 0, 0;
   EXPECT_TRUE(CompareMatrices(Kp_vec[0], Kp_expected, kTolerance,
@@ -189,7 +190,8 @@ TEST_F(ParamParserTests, BodyMotionParams) {
                               MatrixCompareType::absolute));
 
   // Body group "feet" maps to ["leftFoot", "rightFoot"]
-  paramset_.LookupDesiredBodyMotionGains("feet", *rbt_alias_, &Kp_vec, &Kd_vec);
+  paramset_->LookupDesiredBodyMotionGains("feet", *rbt_alias_,
+      &Kp_vec, &Kd_vec);
   EXPECT_EQ(Kp_vec.size(), 2u);
   EXPECT_EQ(Kd_vec.size(), 2u);
 
@@ -213,7 +215,7 @@ TEST_F(ParamParserTests, BodyMotionParams) {
 TEST_F(ParamParserTests, CentroidalMomentumDotParams) {
   // Tests for MakeDesiredCentroidalMomentumDot.
   DesiredCentroidalMomentumDot cdot =
-      paramset_.MakeDesiredCentroidalMomentumDot();
+      paramset_->MakeDesiredCentroidalMomentumDot();
   Vector6<double> weights;
   weights << 0, 0, 0, 10, 10, 10;
   EXPECT_TRUE(CompareMatrices(cdot.weights(), weights, kTolerance,
@@ -224,7 +226,7 @@ TEST_F(ParamParserTests, CentroidalMomentumDotParams) {
   Vector6<double> Kp_expected, Kd_expected;
   Kp_expected << 0, 0, 0, 40, 40, 40;
   Kd_expected << 4, 4, 4, 12, 12, 12;
-  paramset_.LookupDesiredCentroidalMomentumDotGains(&Kp, &Kd);
+  paramset_->LookupDesiredCentroidalMomentumDotGains(&Kp, &Kd);
   EXPECT_TRUE(CompareMatrices(Kp, Kp_expected, kTolerance,
                               MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(Kd, Kd_expected, kTolerance,
@@ -307,9 +309,9 @@ void TestDofMotionsParamsHelper(
 
 // Tests for DesiredDoFMotion related param parsing.
 TEST_F(ParamParserTests, DoFParams) {
-  DesiredDofMotions motion = paramset_.MakeDesiredDofMotions();
+  DesiredDofMotions motion = paramset_->MakeDesiredDofMotions();
   VectorX<double> Kp, Kd;
-  paramset_.LookupDesiredDofMotionGains(&Kp, &Kd);
+  paramset_->LookupDesiredDofMotionGains(&Kp, &Kd);
 
   TestDofMotionsParamsHelper(motion, Kp, Kd, *rbt_alias_, kTolerance);
 }
@@ -317,9 +319,9 @@ TEST_F(ParamParserTests, DoFParams) {
 // Tests MakeQpInput from using group names.
 TEST_F(ParamParserTests, MakeQpInputFromGroupNames) {
   QpInput qp_input =
-      paramset_.MakeQpInput({"pelvis"},               /* contact groups */
-                            {"pelvis", "right_foot"}, /* tracked body groups */
-                            *rbt_alias_);
+      paramset_->MakeQpInput({"pelvis"},               /* contact groups */
+                             {"pelvis", "right_foot"}, /* tracked body groups */
+                             *rbt_alias_);
 
   // Tests for body motion params.
   EXPECT_EQ(qp_input.desired_body_motions().size(), 2);
@@ -357,7 +359,7 @@ TEST_F(ParamParserTests, MakeQpInputFromGroupNames) {
 
   // Tests for Dof motion.
   VectorX<double> Kp, Kd;
-  paramset_.LookupDesiredDofMotionGains(&Kp, &Kd);
+  paramset_->LookupDesiredDofMotionGains(&Kp, &Kd);
   TestDofMotionsParamsHelper(qp_input.desired_dof_motions(), Kp, Kd,
                              *rbt_alias_, kTolerance);
 
@@ -371,9 +373,9 @@ TEST_F(ParamParserTests, MakeQpInputFromGroupNames) {
 // Tests MakeQpInput from RigidBody*.
 TEST_F(ParamParserTests, MakeQpInputFromRigidBodyPtr) {
   QpInput expected =
-      paramset_.MakeQpInput({"pelvis"},               /* contact groups */
-                            {"pelvis", "right_foot"}, /* tracked body groups */
-                            *rbt_alias_);
+      paramset_->MakeQpInput({"pelvis"},               /* contact groups */
+                             {"pelvis", "right_foot"}, /* tracked body groups */
+                             *rbt_alias_);
 
   const std::vector<const RigidBody<double>*>& pelvis_group =
       rbt_alias_->get_body_group("pelvis");
@@ -386,7 +388,7 @@ TEST_F(ParamParserTests, MakeQpInputFromRigidBodyPtr) {
                         r_foot_group.end());
 
   QpInput qp_input =
-      paramset_.MakeQpInput(contact_bodies, tracked_bodies, *rbt_alias_);
+      paramset_->MakeQpInput(contact_bodies, tracked_bodies, *rbt_alias_);
 
   EXPECT_EQ(qp_input, expected);
 }

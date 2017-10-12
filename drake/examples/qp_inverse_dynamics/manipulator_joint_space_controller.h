@@ -13,6 +13,8 @@ namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
+using systems::controllers::qp_inverse_dynamics::ParamSet;
+
 /**
  * This class implements an example of a general purpose controller for a
  * fixed based manipulator based on qp inverse dynamics. It contains two main
@@ -47,8 +49,11 @@ class ManipulatorJointSpaceController
    * @param world_offset RigidBodyFrame X_WB, where B is the base of the robot.
    */
   ManipulatorJointSpaceController(
-      const std::string& model_path, const std::string& alias_group_path,
-      const std::string& controller_config_path, double dt,
+      const std::string& model_path,
+      std::unique_ptr<RigidBodyTreeAliasGroups<double>>* alias_groups,
+      std::shared_ptr<RigidBodyTree<double>> robot_for_control,
+      std::unique_ptr<ParamSet>* paramset,
+      double dt,
       std::shared_ptr<RigidBodyFrame<double>> world_offset = nullptr);
 
   /**
@@ -151,7 +156,7 @@ class ManipulatorJointSpaceController
   }
 
  private:
-  std::unique_ptr<RigidBodyTree<double>> robot_for_control_{nullptr};
+  std::shared_ptr<RigidBodyTree<double>> robot_for_control_{nullptr};
   ManipulatorMoveJointPlanEvalSystem* plan_eval_{nullptr};
   int input_port_index_estimated_state_{};
   int input_port_index_desired_state_{};

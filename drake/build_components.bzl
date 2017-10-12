@@ -43,8 +43,6 @@ LIBDRAKE_COMPONENTS = [
     "//drake/automotive:simple_car",
     "//drake/automotive:simple_powertrain",
     "//drake/automotive:trajectory_car",
-    "//drake/common/proto:matlab_rpc",
-    "//drake/common/proto:protobuf",
     "//drake/common/trajectories/qp_spline:continuity_constraint",
     "//drake/common/trajectories/qp_spline:spline_generation",
     "//drake/common/trajectories/qp_spline:spline_information",
@@ -167,7 +165,6 @@ LIBDRAKE_COMPONENTS = [
     "//drake/multibody:rigid_body_loop",
     "//drake/multibody:rigid_body_tree",
     "//drake/multibody:rigid_body_tree_alias_groups",
-    "//drake/multibody:rigid_body_tree_alias_groups_proto",
     "//drake/multibody:rigid_body_tree_construction",
     "//drake/perception:point_cloud",
     "//drake/perception:point_cloud_flags",
@@ -212,7 +209,6 @@ LIBDRAKE_COMPONENTS = [
     "//drake/systems/controllers/plan_eval:generic_plan",
     "//drake/systems/controllers/plan_eval:plan_eval_base_system",
     "//drake/systems/controllers/plan_eval:test_common",
-    "//drake/systems/controllers/qp_inverse_dynamics:id_controller_config",
     "//drake/systems/controllers/qp_inverse_dynamics:lcm_utils",
     "//drake/systems/controllers/qp_inverse_dynamics:param_parser",
     "//drake/systems/controllers/qp_inverse_dynamics:qp_inverse_dynamics",
@@ -322,4 +318,13 @@ LIBDRAKE_COMPONENTS = [
     "//drake/util:lcm_util",
     "//drake/util:util",
     "//drake/util:yaml_util",
+]
+
+LIBDRAKE_LOADER_COMPONENTS = [
+    "//drake/common/proto:matlab_rpc",
+    "//drake/common/proto:protobuf",
+    "//drake/multibody:rigid_body_tree_alias_groups_loader",
+    "//drake/multibody:rigid_body_tree_alias_groups_proto",
+    "//drake/systems/controllers/qp_inverse_dynamics:id_controller_config",
+    "//drake/systems/controllers/qp_inverse_dynamics:param_parser_loader",
 ]

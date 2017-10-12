@@ -21,7 +21,7 @@ using drake::systems::controllers::qp_inverse_dynamics::RobotKinematicState;
 
 HumanoidStatus::HumanoidStatus(
     const RigidBodyTree<double>* robot,
-    const RigidBodyTreeAliasGroups<double>& alias_group)
+    const RigidBodyTreeAliasGroups<double>& alias_groups)
     : RobotKinematicState<double>(robot) {
   // These are humanoid specific special group names, and they do not exsit
   // for manupulators such as the iiwa arm.
@@ -29,25 +29,26 @@ HumanoidStatus::HumanoidStatus(
                                                "right_foot"};
 
   for (const auto& name : body_names) {
-    if (alias_group.has_body_group(name)) {
-      const RigidBody<double>* body = alias_group.get_body(name);
+    if (alias_groups.has_body_group(name)) {
+      const RigidBody<double>* body = alias_groups.get_body(name);
       bodies_of_interest_.emplace(
           name, BodyOfInterest(name, *body, Vector3<double>::Zero()));
     }
   }
 
   // Only attach foot sensors if this robot has feet.
-  if (alias_group.has_body_group("left_foot")) {
+  if (alias_groups.has_body_group("left_foot")) {
     bodies_of_interest_.emplace(
         "left_foot_sensor",
-        BodyOfInterest("left_foot_sensor", *alias_group.get_body("left_foot"),
+        BodyOfInterest("left_foot_sensor", *alias_groups.get_body("left_foot"),
                        kFootToSensorPositionOffset));
   }
 
-  if (alias_group.has_body_group("right_foot")) {
+  if (alias_groups.has_body_group("right_foot")) {
     bodies_of_interest_.emplace(
         "right_foot_sensor",
-        BodyOfInterest("right_foot_sensor", *alias_group.get_body("right_foot"),
+        BodyOfInterest("right_foot_sensor",
+                       *alias_groups.get_body("right_foot"),
                        kFootToSensorPositionOffset));
   }
 

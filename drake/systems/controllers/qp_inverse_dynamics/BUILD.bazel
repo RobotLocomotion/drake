@@ -34,9 +34,7 @@ drake_cc_library(
         "param_parser.h",
     ],
     deps = [
-        ":id_controller_config",
         ":qp_inverse_dynamics",
-        "//drake/common/proto:protobuf",
         "//drake/multibody:rigid_body_tree_alias_groups",
     ],
 )
@@ -127,6 +125,17 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "param_parser_loader",
+    srcs = ["param_parser_loader.cc"],
+    hdrs = ["param_parser_loader.h"],
+    deps = [
+        ":id_controller_config",
+        "//drake/common/proto:protobuf",
+        "//drake/systems/controllers/qp_inverse_dynamics:param_parser",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -155,7 +164,9 @@ drake_cc_googletest(
         "//drake/common:find_resource",
         "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/multibody:rigid_body_tree_alias_groups",
+        "//drake/multibody:rigid_body_tree_alias_groups_loader",
         "//drake/multibody/parsers",
+        "//drake/systems/controllers/qp_inverse_dynamics:param_parser_loader",
     ],
 )
 
@@ -173,8 +184,10 @@ drake_cc_googletest(
         ":qp_inverse_dynamics",
         "//drake/common:find_resource",
         "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/multibody:rigid_body_tree_alias_groups_loader",
         "//drake/multibody/parsers",
         "//drake/systems/controllers:setpoint",
+        "//drake/systems/controllers/qp_inverse_dynamics:param_parser_loader",
     ],
 )
 
@@ -191,10 +204,12 @@ drake_cc_googletest(
         ":qp_inverse_dynamics_system",
         "//drake/common:find_resource",
         "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/multibody:rigid_body_tree_alias_groups_loader",
         "//drake/multibody/parsers",
         "//drake/systems/analysis:simulator",
         "//drake/systems/controllers:setpoint",
         "//drake/systems/controllers/qp_inverse_dynamics:param_parser",
+        "//drake/systems/controllers/qp_inverse_dynamics:param_parser_loader",
         "//drake/systems/framework",
         "//drake/systems/primitives:constant_value_source",
     ],
@@ -229,10 +244,12 @@ drake_cc_googletest(
         "//drake/common:find_resource",
         "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/examples/valkyrie:valkyrie_constants",
+        "//drake/multibody:rigid_body_tree_alias_groups_loader",
         "//drake/multibody/parsers",
         "//drake/systems/controllers:setpoint",
         "//drake/systems/controllers/qp_inverse_dynamics",
         "//drake/systems/controllers/qp_inverse_dynamics:param_parser",
+        "//drake/systems/controllers/qp_inverse_dynamics:param_parser_loader",
     ],
 )
 

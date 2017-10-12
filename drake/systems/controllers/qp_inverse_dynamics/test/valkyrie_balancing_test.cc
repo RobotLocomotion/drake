@@ -6,7 +6,9 @@
 #include "drake/examples/valkyrie/valkyrie_constants.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/rigid_body_tree_alias_groups_loader.h"
 #include "drake/systems/controllers/qp_inverse_dynamics/param_parser.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/param_parser_loader.h"
 #include "drake/systems/controllers/qp_inverse_dynamics/qp_inverse_dynamics.h"
 #include "drake/systems/controllers/setpoint.h"
 
@@ -57,24 +59,23 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
       urdf, multibody::joints::kRollPitchYaw, &robot);
 
   // KinematicsProperty
-  RigidBodyTreeAliasGroups<double> alias_groups(&robot);
-  alias_groups.LoadFromFile(alias_groups_config);
+  auto alias_groups = RigidBodyTreeAliasGroupsLoadFromFile(
+      &robot, alias_groups_config);
 
   // Controller config
-  ParamSet paramset;
-  paramset.LoadFromFile(controller_config, alias_groups);
+  auto paramset = ParamSetLoadFromFile(controller_config, *alias_groups);
 
   RobotKinematicState<double> robot_status(&robot);
 
-  const RigidBody<double>& pelvis = *alias_groups.get_body("pelvis");
-  const RigidBody<double>& torso = *alias_groups.get_body("torso");
-  const RigidBody<double>& left_foot = *alias_groups.get_body("left_foot");
-  const RigidBody<double>& right_foot = *alias_groups.get_body("right_foot");
+  const RigidBody<double>& pelvis = *alias_groups->get_body("pelvis");
+  const RigidBody<double>& torso = *alias_groups->get_body("torso");
+  const RigidBody<double>& left_foot = *alias_groups->get_body("left_foot");
+  const RigidBody<double>& right_foot = *alias_groups->get_body("right_foot");
 
   QpInverseDynamics con;
-  QpInput input = paramset.MakeQpInput({"feet"},            /* contacts */
-                                       {"pelvis", "torso"}, /* tracked bodies*/
-                                       alias_groups);
+  QpInput input = paramset->MakeQpInput({"feet"},            /* contacts */
+                                        {"pelvis", "torso"}, /* tracked bodies*/
+                                        *alias_groups);
   QpOutput output(
       systems::controllers::qp_inverse_dynamics::GetDofNames(robot));
 
@@ -93,11 +94,11 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
   Vector6<double> Kp_pelvis, Kp_torso, Kd_pelvis, Kd_torso, Kp_centroidal,
       Kd_centroidal;
 
-  paramset.LookupDesiredBodyMotionGains(pelvis, &Kp_pelvis, &Kd_pelvis);
-  paramset.LookupDesiredBodyMotionGains(torso, &Kp_torso, &Kd_torso);
-  paramset.LookupDesiredDofMotionGains(&Kp_q, &Kd_q);
-  paramset.LookupDesiredCentroidalMomentumDotGains(&Kp_centroidal,
-                                                   &Kd_centroidal);
+  paramset->LookupDesiredBodyMotionGains(pelvis, &Kp_pelvis, &Kd_pelvis);
+  paramset->LookupDesiredBodyMotionGains(torso, &Kp_torso, &Kd_torso);
+  paramset->LookupDesiredDofMotionGains(&Kp_q, &Kd_q);
+  paramset->LookupDesiredCentroidalMomentumDotGains(&Kp_centroidal,
+                                                    &Kd_centroidal);
   Kp_com = Kp_centroidal.tail<3>();
   Kd_com = Kd_centroidal.tail<3>();
 
@@ -118,7 +119,7 @@ GTEST_TEST(testQPInverseDynamicsController, testBalancingStanding) {
       Vector6<double>::Zero(), Kp_torso, Kd_torso);
 
   // Perturb initial condition.
-  v[alias_groups.get_velocity_group("back_x").front()] += 1;
+  v[alias_groups->get_velocity_group("back_x").front()] += 1;
   robot_status.UpdateKinematics(0, q, v);
   // Need to update torso velocity again since back_x joint has velocity now.
   torso_vel = ComputeBodyVelocity(robot_status, torso);

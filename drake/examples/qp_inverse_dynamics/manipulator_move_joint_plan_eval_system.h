@@ -13,6 +13,8 @@ namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
+using systems::controllers::qp_inverse_dynamics::ParamSet;
+
 /**
  * This class extends PlanEvalBaseSystem. It outputs a QpInput that contains
  * a single generalized acceleration objective to track the nominal
@@ -36,15 +38,16 @@ class ManipulatorMoveJointPlanEvalSystem
    * and velocities or contains any floating base joint.
    * @param robot Pointer to a RigidBodyTree, whose life span must be longer
    * than this instance.
-   * @param alias_groups_file_name Path to the alias groups file that describes
+   * @param alias_groups Shared pointer to a RigidBodyTreeAliasGroups that describes
    * the robot's topology for the controller.
    * @param param_file_name Path to the config file for the controller.
    * @param dt Time step
    */
-  ManipulatorMoveJointPlanEvalSystem(const RigidBodyTree<double>* robot,
-                                     const std::string& alias_groups_file_name,
-                                     const std::string& param_file_name,
-                                     double dt);
+  ManipulatorMoveJointPlanEvalSystem(
+      const RigidBodyTree<double>* robot,
+      std::unique_ptr<RigidBodyTreeAliasGroups<double>>* alias_groups,
+      std::unique_ptr<ParamSet>* paramset,
+      double dt);
 
   /**
    * Initializes the plan and gains. Must be called before execution.
