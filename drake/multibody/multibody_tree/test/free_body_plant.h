@@ -33,11 +33,11 @@ class FreeBodyPlant final : public systems::LeafSystem<T> {
 
   /// Constructor from known rotational inertia values.
   /// Rotational inertia values have units of kg⋅m².
-  /// @param J
-  ///   rotational inertia about the axis of revolution of the body.
   /// @param I
   ///   rotational inertia about any axis perpendicular to the axis of
   ///   revolution of the body.
+  /// @param J
+  ///   rotational inertia about the axis of revolution of the body.
   FreeBodyPlant(double I, double J);
 
   /// Scalar-converting copy constructor.

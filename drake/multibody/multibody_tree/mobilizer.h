@@ -412,7 +412,7 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
       const SpatialForce<T>& F_Mo_F,
       Eigen::Ref<VectorX<T>> tau) const = 0;
 
-  /// Implements the kinematic coupling `q̇ = N(q)⋅v` between generalized
+  /// Computes the kinematic mapping `q̇ = N(q)⋅v` between generalized
   /// velocities v and time derivatives of the generalized positions `qdot`.
   /// The generalized positions vector is stored in `context`.
   virtual void MapVelocityToQDot(
@@ -420,7 +420,7 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
       const Eigen::Ref<const VectorX<T>>& v,
       EigenPtr<VectorX<T>> qdot) const = 0;
 
-  /// Implements the mapping `v = N⁺(q)⋅q̇` from time derivatives of the
+  /// Computes the mapping `v = N⁺(q)⋅q̇` from time derivatives of the
   /// generalized positions `qdot` to generalized velocities v, where `N⁺(q)` is
   /// the left pseudo-inverse of `N(q)` defined by MapVelocityToQDot().
   /// The generalized positions vector is stored in `context`.
@@ -433,7 +433,7 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// Returns a const Eigen expression of the vector of generalized positions
   /// for `this` mobilizer from a vector `q_array` of generalized positions for
   /// the entire MultibodyTree model.
-  /// This method aborts if the input array is not of size
+  /// This method aborts if `q_array` is not of size
   /// MultibodyTree::get_num_positions().
   Eigen::VectorBlock<const Eigen::Ref<const VectorX<T>>>
   get_positions_from_array(const Eigen::Ref<const VectorX<T>>& q_array) const {
