@@ -28,6 +28,7 @@ brew install $(tr '\n' ' ' <<EOF
 bazel
 boost
 clang-format
+diffstat
 doxygen
 glew
 glib

@@ -48,6 +48,7 @@ apt install --no-install-recommends $(tr '\n' ' ' <<EOF
 bash-completion
 binutils
 coinor-libipopt-dev
+diffstat
 doxygen
 g++
 g++-5
