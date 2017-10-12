@@ -216,10 +216,10 @@ TEST_F(RgbdRendererTest, HorizonTest) {
     for (int v = 0; v < kHeight; ++v) {
       // Looking for the boundary between the sky and the ground.
       if ((static_cast<uint8_t>(kTerrain.r == color_.at(0, v)[0])) &&
-	  (static_cast<uint8_t>(kTerrain.g == color_.at(0, v)[1])) &&
-	  (static_cast<uint8_t>(kTerrain.b == color_.at(0, v)[2]))) {
-	actual_horizon = v;
-	break;
+          (static_cast<uint8_t>(kTerrain.g == color_.at(0, v)[1])) &&
+          (static_cast<uint8_t>(kTerrain.b == color_.at(0, v)[2]))) {
+        actual_horizon = v;
+        break;
       }
     }
 
