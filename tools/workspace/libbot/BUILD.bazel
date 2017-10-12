@@ -1,0 +1,6 @@
+# -*- python -*-
+
+exports_files(
+    ["libbot.cps"],
+    visibility = ["@libbot//:__pkg__"],
+)

@@ -7,8 +7,8 @@
 
 #include <Eigen/Cholesky>
 
+#include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
-#include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/constraint/constraint_problem_data.h"
 #include "drake/multibody/kinematics_cache.h"
@@ -234,7 +234,7 @@ void TimeSteppingRigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
 
   // Solve the rigid impact problem.
   VectorX<T> vnew, cf;
-  constraint_solver_.SolveImpactProblem(cfm_, data, &cf);
+  constraint_solver_.SolveImpactProblem(data, &cf);
   constraint_solver_.ComputeGeneralizedVelocityChange(data, cf, &vnew);
   vnew += data.v;
 

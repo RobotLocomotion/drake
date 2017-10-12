@@ -10,6 +10,7 @@ target_link_libraries(drakeMultibodyParsers
     drakeRBM
     Eigen3::Eigen
     spruce
+    tinydir
     tinyxml2)
 drake_install_libraries(drakeMultibodyParsers)
 drake_install_headers(
@@ -19,7 +20,3 @@ drake_install_headers(
     sdf_parser.h
     urdf_parser.h
     xml_util.h)
-
-if(BUILD_TESTING)
-  add_subdirectory(test)
-endif()

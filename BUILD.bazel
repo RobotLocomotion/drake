@@ -6,7 +6,7 @@
 
 load("//tools:check_licenses.bzl", "check_licenses")
 load("@drake//tools:install.bzl", "install", "install_files")
-load("//tools:lint.bzl", "add_lint_tests")
+load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -51,6 +51,8 @@ DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "pybind11",
     "sdformat",
     "spdlog",
+    "spruce",
+    "tinydir",
     "tinyobjloader",
     "vtk",
     "yaml_cpp",
@@ -66,7 +68,7 @@ install(
     docs = ["LICENSE.TXT"],
     deps = [
         "//drake:install",
-        "//drake/automotive:install_data",
+        "//drake/automotive/models:install_data",
         "//drake/bindings:install",
         "//drake/common:install",
         "//drake/examples:install",

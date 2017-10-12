@@ -37,7 +37,8 @@ LcmSubscriberSystem::LcmSubscriberSystem(
     drake::lcm::DrakeLcmInterface* lcm)
     : channel_(channel),
       translator_(translator),
-      serializer_(std::move(serializer)) {
+      serializer_(std::move(serializer)),
+      lcm_interface_(lcm) {
   DRAKE_DEMAND((translator_ != nullptr) != (serializer_ != nullptr));
   DRAKE_DEMAND(lcm);
 
@@ -144,11 +145,15 @@ int LcmSubscriberSystem::GetMessageCount(const Context<double>& context) const {
 void LcmSubscriberSystem::DoCalcNextUpdateTime(
     const Context<double>& context,
     systems::CompositeEventCollection<double>* events, double* time) const {
-  int last_message_count = GetMessageCount(context);
+  const int last_message_count = GetMessageCount(context);
 
-  std::unique_lock<std::mutex> lock(received_message_mutex_);
+  const int received_message_count = [this]() {
+    std::unique_lock<std::mutex> lock(received_message_mutex_);
+    return received_message_count_;
+  }();
+
   // Has a new message. Schedule an update event.
-  if (last_message_count != received_message_count_) {
+  if (last_message_count != received_message_count) {
     // TODO(siyuan): should be context.get_time() once #5725 is resolved.
     *time = context.get_time() + 0.0001;
     if (translator_ == nullptr) {
@@ -165,8 +170,38 @@ void LcmSubscriberSystem::DoCalcNextUpdateTime(
               Event<double>::TriggerType::kTimed));
     }
   } else {
-    // Use base class' implementation.
-    LeafSystem<double>::DoCalcNextUpdateTime(context, events, time);
+    // Special code to support LCM log playback. For the normal and mock LCM
+    // interfaces, this always returns inf and returns.
+    *time = lcm_interface_->GetNextMessageTime();
+    DRAKE_DEMAND(*time > context.get_time());
+    if (std::isinf(*time)) {
+      return;
+    }
+
+    // Schedule a publish event at the next message time. We use a publish
+    // event here because we only want to generate a side effect to dispatch
+    // the message properly to all the subscribers, not mutating this system's
+    // context.)
+    // Note that for every LCM subscriber in the diagram, they will all schedule
+    // this event for themselves. However, only the first subscriber executing
+    // the callback will advance the log and do the message dispatch. This is
+    // because once the first callback is executed, the front of the log will
+    // have a different timestamp than the context's time (scheduled callback
+    // time).
+    EventCollection<PublishEvent<double>>& pub_events =
+        events->get_mutable_publish_events();
+
+    PublishEvent<double>::PublishCallback callback = [this](
+        const Context<double>& c, const PublishEvent<double>&) {
+      // Want to keep polling from the message queue, if they happen
+      // to be occur at the exact same time.
+      while (lcm_interface_->GetNextMessageTime() == c.get_time()) {
+        lcm_interface_->DispatchMessageAndAdvanceLog(c.get_time());
+      }
+    };
+
+    pub_events.add_event(std::make_unique<systems::PublishEvent<double>>(
+        Event<double>::TriggerType::kTimed, callback));
   }
 }
 
@@ -209,7 +244,6 @@ std::string LcmSubscriberSystem::make_name(const std::string& channel) {
 const std::string& LcmSubscriberSystem::get_channel_name() const {
   return channel_;
 }
-
 
 // This is only called if our output port is vector-valued, because we are
 // using a translator.

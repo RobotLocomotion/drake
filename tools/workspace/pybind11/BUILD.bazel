@@ -1,0 +1,6 @@
+# -*- python -*-
+
+exports_files(
+    ["pybind11-create-cps.py"],
+    visibility = ["@pybind11//:__pkg__"],
+)

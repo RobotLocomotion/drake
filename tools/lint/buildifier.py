@@ -15,7 +15,7 @@ from tools.lint.find_data import find_data
 from tools.lint.util import find_all_sources
 
 # These match data=[] in our BUILD.bazel file.
-_BUILDIFIER = "external/com_github_bazelbuild_buildtools/buildifier/buildifier"
+_BUILDIFIER = "external/buildifier/buildifier"
 _TABLES = "tools/lint/buildifier-tables.json"
 
 
@@ -113,8 +113,8 @@ def main():
     # In fix mode, disallow running from within the Bazel sandbox.
     if "-mode=diff" not in argv and "--mode=diff" not in argv:
         if os.getcwd().endswith(".runfiles/drake"):
-            print("ERROR: do not use 'bazel run' for builfidier")
-            print("ERROR: use bazel-bin/tools/lint/builfidier instead")
+            print("ERROR: do not use 'bazel run' for buildifier")
+            print("ERROR: use bazel-bin/tools/lint/buildifier instead")
             return 1
 
     # In fix or diff mode, just let buildifier do its thing.

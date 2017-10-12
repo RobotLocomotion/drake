@@ -146,18 +146,18 @@ void IiwaStatusReceiver::DoCalcDiscreteVariableUpdates(
     DRAKE_DEMAND(status.num_joints == num_joints_);
 
     VectorX<double> measured_position(num_joints_);
+    VectorX<double> estimated_velocity(num_joints_);
     VectorX<double> commanded_position(num_joints_);
     for (int i = 0; i < status.num_joints; ++i) {
       measured_position(i) = status.joint_position_measured[i];
+      estimated_velocity(i) = status.joint_velocity_estimated[i];
       commanded_position(i) = status.joint_position_commanded[i];
     }
 
     BasicVector<double>* state = discrete_state->get_mutable_vector(0);
     auto state_value = state->get_mutable_value();
-    state_value.segment(num_joints_, num_joints_) =
-        (measured_position - state_value.head(num_joints_)) /
-        kIiwaLcmStatusPeriod;
     state_value.head(num_joints_) = measured_position;
+    state_value.segment(num_joints_, num_joints_) = estimated_velocity;
     state_value.tail(num_joints_) = commanded_position;
   }
 }
@@ -192,6 +192,7 @@ lcmt_iiwa_status IiwaStatusSender::MakeOutputStatus() const {
   lcmt_iiwa_status msg{};
   msg.num_joints = num_joints_;
   msg.joint_position_measured.resize(msg.num_joints, 0);
+  msg.joint_velocity_estimated.resize(msg.num_joints, 0);
   msg.joint_position_commanded.resize(msg.num_joints, 0);
   msg.joint_position_ipo.resize(msg.num_joints, 0);
   msg.joint_torque_measured.resize(msg.num_joints, 0);
@@ -211,6 +212,7 @@ void IiwaStatusSender::OutputStatus(
       this->EvalVectorInput(context, 1);
   for (int i = 0; i < num_joints_; ++i) {
     status.joint_position_measured[i] = state->GetAtIndex(i);
+    status.joint_velocity_estimated[i] = state->GetAtIndex(i + num_joints_);
     status.joint_position_commanded[i] = command->GetAtIndex(i);
   }
 }

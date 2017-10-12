@@ -4,7 +4,7 @@
  **/
 
 #include <gflags/gflags.h>
-#include "spruce.hh"
+#include <spruce.hh>
 
 #include "drake/automotive/maliput/dragway/road_geometry.h"
 #include "drake/automotive/maliput/utility/generate_urdf.h"

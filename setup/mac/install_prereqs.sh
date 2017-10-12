@@ -41,6 +41,7 @@ pkg-config
 python
 scipy
 tinyxml
+tinyxml2
 vtk@8.0
 EOF
 )

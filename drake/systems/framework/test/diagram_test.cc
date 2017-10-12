@@ -1966,6 +1966,94 @@ GTEST_TEST(DiagramParametersTest, ParameterTest) {
   EXPECT_EQ(params2->damping(), original_damping);
 }
 
+// Note: this class is duplicated from leaf_system_test.
+class RandomContextTestSystem : public LeafSystem<double> {
+ public:
+  RandomContextTestSystem() {
+    this->DeclareContinuousState(
+        BasicVector<double>(Eigen::Vector2d(-1.0, -2.0)));
+    this->DeclareNumericParameter(
+        BasicVector<double>(Eigen::Vector3d(1.0, 2.0, 3.0)));
+  }
+
+  void SetRandomState(const Context<double>& context, State<double>* state,
+                      RandomGenerator* generator) const override {
+    std::normal_distribution<double> normal;
+    for (int i = 0; i < context.get_continuous_state_vector().size(); i++) {
+      state->get_mutable_continuous_state()->get_mutable_vector()->SetAtIndex(
+          i, normal(*generator));
+    }
+  }
+  void SetRandomParameters(const Context<double>& context,
+                           Parameters<double>* params,
+                           RandomGenerator* generator) const override {
+    std::uniform_real_distribution<double> uniform;
+    for (int i = 0; i < context.get_numeric_parameter(0)->size(); i++) {
+      params->get_mutable_numeric_parameter(0)->SetAtIndex(i,
+                                                           uniform(*generator));
+    }
+  }
+};
+
+GTEST_TEST(RandomContextTest, SetRandomTest) {
+  DiagramBuilder<double> builder;
+
+  builder.AddSystem<RandomContextTestSystem>();
+  builder.AddSystem<RandomContextTestSystem>();
+
+  const auto diagram = builder.Build();
+
+  auto context = diagram->CreateDefaultContext();
+
+  // Back-up the numeric context values.
+  Eigen::Vector4d state = context->get_continuous_state_vector().CopyToVector();
+  Eigen::Vector3d params0 = context->get_numeric_parameter(0)->CopyToVector();
+  Eigen::Vector3d params1 = context->get_numeric_parameter(1)->CopyToVector();
+
+  // Should return the (same) original values.
+  diagram->SetDefaultContext(context.get());
+  EXPECT_TRUE((state.array() ==
+               context->get_continuous_state_vector().CopyToVector().array())
+                  .all());
+  EXPECT_TRUE((params0.array() ==
+               context->get_numeric_parameter(0)->get_value().array())
+                  .all());
+  EXPECT_TRUE((params1.array() ==
+               context->get_numeric_parameter(1)->get_value().array())
+                  .all());
+
+  RandomGenerator generator;
+
+  // Should return different values.
+  diagram->SetRandomContext(context.get(), &generator);
+  EXPECT_TRUE((state.array() !=
+               context->get_continuous_state_vector().CopyToVector().array())
+                  .all());
+  EXPECT_TRUE((params0.array() !=
+               context->get_numeric_parameter(0)->get_value().array())
+                  .all());
+  EXPECT_TRUE((params1.array() !=
+               context->get_numeric_parameter(1)->get_value().array())
+                  .all());
+
+  // Update backup.
+  state = context->get_continuous_state_vector().CopyToVector();
+  params0 = context->get_numeric_parameter(0)->CopyToVector();
+  params1 = context->get_numeric_parameter(1)->CopyToVector();
+
+  // Should return different values (again).
+  diagram->SetRandomContext(context.get(), &generator);
+  EXPECT_TRUE((state.array() !=
+               context->get_continuous_state_vector().CopyToVector().array())
+                  .all());
+  EXPECT_TRUE((params0.array() !=
+               context->get_numeric_parameter(0)->get_value().array())
+                  .all());
+  EXPECT_TRUE((params1.array() !=
+               context->get_numeric_parameter(1)->get_value().array())
+                  .all());
+}
+
 // TODO(siyuan) add direct tests for EventCollection
 
 }  // namespace

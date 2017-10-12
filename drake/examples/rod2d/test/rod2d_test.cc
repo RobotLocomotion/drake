@@ -207,7 +207,7 @@ class Rod2DDAETest : public ::testing::Test {
     ConstraintVelProblemData<double> data(3 /* ngc */);
     CalcRigidImpactVelProblemData(&data);
     VectorX<double> cf;
-    contact_solver_.SolveImpactProblem(dut_->get_cfm(), data, &cf);
+    contact_solver_.SolveImpactProblem(data, &cf);
 
     // Get the update to the generalized velocity.
     VectorX<double> delta_v;

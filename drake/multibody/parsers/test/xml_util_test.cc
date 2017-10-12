@@ -6,8 +6,7 @@
 #include <vector>
 
 #include <gtest/gtest.h>
-
-#include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
+#include <tinyxml2.h>
 
 using Eigen::Vector3d;
 using tinyxml2::XMLDocument;

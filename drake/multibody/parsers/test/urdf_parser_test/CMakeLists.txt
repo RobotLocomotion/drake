@@ -1,2 +1,0 @@
-drake_add_cc_test(urdf_parser_test)
-target_link_libraries(urdf_parser_test drakeMultibodyParsers)

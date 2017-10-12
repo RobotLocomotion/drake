@@ -50,19 +50,19 @@ def _platform_copts(rule_copts, rule_gcc_copts, cc_test = 0):
     if cc_test:
         extra_gcc_flags = GCC_CC_TEST_FLAGS
     return select({
-        "//tools:gcc4.9-linux":
+        "//tools/cc_toolchain:gcc4.9-linux":
             GCC_FLAGS + extra_gcc_flags + rule_copts + rule_gcc_copts,
-        "//tools:gcc5-linux":
+        "//tools/cc_toolchain:gcc5-linux":
             GCC_FLAGS + extra_gcc_flags + rule_copts + rule_gcc_copts,
-        "//tools:clang3.9-linux": CLANG_FLAGS + rule_copts,
-        "//tools:apple": CLANG_FLAGS + rule_copts,
+        "//tools/cc_toolchain:clang3.9-linux": CLANG_FLAGS + rule_copts,
+        "//tools/cc_toolchain:apple": CLANG_FLAGS + rule_copts,
         "//conditions:default": rule_copts,
     })
 
 def _dsym_command(name):
     """Returns the command to produce .dSYM on OS X, or a no-op on Linux."""
     return select({
-        "//tools:apple_debug":
+        "//tools/cc_toolchain:apple_debug":
             "dsymutil -f $(location :" + name + ") -o $@ 2> /dev/null",
         "//conditions:default": "touch $@",
     })
@@ -244,7 +244,10 @@ def drake_cc_test(
     if disable_in_compilation_mode_dbg:
         # Remove the test declarations from the test in debug mode.
         # TODO(david-german-tri): Actually suppress the test rule.
-        srcs = select({"//tools:debug": [], "//conditions:default": srcs})
+        srcs = select({
+            "//tools/cc_toolchain:debug": [],
+            "//conditions:default": srcs,
+        })
     native.cc_test(
         name = name,
         size = size,
@@ -290,25 +293,3 @@ def drake_cc_googletest(
         name = name,
         deps = deps,
         **kwargs)
-
-# Generate a file with specified content
-def _generate_file_impl(ctx):
-    ctx.file_action(output = ctx.outputs.out, content = ctx.attr.content)
-
-drake_generate_file = rule(
-    attrs = {
-        "content": attr.string(),
-        "out": attr.output(mandatory = True),
-    },
-    output_to_genfiles = True,
-    implementation = _generate_file_impl,
-)
-
-"""Generate a file with specified content.
-
-This creates a rule to generate a file with specified content (which is either
-static or has been previously computed).
-
-Args:
-    content (:obj:`str`): Desired content of the generated file.
-"""
