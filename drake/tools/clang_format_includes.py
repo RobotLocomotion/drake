@@ -40,7 +40,6 @@ def main():
             for dirpath, _, filenames in os.walk(pathname)
             for filename in filenames
             if os.path.splitext(filename)[1][1:] in extensions and
-            "/thirdParty/" not in dirpath and
             "/third_party/" not in dirpath and
             "/matlab/" not in dirpath
         ]

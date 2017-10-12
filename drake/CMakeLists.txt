@@ -51,7 +51,14 @@ target_include_directories(spruce
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../third_party/josephdavisco_spruce>)
 drake_install_libraries(spruce)
 
-add_subdirectory(thirdParty/boost/tcbrindle_cpp17_headers/stx)
+# stx (via third_party)
+add_library(stx ../third_party/com_github_tcbrindle_cpp17_headers/stx/optional.hpp)
+target_include_directories(stx PUBLIC ../third_party/com_github_tcbrindle_cpp17_headers)
+set_target_properties(stx PROPERTIES LINKER_LANGUAGE CXX)
+drake_install_libraries(stx)
+install(FILES ../third_party/com_github_tcbrindle_cpp17_headers/stx/optional.hpp
+  DESTINATION "${DRAKE_INSTALL_INCLUDE_DIR}/stx/stx/optional.hpp")
+
 add_subdirectory(common)
 add_subdirectory(math)
 add_subdirectory(multibody)
