@@ -154,7 +154,7 @@ graphically, the parent process is `launchd` (PID 1), which provides its own
 standard environment variables to the child process.  In particular, it provides
 a minimal ``PATH`` that does not include ``/usr/local/bin``, where most Homebrew
 executables are installed.  Consequently, the Bazel build will fail to find
-Homebrew dependencies like ``glib``, ``pkg-config``, and ``gfortran``.
+Homebrew dependencies like ``glib`` and ``pkg-config``.
 
 The simplest solution is not to launch CLion graphically. Instead, configure
 your shell environment properly in ``.bashrc``, and launch CLion from the
