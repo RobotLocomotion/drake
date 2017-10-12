@@ -3,6 +3,11 @@
 
 load("//tools/workspace/gurobi:gurobi.bzl", "gurobi_test_tags")
 load("@drake//tools:install.bzl", "install")
+load(
+    "//tools:drake.bzl",
+    "drake_py_library",
+    "drake_py_test",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/workspace/mosek:mosek.bzl", "mosek_test_tags")
 load(":pybind.bzl", "drake_pybind_cc_binary")
@@ -103,7 +108,7 @@ PYDRAKE_SO_DATA = [
     ":python/pydrake/solvers/mosek.so",
 ]
 
-py_library(
+drake_py_library(
     name = "pydrake",
     srcs = [
         "python/pydrake/__init__.py",
@@ -134,7 +139,7 @@ install(
     deps = ["//drake:install"],
 )
 
-py_test(
+drake_py_test(
     name = "pydrake_atlas_constructor_test",
     size = "small",
     srcs = ["python/pydrake/test/testAtlasConstructor.py"],
@@ -143,7 +148,7 @@ py_test(
     deps = [":pydrake"],
 )
 
-py_test(
+drake_py_test(
     name = "pydrake_common_test",
     size = "small",
     srcs = ["python/pydrake/test/testCommon.py"],
@@ -152,7 +157,7 @@ py_test(
     deps = [":pydrake"],
 )
 
-py_test(
+drake_py_test(
     name = "pydrake_forward_diff_test",
     size = "small",
     srcs = ["python/pydrake/test/testForwardDiff.py"],
@@ -160,7 +165,7 @@ py_test(
     deps = [":pydrake"],
 )
 
-py_test(
+drake_py_test(
     name = "pydrake_mathematical_program_gurobi_solver_test",
     size = "small",
     srcs = ["python/pydrake/test/testGurobiSolver.py"],
@@ -169,7 +174,7 @@ py_test(
     deps = [":pydrake"],
 )
 
-py_test(
+drake_py_test(
     name = "pydrake_mathematical_program_ipopt_solver_test",
     size = "small",
     srcs = ["python/pydrake/test/test_ipopt_solver.py"],
@@ -181,7 +186,7 @@ py_test(
     deps = [":pydrake"],
 )
 
-py_test(
+drake_py_test(
     name = "pydrake_mathematical_program_mosek_solver_test",
     size = "small",
     srcs = ["python/pydrake/test/testMosekSolver.py"],
@@ -190,7 +195,7 @@ py_test(
     deps = [":pydrake"],
 )
 
-py_test(
+drake_py_test(
     name = "pydrake_mathematical_program_test",
     size = "small",
     srcs = ["python/pydrake/test/testMathematicalProgram.py"],
@@ -199,7 +204,7 @@ py_test(
     deps = [":pydrake"],
 )
 
-py_test(
+drake_py_test(
     name = "pydrake_pr2ik_test",
     size = "small",
     srcs = ["python/pydrake/test/testPR2IK.py"],
@@ -209,7 +214,7 @@ py_test(
     deps = [":pydrake"],
 )
 
-py_test(
+drake_py_test(
     name = "pydrake_rbm_forward_kin_test",
     size = "small",
     srcs = ["python/pydrake/test/testRBTTransformPoints.py"],
@@ -218,7 +223,7 @@ py_test(
     deps = [":pydrake"],
 )
 
-py_test(
+drake_py_test(
     name = "pydrake_rbt_com_test",
     size = "small",
     srcs = ["python/pydrake/test/testRBTCoM.py"],
@@ -227,7 +232,7 @@ py_test(
     deps = [":pydrake"],
 )
 
-py_test(
+drake_py_test(
     name = "pydrake_rbtik_test",
     size = "small",
     srcs = ["python/pydrake/test/testRBTIK.py"],
@@ -237,7 +242,7 @@ py_test(
     deps = [":pydrake"],
 )
 
-py_test(
+drake_py_test(
     name = "pydrake_symbolic_variables_test",
     size = "small",
     srcs = ["python/pydrake/test/testSymbolic.py"],
@@ -245,7 +250,7 @@ py_test(
     deps = [":pydrake"],
 )
 
-py_test(
+drake_py_test(
     name = "pydrake_urdf_parser_test",
     size = "small",
     srcs = ["python/pydrake/test/test_urdf_parser.py"],

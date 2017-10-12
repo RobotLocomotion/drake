@@ -6,6 +6,8 @@ load(
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
+    "drake_py_binary",
+    "drake_py_test",
 )
 load("@drake//tools:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
@@ -339,7 +341,7 @@ drake_cc_binary(
 
 # This should probably move to the test_utilities package, but developers
 # expect to find it here, so we'll leave it alone for now.
-py_binary(
+drake_py_binary(
     name = "cpplint_wrapper",
     testonly = 1,
     srcs = ["test/cpplint_wrapper.py"],
@@ -803,14 +805,14 @@ drake_cc_googletest(
 
 # Run test/drake_cc_googletest_main_test.py, a unit test written in Python that
 # covers the test/drake_cc_googletest_main.cc software.
-py_test(
+drake_py_test(
     name = "drake_cc_googletest_main_test_py",
     srcs = ["test/drake_cc_googletest_main_test.py"],
     data = [":drake_cc_googletest_main_test"],
     main = "test/drake_cc_googletest_main_test.py",
 )
 
-py_test(
+drake_py_test(
     name = "cpplint_wrapper_test",
     srcs = ["test/cpplint_wrapper_test.py"],
     data = [
@@ -820,7 +822,7 @@ py_test(
     ],
 )
 
-py_test(
+drake_py_test(
     name = "resource_tool_test",
     srcs = ["test/resource_tool_test.py"],
     data = [
@@ -830,7 +832,7 @@ py_test(
     ],
 )
 
-py_test(
+drake_py_test(
     name = "resource_tool_installed_test",
     srcs = ["test/resource_tool_installed_test.py"],
     data = [
