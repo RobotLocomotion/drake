@@ -60,6 +60,10 @@
       "Hints": ["@prefix@/lib/cmake/spdlog"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
+    "stx": {
+      "Hints": ["@prefix@/lib/cmake/stx"],
+      "X-CMake-Find-Args": ["CONFIG"]
+    },
     "tinyobjloader": {
       "Version": "1.0.4",
       "Hints": ["@prefix@/lib/cmake/tinyobjloader"],

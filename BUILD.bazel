@@ -52,6 +52,7 @@ DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "sdformat",
     "spdlog",
     "spruce",
+    "stx",
     "tinydir",
     "tinyobjloader",
     "vtk",
