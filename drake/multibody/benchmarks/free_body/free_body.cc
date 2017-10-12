@@ -16,8 +16,8 @@ using Eigen::VectorXd;
 using Eigen::Quaterniond;
 
 std::tuple<Quaterniond, Vector3d, Vector3d>
-FreeBody::
-CalculateExactRotationalSolutionABInitiallyAligned(const double t) const {
+FreeBody::CalculateExactRotationalSolutionABInitiallyAligned(
+    const double t) const {
   // Constant values of moments of inertia.
   const double I = get_I();
   const double J = get_J();
@@ -29,7 +29,8 @@ CalculateExactRotationalSolutionABInitiallyAligned(const double t) const {
   const double wz0 = w_NB_B_initial[2];
 
   // Intermediate calculations for quaternion solution.
-  const double p = std::sqrt(wx0*wx0 + wy0*wy0 + (wz0 * J / I) * (wz0 * J / I));
+  const double p =
+      std::sqrt(wx0 * wx0 + wy0 * wy0 + (wz0 * J / I) * (wz0 * J / I));
   const double s = (I - J) / I * wz0;
   const double coef = wz0 * (J / (I * p));
   const double spt2 = std::sin(p * t / 2);
@@ -45,31 +46,22 @@ CalculateExactRotationalSolutionABInitiallyAligned(const double t) const {
   // which allows for direct calculation of the R_AB rotation matrix.
   const double eAB1 = spt2 / p * (wx0 * cst2 + wy0 * sst2);
   const double eAB2 = spt2 / p * (-wx0 * sst2 + wy0 * cst2);
-  const double eAB3 =  coef * spt2 * cst2 + cpt2 * sst2;
+  const double eAB3 = coef * spt2 * cst2 + cpt2 * sst2;
   const double eAB0 = -coef * spt2 * sst2 + cpt2 * cst2;
   const Quaterniond quat_AB(eAB0, eAB1, eAB2, eAB3);
 
   // Analytical solution for wx(t), wy(t), wz(t).
-  const double wx =  wx0 * std::cos(s * t) + wy0 * std::sin(s * t);
+  const double wx = wx0 * std::cos(s * t) + wy0 * std::sin(s * t);
   const double wy = -wx0 * std::sin(s * t) + wy0 * std::cos(s * t);
-  const double wz =  wz0;
+  const double wz = wz0;
 
   // Analytical solution for time-derivatives of wx, wy, wz.
-  const double wxDt =  (1 - J / I) * wy * wz;
+  const double wxDt = (1 - J / I) * wy * wz;
   const double wyDt = (-1 + J / I) * wx * wz;
   const double wzDt = 0.0;
 
-  // Create a tuple to package for returning.
-  std::tuple<Quaterniond, Vector3d, Vector3d> returned_tuple;
-  std::get<0>(returned_tuple) = quat_AB;
-  Vector3d& w_NB_B   = std::get<1>(returned_tuple);
-  Vector3d& wDt_NB_B = std::get<2>(returned_tuple);
-
-  // Fill returned_tuple with rotation results.
-  w_NB_B   << wx, wy, wz;
-  wDt_NB_B << wxDt, wyDt, wzDt;
-
-  return returned_tuple;
+  return std::make_tuple(
+      quat_AB, Vector3d(wx, wy, wz), Vector3d(wxDt, wyDt, wzDt));
 }
 
 std::tuple<Quaterniond, Vector4d, Vector3d, Vector3d>
@@ -93,7 +85,8 @@ FreeBody::CalculateExactRotationalSolutionNB(const double t) const {
 
   // Analytical solution for time-derivative quaternion in B.
   const Vector4d quatDt =
-    math::CalculateQuaternionDtFromAngularVelocityExpressedInB(quat_NB, w_NB_B);
+      math::CalculateQuaternionDtFromAngularVelocityExpressedInB(quat_NB,
+                                                                 w_NB_B);
 
   // Create a tuple to package for returning.
   std::tuple<Quaterniond, Vector4d, Vector3d, Vector3d> returned_tuple;
@@ -110,7 +103,7 @@ FreeBody::CalculateExactTranslationalSolution(const double t) const {
   // Initial values of x, y, z and ẋ, ẏ, ż.
   const Vector3d& xyz_initial = get_p_NoBcm_N_initial();
   const Vector3d& xyzDt_initial =
-                  GetInitialVelocityOfBcmInWorldExpressedInWorld();
+      GetInitialVelocityOfBcmInWorldExpressedInWorld();
   const double x0 = xyz_initial[0];
   const double y0 = xyz_initial[1];
   const double z0 = xyz_initial[2];
@@ -130,19 +123,19 @@ FreeBody::CalculateExactTranslationalSolution(const double t) const {
   const double zDt = zDt0 + z_acceleration * t;
 
   // Analytical solution for x, y, z (since acceleration is constant).
-  const double x = x0 + xDt0*t + 0.5 * x_acceleration * t * t;
-  const double y = y0 + yDt0*t + 0.5 * y_acceleration * t * t;
-  const double z = z0 + zDt0*t + 0.5 * z_acceleration * t * t;
+  const double x = x0 + xDt0 * t + 0.5 * x_acceleration * t * t;
+  const double y = y0 + yDt0 * t + 0.5 * y_acceleration * t * t;
+  const double z = z0 + zDt0 * t + 0.5 * z_acceleration * t * t;
 
   // Create a tuple to package for returning.
   std::tuple<Vector3d, Vector3d, Vector3d> returned_tuple;
-  Vector3d& xyz    = std::get<0>(returned_tuple);
-  Vector3d& xyzDt  = std::get<1>(returned_tuple);
+  Vector3d& xyz = std::get<0>(returned_tuple);
+  Vector3d& xyzDt = std::get<1>(returned_tuple);
   Vector3d& xyzDDt = std::get<2>(returned_tuple);
 
   // Fill returned_tuple with results.
-  xyz    << x, y, z;
-  xyzDt  << xDt, yDt, zDt;
+  xyz << x, y, z;
+  xyzDt << xDt, yDt, zDt;
   xyzDDt << x_acceleration, y_acceleration, z_acceleration;
 
   return returned_tuple;

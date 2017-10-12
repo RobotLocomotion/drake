@@ -47,7 +47,7 @@ class FreeBody {
         v_NBcm_B_initial_(v_NBcm_B_initial),
         uniform_gravity_expressed_in_world_(gravity_N) {}
 
-  ~FreeBody() {}
+  ~FreeBody() = default;
 
   /// Returns the body's moment of inertia about an axis perpendicular to its
   /// axis of rotation and passing through its center of mass.
@@ -98,9 +98,9 @@ class FreeBody {
 
   /// Calculates exact solutions for quaternion and angular velocity expressed
   /// in body-frame, and their time derivatives for torque-free rotational
-  /// motion of axis-symmetric rigid body B (uniform cylinder) in Newtonian
-  /// frame (World) N, where torque-free means the moment of forces about B's
-  /// mass center is zero. The quaternion characterizes the orientiation between
+  /// motion of axis-symmetric rigid body B in Newtonian frame (World) N,
+  /// where torque-free means the moment of forces about B's mass center is
+  /// zero. The quaternion characterizes the orientation between
   /// right-handed orthogonal unit vectors Nx, Ny, Nz fixed in N and
   /// right-handed orthogonal unit vectors Bx, By, Bz fixed in B, where Bz is
   /// parallel to B's symmetry axis.
@@ -145,13 +145,13 @@ class FreeBody {
       const double t) const;
 
  private:
-  // This "helper" method calculates quat_AB, w_NB_B, and alpha_NB_B at time t.
+  // This "helper" method calculates quat_NB, w_NB_B, and alpha_NB_B at time t.
   // More precisely, this method calculates exact solutions for quaternion,
   // angular velocity, and angular acceleration expressed in body-frame, for
-  // torque-free rotational motion of an axis-symmetric rigid body B (uniform
-  // cylinder) in Newtonian frame (World) A, where torque-free means the moment
-  // of forces about B's mass center is zero.
-  // Right-handed orthogonal unit vectors Ax, Ay, Az fixed in A are initially
+  // torque-free rotational motion of an axis-symmetric rigid body B in
+  // Newtonian frame (World) N, where torque-free means the moment of forces
+  // about B's mass center is zero.
+  // Right-handed orthogonal unit vectors Nx, Ny, Nz fixed in N are initially
   // equal to right-handed orthogonal unit vectors Bx, By, Bz fixed in B,
   // where Bz is parallel to B's symmetry axis.
   // Note: The function CalculateExactRotationalSolutionNB() is a more general
@@ -162,10 +162,10 @@ class FreeBody {
   //
   // std::tuple | Description
   // -----------|-------------------------------------------------
-  // quat_AB    | Quaternion relating Ax, Ay, Az to Bx, By, Bz.
-  //            | Note: quat_AB is analogous to the rotation matrix R_AB.
+  // quat_NB    | Quaternion relating Nx, Ny, Nz to Bx, By, Bz.
+  //            | Note: quat_NB is analogous to the rotation matrix R_NB.
   // w_NB_B     | B's angular velocity in N, expressed in B, e.g., [wx, wy, wz].
-  // wDt_NB_B   | B's angular acceleration in N, expressed in B, [ẇx, ẇy, ẇz].
+  // alpha_NB_B | B's angular acceleration in N, expressed in B, [ẇx, ẇy, ẇz].
   //
   // - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York, 1983.
   //   (with P. W. Likins and D. A. Levinson).  Available for free .pdf
@@ -175,7 +175,7 @@ class FreeBody {
 
   // quat_NB_initial_ is the initial (t=0) value of the quaternion that relates
   // unit vectors Nx, Ny, Nz fixed in World N (e.g., Nz vertically upward) to
-  // unit vectors Bx, By, Bz fixed in cylinder B (Bz parallel to symmetry axis)
+  // unit vectors Bx, By, Bz fixed in body B (Bz parallel to symmetry axis)
   // Note: The quaternion should already be normalized before it is set.
   // Note: quat_NB_initial is analogous to the initial rotation matrix R_NB.
   Quaterniond quat_NB_initial_;
