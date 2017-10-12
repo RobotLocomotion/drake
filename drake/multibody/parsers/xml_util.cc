@@ -5,9 +5,10 @@
 #include <stdexcept>
 #include <string>
 
+#include <tinydir.h>
+
 #include "drake/common/drake_assert.h"
 #include "drake/math/roll_pitch_yaw.h"
-#include "drake/thirdParty/bsd/tinydir/tinydir.h"
 
 using std::string;
 using std::stringstream;

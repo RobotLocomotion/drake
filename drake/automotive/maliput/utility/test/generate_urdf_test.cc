@@ -4,7 +4,7 @@
 #include <fstream>
 
 #include <gtest/gtest.h>
-#include "spruce.hh"
+#include <spruce.hh>
 
 #include "drake/automotive/maliput/monolane/builder.h"
 #include "drake/automotive/maliput/monolane/loader.h"

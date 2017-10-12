@@ -6,7 +6,7 @@ macro(drake_find_packages)
     COMPONENTS MAIN_PROGRAM MEX_COMPILER MX_LIBRARY)
   find_package(Python 2.7 MODULE REQUIRED)
 
-  find_package(Doxygen MODULE)
+  find_package(Doxygen MODULE REQUIRED)
   find_package(Threads MODULE REQUIRED)
 
   find_package(Eigen3 CONFIG REQUIRED)

@@ -62,8 +62,6 @@ endfunction()
 # Set up basic platform properties for building Drake.
 #------------------------------------------------------------------------------
 macro(drake_setup_platform)
-  include(GNUInstallDirs)
-
   # Disable finding out-of-tree packages in the registry.
   # This doesn't exactly make find_package hermetic, but it's a useful step
   # in that direction.
@@ -76,14 +74,10 @@ macro(drake_setup_platform)
   # Ensure that find_package() searches in the install directory first.
   list(APPEND CMAKE_PREFIX_PATH "${CMAKE_INSTALL_PREFIX}")
 
-  # Set RPATH for installed binaries
+  # Set RPATH for installed binaries.
   set(CMAKE_MACOSX_RPATH ON)
-  set(CMAKE_INSTALL_RPATH
-    ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}
-    ${CMAKE_INSTALL_PREFIX}/lib)
+  set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
   set(CMAKE_INSTALL_RPATH_USE_LINK_PATH ON)
-
-  list(REMOVE_DUPLICATES CMAKE_INSTALL_RPATH)
 
   drake_setup_compiler()
 
@@ -102,7 +96,7 @@ endmacro()
 # Set up properties for the Drake superbuild.
 #------------------------------------------------------------------------------
 macro(drake_setup_superbuild)
-  # Set default install prefix
+  # Set default install prefix.
   if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE STRING
       "Prefix for installation of sub-packages (note: required during build!)"
