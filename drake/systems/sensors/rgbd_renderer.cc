@@ -157,8 +157,8 @@ RgbdRenderer::RgbdRenderer(const Eigen::Isometry3d& X_WC,
   }
 }
 
-void RgbdRenderer::RegisterVisual(
-    const DrakeShapes::VisualElement& visual, int body_id) {
+optional<RgbdRenderer::VisualIndex> RgbdRenderer::RegisterVisual(
+    const DrakeShapes::VisualElement& visual, BodyIndex body_id) {
   // Initializes containers in id_object_maps_ if it's not done.
   for (auto& id_object_map : id_object_maps_) {
     const auto it = id_object_map.find(body_id);
@@ -284,7 +284,12 @@ void RgbdRenderer::RegisterVisual(
       id_object_maps_[i][body_id].push_back(
           vtkSmartPointer<vtkActor>(actors[i].GetPointer()));
     }
+
+    return optional<VisualIndex>(VisualIndex(
+        static_cast<int>(id_object_maps_[0][body_id].size() - 1)));
   }
+
+  return nullopt;
 }
 
 void RgbdRenderer::AddFlatTerrain() {
@@ -316,8 +321,9 @@ void RgbdRenderer::UpdateViewpoint(const Eigen::Isometry3d& X_WR) const {
   }
 }
 
-void RgbdRenderer::UpdateVisualPose(
-    const Eigen::Isometry3d& X_WV, int body_id, int visual_id) const {
+void RgbdRenderer::UpdateVisualPose(const Eigen::Isometry3d& X_WV,
+                                    BodyIndex body_id,
+                                    VisualIndex visual_id) const {
   vtkSmartPointer<vtkTransform> vtk_X_WV = ConvertToVtkTransform(X_WV);
   // `id_object_maps_` is modified here. This is OK because 1) we are just
   // copying data to the memory spaces allocated at construction time

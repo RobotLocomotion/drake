@@ -237,9 +237,10 @@ TEST_F(RgbdRendererTest, BoxTest) {
   DrakeShapes::VisualElement visual(X_WV);
   Eigen::Vector3d box_size(1, 1, 1);
   visual.setGeometry(DrakeShapes::Box(box_size));
-  const int kBodyID = 0;
+  const RgbdRenderer::BodyIndex kBodyID(0);
+  const RgbdRenderer::VisualIndex kVisualID(0);
   renderer_->RegisterVisual(visual, kBodyID);
-  renderer_->UpdateVisualPose(X_WV, kBodyID, 0);
+  renderer_->UpdateVisualPose(X_WV, kBodyID, kVisualID);
   Render();
 
   VerifyOutliers();
@@ -263,9 +264,10 @@ TEST_F(RgbdRendererTest, SphereTest) {
   X_WV.translation().z() = 0.5;
   DrakeShapes::VisualElement visual(X_WV);
   visual.setGeometry(DrakeShapes::Sphere(0.5));
-  const int kBodyID = 0;
+  const RgbdRenderer::BodyIndex kBodyID(0);
+  const RgbdRenderer::VisualIndex kVisualID(0);
   renderer_->RegisterVisual(visual, kBodyID);
-  renderer_->UpdateVisualPose(X_WV, kBodyID, 0);
+  renderer_->UpdateVisualPose(X_WV, kBodyID, kVisualID);
   Render();
 
   VerifyOutliers();
@@ -289,9 +291,10 @@ TEST_F(RgbdRendererTest, CylinderTest) {
   X_WV.translation().z() = 0.6;
   DrakeShapes::VisualElement visual(X_WV);
   visual.setGeometry(DrakeShapes::Cylinder(0.2, 1.2));  // Radius and length.
-  const int kBodyID = 1;
+  const RgbdRenderer::BodyIndex kBodyID(1);
+  const RgbdRenderer::VisualIndex kVisualID(0);
   renderer_->RegisterVisual(visual, kBodyID);
-  renderer_->UpdateVisualPose(X_WV, kBodyID, 0);
+  renderer_->UpdateVisualPose(X_WV, kBodyID, kVisualID);
   Render();
 
   VerifyOutliers();
@@ -315,9 +318,10 @@ TEST_F(RgbdRendererTest, MeshTest) {
   auto filename =
       FindResourceOrThrow("drake/systems/sensors/test/models/meshes/box.obj");
   visual.setGeometry(DrakeShapes::Mesh("", filename));
-  const int kBodyID = 0;
+  const RgbdRenderer::BodyIndex kBodyID(0);
+  const RgbdRenderer::VisualIndex kVisualID(0);
   renderer_->RegisterVisual(visual, kBodyID);
-  renderer_->UpdateVisualPose(X_WV, kBodyID, 0);
+  renderer_->UpdateVisualPose(X_WV, kBodyID, kVisualID);
   Render();
 
   VerifyOutliers();
@@ -328,7 +332,7 @@ TEST_F(RgbdRendererTest, MeshTest) {
   // Color
   CompareColor(color_.at(u, v), ColorI({4u, 241u, 33u}), 255u);
   // Depth
-  ASSERT_NEAR(depth_.at(u, v)[0], 2.f, kDepthTolerance);
+  ASSERT_NEAR(depth_.at(u, v)[0], 2., kDepthTolerance);
   // Label
   ASSERT_EQ(label_.at(u, v)[0], kBodyID);
 }

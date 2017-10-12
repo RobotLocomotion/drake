@@ -18,6 +18,8 @@
 #endif
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_optional.h"
+#include "drake/common/type_safe_index.h"
 #include "drake/multibody/shapes/visual_element.h"
 #include "drake/systems/sensors/color_palette.h"
 #include "drake/systems/sensors/image.h"
@@ -49,8 +51,9 @@ struct ModuleInitVtkRenderingOpenGL2 {
 ///     a uint8_t.
 ///
 ///   - Depth (ImageDepth32F) : the depth image has a depth channel represented
-///     by a float. The value stored in the depth channel holds *the Z value in
-///     `R`.*  Note that this is different from the range data used by laser
+///     by a float. For a point in space `P`, the value stored in the depth
+///     channel holds *the Z-component of the position vector `p_RP`.*
+///     Note that this is different from the range data used by laser
 ///     range finders (like that provided by DepthSensor) in which the depth
 ///     value represents the distance from the sensor origin to the object's
 ///     surface.
@@ -126,35 +129,46 @@ class RgbdRenderer final : private ModuleInitVtkRenderingOpenGL2 {
                double fov_y,
                bool show_window);
 
-  ~RgbdRenderer() {}
+  ~RgbdRenderer() = default;
 
   /// Adds a flat terrain in the rendering scene.
   void AddFlatTerrain();
 
-  /// Registers a visual element to a rigid body.
+  /// Represents indices for rigid bodies.
+  using BodyIndex = TypeSafeIndex<class BodyTag>;
+
+  /// Represents indices for visual elements.
+  using VisualIndex = TypeSafeIndex<class VisualTag>;
+
+  /// Registers a visual element to a rigid body and returns the ID of the
+  /// visual element.
   ///
   /// @param visual A visual element to be registered. See VisualElement for
   /// more detail.
   ///
   /// @param body_id The ID of a rigid body that you want a visual to be
   /// associated with. Note that you can associate more than one visual with a
-  /// rigid body. In that case, IDs for the visuals are internally incremented
-  /// per a rigid body.
-  void RegisterVisual(const DrakeShapes::VisualElement& visual, int body_id);
+  /// rigid body.
+  ///
+  /// @return visual_id A local visual ID associated with given `body_id`.
+  /// `nullopt` will be returned if `visual` contains an unsupported shape.
+  /// We assume `visual_id` will be used together with `body_id` when you call
+  /// `UpdateVisualPose` later.
+  optional<VisualIndex> RegisterVisual(
+      const DrakeShapes::VisualElement& visual, BodyIndex body_id);
 
-  /// Updates the pose of a visual with given pose X_WV.
+  /// Updates the pose of a visual with given pose X_WV. Note that a visual is
+  /// uniquely identified using `body_id` and `visual_id`.
   ///
   /// @param X_WV The pose of a visual in the world coordinate system.
   ///
   /// @param body_id The ID of a rigid body that the visual you want to update
   /// is associated with.
   ///
-  /// @param visual_id The ID of a visual that is associated with a rigid body
-  /// and you want to update. The visual_id is coincident with the order
-  /// of the registration with `RegisterVisual` per a body_id starting from
-  /// zero.
+  /// @param visual_id The local ID of a visual that is associated with a rigid
+  /// body and you want to update.
   void UpdateVisualPose(const Eigen::Isometry3d& X_WV,
-                        int body_id, int visual_id) const;
+                        BodyIndex body_id, VisualIndex visual_id) const;
 
   /// Updates renderer's viewpoint with given pose X_WR.
   ///
@@ -209,6 +223,7 @@ class RgbdRenderer final : private ModuleInitVtkRenderingOpenGL2 {
   // vtkSmartPointer to vtkActor. The each vtkActor corresponds to an visual
   // element specified in SDF / URDF. The first element of this array is for
   // color and depth rendering and the second is for label image rendering.
+  // TODO(kunimatsu-tri) Make this more straight forward for the readability.
   std::array<std::map<int, std::vector<vtkSmartPointer<vtkActor>>>, 2>
       id_object_maps_;
   vtkNew<vtkRenderer> color_depth_renderer_;

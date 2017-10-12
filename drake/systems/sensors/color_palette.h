@@ -62,6 +62,9 @@ class ColorPalette {
   /// @param no_body_id The id to express pixels that have no body. This will be
   ///  used in the label image.
   ColorPalette(int num_colors, int terrain_id, int no_body_id) {
+    // Dividing by six because we create "bands" of colors at various intensity
+    // levels and the band width is six. In other words, six is the number of
+    // `push_back` calls in the `for` loop below.
     const int num = std::ceil(num_colors / 6.);
     DRAKE_DEMAND(num < 256);  // The maximum number of uint8_t.
 
