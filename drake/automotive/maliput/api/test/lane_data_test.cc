@@ -235,7 +235,7 @@ TEST_F(RotationTest, QuaternionSetter) {
 #undef CHECK_ALL_ROTATION_ACCESSORS
 
 GTEST_TEST(RBoundsTest, DefaultConstructor) {
-  const RBounds dut;
+  const RBounds dut{};
   // Checks correct default value assignment.
   EXPECT_EQ(dut.min(), 0.);
   EXPECT_EQ(dut.max(), 0.);
@@ -268,7 +268,7 @@ GTEST_TEST(RBoundsTest, Setters) {
 }
 
 GTEST_TEST(HBoundsTest, DefaultConstructor) {
-  const HBounds dut;
+  const HBounds dut{};
   // Checks correct default value assignment.
   EXPECT_EQ(dut.min(), 0.);
   EXPECT_EQ(dut.max(), 0.);
