@@ -294,12 +294,18 @@ cc_binary(
 )
 
 # Install libdrake.so along with all transitive headers in the same workspace
-# (i.e. in Drake itself; not externals).
+# (i.e. in Drake itself; not externals). `@vtk//:install` is necessary because
+# `libpydrake.so` depends on VTK. `//drake/common:install` installs the data
+# sentinel which is required for the pydrake function `getDrakePath()`.
 install(
     name = "install",
     targets = ["libdrake.so"],
     hdr_dest = "include/drake",
     guess_hdrs = "WORKSPACE",
+    deps = [
+        "//drake/common:install",
+        "@vtk//:install",
+    ],
 )
 
 # Gather all of libdrake.so's dependent headers.

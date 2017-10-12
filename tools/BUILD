@@ -126,13 +126,6 @@ exports_files(
     visibility = ["@libbot//:__pkg__"],
 )
 
-exports_files(
-    [
-        "install/kuka_plan_runner/kuka_plan_runner.sh",
-    ],
-    visibility = ["//drake/examples/kuka_iiwa_arm:__pkg__"],
-)
-
 exports_create_cps_scripts([
     "bullet",
     "ccd",
