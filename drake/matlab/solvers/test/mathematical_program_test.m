@@ -2,14 +2,6 @@ function mathematical_program_test
 
 % Simple example of calling MathematicalProgram through the Python bindings.
 
-% Setup PYTHONPATH for this MATLAB session. Move this to addpath_drake() if we
-% expand our use of the Python bindings.
-P = py.sys.path;
-drake_python_path = fullfile(fileparts(getDrakePath), 'build', 'install', 'lib', 'python2.7', 'dist-packages');
-if count(P, drake_python_path) == 0
-    insert(P, int32(0), drake_python_path);
-end
-
 % QP test
 prog = py.pydrake.solvers.mathematicalprogram.MathematicalProgram();
 x = prog.NewContinuousVariables(int32(2), 'x');
