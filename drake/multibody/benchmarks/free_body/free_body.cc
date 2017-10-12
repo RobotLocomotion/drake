@@ -41,7 +41,7 @@ CalculateExactRotationalSolutionABInitiallyAligned(const double t) const {
   // where A is a set Ax, Ay, Az of right-handed orthogonal unit vectors which
   // are fixed in N (Newtonian frame/World) and initially aligned to Bx, By, Bz,
   // where Bz is parallel to B's symmetry axis.
-  // Kane produced an analytical solution for quat_AB [eAB0, eAB1, eB2, eB3],
+  // Kane produced an analytical solution for quat_AB [eAB0, eAB1, eAB2, eAB3],
   // which allows for direct calculation of the R_AB rotation matrix.
   const double eAB1 = spt2 / p * (wx0 * cst2 + wy0 * sst2);
   const double eAB2 = spt2 / p * (-wx0 * sst2 + wy0 * cst2);
