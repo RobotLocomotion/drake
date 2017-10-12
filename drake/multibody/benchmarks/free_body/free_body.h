@@ -124,7 +124,7 @@ class FreeBody {
   ///            | Note: quat_NB is analogous to the rotation matrix R_NB.
   /// quatDt     | Time-derivative of `quat_NB', i.e., [ė0, ė1, ė2, ė3].
   /// w_NB_B     | B's angular velocity in N, expressed in B.
-  /// wDt_NB_B   | B's angular acceleration in N, expressed in B.
+  /// alpha_NB_B | B's angular acceleration in N, expressed in B.
   ///
   /// - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York,
   ///   1983. (with P. W. Likins and D. A. Levinson).  Available for free .pdf
