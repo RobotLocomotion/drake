@@ -1010,10 +1010,12 @@ class MultibodyTree {
   ///   The context containing the state of the %MultibodyTree model.
   /// @param[in] v
   ///   A vector of of generalized velocities for `this` %MultibodyTree model.
+  ///   This method aborts if v is not of size get_num_velocities().
   /// @param[out] qdot
-  ///   A valid (non-null) pointer to a vector in `ℛⁿ` with n the number of
-  ///   generalized positions. This method aborts if `qdot` is nullptr or if it
-  ///   does not have the proper size.
+  ///   A valid (non-null) pointer to a vector in `ℛⁿ` with n being the number
+  ///   of generalized positions in `this` %MultibodyTree model,
+  ///   given by `get_num_positions()`. This method aborts if `qdot` is nullptr
+  ///   or if it is not of size get_num_positions().
   ///
   /// @see MapQDotToVelocity()
   void MapVelocityToQDot(
@@ -1037,10 +1039,11 @@ class MultibodyTree {
   ///   The context containing the state of the %MultibodyTree model.
   /// @param[in] qdot
   ///   A vector containing the time derivatives of the generalized positions.
+  ///   This method aborts if `qdot` is not of size get_num_positions().
   /// @param[out] v
   ///   A valid (non-null) pointer to a vector in `ℛⁿ` with n the number of
   ///   generalized velocities. This method aborts if v is nullptr or if it
-  ///   does not have the proper size.
+  ///   is not of size get_num_velocities().
   ///
   /// @see MapVelocityToQDot()
   void MapQDotToVelocity(
