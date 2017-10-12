@@ -185,6 +185,7 @@ drake_cc_library(
     deps = [
         ":image",
         ":vtk_util",
+        "//drake/common",
         "//drake/multibody/shapes:shapes",
         "@eigen",
         "@vtk//:vtkCommonCore",
