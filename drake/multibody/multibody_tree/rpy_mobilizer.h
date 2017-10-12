@@ -14,10 +14,12 @@
 namespace drake {
 namespace multibody {
 
-/// This mobilizer models a ball joint between an inboard frame F and an
-/// outboard frame M that allows frame M to rotate freely with respect to F. No
-/// translational motion of M in F is allowed and the inboard frame origin `Fo`
-/// and the outboard frame origin `Mo` are coincident at all times.
+/// This mobilizer models a gimbal joint between an inboard frame F and an
+/// outboard frame M that allows frame M to rotate freely with respect to F (
+/// though a gimbal joint provides arbitrary orientation like a ball joint but
+/// with some restrictions, discussed below). No translational motion of M in F
+/// is allowed and the inboard frame origin `Fo` and the outboard frame origin
+/// `Mo` are coincident at all times.
 ///
 /// The orientation `R_FM` of the outboard frame M in F is parametrized with
 /// body `z-y-x` Euler angles (also known as intrinsic angles). That is, the
@@ -36,14 +38,20 @@ namespace multibody {
 /// right-hand-rule with the thumb aligned in the direction of their respective
 /// axes.
 ///
-/// The generalized velocities for this mobilizer corresond to the angular
+/// The generalized velocities for this mobilizer correspond to the angular
 /// velocity `w_FM` of frame M in F, expressed in frame F.
 /// MapVelocityToQDot() maps the angular velocity `w_FM` to Euler angles's rates
 /// while MapQDotToVelocity() maps Euler angles's rates to angular velocity
 /// `w_FM`.
+/// While the mapping MapVelocityToQDot() always exists, its inverse
+/// MapQDotToVelocity() is singular for values of pitch angle `p` such that
+/// `p = π/2 + kπ, ∀ k ∈ ℤ`.
 ///
 /// @note Body `z-y-x` angles (intrinsic) are equivalent to space `x-y-z`
 /// angles (extrinsic).
+///
+/// @note The mapping from Euler angle's rates to angular velocity is singular
+/// for pitch angle `p` such that `p = π/2 + kπ, ∀ k ∈ ℤ`.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 ///
@@ -73,8 +81,8 @@ class RollPitchYawMobilizer final : public MobilizerImpl<T, 3, 3> {
   /// @param[in] context
   ///   The context of the MultibodyTree this mobilizer belongs to.
   /// @retval rpy
-  ///   A vector in ℝ³ which contains the roll, pitch and yaw angles at entries
-  ///   `rpy(0)`, `rpy(1)` and `rpy(2)`, respectively.
+  ///   The roll, pitch and yaw angles stored in `context` packed in a Vector3
+  ///   at entries `rpy(0)`, `rpy(1)` and `rpy(2)`, respectively.
   ///
   /// @throws std::logic_error if `context` is not a valid MultibodyTreeContext.
   Vector3<T> get_rpy(const systems::Context<T>& context) const;
@@ -85,8 +93,8 @@ class RollPitchYawMobilizer final : public MobilizerImpl<T, 3, 3> {
   /// @param[out] context
   ///   The context of the MultibodyTree this mobilizer belongs to.
   /// @param[in] rpy
-  ///   A vector in ℝ³ which must contain roll, pitch and yaw angles at entries
-  ///   `rpy(0)`, `rpy(1)` and `rpy(2)`, respectively.
+  ///   A Vector3 which must pack values of roll, pitch and yaw angles at
+  ///   entries `rpy(0)`, `rpy(1)` and `rpy(2)`, respectively.
   /// @returns a constant reference to `this` mobilizer.
   ///
   /// @throws std::logic_error if `context` is not a valid MultibodyTreeContext.
@@ -114,7 +122,7 @@ class RollPitchYawMobilizer final : public MobilizerImpl<T, 3, 3> {
   ///
   /// @throws std::logic_error if `context` is not a valid MultibodyTreeContext.
   /// @throws std::logic_error if an improper rotation results after projection
-  /// of `R_FM`, that is, if the projected matrix's determinan is `-1`.
+  /// of `R_FM`, that is, if the projected matrix's determinant is `-1`.
   const RollPitchYawMobilizer<T>& SetFromRotationMatrix(
       systems::Context<T>* context, const Matrix3<T>& R_FM) const;
 
@@ -124,8 +132,12 @@ class RollPitchYawMobilizer final : public MobilizerImpl<T, 3, 3> {
   /// @param[in] context
   ///   The context of the MultibodyTree this mobilizer belongs to.
   /// @retval w_FM
-  ///   Angular velocity of the outboard frame M in the inboard frame F,
-  ///   expressed in F.
+  ///   A vector in ℝ³ with the angular velocity of the outboard frame M in the
+  ///   inboard frame F, expressed in F.
+  ///
+  /// @note Many dynamicists follow the convention of expressing angular
+  /// velocity in the outboard frame M; we return it expressed in the inboard
+  /// frame F. That is, this method returns `W_FM_F`.
   ///
   /// @throws std::logic_error if `context` is not a valid MultibodyTreeContext.
   Vector3<T> get_angular_velocity(const systems::Context<T> &context) const;
@@ -135,8 +147,8 @@ class RollPitchYawMobilizer final : public MobilizerImpl<T, 3, 3> {
   /// @param[out] context
   ///   The context of the MultibodyTree this mobilizer belongs to.
   /// @param[in] w_FM
-  ///   The desired angular velocity of the outboard frame M in the inboard
-  ///   frame F, expressed in F.
+  ///   A vector in ℝ³ with the desired angular velocity of the outboard frame M
+  ///   in the inboard frame F, expressed in F.
   /// @returns a constant reference to `this` mobilizer.
   const RollPitchYawMobilizer<T>& set_angular_velocity(
       systems::Context<T> *context, const Vector3<T>& w_FM) const;
@@ -150,7 +162,7 @@ class RollPitchYawMobilizer final : public MobilizerImpl<T, 3, 3> {
   /// Computes the across-mobilizer velocity `V_FM(q, v)` of the outboard frame
   /// M measured and expressed in frame F as a function of the roll, pitch and
   /// yaw angles stored in `context` and of the input generalized velocity v
-  /// which contains the components of the angular velocity `w_FM` expressd in
+  /// which contains the components of the angular velocity `w_FM` expressed in
   /// frame F.
   SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(
       const MultibodyTreeContext<T>& context,
@@ -169,28 +181,41 @@ class RollPitchYawMobilizer final : public MobilizerImpl<T, 3, 3> {
       const MultibodyTreeContext<T>& context,
       const Eigen::Ref<const VectorX<T>>& vdot) const override;
 
-  /// Implements Mobilizer::ProjectSpatialForce().
   void ProjectSpatialForce(
       const MultibodyTreeContext<T>& context,
       const SpatialForce<T>& F_Mo_F,
       Eigen::Ref<VectorX<T>> tau) const override;
 
   /// Maps the generalized velocity v, which correspond to the angular velocity
-  /// `w_FM`, to time derivatives of the roll, pitch and yaw angles.
+  /// `w_FM`, to time derivatives of the roll, pitch and yaw angles in `qdot`.
   ///
   /// @param[in] context
   ///   The context of the MultibodyTree this mobilizer belongs to.
   /// @param[in] v
   ///   A vector of generalized velocities for this Mobilizer which should
-  ///   correspond to an angular velocity `w_FM` of M in F.
+  ///   correspond to a vector in ℝ³ for an angular velocity `w_FM` of M in F.
   /// @param[out] qdot
-  ///   A vector containing the time derivatives of the roll, pitch and yaw
+  ///   A Vector3 packing of the time derivatives of the roll, pitch and yaw
   ///   angles in `qdot(0)`, `qdot(1)` and `qdot(2)`, respectively.
   void MapVelocityToQDot(
       const MultibodyTreeContext<T>& context,
       const Eigen::Ref<const VectorX<T>>& v,
       EigenPtr<VectorX<T>> qdot) const override;
 
+  /// Maps time derivatives of the roll, pitch and yaw angles in `qdot` to the
+  /// generalized velocity v, which corresponds to the angular velocity `w_FM`.
+  ///
+  /// @param[in] context
+  ///   The context of the MultibodyTree this mobilizer belongs to.
+  /// @param[in] qdot
+  ///   A vector containing the time derivatives of the roll, pitch and yaw
+  ///   angles in `qdot(0)`, `qdot(1)` and `qdot(2)`, respectively.
+  /// @param[out] v
+  ///   A vector of generalized velocities for this Mobilizer which should
+  ///   correspond to a vector in ℝ³ for an angular velocity `w_FM` of M in F.
+  ///
+  /// @warning The mapping from Euler angle's rates to angular velocity is
+  /// singular for pitch angle `p` such that `p = π/2 + kπ, ∀ k ∈ ℤ`.
   void MapQDotToVelocity(
       const MultibodyTreeContext<T>& context,
       const Eigen::Ref<const VectorX<T>>& qdot,

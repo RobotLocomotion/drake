@@ -117,14 +117,33 @@ void RollPitchYawMobilizer<T>::MapVelocityToQDot(
   using std::sin;
   using std::cos;
 
+  // The linear map E_F(q) allows computing v from q̇ as:
+  // w_FM = E_F(q) * q̇; q̇ = [ṙ, ṗ, ẏ]ᵀ
+  //
   // The linear map from v to q̇ is given by the inverse of E_F(q):
   //                     [          cos(y),          sin(y),      0]
-  // Einv_F = cos⁻¹(p) * [-cos(p) * sin(y), cos(p) * cos(y),      0]
+  // Einv_F = 1/cos(p) * [-cos(p) * sin(y), cos(p) * cos(y),      0]
   //                     [ sin(p) * cos(y), sin(p) * sin(y), cos(p)]
   //
   // q̇ = Einv_F(q) * w_FM; q̇ = [ṙ, ṗ, ẏ]ᵀ
   //
   // Notice Einv_F is singular for p = π/2 + kπ, ∀ k ∈ ℤ.
+  //
+  // Note to developers:
+  // The expression for Einv_F was symbolically generated with the following
+  // Maxima script (which can be copy/pasted and executed as is):
+  //
+  // Rx:matrix([1,0,0],[0,cos(r),-sin(r)],[0,sin(r),cos(r)]);
+  // Ry:matrix([cos(p),0,sin(p)],[0,1,0],[-sin(p),0,cos(p)]);
+  // Rz:matrix([cos(y),-sin(y),0],[sin(y),cos(y),0],[0,0,1]);
+  // R_FM:Rz . Ry . Rx;
+  // R_MF:transpose(R_FM);
+  // E_F: transpose(append(transpose(
+  //             Rz . Ry . [1,0,0]),transpose(Rz . [0,1,0]),matrix([0,0,1])));
+  // detout: true$
+  // doallmxops: false$
+  // doscmxops: false$
+  // Einv_F: trigsimp(invert(E_F));
 
   const Vector3<T> rpy = get_rpy(context);
   const T& w0 = v[0];
@@ -138,8 +157,15 @@ void RollPitchYawMobilizer<T>::MapVelocityToQDot(
   const T cpi = 1.0 / cp;
   const T t = (cy * w0 + sy * w1) * cpi;  // Common factor.
 
-  // Compute the product q̇ = Einv_F * w_FM directly since it's cheaper than
-  // explicitly forming Einf_F and then multiplying with v.
+  // Although the linear equations relating v to q̇ can be used to explicitly
+  // solve the equation w_FM = E_F(q) * q̇ for q̇, a more computational efficient
+  // solution results by implicit solution of those linear equations.
+  // Namely, the first two equations in w_FM = E_F(q) * q̇ are used to solve for
+  // ṙ and ṗ, then the third equation is used to solve for ẏ in terms of just
+  // ṙ and w2:
+  // ṙ = (cos(y) * w0 + sin(y) * w1) / cos(p)
+  // ṗ = -sin(y) * w0 + cos(y) * w1
+  // ẏ = sin(p) * ṙ + w2
   *qdot =  Vector3<T>(t, -sy * w0 + cy * w1, sp *  t + w2);
 }
 
@@ -160,6 +186,18 @@ void RollPitchYawMobilizer<T>::MapQDotToVelocity(
   //          [         -sin(p),       0, 1]
   //
   // w_FM = E_F(q) * q̇; q̇ = [ṙ, ṗ, ẏ]ᵀ
+  //
+  // Note to developers:
+  // The expression for E_F was symbolically generated with the following
+  // Maxima script (which can be copy/pasted and executed as is):
+  //
+  // Rx:matrix([1,0,0],[0,cos(r),-sin(r)],[0,sin(r),cos(r)]);
+  // Ry:matrix([cos(p),0,sin(p)],[0,1,0],[-sin(p),0,cos(p)]);
+  // Rz:matrix([cos(y),-sin(y),0],[sin(y),cos(y),0],[0,0,1]);
+  // R_FM:Rz . Ry . Rx;
+  // R_MF:transpose(R_FM);
+  // E_F: transpose(append(transpose(
+  //             Rz . Ry . [1,0,0]),transpose(Rz . [0,1,0]),matrix([0,0,1])));
 
   const Vector3<T> rpy = get_rpy(context);
   const T& rdot = qdot[0];
