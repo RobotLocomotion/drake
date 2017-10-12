@@ -653,6 +653,18 @@ class MultibodyTree {
   /// Mobilizer::set_zero_configuration().
   void SetDefaultContext(systems::Context<T>* context) const;
 
+  /// @name Computational methods
+  /// These methods expose the computational capabilities of MultibodyTree to
+  /// compute kinematics, forward and inverse dynamics and, Jacobian matrices,
+  /// among others.
+  /// These methods follow Drake's naming scheme for methods performing a
+  /// computation and therefore are named `CalcXXX()`, where `XXX` corresponds
+  /// to the quantitiy or object of interest to be computed. They all take a
+  /// `systems::Context` as an input argument storing the state of the multibody
+  /// system. A `std::bad_cast` exception is thrown if the passed context is not
+  /// a MultibodyTreeContext.
+  /// @{
+
   /// Computes into the position kinematics `pc` all the kinematic quantities
   /// that depend on the generalized positions only. These include:
   /// - For each body B, the pose `X_BF` of each of the frames F attached to
@@ -662,7 +674,6 @@ class MultibodyTree {
   /// - Across-mobilizer Jacobian matrices `H_FM` and `H_PB_W`.
   /// - Body specific quantities such as `com_W` and `M_Bo_W`.
   ///
-  /// @throws std::bad_cast if `context` is not a `MultibodyTreeContext`.
   /// Aborts if `pc` is nullptr.
   void CalcPositionKinematicsCache(
       const systems::Context<T>& context,
@@ -679,7 +690,6 @@ class MultibodyTree {
   /// @pre The position kinematics `pc` must have been previously updated with a
   /// call to CalcPositionKinematicsCache().
   ///
-  /// @throws std::bad_cast if `context` is not a `MultibodyTreeContext`.
   /// Aborts if `vc` is nullptr.
   void CalcVelocityKinematicsCache(
       const systems::Context<T>& context,
@@ -712,8 +722,6 @@ class MultibodyTree {
   /// call to CalcPositionKinematicsCache().
   /// @pre The velocity kinematics `vc` must have been previously updated with a
   /// call to CalcVelocityKinematicsCache().
-  ///
-  /// @throws std::bad_cast if `context` is not a `MultibodyTreeContext`.
   void CalcAccelerationKinematicsCache(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
@@ -750,8 +758,6 @@ class MultibodyTree {
   /// call to CalcPositionKinematicsCache().
   /// @pre The velocity kinematics `vc` must have been previously updated with a
   /// call to CalcVelocityKinematicsCache().
-  ///
-  /// @throws std::bad_cast if `context` is not a `MultibodyTreeContext`.
   void CalcSpatialAccelerationsFromVdot(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
@@ -864,8 +870,6 @@ class MultibodyTree {
   /// call to CalcPositionKinematicsCache().
   /// @pre The velocity kinematics `vc` must have been previously updated with a
   /// call to CalcVelocityKinematicsCache().
-  ///
-  /// @throws std::bad_cast if `context` is not a `MultibodyTreeContext`.
   void CalcInverseDynamics(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
@@ -917,8 +921,6 @@ class MultibodyTree {
   /// call to CalcPositionKinematicsCache().
   /// @pre The velocity kinematics `vc` must have been previously updated with a
   /// call to CalcVelocityKinematicsCache().
-  ///
-  /// @throws std::bad_cast if `context` is not a `MultibodyTreeContext`.
   void CalcForceElementsContribution(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
@@ -1045,6 +1047,9 @@ class MultibodyTree {
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& qdot,
       EigenPtr<VectorX<T>> v) const;
+
+  /// @}
+  // Closes "Computational methods" Doxygen section.
 
   /// @name Methods to retrieve multibody element variants
   ///
