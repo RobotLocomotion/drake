@@ -8,7 +8,7 @@ set -ex
 find .
 
 # Prep.
-dut=./drake/tools/clang-format-includes
+dut=./tools/lint/clang-format-includes
 [ -x "$dut" ]
 mkdir -p drake/dummy
 

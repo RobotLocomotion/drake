@@ -24,25 +24,11 @@ drake_py_binary(
     name = "lcm_vector_gen",
     srcs = ["lcm_vector_gen.py"],
     data = [
-        "//tools:clang-format",
+        "//tools/lint:clang-format",
     ],
     deps = [
         ":named_vector",
     ],
-)
-
-drake_py_library(
-    name = "formatter",
-    srcs = ["formatter.py"],
-    data = ["//tools:clang-format"],
-)
-
-drake_py_binary(
-    name = "clang-format-includes",
-    srcs = ["clang_format_includes.py"],
-    data = ["//tools:clang-format"],
-    main = "clang_format_includes.py",
-    deps = [":formatter"],
 )
 
 # === test/ ===
@@ -105,20 +91,6 @@ sh_test(
         "test/gen/sample_translator.h",
         "test/sample.named_vector",
         ":lcm_vector_gen",
-    ],
-)
-
-drake_py_test(
-    name = "formatter_test",
-    srcs = ["test/formatter_test.py"],
-    deps = [":formatter"],
-)
-
-sh_test(
-    name = "clang_format_includes_test",
-    srcs = ["test/clang_format_includes_test.sh"],
-    data = [
-        ":clang-format-includes",
     ],
 )
 

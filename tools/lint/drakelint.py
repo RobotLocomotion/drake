@@ -1,6 +1,6 @@
 import sys
 
-from drake.tools.formatter import IncludeFormatter
+from tools.lint.formatter import IncludeFormatter
 
 
 def _check_invalid_line_endings(filename):
@@ -35,7 +35,7 @@ def _check_includes(filename):
     if first_difference is not None:
         print("error: " + filename + ":" + str(first_difference + 1) + ": " +
               "the #include ordering is incorrect")
-        print("note: fix via bazel-bin/drake/tools/clang-format-includes " +
+        print("note: fix via bazel-bin/tools/lint/clang-format-includes " +
               filename)
         return 1
     return 0
