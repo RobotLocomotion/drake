@@ -104,6 +104,8 @@ drake_cc_googletest(
     srcs = ["test/multilane_builder_test.cc"],
     deps = [
         ":builder",
+        "//drake/automotive/maliput/api/test_utilities",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
