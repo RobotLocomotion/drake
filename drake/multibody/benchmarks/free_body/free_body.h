@@ -11,11 +11,6 @@ namespace drake {
 namespace benchmarks {
 namespace free_body {
 
-using Eigen::Vector3d;
-using Eigen::Vector4d;
-using Eigen::VectorXd;
-using Eigen::Quaterniond;
-
 /// The purpose of the %FreeBody class is to provide the data (initial values
 /// and gravity) and methods for calculating the exact analytical solution for
 /// the translational and rotational motion of a toque-free rigid body B with
@@ -38,9 +33,11 @@ class FreeBody {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FreeBody)
 
-  FreeBody(const Quaterniond& quat_NB_initial, const Vector3d& w_NB_B_initial,
-           const Vector3d& p_NoBcm_N_initial, const Vector3d& v_NBcm_B_initial,
-           const Vector3d& gravity_N)
+  FreeBody(const Eigen::Quaterniond& quat_NB_initial,
+           const Eigen::Vector3d& w_NB_B_initial,
+           const Eigen::Vector3d& p_NoBcm_N_initial,
+           const Eigen::Vector3d& v_NBcm_B_initial,
+           const Eigen::Vector3d& gravity_N)
       : quat_NB_initial_(quat_NB_initial),
         w_NB_B_initial_(w_NB_B_initial),
         p_NoBcm_N_initial_(p_NoBcm_N_initial),
@@ -67,32 +64,38 @@ class FreeBody {
   double get_J() const { return 0.02; }
 
   // Get methods for initial values and gravity.
-  const Quaterniond& get_quat_NB_initial() const { return quat_NB_initial_; }
-  const Vector3d& get_w_NB_B_initial() const { return w_NB_B_initial_; }
-  const Vector3d& get_p_NoBcm_N_initial() const { return p_NoBcm_N_initial_; }
-  const Vector3d& get_v_NBcm_B_initial() const { return v_NBcm_B_initial_; }
-  const Vector3d& get_uniform_gravity_expressed_in_world() const {
+  const Eigen::Quaterniond& get_quat_NB_initial() const {
+    return quat_NB_initial_;
+  }
+  const Eigen::Vector3d& get_w_NB_B_initial() const { return w_NB_B_initial_; }
+  const Eigen::Vector3d& get_p_NoBcm_N_initial() const {
+    return p_NoBcm_N_initial_;
+  }
+  const Eigen::Vector3d& get_v_NBcm_B_initial() const {
+    return v_NBcm_B_initial_;
+  }
+  const Eigen::Vector3d& get_uniform_gravity_expressed_in_world() const {
     return uniform_gravity_expressed_in_world_;
   }
-  Vector3d GetInitialVelocityOfBcmInWorldExpressedInWorld() const {
+  Eigen::Vector3d GetInitialVelocityOfBcmInWorldExpressedInWorld() const {
     const Eigen::Matrix3d R_NB_initial = quat_NB_initial_.toRotationMatrix();
     return R_NB_initial * v_NBcm_B_initial_;
   }
 
   // Set methods for initial values and gravity.
-  void set_quat_NB_initial(const Quaterniond& quat_NB_initial) {
+  void set_quat_NB_initial(const Eigen::Quaterniond& quat_NB_initial) {
     quat_NB_initial_ = quat_NB_initial;
   }
-  void set_w_NB_B_initial(const Vector3d& w_NB_B_initial) {
+  void set_w_NB_B_initial(const Eigen::Vector3d& w_NB_B_initial) {
     w_NB_B_initial_ = w_NB_B_initial;
   }
-  void set_p_NoBcm_N_initial(const Vector3d& p_NoBcm_N_initial) {
+  void set_p_NoBcm_N_initial(const Eigen::Vector3d& p_NoBcm_N_initial) {
     p_NoBcm_N_initial_ = p_NoBcm_N_initial;
   }
-  void set_v_NBcm_B_initial(const Vector3d& v_NBcm_B_initial) {
+  void set_v_NBcm_B_initial(const Eigen::Vector3d& v_NBcm_B_initial) {
     v_NBcm_B_initial_ = v_NBcm_B_initial;
   }
-  void SetUniformGravityExpressedInWorld(const Vector3d& gravity) {
+  void SetUniformGravityExpressedInWorld(const Eigen::Vector3d& gravity) {
     uniform_gravity_expressed_in_world_ = gravity;
   }
 
@@ -126,7 +129,8 @@ class FreeBody {
   /// - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York,
   ///   1983. (with P. W. Likins and D. A. Levinson).  Available for free .pdf
   ///   download: https:///ecommons.cornell.edu/handle/1813/637
-  std::tuple<Quaterniond, Vector4d, Vector3d, Vector3d>
+  std::tuple<Eigen::Quaterniond, Eigen::Vector4d, Eigen::Vector3d,
+             Eigen::Vector3d>
   CalculateExactRotationalSolutionNB(const double t) const;
 
   /// Calculates exact solutions for translational motion of an arbitrary rigid
@@ -141,8 +145,8 @@ class FreeBody {
   /// xyz        | Vector3d [x, y, z], Bcm's position from No, expressed in N.
   /// xyzDt      | Vector3d [ẋ, ẏ, ż]  Bcm's velocity in N, expressed in N.
   /// xyzDDt     | Vector3d [ẍ  ÿ  z̈], Bcm's acceleration in N, expressed in N.
-  std::tuple<Vector3d, Vector3d, Vector3d> CalculateExactTranslationalSolution(
-      const double t) const;
+  std::tuple<Eigen::Vector3d, Eigen::Vector3d, Eigen::Vector3d>
+  CalculateExactTranslationalSolution(const double t) const;
 
  private:
   // This "helper" method calculates quat_NB, w_NB_B, and alpha_NB_B at time t.
@@ -170,7 +174,7 @@ class FreeBody {
   // - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York, 1983.
   //   (with P. W. Likins and D. A. Levinson).  Available for free .pdf
   // download: https://ecommons.cornell.edu/handle/1813/637
-  std::tuple<Quaterniond, Vector3d, Vector3d>
+  std::tuple<Eigen::Quaterniond, Eigen::Vector3d, Eigen::Vector3d>
   CalculateExactRotationalSolutionABInitiallyAligned(const double t) const;
 
   // quat_NB_initial_ is the initial (t=0) value of the quaternion that relates
@@ -178,23 +182,23 @@ class FreeBody {
   // unit vectors Bx, By, Bz fixed in body B (Bz parallel to symmetry axis)
   // Note: The quaternion should already be normalized before it is set.
   // Note: quat_NB_initial is analogous to the initial rotation matrix R_NB.
-  Quaterniond quat_NB_initial_;
+  Eigen::Quaterniond quat_NB_initial_;
 
   // w_NB_B_initial_ is B's initial angular velocity in N, expressed in B.
-  Vector3d w_NB_B_initial_;
+  Eigen::Vector3d w_NB_B_initial_;
 
   // p_NoBcm_N_initial_ is Bcm's initial position from No, expressed in N, i.e.,
   // x, y, z, the Nx, Ny, Nz measures of Bcm's position vector from point No
   // (World origin).  Note: Bcm (B's center of mass) is coincident with Bo.
-  Vector3d p_NoBcm_N_initial_;
+  Eigen::Vector3d p_NoBcm_N_initial_;
 
   // v_NBcm_B_initial_ is Bcm's initial velocity in N, expressed in B.
   // Note: v_NBcm_B is not (in general) the time-derivative of ẋ, ẏ, ż.
-  Vector3d v_NBcm_B_initial_;
+  Eigen::Vector3d v_NBcm_B_initial_;
 
   // uniform_gravity_expressed_in_world_ is the local planet's (e.g., Earth)
   // uniform gravitational acceleration, expressed in World (e.g., Earth).
-  Vector3d uniform_gravity_expressed_in_world_;
+  Eigen::Vector3d uniform_gravity_expressed_in_world_;
 };
 
 }  // namespace free_body
