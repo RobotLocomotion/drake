@@ -48,6 +48,7 @@ apt install --no-install-recommends $(tr '\n' ' ' <<EOF
 bash-completion
 binutils
 coinor-libipopt-dev
+diffstat
 doxygen
 g++
 g++-5
@@ -59,7 +60,7 @@ gdb
 git
 graphviz
 libblas-dev
-libboost-dev
+libboost-all-dev
 libexpat1-dev
 libfreetype6
 libglib2.0-dev
@@ -79,6 +80,7 @@ libqt5x11extras5
 libtheora0
 libtiff5
 libtinyxml-dev
+libtinyxml2-dev
 libtool
 libxml2
 libxt6
@@ -102,14 +104,14 @@ EOF
     )
 
 # Install Bazel.
-wget -O /tmp/bazel_0.5.2-linux-x86_64.deb https://github.com/bazelbuild/bazel/releases/download/0.5.2/bazel_0.5.2-linux-x86_64.deb
-if echo "b14c8773dab078d3422fe4082f3ab4d9e14f02313c3b3eb4b5b40c44ce29ed59 /tmp/bazel_0.5.2-linux-x86_64.deb" | sha256sum -c -; then
-  dpkg -i /tmp/bazel_0.5.2-linux-x86_64.deb
+wget -O /tmp/bazel_0.6.1-linux-x86_64.deb https://github.com/bazelbuild/bazel/releases/download/0.6.1/bazel_0.6.1-linux-x86_64.deb
+if echo "5012d064a6e95836db899fec0a2ee2209d2726fae4a79b08c8ceb61049a115cd /tmp/bazel_0.6.1-linux-x86_64.deb" | sha256sum -c -; then
+  dpkg -i /tmp/bazel_0.6.1-linux-x86_64.deb
 else
   die "The Bazel deb does not have the expected SHA256.  Not installing Bazel."
 fi
 
-rm /tmp/bazel_0.5.2-linux-x86_64.deb
+rm /tmp/bazel_0.6.1-linux-x86_64.deb
 
 # Remove deb that we used to generate and install, but no longer need.
 if [ -L /usr/lib/ccache/bazel ]; then

@@ -53,10 +53,9 @@ const GeoPosition PurePursuit<T>::ComputeGoalPoint(
   const Lane* const lane = lane_direction.lane;
   const bool with_s = lane_direction.with_s;
   const LanePosition position =
-      lane->ToLanePosition({pose.get_isometry().translation().x(),
-                            pose.get_isometry().translation().y(),
-                            pose.get_isometry().translation().z()},
-                           nullptr, nullptr);
+      lane->ToLanePosition(
+          GeoPosition::FromXyz(pose.get_isometry().translation()),
+          nullptr, nullptr);
   const T s_new =
       cond(with_s, position.s() + s_lookahead, position.s() - s_lookahead);
   const T s_goal = math::saturate(s_new, 0., lane->length());
@@ -66,6 +65,7 @@ const GeoPosition PurePursuit<T>::ComputeGoalPoint(
 
 // These instantiations must match the API documentation in pure_pursuit.h.
 // The only scalar type supported is double.
+// TODO(jadecastro): Enable AutoDiffXd support.
 template class PurePursuit<double>;
 
 }  // namespace automotive

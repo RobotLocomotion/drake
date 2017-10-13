@@ -28,6 +28,7 @@ brew install $(tr '\n' ' ' <<EOF
 bazel
 boost
 clang-format
+diffstat
 doxygen
 glew
 glib
@@ -41,6 +42,7 @@ pkg-config
 python
 scipy
 tinyxml
+tinyxml2
 vtk@8.0
 EOF
 )

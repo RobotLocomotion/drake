@@ -1,19 +1,5 @@
-include(CMakePackageConfigHelpers)
-include(GNUInstallDirs)
-
-set(DRAKE_INSTALL_INCLUDE_DIR "${CMAKE_INSTALL_INCLUDEDIR}")
-set(DRAKE_INSTALL_LIBRARY_DIR "${CMAKE_INSTALL_LIBDIR}")
-set(DRAKE_INSTALL_RUNTIME_DIR "${CMAKE_INSTALL_BINDIR}")
-set(DRAKE_INSTALL_DOCUMENTATION_DIR "${CMAKE_INSTALL_DOCDIR}")
-
-set(DRAKE_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/${DRAKE_INSTALL_INCLUDE_DIR}")
-set(DRAKE_LIBRARY_DIR "${CMAKE_INSTALL_PREFIX}/${DRAKE_INSTALL_LIBRARY_DIR}")
-set(DRAKE_RUNTIME_DIR "${CMAKE_INSTALL_PREFIX}/${DRAKE_INSTALL_RUNTIME_DIR}")
-set(DRAKE_DOCUMENTATION_DIR "${CMAKE_INSTALL_PREFIX}/${DRAKE_INSTALL_DOCUMENTATION_DIR}")
-
 #------------------------------------------------------------------------------
-# Install a list of header files to the "include" installation directory of the
-# drake project.
+# Install a list of header files to the "include" installation directory.
 #
 #   drake_install_headers(<files...>)
 #
@@ -37,19 +23,17 @@ function(drake_install_headers)
     set(_UNPARSED_ARGUMENTS)
   endif()
 
-  file(RELATIVE_PATH _relative_path
+  file(RELATIVE_PATH _RELATIVE_PATH
     "${PROJECT_SOURCE_DIR}/"
     "${CMAKE_CURRENT_SOURCE_DIR}")
 
   install(FILES ${_FILES}
-    DESTINATION "${DRAKE_INSTALL_INCLUDE_DIR}/drake/${_relative_path}"
+    DESTINATION "include/drake/${_RELATIVE_PATH}"
     ${_UNPARSED_ARGUMENTS})
 endfunction()
 
 #------------------------------------------------------------------------------
-# Install a list of archive or library targets to the library installation
-# directory ("lib", "lib32", or "lib64") of the drake project. Add the library
-# targets to "drake-targets.cmake".
+# Install a list of library targets to the "lib" installation directory.
 #
 # drake_install_libraries(<targets...>)
 #
@@ -61,10 +45,6 @@ endfunction()
 #
 #   <args...>
 #     Additional arguments to be passed through to install(TARGETS).
-#
-# See the documentation of the "GNUInstallDirs" module for the rules that are
-# used to choose the library installation directory for a given host operating
-# system.
 #------------------------------------------------------------------------------
 function(drake_install_libraries)
   cmake_parse_arguments("" "" "" "TARGETS" ${ARGN})
@@ -75,10 +55,6 @@ function(drake_install_libraries)
   endif()
 
   install(TARGETS ${_TARGETS}
-    EXPORT ${PROJECT_NAME}-targets
-    ARCHIVE DESTINATION "${DRAKE_INSTALL_LIBRARY_DIR}"
-    LIBRARY DESTINATION "${DRAKE_INSTALL_LIBRARY_DIR}"
-    RUNTIME DESTINATION "${DRAKE_INSTALL_RUNTIME_DIR}"
-    INCLUDES DESTINATION "${DRAKE_INSTALL_INCLUDE_DIR}"
+    DESTINATION lib
     ${_UNPARSED_ARGUMENTS})
 endfunction()

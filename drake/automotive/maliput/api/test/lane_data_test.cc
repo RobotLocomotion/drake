@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/eigen_types.h"
+#include "drake/common/autodiff.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 
 namespace drake {
@@ -10,134 +10,184 @@ namespace maliput {
 namespace api {
 namespace {
 
-#define CHECK_ALL_LANE_POSITION_ACCESSORS(dut, _s, _r, _h)       \
-  do {                                                           \
-    EXPECT_EQ(dut.s(), _s);                                      \
-    EXPECT_EQ(dut.r(), _r);                                      \
-    EXPECT_EQ(dut.h(), _h);                                      \
-    EXPECT_TRUE(CompareMatrices(dut.srh(), Vector3<double>(_s, _r, _h))); \
+static constexpr double kX0 = 23.;
+static constexpr double kX1 = 75.;
+static constexpr double kX2 = 0.567;
+
+// TODO(jadecastro) Use CompareMatrices() to implement the
+// LanePositionT<T>::srh() accessor checks once AutoDiff supported.
+#define CHECK_ALL_LANE_POSITION_ACCESSORS(dut, _s, _r, _h)              \
+  do {                                                                  \
+    EXPECT_EQ(dut.s(), _s);                                             \
+    EXPECT_EQ(dut.r(), _r);                                             \
+    EXPECT_EQ(dut.h(), _h);                                             \
+    EXPECT_EQ(dut.srh().rows(), 3);                                     \
+    EXPECT_EQ(dut.srh().cols(), 1);                                     \
+    EXPECT_EQ(dut.srh().x(), _s);                                       \
+    EXPECT_EQ(dut.srh().y(), _r);                                       \
+    EXPECT_EQ(dut.srh().z(), _h);                                       \
   } while (0)
 
+// Class for defining identical tests in LanePositionTest across different
+// scalar types, T.
+template <typename T>
+class LanePositionTest : public ::testing::Test {};
 
-GTEST_TEST(LanePositionTest, DefaultConstructor) {
+typedef ::testing::Types<double, AutoDiffXd> Implementations;
+TYPED_TEST_CASE(LanePositionTest, Implementations);
+
+
+TYPED_TEST(LanePositionTest, DefaultConstructor) {
   // Check that default constructor obeys its contract.
-  LanePosition dut;
-  CHECK_ALL_LANE_POSITION_ACCESSORS(dut, 0., 0., 0.);
+  using T = TypeParam;
+  const LanePositionT<T> dut;
+  CHECK_ALL_LANE_POSITION_ACCESSORS(dut, T(0.), T(0.), T(0.));
 }
 
 
-GTEST_TEST(LanePositionTest, ParameterizedConstructor) {
+TYPED_TEST(LanePositionTest, ParameterizedConstructor) {
   // Check the fully-parameterized constructor.
-  LanePosition dut(23., 75., 0.567);
-  CHECK_ALL_LANE_POSITION_ACCESSORS(dut, 23., 75., 0.567);
+  using T = TypeParam;
+  const LanePositionT<T> dut(kX0, kX1, kX2);
+  CHECK_ALL_LANE_POSITION_ACCESSORS(dut, T(kX0), T(kX1), T(kX2));
 }
 
 
-GTEST_TEST(LanePositionTest, ConstructionFromVector) {
+TYPED_TEST(LanePositionTest, ConstructionFromVector) {
   // Check the conversion-construction from a 3-vector.
-  LanePosition dut = LanePosition::FromSrh(Vector3<double>(23., 75., 0.567));
-  CHECK_ALL_LANE_POSITION_ACCESSORS(dut, 23., 75., 0.567);
+  using T = TypeParam;
+  const LanePositionT<T> dut =
+      LanePositionT<T>::FromSrh(Vector3<T>(kX0, kX1, kX2));
+  CHECK_ALL_LANE_POSITION_ACCESSORS(dut, T(kX0), T(kX1), T(kX2));
 }
 
 
-GTEST_TEST(LanePositionTest, VectorSetter) {
+TYPED_TEST(LanePositionTest, VectorSetter) {
   // Check the vector-based setter.
-  LanePosition dut(23., 75., 0.567);
-  dut.set_srh(Vector3<double>(9., 7., 8.));
-  CHECK_ALL_LANE_POSITION_ACCESSORS(dut, 9., 7., 8.);
+  using T = TypeParam;
+  LanePositionT<T> dut(kX0, kX1, kX2);
+  const Vector3<T> srh(T(9.), T(7.), T(8.));
+  dut.set_srh(srh);
+  CHECK_ALL_LANE_POSITION_ACCESSORS(dut, T(srh.x()), T(srh.y()), T(srh.z()));
 }
 
 
-GTEST_TEST(LanePositionTest, ComponentSetters) {
+TYPED_TEST(LanePositionTest, ComponentSetters) {
   // Check the individual component setters.
-  LanePosition dut(0.1, 0.2, 0.3);
+  using T = TypeParam;
+  LanePositionT<T> dut(T(0.1), T(0.2), T(0.3));
 
-  dut.set_s(99.);
-  CHECK_ALL_LANE_POSITION_ACCESSORS(dut, 99., 0.2, 0.3);
+  dut.set_s(T(99.));
+  CHECK_ALL_LANE_POSITION_ACCESSORS(dut, T(99.), T(0.2), T(0.3));
 
-  dut.set_r(2.3);
-  CHECK_ALL_LANE_POSITION_ACCESSORS(dut, 99., 2.3, 0.3);
+  dut.set_r(T(2.3));
+  CHECK_ALL_LANE_POSITION_ACCESSORS(dut, T(99.), T(2.3), T(0.3));
 
-  dut.set_h(42.);
-  CHECK_ALL_LANE_POSITION_ACCESSORS(dut, 99., 2.3, 42.);
+  dut.set_h(T(42.));
+  CHECK_ALL_LANE_POSITION_ACCESSORS(dut, T(99.), T(2.3), T(42.));
 }
 
 #undef CHECK_ALL_LANE_POSITION_ACCESSORS
 
-
+// TODO(jadecastro) Use CompareMatrices() to implement the
+// GeoPositionT<T>::xyz() accessor checks once AutoDiff supported.
 #define CHECK_ALL_GEO_POSITION_ACCESSORS(dut, _x, _y, _z)               \
   do {                                                                  \
     EXPECT_EQ(dut.x(), _x);                                             \
     EXPECT_EQ(dut.y(), _y);                                             \
     EXPECT_EQ(dut.z(), _z);                                             \
-    EXPECT_TRUE(CompareMatrices(dut.xyz(), Vector3<double>(_x, _y, _z))); \
+    EXPECT_EQ(dut.xyz().rows(), 3);                                     \
+    EXPECT_EQ(dut.xyz().cols(), 1);                                     \
+    EXPECT_EQ(dut.xyz().x(), _x);                                       \
+    EXPECT_EQ(dut.xyz().y(), _y);                                       \
+    EXPECT_EQ(dut.xyz().z(), _z);                                       \
   } while (0)
 
+// Class for defining identical tests in GeoPositionTest across different scalar
+// types, T.
+template <typename T>
+class GeoPositionTest : public ::testing::Test {};
 
-GTEST_TEST(GeoPositionTest, DefaultConstructor) {
+typedef ::testing::Types<double, AutoDiffXd> Implementations;
+TYPED_TEST_CASE(GeoPositionTest, Implementations);
+
+TYPED_TEST(GeoPositionTest, DefaultConstructor) {
   // Check that default constructor obeys its contract.
-  GeoPosition dut;
-  CHECK_ALL_GEO_POSITION_ACCESSORS(dut, 0., 0., 0.);
+  using T = TypeParam;
+  const GeoPositionT<T> dut;
+  CHECK_ALL_GEO_POSITION_ACCESSORS(dut, T(0.), T(0.), T(0.));
 }
 
 
-GTEST_TEST(GeoPositionTest, ParameterizedConstructor) {
+TYPED_TEST(GeoPositionTest, ParameterizedConstructor) {
   // Check the fully-parameterized constructor.
-  GeoPosition dut(23., 75., 0.567);
-  CHECK_ALL_GEO_POSITION_ACCESSORS(dut, 23., 75., 0.567);
+  using T = TypeParam;
+  const GeoPositionT<T> dut(kX0, kX1, kX2);
+  CHECK_ALL_GEO_POSITION_ACCESSORS(dut, T(kX0), T(kX1), T(kX2));
 }
 
 
-GTEST_TEST(GeoPositionTest, ConstructionFromVector) {
+TYPED_TEST(GeoPositionTest, ConstructionFromVector) {
   // Check the conversion-construction from a 3-vector.
-  GeoPosition dut = GeoPosition::FromXyz(Vector3<double>(23., 75., 0.567));
-  CHECK_ALL_GEO_POSITION_ACCESSORS(dut, 23., 75., 0.567);
+  using T = TypeParam;
+  const GeoPositionT<T> dut =
+      GeoPositionT<T>::FromXyz(Vector3<T>(T(kX0), T(kX1), T(kX2)));
+  CHECK_ALL_GEO_POSITION_ACCESSORS(dut, T(kX0), T(kX1), T(kX2));
 }
 
 
-GTEST_TEST(GeoPositionTest, VectorSetter) {
+TYPED_TEST(GeoPositionTest, VectorSetter) {
   // Check the vector-based setter.
-  GeoPosition dut(23., 75., 0.567);
-  dut.set_xyz(Vector3<double>(9., 7., 8.));
-  CHECK_ALL_GEO_POSITION_ACCESSORS(dut, 9., 7., 8.);
+  using T = TypeParam;
+  GeoPositionT<T> dut(kX0, kX1, kX2);
+  const Vector3<T> xyz(T(9.), T(7.), T(8.));
+  dut.set_xyz(xyz);
+  CHECK_ALL_GEO_POSITION_ACCESSORS(dut, T(xyz.x()), T(xyz.y()), T(xyz.z()));
 }
 
 
-GTEST_TEST(GeoPositionTest, ComponentSetters) {
+TYPED_TEST(GeoPositionTest, ComponentSetters) {
   // Check the individual component setters.
-  GeoPosition dut(0.1, 0.2, 0.3);
+  using T = TypeParam;
+  GeoPositionT<T> dut(0.1, 0.2, 0.3);
 
-  dut.set_x(99.);
-  CHECK_ALL_GEO_POSITION_ACCESSORS(dut, 99., 0.2, 0.3);
+  dut.set_x(T(99.));
+  CHECK_ALL_GEO_POSITION_ACCESSORS(dut, T(99.), T(0.2), T(0.3));
 
-  dut.set_y(2.3);
-  CHECK_ALL_GEO_POSITION_ACCESSORS(dut, 99., 2.3, 0.3);
+  dut.set_y(T(2.3));
+  CHECK_ALL_GEO_POSITION_ACCESSORS(dut, T(99.), T(2.3), T(0.3));
 
-  dut.set_z(42.);
-  CHECK_ALL_GEO_POSITION_ACCESSORS(dut, 99., 2.3, 42.);
+  dut.set_z(T(42.));
+  CHECK_ALL_GEO_POSITION_ACCESSORS(dut, T(99.), T(2.3), T(42.));
 }
 
-GTEST_TEST(GeoPositionTest, EqualityInequalityOperators) {
+#undef CHECK_ALL_GEO_POSITION_ACCESSORS
+
+TYPED_TEST(GeoPositionTest, EqualityInequalityOperators) {
   // Checks that equality is true iff the constituent components are all equal,
   // and that inequality is true otherwise.
-  GeoPosition gp1(0.1, 0.2, 0.3);
-  GeoPosition gp2(0.1, 0.2, 0.3);
+  using T = TypeParam;
+  GeoPositionT<T> gp1(0.1, 0.2, 0.3);
+  GeoPositionT<T> gp2(0.1, 0.2, 0.3);
 
   EXPECT_TRUE(gp1 == gp2);
   EXPECT_FALSE(gp1 != gp2);
 
-  GeoPosition gp_xerror(gp2.x() + 1e-6, gp2.y(), gp2.z());
+  GeoPositionT<T> gp_xerror(gp2.x() + T(1e-6), gp2.y(), gp2.z());
   EXPECT_FALSE(gp1 == gp_xerror);
   EXPECT_TRUE(gp1 != gp_xerror);
-  GeoPosition gp_yerror(gp2.x(), gp2.y() + 1e-6, gp2.z());
+  GeoPositionT<T> gp_yerror(gp2.x(), gp2.y() + T(1e-6), gp2.z());
   EXPECT_FALSE(gp1 == gp_yerror);
   EXPECT_TRUE(gp1 != gp_xerror);
-  GeoPosition gp_zerror(gp2.x(), gp2.y(), gp2.z() + 1e-6);
+  GeoPositionT<T> gp_zerror(gp2.x(), gp2.y(), gp2.z() + T(1e-6));
   EXPECT_FALSE(gp1 == gp_zerror);
   EXPECT_TRUE(gp1 != gp_xerror);
-}
 
-#undef CHECK_ALL_GEO_POSITION_ACCESSORS
+  GeoPositionT<T> gp_nan1(NAN, NAN, NAN);
+  GeoPositionT<T> gp_nan2(NAN, NAN, NAN);
+  EXPECT_TRUE(gp_nan1 != gp_nan2);
+  EXPECT_FALSE(gp_nan1 == gp_nan2);
+}
 
 // An arbitrary very small number (that passes the tests).
 const double kRotationTolerance = 1e-15;
@@ -233,6 +283,72 @@ TEST_F(RotationTest, QuaternionSetter) {
 }
 
 #undef CHECK_ALL_ROTATION_ACCESSORS
+
+GTEST_TEST(RBoundsTest, DefaultConstructor) {
+  const RBounds dut{};
+  // Checks correct default value assignment.
+  EXPECT_EQ(dut.min(), 0.);
+  EXPECT_EQ(dut.max(), 0.);
+}
+
+GTEST_TEST(RBoundsTest, ParameterizedConstructor) {
+  const double kMin{-5.};
+  const double kMax{5.};
+  RBounds dut(kMin, kMax);
+  // Checks correct value assignment.
+  EXPECT_EQ(dut.min(), kMin);
+  EXPECT_EQ(dut.max(), kMax);
+  // Checks constraints on the constructor.
+  EXPECT_THROW(RBounds(kMax, kMax), std::runtime_error);
+  EXPECT_THROW(RBounds(kMin, kMin), std::runtime_error);
+}
+
+GTEST_TEST(RBoundsTest, Setters) {
+  const double kMin{-5.};
+  const double kMax{5.};
+  RBounds dut(kMin, kMax);
+  // Set min and max correct values.
+  dut.set_min(2. * kMin);
+  EXPECT_EQ(dut.min(), 2. * kMin);
+  dut.set_max(2. * kMax);
+  EXPECT_EQ(dut.max(), 2. * kMax);
+  // Checks constraints on the setters.
+  EXPECT_THROW(dut.set_min(kMax), std::runtime_error);
+  EXPECT_THROW(dut.set_max(kMin), std::runtime_error);
+}
+
+GTEST_TEST(HBoundsTest, DefaultConstructor) {
+  const HBounds dut{};
+  // Checks correct default value assignment.
+  EXPECT_EQ(dut.min(), 0.);
+  EXPECT_EQ(dut.max(), 0.);
+}
+
+GTEST_TEST(HBoundsTest, ParameterizedConstructor) {
+  const double kMin{-5.};
+  const double kMax{5.};
+  HBounds dut(kMin, kMax);
+  // Checks correct value assignment.
+  EXPECT_EQ(dut.min(), kMin);
+  EXPECT_EQ(dut.max(), kMax);
+  // Checks constraints on the constructor.
+  EXPECT_THROW(HBounds(kMax, kMax), std::runtime_error);
+  EXPECT_THROW(HBounds(kMin, kMin), std::runtime_error);
+}
+
+GTEST_TEST(HBoundsTest, Setters) {
+  const double kMin{-5.};
+  const double kMax{5.};
+  HBounds dut(kMin, kMax);
+  // Set min and max correct values.
+  dut.set_min(2. * kMin);
+  EXPECT_EQ(dut.min(), 2. * kMin);
+  dut.set_max(2. * kMax);
+  EXPECT_EQ(dut.max(), 2. * kMax);
+  // Checks constraints on the setters.
+  EXPECT_THROW(dut.set_min(kMax), std::runtime_error);
+  EXPECT_THROW(dut.set_max(kMin), std::runtime_error);
+}
 
 }  // namespace
 }  // namespace api

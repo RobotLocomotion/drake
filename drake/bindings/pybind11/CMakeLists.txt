@@ -1,4 +1,4 @@
-set(PYDRAKE_INSTALL_DIR lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages/pydrake)
+set(PYDRAKE_INSTALL_DIR lib/python2.7/site-packages/pydrake)
 
 include_directories("${NUMPY_INCLUDE_DIRS}")
 

@@ -1,0 +1,6 @@
+# -*- python -*-
+
+exports_files(
+    ["tinyobjloader-create-cps.py"],
+    visibility = ["@tinyobjloader//:__pkg__"],
+)

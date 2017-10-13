@@ -3,23 +3,29 @@
 package(default_visibility = ["//visibility:public"])
 
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools:drake.bzl",
+    "drake_py_binary",
+    "drake_py_library",
+    "drake_py_test",
+)
 
 # TODO(jwnimmer-tri) This probably deserves to live in drake/common, since it
 # should probably be widely used, but we'll wait until we have more evidence
 # before promoting it.
-py_library(
+drake_py_library(
     name = "find_data",
     srcs = ["find_data.py"],
 )
 
-py_library(
+drake_py_library(
     name = "util",
     srcs = ["util.py"],
     data = ["//:.drake-resource-sentinel"],
     visibility = ["//visibility:private"],
 )
 
-py_binary(
+drake_py_binary(
     name = "buildifier",
     srcs = ["buildifier.py"],
     data = [
@@ -32,35 +38,56 @@ py_binary(
     ],
 )
 
-py_binary(
+# Depend on this when you need to call clang-format.  (We don't have a label
+# for the binary yet, but this will stand in for it in the meantime.)
+filegroup(
+    name = "clang-format",
+    srcs = ["//:.clang-format"],
+)
+
+drake_py_binary(
     name = "drakelint",
     srcs = ["drakelint.py"],
     # The clang-format-includes binary is not used by drakelint, because
     # drakelint imports the formatter library directly.  However, we add
     # clang-format-includes here as a data dependency because the formatter
-    # asks the user to run bazel-bin/drake/tools/clang-format-includes for
+    # asks the user to run bazel-bin/tools/lint/clang-format-includes for
     # fixups, and this ensures it always is freshly compiled and available.
-    data = ["//drake/tools:clang-format-includes"],
-    deps = ["//drake/tools:formatter"],
+    data = [":clang-format-includes"],
+    deps = [":formatter"],
 )
 
-py_binary(
+drake_py_binary(
     name = "bzlcodestyle",
     srcs = ["bzlcodestyle.py"],
     main = "bzlcodestyle.py",
     deps = ["@pycodestyle//:pycodestyle"],
 )
 
+drake_py_library(
+    name = "formatter",
+    srcs = ["formatter.py"],
+    data = [":clang-format"],
+)
+
+drake_py_binary(
+    name = "clang-format-includes",
+    srcs = ["clang_format_includes.py"],
+    data = [":clang-format"],
+    main = "clang_format_includes.py",
+    deps = [":formatter"],
+)
+
 # === test ===
 
-py_test(
+drake_py_test(
     name = "find_data_test",
     srcs = ["test/find_data_test.py"],
     data = ["test/find_data_test.txt"],
     deps = [":find_data"],
 )
 
-py_test(
+drake_py_test(
     name = "util_test",
     srcs = ["test/util_test.py"],
     tags = [
@@ -69,6 +96,20 @@ py_test(
         "local",
     ],
     deps = [":util"],
+)
+
+drake_py_test(
+    name = "formatter_test",
+    srcs = ["test/formatter_test.py"],
+    deps = [":formatter"],
+)
+
+sh_test(
+    name = "clang_format_includes_test",
+    srcs = ["test/clang_format_includes_test.sh"],
+    data = [
+        ":clang-format-includes",
+    ],
 )
 
 add_lint_tests()

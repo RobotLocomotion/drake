@@ -2,7 +2,7 @@
 #include <string>
 
 #include <gtest/gtest.h>
-#include "spruce.hh"
+#include <spruce.hh>
 
 #include "drake/common/find_resource.h"
 #include "drake/multibody/joints/floating_base_types.h"

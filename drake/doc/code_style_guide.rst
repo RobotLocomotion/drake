@@ -167,10 +167,10 @@ When adding a model to Drake
 (typically in `drake-distro/drake/examples/ <https://github.com/RobotLocomotion/drake/tree/master/drake/examples>`_),
 you will need to add a ``package.xml`` file to the example's directory to enable
 modeling files like URDF and SDF to refer to resources like mesh files contained
-within the example's directory. While a full ``package.xml`` file that contains
-every `required field <http://wiki.ros.org/catkin/package.xml#Required_Tags>`_
-would be ideal, for Drake's purposes, the following minimal ``package.xml`` file
-is sufficient::
+within the example's directory. Please ensure that your ``package.xml`` file
+contains every
+`required field <http://wiki.ros.org/catkin/package.xml#Required_Tags>`_.
+The following minimal ``package.xml`` file can get you started::
 
     <!--
     This XML file is used by:
@@ -181,6 +181,12 @@ is sufficient::
 
     <package format="2">
       <name>package_name</name>
+      <version>0.0.0</version>
+      <description>
+        A description of your package.
+      </description>
+      <maintainer email="drake-users@mit.edu">Drake Users</maintainer>
+      <license>BSD</license>
     </package>
 
 In the above example, replace "package_name" with the name of your package. This
