@@ -107,8 +107,9 @@ Most of these models/tools are described in `the companion textbook from an MIT 
 We hope you find this tool useful.   Please engage us `via github issues <https://github.com/RobotLocomotion/drake/issues>`_ with comments, questions, success stories, and frustrations.  And please contribute your best bug fixes, features, and examples!
 
 
+************
 Citing Drake
-============
+************
 
 If you would like to cite Drake in your academic publications, we suggest the following BibTeX citation::
 
@@ -120,36 +121,35 @@ If you would like to cite Drake in your academic publications, we suggest the fo
 	}
 
 
+****************	
 Acknowledgements
-================
+****************
 
 The Drake developers would like to acknowledge significant support from the `Toyota Research Institute`_, `DARPA <http://www.darpa.mil/>`_, the `National Science Foundation <https://nsf.gov/>`_, the `Office of Naval Research <http://www.onr.navy.mil/>`_, `Amazon.com <https://www.amazon.com/>`_, and `The MathWorks <http://www.mathworks.com/>`_.
 
 .. _`Toyota Research Institute`: http://tri.global
 
 
+**********
 Next steps
-==========
+**********
+
 .. toctree::
    :maxdepth: 1
 
-   gallery
    installation
-   Introduction and Examples <http://underactuated.csail.mit.edu/underactuated.html?chapter=drake>
-   design
    developers
    Doxygen (C++) <doxygen_cxx/index.html#://>
-   models
    faq
    issues
-   video_tutorials
    Mailing list <http://mailman.mit.edu/mailman/listinfo/drake-users>
    credits
    GitHub <https://github.com/RobotLocomotion/drake>
 
 
+********************************************   
 Using Drake from other Programming Languages
-============================================
+********************************************
 .. toctree::
 		:maxdepth: 1
 
@@ -158,12 +158,11 @@ Using Drake from other Programming Languages
 		matlab_bindings
 
 
+***************************************************		
 Documentation that may be useful but needs updating
-===================================================
-.. toctree::
-		:maxdepth: 1
+***************************************************
 
-		gallery
-		Introduction and Examples <http://underactuated.csail.mit.edu/underactuated.html?chapter=drake>
-		design
-		video_tutorials
+* :doc:`gallery`
+* `Introduction and Examples <http://underactuated.csail.mit.edu/underactuated.html?chapter=drake>`_
+* :doc:`design`
+* :doc:`video_tutorials`
