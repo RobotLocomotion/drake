@@ -1,4 +1,4 @@
-#include "drake/systems/sensors/frame_pose_extractor.h"
+#include "drake/manipulation/util/frame_pose_extractor.h"
 
 #include <algorithm>
 #include <utility>
