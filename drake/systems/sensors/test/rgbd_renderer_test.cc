@@ -29,9 +29,8 @@ const double kDepthTolerance = 1e-4;
 // Holds `(x, y)` indices of the screen coordinate system where the ranges of
 // `x` and `y` are [0, kWidth) and [0, kHeight) respectively.
 struct ScreenCoord {
-  ScreenCoord(int x, int y) : x(x), y(y) {}
-  int x;
-  int y;
+  int x{};
+  int y{};
 };
 
 void CompareColor(const uint8_t* pixel,
@@ -118,8 +117,7 @@ class RgbdRendererTest : public ::testing::Test {
   // The outliers are chosen to point to pixels representing the ground,
   // not objects in the test scene.
   const std::array<ScreenCoord, 4> kOutliers{{
-      ScreenCoord(10, 10), ScreenCoord(10, 470),
-      ScreenCoord(630, 10), ScreenCoord(630, 470)}};
+      {10, 10}, {10, 470}, {630, 10}, {630, 470}}};
 
   ImageRgba8U color_;
   ImageDepth32F depth_;
