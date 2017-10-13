@@ -121,15 +121,26 @@ void RollPitchYawMobilizer<T>::MapVelocityToQDot(
   // w_FM = E_F(q) * q̇; q̇ = [ṙ, ṗ, ẏ]ᵀ
   //
   // The linear map from v to q̇ is given by the inverse of E_F(q):
-  //                     [          cos(y),          sin(y),      0]
-  // Einv_F = 1/cos(p) * [-cos(p) * sin(y), cos(p) * cos(y),      0]
-  //                     [ sin(p) * cos(y), sin(p) * sin(y), cos(p)]
+  //          [          cos(y) / cos(p),          sin(y) / cos(p), 0]
+  // Einv_F = [                  -sin(y),                   cos(y), 0]
+  //          [ sin(p) * cos(y) / cos(p), sin(p) * sin(y) / cos(p), 1]
   //
-  // q̇ = Einv_F(q) * w_FM; q̇ = [ṙ, ṗ, ẏ]ᵀ
+  // such that q̇ = Einv_F(q) * w_FM; q̇ = [ṙ, ṗ, ẏ]ᵀ
+  // where we intentionally wrote the expression for Einv_F in terms of sines
+  // and cosines only to arrive to the more computationally efficient version
+  // below.
   //
   // Notice Einv_F is singular for p = π/2 + kπ, ∀ k ∈ ℤ.
   //
   // Note to developers:
+  // Matrix E_F(q) is obtained by computing w_FM as the composition of the
+  // angular velocity induced by each Euler angle rate in its respective
+  // body-fixed frame. This is outlined in [Diebel 2006, §5.2;
+  // Mitiguy (July 22) 2016, §9.3]. Notice however that our rotation matrix R_FM
+  // is the transpose of that in [Diebel 2006], Eq. 67, given the convention
+  // used there. Still, the expression for E_F in [Diebel 2006] is exactly the
+  // same here presented.
+  //
   // The expression for Einv_F was symbolically generated with the following
   // Maxima script (which can be copy/pasted and executed as is):
   //
@@ -144,6 +155,11 @@ void RollPitchYawMobilizer<T>::MapVelocityToQDot(
   // doallmxops: false$
   // doscmxops: false$
   // Einv_F: trigsimp(invert(E_F));
+  //
+  // [Diebel 2006] Representing attitude: Euler angles, unit quaternions, and
+  //               rotation vectors. Stanford University.
+  // [Mitiguy (July 22) 2016] Mitiguy, P., 2016. Advanced Dynamics & Motion
+  //                          Simulation.
 
   const Vector3<T> rpy = get_rpy(context);
   const T& w0 = v[0];
@@ -155,7 +171,6 @@ void RollPitchYawMobilizer<T>::MapVelocityToQDot(
   const T sy = sin(rpy[2]);
   const T cy = cos(rpy[2]);
   const T cpi = 1.0 / cp;
-  const T t = (cy * w0 + sy * w1) * cpi;  // Common factor.
 
   // Although the linear equations relating v to q̇ can be used to explicitly
   // solve the equation w_FM = E_F(q) * q̇ for q̇, a more computational efficient
@@ -166,6 +181,7 @@ void RollPitchYawMobilizer<T>::MapVelocityToQDot(
   // ṙ = (cos(y) * w0 + sin(y) * w1) / cos(p)
   // ṗ = -sin(y) * w0 + cos(y) * w1
   // ẏ = sin(p) * ṙ + w2
+  const T t = (cy * w0 + sy * w1) * cpi;  // Common factor.
   *qdot =  Vector3<T>(t, -sy * w0 + cy * w1, sp *  t + w2);
 }
 
@@ -188,6 +204,14 @@ void RollPitchYawMobilizer<T>::MapQDotToVelocity(
   // w_FM = E_F(q) * q̇; q̇ = [ṙ, ṗ, ẏ]ᵀ
   //
   // Note to developers:
+  // Matrix E_F(q) is obtained by computing w_FM as the composition of the
+  // angular velocity induced by each Euler angle rate in its respective
+  // body-fixed frame. This is outlined in [Diebel 2006, §5.2;
+  // Mitiguy (July 22) 2016, §9.3]. Notice however that our rotation matrix R_FM
+  // is the transpose of that in [Diebel 2006], Eq. 67, given the convention
+  // used there. Still, the expression for E_F in [Diebel 2006] is exactly the
+  // same here presented.
+  //
   // The expression for E_F was symbolically generated with the following
   // Maxima script (which can be copy/pasted and executed as is):
   //
@@ -198,6 +222,11 @@ void RollPitchYawMobilizer<T>::MapQDotToVelocity(
   // R_MF:transpose(R_FM);
   // E_F: transpose(append(transpose(
   //             Rz . Ry . [1,0,0]),transpose(Rz . [0,1,0]),matrix([0,0,1])));
+  //
+  // [Diebel 2006] Representing attitude: Euler angles, unit quaternions, and
+  //               rotation vectors. Stanford University.
+  // [Mitiguy (July 22) 2016] Mitiguy, P., 2016. Advanced Dynamics & Motion
+  //                          Simulation.
 
   const Vector3<T> rpy = get_rpy(context);
   const T& rdot = qdot[0];
