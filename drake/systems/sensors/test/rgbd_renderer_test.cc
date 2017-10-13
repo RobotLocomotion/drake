@@ -26,15 +26,13 @@ const bool kShowWindow = true;
 const double kColorPixelTolerance = 1.001;
 const double kDepthTolerance = 1e-4;
 
-// Holds `(u, v)` indices of the screen coordinate system where the ranges of
-// `u` and `v` are [0, kWidth) and [0, kHeight) respectively.
+// Holds `(x, y)` indices of the screen coordinate system where the ranges of
+// `x` and `y` are [0, kWidth) and [0, kHeight) respectively.
 struct ScreenCoord {
-  ScreenCoord(int x, int y) : u(x), v(y) {}
-  int u;
-  int v;
+  ScreenCoord(int x, int y) : x(x), y(y) {}
+  int x;
+  int y;
 };
-
-typedef ScreenCoord SC;
 
 void CompareColor(const uint8_t* pixel,
                   const sensors::ColorI& color,
@@ -63,25 +61,25 @@ class RgbdRendererTest : public ::testing::Test {
   }
 
   void VerifyUniformColor(const sensors::ColorI& pixel, int alpha) {
-    for (int v = 0; v < kHeight; ++v) {
-      for (int u = 0; u < kWidth; ++u) {
-        CompareColor(color_.at(u, v), pixel, alpha);
+    for (int y = 0; y < kHeight; ++y) {
+      for (int x = 0; x < kWidth; ++x) {
+        CompareColor(color_.at(x, y), pixel, alpha);
       }
     }
   }
 
   void VerifyUniformLabel(int16_t label) {
-    for (int v = 0; v < kHeight; ++v) {
-      for (int u = 0; u < kWidth; ++u) {
-        ASSERT_EQ(label_.at(u, v)[0], label);
+    for (int y = 0; y < kHeight; ++y) {
+      for (int x = 0; x < kWidth; ++x) {
+        ASSERT_EQ(label_.at(x, y)[0], label);
       }
     }
   }
 
   void VerifyUniformDepth(float depth) {
-    for (int v = 0; v < kHeight; ++v) {
-      for (int u = 0; u < kWidth; ++u) {
-        ASSERT_NEAR(depth_.at(u, v)[0], depth, kDepthTolerance);
+    for (int y = 0; y < kHeight; ++y) {
+      for (int x = 0; x < kWidth; ++x) {
+        ASSERT_NEAR(depth_.at(x, y)[0], depth, kDepthTolerance);
       }
     }
   }
@@ -89,15 +87,15 @@ class RgbdRendererTest : public ::testing::Test {
   // Verifies the chosen pixels, i.e. `kOutliers`, belong to the ground.
   void VerifyOutliers() {
     const auto& kTerrain = renderer_->get_flat_terrain_color();
-    for (const auto& pix_coord : kOutliers) {
-      const int u = pix_coord.u;
-      const int v = pix_coord.v;
+    for (const auto& screen_coord : kOutliers) {
+      const int x = screen_coord.x;
+      const int y = screen_coord.y;
       // Color
-      CompareColor(color_.at(u, v), kTerrain, 255u);
+      CompareColor(color_.at(x, y), kTerrain, 255u);
       // Depth
-      ASSERT_NEAR(depth_.at(u, v)[0], kDefaultDistance, kDepthTolerance);
+      ASSERT_NEAR(depth_.at(x, y)[0], kDefaultDistance, kDepthTolerance);
       // Label
-      ASSERT_EQ(label_.at(u, v)[0], RgbdRenderer::Label::kFlatTerrain);
+      ASSERT_EQ(label_.at(x, y)[0], RgbdRenderer::Label::kFlatTerrain);
     }
   }
 
@@ -120,7 +118,8 @@ class RgbdRendererTest : public ::testing::Test {
   // The outliers are chosen to point to pixels representing the ground,
   // not objects in the test scene.
   const std::array<ScreenCoord, 4> kOutliers{{
-      SC(10, 10), SC(10, 470), SC(630, 10), SC(630, 470)}};
+      ScreenCoord(10, 10), ScreenCoord(10, 470),
+      ScreenCoord(630, 10), ScreenCoord(630, 470)}};
 
   ImageRgba8U color_;
   ImageDepth32F depth_;
@@ -145,9 +144,9 @@ TEST_F(RgbdRendererTest, NoBodyTest) {
   VerifyUniformColor(renderer_->get_sky_color(), 0u);
   VerifyUniformLabel(RgbdRenderer::Label::kNoBody);
   // Verifies depth.
-  for (int v = 0; v < kHeight; ++v) {
-    for (int u = 0; u < kWidth; ++u) {
-      EXPECT_TRUE(std::isnan(depth_.at(u, v)[0]));
+  for (int y = 0; y < kHeight; ++y) {
+    for (int x = 0; x < kWidth; ++x) {
+      EXPECT_TRUE(std::isnan(depth_.at(x, y)[0]));
     }
   }
 }
@@ -181,9 +180,9 @@ TEST_F(RgbdRendererTest, TerrainTest) {
   VerifyUniformColor(kTerrain, 255u);
   VerifyUniformLabel(RgbdRenderer::Label::kFlatTerrain);
   // Verifies depth.
-  for (int v = 0; v < kHeight; ++v) {
-    for (int u = 0; u < kWidth; ++u) {
-      ASSERT_EQ(RgbdRenderer::InvalidDepth::kTooFar, depth_.at(u, v)[0]);
+  for (int y = 0; y < kHeight; ++y) {
+    for (int x = 0; x < kWidth; ++x) {
+      ASSERT_EQ(RgbdRenderer::InvalidDepth::kTooFar, depth_.at(x, y)[0]);
     }
   }
 }
@@ -196,7 +195,7 @@ TEST_F(RgbdRendererTest, HorizonTest) {
       Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY());
   SetUp(X_WR, true);
 
-  // Returns v in [0, kHeight / 2], index of horizon location in image
+  // Returns y in [0, kHeight / 2], index of horizon location in image
   // coordinate system under two assumptions: 1) the gound plane is not clipped
   // by `kClippingPlaneFar`, 2) camera is located above the ground.
   auto CalcHorizon = [](double z) {
@@ -214,12 +213,12 @@ TEST_F(RgbdRendererTest, HorizonTest) {
 
     const auto& kTerrain = renderer_->get_flat_terrain_color();
     int actual_horizon{0};
-    for (int v = 0; v < kHeight; ++v) {
+    for (int y = 0; y < kHeight; ++y) {
       // Looking for the boundary between the sky and the ground.
-      if ((static_cast<uint8_t>(kTerrain.r == color_.at(0, v)[0])) &&
-          (static_cast<uint8_t>(kTerrain.g == color_.at(0, v)[1])) &&
-          (static_cast<uint8_t>(kTerrain.b == color_.at(0, v)[2]))) {
-        actual_horizon = v;
+      if ((static_cast<uint8_t>(kTerrain.r == color_.at(0, y)[0])) &&
+          (static_cast<uint8_t>(kTerrain.g == color_.at(0, y)[1])) &&
+          (static_cast<uint8_t>(kTerrain.b == color_.at(0, y)[2]))) {
+        actual_horizon = y;
         break;
       }
     }
@@ -247,14 +246,14 @@ TEST_F(RgbdRendererTest, BoxTest) {
   VerifyOutliers();
 
   // Verifies inside the box.
-  const int u = kInlier.u;
-  const int v = kInlier.v;
+  const int x = kInlier.x;
+  const int y = kInlier.y;
   // Color
-  CompareColor(color_.at(u, v), kDefaultVisualColor, 255u);
+  CompareColor(color_.at(x, y), kDefaultVisualColor, 255u);
   // Depth
-  ASSERT_NEAR(depth_.at(u, v)[0], 2.f, kDepthTolerance);
+  ASSERT_NEAR(depth_.at(x, y)[0], 2.f, kDepthTolerance);
   // Label
-  ASSERT_EQ(label_.at(u, v)[0], kBodyID);
+  ASSERT_EQ(label_.at(x, y)[0], kBodyID);
 }
 
 TEST_F(RgbdRendererTest, SphereTest) {
@@ -274,14 +273,14 @@ TEST_F(RgbdRendererTest, SphereTest) {
   VerifyOutliers();
 
   // Verifies inside the sphere.
-  const int u = kInlier.u;
-  const int v = kInlier.v;
+  const int x = kInlier.x;
+  const int y = kInlier.y;
   // Color
-  CompareColor(color_.at(u, v), kDefaultVisualColor, 255u);
+  CompareColor(color_.at(x, y), kDefaultVisualColor, 255u);
   // Depth
-  ASSERT_NEAR(depth_.at(u, v)[0], 2.f, kDepthTolerance);
+  ASSERT_NEAR(depth_.at(x, y)[0], 2.f, kDepthTolerance);
   // Label
-  ASSERT_EQ(label_.at(u, v)[0], kBodyID);
+  ASSERT_EQ(label_.at(x, y)[0], kBodyID);
 }
 
 TEST_F(RgbdRendererTest, CylinderTest) {
@@ -301,14 +300,14 @@ TEST_F(RgbdRendererTest, CylinderTest) {
   VerifyOutliers();
 
   // Verifies inside the cylinder.
-  const int u = kInlier.u;
-  const int v = kInlier.v;
+  const int x = kInlier.x;
+  const int y = kInlier.y;
   // Color
-  CompareColor(color_.at(u, v), kDefaultVisualColor, 255u);
+  CompareColor(color_.at(x, y), kDefaultVisualColor, 255u);
   // Depth
-  ASSERT_NEAR(depth_.at(u, v)[0], 1.8f, kDepthTolerance);
+  ASSERT_NEAR(depth_.at(x, y)[0], 1.8f, kDepthTolerance);
   // Label
-  ASSERT_EQ(label_.at(u, v)[0], kBodyID);
+  ASSERT_EQ(label_.at(x, y)[0], kBodyID);
 }
 
 TEST_F(RgbdRendererTest, MeshTest) {
@@ -328,14 +327,14 @@ TEST_F(RgbdRendererTest, MeshTest) {
   VerifyOutliers();
 
   // Verifies inside the cylinder.
-  const int u = kInlier.u;
-  const int v = kInlier.v;
+  const int x = kInlier.x;
+  const int y = kInlier.y;
   // Color
-  CompareColor(color_.at(u, v), ColorI({4u, 241u, 33u}), 255u);
+  CompareColor(color_.at(x, y), ColorI({4u, 241u, 33u}), 255u);
   // Depth
-  ASSERT_NEAR(depth_.at(u, v)[0], 2., kDepthTolerance);
+  ASSERT_NEAR(depth_.at(x, y)[0], 2., kDepthTolerance);
   // Label
-  ASSERT_EQ(label_.at(u, v)[0], kBodyID);
+  ASSERT_EQ(label_.at(x, y)[0], kBodyID);
 }
 
 // TODO(kunimatsu-tri) Move DepthImageToPointCloudConversionTest here from
