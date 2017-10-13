@@ -313,8 +313,10 @@ drake_cc_library(
     ],
     deps = [
         "//drake/multibody:rigid_body_tree",
+        "//drake/multibody/multibody_tree/math:spatial_velocity",
         "//drake/multibody/rigid_body_plant",
         "//drake/systems/framework:leaf_system",
+        "//drake/systems/rendering:frame_velocity",
         "//drake/systems/rendering:pose_bundle",
         "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
     ],

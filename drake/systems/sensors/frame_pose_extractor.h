@@ -17,76 +17,57 @@ namespace sensors {
 
 using systems::rendering::PoseBundle;
 
-constexpr double kLcmStatusPeriod = 1.0/120.0;
-
 /**
- * A structure used to store the attributes of a tracked rigid body frame. These
- * are a subset of the complete set of attributes which the real Optitrack
- * hardware maintains, but is typically sufficient for most applications.
- * @param optitrack_id The rigid body ID as defined in the Optitrack software.
- * @param frame_name The name of the rigid body frame.
- * @param T_WF The transform of this rigid body frame w.r.t. the world.
- *
- */
-struct TrackedObject {
-  int optitrack_id;
-  std::string frame_name;
-  Eigen::Isometry3d T_WF;
-
-  bool operator < (const TrackedObject& obj) const {
-    return (optitrack_id < obj.optitrack_id);
-  }
-};
-
-/**
- * Implements a class that allows a simulation to mock the basic output of the
- * Optitrack system. This class is useful when designing systems that are meant
- * to interface with actual Optitrack hardware, but which also need to be tested
- * and vetted in simulation. It maintains a set of attributes for each tracked
- * object that is a subset of the attributes maintained by the real hardware,
- * but is typically sufficient for most applications. Specfically each tracked
- * object in this interface is described by its Optitrack ID, it's name, and
- * it's pose w.r.t. the world. No information about markers, marker sets, etc.
- * is provided in this interface.
- * Optitrack bodies can be created in one of two ways: (1) by providing the
- * name of each RigidBody (in the RigidBodyTree) to be tracked, or (2) by
+ * Implements a class that maintains pose and velocity information for a set of
+ * specified RigidBodyFrames. Frame information is communicated via a PoseBundle object.
+ * Frames can be specified at construction in one of two ways: (1) by providing a set of RigidBody
+ * names (of bodies already existing in the RigidBodyTree), which specify which
+ * RigidBodies these newly created
+ * frames should be attached to, or (2) by
  * providing a set of RigidBodyFrames directly. The former simply searches the
  * RigidBodyTree and assigns a RigidBodyFrame to the specified body. Frame pose
- * w.r.t. the RigidBody can also be specified.
+ * w.r.t. the base RigidBody frame can also be specified.
  * This system takes an abstract value input of type KinematicResults<double>
  * and generates an abstract value output of type
- * std::vector<TrackedObject>. The output of this system can be
- * connected to an OptitrackFrameSender system which populates an
- * optitrack_frame_t object.
+ * systems::rendering::PoseBundle.
  */
 class FramePoseExtractor : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FramePoseExtractor)
   /**
-   * Constructs a FramePoseExtractor object that tracks a set of RigidBodyFrames.
-   * Each RigidBodyFrame has an associated Optitrack ID.
-   * @param body_frame_to_id_map A mapping of RigidBodyFrames to Motive ID's.
+   * Constructs a FramePoseExtractor object by taking in the RigidBodyFrames to
+   * track directly as a parameter.
+   * @param tree The RigidBodyTree containing the named bodies. FramePoseExtractor
+   *        keeps a reference to this tree to calculate frame poses in the world frame.
+   * @param frames a std::vector of RigidBodyFrames to track. Each RigidBodyFrame
+   *        in this vector should have a name that is unique, i.e., the std::string returned
+   *        by RigidBodyFrame::get_name() should be unique.
+   * @throws std::runtime_error if any frame has a non-unique name or the frame is not
+   *         attached to a RigidBody (i.e., it's RigidBody pointer is nullptr).
    */
-  FramePoseExtractor(
-      const std::map<RigidBodyFrame<double>*, int>& body_frame_to_id_map,
-      double optitrack_lcm_publish_period = kLcmStatusPeriod);
+  FramePoseExtractor(const RigidBodyTree<double>& tree,
+                     const std::vector<RigidBodyFrame<double>*>& frames);
 
   /**
-   * Constructs a FramePoseExtractor object from body names that exist in the
-   * @p tree.
+   * Constructs a FramePoseExtractor object from the information contained in
+   * @p frame_info, which is a std::map whose keys denote unique frame names. Each key is
+   * mapped to a std::pair that includes the RigidBody name (std::string)
+   * specifying which body this frame should be attached to, and the model instance
+   * id in the @p tree that contains the corresponding body.
    *
-   * @param tree The RigidBodyTree containing the named bodies.
-   * @param body_name_to_id_map A mapping of body names to Optitrack ID's.
+   * @param tree The RigidBodyTree containing the named bodies. FramePoseExtractor
+   *        keeps a reference to this tree to calculate frame poses in the world frame.
+   * @param frame_info A mapping from a unique frame name to a pair consisting of
+   *        body name and model instance id.
    * @param frame_poses A vector containing each frame's pose relative to the
    *        parent body. If this vector is empty, it assumes identity for all
    *        poses.
-   * @param optitrack_lcm_publish_period The publish period of the lcm message.
    */
-  FramePoseExtractor(const RigidBodyTree<double>& tree,
-               const std::map<std::string, int>& body_name_to_id_map,
-               std::vector<Eigen::Isometry3d>& frame_poses =
-               *(new std::vector<Eigen::Isometry3d>()),
-               double optitrack_lcm_publish_period = kLcmStatusPeriod);
+  FramePoseExtractor(
+      const RigidBodyTree<double>& tree,
+      const std::map<std::string, std::pair<std::string, int>> frame_info,
+      std::vector<Eigen::Isometry3d>& frame_poses =
+      *(new std::vector<Eigen::Isometry3d>()));
 
   /**
    * This InputPortDescriptor represents an abstract valued input port of type
@@ -110,44 +91,22 @@ class FramePoseExtractor : public systems::LeafSystem<double> {
     return this->get_output_port(0);
   }
 
-  /**
-   * This OutputPort represents an abstract valued output port of type
-   * manipulation::perception::TrackedObject.
-   */
-  const systems::OutputPort<double>& get_optitrack_output_port() const {
-    return this->get_output_port(1);
-  }
-
   int get_pose_bundle_output_port_index() const {
     return this->pose_bundle_output_port_index_;
   }
 
-  int get_optitrack_output_port_index() const {
-    return this->tracked_objects_output_port_index_;
-  }
-
  private:
-  void Init(double optitrack_lcm_publish_period);
-
-  // Checks whether the Optitrack ID is valid, i.e., is greater than zero
-  // and not repeated.
-  bool CheckIdValidity(const int id);
+  void Init();
 
   PoseBundle<double> MakeOutputStatus() const;
 
   void OutputStatus(const systems::Context<double>& context,
                     PoseBundle<double>* output) const;
 
-  std::vector<TrackedObject> MakeOutputStatusOT() const;
-
-  void OutputStatusOT(const systems::Context<double>& context,
-                      std::vector<TrackedObject>* output) const;
-
   int kinematics_input_port_index_{-1};
-  int tracked_objects_output_port_index_{-1};
   int pose_bundle_output_port_index_{-1};
-  std::map<RigidBodyFrame<double>*, int> body_frame_to_id_map_;
-  std::map<int, const RigidBody<double>*> id_to_body_map_;
+  const RigidBodyTree<double>* tree_;
+  std::map<std::string, RigidBodyFrame<double>*> frame_name_to_frame_map_;
 };
 
 }  // namespace sensors
