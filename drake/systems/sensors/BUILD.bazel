@@ -186,7 +186,7 @@ drake_cc_library(
         ":image",
         ":vtk_util",
         "//drake/common",
-        "//drake/multibody/shapes:shapes",
+        "//drake/multibody/shapes",
         "@eigen",
         "@vtk//:vtkCommonCore",
         "@vtk//:vtkCommonDataModel",
