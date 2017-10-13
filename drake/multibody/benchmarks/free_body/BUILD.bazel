@@ -17,13 +17,28 @@ filegroup(
     ]),
 )
 
+drake_cc_library(
+    name = "free_body",
+    srcs = [
+        "free_body.cc",
+    ],
+    hdrs = [
+        "free_body.h",
+    ],
+    deps = [
+        "//drake/common",
+        "//drake/math:geometric_transform",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
-    name = "cylinder_torque_free_analytical_solution",
+    name = "rigid_body_plant_free_body_test",
     size = "medium",
     data = [":models"],
     deps = [
+        ":free_body",
         "//drake/common:find_resource",
         "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/math:autodiff",

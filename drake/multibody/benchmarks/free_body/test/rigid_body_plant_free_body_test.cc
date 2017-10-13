@@ -12,120 +12,20 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/math/autodiff.h"
 #include "drake/math/quaternion.h"
+#include "drake/multibody/benchmarks/free_body/free_body.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
-#include "drake/systems/analysis/runge_kutta3_integrator-inl.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
-#include "drake/systems/framework/diagram.h"
-#include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/primitives/constant_vector_source.h"
 
 namespace drake {
 namespace benchmarks {
-namespace cylinder_torque_free_analytical_solution {
+namespace free_body {
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
 using Eigen::Quaterniond;
-
-//-----------------------------------------------------------------------------
-// The purpose of the TorqueFreeCylinderExactSolution class is to provide the
-// data (initial values and gravity) and methods for calculating the exact
-// analytical solution for the translational and rotational motion of an axis-
-// symmetric rigid body B (uniform cylinder) in a Newtonian frame (World) N.
-// Since the only external forces on B are uniform gravitational forces, there
-// exists an exact closed-form analytical solution for B's motion. The closed-
-// form rotational solution is available since B is "torque-free", i.e., the
-// moment of all forces about B's mass center is zero.
-// This class calculates cylinder B's quaternion, angular velocity and angular
-// acceleration expressed in B (body-frame) as well as the position, velocity,
-// acceleration of Bcm (B's center of mass) in N (World).
-// Algorithm from [Kane, 1983] Sections 1.13 and 3.1, Pages 60-62 and 159-169.
-//
-// - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York, 1983.
-//   (with P. W. Likins and D. A. Levinson).  Available for free .pdf download:
-//   https://ecommons.cornell.edu/handle/1813/637
-//------------------------------------------------------------------------------
-class TorqueFreeCylinderExactSolution{
- public:
-  // Constructors and destructor.
-  TorqueFreeCylinderExactSolution() = delete;
-  TorqueFreeCylinderExactSolution(const Quaterniond& quat_NB_initial,
-                                  const Vector3d& w_NB_B_initial,
-                                  const Vector3d& p_NoBcm_N_initial,
-                                  const Vector3d& v_NBcm_B_initial,
-                                  const Vector3d& gravity_N) {
-    set_quat_NB_initial(quat_NB_initial);
-    set_w_NB_B_initial(w_NB_B_initial);
-    set_p_NoBcm_N_initial(p_NoBcm_N_initial);
-    set_v_NBcm_B_initial(v_NBcm_B_initial);
-    SetUniformGravityExpressedInWorld(gravity_N);
-  }
-  ~TorqueFreeCylinderExactSolution() {}
-
-  // Get methods for initial values and gravity.
-  const Quaterniond&  get_quat_NB_initial() const { return quat_NB_initial_; }
-  const Vector3d&  get_w_NB_B_initial() const { return w_NB_B_initial_; }
-  const Vector3d&  get_p_NoBcm_N_initial() const { return p_NoBcm_N_initial_; }
-  const Vector3d&  get_v_NBcm_B_initial()  const { return v_NBcm_B_initial_; }
-  const Vector3d&  get_uniform_gravity_expressed_in_world() const
-                         { return uniform_gravity_expressed_in_world_; }
-  const Vector3d  GetInitialVelocityOfBcmInWorldExpressedInWorld() const {
-      const Eigen::Matrix3d R_NB_initial = quat_NB_initial_.toRotationMatrix();
-      return R_NB_initial * v_NBcm_B_initial_;
-  }
-
-  // Set methods for initial values and gravity.
-  void  set_quat_NB_initial(const Quaterniond& quat_NB_initial)
-        { quat_NB_initial_ = quat_NB_initial; }
-  void  set_w_NB_B_initial(const Vector3d& w_NB_B_initial)
-        { w_NB_B_initial_ = w_NB_B_initial; }
-  void  set_p_NoBcm_N_initial(const Vector3d& p_NoBcm_N_initial)
-        { p_NoBcm_N_initial_ = p_NoBcm_N_initial; }
-  void  set_v_NBcm_B_initial(const Vector3d& v_NBcm_B_initial)
-        { v_NBcm_B_initial_ = v_NBcm_B_initial; }
-  void  SetUniformGravityExpressedInWorld(const Vector3d& gravity)
-        { uniform_gravity_expressed_in_world_ = gravity; }
-
-  // This method calculates quat_NB, quatDt, w_NB_B, alpha_NB_B at time t.
-  std::tuple<Quaterniond, Vector4d, Vector3d, Vector3d>
-  CalculateExactRotationalSolutionNB(const double t) const;
-
-  // This method calculates p_NoBcm_N, v_NBcm_N, a_NBcm_N, at time t.
-  std::tuple<Vector3d, Vector3d, Vector3d>
-  CalculateExactTranslationalSolution(const double t) const;
-
- private:
-  // This "helper" method calculates quat_AB, w_NB_B, and alpha_NB_B at time t.
-  std::tuple<Quaterniond, Vector3d, Vector3d>
-  CalculateExactRotationalSolutionABInitiallyAligned(const double t) const;
-
-  // quat_NB_initial_ is the initial (t=0) value of the quaternion that relates
-  // unit vectors Nx, Ny, Nz fixed in World N (e.g., Nz vertically upward) to
-  // unit vectors Bx, By, Bz fixed in cylinder B (Bz parallel to symmetry axis)
-  // Note: The quaternion should already be normalized before it is set.
-  // Note: quat_NB_initial is analogous to the initial rotation matrix R_NB.
-  Quaterniond quat_NB_initial_;
-
-  // w_NB_B_initial_  is B's initial angular velocity in N, expressed in B.
-  Vector3d w_NB_B_initial_;
-
-  // p_NoBcm_N_initial_ is Bcm's initial position from No, expressed in N, i.e.,
-  // x, y, z, the Nx, Ny, Nz measures of Bcm's position vector from point No
-  // (World origin).  Note: Bcm (B's center of mass) is coincident with Bo.
-  Vector3d p_NoBcm_N_initial_;
-
-  // v_NBcm_B_initial_ is Bcm's initial velocity in N, expressed in B.
-  // Note: v_NBcm_B is not (in general) the time-derivative of ẋ, ẏ, ż.
-  Vector3d v_NBcm_B_initial_;
-
-  // uniform_gravity_expressed_in_world_ is the local planet's (e.g., Earth)
-  // uniform gravitational acceleration, expressed in World (e.g., Earth).
-  Vector3d uniform_gravity_expressed_in_world_;
-};
 
 
 /**
@@ -143,7 +43,7 @@ class TorqueFreeCylinderExactSolution{
   void TestDrakeSolutionVsExactSolutionForTorqueFreeCylinder(
        const drake::systems::RigidBodyPlant<double>& rigid_body_plant,
        const drake::systems::Context<double>& context,
-       const TorqueFreeCylinderExactSolution& torque_free_cylinder_solution,
+       const FreeBody& torque_free_cylinder_solution,
        const double tolerance,
        drake::systems::ContinuousState<double>* stateDt_drake) {
   DRAKE_DEMAND(stateDt_drake != NULL);
@@ -225,8 +125,8 @@ class TorqueFreeCylinderExactSolution{
   // Ensure time-derivative of Drake's quaternion satifies quarternionDt test.
   // Since more than one time-derivative of a quaternion is associated with the
   // same angular velocity, convert to angular velocity to compare results.
-  EXPECT_TRUE(math::IsBothQuaternionAndQuaternionDtOK(quat_NB_drake,
-                                                quatDt_NB_drake, 16*tolerance));
+  EXPECT_TRUE(math::IsBothQuaternionAndQuaternionDtOK(
+      quat_NB_drake, quatDt_NB_drake, 16*tolerance));
 
   EXPECT_TRUE(math::IsQuaternionAndQuaternionDtEqualAngularVelocityExpressedInB(
       quat_NB_drake, quatDt_NB_drake, w_NB_B_drake, 16*tolerance));
@@ -264,7 +164,7 @@ void  IntegrateForwardWithVariableStepRungeKutta3(
           const drake::systems::RigidBodyPlant<double>& rigid_body_plant,
           const double dt_max, const double t_final,
           const double maximum_absolute_error_per_integration_step,
-          const TorqueFreeCylinderExactSolution& torque_free_cylinder_solution,
+          const FreeBody& torque_free_cylinder_solution,
           drake::systems::Context<double>* context,
           drake::systems::ContinuousState<double>* stateDt_drake) {
   DRAKE_DEMAND(context != NULL  &&  stateDt_drake != NULL  &&  dt_max >= 0.0);
@@ -287,8 +187,9 @@ void  IntegrateForwardWithVariableStepRungeKutta3(
     // At boundary of each numerical integration step, test Drake's simulation
     // accuracy versus exact analytical (closed-form) solution.
     const double tolerance = maximum_absolute_error_per_integration_step;
-    TestDrakeSolutionVsExactSolutionForTorqueFreeCylinder(rigid_body_plant,
-      *context, torque_free_cylinder_solution, tolerance, stateDt_drake);
+    TestDrakeSolutionVsExactSolutionForTorqueFreeCylinder(
+        rigid_body_plant, *context,
+        torque_free_cylinder_solution, tolerance, stateDt_drake);
 
     const double t = context->get_time();
     if (t >= t_final_minus_epsilon) break;
@@ -317,7 +218,7 @@ void  IntegrateForwardWithVariableStepRungeKutta3(
  */
 void  TestDrakeSolutionForSpecificInitialValue(
     const drake::systems::RigidBodyPlant<double>& rigid_body_plant,
-    const TorqueFreeCylinderExactSolution& torque_free_cylinder_solution,
+    const FreeBody& torque_free_cylinder_solution,
     const bool should_numerically_integrate,
     drake::systems::Context<double>* context,
     drake::systems::ContinuousState<double>* stateDt_drake) {
@@ -368,8 +269,9 @@ void  TestDrakeSolutionForSpecificInitialValue(
   // versus exact analytical (closed-form) solution.
   // Initially (t = 0), Drake's results should be close to machine-precision.
   const double epsilon = std::numeric_limits<double>::epsilon();
-  TestDrakeSolutionVsExactSolutionForTorqueFreeCylinder(rigid_body_plant,
-     *context, torque_free_cylinder_solution, 50*epsilon, stateDt_drake);
+  TestDrakeSolutionVsExactSolutionForTorqueFreeCylinder(
+      rigid_body_plant, *context,
+      torque_free_cylinder_solution, 50*epsilon, stateDt_drake);
 
   // Maybe numerically integrate.
   if (should_numerically_integrate) {
@@ -377,9 +279,10 @@ void  TestDrakeSolutionForSpecificInitialValue(
     const double maximum_absolute_error_per_integration_step = 1.0E-3;
 
     // Integrate forward, testing Drake's results vs. exact solution frequently.
-    IntegrateForwardWithVariableStepRungeKutta3(rigid_body_plant, dt_max,
-                    t_final, maximum_absolute_error_per_integration_step,
-                   torque_free_cylinder_solution, context, stateDt_drake);
+    IntegrateForwardWithVariableStepRungeKutta3(
+        rigid_body_plant, dt_max,
+        t_final, maximum_absolute_error_per_integration_step,
+        torque_free_cylinder_solution, context, stateDt_drake);
   }
 }
 
@@ -400,7 +303,7 @@ void  TestDrakeSolutionForVariousInitialValues(
       const drake::systems::RigidBodyPlant<double>& rigid_body_plant,
       drake::systems::Context<double>* context,
       drake::systems::ContinuousState<double>* stateDt_drake) {
-  DRAKE_DEMAND(context != NULL  &&  stateDt_drake != NULL);
+  DRAKE_DEMAND(context != nullptr  &&  stateDt_drake != nullptr);
 
   // Store initial values in a class that can calculate an exact solution.
   // Store gravitational acceleration expressed in N (e.g. [0, 0, -9.8]).
@@ -411,8 +314,9 @@ void  TestDrakeSolutionForVariousInitialValues(
   const Vector3d v_NBcm_B_initial(-4.2, 5.5, 6.1);
   const RigidBodyTree<double>& tree = rigid_body_plant.get_rigid_body_tree();
   const Vector3d gravity = tree.a_grav.tail<3>();
-  TorqueFreeCylinderExactSolution torque_free_cylinder_exact(quat_NB_initial,
-                 w_NB_B_initial, p_NoBcm_N_initial, v_NBcm_B_initial, gravity);
+  FreeBody torque_free_cylinder_exact(
+      quat_NB_initial, w_NB_B_initial,
+      p_NoBcm_N_initial, v_NBcm_B_initial, gravity);
 
   // Test a variety of initial normalized quaternions.
   // Since cylinder B is axis-symmetric for axis Bz, iterate on BodyXY rotation
@@ -459,7 +363,7 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   // Create path to .urdf file containing mass/inertia and geometry properties.
   const std::string urdf_name = "uniform_solid_cylinder.urdf";
   const std::string urdf_dir = "drake/multibody/benchmarks/"
-      "cylinder_torque_free_analytical_solution/";
+      "free_body/";
   const std::string urdf_dir_file_name = FindResourceOrThrow(
       urdf_dir + urdf_name);
 
@@ -494,209 +398,6 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
                                            stateDt_drake.get());
 }
 
-
-
-/**
- * Calculates exact solutions for quaternion, angular velocity, and angular
- * acceleration expressed in body-frame, for torque-free rotational motion of an
- * axis-symmetric rigid body B (uniform cylinder) in Newtonian frame (World) A,
- * where torque-free means the moment of forces about B's mass center is zero.
- * Right-handed orthogonal unit vectors Ax, Ay, Az fixed in A are initially
- * equal to right-handed orthogonal unit vectors Bx, By, Bz fixed in B,
- * where Bz is parallel to B's symmetry axis.
- * Note: The function CalculateExactRotationalSolutionNB() is a more general
- * solution that allows for initial misalignment of Bx, By, Bz.
- * Algorithm from [Kane, 1983] Sections 1.13 and 3.1, Pages 60-62 and 159-169.
- * @param t Current value of time.
- * @returns Machine-precision values at time t are returned as defined below.
- *
- * std::tuple | Description
- * -----------|-------------------------------------------------
- * quat_AB    | Quaternion relating Ax, Ay, Az to Bx, By, Bz.
- *            | Note: quat_AB is analogous to the rotation matrix R_AB.
- * w_NB_B     | B's angular velocity in N, expressed in B, e.g., [wx, wy, wz].
- * wDt_NB_B   | B's angular acceleration in N, expressed in B, [ẇx, ẇy, ẇz].
- *
- * - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York, 1983.
- *   (with P. W. Likins and D. A. Levinson).  Available for free .pdf download:
- *   https://ecommons.cornell.edu/handle/1813/637
- */
-std::tuple<Quaterniond, Vector3d, Vector3d>
-TorqueFreeCylinderExactSolution::
-CalculateExactRotationalSolutionABInitiallyAligned(const double t) const {
-  // Constant values of moments of inertia.
-  const double I = 0.04;
-  const double J = 0.02;
-
-  // Initial values of wx, wy, wz.
-  const Vector3d& w_NB_B_initial = get_w_NB_B_initial();
-  const double wx0 = w_NB_B_initial[0];
-  const double wy0 = w_NB_B_initial[1];
-  const double wz0 = w_NB_B_initial[2];
-
-  // Intermediate calculations for quaternion solution.
-  const double p = std::sqrt(wx0*wx0 + wy0*wy0 + (wz0 * J / I) * (wz0 * J / I));
-  const double s = (I - J) / I * wz0;
-  const double coef = wz0 * (J / (I * p));
-  const double spt2 = std::sin(p * t / 2);
-  const double cpt2 = std::cos(p * t / 2);
-  const double sst2 = std::sin(s * t / 2);
-  const double cst2 = std::cos(s * t / 2);
-
-  // Kane's analytical solution is for quaternion quat_AB that relates A to B,
-  // where A is a set Ax, Ay, Az of right-handed orthogonal unit vectors which
-  // are fixed in N (Newtonian frame/World) and initially aligned to Bx, By, Bz,
-  // where Bz is parallel to B's symmetry axis.
-  // Kane produced an analytical solution for quat_AB [eAB0, eAB1, eB2, eB3],
-  // which allows for direct calculation of the R_AB rotation matrix.
-  const double eAB1 = spt2 / p * (wx0 * cst2 + wy0 * sst2);
-  const double eAB2 = spt2 / p * (-wx0 * sst2 + wy0 * cst2);
-  const double eAB3 =  coef * spt2 * cst2 + cpt2 * sst2;
-  const double eAB0 = -coef * spt2 * sst2 + cpt2 * cst2;
-  const Quaterniond quat_AB(eAB0, eAB1, eAB2, eAB3);
-
-  // Analytical solution for wx(t), wy(t), wz(t).
-  const double wx =  wx0 * std::cos(s * t) + wy0 * std::sin(s * t);
-  const double wy = -wx0 * std::sin(s * t) + wy0 * std::cos(s * t);
-  const double wz =  wz0;
-
-  // Analytical solution for time-derivatives of wx, wy, wz.
-  const double wxDt =  (1 - J / I) * wy * wz;
-  const double wyDt = (-1 + J / I) * wx * wz;
-  const double wzDt = 0.0;
-
-  // Create a tuple to package for returning.
-  std::tuple<Quaterniond, Vector3d, Vector3d> returned_tuple;
-  std::get<0>(returned_tuple) = quat_AB;
-  Vector3d& w_NB_B   = std::get<1>(returned_tuple);
-  Vector3d& wDt_NB_B = std::get<2>(returned_tuple);
-
-  // Fill returned_tuple with rotation results.
-  w_NB_B   << wx, wy, wz;
-  wDt_NB_B << wxDt, wyDt, wzDt;
-
-  return returned_tuple;
-}
-
-
-/**
- * Calculates exact solutions for quaternion and angular velocity expressed in
- * body-frame, and their time derivatives for torque-free rotational motion of
- * axis-symmetric rigid body B (uniform cylinder) in Newtonian frame (World) N,
- * where torque-free means the moment of forces about B's mass center is zero.
- * The quaternion characterizes the orientiation between right-handed orthogonal
- * unit vectors Nx, Ny, Nz fixed in N and right-handed orthogonal unit vectors
- * Bx, By, Bz fixed in B, where Bz is parallel to B's symmetry axis.
- * Note: CalculateExactRotationalSolutionABInitiallyAligned() implements the
- * algorithm from [Kane, 1983] Sections 1.13 and 3.1, Pages 60-62 and 159-169.
- * This function allows for initial misalignment of Nx, Ny, Nz and Bx, By, Bz.
- * @param t Current value of time.
- * @returns Machine-precision values at time t are returned as defined below.
- *
- * std::tuple | Description
- * -----------|-------------------------------------------------
- * quat_NB    | Quaternion relating Nx, Ny, Nz to Bx, By, Bz: [e0, e1, e2, e3].
- *            | Note: quat_NB is analogous to the rotation matrix R_NB.
- * quatDt     | Time-derivative of `quat_NB', i.e., [ė0, ė1, ė2, ė3].
- * w_NB_B     | B's angular velocity in N, expressed in B, e.g., [wx, wy, wz].
- * wDt_NB_B   | B's angular acceleration in N, expressed in B, [ẇx, ẇy, ẇz].
- *
- * - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York, 1983.
- *   (with P. W. Likins and D. A. Levinson).  Available for free .pdf download:
- *   https://ecommons.cornell.edu/handle/1813/637
- */
-std::tuple<Quaterniond, Vector4d, Vector3d, Vector3d>
-TorqueFreeCylinderExactSolution::CalculateExactRotationalSolutionNB(
-                                 const double t) const {
-  // Kane's analytical solution is for quaternion quat_AB that relates A to B,
-  // where A is another set Ax, Ay, Az of right-handed orthogonal unit vectors
-  // which are fixed in N (Newtonian frame) but initially aligned to Bx, By, Bz.
-  Quaterniond quat_AB;
-  Vector3d w_NB_B, wDt_NB_B;
-  std::tie(quat_AB, w_NB_B, wDt_NB_B) =
-      CalculateExactRotationalSolutionABInitiallyAligned(t);
-
-  // Define A basis as World-fixed basis aligned with B's initial orientation.
-  // Multiply (Hamilton product) the quaternions quat_NA * quat_AB to produce
-  // quat_NB, which is analogous to multiplying rotation matrices R_NA * R_AB
-  // to produce the rotation matrix R_NB.
-  // In other words, account for quat_NB_initial (which is quat_NA) to calculate
-  // the quaternion quat_NB that is analogous to the R_NB rotation matrix.
-  const Quaterniond& quat_NA = get_quat_NB_initial();
-  const Quaterniond quat_NB = quat_NA * quat_AB;
-
-  // Analytical solution for time-derivative quaternion in B.
-  const Vector4d quatDt =
-    math::CalculateQuaternionDtFromAngularVelocityExpressedInB(quat_NB, w_NB_B);
-
-  // Create a tuple to package for returning.
-  std::tuple<Quaterniond, Vector4d, Vector3d, Vector3d> returned_tuple;
-  std::get<0>(returned_tuple) = quat_NB;
-  std::get<1>(returned_tuple) = quatDt;
-  std::get<2>(returned_tuple) = w_NB_B;
-  std::get<3>(returned_tuple) = wDt_NB_B;
-
-  return returned_tuple;
-}
-
-
-/**
- * Calculates exact solutions for translational motion of an arbitrary rigid
- * body B in a Newtonian frame (world) N.  Algorithm from high-school physics.
- * @param t Current value of time.
- * @returns Machine-precision values at time t are returned as defined below.
- *
- * std::tuple | Description
- * -----------|-----------------------------------------------------------
- * xyz        | Vector3d [x, y, z], Bcm's position from No, expressed in N.
- * xyzDt      | Vector3d [ẋ, ẏ, ż]  Bcm's velocity in N, expressed in N.
- * xyzDDt     | Vector3d [ẍ  ÿ  z̈], Bcm's acceleration in N, expressed in N.
- */
-std::tuple<Vector3d, Vector3d, Vector3d>
-TorqueFreeCylinderExactSolution::CalculateExactTranslationalSolution(
-                                 const double t) const {
-  // Initial values of x, y, z and ẋ, ẏ, ż.
-  const Vector3d& xyz_initial = get_p_NoBcm_N_initial();
-  const Vector3d& xyzDt_initial =
-                  GetInitialVelocityOfBcmInWorldExpressedInWorld();
-  const double x0 = xyz_initial[0];
-  const double y0 = xyz_initial[1];
-  const double z0 = xyz_initial[2];
-  const double xDt0 = xyzDt_initial[0];
-  const double yDt0 = xyzDt_initial[1];
-  const double zDt0 = xyzDt_initial[2];
-
-  // Analytical solution for ẋ, ẏ, z̈ (only gravitational forces on body).
-  const Vector3d& gravity = get_uniform_gravity_expressed_in_world();
-  const double x_acceleration = gravity[0];
-  const double y_acceleration = gravity[1];
-  const double z_acceleration = gravity[2];
-
-  // Analytical solution for ẋ, ẏ, ż (since acceleration is constant).
-  const double xDt = xDt0 + x_acceleration * t;
-  const double yDt = yDt0 + y_acceleration * t;
-  const double zDt = zDt0 + z_acceleration * t;
-
-  // Analytical solution for x, y, z (since acceleration is constant).
-  const double x = x0 + xDt0*t + 0.5 * x_acceleration * t * t;
-  const double y = y0 + yDt0*t + 0.5 * y_acceleration * t * t;
-  const double z = z0 + zDt0*t + 0.5 * z_acceleration * t * t;
-
-  // Create a tuple to package for returning.
-  std::tuple<Vector3d, Vector3d, Vector3d> returned_tuple;
-  Vector3d& xyz    = std::get<0>(returned_tuple);
-  Vector3d& xyzDt  = std::get<1>(returned_tuple);
-  Vector3d& xyzDDt = std::get<2>(returned_tuple);
-
-  // Fill returned_tuple with results.
-  xyz    << x, y, z;
-  xyzDt  << xDt, yDt, zDt;
-  xyzDDt << x_acceleration, y_acceleration, z_acceleration;
-
-  return returned_tuple;
-}
-
-
-}  // namespace cylinder_torque_free_analytical_solution
+}  // namespace free_body
 }  // namespace benchmarks
 }  // namespace drake
