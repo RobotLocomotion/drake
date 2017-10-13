@@ -134,14 +134,12 @@ class RgbdRenderer final : private ModuleInitVtkRenderingOpenGL2 {
   /// Adds a flat terrain in the rendering scene.
   void AddFlatTerrain();
 
-  /// Represents indices for rigid bodies.
-  using BodyIndex = TypeSafeIndex<class BodyTag>;
-
   /// Represents indices for visual elements.
   using VisualIndex = TypeSafeIndex<class VisualTag>;
 
   /// Registers a visual element to a rigid body and returns the ID of the
-  /// visual element.
+  /// visual element. The element is uniquely identified using `body_id` and
+  /// `visual_id`.
   ///
   /// @param visual A visual element to be registered. See VisualElement for
   /// more detail.
@@ -153,12 +151,11 @@ class RgbdRenderer final : private ModuleInitVtkRenderingOpenGL2 {
   /// @return visual_id A local visual ID associated with given `body_id`.
   /// `nullopt` will be returned if `visual` contains an unsupported shape.
   /// We assume `visual_id` will be used together with `body_id` when you call
-  /// `UpdateVisualPose` later.
+  /// UpdateVisualPose() later.
   optional<VisualIndex> RegisterVisual(
-      const DrakeShapes::VisualElement& visual, BodyIndex body_id);
+      const DrakeShapes::VisualElement& visual, int body_id);
 
-  /// Updates the pose of a visual with given pose X_WV. Note that a visual is
-  /// uniquely identified using `body_id` and `visual_id`.
+  /// Updates the pose of a visual with given pose X_WV.
   ///
   /// @param X_WV The pose of a visual in the world coordinate system.
   ///
@@ -167,8 +164,14 @@ class RgbdRenderer final : private ModuleInitVtkRenderingOpenGL2 {
   ///
   /// @param visual_id The local ID of a visual that is associated with a rigid
   /// body and you want to update.
+  ///
+  // TODO(kunimatsu-tri) Remove body_id once RgbdCamera which holds RgbdRenderer
+  // adapted to MultibodyTree. Both body_id and visual_id are needed here for
+  // now simply because visual_ids are local IDs that you can merely use for
+  // a rigid body and this mechanism is provided by RigidBodyTree which is
+  // currently used by RgbdCamera.
   void UpdateVisualPose(const Eigen::Isometry3d& X_WV,
-                        BodyIndex body_id, VisualIndex visual_id) const;
+                        int body_id, VisualIndex visual_id) const;
 
   /// Updates renderer's viewpoint with given pose X_WR.
   ///

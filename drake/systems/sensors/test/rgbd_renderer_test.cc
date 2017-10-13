@@ -26,14 +26,15 @@ const bool kShowWindow = true;
 const double kColorPixelTolerance = 1.001;
 const double kDepthTolerance = 1e-4;
 
-// Holds `(u, v)` indices of the pixel coordinate system where the ranges of `u`
-// and `v` are [0, kWidth) and [0, kHeight) respectively. See CameraInfo's
-// documentation for more detail.
-struct UV {
-  UV(int x, int y) : u(x), v(y) {}
+// Holds `(u, v)` indices of the screen coordinate system where the ranges of `u`
+// and `v` are [0, kWidth) and [0, kHeight) respectively.
+struct ScreenCoord {
+  ScreenCoord(int x, int y) : u(x), v(y) {}
   int u;
   int v;
 };
+
+typedef ScreenCoord SC;
 
 void CompareColor(const uint8_t* pixel,
                   const sensors::ColorI& color,
@@ -115,11 +116,11 @@ class RgbdRendererTest : public ::testing::Test {
   const float kDefaultDistance{3.f};
   // `kInlier` is chosen to point to a pixel representing an object in the
   // test scene.
-  const UV kInlier = {320, 240};
+  const ScreenCoord kInlier = {320, 240};
   // The outliers are chosen to point to pixels representing the ground,
   // not objects in the test scene.
-  const std::array<UV, 4> kOutliers{{
-      UV(10, 10), UV(10, 470), UV(630, 10), UV(630, 470)}};
+  const std::array<ScreenCoord, 4> kOutliers{{
+      SC(10, 10), SC(10, 470), SC(630, 10), SC(630, 470)}};
 
   ImageRgba8U color_;
   ImageDepth32F depth_;
@@ -237,7 +238,7 @@ TEST_F(RgbdRendererTest, BoxTest) {
   DrakeShapes::VisualElement visual(X_WV);
   Eigen::Vector3d box_size(1, 1, 1);
   visual.setGeometry(DrakeShapes::Box(box_size));
-  const RgbdRenderer::BodyIndex kBodyID(0);
+  const int kBodyID = 0;
   const RgbdRenderer::VisualIndex kVisualID(0);
   renderer_->RegisterVisual(visual, kBodyID);
   renderer_->UpdateVisualPose(X_WV, kBodyID, kVisualID);
@@ -264,7 +265,7 @@ TEST_F(RgbdRendererTest, SphereTest) {
   X_WV.translation().z() = 0.5;
   DrakeShapes::VisualElement visual(X_WV);
   visual.setGeometry(DrakeShapes::Sphere(0.5));
-  const RgbdRenderer::BodyIndex kBodyID(0);
+  const int kBodyID = 0;
   const RgbdRenderer::VisualIndex kVisualID(0);
   renderer_->RegisterVisual(visual, kBodyID);
   renderer_->UpdateVisualPose(X_WV, kBodyID, kVisualID);
@@ -291,7 +292,7 @@ TEST_F(RgbdRendererTest, CylinderTest) {
   X_WV.translation().z() = 0.6;
   DrakeShapes::VisualElement visual(X_WV);
   visual.setGeometry(DrakeShapes::Cylinder(0.2, 1.2));  // Radius and length.
-  const RgbdRenderer::BodyIndex kBodyID(1);
+  const int kBodyID = 1;
   const RgbdRenderer::VisualIndex kVisualID(0);
   renderer_->RegisterVisual(visual, kBodyID);
   renderer_->UpdateVisualPose(X_WV, kBodyID, kVisualID);
@@ -318,7 +319,7 @@ TEST_F(RgbdRendererTest, MeshTest) {
   auto filename =
       FindResourceOrThrow("drake/systems/sensors/test/models/meshes/box.obj");
   visual.setGeometry(DrakeShapes::Mesh("", filename));
-  const RgbdRenderer::BodyIndex kBodyID(0);
+  const int kBodyID = 0;
   const RgbdRenderer::VisualIndex kVisualID(0);
   renderer_->RegisterVisual(visual, kBodyID);
   renderer_->UpdateVisualPose(X_WV, kBodyID, kVisualID);
