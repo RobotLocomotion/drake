@@ -26,8 +26,8 @@ const bool kShowWindow = true;
 const double kColorPixelTolerance = 1.001;
 const double kDepthTolerance = 1e-4;
 
-// Holds `(u, v)` indices of the screen coordinate system where the ranges of `u`
-// and `v` are [0, kWidth) and [0, kHeight) respectively.
+// Holds `(u, v)` indices of the screen coordinate system where the ranges of
+// `u` and `v` are [0, kWidth) and [0, kHeight) respectively.
 struct ScreenCoord {
   ScreenCoord(int x, int y) : u(x), v(y) {}
   int u;
