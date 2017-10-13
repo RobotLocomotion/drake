@@ -6,6 +6,7 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_binary",
+    "drake_py_binary",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
@@ -418,7 +419,7 @@ drake_cc_binary(
     ],
 )
 
-py_binary(
+drake_py_binary(
     name = "steering_command_driver",
     srcs = ["steering_command_driver.py"],
     deps = [
@@ -435,7 +436,7 @@ java_binary(
     ],
 )
 
-py_binary(
+drake_py_binary(
     name = "demo",
     srcs = ["automotive_demo.py"],
     data = [

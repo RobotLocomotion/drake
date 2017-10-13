@@ -38,6 +38,12 @@ new_local_repository(
     path = "third_party/josephdavisco_spruce",
 )
 
+new_local_repository(
+    name = "stx",
+    build_file = "tools/workspace/stx/stx.BUILD",
+    path = "third_party/com_github_tcbrindle_cpp17_headers",
+)
+
 load("@kythe//tools/build_rules/config:pkg_config.bzl", "pkg_config_package")
 
 pkg_config_package(
@@ -274,12 +280,6 @@ load("//tools/workspace/mosek:mosek.bzl", "mosek_repository")
 
 mosek_repository(
     name = "mosek",
-)
-
-load("//tools/workspace/gfortran:gfortran.bzl", "gfortran_repository")
-
-gfortran_repository(
-    name = "gfortran",
 )
 
 git_repository(

@@ -1,0 +1,6 @@
+# -*- python -*-
+
+exports_files(
+    ["stx.cps"],
+    visibility = ["@stx//:__pkg__"],
+)

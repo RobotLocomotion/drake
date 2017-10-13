@@ -6,6 +6,7 @@ load(
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
+    "drake_py_test",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
@@ -103,6 +104,8 @@ drake_cc_googletest(
     srcs = ["test/multilane_builder_test.cc"],
     deps = [
         ":builder",
+        "//drake/automotive/maliput/api/test_utilities",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -158,7 +161,7 @@ drake_cc_binary(
     ],
 )
 
-py_test(
+drake_py_test(
     name = "yaml_load_test",
     size = "small",
     srcs = ["test/yaml_load_test.py"],

@@ -3,7 +3,11 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("@drake//tools:drake.bzl", "drake_java_binary")
+load(
+    "@drake//tools:drake.bzl",
+    "drake_java_binary",
+    "drake_py_test",
+)
 load("@drake//tools:install.bzl", "install")
 load(
     "//tools/workspace/lcm:lcm.bzl",
@@ -340,7 +344,7 @@ install(
 
 # === test/ ===
 
-py_test(
+drake_py_test(
     name = "polynomial_matrix_test",
     srcs = ["test/polynomial_matrix_test.py"],
     deps = [

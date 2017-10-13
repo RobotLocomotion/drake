@@ -6,6 +6,8 @@ load(
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
+    "drake_py_binary",
+    "drake_py_test",
 )
 load("@drake//tools:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
@@ -67,9 +69,9 @@ drake_cc_library(
         "text_logging.h",
     ],
     deps = [
-        "//drake/thirdParty:stx",
         "@eigen",
         "@spdlog",
+        "@stx",
     ],
 )
 
@@ -149,35 +151,33 @@ drake_cc_library(
 
 drake_cc_library(
     name = "symbolic",
-    # We only expose `symbolic.h` to the users of symbolic target and hide the
-    # rest of the header files by adding them in `srcs` section.
     srcs = [
         "symbolic.cc",
         "symbolic_environment.cc",
-        "symbolic_environment.h",
         "symbolic_expression.cc",
-        "symbolic_expression.h",
         "symbolic_expression_cell.cc",
-        "symbolic_expression_cell.h",
-        "symbolic_expression_visitor.h",
         "symbolic_formula.cc",
-        "symbolic_formula.h",
         "symbolic_formula_cell.cc",
-        "symbolic_formula_cell.h",
-        "symbolic_formula_visitor.h",
         "symbolic_monomial.cc",
-        "symbolic_monomial.h",
         "symbolic_monomial_util.cc",
-        "symbolic_monomial_util.h",
         "symbolic_polynomial.cc",
-        "symbolic_polynomial.h",
         "symbolic_variable.cc",
-        "symbolic_variable.h",
         "symbolic_variables.cc",
-        "symbolic_variables.h",
     ],
     hdrs = [
         "symbolic.h",
+        "symbolic_environment.h",
+        "symbolic_expression.h",
+        "symbolic_expression_cell.h",
+        "symbolic_expression_visitor.h",
+        "symbolic_formula.h",
+        "symbolic_formula_cell.h",
+        "symbolic_formula_visitor.h",
+        "symbolic_monomial.h",
+        "symbolic_monomial_util.h",
+        "symbolic_polynomial.h",
+        "symbolic_variable.h",
+        "symbolic_variables.h",
     ],
     deps = [
         ":cond",
@@ -339,7 +339,7 @@ drake_cc_binary(
 
 # This should probably move to the test_utilities package, but developers
 # expect to find it here, so we'll leave it alone for now.
-py_binary(
+drake_py_binary(
     name = "cpplint_wrapper",
     testonly = 1,
     srcs = ["test/cpplint_wrapper.py"],
@@ -803,14 +803,14 @@ drake_cc_googletest(
 
 # Run test/drake_cc_googletest_main_test.py, a unit test written in Python that
 # covers the test/drake_cc_googletest_main.cc software.
-py_test(
+drake_py_test(
     name = "drake_cc_googletest_main_test_py",
     srcs = ["test/drake_cc_googletest_main_test.py"],
     data = [":drake_cc_googletest_main_test"],
     main = "test/drake_cc_googletest_main_test.py",
 )
 
-py_test(
+drake_py_test(
     name = "cpplint_wrapper_test",
     srcs = ["test/cpplint_wrapper_test.py"],
     data = [
@@ -820,7 +820,7 @@ py_test(
     ],
 )
 
-py_test(
+drake_py_test(
     name = "resource_tool_test",
     srcs = ["test/resource_tool_test.py"],
     data = [
@@ -830,7 +830,7 @@ py_test(
     ],
 )
 
-py_test(
+drake_py_test(
     name = "resource_tool_installed_test",
     srcs = ["test/resource_tool_installed_test.py"],
     data = [
