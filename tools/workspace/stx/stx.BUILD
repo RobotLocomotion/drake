@@ -27,7 +27,7 @@ install_cmake_config(
 install(
     name = "install",
     targets = [":stx"],
-    hdr_dest = "include/stx",
+    hdr_dest = "include",
     guess_hdrs = "PACKAGE",
     docs = [
         "LICENSE",

@@ -7,7 +7,7 @@
   "Components": {
     "stx": {
       "Type": "interface",
-      "Includes": ["@prefix@/include/stx"]
+      "Includes": ["@prefix@/include"]
     }
   }
 }
