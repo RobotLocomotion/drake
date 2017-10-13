@@ -1,6 +1,6 @@
 import unittest
 
-from drake.tools.formatter import FormatterBase, IncludeFormatter
+from tools.lint.formatter import FormatterBase, IncludeFormatter
 
 
 class TestFormatterBase(unittest.TestCase):

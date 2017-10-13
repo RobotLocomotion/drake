@@ -320,7 +320,7 @@ following values for the fields:
   :Description: ``Runs the clang format for correcting includes on the current
                   file``
   :Program: ``bazel``
-  :Parameters: ``run //drake/tools:clang-format-includes -- $FilePath$``
+  :Parameters: ``run //tools/lint:clang-format-includes -- $FilePath$``
   :Working directory: ``$Projectpath$``
 
 Leave the checkbox options in their default state.
