@@ -138,8 +138,8 @@ void RollPitchYawMobilizer<T>::MapVelocityToQDot(
   // body-fixed frame. This is outlined in [Diebel 2006, §5.2;
   // Mitiguy (July 22) 2016, §9.3]. Notice however that our rotation matrix R_FM
   // is the transpose of that in [Diebel 2006], Eq. 67, given the convention
-  // used there. Still, the expression for E_F in [Diebel 2006] is exactly the
-  // same here presented.
+  // used there. Still, the expression for Einv_F in [Diebel 2006], Eq. 76, is
+  // exactly the same here presented.
   //
   // The expression for Einv_F was symbolically generated with the following
   // Maxima script (which can be copy/pasted and executed as is):
@@ -209,8 +209,8 @@ void RollPitchYawMobilizer<T>::MapQDotToVelocity(
   // body-fixed frame. This is outlined in [Diebel 2006, §5.2;
   // Mitiguy (July 22) 2016, §9.3]. Notice however that our rotation matrix R_FM
   // is the transpose of that in [Diebel 2006], Eq. 67, given the convention
-  // used there. Still, the expression for E_F in [Diebel 2006] is exactly the
-  // same here presented.
+  // used there. Still, the expression for E_F in [Diebel 2006], Eq. 74, is
+  // exactly the same here presented.
   //
   // The expression for E_F was symbolically generated with the following
   // Maxima script (which can be copy/pasted and executed as is):
