@@ -26,6 +26,7 @@ install(
     targets = ["libdrake.so"],
     hdr_dest = "include/drake",
     guess_hdrs = "WORKSPACE",
+    guess_hdrs_exclude = [ "systems/sensors/vtk_util.h" ]
 )
 
 # Gather all of libdrake.so's dependent headers.
