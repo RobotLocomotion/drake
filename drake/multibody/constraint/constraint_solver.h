@@ -325,7 +325,7 @@ void ConstraintSolver<T>::DetermineNewPartialInertiaSolveOperator(
     std::function<MatrixX<T>(const MatrixX<T>&)>* A_solve) const {
   const int num_eq_constraints = problem_data->kG.size();
 
-  *A_solve = [problem_data, Del_QR, num_eq_constraints, 
+  *A_solve = [problem_data, Del_QR, num_eq_constraints,
               num_generalized_velocities](const MatrixX<T>& X) -> MatrixX<T> {
     // ************************************************************************
     // See DetermineNewFullInertiaSolveOperator() for block inversion formula.
@@ -632,7 +632,7 @@ void ConstraintSolver<T>::SolveConstraintProblem(
                                          num_eq_constraints,
                                          iM_GT, Del);
 
-  // Compute the complete orthogonal factorization. 
+  // Compute the complete orthogonal factorization.
   std::unique_ptr<Eigen::CompleteOrthogonalDecomposition<MatrixX<T>>> Del_QR;
   if (Del.rows() > 0) {
     Del_QR = std::make_unique<
@@ -893,7 +893,7 @@ void ConstraintSolver<T>::SolveImpactProblem(
                                          num_eq_constraints,
                                          iM_GT, Del);
 
-  // Compute the complete orthogonal factorization. 
+  // Compute the complete orthogonal factorization.
   std::unique_ptr<Eigen::CompleteOrthogonalDecomposition<MatrixX<T>>> Del_QR;
   if (Del.rows() > 0) {
     Del_QR = std::make_unique<
@@ -971,16 +971,8 @@ void ConstraintSolver<T>::SolveImpactProblem(
         ww.minCoeff() < -num_vars * npivots * zero_tol ||
         max_dot > max(T(1), zz.maxCoeff()) * max(T(1), ww.maxCoeff()) *
             num_vars * npivots * zero_tol))) {
-    SPDLOG_DEBUG(drake::log(), "LCP matrix: {}", MM);
-    SPDLOG_DEBUG(drake::log(), "LCP vector: {}", qq);
-/*
     throw std::runtime_error("Unable to solve LCP- more regularization might "
                                  "be necessary.");
-*/
-    const int min_exp = -20;
-    const int step_exp = 1;
-    const int max_exp = +20;
-    lcp_.SolveLcpLemkeRegularized(MM, qq, &zz, min_exp, step_exp, max_exp, -1, zero_tol);
   }
 
   // Alias constraint force segments.
