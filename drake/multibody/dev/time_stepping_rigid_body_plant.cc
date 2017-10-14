@@ -230,13 +230,14 @@ void TimeSteppingRigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   data.kL.resize(0);
 
   // Integrate the forces into the velocity.
-  data.v = v + data.solve_inertia(right_hand_side) * dt;
+  const VectorX<T> vprime = v + data.solve_inertia(right_hand_side) * dt;
+  data.Mv = H * vprime;
 
   // Solve the rigid impact problem.
   VectorX<T> vnew, cf;
   constraint_solver_.SolveImpactProblem(data, &cf);
   constraint_solver_.ComputeGeneralizedVelocityChange(data, cf, &vnew);
-  vnew += data.v;
+  vnew += vprime;
 
   // qn = q + dt*qdot.
   VectorX<T> xn(this->get_num_states());
