@@ -7,6 +7,8 @@ package(default_visibility = ["//visibility:public"])
 exports_files(
     ["com_github_bazelbuild_bazel/tools/cpp/osx_cc_wrapper.sh"],
     visibility = [
+        "//common:__pkg__",
+        # TODO(6996) Remove the next line once #6996 is fully merged.
         "//drake/common:__pkg__",
         "//tools/cc_toolchain:__pkg__",
     ],
