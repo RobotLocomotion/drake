@@ -311,7 +311,6 @@ LIBDRAKE_COMPONENTS = [
     "//drake/systems/sensors:rgbd_camera",
     "//drake/systems/sensors:rotary_encoders",
     "//drake/systems/sensors:sensors",
-    "//drake/systems/sensors:vtk_util",
     "//drake/systems/trajectory_optimization:direct_collocation",
     "//drake/systems/trajectory_optimization:direct_transcription",
     "//drake/systems/trajectory_optimization:multiple_shooting",
