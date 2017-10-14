@@ -28,6 +28,7 @@ drake_cc_googletest(
     deps = [
         ":kuka_iiwa_robot_library",
         "//drake/multibody/benchmarks/kuka_iiwa_robot/MG:MG_kuka_robot_lib",
+        "//drake/multibody/multibody_tree/test_utilities:rigid_body_kinematics_PVA",  # noqa
     ],
 )
 
@@ -37,6 +38,7 @@ drake_cc_googletest(
     deps = [
         ":kuka_iiwa_robot_library",
         "//drake/multibody/benchmarks/kuka_iiwa_robot/MG:MG_kuka_robot_lib",
+        "//drake/multibody/multibody_tree/test_utilities:rigid_body_kinematics_PVA",  # noqa
     ],
 )
 

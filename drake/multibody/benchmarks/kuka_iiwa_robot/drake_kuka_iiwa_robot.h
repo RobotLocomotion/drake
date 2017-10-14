@@ -12,6 +12,7 @@
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
+#include "drake/multibody/multibody_tree/test_utilities/rigid_body_kinematics_PVA.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 #include "drake/systems/framework/context.h"
 
@@ -21,6 +22,7 @@ namespace benchmarks {
 namespace kuka_iiwa_robot {
 
 using Eigen::Vector3d;
+using multibody_tree::test_utilities::SpatialKinematicsPVA;
 
 /// Utility struct to assist with returning joint torques/forces.
 /// --------|----------------------------------------------------------
@@ -39,28 +41,6 @@ struct KukaRobotJointReactionForces {
   SpatialForce<double> F_Eo_W;
   SpatialForce<double> F_Fo_W;
   SpatialForce<double> F_Go_W;
-};
-
-/// Utility struct that defines the kinematics of a generic rigid frame B (e.g.,
-/// a rigid body frame) in another arbitrary rigid frame N (e.g., the world).
-/// Herein, Bo and No denote the origins of rigid frame B and N, respectively.
-/// Right-handed sets of orthogonal unit vectors Bx, By, Bz and Nx, Ny, Nz are
-/// fixed in rigid frames B and N, respectively.
-/// -----------|----------------------------------------------------------------
-/// R_NB       | Rotation matrix relating Nx, Ny, Nz to Bx, By, Bz.
-/// p_NoBo_N   | Position vector from No to Bo, expressed in frame N.
-/// w_NB_N     | B's angular velocity in N, expressed in N.
-/// v_NBo_N    | Bo's velocity in N, expressed in N.
-/// alpha_NB_N | B's angular acceleration in N, expressed in N.
-/// a_NBo_N    | Bo's acceleration in N, expressed in N.
-template <typename T>
-struct RigidBodyKinematics {
-  Matrix3<T> R_NB;
-  Vector3<T> p_NoBo_N;
-  Vector3<T> w_NB_N;
-  Vector3<T> v_NBo_N;
-  Vector3<T> alpha_NB_N;
-  Vector3<T> a_NBo_N;
 };
 
 /// Utility method for creating a transform from frame A to frame B.
@@ -187,7 +167,6 @@ class DrakeKukaIIwaRobot {
 
     // After Finalize() method has been called, Context can be created.
     context_ = model_->CreateDefaultContext();
-    mbt_context_ = dynamic_cast<MultibodyTreeContext<double>*>(context_.get());
   }
 
   /// This method gets the number of rigid bodies in this robot.
@@ -206,7 +185,7 @@ class DrakeKukaIIwaRobot {
   /// @param[in] qDDt 2nd-time-derivative of q.
   ///
   /// @returns G's kinematics in N, expressed in N.
-  RigidBodyKinematics<double>
+  SpatialKinematicsPVA<double>
   CalcEndEffectorKinematics(const Eigen::Ref<const VectorX<double>>& q,
                             const Eigen::Ref<const VectorX<double>>& qDt,
                             const Eigen::Ref<const VectorX<double>>& qDDt) {
@@ -232,14 +211,8 @@ class DrakeKukaIIwaRobot {
     const SpatialAcceleration<double>& A_NG_N =
         linkG_->get_spatial_acceleration_in_world(ac);
 
-    // Create a RigidBodyKinematics struct to return results.
-    RigidBodyKinematics<double> kinematics;
-    kinematics.R_NB = X_NG.linear();
-    kinematics.p_NoBo_N = X_NG.translation();
-    kinematics.w_NB_N = V_NG_N.rotational();
-    kinematics.v_NBo_N = V_NG_N.translational();
-    kinematics.alpha_NB_N = A_NG_N.rotational();
-    kinematics.a_NBo_N = A_NG_N.translational();
+    // Create a struct to return results.
+    SpatialKinematicsPVA<double> kinematics(X_NG, V_NG_N, A_NG_N);
     return kinematics;
   }
 
@@ -287,8 +260,8 @@ class DrakeKukaIIwaRobot {
     // Fill arrays generalized_force_applied and F_Bo_W_array using the fact
     // that gravity was included earlier in the model via:
     // model_->AddForceElement<UniformGravityFieldElement>(gravity_vector);
-    model_->CalcForceElementsContribution(*context_, pc, vc,
-                          &Fapplied_Bo_W_array, &generalized_force_applied);
+    model_->CalcForceElementsContribution(
+        *context_, pc, vc, &Fapplied_Bo_W_array, &generalized_force_applied);
 
     // Output vector of generalized forces for calculated motor torques
     // required to drive the Kuka robot at its specified rate.
@@ -462,7 +435,6 @@ class DrakeKukaIIwaRobot {
 
   // After model is finalized, create default context.
   std::unique_ptr<systems::Context<double>> context_;
-  MultibodyTreeContext<double>* mbt_context_;
 };
 
 }  // namespace kuka_iiwa_robot

@@ -1,0 +1,31 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_library(
+    name = "spatial_kinematics_PVA",
+    testonly = 1,
+    srcs = [],
+    hdrs = ["spatial_kinematics_PVA.h"],
+    deps = [
+        "//drake/common:essential",
+        "//drake/multibody/multibody_tree/math:spatial_algebra",
+    ],
+)
+
+drake_cc_library(
+    name = "rigid_body_kinematics_PVA",
+    testonly = 1,
+    srcs = [],
+    hdrs = ["rigid_body_kinematics_PVA.h"],
+    deps = [
+        "//drake/common:essential",
+        ":spatial_kinematics_PVA",
+    ],
+)
+
+add_lint_tests()
