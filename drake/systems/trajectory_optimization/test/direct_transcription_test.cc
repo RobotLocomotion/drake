@@ -248,21 +248,13 @@ GTEST_TEST(DirectTranscriptionTest, TimeVaryingLinearSystemTest) {
     Cvec[i] = C0 + i * Eigen::Matrix2d::Ones();
     Dvec[i] = D0 + i * Eigen::Matrix2d::Ones();
   }
-  const auto Apoly =
-      PiecewisePolynomial<double>::FirstOrderHold(times, Avec);
-  const auto Bpoly =
-      PiecewisePolynomial<double>::FirstOrderHold(times, Bvec);
-  const auto Cpoly =
-      PiecewisePolynomial<double>::FirstOrderHold(times, Cvec);
-  const auto Dpoly =
-      PiecewisePolynomial<double>::FirstOrderHold(times, Dvec);
-  const PiecewisePolynomialTrajectory A(Apoly);
-  const PiecewisePolynomialTrajectory B(Bpoly);
-  const PiecewisePolynomialTrajectory C(Cpoly);
-  const PiecewisePolynomialTrajectory D(Dpoly);
+  const auto A = PiecewisePolynomial<double>::FirstOrderHold(times, Avec);
+  const auto B = PiecewisePolynomial<double>::FirstOrderHold(times, Bvec);
+  const auto C = PiecewisePolynomial<double>::FirstOrderHold(times, Cvec);
+  const auto D = PiecewisePolynomial<double>::FirstOrderHold(times, Dvec);
 
   const double kTimeStep = .1;
-  PiecewisePolynomialLinearSystem<double> system(A, B, C, D, kTimeStep);
+  PiecewisePolynomialLinearSystem<double> system({A, B, C, D}, kTimeStep);
 
   const auto context = system.CreateDefaultContext();
   int kNumSampleTimes = 3;
