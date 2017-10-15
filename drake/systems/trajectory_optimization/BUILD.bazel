@@ -82,6 +82,7 @@ drake_cc_googletest(
         ":direct_transcription",
         "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/common/trajectories:piecewise_polynomial",
+        "//drake/systems/primitives:piecewise_polynomial_linear_system",
     ],
 )
 

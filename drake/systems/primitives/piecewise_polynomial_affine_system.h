@@ -7,13 +7,13 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/extract_double.h"
-#include "drake/systems/primitives/linear_system.h"
+#include "drake/systems/primitives/affine_system.h"
 #include "drake/systems/primitives/time_varying_data.h"
 
 namespace drake {
 namespace systems {
 
-/// A continuous- or discrete-time Linear Time-Varying system described by a
+/// A continuous- or discrete-time Affine Time-Varying system described by a
 /// piecewise polynomial trajectory of system matrices.
 ///
 /// @tparam T The scalar element type, which must be a valid Eigen scalar.
@@ -28,29 +28,29 @@ namespace systems {
 /// @ingroup primitive_systems
 ///
 template <typename T>
-class PiecewisePolynomialLinearSystem final
-    : public TimeVaryingLinearSystem<T> {
+class PiecewisePolynomialAffineSystem final
+    : public TimeVaryingAffineSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PiecewisePolynomialLinearSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PiecewisePolynomialAffineSystem)
 
-  /// Constructs a PiecewisePolynomialLinearSystem from a LinearTimeVaryingData
+  /// Constructs a PiecewisePolynomialAffineSystem from a TimeVaryingData
   /// structure.
   ///
   /// @param time_period Defines the period of the discrete time system; use
   ///  time_period=0.0 to denote a continuous time system.  @default 0.0
-  PiecewisePolynomialLinearSystem(const LinearTimeVaryingData& data,
+  PiecewisePolynomialAffineSystem(const TimeVaryingData& data,
                                   double time_period = 0.)
-      : PiecewisePolynomialLinearSystem<T>(
-            SystemTypeTag<systems::PiecewisePolynomialLinearSystem>{}, data,
+      : PiecewisePolynomialAffineSystem<T>(
+            SystemTypeTag<systems::PiecewisePolynomialAffineSystem>{}, data,
             time_period) {}
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
-  explicit PiecewisePolynomialLinearSystem(
-      const PiecewisePolynomialLinearSystem<U>& other)
-      : PiecewisePolynomialLinearSystem<T>(other.data_, other.time_period()) {}
+  explicit PiecewisePolynomialAffineSystem(
+      const PiecewisePolynomialAffineSystem<U>& other)
+      : PiecewisePolynomialAffineSystem<T>(other.data_, other.time_period()) {}
 
-  /// @name Implementations of PiecewisePolynomialLinearSystem<T>'s pure virtual
+  /// @name Implementations of PiecewisePolynomialAffineSystem<T>'s pure virtual
   /// methods.
   /// @{
   MatrixX<T> A(const T& t) const final {
@@ -59,11 +59,17 @@ class PiecewisePolynomialLinearSystem final
   MatrixX<T> B(const T& t) const final {
     return data_.B.value(ExtractDoubleOrThrow(t));
   }
+  VectorX<T> f0(const T& t) const final {
+    return data_.f0.value(ExtractDoubleOrThrow(t));
+  }
   MatrixX<T> C(const T& t) const final {
     return data_.C.value(ExtractDoubleOrThrow(t));
   }
   MatrixX<T> D(const T& t) const final {
     return data_.D.value(ExtractDoubleOrThrow(t));
+  }
+  VectorX<T> y0(const T& t) const final {
+    return data_.y0.value(ExtractDoubleOrThrow(t));
   }
   /// @}
 
@@ -73,26 +79,26 @@ class PiecewisePolynomialLinearSystem final
   /// etc.); pass a default-constructed object if such support is not desired.
   /// See @ref system_scalar_conversion and examples related to scalar-type
   /// conversion support for more details.
-  PiecewisePolynomialLinearSystem(SystemScalarConverter converter,
-                                  const LinearTimeVaryingData& data,
+  PiecewisePolynomialAffineSystem(SystemScalarConverter converter,
+                                  const TimeVaryingData& data,
                                   double time_period)
-      : TimeVaryingLinearSystem<T>(std::move(converter), data.A.rows(),
+      : TimeVaryingAffineSystem<T>(std::move(converter), data.A.rows(),
                                    data.B.cols(), data.C.rows(), time_period),
         data_(data) {}
 
  private:
   // Allow different specializations to access each other's private data.
   template <typename>
-  friend class PiecewisePolynomialLinearSystem;
+  friend class PiecewisePolynomialAffineSystem;
 
-  const LinearTimeVaryingData data_;
+  const TimeVaryingData data_;
 };
 
 // Exclude symbolic::Expression from the scalartype conversion of
-// PiecewisePolynomialLinearSystem.
+// PiecewisePolynomialAffineSystem.
 namespace scalar_conversion {
 template <>
-struct Traits<PiecewisePolynomialLinearSystem> : public NonSymbolicTraits {};
+struct Traits<PiecewisePolynomialAffineSystem> : public NonSymbolicTraits {};
 }  // namespace scalar_conversion
 
 }  // namespace systems
