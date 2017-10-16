@@ -105,11 +105,12 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "frame_pose_extractor",
-    srcs = ["frame_pose_extractor.cc"],
-    hdrs = ["frame_pose_extractor.h"],
+    name = "frame_pose_tracker",
+    srcs = ["frame_pose_tracker.cc"],
+    hdrs = ["frame_pose_tracker.h"],
     visibility = [
         "//drake/examples/kuka_iiwa_arm:__subpackages__",
+        "//drake/systems/sensors:__subpackages__",
     ],
     deps = [
         "//drake/multibody:rigid_body_tree",
@@ -182,10 +183,10 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "frame_pose_extractor_test",
+    name = "frame_pose_tracker_test",
     data = ["//drake/manipulation/models/iiwa_description:models"],
     deps = [
-        ":frame_pose_extractor",
+        ":frame_pose_tracker",
         "//drake/common:find_resource",
         "//drake/common/test_utilities:eigen_geometry_compare",
         "//drake/common/test_utilities:eigen_matrix_compare",
