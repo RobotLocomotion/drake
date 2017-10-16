@@ -157,6 +157,9 @@ class Lane final : public api::Lane {
   api::GeoPosition DoToGeoPosition(const api::LanePosition& lane_pos) const
       final;
 
+  api::GeoPositionT<AutoDiffXd> DoToGeoPositionAutoDiff(
+      const api::LanePositionT<AutoDiffXd>& lane_pos) const final;
+
   api::Rotation DoGetOrientation(const api::LanePosition& lane_pos) const
       final;
 

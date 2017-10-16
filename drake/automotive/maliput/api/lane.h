@@ -100,6 +100,30 @@ class Lane {
     return DoToGeoPosition(lane_pos);
   }
 
+  /// Generalization of ToGeoPosition to arbitrary scalar types, where the
+  /// structures `LanePositionT<T>` and `GeoPositionT<T>` are used in place of
+  /// `LanePosition` and `GeoPosition`, respectively.
+  ///
+  /// When the arguments are of type AutoDiffXd, the return value is a
+  /// GeoPositionT<AutoDiffXd> containing the same partial derivatives as those
+  /// appearing in lane_pos.  The provided lane_pos must be
+  /// internally-consistent; the s, r, and h variables must have derivatives of
+  /// equal size.
+  ///
+  /// Instantiated templates for the following kinds of T's are provided:
+  /// - double
+  /// - drake::AutoDiffXd
+  ///
+  /// They are already available to link against in the containing library.
+  ///
+  /// Note: This is an experimental API that is not necessarily implemented in
+  /// all back-end implementations.
+
+  // TODO(jadecastro): Apply this implementation in all the subclasses of
+  // `api::Lane`.
+  template <typename T>
+  GeoPositionT<T> ToGeoPositionT(const LanePositionT<T>& lane_pos) const;
+
   /// Determines the LanePosition corresponding to GeoPosition @p geo_pos.
   ///
   /// The return value is the LanePosition of the point within the Lane's
@@ -124,9 +148,9 @@ class Lane {
   ///
   /// When the arguments are of type AutoDiffXd, the return value is a
   /// LanePositionT<AutoDiffXd> containing the same partial derivatives as those
-  /// appearing in geo_pos.  The provided geo_pos must contain x, y, and z
-  /// values whose derivative must be of the same size.  If either @p
-  /// nearest_point or @p distance are non-null, they will also contain @p
+  /// appearing in geo_pos.  The provided geo_pos must be internally-consistent;
+  /// the x, y, and z variables must have derivatives of equal size.  If either
+  /// @p nearest_point or @p distance are non-null, they will also contain @p
   /// geo_pos's partial derivatives.
   ///
   /// Instantiated templates for the following kinds of T's are provided:
@@ -141,7 +165,7 @@ class Lane {
   // TODO(jadecastro): Consider having the client enforce the geo_pos AutoDiffXd
   // coherency contract rather than api::Lane.  Reevaluate this once an AutoDiff
   // consumer for api::ToLanePositionT() exists.
-  //
+
   // TODO(jadecastro): Apply this implementation in all the subclasses of
   // `api::Lane`.
   template <typename T>
@@ -257,6 +281,14 @@ class Lane {
 
   virtual std::unique_ptr<LaneEnd> DoGetDefaultBranch(
       const LaneEnd::Which which_end) const = 0;
+
+  // AutoDiffXd overload of DoToGeoPosition().
+  virtual GeoPositionT<AutoDiffXd> DoToGeoPositionAutoDiff(
+      const LanePositionT<AutoDiffXd>&) const {
+    throw std::runtime_error(
+        "DoToGeoPosition has been instantiated with AutoDiffXd arguments, "
+        "but a Lane back-end has not overrided its AutoDiffXd specialization.");
+  }
 
   // AutoDiffXd overload of DoToLanePosition().
   virtual LanePositionT<AutoDiffXd> DoToLanePositionAutoDiff(
