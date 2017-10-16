@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
@@ -71,15 +72,27 @@ class FindResourceResult {
   optional<std::string> error_message_;
 };
 
+
+
+/// Adds a path in which resources are searched in a persistent variable. Paths
+/// are accumulated each time this function is called. It is searched after the
+/// path given by the environment variable but before the path that can be
+/// found with the sentinel `.drake-resource-sentinel`. This can be used to
+/// find data in installed distributions of drake (or in `pydrake`).
+void AddResourceSearchPath(std::string root_directory);
+
+/// Gets current root directory value from a persistent variable.
+std::vector<std::string> GetResourceSearchPaths();
+
 /// Attempts to locate a Drake resource named by the given @p resource_path.
 /// The @p resource_path refers to the relative path within the Drake
 /// repository, e.g., `drake/examples/pendulum/Pendulum.urdf`.
 ///
-/// When called from within a source code workspace (i.e., what a Drake
-/// developer would use), this finds the resource within the current workspace.
-///
-/// When called from an installed binary build of Drake, this is intended to
-/// find the installed resource, but that feature is not yet implemented.
+/// The search scans for the resource in the following places and in
+/// the following order: 1) in the DRAKE_RESOURCE_ROOT environment variable
+/// 2) in the directories specified by `AddResourceSearchPath()` and 3) in the
+/// drake source workspace. If all of these are unavailable, or do not have the
+/// then it will return a failed result.
 FindResourceResult FindResource(std::string resource_path);
 
 /// Convenient wrapper for querying FindResource(resource_path) followed by
