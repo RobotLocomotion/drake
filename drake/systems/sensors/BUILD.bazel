@@ -304,34 +304,26 @@ drake_cc_binary(
     ],
 )
 
-drake_cc_library(
-    name = "frame_pose_extractor",
-    srcs = ["frame_pose_extractor.cc"],
-    hdrs = ["frame_pose_extractor.h"],
-    visibility = [
-        "//drake/examples/kuka_iiwa_arm:__subpackages__",
-    ],
-    deps = [
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/multibody_tree/math:spatial_velocity",
-        "//drake/multibody/rigid_body_plant",
-        "//drake/systems/framework:leaf_system",
-        "//drake/systems/rendering:frame_velocity",
-        "//drake/systems/rendering:pose_bundle",
-        "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
-    ],
-)
+#drake_cc_library(
+#    name = "optitrack_sender",
+#    srcs = ["optitrack_sender.cc"],
+#    hdrs = ["optitrack_sender.h"],
+#    deps = [
+#        "//drake/manipulation/perception:optitrack_sim",
+#        "//drake/multibody:inverse_kinematics",
+#        "//drake/multibody:rigid_body_tree",
+#        "//drake/systems/framework:leaf_system",
+#        "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
+#    ],
+#)
 
 drake_cc_library(
-    name = "optitrack_sender",
-    srcs = ["optitrack_sender.cc"],
-    hdrs = ["optitrack_sender.h"],
+    name = "optitrack_encoder",
+    srcs = ["optitrack_encoder.cc"],
+    hdrs = ["optitrack_encoder.h"],
     deps = [
-        "//drake/manipulation/perception:optitrack_sim",
-        "//drake/multibody:inverse_kinematics",
-        "//drake/multibody:rigid_body_tree",
+        "//drake/manipulation/util:frame_pose_tracker",
         "//drake/systems/framework:leaf_system",
-        "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
     ],
 )
 
@@ -503,13 +495,11 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "frame_pose_extractor_test",
-    data = ["//drake/manipulation/models/iiwa_description:models"],
+    name = "optitrack_encoder_test",
+    srcs = ["test/optitrack_encoder_test.cc"],
     deps = [
-        ":frame_pose_extractor",
+        ":optitrack_encoder",
         "//drake/common:find_resource",
-        "//drake/common/test_utilities:eigen_geometry_compare",
-        "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
         "//drake/systems/framework",
