@@ -1,4 +1,4 @@
-#include "drake/manipulation/util/frame_pose_extractor.h"
+#include "drake/manipulation/util/frame_pose_tracker.h"
 
 #include <algorithm>
 #include <utility>
@@ -11,8 +11,8 @@
 
 
 namespace drake {
-namespace systems {
-namespace sensors {
+namespace manipulation {
+namespace util {
 
 using std::string;
 using drake::systems::KinematicsResults;
@@ -20,7 +20,7 @@ using systems::rendering::PoseBundle;
 using systems::rendering::FrameVelocity;
 using multibody::SpatialVelocity;
 
-FramePoseExtractor::FramePoseExtractor(
+FramePoseTracker::FramePoseTracker(
     const RigidBodyTree<double>& tree,
     const std::vector<RigidBodyFrame<double>*>& frames) : tree_(&tree){
 
@@ -30,21 +30,21 @@ FramePoseExtractor::FramePoseExtractor(
     std::string frame_name = (*it)->get_name();
     if (body == nullptr) {
       throw std::runtime_error(
-          "FramePoseExtractor::Init: ERROR: found nullptr to "
+          "FramePoseTracker::Init: ERROR: found nullptr to "
               "RigidBody in RigidBodyFrame object.");
     } else if (frame_name_to_frame_map_.find(frame_name) !=
         frame_name_to_frame_map_.end()) {
       throw std::runtime_error(
-          "FramePoseExtractor::Init: ERROR: found duplicate frame name. "
+          "FramePoseTracker::Init: ERROR: found duplicate frame name. "
               "Frame names must be unique.");
     } else {
       frame_name_to_frame_map_[frame_name] = *it;
     }
   }
-  FramePoseExtractor::Init();
+  FramePoseTracker::Init();
 }
 
-FramePoseExtractor::FramePoseExtractor(
+FramePoseTracker::FramePoseTracker(
     const RigidBodyTree<double>& tree,
     const std::map<std::string, std::pair<std::string, int>> frame_info,
     std::vector<Eigen::Isometry3d>& frame_poses) : tree_(&tree){
@@ -70,27 +70,27 @@ FramePoseExtractor::FramePoseExtractor(
     ++m_it;
     ++v_it;
   }
-  FramePoseExtractor::Init();
+  FramePoseTracker::Init();
 }
 
-void FramePoseExtractor::Init() {
+void FramePoseTracker::Init() {
   // Abstract input port of type KinematicsResults
   kinematics_input_port_index_ = this->DeclareAbstractInputPort().get_index();
 
   // Abstract output port of type systems::rendering::PoseBundle
   pose_bundle_output_port_index_ =
       this->DeclareAbstractOutputPort(
-          &FramePoseExtractor::MakeOutputStatus,
-          &FramePoseExtractor::OutputStatus).get_index();
+          &FramePoseTracker::MakeOutputStatus,
+          &FramePoseTracker::OutputStatus).get_index();
 }
 
-PoseBundle<double> FramePoseExtractor::MakeOutputStatus() const {
+PoseBundle<double> FramePoseTracker::MakeOutputStatus() const {
   PoseBundle<double> frame_pose_bundle(
       static_cast<int>(frame_name_to_frame_map_.size()));
   return frame_pose_bundle;
 }
 
-void FramePoseExtractor::OutputStatus(const systems::Context<double>& context,
+void FramePoseTracker::OutputStatus(const systems::Context<double>& context,
                                         PoseBundle<double>* output) const {
   PoseBundle<double>& frame_pose_bundle = *output;
 
@@ -123,6 +123,6 @@ void FramePoseExtractor::OutputStatus(const systems::Context<double>& context,
   }
 }
 
+}  // namespace util
+}  // namespace manipulation
 }  // namespace drake
-}  // namespace systems
-}  // namespace sensors

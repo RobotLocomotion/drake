@@ -12,8 +12,8 @@
 #include "drake/systems/rendering/pose_bundle.h"
 
 namespace drake {
-namespace systems {
-namespace sensors {
+namespace manipulation {
+namespace util {
 
 using systems::rendering::PoseBundle;
 
@@ -31,13 +31,13 @@ using systems::rendering::PoseBundle;
  * and generates an abstract value output of type
  * systems::rendering::PoseBundle.
  */
-class FramePoseExtractor : public systems::LeafSystem<double> {
+class FramePoseTracker : public systems::LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FramePoseExtractor)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FramePoseTracker)
   /**
-   * Constructs a FramePoseExtractor object by taking in the RigidBodyFrames to
+   * Constructs a FramePoseTracker object by taking in the RigidBodyFrames to
    * track directly as a parameter.
-   * @param tree The RigidBodyTree containing the named bodies. FramePoseExtractor
+   * @param tree The RigidBodyTree containing the named bodies. FramePoseTracker
    *        keeps a reference to this tree to calculate frame poses in the world frame.
    * @param frames a std::vector of RigidBodyFrames to track. Each RigidBodyFrame
    *        in this vector should have a name that is unique, i.e., the std::string returned
@@ -45,17 +45,17 @@ class FramePoseExtractor : public systems::LeafSystem<double> {
    * @throws std::runtime_error if any frame has a non-unique name or the frame is not
    *         attached to a RigidBody (i.e., it's RigidBody pointer is nullptr).
    */
-  FramePoseExtractor(const RigidBodyTree<double>& tree,
+  FramePoseTracker(const RigidBodyTree<double>& tree,
                      const std::vector<RigidBodyFrame<double>*>& frames);
 
   /**
-   * Constructs a FramePoseExtractor object from the information contained in
+   * Constructs a FramePoseTracker object from the information contained in
    * @p frame_info, which is a std::map whose keys denote unique frame names. Each key is
    * mapped to a std::pair that includes the RigidBody name (std::string)
    * specifying which body this frame should be attached to, and the model instance
    * id in the @p tree that contains the corresponding body.
    *
-   * @param tree The RigidBodyTree containing the named bodies. FramePoseExtractor
+   * @param tree The RigidBodyTree containing the named bodies. FramePoseTracker
    *        keeps a reference to this tree to calculate frame poses in the world frame.
    * @param frame_info A mapping from a unique frame name to a pair consisting of
    *        body name and model instance id.
@@ -63,7 +63,7 @@ class FramePoseExtractor : public systems::LeafSystem<double> {
    *        parent body. If this vector is empty, it assumes identity for all
    *        poses.
    */
-  FramePoseExtractor(
+  FramePoseTracker(
       const RigidBodyTree<double>& tree,
       const std::map<std::string, std::pair<std::string, int>> frame_info,
       std::vector<Eigen::Isometry3d>& frame_poses =
@@ -81,7 +81,6 @@ class FramePoseExtractor : public systems::LeafSystem<double> {
   int get_kinematics_input_port_index() const {
     return this->kinematics_input_port_index_;
   }
-
 
   /**
    * This OutputPort represents an abstract valued output port of type
@@ -109,6 +108,6 @@ class FramePoseExtractor : public systems::LeafSystem<double> {
   std::map<std::string, RigidBodyFrame<double>*> frame_name_to_frame_map_;
 };
 
-}  // namespace sensors
-}  // namespace systems
+}  // namespace util
+}  // namespace manipulation
 }  // namespace drake

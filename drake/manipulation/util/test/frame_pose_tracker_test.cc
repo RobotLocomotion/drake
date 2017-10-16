@@ -1,27 +1,28 @@
-#include "drake/manipulation/util/frame_pose_extractor.h"
+#include "drake/manipulation/util/frame_pose_tracker.h"
 
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/rigid_body_frame.h"
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
 
 namespace drake {
-namespace systems {
-namespace sensors {
+namespace manipulation {
+namespace util {
 
 using drake::systems::KinematicsResults;
 using drake::parsers::ModelInstanceIdTable;
 using systems::rendering::PoseBundle;
-using systems::sensors::FramePoseExtractor;
+using manipulation::util::FramePoseTracker;
 
 const char* const kIiwaUrdf =
     "drake/manipulation/models/iiwa_description/urdf/"
     "iiwa14_polytope_collision.urdf";
 
-class FramePoseExtractorTest : public ::testing::Test {
+class FramePoseTrackerTest : public ::testing::Test {
  protected:
   virtual void SetUp() {
     // Create the tree.
@@ -30,7 +31,6 @@ class FramePoseExtractorTest : public ::testing::Test {
         Eigen::aligned_allocator<RigidBodyFrame<double>>(), "world", nullptr,
         Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero());
 
-    tree_ = std::make_unique<RigidBodyTree<double>>();
     ModelInstanceIdTable mtable = parsers::urdf::AddModelInstanceFromUrdfFile(
         FindResourceOrThrow(kIiwaUrdf),
         multibody::joints::kFixed,
@@ -62,14 +62,14 @@ class FramePoseExtractorTest : public ::testing::Test {
   }
 
   PoseBundle<double> UpdateInputCalcOutput(
-      const FramePoseExtractor& dut,
+      const FramePoseTracker& dut,
       const KinematicsResults<double>& input_results) {
     std::unique_ptr<systems::AbstractValue> input(
         new systems::Value<KinematicsResults<double>>(tree_.get()));
     input->SetValue(input_results);
 
-    context_ = dut.CreateDefaultContext();
-    output_ = dut.AllocateOutput(*context_);
+    auto context_ = dut.CreateDefaultContext();
+    auto output_ = dut.AllocateOutput(*context_);
     context_->FixInputPort(
         dut.get_kinematics_input_port_index() /* input port ID*/,
         std::move(input));
@@ -90,9 +90,7 @@ class FramePoseExtractorTest : public ::testing::Test {
   std::vector<RigidBodyFrame<double>*> frames_;
 
  private:
-  std::unique_ptr<FramePoseExtractor> dut_;
-  std::unique_ptr<systems::Context<double>> context_;
-  std::unique_ptr<systems::SystemOutput<double>> output_;
+  std::unique_ptr<FramePoseTracker> dut_;
 };
 
 // invalid tests should include
@@ -103,37 +101,70 @@ class FramePoseExtractorTest : public ::testing::Test {
 // (3) invalid body specified in frame (nullptr)
 // (4) invalid frame name (non-unique)
 
-TEST_F(FramePoseExtractorTest, InvalidModelInstanceIdTest) {
+TEST_F(FramePoseTrackerTest, InvalidModelInstanceIdTest) {
   frame_info_["iiwa_frame_3"] = std::make_pair("iiwa_link_3", 10);
   EXPECT_EQ(frame_info_.size(), 4);
-  EXPECT_ANY_THROW(FramePoseExtractor(*(tree_.get()), frame_info_));
+  EXPECT_ANY_THROW(FramePoseTracker(*tree_.get(), frame_info_));
 }
 
-TEST_F(FramePoseExtractorTest, InvalidBodyNameTest) {
+TEST_F(FramePoseTrackerTest, InvalidBodyNameTest) {
   frame_info_["iiwa_frame_3"] = std::make_pair("invalid_body_name", model_id_);
   EXPECT_EQ(frame_info_.size(), 4);
-  EXPECT_ANY_THROW(FramePoseExtractor(*(tree_.get()), frame_info_));
+  EXPECT_ANY_THROW(FramePoseTracker(*tree_.get(), frame_info_));
 }
 
-TEST_F(FramePoseExtractorTest, InvalidFrameTest) {
+TEST_F(FramePoseTrackerTest, InvalidFrameTest) {
   frames_.push_back(new RigidBodyFrame<double>("iiwa_frame_3", nullptr));
   EXPECT_EQ(frames_.size(), 4);
-  EXPECT_ANY_THROW(FramePoseExtractor(*(tree_.get()), frames_));
+  EXPECT_ANY_THROW(FramePoseTracker(*tree_.get(), frames_));
 }
 
-TEST_F(FramePoseExtractorTest, InvalidFrameNameTest) {
+TEST_F(FramePoseTrackerTest, InvalidFrameNameTest) {
   EXPECT_EQ(frames_.size(), 3);
   frames_[2]->set_name("iiwa_frame_0"); // repeat first frame name
-  EXPECT_ANY_THROW(FramePoseExtractor(*(tree_.get()), frames_));
+  EXPECT_ANY_THROW(FramePoseTracker(*tree_.get(), frames_));
 }
 
 // valid tests should include
 // (1) valid frame_info test
 // (2) valid frame test
 
-TEST_F(FramePoseExtractorTest, ValidFrameInfoTest) {
+TEST_F(FramePoseTrackerTest, ValidFrameInfoTest) {
   std::vector<Eigen::Isometry3d> frame_poses(3, T_BF_);
-  FramePoseExtractor dut(*tree_.get(), frame_info_, frame_poses);
+  FramePoseTracker dut(*tree_.get(), frame_info_, frame_poses);
+
+  // Update the input, calculate the output, and compare it with expected pose.
+  KinematicsResults<double> kres(tree_.get());
+  VectorX<double> q(7), v(7);  // sets iiwa positions and velocities
+  q << 0.3, 0.3, 0.3, 0, 0, 0, 0;  // pick an arbitrary iiwa pose
+  kres.Update(q, v.setZero());
+
+  PoseBundle<double> frames_bundle = UpdateInputCalcOutput(dut, kres);
+  EXPECT_EQ(frames_bundle.get_num_poses(), frames_.size());
+
+  // Create a frame name to index map for easy indexing within the PoseBundle.
+  std::map<std::string, int> frame_name_to_index_map;
+  for (int i = 0; i < frames_bundle.get_num_poses(); i++) {
+    frame_name_to_index_map[frames_bundle.get_name(i)] = i;
+  }
+
+  for (auto it = frames_.begin(); it != frames_.end(); ++it) {
+    // Get the body pose w.r.t. the world and the frame pose w.r.t. the body.
+    // Multiply these two and the result should equal the pose contained in the
+    // PoseBundle object, i.e., the frame pose w.r.t. the world.
+    Eigen::Isometry3d T_WB = kres.get_pose_in_world((*it)->get_rigid_body());
+    Eigen::Isometry3d T_BF = (*it)->get_transform_to_body();
+
+    // Extract the appropriate frame from the PoseBundle object.
+    int frame_pose_index = frame_name_to_index_map.at((*it)->get_name());
+    Eigen::Isometry3d T_WF = frames_bundle.get_pose(frame_pose_index);
+
+    EXPECT_TRUE(T_WF.isApprox(T_WB * T_BF, 1e-3));
+  }
+}
+
+TEST_F(FramePoseTrackerTest, ValidFrameTest) {
+  FramePoseTracker dut(*tree_.get(), frames_);
 
   // Update the input, calculate the output, and compare it with expected pose.
   KinematicsResults<double> kres(tree_.get());
@@ -165,39 +196,6 @@ TEST_F(FramePoseExtractorTest, ValidFrameInfoTest) {
   }
 }
 
-TEST_F(FramePoseExtractorTest, ValidFrameTest) {
-  FramePoseExtractor dut(*tree_.get(), frames_);
-
-  // Update the input, calculate the output, and compare it with expected pose.
-  KinematicsResults<double> kres(tree_.get());
-  VectorX<double> q(7), v(7);  // sets iiwa positions and velocities
-  q << 0.3, 0.3, 0.3, 0, 0, 0, 0;  // pick an arbitrary iiwa pose
-  kres.Update(q, v.setZero());
-
-  PoseBundle<double> frames_bundle = UpdateInputCalcOutput(dut, kres);
-  EXPECT_EQ(frames_bundle.get_num_poses(), frames_.size());
-
-  // Create a frame name to index map for easy searching within the PoseBundle.
-  std::map<std::string, int> frame_name_to_index_map;
-  for (int i = 0; i < frames_bundle.get_num_poses(); i++) {
-    frame_name_to_index_map[frames_bundle.get_name(i)] = i;
-  }
-
-  for (auto it = frames_.begin(); it != frames_.end(); ++it) {
-    // Get the body pose w.r.t. the world and the frame pose w.r.t. the body.
-    // Multiply these two and the result should equal the pose contained in the
-    // PoseBundle object, i.e., the frame pose w.r.t. the world.
-    Eigen::Isometry3d T_WB = kres.get_pose_in_world((*it)->get_rigid_body());
-    Eigen::Isometry3d T_BF = (*it)->get_transform_to_body();
-
-    // Extract the appropriate frame from the PoseBundle object.
-    int frame_pose_index = frame_name_to_index_map.at((*it)->get_name());
-    Eigen::Isometry3d T_WF = frames_bundle.get_pose(frame_pose_index);
-
-    EXPECT_TRUE(T_WF.isApprox(T_WB * T_BF, 1e-3));
-  }
-}
-
-}  // namespace sensors
-}  // namespace systems
+}  // namespace util
+}  // namespace manipulation
 }  // namespace drake
