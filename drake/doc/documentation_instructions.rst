@@ -39,27 +39,3 @@ To generate the Doxygen documentation::
 
 To view the generated documentation, open using a web browser to
 ``drake-distro/build/drake/doc/doxygen_cxx/html/index.html``
-
-.. _documentation-generation-instructions-cmake:
-
-When using CMake
-================
-
-Drake's documentation is built using the ``documentation`` build target.
-After building Drake like normal, execute::
-
-    $ cd drake-distro/build/drake
-    $ [make|ninja] documentation
-
-To view the generated documentation, open the following files using a web
-browser:
-
-- Drake website: ``drake-distro/build/drake/doc/sphinx/index.html``
-- Doxygen C++ website: ``drake-distro/build/drake/doc/doxygen_cxx/html/index.html``
-
-If you're using ``ninja``, there are two additional build targets that allow you
-to build just the Sphinx website or C++ Doxygen website::
-
-    $ cd drake-distro/build/drake
-    $ ninja doc/doxygen_cxx_output
-    $ ninja doc/sphinx_output
