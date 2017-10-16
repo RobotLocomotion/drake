@@ -387,14 +387,10 @@ filegroup(
     testonly = 1,
     srcs = [
         "test/models/box.sdf",
-        "test/models/cylinder.sdf",
-        "test/models/mesh_box.sdf",
         "test/models/meshes/box.obj",
         "test/models/meshes/box.png",
-        "test/models/multiple_visuals.sdf",
         "test/models/nothing.sdf",
         "test/models/sphere.sdf",
-        "test/models/three_boxes.sdf",
     ],
     visibility = ["//visibility:private"],
 )
