@@ -14,7 +14,7 @@
 DEFINE_string(gunit_color, "", "");
 
 int main(int argc, char** argv) {
-  std::cout << "Using drake/test/drake_cc_googletest_main.cc\n";
+  std::cout << "Using drake_cc_googletest_main.cc\n";
 
   // Initialize gtest and gmock.
   testing::InitGoogleMock(&argc, argv);

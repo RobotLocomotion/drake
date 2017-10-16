@@ -7,16 +7,22 @@ with a variety of command-line flags.
 import re
 import subprocess
 import os
+import sys
 import unittest
+
+# Set on command-line to the location of drake_cc_googletest_main_test.
+_main_exe = None
 
 
 class TestGtestMain(unittest.TestCase):
     def _check_call(self, args, expected_returncode=0):
-        """Run drake_cc_googletest_main with the given args; return output.
+        """Run _main_exe with the given args; return output.
         """
         try:
+            self.assertTrue(_main_exe is not None)
+            self.assertTrue(os.path.exists(_main_exe), _main_exe)
             output = subprocess.check_output(
-                ["drake/common/drake_cc_googletest_main_test"] + args,
+                [_main_exe] + args,
                 stderr=subprocess.STDOUT)
             returncode = 0
         except subprocess.CalledProcessError as e:
@@ -44,7 +50,7 @@ class TestGtestMain(unittest.TestCase):
             "--help",
             ], expected_returncode=1)
         self.assertGreater(len(output), 1000)
-        self.assertTrue("Using drake/test/drake_cc_googletest_main" in output)
+        self.assertTrue("Using drake_cc_googletest_main" in output)
         self.assertTrue("-gtest_list_tests" in output)
         self.assertTrue("-spdlog_level" in output)
         self.assertTrue("-magic_number" in output)
@@ -65,4 +71,5 @@ class TestGtestMain(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    _main_exe = sys.argv.pop(1)
     unittest.main()
