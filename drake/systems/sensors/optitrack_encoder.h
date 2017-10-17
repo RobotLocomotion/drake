@@ -60,9 +60,8 @@ struct TrackedBody {
  * (not names) are used to differentiate tracked rigid bodies. If no set of @p
  * rigid_body_names are provided, the corresponding frame name
  * from the incoming PoseBundle object is used.
- *
- * TODO(rcory): Add support for markers and marker sets.
  */
+// TODO(rcory): Add support for markers and marker sets.
 class OptitrackEncoder : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OptitrackEncoder)

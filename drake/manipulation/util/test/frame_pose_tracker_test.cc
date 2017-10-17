@@ -82,6 +82,13 @@ class FramePoseTrackerTest : public ::testing::Test {
     return output_value->GetValue<PoseBundle<double>>();
   }
 
+  virtual void TearDown() {
+    for (auto it = frames_.begin(); it != frames_.end(); ++it) {
+      delete (*it);
+    }
+    frames_.clear();
+  }
+
   std::unique_ptr<RigidBodyTree<double>> tree_;
   int model_id_;
   Eigen::Isometry3d T_BF_;

@@ -31,9 +31,8 @@ using systems::rendering::PoseBundle;
  * This system takes an abstract valued input of type KinematicResults<double>
  * and generates an abstract value output of type
  * systems::rendering::PoseBundle<double>.
- *
- * TODO(rcory): Template on type T
  */
+// TODO(rcory): Template FramePoseTracker on type T
 class FramePoseTracker : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FramePoseTracker)
