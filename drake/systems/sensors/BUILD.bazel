@@ -304,18 +304,18 @@ drake_cc_binary(
     ],
 )
 
-#drake_cc_library(
-#    name = "optitrack_sender",
-#    srcs = ["optitrack_sender.cc"],
-#    hdrs = ["optitrack_sender.h"],
-#    deps = [
-#        "//drake/manipulation/perception:optitrack_sim",
-#        "//drake/multibody:inverse_kinematics",
-#        "//drake/multibody:rigid_body_tree",
-#        "//drake/systems/framework:leaf_system",
-#        "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
-#    ],
-#)
+drake_cc_library(
+    name = "optitrack_sender",
+    srcs = ["optitrack_sender.cc"],
+    hdrs = ["optitrack_sender.h"],
+    deps = [
+        "//drake/multibody:inverse_kinematics",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/sysems/sensors:optitrack_encoder",
+        "//drake/systems/framework:leaf_system",
+        "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
+    ],
+)
 
 drake_cc_library(
     name = "optitrack_encoder",
@@ -499,9 +499,6 @@ drake_cc_googletest(
     srcs = ["test/optitrack_encoder_test.cc"],
     deps = [
         ":optitrack_encoder",
-        "//drake/common:find_resource",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/parsers",
         "//drake/systems/framework",
     ],
 )
