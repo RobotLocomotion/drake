@@ -1,6 +1,9 @@
 # -*- python -*-
 
-load("//tools:drake.bzl", "drake_py_binary")
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+)
 
 drake_py_binary(
     name = "cmake_configure_file",
