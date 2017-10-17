@@ -4,7 +4,12 @@ load(
     "@drake//tools/workspace:generate_include_header.bzl",
     "drake_generate_include_header",
 )
-load("@drake//tools:pathutils.bzl", "basename", "dirname", "join_paths")
+load(
+    "@drake//tools/skylark:pathutils.bzl",
+    "basename",
+    "dirname",
+    "join_paths",
+)
 
 def _lcm_aggregate_hdr(
         lcm_package,
