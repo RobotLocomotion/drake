@@ -200,6 +200,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "nonconvex_optimization_util",
+    srcs = ["nonconvex_optimization_util.cc"],
+    hdrs = ["nonconvex_optimization_util.h"],
+    deps = [
+        ":mathematical_program",
+    ],
+)
+
+drake_cc_library(
     name = "bilinear_product_util",
     srcs = ["bilinear_product_util.cc"],
     hdrs = ["bilinear_product_util.h"],
@@ -819,6 +828,18 @@ drake_cc_googletest(
         ":mathematical_program",
         ":mathematical_program_test_util",
         ":quadratic_program_examples",
+    ],
+)
+
+drake_cc_googletest(
+    name = "nonconvex_optimization_util_test",
+    srcs = [
+        "test/nonconvex_optimization_util_test.cc",
+    ],
+    tags = mosek_test_tags(),
+    deps = [
+        ":nonconvex_optimization_util",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
