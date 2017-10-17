@@ -35,13 +35,13 @@ namespace {
 
 // The following tolerance is used due to a precision difference between Ubuntu
 // Linux and Mac OSX.
-const double kTolerance = 1e-12;
-const double kFovY = M_PI_4;
-const bool kShowWindow = false;
-const double kDepthRangeNear = 0.5;
-const double kDepthRangeFar = 5.;
-const int kWidth = 640;
-const int kHeight = 480;
+constexpr double kTolerance = 1e-12;
+constexpr double kFovY = M_PI_4;
+constexpr bool kShowWindow = false;
+constexpr double kDepthRangeNear = 0.5;
+constexpr double kDepthRangeFar = 5.;
+constexpr int kWidth = 640;
+constexpr int kHeight = 480;
 
 void VerifyCameraInfo(const CameraInfo& camera_info) {
   EXPECT_EQ(kWidth, camera_info.width());
@@ -51,7 +51,7 @@ void VerifyCameraInfo(const CameraInfo& camera_info) {
 
   // The expected focal value is calculated by the equation here:
   // https://github.com/RobotLocomotion/drake/blob/master/drake/systems/sensors/camera_info.h#L87
-  const double kExpectedFocal = 579.41125496954282;
+  constexpr double kExpectedFocal = 579.41125496954282;
   EXPECT_NEAR(kExpectedFocal, camera_info.focal_x(), kTolerance);
   EXPECT_NEAR(kExpectedFocal, camera_info.focal_y(), kTolerance);
 }
@@ -160,10 +160,6 @@ class RgbdCameraDiagram : public systems::Diagram<double> {
 
 class RgbdCameraDiagramTest : public ::testing::Test {
  public:
-
-  const int kWidth = 640;
-  const int kHeight = 480;
-
   void Verify() {
     diagram_->CalcOutput(*context_, output_.get());
     auto color = output_->GetMutableData(0)->GetMutableValue<
@@ -230,8 +226,8 @@ class RgbdCameraDiagramTest : public ::testing::Test {
 // as the output camera pose.
 TEST_F(RgbdCameraDiagramTest, FixedCameraOutputTest) {
   // RgbdCamera is looking straight down 1m above the ground.
-  const Eigen::Vector3d position(0, 0, 1);
-  const Eigen::Vector3d orientation(0, M_PI_2, 0);
+  const Eigen::Vector3d position(0., 0., 1.);
+  const Eigen::Vector3d orientation(0., M_PI_2, 0.);
 
   SetUp("nothing.sdf", position, orientation);
   Verify();
@@ -249,7 +245,7 @@ TEST_F(RgbdCameraDiagramTest, FixedCameraOutputTest) {
 
 TEST_F(RgbdCameraDiagramTest, MovableCameraOutputTest) {
   // RgbdCamera is looking straight down 1m above the ground.
-  const Eigen::Isometry3d X_WB = Eigen::Translation3d(0, 0, 1) *
+  const Eigen::Isometry3d X_WB = Eigen::Translation3d(0., 0., 1.) *
       Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY());
 
   SetUp("nothing.sdf", X_WB);
@@ -266,9 +262,9 @@ TEST_F(RgbdCameraDiagramTest, MovableCameraOutputTest) {
 
 class DepthImageToPointCloudConversionTest : public ::testing::Test {
  public:
-  const float kFocal = 500.f;
-  const int kDepthWidth = 60;
-  const int kDepthHeight = 40;
+  static constexpr float kFocal = 500.f;
+  static constexpr int kDepthWidth = 60;
+  static constexpr int kDepthHeight = 40;
 
   DepthImageToPointCloudConversionTest() : camera_info_(
       kDepthWidth, kDepthHeight,
@@ -306,7 +302,7 @@ class DepthImageToPointCloudConversionTest : public ::testing::Test {
 
 // Verifies computed point cloud when pixel values in depth image are valid.
 TEST_F(DepthImageToPointCloudConversionTest, ValidValueTest) {
-  const float kDepthValue = 1.f;
+  constexpr float kDepthValue = 1.f;
   SetUp(kDepthValue);
 
   RgbdCamera::ConvertDepthImageToPointCloud(
@@ -314,7 +310,7 @@ TEST_F(DepthImageToPointCloudConversionTest, ValidValueTest) {
 
   // This tolerance was determined empirically using Drake's supported
   // platforms.
-  const float kDistanceTolerance = 1e-8;
+  constexpr float kDistanceTolerance = 1e-8;
   for (int v = 0; v < depth_image_.height(); ++v) {
     for (int u = 0; u < depth_image_.width(); ++u) {
       const int i = v * depth_image_.width() + u;
