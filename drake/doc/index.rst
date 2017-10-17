@@ -35,7 +35,10 @@ While there are an increasing number of simulation tools available for robotics,
 Here is a quick summary of capabilities:
 
 * Modeling Dynamical Systems
-	* C++ `block-diagram <http://drake.mit.edu/doxygen_cxx/classdrake_1_1systems_1_1_diagram_builder.html#details>`_  modeling environment with support for continuous, discrete, hybrid, event-triggered, and multi-rate systems
+	* C++ `block-diagram <http://drake.mit.edu/doxygen_cxx/classdrake_1_1systems_1_1_diagram_builder.html#details>`_  modeling environment with support for:
+		* Continuous, discrete, hybrid, event-triggered, and multi-rate systems
+		* `Stochastic systems <http://drake.mit.edu/doxygen_cxx/stochastic_systems.html>`_
+		* `System constraints <http://drake.mit.edu/doxygen_cxx/classdrake_1_1systems_1_1_system_constraint.html#details>`_
 	* `Rigid-body kinematics and dynamics <http://drake.mit.edu/doxygen_cxx/group__rigid__body__systems.html>`_
 		* Rigorously designed and tested, well-documented `multi-body library <http://drake.mit.edu/doxygen_cxx/group__multibody__concepts.html>`_
 		* Load from :doc:`SDF / URDF models <models>` (+ a few custom tags)
@@ -49,8 +52,6 @@ Here is a quick summary of capabilities:
 	* **Coming soon**:
 		* API upgrade from `RigidBodyTree <http://drake.mit.edu/doxygen_cxx/class_rigid_body_tree.html>`_ to `MultiBodyTree <http://drake.mit.edu/doxygen_cxx/classdrake_1_1multibody_1_1_multibody_tree.html>`_
 		* Soft-body kinematics and dynamics
-		* `System constraints <https://github.com/robotlocomotion/drake/issues/5297>`_ (Rigid-body systems already support some constraints, such as kinematic loops)
-		* `Stochastic systems <https://github.com/RobotLocomotion/drake/issues/6374>`_ (Random source blocks already exist, but need random contexts and symbolic support).
 		* More sophisticated rendering (towards photo-realism) and noise models for perception
 * Core Libraries / Utilities
 	* `MathematicalProgram <http://drake.mit.edu/doxygen_cxx/group__solvers.html>`_, a C++ interface wrapping many open-source and commercial solvers
@@ -121,7 +122,7 @@ If you would like to cite Drake in your academic publications, we suggest the fo
 	}
 
 
-****************	
+****************
 Acknowledgements
 ****************
 
@@ -147,7 +148,7 @@ Next steps
    GitHub <https://github.com/RobotLocomotion/drake>
 
 
-********************************************   
+********************************************
 Using Drake from other Programming Languages
 ********************************************
 .. toctree::
@@ -158,7 +159,7 @@ Using Drake from other Programming Languages
 		matlab_bindings
 
 
-***************************************************		
+***************************************************
 Documentation that may be useful but needs updating
 ***************************************************
 

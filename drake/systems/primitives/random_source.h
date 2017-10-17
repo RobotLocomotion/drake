@@ -46,12 +46,19 @@ class RandomState {
 /// concept.
 ///   http://en.cppreference.com/w/cpp/concept/RandomNumberDistribution
 ///
+/// Note: User code should not instantiate this class directly, but
+/// should use systems::UniformRandomSource, systems::GaussianRandomSource, and
+/// systems::ExponentialRandomSource systems instead.
+///
 /// Note: This system is only defined for the double scalar type.
 ///
 /// Note: The hard-coding of (default) distribution parameters is imposed
 /// intentionally to simplify analysis (by forcing systems taking noise inputs
 /// to implement the shifting/scaling, the system itself contains all of the
 /// necessary information for stochastic analysis).
+///
+/// @see @ref stochastic_systems, UniformRandomSource, GaussianRandomSource, 
+/// ExponentialRandomSource.
 ///
 /// @ingroup primitive_systems
 template <typename Distribution, typename Generator = std::mt19937>
@@ -136,6 +143,8 @@ typedef internal::RandomSource<std::exponential_distribution<double>>
 ///
 /// @param sampling_interval_sec interval to be used for all new sources.
 /// @returns the total number of RandomSource systems added.
+///
+/// @see @ref stochastic_systems
 int AddRandomInputs(double sampling_interval_sec,
                     DiagramBuilder<double>* builder);
 
