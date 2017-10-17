@@ -23,7 +23,7 @@ namespace sensors {
 /// RgbdCamera uses [VTK](https://github.com/Kitware/VTK) as the rendering
 /// backend.
 /// Its image resolution is fixed at VGA (640 x 480 pixels) for all three
-/// images. The default depth sensing range is 0.5 m to 5.0 m.
+/// images. The default depth sensing range is from 0.5 m to 5.0 m.
 ///
 /// Let `W` be the world coordinate system. In addition to `W`, there are three
 /// more coordinate systems that are associated with an RgbdCamera. They are
@@ -219,6 +219,7 @@ class RgbdCamera final : public LeafSystem<double> {
   // now it has to be repeated before each image output port calculation.
   void UpdateModelPoses(const BasicVector<double>& input_vector) const;
 
+  const InputPortDescriptor<double>* state_input_port_{};
   const OutputPort<double>* color_image_port_{};
   const OutputPort<double>* depth_image_port_{};
   const OutputPort<double>* label_image_port_{};

@@ -18,16 +18,13 @@ namespace sensors {
 
 namespace {
 
-const int kPortStateInput = 0;
-
 // TODO(kunimatsu-tri) Add support for the arbitrary image size
-const int kImageWidth = 640;  // In pixels
-const int kImageHeight = 480;  // In pixels
+constexpr int kImageWidth = 640;  // In pixels
+constexpr int kImageHeight = 480;  // In pixels
 
 Eigen::Isometry3d X_BC() {
   // The color sensor's origin (`Co`) is offset by 0.02 m on the Y axis of
-  // the RgbdRenderer's base coordinate system (`B`).
-  // TODO(kunimatsu-tri) Add support for arbitrary relative pose.
+  // the RgbdCamera's base coordinate system (`B`).
   return Eigen::Translation3d(0., 0.02, 0.) *
     (Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitX()) *
      Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY()));
@@ -35,6 +32,8 @@ Eigen::Isometry3d X_BC() {
 
 }  // namespace
 
+// Note that if `depth_image` holds any pixels that have NaN, the converted
+// points will aslo become NaN.
 void RgbdCamera::ConvertDepthImageToPointCloud(const ImageDepth32F& depth_image,
                                                const CameraInfo& camera_info,
                                                Eigen::Matrix3Xf* point_cloud) {
@@ -82,6 +81,7 @@ RgbdCamera::RgbdCamera(const std::string& name,
       X_WB_initial_(
           Eigen::Translation3d(position[0], position[1], position[2]) *
           Eigen::Isometry3d(math::rpy2rotmat(orientation))),
+      // TODO(kunimatsu-tri) Add support for arbitrary relative pose.
       // TODO(kunimatsu-tri) Change the X_BD_ to be different from X_BC_ when
       // it's needed.
       X_BC_(X_BC()), X_BD_(X_BC()),
@@ -105,6 +105,7 @@ RgbdCamera::RgbdCamera(const std::string& name,
       camera_fixed_(false),
       color_camera_info_(kImageWidth, kImageHeight, fov_y),
       depth_camera_info_(kImageWidth, kImageHeight, fov_y),
+      // TODO(kunimatsu-tri) Add support for arbitrary relative pose.
       // TODO(kunimatsu-tri) Change the X_BD_ to be different from X_BC_ when
       // it's needed.
       X_BC_(X_BC()), X_BD_(X_BC()),
@@ -119,7 +120,8 @@ void RgbdCamera::Init(const std::string& name) {
   set_name(name);
   const int kVecNum =
       tree_.get_num_positions() + tree_.get_num_velocities();
-  this->DeclareInputPort(systems::kVectorValued, kVecNum);
+
+  state_input_port_ = &this->DeclareInputPort(systems::kVectorValued, kVecNum);
 
   ImageRgba8U color_image(kImageWidth, kImageHeight);
   color_image_port_ = &this->DeclareAbstractOutputPort(
@@ -152,7 +154,7 @@ void RgbdCamera::Init(const std::string& name) {
 }
 
 const InputPortDescriptor<double>& RgbdCamera::state_input_port() const {
-  return System<double>::get_input_port(kPortStateInput);
+  return *state_input_port_;
 }
 
 const OutputPort<double>&
@@ -179,7 +181,7 @@ void RgbdCamera::OutputPoseVector(
     const Context<double>& context,
     rendering::PoseVector<double>* pose_vector) const {
   const BasicVector<double>* input_vector =
-      this->EvalVectorInput(context, kPortStateInput);
+      this->EvalVectorInput(context, state_input_port_->get_index());
 
   // Calculates X_WB.
   Eigen::Isometry3d X_WB;
@@ -195,10 +197,11 @@ void RgbdCamera::OutputPoseVector(
     X_WB = tree_.CalcFramePoseInWorldFrame(cache, frame_);
   }
 
-  Eigen::Translation<double, 3> trans =
-      Eigen::Translation<double, 3>(X_WB.translation());
+  Eigen::Translation<double, 3> trans{
+    Eigen::Translation<double, 3>(X_WB.translation())};
   pose_vector->set_translation(trans);
-  Eigen::Quaterniond quat = Eigen::Quaterniond(X_WB.linear());
+
+  Eigen::Quaterniond quat{Eigen::Quaterniond(X_WB.linear())};
   pose_vector->set_rotation(quat);
 }
 
@@ -235,7 +238,7 @@ void RgbdCamera::UpdateModelPoses(
 void RgbdCamera::OutputColorImage(const Context<double>& context,
                                   ImageRgba8U* color_image) const {
   const BasicVector<double>* input_vector =
-      this->EvalVectorInput(context, kPortStateInput);
+      this->EvalVectorInput(context, state_input_port_->get_index());
 
   UpdateModelPoses(*input_vector);
   renderer_->RenderColorImage(color_image);
@@ -244,7 +247,7 @@ void RgbdCamera::OutputColorImage(const Context<double>& context,
 void RgbdCamera::OutputDepthImage(const Context<double>& context,
                                   ImageDepth32F* depth_image) const {
   const BasicVector<double>* input_vector =
-      this->EvalVectorInput(context, kPortStateInput);
+      this->EvalVectorInput(context, state_input_port_->get_index());
 
   UpdateModelPoses(*input_vector);
   renderer_->RenderDepthImage(depth_image);
@@ -253,7 +256,7 @@ void RgbdCamera::OutputDepthImage(const Context<double>& context,
 void RgbdCamera::OutputLabelImage(const Context<double>& context,
                                   ImageLabel16I* label_image) const {
   const BasicVector<double>* input_vector =
-      this->EvalVectorInput(context, kPortStateInput);
+      this->EvalVectorInput(context, state_input_port_->get_index());
 
   UpdateModelPoses(*input_vector);
   renderer_->RenderLabelImage(label_image);
@@ -262,7 +265,8 @@ void RgbdCamera::OutputLabelImage(const Context<double>& context,
 RgbdCameraDiscrete::RgbdCameraDiscrete(std::unique_ptr<RgbdCamera> camera,
                                        double period)
     : camera_(camera.get()), period_(period) {
-  const int width = kImageWidth, height = kImageHeight;
+  constexpr int width = kImageWidth;
+  constexpr int height = kImageHeight;
 
   DiagramBuilder<double> builder;
   builder.AddSystem(std::move(camera));
