@@ -206,6 +206,8 @@ install(
 install(
     name = "install_data",
     visibility = ["//visibility:public"],
+    data = glob(["*.csv", "*.json"]),
+    data_dest = "share/drake/" + package_name(),
     deps = [
         "//drake/examples/kuka_iiwa_arm/models:install_data",
     ],
