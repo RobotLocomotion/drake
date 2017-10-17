@@ -5,9 +5,9 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/rigid_body_frame.h"
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
+#include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {
 namespace manipulation {
@@ -93,14 +93,6 @@ class FramePoseTrackerTest : public ::testing::Test {
   std::unique_ptr<FramePoseTracker> dut_;
 };
 
-// invalid tests should include
-// For frame_info constructor
-// (1) invalid model instance id
-// (2) invalid body name (taken care of by rigidbodytree::find ?)
-// For frame constructor
-// (3) invalid body specified in frame (nullptr)
-// (4) invalid frame name (non-unique)
-
 TEST_F(FramePoseTrackerTest, InvalidModelInstanceIdTest) {
   frame_info_["iiwa_frame_3"] = std::make_pair("iiwa_link_3", 10);
   EXPECT_EQ(frame_info_.size(), 4);
@@ -121,13 +113,9 @@ TEST_F(FramePoseTrackerTest, InvalidFrameTest) {
 
 TEST_F(FramePoseTrackerTest, InvalidFrameNameTest) {
   EXPECT_EQ(frames_.size(), 3);
-  frames_[2]->set_name("iiwa_frame_0"); // repeat first frame name
+  frames_[2]->set_name("iiwa_frame_0");  // repeat first frame name
   EXPECT_ANY_THROW(FramePoseTracker(*tree_.get(), frames_));
 }
-
-// valid tests should include
-// (1) valid frame_info test
-// (2) valid frame test
 
 TEST_F(FramePoseTrackerTest, ValidFrameInfoTest) {
   std::vector<Eigen::Isometry3d> frame_poses(3, T_BF_);

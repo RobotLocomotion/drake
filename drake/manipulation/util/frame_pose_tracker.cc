@@ -1,20 +1,18 @@
 #include "drake/manipulation/util/frame_pose_tracker.h"
 
 #include <algorithm>
-#include <utility>
 #include <cstddef>
+#include <utility>
 
-#include "drake/multibody/rigid_body_plant/kinematics_results.h"
-#include "drake/systems/rendering/pose_bundle.h"
 #include "drake/multibody/multibody_tree/math/spatial_velocity.h"
+#include "drake/multibody/rigid_body_plant/kinematics_results.h"
 #include "drake/systems/rendering/frame_velocity.h"
-
+#include "drake/systems/rendering/pose_bundle.h"
 
 namespace drake {
 namespace manipulation {
 namespace util {
 
-using std::string;
 using drake::systems::KinematicsResults;
 using systems::rendering::PoseBundle;
 using systems::rendering::FrameVelocity;
@@ -22,7 +20,7 @@ using multibody::SpatialVelocity;
 
 FramePoseTracker::FramePoseTracker(
     const RigidBodyTree<double>& tree,
-    const std::vector<RigidBodyFrame<double>*>& frames) : tree_(&tree){
+    const std::vector<RigidBodyFrame<double>*>& frames) : tree_(&tree) {
 
   // Confirm all rigid bodies and frame names are valid.
   for (auto it = frames.begin(); it != frames.end(); ++it) {
@@ -47,7 +45,7 @@ FramePoseTracker::FramePoseTracker(
 FramePoseTracker::FramePoseTracker(
     const RigidBodyTree<double>& tree,
     const std::map<std::string, std::pair<std::string, int>> frame_info,
-    std::vector<Eigen::Isometry3d>& frame_poses) : tree_(&tree){
+    std::vector<Eigen::Isometry3d> frame_poses) : tree_(&tree) {
 
   // If the frame vector is empty, set all frame poses to the identity pose.
   if (frame_poses.empty()) {
@@ -106,7 +104,6 @@ void FramePoseTracker::OutputStatus(const systems::Context<double>& context,
   int frame_index = 0;
   for (auto it = frame_name_to_frame_map_.begin();
        it != frame_name_to_frame_map_.end(); ++frame_index, ++it) {
-
     // Set the pose.
     frame_pose_bundle.set_name(frame_index, it->first);
     frame_pose_bundle.set_model_instance_id(

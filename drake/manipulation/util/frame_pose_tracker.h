@@ -3,6 +3,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "drake/common/eigen_types.h"
@@ -19,46 +20,50 @@ using systems::rendering::PoseBundle;
 
 /**
  * Implements a class that maintains pose and velocity information for a set of
- * specified RigidBodyFrames. Frame information is communicated via a PoseBundle object.
- * Frames can be specified at construction in one of two ways: (1) by providing a set of RigidBody
- * names (of bodies already existing in the RigidBodyTree), which specify which
- * RigidBodies these newly created
- * frames should be attached to, or (2) by
- * providing a set of RigidBodyFrames directly. The former simply searches the
- * RigidBodyTree and assigns a RigidBodyFrame to the specified body. Frame pose
- * w.r.t. the base RigidBody frame can also be specified.
- * This system takes an abstract value input of type KinematicResults<double>
+ * specified RigidBodyFrames. Frame information is communicated via a PoseBundle
+ * object. Frames can be specified at construction in one of two ways: (1) by
+ * providing a set of RigidBody names (of bodies already existing in the
+ * RigidBodyTree), which specify which RigidBodies these newly created frames
+ * should be attached to, or (2) by providing a set of RigidBodyFrames directly.
+ * The former simply searches the RigidBodyTree and assigns a RigidBodyFrame to
+ * the specified body. Frame pose w.r.t. the base RigidBody frame can also be
+ * specified.
+ * This system takes an abstract valued input of type KinematicResults<double>
  * and generates an abstract value output of type
- * systems::rendering::PoseBundle.
+ * systems::rendering::PoseBundle<double>.
  */
 class FramePoseTracker : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FramePoseTracker)
   /**
-   * Constructs a FramePoseTracker object by taking in the RigidBodyFrames to
-   * track directly as a parameter.
+   * Constructs a FramePoseTracker object by directly taking in the
+   * RigidBodyFrames to track.
    * @param tree The RigidBodyTree containing the named bodies. FramePoseTracker
-   *        keeps a reference to this tree to calculate frame poses in the world frame.
-   * @param frames a std::vector of RigidBodyFrames to track. Each RigidBodyFrame
-   *        in this vector should have a name that is unique, i.e., the std::string returned
-   *        by RigidBodyFrame::get_name() should be unique.
-   * @throws std::runtime_error if any frame has a non-unique name or the frame is not
-   *         attached to a RigidBody (i.e., it's RigidBody pointer is nullptr).
+   *        keeps a reference to this tree to calculate frame poses in the world
+   *        frame.
+   * @param frames a std::vector of RigidBodyFrames to track. Each
+   *        RigidBodyFrame in this vector should have a name that is unique,
+   *        i.e., the std::string returned by RigidBodyFrame::get_name() should
+   *        be unique.
+   * @throws std::runtime_error if any frame has a non-unique name or the frame
+   *         is not attached to a RigidBody (i.e., it's RigidBody pointer is
+   *         nullptr).
    */
   FramePoseTracker(const RigidBodyTree<double>& tree,
                      const std::vector<RigidBodyFrame<double>*>& frames);
 
   /**
    * Constructs a FramePoseTracker object from the information contained in
-   * @p frame_info, which is a std::map whose keys denote unique frame names. Each key is
-   * mapped to a std::pair that includes the RigidBody name (std::string)
-   * specifying which body this frame should be attached to, and the model instance
-   * id in the @p tree that contains the corresponding body.
+   * @p frame_info, which is a std::map whose keys denote unique frame names.
+   * Each key is mapped to a std::pair that includes the RigidBody name
+   * (std::string) specifying which body this frame should be attached to, and
+   * the model instance id in the @p tree that contains the corresponding body.
    *
    * @param tree The RigidBodyTree containing the named bodies. FramePoseTracker
-   *        keeps a reference to this tree to calculate frame poses in the world frame.
-   * @param frame_info A mapping from a unique frame name to a pair consisting of
-   *        body name and model instance id.
+   *        keeps a reference to this tree to calculate frame poses in the world
+   *        frame.
+   * @param frame_info A mapping from a unique frame name to a std::pair
+   *        consisting of body name and model instance id.
    * @param frame_poses A vector containing each frame's pose relative to the
    *        parent body. If this vector is empty, it assumes identity for all
    *        poses.
@@ -66,8 +71,8 @@ class FramePoseTracker : public systems::LeafSystem<double> {
   FramePoseTracker(
       const RigidBodyTree<double>& tree,
       const std::map<std::string, std::pair<std::string, int>> frame_info,
-      std::vector<Eigen::Isometry3d>& frame_poses =
-      *(new std::vector<Eigen::Isometry3d>()));
+      std::vector<Eigen::Isometry3d> frame_poses =
+      std::vector<Eigen::Isometry3d>());
 
   /**
    * This InputPortDescriptor represents an abstract valued input port of type

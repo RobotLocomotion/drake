@@ -1,17 +1,18 @@
 #include "drake/systems/sensors/optitrack_encoder.h"
-#include "drake/systems/rendering/pose_bundle.h"
 
+#include <algorithm>
 #include <map>
 #include <string>
-#include <vector>
-#include <algorithm>
 #include <utility>
+#include <vector>
+
+#include "drake/systems/rendering/pose_bundle.h"
 
 namespace drake {
 namespace systems {
 namespace sensors {
 
-using systems::sensors::TrackedObject;
+using systems::sensors::TrackedBody;
 using systems::rendering::PoseBundle;
 
 OptitrackEncoder::OptitrackEncoder(
@@ -22,8 +23,8 @@ OptitrackEncoder::OptitrackEncoder(
   // Abstract input port of type PoseBundle
   pose_bundle_input_port_index_ = this->DeclareAbstractInputPort().get_index();
 
-  // Abstract output port of type vector<TrackedObjects>
-  tracked_objects_output_port_index_ = this->DeclareAbstractOutputPort(
+  // Abstract output port of type vector<TrackedBody>
+  optitrack_output_port_index_ = this->DeclareAbstractOutputPort(
       &OptitrackEncoder::MakeOutputStatus,
       &OptitrackEncoder::OutputStatus).get_index();
 
@@ -33,7 +34,8 @@ OptitrackEncoder::OptitrackEncoder(
                                  "Input parameters frame_name_to_id_map and "
                                  "rigid_body_names must have the same size.");
   } else if (rigid_body_names.empty()) {
-    for (auto it = frame_name_to_id_map.begin(); it != frame_name_to_id_map.end(); ++it) {
+    for (auto it = frame_name_to_id_map.begin();
+         it != frame_name_to_id_map.end(); ++it) {
       rigid_body_names.push_back(it->first);
     }
   }
@@ -43,7 +45,7 @@ OptitrackEncoder::OptitrackEncoder(
   while (m_it != frame_name_to_id_map.end() && v_it != rigid_body_names.end()) {
     if (!CheckIdValidity(m_it->second)) {
       throw std::runtime_error("OptitrackEnc::OptitrackEnc: ERROR: "
-                                   "found invalid Optitrack rigid body id.");
+                                   "Found invalid Optitrack rigid body id.");
     }
     rigid_body_info_map_[m_it->first] =
         std::pair<std::string, int>(*v_it, m_it->second);
@@ -67,14 +69,14 @@ bool OptitrackEncoder::CheckIdValidity(const int id) {
   }
 }
 
-std::vector<TrackedObject> OptitrackEncoder::MakeOutputStatus() const {
-  std::vector<TrackedObject> optitrack_objects(rigid_body_info_map_.size());
+std::vector<TrackedBody> OptitrackEncoder::MakeOutputStatus() const {
+  std::vector<TrackedBody> optitrack_objects(rigid_body_info_map_.size());
   return optitrack_objects;
 }
 
 void OptitrackEncoder::OutputStatus(const systems::Context<double>& context,
-                                    std::vector<TrackedObject>* output) const {
-  std::vector<TrackedObject>& optitrack_objects = *output;
+                                    std::vector<TrackedBody>* output) const {
+  std::vector<TrackedBody>& optitrack_objects = *output;
 
   // Extract the input port for the PoseBundle object, get the
   // transformation of the bodies we care about, and fill in the
@@ -103,6 +105,6 @@ void OptitrackEncoder::OutputStatus(const systems::Context<double>& context,
   std::sort(optitrack_objects.begin(), optitrack_objects.end());
 }
 
-}  // namespace drake
-}  // namespace systems
 }  // namespace sensors
+}  // namespace systems
+}  // namespace drake

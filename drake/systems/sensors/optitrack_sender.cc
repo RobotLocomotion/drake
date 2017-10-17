@@ -1,14 +1,14 @@
 #include "drake/systems/sensors/optitrack_sender.h"
 #include "external/optitrack_driver/lcmtypes/optitrack/optitrack_rigid_body_t.hpp"
 
-#include "drake/manipulation/perception/optitrack_sim.h"
+#include "drake/systems/sensors/optitrack_encoder.h"
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
 
 namespace drake {
 namespace systems {
 namespace sensors {
 
-using manipulation::perception::TrackedObject;
+using systems::sensors::TrackedBody;
 
 OptitrackFrameSender::OptitrackFrameSender(unsigned int num_rigid_bodies)
     : num_rigid_bodies_(num_rigid_bodies) {
@@ -34,15 +34,15 @@ void OptitrackFrameSender::OutputStatus(
 
   status.utime = context.get_time() * 1e6;
 
-  const std::vector<TrackedObject>* mocap_objects =
-      this->EvalInputValue<std::vector<TrackedObject>>(context, 0);
+  const std::vector<TrackedBody>* mocap_objects =
+      this->EvalInputValue<std::vector<TrackedBody>>(context, 0);
 
   for (size_t i = 0; i < mocap_objects->size(); ++i) {
-    status.rigid_bodies[i].id = (*mocap_objects)[i].optitrack_id;
+    status.rigid_bodies[i].id = (*mocap_objects)[i].id_;
 
-    Eigen::Vector3d trans = (*mocap_objects)[i].T_WF.translation();
+    Eigen::Vector3d trans = (*mocap_objects)[i].T_WF_.translation();
     Eigen::Quaterniond rot = Eigen::Quaterniond(
-        (*mocap_objects)[i].T_WF.linear());
+        (*mocap_objects)[i].T_WF_.linear());
 
     status.rigid_bodies[i].xyz[0] = static_cast<float>(trans[0]);
     status.rigid_bodies[i].xyz[1] = static_cast<float>(trans[1]);
