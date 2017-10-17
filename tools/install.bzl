@@ -1,6 +1,6 @@
 # -*- python -*-
 
-load("@drake//tools:drake.bzl", "MainClassInfo")
+load("@drake//tools/skylark:drake_java.bzl", "MainClassInfo")
 load(
     "@drake//tools/skylark:pathutils.bzl",
     "dirname",
