@@ -85,7 +85,7 @@ class OptitrackEncoder : public systems::LeafSystem<double> {
    */
   OptitrackEncoder(
       const std::map<std::string, int>& frame_name_to_id_map,
-      std::vector<std::string> rigid_body_names,
+      std::vector<std::string> rigid_body_names = std::vector<std::string>(),
       double optitrack_lcm_publish_period = kLcmStatusPeriod);
 
   /**

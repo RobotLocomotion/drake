@@ -65,7 +65,8 @@ class FramePoseTracker : public systems::LeafSystem<double> {
    *        keeps a reference to this tree to calculate frame poses in the world
    *        frame.
    * @param frame_info A mapping from a unique frame name to a std::pair
-   *        consisting of body name and model instance id.
+   *        consisting of body name and model instance id. If model instance id
+   *        is -1, every model is searched.
    * @param frame_poses A vector containing each frame's pose relative to the
    *        parent body. If this vector is empty, it assumes identity for all
    *        poses.
