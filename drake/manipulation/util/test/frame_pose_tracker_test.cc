@@ -147,7 +147,7 @@ TEST_F(FramePoseTrackerTest, ValidFrameInfoTest) {
     int frame_pose_index = frame_name_to_index_map.at((*it)->get_name());
     Eigen::Isometry3d T_WF = frames_bundle.get_pose(frame_pose_index);
 
-    EXPECT_TRUE(T_WF.isApprox(T_WB * T_BF, 1e-3));
+    EXPECT_TRUE(T_WF.isApprox(T_WB * T_BF, 1e-6));
   }
 }
 
@@ -180,7 +180,7 @@ TEST_F(FramePoseTrackerTest, ValidFrameTest) {
     int frame_pose_index = frame_name_to_index_map.at((*it)->get_name());
     Eigen::Isometry3d T_WF = frames_bundle.get_pose(frame_pose_index);
 
-    EXPECT_TRUE(T_WF.isApprox(T_WB * T_BF, 1e-3));
+    EXPECT_TRUE(T_WF.isApprox(T_WB * T_BF, 1e-6));
   }
 }
 

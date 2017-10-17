@@ -15,7 +15,7 @@ namespace sensors {
 ///
 /// The system has one abstract-valued input port and one abstract-valued
 /// output port. The abstract input port is templated on a std::vector of type
-/// manipulation::perception::TrackedObject, and the abstract output port value
+/// manipulation::perception::TrackedBody, and the abstract output port value
 /// is templated on type `optitrack_frame_t`.
 ///
 /// Note that this system does not actually send this message on an LCM channel.
@@ -38,15 +38,15 @@ class OptitrackFrameSender : public systems::LeafSystem<double> {
 
  private:
   // This is the method to use for the output port allocator.
-  optitrack::optitrack_frame_t MakeOutputStatus() const;
+  optitrack::optitrack_frame_t CreateNewMessage() const;
 
   // This is the calculator method for the output port.
-  void OutputStatus(const systems::Context<double> &context,
-                    optitrack::optitrack_frame_t *output) const;
+  void PopulateMessage(const systems::Context<double> &context,
+                       optitrack::optitrack_frame_t *output) const;
 
   const unsigned int num_rigid_bodies_;
 };
 
-} // namespace drake
-} // namespace systems
-} // namespace sensors
+}  // namespace sensors
+}  // namespace systems
+}  // namespace drake

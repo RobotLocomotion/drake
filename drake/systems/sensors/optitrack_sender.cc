@@ -1,8 +1,11 @@
 #include "drake/systems/sensors/optitrack_sender.h"
+
+#include <vector>
+
 #include "external/optitrack_driver/lcmtypes/optitrack/optitrack_rigid_body_t.hpp"
 
-#include "drake/systems/sensors/optitrack_encoder.h"
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
+#include "drake/systems/sensors/optitrack_encoder.h"
 
 namespace drake {
 namespace systems {
@@ -13,11 +16,11 @@ using systems::sensors::TrackedBody;
 OptitrackFrameSender::OptitrackFrameSender(unsigned int num_rigid_bodies)
     : num_rigid_bodies_(num_rigid_bodies) {
   this->DeclareAbstractInputPort();
-  this->DeclareAbstractOutputPort(&OptitrackFrameSender::MakeOutputStatus,
-                                  &OptitrackFrameSender::OutputStatus);
+  this->DeclareAbstractOutputPort(&OptitrackFrameSender::CreateNewMessage,
+                                  &OptitrackFrameSender::PopulateMessage);
 }
 
-optitrack::optitrack_frame_t OptitrackFrameSender::MakeOutputStatus() const {
+optitrack::optitrack_frame_t OptitrackFrameSender::CreateNewMessage() const {
   optitrack::optitrack_frame_t msg{};
 
   msg.num_rigid_bodies = num_rigid_bodies_;
@@ -26,9 +29,9 @@ optitrack::optitrack_frame_t OptitrackFrameSender::MakeOutputStatus() const {
   return msg;
 }
 
-void OptitrackFrameSender::OutputStatus(
-    const Context<double>& context,
-    optitrack::optitrack_frame_t* output) const {
+void OptitrackFrameSender::PopulateMessage(
+    const Context<double> &context,
+    optitrack::optitrack_frame_t *output) const {
 
   optitrack::optitrack_frame_t& status = *output;
 
@@ -55,6 +58,6 @@ void OptitrackFrameSender::OutputStatus(
   }
 }
 
-} // namespace drake
-} // namespace systems
-} // namespace sensors
+}  // namespace sensors
+}  // namespace systems
+}  // namespace drake

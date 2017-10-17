@@ -108,10 +108,6 @@ drake_cc_library(
     name = "frame_pose_tracker",
     srcs = ["frame_pose_tracker.cc"],
     hdrs = ["frame_pose_tracker.h"],
-    visibility = [
-        "//drake/examples/kuka_iiwa_arm:__subpackages__",
-        "//drake/systems/sensors:__subpackages__",
-    ],
     deps = [
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/multibody_tree/math:spatial_velocity",
