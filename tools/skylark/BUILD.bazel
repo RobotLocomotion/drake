@@ -1,0 +1,7 @@
+# -*- python -*-
+
+package(default_visibility = ["//visibility:public"])
+
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+add_lint_tests()
