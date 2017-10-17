@@ -131,6 +131,130 @@ TEST_F(MultilaneLineRoadCurveTest, OffsetTest) {
   }
 }
 
+// Checks World function evaluation at different values of [p, r, h].
+TEST_F(MultilaneLineRoadCurveTest, WorldFunction) {
+  const std::vector<double> r_vector{-10., 0., 10.};
+  const std::vector<double> p_vector{0., 0.1, 0.2, 0.5, 0.7, 1.0};
+  const std::vector<double> h_vector{-5., 0., 5.};
+
+  // Checks for a flat curve.
+  const LineRoadCurve flat_dut(kOrigin, kDirection, zp, zp);
+  const Vector3<double> p_versor =
+      Vector3<double>(kDirection.x(), kDirection.y(), 0.).normalized();
+  const Rot3 flat_rotation(0., 0., kHeading);
+  const Vector3<double> kGeoOrigin(kOrigin.x(), kOrigin.y(), 0.);
+  for (double p : p_vector) {
+    for (double r : r_vector) {
+      for (double h : h_vector) {
+        const Vector3<double> geo_position = kGeoOrigin +
+                                             p * kDirection.norm() * p_versor +
+                                             flat_rotation.apply({0., r, h});
+        EXPECT_TRUE(CompareMatrices(flat_dut.W_of_prh(p, r, h), geo_position,
+                                    kVeryExact));
+      }
+    }
+  }
+
+  // Checks for linearly elevated curve.
+  const double kElevationSlope = 15. / kDirection.norm();
+  const double kElevationOffset = 10. / kDirection.norm();
+  const CubicPolynomial linear_elevation(kElevationOffset, kElevationSlope, 0.,
+                                         0.);
+  const LineRoadCurve elevated_dut(kOrigin, kDirection, linear_elevation, zp);
+  // Computes the rotation along the RoadCurve.
+  const Rot3 elevated_rotation(0., -std::atan(linear_elevation.f_dot_p(0.)),
+                               kHeading);
+  const Vector3<double> z_vector(0., 0., kDirection.norm());
+  for (double p : p_vector) {
+    for (double r : r_vector) {
+      for (double h : h_vector) {
+        const Vector3<double> geo_position =
+            kGeoOrigin + p * kDirection.norm() * p_versor +
+            linear_elevation.f_p(p) * z_vector +
+            elevated_rotation.apply({0., r, h});
+        EXPECT_TRUE(CompareMatrices(elevated_dut.W_of_prh(p, r, h),
+                                    geo_position, kVeryExact));
+      }
+    }
+  }
+
+  // Checks for a curve with constant non zero superelevation.
+  const double kSuperelevationOffset = M_PI / 4.;
+  const CubicPolynomial constant_offset_superelevation(
+      kSuperelevationOffset / kDirection.norm(), 0., 0., 0.);
+  const LineRoadCurve superelevated_dut(kOrigin, kDirection, zp,
+                                        constant_offset_superelevation);
+  const Rot3 superelevated_rotation(kSuperelevationOffset, 0., kHeading);
+  for (double p : p_vector) {
+    for (double r : r_vector) {
+      for (double h : h_vector) {
+        const Vector3<double> geo_position =
+            kGeoOrigin + p * kDirection.norm() * p_versor +
+            superelevated_rotation.apply({0., r, h});
+        EXPECT_TRUE(CompareMatrices(superelevated_dut.W_of_prh(p, r, h),
+                                    geo_position, kVeryExact));
+      }
+    }
+  }
+}
+
+// Checks Orientation for different values of [p, r, h].
+TEST_F(MultilaneLineRoadCurveTest, Orientation) {
+  const std::vector<double> r_vector{-10., 0., 10.};
+  const std::vector<double> p_vector{0., 0.1, 0.2, 0.5, 0.7, 1.0};
+  const std::vector<double> h_vector{-5., 0., 5.};
+
+  // Checks for a flat curve.
+  const LineRoadCurve flat_dut(kOrigin, kDirection, zp, zp);
+  const double kZeroRoll{0.};
+  const double kZeroPitch{0.};
+  for (double p : p_vector) {
+    for (double r : r_vector) {
+      for (double h : h_vector) {
+        const Rot3 rotation = flat_dut.Orientation(p, r, h);
+        EXPECT_NEAR(rotation.roll(), kZeroRoll, kVeryExact);
+        EXPECT_NEAR(rotation.pitch(), kZeroPitch, kVeryExact);
+        EXPECT_NEAR(rotation.yaw(), kHeading, kVeryExact);
+      }
+    }
+  }
+
+  // Checks for a linearly elevated curve.
+  const double kElevationSlope = 15. / kDirection.norm();
+  const double kElevationOffset = 10. / kDirection.norm();
+  const CubicPolynomial linear_elevation(kElevationOffset, kElevationSlope, 0.,
+                                         0.);
+  const LineRoadCurve elevated_dut(kOrigin, kDirection, linear_elevation, zp);
+  const double kLinearPitch{-std::atan(linear_elevation.f_dot_p(0.))};
+  for (double p : p_vector) {
+    for (double r : r_vector) {
+      for (double h : h_vector) {
+        const Rot3 rotation = elevated_dut.Orientation(p, r, h);
+        EXPECT_NEAR(rotation.roll(), kZeroRoll, kVeryExact);
+        EXPECT_NEAR(rotation.pitch(), kLinearPitch, kVeryExact);
+        EXPECT_NEAR(rotation.yaw(), kHeading, kVeryExact);
+      }
+    }
+  }
+
+  // Checks for a curve with constant non zero superelevation.
+  const double kSuperelevationOffset = M_PI / 4.;
+  const CubicPolynomial constant_offset_superelevation(
+      kSuperelevationOffset / kDirection.norm(), 0., 0., 0.);
+  const LineRoadCurve superelevated_dut(kOrigin, kDirection, zp,
+                                        constant_offset_superelevation);
+  for (double p : p_vector) {
+    for (double r : r_vector) {
+      for (double h : h_vector) {
+        const Rot3 rotation = superelevated_dut.Orientation(p, r, h);
+        EXPECT_NEAR(rotation.roll(), kSuperelevationOffset, kVeryExact);
+        EXPECT_NEAR(rotation.pitch(), kZeroPitch, kVeryExact);
+        EXPECT_NEAR(rotation.yaw(), kHeading, kVeryExact);
+      }
+    }
+  }
+}
+
 }  // namespace multilane
 }  // namespace maliput
 }  // namespace drake
