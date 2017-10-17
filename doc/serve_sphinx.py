@@ -2,7 +2,7 @@
 This program serves sphinx.zip for a web browser.
 
 Run this via:
-  $ bazel run //drake/doc:serve_sphinx
+  $ bazel run //doc:serve_sphinx
 """
 
 import os
@@ -14,7 +14,7 @@ from SimpleHTTPServer import SimpleHTTPRequestHandler
 from SocketServer import TCPServer
 
 # Unpack zipfile and chdir into it.
-with zipfile.ZipFile("drake/doc/sphinx.zip", "r") as archive:
+with zipfile.ZipFile("doc/sphinx.zip", "r") as archive:
     archive.extractall("sphinx-tmp")
 os.chdir("sphinx-tmp")
 file_url = "file://%s/index.html " % os.path.abspath(os.getcwd())

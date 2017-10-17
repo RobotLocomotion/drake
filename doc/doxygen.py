@@ -15,7 +15,7 @@ from os.path import dirname
 def _get_drake_distro():
     """Find and return the path to drake-distro."""
 
-    result = dirname(dirname(dirname(os.path.abspath(sys.argv[0]))))
+    result = dirname(dirname(os.path.abspath(sys.argv[0])))
     if not os.path.exists(os.path.join(result, "WORKSPACE")):
         raise RuntimeError("Could not place drake-distro at " + result)
     return result
@@ -31,9 +31,8 @@ def _run_doxygen(args):
     if not os.path.exists(binary_dir):
         os.makedirs(binary_dir)
     definitions = OrderedDict()
-    definitions["drake_SOURCE_DIR"] = os.path.join(drake_distro, "drake")
-    definitions["drake_BINARY_DIR"] = os.path.join(drake_distro, "build/drake")
-    definitions["CMAKE_CURRENT_BINARY_DIR"] = binary_dir
+    definitions["DRAKE_WORKSPACE_ROOT"] = drake_distro
+    definitions["BINARY_DIR"] = binary_dir
     if args.quick:
         definitions["DOXYGEN_DOT_FOUND"] = "NO"
         definitions["DOXYGEN_DOT_EXECUTABLE"] = ""
@@ -44,7 +43,7 @@ def _run_doxygen(args):
                        for key, value in definitions.iteritems()]
 
     # Create Doxyfile_CXX.
-    in_filename = os.path.join(drake_distro, "drake/doc/Doxyfile_CXX.in")
+    in_filename = os.path.join(drake_distro, "doc/Doxyfile_CXX.in")
     doxyfile = os.path.join(drake_distro, "build/drake/doc/Doxyfile_CXX")
     subprocess.check_call(
         [os.path.join(

@@ -36,4 +36,4 @@ Mathematical Derivation Documents
 .. Create a bulleted list of links to software design documents (e.g.,
 .. restructured text, PDFs, Google Docs, URLs, etc.)
 
-- `Stereographic Projection <https://github.com/RobotLocomotion/drake/raw/master/drake/doc/derivations/stereographic.pdf>`_
+- `Stereographic Projection <https://github.com/RobotLocomotion/drake/raw/master/doc/derivations/stereographic.pdf>`_

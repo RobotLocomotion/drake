@@ -22,20 +22,20 @@ When using Bazel
 
 To generate the website (Sphinx) documentation::
 
-    $ bazel run //drake/doc:serve_sphinx
+    $ bazel run //doc:serve_sphinx
 
 This will rebuild the website content and serve it to your web browser for
 preview using https://docs.python.org/2/library/webbrowser.html.
 
-To merely compile the website into ``bazel-genfiles/drake/doc/sphinx.zip``
+To merely compile the website into ``bazel-genfiles/doc/sphinx.zip``
 without launching a preview::
 
-    $ bazel build //drake/doc:sphinx.zip
+    $ bazel build //doc:sphinx.zip
 
 To generate the Doxygen documentation::
 
     $ cd drake-distro
-    $ drake/doc/doxygen.py [--quick]
+    $ doc/doxygen.py [--quick]
 
 To view the generated documentation, open using a web browser to
 ``drake-distro/build/drake/doc/doxygen_cxx/html/index.html``
