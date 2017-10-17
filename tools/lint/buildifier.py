@@ -60,6 +60,22 @@ def _find_buildifier_sources():
     ]
 
 
+def _passes_check_mode(args):
+    """The `args` list should be as per subprocess.check_call.  Returns True iff
+    builfidier runs with exitcode 0 and no output, or else returns False iff
+    reformat is needed, or else raises an exception.
+    """
+    try:
+        output = subprocess.check_output(args)
+        return (len(output) == 0)
+    except subprocess.CalledProcessError as e:
+        # https://github.com/bazelbuild/buildtools/blob/1a7c0ec10697afcb87af8a09f12c3f9b9ca56fb2/buildifier/buildifier.go#L227
+        REFORMAT_IS_NEEDED = 4
+        if e.returncode == REFORMAT_IS_NEEDED:
+            return False
+        raise e
+
+
 def main():
     # Slice out our overlay command-line argument "--all".
     argv = sys.argv[1:]
@@ -94,18 +110,16 @@ def main():
     # uses exitcode 0 even when lint exists; we use whether or not its output
     # was empty to tell whether there was lint.
     if "-mode=check" in argv or "--mode=check" in argv:
-        output = subprocess.check_output(tool_cmds + argv)
-        if len(output) == 0:
+        if _passes_check_mode(tool_cmds + argv):
             return 0
         switches = [x for x in argv if x.startswith("-")]
         files = [x for x in argv if not x.startswith("-")]
         print("ERROR: buildifier: the required formatting is incorrect")
         for one_file in files:
-            output = subprocess.check_output(tool_cmds + switches + [one_file])
-            if len(output) > 0:
+            if not _passes_check_mode(tool_cmds + switches + [one_file]):
                 print("ERROR: %s:1: error: %s" % (
                     one_file, "the required formatting is incorrect"))
-                print("ERROR: %s:1: note: fix via %s '%s'" % (
+                print("ERROR: %s:1: note: fix via '%s' '%s'" % (
                     one_file, "bazel-bin/tools/lint/buildifier", one_file))
         print("NOTE: see http://drake.mit.edu/bazel.html#buildifier")
         return 1
