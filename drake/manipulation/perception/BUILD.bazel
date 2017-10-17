@@ -37,7 +37,10 @@ drake_cc_library(
     name = "optitrack_sim",
     srcs = ["optitrack_sim.cc"],
     hdrs = ["optitrack_sim.h"],
-    visibility = ["//drake/examples/kuka_iiwa_arm:__subpackages__"],
+    visibility = [
+        "//drake/examples/kuka_iiwa_arm:__subpackages__",
+        "//drake/systems/sensors:__subpackages__",
+    ],
     deps = [
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/rigid_body_plant",
