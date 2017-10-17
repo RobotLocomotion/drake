@@ -202,6 +202,8 @@ class System {
   ///        ->SetAtIndex(0, gaussian(*generator));
   /// @endcode
   /// Overrides must not change the number of state variables.
+  ///
+  /// @see @ref stochastic_systems
   virtual void SetRandomState(const Context<T>& context, State<T>* state,
                               RandomGenerator* generator) const {
     unused(generator);
@@ -217,6 +219,8 @@ class System {
   ///             ->SetAtIndex(0, uniform(*generator));
   /// @endcode
   /// Overrides must not change the number of state variables.
+  ///
+  /// @see @ref stochastic_systems
   virtual void SetRandomParameters(const Context<T>& context,
                                    Parameters<T>* parameters,
                                    RandomGenerator* generator) const {
