@@ -98,6 +98,7 @@
         "robotlocomotion-lcmtypes:robotlocomotion-lcmtypes-cpp",
         "SDFormat:sdformat",
         "spdlog:spdlog",
+        "stx:stx",
         "yaml-cpp:yaml-cpp"
       ]
     },

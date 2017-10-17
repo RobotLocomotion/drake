@@ -1,3 +1,5 @@
+:orphan:
+
 .. _design_notes:
 
 **************

@@ -22,7 +22,7 @@ Description Format), which are both XML formats.
 
 * `SDF Reference <http://sdformat.org/>`_
 
-* `Drake's version of URDF <urdf/drakeURDF.html#://>`_.  Drake's URDF has
+* `Drake's version of URDF <http://drake.mit.edu/drake-urdf-schema-documentation/drakeURDF.html>`_.  Drake's URDF has
   extensions to the `official ROS URDF <http://wiki.ros.org/urdf/XML>`_.
 
 The target audience for this document is for those who want to model a
@@ -74,7 +74,7 @@ digital representation of an object's surface. A texture may include color,
 brightness, transparency, reflectivity, and other aspects. The texture is
 mapped onto a preexisting surface - typically a mesh.
 
-`URDF <urdf/drakeURDF.html#://>`_- Unified Robot Description Format, an XML
+`URDF <http://drake.mit.edu/drake-urdf-schema-documentation/drakeURDF.html>`_- Unified Robot Description Format, an XML
 format for representing one model of a robot or other object. Unlike SDF,
 only one object can be modeled per file, and pose cannot be modeled. Drake's
 URDF extends the `official ROS URDF <http://wiki.ros.org/urdf/XML>`_.
@@ -167,7 +167,7 @@ existing, working model.  `This tutorial <https://www.youtube
 .com/watch?v=gugV8IMyHnY>`_ walks through editing a model in Drake.
 
 For detailed information on the elements of a model, see the
-`URDF <urdf/drakeURDF.html#://>`_ or `SDF <http://sdformat.org/>`_
+`URDF <http://drake.mit.edu/drake-urdf-schema-documentation/drakeURDF.html>`_ or `SDF <http://sdformat.org/>`_
 references for more information.
 
 .. _models_shape:
