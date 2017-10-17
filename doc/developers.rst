@@ -41,7 +41,7 @@ several hours depending on your machine.
 
 We would like to hear about your success stories if you've used Drake in your
 own projects.  Please consider contributing to our :doc:`gallery` by editing
-``drake/doc/gallery.rst`` and submitting a pull request with the update!
+``doc/gallery.rst`` and submitting a pull request with the update!
 
 Licensing
 =========
