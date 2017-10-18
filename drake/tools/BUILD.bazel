@@ -31,11 +31,9 @@ drake_py_proto_library(
 drake_py_binary(
     name = "lcm_vector_gen",
     srcs = ["lcm_vector_gen.py"],
-    data = [
-        "//tools/lint:clang-format",
-    ],
     deps = [
         ":named_vector",
+        "//tools/lint:clang_format",
     ],
 )
 
