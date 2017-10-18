@@ -508,10 +508,9 @@ def generate_code(args):
     drake_dist_dir = args.workspace
     relative_cxx_dir = cxx_dir.replace(os.path.join(drake_dist_dir, ''), '')
 
-    title_phrase = args.title.split()
-    camel = ''.join([x.capitalize() for x in title_phrase])
-    snake = '_'.join([x.lower() for x in title_phrase])
-    screaming_snake = '_'.join([x.upper() for x in title_phrase])
+    snake, _ = os.path.splitext(os.path.basename(args.named_vector_file))
+    screaming_snake = snake.upper()
+    camel = "".join([x.capitalize() for x in snake.split("_")])
 
     namespace = args.namespace.split("::")
     opening_namespace = "".join(["namespace " + x + "{\n" for x in namespace])
@@ -627,9 +626,6 @@ def main():
     # By default, LCM output is disabled.
     parser.add_argument(
         '--lcmtype-dir', help="output directory for lcm file", default="")
-    parser.add_argument(
-        '--title', required=True,
-        help="title phrase, from which type names will be made")
     parser.add_argument(
         '--named_vector_file', metavar="FILE", required=True,
         help="Protobuf description of vector")
