@@ -1,11 +1,11 @@
-#include "drake/solvers/nonconvex_optimization_util.h"
+#include "drake/solvers/non_convex_optimization_util.h"
 
 #include "drake/solvers/mathematical_program.h"
 
 namespace drake {
 namespace solvers {
 std::pair<Eigen::MatrixXd, Eigen::MatrixXd>
-ConvexDecompositionNonConvexQuadraticForm(
+DecomposeNonConvexQuadraticForm(
     const Eigen::Ref<const Eigen::MatrixXd>& Q) {
   if (Q.rows() != Q.cols()) {
     throw std::runtime_error("Q is not a square matrix.");

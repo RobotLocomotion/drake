@@ -200,9 +200,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "nonconvex_optimization_util",
-    srcs = ["nonconvex_optimization_util.cc"],
-    hdrs = ["nonconvex_optimization_util.h"],
+    name = "non_convex_optimization_util",
+    srcs = ["non_convex_optimization_util.cc"],
+    hdrs = ["non_convex_optimization_util.h"],
     deps = [
         ":mathematical_program",
     ],
@@ -832,13 +832,13 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "nonconvex_optimization_util_test",
+    name = "non_convex_optimization_util_test",
     srcs = [
-        "test/nonconvex_optimization_util_test.cc",
+        "test/non_convex_optimization_util_test.cc",
     ],
     tags = mosek_test_tags(),
     deps = [
-        ":nonconvex_optimization_util",
+        ":non_convex_optimization_util",
         "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
