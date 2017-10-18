@@ -26,7 +26,7 @@ namespace multibody {
 /// generalized coordinates for this mobilizer correspond to
 /// yaw, pitch and roll angles of successive rotations about the z, y and x
 /// axes solidary with frame M, respectively. Mathematically,
-/// rotation `R_FM` is given in terms of the yaw (y), pitch (p) and roll (r)
+/// rotation `R_FM` is given in terms of the roll (r), pitch (p) and yaw (y)
 /// angles by: <pre>
 ///   R_FM(q) = Rz(y) * Ry(p) * Rx(r)
 /// </pre>

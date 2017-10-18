@@ -25,7 +25,9 @@ using systems::Context;
 using systems::RungeKutta3Integrator;
 
 GTEST_TEST(RollPitchYawTest, TimeDerivatives) {
-  const double kAccuracy = 1.0e-5;
+  const double kAccuracy = 1.0e-5;  // The integrator's desired accuracy.
+  // The numerical tolerance accepted for these tests.
+  const double kTolerance = 1.0e-5;
   const double kMaxDt = 0.1;
   const double kEndTime = 10.0;
 
@@ -90,14 +92,14 @@ GTEST_TEST(RollPitchYawTest, TimeDerivatives) {
   Vector3d w_WB_exact = R_WB_exact * w_WB_B_exact;
 
   // Compare computed solution against benchmark:
-  EXPECT_TRUE(CompareMatrices(R_WB, R_WB_exact, kAccuracy,
+  EXPECT_TRUE(CompareMatrices(R_WB, R_WB_exact, kTolerance,
                               MatrixCompareType::relative));
-  EXPECT_TRUE(CompareMatrices(p_WBcm, Vector3d::Zero(), kAccuracy,
+  EXPECT_TRUE(CompareMatrices(p_WBcm, Vector3d::Zero(), kTolerance,
                               MatrixCompareType::relative));
 
-  EXPECT_TRUE(CompareMatrices(w_WB, w_WB_exact, kAccuracy,
+  EXPECT_TRUE(CompareMatrices(w_WB, w_WB_exact, kTolerance,
                               MatrixCompareType::relative));
-  EXPECT_TRUE(CompareMatrices(v_WB, Vector3d::Zero(), kAccuracy,
+  EXPECT_TRUE(CompareMatrices(v_WB, Vector3d::Zero(), kTolerance,
                               MatrixCompareType::relative));
 
   // TODO(amcastro-tri): Verify angular momentum is conserved.
