@@ -115,7 +115,6 @@ drake_cc_library(
         "//drake/systems/framework:leaf_system",
         "//drake/systems/rendering:frame_velocity",
         "//drake/systems/rendering:pose_bundle",
-        "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
     ],
 )
 

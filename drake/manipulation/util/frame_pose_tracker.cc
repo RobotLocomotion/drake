@@ -25,10 +25,10 @@ FramePoseTracker::FramePoseTracker(
 
   if (frames == nullptr) {
     throw std::runtime_error("FramePoseTracker::FramePoseTracker: ERROR: "
-                                 "found nullptr to frames vector.");
+                                 "frames vector is a nullptr.");
   } else if (frames->size() == 0) {
     throw std::runtime_error("FramePoseTracker::FramePoseTracker: ERROR: "
-                                 "found nullptr to frames vector.");
+                                 "frame vector is size 0.");
   }
 
   // Confirm all rigid bodies and frame names are valid.
