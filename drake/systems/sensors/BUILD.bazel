@@ -311,6 +311,7 @@ drake_cc_library(
     deps = [
         "//drake/multibody:inverse_kinematics",
         "//drake/multibody:rigid_body_tree",
+        "//drake/multibody/rigid_body_plant",
         "//drake/systems/framework:leaf_system",
         "//drake/systems/sensors:optitrack_encoder",
         "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
@@ -322,8 +323,8 @@ drake_cc_library(
     srcs = ["optitrack_encoder.cc"],
     hdrs = ["optitrack_encoder.h"],
     deps = [
-        "//drake/manipulation/util:frame_pose_tracker",
         "//drake/systems/framework:leaf_system",
+        "//drake/systems/rendering:pose_bundle",
     ],
 )
 
