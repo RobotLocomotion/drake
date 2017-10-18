@@ -53,12 +53,11 @@ class FramePoseTrackerTest : public ::testing::Test {
 
     // Create the RigidBodyFrames associated with the named bodies, and apply
     // the pose offset.
-    for (auto it = frame_info_.begin();
-         it != frame_info_.end(); ++it) {
+    for (auto frame_info : frame_info_) {
       RigidBody<double>* body = tree_.get()->FindBody(
-          it->second.first, "", it->second.second);
+          frame_info.second.first, "", frame_info.second.second);
       frames_.push_back(std::make_unique<RigidBodyFrame<double>>(
-          it->first, body, T_BF_));
+          frame_info.first, body, T_BF_));
     }
   }
 
@@ -119,7 +118,7 @@ TEST_F(FramePoseTrackerTest, InvalidFrameTest) {
 
 TEST_F(FramePoseTrackerTest, InvalidFrameNameTest) {
   EXPECT_EQ(frames_.size(), 3);
-  frames_[2]->set_name("iiwa_frame_0");  // repeat first frame name
+  frames_[2]->set_name("iiwa_frame_0");  // Repeat first frame name.
   EXPECT_ANY_THROW(FramePoseTracker(*tree_.get(), &frames_));
 }
 
@@ -129,8 +128,8 @@ TEST_F(FramePoseTrackerTest, ValidFrameInfoTest) {
 
   // Update the input, calculate the output, and compare it with expected pose.
   KinematicsResults<double> kres(tree_.get());
-  VectorX<double> q(7), v(7);  // sets iiwa positions and velocities
-  q << 0.3, 0.3, 0.3, 0, 0, 0, 0;  // pick an arbitrary iiwa pose
+  VectorX<double> q(7), v(7);  // Sets iiwa positions and velocities.
+  q << 0.3, 0.3, 0.3, 0, 0, 0, 0;  // Pick an arbitrary iiwa pose.
   kres.Update(q, v.setZero());
 
   PoseBundle<double> frames_bundle = UpdateInputCalcOutput(dut, kres);
@@ -142,16 +141,16 @@ TEST_F(FramePoseTrackerTest, ValidFrameInfoTest) {
     frame_name_to_index_map[frames_bundle.get_name(i)] = i;
   }
 
-  for (auto it = frames_.begin(); it != frames_.end(); ++it) {
+  for (auto& frame : frames_) {
     // Get the body pose w.r.t. the world and the frame pose w.r.t. the body.
     // Multiply these two and the result should equal the pose contained in the
     // PoseBundle object, i.e., the frame pose w.r.t. the world.
     Eigen::Isometry3d T_WB =
-        kres.get_pose_in_world((*it).get()->get_rigid_body());
-    Eigen::Isometry3d T_BF = (*it).get()->get_transform_to_body();
+        kres.get_pose_in_world(frame.get()->get_rigid_body());
+    Eigen::Isometry3d T_BF = frame.get()->get_transform_to_body();
 
     // Extract the appropriate frame from the PoseBundle object.
-    int frame_pose_index = frame_name_to_index_map.at((*it).get()->get_name());
+    int frame_pose_index = frame_name_to_index_map.at(frame.get()->get_name());
     Eigen::Isometry3d T_WF = frames_bundle.get_pose(frame_pose_index);
 
     EXPECT_TRUE(T_WF.isApprox(T_WB * T_BF, 1e-6));
@@ -161,11 +160,12 @@ TEST_F(FramePoseTrackerTest, ValidFrameInfoTest) {
 TEST_F(FramePoseTrackerTest, ValidFrameTest) {
   std::size_t num_frames_in = frames_.size();
   FramePoseTracker dut(*tree_.get(), &frames_);
+  EXPECT_EQ(frames_.size(), 0);
 
   // Update the input, calculate the output, and compare it with expected pose.
   KinematicsResults<double> kres(tree_.get());
-  VectorX<double> q(7), v(7);  // sets iiwa positions and velocities
-  q << 0.3, 0.3, 0.3, 0, 0, 0, 0;  // pick an arbitrary iiwa pose
+  VectorX<double> q(7), v(7);  // Sets iiwa positions and velocities.
+  q << 0.3, 0.3, 0.3, 0, 0, 0, 0;  // Pick an arbitrary iiwa pose.
   kres.Update(q, v.setZero());
 
   PoseBundle<double> frames_bundle = UpdateInputCalcOutput(dut, kres);
@@ -178,11 +178,11 @@ TEST_F(FramePoseTrackerTest, ValidFrameTest) {
   }
 
   std::vector<std::string> frame_names = dut.get_tracked_frame_names();
-  for (auto it = frame_names.begin(); it != frame_names.end(); ++it) {
+  for (auto& frame_name : frame_names) {
     // Get the body pose w.r.t. the world and the frame pose w.r.t. the body.
     // Multiply these two and the result should equal the pose contained in the
     // PoseBundle object, i.e., the frame pose w.r.t. the world.
-    RigidBodyFrame<double>* frame = dut.get_mutable_frame(*it);
+    RigidBodyFrame<double>* frame = dut.get_mutable_frame(frame_name);
     Eigen::Isometry3d T_WB = kres.get_pose_in_world(frame->get_rigid_body());
     Eigen::Isometry3d T_BF = frame->get_transform_to_body();
 

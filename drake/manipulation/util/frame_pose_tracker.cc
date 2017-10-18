@@ -32,9 +32,9 @@ FramePoseTracker::FramePoseTracker(
   }
 
   // Confirm all rigid bodies and frame names are valid.
-  for (auto it = frames->begin(); it != frames->end(); ++it) {
-    RigidBody<double>* body = (*it)->get_mutable_rigid_body();
-    std::string frame_name = (*it)->get_name();
+  for (auto& frame : *frames) {
+    RigidBody<double>* body = frame->get_mutable_rigid_body();
+    std::string frame_name = frame->get_name();
     if (body == nullptr) {
       throw std::runtime_error(
           "FramePoseTracker::FramePoseTracker: ERROR: found nullptr to "
@@ -45,7 +45,7 @@ FramePoseTracker::FramePoseTracker(
           "FramePoseTracker::FramePoseTracker: ERROR: found duplicate frame "
               "name. Frame names must be unique.");
     } else {
-      frame_name_to_frame_map_[frame_name] = std::move(*it);
+      frame_name_to_frame_map_[frame_name] = std::move(frame);
     }
   }
   FramePoseTracker::Init();
@@ -54,29 +54,29 @@ FramePoseTracker::FramePoseTracker(
 
 FramePoseTracker::FramePoseTracker(
     const RigidBodyTree<double>& tree,
-    const std::map<std::string, std::pair<std::string, int>> frame_info,
+    const std::map<std::string, std::pair<std::string, int>> frames_info,
     std::vector<Eigen::Isometry3d> frame_poses) : tree_(&tree) {
 
   // If the frame vector is empty, set all frame poses to the identity pose.
   if (frame_poses.empty()) {
-    frame_poses = std::vector<Eigen::Isometry3d>(frame_info.size(),
+    frame_poses = std::vector<Eigen::Isometry3d>(frames_info.size(),
                                                  Eigen::Isometry3d::Identity());
   }
 
-  DRAKE_DEMAND(frame_info.size() == frame_poses.size());
+  DRAKE_DEMAND(frames_info.size() == frame_poses.size());
 
   // Create and store the related frames. Note that having the frame name as the
   // map key for @p frame_info ensures that frame names coming in are unique.
-  auto m_it = frame_info.begin();
-  auto v_it = frame_poses.begin();
-  while (m_it != frame_info.end() && v_it != frame_poses.end()) {
-    std::string frame_name = m_it->first;
+  auto frame_info = frames_info.begin();
+  auto frame_pose = frame_poses.begin();
+  while (frame_info != frames_info.end() && frame_pose != frame_poses.end()) {
+    std::string frame_name = frame_info->first;
     RigidBody<double>* body = tree_->FindBody(
-        m_it->second.first, "", m_it->second.second);
+        frame_info->second.first, "", frame_info->second.second);
     frame_name_to_frame_map_[frame_name] =
-        std::make_unique<RigidBodyFrame<double>>(frame_name, body, *v_it);
-    ++m_it;
-    ++v_it;
+        std::make_unique<RigidBodyFrame<double>>(frame_name, body, *frame_pose);
+    ++frame_info;
+    ++frame_pose;
   }
   FramePoseTracker::Init();
 }
@@ -99,13 +99,13 @@ PoseBundle<double> FramePoseTracker::MakeOutputStatus() const {
 }
 
 void FramePoseTracker::OutputStatus(const systems::Context<double>& context,
-                                        PoseBundle<double>* output) const {
+                                    PoseBundle<double>* output) const {
   PoseBundle<double>& frame_pose_bundle = *output;
 
   // Extract the input port for the KinematicsResults object, get the
   // transformation of the bodies we care about, and fill in the
   // frame_pose_bundle object.
-  const KinematicsResults<double>* kres =
+  const KinematicsResults<double>* kinematic_results =
       this->EvalInputValue<KinematicsResults<double>>(
           context, kinematics_input_port_index_);
 
@@ -119,14 +119,15 @@ void FramePoseTracker::OutputStatus(const systems::Context<double>& context,
     frame_pose_bundle.set_model_instance_id(
         frame_index, it->second.get()->get_model_instance_id());
     frame_pose_bundle.set_pose(frame_index, tree_->CalcFramePoseInWorldFrame(
-        kres->get_cache(), *(it->second.get())));
+        kinematic_results->get_cache(), *(it->second.get())));
 
     // Set the velocities.
-    SpatialVelocity<double> svel(tree_->CalcFrameSpatialVelocityInWorldFrame(
-        kres->get_cache(), *(it->second.get())));
-    FrameVelocity<double> fvel;
-    fvel.set_velocity(svel);
-    frame_pose_bundle.set_velocity(frame_index, fvel);
+    SpatialVelocity<double> spatial_velocity(
+        tree_->CalcFrameSpatialVelocityInWorldFrame(
+            kinematic_results->get_cache(), *(it->second.get())));
+    FrameVelocity<double> frame_velocity;
+    frame_velocity.set_velocity(spatial_velocity);
+    frame_pose_bundle.set_velocity(frame_index, frame_velocity);
   }
 }
 

@@ -49,8 +49,9 @@ class FramePoseTracker : public systems::LeafSystem<double> {
    *        returned by RigidBodyFrame::get_name() should not match any other
    *        frame name.
    * @throws std::runtime_error if any frame has a non-unique name or the frame
-   *         is not attached to a RigidBody (i.e., it's RigidBody pointer is
-   *         nullptr).
+   *         is not attached to a RigidBody (i.e., its RigidBody pointer is
+   *         nullptr) or @p frames is a nullptr or points to an empty
+   *         std::vector.
    */
   FramePoseTracker(
       const RigidBodyTree<double>& tree,
@@ -58,7 +59,7 @@ class FramePoseTracker : public systems::LeafSystem<double> {
 
   /**
    * Constructs a FramePoseTracker object from the information contained in
-   * @p frame_info, which is a std::map whose keys denote unique frame names.
+   * @p frames_info, which is a std::map whose keys denote unique frame names.
    * Each key is mapped to a std::pair that includes the RigidBody name
    * (std::string) specifying which body this frame should be attached to, and
    * the model instance id in the @p tree that contains the corresponding body.
@@ -66,7 +67,7 @@ class FramePoseTracker : public systems::LeafSystem<double> {
    * @param tree The RigidBodyTree containing the named bodies. FramePoseTracker
    *        keeps a reference to this tree to calculate frame poses in the world
    *        frame.
-   * @param frame_info A mapping from a unique frame name to a std::pair
+   * @param frames_info A mapping from a unique frame name to a std::pair
    *        consisting of body name and model instance id. If model instance id
    *        is -1, every model is searched.
    * @param frame_poses A vector containing each frame's pose relative to the
@@ -75,7 +76,7 @@ class FramePoseTracker : public systems::LeafSystem<double> {
    */
   FramePoseTracker(
       const RigidBodyTree<double>& tree,
-      const std::map<std::string, std::pair<std::string, int>> frame_info,
+      const std::map<std::string, std::pair<std::string, int>> frames_info,
       std::vector<Eigen::Isometry3d> frame_poses =
       std::vector<Eigen::Isometry3d>());
 
