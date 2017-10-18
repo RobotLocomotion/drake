@@ -516,30 +516,19 @@ def generate_code(args):
     closing_namespace = "".join(["}  // namespace " + x + "\n"
                                  for x in reversed(namespace)])
 
-    if args.named_vector_file:
-        # Load the field names and docstrings from protobuf.
-        # In the future, this can be extended for nested messages.
-        with open(args.named_vector_file, "r") as f:
-            vec = named_vector_pb2.NamedVector()
-            google.protobuf.text_format.Merge(f.read(), vec)
-            fields = [{
-                'name': el.name,
-                'doc': el.doc,
-                'default_value': el.default_value,
-                'doc_units': el.doc_units,
-                'min_value': el.min_value,
-                'max_value': el.max_value,
-                } for el in vec.element]
-    else:
-        # Parse the field names from the command line.
+    # Load the field names and docstrings from protobuf.
+    # In the future, this can be extended for nested messages.
+    with open(args.named_vector_file, "r") as f:
+        vec = named_vector_pb2.NamedVector()
+        google.protobuf.text_format.Merge(f.read(), vec)
         fields = [{
-            'name': x,
-            'doc': x,
-            'default_value': '',
-            'doc_units': '',
-            'min_value': '',
-            'max_value': '',
-        } for x in args.fields]
+            'name': el.name,
+            'doc': el.doc,
+            'default_value': el.default_value,
+            'doc_units': el.doc_units,
+            'min_value': el.min_value,
+            'max_value': el.max_value,
+        } for el in vec.element]
 
     # Default some field attributes if they are missing.
     for item in fields:
@@ -630,12 +619,11 @@ def main():
     parser.add_argument(
         '--lcmtype-dir', help="output directory for lcm file", default="")
     parser.add_argument(
-        '--title', help="title phrase, from which type names will be made")
+        '--title', required=True,
+        help="title phrase, from which type names will be made")
     parser.add_argument(
-        '--named_vector_file',
-        help="Protobuf description of vector, supersedes command-line fields")
-    parser.add_argument(
-        'fields', metavar='FIELD', nargs='*', help="field names for vector")
+        '--named_vector_file', metavar="FILE", required=True,
+        help="Protobuf description of vector")
     args = parser.parse_args()
     generate_code(args)
 

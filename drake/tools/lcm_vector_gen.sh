@@ -38,24 +38,6 @@ EOF
 fi
 
 # Call the code generator to produce an LCM message, a translator, and
-# a Drake BasicVector.
-#
-# @param1 title -- used to create class/type names
-# @param... --- used to create field names for vector entries
-gen_lcm_and_vector () {
-    title="$1"
-    snake=$(echo "$title" | tr " " _)
-    shift
-    bazel run //drake/tools:lcm_vector_gen -- \
-        --lcmtype-dir=$drake/lcmtypes \
-        --cxx-dir=$mydir/gen \
-        --namespace="$namespace" \
-        --workspace="$workspace" \
-        --title="$title" "$@"
-    $CLANG_FORMAT --style=file -i "$mydir"/gen/$snake*.h "$mydir"/gen/$snake*.cc
-}
-
-# Call the code generator to produce an LCM message, a translator, and
 # a Drake BasicVector based on specifications contained in a NamedVector proto.
 #
 # @param1 title -- used to create class/type names
@@ -72,22 +54,6 @@ gen_lcm_and_vector_from_proto() {
         --title="$title"  \
         --workspace="$workspace" \
         --named_vector_file="$named_vector_file"
-    $CLANG_FORMAT --style=file -i "$mydir"/gen/$snake*.h "$mydir"/gen/$snake*.cc
-}
-
-# Call the code generator to produce just a Drake BasicVector.
-#
-# @param1 title -- used to create class/type names
-# @param... --- used to create field names for vector entries
-gen_vector () {
-    title="$1"
-    snake=$(echo "$title" | tr " " _)
-    shift
-    bazel run //drake/tools:lcm_vector_gen -- \
-        --cxx-dir=$mydir/gen \
-        --namespace="$namespace" \
-        --workspace="$workspace" \
-        --title="$title" "$@"
     $CLANG_FORMAT --style=file -i "$mydir"/gen/$snake*.h "$mydir"/gen/$snake*.cc
 }
 
