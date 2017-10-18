@@ -78,11 +78,12 @@ class TestResourceTool(unittest.TestCase):
         output = output.replace("\n", " ")
         m = re.search(
             (r"-print_resource_path.*`(drake.*)`.*" +
-             r"absolute path.*?`/home/user/tmp/(drake/.*)`"),
+             r"absolute path.*?`/home/user/tmp/(drake/.*?)`"),
             output)
         self.assertTrue(m is not None, "Could not match in " + repr(output))
-        example_relpath, example_abspath = m.groups()
 
+        example_relpath, example_abspath = m.groups()
+        self.assertEqual(example_relpath, example_abspath)
         # Ask for the help message's example and make sure it still works.
         output = self._check_call([
             "--print_resource_path",
