@@ -1,5 +1,4 @@
 # -*- python -*-
-# This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 # This file is named BUILD.bazel instead of the more typical BUILD, so that on
 # OSX it won't conflict with a build artifacts directory named "build".
