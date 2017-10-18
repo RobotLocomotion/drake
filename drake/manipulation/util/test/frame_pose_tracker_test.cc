@@ -117,6 +117,7 @@ TEST_F(FramePoseTrackerTest, InvalidFrameNameTest) {
   EXPECT_EQ(frames_.size(), 3);
   frames_[2]->set_name("iiwa_frame_0");  // repeat first frame name
   EXPECT_ANY_THROW(FramePoseTracker(*tree_.get(), &frames_));
+  EXPECT_ANY_THROW(FramePoseTracker(*tree_.get(), nullptr));
 }
 
 TEST_F(FramePoseTrackerTest, ValidFrameInfoTest) {

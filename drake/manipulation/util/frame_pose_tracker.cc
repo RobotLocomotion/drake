@@ -23,6 +23,11 @@ FramePoseTracker::FramePoseTracker(
     std::vector<std::unique_ptr<RigidBodyFrame<double>>>* frames)
     : tree_(&tree) {
 
+  if (frames == nullptr) {
+    throw std::runtime_error("FramePoseTracker::FramePoseTracker: ERROR: "
+                                 "found nullptr to frames vector.");
+  }
+
   // Confirm all rigid bodies and frame names are valid.
   for (auto it = frames->begin(); it != frames->end(); ++it) {
     RigidBody<double>* body = (*it)->get_mutable_rigid_body();
