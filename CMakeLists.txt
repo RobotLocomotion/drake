@@ -1,96 +1,143 @@
+# -*- mode: cmake -*-
+# vi: set ft=cmake :
+
 cmake_minimum_required(VERSION 3.5.1)
-project(drake-superbuild)
+project(drake)
+
+if(CMAKE_VERSION VERSION_LESS 3.7)
+  set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/3.7")
+endif()
 
 include(CTest)
 
-include(cmake/config.cmake)
-include(cmake/externals.cmake)
+find_program(BAZEL_EXECUTABLE bazel)
 
-drake_setup_superbuild()
-drake_setup_platform()
+if(NOT BAZEL_EXECUTABLE)
+  message(FATAL_ERROR "Could NOT find Bazel executable")
+endif()
 
-###############################################################################
-# BEGIN external projects
-
-# External projects in order of dependencies.
-
-# eigen
-# N.B. See #5785; do your best not to have to bump this to a newer commit.
-drake_add_external(eigen
-  URL https://bitbucket.org/eigen/eigen/get/3.3.3.tar.gz
-  URL_HASH SHA256=94878cbfa27b0d0fbc64c00d4aafa137f678d5315ae62ba4aecddbd4269ae75f
-  CMAKE_ARGS
-    -DEIGEN_TEST_NO_OPENGL=ON
-    -DEIGEN_TEST_NOQT=ON)
-
-# fmt
-drake_add_external(fmt
-  URL https://github.com/fmtlib/fmt/archive/3.0.1.tar.gz
-  URL_HASH SHA256=dce62ab75a161dd4353a98364feb166d35e7eea382169d59d9ce842c49c55bad
-  CMAKE_ARGS
-    -DFMT_DOC=OFF
-    -DFMT_TEST=OFF)
-
-# gflags
-drake_add_external(gflags
-  URL https://github.com/gflags/gflags/archive/95ffb27c9c7496ede1409e042571054c70cb9519.tar.gz
-  URL_HASH SHA256=723c21f783c720c0403c9b44bf500d1961a08bd2635cbc117107af22d2e1643f
-  CMAKE_ARGS
-    -DBUILD_SHARED_LIBS=ON
-    -DGFLAGS_BUILD_gflags_nothreads_LIB=OFF)
-
-# nlopt
-drake_add_external(nlopt
-  URL https://github.com/stevengj/nlopt/archive/45553da97c890ef58f95e7ef73c5409d2169e824.tar.gz
-  URL_HASH SHA256=931fd125c50acf7cd7e709887ab4923af42a8a07be139572bf8b76bccca76450
-  CMAKE_ARGS
-    -DBUILD_SHARED_LIBS=ON
-    -DBUILD_PYTHON=OFF
-    -DBUILD_OCTAVE=OFF
-    -DBUILD_MATLAB=OFF
-    -DBUILD_GUILE=OFF
-    -DINSTALL_INCLUDE_DIR=${CMAKE_INSTALL_PREFIX}/include/nlopt
-    -DUSE_SWIG=OFF)
-
-# protobuf
-drake_add_external(protobuf
-  URL https://github.com/google/protobuf/archive/v3.1.0.tar.gz
-  URL_HASH SHA256=fb2a314f4be897491bb2446697be693d489af645cb0e165a85e7e64e07eb134d
-  SOURCE_SUBDIR cmake
-  CMAKE_ARGS
-    -DBUILD_SHARED_LIBS=ON
-    -Dprotobuf_BUILD_TESTS=OFF
-    -Dprotobuf_MODULE_COMPATIBLE=ON)
-
-# pybind11
-drake_add_external(pybind11
-  URL https://github.com/RobotLocomotion/pybind11/archive/6d72785766558047ee2e2075198c07d8c25eb631.tar.gz
-  URL_HASH SHA256=08b4813b3b17f607efc4e8ba8b73bf55759ba744cab125e9fc666b5161cb1d0a
-  CMAKE_ARGS
-    -DPYBIND11_PYTHON_VERSION=${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}
-    -DPYBIND11_TEST=OFF)
-
-# tinyobjloader
-drake_add_external(tinyobjloader
-  URL https://github.com/syoyo/tinyobjloader/archive/v1.0.6.tar.gz
-  URL_HASH SHA256=19ee82cd201761954dd833de551edb570e33b320d6027e0d91455faf7cd4c341
-  CMAKE_ARGS
-    -DTINYOBJLOADER_COMPILATION_SHARED=ON
-  )
-
-drake_add_external(drake LOCAL
-  SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake
-  BINARY_DIR ${PROJECT_BINARY_DIR}/drake
-  CMAKE_ARGS -DDISABLE_MATLAB:BOOL=${DISABLE_MATLAB}
-  DEPENDS
-    eigen
-    fmt
-    gflags
-    nlopt
-    protobuf
-    pybind11
-    tinyobjloader
+execute_process(COMMAND "${BAZEL_EXECUTABLE}" version
+  RESULT_VARIABLE EXECUTE_PROCESS_RESULT_VARIABLE
+  OUTPUT_VARIABLE EXECUTE_PROCESS_OUTPUT_VARIABLE
 )
 
-# END external projects
-###############################################################################
+if(NOT EXECUTE_PROCESS_RESULT_VARIABLE EQUAL 0)
+  message(FATAL_ERROR "Could NOT determine Bazel version")
+endif()
+
+string(REGEX MATCH "Build label: ([0-9a-zA-Z.]+)"
+  REGEX_MATCH_OUTPUT_VARIABLE
+  "${EXECUTE_PROCESS_OUTPUT_VARIABLE}"
+)
+
+if(CMAKE_MATCH_1 VERSION_LESS 0.6.1)
+  message(FATAL_ERROR
+    "Bazel version 0.6.1 or higher is required. You are running version ${CMAKE_MATCH_1}"
+  )
+endif()
+
+get_filename_component(C_COMPILER_REALPATH "${CMAKE_C_COMPILER}" REALPATH)
+get_filename_component(C_COMPILER_NAME "${C_COMPILER_REALPATH}" NAME)
+
+get_filename_component(CXX_COMPILER_REALPATH "${CMAKE_CXX_COMPILER}" REALPATH)
+get_filename_component(CXX_COMPILER_NAME "${CXX_COMPILER_REALPATH}" NAME)
+
+if(C_COMPILER_NAME STREQUAL ccache OR CXX_COMPILER_NAME STREQUAL ccache)
+  message(FATAL_ERROR
+    "Compilation with ccache is NOT supported due to incompatibility with Bazel"
+  )
+endif()
+
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING
+    "Choose the type of build, options are None Debug Release RelWithDebInfo MinSizeRel"
+    FORCE
+  )
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY
+    STRINGS None Debug Release RelWithDebInfo MinSizeRel
+  )
+endif()
+
+if(CMAKE_BUILD_TYPE STREQUAL Debug)
+  set(BAZEL_COMPILATION_MODE dbg)
+else()
+  set(BAZEL_COMPILATION_MODE opt)
+endif()
+
+set(BAZEL_ENV "CC=${CMAKE_C_COMPILER}" "CXX=${CMAKE_CXX_COMPILER}")
+
+set(BAZEL_ARGS
+  --compilation_mode=${BAZEL_COMPILATION_MODE}
+  --config=unsupported_crosstool
+  --cxxopt=-std=c++14
+  --host_cxxopt=-std=c++14
+)
+
+if(CMAKE_VERBOSE_MAKEFILE)
+  list(APPEND BAZEL_ARGS --subcommands)
+endif()
+
+option(WITH_GUROBI "Build with support for GUROBI. Experimental." OFF)
+
+if(WITH_GUROBI)
+  list(APPEND BAZEL_ARGS --config=gurobi)
+endif()
+
+option(WITH_MOSEK "Build with support for MOSEK. Experimental." OFF)
+
+if(WITH_MOSEK)
+  list(APPEND BAZEL_ARGS --config=mosek)
+endif()
+
+option(WITH_SNOPT "Build with support for SNOPT" OFF)
+
+if(WITH_SNOPT)
+  list(APPEND BAZEL_ARGS --config=snopt)
+endif()
+
+set(BAZEL_TARGETS //:install)
+
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+  set(CMAKE_INSTALL_PREFIX "${PROJECT_BINARY_DIR}/install" CACHE STRING
+    "Install path prefix, prepended onto install directories" FORCE
+  )
+endif()
+
+include(ExternalProject)
+
+ExternalProject_Add(drake_cxx_python
+  SOURCE_DIR "${PROJECT_SOURCE_DIR}/drake"
+  CONFIGURE_COMMAND :
+  BUILD_COMMAND ${BAZEL_ENV} "${BAZEL_EXECUTABLE}" build ${BAZEL_ARGS} ${BAZEL_TARGETS}
+  BUILD_IN_SOURCE 1
+  BUILD_ALWAYS 1
+  INSTALL_COMMAND ${BAZEL_ENV} "${BAZEL_EXECUTABLE}" run ${BAZEL_ARGS} ${BAZEL_TARGETS} -- "${CMAKE_INSTALL_PREFIX}"
+  USES_TERMINAL_BUILD 1
+  USES_TERMINAL_INSTALL 1
+)
+
+list(APPEND CMAKE_PREFIX_PATH "${CMAKE_INSTALL_PREFIX}")
+
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+option(WITH_MATLAB "Build with support for MATLAB" OFF)
+
+if(WITH_MATLAB)
+  ExternalProject_Add(drake_matlab
+    DEPENDS drake_cxx_python
+    SOURCE_DIR "${PROJECT_SOURCE_DIR}/drake/matlab"
+    CMAKE_ARGS
+      -DBUILD_TESTING:BOOL=${BUILD_TESTING}
+      -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
+      "-DCMAKE_CXX_COMPILER:FILEPATH=${CMAKE_CXX_COMPILER}"
+      -DCMAKE_CXX_STANDARD:STRING=${CMAKE_CXX_STANDARD}
+      -DCMAKE_CXX_STANDARD_REQUIRED:BOOL=${CMAKE_CXX_STANDARD_REQUIRED}
+      "-DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_INSTALL_PREFIX}"
+      "-DCMAKE_MODULE_PATH:PATH=${CMAKE_MODULE_PATH}"
+      "-DCMAKE_PREFIX_PATH:PATH=${CMAKE_PREFIX_PATH}"
+      -DCMAKE_VERBOSE_MAKEFILE:BOOL=${CMAKE_VERBOSE_MAKEFILE}
+    BINARY_DIR "${PROJECT_BINARY_DIR}/drake_matlab-build"
+    BUILD_ALWAYS 1
+  )
+endif()

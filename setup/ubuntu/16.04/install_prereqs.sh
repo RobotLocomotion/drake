@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Prerequisite set-up script for Drake with Bazel on Ubuntu 16.04.
+# Prerequisite set-up script for Drake on Ubuntu 16.04.
 
 set -euo pipefail
 
@@ -47,6 +47,8 @@ apt install --no-install-recommends $(tr '\n' ' ' <<EOF
 
 bash-completion
 binutils
+cmake
+cmake-curses-gui
 coinor-libipopt-dev
 diffstat
 doxygen
@@ -84,6 +86,7 @@ libtinyxml2-dev
 libtool
 libxml2
 libxt6
+make
 mesa-common-dev
 openjdk-8-jdk
 patchutils
