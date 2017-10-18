@@ -322,7 +322,4 @@ LIBDRAKE_COMPONENTS = [
     "//drake/util:lcm_util",
     "//drake/util:util",
     "//drake/util:yaml_util",
-    "//drake:gurobi_deps",
-    "//drake:mosek_deps",
-    "//drake:vtk_deps",
 ]
