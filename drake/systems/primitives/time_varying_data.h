@@ -67,25 +67,25 @@ struct TimeVaryingData {
   ///
   /// @param time_period The time period from which to construct the time
   /// vector.  time_period must be greater than zero.
-  TimeVaryingData(const std::vector<Eigen::MatrixXd>& A,
-                  const std::vector<Eigen::MatrixXd>& B,
-                  const std::vector<Eigen::MatrixXd>& f0,
-                  const std::vector<Eigen::MatrixXd>& C,
-                  const std::vector<Eigen::MatrixXd>& D,
-                  const std::vector<Eigen::MatrixXd>& y0, double time_period)
+  TimeVaryingData(const std::vector<Eigen::MatrixXd>& Ain,
+                  const std::vector<Eigen::MatrixXd>& Bin,
+                  const std::vector<Eigen::MatrixXd>& f0in,
+                  const std::vector<Eigen::MatrixXd>& Cin,
+                  const std::vector<Eigen::MatrixXd>& Din,
+                  const std::vector<Eigen::MatrixXd>& y0in, double time_period)
       : TimeVaryingData(
             PiecewisePolynomial<double>::FirstOrderHold(
-                internal::vector_iota(A.size(), time_period), A),
+                internal::vector_iota(Ain.size(), time_period), Ain),
             PiecewisePolynomial<double>::FirstOrderHold(
-                internal::vector_iota(B.size(), time_period), B),
+                internal::vector_iota(Bin.size(), time_period), Bin),
             PiecewisePolynomial<double>::FirstOrderHold(
-                internal::vector_iota(f0.size(), time_period), f0),
+                internal::vector_iota(f0in.size(), time_period), f0in),
             PiecewisePolynomial<double>::FirstOrderHold(
-                internal::vector_iota(C.size(), time_period), C),
+                internal::vector_iota(Cin.size(), time_period), Cin),
             PiecewisePolynomial<double>::FirstOrderHold(
-                internal::vector_iota(D.size(), time_period), D),
+                internal::vector_iota(Din.size(), time_period), Din),
             PiecewisePolynomial<double>::FirstOrderHold(
-                internal::vector_iota(y0.size(), time_period), y0)) {
+                internal::vector_iota(y0in.size(), time_period), y0in)) {
     DRAKE_DEMAND(time_period > 0.);
   }
 
