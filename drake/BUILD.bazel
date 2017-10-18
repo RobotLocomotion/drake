@@ -1,5 +1,4 @@
 # -*- python -*-
-# This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 package(default_visibility = ["//visibility:public"])
 
@@ -90,6 +89,16 @@ cc_library(
         ":mosek_deps",
         ":vtk_deps",
     ],
+)
+
+# TODO(6996) This file is a compatibility shim; remove this as soon as CI no
+# longer needs it.
+genrule(
+    name = "deprecated_doc",
+    srcs = ["//doc:sphinx.zip"],
+    outs = ["doc/sphinx.zip"],
+    cmd = "cp $(location //doc:sphinx.zip) '$@'",
+    visibility = [],
 )
 
 add_lint_tests()

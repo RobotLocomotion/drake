@@ -15,4 +15,4 @@ is hand edited. This is used to generate `drake-config.cmake` via `cps2cmake`.
   https://mwoehlke.github.io/cps/
   https://github.com/mwoehlke/pycps/
 
-See `drake/doc/bazel.rst` for additional Drake-specific information.
+See `doc/bazel.rst` for additional Drake-specific information.

@@ -7,13 +7,16 @@ load(
     "install_cmake_config",
 )
 load(
+    "@drake//tools/skylark:drake_java.bzl",
+    "drake_java_binary",
+)
+load(
     "@drake//tools/workspace/lcm:lcm.bzl",
     "lcm_c_library",
     "lcm_cc_library",
     "lcm_java_library",
     "lcm_py_library",
 )
-load("@drake//tools:drake.bzl", "drake_java_binary")
 
 package(default_visibility = ["//visibility:public"])
 

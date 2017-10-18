@@ -1,5 +1,4 @@
 # -*- python -*-
-# This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load(
     "//tools:drake.bzl",
@@ -203,8 +202,20 @@ install(
     visibility = ["//visibility:public"],
 )
 
+filegroup(
+    name = "director_configs",
+    srcs = glob([
+        "*.csv",
+        "*.json",
+    ]),
+)
+
 install(
     name = "install_data",
+    data = [
+        ":director_configs",
+    ],
+    data_dest = "share/drake/" + package_name(),
     visibility = ["//visibility:public"],
     deps = [
         "//drake/examples/kuka_iiwa_arm/models:install_data",

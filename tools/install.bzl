@@ -1,7 +1,12 @@
 # -*- python -*-
 
-load("@drake//tools:pathutils.bzl", "dirname", "output_path", "join_paths")
-load("@drake//tools:drake.bzl", "MainClassInfo")
+load("@drake//tools/skylark:drake_java.bzl", "MainClassInfo")
+load(
+    "@drake//tools/skylark:pathutils.bzl",
+    "dirname",
+    "output_path",
+    "join_paths",
+)
 
 InstallInfo = provider()
 

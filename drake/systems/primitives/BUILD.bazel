@@ -1,5 +1,4 @@
 # -*- python -*-
-# This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
 load("//tools/lint:lint.bzl", "add_lint_tests")
@@ -23,11 +22,13 @@ drake_cc_library(
         ":matrix_gain",
         ":multiplexer",
         ":pass_through",
+        ":piecewise_polynomial_affine_system",
         ":piecewise_polynomial_linear_system",
         ":random_source",
         ":saturation",
         ":signal_log",
         ":signal_logger",
+        ":time_varying_data",
         ":trajectory_source",
         ":zero_order_hold",
     ],
@@ -164,15 +165,28 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "piecewise_polynomial_affine_system",
+    srcs = ["piecewise_polynomial_affine_system.cc"],
+    hdrs = ["piecewise_polynomial_affine_system.h"],
+    deps = [
+        ":affine_system",
+        ":time_varying_data",
+        "//drake/common:default_scalars",
+        "//drake/common:essential",
+        "//drake/common:extract_double",
+    ],
+)
+
+drake_cc_library(
     name = "piecewise_polynomial_linear_system",
     srcs = ["piecewise_polynomial_linear_system.cc"],
     hdrs = ["piecewise_polynomial_linear_system.h"],
     deps = [
         ":linear_system",
+        ":time_varying_data",
         "//drake/common:default_scalars",
         "//drake/common:essential",
         "//drake/common:extract_double",
-        "//drake/common/trajectories:piecewise_polynomial_trajectory",
     ],
 )
 
@@ -215,6 +229,16 @@ drake_cc_library(
     deps = [
         "//drake/common:default_scalars",
         "//drake/common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "time_varying_data",
+    srcs = ["time_varying_data.cc"],
+    hdrs = ["time_varying_data.h"],
+    deps = [
+        "//drake/common:essential",
+        "//drake/common/trajectories:piecewise_polynomial_trajectory",
     ],
 )
 
@@ -385,6 +409,35 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_library(
+    name = "piecewise_linear_affine_test",
+    testonly = 1,
+    hdrs = ["test/piecewise_linear_affine_test.h"],
+    visibility = ["//visibility:private"],
+)
+
+drake_cc_googletest(
+    name = "piecewise_polynomial_affine_system_test",
+    deps = [
+        ":piecewise_linear_affine_test",
+        ":piecewise_polynomial_affine_system",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/systems/framework",
+        "//drake/systems/framework/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "piecewise_polynomial_linear_system_test",
+    deps = [
+        ":piecewise_linear_affine_test",
+        ":piecewise_polynomial_linear_system",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/systems/framework",
+        "//drake/systems/framework/test_utilities",
+    ],
+)
+
 drake_cc_googletest(
     name = "random_source_test",
     deps = [
@@ -416,12 +469,11 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "piecewise_polynomial_linear_system_test",
+    name = "time_varying_data_test",
     deps = [
-        ":piecewise_polynomial_linear_system",
+        ":piecewise_linear_affine_test",
+        ":time_varying_data",
         "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/systems/framework",
-        "//drake/systems/framework/test_utilities",
     ],
 )
 

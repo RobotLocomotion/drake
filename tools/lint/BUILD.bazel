@@ -4,7 +4,7 @@ package(default_visibility = ["//visibility:public"])
 
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
-    "//tools:drake.bzl",
+    "@drake//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_library",
     "drake_py_test",
@@ -38,11 +38,10 @@ drake_py_binary(
     ],
 )
 
-# Depend on this when you need to call clang-format.  (We don't have a label
-# for the binary yet, but this will stand in for it in the meantime.)
-filegroup(
-    name = "clang-format",
-    srcs = ["//:.clang-format"],
+drake_py_library(
+    name = "clang_format",
+    srcs = ["clang_format.py"],
+    data = ["//:.clang-format"],
 )
 
 drake_py_binary(
@@ -67,13 +66,12 @@ drake_py_binary(
 drake_py_library(
     name = "formatter",
     srcs = ["formatter.py"],
-    data = [":clang-format"],
+    deps = [":clang_format"],
 )
 
 drake_py_binary(
     name = "clang-format-includes",
     srcs = ["clang_format_includes.py"],
-    data = [":clang-format"],
     main = "clang_format_includes.py",
     deps = [":formatter"],
 )
