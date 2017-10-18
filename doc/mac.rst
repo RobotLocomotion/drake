@@ -1,14 +1,12 @@
-***************
-OS X El Capitan
-***************
+***
+Mac
+***
 
 We assume that you have already installed:
 
-* `Xcode 7.3.1 or above <https://developer.apple.com/xcode/download/>`_ and the Command Line Tools (``xcode-select --install``)
+* Xcode 8.2.1 or above (from the `Mac App Store <https://itunes.apple.com/us/app/xcode/id497799835>`_)
+  and the Command Line Tools for Xcode (``xcode-select --install``)
 * `Java SE Development Kit 8 or above <http://www.oracle.com/technetwork/java/javase/downloads/>`_
-
-Using the Bazel Build System
-============================
 
 Prerequisite setup is automated. Simply run::
 
