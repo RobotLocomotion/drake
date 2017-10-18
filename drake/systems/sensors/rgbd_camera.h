@@ -94,7 +94,8 @@ class RgbdCamera final : public LeafSystem<double> {
   /// @param tree The RigidBodyTree containing the geometric description of the
   /// world. The life span of this parameter must exceed that of this class's
   /// instance. The maximum number of bodies in the `tree` must be less than
-  /// 1536 based on the number of the colors used for the label image.
+  /// 1536 based on the number of the colors used for the label image, otherwise
+  /// an exception will be thrown.
   ///
   /// @param position The x-y-z position of `B` in `W`. This defines the
   /// translation component of `X_WB`.
@@ -114,6 +115,9 @@ class RgbdCamera final : public LeafSystem<double> {
   /// @param show_window A flag for showing a visible window.  If this is false,
   /// offscreen rendering is executed. This is useful for debugging purposes.
   /// The default is true.
+  ///
+  /// @throws std::logic_error When the number of rigid bodies in the scene
+  /// exceeds the maximum limit 1535.
   RgbdCamera(const std::string& name,
              const RigidBodyTree<double>& tree,
              const Eigen::Vector3d& position,
@@ -134,7 +138,8 @@ class RgbdCamera final : public LeafSystem<double> {
   /// @param tree The RigidBodyTree containing the geometric description of the
   /// world. The life span of this parameter must exceed that of this class's
   /// instance. The maximum number of bodies in the `tree` must be less than
-  /// 1536 based on the number of the colors used for the label image.
+  /// 1536 based on the number of the colors used for the label image, otherwise
+  /// an exception will be thrown.
   ///
   /// @param frame The frame in @tree to which this camera is attached.
   ///
@@ -150,6 +155,9 @@ class RgbdCamera final : public LeafSystem<double> {
   /// @param show_window A flag for showing a visible window.  If this is false,
   /// offscreen rendering is executed. This is useful for debugging purposes.
   /// The default is true.
+  ///
+  /// @throws std::logic_error When the number of rigid bodies in the scene
+  /// exceeds the maximum limit 1535.
   RgbdCamera(const std::string& name,
              const RigidBodyTree<double>& tree,
              const RigidBodyFrame<double>& frame,

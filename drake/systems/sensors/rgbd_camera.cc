@@ -198,11 +198,10 @@ void RgbdCamera::OutputPoseVector(
     X_WB = tree_.CalcFramePoseInWorldFrame(cache, frame_);
   }
 
-  Eigen::Translation<double, 3> trans{
-    Eigen::Translation<double, 3>(X_WB.translation())};
+  Eigen::Translation<double, 3> trans{X_WB.translation()};
   pose_vector->set_translation(trans);
 
-  Eigen::Quaterniond quat{Eigen::Quaterniond(X_WB.linear())};
+  Eigen::Quaterniond quat{X_WB.linear()};
   pose_vector->set_rotation(quat);
 }
 

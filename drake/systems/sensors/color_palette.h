@@ -62,7 +62,8 @@ class ColorPalette {
   /// @param no_body_id The id to express pixels that have no body. This will be
   ///  used in the label image.
   ///
-  /// @throws std::logic_error When @p num_colors exceed
+  /// @throws std::logic_error When @p num_colors exceeds the maximum limit,
+  /// which is 1535.
   ColorPalette(int num_colors, int terrain_id, int no_body_id) {
     // Dividing by six because we create "bands" of colors at various intensity
     // levels and the band width is six. In other words, six is the number of
