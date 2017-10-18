@@ -22,44 +22,20 @@ When using Bazel
 
 To generate the website (Sphinx) documentation::
 
-    $ bazel run //drake/doc:serve_sphinx
+    $ bazel run //doc:serve_sphinx
 
 This will rebuild the website content and serve it to your web browser for
 preview using https://docs.python.org/2/library/webbrowser.html.
 
-To merely compile the website into ``bazel-genfiles/drake/doc/sphinx.zip``
+To merely compile the website into ``bazel-genfiles/doc/sphinx.zip``
 without launching a preview::
 
-    $ bazel build //drake/doc:sphinx.zip
+    $ bazel build //doc:sphinx.zip
 
 To generate the Doxygen documentation::
 
     $ cd drake-distro
-    $ drake/doc/doxygen.py [--quick]
+    $ doc/doxygen.py [--quick]
 
 To view the generated documentation, open using a web browser to
 ``drake-distro/build/drake/doc/doxygen_cxx/html/index.html``
-
-.. _documentation-generation-instructions-cmake:
-
-When using CMake
-================
-
-Drake's documentation is built using the ``documentation`` build target.
-After building Drake like normal, execute::
-
-    $ cd drake-distro/build/drake
-    $ [make|ninja] documentation
-
-To view the generated documentation, open the following files using a web
-browser:
-
-- Drake website: ``drake-distro/build/drake/doc/sphinx/index.html``
-- Doxygen C++ website: ``drake-distro/build/drake/doc/doxygen_cxx/html/index.html``
-
-If you're using ``ninja``, there are two additional build targets that allow you
-to build just the Sphinx website or C++ Doxygen website::
-
-    $ cd drake-distro/build/drake
-    $ ninja doc/doxygen_cxx_output
-    $ ninja doc/sphinx_output

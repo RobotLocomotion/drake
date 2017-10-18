@@ -1,10 +1,9 @@
 # -*- python -*-
-# This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools/workspace/gurobi:gurobi.bzl", "gurobi_test_tags")
 load("@drake//tools:install.bzl", "install")
 load(
-    "//tools:drake.bzl",
+    "@drake//tools/skylark:drake_py.bzl",
     "drake_py_library",
     "drake_py_test",
 )

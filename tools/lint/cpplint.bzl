@@ -99,8 +99,8 @@ def cpplint(existing_rules = None, data = None, extra_srcs = None):
         existing_rules = native.existing_rules().values()
 
     for rule in existing_rules:
-        if rule.get("generator_function") == "lcm_cc_library":
-            # Do not lint generated code.
+        if "nolint" in rule.get("tags"):
+            # Disable linting when requested (e.g., for generated code).
             continue
 
         # Extract the list of C++ source code labels and convert to filenames.

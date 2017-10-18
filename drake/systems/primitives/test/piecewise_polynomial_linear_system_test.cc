@@ -4,6 +4,7 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
+#include "drake/systems/primitives/test/piecewise_linear_affine_test.h"
 
 using std::make_unique;
 using std::unique_ptr;
@@ -12,134 +13,30 @@ namespace drake {
 namespace systems {
 namespace {
 
-static constexpr double kDiscreteTimeStep = 0.1;
+using test::kDiscreteTimeStep;
+using test::ExampleAffineTimeVaryingData;
 
-// A helper for accessing the underlying PiecewisePolynomialTrajectory data.
-struct MatrixData {
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MatrixData)
-
-  MatrixData() {}
-  /// Fully-parameterized constructor.
-  MatrixData(const std::vector<double>& times_in,
-             const std::vector<Eigen::MatrixXd>& Avec_in,
-             const std::vector<Eigen::MatrixXd>& Bvec_in,
-             const std::vector<Eigen::MatrixXd>& Cvec_in,
-             const std::vector<Eigen::MatrixXd>& Dvec_in)
-      : times(times_in),
-        Avec(Avec_in),
-        Bvec(Bvec_in),
-        Cvec(Cvec_in),
-        Dvec(Dvec_in) {}
-  std::vector<double> times{};
-  std::vector<Eigen::MatrixXd> Avec;
-  std::vector<Eigen::MatrixXd> Bvec;
-  std::vector<Eigen::MatrixXd> Cvec;
-  std::vector<Eigen::MatrixXd> Dvec;
-};
-
-// Define a simple LinearTimeVaryingData struct via member assignment.
-std::pair<LinearTimeVaryingData, MatrixData> ExampleLinearTimeVaryingData() {
-  const std::vector<double> times{0., kDiscreteTimeStep, 2 * kDiscreteTimeStep};
-  std::vector<Eigen::MatrixXd> Avec(times.size());
-  std::vector<Eigen::MatrixXd> Bvec(times.size());
-  std::vector<Eigen::MatrixXd> Cvec(times.size());
-  std::vector<Eigen::MatrixXd> Dvec(times.size());
-  Eigen::Matrix2d A0;
-  A0 << 1, 2, 3, 4;
-  Eigen::Matrix2d B0;
-  B0 << 5, 6, 7, 8;
-  Eigen::Matrix2d C0;
-  C0 << 9, 10, 11, 12;
-  Eigen::Matrix2d D0;
-  D0 << 13, 14, 15, 16;
-  for (int i{0}; i < static_cast<int>(times.size()); ++i) {
-    Avec[i] = A0 + i * Eigen::Matrix2d::Ones();
-    Bvec[i] = B0 + i * Eigen::Matrix2d::Ones();
-    Cvec[i] = C0 + i * Eigen::Matrix2d::Ones();
-    Dvec[i] = D0 + i * Eigen::Matrix2d::Ones();
-  }
-
-  const auto Apoly = PiecewisePolynomial<double>::FirstOrderHold(times, Avec);
-  const auto Bpoly = PiecewisePolynomial<double>::FirstOrderHold(times, Bvec);
-  const auto Cpoly = PiecewisePolynomial<double>::FirstOrderHold(times, Cvec);
-  const auto Dpoly = PiecewisePolynomial<double>::FirstOrderHold(times, Dvec);
-
-  LinearTimeVaryingData result;
-  result.A = PiecewisePolynomialTrajectory(Apoly);
-  result.B = PiecewisePolynomialTrajectory(Bpoly);
-  result.C = PiecewisePolynomialTrajectory(Cpoly);
-  result.D = PiecewisePolynomialTrajectory(Dpoly);
-
-  return std::make_pair(result, MatrixData{times, Avec, Bvec, Cvec, Dvec});
-}
-
-GTEST_TEST(LinearTimeVaryingData, PiecewisePolynomialConstructor) {
-  LinearTimeVaryingData ppt_data;
-  MatrixData mat_data;
-  std::tie(ppt_data, mat_data) = ExampleLinearTimeVaryingData();
-
-  // Construct a LinearTimeVaryingData struct from PiecewisePolynomials.
-  const LinearTimeVaryingData dut_from_pp =
-      LinearTimeVaryingData(PiecewisePolynomial<double>::FirstOrderHold(
-                                mat_data.times, mat_data.Avec),
-                            PiecewisePolynomial<double>::FirstOrderHold(
-                                mat_data.times, mat_data.Bvec),
-                            PiecewisePolynomial<double>::FirstOrderHold(
-                                mat_data.times, mat_data.Cvec),
-                            PiecewisePolynomial<double>::FirstOrderHold(
-                                mat_data.times, mat_data.Dvec));
-  for (const double t :
-       ppt_data.A.get_piecewise_polynomial().getSegmentTimes()) {
-    EXPECT_TRUE(CompareMatrices(dut_from_pp.A.value(t), ppt_data.A.value(t)));
-    EXPECT_TRUE(CompareMatrices(dut_from_pp.B.value(t), ppt_data.B.value(t)));
-    EXPECT_TRUE(CompareMatrices(dut_from_pp.C.value(t), ppt_data.C.value(t)));
-    EXPECT_TRUE(CompareMatrices(dut_from_pp.D.value(t), ppt_data.D.value(t)));
-  }
-}
-
-GTEST_TEST(LinearTimeVaryingData, PiecewisePolynomialTrajectoryConstructor) {
-  LinearTimeVaryingData data;
-  std::tie(data, std::ignore) = ExampleLinearTimeVaryingData();
-
-  // Construct a LinearTimeVaryingData struct from
-  // PiecewisePolynomialTrajectories.
-  const LinearTimeVaryingData dut_from_ppt =
-      LinearTimeVaryingData(data.A, data.B, data.C, data.D);
-  for (const double t : data.A.get_piecewise_polynomial().getSegmentTimes()) {
-    EXPECT_TRUE(CompareMatrices(dut_from_ppt.A.value(t), data.A.value(t)));
-    EXPECT_TRUE(CompareMatrices(dut_from_ppt.B.value(t), data.B.value(t)));
-    EXPECT_TRUE(CompareMatrices(dut_from_ppt.C.value(t), data.C.value(t)));
-    EXPECT_TRUE(CompareMatrices(dut_from_ppt.D.value(t), data.D.value(t)));
-  }
-}
-
-enum ConstructorType {
-  FromDataContinuous,
-  FromStructContinuous,
-  FromStructDiscrete
-};
+enum ConstructorType { FromContinuous, FromDiscrete };
 
 class PiecewisePolynomialLinearSystemTest
     : public ::testing::TestWithParam<double> {
  public:
   void SetUp() override {
-    std::tie(ltv_data_, mat_data_) = ExampleLinearTimeVaryingData();
+    std::tie(ltv_data_, mat_data_) = ExampleAffineTimeVaryingData();
 
     // Set up an arbitrary PiecewisePolynomialLinearSystem.
-    if (this->GetParam() == ConstructorType::FromDataContinuous) {
-      dut_ =
-          std::make_unique<PiecewisePolynomialLinearSystem<double>>(ltv_data_);
-    } else if (this->GetParam() == ConstructorType::FromStructContinuous) {
-      dut_ = std::make_unique<PiecewisePolynomialLinearSystem<double>>(
-          ltv_data_.A, ltv_data_.B, ltv_data_.C, ltv_data_.D);
-    } else if (this->GetParam() == ConstructorType::FromStructDiscrete) {
+    const LinearTimeVaryingData data(mat_data_.Avec, mat_data_.Bvec,
+                                     mat_data_.Cvec, mat_data_.Dvec,
+                                     kDiscreteTimeStep);
+    if (this->GetParam() == ConstructorType::FromContinuous) {
+      dut_ = make_unique<PiecewisePolynomialLinearSystem<double>>(data);
+    } else if (this->GetParam() == ConstructorType::FromDiscrete) {
       time_period_ = kDiscreteTimeStep;
-      dut_ = std::make_unique<PiecewisePolynomialLinearSystem<double>>(
-          mat_data_.Avec, mat_data_.Bvec, mat_data_.Cvec, mat_data_.Dvec,
-          time_period_);
+      dut_ = make_unique<PiecewisePolynomialLinearSystem<double>>(
+          data, kDiscreteTimeStep);
     }
     context_ = dut_->CreateDefaultContext();
-    input_vector_ = std::make_unique<BasicVector<double>>(2 /* size */);
+    input_vector_ = make_unique<BasicVector<double>>(2 /* size */);
     system_output_ = dut_->AllocateOutput(*context_);
     continuous_state_ = context_->get_mutable_continuous_state();
     discrete_state_ = context_->get_mutable_discrete_state();
@@ -149,18 +46,18 @@ class PiecewisePolynomialLinearSystemTest
 
  protected:
   // The Device Under Test (DUT) is a PiecewisePolynomialLinearSystem<double>.
-  std::unique_ptr<PiecewisePolynomialLinearSystem<double>> dut_;
-  std::unique_ptr<Context<double>> context_;
-  std::unique_ptr<SystemOutput<double>> system_output_;
+  unique_ptr<PiecewisePolynomialLinearSystem<double>> dut_;
+  unique_ptr<Context<double>> context_;
+  unique_ptr<SystemOutput<double>> system_output_;
 
   ContinuousState<double>* continuous_state_{nullptr};
   DiscreteValues<double>* discrete_state_{nullptr};
-  std::unique_ptr<BasicVector<double>> input_vector_;
-  std::unique_ptr<ContinuousState<double>> derivatives_;
-  std::unique_ptr<DiscreteValues<double>> updates_;
+  unique_ptr<BasicVector<double>> input_vector_;
+  unique_ptr<ContinuousState<double>> derivatives_;
+  unique_ptr<DiscreteValues<double>> updates_;
 
-  LinearTimeVaryingData ltv_data_;
-  MatrixData mat_data_;
+  TimeVaryingData ltv_data_;
+  test::MatrixData mat_data_;
   double time_period_{0.};  // Defaults to continuous-time.
 };
 
@@ -188,8 +85,9 @@ TEST_P(PiecewisePolynomialLinearSystemTest, KnotPointConsistency) {
   }
 }
 
-// Tests that the derivatives are correctly computed.
+// Tests that the derivatives and discrete updates are correctly computed.
 TEST_P(PiecewisePolynomialLinearSystemTest, Derivatives) {
+  // Sets the context's input port.
   Eigen::Vector2d u(7, 42);
   input_vector_->get_mutable_value() << u;
   context_->FixInputPort(0, std::move(input_vector_));
@@ -197,8 +95,8 @@ TEST_P(PiecewisePolynomialLinearSystemTest, Derivatives) {
   EXPECT_NE(derivatives_, nullptr);
   EXPECT_NE(updates_, nullptr);
 
+  // Sets the state.
   Eigen::Vector2d x(0.101, 3.7);
-
   if (time_period_ == 0.) {
     continuous_state_->SetFromVector(x);
   } else {
@@ -208,16 +106,19 @@ TEST_P(PiecewisePolynomialLinearSystemTest, Derivatives) {
   std::vector<double> times{0., 1e-5 * kDiscreteTimeStep,
                             0.25 * kDiscreteTimeStep, kDiscreteTimeStep,
                             1.5 * kDiscreteTimeStep};
+  const double tol = 1e-10;
   for (const double t : times) {
     context_->set_time(t);
     const Eigen::Matrix2d A = ltv_data_.A.value(t);
     const Eigen::Matrix2d B = ltv_data_.B.value(t);
     if (time_period_ == 0.) {
       dut_->CalcTimeDerivatives(*context_, derivatives_.get());
-      EXPECT_EQ(A * x + B * u, derivatives_->get_vector().CopyToVector());
+      EXPECT_TRUE(CompareMatrices(
+          A * x + B * u, derivatives_->get_vector().CopyToVector(), tol));
     } else {
       dut_->CalcDiscreteVariableUpdates(*context_, updates_.get());
-      EXPECT_EQ(A * x + B * u, updates_->get_vector(0)->CopyToVector());
+      EXPECT_TRUE(CompareMatrices(
+          A * x + B * u, updates_->get_vector(0)->CopyToVector(), tol));
     }
   }
 }
@@ -240,13 +141,16 @@ TEST_P(PiecewisePolynomialLinearSystemTest, Output) {
   std::vector<double> times{0., 1e-5 * kDiscreteTimeStep,
                             0.25 * kDiscreteTimeStep, kDiscreteTimeStep,
                             1.5 * kDiscreteTimeStep};
-  Eigen::VectorXd expected_output(2);
+  const double tol = 1e-10;
   for (const double t : times) {
     context_->set_time(t);
+
     dut_->CalcOutput(*context_, system_output_.get());
     const Eigen::Matrix2d C = ltv_data_.C.value(t);
     const Eigen::Matrix2d D = ltv_data_.D.value(t);
-    EXPECT_EQ(C * x + D * u, system_output_->get_vector_data(0)->get_value());
+
+    EXPECT_TRUE(CompareMatrices(
+        C * x + D * u, system_output_->get_vector_data(0)->get_value(), tol));
   }
 }
 
@@ -263,9 +167,8 @@ TEST_P(PiecewisePolynomialLinearSystemTest, ScalarTypeConversion) {
 }
 
 INSTANTIATE_TEST_CASE_P(Constructor, PiecewisePolynomialLinearSystemTest,
-                        testing::Values(ConstructorType::FromDataContinuous,
-                                        ConstructorType::FromStructContinuous,
-                                        ConstructorType::FromStructDiscrete));
+                        testing::Values(ConstructorType::FromContinuous,
+                                        ConstructorType::FromDiscrete));
 
 }  // namespace
 }  // namespace systems

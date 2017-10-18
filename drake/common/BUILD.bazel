@@ -1,11 +1,13 @@
 # -*- python -*-
-# This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load(
     "//tools:drake.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
+)
+load(
+    "@drake//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_test",
 )
@@ -460,6 +462,10 @@ genrule(
 sh_test(
     name = "drake_assert_test_compile_variants",
     srcs = ["test/drake_assert_test_compile_variants.sh"],
+    args = [
+        "$(location :capture_cc.env)",
+        "$(location :test/drake_assert_test_compile.cc)",
+    ],
     data = [
         "capture_cc.env",
         "drake_assert.h",
@@ -806,6 +812,7 @@ drake_cc_googletest(
 drake_py_test(
     name = "drake_cc_googletest_main_test_py",
     srcs = ["test/drake_cc_googletest_main_test.py"],
+    args = ["$(location :drake_cc_googletest_main_test)"],
     data = [":drake_cc_googletest_main_test"],
     main = "test/drake_cc_googletest_main_test.py",
 )
@@ -813,6 +820,10 @@ drake_py_test(
 drake_py_test(
     name = "cpplint_wrapper_test",
     srcs = ["test/cpplint_wrapper_test.py"],
+    args = [
+        "$(location :cpplint_wrapper)",
+        "$(location :eigen_types.h)",
+    ],
     data = [
         ":cpplint_wrapper",
         ":eigen_types.h",

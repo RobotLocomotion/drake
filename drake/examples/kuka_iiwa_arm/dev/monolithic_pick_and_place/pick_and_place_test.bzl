@@ -1,5 +1,4 @@
 # -*- python -*-
-# This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 def pick_and_place_test(args = None, size = "small", srcs = None, **kwargs):
     if srcs == None:

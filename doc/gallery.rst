@@ -1,3 +1,5 @@
+:orphan:
+
 *************
 Drake Gallery
 *************
@@ -6,7 +8,7 @@ Drake Gallery
 
 	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/swfobject/2.2/swfobject.js"></script>
 
-If you have an example from your own work that you would like to showcase, please edit ``drake/doc/gallery.rst`` directly and submit a pull request!
+If you have an example from your own work that you would like to showcase, please edit ``doc/gallery.rst`` directly and submit a pull request!
 
 
 Legged Robots

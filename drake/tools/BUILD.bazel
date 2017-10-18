@@ -1,21 +1,29 @@
 # -*- python -*-
-# This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 package(default_visibility = ["//visibility:public"])
 
-load("@protobuf//:protobuf.bzl", "py_proto_library")
 load(
     "//tools:drake.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
+)
+load(
+    "@drake//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_library",
     "drake_py_test",
 )
-load("//tools/workspace/lcm:lcm.bzl", "lcm_cc_library")
+load(
+    "@drake//tools/skylark:drake_lcm.bzl",
+    "drake_lcm_cc_library",
+)
+load(
+    "@drake//tools/skylark:drake_proto.bzl",
+    "drake_py_proto_library",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-py_proto_library(
+drake_py_proto_library(
     name = "named_vector",
     srcs = ["named_vector.proto"],
 )
@@ -24,30 +32,16 @@ drake_py_binary(
     name = "lcm_vector_gen",
     srcs = ["lcm_vector_gen.py"],
     data = [
-        "//tools:clang-format",
+        "//tools/lint:clang-format",
     ],
     deps = [
         ":named_vector",
     ],
 )
 
-drake_py_library(
-    name = "formatter",
-    srcs = ["formatter.py"],
-    data = ["//tools:clang-format"],
-)
-
-drake_py_binary(
-    name = "clang-format-includes",
-    srcs = ["clang_format_includes.py"],
-    data = ["//tools:clang-format"],
-    main = "clang_format_includes.py",
-    deps = [":formatter"],
-)
-
 # === test/ ===
 
-lcm_cc_library(
+drake_lcm_cc_library(
     name = "lcmt_sample",
     testonly = 1,
     includes = ["test/gen"],
@@ -105,20 +99,6 @@ sh_test(
         "test/gen/sample_translator.h",
         "test/sample.named_vector",
         ":lcm_vector_gen",
-    ],
-)
-
-drake_py_test(
-    name = "formatter_test",
-    srcs = ["test/formatter_test.py"],
-    deps = [":formatter"],
-)
-
-sh_test(
-    name = "clang_format_includes_test",
-    srcs = ["test/clang_format_includes_test.sh"],
-    data = [
-        ":clang-format-includes",
     ],
 )
 
