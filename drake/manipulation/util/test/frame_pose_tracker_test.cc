@@ -57,7 +57,8 @@ class FramePoseTrackerTest : public ::testing::Test {
          it != frame_info_.end(); ++it) {
       RigidBody<double>* body = tree_.get()->FindBody(
           it->second.first, "", it->second.second);
-      frames_.push_back(new RigidBodyFrame<double>(it->first, body, T_BF_));
+      frames_.push_back(std::make_unique<RigidBodyFrame<double>>(
+          it->first, body, T_BF_));
     }
   }
 
@@ -82,19 +83,12 @@ class FramePoseTrackerTest : public ::testing::Test {
     return output_value->GetValue<PoseBundle<double>>();
   }
 
-  virtual void TearDown() {
-    for (auto it = frames_.begin(); it != frames_.end(); ++it) {
-      delete (*it);
-    }
-    frames_.clear();
-  }
-
   std::unique_ptr<RigidBodyTree<double>> tree_;
   int model_id_;
   Eigen::Isometry3d T_BF_;
 
   std::map<std::string, std::pair<std::string, int>> frame_info_;
-  std::vector<RigidBodyFrame<double>*> frames_;
+  std::vector<std::unique_ptr<RigidBodyFrame<double>>> frames_;
 
  private:
   std::unique_ptr<FramePoseTracker> dut_;
@@ -113,15 +107,16 @@ TEST_F(FramePoseTrackerTest, InvalidBodyNameTest) {
 }
 
 TEST_F(FramePoseTrackerTest, InvalidFrameTest) {
-  frames_.push_back(new RigidBodyFrame<double>("iiwa_frame_3", nullptr));
+  frames_.push_back(
+      std::make_unique<RigidBodyFrame<double>>("iiwa_frame_3", nullptr));
   EXPECT_EQ(frames_.size(), 4);
-  EXPECT_ANY_THROW(FramePoseTracker(*tree_.get(), frames_));
+  EXPECT_ANY_THROW(FramePoseTracker(*tree_.get(), &frames_));
 }
 
 TEST_F(FramePoseTrackerTest, InvalidFrameNameTest) {
   EXPECT_EQ(frames_.size(), 3);
   frames_[2]->set_name("iiwa_frame_0");  // repeat first frame name
-  EXPECT_ANY_THROW(FramePoseTracker(*tree_.get(), frames_));
+  EXPECT_ANY_THROW(FramePoseTracker(*tree_.get(), &frames_));
 }
 
 TEST_F(FramePoseTrackerTest, ValidFrameInfoTest) {
@@ -147,11 +142,12 @@ TEST_F(FramePoseTrackerTest, ValidFrameInfoTest) {
     // Get the body pose w.r.t. the world and the frame pose w.r.t. the body.
     // Multiply these two and the result should equal the pose contained in the
     // PoseBundle object, i.e., the frame pose w.r.t. the world.
-    Eigen::Isometry3d T_WB = kres.get_pose_in_world((*it)->get_rigid_body());
-    Eigen::Isometry3d T_BF = (*it)->get_transform_to_body();
+    Eigen::Isometry3d T_WB =
+        kres.get_pose_in_world((*it).get()->get_rigid_body());
+    Eigen::Isometry3d T_BF = (*it).get()->get_transform_to_body();
 
     // Extract the appropriate frame from the PoseBundle object.
-    int frame_pose_index = frame_name_to_index_map.at((*it)->get_name());
+    int frame_pose_index = frame_name_to_index_map.at((*it).get()->get_name());
     Eigen::Isometry3d T_WF = frames_bundle.get_pose(frame_pose_index);
 
     EXPECT_TRUE(T_WF.isApprox(T_WB * T_BF, 1e-6));
@@ -159,7 +155,8 @@ TEST_F(FramePoseTrackerTest, ValidFrameInfoTest) {
 }
 
 TEST_F(FramePoseTrackerTest, ValidFrameTest) {
-  FramePoseTracker dut(*tree_.get(), frames_);
+  std::size_t num_frames_in = frames_.size();
+  FramePoseTracker dut(*tree_.get(), &frames_);
 
   // Update the input, calculate the output, and compare it with expected pose.
   KinematicsResults<double> kres(tree_.get());
@@ -168,7 +165,7 @@ TEST_F(FramePoseTrackerTest, ValidFrameTest) {
   kres.Update(q, v.setZero());
 
   PoseBundle<double> frames_bundle = UpdateInputCalcOutput(dut, kres);
-  EXPECT_EQ(frames_bundle.get_num_poses(), frames_.size());
+  EXPECT_EQ(frames_bundle.get_num_poses(), num_frames_in);
 
   // Create a frame name to index map for easy searching within the PoseBundle.
   std::map<std::string, int> frame_name_to_index_map;
@@ -176,15 +173,17 @@ TEST_F(FramePoseTrackerTest, ValidFrameTest) {
     frame_name_to_index_map[frames_bundle.get_name(i)] = i;
   }
 
-  for (auto it = frames_.begin(); it != frames_.end(); ++it) {
+  std::vector<std::string> frame_names = dut.get_tracked_frame_names();
+  for (auto it = frame_names.begin(); it != frame_names.end(); ++it) {
     // Get the body pose w.r.t. the world and the frame pose w.r.t. the body.
     // Multiply these two and the result should equal the pose contained in the
     // PoseBundle object, i.e., the frame pose w.r.t. the world.
-    Eigen::Isometry3d T_WB = kres.get_pose_in_world((*it)->get_rigid_body());
-    Eigen::Isometry3d T_BF = (*it)->get_transform_to_body();
+    RigidBodyFrame<double>* frame = dut.get_mutable_frame(*it);
+    Eigen::Isometry3d T_WB = kres.get_pose_in_world(frame->get_rigid_body());
+    Eigen::Isometry3d T_BF = frame->get_transform_to_body();
 
     // Extract the appropriate frame from the PoseBundle object.
-    int frame_pose_index = frame_name_to_index_map.at((*it)->get_name());
+    int frame_pose_index = frame_name_to_index_map.at(frame->get_name());
     Eigen::Isometry3d T_WF = frames_bundle.get_pose(frame_pose_index);
 
     EXPECT_TRUE(T_WF.isApprox(T_WB * T_BF, 1e-6));

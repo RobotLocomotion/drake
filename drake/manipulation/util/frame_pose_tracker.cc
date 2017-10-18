@@ -20,10 +20,11 @@ using multibody::SpatialVelocity;
 
 FramePoseTracker::FramePoseTracker(
     const RigidBodyTree<double>& tree,
-    const std::vector<RigidBodyFrame<double>*>& frames) : tree_(&tree) {
+    std::vector<std::unique_ptr<RigidBodyFrame<double>>>* frames)
+    : tree_(&tree) {
 
   // Confirm all rigid bodies and frame names are valid.
-  for (auto it = frames.begin(); it != frames.end(); ++it) {
+  for (auto it = frames->begin(); it != frames->end(); ++it) {
     RigidBody<double>* body = (*it)->get_mutable_rigid_body();
     std::string frame_name = (*it)->get_name();
     if (body == nullptr) {
@@ -36,10 +37,11 @@ FramePoseTracker::FramePoseTracker(
           "FramePoseTracker::Init: ERROR: found duplicate frame name. "
               "Frame names must be unique.");
     } else {
-      frame_name_to_frame_map_[frame_name] = *it;
+      frame_name_to_frame_map_[frame_name] = std::move(*it);
     }
   }
   FramePoseTracker::Init();
+  frames->clear();
 }
 
 FramePoseTracker::FramePoseTracker(
@@ -64,7 +66,7 @@ FramePoseTracker::FramePoseTracker(
     RigidBody<double>* body = tree_->FindBody(
         m_it->second.first, "", m_it->second.second);
     frame_name_to_frame_map_[frame_name] =
-        new RigidBodyFrame<double>(frame_name, body, *v_it);
+        std::make_unique<RigidBodyFrame<double>>(frame_name, body, *v_it);
     ++m_it;
     ++v_it;
   }
@@ -107,17 +109,26 @@ void FramePoseTracker::OutputStatus(const systems::Context<double>& context,
     // Set the pose.
     frame_pose_bundle.set_name(frame_index, it->first);
     frame_pose_bundle.set_model_instance_id(
-        frame_index, it->second->get_model_instance_id());
+        frame_index, it->second.get()->get_model_instance_id());
     frame_pose_bundle.set_pose(frame_index, tree_->CalcFramePoseInWorldFrame(
-        kres->get_cache(), *(it->second)));
+        kres->get_cache(), *(it->second.get())));
 
     // Set the velocities.
     SpatialVelocity<double> svel(tree_->CalcFrameSpatialVelocityInWorldFrame(
-        kres->get_cache(), *(it->second)));
+        kres->get_cache(), *(it->second.get())));
     FrameVelocity<double> fvel;
     fvel.set_velocity(svel);
     frame_pose_bundle.set_velocity(frame_index, fvel);
   }
+}
+
+std::vector<std::string> FramePoseTracker::get_tracked_frame_names()  {
+  std::vector<std::string> names;
+  for (auto it = frame_name_to_frame_map_.begin();
+       it != frame_name_to_frame_map_.end(); ++it) {
+    names.push_back(it->first);
+  }
+  return names;
 }
 
 }  // namespace util

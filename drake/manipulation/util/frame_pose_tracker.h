@@ -42,16 +42,19 @@ class FramePoseTracker : public systems::LeafSystem<double> {
    * @param tree The RigidBodyTree containing the named bodies. FramePoseTracker
    *        keeps a reference to this tree to calculate frame poses in the world
    *        frame.
-   * @param frames a std::vector of RigidBodyFrames to track. Each
-   *        RigidBodyFrame in this vector should have a name that is unique,
-   *        i.e., the std::string returned by RigidBodyFrame::get_name() should
-   *        be unique.
+   * @param frames a std::vector of unique pointers to RigidBodyFrames that are
+   *        to be tracked. Pointer ownership is transferred to this class and
+   *        @p frames is cleared before returning. Each RigidBodyFrame in this
+   *        vector should have a name that is unique, i.e., the std::string
+   *        returned by RigidBodyFrame::get_name() should not match any other
+   *        frame name.
    * @throws std::runtime_error if any frame has a non-unique name or the frame
    *         is not attached to a RigidBody (i.e., it's RigidBody pointer is
    *         nullptr).
    */
-  FramePoseTracker(const RigidBodyTree<double>& tree,
-                     const std::vector<RigidBodyFrame<double>*>& frames);
+  FramePoseTracker(
+      const RigidBodyTree<double>& tree,
+      std::vector<std::unique_ptr<RigidBodyFrame<double>>>* frames);
 
   /**
    * Constructs a FramePoseTracker object from the information contained in
@@ -101,6 +104,16 @@ class FramePoseTracker : public systems::LeafSystem<double> {
     return this->pose_bundle_output_port_index_;
   }
 
+  std::size_t get_num_tracked_frames() const {
+    return this->frame_name_to_frame_map_.size();
+  }
+
+  std::vector<std::string> get_tracked_frame_names();
+
+  RigidBodyFrame<double>* get_mutable_frame(std::string frame_name) {
+    return this->frame_name_to_frame_map_[frame_name].get();
+  }
+
  private:
   void Init();
 
@@ -112,7 +125,8 @@ class FramePoseTracker : public systems::LeafSystem<double> {
   int kinematics_input_port_index_{-1};
   int pose_bundle_output_port_index_{-1};
   const RigidBodyTree<double>* tree_;
-  std::map<std::string, RigidBodyFrame<double>*> frame_name_to_frame_map_;
+  std::map<std::string,
+           std::unique_ptr<RigidBodyFrame<double>>> frame_name_to_frame_map_;
 };
 
 }  // namespace util
