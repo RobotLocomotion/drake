@@ -2,5 +2,14 @@ import os.path
 
 
 def getDrakePath():
-    return os.path.realpath(os.path.join(
-        os.path.dirname(__file__), '@RELATIVE_PATH_PYDRAKE_DRAKE@'))
+    # Find if we are in the install tree.
+    install_path = os.path.realpath(os.path.join(
+        os.path.dirname(__file__), '../../../../share/drake'))
+    sentinel = ".drake-resource-sentinel"
+    if os.path.isfile(os.path.join(install_path, sentinel)):
+        print("isntall path: {}".format(install_path))
+        return os.path.join(install_path, 'drake')
+    # Otherwise assume we are in the build tree.
+    source_path = os.path.realpath(os.path.join(
+    os.path.dirname(__file__), '@RELATIVE_PATH_PYDRAKE_DRAKE@'))
+    return source_path
