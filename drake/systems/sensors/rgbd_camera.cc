@@ -1,6 +1,7 @@
 #include "drake/systems/sensors/rgbd_camera.h"
 
 #include <string>
+#include <utility>
 
 #include <Eigen/Dense>
 
