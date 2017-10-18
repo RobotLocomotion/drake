@@ -15,9 +15,6 @@ content = """
   "Compat-Version": "%(MAJOR_VERSION)s.0.0",
   "Requires": {
     "ccd": {
-      "Version": "%(ccd_VERSION)s",
-      "Hints": ["@prefix@/lib/cmake/ccd"],
-      "X-CMake-Find-Args": [ "CONFIG" ]
     },
     "Eigen3": {
       "Version": "%(Eigen3_VERSION)s",
