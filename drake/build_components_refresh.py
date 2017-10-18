@@ -16,8 +16,7 @@ def _find_libdrake_components():
         'except("//drake/examples/...")'
         'except(attr("testonly", "1", "//drake/..."))'
         'except("//drake/lcmtypes/...")'
-        'except("//drake:libdrake_headers")'
-        'except("//drake:drake_shared_library")'
+        'except("//drake:*")'
     ])
     command = ["bazel", "query", query_string]
     components = [x for x in subprocess.check_output(command).split('\n') if x]
