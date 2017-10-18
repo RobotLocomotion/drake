@@ -10,4 +10,4 @@ namespace="drake::examples::acrobot"
 
 source $drake/tools/lcm_vector_gen.sh
 
-gen_vector "acrobot state vector" theta1 theta2 theta1dot theta2dot
+gen_vector_proto "acrobot state vector" $mydir/acrobot_state_vector.named_vector
