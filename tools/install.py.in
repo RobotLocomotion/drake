@@ -90,11 +90,23 @@ def fix_library_rpaths():
             # Look for the absolute path in the dictionary of libraries.
             if dep_basename not in libs.keys():
                 continue
+            lib_dirname = os.path.dirname(dst_full)
+            diff_path = os.path.relpath(libs[dep_basename][0], lib_dirname)
             check_call(
                 ['install_name_tool',
                  "-change", relative_path,
-                 libs[dep_basename][0],
+                 os.path.join('@loader_path', diff_path),
                  dst_full]
+                )
+        # Remove rpath values that contain $ORIGIN. These are from the build
+        # tree and are irrelevant in the install tree.
+        file_output = check_output(["otool", "-l", dst_full])
+        for line in file_output.splitlines():
+            split_line = line.strip().split(' ')
+            if len(split_line) >= 2 and 'path' == split_line[0] and split_line[1].startswith('$ORIGIN'):
+                # path is specified 2 lines below
+                check_call(
+                ['install_name_tool', "-delete_rpath", split_line[1], dst_full]
                 )
 
 def create_java_launcher(filename, classpath, main_class):
