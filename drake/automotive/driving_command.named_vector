@@ -1,3 +1,5 @@
+namespace: "drake::automotive"
+
 element {
      name: "steering_angle"
      doc: "The desired steering angle of a virtual center wheel, positive results in the vehicle turning left."

@@ -1,3 +1,5 @@
+namespace: "drake::tools::test"
+
 element {
     name: "x"
     doc: "Some coordinate"

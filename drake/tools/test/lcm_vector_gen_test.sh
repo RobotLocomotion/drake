@@ -20,7 +20,6 @@ done
 ./drake/tools/lcm_vector_gen \
   --lcmtype-dir="drake/tools/test/gen" \
   --cxx-dir="drake/tools/test/gen" \
-  --namespace="drake::tools::test" \
   --workspace=$(pwd) \
   --named_vector_file="drake/tools/test/sample.named_vector"
 

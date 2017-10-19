@@ -5,14 +5,12 @@
 # Definitions for auto-generating Drake BasicVectors, LCM types, and
 # translators between the two.
 
-# Requires that the variables drake, mydir, and namespace are already defined.
+# Requires that the variables drake and mydir are already defined.
 # $drake is the top of the drake source tree, i.e. $drake/tools contains this
 #        script.
 # $mydir/gen is the directory to which the generated files to be written.
-# $namespace is the ::-delimited set of namespaces in which the generated
-#            C++ source code should reside.
 
-if [ -z "$drake" ] || [ -z "$mydir" ] || [ -z "$namespace" ]
+if [ -z "$drake" ] || [ -z "$mydir" ]
 then
   echo "Required input missing."
   exit 1
@@ -33,7 +31,6 @@ gen_lcm_and_vector_from_proto() {
     bazel run //drake/tools:lcm_vector_gen -- \
         --lcmtype-dir=$drake/lcmtypes \
         --cxx-dir=$mydir/gen \
-        --namespace="$namespace" \
         --workspace="$workspace" \
         --named_vector_file="$named_vector_file"
 }
@@ -46,7 +43,6 @@ gen_vector_proto () {
     named_vector_file="$1"
     bazel run //drake/tools:lcm_vector_gen -- \
         --cxx-dir=$mydir/gen \
-        --namespace="$namespace" \
         --workspace="$workspace" \
         --named_vector_file="$named_vector_file"
 }

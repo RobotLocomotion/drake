@@ -7,8 +7,6 @@ me=$(python -c 'import os; print(os.path.realpath("'"$0"'"))')
 mydir=$(dirname "$me")
 drake=$(dirname "$mydir")
 
-namespace="drake::automotive"
-
 source $drake/tools/lcm_vector_gen.sh
 
 gen_vector_proto $mydir/bicycle_car_parameters.named_vector
