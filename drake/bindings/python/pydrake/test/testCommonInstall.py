@@ -18,20 +18,20 @@ class TestCommonInstall(unittest.TestCase):
             ["install",
              os.path.abspath(tmp_folder),
              ])
-        self.assertEqual(set(os.listdir(tmp_folder)),
-                         set(['libexec', 'lib', 'include',
-                             'share', 'bin', 'plugins']))
+        content_install_folder = os.listdir(tmp_folder)
+        # Check that `lib` and `share` folders are installed since they are
+        # used in this test.
+        self.assertIn('lib', content_install_folder)
+        self.assertIn('share', content_install_folder)
         # Remove Bazel build artifacts, and ensure that we only have install
         # artifacts.
-        shutil.rmtree("drake")
-        os.remove(".drake-resource-sentinel")
-        os.remove("LICENSE.TXT")
-        os.remove("__init__.py")
-        shutil.rmtree("_solib_k8")
-        shutil.rmtree("external")
-        shutil.rmtree("third_party")
-        shutil.rmtree("tools")
-        os.remove("install")
+        content_test_folder = os.listdir(os.getcwd())
+        content_test_folder.remove('tmp')
+        for element in content_test_folder:
+            if os.path.isdir(element):
+                shutil.rmtree(element)
+            else:
+                os.remove(element)
         self.assertEqual(os.listdir("."), [tmp_folder])
 
         # Set the correct PYTHONPATH and (DY)LD_LIBRARY_PATH to use the
