@@ -1227,7 +1227,6 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
   // 0
   // L⋅A⁻¹⋅a + kL
   // where, as above, D is defined as [F -F] (and kD is defined as [kF -kF].
-  VectorX<T> M_inv_x_f = problem_data.solve_inertia(problem_data.tau);
   qq->resize(num_vars, 1);
   qq->segment(0, nc) = N(trunc_neg_invA_a) + kN;
   qq->segment(nc, nr) = F(trunc_neg_invA_a) + kF;
