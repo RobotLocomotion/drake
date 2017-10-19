@@ -425,6 +425,10 @@ Binding<LorentzConeConstraint> ParseLorentzConeConstraint(
   return CreateBinding(make_shared<LorentzConeConstraint>(A, b), vars);
 }
 
+namespace internal {
+template <typename DerivedQ, typename DerivedB>
+std::tuple<Eigen::Matrix<double,
+} // namespace internal
 Binding<LorentzConeConstraint> ParseLorentzConeConstraint(
     const Expression& linear_expr, const Expression& quadratic_expr) {
   const auto& quadratic_p = ExtractVariablesFromExpression(quadratic_expr);

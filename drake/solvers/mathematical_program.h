@@ -189,7 +189,7 @@ enum ProgramAttributes {
 };
 typedef uint32_t AttributesSet;
 
-template<int ...>
+template <int...>
 struct NewVariableNames {};
 /**
    * The type of the names for the newly added variables.
@@ -221,7 +221,7 @@ namespace internal {
  * Return un-initialized new variable names.
  */
 template <int Size>
-typename std::enable_if< Size >= 0, typename NewVariableNames<Size>::type>::type
+typename std::enable_if<Size >= 0, typename NewVariableNames<Size>::type>::type
 CreateNewVariableNames(int) {
   typename NewVariableNames<Size>::type names;
   return names;
@@ -322,7 +322,6 @@ class MathematicalProgram {
     return NewContinuousVariables<Eigen::Dynamic, 1>(rows, 1, name);
   }
 
-
   /**
    * Adds continuous variables, appending them to an internal vector of any
    * existing vars.
@@ -355,10 +354,10 @@ class MathematicalProgram {
    * readability.
    */
   template <int Rows = Eigen::Dynamic, int Cols = Eigen::Dynamic>
-  MatrixDecisionVariable<Rows, Cols>
-  NewContinuousVariables(int rows, int cols, const std::string& name) {
-    rows = Rows == Eigen::Dynamic? rows : Rows;
-    cols = Cols == Eigen::Dynamic? cols : Cols;
+  MatrixDecisionVariable<Rows, Cols> NewContinuousVariables(
+      int rows, int cols, const std::string& name) {
+    rows = Rows == Eigen::Dynamic ? rows : Rows;
+    cols = Cols == Eigen::Dynamic ? cols : Cols;
     auto names =
         internal::CreateNewVariableNames<MultiplyEigenSizes<Rows, Cols>::value>(
             rows * cols);
@@ -425,8 +424,8 @@ class MathematicalProgram {
    * readability.
    */
   template <int Rows = Eigen::Dynamic, int Cols = Eigen::Dynamic>
-  MatrixDecisionVariable<Rows, Cols>
-  NewBinaryVariables(int rows, int cols, const std::string& name) {
+  MatrixDecisionVariable<Rows, Cols> NewBinaryVariables(
+      int rows, int cols, const std::string& name) {
     rows = Rows == Eigen::Dynamic ? rows : Rows;
     cols = Cols == Eigen::Dynamic ? cols : Cols;
     auto names =
@@ -1547,6 +1546,40 @@ class MathematicalProgram {
       const Binding<RotatedLorentzConeConstraint>& binding);
 
   /**
+   * Adds rotated Lorentz cone constraint on the linear expression v1, v2 and
+   * quadratic expression u, such that v1 * v2 >= u, v1 >= 0, v2 >= 0
+   * @param linear_expression1  The linear expression v1.
+   * @param linear_expression2  The linear expression v2.
+   * @param quadratic_expression The quadratic expression u.
+   * @retval binding The newly added rotated Lorentz cone constraint, together
+   * with the bound variables.
+   * @pre
+   * 1. v1 is a linear (affine) expression, in the form of v1 = c1'*x + d1.
+   * 2. v2 is a linear (affine) expression, in the form of v2 = c2'*x + d2.
+   * 2. `quadratic_expression` is a quadratic expression, in the form of
+   *    <pre>
+   *          u = 0.5 * x'*Q*x + b'x + a
+   *    </pre>
+   *    Also the quadratic expression has to be convex, namely Q is a
+   *    positive semidefinite matrix, and the quadratic expression needs
+   *    to be non-negative for any x.
+   * Throws a runtime_error if the preconditions are not satisfied.
+   *
+   * Notice this constraint is equivalent to the vector [z1;z2;y] is within a
+   * rotated Lorentz cone, where
+   * <pre>
+   *  z1 = v1
+   *  z2 = v2
+   *  y = [1 / sqrt(2) * R * x + R⁻ᵀb; sqrt(a - 0.5 * bᵀ * Q⁻¹ * a)]
+   * </pre>
+   * while R satisfies Rᵀ * R = Q
+   */
+  Binding<LorentzConeConstraint> AddRotatedLorentzConeConstraint(
+      const symbolic::Expression& linear_expression1,
+      const symbolic::Expression& linear_expression2,
+      const symbolic::Expression& quadratic_expression);
+
+  /**
    * Adds a constraint that a symbolic expression @param v is in the rotated
    * Lorentz cone, i.e.,
    * \f[
@@ -1917,14 +1950,12 @@ class MathematicalProgram {
    * https://www.gurobi.com/documentation/6.5/refman/parameters.html
    */
   void SetSolverOption(const SolverId& solver_id,
-                       const std::string& solver_option,
-                       double option_value) {
+                       const std::string& solver_option, double option_value) {
     solver_options_double_[solver_id][solver_option] = option_value;
   }
 
   void SetSolverOption(const SolverId& solver_id,
-                       const std::string& solver_option,
-                       int option_value) {
+                       const std::string& solver_option, int option_value) {
     solver_options_int_[solver_id][solver_option] = option_value;
   }
 
@@ -1952,17 +1983,13 @@ class MathematicalProgram {
   /**
    * Sets the ID of the solver that was used to solve this program.
    */
-  void SetSolverId(SolverId solver_id) {
-    solver_id_ = solver_id;
-  }
+  void SetSolverId(SolverId solver_id) { solver_id_ = solver_id; }
 
   /**
    * Returns the ID of the solver that was used to solve this program.
    * Returns empty if Solve() has not been called.
    */
-  optional<SolverId> GetSolverId() const {
-    return solver_id_;
-  }
+  optional<SolverId> GetSolverId() const { return solver_id_; }
 
   /**
    * Getter for optimal cost at the solution. Will return NaN if there has
@@ -2445,8 +2472,7 @@ class MathematicalProgram {
    */
   template <int Rows>
   MatrixDecisionVariable<Rows, Rows> NewSymmetricVariables(
-      VarType type,
-      const typename NewSymmetricVariableNames<Rows>::type& names,
+      VarType type, const typename NewSymmetricVariableNames<Rows>::type& names,
       int rows = Rows) {
     MatrixDecisionVariable<Rows, Rows> decision_variable_matrix(rows, rows);
     NewVariables_impl(type, names, true, decision_variable_matrix);
