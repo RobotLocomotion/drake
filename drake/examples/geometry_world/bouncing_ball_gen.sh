@@ -11,4 +11,4 @@ namespace="drake::examples::bouncing_ball"
 
 source $drake/tools/lcm_vector_gen.sh
 
-gen_vector_proto "bouncing ball vector" $mydir/bouncing_ball_vector.named_vector
+gen_vector_proto $mydir/bouncing_ball_vector.named_vector

@@ -12,5 +12,5 @@ namespace="drake::manipulation::schunk_wsg"
 
 source $drake/tools/lcm_vector_gen.sh
 
-gen_vector_proto "schunk wsg trajectory generator state vector" \
+gen_vector_proto \
   $mydir/schunk_wsg_trajectory_generator_state_vector.named_vector

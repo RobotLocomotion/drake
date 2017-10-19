@@ -21,7 +21,6 @@ done
   --lcmtype-dir="drake/tools/test/gen" \
   --cxx-dir="drake/tools/test/gen" \
   --namespace="drake::tools::test" \
-  --title="Sample" \
   --workspace=$(pwd) \
   --named_vector_file="drake/tools/test/sample.named_vector"
 
