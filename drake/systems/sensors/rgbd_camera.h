@@ -57,8 +57,8 @@ namespace sensors {
 ///   - The label image has single channel represented by a int16_t. The value
 ///     stored in the channel holds a model ID which corresponds to an object
 ///     in the scene. For the pixels corresponding to no body, namely the sky
-///     and the flat terrain, we assign RgbdRenderer::Label::kNoBody and
-///     RgbdRenderer::Label::kFlatTerrain, respectively.
+///     and the flat terrain, we assign Label::kNoBody and Label::kFlatTerrain,
+///     respectively.
 ///
 /// @ingroup sensor_systems
 class RgbdCamera final : public LeafSystem<double> {
@@ -68,11 +68,10 @@ class RgbdCamera final : public LeafSystem<double> {
   /// Converts a depth image obtained from RgbdCamera to a point cloud.  If a
   /// pixel in the depth image has NaN depth value, all the `(x, y, z)` values
   /// in the converted point will be NaN.
-  /// Similarly, if a pixel has either RgbdRenderer::InvalidDepth::kTooFar or
-  /// RgbdRenderer::InvalidDepth::kTooClose, the converted point will be
-  /// RgbdRenderer::InvalidDepth::kTooFar.
-  /// Note that this matches the convention used by the Point Cloud Library
-  /// (PCL).
+  /// Similarly, if a pixel has either InvalidDepth::kTooFar or
+  /// InvalidDepth::kTooClose, the converted point will be
+  /// InvalidDepth::kTooFar. Note that this matches the convention used by the
+  /// Point Cloud Library (PCL).
   ///
   /// @param[in] depth_image The input depth image obtained from RgbdCamera.
   ///
@@ -81,7 +80,7 @@ class RgbdCamera final : public LeafSystem<double> {
   /// @param[out] point_cloud The pointer of output point cloud.
   // TODO(kunimatsu-tri) Use drake::perception::PointCloud instead of
   // Eigen::Matrix3Xf and create new constants there instead of reusing
-  // RgbdRenderer::InvalidDepth.
+  // InvalidDepth.
   // TODO(kunimatsu-tri) Move this to drake::perception.
   static void ConvertDepthImageToPointCloud(const ImageDepth32F& depth_image,
                                             const CameraInfo& camera_info,

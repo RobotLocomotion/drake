@@ -383,20 +383,14 @@ float RgbdRenderer::CheckRangeAndConvertToMeters(float z_buffer_value) const {
     z = static_cast<float>(kB / (z_buffer_value - kA));
 
     if (z > z_far_) {
-      z = RgbdRenderer::InvalidDepth::kTooFar;
+      z = InvalidDepth::kTooFar;
     } else if (z < z_near_) {
-      z = RgbdRenderer::InvalidDepth::kTooClose;
+      z = InvalidDepth::kTooClose;
     }
   }
 
   return z;
 }
-
-constexpr float RgbdRenderer::InvalidDepth::kTooFar;
-constexpr float RgbdRenderer::InvalidDepth::kTooClose;
-
-constexpr int16_t RgbdRenderer::Label::kNoBody;
-constexpr int16_t RgbdRenderer::Label::kFlatTerrain;
 
 }  // namespace sensors
 }  // namespace systems

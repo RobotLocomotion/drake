@@ -42,14 +42,13 @@ void RgbdCamera::ConvertDepthImageToPointCloud(const ImageDepth32F& depth_image,
   const float fy_inv = 1.f / camera_info.focal_y();
 
   Eigen::Matrix3Xf& pc = *point_cloud;
-  pc = Eigen::Matrix3Xf::Constant(3, height * width,
-                                  RgbdRenderer::InvalidDepth::kTooFar);
+  pc = Eigen::Matrix3Xf::Constant(3, height * width, InvalidDepth::kTooFar);
 
   for (int v = 0; v < height; ++v) {
     for (int u = 0; u < width; ++u) {
       float z = depth_image.at(u, v)[0];
-      if (z != RgbdRenderer::InvalidDepth::kTooClose &&
-          z != RgbdRenderer::InvalidDepth::kTooFar) {
+      if (z != InvalidDepth::kTooClose &&
+          z != InvalidDepth::kTooFar) {
         pc(0, v * width + u) = z * (u - cx) * fx_inv;
         pc(1, v * width + u) = z * (v - cy) * fy_inv;
         pc(2, v * width + u) = z;
