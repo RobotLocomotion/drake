@@ -47,6 +47,7 @@ apt install --no-install-recommends $(tr '\n' ' ' <<EOF
 
 bash-completion
 binutils
+chrpath
 coinor-libipopt-dev
 diffstat
 doxygen
