@@ -1,11 +1,11 @@
-syntax = "proto3";
+syntax = "proto2";
 
 package drake.rigid_body_tree;
 
 // Next ID: 3
 message AliasGroup {
     // The name of the group itself.
-    string name = 1;
+    optional string name = 1;
     // The names of the members of the group.
     repeated string member = 2;
 }
