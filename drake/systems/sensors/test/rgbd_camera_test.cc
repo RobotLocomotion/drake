@@ -281,9 +281,9 @@ class DepthImageToPointCloudConversionTest : public ::testing::Test {
       for (int u = 0; u < depth_image_.width(); ++u) {
         const int i = v * depth_image_.width() + u;
         Eigen::Vector3f actual = actual_point_cloud_.col(i);
-        ASSERT_EQ(actual(0), RgbdRenderer::InvalidDepth::kTooFar);
-        ASSERT_EQ(actual(1), RgbdRenderer::InvalidDepth::kTooFar);
-        ASSERT_EQ(actual(2), RgbdRenderer::InvalidDepth::kTooFar);
+        ASSERT_EQ(actual(0), InvalidDepth::kTooFar);
+        ASSERT_EQ(actual(1), InvalidDepth::kTooFar);
+        ASSERT_EQ(actual(2), InvalidDepth::kTooFar);
       }
     }
   }
@@ -348,7 +348,7 @@ TEST_F(DepthImageToPointCloudConversionTest, NanValueTest) {
 
 // Verifies computed point cloud when pixel values in depth image are kTooFar.
 TEST_F(DepthImageToPointCloudConversionTest, TooFarTest) {
-  Init(RgbdRenderer::InvalidDepth::kTooFar);
+  Init(InvalidDepth::kTooFar);
 
   RgbdCamera::ConvertDepthImageToPointCloud(
       depth_image_, camera_info_, &actual_point_cloud_);
@@ -358,7 +358,7 @@ TEST_F(DepthImageToPointCloudConversionTest, TooFarTest) {
 
 // Verifies computed point cloud when pixel values in depth image are kTooClose.
 TEST_F(DepthImageToPointCloudConversionTest, TooCloseTest) {
-  Init(RgbdRenderer::InvalidDepth::kTooClose);
+  Init(InvalidDepth::kTooClose);
 
   RgbdCamera::ConvertDepthImageToPointCloud(
       depth_image_, camera_info_, &actual_point_cloud_);

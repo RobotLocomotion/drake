@@ -1,7 +1,6 @@
 #pragma once
 
 #include <array>
-#include <limits>
 #include <map>
 #include <vector>
 
@@ -66,35 +65,6 @@ struct ModuleInitVtkRenderingOpenGL2 {
 class RgbdRenderer final : private ModuleInitVtkRenderingOpenGL2 {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RgbdRenderer)
-
-  /// Set of constants used to represent invalid depth values.
-  /// Note that if a depth is not measurable, NaN will be set.
-  class InvalidDepth {
-   public:
-    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InvalidDepth)
-    /// The depth value when the max sensing range is exceeded.
-    static constexpr float kTooFar{std::numeric_limits<float>::infinity()};
-
-    /// The depth value when the min sensing range is violated because the
-    /// object being sensed is too close. Note that this
-    /// <a href="http://www.ros.org/reps/rep-0117.html">differs from ROS</a>,
-    /// which uses negative infinity in this scenario. Drake uses zero because
-    /// it results in less devastating bugs when users fail to check for the
-    /// lower limit being hit and using negative infinity does not prevent users
-    /// from writing bad code.
-    static constexpr float kTooClose{0.f};
-  };
-
-  /// Set of labels used for label image.
-  class Label {
-   public:
-    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Label)
-    /// The label used for pixels correspond to nothing.
-    static constexpr int16_t kNoBody{std::numeric_limits<int16_t>::max()};
-    /// The label used for pixels correspond to the flat terrain.
-    static constexpr int16_t kFlatTerrain{
-      std::numeric_limits<int16_t>::max() - 1};
-  };
 
   /// A constructor for %RgbdRenderer.
   ///

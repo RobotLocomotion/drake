@@ -82,7 +82,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "image",
-    srcs = [],
+    srcs = ["image.cc"],
     hdrs = [
         "image.h",
         "pixel_types.h",
