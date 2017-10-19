@@ -19,10 +19,12 @@ def drake_pybind_cc_binary(name, srcs = [], copts = [], **kwargs):
     # _pybind_foo.so files, which breaks C++ global variables.  All object code
     # must come in through libdrake.so.  (Conceivably a header-only library
     # could be allowed in deps, but we can fix that when we need it.)
-    for key in ["deps", "linkshared", "linkstatic"]:
+    for key in ["deps", "linkshared", "linkstatic", "linkopts"]:
         if key in kwargs:
             fail("%s cannot be set by the caller" % key)
 
+    # Count folders in name to find relative path to lib subfolder.
+    relative_path = '/..' * (name.count('/') + 1)
     drake_cc_binary(
         name = name,
         # This is how you tell Bazel to link in a shared library.
@@ -33,6 +35,14 @@ def drake_pybind_cc_binary(name, srcs = [], copts = [], **kwargs):
             "-Wno-cpp",
             "-Wno-unknown-warning-option",
         ] + copts,
+        # Only add RPath for Linux. On MacOS, library paths are updated at
+        # installation.
+        linkopts = select(
+            {
+                "//tools/cc_toolchain:apple": [],
+                "//conditions:default": ["-Wl,-rpath,$$ORIGIN" + relative_path]
+            }
+        ),
         # This is how you tell Bazel to create a shared library.
         linkshared = 1,
         linkstatic = 1,
