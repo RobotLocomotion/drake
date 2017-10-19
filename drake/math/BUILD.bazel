@@ -169,7 +169,6 @@ drake_cc_library(
     hdrs = ["quadratic_form.h"],
     deps = [
         "//drake/common:essential",
-        "//drake/common:nice_type_name",
         "@eigen",
     ],
 )
@@ -307,6 +306,7 @@ drake_cc_googletest(
     name = "quadratic_form_test",
     deps = [
         ":quadratic_form",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
