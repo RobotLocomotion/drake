@@ -94,6 +94,7 @@ python-dev
 python-gtk2
 python-lxml
 python-numpy
+python-protobuf
 python-pygame
 python-scipy
 python-sphinx
