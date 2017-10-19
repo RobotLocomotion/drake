@@ -9,11 +9,11 @@ namespace multibody {
 namespace multibody_tree {
 namespace test_utilities {
 
-/// Utility class containing the transform and spatial velocity/acceleration of
-/// an arbitrary frame B in another arbitrary rigid frame N (e.g., the world).
+/// Utility class containing the transform and spatial velocity/acceleration
+/// of an arbitrary frame B in another arbitrary frame N (e.g., the world).
 /// Herein, Bo and No denote generic points (e.g., the origins) of frames B and
 /// N, respectively.  Right-handed sets of orthogonal unit vectors Bx, By, Bz
-/// and Nx, Ny, Nz are fixed in rigid frames B and N, respectively.
+/// and Nx, Ny, Nz are fixed in frames B and N, respectively.
 template <typename T>
 class SpatialKinematicsPVA {
  public:
