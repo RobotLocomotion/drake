@@ -165,11 +165,11 @@ DesiredDofMotions ParamSet::MakeDesiredDofMotions() const {
 
 void ParamSet::LookupDesiredBodyMotionGains(
     const std::string& group_name,
-    const RigidBodyTreeAliasGroups<double>& alias_group,
+    const RigidBodyTreeAliasGroups<double>& alias_groups,
     std::vector<Vector6<double>>* kp, std::vector<Vector6<double>>* kd) const {
-  if (alias_group.has_body_group(group_name)) {
+  if (alias_groups.has_body_group(group_name)) {
     const std::vector<const RigidBody<double>*> bodies =
-        alias_group.get_body_group(group_name);
+        alias_groups.get_body_group(group_name);
     int ctr = 0;
     kp->resize(bodies.size());
     kd->resize(bodies.size());
@@ -222,13 +222,13 @@ void ParamSet::LookupDesiredDofMotionGains(VectorX<double>* kp,
 QpInput ParamSet::MakeQpInput(
     const std::vector<std::string>& contact_body_groups,
     const std::vector<std::string>& tracked_body_groups,
-    const RigidBodyTreeAliasGroups<double>& alias_group) const {
-  QpInput qp_input(GetDofNames(alias_group.get_tree()));
+    const RigidBodyTreeAliasGroups<double>& alias_groups) const {
+  QpInput qp_input(GetDofNames(alias_groups.get_tree()));
 
   // Inserts all contacts.
   for (const auto& contact_group : contact_body_groups) {
     std::unordered_map<std::string, ContactInformation> contacts =
-        MakeContactInformation(contact_group, alias_group);
+        MakeContactInformation(contact_group, alias_groups);
     qp_input.mutable_contact_information().insert(contacts.begin(),
                                                   contacts.end());
   }
@@ -236,7 +236,7 @@ QpInput ParamSet::MakeQpInput(
   // Inserts all tracked bodies.
   for (const auto& tracked_body_group : tracked_body_groups) {
     std::unordered_map<std::string, DesiredBodyMotion> motions =
-        MakeDesiredBodyMotion(tracked_body_group, alias_group);
+        MakeDesiredBodyMotion(tracked_body_group, alias_groups);
     qp_input.mutable_desired_body_motions().insert(motions.begin(),
                                                    motions.end());
   }
@@ -257,8 +257,8 @@ QpInput ParamSet::MakeQpInput(
 QpInput ParamSet::MakeQpInput(
     const std::vector<const RigidBody<double>*>& contact_bodies,
     const std::vector<const RigidBody<double>*>& tracked_bodies,
-    const RigidBodyTreeAliasGroups<double>& alias_group) const {
-  QpInput qp_input(GetDofNames(alias_group.get_tree()));
+    const RigidBodyTreeAliasGroups<double>& alias_groups) const {
+  QpInput qp_input(GetDofNames(alias_groups.get_tree()));
 
   // Inserts all contacts.
   for (const auto& body : contact_bodies) {

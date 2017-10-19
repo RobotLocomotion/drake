@@ -35,14 +35,14 @@ namespace qp_inverse_dynamics {
  * that consists of a floating base joint and 2 single dof joints.
  *
  * @param config_path Path to the config file.
- * @param alias_group Specifies the relationship between body / joint groups
+ * @param alias_groups Specifies the relationship between body / joint groups
  * and the RigidBodyTree it is constructed from.
  *
  * @throws std::runtime_error if the config file can not be parsed correctly.
  */
 std::unique_ptr<ParamSet> ParamSetLoadFromFile(
     const std::string& config_path,
-    const RigidBodyTreeAliasGroups<double>& alias_group);
+    const RigidBodyTreeAliasGroups<double>& alias_groups);
 
 }  // namespace qp_inverse_dynamics
 }  // namespace controllers

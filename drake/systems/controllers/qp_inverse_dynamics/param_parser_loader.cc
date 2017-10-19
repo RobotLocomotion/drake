@@ -97,16 +97,16 @@ std::string get_dof_name(const RigidBodyTree<T>& robot, int dof_idx) {
 template <typename ConfigType, typename ParamType>
 void BuildParamMapForBodyGroups(
     const ::google::protobuf::RepeatedPtrField<ConfigType>& configs,
-    const RigidBodyTreeAliasGroups<double>& alias_group,
+    const RigidBodyTreeAliasGroups<double>& alias_groups,
     std::function<ParamType(const ConfigType&)> parse_param,
     std::unordered_map<std::string, ParamType>* param_map) {
   for (const auto& config : configs) {
     ParamType param = parse_param(config);
     const std::string& group_name = config.name();
     // Parses the contact parameter for this body group.
-    if (alias_group.has_body_group(group_name)) {
+    if (alias_groups.has_body_group(group_name)) {
       const std::vector<const RigidBody<double>*> bodies =
-        alias_group.get_body_group(group_name);
+        alias_groups.get_body_group(group_name);
       // Makes a contact param for each body in this body group.
       for (const RigidBody<double>* body : bodies) {
         param.name = body->get_name();
@@ -133,7 +133,7 @@ void BuildParamMapForBodyGroups(
 
 std::unique_ptr<ParamSet> ParamSetLoadFromFile(
     const std::string& config_path,
-    const RigidBodyTreeAliasGroups<double>& alias_group) {
+    const RigidBodyTreeAliasGroups<double>& alias_groups) {
   auto paramset = std::make_unique<ParamSet>();
 
   InverseDynamicsControllerConfig id_configs;
@@ -158,7 +158,7 @@ std::unique_ptr<ParamSet> ParamSetLoadFromFile(
   std::unordered_map<std::string, ContactParam> contact_params;
   contact_params.emplace(default_contact_param.name, default_contact_param);
   BuildParamMapForBodyGroups<ContactConfig, ContactParam>(
-      id_configs.contact(), alias_group,
+      id_configs.contact(), alias_groups,
       ParseContactParam, &contact_params);
   paramset->set_contact_params(std::move(contact_params));
 
@@ -168,13 +168,13 @@ std::unique_ptr<ParamSet> ParamSetLoadFromFile(
   std::unordered_map<std::string, DesiredMotionParam> body_motion_params;
   body_motion_params.emplace(default_motion_param.name, default_motion_param);
   BuildParamMapForBodyGroups<AccelerationConfig, DesiredMotionParam>(
-      id_configs.body_motion(), alias_group,
+      id_configs.body_motion(), alias_groups,
       ParseDesiredMotionParam6, &body_motion_params);
   paramset->set_body_motion_params(std::move(body_motion_params));
 
   // Dof motion.
   std::vector<DesiredMotionParam> dof_motion_params;
-  const RigidBodyTree<double>& robot = alias_group.get_tree();
+  const RigidBodyTree<double>& robot = alias_groups.get_tree();
   default_motion_param =
       ParseDesiredMotionParam(id_configs.default_dof_motion(), 1);
 
@@ -188,9 +188,9 @@ std::unique_ptr<ParamSet> ParamSetLoadFromFile(
   for (const auto& dof_config : id_configs.dof_motion()) {
     const std::string& group_name = dof_config.name();
 
-    if (alias_group.has_velocity_group(group_name)) {
+    if (alias_groups.has_velocity_group(group_name)) {
       const std::vector<int>& v_indices =
-          alias_group.get_velocity_group(group_name);
+          alias_groups.get_velocity_group(group_name);
 
       // This is the param for the entire group.
       group_dof_motion_param = ParseDesiredMotionParam(
