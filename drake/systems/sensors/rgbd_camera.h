@@ -29,7 +29,7 @@ namespace sensors {
 /// more coordinate systems that are associated with an RgbdCamera. They are
 /// defined as follows:
 ///
-///   * `B` - The camera's base coordinate system: X-forward, Y-left, and Z-up.
+///   * `B` - the camera's base coordinate system: X-forward, Y-left, and Z-up.
 ///
 ///   * `C` - the camera's color sensor's optical coordinate system: `X-right`,
 ///           `Y-down` and `Z-forward`.
@@ -57,8 +57,8 @@ namespace sensors {
 ///   - The label image has single channel represented by a int16_t. The value
 ///     stored in the channel holds a model ID which corresponds to an object
 ///     in the scene. For the pixels corresponding to no body, namely the sky
-///     and the flat terrain, we assign Label::kNoBody and Label::kFlatTerrain,
-///     respectively.
+///     and the flat terrain, we assign RgbdRenderer::Label::kNoBody and
+///     RgbdRenderer::Label::kFlatTerrain, respectively.
 ///
 /// @ingroup sensor_systems
 class RgbdCamera final : public LeafSystem<double> {
@@ -79,6 +79,10 @@ class RgbdCamera final : public LeafSystem<double> {
   /// @param[in] camera_info The input camera info which is used for conversion.
   ///
   /// @param[out] point_cloud The pointer of output point cloud.
+  // TODO(kunimatsu-tri) Use drake::perception::PointCloud instead of
+  // Eigen::Matrix3Xf and create new constants there instead of reusing
+  // RgbdRenderer::InvalidDepth.
+  // TODO(kunimatsu-tri) Move this to drake::perception.
   static void ConvertDepthImageToPointCloud(const ImageDepth32F& depth_image,
                                             const CameraInfo& camera_info,
                                             Eigen::Matrix3Xf* point_cloud);
@@ -240,8 +244,19 @@ class RgbdCamera final : public LeafSystem<double> {
   const CameraInfo color_camera_info_;
   const CameraInfo depth_camera_info_;
   const Eigen::Isometry3d X_WB_initial_;
-  const Eigen::Isometry3d X_BC_;
-  const Eigen::Isometry3d X_BD_;
+  // The color sensor's origin (`Co`) is offset by 0.02 m on the Y axis of
+  // the RgbdCamera's base coordinate system (`B`).
+  // TODO(kunimatsu-tri) Add support for arbitrary relative pose.
+  // TODO(kunimatsu-tri) Change the X_BD_ to be different from X_BC_ when
+  // it's needed.
+  const Eigen::Isometry3d X_BC_{Eigen::Translation3d(0., 0.02, 0.) *
+        (Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitX()) *
+         Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY()))};
+  // The depth sensor's origin (`Do`) is offset by 0.02 m on the Y axis of
+  // the RgbdCamera's base coordinate system (`B`).
+  const Eigen::Isometry3d X_BD_{Eigen::Translation3d(0., 0.02, 0.) *
+        (Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitX()) *
+         Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY()))};
 
   std::unique_ptr<RgbdRenderer> renderer_;
 };

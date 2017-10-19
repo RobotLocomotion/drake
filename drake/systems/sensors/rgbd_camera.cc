@@ -23,14 +23,6 @@ namespace {
 constexpr int kImageWidth = 640;  // In pixels
 constexpr int kImageHeight = 480;  // In pixels
 
-Eigen::Isometry3d X_BC() {
-  // The color sensor's origin (`Co`) is offset by 0.02 m on the Y axis of
-  // the RgbdCamera's base coordinate system (`B`).
-  return Eigen::Translation3d(0., 0.02, 0.) *
-    (Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitX()) *
-     Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY()));
-}
-
 }  // namespace
 
 // Note that if `depth_image` holds any pixels that have NaN, the converted
@@ -50,15 +42,14 @@ void RgbdCamera::ConvertDepthImageToPointCloud(const ImageDepth32F& depth_image,
   const float fy_inv = 1.f / camera_info.focal_y();
 
   Eigen::Matrix3Xf& pc = *point_cloud;
+  pc = Eigen::Matrix3Xf::Constant(3, height * width,
+                                  RgbdRenderer::InvalidDepth::kTooFar);
+
   for (int v = 0; v < height; ++v) {
     for (int u = 0; u < width; ++u) {
       float z = depth_image.at(u, v)[0];
-      if (z == RgbdRenderer::InvalidDepth::kTooClose ||
-          z == RgbdRenderer::InvalidDepth::kTooFar) {
-        pc(0, v * width + u) = RgbdRenderer::InvalidDepth::kTooFar;
-        pc(1, v * width + u) = RgbdRenderer::InvalidDepth::kTooFar;
-        pc(2, v * width + u) = RgbdRenderer::InvalidDepth::kTooFar;
-      } else {
+      if (z != RgbdRenderer::InvalidDepth::kTooClose &&
+          z != RgbdRenderer::InvalidDepth::kTooFar) {
         pc(0, v * width + u) = z * (u - cx) * fx_inv;
         pc(1, v * width + u) = z * (v - cy) * fy_inv;
         pc(2, v * width + u) = z;
@@ -82,10 +73,6 @@ RgbdCamera::RgbdCamera(const std::string& name,
       X_WB_initial_(
           Eigen::Translation3d(position[0], position[1], position[2]) *
           Eigen::Isometry3d(math::rpy2rotmat(orientation))),
-      // TODO(kunimatsu-tri) Add support for arbitrary relative pose.
-      // TODO(kunimatsu-tri) Change the X_BD_ to be different from X_BC_ when
-      // it's needed.
-      X_BC_(X_BC()), X_BD_(X_BC()),
       renderer_(new RgbdRenderer(
           (Eigen::Translation3d(position[0], position[1], position[2]) *
            Eigen::Isometry3d(math::rpy2rotmat(orientation))) * X_BC_,
@@ -106,10 +93,6 @@ RgbdCamera::RgbdCamera(const std::string& name,
       camera_fixed_(false),
       color_camera_info_(kImageWidth, kImageHeight, fov_y),
       depth_camera_info_(kImageWidth, kImageHeight, fov_y),
-      // TODO(kunimatsu-tri) Add support for arbitrary relative pose.
-      // TODO(kunimatsu-tri) Change the X_BD_ to be different from X_BC_ when
-      // it's needed.
-      X_BC_(X_BC()), X_BD_(X_BC()),
       renderer_(new RgbdRenderer(Eigen::Isometry3d(),
                                  kImageWidth, kImageHeight,
                                  z_near, z_far,
