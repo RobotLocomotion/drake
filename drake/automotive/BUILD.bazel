@@ -52,22 +52,16 @@ drake_cc_library(
 drake_cc_library(
     name = "generated_translators",
     srcs = [
-        "gen/bicycle_car_parameters_translator.cc",
         "gen/bicycle_car_state_translator.cc",
         "gen/driving_command_translator.cc",
-        "gen/maliput_railcar_params_translator.cc",
         "gen/maliput_railcar_state_translator.cc",
-        "gen/simple_car_params_translator.cc",
         "gen/simple_car_state_translator.cc",
         "gen/trajectory_car_state_translator.cc",
     ],
     hdrs = [
-        "gen/bicycle_car_parameters_translator.h",
         "gen/bicycle_car_state_translator.h",
         "gen/driving_command_translator.h",
-        "gen/maliput_railcar_params_translator.h",
         "gen/maliput_railcar_state_translator.h",
-        "gen/simple_car_params_translator.h",
         "gen/simple_car_state_translator.h",
         "gen/trajectory_car_state_translator.h",
     ],
