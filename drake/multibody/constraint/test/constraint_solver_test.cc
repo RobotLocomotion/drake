@@ -1500,9 +1500,65 @@ TEST_P(Constraint2DSolverTest, TwoPointContactCrossTerms) {
   // Set the state of the rod to resting.
   SetRodToRestingHorizontalConfig();
 
+  // Set the velocity on the rod to move to the right.
+
   // Set the sliding coefficient of friction to somewhat small and the static
   // coefficient of friction to very large.
   rod_->set_mu_coulomb(1e-1);
+  rod_->set_mu_static(1.0);
+
+  // Get the contacts, then eliminate the right point of contact.
+  std::vector<Vector2d> contacts;
+  rod_->GetContactPoints(*context_, &contacts);
+  ASSERT_EQ(contacts.size(), 2);
+  contacts.pop_back();
+
+  // Now, construct the acceleration-level problem data as usual to set
+  // inertia solver and external forces.
+  std::vector<double> tangent_vels;
+  rod_->GetContactPointsTangentVelocities(*context_, contacts, &tangent_vels);
+
+  // Modify the tangent velocity on the left contact to effect a sticking 
+  // contact. This modification can be imagined as the  end of the rod
+  // is touching a conveyer belt moving to the left.
+  tangent_vels[0] = 0.0;
+
+  // Compute the constraint problem data.
+  rod_->CalcConstraintProblemData(
+    *context_, contacts, tangent_vels, accel_data_.get());
+
+  // Check the consistency of the data.
+  CheckProblemConsistency(*accel_data_, contacts.size());
+
+  // Compute the constraint forces. Note that we increase cfm to prevent the
+  // occasional "failure to solve LCP" exception.
+  VectorX<double> cf;
+  solver_.SolveConstraintProblem(*accel_data_, &cf);
+
+  // Verify the size of cf is as expected.
+  EXPECT_EQ(cf.size(), accel_data_->sliding_contacts.size() +
+                       accel_data_->non_sliding_contacts.size() * 2);
+
+  // Verify that the horizontal acceleration is zero (since mu_static is so
+  // large, meaning that the sticking friction force is able to overwhelm the
+  // sliding friction force. If the cross-constraint term FM⁻¹(Nᵀ - μQᵀ) is not
+  // computed properly, this acceleration might not be zero.
+  VectorX<double> vdot;
+  solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &vdot);
+  EXPECT_NEAR(vdot[0], 0, lcp_eps_);
+}
+
+// Tests the rod in a two-point contact configuration with one sticking
+// contact and one generic unilateral constraint. This test tests that the 
+// cross-term interaction between non-sliding friction forces and generic
+// unilateral constraints.
+TEST_P(Constraint2DSolverTest, OneContactOneLimitCrossTerms) {
+  // Set the state of the rod to resting.
+  SetRodToRestingHorizontalConfig();
+
+  // Set the sliding coefficient of friction to zero (it won't be used) and the
+  // static coefficient of friction to very large.
+  rod_->set_mu_coulomb(0.0);
   rod_->set_mu_static(1.0);
 
   // First, construct the acceleration-level problem data as normal to set
@@ -1541,6 +1597,7 @@ TEST_P(Constraint2DSolverTest, TwoPointContactCrossTerms) {
   solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &vdot);
   EXPECT_NEAR(vdot[0], 0, lcp_eps_);
 }
+
 
 // Tests the rod in a two-point contacting configuration *realized through
 // a configuration limit constraint*. No frictional forces are applied, so
