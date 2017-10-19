@@ -28,8 +28,7 @@ void MGKukaIIwaRobot<T>::PrepareMGOutput(
 
 
 template<typename T>
-std::tuple<Matrix3d, Vector3d, Vector3d, Vector3d, Vector3d, Vector3d>
-MGKukaIIwaRobot<T>::CalcEndEffectorKinematics(
+SpatialKinematicsPVA<T> MGKukaIIwaRobot<T>::CalcEndEffectorKinematics(
     const Eigen::Ref<const VectorX<T>>& q,
     const Eigen::Ref<const VectorX<T>>& qDt,
     const Eigen::Ref<const VectorX<T>>& qDDt) const {
@@ -50,7 +49,8 @@ MGKukaIIwaRobot<T>::CalcEndEffectorKinematics(
   const Vector3d alpha_NG_N(MG_kuka_auto_generated_.alpha_NG_N);
   const Vector3d a_NGo_N(MG_kuka_auto_generated_.a_NGo_N);
 
-  return std::make_tuple(R_NG, p_NoGo_N, w_NG_N, v_NGo_N, alpha_NG_N, a_NGo_N);
+  return SpatialKinematicsPVA<T>(R_NG, p_NoGo_N, w_NG_N, v_NGo_N, alpha_NG_N,
+      a_NGo_N);
 }
 
 

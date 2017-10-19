@@ -11,7 +11,6 @@ namespace {
 
 using Eigen::Vector3d;
 using Eigen::Matrix3d;
-using drake::multibody::multibody_tree::test_utilities::RigidBodyKinematicsPVA;
 using drake::multibody::multibody_tree::test_utilities::SpatialKinematicsPVA;
 using SpatialForced = SpatialForce<double>;
 using Vector7d = Eigen::Matrix<double, 7, 1>;
@@ -30,28 +29,30 @@ void TestKukaArmInverseDynamics(const Eigen::Ref<const VectorX<double>>& q,
   // alpha_NG_N | G's angular acceleration in N, expressed in N.
   // a_NGo_N    | Go's acceleration in N, expressed in N.
   DrakeKukaIIwaRobot drake_kuka_robot(gravity);
-  const SpatialKinematicsPVA<double> spatial_kinematics =
+  const SpatialKinematicsPVA<double> drake_kinematics =
       drake_kuka_robot.CalcEndEffectorKinematics(q, qDt, qDDt);
-  const RigidBodyKinematicsPVA<double> kinematics(spatial_kinematics);
 
   // Kinematics: Get corresponding MotionGenesis information.
-  // TODO(Mitiguy) Have MotionGenesis also return RigidBodyKinematicsPVA.
+  // TODO(Mitiguy) Have MotionGenesis also return SpatialKinematicsPVA.
   MG::MGKukaIIwaRobot<double> MG_kuka_robot(gravity);
-  Matrix3d R_NG_true;
-  Vector3d p_NoGo_N_true, w_NG_N_true, v_NGo_N_true;
-  Vector3d alpha_NG_N_true, a_NGo_N_true;
-  std::tie(R_NG_true, p_NoGo_N_true, w_NG_N_true, v_NGo_N_true,
-           alpha_NG_N_true, a_NGo_N_true) =
+  const SpatialKinematicsPVA<double> MG_kinematics =
       MG_kuka_robot.CalcEndEffectorKinematics(q, qDt, qDDt);
 
   // Kinematics: Compare Drake results with MotionGenesis (expected) results.
   constexpr double kEpsilon = 10 * std::numeric_limits<double>::epsilon();
-  EXPECT_TRUE(kinematics.R_NB_.isApprox(R_NG_true, kEpsilon));
-  EXPECT_TRUE(kinematics.p_NoBo_N_.isApprox(p_NoGo_N_true, kEpsilon));
-  EXPECT_TRUE(kinematics.w_NB_N_.isApprox(w_NG_N_true, kEpsilon));
-  EXPECT_TRUE(kinematics.v_NBo_N_.isApprox(v_NGo_N_true, kEpsilon));
-  EXPECT_TRUE(kinematics.alpha_NB_N_.isApprox(alpha_NG_N_true, kEpsilon));
-  EXPECT_TRUE(kinematics.a_NBo_N_.isApprox(a_NGo_N_true, kEpsilon));
+  EXPECT_TRUE(drake_kinematics.rotation_matrix().isApprox(
+      MG_kinematics.rotation_matrix(), kEpsilon));
+  EXPECT_TRUE(drake_kinematics.position_vector().isApprox(
+      MG_kinematics.position_vector(), kEpsilon));
+  EXPECT_TRUE(drake_kinematics.angular_velocity().isApprox(
+      MG_kinematics.angular_velocity(), kEpsilon));
+  EXPECT_TRUE(drake_kinematics.translational_velocity().isApprox(
+      MG_kinematics.translational_velocity(), kEpsilon));
+  EXPECT_TRUE(drake_kinematics.angular_acceleration().isApprox(
+      MG_kinematics.angular_acceleration(), kEpsilon));
+  EXPECT_TRUE(drake_kinematics.translational_acceleration().isApprox(
+      MG_kinematics.translational_acceleration(), kEpsilon));
+
 
   // Inverse dynamics: Get Drake's joint forces/torques, including:
   // --------|-------------------------------------------------

@@ -7,6 +7,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/MG/MG_kuka_iiwa_robot_auto_generated.h"
 #include "drake/multibody/multibody_tree/math/spatial_force.h"
+#include "drake/multibody/multibody_tree/test_utilities/spatial_kinematics.h"
 
 namespace drake {
 namespace multibody {
@@ -16,6 +17,7 @@ namespace MG {
 
 using Eigen::Vector3d;
 using Eigen::Matrix3d;
+using multibody_tree::test_utilities::SpatialKinematicsPVA;
 using SpatialForced = SpatialForce<double>;
 using Vector7d = Eigen::Matrix<double, 7, 1>;
 
@@ -74,8 +76,6 @@ class MGKukaIIwaRobot {
   /// @param[in] qDDt 2nd-time-derivatives of q (q̈).
   ///
   /// @returns Machine-precision values as defined below.
-  ///
-  /// std::tuple | Description
   /// -----------|-------------------------------------------------
   /// R_NG       | Rotation matrix relating Nx, Ny, Nz to Gx, Gy, Gz.
   /// p_NoGo_N   | Go's position from No, expressed in N.
@@ -83,8 +83,8 @@ class MGKukaIIwaRobot {
   /// v_NGo_N    | Go's velocity in N, expressed in N.
   /// alpha_NG_N | G's angular acceleration in N, expressed in N.
   /// a_NGo_N    | Go's acceleration in N, expressed in N.
-  std::tuple<Matrix3d, Vector3d, Vector3d, Vector3d, Vector3d, Vector3d>
-  CalcEndEffectorKinematics(const Eigen::Ref<const VectorX<T>>& q,
+  SpatialKinematicsPVA<T> CalcEndEffectorKinematics(
+                            const Eigen::Ref<const VectorX<T>>& q,
                             const Eigen::Ref<const VectorX<T>>& qDt,
                             const Eigen::Ref<const VectorX<T>>& qDDt) const;
 

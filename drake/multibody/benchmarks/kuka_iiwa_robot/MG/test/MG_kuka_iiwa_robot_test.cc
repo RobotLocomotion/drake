@@ -37,26 +37,22 @@ void CompareEndEffectorPositionVelocityVsExpectedSolution(
     const Eigen::Vector3d &alpha_NG_N_expected,
     const Eigen::Vector3d &a_NGo_N_expected) {
   MGKukaIIwaRobot<double> MG_kuka_robot(0);
-  // R_NG       | Rotation matrix relating Nx, Ny, Nz to Gx, Gy, Gz.
-  // p_NoGo_N   | Go's position from No, expressed in N.
-  // w_NG_N     | G's angular velocity in N, expressed in N.
-  // v_NGo_N    | Go's velocity in N, expressed in N.
-  // alpha_NG_N | G's angular acceleration in N, expressed in N.
-  // a_NGo_N    | Go's acceleration in N, expressed in N.
-  Eigen::Matrix3d R_NG;
-  Eigen::Vector3d p_No_Go_N, w_NG_N, v_NGo_N, alpha_NG_N, a_NGo_N;
-  std::tie(R_NG, p_No_Go_N, w_NG_N, v_NGo_N, alpha_NG_N, a_NGo_N) =
+  const SpatialKinematicsPVA<double> kinematics =
       MG_kuka_robot.CalcEndEffectorKinematics(q, qDt, qDDt);
 
   // Compare actual results with expected results.
-  constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
-  const double tolerance = 10 * kEpsilon;
-  EXPECT_TRUE(R_NG.isApprox(R_NG_expected, tolerance));
-  EXPECT_TRUE(p_No_Go_N.isApprox(p_No_Go_N_expected, tolerance));
-  EXPECT_TRUE(w_NG_N.isApprox(w_NG_N_expected, tolerance));
-  EXPECT_TRUE(v_NGo_N.isApprox(v_NGo_N_expected, tolerance));
-  EXPECT_TRUE(alpha_NG_N.isApprox(alpha_NG_N_expected, tolerance));
-  EXPECT_TRUE(a_NGo_N.isApprox(a_NGo_N_expected, tolerance));
+  constexpr double kEpsilon = 10 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(kinematics.rotation_matrix().isApprox(R_NG_expected, kEpsilon));
+  EXPECT_TRUE(kinematics.position_vector().isApprox(p_No_Go_N_expected,
+      kEpsilon));
+  EXPECT_TRUE(kinematics.angular_velocity().isApprox(w_NG_N_expected,
+      kEpsilon));
+  EXPECT_TRUE(kinematics.translational_velocity().isApprox(v_NGo_N_expected,
+      kEpsilon));
+  EXPECT_TRUE(kinematics.angular_acceleration().isApprox(alpha_NG_N_expected,
+      kEpsilon));
+  EXPECT_TRUE(kinematics.translational_acceleration().isApprox(a_NGo_N_expected,
+      kEpsilon));
 }
 
 

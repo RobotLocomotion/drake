@@ -12,7 +12,7 @@
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/revolute_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
-#include "drake/multibody/multibody_tree/test_utilities/rigid_body_kinematics_PVA.h"
+#include "drake/multibody/multibody_tree/test_utilities/spatial_kinematics.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 #include "drake/systems/framework/context.h"
 
@@ -211,9 +211,8 @@ class DrakeKukaIIwaRobot {
     const SpatialAcceleration<double>& A_NG_N =
         linkG_->get_spatial_acceleration_in_world(ac);
 
-    // Create a struct to return results.
-    SpatialKinematicsPVA<double> kinematics(X_NG, V_NG_N, A_NG_N);
-    return kinematics;
+    // Create a class to return the results.
+    return SpatialKinematicsPVA<double>(X_NG, V_NG_N, A_NG_N);
   }
 
 
@@ -233,10 +232,10 @@ class DrakeKukaIIwaRobot {
   /// F_Eo_W  | Spatial force on Eo from D, expressed in frame W (world).
   /// F_Fo_W  | Spatial force on Fo from E, expressed in frame W (world).
   /// F_Go_W  | Spatial force on Go from F, expressed in frame W (world).
-  const KukaRobotJointReactionForces
-      CalcJointReactionForces(const Eigen::Ref<const VectorX<double>>& q,
-                              const Eigen::Ref<const VectorX<double>>& qDt,
-                              const Eigen::Ref<const VectorX<double>>& qDDt) {
+  const KukaRobotJointReactionForces CalcJointReactionForces(
+      const Eigen::Ref<const VectorX<double>>& q,
+      const Eigen::Ref<const VectorX<double>>& qDt,
+      const Eigen::Ref<const VectorX<double>>& qDDt) {
     SetJointAnglesAnd1stDerivatives(q.data(), qDt.data());
 
     // Get the position, velocity, and acceleration cache from the context.
