@@ -93,11 +93,11 @@ std::unique_ptr<RigidBodyPlant<T>> BuildCombinedPlant(
   // table, and the iiwa arms are fixed to the other two tables.
   tree_builder->AddFixedModelInstance(
       "table", /* right arm */
-      Eigen::Vector3d(0.243716, 0.625087, 0) /* xyz */,
+      Eigen::Vector3d(0, 0, 0) /* xyz */,
       Eigen::Vector3d::Zero() /* rpy */);
   tree_builder->AddFixedModelInstance(
       "table", /* left arm */
-      Eigen::Vector3d(0.243716, 0.9 + 0.625087, 0) /* xyz */,
+      Eigen::Vector3d(0, 0.9, 0) /* xyz */,
       Eigen::Vector3d::Zero() /* rpy */);
   tree_builder->AddFixedModelInstance(
       "large_table", /* box */
