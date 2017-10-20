@@ -39,6 +39,7 @@ lz4
 numpy
 patchutils
 pkg-config
+protobuf@2.6
 python
 scipy
 tinyxml
