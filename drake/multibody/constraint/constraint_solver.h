@@ -315,7 +315,7 @@ class ConstraintSolver {
       std::function<const MatrixX<T>(const MatrixX<T>&)> modified_inertia_solve,
       ProblemData* modified_problem_data) const;
 
-  mutable drake::solvers::MobyLCPSolver<T> lcp_;
+  drake::solvers::MobyLCPSolver<T> lcp_;
 };
 
 // Determines the set of linearly independent constraints and new versions of
@@ -1109,7 +1109,6 @@ void ConstraintSolver<T>::SolveImpactProblem(
                                   // factor of ten.
     const int max_exp = 1;        // Maximum regularization: 1e1.
     const double piv_tol = -1;    // Make solver compute the pivot tolerance.
-    lcp_.SetLoggingEnabled(true);
     if (!lcp_.SolveLcpLemkeRegularized(
         MM, qq, &zz, min_exp, step_exp, max_exp, piv_tol, zero_tol)) {
       throw std::runtime_error("Progressively regularized LCP solve failed.");
@@ -1120,7 +1119,6 @@ void ConstraintSolver<T>::SolveImpactProblem(
       SPDLOG_DEBUG(drake::log(), "z'w: ",
           (zz.array() * ww.array()).abs().maxCoeff());
     }
-    lcp_.SetLoggingEnabled(false);
   }
 
   // Alias constraint force segments.
