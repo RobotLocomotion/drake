@@ -44,7 +44,7 @@ message MatlabRPC {
 
   repeated MatlabArray rhs = 2;  // the input argument data
 
-  optional string function_name = 3;  // any input allowed by matlab's
-                                      // mexcallmatlab command
+  // any input allowed by matlab's mexcallmatlab command
   // (http://www.mathworks.com/help/matlab/apiref/mexcallmatlab.html)
+  optional string function_name = 3;
 }
