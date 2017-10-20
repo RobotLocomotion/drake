@@ -32,7 +32,7 @@
 #include "drake/systems/primitives/constant_vector_source.h"
 
 DEFINE_int32(target, 0, "ID of the target to pick.");
-DEFINE_double(orientation, 2 * M_PI, "Yaw angle of the box.");
+DEFINE_double(orientation, 2 * M_PI, "Yaw angle of the target.");
 DEFINE_int32(start_position, 1, "Position index to start from");
 DEFINE_int32(end_position, 2, "Position index to end at");
 DEFINE_double(dt, 1e-3, "Integration step size");
@@ -94,13 +94,12 @@ Target GetTarget() {
 
 std::unique_ptr<systems::RigidBodyPlant<double>> BuildCombinedPlant(
     const std::vector<Eigen::Vector3d>& post_positions,
-    const Eigen::Vector3d& table_position,
-    const std::string& target_model,
-    const Eigen::Vector3d& box_position,
-    const Eigen::Vector3d& box_orientation,
+    const Eigen::Vector3d& table_position, const std::string& target_model,
+    const Eigen::Vector3d& target_position,
+    const Eigen::Vector3d& target_orientation,
     ModelInstanceInfo<double>* iiwa_instance,
     ModelInstanceInfo<double>* wsg_instance,
-    ModelInstanceInfo<double>* box_instance) {
+    ModelInstanceInfo<double>* target_instance) {
   auto tree_builder = std::make_unique<WorldSimTreeBuilder<double>>();
 
   // Adds models to the simulation builder. Instances of these models can be
@@ -132,14 +131,14 @@ std::unique_ptr<systems::RigidBodyPlant<double>> BuildCombinedPlant(
                                         Eigen::Vector3d::Zero());
   }
   tree_builder->AddGround();
-  // Chooses an appropriate box.
-  int box_id = 0;
+  // Chooses an appropriate target.
+  int target_id = 0;
   int iiwa_id = tree_builder->AddFixedModelInstance("iiwa", kRobotBase);
   *iiwa_instance = tree_builder->get_model_info_for_instance(iiwa_id);
 
-  box_id = tree_builder->AddFloatingModelInstance("target", box_position,
-                                                  box_orientation);
-  *box_instance = tree_builder->get_model_info_for_instance(box_id);
+  target_id = tree_builder->AddFloatingModelInstance("target", target_position,
+                                                     target_orientation);
+  *target_instance = tree_builder->get_model_info_for_instance(target_id);
 
   int wsg_id = tree_builder->AddModelInstanceToFrame(
       "wsg", tree_builder->tree().findFrame("iiwa_frame_ee"),
@@ -207,10 +206,10 @@ int DoMain(void) {
   place_locations.push_back(place_location);
 
   Target target = GetTarget();
-  Eigen::Vector3d box_origin(0, 0, kTableTopZInWorld);
-  box_origin += place_locations[FLAGS_start_position].translation();
+  Eigen::Vector3d target_origin(0, 0, kTableTopZInWorld);
+  target_origin += place_locations[FLAGS_start_position].translation();
   Eigen::Vector3d half_target_height(0, 0, target.dimensions(2) * 0.5);
-  box_origin += half_target_height;
+  target_origin += half_target_height;
 
   for (size_t i = 0; i < place_locations.size(); i++) {
     place_locations[i].translation() += half_target_height;
@@ -218,19 +217,19 @@ int DoMain(void) {
 
   lcm::DrakeLcm lcm;
   systems::DiagramBuilder<double> builder;
-  ModelInstanceInfo<double> iiwa_instance, wsg_instance, box_instance;
+  ModelInstanceInfo<double> iiwa_instance, wsg_instance, target_instance;
 
   // Offset from the center of the second table to the pick/place
   // location on the table.
   const Eigen::Vector3d table_offset(0.30, 0, 0);
   std::unique_ptr<systems::RigidBodyPlant<double>> model_ptr =
       BuildCombinedPlant(post_locations, table_position + table_offset,
-                         target.model_name,
-                         box_origin, Vector3<double>(0, 0, FLAGS_orientation),
-                         &iiwa_instance, &wsg_instance, &box_instance);
+                         target.model_name, target_origin,
+                         Vector3<double>(0, 0, FLAGS_orientation),
+                         &iiwa_instance, &wsg_instance, &target_instance);
 
   auto plant = builder.AddSystem<IiwaAndWsgPlantWithStateEstimator<double>>(
-      std::move(model_ptr), iiwa_instance, wsg_instance, box_instance);
+      std::move(model_ptr), iiwa_instance, wsg_instance, target_instance);
   plant->set_name("plant");
 
   auto contact_viz =
@@ -291,7 +290,7 @@ int DoMain(void) {
           FindResourceOrThrow(kIiwaUrdf), kIiwaEndEffectorName,
           iiwa_base, place_locations);
 
-  builder.Connect(plant->get_output_port_box_robot_state_msg(),
+  builder.Connect(plant->get_output_port_object_robot_state_msg(),
                   state_machine->get_input_port_box_state());
   builder.Connect(wsg_status_sender->get_output_port(0),
                   state_machine->get_input_port_wsg_status());
