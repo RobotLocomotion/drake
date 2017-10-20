@@ -306,9 +306,9 @@ class ConstraintSolver {
 // @param num_generalized_velocities The dimension of the system generalized
 //        velocities.
 // @param problem_data The constraint problem data.
-// @param Del The factorization of the Delassus Matrix GM⁻¹Gᵀ,
-//            where G is the constraint Jacobian corresponding to the
-//            independent constraints.
+// @param Del_QR The factorization of the Delassus Matrix GM⁻¹Gᵀ,
+//               where G is the constraint Jacobian corresponding to the
+//               independent constraints.
 // @param[out] A_solve The operator for solving AX = B, on return.
 template <typename T>
 template <typename ProblemData>
@@ -364,9 +364,9 @@ void ConstraintSolver<T>::DetermineNewPartialInertiaSolveOperator(
 // @param num_generalized_velocities The dimension of the system generalized
 //        velocities.
 // @param problem_data The constraint problem data.
-// @param Del The factorization of the Delassus Matrix GM⁻¹Gᵀ,
-//            where G is the constraint Jacobian corresponding to the
-//            independent constraints.
+// @param Del_QR The factorization of the Delassus Matrix GM⁻¹Gᵀ,
+//               where G is the constraint Jacobian corresponding to the
+//               independent constraints.
 // @param[out] A_solve The operator for solving AX = B, on return.
 template <typename T>
 template <typename ProblemData>
