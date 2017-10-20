@@ -8,8 +8,6 @@ mydir=$(dirname "$me")
 manipulation=$(dirname "$mydir")
 drake=$(dirname "$manipulation")
 
-namespace="drake::manipulation::schunk_wsg"
-
 source $drake/tools/lcm_vector_gen.sh
 
 gen_vector_proto \
