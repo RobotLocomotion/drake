@@ -59,6 +59,21 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "lcm_plan_interpolator",
+    srcs = ["lcm_plan_interpolator.cc"],
+    hdrs = [
+        "lcm_plan_interpolator.h",
+    ],
+    deps = [
+        ":iiwa_common",
+        ":iiwa_lcm",
+        "//drake/manipulation/planner:robot_plan_interpolator",
+        "//drake/systems/framework:diagram_builder",
+        "//drake/systems/primitives:demultiplexer",
+    ],
+)
+
 drake_cc_binary(
     name = "iiwa_controller",
     srcs = ["iiwa_controller.cc"],
@@ -68,18 +83,12 @@ drake_cc_binary(
     ],
     deps = [
         ":iiwa_common",
-        ":iiwa_lcm",
-        "//drake/common:find_resource",
+        ":lcm_plan_interpolator",
         "//drake/common:text_logging_gflags",
         "//drake/lcm",
-        "//drake/manipulation/planner:robot_plan_interpolator",
-        "//drake/systems/analysis:simulator",
         "//drake/systems/lcm",
         "//drake/systems/lcm:lcm_driven_loop",
-        "//drake/systems/primitives:demultiplexer",
         "@com_github_gflags_gflags//:gflags",
-        "@lcmtypes_bot2_core",
-        "@lcmtypes_robotlocomotion",
     ],
 )
 
