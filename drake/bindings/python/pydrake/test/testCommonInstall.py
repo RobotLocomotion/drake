@@ -49,8 +49,12 @@ class TestCommonInstall(unittest.TestCase):
             os.path.join(tmp_folder, "lib")
         )
         data_folder = os.path.join(tmp_folder, "share", "drake", "drake")
+        # Call python2 to force using python brew install. Calling python
+        # system would result in a crash since pydrake was built against
+        # brew python. On Linux this will still work and force using
+        # python2 which should be a link to the actual executable.
         output_path = subprocess.check_output(
-            ["python",
+            ["python2",
              "-c", "import pydrake; print(pydrake.getDrakePath())"
              ],
             env=tool_env,
