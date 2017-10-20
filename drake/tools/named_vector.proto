@@ -15,7 +15,7 @@ message NamedVector {
     repeated NamedVectorElement element = 1;
 
     // A ::-separated namespace for this vector, such as "drake::automotive".
-    string namespace = 2;
+    optional string namespace = 2;
 }
 
 message NamedVectorElement {
