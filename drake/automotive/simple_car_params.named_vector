@@ -1,3 +1,5 @@
+namespace: "drake::automotive"
+
 # The defaults in this file approximate a 2010 Toyota Prius.
 
 element {

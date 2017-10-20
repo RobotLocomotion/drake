@@ -508,17 +508,11 @@ def generate_code(args):
     drake_dist_dir = args.workspace
     relative_cxx_dir = cxx_dir.replace(os.path.join(drake_dist_dir, ''), '')
 
-    title_phrase = args.title.split()
-    camel = ''.join([x.capitalize() for x in title_phrase])
-    snake = '_'.join([x.lower() for x in title_phrase])
-    screaming_snake = '_'.join([x.upper() for x in title_phrase])
+    snake, _ = os.path.splitext(os.path.basename(args.named_vector_file))
+    screaming_snake = snake.upper()
+    camel = "".join([x.capitalize() for x in snake.split("_")])
 
-    namespace = args.namespace.split("::")
-    opening_namespace = "".join(["namespace " + x + "{\n" for x in namespace])
-    closing_namespace = "".join(["}  // namespace " + x + "\n"
-                                 for x in reversed(namespace)])
-
-    # Load the field names and docstrings from protobuf.
+    # Load the vector's details from protobuf.
     # In the future, this can be extended for nested messages.
     with open(args.named_vector_file, "r") as f:
         vec = named_vector_pb2.NamedVector()
@@ -531,6 +525,10 @@ def generate_code(args):
             'min_value': el.min_value,
             'max_value': el.max_value,
         } for el in vec.element]
+        if vec.namespace:
+            namespace_list = vec.namespace.split("::")
+        else:
+            namespace_list = []
 
     # Default some field attributes if they are missing.
     for item in fields:
@@ -538,6 +536,12 @@ def generate_code(args):
             item['default_value'] = DEFAULT_CTOR_FIELD_DEFAULT_VALUE
         if len(item['doc_units']) == 0:
             item['doc_units'] = DEFAULT_CTOR_FIELD_UNKNOWN_DOC_UNITS
+
+    # The C++ namespace open & close dance is as requested in the protobuf.
+    opening_namespace = "".join(["namespace " + x + "{\n"
+                                 for x in namespace_list])
+    closing_namespace = "".join(["}  // namespace " + x + "\n"
+                                 for x in reversed(namespace_list)])
 
     # The context provides string substitutions for the C++ code blocks in the
     # literal strings throughout this program.
@@ -621,15 +625,9 @@ def main():
         '--cxx-dir', help="output directory for cxx files", default=".")
     parser.add_argument(
         '--workspace', help="Drake WORKSPACE root.", required=True)
-    parser.add_argument(
-        '--namespace', help="::-delimited enclosing namespace",
-        default="drake")
     # By default, LCM output is disabled.
     parser.add_argument(
         '--lcmtype-dir', help="output directory for lcm file", default="")
-    parser.add_argument(
-        '--title', required=True,
-        help="title phrase, from which type names will be made")
     parser.add_argument(
         '--named_vector_file', metavar="FILE", required=True,
         help="Protobuf description of vector")

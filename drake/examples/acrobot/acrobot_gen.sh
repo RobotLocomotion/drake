@@ -6,8 +6,6 @@ mydir=$(dirname "$me")
 examples=$(dirname "$mydir")
 drake=$(dirname "$examples")
 
-namespace="drake::examples::acrobot"
-
 source $drake/tools/lcm_vector_gen.sh
 
-gen_vector_proto "acrobot state vector" $mydir/acrobot_state_vector.named_vector
+gen_vector_proto $mydir/acrobot_state_vector.named_vector

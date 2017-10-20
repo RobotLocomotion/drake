@@ -6,6 +6,23 @@ namespace api {
 
 // These instantiations must match the API documentation in lane.h.
 template<>
+GeoPositionT<double> Lane::ToGeoPositionT<double>(
+    const LanePositionT<double>& lane_pos) const {
+  return DoToGeoPosition(lane_pos);
+}
+
+template<>
+GeoPositionT<AutoDiffXd> Lane::ToGeoPositionT<AutoDiffXd>(
+    const LanePositionT<AutoDiffXd>& lane_pos) const {
+  // Fail fast if lane_pos contains derivatives of inconsistent sizes.
+  const Eigen::VectorXd deriv = lane_pos.s().derivatives();
+  DRAKE_THROW_UNLESS(deriv.size() == lane_pos.r().derivatives().size());
+  DRAKE_THROW_UNLESS(deriv.size() == lane_pos.h().derivatives().size());
+
+  return DoToGeoPositionAutoDiff(lane_pos);
+}
+
+template<>
 LanePositionT<double> Lane::ToLanePositionT<double>(
     const GeoPositionT<double>& geo_pos,
     GeoPositionT<double>* nearest_point,
