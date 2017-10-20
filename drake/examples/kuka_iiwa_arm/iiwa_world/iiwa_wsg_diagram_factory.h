@@ -1,11 +1,12 @@
 #pragma once
 
 #include <memory>
+#include <utility>
+#include <vector>
 
 #include "drake/examples/kuka_iiwa_arm/oracular_state_estimator.h"
 #include "drake/manipulation/util/world_sim_tree_builder.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
-#include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/primitives/pass_through.h"
@@ -13,8 +14,6 @@
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
-using systems::PassThrough;
-using manipulation::util::ModelInstanceInfo;
 
 /// A custom `systems::Diagram` composed of a `systems::RigidBodyPlant`, and a
 /// `systems::InverseDynamicsController`, `systems::PidController`, and two
@@ -36,17 +35,30 @@ using manipulation::util::ModelInstanceInfo;
 template <typename T>
 class IiwaAndWsgPlantWithStateEstimator : public systems::Diagram<T> {
  public:
-  /// Constructs the IiwaAndWsgPlantWithStateEstimator.
-  /// `combined_plant` :  a `RigidBodyPlant` that is assumed to be generated
-  /// containing a Kuka IIWA and a Schunk WSG model, as well as a "box"
-  /// object. The arguments `iiwa_info`, `wsg_info`, and `box_info` are the
-  /// `ModelInstanceInfo` objects corresponding to the Kuka IIWA, Schunk WSG
-  /// and the box object respectively.
+  /// Constructs the IiwaAndWsgPlantWithStateEstimator.  `combined_plant` :  a
+  /// `RigidBodyPlant` that is assumed to be generated containing a Kuka IIWA
+  /// and a Schunk WSG model, as well as a "box" object. The arguments
+  /// `iiwa_info`, `wsg_info`, and `box_info` are the
+  /// `manipulation::util::ModelInstanceInfo` objects corresponding to the Kuka
+  /// IIWA, Schunk WSG and the box object respectively.
   IiwaAndWsgPlantWithStateEstimator(
       std::unique_ptr<systems::RigidBodyPlant<T>> combined_plant,
-      const ModelInstanceInfo<T>& iiwa_info,
-      const ModelInstanceInfo<T>& wsg_info,
-      const ModelInstanceInfo<T>& box_info);
+      const std::vector<manipulation::util::ModelInstanceInfo<T>>& iiwa_info,
+      const std::vector<manipulation::util::ModelInstanceInfo<T>>& wsg_info,
+      const std::vector<manipulation::util::ModelInstanceInfo<T>>& box_info);
+
+  /// Constructs an IiwaAndWsgPlantWithStateEstimator a RigidBodyPlant @p
+  /// combined_plant that contains a single Kuka IIWA, Schunk WSG, and box.
+  IiwaAndWsgPlantWithStateEstimator(
+      std::unique_ptr<systems::RigidBodyPlant<T>> combined_plant,
+      const manipulation::util::ModelInstanceInfo<T>& iiwa_info,
+      const manipulation::util::ModelInstanceInfo<T>& wsg_info,
+      const manipulation::util::ModelInstanceInfo<T>& box_info)
+      : IiwaAndWsgPlantWithStateEstimator(
+            std::move(combined_plant),
+            std::vector<manipulation::util::ModelInstanceInfo<T>>{iiwa_info},
+            std::vector<manipulation::util::ModelInstanceInfo<T>>{wsg_info},
+            std::vector<manipulation::util::ModelInstanceInfo<T>>{box_info}) {}
 
   const systems::RigidBodyPlant<T>& get_plant() const { return *plant_; }
 
@@ -54,38 +66,43 @@ class IiwaAndWsgPlantWithStateEstimator : public systems::Diagram<T> {
     return plant_->get_rigid_body_tree();
   }
 
-  const systems::InputPortDescriptor<T>& get_input_port_iiwa_state_command()
-      const {
-    return this->get_input_port(input_port_iiwa_state_command_);
+  const systems::InputPortDescriptor<T>& get_input_port_iiwa_state_command(
+      int index = 0) const {
+    return this->get_input_port(input_port_iiwa_state_command_.at(index));
   }
 
   const systems::InputPortDescriptor<T>&
-  get_input_port_iiwa_acceleration_command() const {
-    return this->get_input_port(input_port_iiwa_acceleration_command_);
+  get_input_port_iiwa_acceleration_command(int index = 0) const {
+    return this->get_input_port(
+        input_port_iiwa_acceleration_command_.at(index));
   }
 
-  const systems::InputPortDescriptor<T>& get_input_port_wsg_command() const {
-    return this->get_input_port(input_port_wsg_command_);
+  const systems::InputPortDescriptor<T>& get_input_port_wsg_command(
+      int index = 0) const {
+    return this->get_input_port(input_port_wsg_command_.at(index));
   }
 
-  const systems::OutputPort<T>& get_output_port_iiwa_state() const {
-    return this->get_output_port(output_port_iiwa_state_);
+  const systems::OutputPort<T>& get_output_port_iiwa_state(
+      int index = 0) const {
+    return this->get_output_port(output_port_iiwa_state_.at(index));
   }
 
-  const systems::OutputPort<T>& get_output_port_wsg_state() const {
-    return this->get_output_port(output_port_wsg_state_);
+  const systems::OutputPort<T>& get_output_port_wsg_state(int index = 0) const {
+    return this->get_output_port(output_port_wsg_state_.at(index));
   }
 
   const systems::OutputPort<T>& get_output_port_plant_state() const {
     return this->get_output_port(output_port_plant_state_);
   }
 
-  const systems::OutputPort<T>& get_output_port_iiwa_robot_state_msg() const {
-    return this->get_output_port(output_port_iiwa_robot_state_t_);
+  const systems::OutputPort<T>& get_output_port_iiwa_robot_state_msg(
+      int index = 0) const {
+    return this->get_output_port(output_port_iiwa_robot_state_t_.at(index));
   }
 
-  const systems::OutputPort<T>& get_output_port_box_robot_state_msg() const {
-    return this->get_output_port(output_port_box_robot_state_t_);
+  const systems::OutputPort<T>& get_output_port_box_robot_state_msg(
+      int index = 0) const {
+    return this->get_output_port(output_port_box_robot_state_t_.at(index));
   }
 
   const systems::OutputPort<T>& get_output_port_contact_results() const {
@@ -93,21 +110,17 @@ class IiwaAndWsgPlantWithStateEstimator : public systems::Diagram<T> {
   }
 
  private:
-  OracularStateEstimation<T>* iiwa_state_est_{nullptr};
-  OracularStateEstimation<T>* box_state_est_{nullptr};
-  std::unique_ptr<RigidBodyTree<T>> object_{nullptr};
-  systems::controllers::InverseDynamicsController<T>* iiwa_controller_{nullptr};
-  systems::controllers::PidController<T>* wsg_controller_{nullptr};
+  std::vector<std::unique_ptr<RigidBodyTree<T>>> objects_;
   systems::RigidBodyPlant<T>* plant_{nullptr};
 
-  int input_port_iiwa_state_command_{-1};
-  int input_port_iiwa_acceleration_command_{-1};
-  int input_port_wsg_command_{-1};
-  int output_port_iiwa_state_{-1};
-  int output_port_wsg_state_{-1};
+  std::vector<int> input_port_iiwa_state_command_;
+  std::vector<int> input_port_iiwa_acceleration_command_;
+  std::vector<int> input_port_wsg_command_;
+  std::vector<int> output_port_iiwa_state_;
+  std::vector<int> output_port_wsg_state_;
+  std::vector<int> output_port_iiwa_robot_state_t_;
+  std::vector<int> output_port_box_robot_state_t_;
   int output_port_plant_state_{-1};
-  int output_port_iiwa_robot_state_t_{-1};
-  int output_port_box_robot_state_t_{-1};
   int output_port_contact_results_t_{-1};
 };
 
