@@ -306,13 +306,7 @@ class ConstraintSolver {
 // @param num_generalized_velocities The dimension of the system generalized
 //        velocities.
 // @param problem_data The constraint problem data.
-// @param indep_constraints The indices of the independent constraints out of
-//                          the set of the original bilateral constraints.
-// @param G_mult The new G_mult operator that corresponds to the
-//               independent constraints.
-// @param G_transpose_mult The new G_transpose_mult operator that
-//                         corresponds to the independent constraints.
-// @param Del The Cholesky factorization of the Delassus Matrix GM⁻¹Gᵀ,
+// @param Del The factorization of the Delassus Matrix GM⁻¹Gᵀ,
 //            where G is the constraint Jacobian corresponding to the
 //            independent constraints.
 // @param[out] A_solve The operator for solving AX = B, on return.
@@ -370,13 +364,7 @@ void ConstraintSolver<T>::DetermineNewPartialInertiaSolveOperator(
 // @param num_generalized_velocities The dimension of the system generalized
 //        velocities.
 // @param problem_data The constraint problem data.
-// @param indep_constraints The indices of the independent constraints out of
-//                          the set of the original bilateral constraints.
-// @param G_mult The new G_mult operator that corresponds to the
-//               independent constraints.
-// @param G_transpose_mult The new G_transpose_mult operator that
-//                         corresponds to the independent constraints.
-// @param Del The Cholesky factorization of the Delassus Matrix GM⁻¹Gᵀ,
+// @param Del The factorization of the Delassus Matrix GM⁻¹Gᵀ,
 //            where G is the constraint Jacobian corresponding to the
 //            independent constraints.
 // @param[out] A_solve The operator for solving AX = B, on return.
@@ -622,39 +610,46 @@ void ConstraintSolver<T>::SolveConstraintProblem(
   // are dependent upon time (e.g., prescribed motion constraints) might not be
   // fully satisfiable.
 
-  // Form the Delassus matrix for the bilateral constraints.
-  MatrixX<T> Del(num_eq_constraints, num_eq_constraints);
-  MatrixX<T> iM_GT(num_generalized_velocities, num_eq_constraints);
-  ComputeInverseInertiaTimesGT(problem_data.solve_inertia,
-                               problem_data.G_transpose_mult,
-                               num_eq_constraints, &iM_GT);
-  ComputeConstraintSpaceComplianceMatrix(problem_data.G_mult,
-                                         num_eq_constraints,
-                                         iM_GT, Del);
-
-  // Compute the complete orthogonal factorization.
-  std::unique_ptr<Eigen::CompleteOrthogonalDecomposition<MatrixX<T>>> Del_QR;
-  if (Del.rows() > 0) {
-    Del_QR = std::make_unique<
-      Eigen::CompleteOrthogonalDecomposition<MatrixX<T>>>(Del);
-  }
-
-  // Determine a new "inertia" solve operator, which solves AX = B, where
-  // A = | M  -Gᵀ |
-  //     | G   0  |
-  // using a least-squares solution to accommodate rank-deficiency in G. This
-  // will allow transforming the mixed LCP into a pure LCP.
+  // Prepare to set up the functionals to compute Ax = b, where A is the
+  // blocked saddle point matrix containing the generalized inertia matrix
+  // and the bilateral constraints *assuming there are bilateral constraints*.
+  // If there are no bilateral constraints, A_solve and fast_A_solve will
+  // simply point to the inertia solve operator.
   std::function<MatrixX<T>(const MatrixX<T>&)> A_solve;
-  DetermineNewFullInertiaSolveOperator(
-      &problem_data, num_generalized_velocities, Del_QR.get(), &A_solve);
-  if (num_eq_constraints == 0)
-    A_solve = problem_data.solve_inertia;
-
-  // Determine a new "inertia" solve operator, using only the upper left block
-  // of A⁻¹ (denoted C above) to exploit zero blocks in common operations.
   std::function<MatrixX<T>(const MatrixX<T>&)> fast_A_solve;
-  DetermineNewPartialInertiaSolveOperator(
-      &problem_data, num_generalized_velocities, Del_QR.get(), &fast_A_solve);
+  std::unique_ptr<Eigen::CompleteOrthogonalDecomposition<MatrixX<T>>> Del_QR;
+
+  if (num_eq_constraints > 0) {
+    // Form the Delassus matrix for the bilateral constraints.
+    MatrixX<T> Del(num_eq_constraints, num_eq_constraints);
+    MatrixX<T> iM_GT(num_generalized_velocities, num_eq_constraints);
+    ComputeInverseInertiaTimesGT(problem_data.solve_inertia,
+                                 problem_data.G_transpose_mult,
+                                 num_eq_constraints, &iM_GT);
+    ComputeConstraintSpaceComplianceMatrix(problem_data.G_mult,
+                                           num_eq_constraints,
+                                           iM_GT, Del);
+
+    // Compute the complete orthogonal factorization.
+    Del_QR = std::make_unique<
+        Eigen::CompleteOrthogonalDecomposition<MatrixX<T>>>(Del);
+
+    // Determine a new "inertia" solve operator, which solves AX = B, where
+    // A = | M  -Gᵀ |
+    //     | G   0  |
+    // using a least-squares solution to accommodate rank-deficiency in G. This
+    // will allow transforming the mixed LCP into a pure LCP.
+    DetermineNewFullInertiaSolveOperator(
+        &problem_data, num_generalized_velocities, Del_QR.get(), &A_solve);
+
+    // Determine a new "inertia" solve operator, using only the upper left block
+    // of A⁻¹ (denoted C above) to exploit zero blocks in common operations.
+    DetermineNewPartialInertiaSolveOperator(
+        &problem_data, num_generalized_velocities, Del_QR.get(), &fast_A_solve);
+  } else {
+    A_solve = problem_data.solve_inertia;
+    fast_A_solve = problem_data.solve_inertia;
+  }
 
   // Copy the problem data and then update it to account for bilateral
   // constraints.
@@ -883,40 +878,46 @@ void ConstraintSolver<T>::SolveImpactProblem(
   // are dependent upon time (e.g., prescribed motion constraints) might not be
   // fully satisfiable.
 
-  // Form the Delassus matrix for the bilateral constraints.
-  MatrixX<T> Del(num_eq_constraints, num_eq_constraints);
-  MatrixX<T> iM_GT(num_generalized_velocities, num_eq_constraints);
-  ComputeInverseInertiaTimesGT(problem_data.solve_inertia,
-                               problem_data.G_transpose_mult,
-                               num_eq_constraints, &iM_GT);
-  ComputeConstraintSpaceComplianceMatrix(problem_data.G_mult,
-                                         num_eq_constraints,
-                                         iM_GT, Del);
-
-  // Compute the complete orthogonal factorization.
-  std::unique_ptr<Eigen::CompleteOrthogonalDecomposition<MatrixX<T>>> Del_QR;
-  if (Del.rows() > 0) {
-    Del_QR = std::make_unique<
-      Eigen::CompleteOrthogonalDecomposition<MatrixX<T>>>(Del);
-  }
-
-
-  // Determine a new "inertia" solve operator, which solves AX = B, where
-  // A = | M  -Gᵀ |
-  //     | G   0  |
-  // using the newly reduced set of constraints. This will allow transforming
-  // the mixed LCP into a pure LCP.
+  // Prepare to set up the functionals to compute Ax = b, where A is the
+  // blocked saddle point matrix containing the generalized inertia matrix
+  // and the bilateral constraints *assuming there are bilateral constraints*.
+  // If there are no bilateral constraints, A_solve and fast_A_solve will
+  // simply point to the inertia solve operator.
   std::function<MatrixX<T>(const MatrixX<T>&)> A_solve;
-  DetermineNewFullInertiaSolveOperator(
-      &problem_data, num_generalized_velocities, Del_QR.get(), &A_solve);
-  if (num_eq_constraints == 0)
-    A_solve = problem_data.solve_inertia;
-
-  // Determine a new "inertia" solve operator, using only the upper left block
-  // of A⁻¹ to exploit zeros in common operations.
   std::function<MatrixX<T>(const MatrixX<T>&)> fast_A_solve;
-  DetermineNewPartialInertiaSolveOperator(
-      &problem_data, num_generalized_velocities, Del_QR.get(), &fast_A_solve);
+  std::unique_ptr<Eigen::CompleteOrthogonalDecomposition<MatrixX<T>>> Del_QR;
+
+  // Form the Delassus matrix for the bilateral constraints.
+  if (num_eq_constraints > 0) {
+    MatrixX<T> Del(num_eq_constraints, num_eq_constraints);
+    MatrixX<T> iM_GT(num_generalized_velocities, num_eq_constraints);
+    ComputeInverseInertiaTimesGT(problem_data.solve_inertia,
+                                 problem_data.G_transpose_mult,
+                                 num_eq_constraints, &iM_GT);
+    ComputeConstraintSpaceComplianceMatrix(problem_data.G_mult,
+                                           num_eq_constraints,
+                                           iM_GT, Del);
+
+    // Compute the complete orthogonal factorization.
+    Del_QR = std::make_unique<
+        Eigen::CompleteOrthogonalDecomposition<MatrixX<T>>>(Del);
+
+    // Determine a new "inertia" solve operator, which solves AX = B, where
+    // A = | M  -Gᵀ |
+    //     | G   0  |
+    // using the newly reduced set of constraints. This will allow transforming
+    // the mixed LCP into a pure LCP.
+    DetermineNewFullInertiaSolveOperator(
+        &problem_data, num_generalized_velocities, Del_QR.get(), &A_solve);
+
+    // Determine a new "inertia" solve operator, using only the upper left block
+    // of A⁻¹ to exploit zeros in common operations.
+    DetermineNewPartialInertiaSolveOperator(
+        &problem_data, num_generalized_velocities, Del_QR.get(), &fast_A_solve);
+  } else {
+    A_solve = problem_data.solve_inertia;
+    fast_A_solve = problem_data.solve_inertia;
+  }
 
   // Copy the problem data and then update it to account for bilateral
   // constraints.
