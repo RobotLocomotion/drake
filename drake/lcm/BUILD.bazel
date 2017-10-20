@@ -84,6 +84,7 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "drake_lcm_test",
+    flaky = 1,
     local = 1,
     deps = [
         ":lcm",

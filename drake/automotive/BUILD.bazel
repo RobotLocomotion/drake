@@ -405,6 +405,7 @@ drake_cc_binary(
         "//drake/automotive/models:prod_models",
     ],
     test_rule_args = [" --simulation_sec=0.01"],
+    test_rule_flaky = 1,
     deps = [
         ":automotive_simulator",
         "//drake/common:find_resource",
@@ -453,6 +454,7 @@ drake_py_binary(
 drake_cc_googletest(
     name = "automotive_simulator_test",
     data = ["//drake/automotive/models:prod_models"],
+    flaky = 1,
     local = 1,
     deps = [
         "//drake/automotive:automotive_simulator",
