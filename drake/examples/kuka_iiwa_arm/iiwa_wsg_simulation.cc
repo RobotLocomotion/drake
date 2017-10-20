@@ -230,7 +230,7 @@ int DoMain() {
   box_state_pub->set_name("box_state_publisher");
   box_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
 
-  builder.Connect(model->get_output_port_box_robot_state_msg(),
+  builder.Connect(model->get_output_port_object_robot_state_msg(),
                   box_state_pub->get_input_port(0));
   box_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
 
