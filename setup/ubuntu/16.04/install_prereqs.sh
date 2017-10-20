@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Prerequisite set-up script for Drake with Bazel on Ubuntu 16.04.
+# Prerequisite set-up script for Drake on Ubuntu 16.04.
 
 set -euo pipefail
 
@@ -11,12 +11,12 @@ die () {
 
 me="The Drake prerequisite set-up script"
 
-[[ $EUID -eq 0 ]] || die "$me must run as root. Please use sudo."
+[[ "${EUID}" -eq 0 ]] || die "${me} must run as root. Please use sudo."
 
 apt update
 apt install --no-install-recommends lsb-release wget
 
-[[ "$(lsb_release -sc)" == "xenial" ]] || die "$me only supports Ubuntu 16.04."
+[[ "$(lsb_release -sc)" == "xenial" ]] || die "${me} only supports Ubuntu 16.04."
 
 # Install Clang 3.9
 while true; do
@@ -47,6 +47,8 @@ apt install --no-install-recommends $(tr '\n' ' ' <<EOF
 
 bash-completion
 binutils
+cmake
+cmake-curses-gui
 coinor-libipopt-dev
 diffstat
 doxygen
@@ -85,6 +87,8 @@ libtinyxml2-dev
 libtool
 libxml2
 libxt6
+libyaml-cpp-dev
+make
 mesa-common-dev
 openjdk-8-jdk
 patchutils
