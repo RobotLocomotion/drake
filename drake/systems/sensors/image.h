@@ -148,7 +148,8 @@ class Image {
 };
 
 /// Set of constants used to represent invalid depth values.
-/// Note that if a depth is not measurable, NaN will be set.
+/// Note that in the case that a depth is not measurable, the constants defined
+/// here are not used. Instead we set the depth to NaN.
 class InvalidDepth {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InvalidDepth)

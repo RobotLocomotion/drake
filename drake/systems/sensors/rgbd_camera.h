@@ -184,9 +184,14 @@ class RgbdCamera final : public LeafSystem<double> {
   const Eigen::Isometry3d& depth_camera_optical_pose() const { return X_BD_; }
 
   /// Returns the RigidBodyFrame to which this RgbdCamera is attached.
+  ///
+  /// @throws std::logic_error When RgbdCamera is instantiated as a fixed
+  /// camera.
   const RigidBodyFrame<double>& frame() const {
     if (camera_fixed_)
-      throw std::runtime_error("Invalid access to the ungiven frame.");
+      throw std::logic_error(
+          "RgbdCamera::frame(): "
+          "A fixed camera does not have an associated frame.");
     return frame_;
   }
 

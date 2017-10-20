@@ -33,6 +33,11 @@ namespace {
 // RgbdCameraDiscrete is tested in :rgbd_camera_publish_lcm_test,
 // given the relative simplicity of its interface.
 
+// Note that we use ASSERTs instead of EXPECTs when we need to traverse many
+// pixels in an image or many points in a point cloud. This is to prevent
+// outputting massive amount of error messages and making debug hard when
+// test failed.
+
 // The following tolerance is used due to a precision difference between Ubuntu
 // Linux and Mac OSX.
 constexpr double kTolerance = 1e-12;
@@ -50,7 +55,7 @@ void VerifyCameraInfo(const CameraInfo& camera_info) {
   EXPECT_NEAR(kHeight * 0.5, camera_info.center_y(), kTolerance);
 
   // The expected focal value is calculated by the equation here:
-  // https://github.com/RobotLocomotion/drake/blob/master/drake/systems/sensors/camera_info.h#L87
+  // https://github.com/RobotLocomotion/drake/blob/master/drake/systems/sensors/camera_info.h
   constexpr double kExpectedFocal = 579.41125496954282;
   EXPECT_NEAR(kExpectedFocal, camera_info.focal_x(), kTolerance);
   EXPECT_NEAR(kExpectedFocal, camera_info.focal_y(), kTolerance);
@@ -76,7 +81,7 @@ GTEST_TEST(RgbdCamera, TestInstantiation) {
     VerifyCameraInfo(camera.depth_camera_info());
     VerifyCameraPose(camera.color_camera_optical_pose());
     VerifyCameraPose(camera.depth_camera_optical_pose());
-    ASSERT_NO_THROW(camera.tree());
+    EXPECT_NO_THROW(camera.tree());
   };
 
   RgbdCamera fixed_camera("rgbd_camera",
@@ -88,7 +93,7 @@ GTEST_TEST(RgbdCamera, TestInstantiation) {
   Verify(fixed_camera);
   // With the fixed camera use case, RgbdCamera doesn't hold a frame, thus
   // throws an exception.
-  ASSERT_THROW(fixed_camera.frame(), std::runtime_error);
+  EXPECT_THROW(fixed_camera.frame(), std::logic_error);
 
   RgbdCamera movable_camera("rgbd_camera",
                             RigidBodyTree<double>(),
@@ -96,7 +101,7 @@ GTEST_TEST(RgbdCamera, TestInstantiation) {
                             kDepthRangeNear, kDepthRangeFar,
                             kFovY, kShowWindow);
   Verify(movable_camera);
-  ASSERT_NO_THROW(movable_camera.frame());
+  EXPECT_NO_THROW(movable_camera.frame());
 }
 
 
@@ -192,11 +197,9 @@ class RgbdCameraDiagramTest : public ::testing::Test {
   }
 
  protected:
-  void SetUp() override {}
-
   // For fixed camera base.
-  void SetUp(const std::string& sdf, const Eigen::Vector3d& position,
-             const Eigen::Vector3d& orientation) {
+  void Init(const std::string& sdf, const Eigen::Vector3d& position,
+            const Eigen::Vector3d& orientation) {
     diagram_ = std::make_unique<RgbdCameraDiagram>(
         FindResourceOrThrow("drake/systems/sensors/test/models/" + sdf));
     diagram_->Init(position, orientation);
@@ -205,8 +208,8 @@ class RgbdCameraDiagramTest : public ::testing::Test {
   }
 
   // For moving camera base.
-  void SetUp(const std::string& sdf,
-             const Eigen::Isometry3d& transformation) {
+  void Init(const std::string& sdf,
+            const Eigen::Isometry3d& transformation) {
     diagram_ = std::make_unique<RgbdCameraDiagram>(
         FindResourceOrThrow("drake/systems/sensors/test/models/" + sdf));
     diagram_->Init(transformation);
@@ -229,7 +232,7 @@ TEST_F(RgbdCameraDiagramTest, FixedCameraOutputTest) {
   const Eigen::Vector3d position(0., 0., 1.);
   const Eigen::Vector3d orientation(0., M_PI_2, 0.);
 
-  SetUp("nothing.sdf", position, orientation);
+  Init("nothing.sdf", position, orientation);
   Verify();
 
   rendering::PoseVector<double>* const camera_base_pose =
@@ -248,7 +251,7 @@ TEST_F(RgbdCameraDiagramTest, MovableCameraOutputTest) {
   const Eigen::Isometry3d X_WB = Eigen::Translation3d(0., 0., 1.) *
       Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY());
 
-  SetUp("nothing.sdf", X_WB);
+  Init("nothing.sdf", X_WB);
   Verify();
 
   rendering::PoseVector<double>* const camera_base_pose =
@@ -286,10 +289,8 @@ class DepthImageToPointCloudConversionTest : public ::testing::Test {
   }
 
  protected:
-  void SetUp() override {}
-
   // This must be called by all the test cases first.
-  void SetUp(float depth_value) {
+  void Init(float depth_value) {
     std::fill(depth_image_.at(0, 0),
               depth_image_.at(0, 0) + depth_image_.size(),
               depth_value);
@@ -303,7 +304,7 @@ class DepthImageToPointCloudConversionTest : public ::testing::Test {
 // Verifies computed point cloud when pixel values in depth image are valid.
 TEST_F(DepthImageToPointCloudConversionTest, ValidValueTest) {
   constexpr float kDepthValue = 1.f;
-  SetUp(kDepthValue);
+  Init(kDepthValue);
 
   RgbdCamera::ConvertDepthImageToPointCloud(
       depth_image_, camera_info_, &actual_point_cloud_);
@@ -329,7 +330,7 @@ TEST_F(DepthImageToPointCloudConversionTest, ValidValueTest) {
 
 // Verifies computed point cloud when pixel values in depth image are NaN.
 TEST_F(DepthImageToPointCloudConversionTest, NanValueTest) {
-  SetUp(std::numeric_limits<float>::quiet_NaN());
+  Init(std::numeric_limits<float>::quiet_NaN());
 
   RgbdCamera::ConvertDepthImageToPointCloud(
       depth_image_, camera_info_, &actual_point_cloud_);
@@ -347,7 +348,7 @@ TEST_F(DepthImageToPointCloudConversionTest, NanValueTest) {
 
 // Verifies computed point cloud when pixel values in depth image are kTooFar.
 TEST_F(DepthImageToPointCloudConversionTest, TooFarTest) {
-  SetUp(InvalidDepth::kTooFar);
+  Init(InvalidDepth::kTooFar);
 
   RgbdCamera::ConvertDepthImageToPointCloud(
       depth_image_, camera_info_, &actual_point_cloud_);
@@ -357,7 +358,7 @@ TEST_F(DepthImageToPointCloudConversionTest, TooFarTest) {
 
 // Verifies computed point cloud when pixel values in depth image are kTooClose.
 TEST_F(DepthImageToPointCloudConversionTest, TooCloseTest) {
-  SetUp(InvalidDepth::kTooClose);
+  Init(InvalidDepth::kTooClose);
 
   RgbdCamera::ConvertDepthImageToPointCloud(
       depth_image_, camera_info_, &actual_point_cloud_);
