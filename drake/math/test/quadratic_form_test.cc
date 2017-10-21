@@ -60,6 +60,26 @@ GTEST_TEST(TestDecomposePositiveQuadraticForm, Test3) {
   double c = 0;
   CheckDecomposePositiveQuadraticForm(Q, b, c);
 }
+
+GTEST_TEST(TestDecomposePositiveQuadraticForm, Test4) {
+  Eigen::Matrix2d Q;
+  Q << 1, 1.5, 1.5, 1;
+  Eigen::Vector2d b(0, 0);
+  double c = 0;
+  EXPECT_THROW(DecomposePositiveQuadraticForm(Q, b, c), std::runtime_error);
+}
+
+GTEST_TEST(TestDecomposePositiveQuadraticForm, Test5) {
+  Eigen::Matrix3d Q;
+  // clang-format off
+  Q << 1, 2, 0,
+       2, 4, 0,
+       0, 0, 0;
+  // clang-format on
+  Eigen::Vector3d b(2, 4, -1);
+  double c = 1;
+  EXPECT_THROW(DecomposePositiveQuadraticForm(Q, b, c), std::runtime_error);
+}
 }  // namespace
 }  // namespace math
 }  // namespace drake

@@ -5,6 +5,7 @@
 #include <sstream>
 
 #include "drake/solvers/symbolic_extraction.h"
+#include "drake/math/quadratic_form.h"
 
 namespace drake {
 namespace solvers {
@@ -425,10 +426,6 @@ Binding<LorentzConeConstraint> ParseLorentzConeConstraint(
   return CreateBinding(make_shared<LorentzConeConstraint>(A, b), vars);
 }
 
-namespace internal {
-template <typename DerivedQ, typename DerivedB>
-std::tuple<Eigen::Matrix<double,
-} // namespace internal
 Binding<LorentzConeConstraint> ParseLorentzConeConstraint(
     const Expression& linear_expr, const Expression& quadratic_expr) {
   const auto& quadratic_p = ExtractVariablesFromExpression(quadratic_expr);
@@ -439,6 +436,9 @@ Binding<LorentzConeConstraint> ParseLorentzConeConstraint(
   Eigen::VectorXd b(quadratic_vars.size());
   double a;
   DecomposeQuadraticPolynomial(poly, quadratic_var_to_index_map, &Q, &b, &a);
+  std::cout << "Q:\n" << Q << "\n\n";
+  std::cout << "b:\n" << b << "\n\n";
+  std::cout << "a:" << a << "\n\n";
   // The constraint that the linear expression v1 satisfying
   // v1 >= sqrt(0.5 * x' * Q * x + b' * x + a), is equivalent to the vector
   // [z; y] being within a Lorentz cone, where
@@ -447,83 +447,13 @@ Binding<LorentzConeConstraint> ParseLorentzConeConstraint(
   // R is the matrix satisfying Rᵀ * R = Q
 
   VectorX<Expression> expr{};
-
-  double constant;  // constant is a - 0.5 * bᵀ * Q⁻¹ * a
-  // If Q is strictly positive definite, then use LLT
-  Eigen::LLT<Eigen::MatrixXd> llt_Q(Q.selfadjointView<Eigen::Upper>());
-  if (llt_Q.info() == Eigen::Success) {
-    Eigen::MatrixXd R = llt_Q.matrixU();
-    expr.resize(2 + R.rows());
-    expr(0) = linear_expr;
-    expr.segment(1, R.rows()) =
-        1.0 / std::sqrt(2) * (R * quadratic_vars + llt_Q.matrixL().solve(b));
-    constant = a - 0.5 * b.dot(llt_Q.solve(b));
-  } else {
-    // Q is not strictly positive definite.
-    // First check if Q is zero.
-    const bool is_Q_zero = (Q.array() == 0).all();
-
-    if (is_Q_zero) {
-      // Now check if the linear term b is zero. If both Q and b are zero, then
-      // add the linear constraint linear_expr >= sqrt(a); otherwise throw a
-      // runtime error.
-      const bool is_b_zero = (b.array() == 0).all();
-      if (!is_b_zero) {
-        ostringstream oss;
-        oss << "Expression " << quadratic_expr
-            << " is not quadratic, cannot call ParseLorentzConeConstraint.\n";
-        throw runtime_error(oss.str());
-      } else {
-        if (a < 0) {
-          ostringstream oss;
-          oss << "Expression " << quadratic_expr
-              << " is negative, cannot call ParseLorentzConeConstraint.\n";
-          throw runtime_error(oss.str());
-        }
-        Vector2<Expression> expr_constant_quadratic(linear_expr, std::sqrt(a));
-        return ParseLorentzConeConstraint(expr_constant_quadratic);
-      }
-    }
-    // Q is not strictly positive, nor is it zero. Use LDLT to decompose Q
-    // into R * Rᵀ.
-    // Question: is there a better way to compute R * x and R⁻ᵀb? The following
-    // code is really ugly.
-    Eigen::LDLT<Eigen::MatrixXd> ldlt_Q(Q.selfadjointView<Eigen::Upper>());
-    if (ldlt_Q.info() != Eigen::Success || !ldlt_Q.isPositive()) {
-      ostringstream oss;
-      oss << "Expression" << quadratic_expr
-          << " does not have a positive semidefinite Hessian. Cannot be called "
-             "with ParseLorentzConeConstraint.\n";
-      throw runtime_error(oss.str());
-    }
-    Eigen::MatrixXd R1 = ldlt_Q.matrixU();
-    for (int i = 0; i < R1.rows(); ++i) {
-      for (int j = 0; j < i; ++j) {
-        R1(i, j) = 0;
-      }
-      const double d_sqrt = std::sqrt(ldlt_Q.vectorD()(i));
-      for (int j = i; j < R1.cols(); ++j) {
-        R1(i, j) *= d_sqrt;
-      }
-    }
-    Eigen::MatrixXd R = R1 * ldlt_Q.transpositionsP();
-
-    expr.resize(2 + R1.rows());
-    expr(0) = linear_expr;
-    // expr.segment(1, R1.rows()) = 1/sqrt(2) * (R * x + R⁻ᵀb)
-    expr.segment(1, R1.rows()) =
-        1.0 / std::sqrt(2) *
-        (R * quadratic_vars + R.transpose().fullPivHouseholderQr().solve(b));
-    constant = a - 0.5 * b.dot(ldlt_Q.solve(b));
-  }
-  if (constant < 0) {
-    ostringstream oss;
-    oss << "Expression " << quadratic_expr
-        << " is not guaranteed to be non-negative, cannot call it with "
-           "ParseLorentzConeConstraint.\n";
-    throw runtime_error(oss.str());
-  }
-  expr(expr.rows() - 1) = std::sqrt(constant);
+  // expr.segment(1, R1.rows()) = 1/sqrt(2) * (R * x + R⁻ᵀb)
+  Eigen::MatrixXd C;
+  Eigen::VectorXd d;
+  std::tie(C, d) = math::DecomposePositiveQuadraticForm(0.5 * Q, b, a);
+  expr.resize(1 + C.rows());
+  expr(0) = linear_expr;
+  expr.segment(1, C.rows()) = C * quadratic_vars + d;
   return ParseLorentzConeConstraint(expr);
 }
 

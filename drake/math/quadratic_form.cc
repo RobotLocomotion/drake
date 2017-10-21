@@ -21,11 +21,12 @@ DecomposePositiveQuadraticForm(const Eigen::Ref<const Eigen::MatrixXd>& Q,
   // [1]    [b/2   c]   [1]
   // We will call the matrix in the middle as M
   Eigen::MatrixXd M(Q.rows() + 1, Q.rows() + 1);
-  M.block(0, 0, Q.rows(), Q.cols()) = Q;
+  M.block(0, 0, Q.rows(), Q.cols()) = (Q + Q.transpose()) / 2;
   M.block(0, Q.cols(), Q.rows(), 1) = b / 2;
   M.block(Q.rows(), 0, 1, Q.cols()) = b.transpose() / 2;
   M(Q.rows(), Q.cols()) = c;
 
+  std::cout << "M:\n" << M << "\n\n";
   Eigen::MatrixXd R;
   Eigen::MatrixXd d;
   // M should be a positive semidefinite matrix, to make sure that the quadratic
