@@ -8,7 +8,7 @@ namespace drake {
 namespace solvers {
 namespace {
 GTEST_TEST(DecomposeNonConvexQuadraticForm, Test0) {
-  // Decomposes a psd matrix Q. This should yield Q1 = Q and Q2 = 0.
+  // Decomposes a PSD matrix Q. This should yield Q1 = Q and Q2 = 0.
   Eigen::Matrix3d Q1, Q2;
   Eigen::Matrix3d Q = Eigen::Matrix3d::Identity();
   std::tie(Q1, Q2) = DecomposeNonConvexQuadraticForm(Q);

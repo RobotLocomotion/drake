@@ -35,7 +35,14 @@ DecomposeNonConvexQuadraticForm(
   prog.AddLinearConstraint(symbolic::Expression(s) >=
                            Q2.cast<symbolic::Expression>().trace());
   prog.AddCost(s);
-  prog.Solve();
+  SolutionResult result = prog.Solve();
+  // This problem should always be feasible, since we can choose Q1 to a large
+  // diagonal matrix, and Q2 will also have large diagonal entries. Both Q1 and
+  // Q2 are diagonally dominant, thus they are both positive definite.
+  // Due to positive definiteness, both trace(Q1) and trace(Q2) are
+  // non-negative, so min(max(trace(Q1), trace(Q2)) is lower bounded. Hence,
+  // this optimal cost is not un-bounded.
+  DRAKE_DEMAND(result == SolutionResult::kSolutionFound);
   auto Q1_sol = prog.GetSolution(Q1);
   auto Q2_sol = prog.GetSolution(Q2);
   return std::make_pair(Q1_sol, Q2_sol);
