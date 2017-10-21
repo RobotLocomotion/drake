@@ -275,14 +275,14 @@ class ConstraintSolver {
   void DetermineNewPartialInertiaSolveOperator(
     const ProblemData* problem_data,
     int num_generalized_velocities,
-    const Eigen::CompleteOrthogonalDecomposition<MatrixX<T>>* Del_QR,
+    const Eigen::CompleteOrthogonalDecomposition<MatrixX<T>>* delassus_QTZ,
     std::function<MatrixX<T>(const MatrixX<T>&)>* A_solve) const;
 
   template <typename ProblemData>
   void DetermineNewFullInertiaSolveOperator(
     const ProblemData* problem_data,
     int num_generalized_velocities,
-    const Eigen::CompleteOrthogonalDecomposition<MatrixX<T>>* Del_QR,
+    const Eigen::CompleteOrthogonalDecomposition<MatrixX<T>>* delassus_QTZ,
     std::function<MatrixX<T>(const MatrixX<T>&)>* A_solve) const;
 
   template <typename ProblemData>
@@ -306,7 +306,7 @@ class ConstraintSolver {
 // @param num_generalized_velocities The dimension of the system generalized
 //        velocities.
 // @param problem_data The constraint problem data.
-// @param Del_QR The factorization of the Delassus Matrix GM⁻¹Gᵀ,
+// @param delassus_QTZ The factorization of the Delassus Matrix GM⁻¹Gᵀ,
 //               where G is the constraint Jacobian corresponding to the
 //               independent constraints.
 // @param[out] A_solve The operator for solving AX = B, on return.
@@ -315,11 +315,11 @@ template <typename ProblemData>
 void ConstraintSolver<T>::DetermineNewPartialInertiaSolveOperator(
     const ProblemData* problem_data,
     int num_generalized_velocities,
-    const Eigen::CompleteOrthogonalDecomposition<MatrixX<T>>* Del_QR,
+    const Eigen::CompleteOrthogonalDecomposition<MatrixX<T>>* delassus_QTZ,
     std::function<MatrixX<T>(const MatrixX<T>&)>* A_solve) const {
   const int num_eq_constraints = problem_data->kG.size();
 
-  *A_solve = [problem_data, Del_QR, num_eq_constraints,
+  *A_solve = [problem_data, delassus_QTZ, num_eq_constraints,
               num_generalized_velocities](const MatrixX<T>& X) -> MatrixX<T> {
     // ************************************************************************
     // See DetermineNewFullInertiaSolveOperator() for block inversion formula.
@@ -340,7 +340,7 @@ void ConstraintSolver<T>::DetermineNewPartialInertiaSolveOperator(
       G_iM_X.col(i) = problem_data->G_mult(iM_X.col(i));
 
     // Compute (GM⁻¹Gᵀ)⁻¹GM⁻¹X
-    const MatrixX<T> Del_G_iM_X = Del_QR->solve(G_iM_X);
+    const MatrixX<T> Del_G_iM_X = delassus_QTZ->solve(G_iM_X);
 
     // Compute Gᵀ(GM⁻¹Gᵀ)⁻¹GM⁻¹X
     const MatrixX<T> GT_Del_G_iM_X = problem_data->G_transpose_mult(Del_G_iM_X);
@@ -364,7 +364,7 @@ void ConstraintSolver<T>::DetermineNewPartialInertiaSolveOperator(
 // @param num_generalized_velocities The dimension of the system generalized
 //        velocities.
 // @param problem_data The constraint problem data.
-// @param Del_QR The factorization of the Delassus Matrix GM⁻¹Gᵀ,
+// @param delassus_QTZ The factorization of the Delassus Matrix GM⁻¹Gᵀ,
 //               where G is the constraint Jacobian corresponding to the
 //               independent constraints.
 // @param[out] A_solve The operator for solving AX = B, on return.
@@ -373,12 +373,12 @@ template <typename ProblemData>
 void ConstraintSolver<T>::DetermineNewFullInertiaSolveOperator(
     const ProblemData* problem_data,
     int num_generalized_velocities,
-    const Eigen::CompleteOrthogonalDecomposition<MatrixX<T>>* Del_QR,
+    const Eigen::CompleteOrthogonalDecomposition<MatrixX<T>>* delassus_QTZ,
     std::function<MatrixX<T>(const MatrixX<T>&)>* A_solve) const {
   // Get the number of equality constraints.
   const int num_eq_constraints = problem_data->kG.size();
 
-  *A_solve = [problem_data, Del_QR, num_eq_constraints,
+  *A_solve = [problem_data, delassus_QTZ, num_eq_constraints,
               num_generalized_velocities](const MatrixX<T>& B) -> MatrixX<T> {
     // From a block matrix inversion,
     // | M  -Gᵀ |⁻¹ | Y | = |  C  E || Y | = | CY + EZ   |
@@ -411,7 +411,7 @@ void ConstraintSolver<T>::DetermineNewFullInertiaSolveOperator(
       G_iM_Y.col(i) = problem_data->G_mult(iM_Y.col(i));
 
     // Compute (GM⁻¹Gᵀ)⁻¹GM⁻¹Y
-    const MatrixX<T> Del_G_iM_Y = Del_QR->solve(G_iM_Y);
+    const MatrixX<T> Del_G_iM_Y = delassus_QTZ->solve(G_iM_Y);
 
     // Compute Gᵀ(GM⁻¹Gᵀ)⁻¹GM⁻¹Y
     const MatrixX<T> GT_Del_G_iM_Y = problem_data->G_transpose_mult(Del_G_iM_Y);
@@ -422,7 +422,7 @@ void ConstraintSolver<T>::DetermineNewFullInertiaSolveOperator(
 
     // 2. Begin computation of components of E
     // Compute (GM⁻¹Gᵀ)⁻¹Z
-    const MatrixX<T> Del_Z = Del_QR->solve(Z);
+    const MatrixX<T> Del_Z = delassus_QTZ->solve(Z);
 
     // Compute Gᵀ(GM⁻¹Gᵀ)⁻¹Z
     const MatrixX<T> GT_Del_Z = problem_data->G_transpose_mult(Del_Z);
@@ -434,7 +434,7 @@ void ConstraintSolver<T>::DetermineNewFullInertiaSolveOperator(
     X_top = problem_data->solve_inertia(Y) - iM_GT_Del_G_iM_Y + iM_GT_Del_Z;
 
     // Set the bottom block of the result.
-    X_bot = Del_QR->solve(Z) - Del_G_iM_Y;
+    X_bot = delassus_QTZ->solve(Z) - Del_G_iM_Y;
 
     return X;
   };
@@ -617,7 +617,8 @@ void ConstraintSolver<T>::SolveConstraintProblem(
   // simply point to the inertia solve operator.
   std::function<MatrixX<T>(const MatrixX<T>&)> A_solve;
   std::function<MatrixX<T>(const MatrixX<T>&)> fast_A_solve;
-  std::unique_ptr<Eigen::CompleteOrthogonalDecomposition<MatrixX<T>>> Del_QR;
+  std::unique_ptr<Eigen::CompleteOrthogonalDecomposition<
+      MatrixX<T>>> delassus_QTZ;
 
   if (num_eq_constraints > 0) {
     // Form the Delassus matrix for the bilateral constraints.
@@ -631,7 +632,7 @@ void ConstraintSolver<T>::SolveConstraintProblem(
                                            iM_GT, Del);
 
     // Compute the complete orthogonal factorization.
-    Del_QR = std::make_unique<
+    delassus_QTZ = std::make_unique<
         Eigen::CompleteOrthogonalDecomposition<MatrixX<T>>>(Del);
 
     // Determine a new "inertia" solve operator, which solves AX = B, where
@@ -639,13 +640,13 @@ void ConstraintSolver<T>::SolveConstraintProblem(
     //     | G   0  |
     // using a least-squares solution to accommodate rank-deficiency in G. This
     // will allow transforming the mixed LCP into a pure LCP.
-    DetermineNewFullInertiaSolveOperator(
-        &problem_data, num_generalized_velocities, Del_QR.get(), &A_solve);
+    DetermineNewFullInertiaSolveOperator(&problem_data,
+        num_generalized_velocities, delassus_QTZ.get(), &A_solve);
 
     // Determine a new "inertia" solve operator, using only the upper left block
     // of A⁻¹ (denoted C above) to exploit zero blocks in common operations.
-    DetermineNewPartialInertiaSolveOperator(
-        &problem_data, num_generalized_velocities, Del_QR.get(), &fast_A_solve);
+    DetermineNewPartialInertiaSolveOperator(&problem_data,
+        num_generalized_velocities, delassus_QTZ.get(), &fast_A_solve);
   } else {
     A_solve = problem_data.solve_inertia;
     fast_A_solve = problem_data.solve_inertia;
@@ -885,7 +886,8 @@ void ConstraintSolver<T>::SolveImpactProblem(
   // simply point to the inertia solve operator.
   std::function<MatrixX<T>(const MatrixX<T>&)> A_solve;
   std::function<MatrixX<T>(const MatrixX<T>&)> fast_A_solve;
-  std::unique_ptr<Eigen::CompleteOrthogonalDecomposition<MatrixX<T>>> Del_QR;
+  std::unique_ptr<
+      Eigen::CompleteOrthogonalDecomposition<MatrixX<T>>> delassus_QTZ;
 
   // Form the Delassus matrix for the bilateral constraints.
   if (num_eq_constraints > 0) {
@@ -899,7 +901,7 @@ void ConstraintSolver<T>::SolveImpactProblem(
                                            iM_GT, Del);
 
     // Compute the complete orthogonal factorization.
-    Del_QR = std::make_unique<
+    delassus_QTZ = std::make_unique<
         Eigen::CompleteOrthogonalDecomposition<MatrixX<T>>>(Del);
 
     // Determine a new "inertia" solve operator, which solves AX = B, where
@@ -907,13 +909,13 @@ void ConstraintSolver<T>::SolveImpactProblem(
     //     | G   0  |
     // using the newly reduced set of constraints. This will allow transforming
     // the mixed LCP into a pure LCP.
-    DetermineNewFullInertiaSolveOperator(
-        &problem_data, num_generalized_velocities, Del_QR.get(), &A_solve);
+    DetermineNewFullInertiaSolveOperator(&problem_data,
+        num_generalized_velocities, delassus_QTZ.get(), &A_solve);
 
     // Determine a new "inertia" solve operator, using only the upper left block
     // of A⁻¹ to exploit zeros in common operations.
-    DetermineNewPartialInertiaSolveOperator(
-        &problem_data, num_generalized_velocities, Del_QR.get(), &fast_A_solve);
+    DetermineNewPartialInertiaSolveOperator(&problem_data,
+        num_generalized_velocities, delassus_QTZ.get(), &fast_A_solve);
   } else {
     A_solve = problem_data.solve_inertia;
     fast_A_solve = problem_data.solve_inertia;
