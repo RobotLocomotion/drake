@@ -55,12 +55,46 @@ drake_cc_library(
     deps = [
         "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
         "//drake/examples/kuka_iiwa_arm/iiwa_world:iiwa_wsg_diagram_factory",
-        "//drake/examples/kuka_iiwa_arm/pick_and_place:pick_and_place_configuration",
+        "//drake/examples/kuka_iiwa_arm/pick_and_place:pick_and_place_configuration",  # noqa
         "//drake/manipulation/schunk_wsg:schunk_wsg_controller",
         "//drake/manipulation/util:frame_pose_tracker",
         "//drake/systems/sensors:optitrack_encoder",
         "//drake/systems/sensors:optitrack_sender",
         "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
+    ],
+)
+
+drake_cc_library(
+    name = "lcm_planner",
+    srcs = [
+        "lcm_planner.cc",
+        "state_machine_system.cc",
+    ],
+    hdrs = [
+        "lcm_planner.h",
+        "state_machine_system.h",
+    ],
+    data = [
+        "//drake/examples/kuka_iiwa_arm:models",
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        "//drake/common:find_resource",
+        "//drake/common:text_logging_gflags",
+        "//drake/examples/kuka_iiwa_arm:iiwa_common",
+        "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
+        "//drake/examples/kuka_iiwa_arm/pick_and_place",
+        "//drake/lcm",
+        "//drake/lcmtypes:iiwa",
+        "//drake/lcmtypes:schunk",
+        "//drake/manipulation/perception:optitrack_pose_extractor",
+        "//drake/systems/framework:leaf_system",
+        "//drake/systems/lcm",
+        "//drake/systems/primitives:pass_through",
+        "//drake/util:lcm_util",
+        "@com_github_gflags_gflags//:gflags",
+        "@lcmtypes_bot2_core",
+        "@lcmtypes_robotlocomotion",
     ],
 )
 
