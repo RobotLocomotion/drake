@@ -1,6 +1,6 @@
 # -*- python -*-
 
-load("@drake//tools:install.bzl", "install")
+load("@drake//tools/install:install.bzl", "install")
 
 install(
     name = "install_data",

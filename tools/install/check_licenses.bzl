@@ -1,6 +1,6 @@
 # -*- python -*-
 
-load("@drake//tools:install.bzl", "InstallInfo")
+load("@drake//tools/install:install.bzl", "InstallInfo")
 
 # List of exact file names of license files
 LICENSE_LITERALS = [
