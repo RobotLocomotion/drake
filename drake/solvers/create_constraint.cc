@@ -436,9 +436,6 @@ Binding<LorentzConeConstraint> ParseLorentzConeConstraint(
   Eigen::VectorXd b(quadratic_vars.size());
   double a;
   DecomposeQuadraticPolynomial(poly, quadratic_var_to_index_map, &Q, &b, &a);
-  std::cout << "Q:\n" << Q << "\n\n";
-  std::cout << "b:\n" << b << "\n\n";
-  std::cout << "a:" << a << "\n\n";
   // The constraint that the linear expression v1 satisfying
   // v1 >= sqrt(0.5 * x' * Q * x + b' * x + a), is equivalent to the vector
   // [z; y] being within a Lorentz cone, where
@@ -457,6 +454,38 @@ Binding<LorentzConeConstraint> ParseLorentzConeConstraint(
   return ParseLorentzConeConstraint(expr);
 }
 
+Binding<RotatedLorentzConeConstraint> ParseRotatedLorentzConeConstraint(const Eigen::Ref<const VectorX<symbolic::Expression>>& v) {
+  DRAKE_DEMAND(v.rows() >= 3);
+  Eigen::MatrixXd A{};
+  Eigen::VectorXd b(v.size());
+  VectorXDecisionVariable vars{};
+  DecomposeLinearExpression(v, &A, &b, &vars);
+  DRAKE_DEMAND(vars.rows() >= 1);
+  return CreateBinding(std::make_shared<RotatedLorentzConeConstraint>(A, b), vars);
+}
+
+Binding<RotatedLorentzConeConstraint> ParseRotatedLorentzConeConstraint(
+    const symbolic::Expression& linear_expr1,
+    const symbolic::Expression& linear_expr2,
+    const symbolic::Expression& quadratic_expr) {
+  const auto& quadratic_p = ExtractVariablesFromExpression(quadratic_expr);
+  const auto& quadratic_vars = quadratic_p.first;
+  const auto& quadratic_var_to_index_map = quadratic_p.second;
+  const symbolic::Polynomial poly{quadratic_expr};
+  Eigen::MatrixXd Q(quadratic_vars.size(), quadratic_vars.size());
+  Eigen::VectorXd b(quadratic_vars.size());
+  double a;
+  DecomposeQuadraticPolynomial(poly, quadratic_var_to_index_map, &Q, &b, &a);
+
+  Eigen::MatrixXd C;
+  Eigen::VectorXd d;
+  std::tie(C, d) = math::DecomposePositiveQuadraticForm(0.5 * Q, b, a);
+  VectorX<symbolic::Expression> expr(2 + C.rows());
+  expr(0) = linear_expr1;
+  expr(1) = linear_expr2;
+  expr.tail(C.rows()) = C * quadratic_vars + d;
+  return ParseRotatedLorentzConeConstraint(expr);
+}
 }  // namespace internal
 }  // namespace solvers
 }  // namespace drake

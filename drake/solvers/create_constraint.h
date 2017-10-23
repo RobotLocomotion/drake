@@ -217,11 +217,48 @@ std::shared_ptr<Constraint> MakePolynomialConstraint(
 Binding<LorentzConeConstraint> ParseLorentzConeConstraint(
     const Eigen::Ref<const VectorX<symbolic::Expression>>& v);
 
-/*
- * Assist MathematicalProgram::AddLorentzConeConstraint(...).
+/**
+ * Construct a Lorentz cone constraint
+ *   u >= sqrt(v)
+ * where u is a linear expression, and v is a non-negative quadratic expression.
+ * @param linear_expr The linear (affine) expression u. Throws a runtime_error
+ * if u is not linear.
+ * @param quadratic_expr The non-negative quadratic expression v. Throws a
+ * runtime_error if v is not a non-negative quadratic expression.
+ * @return The newly constructed Lorentz cone constraint.
  */
 Binding<LorentzConeConstraint> ParseLorentzConeConstraint(
     const symbolic::Expression& linear_expr,
+    const symbolic::Expression& quadratic_expr);
+
+/**
+ * Construct a rotated Lorentz cone constraint
+ * v(0) * v(1) >= v(2)² + v(3)² + ... + v(n-1)²,
+ * v(0) >= 0, v(1) >= 0
+ * where each entry in v is a linear (affine) expression.
+ * @param v A vector of linear (affine) expressions. Throws std::runtime_error
+ * if any entry in v is not linear (affine).
+ * @return The newly constructed rotated Lorentz cone constraint.
+ */
+Binding<RotatedLorentzConeConstraint> ParseRotatedLorentzConeConstraint(
+    const Eigen::Ref<const VectorX<symbolic::Expression>>& v);
+
+/**
+ * Construct a rotated Lorentz cone constraint
+ * u₁ * u₂ >= v, u₁ >= 0, u₂ >= 0
+ * where u₁, u₂ are linear expressions, and v is a non-negative quadratic
+ * expression.
+ * @param linear_expr1 The linear (affine) expression u₁, throw a
+ * std::runtime_error if u₁ is not linear.
+ * @param linear_expr2 The linear (affine) expression u₂, throw a
+ * std::runtime_error if u₂ is not linear.
+ * @param quadratic_expr The non-negative quadratic expression v, throw a
+ * std::runtime_error if v is not a non-negative quadratic expression.
+ * @return The newly constructed rotated Lorentz cone constraint.
+ */
+Binding<RotatedLorentzConeConstraint> ParseRotatedLorentzConeConstraint(
+    const symbolic::Expression& linear_expr1,
+    const symbolic::Expression& linear_expr2,
     const symbolic::Expression& quadratic_expr);
 
 // TODO(eric.cousineau): Implement this if variable creation is separated.

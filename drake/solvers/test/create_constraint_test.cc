@@ -32,6 +32,39 @@ void CheckParseLorentzConeConstraint(
                      symbolic::Polynomial(quadratic_expression), 1E-10);
 }
 
+void CheckParseRotatedLorentzConeConstraint(
+    const Eigen::Ref<const VectorX<symbolic::Expression>>& v) {
+  Binding<RotatedLorentzConeConstraint> binding =
+      internal::ParseRotatedLorentzConeConstraint(v);
+  const Eigen::MatrixXd A = binding.constraint()->A();
+  const Eigen::VectorXd b = binding.constraint()->b();
+  const VectorX<symbolic::Expression> z = A * binding.variables() + b;
+  for (int i = 0; i < z.rows(); ++i) {
+    ComparePolynomials(symbolic::Polynomial(z(i)), symbolic::Polynomial(v(i)),
+                       1E-10);
+  }
+}
+
+void CheckParseRotatedLorentzConeConstraint(
+    const symbolic::Expression& linear_expression1,
+    const symbolic::Expression& linear_expression2,
+    const symbolic::Expression& quadratic_expression) {
+  Binding<RotatedLorentzConeConstraint> binding =
+      internal::ParseRotatedLorentzConeConstraint(
+          linear_expression1, linear_expression2, quadratic_expression);
+  const Eigen::MatrixXd A = binding.constraint()->A();
+  const Eigen::VectorXd b = binding.constraint()->b();
+  const VectorX<symbolic::Expression> z = A * binding.variables() + b;
+  ComparePolynomials(symbolic::Polynomial(z(0)),
+                     symbolic::Polynomial(linear_expression1), 1E-10);
+  ComparePolynomials(symbolic::Polynomial(z(1)),
+                     symbolic::Polynomial(linear_expression2), 1E-10);
+  ComparePolynomials(
+      symbolic::Polynomial(
+          z.tail(z.rows() - 2).cast<symbolic::Expression>().squaredNorm()),
+      symbolic::Polynomial(quadratic_expression), 1E-10);
+}
+
 class ParseLorentzConeConstraintTest : public ::testing::Test {
  public:
   ParseLorentzConeConstraintTest()
@@ -113,6 +146,61 @@ TEST_F(ParseLorentzConeConstraintTest, Test9) {
   EXPECT_THROW(internal::ParseLorentzConeConstraint(
                    x_(0), pow(x_(1) + x_(2) + 2, 2) - 1),
                std::runtime_error);
+}
+
+class ParseRotatedLorentzConeConstraintTest : public ::testing::Test {
+ public:
+  ParseRotatedLorentzConeConstraintTest()
+      : x0_{"x0"}, x1_{"x1"}, x2_{"x2"}, x3_{"x3"} {
+    x_ << x0_, x1_, x2_, x3_;
+  }
+
+ protected:
+  symbolic::Variable x0_;
+  symbolic::Variable x1_;
+  symbolic::Variable x2_;
+  symbolic::Variable x3_;
+  Vector4<symbolic::Variable> x_;
+};
+
+TEST_F(ParseRotatedLorentzConeConstraintTest, Test0) {
+  // x(0) * x(1) >= x(2)² + x(3)², x(0) >= 0, x(1) >= 0
+  CheckParseRotatedLorentzConeConstraint(x_.cast<symbolic::Expression>());
+  CheckParseRotatedLorentzConeConstraint(x_(0), x_(1),
+                                         x_(2) * x_(2) + x_(3) * x_(3));
+}
+
+TEST_F(ParseRotatedLorentzConeConstraintTest, Test1) {
+  // (x(0) + 2) * (2 * x(1) + x(0) + 1) >= x(2)² + x(3)²
+  // x(0) + 2 >= 0
+  // 2 * x(1) + x(0) + 1 >= 0
+  Vector4<symbolic::Expression> expression;
+  expression << x_(0) + 2, 2 * x_(1) + x_(0) + 1, x_(2), x_(3);
+  CheckParseRotatedLorentzConeConstraint(expression);
+  CheckParseRotatedLorentzConeConstraint(expression(0), expression(1),
+                                         x_(2) * x_(2) + x_(3) * x_(3));
+}
+
+TEST_F(ParseRotatedLorentzConeConstraintTest, Test2) {
+  // (x(0) - x(1) + 2) * (3 * x(2)) >= (x(1) + x(2))² + (x(2) + 2 * x(3) + 2)² +
+  // 5
+  Eigen::Matrix<symbolic::Expression, 5, 1> expression;
+  expression << x_(0) - x_(1) + 2, 3 * x_(2), x_(1) + x_(2),
+      x_(2) + 2 * x_(3) + 2, std::sqrt(5);
+  CheckParseRotatedLorentzConeConstraint(expression);
+  CheckParseRotatedLorentzConeConstraint(
+      expression(0), expression(1),
+      pow(x_(1) + x_(2), 2) + pow(x_(2) + 2 * x_(3) + 2, 2) + 5);
+}
+
+TEST_F(ParseRotatedLorentzConeConstraintTest, Test3) {
+  // Throw a runtime error when the precondition is not satisfied.
+  Eigen::Matrix<symbolic::Expression, 4, 1> expression;
+  expression << 2 * x_(0) * x_(1), x_(2), x_(3), 1;
+  EXPECT_THROW(internal::ParseRotatedLorentzConeConstraint(expression), std::runtime_error);
+  EXPECT_THROW(internal::ParseRotatedLorentzConeConstraint(x_(0) * x_(1), x_(1), x_(2) * x_(2) + 1), std::runtime_error);
+  EXPECT_THROW(internal::ParseRotatedLorentzConeConstraint(x_(1), x_(0) * x_(1), x_(2) * x_(2) + 1), std::runtime_error);
+  EXPECT_THROW(internal::ParseRotatedLorentzConeConstraint(x_(0), x_(1), x_(2) * x_(2) - 1), std::runtime_error);
 }
 }  // namespace
 }  // namespace solvers

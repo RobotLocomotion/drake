@@ -469,14 +469,17 @@ Binding<RotatedLorentzConeConstraint> MathematicalProgram::AddConstraint(
 
 Binding<RotatedLorentzConeConstraint>
 MathematicalProgram::AddRotatedLorentzConeConstraint(
+    const symbolic::Expression& linear_expression1,
+    const symbolic::Expression& linear_expression2,
+    const symbolic::Expression& quadratic_expression) {
+  return internal::ParseRotatedLorentzConeConstraint(
+      linear_expression1, linear_expression2, quadratic_expression);
+}
+
+Binding<RotatedLorentzConeConstraint>
+MathematicalProgram::AddRotatedLorentzConeConstraint(
     const Eigen::Ref<const VectorX<Expression>>& v) {
-  DRAKE_DEMAND(v.rows() >= 3);
-  Eigen::MatrixXd A{};
-  Eigen::VectorXd b(v.size());
-  VectorXDecisionVariable vars{};
-  DecomposeLinearExpression(v, &A, &b, &vars);
-  DRAKE_DEMAND(vars.rows() >= 1);
-  return AddRotatedLorentzConeConstraint(A, b, vars);
+  return internal::ParseRotatedLorentzConeConstraint(v);
 }
 
 Binding<RotatedLorentzConeConstraint>

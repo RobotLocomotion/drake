@@ -3,13 +3,13 @@
 #include <iostream>
 
 #include <Eigen/Cholesky>
+#include <Eigen/Eigenvalues>
 
 namespace drake {
 namespace math {
-std::pair<Eigen::MatrixXd, Eigen::MatrixXd>
-DecomposePositiveQuadraticForm(const Eigen::Ref<const Eigen::MatrixXd>& Q,
-                               const Eigen::Ref<const Eigen::VectorXd>& b,
-                               double c) {
+std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposePositiveQuadraticForm(
+    const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::VectorXd>& b, double c) {
   if (Q.rows() != Q.cols()) {
     throw std::runtime_error("Q should be a square matrix.");
   }
@@ -26,7 +26,6 @@ DecomposePositiveQuadraticForm(const Eigen::Ref<const Eigen::MatrixXd>& Q,
   M.block(Q.rows(), 0, 1, Q.cols()) = b.transpose() / 2;
   M(Q.rows(), Q.cols()) = c;
 
-  std::cout << "M:\n" << M << "\n\n";
   Eigen::MatrixXd R;
   Eigen::MatrixXd d;
   // M should be a positive semidefinite matrix, to make sure that the quadratic
@@ -51,7 +50,9 @@ DecomposePositiveQuadraticForm(const Eigen::Ref<const Eigen::MatrixXd>& Q,
     // First write M = Aᵀ * A
     // TODO(hongkai.dai) The right bottom corner of U is 0, so we should remove
     // this block.
-    Eigen::MatrixXd A =  ldlt.matrixU() * (ldlt.transpositionsP() * Eigen::MatrixXd::Identity(M.rows(), M.cols()));
+    Eigen::MatrixXd A =
+        ldlt.matrixU() * (ldlt.transpositionsP() *
+                          Eigen::MatrixXd::Identity(M.rows(), M.cols()));
     A = ldlt.vectorD().array().real().sqrt().matrix().asDiagonal() * A;
     R = A.block(0, 0, Q.rows() + 1, Q.cols());
     d = A.col(Q.cols());
