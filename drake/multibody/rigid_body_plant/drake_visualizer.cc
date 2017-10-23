@@ -41,7 +41,7 @@ void DrakeVisualizer::DoCalcNextUpdateTime(
     return LeafSystem<double>::DoCalcNextUpdateTime(context, events, time);
   } else {
     // TODO(siyuan): cleanup after #5725 is resolved.
-    *time = context.get_time() + 0.0001;
+    *time = context.get_discrete_state(0)->GetAtIndex(0);
     DiscreteUpdateEvent<double> event(Event<double>::TriggerType::kTimed);
     event.add_to_composite(events);
   }

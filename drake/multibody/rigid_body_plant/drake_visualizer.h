@@ -111,16 +111,20 @@ class DrakeVisualizer : public LeafSystem<double> {
  private:
   // Returns true if initialization phase has been completed.
   bool is_load_message_sent(const Context<double>& context) const {
-    return context.get_discrete_state(0)->GetAtIndex(0) > 0;
+    return context.get_discrete_state(0)->GetAtIndex(0) < 0;
   }
 
   // Sets the discrete state to @p flag.
   void set_is_load_message_sent(DiscreteValues<double>* state,
                                 bool flag) const {
+    // NOTE: The discrete state *is* the time at which the load robot message
+    // should be broadcast. When the message has *not* been sent, the time
+    // is set to an early point in the simulation. When it has been set, the
+    // time is negative (indicating that no further effort is required).
     if (flag)
-      state->get_mutable_vector(0)->SetAtIndex(0, 1);
+      state->get_mutable_vector(0)->SetAtIndex(0, -1);
     else
-      state->get_mutable_vector(0)->SetAtIndex(0, 0);
+      state->get_mutable_vector(0)->SetAtIndex(0, 1e-4);
   }
 
   // Set the default to "initialization phase has not been completed."
