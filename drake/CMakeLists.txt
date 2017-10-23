@@ -69,9 +69,3 @@ add_subdirectory(bindings/python)
 add_subdirectory(bindings/pybind11)
 
 add_subdirectory(matlab)
-
-option(ENABLE_DOCUMENTATION "Enable build target for Doxygen and Sphinx documentation." ON)
-
-if(ENABLE_DOCUMENTATION)
-  add_subdirectory(doc)
-endif()

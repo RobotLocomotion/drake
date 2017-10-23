@@ -7,8 +7,6 @@ mydir=$(dirname "$me")
 systems=$(dirname "$mydir")
 drake=$(dirname "$systems")
 
-namespace="drake::systems::sensors"
-
 source $drake/tools/lcm_vector_gen.sh
 
-gen_vector_proto "beam model params" $mydir/beam_model_params.named_vector
+gen_vector_proto $mydir/beam_model_params.named_vector

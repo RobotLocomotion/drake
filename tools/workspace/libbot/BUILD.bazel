@@ -1,6 +1,10 @@
 # -*- python -*-
 
 exports_files(
-    ["libbot.cps"],
+    [
+        "bot-procman-sheriff",
+        "build_prefix.py",
+        "libbot.cps",
+    ],
     visibility = ["@libbot//:__pkg__"],
 )

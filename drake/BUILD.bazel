@@ -1,11 +1,10 @@
 # -*- python -*-
-# This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 package(default_visibility = ["//visibility:public"])
 
-load("@drake//tools:install.bzl", "install")
+load("@drake//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools:transitive_hdrs.bzl", "transitive_hdrs_library")
+load("//tools/install:transitive_hdrs.bzl", "transitive_hdrs_library")
 load(":build_components.bzl", "LIBDRAKE_COMPONENTS")
 
 # The Drake binary package. libdrake.so contains all the symbols from all the
@@ -90,6 +89,16 @@ cc_library(
         ":mosek_deps",
         ":vtk_deps",
     ],
+)
+
+# TODO(6996) This file is a compatibility shim; remove this as soon as CI no
+# longer needs it.
+genrule(
+    name = "deprecated_doc",
+    srcs = ["//doc:sphinx.zip"],
+    outs = ["doc/sphinx.zip"],
+    cmd = "cp $(location //doc:sphinx.zip) '$@'",
+    visibility = [],
 )
 
 add_lint_tests()

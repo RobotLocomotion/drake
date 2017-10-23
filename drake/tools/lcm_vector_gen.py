@@ -4,10 +4,12 @@ Run this script using Bazel.
 
 import argparse
 import os
+import subprocess
 
 import google.protobuf.text_format
 
 from drake.tools import named_vector_pb2
+import tools.lint.clang_format as clang_format_lib
 
 
 def put(fileobj, text, newlines_after=0):
@@ -506,40 +508,27 @@ def generate_code(args):
     drake_dist_dir = args.workspace
     relative_cxx_dir = cxx_dir.replace(os.path.join(drake_dist_dir, ''), '')
 
-    title_phrase = args.title.split()
-    camel = ''.join([x.capitalize() for x in title_phrase])
-    snake = '_'.join([x.lower() for x in title_phrase])
-    screaming_snake = '_'.join([x.upper() for x in title_phrase])
+    snake, _ = os.path.splitext(os.path.basename(args.named_vector_file))
+    screaming_snake = snake.upper()
+    camel = "".join([x.capitalize() for x in snake.split("_")])
 
-    namespace = args.namespace.split("::")
-    opening_namespace = "".join(["namespace " + x + "{\n" for x in namespace])
-    closing_namespace = "".join(["}  // namespace " + x + "\n"
-                                 for x in reversed(namespace)])
-
-    if args.named_vector_file:
-        # Load the field names and docstrings from protobuf.
-        # In the future, this can be extended for nested messages.
-        with open(args.named_vector_file, "r") as f:
-            vec = named_vector_pb2.NamedVector()
-            google.protobuf.text_format.Merge(f.read(), vec)
-            fields = [{
-                'name': el.name,
-                'doc': el.doc,
-                'default_value': el.default_value,
-                'doc_units': el.doc_units,
-                'min_value': el.min_value,
-                'max_value': el.max_value,
-                } for el in vec.element]
-    else:
-        # Parse the field names from the command line.
+    # Load the vector's details from protobuf.
+    # In the future, this can be extended for nested messages.
+    with open(args.named_vector_file, "r") as f:
+        vec = named_vector_pb2.NamedVector()
+        google.protobuf.text_format.Merge(f.read(), vec)
         fields = [{
-            'name': x,
-            'doc': x,
-            'default_value': '',
-            'doc_units': '',
-            'min_value': '',
-            'max_value': '',
-        } for x in args.fields]
+            'name': el.name,
+            'doc': el.doc,
+            'default_value': el.default_value,
+            'doc_units': el.doc_units,
+            'min_value': el.min_value,
+            'max_value': el.max_value,
+        } for el in vec.element]
+        if vec.namespace:
+            namespace_list = vec.namespace.split("::")
+        else:
+            namespace_list = []
 
     # Default some field attributes if they are missing.
     for item in fields:
@@ -547,6 +536,12 @@ def generate_code(args):
             item['default_value'] = DEFAULT_CTOR_FIELD_DEFAULT_VALUE
         if len(item['doc_units']) == 0:
             item['doc_units'] = DEFAULT_CTOR_FIELD_UNKNOWN_DOC_UNITS
+
+    # The C++ namespace open & close dance is as requested in the protobuf.
+    opening_namespace = "".join(["namespace " + x + "{\n"
+                                 for x in namespace_list])
+    closing_namespace = "".join(["}  // namespace " + x + "\n"
+                                 for x in reversed(namespace_list)])
 
     # The context provides string substitutions for the C++ code blocks in the
     # literal strings throughout this program.
@@ -565,7 +560,9 @@ def generate_code(args):
     context.update(generated_code_warning='\n'.join([
         disclaimer, "// See drake/tools/lcm_vector_gen.py."]))
 
-    with open(os.path.join(cxx_dir, "%s.h" % snake), 'w') as hh:
+    cxx_names = []
+    cxx_names.append(os.path.join(cxx_dir, "%s.h" % snake))
+    with open(cxx_names[-1], 'w') as hh:
         print "generating %s" % hh.name
         put(hh, VECTOR_HH_PREAMBLE % context, 2)
         generate_indices(hh, context, fields)
@@ -581,7 +578,8 @@ def generate_code(args):
         put(hh, VECTOR_CLASS_END % context, 2)
         put(hh, VECTOR_HH_POSTAMBLE % context, 1)
 
-    with open(os.path.join(cxx_dir, "%s.cc" % snake), 'w') as cc:
+    cxx_names.append(os.path.join(cxx_dir, "%s.cc" % snake))
+    with open(cxx_names[-1], 'w') as cc:
         print "generating %s" % cc.name
         put(cc, VECTOR_CC_PREAMBLE % context, 2)
         generate_indices_storage(cc, context, fields)
@@ -590,14 +588,14 @@ def generate_code(args):
         put(cc, VECTOR_CC_POSTAMBLE % context, 1)
 
     if args.lcmtype_dir:
-        with open(os.path.join(cxx_dir, "%s_translator.h" % snake),
-                  'w') as hh:
+        cxx_names.append(os.path.join(cxx_dir, "%s_translator.h" % snake))
+        with open(cxx_names[-1], 'w') as hh:
             put(hh, TRANSLATOR_HH_PREAMBLE % context, 2)
             put(hh, TRANSLATOR_CLASS_DECL % context, 2)
             put(hh, TRANSLATOR_HH_POSTAMBLE % context, 1)
 
-        with open(os.path.join(cxx_dir, "%s_translator.cc" % snake),
-                  'w') as cc:
+        cxx_names.append(os.path.join(cxx_dir, "%s_translator.cc" % snake))
+        with open(cxx_names[-1], 'w') as cc:
             print "generating %s" % cc.name
             put(cc, TRANSLATOR_CC_PREAMBLE % context, 2)
             generate_allocate_output_vector(cc, context, fields)
@@ -614,6 +612,10 @@ def generate_code(args):
                                                       field['doc']), 1)
             put(lcm, LCMTYPE_POSTAMBLE % context, 1)
 
+    subprocess.check_call([
+        clang_format_lib.get_clang_format_path(),
+        "--style=file", "-i"] + cxx_names)
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -623,19 +625,12 @@ def main():
         '--cxx-dir', help="output directory for cxx files", default=".")
     parser.add_argument(
         '--workspace', help="Drake WORKSPACE root.", required=True)
-    parser.add_argument(
-        '--namespace', help="::-delimited enclosing namespace",
-        default="drake")
     # By default, LCM output is disabled.
     parser.add_argument(
         '--lcmtype-dir', help="output directory for lcm file", default="")
     parser.add_argument(
-        '--title', help="title phrase, from which type names will be made")
-    parser.add_argument(
-        '--named_vector_file',
-        help="Protobuf description of vector, supersedes command-line fields")
-    parser.add_argument(
-        'fields', metavar='FIELD', nargs='*', help="field names for vector")
+        '--named_vector_file', metavar="FILE", required=True,
+        help="Protobuf description of vector")
     args = parser.parse_args()
     generate_code(args)
 

@@ -1,0 +1,10 @@
+namespace: "drake::examples::pendulum"
+
+element {
+    name: "theta"
+    doc: "theta"
+}
+element {
+    name: "thetadot"
+    doc: "thetadot"
+}

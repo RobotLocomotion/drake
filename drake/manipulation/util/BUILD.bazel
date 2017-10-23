@@ -1,5 +1,4 @@
 # -*- python -*-
-# This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load(
     "//tools:drake.bzl",
@@ -104,6 +103,20 @@ drake_cc_library(
     deps = ["//drake/common:essential"],
 )
 
+drake_cc_library(
+    name = "frame_pose_tracker",
+    srcs = ["frame_pose_tracker.cc"],
+    hdrs = ["frame_pose_tracker.h"],
+    deps = [
+        "//drake/multibody:rigid_body_tree",
+        "//drake/multibody/multibody_tree/math:spatial_velocity",
+        "//drake/multibody/rigid_body_plant",
+        "//drake/systems/framework:leaf_system",
+        "//drake/systems/rendering:frame_velocity",
+        "//drake/systems/rendering:pose_bundle",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -160,6 +173,20 @@ drake_cc_googletest(
         "//drake/systems/controllers:pid_controller",
         "//drake/systems/framework",
         "//drake/systems/primitives:constant_vector_source",
+    ],
+)
+
+drake_cc_googletest(
+    name = "frame_pose_tracker_test",
+    data = ["//drake/manipulation/models/iiwa_description:models"],
+    deps = [
+        ":frame_pose_tracker",
+        "//drake/common:find_resource",
+        "//drake/common/test_utilities:eigen_geometry_compare",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/multibody:rigid_body_tree",
+        "//drake/multibody/parsers",
+        "//drake/systems/framework",
     ],
 )
 

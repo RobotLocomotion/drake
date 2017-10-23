@@ -1,3 +1,5 @@
+namespace: "drake::automotive"
+
 # The default values contained below are from Kesting, Treiber and Helbing,
 # 2007 (cited in mobil_planner.h).
 element {

@@ -1,21 +1,29 @@
 # -*- python -*-
-# This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 package(default_visibility = ["//visibility:public"])
 
-load("@protobuf//:protobuf.bzl", "py_proto_library")
 load(
     "//tools:drake.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
+)
+load(
+    "@drake//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_library",
     "drake_py_test",
 )
-load("//tools/workspace/lcm:lcm.bzl", "lcm_cc_library")
+load(
+    "@drake//tools/skylark:drake_lcm.bzl",
+    "drake_lcm_cc_library",
+)
+load(
+    "@drake//tools/skylark:drake_proto.bzl",
+    "drake_py_proto_library",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-py_proto_library(
+drake_py_proto_library(
     name = "named_vector",
     srcs = ["named_vector.proto"],
 )
@@ -23,17 +31,15 @@ py_proto_library(
 drake_py_binary(
     name = "lcm_vector_gen",
     srcs = ["lcm_vector_gen.py"],
-    data = [
-        "//tools/lint:clang-format",
-    ],
     deps = [
         ":named_vector",
+        "//tools/lint:clang_format",
     ],
 )
 
 # === test/ ===
 
-lcm_cc_library(
+drake_lcm_cc_library(
     name = "lcmt_sample",
     testonly = 1,
     includes = ["test/gen"],

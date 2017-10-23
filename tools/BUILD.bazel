@@ -1,7 +1,7 @@
 # -*- python -*-
 
 load(
-    "@drake//tools:install.bzl",
+    "@drake//tools/install:install.bzl",
     "cmake_config",
     "install_cmake_config",
 )
@@ -26,32 +26,6 @@ sh_binary(
         "@drake_visualizer",
         "@optitrack_driver//lcmtypes:py_optitrack_lcmtypes",
     ],
-)
-
-py_library(
-    name = "cpsutils",
-    srcs = ["cpsutils.py"],
-    deps = ["@pycps//:cps"],
-)
-
-exports_files(
-    ["install.py.in"],
-    visibility = ["//visibility:public"],
-)
-
-exports_files(
-    [
-        "install/libbot/bot-procman-sheriff",
-        "install/libbot/build_prefix.py",
-    ],
-    visibility = ["@libbot//:__pkg__"],
-)
-
-exports_files(
-    [
-        "install/kuka_plan_runner/kuka_plan_runner.sh",
-    ],
-    visibility = ["//drake/examples/kuka_iiwa_arm:__pkg__"],
 )
 
 cmake_config(

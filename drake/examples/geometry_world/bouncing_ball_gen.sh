@@ -7,8 +7,6 @@ mydir=$(dirname "$me")
 examples=$(dirname "$mydir")
 drake=$(dirname "$examples")
 
-namespace="drake::examples::bouncing_ball"
-
 source $drake/tools/lcm_vector_gen.sh
 
-gen_vector "bouncing ball vector" z zdot
+gen_vector_proto $mydir/bouncing_ball_vector.named_vector

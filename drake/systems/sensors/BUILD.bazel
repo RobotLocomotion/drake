@@ -1,5 +1,4 @@
 # -*- python -*-
-# This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load(
     "//tools:drake.bzl",
@@ -83,7 +82,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "image",
-    srcs = [],
+    srcs = ["image.cc"],
     hdrs = [
         "image.h",
         "pixel_types.h",
@@ -207,6 +206,7 @@ drake_cc_library(
     deps = [
         ":camera_info",
         ":image",
+        ":rgbd_renderer",
         ":vtk_util",
         "//drake/math:geometric_transform",
         "//drake/multibody:rigid_body_frame",
@@ -387,14 +387,10 @@ filegroup(
     testonly = 1,
     srcs = [
         "test/models/box.sdf",
-        "test/models/cylinder.sdf",
-        "test/models/mesh_box.sdf",
         "test/models/meshes/box.obj",
         "test/models/meshes/box.png",
-        "test/models/multiple_visuals.sdf",
         "test/models/nothing.sdf",
         "test/models/sphere.sdf",
-        "test/models/three_boxes.sdf",
     ],
     visibility = ["//visibility:private"],
 )

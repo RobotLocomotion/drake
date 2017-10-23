@@ -1,11 +1,10 @@
 # -*- python -*-
-# This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 # This file is named BUILD.bazel instead of the more typical BUILD, so that on
 # OSX it won't conflict with a build artifacts directory named "build".
 
-load("//tools:check_licenses.bzl", "check_licenses")
-load("@drake//tools:install.bzl", "install", "install_files")
+load("//tools/install:check_licenses.bzl", "check_licenses")
+load("@drake//tools/install:install.bzl", "install", "install_files")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(
@@ -57,7 +56,7 @@ DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "tinyobjloader",
     "vtk",
     "yaml_cpp",
-]] + ["//tools/install/%s:install" % p for p in [
+]] + ["//tools/workspace/%s:install" % p for p in [
     "gflags",
     "jchart2d",
     "optitrack_driver",

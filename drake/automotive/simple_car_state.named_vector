@@ -1,3 +1,5 @@
+namespace: "drake::automotive"
+
 element {
     name: "x"
     doc: "x"

@@ -1,5 +1,4 @@
 # -*- python -*-
-# This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 # Should include everything any consumer of Drake would ever need.
 #
@@ -97,6 +96,7 @@ LIBDRAKE_COMPONENTS = [
     "//drake/geometry:shape_specification",
     "//drake/lcm:interface",
     "//drake/lcm:lcm",
+    "//drake/lcm:lcm_log",
     "//drake/lcm:translator_base",
     "//drake/manipulation/planner:constraint_relaxing_ik",
     "//drake/manipulation/planner:robot_plan_interpolator",
@@ -124,6 +124,7 @@ LIBDRAKE_COMPONENTS = [
     "//drake/math:saturate",
     "//drake/math:vector3_util",
     "//drake/multibody/benchmarks/acrobot:acrobot",
+    "//drake/multibody/benchmarks/free_body:free_body",
     "//drake/multibody/benchmarks/mass_damper_spring:mass_damper_spring_analytical_solution",  # noqa
     "//drake/multibody/collision:bullet_collision",
     "//drake/multibody/collision:collision",
@@ -282,6 +283,7 @@ LIBDRAKE_COMPONENTS = [
     "//drake/systems/primitives:matrix_gain",
     "//drake/systems/primitives:multiplexer",
     "//drake/systems/primitives:pass_through",
+    "//drake/systems/primitives:piecewise_polynomial_linear_system",
     "//drake/systems/primitives:primitives",
     "//drake/systems/primitives:random_source",
     "//drake/systems/primitives:saturation",
@@ -309,6 +311,7 @@ LIBDRAKE_COMPONENTS = [
     "//drake/systems/sensors:image",
     "//drake/systems/sensors:image_to_lcm_image_array_t",
     "//drake/systems/sensors:rgbd_camera",
+    "//drake/systems/sensors:rgbd_renderer",
     "//drake/systems/sensors:rotary_encoders",
     "//drake/systems/sensors:sensors",
     "//drake/systems/sensors:vtk_util",
@@ -319,7 +322,4 @@ LIBDRAKE_COMPONENTS = [
     "//drake/util:lcm_util",
     "//drake/util:util",
     "//drake/util:yaml_util",
-    "//drake:gurobi_deps",
-    "//drake:mosek_deps",
-    "//drake:vtk_deps",
 ]

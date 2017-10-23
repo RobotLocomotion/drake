@@ -46,12 +46,19 @@ class RandomState {
 /// concept.
 ///   http://en.cppreference.com/w/cpp/concept/RandomNumberDistribution
 ///
-/// Note: This system is only defined for the double scalar type.
+/// @note User code should not instantiate this class directly, but
+/// should use systems::UniformRandomSource, systems::GaussianRandomSource, and
+/// systems::ExponentialRandomSource systems instead.
 ///
-/// Note: The hard-coding of (default) distribution parameters is imposed
+/// @note This system is only defined for the double scalar type.
+///
+/// @note The hard-coding of (default) distribution parameters is imposed
 /// intentionally to simplify analysis (by forcing systems taking noise inputs
 /// to implement the shifting/scaling, the system itself contains all of the
 /// necessary information for stochastic analysis).
+///
+/// @see @ref stochastic_systems, UniformRandomSource, GaussianRandomSource,
+/// ExponentialRandomSource.
 ///
 /// @ingroup primitive_systems
 template <typename Distribution, typename Generator = std::mt19937>
@@ -111,6 +118,7 @@ class RandomSource : public LeafSystem<double> {
 
 /// Generates uniformly distributed random numbers in the interval [0,1].
 ///
+/// @see internal::RandomSource
 /// @ingroup primitive_systems
 typedef internal::RandomSource<std::uniform_real_distribution<double>>
     UniformRandomSource;
@@ -118,6 +126,7 @@ typedef internal::RandomSource<std::uniform_real_distribution<double>>
 /// Generates normally distributed random numbers with mean zero and unit
 /// covariance.
 ///
+/// @see internal::RandomSource
 /// @ingroup primitive_systems
 typedef internal::RandomSource<std::normal_distribution<double>>
     GaussianRandomSource;
@@ -125,6 +134,7 @@ typedef internal::RandomSource<std::normal_distribution<double>>
 /// Generates exponentially distributed random numbers with mean, standard
 /// deviation, and scale parameter (aka 1/λ) set to one.
 ///
+/// @see internal::RandomSource
 /// @ingroup primitive_systems
 typedef internal::RandomSource<std::exponential_distribution<double>>
     ExponentialRandomSource;
@@ -136,6 +146,8 @@ typedef internal::RandomSource<std::exponential_distribution<double>>
 ///
 /// @param sampling_interval_sec interval to be used for all new sources.
 /// @returns the total number of RandomSource systems added.
+///
+/// @see @ref stochastic_systems
 int AddRandomInputs(double sampling_interval_sec,
                     DiagramBuilder<double>* builder);
 

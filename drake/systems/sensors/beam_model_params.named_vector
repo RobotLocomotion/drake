@@ -1,3 +1,4 @@
+namespace: "drake::systems::sensors"
 
 element {
     name: "lambda_short"
