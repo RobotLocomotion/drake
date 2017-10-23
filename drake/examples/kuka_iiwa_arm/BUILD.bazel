@@ -127,6 +127,7 @@ drake_cc_binary(
         ":iiwa_common",
         ":iiwa_lcm",
         "//drake/common:find_resource",
+        "//drake/common:text_logging_gflags",
         "//drake/lcm",
         "//drake/manipulation/util:sim_diagram_builder",
         "//drake/manipulation/util:world_sim_tree_builder",
@@ -182,6 +183,23 @@ drake_cc_googletest(
     name = "optitrack_test",
     deps = [
         "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
+    ],
+)
+
+# Test that kuka_simulation can load the dual arm urdf
+sh_test(
+    name = "dual_kuka_simulation_test",
+    size = "small",
+    srcs = ["kuka_simulation"],
+    args = [
+        "$(location :kuka_simulation)",
+        "--urdf",
+        "$(location //drake/manipulation/models/iiwa_description:urdf/dual_iiwa14_polytope_collision.urdf)",  # noqa
+        "--simulation_sec=0.01",
+        "--novisualize_frames",
+    ],
+    data = [
+        "//drake/manipulation/models/iiwa_description:urdf/dual_iiwa14_polytope_collision.urdf",  # noqa
     ],
 )
 
