@@ -60,7 +60,17 @@ class WorldStateSubscriber {
   void HandleIiwaStatus(const lcm::ReceiveBuffer*, const std::string&,
                         const bot_core::robot_state_t* iiwa_msg) {
     DRAKE_DEMAND(iiwa_msg != nullptr);
-    state_->HandleIiwaStatus(*iiwa_msg);
+    // Extract robot base pose.
+    Isometry3<double> X_WB = DecodePose(iiwa_msg->pose);
+    // Extract joint positions.
+    lcmt_iiwa_status iiwa_status;
+    iiwa_status.utime = iiwa_msg->utime;
+    iiwa_status.num_joints = iiwa_msg->num_joints;
+    std::transform(iiwa_msg->joint_position.cbegin(),
+                   iiwa_msg->joint_position.cend(),
+                   std::back_inserter(iiwa_status.joint_position_measured),
+                   [](float q) -> double { return q; });
+    state_->HandleIiwaStatus(iiwa_status, X_WB);
   }
 
   // Handles WSG states from the LCM message.
@@ -120,27 +130,28 @@ void RunPickAndPlaceDemo() {
         lcm.publish("SCHUNK_WSG_COMMAND", msg);
       });
 
+  PlannerConfiguration planner_configuration;
+  planner_configuration.model_path =
+      "drake/manipulation/models/iiwa_description/urdf/"
+      "iiwa14_polytope_collision.urdf";
+  planner_configuration.end_effector_name = "iiwa_link_ee";
   // This needs to match the object model file in iiwa_wsg_simulation.cc
-  const double half_box_height = 0.1;
-  std::vector<Isometry3<double>> place_locations;
-  Isometry3<double> place_location;
-  // TODO(sam.creasey) fix these
-  place_location.translation() = Vector3<double>(0, 0.8, half_box_height);
-  place_location.linear() = Matrix3<double>(
-      AngleAxis<double>(M_PI / 2., Vector3<double>::UnitZ()));
-  place_locations.push_back(place_location);
+  planner_configuration.target_dimensions = {0.06, 0.06, 0.1};
+  planner_configuration.num_tables = 2;
+  Isometry3<double> X_WT{Isometry3<double>::Identity()};
+  X_WT.translation() = Vector3<double>(0, 0.8, 0);
+  env_state.HandleTableStatus(0, X_WT);
 
-  place_location.translation() = Vector3<double>(0.8, 0, half_box_height);
-  place_location.linear().setIdentity();
-  place_locations.push_back(place_location);
+  X_WT.translation() = Vector3<double>(0.8, 0, 0);
+  env_state.HandleTableStatus(1, X_WT);
 
-  PickAndPlaceStateMachine machine(place_locations, true);
+  PickAndPlaceStateMachine machine(planner_configuration, true);
 
   // lcm handle loop
   while (true) {
     // Handles all messages.
     while (lcm.handleTimeout(10) == 0) {}
-    machine.Update(env_state, iiwa_callback, wsg_callback, &planner);
+    machine.Update(env_state, iiwa_callback, wsg_callback);
   }
 }
 

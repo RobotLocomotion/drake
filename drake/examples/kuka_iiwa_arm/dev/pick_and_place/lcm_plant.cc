@@ -1,11 +1,15 @@
 #include "drake/examples/kuka_iiwa_arm/dev/pick_and_place/lcm_plant.h"
 
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
+
 #include "optitrack/optitrack_frame_t.hpp"
 
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_controller.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_lcm.h"
-#include "drake/manipulation/util/frame_pose_tracker.h"
 #include "drake/manipulation/util/frame_pose_tracker.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
@@ -234,7 +238,7 @@ LcmPlant::LcmPlant(
       builder.ExportOutput(iiwa_and_wsg_plant_->get_output_port_plant_state());
 
   std::vector<IiwaCommandReceiver*> iiwa_command_receivers;
-  const int kNumIiwas = plant_configuration.robot_base_poses.size();
+  const int kNumIiwas = plant_configuration.robot_poses.size();
   for (int i = 0; i < kNumIiwas; ++i) {
     const std::string suffix{"_" + std::to_string(i)};
     auto iiwa_command_receiver =
@@ -301,7 +305,7 @@ LcmPlant::LcmPlant(
   builder.BuildInto(this);
 }
 
-}  // namespace monolithic_pick_and_place
+}  // namespace pick_and_place
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
 }  // namespace drake

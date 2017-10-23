@@ -19,42 +19,30 @@ const char* const kIiwaUrdf =
 GTEST_TEST(PickAndPlaceWorldStateTest, EndEffectorTest) {
   WorldState dut(FindResourceOrThrow(kIiwaUrdf), "iiwa_link_ee");
 
-  bot_core::robot_state_t iiwa_msg{};
+  Isometry3<double> iiwa_base{Isometry3<double>::Identity()};
+
+  lcmt_iiwa_status iiwa_msg{};
   iiwa_msg.utime = 1000;
-  iiwa_msg.pose.translation.x = 0;
-  iiwa_msg.pose.translation.y = 0;
-  iiwa_msg.pose.translation.z = 0;
-  iiwa_msg.pose.rotation.w = 1;
-  iiwa_msg.pose.rotation.x = 0;
-  iiwa_msg.pose.rotation.y = 0;
-  iiwa_msg.pose.rotation.z = 0;
   iiwa_msg.num_joints = kIiwaArmNumJoints;
-  iiwa_msg.joint_name.push_back("iiwa_joint_1");
-  iiwa_msg.joint_name.push_back("iiwa_joint_2");
-  iiwa_msg.joint_name.push_back("iiwa_joint_3");
-  iiwa_msg.joint_name.push_back("iiwa_joint_4");
-  iiwa_msg.joint_name.push_back("iiwa_joint_5");
-  iiwa_msg.joint_name.push_back("iiwa_joint_6");
-  iiwa_msg.joint_name.push_back("iiwa_joint_7");
 
   // Arbitrary position/velocity taken from an LCM message emitted by
   // a running test.
-  iiwa_msg.joint_position.push_back(-0.5707351);
-  iiwa_msg.joint_position.push_back(0.979246);
-  iiwa_msg.joint_position.push_back(0.8769545);
-  iiwa_msg.joint_position.push_back(-0.72);
-  iiwa_msg.joint_position.push_back(0.4279);
-  iiwa_msg.joint_position.push_back(0.674535);
-  iiwa_msg.joint_position.push_back(-1.325);
-  iiwa_msg.joint_velocity.push_back(-0.381015);
-  iiwa_msg.joint_velocity.push_back(0.653732);
-  iiwa_msg.joint_velocity.push_back(0.5854421);
-  iiwa_msg.joint_velocity.push_back(-0.4807268);
-  iiwa_msg.joint_velocity.push_back(0.45032358);
-  iiwa_msg.joint_velocity.push_back(-0.8845549);
-  iiwa_msg.joint_velocity.push_back(0.0);
+  iiwa_msg.joint_position_measured.push_back(-0.5707351);
+  iiwa_msg.joint_position_measured.push_back(0.979246);
+  iiwa_msg.joint_position_measured.push_back(0.8769545);
+  iiwa_msg.joint_position_measured.push_back(-0.72);
+  iiwa_msg.joint_position_measured.push_back(0.4279);
+  iiwa_msg.joint_position_measured.push_back(0.674535);
+  iiwa_msg.joint_position_measured.push_back(-1.325);
+  iiwa_msg.joint_velocity_estimated.push_back(-0.381015);
+  iiwa_msg.joint_velocity_estimated.push_back(0.653732);
+  iiwa_msg.joint_velocity_estimated.push_back(0.5854421);
+  iiwa_msg.joint_velocity_estimated.push_back(-0.4807268);
+  iiwa_msg.joint_velocity_estimated.push_back(0.45032358);
+  iiwa_msg.joint_velocity_estimated.push_back(-0.8845549);
+  iiwa_msg.joint_velocity_estimated.push_back(0.0);
 
-  dut.HandleIiwaStatus(iiwa_msg);
+  dut.HandleIiwaStatus(iiwa_msg, iiwa_base);
 
   EXPECT_EQ(dut.get_iiwa_time(), iiwa_msg.utime * 1e-6);
   EXPECT_TRUE(dut.get_iiwa_base().isApprox(Isometry3<double>::Identity()));
@@ -66,10 +54,10 @@ GTEST_TEST(PickAndPlaceWorldStateTest, EndEffectorTest) {
   // Create another world state and move the base.  We expect that the
   // end effector pose will move by a comparable amount.
   WorldState dut2(FindResourceOrThrow(kIiwaUrdf), "iiwa_link_ee");
-  iiwa_msg.pose.translation.x += 1;
+  iiwa_base.translation().x() += 1;
   expected_pos(0) += 1;
 
-  dut2.HandleIiwaStatus(iiwa_msg);
+  dut2.HandleIiwaStatus(iiwa_msg, iiwa_base);
 
   EXPECT_EQ(dut2.get_iiwa_time(), iiwa_msg.utime * 1e-6);
   const auto translation2 = dut2.get_iiwa_end_effector_pose().translation();

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_wsg_diagram_factory.h"
 #include "drake/examples/kuka_iiwa_arm/pick_and_place/pick_and_place_configuration.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
@@ -108,7 +110,7 @@ class LcmPlant : public systems::Diagram<double> {
   int output_port_plant_state_{-1};
   IiwaAndWsgPlantWithStateEstimator<double>* iiwa_and_wsg_plant_;
 };
-}  // namespace monolithic_pick_and_place
+}  // namespace pick_and_place
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
 }  // namespace drake
