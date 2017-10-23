@@ -1,0 +1,101 @@
+model {
+  items {
+    key: "cube"
+    value: {
+      simulation_model_path: "drake/examples/kuka_iiwa_arm/models/objects/simple_cuboid.urdf"
+    }
+  }
+  items {
+    key: "big_robot_toy"
+    value {
+      simulation_model_path: "drake/examples/kuka_iiwa_arm/models/objects/big_robot_toy.urdf"
+    }
+  }
+  items {
+    key: "round_table"
+    value: {
+      simulation_model_path: "drake/examples/kuka_iiwa_arm/models/objects/round_table.urdf"
+    }
+  }
+  items {
+    key: "folding_table"
+    value: {
+      simulation_model_path: "drake/examples/kuka_iiwa_arm/models/objects/folding_table.urdf"
+    }
+  }
+  items {
+    key: "iiwa"
+    value: {
+      simulation_model_path: "drake/manipulation/models/iiwa_description/urdf/iiwa14_polytope_collision.urdf";
+    }
+  }
+}
+
+table {
+  model_name: "round_table"
+  optitrack_info {
+    id: 8
+  }
+  pose {
+    xyz: [0.1, 0.9, 0.91]
+  }
+}
+table {
+  model_name: "round_table"
+  optitrack_info {
+    id: 9
+  }
+  pose {
+    xyz: [0.8, -0.36, 0.91]
+  }
+}
+table {
+  model_name: "folding_table"
+  optitrack_info {
+    id: 12
+  }
+  pose {
+    xyz: [0.8, 0.36, 0.66]
+    rpy: [0.0, 0.0, 0.7]
+  }
+}
+table {
+  model_name: "folding_table"
+  optitrack_info {
+    id: 13
+  }
+  pose {
+    xyz: [0.1, -0.9, 0.66]
+  }
+}
+
+robot {
+  model_name: "iiwa"
+  optitrack_info {
+    id: 1
+  }
+  pose {
+    xyz: [0.0, 0.0, 0.7645]
+  }
+}
+
+object {
+  model_name: "big_robot_toy"
+  optitrack_info {
+    id: 7
+  }
+  pose {
+    xyz: [0.1, 0.9, 1.0]
+    rpy: [0.0, 0.0, 1.571]
+  }
+}
+
+task {
+  end_effector_name: "iiwa_link_ee"
+}
+
+
+default_compliant_material {
+    youngs_modulus: 3e7
+    dissipation: 5
+}

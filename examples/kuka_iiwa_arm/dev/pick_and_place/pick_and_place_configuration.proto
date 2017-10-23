@@ -44,7 +44,7 @@ message Model{
 message ModelInstance {
     // The name of the model. This should correspond to a key in the model
     // field of the PickAndPlaceConfiguration message.
-    required string name = 1;
+    required string model_name = 1;
     // The Optitrack information for the model base.
     required OptitrackInfo optitrack_info = 2;
     // The [initial] world-pose of the model base.

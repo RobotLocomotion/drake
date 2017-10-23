@@ -32,7 +32,7 @@ model {
 }
 
 table {
-  name: "yellow_post"
+  model_name: "yellow_post"
   optitrack_info {
     id: 2
     X_MF {
@@ -45,7 +45,7 @@ table {
 }
 
 table {
-  name: "yellow_post"
+  model_name: "yellow_post"
   optitrack_info {
     id: 3
     X_MF {
@@ -58,7 +58,7 @@ table {
 }
 
 table {
-  name: "extra_heavy_duty_table"
+  model_name: "extra_heavy_duty_table"
   optitrack_info {
     id: 4
     X_MF {
@@ -71,7 +71,7 @@ table {
 }
 
 table {
-  name: "yellow_post"
+  model_name: "yellow_post"
   optitrack_info {
     id: 5
     X_MF {
@@ -84,7 +84,7 @@ table {
 }
 
 table {
-  name: "yellow_post"
+  model_name: "yellow_post"
   optitrack_info {
     id: 6
     X_MF {
@@ -97,7 +97,7 @@ table {
 }
 
 table {
-  name: "yellow_post"
+  model_name: "yellow_post"
   optitrack_info {
     id: 7
     X_MF {
@@ -110,7 +110,7 @@ table {
 }
 
 robot {
-  name: "iiwa"
+  model_name: "iiwa"
   optitrack_info {
     id: 1
   }
@@ -120,7 +120,7 @@ robot {
 }
 
 object {
-  name: "cube"
+  model_name: "cube"
   optitrack_info {
     id: 8
   }
