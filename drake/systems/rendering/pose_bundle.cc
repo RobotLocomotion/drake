@@ -2,9 +2,8 @@
 
 #include <Eigen/Dense>
 
-#include "drake/common/autodiff_overloads.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
-#include "drake/common/symbolic.h"
 
 namespace drake {
 namespace systems {
@@ -73,10 +72,9 @@ void PoseBundle<T>::set_model_instance_id(int index, int id) {
   ids_[index] = id;
 }
 
-template class PoseBundle<double>;
-template class PoseBundle<AutoDiffXd>;
-template class PoseBundle<symbolic::Expression>;
-
 }  // namespace rendering
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::rendering::PoseBundle)

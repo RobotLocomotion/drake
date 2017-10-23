@@ -1,8 +1,7 @@
 #include "drake/systems/controllers/pid_controlled_system.h"
 
-#include "drake/common/autodiff_overloads.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
-#include "drake/common/eigen_autodiff_types.h"
 #include "drake/systems/primitives/saturation.h"
 
 namespace drake {
@@ -156,9 +155,9 @@ PidControlledSystem<T>::ConnectControllerWithInputSaturation(
 template <typename T>
 PidControlledSystem<T>::~PidControlledSystem() {}
 
-template class PidControlledSystem<double>;
-template class PidControlledSystem<AutoDiffXd>;
-
 }  // namespace controllers
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::systems::controllers::PidControlledSystem)

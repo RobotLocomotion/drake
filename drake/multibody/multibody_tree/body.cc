@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/autodiff.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 
 namespace drake {

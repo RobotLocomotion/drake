@@ -7,9 +7,9 @@
 #include <unordered_map>
 #include <utility>
 
+#include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/symbolic.h"
 #include "drake/systems/framework/scalar_conversion_traits.h"
@@ -231,7 +231,12 @@ static std::unique_ptr<System<T>> Make(
     throw std::runtime_error(msg.str());
   }
   const S<U>& my_other = dynamic_cast<const S<U>&>(other);
-  return std::make_unique<S<T>>(my_other);
+  auto result = std::make_unique<S<T>>(my_other);
+  // We manually propagate the name from the old System to the new.  The name
+  // is the only extrinsic property of the System and LeafSystem base classes
+  // that is stored within the System itself.
+  result->set_name(other.get_name());
+  return std::move(result);
 }
 // When Traits says not to convert.
 template <template <typename> class S, typename T, typename U>

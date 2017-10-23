@@ -41,7 +41,8 @@ ClosestPose<T> PoseSelector<T>::FindSingleClosestPose(
 
   DRAKE_DEMAND(lane != nullptr);
 
-  const GeoPosition ego_geo_position(ego_pose.get_isometry().translation());
+  const GeoPosition ego_geo_position =
+      GeoPosition::FromXyz(ego_pose.get_isometry().translation());
   const LanePosition ego_lane_position =
       lane->ToLanePosition(ego_geo_position, nullptr, nullptr);
   LaneDirection lane_direction = CalcLaneDirection(
@@ -65,7 +66,8 @@ ClosestPose<T> PoseSelector<T>::FindSingleClosestPose(
     T distance_increment{0.};
     for (int i = 0; i < traffic_poses.get_num_poses(); ++i) {
       const Isometry3<T> traffic_isometry = traffic_poses.get_pose(i);
-      const GeoPosition traffic_geo_position(traffic_isometry.translation());
+      const GeoPosition traffic_geo_position =
+          GeoPosition::FromXyz(traffic_isometry.translation());
 
       if (ego_geo_position == traffic_geo_position) continue;
       if (!IsWithinLane(traffic_geo_position, lane_direction.lane)) continue;
@@ -125,7 +127,9 @@ T PoseSelector<T>::GetSigmaVelocity(const RoadOdometry<T>& road_odometry) {
   DRAKE_DEMAND(IsWithinLane(road_odometry.pos, road_odometry.lane));
   const maliput::api::Rotation rot =
       road_odometry.lane->GetOrientation(road_odometry.pos);
-  const Vector3<T>& vel = road_odometry.vel.get_velocity().translational();
+  multibody::SpatialVelocity<T> road_odometry_velocity =
+      road_odometry.vel.get_velocity();
+  const Vector3<T>& vel = road_odometry_velocity.translational();
   return vel(0) * std::cos(rot.yaw()) + vel(1) * std::sin(rot.yaw());
 }
 

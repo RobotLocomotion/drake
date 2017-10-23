@@ -1,0 +1,5 @@
+# -*- python -*-
+
+load("//tools/install:install_data.bzl", "install_data")
+
+install_data()

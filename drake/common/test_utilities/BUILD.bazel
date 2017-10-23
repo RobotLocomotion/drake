@@ -1,0 +1,127 @@
+# -*- python -*-
+
+load(
+    "//tools:drake.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+# This should encompass every cc_library in this package, except for items that
+# should only ever be linked into main() programs.
+drake_cc_library(
+    name = "test_utilities",
+    testonly = 1,
+    srcs = [],
+    hdrs = [],
+    deps = [
+        ":eigen_geometry_compare",
+        ":eigen_matrix_compare",
+        ":is_dynamic_castable",
+        ":is_memcpy_movable",
+        ":measure_execution",
+        ":random_polynomial_matrix",
+        ":symbolic_test_util",
+    ],
+    # Intentionally excluded items:
+    # - drake_cc_googletest_main
+)
+
+drake_cc_library(
+    name = "eigen_geometry_compare",
+    testonly = 1,
+    srcs = ["eigen_geometry_compare.cc"],
+    hdrs = ["eigen_geometry_compare.h"],
+    deps = [
+        ":eigen_matrix_compare",
+        "//drake/common:essential",
+        "@gtest//:without_main",
+    ],
+)
+
+drake_cc_library(
+    name = "eigen_matrix_compare",
+    testonly = 1,
+    hdrs = ["eigen_matrix_compare.h"],
+    deps = [
+        "//drake/common:essential",
+        "@gtest//:without_main",
+    ],
+)
+
+drake_cc_library(
+    name = "is_dynamic_castable",
+    testonly = 1,
+    hdrs = ["is_dynamic_castable.h"],
+    deps = [
+        "//drake/common:nice_type_name",
+    ],
+)
+
+drake_cc_library(
+    name = "is_memcpy_movable",
+    testonly = 1,
+    hdrs = ["is_memcpy_movable.h"],
+)
+
+drake_cc_library(
+    name = "measure_execution",
+    testonly = 1,
+    hdrs = ["measure_execution.h"],
+)
+
+drake_cc_library(
+    name = "random_polynomial_matrix",
+    testonly = 1,
+    hdrs = ["random_polynomial_matrix.h"],
+    deps = [
+        "//drake/common:polynomial",
+    ],
+)
+
+drake_cc_library(
+    name = "symbolic_test_util",
+    testonly = 1,
+    hdrs = ["symbolic_test_util.h"],
+    deps = [
+        "//drake/common:symbolic",
+    ],
+)
+
+# This is only intended to be used by the drake_cc_googletest() macro.
+# Do not add it to ":test_utilities".
+drake_cc_library(
+    name = "drake_cc_googletest_main",
+    testonly = 1,
+    srcs = ["drake_cc_googletest_main.cc"],
+    deps = [
+        "//drake/common:text_logging_gflags",
+        "@gtest//:without_main",
+    ],
+)
+
+drake_cc_googletest(
+    name = "eigen_matrix_compare_test",
+    deps = [
+        ":eigen_matrix_compare",
+        "//drake/common:essential",
+    ],
+)
+
+drake_cc_googletest(
+    name = "is_dynamic_castable_test",
+    deps = [
+        ":is_dynamic_castable",
+    ],
+)
+
+drake_cc_googletest(
+    name = "is_memcpy_movable_test",
+    deps = [
+        ":is_memcpy_movable",
+    ],
+)
+
+add_lint_tests()

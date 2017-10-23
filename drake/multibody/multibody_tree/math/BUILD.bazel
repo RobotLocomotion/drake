@@ -1,0 +1,75 @@
+# -*- python -*-
+
+load(
+    "//tools:drake.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+drake_cc_library(
+    name = "spatial_vector",
+    srcs = [],
+    hdrs = ["spatial_vector.h"],
+    deps = [
+        "//drake/common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "spatial_velocity",
+    srcs = [],
+    hdrs = ["spatial_velocity.h"],
+    deps = [
+        ":spatial_vector",
+        "//drake/common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "spatial_acceleration",
+    srcs = [],
+    hdrs = ["spatial_acceleration.h"],
+    deps = [
+        ":spatial_vector",
+        "//drake/common:essential",
+        "//drake/math:vector3_util",
+    ],
+)
+
+drake_cc_library(
+    name = "spatial_force",
+    srcs = [],
+    hdrs = ["spatial_force.h"],
+    deps = [
+        ":spatial_vector",
+        "//drake/common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "spatial_algebra",
+    srcs = [],
+    hdrs = ["spatial_algebra.h"],
+    deps = [
+        ":spatial_acceleration",
+        ":spatial_force",
+        ":spatial_vector",
+        ":spatial_velocity",
+        "//drake/common:essential",
+    ],
+)
+
+drake_cc_googletest(
+    name = "spatial_algebra_test",
+    deps = [
+        ":spatial_algebra",
+        "//drake/common:autodiff",
+    ],
+)
+
+add_lint_tests()

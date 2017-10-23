@@ -11,12 +11,12 @@ die () {
 
 me="The Drake prerequisite set-up script"
 
-[[ $EUID -eq 0 ]] || die "$me must run as root. Please use sudo."
+[[ "${EUID}" -eq 0 ]] || die "${me} must run as root. Please use sudo."
 
 apt update
 apt install --no-install-recommends lsb-release wget
 
-[[ "$(lsb_release -sc)" == "xenial" ]] || die "$me only supports Ubuntu 16.04."
+[[ "$(lsb_release -sc)" == "xenial" ]] || die "${me} only supports Ubuntu 16.04."
 
 # Install Clang 3.9
 while true; do
@@ -41,28 +41,16 @@ while true; do
   esac
 done
 
-# The CI scripts require a newer version of CMake than apt installs.
-# Only install CMake if it's not installed or older than 3.5.1.
-install_cmake=true
-if command -v cmake &>/dev/null; then
-  cmake_version=$(cmake --version) &>/dev/null
-  cmake_version=${cmake_version:14:5}
-  if dpkg --compare-versions $cmake_version ge 3.5.1; then
-    echo "CMake is already installed ($cmake_version)"
-    install_cmake=false
-  fi
-fi
-if $install_cmake; then
-  apt install --no-install-recommends cmake cmake-curses-gui
-fi
-
 # Install the APT dependencies.
 apt update -y
 apt install --no-install-recommends $(tr '\n' ' ' <<EOF
 
 bash-completion
 binutils
+cmake
+cmake-curses-gui
 coinor-libipopt-dev
+diffstat
 doxygen
 g++
 g++-5
@@ -71,13 +59,10 @@ gcc
 gcc-5
 gcc-5-multilib
 gdb
-gfortran
-gfortran-5
-gfortran-5-multilib
 git
 graphviz
 libblas-dev
-libboost-dev
+libboost-all-dev
 libexpat1-dev
 libfreetype6
 libglib2.0-dev
@@ -91,24 +76,29 @@ libnetcdf-c++4
 libnetcdf11
 libogg0
 libpng-dev
+libprotobuf-dev
 libqt5multimedia5
 libqt5opengl5
 libqt5x11extras5
 libtheora0
 libtiff5
 libtinyxml-dev
+libtinyxml2-dev
 libtool
 libxml2
 libxt6
+libyaml-cpp-dev
 make
 mesa-common-dev
 openjdk-8-jdk
 patchutils
 pkg-config
+protobuf-compiler
 python-dev
 python-gtk2
 python-lxml
 python-numpy
+python-protobuf
 python-pygame
 python-scipy
 python-sphinx
@@ -121,35 +111,16 @@ EOF
     )
 
 # Install Bazel.
-wget -O /tmp/bazel_0.5.2-linux-x86_64.deb https://github.com/bazelbuild/bazel/releases/download/0.5.2/bazel_0.5.2-linux-x86_64.deb
-if echo "b14c8773dab078d3422fe4082f3ab4d9e14f02313c3b3eb4b5b40c44ce29ed59 /tmp/bazel_0.5.2-linux-x86_64.deb" | sha256sum -c -; then
-  dpkg -i /tmp/bazel_0.5.2-linux-x86_64.deb
+wget -O /tmp/bazel_0.6.1-linux-x86_64.deb https://github.com/bazelbuild/bazel/releases/download/0.6.1/bazel_0.6.1-linux-x86_64.deb
+if echo "5012d064a6e95836db899fec0a2ee2209d2726fae4a79b08c8ceb61049a115cd /tmp/bazel_0.6.1-linux-x86_64.deb" | sha256sum -c -; then
+  dpkg -i /tmp/bazel_0.6.1-linux-x86_64.deb
 else
   die "The Bazel deb does not have the expected SHA256.  Not installing Bazel."
 fi
 
-rm /tmp/bazel_0.5.2-linux-x86_64.deb
+rm /tmp/bazel_0.6.1-linux-x86_64.deb
 
 # Remove deb that we used to generate and install, but no longer need.
 if [ -L /usr/lib/ccache/bazel ]; then
   apt purge ccache-bazel-wrapper
 fi
-
-# TODO(david-german-tri): Do we need to munge the MATLAB C++ libraries?
-# http://drake.mit.edu/ubuntu.html#matlab
-
-# TODO(jamiesnape): Remove the below legacy dependencies when CMake support
-# is removed.
-
-apt install --no-install-recommends $(tr '\n' ' ' <<EOF
-
-libqt4-dev
-libqt4-opengl-dev
-libvtk-java
-libvtk5-dev
-libvtk5-qt4-dev
-ninja-build
-python-vtk
-
-EOF
-    )

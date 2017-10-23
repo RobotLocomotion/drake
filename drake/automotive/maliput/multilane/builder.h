@@ -24,9 +24,9 @@ class RoadGeometry;
 /// network.
 ///
 /// multilane is a simple road-network implementation:
-///  - single lane per segment;
-///  - constant lane_bounds, driveable_bounds, and elevation_bounds,
-///    same for all lanes;
+///  - multiple lanes per segment;
+///  - constant lane width, lane_bounds, and elevation_bounds, same for all
+///    lanes;
 ///  - only linear and constant-curvature-arc primitives in XY-plane;
 ///  - cubic polynomials (parameterized on XY-arc-length) for elevation
 ///    and superelevation;
@@ -40,11 +40,22 @@ class RoadGeometry;
 /// start Endpoint to an end Endpoint calculated via a linear or arc
 /// displacement (ArcOffset).  A Group is a collection of Connections.
 ///
-/// Builder::Build() constructs a RoadGeometry.  Each Connection yields a
-/// Segment bearing a single Lane.  Each Group yields a Junction containing
+/// Builder::Build() constructs a RoadGeometry. Each Connection yields a
+/// Segment bearing multiple Lanes. Each Group yields a Junction containing
 /// the Segments associated with the grouped Connections; ungrouped
 /// Connections each receive their own Junction.
-
+///
+/// Specific suffixes are used to name Maliput entities. The following list
+/// explains the naming convention:
+///
+///  - Junctions: "j:" + Group::id(), or "j" + Connection::id() for an
+///    ungrouped Connection.
+///  - Segments: "s:" + Connection::id()
+///  - Lanes: "l:" + Connection::id() + "_" + lane_index
+///  - BranchPoints: "bp:" + branch_point_index
+///
+/// Note: 'lane_index' is the index in the Segment, and 'branch_point_index' is
+/// is the index in the RoadGeometry.
 
 /// XY-plane-only parameters for an endpoint of a connection, specified in
 /// the world frame.
@@ -157,7 +168,7 @@ class Endpoint {
 
 
 /// Specification for path offset along a circular arc.
-///  * radius: radius of the arc, which must be non-negative
+///  * radius: radius of the arc, which must be positive
 ///  * d_theta:  angle of arc segment (Δθ)
 ///    * d_theta > 0 is counterclockwise ('veer to left')
 ///    * d_theta < 0 is clockwise ('veer to right')
@@ -186,7 +197,7 @@ class ArcOffset {
 /// Representation of a reference path connecting two endpoints.
 ///
 /// Upon building the RoadGeometry, a Connection yields a Segment
-/// bearing a single Lane with the specified reference path.  The
+/// bearing multiple Lanes with offsets from the reference path. The
 /// Segment will belong to its own Junction, unless the Connection was
 /// grouped with other Connections into a Group.
 ///
@@ -202,23 +213,67 @@ class Connection {
   /// Possible connection geometries:  line- or arc-segment.
   enum Type { kLine, kArc };
 
-  /// Constructs a line-segment connection joining @p start to @p end.
-  Connection(const std::string& id,
-             const Endpoint& start, const Endpoint& end)
-      : type_(kLine), id_(id), start_(start), end_(end) {}
+  /// Constructs a line-segment connection joining `start` to `end`.
+  ///
+  /// Segments will contain `num_lanes` lanes, which must be greater than zero.
+  /// First Lane centerline will be placed at `r0` distance from the reference
+  /// curve.
+  ///
+  /// `left_shoulder` and `right_shoulder` are extra spaces added to the right
+  /// and left side of the first and last lanes of the Segment. They will be
+  /// added to Segment's bounds and must be greater or equal to zero.
+  Connection(const std::string& id, const Endpoint& start, const Endpoint& end,
+             int num_lanes, double r0, double left_shoulder,
+             double right_shoulder)
+      : type_(kLine),
+        id_(id),
+        start_(start),
+        end_(end),
+        num_lanes_(num_lanes),
+        r0_(r0),
+        left_shoulder_(left_shoulder),
+        right_shoulder_(right_shoulder) {
+    DRAKE_DEMAND(num_lanes_ > 0);
+    DRAKE_DEMAND(left_shoulder_ >= 0);
+    DRAKE_DEMAND(right_shoulder_ >= 0);
+  }
 
-  /// Constructs an arc-segment connection joining @p start to @p end.
+  /// Constructs an arc-segment connection joining `start` to `end`.
   ///
-  /// @p cx, @p cy specify the center of the arc. @p radius is the radius,
-  /// and @p d_theta is the angle of arc.
+  /// `cx`, `cy` specify the center of the arc. `radius` is the radius,
+  /// and `d_theta` is the angle of arc.
   ///
-  /// @p radius must be non-negative.  @p d_theta > 0 indicates a
+  /// `radius` must be positive.  `d_theta` > 0 indicates a
   /// counterclockwise arc from start to end.
-  Connection(const std::string& id,
-             const Endpoint& start, const Endpoint& end,
-             double cx, double cy, double radius, double d_theta)
-      : type_(kArc), id_(id), start_(start), end_(end),
-        cx_(cx), cy_(cy), radius_(radius), d_theta_(d_theta) {}
+  ///
+  /// Segments will contain `num_lanes` lanes, which must be greater than zero.
+  /// First Lane centerline will be placed at `r0` distance from the reference
+  /// curve.
+  ///
+  /// `left_shoulder` and `right_shoulder` are extra spaces added to the right
+  /// and left side of the first and last lanes of the Segment. They will be
+  /// added to Segment's bounds and must be greater or equal to zero.
+  Connection(const std::string& id, const Endpoint& start, const Endpoint& end,
+             int num_lanes, double r0, double left_shoulder,
+             double right_shoulder, double cx, double cy, double radius,
+             double d_theta)
+      : type_(kArc),
+        id_(id),
+        start_(start),
+        end_(end),
+        num_lanes_(num_lanes),
+        r0_(r0),
+        left_shoulder_(left_shoulder),
+        right_shoulder_(right_shoulder),
+        cx_(cx),
+        cy_(cy),
+        radius_(radius),
+        d_theta_(d_theta) {
+    DRAKE_DEMAND(num_lanes_ > 0);
+    DRAKE_DEMAND(left_shoulder_ >= 0);
+    DRAKE_DEMAND(right_shoulder_ >= 0);
+    DRAKE_DEMAND(radius_ > 0);
+  }
 
   /// Returns the geometric type of the path.
   Type type() const { return type_; }
@@ -256,11 +311,28 @@ class Connection {
     return d_theta_;
   }
 
+  /// Returns the number of lanes the Segment will contain.
+  int num_lanes() const { return num_lanes_; }
+
+  /// Returns the lateral offset from the reference curve to the first Lane
+  /// centerline.
+  double r0() const { return r0_; }
+
+  /// Returns the left shoulder distance of the segment.
+  double left_shoulder() const { return left_shoulder_; }
+
+  /// Returns the right shoulder distance of the segment.
+  double right_shoulder() const { return right_shoulder_; }
+
  private:
   Type type_{};
   std::string id_;
   Endpoint start_;
   Endpoint end_;
+  const int num_lanes_{};
+  const double r0_{};
+  const double left_shoulder_{};
+  const double right_shoulder_{};
 
   // Bits specific to type_ == kArc:
   double cx_{};
@@ -278,10 +350,10 @@ class Group {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Group)
 
-  /// Constructs an empty Group with the specified @p id.
+  /// Constructs an empty Group with the specified `id`.
   explicit Group(const std::string& id) : id_(id) {}
 
-  /// Constructs a Group with @p id, populated by @p connections.
+  /// Constructs a Group with `id`, populated by `connections`.
   Group(const std::string& id,
         const std::vector<const Connection*>& connections)
       : id_(id) {
@@ -320,63 +392,69 @@ class Builder {
   /// Constructs a Builder which can be used to specify and assemble a
   /// multilane implementation of an api::RoadGeometry.
   ///
-  /// The bounds @p lane_bounds, @p driveable_bounds, and @p elevation_bounds
-  /// are applied uniformly to the single lanes of every segment;
-  /// @p lane_bounds must be a subset of @p driveable_bounds.
-  /// @p linear_tolerance and @p angular_tolerance specify the respective
+  /// `lane_width` is the width assigned to all Lanes. It must be greater or
+  /// equal to zero. Lane reference path (which are offsets of parent Segment
+  /// reference curve) are centered within the Lane. Lane spacing will be
+  /// `lane_width` too. Segment extents will be derived from the composition of
+  /// left and right shoulders, number of lanes and lane spacing. The
+  /// `elevation_bounds` is applied uniformly to all lanes of every segment.
+  /// `linear_tolerance` and `angular_tolerance` specify the respective
   /// tolerances for the resulting RoadGeometry.
-  Builder(const api::RBounds& lane_bounds,
-          const api::RBounds& driveable_bounds,
-          const api::HBounds& elevation_bounds,
-          const double linear_tolerance,
-          const double angular_tolerance);
+  Builder(double lane_width, const api::HBounds& elevation_bounds,
+          double linear_tolerance, double angular_tolerance);
 
-  /// Connects @p start to an end-point linearly displaced from @p start.
-  /// @p length specifies the length of displacement (in the direction of the
-  /// heading of @p start).  @p z_end specifies the elevation characteristics
-  /// at the end-point.
-  const Connection* Connect(
-      const std::string& id,
-      const Endpoint& start,
-      const double length,
-      const EndpointZ& z_end);
+  /// Connects `start` to an end-point linearly displaced from `start`.
+  /// `length` specifies the length of displacement (in the direction of the
+  /// heading of `start`). `z_end` specifies the elevation characteristics at
+  /// the end-point.
+  /// `r0` is the distance from the reference curve to the first Lane
+  /// centerline. `left_shoulder` and `right_shoulder` are extra lateral
+  /// distances added to the extents of the Segment after the first and last
+  /// Lanes positions are determined.
+  const Connection* Connect(const std::string& id, int num_lanes, double r0,
+                            double left_shoulder, double right_shoulder,
+                            const Endpoint& start, double length,
+                            const EndpointZ& z_end);
 
-  /// Connects @p start to an end-point displaced from @p start via an arc.
-  /// @p arc specifies the shape of the arc.  @p z_end specifies the
-  /// elevation characteristics at the end-point.
-  const Connection* Connect(
-      const std::string& id,
-      const Endpoint& start,
-      const ArcOffset& arc,
-      const EndpointZ& z_end);
+  /// Connects `start` to an end-point displaced from `start` via an arc.
+  /// `arc` specifies the shape of the arc. `z_end` specifies the elevation
+  /// characteristics at the end-point.
+  /// `r0` is the distance from the reference curve to the first Lane
+  /// centerline. `left_shoulder` and `right_shoulder` are extra lateral
+  /// distances added to the extents of the Segment after the first and last
+  /// Lanes positions are determined.
+  const Connection* Connect(const std::string& id, int num_lanes, double r0,
+                            double left_shoulder, double right_shoulder,
+                            const Endpoint& start, const ArcOffset& arc,
+                            const EndpointZ& z_end);
 
   /// Sets the default branch for one end of a connection.
   ///
-  /// The default branch for the @p in_end of connection @p in will set to be
-  /// @p out_end of connection @p out.  The specified connections must
-  /// actually be joined at the specified ends (i.e., the Endpoint's for
-  /// those ends must be coincident and (anti)parallel within the tolerances
-  /// for the Builder).
-  void SetDefaultBranch(
-      const Connection* in, const api::LaneEnd::Which in_end,
-      const Connection* out, const api::LaneEnd::Which out_end);
+  /// The default branch for the `in_end` of connection `in` at Lane
+  /// `in_lane_index`will set to be `out_end` of connection `out` at Lane
+  /// `out_lane_index`. The specified connections must actually be joined at the
+  /// specified ends (i.e., the Endpoint's for those ends must be coincident and
+  /// (anti)parallel within the tolerances for the Builder).
+  void SetDefaultBranch(const Connection* in, int in_lane_index,
+                        const api::LaneEnd::Which in_end, const Connection* out,
+                        int out_lane_index, const api::LaneEnd::Which out_end);
 
-  /// Creates a new empty connection group with ID string @p id.
+  /// Creates a new empty connection group with ID string `id`.
   Group* MakeGroup(const std::string& id);
 
-  /// Creates a new connection group with ID @p id, populated with the
-  /// given @p connections.
+  /// Creates a new connection group with ID `id`, populated with the
+  /// given `connections`.
   Group* MakeGroup(const std::string& id,
                    const std::vector<const Connection*>& connections);
 
-  /// Produces a RoadGeometry, with the ID @p id.
+  /// Produces a RoadGeometry, with the ID `id`.
   std::unique_ptr<const api::RoadGeometry> Build(
       const api::RoadGeometryId& id) const;
 
  private:
   // EndpointFuzzyOrder is an arbitrary strict complete ordering of Endpoints
   // useful for, e.g., std::map.  It provides a comparison operation that
-  // treats two Endpoints within @p linear_tolerance of one another as
+  // treats two Endpoints within `linear_tolerance` of one another as
   // equivalent.
   //
   // This is used to match up the endpoints of Connections, to determine
@@ -429,20 +507,26 @@ class Builder {
   struct DefaultBranch {
     DefaultBranch() = default;
 
-    DefaultBranch(
-        const Connection* ain, const api::LaneEnd::Which ain_end,
-        const Connection* aout, const api::LaneEnd::Which aout_end)
-        : in(ain), in_end(ain_end), out(aout), out_end(aout_end) {}
+    DefaultBranch(const Connection* ain, int ain_lane_index,
+                  const api::LaneEnd::Which ain_end, const Connection* aout,
+                  int aout_lane_index, const api::LaneEnd::Which aout_end)
+        : in(ain),
+          in_lane_index(ain_lane_index),
+          in_end(ain_end),
+          out(aout),
+          out_lane_index(aout_lane_index),
+          out_end(aout_end) {}
 
     const Connection* in{};
+    const int in_lane_index{};
     api::LaneEnd::Which in_end{};
     const Connection* out{};
+    const int out_lane_index{};
     api::LaneEnd::Which out_end{};
   };
 
-  Lane* BuildConnection(
-      const Connection* const cnx,
-      Junction* const junction,
+  std::vector<Lane*> BuildConnection(
+      const Connection* const cnx, Junction* const junction,
       RoadGeometry* const rg,
       std::map<Endpoint, BranchPoint*, EndpointFuzzyOrder>* const bp_map) const;
 
@@ -456,11 +540,10 @@ class Builder {
       RoadGeometry* rg,
       std::map<Endpoint, BranchPoint*, EndpointFuzzyOrder>* bp_map) const;
 
-  api::RBounds lane_bounds_;
-  api::RBounds driveable_bounds_;
-  api::HBounds elevation_bounds_;
-  double linear_tolerance_{};
-  double angular_tolerance_{};
+  const double lane_width_{};
+  const api::HBounds elevation_bounds_;
+  const double linear_tolerance_{};
+  const double angular_tolerance_{};
   std::vector<std::unique_ptr<Connection>> connections_;
   std::vector<DefaultBranch> default_branches_;
   std::vector<std::unique_ptr<Group>> groups_;

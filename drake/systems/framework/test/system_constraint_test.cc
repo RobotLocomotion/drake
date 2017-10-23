@@ -33,36 +33,38 @@ GTEST_TEST(SystemConstraintTest, BasicTest) {
                               Eigen::MatrixXd(0, 1));
   auto context = system.CreateDefaultContext();
 
+  const double tol = 1e-6;
+
   // Test equality constraint.
-  SystemConstraint<double> equality_constraint(calc, 1, true,
-                                               "equality constraint");
+  SystemConstraint<double> equality_constraint(
+      calc, 1, SystemConstraintType::kEquality, "equality constraint");
   context->get_mutable_continuous_state_vector()->SetAtIndex(1, 5.0);
   equality_constraint.Calc(*context, &value);
   EXPECT_EQ(value[0], 5.0);
-  EXPECT_FALSE(equality_constraint.CheckSatisfied(*context));
+  EXPECT_FALSE(equality_constraint.CheckSatisfied(*context, tol));
 
   context->get_mutable_continuous_state_vector()->SetAtIndex(1, 0.0);
   equality_constraint.Calc(*context, &value);
   EXPECT_EQ(value[0], 0.0);
-  EXPECT_TRUE(equality_constraint.CheckSatisfied(*context));
+  EXPECT_TRUE(equality_constraint.CheckSatisfied(*context, tol));
 
   EXPECT_EQ(equality_constraint.size(), 1);
   EXPECT_EQ(equality_constraint.description(), "equality constraint");
 
   // Test inequality constraint.
-  SystemConstraint<double> inequality_constraint(calc2, 2, false,
-                                                 "inequality constraint");
+  SystemConstraint<double> inequality_constraint(
+      calc2, 2, SystemConstraintType::kInequality, "inequality constraint");
   context->get_mutable_continuous_state_vector()->SetAtIndex(0, 3.0);
   context->get_mutable_continuous_state_vector()->SetAtIndex(1, 5.0);
   inequality_constraint.Calc(*context, &value);
   EXPECT_EQ(value[0], 3.0);
   EXPECT_EQ(value[1], 5.0);
-  EXPECT_TRUE(inequality_constraint.CheckSatisfied(*context));
+  EXPECT_TRUE(inequality_constraint.CheckSatisfied(*context, tol));
 
   context->get_mutable_continuous_state_vector()->SetAtIndex(1, -0.5);
   inequality_constraint.Calc(*context, &value);
   EXPECT_EQ(value[1], -0.5);
-  EXPECT_FALSE(inequality_constraint.CheckSatisfied(*context));
+  EXPECT_FALSE(inequality_constraint.CheckSatisfied(*context, tol));
 
   EXPECT_EQ(inequality_constraint.size(), 2);
   EXPECT_EQ(inequality_constraint.description(), "inequality constraint");

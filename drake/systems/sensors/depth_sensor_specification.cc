@@ -66,11 +66,11 @@ void DepthSensorSpecification::set_max_pitch(double max_pitch) {
   max_pitch_ = max_pitch;
 }
 
-void DepthSensorSpecification::set_num_yaw_values(double num_yaw_values) {
+void DepthSensorSpecification::set_num_yaw_values(int num_yaw_values) {
   num_yaw_values_ = num_yaw_values;
 }
 
-void DepthSensorSpecification::set_num_pitch_values(double num_pitch_values) {
+void DepthSensorSpecification::set_num_pitch_values(int num_pitch_values) {
   num_pitch_values_ = num_pitch_values;
 }
 

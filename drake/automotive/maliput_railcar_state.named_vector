@@ -1,3 +1,5 @@
+namespace: "drake::automotive"
+
 element {
     name: "s"
     doc: "The s-coordinate of the vehicle in a `Lane`-frame."

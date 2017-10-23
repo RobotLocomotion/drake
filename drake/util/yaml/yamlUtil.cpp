@@ -1,4 +1,4 @@
-#include "yamlUtil.h"
+#include "drake/util/yaml/yamlUtil.h"
 
 #include "drake/multibody/joints/floating_base_types.h"
 

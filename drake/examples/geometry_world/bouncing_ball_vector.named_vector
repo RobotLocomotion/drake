@@ -1,0 +1,10 @@
+namespace: "drake::examples::bouncing_ball"
+
+element {
+    name: "z"
+    doc: "z"
+}
+element {
+    name: "zdot"
+    doc: "zdot"
+}

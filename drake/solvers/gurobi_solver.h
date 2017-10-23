@@ -3,8 +3,8 @@
 #include <functional>
 #include <string>
 
+#include "drake/common/autodiff.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/eigen_autodiff_types.h"
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/mathematical_program_solver_interface.h"
 

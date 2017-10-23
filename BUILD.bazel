@@ -1,12 +1,11 @@
 # -*- python -*-
-# This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 # This file is named BUILD.bazel instead of the more typical BUILD, so that on
 # OSX it won't conflict with a build artifacts directory named "build".
 
-load("//tools:check_licenses.bzl", "check_licenses")
-load("@drake//tools:install.bzl", "install", "install_files")
-load("//tools:lint.bzl", "add_lint_tests")
+load("//tools/install:check_licenses.bzl", "check_licenses")
+load("@drake//tools/install:install.bzl", "install", "install_files")
+load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -51,10 +50,13 @@ DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "pybind11",
     "sdformat",
     "spdlog",
+    "spruce",
+    "stx",
+    "tinydir",
     "tinyobjloader",
     "vtk",
     "yaml_cpp",
-]] + ["//tools/install/%s:install" % p for p in [
+]] + ["//tools/workspace/%s:install" % p for p in [
     "gflags",
     "jchart2d",
     "optitrack_driver",
@@ -66,10 +68,10 @@ install(
     docs = ["LICENSE.TXT"],
     deps = [
         "//drake:install",
-        "//drake/automotive:install_data",
+        "//drake/automotive/models:install_data",
         "//drake/bindings:install",
         "//drake/common:install",
-        "//drake/examples:install_data",
+        "//drake/examples:install",
         "//drake/lcmtypes:install",
         "//drake/manipulation/models:install_data",
         "//tools:install",

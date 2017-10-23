@@ -2,7 +2,7 @@
 
 #include <utility>
 
-#include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/autodiff.h"
 
 namespace drake {
 namespace systems {

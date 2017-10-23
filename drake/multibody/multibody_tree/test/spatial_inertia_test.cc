@@ -5,7 +5,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
@@ -318,6 +318,39 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidWithCOMTooFarOut) {
         "See SpatialInertia::IsPhysicallyValid()";
     EXPECT_EQ(e.what(), expected_msg);
   }
+}
+
+// Tests the method SpatialInertia::MakeFromCentralInertia(...).
+GTEST_TEST(SpatialInertia, MakeFromCentralInertia) {
+  const double mass = 2;
+  const Vector3d p_BoBcm_B(3, 4, 5);
+  const RotationalInertia<double> I_BBcm_B(6, 7, 8);
+  const SpatialInertia<double> M_BBo_B =
+      SpatialInertia<double>::MakeFromCentralInertia(mass, p_BoBcm_B, I_BBcm_B);
+
+  // Check for physically correct spatial inertia.
+  EXPECT_TRUE(M_BBo_B.IsPhysicallyValid());
+
+  // Check spatial inertia for proper value for mass and center of mass.
+  EXPECT_EQ(M_BBo_B.get_mass(), mass);
+  EXPECT_EQ(M_BBo_B.get_com(), p_BoBcm_B);
+
+  // Check spatial inertia for proper moments/products of inertia.
+  // Note: The values below for Ixx, Iyy, Izz were calculated by MotionGenesis.
+  const RotationalInertia<double> I_BBo_B = M_BBo_B.CalcRotationalInertia();
+  const Vector3d moments  = I_BBo_B.get_moments();
+  const double Ixx = 88, Iyy = 75,  Izz = 58;
+  EXPECT_NEAR(moments(0), Ixx, kEpsilon);
+  EXPECT_NEAR(moments(1), Iyy, kEpsilon);
+  EXPECT_NEAR(moments(2), Izz, kEpsilon);
+
+  // Check spatial inertia for proper moments/products of inertia.
+  // Note: The values below for Ixy, Ixz, Iyz were calculated by MotionGenesis.
+  const Vector3d products = I_BBo_B.get_products();
+  const double Ixy = -24, Ixz = -30, Iyz = -40;
+  EXPECT_NEAR(products(0), Ixy, kEpsilon);
+  EXPECT_NEAR(products(1), Ixz, kEpsilon);
+  EXPECT_NEAR(products(2), Iyz, kEpsilon);
 }
 
 }  // namespace

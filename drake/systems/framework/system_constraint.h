@@ -4,11 +4,12 @@
 #include <string>
 #include <utility>
 
-#include "drake/common/autodiff_overloads.h"
+#include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/number_traits.h"
 #include "drake/common/type_safe_index.h"
+#include "drake/common/unused.h"
 
 namespace drake {
 namespace systems {
@@ -17,6 +18,11 @@ template <typename T>
 class Context;
 
 using SystemConstraintIndex = TypeSafeIndex<class SystemConstraintTag>;
+
+enum class SystemConstraintType {
+  kEquality = 0,    ///< The constraint is of the form f(x)=0.
+  kInequality = 1,  ///< The constraint is of the form f(x)≥0.
+};
 
 /// A SystemConstraint is a generic base-class for constraints on Systems.
 ///
@@ -27,7 +33,7 @@ using SystemConstraintIndex = TypeSafeIndex<class SystemConstraintTag>;
 /// system will satisfy the following (in)equalities".  Examples could
 /// include conserved quantities or joint limits on a mechanism.
 ///
-/// This class is intentionally compatible with, but (so far) independent from
+/// This class is intentionally similar to, but (so far) independent from
 /// solvers::Constraint. This is primarily because there is no notion of
 /// decision variables in the system classes (yet); rather each individual
 /// algorithm (e.g. trajectory optimization, or system identification)
@@ -36,7 +42,8 @@ using SystemConstraintIndex = TypeSafeIndex<class SystemConstraintTag>;
 /// (e.g. by populating the Context with the decision variables and calling
 /// Calc).
 ///
-/// @see LeafSystem<T>::DeclareConstraint for use cases.
+/// @see LeafSystem<T>::DeclareEqualityConstraint and
+///      LeafSystem<T>::DeclareInequalityConstraint for use cases.
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
@@ -62,18 +69,16 @@ class SystemConstraint {
   /// Constructs the SystemConstraint.
   ///
   /// @param count the number of constraints (size of the value vector).
-  /// @param is_equality_constraint true implies that the constraint is of the
-  /// form f(x)=0, false implies an inequality constraint of the form f(x)≥0.
+  /// @param type the SystemConstraintType.
   /// @param description a human-readable description useful for debugging.
   SystemConstraint(CalcCallback calc_function, int count,
-                   bool is_equality_constraint, const std::string& description)
+                   SystemConstraintType type, const std::string& description)
       : calc_function_(std::move(calc_function)),
         count_(count),
-        is_equality_constraint_(is_equality_constraint),
+        type_(type),
         description_(description) {
     DRAKE_DEMAND(count_ >= 0);
   }
-  virtual ~SystemConstraint() = default;
 
   /// Evaluates the function pointer passed in through the constructor,
   /// writing the output to @p value.  @p value will be (non-conservatively)
@@ -90,26 +95,39 @@ class SystemConstraint {
   // gen scripts call this IsValid, but Constraint calls it CheckSatisfied.
   template <typename T1 = T>
   typename std::enable_if<is_numeric<T1>::value, bool>::type CheckSatisfied(
-      const Context<T1>& context, double tol = 1E-6) const {
+      const Context<T1>& context, double tol) const {
     DRAKE_DEMAND(tol >= 0.0);
     VectorX<T> value(count_);
     Calc(context, &value);
-    if (is_equality_constraint_) {
+    if (type_ == SystemConstraintType::kEquality) {
       return (value.template lpNorm<Eigen::Infinity>() <= tol);
     } else {
       return (value.array() >= -tol).all();
     }
   }
 
+  /// Supports CheckSatisfied calls for non-numeric scalar types by simply
+  /// returning true.
+  template <typename T1 = T>
+  typename std::enable_if<!is_numeric<T1>::value, bool>::type CheckSatisfied(
+      const Context<T1>& context, double tol) const {
+    DRAKE_DEMAND(tol >= 0.0);
+    unused(context);
+    return true;
+  }
+
   // Accessor methods.
   int size() const { return count_; }
-  bool is_equality_constraint() const { return is_equality_constraint_; }
+  SystemConstraintType type() const { return type_; }
+  bool is_equality_constraint() const {
+    return (type_ == SystemConstraintType::kEquality);
+  }
   const std::string& description() const { return description_; }
 
  private:
   const CalcCallback calc_function_;
   const int count_{0};
-  const bool is_equality_constraint_{false};
+  const SystemConstraintType type_;
   const std::string description_;
 };
 

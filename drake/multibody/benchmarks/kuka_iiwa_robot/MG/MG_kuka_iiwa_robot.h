@@ -152,13 +152,12 @@ class MGKukaIIwaRobot {
                             const Eigen::Ref<const VectorX<T>>& qDt,
                             const Eigen::Ref<const VectorX<T>>& qDDt) const;
 
-
   /// This method sets Earth's uniform gravitational acceleration ("little g")
   /// At construction, little g is initialized to 0.0 m/s² (not 9.81 m/s²).
   /// Right-handed orthogonal unit vectors Nx, Ny, Nz are fixed in N (Earth)
   /// with Nz vertically upward.  Hence gravity acts in the -Nz direction.
   /// @param[in] g Earth (or celestial body) gravitational acceleration in m/s².
-  void set_surface_gravity(double g) { MG_kuka_auto_generated_.g = g; }
+  void set_gravity(double g) { MG_kuka_auto_generated_.g = g; }
 
   /** @name Methods for returning mass
    *  These methods return the mass of robot links A, B, C, D, E, F, G (in kg).

@@ -3,7 +3,7 @@
 #include <string>
 
 #include <gtest/gtest.h>
-#include "spruce.hh"
+#include <spruce.hh>
 
 using std::string;
 

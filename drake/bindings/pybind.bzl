@@ -43,6 +43,9 @@ def drake_pybind_cc_binary(name, srcs = [], copts = [], **kwargs):
             # include path, and its prerequisite *.so's onto LD_LIBRARY_PATH.
             "//drake:drake_shared_library",
             "@pybind11",
+            # TODO(jwnimmer-tri) We should be getting stx header path from
+            # :drake_shared_library, but that isn't working yet.
+            "@stx",
         ],
         **kwargs
     )

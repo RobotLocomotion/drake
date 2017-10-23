@@ -4,8 +4,6 @@
 
 #include <Eigen/Dense>
 
-#include "drake/common/drake_compat.h"
-
 namespace drake {
 
 /// Returns true if and only if the two matrices are equal to within a certain
