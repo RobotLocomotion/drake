@@ -576,7 +576,7 @@ class System {
   /// times.
   /// @param[out] periodic_attr Contains the periodic trigger attributes
   ///             on return of `true` from this function; the value will be
-  ///             changed on return value `false`. Function aborts if null.
+  ///             unchanged on return value `false`. Function aborts if null.
   /// @returns `true` if there exists a unique periodic attribute that triggers
   ///          one or more discrete update events and `false` otherwise.
   bool GetUniquePeriodicDiscreteUpdateAttribute(
@@ -1472,10 +1472,7 @@ class System {
   ///      variable.
   /// @note The default implementation returns an empty map.
   virtual std::map<typename Event<T>::PeriodicAttribute, std::vector<Event<T>*>>
-    DoGetPeriodicEvents() const {
-    return std::map<typename Event<T>::PeriodicAttribute,
-      std::vector<Event<T>*>>();
-  }
+    DoGetPeriodicEvents() const = 0;
 
   /// Implement this method to return any events to be handled before the
   /// simulator integrates the system's continuous state at each time step.

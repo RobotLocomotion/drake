@@ -1277,12 +1277,8 @@ class Diagram : public System<T>,
         std::vector<Event<T>*>> periodic_events_map;
 
     for (int i = 0; i < num_subsystems(); ++i) {
-      // We do not just pass in the update_period_sec and update_offset_sec
-      // directly, because subsystem GetNumPeriodicDiscreteUpdates() calls
-      // are not required to leave those values untouched on a return value
-      // greater than one.
       auto sub_map = registered_systems_[i]->GetPeriodicEvents();
-      for (const auto sub_attr_events : sub_map) {
+      for (const auto& sub_attr_events : sub_map) {
         const auto& sub_vec = sub_attr_events.second;
         auto& vec = periodic_events_map[sub_attr_events.first];
         vec.insert(vec.end(), sub_vec.begin(), sub_vec.end());
