@@ -547,7 +547,7 @@ GTEST_TEST(rigid_body_plant_test, BasicTimeSteppingTest) {
   EXPECT_TRUE(continuous_context->has_only_continuous_state());
   EXPECT_TRUE(time_stepping_context->has_only_discrete_state());
   EXPECT_EQ(continuous_context->get_continuous_state()->size(),
-            time_stepping_context->get_discrete_state(0)->size());
+            time_stepping_context->get_discrete_state(0).size());
 
   // Check that the dynamics of the time-stepping model match the
   // (backwards-)Euler approximation of the continuous time dynamics.
@@ -559,7 +559,7 @@ GTEST_TEST(rigid_body_plant_test, BasicTimeSteppingTest) {
 
   const VectorXd x = continuous_context->get_continuous_state()->CopyToVector();
   EXPECT_TRUE(CompareMatrices(
-      x, time_stepping_context->get_discrete_state(0)->CopyToVector()));
+      x, time_stepping_context->get_discrete_state(0).CopyToVector()));
 
   const VectorXd q = continuous_context->get_continuous_state()
                          ->get_generalized_position()
@@ -580,7 +580,7 @@ GTEST_TEST(rigid_body_plant_test, BasicTimeSteppingTest) {
   VectorXd xn(qn.rows() + vn.rows());
   xn << qn, vn;
 
-  EXPECT_TRUE(CompareMatrices(updates->get_vector(0)->CopyToVector(), xn));
+  EXPECT_TRUE(CompareMatrices(updates->get_vector(0).CopyToVector(), xn));
 }
 
 }  // namespace

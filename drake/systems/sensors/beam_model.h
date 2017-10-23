@@ -77,7 +77,7 @@ class BeamModel final : public LeafSystem<T> {
     return this->get_input_port(4);
   }
 
-  BeamModelParams<T>* get_mutable_parameters(Context<T>* context) const;
+  BeamModelParams<T>& get_mutable_parameters(Context<T>* context) const;
 
   double max_range() const { return max_range_; }
 

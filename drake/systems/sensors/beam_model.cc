@@ -41,7 +41,7 @@ BeamModel<T>::BeamModel(int num_depth_readings, double max_range)
       calc_event_probabilities_constraint =
           [](const Context<T>& context, VectorX<T>* value) {
             const auto* params = dynamic_cast<const BeamModelParams<T>*>(
-                context.get_numeric_parameter(0));
+                &context.get_numeric_parameter(0));
             DRAKE_DEMAND(params != nullptr);
             (*value)[0] = 1.0 - params->probability_short() -
                           params->probability_miss() -
@@ -58,7 +58,7 @@ BeamModel<T>::BeamModel(const DepthSensorSpecification& specification)
 }
 
 template <typename T>
-BeamModelParams<T>* BeamModel<T>::get_mutable_parameters(
+BeamModelParams<T>& BeamModel<T>::get_mutable_parameters(
     Context<T>* context) const {
   return this->template GetMutableNumericParameter<BeamModelParams>(context, 0);
 }
@@ -66,8 +66,8 @@ BeamModelParams<T>* BeamModel<T>::get_mutable_parameters(
 template <typename T>
 void BeamModel<T>::CalcOutput(const systems::Context<T>& context,
                               BasicVector<T>* output) const {
-  const auto params =
-      dynamic_cast<const BeamModelParams<T>*>(context.get_numeric_parameter(0));
+  const auto params = dynamic_cast<const BeamModelParams<T>*>(
+      &context.get_numeric_parameter(0));
   DRAKE_DEMAND(params != nullptr);
   const auto& depth = this->EvalEigenVectorInput(context, 0);
   const auto& w_event = this->EvalEigenVectorInput(context, 1);

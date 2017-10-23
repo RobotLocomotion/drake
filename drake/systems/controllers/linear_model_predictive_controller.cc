@@ -29,7 +29,7 @@ LinearModelPredictiveController<T>::LinearModelPredictiveController(
       model_(std::move(model)),
       base_context_(std::move(base_context)),
       num_states_(
-          model_->CreateDefaultContext()->get_discrete_state(0)->size()),
+          model_->CreateDefaultContext()->get_discrete_state(0).size()),
       num_inputs_(model_->get_input_port(0).size()),
       Q_(Q),
       R_(R),
@@ -103,7 +103,7 @@ VectorX<T> LinearModelPredictiveController<T>::SetupAndSolveQp(
                       input_error.transpose() * R_ * input_error);
 
   const VectorX<T> state_ref =
-      base_context.get_discrete_state()->get_vector()->CopyToVector();
+      base_context.get_discrete_state()->get_vector().CopyToVector();
   prog.AddLinearConstraint(prog.initial_state() == current_state - state_ref);
 
   DRAKE_DEMAND(prog.Solve() == solvers::SolutionResult::kSolutionFound);

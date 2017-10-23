@@ -49,9 +49,9 @@ class ConstantVectorSource : public SingleOutputVectorSource<T> {
   /// given @p context.
   const BasicVector<T>& get_source_value(const Context<T>& context) const;
 
-  /// Return a mutable pointer to the source value of this block in the given
+  /// Return a mutable reference to the source value of this block in the given
   /// @p context.
-  BasicVector<T>* get_mutable_source_value(Context<T>* context);
+  BasicVector<T>& get_mutable_source_value(Context<T>* context);
 
  private:
   // Outputs a signal with a fixed value as specified by the user.

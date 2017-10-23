@@ -224,7 +224,7 @@ class MaliputRailcarTest : public ::testing::Test {
 
   // Sets the configuration parameters of the railcar.
   void SetParams(const MaliputRailcarParams<double>& params) {
-    dut_->get_mutable_parameters(context_.get())->SetFrom(params);
+    dut_->get_mutable_parameters(context_.get()).SetFrom(params);
   }
 
   // Obtains the lanes created by the call to InitializeTwoLaneStretchOfRoad().

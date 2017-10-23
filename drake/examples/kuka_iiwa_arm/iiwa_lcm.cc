@@ -35,7 +35,7 @@ void IiwaCommandReceiver::set_initial_position(
     Context<double>* context,
     const Eigen::Ref<const VectorX<double>> x) const {
   auto state_value =
-      context->get_mutable_discrete_state(0)->get_mutable_value();
+      context->get_mutable_discrete_state(0).get_mutable_value();
   DRAKE_ASSERT(x.size() == num_joints_);
   state_value.head(num_joints_) = x;
   state_value.tail(num_joints_) = VectorX<double>::Zero(num_joints_);
@@ -61,8 +61,8 @@ void IiwaCommandReceiver::DoCalcDiscreteVariableUpdates(
       new_positions(i) = command.joint_position[i];
     }
 
-    BasicVector<double>* state = discrete_state->get_mutable_vector(0);
-    auto state_value = state->get_mutable_value();
+    BasicVector<double>& state = discrete_state->get_mutable_vector(0);
+    auto state_value = state.get_mutable_value();
     state_value.tail(num_joints_) =
         (new_positions - state_value.head(num_joints_)) / kIiwaLcmStatusPeriod;
     state_value.head(num_joints_) = new_positions;
@@ -73,7 +73,7 @@ void IiwaCommandReceiver::OutputCommand(const Context<double>& context,
                                         BasicVector<double>* output) const {
   Eigen::VectorBlock<VectorX<double>> output_vec =
       output->get_mutable_value();
-  output_vec = context.get_discrete_state(0)->get_value();
+  output_vec = context.get_discrete_state(0).get_value();
 }
 
 IiwaCommandSender::IiwaCommandSender(int num_joints)
@@ -154,8 +154,8 @@ void IiwaStatusReceiver::DoCalcDiscreteVariableUpdates(
       commanded_position(i) = status.joint_position_commanded[i];
     }
 
-    BasicVector<double>* state = discrete_state->get_mutable_vector(0);
-    auto state_value = state->get_mutable_value();
+    BasicVector<double>& state = discrete_state->get_mutable_vector(0);
+    auto state_value = state.get_mutable_value();
     state_value.head(num_joints_) = measured_position;
     state_value.segment(num_joints_, num_joints_) = estimated_velocity;
     state_value.tail(num_joints_) = commanded_position;
@@ -164,7 +164,7 @@ void IiwaStatusReceiver::DoCalcDiscreteVariableUpdates(
 
 void IiwaStatusReceiver::OutputMeasuredPosition(const Context<double>& context,
                                        BasicVector<double>* output) const {
-  const auto state_value = context.get_discrete_state(0)->get_value();
+  const auto state_value = context.get_discrete_state(0).get_value();
 
   Eigen::VectorBlock<VectorX<double>> measured_position_output =
       output->get_mutable_value();
@@ -173,7 +173,7 @@ void IiwaStatusReceiver::OutputMeasuredPosition(const Context<double>& context,
 
 void IiwaStatusReceiver::OutputCommandedPosition(
     const Context<double>& context, BasicVector<double>* output) const {
-  const auto state_value = context.get_discrete_state(0)->get_value();
+  const auto state_value = context.get_discrete_state(0).get_value();
 
   Eigen::VectorBlock<VectorX<double>> commanded_position_output =
       output->get_mutable_value();

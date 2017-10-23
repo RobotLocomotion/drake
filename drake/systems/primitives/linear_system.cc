@@ -153,14 +153,14 @@ MakeStateAndInputMatrices(
     return std::make_pair(math::autoDiffToGradientMatrix(autodiff_xdot_vec),
                           math::autoDiffToValueMatrix(autodiff_xdot_vec));
   }
-  auto autodiff_x0 =
+  auto& autodiff_x0 =
       autodiff_context->get_mutable_discrete_state()->get_mutable_vector();
-  autodiff_x0->SetFromVector(autodiff_x0_vec);
+  autodiff_x0.SetFromVector(autodiff_x0_vec);
   std::unique_ptr<DiscreteValues<AutoDiffXd>> autodiff_x1 =
       autodiff_system.AllocateDiscreteVariables();
   autodiff_system.CalcDiscreteVariableUpdates(*autodiff_context,
                                               autodiff_x1.get());
-  auto autodiff_x1_vec = autodiff_x1->get_vector()->CopyToVector();
+  auto autodiff_x1_vec = autodiff_x1->get_vector().CopyToVector();
 
   if (!(math::autoDiffToValueMatrix(autodiff_x1_vec) -
         math::autoDiffToValueMatrix(autodiff_x0_vec))
@@ -214,7 +214,7 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
   const Eigen::VectorXd x0 =
       (context.has_only_continuous_state())
           ? context.get_continuous_state_vector().CopyToVector()
-          : context.get_discrete_state(0)->get_value();
+          : context.get_discrete_state(0).get_value();
   const int num_states = x0.size();
 
   Eigen::VectorXd u0 = Eigen::VectorXd::Zero(num_inputs);

@@ -44,7 +44,7 @@ GTEST_TEST(PendulumPlantTest, CalcTotalEnergy) {
   const auto context = plant.CreateDefaultContext();
 
   const auto params = dynamic_cast<const PendulumParams<double>*>(
-      context->get_numeric_parameter(0));
+      &context->get_numeric_parameter(0));
   EXPECT_TRUE(params);
 
   auto* state = dynamic_cast<PendulumState<double>*>(

@@ -92,7 +92,7 @@ class Context {
     DRAKE_THROW_UNLESS(get_num_abstract_state_groups() == 0);
     int count = get_continuous_state()->size();
     for (int i = 0; i < get_num_discrete_state_groups(); i++)
-      count += get_discrete_state(i)->size();
+      count += get_discrete_state(i).size();
     return count;
   }
 
@@ -136,8 +136,8 @@ class Context {
 
   /// Returns a reference to the discrete state vector. The vector may be of
   /// size zero.
-  const VectorBase<T>& get_discrete_state_vector() const {
-    return *get_discrete_state()->get_vector();
+  const BasicVector<T>& get_discrete_state_vector() const {
+    return get_discrete_state()->get_vector();
   }
 
   /// Returns a mutable pointer to the discrete component of the state,
@@ -148,7 +148,7 @@ class Context {
 
   /// Returns a mutable pointer to element @p index of the discrete state.
   /// Asserts if @p index doesn't exist.
-  BasicVector<T>* get_mutable_discrete_state(int index) {
+  BasicVector<T>& get_mutable_discrete_state(int index) {
     DiscreteValues<T>* xd = get_mutable_discrete_state();
     return xd->get_mutable_vector(index);
   }
@@ -160,7 +160,7 @@ class Context {
 
   /// Returns a const pointer to the discrete component of the
   /// state at @p index.  Asserts if @p index doesn't exist.
-  const BasicVector<T>* get_discrete_state(int index) const {
+  const BasicVector<T>& get_discrete_state(int index) const {
     const DiscreteValues<T>* xd = get_state().get_discrete_state();
     return xd->get_vector(index);
   }
@@ -343,13 +343,13 @@ class Context {
 
   /// Returns a const pointer to the vector-valued parameter at @p index.
   /// Asserts if @p index doesn't exist.
-  const BasicVector<T>* get_numeric_parameter(int index) const {
+  const BasicVector<T>& get_numeric_parameter(int index) const {
     return get_parameters().get_numeric_parameter(index);
   }
 
   /// Returns a mutable pointer to element @p index of the vector-valued
   /// parameters. Asserts if @p index doesn't exist.
-  BasicVector<T>* get_mutable_numeric_parameter(int index) {
+  BasicVector<T>& get_mutable_numeric_parameter(int index) {
     return get_mutable_parameters().get_mutable_numeric_parameter(index);
   }
 

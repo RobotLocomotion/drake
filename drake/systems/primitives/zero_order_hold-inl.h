@@ -63,7 +63,7 @@ void ZeroOrderHold<T>::DoCalcVectorOutput(
       const Context<T>& context,
       BasicVector<T>* output) const {
   DRAKE_ASSERT(!is_abstract());
-  const BasicVector<T>& state_value = *context.get_discrete_state(0);
+  const BasicVector<T>& state_value = context.get_discrete_state(0);
   output->SetFrom(state_value);
 }
 
@@ -74,7 +74,7 @@ void ZeroOrderHold<T>::DoCalcDiscreteVariableUpdates(
     DiscreteValues<T>* discrete_state) const {
   DRAKE_ASSERT(!is_abstract());
   const BasicVector<T>& input_value = *this->EvalVectorInput(context, 0);
-  BasicVector<T>& state_value = *discrete_state->get_mutable_vector(0);
+  BasicVector<T>& state_value = discrete_state->get_mutable_vector(0);
   state_value.SetFrom(input_value);
 }
 

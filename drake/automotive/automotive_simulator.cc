@@ -555,10 +555,9 @@ void AutomotiveSimulator<T>::InitializeMaliputRailcars() {
     DRAKE_ASSERT(state);
     state->set_value(initial_state.get_value());
 
-    MaliputRailcarParams<T>* railcar_system_params =
+    MaliputRailcarParams<T>& railcar_system_params =
         car->get_mutable_parameters(&context);
-    DRAKE_DEMAND(railcar_system_params != nullptr);
-    railcar_system_params->set_value(params.get_value());
+    railcar_system_params.set_value(params.get_value());
   }
 }
 

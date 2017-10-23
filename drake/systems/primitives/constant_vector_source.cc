@@ -37,7 +37,7 @@ const BasicVector<T>& ConstantVectorSource<T>::get_source_value(
 }
 
 template <typename T>
-BasicVector<T>* ConstantVectorSource<T>::get_mutable_source_value(
+BasicVector<T>& ConstantVectorSource<T>::get_mutable_source_value(
     Context<T>* context) {
   return this->GetMutableNumericParameter(context, source_value_index_);
 }

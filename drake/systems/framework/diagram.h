@@ -352,7 +352,7 @@ class Diagram : public System<T>,
 
       std::vector<BasicVector<T>*> numeric_params;
       for (int j = 0; j < subcontext.num_numeric_parameters(); ++j) {
-        numeric_params.push_back(params->get_mutable_numeric_parameter(
+        numeric_params.push_back(&params->get_mutable_numeric_parameter(
             numeric_parameter_offset + j));
       }
       numeric_parameter_offset += subcontext.num_numeric_parameters();
@@ -418,7 +418,7 @@ class Diagram : public System<T>,
       std::vector<BasicVector<T>*> numeric_params;
       std::vector<AbstractValue*> abstract_params;
       for (int j = 0; j < subcontext.num_numeric_parameters(); ++j) {
-        numeric_params.push_back(params->get_mutable_numeric_parameter(
+        numeric_params.push_back(&params->get_mutable_numeric_parameter(
             numeric_parameter_offset + j));
       }
       numeric_parameter_offset += subcontext.num_numeric_parameters();
@@ -1149,8 +1149,8 @@ class Diagram : public System<T>,
     // current values.
     // TODO(siyuan): should have a API level CopyFrom for DiscreteValues.
     for (int i = 0; i < diagram_discrete->num_groups(); ++i) {
-      diagram_discrete->get_mutable_vector(i)->set_value(
-          context.get_discrete_state(i)->get_value());
+      diagram_discrete->get_mutable_vector(i).set_value(
+          context.get_discrete_state(i).get_value());
     }
 
     const DiagramEventCollection<DiscreteUpdateEvent<T>>& info =

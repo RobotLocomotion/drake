@@ -186,14 +186,14 @@ GTEST_TEST(DiscreteAffineSystemTest, DiscreteTime) {
 
   Eigen::Vector3d x0(26, 27, 28);
 
-  context->get_mutable_discrete_state(0)->SetFromVector(x0);
+  context->get_mutable_discrete_state(0).SetFromVector(x0);
   double u0 = 29;
   context->FixInputPort(0, Vector1d::Constant(u0));
 
   auto update = system.AllocateDiscreteVariables();
   system.CalcDiscreteVariableUpdates(*context, update.get());
 
-  EXPECT_TRUE(CompareMatrices(update->get_vector(0)->CopyToVector(),
+  EXPECT_TRUE(CompareMatrices(update->get_vector(0).CopyToVector(),
                               A * x0 + B * u0 + f0));
 
   // Test TimeVaryingAffineSystem accessor methods.
@@ -276,13 +276,13 @@ GTEST_TEST(SimpleTimeVaryingAffineSystemTest, DiscreteEvalTest) {
 
   auto context = sys.CreateDefaultContext();
   context->set_time(t);
-  context->get_mutable_discrete_state()->get_mutable_vector()->SetFromVector(x);
+  context->get_mutable_discrete_state()->get_mutable_vector().SetFromVector(x);
   context->FixInputPort(0, BasicVector<double>::Make(42.0));
 
   auto updates = sys.AllocateDiscreteVariables();
   sys.CalcDiscreteVariableUpdates(*context, updates.get());
   EXPECT_TRUE(CompareMatrices(sys.A(t) * x + 42.0 * sys.B(t),
-                              updates->get_vector()->CopyToVector()));
+                              updates->get_vector().CopyToVector()));
 
   auto output = sys.AllocateOutput(*context);
   sys.CalcOutput(*context, output.get());

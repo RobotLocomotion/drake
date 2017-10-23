@@ -247,9 +247,9 @@ TEST_F(TestLinearizeFromAffine, DiscreteAtEquilibrium) {
   const Eigen::Matrix3d eye = Eigen::Matrix3d::Identity();
   const Eigen::Vector3d x0 =
       (eye - A_).colPivHouseholderQr().solve(B_ * u0_ + f0_);
-  systems::BasicVector<double>* xd =
+  systems::BasicVector<double>& xd =
       context->get_mutable_discrete_state()->get_mutable_vector();
-  xd->SetFromVector(x0);
+  xd.SetFromVector(x0);
 
   auto linearized_system = Linearize(*discrete_system_, *context);
 
@@ -279,9 +279,9 @@ TEST_F(TestLinearizeFromAffine, DiscreteAtEquilibrium) {
 TEST_F(TestLinearizeFromAffine, DiscreteAtNonEquilibrium) {
   auto context = discrete_system_->CreateDefaultContext();
   context->FixInputPort(0, Vector1d::Constant(u0_));
-  systems::BasicVector<double>* xd =
+  systems::BasicVector<double>& xd =
       context->get_mutable_discrete_state()->get_mutable_vector();
-  xd->SetFromVector(x0_);
+  xd.SetFromVector(x0_);
 
   // This Context is not an equilibrium point.
   EXPECT_THROW(Linearize(*discrete_system_, *context), std::runtime_error);
@@ -321,7 +321,7 @@ class TestNonPeriodicSystem : public LeafSystem<double> {
       const Context<double>& context,
       const std::vector<const DiscreteUpdateEvent<double>*>&,
       DiscreteValues<double>* discrete_state) const override {
-    (*discrete_state)[0] = context.get_discrete_state(0)->GetAtIndex(0) + 1;
+    (*discrete_state)[0] = context.get_discrete_state(0).GetAtIndex(0) + 1;
   }
 };
 
@@ -504,7 +504,7 @@ TEST_F(LinearSystemTest, LinearizeSystemWithParameters) {
 
   const auto params =
       dynamic_cast<const examples::pendulum::PendulumParams<double>*>(
-          context->get_numeric_parameter(0));
+          &context->get_numeric_parameter(0));
   EXPECT_TRUE(params);
 
   // Compare against manual linearization of the pendulum dynamics.

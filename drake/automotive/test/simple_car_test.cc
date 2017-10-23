@@ -394,7 +394,7 @@ TEST_F(SimpleCarTest, TestConstraints) {
   using systems::SystemConstraintIndex;
 
   SimpleCarParams<double>* params = dynamic_cast<SimpleCarParams<double>*>(
-      context_->get_mutable_numeric_parameter(0));
+      &context_->get_mutable_numeric_parameter(0));
   EXPECT_TRUE(params);
   SimpleCarState<double>* state = continuous_state();
 
