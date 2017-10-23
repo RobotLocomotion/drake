@@ -11,6 +11,8 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/text_logging.h"
+#include "drake/common/text_logging_gflags.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/lcm/drake_lcm.h"
@@ -123,19 +125,30 @@ int DoMain() {
   base_builder->Connect(status_sender->get_output_port(0),
                         status_pub->get_input_port(0));
 
-  // Visualizes the end effector frame and 7th body's frame.
-  std::vector<RigidBodyFrame<double>> local_transforms;
-  local_transforms.push_back(
-      RigidBodyFrame<double>("iiwa_link_ee", tree.FindBody("iiwa_link_ee"),
-                             Isometry3<double>::Identity()));
-  local_transforms.push_back(
-      RigidBodyFrame<double>("iiwa_link_7", tree.FindBody("iiwa_link_7"),
-                             Isometry3<double>::Identity()));
-  auto frame_viz = base_builder->AddSystem<systems::FrameVisualizer>(
-      &tree, local_transforms, &lcm);
-  base_builder->Connect(plant->get_output_port(0),
-                        frame_viz->get_input_port(0));
-  frame_viz->set_publish_period(kIiwaLcmStatusPeriod);
+  // TODO(sam.creasey) This try/catch block is here because even
+  // though RigidBodyTree::FindBody returns a pointer and could return
+  // null to indicate failure, it throws instead.  At any rate, warn
+  // instead of dying if the links aren't named as expected.  This
+  // happens (for example) when loading
+  // dual_iiwa14_polytope_collision.urdf.
+  try {
+    // Visualizes the end effector frame and 7th body's frame.
+    std::vector<RigidBodyFrame<double>> local_transforms;
+    local_transforms.push_back(
+        RigidBodyFrame<double>("iiwa_link_ee", tree.FindBody("iiwa_link_ee"),
+                               Isometry3<double>::Identity()));
+    local_transforms.push_back(
+        RigidBodyFrame<double>("iiwa_link_7", tree.FindBody("iiwa_link_7"),
+                               Isometry3<double>::Identity()));
+    auto frame_viz = base_builder->AddSystem<systems::FrameVisualizer>(
+        &tree, local_transforms, &lcm);
+    base_builder->Connect(plant->get_output_port(0),
+                          frame_viz->get_input_port(0));
+    frame_viz->set_publish_period(kIiwaLcmStatusPeriod);
+  } catch (std::logic_error& ex) {
+    drake::log()->warn("Not visualizing end effector frames:\n{}",
+                       ex.what());
+  }
 
   auto sys = builder.Build();
 
@@ -163,5 +176,6 @@ int DoMain() {
 
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
+  drake::logging::HandleSpdlogGflags();
   return drake::examples::kuka_iiwa_arm::DoMain();
 }
