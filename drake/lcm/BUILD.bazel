@@ -84,6 +84,8 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "drake_lcm_test",
+    # The test doesn't use mock LCM.
+    flaky = 1,
     local = 1,
     deps = [
         ":lcm",
