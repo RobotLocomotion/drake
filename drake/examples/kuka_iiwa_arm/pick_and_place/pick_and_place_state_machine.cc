@@ -2,11 +2,19 @@
 
 #include <algorithm>
 #include <limits>
+#include <random>
+#include <string>
+
+#include <spdlog/fmt/ostr.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/trajectories/piecewise_quaternion.h"
+#include "drake/manipulation/util/world_sim_tree_builder.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/rigid_body_ik.h"
+#include "drake/multibody/joints/fixed_joint.h"
 
 namespace drake {
 namespace examples {
@@ -14,100 +22,285 @@ namespace kuka_iiwa_arm {
 namespace pick_and_place {
 namespace {
 
-using manipulation::planner::ConstraintRelaxingIk;
+using manipulation::util::WorldSimTreeBuilder;
 
-// Position the gripper 30cm above the object before grasp.
-const double kPreGraspHeightOffset = 0.3;
-
-// Computes the desired end effector pose in the world frame given the object
-// pose in the world frame and the dimensions of the objects axis-aligned
-// bounding box.
-Isometry3<double> ComputeGraspPose(const Isometry3<double>& X_WObj,
-                                   Vector3<double> object_dimensions) {
-  // A conservative estimate of the fingers' length.
-  const double finger_length = 0.07;
-
-  // The grasp frame (G) should be at the center of the object if possible, but
-  // no further than finger_length from the back edge of the  object.
-  Isometry3<double> X_OG{Isometry3<double>::Identity()};
-  X_OG.translation().x() =
-      std::min<double>(0, -0.5 * object_dimensions.x() + finger_length);
-
-  // TODO(avalenzu): Add a planning model for the gripper that includes the
-  // grasp frame as a named frame.
-  // The gripper (and therfore the grasp frame) is rotated relative to the end
-  // effector link.
-  const double grasp_frame_angular_offset{-M_PI / 8};
-  // The grasp frame is located between the fingertips of the gripper which is
-  // grasp_frame_translational_offset from the origin of the end-effector link.
-  const double grasp_frame_translational_offset{0.19};
-  Isometry3<double> X_EG{Isometry3<double>::Identity()};
-  X_EG.rotate(
-      Eigen::AngleAxisd(grasp_frame_angular_offset, Eigen::Vector3d::UnitX()));
-  X_EG.translation().x() = grasp_frame_translational_offset;
-
-  return X_WObj * X_OG * X_EG.inverse();
-}
+const char kGraspFrameName[] = "grasp_frame";
 
 // Generates a sequence (@p num_via_points + 1) of key frames s.t. the end
 // effector moves in a straight line between @pX_WEndEffector0 and
-// @p X_WEndEffector1. Orientation is interpolated with slerp. Intermediate
-// waypoints' tolerance can be adjusted separately.
-bool PlanStraightLineMotion(const VectorX<double>& q_current,
-                            const int num_via_points, double duration,
-                            const Isometry3<double>& X_WEndEffector0,
-                            const Isometry3<double>& X_WEndEffector1,
-                            const Vector3<double>& via_points_pos_tolerance,
-                            const double via_points_rot_tolerance,
-                            ConstraintRelaxingIk* planner, IKResults* ik_res,
-                            std::vector<double>* times) {
-  DRAKE_DEMAND(duration > 0 && num_via_points >= 0);
-  // Makes a slerp trajectory from start to end.
-  const eigen_aligned_std_vector<Quaternion<double>> quats = {
-      Quaternion<double>(X_WEndEffector0.linear()),
-      Quaternion<double>(X_WEndEffector1.linear())};
+// @p X_WEndEffector1.
+PostureInterpolationResult PlanInterpolatingMotion(
+    const PostureInterpolationRequest& request, RigidBodyTree<double>* robot,
+    bool straight_line_motion = true) {
+  // Create local references to request member variables
+  const VectorX<double>& q_initial{request.q_initial};
+  const VectorX<double>& q_final{request.q_final};
+  const std::vector<double>& times{request.times};
+  const double& position_tolerance{request.position_tolerance};
+  const double& orientation_tolerance{request.orientation_tolerance};
+  const bool& fall_back_to_joint_space_interpolation{
+      request.fall_back_to_joint_space_interpolation};
+  const double max_joint_position_change{request.max_joint_position_change};
 
-  const std::vector<MatrixX<double>> pos = {X_WEndEffector0.translation(),
-                                            X_WEndEffector1.translation()};
-  drake::log()->debug(
-      "Planning straight line from {} {} to {} {}", pos[0].transpose(),
-      math::rotmat2rpy(X_WEndEffector0.linear()), pos[1].transpose(),
-      math::rotmat2rpy(X_WEndEffector1.linear()));
+  const int kNumKnots = times.size();
 
-  PiecewiseQuaternionSlerp<double> rot_traj({0, duration}, quats);
-  PiecewisePolynomial<double> pos_traj =
-      PiecewisePolynomial<double>::FirstOrderHold({0, duration}, pos);
+  drake::log()->debug("Processing interpolation request:");
+  drake::log()->debug("\tNumber of knots: {}", kNumKnots);
+  drake::log()->debug("\tPosition tolerance: {}", position_tolerance);
+  drake::log()->debug("\tOrientation tolerance: {}", orientation_tolerance);
+  drake::log()->debug("\tFall back to joint space: {}",
+                      fall_back_to_joint_space_interpolation);
 
-  std::vector<ConstraintRelaxingIk::IkCartesianWaypoint> waypoints(
-      num_via_points + 1);
-  const double dt = duration / (num_via_points + 1);
-  double time = 0;
-  times->clear();
-  times->push_back(time);
-  for (int i = 0; i <= num_via_points; ++i) {
-    time += dt;
-    times->push_back(time);
-    waypoints[i].pose.translation() = pos_traj.value(time);
-    waypoints[i].pose.linear() = Matrix3<double>(rot_traj.orientation(time));
+  int kNumJoints{robot->get_num_positions()};
+  const VectorX<int> joint_indices =
+      VectorX<int>::LinSpaced(kNumJoints, 0, kNumJoints - 1);
+  int grasp_frame_index = robot->FindBodyIndex(kGraspFrameName);
+  int world_idx = robot->FindBodyIndex("world");
+  Vector3<double> end_effector_points{0, 0, 0};
+
+  // Create vectors to hold the constraint objects
+  std::vector<std::unique_ptr<PostureConstraint>> posture_constraints;
+  std::vector<std::unique_ptr<WorldQuatConstraint>> orientation_constraints;
+  std::vector<std::unique_ptr<Point2LineSegDistConstraint>>
+      point_to_line_seg_constraints;
+  std::vector<std::unique_ptr<WorldGazeDirConstraint>> gaze_dir_constraints;
+  std::vector<std::unique_ptr<PostureChangeConstraint>>
+      posture_change_constraints;
+  std::vector<std::unique_ptr<WorldPositionInFrameConstraint>>
+      position_in_frame_constraints;
+  std::vector<RigidBodyConstraint*> constraint_array;
+
+  // Compute the initial and final end-effector poses
+  auto kinematics_cache = robot->CreateKinematicsCache();
+  kinematics_cache.initialize(q_initial);
+  robot->doKinematics(kinematics_cache);
+  const Isometry3<double> X_WG_initial =
+      robot->relativeTransform(kinematics_cache, world_idx, grasp_frame_index);
+  kinematics_cache.initialize(q_final);
+  robot->doKinematics(kinematics_cache);
+  const Isometry3<double> X_WG_final =
+      robot->relativeTransform(kinematics_cache, world_idx, grasp_frame_index);
+
+  std::pair<Vector3<double>, Vector3<double>> r_WG{X_WG_initial.translation(),
+                                                   X_WG_final.translation()};
+  std::pair<Quaternion<double>, Quaternion<double>> quat_WG{
+      Quaternion<double>(X_WG_initial.linear()),
+      Quaternion<double>(X_WG_final.linear())};
+
+  if (straight_line_motion) {
+    drake::log()->debug("Planning straight line from {} {} to {} {}",
+                        r_WG.first.transpose(),
+                        math::rotmat2rpy(X_WG_initial.rotation()).transpose(),
+                        r_WG.second.transpose(),
+                        math::rotmat2rpy(X_WG_final.rotation()).transpose());
+  } else {
     drake::log()->debug(
-        "via ({}/{}): {} {}", i, num_via_points,
-        waypoints[i].pose.translation().transpose(),
-        math::rotmat2rpy(waypoints[i].pose.linear()).transpose());
-    if (i != num_via_points) {
-      waypoints[i].pos_tol = via_points_pos_tolerance;
-      waypoints[i].rot_tol = via_points_rot_tolerance;
+        "Planning motion from {} to {}, above z = {}", r_WG.first.transpose(),
+        r_WG.second.transpose(),
+        (r_WG.first.z() < r_WG.second.z()) ? r_WG.first : r_WG.second);
+  }
+
+  // Define active times for intermediate and final constraints
+  const double& start_time = times.front();
+  const double& end_time = times.back();
+  const Vector2<double> intermediate_tspan{start_time, end_time};
+  const Vector2<double> final_tspan{end_time, end_time};
+
+  // Constrain the configuration at the final knot point to match q_final.
+  posture_constraints.emplace_back(new PostureConstraint(robot, final_tspan));
+  const VectorX<double> q_lb{q_final};
+  const VectorX<double> q_ub{q_final};
+  posture_constraints.back()->setJointLimits(joint_indices, q_lb, q_ub);
+  constraint_array.push_back(posture_constraints.back().get());
+
+  // Construct intermediate constraints for via points
+  if (straight_line_motion) {
+    // We will impose a Point2LineSegDistConstraint and WorldGazeDirConstraint
+    // on the via points.
+    Eigen::Matrix<double, 3, 2> line_ends_W;
+    line_ends_W << r_WG.first, r_WG.second;
+
+    double dist_lb{0.0};
+    double dist_ub{position_tolerance};
+    point_to_line_seg_constraints.emplace_back(new Point2LineSegDistConstraint(
+        robot, grasp_frame_index, end_effector_points, world_idx, line_ends_W,
+        dist_lb, dist_ub, intermediate_tspan));
+    constraint_array.push_back(point_to_line_seg_constraints.back().get());
+
+    // Find axis-angle representation of the rotation from X_WG_initial to
+    // X_WG_final.
+    Isometry3<double> X_WG_delta = X_WG_final.inverse() * X_WG_initial;
+    Eigen::AngleAxis<double> aaxis{X_WG_delta.linear()};
+    Vector3<double> axis_E{aaxis.axis()};
+    Vector3<double> dir_W{X_WG_initial.linear() * axis_E};
+
+    // If the intial and final end-effector orientations are close to each other
+    // (to within the orientation tolerance), fix the orientation for all via
+    // points. Otherwise, only allow the end-effector to rotate about the axis
+    // defining the rotation between the initial and final orientations.
+    if (std::abs(aaxis.angle()) < orientation_tolerance) {
+      orientation_constraints.emplace_back(new WorldQuatConstraint(
+          robot, grasp_frame_index,
+          Eigen::Vector4d(quat_WG.second.w(), quat_WG.second.x(),
+                          quat_WG.second.y(), quat_WG.second.z()),
+          orientation_tolerance, intermediate_tspan));
+      constraint_array.push_back(orientation_constraints.back().get());
+    } else {
+      gaze_dir_constraints.emplace_back(new WorldGazeDirConstraint(
+          robot, grasp_frame_index, axis_E, dir_W, orientation_tolerance,
+          intermediate_tspan));
+      constraint_array.push_back(gaze_dir_constraints.back().get());
     }
-    waypoints[i].constrain_orientation = true;
+
+    // Place limits on the change in joint angles between knots
+    const VectorX<double> ub_change =
+        max_joint_position_change * VectorX<double>::Ones(kNumJoints);
+    const VectorX<double> lb_change = -ub_change;
+    for (int i = 1; i < kNumKnots; ++i) {
+      const Vector2<double> segment_tspan{times[i - 1], times[i]};
+      posture_change_constraints.emplace_back(new PostureChangeConstraint(
+          robot, joint_indices, lb_change, ub_change, segment_tspan));
+      constraint_array.push_back(posture_change_constraints.back().get());
+    }
+  } else {
+    // We will constrain the z-component of the end-effector position to be
+    // above the lower of the two end points at all via points.
+    Isometry3<double> X_WL{Isometry3<double>::Identity()};  // World to fLoor
+    X_WL.translation() =
+        (r_WG.first.z() < r_WG.second.z()) ? r_WG.first : r_WG.second;
+
+    drake::log()->debug("Planning motion from {} to {}, above z = {}",
+                        r_WG.first.transpose(), r_WG.second.transpose(),
+                        X_WL.translation().z());
+
+    Vector3<double> lb{-std::numeric_limits<double>::infinity(),
+                       -std::numeric_limits<double>::infinity(),
+                       -position_tolerance};
+    Vector3<double> ub{std::numeric_limits<double>::infinity(),
+                       std::numeric_limits<double>::infinity(),
+                       std::numeric_limits<double>::infinity()};
+
+    position_in_frame_constraints.emplace_back(
+        new WorldPositionInFrameConstraint(robot, grasp_frame_index,
+                                           end_effector_points, X_WL.matrix(),
+                                           lb, ub, intermediate_tspan));
+    constraint_array.push_back(position_in_frame_constraints.back().get());
   }
-  DRAKE_DEMAND(times->size() == waypoints.size() + 1);
-  const bool planner_result =
-      planner->PlanSequentialTrajectory(waypoints, q_current, ik_res);
-  drake::log()->debug("q initial: {}", q_current.transpose());
-  if (!ik_res->q_sol.empty()) {
-    drake::log()->debug("q final: {}", ik_res->q_sol.back().transpose());
+
+  // Set the seed for the first attempt (and the nominal value for all attempts)
+  // to be the cubic interpolation between the initial and final
+  // configurations.
+  VectorX<double> q_dot_zero{VectorX<double>::Zero(kNumJoints)};
+  MatrixX<double> q_knots_seed{kNumJoints, kNumKnots};
+  PiecewisePolynomial<double> q_seed_traj{PiecewisePolynomial<double>::Cubic(
+      {times.front(), times.back()}, {q_initial, q_final}, q_dot_zero,
+      q_dot_zero)};
+  for (int i = 0; i < kNumKnots; ++i) {
+    q_knots_seed.col(i) = q_seed_traj.value(times[i]);
   }
-  drake::log()->debug("result: {}", planner_result);
-  return planner_result;
+  MatrixX<double> q_knots_nom{q_knots_seed};
+
+  // Get the time values into the format required by inverseKinTrajSimple
+  VectorX<double> t{kNumKnots};
+  for (int i = 0; i < kNumKnots; ++i) t(i) = times[i];
+
+  // Configure ik input and output structs.
+  IKoptions ikoptions(robot);
+  ikoptions.setFixInitialState(true);
+  ikoptions.setQa(MatrixX<double>::Identity(robot->get_num_positions(),
+                                            robot->get_num_positions()));
+  ikoptions.setQv(MatrixX<double>::Identity(robot->get_num_positions(),
+                                            robot->get_num_positions()));
+  ikoptions.setMajorOptimalityTolerance(straight_line_motion ? 1e-6 : 1e-4);
+  IKResults ik_res;
+
+  // Attempt to solve the ik traj problem multiple times. If falling back to
+  // joint-space interpolation is allowed, don't try as hard.
+  const int kNumRestarts =
+      (straight_line_motion && fall_back_to_joint_space_interpolation) ? 5 : 50;
+  std::default_random_engine rand_generator{1234};
+  for (int i = 0; i < kNumRestarts; ++i) {
+    ik_res = inverseKinTrajSimple(robot, t, q_knots_seed, q_knots_nom,
+                                  constraint_array, ikoptions);
+    if (ik_res.info[0] == 1) {
+      break;
+    } else {
+      VectorX<double> q_mid = robot->getRandomConfiguration(rand_generator);
+      q_seed_traj = PiecewisePolynomial<double>::Cubic(
+          {times.front(), 0.5 * (times.front() + times.back()), times.back()},
+          {q_initial, q_mid, q_final}, q_dot_zero, q_dot_zero);
+      for (int j = 0; j < kNumKnots; ++j) {
+        q_knots_seed.col(j) = q_seed_traj.value(times[j]);
+      }
+    }
+  }
+  PostureInterpolationResult result;
+  result.success = (ik_res.info[0] == 1);
+  std::vector<MatrixX<double>> q_sol(kNumKnots);
+  if (result.success) {
+    for (int i = 0; i < kNumKnots; ++i) {
+      q_sol[i] = ik_res.q_sol[i];
+    }
+    result.q_traj = PiecewisePolynomial<double>::Cubic(times, q_sol, q_dot_zero,
+                                                       q_dot_zero);
+  } else if (straight_line_motion && fall_back_to_joint_space_interpolation) {
+    result =
+        PlanInterpolatingMotion(request, robot, false /*straight_line_motion*/);
+  } else {
+    result.q_traj = PiecewisePolynomial<double>::Cubic(
+        {times.front(), times.back()}, {q_initial, q_initial}, q_dot_zero,
+        q_dot_zero);
+  }
+  return result;
+}
+
+void OpenGripper(const WorldState& env_state, WsgAction* wsg_act,
+                 lcmt_schunk_wsg_command* msg) {
+  wsg_act->OpenGripper(env_state, msg);
+}
+
+void CloseGripper(const WorldState& env_state, WsgAction* wsg_act,
+                  lcmt_schunk_wsg_command* msg) {
+  wsg_act->CloseGripper(env_state, msg);
+}
+
+std::unique_ptr<RigidBodyTree<double>> BuildTree(
+    const std::string& model_path) {
+  WorldSimTreeBuilder<double> tree_builder;
+  tree_builder.StoreModel("iiwa", model_path);
+  tree_builder.AddFixedModelInstance("iiwa", Vector3<double>::Zero());
+  return tree_builder.Build();
+}
+
+}  // namespace
+
+std::ostream& operator<<(std::ostream& os, const PickAndPlaceState value) {
+  switch (value) {
+    case (PickAndPlaceState::kOpenGripper):
+      return os << "kOpenGripper";
+    case (PickAndPlaceState::kPlan):
+      return os << "kPlan";
+    case (PickAndPlaceState::kApproachPickPregrasp):
+      return os << "kApproachPickPregrasp";
+    case (PickAndPlaceState::kApproachPick):
+      return os << "kApproachPick";
+    case (PickAndPlaceState::kGrasp):
+      return os << "kGrasp";
+    case (PickAndPlaceState::kLiftFromPick):
+      return os << "kLiftFromPick";
+    case (PickAndPlaceState::kApproachPlacePregrasp):
+      return os << "kApproachPlacePregrasp";
+    case (PickAndPlaceState::kApproachPlace):
+      return os << "kApproachPlace";
+    case (PickAndPlaceState::kPlace):
+      return os << "kPlace";
+    case (PickAndPlaceState::kLiftFromPlace):
+      return os << "kLiftFromPlace";
+    case (PickAndPlaceState::kReset):
+      return os << "kReset";
+    case (PickAndPlaceState::kDone):
+      return os << "kDone";
+  }
 }
 
 bool ComputeInitialAndFinalObjectPoses(const WorldState& env_state,
@@ -197,299 +390,493 @@ bool ComputeInitialAndFinalObjectPoses(const WorldState& env_state,
   return true;
 }
 
-}  // namespace
+bool PickAndPlaceStateMachine::ComputeDesiredPoses(const WorldState& env_state,
+                                                   double yaw_offset,
+                                                   double pitch_offset) {
+  X_WG_desired_.clear();
+
+  //
+  //       (ApproachPickPregrasp,                         (ApproachPlacePregrasp
+  //        LiftFromPick ),                                LiftFromPlace)
+  //       +--------------------------------------------------------+
+  //       |                                                        |
+  //       |                                                        |
+  //       + (ApproachPick)                         (ApproachPlace) +
+  //
+  // W  - World frame, coincides with kuka base frame.
+  // O  - Object frame
+  // Oi - Object frame (initial)
+  // Of - Object frame (final)
+  // T  - Table frame
+  // E  - End-effector frame
+  // G  - Grasp frame
+
+  // Position the gripper 30cm above the object before grasp.
+  const double pregrasp_offset = 0.3;
+
+  Isometry3<double> X_WOi;
+  Isometry3<double> X_WOf;
+  if (!ComputeInitialAndFinalObjectPoses(env_state, &X_WOi, &X_WOf)) {
+    return false;
+  }
+
+  X_WOi.rotate(AngleAxis<double>(yaw_offset, Vector3<double>::UnitZ()));
+
+  // A conservative estimate of the fingers' length.
+  const double finger_length = 0.07;
+
+  // The grasp frame (G) should be at the center of the object if possible, but
+  // no further than finger_length*cos(pitch_offset) from the back edge of the
+  // object.
+  Isometry3<double> X_OG{Isometry3<double>::Identity()};
+  X_OG.rotate(AngleAxis<double>(pitch_offset, Vector3<double>::UnitY()));
+  X_OG.translation().x() =
+      std::min<double>(0, -0.5 * env_state.get_object_dimensions().x() +
+                              finger_length * std::cos(pitch_offset));
+  // Set ApproachPick pose
+  Isometry3<double> X_OiO{Isometry3<double>::Identity()};
+  X_WG_desired_.emplace(PickAndPlaceState::kApproachPick, X_WOi * X_OiO * X_OG);
+
+  // Set ApproachPickPregrasp pose
+  Isometry3<double> X_GGoffset{Isometry3<double>::Identity()};
+  X_OiO.setIdentity();
+  const double approach_angle = 70.0 * M_PI / 180.0;
+  X_OiO.translation()[0] = -cos(approach_angle) * pregrasp_offset;
+  X_OiO.translation()[2] = sin(approach_angle) * pregrasp_offset;
+  X_WG_desired_.emplace(PickAndPlaceState::kApproachPickPregrasp,
+                        X_WOi * X_OiO * X_OG * X_GGoffset);
+
+  // Set LiftFromPick pose
+  X_OiO.setIdentity();
+  X_OiO.translation()[2] = pregrasp_offset;
+  X_WG_desired_.emplace(PickAndPlaceState::kLiftFromPick, X_WOi * X_OiO * X_OG);
+
+  // Set ApproachPlace pose
+  Isometry3<double> X_OfO{Isometry3<double>::Identity()};
+  X_WG_desired_.emplace(PickAndPlaceState::kApproachPlace,
+                        X_WOf * X_OfO * X_OG);
+
+  // Set ApproachPlacePregrasp pose
+  X_OfO.setIdentity();
+  X_OfO.translation()[2] = pregrasp_offset;
+  X_WG_desired_.emplace(PickAndPlaceState::kApproachPlacePregrasp,
+                        X_WOf * X_OfO * X_OG);
+
+  // Set LiftFromPlace pose
+  X_OfO.setIdentity();
+  X_OfO.translation()[0] = -cos(approach_angle) * pregrasp_offset;
+  X_OfO.translation()[2] = sin(approach_angle) * pregrasp_offset;
+  X_WG_desired_.emplace(PickAndPlaceState::kLiftFromPlace,
+                        X_WOf * X_OfO * X_OG);
+  return true;
+}
 
 PickAndPlaceStateMachine::PickAndPlaceStateMachine(
     const pick_and_place::PlannerConfiguration& configuration, bool single_move)
     : single_move_(single_move),
-      state_(kOpenGripper),
+      state_(PickAndPlaceState::kOpenGripper),
       // Position and rotation tolerances.  These were hand-tuned by
       // adjusting to tighter bounds until IK stopped reliably giving
       // results.
-      tight_pos_tol_(0.005, 0.005, 0.005),
+      tight_pos_tol_(0.001, 0.001, 0.001),
       tight_rot_tol_(0.05),
-      loose_pos_tol_(0.25, 0.25, 0.25),
-      loose_rot_tol_(0.5),
-      configuration_(configuration) {}
+      loose_pos_tol_(0.1, 0.1, 0.1),
+      loose_rot_tol_(30 * M_PI / 180),
+      configuration_(configuration),
+      q_seed_(VectorX<double>::Zero(0)) {}
 
 PickAndPlaceStateMachine::~PickAndPlaceStateMachine() {}
+
+bool PickAndPlaceStateMachine::ComputeNominalConfigurations(
+    const WorldState& env_state, RigidBodyTree<double>* robot) {
+  bool success = false;
+  nominal_q_map_.clear();
+  //  Create vectors to hold the constraint objects
+  std::vector<std::unique_ptr<WorldPositionConstraint>> position_constraints;
+  std::vector<std::unique_ptr<WorldQuatConstraint>> orientation_constraints;
+  std::vector<std::unique_ptr<PostureChangeConstraint>>
+      posture_change_constraints;
+  std::vector<std::vector<RigidBodyConstraint*>> constraint_arrays;
+  std::vector<double> yaw_offsets{M_PI, 0.0};
+  std::vector<double> pitch_offsets{M_PI / 8};
+  int kNumJoints = robot->get_num_positions();
+
+  int grasp_frame_index = robot->FindBodyIndex(kGraspFrameName);
+  Vector3<double> end_effector_points{0, 0, 0};
+
+  std::vector<PickAndPlaceState> states{
+      PickAndPlaceState::kApproachPickPregrasp,
+      PickAndPlaceState::kApproachPick,
+      PickAndPlaceState::kLiftFromPick,
+      PickAndPlaceState::kApproachPlacePregrasp,
+      PickAndPlaceState::kApproachPlace,
+      PickAndPlaceState::kLiftFromPlace};
+  int kNumKnots = states.size() + 1;
+
+  VectorX<double> q_initial{env_state.get_iiwa_q()};
+  if (q_seed_.size() == 0) {
+    q_seed_ = q_initial;
+  }
+  VectorX<double> t{VectorX<double>::LinSpaced(kNumKnots, 0, kNumKnots - 1)};
+  // Set up an inverse kinematics trajectory problem with one knot for each
+  // state
+  MatrixX<double> q_nom =
+      MatrixX<double>::Zero(robot->get_num_positions(), kNumKnots);
+
+  for (double pitch_offset : pitch_offsets) {
+    for (double yaw_offset : yaw_offsets) {
+      if (ComputeDesiredPoses(env_state, yaw_offset, pitch_offset)) {
+        constraint_arrays.emplace_back();
+
+        for (int i = 1; i < kNumKnots; ++i) {
+          const PickAndPlaceState state{states[i - 1]};
+          const Vector2<double> knot_tspan{t(i), t(i)};
+
+          // Extract desired position and orientation of end effector at the
+          // given
+          // state.
+          const Isometry3<double>& X_WG = X_WG_desired_.at(state);
+          const Vector3<double>& r_WG = X_WG.translation();
+          const Quaternion<double>& quat_WG{X_WG.rotation()};
+
+          // Constrain the end-effector position for all knots.
+          position_constraints.emplace_back(new WorldPositionConstraint(
+              robot, grasp_frame_index, end_effector_points,
+              r_WG - tight_pos_tol_, r_WG + tight_pos_tol_, knot_tspan));
+          constraint_arrays.back().push_back(position_constraints.back().get());
+
+          // Constrain the end-effector orientation for all knots
+          orientation_constraints.emplace_back(
+              new WorldQuatConstraint(robot, grasp_frame_index,
+                                      Eigen::Vector4d(quat_WG.w(), quat_WG.x(),
+                                                      quat_WG.y(), quat_WG.z()),
+                                      tight_rot_tol_, knot_tspan));
+          constraint_arrays.back().push_back(
+              orientation_constraints.back().get());
+
+          // For each pair of adjacent knots, add a constraint on the change in
+          // joint positions.
+          if (i > 1) {
+            const VectorX<int> joint_indices =
+                VectorX<int>::LinSpaced(kNumJoints, 0, kNumJoints - 1);
+            const Vector2<double> segment_tspan{t(i - 1), t(i)};
+            // The move to ApproachPlacePregrasp can require large joint
+            // motions.
+            const double max_joint_position_change =
+                (state == PickAndPlaceState::kApproachPlacePregrasp)
+                    ? 0.75 * M_PI
+                    : M_PI_4;
+            const VectorX<double> ub_change{max_joint_position_change *
+                                            VectorX<double>::Ones(kNumJoints)};
+            const VectorX<double> lb_change{-ub_change};
+            posture_change_constraints.emplace_back(new PostureChangeConstraint(
+                robot, joint_indices, lb_change, ub_change, segment_tspan));
+            constraint_arrays.back().push_back(
+                posture_change_constraints.back().get());
+          }
+        }
+      }
+    }
+  }
+
+  if (constraint_arrays.empty()) return false;
+
+  // Solve the IK problem. Re-seed with random values if the initial seed is
+  // unsuccessful.
+  IKResults ik_res;
+  IKoptions ikoptions(robot);
+  ikoptions.setFixInitialState(true);
+  for (const auto& constraint_array : constraint_arrays) {
+    MatrixX<double> q_knots_seed{robot->get_num_positions(), kNumKnots};
+    for (int j = 0; j < kNumKnots; ++j) {
+      double s = static_cast<double>(j) / static_cast<double>(kNumKnots - 1);
+      q_knots_seed.col(j) = (1 - s) * q_initial + s * q_seed_;
+    }
+    ik_res = inverseKinTrajSimple(robot, t, q_knots_seed, q_nom,
+                                  constraint_array, ikoptions);
+    success = ik_res.info[0] == 1;
+    if (success) {
+      q_seed_.resize(0);
+      planning_failure_count_ = 0;
+      break;
+    } else {
+      q_seed_ = robot->getRandomConfiguration(rand_generator_);
+      drake::log()->warn("Attempt {} failed with info {}",
+                         planning_failure_count_++, ik_res.info[0]);
+    }
+  }
+  if (success) {
+    for (int i = 1; i < kNumKnots; ++i) {
+      drake::log()->debug("State {}: q = ({})", states[i - 1],
+                          ik_res.q_sol[i].transpose());
+      nominal_q_map_.emplace(states[i - 1], ik_res.q_sol[i]);
+    }
+  }
+  return success;
+}
+
+bool PickAndPlaceStateMachine::ComputeTrajectories(
+    const WorldState& env_state, RigidBodyTree<double>* robot) {
+  bool success = ComputeNominalConfigurations(env_state, robot);
+  if (!success) return false;
+  std::vector<PickAndPlaceState> states{
+      PickAndPlaceState::kApproachPickPregrasp,
+      PickAndPlaceState::kApproachPick,
+      PickAndPlaceState::kLiftFromPick,
+      PickAndPlaceState::kApproachPlacePregrasp,
+      PickAndPlaceState::kApproachPlace,
+      PickAndPlaceState::kLiftFromPlace};
+  VectorX<double> q_0{robot->get_num_positions()};
+  if (interpolation_result_map_.empty()) {
+    q_0 << env_state.get_iiwa_q();
+    drake::log()->debug("Using current configuration as q_0.");
+  } else {
+    drake::log()->debug("Using end of the last plan as q_0.");
+    const PiecewisePolynomial<double>& q_traj_last =
+        interpolation_result_map_.at(states.back()).q_traj;
+    q_0 << q_traj_last.value(q_traj_last.getEndTime());
+  }
+  drake::log()->debug("\tq_0 = [{}]", q_0.transpose());
+  drake::log()->debug("Clearing interpolation_result_map_.");
+  interpolation_result_map_.clear();
+  const double kExtraShortDuration = 0.5;
+  const double kShortDuration = 1;
+  const double kLongDuration = 1.5;
+  const double kExtraLongDuration = 1.5;
+  int kNumJoints = robot->get_num_positions();
+  for (PickAndPlaceState state : states) {
+    drake::log()->info("Planning trajectory for {}.", state);
+    const VectorX<double> q_f = nominal_q_map_.at(state);
+    PostureInterpolationResult result;
+    if ((q_f - q_0).array().abs().maxCoeff() < 10 * M_PI / 180) {
+      // If very close, just interpolate in joint space.
+      VectorX<double> q_dot0{VectorX<double>::Zero(kNumJoints)};
+      VectorX<double> q_dotf{VectorX<double>::Zero(kNumJoints)};
+
+      result.success = true;
+      result.q_traj = PiecewisePolynomial<double>::Cubic(
+          {0, kExtraShortDuration}, {q_0, q_f}, q_dot0, q_dotf);
+    } else {
+      double duration{kShortDuration};
+      double position_tolerance{tight_pos_tol_(0)};
+      double orientation_tolerance{tight_rot_tol_};
+      bool fall_back_to_joint_space_interpolation{false};
+      switch (state) {
+        case PickAndPlaceState::kApproachPickPregrasp:
+        case PickAndPlaceState::kApproachPlacePregrasp: {
+          position_tolerance = loose_pos_tol_(0);
+          orientation_tolerance = loose_rot_tol_;
+          fall_back_to_joint_space_interpolation = true;
+          duration = kLongDuration;
+        } break;
+
+        case PickAndPlaceState::kLiftFromPlace: {
+          position_tolerance = loose_pos_tol_(0);
+          orientation_tolerance = loose_rot_tol_;
+          fall_back_to_joint_space_interpolation = true;
+          duration = kExtraLongDuration;
+        } break;
+
+        default:  // No action needed for other cases
+          break;
+      }
+      PostureInterpolationRequest request;
+
+      request.max_joint_position_change = 0.5 * M_PI_4;
+      request.q_initial = q_0;
+      request.q_final = q_f;
+      double max_delta_q{
+          (request.q_final - request.q_initial).cwiseAbs().maxCoeff()};
+      int num_via_points = std::min<int>(
+          3, std::ceil(2 * max_delta_q / request.max_joint_position_change));
+      double dt{duration / static_cast<double>(num_via_points)};
+      request.times.resize(num_via_points + 1);
+      request.times.front() = 0.0;
+      for (int i = 1; i < static_cast<int>(request.times.size()) - 1; ++i) {
+        request.times[i] = i * dt;
+      }
+      request.times.back() = duration;
+      request.position_tolerance = position_tolerance;
+      request.orientation_tolerance = orientation_tolerance;
+      request.fall_back_to_joint_space_interpolation =
+          fall_back_to_joint_space_interpolation;
+
+      result = PlanInterpolatingMotion(request, robot);
+    }
+
+    interpolation_result_map_.emplace(state, result);
+    success = success && result.success;
+    q_0 = q_f;
+  }
+  return success;
+}
 
 void PickAndPlaceStateMachine::Update(const WorldState& env_state,
                                       const IiwaPublishCallback& iiwa_callback,
                                       const WsgPublishCallback& wsg_callback) {
   IKResults ik_res;
-  std::vector<double> times;
   robotlocomotion::robot_plan_t stopped_plan{};
   stopped_plan.num_states = 0;
 
+  PickAndPlaceState next_state{state_};
+  auto schunk_action = OpenGripper;
   switch (state_) {
-    // Opens the gripper.
-    case kOpenGripper: {
-      if (!wsg_act_.ActionStarted()) {
-        lcmt_schunk_wsg_command msg;
-        wsg_act_.OpenGripper(env_state, &msg);
-        wsg_callback(&msg);
-
-        drake::log()->info("kOpenGripper at {}", env_state.get_iiwa_time());
-        const Isometry3<double>& pose = env_state.get_object_pose();
-        drake::log()->info("Object at: {} {}", pose.translation().transpose(),
-                           math::rotmat2rpy(pose.rotation()).transpose());
-      }
-
-      if (wsg_act_.ActionFinished(env_state)) {
-        state_ = kApproachPickPregrasp;
-        wsg_act_.Reset();
-      }
+    case PickAndPlaceState::kOpenGripper: {
+      next_state = PickAndPlaceState::kPlan;
+    } break;
+    case PickAndPlaceState::kApproachPickPregrasp: {
+      next_state = PickAndPlaceState::kApproachPick;
+    } break;
+    case PickAndPlaceState::kApproachPick: {
+      next_state = PickAndPlaceState::kGrasp;
+    } break;
+    case PickAndPlaceState::kGrasp: {
+      schunk_action = CloseGripper;
+      next_state = PickAndPlaceState::kLiftFromPick;
+    } break;
+    case PickAndPlaceState::kLiftFromPick: {
+      next_state = PickAndPlaceState::kApproachPlacePregrasp;
+    } break;
+    case PickAndPlaceState::kApproachPlacePregrasp: {
+      next_state = PickAndPlaceState::kApproachPlace;
+    } break;
+    case PickAndPlaceState::kApproachPlace: {
+      next_state = PickAndPlaceState::kPlace;
+    } break;
+    case PickAndPlaceState::kPlace: {
+      next_state = PickAndPlaceState::kLiftFromPlace;
+    } break;
+    case PickAndPlaceState::kLiftFromPlace: {
+      next_state = PickAndPlaceState::kReset;
+    } break;
+    default:  // No action needed for other cases
       break;
-    }
+  }
 
-    case kApproachPickPregrasp: {
-      // Approaches kPreGraspHeightOffset above the center of the object.
+  switch (state_) {
+    // IIWA arm movements
+    case PickAndPlaceState::kApproachPick:
+    case PickAndPlaceState::kLiftFromPick:
+    case PickAndPlaceState::kApproachPlace:
+    case PickAndPlaceState::kLiftFromPlace:
+    case PickAndPlaceState::kApproachPickPregrasp:
+    case PickAndPlaceState::kApproachPlacePregrasp: {
       if (!iiwa_move_.ActionStarted()) {
-        ComputeInitialAndFinalObjectPoses(env_state, &X_WO_initial_,
-                                          &X_WO_final_);
-
-        // Computes the desired end effector pose in the world frame to be
-        // kPreGraspHeightOffset above the object.
-        const Isometry3<double>& X_WO = X_WO_initial_;
-        X_Wend_effector_0_ = env_state.get_iiwa_end_effector_pose();
-        X_Wend_effector_1_ =
-            ComputeGraspPose(X_WO, configuration_.target_dimensions);
-        X_Wend_effector_1_.translation()[2] += kPreGraspHeightOffset;
-
-        // 2 seconds, no via points.
-        ConstraintRelaxingIk planner{configuration_.absolute_model_path(),
-                                     configuration_.end_effector_name,
-                                     Isometry3<double>::Identity()};
-        bool res = PlanStraightLineMotion(
-            env_state.get_iiwa_q(), 0, 2, X_Wend_effector_0_,
-            X_Wend_effector_1_, loose_pos_tol_, loose_rot_tol_, &planner,
-            &ik_res, &times);
-        DRAKE_DEMAND(res);
-
         robotlocomotion::robot_plan_t plan{};
-        iiwa_move_.MoveJoints(env_state, planner.get_robot(), times,
-                              ik_res.q_sol, &plan);
+        std::vector<VectorX<double>> q;
+        PostureInterpolationResult& result =
+            interpolation_result_map_.at(state_);
+        DRAKE_THROW_UNLESS(result.success);
+        const std::vector<double>& times{result.q_traj.getSegmentTimes()};
+        q.reserve(times.size());
+        for (double t : times) {
+          q.push_back(result.q_traj.value(t));
+        }
+        std::unique_ptr<RigidBodyTree<double>> robot{
+            BuildTree(configuration_.drake_relative_model_path)};
+
+        iiwa_move_.MoveJoints(env_state, *robot, times, q, &plan);
         iiwa_callback(&plan);
 
-        drake::log()->info("kApproachPickPregrasp at {}",
-                           env_state.get_iiwa_time());
+        drake::log()->info("{} at {}", state_, env_state.get_iiwa_time());
+        drake::log()->debug("\tq_0 = [{}]", q.front().transpose());
+        drake::log()->debug("\tq_f = [{}]", q.back().transpose());
       }
-
       if (iiwa_move_.ActionFinished(env_state)) {
-        state_ = kApproachPick;
-        iiwa_move_.Reset();
-      }
-      break;
-    }
-
-    case kApproachPick: {
-      // Moves gripper straight down.
-      if (!iiwa_move_.ActionStarted()) {
-        X_Wend_effector_0_ = X_Wend_effector_1_;
-        X_Wend_effector_1_.translation()[2] -= kPreGraspHeightOffset;
-
-        // 2 seconds, 3 via points. More via points to ensure the end
-        // effector moves in more or less a straight line.
-        ConstraintRelaxingIk planner{configuration_.absolute_model_path(),
-                                     configuration_.end_effector_name,
-                                     Isometry3<double>::Identity()};
-        bool res = PlanStraightLineMotion(
-            env_state.get_iiwa_q(), 3, 2, X_Wend_effector_0_,
-            X_Wend_effector_1_, tight_pos_tol_, tight_rot_tol_, &planner,
-            &ik_res, &times);
-        DRAKE_DEMAND(res);
-
-        robotlocomotion::robot_plan_t plan{};
-        iiwa_move_.MoveJoints(env_state, planner.get_robot(), times,
-                              ik_res.q_sol, &plan);
-        iiwa_callback(&plan);
-
-        drake::log()->info("kApproachPick at {}", env_state.get_iiwa_time());
-      }
-
-      if (iiwa_move_.ActionFinished(env_state)) {
-        state_ = kGrasp;
-        iiwa_callback(&stopped_plan);
-        iiwa_move_.Reset();
-      }
-      break;
-    }
-
-    case kGrasp: {
-      // Grasps the object.
-      if (!wsg_act_.ActionStarted()) {
-        lcmt_schunk_wsg_command msg;
-        wsg_act_.CloseGripper(env_state, &msg);
-        wsg_callback(&msg);
-
-        drake::log()->info("kGrasp at {}", env_state.get_iiwa_time());
-      }
-
-      if (wsg_act_.ActionFinished(env_state)) {
-        state_ = kLiftFromPick;
-        wsg_act_.Reset();
-      }
-      break;
-    }
-
-    case kLiftFromPick: {
-      // Lifts the object straight up.
-      if (!iiwa_move_.ActionStarted()) {
-        X_Wend_effector_0_ = X_Wend_effector_1_;
-        X_Wend_effector_1_.translation()[2] += kPreGraspHeightOffset;
-
-        // 2 seconds, 3 via points.
-        ConstraintRelaxingIk planner{configuration_.absolute_model_path(),
-                                     configuration_.end_effector_name,
-                                     Isometry3<double>::Identity()};
-        bool res = PlanStraightLineMotion(
-            env_state.get_iiwa_q(), 3, 2, X_Wend_effector_0_,
-            X_Wend_effector_1_, tight_pos_tol_, tight_rot_tol_, &planner,
-            &ik_res, &times);
-        DRAKE_DEMAND(res);
-
-        robotlocomotion::robot_plan_t plan{};
-        iiwa_move_.MoveJoints(env_state, planner.get_robot(), times,
-                              ik_res.q_sol, &plan);
-        iiwa_callback(&plan);
-
-        drake::log()->info("kLiftFromPick at {}", env_state.get_iiwa_time());
-      }
-
-      if (iiwa_move_.ActionFinished(env_state)) {
-        state_ = kApproachPlacePregrasp;
-        iiwa_move_.Reset();
-      }
-      break;
-    }
-
-    case kApproachPlacePregrasp: {
-      // Uses 2 seconds to move to right about the target place location.
-      if (!iiwa_move_.ActionStarted()) {
-        const Isometry3<double>& X_WO_desired = X_WO_final_;
-
-        X_Wend_effector_0_ = X_Wend_effector_1_;
-        X_Wend_effector_1_ =
-            ComputeGraspPose(X_WO_desired, configuration_.target_dimensions);
-        X_Wend_effector_1_.translation()[2] += kPreGraspHeightOffset;
-
-        // 2 seconds, no via points.
-        ConstraintRelaxingIk planner{configuration_.absolute_model_path(),
-                                     configuration_.end_effector_name,
-                                     Isometry3<double>::Identity()};
-        bool res = PlanStraightLineMotion(
-            env_state.get_iiwa_q(), 0, 2, X_Wend_effector_0_,
-            X_Wend_effector_1_, loose_pos_tol_, loose_rot_tol_, &planner,
-            &ik_res, &times);
-        DRAKE_DEMAND(res);
-
-        robotlocomotion::robot_plan_t plan{};
-        iiwa_move_.MoveJoints(env_state, planner.get_robot(), times,
-                              ik_res.q_sol, &plan);
-        iiwa_callback(&plan);
-
-        drake::log()->info("kApproachPlacePregrasp at {}",
-                           env_state.get_iiwa_time());
-      }
-
-      if (iiwa_move_.ActionFinished(env_state)) {
-        state_ = kApproachPlace;
-        iiwa_move_.Reset();
-      }
-      break;
-    }
-
-    case kApproachPlace: {
-      // Moves straight down.
-      if (!iiwa_move_.ActionStarted()) {
-        // Computes the desired end effector pose in the world frame.
-        X_Wend_effector_0_ = X_Wend_effector_1_;
-        X_Wend_effector_1_.translation()[2] -= kPreGraspHeightOffset;
-
-        // 2 seconds, 3 via points.
-        ConstraintRelaxingIk planner{configuration_.absolute_model_path(),
-                                     configuration_.end_effector_name,
-                                     Isometry3<double>::Identity()};
-        bool res = PlanStraightLineMotion(
-            env_state.get_iiwa_q(), 3, 2, X_Wend_effector_0_,
-            X_Wend_effector_1_, tight_pos_tol_, tight_rot_tol_, &planner,
-            &ik_res, &times);
-        DRAKE_DEMAND(res);
-
-        robotlocomotion::robot_plan_t plan{};
-        iiwa_move_.MoveJoints(env_state, planner.get_robot(), times,
-                              ik_res.q_sol, &plan);
-        iiwa_callback(&plan);
-
-        drake::log()->info("kApproachPlace at {}", env_state.get_iiwa_time());
-      }
-
-      if (iiwa_move_.ActionFinished(env_state)) {
-        state_ = kPlace;
-        iiwa_callback(&stopped_plan);
-        iiwa_move_.Reset();
-      }
-      break;
-    }
-
-    case kPlace: {
-      // Releases the object.
-      if (!wsg_act_.ActionStarted()) {
-        lcmt_schunk_wsg_command msg;
-        wsg_act_.OpenGripper(env_state, &msg);
-        wsg_callback(&msg);
-
-        drake::log()->info("kPlace at {}", env_state.get_iiwa_time());
-      }
-
-      if (wsg_act_.ActionFinished(env_state)) {
-        state_ = kLiftFromPlace;
-        wsg_act_.Reset();
-      }
-      break;
-    }
-
-    case kLiftFromPlace: {
-      // Moves straight up.
-      if (!iiwa_move_.ActionStarted()) {
-        X_Wend_effector_0_ = X_Wend_effector_1_;
-        X_Wend_effector_1_.translation()[2] += kPreGraspHeightOffset;
-
-        // 2 seconds, 5 via points.
-        ConstraintRelaxingIk planner{configuration_.absolute_model_path(),
-                                     configuration_.end_effector_name,
-                                     Isometry3<double>::Identity()};
-        bool res = PlanStraightLineMotion(
-            env_state.get_iiwa_q(), 5, 2.0, X_Wend_effector_0_,
-            X_Wend_effector_1_, tight_pos_tol_, tight_rot_tol_, &planner,
-            &ik_res, &times);
-        DRAKE_DEMAND(res);
-
-        robotlocomotion::robot_plan_t plan{};
-        iiwa_move_.MoveJoints(env_state, planner.get_robot(), times,
-                              ik_res.q_sol, &plan);
-        iiwa_callback(&plan);
-
-        drake::log()->info("kLiftFromPlace at {}", env_state.get_iiwa_time());
-      }
-
-      if (iiwa_move_.ActionFinished(env_state)) {
-        if (single_move_) {
-          state_ = kDone;
-          iiwa_callback(&stopped_plan);
-          drake::log()->info("kDone at {}", env_state.get_iiwa_time());
-        } else {
-          state_ = kOpenGripper;
+        // If the object has moved since kPlan, we need to replan.
+        state_ = next_state;
+        switch (state_) {
+          case PickAndPlaceState::kApproachPick:
+          case PickAndPlaceState::kApproachPickPregrasp: {
+            if (!env_state.get_object_pose().translation().isApprox(
+                    expected_object_pose_.translation(), 0.05)) {
+              drake::log()->info("Target moved! Re-planning ...");
+              interpolation_result_map_.clear();
+              state_ = PickAndPlaceState::kPlan;
+            }
+          } break;
+          default:  // No action needed for other cases
+            break;
         }
         iiwa_move_.Reset();
       }
-      break;
-    }
+    } break;
+    // Schunk gripper actions
+    case PickAndPlaceState::kOpenGripper: {
+      if (!wsg_act_.ActionStarted()) {
+        const Isometry3<double>& obj_pose = env_state.get_object_pose();
+        drake::log()->info("Object at: {} {}",
+                           obj_pose.translation().transpose(),
+                           math::rotmat2rpy(obj_pose.rotation()).transpose());
+        const Isometry3<double>& iiwa_pose = env_state.get_iiwa_base();
+        drake::log()->info("Base at: {} {}",
+                           iiwa_pose.translation().transpose(),
+                           math::rotmat2rpy(iiwa_pose.rotation()).transpose());
+      }
+    }  // Intentionally fall through
+    case PickAndPlaceState::kGrasp:
+    case PickAndPlaceState::kPlace: {
+      if (!wsg_act_.ActionStarted()) {
+        lcmt_schunk_wsg_command msg;
+        schunk_action(env_state, &wsg_act_, &msg);
+        wsg_callback(&msg);
 
-    case kDone: {
-      break;
-    }
+        drake::log()->info("{} at {}", state_, env_state.get_iiwa_time());
+      }
+      if (wsg_act_.ActionFinished(env_state)) {
+        state_ = next_state;
+        wsg_act_.Reset();
+      }
+    } break;
+    case PickAndPlaceState::kPlan: {
+      drake::log()->info("{} at {}", state_, env_state.get_iiwa_time());
+      // Compute all the desired configurations
+      expected_object_pose_ = env_state.get_object_pose();
+      std::unique_ptr<RigidBodyTree<double>> robot{
+          BuildTree(configuration_.drake_relative_model_path)};
+
+      // Add the grasp frame as a RigidBody. This allows it to be used in IK
+      // constraints.
+      // TODO(avalenzu): Add a planning model for the gripper that includes
+      // the grasp frame as a named frame.
+      auto grasp_frame = std::make_unique<RigidBody<double>>();
+      grasp_frame->set_name(kGraspFrameName);
+      // The gripper (and therfore the grasp frame) is rotated relative to the
+      // end effector link.
+      const double grasp_frame_angular_offset{-M_PI / 8};
+      // The grasp frame is located between the fingertips of the gripper
+      // which is grasp_frame_translational_offset from the origin of the
+      // end-effector link.
+      const double grasp_frame_translational_offset{0.19};
+      Isometry3<double> X_EG{Isometry3<double>::Identity()};
+      X_EG.rotate(Eigen::AngleAxisd(grasp_frame_angular_offset,
+                                    Eigen::Vector3d::UnitX()));
+      X_EG.translation().x() = grasp_frame_translational_offset;
+      std::string grasp_frame_joint_name = kGraspFrameName;
+      grasp_frame_joint_name += "_joint";
+      auto grasp_frame_fixed_joint =
+          std::make_unique<FixedJoint>(grasp_frame_joint_name, X_EG);
+      grasp_frame->add_joint(robot->FindBody(configuration_.end_effector_name),
+                             std::move(grasp_frame_fixed_joint));
+      robot->add_rigid_body(std::move(grasp_frame));
+      robot->compile();
+
+      if (ComputeTrajectories(env_state, robot.get())) {
+        // Proceed to execution
+        state_ = PickAndPlaceState::kApproachPickPregrasp;
+      }  // otherwise re-plan on next call to Update.
+    } break;
+    case PickAndPlaceState::kReset: {
+      if (single_move_) {
+        state_ = PickAndPlaceState::kDone;
+        iiwa_callback(&stopped_plan);
+        drake::log()->info("{} at {}", state_, env_state.get_iiwa_time());
+      } else {
+        state_ = PickAndPlaceState::kOpenGripper;
+      }
+    } break;
+    case PickAndPlaceState::kDone: {
+    } break;
   }
 }
 

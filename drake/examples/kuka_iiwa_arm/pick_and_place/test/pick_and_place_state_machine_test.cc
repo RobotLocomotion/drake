@@ -99,34 +99,31 @@ GTEST_TEST(PickAndPlaceStateMachineTest, StateMachineTest) {
     wsg_command = *command;
   };
 
-  manipulation::planner::ConstraintRelaxingIk planner(
-      FindResourceOrThrow(kIiwaUrdf), "iiwa_link_ee",
-      Isometry3<double>::Identity());
-
   dut.Update(world_state, iiwa_callback, wsg_callback);
 
   std::vector<TestStep> steps;
-  steps.push_back(TestStep{0, 1, kOpenGripper});
-  steps.push_back(TestStep{0, 1, kApproachPickPregrasp});
-  steps.push_back(TestStep{1, 1, kApproachPickPregrasp});
-  steps.push_back(TestStep{1, 1, kApproachPick});
-  steps.push_back(TestStep{2, 1, kApproachPick});
-  steps.push_back(TestStep{3, 1, kGrasp});
-  steps.push_back(TestStep{3, 2, kGrasp});
-  steps.push_back(TestStep{3, 2, kGrasp});
-  steps.push_back(TestStep{3, 2, kLiftFromPick});
-  steps.push_back(TestStep{4, 2, kLiftFromPick});
-  steps.push_back(TestStep{4, 2, kApproachPlacePregrasp});
-  steps.push_back(TestStep{5, 2, kApproachPlacePregrasp});
-  steps.push_back(TestStep{5, 2, kApproachPlace});
-  steps.push_back(TestStep{6, 2, kApproachPlace});
-  steps.push_back(TestStep{7, 2, kPlace});
-  steps.push_back(TestStep{7, 3, kPlace});
-  steps.push_back(TestStep{7, 3, kPlace});
-  steps.push_back(TestStep{7, 3, kLiftFromPlace});
-  steps.push_back(TestStep{8, 3, kLiftFromPlace});
-  steps.push_back(TestStep{9, 3, kDone});
-  steps.push_back(TestStep{9, 3, kDone});
+  steps.push_back(TestStep{0, 1, PickAndPlaceState::kOpenGripper});
+  steps.push_back(TestStep{0, 1, PickAndPlaceState::kPlan});
+  steps.push_back(TestStep{0, 1, PickAndPlaceState::kApproachPickPregrasp});
+  steps.push_back(TestStep{1, 1, PickAndPlaceState::kApproachPickPregrasp});
+  steps.push_back(TestStep{1, 1, PickAndPlaceState::kApproachPick});
+  steps.push_back(TestStep{2, 1, PickAndPlaceState::kApproachPick});
+  steps.push_back(TestStep{2, 1, PickAndPlaceState::kGrasp});
+  steps.push_back(TestStep{2, 2, PickAndPlaceState::kGrasp});
+  steps.push_back(TestStep{2, 2, PickAndPlaceState::kGrasp});
+  steps.push_back(TestStep{2, 2, PickAndPlaceState::kLiftFromPick});
+  steps.push_back(TestStep{3, 2, PickAndPlaceState::kLiftFromPick});
+  steps.push_back(TestStep{3, 2, PickAndPlaceState::kApproachPlacePregrasp});
+  steps.push_back(TestStep{4, 2, PickAndPlaceState::kApproachPlacePregrasp});
+  steps.push_back(TestStep{4, 2, PickAndPlaceState::kApproachPlace});
+  steps.push_back(TestStep{5, 2, PickAndPlaceState::kApproachPlace});
+  steps.push_back(TestStep{5, 2, PickAndPlaceState::kPlace});
+  steps.push_back(TestStep{5, 3, PickAndPlaceState::kPlace});
+  steps.push_back(TestStep{5, 3, PickAndPlaceState::kPlace});
+  steps.push_back(TestStep{5, 3, PickAndPlaceState::kLiftFromPlace});
+  steps.push_back(TestStep{6, 3, PickAndPlaceState::kLiftFromPlace});
+  steps.push_back(TestStep{6, 3, PickAndPlaceState::kReset});
+  steps.push_back(TestStep{7, 3, PickAndPlaceState::kDone});
 
   for (const TestStep& step : steps) {
     // Steps are long (5 seconds) so actions always complete in a
@@ -147,7 +144,7 @@ GTEST_TEST(PickAndPlaceStateMachineTest, StateMachineTest) {
     // Warp the object to the target y position when we expect to be
     // transitioning to kApproachPlace (this is the y value it would
     // have had after kApproachPlacePregrasp completed successfully).
-    if (step.state_expected == kApproachPlace) {
+    if (step.state_expected == PickAndPlaceState::kApproachPlace) {
       object_msg.pose.translation.y = X_WT.translation()(1);
       world_state.HandleObjectStatus(object_msg);
     }
