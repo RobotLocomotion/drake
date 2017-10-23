@@ -1219,10 +1219,10 @@ class LeafSystem : public System<T> {
   }
 
  private:
-  std::map<typename Event<T>::PeriodicAttribute, std::vector<Event<T>*>>
-      DoGetPeriodicEvents() const override {
-    std::map<typename Event<T>::PeriodicAttribute,
-        std::vector<Event<T>*>> periodic_events_map;
+  std::map<typename Event<T>::PeriodicAttribute, std::vector<const Event<T>*>,
+      PeriodicAttributeComparator<T>> DoGetPeriodicEvents() const override {
+    std::map<typename Event<T>::PeriodicAttribute, std::vector<const Event<T>*>,
+        PeriodicAttributeComparator<T>> periodic_events_map;
     for (const auto& i : periodic_events_) {
       periodic_events_map[i.first].push_back(i.second.get());
     }

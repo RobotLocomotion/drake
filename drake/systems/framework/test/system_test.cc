@@ -204,6 +204,15 @@ class TestSystem : public System<double> {
         UnrestrictedUpdateEvent<double>>::MakeForcedEventCollection();
   }
 
+  std::map<Event<double>::PeriodicAttribute,
+      std::vector<const Event<double>*>,
+      PeriodicAttributeComparator<double>>
+      DoGetPeriodicEvents() const override {
+    return std::map<Event<double>::PeriodicAttribute,
+        std::vector<const Event<double>*>,
+        PeriodicAttributeComparator<double>>();
+  }
+
  private:
   mutable int publish_count_ = 0;
   mutable int update_count_ = 0;
@@ -547,6 +556,12 @@ class ValueIOTestSystem : public System<T> {
   AllocateForcedUnrestrictedUpdateEventCollection() const override {
     return LeafEventCollection<
         UnrestrictedUpdateEvent<T>>::MakeForcedEventCollection();
+  }
+
+  std::map<typename Event<T>::PeriodicAttribute, std::vector<const Event<T>*>,
+      PeriodicAttributeComparator<T>> DoGetPeriodicEvents() const override {
+    return std::map<typename Event<T>::PeriodicAttribute,
+        std::vector<const Event<T>*>, PeriodicAttributeComparator<T>>();
   }
 };
 

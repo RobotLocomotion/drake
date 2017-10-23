@@ -37,21 +37,21 @@ class TestSystem : public LeafSystem<T> {
     const double period = 10.0;
     const double offset = 5.0;
     this->DeclarePeriodicDiscreteUpdate(period, offset);
-    typename Event<T>::PeriodicAttribute periodic_attr;
-    EXPECT_EQ(this->GetUniquePeriodicDiscreteUpdateAttribute
-      (&periodic_attr), true);
-    EXPECT_EQ(periodic_attr.period_sec, period);
-    EXPECT_EQ(periodic_attr.offset_sec, offset);
+    optional<typename Event<T>::PeriodicAttribute> periodic_attr =
+        this->GetUniquePeriodicDiscreteUpdateAttribute();
+    ASSERT_TRUE(periodic_attr);
+    EXPECT_EQ(periodic_attr.value().period_sec, period);
+    EXPECT_EQ(periodic_attr.value().offset_sec, offset);
   }
 
   void AddPeriodicUpdate(double period) {
     const double offset = 0.0;
     this->DeclarePeriodicDiscreteUpdate(period, offset);
-    Event<double>::PeriodicAttribute periodic_attr;
-    EXPECT_EQ(this->GetUniquePeriodicDiscreteUpdateAttribute
-      (&periodic_attr), true);
-    EXPECT_EQ(periodic_attr.period_sec, period);
-    EXPECT_EQ(periodic_attr.offset_sec, offset);
+    optional<Event<double>::PeriodicAttribute> periodic_attr =
+       this->GetUniquePeriodicDiscreteUpdateAttribute();
+    ASSERT_TRUE(periodic_attr);
+    EXPECT_EQ(periodic_attr.value().period_sec, period);
+    EXPECT_EQ(periodic_attr.value().offset_sec, offset);
   }
 
   void AddPeriodicUpdate(double period, double offset) {
@@ -142,6 +142,7 @@ TEST_F(LeafSystemTest, MultipleNonUniquePeriods) {
   // Verify the size of the periodic events mapping.
   auto mapping = system_.GetPeriodicEvents();
   ASSERT_EQ(mapping.size(), 2);
+  EXPECT_FALSE(system_.GetUniquePeriodicDiscreteUpdateAttribute());
 }
 
 

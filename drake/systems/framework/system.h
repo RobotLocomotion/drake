@@ -668,18 +668,17 @@ class System {
   ///             unchanged on return value `false`. Function aborts if null.
   /// @returns `true` if there exists a unique periodic attribute that triggers
   ///          one or more discrete update events and `false` otherwise.
-  bool GetUniquePeriodicDiscreteUpdateAttribute(
-      typename Event<T>::PeriodicAttribute* periodic_attr) const {
-    DRAKE_DEMAND(periodic_attr);
+  optional<typename Event<T>::PeriodicAttribute>
+      GetUniquePeriodicDiscreteUpdateAttribute() const {
     bool discrete_update_found = false;
     typename Event<T>::PeriodicAttribute saved_attr;
     auto periodic_events = GetPeriodicEvents();
     for (const auto& saved_attr_and_vector : periodic_events) {
       bool found_in_vector = false;
       for (const auto& event : saved_attr_and_vector.second) {
-        if (dynamic_cast<DiscreteUpdateEvent<T>*>(event)) {
+        if (dynamic_cast<const DiscreteUpdateEvent<T>*>(event)) {
           if (discrete_update_found)
-            return false;
+            return optional<typename Event<T>::PeriodicAttribute>();
           found_in_vector = true;
           saved_attr = saved_attr_and_vector.first;
           break;
@@ -690,15 +689,15 @@ class System {
     }
 
     if (discrete_update_found)
-      *periodic_attr = saved_attr;
-    return discrete_update_found;
+      return optional<typename Event<T>::PeriodicAttribute>(saved_attr);
+    return optional<typename Event<T>::PeriodicAttribute>();
   }
 
   /// Gets all periodic triggered events for a system. Each periodic attribute
   /// (offset and period, in seconds) is mapped to one or more update events
   /// that are to be triggered at the proper times.
-  std::map<typename Event<T>::PeriodicAttribute, std::vector<Event<T>*>>
-    GetPeriodicEvents() const {
+  std::map<typename Event<T>::PeriodicAttribute, std::vector<const Event<T>*>,
+    PeriodicAttributeComparator<T>> GetPeriodicEvents() const {
     return DoGetPeriodicEvents();
   }
 
@@ -1567,7 +1566,8 @@ class System {
   /// @see GetPeriodicEvents() for a detailed description of the returned
   ///      variable.
   /// @note The default implementation returns an empty map.
-  virtual std::map<typename Event<T>::PeriodicAttribute, std::vector<Event<T>*>>
+  virtual std::map<typename Event<T>::PeriodicAttribute,
+      std::vector<const Event<T>*>, PeriodicAttributeComparator<T>>
     DoGetPeriodicEvents() const = 0;
 
   /// Implement this method to return any events to be handled before the

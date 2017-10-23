@@ -1370,10 +1370,11 @@ class Diagram : public System<T>,
     }
   }
 
-  std::map<typename Event<T>::PeriodicAttribute, std::vector<Event<T>*>>
-      DoGetPeriodicEvents() const override {
+  std::map<typename Event<T>::PeriodicAttribute, std::vector<const Event<T>*>,
+      PeriodicAttributeComparator<T>> DoGetPeriodicEvents() const override {
     std::map<typename Event<T>::PeriodicAttribute,
-        std::vector<Event<T>*>> periodic_events_map;
+        std::vector<const Event<T>*>,
+        PeriodicAttributeComparator<T>> periodic_events_map;
 
     for (int i = 0; i < num_subsystems(); ++i) {
       auto sub_map = registered_systems_[i]->GetPeriodicEvents();

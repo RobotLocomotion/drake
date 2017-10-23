@@ -30,8 +30,8 @@ class LeafCompositeEventCollection;
  * Derived classes should contain a function pointer to an optional callback
  * function that handles the event. No-op is the default handling behavior.
  * Currently, the System framework only supports three concrete event types:
- * PublishEvent, DiscreteEvent and UnrestrictedUpdateEvent distinguished by
- * their callback functions' access level to the context.
+ * PublishEvent, DiscreteUpdateEvent, and UnrestrictedUpdateEvent distinguished
+ * by their callback functions' access level to the context.
  */
 template <typename T>
 class Event {
@@ -108,12 +108,6 @@ class Event {
      * The time after zero when this event should first occur.
      */
     double offset_sec{0.0};
-
-    bool operator<(const PeriodicAttribute& p) const {
-      if (period_sec == p.period_sec)
-        return offset_sec < p.offset_sec;
-      return period_sec < p.period_sec;
-    }
   };
 
   virtual ~Event() {}
@@ -189,6 +183,18 @@ class Event {
  private:
   const TriggerType trigger_type_;
   std::unique_ptr<AbstractValue> attribute_{nullptr};
+};
+
+/// Structure for comparing two PeriodicAttributes for use in a map container,
+/// using an arbitrary comparison method.
+template <class T>
+struct PeriodicAttributeComparator {
+  bool operator()(const typename Event<T>::PeriodicAttribute& a,
+    const typename Event<T>::PeriodicAttribute& b) const {
+      if (a.period_sec == b.period_sec)
+        return a.offset_sec < b.offset_sec;
+      return a.period_sec < b.period_sec;
+  }
 };
 
 /**
