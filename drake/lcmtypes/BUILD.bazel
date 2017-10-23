@@ -2,7 +2,7 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("@drake//tools:install.bzl", "install")
+load("@drake//tools/install:install.bzl", "install")
 load(
     "@drake//tools/skylark:drake_java.bzl",
     "drake_java_binary",
@@ -329,7 +329,7 @@ install(
         "bin/drake-lcm-spy-launcher.sh": "drake-lcm-spy",
     },
     deps = [
-        "//tools/install/optitrack_driver:install",
+        "//tools/workspace/optitrack_driver:install",
         "@lcmtypes_robotlocomotion//:install",
         "@libbot//:install_bot2_core",
         "@libbot//:install_lcmtypes",

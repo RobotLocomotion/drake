@@ -6,7 +6,7 @@ load(
     "drake_cc_binary",
     "drake_cc_googletest",
 )
-load("//tools:install_data.bzl", "install", "install_data")
+load("//tools/install:install_data.bzl", "install", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(
@@ -191,6 +191,7 @@ install(
     targets = [
         ":kuka_plan_runner",
     ],
+    runtime_strip_prefix = ["install"],
     visibility = ["//visibility:public"],
 )
 

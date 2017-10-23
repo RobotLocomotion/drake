@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from drake.tools.cpsutils import read_defs
+from drake.tools.install.cpsutils import read_defs
 
 defs = read_defs("set\(OCTOMAP_(\w+_VERSION)\s([0-9]+)")
 
