@@ -28,7 +28,7 @@ VanDerPolOscillator<T>::VanDerPolOscillator() : systems::LeafSystem<T>() {
   typename systems::SystemConstraint<T>::CalcCallback mu = [](
       const systems::Context<T>& context, VectorX<T>* value) {
     // Extract μ from the parameters.
-    *value = Vector1<T>(context.get_numeric_parameter(0)->GetAtIndex(0));
+    *value = Vector1<T>(context.get_numeric_parameter(0).GetAtIndex(0));
   };
   this->DeclareInequalityConstraint(mu, 1, "mu ≥ 0");
 }
@@ -42,7 +42,7 @@ void VanDerPolOscillator<T>::DoCalcTimeDerivatives(
       context.get_continuous_state()->get_generalized_position().GetAtIndex(0);
   const T qdot =
       context.get_continuous_state()->get_generalized_velocity().GetAtIndex(0);
-  const T mu = context.get_numeric_parameter(0)->GetAtIndex(0);
+  const T mu = context.get_numeric_parameter(0).GetAtIndex(0);
 
   using std::pow;
   const T qddot = -mu * (q * q - 1) * qdot - q;

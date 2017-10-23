@@ -215,7 +215,7 @@ class DiagramContext : public Context<T> {
     for (auto& subcontext : contexts_) {
       Parameters<T>& subparams = subcontext->get_mutable_parameters();
       for (int i = 0; i < subparams.num_numeric_parameters(); ++i) {
-        numeric_params.push_back(subparams.get_mutable_numeric_parameter(i));
+        numeric_params.push_back(&subparams.get_mutable_numeric_parameter(i));
       }
       for (int i = 0; i < subparams.num_abstract_parameters(); ++i) {
         abstract_params.push_back(

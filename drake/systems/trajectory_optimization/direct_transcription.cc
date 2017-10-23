@@ -78,10 +78,10 @@ class DiscreteTimeSystemConstraint : public solvers::Constraint {
       input_port_value_->GetMutableVectorData<AutoDiffXd>()->SetFromVector(
           input);
     }
-    context_->get_mutable_discrete_state(0)->SetFromVector(state);
+    context_->get_mutable_discrete_state(0).SetFromVector(state);
 
     system_.CalcDiscreteVariableUpdates(*context_, discrete_state_);
-    y = next_state - discrete_state_->get_vector(0)->CopyToVector();
+    y = next_state - discrete_state_->get_vector(0).CopyToVector();
   }
 
  private:
@@ -216,7 +216,7 @@ bool DirectTranscription::AddSymbolicDynamicConstraints(
 
   symbolic::Substitution sub;
   for (int i = 0; i < context.num_numeric_parameters(); i++) {
-    const auto& params = context.get_numeric_parameter(i)->get_value();
+    const auto& params = context.get_numeric_parameter(i).get_value();
     for (int j = 0; j < params.size(); j++) {
       sub.emplace(inspector->numeric_parameters(i)[j], params[j]);
     }
@@ -285,7 +285,7 @@ void DirectTranscription::ValidateSystem(const System<double>& system,
   // (#6878).
 
   DRAKE_DEMAND(context.get_num_discrete_state_groups() == 1);
-  DRAKE_DEMAND(num_states() == context.get_discrete_state(0)->size());
+  DRAKE_DEMAND(num_states() == context.get_discrete_state(0).size());
   DRAKE_DEMAND(system.get_num_input_ports() <= 1);
   DRAKE_DEMAND(num_inputs() == (context.get_num_input_ports() > 0
                                 ? system.get_input_port(0).size()

@@ -148,7 +148,7 @@ void TimeSteppingRigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   const auto& tree = this->get_rigid_body_tree();
 
   // Get the system state.
-  auto x = context.get_discrete_state(0)->get_value();
+  auto x = context.get_discrete_state(0).get_value();
   VectorX<T> q = x.topRows(nq);
   VectorX<T> v = x.bottomRows(nv);
   auto kcache = tree.doKinematics(q, v);
@@ -242,7 +242,7 @@ void TimeSteppingRigidBodyPlant<T>::DoCalcDiscreteVariableUpdates(
   // qn = q + dt*qdot.
   VectorX<T> xn(this->get_num_states());
   xn << q + dt * tree.transformVelocityToQDot(kcache, vnew), vnew;
-  updates->get_mutable_vector(0)->SetFromVector(xn);
+  updates->get_mutable_vector(0).SetFromVector(xn);
 }
 
 // Explicitly instantiates on the most common scalar types.

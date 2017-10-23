@@ -1392,10 +1392,10 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
   // Initialize the zero-order holds to different values than their input ports.
   Context<double>& ctx1 =
       diagram_.GetMutableSubsystemContext(*diagram_.hold1(), context_.get());
-  ctx1.get_mutable_discrete_state(0)->SetAtIndex(0, 1001.0);
+  ctx1.get_mutable_discrete_state(0).SetAtIndex(0, 1001.0);
   Context<double>& ctx2 =
       diagram_.GetMutableSubsystemContext(*diagram_.hold2(), context_.get());
-  ctx2.get_mutable_discrete_state(0)->SetAtIndex(0, 1002.0);
+  ctx2.get_mutable_discrete_state(0).SetAtIndex(0, 1002.0);
 
   // Allocate the discrete variables.
   std::unique_ptr<DiscreteValues<double>> updates =
@@ -1415,11 +1415,11 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
   diagram_.CalcDiscreteVariableUpdates(
       *context_, events->get_discrete_update_events(), updates.get());
   context_->get_mutable_discrete_state()->SetFrom(*updates);
-  EXPECT_EQ(1001.0, ctx1.get_discrete_state(0)->GetAtIndex(0));
-  EXPECT_EQ(23.0, ctx2.get_discrete_state(0)->GetAtIndex(0));
+  EXPECT_EQ(1001.0, ctx1.get_discrete_state(0).GetAtIndex(0));
+  EXPECT_EQ(23.0, ctx2.get_discrete_state(0).GetAtIndex(0));
 
   // Restore hold2 to its original value.
-  ctx2.get_mutable_discrete_state(0)->SetAtIndex(0, 1002.0);
+  ctx2.get_mutable_discrete_state(0).SetAtIndex(0, 1002.0);
   // Set the time to 11.5, so both hold1 and hold2 update.
   context_->set_time(11.5);
   time = diagram_.CalcNextUpdateTime(*context_, events.get());
@@ -1431,8 +1431,8 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
   diagram_.CalcDiscreteVariableUpdates(
       *context_, events->get_discrete_update_events(), updates.get());
   context_->get_mutable_discrete_state()->SetFrom(*updates);
-  EXPECT_EQ(17.0, ctx1.get_discrete_state(0)->GetAtIndex(0));
-  EXPECT_EQ(23.0, ctx2.get_discrete_state(0)->GetAtIndex(0));
+  EXPECT_EQ(17.0, ctx1.get_discrete_state(0).GetAtIndex(0));
+  EXPECT_EQ(23.0, ctx2.get_discrete_state(0).GetAtIndex(0));
 }
 
 // Tests that a publish action is taken at 19 sec.
@@ -1833,7 +1833,7 @@ class PerStepActionTestSystem : public LeafSystem<double> {
       const Context<double>& context,
       const std::vector<const DiscreteUpdateEvent<double>*>& events,
       DiscreteValues<double>* discrete_state) const override {
-    (*discrete_state)[0] = context.get_discrete_state(0)->GetAtIndex(0) + 1;
+    (*discrete_state)[0] = context.get_discrete_state(0).GetAtIndex(0) + 1;
   }
 
   void DoCalcUnrestrictedUpdate(
@@ -1841,7 +1841,7 @@ class PerStepActionTestSystem : public LeafSystem<double> {
       const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
       State<double>* state) const override {
     int int_num =
-        static_cast<int>(context.get_discrete_state(0)->GetAtIndex(0));
+        static_cast<int>(context.get_discrete_state(0).GetAtIndex(0));
     state->get_mutable_abstract_state<std::string>(0) =
         "wow" + std::to_string(int_num);
   }
@@ -1921,17 +1921,17 @@ GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
 
   // sys0 doesn't have any updates.
   auto& sys0_context = diagram->GetSubsystemContext(*sys0, *context);
-  EXPECT_EQ(sys0_context.get_discrete_state(0)->GetAtIndex(0), 0);
+  EXPECT_EQ(sys0_context.get_discrete_state(0).GetAtIndex(0), 0);
   EXPECT_EQ(sys0_context.get_abstract_state<std::string>(0), "wow");
 
   // sys1 should have an unrestricted update then a discrete update.
   auto& sys1_context = diagram->GetSubsystemContext(*sys1, *context);
-  EXPECT_EQ(sys1_context.get_discrete_state(0)->GetAtIndex(0), 1);
+  EXPECT_EQ(sys1_context.get_discrete_state(0).GetAtIndex(0), 1);
   EXPECT_EQ(sys1_context.get_abstract_state<std::string>(0), "wow0");
 
   // sys2 should have a unrestricted update then a publish.
   auto& sys2_context = diagram->GetSubsystemContext(*sys2, *context);
-  EXPECT_EQ(sys2_context.get_discrete_state(0)->GetAtIndex(0), 0);
+  EXPECT_EQ(sys2_context.get_discrete_state(0).GetAtIndex(0), 0);
   EXPECT_EQ(sys2_context.get_abstract_state<std::string>(0), "wow0");
 }
 
@@ -2192,10 +2192,10 @@ GTEST_TEST(DiagramParametersTest, ParameterTest) {
 
   // Get pointers to the parameters.
   auto params1 = dynamic_cast<examples::pendulum::PendulumParams<double>*>(
-      diagram->GetMutableSubsystemContext(*pendulum1, context.get())
+      &diagram->GetMutableSubsystemContext(*pendulum1, context.get())
           .get_mutable_numeric_parameter(0));
   auto params2 = dynamic_cast<examples::pendulum::PendulumParams<double>*>(
-      diagram->GetMutableSubsystemContext(*pendulum2, context.get())
+      &diagram->GetMutableSubsystemContext(*pendulum2, context.get())
           .get_mutable_numeric_parameter(0));
 
   const double original_damping = params1->damping();
@@ -2238,9 +2238,9 @@ class RandomContextTestSystem : public LeafSystem<double> {
                            Parameters<double>* params,
                            RandomGenerator* generator) const override {
     std::uniform_real_distribution<double> uniform;
-    for (int i = 0; i < context.get_numeric_parameter(0)->size(); i++) {
-      params->get_mutable_numeric_parameter(0)->SetAtIndex(i,
-                                                           uniform(*generator));
+    for (int i = 0; i < context.get_numeric_parameter(0).size(); i++) {
+      params->get_mutable_numeric_parameter(0).SetAtIndex(i,
+                                                          uniform(*generator));
     }
   }
 };
@@ -2257,8 +2257,8 @@ GTEST_TEST(RandomContextTest, SetRandomTest) {
 
   // Back-up the numeric context values.
   Eigen::Vector4d state = context->get_continuous_state_vector().CopyToVector();
-  Eigen::Vector3d params0 = context->get_numeric_parameter(0)->CopyToVector();
-  Eigen::Vector3d params1 = context->get_numeric_parameter(1)->CopyToVector();
+  Eigen::Vector3d params0 = context->get_numeric_parameter(0).CopyToVector();
+  Eigen::Vector3d params1 = context->get_numeric_parameter(1).CopyToVector();
 
   // Should return the (same) original values.
   diagram->SetDefaultContext(context.get());
@@ -2266,10 +2266,10 @@ GTEST_TEST(RandomContextTest, SetRandomTest) {
                context->get_continuous_state_vector().CopyToVector().array())
                   .all());
   EXPECT_TRUE((params0.array() ==
-               context->get_numeric_parameter(0)->get_value().array())
+               context->get_numeric_parameter(0).get_value().array())
                   .all());
   EXPECT_TRUE((params1.array() ==
-               context->get_numeric_parameter(1)->get_value().array())
+               context->get_numeric_parameter(1).get_value().array())
                   .all());
 
   RandomGenerator generator;
@@ -2280,16 +2280,16 @@ GTEST_TEST(RandomContextTest, SetRandomTest) {
                context->get_continuous_state_vector().CopyToVector().array())
                   .all());
   EXPECT_TRUE((params0.array() !=
-               context->get_numeric_parameter(0)->get_value().array())
+               context->get_numeric_parameter(0).get_value().array())
                   .all());
   EXPECT_TRUE((params1.array() !=
-               context->get_numeric_parameter(1)->get_value().array())
+               context->get_numeric_parameter(1).get_value().array())
                   .all());
 
   // Update backup.
   state = context->get_continuous_state_vector().CopyToVector();
-  params0 = context->get_numeric_parameter(0)->CopyToVector();
-  params1 = context->get_numeric_parameter(1)->CopyToVector();
+  params0 = context->get_numeric_parameter(0).CopyToVector();
+  params1 = context->get_numeric_parameter(1).CopyToVector();
 
   // Should return different values (again).
   diagram->SetRandomContext(context.get(), &generator);
@@ -2297,10 +2297,10 @@ GTEST_TEST(RandomContextTest, SetRandomTest) {
                context->get_continuous_state_vector().CopyToVector().array())
                   .all());
   EXPECT_TRUE((params0.array() !=
-               context->get_numeric_parameter(0)->get_value().array())
+               context->get_numeric_parameter(0).get_value().array())
                   .all());
   EXPECT_TRUE((params1.array() !=
-               context->get_numeric_parameter(1)->get_value().array())
+               context->get_numeric_parameter(1).get_value().array())
                   .all());
 }
 
