@@ -28,9 +28,12 @@ class ImageToLcmImageArrayT : public systems::LeafSystem<double> {
   /// @param color_frame_name The frame name used for color image.
   /// @param depth_frame_name The frame name used for depth image.
   /// @param label_frame_name The frame name used for label image.
+  /// @param do_compress When true, zlib compression will be performed. The
+  /// default is false.
   ImageToLcmImageArrayT(const std::string& color_frame_name,
                         const std::string& depth_frame_name,
-                        const std::string& label_frame_name);
+                        const std::string& label_frame_name,
+                        const bool do_compress = false);
 
   /// Returns a descriptor of the input port containing a color image.
   const InputPortDescriptor<double>& color_image_input_port() const;
@@ -57,6 +60,8 @@ class ImageToLcmImageArrayT : public systems::LeafSystem<double> {
   std::string color_frame_name_;
   std::string depth_frame_name_;
   std::string label_frame_name_;
+
+  const bool do_compress_;
 };
 
 }  // namespace sensors
