@@ -122,7 +122,7 @@ drake_cc_binary(
         ":models",
         "//drake/manipulation/models/iiwa_description:models",
     ],
-    test_rule_args = ["--simulation_sec=0.1"],
+    test_rule_args = ["--simulation_sec=0.1 --target_realtime_rate=0.0"],
     deps = [
         ":iiwa_common",
         ":iiwa_lcm",

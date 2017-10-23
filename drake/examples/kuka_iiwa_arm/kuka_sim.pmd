@@ -1,12 +1,12 @@
 group "0.sim" {
 
   cmd "0.kuka_simulation" {
-    exec = "build/drake/examples/kuka_iiwa_arm/kuka_simulation";
+    exec = "bazel-bin/drake/examples/kuka_iiwa_arm/kuka_simulation";
     host = "localhost";
   }
 
   cmd "1.kuka_plan_runner" {
-    exec = "build/drake/examples/kuka_iiwa_arm/kuka_plan_runner";
+    exec = "bazel-bin/drake/examples/kuka_iiwa_arm/kuka_plan_runner";
     host = "localhost";
   }
 

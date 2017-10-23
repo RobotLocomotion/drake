@@ -33,6 +33,9 @@
 DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
               "Number of seconds to simulate.");
 DEFINE_string(urdf, "", "Name of urdf to load");
+DEFINE_double(target_realtime_rate, 1.0,
+              "Playback speed.  See documentation for "
+              "Simulator::set_target_realtime_rate() for details.");
 
 namespace drake {
 namespace examples {
@@ -143,6 +146,7 @@ int DoMain() {
 
   lcm.StartReceiveThread();
   simulator.set_publish_every_time_step(false);
+  simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
 
   command_receiver->set_initial_position(
