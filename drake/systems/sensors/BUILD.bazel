@@ -304,6 +304,27 @@ drake_cc_binary(
     ],
 )
 
+drake_cc_library(
+    name = "optitrack_sender",
+    srcs = ["optitrack_sender.cc"],
+    hdrs = ["optitrack_sender.h"],
+    deps = [
+        ":optitrack_encoder",
+        "//drake/systems/framework:leaf_system",
+        "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
+    ],
+)
+
+drake_cc_library(
+    name = "optitrack_encoder",
+    srcs = ["optitrack_encoder.cc"],
+    hdrs = ["optitrack_encoder.h"],
+    deps = [
+        "//drake/systems/framework:leaf_system",
+        "//drake/systems/rendering:pose_bundle",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -465,6 +486,26 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "image_to_lcm_image_array_t_test",
     deps = [":image_to_lcm_image_array_t"],
+)
+
+drake_cc_googletest(
+    name = "optitrack_encoder_test",
+    srcs = ["test/optitrack_encoder_test.cc"],
+    deps = [
+        ":optitrack_encoder",
+        "//drake/systems/framework",
+    ],
+)
+
+drake_cc_googletest(
+    name = "optitrack_sender_test",
+    srcs = ["test/optitrack_sender_test.cc"],
+    deps = [
+        ":optitrack_encoder",
+        ":optitrack_sender",
+        "//drake/systems/framework",
+        "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
+    ],
 )
 
 add_lint_tests()
