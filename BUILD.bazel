@@ -35,14 +35,13 @@ install(
     name = "install",
     docs = ["LICENSE.TXT"],
     deps = [
-        "//drake:install",
         "//drake/automotive/models:install_data",
         "//drake/bindings:install",
         "//drake/common:install",
         "//drake/examples:install",
         "//drake/lcmtypes:install",
         "//drake/manipulation/models:install_data",
-        "//tools:install",
+        "//tools/install/libdrake:install",
         "//tools/workspace:install_external_packages",
     ],
 )
