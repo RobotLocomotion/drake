@@ -20,21 +20,18 @@ namespace systems {
 /**
  * This is a Drake System block that takes a RigidBodyTree and publishes LCM
  * messages that are intended for the DrakeVisualizer. It does this in two
- * phases: initialization and run-time. This system holds a DiscreteState in
- * its context that identifies whether the initialization phase has been
- * completed. It is initialized to false in SetDefaultState(). The
- * initialization phase is performed in DoCalcDiscreteVariableUpdates(), which
- * is scheduled by DoCalcNextUpdateTime(). This class is intended to be used
- * only in the System framework with proper event handling. If this is not the
- * use case, users are encouraged to send the LCM messages directly through LCM.
- * ViewerDrawTranslator and multibody::CreateLoadRobotMessage() are useful for
- * generating the appropriate LCM messages.
+ * phases: initialization and run-time.
  *
- * During initialization, this system block analyzes the RigidBodyTree and tells
- * Drake Visualizer what it will be visualizing. For example, these include the
- * number of rigid bodies, their dimensions, and colors. The LCM message used
- * during this phase is called `lcmt_viewer_load_robot` and the channel name is
- * "DRAKE_VIEWER_LOAD_ROBOT".
+ * The initialization is responsible for dispatching the LCM message of
+ * _loading_ the bodies in the RigidBodyTree. More specifically, the LCM message
+ * is the `lcmt_viewer_load_robot` and the channel name is
+ * "DRAKE_VIEWER_LOAD_ROBOT". The contents include the number of rigid bodies
+ * and their visual properties (geometry and materials). This work is done
+ * _implicitly_ as a result of querying the system for it's next update time (in
+ * DoCalcNextUpdateTime()). Once the system has dispatched the load message, it
+ * will _not_ dispatch another in its lifetime unless its
+ * `enable_load_message()` method is invoked  followed by a subsequent call to
+ * DoCalcNextUpdateTime().
  *
  * During run-time, this system block takes the current state of the model and
  * tells Drake Visualizer how to visualize the model. For example, this includes
@@ -108,29 +105,21 @@ class DrakeVisualizer : public LeafSystem<double> {
   void PlaybackTrajectory(
       const PiecewisePolynomial<double>& input_trajectory) const;
 
+  /**
+   * Rests the System so that the next invocation of DoCalcNextUpdateTime() will
+   * cause a robot load message to be sent.
+   */
+  void enable_load_message() { load_message_sent_ = false; }
+
  private:
   // Returns true if initialization phase has been completed.
-  bool is_load_message_sent(const Context<double>& context) const {
-    return context.get_discrete_state(0)->GetAtIndex(0) < 0;
+  bool is_load_message_sent() const {
+    return load_message_sent_;
   }
 
   // Sets the discrete state to @p flag.
-  void set_is_load_message_sent(DiscreteValues<double>* state,
-                                bool flag) const {
-    // NOTE: The discrete state *is* the time at which the load robot message
-    // should be broadcast. When the message has *not* been sent, the time
-    // is set to an early point in the simulation. When it has been set, the
-    // time is negative (indicating that no further effort is required).
-    if (flag)
-      state->get_mutable_vector(0)->SetAtIndex(0, -1);
-    else
-      state->get_mutable_vector(0)->SetAtIndex(0, 1e-4);
-  }
-
-  // Set the default to "initialization phase has not been completed."
-  void SetDefaultState(const Context<double>&, State<double>* state)
-      const override {
-    set_is_load_message_sent(state->get_mutable_discrete_state(), false);
+  void set_is_load_message_sent(bool flag) const {
+    load_message_sent_ = flag;
   }
 
   // If initialization has not been completed, schedule a DiscreteStateUpdate
@@ -139,12 +128,6 @@ class DrakeVisualizer : public LeafSystem<double> {
   void DoCalcNextUpdateTime(const Context<double>& context,
                             CompositeEventCollection<double>* events,
                             double* time) const override;
-
-  // Sets the initialization flag to true, and calls PublishLoadRobot().
-  void DoCalcDiscreteVariableUpdates(
-      const Context<double>& context,
-      const std::vector<const DiscreteUpdateEvent<double>*>&,
-      DiscreteValues<double>* discrete_state) const override;
 
   // Publishes a draw message if initialization is completed. Otherwise, it
   // emits a warning and return.
@@ -170,6 +153,9 @@ class DrakeVisualizer : public LeafSystem<double> {
 
   // The (optional) log used for recording and playback.
   std::unique_ptr<SignalLog<double>> log_{nullptr};
+
+  // Internal book keeping for determining if the load message needs to be sent.
+  mutable bool load_message_sent_{false};
 };
 
 }  // namespace systems
