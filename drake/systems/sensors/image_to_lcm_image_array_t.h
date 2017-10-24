@@ -11,7 +11,7 @@ namespace drake {
 namespace systems {
 namespace sensors {
 
-/// An ImageToLcmImageArrayT takes as input a ImageBgra8U, ImageDepth32F and
+/// An ImageToLcmImageArrayT takes as input an ImageRgba8U, ImageDepth32F and
 /// ImageLabel16I. This system outputs an AbstractValue containing a
 /// `Value<robotlocomotion::image_array_t>` LCM message that defines an array
 /// of images (image_t). This message can then be sent to other processes that
@@ -23,7 +23,7 @@ class ImageToLcmImageArrayT : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ImageToLcmImageArrayT)
 
-  /// A %ImageToLcmImageArrayT constructor.
+  /// An %ImageToLcmImageArrayT constructor.
   ///
   /// @param color_frame_name The frame name used for color image.
   /// @param depth_frame_name The frame name used for depth image.
@@ -52,10 +52,10 @@ class ImageToLcmImageArrayT : public systems::LeafSystem<double> {
   void CalcImageArray(const systems::Context<double>& context,
                       robotlocomotion::image_array_t* msg) const;
 
-  int color_image_input_port_index_{};
-  int depth_image_input_port_index_{};
-  int label_image_input_port_index_{};
-  int image_array_t_msg_output_port_index_{};
+  int color_image_input_port_index_{-1};
+  int depth_image_input_port_index_{-1};
+  int label_image_input_port_index_{-1};
+  int image_array_t_msg_output_port_index_{-1};
 
   std::string color_frame_name_;
   std::string depth_frame_name_;
