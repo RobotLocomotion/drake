@@ -32,6 +32,9 @@
 #include "drake/systems/sensors/image.h"
 #include "drake/systems/sensors/vtk_util.h"
 
+// This macro declares vtkRenderingOpenGL2_AutoInit_{Construct(), Destruct()}
+// functions and the former is called via VTK_AUTOINIT_CONSTRUCT in
+// ModuleInitVtkRenderingOpenGL2.
 VTK_AUTOINIT_DECLARE(vtkRenderingOpenGL2)
 
 // TODO(kunimatsu-tri) Refactor RgbdRenderer with GeometryWorld when it's ready,
@@ -86,7 +89,6 @@ void PerformVTKUpdate(
   exporter->Update();
 }
 
-
 void SetModelTransformMatrixToVtkCamera(
     vtkCamera* camera, const vtkSmartPointer<vtkTransform>& X_WC) {
   // vtkCamera contains a transformation as the internal state and
@@ -104,6 +106,8 @@ void SetModelTransformMatrixToVtkCamera(
 
 class RgbdRenderer::Impl : private ModuleInitVtkRenderingOpenGL2 {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Impl)
+
   Impl(const Eigen::Isometry3d& X_WC, int width, int height,
        double z_near, double z_far, double fov_y, bool show_window);
 
