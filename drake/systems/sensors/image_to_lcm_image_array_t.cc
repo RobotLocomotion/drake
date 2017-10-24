@@ -43,9 +43,20 @@ void Compress(const Image<kPixelType>& image, image_t* msg) {
 }
 
 template <PixelType kPixelType>
+void Pack(const Image<kPixelType>& image, image_t* msg) {
+  msg->compression_method = image_t::COMPRESSION_METHOD_NOT_COMPRESSED;
+
+  const int size = image.width() * image.height() * image.kPixelSize;
+  msg->data.resize(size);
+  msg->size = size;
+  memcpy(&msg->data[0], image.at(0, 0), size);
+}
+
+template <PixelType kPixelType>
 void PackImageToLcmImageT(const Image<kPixelType>& image, int64_t utime,
                           uint8_t pixel_format, uint8_t channel_type,
-                          const string& frame_name, image_t* msg) {
+                          const string& frame_name, image_t* msg,
+                          bool do_compress) {
   // TODO(kunimatsu-tri) Fix seq here that is always set to zero.
   msg->header.seq = 0;
   msg->header.utime = utime;
@@ -57,18 +68,23 @@ void PackImageToLcmImageT(const Image<kPixelType>& image, int64_t utime,
   msg->pixel_format = pixel_format;
   msg->channel_type = channel_type;
 
-  // TODO(kunimatsu-tri) Make compression optional and/or selectable.
-  Compress(image, msg);
+  if (do_compress) {
+    Compress(image, msg);
+  } else {
+    Pack(image, msg);
+  }
 }
 
 }  // anonymous namespace
 
 ImageToLcmImageArrayT::ImageToLcmImageArrayT(const string& color_frame_name,
                                              const string& depth_frame_name,
-                                             const string& label_frame_name)
+                                             const string& label_frame_name,
+                                             bool do_compress)
     : color_frame_name_(color_frame_name),
       depth_frame_name_(depth_frame_name),
-      label_frame_name_(label_frame_name) {
+      label_frame_name_(label_frame_name),
+      do_compress_(do_compress) {
   color_image_input_port_index_ =
       DeclareAbstractInputPort(systems::Value<ImageRgba8U>()).get_index();
 
@@ -127,7 +143,8 @@ void ImageToLcmImageArrayT::CalcImageArray(
     PackImageToLcmImageT(color_image, msg->header.utime,
                          image_t::PIXEL_FORMAT_RGBA,
                          image_t::CHANNEL_TYPE_UINT8, color_frame_name_,
-                         &color_image_msg);
+                         &color_image_msg,
+                         do_compress_);
     msg->images.push_back(color_image_msg);
     msg->num_images++;
   }
@@ -139,7 +156,8 @@ void ImageToLcmImageArrayT::CalcImageArray(
     PackImageToLcmImageT(depth_image, msg->header.utime,
                          image_t::PIXEL_FORMAT_DEPTH,
                          image_t::CHANNEL_TYPE_FLOAT32, depth_frame_name_,
-                         &depth_image_msg);
+                         &depth_image_msg,
+                         do_compress_);
     msg->images.push_back(depth_image_msg);
     msg->num_images++;
   }
@@ -152,7 +170,8 @@ void ImageToLcmImageArrayT::CalcImageArray(
     PackImageToLcmImageT(label_image, msg->header.utime,
                          image_t::PIXEL_FORMAT_LABEL,
                          image_t::CHANNEL_TYPE_INT16, label_frame_name_,
-                         &label_image_msg);
+                         &label_image_msg,
+                         do_compress_);
     msg->images.push_back(label_image_msg);
     msg->num_images++;
   }
