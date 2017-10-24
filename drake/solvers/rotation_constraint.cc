@@ -1019,13 +1019,13 @@ void AddOrthogonalAndCrossProductConstraintRelaxationReplacingBilinearProduct(
       prog->AddLinearConstraint(
           ReplaceBilinearTerms(
               R.col(i).dot(R.col(j).cast<symbolic::Expression>()), R_flat,
-              R_flat, W) == 0);
+              R_flat, W.cast<symbolic::Expression>()) == 0);
       // Orthogonal constraint between R.row(i), R.row(j)
       prog->AddLinearConstraint(
           ReplaceBilinearTerms(
               R.row(i).transpose().dot(
                   R.row(j).cast<symbolic::Expression>().transpose()),
-              R_flat, R_flat, W) == 0);
+              R_flat, R_flat, W.cast<symbolic::Expression>()) == 0);
     }
   }
 
@@ -1038,13 +1038,13 @@ void AddOrthogonalAndCrossProductConstraintRelaxationReplacingBilinearProduct(
         R.row(j).transpose().cast<symbolic::Expression>());
     for (int row = 0; row < 3; ++row) {
       // R.col(i) x R.col(j) = R.col(k).
-      prog->AddLinearConstraint(ReplaceBilinearTerms(cross_product1(row),
-                                                     R_flat, R_flat,
-                                                     W) == R(row, k));
+      prog->AddLinearConstraint(
+          ReplaceBilinearTerms(cross_product1(row), R_flat, R_flat,
+                               W.cast<symbolic::Expression>()) == R(row, k));
       // R.row(i) x R.row(j) = R.row(k).
-      prog->AddLinearConstraint(ReplaceBilinearTerms(cross_product2(row),
-                                                     R_flat, R_flat,
-                                                     W) == R(k, row));
+      prog->AddLinearConstraint(
+          ReplaceBilinearTerms(cross_product2(row), R_flat, R_flat,
+                               W.cast<symbolic::Expression>()) == R(k, row));
     }
   }
 }

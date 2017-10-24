@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
 #include "drake/solvers/decision_variable.h"
 
@@ -28,6 +29,6 @@ symbolic::Expression ReplaceBilinearTerms(
     const symbolic::Expression& e,
     const Eigen::Ref<const VectorXDecisionVariable>& x,
     const Eigen::Ref<const VectorXDecisionVariable>& y,
-    const Eigen::Ref<const MatrixXDecisionVariable>& W);
+    const Eigen::Ref<const MatrixX<symbolic::Expression>>& W);
 }  // namespace solvers
 }  // namespace drake
