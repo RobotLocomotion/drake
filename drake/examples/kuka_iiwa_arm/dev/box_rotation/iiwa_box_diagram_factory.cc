@@ -112,6 +112,9 @@ IiwaAndBoxPlantWithStateEstimator<T>::IiwaAndBoxPlantWithStateEstimator(
   output_port_contact_results_t_ =
       base_builder->ExportOutput(plant_->contact_results_output_port());
 
+  output_port_kinematics_results_t_ =
+      base_builder->ExportOutput(plant_->kinematics_results_output_port());
+
   builder.BuildInto(this);
 }
 template

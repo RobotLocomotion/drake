@@ -79,6 +79,11 @@ class IiwaAndBoxPlantWithStateEstimator : public systems::Diagram<T> {
     return this->get_output_port(output_port_contact_results_t_);
   }
 
+  const systems::OutputPort<T> &get_output_port_kinematics_results()
+  const {
+    return this->get_output_port(output_port_kinematics_results_t_);
+  }
+
   void SetPositionControlledGains(Eigen::VectorXd* Kp, Eigen::VectorXd* Ki,
                                   Eigen::VectorXd* Kd);
 
@@ -96,6 +101,7 @@ class IiwaAndBoxPlantWithStateEstimator : public systems::Diagram<T> {
   int output_port_iiwa_robot_state_t_{-1};
   int output_port_box_robot_state_t_{-1};
   int output_port_contact_results_t_{-1};
+  int output_port_kinematics_results_t_{-1};
 };
 
 }  // namespace box_rotation
