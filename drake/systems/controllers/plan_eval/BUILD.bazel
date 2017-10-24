@@ -67,7 +67,9 @@ drake_cc_googletest(
         "//drake/common:find_resource",
         "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/multibody:rigid_body_tree",
+        "//drake/multibody:rigid_body_tree_alias_groups_loader",
         "//drake/multibody/parsers",
+        "//drake/systems/controllers/qp_inverse_dynamics:param_parser_loader",
     ],
 )
 

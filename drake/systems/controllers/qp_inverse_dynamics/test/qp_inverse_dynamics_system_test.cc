@@ -6,8 +6,10 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/rigid_body_tree_alias_groups_loader.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/qp_inverse_dynamics/param_parser.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/param_parser_loader.h"
 #include "drake/systems/controllers/qp_inverse_dynamics/robot_kinematic_state.h"
 #include "drake/systems/controllers/setpoint.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -40,10 +42,10 @@ GTEST_TEST(testQpInverseDynamicsSystem, IiwaInverseDynamics) {
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       kModelPath, multibody::joints::kFixed, &robot);
 
-  RigidBodyTreeAliasGroups<double> alias_groups(&robot);
-  alias_groups.LoadFromFile(kAliasGroupsPath);
-  ParamSet paramset;
-  paramset.LoadFromFile(kControlConfigPath, alias_groups);
+  auto alias_groups = RigidBodyTreeAliasGroupsLoadFromFile(
+      &robot, kAliasGroupsPath);
+
+  auto paramset = ParamSetLoadFromFile(kControlConfigPath, *alias_groups);
 
   DiagramBuilder<double> builder;
 
@@ -66,11 +68,11 @@ GTEST_TEST(testQpInverseDynamicsSystem, IiwaInverseDynamics) {
 
   // Makes a source for qp input.
   const std::vector<std::string> empty;
-  QpInput input = paramset.MakeQpInput(empty, /* contacts */
-                                       empty, /* tracked bodies*/
-                                       alias_groups);
+  QpInput input = paramset->MakeQpInput(empty, /* contacts */
+                                        empty, /* tracked bodies*/
+                                        *alias_groups);
   VectorX<double> kp, kd;
-  paramset.LookupDesiredDofMotionGains(&kp, &kd);
+  paramset->LookupDesiredDofMotionGains(&kp, &kd);
   // Desired q and v.
   VectorX<double> q_d = q;
   VectorX<double> v_d = v;

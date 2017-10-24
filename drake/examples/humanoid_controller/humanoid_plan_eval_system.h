@@ -12,6 +12,8 @@ namespace drake {
 namespace examples {
 namespace humanoid_controller {
 
+using systems::controllers::qp_inverse_dynamics::ParamSet;
+
 /**
  * This class extends PlanEvalBaseSystem to interpret plans for humanoid robots.
  * At every tick, this class generates a QpInput that tracks those trajectories
@@ -33,14 +35,16 @@ class HumanoidPlanEvalSystem
    * Constructor.
    * @param robot Pointer to a RigidBodyTree, whose life span must be longer
    * than this instance.
-   * @param alias_groups_file_name Path to the alias groups file that describes
+   * @param alias_groups Shared pointer to a RigidBodyTreeAliasGroups that describes
    * the robot's topology for the controller.
    * @param param_file_name Path to the config file for the controller.
    * @param dt Control time step.
    */
-  HumanoidPlanEvalSystem(const RigidBodyTree<double>* robot,
-                         const std::string& alias_groups_file_name,
-                         const std::string& param_file_name, double dt);
+  HumanoidPlanEvalSystem(
+      const RigidBodyTree<double>* robot,
+      std::unique_ptr<RigidBodyTreeAliasGroups<double>>* alias_groups,
+      std::unique_ptr<ParamSet>* paramset,
+      double dt);
 
   /**
    * Initializes the plan in @p state to maintain the current robot

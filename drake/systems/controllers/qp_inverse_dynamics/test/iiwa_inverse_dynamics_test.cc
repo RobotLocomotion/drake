@@ -5,7 +5,9 @@
 #include "drake/common/text_logging.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/rigid_body_tree_alias_groups_loader.h"
 #include "drake/systems/controllers/qp_inverse_dynamics/param_parser.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/param_parser_loader.h"
 #include "drake/systems/controllers/qp_inverse_dynamics/qp_inverse_dynamics.h"
 #include "drake/systems/controllers/setpoint.h"
 
@@ -35,19 +37,18 @@ GTEST_TEST(testQPInverseDynamicsController, testForIiwa) {
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       urdf, multibody::joints::kFixed, &robot);
 
-  RigidBodyTreeAliasGroups<double> alias_groups(&robot);
-  alias_groups.LoadFromFile(alias_groups_config);
+  auto alias_groups = RigidBodyTreeAliasGroupsLoadFromFile(
+      &robot, alias_groups_config);
 
-  ParamSet paramset;
-  paramset.LoadFromFile(controller_config, alias_groups);
+  auto paramset = ParamSetLoadFromFile(controller_config, *alias_groups);
 
   RobotKinematicState<double> robot_status(&robot);
 
   QpInverseDynamics con;
   std::vector<std::string> contact_group_names = {};
   std::vector<std::string> tracked_body_names = {};
-  QpInput input = paramset.MakeQpInput(contact_group_names, tracked_body_names,
-                                       alias_groups);
+  QpInput input = paramset->MakeQpInput(contact_group_names, tracked_body_names,
+                                        *alias_groups);
   QpOutput output(GetDofNames(robot));
 
   // Sets up desired q and v.
@@ -56,7 +57,7 @@ GTEST_TEST(testQPInverseDynamicsController, testForIiwa) {
 
   // Sets up a control policy to track q and v.
   VectorX<double> kp, kd;
-  paramset.LookupDesiredDofMotionGains(&kp, &kd);
+  paramset->LookupDesiredDofMotionGains(&kp, &kd);
   VectorSetpoint<double> policy(q, v, VectorX<double>::Zero(q.size()), kp, kd);
 
   // Perturbs the initial condition.

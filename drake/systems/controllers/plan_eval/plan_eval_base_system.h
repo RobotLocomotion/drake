@@ -30,14 +30,16 @@ class PlanEvalBaseSystem : public systems::LeafSystem<double> {
    * Constructor.
    * @param robot Pointer to a RigidBodyTree, whose life span must be longer
    * than this instance.
-   * @param alias_groups_file_name Path to the alias groups file that describes
+   * @param alias_groups Shared pointer to a RigidBodyTreeAliasGroups that describes
    * the robot's topology for the controller.
    * @param param_file_name Path to the config file for the controller.
    * @param dt Control time step
    */
-  PlanEvalBaseSystem(const RigidBodyTree<double>* robot,
-                     const std::string& alias_groups_file_name,
-                     const std::string& param_file_name, double dt);
+  PlanEvalBaseSystem(
+      const RigidBodyTree<double>* robot,
+      std::unique_ptr<RigidBodyTreeAliasGroups<double>>* alias_groups,
+      std::unique_ptr<qp_inverse_dynamics::ParamSet>* paramset,
+      double dt);
 
   /**
    * Calls DoExtendedCalcUnrestrictedUpdate().
@@ -78,12 +80,12 @@ class PlanEvalBaseSystem : public systems::LeafSystem<double> {
   double get_control_dt() const { return control_dt_; }
 
   const RigidBodyTreeAliasGroups<double>& get_alias_groups() const {
-    return alias_groups_;
+    return *alias_groups_;
   }
 
   const systems::controllers::qp_inverse_dynamics::ParamSet& get_paramset()
       const {
-    return paramset_;
+    return *paramset_;
   }
   /// @}
 
@@ -130,8 +132,8 @@ class PlanEvalBaseSystem : public systems::LeafSystem<double> {
   const RigidBodyTree<double>& robot_;
   const double control_dt_{};
 
-  RigidBodyTreeAliasGroups<double> alias_groups_;
-  systems::controllers::qp_inverse_dynamics::ParamSet paramset_;
+  std::shared_ptr<RigidBodyTreeAliasGroups<double>> alias_groups_;
+  std::shared_ptr<qp_inverse_dynamics::ParamSet> paramset_;
 
   int input_port_index_kinematic_state_{};
   int output_port_index_qp_input_{};

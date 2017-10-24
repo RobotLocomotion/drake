@@ -9,10 +9,9 @@ namespace humanoid_controller {
 using systems::controllers::qp_inverse_dynamics::RobotKinematicState;
 
 RobotStateMsgToHumanoidStatusSystem::RobotStateMsgToHumanoidStatusSystem(
-    const RigidBodyTree<double>* robot, const std::string& alias_group_path)
+    const RigidBodyTree<double>* robot,
+    const RigidBodyTreeAliasGroups<double>& alias_groups)
     : robot_(*robot), translator_(*robot) {
-  RigidBodyTreeAliasGroups<double> alias_groups(&robot_);
-  alias_groups.LoadFromFile(alias_group_path);
   default_output_ = std::make_unique<HumanoidStatus>(&robot_, alias_groups);
 
   DeclareAbstractInputPort();

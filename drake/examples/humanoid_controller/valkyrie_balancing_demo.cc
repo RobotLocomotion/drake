@@ -2,11 +2,15 @@
 #include "drake/examples/humanoid_controller/humanoid_controller.h"
 #include "drake/examples/valkyrie/valkyrie_constants.h"
 #include "drake/manipulation/util/robot_state_msg_translator.h"
+#include "drake/multibody/rigid_body_tree_alias_groups_loader.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/param_parser_loader.h"
 #include "drake/systems/lcm/lcm_driven_loop.h"
 
 namespace drake {
 namespace examples {
 namespace humanoid_controller {
+
+using systems::controllers::qp_inverse_dynamics::ParamSetLoadFromFile;
 
 // This is an example qp based inverse dynamics controller loop for Valkyrie
 // built from the Systems blocks.
@@ -25,8 +29,12 @@ void controller_loop() {
       "config/valkyrie.id_controller_config");
 
   drake::lcm::DrakeLcm lcm;
-  HumanoidController valkyrie_controller(kModelFileName, kControlConfigPath,
-                                         kAliasGroupPath, &lcm);
+  RigidBodyTree<double> robot;
+  auto alias_groups = RigidBodyTreeAliasGroupsLoadFromFile(
+      &robot, kAliasGroupPath);
+  auto paramset = ParamSetLoadFromFile(kControlConfigPath, *alias_groups);
+  HumanoidController valkyrie_controller(&robot, kModelFileName, &alias_groups,
+                                         &paramset, &lcm);
   HumanoidPlanEvalSystem* plan_eval =
       valkyrie_controller.get_mutable_plan_eval();
   const systems::lcm::LcmSubscriberSystem& state_msg_subscriber =
@@ -47,18 +55,15 @@ void controller_loop() {
   // Decodes the message into q and v.
   const bot_core::robot_state_t& raw_msg =
       first_msg.GetValueOrThrow<bot_core::robot_state_t>();
-  RigidBodyTree<double> robot;
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       kModelFileName, multibody::joints::kRollPitchYaw, &robot);
-  RigidBodyTreeAliasGroups<double> alias_groups(&robot);
-  alias_groups.LoadFromFile(kAliasGroupPath);
 
   VectorX<double> q(robot.get_num_positions());
   VectorX<double> v(robot.get_num_velocities());
   manipulation::RobotStateLcmMessageTranslator translator(robot);
   translator.DecodeMessageKinematics(raw_msg, q, v);
 
-  HumanoidStatus robot_status(&robot, alias_groups);
+  HumanoidStatus robot_status(&robot, *alias_groups);
   v.setZero();
   robot_status.UpdateKinematics(msg_time, q, v);
 

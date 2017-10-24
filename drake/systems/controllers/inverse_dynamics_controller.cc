@@ -21,12 +21,13 @@ void InverseDynamicsController<T>::SetUp(const VectorX<double>& kp,
   DiagramBuilder<T> builder;
   this->set_name("InverseDynamicsController");
 
-  const RigidBodyTree<T>& robot = *robot_for_control_;
-  DRAKE_DEMAND(robot.get_num_positions() == kp.size());
-  DRAKE_DEMAND(robot.get_num_positions() == robot.get_num_velocities());
-  DRAKE_DEMAND(robot.get_num_positions() == robot.get_num_actuators());
+  DRAKE_DEMAND(robot_for_control_->get_num_positions() == kp.size());
+  DRAKE_DEMAND(robot_for_control_->get_num_positions() ==
+      robot_for_control_->get_num_velocities());
+  DRAKE_DEMAND(robot_for_control_->get_num_positions() ==
+      robot_for_control_->get_num_actuators());
 
-  const int dim = robot.get_num_velocities();
+  const int dim = robot_for_control_->get_num_velocities();
 
   /*
   (vd*)
@@ -47,7 +48,8 @@ void InverseDynamicsController<T>::SetUp(const VectorX<double>& kp,
 
   // Adds inverse dynamics.
   auto inverse_dynamics =
-      builder.template AddSystem<InverseDynamics<T>>(robot, false);
+      builder.template AddSystem<InverseDynamics<T>>(
+          *robot_for_control_, false);
   inverse_dynamics->set_name("inverse_dynamics");
 
   // Redirects estimated state input into PID and inverse dynamics.
@@ -85,7 +87,7 @@ void InverseDynamicsController<T>::SetUp(const VectorX<double>& kp,
     // Uses a zero constant source for reference acceleration.
     auto zero_feedforward_acceleration =
         builder.template AddSystem<ConstantVectorSource<T>>(
-            VectorX<T>::Zero(robot.get_num_velocities()));
+            VectorX<T>::Zero(robot_for_control_->get_num_velocities()));
     zero_feedforward_acceleration->set_name("zero");
     builder.Connect(zero_feedforward_acceleration->get_output_port(),
                     adder->get_input_port(1));
@@ -112,11 +114,11 @@ void InverseDynamicsController<T>::set_integral_value(
 
 template <typename T>
 InverseDynamicsController<T>::InverseDynamicsController(
-    std::unique_ptr<RigidBodyTree<T>> robot, const VectorX<double>& kp,
+    std::shared_ptr<RigidBodyTree<T>> robot, const VectorX<double>& kp,
     const VectorX<double>& ki, const VectorX<double>& kd,
     bool has_reference_acceleration)
     : has_reference_acceleration_(has_reference_acceleration) {
-  robot_for_control_ = std::move(robot);
+  robot_for_control_ = robot;
   SetUp(kp, ki, kd);
 }
 

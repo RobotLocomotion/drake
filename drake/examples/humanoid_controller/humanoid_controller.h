@@ -25,6 +25,7 @@ namespace examples {
 namespace humanoid_controller {
 
 using systems::controllers::qp_inverse_dynamics::QpInverseDynamicsSystem;
+using systems::controllers::qp_inverse_dynamics::ParamSet;
 
 /**
  * A controller for humanoid balancing built on top of HumanoidPlanEvalSystem
@@ -34,29 +35,31 @@ using systems::controllers::qp_inverse_dynamics::QpInverseDynamicsSystem;
  */
 class HumanoidController : public systems::Diagram<double> {
  public:
-  HumanoidController(const std::string& model_path,
-                     const std::string& control_config_path,
-                     const std::string& alias_group_path, lcm::DrakeLcm* lcm) {
+  HumanoidController(
+      RigidBodyTree<double>* robot,
+      const std::string& model_path,
+      std::unique_ptr<RigidBodyTreeAliasGroups<double>>* alias_groups,
+      std::unique_ptr<ParamSet>* paramset,
+      lcm::DrakeLcm* lcm) {
     systems::DiagramBuilder<double> builder;
 
-    robot_ = std::make_unique<RigidBodyTree<double>>();
     parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-        model_path, multibody::joints::kRollPitchYaw, robot_.get());
+        model_path, multibody::joints::kRollPitchYaw, robot);
     RobotStateMsgToHumanoidStatusSystem* msg_to_humanoid_status =
         builder.AddSystem(std::make_unique<RobotStateMsgToHumanoidStatusSystem>(
-            robot_.get(), alias_group_path));
+            robot, *(*alias_groups)));
 
     const double kControlDt = 0.003;
     plan_eval_ = builder.AddSystem(std::make_unique<HumanoidPlanEvalSystem>(
-        robot_.get(), alias_group_path, control_config_path, kControlDt));
+        robot, alias_groups, paramset, kControlDt));
 
     QpInverseDynamicsSystem* qp_con = builder.AddSystem(
-        std::make_unique<QpInverseDynamicsSystem>(robot_.get(), kControlDt));
+        std::make_unique<QpInverseDynamicsSystem>(robot, kControlDt));
 
     // TODO(siyuan): bot_core::atlas_command_t is very specific to the Atlas
     // humanoid. Consider switch to another more generic message type.
     AtlasCommandTranslatorSystem* joint_con =
-        builder.AddSystem<AtlasCommandTranslatorSystem>(*robot_);
+        builder.AddSystem<AtlasCommandTranslatorSystem>(*robot);
 
     robot_state_subscriber_ = builder.AddSystem(
         systems::lcm::LcmSubscriberSystem::Make<bot_core::robot_state_t>(
@@ -108,7 +111,6 @@ class HumanoidController : public systems::Diagram<double> {
  private:
   systems::lcm::LcmSubscriberSystem* robot_state_subscriber_{nullptr};
   HumanoidPlanEvalSystem* plan_eval_{nullptr};
-  std::unique_ptr<RigidBodyTree<double>> robot_{nullptr};
 };
 
 }  // namespace humanoid_controller

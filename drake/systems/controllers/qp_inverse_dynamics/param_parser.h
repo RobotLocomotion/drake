@@ -133,71 +133,39 @@ class ParamSet {
   ParamSet() {}
 
   /**
-   * Loads parameters from a config file for the inverse dynamics controller.
-   * The format of the config file is defined in id_controller_config.proto.
-   *
-   * For the `ContactConfig` and `AccelerationConfig` (defined in
-   * id_controller_config.proto), the `name` field should correspond to either
-   * a body group or joint group name in the associated
-   * RigidBodyTreeAliasGroups. Every member in that group will have the same
-   * parameters. A `default` parameter can also be specified for `body_motion`,
-   * `dof_motion` and `contact` for InverseDynamicsControllerConfig. It will be
-   * returned when parameters are not explicitly specified. It is recommended
-   * to supply the default parameters.
-   *
-   * For AccelerationConfig, the number of recurrence for `kp`, `kd` and
-   * `weight` can either be 1 or exactly matches the dimension of the
-   * associated parameter. The first case is a simpler way for specifying
-   * everything with the same number. For example, when specifying parameters
-   * for spatial accelerations, `kp`, `kd` and `weight` need to be 6
-   * dimensional. When used for accelerations in the generalized coordinates,
-   * `kp`, `kd` and `weight` need to match the dimension of that joint group.
-   * E.g. `kp`, `kd` and `weight` need to be 8 dimensional for a joint group
-   * that consists of a floating base joint and 2 single dof joints.
-   *
-   * @param config_path Path to the config file.
-   * @param alias_group Specifies the relationship between body / joint groups
-   * and the RigidBodyTree it is constructed from.
-   *
-   * @throws std::runtime_error if the config file can not be parsed correctly.
-   */
-  void LoadFromFile(const std::string& config_path,
-                    const RigidBodyTreeAliasGroups<double>& alias_group);
-
-  /**
    * Returns a map from body names to ContactInformation, where the body names
-   * belong to the body group specified by @p group_name in @p alias_group.
+   * belong to the body group specified by @p group_name in @p alias_groups.
    * For each body without a corresponding ContactParam, a ContactInformation
-   * will be constructed using the default ContactParam. If @p alias_group
+   * will be constructed using the default ContactParam. If @p alias_groups
    * does not contain @p group_name, an empty map will be returned.
    *
    * @param group_name Name of the body group of interest.
-   * @param alias_group Specifies the relationship between body / joint groups
+   * @param alias_groups Specifies the relationship between body / joint groups
    * and the RigidBodyTree it is constructed from.
    * @return A map from body names to ContactInformation
    */
   std::unordered_map<std::string, ContactInformation> MakeContactInformation(
       const std::string& group_name,
-      const RigidBodyTreeAliasGroups<double>& alias_group) const;
+      const RigidBodyTreeAliasGroups<double>& alias_groups) const;
 
   /**
    * Returns a map from body names to DesiredBodyMotions, where the body names
-   * belongs to the body group specified by @p group_name in @p alias_group.
+   * belongs to the body group specified by @p group_name in @p alias_groups.
    * This method only sets the weights and constraint_types fields of
    * DesiredBodyMotion; it does not set the values, which must be set
    * separately. For each body name, if it has no corresponding
    * DesiredMotionParam, a DesiredBodyMotion will be constructed using the
-   * default DesiredMotionParam. If @p alias_group does not contain
+   * default DesiredMotionParam. If @p alias_groups does not contain
    * @p group_name, an empty map will be returned.
    *
    * @param group_name Name of the body group of interest.
-   * @param alias_group Specifies the relationship between body / joint groups
+   * @param alias_groups Specifies the relationship between body / joint groups
    * and the RigidBodyTree it is constructed from.
    * @return A map from body names to DesiredBodyMotions.
    */
   std::unordered_map<std::string, DesiredBodyMotion> MakeDesiredBodyMotion(
       const std::string& group_name,
-      const RigidBodyTreeAliasGroups<double>& alias_group) const;
+      const RigidBodyTreeAliasGroups<double>& alias_groups) const;
 
   /**
    * Returns a single ContactInformation for @p body. If @p body has no
@@ -224,17 +192,17 @@ class ParamSet {
    * correspond to the ith entry in body group @p group_name.
    * @p kp and @p kd will be resized to match the size of the body group
    * specified by @p group_name. If @p group_name does not exist in
-   * @p alias_group, @p kp and @p kd will be cleared.
+   * @p alias_groups, @p kp and @p kd will be cleared.
    *
    * @param group_name Name of the body group of interest.
-   * @param alias_group RigidBodyTreeAliasGroups specifying the relationship
+   * @param alias_groups RigidBodyTreeAliasGroups specifying the relationship
    * between body / joint groups and the RigidBodyTree it is constructed from.
    * @param[out] kp container for kp's output.
    * @param[out] kd container for kd's output.
    */
   void LookupDesiredBodyMotionGains(
       const std::string& group_name,
-      const RigidBodyTreeAliasGroups<double>& alias_group,
+      const RigidBodyTreeAliasGroups<double>& alias_groups,
       std::vector<Vector6<double>>* kp, std::vector<Vector6<double>>* kd) const;
 
   /**
@@ -299,13 +267,13 @@ class ParamSet {
    * @param tracked_body_groups Names of body groups that are being tracked.
    * For each body of each group, a DesiredBodyMotion will be populated in the
    * returned QpInput.
-   * @param alias_group Specifies the relationship between body / joint groups
+   * @param alias_groups Specifies the relationship between body / joint groups
    * and the RigidBodyTree it is constructed from.
    */
   QpInput MakeQpInput(
       const std::vector<std::string>& contact_body_groups,
       const std::vector<std::string>& tracked_body_groups,
-      const RigidBodyTreeAliasGroups<double>& alias_group) const;
+      const RigidBodyTreeAliasGroups<double>& alias_groups) const;
 
   /**
    * Returns a QpInput for the given contacts and tracked bodies using the
@@ -316,19 +284,23 @@ class ParamSet {
    * @param contact_bodies Pointers to bodies in contact.
    * @param tracked_bodies Pointers to bodies that have Cartesian tracking
    * objectives.
-   * @param alias_group Specifies the relationship between body / joint groups
+   * @param alias_groups Specifies the relationship between body / joint groups
    * and the RigidBodyTree it is constructed from.
    */
   QpInput MakeQpInput(
       const std::vector<const RigidBody<double>*>& contact_bodies,
       const std::vector<const RigidBody<double>*>& tracked_bodies,
-      const RigidBodyTreeAliasGroups<double>& alias_group) const;
+      const RigidBodyTreeAliasGroups<double>& alias_groups) const;
 
   /**
    * Returns the weight for regularizing the basis vectors of contact forces.
    */
   double get_basis_regularization_weight() const {
     return basis_regularization_weight_;
+  }
+
+  void set_basis_regularization_weight(double basis) {
+    basis_regularization_weight_ = basis;
   }
 
   /**
@@ -341,6 +313,26 @@ class ParamSet {
    * @param name New name for this ParamSet.
    */
   void set_name(const std::string& name) { name_ = name; }
+
+  void set_centroidal_momentum_dot_params(DesiredMotionParam cmdp) {
+    centroidal_momentum_dot_params_ = cmdp;
+  }
+
+  void set_contact_params(
+      std::unordered_map<std::string, ContactParam>&& contact_params) {
+    contact_params_ = contact_params;
+  }
+
+  void set_body_motion_params(
+      std::unordered_map<std::string,
+          DesiredMotionParam>&& body_motion_params) {
+    body_motion_params_ = body_motion_params;
+  }
+
+  void set_dof_motion_params(
+      std::vector<DesiredMotionParam>&& dof_motion_params) {
+    dof_motion_params_ = dof_motion_params;
+  }
 
  private:
   // Name of this ParamSet.
