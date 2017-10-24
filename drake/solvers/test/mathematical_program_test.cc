@@ -506,8 +506,7 @@ void ExpectBadVar(MathematicalProgram* prog, int num_var, Args&&... args) {
   using internal::CreateBinding;
   auto c = make_shared<C>(std::forward<Args>(args)...);
   VectorXDecisionVariable x(num_var);
-  for (int i = 0; i < num_var; ++i)
-    x(i) = Variable("bad" + std::to_string(i));
+  for (int i = 0; i < num_var; ++i) x(i) = Variable("bad" + std::to_string(i));
   // Use minimal call site (directly on adding Binding<C>).
   // TODO(eric.cousineau): Check if there is a way to parse the error text to
   // ensure that we are capturing the correct error.
@@ -2070,6 +2069,48 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint4) {
   Matrix<Expression, 5, 1> e;
   e << 2 * x(0) + 3 * x(2) + 3, x(0) - 4 * x(2), 2 * x(2), 3 * x(0) + 1, 4;
   CheckParsedSymbolicRotatedLorentzConeConstraint(&prog, e);
+}
+
+void ComparePolynomials(const symbolic::Polynomial& p1,
+                        const symbolic::Polynomial& p2, double tol) {
+  const symbolic::Polynomial diff = p1 - p2;
+  // Check if the absolute value of the coefficient for each monomial is less
+  // than tol.
+  const symbolic::Polynomial::MapType& map = diff.monomial_to_coefficient_map();
+  for (const auto& p : map) {
+    EXPECT_LE(std::abs(get_constant_value(p.second)), tol);
+  }
+}
+
+GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint5) {
+  // Add rotated Lorentz cone constraint, using quadratic expression.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<4>("x");
+  symbolic::Expression linear_expression1 = x(0) + 1;
+  symbolic::Expression linear_expression2 = x(1) - x(2);
+  Eigen::Matrix2d Q;
+  Eigen::Vector2d b;
+  double c{5};
+  Q << 1, 0.5, 0.5, 1;
+  b << 0, 0.1;
+  symbolic::Expression quadratic_expression =
+      x.head<2>().cast<symbolic::Expression>().dot(Q * x.head<2>() + b) + c;
+  auto binding = prog.AddRotatedLorentzConeConstraint(
+      linear_expression1, linear_expression2, quadratic_expression);
+  EXPECT_EQ(binding.constraint(),
+            prog.rotated_lorentz_cone_constraints().back().constraint());
+  VectorX<symbolic::Expression> z =
+      binding.constraint()->A() * binding.variables() +
+      binding.constraint()->b();
+  ComparePolynomials(symbolic::Polynomial(linear_expression1),
+                     symbolic::Polynomial(z(0)), 1E-10);
+  ComparePolynomials(symbolic::Polynomial(linear_expression2),
+                     symbolic::Polynomial(z(1)), 1E-10);
+  ComparePolynomials(
+      symbolic::Polynomial(quadratic_expression),
+      symbolic::Polynomial(
+          z.tail(z.rows() - 2).cast<symbolic::Expression>().squaredNorm()),
+      1E-10);
 }
 
 namespace {

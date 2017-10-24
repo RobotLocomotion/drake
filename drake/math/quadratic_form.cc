@@ -9,12 +9,15 @@ namespace drake {
 namespace math {
 std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposePositiveQuadraticForm(
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
-    const Eigen::Ref<const Eigen::VectorXd>& b, double c) {
+    const Eigen::Ref<const Eigen::VectorXd>& b, double c, double tol) {
   if (Q.rows() != Q.cols()) {
     throw std::runtime_error("Q should be a square matrix.");
   }
   if (b.rows() != Q.rows()) {
     throw std::runtime_error("b is not in the right size.");
+  }
+  if (tol < 0) {
+    throw std::runtime_error("tol should be non-negative.");
   }
   // The quadratic form xᵀQx + bᵀx + c can also be written as
   // [x]ᵀ * [Q   b/2] * [x]
@@ -43,6 +46,30 @@ std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposePositiveQuadraticForm(
     d = U.col(Q.cols());
     return std::make_pair(R, d);
   }
+  // M should be positive semidefinite.
+  // Ideally I should use robust Cholesky decomposition to decompose M as
+  // Aᵀ * A. Unfortunately there is some bug in Eigen's LDLT code, see
+  // http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1479
+  // So I use Eigen value decomposition here.
+  // TODO(hongkai.dai): switch to Cholesky decomposition once
+  // http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1479 is fixed.
+  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(M);
+  if (es.info() == Eigen::Success && (es.eigenvalues().array() >= -tol).all()) {
+    Eigen::MatrixXd eigen_vectors(es.eigenvalues().rows(), 2);
+    eigen_vectors.col(0) = es.eigenvalues();
+    eigen_vectors.col(1) = Eigen::VectorXd::Zero(es.eigenvalues().rows());
+    Eigen::MatrixXd A = eigen_vectors.rowwise()
+                            .maxCoeff()
+                            .array()
+                            .sqrt()
+                            .matrix()
+                            .asDiagonal() *
+                        es.eigenvectors().transpose();
+    R = A.block(0, 0, Q.rows() + 1, Q.cols());
+    d = A.col(Q.cols());
+    return std::make_pair(R, d);
+  }
+  /* Call robust Cholesky decomposition to decompose M into Aᵀ * A.
   // M should be positive semidefinite, so LDLT should be successful.
   Eigen::LDLT<Eigen::MatrixXd> ldlt(M);
   if (ldlt.info() == Eigen::Success && ldlt.isPositive()) {
@@ -57,8 +84,8 @@ std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposePositiveQuadraticForm(
     R = A.block(0, 0, Q.rows() + 1, Q.cols());
     d = A.col(Q.cols());
     return std::make_pair(R, d);
-  }
+  }*/
   throw std::runtime_error("The quadratic form is not positive semidefinite.");
-};
+}
 }  // namespace math
 }  // namespace drake

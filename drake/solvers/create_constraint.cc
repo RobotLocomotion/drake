@@ -4,8 +4,8 @@
 #include <cmath>
 #include <sstream>
 
-#include "drake/solvers/symbolic_extraction.h"
 #include "drake/math/quadratic_form.h"
+#include "drake/solvers/symbolic_extraction.h"
 
 namespace drake {
 namespace solvers {
@@ -454,14 +454,16 @@ Binding<LorentzConeConstraint> ParseLorentzConeConstraint(
   return ParseLorentzConeConstraint(expr);
 }
 
-Binding<RotatedLorentzConeConstraint> ParseRotatedLorentzConeConstraint(const Eigen::Ref<const VectorX<symbolic::Expression>>& v) {
+Binding<RotatedLorentzConeConstraint> ParseRotatedLorentzConeConstraint(
+    const Eigen::Ref<const VectorX<symbolic::Expression>>& v) {
   DRAKE_DEMAND(v.rows() >= 3);
   Eigen::MatrixXd A{};
   Eigen::VectorXd b(v.size());
   VectorXDecisionVariable vars{};
   DecomposeLinearExpression(v, &A, &b, &vars);
   DRAKE_DEMAND(vars.rows() >= 1);
-  return CreateBinding(std::make_shared<RotatedLorentzConeConstraint>(A, b), vars);
+  return CreateBinding(std::make_shared<RotatedLorentzConeConstraint>(A, b),
+                       vars);
 }
 
 Binding<RotatedLorentzConeConstraint> ParseRotatedLorentzConeConstraint(

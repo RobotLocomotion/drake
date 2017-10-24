@@ -233,8 +233,10 @@ Binding<LorentzConeConstraint> ParseLorentzConeConstraint(
 
 /**
  * Construct a rotated Lorentz cone constraint
+ *
  * v(0) * v(1) >= v(2)² + v(3)² + ... + v(n-1)²,
  * v(0) >= 0, v(1) >= 0
+ *
  * where each entry in v is a linear (affine) expression.
  * @param v A vector of linear (affine) expressions. Throws std::runtime_error
  * if any entry in v is not linear (affine).
@@ -255,6 +257,19 @@ Binding<RotatedLorentzConeConstraint> ParseRotatedLorentzConeConstraint(
  * @param quadratic_expr The non-negative quadratic expression v, throw a
  * std::runtime_error if v is not a non-negative quadratic expression.
  * @return The newly constructed rotated Lorentz cone constraint.
+ * @note Numerically this function is not very stable. The reason is that we
+ * need to convert the quadratic expression v = xᵀQx + bᵀx + c to the form
+ * v = |Ax + b|². This requires to determine if the matrix
+ * <pre>
+ * [Q    b/2]
+ * [bᵀ/2   c]
+ * </pre>
+ * is positive semidefinite or not. If the matrix is at the boundary of the
+ * positive semidefinite cone, then the numerical procedure to determine if the
+ * matrix is PSD or not is not very stable. So call this function when you are
+ * sure that the quadratic expression is STRICTLY positive definite, otherwise
+ * this function MAY throw a runtime error when you think you have a positive
+ * semi-definite quadratic expression.
  */
 Binding<RotatedLorentzConeConstraint> ParseRotatedLorentzConeConstraint(
     const symbolic::Expression& linear_expr1,

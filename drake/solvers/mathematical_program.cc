@@ -472,14 +472,18 @@ MathematicalProgram::AddRotatedLorentzConeConstraint(
     const symbolic::Expression& linear_expression1,
     const symbolic::Expression& linear_expression2,
     const symbolic::Expression& quadratic_expression) {
-  return internal::ParseRotatedLorentzConeConstraint(
+  auto binding = internal::ParseRotatedLorentzConeConstraint(
       linear_expression1, linear_expression2, quadratic_expression);
+  AddConstraint(binding);
+  return binding;
 }
 
 Binding<RotatedLorentzConeConstraint>
 MathematicalProgram::AddRotatedLorentzConeConstraint(
     const Eigen::Ref<const VectorX<Expression>>& v) {
-  return internal::ParseRotatedLorentzConeConstraint(v);
+  auto binding = internal::ParseRotatedLorentzConeConstraint(v);
+  AddConstraint(binding);
+  return binding;
 }
 
 Binding<RotatedLorentzConeConstraint>

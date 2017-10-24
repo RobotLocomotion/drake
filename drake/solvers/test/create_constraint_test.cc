@@ -106,9 +106,10 @@ TEST_F(ParseLorentzConeConstraintTest, Test3) {
 }
 
 TEST_F(ParseLorentzConeConstraintTest, Test4) {
-  // Test x(0) + 2x(2) + 3 >= sqrt((x(1) + 2x(3)-1)² + 3(-x(0)+2x(3)+1)² + 3)
+  // Test x(0) + 2x(2) + 3 >= sqrt((x(1) + x(0) + 2x(3)-1)² + 3(-x(0)+2x(3)+1)²
+  // + 3)
   CheckParseLorentzConeConstraint(x_(0) + 2 * x_(2) + 3,
-                                  2 * pow(x_(1) + 2 * x_(3) - 1, 2) +
+                                  2 * pow(x_(1) + x_(0) + 2 * x_(3) - 1, 2) +
                                       3 * pow(-x_(0) + 2 * x_(3) + 1, 2) + 3);
 }
 
@@ -197,10 +198,17 @@ TEST_F(ParseRotatedLorentzConeConstraintTest, Test3) {
   // Throw a runtime error when the precondition is not satisfied.
   Eigen::Matrix<symbolic::Expression, 4, 1> expression;
   expression << 2 * x_(0) * x_(1), x_(2), x_(3), 1;
-  EXPECT_THROW(internal::ParseRotatedLorentzConeConstraint(expression), std::runtime_error);
-  EXPECT_THROW(internal::ParseRotatedLorentzConeConstraint(x_(0) * x_(1), x_(1), x_(2) * x_(2) + 1), std::runtime_error);
-  EXPECT_THROW(internal::ParseRotatedLorentzConeConstraint(x_(1), x_(0) * x_(1), x_(2) * x_(2) + 1), std::runtime_error);
-  EXPECT_THROW(internal::ParseRotatedLorentzConeConstraint(x_(0), x_(1), x_(2) * x_(2) - 1), std::runtime_error);
+  EXPECT_THROW(internal::ParseRotatedLorentzConeConstraint(expression),
+               std::runtime_error);
+  EXPECT_THROW(internal::ParseRotatedLorentzConeConstraint(x_(0) * x_(1), x_(1),
+                                                           x_(2) * x_(2) + 1),
+               std::runtime_error);
+  EXPECT_THROW(internal::ParseRotatedLorentzConeConstraint(x_(1), x_(0) * x_(1),
+                                                           x_(2) * x_(2) + 1),
+               std::runtime_error);
+  EXPECT_THROW(internal::ParseRotatedLorentzConeConstraint(x_(0), x_(1),
+                                                           x_(2) * x_(2) - 1),
+               std::runtime_error);
 }
 }  // namespace
 }  // namespace solvers
