@@ -56,6 +56,8 @@ struct TrackedBody {
  * (not names) are used to differentiate tracked rigid bodies. If no set of @p
  * rigid_body_names are provided, the corresponding frame name
  * from the incoming PoseBundle object is used.
+ * For an example on how to use the OptitrackEncoder class see
+ * iiwa_box_simulation.cc
  */
 // TODO(rcory): Add support for markers and marker sets.
 class OptitrackEncoder : public systems::LeafSystem<double> {
