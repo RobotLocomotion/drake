@@ -34,19 +34,11 @@ class TestCommonInstall(unittest.TestCase):
                 os.remove(element)
         self.assertEqual(os.listdir("."), [tmp_folder])
 
-        # Set the correct PYTHONPATH and (DY)LD_LIBRARY_PATH to use the
-        # correct pydrake module.
+        # Set the correct PYTHONPATH to use the correct pydrake module.
         env_python_path = "PYTHONPATH"
-        if sys.platform == 'darwin':
-            env_ld_library = "DYLD_LIBRARY_PATH"
-        else:
-            env_ld_library = "LD_LIBRARY_PATH"
         tool_env = dict(os.environ)
         tool_env[env_python_path] = os.path.abspath(
             os.path.join(tmp_folder, "lib", "python2.7", "site-packages")
-        )
-        tool_env[env_ld_library] = os.path.abspath(
-            os.path.join(tmp_folder, "lib")
         )
         data_folder = os.path.join(tmp_folder, "share", "drake", "drake")
         # Call python2 to force using python brew install. Calling python
