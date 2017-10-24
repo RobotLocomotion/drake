@@ -1500,27 +1500,22 @@ TEST_P(Constraint2DSolverTest, TwoPointContactCrossTerms) {
   // Set the state of the rod to resting.
   SetRodToRestingHorizontalConfig();
 
-  // Set the velocity on the rod to move to the right.
-
   // Set the sliding coefficient of friction to somewhat small and the static
   // coefficient of friction to very large.
   rod_->set_mu_coulomb(1e-1);
   rod_->set_mu_static(1.0);
 
-  // Get the contacts, then eliminate the right point of contact.
-  std::vector<Vector2d> contacts;
-  rod_->GetContactPoints(*context_, &contacts);
-  ASSERT_EQ(contacts.size(), 2);
-  contacts.pop_back();
-
-  // Now, construct the acceleration-level problem data as usual to set
+  // First, construct the acceleration-level problem data as usual to set
   // inertia solver and external forces.
+  std::vector<Vector2d> contacts;
   std::vector<double> tangent_vels;
+  rod_->GetContactPoints(*context_, &contacts);
   rod_->GetContactPointsTangentVelocities(*context_, contacts, &tangent_vels);
 
-  // Modify the tangent velocity on the left contact to effect a sticking
-  // contact.
-  tangent_vels[0] = 0.0;
+  // Modify the tangent velocity on the left contact to effect a sliding
+  // contact. This modification can be imagined as the left end of the rod
+  // is touching a conveyer belt moving to the belt.
+  tangent_vels[0] = 1.0;
 
   // Compute the constraint problem data.
   rod_->CalcConstraintProblemData(
@@ -1548,15 +1543,15 @@ TEST_P(Constraint2DSolverTest, TwoPointContactCrossTerms) {
 }
 
 // Tests that the cross-term interaction between contact forces and generic
-// unilateral constraints is computed correctly.
+// unilateral constraints is computed correctly at the acceleration level.
 TEST_P(Constraint2DSolverTest, ContactLimitCrossTermAccel) {
   // Set the state of the rod to resting.
   SetRodToRestingHorizontalConfig();
 
   // Set the sliding coefficient of friction to zero (it won't be used) and the
-  // static coefficient of friction to frictionless as well.
+  // static coefficient of friction to a relatively large value.
   rod_->set_mu_coulomb(0.0);
-  rod_->set_mu_static(0.0);
+  rod_->set_mu_static(1.0);
 
   // First, construct the acceleration-level problem data as normal to set
   // inertia solver and external forces.
@@ -1569,17 +1564,20 @@ TEST_P(Constraint2DSolverTest, ContactLimitCrossTermAccel) {
   rod_->CalcConstraintProblemData(
     *context_, contacts, tangent_vels, accel_data_.get());
 
-  // Reverse the gravitational force.
-  accel_data_->tau *= -1;
+  // Add some horizontal force.
+  accel_data_->tau[0] = 1.0;
 
   // Construct the problem as a limit constraint preventing movement in the
   // upward direction.
   const int ngc = get_rod_num_coordinates();
-  accel_data_->kL.resize(1);
-  accel_data_->gammaL.setZero(1);
+  const int num_generic_unilateral_constraints = 1;
+  accel_data_->kL.resize(num_generic_unilateral_constraints);
+  accel_data_->gammaL.setZero(num_generic_unilateral_constraints);
 
   // Set the Jacobian entry- in this case, the limit is an upper limit on the
-  // second coordinate (vertical position).
+  // second coordinate (vertical position). The constraint is: v̇₂ ≤ 0, which
+  // we transform to the form: -v̇₂ ≥ 0 (explaining the provenance of the minus
+  // sign in L).
   const int num_limit_constraints = 1;
   MatrixX<double> L(accel_data_->kL.size(), ngc);
   L.setZero();
@@ -1612,15 +1610,16 @@ TEST_P(Constraint2DSolverTest, ContactLimitCrossTermAccel) {
 }
 
 // Tests that the cross-term interaction between contact forces and generic
-// unilateral constraints is computed correctly.
+// unilateral constraints is computed correctly at the velocity level.
 TEST_P(Constraint2DSolverTest, ContactLimitCrossTermVel) {
   // Set the state of the rod to resting.
   SetRodToSlidingImpactingHorizontalConfig(true);
 
-  // Set the sliding coefficient of friction to zero (it won't be used) and the
-  // static coefficient of friction to frictionless as well.
-  rod_->set_mu_coulomb(0.0);
-  rod_->set_mu_static(0.0);
+  // Set the coefficient of friction (mu_static won't be used in this problem,
+  // but an exception will be thrown if mu_coulomb is greater than mu_static)
+  // to a relatively large number.
+  rod_->set_mu_coulomb(1.0);
+  rod_->set_mu_static(1.0);
 
   // First, construct the velocity-level problem data as normal to set
   // inertia solver and external forces.
@@ -1633,14 +1632,20 @@ TEST_P(Constraint2DSolverTest, ContactLimitCrossTermVel) {
   rod_->CalcImpactProblemData(
     *context_, contacts, vel_data_.get());
 
+  // Add in some horizontal velocity to test the transition to stiction too.
+  vel_data_->v[0] = 1.0;
+
   // Construct the problem as a limit constraint preventing movement in the
   // downward direction.
   const int ngc = get_rod_num_coordinates();
-  vel_data_->kL.resize(1);
-  vel_data_->gammaL.setOnes(1) *= cfm_;
+  const int num_generic_unilateral_constraints = 1;
+  vel_data_->kL.resize(num_generic_unilateral_constraints);
+  vel_data_->gammaL.setOnes(num_generic_unilateral_constraints) *= cfm_;
 
   // Set the Jacobian entry- in this case, the limit is an upper limit on the
-  // second coordinate (vertical position).
+  // second coordinate (vertical position). The constraint is: v₂ ≤ 0, which
+  // we transform to the form: -v₂ ≥ 0 (explaining the provenance of the minus
+  // sign in L).
   const int num_limit_constraints = 1;
   MatrixX<double> L(vel_data_->kL.size(), ngc);
   L.setZero();
@@ -1653,10 +1658,6 @@ TEST_P(Constraint2DSolverTest, ContactLimitCrossTermVel) {
     return L.transpose() * v;
   };
   vel_data_->kL.setZero(num_limit_constraints);
-
-  // Reverse the velocity, which will make the contact constraints inactive;
-  // the limit constraint should be the only active constraint.
-  vel_data_->v *= -1;
 
   // Check the consistency of the data.
   CheckProblemConsistency(*vel_data_, contacts.size());
@@ -1673,7 +1674,7 @@ TEST_P(Constraint2DSolverTest, ContactLimitCrossTermVel) {
   // velocity is zero.
   VectorX<double> dv;
   solver_.ComputeGeneralizedVelocityChange(*vel_data_, cf, &dv);
-  EXPECT_NEAR(dv[0], 0, lcp_eps_);
+  EXPECT_NEAR(vel_data_->v[0] + dv[0], 0, lcp_eps_);
   EXPECT_NEAR(vel_data_->v[1] + dv[1], 0, lcp_eps_);
 }
 

@@ -1221,7 +1221,7 @@ void ConstraintSolver<T>::CheckAccelConstraintMatrix(
     const MatrixX<T>& MM) const {
   // Get numbers of types of contacts.
   const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
-                                 problem_data.r.end(), 0);
+                                                   problem_data.r.end(), 0);
   const int num_limits = problem_data.kL.size();
 
   // Alias operators and vectors to make accessing them less clunky.
