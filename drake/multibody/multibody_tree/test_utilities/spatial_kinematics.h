@@ -26,7 +26,7 @@ class SpatialKinematicsPVA {
   SpatialKinematicsPVA(const Isometry3<T>& X_NB,
                        const SpatialVelocity<T>& V_NBo_N,
                        const SpatialAcceleration<T>& A_NBo_N) :
-                       X_NB_(X_NB), V_NBo_N_(V_NBo_N), A_NBo_N_(A_NBo_N) {;}
+                       X_NB_(X_NB), V_NBo_N_(V_NBo_N), A_NBo_N_(A_NBo_N) {}
 
   /// Constructor that populates the members of this class.
   /// @param[in] R_NB 3x3 rotation matrix relating Nx, Ny, Nz to Bx, By, Bz.

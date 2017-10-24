@@ -15,7 +15,6 @@ using drake::multibody::multibody_tree::test_utilities::SpatialKinematicsPVA;
 using SpatialForced = SpatialForce<double>;
 using Vector7d = Eigen::Matrix<double, 7, 1>;
 
-
 // Compare Drake's MultibodyTree forces and motion with MotionGenesis solution.
 void TestKukaArmInverseDynamics(const Eigen::Ref<const VectorX<double>>& q,
                                 const Eigen::Ref<const VectorX<double>>& qDt,
@@ -33,7 +32,6 @@ void TestKukaArmInverseDynamics(const Eigen::Ref<const VectorX<double>>& q,
       drake_kuka_robot.CalcEndEffectorKinematics(q, qDt, qDDt);
 
   // Kinematics: Get corresponding MotionGenesis information.
-  // TODO(Mitiguy) Have MotionGenesis also return SpatialKinematicsPVA.
   MG::MGKukaIIwaRobot<double> MG_kuka_robot(gravity);
   const SpatialKinematicsPVA<double> MG_kinematics =
       MG_kuka_robot.CalcEndEffectorKinematics(q, qDt, qDDt);
