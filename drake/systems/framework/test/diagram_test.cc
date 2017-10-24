@@ -39,8 +39,8 @@ class EmptySystem : public LeafSystem<T> {
 
   // Adds an arbitrary periodic discrete update.
   void AddPeriodicDiscreteUpdate() {
-    const double default_period = 1.0;
-    const double default_offset = 2.0;
+    const double default_period = 1.125;
+    const double default_offset = 2.25;
     this->DeclarePeriodicDiscreteUpdate(default_period, default_offset);
   }
 
@@ -156,8 +156,8 @@ class EmptySystemDiagram : public Diagram<double> {
 
 template <typename T>
 void CheckPeriodAndOffset(const typename Event<T>::PeriodicAttribute& attr) {
-  EXPECT_EQ(attr.period_sec, 1.0);
-  EXPECT_EQ(attr.offset_sec, 2.0);
+  EXPECT_EQ(attr.period_sec, 1.125);
+  EXPECT_EQ(attr.offset_sec, 2.25);
 }
 
 // Tests whether the diagram exhibits the correct behavior for
