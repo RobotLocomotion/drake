@@ -239,7 +239,7 @@ drake_cc_library(
     data = [
         DRAKE_RESOURCE_SENTINEL,
     ],
-    visibility = ["//drake:__pkg__"],
+    visibility = ["//tools/install/libdrake:__pkg__"],
     deps = [
         ":essential",
         ":find_resource",

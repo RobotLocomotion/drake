@@ -1,10 +1,5 @@
 # -*- python -*-
 
-load(
-    "@drake//tools/install:install.bzl",
-    "cmake_config",
-    "install_cmake_config",
-)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
@@ -26,18 +21,6 @@ sh_binary(
         "@drake_visualizer",
         "@optitrack_driver//lcmtypes:py_optitrack_lcmtypes",
     ],
-)
-
-cmake_config(
-    cps_file_name = "drake.cps",
-    package = "drake",
-)
-
-install_cmake_config(
-    name = "install",
-    package = "drake",
-    versioned = 0,
-    visibility = ["//visibility:public"],
 )
 
 # === config_setting rules ===
