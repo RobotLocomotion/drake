@@ -674,7 +674,7 @@ class System {
     auto periodic_events = GetPeriodicEvents();
     for (const auto& saved_attr_and_vector : periodic_events) {
       for (const auto& event : saved_attr_and_vector.second) {
-        if (dynamic_cast<const DiscreteUpdateEvent<T>*>(event)) {
+        if (event->is_discrete_update()) {
           if (saved_attr)
             return nullopt;
           saved_attr = saved_attr_and_vector.first;

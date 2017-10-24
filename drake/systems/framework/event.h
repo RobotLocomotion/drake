@@ -40,6 +40,9 @@ class Event {
   Event(Event&&) = delete;
   void operator=(Event&&) = delete;
 
+  /// Returns `true` if this is a DiscreteUpdateEvent.
+  virtual bool is_discrete_update() const = 0;
+
   /**
    * Predefined types of triggers. Used at run time to determine why the
    * associated event has occurred.
@@ -208,6 +211,7 @@ class PublishEvent final : public Event<T> {
   void operator=(const PublishEvent&) = delete;
   PublishEvent(PublishEvent&&) = delete;
   void operator=(PublishEvent&&) = delete;
+  bool is_discrete_update() const override { return false; }
 
   /**
    * Callback function that processes a publish event.
@@ -271,6 +275,7 @@ class DiscreteUpdateEvent final : public Event<T> {
   void operator=(const DiscreteUpdateEvent&) = delete;
   DiscreteUpdateEvent(DiscreteUpdateEvent&&) = delete;
   void operator=(DiscreteUpdateEvent&&) = delete;
+  bool is_discrete_update() const override { return true; }
 
   /**
    * Callback function that processes a discrete update event.
@@ -340,6 +345,7 @@ class UnrestrictedUpdateEvent final : public Event<T> {
   void operator=(const UnrestrictedUpdateEvent&) = delete;
   UnrestrictedUpdateEvent(UnrestrictedUpdateEvent&&) = delete;
   void operator=(UnrestrictedUpdateEvent&&) = delete;
+  bool is_discrete_update() const override { return false; }
 
   /**
    * Callback function that processes an unrestricted update event.
