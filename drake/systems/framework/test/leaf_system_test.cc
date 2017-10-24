@@ -37,10 +37,24 @@ class TestSystem : public LeafSystem<T> {
     const double period = 10.0;
     const double offset = 5.0;
     this->DeclarePeriodicDiscreteUpdate(period, offset);
+    optional<typename Event<T>::PeriodicAttribute> periodic_attr =
+        this->GetUniquePeriodicDiscreteUpdateAttribute();
+    ASSERT_TRUE(periodic_attr);
+    EXPECT_EQ(periodic_attr.value().period_sec, period);
+    EXPECT_EQ(periodic_attr.value().offset_sec, offset);
   }
 
   void AddPeriodicUpdate(double period) {
     const double offset = 0.0;
+    this->DeclarePeriodicDiscreteUpdate(period, offset);
+    optional<Event<double>::PeriodicAttribute> periodic_attr =
+       this->GetUniquePeriodicDiscreteUpdateAttribute();
+    ASSERT_TRUE(periodic_attr);
+    EXPECT_EQ(periodic_attr.value().period_sec, period);
+    EXPECT_EQ(periodic_attr.value().offset_sec, offset);
+  }
+
+  void AddPeriodicUpdate(double period, double offset) {
     this->DeclarePeriodicDiscreteUpdate(period, offset);
   }
 
@@ -105,6 +119,31 @@ TEST_F(LeafSystemTest, NoUpdateEvents) {
   EXPECT_EQ(std::numeric_limits<double>::infinity(), time);
   EXPECT_TRUE(!leaf_info_->HasEvents());
 }
+
+// Tests that multiple periodic updates with the same periodic attribute are
+// identified as unique.
+TEST_F(LeafSystemTest, MultipleUniquePeriods) {
+  system_.AddPeriodicUpdate();
+  system_.AddPeriodicUpdate();
+
+  // Verify the size of the periodic events mapping.
+  auto mapping = system_.GetPeriodicEvents();
+  ASSERT_EQ(mapping.size(), 1);
+  EXPECT_EQ(mapping.begin()->second.size(), 2);
+}
+
+// Tests that periodic updates with different periodic attributes are
+// identified as non-unique.
+TEST_F(LeafSystemTest, MultipleNonUniquePeriods) {
+  system_.AddPeriodicUpdate(1.0, 2.0);
+  system_.AddPeriodicUpdate(2.0, 3.0);
+
+  // Verify the size of the periodic events mapping.
+  auto mapping = system_.GetPeriodicEvents();
+  ASSERT_EQ(mapping.size(), 2);
+  EXPECT_FALSE(system_.GetUniquePeriodicDiscreteUpdateAttribute());
+}
+
 
 // Tests that if the current time is smaller than the offset, the next
 // update time is the offset.
