@@ -445,9 +445,10 @@ Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
 }
 
 Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
-    const Expression& linear_expr, const Expression& quadratic_expr) {
+    const Expression& linear_expr, const Expression& quadratic_expr,
+    double tol) {
   return AddConstraint(
-      internal::ParseLorentzConeConstraint(linear_expr, quadratic_expr));
+      internal::ParseLorentzConeConstraint(linear_expr, quadratic_expr, tol));
 }
 
 Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
@@ -471,9 +472,9 @@ Binding<RotatedLorentzConeConstraint>
 MathematicalProgram::AddRotatedLorentzConeConstraint(
     const symbolic::Expression& linear_expression1,
     const symbolic::Expression& linear_expression2,
-    const symbolic::Expression& quadratic_expression) {
+    const symbolic::Expression& quadratic_expression, double tol) {
   auto binding = internal::ParseRotatedLorentzConeConstraint(
-      linear_expression1, linear_expression2, quadratic_expression);
+      linear_expression1, linear_expression2, quadratic_expression, tol);
   AddConstraint(binding);
   return binding;
 }

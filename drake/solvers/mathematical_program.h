@@ -354,8 +354,8 @@ class MathematicalProgram {
    * readability.
    */
   template <int Rows = Eigen::Dynamic, int Cols = Eigen::Dynamic>
-  MatrixDecisionVariable<Rows, Cols> NewContinuousVariables(
-      int rows, int cols, const std::string& name) {
+  MatrixDecisionVariable<Rows, Cols>
+  NewContinuousVariables(int rows, int cols, const std::string& name) {
     rows = Rows == Eigen::Dynamic ? rows : Rows;
     cols = Cols == Eigen::Dynamic ? cols : Cols;
     auto names =
@@ -1420,8 +1420,11 @@ class MathematicalProgram {
   /**
    * Adds Lorentz cone constraint on the linear expression v1 and quadratic
    * expression v2, such that v1 >= sqrt(v2)
-   * @param v1     The linear expression.
-   * @param v2  The quadratic expression.
+   * @param linear expression     The linear expression v1.
+   * @param quadratic_expression  The quadratic expression v2.
+   * @param tol The tolerance to determine if the matrix in v2 is positive
+   * semidefinite or not. @see DecomposePositiveQuadraticForm for more
+   * explanation. @default is 0.
    * @retval binding The newly added Lorentz cone constraint, together with the
    * bound variables.
    * @pre
@@ -1439,13 +1442,13 @@ class MathematicalProgram {
    * Lorentz cone, where
    * <pre>
    *  z = v1
-   *  y = R * [x;1]
+   *  y = R * x + d
    * </pre>
-   * while R satisfies Rᵀ * R = [Q     b/2]
-   *                            [bᵀ/2    a]
+   * while (R, d) satisfies y'*y = x'*Q*x + b'*x + a
    */
   Binding<LorentzConeConstraint> AddLorentzConeConstraint(
-      const symbolic::Expression& v1, const symbolic::Expression& v2);
+      const symbolic::Expression& linear_expression,
+      const symbolic::Expression& quadratic_expression, double tol = 0);
 
   /**
    * Adds Lorentz cone constraint referencing potentially a subset of the
@@ -1549,9 +1552,12 @@ class MathematicalProgram {
   /**
    * Adds rotated Lorentz cone constraint on the linear expression v1, v2 and
    * quadratic expression u, such that v1 * v2 >= u, v1 >= 0, v2 >= 0
-   * @param linear_expression1  The linear expression v1.
-   * @param linear_expression2  The linear expression v2.
+   * @param linear_expression1 The linear expression v1.
+   * @param linear_expression2 The linear expression v2.
    * @param quadratic_expression The quadratic expression u.
+   * @param tol The tolerance to determine if the matrix in v2 is positive
+   * semidefinite or not. @see DecomposePositiveQuadraticForm for more
+   * explanation. @default is 0.
    * @retval binding The newly added rotated Lorentz cone constraint, together
    * with the bound variables.
    * @pre
@@ -1571,7 +1577,7 @@ class MathematicalProgram {
   Binding<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint(
       const symbolic::Expression& linear_expression1,
       const symbolic::Expression& linear_expression2,
-      const symbolic::Expression& quadratic_expression);
+      const symbolic::Expression& quadratic_expression, double tol = 0);
 
   /**
    * Adds a constraint that a symbolic expression @param v is in the rotated

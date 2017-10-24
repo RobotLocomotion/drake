@@ -25,6 +25,8 @@ namespace math {
  * [Q    b/2]
  * [bᵀ/2   c]
  * are all greater than -tol. @default is 0.
+ * @retval (R, d). R and d has the same number of rows. We do not guarantee that
+ * R has the same number of rows as Q.
  * @pre 1. The quadratic form is always non-negative, namely the matrix
  *         <pre>
  *         [Q    b/2]

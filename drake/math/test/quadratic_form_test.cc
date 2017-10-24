@@ -9,15 +9,16 @@ namespace math {
 namespace {
 void CheckDecomposePositiveQuadraticForm(
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
-    const Eigen::Ref<const Eigen::VectorXd>& b, double c, double tol = 0) {
+    const Eigen::Ref<const Eigen::VectorXd>& b, double c, double tol_psd = 0) {
   Eigen::MatrixXd R;
   Eigen::VectorXd d;
-  std::tie(R, d) = DecomposePositiveQuadraticForm(Q, b, c, tol);
-  EXPECT_TRUE(CompareMatrices(R.transpose() * R, Q, 1E-10,
+  double tol_check = 1E-10;
+  std::tie(R, d) = DecomposePositiveQuadraticForm(Q, b, c, tol_psd);
+  EXPECT_TRUE(CompareMatrices(R.transpose() * R, Q, tol_check,
                               MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(R.transpose() * d, b / 2, 1E-10,
+  EXPECT_TRUE(CompareMatrices(R.transpose() * d, b / 2, tol_check,
                               MatrixCompareType::absolute));
-  EXPECT_NEAR(d.squaredNorm(), c, 1E-10);
+  EXPECT_NEAR(d.squaredNorm(), c, tol_check);
 }
 
 GTEST_TEST(TestDecomposePositiveQuadraticForm, Test0) {
@@ -36,7 +37,6 @@ GTEST_TEST(TestDecomposePositiveQuadraticForm, Test0) {
 GTEST_TEST(TestDecomposePositiveQuadraticForm, Test1) {
   // Decomposes a positive quadratic form with linear terms.
   //   x² + 4xy + 4y² + 2x + 4y + 2
-  // = (x + 2y + 1)² + 1
   Eigen::Matrix2d Q;
   Q << 1, 2, 2, 4;
   Eigen::Vector2d b(2, 4);

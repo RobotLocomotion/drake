@@ -24,10 +24,10 @@ std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposePositiveQuadraticForm(
   // [1]    [b/2   c]   [1]
   // We will call the matrix in the middle as M
   Eigen::MatrixXd M(Q.rows() + 1, Q.rows() + 1);
-  M.block(0, 0, Q.rows(), Q.cols()) = (Q + Q.transpose()) / 2;
-  M.block(0, Q.cols(), Q.rows(), 1) = b / 2;
-  M.block(Q.rows(), 0, 1, Q.cols()) = b.transpose() / 2;
-  M(Q.rows(), Q.cols()) = c;
+  // clang-format on
+  M << (Q + Q.transpose()) / 2, b / 2,
+       b.transpose() / 2, c;
+  // clang-format off
 
   Eigen::MatrixXd R;
   Eigen::MatrixXd d;
@@ -47,10 +47,10 @@ std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposePositiveQuadraticForm(
     return std::make_pair(R, d);
   }
   // M should be positive semidefinite.
-  // Ideally I should use robust Cholesky decomposition to decompose M as
+  // Ideally we should use robust Cholesky decomposition to decompose M as
   // Aᵀ * A. Unfortunately there is some bug in Eigen's LDLT code, see
   // http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1479
-  // So I use Eigen value decomposition here.
+  // So w use Eigen value decomposition here.
   // TODO(hongkai.dai): switch to Cholesky decomposition once
   // http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1479 is fixed.
   Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(M);
