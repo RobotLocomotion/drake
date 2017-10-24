@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "external/optitrack_driver/lcmtypes/optitrack/optitrack_rigid_body_t.hpp"
+#include "optitrack/optitrack_frame_t.hpp"
 
 #include "drake/systems/sensors/optitrack_encoder.h"
 
@@ -12,30 +12,30 @@ namespace sensors {
 
 using systems::sensors::TrackedBody;
 
-OptitrackFrameSender::OptitrackFrameSender(int num_rigid_bodies)
+OptitrackLCMFrameSender::OptitrackLCMFrameSender(int num_rigid_bodies)
     : num_rigid_bodies_(num_rigid_bodies) {
   DRAKE_DEMAND(num_rigid_bodies >= 0);
   this->DeclareAbstractInputPort();
-  this->DeclareAbstractOutputPort(&OptitrackFrameSender::CreateNewMessage,
-                                  &OptitrackFrameSender::PopulateMessage);
+  this->DeclareAbstractOutputPort(&OptitrackLCMFrameSender::CreateNewMessage,
+                                  &OptitrackLCMFrameSender::PopulateMessage);
 }
 
-optitrack::optitrack_frame_t OptitrackFrameSender::CreateNewMessage() const {
+optitrack::optitrack_frame_t OptitrackLCMFrameSender::CreateNewMessage() const {
   optitrack::optitrack_frame_t msg{};
 
   msg.num_rigid_bodies = num_rigid_bodies_;
-  msg.rigid_bodies.resize(num_rigid_bodies_);
+  msg.rigid_bodies.resize(static_cast<size_t>(num_rigid_bodies_));
 
   return msg;
 }
 
-void OptitrackFrameSender::PopulateMessage(
+void OptitrackLCMFrameSender::PopulateMessage(
     const Context<double>& context,
     optitrack::optitrack_frame_t* output) const {
 
   optitrack::optitrack_frame_t& status = *output;
 
-  status.utime = context.get_time() * 1e6;
+  status.utime = static_cast<int64_t >(context.get_time() * 1e6);
 
   const std::vector<TrackedBody>* mocap_objects =
       this->EvalInputValue<std::vector<TrackedBody>>(context, 0);

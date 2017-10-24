@@ -500,4 +500,15 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "optitrack_sender_test",
+    srcs = ["test/optitrack_sender_test.cc"],
+    deps = [
+        ":optitrack_encoder",
+        ":optitrack_sender",
+        "//drake/systems/framework",
+        "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
+    ],
+)
+
 add_lint_tests()

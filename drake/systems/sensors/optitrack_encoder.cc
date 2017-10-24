@@ -93,10 +93,10 @@ void OptitrackEncoder::CalcOutputValue(const systems::Context<double>& context,
 
   DRAKE_DEMAND(optitrack_objects.size() == rigid_body_info_map_.size());
   int optitrack_obj_index = 0;
-  for (auto it : rigid_body_info_map_) {
-    optitrack_objects[optitrack_obj_index].body_name = it.second.first;
-    optitrack_objects[optitrack_obj_index].id = it.second.second;
-    int pose_index = frame_name_to_index_map[it.first];
+  for (const auto& pair : rigid_body_info_map_) {
+    optitrack_objects[optitrack_obj_index].body_name = pair.second.first;
+    optitrack_objects[optitrack_obj_index].id = pair.second.second;
+    int pose_index = frame_name_to_index_map[pair.first];
     optitrack_objects[optitrack_obj_index].T_WF =
         pose_bundle->get_pose(pose_index);
     ++optitrack_obj_index;

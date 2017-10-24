@@ -19,13 +19,16 @@ class OptitrackEncoderTest : public ::testing::Test {
     pose_bundle_ = new PoseBundle<double>(3);
     pose_bundle_->set_name(0, "iiwa_frame_0");
     pose_bundle_->set_pose(
-        0, Eigen::Isometry3d(Eigen::AngleAxis<double>(0.1, axis)));
+        0, Eigen::Isometry3d(Eigen::AngleAxis<double>(0.1, axis)).
+            pretranslate(Eigen::Vector3d(0.2, 0.3, 0.7)));
     pose_bundle_->set_name(1, "iiwa_frame_1");
     pose_bundle_->set_pose(
-        1, Eigen::Isometry3d(Eigen::AngleAxis<double>(0.2, axis)));
+        1, Eigen::Isometry3d(Eigen::AngleAxis<double>(0.2, axis)).
+            pretranslate(Eigen::Vector3d(0.5, 0.8, 0.9)));
     pose_bundle_->set_name(2, "iiwa_frame_2");
     pose_bundle_->set_pose(
-        2, Eigen::Isometry3d(Eigen::AngleAxis<double>(0.3, axis)));
+        2, Eigen::Isometry3d(Eigen::AngleAxis<double>(0.3, axis)).
+            pretranslate(Eigen::Vector3d(0.1, 0.4, 0.8)));
 
     // The OptitrackEncoder class constructor takes a map of unique frame names
     // (that have a match in the PoseBundle input object) to unique Optitrack
