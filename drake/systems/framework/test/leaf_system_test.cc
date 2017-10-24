@@ -56,7 +56,6 @@ class TestSystem : public LeafSystem<T> {
 
   void AddPeriodicUpdate(double period, double offset) {
     this->DeclarePeriodicDiscreteUpdate(period, offset);
-    Event<double>::PeriodicAttribute periodic_attr;
   }
 
   void AddPeriodicUnrestrictedUpdate(double period, double offset) {

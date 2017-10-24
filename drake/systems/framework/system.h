@@ -670,27 +670,20 @@ class System {
   ///          one or more discrete update events and `false` otherwise.
   optional<typename Event<T>::PeriodicAttribute>
       GetUniquePeriodicDiscreteUpdateAttribute() const {
-    bool discrete_update_found = false;
-    typename Event<T>::PeriodicAttribute saved_attr;
+    optional<typename Event<T>::PeriodicAttribute> saved_attr;
     auto periodic_events = GetPeriodicEvents();
     for (const auto& saved_attr_and_vector : periodic_events) {
-      bool found_in_vector = false;
       for (const auto& event : saved_attr_and_vector.second) {
         if (dynamic_cast<const DiscreteUpdateEvent<T>*>(event)) {
-          if (discrete_update_found)
-            return optional<typename Event<T>::PeriodicAttribute>();
-          found_in_vector = true;
+          if (saved_attr)
+            return nullopt;
           saved_attr = saved_attr_and_vector.first;
           break;
         }
       }
-      if (found_in_vector)
-        discrete_update_found = true;
     }
 
-    if (discrete_update_found)
-      return optional<typename Event<T>::PeriodicAttribute>(saved_attr);
-    return optional<typename Event<T>::PeriodicAttribute>();
+    return saved_attr;
   }
 
   /// Gets all periodic triggered events for a system. Each periodic attribute

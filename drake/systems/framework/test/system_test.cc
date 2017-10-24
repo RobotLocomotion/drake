@@ -208,9 +208,7 @@ class TestSystem : public System<double> {
       std::vector<const Event<double>*>,
       PeriodicAttributeComparator<double>>
       DoGetPeriodicEvents() const override {
-    return std::map<Event<double>::PeriodicAttribute,
-        std::vector<const Event<double>*>,
-        PeriodicAttributeComparator<double>>();
+    return {};
   }
 
  private:
@@ -560,8 +558,7 @@ class ValueIOTestSystem : public System<T> {
 
   std::map<typename Event<T>::PeriodicAttribute, std::vector<const Event<T>*>,
       PeriodicAttributeComparator<T>> DoGetPeriodicEvents() const override {
-    return std::map<typename Event<T>::PeriodicAttribute,
-        std::vector<const Event<T>*>, PeriodicAttributeComparator<T>>();
+    return {};
   }
 };
 

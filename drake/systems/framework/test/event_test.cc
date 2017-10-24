@@ -1,10 +1,5 @@
 #include "drake/systems/framework/event.h"
 
-#include <memory>
-#include <stdexcept>
-
-#include <Eigen/Dense>
-#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 namespace drake {
@@ -36,6 +31,7 @@ GTEST_TEST(EventsTest, PeriodicAttributeComparatorTest) {
   // Case 4: the two attributes are identical.
   att2 = att1;
   EXPECT_FALSE(comparator(att1, att2));
+  EXPECT_FALSE(comparator(att2, att1));
 }
 
 }  // namespace
