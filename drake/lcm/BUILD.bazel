@@ -84,6 +84,8 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "drake_lcm_test",
+    # Flaky because LCM self-test can fail (PR #7311)
+    flaky = 1,
     local = 1,
     deps = [
         ":lcm",
