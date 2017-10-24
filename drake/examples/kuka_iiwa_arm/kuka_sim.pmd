@@ -1,12 +1,12 @@
 group "0.sim" {
 
   cmd "0.kuka_simulation" {
-    exec = "build/drake/examples/kuka_iiwa_arm/kuka_simulation";
+    exec = "bazel-bin/drake/examples/kuka_iiwa_arm/kuka_simulation";
     host = "localhost";
   }
 
   cmd "1.kuka_plan_runner" {
-    exec = "build/drake/examples/kuka_iiwa_arm/kuka_plan_runner";
+    exec = "bazel-bin/drake/examples/kuka_iiwa_arm/kuka_plan_runner";
     host = "localhost";
   }
 
@@ -19,7 +19,7 @@ group "0.sim" {
 group "1.tools" {
 
   cmd "0.drake-visualizer" {
-    exec = "build/install/bin/drake-visualizer";
+    exec = "bazel-bin/tools/drake_visualizer";
     host = "localhost";
   }
 
@@ -28,10 +28,4 @@ group "1.tools" {
     exec = "build/install/bin/directorPython drake/examples/kuka_iiwa_arm/director_ik_app.py --director_config drake/examples/kuka_iiwa_arm/director_config.json";
     host = "localhost";
   }
-
-  cmd "2.signal-scope" {
-    exec = "build/install/bin/signal-scope drake/examples/kuka_iiwa_arm/kuka_iiwa_signal_scope.py";
-    host = "localhost";
-  }
-
 }
