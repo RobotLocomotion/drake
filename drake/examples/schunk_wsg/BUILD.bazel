@@ -27,6 +27,8 @@ drake_cc_binary(
         "//drake/manipulation/models/wsg_50_description:models",
     ],
     test_rule_args = ["--simulation_sec=0.1"],
+    # Flaky because LCM self-test can fail (PR #7311)
+    test_rule_flaky = 1,
     deps = [
         ":simulated_schunk_wsg_system",
         "//drake/lcm",
