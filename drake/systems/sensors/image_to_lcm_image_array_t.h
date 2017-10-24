@@ -36,7 +36,7 @@ class ImageToLcmImageArrayT : public systems::LeafSystem<double> {
   ImageToLcmImageArrayT(const std::string& color_frame_name,
                         const std::string& depth_frame_name,
                         const std::string& label_frame_name,
-                        const bool do_compress = false);
+                        bool do_compress = false);
 
   /// Returns a descriptor of the input port containing a color image.
   const InputPortDescriptor<double>& color_image_input_port() const;
@@ -60,9 +60,9 @@ class ImageToLcmImageArrayT : public systems::LeafSystem<double> {
   int label_image_input_port_index_{-1};
   int image_array_t_msg_output_port_index_{-1};
 
-  std::string color_frame_name_;
-  std::string depth_frame_name_;
-  std::string label_frame_name_;
+  const std::string color_frame_name_;
+  const std::string depth_frame_name_;
+  const std::string label_frame_name_;
 
   const bool do_compress_;
 };

@@ -80,7 +80,7 @@ void PackImageToLcmImageT(const Image<kPixelType>& image, int64_t utime,
 ImageToLcmImageArrayT::ImageToLcmImageArrayT(const string& color_frame_name,
                                              const string& depth_frame_name,
                                              const string& label_frame_name,
-                                             const bool do_compress)
+                                             bool do_compress)
     : color_frame_name_(color_frame_name),
       depth_frame_name_(depth_frame_name),
       label_frame_name_(label_frame_name),
