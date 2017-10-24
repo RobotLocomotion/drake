@@ -19,7 +19,6 @@ Vector3<double> RoadCurve::W_of_prh(double p, double r, double h) const {
 Vector3<double> RoadCurve::W_prime_of_prh(double p, double r, double h,
                                           const Rot3& Rabg,
                                           double g_prime) const {
-  // TODO(agalbachicar)  This method needs test coverage.
   const Vector2<double> G_prime = xy_dot_of_p(p);
 
   const Rot3& R = Rabg;
@@ -74,7 +73,6 @@ Vector3<double> RoadCurve::W_prime_of_prh(double p, double r, double h,
 }
 
 Rot3 RoadCurve::Rabg_of_p(double p) const {
-  // TODO(agalbachicar)  This method needs test coverage.
   return Rot3(superelevation().f_p(p) * p_scale(),
               -std::atan(elevation().f_dot_p(p)),
               heading_of_p(p));
@@ -113,14 +111,12 @@ Rot3 RoadCurve::Orientation(double p, double r, double h) const {
 Vector3<double> RoadCurve::s_hat_of_prh(double p, double r, double h,
                                         const Rot3& Rabg,
                                         double g_prime) const {
-  // TODO(agalbachicar)  This method needs direct test coverage.
   const Vector3<double> W_prime = W_prime_of_prh(p, r, h, Rabg, g_prime);
   return W_prime * (1.0 / W_prime.norm());
 }
 
 
 Vector3<double> RoadCurve::r_hat_of_Rabg(const Rot3& Rabg) const {
-  // TODO(agalbachicar)  This method needs direct test coverage.
   return Rabg.apply({0., 1., 0.});
 }
 
