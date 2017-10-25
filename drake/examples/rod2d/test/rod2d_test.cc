@@ -215,7 +215,7 @@ class Rod2DDAETest : public ::testing::Test {
 
     // Update the velocity part of the state.
     context_->get_mutable_continuous_state()->get_mutable_generalized_velocity()
-        ->SetFromVector(data.v + delta_v);
+        ->SetFromVector(data.solve_inertia(data.Mv) + delta_v);
   }
 
   // Gets the number of generalized coordinates for the rod.
@@ -271,7 +271,7 @@ class Rod2DDAETest : public ::testing::Test {
     EXPECT_EQ(GetOperatorDim(data.N_mult), num_contacts);
     CheckTransOperatorDim(data.N_transpose_mult, num_contacts);
     EXPECT_EQ(data.kN.size(), num_contacts);
-    EXPECT_EQ(data.v.size(), get_rod_num_coordinates());
+    EXPECT_EQ(data.Mv.size(), get_rod_num_coordinates());
     EXPECT_TRUE(data.solve_inertia);
     EXPECT_EQ(GetOperatorDim(data.F_mult), num_contacts);
     CheckTransOperatorDim(data.F_transpose_mult, num_contacts);

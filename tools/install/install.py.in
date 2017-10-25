@@ -11,6 +11,7 @@ from subprocess import check_output, check_call
 subdirs = set()
 prefix = None
 libs = {}
+list_only = False
 
 
 def needs_install(src, dst):
@@ -33,6 +34,11 @@ def needs_install(src, dst):
 
 def install(src, dst):
     global subdirs
+
+    # In list-only mode, just display the filename, don't do any real work.
+    if list_only:
+        print(dst)
+        return
 
     # Ensure destination subdirectory exists, creating it if necessary.
     subdir = os.path.dirname(dst)
@@ -98,6 +104,10 @@ def fix_library_rpaths():
                 )
 
 def create_java_launcher(filename, classpath, main_class):
+    # In list-only mode, just display the filename, don't do any real work.
+    if list_only:
+        print(filename)
+        return
     # Make sure install directory exists.
     filename = os.path.join(prefix, filename)
     filepath = os.path.dirname(filename)
@@ -130,14 +140,19 @@ java %s
 
 def main(args):
     global prefix
+    global list_only
 
     # Set up options.
     parser = argparse.ArgumentParser()
     parser.add_argument('prefix', type=str, help='Install prefix')
+    parser.add_argument(
+        '--list', action='store_true', default=False,
+        help='print the list of installed files; do not install anything')
     args = parser.parse_args(args)
 
     # Get install prefix.
     prefix = args.prefix
+    list_only = args.list
 
     # Because Bazel executes us in a strange working directory and not the
     # working directory of the user's shell, enforce that the install

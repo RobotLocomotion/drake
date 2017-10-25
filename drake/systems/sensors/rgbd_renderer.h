@@ -1,21 +1,9 @@
 #pragma once
 
-#include <array>
 #include <limits>
-#include <map>
-#include <vector>
+#include <memory>
 
 #include <Eigen/Dense>
-#include <vtkActor.h>
-#include <vtkImageExport.h>
-#include <vtkNew.h>
-#include <vtkRenderWindow.h>
-#include <vtkRenderer.h>
-#include <vtkSmartPointer.h>
-#include <vtkWindowToImageFilter.h>
-#if VTK_MAJOR_VERSION >= 6
-#include <vtkAutoInit.h>
-#endif
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_optional.h"
@@ -24,22 +12,9 @@
 #include "drake/systems/sensors/color_palette.h"
 #include "drake/systems/sensors/image.h"
 
-#if VTK_MAJOR_VERSION >= 6
-VTK_AUTOINIT_DECLARE(vtkRenderingOpenGL2)
-#endif
-
 namespace drake {
 namespace systems {
 namespace sensors {
-
-// Register the object factories for the vtkRenderingOpenGL2 module.
-struct ModuleInitVtkRenderingOpenGL2 {
-  ModuleInitVtkRenderingOpenGL2() {
-#if VTK_MAJOR_VERSION >= 6
-    VTK_AUTOINIT_CONSTRUCT(vtkRenderingOpenGL2)
-#endif
-  }
-};
 
 /// An RGB-D renderer that renders RGB, depth and label images using
 /// VisualElement. The coordinate system of RgbdRenderer's viewpoint `R` is
@@ -63,38 +38,9 @@ struct ModuleInitVtkRenderingOpenGL2 {
 ///     corresponds to an object in the scene. For the pixels corresponding to
 ///     no body, namely the sky and the flat terrain, we assign Label::kNoBody
 ///     and Label::kFlatTerrain, respectively.
-class RgbdRenderer final : private ModuleInitVtkRenderingOpenGL2 {
+class RgbdRenderer final {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RgbdRenderer)
-
-  /// Set of constants used to represent invalid depth values.
-  /// Note that if a depth is not measurable, NaN will be set.
-  class InvalidDepth {
-   public:
-    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InvalidDepth)
-    /// The depth value when the max sensing range is exceeded.
-    static constexpr float kTooFar{std::numeric_limits<float>::infinity()};
-
-    /// The depth value when the min sensing range is violated because the
-    /// object being sensed is too close. Note that this
-    /// <a href="http://www.ros.org/reps/rep-0117.html">differs from ROS</a>,
-    /// which uses negative infinity in this scenario. Drake uses zero because
-    /// it results in less devastating bugs when users fail to check for the
-    /// lower limit being hit and using negative infinity does not prevent users
-    /// from writing bad code.
-    static constexpr float kTooClose{0.f};
-  };
-
-  /// Set of labels used for label image.
-  class Label {
-   public:
-    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Label)
-    /// The label used for pixels correspond to nothing.
-    static constexpr int16_t kNoBody{std::numeric_limits<int16_t>::max()};
-    /// The label used for pixels correspond to the flat terrain.
-    static constexpr int16_t kFlatTerrain{
-      std::numeric_limits<int16_t>::max() - 1};
-  };
 
   /// A constructor for %RgbdRenderer.
   ///
@@ -129,7 +75,7 @@ class RgbdRenderer final : private ModuleInitVtkRenderingOpenGL2 {
                double fov_y,
                bool show_window);
 
-  ~RgbdRenderer() = default;
+  ~RgbdRenderer();
 
   /// Adds a flat terrain in the rendering scene.
   void AddFlatTerrain();
@@ -195,50 +141,23 @@ class RgbdRenderer final : private ModuleInitVtkRenderingOpenGL2 {
   void RenderLabelImage(ImageLabel16I* label_image_out) const;
 
   /// Returns the image width.
-  int width() const { return width_; }
+  int width() const;
 
   /// Returns the image height.
-  int height() const { return height_; }
+  int height() const;
 
   /// Returns the renderer's vertical field of view.
-  double fov_y() const { return fov_y_; }
+  double fov_y() const;
 
   /// Returns sky's color in RGB image.
-  const ColorI& get_sky_color() const {
-    return color_palette_.get_sky_color(); }
+  const ColorI& get_sky_color() const;
 
   /// Returns flat terrain's color in RGB image.
-  const ColorI& get_flat_terrain_color() const {
-    return color_palette_.get_terrain_color(); }
+  const ColorI& get_flat_terrain_color() const;
 
  private:
-  float CheckRangeAndConvertToMeters(float z_buffer_value) const;
-
-  const int width_;
-  const int height_;
-  const double fov_y_;
-  const double z_near_;
-  const double z_far_;
-  const ColorPalette color_palette_;
-
-  vtkNew<vtkActor> terrain_actor_;
-  // An array of maps which take pairs of a body index in RBT and a vector of
-  // vtkSmartPointer to vtkActor. The each vtkActor corresponds to an visual
-  // element specified in SDF / URDF. The first element of this array is for
-  // color and depth rendering and the second is for label image rendering.
-  // TODO(kunimatsu-tri) Make this more straight forward for the readability.
-  std::array<std::map<int, std::vector<vtkSmartPointer<vtkActor>>>, 2>
-      id_object_maps_;
-  vtkNew<vtkRenderer> color_depth_renderer_;
-  vtkNew<vtkRenderer> label_renderer_;
-  vtkNew<vtkRenderWindow> color_depth_render_window_;
-  vtkNew<vtkRenderWindow> label_render_window_;
-  vtkNew<vtkWindowToImageFilter> color_filter_;
-  vtkNew<vtkWindowToImageFilter> depth_filter_;
-  vtkNew<vtkWindowToImageFilter> label_filter_;
-  vtkNew<vtkImageExport> color_exporter_;
-  vtkNew<vtkImageExport> depth_exporter_;
-  vtkNew<vtkImageExport> label_exporter_;
+  class Impl;
+  std::unique_ptr<Impl> impl_;
 };
 
 }  // namespace sensors

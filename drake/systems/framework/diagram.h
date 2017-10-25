@@ -1370,6 +1370,24 @@ class Diagram : public System<T>,
     }
   }
 
+  std::map<typename Event<T>::PeriodicAttribute, std::vector<const Event<T>*>,
+      PeriodicAttributeComparator<T>> DoGetPeriodicEvents() const override {
+    std::map<typename Event<T>::PeriodicAttribute,
+        std::vector<const Event<T>*>,
+        PeriodicAttributeComparator<T>> periodic_events_map;
+
+    for (int i = 0; i < num_subsystems(); ++i) {
+      auto sub_map = registered_systems_[i]->GetPeriodicEvents();
+      for (const auto& sub_attr_events : sub_map) {
+        const auto& sub_vec = sub_attr_events.second;
+        auto& vec = periodic_events_map[sub_attr_events.first];
+        vec.insert(vec.end(), sub_vec.begin(), sub_vec.end());
+      }
+    }
+
+    return periodic_events_map;
+  }
+
   void DoGetPerStepEvents(
       const Context<T>& context,
       CompositeEventCollection<T>* event_info) const override {

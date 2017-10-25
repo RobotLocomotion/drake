@@ -1,12 +1,12 @@
-syntax = "proto3";
+syntax = "proto2";
 
 package drake.systems.controllers.qp_inverse_dynamics;
 
 // TODO(siyuanfeng): This probably should go to drake/common eventually.
 message Vec3 {
-    double x = 1;
-    double y = 2;
-    double z = 3;
+    optional double x = 1;
+    optional double y = 2;
+    optional double z = 3;
 }
 
 // Contains parameters for specifying desired accelerations for the inverse
@@ -25,7 +25,7 @@ message Vec3 {
 message AccelerationConfig {
     // Name should be a valid group name in the corresponding
     // RigidBodyTreeAliasGroups.
-    string name = 1;
+    optional string name = 1;
 
     // For body tracking, the `kp` and `kd` gains are applied on the pose and
     // velocity measured in the world frame.
@@ -43,27 +43,27 @@ message AccelerationConfig {
 // dynamics controller.
 message ContactConfig {
     // Name should be a valid group name in the corresponding AliasGroups.
-    string name = 1;
+    optional string name = 1;
 
     // Positive weight means the corresponding acceleration will be used as a
     // cost term, 0 means it will be skipped, and negative value means it will
     // be used as a hard constraint.
-    double weight = 2;
+    optional double weight = 2;
 
     // This is used to damp out nonzero contact velocity by setting the
     // desired contact acceleration to `-kd * v`, where v is the measured
     // contact velocity.
-    double kd = 3;
+    optional double kd = 3;
 
     // Friction coefficient.
-    double mu = 4;
+    optional double mu = 4;
 
     // The contact point and norm are specified in the body frame.
     repeated Vec3 contact_point = 5;
-    Vec3 contact_normal = 6;
+    optional Vec3 contact_normal = 6;
 
     // Number of basis vectors used to approximate the friction cone.
-    int32 num_basis_per_contact_point = 7;
+    optional int32 num_basis_per_contact_point = 7;
 }
 
 // Contains parameters for the inverse dynamics controller. There are 4
@@ -74,23 +74,23 @@ message ContactConfig {
 message InverseDynamicsControllerConfig {
     // Name of this set of parameters. Used to distinguish different sets of
     // parameters, e.g. walking_params vs manipulation_params.
-    string name = 1;
+    optional string name = 1;
 
     // Centroidal momentum.
-    AccelerationConfig centroidal_momentum = 2;
+    optional AccelerationConfig centroidal_momentum = 2;
 
     // Body acceleration.
-    AccelerationConfig default_body_motion = 3;
+    optional AccelerationConfig default_body_motion = 3;
     repeated AccelerationConfig body_motion = 4;
 
     // Acceleration in the generalized coordinates.
-    AccelerationConfig default_dof_motion = 5;
+    optional AccelerationConfig default_dof_motion = 5;
     repeated AccelerationConfig dof_motion = 6;
 
     // Contact information.
-    ContactConfig default_contact = 7;
+    optional ContactConfig default_contact = 7;
     repeated ContactConfig contact = 8;
 
     // Regularization weight of the contact force basis.
-    double contact_force_basis_weight = 9;
+    optional double contact_force_basis_weight = 9;
 }

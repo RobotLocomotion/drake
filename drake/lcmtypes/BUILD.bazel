@@ -2,7 +2,7 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("@drake//tools:install.bzl", "install")
+load("@drake//tools/install:install.bzl", "install")
 load(
     "@drake//tools/skylark:drake_java.bzl",
     "drake_java_binary",
@@ -243,6 +243,15 @@ drake_lcm_cc_library(
     ],
 )
 
+drake_lcm_cc_library(
+    name = "jaco",
+    lcm_package = "drake",
+    lcm_srcs = [
+        "lcmt_jaco_command.lcm",
+        "lcmt_jaco_status.lcm",
+    ],
+)
+
 # TODO(jwnimmer-tri) Many more C++ messages are missing ...
 
 drake_lcm_py_library(
@@ -278,6 +287,7 @@ DRAKE_LCMTYPES = [
     ":drake_signal",
     ":iiwa",
     ":inverse_dynamics_debug_info",
+    ":jaco",
     ":joint_pd_override",
     ":manipulator_plan_move_end_effector",
     ":piecewise_polynomial",
@@ -329,7 +339,7 @@ install(
         "bin/drake-lcm-spy-launcher.sh": "drake-lcm-spy",
     },
     deps = [
-        "//tools/install/optitrack_driver:install",
+        "//tools/workspace/optitrack_driver:install",
         "@lcmtypes_robotlocomotion//:install",
         "@libbot//:install_bot2_core",
         "@libbot//:install_lcmtypes",

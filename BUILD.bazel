@@ -3,8 +3,7 @@
 # This file is named BUILD.bazel instead of the more typical BUILD, so that on
 # OSX it won't conflict with a build artifacts directory named "build".
 
-load("//tools:check_licenses.bzl", "check_licenses")
-load("@drake//tools:install.bzl", "install", "install_files")
+load("@drake//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(
@@ -32,37 +31,6 @@ alias(
     actual = "@protobuf//:protobuf_python",
 )
 
-DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
-    "bullet",
-    "ccd",
-    "drake_visualizer",
-    "eigen",
-    "fcl",
-    "fmt",
-    "ignition_math",
-    "ignition_rndf",
-    "lcm",
-    "lcmtypes_bot2_core",
-    "lcmtypes_robotlocomotion",
-    "libbot",
-    "nlopt",
-    "octomap",
-    "pybind11",
-    "sdformat",
-    "spdlog",
-    "spruce",
-    "stx",
-    "tinydir",
-    "tinyobjloader",
-    "vtk",
-    "yaml_cpp",
-]] + ["//tools/install/%s:install" % p for p in [
-    "gflags",
-    "jchart2d",
-    "optitrack_driver",
-    "protobuf",
-]]
-
 install(
     name = "install",
     docs = ["LICENSE.TXT"],
@@ -75,9 +43,8 @@ install(
         "//drake/lcmtypes:install",
         "//drake/manipulation/models:install_data",
         "//tools:install",
-    ] + DRAKE_EXTERNAL_PACKAGE_INSTALLS,
+        "//tools/workspace:install_external_packages",
+    ],
 )
-
-check_licenses(DRAKE_EXTERNAL_PACKAGE_INSTALLS + [":install"])
 
 add_lint_tests()

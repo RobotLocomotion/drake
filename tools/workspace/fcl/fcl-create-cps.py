@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from drake.tools.cpsutils import read_defs, read_requires
+from drake.tools.install.cpsutils import read_defs, read_requires
 
 defs = read_defs("set\(FCL_(\w+_VERSION)\s+([0-9]+)")
 defs.update(read_requires())

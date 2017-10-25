@@ -1219,6 +1219,16 @@ class LeafSystem : public System<T> {
   }
 
  private:
+  std::map<typename Event<T>::PeriodicAttribute, std::vector<const Event<T>*>,
+      PeriodicAttributeComparator<T>> DoGetPeriodicEvents() const override {
+    std::map<typename Event<T>::PeriodicAttribute, std::vector<const Event<T>*>,
+        PeriodicAttributeComparator<T>> periodic_events_map;
+    for (const auto& i : periodic_events_) {
+      periodic_events_map[i.first].push_back(i.second.get());
+    }
+    return periodic_events_map;
+  }
+
   // Calls DoPublish.
   // Assumes @param events is an instance of LeafEventCollection, throws
   // std::bad_cast otherwise.

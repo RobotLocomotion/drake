@@ -6,7 +6,7 @@ load(
     "drake_cc_binary",
     "drake_cc_googletest",
 )
-load("//tools:install_data.bzl", "install", "install_data")
+load("//tools/install:install_data.bzl", "install", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(
@@ -93,6 +93,8 @@ drake_cc_binary(
         "//drake/manipulation/models/wsg_50_description:models",
     ],
     test_rule_args = ["--simulation_sec=0.01"],
+    # Flaky because LCM self-test can fail (PR #7311)
+    test_rule_flaky = 1,
     deps = [
         ":iiwa_common",
         ":iiwa_lcm",
@@ -122,11 +124,14 @@ drake_cc_binary(
         ":models",
         "//drake/manipulation/models/iiwa_description:models",
     ],
-    test_rule_args = ["--simulation_sec=0.1"],
+    test_rule_args = ["--simulation_sec=0.1 --target_realtime_rate=0.0"],
+    # Flaky because LCM self-test can fail (PR #7311)
+    test_rule_flaky = 1,
     deps = [
         ":iiwa_common",
         ":iiwa_lcm",
         "//drake/common:find_resource",
+        "//drake/common:text_logging_gflags",
         "//drake/lcm",
         "//drake/manipulation/util:sim_diagram_builder",
         "//drake/manipulation/util:world_sim_tree_builder",
@@ -185,12 +190,30 @@ drake_cc_googletest(
     ],
 )
 
+# Test that kuka_simulation can load the dual arm urdf
+sh_test(
+    name = "dual_kuka_simulation_test",
+    size = "small",
+    srcs = ["kuka_simulation"],
+    args = [
+        "$(location :kuka_simulation)",
+        "--urdf",
+        "$(location //drake/manipulation/models/iiwa_description:urdf/dual_iiwa14_polytope_collision.urdf)",  # noqa
+        "--simulation_sec=0.01",
+        "--novisualize_frames",
+    ],
+    data = [
+        "//drake/manipulation/models/iiwa_description:urdf/dual_iiwa14_polytope_collision.urdf",  # noqa
+    ],
+)
+
 # This examples needs to be install for external projects such as Spartan.
 install(
     name = "install",
     targets = [
         ":kuka_plan_runner",
     ],
+    runtime_strip_prefix = ["install"],
     visibility = ["//visibility:public"],
 )
 

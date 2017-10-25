@@ -404,7 +404,7 @@ install = rule(
             allow_files = True,
             executable = True,
             cfg = "target",
-            default = Label("//tools:install.py.in"),
+            default = Label("//tools/install:install.py.in"),
         ),
     },
     executable = True,
@@ -606,7 +606,7 @@ def cmake_config(
             srcs = [script],
             main = script,
             visibility = ["//visibility:private"],
-            deps = ["@drake//tools:cpsutils"],
+            deps = ["@drake//tools/install:cpsutils"],
         )
 
         cps_file_name = "{}.cps".format(package)
