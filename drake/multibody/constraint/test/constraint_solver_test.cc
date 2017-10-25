@@ -1514,7 +1514,7 @@ TEST_P(Constraint2DSolverTest, TwoPointContactCrossTerms) {
   rod_->set_mu_coulomb(1e-1);
   rod_->set_mu_static(1.0);
 
-  // First, construct the acceleration-level problem data as normal to set
+  // First, construct the acceleration-level problem data as usual to set
   // inertia solver and external forces.
   std::vector<Vector2d> contacts;
   std::vector<double> tangent_vels;
@@ -1523,7 +1523,7 @@ TEST_P(Constraint2DSolverTest, TwoPointContactCrossTerms) {
 
   // Modify the tangent velocity on the left contact to effect a sliding
   // contact. This modification can be imagined as the left end of the rod
-  // is touching a conveyer belt moving to the right.
+  // is touching a conveyor belt moving to the right.
   tangent_vels[0] = 1.0;
 
   // Compute the constraint problem data.
@@ -1550,6 +1550,144 @@ TEST_P(Constraint2DSolverTest, TwoPointContactCrossTerms) {
   solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &vdot);
   EXPECT_NEAR(vdot[0], 0, lcp_eps_);
 }
+
+// Tests that the cross-term interaction between contact forces and generic
+// unilateral constraints is computed correctly at the acceleration level.
+TEST_P(Constraint2DSolverTest, ContactLimitCrossTermAccel) {
+  // Set the state of the rod to resting.
+  SetRodToRestingHorizontalConfig();
+
+  // Set the sliding coefficient of friction to zero (it won't be used) and the
+  // static coefficient of friction to a relatively large value.
+  rod_->set_mu_coulomb(0.0);
+  rod_->set_mu_static(1.0);
+
+  // First, construct the acceleration-level problem data as normal to set
+  // inertia solver and external forces.
+  std::vector<Vector2d> contacts;
+  std::vector<double> tangent_vels;
+  rod_->GetContactPoints(*context_, &contacts);
+  rod_->GetContactPointsTangentVelocities(*context_, contacts, &tangent_vels);
+
+  // Compute the constraint problem data.
+  rod_->CalcConstraintProblemData(
+    *context_, contacts, tangent_vels, accel_data_.get());
+
+  // Add some horizontal force.
+  accel_data_->tau[0] = 1.0;
+
+  // Construct the problem as a limit constraint preventing movement in the
+  // upward direction.
+  const int ngc = get_rod_num_coordinates();
+  const int num_generic_unilateral_constraints = 1;
+  accel_data_->kL.resize(num_generic_unilateral_constraints);
+  accel_data_->gammaL.setZero(num_generic_unilateral_constraints);
+
+  // Set the Jacobian entry- in this case, the limit is an upper limit on the
+  // second coordinate (vertical position). The constraint is: v̇₂ ≤ 0, which
+  // we transform to the form: -v̇₂ ≥ 0 (explaining the provenance of the minus
+  // sign in L).
+  const int num_limit_constraints = 1;
+  MatrixX<double> L(accel_data_->kL.size(), ngc);
+  L.setZero();
+  L(0, 1) = -1;
+  accel_data_->L_mult = [&L](const VectorX<double>& v) -> VectorX<double> {
+    return L * v;
+  };
+  accel_data_->L_transpose_mult = [&L](const VectorX<double>& v) ->
+    VectorX<double> {
+    return L.transpose() * v;
+  };
+  accel_data_->kL.setZero(num_limit_constraints);
+
+  // Check the consistency of the data.
+  CheckProblemConsistency(*accel_data_, contacts.size());
+
+  // Compute the constraint forces.
+  VectorX<double> cf;
+  solver_.SolveConstraintProblem(*accel_data_, &cf);
+
+  // Verify the size of cf is as expected.
+  EXPECT_EQ(cf.size(), accel_data_->non_sliding_contacts.size() * 2 + 1);
+
+  // Verify that the horizontal and vertical acceleration of the rod c.o.m.
+  // is zero.
+  VectorX<double> vdot;
+  solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &vdot);
+  EXPECT_NEAR(vdot[0], 0, lcp_eps_);
+  EXPECT_NEAR(vdot[1], 0, lcp_eps_);
+}
+
+// Tests that the cross-term interaction between contact forces and generic
+// unilateral constraints is computed correctly at the velocity level.
+TEST_P(Constraint2DSolverTest, ContactLimitCrossTermVel) {
+  // Set the state of the rod to resting.
+  SetRodToSlidingImpactingHorizontalConfig(true);
+
+  // Set the coefficient of friction (mu_static won't be used in this problem,
+  // but an exception will be thrown if mu_coulomb is greater than mu_static)
+  // to a relatively large number.
+  rod_->set_mu_coulomb(1.0);
+  rod_->set_mu_static(1.0);
+
+  // First, construct the velocity-level problem data as normal to set
+  // inertia solver and external forces.
+  std::vector<Vector2d> contacts;
+  std::vector<double> tangent_vels;
+  rod_->GetContactPoints(*context_, &contacts);
+  rod_->GetContactPointsTangentVelocities(*context_, contacts, &tangent_vels);
+
+  // Compute the constraint problem data.
+  rod_->CalcImpactProblemData(
+    *context_, contacts, vel_data_.get());
+
+  // Add in some horizontal velocity to test the transition to stiction too.
+  vel_data_->Mv[0] = 1.0;
+  const VectorX<double> v = vel_data_->solve_inertia(vel_data_->Mv);
+
+  // Construct the problem as a limit constraint preventing movement in the
+  // downward direction.
+  const int ngc = get_rod_num_coordinates();
+  const int num_generic_unilateral_constraints = 1;
+  vel_data_->kL.resize(num_generic_unilateral_constraints);
+  vel_data_->gammaL.setOnes(num_generic_unilateral_constraints) *= cfm_;
+
+  // Set the Jacobian entry- in this case, the limit is an upper limit on the
+  // second coordinate (vertical position). The constraint is: v₂ ≤ 0, which
+  // we transform to the form: -v₂ ≥ 0 (explaining the provenance of the minus
+  // sign in L).
+  const int num_limit_constraints = 1;
+  MatrixX<double> L(vel_data_->kL.size(), ngc);
+  L.setZero();
+  L(0, 1) = -1;
+  vel_data_->L_mult = [&L](const VectorX<double>& vv) -> VectorX<double> {
+    return L * vv;
+  };
+  vel_data_->L_transpose_mult = [&L](const VectorX<double>& vv) ->
+    VectorX<double> {
+    return L.transpose() * vv;
+  };
+  vel_data_->kL.setZero(num_limit_constraints);
+
+  // Check the consistency of the data.
+  CheckProblemConsistency(*vel_data_, contacts.size());
+
+  // Compute the constraint forces. Note that we increase cfm to prevent the
+  // occasional "failure to solve LCP" exception.
+  VectorX<double> cf;
+  solver_.SolveImpactProblem(*vel_data_, &cf);
+
+  // Verify the size of cf is as expected.
+  EXPECT_EQ(cf.size(), vel_data_->mu.size() * 2 + 1);
+
+  // Verify that the horizontal velocity is unchanged and that the vertical
+  // velocity is zero.
+  VectorX<double> dv;
+  solver_.ComputeGeneralizedVelocityChange(*vel_data_, cf, &dv);
+  EXPECT_NEAR(v[0] + dv[0], 0, lcp_eps_);
+  EXPECT_NEAR(v[1] + dv[1], 0, lcp_eps_);
+}
+
 
 // Tests the rod in a two-point contacting configuration *realized through
 // a configuration limit constraint*. No frictional forces are applied, so

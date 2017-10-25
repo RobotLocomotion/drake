@@ -242,6 +242,13 @@ class ConstraintSolver {
       std::vector<Vector2<T>>* contact_impulses);
 
  private:
+  void CheckAccelConstraintMatrix(
+    const ConstraintAccelProblemData<T>& problem_data,
+    const MatrixX<T>& MM) const;
+  void CheckVelConstraintMatrix(
+    const ConstraintVelProblemData<T>& problem_data,
+    const MatrixX<T>& MM) const;
+
   // Computes a constraint space compliance matrix A⋅M⁻¹⋅Bᵀ, where A ∈ ℝᵃˣᵐ
   // (realized here using an operator) and B ∈ ℝᵇˣᵐ are both Jacobian matrices
   // and M⁻¹ ∈ ℝᵐˣᵐ is the inverse of the generalized inertia matrix. Note that
@@ -492,6 +499,7 @@ void ConstraintSolver<T>::SolveConstraintProblem(
   const int num_contacts = num_sliding + num_non_sliding;
   const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
                                                    problem_data.r.end(), 0);
+  const int nk = num_spanning_vectors * 2;
   const int num_limits = problem_data.kL.size();
   const int num_eq_constraints = problem_data.kG.size();
 
@@ -704,8 +712,7 @@ void ConstraintSolver<T>::SolveConstraintProblem(
   const auto fD_plus = zz.segment(num_contacts, num_spanning_vectors);
   const auto fD_minus = zz.segment(num_contacts + num_spanning_vectors,
                                    num_spanning_vectors);
-  const auto fL = zz.segment(num_contacts + num_spanning_vectors * 2,
-                             num_limits);
+  const auto fL = zz.segment(num_contacts + num_non_sliding + nk, num_limits);
   const auto fF = cf->segment(num_contacts, num_spanning_vectors);
 
   // Get the constraint forces in the specified packed storage format.
@@ -970,8 +977,35 @@ void ConstraintSolver<T>::SolveImpactProblem(
         ww.minCoeff() < -num_vars * npivots * zero_tol ||
         max_dot > max(T(1), zz.maxCoeff()) * max(T(1), ww.maxCoeff()) *
             num_vars * npivots * zero_tol))) {
-    throw std::runtime_error("Unable to solve LCP- more regularization might "
-                                 "be necessary.");
+    // Report difficulty
+    SPDLOG_DEBUG(drake::log(), "Unable to solve impacting problem LCP without "
+        "progressive regularization");
+    SPDLOG_DEBUG(drake::log(), "zero tolerance for z/w: {}",
+        num_vars * npivots * zero_tol);
+    SPDLOG_DEBUG(drake::log(), "Solver reports success? {}", success);
+    SPDLOG_DEBUG(drake::log(), "minimum z: {}", zz.minCoeff());
+    SPDLOG_DEBUG(drake::log(), "minimum w: {}", ww.minCoeff());
+    SPDLOG_DEBUG(drake::log(), "zero tolerance for <z,w>: {}",
+      max(T(1), zz.maxCoeff()) * max(T(1), ww.maxCoeff()) * num_vars *
+      npivots * zero_tol);
+    SPDLOG_DEBUG(drake::log(), "z'w: {}", max_dot);
+
+    // Use progressive regularization to solve.
+    const int min_exp = -16;      // Minimum regularization factor: 1e-16.
+    const unsigned step_exp = 1;  // Regularization progressively increases by a
+                                  // factor of ten.
+    const int max_exp = 1;        // Maximum regularization: 1e1.
+    const double piv_tol = -1;    // Make solver compute the pivot tolerance.
+    if (!lcp_.SolveLcpLemkeRegularized(
+        MM, qq, &zz, min_exp, step_exp, max_exp, piv_tol, zero_tol)) {
+      throw std::runtime_error("Progressively regularized LCP solve failed.");
+    } else {
+      ww = MM * zz + qq;
+      SPDLOG_DEBUG(drake::log(), "minimum z: {}", zz.minCoeff());
+      SPDLOG_DEBUG(drake::log(), "minimum w: {}", ww.minCoeff());
+      SPDLOG_DEBUG(drake::log(), "z'w: ",
+          (zz.array() * ww.array()).abs().maxCoeff());
+    }
   }
 
   // Alias constraint force segments.
@@ -979,7 +1013,7 @@ void ConstraintSolver<T>::SolveImpactProblem(
   const auto fD_plus = zz.segment(num_contacts, num_spanning_vectors);
   const auto fD_minus = zz.segment(num_contacts + num_spanning_vectors,
                                    num_spanning_vectors);
-  const auto fL = zz.segment(num_contacts + num_spanning_vectors * 2,
+  const auto fL = zz.segment(num_contacts * 2 + num_spanning_vectors * 2,
                              num_limits);
   const auto fF = cf->segment(num_contacts, num_spanning_vectors);
 
@@ -1066,6 +1100,50 @@ void ConstraintSolver<T>::ComputeInverseInertiaTimesGT(
     gT = G_transpose_mult(basis);
     iM_GT->col(i) = M_inv_mult(gT);
   }
+}
+
+// Checks the validity of the constraint matrix. This operation is relatively
+// expensive and should only be called in debug mode. Nevertheless, it's
+// useful to debug untested constraint Jacobian operators.
+template <class T>
+void ConstraintSolver<T>::CheckAccelConstraintMatrix(
+    const ConstraintAccelProblemData<T>& problem_data,
+    const MatrixX<T>& MM) const {
+  // Get numbers of types of contacts.
+  const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
+                                                   problem_data.r.end(), 0);
+  const int num_limits = problem_data.kL.size();
+
+  // Alias operators and vectors to make accessing them less clunky.
+  auto FT = problem_data.F_transpose_mult;
+  auto L = problem_data.L_mult;
+  auto iM = problem_data.solve_inertia;
+
+  // Alias these variables for more readable construction of MM and qq.
+  const int ngv = problem_data.tau.size();  // generalized velocity dimension.
+  const int nr = num_spanning_vectors;
+  const int nk = nr * 2;
+  const int nl = num_limits;
+  const int num_sliding = problem_data.sliding_contacts.size();
+  const int num_non_sliding = problem_data.non_sliding_contacts.size();
+  const int num_contacts = num_sliding + num_non_sliding;
+
+  // Get the block of M that was set through a transposition operation.
+  Eigen::Ref<const MatrixX<T>> L_iM_FT =
+      MM.block(num_contacts + nk + num_non_sliding, num_contacts, nl, nr);
+
+  // Compute the block from scratch.
+  MatrixX<T> L_iM_FT_true(nl, nr);
+  MatrixX<T> iM_FT(ngv, nr);
+  ComputeInverseInertiaTimesGT(iM, FT, nr, &iM_FT);
+  ComputeConstraintSpaceComplianceMatrix(L, nl, iM_FT, L_iM_FT_true);
+
+  // Determine the zero tolerance.
+  const double zero_tol = std::numeric_limits<double>::epsilon() * MM.norm() *
+      MM.rows();
+
+  // Check that the blocks are nearly equal.
+  DRAKE_ASSERT((L_iM_FT - L_iM_FT_true).norm() < zero_tol);
 }
 
 // Forms the LCP matrix and vector, which is used to determine the constraint
@@ -1156,7 +1234,8 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
       0, nc + nk + num_non_sliding, nc, nl);
   Eigen::Ref<MatrixX<T>> F_iM_NT_minus_muQT = MM->block(nc, 0, nr, nc);
   Eigen::Ref<MatrixX<T>> F_iM_FT = MM->block(nc, nc, nr, nr);
-  Eigen::Ref<MatrixX<T>> F_iM_LT = MM->block(nc, nc + nk, nr, nl);
+  Eigen::Ref<MatrixX<T>> F_iM_LT =
+      MM->block(nc, nc + nk + num_non_sliding, nr, nl);
   Eigen::Ref<MatrixX<T>> L_iM_NT_minus_muQT = MM->block(
       nc + nk + num_non_sliding, 0, nl, nc);
   Eigen::Ref<MatrixX<T>> L_iM_LT = MM->block(
@@ -1185,10 +1264,10 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
   // Now construct the negated tangent contact direction rows. These negated
   // tangent contact directions allow the LCP to compute forces applied along
   // the negative x-axis. E will have to be reset to un-negate it.
-  MM->block(nc + nr, 0, nr, nc + nk + nl) = -MM->block(nc, 0, nr, nc + nk + nl);
+  MM->block(nc + nr, 0, nr, MM->cols()) = -MM->block(nc, 0, nr, MM->cols());
   MM->block(nc + nr, nc + nk, num_spanning_vectors, num_non_sliding) = E;
 
-  // Construct the next two rows, which provide the friction "cone" constraint.
+  // Construct the next block, which provides the friction "cone" constraint.
   const std::vector<int>& ns_contacts = problem_data.non_sliding_contacts;
   MM->block(nc + nk, 0, num_non_sliding, nc).setZero();
   for (int i = 0; static_cast<size_t>(i) < ns_contacts.size(); ++i)
@@ -1199,10 +1278,14 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
             num_spanning_vectors) = -E.transpose();
   MM->block(nc + nk, nc + nk, num_non_sliding, num_non_sliding + nl).setZero();
 
-  // Construct the last row block, which provides the configuration limit
-  // constraint.
-  MM->block(nc + nk + num_non_sliding, 0, nl, nc + nk) =
-      MM->block(0, nc + nk + num_non_sliding, nc + nk, nl).transpose().eval();
+  // Construct the last row block, which provides the generic unilateral
+  // constraints.
+  MM->block(nc + nk + num_non_sliding, 0, nl, nc + nk + num_non_sliding) =
+      MM->block(0, nc + nk + num_non_sliding, nc + nk + num_non_sliding, nl).
+      transpose().eval();
+
+  // Check the transposed blocks of the LCP matrix.
+  DRAKE_ASSERT_VOID(CheckAccelConstraintMatrix(problem_data, *MM));
 
   // Verify that all gamma vectors are either empty or non-negative.
   DRAKE_DEMAND(gammaN.size() == 0 || gammaN.minCoeff() >= 0);
@@ -1232,6 +1315,59 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
   qq->segment(nc + nr, nr) = -qq->segment(nc, nr);
   qq->segment(nc + nk, num_non_sliding).setZero();
   qq->segment(nc + nk + num_non_sliding, num_limits) = L(trunc_neg_invA_a) + kL;
+}
+
+template <class T>
+void ConstraintSolver<T>::CheckVelConstraintMatrix(
+    const ConstraintVelProblemData<T>& problem_data,
+    const MatrixX<T>& MM) const {
+  // Get numbers of contacts.
+  const int num_contacts = problem_data.mu.size();
+  const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
+                                                   problem_data.r.end(), 0);
+  const int num_limits = problem_data.kL.size();
+
+  // Alias operators and vectors to make accessing them less clunky.
+  const auto N = problem_data.N_mult;
+  const auto NT = problem_data.N_transpose_mult;
+  const auto F = problem_data.F_mult;
+  const auto FT = problem_data.F_transpose_mult;
+  const auto L = problem_data.L_mult;
+  const auto LT = problem_data.L_transpose_mult;
+  auto iM = problem_data.solve_inertia;
+
+  // Alias these variables for more readable construction of MM and qq.
+  const int ngv = problem_data.Mv.size();  // generalized velocity dimension.
+  const int nr = num_spanning_vectors;
+  const int nk = nr * 2;
+  const int nl = num_limits;
+
+  // Get blocks of M that were set through a transposition operation.
+  Eigen::Ref<const MatrixX<T>> F_iM_NT =
+      MM.block(num_contacts, 0, nr, num_contacts);
+  Eigen::Ref<const MatrixX<T>> L_iM_NT =
+      MM.block(num_contacts * 2 + nk, 0, nl, num_contacts);
+  Eigen::Ref<const MatrixX<T>> L_iM_FT =
+      MM.block(num_contacts * 2 + nk, num_contacts, nl, nr);
+
+  // Compute the blocks from scratch.
+  MatrixX<T> F_iM_NT_true(nr, num_contacts), L_iM_NT_true(nl, num_contacts);
+  MatrixX<T> L_iM_FT_true(nl, nr);
+  MatrixX<T> iM_NT(ngv, num_contacts), iM_FT(ngv, nr);
+  ComputeInverseInertiaTimesGT(iM, NT, num_contacts, &iM_NT);
+  ComputeInverseInertiaTimesGT(iM, FT, nr, &iM_FT);
+  ComputeConstraintSpaceComplianceMatrix(F, nr, iM_NT, F_iM_NT_true);
+  ComputeConstraintSpaceComplianceMatrix(L, nl, iM_NT, L_iM_NT_true);
+  ComputeConstraintSpaceComplianceMatrix(L, nl, iM_FT, L_iM_FT_true);
+
+  // Determine the zero tolerance.
+  const double zero_tol = std::numeric_limits<double>::epsilon() * MM.norm() *
+      MM.rows();
+
+  // Check that the blocks are nearly equal.
+  DRAKE_ASSERT((F_iM_NT - F_iM_NT_true).norm() < zero_tol);
+  DRAKE_ASSERT((L_iM_NT - L_iM_NT_true).norm() < zero_tol);
+  DRAKE_ASSERT((L_iM_FT - L_iM_FT_true).norm() < zero_tol);
 }
 
 // Forms the LCP matrix and vector, which is used to determine the collisional
@@ -1314,7 +1450,7 @@ void ConstraintSolver<T>::FormImpactingConstraintLCP(
   Eigen::Ref<MatrixX<T>> N_iM_FT = MM->block(0, nc, nc, nr);
   Eigen::Ref<MatrixX<T>> N_iM_LT = MM->block(0, nc * 2 + nk, nc, nl);
   Eigen::Ref<MatrixX<T>> F_iM_FT = MM->block(nc, nc, nr, nr);
-  Eigen::Ref<MatrixX<T>> F_iM_LT = MM->block(nc, nc + nk, nr, nl);
+  Eigen::Ref<MatrixX<T>> F_iM_LT = MM->block(nc, nc * 2 + nk, nr, nl);
   Eigen::Ref<MatrixX<T>> L_iM_LT = MM->block(nc * 2 + nk, nc * 2 + nk, nl, nl);
   ComputeConstraintSpaceComplianceMatrix(N, nc, iM_NT, N_iM_NT);
   ComputeConstraintSpaceComplianceMatrix(N, nc, iM_FT, N_iM_FT);
@@ -1335,7 +1471,7 @@ void ConstraintSolver<T>::FormImpactingConstraintLCP(
   // Now construct the negated tangent contact direction rows. These negated
   // tangent contact directions allow the LCP to compute forces applied along
   // the negative x-axis. E will have to be reset to un-negate it.
-  MM->block(nc + nr, 0, nr, nc + nk + nl) = -MM->block(nc, 0, nr, nc + nk + nl);
+  MM->block(nc + nr, 0, nr, MM->cols()) = -MM->block(nc, 0, nr, MM->cols());
   MM->block(nc + nr, nc + nk, num_spanning_vectors, nc) = E;
 
   // Construct the next two row blocks, which provide the friction "cone"
@@ -1348,8 +1484,11 @@ void ConstraintSolver<T>::FormImpactingConstraintLCP(
 
   // Construct the last row block, which provides the generic unilateral
   // constraints.
-  MM->block(nc * 2 + nk, 0, nl, nc + nk) =
-      MM->block(0, nc * 2 + nk, nc + nk, nl).transpose().eval();
+  MM->block(nc * 2 + nk, 0, nl, nc * 2 + nk) =
+      MM->block(0, nc * 2 + nk, nc * 2 + nk, nl).transpose().eval();
+
+  // Check the transposed blocks of the LCP matrix.
+  DRAKE_ASSERT_VOID(CheckVelConstraintMatrix(problem_data, *MM));
 
   // Verify that all gamma vectors are either empty or non-negative.
   DRAKE_DEMAND(gammaN.size() == 0 || gammaN.minCoeff() >= 0);
