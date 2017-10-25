@@ -26,7 +26,6 @@ DrakeVisualizer::DrakeVisualizer(const RigidBodyTree<double>& tree,
   const int vector_size =
       tree.get_num_positions() + tree.get_num_velocities();
   DeclareInputPort(kVectorValued, vector_size);
-  this->DeclareDiscreteState(1);
   if (enable_playback) log_.reset(new SignalLog<double>(vector_size));
 }
 
@@ -37,24 +36,14 @@ void DrakeVisualizer::set_publish_period(double period) {
 void DrakeVisualizer::DoCalcNextUpdateTime(
     const Context<double>& context, CompositeEventCollection<double>* events,
     double* time) const {
-  if (is_load_message_sent(context)) {
+  // NOTE: This *might* be better placed in an Initialize() method. (Once the
+  // semantics of such an interface is defined.)
+  if (is_load_message_sent()) {
     return LeafSystem<double>::DoCalcNextUpdateTime(context, events, time);
   } else {
-    // TODO(siyuan): cleanup after #5725 is resolved.
-    *time = context.get_time() + 0.0001;
-    DiscreteUpdateEvent<double> event(Event<double>::TriggerType::kTimed);
-    event.add_to_composite(events);
+    PublishLoadRobot();
+    set_is_load_message_sent(true);
   }
-}
-
-void DrakeVisualizer::DoCalcDiscreteVariableUpdates(
-    const Context<double>& context,
-    const std::vector<const DiscreteUpdateEvent<double>*>&,
-    DiscreteValues<double>* discrete_state) const {
-  DRAKE_DEMAND(!is_load_message_sent(context));
-
-  PublishLoadRobot();
-  set_is_load_message_sent(discrete_state, true);
 }
 
 void DrakeVisualizer::ReplayCachedSimulation() const {
@@ -138,7 +127,7 @@ void DrakeVisualizer::PlaybackTrajectory(
 
 void DrakeVisualizer::DoPublish(const Context<double>& context,
     const std::vector<const PublishEvent<double>*>&) const {
-  if (!is_load_message_sent(context)) {
+  if (!is_load_message_sent()) {
     drake::log()->warn(
         "DrakeVisualizer::Publish() called before PublishLoadRobot()");
     return;
