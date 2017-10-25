@@ -50,6 +50,7 @@ binutils
 chrpath
 cmake
 cmake-curses-gui
+coinor-libclp-dev
 coinor-libipopt-dev
 diffstat
 doxygen
