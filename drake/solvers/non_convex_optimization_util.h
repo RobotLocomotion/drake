@@ -4,7 +4,7 @@
 
 #include <Eigen/Core>
 
-#include "drake/solvers/constraint.h"
+#include "drake/solvers/mathematical_program.h"
 
 namespace drake {
 namespace solvers {
@@ -40,30 +40,53 @@ namespace solvers {
 std::pair<Eigen::MatrixXd, Eigen::MatrixXd>
 DecomposeNonConvexQuadraticForm(const Eigen::Ref<const Eigen::MatrixXd>& Q);
 
-
 /**
- * For a non-convex quadratic inequality constraint
- *   xᵀQ₁x - xᵀQ₂x + pᵀx <= r
+ * For a non-convex quadratic constraint
+ *   lb <= xᵀQ₁x - xᵀQ₂x + pᵀx <= ub
  * where Q₁, Q₂ are both positive semidefinite matrices, we relax this
  * constraint by several convex constraints. The steps are
- * 1. Linearize xᵀQ₂x at a point x₀, the linear function
- *    2 x₀ᵀQ₂(x - x₀) + x₀ᵀQ₂x₀ is a lower bound of xᵀQ₂x, due to the convexity.
- * 2. Shift the linear function uppward by d, as
- *    2 x₀ᵀQ₂(x - x₀) + x₀ᵀQ₂x₀ + d, where d is a positive scalar. Within a
- *    neighbourhood of the linearization point x₀, this linear function is an
- *    upper bound of the quadratic form xᵀQ₂x, the maximal error between the
- *    linear upper bound and the quadratic form is d.
- * 3. Relax the original constraint as
- *    xᵀQ₁x <= r + xᵀQ₂x - pᵀx
- *          <= r + 2 x₀ᵀQ₂(x - x₀) + x₀ᵀQ₂x₀ + d - pᵀx
- *    This is a convex second order cone constraint.
- *    If there is a solution satisfying the relaxed constraint, this solution
- *    can violate the original non-convex constraint by at most d; on the other
- *    hand, if there is not a solution satisfying the relaxed constraint, it
- *    proves that the original non-convex constraint does not have a solution
- *    in the neighbourhood of x₀, where the neighbourhood is defined as
- *    {x | 2 x₀ᵀQ₂(x - x₀) + x₀ᵀQ₂x₀ + d >= xᵀQ₂x}. This neighbourhood is the
- *    trust-region of this approach.
+ * 1. Introduce two new variables z₁, z₂, to replace xᵀQ₁x and xᵀQ₂x
+ *    respectively. The constraint becomes
+ *    <pre>
+ *      lb <= z₁ - z₂ + pᵀx <= ub              (1)
+ *    </pre>
+ * 2. Ideally, we would like to enforce z₁ = xᵀQ₁x and z₂ = xᵀQ₂x through convex
+ *    constraints. To this end, we first bound z₁ and z₂ from below, as
+ *    <pre>
+ *      z₁ >= xᵀQ₁x                            (2)
+ *      z₂ >= xᵀQ₂x                            (3)
+ *    </pre>
+ *    These two constraints are second order cone
+ *    constraints.
+ * 3. To bound z₁ and z₂ from above, we consider to linearize the quadratic
+ *    forms xᵀQ₁x and xᵀQ₂x at a point x₀. Due to the convexity of the quadratic
+ *    form, we know that given a positive scalar d, there exists a neighbourhood
+ *    around x₀, s.t
+ *    <pre>
+ *    xᵀQ₁x <= 2 x₀ᵀQ₁(x - x₀) + x₀ᵀQ₁x₀ + d   (4)
+ *    xᵀQ₂x <= 2 x₀ᵀQ₂(x - x₀) + x₀ᵀQ₂x₀ + d   (5)
+ *    </pre>
+ *    so we also enforce the linear constraints
+ *    <pre>
+ *      z₁ <= 2 x₀ᵀQ₁(x - x₀) + x₀ᵀQ₁x₀ + d    (6)
+ *      z₂ <= 2 x₀ᵀQ₂(x - x₀) + x₀ᵀQ₂x₀ + d    (7)
+ *    </pre>
+ *    So we relax the original non-convex constraint, with the convex
+ *    constraints (1)(2)(3)(6)(7)
+ *
+ * The trust region is the neighbourhood around x₀, such that the inequalities
+ * (4), (5) are satisfied.
+ *
+ * The positive scalar d controls both how much the constraint relaxation is
+ * (the original constraint can be violated by at most d), and how big the trust
+ * region is.
+ *
+ * If there is a solution satisfying the relaxed constraint, this solution
+ * can violate the original non-convex constraint by at most d; on the other
+ * hand, if there is not a solution satisfying the relaxed constraint, it
+ * proves that the original non-convex constraint does not have a solution
+ * in the trust region.
+ *
  * This approach is outlined in section III of
  *   On Time Optimization of Centroidal Momentum Dynamics
  *   by Brahayam Ponton, Alexander Herzog, Stefan Schaal and Ludovic Righetti,
@@ -74,21 +97,29 @@ DecomposeNonConvexQuadraticForm(const Eigen::Ref<const Eigen::MatrixXd>& Q);
  * @param Q2 A positive definite matrix.
  * @param p A vector, the linear coefficients in the quadratic form.
  * @param linearization_point The vector `x₀` in the documentation above.
- * @param upper_bound The right-hand side of the inequality constraint, `r` in
- * the documentation above.
+ * @param lower_bound The left-hand side of the original non-convex constraint.
+ * @param upper_bound The right-hand side of the original non-convex constraint.
  * @param trust_region_gap The user-specified positive scalar, `d` in
  * the documentation above. This gap determines both the maximal constraint
  * violation, together with the size of the trust region.
- * @return The newly constructed rotated Lorentz cone constraint.
- * @pre 1. Q1, Q2 are positive definite.
+ * @retval <linear_constraint, rotated_lorentz_cone1, rotated_lorentz_cone>
+ * linear_constraint includes (1)(6)(7)
+ * rotated_lorentz_cone1 is (2)
+ * rotated_lorentz_cone2 is (3)
+ * @pre 1. Q1, Q2 are positive semidefinite.
  *      2. d is positive.
- *      3. Q1, Q2, p, x₀ are all of the consistent size.
+ *      3. Q1, Q2, p, x, x₀ are all of the consistent size.
+ *      4. lower_bound <= upper_bound.
  */
-std::shared_ptr<RotatedLorentzConeConstraint>
+std::tuple<Binding<LinearConstraint>, Binding<RotatedLorentzConeConstraint>,
+           Binding<RotatedLorentzConeConstraint>>
 RelaxNonConvexQuadraticInequalityConstraintInTrustRegion(
+    MathematicalProgram* prog,
+    const Eigen::Ref<const VectorXDecisionVariable>& x,
     const Eigen::Ref<const Eigen::MatrixXd>& Q1,
     const Eigen::Ref<const Eigen::MatrixXd>& Q2,
-    const Eigen::Ref<const Eigen::VectorXd>& p, double upper_bound,
+    const Eigen::Ref<const Eigen::VectorXd>& p, double lower_bound,
+    double upper_bound,
     const Eigen::Ref<const Eigen::VectorXd>& linearization_point,
     double trust_region_gap);
 }  // namespace solvers
