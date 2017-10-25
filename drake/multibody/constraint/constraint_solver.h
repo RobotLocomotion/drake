@@ -1337,7 +1337,7 @@ void ConstraintSolver<T>::CheckVelConstraintMatrix(
   auto iM = problem_data.solve_inertia;
 
   // Alias these variables for more readable construction of MM and qq.
-  const int ngv = problem_data.v.size();  // generalized velocity dimension.
+  const int ngv = problem_data.Mv.size();  // generalized velocity dimension.
   const int nr = num_spanning_vectors;
   const int nk = nr * 2;
   const int nl = num_limits;

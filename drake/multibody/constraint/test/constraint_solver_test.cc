@@ -1523,7 +1523,7 @@ TEST_P(Constraint2DSolverTest, TwoPointContactCrossTerms) {
 
   // Modify the tangent velocity on the left contact to effect a sliding
   // contact. This modification can be imagined as the left end of the rod
-  // is touching a conveyer belt moving to the belt.
+  // is touching a conveyor belt moving to the right.
   tangent_vels[0] = 1.0;
 
   // Compute the constraint problem data.
@@ -1642,7 +1642,8 @@ TEST_P(Constraint2DSolverTest, ContactLimitCrossTermVel) {
     *context_, contacts, vel_data_.get());
 
   // Add in some horizontal velocity to test the transition to stiction too.
-  vel_data_->v[0] = 1.0;
+  vel_data_->Mv[0] = 1.0;
+  const VectorX<double> v = vel_data_->solve_inertia(vel_data_->Mv);
 
   // Construct the problem as a limit constraint preventing movement in the
   // downward direction.
@@ -1659,12 +1660,12 @@ TEST_P(Constraint2DSolverTest, ContactLimitCrossTermVel) {
   MatrixX<double> L(vel_data_->kL.size(), ngc);
   L.setZero();
   L(0, 1) = -1;
-  vel_data_->L_mult = [&L](const VectorX<double>& v) -> VectorX<double> {
-    return L * v;
+  vel_data_->L_mult = [&L](const VectorX<double>& vv) -> VectorX<double> {
+    return L * vv;
   };
-  vel_data_->L_transpose_mult = [&L](const VectorX<double>& v) ->
+  vel_data_->L_transpose_mult = [&L](const VectorX<double>& vv) ->
     VectorX<double> {
-    return L.transpose() * v;
+    return L.transpose() * vv;
   };
   vel_data_->kL.setZero(num_limit_constraints);
 
@@ -1683,8 +1684,8 @@ TEST_P(Constraint2DSolverTest, ContactLimitCrossTermVel) {
   // velocity is zero.
   VectorX<double> dv;
   solver_.ComputeGeneralizedVelocityChange(*vel_data_, cf, &dv);
-  EXPECT_NEAR(vel_data_->v[0] + dv[0], 0, lcp_eps_);
-  EXPECT_NEAR(vel_data_->v[1] + dv[1], 0, lcp_eps_);
+  EXPECT_NEAR(v[0] + dv[0], 0, lcp_eps_);
+  EXPECT_NEAR(v[1] + dv[1], 0, lcp_eps_);
 }
 
 
