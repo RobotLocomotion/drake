@@ -145,18 +145,22 @@ GTEST_TEST(TestRelaxNonConvexQuadraticInequalityConstraintInTrustRegion,
 
 GTEST_TEST(TestRelaxNonConvexQuadraticInequalityConstraintInTrustRegion, SolveProblem0) {
   // For a feasibility problem
-  // find x, s.t x(0)² - x(1)² <= 2
+  // find x, s.t 1 <= x(0)² - x(1)² <= 2
+  // The relaxation of the constraint is
+  // 1 <= z1 - z2 <= 2
   // We linearize it about x = (2, 1). If we set the violation to 0.5, within
   // the trust region 2x(1) - 1 + 0.5 >= x(1)², there should be a solution
   // that violates the constraint by at most 0.5
-  Eigen::Matrix2d Q1, Q2;
-  // We add 1E-10 here to make sure Q1 and Q2 are positive definite.
-  Q1 << 1 + 1E-10, 0, 0, 1E-10;
-  Q2 << 1E-10, 0, 0, 1 + 1E-10;
-  auto constraint = RelaxNonConvexQuadraticInequalityConstraintInTrustRegion(Q1, Q2, Eigen::Vector2d::Zero(), 2, Eigen::Vector2d(2, 1), 0.5);
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
-  prog.AddConstraint(constraint, x);
+  Eigen::Matrix2d Q1, Q2;
+  Q1 << 1, 0, 0, 0;
+  Q2 << 0, 0, 0, 1;
+  Binding<LinearConstraint> linear_constraint;
+  Binding<RotatedLorentzConeConstraint> rotated_lorentz_cone_constraint1;
+  Binding<RotatedLorentzConeConstraint> rotated_lorentz_cone_constraint2;
+  std::tie(linear_constraint, rotated_lorentz_cone_constraint1, rotated_lorentz_cone_constraint2) = RelaxNonConvexQuadraticInequalityConstraintInTrustRegion(&prog, x, Q1, Q2, Eigen::Vector2d::Zero(), 1, 2, Eigen::Vector2d(2, 1), 0.5);
+
   auto result = prog.Solve();
   EXPECT_EQ(result, SolutionResult::kSolutionFound);
   auto x_sol = prog.GetSolution(x);

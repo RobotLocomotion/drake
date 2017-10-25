@@ -1,5 +1,6 @@
 #include "drake/solvers/non_convex_optimization_util.h"
 
+#include "drake/math/quadratic_form.h"
 #include "drake/solvers/mathematical_program.h"
 
 namespace drake {
@@ -73,7 +74,7 @@ Eigen::MatrixXd DecomposeYasXtransposeTimesX(const Eigen::Ref<const Eigen::Matri
 }
 
 std::tuple<Binding<LinearConstraint>, Binding<RotatedLorentzConeConstraint>,
-           Binding<RotatedLorentzConeConstraint>>
+           Binding<RotatedLorentzConeConstraint>, VectorDecisionVariable<2>>
 RelaxNonConvexQuadraticInequalityConstraintInTrustRegion(
     MathematicalProgram* prog,
     const Eigen::Ref<const VectorXDecisionVariable>& x,
@@ -115,7 +116,7 @@ RelaxNonConvexQuadraticInequalityConstraintInTrustRegion(
   Binding<RotatedLorentzConeConstraint> lorentz_cone_constraint2 =
       prog->AddRotatedLorentzConeConstraint(lorentz_cone_expr2);
   return std::make_tuple(linear_constraint, lorentz_cone_constraint1,
-                         lorentz_cone_constraint2);
+                         lorentz_cone_constraint2, z);
 }
 }  // namespace solvers
 }  // namespace drake

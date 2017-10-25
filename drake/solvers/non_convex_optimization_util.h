@@ -102,17 +102,18 @@ DecomposeNonConvexQuadraticForm(const Eigen::Ref<const Eigen::MatrixXd>& Q);
  * @param trust_region_gap The user-specified positive scalar, `d` in
  * the documentation above. This gap determines both the maximal constraint
  * violation, together with the size of the trust region.
- * @retval <linear_constraint, rotated_lorentz_cone1, rotated_lorentz_cone>
+ * @retval <linear_constraint, rotated_lorentz_cone1, rotated_lorentz_cone, z>
  * linear_constraint includes (1)(6)(7)
  * rotated_lorentz_cone1 is (2)
  * rotated_lorentz_cone2 is (3)
+ * z is the newly added variable.
  * @pre 1. Q1, Q2 are positive semidefinite.
  *      2. d is positive.
  *      3. Q1, Q2, p, x, x₀ are all of the consistent size.
  *      4. lower_bound <= upper_bound.
  */
 std::tuple<Binding<LinearConstraint>, Binding<RotatedLorentzConeConstraint>,
-           Binding<RotatedLorentzConeConstraint>>
+           Binding<RotatedLorentzConeConstraint>, VectorDecisionVariable<2>>
 RelaxNonConvexQuadraticInequalityConstraintInTrustRegion(
     MathematicalProgram* prog,
     const Eigen::Ref<const VectorXDecisionVariable>& x,
