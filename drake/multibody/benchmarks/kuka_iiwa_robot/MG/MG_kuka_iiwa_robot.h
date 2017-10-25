@@ -7,6 +7,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/MG/MG_kuka_iiwa_robot_auto_generated.h"
 #include "drake/multibody/multibody_tree/math/spatial_force.h"
+#include "drake/multibody/multibody_tree/test_utilities/spatial_kinematics.h"
 
 namespace drake {
 namespace multibody {
@@ -16,6 +17,7 @@ namespace MG {
 
 using Eigen::Vector3d;
 using Eigen::Matrix3d;
+using multibody_tree::test_utilities::SpatialKinematicsPVA;
 using SpatialForced = SpatialForce<double>;
 using Vector7d = Eigen::Matrix<double, 7, 1>;
 
@@ -56,9 +58,14 @@ class MGKukaIIwaRobot {
   /// Constructs an object that serves as Drake's interface to a Motion Genesis
   /// model of the aforementioned KUKA robot.  All model parameters are from:
   /// drake/multibody/benchmarks/kuka_iiwa_robot/kuka_iiwa_robot.urdf
-  MGKukaIIwaRobot() {
+  /// @param[in] gravity Earth's gravitational acceleration in m/s².  The world
+  /// z-unit vector is vertically upward.  If a gravity value of 9.8 is passed
+  /// to this constructor, it means the gravity vector is directed opposite the
+  /// world upward z-unit vector (which is correct -- gravity is downward).
+  explicit MGKukaIIwaRobot(double gravity) {
     static_assert(std::is_same<T, double>::value,
                   "This class only supports T = double.");
+    set_gravity(gravity);
   }
 
   /// This method calculates kinematic properties of the robot's end-effector
@@ -69,8 +76,6 @@ class MGKukaIIwaRobot {
   /// @param[in] qDDt 2nd-time-derivatives of q (q̈).
   ///
   /// @returns Machine-precision values as defined below.
-  ///
-  /// std::tuple | Description
   /// -----------|-------------------------------------------------
   /// R_NG       | Rotation matrix relating Nx, Ny, Nz to Gx, Gy, Gz.
   /// p_NoGo_N   | Go's position from No, expressed in N.
@@ -78,8 +83,8 @@ class MGKukaIIwaRobot {
   /// v_NGo_N    | Go's velocity in N, expressed in N.
   /// alpha_NG_N | G's angular acceleration in N, expressed in N.
   /// a_NGo_N    | Go's acceleration in N, expressed in N.
-  std::tuple<Matrix3d, Vector3d, Vector3d, Vector3d, Vector3d, Vector3d>
-  CalcEndEffectorKinematics(const Eigen::Ref<const VectorX<T>>& q,
+  SpatialKinematicsPVA<T> CalcEndEffectorKinematics(
+                            const Eigen::Ref<const VectorX<T>>& q,
                             const Eigen::Ref<const VectorX<T>>& qDt,
                             const Eigen::Ref<const VectorX<T>>& qDDt) const;
 
@@ -126,7 +131,25 @@ class MGKukaIIwaRobot {
   /// F_Go_Fg    | Spatial force on Go from F, expressed in frame Fg.
   std::tuple<SpatialForced, SpatialForced, SpatialForced, SpatialForced,
              SpatialForced, SpatialForced, SpatialForced>
-  CalcJointReactionForces(const Eigen::Ref<const VectorX<T>>& q,
+  CalcJointReactionForcesExpressedInMobilizer(
+                          const Eigen::Ref<const VectorX<T>>& q,
+                          const Eigen::Ref<const VectorX<T>>& qDt,
+                          const Eigen::Ref<const VectorX<T>>& qDDt) const;
+
+  /// @see CalcJointReactionForcesExpressedInMobilizerFrame.
+  /// @returns Machine-precision values as defined below.
+  /// --------|-------------------------------------------------
+  /// F_Ao_W  | Spatial force on Ao from N, expressed in world frame W.
+  /// F_Bo_W  | Spatial force on Bo from A, expressed in world frame W.
+  /// F_Co_W  | Spatial force on Co from B, expressed in world frame W.
+  /// F_Do_W  | Spatial force on Do from C, expressed in world frame W.
+  /// F_Eo_W  | Spatial force on Eo from D, expressed in world frame W.
+  /// F_Fo_W  | Spatial force on Fo from E, expressed in world frame W.
+  /// F_Go_W  | Spatial force on Go from F, expressed in world frame W.
+  std::tuple<SpatialForced, SpatialForced, SpatialForced, SpatialForced,
+             SpatialForced, SpatialForced, SpatialForced>
+  CalcJointReactionForcesExpressedInWorld(
+                          const Eigen::Ref<const VectorX<T>>& q,
                           const Eigen::Ref<const VectorX<T>>& qDt,
                           const Eigen::Ref<const VectorX<T>>& qDDt) const;
 
@@ -152,12 +175,12 @@ class MGKukaIIwaRobot {
                             const Eigen::Ref<const VectorX<T>>& qDt,
                             const Eigen::Ref<const VectorX<T>>& qDDt) const;
 
-  /// This method sets Earth's uniform gravitational acceleration ("little g")
-  /// At construction, little g is initialized to 0.0 m/s² (not 9.81 m/s²).
-  /// Right-handed orthogonal unit vectors Nx, Ny, Nz are fixed in N (Earth)
-  /// with Nz vertically upward.  Hence gravity acts in the -Nz direction.
-  /// @param[in] g Earth (or celestial body) gravitational acceleration in m/s².
-  void set_gravity(double g) { MG_kuka_auto_generated_.g = g; }
+  /// This method sets Earth's (or astronomical body's) uniform gravitational
+  /// acceleration ("little g").  By default, little g is initialized to
+  /// 0.0 m/s² (not 9.81 m/s²).  Right-handed orthogonal unit vectors Nx, Ny, Nz
+  /// are fixed in N (Earth) with Nz vertically upward (so gravity is in -Nz).
+  /// @param[in] gravity Earth's gravitational acceleration in m/s².
+  void set_gravity(double gravity) { MG_kuka_auto_generated_.g = gravity; }
 
   /** @name Methods for returning mass
    *  These methods return the mass of robot links A, B, C, D, E, F, G (in kg).
