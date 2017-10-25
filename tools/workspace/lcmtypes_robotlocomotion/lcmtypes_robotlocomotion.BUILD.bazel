@@ -52,9 +52,11 @@ lcm_py_library(
 CMAKE_PACKAGE = "robotlocomotion-lcmtypes"
 
 cmake_config(
-    package = CMAKE_PACKAGE,
     cps_file_name = "@drake//tools/workspace/{}:{}.cps".format(
-        "lcmtypes_robotlocomotion", CMAKE_PACKAGE),
+        "lcmtypes_robotlocomotion",
+        CMAKE_PACKAGE,
+    ),
+    package = CMAKE_PACKAGE,
 )
 
 install_cmake_config(
