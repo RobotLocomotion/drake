@@ -80,10 +80,10 @@ class TestSystem : public LeafSystem<T> {
 
   void SetDefaultParameters(const Context<T>& context,
                             Parameters<T>* params) const override {
-    BasicVector<T>* param = params->get_mutable_numeric_parameter(0);
+    BasicVector<T>& param = params->get_mutable_numeric_parameter(0);
     Vector2<T> p0;
     p0 << 13.0, 7.0;
-    param->SetFromVector(p0);
+    param.SetFromVector(p0);
   }
 
   const BasicVector<T>& GetVanillaNumericParameters(
@@ -91,7 +91,7 @@ class TestSystem : public LeafSystem<T> {
     return this->GetNumericParameter(context, 0 /* index */);
   }
 
-  BasicVector<T>* GetVanillaMutableNumericParameters(
+  BasicVector<T>& GetVanillaMutableNumericParameters(
       Context<T>* context) const {
     return this->GetMutableNumericParameter(context, 0 /* index */);
   }
@@ -319,9 +319,9 @@ TEST_F(LeafSystemTest, Parameters) {
       system_.GetVanillaNumericParameters(*context);
   EXPECT_EQ(13.0, vec[0]);
   EXPECT_EQ(7.0, vec[1]);
-  BasicVector<double>* mutable_vec =
+  BasicVector<double>& mutable_vec =
       system_.GetVanillaMutableNumericParameters(context.get());
-  mutable_vec->SetAtIndex(1, 42.0);
+  mutable_vec.SetAtIndex(1, 42.0);
   EXPECT_EQ(42.0, vec[1]);
 }
 
@@ -627,12 +627,12 @@ GTEST_TEST(ModelLeafSystemTest, ModelNumericParams) {
   DeclaredModelPortsSystem dut;
   auto context = dut.CreateDefaultContext();
   ASSERT_EQ(context->num_numeric_parameters(), 1);
-  const BasicVector<double>* const param = context->get_numeric_parameter(0);
+  const BasicVector<double>& param = context->get_numeric_parameter(0);
   // Check that type was preserved.
-  ASSERT_NE(nullptr, dynamic_cast<const MyVector2d*>(param));
-  EXPECT_EQ(2, param->size());
-  EXPECT_EQ(1.1, param->GetAtIndex(0));
-  EXPECT_EQ(2.2, param->GetAtIndex(1));
+  ASSERT_TRUE(is_dynamic_castable<const MyVector2d>(&param));
+  EXPECT_EQ(2, param.size());
+  EXPECT_EQ(1.1, param.GetAtIndex(0));
+  EXPECT_EQ(2.2, param.GetAtIndex(1));
 }
 
 // Tests that DeclareAbstractState works expectedly.
@@ -1545,7 +1545,7 @@ GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   auto context = dut.CreateDefaultContext();
 
   // `param0[0] >= 11.0` with `param0[0] == 1.0` produces `-10.0 >= 0.0`.
-  context->get_mutable_numeric_parameter(0)->SetAtIndex(0, 1.0);
+  context->get_mutable_numeric_parameter(0).SetAtIndex(0, 1.0);
   Eigen::VectorXd value0;
   constraint0.Calc(*context, &value0);
   EXPECT_TRUE(CompareMatrices(value0, Vector1<double>::Constant(-10.0)));
@@ -1592,9 +1592,9 @@ class RandomContextTestSystem : public LeafSystem<double> {
                            Parameters<double>* params,
                            RandomGenerator* generator) const override {
     std::uniform_real_distribution<double> uniform;
-    for (int i = 0; i < context.get_numeric_parameter(0)->size(); i++) {
-      params->get_mutable_numeric_parameter(0)->SetAtIndex(i,
-                                                           uniform(*generator));
+    for (int i = 0; i < context.get_numeric_parameter(0).size(); i++) {
+      params->get_mutable_numeric_parameter(0).SetAtIndex(i,
+                                                          uniform(*generator));
     }
   }
 };
@@ -1606,7 +1606,7 @@ GTEST_TEST(RandomContextTest, SetRandomTest) {
 
   // Back-up the numeric context values.
   Eigen::Vector2d state = context->get_continuous_state_vector().CopyToVector();
-  Eigen::Vector3d params = context->get_numeric_parameter(0)->CopyToVector();
+  Eigen::Vector3d params = context->get_numeric_parameter(0).CopyToVector();
 
   // Should return the (same) original values.
   system.SetDefaultContext(context.get());
@@ -1614,7 +1614,7 @@ GTEST_TEST(RandomContextTest, SetRandomTest) {
                context->get_continuous_state_vector().CopyToVector().array())
                   .all());
   EXPECT_TRUE(
-      (params.array() == context->get_numeric_parameter(0)->get_value().array())
+      (params.array() == context->get_numeric_parameter(0).get_value().array())
           .all());
 
   RandomGenerator generator;
@@ -1625,12 +1625,12 @@ GTEST_TEST(RandomContextTest, SetRandomTest) {
                context->get_continuous_state_vector().CopyToVector().array())
                   .all());
   EXPECT_TRUE(
-      (params.array() != context->get_numeric_parameter(0)->get_value().array())
+      (params.array() != context->get_numeric_parameter(0).get_value().array())
           .all());
 
   // Update backup.
   state = context->get_continuous_state_vector().CopyToVector();
-  params = context->get_numeric_parameter(0)->CopyToVector();
+  params = context->get_numeric_parameter(0).CopyToVector();
 
   // Should return different values (again).
   system.SetRandomContext(context.get(), &generator);
@@ -1638,7 +1638,7 @@ GTEST_TEST(RandomContextTest, SetRandomTest) {
                context->get_continuous_state_vector().CopyToVector().array())
                   .all());
   EXPECT_TRUE(
-      (params.array() != context->get_numeric_parameter(0)->get_value().array())
+      (params.array() != context->get_numeric_parameter(0).get_value().array())
           .all());
 }
 

@@ -135,7 +135,7 @@ class VectorSystem : public LeafSystem<T> {
       state_vector = dynamic_cast<const BasicVector<T>*>(&vector_base);
     } else {
       DRAKE_ASSERT(context.has_only_discrete_state());
-      state_vector = context.get_discrete_state(0);
+      state_vector = &context.get_discrete_state(0);
     }
     DRAKE_DEMAND(state_vector != nullptr);
     return state_vector->get_value();
@@ -186,18 +186,16 @@ class VectorSystem : public LeafSystem<T> {
 
     // Obtain the block form of xd before the update (i.e., the prior state).
     DRAKE_ASSERT(context.has_only_discrete_state());
-    const BasicVector<T>* const state_vector = context.get_discrete_state(0);
-    DRAKE_ASSERT(state_vector != nullptr);
+    const BasicVector<T>& state_vector = context.get_discrete_state(0);
     const Eigen::VectorBlock<const VectorX<T>> state_block =
-        state_vector->get_value();
+        state_vector.get_value();
 
     // Obtain the block form of xd after the update (i.e., the next state).
     DRAKE_ASSERT(discrete_state != nullptr);
-    BasicVector<T>* const discrete_update_vector =
+    BasicVector<T>& discrete_update_vector =
         discrete_state->get_mutable_vector();
-    DRAKE_ASSERT(discrete_update_vector != nullptr);
     Eigen::VectorBlock<VectorX<T>> discrete_update_block =
-        discrete_update_vector->get_mutable_value();
+        discrete_update_vector.get_mutable_value();
 
     // Delegate to subclass.
     DoCalcVectorDiscreteVariableUpdates(context, input_block, state_block,

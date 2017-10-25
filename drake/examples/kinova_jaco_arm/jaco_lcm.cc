@@ -43,7 +43,7 @@ void JacoCommandReceiver::set_initial_position(
     Context<double>* context,
     const Eigen::Ref<const VectorX<double>> x) const {
   auto state_value =
-      context->get_mutable_discrete_state(0)->get_mutable_value();
+      context->get_mutable_discrete_state(0).get_mutable_value();
   DRAKE_ASSERT(x.size() == num_joints_ + num_fingers_);
   state_value.head(num_joints_ + num_fingers_) = x;
   state_value.tail(num_joints_ + num_fingers_) =
@@ -60,8 +60,8 @@ void JacoCommandReceiver::DoCalcDiscreteVariableUpdates(
 
   // If we're using a default constructed message (haven't received
   // a command yet), keep using the initial state.
-  BasicVector<double>* state = discrete_state->get_mutable_vector(0);
-  auto state_value = state->get_mutable_value();
+  BasicVector<double>& state = discrete_state->get_mutable_vector(0);
+  auto state_value = state.get_mutable_value();
   auto velocities = state_value.tail(num_joints_ + num_fingers_);
 
   DRAKE_DEMAND(command.num_joints == 0 || command.num_joints == num_joints_);
@@ -84,7 +84,7 @@ void JacoCommandReceiver::OutputCommand(const Context<double>& context,
                                         BasicVector<double>* output) const {
   Eigen::VectorBlock<VectorX<double>> output_vec =
       output->get_mutable_value();
-  output_vec = context.get_discrete_state(0)->get_value();
+  output_vec = context.get_discrete_state(0).get_value();
 }
 
 JacoCommandSender::JacoCommandSender(int num_joints, int num_fingers)
@@ -141,8 +141,8 @@ void JacoStatusReceiver::DoCalcDiscreteVariableUpdates(
   DRAKE_ASSERT(input != nullptr);
   const auto& status = input->GetValue<lcmt_jaco_status>();
 
-  BasicVector<double>* state = discrete_state->get_mutable_vector(0);
-  auto state_value = state->get_mutable_value();
+  BasicVector<double>& state = discrete_state->get_mutable_vector(0);
+  auto state_value = state.get_mutable_value();
   auto velocities = state_value.tail(num_joints_ + num_fingers_);
 
   DRAKE_DEMAND(status.num_joints == 0 || status.num_joints == num_joints_);
@@ -171,7 +171,7 @@ void JacoStatusReceiver::OutputStatus(const Context<double>& context,
                                       BasicVector<double>* output) const {
   Eigen::VectorBlock<VectorX<double>> output_vec =
       output->get_mutable_value();
-  output_vec = context.get_discrete_state(0)->get_value();
+  output_vec = context.get_discrete_state(0).get_value();
 }
 
 JacoStatusSender::JacoStatusSender(int num_joints, int num_fingers)
