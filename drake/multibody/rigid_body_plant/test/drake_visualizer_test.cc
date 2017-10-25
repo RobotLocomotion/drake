@@ -457,8 +457,8 @@ void PublishLoadRobotModelMessageHelper(
     const DrakeVisualizer& dut, Context<double>* context) {
   std::unique_ptr<State<double>> tmp_state = context->CloneState();
   dut.CalcDiscreteVariableUpdates(*context,
-      tmp_state->get_mutable_discrete_state());
-  context->get_mutable_state()->CopyFrom(*tmp_state);
+      &tmp_state->get_mutable_discrete_state());
+  context->get_mutable_state().CopyFrom(*tmp_state);
 }
 
 // Tests the basic functionality of the DrakeVisualizer.
@@ -512,12 +512,12 @@ GTEST_TEST(DrakeVisualizerTests, TestPublishPeriod) {
   // Prepares to integrate.
   drake::systems::Simulator<double> simulator(dut, std::move(context));
   simulator.set_publish_every_time_step(false);
-  PublishLoadRobotModelMessageHelper(dut, simulator.get_mutable_context());
+  PublishLoadRobotModelMessageHelper(dut, &simulator.get_mutable_context());
   simulator.Initialize();
 
   for (double time = 0; time < 4; time += 0.01) {
     simulator.StepTo(time);
-    EXPECT_NEAR(simulator.get_mutable_context()->get_time(), time, 1e-10);
+    EXPECT_NEAR(simulator.get_mutable_context().get_time(), time, 1e-10);
     // Note that the expected time is in milliseconds.
     const double expected_time =
         std::floor(time / kPublishPeriod) * kPublishPeriod * 1000;

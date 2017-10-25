@@ -296,7 +296,7 @@ int DoMain() {
   Simulator<double> simulator(*sys);
 
   simulator.reset_integrator<systems::RungeKutta2Integrator<double>>(
-      *sys, 1e-3, simulator.get_mutable_context());
+      *sys, 1e-3, &simulator.get_mutable_context());
 
   // TODO(rcory): Explore other integration schemes here.
 //  simulator.reset_integrator<systems::ImplicitEulerIntegrator<double>>(

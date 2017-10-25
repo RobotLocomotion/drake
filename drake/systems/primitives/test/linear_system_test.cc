@@ -28,7 +28,7 @@ class LinearSystemTest : public AffineLinearSystemTest {
     context_ = dut_->CreateDefaultContext();
     input_vector_ = make_unique<BasicVector<double>>(2 /* size */);
     system_output_ = dut_->AllocateOutput(*context_);
-    state_ = context_->get_mutable_continuous_state();
+    state_ = &context_->get_mutable_continuous_state();
     derivatives_ = dut_->AllocateTimeDerivatives();
   }
 
@@ -185,7 +185,7 @@ TEST_F(TestLinearizeFromAffine, ContinuousAtEquilibrium) {
 
   // Set x0 to the actual equilibrium point.
   const Eigen::Vector3d x0 = A_.colPivHouseholderQr().solve(-B_ * u0_ - f0_);
-  context->get_mutable_continuous_state_vector()->SetFromVector(x0);
+  context->get_mutable_continuous_state_vector().SetFromVector(x0);
 
   auto linearized_system = Linearize(*continuous_system_, *context);
 
@@ -214,7 +214,7 @@ TEST_F(TestLinearizeFromAffine, ContinuousAtEquilibrium) {
 TEST_F(TestLinearizeFromAffine, ContinuousAtNonEquilibrium) {
   auto context = continuous_system_->CreateDefaultContext();
   context->FixInputPort(0, Vector1d::Constant(u0_));
-  context->get_mutable_continuous_state_vector()->SetFromVector(x0_);
+  context->get_mutable_continuous_state_vector().SetFromVector(x0_);
 
   // This Context is not an equilibrium point.
   EXPECT_THROW(Linearize(*continuous_system_, *context), std::runtime_error);
@@ -248,7 +248,7 @@ TEST_F(TestLinearizeFromAffine, DiscreteAtEquilibrium) {
   const Eigen::Vector3d x0 =
       (eye - A_).colPivHouseholderQr().solve(B_ * u0_ + f0_);
   systems::BasicVector<double>& xd =
-      context->get_mutable_discrete_state()->get_mutable_vector();
+      context->get_mutable_discrete_state().get_mutable_vector();
   xd.SetFromVector(x0);
 
   auto linearized_system = Linearize(*discrete_system_, *context);
@@ -280,7 +280,7 @@ TEST_F(TestLinearizeFromAffine, DiscreteAtNonEquilibrium) {
   auto context = discrete_system_->CreateDefaultContext();
   context->FixInputPort(0, Vector1d::Constant(u0_));
   systems::BasicVector<double>& xd =
-      context->get_mutable_discrete_state()->get_mutable_vector();
+      context->get_mutable_discrete_state().get_mutable_vector();
   xd.SetFromVector(x0_);
 
   // This Context is not an equilibrium point.
@@ -493,11 +493,11 @@ TEST_F(LinearSystemTest, LinearizeSystemWithParameters) {
   auto input = std::make_unique<examples::pendulum::PendulumInput<double>>();
   input->set_tau(0.0);
   context->FixInputPort(0, std::move(input));
-  examples::pendulum::PendulumState<double>* state =
-      dynamic_cast<examples::pendulum::PendulumState<double>*>(
+  examples::pendulum::PendulumState<double>& state =
+      dynamic_cast<examples::pendulum::PendulumState<double>&>(
           context->get_mutable_continuous_state_vector());
-  state->set_theta(0.0);
-  state->set_thetadot(0.0);
+  state.set_theta(0.0);
+  state.set_thetadot(0.0);
 
   std::unique_ptr<LinearSystem<double>> linearized_pendulum =
       Linearize(pendulum, *context);

@@ -76,8 +76,8 @@ int do_main() {
     x0 = VectorX<double>::Random(12);
 
     simulator.get_mutable_context()
-        ->get_mutable_continuous_state_vector()
-        ->SetFromVector(x0);
+        .get_mutable_continuous_state_vector()
+        .SetFromVector(x0);
 
     simulator.Initialize();
     simulator.set_target_realtime_rate(FLAGS_simulation_real_time_rate);
@@ -85,8 +85,8 @@ int do_main() {
 
     // Goal state verification.
     const Context<double>& context = simulator.get_context();
-    const ContinuousState<double>* state = context.get_continuous_state();
-    const VectorX<double>& position_vector = state->CopyToVector();
+    const ContinuousState<double>& state = context.get_continuous_state();
+    const VectorX<double>& position_vector = state.CopyToVector();
 
     if (!is_approx_equal_abstol(
         position_vector, kNominalState, 1e-4)) {

@@ -42,7 +42,7 @@ void controller_loop() {
   const systems::AbstractValue& first_msg = loop.WaitForMessage();
   double msg_time =
       loop.get_message_to_time_converter().GetTimeInSeconds(first_msg);
-  loop.get_mutable_context()->set_time(msg_time);
+  loop.get_mutable_context().set_time(msg_time);
 
   // Decodes the message into q and v.
   const bot_core::robot_state_t& raw_msg =
@@ -65,8 +65,8 @@ void controller_loop() {
   // Sets plan eval's desired to the measured state.
   systems::Context<double>& plan_eval_context =
       valkyrie_controller.GetMutableSubsystemContext(
-          *plan_eval, loop.get_mutable_context());
-  plan_eval->Initialize(robot_status, plan_eval_context.get_mutable_state());
+          *plan_eval, &loop.get_mutable_context());
+  plan_eval->Initialize(robot_status, &plan_eval_context.get_mutable_state());
 
   // Starts the loop.
   loop.RunToSecondsAssumingInitialized();

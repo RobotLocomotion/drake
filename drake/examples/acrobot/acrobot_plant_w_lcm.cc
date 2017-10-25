@@ -83,9 +83,9 @@ int DoMain() {
   // Sets an initial condition near the stable fixed point.
   systems::Context<double>& acrobot_context =
       diagram->GetMutableSubsystemContext(*acrobot,
-                                          simulator.get_mutable_context());
+                                          &simulator.get_mutable_context());
   AcrobotStateVector<double>* x0 = dynamic_cast<AcrobotStateVector<double>*>(
-      acrobot_context.get_mutable_continuous_state_vector());
+      &acrobot_context.get_mutable_continuous_state_vector());
   DRAKE_DEMAND(x0 != nullptr);
   x0->set_theta1(0.1);
   x0->set_theta2(0.1);

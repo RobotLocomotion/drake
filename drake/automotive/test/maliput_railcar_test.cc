@@ -192,7 +192,7 @@ class MaliputRailcarTest : public ::testing::Test {
 
   MaliputRailcarState<double>* continuous_state() {
     auto result = dynamic_cast<MaliputRailcarState<double>*>(
-        context_->get_mutable_continuous_state_vector());
+        &context_->get_mutable_continuous_state_vector());
     if (result == nullptr) { throw std::bad_cast(); }
     return result;
   }
@@ -293,7 +293,7 @@ class MaliputRailcarTest : public ::testing::Test {
     std::unique_ptr<BasicVector<double>> prior_velocity =
         velocity_output()->Clone();
 
-    dut_->CalcUnrestrictedUpdate(*context_, context_->get_mutable_state());
+    dut_->CalcUnrestrictedUpdate(*context_, &context_->get_mutable_state());
 
     if (flip_curve_lane) {
       EXPECT_EQ(continuous_state()->s(), curved_lane->length());
@@ -312,7 +312,8 @@ class MaliputRailcarTest : public ::testing::Test {
     dut_->CalcTimeDerivatives(*context_, derivatives_.get());
     const MaliputRailcarState<double>* const railcar_derivatives =
       dynamic_cast<const MaliputRailcarState<double>*>(
-          derivatives_->get_mutable_vector());
+          &derivatives_->get_mutable_vector());
+    ASSERT_NE(nullptr, railcar_derivatives);
     if (flip_curve_lane) {
       EXPECT_LT(railcar_derivatives->s(), -kForwardSpeed);
     } else {
@@ -544,7 +545,7 @@ TEST_F(MaliputRailcarTest, DerivativesDragway) {
   // Grabs a pointer to where the EvalTimeDerivatives results end up.
   const MaliputRailcarState<double>* const result =
       dynamic_cast<const MaliputRailcarState<double>*>(
-          derivatives_->get_mutable_vector());
+          &derivatives_->get_mutable_vector());
   ASSERT_NE(nullptr, result);
 
   // Sets the input command.
@@ -606,7 +607,7 @@ TEST_F(MaliputRailcarTest, DerivativesMonolane) {
   // Grabs a pointer to where the EvalTimeDerivatives results end up.
   const MaliputRailcarState<double>* const result =
       dynamic_cast<const MaliputRailcarState<double>*>(
-          derivatives_->get_mutable_vector());
+          &derivatives_->get_mutable_vector());
   ASSERT_NE(nullptr, result);
 
   // Sets the input command.
@@ -636,7 +637,7 @@ TEST_F(MaliputRailcarTest, InputPortNotConnected) {
   // Grabs a pointer to where the EvalTimeDerivatives results end up.
   const MaliputRailcarState<double>* const result =
       dynamic_cast<const MaliputRailcarState<double>*>(
-          derivatives_->get_mutable_vector());
+          &derivatives_->get_mutable_vector());
   ASSERT_NE(nullptr, result);
 
   ASSERT_NO_FATAL_FAILURE(
@@ -668,7 +669,7 @@ TEST_F(MaliputRailcarTest, DecreasingSDragway) {
   // Grabs a pointer to where the EvalTimeDerivatives results end up.
   const MaliputRailcarState<double>* const result =
       dynamic_cast<const MaliputRailcarState<double>*>(
-          derivatives_->get_mutable_vector());
+          &derivatives_->get_mutable_vector());
   ASSERT_NE(nullptr, result);
 
   // Sets the input command.
@@ -1003,12 +1004,12 @@ TEST_F(MaliputRailcarTest, TestStopConditions) {
   continuous_state()->set_speed(kSpeed);
   lane_direction().lane = straight_lane;
   lane_direction().with_s = true;
-  dut_->CalcUnrestrictedUpdate(*context_, context_->get_mutable_state());
+  dut_->CalcUnrestrictedUpdate(*context_, &context_->get_mutable_state());
   EXPECT_EQ(continuous_state()->speed(), kSpeed);
   continuous_state()->set_s(-1e-10);
   lane_direction().lane = straight_lane;
   lane_direction().with_s = false;
-  dut_->CalcUnrestrictedUpdate(*context_, context_->get_mutable_state());
+  dut_->CalcUnrestrictedUpdate(*context_, &context_->get_mutable_state());
   EXPECT_EQ(continuous_state()->speed(), 0);
 
   // Verifies that the car does not stop when it is on the straight lane and is
@@ -1031,7 +1032,7 @@ TEST_F(MaliputRailcarTest, TestStopConditions) {
       for (const auto r : std::list<double>{-1, 0, 1}) {
         params.set_r(r);
         SetParams(params);
-        dut_->CalcUnrestrictedUpdate(*context_, context_->get_mutable_state());
+        dut_->CalcUnrestrictedUpdate(*context_, &context_->get_mutable_state());
         EXPECT_EQ(continuous_state()->speed(), kSpeed);
       }
     }
@@ -1056,7 +1057,7 @@ TEST_F(MaliputRailcarTest, TestStopConditions) {
       for (const auto r : std::list<double>{-1, 0, 1}) {
         params.set_r(r);
         SetParams(params);
-        dut_->CalcUnrestrictedUpdate(*context_, context_->get_mutable_state());
+        dut_->CalcUnrestrictedUpdate(*context_, &context_->get_mutable_state());
         EXPECT_EQ(continuous_state()->speed(), kSpeed);
       }
     }
@@ -1069,11 +1070,11 @@ TEST_F(MaliputRailcarTest, TestStopConditions) {
   continuous_state()->set_speed(kSpeed);
   lane_direction().lane = curved_lane;
   lane_direction().with_s = false;
-  dut_->CalcUnrestrictedUpdate(*context_, context_->get_mutable_state());
+  dut_->CalcUnrestrictedUpdate(*context_, &context_->get_mutable_state());
   EXPECT_EQ(continuous_state()->speed(), kSpeed);
   lane_direction().lane = curved_lane;
   lane_direction().with_s = true;
-  dut_->CalcUnrestrictedUpdate(*context_, context_->get_mutable_state());
+  dut_->CalcUnrestrictedUpdate(*context_, &context_->get_mutable_state());
   EXPECT_EQ(continuous_state()->speed(), 0);
 }
 

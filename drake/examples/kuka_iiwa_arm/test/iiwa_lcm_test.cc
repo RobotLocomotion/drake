@@ -57,7 +57,7 @@ GTEST_TEST(IiwaLcmTest, IiwaCommandReceiverTest) {
 
   std::unique_ptr<systems::DiscreteValues<double>> update =
       dut.AllocateDiscreteVariables();
-  update->SetFrom(*context->get_mutable_discrete_state());
+  update->SetFrom(context->get_mutable_discrete_state());
   dut.CalcDiscreteVariableUpdates(*context, update.get());
   context->set_discrete_state(std::move(update));
 
@@ -135,7 +135,7 @@ GTEST_TEST(IiwaLcmTest, IiwaStatusReceiverTest) {
 
   std::unique_ptr<systems::DiscreteValues<double>> update =
       dut.AllocateDiscreteVariables();
-  update->SetFrom(*context->get_mutable_discrete_state());
+  update->SetFrom(context->get_mutable_discrete_state());
   dut.CalcDiscreteVariableUpdates(*context, update.get());
   context->set_discrete_state(std::move(update));
 

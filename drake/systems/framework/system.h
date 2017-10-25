@@ -176,13 +176,13 @@ class System {
   void SetDefaultContext(Context<T>* context) const {
     // Set the default state, checking that the number of state variables does
     // not change.
-    const int n_xc = context->get_continuous_state()->size();
+    const int n_xc = context->get_continuous_state().size();
     const int n_xd = context->get_num_discrete_state_groups();
     const int n_xa = context->get_num_abstract_state_groups();
 
-    SetDefaultState(*context, context->get_mutable_state());
+    SetDefaultState(*context, &context->get_mutable_state());
 
-    DRAKE_DEMAND(n_xc == context->get_continuous_state()->size());
+    DRAKE_DEMAND(n_xc == context->get_continuous_state().size());
     DRAKE_DEMAND(n_xd == context->get_num_discrete_state_groups());
     DRAKE_DEMAND(n_xa == context->get_num_abstract_state_groups());
 
@@ -233,13 +233,13 @@ class System {
   void SetRandomContext(Context<T>* context, RandomGenerator* generator) const {
     // Set the default state, checking that the number of state variables does
     // not change.
-    const int n_xc = context->get_continuous_state()->size();
+    const int n_xc = context->get_continuous_state().size();
     const int n_xd = context->get_num_discrete_state_groups();
     const int n_xa = context->get_num_abstract_state_groups();
 
-    SetRandomState(*context, context->get_mutable_state(), generator);
+    SetRandomState(*context, &context->get_mutable_state(), generator);
 
-    DRAKE_DEMAND(n_xc == context->get_continuous_state()->size());
+    DRAKE_DEMAND(n_xc == context->get_continuous_state().size());
     DRAKE_DEMAND(n_xd == context->get_num_discrete_state_groups());
     DRAKE_DEMAND(n_xa == context->get_num_abstract_state_groups());
 
@@ -495,7 +495,7 @@ class System {
     DRAKE_ASSERT(J.rows() == get_num_constraint_equations(context));
     DRAKE_ASSERT(
         J.cols() ==
-        context.get_continuous_state()->get_generalized_velocity().size());
+        context.get_continuous_state().get_generalized_velocity().size());
     return DoCalcVelocityChangeFromConstraintImpulses(context, J, lambda);
   }
 
@@ -586,9 +586,9 @@ class System {
       const EventCollection<UnrestrictedUpdateEvent<T>>& events,
       State<T>* state) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
-    const int continuous_state_dim = state->get_continuous_state()->size();
-    const int discrete_state_dim = state->get_discrete_state()->num_groups();
-    const int abstract_state_dim = state->get_abstract_state()->size();
+    const int continuous_state_dim = state->get_continuous_state().size();
+    const int discrete_state_dim = state->get_discrete_state().num_groups();
+    const int abstract_state_dim = state->get_abstract_state().size();
 
     // Copy current state to the passed-in state, as specified in the
     // documentation for DoCalcUnrestrictedUpdate().
@@ -596,9 +596,9 @@ class System {
 
     DispatchUnrestrictedUpdateHandler(context, events, state);
 
-    if (continuous_state_dim != state->get_continuous_state()->size() ||
-        discrete_state_dim != state->get_discrete_state()->num_groups() ||
-        abstract_state_dim != state->get_abstract_state()->size())
+    if (continuous_state_dim != state->get_continuous_state().size() ||
+        discrete_state_dim != state->get_discrete_state().num_groups() ||
+        abstract_state_dim != state->get_abstract_state().size())
       throw std::logic_error(
           "State variable dimensions cannot be changed "
           "in CalcUnrestrictedUpdate().");
@@ -1072,8 +1072,7 @@ class System {
 
   /// Returns a copy of the continuous state vector `xc` into an Eigen vector.
   VectorX<T> CopyContinuousStateVector(const Context<T>& context) const {
-    DRAKE_ASSERT(context.get_continuous_state() != nullptr);
-    return context.get_continuous_state()->CopyToVector();
+    return context.get_continuous_state().CopyToVector();
   }
 
   /// Declares that `parent` is the immediately enclosing Diagram. The
@@ -1759,7 +1758,7 @@ class System {
       const Eigen::VectorXd& lambda) const {
     unused(J, lambda);
     DRAKE_DEMAND(get_num_constraint_equations(context) == 0);
-    const auto& gv = context.get_continuous_state()->get_generalized_velocity();
+    const auto& gv = context.get_continuous_state().get_generalized_velocity();
     return Eigen::VectorXd::Zero(gv.size());
   }
 

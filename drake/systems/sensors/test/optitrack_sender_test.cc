@@ -45,7 +45,7 @@ GTEST_TEST(OptitrackSenderTest, OptitrackLCMSenderTest) {
   auto output = dut.AllocateOutput(*context);
   context->FixInputPort(0 /* input port ID*/, std::move(input));
 
-  dut.CalcUnrestrictedUpdate(*context, context->get_mutable_state());
+  dut.CalcUnrestrictedUpdate(*context, &context->get_mutable_state());
   dut.CalcOutput(*context, output.get());
   auto output_value = output->get_data(0);
 

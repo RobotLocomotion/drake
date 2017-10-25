@@ -269,8 +269,8 @@ void RigidBodyPlant<T>::set_position(Context<T>* context, int position_index,
                                                        position);
   } else {
     context->get_mutable_continuous_state()
-        ->get_mutable_generalized_position()
-        ->SetAtIndex(position_index, position);
+        .get_mutable_generalized_position()
+        .SetAtIndex(position_index, position);
   }
 }
 
@@ -283,8 +283,8 @@ void RigidBodyPlant<T>::set_velocity(Context<T>* context, int velocity_index,
         get_num_positions() + velocity_index, velocity);
   } else {
     context->get_mutable_continuous_state()
-        ->get_mutable_generalized_velocity()
-        ->SetAtIndex(velocity_index, velocity);
+        .get_mutable_generalized_velocity()
+        .SetAtIndex(velocity_index, velocity);
   }
 }
 
@@ -292,7 +292,7 @@ template <typename T>
 void RigidBodyPlant<T>::set_state_vector(
     Context<T>* context, const Eigen::Ref<const VectorX<T>> x) const {
   DRAKE_ASSERT(context != nullptr);
-  set_state_vector(context->get_mutable_state(), x);
+  set_state_vector(&context->get_mutable_state(), x);
 }
 
 template <typename T>
@@ -301,10 +301,10 @@ void RigidBodyPlant<T>::set_state_vector(
   DRAKE_ASSERT(state != nullptr);
   DRAKE_ASSERT(x.size() == get_num_states());
   if (is_state_discrete()) {
-    auto* xd = state->get_mutable_discrete_state();
-    xd->get_mutable_vector(0).SetFromVector(x);
+    auto& xd = state->get_mutable_discrete_state();
+    xd.get_mutable_vector(0).SetFromVector(x);
   } else {
-    state->get_mutable_continuous_state()->SetFromVector(x);
+    state->get_mutable_continuous_state().SetFromVector(x);
   }
 }
 
@@ -396,7 +396,7 @@ void RigidBodyPlant<T>::CopyStateToOutput(const Context<T>& context,
   // mere pointers to state variables (or cache lines).
   const VectorX<T> state_vector =
       (is_state_discrete()) ? context.get_discrete_state(0).CopyToVector()
-                            : context.get_continuous_state()->CopyToVector();
+                            : context.get_continuous_state().CopyToVector();
 
   state_output_vector->get_mutable_value() = state_vector;
 }
@@ -409,7 +409,7 @@ void RigidBodyPlant<T>::CalcInstanceOutput(
   // TODO(sherm1) Should reference state rather than copy it here.
   const VectorX<T> state_vector =
       (is_state_discrete()) ? context.get_discrete_state(0).CopyToVector()
-                            : context.get_continuous_state()->CopyToVector();
+                            : context.get_continuous_state().CopyToVector();
 
   auto values = instance_output->get_mutable_value();
   const auto& instance_positions = position_map_[instance_id];

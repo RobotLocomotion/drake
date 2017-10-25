@@ -126,7 +126,7 @@ class DrakeVisualizer : public LeafSystem<double> {
   // Set the default to "initialization phase has not been completed."
   void SetDefaultState(const Context<double>&, State<double>* state)
       const override {
-    set_is_load_message_sent(state->get_mutable_discrete_state(), false);
+    set_is_load_message_sent(&state->get_mutable_discrete_state(), false);
   }
 
   // If initialization has not been completed, schedule a DiscreteStateUpdate

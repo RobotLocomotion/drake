@@ -135,18 +135,18 @@ class SpringMassSystem : public LeafSystem<T> {
 
   /// Sets the position of the mass in the given Context.
   void set_position(Context<T>* context, const T& position) const {
-    get_mutable_state(context)->set_position(position);
+    get_mutable_state(context).set_position(position);
   }
 
   /// Sets the velocity of the mass in the given Context.
   void set_velocity(Context<T>* context, const T& velocity) const {
-    get_mutable_state(context)->set_velocity(velocity);
+    get_mutable_state(context).set_velocity(velocity);
   }
 
   /// Sets the initial value of the conservative power integral in the given
   /// Context.
   void set_conservative_work(Context<T>* context, const T& energy) const {
-    get_mutable_state(context)->set_conservative_work(energy);
+    get_mutable_state(context).set_conservative_work(energy);
   }
 
   /// Returns the force being applied by the spring to the mass in the given
@@ -261,18 +261,18 @@ class SpringMassSystem : public LeafSystem<T> {
     return dynamic_cast<const SpringMassStateVector<T>&>(cstate.get_vector());
   }
 
-  static SpringMassStateVector<T>* get_mutable_state(
+  static SpringMassStateVector<T>& get_mutable_state(
       ContinuousState<T>* cstate) {
-    return dynamic_cast<SpringMassStateVector<T>*>(
+    return dynamic_cast<SpringMassStateVector<T>&>(
         cstate->get_mutable_vector());
   }
 
   static const SpringMassStateVector<T>& get_state(const Context<T>& context) {
-    return get_state(*context.get_continuous_state());
+    return get_state(context.get_continuous_state());
   }
 
-  static SpringMassStateVector<T>* get_mutable_state(Context<T>* context) {
-    return get_mutable_state(context->get_mutable_continuous_state());
+  static SpringMassStateVector<T>& get_mutable_state(Context<T>* context) {
+    return get_mutable_state(&context->get_mutable_continuous_state());
   }
 
   const double spring_constant_N_per_m_{};

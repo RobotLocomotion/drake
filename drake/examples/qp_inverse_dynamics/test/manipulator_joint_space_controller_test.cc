@@ -134,13 +134,13 @@ class ManipulatorJointSpaceControllerTest : public ::testing::Test {
     // ManipulatorJointSpaceController.
     diagram_->CalcUnrestrictedUpdate(
         *context_, events->get_unrestricted_update_events(), state.get());
-    context_->get_mutable_state()->CopyFrom(*state);
+    context_->get_mutable_state().CopyFrom(*state);
 
     // Generates QpOuput from the inverse dynamics block within
     // ManipulatorJointSpaceController.
     diagram_->CalcUnrestrictedUpdate(
          *context_, events->get_unrestricted_update_events(), state.get());
-    context_->get_mutable_state()->CopyFrom(*state);
+    context_->get_mutable_state().CopyFrom(*state);
 
     // Gets output.
     diagram_->CalcOutput(*context_, output_.get());

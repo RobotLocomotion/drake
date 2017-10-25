@@ -39,7 +39,7 @@ void CheckStatistics(
 
   systems::Simulator<double> simulator(*diagram);
   BasicVector<double>& state =
-      simulator.get_mutable_context()->get_mutable_discrete_state(0);
+      simulator.get_mutable_context().get_mutable_discrete_state(0);
   for (int i = 0; i < state.size(); i++) {
     state.SetAtIndex(i, 0.0);
   }

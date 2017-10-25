@@ -76,7 +76,7 @@ std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
 
   DRAKE_DEMAND(system.get_num_input_ports() == 1);
   const int num_inputs = system.get_input_port(0).size(),
-            num_states = context.get_continuous_state()->size();
+            num_states = context.get_continuous_state().size();
   DRAKE_DEMAND(num_states > 0);
   DRAKE_DEMAND(context.has_only_continuous_state());
   // TODO(russt): Confirm behavior if Q is not PSD.

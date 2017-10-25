@@ -129,15 +129,15 @@ int DoMain() {
   for (int i = 0; i < kNumJoints; i++)
     q0[i] = first_status.joint_position_measured[i];
 
-  systems::Context<double>* diagram_context = loop.get_mutable_context();
+  systems::Context<double>& diagram_context = loop.get_mutable_context();
   systems::Context<double>& status_sub_context =
-      diagram->GetMutableSubsystemContext(*status_sub, diagram_context);
+      diagram->GetMutableSubsystemContext(*status_sub, &diagram_context);
   status_sub->SetDefaultContext(&status_sub_context);
 
   // Explicit initialization.
-  diagram_context->set_time(msg_time);
+  diagram_context.set_time(msg_time);
   auto& plan_interpolator_context =
-      diagram->GetMutableSubsystemContext(*plan_interpolator, diagram_context);
+      diagram->GetMutableSubsystemContext(*plan_interpolator, &diagram_context);
   plan_interpolator->Initialize(msg_time, q0, &plan_interpolator_context);
 
   loop.RunToSecondsAssumingInitialized();

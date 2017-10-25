@@ -628,7 +628,7 @@ void Rod2D<T>::CalcImpactProblemData(
        0,     0,     J_;
 
   // Get the generalized velocity.
-  data->Mv = M * context.get_continuous_state()->get_generalized_velocity().
+  data->Mv = M * context.get_continuous_state().get_generalized_velocity().
       CopyToVector();
 
   // Set the inertia solver.
@@ -690,7 +690,7 @@ void Rod2D<T>::CopyStateOut(const systems::Context<T>& context,
   // Output port value is just the continuous or discrete state.
   const VectorX<T> state = (simulation_type_ == SimulationType::kTimeStepping)
                                ? context.get_discrete_state(0).CopyToVector()
-                               : context.get_continuous_state()->CopyToVector();
+                               : context.get_continuous_state().CopyToVector();
   state_port_value->SetFromVector(state);
 }
 
@@ -700,7 +700,7 @@ void Rod2D<T>::CopyPoseOut(
     systems::rendering::PoseVector<T>* pose_port_value) const {
   const VectorX<T> state = (simulation_type_ == SimulationType::kTimeStepping)
                                ? context.get_discrete_state(0).CopyToVector()
-                               : context.get_continuous_state()->CopyToVector();
+                               : context.get_continuous_state().CopyToVector();
   ConvertStateToPose(state, pose_port_value);
 }
 
@@ -880,24 +880,24 @@ void Rod2D<T>::HandleImpact(const systems::Context<T>& context,
   const T& thetadot = state.GetAtIndex(5);
 
   // Get the continuous state vector.
-  systems::VectorBase<T>* new_statev = new_state->
-      get_mutable_continuous_state()->get_mutable_vector();
+  systems::VectorBase<T>& new_statev = new_state->
+      get_mutable_continuous_state().get_mutable_vector();
 
   // Positional aspects of state do not change.
-  new_statev->SetAtIndex(0, x);
-  new_statev->SetAtIndex(1, y);
-  new_statev->SetAtIndex(2, theta);
+  new_statev.SetAtIndex(0, x);
+  new_statev.SetAtIndex(1, y);
+  new_statev.SetAtIndex(2, theta);
 
   // Copy abstract variables (mode and contact point) by default. Mode
   // may change depending on impact outcome.
-  new_state->get_mutable_abstract_state()->CopyFrom(
-      *context.get_abstract_state());
+  new_state->get_mutable_abstract_state().CopyFrom(
+      context.get_abstract_state());
 
   // If there is no impact, quit now.
   if (!IsImpacting(context)) {
-    new_statev->SetAtIndex(3, xdot);
-    new_statev->SetAtIndex(4, ydot);
-    new_statev->SetAtIndex(5, thetadot);
+    new_statev.SetAtIndex(3, xdot);
+    new_statev.SetAtIndex(4, ydot);
+    new_statev.SetAtIndex(5, thetadot);
     return;
   }
 
@@ -960,9 +960,9 @@ void Rod2D<T>::HandleImpact(const systems::Context<T>& context,
                -10*std::numeric_limits<double>::epsilon());
 
   // Update the velocity.
-  new_statev->SetAtIndex(3, xdot + delta_xdot);
-  new_statev->SetAtIndex(4, ydot + delta_ydot);
-  new_statev->SetAtIndex(5, thetadot + delta_thetadot);
+  new_statev.SetAtIndex(3, xdot + delta_xdot);
+  new_statev.SetAtIndex(4, ydot + delta_ydot);
+  new_statev.SetAtIndex(5, thetadot + delta_thetadot);
 }
 
 // Computes the impulses such that the vertical velocity at the contact point
@@ -1814,8 +1814,7 @@ void Rod2D<T>::CalcAccelerationsOneContactSliding(
   const T& thetadot = state.GetAtIndex(5);
 
   // Obtain the structure we need to write into.
-  systems::VectorBase<T>* const f = derivatives->get_mutable_vector();
-  DRAKE_ASSERT(f != nullptr);
+  systems::VectorBase<T>& f = derivatives->get_mutable_vector();
 
   // The two endpoints of the rod are located at (x,y) + R(theta)*[0,r/2] and
   // (x,y) + R(theta)*[0,-r/2], where
@@ -1860,9 +1859,9 @@ void Rod2D<T>::CalcAccelerationsOneContactSliding(
   const T zero_tol = 10 * std::numeric_limits<double>::epsilon() *
       max(T(1), thetadot) * max(T(1), thetaddot);
   if (cyddot > -zero_tol) {
-    f->SetAtIndex(3, fX / mass_);
-    f->SetAtIndex(4, fY / mass_ + g_);
-    f->SetAtIndex(5, tau / J_);
+    f.SetAtIndex(3, fX / mass_);
+    f.SetAtIndex(4, fY / mass_ + g_);
+    f.SetAtIndex(5, tau / J_);
     return;
   }
 
@@ -1910,9 +1909,9 @@ void Rod2D<T>::CalcAccelerationsOneContactSliding(
 
   // Now that normal force is computed, set the acceleration.
   const T fF = -sgn_cxdot * mu_ * fN;
-  f->SetAtIndex(3, (fF + fX) / mass_);
-  f->SetAtIndex(4, (fN + fY) / mass_ + get_gravitational_acceleration());
-  f->SetAtIndex(5, ((cx - x) * fN - (cy - y) * fF + tau) / J);
+  f.SetAtIndex(3, (fF + fX) / mass_);
+  f.SetAtIndex(4, (fN + fY) / mass_ + get_gravitational_acceleration());
+  f.SetAtIndex(5, ((cx - x) * fN - (cy - y) * fF + tau) / J);
 
   // Lines below currently unused but are occasionally helpful for
   // debugging.
@@ -1930,8 +1929,7 @@ void Rod2D<T>::CalcAccelerationsOneContactNoSliding(
   using std::abs;
 
   // Obtain the structure we need to write into.
-  systems::VectorBase<T>* const f = derivatives->get_mutable_vector();
-  DRAKE_ASSERT(f != nullptr);
+  systems::VectorBase<T>& f = derivatives->get_mutable_vector();
 
   // Get necessary state variables.
   const T& x = context.get_continuous_state_vector().GetAtIndex(0);
@@ -2019,13 +2017,13 @@ void Rod2D<T>::CalcAccelerationsOneContactNoSliding(
 
     // Pick the one that is smaller in magnitude.
     if (abs(cxddot1) < abs(cxddot2)) {
-      SetAccelerations(context, fN1, fF1, c, f);
+      SetAccelerations(context, fN1, fF1, c, &f);
     } else {
-      SetAccelerations(context, fN2, fF2, c, f);
+      SetAccelerations(context, fN2, fF2, c, &f);
     }
   } else {
     // Friction force is within the friction cone.
-    SetAccelerations(context, fN, fF, c, f);
+    SetAccelerations(context, fN, fF, c, &f);
   }
 }
 
@@ -2045,8 +2043,7 @@ void Rod2D<T>::CalcAccelerationsTwoContact(
   const T& xdot = state.GetAtIndex(3);
 
   // Obtain the structure we need to write into.
-  systems::VectorBase<T>* const f = derivatives->get_mutable_vector();
-  DRAKE_ASSERT(f != nullptr);
+  systems::VectorBase<T>& f = derivatives->get_mutable_vector();
 
   // Get the two points of contact.
   const int k = get_k(context);
@@ -2064,7 +2061,7 @@ void Rod2D<T>::CalcAccelerationsTwoContact(
     CalcTwoContactSlidingForces(context, &fN, &fF);
   }
 
-  SetAccelerations(context, fN, fF, c1, c2, f);
+  SetAccelerations(context, fN, fF, c1, c2, &f);
 }
 
 template <class T>
@@ -2104,7 +2101,7 @@ void Rod2D<T>::CalcAccelerationsCompliantContactAndBallistic(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
   // Obtain the structure we need to write into (ds=d/dt state).
-  systems::VectorBase<T>* const ds = derivatives->get_mutable_vector();
+  systems::VectorBase<T>& ds = derivatives->get_mutable_vector();
 
   // Get external applied force (a spatial force at Ro, in W).
   const auto Fext_Ro_W = ComputeExternalForces(context);
@@ -2115,9 +2112,9 @@ void Rod2D<T>::CalcAccelerationsCompliantContactAndBallistic(
 
   // Second three derivative components are acceleration due to gravity,
   // contact forces, and non-gravitational, non-contact external forces.
-  ds->SetAtIndex(3, F_Ro_W[0]/mass_);
-  ds->SetAtIndex(4, F_Ro_W[1]/mass_);
-  ds->SetAtIndex(5, F_Ro_W[2]/J_);
+  ds.SetAtIndex(3, F_Ro_W[0]/mass_);
+  ds.SetAtIndex(4, F_Ro_W[1]/mass_);
+  ds.SetAtIndex(5, F_Ro_W[2]/J_);
 }
 
 // Computes the accelerations of the rod center of mass for the case of
@@ -2127,15 +2124,15 @@ void Rod2D<T>::CalcAccelerationsBallistic(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
   // Obtain the structure we need to write into (ds=d/dt state).
-  systems::VectorBase<T>* const ds = derivatives->get_mutable_vector();
+  systems::VectorBase<T>& ds = derivatives->get_mutable_vector();
 
   const Vector3<T> fext = ComputeExternalForces(context);
 
   // Second three derivative components are acceleration due to gravity and
   // external forces.
-  ds->SetAtIndex(3, fext(0)/mass_);
-  ds->SetAtIndex(4, fext(1)/mass_);
-  ds->SetAtIndex(5, fext(2)/J_);
+  ds.SetAtIndex(3, fext(0)/mass_);
+  ds.SetAtIndex(4, fext(1)/mass_);
+  ds.SetAtIndex(5, fext(2)/J_);
 }
 
 template <typename T>
@@ -2159,12 +2156,12 @@ void Rod2D<T>::DoCalcTimeDerivatives(
   const T& thetadot = state.GetAtIndex(5);
 
   // Obtain the structure we need to write into.
-  systems::VectorBase<T>* const f = derivatives->get_mutable_vector();
+  systems::VectorBase<T>& f = derivatives->get_mutable_vector();
 
   // First three derivative components are xdot, ydot, thetadot.
-  f->SetAtIndex(0, xdot);
-  f->SetAtIndex(1, ydot);
-  f->SetAtIndex(2, thetadot);
+  f.SetAtIndex(0, xdot);
+  f.SetAtIndex(1, ydot);
+  f.SetAtIndex(2, thetadot);
 
   // Compute the velocity derivatives (accelerations).
   if (simulation_type_ == SimulationType::kCompliant) {
@@ -2234,24 +2231,24 @@ void Rod2D<T>::SetDefaultState(const systems::Context<T>&,
   const double r22 = sqrt(2) / 2;
   x0 << half_len * r22, half_len * r22, M_PI / 4.0, -1, 0, 0;  // Initial state.
   if (simulation_type_ == SimulationType::kTimeStepping) {
-    state->get_mutable_discrete_state()->get_mutable_vector(0)
+    state->get_mutable_discrete_state().get_mutable_vector(0)
         .SetFromVector(x0);
   } else {
     // Continuous variables.
-    state->get_mutable_continuous_state()->SetFromVector(x0);
+    state->get_mutable_continuous_state().SetFromVector(x0);
 
     // Set abstract variables for piecewise DAE approach.
     if (simulation_type_ == SimulationType::kPiecewiseDAE) {
       // Indicate that the rod is in the single contact sliding mode.
       state->get_mutable_abstract_state()
-          ->get_mutable_value(0)
+          .get_mutable_value(0)
           .template GetMutableValue<Rod2D<T>::Mode>() =
           Rod2D<T>::kSlidingSingleContact;
 
       // Determine and set the point of contact.
       const double theta = x0(2);
       const int k = (sin(theta) > 0) ? -1 : 1;
-      state->get_mutable_abstract_state()->get_mutable_value(1)
+      state->get_mutable_abstract_state().get_mutable_value(1)
           .template GetMutableValue<int>() = k;
     }
   }
