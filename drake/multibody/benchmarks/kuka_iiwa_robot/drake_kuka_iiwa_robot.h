@@ -171,7 +171,7 @@ class DrakeKukaIIwaRobot {
 
   /// This method gets the number of rigid bodies in this robot.
   /// @returns the number of rigid bodies in this robot.
-  int get_number_of_rigid_bodies() const  {return model_->get_num_bodies();}
+  int get_number_of_rigid_bodies() const  { return model_->get_num_bodies(); }
 
   /// This method calculates kinematic properties of the end-effector (herein
   /// denoted as rigid body G) of a 7-DOF KUKA LBR iiwa robot (14 kg payload).
@@ -373,7 +373,7 @@ class DrakeKukaIIwaRobot {
   // 0.0 m/s² (not 9.81 m/s²).  Right-handed orthogonal unit vectors Nx, Ny, Nz
   // are fixed in N (Earth) with Nz vertically upward (so gravity is in -Nz).
   // @param[in] gravity Earth's gravitational acceleration in m/s².
-  void set_gravity(double gravity) {gravity_ = gravity;}
+  void set_gravity(double gravity) { gravity_ = gravity; }
 
   // This model's MultibodyTree always has a built-in "world" body.
   // Newtonian reference frame (linkN) is the world body.
