@@ -192,6 +192,40 @@ TYPED_TEST(SpatialQuantityTest, RawDataAccessors) {
   EXPECT_EQ(V[5], const_data[5]);
 }
 
+// Tests maximum absolute difference between two spatial vectors.
+TYPED_TEST(SpatialQuantityTest, GetMaximumAbsoluteDifferences) {
+  typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
+  typedef typename TestFixture::ScalarType T;
+  const Vector3<T> wA(1, 2, -3), vA(9, 8, -7);
+  const Vector3<T> wB(4, 5, -7), vB(7, 7, -7);
+  const SpatialQuantity A(wA, vA), B(wB, vB);
+
+  T w_difference, v_difference;
+  std::tie(w_difference, v_difference) = A.GetMaximumAbsoluteDifferences(B);
+
+  // Compare actual results with expected results.
+  using std::abs;
+  const double tolerance = 8 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(abs(w_difference - 4) < tolerance);
+  EXPECT_TRUE(abs(v_difference - 2) < tolerance);
+}
+
+// Tests the comparison between two spatial vectors (with absolute tolerances).
+TYPED_TEST(SpatialQuantityTest, IsNearlyEqualWithinAbsoluteTolerance) {
+  typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
+  typedef typename TestFixture::ScalarType T;
+  const Vector3<T> wA(1, 2, -3), vA(9, 8, -7);
+  const Vector3<T> wB(4, 5, -7), vB(7, 7, -7);
+  const SpatialQuantity A(wA, vA), B(wB, vB);
+
+  const double tolerance = 8 * std::numeric_limits<double>::epsilon();
+  double w_epsilon = 4 + tolerance, v_epsilon = 2 + tolerance;
+  EXPECT_TRUE(A.IsNearlyEqualWithinAbsoluteTolerance(B, w_epsilon, v_epsilon));
+
+  w_epsilon = 4 - tolerance, v_epsilon = 2 - tolerance;
+  EXPECT_FALSE(A.IsNearlyEqualWithinAbsoluteTolerance(B, w_epsilon, v_epsilon));
+}
+
 // Tests comparison to a given precision.
 TYPED_TEST(SpatialQuantityTest, IsApprox) {
   typedef typename TestFixture::SpatialQuantityType SpatialQuantity;

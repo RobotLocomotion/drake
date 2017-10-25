@@ -1,6 +1,7 @@
 #pragma once
 
 #include <limits>
+#include <tuple>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
@@ -126,6 +127,35 @@ class SpatialVector {
   /// It is guaranteed that there will be six (6) T's densely packed at data[0],
   /// data[1], etc.
   T* mutable_data() { return V_.data(); }
+
+  /// Returns the maximum absolute values of the differences in the rotational
+  /// and translational components of `this` and `other`, as follows:
+  /// -----------------|-------------------------------------------------
+  /// w_max_difference | Maximum absolute difference in rotation components.
+  /// v_max_difference | Maximum absolute difference in translation components.
+  std::tuple<const T, const T> GetMaximumAbsoluteDifferences(
+      const SpatialQuantity& other) const {
+    const Vector3<T> w_difference = rotational() - other.rotational();
+    const Vector3<T> v_difference = translational() - other.translational();
+    const T w_max_difference = w_difference.template lpNorm<Eigen::Infinity>();
+    const T v_max_difference = v_difference.template lpNorm<Eigen::Infinity>();
+    return std::make_tuple(w_max_difference, v_max_difference);
+  }
+
+  /// Compares the rotational and translational parts of `this` and `other`
+  /// to check if they are the same to within specified absolute differences.
+  /// @returns `true` if the rotational part of`this` and `other` are equal
+  /// within @p rotational_tolerance and the translational part of `this` and
+  /// `other` are equal within @p translational_tolerance.
+  bool IsNearlyEqualWithinAbsoluteTolerance(
+      const SpatialQuantity& other, const T& rotational_epsilon,
+      const T& translational_epsilon) const {
+    T w_max_difference, v_max_difference;
+    std::tie(w_max_difference, v_max_difference) =
+        GetMaximumAbsoluteDifferences(other);
+    return w_max_difference <= rotational_epsilon &&
+           v_max_difference <= translational_epsilon;
+  }
 
   /// Compares `this` spatial vector to the provided spatial vector `other`
   /// within a specified precision.
