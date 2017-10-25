@@ -760,7 +760,7 @@ void ConstraintSolver<T>::SolveImpactProblem(
   }
   const int num_limits = problem_data.kL.size();
   const int num_eq_constraints = problem_data.kG.size();
-  const int num_generalized_velocities = problem_data.v.size();
+  const int num_generalized_velocities = problem_data.Mv.size();
 
   // Look for fast exit.
   if (num_contacts == 0 && num_limits == 0 && num_eq_constraints == 0) {
@@ -772,12 +772,15 @@ void ConstraintSolver<T>::SolveImpactProblem(
   const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
                                                    problem_data.r.end(), 0);
 
+  // Determine the pre-impact velocity.
+  const VectorX<T> v = problem_data.solve_inertia(problem_data.Mv);
+
   // If no impact and no bilateral constraints, do not apply the impact model.
   // (We avoid this calculation if there are bilateral constraints because it's
   // too hard to determine a workable tolerance at this point).
-  const VectorX<T> N_eval = problem_data.N_mult(problem_data.v) +
+  const VectorX<T> N_eval = problem_data.N_mult(v) +
       problem_data.kN;
-  const VectorX<T> L_eval = problem_data.L_mult(problem_data.v) +
+  const VectorX<T> L_eval = problem_data.L_mult(v) +
       problem_data.kL;
   if ((num_contacts == 0 || N_eval.minCoeff() >= 0) &&
       (num_limits == 0 || L_eval.minCoeff() >= 0) &&
@@ -924,25 +927,18 @@ void ConstraintSolver<T>::SolveImpactProblem(
   // Copy the problem data and then update it to account for bilateral
   // constraints.
   ConstraintVelProblemData<T> modified_problem_data(
-      problem_data.v.size() + num_eq_constraints);
+      problem_data.Mv.size() + num_eq_constraints);
   ConstraintVelProblemData<T>* data_ptr = &modified_problem_data;
   data_ptr = UpdateProblemDataForUnilateralConstraints(
       problem_data, fast_A_solve, data_ptr);
 
   // Compute a and A⁻¹a.
-  // TODO(edrumwri): Replace this nasty operation by replacing v in problem
-  // data with Mv (generalized momentum).
-  const MatrixX<T> eye = MatrixX<T>::Identity(problem_data.v.size(),
-                                              problem_data.v.size());
-  const MatrixX<T> inv_M = problem_data.solve_inertia(eye);
-  Eigen::LLT<MatrixX<T>> inv_M_llt(inv_M);
-  DRAKE_DEMAND(inv_M_llt.info() == Eigen::Success);
-  VectorX<T> Mv = inv_M_llt.solve(problem_data.v);
-  VectorX<T> a(problem_data.v.size() + num_eq_constraints);
-  a.head(problem_data.v.size()) = -Mv;
+  const VectorX<T>& Mv = problem_data.Mv;
+  VectorX<T> a(Mv.size() + num_eq_constraints);
+  a.head(Mv.size()) = -Mv;
   a.tail(num_eq_constraints) = data_ptr->kG;
   const VectorX<T> invA_a = A_solve(a);
-  const VectorX<T> trunc_neg_invA_a = -invA_a.head(problem_data.v.size());
+  const VectorX<T> trunc_neg_invA_a = -invA_a.head(Mv.size());
 
   // Set up the linear complementarity problem.
   MatrixX<T> MM;
@@ -1293,7 +1289,7 @@ void ConstraintSolver<T>::FormImpactingConstraintLCP(
   }
 
   // Alias these variables for more readable construction of MM and qq.
-  const int ngv = problem_data.v.size();  // generalized velocity dimension.
+  const int ngv = problem_data.Mv.size();  // generalized velocity dimension.
   const int nc = num_contacts;
   const int nr = num_spanning_vectors;
   const int nk = nr * 2;
