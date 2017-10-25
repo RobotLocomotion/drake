@@ -73,8 +73,8 @@ pkg_config_package(
 pkg_config_package(
     name = "systemprotobuf",
     modname = "protobuf",
-    # This is the hard-coded path to the Homebrew package on MacOS.
-    pkg_config_path = "/usr/local/Cellar/protobuf@2.6/2.6.0/lib/pkgconfig",
+    # This is the hard-coded path to the Homebrew package on macOS.
+    pkg_config_path = "/usr/local/opt/protobuf@2.6/lib/pkgconfig",
 )
 
 load("//tools/workspace/python:python.bzl", "python_repository")
