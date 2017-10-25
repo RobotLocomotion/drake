@@ -31,8 +31,8 @@ void AddObjective(MathematicalProgram* prog,
   MatrixDecisionVariable<1, 1> sigma =
       prog->NewContinuousVariables<1, 1>("sigma");
   // trace(R_errorᵀ * R_error) = sum_{i,j} R_error(i,j)²
-  prog->AddLorentzConeConstraint(sigma(0),
-                                 (R_error.transpose() * R_error).trace());
+  prog->AddLorentzConeConstraint(
+      sigma(0), (R_error.transpose() * R_error).trace(), 1E-15);
 
   // min sigma
   prog->AddCost(sigma(0));
