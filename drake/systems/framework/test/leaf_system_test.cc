@@ -629,7 +629,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelNumericParams) {
   ASSERT_EQ(context->num_numeric_parameters(), 1);
   const BasicVector<double>& param = context->get_numeric_parameter(0);
   // Check that type was preserved.
-  ASSERT_NE(nullptr, dynamic_cast<const MyVector2d*>(&param));
+  ASSERT_TRUE(is_dynamic_castable<const MyVector2d>(&param));
   EXPECT_EQ(2, param.size());
   EXPECT_EQ(1.1, param.GetAtIndex(0));
   EXPECT_EQ(2.2, param.GetAtIndex(1));
