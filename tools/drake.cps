@@ -31,6 +31,16 @@
       "Hints": ["@prefix@/lib/cmake/fmt"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
+    "ignition-math3": {
+      "Version": "3.2.0",
+      "Hints": ["@prefix@/lib/cmake/ignition-math3"],
+      "X-CMake-Find-Args": ["CONFIG"]
+    },
+    "ignition-rndf0": {
+      "Version": "0.1.5",
+      "Hints": ["@prefix@/lib/cmake/ignition-rndf0"],
+      "X-CMake-Find-Args": ["CONFIG"]
+    },
     "lcm": {
       "Version": "1.3.95",
       "Hints": ["@prefix@/lib/cmake/lcm"],
@@ -69,10 +79,19 @@
       "Hints": ["@prefix@/lib/cmake/tinyobjloader"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
+    "VTK": {
+      "Version": "8.0.1",
+      "Hints": ["@prefix@/lib/cmake/vtk-8.0"],
+      "X-CMake-Find-Args": ["CONFIG"]
+    },
     "yaml-cpp": {
       "Version": "0.5.5",
       "Hints": ["@prefix@/lib/cmake/yaml-cpp"],
       "X-CMake-Find-Args": ["CONFIG"]
+    },
+    "ZLIB": {
+      "Version": "1.2.5",
+      "X-CMake-Find-Args": ["MODULE"]
     }
   },
   "Default-Components": [":drake"],
@@ -84,19 +103,33 @@
         "@prefix@/include"
       ],
       "Compile-Features": ["c++14"],
-      "Link-Flags": ["-lz"],
+      "Link-Flags": ["-ltinyxml2"],
+      "Link-Requires": [
+        "fmt:fmt",
+        "NLopt:nlopt",
+        "SDFormat:sdformat",
+        "vtkCommonCore",
+        "vtkCommonDataModel",
+        "vtkCommonTransforms",
+        "vtkFiltersGeneral",
+        "vtkFiltersSources",
+        "vtkIOGeometry",
+        "vtkIOImage",
+        "vtkRenderingCore",
+        "vtkRenderingOpenGL2",
+        "ZLIB:ZLIB"
+      ],
       "Requires": [
         ":drake-lcmtypes-cpp",
         "bot2-core-lcmtypes:lcmtypes_bot2-core-cpp",
         "Bullet:BulletCollision",
         "Eigen3:Eigen",
         "fcl:fcl",
-        "fmt:fmt",
+        "ignition-math3:ignition-math3",
+        "ignition-rndf0:ignition-rndf0",
         "lcm:lcm",
-        "NLopt:nlopt",
         "protobuf:protobuf",
         "robotlocomotion-lcmtypes:robotlocomotion-lcmtypes-cpp",
-        "SDFormat:sdformat",
         "spdlog:spdlog",
         "stx:stx",
         "yaml-cpp:yaml-cpp"
