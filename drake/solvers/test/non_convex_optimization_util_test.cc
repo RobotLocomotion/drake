@@ -5,6 +5,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/solvers/decision_variable.h"
+#include "drake/solvers/mathematical_program.h"
 
 namespace drake {
 namespace solvers {
@@ -95,7 +96,8 @@ void CheckRelaxNonConvexQuadraticInequalityConstraintInTrustRegion(
                (x.dot(Q1 * x)).Expand());
 }
 
-GTEST_TEST(TestRelaxNonConvexQuadraticInequalityConstraintInTrustRegion, Test0) {
+GTEST_TEST(TestRelaxNonConvexQuadraticInequalityConstraintInTrustRegion,
+           Test0) {
   Eigen::Matrix2d Q1 = Eigen::Matrix2d::Identity();
   Eigen::Matrix2d Q2;
   Q2 << 1, 0.2, 0.2, 1;
@@ -107,7 +109,8 @@ GTEST_TEST(TestRelaxNonConvexQuadraticInequalityConstraintInTrustRegion, Test0) 
       Q1, Q2, p, upper_bound, linearization_point, trust_region_gap);
 }
 
-GTEST_TEST(TestRelaxNonConvexQuadraticInequalityConstraintInTrustRegion, Test1) {
+GTEST_TEST(TestRelaxNonConvexQuadraticInequalityConstraintInTrustRegion,
+           Test1) {
   Eigen::Matrix2d Q1;
   Q1 << 1, 0.2, 0.2, 2;
   Eigen::Matrix2d Q2;
@@ -118,6 +121,47 @@ GTEST_TEST(TestRelaxNonConvexQuadraticInequalityConstraintInTrustRegion, Test1) 
   double trust_region_gap{1};
   CheckRelaxNonConvexQuadraticInequalityConstraintInTrustRegion(
       Q1, Q2, p, upper_bound, linearization_point, trust_region_gap);
+}
+
+GTEST_TEST(TestRelaxNonConvexQuadraticInequalityConstraintInTrustRegion,
+           TestRuntimeError) {
+  Eigen::Matrix2d non_positive_Q;
+  non_positive_Q << 1, 1.5, 1.5, 1;
+  Eigen::Matrix2d positive_Q;
+  positive_Q << 1, 0.2, 0.2, 1;
+  EXPECT_THROW(RelaxNonConvexQuadraticInequalityConstraintInTrustRegion(
+                   non_positive_Q, positive_Q, Eigen::Vector2d(1, 0), 0.1,
+                   Eigen::Vector2d(1, 2), 1),
+               std::runtime_error);
+  EXPECT_THROW(RelaxNonConvexQuadraticInequalityConstraintInTrustRegion(
+                   positive_Q, non_positive_Q, Eigen::Vector2d(1, 0), 0.1,
+                   Eigen::Vector2d(1, 2), 1),
+               std::runtime_error);
+  EXPECT_THROW(RelaxNonConvexQuadraticInequalityConstraintInTrustRegion(
+                   positive_Q, positive_Q, Eigen::Vector2d(1, 0), 0.1,
+                   Eigen::Vector2d(1, 2), -0.1),
+               std::runtime_error);
+}
+
+GTEST_TEST(TestRelaxNonConvexQuadraticInequalityConstraintInTrustRegion, SolveProblem0) {
+  // For a feasibility problem
+  // find x, s.t x(0)² - x(1)² <= 2
+  // We linearize it about x = (2, 1). If we set the violation to 0.5, within
+  // the trust region 2x(1) - 1 + 0.5 >= x(1)², there should be a solution
+  // that violates the constraint by at most 0.5
+  Eigen::Matrix2d Q1, Q2;
+  // We add 1E-10 here to make sure Q1 and Q2 are positive definite.
+  Q1 << 1 + 1E-10, 0, 0, 1E-10;
+  Q2 << 1E-10, 0, 0, 1 + 1E-10;
+  auto constraint = RelaxNonConvexQuadraticInequalityConstraintInTrustRegion(Q1, Q2, Eigen::Vector2d::Zero(), 2, Eigen::Vector2d(2, 1), 0.5);
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddConstraint(constraint, x);
+  auto result = prog.Solve();
+  EXPECT_EQ(result, SolutionResult::kSolutionFound);
+  auto x_sol = prog.GetSolution(x);
+  EXPECT_LE(std::pow(x_sol(0), 2) - std::pow(x_sol(1), 2), 2 + 0.5);
+  EXPECT_GE(2 * x_sol(1) - 1 + 0.5, std::pow(x_sol(1), 2));
 }
 }  // namespace
 }  // namespace solvers
