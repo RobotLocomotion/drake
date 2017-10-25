@@ -43,7 +43,7 @@ Eigen::MatrixXd DecomposePSDmatrixIntoXtransposeTimesX(
  * [Q    b/2]
  * [bᵀ/2   c]
  * are all greater than -tol. @default is 0.
- * @retval (R, d). R and d has the same number of rows. R.cols() == x.rows().
+ * @retval (R, d). R and d have the same number of rows. R.cols() == x.rows().
  * The matrix X = [R d] has the same number of rows as the rank of
  * <pre>
  *    [Q    b/2]

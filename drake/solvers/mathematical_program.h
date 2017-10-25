@@ -1420,7 +1420,7 @@ class MathematicalProgram {
   /**
    * Adds Lorentz cone constraint on the linear expression v1 and quadratic
    * expression v2, such that v1 >= sqrt(v2)
-   * @param linear expression     The linear expression v1.
+   * @param linear_expression The linear expression v1.
    * @param quadratic_expression  The quadratic expression v2.
    * @param tol The tolerance to determine if the matrix in v2 is positive
    * semidefinite or not. @see DecomposePositiveQuadraticForm for more
