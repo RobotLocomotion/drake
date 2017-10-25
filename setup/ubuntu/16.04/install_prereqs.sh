@@ -49,6 +49,7 @@ bash-completion
 binutils
 cmake
 cmake-curses-gui
+chrpath
 coinor-libipopt-dev
 diffstat
 doxygen
