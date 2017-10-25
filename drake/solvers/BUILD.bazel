@@ -411,6 +411,7 @@ drake_cc_library(
 drake_cc_library(
     name = "dreal_solver",
     srcs = [
+        "dreal_solver.cc",
         "dreal_solver_common.cc",
         "no_dreal.cc",
     ],
@@ -418,6 +419,7 @@ drake_cc_library(
     deps = [
         ":mathematical_program_api",
         "//drake/common:essential",
+        "@dreal",
     ],
 )
 
@@ -696,6 +698,13 @@ drake_cc_googletest(
     deps = [
         ":mathematical_program",
         "//drake/common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "dreal_solver_test",
+    deps = [
+        ":dreal_solver",
     ],
 )
 

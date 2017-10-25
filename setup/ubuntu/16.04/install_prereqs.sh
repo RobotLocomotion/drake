@@ -50,6 +50,7 @@ binutils
 cmake
 cmake-curses-gui
 coinor-libipopt-dev
+coinor-libclp-dev
 diffstat
 doxygen
 g++
@@ -109,6 +110,32 @@ zlib1g-dev
 
 EOF
     )
+
+# Install IBEX (dReal dependency)
+IBEX_VERSION=2.6.1.20171019111120.git5f6731a3d20072d02478c806d05724f5f306f15d~16.04
+IBEX_DEB=libibex-dev_${IBEX_VERSION}_amd64.deb
+IBEX_SHA256=cf5933f8f7173345dff9f2c7c62ed1bb8f003c591f00ac582b08119c18fbefc0
+IBEX_MIRROR=https://launchpad.net/~dreal/+archive/ubuntu/dreal/+files
+wget -O /tmp/${IBEX_DEB} ${IBEX_MIRROR}/${IBEX_DEB}
+if echo "${IBEX_SHA256} /tmp/${IBEX_DEB}" | sha256sum -c -; then
+  dpkg -i /tmp/${IBEX_DEB}
+  rm /tmp/${IBEX_DEB}
+else
+  die "The IBEX deb does not have the expected SHA256.  Not installing IBEX."
+fi
+
+# Install dReal.
+DREAL_VERSION=4.17.10.5
+DREAL_DEB=dreal_${DREAL_VERSION}_amd64.deb
+DREAL_SHA256=2f52d8470f09e6fee56815656e849f338c980cb746f242fd9012f93cd423d540
+DREAL_MIRROR=https://dl.bintray.com/dreal/dreal
+wget -O /tmp/${DREAL_DEB} ${DREAL_MIRROR}/${DREAL_DEB}
+if echo "${DREAL_SHA256} /tmp/${DREAL_DEB}" | sha256sum -c -; then
+  dpkg -i /tmp/${DREAL_DEB}
+  rm /tmp/${DREAL_DEB}
+else
+  die "The dReal deb does not have the expected SHA256.  Not installing dReal."
+fi
 
 # Install Bazel.
 wget -O /tmp/bazel_0.6.1-linux-x86_64.deb https://github.com/bazelbuild/bazel/releases/download/0.6.1/bazel_0.6.1-linux-x86_64.deb
