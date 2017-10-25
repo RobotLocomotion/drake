@@ -7,8 +7,6 @@ mydir=$(dirname "$me")
 examples=$(dirname "$mydir")
 drake=$(dirname "$examples")
 
-namespace="drake::examples::pendulum"
-
 source $drake/tools/lcm_vector_gen.sh
 
 gen_vector_proto $mydir/pendulum_state.named_vector

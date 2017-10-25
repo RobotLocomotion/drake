@@ -621,8 +621,14 @@ void Rod2D<T>::CalcImpactProblemData(
   using std::abs;
   DRAKE_DEMAND(data);
 
+  // Setup the generalized inertia matrix.
+  Matrix3<T> M;
+  M << mass_, 0,     0,
+       0,     mass_, 0,
+       0,     0,     J_;
+
   // Get the generalized velocity.
-  data->v = context.get_continuous_state()->get_generalized_velocity().
+  data->Mv = M * context.get_continuous_state()->get_generalized_velocity().
       CopyToVector();
 
   // Set the inertia solver.

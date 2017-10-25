@@ -1,7 +1,7 @@
 # -*- python -*-
 
 load(
-    "@drake//tools:install.bzl",
+    "@drake//tools/install:install.bzl",
     "cmake_config",
     "install",
     "install_cmake_config",
@@ -31,7 +31,7 @@ install(
     docs = ["@com_github_gflags_gflags//:COPYING.txt"],
     doc_dest = "share/doc/gflags",
     allowed_externals = ["@com_github_gflags_gflags//:gflags"],
-    visibility = ["//:__pkg__"],
+    visibility = ["//tools/workspace:__pkg__"],
     deps = [":install_cmake_config"],
 )
 

@@ -550,7 +550,7 @@ filegroup(
         files_to_install = [":vtk"]
 
     file_content += """
-load("@drake//tools:install.bzl", "install_files")
+load("@drake//tools/install:install.bzl", "install_files")
 install_files(
     name = "install",
     dest = ".",

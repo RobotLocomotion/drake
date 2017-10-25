@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from drake.tools.cpsutils import read_version_defs
+from drake.tools.install.cpsutils import read_version_defs
 
 defs = read_version_defs("set\(FMT_VERSION\s([0-9]+).([0-9]+).([0-9]+)")
 

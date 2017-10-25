@@ -483,9 +483,9 @@ struct ConstraintVelProblemData {
   VectorX<T> gammaL;
   /// @}
 
-  /// The ℝᵐ vector v, the generalized velocity immediately before any impulsive
+  /// The ℝᵐ generalized momentum immediately before any impulsive
   /// forces (from impact) are applied.
-  VectorX<T> v;
+  VectorX<T> Mv;
 
   /// A function for solving the equation MX = B for matrix X, given input
   /// matrix B, where M is the generalized inertia matrix for the rigid body

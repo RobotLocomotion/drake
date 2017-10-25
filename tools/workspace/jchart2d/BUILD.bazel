@@ -1,7 +1,7 @@
 # -*- python -*-
 
 load(
-    "@drake//tools:install.bzl",
+    "@drake//tools/install:install.bzl",
     "cmake_config",
     "install",
     "install_cmake_config",
@@ -36,7 +36,7 @@ install(
     docs = JCHART_LICENSE_DOCS,
     doc_strip_prefix = ["**/"],
     allowed_externals = JCHART_LICENSE_DOCS + JCHART_TARGETS,
-    visibility = ["//:__pkg__"],
+    visibility = ["//tools/workspace:__pkg__"],
     deps = [":install_cmake_config"],
 )
 

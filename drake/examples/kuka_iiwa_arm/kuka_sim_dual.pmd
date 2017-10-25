@@ -1,12 +1,12 @@
 group "0.sim" {
 
   cmd "0.kuka_simulation" {
-    exec = "build/drake/examples/kuka_iiwa_arm/kuka_simulation --urdf drake/manipulation/models/iiwa_description/urdf/dual_iiwa14_polytope_collision.urdf";
+    exec = "bazel-bin/drake/examples/kuka_iiwa_arm/kuka_simulation --urdf drake/manipulation/models/iiwa_description/urdf/dual_iiwa14_polytope_collision.urdf --novisualize_frames";
     host = "localhost";
   }
 
   cmd "1.iiwa_controller" {
-    exec = "build/drake/examples/kuka_iiwa_arm/iiwa_controller --urdf drake/manipulation/models/iiwa_description/urdf/dual_iiwa14_polytope_collision.urdf";
+    exec = "bazel-bin/drake/examples/kuka_iiwa_arm/iiwa_controller --urdf drake/manipulation/models/iiwa_description/urdf/dual_iiwa14_polytope_collision.urdf";
     host = "localhost";
   }
 

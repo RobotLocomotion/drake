@@ -1,0 +1,17 @@
+# -*- python -*-
+
+package(default_visibility = ["//visibility:public"])
+
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+py_library(
+    name = "cpsutils",
+    srcs = ["cpsutils.py"],
+    deps = ["@pycps//:cps"],
+)
+
+exports_files(
+    ["install.py.in"],
+)
+
+add_lint_tests()

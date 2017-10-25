@@ -1,3 +1,5 @@
+namespace: "drake::examples::acrobot"
+
 element {
     name: "theta1"
     doc: "theta1"

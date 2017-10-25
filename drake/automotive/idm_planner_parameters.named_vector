@@ -1,3 +1,5 @@
+namespace: "drake::automotive"
+
 # The default values contained below are from:
 #   https://en.wikipedia.org/wiki/Intelligent_driver_model
 element {

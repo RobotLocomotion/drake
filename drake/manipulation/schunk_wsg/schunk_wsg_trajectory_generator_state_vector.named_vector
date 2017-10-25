@@ -1,3 +1,5 @@
+namespace: "drake::manipulation::schunk_wsg"
+
 element {
     name: "last_target_position"
     doc: "last_target_position"
