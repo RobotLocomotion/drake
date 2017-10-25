@@ -424,8 +424,8 @@ class MathematicalProgram {
    * readability.
    */
   template <int Rows = Eigen::Dynamic, int Cols = Eigen::Dynamic>
-  MatrixDecisionVariable<Rows, Cols> NewBinaryVariables(
-      int rows, int cols, const std::string& name) {
+  MatrixDecisionVariable<Rows, Cols>
+  NewBinaryVariables(int rows, int cols, const std::string& name) {
     rows = Rows == Eigen::Dynamic ? rows : Rows;
     cols = Cols == Eigen::Dynamic ? cols : Cols;
     auto names =

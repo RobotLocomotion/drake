@@ -2075,12 +2075,12 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint4) {
 GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint5) {
   // Add rotated Lorentz cone constraint, using quadratic expression.
   MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<4>("x");
+  const auto x = prog.NewContinuousVariables<4>("x");
   Expression linear_expression1 = x(0) + 1;
   Expression linear_expression2 = x(1) - x(2);
   Eigen::Matrix2d Q;
   Eigen::Vector2d b;
-  double c{5};
+  const double c{5};
   Q << 1, 0.5, 0.5, 1;
   b << 0, 0.1;
   const Expression quadratic_expression =

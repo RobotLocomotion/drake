@@ -449,7 +449,9 @@ Binding<LorentzConeConstraint> ParseLorentzConeConstraint(
   Eigen::VectorXd d;
   std::tie(C, d) = math::DecomposePositiveQuadraticForm(0.5 * Q, b, a, tol);
   expr.resize(1 + C.rows());
+  // expr(0) is z
   expr(0) = linear_expr;
+  // expr.segment(1, C.rows()) = y
   expr.segment(1, C.rows()) = C * quadratic_vars + d;
   return ParseLorentzConeConstraint(expr);
 }

@@ -115,6 +115,7 @@ void ComparePolynomials(const symbolic::Polynomial& p1,
     EXPECT_LE(std::abs(get_constant_value(p.second)), tol);
   }
 }
+
 }  // namespace test
 }  // namespace symbolic
 }  // namespace drake

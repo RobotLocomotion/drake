@@ -1,12 +1,43 @@
 #include "drake/math/quadratic_form.h"
 
-#include <iostream>
-
 #include <Eigen/Cholesky>
 #include <Eigen/Eigenvalues>
 
 namespace drake {
 namespace math {
+Eigen::MatrixXd DecomposePSDmatrixIntoXtransposeTimesX(
+    const Eigen::Ref<const Eigen::MatrixXd>& Y, double zero_tol) {
+  if (Y.rows() != Y.cols()) {
+    throw std::runtime_error("Y is not square.");
+  }
+  if (zero_tol < 0) {
+    throw std::runtime_error("zero_tol should be non-negative.");
+  }
+  Eigen::LLT<Eigen::MatrixXd> llt_Y(Y);
+  if (llt_Y.info() == Eigen::Success) {
+    return llt_Y.matrixU();
+  } else {
+    // TODO(hongkai.dai) Switch to use robust Choleskly decomposition instead
+    // of Eigen value decomposition, when the bug in
+    // http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1479 is fixed.
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es_Y(Y);
+    if (es_Y.info() == Eigen::Success) {
+      Eigen::MatrixXd X(Y.rows(), Y.cols());
+      int X_row_count = 0;
+      for (int i = 0; i < es_Y.eigenvalues().rows(); ++i) {
+        if (es_Y.eigenvalues()(i) < -zero_tol) {
+          throw std::runtime_error("Y is not positive definite.");
+        } else if (es_Y.eigenvalues()(i) > zero_tol) {
+          X.row(X_row_count++) = std::sqrt(es_Y.eigenvalues()(i)) *
+                                 es_Y.eigenvectors().col(i).transpose();
+        }
+      }
+      return X.topRows(X_row_count);
+    }
+  }
+  throw std::runtime_error("Y is not PSD.");
+}
+
 std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposePositiveQuadraticForm(
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::VectorXd>& b, double c, double tol) {
@@ -14,10 +45,7 @@ std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposePositiveQuadraticForm(
     throw std::runtime_error("Q should be a square matrix.");
   }
   if (b.rows() != Q.rows()) {
-    throw std::runtime_error("b is not in the right size.");
-  }
-  if (tol < 0) {
-    throw std::runtime_error("tol should be non-negative.");
+    throw std::runtime_error("b does not have the right size.");
   }
   // The quadratic form xᵀQx + bᵀx + c can also be written as
   // [x]ᵀ * [Q   b/2] * [x]
@@ -29,63 +57,10 @@ std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposePositiveQuadraticForm(
        b.transpose() / 2, c;
   // clang-format off
 
-  Eigen::MatrixXd R;
-  Eigen::MatrixXd d;
-  // M should be a positive semidefinite matrix, to make sure that the quadratic
-  // form xᵀQx + bᵀx + c is always non-negative.
-  // First do a Cholesky decomposition of M, as M = Uᵀ*U. If Cholesky fails,
-  // then
-  // M is not positive definite.
-  Eigen::LLT<Eigen::MatrixXd> llt(M);
-  if (llt.info() == Eigen::Success) {
-    // U is an upper diagonal matrix.
-    // U = [U1 u2]
-    //     [0  u3]
-    Eigen::MatrixXd U = llt.matrixU();
-    R = U.block(0, 0, Q.rows() + 1, Q.cols());
-    d = U.col(Q.cols());
-    return std::make_pair(R, d);
-  }
-  // M should be positive semidefinite.
-  // Ideally we should use robust Cholesky decomposition to decompose M as
-  // Aᵀ * A. Unfortunately there is some bug in Eigen's LDLT code, see
-  // http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1479
-  // So w use Eigen value decomposition here.
-  // TODO(hongkai.dai): switch to Cholesky decomposition once
-  // http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1479 is fixed.
-  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(M);
-  if (es.info() == Eigen::Success && (es.eigenvalues().array() >= -tol).all()) {
-    Eigen::MatrixXd eigen_vectors(es.eigenvalues().rows(), 2);
-    eigen_vectors.col(0) = es.eigenvalues();
-    eigen_vectors.col(1) = Eigen::VectorXd::Zero(es.eigenvalues().rows());
-    Eigen::MatrixXd A = eigen_vectors.rowwise()
-                            .maxCoeff()
-                            .array()
-                            .sqrt()
-                            .matrix()
-                            .asDiagonal() *
-                        es.eigenvectors().transpose();
-    R = A.block(0, 0, Q.rows() + 1, Q.cols());
-    d = A.col(Q.cols());
-    return std::make_pair(R, d);
-  }
-  /* Call robust Cholesky decomposition to decompose M into Aᵀ * A.
-  // M should be positive semidefinite, so LDLT should be successful.
-  Eigen::LDLT<Eigen::MatrixXd> ldlt(M);
-  if (ldlt.info() == Eigen::Success && ldlt.isPositive()) {
-    // M = PᵀLDLᵀP
-    // First write M = Aᵀ * A
-    // TODO(hongkai.dai) The right bottom corner of U is 0, so we should remove
-    // this block.
-    Eigen::MatrixXd A =
-        ldlt.matrixU() * (ldlt.transpositionsP() *
-                          Eigen::MatrixXd::Identity(M.rows(), M.cols()));
-    A = ldlt.vectorD().array().real().sqrt().matrix().asDiagonal() * A;
-    R = A.block(0, 0, Q.rows() + 1, Q.cols());
-    d = A.col(Q.cols());
-    return std::make_pair(R, d);
-  }*/
-  throw std::runtime_error("The quadratic form is not positive semidefinite.");
+  const Eigen::MatrixXd A = DecomposePSDmatrixIntoXtransposeTimesX(M, tol);
+  Eigen::MatrixXd R = A.leftCols(Q.cols());
+  Eigen::VectorXd d = A.col(Q.cols());
+  return std::make_pair(R, d);
 }
 }  // namespace math
 }  // namespace drake
