@@ -201,8 +201,17 @@ TEST_F(BilinearProductTest, WIsExpression2) {
   EXPECT_PRED2(
       ExprEqual,
       (ReplaceBilinearTerms(x_(0) * y_(1) + 2 * x_(0) * y_(0) + Z1_(0, 0),
-                           x_.head<3>(), y_.head<3>(), Z1_ - Z2_)).Expand(),
+                            x_.head<3>(), y_.head<3>(), Z1_ - Z2_))
+          .Expand(),
       Z1_(0, 1) - Z2_(0, 1) + 2 * Z1_(0, 0) - 2 * Z2_(0, 0) + Z1_(0, 0));
+}
+
+TEST_F(BilinearProductTest, WIsExpression3) {
+  // W is an expression, that contains x or y
+  Eigen::Matrix<symbolic::Expression, 3, 4> W = xy_;
+  W(0, 1) += x_(0);
+  EXPECT_THROW(ReplaceBilinearTerms(x_(0) + x_(0) * y_(1), x_, y_, W).Expand(),
+               std::runtime_error);
 }
 
 TEST_F(BilinearProductTest, DuplicateEntry) {

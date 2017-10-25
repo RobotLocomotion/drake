@@ -22,7 +22,11 @@ namespace solvers {
  * @param y The bilinear product between `x` and `y` will be replaced by the
  * corresponding term in `W.Throws a runtime error if `y` contains duplicate
  * entries.
- * @param W Bilinear product term x(i) * y(j) will be replaced by W(i, j).
+ * @param W Bilinear product term x(i) * y(j) will be replaced by W(i, j). If
+ * W(i,j) is not a single variable, but an expression, then this expression
+ * cannot contain a variable in either x or y. The program will throw a
+ * runtime error, if W(i, j) is not a single variable, and also contains a
+ * variable in x or y.
  * @return The symbolic expression after replacing x(i) * y(j) with W(i, j).
  */
 symbolic::Expression ReplaceBilinearTerms(
