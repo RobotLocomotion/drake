@@ -91,6 +91,31 @@ DecomposeNonConvexQuadraticForm(const Eigen::Ref<const Eigen::MatrixXd>& Q);
  *   On Time Optimization of Centroidal Momentum Dynamics
  *   by Brahayam Ponton, Alexander Herzog, Stefan Schaal and Ludovic Righetti,
  *   ICRA, 2018
+ *
+ * The special cases are when Q₁ = 0 or Q₂ = 0.
+ * 1. When Q₁ = 0, the constraint becomes
+ *    xᵀQ₂x <= pᵀx - lb
+ *    xᵀQ₂x >= pᵀx - ub
+ *    If ub = +∞, then the original constraint is the convex rotated Lorentz
+ *    cone constraint xᵀQ₂x <= pᵀx - lb. The user should not call this function
+ *    to relax this convex constraint. Throw a runtime error.
+ *    If ub < +∞, then we introduce a new variable z, with the constraints
+ *    z >= xᵀQ₂x
+ *    z <= 2 x₀ᵀQ₂(x - x₀) + x₀ᵀQ₂x₀ + d
+ *    z >= pᵀx - ub
+ *    xᵀQ₂x <= pᵀx - lb
+ * 2. When Q₂ = 0, the constraint becomes
+ *    xᵀQ₁x <= ub - pᵀx
+ *    xᵀQ₁x >= lb - pᵀx
+ *    If lb = -∞, then the original constraint is the convex rotated Lorentz
+ *    cone constraint xᵀQ₁x <= ub - pᵀx. The user should not call this function
+ *    to relax this convex constraint. Throw a runtime error.
+ *    If lb > -∞, then we introduce a new variable z, with the constraints
+ *    z >= xᵀQ₁x
+ *    z <= 2 x₀ᵀQ₁(x - x₀) + x₀ᵀQ₁x₀ + d
+ *    z >= lb - pᵀx
+ *    xᵀQ₁x <= ub - pᵀx
+ *
  * @param Q1 A positive definite matrix. Notice we can always add a diagonal
  * matrix a * identity to Q1 and Q2 simultaneously, to make both matrices
  * positive definite, while keeping their difference Q1 - Q2 unchanged.
@@ -114,7 +139,7 @@ DecomposeNonConvexQuadraticForm(const Eigen::Ref<const Eigen::MatrixXd>& Q);
  */
 std::tuple<Binding<LinearConstraint>, Binding<RotatedLorentzConeConstraint>,
            Binding<RotatedLorentzConeConstraint>, VectorDecisionVariable<2>>
-RelaxNonConvexQuadraticInequalityConstraintInTrustRegion(
+RelaxNonConvexQuadraticConstraintInTrustRegion(
     MathematicalProgram* prog,
     const Eigen::Ref<const VectorXDecisionVariable>& x,
     const Eigen::Ref<const Eigen::MatrixXd>& Q1,

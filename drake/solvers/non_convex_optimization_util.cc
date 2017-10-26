@@ -50,7 +50,7 @@ std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposeNonConvexQuadraticForm(
 
 std::tuple<Binding<LinearConstraint>, Binding<RotatedLorentzConeConstraint>,
            Binding<RotatedLorentzConeConstraint>, VectorDecisionVariable<2>>
-RelaxNonConvexQuadraticInequalityConstraintInTrustRegion(
+RelaxNonConvexQuadraticConstraintInTrustRegion(
     MathematicalProgram* prog,
     const Eigen::Ref<const VectorXDecisionVariable>& x,
     const Eigen::Ref<const Eigen::MatrixXd>& Q1,
