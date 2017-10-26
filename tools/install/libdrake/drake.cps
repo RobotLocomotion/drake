@@ -84,11 +84,6 @@
       "Hints": ["@prefix@/lib/cmake/vtk-8.0"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
-    "yaml-cpp": {
-      "Version": "0.5.5",
-      "Hints": ["@prefix@/lib/cmake/yaml-cpp"],
-      "X-CMake-Find-Args": ["CONFIG"]
-    },
     "ZLIB": {
       "Version": "1.2.5",
       "X-CMake-Find-Args": ["MODULE"]
@@ -132,7 +127,6 @@
         "robotlocomotion-lcmtypes:robotlocomotion-lcmtypes-cpp",
         "spdlog:spdlog",
         "stx:stx",
-        "yaml-cpp:yaml-cpp"
       ]
     },
     "drake-lcmtypes-cpp": {
