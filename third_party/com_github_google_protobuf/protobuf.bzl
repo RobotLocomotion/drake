@@ -80,13 +80,9 @@ def _proto_gen_impl(ctx):
   if args:
     paths = [s.path for s in srcs]
     cmdlist = ["protoc"] + args + import_flags + paths
-    env = {}
-    if ctx.var['GLIBC_VERSION'] == 'macosx':
-      env = {'PATH': '/usr/local/opt/protobuf@2.6/bin'}
     ctx.action(
         inputs = srcs + deps,
         outputs = ctx.outputs.outs,
-        env = env,
         command = ' '.join(cmdlist),
         mnemonic = "ProtoCompile",
     )
