@@ -112,6 +112,14 @@ zlib1g-dev
 EOF
     )
 
+# Install octomap from ROS kinetic
+if apt-cache show ros-kinetic-octomap > /dev/null; then
+  apt install --no-install-recommends ros-kinetic-octomap
+else
+  echo "You need to set up the ROS repositories to install octomap."
+  die "http://wiki.ros.org/kinetic/Installation/Ubuntu"
+fi
+
 # Install Bazel.
 wget -O /tmp/bazel_0.6.1-linux-x86_64.deb https://github.com/bazelbuild/bazel/releases/download/0.6.1/bazel_0.6.1-linux-x86_64.deb
 if echo "5012d064a6e95836db899fec0a2ee2209d2726fae4a79b08c8ceb61049a115cd /tmp/bazel_0.6.1-linux-x86_64.deb" | sha256sum -c -; then

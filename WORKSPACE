@@ -185,12 +185,9 @@ pkg_config_package(
     modname = "ccd",
 )
 
-github_archive(
+pkg_config_package(
     name = "octomap",
-    repository = "OctoMap/octomap",
-    commit = "v1.7.2",
-    sha256 = "fe55efbb9ebf2b3388860e54b1c8a53d23e5a05de5956c043278013e01066c34",  # noqa
-    build_file = "tools/workspace/octomap/octomap.BUILD.bazel",
+    modname = "octomap",
 )
 
 github_archive(

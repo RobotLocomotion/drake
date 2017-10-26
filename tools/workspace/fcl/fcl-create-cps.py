@@ -22,9 +22,6 @@ content = """
       "X-CMake-Find-Args": [ "CONFIG" ]
     },
     "octomap": {
-      "Version": "%(octomap_VERSION)s",
-      "Hints": ["@prefix@/lib/cmake/octomap"],
-      "X-CMake-Find-Args": [ "CONFIG" ]
     }
   },
   "Default-Components": [ ":fcl" ],
