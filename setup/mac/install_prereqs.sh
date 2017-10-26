@@ -29,6 +29,10 @@ brew tap robotlocomotion/director
 brew update
 brew upgrade
 
+# Note that the version of protobuf here differs from what is in Ubuntu 16.04.
+# This turns out to be OK because newer versions of protobuf can generate
+# wire-compatible versions for older versions of .proto files, and using the
+# default version from Homebrew simplifies the code to find it.
 brew install $(tr '\n' ' ' <<EOF
 bash-completion
 bazel
@@ -47,7 +51,7 @@ nlopt
 numpy
 patchutils
 pkg-config
-protobuf@2.6
+protobuf
 python
 scipy
 tinyxml
