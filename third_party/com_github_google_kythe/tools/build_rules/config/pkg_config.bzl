@@ -1,7 +1,7 @@
 """Skylark module for system libraries known to pkg-config.
 
 pkg_config_module(name, modname,
-                  atleast_version, exact_version, max_version, pkg_config_path)
+                  atleast_version, exact_version, max_version)
   Create a local repository based on the results of pkg-config.
 
   Args:
@@ -10,8 +10,6 @@ pkg_config_module(name, modname,
     atleast_version: Optional, string. Require at least this version.
     exact_version: Optional, string. Require exactly this version.
     max_version: Optional, string.  Require less than this version.
-    pkg_config_path: Optional, string.  Add this path to PKG_CONFIG_PATH before
-                     calling pkg-config.
 
   The configured repository will have a `cc_library` target with the
   provided `name`.
@@ -42,21 +40,19 @@ def _find(repo_ctx):
     return _fail(repo_ctx, "Unable to find pkg-config executable")
   return success(pkg_config)
 
-def _exists(repo_ctx, pc_args, pc_env):
-  result = unwrap(repo_ctx).execute(pc_args + ["--print-errors", "--exists"],
-                                    environment=pc_env)
+def _exists(repo_ctx, pc_args):
+  result = unwrap(repo_ctx).execute(pc_args + ["--print-errors", "--exists"])
   if result.return_code != 0:
     return _fail(repo_ctx, "Unable to find module", result.stderr)
   return success(True)
 
-def _installed_version(repo_ctx, pc_args, pc_env):
-  result = unwrap(repo_ctx).execute(pc_args + ["--modversion"],
-                                    environment=pc_env)
+def _installed_version(repo_ctx, pc_args):
+  result = unwrap(repo_ctx).execute(pc_args + ["--modversion"])
   if result.return_code != 0:
     return _fail(repo_ctx, "Unable to determine installed version", result.stderr)
   return success(result.stdout.strip())
 
-def _check_version(repo_ctx, pc_args, pc_env):
+def _check_version(repo_ctx, pc_args):
   version_args = []
   for name in ["atleast_version", "max_version", "exact_version"]:
     value = getattr(repo_ctx.attr, name, "")
@@ -65,9 +61,9 @@ def _check_version(repo_ctx, pc_args, pc_env):
   if not version_args:
     return success(True)
 
-  result = unwrap(repo_ctx).execute(pc_args + version_args, environment=pc_env)
+  result = unwrap(repo_ctx).execute(pc_args + version_args)
   if result.return_code != 0:
-    version = _installed_version(repo_ctx, pc_args, pc_env)
+    version = _installed_version(repo_ctx, pc_args)
     if version.error != None:
       return version
     return _fail(repo_ctx,
@@ -77,16 +73,15 @@ def _check_version(repo_ctx, pc_args, pc_env):
   else:
     return success(True)
 
-def _cflags(repo_ctx, pc_args, pc_env):
-  result = unwrap(repo_ctx).execute(pc_args + ["--cflags"], environment=pc_env)
+def _cflags(repo_ctx, pc_args):
+  result = unwrap(repo_ctx).execute(pc_args + ["--cflags"])
   if result.return_code != 0:
     return _fail(repo_ctx, "Unable to determine cflags", result.stderr)
   stdout = result.stdout
   return success([arg for arg in stdout.strip().split(" ") if arg])
 
-def _linkopts(repo_ctx, pc_args, pc_env):
-  result = unwrap(repo_ctx).execute(pc_args + ["--static", "--libs"],
-                                    environment=pc_env)
+def _linkopts(repo_ctx, pc_args):
+  result = unwrap(repo_ctx).execute(pc_args + ["--static", "--libs"])
   if result.return_code != 0:
     return _fail(repo_ctx, "Unable to determine linkopts", result.stderr)
   stdout = result.stdout
@@ -152,18 +147,17 @@ def setup_pkg_config_package(repo_ctx):
   if pkg_config.error != None:
     return pkg_config
   pc_args = [pkg_config.value, repo_ctx.attr.modname]
-  pc_env = {'PKG_CONFIG_PATH': getattr(repo_ctx.attr, 'pkg_config_path', "")}
-  exists = _exists(repo_ctx, pc_args, pc_env)
+  exists = _exists(repo_ctx, pc_args)
   if exists.error != None:
     return exists
-  version = _check_version(repo_ctx, pc_args, pc_env)
+  version = _check_version(repo_ctx, pc_args)
   if version.error != None:
     return version
-  cflags = _cflags(repo_ctx, pc_args, pc_env)
+  cflags = _cflags(repo_ctx, pc_args)
   if cflags.error != None:
     return cflags
 
-  linkopts = _linkopts(repo_ctx, pc_args, pc_env)
+  linkopts = _linkopts(repo_ctx, pc_args)
   if linkopts.error != None:
     return linkopts
 
@@ -182,7 +176,6 @@ pkg_config_package = repository_rule(
         "atleast_version": attr.string(),
         "max_version": attr.string(),
         "exact_version": attr.string(),
-        "pkg_config_path": attr.string(),
         "build_file_template": attr.label(
             default = Label("@kythe//tools/build_rules/config:BUILD.tpl"),
             single_file = True,
