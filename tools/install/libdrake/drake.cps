@@ -47,7 +47,6 @@
       "X-CMake-Find-Args": ["CONFIG"]
     },
     "protobuf": {
-      "Version": "3.1.0",
       "Hints": ["@prefix@/lib/cmake/protobuf"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
