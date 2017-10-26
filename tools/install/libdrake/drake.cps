@@ -126,7 +126,7 @@
         "protobuf:protobuf",
         "robotlocomotion-lcmtypes:robotlocomotion-lcmtypes-cpp",
         "spdlog:spdlog",
-        "stx:stx",
+        "stx:stx"
       ]
     },
     "drake-lcmtypes-cpp": {
