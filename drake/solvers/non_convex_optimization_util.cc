@@ -5,8 +5,7 @@
 
 namespace drake {
 namespace solvers {
-std::pair<Eigen::MatrixXd, Eigen::MatrixXd>
-DecomposeNonConvexQuadraticForm(
+std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposeNonConvexQuadraticForm(
     const Eigen::Ref<const Eigen::MatrixXd>& Q) {
   if (Q.rows() != Q.cols()) {
     throw std::runtime_error("Q is not a square matrix.");
@@ -49,30 +48,6 @@ DecomposeNonConvexQuadraticForm(
   return std::make_pair(Q1_sol, Q2_sol);
 }
 
-Eigen::MatrixXd DecomposeYasXtransposeTimesX(const Eigen::Ref<const Eigen::MatrixXd>& Y, double psd_tol) {
-  DRAKE_DEMAND(Y.rows() == Y.cols());
-  DRAKE_DEMAND(psd_tol >= 0)
-  Eigen::LLT<Eigen::MatrixXd> llt_Y(Y);
-  if (llt_Y.info() == Eigen::Success) {
-    return llt_Y.matrixU();
-  } else {
-    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es_Y(Y);
-    if (es_Y.info() == Eigen::Success) {
-      Eigen::MatrixXd X(Y.rows(), Y.cols());
-      int X_row_count = 0;
-      for (int i = 0; i < es_Y.eigenvalues().rows(); ++i) {
-        if (es_Y.eigenvalues()(i) < -psd_tol) {
-          throw std::runtime_error("Y is not positive definite.");
-        } else if (es_Y.eigenvalues()(i) > psd_tol) {
-          X.row(X_row_count++) = std::sqrt(es_Y.eigenvalues()(i)) * es_Y.eigenvectors().col(i).transpose();
-        }
-      }
-      return X.topRows(X_row_count);
-    }
-  }
-  throw std::runtime_error("Y is not PSD.");
-}
-
 std::tuple<Binding<LinearConstraint>, Binding<RotatedLorentzConeConstraint>,
            Binding<RotatedLorentzConeConstraint>, VectorDecisionVariable<2>>
 RelaxNonConvexQuadraticInequalityConstraintInTrustRegion(
@@ -99,18 +74,27 @@ RelaxNonConvexQuadraticInequalityConstraintInTrustRegion(
     throw std::runtime_error("trust_region_gap should be positive.");
   }
   auto z = prog->NewContinuousVariables<2>("z");
-  Binding<LinearConstraint> linear_constraint = prog->AddLinearConstraint(
-      z(0) - z(1) + p.dot(x) <= upper_bound &&
-      z(0) - z(1) + p.dot(x) >= lower_bound &&
-      z(0) <= 2 * x0.dot(Q1 * x) - x0.dot(Q1 * x0) + trust_region_gap &&
-      z(1) <= 2 * x0.dot(Q2 * x) - x0.dot(Q2 * x0) + trust_region_gap);
+  Vector3<symbolic::Expression> linear_expressions;
+  linear_expressions << z(0) - z(1) + p.dot(x), z(0) - 2 * x0.dot(Q1 * x),
+      z(1) - 2 * x0.dot(Q2 * x);
+  const Eigen::Vector3d linear_lb(lower_bound,
+                                  -std::numeric_limits<double>::infinity(),
+                                  -std::numeric_limits<double>::infinity());
+  const Eigen::Vector3d linear_ub(upper_bound,
+                                  -x0.dot(Q1 * x0) + trust_region_gap,
+                                  -x0.dot(Q2 * x0) + trust_region_gap);
+  Binding<LinearConstraint> linear_constraint =
+      prog->AddConstraint(internal::ParseLinearConstraint(
+          linear_expressions, linear_lb, linear_ub));
   double psd_tol = 1E-15;
-  const Eigen::MatrixXd A1 = DecomposeYasXtransposeTimesX(Q1, psd_tol);
-  const Eigen::MatrixXd A2 = DecomposeYasXtransposeTimesX(Q2, psd_tol);
+  const Eigen::MatrixXd A1 =
+      math::DecomposePSDmatrixIntoXtransposeTimesX(Q1, psd_tol);
+  const Eigen::MatrixXd A2 =
+      math::DecomposePSDmatrixIntoXtransposeTimesX(Q2, psd_tol);
   VectorX<symbolic::Expression> lorentz_cone_expr1(2 + A1.rows());
   VectorX<symbolic::Expression> lorentz_cone_expr2(2 + A2.rows());
   lorentz_cone_expr1 << 1, z(0), A1 * x;
-  lorentz_cone_expr1 << 1, z(1), A2 * x;
+  lorentz_cone_expr2 << 1, z(1), A2 * x;
   Binding<RotatedLorentzConeConstraint> lorentz_cone_constraint1 =
       prog->AddRotatedLorentzConeConstraint(lorentz_cone_expr1);
   Binding<RotatedLorentzConeConstraint> lorentz_cone_constraint2 =

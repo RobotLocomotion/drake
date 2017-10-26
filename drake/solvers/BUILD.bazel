@@ -205,6 +205,7 @@ drake_cc_library(
     hdrs = ["non_convex_optimization_util.h"],
     deps = [
         ":mathematical_program",
+        "//drake/math:quadratic_form",
     ],
 )
 
