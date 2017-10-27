@@ -164,6 +164,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "quadratic_form",
+    srcs = ["quadratic_form.cc"],
+    hdrs = ["quadratic_form.h"],
+    deps = [
+        "//drake/common:essential",
+        "@eigen",
+    ],
+)
+
+drake_cc_library(
     name = "saturate",
     srcs = [],
     hdrs = ["saturate.h"],
@@ -288,6 +298,14 @@ drake_cc_googletest(
     name = "orthonormal_basis_test",
     deps = [
         ":orthonormal_basis",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "quadratic_form_test",
+    deps = [
+        ":quadratic_form",
         "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )

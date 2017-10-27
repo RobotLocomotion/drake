@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Prerequisite set-up script for Drake with Bazel on Ubuntu 16.04.
+# Prerequisite set-up script for Drake on Ubuntu 16.04.
 
 set -euo pipefail
 
@@ -11,12 +11,12 @@ die () {
 
 me="The Drake prerequisite set-up script"
 
-[[ $EUID -eq 0 ]] || die "$me must run as root. Please use sudo."
+[[ "${EUID}" -eq 0 ]] || die "${me} must run as root. Please use sudo."
 
 apt update
 apt install --no-install-recommends lsb-release wget
 
-[[ "$(lsb_release -sc)" == "xenial" ]] || die "$me only supports Ubuntu 16.04."
+[[ "$(lsb_release -sc)" == "xenial" ]] || die "${me} only supports Ubuntu 16.04."
 
 # Install Clang 3.9
 while true; do
@@ -47,6 +47,10 @@ apt install --no-install-recommends $(tr '\n' ' ' <<EOF
 
 bash-completion
 binutils
+chrpath
+cmake
+cmake-curses-gui
+coinor-libclp-dev
 coinor-libipopt-dev
 diffstat
 doxygen
@@ -62,36 +66,40 @@ graphviz
 libblas-dev
 libboost-all-dev
 libexpat1-dev
-libfreetype6
+libfreetype6-dev
 libglib2.0-dev
 libglu1-mesa-dev
-libhdf5-10
-libjpeg8
-libjsoncpp1
+libhdf5-dev
+libjpeg8-dev
+libjsoncpp-dev
 liblapack-dev
 liblz4-dev
-libnetcdf-c++4
-libnetcdf11
-libogg0
+libnetcdf-cxx-legacy-dev
+libnetcdf-dev
+libogg-dev
 libpng-dev
-libqt5multimedia5
-libqt5opengl5
-libqt5x11extras5
-libtheora0
-libtiff5
+libprotobuf-dev
+libqt5opengl5-dev
+libqt5x11extras5-dev
+libtheora-dev
+libtiff5-dev
 libtinyxml-dev
 libtinyxml2-dev
 libtool
-libxml2
-libxt6
+libxml2-dev
+libxt-dev
+libyaml-cpp-dev
+make
 mesa-common-dev
 openjdk-8-jdk
 patchutils
 pkg-config
+protobuf-compiler
 python-dev
 python-gtk2
 python-lxml
 python-numpy
+python-protobuf
 python-pygame
 python-scipy
 python-sphinx

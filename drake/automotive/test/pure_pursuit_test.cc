@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/automotive/maliput/dragway/road_geometry.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 
 namespace drake {
 namespace automotive {
@@ -15,26 +16,27 @@ class PurePursuitTest : public ::testing::Test {
   void SetUp() override {
     // Create a straight road with one lane.
     road_.reset(new maliput::dragway::RoadGeometry(
-        maliput::api::RoadGeometryId("Single-Lane Dragway"),
-        1 /* num_lanes */, 100 /* length */, 4. /* lane_width */,
-        0. /* shoulder_width */,
+        maliput::api::RoadGeometryId("Single-Lane Dragway"), 1 /* num_lanes */,
+        100 /* length */, 4. /* lane_width */, 0. /* shoulder_width */,
         5. /* maximum_height */,
         std::numeric_limits<double>::epsilon() /* linear_tolerance */,
         std::numeric_limits<double>::epsilon() /* angular_tolerance */));
   }
 
   const PurePursuitParams<double> pp_params_{};
+  const PurePursuitParams<AutoDiffXd> pp_params_ad_{};
   const SimpleCarParams<double> car_params_{};
+  const SimpleCarParams<AutoDiffXd> car_params_ad_{};
   std::unique_ptr<maliput::api::RoadGeometry> road_;
 };
 
 TEST_F(PurePursuitTest, Evaluate) {
-  systems::rendering::PoseVector<double> ego_pose;
   const maliput::api::Lane* const lane =
       road_->junction(0)->segment(0)->lane(0);
 
   // Set the ego car's pose to be all zeros, and facing parallel to the track in
-  // the positive-s direction..
+  // the positive-s direction.
+  systems::rendering::PoseVector<double> ego_pose;
   ego_pose.set_translation(
       Eigen::Translation3d(0. /* s */, 0. /* r */, 0. /* h */));
   ego_pose.set_rotation(Eigen::Quaternion<double>(0. /* w */, 0. /* x */,
@@ -95,6 +97,61 @@ TEST_F(PurePursuitTest, Evaluate) {
   // Expect the steering angle to be between zero and 90-degrees.
   EXPECT_GT(0., result);
   EXPECT_LT(-M_PI_2, result);
+}
+
+TEST_F(PurePursuitTest, EvaluateAutoDiff) {
+  const maliput::api::Lane* const lane =
+      road_->junction(0)->segment(0)->lane(0);
+
+  // Set the ego car's pose to be all zeros, and facing parallel to the track in
+  // the positive-s direction.
+  // Derivatives are set such that ∂s/∂s = 1, ∂r/∂s = 0., ∂h/∂s = 0, etc.
+  AutoDiffXd s(0., Vector3<double>(1., 0., 0.));
+  AutoDiffXd r(0., Vector3<double>(0., 1., 0.));
+  AutoDiffXd h(0., Vector3<double>(0., 0., 1.));
+  AutoDiffXd ad_zero(0., Vector3<double>(0., 0., 0.));
+  systems::rendering::PoseVector<AutoDiffXd> ego_pose;
+  ego_pose.set_translation(Translation3<AutoDiffXd>(s, r, h));
+  ego_pose.set_rotation(Eigen::Quaternion<AutoDiffXd>(
+      ad_zero /* w */, ad_zero /* x */, ad_zero /* y */, ad_zero /* z */));
+
+  AutoDiffXd result = PurePursuit<AutoDiffXd>::Evaluate(
+      pp_params_ad_, car_params_ad_, {lane, true /* with_s */}, ego_pose);
+
+  // Expect the steering angle to be zero and its derivative to be negatively
+  // related to changes in r, but insensitive to changes in s and h.
+  EXPECT_EQ(0., result.value());
+  EXPECT_EQ(0., result.derivatives()(0));  // ∂(steering_angle)/∂s
+  EXPECT_GT(0., result.derivatives()(1));  // ∂(steering_angle)/∂r
+  EXPECT_EQ(0., result.derivatives()(2));  // ∂(steering_angle)/∂h
+
+  // Set the ego car to the left of the centerline, and facing parallel to the
+  // track in the positive-s direction.
+  r.value() = 1.;
+  ego_pose.set_translation(Translation3<AutoDiffXd>(s, r, h));
+  result = PurePursuit<AutoDiffXd>::Evaluate(
+      pp_params_ad_, car_params_ad_, {lane, true /* with_s */}, ego_pose);
+
+  // Expect the steering angle to be negative and its derivative to be
+  // negatively related to changes in r, but insensitive to changes in s and h.
+  EXPECT_GT(0., result.value());
+  EXPECT_EQ(0., result.derivatives()(0));  // ∂(steering_angle)/∂s
+  EXPECT_GT(0., result.derivatives()(1));  // ∂(steering_angle)/∂r
+  EXPECT_EQ(0., result.derivatives()(2));  // ∂(steering_angle)/∂h
+
+  // Set the ego car to the right of the centerline, and facing parallel to the
+  // track in the positive-s direction.
+  r.value() = -1.;
+  ego_pose.set_translation(Translation3<AutoDiffXd>(s, r, h));
+  result = PurePursuit<AutoDiffXd>::Evaluate(
+      pp_params_ad_, car_params_ad_, {lane, true /* with_s */}, ego_pose);
+
+  // Expect the steering angle to be positive and its derivative to be
+  // negatively related to changes in r, but insensitive to changes in s and h.
+  EXPECT_LT(0., result.value());
+  EXPECT_EQ(0., result.derivatives()(0));  // ∂(steering_angle)/∂s
+  EXPECT_GT(0., result.derivatives()(1));  // ∂(steering_angle)/∂r
+  EXPECT_EQ(0., result.derivatives()(2));  // ∂(steering_angle)/∂h
 }
 
 TEST_F(PurePursuitTest, ComputeGoalPoint) {

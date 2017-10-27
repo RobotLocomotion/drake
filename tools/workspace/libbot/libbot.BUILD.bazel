@@ -1,7 +1,7 @@
 # -*- python -*-
 
 load(
-    "@drake//tools:install.bzl",
+    "@drake//tools/install:install.bzl",
     "cmake_config",
     "install",
     "install_cmake_config",
@@ -638,12 +638,12 @@ install(
 
 filegroup(
     name = "bot-procman-sheriff",
-    srcs = ["@drake//tools:install/libbot/bot-procman-sheriff"],
+    srcs = ["@drake//tools/workspace/libbot:bot-procman-sheriff"],
 )
 
 filegroup(
     name = "build_prefix",
-    srcs = ["@drake//tools:install/libbot/build_prefix.py"],
+    srcs = ["@drake//tools/workspace/libbot:build_prefix.py"],
 )
 
 install(

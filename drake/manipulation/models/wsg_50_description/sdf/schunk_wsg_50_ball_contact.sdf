@@ -1,6 +1,10 @@
 <?xml version='1.0'?>
 <sdf version='1.6'>
   <model name='Schunk_Gripper'>
+    <!--To enable faster simulation, the collision geometry in this model
+         consists of multiple spheres. These are arranged in a line along each
+         finger, with two additional spheres forming a triangle at each finger
+         tip.-->
     <link name='body'>
       <pose frame=''>0 -0.049133 0 0 -0 0</pose>
       <inertial>
@@ -98,7 +102,7 @@
       </collision>
     </link>
     <link name='left_finger'>
-      <pose frame=''>-0.008 0.025 0 0 -0 0</pose>
+      <pose frame=''>-0.008 0.029 0 0 -0 0</pose>
       <inertial>
         <mass>0.05</mass>
         <inertia>
@@ -117,7 +121,7 @@
         <pose frame=''>0 0 0 0 -0 0</pose>
         <geometry>
           <box>
-            <size>0.016 0.075 0.02</size>
+            <size>0.016 0.083 0.02</size>
           </box>
         </geometry>
         <material>
@@ -140,7 +144,7 @@
       <!-- A sequence of spaced spheres the *width* of the finger from the tip
       towards the base. -->
       <collision name='collision'>
-        <pose frame=''>0 -0.0225 0 0 0 0</pose>
+        <pose frame=''>0 -0.0209 0 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>0.008</radius>
@@ -148,7 +152,7 @@
         </geometry>
       </collision>
       <collision name='collision'>
-        <pose frame=''>0 -0.0075 0 0 0 0</pose>
+        <pose frame=''>0 -0.0049 0 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>0.008</radius>
@@ -156,7 +160,7 @@
         </geometry>
       </collision>
       <collision name='collision'>
-        <pose frame=''>0 0.0075 0 0 0 0</pose>
+        <pose frame=''>0 0.0112 0 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>0.008</radius>
@@ -164,18 +168,28 @@
         </geometry>
       </collision>
       <collision name='collision'>
-        <pose frame=''>0 0.0225 0 0 0 0</pose>
+        <pose frame=''>0 0.0271 0 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>0.008</radius>
           </sphere>
         </geometry>
       </collision>
+      <!-- Two more spheres that form a triangle with the tip-most sphere
+           above. -->
       <collision name='collision'>
-        <pose frame=''>0 0.0375 0 0 0 0</pose>
+        <pose frame=''>0.0040 0.0375 0.0060 0 0 0</pose>
         <geometry>
           <sphere>
-            <radius>0.008</radius>
+            <radius>0.004</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <collision name='collision'>
+        <pose frame=''>0.0040 0.0375 -0.0060 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.004</radius>
           </sphere>
         </geometry>
       </collision>
@@ -217,7 +231,7 @@
       <gravity>1</gravity>
     </link>
     <link name='right_finger'>
-      <pose frame=''>0.008 0.025 0 0 -0 0</pose>
+      <pose frame=''>0.008 0.029 0 0 -0 0</pose>
       <inertial>
         <mass>0.05</mass>
         <inertia>
@@ -236,7 +250,7 @@
         <pose frame=''>0 0 0 0 -0 0</pose>
         <geometry>
           <box>
-            <size>0.016 0.075 0.02</size>
+            <size>0.016 0.083 0.02</size>
           </box>
         </geometry>
         <material>
@@ -259,7 +273,7 @@
       <!-- A sequence of spaced spheres the *width* of the finger from the tip
       towards the base. -->
       <collision name='collision'>
-        <pose frame=''>0 -0.0225 0 0 0 0</pose>
+        <pose frame=''>0 -0.0209 0 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>0.008</radius>
@@ -267,7 +281,7 @@
         </geometry>
       </collision>
       <collision name='collision'>
-        <pose frame=''>0 -0.0075 0 0 0 0</pose>
+        <pose frame=''>0 -0.0049 0 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>0.008</radius>
@@ -275,7 +289,7 @@
         </geometry>
       </collision>
       <collision name='collision'>
-        <pose frame=''>0 0.0075 0 0 0 0</pose>
+        <pose frame=''>0 0.0112 0 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>0.008</radius>
@@ -283,18 +297,28 @@
         </geometry>
       </collision>
       <collision name='collision'>
-        <pose frame=''>0 0.0225 0 0 0 0</pose>
+        <pose frame=''>0 0.0271 0 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>0.008</radius>
           </sphere>
         </geometry>
       </collision>
+      <!-- Two more spheres that form a triangle with the tip-most sphere
+           above. -->
       <collision name='collision'>
-        <pose frame=''>0 0.0375 0 0 0 0</pose>
+        <pose frame=''>-0.004 0.0375 0.0060 0 0 0</pose>
         <geometry>
           <sphere>
-            <radius>0.008</radius>
+            <radius>0.004</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <collision name='collision'>
+        <pose frame=''>-0.004 0.0375 -0.0060 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.004</radius>
           </sphere>
         </geometry>
       </collision>

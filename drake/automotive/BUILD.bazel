@@ -45,36 +45,29 @@ drake_cc_library(
         "gen/trajectory_car_state.h",
     ],
     deps = [
-        "//drake/systems/framework",
+        "//drake/systems/framework:vector",
     ],
 )
 
 drake_cc_library(
     name = "generated_translators",
     srcs = [
-        "gen/bicycle_car_parameters_translator.cc",
         "gen/bicycle_car_state_translator.cc",
         "gen/driving_command_translator.cc",
-        "gen/maliput_railcar_params_translator.cc",
         "gen/maliput_railcar_state_translator.cc",
-        "gen/simple_car_params_translator.cc",
         "gen/simple_car_state_translator.cc",
         "gen/trajectory_car_state_translator.cc",
     ],
     hdrs = [
-        "gen/bicycle_car_parameters_translator.h",
         "gen/bicycle_car_state_translator.h",
         "gen/driving_command_translator.h",
-        "gen/maliput_railcar_params_translator.h",
         "gen/maliput_railcar_state_translator.h",
-        "gen/simple_car_params_translator.h",
         "gen/simple_car_state_translator.h",
         "gen/trajectory_car_state_translator.h",
     ],
     deps = [
         ":generated_vectors",
         "//drake/lcmtypes:automotive",
-        "//drake/systems/framework",
         "//drake/systems/lcm:translator",
     ],
 )
@@ -86,6 +79,7 @@ drake_cc_library(
     deps = [
         ":generated_vectors",
         "//drake/common:symbolic",
+        "//drake/systems/framework:leaf_system",
     ],
 )
 
@@ -145,6 +139,7 @@ drake_cc_library(
         ":pose_selector",
         ":road_odometry",
         "//drake/automotive/maliput/api",
+        "//drake/systems/framework:leaf_system",
         "//drake/systems/rendering:pose_bundle",
         "//drake/systems/rendering:pose_vector",
     ],
@@ -179,6 +174,7 @@ drake_cc_library(
         ":lane_direction",
         "//drake/automotive/maliput/api",
         "//drake/math:geometric_transform",
+        "//drake/systems/framework:leaf_system",
         "//drake/systems/rendering:frame_velocity",
         "//drake/systems/rendering:pose_vector",
     ],
@@ -198,6 +194,7 @@ drake_cc_library(
         "//drake/common:cond",
         "//drake/common:symbolic",
         "//drake/math:saturate",
+        "//drake/systems/framework:leaf_system",
         "//drake/systems/rendering:pose_bundle",
         "//drake/systems/rendering:pose_vector",
     ],
@@ -222,6 +219,7 @@ drake_cc_library(
         ":lane_direction",
         ":road_odometry",
         "//drake/automotive/maliput/api",
+        "//drake/common:extract_double",
         "//drake/systems/rendering:pose_bundle",
         "//drake/systems/rendering:pose_vector",
     ],
@@ -252,7 +250,6 @@ drake_cc_library(
         ":generated_vectors",
         ":lane_direction",
         "//drake/automotive/maliput/api",
-        "//drake/common:cond",
         "//drake/common:symbolic",
         "//drake/math:saturate",
         "//drake/systems/rendering:pose_vector",
@@ -267,6 +264,7 @@ drake_cc_library(
         ":generated_vectors",
         ":lane_direction",
         ":pure_pursuit",
+        "//drake/systems/framework:leaf_system",
         "//drake/systems/rendering:pose_vector",
     ],
 )
@@ -311,6 +309,7 @@ drake_cc_library(
         "//drake/common:double",
         "//drake/common:symbolic",
         "//drake/math:saturate",
+        "//drake/systems/framework:leaf_system",
         "//drake/systems/rendering:frame_velocity",
         "//drake/systems/rendering:pose_vector",
     ],
@@ -346,6 +345,7 @@ drake_cc_library(
         ":generated_vectors",
         "//drake/common:autodiff",
         "//drake/common:extract_double",
+        "//drake/systems/framework:leaf_system",
         "//drake/systems/rendering:frame_velocity",
         "//drake/systems/rendering:pose_vector",
     ],
@@ -411,6 +411,8 @@ drake_cc_binary(
         "//drake/automotive/models:prod_models",
     ],
     test_rule_args = [" --simulation_sec=0.01"],
+    # Flaky because LCM self-test can fail (PR #7311)
+    test_rule_flaky = 1,
     deps = [
         ":automotive_simulator",
         "//drake/common:find_resource",
@@ -459,6 +461,8 @@ drake_py_binary(
 drake_cc_googletest(
     name = "automotive_simulator_test",
     data = ["//drake/automotive/models:prod_models"],
+    # Flaky because LCM self-test can fail (PR #7311)
+    flaky = 1,
     local = 1,
     deps = [
         "//drake/automotive:automotive_simulator",
@@ -559,6 +563,7 @@ drake_cc_googletest(
         "//drake/automotive:pose_selector",
         "//drake/automotive/maliput/dragway",
         "//drake/automotive/maliput/monolane:builder",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -586,6 +591,7 @@ drake_cc_googletest(
     deps = [
         "//drake/automotive:pure_pursuit",
         "//drake/automotive/maliput/dragway",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -594,6 +600,7 @@ drake_cc_googletest(
     deps = [
         "//drake/automotive:pure_pursuit_controller",
         "//drake/automotive/maliput/dragway",
+        "//drake/systems/framework/test_utilities",
     ],
 )
 

@@ -40,7 +40,7 @@ new_local_repository(
 
 new_local_repository(
     name = "stx",
-    build_file = "tools/workspace/stx/stx.BUILD",
+    build_file = "tools/workspace/stx/stx.BUILD.bazel",
     path = "third_party/com_github_tcbrindle_cpp17_headers",
 )
 

@@ -1,3 +1,5 @@
+namespace: "drake::automotive"
+
 element {
     name: "position"
     doc: "The along-curve position of the vehicle."

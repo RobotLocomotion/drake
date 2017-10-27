@@ -125,7 +125,7 @@ const OutputPort<T>& MaliputRailcar<T>::velocity_output() const {
 }
 
 template <typename T>
-MaliputRailcarParams<T>* MaliputRailcar<T>::get_mutable_parameters(
+MaliputRailcarParams<T>& MaliputRailcar<T>::get_mutable_parameters(
     systems::Context<T>* context) const {
   return this->template GetMutableNumericParameter<MaliputRailcarParams>(
       context, 0);

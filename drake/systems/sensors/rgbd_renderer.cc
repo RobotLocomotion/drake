@@ -1,12 +1,15 @@
 #include "drake/systems/sensors/rgbd_renderer.h"
 
+#include <array>
 #include <fstream>
 #include <limits>
+#include <map>
 #include <string>
 #include <vector>
 
 #include <Eigen/Dense>
 #include <vtkActor.h>
+#include <vtkAutoInit.h>
 #include <vtkCamera.h>
 #include <vtkCubeSource.h>
 #include <vtkCylinderSource.h>
@@ -23,12 +26,16 @@
 #include <vtkSphereSource.h>
 #include <vtkTransform.h>
 #include <vtkTransformPolyDataFilter.h>
-#include <vtkVersion.h>
 #include <vtkWindowToImageFilter.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/systems/sensors/image.h"
 #include "drake/systems/sensors/vtk_util.h"
+
+// This macro declares vtkRenderingOpenGL2_AutoInit_{Construct(), Destruct()}
+// functions and the former is called via VTK_AUTOINIT_CONSTRUCT in
+// ModuleInitVtkRenderingOpenGL2.
+VTK_AUTOINIT_DECLARE(vtkRenderingOpenGL2)
 
 // TODO(kunimatsu-tri) Refactor RgbdRenderer with GeometryWorld when it's ready,
 // so that other VTK dependent sensor simulators can share the world without
@@ -42,6 +49,7 @@ using vtk_util::ConvertToVtkTransform;
 using vtk_util::MakeVtkPointerArray;
 
 namespace {
+
 const int kNumMaxLabel = 256;
 
 // TODO(kunimatsu-tri) Add support for the arbitrary clipping planes.
@@ -52,6 +60,13 @@ const double kTerrainSize = 100.;
 // For Zbuffer value conversion.
 const double kA = kClippingPlaneFar / (kClippingPlaneFar - kClippingPlaneNear);
 const double kB = -kA * kClippingPlaneNear;
+
+// Register the object factories for the vtkRenderingOpenGL2 module.
+struct ModuleInitVtkRenderingOpenGL2 {
+  ModuleInitVtkRenderingOpenGL2() {
+    VTK_AUTOINIT_CONSTRUCT(vtkRenderingOpenGL2)
+  }
+};
 
 std::string RemoveFileExtension(const std::string& filepath) {
   const size_t last_dot = filepath.find_last_of(".");
@@ -82,17 +97,169 @@ void SetModelTransformMatrixToVtkCamera(
   // needed here.
   camera->SetPosition(0., 0., 0.);
   camera->SetFocalPoint(0., 0., 1.);  // Sets z-forward.
-  camera->SetViewUp(0., -1, 0.);  // Sets y-down. For the detail, please refere
+  camera->SetViewUp(0., -1, 0.);  // Sets y-down. For the detail, please refer
   // to CameraInfo's document.
   camera->ApplyTransform(X_WC);
 }
 
 }  // namespace
 
-RgbdRenderer::RgbdRenderer(const Eigen::Isometry3d& X_WC,
-                           int width, int height,
-                           double z_near, double z_far,
-                           double fov_y, bool show_window)
+class RgbdRenderer::Impl : private ModuleInitVtkRenderingOpenGL2 {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Impl)
+
+  Impl(const Eigen::Isometry3d& X_WC, int width, int height,
+       double z_near, double z_far, double fov_y, bool show_window);
+
+  ~Impl() {}
+
+  void AddFlatTerrain();
+
+  optional<VisualIndex> RegisterVisual(
+      const DrakeShapes::VisualElement& visual, int body_id);
+
+  void UpdateVisualPose(
+      const Eigen::Isometry3d& X_WV, int body_id, VisualIndex visual_id) const;
+
+  void UpdateViewpoint(const Eigen::Isometry3d& X_WR) const;
+
+  void RenderColorImage(ImageRgba8U* color_image_out) const;
+
+  void RenderDepthImage(ImageDepth32F* depth_image_out) const;
+
+  void RenderLabelImage(ImageLabel16I* label_image_out) const;
+
+  int width() const { return width_; }
+
+  int height() const { return height_; }
+
+  double fov_y() const { return fov_y_; }
+
+  const ColorI& get_sky_color() const {
+    return color_palette_.get_sky_color();
+  }
+
+  const ColorI& get_flat_terrain_color() const {
+    return color_palette_.get_terrain_color();
+  }
+
+ private:
+  float CheckRangeAndConvertToMeters(float z_buffer_value) const;
+
+  const int width_;
+  const int height_;
+  const double fov_y_;
+  const double z_near_;
+  const double z_far_;
+  const ColorPalette color_palette_;
+
+  vtkNew<vtkActor> terrain_actor_;
+  // An array of maps which take pairs of a body index in RBT and a vector of
+  // vtkSmartPointer to vtkActor. The each vtkActor corresponds to an visual
+  // element specified in SDF / URDF. The first element of this array is for
+  // color and depth rendering and the second is for label image rendering.
+  // TODO(kunimatsu-tri) Make this more straight forward for the readability.
+  std::array<std::map<int, std::vector<vtkSmartPointer<vtkActor>>>, 2>
+      id_object_maps_;
+  vtkNew<vtkRenderer> color_depth_renderer_;
+  vtkNew<vtkRenderer> label_renderer_;
+  vtkNew<vtkRenderWindow> color_depth_render_window_;
+  vtkNew<vtkRenderWindow> label_render_window_;
+  vtkNew<vtkWindowToImageFilter> color_filter_;
+  vtkNew<vtkWindowToImageFilter> depth_filter_;
+  vtkNew<vtkWindowToImageFilter> label_filter_;
+  vtkNew<vtkImageExport> color_exporter_;
+  vtkNew<vtkImageExport> depth_exporter_;
+  vtkNew<vtkImageExport> label_exporter_;
+};
+
+void RgbdRenderer::Impl::AddFlatTerrain() {
+  vtkSmartPointer<vtkPlaneSource> plane =
+      vtk_util::CreateSquarePlane(kTerrainSize);
+  vtkNew<vtkPolyDataMapper> mapper;
+  mapper->SetInputConnection(plane->GetOutputPort());
+  terrain_actor_->SetMapper(mapper.GetPointer());
+
+  auto color = ColorPalette::Normalize(color_palette_.get_terrain_color());
+  terrain_actor_->GetProperty()->SetColor(color.r, color.g, color.b);
+  terrain_actor_->GetProperty()->LightingOff();
+  for (auto& renderer : MakeVtkPointerArray(color_depth_renderer_,
+                                            label_renderer_)) {
+    renderer->AddActor(terrain_actor_.GetPointer());
+  }
+}
+
+void RgbdRenderer::Impl::UpdateVisualPose(
+    const Eigen::Isometry3d& X_WV, int body_id, VisualIndex visual_id) const {
+  vtkSmartPointer<vtkTransform> vtk_X_WV = ConvertToVtkTransform(X_WV);
+  // `id_object_maps_` is modified here. This is OK because 1) we are just
+  // copying data to the memory spaces allocated at construction time
+  // and 2) we are not outputting these data to outside the class.
+  for (auto& id_object_map : id_object_maps_) {
+    auto& actor = id_object_map.at(body_id).at(visual_id);
+    actor->SetUserTransform(vtk_X_WV);
+  }
+}
+
+void RgbdRenderer::Impl::UpdateViewpoint(const Eigen::Isometry3d& X_WR) const {
+  vtkSmartPointer<vtkTransform> vtk_X_WR = ConvertToVtkTransform(X_WR);
+
+  for (auto& renderer : MakeVtkPointerArray(color_depth_renderer_,
+                                            label_renderer_)) {
+    auto camera = renderer->GetActiveCamera();
+    SetModelTransformMatrixToVtkCamera(camera, vtk_X_WR);
+  }
+}
+
+void RgbdRenderer::Impl::RenderColorImage(
+    ImageRgba8U* color_image_out) const {
+  // TODO(sherm1) Should evaluate VTK cache entry.
+  PerformVTKUpdate(color_depth_render_window_, color_filter_, color_exporter_);
+  color_exporter_->Export(color_image_out->at(0, 0));
+}
+
+void RgbdRenderer::Impl::RenderDepthImage(
+    ImageDepth32F* depth_image_out) const {
+  // TODO(sherm1) Should evaluate VTK cache entry.
+  PerformVTKUpdate(color_depth_render_window_, depth_filter_, depth_exporter_);
+  depth_exporter_->Export(depth_image_out->at(0, 0));
+
+  // TODO(kunimatsu-tri) Calculate this in a vertex shader.
+  for (int v = 0; v < height_; ++v) {
+    for (int u = 0; u < width_; ++u) {
+      depth_image_out->at(u, v)[0] =
+          CheckRangeAndConvertToMeters(depth_image_out->at(u, v)[0]);
+    }
+  }
+}
+
+void RgbdRenderer::Impl::RenderLabelImage(
+    ImageLabel16I* label_image_out) const {
+  // TODO(sherm1) Should evaluate VTK cache entry.
+  PerformVTKUpdate(label_render_window_, label_filter_, label_exporter_);
+
+  ImageRgb8U image(width_, height_);
+  label_exporter_->Export(image.at(0, 0));
+
+  ColorI color;
+  for (int v = 0; v < height_; ++v) {
+    for (int u = 0; u < width_; ++u) {
+      color.r = image.at(u, v)[0];
+      color.g = image.at(u, v)[1];
+      color.b = image.at(u, v)[2];
+      label_image_out->at(u, v)[0] =
+          static_cast<int16_t>(color_palette_.LookUpId(color));
+    }
+  }
+}
+
+RgbdRenderer::Impl::Impl(const Eigen::Isometry3d& X_WC,
+                         int width,
+                         int height,
+                         double z_near,
+                         double z_far,
+                         double fov_y,
+                         bool show_window)
     : width_(width), height_(height), fov_y_(fov_y),
       z_near_(z_near), z_far_(z_far),
       color_palette_(kNumMaxLabel, Label::kFlatTerrain, Label::kNoBody) {
@@ -117,11 +284,8 @@ RgbdRenderer::RgbdRenderer(const Eigen::Isometry3d& X_WC,
     SetModelTransformMatrixToVtkCamera(camera, vtk_X_WC);
   }
 
-#if ((VTK_MAJOR_VERSION == 7) && (VTK_MINOR_VERSION >= 1)) || \
-    (VTK_MAJOR_VERSION >= 8)
   color_depth_renderer_->SetUseDepthPeeling(1);
   color_depth_renderer_->UseFXAAOn();
-#endif
 
   const auto windows = MakeVtkPointerArray(
       color_depth_render_window_, label_render_window_);
@@ -148,16 +312,12 @@ RgbdRenderer::RgbdRenderer(const Eigen::Isometry3d& X_WC,
     filters[i]->SetMagnification(1);
     filters[i]->ReadFrontBufferOff();
     filters[i]->Update();
-#if VTK_MAJOR_VERSION <= 5
-    exporters[i]->SetInput(filters[i]->GetOutput());
-#else
     exporters[i]->SetInputData(filters[i]->GetOutput());
-#endif
     exporters[i]->ImageLowerLeftOff();
   }
 }
 
-optional<RgbdRenderer::VisualIndex> RgbdRenderer::RegisterVisual(
+optional<RgbdRenderer::VisualIndex> RgbdRenderer::Impl::RegisterVisual(
     const DrakeShapes::VisualElement& visual, int body_id) {
   // Initializes containers in id_object_maps_ if it's not done.
   for (auto& id_object_map : id_object_maps_) {
@@ -292,88 +452,8 @@ optional<RgbdRenderer::VisualIndex> RgbdRenderer::RegisterVisual(
   return nullopt;
 }
 
-void RgbdRenderer::AddFlatTerrain() {
-  vtkSmartPointer<vtkPlaneSource> plane =
-      vtk_util::CreateSquarePlane(kTerrainSize);
-  vtkNew<vtkPolyDataMapper> mapper;
-  mapper->SetInputConnection(plane->GetOutputPort());
-  terrain_actor_->SetMapper(mapper.GetPointer());
-
-  auto color = ColorPalette::Normalize(color_palette_.get_terrain_color());
-  terrain_actor_->GetProperty()->SetColor(color.r, color.g, color.b);
-  terrain_actor_->GetProperty()->LightingOff();
-  for (auto& renderer : MakeVtkPointerArray(color_depth_renderer_,
-                                            label_renderer_)) {
-    renderer->AddActor(terrain_actor_.GetPointer());
-  }
-}
-
-void RgbdRenderer::UpdateViewpoint(const Eigen::Isometry3d& X_WR) const {
-  vtkSmartPointer<vtkTransform> vtk_X_WR = ConvertToVtkTransform(X_WR);
-
-  for (auto& renderer : MakeVtkPointerArray(color_depth_renderer_,
-                                            label_renderer_)) {
-    auto camera = renderer->GetActiveCamera();
-    // TODO(kunimatsu-tri) Once VTK 5.8 support dropped, rewrite this
-    // using `vtkCamera`'s `SetModelTransformMatrix` method which is
-    // introduced since VTK 5.10.
-    SetModelTransformMatrixToVtkCamera(camera, vtk_X_WR);
-  }
-}
-
-void RgbdRenderer::UpdateVisualPose(const Eigen::Isometry3d& X_WV,
-                                    int body_id,
-                                    VisualIndex visual_id) const {
-  vtkSmartPointer<vtkTransform> vtk_X_WV = ConvertToVtkTransform(X_WV);
-  // `id_object_maps_` is modified here. This is OK because 1) we are just
-  // copying data to the memory spaces allocated at construction time
-  // and 2) we are not outputting these data to outside the class.
-  for (auto& id_object_map : id_object_maps_) {
-    auto& actor = id_object_map.at(body_id).at(visual_id);
-    actor->SetUserTransform(vtk_X_WV);
-  }
-}
-
-void RgbdRenderer::RenderColorImage(ImageRgba8U* color_image_out) const {
-  // TODO(sherm1) Should evaluate VTK cache entry.
-  PerformVTKUpdate(color_depth_render_window_, color_filter_, color_exporter_);
-  color_exporter_->Export(color_image_out->at(0, 0));
-}
-
-void RgbdRenderer::RenderDepthImage(ImageDepth32F* depth_image_out) const {
-  // TODO(sherm1) Should evaluate VTK cache entry.
-  PerformVTKUpdate(color_depth_render_window_, depth_filter_, depth_exporter_);
-  depth_exporter_->Export(depth_image_out->at(0, 0));
-
-  // TODO(kunimatsu-tri) Calculate this in a vertex shader.
-  for (int v = 0; v < height_; ++v) {
-    for (int u = 0; u < width_; ++u) {
-      depth_image_out->at(u, v)[0] =
-          CheckRangeAndConvertToMeters(depth_image_out->at(u, v)[0]);
-    }
-  }
-}
-
-void RgbdRenderer::RenderLabelImage(ImageLabel16I* label_image_out) const {
-  // TODO(sherm1) Should evaluate VTK cache entry.
-  PerformVTKUpdate(label_render_window_, label_filter_, label_exporter_);
-
-  ImageRgb8U image(width_, height_);
-  label_exporter_->Export(image.at(0, 0));
-
-  ColorI color;
-  for (int v = 0; v < height_; ++v) {
-    for (int u = 0; u < width_; ++u) {
-      color.r = image.at(u, v)[0];
-      color.g = image.at(u, v)[1];
-      color.b = image.at(u, v)[2];
-      label_image_out->at(u, v)[0] =
-          static_cast<int16_t>(color_palette_.LookUpId(color));
-    }
-  }
-}
-
-float RgbdRenderer::CheckRangeAndConvertToMeters(float z_buffer_value) const {
+float RgbdRenderer::Impl::CheckRangeAndConvertToMeters(
+    float z_buffer_value) const {
   float z;
   // When the depth is either closer than `kClippingPlaneNear` or farther than
   // `kClippingPlaneFar`, `z_buffer_value` becomes `1.f`.
@@ -383,20 +463,70 @@ float RgbdRenderer::CheckRangeAndConvertToMeters(float z_buffer_value) const {
     z = static_cast<float>(kB / (z_buffer_value - kA));
 
     if (z > z_far_) {
-      z = RgbdRenderer::InvalidDepth::kTooFar;
+      z = InvalidDepth::kTooFar;
     } else if (z < z_near_) {
-      z = RgbdRenderer::InvalidDepth::kTooClose;
+      z = InvalidDepth::kTooClose;
     }
   }
 
   return z;
 }
 
-constexpr float RgbdRenderer::InvalidDepth::kTooFar;
-constexpr float RgbdRenderer::InvalidDepth::kTooClose;
+RgbdRenderer::RgbdRenderer(const Eigen::Isometry3d& X_WC,
+                           int width,
+                           int height,
+                           double z_near,
+                           double z_far,
+                           double fov_y,
+                           bool show_window)
+    : impl_(new RgbdRenderer::Impl(X_WC, width, height, z_near, z_far, fov_y,
+                                   show_window)) {}
 
-constexpr int16_t RgbdRenderer::Label::kNoBody;
-constexpr int16_t RgbdRenderer::Label::kFlatTerrain;
+RgbdRenderer::~RgbdRenderer() {}
+
+optional<RgbdRenderer::VisualIndex> RgbdRenderer::RegisterVisual(
+    const DrakeShapes::VisualElement& visual, int body_id) {
+  return impl_->RegisterVisual(visual, body_id);
+}
+
+void RgbdRenderer::AddFlatTerrain() {
+  impl_->AddFlatTerrain();
+}
+
+void RgbdRenderer::UpdateViewpoint(const Eigen::Isometry3d& X_WR) const {
+  impl_->UpdateViewpoint(X_WR);
+}
+
+void RgbdRenderer::UpdateVisualPose(
+    const Eigen::Isometry3d& X_WV, int body_id, VisualIndex visual_id) const {
+  impl_->UpdateVisualPose(X_WV, body_id, visual_id);
+}
+
+void RgbdRenderer::RenderColorImage(ImageRgba8U* color_image_out) const {
+  impl_->RenderColorImage(color_image_out);
+}
+
+void RgbdRenderer::RenderDepthImage(ImageDepth32F* depth_image_out) const {
+  impl_->RenderDepthImage(depth_image_out);
+}
+
+void RgbdRenderer::RenderLabelImage(ImageLabel16I* label_image_out) const {
+  impl_->RenderLabelImage(label_image_out);
+}
+
+int RgbdRenderer::width() const { return impl_->width(); }
+
+int RgbdRenderer::height() const { return impl_->height(); }
+
+double RgbdRenderer::fov_y() const { return impl_->fov_y(); }
+
+const ColorI& RgbdRenderer::get_sky_color() const {
+  return impl_->get_sky_color();
+}
+
+const ColorI& RgbdRenderer::get_flat_terrain_color() const {
+  return impl_->get_flat_terrain_color();
+}
 
 }  // namespace sensors
 }  // namespace systems

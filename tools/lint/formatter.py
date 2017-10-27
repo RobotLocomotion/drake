@@ -4,6 +4,8 @@
 import os
 from subprocess import Popen, PIPE, CalledProcessError
 
+import tools.lint.clang_format as clang_format_lib
+
 
 class FormatterBase(object):
     """A base class for formatting-related tools, with the ability to load a
@@ -181,12 +183,6 @@ class FormatterBase(object):
     def get_non_format_ranges(self):
         return self.indices_to_ranges(self.get_non_format_indices())
 
-    def _get_clang_format_path(self):
-        preferred = "/usr/bin/clang-format-3.9"
-        if os.path.isfile(preferred):
-            return preferred
-        return "clang-format"
-
     def clang_format(self):
         """Reformat the working list using clang-format, passing -lines=...
         groups for only the lines that pass the should_format() predicate.
@@ -199,7 +195,7 @@ class FormatterBase(object):
 
         # Run clang-format.
         command = [
-            self._get_clang_format_path(),
+            clang_format_lib.get_clang_format_path(),
             "-style=file",
             "-assume-filename=%s" % self._filename] + \
             lines_args

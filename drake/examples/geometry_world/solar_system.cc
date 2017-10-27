@@ -83,8 +83,8 @@ void SolarSystem<T>::SetDefaultState(const systems::Context<T>&,
   xc->SetFromVector(initial_state);
   DiscreteValues<T>* xd = state->get_mutable_discrete_state();
   for (int i = 0; i < xd->num_groups(); i++) {
-    BasicVector<T>* s = xd->get_mutable_vector(i);
-    s->SetFromVector(VectorX<T>::Zero(s->size()));
+    BasicVector<T>& s = xd->get_mutable_vector(i);
+    s.SetFromVector(VectorX<T>::Zero(s.size()));
   }
 }
 

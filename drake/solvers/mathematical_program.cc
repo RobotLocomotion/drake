@@ -445,9 +445,10 @@ Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
 }
 
 Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
-    const Expression& linear_expr, const Expression& quadratic_expr) {
-  return AddConstraint(
-      internal::ParseLorentzConeConstraint(linear_expr, quadratic_expr));
+    const Expression& linear_expression, const Expression& quadratic_expression,
+    double tol) {
+  return AddConstraint(internal::ParseLorentzConeConstraint(
+      linear_expression, quadratic_expression, tol));
 }
 
 Binding<LorentzConeConstraint> MathematicalProgram::AddLorentzConeConstraint(
@@ -469,14 +470,21 @@ Binding<RotatedLorentzConeConstraint> MathematicalProgram::AddConstraint(
 
 Binding<RotatedLorentzConeConstraint>
 MathematicalProgram::AddRotatedLorentzConeConstraint(
+    const symbolic::Expression& linear_expression1,
+    const symbolic::Expression& linear_expression2,
+    const symbolic::Expression& quadratic_expression, double tol) {
+  auto binding = internal::ParseRotatedLorentzConeConstraint(
+      linear_expression1, linear_expression2, quadratic_expression, tol);
+  AddConstraint(binding);
+  return binding;
+}
+
+Binding<RotatedLorentzConeConstraint>
+MathematicalProgram::AddRotatedLorentzConeConstraint(
     const Eigen::Ref<const VectorX<Expression>>& v) {
-  DRAKE_DEMAND(v.rows() >= 3);
-  Eigen::MatrixXd A{};
-  Eigen::VectorXd b(v.size());
-  VectorXDecisionVariable vars{};
-  DecomposeLinearExpression(v, &A, &b, &vars);
-  DRAKE_DEMAND(vars.rows() >= 1);
-  return AddRotatedLorentzConeConstraint(A, b, vars);
+  auto binding = internal::ParseRotatedLorentzConeConstraint(v);
+  AddConstraint(binding);
+  return binding;
 }
 
 Binding<RotatedLorentzConeConstraint>

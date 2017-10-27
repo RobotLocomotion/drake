@@ -1,4 +1,4 @@
-syntax = "proto3";
+syntax = "proto2";
 
 package tools;
 
@@ -13,29 +13,32 @@ package tools;
 // produces LCM messages and System Framework data structures.
 message NamedVector {
     repeated NamedVectorElement element = 1;
+
+    // A ::-separated namespace for this vector, such as "drake::automotive".
+    optional string namespace = 2;
 }
 
 message NamedVectorElement {
     // The short name of this element. Should typically contain only lowercase
     // a-z and underscores, since it appears in generated code.
-    string name = 1;
+    optional string name = 1;
 
     // A free-text description of this element's purpose. Only appears in
     // comments.
-    string doc = 2;
+    optional string doc = 2;
 
     // An optional default value for this element.
-    string default_value = 3;
+    optional string default_value = 3;
 
     // An optional documentation string stating the units of this element.
     // It should be just the units abbreviation, e.g., "m/s".
-    string doc_units = 4;
+    optional string doc_units = 4;
 
     // An optional inclusive lower bound on well-formed values for this
     // element.
-    string min_value = 5;
+    optional string min_value = 5;
 
     // An optional inclusive upper bound on well-formed values for this
     // element.
-    string max_value = 6;
+    optional string max_value = 6;
 }

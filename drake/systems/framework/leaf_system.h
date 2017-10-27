@@ -147,8 +147,8 @@ class LeafSystem : public System<T> {
     // -- The numeric parameters must all be valid BasicVectors.
     const int num_numeric_parameters = context->num_numeric_parameters();
     for (int i = 0; i < num_numeric_parameters; ++i) {
-      const BasicVector<T>* const group = context->get_numeric_parameter(i);
-      detail::CheckBasicVectorInvariants(group);
+      const BasicVector<T>& group = context->get_numeric_parameter(i);
+      detail::CheckBasicVectorInvariants(&group);
     }
     // Note that the outputs are not part of the Context, but instead are
     // checked by LeafSystemOutput::add_port.
@@ -174,8 +174,8 @@ class LeafSystem : public System<T> {
     }
     DiscreteValues<T>* xd = state->get_mutable_discrete_state();
     for (int i = 0; i < xd->num_groups(); i++) {
-      BasicVector<T>* s = xd->get_mutable_vector(i);
-      s->SetFromVector(VectorX<T>::Zero(s->size()));
+      BasicVector<T>& s = xd->get_mutable_vector(i);
+      s.SetFromVector(VectorX<T>::Zero(s.size()));
     }
   }
 
@@ -187,12 +187,12 @@ class LeafSystem : public System<T> {
                             Parameters<T>* parameters) const override {
     unused(context);
     for (int i = 0; i < parameters->num_numeric_parameters(); i++) {
-      BasicVector<T>* p = parameters->get_mutable_numeric_parameter(i);
+      BasicVector<T>& p = parameters->get_mutable_numeric_parameter(i);
       auto model_vector = model_numeric_parameters_.CloneVectorModel<T>(i);
       if (model_vector != nullptr) {
-        p->SetFrom(*model_vector);
+        p.SetFrom(*model_vector);
       } else {
-        p->SetFromVector(VectorX<T>::Constant(p->size(), 1.0));
+        p.SetFromVector(VectorX<T>::Constant(p.size(), 1.0));
       }
     }
   }
@@ -523,9 +523,8 @@ class LeafSystem : public System<T> {
     MaybeDeclareVectorBaseInequalityConstraint(
         "parameter " + std::to_string(index), model_vector,
         [index](const Context<T>& context) -> const VectorBase<T>& {
-          const BasicVector<T>* result = context.get_numeric_parameter(index);
-          DRAKE_DEMAND(result != nullptr);
-          return *result;
+          const BasicVector<T>& result = context.get_numeric_parameter(index);
+          return result;
         });
     return index;
   }
@@ -540,7 +539,7 @@ class LeafSystem : public System<T> {
     const auto& leaf_context =
         dynamic_cast<const systems::LeafContext<T>&>(context);
     const auto* const params =
-        dynamic_cast<const U<T>*>(leaf_context.get_numeric_parameter(index));
+        dynamic_cast<const U<T>*>(&leaf_context.get_numeric_parameter(index));
     DRAKE_ASSERT(params != nullptr);
     return *params;
   }
@@ -549,15 +548,15 @@ class LeafSystem : public System<T> {
   /// Asserts if the context is not a LeafContext, or if it does not have a
   /// vector-valued parameter of type U at @p index.
   template <template <typename> class U = BasicVector>
-  U<T>* GetMutableNumericParameter(Context<T>* context, int index) const {
+  U<T>& GetMutableNumericParameter(Context<T>* context, int index) const {
     static_assert(std::is_base_of<BasicVector<T>, U<T>>::value,
                   "U must be a subclass of BasicVector.");
     auto* leaf_context = dynamic_cast<systems::LeafContext<T>*>(context);
     DRAKE_ASSERT(leaf_context != nullptr);
-    auto* params =
-        dynamic_cast<U<T>*>(leaf_context->get_mutable_numeric_parameter(index));
+    auto* const params = dynamic_cast<U<T>*>(
+        &leaf_context->get_mutable_numeric_parameter(index));
     DRAKE_ASSERT(params != nullptr);
-    return params;
+    return *params;
   }
 
   /// Declares that this System has a simple, fixed-period event specified with
@@ -1219,6 +1218,16 @@ class LeafSystem : public System<T> {
   }
 
  private:
+  std::map<typename Event<T>::PeriodicAttribute, std::vector<const Event<T>*>,
+      PeriodicAttributeComparator<T>> DoGetPeriodicEvents() const override {
+    std::map<typename Event<T>::PeriodicAttribute, std::vector<const Event<T>*>,
+        PeriodicAttributeComparator<T>> periodic_events_map;
+    for (const auto& i : periodic_events_) {
+      periodic_events_map[i.first].push_back(i.second.get());
+    }
+    return periodic_events_map;
+  }
+
   // Calls DoPublish.
   // Assumes @param events is an instance of LeafEventCollection, throws
   // std::bad_cast otherwise.

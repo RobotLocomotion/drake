@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
 #include "drake/solvers/decision_variable.h"
 
@@ -16,18 +17,22 @@ namespace solvers {
  * @param e An expression potentially contains bilinear products between x and
  * y.
  * @param x The bilinear product between `x` and `y` will be replaced by the
- * corresponding term in `W. Throws a runtime error if `x` contains duplicate
+ * corresponding term in `W`. Throws a runtime error if `x` contains duplicate
  * entries.
  * @param y The bilinear product between `x` and `y` will be replaced by the
  * corresponding term in `W.Throws a runtime error if `y` contains duplicate
  * entries.
- * @param W Bilinear product term x(i) * y(j) will be replaced by W(i, j).
+ * @param W Bilinear product term x(i) * y(j) will be replaced by W(i, j). If
+ * W(i,j) is not a single variable, but an expression, then this expression
+ * cannot contain a variable in either x or y. The program will throw a
+ * runtime error, if W(i, j) is not a single variable, and also contains a
+ * variable in x or y.
  * @return The symbolic expression after replacing x(i) * y(j) with W(i, j).
  */
 symbolic::Expression ReplaceBilinearTerms(
     const symbolic::Expression& e,
     const Eigen::Ref<const VectorXDecisionVariable>& x,
     const Eigen::Ref<const VectorXDecisionVariable>& y,
-    const Eigen::Ref<const MatrixXDecisionVariable>& W);
+    const Eigen::Ref<const MatrixX<symbolic::Expression>>& W);
 }  // namespace solvers
 }  // namespace drake

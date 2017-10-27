@@ -40,9 +40,9 @@ GTEST_TEST(SystemScalarConversionDoxygen, PendulumPlantAutodiff) {
 
   // TODO(#6944) This is a hack to work around AutoDiffXd being broken.
   // (This stanza is excluded from the Doxygen twin of this unit test.)
-  auto* params = autodiff_context->get_mutable_numeric_parameter(0);
-  for (int i = 0; i < params->size(); ++i) {
-    (*params)[i].derivatives() = Vector1d::Zero(1);
+  auto& params = autodiff_context->get_mutable_numeric_parameter(0);
+  for (int i = 0; i < params.size(); ++i) {
+    params[i].derivatives() = Vector1d::Zero(1);
   }
 
   // Compute denergy/dtheta around its initial conditions.

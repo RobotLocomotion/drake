@@ -215,7 +215,7 @@ class Rod2DDAETest : public ::testing::Test {
 
     // Update the velocity part of the state.
     context_->get_mutable_continuous_state()->get_mutable_generalized_velocity()
-        ->SetFromVector(data.v + delta_v);
+        ->SetFromVector(data.solve_inertia(data.Mv) + delta_v);
   }
 
   // Gets the number of generalized coordinates for the rod.
@@ -271,7 +271,7 @@ class Rod2DDAETest : public ::testing::Test {
     EXPECT_EQ(GetOperatorDim(data.N_mult), num_contacts);
     CheckTransOperatorDim(data.N_transpose_mult, num_contacts);
     EXPECT_EQ(data.kN.size(), num_contacts);
-    EXPECT_EQ(data.v.size(), get_rod_num_coordinates());
+    EXPECT_EQ(data.Mv.size(), get_rod_num_coordinates());
     EXPECT_TRUE(data.solve_inertia);
     EXPECT_EQ(GetOperatorDim(data.F_mult), num_contacts);
     CheckTransOperatorDim(data.F_transpose_mult, num_contacts);
@@ -1102,7 +1102,7 @@ class Rod2DTimeSteppingTest : public ::testing::Test {
     context_->FixInputPort(0, std::move(ext_input));
   }
 
-  BasicVector<double> *mutable_discrete_state() {
+  BasicVector<double>& mutable_discrete_state() {
     return context_->get_mutable_discrete_state(0);
   }
 // Sets a secondary initial Rod2D configuration.
@@ -1116,7 +1116,7 @@ class Rod2DTimeSteppingTest : public ::testing::Test {
     using std::sqrt;
     const double half_len = dut_->get_rod_half_length();
     const double r22 = std::sqrt(2) / 2;
-    auto xd = mutable_discrete_state()->get_mutable_value();
+    auto xd = mutable_discrete_state().get_mutable_value();
 
     xd[0] = -half_len * r22;
     xd[1] = half_len * r22;
@@ -1146,7 +1146,7 @@ TEST_F(Rod2DTimeSteppingTest, RodGoesToRest) {
   simulator.StepTo(t_final);
 
   // Get angular orientation and velocity.
-  const auto xd = simulator.get_context().get_discrete_state(0)->get_value();
+  const auto xd = simulator.get_context().get_discrete_state(0).get_value();
   const double theta = xd(2);
   const double theta_dot = xd(5);
 
@@ -1215,7 +1215,7 @@ GTEST_TEST(Rod2DCrossValidationTest, OneStepSolutionSliding) {
 
   // See whether the states are equal.
   const Context<double>& context_ts_new = simulator_ts.get_context();
-  const auto& xd = context_ts_new.get_discrete_state(0)->get_value();
+  const auto& xd = context_ts_new.get_discrete_state(0).get_value();
 
   // Check that the solution is nearly identical.
   const double tol = std::numeric_limits<double>::epsilon() * 10;
@@ -1258,7 +1258,7 @@ GTEST_TEST(Rod2DCrossValidationTest, OneStepSolutionSticking) {
   const double half_len = pdae.get_rod_half_length();
   ContinuousState<double>& xc =
       *context_pdae->get_mutable_continuous_state();
-  auto xd = context_ts->get_mutable_discrete_state(0)->get_mutable_value();
+  auto xd = context_ts->get_mutable_discrete_state(0).get_mutable_value();
   xc[0] = xd[0] = 0.0;
   xc[1] = xd[1] = half_len;
   xc[2] = xd[2] = M_PI_2;

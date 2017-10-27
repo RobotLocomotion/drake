@@ -57,6 +57,18 @@ class TestResourceTool(unittest.TestCase):
         with open(absolute_path, 'r') as data:
             self.assertEqual(data.read(), "tmp_resource")
 
+        # Remove environment variable.
+        absolute_path = subprocess.check_output(
+            [resource_tool,
+             "--print_resource_path",
+             "drake/common/test/tmp_resource",
+             "--add_resource_search_path",
+             "tmp/share/drake",
+             ],
+            ).strip()
+        with open(absolute_path, 'r') as data:
+            self.assertEqual(data.read(), "tmp_resource")
+
 
 if __name__ == '__main__':
     unittest.main()

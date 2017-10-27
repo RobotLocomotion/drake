@@ -114,7 +114,7 @@ class SystemSymbolicInspector {
   Eigen::VectorBlock<const VectorX<symbolic::Expression>> discrete_update(
       int i) const {
     DRAKE_DEMAND(i >= 0 && i < static_cast<int>(discrete_updates_->size()));
-    return discrete_updates_->get_vector(i)->get_value();
+    return discrete_updates_->get_vector(i).get_value();
   }
 
   /// Returns a reference to the symbolic representation of the output.

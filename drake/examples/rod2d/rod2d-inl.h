@@ -621,8 +621,14 @@ void Rod2D<T>::CalcImpactProblemData(
   using std::abs;
   DRAKE_DEMAND(data);
 
+  // Setup the generalized inertia matrix.
+  Matrix3<T> M;
+  M << mass_, 0,     0,
+       0,     mass_, 0,
+       0,     0,     J_;
+
   // Get the generalized velocity.
-  data->v = context.get_continuous_state()->get_generalized_velocity().
+  data->Mv = M * context.get_continuous_state()->get_generalized_velocity().
       CopyToVector();
 
   // Set the inertia solver.
@@ -683,7 +689,7 @@ void Rod2D<T>::CopyStateOut(const systems::Context<T>& context,
                             systems::BasicVector<T>* state_port_value) const {
   // Output port value is just the continuous or discrete state.
   const VectorX<T> state = (simulation_type_ == SimulationType::kTimeStepping)
-                               ? context.get_discrete_state(0)->CopyToVector()
+                               ? context.get_discrete_state(0).CopyToVector()
                                : context.get_continuous_state()->CopyToVector();
   state_port_value->SetFromVector(state);
 }
@@ -693,7 +699,7 @@ void Rod2D<T>::CopyPoseOut(
     const systems::Context<T>& context,
     systems::rendering::PoseVector<T>* pose_port_value) const {
   const VectorX<T> state = (simulation_type_ == SimulationType::kTimeStepping)
-                               ? context.get_discrete_state(0)->CopyToVector()
+                               ? context.get_discrete_state(0).CopyToVector()
                                : context.get_continuous_state()->CopyToVector();
   ConvertStateToPose(state, pose_port_value);
 }
@@ -717,7 +723,7 @@ void Rod2D<T>::DoCalcDiscreteVariableUpdates(
   const double cfm = get_cfm();
 
   // Get the necessary state variables.
-  const systems::BasicVector<T>& state = *context.get_discrete_state(0);
+  const systems::BasicVector<T>& state = context.get_discrete_state(0);
   const auto& q = state.get_value().template segment<3>(0);
   Vector3<T> v = state.get_value().template segment<3>(3);
   const T& x = q(0);
@@ -849,9 +855,9 @@ void Rod2D<T>::DoCalcDiscreteVariableUpdates(
   VectorX<T> qplus = q + vplus*dt_;
 
   // Set the new discrete state.
-  systems::BasicVector<T>* new_state = discrete_state->get_mutable_vector(0);
-  new_state->get_mutable_value().segment(0, 3) = qplus;
-  new_state->get_mutable_value().segment(3, 3) = vplus;
+  systems::BasicVector<T>& new_state = discrete_state->get_mutable_vector(0);
+  new_state.get_mutable_value().segment(0, 3) = qplus;
+  new_state.get_mutable_value().segment(3, 3) = vplus;
 }
 
 /// Models impact using an inelastic impact model with friction.
@@ -2229,7 +2235,7 @@ void Rod2D<T>::SetDefaultState(const systems::Context<T>&,
   x0 << half_len * r22, half_len * r22, M_PI / 4.0, -1, 0, 0;  // Initial state.
   if (simulation_type_ == SimulationType::kTimeStepping) {
     state->get_mutable_discrete_state()->get_mutable_vector(0)
-        ->SetFromVector(x0);
+        .SetFromVector(x0);
   } else {
     // Continuous variables.
     state->get_mutable_continuous_state()->SetFromVector(x0);

@@ -551,6 +551,13 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "event_test",
+    deps = [
+        ":event_collection",
+    ],
+)
+
+drake_cc_googletest(
     name = "leaf_context_test",
     deps = [
         ":leaf_context",

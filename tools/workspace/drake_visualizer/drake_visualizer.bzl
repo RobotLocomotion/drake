@@ -17,7 +17,10 @@ Build configuration:
 
 Example:
     WORKSPACE:
-        load("//tools/workspace/drake_visualizer:drake_visualizer.bzl", "drake_visualizer_repository")
+        load(
+            "//tools/workspace/drake_visualizer:drake_visualizer.bzl",
+            "drake_visualizer_repository",
+        )
         drake_visualizer_repository(name = "foo")
 
     BUILD:
@@ -79,7 +82,7 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
-load("@drake//tools:install.bzl", "install_files")
+load("@drake//tools/install:install.bzl", "install_files")
 install_files(
     name = "install",
     dest = ".",
