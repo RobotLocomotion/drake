@@ -106,6 +106,7 @@ drake_cc_library(
     deps = [
         ":generated_vectors",
         "//drake/common:autodiff",
+        "//drake/common:autodiffxd_make_coherent",
     ],
 )
 
@@ -119,6 +120,8 @@ drake_cc_library(
         ":pose_selector",
         ":road_odometry",
         "//drake/automotive/maliput/api",
+        "//drake/common:default_scalars",
+        "//drake/common:extract_double",
         "//drake/systems/framework:leaf_system",
         "//drake/systems/rendering:pose_bundle",
         "//drake/systems/rendering:pose_vector",
@@ -132,6 +135,7 @@ drake_cc_library(
     deps = [
         ":generated_vectors",
         "//drake/common:default_scalars",
+        "//drake/common:extract_double",
     ],
 )
 
@@ -199,6 +203,7 @@ drake_cc_library(
         ":lane_direction",
         ":road_odometry",
         "//drake/automotive/maliput/api",
+        "//drake/common:autodiffxd_make_coherent",
         "//drake/common:extract_double",
         "//drake/systems/rendering:pose_bundle",
         "//drake/systems/rendering:pose_vector",
@@ -438,6 +443,17 @@ drake_py_binary(
 
 # === test/ ===
 
+drake_cc_library(
+    name = "autodiff_test_utilities",
+    testonly = 1,
+    hdrs = ["test/autodiff_test_utilities.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        "//drake/common:autodiff",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
 drake_cc_googletest(
     name = "automotive_simulator_test",
     data = ["//drake/automotive/models:prod_models"],
@@ -519,13 +535,17 @@ drake_cc_googletest(
     deps = [
         "//drake/automotive:idm_controller",
         "//drake/automotive/maliput/dragway",
+        "//drake/systems/framework/test_utilities:scalar_conversion",
     ],
 )
 
 drake_cc_googletest(
     name = "idm_planner_test",
     deps = [
+        "//drake/automotive:autodiff_test_utilities",
         "//drake/automotive:idm_planner",
+        "//drake/common:extract_double",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -603,7 +623,9 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "trajectory_car_test",
     deps = [
+        "//drake/automotive:autodiff_test_utilities",
         "//drake/automotive:trajectory_car",
+        "//drake/common:extract_double",
         "//drake/systems/analysis:simulator",
         "//drake/systems/framework/test_utilities",
     ],
