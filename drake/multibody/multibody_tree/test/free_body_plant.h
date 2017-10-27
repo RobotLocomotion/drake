@@ -83,7 +83,7 @@ class FreeBodyPlant final : public systems::LeafSystem<T> {
   double J_{0};
   MultibodyTree<T> model_;
   const RigidBody<T>* body_{nullptr};
-  const RollPitchYawMobilizer<T>* mobilizer_{nullptr};
+  const SpaceXYZMobilizer<T>* mobilizer_{nullptr};
 };
 
 }  // namespace test
