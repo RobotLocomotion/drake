@@ -34,6 +34,7 @@ drake_cc_library(
         ":hash",
         ":is_approx_equal_abstol",
         ":is_cloneable",
+        ":make_coherent",
         ":nice_type_name",
         ":number_traits",
         ":polynomial",
@@ -135,6 +136,15 @@ drake_cc_library(
     hdrs = ["hash.h"],
     deps = [
         ":essential",
+    ],
+)
+
+drake_cc_library(
+    name = "make_coherent",
+    hdrs = ["make_coherent.h"],
+    deps = [
+        ":autodiff",
+        ":symbolic",
     ],
 )
 
@@ -559,6 +569,14 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":is_approx_equal_abstol",
+    ],
+)
+
+drake_cc_googletest(
+    name = "make_coherent_test",
+    deps = [
+        ":make_coherent",
+        "//drake/common/test_utilities:eigen_matrix_compare",
     ],
 )
 
