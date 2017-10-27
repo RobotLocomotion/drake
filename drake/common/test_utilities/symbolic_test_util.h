@@ -112,7 +112,7 @@ bool PolynomialEqual(const symbolic::Polynomial& p1,
   // than tol.
   const symbolic::Polynomial::MapType& map = diff.monomial_to_coefficient_map();
   for (const auto& p : map) {
-    if(std::abs(get_constant_value(p.second)) > tol) {
+    if (std::abs(get_constant_value(p.second)) > tol) {
       return false;
     }
   }
