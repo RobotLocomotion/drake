@@ -1,3 +1,7 @@
+#=============================================================================
+# NOTICE: This file is not an exact copy of FindProtobuf.cmake from upstream.
+#=============================================================================
+
 # Distributed under the OSI-approved BSD 3-Clause License.  See accompanying
 # file Copyright.txt or https://cmake.org/licensing for details.
 
@@ -313,7 +317,7 @@ if( Protobuf_USE_STATIC_LIBS )
   endif()
 endif()
 
-include(${CMAKE_CURRENT_LIST_DIR}/SelectLibraryConfigurations.cmake)
+include(SelectLibraryConfigurations)
 
 # Internal function: search for normal library as well as a debug one
 #    if the debug one is specified also include debug/optimized keywords
@@ -539,7 +543,7 @@ if(Protobuf_INCLUDE_DIR)
   endif()
 endif()
 
-include(${CMAKE_CURRENT_LIST_DIR}/FindPackageHandleStandardArgs.cmake)
+include(FindPackageHandleStandardArgs)
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(Protobuf
     REQUIRED_VARS Protobuf_LIBRARIES Protobuf_INCLUDE_DIR
     VERSION_VAR Protobuf_VERSION
