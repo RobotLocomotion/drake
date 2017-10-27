@@ -3,7 +3,6 @@
 #include <cmath>
 
 #include "drake/automotive/pure_pursuit.h"
-#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 
 namespace drake {
@@ -18,9 +17,7 @@ static constexpr int kCarParamsIndex{1};
 
 template <typename T>
 PurePursuitController<T>::PurePursuitController()
-    : systems::LeafSystem<T>(
-          systems::SystemTypeTag<automotive::PurePursuitController>{}),
-      lane_index_{this->DeclareAbstractInputPort().get_index()},
+    : lane_index_{this->DeclareAbstractInputPort().get_index()},
       ego_pose_index_{
           this->DeclareInputPort(systems::kVectorValued, PoseVector<T>::kSize)
               .get_index()},
@@ -95,10 +92,9 @@ void PurePursuitController<T>::CalcSteeringCommand(
       PurePursuit<T>::Evaluate(pp_params, car_params, lane_direction, ego_pose);
 }
 
-}  // namespace automotive
-}  // namespace drake
-
 // These instantiations must match the API documentation in
 // pure_pursuit_controller.h.
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::automotive::PurePursuitController)
+template class PurePursuitController<double>;
+
+}  // namespace automotive
+}  // namespace drake
