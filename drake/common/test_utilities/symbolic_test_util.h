@@ -118,7 +118,6 @@ bool PolynomialEqual(const symbolic::Polynomial& p1,
   }
   return true;
 }
-
 }  // namespace test
 }  // namespace symbolic
 }  // namespace drake

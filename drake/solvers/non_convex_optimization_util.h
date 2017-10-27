@@ -1,6 +1,8 @@
 #pragma once
 
+#include <tuple>
 #include <utility>
+#include <vector>
 
 #include <Eigen/Core>
 
@@ -37,8 +39,8 @@ namespace solvers {
  * TODO(hongkai.dai): templatize this function, to avoid dynamic memory
  * allocation.
  */
-std::pair<Eigen::MatrixXd, Eigen::MatrixXd>
-DecomposeNonConvexQuadraticForm(const Eigen::Ref<const Eigen::MatrixXd>& Q);
+std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposeNonConvexQuadraticForm(
+    const Eigen::Ref<const Eigen::MatrixXd>& Q);
 
 /**
  * For a non-convex quadratic constraint
@@ -94,28 +96,26 @@ DecomposeNonConvexQuadraticForm(const Eigen::Ref<const Eigen::MatrixXd>& Q);
  *
  * The special cases are when Q₁ = 0 or Q₂ = 0.
  * 1. When Q₁ = 0, the constraint becomes
- *    xᵀQ₂x <= pᵀx - lb
- *    xᵀQ₂x >= pᵀx - ub
+ *    lb <= -xᵀQ₂x + pᵀx <= ub
  *    If ub = +∞, then the original constraint is the convex rotated Lorentz
  *    cone constraint xᵀQ₂x <= pᵀx - lb. The user should not call this function
  *    to relax this convex constraint. Throw a runtime error.
  *    If ub < +∞, then we introduce a new variable z, with the constraints
+ *    lb <= -z + pᵀx <= ub
  *    z >= xᵀQ₂x
  *    z <= 2 x₀ᵀQ₂(x - x₀) + x₀ᵀQ₂x₀ + d
- *    z >= pᵀx - ub
- *    xᵀQ₂x <= pᵀx - lb
  * 2. When Q₂ = 0, the constraint becomes
- *    xᵀQ₁x <= ub - pᵀx
- *    xᵀQ₁x >= lb - pᵀx
+ *    lb <= xᵀQ₁x + pᵀx <= ub
  *    If lb = -∞, then the original constraint is the convex rotated Lorentz
  *    cone constraint xᵀQ₁x <= ub - pᵀx. The user should not call this function
  *    to relax this convex constraint. Throw a runtime error.
  *    If lb > -∞, then we introduce a new variable z, with the constraints
+ *    lb <= z + pᵀx <= ub
  *    z >= xᵀQ₁x
  *    z <= 2 x₀ᵀQ₁(x - x₀) + x₀ᵀQ₁x₀ + d
- *    z >= lb - pᵀx
- *    xᵀQ₁x <= ub - pᵀx
- *
+ * 3. If both Q₁ and Q₂ are zero, then the original constraint is a convex
+ *    linear constraint lb <= pᵀx <= ub. The user should not call this function
+ *    to relax this convex constraint. Throw a runtime error.
  * @param Q1 A positive definite matrix. Notice we can always add a diagonal
  * matrix a * identity to Q1 and Q2 simultaneously, to make both matrices
  * positive definite, while keeping their difference Q1 - Q2 unchanged.
@@ -127,18 +127,20 @@ DecomposeNonConvexQuadraticForm(const Eigen::Ref<const Eigen::MatrixXd>& Q);
  * @param trust_region_gap The user-specified positive scalar, `d` in
  * the documentation above. This gap determines both the maximal constraint
  * violation, together with the size of the trust region.
- * @retval <linear_constraint, rotated_lorentz_cone1, rotated_lorentz_cone, z>
+ * @retval <linear_constraint, rotated_lorentz_cones, z>
  * linear_constraint includes (1)(6)(7)
- * rotated_lorentz_cone1 is (2)
- * rotated_lorentz_cone2 is (3)
+ * rotated_lorentz_cones are (2) (3)
+ * When either Q1 or Q2 is zero, rotated_lorentz_cones contains only one rotated
+ * Lorentz cone, either (2) or (3).
  * z is the newly added variable.
  * @pre 1. Q1, Q2 are positive semidefinite.
  *      2. d is positive.
  *      3. Q1, Q2, p, x, x₀ are all of the consistent size.
  *      4. lower_bound <= upper_bound.
  */
-std::tuple<Binding<LinearConstraint>, Binding<RotatedLorentzConeConstraint>,
-           Binding<RotatedLorentzConeConstraint>, VectorDecisionVariable<2>>
+std::tuple<Binding<LinearConstraint>,
+           std::vector<Binding<RotatedLorentzConeConstraint>>,
+           VectorXDecisionVariable>
 RelaxNonConvexQuadraticConstraintInTrustRegion(
     MathematicalProgram* prog,
     const Eigen::Ref<const VectorXDecisionVariable>& x,

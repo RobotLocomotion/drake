@@ -1,5 +1,7 @@
 #include "drake/solvers/non_convex_optimization_util.h"
 
+#include <limits>
+
 #include "drake/math/quadratic_form.h"
 #include "drake/solvers/mathematical_program.h"
 
@@ -48,8 +50,9 @@ std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposeNonConvexQuadraticForm(
   return std::make_pair(Q1_sol, Q2_sol);
 }
 
-std::tuple<Binding<LinearConstraint>, Binding<RotatedLorentzConeConstraint>,
-           Binding<RotatedLorentzConeConstraint>, VectorDecisionVariable<2>>
+std::tuple<Binding<LinearConstraint>,
+           std::vector<Binding<RotatedLorentzConeConstraint>>,
+           VectorXDecisionVariable>
 RelaxNonConvexQuadraticConstraintInTrustRegion(
     MathematicalProgram* prog,
     const Eigen::Ref<const VectorXDecisionVariable>& x,
@@ -73,6 +76,51 @@ RelaxNonConvexQuadraticConstraintInTrustRegion(
   if (trust_region_gap <= 0) {
     throw std::runtime_error("trust_region_gap should be positive.");
   }
+
+  const bool Q1_is_zero = (Q1.array() == 0).all();
+  const bool Q2_is_zero = (Q2.array() == 0).all();
+  // Both Q1 and Q2 are zero.
+  if (Q1_is_zero && Q2_is_zero) {
+    throw std::runtime_error(
+        "Both Q1 and Q2 are zero. The constraint is linear. The user should "
+        "not call this function to relax a linear constraint.");
+  }
+
+  // Only Q1 is zero.
+  const double psd_tol = 1E-15;
+  if (Q1_is_zero && std::isinf(upper_bound)) {
+    throw std::runtime_error(
+        "Q1 is zero, and upper_bound is infinity. The constraint is convex. "
+        "The user should not call this function to relax a convex "
+        "constraint.");
+  }
+  if (Q2_is_zero && std::isinf(lower_bound)) {
+    throw std::runtime_error(
+        "Q2 is zero, and lower_bound is -infinity. The constraint is convex. "
+        "The user should not call this function to relax a convex constraint.");
+  }
+
+  if (Q1_is_zero || Q2_is_zero) {
+    const double z_coeff = Q1_is_zero ? -1 : 1;
+    const Eigen::Matrix2d nonzero_Q = Q1_is_zero ? Q2 : Q1;
+    auto z = prog->NewContinuousVariables<1>("z");
+    Binding<RotatedLorentzConeConstraint> lorentz_cone1 =
+        prog->AddRotatedLorentzConeConstraint(z(0), 1, x.dot(nonzero_Q * x),
+                                              psd_tol);
+    Eigen::Vector2d linear_lb(x0.dot(nonzero_Q * x0) - trust_region_gap,
+                              lower_bound);
+    Eigen::Vector2d linear_ub(std::numeric_limits<double>::infinity(),
+                              upper_bound);
+    Vector2<symbolic::Expression> linear_expr(2 * x0.dot(nonzero_Q * x) - z(0),
+                                              p.dot(x) + z_coeff * z(0));
+    Binding<LinearConstraint> linear_constraint = prog->AddConstraint(
+        internal::ParseLinearConstraint(linear_expr, linear_lb, linear_ub));
+    std::vector<Binding<RotatedLorentzConeConstraint>> lorentz_cones{
+        {lorentz_cone1}};
+    return std::make_tuple(linear_constraint, lorentz_cones, z);
+  }
+
+  // Neither Q1 nor Q2 is zero.
   auto z = prog->NewContinuousVariables<2>("z");
   Vector3<symbolic::Expression> linear_expressions;
   linear_expressions << z(0) - z(1) + p.dot(x), z(0) - 2 * x0.dot(Q1 * x),
@@ -86,7 +134,7 @@ RelaxNonConvexQuadraticConstraintInTrustRegion(
   Binding<LinearConstraint> linear_constraint =
       prog->AddConstraint(internal::ParseLinearConstraint(
           linear_expressions, linear_lb, linear_ub));
-  double psd_tol = 1E-15;
+
   const Eigen::MatrixXd A1 =
       math::DecomposePSDmatrixIntoXtransposeTimesX(Q1, psd_tol);
   const Eigen::MatrixXd A2 =
@@ -99,8 +147,9 @@ RelaxNonConvexQuadraticConstraintInTrustRegion(
       prog->AddRotatedLorentzConeConstraint(lorentz_cone_expr1);
   Binding<RotatedLorentzConeConstraint> lorentz_cone_constraint2 =
       prog->AddRotatedLorentzConeConstraint(lorentz_cone_expr2);
-  return std::make_tuple(linear_constraint, lorentz_cone_constraint1,
-                         lorentz_cone_constraint2, z);
+  std::vector<Binding<RotatedLorentzConeConstraint>> lorentz_cones{
+      {lorentz_cone_constraint1, lorentz_cone_constraint2}};
+  return std::make_tuple(linear_constraint, lorentz_cones, z);
 }
 }  // namespace solvers
 }  // namespace drake
