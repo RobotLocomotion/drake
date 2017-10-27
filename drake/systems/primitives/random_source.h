@@ -108,7 +108,7 @@ class RandomSource : public LeafSystem<double> {
   // Output is the zero-order hold of the discrete state.
   void CopyStateToOutput(const Context<double>& context,
                          BasicVector<double>* output) const {
-    output->SetFromVector(context.get_discrete_state(0)->CopyToVector());
+    output->SetFromVector(context.get_discrete_state(0).CopyToVector());
   }
 
   Seed seed_{RandomState::default_seed};

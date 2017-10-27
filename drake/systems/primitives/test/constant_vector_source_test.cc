@@ -54,10 +54,10 @@ TEST_F(ConstantVectorSourceTest, EigenModel) {
 
   // Tests that the output reflects changes to the parameter value in the
   // context.
-  BasicVector<double>* source_value =
+  BasicVector<double>& source_value =
       static_cast<ConstantVectorSource<double>*>(source_.get())
           ->get_mutable_source_value(context_.get());
-  source_value->SetFromVector(2.0 * source_value->get_value());
+  source_value.SetFromVector(2.0 * source_value.get_value());
 
   source_->get_output_port(0).Calc(*context_, output_.get());
 
@@ -82,10 +82,10 @@ TEST_F(ConstantVectorSourceTest, BasicVectorModel) {
 
   // Tests that the output reflects changes to the parameter value in the
   // context.
-  BasicVector<double>* source_value =
+  BasicVector<double>& source_value =
       static_cast<ConstantVectorSource<double>*>(source_.get())
           ->get_mutable_source_value(context_.get());
-  source_value->SetFromVector(2.0 * source_value->get_value());
+  source_value.SetFromVector(2.0 * source_value.get_value());
 
   source_->get_output_port(0).Calc(*context_, output_.get());
 

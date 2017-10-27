@@ -1,5 +1,7 @@
 # -*- python -*-
 
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
 exports_files(
     [
         "nlopt-gen-hpp.sh",
@@ -7,3 +9,5 @@ exports_files(
     ],
     visibility = ["@nlopt//:__pkg__"],
 )
+
+add_lint_tests()

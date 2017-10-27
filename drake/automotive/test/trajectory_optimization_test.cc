@@ -48,7 +48,7 @@ GTEST_TEST(TrajectoryOptimizationTest, SimpleCarDircolTest) {
 
   const SimpleCarParams<double>* params =
       dynamic_cast<const SimpleCarParams<double>*>(
-          context->get_numeric_parameter(0));
+          &context->get_numeric_parameter(0));
   DRAKE_DEMAND(params != nullptr);
 
   // Impose limits that are inside the true command limits.

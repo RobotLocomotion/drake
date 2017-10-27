@@ -46,6 +46,7 @@ list(APPEND optimization_files
 
 add_library(drakeOptimization ${optimization_files})
 target_link_libraries(drakeOptimization
+  drakeMath
   drakeCommon
   Eigen3::Eigen)
 drake_install_headers(

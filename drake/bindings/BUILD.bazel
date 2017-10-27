@@ -128,7 +128,6 @@ install(
     library_strip_prefix = ["python"],
     py_strip_prefix = ["python"],
     visibility = ["//visibility:public"],
-    deps = ["//drake:install"],
 )
 
 drake_py_test(
@@ -156,7 +155,7 @@ drake_py_test(
 # `no_everything` because `libgurobi70.so` is not found [Issue #7283].
 drake_py_test(
     name = "pydrake_common_install_test",
-    size = "small",
+    size = "medium",
     srcs = ["python/pydrake/test/testCommonInstall.py"],
     data = ["//:install"],
     main = "python/pydrake/test/testCommonInstall.py",

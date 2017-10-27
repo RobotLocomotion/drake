@@ -571,7 +571,8 @@ bool FormulaPositiveSemidefinite::EqualTo(const FormulaCell& f) const {
   DRAKE_ASSERT(get_kind() == f.get_kind());
   const FormulaPositiveSemidefinite& f_psd{
       static_cast<const FormulaPositiveSemidefinite&>(f)};
-  return CheckStructuralEquality(m_, f_psd.m_);
+  return (m_.rows() == f_psd.m_.rows()) && (m_.cols() == f_psd.m_.cols()) &&
+      CheckStructuralEquality(m_, f_psd.m_);
 }
 
 bool FormulaPositiveSemidefinite::Less(const FormulaCell& f) const {

@@ -83,6 +83,7 @@ drake_cc_googletest(
     name = "sample_translator_test",
     deps = [
         ":sample_translator",
+        "//drake/common/test_utilities",
     ],
 )
 
