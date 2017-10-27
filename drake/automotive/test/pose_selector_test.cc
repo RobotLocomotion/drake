@@ -6,6 +6,8 @@
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput/dragway/road_geometry.h"
 #include "drake/automotive/maliput/monolane/builder.h"
+#include "drake/common/extract_double.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/roll_pitch_yaw_using_quaternion.h"
 
 namespace drake {
@@ -65,8 +67,9 @@ class PoseSelectorDragwayTest : public ::testing::Test {
   std::unique_ptr<maliput::dragway::RoadGeometry> road_;
 };
 
-static void SetDefaultDragwayPoses(PoseVector<double>* ego_pose,
-                                   PoseBundle<double>* traffic_poses) {
+template <typename T>
+static void SetDefaultDragwayPoses(PoseVector<T>* ego_pose,
+                                   PoseBundle<T>* traffic_poses) {
   DRAKE_DEMAND(traffic_poses->get_num_poses() == kNumDragwayTrafficCars);
   DRAKE_DEMAND(kEgoSPosition > 0. && kDragwayLaneLength > kEgoSPosition);
   DRAKE_DEMAND(kJustAheadSPosition > kEgoSPosition &&
@@ -80,39 +83,57 @@ static void SetDefaultDragwayPoses(PoseVector<double>* ego_pose,
   //     Far Behind   Just Behind     Ego     Just Ahead   Far Ahead
   //   |------o------------o-----------o----------o------------o-------------|
   //  s=0     3            7           10         31           35           100
-  ego_pose->set_translation(Eigen::Translation3d(
-      kEgoSPosition /* s */, kEgoRPosition /* r */, 0. /* h */));
+  ego_pose->set_translation(Translation3<T>(
+      T(kEgoSPosition) /* s */, T(kEgoRPosition) /* r */, T(0.) /* h */));
 
-  const Eigen::Translation3d translation_far_ahead(
-      kFarAheadSPosition /* s */, kEgoRPosition /* r */, 0. /* h */);
-  FrameVelocity<double> velocity_far_ahead{};
-  velocity_far_ahead.get_mutable_value() << 0. /* ωx */, 0. /* ωy */,
-      0. /* ωz */, kTrafficXVelocity /* vx */, 0. /* vy */, 0. /* vz */;
-  const Eigen::Translation3d translation_just_ahead(
-      kJustAheadSPosition /* s */, kEgoRPosition /* r */, 0. /* h */);
-  const Eigen::Translation3d translation_just_behind(
-      kJustBehindSPosition /* s */, kEgoRPosition /* r */, 0. /* h */);
-  const Eigen::Translation3d translation_far_behind(
-      kFarBehindSPosition /* s */, kEgoRPosition /* r */, 0. /* h */);
-  traffic_poses->set_pose(kFarAheadIndex,
-                          Eigen::Isometry3d(translation_far_ahead));
+  const Translation3<T> translation_far_ahead(
+      T(kFarAheadSPosition) /* s */, T(kEgoRPosition) /* r */, T(0.) /* h */);
+  FrameVelocity<T> velocity_far_ahead{};
+  velocity_far_ahead.get_mutable_value() << T(0.) /* ωx */, T(0.) /* ωy */,
+      T(0.) /* ωz */, T(kTrafficXVelocity) /* vx */, T(0.) /* vy */,
+      T(0.) /* vz */;
+  const Translation3<T> translation_just_ahead(
+      T(kJustAheadSPosition) /* s */, T(kEgoRPosition) /* r */, T(0.) /* h */);
+  const Translation3<T> translation_just_behind(
+      T(kJustBehindSPosition) /* s */, T(kEgoRPosition) /* r */, T(0.) /* h */);
+  const Translation3<T> translation_far_behind(
+      T(kFarBehindSPosition) /* s */, T(kEgoRPosition) /* r */, T(0.) /* h */);
+  traffic_poses->set_pose(kFarAheadIndex, Isometry3<T>(translation_far_ahead));
   traffic_poses->set_velocity(kFarAheadIndex, velocity_far_ahead);
   traffic_poses->set_pose(kJustAheadIndex,
-                          Eigen::Isometry3d(translation_just_ahead));
+                          Isometry3<T>(translation_just_ahead));
   traffic_poses->set_pose(kJustBehindIndex,
-                          Eigen::Isometry3d(translation_just_behind));
+                          Isometry3<T>(translation_just_behind));
   traffic_poses->set_pose(kFarBehindIndex,
-                          Eigen::Isometry3d(translation_far_behind));
+                          Isometry3<T>(translation_far_behind));
+}
+
+static void SetDefaultDragwayPoseDerivatives(
+    PoseVector<AutoDiffXd>* ego_pose, PoseBundle<AutoDiffXd>* traffic_poses) {
+  Eigen::Translation<AutoDiffXd, 3> ego_translation =
+      ego_pose->get_translation();
+  ego_translation.x().derivatives() = Eigen::Vector3d(1., 0., 0.);
+  ego_translation.y().derivatives() = Eigen::Vector3d(0., 1., 0.);
+  ego_translation.z().derivatives() = Eigen::Vector3d(0., 0., 1.);
+  ego_pose->set_translation(ego_translation);
+  for (int i{0}; i < traffic_poses->get_num_poses(); ++i) {
+    Isometry3<AutoDiffXd> position;
+    position.translation() = traffic_poses->get_pose(i).translation();
+    position.translation().x().derivatives() = Eigen::Vector3d(1., 0., 0.);
+    position.translation().y().derivatives() = Eigen::Vector3d(0., 1., 0.);
+    position.translation().z().derivatives() = Eigen::Vector3d(0., 0., 1.);
+    traffic_poses->set_pose(i, position);
+  }
 }
 
 // Sets the poses for one ego car and one traffic car, with the relative
 // positions of each determined by the given s_offset an r_offset values.  The
 // optional `yaw` argument determines the orientation of the ego car with
 // respect to the x-axis.
-static void SetPoses(double s_offset, double r_offset,
-                     PoseVector<double>* ego_pose,
-                     PoseBundle<double>* traffic_poses,
-                     double yaw = 0.) {
+template <typename T>
+static void SetPoses(const T& s_offset, const T& r_offset,
+                     PoseVector<T>* ego_pose, PoseBundle<T>* traffic_poses,
+                     const T& yaw = T(0.)) {
   DRAKE_DEMAND(traffic_poses->get_num_poses() == 1);
   DRAKE_DEMAND(kEgoSPosition > 0. && kDragwayLaneLength > kEgoSPosition);
   DRAKE_DEMAND(kJustAheadSPosition > kEgoSPosition &&
@@ -121,27 +142,30 @@ static void SetPoses(double s_offset, double r_offset,
                kJustBehindSPosition > 0.);
 
   // Create poses for one traffic car and one ego car.
-  ego_pose->set_translation(Eigen::Translation3d(
-      kEgoSPosition /* s */, kEgoRPosition /* r */, 0. /* h */));
+  ego_pose->set_translation(Translation3<T>(
+      T(kEgoSPosition) /* s */, T(kEgoRPosition) /* r */, T(0.) /* h */));
   ego_pose->set_rotation(
-      RollPitchYawToQuaternion(Vector3<double>{0., 0., yaw}));
+      RollPitchYawToQuaternion(Vector3<T>{T(0.), T(0.), T(yaw)}));
 
-  const Eigen::Translation3d translation(kEgoSPosition + s_offset /* s */,
-                                         kEgoRPosition + r_offset /* r */,
-                                         0. /* h */);
-  FrameVelocity<double> traffic_velocity{};
-  traffic_velocity.get_mutable_value() << 0. /* ωx */, 0. /* ωy */, 0. /* ωz */,
-      kTrafficXVelocity /* vx */, 0. /* vy */, 0. /* vz */;
-  traffic_poses->set_pose(0, Eigen::Isometry3d(translation));
+  const Translation3<T> translation(T(kEgoSPosition) + s_offset /* s */,
+                                    T(kEgoRPosition) + r_offset /* r */,
+                                    T(0.) /* h */);
+  FrameVelocity<T> traffic_velocity{};
+  traffic_velocity.get_mutable_value() << T(0.) /* ωx */, T(0.) /* ωy */,
+      T(0.) /* ωz */, T(kTrafficXVelocity) /* vx */, T(0.) /* vy */,
+      T(0.) /* vz */;
+  traffic_poses->set_pose(0, Isometry3<T>(translation));
   traffic_poses->set_velocity(0, traffic_velocity);
 }
 
 // Returns the lane in the road associated with the provided pose.
-const maliput::api::Lane* get_lane(const PoseVector<double>& pose,
+template <typename T>
+const maliput::api::Lane* get_lane(const PoseVector<T>& pose,
                                    const maliput::api::RoadGeometry& road) {
-  const GeoPosition geo_position{pose.get_translation().x(),
-                                 pose.get_translation().y(),
-                                 pose.get_translation().z()};
+  const GeoPosition geo_position{
+      ExtractDoubleOrThrow(pose.get_translation().x()),
+      ExtractDoubleOrThrow(pose.get_translation().y()),
+      ExtractDoubleOrThrow(pose.get_translation().z())};
   return road.ToRoadPosition(geo_position, nullptr, nullptr, nullptr).lane;
 }
 
@@ -272,6 +296,106 @@ TEST_F(PoseSelectorDragwayTest, TwoLaneDragway) {
   }
 }
 
+TEST_F(PoseSelectorDragwayTest, TwoLaneDragwayAutoDiff) {
+  MakeDragway(2 /* num lanes */, kDragwayLaneLength);
+
+  PoseVector<AutoDiffXd> ego_pose;
+  PoseBundle<AutoDiffXd> traffic_poses(kNumDragwayTrafficCars);
+
+  // Define the default poses.
+  SetDefaultDragwayPoses(&ego_pose, &traffic_poses);
+  SetDefaultDragwayPoseDerivatives(&ego_pose, &traffic_poses);
+
+  // Choose a scan-ahead distance shorter than the lane length.
+  const AutoDiffXd scan_ahead_distance(kDragwayLaneLength / 2.);
+  {
+    const std::map<AheadOrBehind, const ClosestPose<AutoDiffXd>> closest_poses =
+        PoseSelector<AutoDiffXd>::FindClosestPair(get_lane(ego_pose, *road_),
+                                                  ego_pose, traffic_poses,
+                                                  scan_ahead_distance);
+
+    // Verifies that the correct leading and trailing cars are identified, and
+    // that their derivatives are correct.
+    const Vector3<AutoDiffXd> srh_ahead =
+        closest_poses.at(AheadOrBehind::kAhead).odometry.pos.srh();
+    EXPECT_EQ(kJustAheadSPosition, srh_ahead.x().value());
+    // Both the ahead and behind cars were found within scan_ahead_distance.
+    // Expect the x-y-z-axis derivatives for both to be the orthonormal basis
+    // aligned with the s-r-h axis.
+    const Matrix3<double> expected_derivatives = Matrix3<double>::Identity();
+    for (int i{0}; i < 3; ++i) {
+      EXPECT_TRUE(CompareMatrices(expected_derivatives.col(i),
+                                  srh_ahead(i).derivatives()));
+    }
+    const Vector3<AutoDiffXd> srh_behind =
+        closest_poses.at(AheadOrBehind::kBehind).odometry.pos.srh();
+    EXPECT_EQ(kJustBehindSPosition, srh_behind.x().value());
+    for (int i{0}; i < 3; ++i) {
+      EXPECT_TRUE(CompareMatrices(expected_derivatives.col(i),
+                                  srh_behind(i).derivatives()));
+    }
+    const AutoDiffXd dist_ahead =
+        closest_poses.at(AheadOrBehind::kAhead).distance;
+    EXPECT_EQ(kJustAheadSPosition - kEgoSPosition, dist_ahead);
+    // Distance is always invariant wrt. to x, y and z.
+    EXPECT_TRUE(
+        CompareMatrices(Vector3<double>(0., 0., 0.), dist_ahead.derivatives()));
+    const AutoDiffXd dist_behind =
+        closest_poses.at(AheadOrBehind::kBehind).distance;
+    EXPECT_EQ(kEgoSPosition - kJustBehindSPosition, dist_behind);
+    // Distance is always invariant wrt. to x, y and z.
+    EXPECT_TRUE(CompareMatrices(Vector3<double>(0., 0., 0.),
+                                dist_behind.derivatives()));
+  }
+
+  // Bump the "just ahead" car into the lane to the left.
+  Isometry3<AutoDiffXd> isometry_just_ahead =
+      traffic_poses.get_pose(kJustAheadIndex);
+  isometry_just_ahead.translation().y() += kDragwayLaneWidth;
+  traffic_poses.set_pose(kJustAheadIndex, isometry_just_ahead);
+  // Peer into the adjacent lane to the left.
+  {
+    const std::map<AheadOrBehind, const ClosestPose<AutoDiffXd>> closest_poses =
+        PoseSelector<AutoDiffXd>::FindClosestPair(
+            get_lane(ego_pose, *road_)->to_left(), ego_pose, traffic_poses,
+            scan_ahead_distance);
+
+    // Expect there to be no car behind on the immediate left and the "just
+    // ahead" car to be leading.
+    const Vector3<AutoDiffXd> srh_ahead =
+        closest_poses.at(AheadOrBehind::kAhead).odometry.pos.srh();
+    EXPECT_EQ(kJustAheadSPosition, srh_ahead.x().value());
+    // Expect the ahead car to have x-y-z-axis derivatives forming an
+    // orthonormal basis aligned with the s-r-h axis.  There is no car behind,
+    // so the derivatives should be all zeros.
+    const Matrix3<double> expected_derivatives = Matrix3<double>::Identity();
+    for (int i{0}; i < 3; ++i) {
+      EXPECT_TRUE(CompareMatrices(expected_derivatives.col(i),
+                                  srh_ahead(i).derivatives()));
+    }
+    const Vector3<AutoDiffXd> srh_behind =
+        closest_poses.at(AheadOrBehind::kBehind).odometry.pos.srh();
+    EXPECT_EQ(-std::numeric_limits<AutoDiffXd>::infinity(),
+              srh_behind.x().value());
+    for (int i{0}; i < 3; ++i) {
+      EXPECT_TRUE(CompareMatrices(Vector3<double>(0., 0., 0.),
+                                  srh_behind(i).derivatives()));
+    }
+    const AutoDiffXd dist_ahead =
+        closest_poses.at(AheadOrBehind::kAhead).distance;
+    EXPECT_EQ(kJustAheadSPosition - kEgoSPosition, dist_ahead);
+    // Distance is always invariant wrt. to x, y and z.
+    EXPECT_TRUE(
+        CompareMatrices(Vector3<double>(0., 0., 0.), dist_ahead.derivatives()));
+    const AutoDiffXd dist_behind =
+        closest_poses.at(AheadOrBehind::kBehind).distance;
+    EXPECT_EQ(std::numeric_limits<AutoDiffXd>::infinity(), dist_behind);
+    // Distance is always invariant wrt. to x, y and z.
+    EXPECT_TRUE(CompareMatrices(Vector3<double>(0., 0., 0.),
+                                dist_behind.derivatives()));
+  }
+}
+
 // Verifies that CalcLaneDirection returns the correct result when the ego
 // vehicle's orientation is altered.
 TEST_F(PoseSelectorDragwayTest, EgoOrientation) {
@@ -338,6 +462,45 @@ TEST_F(PoseSelectorDragwayTest, NoCarsOnShortRoad) {
             closest_poses.at(AheadOrBehind::kAhead).distance);
   EXPECT_EQ(std::numeric_limits<double>::infinity(),
             closest_poses.at(AheadOrBehind::kBehind).distance);
+}
+
+TEST_F(PoseSelectorDragwayTest, NoCarsOnShortRoadAutoDiff) {
+  // When no cars are found on a dragway whose length is less than the
+  // scan_distance, then infinite distances should be returned.
+  const double kShortLaneLength{40.};
+  MakeDragway(2 /* num lanes */, kShortLaneLength);
+
+  PoseVector<AutoDiffXd> ego_pose;
+  PoseBundle<AutoDiffXd> traffic_poses(kNumDragwayTrafficCars);
+
+  // Define the default poses.
+  SetDefaultDragwayPoses(&ego_pose, &traffic_poses);
+  SetDefaultDragwayPoseDerivatives(&ego_pose, &traffic_poses);
+
+  // Choose a scan-ahead distance greater than the lane length.
+  const AutoDiffXd scan_ahead_distance(kShortLaneLength + 10.);
+  EXPECT_GT(scan_ahead_distance,
+            kShortLaneLength - ego_pose.get_translation().x());
+  EXPECT_GT(scan_ahead_distance, ego_pose.get_translation().x());
+
+  // Scan for cars in the left lane, which should contain no cars.
+  const std::map<AheadOrBehind, const ClosestPose<AutoDiffXd>> closest_poses =
+      PoseSelector<AutoDiffXd>::FindClosestPair(
+          get_lane(ego_pose, *road_)->to_left(), ego_pose, traffic_poses,
+          scan_ahead_distance);
+
+  // Expect distances to have infinite value and zero derivatives in both the
+  // ahead and behind directions.
+  EXPECT_EQ(std::numeric_limits<double>::infinity(),
+            closest_poses.at(AheadOrBehind::kAhead).distance);
+  EXPECT_EQ(std::numeric_limits<double>::infinity(),
+            closest_poses.at(AheadOrBehind::kBehind).distance);
+  EXPECT_TRUE(CompareMatrices(
+      Vector3<double>(0., 0., 0.),
+      closest_poses.at(AheadOrBehind::kAhead).distance.derivatives()));
+  EXPECT_TRUE(CompareMatrices(
+      Vector3<double>(0., 0., 0.),
+      closest_poses.at(AheadOrBehind::kBehind).distance.derivatives()));
 }
 
 // Verifies the result when the s-positions of the ego and traffic vehicles have
@@ -524,6 +687,10 @@ GTEST_TEST(PoseSelectorTest, MultiSegmentRoad) {
     }
   }
 }
+
+// TODO(jadecastro) We cannot yet test against AutoDiff for multi-segment roads
+// because only the Dragway backend has AutoDiff implementations for
+// Lane::ToLanePosition() and Lane::ToGeoPosition().
 
 }  // namespace
 }  // namespace automotive

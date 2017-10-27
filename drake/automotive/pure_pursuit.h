@@ -22,6 +22,7 @@ namespace automotive {
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
+/// - AutoDiffXd
 ///
 /// They are already available to link against in the containing library.
 ///
@@ -55,7 +56,7 @@ class PurePursuit {
   /// Computes the goal point at a distance `s_lookahead` from the closest
   /// position on the curve in the intended direction of travel, and `with_s`
   /// and `pose` are the direction of travel and PoseVector for the ego vehicle.
-  static const maliput::api::GeoPosition ComputeGoalPoint(
+  static const maliput::api::GeoPositionT<T> ComputeGoalPoint(
       const T& s_lookahead, const LaneDirection& lane_direction,
       const systems::rendering::PoseVector<T>& pose);
 };

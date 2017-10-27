@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/automotive/maliput/dragway/road_geometry.h"
+#include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
 namespace drake {
 namespace automotive {
@@ -23,8 +24,7 @@ class PurePursuitControllerTest : public ::testing::Test {
     // Create a straight road with two lanes.
     road_.reset(new maliput::dragway::RoadGeometry(
         maliput::api::RoadGeometryId("Two-Lane Dragway"), 1 /* num_lanes */,
-        100 /* length */, kLaneWidth /* lane_width */,
-        0. /* shoulder_width */,
+        100 /* length */, kLaneWidth /* lane_width */, 0. /* shoulder_width */,
         5. /* maximum_height */,
         std::numeric_limits<double>::epsilon() /* linear_tolerance */,
         std::numeric_limits<double>::epsilon() /* angular_tolerance */));
@@ -81,6 +81,22 @@ TEST_F(PurePursuitControllerTest, Topology) {
       dut_->get_output_port(dut_->steering_command_output().get_index());
   EXPECT_EQ(systems::kVectorValued, command_output_port.get_data_type());
   EXPECT_EQ(1 /* steering angle output */, command_output_port.size());
+}
+
+TEST_F(PurePursuitControllerTest, ToAutoDiff) {
+  EXPECT_TRUE(is_autodiffxd_convertible(*dut_, [&](const auto& other_dut) {
+    auto other_context = other_dut.CreateDefaultContext();
+    auto other_output = other_dut.AllocateOutput(*other_context);
+    auto other_derivatives = other_dut.AllocateTimeDerivatives();
+
+    other_context->FixInputPort(dut_->lane_input().get_index(),
+                                systems::AbstractValue::Make(*lane_direction_));
+    auto ego_pose = std::make_unique<PoseVector<AutoDiffXd>>();
+    other_context->FixInputPort(dut_->ego_pose_input().get_index(),
+                                std::move(ego_pose));
+
+    other_dut.CalcOutput(*other_context, other_output.get());
+  }));
 }
 
 TEST_F(PurePursuitControllerTest, Output) {
