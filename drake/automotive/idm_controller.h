@@ -43,6 +43,7 @@ namespace automotive {
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
+/// - AutoDiffXd
 ///
 /// They are already available to link against in the containing library.
 ///
@@ -55,6 +56,12 @@ class IdmController : public systems::LeafSystem<T> {
   /// Constructor.
   /// @param road is the pre-defined RoadGeometry.
   explicit IdmController(const maliput::api::RoadGeometry& road);
+
+  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  template <typename U>
+  explicit IdmController(const IdmController<U>& other)
+      : IdmController<T>(other.road_) {}
+
   ~IdmController() override;
 
   /// See the class description for details on the following input ports.
@@ -80,14 +87,15 @@ class IdmController : public systems::LeafSystem<T> {
       systems::BasicVector<T>* command) const;
 
  private:
+  // Allow different specializations to access each other's private data.
+  template <typename> friend class IdmController;
+
   // Converts @p pose into RoadPosition.
   const maliput::api::RoadPosition GetRoadPosition(
       const Isometry3<T>& pose) const;
 
   void CalcAcceleration(const systems::Context<T>& context,
                         systems::BasicVector<T>* accel_output) const;
-
-  // TODO(jadecastro): Introduce AutoDiff support and unit tests.
 
   const maliput::api::RoadGeometry& road_;
 
@@ -99,4 +107,13 @@ class IdmController : public systems::LeafSystem<T> {
 };
 
 }  // namespace automotive
+
+namespace systems {
+namespace scalar_conversion {
+// Disable symbolic support, because we use ExtractDoubleOrThrow.
+template <>
+struct Traits<automotive::IdmController> : public NonSymbolicTraits {};
+}  // namespace scalar_conversion
+}  // namespace systems
+
 }  // namespace drake
