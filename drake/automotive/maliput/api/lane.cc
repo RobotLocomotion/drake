@@ -46,13 +46,11 @@ LanePositionT<AutoDiffXd> Lane::ToLanePositionT<AutoDiffXd>(
   // If the partial derivatives of result, nearest_point and distance are not of
   // the same dimension as those in geo_pos, pad them with zeros of the same
   // dismension as those in geo_pos.
-  Vector3<AutoDiffXd> srh = result.srh();
-  Eigen::internal::make_coherent(srh.x().derivatives(), deriv);
-  Eigen::internal::make_coherent(srh.y().derivatives(), deriv);
-  Eigen::internal::make_coherent(srh.z().derivatives(), deriv);
-  result.set_srh(srh);
+  Eigen::internal::make_coherent(result.s().derivatives(), deriv);
+  Eigen::internal::make_coherent(result.r().derivatives(), deriv);
+  Eigen::internal::make_coherent(result.h().derivatives(), deriv);
   if (nearest_point != nullptr) {
-    Vector3<AutoDiffXd> xyz = nearest_point->xyz();
+    const Vector3<AutoDiffXd>& xyz = nearest_point->xyz();
     Eigen::internal::make_coherent(xyz.x().derivatives(), deriv);
     Eigen::internal::make_coherent(xyz.y().derivatives(), deriv);
     Eigen::internal::make_coherent(xyz.z().derivatives(), deriv);
