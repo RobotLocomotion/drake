@@ -42,23 +42,6 @@ macro(drake_setup_compiler)
 endmacro()
 
 #------------------------------------------------------------------------------
-# Add local CMake modules to CMake search path.
-#------------------------------------------------------------------------------
-function(drake_setup_cmake BASE_PATH)
-  set(CMAKE_MODULE_PATH "${BASE_PATH}")
-  file(GLOB _versions RELATIVE ${BASE_PATH} "${BASE_PATH}/*/")
-  foreach(_version ${_versions})
-    if(IS_DIRECTORY "${BASE_PATH}/${_version}")
-      if(CMAKE_VERSION VERSION_LESS ${_version})
-        list(INSERT CMAKE_MODULE_PATH 0 "${BASE_PATH}/${_version}")
-      endif()
-    endif()
-  endforeach()
-  list(INSERT CMAKE_MODULE_PATH 0 ${BASE_PATH})
-  set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" PARENT_SCOPE)
-endfunction()
-
-#------------------------------------------------------------------------------
 # Set up basic platform properties for building Drake.
 #------------------------------------------------------------------------------
 macro(drake_setup_platform)
@@ -108,4 +91,9 @@ endmacro()
 
 # Set up local module paths; this needs to be done immediately as other helper
 # modules may need to include things from our local module set
-drake_setup_cmake(${CMAKE_CURRENT_LIST_DIR}/modules)
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/modules")
+
+if(CMAKE_VERSION VERSION_LESS 3.10)
+  list(INSERT CMAKE_MODULE_PATH 0
+    "${CMAKE_CURRENT_LIST_DIR}/../third_party/com_kitware_gitlab_cmake_cmake/3.10/Modules")
+endif()
