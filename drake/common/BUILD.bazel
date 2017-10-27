@@ -34,6 +34,7 @@ drake_cc_library(
         ":hash",
         ":is_approx_equal_abstol",
         ":is_cloneable",
+        ":make_coherent",
         ":nice_type_name",
         ":number_traits",
         ":polynomial",
@@ -133,6 +134,14 @@ drake_cc_library(
 drake_cc_library(
     name = "hash",
     hdrs = ["hash.h"],
+    deps = [
+        ":essential",
+    ],
+)
+
+drake_cc_library(
+    name = "make_coherent",
+    hdrs = ["make_coherent.h"],
     deps = [
         ":essential",
     ],
