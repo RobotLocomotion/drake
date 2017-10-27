@@ -1,0 +1,26 @@
+namespace: "drake::examples"
+
+element {
+     name: "x"
+     doc: "Horizontal location of the center-of-mass in meters."
+}
+element {
+     name: "y"
+     doc: "Vertical location of the center-of-mass in meters."
+}
+element {
+     name: "theta"
+     doc: "angle of the rod (measured counter-clockwise) in radians."
+}
+element {
+     name: "xdot"
+     doc: "Velocity of the horizontal location of the c.o.m. in m/s."
+}
+element {
+     name: "ydot"
+     doc: "Velocity of the vertical location of the c.o.m. in m/s."
+}
+element {
+     name: "thetadot"
+     doc: "angular velocity of the rod in radians per second."
+}
