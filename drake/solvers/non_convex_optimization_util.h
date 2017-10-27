@@ -44,40 +44,43 @@ std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposeNonConvexQuadraticForm(
 
 /**
  * For a non-convex quadratic constraint
- *   lb <= xᵀQ₁x - xᵀQ₂x + pᵀx <= ub
+ *   lb ≤ xᵀQ₁x - xᵀQ₂x + pᵀx ≤ ub
  * where Q₁, Q₂ are both positive semidefinite matrices, we relax this
  * constraint by several convex constraints. The steps are
  * 1. Introduce two new variables z₁, z₂, to replace xᵀQ₁x and xᵀQ₂x
  *    respectively. The constraint becomes
  *    <pre>
- *      lb <= z₁ - z₂ + pᵀx <= ub              (1)
+ *      lb ≤ z₁ - z₂ + pᵀx ≤ ub              (1)
  *    </pre>
  * 2. Ideally, we would like to enforce z₁ = xᵀQ₁x and z₂ = xᵀQ₂x through convex
  *    constraints. To this end, we first bound z₁ and z₂ from below, as
  *    <pre>
- *      z₁ >= xᵀQ₁x                            (2)
- *      z₂ >= xᵀQ₂x                            (3)
+ *      z₁ ≥ xᵀQ₁x                            (2)
+ *      z₂ ≥ xᵀQ₂x                            (3)
  *    </pre>
  *    These two constraints are second order cone
  *    constraints.
- * 3. To bound z₁ and z₂ from above, we consider to linearize the quadratic
- *    forms xᵀQ₁x and xᵀQ₂x at a point x₀. Due to the convexity of the quadratic
- *    form, we know that given a positive scalar d, there exists a neighbourhood
- *    around x₀, s.t
+ * 3. To bound z₁ and z₂ from above, we linearize the quadratic forms
+ *    xᵀQ₁x and xᵀQ₂x at a point x₀. Due to the convexity of the quadratic
+ *    form, we know that given a positive scalar d > 0, there exists a
+ *    neighbourhood N(x₀)
+ *    around x₀, s.t ∀ x ∈ N(x₀)
  *    <pre>
- *    xᵀQ₁x <= 2 x₀ᵀQ₁(x - x₀) + x₀ᵀQ₁x₀ + d   (4)
- *    xᵀQ₂x <= 2 x₀ᵀQ₂(x - x₀) + x₀ᵀQ₂x₀ + d   (5)
+ *    xᵀQ₁x ≤ 2 x₀ᵀQ₁(x - x₀) + x₀ᵀQ₁x₀ + d   (4)
+ *    xᵀQ₂x ≤ 2 x₀ᵀQ₂(x - x₀) + x₀ᵀQ₂x₀ + d   (5)
  *    </pre>
- *    so we also enforce the linear constraints
+ *    Notice N(x₀) is the intersection of two ellipsoids, as formulated in (4)
+ *    and (5).
+ *    Therefore, we also enforce the linear constraints
  *    <pre>
- *      z₁ <= 2 x₀ᵀQ₁(x - x₀) + x₀ᵀQ₁x₀ + d    (6)
- *      z₂ <= 2 x₀ᵀQ₂(x - x₀) + x₀ᵀQ₂x₀ + d    (7)
+ *      z₁ ≤ 2 x₀ᵀQ₁(x - x₀) + x₀ᵀQ₁x₀ + d    (6)
+ *      z₂ ≤ 2 x₀ᵀQ₂(x - x₀) + x₀ᵀQ₂x₀ + d    (7)
  *    </pre>
  *    So we relax the original non-convex constraint, with the convex
- *    constraints (1)(2)(3)(6)(7)
+ *    constraints (1)-(3), (6) and (7).
  *
- * The trust region is the neighbourhood around x₀, such that the inequalities
- * (4), (5) are satisfied.
+ * The trust region is the neighbourhood N(x₀) around x₀, such that the
+ * inequalities (4), (5) are satisfied ∀ x ∈ N(x₀).
  *
  * The positive scalar d controls both how much the constraint relaxation is
  * (the original constraint can be violated by at most d), and how big the trust
@@ -95,27 +98,31 @@ std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposeNonConvexQuadraticForm(
  *   ICRA, 2018
  *
  * The special cases are when Q₁ = 0 or Q₂ = 0.
- * 1. When Q₁ = 0, the constraint becomes
- *    lb <= -xᵀQ₂x + pᵀx <= ub
+ * 1. When Q₁ = 0, the original constraint becomes
+ *    lb ≤ -xᵀQ₂x + pᵀx ≤ ub
  *    If ub = +∞, then the original constraint is the convex rotated Lorentz
- *    cone constraint xᵀQ₂x <= pᵀx - lb. The user should not call this function
+ *    cone constraint xᵀQ₂x ≤ pᵀx - lb. The user should not call this function
  *    to relax this convex constraint. Throw a runtime error.
  *    If ub < +∞, then we introduce a new variable z, with the constraints
- *    lb <= -z + pᵀx <= ub
- *    z >= xᵀQ₂x
- *    z <= 2 x₀ᵀQ₂(x - x₀) + x₀ᵀQ₂x₀ + d
+ *    lb ≤ -z + pᵀx ≤ ub
+ *    z ≥ xᵀQ₂x
+ *    z ≤ 2 x₀ᵀQ₂(x - x₀) + x₀ᵀQ₂x₀ + d
  * 2. When Q₂ = 0, the constraint becomes
- *    lb <= xᵀQ₁x + pᵀx <= ub
+ *    lb ≤ xᵀQ₁x + pᵀx ≤ ub
  *    If lb = -∞, then the original constraint is the convex rotated Lorentz
- *    cone constraint xᵀQ₁x <= ub - pᵀx. The user should not call this function
+ *    cone constraint xᵀQ₁x ≤ ub - pᵀx. The user should not call this function
  *    to relax this convex constraint. Throw a runtime error.
  *    If lb > -∞, then we introduce a new variable z, with the constraints
- *    lb <= z + pᵀx <= ub
- *    z >= xᵀQ₁x
- *    z <= 2 x₀ᵀQ₁(x - x₀) + x₀ᵀQ₁x₀ + d
+ *    lb ≤ z + pᵀx ≤ ub
+ *    z ≥ xᵀQ₁x
+ *    z ≤ 2 x₀ᵀQ₁(x - x₀) + x₀ᵀQ₁x₀ + d
  * 3. If both Q₁ and Q₂ are zero, then the original constraint is a convex
- *    linear constraint lb <= pᵀx <= ub. The user should not call this function
+ *    linear constraint lb ≤ pᵀx ≤ ub. The user should not call this function
  *    to relax this convex constraint. Throw a runtime error.
+ * @param prog The MathematicalProgram to which the relaxed constraints are
+ * added.
+ * @param x The decision variables appeared in the original non-convex
+ * constraint.
  * @param Q1 A positive definite matrix. Notice we can always add a diagonal
  * matrix a * identity to Q1 and Q2 simultaneously, to make both matrices
  * positive definite, while keeping their difference Q1 - Q2 unchanged.
@@ -136,7 +143,7 @@ std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposeNonConvexQuadraticForm(
  * @pre 1. Q1, Q2 are positive semidefinite.
  *      2. d is positive.
  *      3. Q1, Q2, p, x, x₀ are all of the consistent size.
- *      4. lower_bound <= upper_bound.
+ *      4. lower_bound ≤ upper_bound.
  */
 std::tuple<Binding<LinearConstraint>,
            std::vector<Binding<RotatedLorentzConeConstraint>>,

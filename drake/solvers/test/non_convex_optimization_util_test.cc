@@ -377,10 +377,11 @@ void SolveRelaxNonConvexQuadraticConstraintInTrustRegionWithZeroQ1(
   Eigen::Vector2d linear_lb, linear_ub;
   linear_lb << x0.dot(Q2 * x0) - trust_region_gap, lb;
   linear_ub << std::numeric_limits<double>::infinity(), ub;
+  const double poly_tol{1E-10};
   for (int i = 0; i < 2; ++i) {
     EXPECT_TRUE(PolynomialEqual(symbolic::Polynomial(linear_expr(i)),
                                 symbolic::Polynomial(linear_expr_expected(i)),
-                                1E-10));
+                                poly_tol));
     EXPECT_TRUE(CompareMatrices(linear_constraint.constraint()->lower_bound(),
                                 linear_lb, 1E-15, MatrixCompareType::absolute));
     EXPECT_TRUE(CompareMatrices(linear_constraint.constraint()->upper_bound(),
@@ -391,10 +392,10 @@ void SolveRelaxNonConvexQuadraticConstraintInTrustRegionWithZeroQ1(
       lorentz_cone1.constraint()->A() * lorentz_cone1.variables() +
       lorentz_cone1.constraint()->b();
   EXPECT_TRUE(PolynomialEqual(symbolic::Polynomial(y1(0) * y1(1)),
-                              symbolic::Polynomial(z(0)), 1E-15));
+                              symbolic::Polynomial(z(0)), poly_tol));
   EXPECT_TRUE(PolynomialEqual(
       symbolic::Polynomial(y1.tail(y1.rows() - 2).squaredNorm()),
-      symbolic::Polynomial(x.dot(Q2 * x)), 1E-15));
+      symbolic::Polynomial(x.dot(Q2 * x)), poly_tol));
 
   auto cost = prog->AddLinearCost(x.cast<symbolic::Expression>().sum());
   for (int i = 0; i < c.cols(); ++i) {
