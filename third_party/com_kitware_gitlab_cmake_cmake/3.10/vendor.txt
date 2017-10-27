@@ -1,0 +1,6 @@
+The files in this directory tree (other than this file) are derived from CMake:
+
+  remote = "https://gitlab.kitware.com/cmake/cmake.git"
+  sha = "319622a49fb300cd8a7efd8378421a32204510de"
+
+Please update this metadata when copying new versions from upstream.
