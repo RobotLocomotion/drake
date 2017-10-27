@@ -344,9 +344,6 @@ TEST_F(MultilaneArcRoadCurveTest, WorldFunctionDerivative) {
     return dw / (12. * kDifferential);
   };
 
-  const double kZeroRoll{0.};
-  const double kZeroPitch{0.};
-  const double kZeroGPrime{0.};
   // Checks for a flat curve.
   const ArcRoadCurve flat_dut(kCenter, kRadius, kTheta0, kDTheta, zp, zp);
   const Vector3<double> kGeoCenter(kCenter.x(), kCenter.y(), 0.);
@@ -354,15 +351,15 @@ TEST_F(MultilaneArcRoadCurveTest, WorldFunctionDerivative) {
     for (double r : r_vector) {
       for (double h : h_vector) {
         // Computes the rotation along the RoadCurve at [p, r, h].
-        const Rot3 flat_rotation(
-            kZeroRoll, kZeroPitch, flat_dut.heading_of_p(p));
+        const Rot3 rotation = flat_dut.Rabg_of_p(p);
+        const double g_prime = flat_dut.elevation().f_dot_p(p);
         const Vector3<double> w_prime =
-            flat_dut.W_prime_of_prh(p, r, h, flat_rotation, kZeroGPrime);
+            flat_dut.W_prime_of_prh(p, r, h, rotation, g_prime);
         const Vector3<double> numeric_w_prime =
             numeric_w_prime_of_prh(flat_dut, p, r, h);
         EXPECT_TRUE(CompareMatrices(w_prime, numeric_w_prime, kQuiteExact));
         const Vector3<double> s_hat =
-            flat_dut.s_hat_of_prh(p, r, h, flat_rotation, kZeroGPrime);
+            flat_dut.s_hat_of_prh(p, r, h, rotation, g_prime);
         EXPECT_TRUE(CompareMatrices(w_prime.normalized(), s_hat, kVeryExact));
       }
     }
@@ -375,20 +372,19 @@ TEST_F(MultilaneArcRoadCurveTest, WorldFunctionDerivative) {
                                          0.);
   const ArcRoadCurve elevated_dut(kCenter, kRadius, kTheta0, kDTheta,
                                   linear_elevation, zp);
-  const double kLinearElevatedPitch = -std::atan(linear_elevation.f_dot_p(0.));
   for (double p : p_vector) {
     for (double r : r_vector) {
       for (double h : h_vector) {
         // Computes the rotation along the RoadCurve at [p, r, h].
-        const Rot3 elevated_rotation(kZeroRoll, kLinearElevatedPitch,
-                                     elevated_dut.heading_of_p(p));
+        const Rot3 rotation = elevated_dut.Rabg_of_p(p);
+        const double g_prime = elevated_dut.elevation().f_dot_p(p);
         const Vector3<double> w_prime = elevated_dut.W_prime_of_prh(
-            p, r, h, elevated_rotation, kElevationSlope);
+            p, r, h, rotation, g_prime);
         const Vector3<double> numeric_w_prime =
             numeric_w_prime_of_prh(elevated_dut, p, r, h);
         EXPECT_TRUE(CompareMatrices(w_prime, numeric_w_prime, kQuiteExact));
         const Vector3<double> s_hat = elevated_dut.s_hat_of_prh(
-            p, r, h, elevated_rotation, kElevationSlope);
+            p, r, h, rotation, g_prime);
         EXPECT_TRUE(CompareMatrices(w_prime.normalized(), s_hat, kVeryExact));
       }
     }
@@ -404,22 +400,24 @@ TEST_F(MultilaneArcRoadCurveTest, WorldFunctionDerivative) {
     for (double r : r_vector) {
       for (double h : h_vector) {
         // Computes the rotation along the RoadCurve at [p, r, h].
-        const Rot3 superelevated_rotation(kSuperelevationOffset, kZeroPitch,
-                                          superelevated_dut.heading_of_p(p));
+        const Rot3 rotation = superelevated_dut.Rabg_of_p(p);
+        const double g_prime = superelevated_dut.elevation().f_dot_p(p);
         const Vector3<double> w_prime = superelevated_dut.W_prime_of_prh(
-            p, r, h, superelevated_rotation, kZeroGPrime);
+            p, r, h, rotation, g_prime);
         const Vector3<double> numeric_w_prime =
             numeric_w_prime_of_prh(superelevated_dut, p, r, h);
         EXPECT_TRUE(CompareMatrices(w_prime, numeric_w_prime, kQuiteExact));
         const Vector3<double> s_hat = superelevated_dut.s_hat_of_prh(
-            p, r, h, superelevated_rotation, kZeroGPrime);
+            p, r, h, rotation, g_prime);
         EXPECT_TRUE(CompareMatrices(w_prime.normalized(), s_hat, kVeryExact));
       }
     }
   }
 }
 
-// Checks reference curve rotation for different values of p.
+// Checks reference curve rotation for different values of p. To compute the
+// values being used below, the same curve functions were composed and
+// numerically evaluated using Octave.
 TEST_F(MultilaneArcRoadCurveTest, ReferenceCurveRotation) {
   // Wraps angles in [-π, π) range.
   auto wrap = [](double theta) {

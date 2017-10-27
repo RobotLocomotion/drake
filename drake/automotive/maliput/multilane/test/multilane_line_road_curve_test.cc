@@ -224,22 +224,20 @@ TEST_F(MultilaneLineRoadCurveTest, WorldFunctionDerivative) {
     return dw / (12. * kDifferential);
   };
 
-  const double kZeroRoll{0.};
-  const double kZeroPitch{0.};
-  const double kZeroGPrime{0.};
   // Checks for a flat curve.
   const LineRoadCurve flat_dut(kOrigin, kDirection, zp, zp);
-  const Rot3 flat_rotation(kZeroRoll, kZeroPitch, kHeading);
   for (double p : p_vector) {
     for (double r : r_vector) {
       for (double h : h_vector) {
+        const Rot3 rotation = flat_dut.Rabg_of_p(p);
+        const double g_prime = flat_dut.elevation().f_dot_p(p);
         const Vector3<double> w_prime =
-            flat_dut.W_prime_of_prh(p, r, h, flat_rotation, kZeroGPrime);
+            flat_dut.W_prime_of_prh(p, r, h, rotation, g_prime);
         const Vector3<double> numeric_w_prime =
             numeric_w_prime_of_prh(flat_dut, p, r, h);
         EXPECT_TRUE(CompareMatrices(w_prime, numeric_w_prime, kQuiteExact));
         const Vector3<double> s_hat =
-            flat_dut.s_hat_of_prh(p, r, h, flat_rotation, kZeroGPrime);
+            flat_dut.s_hat_of_prh(p, r, h, rotation, g_prime);
         EXPECT_TRUE(CompareMatrices(w_prime.normalized(), s_hat, kVeryExact));
       }
     }
@@ -252,18 +250,18 @@ TEST_F(MultilaneLineRoadCurveTest, WorldFunctionDerivative) {
                                          0.);
   const LineRoadCurve elevated_dut(kOrigin, kDirection, linear_elevation, zp);
   // Computes the rotation along the RoadCurve.
-  const Rot3 elevated_rotation(
-      kZeroRoll, -std::atan(linear_elevation.f_dot_p(0.)), kHeading);
   for (double p : p_vector) {
     for (double r : r_vector) {
       for (double h : h_vector) {
+        const Rot3 rotation = elevated_dut.Rabg_of_p(p);
+        const double g_prime = elevated_dut.elevation().f_dot_p(p);
         const Vector3<double> w_prime = elevated_dut.W_prime_of_prh(
-            p, r, h, elevated_rotation, kElevationSlope);
+            p, r, h, rotation, g_prime);
         const Vector3<double> numeric_w_prime =
             numeric_w_prime_of_prh(elevated_dut, p, r, h);
         EXPECT_TRUE(CompareMatrices(w_prime, numeric_w_prime, kQuiteExact));
         const Vector3<double> s_hat = elevated_dut.s_hat_of_prh(
-            p, r, h, elevated_rotation, kElevationSlope);
+            p, r, h, rotation, g_prime);
         EXPECT_TRUE(CompareMatrices(w_prime.normalized(), s_hat, kVeryExact));
       }
     }
@@ -275,18 +273,18 @@ TEST_F(MultilaneLineRoadCurveTest, WorldFunctionDerivative) {
       kSuperelevationOffset / kDirection.norm(), 0., 0., 0.);
   const LineRoadCurve superelevated_dut(kOrigin, kDirection, zp,
                                         constant_offset_superelevation);
-  const Rot3 superelevated_rotation(
-      kSuperelevationOffset, kZeroPitch, kHeading);
   for (double p : p_vector) {
     for (double r : r_vector) {
       for (double h : h_vector) {
+        const Rot3 rotation = superelevated_dut.Rabg_of_p(p);
+        const double g_prime = superelevated_dut.elevation().f_dot_p(p);
         const Vector3<double> w_prime = superelevated_dut.W_prime_of_prh(
-            p, r, h, superelevated_rotation, kZeroGPrime);
+            p, r, h, rotation, g_prime);
         const Vector3<double> numeric_w_prime =
             numeric_w_prime_of_prh(superelevated_dut, p, r, h);
         EXPECT_TRUE(CompareMatrices(w_prime, numeric_w_prime, kQuiteExact));
         const Vector3<double> s_hat = superelevated_dut.s_hat_of_prh(
-            p, r, h, superelevated_rotation, kZeroGPrime);
+            p, r, h, rotation, g_prime);
         EXPECT_TRUE(CompareMatrices(w_prime.normalized(), s_hat, kVeryExact));
       }
     }
