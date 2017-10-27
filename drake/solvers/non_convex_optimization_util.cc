@@ -71,7 +71,8 @@ RelaxNonConvexQuadraticConstraintInTrustRegion(
   }
   if (Q1.rows() != Q2.rows() || Q1.rows() != p.rows() ||
       Q1.rows() != x0.rows() || Q1.rows() != x.rows()) {
-    throw std::runtime_error("The input matrices do not have the right size.");
+    throw std::runtime_error(
+        "The dimensions of the inputs are not consistent.");
   }
   if (trust_region_gap <= 0) {
     throw std::runtime_error("trust_region_gap should be positive.");

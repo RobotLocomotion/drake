@@ -102,7 +102,7 @@ std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposeNonConvexQuadraticForm(
  *    lb ≤ -xᵀQ₂x + pᵀx ≤ ub
  *    If ub = +∞, then the original constraint is the convex rotated Lorentz
  *    cone constraint xᵀQ₂x ≤ pᵀx - lb. The user should not call this function
- *    to relax this convex constraint. Throw a runtime error.
+ *    to relax this convex constraint. @throws std::runtime_error.
  *    If ub < +∞, then we introduce a new variable z, with the constraints
  *    lb ≤ -z + pᵀx ≤ ub
  *    z ≥ xᵀQ₂x
@@ -111,7 +111,7 @@ std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposeNonConvexQuadraticForm(
  *    lb ≤ xᵀQ₁x + pᵀx ≤ ub
  *    If lb = -∞, then the original constraint is the convex rotated Lorentz
  *    cone constraint xᵀQ₁x ≤ ub - pᵀx. The user should not call this function
- *    to relax this convex constraint. Throw a runtime error.
+ *    to relax this convex constraint. @throws std::runtime_error.
  *    If lb > -∞, then we introduce a new variable z, with the constraints
  *    lb ≤ z + pᵀx ≤ ub
  *    z ≥ xᵀQ₁x
@@ -123,17 +123,15 @@ std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposeNonConvexQuadraticForm(
  * added.
  * @param x The decision variables appeared in the original non-convex
  * constraint.
- * @param Q1 A positive definite matrix. Notice we can always add a diagonal
- * matrix a * identity to Q1 and Q2 simultaneously, to make both matrices
- * positive definite, while keeping their difference Q1 - Q2 unchanged.
- * @param Q2 A positive definite matrix.
+ * @param Q1 A positive semidefinite matrix.
+ * @param Q2 A positive semidefinite matrix.
  * @param p A vector, the linear coefficients in the quadratic form.
  * @param linearization_point The vector `x₀` in the documentation above.
  * @param lower_bound The left-hand side of the original non-convex constraint.
  * @param upper_bound The right-hand side of the original non-convex constraint.
  * @param trust_region_gap The user-specified positive scalar, `d` in
  * the documentation above. This gap determines both the maximal constraint
- * violation, together with the size of the trust region.
+ * violation and the size of the trust region.
  * @retval <linear_constraint, rotated_lorentz_cones, z>
  * linear_constraint includes (1)(6)(7)
  * rotated_lorentz_cones are (2) (3)
@@ -143,7 +141,7 @@ std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposeNonConvexQuadraticForm(
  * @pre 1. Q1, Q2 are positive semidefinite.
  *      2. d is positive.
  *      3. Q1, Q2, p, x, x₀ are all of the consistent size.
- *      4. lower_bound ≤ upper_bound.
+ *      @throws std::runtime_error when the precondition is not satisfied.
  */
 std::tuple<Binding<LinearConstraint>,
            std::vector<Binding<RotatedLorentzConeConstraint>>,
