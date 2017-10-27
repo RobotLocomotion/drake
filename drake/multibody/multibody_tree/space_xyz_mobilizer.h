@@ -54,7 +54,7 @@ namespace multibody {
 /// many dynamicists. They are also known as the Tait-Bryan angles or Cardan
 /// angles.
 ///
-/// @note The mapping from Euler angle's rates to angular velocity is singular
+/// @note The mapping from angular velocity to Euler angle's rates is singular
 /// for angle `θ₂` (many times referred to as the pitch angle) such that
 /// `θ₂ = π/2 + kπ, ∀ k ∈ ℤ`.
 ///
@@ -206,6 +206,13 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
   /// @param[out] qdot
   ///   A Vector3 packing of the time derivatives of the space x-y-z angles θ₁,
   ///   θ₂, θ₃ in `qdot(0)`, `qdot(1)` and `qdot(2)`, respectively.
+  ///
+  /// @warning The mapping from Euler angle's rates to angular velocity is
+  /// singular for angle `θ₂` such that `θ₂ = π/2 + kπ, ∀ k ∈ ℤ`.
+  /// To avoid working close to this singularity (which could potentially result
+  /// in large errors for `qdot`), this method aborts when the absolute value of
+  /// the cosine of θ₂ is smaller than 10⁻³, a number arbitrarily chosen to this
+  /// end.
   void MapVelocityToQDot(
       const MultibodyTreeContext<T>& context,
       const Eigen::Ref<const VectorX<T>>& v,
@@ -223,9 +230,6 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
   /// @param[out] v
   ///   A vector of generalized velocities for this Mobilizer which should
   ///   correspond to a vector in ℝ³ for an angular velocity `w_FM` of M in F.
-  ///
-  /// @warning The mapping from Euler angle's rates to angular velocity is
-  /// singular for angle `θ₂` such that `θ₂ = π/2 + kπ, ∀ k ∈ ℤ`.
   void MapQDotToVelocity(
       const MultibodyTreeContext<T>& context,
       const Eigen::Ref<const VectorX<T>>& qdot,

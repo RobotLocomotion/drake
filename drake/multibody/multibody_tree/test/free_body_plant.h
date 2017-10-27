@@ -4,7 +4,7 @@
 
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
-#include "drake/multibody/multibody_tree/rpy_mobilizer.h"
+#include "drake/multibody/multibody_tree/space_xyz_mobilizer.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_system.h"
 

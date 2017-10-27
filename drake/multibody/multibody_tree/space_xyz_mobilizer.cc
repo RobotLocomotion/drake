@@ -1,4 +1,4 @@
-#include "drake/multibody/multibody_tree/rpy_mobilizer.h"
+#include "drake/multibody/multibody_tree/space_xyz_mobilizer.h"
 
 #include <memory>
 #include <stdexcept>
@@ -116,6 +116,7 @@ void SpaceXYZMobilizer<T>::MapVelocityToQDot(
 
   using std::sin;
   using std::cos;
+  using std::abs;
 
   // The linear map E_F(q) allows computing v from q̇ as:
   // w_FM = E_F(q) * q̇; q̇ = [ṙ, ṗ, ẏ]ᵀ
@@ -165,12 +166,14 @@ void SpaceXYZMobilizer<T>::MapVelocityToQDot(
   //                          Simulation.
 
   const Vector3<T> angles = get_angles(context);
+  const T cp = cos(angles[1]);
+  DRAKE_DEMAND(abs(cp) > 1.0e-3);
+
   const T& w0 = v[0];
   const T& w1 = v[1];
   const T& w2 = v[2];
 
   const T sp = sin(angles[1]);
-  const T cp = cos(angles[1]);
   const T sy = sin(angles[2]);
   const T cy = cos(angles[2]);
   const T cpi = 1.0 / cp;
