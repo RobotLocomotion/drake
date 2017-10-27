@@ -14,7 +14,6 @@
 #include "drake/automotive/gen/trajectory_car_params.h"
 #include "drake/automotive/gen/trajectory_car_state.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/extract_double.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/vector_base.h"
 #include "drake/systems/rendering/frame_velocity.h"
@@ -62,7 +61,7 @@ namespace automotive {
 template <typename T>
 class TrajectoryCar final : public systems::LeafSystem<T> {
  public:
-  typedef typename Curve2<double>::Point2 Point2d;
+  typedef typename Curve2<T>::Point2T Point2;
 
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TrajectoryCar)
 
@@ -108,8 +107,8 @@ class TrajectoryCar final : public systems::LeafSystem<T> {
  protected:
   /// Data structure returned by CalcRawPose containing raw pose information.
   struct PositionHeading {
-    Point2d position = Point2d(Point2d::Zero());
-    double heading{0.};
+    Point2 position = Point2::Zero();
+    T heading{0.};
   };
 
   void CalcStateOutput(const systems::Context<T>& context,
@@ -245,14 +244,16 @@ class TrajectoryCar final : public systems::LeafSystem<T> {
 
   // Computes the PositionHeading of the trajectory car based on the car's
   // current position along the curve.
-  const PositionHeading CalcRawPose(const TrajectoryCarState<T>& state) const {
+  const PositionHeading CalcRawPose(const TrajectoryCarState<T>& state)
+      const {
     using std::atan2;
 
     PositionHeading result;
 
     // Compute the curve at the current longitudinal (along-curve) position.
-    const typename Curve2<double>::PositionResult pose =
-        curve_.GetPosition(ExtractDoubleOrThrow(state.position()));
+    Curve2<T> curve(curve_.waypoints());
+    const typename Curve2<T>::PositionResult pose =
+        curve.GetPosition(state.position());
     // TODO(jadecastro): Now that the curve is a function of position rather
     // than time, we are not acting on a `trajectory` anymore.  Rename this
     // System to PathFollowingCar or something similar.
