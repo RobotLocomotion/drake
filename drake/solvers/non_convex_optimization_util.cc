@@ -77,6 +77,10 @@ RelaxNonConvexQuadraticConstraintInTrustRegion(
   if (trust_region_gap <= 0) {
     throw std::runtime_error("trust_region_gap should be positive.");
   }
+  if (lower_bound > upper_bound) {
+    throw std::runtime_error(
+        "lower_bound should be no larger than upper_bound");
+  }
 
   const bool Q1_is_zero = (Q1.array() == 0).all();
   const bool Q2_is_zero = (Q2.array() == 0).all();

@@ -102,7 +102,8 @@ std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposeNonConvexQuadraticForm(
  *    lb ≤ -xᵀQ₂x + pᵀx ≤ ub
  *    If ub = +∞, then the original constraint is the convex rotated Lorentz
  *    cone constraint xᵀQ₂x ≤ pᵀx - lb. The user should not call this function
- *    to relax this convex constraint. @throws std::runtime_error.
+ *    to relax this convex constraint.
+ *    @throws std::runtime_error if Q₁ = 0 and ub = +∞.
  *    If ub < +∞, then we introduce a new variable z, with the constraints
  *    lb ≤ -z + pᵀx ≤ ub
  *    z ≥ xᵀQ₂x
@@ -111,7 +112,8 @@ std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposeNonConvexQuadraticForm(
  *    lb ≤ xᵀQ₁x + pᵀx ≤ ub
  *    If lb = -∞, then the original constraint is the convex rotated Lorentz
  *    cone constraint xᵀQ₁x ≤ ub - pᵀx. The user should not call this function
- *    to relax this convex constraint. @throws std::runtime_error.
+ *    to relax this convex constraint.
+ *    @throws std::runtime_error if Q₂ = 0 and lb = -∞.
  *    If lb > -∞, then we introduce a new variable z, with the constraints
  *    lb ≤ z + pᵀx ≤ ub
  *    z ≥ xᵀQ₁x
@@ -141,6 +143,7 @@ std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposeNonConvexQuadraticForm(
  * @pre 1. Q1, Q2 are positive semidefinite.
  *      2. d is positive.
  *      3. Q1, Q2, p, x, x₀ are all of the consistent size.
+ *      4. lower_bound ≤ upper_bound.
  *      @throws std::runtime_error when the precondition is not satisfied.
  */
 std::tuple<Binding<LinearConstraint>,
