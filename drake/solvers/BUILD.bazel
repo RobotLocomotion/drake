@@ -214,6 +214,7 @@ drake_cc_library(
     hdrs = ["bilinear_product_util.h"],
     deps = [
         ":decision_variable",
+        "//drake/common:essential",
         "//drake/common:symbolic",
     ],
 )
