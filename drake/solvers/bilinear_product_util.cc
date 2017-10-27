@@ -99,7 +99,8 @@ Expression ReplaceBilinearTerms(
                                      "the corresponding variables.";
         throw runtime_error(oss.str());
       }
-      // w_xy_expr is the symbolic expression representing the bilinear term x * y.
+      // w_xy_expr is the symbolic expression representing the bilinear term x *
+      // y.
       const symbolic::Expression& w_xy_expr{
           W(it_x_idx->second, it_y_idx->second)};
       if (is_variable(w_xy_expr)) {
