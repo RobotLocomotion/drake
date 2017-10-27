@@ -17,7 +17,7 @@ namespace solvers {
  * @param e An expression potentially contains bilinear products between x and
  * y.
  * @param x The bilinear product between `x` and `y` will be replaced by the
- * corresponding term in `W. Throws a runtime error if `x` contains duplicate
+ * corresponding term in `W`. Throws a runtime error if `x` contains duplicate
  * entries.
  * @param y The bilinear product between `x` and `y` will be replaced by the
  * corresponding term in `W.Throws a runtime error if `y` contains duplicate

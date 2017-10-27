@@ -176,6 +176,8 @@ TEST_F(BilinearProductTest, HigherOrderTest) {
 }
 
 TEST_F(BilinearProductTest, WIncludesXY) {
+  // When W(i, j) is just a single variable, then that variable can be in x or
+  // y.
   const VectorDecisionVariable<2> x{x_(0), x_(1)};
   const VectorDecisionVariable<2> y{y_(0), y_(1)};
   Matrix2<symbolic::Expression> W;
@@ -207,7 +209,7 @@ TEST_F(BilinearProductTest, WIsExpression2) {
 }
 
 TEST_F(BilinearProductTest, WIsExpression3) {
-  // W is an expression, that contains x or y
+  // W is an expression, that contains x or y. This is not allowed.
   Eigen::Matrix<symbolic::Expression, 3, 4> W = xy_;
   W(0, 1) += x_(0);
   EXPECT_THROW(ReplaceBilinearTerms(x_(0) + x_(0) * y_(1), x_, y_, W).Expand(),
