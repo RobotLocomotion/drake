@@ -51,11 +51,13 @@ def _tmpl_dict(values):
     tmpl[key] = value
   return tmpl
 
-def write_build(repo_ctx, includes, defines, linkopts, srcs=None):
+def write_build(repo_ctx, includes, defines, linkopts, install_content=None, srcs=None):
   if srcs == None:
     srcs = ["empty.cc"]
     # TODO(shahms): See if we can finally do away with this on OS X.
     repo_file(repo_ctx, "empty.cc", "", False)
+  if install_content == None:
+    install_content = ""
   subs = _tmpl_dict({
       "name": repo_ctx.name,
       "srcs": srcs,
@@ -63,4 +65,7 @@ def write_build(repo_ctx, includes, defines, linkopts, srcs=None):
       "defines": defines,
       "linkopts": linkopts,
   })
+  # The install content is outside of _tmpl_dict above because we explicitly
+  # do not want the 'repr' version of the code.
+  subs["%{install_content}"] = install_content
   repo_template(repo_ctx, "BUILD", repo_ctx.attr.build_file_template, subs)

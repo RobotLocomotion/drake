@@ -10,3 +10,5 @@ cc_library(
     includes = ["%{includes}"],
     linkopts = ["%{linkopts}"],
 )
+
+%{install_content}

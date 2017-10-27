@@ -182,6 +182,8 @@ github_archive(
 
 pkg_config_package(
     name = "ccd",
+    generate_cps = True,
+    license = "BSD-3-Clause",
     modname = "ccd",
 )
 

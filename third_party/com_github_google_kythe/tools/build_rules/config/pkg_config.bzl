@@ -18,12 +18,55 @@ pkg_config_module(name, modname,
 load(":common.bzl", "error", "success", "write_build")
 load(":wrapped_ctx.bzl", "unwrap")
 
-def _write_build(repo_ctx, cflags, linkopts):
+_cps_build_content = """
+load(
+    "@drake//tools/install:install.bzl",
+    "cmake_config",
+    "install",
+    "install_cmake_config",
+)
+
+CMAKE_PACKAGE = "{package}"
+
+cmake_config(
+    cps_file_name = CMAKE_PACKAGE + ".cps",
+    package = CMAKE_PACKAGE,
+)
+
+install_cmake_config(package = CMAKE_PACKAGE)
+
+install(
+    name = "install",
+    workspace = CMAKE_PACKAGE,
+    visibility = ["//visibility:public"],
+    deps = [":install_cmake_config"],
+)
+"""
+
+_cps_content = """
+{{
+  "Cps-Version": "0.8.0",
+  "Name": "{package}",
+  "Description": "Library for collision detection between two convex shapes",
+  "License": "{license}",
+  "Version": "{vers}",
+  "Default-Components": [":{package}"],
+  "Components": {{
+    "{package}": {{
+      "Type": "dylib",
+      "Location": "{libdir}/lib{package}.{extension}",
+      "Includes": ["{include}"]
+    }}
+  }}
+}}
+"""
+
+def _write_build(repo_ctx, cflags, linkopts, install_content):
   # Silence a warning about unknown cflags.
   if "-pthread" in cflags and "-pthread" in linkopts:
     cflags.remove("-pthread")
   includes, defines = _parse_cflags(repo_ctx, cflags)
-  write_build(repo_ctx, includes, defines, linkopts)
+  write_build(repo_ctx, includes, defines, linkopts, install_content)
 
 def _fail(repo_ctx, message, tail=""):
   """Fail with message if repo_ctx.attr.mandatory, otherwise warn."""
@@ -142,7 +185,24 @@ def _parse_cflags(repo_ctx, cflags):
   includes = _symlink_directories(repo_ctx, "include", includes)
   return includes, defines
 
+def _include_dir(repo_ctx, pc_args):
+  result = unwrap(repo_ctx).execute(pc_args + ["--variable=includedir"])
+  if result.return_code != 0:
+    return _fail(repo_ctx, "Unable to determine include dir", result.stderr)
+  return success(result.stdout.strip())
+
+def _lib_dir(repo_ctx, pc_args):
+  result = unwrap(repo_ctx).execute(pc_args + ["--variable=libdir"])
+  if result.return_code != 0:
+    return _fail(repo_ctx, "Unable to determine lib dir", result.stderr)
+  return success(result.stdout.strip())
+
 def setup_pkg_config_package(repo_ctx):
+  generate_cps = getattr(repo_ctx.attr, 'generate_cps', False)
+  license = getattr(repo_ctx.attr, 'license', "")
+  if generate_cps and not license:
+    fail("Must provide a license when generating cps")
+
   pkg_config = _find(repo_ctx)
   if pkg_config.error != None:
     return pkg_config
@@ -161,7 +221,32 @@ def setup_pkg_config_package(repo_ctx):
   if linkopts.error != None:
     return linkopts
 
-  _write_build(repo_ctx, cflags.value, linkopts.value)
+  includedir = _include_dir(repo_ctx, pc_args)
+  if includedir.error != None:
+    return includedir
+
+  installed_vers = _installed_version(repo_ctx, pc_args)
+  if installed_vers.error != None:
+    return installed_vers
+
+  libdir = _lib_dir(repo_ctx, pc_args)
+  if libdir.error != None:
+    return libdir
+
+  _write_build(repo_ctx, cflags.value, linkopts.value,
+               install_content=_cps_build_content.format(package=repo_ctx.attr.modname))
+
+  if generate_cps:
+    extension = "dylib" if repo_ctx.os.name == "mac os x" else "so"
+    repo_ctx.file('ccd.cps',
+                  _cps_content.format(vers=installed_vers.value,
+                                      package=repo_ctx.attr.modname,
+                                      license=license,
+                                      include=includedir.value,
+                                      libdir=libdir.value,
+                                      extension=extension),
+                  False)
+
   return success(True)
 
 def _impl(repo_ctx):
@@ -176,6 +261,8 @@ pkg_config_package = repository_rule(
         "atleast_version": attr.string(),
         "max_version": attr.string(),
         "exact_version": attr.string(),
+        "generate_cps": attr.bool(),
+        "license": attr.string(),
         "build_file_template": attr.label(
             default = Label("@kythe//tools/build_rules/config:BUILD.tpl"),
             single_file = True,
