@@ -64,6 +64,8 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
   const bool kForceAppliedToRight = true;
   const bool kSlideLeft = false;
   const bool kSlideRight = true;
+  const bool kLinearSystemSolver = false;
+  const bool kLCPSolver = true;
 
   // Gets the frame for a sliding contact.
   Matrix2<double> GetSlidingContactFrameToWorldTransform(
@@ -181,6 +183,10 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     DRAKE_DEMAND(contact_points_dup >= 0);
     DRAKE_DEMAND(friction_directions_dup >= 0);
 
+    // Reset constraint acceleration data.
+    const int num_velocities = 3;
+    *data = ConstraintAccelProblemData<double>(num_velocities);
+
     // Get the points of contact from Rod2D.
     std::vector<Vector2d> contacts;
     std::vector<double> tangent_vels;
@@ -273,6 +279,10 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
       int friction_directions_dup) {
     DRAKE_DEMAND(contact_points_dup >= 0);
     DRAKE_DEMAND(friction_directions_dup >= 0);
+
+    // Reset constraint acceleration data.
+    const int num_velocities = 3;
+    *data = ConstraintVelProblemData<double>(num_velocities);
 
     // Get the points of contact from Rod2D.
     std::vector<Vector2d> contacts;
@@ -544,7 +554,8 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
 
   // Tests the rod in a two-point sticking configuration, with force either
   // to the right or to the left.
-  void TwoPointSticking(bool force_applied_to_right) {
+  void TwoPointSticking(
+      bool force_applied_to_right, bool use_lcp_solver) {
     // Set the contact to large friction. Note that only the static friction
     // coefficient will be used since there are no sliding contacts.
     rod_->set_mu_coulomb(0.0);
@@ -566,6 +577,9 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
         CalcConstraintAccelProblemData(
             accel_data_.get(), contact_dup, friction_dir_dup);
         EXPECT_TRUE(accel_data_->sliding_contacts.empty());
+
+        // Indicate whether to use the linear system solver.
+        accel_data_->use_complementarity_problem_solver = use_lcp_solver;
 
         // Add a force pulling the rod horizontally.
         const double horz_f = (force_applied_to_right) ? 100 : -100;
@@ -1019,7 +1033,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
   // Tests the rod in a sliding configuration with sliding velocity as
   // specified. If `upright` is true, then the rod makes contact at a single
   // point. Otherwise, it will be on its side and make contact at two points.
-  void Sliding(bool sliding_to_right, bool upright) {
+  void Sliding(bool sliding_to_right, bool upright, bool use_lcp_solver) {
     if (upright) {
       SetRodToRestingVerticalConfig();
     } else {
@@ -1038,6 +1052,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
 
     // Compute the problem data.
     CalcConstraintAccelProblemData(accel_data_.get());
+    accel_data_->use_complementarity_problem_solver = use_lcp_solver;
 
     // First, counteract the acceleration from gravity using the kN term.
     accel_data_->kN.setOnes() *= -grav_accel;
@@ -1108,7 +1123,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
   // Tests the rod in an upright sliding configuration with sliding velocity as
   // specified. The rod will be constrained to prevent rotational acceleration
   // using a bilateral constraint as well.
-  void SlidingPlusBilateral(bool sliding_to_right) {
+  void SlidingPlusBilateral(bool sliding_to_right, bool use_lcp_solver) {
       SetRodToRestingVerticalConfig();
     ContinuousState<double>& xc = *context_->
         get_mutable_continuous_state();
@@ -1120,6 +1135,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
 
     // Compute the problem data.
     CalcConstraintAccelProblemData(accel_data_.get());
+    accel_data_->use_complementarity_problem_solver = use_lcp_solver;
 
     // Add in bilateral constraints on rotational motion.
     accel_data_->kG.setZero(1);    // No right hand side term.
@@ -1287,6 +1303,314 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     EXPECT_NEAR(v[2] + gv[2], -vel_data_->kG[0],
                 lcp_eps_ * cf.size());
   }
+
+  // Tests the rod in a one-point sliding contact configuration with a second
+  // constraint that prevents horizontal acceleration. This test tests the
+  // interaction between contact and limit constraints.
+  void OnePointPlusLimit(bool use_lcp_solver) {
+    // Set the state of the rod to vertically-at-rest and sliding to the left.
+    // Set the state of the rod to resting on its side with horizontal velocity.
+    SetRodToRestingHorizontalConfig();
+    ContinuousState<double>& xc = *context_->
+      get_mutable_continuous_state();
+    xc[3] = 1.0;
+
+    // Set the coefficient of friction to somewhat small (to limit the sliding
+    // force).
+    rod_->set_mu_coulomb(1e-1);
+
+    // Get the gravitational acceleration.
+    const double grav_accel = rod_->get_gravitational_acceleration();
+
+    // First, construct the acceleration-level problem data as normal to set
+    // inertia solver and external forces.
+    CalcConstraintAccelProblemData(accel_data_.get());
+    accel_data_->use_complementarity_problem_solver = use_lcp_solver;
+
+    // Get the original N and Nᵀ - μQᵀ
+    const int ngc = get_rod_num_coordinates();
+    const int num_old_contacts = 2;
+    MatrixX<double> N(num_old_contacts, ngc);
+    MatrixX<double> N_minus_muQ_transpose(ngc, num_old_contacts);
+    for (int i = 0; i < num_old_contacts; ++i) {
+      N_minus_muQ_transpose.col(i) = accel_data_->N_minus_muQ_transpose_mult(
+        VectorX<double>::Unit(2, i));
+    }
+    for (int i = 0; i < ngc; ++i)
+      N.col(i) = accel_data_->N_mult(VectorX<double>::Unit(ngc, i));
+
+    // Construct the problem as a limit constraint preventing movement in the
+    // downward direction.
+    accel_data_->sliding_contacts.resize(1);
+    accel_data_->mu_sliding.resize(1);
+    accel_data_->N_mult = [&N](const VectorX<double>& v) {
+      return N.row(0) * v;
+    };
+    accel_data_->kN.setZero(1);
+    accel_data_->gammaN.setZero(1);
+    accel_data_->kL.setZero(1);
+    accel_data_->gammaL.setZero(1);
+    accel_data_->N_minus_muQ_transpose_mult =
+        [&N_minus_muQ_transpose](const VectorX<double>& l) {
+      return N_minus_muQ_transpose.col(0) * l;
+    };
+
+    // Set the Jacobian entry- in this case, the limit is a lower limit on the
+    // second coordinate (vertical position).
+    const int num_limits = 1;
+    accel_data_->L_mult = [&N](const VectorX<double>& v) -> VectorX<double> {
+      return N.row(1) * v;
+    };
+    accel_data_->L_transpose_mult = [&N](const VectorX<double>& v) ->
+      VectorX<double> {
+        return N.row(1).transpose() * v;
+    };
+    accel_data_->kL.setZero(num_limits);
+
+    // Set kN and kL terms to counteract gravity, which should prevent any
+    // constraint forces from being applied.
+    accel_data_->kN.setOnes() *= -grav_accel;
+    accel_data_->kL.setOnes() *= -grav_accel;
+
+    // Compute the constraint forces and verify that none are applied.
+    VectorX<double> cf;
+    solver_.SolveConstraintProblem(*accel_data_, &cf);
+    EXPECT_LT(cf.norm(), lcp_eps_);
+
+    // Reset kN and kL and recompute constraint forces.
+    accel_data_->kN.setZero();
+    accel_data_->kL.setZero();
+    solver_.SolveConstraintProblem(*accel_data_, &cf);
+
+    // Verify the size of cf is as expected.
+    const int num_contacts = 1;
+    EXPECT_EQ(cf.size(), num_contacts + num_limits);
+
+    // Verify that the vertical acceleration is zero. If the cross-constraint
+    // term LM⁻¹(Nᵀ - μQᵀ) is not computed properly, this acceleration might not
+    // be zero. Note that μQᵀ will not have any effect here.
+    VectorX<double> vdot;
+    solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &vdot);
+    EXPECT_NEAR(vdot[1], 0, lcp_eps_);
+
+    // Set kN and kL terms to effectively double gravity, which should cause the
+    // rod to accelerate upward.
+    accel_data_->kN.setOnes() *= grav_accel;
+    accel_data_->kL.setOnes() *= grav_accel;
+    solver_.SolveConstraintProblem(*accel_data_, &cf);
+    solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &vdot);
+    EXPECT_NEAR(vdot[1], -grav_accel, lcp_eps_);
+  }
+
+  // Tests the rod in a two-point contact configuration with both sticking and
+  // sliding contacts. This test tests that the cross-term interaction between
+  // sliding friction forces and non-sliding friction forces constraints is
+  // correct.
+  void TwoPointContactCrossTerms(bool use_lcp_solver) {
+    // Set the state of the rod to resting.
+    SetRodToRestingHorizontalConfig();
+
+    // Set the sliding coefficient of friction to somewhat small and the static
+    // coefficient of friction to very large.
+    rod_->set_mu_coulomb(1e-1);
+    rod_->set_mu_static(1.0);
+
+    // First, construct the acceleration-level problem data as usual to set
+    // inertia solver and external forces.
+    std::vector<Vector2d> contacts;
+    std::vector<double> tangent_vels;
+    rod_->GetContactPoints(*context_, &contacts);
+    rod_->GetContactPointsTangentVelocities(*context_, contacts, &tangent_vels);
+
+    // Modify the tangent velocity on the left contact to effect a sliding
+    // contact. This modification can be imagined as the left end of the rod
+    // is touching a conveyor belt moving to the right.
+    tangent_vels[0] = 1.0;
+
+    // Compute the constraint problem data.
+    rod_->CalcConstraintProblemData(
+      *context_, contacts, tangent_vels, accel_data_.get());
+    accel_data_->use_complementarity_problem_solver = use_lcp_solver;
+
+    // Check the consistency of the data.
+    CheckProblemConsistency(*accel_data_, contacts.size());
+
+    // Compute the constraint forces. Note that we increase cfm to prevent the
+    // occasional "failure to solve LCP" exception.
+    VectorX<double> cf;
+    solver_.SolveConstraintProblem(*accel_data_, &cf);
+
+    // Verify the size of cf is as expected.
+    EXPECT_EQ(cf.size(), accel_data_->sliding_contacts.size() +
+                         accel_data_->non_sliding_contacts.size() * 2);
+
+    // Verify that the horizontal acceleration is zero (since mu_static is so
+    // large, meaning that the sticking friction force is able to overwhelm the
+    // sliding friction force. If the cross-constraint term FM⁻¹(Nᵀ - μQᵀ) is
+    // not computed properly, this acceleration might not be zero.
+    VectorX<double> vdot;
+    solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &vdot);
+    EXPECT_NEAR(vdot[0], 0, lcp_eps_);
+  }
+
+  // Tests that the cross-term interaction between contact forces and generic
+  // unilateral constraints is computed correctly at the acceleration level.
+  void ContactLimitCrossTermAccel(bool use_lcp_solver) {
+    // Set the state of the rod to resting.
+    SetRodToRestingHorizontalConfig();
+
+    // Set the sliding coefficient of friction to zero (it won't be used) and
+    // the static coefficient of friction to a relatively large value.
+    rod_->set_mu_coulomb(0.0);
+    rod_->set_mu_static(1.0);
+
+    // First, construct the acceleration-level problem data as normal to set
+    // inertia solver and external forces.
+    std::vector<Vector2d> contacts;
+    std::vector<double> tangent_vels;
+    rod_->GetContactPoints(*context_, &contacts);
+    rod_->GetContactPointsTangentVelocities(*context_, contacts, &tangent_vels);
+
+    // Compute the constraint problem data.
+    rod_->CalcConstraintProblemData(
+      *context_, contacts, tangent_vels, accel_data_.get());
+    accel_data_->use_complementarity_problem_solver = use_lcp_solver;
+
+    // Add some horizontal force.
+    accel_data_->tau[0] = 1.0;
+
+    // Construct the problem as a limit constraint preventing movement in the
+    // upward direction.
+    const int ngc = get_rod_num_coordinates();
+    const int num_generic_unilateral_constraints = 1;
+    accel_data_->kL.resize(num_generic_unilateral_constraints);
+    accel_data_->gammaL.setZero(num_generic_unilateral_constraints);
+
+    // Set the Jacobian entry- in this case, the limit is an upper limit on the
+    // second coordinate (vertical position). The constraint is: v̇₂ ≤ 0, which
+    // we transform to the form: -v̇₂ ≥ 0 (explaining the provenance of the minus
+    // sign in L).
+    const int num_limit_constraints = 1;
+    MatrixX<double> L(accel_data_->kL.size(), ngc);
+    L.setZero();
+    L(0, 1) = -1;
+    accel_data_->L_mult = [&L](const VectorX<double>& v) -> VectorX<double> {
+      return L * v;
+    };
+    accel_data_->L_transpose_mult = [&L](const VectorX<double>& v) ->
+      VectorX<double> {
+      return L.transpose() * v;
+    };
+    accel_data_->kL.setZero(num_limit_constraints);
+
+    // Check the consistency of the data.
+    CheckProblemConsistency(*accel_data_, contacts.size());
+
+    // Compute the constraint forces.
+    VectorX<double> cf;
+    solver_.SolveConstraintProblem(*accel_data_, &cf);
+
+    // Verify the size of cf is as expected.
+    EXPECT_EQ(cf.size(), accel_data_->non_sliding_contacts.size() * 2 + 1);
+
+    // Verify that the horizontal and vertical acceleration of the rod c.o.m.
+    // is zero.
+    VectorX<double> vdot;
+    solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &vdot);
+    EXPECT_NEAR(vdot[0], 0, lcp_eps_);
+    EXPECT_NEAR(vdot[1], 0, lcp_eps_);
+  }
+
+  // Tests the rod in a two-point contacting configuration *realized through
+  // a configuration limit constraint*. No frictional forces are applied, so
+  // any velocity projections along directions other than the contact normal
+  // will be irrelevant.
+  void TwoPointAsLimit(bool use_lcp_solver) {
+    // Set the state of the rod to resting on its side.
+    SetRodToRestingHorizontalConfig();
+
+    // First, construct the acceleration-level problem data as normal to set
+    // inertia solver and external forces.
+    CalcConstraintAccelProblemData(accel_data_.get());
+    accel_data_->use_complementarity_problem_solver = use_lcp_solver;
+
+    // Construct the problem as a limit constraint preventing movement in the
+    // downward direction.
+    const int ngc = get_rod_num_coordinates();
+    accel_data_->sliding_contacts.resize(0);
+    accel_data_->non_sliding_contacts.resize(0);
+    accel_data_->mu_sliding.resize(0);
+    accel_data_->mu_non_sliding.resize(0);
+    accel_data_->r.resize(0);
+    accel_data_->N_mult = [](const VectorX<double>&) {
+      return VectorX<double>(0);
+    };
+    accel_data_->kN.resize(0);
+    accel_data_->gammaN.resize(0);
+    accel_data_->F_mult = [](const VectorX<double>&) {
+      return VectorX<double>(0);
+    };
+    accel_data_->F_transpose_mult = [ngc](const VectorX<double>&) {
+      return VectorX<double>::Zero(ngc);
+    };
+    accel_data_->kF.resize(0);
+    accel_data_->gammaF.resize(0);
+    accel_data_->gammaE.resize(0);
+    accel_data_->kL.resize(1);
+    accel_data_->gammaL.setZero(1);
+    accel_data_->N_minus_muQ_transpose_mult = [ngc](const VectorX<double>&) {
+      return VectorX<double>::Zero(ngc);
+    };
+
+    // Set the Jacobian entry- in this case, the limit is a lower limit on the
+    // second coordinate (vertical position).
+    const int num_limit_constraints = 1;
+    MatrixX<double> L(accel_data_->kL.size(), ngc);
+    L.setZero();
+    L(0, 1) = 1;
+    accel_data_->L_mult = [&L](const VectorX<double>& v) -> VectorX<double> {
+      return L * v;
+    };
+    accel_data_->L_transpose_mult = [&L](const VectorX<double>& v) ->
+      VectorX<double> {
+      return L.transpose() * v;
+    };
+    accel_data_->kL.setZero(num_limit_constraints);
+
+    // Compute the constraint forces.
+    VectorX<double> cf;
+    solver_.SolveConstraintProblem(*accel_data_, &cf);
+
+    // Verify the size of cf is as expected.
+    EXPECT_EQ(cf.size(), 1);
+
+    // Verify that the normal force exactly opposes gravity.
+    const double mg = std::fabs(rod_->get_gravitational_acceleration()) *
+        rod_->get_rod_mass();
+    EXPECT_NEAR(cf[0], mg, lcp_eps_);
+
+    // Set the Jacobian entry- in this case, the limit is an upper limit on the
+    // second coordinate (vertical position).
+    L *= -1;
+
+    // Reverse the external force (gravity) on the rod. tau was set by the
+    // call to Rod2D::CalcConstraintProblemData().
+    accel_data_->tau *= -1;
+
+    // Recompute the constraint forces, and verify that they're still equal
+    // to the force from gravity. Note: if the forces were to be applied to the
+    // rod, one will need to compute Lᵀcf[0] to obtain the generalized force;
+    // this is how we can handle upper and lower limits with only non-negativity
+    // constraints.
+    solver_.SolveConstraintProblem(*accel_data_, &cf);
+    EXPECT_EQ(cf.size(), 1);
+    EXPECT_NEAR(cf[0], mg, lcp_eps_);
+
+    // Verify that the vertical acceleration is zero.
+    VectorX<double> vdot;
+    solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &vdot);
+    EXPECT_NEAR(vdot[1], 0, lcp_eps_);
+  }
 };
 
 // Tests the rod in single-point sticking configurations.
@@ -1298,9 +1622,12 @@ TEST_P(Constraint2DSolverTest, SinglePointStickingBothSigns) {
 
 // Tests the rod in a two-point sticking configurations.
 TEST_P(Constraint2DSolverTest, TwoPointStickingSign) {
-  // Test sticking with applied force to the right (+1) and the left (-1).
-  TwoPointSticking(kForceAppliedToRight);
-  TwoPointSticking(kForceAppliedToLeft);
+  // Test sticking with applied force to the right and the left, and with both
+  // the LCP solver and the linear system solver.
+  TwoPointSticking(kForceAppliedToRight, kLCPSolver);
+  TwoPointSticking(kForceAppliedToLeft, kLCPSolver);
+  TwoPointSticking(kForceAppliedToRight, kLinearSystemSolver);
+  TwoPointSticking(kForceAppliedToLeft, kLinearSystemSolver);
 }
 
 // Tests the rod in two-point non-sliding configurations that will transition
@@ -1327,24 +1654,32 @@ TEST_P(Constraint2DSolverTest, TwoPointImpactingAndStickingTest) {
 }
 
 // Tests the rod in a two-point sliding configuration, both to the right
-// and to the left.
+// and to the left and using both the LCP and linear system solvers.
 TEST_P(Constraint2DSolverTest, TwoPointSlidingTest) {
-  Sliding(kSlideRight, false /* not upright */);
-  Sliding(kSlideLeft, false /* not upright */);
+  Sliding(kSlideRight, false /* not upright */, kLCPSolver);
+  Sliding(kSlideLeft, false /* not upright */, kLCPSolver);
+  Sliding(kSlideRight, false /* not upright */, kLinearSystemSolver);
+  Sliding(kSlideLeft, false /* not upright */, kLinearSystemSolver);
 }
 
 // Tests the rod in a single point sliding configuration, with sliding both
-// to the right and to the left.
+// to the right and to the left and using both the LCP and linear system
+// solvers.
 TEST_P(Constraint2DSolverTest, SinglePointSlidingTest) {
-  Sliding(kSlideRight, true /* upright */);
-  Sliding(kSlideLeft, true /* upright */);
+  Sliding(kSlideRight, true /* upright */, kLCPSolver);
+  Sliding(kSlideLeft, true /* upright */, kLCPSolver);
+  Sliding(kSlideRight, true /* upright */, kLinearSystemSolver);
+  Sliding(kSlideLeft, true /* upright */, kLinearSystemSolver);
 }
 
 // Tests the rod in a single point sliding configuration, with sliding both
-// to the right and to the left, and with a bilateral constraint imposed.
+// to the right and to the left, and with a bilateral constraint imposed, and
+// using both the LCP and linear system solvers.
 TEST_P(Constraint2DSolverTest, SinglePointSlidingPlusBilateralTest) {
-  SlidingPlusBilateral(kSlideRight);
-  SlidingPlusBilateral(kSlideLeft);
+  SlidingPlusBilateral(kSlideRight, kLCPSolver);
+  SlidingPlusBilateral(kSlideLeft, kLCPSolver);
+  SlidingPlusBilateral(kSlideRight, kLinearSystemSolver);
+  SlidingPlusBilateral(kSlideLeft, kLinearSystemSolver);
 }
 
 // Tests the rod in a single point impacting configuration, with sliding both
@@ -1352,6 +1687,41 @@ TEST_P(Constraint2DSolverTest, SinglePointSlidingPlusBilateralTest) {
 TEST_P(Constraint2DSolverTest, SinglePointSlidingImpactPlusBilateralTest) {
   SlidingPlusBilateralImpact(kSlideRight);
   SlidingPlusBilateralImpact(kSlideLeft);
+}
+
+// Tests the rod in a one-point sliding contact configuration with a second
+// constraint that prevents horizontal acceleration. This test tests the
+// interaction between contact and limit constraints using both the LCP solver
+// and the linear system solver.
+TEST_P(Constraint2DSolverTest, OnePointPlusLimitTest) {
+  OnePointPlusLimit(kLCPSolver);
+  OnePointPlusLimit(kLinearSystemSolver);
+}
+
+// Tests the rod in a two-point contact configuration with both sticking and
+// sliding contacts and using both the LCP and linear system solvers. This test
+// tests that the cross-term interaction between sliding friction forces and
+// non-sliding friction forces constraints is correct.
+TEST_P(Constraint2DSolverTest, TwoPointContactCrossTermsTest) {
+  TwoPointContactCrossTerms(kLCPSolver);
+  TwoPointContactCrossTerms(kLinearSystemSolver);
+}
+
+// Tests that the cross-term interaction between contact forces and generic
+// unilateral constraints is computed correctly at the acceleration level. Tests
+// both the LCP solver and the linear system solver.
+TEST_P(Constraint2DSolverTest, ContactLimitCrossTermAccelTest) {
+  ContactLimitCrossTermAccel(kLCPSolver);
+  ContactLimitCrossTermAccel(kLinearSystemSolver);
+}
+
+// Tests the rod in a two-point contacting configuration *realized through
+// a configuration limit constraint* using both the LCP and linear system
+// solvers. No frictional forces are applied, so any velocity projections along
+// directions other than the contact normal will be irrelevant.
+TEST_P(Constraint2DSolverTest, TwoPointAsLimitTest) {
+  TwoPointAsLimit(kLCPSolver);
+  TwoPointAsLimit(kLinearSystemSolver);
 }
 
 // Tests the rod in a two-point configuration, in a situation where a force
@@ -1405,218 +1775,6 @@ TEST_P(Constraint2DSolverTest, NoImpactImpliesNoImpulses) {
   }
 }
 
-// Tests the rod in a one-point sliding contact configuration with a second
-// constraint that prevents horizontal acceleration. This test tests the
-// interaction between contact and limit constraints.
-TEST_P(Constraint2DSolverTest, OnePointPlusLimit) {
-  // Set the state of the rod to vertically-at-rest and sliding to the left.
-  // Set the state of the rod to resting on its side with horizontal velocity.
-  SetRodToRestingHorizontalConfig();
-  ContinuousState<double>& xc = *context_->
-    get_mutable_continuous_state();
-  xc[3] = 1.0;
-
-  // Set the coefficient of friction to somewhat small (to limit sliding force)
-  rod_->set_mu_coulomb(1e-1);
-
-  // Get the gravitational acceleration.
-  const double grav_accel = rod_->get_gravitational_acceleration();
-
-  // First, construct the acceleration-level problem data as normal to set
-  // inertia solver and external forces.
-  CalcConstraintAccelProblemData(accel_data_.get());
-
-  // Get the original N and Nᵀ - μQᵀ
-  const int ngc = get_rod_num_coordinates();
-  const int num_old_contacts = 2;
-  MatrixX<double> N(num_old_contacts, ngc);
-  MatrixX<double> N_minus_muQ_transpose(ngc, num_old_contacts);
-  for (int i = 0; i < num_old_contacts; ++i) {
-    N_minus_muQ_transpose.col(i) = accel_data_->N_minus_muQ_transpose_mult(
-      VectorX<double>::Unit(2, i));
-  }
-  for (int i = 0; i < ngc; ++i)
-    N.col(i) = accel_data_->N_mult(VectorX<double>::Unit(ngc, i));
-
-  // Construct the problem as a limit constraint preventing movement in the
-  // downward direction.
-  accel_data_->sliding_contacts.resize(1);
-  accel_data_->mu_sliding.resize(1);
-  accel_data_->N_mult = [&N](const VectorX<double>& v) {
-    return N.row(0) * v;
-  };
-  accel_data_->kN.setZero(1);
-  accel_data_->gammaN.setZero(1);
-  accel_data_->kL.setZero(1);
-  accel_data_->gammaL.setZero(1);
-  accel_data_->N_minus_muQ_transpose_mult =
-      [&N_minus_muQ_transpose](const VectorX<double>& l) {
-    return N_minus_muQ_transpose.col(0) * l;
-  };
-
-  // Set the Jacobian entry- in this case, the limit is a lower limit on the
-  // second coordinate (vertical position).
-  const int num_limits = 1;
-  accel_data_->L_mult = [&N](const VectorX<double>& v) -> VectorX<double> {
-    return N.row(1) * v;
-  };
-  accel_data_->L_transpose_mult = [&N](const VectorX<double>& v) ->
-    VectorX<double> {
-      return N.row(1).transpose() * v;
-  };
-  accel_data_->kL.setZero(num_limits);
-
-  // Set kN and kL terms to counteract gravity, which should prevent any
-  // constraint forces from being applied.
-  accel_data_->kN.setOnes() *= -grav_accel;
-  accel_data_->kL.setOnes() *= -grav_accel;
-
-  // Compute the constraint forces and verify that none are applied.
-  VectorX<double> cf;
-  solver_.SolveConstraintProblem(*accel_data_, &cf);
-  EXPECT_LT(cf.norm(), lcp_eps_);
-
-  // Reset kN and kL and recompute constraint forces.
-  accel_data_->kN.setZero();
-  accel_data_->kL.setZero();
-  solver_.SolveConstraintProblem(*accel_data_, &cf);
-
-  // Verify the size of cf is as expected.
-  const int num_contacts = 1;
-  EXPECT_EQ(cf.size(), num_contacts + num_limits);
-
-  // Verify that the vertical acceleration is zero. If the cross-constraint
-  // term LM⁻¹(Nᵀ - μQᵀ) is not computed properly, this acceleration might not
-  // be zero. Note that μQᵀ will not have any effect here.
-  VectorX<double> vdot;
-  solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &vdot);
-  EXPECT_NEAR(vdot[1], 0, lcp_eps_);
-
-  // Set kN and kL terms to effectively double gravity, which should cause the
-  // rod to accelerate upward.
-  accel_data_->kN.setOnes() *= grav_accel;
-  accel_data_->kL.setOnes() *= grav_accel;
-  solver_.SolveConstraintProblem(*accel_data_, &cf);
-  solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &vdot);
-  EXPECT_NEAR(vdot[1], -grav_accel, lcp_eps_);
-}
-
-// Tests the rod in a two-point contact configuration with both sticking and
-// sliding contacts. This test tests that the cross-term interaction between
-// sliding friction forces and non-sliding friction forces constraints is
-// correct.
-TEST_P(Constraint2DSolverTest, TwoPointContactCrossTerms) {
-  // Set the state of the rod to resting.
-  SetRodToRestingHorizontalConfig();
-
-  // Set the sliding coefficient of friction to somewhat small and the static
-  // coefficient of friction to very large.
-  rod_->set_mu_coulomb(1e-1);
-  rod_->set_mu_static(1.0);
-
-  // First, construct the acceleration-level problem data as usual to set
-  // inertia solver and external forces.
-  std::vector<Vector2d> contacts;
-  std::vector<double> tangent_vels;
-  rod_->GetContactPoints(*context_, &contacts);
-  rod_->GetContactPointsTangentVelocities(*context_, contacts, &tangent_vels);
-
-  // Modify the tangent velocity on the left contact to effect a sliding
-  // contact. This modification can be imagined as the left end of the rod
-  // is touching a conveyor belt moving to the right.
-  tangent_vels[0] = 1.0;
-
-  // Compute the constraint problem data.
-  rod_->CalcConstraintProblemData(
-    *context_, contacts, tangent_vels, accel_data_.get());
-
-  // Check the consistency of the data.
-  CheckProblemConsistency(*accel_data_, contacts.size());
-
-  // Compute the constraint forces. Note that we increase cfm to prevent the
-  // occasional "failure to solve LCP" exception.
-  VectorX<double> cf;
-  solver_.SolveConstraintProblem(*accel_data_, &cf);
-
-  // Verify the size of cf is as expected.
-  EXPECT_EQ(cf.size(), accel_data_->sliding_contacts.size() +
-                       accel_data_->non_sliding_contacts.size() * 2);
-
-  // Verify that the horizontal acceleration is zero (since mu_static is so
-  // large, meaning that the sticking friction force is able to overwhelm the
-  // sliding friction force. If the cross-constraint term FM⁻¹(Nᵀ - μQᵀ) is not
-  // computed properly, this acceleration might not be zero.
-  VectorX<double> vdot;
-  solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &vdot);
-  EXPECT_NEAR(vdot[0], 0, lcp_eps_);
-}
-
-// Tests that the cross-term interaction between contact forces and generic
-// unilateral constraints is computed correctly at the acceleration level.
-TEST_P(Constraint2DSolverTest, ContactLimitCrossTermAccel) {
-  // Set the state of the rod to resting.
-  SetRodToRestingHorizontalConfig();
-
-  // Set the sliding coefficient of friction to zero (it won't be used) and the
-  // static coefficient of friction to a relatively large value.
-  rod_->set_mu_coulomb(0.0);
-  rod_->set_mu_static(1.0);
-
-  // First, construct the acceleration-level problem data as normal to set
-  // inertia solver and external forces.
-  std::vector<Vector2d> contacts;
-  std::vector<double> tangent_vels;
-  rod_->GetContactPoints(*context_, &contacts);
-  rod_->GetContactPointsTangentVelocities(*context_, contacts, &tangent_vels);
-
-  // Compute the constraint problem data.
-  rod_->CalcConstraintProblemData(
-    *context_, contacts, tangent_vels, accel_data_.get());
-
-  // Add some horizontal force.
-  accel_data_->tau[0] = 1.0;
-
-  // Construct the problem as a limit constraint preventing movement in the
-  // upward direction.
-  const int ngc = get_rod_num_coordinates();
-  const int num_generic_unilateral_constraints = 1;
-  accel_data_->kL.resize(num_generic_unilateral_constraints);
-  accel_data_->gammaL.setZero(num_generic_unilateral_constraints);
-
-  // Set the Jacobian entry- in this case, the limit is an upper limit on the
-  // second coordinate (vertical position). The constraint is: v̇₂ ≤ 0, which
-  // we transform to the form: -v̇₂ ≥ 0 (explaining the provenance of the minus
-  // sign in L).
-  const int num_limit_constraints = 1;
-  MatrixX<double> L(accel_data_->kL.size(), ngc);
-  L.setZero();
-  L(0, 1) = -1;
-  accel_data_->L_mult = [&L](const VectorX<double>& v) -> VectorX<double> {
-    return L * v;
-  };
-  accel_data_->L_transpose_mult = [&L](const VectorX<double>& v) ->
-    VectorX<double> {
-    return L.transpose() * v;
-  };
-  accel_data_->kL.setZero(num_limit_constraints);
-
-  // Check the consistency of the data.
-  CheckProblemConsistency(*accel_data_, contacts.size());
-
-  // Compute the constraint forces.
-  VectorX<double> cf;
-  solver_.SolveConstraintProblem(*accel_data_, &cf);
-
-  // Verify the size of cf is as expected.
-  EXPECT_EQ(cf.size(), accel_data_->non_sliding_contacts.size() * 2 + 1);
-
-  // Verify that the horizontal and vertical acceleration of the rod c.o.m.
-  // is zero.
-  VectorX<double> vdot;
-  solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &vdot);
-  EXPECT_NEAR(vdot[0], 0, lcp_eps_);
-  EXPECT_NEAR(vdot[1], 0, lcp_eps_);
-}
 
 // Tests that the cross-term interaction between contact forces and generic
 // unilateral constraints is computed correctly at the velocity level.
@@ -1686,97 +1844,6 @@ TEST_P(Constraint2DSolverTest, ContactLimitCrossTermVel) {
   solver_.ComputeGeneralizedVelocityChange(*vel_data_, cf, &dv);
   EXPECT_NEAR(v[0] + dv[0], 0, lcp_eps_);
   EXPECT_NEAR(v[1] + dv[1], 0, lcp_eps_);
-}
-
-
-// Tests the rod in a two-point contacting configuration *realized through
-// a configuration limit constraint*. No frictional forces are applied, so
-// any velocity projections along directions other than the contact normal
-// will be irrelevant.
-TEST_P(Constraint2DSolverTest, TwoPointAsLimit) {
-  // Set the state of the rod to resting on its side.
-  SetRodToRestingHorizontalConfig();
-
-  // First, construct the acceleration-level problem data as normal to set
-  // inertia solver and external forces.
-  CalcConstraintAccelProblemData(accel_data_.get());
-
-  // Construct the problem as a limit constraint preventing movement in the
-  // downward direction.
-  const int ngc = get_rod_num_coordinates();
-  accel_data_->sliding_contacts.resize(0);
-  accel_data_->non_sliding_contacts.resize(0);
-  accel_data_->mu_sliding.resize(0);
-  accel_data_->mu_non_sliding.resize(0);
-  accel_data_->r.resize(0);
-  accel_data_->N_mult = [](const VectorX<double>&) {
-    return VectorX<double>(0);
-  };
-  accel_data_->kN.resize(0);
-  accel_data_->gammaN.resize(0);
-  accel_data_->F_mult = [](const VectorX<double>&) {
-    return VectorX<double>(0);
-  };
-  accel_data_->F_transpose_mult = [ngc](const VectorX<double>&) {
-    return VectorX<double>::Zero(ngc);
-  };
-  accel_data_->kF.resize(0);
-  accel_data_->gammaF.resize(0);
-  accel_data_->gammaE.resize(0);
-  accel_data_->kL.resize(1);
-  accel_data_->gammaL.setZero(1);
-  accel_data_->N_minus_muQ_transpose_mult = [ngc](const VectorX<double>&) {
-    return VectorX<double>::Zero(ngc);
-  };
-
-  // Set the Jacobian entry- in this case, the limit is a lower limit on the
-  // second coordinate (vertical position).
-  const int num_limit_constraints = 1;
-  MatrixX<double> L(accel_data_->kL.size(), ngc);
-  L.setZero();
-  L(0, 1) = 1;
-  accel_data_->L_mult = [&L](const VectorX<double>& v) -> VectorX<double> {
-    return L * v;
-  };
-  accel_data_->L_transpose_mult = [&L](const VectorX<double>& v) ->
-    VectorX<double> {
-    return L.transpose() * v;
-  };
-  accel_data_->kL.setZero(num_limit_constraints);
-
-  // Compute the constraint forces.
-  VectorX<double> cf;
-  solver_.SolveConstraintProblem(*accel_data_, &cf);
-
-  // Verify the size of cf is as expected.
-  EXPECT_EQ(cf.size(), 1);
-
-  // Verify that the normal force exactly opposes gravity.
-  const double mg = std::fabs(rod_->get_gravitational_acceleration()) *
-      rod_->get_rod_mass();
-  EXPECT_NEAR(cf[0], mg, lcp_eps_);
-
-  // Set the Jacobian entry- in this case, the limit is an upper limit on the
-  // second coordinate (vertical position).
-  L *= -1;
-
-  // Reverse the external force (gravity) on the rod. tau was set by the
-  // call to Rod2D::CalcConstraintProblemData().
-  accel_data_->tau *= -1;
-
-  // Recompute the constraint forces, and verify that they're still equal
-  // to the force from gravity. Note: if the forces were to be applied to the
-  // rod, one will need to compute Lᵀcf[0] to obtain the generalized force;
-  // this is how we can handle upper and lower limits with only non-negativity
-  // constraints.
-  solver_.SolveConstraintProblem(*accel_data_, &cf);
-  EXPECT_EQ(cf.size(), 1);
-  EXPECT_NEAR(cf[0], mg, lcp_eps_);
-
-  // Verify that the vertical acceleration is zero.
-  VectorX<double> vdot;
-  solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &vdot);
-  EXPECT_NEAR(vdot[1], 0, lcp_eps_);
 }
 
 // Tests the rod in a two-point configuration *realized through a configuration

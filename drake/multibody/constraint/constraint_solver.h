@@ -242,6 +242,14 @@ class ConstraintSolver {
       std::vector<Vector2<T>>* contact_impulses);
 
  private:
+  void FormAndSolveConstraintLCP(
+      const ConstraintAccelProblemData<T>& problem_data,
+      const VectorX<T>& trunc_neg_invA_a,
+      VectorX<T>* cf) const;
+  void FormAndSolveConstraintLinearSystem(
+      const ConstraintAccelProblemData<T>& problem_data,
+      const VectorX<T>& trunc_neg_invA_a,
+      VectorX<T>* cf) const;
   void CheckAccelConstraintMatrix(
     const ConstraintAccelProblemData<T>& problem_data,
     const MatrixX<T>& MM) const;
@@ -269,11 +277,19 @@ class ConstraintSolver {
       int m,
       MatrixX<T>* iM_GT);
 
+  void FormLinearSystem(
+    const ConstraintAccelProblemData<T>& problem_data,
+    const VectorX<T> trunc_neg_invA_a,
+    MatrixX<T>* MM, VectorX<T>* qq) const;
   void FormImpactingConstraintLCP(
       const ConstraintVelProblemData<T>& problem_data,
       const VectorX<T>& invA_a,
       MatrixX<T>* MM, VectorX<T>* qq) const;
   void FormSustainedConstraintLCP(
+      const ConstraintAccelProblemData<T>& problem_data,
+      const VectorX<T>& invA_a,
+      MatrixX<T>* MM, VectorX<T>* qq) const;
+  void FormSustainedConstraintLinearSystem(
       const ConstraintAccelProblemData<T>& problem_data,
       const VectorX<T>& invA_a,
       MatrixX<T>* MM, VectorX<T>* qq) const;
@@ -477,15 +493,27 @@ ProblemData* ConstraintSolver<T>::UpdateProblemDataForUnilateralConstraints(
   }
 }
 
-template <typename T>
-void ConstraintSolver<T>::SolveConstraintProblem(
+// Forms the system of linear equations used to compute the accelerations during
+// ODE evaluations. Specifically, this method forms the matrix @p MM and vector
+// @p qq used to describe the linear complementarity problem MM*z + qq = w,
+// where:
+// (1) z ≥ 0
+// (2) w ≥ 0
+// (3) z ⋅ w = 0
+// If the active set is correctly determined, the contact mode variables will
+// provide the solution w = 0, implying that z = MM⁻¹⋅qq. This function only
+// forms MM and qq. It does not attempt to solve the linear system (or, by
+// extension, determine whether said solution for z results in a solution to
+// the linear complementarity problem).
+template <class T>
+void ConstraintSolver<T>::FormAndSolveConstraintLinearSystem(
     const ConstraintAccelProblemData<T>& problem_data,
+    const VectorX<T>& trunc_neg_invA_a,
     VectorX<T>* cf) const {
   using std::max;
   using std::abs;
 
-  if (!cf)
-    throw std::logic_error("cf (output parameter) is null.");
+  DRAKE_DEMAND(cf);
 
   // Alias problem data.
   const std::vector<int>& sliding_contacts = problem_data.sliding_contacts;
@@ -493,7 +521,61 @@ void ConstraintSolver<T>::SolveConstraintProblem(
       problem_data.non_sliding_contacts;
 
   // Get numbers of friction directions and types of contacts.
-  const int num_generalized_velocities = problem_data.tau.size();
+  const int num_sliding = sliding_contacts.size();
+  const int num_non_sliding = non_sliding_contacts.size();
+  const int num_contacts = num_sliding + num_non_sliding;
+  const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
+                                                   problem_data.r.end(), 0);
+  const int num_limits = problem_data.kL.size();
+  const int num_eq_constraints = problem_data.kG.size();
+
+  // Initialize contact force vector.
+  cf->resize(num_contacts + num_spanning_vectors + num_limits +
+      num_eq_constraints);
+
+  // Using Equations (f) and (g) from the comments in
+  // FormAndSolveConstraintLCP() and defining C as the upper left block of A⁻¹,
+  // the linear system is defined as MM*z + qq = 0, where:
+  //
+  // MM ≡ | NC(Nᵀ-μQᵀ)  NCDᵀ   NCLᵀ |
+  //      | DC(Nᵀ-μQᵀ)  DCDᵀ   DCLᵀ |
+  //      | LC(Nᵀ-μQᵀ)  LCDᵀ   LCLᵀ |
+  //
+  // qq ≡ | kᴺ + |N 0|A⁻¹a |
+  //      | kᴰ + |D 0|A⁻¹a |
+  //      | kᴸ + |L 0|A⁻¹a |
+
+  // @TODO(edrumwri): Consider checking whether or not the constraints are
+  // satisfied to a user-specified tolerance; a set of constraint equations that
+  // are dependent upon time (e.g., prescribed motion constraints) might not be
+  // fully satisfiable.
+
+  // Set up the linear system.
+  MatrixX<T> MM;
+  VectorX<T> qq;
+  FormSustainedConstraintLinearSystem(problem_data, trunc_neg_invA_a, &MM, &qq);
+
+  // Solve the linear system.
+  Eigen::CompleteOrthogonalDecomposition<MatrixX<T>> MM_QTZ(MM);
+  cf->head(qq.size()) = MM_QTZ.solve(-qq);
+}
+
+template <typename T>
+void ConstraintSolver<T>::FormAndSolveConstraintLCP(
+    const ConstraintAccelProblemData<T>& problem_data,
+    const VectorX<T>& trunc_neg_invA_a,
+    VectorX<T>* cf) const {
+  using std::max;
+  using std::abs;
+
+  DRAKE_DEMAND(cf);
+
+  // Alias problem data.
+  const std::vector<int>& sliding_contacts = problem_data.sliding_contacts;
+  const std::vector<int>& non_sliding_contacts =
+      problem_data.non_sliding_contacts;
+
+  // Get numbers of friction directions and types of contacts.
   const int num_sliding = sliding_contacts.size();
   const int num_non_sliding = non_sliding_contacts.size();
   const int num_contacts = num_sliding + num_non_sliding;
@@ -502,28 +584,6 @@ void ConstraintSolver<T>::SolveConstraintProblem(
   const int nk = num_spanning_vectors * 2;
   const int num_limits = problem_data.kL.size();
   const int num_eq_constraints = problem_data.kG.size();
-
-  // Look for fast exit.
-  if (num_contacts == 0 && num_limits == 0 && num_eq_constraints == 0) {
-    cf->resize(0);
-    return;
-  }
-
-  // Look for a second fast exit. (We avoid this calculation if there are
-  // bilateral constraints because it's too hard to determine a workable
-  // tolerance at this point).
-  const VectorX<T> candidate_accel = problem_data.solve_inertia(
-      problem_data.tau);
-  const VectorX<T> N_eval = problem_data.N_mult(candidate_accel) +
-      problem_data.kN;
-  const VectorX<T> L_eval = problem_data.L_mult(candidate_accel) +
-      problem_data.kL;
-  if ((num_contacts == 0 || N_eval.minCoeff() >= 0) &&
-      (num_limits == 0 || L_eval.minCoeff() >= 0) &&
-      (num_eq_constraints == 0)) {
-    cf->setZero();
-    return;
-  }
 
   // Initialize contact force vector.
   cf->resize(num_contacts + num_spanning_vectors + num_limits +
@@ -618,6 +678,98 @@ void ConstraintSolver<T>::SolveConstraintProblem(
   // are dependent upon time (e.g., prescribed motion constraints) might not be
   // fully satisfiable.
 
+  // Set up the pure linear complementarity problem.
+  MatrixX<T> MM;
+  VectorX<T> qq;
+  FormSustainedConstraintLCP(problem_data, trunc_neg_invA_a, &MM, &qq);
+
+  // Get the zero tolerance for solving the LCP.
+  const T zero_tol = lcp_.ComputeZeroTolerance(MM);
+
+  // Solve the LCP and compute the values of the slack variables.
+  VectorX<T> zz;
+  bool success = lcp_.SolveLcpLemke(MM, qq, &zz, -1, zero_tol);
+  VectorX<T> ww = MM * zz + qq;
+  const double max_dot = (zz.size() > 0) ?
+                         (zz.array() * ww.array()).abs().maxCoeff() : 0.0;
+
+  // NOTE: This LCP might not be solvable due to inconsistent configurations.
+  // Check the answer and throw a runtime error if it's no good.
+  // LCP constraints are zz ≥ 0, ww ≥ 0, zzᵀww = 0. Since the zero tolerance
+  // is used to check a single element for zero (within a single pivoting
+  // operation), we must compensate for the number of pivoting operations and
+  // the problem size. zzᵀww must use a looser tolerance to account for the
+  // num_vars multiplies.
+  const int num_vars = qq.size();
+  const int npivots = std::max(1, lcp_.get_num_pivots());
+  if (!success || (zz.size() > 0 &&
+      (zz.minCoeff() < -num_vars * npivots * zero_tol ||
+      ww.minCoeff() < -num_vars * npivots * zero_tol ||
+      max_dot > max(T(1), zz.maxCoeff()) * max(T(1), ww.maxCoeff()) * num_vars *
+          npivots * zero_tol))) {
+    throw std::runtime_error("Unable to solve LCP- it may be unsolvable.");
+  }
+
+  // Alias constraint force segments.
+  const auto fN = zz.segment(0, num_contacts);
+  const auto fD_plus = zz.segment(num_contacts, num_spanning_vectors);
+  const auto fD_minus = zz.segment(num_contacts + num_spanning_vectors,
+                                   num_spanning_vectors);
+  const auto fL = zz.segment(num_contacts + num_non_sliding + nk, num_limits);
+
+  // Get the constraint forces in the specified packed storage format.
+  cf->segment(0, num_contacts) = fN;
+  cf->segment(num_contacts, num_spanning_vectors) = fD_plus - fD_minus;
+  cf->segment(num_contacts + num_spanning_vectors, num_limits) = fL;
+}
+
+template <typename T>
+void ConstraintSolver<T>::SolveConstraintProblem(
+    const ConstraintAccelProblemData<T>& problem_data,
+    VectorX<T>* cf) const {
+  using std::max;
+  using std::abs;
+
+  if (!cf)
+    throw std::logic_error("cf (output parameter) is null.");
+
+  // Alias problem data.
+  const std::vector<int>& sliding_contacts = problem_data.sliding_contacts;
+  const std::vector<int>& non_sliding_contacts =
+      problem_data.non_sliding_contacts;
+
+  // Get numbers of friction directions, types of contacts, and other data.
+  const int num_sliding = sliding_contacts.size();
+  const int num_non_sliding = non_sliding_contacts.size();
+  const int num_contacts = num_sliding + num_non_sliding;
+  const int num_limits = problem_data.kL.size();
+  const int num_eq_constraints = problem_data.kG.size();
+  const int num_generalized_velocities = problem_data.tau.size();
+  const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
+                                                   problem_data.r.end(), 0);
+
+  // Look for fast exit.
+  if (num_contacts == 0 && num_limits == 0 && num_eq_constraints == 0) {
+    cf->resize(0);
+    return;
+  }
+
+  // Look for a second fast exit. (We avoid this calculation if there are
+  // bilateral constraints because it's too hard to determine a workable
+  // tolerance at this point).
+  const VectorX<T> candidate_accel = problem_data.solve_inertia(
+      problem_data.tau);
+  const VectorX<T> N_eval = problem_data.N_mult(candidate_accel) +
+      problem_data.kN;
+  const VectorX<T> L_eval = problem_data.L_mult(candidate_accel) +
+      problem_data.kL;
+  if ((num_contacts == 0 || N_eval.minCoeff() >= 0) &&
+      (num_limits == 0 || L_eval.minCoeff() >= 0) &&
+      (num_eq_constraints == 0)) {
+    cf->setZero();
+    return;
+  }
+
   // Prepare to set up the functionals to compute Ax = b, where A is the
   // blocked saddle point matrix containing the generalized inertia matrix
   // and the bilateral constraints *assuming there are bilateral constraints*.
@@ -675,52 +827,17 @@ void ConstraintSolver<T>::SolveConstraintProblem(
   const VectorX<T> invA_a = A_solve(a);
   const VectorX<T> trunc_neg_invA_a = -invA_a.head(problem_data.tau.size());
 
-  // Set up the pure linear complementarity problem.
-  MatrixX<T> MM;
-  VectorX<T> qq;
-  FormSustainedConstraintLCP(*data_ptr, trunc_neg_invA_a, &MM, &qq);
-
-  // Get the zero tolerance for solving the LCP.
-  const T zero_tol = lcp_.ComputeZeroTolerance(MM);
-
-  // Solve the LCP and compute the values of the slack variables.
-  VectorX<T> zz;
-  bool success = lcp_.SolveLcpLemke(MM, qq, &zz, -1, zero_tol);
-  VectorX<T> ww = MM * zz + qq;
-  const double max_dot = (zz.size() > 0) ?
-                         (zz.array() * ww.array()).abs().maxCoeff() : 0.0;
-
-  // NOTE: This LCP might not be solvable due to inconsistent configurations.
-  // Check the answer and throw a runtime error if it's no good.
-  // LCP constraints are zz ≥ 0, ww ≥ 0, zzᵀww = 0. Since the zero tolerance
-  // is used to check a single element for zero (within a single pivoting
-  // operation), we must compensate for the number of pivoting operations and
-  // the problem size. zzᵀww must use a looser tolerance to account for the
-  // num_vars multiplies.
-  const int num_vars = qq.size();
-  const int npivots = std::max(1, lcp_.get_num_pivots());
-  if (!success || (zz.size() > 0 &&
-      (zz.minCoeff() < -num_vars * npivots * zero_tol ||
-      ww.minCoeff() < -num_vars * npivots * zero_tol ||
-      max_dot > max(T(1), zz.maxCoeff()) * max(T(1), ww.maxCoeff()) * num_vars *
-          npivots * zero_tol))) {
-    throw std::runtime_error("Unable to solve LCP- it may be unsolvable.");
+  // Determine which problem formulation to use.
+  if (problem_data.use_complementarity_problem_solver) {
+    FormAndSolveConstraintLCP(*data_ptr, trunc_neg_invA_a, cf);
+  } else {
+    FormAndSolveConstraintLinearSystem(*data_ptr, trunc_neg_invA_a, cf);
   }
 
   // Alias constraint force segments.
-  const auto fN = zz.segment(0, num_contacts);
-  const auto fD_plus = zz.segment(num_contacts, num_spanning_vectors);
-  const auto fD_minus = zz.segment(num_contacts + num_spanning_vectors,
-                                   num_spanning_vectors);
-  const auto fL = zz.segment(num_contacts + num_non_sliding + nk, num_limits);
+  const auto fN = cf->segment(0, num_contacts);
   const auto fF = cf->segment(num_contacts, num_spanning_vectors);
-
-  // Get the constraint forces in the specified packed storage format.
-  cf->segment(0, num_contacts) = fN;
-  cf->segment(num_contacts, num_spanning_vectors) = fD_plus - fD_minus;
-  cf->segment(num_contacts + num_spanning_vectors, num_limits) = fL;
-  cf->segment(num_contacts + num_spanning_vectors + num_limits,
-      num_eq_constraints).setZero();
+  const auto fL = cf->segment(num_contacts + num_spanning_vectors, num_limits);
 
   // Determine the accelerations and the bilateral constraint forces.
   //     Au + Xv + a = 0
@@ -1144,6 +1261,107 @@ void ConstraintSolver<T>::CheckAccelConstraintMatrix(
 
   // Check that the blocks are nearly equal.
   DRAKE_ASSERT((L_iM_FT - L_iM_FT_true).norm() < zero_tol);
+}
+
+// Forms the linear system matrix and vector, which is used to determine the
+// constraint forces.
+template <class T>
+void ConstraintSolver<T>::FormSustainedConstraintLinearSystem(
+    const ConstraintAccelProblemData<T>& problem_data,
+    const VectorX<T>& trunc_neg_invA_a,
+    MatrixX<T>* MM, VectorX<T>* qq) const {
+  DRAKE_DEMAND(MM);
+  DRAKE_DEMAND(qq);
+
+  // Get numbers of types of contacts.
+  const int num_sliding = problem_data.sliding_contacts.size();
+  const int num_non_sliding = problem_data.non_sliding_contacts.size();
+  const int num_contacts = num_sliding + num_non_sliding;
+  const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
+                                 problem_data.r.end(), 0);
+  const int num_limits = problem_data.kL.size();
+
+  // Problem matrices and vectors are mildly adapted from:
+  // M. Anitescu and F. Potra. Formulating Dynamic Multi-Rigid Body Contact
+  // Problems as Solvable Linear Complementarity Problems. Nonlinear Dynamics,
+  // 14, 1997.
+
+  // Alias operators and vectors to make accessing them less clunky.
+  auto N = problem_data.N_mult;
+  auto F = problem_data.F_mult;
+  auto FT = problem_data.F_transpose_mult;
+  auto L = problem_data.L_mult;
+  auto LT = problem_data.L_transpose_mult;
+  auto iM = problem_data.solve_inertia;
+  const VectorX<T>& kN = problem_data.kN;
+  const VectorX<T>& kF = problem_data.kF;
+  const VectorX<T>& kL = problem_data.kL;
+  const VectorX<T>& gammaN = problem_data.gammaN;
+  const VectorX<T>& gammaF = problem_data.gammaF;
+  const VectorX<T>& gammaL = problem_data.gammaL;
+
+  // Alias these variables for more readable construction of MM and qq.
+  const int ngv = problem_data.tau.size();  // generalized velocity dimension.
+  const int nc = num_contacts;
+  const int nr = num_spanning_vectors;
+  const int nl = num_limits;
+  const int num_vars = nc + nr + nl;
+
+  // Precompute some matrices that will be reused repeatedly.
+  MatrixX<T> iM_NT_minus_muQT(ngv, nc), iM_FT(ngv, nr), iM_LT(ngv, nl);
+  ComputeInverseInertiaTimesGT(
+      iM, problem_data.N_minus_muQ_transpose_mult, nc, &iM_NT_minus_muQT);
+  ComputeInverseInertiaTimesGT(iM, FT, nr, &iM_FT);
+  ComputeInverseInertiaTimesGT(iM, LT, nl, &iM_LT);
+
+  // Name the blocks of the matrix, which takes the form:
+  // N⋅M⁻¹⋅(Nᵀ - μₛQᵀ)  N⋅M⁻¹⋅Fᵀ  N⋅M⁻¹⋅Lᵀ
+  // F⋅M⁻¹⋅(Nᵀ - μₛQᵀ)  F⋅M⁻¹⋅Fᵀ  D⋅M⁻¹⋅Lᵀ
+  // L⋅M⁻¹⋅(Nᵀ - μₛQᵀ)  L⋅M⁻¹⋅Fᵀ  L⋅M⁻¹⋅Lᵀ
+  MM->resize(num_vars, num_vars);
+  Eigen::Ref<MatrixX<T>> N_iM_NT_minus_muQT = MM->block(0, 0, nc, nc);
+  Eigen::Ref<MatrixX<T>> N_iM_FT = MM->block(0, nc, nc, nr);
+  Eigen::Ref<MatrixX<T>> N_iM_LT = MM->block(0, nc + nr, nc, nl);
+  Eigen::Ref<MatrixX<T>> F_iM_NT_minus_muQT = MM->block(nc, 0, nr, nc);
+  Eigen::Ref<MatrixX<T>> F_iM_FT = MM->block(nc, nc, nr, nr);
+  Eigen::Ref<MatrixX<T>> F_iM_LT = MM->block(nc, nc + nr, nr, nl);
+  Eigen::Ref<MatrixX<T>> L_iM_NT_minus_muQT = MM->block(nc + nr, 0, nl, nc);
+  Eigen::Ref<MatrixX<T>> L_iM_FT = MM->block(nc + nr, nc, nl, nr);
+  Eigen::Ref<MatrixX<T>> L_iM_LT = MM->block(nc + nr, nc + nr, nl, nl);
+
+  // Compute the blocks.
+  ComputeConstraintSpaceComplianceMatrix(
+      N, nc, iM_NT_minus_muQT, N_iM_NT_minus_muQT);
+  ComputeConstraintSpaceComplianceMatrix(N, nc, iM_FT, N_iM_FT);
+  ComputeConstraintSpaceComplianceMatrix(N, nc, iM_LT, N_iM_LT);
+  ComputeConstraintSpaceComplianceMatrix(
+      F, nr, iM_NT_minus_muQT, F_iM_NT_minus_muQT);
+  ComputeConstraintSpaceComplianceMatrix(F, nr, iM_FT, F_iM_FT);
+  ComputeConstraintSpaceComplianceMatrix(F, nr, iM_LT, F_iM_LT);
+  ComputeConstraintSpaceComplianceMatrix(
+      L, nl, iM_NT_minus_muQT, L_iM_NT_minus_muQT);
+  ComputeConstraintSpaceComplianceMatrix(L, nl, iM_LT, L_iM_LT);
+  L_iM_FT = F_iM_LT.transpose().eval();
+
+  // Verify that the gamma vectors are either empty or non-negative.
+  DRAKE_DEMAND(gammaN.size() == 0 || gammaN.minCoeff() >= 0);
+  DRAKE_DEMAND(gammaF.size() == 0 || gammaF.minCoeff() >= 0);
+  DRAKE_DEMAND(gammaL.size() == 0 || gammaL.minCoeff() >= 0);
+
+  // Regularize the matrix.
+  MM->topLeftCorner(nc, nc) += Eigen::DiagonalMatrix<T, Eigen::Dynamic>(gammaN);
+  MM->block(nc, nc, nr, nr) += Eigen::DiagonalMatrix<T, Eigen::Dynamic>(gammaF);
+  MM->block(nc + nr, nc + nr, nl, nl) +=
+      Eigen::DiagonalMatrix<T, Eigen::Dynamic>(gammaL);
+
+  // Construct the vector:
+  // N⋅A⁻¹⋅a + kN
+  // F⋅A⁻¹⋅a + kD
+  // L⋅A⁻¹⋅a + kL
+  qq->resize(num_vars, 1);
+  qq->segment(0, nc) = N(trunc_neg_invA_a) + kN;
+  qq->segment(nc, nr) = F(trunc_neg_invA_a) + kF;
+  qq->segment(nc + nr, num_limits) = L(trunc_neg_invA_a) + kL;
 }
 
 // Forms the LCP matrix and vector, which is used to determine the constraint
