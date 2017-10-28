@@ -44,6 +44,7 @@ ipopt
 libyaml
 lz4
 numpy
+nlopt
 patchutils
 pkg-config
 protobuf@2.6
