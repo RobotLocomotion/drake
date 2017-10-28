@@ -129,10 +129,12 @@ class SpatialVector {
   T* mutable_data() { return V_.data(); }
 
   /// Returns the maximum absolute values of the differences in the rotational
-  /// and translational components of `this` and `other`, as follows:
+  /// and translational components of `this` and `other` (i.e., the infinity
+  /// norms of the difference in rotational and translational components).
+  /// Quantity         | Description
   /// -----------------|-------------------------------------------------
-  /// w_max_difference | Maximum absolute difference in rotation components.
-  /// v_max_difference | Maximum absolute difference in translation components.
+  /// w_max_difference | Maximum absolute difference in rotation components
+  /// v_max_difference | Maximum absolute difference in translation components
   std::tuple<const T, const T> GetMaximumAbsoluteDifferences(
       const SpatialQuantity& other) const {
     const Vector3<T> w_difference = rotational() - other.rotational();
@@ -144,17 +146,25 @@ class SpatialVector {
 
   /// Compares the rotational and translational parts of `this` and `other`
   /// to check if they are the same to within specified absolute differences.
-  /// @returns `true` if the rotational part of`this` and `other` are equal
+  /// @param[in] rotational_tolerance maximum allowable absolute difference
+  /// between the rotational parts of `this` and `other`.  The units depend on
+  /// the underlying class.  For example, spatial velocity, acceleration, and
+  /// force have units of rad/sec, rad/sec^2, and N*m, respectively.
+  /// @param[in] translational_tolerance maximum allowable absolute difference
+  /// between the translational parts of `this` and `other`.  The units depend
+  /// on the underlying class.  For example, spatial velocity, acceleration, and
+  /// force have units of meter/sec, meter/sec^2, and Newton, respectively.
+  /// @returns `true` if the rotational part of `this` and `other` are equal
   /// within @p rotational_tolerance and the translational part of `this` and
   /// `other` are equal within @p translational_tolerance.
   bool IsNearlyEqualWithinAbsoluteTolerance(
-      const SpatialQuantity& other, const T& rotational_epsilon,
-      const T& translational_epsilon) const {
+      const SpatialQuantity& other, const T& rotational_tolerance,
+      const T& translational_tolerance) const {
     T w_max_difference, v_max_difference;
     std::tie(w_max_difference, v_max_difference) =
         GetMaximumAbsoluteDifferences(other);
-    return w_max_difference <= rotational_epsilon &&
-           v_max_difference <= translational_epsilon;
+    return w_max_difference <= rotational_tolerance &&
+           v_max_difference <= translational_tolerance;
   }
 
   /// Compares `this` spatial vector to the provided spatial vector `other`
