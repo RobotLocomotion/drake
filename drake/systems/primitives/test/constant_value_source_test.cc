@@ -42,7 +42,7 @@ TEST_F(ConstantValueSourceTest, Output) {
 
 // Tests that ConstantValueSource allocates no state variables in the context_.
 TEST_F(ConstantValueSourceTest, ConstantValueSourceIsStateless) {
-  EXPECT_EQ(0, context_->get_continuous_state()->size());
+  EXPECT_EQ(0, context_->get_continuous_state().size());
 }
 
 }  // namespace

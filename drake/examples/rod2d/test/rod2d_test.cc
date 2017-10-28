@@ -61,7 +61,7 @@ class Rod2DDAETest : public ::testing::Test {
     return context_->CloneState();
   }
 
-  VectorBase<double> *continuous_state() {
+  VectorBase<double>& continuous_state() {
     return context_->get_mutable_continuous_state_vector();
   }
 
@@ -77,7 +77,7 @@ class Rod2DDAETest : public ::testing::Test {
     const double half_len = dut_->get_rod_half_length();
     const double r22 = std::sqrt(2) / 2;
     ContinuousState<double>& xc =
-        *context_->get_mutable_continuous_state();
+        context_->get_mutable_continuous_state();
     xc[0] = -half_len * r22;
     xc[1] = half_len * r22;
     xc[2] = 3 * M_PI / 4.0;
@@ -86,23 +86,23 @@ class Rod2DDAETest : public ::testing::Test {
     xc[5] = 0.0;
 
     // Indicate that the rod is in the single contact sliding mode.
-    AbstractValues* abs_state =
-        context_->get_mutable_state()->get_mutable_abstract_state();
-    abs_state->get_mutable_value(0)
+    AbstractValues& abs_state =
+        context_->get_mutable_state().get_mutable_abstract_state();
+    abs_state.get_mutable_value(0)
         .template GetMutableValue<Rod2D<double>::Mode>() =
         Rod2D<double>::kSlidingSingleContact;
 
     // Determine the point of contact.
     const double theta = xc[2];
     const int k = (std::sin(theta) > 0) ? -1 : 1;
-    abs_state->get_mutable_value(1).template GetMutableValue<int>() = k;
+    abs_state.get_mutable_value(1).template GetMutableValue<int>() = k;
   }
 
   // Sets the rod to a state that corresponds to ballistic motion.
   void SetBallisticState() {
     const double half_len = dut_->get_rod_half_length();
     ContinuousState<double>& xc =
-        *context_->get_mutable_continuous_state();
+        context_->get_mutable_continuous_state();
     xc[0] = 0.0;
     xc[1] = 10 * half_len;
     xc[2] = M_PI_2;
@@ -111,9 +111,9 @@ class Rod2DDAETest : public ::testing::Test {
     xc[5] = 3.0;
 
     // Set the mode to ballistic.
-    AbstractValues* abs_state =
-        context_->get_mutable_state()->get_mutable_abstract_state();
-    abs_state->get_mutable_value(0)
+    AbstractValues& abs_state =
+        context_->get_mutable_state().get_mutable_abstract_state();
+    abs_state.get_mutable_value(0)
         .template GetMutableValue<Rod2D<double>::Mode>() =
         Rod2D<double>::kBallisticMotion;
 
@@ -123,8 +123,7 @@ class Rod2DDAETest : public ::testing::Test {
   // Sets the rod to an interpenetrating configuration without modifying the
   // velocity or any mode variables.
   void SetInterpenetratingConfig() {
-    ContinuousState<double>& xc =
-        *context_->get_mutable_continuous_state();
+    ContinuousState<double>& xc = context_->get_mutable_continuous_state();
     // Configuration has the rod on its side.
     xc[0] = 0.0;    // com horizontal position
     xc[1] = -1.0;   // com vertical position
@@ -134,8 +133,7 @@ class Rod2DDAETest : public ::testing::Test {
   // Sets the rod to a resting horizontal configuration without modifying the
   // mode variables.
   void SetRestingHorizontalConfig() {
-    ContinuousState<double>& xc =
-        *context_->get_mutable_continuous_state();
+    ContinuousState<double>& xc = context_->get_mutable_continuous_state();
     // Configuration has the rod on its side.
     xc[0] = 0.0;     // com horizontal position
     xc[1] = 0.0;     // com vertical position
@@ -146,8 +144,7 @@ class Rod2DDAETest : public ::testing::Test {
   // Sets the rod to a resting vertical configuration without modifying the
   // mode variables.
   void SetRestingVerticalConfig() {
-    ContinuousState<double>& xc =
-        *context_->get_mutable_continuous_state();
+    ContinuousState<double>& xc = context_->get_mutable_continuous_state();
     xc[0] = 0.0;                             // com horizontal position
     xc[1] = dut_->get_rod_half_length();     // com vertical position
     xc[2] = M_PI_2;                          // rod rotation
@@ -160,21 +157,20 @@ class Rod2DDAETest : public ::testing::Test {
     // but with the vertical component of velocity set such that the state
     // corresponds to an impact.
     SetSecondInitialConfig();
-    ContinuousState<double>& xc =
-        *context_->get_mutable_continuous_state();
+    ContinuousState<double>& xc = context_->get_mutable_continuous_state();
     xc[4] = -1.0;    // com horizontal velocity
 
     // Indicate that the rod is in the single contact sliding mode.
-    AbstractValues* abs_state =
-        context_->get_mutable_state()->get_mutable_abstract_state();
-    abs_state->get_mutable_value(0)
+    AbstractValues& abs_state =
+        context_->get_mutable_state().get_mutable_abstract_state();
+    abs_state.get_mutable_value(0)
         .template GetMutableValue<Rod2D<double>::Mode>() =
         Rod2D<double>::kSlidingSingleContact;
 
     // Determine the point of contact.
     const double theta = xc[2];
     const int k = (std::sin(theta) > 0) ? -1 : 1;
-    abs_state->get_mutable_value(1).template GetMutableValue<int>() = k;
+    abs_state.get_mutable_value(1).template GetMutableValue<int>() = k;
   }
 
   // Computes rigid impact data.
@@ -214,8 +210,8 @@ class Rod2DDAETest : public ::testing::Test {
     contact_solver_.ComputeGeneralizedVelocityChange(data, cf, &delta_v);
 
     // Update the velocity part of the state.
-    context_->get_mutable_continuous_state()->get_mutable_generalized_velocity()
-        ->SetFromVector(data.solve_inertia(data.Mv) + delta_v);
+    context_->get_mutable_continuous_state().get_mutable_generalized_velocity()
+        .SetFromVector(data.solve_inertia(data.Mv) + delta_v);
   }
 
   // Gets the number of generalized coordinates for the rod.
@@ -290,7 +286,7 @@ class Rod2DDAETest : public ::testing::Test {
 
 // Checks that the output port represents the state.
 TEST_F(Rod2DDAETest, Output) {
-  const ContinuousState<double>& xc = *context_->get_continuous_state();
+  const ContinuousState<double>& xc = context_->get_continuous_state();
   std::unique_ptr<SystemOutput<double>> output =
       dut_->AllocateOutput(*context_);
   dut_->CalcOutput(*context_, output.get());
@@ -330,8 +326,7 @@ TEST_F(Rod2DDAETest, ImpactWorks) {
   // Cause the initial state to be impacting, with center of mass directly
   // over the point of contact.
   const double half_len = dut_->get_rod_half_length();
-  ContinuousState<double>& xc =
-      *context_->get_mutable_continuous_state();
+  ContinuousState<double>& xc = context_->get_mutable_continuous_state();
   xc[0] = 0.0;
   xc[1] = half_len;
   xc[2] = M_PI_2;
@@ -376,7 +371,7 @@ TEST_F(Rod2DDAETest, ConsistentDerivativesBallistic) {
   // ballistic system.
   const double tol = std::numeric_limits<double>::epsilon();
   const double g = dut_->get_gravitational_acceleration();
-  const ContinuousState<double>& xc = *context_->get_continuous_state();
+  const ContinuousState<double>& xc = context_->get_continuous_state();
   EXPECT_NEAR((*derivatives_)[0], xc[3], tol);  // qdot = v ...
   EXPECT_NEAR((*derivatives_)[1], xc[4], tol);  // ... for this ...
   EXPECT_NEAR((*derivatives_)[2], xc[5], tol);  // ... system.
@@ -395,8 +390,7 @@ TEST_F(Rod2DDAETest, ConsistentDerivativesContacting) {
   // Set the initial state to sustained contact with zero tangential velocity
   // at the point of contact.
   const double half_len = dut_->get_rod_half_length();
-  ContinuousState<double>& xc =
-      *context_->get_mutable_continuous_state();
+  ContinuousState<double>& xc = context_->get_mutable_continuous_state();
   xc[0] = 0.0;
   xc[1] = half_len;
   xc[2] = M_PI_2;
@@ -458,8 +452,7 @@ TEST_F(Rod2DDAETest, DerivativesContactingAndSticking) {
   // Set the initial state to sustained contact with zero tangential velocity
   // at the point of contact and the rod being straight up.
   const double half_len = dut_->get_rod_half_length();
-  ContinuousState<double>& xc =
-      *context_->get_mutable_continuous_state();
+  ContinuousState<double>& xc = context_->get_mutable_continuous_state();
   xc[0] = 0.0;
   xc[1] = half_len;
   xc[2] = M_PI_2;
@@ -548,12 +541,12 @@ TEST_F(Rod2DDAETest, ImpactNoChange) {
   EXPECT_FALSE(dut_->IsImpacting(*context_));
 
   // Get the continuous state.
-  const VectorX<double> xc_old = context_->get_continuous_state()->
+  const VectorX<double> xc_old = context_->get_continuous_state().
       get_vector().CopyToVector();
 
   // Model the impact and get the continuous state out.
   ModelImpact();
-  const VectorX<double> xc = context_->get_continuous_state()->
+  const VectorX<double> xc = context_->get_continuous_state().
       get_vector().CopyToVector();
 
   // Verify the continuous state did not change.
@@ -586,7 +579,7 @@ TEST_F(Rod2DDAETest, InfFrictionImpactThenNoImpact) {
   // Handle the impact and copy the result to the context.
   std::unique_ptr<State<double>> new_state = CloneState();
   dut_->HandleImpact(*context_, new_state.get());
-  context_->get_mutable_state()->SetFrom(*new_state);
+  context_->get_mutable_state().SetFrom(*new_state);
   EXPECT_FALSE(dut_->IsImpacting(*context_));
 
   // Verify that the state is now in a sticking mode.
@@ -595,9 +588,9 @@ TEST_F(Rod2DDAETest, InfFrictionImpactThenNoImpact) {
 
   // Do one more impact- there should now be no change.
   dut_->HandleImpact(*context_, new_state.get());
-  EXPECT_TRUE(CompareMatrices(new_state->get_continuous_state()->get_vector().
+  EXPECT_TRUE(CompareMatrices(new_state->get_continuous_state().get_vector().
                                   CopyToVector(),
-                              context_->get_continuous_state()->get_vector().
+                              context_->get_continuous_state().get_vector().
                                   CopyToVector(),
                               std::numeric_limits<double>::epsilon(),
                               MatrixCompareType::absolute));
@@ -622,7 +615,7 @@ TEST_F(Rod2DDAETest, NoFrictionImpactThenNoImpact) {
   // Handle the impact and copy the result to the context.
   std::unique_ptr<State<double>> new_state = CloneState();
   dut_->HandleImpact(*context_, new_state.get());
-  context_->get_mutable_state()->SetFrom(*new_state);
+  context_->get_mutable_state().SetFrom(*new_state);
   EXPECT_FALSE(dut_->IsImpacting(*context_));
 
   // Verify that the state is still in a sliding mode.
@@ -632,9 +625,9 @@ TEST_F(Rod2DDAETest, NoFrictionImpactThenNoImpact) {
   // Do one more impact- there should now be no change.
   // Verify that there is no further change from this second impact.
   dut_->HandleImpact(*context_, new_state.get());
-  EXPECT_TRUE(CompareMatrices(new_state->get_continuous_state()->get_vector().
+  EXPECT_TRUE(CompareMatrices(new_state->get_continuous_state().get_vector().
                                   CopyToVector(),
-                              context_->get_continuous_state()->get_vector().
+                              context_->get_continuous_state().get_vector().
                                   CopyToVector(),
                               std::numeric_limits<double>::epsilon(),
                               MatrixCompareType::absolute));
@@ -648,8 +641,7 @@ TEST_F(Rod2DDAETest, NoFrictionImpactThenNoImpact) {
 TEST_F(Rod2DDAETest, NoSliding) {
   const double half_len = dut_->get_rod_half_length();
   const double r22 = std::sqrt(2) / 2;
-  ContinuousState<double>& xc =
-      *context_->get_mutable_continuous_state();
+  ContinuousState<double>& xc = context_->get_mutable_continuous_state();
 
   // Set the coefficient of friction to zero (triggering the case on the
   // edge of the friction cone).
@@ -681,8 +673,7 @@ TEST_F(Rod2DDAETest, NoSliding) {
 
 // Test multiple (two-point) contact configurations.
 TEST_F(Rod2DDAETest, MultiPoint) {
-  ContinuousState<double> &xc =
-      *context_->get_mutable_continuous_state();
+  ContinuousState<double>& xc = context_->get_mutable_continuous_state();
 
   // Set the rod to a horizontal, two-contact configuration.
   xc[0] = 0;
@@ -752,12 +743,12 @@ TEST_F(Rod2DDAETest, ImpactNoChange2) {
   SetSecondInitialConfig();
 
   // Get the continuous state.
-  const VectorX<double> xc_old = context_->get_continuous_state()->
+  const VectorX<double> xc_old = context_->get_continuous_state().
     get_vector().CopyToVector();
 
   // Model the impact and get the continuous state out.
   ModelImpact();
-  const VectorX<double> xc = context_->get_continuous_state()->
+  const VectorX<double> xc = context_->get_continuous_state().
     get_vector().CopyToVector();
 
   // Verify the continuous state did not change.
@@ -781,7 +772,7 @@ TEST_F(Rod2DDAETest, InfFrictionImpactThenNoImpact2) {
 
   // Handle the impact and copy the result to the context.
   dut_->HandleImpact(*context_, new_state.get());
-  context_->get_mutable_state()->SetFrom(*new_state);
+  context_->get_mutable_state().SetFrom(*new_state);
 
   // Verify the state no longer corresponds to an impact.
   EXPECT_FALSE(dut_->IsImpacting(*context_));
@@ -792,9 +783,9 @@ TEST_F(Rod2DDAETest, InfFrictionImpactThenNoImpact2) {
 
   // Do one more impact- there should now be no change.
   dut_->HandleImpact(*context_, new_state.get());
-  EXPECT_TRUE(CompareMatrices(new_state->get_continuous_state()->get_vector().
+  EXPECT_TRUE(CompareMatrices(new_state->get_continuous_state().get_vector().
                                   CopyToVector(),
-                              context_->get_continuous_state()->get_vector().
+                              context_->get_continuous_state().get_vector().
                                   CopyToVector(),
                               std::numeric_limits<double>::epsilon(),
                               MatrixCompareType::absolute));
@@ -823,14 +814,14 @@ TEST_F(Rod2DDAETest, NoFrictionImpactThenNoImpact2) {
 
   // Handle the impact and copy the result to the context.
   dut_->HandleImpact(*context_, new_state.get());
-  context_->get_mutable_state()->SetFrom(*new_state);
+  context_->get_mutable_state().SetFrom(*new_state);
   EXPECT_FALSE(dut_->IsImpacting(*context_));
 
   // Do one more impact- there should now be no change.
   dut_->HandleImpact(*context_, new_state.get());
-  EXPECT_TRUE(CompareMatrices(new_state->get_continuous_state()->get_vector().
+  EXPECT_TRUE(CompareMatrices(new_state->get_continuous_state().get_vector().
                                   CopyToVector(),
-                              context_->get_continuous_state()->get_vector().
+                              context_->get_continuous_state().get_vector().
                                   CopyToVector(),
                               std::numeric_limits<double>::epsilon(),
                               MatrixCompareType::absolute));
@@ -847,8 +838,7 @@ TEST_F(Rod2DDAETest, BallisticNoImpact) {
 
   // Move the rod upward vertically so that it is no longer impacting and
   // set the mode to ballistic motion.
-  ContinuousState<double>& xc =
-      *context_->get_mutable_continuous_state();
+  ContinuousState<double>& xc = context_->get_mutable_continuous_state();
   xc[1] += 10.0;
   context_->template get_mutable_abstract_state<Rod2D<double>::Mode>(0) =
       Rod2D<double>::kBallisticMotion;
@@ -925,7 +915,7 @@ TEST_F(Rod2DDAETest, OtherEndpointDistWitness) {
 TEST_F(Rod2DDAETest, SeparationWitness) {
   // Set the rod to an upward configuration so that accelerations are simple
   // to predict.
-  ContinuousState<double>& xc = *context_->get_mutable_continuous_state();
+  ContinuousState<double>& xc = context_->get_mutable_continuous_state();
 
   // Configuration has the rod on its side. Vertical velocity is still zero.
   xc[0] = 0.0;
@@ -965,8 +955,7 @@ TEST_F(Rod2DDAETest, StickingSlidingWitness) {
   // Put the rod into an upright configuration with no tangent velocity and
   // some horizontal force.
   const double half_len = dut_->get_rod_half_length();
-  ContinuousState<double>& xc =
-      *context_->get_mutable_continuous_state();
+  ContinuousState<double>& xc = context_->get_mutable_continuous_state();
   xc[0] = 0.0;       // com horizontal position
   xc[1] = half_len;  // com vertical position
   xc[2] = M_PI_2;    // rod rotation
@@ -1024,8 +1013,7 @@ TEST_F(Rod2DDAETest, RigidContactProblemDataHorizontalResting) {
 TEST_F(Rod2DDAETest, RigidContactProblemDataHorizontalSliding) {
   // Set the rod to a sliding horizontal configuration.
   SetRestingHorizontalConfig();
-  ContinuousState<double>& xc =
-      *context_->get_mutable_continuous_state();
+  ContinuousState<double>& xc = context_->get_mutable_continuous_state();
   xc[3] = 1.0;  // horizontal velocity of the rod center-of-mass.
 
   // Compute the problem data.
@@ -1065,8 +1053,7 @@ TEST_F(Rod2DDAETest, RigidContactProblemDataVerticalResting) {
 TEST_F(Rod2DDAETest, RigidContactProblemDataVerticalSliding) {
   // Set the rod to a sliding vertical configuration.
   SetRestingVerticalConfig();
-  ContinuousState<double>& xc =
-      *context_->get_mutable_continuous_state();
+  ContinuousState<double>& xc = context_->get_mutable_continuous_state();
   xc[3] = 1.0;
 
   // Compute the problem data.
@@ -1205,13 +1192,13 @@ GTEST_TEST(Rod2DCrossValidationTest, OneStepSolutionSliding) {
   // based approach.
   std::unique_ptr<ContinuousState<double>> f = pdae.AllocateTimeDerivatives();
   pdae.CalcTimeDerivatives(*context_pdae, f.get());
-  auto xc = context_pdae->get_mutable_continuous_state_vector();
-  xc->SetAtIndex(3, xc->GetAtIndex(3) + dt * ((*f)[3]));
-  xc->SetAtIndex(4, xc->GetAtIndex(4) + dt * ((*f)[4]));
-  xc->SetAtIndex(5, xc->GetAtIndex(5) + dt * ((*f)[5]));
-  xc->SetAtIndex(0, xc->GetAtIndex(0) + dt * xc->GetAtIndex(3));
-  xc->SetAtIndex(1, xc->GetAtIndex(1) + dt * xc->GetAtIndex(4));
-  xc->SetAtIndex(2, xc->GetAtIndex(2) + dt * xc->GetAtIndex(5));
+  auto& xc = context_pdae->get_mutable_continuous_state_vector();
+  xc.SetAtIndex(3, xc.GetAtIndex(3) + dt * ((*f)[3]));
+  xc.SetAtIndex(4, xc.GetAtIndex(4) + dt * ((*f)[4]));
+  xc.SetAtIndex(5, xc.GetAtIndex(5) + dt * ((*f)[5]));
+  xc.SetAtIndex(0, xc.GetAtIndex(0) + dt * xc.GetAtIndex(3));
+  xc.SetAtIndex(1, xc.GetAtIndex(1) + dt * xc.GetAtIndex(4));
+  xc.SetAtIndex(2, xc.GetAtIndex(2) + dt * xc.GetAtIndex(5));
 
   // See whether the states are equal.
   const Context<double>& context_ts_new = simulator_ts.get_context();
@@ -1219,12 +1206,12 @@ GTEST_TEST(Rod2DCrossValidationTest, OneStepSolutionSliding) {
 
   // Check that the solution is nearly identical.
   const double tol = std::numeric_limits<double>::epsilon() * 10;
-  EXPECT_NEAR(xc->GetAtIndex(0), xd[0], tol);
-  EXPECT_NEAR(xc->GetAtIndex(1), xd[1], tol);
-  EXPECT_NEAR(xc->GetAtIndex(2), xd[2], tol);
-  EXPECT_NEAR(xc->GetAtIndex(3), xd[3], tol);
-  EXPECT_NEAR(xc->GetAtIndex(4), xd[4], tol);
-  EXPECT_NEAR(xc->GetAtIndex(5), xd[5], tol);
+  EXPECT_NEAR(xc.GetAtIndex(0), xd[0], tol);
+  EXPECT_NEAR(xc.GetAtIndex(1), xd[1], tol);
+  EXPECT_NEAR(xc.GetAtIndex(2), xd[2], tol);
+  EXPECT_NEAR(xc.GetAtIndex(3), xd[3], tol);
+  EXPECT_NEAR(xc.GetAtIndex(4), xd[4], tol);
+  EXPECT_NEAR(xc.GetAtIndex(5), xd[5], tol);
 
   // TODO(edrumwri): Introduce more extensive tests that cross-validate the
   // time-stepping based approach against the piecewise DAE-based approach for
@@ -1256,8 +1243,7 @@ GTEST_TEST(Rod2DCrossValidationTest, OneStepSolutionSticking) {
 
   // This configuration has no sliding velocity.
   const double half_len = pdae.get_rod_half_length();
-  ContinuousState<double>& xc =
-      *context_pdae->get_mutable_continuous_state();
+  ContinuousState<double>& xc = context_pdae->get_mutable_continuous_state();
   auto xd = context_ts->get_mutable_discrete_state(0).get_mutable_value();
   xc[0] = xd[0] = 0.0;
   xc[1] = xd[1] = half_len;
@@ -1344,7 +1330,7 @@ class Rod2DCompliantTest : public ::testing::Test {
 
   // Return the state x,y,θ,xdot,ydot,θdot as a Vector6.
   Vector6d get_state() const {
-    const ContinuousState<double>& xc = *context_->get_continuous_state();
+    const ContinuousState<double>& xc = context_->get_continuous_state();
     return Vector6d(xc.CopyToVector());
   }
 
@@ -1356,15 +1342,13 @@ class Rod2DCompliantTest : public ::testing::Test {
 
   // Sets the planar pose in the context.
   void set_pose(double x, double y, double theta) {
-    ContinuousState<double>& xc =
-        *context_->get_mutable_continuous_state();
+    ContinuousState<double>& xc = context_->get_mutable_continuous_state();
     xc[0] = x; xc[1] = y; xc[2] = theta;
   }
 
   // Sets the planar velocity in the context.
   void set_velocity(double xdot, double ydot, double thetadot) {
-    ContinuousState<double>& xc =
-        *context_->get_mutable_continuous_state();
+    ContinuousState<double>& xc = context_->get_mutable_continuous_state();
     xc[3] = xdot; xc[4] = ydot; xc[5] = thetadot;
   }
 
@@ -1514,7 +1498,7 @@ GTEST_TEST(Rod2DCrossValidationTest, Outputs) {
   x_pdae[0] = 0;
   x_pdae[1] = pdae.get_rod_half_length();
   x_pdae[2] = M_PI_2;
-  context_pdae->get_mutable_continuous_state()->SetFromVector(x_pdae);
+  context_pdae->get_mutable_continuous_state().SetFromVector(x_pdae);
   pdae.CalcOutput(*context_pdae, output_pdae.get());
 
   // Rotation by theta is converted to rotation around +y by theta + π/2.

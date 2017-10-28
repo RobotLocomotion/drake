@@ -33,7 +33,7 @@ class QuadrotorPlant final : public systems::LeafSystem<T> {
   int get_num_states() const { return kStateDimension; }
 
   void set_state(systems::Context<T>* context, const VectorX<T>& x) const {
-    context->get_mutable_continuous_state_vector()->SetFromVector(x);
+    context->get_mutable_continuous_state_vector().SetFromVector(x);
   }
 
   double m() const { return m_; }

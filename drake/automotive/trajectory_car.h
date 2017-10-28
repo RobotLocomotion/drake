@@ -160,11 +160,10 @@ class TrajectoryCar final : public systems::LeafSystem<T> {
 
     // Obtain the result structure.
     DRAKE_ASSERT(derivatives != nullptr);
-    systems::VectorBase<T>* const vector_derivatives =
+    systems::VectorBase<T>& vector_derivatives =
         derivatives->get_mutable_vector();
-    DRAKE_ASSERT(vector_derivatives);
     TrajectoryCarState<T>* const rates =
-        dynamic_cast<TrajectoryCarState<T>*>(vector_derivatives);
+        dynamic_cast<TrajectoryCarState<T>*>(&vector_derivatives);
     DRAKE_ASSERT(rates);
 
     ImplCalcTimeDerivatives(params, *state, *input, rates);

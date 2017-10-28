@@ -136,7 +136,7 @@ MakeStateAndInputMatrices(
     Context<AutoDiffXd>* autodiff_context,
     WhichAction which_action) {
   if (autodiff_context->has_only_continuous_state()) {
-    autodiff_context->get_mutable_continuous_state_vector()->SetFromVector(
+    autodiff_context->get_mutable_continuous_state_vector().SetFromVector(
         autodiff_x0_vec);
     std::unique_ptr<ContinuousState<AutoDiffXd>> autodiff_xdot =
         autodiff_system.AllocateTimeDerivatives();
@@ -154,7 +154,7 @@ MakeStateAndInputMatrices(
                           math::autoDiffToValueMatrix(autodiff_xdot_vec));
   }
   auto& autodiff_x0 =
-      autodiff_context->get_mutable_discrete_state()->get_mutable_vector();
+      autodiff_context->get_mutable_discrete_state().get_mutable_vector();
   autodiff_x0.SetFromVector(autodiff_x0_vec);
   std::unique_ptr<DiscreteValues<AutoDiffXd>> autodiff_x1 =
       autodiff_system.AllocateDiscreteVariables();

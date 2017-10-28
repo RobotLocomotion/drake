@@ -100,7 +100,7 @@ GTEST_TEST(BeamModelTest, TestProbabilityDensity) {
   for (int i = 0; i < simulator.get_context().get_num_discrete_state_groups();
        i++) {
     BasicVector<double>& state =
-        simulator.get_mutable_context()->get_mutable_discrete_state(0);
+        simulator.get_mutable_context().get_mutable_discrete_state(0);
     for (int j = 0; j < state.size(); j++) {
       state.SetAtIndex(j, 0.0);
     }
@@ -108,7 +108,7 @@ GTEST_TEST(BeamModelTest, TestProbabilityDensity) {
 
   auto& params =
       beam_model->get_mutable_parameters(&diagram->GetMutableSubsystemContext(
-          *beam_model, simulator.get_mutable_context()));
+          *beam_model, &simulator.get_mutable_context()));
 
   // Set some testable beam model parameters.
   params.set_lambda_short(2.0);

@@ -41,11 +41,11 @@ class SpringMassSystemTest : public ::testing::Test {
 
     // Set up some convenience pointers.
     state_ = dynamic_cast<SpringMassStateVector<double>*>(
-        context_->get_mutable_continuous_state_vector());
+        &context_->get_mutable_continuous_state_vector());
     output_ = dynamic_cast<const SpringMassStateVector<double>*>(
         system_output_->get_vector_data(0));
     derivatives_ = dynamic_cast<SpringMassStateVector<double>*>(
-        system_derivatives_->get_mutable_vector());
+        &system_derivatives_->get_mutable_vector());
   }
 
   void InitializeState(const double position, const double velocity) {
@@ -126,14 +126,14 @@ TEST_F(SpringMassSystemTest, Output) {
 // Tests that second-order structure is exposed in the state.
 TEST_F(SpringMassSystemTest, SecondOrderStructure) {
   InitializeState(1.2, 3.4);  // Displacement 1.2m, velocity 3.4m/sec.
-  ContinuousState<double>* continuous_state =
+  ContinuousState<double>& continuous_state =
       context_->get_mutable_continuous_state();
-  ASSERT_EQ(1, continuous_state->get_generalized_position().size());
-  ASSERT_EQ(1, continuous_state->get_generalized_velocity().size());
-  ASSERT_EQ(1, continuous_state->get_misc_continuous_state().size());
-  EXPECT_NEAR(1.2, continuous_state->get_generalized_position().GetAtIndex(0),
+  ASSERT_EQ(1, continuous_state.get_generalized_position().size());
+  ASSERT_EQ(1, continuous_state.get_generalized_velocity().size());
+  ASSERT_EQ(1, continuous_state.get_misc_continuous_state().size());
+  EXPECT_NEAR(1.2, continuous_state.get_generalized_position().GetAtIndex(0),
               1e-8);
-  EXPECT_NEAR(3.4, continuous_state->get_generalized_velocity().GetAtIndex(0),
+  EXPECT_NEAR(3.4, continuous_state.get_generalized_velocity().GetAtIndex(0),
               1e-8);
 }
 
@@ -141,7 +141,7 @@ TEST_F(SpringMassSystemTest, SecondOrderStructure) {
 // MapVelocityToConfigurationDerivative.
 TEST_F(SpringMassSystemTest, MapVelocityToConfigurationDerivative) {
   InitializeState(1.2, 3.4);  // Displacement 1.2m, velocity 3.4m/sec.
-  ContinuousState<double>* continuous_state =
+  ContinuousState<double>& continuous_state =
       context_->get_mutable_continuous_state();
 
   // Slice just the configuration derivatives out of the derivative
@@ -149,7 +149,7 @@ TEST_F(SpringMassSystemTest, MapVelocityToConfigurationDerivative) {
   Subvector<double> configuration_derivatives(derivatives_, 0, 1);
 
   system_->MapVelocityToQDot(
-      *context_, continuous_state->get_generalized_velocity(),
+      *context_, continuous_state.get_generalized_velocity(),
       &configuration_derivatives);
 
   EXPECT_NEAR(3.4, derivatives_->get_position(), 1e-8);
@@ -257,17 +257,17 @@ MatrixX<double> CalcDxdotDx(const System<double>& system,
   MatrixX<double> d_xdot_dx(nx, nx);
 
   auto temp_context = context.Clone();
-  auto x = temp_context->get_mutable_continuous_state_vector();
+  auto& x = temp_context->get_mutable_continuous_state_vector();
 
   // This is a temp that holds one column of the result as a ContinuousState.
   auto derivs = system.AllocateTimeDerivatives();
 
-  for (int i = 0; i < x->size(); ++i) {
-    const double xi = x->GetAtIndex(i);
-    x->SetAtIndex(i, xi + perturb);
+  for (int i = 0; i < x.size(); ++i) {
+    const double xi = x.GetAtIndex(i);
+    x.SetAtIndex(i, xi + perturb);
     system.CalcTimeDerivatives(*temp_context, derivs.get());
     d_xdot_dx.col(i) = (derivs->CopyToVector() - xdot0) / perturb;
-    x->SetAtIndex(i, xi);  // repair Context
+    x.SetAtIndex(i, xi);  // repair Context
   }
 
   return d_xdot_dx;
@@ -280,10 +280,10 @@ void StepExplicitEuler(
     Context<double>& context) {
   const double t = context.get_time();
   // Invalidate all xc-dependent quantities.
-  VectorBase<double>* xc =
+  VectorBase<double>& xc =
       context.get_mutable_continuous_state_vector();
   const auto& dxc = derivs.get_vector();
-  xc->PlusEqScaled(h, dxc);  // xc += h*dxc
+  xc.PlusEqScaled(h, dxc);  // xc += h*dxc
   context.set_time(t + h);
 }
 
@@ -298,26 +298,25 @@ void StepSemiExplicitEuler(
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     Context<double>& context) {
   const double t = context.get_time();
-  ContinuousState<double>* xc = context.get_mutable_continuous_state();
+  ContinuousState<double>& xc = context.get_mutable_continuous_state();
 
   // Invalidate z-dependent quantities.
-  VectorBase<double>* xz = xc->get_mutable_misc_continuous_state();
+  VectorBase<double>& xz = xc.get_mutable_misc_continuous_state();
   const auto& dxz = derivs.get_misc_continuous_state();
-  xz->PlusEqScaled(h, dxz);  // xz += h*dxz
+  xz.PlusEqScaled(h, dxz);  // xz += h*dxz
 
   // Invalidate v-dependent quantities.
-  VectorBase<double>* xv = xc->get_mutable_generalized_velocity();
+  VectorBase<double>& xv = xc.get_mutable_generalized_velocity();
   const auto& dxv = derivs.get_generalized_velocity();
-  xv->PlusEqScaled(h, dxv);  // xv += h*dxv
+  xv.PlusEqScaled(h, dxv);  // xv += h*dxv
 
   context.set_time(t + h);
 
   // Invalidate q-dependent quantities.
-  VectorBase<double>* xq = xc->get_mutable_generalized_position();
-  auto dxq = derivs.get_mutable_generalized_position();
-  system.MapVelocityToQDot(context, *xv,
-                           dxq);  // qdot = N(q)*v
-  xq->PlusEqScaled(h, *dxq);                          // xq += h*qdot
+  VectorBase<double>& xq = xc.get_mutable_generalized_position();
+  auto& dxq = derivs.get_mutable_generalized_position();
+  system.MapVelocityToQDot(context, xv, &dxq);  // qdot = N(q)*v
+  xq.PlusEqScaled(h, dxq);                       // xq += h*qdot
 }
 
 /* Implicit Euler (unconditionally stable): x1 = x0 + h xdot(t1,x1)
@@ -334,14 +333,14 @@ void StepImplicitEuler(
     // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
     Context<double>& context) {
   const double t = context.get_time();
-  ContinuousState<double>* xc = context.get_mutable_continuous_state();
+  ContinuousState<double>& xc = context.get_mutable_continuous_state();
 
   // Invalidate all xc-dependent quantities.
-  VectorBase<double>* x1 = xc->get_mutable_vector();
+  VectorBase<double>& x1 = xc.get_mutable_vector();
 
-  const auto vx0 = x1->CopyToVector();
+  const auto vx0 = x1.CopyToVector();
   const auto& dx0 = derivs.get_vector();
-  x1->PlusEqScaled(h, dx0);  // x1 += h*dx0 (initial guess)
+  x1.PlusEqScaled(h, dx0);  // x1 += h*dx0 (initial guess)
   context.set_time(t + h);   // t=t1
   const int nx = static_cast<int>(vx0.size());
   const auto I = MatrixX<double>::Identity(nx, nx);
@@ -351,14 +350,14 @@ void StepImplicitEuler(
   for (int i = 0; i < 6; ++i) {
     system.CalcTimeDerivatives(context, &derivs);
     const auto& dx1 = derivs.get_vector();
-    const auto vx1 = x1->CopyToVector();
+    const auto vx1 = x1.CopyToVector();
     const auto vdx1 = dx1.CopyToVector();
     const auto err = vx1 - (vx0 + h * vdx1);
     const auto DxdotDx = CalcDxdotDx(system, context);
     const auto J = I - h * DxdotDx;
     Eigen::PartialPivLU<MatrixX<double>> Jlu(J);
     VectorX<double> dx = Jlu.solve(err);
-    x1->SetFromVector(vx1 - dx);
+    x1.SetFromVector(vx1 - dx);
   }
 }
 

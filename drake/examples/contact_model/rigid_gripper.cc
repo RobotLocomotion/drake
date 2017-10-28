@@ -124,9 +124,9 @@ int main() {
   const std::unique_ptr<systems::Diagram<double>> model = builder.Build();
   systems::Simulator<double> simulator(*model);
 
-  auto context = simulator.get_mutable_context();
+  systems::Context<double>& context = simulator.get_mutable_context();
 
-  simulator.reset_integrator<RungeKutta3Integrator<double>>(*model, context);
+  simulator.reset_integrator<RungeKutta3Integrator<double>>(*model, &context);
   simulator.get_mutable_integrator()->request_initial_step_size_target(1e-4);
   simulator.get_mutable_integrator()->set_target_accuracy(FLAGS_accuracy);
   std::cout << "Variable-step integrator accuracy: " << FLAGS_accuracy << "\n";
@@ -139,7 +139,7 @@ int main() {
   int step_count =
       static_cast<int>(std::ceil(FLAGS_sim_duration / kPrintPeriod));
   for (int i = 1; i <= step_count; ++i) {
-    double t = context->get_time();
+    double t = context.get_time();
     std::cout << "time: " << t << "\n";
     simulator.StepTo(i * kPrintPeriod);
   }

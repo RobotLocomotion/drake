@@ -86,10 +86,10 @@ void PidController<T>::DoCalcTimeDerivatives(
       this->EvalEigenVectorInput(context, input_index_desired_state_);
 
   // The derivative of the continuous state is the instantaneous position error.
-  VectorBase<T>* const derivatives_vector = derivatives->get_mutable_vector();
+  VectorBase<T>& derivatives_vector = derivatives->get_mutable_vector();
   const VectorX<T> controlled_state_diff =
       state_d - (state_projection_.cast<T>() * state);
-  derivatives_vector->SetFromVector(
+  derivatives_vector.SetFromVector(
       controlled_state_diff.head(num_controlled_q_));
 }
 

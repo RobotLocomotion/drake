@@ -151,9 +151,9 @@ class PidController : public StateFeedbackControllerInterface<T>,
    */
   void set_integral_value(Context<T>* context,
                           const Eigen::Ref<const VectorX<T>>& value) const {
-    VectorBase<T>* state_vector =
+    VectorBase<T>& state_vector =
         context->get_mutable_continuous_state_vector();
-    state_vector->SetFromVector(value);
+    state_vector.SetFromVector(value);
   }
 
   /**
