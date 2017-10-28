@@ -493,18 +493,10 @@ ProblemData* ConstraintSolver<T>::UpdateProblemDataForUnilateralConstraints(
   }
 }
 
-// Forms the system of linear equations used to compute the accelerations during
-// ODE evaluations. Specifically, this method forms the matrix @p MM and vector
-// @p qq used to describe the linear complementarity problem MM*z + qq = w,
-// where:
-// (1) z ≥ 0
-// (2) w ≥ 0
-// (3) z ⋅ w = 0
-// If the active set is correctly determined, the contact mode variables will
-// provide the solution w = 0, implying that z = MM⁻¹⋅qq. This function only
-// forms MM and qq. It does not attempt to solve the linear system (or, by
-// extension, determine whether said solution for z results in a solution to
-// the linear complementarity problem).
+// Forms and solves the system of linear equations used to compute the
+// accelerations during ODE evaluations, as an alternative to the linear
+// complementarity problem formulation. If all constraints are known to be
+// active, this method will provide the correct solution rapidly.
 template <class T>
 void ConstraintSolver<T>::FormAndSolveConstraintLinearSystem(
     const ConstraintAccelProblemData<T>& problem_data,
@@ -560,6 +552,12 @@ void ConstraintSolver<T>::FormAndSolveConstraintLinearSystem(
   cf->head(qq.size()) = MM_QTZ.solve(-qq);
 }
 
+// Forms and solves the linear complementarity problem used to compute the
+// accelerations during ODE evaluations, as an alternative to the linear
+// system problem formulation. In contrast to
+// FormAndSolveConstraintLinearSystem(), this approach does not require the
+// active constraints to be known a priori. Significantly more computation is
+// required, however.
 template <typename T>
 void ConstraintSolver<T>::FormAndSolveConstraintLCP(
     const ConstraintAccelProblemData<T>& problem_data,
