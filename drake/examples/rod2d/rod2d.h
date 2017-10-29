@@ -302,8 +302,12 @@ class Rod2D : public systems::LeafSystem<T> {
     dissipation_ = dissipation;
   }
 
-  // Sets stiffness and dissipation for the rod from cfm and erp values.
+  /// Sets stiffness and dissipation for the rod from cfm and erp values.
   void SetStiffnessAndDissipation(double cfm, double erp) {
+    // These values were determined by solving the equations:
+    // cfm = 1 / (dt * stiffness + dissipation)
+    // erp = dt * stiffness / (dt * stiffness + dissipation)
+    // for k and b.
     const double k = erp / (cfm * dt_);
     const double b = (1 - erp) / cfm;
     set_stiffness(k);
