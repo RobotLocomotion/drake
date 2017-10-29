@@ -9,7 +9,15 @@ import subprocess
 import sys
 
 
-# TODO(jwnimmer-tri) This should exclude sources under `dev`.
+def _is_dev(label):
+    return "/dev:" in label or "/dev/" in label
+
+
+def _remove_dev(components):
+    # Filter out components that are in a dev (unsupported) package.
+    return [x for x in components if not _is_dev(x)]
+
+
 def _find_libdrake_components():
     query_string = ' '.join([
         'kind("cc_library",'
@@ -22,6 +30,7 @@ def _find_libdrake_components():
     ])
     command = ["bazel", "query", query_string]
     components = [x for x in subprocess.check_output(command).split('\n') if x]
+    components = _remove_dev(components)
     def _key(x):
         return x.split('/')
     return sorted(components, key=_key)
