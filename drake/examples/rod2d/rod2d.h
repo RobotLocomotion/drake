@@ -285,8 +285,7 @@ class Rod2D : public systems::LeafSystem<T> {
   /// Get compliant contact normal stiffness in N/m.
   double get_stiffness() const { return stiffness_; }
 
-  /// Set compliant contact normal stiffness in N/m (>= 0). This has no effect
-  /// if the rod model is not compliant.
+  /// Set compliant contact normal stiffness in N/m (>= 0).
   void set_stiffness(double stiffness) {
     DRAKE_DEMAND(stiffness >= 0);
     stiffness_ = stiffness;
@@ -295,14 +294,14 @@ class Rod2D : public systems::LeafSystem<T> {
   /// Get compliant contact normal dissipation in 1/velocity (s/m).
   double get_dissipation() const { return dissipation_; }
 
-  /// Set compliant contact normal dissipation in 1/velocity (s/m, >= 0). This
-  /// has no effect if the rod model is not compliant.
+  /// Set compliant contact normal dissipation in 1/velocity (s/m, >= 0).
   void set_dissipation(double dissipation) {
     DRAKE_DEMAND(dissipation >= 0);
     dissipation_ = dissipation;
   }
 
-  /// Sets stiffness and dissipation for the rod from cfm and erp values.
+  /// Sets stiffness and dissipation for the rod from cfm and erp values (used
+  /// for time stepping implementations).
   void SetStiffnessAndDissipation(double cfm, double erp) {
     // These values were determined by solving the equations:
     // cfm = 1 / (dt * stiffness + dissipation)
