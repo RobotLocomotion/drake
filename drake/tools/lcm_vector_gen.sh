@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# TODO(jwnimmer-tri) This file is DEPRECATED; do not use it in new code.
+# It will soon be deleted.
+
 # Usage: source $drake/tools/lcm_vector_gen.sh
 
 # Definitions for auto-generating Drake BasicVectors, LCM types, and
