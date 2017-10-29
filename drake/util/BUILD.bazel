@@ -9,7 +9,6 @@ drake_cc_library(
     name = "util",
     srcs = [
         "drakeGeometryUtil.cpp",
-        "drakeUtil.cpp",
     ],
     hdrs = [
         "drakeGeometryUtil.h",

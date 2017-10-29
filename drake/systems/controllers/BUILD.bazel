@@ -107,6 +107,7 @@ drake_cc_library(
         "//drake/math:autodiff",
         "//drake/math:expmap",
         "//drake/math:geometric_transform",
+        "//drake/multibody:resolve_center_of_pressure",
         "//drake/multibody:rigid_body_tree",
         "//drake/util",
     ],

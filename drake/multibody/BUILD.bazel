@@ -84,6 +84,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "resolve_center_of_pressure",
+    srcs = ["resolve_center_of_pressure.cc"],
+    hdrs = ["resolve_center_of_pressure.h"],
+    deps = [
+        "@eigen",
+    ],
+)
+
+drake_cc_library(
     name = "rigid_body_constraint",
     srcs = ["rigid_body_constraint.cc"],
     hdrs = ["rigid_body_constraint.h"],
@@ -176,6 +185,7 @@ drake_cc_library(
     visibility = [],
     deps = [
         ":kinematics_cache",
+        ":resolve_center_of_pressure",
         ":rigid_body",
         ":rigid_body_actuator",
         ":rigid_body_frame",

@@ -21,8 +21,8 @@
 #include "drake/multibody/joints/fixed_joint.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/kinematics_cache-inl.h"
+#include "drake/multibody/resolve_center_of_pressure.h"
 #include "drake/util/drakeGeometryUtil.h"
-#include "drake/util/drakeUtil.h"
 
 using Eigen::AutoDiffScalar;
 using Eigen::Dynamic;
