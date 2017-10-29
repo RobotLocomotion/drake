@@ -41,6 +41,7 @@ drake_cc_library(
     deps = [
         "//drake/common:essential",
         "//drake/multibody/constraint",
+        "//drake/multibody/constraint:constraint_solver",
         "//drake/solvers:mathematical_program",
         "//drake/systems/framework:leaf_system",
         "//drake/systems/rendering:pose_vector",

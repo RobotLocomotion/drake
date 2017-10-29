@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "drake/multibody/constraint/constraint_problem_data.h"
+#include "drake/multibody/constraint/constraint_solver.h"
 #include "drake/solvers/moby_lcp_solver.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/rendering/pose_vector.h"
@@ -216,37 +217,14 @@ class Rod2D : public systems::LeafSystem<T> {
 
   /// Gets the constraint force mixing parameter (CFM, used for time stepping
   /// systems only).
-  double get_cfm() const { return cfm_; }
-
-  /// Sets the constraint force mixing parameter (CFM, used for time stepping
-  /// systems only). The default CFM value is 1e-8.
-  /// @param cfm a floating point value in the range [0, infinity].
-  /// @throws std::logic_error if contact is modeled as compliant or if
-  ///         cfm is set to a negative value.
-  void set_cfm(double cfm) {
-    if (simulation_type_ == SimulationType::kCompliant)
-      throw std::logic_error("Attempt to set CFM for compliant contact model.");
-    if (cfm < 0)
-      throw std::logic_error("Negative CFM value specified.");
-    cfm_ = cfm;
+  double get_cfm() const {
+    return 1.0 / (stiffness_ * dt_ + dissipation_);
   }
 
-  /// Gets the error reduction parameter (ERP, used for time stepping systems
-  /// only).
-  double get_erp() const { return erp_; }
-
-  /// Sets the error reduction parameter (ERP, used for time stepping systems
-  /// only). The default ERP value is 0.8.
-  /// @param erp a floating point value in the range [0, 1].
-  /// @throws std::logic_error if this is not a time stepping system or if
-  ///         erp is set to a negative value.
-  void set_erp(double erp) {
-    if (simulation_type_ != SimulationType::kTimeStepping)
-      throw std::logic_error("Attempt to set ERP for non-time stepping "
-                             "system.");
-    if (erp < 0 || erp > 1)
-      throw std::logic_error("Invalid ERP value specified.");
-    erp_ = erp;
+  /// Gets the error reduction parameter (ERP, used for time stepping
+  /// systems only).
+  double get_erp() const {
+    return dt_ * stiffness_ / (stiffness_ * dt_ + dissipation_);
   }
 
   /// Gets the generalized position of the rod, given a Context. The first two
@@ -322,6 +300,14 @@ class Rod2D : public systems::LeafSystem<T> {
   void set_dissipation(double dissipation) {
     DRAKE_DEMAND(dissipation >= 0);
     dissipation_ = dissipation;
+  }
+
+  // Sets stiffness and dissipation for the rod from cfm and erp values.
+  void SetStiffnessAndDissipation(double cfm, double erp) {
+    const double k = erp / (cfm * dt_);
+    const double b = (1 - erp) / cfm;
+    set_stiffness(k);
+    set_dissipation(b);
   }
 
   /// Get compliant contact static friction (stiction) coefficient `μ_s`.
@@ -536,6 +522,7 @@ class Rod2D : public systems::LeafSystem<T> {
                                const Vector2<T>& p,
                                const Vector2<T>& dir) const;
   static Matrix2<T> GetRotationMatrixDerivative(T theta, T thetadot);
+  Matrix3<T> GetInertiaMatrix() const;
   T GetSlidingVelocityTolerance() const;
   MatrixX<T> solve_inertia(const MatrixX<T>& B) const;
   int get_k(const systems::Context<T>& context) const;
@@ -558,7 +545,7 @@ class Rod2D : public systems::LeafSystem<T> {
   static void ConvertStateToPose(const VectorX<T>& state,
                                  systems::rendering::PoseVector<T>* pose);
   Vector3<T> ComputeExternalForces(const systems::Context<T>& context) const;
-  Matrix3<T> get_inverse_inertia_matrix() const;
+  Matrix3<T> GetInverseInertiaMatrix() const;
   void CalcTwoContactNoSlidingForces(const systems::Context<T>& context,
                                     Vector2<T>* fN, Vector2<T>* fF) const;
   void CalcTwoContactSlidingForces(const systems::Context<T>& context,
@@ -611,6 +598,9 @@ class Rod2D : public systems::LeafSystem<T> {
   // Friction model used in compliant contact.
   static T CalcMuStribeck(const T& us, const T& ud, const T& v);
 
+  // The constraint solver.
+  multibody::constraint::ConstraintSolver<T> solver_;
+
   // Solves linear complementarity problems for time stepping.
   solvers::MobyLCPSolver<T> lcp_;
 
@@ -625,8 +615,6 @@ class Rod2D : public systems::LeafSystem<T> {
   double mu_{1000.};        // The (dynamic) coefficient of friction.
   double g_{-9.81};         // The acceleration due to gravity (in y direction).
   double J_{1.};            // The moment of the inertia of the rod.
-  double erp_{0.8};         // ERP for time stepping systems.
-  double cfm_{1e-8};        // CFM for time stepping systems.
 
   // Compliant contact parameters.
   double stiffness_{10000};   // Normal stiffness of the ground plane (N/m).
