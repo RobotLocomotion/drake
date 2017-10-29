@@ -255,7 +255,7 @@ class Rod2D : public systems::LeafSystem<T> {
   /// the rod, measured counter-clockwise with respect to the x-axis.
   Vector3<T> GetRodConfig(const systems::Context<T>& context) const {
     return context.get_state().
-        get_continuous_state()->get_generalized_position().CopyToVector();
+        get_continuous_state().get_generalized_position().CopyToVector();
   }
 
   /// Gets the generalized velocity of the rod, given a Context. The first
@@ -264,7 +264,7 @@ class Rod2D : public systems::LeafSystem<T> {
   /// the rod.
   Vector3<T> GetRodVelocity(const systems::Context<T>& context) const {
     return context.get_state().
-        get_continuous_state()->get_generalized_velocity().CopyToVector();
+        get_continuous_state().get_generalized_velocity().CopyToVector();
   }
 
   /// Models impact using an inelastic impact model with friction.

@@ -114,10 +114,10 @@ UniformlyAcceleratedParticle<T>::CreateContext(
   // Allocate context.
   auto context = this->AllocateContext();
   // Set continuous state.
-  systems::VectorBase<T>* cstate =
+  systems::VectorBase<T>& cstate =
     context->get_mutable_continuous_state_vector();
-  cstate->SetAtIndex(0, position);
-  cstate->SetAtIndex(1, velocity);
+  cstate.SetAtIndex(0, position);
+  cstate.SetAtIndex(1, velocity);
   return context;
 }
 

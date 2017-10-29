@@ -585,7 +585,7 @@ class Diagram : public System<T>,
   State<T>& GetMutableSubsystemState(const System<T>& subsystem,
                                      Context<T>* context) const {
     Context<T>& subcontext = GetMutableSubsystemContext(subsystem, context);
-    return *subcontext.get_mutable_state();
+    return subcontext.get_mutable_state();
   }
 
   /// Retrieves the state for a particular subsystem from the @p state for the
@@ -927,10 +927,9 @@ class Diagram : public System<T>,
     // Check that the dimensions of the continuous state in the context match
     // the dimensions of the provided generalized velocity and configuration
     // derivatives.
-    const ContinuousState<T>* xc = context.get_continuous_state();
-    DRAKE_DEMAND(xc != nullptr);
-    const int nq = xc->get_generalized_position().size();
-    const int nv = xc->get_generalized_velocity().size();
+    const ContinuousState<T>& xc = context.get_continuous_state();
+    const int nq = xc.get_generalized_position().size();
+    const int nv = xc.get_generalized_velocity().size();
     DRAKE_DEMAND(nq == qdot->size());
     DRAKE_DEMAND(nv == generalized_velocity.size());
 
@@ -946,17 +945,15 @@ class Diagram : public System<T>,
     for (int i = 0; i < num_subsystems(); ++i) {
       // Find the continuous state of subsystem i.
       const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
-      const ContinuousState<T>* sub_xc = subcontext.get_continuous_state();
-      // If subsystem i is stateless, skip it.
-      if (sub_xc == nullptr) continue;
+      const ContinuousState<T>& sub_xc = subcontext.get_continuous_state();
 
       // Select the chunk of generalized_velocity belonging to subsystem i.
-      const int num_v = sub_xc->get_generalized_velocity().size();
+      const int num_v = sub_xc.get_generalized_velocity().size();
       const Eigen::Ref<const VectorX<T>>& v_slice =
           generalized_velocity.segment(v_index, num_v);
 
       // Select the chunk of qdot belonging to subsystem i.
-      const int num_q = sub_xc->get_generalized_position().size();
+      const int num_q = sub_xc.get_generalized_position().size();
       Subvector<T> dq_slice(qdot, q_index, num_q);
 
       // Delegate the actual mapping to subsystem i itself.
@@ -977,10 +974,9 @@ class Diagram : public System<T>,
     // Check that the dimensions of the continuous state in the context match
     // the dimensions of the provided generalized velocity and configuration
     // derivatives.
-    const ContinuousState<T>* xc = context.get_continuous_state();
-    DRAKE_DEMAND(xc != nullptr);
-    const int nq = xc->get_generalized_position().size();
-    const int nv = xc->get_generalized_velocity().size();
+    const ContinuousState<T>& xc = context.get_continuous_state();
+    const int nq = xc.get_generalized_position().size();
+    const int nv = xc.get_generalized_velocity().size();
     DRAKE_DEMAND(nq == qdot.size());
     DRAKE_DEMAND(nv == generalized_velocity->size());
 
@@ -996,17 +992,15 @@ class Diagram : public System<T>,
     for (int i = 0; i < num_subsystems(); ++i) {
       // Find the continuous state of subsystem i.
       const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
-      const ContinuousState<T>* sub_xc = subcontext.get_continuous_state();
-      // If subsystem i is stateless, skip it.
-      if (sub_xc == nullptr) continue;
+      const ContinuousState<T>& sub_xc = subcontext.get_continuous_state();
 
       // Select the chunk of qdot belonging to subsystem i.
-      const int num_q = sub_xc->get_generalized_position().size();
+      const int num_q = sub_xc.get_generalized_position().size();
       const Eigen::Ref<const VectorX<T>>& dq_slice =
           qdot.segment(q_index, num_q);
 
       // Select the chunk of generalized_velocity belonging to subsystem i.
-      const int num_v = sub_xc->get_generalized_velocity().size();
+      const int num_v = sub_xc.get_generalized_velocity().size();
       Subvector<T> v_slice(generalized_velocity, v_index, num_v);
 
       // Delegate the actual mapping to subsystem i itself.

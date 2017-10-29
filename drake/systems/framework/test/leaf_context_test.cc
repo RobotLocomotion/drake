@@ -114,7 +114,7 @@ class LeafContextTest : public ::testing::Test {
 // LeafContextTest::SetUp.
 void VerifyClonedState(const State<double>& clone) {
   // Verify that the state was copied.
-  const ContinuousState<double>& xc = *clone.get_continuous_state();
+  const ContinuousState<double>& xc = clone.get_continuous_state();
   {
     VectorX<double> contents = xc.CopyToVector();
     VectorX<double> expected(kContinuousStateSize);
@@ -122,9 +122,9 @@ void VerifyClonedState(const State<double>& clone) {
     EXPECT_EQ(expected, contents);
   }
 
-  EXPECT_EQ(2, clone.get_discrete_state()->num_groups());
-  const BasicVector<double>& xd0 = clone.get_discrete_state()->get_vector(0);
-  const BasicVector<double>& xd1 = clone.get_discrete_state()->get_vector(1);
+  EXPECT_EQ(2, clone.get_discrete_state().num_groups());
+  const BasicVector<double>& xd0 = clone.get_discrete_state().get_vector(0);
+  const BasicVector<double>& xd1 = clone.get_discrete_state().get_vector(1);
   {
     VectorX<double> contents = xd0.CopyToVector();
     VectorX<double> expected(1);
@@ -139,8 +139,8 @@ void VerifyClonedState(const State<double>& clone) {
     EXPECT_EQ(expected, contents);
   }
 
-  EXPECT_EQ(1, clone.get_abstract_state()->size());
-  EXPECT_EQ(42, clone.get_abstract_state()->get_value(0).GetValue<int>());
+  EXPECT_EQ(1, clone.get_abstract_state().size());
+  EXPECT_EQ(42, clone.get_abstract_state().get_value(0).GetValue<int>());
   EXPECT_EQ(42, clone.get_abstract_state<int>(0));
 
   // Verify that the state type was preserved.
@@ -289,9 +289,9 @@ TEST_F(LeafContextTest, Clone) {
 
   // Verify that changes to the cloned state do not affect the original state.
   // -- Continuous
-  ContinuousState<double>* xc = clone->get_mutable_continuous_state();
-  xc->get_mutable_generalized_velocity()->SetAtIndex(1, 42.0);
-  EXPECT_EQ(42.0, (*xc)[3]);
+  ContinuousState<double>& xc = clone->get_mutable_continuous_state();
+  xc.get_mutable_generalized_velocity().SetAtIndex(1, 42.0);
+  EXPECT_EQ(42.0, xc[3]);
   EXPECT_EQ(5.0, context_.get_continuous_state_vector().GetAtIndex(3));
 
   // -- Discrete
@@ -303,7 +303,7 @@ TEST_F(LeafContextTest, Clone) {
   // -- Abstract (even though it's not owned in context_)
   clone->get_mutable_abstract_state<int>(0) = 2048;
   EXPECT_EQ(42, context_.get_abstract_state<int>(0));
-  EXPECT_EQ(42, context_.get_abstract_state()->get_value(0).GetValue<int>());
+  EXPECT_EQ(42, context_.get_abstract_state().get_value(0).GetValue<int>());
   EXPECT_EQ(2048, clone->get_abstract_state<int>(0));
 
   // Verify that the parameters were copied.
@@ -337,13 +337,13 @@ TEST_F(LeafContextTest, CloneState) {
 // Tests that the State can be copied from another State.
 TEST_F(LeafContextTest, CopyStateFrom) {
   std::unique_ptr<Context<double>> clone = context_.Clone();
-  (*clone->get_mutable_continuous_state())[0] = 81.0;
+  clone->get_mutable_continuous_state()[0] = 81.0;
   clone->get_mutable_discrete_state(0)[0] = 243.0;
   clone->get_mutable_abstract_state<int>(0) = 729;
 
-  context_.get_mutable_state()->CopyFrom(clone->get_state());
+  context_.get_mutable_state().CopyFrom(clone->get_state());
 
-  EXPECT_EQ(81.0, (*context_.get_continuous_state())[0]);
+  EXPECT_EQ(81.0, context_.get_continuous_state()[0]);
   EXPECT_EQ(243.0, context_.get_discrete_state(0)[0]);
   EXPECT_EQ(729, context_.get_abstract_state<int>(0));
 }
@@ -395,7 +395,7 @@ TEST_F(LeafContextTest, SetTimeStateAndParametersFrom) {
   // Verify that time was set.
   EXPECT_EQ(kTime, target.get_time());
   // Verify that state was set.
-  const ContinuousState<AutoDiffXd> &xc = *target.get_continuous_state();
+  const ContinuousState<AutoDiffXd>& xc = target.get_continuous_state();
   EXPECT_EQ(kGeneralizedPositionSize, xc.get_generalized_position().size());
   EXPECT_EQ(5.0, xc.get_generalized_velocity()[1].value());
   EXPECT_EQ(0, xc.get_generalized_velocity()[1].derivatives().size());

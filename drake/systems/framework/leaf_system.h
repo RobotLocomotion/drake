@@ -141,7 +141,7 @@ class LeafSystem : public System<T> {
     detail::CheckBasicVectorInvariants(dynamic_cast<const BasicVector<T>*>(xc));
     // -- The discrete state must all be valid BasicVectors.
     for (const BasicVector<T>* group :
-         context->get_state().get_discrete_state()->get_data()) {
+         context->get_state().get_discrete_state().get_data()) {
       detail::CheckBasicVectorInvariants(group);
     }
     // -- The numeric parameters must all be valid BasicVectors.
@@ -166,15 +166,15 @@ class LeafSystem : public System<T> {
                        State<T>* state) const override {
     unused(context);
     DRAKE_DEMAND(state != nullptr);
-    ContinuousState<T>* xc = state->get_mutable_continuous_state();
+    ContinuousState<T>& xc = state->get_mutable_continuous_state();
     if (model_continuous_state_vector_ != nullptr) {
-      xc->SetFromVector(model_continuous_state_vector_->get_value());
+      xc.SetFromVector(model_continuous_state_vector_->get_value());
     } else {
-      xc->SetFromVector(VectorX<T>::Zero(xc->size()));
+      xc.SetFromVector(VectorX<T>::Zero(xc.size()));
     }
-    DiscreteValues<T>* xd = state->get_mutable_discrete_state();
-    for (int i = 0; i < xd->num_groups(); i++) {
-      BasicVector<T>& s = xd->get_mutable_vector(i);
+    DiscreteValues<T>& xd = state->get_mutable_discrete_state();
+    for (int i = 0; i < xd.num_groups(); i++) {
+      BasicVector<T>& s = xd.get_mutable_vector(i);
       s.SetFromVector(VectorX<T>::Zero(s.size()));
     }
   }
@@ -691,9 +691,8 @@ class LeafSystem : public System<T> {
     MaybeDeclareVectorBaseInequalityConstraint(
         "continuous state", model_vector,
         [](const Context<T>& context) -> const VectorBase<T>& {
-          const ContinuousState<T>* state = context.get_continuous_state();
-          DRAKE_DEMAND(state != nullptr);
-          return state->get_vector();
+          const ContinuousState<T>& state = context.get_continuous_state();
+          return state.get_vector();
         });
   }
 
@@ -1254,7 +1253,7 @@ class LeafSystem : public System<T> {
         dynamic_cast<const LeafEventCollection<DiscreteUpdateEvent<T>>&>(
             events);
     // TODO(siyuan): should have a API level CopyFrom for DiscreteValues.
-    discrete_state->CopyFrom(*context.get_discrete_state());
+    discrete_state->CopyFrom(context.get_discrete_state());
     // Only call DoCalcDiscreteVariableUpdates if there are discrete update
     // events.
     DRAKE_DEMAND(leaf_events.HasEvents());

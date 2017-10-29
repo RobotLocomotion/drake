@@ -53,10 +53,10 @@ FirstOrderLowPassFilter<T>::get_time_constants_vector() const {
 template <typename T>
 void FirstOrderLowPassFilter<T>::set_initial_output_value(
     Context<T>* context, const Eigen::Ref<const VectorX<T>>& z0) const {
-  VectorBase<T>* state_vector = context->get_mutable_continuous_state_vector();
+  VectorBase<T>& state_vector = context->get_mutable_continuous_state_vector();
   // Asserts that the input value is a column vector of the appropriate size.
-  DRAKE_ASSERT(z0.rows() == state_vector->size() && z0.cols() == 1);
-  state_vector->SetFromVector(z0);
+  DRAKE_ASSERT(z0.rows() == state_vector.size() && z0.cols() == 1);
+  state_vector.SetFromVector(z0);
 }
 
 template <typename T>

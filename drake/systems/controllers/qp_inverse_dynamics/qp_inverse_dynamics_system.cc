@@ -17,7 +17,7 @@ template <typename ValueType>
 ValueType& get_mutable_value(systems::State<double>* state, int index) {
   DRAKE_DEMAND(state);
   return state->get_mutable_abstract_state()
-      ->get_mutable_value(index)
+      .get_mutable_value(index)
       .GetMutableValue<ValueType>();
 }
 

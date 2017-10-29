@@ -60,7 +60,7 @@ void ComputeRegionOfAttraction() {
   const Variable& x = xvec(0);
 
   // Extract the polynomial dynamics.
-  context->get_mutable_continuous_state_vector()->SetAtIndex(0, x);
+  context->get_mutable_continuous_state_vector().SetAtIndex(0, x);
   system.CalcTimeDerivatives(*context, derivatives.get());
 
   // Define the Lyapunov function.

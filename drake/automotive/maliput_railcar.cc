@@ -250,10 +250,9 @@ void MaliputRailcar<T>::DoCalcTimeDerivatives(
   DRAKE_ASSERT(input->size() == 1);
 
   // Obtains the result structure.
-  VectorBase<T>* const vector_derivatives = derivatives->get_mutable_vector();
-  DRAKE_ASSERT(vector_derivatives);
+  VectorBase<T>& vector_derivatives = derivatives->get_mutable_vector();
   MaliputRailcarState<T>* const rates =
-      dynamic_cast<MaliputRailcarState<T>*>(vector_derivatives);
+      dynamic_cast<MaliputRailcarState<T>*>(&vector_derivatives);
   DRAKE_ASSERT(rates != nullptr);
 
   ImplCalcTimeDerivatives(params, state, lane_direction, *input, rates);
@@ -307,12 +306,12 @@ void MaliputRailcar<T>::SetDefaultState(const Context<T>&,
     State<T>* state) const {
   MaliputRailcarState<T>* railcar_state =
       dynamic_cast<MaliputRailcarState<T>*>(
-          state->get_mutable_continuous_state()->get_mutable_vector());
+          &state->get_mutable_continuous_state().get_mutable_vector());
   DRAKE_DEMAND(railcar_state != nullptr);
   SetDefaultState(railcar_state);
 
   LaneDirection& lane_direction =
-      state->get_mutable_abstract_state()->get_mutable_value(0).
+      state->get_mutable_abstract_state().get_mutable_value(0).
           template GetMutableValue<LaneDirection>();
   lane_direction = initial_lane_direction_;
 }
@@ -389,12 +388,10 @@ void MaliputRailcar<T>::DoCalcUnrestrictedUpdate(
   // Copies the present state into the new one.
   next_state->CopyFrom(context.get_state());
 
-  ContinuousState<T>* cs = next_state->get_mutable_continuous_state();
-  DRAKE_ASSERT(cs != nullptr);
-  VectorBase<T>* cv = cs->get_mutable_vector();
-  DRAKE_ASSERT(cv != nullptr);
+  ContinuousState<T>& cs = next_state->get_mutable_continuous_state();
+  VectorBase<T>& cv = cs.get_mutable_vector();
   MaliputRailcarState<T>* const next_railcar_state =
-      dynamic_cast<MaliputRailcarState<T>*>(cv);
+      dynamic_cast<MaliputRailcarState<T>*>(&cv);
   DRAKE_ASSERT(next_railcar_state != nullptr);
 
   // Handles the case where no lane change or speed adjustment is necessary. No

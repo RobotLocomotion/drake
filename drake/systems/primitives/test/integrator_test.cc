@@ -26,13 +26,13 @@ class IntegratorTest : public ::testing::Test {
     output_ = integrator_->AllocateOutput(*context_);
 
     // Set the state to zero initially.
-    ContinuousState<double>* xc = continuous_state();
-    EXPECT_EQ(3, xc->size());
-    EXPECT_EQ(3, xc->get_misc_continuous_state().size());
-    xc->SetFromVector(Eigen::VectorXd::Zero(kLength));
+    ContinuousState<double>& xc = continuous_state();
+    EXPECT_EQ(3, xc.size());
+    EXPECT_EQ(3, xc.get_misc_continuous_state().size());
+    xc.SetFromVector(Eigen::VectorXd::Zero(kLength));
   }
 
-  ContinuousState<double>* continuous_state() {
+  ContinuousState<double>& continuous_state() {
     return context_->get_mutable_continuous_state();
   }
 
@@ -69,7 +69,7 @@ TEST_F(IntegratorTest, Output) {
   Eigen::Vector3d expected = Eigen::Vector3d::Zero();
   EXPECT_EQ(expected, output_port->get_value());
 
-  continuous_state()->get_mutable_vector()->SetAtIndex(1, 42.0);
+  continuous_state().get_mutable_vector().SetAtIndex(1, 42.0);
   expected << 0.0, 42.0, 0.0;
   integrator_->CalcOutput(*context_, output_.get());
   EXPECT_EQ(expected, output_port->get_value());
@@ -106,7 +106,7 @@ class SymbolicIntegratorTest : public IntegratorTest {
             symbolic::Variable("u1"),
             symbolic::Variable("u2")));
 
-    auto& xc = *symbolic_context_->get_mutable_continuous_state_vector();
+    auto& xc = symbolic_context_->get_mutable_continuous_state_vector();
     xc[0] = symbolic::Variable("x0");
     xc[1] = symbolic::Variable("x1");
     xc[2] = symbolic::Variable("x2");

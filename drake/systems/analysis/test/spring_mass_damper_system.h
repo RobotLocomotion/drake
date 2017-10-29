@@ -116,7 +116,7 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
   void DoCalcTimeDerivatives(const Context <T>& context,
                              ContinuousState <T>* derivatives) const override {
     // Get the current state of the spring.
-    const ContinuousState<T>& state = *context.get_continuous_state();
+    const ContinuousState<T>& state = context.get_continuous_state();
 
     // First element of the derivative is spring velocity.
     const T xd = state[1];

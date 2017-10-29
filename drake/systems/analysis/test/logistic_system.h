@@ -35,7 +35,7 @@ class LogisticWitness : public systems::WitnessFunction<T> {
 
   // The witness function is simply the state value itself.
   T DoEvaluate(const Context<T>& context) const override {
-    return (*context.get_continuous_state())[0];
+    return context.get_continuous_state()[0];
   }
 };
 
@@ -68,7 +68,7 @@ class LogisticSystem : public LeafSystem<T> {
     const T& t = context.get_time();
 
     // Get state.
-    const T& x = (*context.get_continuous_state())[0];
+    const T& x = context.get_continuous_state()[0];
 
     // Compute the derivative.
     (*continuous_state)[0] = alpha_ * (1 - pow(x/k_, nu_)) * t;
