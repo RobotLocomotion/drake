@@ -43,6 +43,7 @@ graphviz
 ipopt
 libyaml
 lz4
+nlopt
 numpy
 patchutils
 pkg-config
