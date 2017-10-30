@@ -14,6 +14,7 @@ def drake_cc_proto_library(
     cc_proto_library(
         name = name,
         tags = tags + ["nolint"],
+        default_runtime = "@systemprotobuf",
         **kwargs)
 
 def drake_py_proto_library(
