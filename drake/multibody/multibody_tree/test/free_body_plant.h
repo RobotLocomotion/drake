@@ -4,7 +4,7 @@
 
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
-#include "drake/multibody/multibody_tree/rpy_mobilizer.h"
+#include "drake/multibody/multibody_tree/space_xyz_mobilizer.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -83,7 +83,7 @@ class FreeBodyPlant final : public systems::LeafSystem<T> {
   double J_{0};
   MultibodyTree<T> model_;
   const RigidBody<T>* body_{nullptr};
-  const RollPitchYawMobilizer<T>* mobilizer_{nullptr};
+  const SpaceXYZMobilizer<T>* mobilizer_{nullptr};
 };
 
 }  // namespace test

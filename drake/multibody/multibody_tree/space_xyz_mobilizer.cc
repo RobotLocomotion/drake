@@ -1,4 +1,4 @@
-#include "drake/multibody/multibody_tree/rpy_mobilizer.h"
+#include "drake/multibody/multibody_tree/space_xyz_mobilizer.h"
 
 #include <memory>
 #include <stdexcept>
@@ -13,7 +13,7 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
-Vector3<T> RollPitchYawMobilizer<T>::get_rpy(
+Vector3<T> SpaceXYZMobilizer<T>::get_angles(
     const systems::Context<T>& context) const {
   const MultibodyTreeContext<T>& mbt_context =
       this->GetMultibodyTreeContextOrThrow(context);
@@ -21,17 +21,17 @@ Vector3<T> RollPitchYawMobilizer<T>::get_rpy(
 }
 
 template <typename T>
-const RollPitchYawMobilizer<T>& RollPitchYawMobilizer<T>::set_rpy(
-    systems::Context<T>* context, const Vector3<T>& rpy) const {
+const SpaceXYZMobilizer<T>& SpaceXYZMobilizer<T>::set_angles(
+    systems::Context<T>* context, const Vector3<T>& angles) const {
   MultibodyTreeContext<T>& mbt_context =
       this->GetMutableMultibodyTreeContextOrThrow(context);
   auto q = this->get_mutable_positions(&mbt_context);
-  q = rpy;
+  q = angles;
   return *this;
 }
 
 template <typename T>
-const RollPitchYawMobilizer<T>& RollPitchYawMobilizer<T>::SetFromRotationMatrix(
+const SpaceXYZMobilizer<T>& SpaceXYZMobilizer<T>::SetFromRotationMatrix(
     systems::Context<T>* context, const Matrix3<T>& R_FM) const {
   MultibodyTreeContext<T>& mbt_context =
       this->GetMutableMultibodyTreeContextOrThrow(context);
@@ -49,7 +49,7 @@ const RollPitchYawMobilizer<T>& RollPitchYawMobilizer<T>::SetFromRotationMatrix(
 }
 
 template <typename T>
-Vector3<T> RollPitchYawMobilizer<T>::get_angular_velocity(
+Vector3<T> SpaceXYZMobilizer<T>::get_angular_velocity(
     const systems::Context<T> &context) const {
   const MultibodyTreeContext<T>& mbt_context =
       this->GetMultibodyTreeContextOrThrow(context);
@@ -57,8 +57,8 @@ Vector3<T> RollPitchYawMobilizer<T>::get_angular_velocity(
 }
 
 template <typename T>
-const RollPitchYawMobilizer<T>& RollPitchYawMobilizer<T>::set_angular_velocity(
-    systems::Context<T> *context, const Vector3<T>& w_FM) const {
+const SpaceXYZMobilizer<T>& SpaceXYZMobilizer<T>::set_angular_velocity(
+    systems::Context<T>* context, const Vector3<T>& w_FM) const {
   MultibodyTreeContext<T>& mbt_context =
       this->GetMutableMultibodyTreeContextOrThrow(context);
   auto v = this->get_mutable_velocities(&mbt_context);
@@ -68,19 +68,19 @@ const RollPitchYawMobilizer<T>& RollPitchYawMobilizer<T>::set_angular_velocity(
 }
 
 template <typename T>
-Isometry3<T> RollPitchYawMobilizer<T>::CalcAcrossMobilizerTransform(
+Isometry3<T> SpaceXYZMobilizer<T>::CalcAcrossMobilizerTransform(
     const MultibodyTreeContext<T>& context) const {
-  const auto& rpy = this->get_positions(context);
-  DRAKE_ASSERT(rpy.size() == kNq);
+  const auto& angles = this->get_positions(context);
+  DRAKE_ASSERT(angles.size() == kNq);
   Isometry3<T> X_FM = Isometry3<T>::Identity();
   // Notice math::rpy2rotmat(rpy) assumes entries rpy(0), rpy(1) and rpy(2)
   // correspond to roll, pitch and yaw angles respectively.
-  X_FM.linear() = math::rpy2rotmat(rpy);
+  X_FM.linear() = math::rpy2rotmat(angles);
   return X_FM;
 }
 
 template <typename T>
-SpatialVelocity<T> RollPitchYawMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
+SpatialVelocity<T> SpaceXYZMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
     const MultibodyTreeContext<T>&,
     const Eigen::Ref<const VectorX<T>>& v) const {
   DRAKE_ASSERT(v.size() == kNv);
@@ -89,7 +89,7 @@ SpatialVelocity<T> RollPitchYawMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
 
 template <typename T>
 SpatialAcceleration<T>
-RollPitchYawMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
+SpaceXYZMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
     const MultibodyTreeContext<T>&,
     const Eigen::Ref<const VectorX<T>>& vdot) const {
   DRAKE_ASSERT(vdot.size() == kNv);
@@ -97,7 +97,7 @@ RollPitchYawMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
 }
 
 template <typename T>
-void RollPitchYawMobilizer<T>::ProjectSpatialForce(
+void SpaceXYZMobilizer<T>::ProjectSpatialForce(
     const MultibodyTreeContext<T>&,
     const SpatialForce<T>& F_Mo_F,
     Eigen::Ref<VectorX<T>> tau) const {
@@ -106,7 +106,7 @@ void RollPitchYawMobilizer<T>::ProjectSpatialForce(
 }
 
 template <typename T>
-void RollPitchYawMobilizer<T>::MapVelocityToQDot(
+void SpaceXYZMobilizer<T>::MapVelocityToQDot(
     const MultibodyTreeContext<T>& context,
     const Eigen::Ref<const VectorX<T>>& v,
     EigenPtr<VectorX<T>> qdot) const {
@@ -116,9 +116,13 @@ void RollPitchYawMobilizer<T>::MapVelocityToQDot(
 
   using std::sin;
   using std::cos;
+  using std::abs;
 
   // The linear map E_F(q) allows computing v from q̇ as:
   // w_FM = E_F(q) * q̇; q̇ = [ṙ, ṗ, ẏ]ᵀ
+  //
+  // Here, following a convention used by many dynamicists, we are calling the
+  // angles θ₁, θ₂, θ₃ as roll (r), pitch (p) and yaw (y), respectively.
   //
   // The linear map from v to q̇ is given by the inverse of E_F(q):
   //          [          cos(y) / cos(p),          sin(y) / cos(p), 0]
@@ -161,15 +165,17 @@ void RollPitchYawMobilizer<T>::MapVelocityToQDot(
   // [Mitiguy (July 22) 2016] Mitiguy, P., 2016. Advanced Dynamics & Motion
   //                          Simulation.
 
-  const Vector3<T> rpy = get_rpy(context);
+  const Vector3<T> angles = get_angles(context);
+  const T cp = cos(angles[1]);
+  DRAKE_DEMAND(abs(cp) > 1.0e-3);
+
   const T& w0 = v[0];
   const T& w1 = v[1];
   const T& w2 = v[2];
 
-  const T sp = sin(rpy[1]);
-  const T cp = cos(rpy[1]);
-  const T sy = sin(rpy[2]);
-  const T cy = cos(rpy[2]);
+  const T sp = sin(angles[1]);
+  const T sy = sin(angles[2]);
+  const T cy = cos(angles[2]);
   const T cpi = 1.0 / cp;
 
   // Although the linear equations relating v to q̇ can be used to explicitly
@@ -186,7 +192,7 @@ void RollPitchYawMobilizer<T>::MapVelocityToQDot(
 }
 
 template <typename T>
-void RollPitchYawMobilizer<T>::MapQDotToVelocity(
+void SpaceXYZMobilizer<T>::MapQDotToVelocity(
     const MultibodyTreeContext<T>& context,
     const Eigen::Ref<const VectorX<T>>& qdot,
     EigenPtr<VectorX<T>> v) const {
@@ -202,6 +208,9 @@ void RollPitchYawMobilizer<T>::MapQDotToVelocity(
   //          [         -sin(p),       0, 1]
   //
   // w_FM = E_F(q) * q̇; q̇ = [ṙ, ṗ, ẏ]ᵀ
+  //
+  // Here, following a convention used by many dynamicists, we are calling the
+  // angles θ₁, θ₂, θ₃ as roll (r), pitch (p) and yaw (y), respectively.
   //
   // Note to developers:
   // Matrix E_F(q) is obtained by computing w_FM as the composition of the
@@ -228,15 +237,15 @@ void RollPitchYawMobilizer<T>::MapQDotToVelocity(
   // [Mitiguy (July 22) 2016] Mitiguy, P., 2016. Advanced Dynamics & Motion
   //                          Simulation.
 
-  const Vector3<T> rpy = get_rpy(context);
+  const Vector3<T> angles = get_angles(context);
   const T& rdot = qdot[0];
   const T& pdot = qdot[1];
   const T& ydot = qdot[2];
 
-  const T sp = sin(rpy[1]);
-  const T cp = cos(rpy[1]);
-  const T sy = sin(rpy[2]);
-  const T cy = cos(rpy[2]);
+  const T sp = sin(angles[1]);
+  const T cp = cos(angles[1]);
+  const T sy = sin(angles[2]);
+  const T cy = cos(angles[2]);
   const T cp_x_rdot = cp * rdot;
 
   // Compute the product w_FM = E_W * q̇ directly since it's cheaper than
@@ -250,32 +259,32 @@ void RollPitchYawMobilizer<T>::MapQDotToVelocity(
 template <typename T>
 template <typename ToScalar>
 std::unique_ptr<Mobilizer<ToScalar>>
-RollPitchYawMobilizer<T>::TemplatedDoCloneToScalar(
+SpaceXYZMobilizer<T>::TemplatedDoCloneToScalar(
     const MultibodyTree<ToScalar>& tree_clone) const {
   const Frame<ToScalar>& inboard_frame_clone =
       tree_clone.get_variant(this->get_inboard_frame());
   const Frame<ToScalar>& outboard_frame_clone =
       tree_clone.get_variant(this->get_outboard_frame());
-  return std::make_unique<RollPitchYawMobilizer<ToScalar>>(
+  return std::make_unique<SpaceXYZMobilizer<ToScalar>>(
       inboard_frame_clone, outboard_frame_clone);
 }
 
 template <typename T>
-std::unique_ptr<Mobilizer<double>> RollPitchYawMobilizer<T>::DoCloneToScalar(
+std::unique_ptr<Mobilizer<double>> SpaceXYZMobilizer<T>::DoCloneToScalar(
     const MultibodyTree<double>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
 template <typename T>
 std::unique_ptr<Mobilizer<AutoDiffXd>>
-RollPitchYawMobilizer<T>::DoCloneToScalar(
+SpaceXYZMobilizer<T>::DoCloneToScalar(
     const MultibodyTree<AutoDiffXd>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
 // Explicitly instantiates on the most common scalar types.
-template class RollPitchYawMobilizer<double>;
-template class RollPitchYawMobilizer<AutoDiffXd>;
+template class SpaceXYZMobilizer<double>;
+template class SpaceXYZMobilizer<AutoDiffXd>;
 
 }  // namespace multibody
 }  // namespace drake

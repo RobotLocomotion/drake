@@ -39,7 +39,7 @@ void FreeBodyPlant<T>::BuildMultibodyTreeModel() {
   body_ = &model_.template AddBody<RigidBody>(M_Bcm);
 
   mobilizer_ =
-      &model_.template AddMobilizer<RollPitchYawMobilizer>(
+      &model_.template AddMobilizer<SpaceXYZMobilizer>(
           model_.get_world_frame(), body_->get_body_frame());
 
   model_.Finalize();
