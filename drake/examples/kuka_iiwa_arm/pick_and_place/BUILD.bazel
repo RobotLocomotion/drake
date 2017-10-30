@@ -12,6 +12,16 @@ package(
 )
 
 drake_cc_library(
+    name = "pick_and_place_configuration",
+    hdrs = [
+        "pick_and_place_configuration.h",
+    ],
+    deps = [
+        "//drake/common",
+    ],
+)
+
+drake_cc_library(
     name = "pick_and_place",
     srcs = [
         "action.cc",
