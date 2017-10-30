@@ -69,3 +69,10 @@ PyYAML
 Sphinx
 EOF
 )
+
+# Needed to allow 'import google.protobuf.text_format' on macOS with the
+# protobuf homebrew bottle
+USER=$( id -un )
+PY_SITE_PKGS=/Users/$USER/Library/Python/2.7/lib/python/site-packages
+mkdir -p $PY_SITE_PKGS
+echo 'import site; site.addsitedir("/usr/local/lib/python2.7/site-packages")' >> $PY_SITE_PKGS/homebrew.pth
