@@ -14,8 +14,8 @@ def drake_cc_proto_library(
     cc_proto_library(
         name = name,
         protoc = "@drake//tools/skylark:drake_protoc",
-        tags = tags + ["nolint"],
         default_runtime = "@systemprotobuf",
+        tags = tags + ["nolint"],
         **kwargs)
 
 def drake_py_proto_library(
