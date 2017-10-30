@@ -23,25 +23,34 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 local_repository(
     name = "kythe",
+    # TODO(jwnimmer-tri) According to Bazel documentation, the `path` argument
+    # to `local_repository()` is supposed be an absolute path.  We should be
+    # using using the __workspace_dir__ prefix here, like the other third_party
+    # workspace items below.  However, doing so causes loading-phase errors.
+    # We suspect that those errors are due to a Bazel bug, possibly related to
+    # either bazelbuild/bazel#2811 and/or bazelbuild/bazel#269.  Since the only
+    # use of kythe tooling is for pkg_config_package, and we plan to implement
+    # our own version of that soon anyway, we'll leave this alone for now,
+    # rather than diagnosing the errors.
     path = "third_party/com_github_google_kythe",
 )
 
 new_local_repository(
     name = "tinydir",
     build_file = "tools/workspace/tinydir/tinydir.BUILD.bazel",
-    path = "third_party/com_github_cxong_tinydir",
+    path = __workspace_dir__ + "/third_party/com_github_cxong_tinydir",
 )
 
 new_local_repository(
     name = "spruce",
     build_file = "tools/workspace/spruce/spruce.BUILD.bazel",
-    path = "third_party/josephdavisco_spruce",
+    path = __workspace_dir__ + "/third_party/josephdavisco_spruce",
 )
 
 new_local_repository(
     name = "stx",
     build_file = "tools/workspace/stx/stx.BUILD.bazel",
-    path = "third_party/com_github_tcbrindle_cpp17_headers",
+    path = __workspace_dir__ + "/third_party/com_github_tcbrindle_cpp17_headers",  # noqa
 )
 
 load("@kythe//tools/build_rules/config:pkg_config.bzl", "pkg_config_package")
