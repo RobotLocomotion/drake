@@ -13,12 +13,14 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include "google/protobuf/io/coded_stream.h"
-#include "google/protobuf/io/zero_copy_stream_impl.h"
+#include <google/protobuf/io/coded_stream.h>
+#include <google/protobuf/io/zero_copy_stream_impl.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/proto/matlab_rpc.pb.h"
-#include "drake/matlab/util/mex_util.h"
+#include "drake/common/unused.h"
+
+#include "mex_util.h"
 
 // Mex client for matlab remote procedure calls (RPCs).
 
@@ -31,6 +33,9 @@
 // manually delete a client variable.
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
+  drake::unused(nlhs);
+  drake::unused(plhs);
+
   std::string filename = "/tmp/matlab_rpc";
 
   if (nrhs == 1) {
