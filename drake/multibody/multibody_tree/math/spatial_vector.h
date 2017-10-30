@@ -131,7 +131,8 @@ class SpatialVector {
   /// Returns the maximum absolute values of the differences in the rotational
   /// and translational components of `this` and `other` (i.e., the infinity
   /// norms of the difference in rotational and translational components).
-  /// Quantity         | Description
+  /// These quantities are returned in a tuple, in the order below.
+  /// std::tuple       | Description
   /// -----------------|-------------------------------------------------
   /// w_max_difference | Maximum absolute difference in rotation components
   /// v_max_difference | Maximum absolute difference in translation components
