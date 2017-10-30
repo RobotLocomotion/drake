@@ -48,8 +48,7 @@ def _proto_gen_impl(ctx):
   deps += ctx.files.srcs
   gen_dir = _GenDir(ctx)
   if gen_dir:
-    gendirflag = "-I" + ctx.var["GENDIR"] + "/" + gen_dir
-    import_flags = ["-I" + gen_dir, gendirflag]
+    import_flags = ["-I" + gen_dir, "-I" + ctx.var["GENDIR"] + "/" + gen_dir]
   else:
     import_flags = ["-I."]
 
@@ -81,10 +80,10 @@ def _proto_gen_impl(ctx):
     paths = [s.path for s in srcs]
     cmdlist = ["protoc"] + args + import_flags + paths
     ctx.action(
-        inputs = srcs + deps,
-        outputs = ctx.outputs.outs,
-        command = ' '.join(cmdlist),
-        mnemonic = "ProtoCompile",
+        inputs=srcs + deps,
+        outputs=ctx.outputs.outs,
+        command=' '.join(cmdlist),
+        mnemonic="ProtoCompile",
     )
 
   return struct(
@@ -129,7 +128,7 @@ Args:
     compiler.
   plugin_language: the language of the generated sources
   plugin_options: a list of options to be passed to the plugin
-  gen_cc: generates C++ sources in addition to the ones from the plugin.
+  gen_cc: generates C++ sources in addition to the ones from the plugin. 
   gen_py: generates Python sources in addition to the ones from the plugin.
   outs: a list of labels of the expected outputs from the protocol compiler.
 """
@@ -142,6 +141,7 @@ def cc_proto_library(
         include=None,
         internal_bootstrap_hack=False,
         use_grpc_plugin=False,
+        default_runtime="//:protobuf",
         **kargs):
   """Bazel rule to create a C++ protobuf library from proto source files
 
@@ -162,6 +162,8 @@ def cc_proto_library(
         cc_proto_library can depend on it.
     use_grpc_plugin: a flag to indicate whether to call the grpc C++ plugin
         when processing the proto files.
+    default_runtime: the implicitly default runtime which will be depended on by
+        the generated cc_library target.
     **kargs: other keyword arguments that are passed to cc_library.
 
   """
@@ -204,13 +206,15 @@ def cc_proto_library(
       visibility=["//visibility:public"],
   )
 
+  if default_runtime and not default_runtime in cc_libs:
+    cc_libs += [default_runtime]
   if use_grpc_plugin:
     cc_libs += ["//external:grpc_lib"]
 
   native.cc_library(
       name=name,
       srcs=outs,
-      deps=cc_libs + deps + ["@systemprotobuf"],
+      deps=cc_libs + deps,
       includes=includes,
       **kargs)
 
