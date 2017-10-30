@@ -20,6 +20,8 @@
 #include "drake/math/quaternion.h"
 #include "drake/math/rotation_conversion_gradient.h"
 
+// TODO(jwnimmer-tri): Clean up function naming and other styleguide defects.
+
 double angleDiff(double phi1, double phi2);
 
 int rotationRepresentationSize(int rotation_type);
