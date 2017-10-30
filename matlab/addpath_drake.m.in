@@ -1,7 +1,7 @@
 function [] = addpath_drake()
 
 root = fileparts(mfilename('fullpath'));
-addpath(fullfile(root, 'util'));
+addpath(root);
 
 drake_python_path = fullfile('@CMAKE_INSTALL_PREFIX@', 'lib', 'python2.7', 'site-packages');
 
