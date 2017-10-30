@@ -290,6 +290,7 @@ def py_proto_library(
         py_libs=[],
         py_extra_srcs=[],
         include=None,
+        default_runtime="//:protobuf_python",
         protoc="//:protoc",
         **kargs):
   """Bazel rule to create a Python protobuf library from proto source files
@@ -307,6 +308,8 @@ def py_proto_library(
     py_extra_srcs: extra source files that will be added to the output
         py_library. This attribute is used for internal bootstrapping.
     include: a string indicating the include path of the .proto files.
+    default_runtime: the implicitly default runtime which will be depended on by
+        the generated py_library_target
     protoc: the label of the protocol compiler to generate the sources.
     **kargs: other keyword arguments that are passed to cc_library.
 
@@ -327,6 +330,9 @@ def py_proto_library(
       outs=outs,
       visibility=["//visibility:public"],
   )
+
+  if default_runtime and not default_runtime in py_libs + deps:
+    py_libs += [default_runtime]
 
   native.py_library(
       name=name,
