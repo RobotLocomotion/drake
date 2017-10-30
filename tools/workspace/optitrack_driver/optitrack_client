@@ -1,0 +1,54 @@
+#!/usr/bin/env python2
+
+import os
+import sys
+
+
+def main():
+    python_program = None
+    search_path = os.getenv('PATH', os.defpath).split(os.pathsep)
+
+    for path in search_path:
+        if not path:
+            continue
+
+        program = os.path.join(path, 'python2')
+
+        if os.path.isfile(program) and os.access(program, os.X_OK):
+            python_program = program
+            break
+
+    if python_program is None:
+        raise AssertionError('Could not find python2 executable')
+
+    python_path = os.path.abspath(os.path.join(
+        sys.argv[0], os.pardir, os.pardir, 'lib', 'python2.7', 'site-packages'
+    ))
+
+    main_filename = os.path.join(python_path, 'optitrack/optitrack_client.py')
+
+    if not os.path.exists(main_filename) or not os.access(
+            main_filename, os.R_OK):
+        raise OSError('Could not find optitrack/optitrack_client.py')
+
+    args = [python_program, main_filename] + sys.argv[1:]
+
+    environ = {}
+    environ['PYTHONPATH'] = python_path
+    os.environ.update(environ)
+
+    try:
+        sys.stdout.flush()
+        os.execv(args[0], args)
+
+    except EnvironmentError:
+        exception = sys.exc_info()[1]
+
+        if not getattr(exception, 'filename', None):
+            exception.filename = python_program
+
+        raise
+
+
+if __name__ == '__main__':
+    main()

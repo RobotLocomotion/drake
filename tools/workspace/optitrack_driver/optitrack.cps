@@ -19,6 +19,10 @@
       "Type": "jar",
       "Location": "@prefix@/share/java/lcmtypes_optitrack.jar",
       "Requires": ["lcm:lcm-java"]
+    },
+    "optitrack_client": {
+      "Type": "exe",
+      "Location": "@prefix@/bin/optitrack_client"
     }
   }
 }

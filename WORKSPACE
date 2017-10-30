@@ -229,8 +229,8 @@ github_archive(
 github_archive(
     name = "optitrack_driver",
     repository = "RobotLocomotion/optitrack-driver",
-    commit = "3c53cefbe16b3fcb0747034d2435cef7f9892265",
-    sha256 = "d09882fd6a9296b020a3e258ec943b8db03ed80c795e7613dac56acbc289c7a4",  # noqa
+    commit = "b0d633570966e08b8915dee0867747596839d06c",
+    sha256 = "5f7f46273f36073dc15191fe37dc538b4b23eaeaae63de153abeaa61d1134ad6",  # noqa
 )
 
 github_archive(
