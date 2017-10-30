@@ -3,13 +3,27 @@ Run this script using Bazel.
 """
 
 import argparse
+import collections
 import os
 import subprocess
 
 import google.protobuf.text_format
 
-from drake.tools import named_vector_pb2
-import tools.lint.clang_format as clang_format_lib
+# TODO(jwnimmer-tri) Unfortunately, the module paths change when called from
+# the deprecated codegen bash scripts, versus the Bazel sandbox codegen.  So,
+# we'll try both.  We should replace with a single import block once the
+# deprecated command-line interface is gone.
+try:
+    # This is the forward-looking phrasing that works when running as a codegen
+    # tool insid the sandbox.
+    from drake.drake.tools import named_vector_pb2
+    from drake.tools.lint.clang_format import get_clang_format_path
+    from drake.tools.lint.find_data import find_data
+except ImportError:
+    # This is the deprecated phrasing only works when running from bazel-bin.
+    from drake.tools import named_vector_pb2
+    from tools.lint.clang_format import get_clang_format_path
+    from tools.lint.find_data import find_data
 
 
 def put(fileobj, text, newlines_after=0):
@@ -350,7 +364,7 @@ VECTOR_HH_POSTAMBLE = """
 """
 
 VECTOR_CC_PREAMBLE = """
-#include "%(relative_cxx_dir)s/%(snake)s.h"
+#include "%(cxx_include_path)s/%(snake)s.h"
 
 %(generated_code_warning)s
 
@@ -369,9 +383,9 @@ TRANSLATOR_HH_PREAMBLE = """
 #include <memory>
 #include <vector>
 
-#include "%(relative_cxx_dir)s/%(snake)s.h"
+#include "%(cxx_include_path)s/%(snake)s.h"
+#include "%(lcm_package)s/lcmt_%(snake)s_t.hpp"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
-#include "drake/lcmt_%(snake)s_t.hpp"
 
 %(opening_namespace)s
 """
@@ -400,7 +414,7 @@ TRANSLATOR_HH_POSTAMBLE = """
 """
 
 TRANSLATOR_CC_PREAMBLE = """
-#include "%(relative_cxx_dir)s/%(snake)s_translator.h"
+#include "%(cxx_include_path)s/%(snake)s_translator.h"
 
 %(generated_code_warning)s
 
@@ -435,7 +449,7 @@ void %(camel)sTranslator::Serialize(
   const auto* const vector =
       dynamic_cast<const %(camel)s<double>*>(&vector_base);
   DRAKE_DEMAND(vector != nullptr);
-  drake::lcmt_%(snake)s_t message;
+  %(lcm_package)s::lcmt_%(snake)s_t message;
   message.timestamp = static_cast<int64_t>(time * 1000);
 """
 DESERIALIZE_FIELD = """
@@ -466,7 +480,7 @@ void %(camel)sTranslator::Deserialize(
   auto* const my_vector = dynamic_cast<%(camel)s<double>*>(vector_base);
   DRAKE_DEMAND(my_vector != nullptr);
 
-  drake::lcmt_%(snake)s_t message;
+  %(lcm_package)s::lcmt_%(snake)s_t message;
   int status = message.decode(lcm_message_bytes, 0, lcm_message_length);
   if (status < 0) {
     throw std::runtime_error("Failed to decode LCM message %(snake)s.");
@@ -490,7 +504,7 @@ def generate_serialize(cc, caller_context, fields):
 LCMTYPE_PREAMBLE = """
 %(generated_code_warning)s
 
-package drake;
+package %(lcm_package)s;
 
 struct lcmt_%(snake)s_t {
   // The timestamp in milliseconds.
@@ -502,19 +516,60 @@ LCMTYPE_POSTAMBLE = """
 """
 
 
-def generate_code(args):
-    cxx_dir = os.path.abspath(args.cxx_dir)
-    lcmtype_dir = os.path.abspath(args.lcmtype_dir)
-    drake_dist_dir = args.workspace
-    relative_cxx_dir = cxx_dir.replace(os.path.join(drake_dist_dir, ''), '')
+def deprecated_generate_all_code(args):
+    # This is a compatiblity shim from the old ArgumentParser semantics, to the
+    # new implementation function `generate_code()`.  TODO(jwnimmer-tri) Remove
+    # me once the depreacted command-line interface is gone.
 
+    cxx_dir = os.path.abspath(args.cxx_dir)
+    lcmtype_dir = os.path.abspath(args.lcmtype_dir or "")
+    cxx_include_path = cxx_dir.replace(os.path.join(args.workspace, ''), '')
+
+    # Compute appropriate filenames for all outputs ...
     snake, _ = os.path.splitext(os.path.basename(args.named_vector_file))
+    cxx_filenames = [
+        os.path.join(cxx_dir, pattern % snake)
+        for pattern in [
+            "%s.h", "%s.cc", "%s_translator.h", "%s_translator.cc",
+        ]
+    ]
+    lcm_filename = os.path.join(lcmtype_dir, "lcmt_%s_t.lcm" % snake)
+    # ... but omit LCM support if the user didn't want it.
+    if not args.lcmtype_dir:
+        cxx_filenames[2] = None
+        cxx_filenames[3] = None
+        lcm_filename = None
+
+    # Delegate to the helper function.
+    generate_code(
+        args.named_vector_file,
+        cxx_include_path,
+        vector_hh_filename=cxx_filenames[0],
+        vector_cc_filename=cxx_filenames[1],
+        translator_hh_filename=cxx_filenames[2],
+        translator_cc_filename=cxx_filenames[3],
+        lcm_filename=lcm_filename)
+
+    # Success.
+    return 0
+
+
+def generate_code(
+        named_vector_filename,
+        cxx_include_path,
+        vector_hh_filename=None,
+        vector_cc_filename=None,
+        translator_hh_filename=None,
+        translator_cc_filename=None,
+        lcm_filename=None):
+
+    snake, _ = os.path.splitext(os.path.basename(named_vector_filename))
     screaming_snake = snake.upper()
     camel = "".join([x.capitalize() for x in snake.split("_")])
 
     # Load the vector's details from protobuf.
     # In the future, this can be extended for nested messages.
-    with open(args.named_vector_file, "r") as f:
+    with open(named_vector_filename, "r") as f:
         vec = named_vector_pb2.NamedVector()
         google.protobuf.text_format.Merge(f.read(), vec)
         fields = [{
@@ -546,13 +601,14 @@ def generate_code(args):
     # The context provides string substitutions for the C++ code blocks in the
     # literal strings throughout this program.
     context = dict()
-    context.update(relative_cxx_dir=relative_cxx_dir)
+    context.update(cxx_include_path=cxx_include_path)
     context.update(camel=camel)
     context.update(indices=camel + 'Indices')
     context.update(snake=snake)
     context.update(screaming_snake=screaming_snake)
     context.update(opening_namespace=opening_namespace)
     context.update(closing_namespace=closing_namespace)
+    context.update(lcm_package="drake")
 
     # This is a specially-formatted code block to warn users not to edit.
     # This disclaimer text is special-cased by our review tool, reviewable.io.
@@ -561,78 +617,164 @@ def generate_code(args):
         disclaimer, "// See drake/tools/lcm_vector_gen.py."]))
 
     cxx_names = []
-    cxx_names.append(os.path.join(cxx_dir, "%s.h" % snake))
-    with open(cxx_names[-1], 'w') as hh:
-        print "generating %s" % hh.name
-        put(hh, VECTOR_HH_PREAMBLE % context, 2)
-        generate_indices(hh, context, fields)
-        put(hh, '', 1)
-        generate_indices_names_accessor_decl(hh, context)
-        put(hh, VECTOR_CLASS_BEGIN % context, 2)
-        generate_default_ctor(hh, context, fields)
-        generate_do_clone(hh, context, fields)
-        generate_accessors(hh, context, fields)
-        put(hh, GET_COORDINATE_NAMES % context, 2)
-        generate_is_valid(hh, context, fields)
-        generate_calc_inequality_constraint(hh, context, fields)
-        put(hh, VECTOR_CLASS_END % context, 2)
-        put(hh, VECTOR_HH_POSTAMBLE % context, 1)
+    if vector_hh_filename:
+        with open(vector_hh_filename, 'w') as hh:
+            cxx_names.append(hh.name)
+            put(hh, VECTOR_HH_PREAMBLE % context, 2)
+            generate_indices(hh, context, fields)
+            put(hh, '', 1)
+            generate_indices_names_accessor_decl(hh, context)
+            put(hh, VECTOR_CLASS_BEGIN % context, 2)
+            generate_default_ctor(hh, context, fields)
+            generate_do_clone(hh, context, fields)
+            generate_accessors(hh, context, fields)
+            put(hh, GET_COORDINATE_NAMES % context, 2)
+            generate_is_valid(hh, context, fields)
+            generate_calc_inequality_constraint(hh, context, fields)
+            put(hh, VECTOR_CLASS_END % context, 2)
+            put(hh, VECTOR_HH_POSTAMBLE % context, 1)
 
-    cxx_names.append(os.path.join(cxx_dir, "%s.cc" % snake))
-    with open(cxx_names[-1], 'w') as cc:
-        print "generating %s" % cc.name
-        put(cc, VECTOR_CC_PREAMBLE % context, 2)
-        generate_indices_storage(cc, context, fields)
-        put(cc, '', 1)
-        generate_indices_names_accessor_impl(cc, context, fields)
-        put(cc, VECTOR_CC_POSTAMBLE % context, 1)
+    if vector_cc_filename:
+        with open(vector_cc_filename, 'w') as cc:
+            cxx_names.append(cc.name)
+            put(cc, VECTOR_CC_PREAMBLE % context, 2)
+            generate_indices_storage(cc, context, fields)
+            put(cc, '', 1)
+            generate_indices_names_accessor_impl(cc, context, fields)
+            put(cc, VECTOR_CC_POSTAMBLE % context, 1)
 
-    if args.lcmtype_dir:
-        cxx_names.append(os.path.join(cxx_dir, "%s_translator.h" % snake))
-        with open(cxx_names[-1], 'w') as hh:
+    if translator_hh_filename:
+        with open(translator_hh_filename, 'w') as hh:
+            cxx_names.append(hh.name)
             put(hh, TRANSLATOR_HH_PREAMBLE % context, 2)
             put(hh, TRANSLATOR_CLASS_DECL % context, 2)
             put(hh, TRANSLATOR_HH_POSTAMBLE % context, 1)
 
-        cxx_names.append(os.path.join(cxx_dir, "%s_translator.cc" % snake))
-        with open(cxx_names[-1], 'w') as cc:
-            print "generating %s" % cc.name
+    if translator_cc_filename:
+        with open(translator_cc_filename, 'w') as cc:
+            cxx_names.append(cc.name)
             put(cc, TRANSLATOR_CC_PREAMBLE % context, 2)
             generate_allocate_output_vector(cc, context, fields)
             generate_deserialize(cc, context, fields)
             generate_serialize(cc, context, fields)
             put(cc, TRANSLATOR_CC_POSTAMBLE % context, 1)
 
-        with open(os.path.join(lcmtype_dir, "lcmt_%s_t.lcm" % snake),
-                  'w') as lcm:
-            print "generating %s" % lcm.name
+    if lcm_filename:
+        with open(lcm_filename, 'w') as lcm:
             put(lcm, LCMTYPE_PREAMBLE % context, 2)
             for field in fields:
                 put(lcm, "  double {};  // {}".format(field['name'],
                                                       field['doc']), 1)
             put(lcm, LCMTYPE_POSTAMBLE % context, 1)
 
-    subprocess.check_call([
-        clang_format_lib.get_clang_format_path(),
-        "--style=file", "-i"] + cxx_names)
+    # Run clang-format over all C++ files.
+    for one_filename in cxx_names:
+        # The clang-format tool has no way to specify a config file, other than
+        # putting a dotfile somehwere in a parent dir of the target.  Because
+        # our output is in genfiles but the dotfile is in runfiles, we won't
+        # automatically find it.  We'll resolve that by temporarily symlinking
+        # the dotfile into place.
+        dotfile = find_data(".clang-format")
+        temp_dotfile = os.path.join(
+            os.path.dirname(one_filename), ".clang-format")
+        assert not os.path.exists(temp_dotfile)
+        os.symlink(dotfile, temp_dotfile)
+        subprocess.check_call([
+            get_clang_format_path(), "--style=file", "-i", one_filename])
+        os.unlink(temp_dotfile)
+
+
+def generate_all_code(srcs, outs):
+    # Match srcs to outs.
+    src_to_kind_to_out = collections.OrderedDict()
+    for one_src in srcs:
+        snake, _ = os.path.splitext(os.path.basename(one_src))
+        basename_to_kind = {
+            snake + ".h": "vector_hh_filename",
+            snake + ".cc": "vector_cc_filename",
+            snake + "_translator.h": "translator_hh_filename",
+            snake + "_translator.cc": "translator_cc_filename",
+            "lcmt_" + snake + "_t.lcm": "lcm_filename",
+        }
+        kind_to_out = dict([
+            (basename_to_kind[os.path.basename(one_out)], one_out)
+            for one_out in outs
+            if os.path.basename(one_out) in basename_to_kind
+        ])
+        if not kind_to_out:
+            print("warning: no outs matched for src " + one_src)
+            continue
+        src_to_kind_to_out[one_src] = kind_to_out
+    covered_outs = set()
+    for one_kind_to_out in src_to_kind_to_out.values():
+        for one_out in one_kind_to_out.values():
+            covered_outs.add(one_out)
+    missing_outs = set(outs) - covered_outs
+    if missing_outs:
+        print("error: could not find src for some outs:")
+        for one_src in sorted(src_to_kind_to_out.keys()):
+            print("note: have src " + one_src)
+        for one_out in sorted(covered_outs):
+            print("note: match out " + one_out)
+        for one_out in sorted(missing_outs):
+            print("error: no src for out " + one_out)
+        return 1
+
+    # Do the one, one src at a time.
+    for src, kind_to_out in src_to_kind_to_out.items():
+        cxx_include_path = os.path.dirname(src) + "/gen"
+        generate_code(src, cxx_include_path, **kind_to_out)
+
+    # Success.
+    return 0
 
 
 def main():
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+    # TODO(jwnimmer-tri) This block is the deprecated command-line interface;
+    # remove it when lcm_vector_gen.sh disappers.
     parser.add_argument(
-        '--cxx-dir', help="output directory for cxx files", default=".")
+        '--cxx-dir',
+        help="output directory for cxx files (DEPRECATED)")
     parser.add_argument(
-        '--workspace', help="Drake WORKSPACE root.", required=True)
+        '--workspace',
+        help="Drake WORKSPACE root (DEPRECATED)")
     # By default, LCM output is disabled.
     parser.add_argument(
-        '--lcmtype-dir', help="output directory for lcm file", default="")
+        '--lcmtype-dir',
+        help="output directory for lcm file (DEPRECATED)")
     parser.add_argument(
-        '--named_vector_file', metavar="FILE", required=True,
-        help="Protobuf description of vector")
+        '--named_vector_file', metavar="FILE",
+        help="Protobuf description of vector (DEPRECATED)")
+
+    parser.add_argument(
+        '--src', metavar="FILE", dest='srcs', action='append', default=[],
+        help="'*.named_vector' description(s) of vector(s)")
+    parser.add_argument(
+        '--out', metavar="FILE", dest='outs', action='append', default=[],
+        help="generated filename(s) to create")
     args = parser.parse_args()
-    generate_code(args)
+
+    # TODO(jwnimmer-tri) This block is the deprecated command-line interface;
+    # remove it when lcm_vector_gen.sh disappers.
+    if ((args.cxx_dir is not None) or
+            (args.workspace is not None) or
+            (args.lcmtype_dir is not None) or
+            (args.named_vector_file is not None)):
+        assert args.cxx_dir is not None
+        assert args.workspace is not None
+        # lcmtype_dir is allowed to be None
+        assert args.named_vector_file is not None
+        return deprecated_generate_all_code(args)
+    assert args.cxx_dir is None
+    assert args.workspace is None
+    assert args.lcmtype_dir is None
+    assert args.named_vector_file is None
+
+    return generate_all_code(args.srcs, args.outs)
 
 
 if __name__ == "__main__":
