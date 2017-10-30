@@ -4,4 +4,9 @@ package(default_visibility = ["//visibility:public"])
 
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
+sh_binary(
+    name = "drake_protoc",
+    srcs = ["drake_protoc.sh"],
+)
+
 add_lint_tests()

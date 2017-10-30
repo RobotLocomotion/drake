@@ -49,7 +49,7 @@ new_local_repository(
 # into "systemprotobuf" via pkg-config below.
 local_repository(
     name = "protobuf",
-    path = __workspace_dir__ + "/third_party/com_github_google_protobuf",
+    path = "third_party/com_github_google_protobuf",
 )
 
 load("@kythe//tools/build_rules/config:pkg_config.bzl", "pkg_config_package")

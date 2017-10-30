@@ -77,12 +77,11 @@ def _proto_gen_impl(ctx):
     args += ["--%s_out=%s" % (lang, outdir)]
 
   if args:
-    paths = [s.path for s in srcs]
-    cmdlist = ["protoc"] + args + import_flags + paths
     ctx.action(
         inputs=srcs + deps,
         outputs=ctx.outputs.outs,
-        command=' '.join(cmdlist),
+        arguments=args + import_flags + [s.path for s in srcs],
+        executable=ctx.executable.protoc,
         mnemonic="ProtoCompile",
     )
 
@@ -99,6 +98,12 @@ proto_gen = rule(
         "srcs": attr.label_list(allow_files = True),
         "deps": attr.label_list(providers = ["proto"]),
         "includes": attr.string_list(),
+        "protoc": attr.label(
+            cfg = "host",
+            executable = True,
+            allow_files = True,
+            mandatory = True,
+        ),
         "plugin": attr.label(
             cfg = "host",
             allow_files = True,
@@ -124,6 +129,7 @@ Args:
     against.
   deps: a list of dependency labels; must be other proto libraries.
   includes: a list of include paths to .proto files.
+  protoc: the label of the protocol compiler to generate the sources.
   plugin: the label of the protocol compiler plugin to be passed to the protocol
     compiler.
   plugin_language: the language of the generated sources
@@ -139,6 +145,7 @@ def cc_proto_library(
         deps=[],
         cc_libs=[],
         include=None,
+        protoc="//:protoc",
         internal_bootstrap_hack=False,
         use_grpc_plugin=False,
         default_runtime="//:protobuf",
@@ -156,6 +163,7 @@ def cc_proto_library(
     cc_libs: a list of other cc_library targets depended by the generated
         cc_library.
     include: a string indicating the include path of the .proto files.
+    protoc: the label of the protocol compiler to generate the sources.
     internal_bootstrap_hack: a flag indicate the cc_proto_library is used only
         for bootstraping. When it is set to True, no files will be generated.
         The rule will simply be a provider for .proto files, so that other
@@ -180,6 +188,7 @@ def cc_proto_library(
         srcs=srcs,
         deps=[s + "_genproto" for s in deps],
         includes=includes,
+        protoc=protoc,
         visibility=["//visibility:public"],
     )
     # An empty cc_library to make rule dependency consistent.
@@ -199,6 +208,7 @@ def cc_proto_library(
       srcs=srcs,
       deps=[s + "_genproto" for s in deps],
       includes=includes,
+      protoc=protoc,
       plugin=grpc_cpp_plugin,
       plugin_language="grpc",
       gen_cc=1,
@@ -280,6 +290,7 @@ def py_proto_library(
         py_libs=[],
         py_extra_srcs=[],
         include=None,
+        protoc="//:protoc",
         **kargs):
   """Bazel rule to create a Python protobuf library from proto source files
 
@@ -296,6 +307,7 @@ def py_proto_library(
     py_extra_srcs: extra source files that will be added to the output
         py_library. This attribute is used for internal bootstrapping.
     include: a string indicating the include path of the .proto files.
+    protoc: the label of the protocol compiler to generate the sources.
     **kargs: other keyword arguments that are passed to cc_library.
 
   """
@@ -310,6 +322,7 @@ def py_proto_library(
       srcs=srcs,
       deps=[s + "_genproto" for s in deps],
       includes=includes,
+      protoc=protoc,
       gen_py=1,
       outs=outs,
       visibility=["//visibility:public"],
