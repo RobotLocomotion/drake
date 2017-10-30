@@ -198,12 +198,3 @@ void addOffset(std::vector<T>& v, const T& offset) {
 void baseZeroToBaseOne(std::vector<int>& vec);
 
 double angleAverage(double theta1, double theta2);
-
-template <typename DerivedTorque, typename DerivedForce, typename DerivedNormal,
-          typename DerivedPoint>
-std::pair<Eigen::Vector3d, double> resolveCenterOfPressure(
-    const Eigen::MatrixBase<DerivedTorque>& torque,
-    const Eigen::MatrixBase<DerivedForce>& force,
-    const Eigen::MatrixBase<DerivedNormal>& normal,
-    const Eigen::MatrixBase<DerivedPoint>& point_on_contact_plane);
-
