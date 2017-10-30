@@ -24,7 +24,7 @@ load(
     "drake_lcm_cc_library",
 )
 load(
-    "@protobuf//:protobuf.bzl",
+    "@drake//tools/skylark:drake_proto.bzl",
     "drake_py_proto_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
@@ -32,7 +32,6 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 drake_py_proto_library(
     name = "named_vector",
     srcs = ["named_vector.proto"],
-    tags = ["nolint"],
 )
 
 drake_py_binary(

@@ -117,8 +117,8 @@ proto_gen = rule(
 """Generates codes from Protocol Buffers definitions.
 
 This rule helps you to implement Skylark macros specific to the target
-language. You should prefer more specific `drake_cc_proto_library `,
-`drake_py_proto_library` and others unless you are adding such wrapper macros.
+language. You should prefer more specific `cc_proto_library `,
+`py_proto_library` and others unless you are adding such wrapper macros.
 
 Args:
   srcs: Protocol Buffers definition files (.proto) to run the protocol compiler
@@ -134,7 +134,7 @@ Args:
   outs: a list of labels of the expected outputs from the protocol compiler.
 """
 
-def drake_cc_proto_library(
+def cc_proto_library(
         name,
         srcs=[],
         deps=[],
@@ -150,16 +150,16 @@ def drake_cc_proto_library(
   the native rule.
 
   Args:
-    name: the name of the drake_cc_proto_library.
-    srcs: the .proto files of the drake_cc_proto_library.
-    deps: a list of dependency labels; must be drake_cc_proto_library.
+    name: the name of the cc_proto_library.
+    srcs: the .proto files of the cc_proto_library.
+    deps: a list of dependency labels; must be cc_proto_library.
     cc_libs: a list of other cc_library targets depended by the generated
         cc_library.
     include: a string indicating the include path of the .proto files.
-    internal_bootstrap_hack: a flag indicate the drake_cc_proto_library is used only
+    internal_bootstrap_hack: a flag indicate the cc_proto_library is used only
         for bootstraping. When it is set to True, no files will be generated.
         The rule will simply be a provider for .proto files, so that other
-        drake_cc_proto_library can depend on it.
+        cc_proto_library can depend on it.
     use_grpc_plugin: a flag to indicate whether to call the grpc C++ plugin
         when processing the proto files.
     **kargs: other keyword arguments that are passed to cc_library.
@@ -242,7 +242,7 @@ def internal_gen_well_known_protos_java(srcs):
 def internal_copied_filegroup(name, srcs, strip_prefix, dest, **kwargs):
   """Macro to copy files to a different directory and then create a filegroup.
 
-  This is used by the //:protobuf_python drake_py_proto_library target to work around
+  This is used by the //:protobuf_python py_proto_library target to work around
   an issue caused by Python source files that are part of the same Python
   package being in separate directories.
 
@@ -269,7 +269,7 @@ def internal_copied_filegroup(name, srcs, strip_prefix, dest, **kwargs):
       **kwargs)
 
 
-def drake_py_proto_library(
+def py_proto_library(
         name,
         srcs=[],
         deps=[],
@@ -284,9 +284,9 @@ def drake_py_proto_library(
   the native rule.
 
   Args:
-    name: the name of the drake_py_proto_library.
-    srcs: the .proto files of the drake_py_proto_library.
-    deps: a list of dependency labels; must be drake_py_proto_library.
+    name: the name of the py_proto_library.
+    srcs: the .proto files of the py_proto_library.
+    deps: a list of dependency labels; must be py_proto_library.
     py_libs: a list of other py_library targets depended by the generated
         py_library.
     py_extra_srcs: extra source files that will be added to the output
