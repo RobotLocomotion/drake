@@ -14,7 +14,8 @@ using Eigen::Translation3d;
 using Eigen::Vector3d;
 
 template<typename T>
-FreeRotatingBodyPlant<T>::FreeRotatingBodyPlant(double I, double J) : I_(I), J_(J) {
+FreeRotatingBodyPlant<T>::FreeRotatingBodyPlant(double I, double J) :
+    I_(I), J_(J) {
   BuildMultibodyTreeModel();
   DRAKE_DEMAND(model_.get_num_positions() == 3);
   DRAKE_DEMAND(model_.get_num_velocities() == 3);

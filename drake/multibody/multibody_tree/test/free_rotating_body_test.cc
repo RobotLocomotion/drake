@@ -1,9 +1,8 @@
-#include "drake/multibody/benchmarks/free_body/free_body.h"
-
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/multibody/benchmarks/free_body/free_body.h"
 #include "drake/multibody/multibody_tree/test/free_rotating_body_plant.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/simulator.h"
@@ -51,7 +50,8 @@ GTEST_TEST(RollPitchYawTest, TimeDerivatives) {
       p0_WBcm, v0_WBcm, gravity_W);
 
   // Instantiate the model for the free body in space.
-  FreeRotatingBodyPlant<double> free_body_plant(benchmark_.get_I(), benchmark_.get_J());
+  FreeRotatingBodyPlant<double> free_body_plant(benchmark_.get_I(),
+                                                benchmark_.get_J());
 
   systems::Simulator<double> simulator(free_body_plant);
   systems::Context<double>& context = simulator.get_mutable_context();
