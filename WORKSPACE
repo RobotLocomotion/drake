@@ -44,9 +44,12 @@ new_local_repository(
     path = "third_party/com_github_tcbrindle_cpp17_headers",
 )
 
+# This local repository imports the protobuf build rules for Bazel (based on
+# the upstream protobuf.bzl build rules).  The protobuf runtime is loaded
+# into "systemprotobuf" via pkg-config below.
 local_repository(
     name = "protobuf",
-    path = "third_party/com_github_google_protobuf",
+    path = __workspace_dir__ + "/third_party/com_github_google_protobuf",
 )
 
 load("@kythe//tools/build_rules/config:pkg_config.bzl", "pkg_config_package")
@@ -61,6 +64,8 @@ pkg_config_package(
     modname = "gthread-2.0",
 )
 
+# Load in the paths and flags to the system version of the protobuf runtime;
+# the Bazel build rules are loaded into "protobuf" via local_repository above.
 pkg_config_package(
     name = "systemprotobuf",
     modname = "protobuf",
