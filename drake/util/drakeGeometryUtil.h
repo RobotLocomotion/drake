@@ -12,7 +12,6 @@
 
 #include "drake/common/constants.h"
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/cross_product.h"
 #include "drake/math/gradient.h"
@@ -21,64 +20,11 @@
 #include "drake/math/quaternion.h"
 #include "drake/math/rotation_conversion_gradient.h"
 
-DRAKE_DEPRECATED("Use drake::kHomogeneousTransformSize instead.")
-const int HOMOGENEOUS_TRANSFORM_SIZE = 16;
-
-DRAKE_DEPRECATED("Use drake::kQuaternionSize instead.")
-const int QUAT_SIZE = 4;
-DRAKE_DEPRECATED("Use drake::kRpySize instead.")
-const int RPY_SIZE = 3;
-DRAKE_DEPRECATED("Use drake::kSpaceDimension instead.")
-const int SPACE_DIMENSION = 3;
-DRAKE_DEPRECATED("Use drake::kRotmatSize instead.")
-const int RotmatSize = drake::kSpaceDimension * drake::kSpaceDimension;
+// TODO(jwnimmer-tri): Clean up function naming and other styleguide defects.
 
 double angleDiff(double phi1, double phi2);
 
-// NOTE: not reshaping second derivative to Matlab geval output format!
-template <typename Derived>
-DRAKE_DEPRECATED("Use drake::math::NormalizeVector instead.")
-void normalizeVec(
-    const Eigen::MatrixBase<Derived>& x, typename Derived::PlainObject& x_norm,
-    typename drake::math::Gradient<Derived, Derived::RowsAtCompileTime,
-                                   1>::type* dx_norm = nullptr,
-    typename drake::math::Gradient<Derived, Derived::RowsAtCompileTime,
-                                   2>::type* ddx_norm = nullptr) {
-  drake::math::NormalizeVector(x, x_norm, dx_norm, ddx_norm);
-}
-
 int rotationRepresentationSize(int rotation_type);
-
-/*
- * rotation conversion gradient functions
- */
-template <typename Derived>
-DRAKE_DEPRECATED("Use drake::math::dquat2rotmat instead.")
-typename drake::math::Gradient<Eigen::Matrix<typename Derived::Scalar, 3, 3>,
-                               drake::kQuaternionSize>::type
-dquat2rotmat(const Eigen::MatrixBase<Derived>& q) {
-  return drake::math::dquat2rotmat(q);
-}
-
-template <typename DerivedR, typename DerivedDR>
-DRAKE_DEPRECATED("Use drake::math::drotmat2rpy instead.")
-typename drake::math::Gradient<
-    Eigen::Matrix<typename DerivedR::Scalar, drake::kRpySize, 1>,
-    DerivedDR::ColsAtCompileTime>::type
-drotmat2rpy(const Eigen::MatrixBase<DerivedR>& R,
-            const Eigen::MatrixBase<DerivedDR>& dR) {
-  return drake::math::drotmat2rpy(R, dR);
-}
-
-template <typename DerivedR, typename DerivedDR>
-DRAKE_DEPRECATED("Use drake::math::drotmat2quat instead.")
-typename drake::math::Gradient<
-    Eigen::Matrix<typename DerivedR::Scalar, drake::kQuaternionSize, 1>,
-    DerivedDR::ColsAtCompileTime>::type
-drotmat2quat(const Eigen::MatrixBase<DerivedR>& R,
-             const Eigen::MatrixBase<DerivedDR>& dR) {
-  return drake::math::drotmat2quat(R, dR);
-}
 
 /*
  * angular velocity conversion functions
