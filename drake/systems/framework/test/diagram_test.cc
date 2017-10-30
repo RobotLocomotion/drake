@@ -356,21 +356,19 @@ class DiagramTest : public ::testing::Test {
     input2_ = BasicVector<double>::Make({64, 128, 256});
 
     // Initialize the integrator states.
-    auto integrator0_xc = GetMutableContinuousState(integrator0());
-    ASSERT_TRUE(integrator0_xc != nullptr);
-    integrator0_xc->get_mutable_vector()->SetAtIndex(0, 3);
-    integrator0_xc->get_mutable_vector()->SetAtIndex(1, 9);
-    integrator0_xc->get_mutable_vector()->SetAtIndex(2, 27);
+    auto& integrator0_xc = GetMutableContinuousState(integrator0());
+    integrator0_xc.get_mutable_vector().SetAtIndex(0, 3);
+    integrator0_xc.get_mutable_vector().SetAtIndex(1, 9);
+    integrator0_xc.get_mutable_vector().SetAtIndex(2, 27);
 
-    auto integrator1_xc = GetMutableContinuousState(integrator1());
-    ASSERT_TRUE(integrator1_xc != nullptr);
-    integrator1_xc->get_mutable_vector()->SetAtIndex(0, 81);
-    integrator1_xc->get_mutable_vector()->SetAtIndex(1, 243);
-    integrator1_xc->get_mutable_vector()->SetAtIndex(2, 729);
+    auto& integrator1_xc = GetMutableContinuousState(integrator1());
+    integrator1_xc.get_mutable_vector().SetAtIndex(0, 81);
+    integrator1_xc.get_mutable_vector().SetAtIndex(1, 243);
+    integrator1_xc.get_mutable_vector().SetAtIndex(2, 729);
   }
 
   // Returns the continuous state of the given @p system.
-  ContinuousState<double>* GetMutableContinuousState(
+  ContinuousState<double>& GetMutableContinuousState(
       const System<double>* system) {
     return diagram_->GetMutableSubsystemState(*system, context_.get())
         .get_mutable_continuous_state();
@@ -522,11 +520,11 @@ TEST_F(DiagramTest, GetMutableSubsystemState) {
   State<double>& state_from_context = diagram_->GetMutableSubsystemState(
       *diagram_->integrator0(), context_.get());
   State<double>& state_from_state = diagram_->GetMutableSubsystemState(
-      *diagram_->integrator0(), context_->get_mutable_state());
+      *diagram_->integrator0(), &context_->get_mutable_state());
 
   EXPECT_EQ(&state_from_context, &state_from_state);
   const ContinuousState<double>& xc =
-      *state_from_context.get_continuous_state();
+      state_from_context.get_continuous_state();
   EXPECT_EQ(3, xc[0]);
   EXPECT_EQ(9, xc[1]);
   EXPECT_EQ(27, xc[2]);
@@ -769,22 +767,22 @@ class DiagramOfDiagramsTest : public ::testing::Test {
     State<double>& integrator0_x = subdiagram0_->GetMutableSubsystemState(
         *subdiagram0_->integrator0(), &d0_context);
     integrator0_x.get_mutable_continuous_state()
-        ->get_mutable_vector()->SetAtIndex(0, 3);
+        .get_mutable_vector().SetAtIndex(0, 3);
 
     State<double>& integrator1_x = subdiagram0_->GetMutableSubsystemState(
         *subdiagram0_->integrator1(), &d0_context);
     integrator1_x.get_mutable_continuous_state()
-        ->get_mutable_vector()->SetAtIndex(0, 9);
+        .get_mutable_vector().SetAtIndex(0, 9);
 
     State<double>& integrator2_x = subdiagram1_->GetMutableSubsystemState(
         *subdiagram1_->integrator0(), &d1_context);
     integrator2_x.get_mutable_continuous_state()
-        ->get_mutable_vector()->SetAtIndex(0, 27);
+        .get_mutable_vector().SetAtIndex(0, 27);
 
     State<double>& integrator3_x = subdiagram1_->GetMutableSubsystemState(
         *subdiagram1_->integrator1(), &d1_context);
     integrator3_x.get_mutable_continuous_state()
-        ->get_mutable_vector()->SetAtIndex(0, 81);
+        .get_mutable_vector().SetAtIndex(0, 81);
   }
 
   const int kSize = 1;
@@ -1189,7 +1187,7 @@ class SecondOrderStateSystem : public LeafSystem<double> {
 
   SecondOrderStateVector* x(Context<double>* context) const {
     return dynamic_cast<SecondOrderStateVector*>(
-        context->get_mutable_continuous_state_vector());
+        &context->get_mutable_continuous_state_vector());
   }
 
  protected:
@@ -1258,7 +1256,7 @@ GTEST_TEST(SecondOrderStateTest, MapVelocityToQDot) {
 
   BasicVector<double> qdot(2);
   const VectorBase<double>& v =
-      context->get_continuous_state()->get_generalized_velocity();
+      context->get_continuous_state().get_generalized_velocity();
   diagram.MapVelocityToQDot(*context, v, &qdot);
 
   // The order of these derivatives is defined to be the same as the order
@@ -1414,7 +1412,7 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
   context_->set_time(9.0);
   diagram_.CalcDiscreteVariableUpdates(
       *context_, events->get_discrete_update_events(), updates.get());
-  context_->get_mutable_discrete_state()->SetFrom(*updates);
+  context_->get_mutable_discrete_state().SetFrom(*updates);
   EXPECT_EQ(1001.0, ctx1.get_discrete_state(0).GetAtIndex(0));
   EXPECT_EQ(23.0, ctx2.get_discrete_state(0).GetAtIndex(0));
 
@@ -1430,7 +1428,7 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
   context_->set_time(12.0);
   diagram_.CalcDiscreteVariableUpdates(
       *context_, events->get_discrete_update_events(), updates.get());
-  context_->get_mutable_discrete_state()->SetFrom(*updates);
+  context_->get_mutable_discrete_state().SetFrom(*updates);
   EXPECT_EQ(17.0, ctx1.get_discrete_state(0).GetAtIndex(0));
   EXPECT_EQ(23.0, ctx2.get_discrete_state(0).GetAtIndex(0));
 }
@@ -1476,7 +1474,7 @@ class SystemWithAbstractState : public LeafSystem<double> {
       const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
       State<double>* state) const override {
     double& state_num = state->get_mutable_abstract_state()
-                            ->get_mutable_value(0)
+                            .get_mutable_value(0)
                             .GetMutableValue<double>();
     state_num = id_ + context.get_time();
   }
@@ -1568,7 +1566,7 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
   EXPECT_EQ(get_sys1_abstract_data_as_double(), 1);
 
   // Swaps in the new state, and the abstract data for sys0 should be updated.
-  context_->get_mutable_state()->CopyFrom(*x_buf);
+  context_->get_mutable_state().CopyFrom(*x_buf);
   EXPECT_EQ(get_sys0_abstract_data_as_double(), (time + 0));
   EXPECT_EQ(get_sys1_abstract_data_as_double(), 1);
 
@@ -1587,7 +1585,7 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
   diagram_.CalcUnrestrictedUpdate(
       *context_, events->get_unrestricted_update_events(), x_buf.get());
   // Both sys0 and sys1's abstract data should be updated.
-  context_->get_mutable_state()->CopyFrom(*x_buf);
+  context_->get_mutable_state().CopyFrom(*x_buf);
   EXPECT_EQ(get_sys0_abstract_data_as_double(), (time + 0));
   EXPECT_EQ(get_sys1_abstract_data_as_double(), (time + 1));
 }
@@ -1679,16 +1677,16 @@ TEST_F(NestedDiagramContextTest, GetSubsystemContext) {
 
   big_diagram_->GetMutableSubsystemContext(*integrator0_, big_context_.get())
       .get_mutable_continuous_state_vector()
-      ->SetAtIndex(0, 1);
+      .SetAtIndex(0, 1);
   big_diagram_->GetMutableSubsystemContext(*integrator1_, big_context_.get())
       .get_mutable_continuous_state_vector()
-      ->SetAtIndex(0, 2);
+      .SetAtIndex(0, 2);
   big_diagram_->GetMutableSubsystemContext(*integrator2_, big_context_.get())
       .get_mutable_continuous_state_vector()
-      ->SetAtIndex(0, 3);
+      .SetAtIndex(0, 3);
   big_diagram_->GetMutableSubsystemContext(*integrator3_, big_context_.get())
       .get_mutable_continuous_state_vector()
-      ->SetAtIndex(0, 4);
+      .SetAtIndex(0, 4);
 
   // Checks states.
   EXPECT_EQ(big_diagram_->GetSubsystemContext(*integrator0_, *big_context_)
@@ -1727,40 +1725,40 @@ TEST_F(NestedDiagramContextTest, GetSubsystemState) {
   EXPECT_EQ(big_output_->get_vector_data(2)->GetAtIndex(0), 0);
   EXPECT_EQ(big_output_->get_vector_data(3)->GetAtIndex(0), 0);
 
-  State<double>* big_state = big_context_->get_mutable_state();
+  State<double>& big_state = big_context_->get_mutable_state();
   big_diagram_
-      ->GetMutableSubsystemState(*integrator0_, big_state)
+      ->GetMutableSubsystemState(*integrator0_, &big_state)
       .get_mutable_continuous_state()
-      ->get_mutable_vector()
-      ->SetAtIndex(0, 1);
+      .get_mutable_vector()
+      .SetAtIndex(0, 1);
   big_diagram_
-      ->GetMutableSubsystemState(*integrator1_, big_state)
+      ->GetMutableSubsystemState(*integrator1_, &big_state)
       .get_mutable_continuous_state()
-      ->get_mutable_vector()
-      ->SetAtIndex(0, 2);
+      .get_mutable_vector()
+      .SetAtIndex(0, 2);
   big_diagram_
-      ->GetMutableSubsystemState(*integrator2_, big_state)
+      ->GetMutableSubsystemState(*integrator2_, &big_state)
       .get_mutable_continuous_state()
-      ->get_mutable_vector()
-      ->SetAtIndex(0, 3);
+      .get_mutable_vector()
+      .SetAtIndex(0, 3);
   big_diagram_
-      ->GetMutableSubsystemState(*integrator3_, big_state)
+      ->GetMutableSubsystemState(*integrator3_, &big_state)
       .get_mutable_continuous_state()
-      ->get_mutable_vector()
-      ->SetAtIndex(0, 4);
+      .get_mutable_vector()
+      .SetAtIndex(0, 4);
 
   // Checks state.
-  EXPECT_EQ(big_diagram_->GetSubsystemState(*integrator0_, *big_state)
-                .get_continuous_state()->get_vector()[0],
+  EXPECT_EQ(big_diagram_->GetSubsystemState(*integrator0_, big_state)
+                .get_continuous_state().get_vector()[0],
             1);
-  EXPECT_EQ(big_diagram_->GetSubsystemState(*integrator1_, *big_state)
-                .get_continuous_state()->get_vector()[0],
+  EXPECT_EQ(big_diagram_->GetSubsystemState(*integrator1_, big_state)
+                .get_continuous_state().get_vector()[0],
             2);
-  EXPECT_EQ(big_diagram_->GetSubsystemState(*integrator2_, *big_state)
-                .get_continuous_state()->get_vector()[0],
+  EXPECT_EQ(big_diagram_->GetSubsystemState(*integrator2_, big_state)
+                .get_continuous_state().get_vector()[0],
             3);
-  EXPECT_EQ(big_diagram_->GetSubsystemState(*integrator3_, *big_state)
-                .get_continuous_state()->get_vector()[0],
+  EXPECT_EQ(big_diagram_->GetSubsystemState(*integrator3_, big_state)
+                .get_continuous_state().get_vector()[0],
             4);
 
   // Checks output.
@@ -1825,7 +1823,7 @@ class PerStepActionTestSystem : public LeafSystem<double> {
  private:
   void SetDefaultState(const Context<double>& context,
                        State<double>* state) const override {
-    (*state->get_mutable_discrete_state())[0] = 0;
+    state->get_mutable_discrete_state()[0] = 0;
     state->get_mutable_abstract_state<std::string>(0) = "wow";
   }
 
@@ -1903,13 +1901,13 @@ GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
   // Does unrestricted update first.
   diagram->CalcUnrestrictedUpdate(
       *context, events->get_unrestricted_update_events(), tmp_state.get());
-  context->get_mutable_state()->CopyFrom(*tmp_state);
+  context->get_mutable_state().CopyFrom(*tmp_state);
 
   // Does discrete updates second.
   diagram->CalcDiscreteVariableUpdates(*context,
                                        events->get_discrete_update_events(),
                                        tmp_discrete_state.get());
-  context->get_mutable_discrete_state()->SetFrom(*tmp_discrete_state);
+  context->get_mutable_discrete_state().SetFrom(*tmp_discrete_state);
 
   // Publishes last.
   diagram->Publish(*context, events->get_publish_events());
@@ -2101,12 +2099,12 @@ GTEST_TEST(DiagramConstraintTest, SystemConstraintsTest) {
   // Set sys1 context.
   diagram->GetMutableSubsystemContext(*sys1, context.get())
       .get_mutable_continuous_state_vector()
-      ->SetFromVector(Eigen::Vector2d(5.0, 7.0));
+      .SetFromVector(Eigen::Vector2d(5.0, 7.0));
 
   // Set sys2 context.
   diagram->GetMutableSubsystemContext(*sys2, context.get())
       .get_mutable_continuous_state_vector()
-      ->SetFromVector(Eigen::Vector2d(11.0, 12.0));
+      .SetFromVector(Eigen::Vector2d(11.0, 12.0));
 
   Eigen::VectorXd value;
   // Check system 1's x0 constraint.
@@ -2230,7 +2228,7 @@ class RandomContextTestSystem : public LeafSystem<double> {
                       RandomGenerator* generator) const override {
     std::normal_distribution<double> normal;
     for (int i = 0; i < context.get_continuous_state_vector().size(); i++) {
-      state->get_mutable_continuous_state()->get_mutable_vector()->SetAtIndex(
+      state->get_mutable_continuous_state().get_mutable_vector().SetAtIndex(
           i, normal(*generator));
     }
   }

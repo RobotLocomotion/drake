@@ -48,7 +48,7 @@ GTEST_TEST(TestKalman, DoubleIntegrator) {
   auto sys = std::make_unique<LinearSystem<double>>(A, B, C, D);
   auto context = sys->CreateDefaultContext();
   context->FixInputPort(0, Eigen::Matrix<double, 1, 1>::Zero());
-  context->get_mutable_continuous_state()->SetFromVector(
+  context->get_mutable_continuous_state().SetFromVector(
       Eigen::Vector2d::Zero());
   auto filter =
       SteadyStateKalmanFilter(std::move(sys), std::move(context), W, V);

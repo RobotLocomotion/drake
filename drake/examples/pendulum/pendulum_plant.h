@@ -56,16 +56,16 @@ class PendulumPlant : public systems::LeafSystem<T> {
   }
 
   static const PendulumState<T>& get_state(const systems::Context<T>& context) {
-    return get_state(*context.get_continuous_state());
+    return get_state(context.get_continuous_state());
   }
 
-  static PendulumState<T>* get_mutable_state(
+  static PendulumState<T>& get_mutable_state(
       systems::ContinuousState<T>* cstate) {
-    return dynamic_cast<PendulumState<T>*>(cstate->get_mutable_vector());
+    return dynamic_cast<PendulumState<T>&>(cstate->get_mutable_vector());
   }
 
-  static PendulumState<T>* get_mutable_state(systems::Context<T>* context) {
-    return get_mutable_state(context->get_mutable_continuous_state());
+  static PendulumState<T>& get_mutable_state(systems::Context<T>* context) {
+    return get_mutable_state(&context->get_mutable_continuous_state());
   }
 
   static PendulumState<T>* get_mutable_output(

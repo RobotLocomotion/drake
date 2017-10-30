@@ -76,6 +76,7 @@ liblapack-dev
 liblz4-dev
 libnetcdf-cxx-legacy-dev
 libnetcdf-dev
+libnlopt-dev
 libogg-dev
 libpng-dev
 libprotobuf-dev

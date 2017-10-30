@@ -393,6 +393,44 @@ void MultibodyTree<T>::CalcForceElementsContribution(
 }
 
 template <typename T>
+void MultibodyTree<T>::MapQDotToVelocity(
+    const systems::Context<T>& context,
+    const Eigen::Ref<const VectorX<T>>& qdot,
+    EigenPtr<VectorX<T>> v) const {
+  DRAKE_DEMAND(qdot.size() == get_num_positions());
+  DRAKE_DEMAND(v != nullptr);
+  DRAKE_DEMAND(v->size() == get_num_velocities());
+  const auto& mbt_context =
+      dynamic_cast<const MultibodyTreeContext<T>&>(context);
+  VectorUpTo6<T> v_mobilizer;
+  for (const auto& mobilizer : owned_mobilizers_) {
+    const auto qdot_mobilizer = mobilizer->get_positions_from_array(qdot);
+    v_mobilizer.resize(mobilizer->get_num_velocities());
+    mobilizer->MapQDotToVelocity(mbt_context, qdot_mobilizer, &v_mobilizer);
+    mobilizer->get_mutable_velocities_from_array(v) = v_mobilizer;
+  }
+}
+
+template <typename T>
+void MultibodyTree<T>::MapVelocityToQDot(
+    const systems::Context<T>& context,
+    const Eigen::Ref<const VectorX<T>>& v,
+    EigenPtr<VectorX<T>> qdot) const {
+  DRAKE_DEMAND(v.size() == get_num_velocities());
+  DRAKE_DEMAND(qdot != nullptr);
+  DRAKE_DEMAND(qdot->size() == get_num_positions());
+  const auto& mbt_context =
+      dynamic_cast<const MultibodyTreeContext<T>&>(context);
+  VectorUpTo6<T> qdot_mobilizer;
+  for (const auto& mobilizer : owned_mobilizers_) {
+    const auto v_mobilizer = mobilizer->get_velocities_from_array(v);
+    qdot_mobilizer.resize(mobilizer->get_num_positions());
+    mobilizer->MapVelocityToQDot(mbt_context, v_mobilizer, &qdot_mobilizer);
+    mobilizer->get_mutable_positions_from_array(qdot) = qdot_mobilizer;
+  }
+}
+
+template <typename T>
 void MultibodyTree<T>::CalcMassMatrixViaInverseDynamics(
     const systems::Context<T>& context, EigenPtr<MatrixX<T>> H) const {
   DRAKE_DEMAND(H != nullptr);

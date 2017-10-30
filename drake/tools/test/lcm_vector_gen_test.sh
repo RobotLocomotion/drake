@@ -1,34 +1,21 @@
-#/bin/bash
-# Unit test for lcm_vector_gen.py.
 # This test should only be run via Bazel, never directly on the command line.
+# Unit test for lcm_vector_gen.py.
 
 set -ex
+
+[[ -f ./drake/tools/lcm_vector_gen_test ]]  # Fail-fast when not under Bazel.
 
 # Dump some debugging output.
 find .
 
-# Move the originals (which are symlinks) out of the way.
+# These are the filenames under test.
 tool_outputs="lcmt_sample_t.lcm sample.cc sample.h sample_translator.cc 
   sample_translator.h"
+
+# Insist that the generated output matches the goal copy in git.
+mv drake/tools/test/lcmt_sample_t.lcm drake/tools/test/gen/
 for item in $tool_outputs; do
-  test -L drake/tools/test/gen/"$item"  # Fail-fast if not under Bazel.
-  mv drake/tools/test/gen/"${item}"{,.orig}
-done
-
-# Run the code generator.
-# TODO(jwnimmer-tri) De-duplicate this with lcm_vector_gen.sh.
-./drake/tools/lcm_vector_gen \
-  --lcmtype-dir="drake/tools/test/gen" \
-  --cxx-dir="drake/tools/test/gen" \
-  --workspace=$(pwd) \
-  --named_vector_file="drake/tools/test/sample.named_vector"
-
-# Dump some debugging output.
-find drake/tools/test/gen
-
-# Insist that the generated output matches the current copy in git.
-for item in $tool_outputs; do
-  diff --unified=20 drake/tools/test/gen/"${item}"{.orig,}
+  diff --unified=20 drake/tools/test/{goal,gen}/"${item}"
 done
 
 echo "PASS"

@@ -28,16 +28,6 @@ class MySpringMassSystem : public SpringMassSystem<T> {
 
   int get_update_count() const { return update_count_; }
 
-  /** There are no discrete variables in this system, but it does use
-   * a discrete update with zero variables. In other words, this function
-   * is a kludge until discrete variables are automatically allocated in
-   * a system.
-   */
-  std::unique_ptr<DiscreteValues<T>> AllocateDiscreteVariables()
-      const override {
-    return std::make_unique<DiscreteValues<T>>();
-  }
-
  private:
   // Publish t q u to standard output.
   void DoPublish(const Context<T>&,

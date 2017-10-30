@@ -169,7 +169,7 @@ int DoMain() {
 
   command_receiver->set_initial_position(
       &sys->GetMutableSubsystemContext(*command_receiver,
-                                       simulator.get_mutable_context()),
+                                       &simulator.get_mutable_context()),
       VectorX<double>::Zero(tree.get_num_positions()));
 
   // Simulate for a very long time.

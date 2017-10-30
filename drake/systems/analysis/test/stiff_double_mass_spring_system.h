@@ -76,13 +76,13 @@ class StiffDoubleMassSpringSystem : public LeafSystem<T> {
   /// Gets the positions of the two point mass bodies.
   Vector2<T> get_position(const Context<T>& c) const {
     return
-        c.get_continuous_state()->get_generalized_position().CopyToVector();
+        c.get_continuous_state().get_generalized_position().CopyToVector();
   }
 
   /// Gets the velocity of the two point mass bodies.
   Vector2<T> get_velocity(const Context<T>& c) const {
     return
-        c.get_continuous_state()->get_generalized_velocity().CopyToVector();
+        c.get_continuous_state().get_generalized_velocity().CopyToVector();
   }
 
   /// Gets the mass for the bodies in the system.
@@ -91,7 +91,7 @@ class StiffDoubleMassSpringSystem : public LeafSystem<T> {
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* deriv) const override {
     // Get velocity.
-    const VectorBase<T>& xd = context.get_continuous_state()->
+    const VectorBase<T>& xd = context.get_continuous_state().
         get_generalized_velocity();
 
     // Get the masses and spring and damping coefficients.
@@ -104,8 +104,8 @@ class StiffDoubleMassSpringSystem : public LeafSystem<T> {
     const Vector2<T> a = f.array() / mass.array();
 
     // Set the derivatives.
-    deriv->get_mutable_generalized_position()->SetFrom(xd);
-    deriv->get_mutable_generalized_velocity()->SetFromVector(a);
+    deriv->get_mutable_generalized_position().SetFrom(xd);
+    deriv->get_mutable_generalized_velocity().SetFromVector(a);
   }
 
   /// Gets the end time for integration.
@@ -121,9 +121,9 @@ class StiffDoubleMassSpringSystem : public LeafSystem<T> {
     x(1) = 1.5;
     xd.setZero();
 
-    state->get_mutable_continuous_state()->get_mutable_generalized_position()->
+    state->get_mutable_continuous_state().get_mutable_generalized_position().
         SetFromVector(x);
-    state->get_mutable_continuous_state()->get_mutable_generalized_velocity()->
+    state->get_mutable_continuous_state().get_mutable_generalized_velocity().
         SetFromVector(xd);
   }
 
@@ -150,23 +150,23 @@ class StiffDoubleMassSpringSystem : public LeafSystem<T> {
         (get_mass()(0) + get_mass()(1)));
 
     // Setup c1 and c2 for ODE constants.
-    const double c1 = context.get_continuous_state()->
+    const double c1 = context.get_continuous_state().
         get_generalized_position().GetAtIndex(0);
-    const double c2 = context.get_continuous_state()->
+    const double c2 = context.get_continuous_state().
         get_generalized_velocity().GetAtIndex(0) / omega;
 
     // Set the position and velocity of the first body using the ODE solution.
     const double x1_final = c1 * cos(omega * t) + c2 * sin(omega * t);
     const double v1_final = c1 * -sin(omega * t) * omega +
         c2 * +cos(omega * t) * omega;
-    state->get_mutable_generalized_position()->SetAtIndex(0, x1_final);
-    state->get_mutable_generalized_velocity()->SetAtIndex(0, v1_final);
+    state->get_mutable_generalized_position().SetAtIndex(0, x1_final);
+    state->get_mutable_generalized_velocity().SetAtIndex(0, v1_final);
 
     // The position of the second body should be offset exactly from the first.
-    state->get_mutable_generalized_position()->SetAtIndex(1, x1_final + offset);
+    state->get_mutable_generalized_position().SetAtIndex(1, x1_final + offset);
 
     // Velocity of the second body should be zero.
-    state->get_mutable_generalized_velocity()->SetAtIndex(1, 0);
+    state->get_mutable_generalized_velocity().SetAtIndex(1, 0);
   }
 };
 

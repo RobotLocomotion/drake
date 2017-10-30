@@ -1,5 +1,6 @@
 add_library(drakeRBM
     kinematics_cache.cc
+    resolve_center_of_pressure.cc
     rigid_body_tree.cc
     rigid_body.cc
     rigid_body_tree_contact.cc
@@ -23,6 +24,7 @@ drake_install_headers(
     kinematics_cache-inl.h
     material_map.h
     pose_map.h
+    resolve_center_of_pressure.h
     rigid_body.h
     rigid_body_actuator.h
     rigid_body_frame.h

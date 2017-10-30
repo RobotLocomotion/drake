@@ -37,7 +37,7 @@ class OptitrackPoseTest : public ::testing::Test {
     input->SetValue(input_frame);
     context_->FixInputPort(0 /* input port ID*/, std::move(input));
 
-    dut_->CalcUnrestrictedUpdate(*context_, context_->get_mutable_state());
+    dut_->CalcUnrestrictedUpdate(*context_, &context_->get_mutable_state());
     dut_->CalcOutput(*context_, output_.get());
     auto output_value = output_->get_data(0);
 

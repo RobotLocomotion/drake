@@ -38,7 +38,7 @@ int exec(int argc, char* argv[]) {
   diagram.get_mutable_logger()->enable_log_to_console();
 
   unique_ptr<Context<double>> context = diagram.AllocateContext();
-  diagram.SetDefaultState(*context, context->get_mutable_state());
+  diagram.SetDefaultState(*context, &context->get_mutable_state());
 
   // Sets the initial state of the pendulum.
   diagram.SetInitialState(context.get(), FLAGS_initial_q, FLAGS_initial_v);

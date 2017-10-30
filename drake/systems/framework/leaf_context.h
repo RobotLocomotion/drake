@@ -60,9 +60,15 @@ class LeafContext : public Context<T> {
     return static_cast<int>(input_values_.size());
   }
 
-  const State<T>& get_state() const override { return *state_; }
+  const State<T>& get_state() const final {
+    DRAKE_ASSERT(state_ != nullptr);
+    return *state_;
+  }
 
-  State<T>* get_mutable_state() override { return state_.get(); }
+  State<T>& get_mutable_state() final {
+    DRAKE_ASSERT(state_ != nullptr);
+    return *state_.get();
+  }
 
   /// Reserves a cache entry with the given @p prerequisites on which it
   /// depends. Returns a ticket to identify the entry.
@@ -161,20 +167,18 @@ class LeafContext : public Context<T> {
     State<T>* clone = new State<T>();
 
     // Make a deep copy of the continuous state using BasicVector::Clone().
-    if (this->get_continuous_state() != nullptr) {
-      const ContinuousState<T>& xc = *this->get_continuous_state();
-      const int num_q = xc.get_generalized_position().size();
-      const int num_v = xc.get_generalized_velocity().size();
-      const int num_z = xc.get_misc_continuous_state().size();
-      const BasicVector<T>& xc_vector =
-          dynamic_cast<const BasicVector<T>&>(xc.get_vector());
-      clone->set_continuous_state(std::make_unique<ContinuousState<T>>(
-          xc_vector.Clone(), num_q, num_v, num_z));
-    }
+    const ContinuousState<T>& xc = this->get_continuous_state();
+    const int num_q = xc.get_generalized_position().size();
+    const int num_v = xc.get_generalized_velocity().size();
+    const int num_z = xc.get_misc_continuous_state().size();
+    const BasicVector<T>& xc_vector =
+        dynamic_cast<const BasicVector<T>&>(xc.get_vector());
+    clone->set_continuous_state(std::make_unique<ContinuousState<T>>(
+        xc_vector.Clone(), num_q, num_v, num_z));
 
     // Make deep copies of the discrete and abstract states.
-    clone->set_discrete_state(get_state().get_discrete_state()->Clone());
-    clone->set_abstract_state(get_state().get_abstract_state()->Clone());
+    clone->set_discrete_state(get_state().get_discrete_state().Clone());
+    clone->set_abstract_state(get_state().get_abstract_state().Clone());
 
     return clone;
   }
