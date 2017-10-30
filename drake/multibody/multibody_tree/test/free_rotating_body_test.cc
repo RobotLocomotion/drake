@@ -54,15 +54,15 @@ GTEST_TEST(RollPitchYawTest, TimeDerivatives) {
   FreeRotatingBodyPlant<double> free_body_plant(benchmark_.get_I(), benchmark_.get_J());
 
   systems::Simulator<double> simulator(free_body_plant);
-  systems::Context<double>* context = simulator.get_mutable_context();
+  systems::Context<double>& context = simulator.get_mutable_context();
 
   // Set the initial angular velocity.
-  free_body_plant.set_angular_velocity(context, w0_WB);
+  free_body_plant.set_angular_velocity(&context, w0_WB);
 
   simulator.Initialize();
   RungeKutta3Integrator<double>* integrator =
           simulator.reset_integrator<RungeKutta3Integrator<double>>(
-              free_body_plant, simulator.get_mutable_context());
+              free_body_plant, &context);
   integrator->set_maximum_step_size(kMaxDt);
   EXPECT_FALSE(integrator->get_fixed_step_mode());
   EXPECT_TRUE(integrator->supports_error_estimation());
@@ -73,11 +73,11 @@ GTEST_TEST(RollPitchYawTest, TimeDerivatives) {
   simulator.StepTo(kEndTime);
 
   // Get solution:
-  Isometry3d X_WB = free_body_plant.CalcPoseInWorldFrame(*context);
+  Isometry3d X_WB = free_body_plant.CalcPoseInWorldFrame(context);
   Matrix3d R_WB = X_WB.linear();
   Vector3d p_WBcm = X_WB.translation();
   SpatialVelocity<double> V_WB =
-      free_body_plant.CalcSpatialVelocityInWorldFrame(*context);
+      free_body_plant.CalcSpatialVelocityInWorldFrame(context);
   const Vector3d& w_WB = V_WB.rotational();
   const Vector3d& v_WB = V_WB.translational();
 
