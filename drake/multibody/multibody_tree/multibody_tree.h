@@ -1012,7 +1012,7 @@ class MultibodyTree {
   ///   A vector of of generalized velocities for `this` %MultibodyTree model.
   ///   This method aborts if v is not of size get_num_velocities().
   /// @param[out] qdot
-  ///   A valid (non-null) pointer to a vector in `ℛⁿ` with n being the number
+  ///   A valid (non-null) pointer to a vector in `ℝⁿ` with n being the number
   ///   of generalized positions in `this` %MultibodyTree model,
   ///   given by `get_num_positions()`. This method aborts if `qdot` is nullptr
   ///   or if it is not of size get_num_positions().
