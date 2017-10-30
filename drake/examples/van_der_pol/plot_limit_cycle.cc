@@ -32,10 +32,11 @@ void DoMain() {
   // TODO(russt): Use trajectory optimization to compute the cycle for arbitrary
   // μ.
   const Eigen::Vector2d initial_state(-0.1144, 2.0578);
-  auto vdp_state =
-      diagram->GetMutableSubsystemContext(*vdp, simulator.get_mutable_context())
+  systems::VectorBase<double>& vdp_state =
+      diagram
+          ->GetMutableSubsystemContext(*vdp, &simulator.get_mutable_context())
           .get_mutable_continuous_state_vector();
-  vdp_state->SetFromVector(initial_state);
+  vdp_state.SetFromVector(initial_state);
 
   // Simulate for the (experimentally acquired) period of the cycle for μ=1.
   simulator.StepTo(6.667);
@@ -52,7 +53,7 @@ void DoMain() {
   // TODO(russt): Tighten this tolerance after I generalize the code to support
   // arbitrary μ.
   DRAKE_DEMAND(
-      is_approx_equal_abstol(vdp_state->CopyToVector(), initial_state, 1e-2));
+      is_approx_equal_abstol(vdp_state.CopyToVector(), initial_state, 1e-2));
 }
 
 }  // namespace

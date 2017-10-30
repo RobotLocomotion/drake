@@ -124,12 +124,13 @@ int main() {
 
   // Create simulator.
   auto simulator = std::make_unique<Simulator<double>>(*diagram);
-  auto context = simulator->get_mutable_context();
+  Context<double>& context = simulator->get_mutable_context();
   simulator->reset_integrator<RungeKutta2Integrator<double>>(*diagram,
                                                              FLAGS_timestep,
-                                                             context);
+                                                             &context);
   // Set initial state.
-  auto& plant_context = diagram->GetMutableSubsystemContext(plant, context);
+  Context<double>& plant_context =
+      diagram->GetMutableSubsystemContext(plant, &context);
 
   // 1 floating quat joint = |xyz|, |q|, |w|, |xyzdot| = 3 + 4 + 3 + 3.
   const int kStateSize = 13 * (1 + FLAGS_pin_count);

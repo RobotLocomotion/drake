@@ -115,7 +115,7 @@ int do_main(int argc, char* argv[]) {
   // Set an initial condition near the upright fixed point.
   auto x0 = acrobot_w_encoder->get_mutable_acrobot_state(
       &(diagram->GetMutableSubsystemContext(*acrobot_w_encoder,
-                                            simulator.get_mutable_context())));
+                                            &simulator.get_mutable_context())));
   DRAKE_DEMAND(x0 != nullptr);
   x0->set_theta1(M_PI + 0.1);
   x0->set_theta2(-.1);
@@ -123,15 +123,14 @@ int do_main(int argc, char* argv[]) {
   x0->set_theta2dot(0.0);
 
   // Set the initial conditions of the observer.
-  auto xhat0 = diagram
-                   ->GetMutableSubsystemContext(*observer,
-                                                simulator.get_mutable_context())
-                   .get_mutable_continuous_state_vector();
-  DRAKE_DEMAND(xhat0 != nullptr);
-  xhat0->SetAtIndex(0, M_PI);
-  xhat0->SetAtIndex(1, 0.0);
-  xhat0->SetAtIndex(2, 0.0);
-  xhat0->SetAtIndex(3, 0.0);
+  auto& xhat0 = diagram
+                    ->GetMutableSubsystemContext(
+                        *observer, &simulator.get_mutable_context())
+                    .get_mutable_continuous_state_vector();
+  xhat0.SetAtIndex(0, M_PI);
+  xhat0.SetAtIndex(1, 0.0);
+  xhat0.SetAtIndex(2, 0.0);
+  xhat0.SetAtIndex(3, 0.0);
 
   // Simulate.
   simulator.set_target_realtime_rate(FLAGS_realtime_factor);

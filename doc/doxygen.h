@@ -15,6 +15,7 @@
     <li><a href="class_rigid_body_tree.html">Rigid-Body Kinematics and
   Dynamics</a></li>
     <li><a href="group__automotive__systems.html">Automotive Systems</a></li>
+    <li> \subpage stochastic_systems 
   </ul>
   <li>Algorithms</li>
   <ul>
@@ -54,3 +55,6 @@ out the Doxygen C++ documentation</a></p>
 only updated nightly.</p>
 
 */
+
+
+

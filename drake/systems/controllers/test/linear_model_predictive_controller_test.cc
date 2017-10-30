@@ -40,7 +40,7 @@ class TestMpcWithDoubleIntegrator : public ::testing::Test {
     std::unique_ptr<Context<double>> system_context =
         system->CreateDefaultContext();
     system_context->FixInputPort(0, u0);
-    system_context->get_mutable_discrete_state(0)->SetFromVector(x0);
+    system_context->get_mutable_discrete_state(0).SetFromVector(x0);
 
     dut_.reset(new LinearModelPredictiveController<double>(
         std::move(system), std::move(system_context), Q_, R_, kTimeStep,
@@ -112,15 +112,15 @@ class CubicPolynomialSystem final : public LeafSystem<T> {
       const std::vector<const DiscreteUpdateEvent<T>*>&,
       DiscreteValues<T>* next_state) const final {
     using std::pow;
-    const T& x1 = context.get_discrete_state(0)->get_value()[0];
+    const T& x1 = context.get_discrete_state(0).get_value()[0];
     const T& u = this->EvalVectorInput(context, 0)->get_value()[0];
-    next_state->get_mutable_vector(0)->SetAtIndex(0, u);
-    next_state->get_mutable_vector(0)->SetAtIndex(1, pow(x1, 3.));
+    next_state->get_mutable_vector(0).SetAtIndex(0, u);
+    next_state->get_mutable_vector(0).SetAtIndex(1, pow(x1, 3.));
   }
 
   void OutputState(const systems::Context<T>& context,
                    BasicVector<T>* output) const {
-    output->set_value(context.get_discrete_state(0)->get_value());
+    output->set_value(context.get_discrete_state(0).get_value());
   }
 
   // TODO(jadecastro) We know a discrete system of this format does not have
@@ -154,9 +154,9 @@ class TestMpcWithCubicSystem : public ::testing::Test {
     context->FixInputPort(0, Vector1d::Constant(0.));
 
     // Set the nominal state.
-    BasicVector<double>* x =
-        context->get_mutable_discrete_state()->get_mutable_vector();
-    x->SetFromVector(Eigen::Vector2d::Zero());  // Fixed point is zero.
+    BasicVector<double>& x =
+        context->get_mutable_discrete_state().get_mutable_vector();
+    x.SetFromVector(Eigen::Vector2d::Zero());  // Fixed point is zero.
 
     dut_.reset(new LinearModelPredictiveController<double>(
         std::move(system_), std::move(context), Q_, R_, time_step_,
@@ -196,13 +196,13 @@ class TestMpcWithCubicSystem : public ::testing::Test {
 
     const auto& cubic_system = GetSystemByName("cubic_system", *diagram_);
     Context<double>& cubic_system_context =
-        diagram_->GetMutableSubsystemContext(cubic_system,
-                                             simulator_->get_mutable_context());
-    BasicVector<double>* x0 =
-        cubic_system_context.get_mutable_discrete_state()->get_mutable_vector();
+        diagram_->GetMutableSubsystemContext(
+            cubic_system, &simulator_->get_mutable_context());
+    BasicVector<double>& x0 =
+        cubic_system_context.get_mutable_discrete_state().get_mutable_vector();
 
     // Set an initial condition near the fixed point.
-    x0->SetFromVector(10. * Eigen::Vector2d::Ones());
+    x0.SetFromVector(10. * Eigen::Vector2d::Ones());
 
     simulator_->set_target_realtime_rate(1.);
     simulator_->Initialize();
@@ -232,7 +232,7 @@ TEST_F(TestMpcWithCubicSystem, TimeInvariantMpc) {
   // Result should be deadbeat; expect convergence to within a tiny tolerance in
   // one step.
   Eigen::Vector2d result =
-      simulator_->get_mutable_context()->get_discrete_state(0)->get_value();
+      simulator_->get_mutable_context().get_discrete_state(0).get_value();
   EXPECT_TRUE(CompareMatrices(result, Eigen::Vector2d::Zero(), kTolerance));
 }
 

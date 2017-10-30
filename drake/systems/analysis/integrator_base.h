@@ -467,8 +467,8 @@ class IntegratorBase {
       err_est_ = system_.AllocateTimeDerivatives();
 
       const auto& xc = context_->get_state().get_continuous_state();
-      const int gv_size = xc->get_generalized_velocity().size();
-      const int misc_size = xc->get_misc_continuous_state().size();
+      const int gv_size = xc.get_generalized_velocity().size();
+      const int misc_size = xc.get_misc_continuous_state().size();
       if (qbar_weight_.size() != gv_size) qbar_weight_.setOnes(gv_size);
       if (z_weight_.size() != misc_size) z_weight_.setOnes(misc_size);
 
@@ -1407,9 +1407,9 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
   // revert time and state.
   const Context<T>& context = get_context();
   const T current_time = context.get_time();
-  VectorBase<T>* xc =
+  VectorBase<T>& xc =
       get_mutable_context()->get_mutable_continuous_state_vector();
-  xc0_save_ = xc->CopyToVector();
+  xc0_save_ = xc.CopyToVector();
 
   // Set the step size to attempt.
   T step_size_to_attempt = get_ideal_next_step_size();
@@ -1510,7 +1510,7 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
 
       // Reset the time, state, and time derivative at t0.
       get_mutable_context()->set_time(current_time);
-      xc->SetFromVector(xc0_save_);
+      xc.SetFromVector(xc0_save_);
     }
   } while (!step_succeeded);
 
@@ -1767,7 +1767,7 @@ typename IntegratorBase<T>::StepResult IntegratorBase<T>::IntegrateAtMost(
 
   // If there is no continuous state, there will be no need to limit the
   // integration step size.
-  if (get_context().get_continuous_state()->size() == 0) {
+  if (get_context().get_continuous_state().size() == 0) {
     Context<T>* context = get_mutable_context();
     context->set_time(context->get_time() + dt);
     return candidate_result;

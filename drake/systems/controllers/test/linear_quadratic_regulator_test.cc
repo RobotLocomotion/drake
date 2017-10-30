@@ -88,7 +88,7 @@ void TestLQRAffineSystemAgainstKnownSolution(
   Eigen::VectorXd u0 = Eigen::VectorXd::Zero(m);
 
   context->FixInputPort(0, u0);
-  context->get_mutable_continuous_state()->SetFromVector(x0);
+  context->get_mutable_continuous_state().SetFromVector(x0);
   std::unique_ptr<AffineSystem<double>> lqr =
       LinearQuadraticRegulator(sys, *context, Q, R, N);
 

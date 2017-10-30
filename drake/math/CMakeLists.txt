@@ -14,6 +14,7 @@ set(sources
   jacobian.cc
   matrix_util.cc
   normalize_vector.cc
+  quadratic_form.cc
   quaternion.cc
   roll_pitch_yaw.cc
   rotation_conversion_gradient.cc
@@ -37,6 +38,7 @@ set(installed_headers
   jacobian.h
   matrix_util.h
   normalize_vector.h
+  quadratic_form.h
   quaternion.h
   random_rotation.h
   roll_pitch_yaw.h

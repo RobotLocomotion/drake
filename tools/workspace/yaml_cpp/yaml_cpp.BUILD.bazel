@@ -1,7 +1,7 @@
 # -*- python -*-
 
 load(
-    "@drake//tools:install.bzl",
+    "@drake//tools/install:install.bzl",
     "cmake_config",
     "install",
     "install_cmake_config",

@@ -84,7 +84,7 @@ void KinematicsResults<T>::UpdateFromContext(const Context<T>& context) {
   const int nv = tree_->get_num_velocities();
 
   VectorX<T> x;
-  if (context.get_state().get_continuous_state()->size() > 0) {
+  if (context.get_state().get_continuous_state().size() > 0) {
     // TODO(amcastro-tri): provide nicer accessor to an Eigen representation for
     // LeafSystems.
     x = dynamic_cast<const BasicVector<T>&>(

@@ -14,6 +14,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/unused.h"
+#include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -29,77 +30,87 @@ namespace systems {
 namespace sensors {
 namespace {
 
-// This suite tests RgbdCamera.
 // RgbdCameraDiscrete is tested in :rgbd_camera_publish_lcm_test,
 // given the relative simplicity of its interface.
 
+// Note that we use ASSERTs instead of EXPECTs when we need to traverse many
+// pixels in an image or many points in a point cloud. This is to prevent
+// outputting massive amount of error messages and making debug hard when
+// test failed.
+
 // The following tolerance is used due to a precision difference between Ubuntu
-// Linux and Macintosh OSX.
-const double kTolerance = 1e-12;
-const double kColorPixelTolerance = 1.001;
-const double kDepthTolerance = 1e-4;
-const double kFovY = M_PI_4;
-const bool kShowWindow = false;
-const double kDepthRangeNear = 0.5;
-const double kDepthRangeFar = 5.;
+// Linux and Mac OSX.
+constexpr double kTolerance = 1e-12;
+constexpr double kFovY = M_PI_4;
+constexpr bool kShowWindow = false;
+constexpr double kDepthRangeNear = 0.5;
+constexpr double kDepthRangeFar = 5.;
+constexpr int kWidth = 640;
+constexpr int kHeight = 480;
 
-class RgbdCameraTest : public ::testing::Test {
- public:
-  RgbdCameraTest() : dut_("rgbd_camera", RigidBodyTree<double>(),
-                          Eigen::Vector3d(1., 2., 3.),
-                          Eigen::Vector3d(0.1, 0.2, 0.3),
-                          kDepthRangeNear, kDepthRangeFar,
-                          kFovY, kShowWindow) {}
+void VerifyCameraInfo(const CameraInfo& camera_info) {
+  EXPECT_EQ(kWidth, camera_info.width());
+  EXPECT_EQ(kHeight, camera_info.height());
+  EXPECT_NEAR(kWidth * 0.5, camera_info.center_x(), kTolerance);
+  EXPECT_NEAR(kHeight * 0.5, camera_info.center_y(), kTolerance);
 
-  void SetUp() {}
-
-  void Verify(const CameraInfo& dut) {
-    const int kExpectedWidth = 640;
-    const int kExpectedHeight = 480;
-    EXPECT_EQ(kExpectedWidth, dut.width());
-    EXPECT_EQ(kExpectedHeight, dut.height());
-    EXPECT_NEAR(kExpectedWidth * 0.5, dut.center_x(), kTolerance);
-    EXPECT_NEAR(kExpectedHeight * 0.5, dut.center_y(), kTolerance);
-
-    // The expected focal value is calculated by the equation here:
-    // https://github.com/RobotLocomotion/drake/blob/master/drake/systems/sensors/camera_info.h#L87
-    const double kExpectedFocal = 579.41125496954282;
-    EXPECT_NEAR(kExpectedFocal, dut.focal_x(), kTolerance);
-    EXPECT_NEAR(kExpectedFocal, dut.focal_y(), kTolerance);
-  }
-
- protected:
-  const RgbdCamera dut_;
-};
-
-TEST_F(RgbdCameraTest, InstantiateTest) {
-  Verify(dut_.color_camera_info());
-  Verify(dut_.depth_camera_info());
+  // The expected focal value is calculated by the equation here:
+  // https://github.com/RobotLocomotion/drake/blob/master/drake/systems/sensors/camera_info.h
+  constexpr double kExpectedFocal = 579.41125496954282;
+  EXPECT_NEAR(kExpectedFocal, camera_info.focal_x(), kTolerance);
+  EXPECT_NEAR(kExpectedFocal, camera_info.focal_y(), kTolerance);
 }
 
-TEST_F(RgbdCameraTest, ColorAndDepthCameraPoseTest) {
+void VerifyCameraPose(const Eigen::Isometry3d camera_optical_pose) {
   // This is calculated by hand.
-  const Eigen::Isometry3d expected_X_BC((
+  const Eigen::Isometry3d kExpected((
       Eigen::Matrix4d() <<
        0.,  0., 1., 0.,
       -1.,  0., 0., 0.02,
        0., -1., 0., 0.,
        0.,  0., 0., 1.).finished());
 
-  EXPECT_TRUE(CompareMatrices(expected_X_BC.matrix(),
-                              dut_.color_camera_optical_pose().matrix(),
-                              kTolerance));
-  EXPECT_TRUE(CompareMatrices(expected_X_BC.matrix(),
-                              dut_.depth_camera_optical_pose().matrix(),
+  EXPECT_TRUE(CompareMatrices(kExpected.matrix(),
+                              camera_optical_pose.matrix(),
                               kTolerance));
 }
 
-class RenderingSim : public systems::Diagram<double> {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RenderingSim)
+GTEST_TEST(RgbdCamera, TestInstantiation) {
+  auto Verify = [](const RgbdCamera& camera) {
+    VerifyCameraInfo(camera.color_camera_info());
+    VerifyCameraInfo(camera.depth_camera_info());
+    VerifyCameraPose(camera.color_camera_optical_pose());
+    VerifyCameraPose(camera.depth_camera_optical_pose());
+    EXPECT_NO_THROW(camera.tree());
+  };
 
-  explicit RenderingSim(const std::string& sdf_file) {
-    this->set_name("rendering_sim");
+  RgbdCamera fixed_camera("rgbd_camera",
+                          RigidBodyTree<double>(),
+                          Eigen::Vector3d(1., 2., 3.),
+                          Eigen::Vector3d(0.1, 0.2, 0.3),
+                          kDepthRangeNear, kDepthRangeFar,
+                          kFovY, kShowWindow);
+  Verify(fixed_camera);
+  // With the fixed camera use case, RgbdCamera doesn't hold a frame, thus
+  // throws an exception.
+  EXPECT_THROW(fixed_camera.frame(), std::logic_error);
+
+  RgbdCamera movable_camera("rgbd_camera",
+                            RigidBodyTree<double>(),
+                            RigidBodyFrame<double>(),
+                            kDepthRangeNear, kDepthRangeFar,
+                            kFovY, kShowWindow);
+  Verify(movable_camera);
+  EXPECT_NO_THROW(movable_camera.frame());
+}
+
+
+class RgbdCameraDiagram : public systems::Diagram<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RgbdCameraDiagram)
+
+  explicit RgbdCameraDiagram(const std::string& sdf_file) {
+    this->set_name("rgbd_camera_diagram");
 
     auto tree = std::make_unique<RigidBodyTree<double>>();
     drake::parsers::sdf::AddModelInstancesFromSdfFileToWorld(
@@ -112,8 +123,8 @@ class RenderingSim : public systems::Diagram<double> {
   }
 
   // For fixed camera base.
-  void InitFixedCamera(const Eigen::Vector3d& position,
-                       const Eigen::Vector3d& orientation) {
+  void Init(const Eigen::Vector3d& position,
+            const Eigen::Vector3d& orientation) {
     rgbd_camera_ = builder_.AddSystem<RgbdCamera>(
         "rgbd_camera", plant_->get_rigid_body_tree(), position, orientation,
         kDepthRangeNear, kDepthRangeFar, kFovY, kShowWindow);
@@ -122,7 +133,7 @@ class RenderingSim : public systems::Diagram<double> {
   }
 
   // For movable camera base.
-  void InitMovableCamera(const Eigen::Isometry3d& transformation) {
+  void Init(const Eigen::Isometry3d& transformation) {
     rgbd_camera_frame_ = std::allocate_shared<RigidBodyFrame<double>>(
         Eigen::aligned_allocator<RigidBodyFrame<double>>(),
         "rgbd camera frame", plant_->get_rigid_body_tree().FindBody("link"),
@@ -152,376 +163,116 @@ class RenderingSim : public systems::Diagram<double> {
   std::shared_ptr<RigidBodyFrame<double>> rgbd_camera_frame_;
 };
 
-// TODO(kunimatsu-tri) Remove this once the arbitrary terrain color support
-// is added.
-const std::array<uint8_t, 4> kTerrainColor{{255u, 229u, 204u, 255u}};
-
-const int kWidth = 640;
-const int kHeight = 480;
-
-// Pixel coordinate system values.
-struct UV {
-  int u;
-  int v;
-};
-
-UV kCorners[4] = {
-  UV{0, 0},
-  UV{kWidth - 1, 0},
-  UV{0, kHeight - 1},
-  UV{kWidth - 1, kHeight - 1}
-};
-
-
-class ImageTest : public ::testing::Test {
+class RgbdCameraDiagramTest : public ::testing::Test {
  public:
-  typedef std::function<void(
-      const sensors::ImageRgba8U& color_image,
-      const sensors::ImageDepth32F& depth_image)> ImageVerifier;
-
-  typedef std::function<void(
-      const sensors::ImageRgba8U& color_image,
-      const sensors::ImageDepth32F& depth_image,
-      int horizon)> ImageHorizonVerifier;
-
-  typedef std::function<void(
-      const Eigen::Isometry3d& pose)> CameraBasePoseVerifier;
-
-  void Verify(ImageVerifier verifier) {
+  void Verify() {
     diagram_->CalcOutput(*context_, output_.get());
-
-    auto color_image = output_->GetMutableData(0)->GetMutableValue<
+    auto color = output_->GetMutableData(0)->GetMutableValue<
       sensors::ImageRgba8U>();
-    auto depth_image = output_->GetMutableData(1)->GetMutableValue<
+    auto depth = output_->GetMutableData(1)->GetMutableValue<
       sensors::ImageDepth32F>();
-
-    verifier(color_image, depth_image);
-  }
-
-  // Calculates the pixel location of the horizon.
-  static int CalcHorizon(double z, int image_height) {
-    const double elevation_per_pixel = kFovY / image_height;
-    const double kTerrainSize = 50.;
-    return image_height / 2 +
-        std::atan(z / kTerrainSize) / elevation_per_pixel;
-  }
-
-  void VerifyPoseUpdate(ImageHorizonVerifier verifier) {
-    auto& color_image = output_->GetMutableData(0)->GetMutableValue<
-      sensors::ImageRgba8U>();
-    auto& depth_image = output_->GetMutableData(1)->GetMutableValue<
-      sensors::ImageDepth32F>();
-    VectorBase<double>* cstate =
-        context_->get_mutable_continuous_state_vector();
-
-    const double kZInitial = 1.;
-    const std::array<double, 3> kZDiffs{{0., -0.2, -0.5}};
-
-    for (int i = 0; i < 3; ++i) {
-      cstate->SetAtIndex(2, kZDiffs[i]);
-      diagram_->CalcOutput(*context_, output_.get());
-      double expected_horizon = CalcHorizon(kZInitial + kZDiffs[i],
-                                            color_image.height());
-      verifier(color_image, depth_image, expected_horizon);
-    }
-  }
-
-
-  void Verify(CameraBasePoseVerifier verifier) {
-    diagram_->CalcOutput(*context_, output_.get());
-    rendering::PoseVector<double>* const camera_base_pose =
-        dynamic_cast<rendering::PoseVector<double>*>(
-            output_->GetMutableVectorData(3));
-
-    verifier(camera_base_pose->get_isometry());
-  }
-
-  void VerifyLabelImage() {
-    diagram_->CalcOutput(*context_, output_.get());
-    auto label_image = output_->GetMutableData(2)->GetMutableValue<
+    auto label = output_->GetMutableData(2)->GetMutableValue<
       sensors::ImageLabel16I>();
 
-    std::vector<int16_t> actual_ids;
-    for (int v = 0; v < label_image.height(); ++v) {
-      for (int u = 0; u < label_image.width(); ++u) {
-        const int16_t id = label_image.at(u, v)[0];
-        auto it = std::find(actual_ids.begin(), actual_ids.end(), id);
-        if (it == actual_ids.end()) {
-          actual_ids.push_back(id);
+    EXPECT_EQ(color.width(), kWidth);
+    EXPECT_EQ(color.height(), kHeight);
+    EXPECT_EQ(depth.width(), kWidth);
+    EXPECT_EQ(depth.height(), kHeight);
+    EXPECT_EQ(label.width(), kWidth);
+    EXPECT_EQ(label.height(), kHeight);
+
+    // Verifying all the pixel has the same values in each images.
+    const auto& kColor = color.at(0, 0);
+    const auto& kDepth = depth.at(0, 0);
+    const auto& kLabel = label.at(0, 0);
+    for (int v = 0; v < kHeight; ++v) {
+      for (int u = 0; u < kWidth; ++u) {
+        for (int ch = 0; ch < color.kNumChannels; ++ch) {
+          ASSERT_EQ(kColor[ch], color.at(u, v)[ch]);
         }
+        ASSERT_EQ(kDepth[0], depth.at(u, v)[0]);
+        ASSERT_EQ(kLabel[0], label.at(u, v)[0]);
       }
     }
-    // We have three objects, but one of them is outside of the view frustum.
-    // In addition, we have the sky and the terrain.
-    const int kExpectedNumIds{4};
-    EXPECT_EQ(kExpectedNumIds, actual_ids.size());
-
-    ASSERT_EQ(label_image.at(320, 205)[0], 1);
-    ASSERT_EQ(label_image.at(470, 205)[0], 2);
-    // Terrain
-    ASSERT_EQ(label_image.at(0, 479)[0], RgbdCamera::Label::kFlatTerrain);
-    // Sky
-    ASSERT_EQ(label_image.at(0, 0)[0], RgbdCamera::Label::kNoBody);
-  }
-
-  static void VerifyCameraPose(const Eigen::Isometry3d& pose_actual) {
-    const Eigen::Isometry3d expected(
-        Eigen::Translation3d(0., 0., 4.999) *
-        (Eigen::AngleAxisd(0., Eigen::Vector3d::UnitX()) *
-         Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY()) *
-         Eigen::AngleAxisd(0., Eigen::Vector3d::UnitZ())));
-
-    EXPECT_TRUE(CompareMatrices(expected.matrix(),
-                                pose_actual.matrix(),
-                                kTolerance));
-  }
-
-  static void VerifyUniformColorAndDepth(
-      const sensors::ImageRgba8U& color_image,
-      const sensors::ImageDepth32F& depth_image,
-      const std::array<uint8_t, 4>& color, float depth) {
-    // Verifies by sampling 32 x 24 points instead of 640 x 480 points. The
-    // assumption is any defects will be detected by sampling this amount.
-    for (int v = 0; v < color_image.height(); v += 20) {
-      for (int u = 0; u < color_image.width(); u += 20) {
-        for (int ch = 0; ch < color_image.kNumChannels; ++ch) {
-          ASSERT_NEAR(color_image.at(u, v)[ch], color[ch],
-                      kColorPixelTolerance);
-        }
-        // Assuming depth value provides 0.1 mm precision.
-        ASSERT_NEAR(depth_image.at(u, v)[0], depth, kDepthTolerance);
-      }
-    }
-  }
-
-  static void VerifyTerrain(const sensors::ImageRgba8U& color_image,
-                            const sensors::ImageDepth32F& depth_image) {
-    VerifyUniformColorAndDepth(color_image, depth_image,
-                               kTerrainColor, 4.999f);
-  }
-
-  static void VerifyBox(
-      const sensors::ImageRgba8U& color_image,
-      const sensors::ImageDepth32F& depth_image) {
-    // This is given by the material diffuse element in `box.sdf`.
-    const std::array<uint8_t, 4> kPixelColor{{255u, 255u, 255u, 255u}};
-    VerifyUniformColorAndDepth(color_image, depth_image, kPixelColor, 1.f);
-  }
-
-  static void VerifyCylinder(
-      const sensors::ImageRgba8U& color_image,
-      const sensors::ImageDepth32F& depth_image) {
-    // This is given by the material diffuse element in `cylinder.sdf`.
-    const std::array<uint8_t, 4> kPixelColor{{255u, 0u, 255u, 255u}};
-    VerifyUniformColorAndDepth(color_image, depth_image, kPixelColor, 1.f);
-  }
-
-  static void VerifyMeshBox(const sensors::ImageRgba8U& color_image,
-                            const sensors::ImageDepth32F& depth_image) {
-    // This is given by `box.png` which is the texture file for `box.obj`.
-    const std::array<uint8_t, 4> kPixelColor{{4u, 241u, 33u, 255u}};
-    VerifyUniformColorAndDepth(color_image, depth_image, kPixelColor, 1.f);
-  }
-
-  // Verifies the color and depth of the image at the center and four corners.
-  static void VerifySphere(const sensors::ImageRgba8U& color_image,
-                           const sensors::ImageDepth32F& depth_image) {
-    // Verifies the four corner points.
-
-    for (const auto& corner : kCorners) {
-      for (int ch = 0; ch < color_image.kNumChannels; ++ch) {
-        ASSERT_NEAR(color_image.at(corner.u, corner.v)[ch],
-                    kTerrainColor[ch], kColorPixelTolerance);
-      }
-      ASSERT_NEAR(depth_image.at(corner.u, corner.v)[0], 2.f, kDepthTolerance);
-    }
-
-    // Verifies the center point's color.
-    const int half_width = color_image.width() / 2;
-    const int half_height = color_image.height() / 2;
-    // If there is no material diffuse information provided in the SDF file, the
-    // default color given by our SDF parser is `(0.7, 0.7, 0.7, 1.0)` which is
-    // `(179u, 179u, 179u, 255u)` in `uint8_t`.
-    for (int ch = 0; ch < color_image.kNumChannels - 1; ++ch) {
-      ASSERT_NEAR(color_image.at(half_width, half_height)[ch],
-                  179u, kColorPixelTolerance);
-    }
-    ASSERT_NEAR(color_image.at(half_width, half_height)[3],
-                255u, kColorPixelTolerance);
-
-    // Verifies the center point's depth.
-    ASSERT_NEAR(depth_image.at(half_width, half_height)[0], 1.f,
-                kDepthTolerance);
-  }
-
-  // Verifies the color and depth of the image at the two visuals (boxes).
-  static void VerifyMultipleVisuals(const sensors::ImageRgba8U& color_image,
-                                    const sensors::ImageDepth32F& depth_image) {
-    // Verifies the four corner points.
-    for (const auto& corner : kCorners) {
-      for (int ch = 0; ch < color_image.kNumChannels; ++ch) {
-        ASSERT_NEAR(color_image.at(corner.u, corner.v)[ch],
-                    kTerrainColor[ch], kColorPixelTolerance);
-      }
-      ASSERT_NEAR(depth_image.at(corner.u, corner.v)[0], 4.999f,
-                  kDepthTolerance);
-    }
-
-    // Verifies the four corner points.
-    UV kRightBox{kWidth / 2 + 144, kHeight / 2};
-    UV kLeftBox{kWidth / 2 - 144, kHeight / 2};
-    for (int ch = 0; ch < color_image.kNumChannels - 1; ++ch) {
-      ASSERT_NEAR(color_image.at(kRightBox.u, kRightBox.v)[ch],
-                  179u, kColorPixelTolerance);
-      ASSERT_NEAR(color_image.at(kLeftBox.u, kLeftBox.v)[ch],
-                  179u, kColorPixelTolerance);
-    }
-    ASSERT_NEAR(depth_image.at(kRightBox.u, kRightBox.v)[0],
-                3.999f, kDepthTolerance);
-    ASSERT_NEAR(depth_image.at(kLeftBox.u, kLeftBox.v)[0],
-                3.999f, kDepthTolerance);
-  }
-
-  static void VerifyMovingCamera(const sensors::ImageRgba8U& color_image,
-                                 const sensors::ImageDepth32F& depth_image,
-                                 int expected_horizon) {
-    // TODO(jamiesnape): Is depth_image actually needed?
-    drake::unused(depth_image);
-    int actual_horizon{0};
-    std::array<uint8_t, 4> color{{0u, 0u, 0u, 0u}};
-    for (int v = 0; v < color_image.height(); ++v) {
-      if ((color[0] != color_image.at(0, v)[0]) ||
-          (color[1] != color_image.at(0, v)[1]) ||
-          (color[2] != color_image.at(0, v)[2]) ||
-          (color[3] != color_image.at(0, v)[3])) {
-        for (int ch = 0; ch < color_image.kNumChannels; ++ch) {
-          color[ch] = color_image.at(0, v)[ch];
-        }
-        actual_horizon = v;
-      }
-    }
-
-    // We need a tolerance because the result varies depending on the CPU.
-    ASSERT_NEAR(expected_horizon, actual_horizon, 1.001);
   }
 
  protected:
-  void SetUp() override {}
-
   // For fixed camera base.
-  void SetUp(const std::string& sdf, const Eigen::Vector3d& position,
-             const Eigen::Vector3d& orientation) {
-    diagram_ = std::make_unique<RenderingSim>(
+  void Init(const std::string& sdf, const Eigen::Vector3d& position,
+            const Eigen::Vector3d& orientation) {
+    diagram_ = std::make_unique<RgbdCameraDiagram>(
         FindResourceOrThrow("drake/systems/sensors/test/models/" + sdf));
-    diagram_->InitFixedCamera(position, orientation);
+    diagram_->Init(position, orientation);
     context_ = diagram_->CreateDefaultContext();
     output_ = diagram_->AllocateOutput(*context_);
   }
 
   // For moving camera base.
-  void SetUp(const std::string& sdf,
-             const Eigen::Isometry3d& transformation) {
-    diagram_ = std::make_unique<RenderingSim>(
+  void Init(const std::string& sdf,
+            const Eigen::Isometry3d& transformation) {
+    diagram_ = std::make_unique<RgbdCameraDiagram>(
         FindResourceOrThrow("drake/systems/sensors/test/models/" + sdf));
-    diagram_->InitMovableCamera(transformation);
+    diagram_->Init(transformation);
     context_ = diagram_->CreateDefaultContext();
     output_ = diagram_->AllocateOutput(*context_);
   }
 
- private:
-  std::unique_ptr<RenderingSim> diagram_;
-  std::unique_ptr<systems::Context<double>> context_;
   std::unique_ptr<systems::SystemOutput<double>> output_;
+
+ private:
+  std::unique_ptr<RgbdCameraDiagram> diagram_;
+  std::unique_ptr<systems::Context<double>> context_;
 };
 
 
-// Verifies the rendered terrain and the camera's pose.
-TEST_F(ImageTest, TerrainRenderingTest) {
-  SetUp("nothing.sdf",
-        Eigen::Vector3d(0., 0., 4.999),
-        Eigen::Vector3d(0., M_PI_2, 0.));
-  Verify(ImageTest::VerifyTerrain);
-  Verify(ImageTest::VerifyCameraPose);
+// Verifies the output images whose all the pixels have the same value as well
+// as the output camera pose.
+TEST_F(RgbdCameraDiagramTest, FixedCameraOutputTest) {
+  // RgbdCamera is looking straight down 1m above the ground.
+  const Eigen::Vector3d position(0., 0., 1.);
+  const Eigen::Vector3d orientation(0., M_PI_2, 0.);
+
+  Init("nothing.sdf", position, orientation);
+  Verify();
+
+  rendering::PoseVector<double>* const camera_base_pose =
+      dynamic_cast<rendering::PoseVector<double>*>(
+          output_->GetMutableVectorData(3));
+
+  const Eigen::Isometry3d actual = camera_base_pose->get_isometry();
+  EXPECT_TRUE(CompareMatrices(position.matrix(),
+                              actual.translation().matrix(), kTolerance));
+  EXPECT_TRUE(CompareMatrices(math::rpy2rotmat(orientation).matrix(),
+                              actual.linear().matrix(), kTolerance));
 }
 
-// Verifies the rendered box.
-TEST_F(ImageTest, BoxRenderingTest) {
-  SetUp("box.sdf",
-        Eigen::Vector3d(0., 0., 2.),
-        Eigen::Vector3d(0., M_PI_2, 0.));
-  Verify(ImageTest::VerifyBox);
-}
+TEST_F(RgbdCameraDiagramTest, MovableCameraOutputTest) {
+  // RgbdCamera is looking straight down 1m above the ground.
+  const Eigen::Isometry3d X_WB = Eigen::Translation3d(0., 0., 1.) *
+      Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY());
 
-// Verifies the rendered cylinder.
-TEST_F(ImageTest, CylinderRenderingTest) {
-  SetUp("cylinder.sdf",
-        Eigen::Vector3d(0., 0., 2.),
-        Eigen::Vector3d(0., M_PI_2, 0.));
-  Verify(ImageTest::VerifyCylinder);
-}
+  Init("nothing.sdf", X_WB);
+  Verify();
 
-// TODO(jamiesnape, kunimatsu-tri): Fix test for newer versions of VTK.
-#if VTK_MAJOR_VERSION <= 5
-// Verifies the rendered mesh box.
-TEST_F(ImageTest, MeshBoxRenderingTest) {
-  SetUp("mesh_box.sdf",
-        Eigen::Vector3d(0., 0., 3.),
-        Eigen::Vector3d(0., M_PI_2, 0.));
-  Verify(ImageTest::VerifyMeshBox);
-}
-#endif
+  rendering::PoseVector<double>* const camera_base_pose =
+      dynamic_cast<rendering::PoseVector<double>*>(
+          output_->GetMutableVectorData(3));
 
-// Verifies the rendered sphere.
-TEST_F(ImageTest, SphereRenderingTest) {
-  SetUp("sphere.sdf",
-        Eigen::Vector3d(0., 0., 2.),
-        Eigen::Vector3d(0., M_PI_2, 0.));
-  Verify(ImageTest::VerifySphere);
+  const Eigen::Isometry3d actual = camera_base_pose->get_isometry();
+  EXPECT_TRUE(CompareMatrices(X_WB.matrix(),
+                              actual.matrix(), kTolerance));
 }
-
-// Verifies the camera pose update.
-// RgbdCamera's base is attached to a model.  RgbdCamera's optical axis is
-// parallel to the flat terrain, so the camera sees the horizon.   This test
-// verifies that the horizon's pixel location changes as the model's state
-// updated.
-TEST_F(ImageTest, CameraPoseUpdateTest) {
-  // Attaches the camera to a location that is 11 m above the model.
-  Eigen::Isometry3d transformation((Eigen::Matrix4d() <<
-                                    1., 0., 0., 0.,
-                                    0., 1., 0., 0.,
-                                    0., 0., 1., 11.,
-                                    0., 0., 0., 1.).finished());
-  SetUp("nothing.sdf", transformation);
-  VerifyPoseUpdate(ImageTest::VerifyMovingCamera);
-}
-
-// Verifies the number of ids in a label image.
-TEST_F(ImageTest, LabelRenderingTest) {
-  SetUp("three_boxes.sdf",
-        Eigen::Vector3d(-10., 0., 2.),
-        Eigen::Vector3d(0., M_PI_4 * 0.2, 0.));
-  VerifyLabelImage();
-}
-
-// Verifies the case that a model has multiple visuals.
-TEST_F(ImageTest, MultipleVisualsTest) {
-  // The following SDF includes a link that has more than two visuals.
-  SetUp("multiple_visuals.sdf",
-        Eigen::Vector3d(0., 0., 4.999),
-        Eigen::Vector3d(0., M_PI_2, 0.));
-  Verify(ImageTest::VerifyMultipleVisuals);
-}
-
 
 class DepthImageToPointCloudConversionTest : public ::testing::Test {
  public:
-  const float kFocal = 500.f;
-  const int kWidth = 6;
-  const int kHeight = 4;
+  static constexpr float kFocal = 500.f;
+  static constexpr int kDepthWidth = 60;
+  static constexpr int kDepthHeight = 40;
 
   DepthImageToPointCloudConversionTest() : camera_info_(
-      kWidth, kHeight, kFocal, kFocal, kWidth * 0.5, kHeight * 0.5),
-      depth_image_(kWidth, kHeight, 1) {}
+      kDepthWidth, kDepthHeight,
+      kFocal, kFocal, kDepthWidth * 0.5, kDepthHeight * 0.5),
+      depth_image_(kDepthWidth, kDepthHeight, 1) {}
 
   // kTooClose is treated as kTooFar. For the detail, refer to the document of
   // RgbdCamera::ConvertDepthImageToPointCloud.
@@ -530,15 +281,16 @@ class DepthImageToPointCloudConversionTest : public ::testing::Test {
       for (int u = 0; u < depth_image_.width(); ++u) {
         const int i = v * depth_image_.width() + u;
         Eigen::Vector3f actual = actual_point_cloud_.col(i);
-        EXPECT_EQ(actual(0), RgbdCamera::InvalidDepth::kTooFar);
-        EXPECT_EQ(actual(1), RgbdCamera::InvalidDepth::kTooFar);
-        EXPECT_EQ(actual(2), RgbdCamera::InvalidDepth::kTooFar);
+        ASSERT_EQ(actual(0), InvalidDepth::kTooFar);
+        ASSERT_EQ(actual(1), InvalidDepth::kTooFar);
+        ASSERT_EQ(actual(2), InvalidDepth::kTooFar);
       }
     }
   }
 
  protected:
-  void InitDepthImage(float depth_value) {
+  // This must be called by all the test cases first.
+  void Init(float depth_value) {
     std::fill(depth_image_.at(0, 0),
               depth_image_.at(0, 0) + depth_image_.size(),
               depth_value);
@@ -551,67 +303,65 @@ class DepthImageToPointCloudConversionTest : public ::testing::Test {
 
 // Verifies computed point cloud when pixel values in depth image are valid.
 TEST_F(DepthImageToPointCloudConversionTest, ValidValueTest) {
-  const float kDepthValue = 1.f;
-  InitDepthImage(kDepthValue);
+  constexpr float kDepthValue = 1.f;
+  Init(kDepthValue);
 
-  RgbdCamera::ConvertDepthImageToPointCloud(depth_image_, camera_info_,
-                                            &actual_point_cloud_);
+  RgbdCamera::ConvertDepthImageToPointCloud(
+      depth_image_, camera_info_, &actual_point_cloud_);
 
   // This tolerance was determined empirically using Drake's supported
   // platforms.
-  const float kDistanceTolerance = 1e-9;
+  constexpr float kDistanceTolerance = 1e-8;
   for (int v = 0; v < depth_image_.height(); ++v) {
     for (int u = 0; u < depth_image_.width(); ++u) {
       const int i = v * depth_image_.width() + u;
       Eigen::Vector3f actual = actual_point_cloud_.col(i);
 
-      EXPECT_NEAR(actual(0), kDepthValue * (u - kWidth * 0.5) / kFocal,
-                  kDistanceTolerance);
-      EXPECT_NEAR(actual(1), kDepthValue * (v - kHeight * 0.5) / kFocal,
-                  kDistanceTolerance);
-      EXPECT_NEAR(actual(2), kDepthValue, kDistanceTolerance);
+      const double expected_x =
+          kDepthValue * (u - kDepthWidth * 0.5) / kFocal;
+      ASSERT_NEAR(actual(0), expected_x, kDistanceTolerance);
+      const double expected_y =
+          kDepthValue * (v - kDepthHeight * 0.5) / kFocal;
+      ASSERT_NEAR(actual(1), expected_y, kDistanceTolerance);
+      ASSERT_NEAR(actual(2), kDepthValue, kDistanceTolerance);
     }
   }
 }
 
 // Verifies computed point cloud when pixel values in depth image are NaN.
 TEST_F(DepthImageToPointCloudConversionTest, NanValueTest) {
-  const float kDepthValue = std::numeric_limits<float>::quiet_NaN();
-  InitDepthImage(kDepthValue);
+  Init(std::numeric_limits<float>::quiet_NaN());
 
-  RgbdCamera::ConvertDepthImageToPointCloud(depth_image_, camera_info_,
-                                            &actual_point_cloud_);
+  RgbdCamera::ConvertDepthImageToPointCloud(
+      depth_image_, camera_info_, &actual_point_cloud_);
 
   for (int v = 0; v < depth_image_.height(); ++v) {
     for (int u = 0; u < depth_image_.width(); ++u) {
       const int i = v * depth_image_.width() + u;
       Eigen::Vector3f actual = actual_point_cloud_.col(i);
-
-      EXPECT_TRUE(std::isnan(actual(0)));
-      EXPECT_TRUE(std::isnan(actual(1)));
-      EXPECT_TRUE(std::isnan(actual(2)));
+      ASSERT_TRUE(std::isnan(actual(0)));
+      ASSERT_TRUE(std::isnan(actual(1)));
+      ASSERT_TRUE(std::isnan(actual(2)));
     }
   }
 }
 
 // Verifies computed point cloud when pixel values in depth image are kTooFar.
 TEST_F(DepthImageToPointCloudConversionTest, TooFarTest) {
-  const float kDepthValue = RgbdCamera::InvalidDepth::kTooFar;
-  InitDepthImage(kDepthValue);
+  Init(InvalidDepth::kTooFar);
 
-  RgbdCamera::ConvertDepthImageToPointCloud(depth_image_, camera_info_,
-                                            &actual_point_cloud_);
+  RgbdCamera::ConvertDepthImageToPointCloud(
+      depth_image_, camera_info_, &actual_point_cloud_);
 
   VerifyTooFarTooClose();
 }
 
 // Verifies computed point cloud when pixel values in depth image are kTooClose.
 TEST_F(DepthImageToPointCloudConversionTest, TooCloseTest) {
-  const float kDepthValue = RgbdCamera::InvalidDepth::kTooClose;
-  InitDepthImage(kDepthValue);
+  Init(InvalidDepth::kTooClose);
 
-  RgbdCamera::ConvertDepthImageToPointCloud(depth_image_, camera_info_,
-                                            &actual_point_cloud_);
+  RgbdCamera::ConvertDepthImageToPointCloud(
+      depth_image_, camera_info_, &actual_point_cloud_);
 
   VerifyTooFarTooClose();
 }

@@ -220,7 +220,7 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   // surprisingly complicated.
   systems::Context<double>& plant_context =
       model->GetMutableSubsystemContext(
-          *plant, simulator.get_mutable_context());
+          *plant, &simulator.get_mutable_context());
   Eigen::VectorXd plant_initial_state =
       Eigen::VectorXd::Zero(plant->get_num_states());
   plant_initial_state.head(plant->get_num_positions())
@@ -242,9 +242,9 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   plant_initial_state(5) = 0.009759;
   plant->set_state_vector(&plant_context, plant_initial_state);
 
-  auto context = simulator.get_mutable_context();
+  systems::Context<double>& context = simulator.get_mutable_context();
 
-  simulator.reset_integrator<RungeKutta3Integrator<double>>(*model, context);
+  simulator.reset_integrator<RungeKutta3Integrator<double>>(*model, &context);
   simulator.get_mutable_integrator()->request_initial_step_size_target(1e-4);
   simulator.get_mutable_integrator()->set_target_accuracy(1e-3);
 

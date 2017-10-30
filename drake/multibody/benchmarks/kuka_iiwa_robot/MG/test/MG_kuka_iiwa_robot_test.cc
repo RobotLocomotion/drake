@@ -36,27 +36,23 @@ void CompareEndEffectorPositionVelocityVsExpectedSolution(
     const Eigen::Vector3d &v_NGo_N_expected,
     const Eigen::Vector3d &alpha_NG_N_expected,
     const Eigen::Vector3d &a_NGo_N_expected) {
-  MGKukaIIwaRobot<double> MG_kuka_robot;
-  // R_NG       | Rotation matrix relating Nx, Ny, Nz to Gx, Gy, Gz.
-  // p_NoGo_N   | Go's position from No, expressed in N.
-  // w_NG_N     | G's angular velocity in N, expressed in N.
-  // v_NGo_N    | Go's velocity in N, expressed in N.
-  // alpha_NG_N | G's angular acceleration in N, expressed in N.
-  // a_NGo_N    | Go's acceleration in N, expressed in N.
-  Eigen::Matrix3d R_NG;
-  Eigen::Vector3d p_No_Go_N, w_NG_N, v_NGo_N, alpha_NG_N, a_NGo_N;
-  std::tie(R_NG, p_No_Go_N, w_NG_N, v_NGo_N, alpha_NG_N, a_NGo_N) =
+  MGKukaIIwaRobot<double> MG_kuka_robot(0);
+  const SpatialKinematicsPVA<double> kinematics =
       MG_kuka_robot.CalcEndEffectorKinematics(q, qDt, qDDt);
 
   // Compare actual results with expected results.
-  constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
-  const double tolerance = 10 * kEpsilon;
-  EXPECT_TRUE(R_NG.isApprox(R_NG_expected, tolerance));
-  EXPECT_TRUE(p_No_Go_N.isApprox(p_No_Go_N_expected, tolerance));
-  EXPECT_TRUE(w_NG_N.isApprox(w_NG_N_expected, tolerance));
-  EXPECT_TRUE(v_NGo_N.isApprox(v_NGo_N_expected, tolerance));
-  EXPECT_TRUE(alpha_NG_N.isApprox(alpha_NG_N_expected, tolerance));
-  EXPECT_TRUE(a_NGo_N.isApprox(a_NGo_N_expected, tolerance));
+  constexpr double kEpsilon = 10 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(kinematics.rotation_matrix().isApprox(R_NG_expected, kEpsilon));
+  EXPECT_TRUE(kinematics.position_vector().isApprox(p_No_Go_N_expected,
+      kEpsilon));
+  EXPECT_TRUE(kinematics.angular_velocity().isApprox(w_NG_N_expected,
+      kEpsilon));
+  EXPECT_TRUE(kinematics.translational_velocity().isApprox(v_NGo_N_expected,
+      kEpsilon));
+  EXPECT_TRUE(kinematics.angular_acceleration().isApprox(alpha_NG_N_expected,
+      kEpsilon));
+  EXPECT_TRUE(kinematics.translational_acceleration().isApprox(a_NGo_N_expected,
+      kEpsilon));
 }
 
 
@@ -162,7 +158,7 @@ GTEST_TEST(KukaIIwaRobot, TorqueMotorA) {
   q_DDt << qADDt, qBDDt, qCDDt, qDDDt, qEDDt, qFDDt, qGDDt;
 
   // MotionGenesis (MG) solution for the motor torques to hold the robot static.
-  MGKukaIIwaRobot<double> MG_kuka_robot;
+  MGKukaIIwaRobot<double> MG_kuka_robot(0);
   Vector7d zTorques = MG_kuka_robot.CalcRevoluteMotorZTorques(q, q_Dt, q_DDt);
 
   // Expected solution for the motor torques to hold the robot static.
@@ -182,7 +178,7 @@ GTEST_TEST(KukaIIwaRobot, TorqueMotorA) {
   // Calculate the joint reaction torques/forces.
   SpatialForced F_Ao_Na, F_Bo_Ab, F_Co_Bc, F_Do_Cd, F_Eo_De, F_Fo_Ef, F_Go_Fg;
   std::tie(F_Ao_Na, F_Bo_Ab, F_Co_Bc, F_Do_Cd, F_Eo_De, F_Fo_Ef, F_Go_Fg) =
-      MG_kuka_robot.CalcJointReactionForces(q, q_Dt, q_DDt);
+      MG_kuka_robot.CalcJointReactionForcesExpressedInMobilizer(q, q_Dt, q_DDt);
 
   // Create the expected solution for the joint reaction torque/forces.
   Eigen::Vector3d zero_vector(0, 0, 0), y_vector(0, 1, 0), z_vector(0, 0, 1);

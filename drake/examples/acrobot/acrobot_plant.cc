@@ -187,7 +187,7 @@ template <typename T>
 AcrobotStateVector<T>* AcrobotWEncoder<T>::get_mutable_acrobot_state(
     systems::Context<T>* context) const {
   AcrobotStateVector<T>* x = dynamic_cast<AcrobotStateVector<T>*>(
-      this->GetMutableSubsystemContext(*acrobot_plant_, context)
+      &this->GetMutableSubsystemContext(*acrobot_plant_, context)
           .get_mutable_continuous_state_vector());
   DRAKE_DEMAND(x != nullptr);
   return x;
@@ -202,7 +202,7 @@ std::unique_ptr<systems::AffineSystem<double>> BalancingLQRController(
 
   // Set nominal state to the upright fixed point.
   AcrobotStateVector<double>* x = dynamic_cast<AcrobotStateVector<double>*>(
-      context->get_mutable_continuous_state_vector());
+      &context->get_mutable_continuous_state_vector());
   DRAKE_ASSERT(x != nullptr);
   x->set_theta1(M_PI);
   x->set_theta2(0.0);

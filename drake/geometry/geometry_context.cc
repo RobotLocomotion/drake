@@ -11,7 +11,7 @@ GeometryContext<T>::GeometryContext(int geometry_state_index)
 template <typename T>
 GeometryState<T>& GeometryContext<T>::get_mutable_geometry_state() {
   return this->get_mutable_state()
-      ->template get_mutable_abstract_state<GeometryState<T>>(
+      .template get_mutable_abstract_state<GeometryState<T>>(
           geometry_state_index_);
 }
 

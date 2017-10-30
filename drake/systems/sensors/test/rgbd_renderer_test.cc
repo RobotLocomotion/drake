@@ -94,7 +94,7 @@ class RgbdRendererTest : public ::testing::Test {
       // Depth
       ASSERT_NEAR(depth_.at(x, y)[0], kDefaultDistance, kDepthTolerance);
       // Label
-      ASSERT_EQ(label_.at(x, y)[0], RgbdRenderer::Label::kFlatTerrain);
+      ASSERT_EQ(label_.at(x, y)[0], Label::kFlatTerrain);
     }
   }
 
@@ -140,7 +140,7 @@ TEST_F(RgbdRendererTest, NoBodyTest) {
   Render();
 
   VerifyUniformColor(renderer_->get_sky_color(), 0u);
-  VerifyUniformLabel(RgbdRenderer::Label::kNoBody);
+  VerifyUniformLabel(Label::kNoBody);
   // Verifies depth.
   for (int y = 0; y < kHeight; ++y) {
     for (int x = 0; x < kWidth; ++x) {
@@ -159,7 +159,7 @@ TEST_F(RgbdRendererTest, TerrainTest) {
     renderer_->UpdateViewpoint(X_WR_);
     Render();
     VerifyUniformColor(kTerrain, 255u);
-    VerifyUniformLabel(RgbdRenderer::Label::kFlatTerrain);
+    VerifyUniformLabel(Label::kFlatTerrain);
     VerifyUniformDepth(depth);
   }
 
@@ -168,19 +168,19 @@ TEST_F(RgbdRendererTest, TerrainTest) {
   renderer_->UpdateViewpoint(X_WR_);
   Render();
   VerifyUniformColor(kTerrain, 255u);
-  VerifyUniformLabel(RgbdRenderer::Label::kFlatTerrain);
-  VerifyUniformDepth(RgbdRenderer::InvalidDepth::kTooClose);
+  VerifyUniformLabel(Label::kFlatTerrain);
+  VerifyUniformDepth(InvalidDepth::kTooClose);
 
   // Farther than kZFar.
   X_WR_.translation().z() = kZFar + 1e-3;
   renderer_->UpdateViewpoint(X_WR_);
   Render();
   VerifyUniformColor(kTerrain, 255u);
-  VerifyUniformLabel(RgbdRenderer::Label::kFlatTerrain);
+  VerifyUniformLabel(Label::kFlatTerrain);
   // Verifies depth.
   for (int y = 0; y < kHeight; ++y) {
     for (int x = 0; x < kWidth; ++x) {
-      ASSERT_EQ(RgbdRenderer::InvalidDepth::kTooFar, depth_.at(x, y)[0]);
+      ASSERT_EQ(InvalidDepth::kTooFar, depth_.at(x, y)[0]);
     }
   }
 }

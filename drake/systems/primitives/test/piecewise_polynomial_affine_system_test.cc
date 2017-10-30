@@ -38,8 +38,8 @@ class PiecewisePolynomialAffineSystemTest
     context_ = dut_->CreateDefaultContext();
     input_vector_ = make_unique<BasicVector<double>>(2 /* size */);
     system_output_ = dut_->AllocateOutput(*context_);
-    continuous_state_ = context_->get_mutable_continuous_state();
-    discrete_state_ = context_->get_mutable_discrete_state();
+    continuous_state_ = &context_->get_mutable_continuous_state();
+    discrete_state_ = &context_->get_mutable_discrete_state();
     derivatives_ = dut_->AllocateTimeDerivatives();
     updates_ = dut_->AllocateDiscreteVariables();
   }
@@ -106,7 +106,7 @@ TEST_P(PiecewisePolynomialAffineSystemTest, DiscreteUpdates) {
   if (time_period_ == 0.) {
     continuous_state_->SetFromVector(x);
   } else {
-    discrete_state_->get_mutable_vector(0)->SetFromVector(x);
+    discrete_state_->get_mutable_vector(0).SetFromVector(x);
   }
 
   const double tol = 1e-10;
@@ -122,7 +122,7 @@ TEST_P(PiecewisePolynomialAffineSystemTest, DiscreteUpdates) {
     } else {
       dut_->CalcDiscreteVariableUpdates(*context_, updates_.get());
       EXPECT_TRUE(CompareMatrices(
-          A * x + B * u + f0, updates_->get_vector(0)->CopyToVector(), tol));
+          A * x + B * u + f0, updates_->get_vector(0).CopyToVector(), tol));
     }
   }
 }
@@ -139,7 +139,7 @@ TEST_P(PiecewisePolynomialAffineSystemTest, Output) {
   if (time_period_ == 0.) {
     continuous_state_->SetFromVector(x);
   } else {
-    discrete_state_->get_mutable_vector(0)->SetFromVector(x);
+    discrete_state_->get_mutable_vector(0).SetFromVector(x);
   }
 
   const double tol = 1e-10;

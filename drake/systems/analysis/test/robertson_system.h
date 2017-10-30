@@ -38,9 +38,9 @@ class RobertsonSystem : public LeafSystem<T> {
     T y3_prime = 3e7 * y2 * y2;
 
     // Set the derivatives.
-    deriv->get_mutable_vector()->SetAtIndex(0, y1_prime);
-    deriv->get_mutable_vector()->SetAtIndex(1, y2_prime);
-    deriv->get_mutable_vector()->SetAtIndex(2, y3_prime);
+    deriv->get_mutable_vector().SetAtIndex(0, y1_prime);
+    deriv->get_mutable_vector().SetAtIndex(1, y2_prime);
+    deriv->get_mutable_vector().SetAtIndex(2, y3_prime);
   }
 
   /// Gets the end time for integration.

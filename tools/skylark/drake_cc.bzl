@@ -115,6 +115,7 @@ def drake_cc_binary(
         add_test_rule = 0,
         test_rule_args = [],
         test_rule_size = None,
+        test_rule_flaky = 0,
         **kwargs):
     """Creates a rule to declare a C++ binary.
 
@@ -160,6 +161,7 @@ def drake_cc_binary(
             deps = deps,
             copts = copts,
             size = test_rule_size,
+            flaky = test_rule_flaky,
             testonly = testonly,
             linkstatic = linkstatic,
             args = test_rule_args,

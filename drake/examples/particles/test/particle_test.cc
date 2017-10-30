@@ -45,11 +45,11 @@ TYPED_TEST_CASE_P(ParticleTest);
 /// state (position and velocity).
 TYPED_TEST_P(ParticleTest, OutputTest) {
   // Initialize state.
-  systems::VectorBase<TypeParam>* continuous_state_vector =
+  systems::VectorBase<TypeParam>& continuous_state_vector =
     this->context_->get_mutable_continuous_state_vector();
-  continuous_state_vector->SetAtIndex(
+  continuous_state_vector.SetAtIndex(
       0, static_cast<TypeParam>(10.0));  // x0 = 10 m.
-  continuous_state_vector->SetAtIndex(
+  continuous_state_vector.SetAtIndex(
       1, static_cast<TypeParam>(1.0));  // x1 = 1 m/s.
   // Compute outputs.
   this->dut_->CalcOutput(*this->context_, this->output_.get());
@@ -74,11 +74,11 @@ TYPED_TEST_P(ParticleTest, DerivativesTest) {
   input->SetAtIndex(0, static_cast<TypeParam>(1.0));  // u0 = 1 m/s^2
   this->context_->FixInputPort(0, std::move(input));
   // Set state.
-  systems::VectorBase<TypeParam>* continuous_state_vector =
+  systems::VectorBase<TypeParam>& continuous_state_vector =
     this->context_->get_mutable_continuous_state_vector();
-  continuous_state_vector->SetAtIndex(
+  continuous_state_vector.SetAtIndex(
       0, static_cast<TypeParam>(0.0));  // x0 = 0 m
-  continuous_state_vector->SetAtIndex(
+  continuous_state_vector.SetAtIndex(
       1, static_cast<TypeParam>(2.0));  // x1 = 2 m/s
   // Compute derivatives.
   this->dut_->CalcTimeDerivatives(*this->context_, this->derivatives_.get());

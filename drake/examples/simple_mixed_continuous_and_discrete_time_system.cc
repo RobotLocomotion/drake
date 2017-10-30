@@ -32,7 +32,7 @@ class SimpleMixedContinuousTimeDiscreteTimeSystem
       const drake::systems::Context<double>& context,
       const std::vector<const drake::systems::DiscreteUpdateEvent<double>*>&,
       drake::systems::DiscreteValues<double>* updates) const override {
-    const double x = context.get_discrete_state(0)->GetAtIndex(0);
+    const double x = context.get_discrete_state(0).GetAtIndex(0);
     const double xn = std::pow(x, 3.0);
     (*updates)[0] = xn;
   }
@@ -43,14 +43,14 @@ class SimpleMixedContinuousTimeDiscreteTimeSystem
       drake::systems::ContinuousState<double>* derivatives) const override {
     const double x = context.get_continuous_state_vector().GetAtIndex(0);
     const double xdot = -x + std::pow(x, 3.0);
-    derivatives->get_mutable_vector()->SetAtIndex(0, xdot);
+    derivatives->get_mutable_vector().SetAtIndex(0, xdot);
   }
 
   // y = x
   void CopyStateOut(
       const drake::systems::Context<double>& context,
       drake::systems::BasicVector<double>* output) const {
-    const double x1 = context.get_discrete_state(0)->GetAtIndex(0);
+    const double x1 = context.get_discrete_state(0).GetAtIndex(0);
     output->SetAtIndex(0, x1);
 
     const double x2 = context.get_continuous_state_vector().GetAtIndex(0);
@@ -67,10 +67,10 @@ int main() {
 
   // Set the initial conditions x(0).
   drake::systems::DiscreteValues<double>& xd =
-      *simulator.get_mutable_context()->get_mutable_discrete_state();
+      simulator.get_mutable_context().get_mutable_discrete_state();
   xd[0] = 0.99;
   drake::systems::ContinuousState<double>& xc =
-      *simulator.get_mutable_context()->get_mutable_continuous_state();
+      simulator.get_mutable_context().get_mutable_continuous_state();
   xc[0] = 0.9;
 
   // Simulate for 10 seconds.

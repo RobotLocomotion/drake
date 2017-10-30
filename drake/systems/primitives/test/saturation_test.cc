@@ -20,7 +20,7 @@ void TestInputAndOutput(const Saturation<T>& saturation_system,
   const int port_size = saturation_system.get_size();
 
   // Verifies that Saturation allocates no state variables in the context.
-  EXPECT_EQ(context->get_continuous_state()->size(), 0);
+  EXPECT_EQ(context->get_continuous_state().size(), 0);
   auto output = saturation_system.AllocateOutput(*context);
   auto input = std::make_unique<BasicVector<T>>(port_size);
 

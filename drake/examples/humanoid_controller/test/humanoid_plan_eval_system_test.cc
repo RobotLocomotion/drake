@@ -111,7 +111,7 @@ class HumanoidPlanEvalAndQpInverseDynamicsTest : public ::testing::Test {
     // Initializes.
     auto& plan_eval_context =
         diagram_->GetMutableSubsystemContext(*plan_eval, context_.get());
-    plan_eval->Initialize(robot_status, plan_eval_context.get_mutable_state());
+    plan_eval->Initialize(robot_status, &plan_eval_context.get_mutable_state());
 
     // Computes results.
     auto events = diagram_->AllocateCompositeEventCollection();
@@ -120,7 +120,7 @@ class HumanoidPlanEvalAndQpInverseDynamicsTest : public ::testing::Test {
     std::unique_ptr<systems::State<double>> state = context_->CloneState();
     diagram_->CalcUnrestrictedUpdate(
         *context_, events->get_unrestricted_update_events(), state.get());
-    context_->get_mutable_state()->CopyFrom(*state);
+    context_->get_mutable_state().CopyFrom(*state);
     diagram_->CalcOutput(*context_, output_.get());
   }
 

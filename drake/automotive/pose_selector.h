@@ -44,6 +44,7 @@ enum class AheadOrBehind { kAhead = 0, kBehind = 1 };
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
+/// - AutoDiffXd
 ///
 /// They are already available to link against in the containing library.
 ///
@@ -108,24 +109,30 @@ class PoseSelector {
   /// elevation and superelevation.  Throws if any element of
   /// `road_odometry.pos` is not within the respective bounds of
   /// `road_odometry.lane`.
+  ///
+  /// N.B. This function currently only provides exact derivatives for velocity
+  /// in the `s` direction when the road is straight (no yaw angle variations).
+  //
+  // TODO(jadecastro) Enable AutoDiffXd for
+  // maliput::api::Lane::GetOrientation().
   static T GetSigmaVelocity(const RoadOdometry<T>& road_odometry);
 
   /// Returns `true` if and only if @p lane_position is within the longitudinal
   /// (s), driveable (r) and elevation (h) bounds of the specified @p lane
   /// (i.e. within `lane->driveable_bounds()` and `lane->elevation_bounds()`).
   static bool IsWithinDriveable(
-      const maliput::api::LanePosition& lane_position,
+      const maliput::api::LanePositionT<T>& lane_position,
       const maliput::api::Lane* lane);
 
   /// Returns `true` if and only if @p geo_position is within the longitudinal
   /// (s), lateral (r) and elevation (h) bounds of the specified @p lane
   /// (i.e. within `lane->lane_bounds()` and `lane->elevation_bounds()`).
-  static bool IsWithinLane(const maliput::api::GeoPosition& geo_position,
+  static bool IsWithinLane(const maliput::api::GeoPositionT<T>& geo_position,
                            const maliput::api::Lane* lane);
 
   /// Returns `true` if and only if @p lane_position is within the driveable
   /// bounds of @p lane and, in addition, `r` is within its lane bounds.
-  static bool IsWithinLane(const maliput::api::LanePosition& lane_position,
+  static bool IsWithinLane(const maliput::api::LanePositionT<T>& lane_position,
                            const maliput::api::Lane* lane);
 
  private:
@@ -136,30 +143,40 @@ class PoseSelector {
   static std::unique_ptr<maliput::api::LaneEnd> GetDefaultOngoingLane(
       LaneDirection* lane_direction);
 
-  // Returns a RoadOdometry that contains infinite positions and zero `r`, `h`,
-  // and velocity values. If @p lane_direction contains `with_s == True`, a
-  // RoadOdometry containing an s-position at positive infinity is returned;
-  // otherwise a negative-intinite position is returned.
+  // Returns a RoadOdometry that contains an infinite `s` position, zero `r` and
+  // `h` positions, and zero velocities. If @p lane_direction contains `with_s
+  // == True`, a RoadOdometry containing an s-position at positive infinity is
+  // returned; otherwise a negative-infinite position is returned.  For T =
+  // AutoDiffXd, the derivatives of the returned RoadOdometry are made to be
+  // coherent with respect to @p ego_pose.
   static RoadOdometry<T> MakeInfiniteOdometry(
-      const LaneDirection& lane_direction);
+      const LaneDirection& lane_direction,
+      const systems::rendering::PoseVector<T>& ego_pose);
+
+  // Returns positive infinity. For T = AutoDiffXd, the derivatives of the
+  // the return value are made to be coherent with respect to @p ego_pose.
+  static T MakeInfiniteDistance(
+      const systems::rendering::PoseVector<T>& ego_pose);
 
   // Returns the distance (along the `s`-coordinate) from an end of a lane to a
   // @p lane_position in that lane, where the end is determined by the `with_s`
   // of the provided `lane_direction`.  Both `lane` and `with_s` are specified
   // in @p lane_direction.  Throws if any element of @p lane_position is not
   // within the respective bounds of `lane_direction.lane`.
-  static double CalcLaneProgress(
+  static T CalcLaneProgress(
       const LaneDirection& lane_direction,
-      const maliput::api::LanePosition& lane_position);
+      const maliput::api::LanePositionT<T>& lane_position);
 
-  // Constructs a LaneDirection structure based on a vehicle's current @p
-  // road_position and @p rotation (in global coordinates), and the @p side of
+  // Constructs a LaneDirection structure based on a vehicle's current @p lane,
+  // @p lane_position, @p rotation (in global coordinates), and the @p side of
   // the car (ahead or behind) that traffic is being observed.  Note that
-  // `LaneDirection::with_s` is interpreted as the direction along which targets
-  // are being observed (regardless of the ego car's orientation): it is true if
-  // cars are being observed along the `s`-direction and is false otherwise.
+  // `LaneDirection::with_s` in the return argument is interpreted as the
+  // direction along which targets are being observed (regardless of the ego
+  // car's orientation): it is true if cars are being observed along the
+  // `s`-direction and is false otherwise.
   static LaneDirection CalcLaneDirection(
-      const maliput::api::RoadPosition& road_position,
+      const maliput::api::Lane* lane,
+      const maliput::api::LanePositionT<T>& lane_position,
       const Eigen::Quaternion<T>& rotation, AheadOrBehind side);
 };
 

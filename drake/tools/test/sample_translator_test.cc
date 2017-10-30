@@ -5,6 +5,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/tools/test/gen/sample.h"
 
 namespace drake {
@@ -41,8 +42,7 @@ GTEST_TEST(SampleTranslatorTest, RoundtripTest) {
   std::unique_ptr<systems::VectorBase<double>> allocated_vector =
       dut.AllocateOutputVector();
   ASSERT_NE(nullptr, allocated_vector.get());
-  ASSERT_NE(nullptr, dynamic_cast<Sample<double>*>(
-      allocated_vector.get()));
+  ASSERT_TRUE(is_dynamic_castable<Sample<double>>(allocated_vector.get()));
 }
 
 }  // namespace

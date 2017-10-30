@@ -58,7 +58,7 @@ class InverseDynamicsTest : public ::testing::Test {
     }
 
     // Checks that no state variables are allocated in the context.
-    EXPECT_EQ(context_->get_continuous_state()->size(), 0);
+    EXPECT_EQ(context_->get_continuous_state().size(), 0);
 
     // Checks that the number of output ports in the Gravity Compensator system
     // and the SystemOutput are consistent.

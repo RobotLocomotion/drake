@@ -69,11 +69,8 @@ const char kIiwaEndEffectorName[] = "iiwa_link_ee";
 // 0.736 + 0.057 / 2.
 const double kTableTopZInWorld = 0.736 + 0.057 / 2;
 
-// Coordinates for kRobotBase originally from iiwa_world_demo.cc.
-// The intention is to center the robot on the table.
-// TODO(sam.creasey) fix this
 const Eigen::Vector3d kRobotBase(0, 0, kTableTopZInWorld);
-const Eigen::Vector3d kTableBase(0.243716, 0.625087, 0.);
+const Eigen::Vector3d kTableBase(0, 0, 0);
 
 struct Target {
   std::string model_name;
@@ -310,16 +307,16 @@ int DoMain(void) {
   simulator.Initialize();
   simulator.set_target_realtime_rate(FLAGS_realtime_rate);
   simulator.reset_integrator<RungeKutta2Integrator<double>>(*sys,
-      FLAGS_dt, simulator.get_mutable_context());
+      FLAGS_dt, &simulator.get_mutable_context());
   simulator.get_mutable_integrator()->set_maximum_step_size(FLAGS_dt);
   simulator.get_mutable_integrator()->set_fixed_step_mode(true);
 
   auto& plan_source_context = sys->GetMutableSubsystemContext(
-      *iiwa_trajectory_generator, simulator.get_mutable_context());
+      *iiwa_trajectory_generator, &simulator.get_mutable_context());
   iiwa_trajectory_generator->Initialize(
       plan_source_context.get_time(),
       Eigen::VectorXd::Zero(7),
-      plan_source_context.get_mutable_state());
+      &plan_source_context.get_mutable_state());
 
   // Step the simulator in some small increment.  Between steps, check
   // to see if the state machine thinks we're done, and if so that the

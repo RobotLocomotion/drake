@@ -73,13 +73,13 @@ class Parameters {
 
   /// Returns the vector-valued parameter at @p index. Asserts if the index
   /// is out of bounds.
-  const BasicVector<T>* get_numeric_parameter(int index) const {
+  const BasicVector<T>& get_numeric_parameter(int index) const {
     return numeric_parameters_->get_vector(index);
   }
 
   /// Returns the vector-valued parameter at @p index. Asserts if the index
   /// is out of bounds.
-  BasicVector<T>* get_mutable_numeric_parameter(int index) {
+  BasicVector<T>& get_mutable_numeric_parameter(int index) {
     return numeric_parameters_->get_mutable_vector(index);
   }
 
