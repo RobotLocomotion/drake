@@ -13,7 +13,7 @@ namespace multibody {
 namespace multibody_tree {
 namespace test {
 
-/// This plant models the rotational motion of a free body in space.
+/// This plant models the rotational motion of a torque free body in space.
 /// This body is axially symmetric with rotational inertia about its axis of
 /// revolution J and with a rotational inertia I about any axis perpendicular to
 /// its axis of revolution.
@@ -27,9 +27,9 @@ namespace test {
 /// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 template<typename T>
-class FreeBodyPlant final : public systems::LeafSystem<T> {
+class FreeRotatingBodyPlant final : public systems::LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FreeBodyPlant)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FreeRotatingBodyPlant)
 
   /// Constructor from known rotational inertia values.
   /// Rotational inertia values have units of kg⋅m².
@@ -38,11 +38,11 @@ class FreeBodyPlant final : public systems::LeafSystem<T> {
   ///   revolution of the body.
   /// @param J
   ///   rotational inertia about the axis of revolution of the body.
-  FreeBodyPlant(double I, double J);
+  FreeRotatingBodyPlant(double I, double J);
 
   /// Scalar-converting copy constructor.
   template <typename U>
-  explicit FreeBodyPlant(const FreeBodyPlant<U>&);
+  explicit FreeRotatingBodyPlant(const FreeRotatingBodyPlant<U>&);
 
   /// Stores in `context` the value of the angular velocity `w_WB` of the body
   /// in the world frame W.

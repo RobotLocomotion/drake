@@ -14,7 +14,7 @@ using Eigen::Translation3d;
 using Eigen::Vector3d;
 
 template<typename T>
-FreeBodyPlant<T>::FreeBodyPlant(double I, double J) : I_(I), J_(J) {
+FreeRotatingBodyPlant<T>::FreeRotatingBodyPlant(double I, double J) : I_(I), J_(J) {
   BuildMultibodyTreeModel();
   DRAKE_DEMAND(model_.get_num_positions() == 3);
   DRAKE_DEMAND(model_.get_num_velocities() == 3);
@@ -26,11 +26,11 @@ FreeBodyPlant<T>::FreeBodyPlant(double I, double J) : I_(I), J_(J) {
 
 template<typename T>
 template<typename U>
-FreeBodyPlant<T>::FreeBodyPlant(
-    const FreeBodyPlant<U> &other) : FreeBodyPlant<T>(I_, J_) {}
+FreeRotatingBodyPlant<T>::FreeRotatingBodyPlant(
+    const FreeRotatingBodyPlant<U> &other) : FreeRotatingBodyPlant<T>(I_, J_) {}
 
 template<typename T>
-void FreeBodyPlant<T>::BuildMultibodyTreeModel() {
+void FreeRotatingBodyPlant<T>::BuildMultibodyTreeModel() {
   UnitInertia<double> G_Bcm =
       UnitInertia<double>::AxiallySymmetric(J_, I_, Vector3<double>::UnitZ());
   const double kMass = 1.0;
@@ -47,12 +47,12 @@ void FreeBodyPlant<T>::BuildMultibodyTreeModel() {
 
 template<typename T>
 std::unique_ptr<systems::LeafContext<T>>
-FreeBodyPlant<T>::DoMakeContext() const {
+FreeRotatingBodyPlant<T>::DoMakeContext() const {
   return model_.CreateDefaultContext();
 }
 
 template<typename T>
-void FreeBodyPlant<T>::DoCalcTimeDerivatives(
+void FreeRotatingBodyPlant<T>::DoCalcTimeDerivatives(
     const systems::Context<T> &context,
     systems::ContinuousState<T> *derivatives) const {
   const auto x =
@@ -84,7 +84,7 @@ void FreeBodyPlant<T>::DoCalcTimeDerivatives(
 }
 
 template<typename T>
-void FreeBodyPlant<T>::DoMapQDotToVelocity(
+void FreeRotatingBodyPlant<T>::DoMapQDotToVelocity(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& qdot,
     systems::VectorBase<T>* generalized_velocity) const {
@@ -101,7 +101,7 @@ void FreeBodyPlant<T>::DoMapQDotToVelocity(
 }
 
 template<typename T>
-void FreeBodyPlant<T>::DoMapVelocityToQDot(
+void FreeRotatingBodyPlant<T>::DoMapVelocityToQDot(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& generalized_velocity,
     systems::VectorBase<T>* positions_derivative) const {
@@ -118,13 +118,13 @@ void FreeBodyPlant<T>::DoMapVelocityToQDot(
 }
 
 template<typename T>
-void FreeBodyPlant<T>::set_angular_velocity(
+void FreeRotatingBodyPlant<T>::set_angular_velocity(
     systems::Context<T>* context, const Vector3<T>& w_WB) const {
   mobilizer_->set_angular_velocity(context, w_WB);
 }
 
 template<typename T>
-Isometry3<T> FreeBodyPlant<T>::CalcPoseInWorldFrame(
+Isometry3<T> FreeRotatingBodyPlant<T>::CalcPoseInWorldFrame(
     const systems::Context<T>& context) const {
   PositionKinematicsCache<T> pc(model_.get_topology());
   model_.CalcPositionKinematicsCache(context, &pc);
@@ -132,7 +132,7 @@ Isometry3<T> FreeBodyPlant<T>::CalcPoseInWorldFrame(
 }
 
 template<typename T>
-SpatialVelocity<T> FreeBodyPlant<T>::CalcSpatialVelocityInWorldFrame(
+SpatialVelocity<T> FreeRotatingBodyPlant<T>::CalcSpatialVelocityInWorldFrame(
     const systems::Context<T>& context) const {
   PositionKinematicsCache<T> pc(model_.get_topology());
   model_.CalcPositionKinematicsCache(context, &pc);
@@ -147,4 +147,4 @@ SpatialVelocity<T> FreeBodyPlant<T>::CalcSpatialVelocityInWorldFrame(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::multibody_tree::test::FreeBodyPlant)
+    class ::drake::multibody::multibody_tree::test::FreeRotatingBodyPlant)

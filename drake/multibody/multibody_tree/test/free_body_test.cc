@@ -51,7 +51,7 @@ GTEST_TEST(RollPitchYawTest, TimeDerivatives) {
       p0_WBcm, v0_WBcm, gravity_W);
 
   // Instantiate the model for the free body in space.
-  FreeBodyPlant<double> free_body_plant(benchmark_.get_I(), benchmark_.get_J());
+  FreeRotatingBodyPlant<double> free_body_plant(benchmark_.get_I(), benchmark_.get_J());
 
   systems::Simulator<double> simulator(free_body_plant);
   systems::Context<double>* context = simulator.get_mutable_context();
