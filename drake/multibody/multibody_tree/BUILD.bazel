@@ -142,10 +142,10 @@ drake_cc_library(
 # === test/ ===
 
 drake_cc_library(
-    name = "free_body_plant",
+    name = "free_rotating_body_plant",
     testonly = 1,
-    srcs = ["test/free_body_plant.cc"],
-    hdrs = ["test/free_body_plant.h"],
+    srcs = ["test/free_rotating_body_plant.cc"],
+    hdrs = ["test/free_rotating_body_plant.h"],
     deps = [
         "//drake/common:default_scalars",
         "//drake/multibody/multibody_tree",
@@ -154,13 +154,13 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
-    name = "free_body_test",
+    name = "free_rotating_body_test",
     size = "small",
     srcs = [
-        "test/free_body_test.cc",
+        "test/free_rotating_body_test.cc",
     ],
     deps = [
-        ":free_body_plant",
+        ":free_rotating_body_plant",
         "//drake/common/test_utilities:eigen_matrix_compare",
         "//drake/multibody/benchmarks/free_body",
         "//drake/systems/analysis:simulator",
