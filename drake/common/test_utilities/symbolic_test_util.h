@@ -105,7 +105,7 @@ inline bool FormulaNotLess(const Formula& f1, const Formula& f2) {
  * @param p2 A polynomial.
  * @param tol The tolerance on the coefficients of p1 - p2.
  */
-bool PolynomialEqual(const symbolic::Polynomial& p1,
+::testing::AssertionResult PolynomialEqual(const symbolic::Polynomial& p1,
                      const symbolic::Polynomial& p2, double tol) {
   const symbolic::Polynomial diff = p1 - p2;
   // Check if the absolute value of the coefficient for each monomial is less
@@ -113,10 +113,12 @@ bool PolynomialEqual(const symbolic::Polynomial& p1,
   const symbolic::Polynomial::MapType& map = diff.monomial_to_coefficient_map();
   for (const auto& p : map) {
     if (std::abs(get_constant_value(p.second)) > tol) {
-      return false;
+      return ::testing::AssertionFailure()
+             << "The coefficient for " << p.first << " is " << p.second
+             << ", exceed tolerance " << tol << "\n";
     }
   }
-  return true;
+  return ::testing::AssertionSuccess();
 }
 }  // namespace test
 }  // namespace symbolic
