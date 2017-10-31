@@ -47,17 +47,6 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
-    name = "yaml_util",
-    srcs = ["yaml/yamlUtil.cpp"],
-    hdrs = ["yaml/yamlUtil.h"],
-    deps = [
-        "//drake/common:essential",
-        "//drake/systems/controllers:qp_common",
-        "@yaml_cpp",
-    ],
-)
-
 # === test/ ===
 
 drake_cc_googletest(

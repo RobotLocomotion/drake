@@ -328,5 +328,4 @@ LIBDRAKE_COMPONENTS = [
     "//drake/util:convex_hull",
     "//drake/util:lcm_util",
     "//drake/util:util",
-    "//drake/util:yaml_util",
 ]

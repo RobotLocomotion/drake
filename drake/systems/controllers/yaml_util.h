@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <map>
+#include <string>
 
 #include "yaml-cpp/yaml.h"
 
@@ -25,6 +26,7 @@ drake::eigen_aligned_std_map<std::string, QPControllerParams> loadAllParamSets(
     YAML::Node config, const RigidBodyTree<double>& robot);
 drake::eigen_aligned_std_map<std::string, QPControllerParams> loadAllParamSets(
     YAML::Node config, const RigidBodyTree<double>& robot,
+    // NOLINTNEXTLINE(runtime/references)
     std::ofstream& debug_output_file);
 RobotPropertyCache parseKinematicTreeMetadata(
     const YAML::Node& metadata, const RigidBodyTree<double>& robot);

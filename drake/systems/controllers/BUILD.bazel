@@ -146,6 +146,18 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "yaml_util",
+    srcs = ["yaml_util.cc"],
+    hdrs = ["yaml_util.h"],
+    visibility = [],
+    deps = [
+        ":qp_common",
+        "//drake/common:essential",
+        "@yaml_cpp",
+    ],
+)
+
 # This library is empty unless Gurobi is available.
 drake_cc_library(
     name = "instantaneous_qp_controller",
@@ -160,6 +172,7 @@ drake_cc_library(
     deps = [
         ":control_util",
         ":qp_common",
+        ":yaml_util",
         "//drake/common:essential",
         "//drake/common:find_resource",
         "//drake/common:is_approx_equal_abstol",
@@ -171,7 +184,6 @@ drake_cc_library(
         "//drake/solvers:gurobi_qp",
         "//drake/util",
         "//drake/util:lcm_util",
-        "//drake/util:yaml_util",
     ],
 )
 

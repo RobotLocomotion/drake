@@ -20,9 +20,9 @@
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/solvers/fast_qp.h"
 #include "drake/systems/controllers/controlUtil.h"
+#include "drake/systems/controllers/yaml_util.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/lcmUtil.h"
-#include "drake/util/yaml/yamlUtil.h"
 
 const double REG = 1e-8;
 
