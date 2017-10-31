@@ -1,6 +1,6 @@
 #pragma once
 
-#include "drake/examples/rod2d/gen/rod2d_state.h"
+#include "drake/examples/rod2d/gen/rod2d_state_vector.h"
 
 #include <memory>
 #include <utility>
@@ -216,25 +216,25 @@ class Rod2D : public systems::LeafSystem<T> {
   ///         kPiecewiseDAE or kCompliant.
   explicit Rod2D(SimulationType simulation_type, double dt);
 
-  static const Rod2dState<T>& get_state(
+  static const Rod2dStateVector<T>& get_state(
       const systems::ContinuousState<T>& cstate) {
-    return dynamic_cast<const Rod2dState<T>&>(cstate);
+    return dynamic_cast<const Rod2dStateVector<T>&>(cstate);
   }
 
-  static Rod2dState<T>* get_mutable_state(
+  static Rod2dStateVector<T>* get_mutable_state(
       systems::ContinuousState<T>* cstate) {
-    return dynamic_cast<Rod2dState<T>*>(cstate); 
+    return dynamic_cast<Rod2dStateVector<T>*>(cstate); 
   }
 
-  static const Rod2dState<T>& get_state(
+  static const Rod2dStateVector<T>& get_state(
       const systems::Context<T>& context) {
-    return dynamic_cast<const Rod2dState<T>&>(
-        *context.get_continuous_state());
+    return dynamic_cast<const Rod2dStateVector<T>&>(
+        context.get_continuous_state());
   }
 
-  static Rod2dState<T>* get_mutable_state(
+  static Rod2dStateVector<T>& get_mutable_state(
       systems::Context<T>* context) {
-    return dynamic_cast<Rod2dState<T>*>(
+    return dynamic_cast<Rod2dStateVector<T>&>(
         context->get_mutable_continuous_state());
   }
 

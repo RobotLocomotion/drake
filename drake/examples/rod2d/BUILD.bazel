@@ -5,6 +5,9 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_binary",
+)
+load("//tools/install:install_data.bzl", "install_data")
+load(
     "@drake//tools/vector_gen:vector_gen.bzl",
     "drake_cc_vector_gen_library",
 )
@@ -14,7 +17,7 @@ package(default_visibility = ["//visibility:public"])
 
 drake_cc_vector_gen_library(
     name = "rod2d_state_vector",
-    srcs = "rod2d_state_vector.named_vector",
+    srcs = ["rod2d_state_vector.named_vector"],
 )
 
 drake_cc_binary(
