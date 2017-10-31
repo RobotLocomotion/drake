@@ -499,8 +499,8 @@ ProblemData* ConstraintSolver<T>::UpdateProblemDataForUnilateralConstraints(
 //        A ≡ | M Gᵀ |    (M is the generalized inertia matrix and G is the
 //            | G 0  |     Jacobian matrix for the bilateral constraints)
 //        and a ≡ | -τ |  (τ [tau] and kG are defined in `problem_data`).
-//                | kG | 
-// @param[out] cf The unilateral constraint forces, on return, in a packed 
+//                | kG |
+// @param[out] cf The unilateral constraint forces, on return, in a packed
 //                storage format. The first `nc` elements of `cf` correspond to
 //                the magnitudes of the contact forces applied along the normals
 //                of the `nc` contact points. The next elements of `cf`
