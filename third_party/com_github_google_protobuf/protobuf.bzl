@@ -309,7 +309,7 @@ def py_proto_library(
         py_library. This attribute is used for internal bootstrapping.
     include: a string indicating the include path of the .proto files.
     default_runtime: the implicitly default runtime which will be depended on by
-        the generated py_library_target.
+        the generated py_library target.
     protoc: the label of the protocol compiler to generate the sources.
     **kargs: other keyword arguments that are passed to cc_library.
 
