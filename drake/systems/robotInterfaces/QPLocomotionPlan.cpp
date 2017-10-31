@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <functional>
 #include <limits>
 #include <memory>
 #include <stdexcept>
@@ -62,6 +63,15 @@ using std::vector;
 const std::map<SupportLogicType, std::vector<bool>>
     QPLocomotionPlan::support_logic_maps_ =
     QPLocomotionPlan::createSupportLogicMaps();
+
+namespace {
+template <typename T>
+// NOLINTNEXTLINE(runtime/references)
+void addOffset(std::vector<T>& v, const T& offset) {
+  std::transform(v.begin(), v.end(), v.begin(),
+                 std::bind2nd(std::plus<double>(), offset));
+}
+}  // namespace
 
 std::string primaryBodyOrFrameName(const std::string& full_body_name) {
   size_t i = 0;

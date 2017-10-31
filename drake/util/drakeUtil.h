@@ -171,9 +171,3 @@ void stdVectorOfStdVectorsToEigen(
     }
   }
 }
-
-template <typename T>
-void addOffset(std::vector<T>& v, const T& offset) {
-  std::transform(v.begin(), v.end(), v.begin(),
-                 std::bind2nd(std::plus<double>(), offset));
-}
