@@ -57,6 +57,10 @@ new_local_repository(
 # into "systemprotobuf" via pkg-config below.
 local_repository(
     name = "protobuf",
+    # TODO(clalancette) Per https://github.com/RobotLocomotion/drake/pull/7361
+    # this should use an absolute path (so this should be prepended by
+    # __workspace_dir__).  However, in a clean build, this did not work.  We
+    # should investigate that and fix it.
     path = "third_party/com_github_google_protobuf",
 )
 
