@@ -277,10 +277,6 @@ class ConstraintSolver {
       int m,
       MatrixX<T>* iM_GT);
 
-  void FormLinearSystem(
-    const ConstraintAccelProblemData<T>& problem_data,
-    const VectorX<T> trunc_neg_invA_a,
-    MatrixX<T>* MM, VectorX<T>* qq) const;
   void FormImpactingConstraintLCP(
       const ConstraintVelProblemData<T>& problem_data,
       const VectorX<T>& invA_a,
@@ -497,6 +493,24 @@ ProblemData* ConstraintSolver<T>::UpdateProblemDataForUnilateralConstraints(
 // accelerations during ODE evaluations, as an alternative to the linear
 // complementarity problem formulation. If all constraints are known to be
 // active, this method will provide the correct solution rapidly.
+// @param problem_data The constraint data formulated at the acceleration
+//                     level.
+// @param trunc_neg_invA_a The firsg ngc elements of -A⁻¹a, where
+//        A ≡ | M Gᵀ |    (M is the generalized inertia matrix and G is the
+//            | G 0  |     Jacobian matrix for the bilateral constraints)
+//        and a ≡ | -τ |  (τ [tau] and kG are defined in `problem_data`).
+//                | kG | 
+// @param[out] cf The unilateral constraint forces, on return, in a packed 
+//                storage format. The first `nc` elements of `cf` correspond to
+//                the magnitudes of the contact forces applied along the normals
+//                of the `nc` contact points. The next elements of `cf`
+//                correspond to the frictional forces along the `r` spanning
+//                directions at each non-sliding point of contact. The first `r`
+//                values (after the initial `nc` elements) correspond to the
+//                first non-sliding contact, the next `r` values correspond to
+//                the second non-sliding contact, etc. The next `ℓ` values of
+//                `cf` correspond to the forces applied to enforce generic
+//                unilateral constraints. `cf` will be resized as necessary.
 template <class T>
 void ConstraintSolver<T>::FormAndSolveConstraintLinearSystem(
     const ConstraintAccelProblemData<T>& problem_data,

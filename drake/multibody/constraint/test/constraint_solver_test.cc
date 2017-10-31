@@ -547,8 +547,10 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     }
   }
 
-  // Tests the rod in a two-point sticking configuration, with force either
-  // to the right or to the left.
+  // Tests the rod in a two-point sticking configuration (i.e., force should
+  // be applied with no resulting tangential motion), with force applied either
+  // to the right or to the left (force_applied_to_right = false) and using
+  // either the LCP solver or the linear system solver (use_lcp_solver = false).
   void TwoPointSticking(
       bool force_applied_to_right, bool use_lcp_solver) {
     // Set the contact to large friction. Note that only the static friction
