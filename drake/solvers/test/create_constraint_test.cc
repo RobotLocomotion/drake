@@ -17,12 +17,12 @@ void CheckParseLorentzConeConstraint(const Expression& linear_expression,
   const Eigen::MatrixXd A = binding.constraint()->A();
   const Eigen::VectorXd b = binding.constraint()->b();
   const VectorX<Expression> z = A * binding.variables() + b;
-  symbolic::test::ComparePolynomials(symbolic::Polynomial(z(0)),
-                                     symbolic::Polynomial(linear_expression),
-                                     1E-10);
-  symbolic::test::ComparePolynomials(
+  EXPECT_TRUE(symbolic::test::PolynomialEqual(
+      symbolic::Polynomial(z(0)), symbolic::Polynomial(linear_expression),
+      1E-10));
+  EXPECT_TRUE(symbolic::test::PolynomialEqual(
       symbolic::Polynomial(z.tail(z.rows() - 1).squaredNorm()),
-      symbolic::Polynomial(quadratic_expression), 1E-10);
+      symbolic::Polynomial(quadratic_expression), 1E-10));
 }
 
 void CheckParseRotatedLorentzConeConstraint(
@@ -33,8 +33,8 @@ void CheckParseRotatedLorentzConeConstraint(
   const Eigen::VectorXd b = binding.constraint()->b();
   const VectorX<Expression> z = A * binding.variables() + b;
   for (int i = 0; i < z.rows(); ++i) {
-    symbolic::test::ComparePolynomials(symbolic::Polynomial(z(i)),
-                                       symbolic::Polynomial(v(i)), 1E-10);
+    EXPECT_TRUE(symbolic::test::PolynomialEqual(symbolic::Polynomial(z(i)),
+                                    symbolic::Polynomial(v(i)), 1E-10));
   }
 }
 
@@ -48,16 +48,16 @@ void CheckParseRotatedLorentzConeConstraint(
   const Eigen::VectorXd b = binding.constraint()->b();
   const VectorX<Expression> z = A * binding.variables() + b;
   const double tol_check{1E-10};
-  symbolic::test::ComparePolynomials(symbolic::Polynomial(z(0)),
-                                     symbolic::Polynomial(linear_expression1),
-                                     tol_check);
-  symbolic::test::ComparePolynomials(symbolic::Polynomial(z(1)),
-                                     symbolic::Polynomial(linear_expression2),
-                                     tol_check);
-  symbolic::test::ComparePolynomials(
+  EXPECT_TRUE(symbolic::test::PolynomialEqual(symbolic::Polynomial(z(0)),
+                                  symbolic::Polynomial(linear_expression1),
+                                  tol_check));
+  EXPECT_TRUE(symbolic::test::PolynomialEqual(symbolic::Polynomial(z(1)),
+                                  symbolic::Polynomial(linear_expression2),
+                                  tol_check));
+  EXPECT_TRUE(symbolic::test::PolynomialEqual(
       symbolic::Polynomial(
           z.tail(z.rows() - 2).cast<Expression>().squaredNorm()),
-      symbolic::Polynomial(quadratic_expression), tol_check);
+      symbolic::Polynomial(quadratic_expression), tol_check));
 }
 
 class ParseLorentzConeConstraintTest : public ::testing::Test {
