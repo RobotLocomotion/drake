@@ -26,6 +26,6 @@ def drake_py_proto_library(
     py_proto_library(
         name = name,
         protoc = "@protobuf//:drake_protoc",
-        default_runtime = None,  # use the system default
+        default_runtime = None,  # Use the system default.
         tags = tags + ["nolint"],
         **kwargs)
