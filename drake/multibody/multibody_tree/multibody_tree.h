@@ -998,6 +998,76 @@ class MultibodyTree {
   void CalcBiasTerm(
       const systems::Context<T>& context, EigenPtr<VectorX<T>> Cv) const;
 
+  /// @name Methods to compute multibody Jacobians.
+  /// @{
+  // --------------------------------------
+  // From SimbodyMatterSubsystem.h:
+  // --------------------------------------
+
+  // multiplyByStationJacobian:
+  // Simbody method to compute v_WP = J*v for a given point p, with v_WP only
+  // the translational velocity.
+
+  // calcStationJacobian:
+  // Explicitly computes a Jacobian for a given set of stations.
+  // Costs about 42*nstations + 54*nbodies + 33*nvels flops.
+
+  // calcBiasForStationJacobian:
+  // Computes Jdot_WS for a station point S.
+
+  // multiplyBySystemJacobian:
+  // Computes J_WB * v with cost 12*(nb+n) flops. Multiplication by J, even if
+  // already available, costs 12*nb*n flops. Multiplication costs 6*nt*n.
+
+  // calcSystemJacobian:
+  // Computes the full system Jacobian of size nbodies x num_velocities such that
+  // V_WB = J_WB(q) * v
+
+  // calcBiasForSystemJacobian:
+  // Computes the system wide Jdot_WB, as in A_WB = J_WB * vdot + Jdot_WB * v.
+
+  // I think what we want is:
+  // multiplyByFrameJacobian: computes the spatial velocity of a station frame F
+  // on a body B.
+
+  // calcFrameJacobian:
+  // Explcitly forms the frame Jacobian above.
+
+  // calcBiasForFrameJacobian:
+  // Computes Jdot for the frame Jacobian.
+
+  // Inverse Kinematics Notes:
+  // Look in controlled_kuka_demo.cc the ussage of WorldPositionConstraint (
+  // rigid_body_constraint.h, L 383) for
+  // specifying a set of points on a body to lie within a bounding box within
+  // sertain time span.
+  // Added in line 115, which effectively resolves into a call to inverseKinBackend
+  // in inverse_kinematics_backend.cc, L. 195.
+  // WorldPositionConstraint is a RigidBodyConstraint::SingleTimeKinematicConstraintCategory
+  // Therefore L 235 gets executed in inverse_kinematics_backend.cc and the contraint
+  // gets wrapped by a SingleTimeKinematicConstraintWrapper (constraint_wrappers.h, L 39).
+  // This wrapper implements DoEval for the solver to call, which in turns calls
+  // eval() on the original WorldPositionConstraint.
+  //
+  // WorldPositionConstraint must implement evalPositions(cache, pos, J).
+  // L 707 of rigid_body_constraint.cc. THAT, is what you need to implement first!!
+
+  // The following line computes the pose of a series of points, stations,
+  // (get_pts()) originally expressed in the body frame for body_, in the world
+  // frame (index 0 in the arguments).
+  //
+  // pos = getRobotPointer()->transformPoints(cache, get_pts(), body_, 0);
+  //
+  //
+  // The following line seems to compute J_WP for all those points, such taht
+  // v_WP = Jq_WP * qdot (in_terms_of_qdot = true, last argument).
+  // J = getRobotPointer()->transformPointsJacobian(cache, get_pts(), body_, 0,true);
+  //
+  // That is, that call computes Jq_WP = d(p_WP)/dq, the so called analytic Jacobian.
+  
+  /// @}
+  // End of multibody Jacobian methods section.
+
   /// @name Methods to retrieve multibody element variants
   ///
   /// Given two variants of the same %MultibodyTree, these methods map an
