@@ -49,7 +49,7 @@ drake_cc_library(
         "rod2d-inl.h",
     ],
     deps = [
-	":rod2d_state_vector",
+        ":rod2d_state_vector",
         "//drake/common:essential",
         "//drake/multibody/constraint",
         "//drake/solvers:mathematical_program",
