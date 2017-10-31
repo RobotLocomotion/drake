@@ -223,7 +223,7 @@ class Rod2D : public systems::LeafSystem<T> {
 
   static Rod2dStateVector<T>* get_mutable_state(
       systems::ContinuousState<T>* cstate) {
-    return dynamic_cast<Rod2dStateVector<T>*>(cstate); 
+    return dynamic_cast<Rod2dStateVector<T>*>(cstate);
   }
 
   static const Rod2dStateVector<T>& get_state(
