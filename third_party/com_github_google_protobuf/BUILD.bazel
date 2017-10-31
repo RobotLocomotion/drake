@@ -3,3 +3,8 @@ package(
 )
 
 exports_files(["protobuf.bzl"])
+
+alias(
+    name = "protobuf",
+    actual = "@systemprotobuf",
+)
