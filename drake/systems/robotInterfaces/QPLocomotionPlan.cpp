@@ -17,7 +17,7 @@
 #include "drake/math/gradient.h"
 #include "drake/math/quaternion.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/util/convexHull.h"
+#include "drake/systems/robotInterfaces/convex_hull.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"
 #include "drake/util/lcmUtil.h"
