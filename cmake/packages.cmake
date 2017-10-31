@@ -2,6 +2,11 @@
 # Find external packages.
 #------------------------------------------------------------------------------
 macro(drake_find_packages)
+
+  if (NOT ${DISABLE_MATLAB})
+    find_package(Matlab MODULE REQUIRED
+      COMPONENTS MAIN_PROGRAM MEX_COMPILER MX_LIBRARY)
+  endif(NOT ${DISABLE_MATLAB})
   find_package(Matlab MODULE REQUIRED
     COMPONENTS MAIN_PROGRAM MEX_COMPILER MX_LIBRARY)
   find_package(Python 2.7 MODULE REQUIRED)
