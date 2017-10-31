@@ -76,8 +76,12 @@ class EndpointZ {
       : z_(z), z_dot_(z_dot), theta_(theta), theta_dot_(theta_dot) {}
 
   /// Returns an EndpointZ with reversed direction.
+  ///
+  /// Reversing direction is equivalent to rotating s (and along with it, r)
+  /// around the h-axis by 180 degrees, thus flipping the signs of z_dot
+  /// and theta.
   EndpointZ reverse() const {
-    return EndpointZ(z_, -z_dot_, theta_, -theta_dot_);
+    return EndpointZ(z_, -z_dot_, -theta_, theta_dot_);
   }
 
   double z() const { return z_; }
@@ -179,96 +183,68 @@ class Connection {
   /// Possible connection geometries:  line- or arc-segment.
   enum Type { kLine, kArc };
 
-  /// Contains Segment related parameters for later construction.
-  struct SegmentParameters {
-    /// Number of lanes that the Segment will contain.
-    int num_lanes;
-    /// First Lane centerline distance from Segment's reference curve.
-    double r0;
-    /// Extra space at the right of the first Lane in the Segment.
-    double left_shoulder;
-    /// Extra space at the left of the last Lane in the Segment.
-    double right_shoulder;
-  };
-
   /// Constructs a line-segment connection joining `start` to `end`.
   ///
-  /// `segment_parameters` contains the information necessary to later build a
-  /// Segment. It will contain `segment_parameters.num_lanes` lanes, which must
-  /// be greater than zero. First Lane centerline will be placed at
-  /// `segment_parameters.r0` distance from the reference curve.
+  /// Segments will contain `num_lanes` lanes, which must be greater than zero.
+  /// First Lane centerline will be placed at `r0` distance from the reference
+  /// curve.
   ///
-  /// `segment_parameters.left_shoulder` and `segment_parameters.right_shoulder`
-  /// are extra spaces added to the right and left side of the first and last
-  /// lanes of the Segment. They will be added to Segment's bounds and must be
-  /// greater or equal to zero.
+  /// `left_shoulder` and `right_shoulder` are extra spaces added to the right
+  /// and left side of the first and last lanes of the Segment. They will be
+  /// added to Segment's bounds and must be greater or equal to zero.
 
   // TODO(agalbachicar)    `end` should be removed in order to avoid
   //                       inconsistencies when describing the geometry.
   Connection(const std::string& id, const Endpoint& start, const Endpoint& end,
-             const SegmentParameters& segment_parameters)
+             int num_lanes, double r0, double left_shoulder,
+             double right_shoulder)
       : type_(kLine),
         id_(id),
         start_(start),
         end_(end),
-        num_lanes_(segment_parameters.num_lanes),
-        r0_(segment_parameters.r0),
-        left_shoulder_(segment_parameters.left_shoulder),
-        right_shoulder_(segment_parameters.right_shoulder) {
+        num_lanes_(num_lanes),
+        r0_(r0),
+        left_shoulder_(left_shoulder),
+        right_shoulder_(right_shoulder) {
     DRAKE_DEMAND(num_lanes_ > 0);
     DRAKE_DEMAND(left_shoulder_ >= 0);
     DRAKE_DEMAND(right_shoulder_ >= 0);
   }
 
-  /// Contains arc-geometry parameters to build an arc-segment Connection.
-  struct ArcGeometry {
-    /// Arc's center x coordinate.
-    double cx;
-    /// Arc's center y coordinate.
-    double cy;
-    /// Arc's radius.
-    double radius;
-    /// Arc's angle span. Being positive indicates a counter-clockwise arc.
-    double d_theta;
-  };
-
   /// Constructs an arc-segment connection joining `start` to `end`.
   ///
-  /// `segment_parameters` contains the information necessary to later build a
-  /// Segment. It will contain `segment_parameters.num_lanes` lanes, which must
-  /// be greater than zero. First Lane centerline will be placed at
-  /// `segment_parameters.r0` distance from the reference curve.
+  /// `cx`, `cy` specify the center of the arc. `radius` is the radius,
+  /// and `d_theta` is the angle of arc.
   ///
-  /// `segment_parameters.left_shoulder` and `segment_parameters.right_shoulder`
-  /// are extra spaces added to the right and left side of the first and last
-  /// lanes of the Segment. They will be added to Segment's bounds and must be
-  /// greater or equal to zero.
+  /// `radius` must be positive.  `d_theta` > 0 indicates a
+  /// counterclockwise arc from start to end.
   ///
-  /// `arc_geometry` holds information to build the arc-geometry.
-  /// `arc_geometry.cx`, `arc_geometry.cy` specify the center of the arc.
-  /// `arc_geometry.radius` is the radius, and `arc_geometry.d_theta` is the
-  /// angle of arc.
+  /// Segments will contain `num_lanes` lanes, which must be greater than zero.
+  /// First Lane centerline will be placed at `r0` distance from the reference
+  /// curve.
   ///
-  /// `arc_geometry.radius` must be positive.  `arc_geometry.d_theta` > 0
-  /// indicates a counter-clockwise arc from start to end.
+  /// `left_shoulder` and `right_shoulder` are extra spaces added to the right
+  /// and left side of the first and last lanes of the Segment. They will be
+  /// added to Segment's bounds and must be greater or equal to zero.
 
   // TODO(agalbachicar)    `end` should be removed in order to avoid
   //                       inconsistencies when describing the geometry.
   Connection(const std::string& id, const Endpoint& start, const Endpoint& end,
-             const SegmentParameters& segment_parameters,
-             const ArcGeometry& arc_geometry)
+             int num_lanes, double r0, double left_shoulder,
+             double right_shoulder, double cx, double cy, double radius,
+             double d_theta)
       : type_(kArc),
         id_(id),
         start_(start),
         end_(end),
-        num_lanes_(segment_parameters.num_lanes),
-        r0_(segment_parameters.r0),
-        left_shoulder_(segment_parameters.left_shoulder),
-        right_shoulder_(segment_parameters.right_shoulder),
-        cx_(arc_geometry.cx),
-        cy_(arc_geometry.cy),
-        radius_(arc_geometry.radius),
-        d_theta_(arc_geometry.d_theta) {
+        num_lanes_(num_lanes),
+        r0_(r0),
+        left_shoulder_(left_shoulder),
+        right_shoulder_(right_shoulder),
+        cx_(cx),
+        cy_(cy),
+        radius_(radius),
+        d_theta_(d_theta) {
     DRAKE_DEMAND(num_lanes_ > 0);
     DRAKE_DEMAND(left_shoulder_ >= 0);
     DRAKE_DEMAND(right_shoulder_ >= 0);
@@ -350,19 +326,11 @@ class Group {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Group)
 
   /// Constructs an empty Group with the specified `id`.
-  ///
-  /// `id` must be unique so as to identify only one Junction.
-
-  // TODO(maddog@tri.global)    Enforce uniqueness of `id`.
   explicit Group(const std::string& id) : id_(id) {}
 
   /// Constructs a Group with `id`, populated by `connections`.
   ///
-  /// `id` must be unique so as to identify only one Junction.
-  ///
   /// `connections` must not contain duplicates.
-
-  // TODO(maddog@tri.global)    Enforce uniqueness of `id`.
   Group(const std::string& id,
         const std::vector<const Connection*>& connections)
       : id_(id) {

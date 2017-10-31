@@ -59,7 +59,7 @@ GTEST_TEST(EndpointZTest, Reverse) {
   const EndpointZ dut{1., 2., M_PI / 4., M_PI / 2.};
   const double kZeroTolerance{0.};
   EXPECT_TRUE(test::IsEndpointZClose(
-      dut.reverse(), {1., -2., M_PI / 4., -M_PI / 2.}, kZeroTolerance));
+      dut.reverse(), {1., -2., -M_PI / 4., M_PI / 2.}, kZeroTolerance));
 }
 
 // ArcOffset checks.
@@ -82,8 +82,6 @@ class MultilaneConnectionTest : public ::testing::Test {
   const int kNumLanes{3};
   const double kLeftShoulder{1.};
   const double kRightShoulder{1.5};
-  const Connection::SegmentParameters kSegmentParameters{
-      kNumLanes, kR0, kLeftShoulder, kRightShoulder};
   const EndpointZ kLowFlatZ{0., 0., 0., 0.};
   const double kHeading{-M_PI / 4.};
   const EndpointXy kStartXy{20., 30., kHeading};
@@ -99,8 +97,9 @@ TEST_F(MultilaneConnectionTest, ArcAccessors) {
   const double kDTheta{M_PI / 2.};
   const Endpoint kEndEndpoint{{40., 30., kHeading + kDTheta}, kLowFlatZ};
 
-  const Connection dut(kId, kStartEndpoint, kEndEndpoint, kSegmentParameters,
-                       {kCenterX, kCenterY, kRadius, kDTheta});
+  const Connection dut(kId, kStartEndpoint, kEndEndpoint, kNumLanes, kR0,
+                       kLeftShoulder, kRightShoulder, kCenterX, kCenterY,
+                       kRadius, kDTheta);
   EXPECT_EQ(dut.type(), Connection::Type::kArc);
   EXPECT_EQ(dut.id(), kId);
   EXPECT_TRUE(
@@ -119,8 +118,8 @@ TEST_F(MultilaneConnectionTest, ArcAccessors) {
 TEST_F(MultilaneConnectionTest, LineAccessors) {
   const std::string kId{"line_connection"};
   const Endpoint kEndEndpoint{{50., 0., kHeading}, kLowFlatZ};
-
-  const Connection dut(kId, kStartEndpoint, kEndEndpoint, kSegmentParameters);
+  const Connection dut(kId, kStartEndpoint, kEndEndpoint, kNumLanes, kR0,
+                       kLeftShoulder, kRightShoulder);
   EXPECT_EQ(dut.type(), Connection::Type::kLine);
   EXPECT_EQ(dut.id(), kId);
   EXPECT_TRUE(
