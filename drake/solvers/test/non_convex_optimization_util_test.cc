@@ -83,7 +83,7 @@ void CheckRelaxNonConvexQuadraticConstraintInTrustRegion(
     const Eigen::Ref<const Eigen::VectorXd>& linearization_point,
     double trust_region_gap) {
   const auto& x0 = linearization_point;
-  const auto result = RelaxNonConvexQuadraticConstraintInTrustRegion(
+  const auto result = AddRelaxNonConvexQuadraticConstraintInTrustRegion(
       prog, x, Q1, Q2, p, lower_bound, upper_bound, linearization_point,
       trust_region_gap);
   Binding<LinearConstraint> linear_constraint = std::get<0>(result);
@@ -185,17 +185,20 @@ TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, TestRuntimeError) {
   non_positive_Q << 1, 1.5, 1.5, 1;
   Eigen::Matrix2d positive_Q;
   positive_Q << 1, 0.2, 0.2, 1;
-  EXPECT_THROW(RelaxNonConvexQuadraticConstraintInTrustRegion(
-                   &prog_, x_, non_positive_Q, positive_Q,
-                   Eigen::Vector2d(1, 0), -1, 0.1, Eigen::Vector2d(1, 2), 1),
+  // Q1 not being positive semidefinite.
+  EXPECT_THROW(AddRelaxNonConvexQuadraticConstraintInTrustRegion(
+      &prog_, x_, non_positive_Q, positive_Q,
+      Eigen::Vector2d(1, 0), -1, 0.1, Eigen::Vector2d(1, 2), 1),
                std::runtime_error);
-  EXPECT_THROW(RelaxNonConvexQuadraticConstraintInTrustRegion(
-                   &prog_, x_, positive_Q, non_positive_Q,
-                   Eigen::Vector2d(1, 0), -1, 0.1, Eigen::Vector2d(1, 2), 1),
+  // Q2 not being positive semidefinite.
+  EXPECT_THROW(AddRelaxNonConvexQuadraticConstraintInTrustRegion(
+      &prog_, x_, positive_Q, non_positive_Q,
+      Eigen::Vector2d(1, 0), -1, 0.1, Eigen::Vector2d(1, 2), 1),
                std::runtime_error);
-  EXPECT_THROW(RelaxNonConvexQuadraticConstraintInTrustRegion(
-                   &prog_, x_, positive_Q, positive_Q, Eigen::Vector2d(1, 0),
-                   -1, 0.1, Eigen::Vector2d(1, 2), -0.1),
+  // Negative trust region gap.
+  EXPECT_THROW(AddRelaxNonConvexQuadraticConstraintInTrustRegion(
+      &prog_, x_, positive_Q, positive_Q, Eigen::Vector2d(1, 0),
+      -1, 0.1, Eigen::Vector2d(1, 2), -0.1),
                std::runtime_error);
 }
 
@@ -208,7 +211,7 @@ void SolveRelaxNonConvexQuadraticConstraintInTrustRegion(
     double upper_bound, const Eigen::Ref<const Eigen::VectorXd>& x0,
     double trust_region_gap, const Eigen::Ref<const Eigen::MatrixXd>& c) {
   const auto relaxed_constraints =
-      RelaxNonConvexQuadraticConstraintInTrustRegion(
+      AddRelaxNonConvexQuadraticConstraintInTrustRegion(
           prog, x, Q1, Q2, p, lower_bound, upper_bound, x0, trust_region_gap);
   VectorDecisionVariable<2> z = std::get<2>(relaxed_constraints);
 
@@ -283,9 +286,15 @@ TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion,
   prog_.AddBoundingBoxConstraint(0, 0, x_(0));
   const Eigen::Matrix2d Q1 = Eigen::Vector2d(1, 0).asDiagonal();
   const Eigen::Matrix2d Q2 = Eigen::Vector2d(0, 1).asDiagonal();
-  RelaxNonConvexQuadraticConstraintInTrustRegion(&prog_, x_, Q1, Q2,
-                                                 Eigen::Vector2d::Zero(), 1, 1,
-                                                 Eigen::Vector2d(1, 0), 0.1);
+  AddRelaxNonConvexQuadraticConstraintInTrustRegion(&prog_,
+                                                    x_,
+                                                    Q1,
+                                                    Q2,
+                                                    Eigen::Vector2d::Zero(),
+                                                    1,
+                                                    1,
+                                                    Eigen::Vector2d(1, 0),
+                                                    0.1);
 
   auto result = prog_.Solve();
   EXPECT_TRUE(result == SolutionResult::kInfeasible_Or_Unbounded ||
@@ -306,7 +315,7 @@ GTEST_TEST(TestRelaxNonConvexQuadraticConstraintInTrustRegionInfeasible,
   Eigen::Matrix2d Q1 = Eigen::Vector2d(1, 0).asDiagonal();
   Eigen::Matrix2d Q2 = Eigen::Vector2d(0, 2).asDiagonal();
   const auto relaxed_constraint =
-      RelaxNonConvexQuadraticConstraintInTrustRegion(
+      AddRelaxNonConvexQuadraticConstraintInTrustRegion(
           &prog1, x1, Q1, Q2, Eigen::Vector2d::Zero(), 1, 1,
           Eigen::Vector2d(-5, -3), 0.1);
 
@@ -328,29 +337,29 @@ GTEST_TEST(TestRelaxNonConvexQuadraticConstraintInTrustRegionInfeasible,
 TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, ZeroQ1Q2) {
   // Should throw a runtime error.
   // Both Q1 and Q2 are 0
-  EXPECT_THROW(RelaxNonConvexQuadraticConstraintInTrustRegion(
-                   &prog_, x_, Eigen::Matrix2d::Zero(), Eigen::Matrix2d::Zero(),
-                   Eigen::Vector2d(1, 2), 1, 2, Eigen::Vector2d(2, 1), 1),
+  EXPECT_THROW(AddRelaxNonConvexQuadraticConstraintInTrustRegion(
+      &prog_, x_, Eigen::Matrix2d::Zero(), Eigen::Matrix2d::Zero(),
+      Eigen::Vector2d(1, 2), 1, 2, Eigen::Vector2d(2, 1), 1),
                std::runtime_error);
   // Q1 is zero and upper_bound is infinity.
   EXPECT_THROW(
-      RelaxNonConvexQuadraticConstraintInTrustRegion(
+      AddRelaxNonConvexQuadraticConstraintInTrustRegion(
           &prog_, x_, Eigen::Matrix2d::Zero(), Eigen::Matrix2d::Identity(),
           Eigen::Vector2d(1, 2), 1, std::numeric_limits<double>::infinity(),
           Eigen::Vector2d(2, 1), 1),
       std::runtime_error);
   // Q2 is zero and lower_bound is -infinity.
   EXPECT_THROW(
-      RelaxNonConvexQuadraticConstraintInTrustRegion(
+      AddRelaxNonConvexQuadraticConstraintInTrustRegion(
           &prog_, x_, Eigen::Matrix2d::Identity(), Eigen::Matrix2d::Zero(),
           Eigen::Vector2d(1, 2), -std::numeric_limits<double>::infinity(), 1,
           Eigen::Vector2d(2, 1), 1),
       std::runtime_error);
   // lower_bound is larger than upper_bound
-  EXPECT_THROW(RelaxNonConvexQuadraticConstraintInTrustRegion(
-                   &prog_, x_, Eigen::Matrix2d::Identity(),
-                   0.1 * Eigen::Matrix2d::Identity(), Eigen::Vector2d(1, 2), 2,
-                   1, Eigen::Vector2d(2, 1), 1),
+  EXPECT_THROW(AddRelaxNonConvexQuadraticConstraintInTrustRegion(
+      &prog_, x_, Eigen::Matrix2d::Identity(),
+      0.1 * Eigen::Matrix2d::Identity(), Eigen::Vector2d(1, 2), 2,
+      1, Eigen::Vector2d(2, 1), 1),
                std::runtime_error);
 }
 
@@ -362,7 +371,7 @@ void SolveRelaxNonConvexQuadraticConstraintInTrustRegionWithZeroQ1(
     const Eigen::Ref<const Eigen::VectorXd>& x0, double trust_region_gap,
     const Eigen::Ref<const Eigen::MatrixXd>& c) {
   const auto relaxed_constraints =
-      RelaxNonConvexQuadraticConstraintInTrustRegion(
+      AddRelaxNonConvexQuadraticConstraintInTrustRegion(
           prog, x, Eigen::MatrixXd::Zero(x.rows(), x.rows()), Q2, p, lb, ub, x0,
           trust_region_gap);
   const Binding<LinearConstraint> linear_constraint =
@@ -445,7 +454,7 @@ TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, ZeroQ1Test2) {
   Q2 << 1, 0, 0, 1;
   prog_.AddLinearConstraint(x_(0) + x_(1) >= 10);
 
-  RelaxNonConvexQuadraticConstraintInTrustRegion(
+  AddRelaxNonConvexQuadraticConstraintInTrustRegion(
       &prog_, x_, Eigen::Matrix2d::Zero(), Q2, Eigen::Vector2d::Zero(), -4, -1,
       Eigen::Vector2d(0, 1), 1);
 
@@ -462,7 +471,7 @@ void SolveRelaxNonConvexQuadraticConstraintInTrustRegionWithZeroQ2(
     const Eigen::Ref<const Eigen::VectorXd>& x0, double trust_region_gap,
     const Eigen::Ref<const Eigen::MatrixXd>& c) {
   const auto relaxed_constraints =
-      RelaxNonConvexQuadraticConstraintInTrustRegion(
+      AddRelaxNonConvexQuadraticConstraintInTrustRegion(
           prog, x, Q1, Eigen::MatrixXd::Zero(x.rows(), x.rows()), p, lb, ub, x0,
           trust_region_gap);
   const Binding<LinearConstraint> linear_constraint =
@@ -545,7 +554,7 @@ TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, ZeroQ2Test2) {
   Q1 << 1, 0, 0, 1;
   prog_.AddLinearConstraint(x_(0) + x_(1) >= 10);
 
-  RelaxNonConvexQuadraticConstraintInTrustRegion(
+  AddRelaxNonConvexQuadraticConstraintInTrustRegion(
       &prog_, x_, Q1, Eigen::Matrix2d::Zero(), Eigen::Vector2d::Zero(), 1, 4,
       Eigen::Vector2d(0, 1), 1);
 

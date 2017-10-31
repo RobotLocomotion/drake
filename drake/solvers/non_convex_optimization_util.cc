@@ -53,14 +53,14 @@ std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposeNonConvexQuadraticForm(
 std::tuple<Binding<LinearConstraint>,
            std::vector<Binding<RotatedLorentzConeConstraint>>,
            VectorXDecisionVariable>
-RelaxNonConvexQuadraticConstraintInTrustRegion(
-    MathematicalProgram* prog,
-    const Eigen::Ref<const VectorXDecisionVariable>& x,
-    const Eigen::Ref<const Eigen::MatrixXd>& Q1,
-    const Eigen::Ref<const Eigen::MatrixXd>& Q2,
-    const Eigen::Ref<const Eigen::VectorXd>& p, double lower_bound,
+AddRelaxNonConvexQuadraticConstraintInTrustRegion(
+    MathematicalProgram *prog,
+    const Eigen::Ref<const VectorXDecisionVariable> &x,
+    const Eigen::Ref<const Eigen::MatrixXd> &Q1,
+    const Eigen::Ref<const Eigen::MatrixXd> &Q2,
+    const Eigen::Ref<const Eigen::VectorXd> &p, double lower_bound,
     double upper_bound,
-    const Eigen::Ref<const Eigen::VectorXd>& linearization_point,
+    const Eigen::Ref<const Eigen::VectorXd> &linearization_point,
     double trust_region_gap) {
   const auto& x0 = linearization_point;
   if (Q1.rows() != Q1.cols()) {
