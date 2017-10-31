@@ -3,8 +3,3 @@ package(
 )
 
 exports_files(["protobuf.bzl"])
-
-sh_binary(
-    name = "drake_protoc",
-    srcs = ["drake_protoc.sh"],
-)

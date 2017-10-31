@@ -13,7 +13,7 @@ def drake_cc_proto_library(
     """A wrapper to insert Drake-specific customizations."""
     cc_proto_library(
         name = name,
-        protoc = "@protobuf//:drake_protoc",
+        protoc = "@drake//tools/skylark:drake_protoc",
         default_runtime = "@systemprotobuf",
         tags = tags + ["nolint"],
         **kwargs)
@@ -25,7 +25,7 @@ def drake_py_proto_library(
     """A wrapper to insert Drake-specific customizations."""
     py_proto_library(
         name = name,
-        protoc = "@protobuf//:drake_protoc",
+        protoc = "@drake//tools/skylark:drake_protoc",
         default_runtime = None,  # Use the system default.
         tags = tags + ["nolint"],
         **kwargs)
