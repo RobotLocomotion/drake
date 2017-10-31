@@ -30,6 +30,11 @@ using test::VarLess;
 using test::VarNotEqual;
 using test::VarNotLess;
 
+template <typename T>
+size_t get_std_hash(const T& item) {
+  return std::hash<T>{}(item);
+}
+
 // Provides common variables that are used by the following tests.
 class VariableTest : public ::testing::Test {
  protected:
@@ -64,13 +69,13 @@ TEST_F(VariableTest, GetName) {
 TEST_F(VariableTest, MoveCopyPreserveId) {
   Variable x{"x"};
   const size_t x_id{x.get_id()};
-  const size_t x_hash{x.get_hash()};
+  const size_t x_hash{get_std_hash(x)};
   const Variable x_copied{x};
   const Variable x_moved{move(x)};
   EXPECT_EQ(x_id, x_copied.get_id());
-  EXPECT_EQ(x_hash, x_copied.get_hash());
+  EXPECT_EQ(x_hash, get_std_hash(x_copied));
   EXPECT_EQ(x_id, x_moved.get_id());
-  EXPECT_EQ(x_hash, x_moved.get_hash());
+  EXPECT_EQ(x_hash, get_std_hash(x_moved));
 }
 
 TEST_F(VariableTest, Less) {
@@ -138,14 +143,14 @@ TEST_F(VariableTest, EqualityCheck) {
 
 // This test checks whether Variable is compatible with std::unordered_set.
 TEST_F(VariableTest, CompatibleWithUnorderedSet) {
-  unordered_set<Variable, hash_value<Variable>> uset;
+  unordered_set<Variable> uset;
   uset.emplace(x_);
   uset.emplace(y_);
 }
 
 // This test checks whether Variable is compatible with std::unordered_map.
 TEST_F(VariableTest, CompatibleWithUnorderedMap) {
-  unordered_map<Variable, Variable, hash_value<Variable>> umap;
+  unordered_map<Variable, Variable> umap;
   umap.emplace(x_, y_);
 }
 
