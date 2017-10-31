@@ -329,11 +329,11 @@ TEST_F(LeafSystemTest, Parameters) {
 TEST_F(LeafSystemTest, DeclareVanillaMiscContinuousState) {
   system_.DeclareContinuousState(2);
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
-  const ContinuousState<double>* xc = context->get_continuous_state();
-  EXPECT_EQ(2, xc->size());
-  EXPECT_EQ(0, xc->get_generalized_position().size());
-  EXPECT_EQ(0, xc->get_generalized_velocity().size());
-  EXPECT_EQ(2, xc->get_misc_continuous_state().size());
+  const ContinuousState<double>& xc = context->get_continuous_state();
+  EXPECT_EQ(2, xc.size());
+  EXPECT_EQ(0, xc.get_generalized_position().size());
+  EXPECT_EQ(0, xc.get_generalized_velocity().size());
+  EXPECT_EQ(2, xc.get_misc_continuous_state().size());
 }
 
 // Tests that the leaf system reserved the declared misc continuous state of
@@ -341,14 +341,14 @@ TEST_F(LeafSystemTest, DeclareVanillaMiscContinuousState) {
 TEST_F(LeafSystemTest, DeclareTypedMiscContinuousState) {
   system_.DeclareContinuousState(MyVector2d());
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
-  const ContinuousState<double>* xc = context->get_continuous_state();
+  const ContinuousState<double>& xc = context->get_continuous_state();
   // Check that type was preserved.
   EXPECT_NE(nullptr, dynamic_cast<MyVector2d*>(
-                         context->get_mutable_continuous_state_vector()));
-  EXPECT_EQ(2, xc->size());
-  EXPECT_EQ(0, xc->get_generalized_position().size());
-  EXPECT_EQ(0, xc->get_generalized_velocity().size());
-  EXPECT_EQ(2, xc->get_misc_continuous_state().size());
+                         &context->get_mutable_continuous_state_vector()));
+  EXPECT_EQ(2, xc.size());
+  EXPECT_EQ(0, xc.get_generalized_position().size());
+  EXPECT_EQ(0, xc.get_generalized_velocity().size());
+  EXPECT_EQ(2, xc.get_misc_continuous_state().size());
 }
 
 // Tests that the leaf system reserved the declared continuous state with
@@ -356,11 +356,11 @@ TEST_F(LeafSystemTest, DeclareTypedMiscContinuousState) {
 TEST_F(LeafSystemTest, DeclareVanillaContinuousState) {
   system_.DeclareContinuousState(4, 3, 2);
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
-  const ContinuousState<double>* xc = context->get_continuous_state();
-  EXPECT_EQ(4 + 3 + 2, xc->size());
-  EXPECT_EQ(4, xc->get_generalized_position().size());
-  EXPECT_EQ(3, xc->get_generalized_velocity().size());
-  EXPECT_EQ(2, xc->get_misc_continuous_state().size());
+  const ContinuousState<double>& xc = context->get_continuous_state();
+  EXPECT_EQ(4 + 3 + 2, xc.size());
+  EXPECT_EQ(4, xc.get_generalized_position().size());
+  EXPECT_EQ(3, xc.get_generalized_velocity().size());
+  EXPECT_EQ(2, xc.get_misc_continuous_state().size());
 }
 
 // Tests that the leaf system reserved the declared continuous state with
@@ -369,15 +369,15 @@ TEST_F(LeafSystemTest, DeclareTypedContinuousState) {
   using MyVector9d = MyVector<4 + 3 + 2, double>;
   system_.DeclareContinuousState(MyVector9d(), 4, 3, 2);
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
-  const ContinuousState<double>* xc = context->get_continuous_state();
+  const ContinuousState<double>& xc = context->get_continuous_state();
   // Check that type was preserved.
   EXPECT_NE(nullptr, dynamic_cast<MyVector9d*>(
-                         context->get_mutable_continuous_state_vector()));
+                         &context->get_mutable_continuous_state_vector()));
   // Check that dimensions were preserved.
-  EXPECT_EQ(4 + 3 + 2, xc->size());
-  EXPECT_EQ(4, xc->get_generalized_position().size());
-  EXPECT_EQ(3, xc->get_generalized_velocity().size());
-  EXPECT_EQ(2, xc->get_misc_continuous_state().size());
+  EXPECT_EQ(4 + 3 + 2, xc.size());
+  EXPECT_EQ(4, xc.get_generalized_position().size());
+  EXPECT_EQ(3, xc.get_generalized_velocity().size());
+  EXPECT_EQ(2, xc.get_misc_continuous_state().size());
 }
 
 TEST_F(LeafSystemTest, DeclarePerStepEvents) {
@@ -1433,7 +1433,7 @@ GTEST_TEST(SystemConstraintTest, ClassMethodTest) {
   EXPECT_EQ(dut.get_num_constraints(), 2);
 
   auto context = dut.CreateDefaultContext();
-  context->get_mutable_continuous_state_vector()->SetFromVector(
+  context->get_mutable_continuous_state_vector().SetFromVector(
       Eigen::Vector2d(5.0, 7.0));
 
   EXPECT_EQ(dut.get_constraint(SystemConstraintIndex(0)).size(), 1);
@@ -1471,7 +1471,7 @@ GTEST_TEST(SystemConstraintTest, FunctionHandleTest) {
   EXPECT_EQ(dut.get_num_constraints(), 1);
 
   auto context = dut.CreateDefaultContext();
-  context->get_mutable_continuous_state_vector()->SetFromVector(
+  context->get_mutable_continuous_state_vector().SetFromVector(
       Eigen::Vector2d(5.0, 7.0));
 
   Eigen::VectorXd value;
@@ -1551,7 +1551,7 @@ GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   EXPECT_TRUE(CompareMatrices(value0, Vector1<double>::Constant(-10.0)));
 
   // `xc[0] >= 22.0` with `xc[0] == 2.0` produces `-20.0 >= 0.0`.
-  context->get_mutable_continuous_state_vector()->SetAtIndex(0, 2.0);
+  context->get_mutable_continuous_state_vector().SetAtIndex(0, 2.0);
   Eigen::VectorXd value1;
   constraint1.Calc(*context, &value1);
   EXPECT_TRUE(CompareMatrices(value1, Vector1<double>::Constant(-20.0)));
@@ -1584,7 +1584,7 @@ class RandomContextTestSystem : public LeafSystem<double> {
                       RandomGenerator* generator) const override {
     std::normal_distribution<double> normal;
     for (int i = 0; i < context.get_continuous_state_vector().size(); i++) {
-      state->get_mutable_continuous_state()->get_mutable_vector()->SetAtIndex(
+      state->get_mutable_continuous_state().get_mutable_vector().SetAtIndex(
           i, normal(*generator));
     }
   }

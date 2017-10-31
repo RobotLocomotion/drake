@@ -307,16 +307,16 @@ int DoMain(void) {
   simulator.Initialize();
   simulator.set_target_realtime_rate(FLAGS_realtime_rate);
   simulator.reset_integrator<RungeKutta2Integrator<double>>(*sys,
-      FLAGS_dt, simulator.get_mutable_context());
+      FLAGS_dt, &simulator.get_mutable_context());
   simulator.get_mutable_integrator()->set_maximum_step_size(FLAGS_dt);
   simulator.get_mutable_integrator()->set_fixed_step_mode(true);
 
   auto& plan_source_context = sys->GetMutableSubsystemContext(
-      *iiwa_trajectory_generator, simulator.get_mutable_context());
+      *iiwa_trajectory_generator, &simulator.get_mutable_context());
   iiwa_trajectory_generator->Initialize(
       plan_source_context.get_time(),
       Eigen::VectorXd::Zero(7),
-      plan_source_context.get_mutable_state());
+      &plan_source_context.get_mutable_state());
 
   // Step the simulator in some small increment.  Between steps, check
   // to see if the state machine thinks we're done, and if so that the

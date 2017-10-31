@@ -1,35 +1,7 @@
-/*
-* drakeUtil.cpp
- *
- *  Created on: Jun 19, 2013
- *      Author: russt
- */
+#include "drake/multibody/resolve_center_of_pressure.h"
 
-#include "drake/util/drakeUtil.h"
-
+#include <limits>
 #include <stdexcept>
-
-#include <Eigen/Dense>
-
-void baseZeroToBaseOne(std::vector<int>& vec) {
-  for (std::vector<int>::iterator iter = vec.begin(); iter != vec.end(); iter++)
-    (*iter)++;
-}
-
-double angleAverage(double theta1, double theta2) {
-  // Computes the average between two angles by averaging points on the unit
-  // circle and taking the arctan of the result.
-  //   see: http://en.wikipedia.org/wiki/Mean_of_circular_quantities
-  // theta1 is a scalar or column vector of angles (rad)
-  // theta2 is a scalar or column vector of angles (rad)
-
-  double x_mean = 0.5 * (cos(theta1) + cos(theta2));
-  double y_mean = 0.5 * (sin(theta1) + sin(theta2));
-
-  double angle_mean = atan2(y_mean, x_mean);
-
-  return angle_mean;
-}
 
 template <typename DerivedTorque, typename DerivedForce, typename DerivedNormal,
           typename DerivedPoint>

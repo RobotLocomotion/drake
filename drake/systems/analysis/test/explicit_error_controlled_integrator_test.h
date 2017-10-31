@@ -151,7 +151,7 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, BulletProofSetup) {
 
   // Get the final position.
   const double x_final =
-      this->context->get_continuous_state()->get_vector().GetAtIndex(0);
+      this->context->get_continuous_state().get_vector().GetAtIndex(0);
 
   // Check the solution. We're not really looking for accuracy here, just
   // want to make sure that the value is finite.
@@ -246,7 +246,7 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, SpringMassStepEC) {
 
   // Get the final position.
   const double x_final =
-      this->context->get_continuous_state()->get_vector().GetAtIndex(0);
+      this->context->get_continuous_state().get_vector().GetAtIndex(0);
 
   // Store the number of integration steps.
   int fixed_steps = this->integrator->get_num_steps_taken();

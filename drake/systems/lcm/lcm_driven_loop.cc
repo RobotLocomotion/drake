@@ -44,14 +44,14 @@ const AbstractValue& LcmDrivenLoop::WaitForMessage() {
   if (sub_events_->HasDiscreteUpdateEvents()) {
     driving_sub_.CalcDiscreteVariableUpdates(
         *sub_context_, sub_events_->get_discrete_update_events(),
-        sub_swap_state_->get_mutable_discrete_state());
+        &sub_swap_state_->get_mutable_discrete_state());
   } else if (sub_events_->HasUnrestrictedUpdateEvents()) {
     driving_sub_.CalcUnrestrictedUpdate(*sub_context_,
         sub_events_->get_unrestricted_update_events(), sub_swap_state_.get());
   } else {
     DRAKE_DEMAND(false);
   }
-  sub_context_->get_mutable_state()->CopyFrom(*sub_swap_state_);
+  sub_context_->get_mutable_state().CopyFrom(*sub_swap_state_);
 
   driving_sub_.CalcOutput(*sub_context_, sub_output_.get());
   return *(sub_output_->get_data(0));

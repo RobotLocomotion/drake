@@ -58,7 +58,7 @@ class OptitrackEncoderTest : public ::testing::Test {
         dut.get_pose_bundle_input_port_index() /* input port ID*/,
         std::move(input));
 
-    dut.CalcUnrestrictedUpdate(*context, context->get_mutable_state());
+    dut.CalcUnrestrictedUpdate(*context, &context->get_mutable_state());
     dut.CalcOutput(*context, output.get());
     auto output_value =
         output->get_data(dut.get_optitrack_output_port_index());

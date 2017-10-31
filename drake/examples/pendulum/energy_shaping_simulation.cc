@@ -87,17 +87,17 @@ int DoMain() {
   systems::Simulator<double> simulator(*diagram);
   systems::Context<double>& pendulum_context =
       diagram->GetMutableSubsystemContext(*pendulum,
-                                          simulator.get_mutable_context());
-  auto state = pendulum->get_mutable_state(&pendulum_context);
+                                          &simulator.get_mutable_context());
+  auto& state = pendulum->get_mutable_state(&pendulum_context);
 
   // Desired energy is the total energy when the pendulum is at the upright.
-  state->set_theta(M_PI);
-  state->set_thetadot(0.0);
+  state.set_theta(M_PI);
+  state.set_thetadot(0.0);
   const double desired_energy = pendulum->CalcTotalEnergy(pendulum_context);
 
   // Set initial conditions (near the bottom).
-  state->set_theta(0.1);
-  state->set_thetadot(0.2);
+  state.set_theta(0.1);
+  state.set_thetadot(0.2);
   const double initial_energy = pendulum->CalcTotalEnergy(pendulum_context);
 
   // Run the simulation.

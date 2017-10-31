@@ -76,12 +76,12 @@ int DoMain() {
   systems::Simulator<double> simulator(*diagram);
 
   Context<double>& jaco_context = diagram->GetMutableSubsystemContext(
-      *plant, simulator.get_mutable_context());
+      *plant, &simulator.get_mutable_context());
 
   // Sets (arbitrary) initial conditions.
   // See the @file docblock in jaco_common.h for joint index descriptions.
-  VectorBase<double>* x0 = jaco_context.get_mutable_continuous_state_vector();
-  x0->SetAtIndex(1, 0.5);  // shoulder fore/aft angle [rad]
+  VectorBase<double>& x0 = jaco_context.get_mutable_continuous_state_vector();
+  x0.SetAtIndex(1, 0.5);  // shoulder fore/aft angle [rad]
 
   simulator.Initialize();
 
@@ -91,9 +91,9 @@ int DoMain() {
 
   // Ensures the simulation was successful.
   const Context<double>& context = simulator.get_context();
-  const ContinuousState<double>* state = context.get_continuous_state();
-  const VectorBase<double>& position_vector = state->get_generalized_position();
-  const VectorBase<double>& velocity_vector = state->get_generalized_velocity();
+  const ContinuousState<double>& state = context.get_continuous_state();
+  const VectorBase<double>& position_vector = state.get_generalized_position();
+  const VectorBase<double>& velocity_vector = state.get_generalized_velocity();
 
   const int num_q = position_vector.size();
   const int num_v = velocity_vector.size();

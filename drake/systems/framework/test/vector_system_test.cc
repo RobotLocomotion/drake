@@ -245,7 +245,7 @@ TEST_F(VectorSystemTest, OutputContinuous) {
   auto& output_port = dut.get_output_port();
   std::unique_ptr<AbstractValue> output = output_port.Allocate(*context);
   context->FixInputPort(0, BasicVector<double>::Make({1, 2}));
-  context->get_mutable_continuous_state_vector()->SetFromVector(
+  context->get_mutable_continuous_state_vector().SetFromVector(
       Eigen::Vector2d::Ones());
   output_port.Calc(*context, output.get());
   EXPECT_EQ(dut.get_output_count(), 1);
@@ -303,7 +303,7 @@ TEST_F(VectorSystemTest, TimeDerivatives) {
   dut.DeclareContinuousState(TestVectorSystem::kSize);
   context = dut.CreateDefaultContext();
   context->FixInputPort(0, BasicVector<double>::Make({1, 2}));
-  context->get_mutable_continuous_state_vector()->SetFromVector(
+  context->get_mutable_continuous_state_vector().SetFromVector(
       Eigen::Vector2d::Ones());
   derivatives = dut.AllocateTimeDerivatives();
   dut.CalcTimeDerivatives(*context, derivatives.get());
@@ -377,7 +377,7 @@ class NoInputContinuousTimeSystem : public VectorSystem<double> {
 TEST_F(VectorSystemTest, NoInputContinuousTimeSystemTest) {
   NoInputContinuousTimeSystem dut;
   auto context = dut.CreateDefaultContext();
-  context->get_mutable_continuous_state()->SetFromVector(Vector1d::Ones());
+  context->get_mutable_continuous_state().SetFromVector(Vector1d::Ones());
 
   // Ensure that time derivatives get calculated correctly.
   std::unique_ptr<ContinuousState<double>> derivatives =
@@ -416,7 +416,7 @@ class NoInputNoOutputDiscreteTimeSystem : public VectorSystem<double> {
 TEST_F(VectorSystemTest, NoInputNoOutputDiscreteTimeSystemTest) {
   NoInputNoOutputDiscreteTimeSystem dut;
   auto context = dut.CreateDefaultContext();
-  context->get_mutable_discrete_state()->get_mutable_vector().SetFromVector(
+  context->get_mutable_discrete_state().get_mutable_vector().SetFromVector(
       Vector1d::Constant(2.0));
 
   auto discrete_updates = dut.AllocateDiscreteVariables();
@@ -540,7 +540,7 @@ TEST_F(VectorSystemTest, MissingMethodsDiscreteTimeSystemTest) {
   MissingMethodsDiscreteTimeSystem dut;
   auto context = dut.CreateDefaultContext();
 
-  context->get_mutable_discrete_state()->get_mutable_vector().SetFromVector(
+  context->get_mutable_discrete_state().get_mutable_vector().SetFromVector(
       Vector1d::Constant(2.0));
   auto discrete_updates = dut.AllocateDiscreteVariables();
   EXPECT_THROW(

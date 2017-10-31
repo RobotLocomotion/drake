@@ -6,15 +6,15 @@ load(
     "drake_cc_library",
     "drake_cc_binary",
 )
+load(
+    "@drake//tools/vector_gen:vector_gen.bzl",
+    "drake_cc_vector_gen_library",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-drake_cc_library(
+drake_cc_vector_gen_library(
     name = "bouncing_ball_vector",
-    srcs = ["gen/bouncing_ball_vector.cc"],
-    hdrs = ["gen/bouncing_ball_vector.h"],
-    deps = [
-        "//drake/systems/framework:vector",
-    ],
+    srcs = ["bouncing_ball_vector.named_vector"],
 )
 
 drake_cc_library(

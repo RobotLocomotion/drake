@@ -23,7 +23,7 @@ class AffineSystemTest : public AffineLinearSystemTest {
     context_ = dut_->CreateDefaultContext();
     input_vector_ = make_unique<BasicVector<double>>(2 /* size */);
     system_output_ = dut_->AllocateOutput(*context_);
-    state_ = context_->get_mutable_continuous_state();
+    state_ = &context_->get_mutable_continuous_state();
     derivatives_ = dut_->AllocateTimeDerivatives();
     updates_ = dut_->AllocateDiscreteVariables();
   }
@@ -255,7 +255,7 @@ GTEST_TEST(SimpleTimeVaryingAffineSystemTest, EvalTest) {
 
   auto context = sys.CreateDefaultContext();
   context->set_time(t);
-  context->get_mutable_continuous_state_vector()->SetFromVector(x);
+  context->get_mutable_continuous_state_vector().SetFromVector(x);
   context->FixInputPort(0, BasicVector<double>::Make(42.0));
 
   auto derivs = sys.AllocateTimeDerivatives();
@@ -276,7 +276,7 @@ GTEST_TEST(SimpleTimeVaryingAffineSystemTest, DiscreteEvalTest) {
 
   auto context = sys.CreateDefaultContext();
   context->set_time(t);
-  context->get_mutable_discrete_state()->get_mutable_vector().SetFromVector(x);
+  context->get_mutable_discrete_state().get_mutable_vector().SetFromVector(x);
   context->FixInputPort(0, BasicVector<double>::Make(42.0));
 
   auto updates = sys.AllocateDiscreteVariables();
