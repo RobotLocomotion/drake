@@ -19,6 +19,7 @@
 #include "drake/math/quaternion.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/systems/robotInterfaces/convex_hull.h"
+#include "drake/systems/robotInterfaces/verify_subtype_sizes.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"
 #include "drake/util/lcmUtil.h"

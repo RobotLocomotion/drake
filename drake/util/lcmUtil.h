@@ -12,7 +12,6 @@
 #include "drake/lcmt_piecewise_polynomial.hpp"
 #include "drake/lcmt_polynomial.hpp"
 #include "drake/lcmt_polynomial_matrix.hpp"
-#include "drake/lcmt_qp_controller_input.hpp"
 
 void EncodeVector3d(
     const Eigen::Ref<const Eigen::Vector3d>& vec, bot_core::vector_3d_t& msg);
@@ -83,8 +82,3 @@ void encodePiecewisePolynomial(
 
 PiecewisePolynomial<double> decodePiecewisePolynomial(
     const drake::lcmt_piecewise_polynomial& msg);
-
-void verifySubtypeSizes(
-    drake::lcmt_support_data& support_data);
-void verifySubtypeSizes(
-    drake::lcmt_qp_controller_input& qp_input);

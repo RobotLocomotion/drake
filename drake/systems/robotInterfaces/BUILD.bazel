@@ -20,8 +20,14 @@ drake_cc_library(
 
 drake_cc_library(
     name = "qp_locomotion_plan",
-    srcs = ["QPLocomotionPlan.cpp"],
-    hdrs = ["QPLocomotionPlan.h"],
+    srcs = [
+        "QPLocomotionPlan.cpp",
+        "verify_subtype_sizes.cc",
+        "verify_subtype_sizes.h",
+    ],
+    hdrs = [
+        "QPLocomotionPlan.h",
+    ],
     deps = [
         ":body_motion_data",
         ":convex_hull",
