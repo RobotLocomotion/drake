@@ -12,6 +12,10 @@
 #include <Eigen/Core>
 #include <unsupported/Eigen/AutoDiff>
 
+static_assert(EIGEN_WORLD_VERSION >= 3 && EIGEN_MAJOR_VERSION >= 3 &&
+                  EIGEN_MINOR_VERSION >= 3,
+              "Drake requires Eigen >= v3.3.3.");
+
 // Do not alpha-sort the following block of hard-coded #includes, which is
 // protected by `clang-format on/off`.
 //
