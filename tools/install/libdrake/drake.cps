@@ -51,9 +51,7 @@
       "Hints": ["@prefix@/lib/cmake/nlopt"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
-    "protobuf": {
-      "Hints": ["@prefix@/lib/cmake/protobuf"],
-      "X-CMake-Find-Args": ["CONFIG"]
+    "Protobuf": {
     },
     "robotlocomotion-lcmtypes": {
       "Hints": ["@prefix@/lib/cmake/robotlocomotion-lcmtypes"],
@@ -127,7 +125,7 @@
         "ignition-math3:ignition-math3",
         "ignition-rndf0:ignition-rndf0",
         "lcm:lcm",
-        "protobuf:protobuf",
+        "protobuf",
         "robotlocomotion-lcmtypes:robotlocomotion-lcmtypes-cpp",
         "spdlog:spdlog",
         "stx:stx",
