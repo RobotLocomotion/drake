@@ -1,0 +1,18 @@
+#!/usr/bin/env python
+
+import os
+import sys
+
+
+def main():
+    prefix = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    sys.path.insert(0, os.path.join(
+        prefix, 'lib', 'python2.7', 'site-packages'))
+
+    import optitrack.optitrack_client
+
+    optitrack.optitrack_client.main()
+
+
+if __name__ == '__main__':
+    main()
