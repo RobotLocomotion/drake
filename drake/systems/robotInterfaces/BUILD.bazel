@@ -43,6 +43,7 @@ drake_cc_library(
         "//drake/math:geometric_transform",
         "//drake/math:gradient",
         "//drake/multibody:rigid_body_tree",
+        "//drake/systems/controllers:polynomial_encode_decode",
         "//drake/systems/controllers:zmp_util",
         "//drake/util",
         "//drake/util:lcm_util",

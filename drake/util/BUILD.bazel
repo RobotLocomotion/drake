@@ -27,10 +27,6 @@ drake_cc_library(
     hdrs = ["lcmUtil.h"],
     deps = [
         ":util",
-        "//drake/common/trajectories:piecewise_polynomial",
-        "//drake/lcmtypes:piecewise_polynomial",
-        "//drake/lcmtypes:polynomial",
-        "//drake/lcmtypes:polynomial_matrix",
         "//drake/math:geometric_transform",
         "@eigen",
         "@lcmtypes_bot2_core",

@@ -18,6 +18,7 @@
 #include "drake/math/gradient.h"
 #include "drake/math/quaternion.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/systems/controllers/polynomial_encode_decode.h"
 #include "drake/systems/robotInterfaces/convex_hull.h"
 #include "drake/systems/robotInterfaces/verify_subtype_sizes.h"
 #include "drake/util/drakeGeometryUtil.h"
