@@ -36,10 +36,8 @@ const Connection* Builder::Connect(const std::string& id, int num_lanes,
                  start.xy().y() + (length * std::sin(start.xy().heading())),
                  start.xy().heading()),
       z_end);
-  const Connection::SegmentParameters segment_parameters {
-      num_lanes, r0, left_shoulder, right_shoulder};
-  connections_.push_back(std::make_unique<Connection>(id, start, end,
-                                                      segment_parameters));
+  connections_.push_back(std::make_unique<Connection>(
+      id, start, end, num_lanes, r0, left_shoulder, right_shoulder));
   return connections_.back().get();
 }
 
@@ -52,19 +50,16 @@ const Connection* Builder::Connect(const std::string& id, int num_lanes,
   const double theta0 = alpha - std::copysign(M_PI / 2., arc.d_theta());
   const double theta1 = theta0 + arc.d_theta();
 
-  const Connection::ArcGeometry arc_geometry{
-      start.xy().x() - (arc.radius() * std::cos(theta0)),
-      start.xy().y() - (arc.radius() * std::sin(theta0)),
-      arc.radius(), arc.d_theta()};
-  const Endpoint end(EndpointXy(
-      arc_geometry.cx + (arc.radius() * std::cos(theta1)),
-      arc_geometry.cy + (arc.radius() * std::sin(theta1)),
-      alpha + arc.d_theta()),
-      z_end);
-  const Connection::SegmentParameters segment_parameters{
-      num_lanes, r0, left_shoulder, right_shoulder};
+  const double cx = start.xy().x() - (arc.radius() * std::cos(theta0));
+  const double cy = start.xy().y() - (arc.radius() * std::sin(theta0));
+  const Endpoint end(EndpointXy(cx + (arc.radius() * std::cos(theta1)),
+                                cy + (arc.radius() * std::sin(theta1)),
+                                alpha + arc.d_theta()),
+                     z_end);
+
   connections_.push_back(std::make_unique<Connection>(
-      id, start, end, segment_parameters, arc_geometry));
+      id, start, end, num_lanes, r0, left_shoulder, right_shoulder, cx, cy,
+      arc.radius(), arc.d_theta()));
   return connections_.back().get();
 }
 

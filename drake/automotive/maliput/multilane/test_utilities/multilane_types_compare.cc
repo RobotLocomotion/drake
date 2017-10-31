@@ -9,10 +9,6 @@ namespace maliput {
 namespace multilane {
 namespace test {
 
-// Scale factor in meters used to convert back and forth from an angle deviation
-// to length deviation.
-const double kLengthScale{1.};
-
 ::testing::AssertionResult IsEndpointXyClose(const EndpointXy& xy1,
                                              const EndpointXy& xy2,
                                              double tolerance) {
@@ -38,16 +34,16 @@ const double kLengthScale{1.};
                     ", diff = " + std::to_string(delta) +
                     ", tolerance = " + std::to_string(tolerance) + "\n";
   }
-  const double delta_angle = std::abs(xy1.heading() - xy2.heading());
-  if ((delta_angle * kLengthScale) > tolerance) {
+  delta = std::abs(xy1.heading() - xy2.heading());
+  if (delta > tolerance) {
     fails = true;
     error_message = error_message +
                     "EndpointXys are different at heading angle. " +
                     "xy1.heading(): " + std::to_string(xy1.heading()) +
                     " vs.  xy2.heading(): " + std::to_string(xy2.heading()) +
-                    ", diff = " + std::to_string(delta_angle) +
+                    ", diff = " + std::to_string(delta) +
                     ", tolerance = " +
-                    std::to_string(tolerance / kLengthScale) + "\n";
+                    std::to_string(tolerance) + "\n";
   }
   if (fails) {
     return ::testing::AssertionFailure() << error_message;
@@ -83,16 +79,16 @@ const double kLengthScale{1.};
                     ", diff = " + std::to_string(delta) +
                     ", tolerance = " + std::to_string(tolerance) + "\n";
   }
-  const double delta_angle = std::abs(z1.theta() - z2.theta());
-  if ((delta_angle * kLengthScale) > tolerance) {
+  delta = std::abs(z1.theta() - z2.theta());
+  if (delta > tolerance) {
     fails = true;
     error_message = error_message +
                     "EndpointZ are different at theta angle. " +
                     "z1.theta(): " + std::to_string(z1.theta()) +
                     " vs.  z2.theta(): " + std::to_string(z2.theta()) +
-                    ", diff = " + std::to_string(delta_angle) +
+                    ", diff = " + std::to_string(delta) +
                     ", tolerance = " +
-                    std::to_string(tolerance / kLengthScale) + "\n";
+                    std::to_string(tolerance) + "\n";
   }
   delta = std::abs(z1.theta_dot() - z2.theta_dot());
   if (delta > tolerance) {
