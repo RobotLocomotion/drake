@@ -40,7 +40,7 @@ struct ConstraintAccelProblemData {
   /// Flag for whether the complementarity problem solver should be used to
   /// solve this particular problem instance. If every constraint in the problem
   /// data is active, using the linear system solver
-  /// (`use_complementarity_problem_solve=false`) will yield a solution much
+  /// (`use_complementarity_problem_solver=false`) will yield a solution much
   /// more quickly. If it is unknown whether every constraint is active, the
   /// complementarity problem solver should be used; otherwise, the inequality
   /// constraints embedded in the problem data may not be satisfied. The safe
