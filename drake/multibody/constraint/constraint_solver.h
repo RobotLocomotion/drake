@@ -401,9 +401,9 @@ void ConstraintSolver<T>::DetermineNewFullInertiaSolveOperator(
               num_generalized_velocities](const MatrixX<T>& B) -> MatrixX<T> {
     // From a block matrix inversion,
     // | M  -Gᵀ |⁻¹ | Y | = |  C  E || Y | = | CY + EZ   |
-    // | G'  0  |   | Z |   | -Eᵀ F || Z |   | -EᵀY + FZ |
-    // where C  ≡ M⁻¹ - M⁻¹Gᵀ(GM⁻¹Gᵀ)⁻¹GM⁻¹
-    //       E  ≡ M⁻¹Gᵀ(GM⁻¹Gᵀ)⁻¹
+    // | G   0  |   | Z |   | -Eᵀ F || Z |   | -EᵀY + FZ |
+    // where E  ≡ M⁻¹Gᵀ(GM⁻¹Gᵀ)⁻¹
+    //       C  ≡ M⁻¹ - M⁻¹Gᵀ(GM⁻¹Gᵀ)⁻¹GM⁻¹ = M⁻¹ - M⁻¹GᵀE
     //      -Eᵀ ≡ -(GM⁻¹Gᵀ)⁻¹GM⁻¹
     //       F  ≡ (GM⁻¹Gᵀ)⁻¹
     //       B  ≡ | Y |
@@ -450,7 +450,7 @@ void ConstraintSolver<T>::DetermineNewFullInertiaSolveOperator(
     const MatrixX<T> iM_GT_Del_Z = problem_data->solve_inertia(GT_Del_Z);
 
     // Set the top block of the result.
-    X_top = problem_data->solve_inertia(Y) - iM_GT_Del_G_iM_Y + iM_GT_Del_Z;
+    X_top = iM_Y - iM_GT_Del_G_iM_Y + iM_GT_Del_Z;
 
     // Set the bottom block of the result.
     X_bot = delassus_QTZ->solve(Z) - Del_G_iM_Y;
