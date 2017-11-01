@@ -9,21 +9,9 @@ import subprocess
 
 import google.protobuf.text_format
 
-# TODO(jwnimmer-tri) Unfortunately, the module paths change when called from
-# the deprecated codegen bash scripts, versus the Bazel sandbox codegen.  So,
-# we'll try both.  We should replace with a single import block once the
-# deprecated command-line interface is gone.
-try:
-    # This is the forward-looking phrasing that works when running as a codegen
-    # tool insid the sandbox.
-    from drake.drake.tools import named_vector_pb2
-    from drake.tools.lint.clang_format import get_clang_format_path
-    from drake.tools.lint.find_data import find_data
-except ImportError:
-    # This is the deprecated phrasing only works when running from bazel-bin.
-    from drake.tools import named_vector_pb2
-    from tools.lint.clang_format import get_clang_format_path
-    from tools.lint.find_data import find_data
+from drake.drake.tools import named_vector_pb2
+from drake.tools.lint.clang_format import get_clang_format_path
+from drake.tools.lint.find_data import find_data
 
 
 def put(fileobj, text, newlines_after=0):
@@ -516,53 +504,15 @@ LCMTYPE_POSTAMBLE = """
 """
 
 
-def deprecated_generate_all_code(args):
-    # This is a compatiblity shim from the old ArgumentParser semantics, to the
-    # new implementation function `generate_code()`.  TODO(jwnimmer-tri) Remove
-    # me once the depreacted command-line interface is gone.
-
-    cxx_dir = os.path.abspath(args.cxx_dir)
-    lcmtype_dir = os.path.abspath(args.lcmtype_dir or "")
-    cxx_include_path = cxx_dir.replace(os.path.join(args.workspace, ''), '')
-
-    # Compute appropriate filenames for all outputs ...
-    snake, _ = os.path.splitext(os.path.basename(args.named_vector_file))
-    cxx_filenames = [
-        os.path.join(cxx_dir, pattern % snake)
-        for pattern in [
-            "%s.h", "%s.cc", "%s_translator.h", "%s_translator.cc",
-        ]
-    ]
-    lcm_filename = os.path.join(lcmtype_dir, "lcmt_%s_t.lcm" % snake)
-    # ... but omit LCM support if the user didn't want it.
-    if not args.lcmtype_dir:
-        cxx_filenames[2] = None
-        cxx_filenames[3] = None
-        lcm_filename = None
-
-    # Delegate to the helper function.
-    generate_code(
-        args.named_vector_file,
-        cxx_include_path,
-        vector_hh_filename=cxx_filenames[0],
-        vector_cc_filename=cxx_filenames[1],
-        translator_hh_filename=cxx_filenames[2],
-        translator_cc_filename=cxx_filenames[3],
-        lcm_filename=lcm_filename)
-
-    # Success.
-    return 0
-
-
 def generate_code(
         named_vector_filename,
-        cxx_include_path,
         vector_hh_filename=None,
         vector_cc_filename=None,
         translator_hh_filename=None,
         translator_cc_filename=None,
         lcm_filename=None):
 
+    cxx_include_path = os.path.dirname(named_vector_filename) + "/gen"
     snake, _ = os.path.splitext(os.path.basename(named_vector_filename))
     screaming_snake = snake.upper()
     camel = "".join([x.capitalize() for x in snake.split("_")])
@@ -722,8 +672,7 @@ def generate_all_code(srcs, outs):
 
     # Do the one, one src at a time.
     for src, kind_to_out in src_to_kind_to_out.items():
-        cxx_include_path = os.path.dirname(src) + "/gen"
-        generate_code(src, cxx_include_path, **kind_to_out)
+        generate_code(src, **kind_to_out)
 
     # Success.
     return 0
@@ -733,23 +682,6 @@ def main():
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-
-    # TODO(jwnimmer-tri) This block is the deprecated command-line interface;
-    # remove it when lcm_vector_gen.sh disappers.
-    parser.add_argument(
-        '--cxx-dir',
-        help="output directory for cxx files (DEPRECATED)")
-    parser.add_argument(
-        '--workspace',
-        help="Drake WORKSPACE root (DEPRECATED)")
-    # By default, LCM output is disabled.
-    parser.add_argument(
-        '--lcmtype-dir',
-        help="output directory for lcm file (DEPRECATED)")
-    parser.add_argument(
-        '--named_vector_file', metavar="FILE",
-        help="Protobuf description of vector (DEPRECATED)")
-
     parser.add_argument(
         '--src', metavar="FILE", dest='srcs', action='append', default=[],
         help="'*.named_vector' description(s) of vector(s)")
@@ -757,23 +689,6 @@ def main():
         '--out', metavar="FILE", dest='outs', action='append', default=[],
         help="generated filename(s) to create")
     args = parser.parse_args()
-
-    # TODO(jwnimmer-tri) This block is the deprecated command-line interface;
-    # remove it when lcm_vector_gen.sh disappers.
-    if ((args.cxx_dir is not None) or
-            (args.workspace is not None) or
-            (args.lcmtype_dir is not None) or
-            (args.named_vector_file is not None)):
-        assert args.cxx_dir is not None
-        assert args.workspace is not None
-        # lcmtype_dir is allowed to be None
-        assert args.named_vector_file is not None
-        return deprecated_generate_all_code(args)
-    assert args.cxx_dir is None
-    assert args.workspace is None
-    assert args.lcmtype_dir is None
-    assert args.named_vector_file is None
-
     return generate_all_code(args.srcs, args.outs)
 
 

@@ -11,6 +11,14 @@ load(
     "join_paths",
 )
 
+def _relative_dirname_basename(label):
+    # When computing outs derived from srcs in a different package (i.e., when
+    # srcs labels have a colon), we only want their package-relative stem (the
+    # dirname and basename after the colon).
+    if ":" in label:
+        label = label.split(":")[-1]
+    return dirname(label), basename(label)
+
 def _vector_gen_outs(srcs, kind):
     """Return the list of output filenames.  The `kind` is one of "vector"
     (foo.h, foo.cc), "translator" (foo_translator.h, foo_translator.cc),
@@ -18,15 +26,16 @@ def _vector_gen_outs(srcs, kind):
     output will appear under a "gen" folder, but *.lcm output will not.
     """
     # Find and remove the dirname and extension shared by all srcs.
-    # For srcs in the current directory, the dirname will be empty.
-    subdir = dirname(srcs[0])
+    # For srcs in the current directory, the dirname will be ".".
+    subdir, _ = _relative_dirname_basename(srcs[0])
     names = []
     for item in srcs:
-        if dirname(item) != subdir:
+        item_dirname, item_basename = _relative_dirname_basename(item)
+        if item_dirname != subdir:
             fail("%s subdirectory doesn't match %s" % (item, srcs[0]))
         if not item.endswith(".named_vector"):
             fail(item + " doesn't end with .named_vector")
-        name = basename(item)[:-len(".named_vector")]
+        name = item_basename[:-len(".named_vector")]
         names.append(name)
 
     # Compute outs based on kind.

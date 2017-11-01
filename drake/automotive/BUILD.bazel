@@ -10,65 +10,45 @@ load(
     "@drake//tools/skylark:drake_py.bzl",
     "drake_py_binary",
 )
+load(
+    "@drake//tools/vector_gen:vector_gen.bzl",
+    "drake_cc_vector_gen_library",
+    "drake_cc_vector_gen_translator_library",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
-drake_cc_library(
+# Keep this list in sync with the list of _AUTOMOTIVE_LCM_SRCS within
+# ../lcmtypes/BUILD.bazel.  TODO(jwnimmer-tri) De-duplicate the two lists,
+# likely by moving the automotive lcmtypes into their own package.
+_LCM_ENABLED_NAMED_VECTORS = [
+    "bicycle_car_state.named_vector",
+    "driving_command.named_vector",
+    "maliput_railcar_state.named_vector",
+    "simple_car_state.named_vector",
+    "trajectory_car_state.named_vector",
+]
+
+drake_cc_vector_gen_library(
     name = "generated_vectors",
     srcs = [
-        "gen/bicycle_car_parameters.cc",
-        "gen/bicycle_car_state.cc",
-        "gen/driving_command.cc",
-        "gen/idm_planner_parameters.cc",
-        "gen/maliput_railcar_params.cc",
-        "gen/maliput_railcar_state.cc",
-        "gen/mobil_planner_parameters.cc",
-        "gen/pure_pursuit_params.cc",
-        "gen/simple_car_params.cc",
-        "gen/simple_car_state.cc",
-        "gen/trajectory_car_params.cc",
-        "gen/trajectory_car_state.cc",
-    ],
-    hdrs = [
-        "gen/bicycle_car_parameters.h",
-        "gen/bicycle_car_state.h",
-        "gen/driving_command.h",
-        "gen/idm_planner_parameters.h",
-        "gen/maliput_railcar_params.h",
-        "gen/maliput_railcar_state.h",
-        "gen/mobil_planner_parameters.h",
-        "gen/pure_pursuit_params.h",
-        "gen/simple_car_params.h",
-        "gen/simple_car_state.h",
-        "gen/trajectory_car_params.h",
-        "gen/trajectory_car_state.h",
-    ],
-    deps = [
-        "//drake/systems/framework:vector",
-    ],
+        "bicycle_car_parameters.named_vector",
+        "idm_planner_parameters.named_vector",
+        "maliput_railcar_params.named_vector",
+        "mobil_planner_parameters.named_vector",
+        "pure_pursuit_params.named_vector",
+        "simple_car_params.named_vector",
+        "trajectory_car_params.named_vector",
+    ] + _LCM_ENABLED_NAMED_VECTORS,
 )
 
-drake_cc_library(
+drake_cc_vector_gen_translator_library(
     name = "generated_translators",
-    srcs = [
-        "gen/bicycle_car_state_translator.cc",
-        "gen/driving_command_translator.cc",
-        "gen/maliput_railcar_state_translator.cc",
-        "gen/simple_car_state_translator.cc",
-        "gen/trajectory_car_state_translator.cc",
-    ],
-    hdrs = [
-        "gen/bicycle_car_state_translator.h",
-        "gen/driving_command_translator.h",
-        "gen/maliput_railcar_state_translator.h",
-        "gen/simple_car_state_translator.h",
-        "gen/trajectory_car_state_translator.h",
-    ],
+    srcs = _LCM_ENABLED_NAMED_VECTORS,
     deps = [
         ":generated_vectors",
         "//drake/lcmtypes:automotive",
-        "//drake/systems/lcm:translator",
     ],
 )
 
