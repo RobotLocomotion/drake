@@ -22,11 +22,6 @@ Packages
 This subsection lists various `packages <https://packagecontrol.io/>`_ that we
 recommend you install.
 
-CMake
------
-
-https://packagecontrol.io/packages/CMake
-
 cpplint
 -------
 
@@ -45,10 +40,10 @@ To change your custom user preferences, go to "Sublime Text", "Preferences",
 
 Full File Path Display
 ----------------------
-Note that this only needs to be done on OS X since the full path appears by
+Note that this only needs to be done on Mac since the full path appears by
 default on Linux machines.
 
-To display the current file's full path in the title bar on OSX::
+To display the current file's full path in the title bar on Mac::
 
     "show_full_path": true,
 

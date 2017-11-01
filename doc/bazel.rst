@@ -21,8 +21,6 @@ to install Bazel.
 Drake clone and platform setup
 ==============================
 
-The one-time platform setup is the same as for a CMake build:
-
  - Start with a **git clone** of drake, per the :ref:`Getting Drake
    <getting_drake>` instructions.
 

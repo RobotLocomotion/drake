@@ -70,23 +70,25 @@ The following table shows the configurations and platforms that Drake
 officially supports. Supported configurations are tested in continuous
 integration. All other configurations are provided on a best-effort basis.
 
-For CMake builds, the "Unix Makefiles" and "Ninja" CMake generators are
-supported. MATLAB is only supported for CMake builds on Ubuntu operating
-systems.
+Drake requires a compiler running in C++14 mode or greater. MATLAB is only
+supported for CMake builds using the "Unix Makefiles" generator.
 
-Drake requires a compiler running in C++14 mode or greater.
++-----------------------------+----------------+-----------------+------------+-------------------+--------+
+| Operating System            | Build System   | C/C++ Compiler  | Java       | MATLAB (Optional) | Python |
++=============================+================+=================+============+===================+========+
++-----------------------------+----------------+-----------------+------------+-------------------+--------+
+| Ubuntu 16.04 LTS ("Xenial") | | Bazel 0.6.1  | | Clang 3.9     | OpenJDK 8  | R2017a            | 2.7.11 |
+|                             | | CMake 3.5.1  | | GCC 5.4       |            |                   |        |
++-----------------------------+----------------+-----------------+------------+                   +--------+
+| OS X 10.11 ("El Capitan")   | | Bazel 0.6.1  | Apple Clang 8.0 | Oracle 1.8 |                   | 2.7.14 |
++-----------------------------+ | CMake 3.10.0 +-----------------+            |                   |        |
+| macOS 10.12 ("Sierra")      |                | Apple Clang 9.0 |            |                   |        |
++-----------------------------+                |                 |            +-------------------+        |
+| macOS 10.13 ("High Sierra") |                |                 |            | R2017b            |        |
++-----------------------------+----------------+-----------------+------------+-------------------+--------+
 
-+-----------------------------+---------------+-----------------+------------+-------------------+--------+
-| Operating System            | Build System  | C/C++ Compiler  | Java       | MATLAB (Optional) | Python |
-+=============================+===============+=================+============+===================+========+
-+-----------------------------+---------------+-----------------+------------+-------------------+--------+
-| Ubuntu 16.04 LTS ("Xenial") | | Bazel 0.6.1 | | Clang 3.9     | OpenJDK 8  | R2017a            | 2.7.11 |
-|                             | | CMake 3.5.1 | | GCC 5.4       |            |                   |        |
-+-----------------------------+---------------+-----------------+------------+-------------------+--------+
-| OS X 10.11 ("El Capitan")   | Bazel 0.6.1   | Apple Clang 8.0 | Oracle 1.8 | Not Supported     | 2.7.14 |
-+-----------------------------+---------------+-----------------+------------+-------------------+--------+
-| macOS 10.12 ("Sierra")      | Bazel 0.6.1   | Apple Clang 9.0 | Oracle 1.8 | Not Supported     | 2.7.14 |
-+-----------------------------+---------------+-----------------+------------+-------------------+--------+
+macOS 10.13 ("High Sierra") support is experimental and untested in continuous
+integration.
 
 Code Review
 ===========

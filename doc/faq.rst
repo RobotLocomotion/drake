@@ -8,8 +8,6 @@ Frequently Asked Questions
    :depth: 3
    :local:
 
-See also the :ref:`MATLAB FAQ <matlab_faq>`.
-
 .. _faq_osx_build_failure_missing_dependency_declarations:
 
 Why Does Build Fail with "this rule is missing dependency declarations" on macOS?
