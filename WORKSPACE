@@ -18,7 +18,6 @@ workspace(name = "drake")
 
 load("//tools/workspace:bitbucket.bzl", "bitbucket_archive")
 load("//tools/workspace:github.bzl", "github_archive")
-load("//tools/workspace:os.bzl", "os_specific_alias_repository")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 local_repository(
