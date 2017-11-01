@@ -51,6 +51,12 @@ class Event {
     kUnknown,
 
     /**
+     * This trigger indicates that an associated event is triggered at system
+     * initialization.
+     */
+    kInitialization,
+
+    /**
      * This trigger indicates that an associated event is triggered by directly
      * calling the corresponding public system API for event handling (e.g.
      * Publish(context)).
@@ -257,7 +263,10 @@ class PublishEvent final : public Event<T> {
   PublishEvent(const PublishEvent&) = default;
 
   // Clones PublishEvent-specific data.
-  PublishEvent<T>* DoClone() const override { return new PublishEvent(*this); }
+  PublishEvent<T>* DoClone() const override {
+    PublishEvent<T>* ret = new PublishEvent(*this);
+    return ret;
+  }
 
   // Optional callback function that handles this publish event.
   PublishCallback callback_{nullptr};
