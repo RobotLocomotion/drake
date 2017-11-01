@@ -216,13 +216,13 @@ class Rod2D : public systems::LeafSystem<T> {
   explicit Rod2D(SimulationType simulation_type, double dt);
 
   /// Gets the constraint force mixing parameter (CFM, used for time stepping
-  /// systems only).
+  /// systems only), which should lie in the interval [0, infinity].
   double get_cfm() const {
     return 1.0 / (stiffness_ * dt_ + dissipation_);
   }
 
   /// Gets the error reduction parameter (ERP, used for time stepping
-  /// systems only).
+  /// systems only), which should lie in the interval [0, 1].
   double get_erp() const {
     return dt_ * stiffness_ / (stiffness_ * dt_ + dissipation_);
   }

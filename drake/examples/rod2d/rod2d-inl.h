@@ -818,7 +818,7 @@ void Rod2D<T>::DoCalcDiscreteVariableUpdates(
   // incorporated into v.
   VectorX<T> vplus = v + delta_v;
 
-  // Compute the new position using explicit Euler integration.
+  // Compute the new position using an "explicit" update. 
   VectorX<T> qplus = q + vplus * dt_;
 
   // Set the new discrete state.
@@ -1316,9 +1316,9 @@ Matrix3<T> Rod2D<T>::GetInertiaMatrix() const {
 template <class T>
 Matrix3<T> Rod2D<T>::GetInverseInertiaMatrix() const {
   Matrix3<T> M_inv;
-  M_inv << 1.0 / mass_, 0, 0,
-      0, 1.0 / mass_, 0,
-      0, 0, 1.0 / J_;
+  M_inv << 1.0 / mass_, 0,           0,
+           0,           1.0 / mass_, 0,
+           0,           0,           1.0 / J_;
   return M_inv;
 }
 
