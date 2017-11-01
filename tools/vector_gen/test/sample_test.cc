@@ -1,4 +1,4 @@
-#include "drake/tools/test/gen/sample.h"
+#include "drake/tools/vector_gen/test/gen/sample.h"
 
 #include <cmath>
 

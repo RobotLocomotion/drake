@@ -90,7 +90,7 @@ _vector_gen = rule(
         "lcm_vector_gen": attr.label(
             cfg = "host",
             executable = True,
-            default = Label("@drake//drake/tools:lcm_vector_gen"),
+            default = Label("@drake//tools/vector_gen:lcm_vector_gen"),
         ),
     },
     output_to_genfiles = True,

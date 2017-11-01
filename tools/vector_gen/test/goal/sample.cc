@@ -1,4 +1,4 @@
-#include "drake/tools/test/gen/sample.h"
+#include "drake/tools/vector_gen/test/gen/sample.h"
 
 // GENERATED FILE DO NOT EDIT
 // See drake/tools/lcm_vector_gen.py.
