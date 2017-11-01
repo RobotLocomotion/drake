@@ -1111,6 +1111,18 @@ class MultibodyTree {
   //    const Context&,
   //    const Frame& from_frame_B, const Frame& to_frame_A,
   //    const Matrix3X<T>& p_BQi, EigenPtr<MatrixX<T>> J_AQi)
+  //
+  // Others (for orientation)
+  // Quaternion<T> CalcRelativeQuaternion(context, from_frame_B, to_frame_A)
+  //   see: RBT::relativeQuaternion()
+  // CalcRelativeQuaternionJacobian(
+  //    contex, from_frame_B, to_frame_A, J)
+  //   see: RBT::relativeQuaternionJacobian()
+  //
+  // CalcRelativeSpaceXYZAngles(context, from_frame_B, to_frame_A)
+  //   see: RBT::relativeRollPitchYaw
+  // CalcRelativeSpaceXYZAnglesJacobian(context, from_frame_B, to_frame_A)
+  //   see: RBT::relativeRollPitchYawJacobian
 
   /// @}
   // End of multibody Jacobian methods section.
