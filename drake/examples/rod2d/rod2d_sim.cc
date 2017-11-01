@@ -10,7 +10,7 @@
 #include "drake/examples/rod2d/rod2d.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_viewer_draw.hpp"
-#include "drake/lcmtypes/drake/lcmt_viewer_load_robot.hpp"
+#include "drake/lcmt_viewer_load_robot.hpp"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/simulator.h"
