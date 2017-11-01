@@ -1,4 +1,4 @@
-#include "drake/matlab/util/mex_util.h"
+#include "mex_util.h"
 
 #include <limits>
 
