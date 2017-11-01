@@ -17,6 +17,10 @@ load(
     "drake_lcm_java_library",
     "drake_lcm_py_library",
 )
+load(
+    "@drake//tools/vector_gen:vector_gen.bzl",
+    "drake_vector_gen_lcm_sources",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 drake_lcm_cc_library(
@@ -213,16 +217,33 @@ drake_lcm_cc_library(
     ],
 )
 
+# Keep this list in sync with the list of _LCM_ENABLED_NAMED_VECTORS within
+# ../automotive/BUILD.bazel. TODO(jwnimmer-tri) De-duplicate the two lists,
+# likely by moving the automotive lcmtypes into their own package.
+_AUTOMOTIVE_LCM_SRCS = [
+    "lcmt_bicycle_car_state_t.lcm",
+    "lcmt_driving_command_t.lcm",
+    "lcmt_maliput_railcar_state_t.lcm",
+    "lcmt_simple_car_state_t.lcm",
+    "lcmt_trajectory_car_state_t.lcm",
+]
+
+# Generate *.lcm sources from *.named_vector files.
+drake_vector_gen_lcm_sources(
+    name = "automotive_sources",
+    srcs = [
+        "//drake/automotive:{}.named_vector".format(
+            x[len("lcmt_"):-len("_t.lcm")],
+        )
+        for x in _AUTOMOTIVE_LCM_SRCS
+    ],
+)
+
+# Generate C++ sources and a library from *.lcm sources.
 drake_lcm_cc_library(
     name = "automotive",
     lcm_package = "drake",
-    lcm_srcs = [
-        "lcmt_bicycle_car_state_t.lcm",
-        "lcmt_driving_command_t.lcm",
-        "lcmt_maliput_railcar_state_t.lcm",
-        "lcmt_simple_car_state_t.lcm",
-        "lcmt_trajectory_car_state_t.lcm",
-    ],
+    lcm_srcs = _AUTOMOTIVE_LCM_SRCS,
 )
 
 drake_lcm_cc_library(
@@ -257,7 +278,7 @@ drake_lcm_cc_library(
 drake_lcm_py_library(
     name = "lcmtypes_py",
     lcm_package = "drake",
-    lcm_srcs = glob(["*.lcm"]),
+    lcm_srcs = glob(["*.lcm"]) + _AUTOMOTIVE_LCM_SRCS,
     deps = [
         "@lcmtypes_bot2_core//:lcmtypes_bot2_core_py",
     ],
@@ -266,7 +287,7 @@ drake_lcm_py_library(
 drake_lcm_java_library(
     name = "lcmtypes_drake_java",
     lcm_package = "drake",
-    lcm_srcs = glob(["*.lcm"]),
+    lcm_srcs = glob(["*.lcm"]) + _AUTOMOTIVE_LCM_SRCS,
     deps = ["@lcmtypes_bot2_core//:lcmtypes_bot2_core_java"],
 )
 
