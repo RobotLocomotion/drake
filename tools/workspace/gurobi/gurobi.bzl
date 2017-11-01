@@ -11,7 +11,7 @@ def _gurobi_impl(repository_ctx):
     if os_result.error != None:
         fail(os_result.error)
 
-    if os_result.is_mac:
+    if os_result.is_macos:
         gurobi_path = "/Library/gurobi702/mac64"
         repository_ctx.symlink(gurobi_path, "gurobi-distro")
         warning = "Gurobi 7.0.2 is not installed."

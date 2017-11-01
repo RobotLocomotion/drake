@@ -35,7 +35,7 @@ def _impl(repository_ctx):
     if os_result.error != None:
         fail(os_result.error)
 
-    if os_result.is_mac:
+    if os_result.is_macos:
         repository_ctx.file("empty.cc", executable = False)
 
         repository_ctx.symlink("/usr/include/expat.h", "include/expat.h")
