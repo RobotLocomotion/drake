@@ -401,7 +401,7 @@ TEST_F(MonomialTest, MonomialBasis_x_y_z_w_3) {
 // This test shows that we can have a std::unordered_map whose key is of
 // Monomial.
 TEST_F(MonomialTest, UnorderedMapOfMonomial) {
-  unordered_map<Monomial, double, hash_value<Monomial>> monomial_to_coeff_map;
+  unordered_map<Monomial, double> monomial_to_coeff_map;
   Monomial x_3{var_x_, 3};
   Monomial y_5{var_y_, 5};
   // Add 2 * x^3
