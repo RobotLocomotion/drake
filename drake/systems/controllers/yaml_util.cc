@@ -1,4 +1,9 @@
-#include "drake/util/yaml/yamlUtil.h"
+#include "drake/systems/controllers/yaml_util.h"
+
+#include <algorithm>
+#include <set>
+#include <utility>
+#include <vector>
 
 #include "drake/multibody/joints/floating_base_types.h"
 
@@ -69,6 +74,7 @@ YAML::Node get(const YAML::Node& parent, const std::string& key) {
   }
 }
 
+// NOLINTNEXTLINE(runtime/references)
 void loadBodyMotionParams(QPControllerParams& params, const YAML::Node& config,
                           const RigidBodyTree<double>& robot) {
   for (auto body_it = robot.bodies.begin(); body_it != robot.bodies.end();
@@ -87,6 +93,7 @@ void loadBodyMotionParams(QPControllerParams& params, const YAML::Node& config,
   }
 }
 
+// NOLINTNEXTLINE(runtime/references)
 void loadSingleJointParams(QPControllerParams& params,
                            Eigen::DenseIndex position_index,
                            const YAML::Node& config,
@@ -142,6 +149,7 @@ void loadSingleJointParams(QPControllerParams& params,
       get(soft_limits_config, "k_logistic").as<double>();
 }
 
+// NOLINTNEXTLINE(runtime/references)
 void loadJointParams(QPControllerParams& params, const YAML::Node& config,
                      const RigidBodyTree<double>& robot) {
   std::map<std::string, int> position_name_to_index =
@@ -176,6 +184,7 @@ void loadJointParams(QPControllerParams& params, const YAML::Node& config,
   // }
 }
 
+// NOLINTNEXTLINE(runtime/references)
 void loadSingleInputParams(QPControllerParams& params,
                            Eigen::DenseIndex position_index,
                            YAML::Node config) {
@@ -209,6 +218,7 @@ void loadSingleInputParams(QPControllerParams& params,
   }
 }
 
+// NOLINTNEXTLINE(runtime/references)
 void loadInputParams(QPControllerParams& params, const YAML::Node& config,
                      const RigidBodyTree<double>& robot) {
   for (auto actuator_it = robot.actuators.begin();
@@ -244,6 +254,7 @@ void loadInputParams(QPControllerParams& params, const YAML::Node& config,
 namespace YAML {
 template <>
 struct convert<VRefIntegratorParams> {
+  // NOLINTNEXTLINE(runtime/references)
   static bool decode(const Node& node, VRefIntegratorParams& rhs) {
     if (!node.IsMap()) {
       return false;
@@ -257,6 +268,7 @@ struct convert<VRefIntegratorParams> {
 
 template <>
 struct convert<BodyMotionParams> {
+  // NOLINTNEXTLINE(runtime/references)
   static bool decode(const Node& node, BodyMotionParams& params) {
     if (!node.IsMap()) {
       return false;
@@ -425,6 +437,7 @@ JointNames parseRobotJointNames(const YAML::Node& joint_names,
 namespace YAML {
 template <>
 struct convert<FloatingBaseType> {
+  // NOLINTNEXTLINE(runtime/references)
   static bool decode(const Node& node, FloatingBaseType& rhs) {
     std::string joint_type = node.as<std::string>();
     if (joint_type == "kFixed") {
@@ -442,6 +455,7 @@ struct convert<FloatingBaseType> {
 
 template <>
 struct convert<Attachment> {
+  // NOLINTNEXTLINE(runtime/references)
   static bool decode(const Node& node, Attachment& rhs) {
     if (!node.IsMap()) {
       return false;
@@ -465,6 +479,7 @@ struct convert<Attachment> {
 
 template <>
 struct convert<KinematicModifications> {
+  // NOLINTNEXTLINE(runtime/references)
   static bool decode(const Node& node, KinematicModifications& rhs) {
     if (!node.IsMap()) {
       return false;

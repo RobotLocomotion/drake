@@ -1,6 +1,4 @@
-/* clang-format off to disable clang-format-includes */
-#include "drake/util/convexHull.h"
-/* clang-format on */
+#include "drake/systems/robotInterfaces/convex_hull.h"
 
 #include <iostream>
 

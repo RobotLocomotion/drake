@@ -325,8 +325,6 @@ LIBDRAKE_COMPONENTS = [
     "//drake/systems/trajectory_optimization:direct_collocation",
     "//drake/systems/trajectory_optimization:direct_transcription",
     "//drake/systems/trajectory_optimization:multiple_shooting",
-    "//drake/util:convex_hull",
     "//drake/util:lcm_util",
     "//drake/util:util",
-    "//drake/util:yaml_util",
 ]
