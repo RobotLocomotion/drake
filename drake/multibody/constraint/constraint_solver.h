@@ -644,7 +644,7 @@ void ConstraintSolver<T>::FormAndSolveConstraintLCP(
   //     | fG |          | fD |
   //                     |  λ |
   //                     | fL |
-  // 
+  //
   // Therefore, using Equations (f) and (g) and defining C as the upper left
   // block of A⁻¹, the pure LCP (qq,MM) is defined as:
   //
@@ -956,7 +956,7 @@ void ConstraintSolver<T>::SolveImpactProblem(
   //     | fG |          | fD |
   //                     |  λ |
   //                     | fL |
-  // 
+  //
   // Therefore, using Equations (f) and (g) and defining C as the upper left
   // block of A⁻¹, the pure LCP (q,M) is defined as:
   // MM ≡ | NCNᵀ  NCDᵀ   0   NCLᵀ |
