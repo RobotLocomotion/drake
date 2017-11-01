@@ -8,8 +8,6 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/drake_assert.h"
-
 namespace drake {
 
 /** Combines a given hash value @p seed and a hash of parameter @p v. */
