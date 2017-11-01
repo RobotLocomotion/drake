@@ -801,7 +801,7 @@ void ConstraintSolver<T>::SolveConstraintProblem(
         num_generalized_velocities, delassus_QTZ.get(), &A_solve);
 
     // Determine a new "inertia" solve operator, using only the upper left block
-    // of A⁻¹ (denoted C above) to exploit zero blocks in common operations.
+    // of A⁻¹ (denoted C) to exploit zero blocks in common operations.
     DetermineNewPartialInertiaSolveOperator(&problem_data,
         num_generalized_velocities, delassus_QTZ.get(), &fast_A_solve);
   } else {
