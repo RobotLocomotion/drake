@@ -1,4 +1,4 @@
-namespace: "drake::examples"
+namespace: "drake::examples::rod2d"
 
 element {
      name: "x"
