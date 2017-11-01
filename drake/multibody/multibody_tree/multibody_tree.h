@@ -1111,7 +1111,7 @@ class MultibodyTree {
   //    const Context&,
   //    const Frame& from_frame_B, const Frame& to_frame_A,
   //    const Matrix3X<T>& p_BQi, EigenPtr<MatrixX<T>> J_AQi)
-  
+
   /// @}
   // End of multibody Jacobian methods section.
 
