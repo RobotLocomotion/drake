@@ -8,7 +8,7 @@
 
 #include "drake/lcmt_sample_t.hpp"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
-#include "drake/tools/test/gen/sample.h"
+#include "drake/tools/vector_gen/test/gen/sample.h"
 
 namespace drake {
 namespace tools {

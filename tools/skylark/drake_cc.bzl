@@ -94,6 +94,13 @@ def drake_cc_library(
     could be revisited if binary size becomes a concern.
     """
     _check_library_deps_blacklist(name, deps)
+    if native.package_name().startswith("drake"):
+        strip_include_prefix = None
+        include_prefix = None
+    else:
+        # Require include paths like "drake/foo/bar.h", not "foo/bar.h".
+        strip_include_prefix = "/"
+        include_prefix = "drake"
     native.cc_library(
         name = name,
         hdrs = hdrs,
@@ -101,6 +108,8 @@ def drake_cc_library(
         deps = deps,
         copts = _platform_copts(copts, gcc_copts),
         linkstatic = linkstatic,
+        strip_include_prefix = strip_include_prefix,
+        include_prefix = include_prefix,
         **kwargs)
 
 def drake_cc_binary(

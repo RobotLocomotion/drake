@@ -9,7 +9,7 @@ import subprocess
 
 import google.protobuf.text_format
 
-from drake.drake.tools import named_vector_pb2
+from drake.tools.vector_gen import named_vector_pb2
 from drake.tools.lint.clang_format import get_clang_format_path
 from drake.tools.lint.find_data import find_data
 
@@ -513,6 +513,11 @@ def generate_code(
         lcm_filename=None):
 
     cxx_include_path = os.path.dirname(named_vector_filename) + "/gen"
+    # TODO(#6996) Do this unconditionally once #6996 shuffle is finished.
+    if not cxx_include_path.startswith("drake/"):
+        # TODO(jwnimmer-tri) For use outside of Drake, this include_prefix
+        # should probably be configurable, instead of hard-coded here.
+        cxx_include_path = "drake/" + cxx_include_path
     snake, _ = os.path.splitext(os.path.basename(named_vector_filename))
     screaming_snake = snake.upper()
     camel = "".join([x.capitalize() for x in snake.split("_")])

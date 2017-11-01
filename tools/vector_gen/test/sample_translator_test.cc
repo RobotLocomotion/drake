@@ -1,4 +1,4 @@
-#include "drake/tools/test/gen/sample_translator.h"
+#include "drake/tools/vector_gen/test/gen/sample_translator.h"
 
 #include <cstdint>
 #include <vector>
@@ -6,7 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/is_dynamic_castable.h"
-#include "drake/tools/test/gen/sample.h"
+#include "drake/tools/vector_gen/test/gen/sample.h"
 
 namespace drake {
 namespace tools {
