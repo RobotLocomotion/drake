@@ -1064,6 +1064,53 @@ class MultibodyTree {
   // J = getRobotPointer()->transformPointsJacobian(cache, get_pts(), body_, 0,true);
   //
   // That is, that call computes Jq_WP = d(p_WP)/dq, the so called analytic Jacobian.
+  //
+  // Equivalences:
+  //  transformPointsJacobian (RBT) == calcStationJacobian (Simbody)
+  //  transformPoints (RBT) == None it looks like?
+  // For MBT probably we'd like thing to look like:
+  //
+  //  Computes the relative transform X_BA from a frame A to a frame B.
+  //  That is, the position of a point Q measured and expressed in frame B can
+  //  be computed from the position p_AQ of this point measured and expressed in
+  //  frame A using the transformation p_BQ = X_BA * p_AQ.
+  //  Isometry3<T> CalcRelativeTransform(
+  //    const Context&, const Frame& from_frame_A, const Frame& to_frame_B)
+  //
+  //  Given a vector of positions p_APi of points Pi in A, computes the
+  //  position p_BPi of each point Pi in frame B.
+  //  CalcPointsPositions(
+  //    const Context&,
+  //    const Frame& from_frame_A, const Frame& to_frame_B,
+  //    const Matrix3X<T>& points_in_A, EigenPtr<Matrix3X<T>> points_in_B)
+  //
+  //  This method computes the analytical Jacobian for the positions p_AQi in a
+  //  frame A of set of points Qi, given the knowledge of these points (fixed)
+  //  position p_BQi in a frame B.
+  //  The analytical Jacobian for the position p_AQi of a point Q in frame A is
+  //  defined as: <pre>
+  //    J_AQi = d(p_AQi(q))/dq
+  //  </pre>
+  //  that is, the analytical Jacobian J_AQi is the gradient of `p_AQi(q)` with
+  //  respect to the generalized positions q.
+  //  @pre from_frame_B
+  //   The input points are measured and expressed in this frame B and are
+  //   constant (fixed) in this frame.
+  //  @pre to_frame_A
+  //  @pre p_BQi
+  //    A matrix with the fixed position of a set of points `Qi` in a frame B.
+  //    Each column of this matrix contains the position vector p_BQi for a
+  //    point `Qi` measured and expressed in frame B.
+  //  CalcPointsAnalyticalJacobian(
+  //    const Context&,
+  //    const Frame& from_frame_B, const Frame& to_frame_A,
+  //    const Matrix3X<T>& p_BQi, EigenPtr<MatrixX<T>> J_AQi)
+  //
+  // Likewise, we could introduce:
+  //  CalcPointsGeometricJacobian(
+  //    const Context&,
+  //    const Frame& from_frame_B, const Frame& to_frame_A,
+  //    const Matrix3X<T>& p_BQi, EigenPtr<MatrixX<T>> J_AQi)
   
   /// @}
   // End of multibody Jacobian methods section.
