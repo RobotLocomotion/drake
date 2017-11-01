@@ -189,12 +189,11 @@ github_archive(
     build_file = "tools/workspace/bullet/bullet.BUILD.bazel",
 )
 
-github_archive(
+pkg_config_package(
     name = "ccd",
-    repository = "danfis/libccd",
-    commit = "v2.0",
-    sha256 = "1b4997e361c79262cf1fe5e1a3bf0789c9447d60b8ae2c1f945693ad574f9471",  # noqa
-    build_file = "tools/workspace/ccd/ccd.BUILD.bazel",
+    generate_cps = True,
+    license = "BSD-3-Clause",
+    modname = "ccd",
 )
 
 github_archive(

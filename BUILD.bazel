@@ -35,6 +35,7 @@ install(
     name = "install",
     docs = ["LICENSE.TXT"],
     deps = [
+        "@ccd//:install",
         "//drake/automotive/models:install_data",
         "//drake/bindings:install",
         "//drake/common:install",
