@@ -217,24 +217,24 @@ class Rod2D : public systems::LeafSystem<T> {
 
   static const Rod2dStateVector<T>& get_state(
       const systems::ContinuousState<T>& cstate) {
-    return dynamic_cast<const Rod2dStateVector<T>&>(cstate);
+    return dynamic_cast<const Rod2dStateVector<T>&>(cstate.get_vector());
   }
 
-  static Rod2dStateVector<T>* get_mutable_state(
+  static Rod2dStateVector<T>& get_mutable_state(
       systems::ContinuousState<T>* cstate) {
-    return dynamic_cast<Rod2dStateVector<T>*>(cstate);
+    return dynamic_cast<Rod2dStateVector<T>&>(cstate->get_mutable_vector());
   }
 
   static const Rod2dStateVector<T>& get_state(
       const systems::Context<T>& context) {
     return dynamic_cast<const Rod2dStateVector<T>&>(
-        context.get_continuous_state());
+        context.get_continuous_state_vector());
   }
 
   static Rod2dStateVector<T>& get_mutable_state(
       systems::Context<T>* context) {
     return dynamic_cast<Rod2dStateVector<T>&>(
-        context->get_mutable_continuous_state());
+        context->get_mutable_continuous_state_vector());
   }
 
   /// Gets the constraint force mixing parameter (CFM, used for time stepping

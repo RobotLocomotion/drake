@@ -47,7 +47,7 @@ Rod2D<T>::Rod2D(SimulationType simulation_type, double dt)
 
     // Both piecewise DAE and compliant approach require six continuous
     // variables.
-    this->DeclareContinuousState(3, 3, 0);  // q, v, z
+    this->DeclareContinuousState(Rod2dStateVector<T>(), 3, 3, 0);  // q, v, z
   }
 
   this->DeclareInputPort(systems::kVectorValued, 3);

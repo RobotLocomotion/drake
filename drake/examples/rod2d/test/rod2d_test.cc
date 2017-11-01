@@ -284,6 +284,37 @@ class Rod2DDAETest : public ::testing::Test {
       contact_solver_;
 };
 
+// Verifies that the state vector functions throw no exceptions.
+TEST_F(Rod2DDAETest, NamedStateVectorsNoThrow) {
+  EXPECT_NO_THROW(Rod2D<double>::get_mutable_state(context_.get()));
+  EXPECT_NO_THROW(Rod2D<double>::get_state(*context_));
+  EXPECT_NO_THROW(Rod2D<double>::get_state(context_->get_continuous_state()));
+  EXPECT_NO_THROW(Rod2D<double>::get_mutable_state(
+      &context_->get_mutable_continuous_state()));
+}
+
+// Tests that named state vector components are at expected indices.
+TEST_F(Rod2DDAETest, ExpectedIndices) {
+  // Set the state.
+  Rod2dStateVector<double>& state = Rod2D<double>::get_mutable_state(
+      context_.get());
+  state.set_x(1.0);
+  state.set_y(2.0);
+  state.set_theta(3.0);
+  state.set_xdot(5.0);
+  state.set_ydot(7.0);
+  state.set_thetadot(11.0);
+
+  // Check the indices.
+  const VectorBase<double>& x = context_->get_continuous_state_vector();
+  EXPECT_EQ(state.x(), x[0]);
+  EXPECT_EQ(state.y(), x[1]);
+  EXPECT_EQ(state.theta(), x[2]);
+  EXPECT_EQ(state.xdot(), x[3]);
+  EXPECT_EQ(state.ydot(), x[4]);
+  EXPECT_EQ(state.thetadot(), x[5]);
+}
+
 // Checks that the output port represents the state.
 TEST_F(Rod2DDAETest, Output) {
   const ContinuousState<double>& xc = context_->get_continuous_state();
