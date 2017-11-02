@@ -1,11 +1,12 @@
 .. _matlab-bindings:
 
 ***********************
-Using Drake from Matlab
+Using Drake from MATLAB
 ***********************
 
 MATLAB code/bindings available in Drake are unit tested on MATLAB R2017a.
-Earlier MATLAB versions may work but are not officially supported.
+Other MATLAB versions R2016a or above may work but are not officially
+supported.
 
 We are currently experimenting with a few solutions for implementing the
 MATLAB bindings for Drake's new C++ libraries.  You will find minimal
@@ -16,13 +17,15 @@ In the meantime,
 :ref:`Using Drake from Python <python-bindings>`
 may also prove useful.
 
-See also
-========
+Building the MATLAB Bindings
+----------------------------
 
-.. toctree::
-    :maxdepth: 1
-
-    matlab_faq
+    export PATH=/usr/local/MATLAB/R2017a/bin:$PATH  # Ubuntu
+    git clone https://github.com/RobotLocomotion/drake.git
+    mkdir drake-build
+    cd drake-build
+    cmake -DWITH_MATLAB=ON ../drake
+    make
 
 Original MATLAB
 ===============
