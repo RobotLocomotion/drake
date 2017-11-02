@@ -818,7 +818,7 @@ void Rod2D<T>::DoCalcDiscreteVariableUpdates(
   // incorporated into v.
   VectorX<T> vplus = v + delta_v;
 
-  // Compute the new position using an "explicit" update. 
+  // Compute the new position using an "explicit" update.
   VectorX<T> qplus = q + vplus * dt_;
 
   // Set the new discrete state.
