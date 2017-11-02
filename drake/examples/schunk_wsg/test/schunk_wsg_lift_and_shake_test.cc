@@ -35,6 +35,8 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/pid_controlled_system.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/primitives/demultiplexer.h"
+#include "drake/systems/primitives/multiplexer.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/trajectory_source.h"
@@ -44,14 +46,44 @@ namespace examples {
 namespace schunk_wsg {
 namespace {
 
+using drake::systems::Multiplexer;
+using drake::systems::Demultiplexer;
 using drake::systems::RungeKutta3Integrator;
 using drake::systems::ContactResultsToLcmSystem;
 using drake::systems::lcm::LcmPublisherSystem;
 using drake::systems::KinematicsResults;
+using drake::systems::Context;
+using drake::systems::BasicVector;
 using Eigen::Vector3d;
 
 // Initial height of the box's origin.
 const double kBoxInitZ = 0.076;
+
+class Sinusoid : public systems::LeafSystem<double> {
+ public:
+  Sinusoid(double tstart, double freq, double amp, double offset) : freq_(freq), amp_(amp), offset_(offset), tstart_(tstart) {
+    const int num_outputs = 2;
+    this->DeclareVectorOutputPort(BasicVector<double>(num_outputs), &Sinusoid::Output);
+  }
+
+ private:
+  void Output(const Context<double>& c, BasicVector<double>* output) const {
+    using std::sin;
+    using std::cos;
+
+    const double t = c.get_time();
+    if (t >= tstart_) {
+      const double tknot = t - tstart_;
+      output->SetAtIndex(0, sin(tknot*freq_ + offset_)*amp_);
+      output->SetAtIndex(1, cos(tknot*freq_ + offset_)*amp_*freq_);
+    } else {
+      output->SetAtIndex(0, 0.0);
+      output->SetAtIndex(1, 0.0);
+    }
+  }
+
+  double freq_{0.0}, amp_{0.0}, offset_{0.0}, tstart_{0.0};
+};
 
 std::unique_ptr<RigidBodyTreed> BuildLiftTestTree(
     int* lifter_instance_id, int* gripper_instance_id) {
@@ -124,9 +156,9 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
       plant->model_instance_state_output_port(lifter_instance_id);
 
   // Constants chosen arbitrarily.
-  const Vector1d lift_kp(300.);
-  const Vector1d lift_ki(0.);
-  const Vector1d lift_kd(5.);
+  const auto lift_kp = VectorX<double>::Ones(6) * 300.0;
+  const auto lift_ki = VectorX<double>::Ones(6) * 0.0;
+  const auto lift_kd = VectorX<double>::Ones(6) * 5.0;
 
   auto lifting_pid_ports =
       systems::controllers::PidControlledSystem<double>::ConnectController(
@@ -135,23 +167,40 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
 
   auto zero_source =
       builder.AddSystem<systems::ConstantVectorSource<double>>(
-          Eigen::VectorXd::Zero(1));
+          Eigen::VectorXd::Zero(6));
   zero_source->set_name("zero");
   builder.Connect(zero_source->get_output_port(),
                   lifting_pid_ports.control_input_port);
+
+  // Create the sinusoids.
+  const double kLiftStart = 1.0;
+  const int num_sinusoids = 5;
+  systems::System<double>* sinusoids[num_sinusoids];
+  sinusoids[0] = builder.AddSystem<Sinusoid>(kLiftStart, 1.0, 1.0, 0.0);
+  sinusoids[1] = builder.AddSystem<Sinusoid>(kLiftStart, 2.0, 0.5, 0.0);
+  sinusoids[2] = builder.AddSystem<Sinusoid>(kLiftStart, 3.0, 0.3, 0.0);
+  sinusoids[3] = builder.AddSystem<Sinusoid>(kLiftStart, 5.0, 0.2, 0.0);
+  sinusoids[4] = builder.AddSystem<Sinusoid>(kLiftStart, 7.0, 1.0/7, 0.0);
+
+  // Demultiplex each of the sinusoid's outputs.
+  Demultiplexer<double>* demux[num_sinusoids];
+  for (int i = 0; i < num_sinusoids; ++i) {
+    demux[i] = builder.AddSystem<Demultiplexer<double>>(2, 1);
+    builder.Connect(sinusoids[i]->get_output_port(0), demux[i]->get_input_port(0));
+  }
 
   // Create a trajectory with 3 seconds of main lift time from second
   // 1 to second 4, coming to a stop by second 5.  The initial delay
   // is to allow the gripper to settle on the box before we start
   // moving.
   const double kLiftHeight = 1.0;
-  const double kLiftStart = 1.0;
   std::vector<double> lift_breaks{0., 0.9, kLiftStart, 4., 5};
   std::vector<Eigen::MatrixXd> lift_knots;
   lift_knots.push_back(Eigen::Vector2d(0., 0.));
   lift_knots.push_back(Eigen::Vector2d(0., 0.));
   lift_knots.push_back(Eigen::Vector2d(0., 0.09 * kLiftHeight));
   lift_knots.push_back(Eigen::Vector2d(0.9 * kLiftHeight, 0.09 * kLiftHeight));
+
   // Stop gradually.
   lift_knots.push_back(Eigen::Vector2d(kLiftHeight, 0.));
   PiecewisePolynomialTrajectory lift_trajectory(
@@ -161,8 +210,21 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   auto lift_source =
       builder.AddSystem<systems::TrajectorySource>(lift_trajectory);
   lift_source->set_name("lift_source");
-  builder.Connect(lift_source->get_output_port(),
-                  lifting_pid_ports.state_input_port);
+
+  // Use one more demultiplexer for the lift trajectory outputs.
+  auto lift_traj_demux = builder.AddSystem<Demultiplexer<double>>(2, 1);
+  builder.Connect(lift_source->get_output_port(), lift_traj_demux->get_input_port(0));
+
+  // Now, multiplex the ports back together to the PID controller.
+  auto mux = builder.AddSystem<Multiplexer<double>>(12);
+  builder.Connect(lift_traj_demux->get_output_port(0), mux->get_input_port(0));
+  builder.Connect(lift_traj_demux->get_output_port(1), mux->get_input_port(6));
+  for (int i = 0; i < num_sinusoids; ++i) {
+    builder.Connect(demux[i]->get_output_port(0), mux->get_input_port(i+1));
+    builder.Connect(demux[i]->get_output_port(1), mux->get_input_port(i+7));
+  }
+
+  builder.Connect(mux->get_output_port(0), lifting_pid_ports.state_input_port);
 
   // Create a trajectory for grip force.
   // Settle the grip by the time the lift starts.
@@ -228,7 +290,7 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
       = tree.getZeroConfiguration();
 
   auto positions = tree.computePositionNameToIndexMap();
-  ASSERT_EQ(positions["left_finger_sliding_joint"], 1);
+  ASSERT_EQ(positions["left_finger_sliding_joint"], 6);
 
   // The values below were extracted from the positions corresponding
   // to an open gripper.  Dumping them here is significantly more

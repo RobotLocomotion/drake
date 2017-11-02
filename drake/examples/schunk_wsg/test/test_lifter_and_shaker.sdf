@@ -60,7 +60,7 @@
     </link>
 
     <link name='x_rot_link'>
-      <pose frame=''>0 0 0 0 -0 0</pose>
+      <pose frame=''>0 0 0 0 0 0</pose>
       <inertial>
         <mass>0</mass>
         <inertia>
@@ -151,7 +151,7 @@
         <!-- Drake attaches an actuator to all and only joints with a nonzero
              effort limit. -->
         <limit>
-          <lower>0</lower>
+          <lower>-1</lower>
           <upper>1</upper>
           <effort>80</effort>
           <stiffness>1500</stiffness>
@@ -176,7 +176,7 @@
         <!-- Drake attaches an actuator to all and only joints with a nonzero
              effort limit. -->
         <limit>
-          <lower>0</lower>
+          <lower>-1</lower>
           <upper>1</upper>
           <effort>80</effort>
           <stiffness>1500</stiffness>
@@ -191,7 +191,7 @@
       </axis>
     </joint>
 
-    <joint name='x_rot_joint' type='revolute'>
+    <joint name='x_rot_joint' type='prismatic'>
       <parent>y_translate_link</parent>
       <child>x_rot_link</child>
       <pose frame=''>0 0 0 0 -0 0</pose>
@@ -201,11 +201,8 @@
         <!-- Drake attaches an actuator to all and only joints with a nonzero
              effort limit. -->
         <limit>
-          <lower>0</lower>
+          <lower>-1</lower>
           <upper>1</upper>
-          <effort>80</effort>
-          <stiffness>1500</stiffness>
-          <dissipation>50</dissipation>
         </limit>
         <dynamics>
           <spring_reference>0</spring_reference>
@@ -216,7 +213,7 @@
       </axis>
     </joint>
 
-    <joint name='y_rot_joint' type='revolute'>
+    <joint name='y_rot_joint' type='prismatic'>
       <parent>x_rot_link</parent>
       <child>y_rot_link</child>
       <pose frame=''>0 0 0 0 -0 0</pose>
@@ -226,7 +223,7 @@
         <!-- Drake attaches an actuator to all and only joints with a nonzero
              effort limit. -->
         <limit>
-          <lower>0</lower>
+          <lower>-1</lower>
           <upper>1</upper>
           <effort>80</effort>
           <stiffness>1500</stiffness>
@@ -241,7 +238,7 @@
       </axis>
     </joint>
 
-    <joint name='z_rot_joint' type='prismatic'>
+    <joint name='z_rot_joint' type='revolute'>
       <parent>y_rot_link</parent>
       <child>z_rot_link</child>
       <pose frame=''>0 0 0 0 -0 0</pose>
@@ -251,7 +248,7 @@
         <!-- Drake attaches an actuator to all and only joints with a nonzero
              effort limit. -->
         <limit>
-          <lower>0</lower>
+          <lower>-1</lower>
           <upper>1</upper>
           <effort>80</effort>
           <stiffness>1500</stiffness>
