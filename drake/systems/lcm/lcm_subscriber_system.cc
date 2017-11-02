@@ -86,10 +86,10 @@ void LcmSubscriberSystem::SetDefaultState(const Context<double>&,
                                           State<double>* state) const {
   if (translator_ != nullptr) {
     DRAKE_DEMAND(serializer_ == nullptr);
-    ProcessMessageAndStoreToDiscreteState(state->get_mutable_discrete_state());
+    ProcessMessageAndStoreToDiscreteState(&state->get_mutable_discrete_state());
   } else {
     DRAKE_DEMAND(translator_ == nullptr);
-    ProcessMessageAndStoreToAbstractState(state->get_mutable_abstract_state());
+    ProcessMessageAndStoreToAbstractState(&state->get_mutable_abstract_state());
   }
 }
 
@@ -275,7 +275,7 @@ void LcmSubscriberSystem::CalcSerializerOutputValue(
     const Context<double>& context, AbstractValue* output_value) const {
   DRAKE_DEMAND(serializer_.get() != nullptr);
   output_value->SetFrom(
-      context.get_abstract_state()->get_value(kStateIndexMessage));
+      context.get_abstract_state().get_value(kStateIndexMessage));
 }
 
 void LcmSubscriberSystem::HandleMessage(const std::string& channel,

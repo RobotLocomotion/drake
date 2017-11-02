@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/lcmtypes/drake/lcmt_viewer_draw.hpp"
+#include "drake/lcmt_viewer_draw.hpp"
 #include "drake/systems/rendering/pose_bundle.h"
 
 namespace drake {

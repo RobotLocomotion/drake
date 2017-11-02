@@ -18,9 +18,9 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/examples/kuka_iiwa_arm/oracular_state_estimator.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/lcmt_contact_results_for_viz.hpp"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
-#include "drake/lcmtypes/drake/lcmt_contact_results_for_viz.hpp"
 #include "drake/manipulation/util/frame_pose_tracker.h"
 #include "drake/manipulation/util/world_sim_tree_builder.h"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -296,7 +296,7 @@ int DoMain() {
   Simulator<double> simulator(*sys);
 
   simulator.reset_integrator<systems::RungeKutta2Integrator<double>>(
-      *sys, 1e-3, simulator.get_mutable_context());
+      *sys, 1e-3, &simulator.get_mutable_context());
 
   // TODO(rcory): Explore other integration schemes here.
 //  simulator.reset_integrator<systems::ImplicitEulerIntegrator<double>>(

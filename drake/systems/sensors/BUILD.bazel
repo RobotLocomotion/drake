@@ -6,6 +6,10 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
 )
+load(
+    "@drake//tools/vector_gen:vector_gen.bzl",
+    "drake_cc_vector_gen_library",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
@@ -42,17 +46,9 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
+drake_cc_vector_gen_library(
     name = "beam_model_params",
-    srcs = [
-        "gen/beam_model_params.cc",
-    ],
-    hdrs = [
-        "gen/beam_model_params.h",
-    ],
-    deps = [
-        "//drake/systems/framework:vector",
-    ],
+    srcs = ["beam_model_params.named_vector"],
 )
 
 drake_cc_library(

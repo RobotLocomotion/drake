@@ -65,7 +65,7 @@ class VectorSystem : public LeafSystem<T> {
 
     // At most one of either continuous xor discrete state.
     DRAKE_THROW_UNLESS(result->get_num_abstract_state_groups() == 0);
-    const int continuous_size = result->get_continuous_state()->size();
+    const int continuous_size = result->get_continuous_state().size();
     const int num_discrete_groups = result->get_num_discrete_state_groups();
     DRAKE_DEMAND(continuous_size >= 0);
     DRAKE_DEMAND(num_discrete_groups >= 0);
@@ -160,10 +160,9 @@ class VectorSystem : public LeafSystem<T> {
         dynamic_cast<const BasicVector<T>&>(state_vector).get_value();
 
     // Obtain the block form of xcdot.
-    VectorBase<T>* const derivatives_vector = derivatives->get_mutable_vector();
-    DRAKE_ASSERT(derivatives_vector != nullptr);
+    VectorBase<T>& derivatives_vector = derivatives->get_mutable_vector();
     Eigen::VectorBlock<VectorX<T>> derivatives_block =
-        dynamic_cast<BasicVector<T>&>(*derivatives_vector).get_mutable_value();
+        dynamic_cast<BasicVector<T>&>(derivatives_vector).get_mutable_value();
 
     // Delegate to subclass.
     DoCalcVectorTimeDerivatives(context, input_block, state_block,

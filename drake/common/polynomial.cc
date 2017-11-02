@@ -81,7 +81,7 @@ template <typename CoefficientType>
 Polynomial<CoefficientType>::Polynomial(const string varname,
                                         const unsigned int num) {
   Monomial m;
-  m.coefficient = (CoefficientType)1;
+  m.coefficient = CoefficientType{1};
   Term t;
   t.var = VariableNameToId(varname, num);
   t.power = 1;
@@ -304,8 +304,8 @@ Polynomial<CoefficientType> Polynomial<CoefficientType>::Integral(
       t.power = 1;
       iter->terms.push_back(t);
     } else {
-      iter->coefficient /= (RealScalar)(iter->terms[0].power + 1);
-      iter->terms[0].power += (PowerType)1;
+      iter->coefficient /= static_cast<RealScalar>(iter->terms[0].power + 1);
+      iter->terms[0].power += PowerType{1};
     }
   }
   Monomial m;
@@ -343,7 +343,7 @@ Polynomial<CoefficientType>& Polynomial<CoefficientType>::operator-=(
     const Polynomial<CoefficientType>& other) {
   for (const auto& iter : other.monomials_) {
     monomials_.push_back(iter);
-    monomials_.back().coefficient *= (CoefficientType)(-1);
+    monomials_.back().coefficient *= CoefficientType{-1};
   }
   MakeMonomialsUnique();  // also sets is_univariate false if necessary
   return *this;
@@ -554,7 +554,7 @@ Polynomial<CoefficientType>::VariableNameToId(const string name,
   const VarType maxId = std::numeric_limits<VarType>::max() / 2 / kMaxNamePart;
   if (m > maxId) throw runtime_error("name exceeds max ID");
   if (m < 1) throw runtime_error("m must be >0");
-  return (VarType)2 * (name_part + kMaxNamePart * (m - 1));
+  return static_cast<VarType>(2) * (name_part + kMaxNamePart * (m - 1));
 }
 
 template <typename CoefficientType>

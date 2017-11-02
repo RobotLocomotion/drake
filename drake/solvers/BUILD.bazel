@@ -205,6 +205,7 @@ drake_cc_library(
     hdrs = ["non_convex_optimization_util.h"],
     deps = [
         ":mathematical_program",
+        "//drake/math:quadratic_form",
     ],
 )
 
@@ -847,8 +848,10 @@ drake_cc_googletest(
     ],
     tags = mosek_test_tags(),
     deps = [
+        ":decision_variable",
         ":non_convex_optimization_util",
         "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/common/test_utilities:symbolic_test_util",
     ],
 )
 

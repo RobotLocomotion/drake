@@ -1,5 +1,5 @@
 **********************************
-Binary installation (OS X, Ubuntu)
+Binary installation (Mac, Ubuntu)
 **********************************
 
 Important Note (October, 2016)

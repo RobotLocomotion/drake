@@ -259,7 +259,7 @@ void  TestDrakeSolutionForSpecificInitialValue(
                    torque_free_cylinder_solution.get_w_NB_B_initial(),
                    torque_free_cylinder_solution.get_v_NBcm_B_initial();
   systems::VectorBase<double>& state_drake =
-      *(context->get_mutable_continuous_state_vector());
+      context->get_mutable_continuous_state_vector();
   state_drake.SetFromVector(state_initial);
 
   // Ensure the time stored by context is set to 0.0 (initial value).

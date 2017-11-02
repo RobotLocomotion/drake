@@ -36,7 +36,7 @@ class DirectCollocationConstraint : public solvers::Constraint {
         derivatives_(system_->AllocateTimeDerivatives()),
         num_states_(num_states),
         num_inputs_(num_inputs) {
-    DRAKE_DEMAND(num_states_ == context.get_continuous_state()->size());
+    DRAKE_DEMAND(num_states_ == context.get_continuous_state().size());
     DRAKE_DEMAND(num_inputs_ == (context.get_num_input_ports() > 0
                                      ? system.get_input_port(0).size()
                                      : 0));
@@ -66,7 +66,7 @@ class DirectCollocationConstraint : public solvers::Constraint {
       input_port_value_->GetMutableVectorData<AutoDiffXd>()->SetFromVector(
           input);
     }
-    context_->get_mutable_continuous_state()->SetFromVector(state);
+    context_->get_mutable_continuous_state().SetFromVector(state);
     system_->CalcTimeDerivatives(*context_, derivatives_.get());
     *xdot = derivatives_->CopyToVector();
   }
@@ -133,7 +133,7 @@ DirectCollocation::DirectCollocation(const System<double>* system,
                                      double minimum_timestep,
                                      double maximum_timestep)
     : MultipleShooting(system->get_num_total_inputs(),
-                       context.get_continuous_state()->size(), num_time_samples,
+                       context.get_continuous_state().size(), num_time_samples,
                        minimum_timestep, maximum_timestep),
       system_(system),
       context_(system_->CreateDefaultContext()),
@@ -208,7 +208,7 @@ PiecewisePolynomialTrajectory DirectCollocation::ReconstructStateTrajectory()
     states[i] = GetSolution(state(i));
     input_port_value_->GetMutableVectorData<double>()->SetFromVector(
         GetSolution(input(i)));
-    context_->get_mutable_continuous_state()->SetFromVector(states[i]);
+    context_->get_mutable_continuous_state().SetFromVector(states[i]);
     system_->CalcTimeDerivatives(*context_, continuous_state_.get());
     derivatives[i] = continuous_state_->CopyToVector();
   }

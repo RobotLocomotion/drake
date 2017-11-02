@@ -50,10 +50,10 @@ class ContactFormulaTest : public ::testing::Test {
     const int port_index = plant_->contact_results_output_port().get_index();
 
     // Set Sphere 2's velocity.
-    auto velocities = context_->get_mutable_state()
-                          ->get_mutable_continuous_state()
-                          ->get_mutable_generalized_velocity();
-    ASSERT_EQ(velocities->size(), 12);  // Two quaternion floating joints.
+    auto& velocities = context_->get_mutable_state()
+                           .get_mutable_continuous_state()
+                           .get_mutable_generalized_velocity();
+    ASSERT_EQ(velocities.size(), 12);  // Two quaternion floating joints.
     Vector6d v_WS2 = get_v_WS2();
     VectorXd target_velocities;
     target_velocities.resize(12);
@@ -61,7 +61,7 @@ class ContactFormulaTest : public ::testing::Test {
         0, 0, 0,                       // sphere 1 linear velocity
         v_WS2[0], v_WS2[1], v_WS2[2],  // sphere 2 angular velocity
         v_WS2[3], v_WS2[4], v_WS2[5];  // sphere 2 linear velocity
-    velocities->SetFromVector(target_velocities);
+    velocities.SetFromVector(target_velocities);
 
     SetContactParameters();
     plant_->set_normal_contact_parameters(stiffness_, dissipation_);

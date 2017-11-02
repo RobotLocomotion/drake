@@ -104,8 +104,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
   // Sets the rod to a resting horizontal configuration without modifying the
   // rod's mode variables.
   void SetRodToRestingHorizontalConfig() {
-    ContinuousState<double>& xc =
-        *context_->get_mutable_continuous_state();
+    ContinuousState<double>& xc = context_->get_mutable_continuous_state();
     // Configuration has the rod on its side.
     xc[0] = 0.0;     // com horizontal position
     xc[1] = 0.0;     // com vertical position
@@ -116,8 +115,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
   // Sets the rod to an upward moving horizontal configuration without modifying
   // the rod's mode variables.
   void SetRodToUpwardMovingHorizontalConfig() {
-    ContinuousState<double>& xc =
-        *context_->get_mutable_continuous_state();
+    ContinuousState<double>& xc = context_->get_mutable_continuous_state();
     // Configuration has the rod on its side.
     xc[0] = 0.0;     // com horizontal position
     xc[1] = 0.0;     // com vertical position
@@ -131,8 +129,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
   // configured to lie upon its side and without modifying the rod's mode
   // variables.
   void SetRodToSlidingImpactingHorizontalConfig(bool sliding_to_right) {
-    ContinuousState<double>& xc =
-        *context_->get_mutable_continuous_state();
+    ContinuousState<double>& xc = context_->get_mutable_continuous_state();
     // Configuration has the rod on its side.
     xc[0] = 0.0;                          // com horizontal position
     xc[1] = 0.0;                          // com vertical position
@@ -145,8 +142,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
   // Sets the rod to a sliding velocity with the rod configured to impact
   // vertically and without modifying the rod's mode variables.
   void SetRodToSlidingImpactingVerticalConfig(bool sliding_to_right) {
-    ContinuousState<double>& xc =
-        *context_->get_mutable_continuous_state();
+    ContinuousState<double>& xc = context_->get_mutable_continuous_state();
     // Configuration has the rod on its side.
     xc[0] = 0.0;                          // com horizontal position
     xc[1] = 0.0;                          // com vertical position
@@ -159,8 +155,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
   // Sets the rod to a resting vertical configuration without modifying the
   // mode variables.
   void SetRodToRestingVerticalConfig() {
-    ContinuousState<double>& xc =
-        *context_->get_mutable_continuous_state();
+    ContinuousState<double>& xc = context_->get_mutable_continuous_state();
     xc[0] = 0.0;                             // com horizontal position
     xc[1] = rod_->get_rod_half_length();     // com vertical position
     xc[2] = M_PI_2;                          // rod rotation
@@ -813,7 +808,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
         SetRodToSlidingImpactingHorizontalConfig(sliding_to_right);
 
         // Get the vertical velocity of the rod.
-        const double vert_vel = context_->get_continuous_state()->
+        const double vert_vel = context_->get_continuous_state().
             CopyToVector()[4];
 
         // Compute the problem data.
@@ -934,7 +929,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
         SetRodToSlidingImpactingHorizontalConfig(sliding_to_right);
 
         // Get the vertical velocity of the rod.
-        const double vert_vel = context_->get_continuous_state()->
+        const double vert_vel = context_->get_continuous_state().
             CopyToVector()[4];
 
         // Compute the impact problem data.
@@ -1027,8 +1022,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
       // Set the state of the rod to resting on its side w/ horizontal velocity.
       SetRodToRestingHorizontalConfig();
     }
-    ContinuousState<double>& xc = *context_->
-        get_mutable_continuous_state();
+    ContinuousState<double>& xc = context_->get_mutable_continuous_state();
     xc[3] = (sliding_to_right) ? 1 : -1;
 
     // Get the gravitational acceleration.
@@ -1111,8 +1105,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
   // using a bilateral constraint as well.
   void SlidingPlusBilateral(bool sliding_to_right) {
       SetRodToRestingVerticalConfig();
-    ContinuousState<double>& xc = *context_->
-        get_mutable_continuous_state();
+    ContinuousState<double>& xc = context_->get_mutable_continuous_state();
     xc[3] = (sliding_to_right) ? 1 : -1;
 
     // Set the coefficient of friction. A nonzero coefficient of friction should
@@ -1259,8 +1252,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     EXPECT_EQ(cf.size(), num_contacts * 2 + num_bilateral_eqns);
 
     // Get the pre-impact vertical momentum.
-    ContinuousState<double>& xc =
-        *context_->get_mutable_continuous_state();
+    ContinuousState<double>& xc = context_->get_mutable_continuous_state();
     const double mv = rod_->get_rod_mass() * xc[4];
 
     // Verify that the normal contact impulses exactly oppose the pre-impact
@@ -1413,8 +1405,7 @@ TEST_P(Constraint2DSolverTest, OnePointPlusLimit) {
   // Set the state of the rod to vertically-at-rest and sliding to the left.
   // Set the state of the rod to resting on its side with horizontal velocity.
   SetRodToRestingHorizontalConfig();
-  ContinuousState<double>& xc = *context_->
-    get_mutable_continuous_state();
+  ContinuousState<double>& xc = context_->get_mutable_continuous_state();
   xc[3] = 1.0;
 
   // Set the coefficient of friction to somewhat small (to limit sliding force)
@@ -1787,8 +1778,7 @@ TEST_P(Constraint2DSolverTest, TwoPointAsLimit) {
 TEST_P(Constraint2DSolverTest, TwoPointImpactAsLimit) {
   // Set the state of the rod to impacting on its side.
   SetRodToSlidingImpactingHorizontalConfig(true /* moving to the right */);
-  ContinuousState<double>& xc = *context_->
-      get_mutable_continuous_state();
+  ContinuousState<double>& xc = context_->get_mutable_continuous_state();
   const double vert_vel = xc[4];
 
   // First, construct the velocity-level problem data as normal to set

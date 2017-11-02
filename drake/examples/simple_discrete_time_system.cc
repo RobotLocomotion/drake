@@ -51,7 +51,7 @@ int main() {
 
   // Set the initial conditions x(0).
   drake::systems::DiscreteValues<double>& state =
-      *simulator.get_mutable_context()->get_mutable_discrete_state();
+      simulator.get_mutable_context().get_mutable_discrete_state();
   state[0] = 0.99;
 
   // Simulate for 10 seconds.

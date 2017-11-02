@@ -101,46 +101,52 @@ class ContinuousState {
   T& operator[](std::size_t idx) { return (*state_)[idx]; }
   const T& operator[](std::size_t idx) const { return (*state_)[idx]; }
 
-  /// Returns the entire continuous state vector.
-  const VectorBase<T>& get_vector() const { return *state_; }
+  /// Returns a reference to the entire continuous state vector.
+  const VectorBase<T>& get_vector() const {
+    DRAKE_ASSERT(state_ != nullptr);
+    return *state_;
+  }
 
-  /// Returns a mutable pointer to the entire continuous state vector, which
-  /// is never nullptr.
-  VectorBase<T>* get_mutable_vector() { return state_.get(); }
+  /// Returns a mutable reference to the entire continuous state vector.
+  VectorBase<T>& get_mutable_vector() {
+    DRAKE_ASSERT(state_ != nullptr);
+    return *state_.get();
+  }
 
-  /// Returns the subset of the state vector that is generalized position `q`.
+  /// Returns a const reference to the subset of the state vector that is
+  /// generalized position `q`. May be zero length.
   const VectorBase<T>& get_generalized_position() const {
     return *generalized_position_;
   }
 
-  /// Returns a mutable pointer to the subset of the state vector that is
-  /// generalized position `q`.
-  VectorBase<T>* get_mutable_generalized_position() {
-    return generalized_position_.get();
+  /// Returns a mutable reference to the subset of the state vector that is
+  /// generalized position `q`. May be zero length.
+  VectorBase<T>& get_mutable_generalized_position() {
+    return *generalized_position_.get();
   }
 
-  /// Returns the subset of the continuous state vector that is generalized
-  /// velocity `v`.
+  /// Returns a const reference to the subset of the continuous state vector
+  /// that is generalized velocity `v`. May be zero length.
   const VectorBase<T>& get_generalized_velocity() const {
     return *generalized_velocity_;
   }
 
-  /// Returns a mutable pointer to the subset of the continuous state vector
-  /// that is generalized velocity `v`.
-  VectorBase<T>* get_mutable_generalized_velocity() {
-    return generalized_velocity_.get();
+  /// Returns a mutable reference to the subset of the continuous state vector
+  /// that is generalized velocity `v`. May be zero length.
+  VectorBase<T>& get_mutable_generalized_velocity() {
+    return *generalized_velocity_.get();
   }
 
-  /// Returns the subset of the continuous state vector that is other
-  /// continuous state `z`.
+  /// Returns a const reference to the subset of the continuous state vector
+  /// that is other continuous state `z`. May be zero length.
   const VectorBase<T>& get_misc_continuous_state() const {
     return *misc_continuous_state_;
   }
 
-  /// Returns a mutable pointer to the subset of the continuous state vector
-  /// that is other continuous state `z`.
-  VectorBase<T>* get_mutable_misc_continuous_state() {
-    return misc_continuous_state_.get();
+  /// Returns a mutable reference to the subset of the continuous state vector
+  /// that is other continuous state `z`. May be zero length.
+  VectorBase<T>& get_mutable_misc_continuous_state() {
+    return *misc_continuous_state_.get();
   }
 
 
@@ -160,7 +166,7 @@ class ContinuousState {
   /// Sets the entire continuous state vector from an Eigen expression.
   void SetFromVector(const Eigen::Ref<const VectorX<T>>& value) {
     DRAKE_ASSERT(value.size() == state_->size());
-    this->get_mutable_vector()->SetFromVector(value);
+    this->get_mutable_vector().SetFromVector(value);
   }
 
   /// Returns a copy of the entire continuous state vector into an Eigen vector.

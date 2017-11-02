@@ -40,12 +40,14 @@ class State {
     continuous_state_ = std::move(xc);
   }
 
-  const ContinuousState<T>* get_continuous_state() const {
-    return continuous_state_.get();
+  const ContinuousState<T>& get_continuous_state() const {
+    DRAKE_ASSERT(continuous_state_ != nullptr);
+    return *continuous_state_.get();
   }
 
-  ContinuousState<T>* get_mutable_continuous_state() {
-    return continuous_state_.get();
+  ContinuousState<T>& get_mutable_continuous_state() {
+    DRAKE_ASSERT(continuous_state_ != nullptr);
+    return *continuous_state_.get();
   }
 
   void set_discrete_state(std::unique_ptr<DiscreteValues<T>> xd) {
@@ -53,12 +55,14 @@ class State {
     discrete_state_ = std::move(xd);
   }
 
-  const DiscreteValues<T>* get_discrete_state() const {
-    return discrete_state_.get();
+  const DiscreteValues<T>& get_discrete_state() const {
+    DRAKE_ASSERT(discrete_state_ != nullptr);
+    return *discrete_state_.get();
   }
 
-  DiscreteValues<T>* get_mutable_discrete_state() {
-    return discrete_state_.get();
+  DiscreteValues<T>& get_mutable_discrete_state() {
+    DRAKE_ASSERT(discrete_state_ != nullptr);
+    return *discrete_state_.get();
   }
 
   void set_abstract_state(std::unique_ptr<AbstractValues> xa) {
@@ -66,42 +70,46 @@ class State {
     abstract_state_ = std::move(xa);
   }
 
-  const AbstractValues* get_abstract_state() const {
-    return abstract_state_.get();
+  const AbstractValues& get_abstract_state() const {
+    DRAKE_ASSERT(abstract_state_ != nullptr);
+    return *abstract_state_.get();
   }
 
-  AbstractValues* get_mutable_abstract_state() { return abstract_state_.get(); }
+  AbstractValues& get_mutable_abstract_state() {
+    DRAKE_ASSERT(abstract_state_ != nullptr);
+    return *abstract_state_.get();
+  }
 
   /// Returns a const pointer to the abstract component of the
   /// state at @p index.  Asserts if @p index doesn't exist.
   template <typename U>
   const U& get_abstract_state(int index) const {
-    const AbstractValues* xa = get_abstract_state();
-    return xa->get_value(index).GetValue<U>();
+    const AbstractValues& xa = get_abstract_state();
+    return xa.get_value(index).GetValue<U>();
   }
 
   /// Returns a mutable pointer to element @p index of the abstract state.
   /// Asserts if @p index doesn't exist.
   template <typename U>
   U& get_mutable_abstract_state(int index) {
-    AbstractValues* xa = get_mutable_abstract_state();
-    return xa->get_mutable_value(index).GetMutableValue<U>();
+    AbstractValues& xa = get_mutable_abstract_state();
+    return xa.get_mutable_value(index).GetMutableValue<U>();
   }
 
   /// Copies the values from another State of the same scalar type into this
   /// State.
   void CopyFrom(const State<T>& other) {
-    continuous_state_->CopyFrom(*other.get_continuous_state());
-    discrete_state_->CopyFrom(*other.get_discrete_state());
-    abstract_state_->CopyFrom(*other.get_abstract_state());
+    continuous_state_->CopyFrom(other.get_continuous_state());
+    discrete_state_->CopyFrom(other.get_discrete_state());
+    abstract_state_->CopyFrom(other.get_abstract_state());
   }
 
   /// Initializes this state (regardless of scalar type) from a State<double>.
   /// All scalar types in Drake must support initialization from doubles.
   void SetFrom(const State<double>& other) {
-    continuous_state_->SetFrom(*other.get_continuous_state());
-    discrete_state_->SetFrom(*other.get_discrete_state());
-    abstract_state_->CopyFrom(*other.get_abstract_state());
+    continuous_state_->SetFrom(other.get_continuous_state());
+    discrete_state_->SetFrom(other.get_discrete_state());
+    abstract_state_->CopyFrom(other.get_abstract_state());
   }
 
  private:

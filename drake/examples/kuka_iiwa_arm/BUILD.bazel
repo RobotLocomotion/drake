@@ -108,6 +108,7 @@ drake_cc_binary(
         ":iiwa_common",
         ":iiwa_lcm",
         ":oracular_state_estimator",
+        "//drake/common:text_logging_gflags",
         "//drake/examples/kuka_iiwa_arm/iiwa_world:iiwa_wsg_diagram_factory",
         "//drake/lcm",
         "//drake/manipulation/schunk_wsg:schunk_wsg_constants",
@@ -214,6 +215,8 @@ sh_test(
     data = [
         "//drake/manipulation/models/iiwa_description:urdf/dual_iiwa14_polytope_collision.urdf",  # noqa
     ],
+    # Flaky because LCM self-test can fail (PR #7311)
+    flaky = 1,
 )
 
 # This examples needs to be install for external projects such as Spartan.

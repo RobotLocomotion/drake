@@ -5,10 +5,17 @@ load(
     "cmake_config",
     "install",
     "install_cmake_config",
+    "install_files",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
+
+install_files(
+    name = "install_optitrack_client",
+    dest = "bin",
+    files = ["optitrack_client"],
+)
 
 CMAKE_PACKAGE = "optitrack"
 
@@ -28,7 +35,7 @@ OPTITRACK_TARGETS = [
     "@optitrack_driver//lcmtypes:lcmtypes_optitrack",
     "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
     "@optitrack_driver//lcmtypes:py_optitrack_lcmtypes",
-    "@optitrack_driver//src:optitrack_client",
+    "@optitrack_driver//src:optitrack_client_py",
 ]
 
 install(
@@ -47,7 +54,10 @@ install(
     },
     allowed_externals = OPTITRACK_LICENSE_DOCS + OPTITRACK_TARGETS,
     visibility = ["//:__subpackages__"],
-    deps = [":install_cmake_config"],
+    deps = [
+        ":install_cmake_config",
+        ":install_optitrack_client",
+    ],
 )
 
-add_lint_tests()
+add_lint_tests(python_lint_extra_srcs = ["optitrack_client"])

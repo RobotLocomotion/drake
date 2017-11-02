@@ -46,11 +46,6 @@
       "Hints": ["@prefix@/lib/cmake/lcm"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
-    "NLopt": {
-      "Version": "2.5.0",
-      "Hints": ["@prefix@/lib/cmake/nlopt"],
-      "X-CMake-Find-Args": ["CONFIG"]
-    },
     "protobuf": {
       "Version": "3.1.0",
       "Hints": ["@prefix@/lib/cmake/protobuf"],
@@ -81,7 +76,10 @@
     },
     "VTK": {
       "Version": "8.0.1",
-      "Hints": ["@prefix@/lib/cmake/vtk-8.0"],
+      "Hints": [
+        "@prefix@/lib/cmake/vtk-8.0",
+        "/usr/local/opt/vtk@8.0/lib/cmake/vtk-8.0"
+      ],
       "X-CMake-Find-Args": ["CONFIG"]
     },
     "yaml-cpp": {
@@ -103,10 +101,9 @@
         "@prefix@/include"
       ],
       "Compile-Features": ["c++14"],
-      "Link-Flags": ["-ltinyxml2"],
+      "Link-Flags": ["-lnlopt", "-ltinyxml2"],
       "Link-Requires": [
         "fmt:fmt",
-        "NLopt:nlopt",
         "SDFormat:sdformat",
         "vtkCommonCore",
         "vtkCommonDataModel",

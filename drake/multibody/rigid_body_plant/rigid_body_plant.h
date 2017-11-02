@@ -220,17 +220,16 @@ class RigidBodyPlant : public LeafSystem<T> {
     if (is_state_discrete()) {
       // Extract a reference to the discrete state from the context.
       BasicVector<T>& xd =
-          state->get_mutable_discrete_state()->get_mutable_vector(0);
+          state->get_mutable_discrete_state().get_mutable_vector(0);
 
       // Write the zero configuration into the discrete state.
       xd.SetFromVector(x0);
     } else {
-      // Extract a pointer to continuous state from the context.
-      ContinuousState<T>* xc = state->get_mutable_continuous_state();
-      DRAKE_DEMAND(xc != nullptr);
+      // Extract a reference to continuous state from the context.
+      ContinuousState<T>& xc = state->get_mutable_continuous_state();
 
       // Write the zero configuration into the continuous state.
-      xc->SetFromVector(x0);
+      xc.SetFromVector(x0);
     }
   }
 

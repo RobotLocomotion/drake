@@ -53,8 +53,8 @@ class BeadOnAWireTest : public ::testing::Test {
 
 // Checks output is as expected.
 TEST_F(BeadOnAWireTest, Output) {
-  const systems::ContinuousState<double>& v = *context_abs_->
-                                               get_continuous_state();
+  const systems::ContinuousState<double>& v = context_abs_->
+                                                get_continuous_state();
   dut_abs_->CalcOutput(*context_abs_, output_abs_.get());
   for (int i = 0; i < v.size(); ++i)
     EXPECT_EQ(v[i], output_abs_->get_vector_data(0)->get_value()(i));
@@ -196,8 +196,8 @@ TEST_F(BeadOnAWireTest, ConstraintFunctionEval) {
                                            &inverse_vert_line_function);
 
   // Put the bead directly onto the wire.
-  systems::ContinuousState<double> &xc =
-      *context_abs_->get_mutable_continuous_state();
+  systems::ContinuousState<double>& xc =
+      context_abs_->get_mutable_continuous_state();
   const double s = 1.0;
   xc[0] = 0.0;
   xc[1] = 0.0;
@@ -219,8 +219,8 @@ TEST_F(BeadOnAWireTest, ConstraintFunctionEval) {
 TEST_F(BeadOnAWireTest, ConstraintDotFunctionEval) {
   // Put the bead directly onto the wire and make its velocity such that
   // it is not instantaneously leaving the wire.
-  systems::ContinuousState<double> &xc =
-      *context_abs_->get_mutable_continuous_state();
+  systems::ContinuousState<double>& xc =
+      context_abs_->get_mutable_continuous_state();
   const double s = 1.0;
   xc[0] = std::cos(s);
   xc[1] = std::sin(s);

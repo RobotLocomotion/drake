@@ -185,14 +185,26 @@ class Simulator {
 
   /// Returns a const reference to the internally-maintained Context holding the
   /// most recent step in the trajectory. This is suitable for publishing or
-  /// extracting information about this trajectory step.
-  const Context<T>& get_context() const { return *context_; }
+  /// extracting information about this trajectory step. Do not call this method
+  /// if there is no Context.
+  const Context<T>& get_context() const {
+    DRAKE_ASSERT(context_ != nullptr);
+    return *context_;
+  }
 
-  /// Returns a mutable pointer to the internally-maintained Context holding the
-  /// most recent step in the trajectory. This is suitable for use in updates,
-  /// sampling operations, event handlers, and constraint projection. You can
-  /// also modify this prior to calling Initialize() to set initial conditions.
-  Context<T>* get_mutable_context() { return context_.get(); }
+  /// Returns a mutable reference to the internally-maintained Context holding
+  /// the most recent step in the trajectory. This is suitable for use in
+  /// updates, sampling operations, event handlers, and constraint projection.
+  /// You can also modify this prior to calling Initialize() to set initial
+  /// conditions. Do not call this method if there is no Context.
+  Context<T>& get_mutable_context()  {
+    DRAKE_ASSERT(context_ != nullptr);
+    return *context_;
+  }
+
+  /// Returns `true` if this Simulator has an internally-maintained Context.
+  /// This is always true unless `reset_context()` has been called.
+  bool has_context() const { return context_ != nullptr; }
 
   /// Replace the internally-maintained Context with a different one. The
   /// current Context is deleted. This is useful for supplying a new set of
@@ -448,9 +460,8 @@ void Simulator<T>::HandleUnrestrictedUpdate(
         unrestricted_updates_.get());
     // TODO(edrumwri): simply swap the states for additional speed.
     // Now write the update back into the context.
-    State<T>* x = context_->get_mutable_state();
-    DRAKE_DEMAND(x != nullptr);
-    x->CopyFrom(*unrestricted_updates_);
+    State<T>& x = context_->get_mutable_state();
+    x.CopyFrom(*unrestricted_updates_);
     ++num_unrestricted_updates_;
   }
 }
@@ -463,11 +474,9 @@ void Simulator<T>::HandleDiscreteUpdate(
     // First, compute the discrete updates into a temporary buffer.
     system_.CalcDiscreteVariableUpdates(*context_, events,
         discrete_updates_.get());
-    DiscreteValues<T>* xd = context_->get_mutable_discrete_state();
-    // Systems with discrete update events must have discrete state.
-    DRAKE_DEMAND(xd != nullptr);
     // Then, write them back into the context.
-    xd->CopyFrom(*discrete_updates_);
+    DiscreteValues<T>& xd = context_->get_mutable_discrete_state();
+    xd.CopyFrom(*discrete_updates_);
     ++num_discrete_updates_;
   }
 }
@@ -654,7 +663,7 @@ void Simulator<T>::IsolateWitnessTriggers(
   // a dead band.
 
   // Will need to alter the context repeatedly.
-  Context<T>* context = get_mutable_context();
+  Context<T>& context = get_mutable_context();
 
   // Get the witness isolation interval length.
   const optional<T> witness_iso_len = GetCurrentWitnessTimeIsolation();
@@ -666,14 +675,14 @@ void Simulator<T>::IsolateWitnessTriggers(
 
   // Mini function for integrating the system forward in time from t0.
   std::function<void(const T&)> integrate_forward =
-      [&t0, &x0, context, this](const T& t_des) {
+      [&t0, &x0, &context, this](const T& t_des) {
     const T inf = std::numeric_limits<double>::infinity();
-    context->set_time(t0);
-    context->get_mutable_continuous_state()->SetFromVector(x0);
+    context.set_time(t0);
+    context.get_mutable_continuous_state().SetFromVector(x0);
     T t_remaining = t_des - t0;
     while (t_remaining > 0) {
       integrator_->IntegrateAtMost(inf, inf, t_remaining);
-      t_remaining = t_des - context->get_time();
+      t_remaining = t_des - context.get_time();
     }
   };
 
@@ -689,7 +698,7 @@ void Simulator<T>::IsolateWitnessTriggers(
     // See whether any witness functions trigger.
     bool trigger = false;
     for (size_t i = 0; i < witnesses.size(); ++i) {
-      wc[i] = get_system().EvaluateWitness(*context, *witnesses[i]);
+      wc[i] = get_system().EvaluateWitness(context, *witnesses[i]);
       if (witnesses[i]->should_trigger(w0[i], wc[i]))
         trigger = true;
     }
@@ -732,7 +741,7 @@ bool Simulator<T>::IntegrateContinuousState(const T& next_publish_dt,
   // Save the time and current state.
   const Context<T>& context = get_context();
   const T t0 = context.get_time();
-  const VectorX<T> x0 = context.get_continuous_state()->CopyToVector();
+  const VectorX<T> x0 = context.get_continuous_state().CopyToVector();
 
   // Get the set of witness functions active at the current time.
   const System<T>& system = get_system();
