@@ -116,6 +116,7 @@ void DrakeVisualizer::PlaybackTrajectory(
 void DrakeVisualizer::DoPublish(
     const Context<double>& context,
     const std::vector<const PublishEvent<double>*>& event) const {
+  // Initialization should only happen as a singleton event.
   if (event.size() == 1 && event.front()->get_trigger_type() ==
       Event<double>::TriggerType::kInitialization) {
     PublishLoadRobot();

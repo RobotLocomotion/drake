@@ -109,6 +109,9 @@ class DrakeVisualizer : public LeafSystem<double> {
       const PiecewisePolynomial<double>& input_trajectory) const;
 
  private:
+  // TODO(siyuan): Split DoPublish into individual callbacks for different
+  // events. Since the desired behaviors for different triggers are exclusive.
+
   // If @p events has only 1 kInitialization trigger typed event, calls
   // PublishLoadRobot. Otherwise it publishes a draw message.
   void DoPublish(const systems::Context<double>& context,

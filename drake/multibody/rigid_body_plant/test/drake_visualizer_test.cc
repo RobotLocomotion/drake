@@ -513,6 +513,7 @@ GTEST_TEST(DrakeVisualizerTests, TestPublishPeriod) {
   drake::systems::Simulator<double> simulator(dut, std::move(context));
   simulator.set_publish_every_time_step(false);
   simulator.Initialize();
+  VerifyLoadMessage(lcm.get_last_published_message("DRAKE_VIEWER_LOAD_ROBOT"));
 
   for (double time = 0; time < 4; time += 0.01) {
     simulator.StepTo(time);
