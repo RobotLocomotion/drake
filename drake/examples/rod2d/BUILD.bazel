@@ -6,9 +6,18 @@ load(
     "drake_cc_library",
     "drake_cc_binary",
 )
+load(
+    "@drake//tools/vector_gen:vector_gen.bzl",
+    "drake_cc_vector_gen_library",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
+
+drake_cc_vector_gen_library(
+    name = "rod2d_state_vector",
+    srcs = ["rod2d_state_vector.named_vector"],
+)
 
 drake_cc_binary(
     name = "rod2d_sim",
@@ -39,6 +48,7 @@ drake_cc_library(
         "rod2d-inl.h",
     ],
     deps = [
+        ":rod2d_state_vector",
         "//drake/common:essential",
         "//drake/multibody/constraint",
         "//drake/solvers:mathematical_program",
