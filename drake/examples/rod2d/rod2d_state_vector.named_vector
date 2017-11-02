@@ -2,25 +2,31 @@ namespace: "drake::examples::rod2d"
 
 element {
      name: "x"
-     doc: "Horizontal location of the center-of-mass in meters."
+     doc: "Horizontal location of the center-of-mass."
+     doc_units: "m"
 }
 element {
      name: "y"
-     doc: "Vertical location of the center-of-mass in meters."
+     doc: "Vertical location of the center-of-mass."
+     doc_units: "m"
 }
 element {
      name: "theta"
-     doc: "angle of the rod (measured counter-clockwise) in radians."
+     doc: "Angle of the rod (measured counter-clockwise)."
+     doc_units: "rad"
 }
 element {
      name: "xdot"
-     doc: "Velocity of the horizontal location of the c.o.m. in m/s."
+     doc: "Velocity of the horizontal location of the center-of-mass."
+     doc_units: "m/s"
 }
 element {
      name: "ydot"
-     doc: "Velocity of the vertical location of the c.o.m. in m/s."
+     doc: "Velocity of the vertical location of the center-of-mass."
+     doc_units: "m/s"
 }
 element {
      name: "thetadot"
-     doc: "angular velocity of the rod in radians per second."
+     doc: "Angular velocity of the rod."
+     doc_units: "rad/s"
 }
