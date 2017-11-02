@@ -143,10 +143,18 @@ class WsgAction : public Action {
   }
 
   /**
-   * Returns true if the gripper stopped moving, and it is at least 0.5 seconds
-   * after an Open / Close command was last issued.
+   * Returns true if the following criteria are satisfied:
+   *  - The gripper velocity is less than the final velocity threshold
+   *  - 0.5 s have elapsed since the last Open/Close command was issued
+   *  - The gripper position is greater than (for an Open command) or less than
+   *    (for a Close command) the open position threshold.
    */
   bool ActionFinished(const WorldState& est_state) const override;
+
+ private:
+  enum { kOpen, kClose } last_command_{kOpen};
+  double final_velocity_threshold_ = 1e-2;  // m/s
+  double open_position_threshold_ = .095;   // m
 };
 
 }  // namespace pick_and_place
