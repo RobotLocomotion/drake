@@ -1642,62 +1642,60 @@ GTEST_TEST(RandomContextTest, SetRandomTest) {
           .all());
 }
 
-// Note: this class is duplicated in diagram_test.
-class InitializationTestSystem : public LeafSystem<double> {
- public:
-  InitializationTestSystem() {
-    PublishEvent<double> pub_event(Event<double>::TriggerType::kInitialization,
-        std::bind(&InitializationTestSystem::InitPublish, this,
-            std::placeholders::_1, std::placeholders::_2));
-    DeclareInitializationEvent(pub_event);
-
-    DeclareInitializationEvent(
-        DiscreteUpdateEvent<double>(
-            Event<double>::TriggerType::kInitialization));
-    DeclareInitializationEvent(
-        UnrestrictedUpdateEvent<double>(
-            Event<double>::TriggerType::kInitialization));
-  }
-
-  bool get_pub_init() const { return pub_init_; }
-  bool get_dis_update_init() const { return dis_update_init_; }
-  bool get_unres_update_init() const { return unres_update_init_; }
-
- private:
-  void InitPublish(
-      const Context<double>&,
-      const PublishEvent<double>& event) const {
-    EXPECT_EQ(event.get_trigger_type(),
-              Event<double>::TriggerType::kInitialization);
-    pub_init_ = true;
-  }
-
-  void DoCalcDiscreteVariableUpdates(
-      const Context<double>&,
-      const std::vector<const DiscreteUpdateEvent<double>*>& events,
-      DiscreteValues<double>*) const final {
-    EXPECT_EQ(events.size(), 1);
-    EXPECT_EQ(events.front()->get_trigger_type(),
-              Event<double>::TriggerType::kInitialization);
-    dis_update_init_ = true;
-  }
-
-  void DoCalcUnrestrictedUpdate(
-      const Context<double>&,
-      const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
-      State<double>*) const final {
-    EXPECT_EQ(events.size(), 1);
-    EXPECT_EQ(events.front()->get_trigger_type(),
-              Event<double>::TriggerType::kInitialization);
-    unres_update_init_ = true;
-  }
-
-  mutable bool pub_init_{false};
-  mutable bool dis_update_init_{false};
-  mutable bool unres_update_init_{false};
-};
-
+// Tests initialization works properly for a leaf system.
 GTEST_TEST(InitializationTest, InitializationTest) {
+  class InitializationTestSystem : public LeafSystem<double> {
+   public:
+    InitializationTestSystem() {
+      PublishEvent<double> pub_event(
+          Event<double>::TriggerType::kInitialization,
+          std::bind(&InitializationTestSystem::InitPublish, this,
+                    std::placeholders::_1, std::placeholders::_2));
+      DeclareInitializationEvent(pub_event);
+
+      DeclareInitializationEvent(DiscreteUpdateEvent<double>(
+          Event<double>::TriggerType::kInitialization));
+      DeclareInitializationEvent(UnrestrictedUpdateEvent<double>(
+          Event<double>::TriggerType::kInitialization));
+    }
+
+    bool get_pub_init() const { return pub_init_; }
+    bool get_dis_update_init() const { return dis_update_init_; }
+    bool get_unres_update_init() const { return unres_update_init_; }
+
+   private:
+    void InitPublish(const Context<double>&,
+                     const PublishEvent<double>& event) const {
+      EXPECT_EQ(event.get_trigger_type(),
+                Event<double>::TriggerType::kInitialization);
+      pub_init_ = true;
+    }
+
+    void DoCalcDiscreteVariableUpdates(
+        const Context<double>&,
+        const std::vector<const DiscreteUpdateEvent<double>*>& events,
+        DiscreteValues<double>*) const final {
+      EXPECT_EQ(events.size(), 1);
+      EXPECT_EQ(events.front()->get_trigger_type(),
+                Event<double>::TriggerType::kInitialization);
+      dis_update_init_ = true;
+    }
+
+    void DoCalcUnrestrictedUpdate(
+        const Context<double>&,
+        const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
+        State<double>*) const final {
+      EXPECT_EQ(events.size(), 1);
+      EXPECT_EQ(events.front()->get_trigger_type(),
+                Event<double>::TriggerType::kInitialization);
+      unres_update_init_ = true;
+    }
+
+    mutable bool pub_init_{false};
+    mutable bool dis_update_init_{false};
+    mutable bool unres_update_init_{false};
+  };
+
   InitializationTestSystem dut;
   auto context = dut.CreateDefaultContext();
   auto discrete_updates = dut.AllocateDiscreteVariables();
@@ -1707,9 +1705,10 @@ GTEST_TEST(InitializationTest, InitializationTest) {
 
   dut.Publish(*context, init_events->get_publish_events());
   dut.CalcDiscreteVariableUpdates(*context,
-      init_events->get_discrete_update_events(), discrete_updates.get());
-  dut.CalcUnrestrictedUpdate(*context,
-      init_events->get_unrestricted_update_events(), state.get());
+                                  init_events->get_discrete_update_events(),
+                                  discrete_updates.get());
+  dut.CalcUnrestrictedUpdate(
+      *context, init_events->get_unrestricted_update_events(), state.get());
 
   EXPECT_TRUE(dut.get_pub_init());
   EXPECT_TRUE(dut.get_dis_update_init());
