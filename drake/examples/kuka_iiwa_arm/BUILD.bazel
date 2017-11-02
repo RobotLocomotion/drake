@@ -215,6 +215,8 @@ sh_test(
     data = [
         "//drake/manipulation/models/iiwa_description:urdf/dual_iiwa14_polytope_collision.urdf",  # noqa
     ],
+    # Flaky because LCM self-test can fail (PR #7311)
+    flaky = 1,
 )
 
 # This examples needs to be install for external projects such as Spartan.
