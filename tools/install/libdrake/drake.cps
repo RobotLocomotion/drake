@@ -96,7 +96,11 @@
         "@prefix@/include"
       ],
       "Compile-Features": ["c++14"],
-      "Link-Flags": ["-lnlopt", "-ltinyxml2"],
+      "Link-Flags": [
+        "-lnlopt",
+        "-ltinyxml2",
+        "-lyaml-cpp"
+      ],
       "Link-Requires": [
         "fmt:fmt",
         "SDFormat:sdformat",
