@@ -41,7 +41,6 @@ glew
 glib
 graphviz
 ipopt
-libccd
 libyaml
 lz4
 nlopt
