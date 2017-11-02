@@ -77,6 +77,7 @@ void WsgAction::OpenGripper(const WorldState& est_state,
   msg->utime = est_state.get_wsg_time() * 1e6;
   msg->target_position_mm = 100;  // Maximum aperture for WSG
   msg->force = 40;  // Force in center of WSG range
+  last_command_ = kOpen;
 }
 
 void WsgAction::CloseGripper(const WorldState& est_state,
@@ -88,15 +89,21 @@ void WsgAction::CloseGripper(const WorldState& est_state,
                                 // and keep applying force on a real
                                 // WSG when no object is grasped.
   msg->force = 40;
+  last_command_ = kClose;
 }
 
 bool WsgAction::ActionFinished(const WorldState& est_state) const {
   if (!ActionStarted()) return false;
-
-  const double max_finished_velocity = 1e-2;
-  if (std::abs(est_state.get_wsg_v()) < max_finished_velocity &&
-      (get_time_since_action_start(est_state.get_wsg_time()) > 0.5))
-    return true;
+  if (std::abs(est_state.get_wsg_v()) < kFinalSpeedThreshold &&
+      (get_time_since_action_start(est_state.get_wsg_time()) > 0.5)) {
+    if (last_command_ == kOpen &&
+        est_state.get_wsg_q() > kOpenPositionThreshold) {
+      return true;
+    } else if (last_command_ == kClose &&
+               est_state.get_wsg_q() < kOpenPositionThreshold) {
+      return true;
+    }
+  }
   return false;
 }
 
