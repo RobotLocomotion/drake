@@ -217,12 +217,9 @@ pkg_config_package(
     modname = "ipopt",
 )
 
-github_archive(
+pkg_config_package(
     name = "nlopt",
-    repository = "stevengj/nlopt",
-    commit = "45553da97c890ef58f95e7ef73c5409d2169e824",
-    sha256 = "931fd125c50acf7cd7e709887ab4923af42a8a07be139572bf8b76bccca76450",  # noqa
-    build_file = "tools/workspace/nlopt/nlopt.BUILD.bazel",
+    modname = "nlopt",
 )
 
 github_archive(
