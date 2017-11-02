@@ -109,10 +109,10 @@ class DrakeVisualizer : public LeafSystem<double> {
       const PiecewisePolynomial<double>& input_trajectory) const;
 
  private:
-  // Publishes a draw message if initialization is completed. Otherwise, it
-  // emits a warning and return.
+  // If @p events has only 1 kInitialization trigger typed event, calls
+  // PublishLoadRobot. Otherwise it publishes a draw message.
   void DoPublish(const systems::Context<double>& context,
-                 const std::vector<const PublishEvent<double>*>&)
+                 const std::vector<const PublishEvent<double>*>& events)
                  const override;
 
   // Publishes a lcmt_viewer_load_robot message containing a description

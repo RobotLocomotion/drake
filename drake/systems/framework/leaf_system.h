@@ -1445,6 +1445,7 @@ class LeafSystem : public System<T> {
   // major time step.
   LeafCompositeEventCollection<T> per_step_events_;
 
+  // Update or Publish events that need to be handled at system initialization.
   LeafCompositeEventCollection<T> initialization_events_;
 
   // A model continuous state to be used in AllocateDefaultContext.
