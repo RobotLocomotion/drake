@@ -263,10 +263,7 @@ class PublishEvent final : public Event<T> {
   PublishEvent(const PublishEvent&) = default;
 
   // Clones PublishEvent-specific data.
-  PublishEvent<T>* DoClone() const override {
-    PublishEvent<T>* ret = new PublishEvent(*this);
-    return ret;
-  }
+  PublishEvent<T>* DoClone() const override { return new PublishEvent(*this); }
 
   // Optional callback function that handles this publish event.
   PublishCallback callback_{nullptr};

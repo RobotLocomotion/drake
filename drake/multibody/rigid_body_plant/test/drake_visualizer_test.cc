@@ -455,9 +455,9 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
 // Helper function to publish load robot model message.
 void PublishLoadRobotModelMessageHelper(
     const DrakeVisualizer& dut, const Context<double>& context) {
-  auto init_events = system_.AllocateCompositeEventCollection();
+  auto init_events = dut.AllocateCompositeEventCollection();
   dut.GetInitializationEvents(context, init_events.get());
-  dut.Publish(context, *init_events);
+  dut.Publish(context, init_events->get_publish_events());
 }
 
 // Tests the basic functionality of the DrakeVisualizer.
