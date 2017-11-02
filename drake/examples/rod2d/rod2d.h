@@ -238,16 +238,28 @@ class Rod2D : public systems::LeafSystem<T> {
         context->get_mutable_continuous_state_vector());
   }
 
+  /// Transforms damping to dissipation (α), given the amount of deformation.
+  double TransformDissipationToDamping() const {
+    // Equation (16) from [Hunt 1975], yields b = 3/2 * α * k * x. We can
+    // assume that the stiffness and dissipation are determined for a small
+    // deformation (x), which we will somewhat arbitrarily represent using a
+    // scale factor of 1/1000.
+    const double characteristic_deformation = 1.0 / 1000;
+    return dissipation_ * 1.5 * stiffness_ * characteristic_deformation *
+        half_length_;
+  }
+
   /// Gets the constraint force mixing parameter (CFM, used for time stepping
-  /// systems only).
+  /// systems only), which should lie in the interval [0, infinity].
   double get_cfm() const {
-    return 1.0 / (stiffness_ * dt_ + dissipation_);
+    return 1.0 / (stiffness_ * dt_ + TransformDissipationToDamping());
   }
 
   /// Gets the error reduction parameter (ERP, used for time stepping
-  /// systems only).
+  /// systems only), which should lie in the interval [0, 1].
   double get_erp() const {
-    return dt_ * stiffness_ / (stiffness_ * dt_ + dissipation_);
+    return dt_ * stiffness_ / (stiffness_ * dt_ +
+        TransformDissipationToDamping());
   }
 
   /// Gets the generalized position of the rod, given a Context. The first two
@@ -327,13 +339,22 @@ class Rod2D : public systems::LeafSystem<T> {
   /// for time stepping implementations).
   void SetStiffnessAndDissipation(double cfm, double erp) {
     // These values were determined by solving the equations:
-    // cfm = 1 / (dt * stiffness + dissipation)
-    // erp = dt * stiffness / (dt * stiffness + dissipation)
+    // cfm = 1 / (dt * stiffness + damping)
+    // erp = dt * stiffness / (dt * stiffness + damping)
     // for k and b.
     const double k = erp / (cfm * dt_);
     const double b = (1 - erp) / cfm;
     set_stiffness(k);
-    set_dissipation(b);
+
+    // Transformation from damping to dissipation (α) requires using
+    // Equation (16) from [Hunt 1975], yields b = 3/2 * α * k * x. We can
+    // assume that the stiffness and dissipation are determined for a small
+    // deformation (x), which we will somewhat arbitrarily represent using a
+    // scale factor of 1/1000.
+    const double characteristic_deformation = 1.0 / 1000;
+    const double alpha = b / (1.5 * k * characteristic_deformation *
+        half_length_);
+    set_dissipation(alpha);
   }
 
   /// Get compliant contact static friction (stiction) coefficient `μ_s`.

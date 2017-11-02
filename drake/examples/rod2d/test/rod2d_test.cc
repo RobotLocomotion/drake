@@ -726,11 +726,11 @@ TEST_F(Rod2DDAETest, MultiPoint) {
 
   // Compute the derivatives and verify that the linear and angular acceleration
   // are approximately zero.
-  const double eps = 250 * std::numeric_limits<double>::epsilon();
+  const double tol = 250 * std::numeric_limits<double>::epsilon();
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
-  EXPECT_NEAR((*derivatives_)[3], 0, eps);
-  EXPECT_NEAR((*derivatives_)[4], 0, eps);
-  EXPECT_NEAR((*derivatives_)[5], 0, eps);
+  EXPECT_NEAR((*derivatives_)[3], 0, tol);
+  EXPECT_NEAR((*derivatives_)[4], 0, tol);
+  EXPECT_NEAR((*derivatives_)[5], 0, tol);
 
   // Set the coefficient of friction to "very large".
   const double large = 100.0;
@@ -739,9 +739,9 @@ TEST_F(Rod2DDAETest, MultiPoint) {
   // TODO(edrumwri): Check derivatives now.
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
   EXPECT_NEAR((*derivatives_)[3], -large *
-      std::abs(dut_->get_gravitational_acceleration()), eps * large);
-  EXPECT_NEAR((*derivatives_)[4], 0, eps);
-  EXPECT_NEAR((*derivatives_)[5], 0, eps);
+      std::abs(dut_->get_gravitational_acceleration()), tol * large);
+  EXPECT_NEAR((*derivatives_)[4], 0, tol);
+  EXPECT_NEAR((*derivatives_)[5], 0, tol);
 
   // Set the rod velocity to zero.
   xc[3] = 0.0;
@@ -758,17 +758,17 @@ TEST_F(Rod2DDAETest, MultiPoint) {
 
   // Verify that the linear and angular acceleration are still zero.
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
-  EXPECT_NEAR((*derivatives_)[3], 0, eps);
-  EXPECT_NEAR((*derivatives_)[4], 0, eps);
-  EXPECT_NEAR((*derivatives_)[5], 0, eps);
+  EXPECT_NEAR((*derivatives_)[3], 0, tol);
+  EXPECT_NEAR((*derivatives_)[4], 0, tol);
+  EXPECT_NEAR((*derivatives_)[5], 0, tol);
 
   // Set the coefficient of friction to zero. Now the force should result
   // in the rod being pushed to the right.
   dut_->set_mu_coulomb(0.0);
   dut_->CalcTimeDerivatives(*context_, derivatives_.get());
-  EXPECT_NEAR((*derivatives_)[3], fX/dut_->get_rod_mass(), eps);
-  EXPECT_NEAR((*derivatives_)[4], 0, eps);
-  EXPECT_NEAR((*derivatives_)[5], 0, eps);
+  EXPECT_NEAR((*derivatives_)[3], fX/dut_->get_rod_mass(), tol);
+  EXPECT_NEAR((*derivatives_)[4], 0, tol);
+  EXPECT_NEAR((*derivatives_)[5], 0, tol);
 }
 
 // Verify that the Painlevé configuration does not correspond to an impacting
