@@ -16,7 +16,6 @@ drake_py_binary(
 
 _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "bullet",
-    "ccd",
     "drake_visualizer",
     "eigen",
     "fcl",
@@ -28,7 +27,6 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "lcmtypes_robotlocomotion",
     "libbot",
     "nlopt",
-    "octomap",
     "pybind11",
     "sdformat",
     "spdlog",
@@ -37,7 +35,6 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "tinydir",
     "tinyobjloader",
     "vtk",
-    "yaml_cpp",
 ]] + ["//tools/workspace/%s:install" % p for p in [
     "gflags",
     "jchart2d",

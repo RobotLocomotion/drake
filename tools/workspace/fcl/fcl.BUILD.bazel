@@ -26,9 +26,17 @@ cmake_configure_file(
     out = "include/fcl/config.h",
     cmakelists = [
         "CMakeModules/FCLVersion.cmake",
-        "@octomap//:cmakelists_with_version",
     ],
-    defines = ["FCL_HAVE_OCTOMAP"],
+    defines = [
+        "FCL_HAVE_OCTOMAP",
+        # These definitions inform fcl which version of octomap
+        # will be found by the system.
+        # They should be kept in sync with the package
+        # ros-kinetic-octomap http://wiki.ros.org/octomap
+        "OCTOMAP_MAJOR_VERSION=1",
+        "OCTOMAP_MINOR_VERSION=8",
+        "OCTOMAP_PATCH_VERSION=1",
+    ],
     visibility = ["//visibility:private"],
 )
 
@@ -62,9 +70,7 @@ cmake_config(
     script = "@drake//tools/workspace/fcl:fcl-create-cps.py",
     version_file = "CMakeModules/FCLVersion.cmake",
     deps = [
-        "@ccd//:cps",
         "@eigen//:cps",
-        "@octomap//:cps",
     ],
 )
 

@@ -188,20 +188,14 @@ github_archive(
     build_file = "tools/workspace/bullet/bullet.BUILD.bazel",
 )
 
-github_archive(
+pkg_config_package(
     name = "ccd",
-    repository = "danfis/libccd",
-    commit = "v2.0",
-    sha256 = "1b4997e361c79262cf1fe5e1a3bf0789c9447d60b8ae2c1f945693ad574f9471",  # noqa
-    build_file = "tools/workspace/ccd/ccd.BUILD.bazel",
+    modname = "ccd",
 )
 
-github_archive(
+pkg_config_package(
     name = "octomap",
-    repository = "OctoMap/octomap",
-    commit = "v1.7.2",
-    sha256 = "fe55efbb9ebf2b3388860e54b1c8a53d23e5a05de5956c043278013e01066c34",  # noqa
-    build_file = "tools/workspace/octomap/octomap.BUILD.bazel",
+    modname = "octomap",
 )
 
 github_archive(
@@ -264,12 +258,10 @@ github_archive(
     build_file = "tools/workspace/tinyobjloader/tinyobjloader.BUILD.bazel",
 )
 
-github_archive(
+pkg_config_package(
     name = "yaml_cpp",
-    repository = "jbeder/yaml-cpp",
-    commit = "85af926ddc5f3c8fb438001743e65ec3a039ceec",
-    sha256 = "907fb42a502e1448a73959f9a648771b070d6d8513f16d74149f775fc56550ef",  # noqa
-    build_file = "tools/workspace/yaml_cpp/yaml_cpp.BUILD.bazel",
+    atleast_version = "0.5.2",
+    modname = "yaml-cpp",
 )
 
 load("//tools/workspace/buildifier:buildifier.bzl", "buildifier_repository")
