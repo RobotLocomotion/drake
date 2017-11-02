@@ -11,7 +11,6 @@ content = """
   "Description": "A YAML parser and emitter in C++",
   "License": "MIT",
   "Version": "%(VERSION_MAJOR)s.%(VERSION_MINOR)s.%(VERSION_MINOR)s",
-  "Compat-Version": "%(VERSION_MAJOR)s.0.0",
   "Default-Components": [ ":yaml-cpp" ],
   "Components": {
     "yaml-cpp": {
