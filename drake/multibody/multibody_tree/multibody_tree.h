@@ -1009,6 +1009,15 @@ class MultibodyTree {
   // the translational velocity.
 
   // calcStationJacobian:
+  // Under the hood it actually computes J^T by performing multiplications with
+  // spatial forces on each body corresponding to a force on point Qi with only
+  // one component equal to one.
+  // See: SimbodyMatterSubsystemRep::multiplyBySystemJacobianTranspose() in
+  // SimbodyMatterSubsystemRep.cpp, L 6089.
+  // See: RigidBodyNodeSpec::multiplyBySystemJacobianTranspose() in
+  // RigidBodyNodeSpec.cpp, L. 794.
+  //
+  // This could be validated against an AutoDiffXd approach for unit testing.
   // Explicitly computes a Jacobian for a given set of stations.
   // Costs about 42*nstations + 54*nbodies + 33*nvels flops.
 
@@ -1115,14 +1124,25 @@ class MultibodyTree {
   // Others (for orientation)
   // Quaternion<T> CalcRelativeQuaternion(context, from_frame_B, to_frame_A)
   //   see: RBT::relativeQuaternion()
-  // CalcRelativeQuaternionJacobian(
+  // CalcRelativeQuaternionAnalyticalJacobian(
   //    contex, from_frame_B, to_frame_A, J)
   //   see: RBT::relativeQuaternionJacobian()
   //
   // CalcRelativeSpaceXYZAngles(context, from_frame_B, to_frame_A)
   //   see: RBT::relativeRollPitchYaw
-  // CalcRelativeSpaceXYZAnglesJacobian(context, from_frame_B, to_frame_A)
+  // CalcRelativeSpaceXYZAnglesAnalyticalJacobian(context, from_frame_B, to_frame_A)
   //   see: RBT::relativeRollPitchYawJacobian
+  //
+  //
+  // ACTION LIST:
+  // 1. Implement CalcRelativeTransform()
+  // 2. Implement CalcPointsPositions() using (1).
+  // 3. Implement MultiplyBySystemJacobianTranspose(), with options:
+  //      a) As in Simbody, cave a BodyNode::MultiplyBySystemJacobianTranspose()
+  //      b) could we use inverse dynamics with some bits disabled?
+  // 4. Implement CalcPointsAnalyticalJacobian() using 3.
+  // 5. Verify CalcPointsAnalyticalJacobian() using AutoDiffXd in (2) to compute
+  //    the same Jacobian.
 
   /// @}
   // End of multibody Jacobian methods section.
