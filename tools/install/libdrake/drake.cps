@@ -92,7 +92,7 @@
       "Link-Flags": [
         "-ltinyxml2",
         "-lyaml-cpp"
-        ],
+      ],
       "Link-Requires": [
         "fmt:fmt",
         "SDFormat:sdformat",
