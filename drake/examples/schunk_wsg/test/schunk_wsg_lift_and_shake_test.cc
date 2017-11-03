@@ -31,7 +31,7 @@
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
-#include "drake/systems/analysis/runge_kutta3_integrator.h"
+#include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/pid_controlled_system.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -49,6 +49,7 @@ namespace {
 using drake::systems::Multiplexer;
 using drake::systems::Demultiplexer;
 using drake::systems::RungeKutta3Integrator;
+using drake::systems::ImplicitEulerIntegrator;
 using drake::systems::ContactResultsToLcmSystem;
 using drake::systems::lcm::LcmPublisherSystem;
 using drake::systems::KinematicsResults;
@@ -145,6 +146,7 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   const double kStaticFriction = 0.9;
   const double kDynamicFriction = 0.5;
   const double kVStictionTolerance = 0.01;
+//  const double kVStictionTolerance = 1e-5;
   plant->set_normal_contact_parameters(kStiffness, kDissipation);
   plant->set_friction_contact_parameters(kStaticFriction, kDynamicFriction,
                                          kVStictionTolerance);
@@ -176,11 +178,18 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   const double kLiftStart = 1.0;
   const int num_sinusoids = 5;
   systems::System<double>* sinusoids[num_sinusoids];
-  sinusoids[0] = builder.AddSystem<Sinusoid>(kLiftStart, 1.0, 1.0, 0.0);
-  sinusoids[1] = builder.AddSystem<Sinusoid>(kLiftStart, 2.0, 0.5, 0.0);
-  sinusoids[2] = builder.AddSystem<Sinusoid>(kLiftStart, 3.0, 0.3, 0.0);
-  sinusoids[3] = builder.AddSystem<Sinusoid>(kLiftStart, 5.0, 0.2, 0.0);
-  sinusoids[4] = builder.AddSystem<Sinusoid>(kLiftStart, 7.0, 1.0/7, 0.0);
+  sinusoids[0] = builder.AddSystem<Sinusoid>(kLiftStart, 9.0, 0.5, 0.0);
+  sinusoids[1] = builder.AddSystem<Sinusoid>(kLiftStart, 11.0, 0.25, 0.0);
+  sinusoids[2] = builder.AddSystem<Sinusoid>(kLiftStart, 13.0, 0.125, 0.0);
+  sinusoids[3] = builder.AddSystem<Sinusoid>(kLiftStart, 15.0, 0.0625, 0.0);
+  sinusoids[4] = builder.AddSystem<Sinusoid>(kLiftStart, 17.0, 0.03125, 0.0);
+/*
+  sinusoids[0] = builder.AddSystem<Sinusoid>(kLiftStart, 1.0, 0, 0.0);
+  sinusoids[1] = builder.AddSystem<Sinusoid>(kLiftStart, 3.0, 0, 0.0);
+  sinusoids[2] = builder.AddSystem<Sinusoid>(kLiftStart, 17.0, 0, 0.0);
+  sinusoids[3] = builder.AddSystem<Sinusoid>(kLiftStart, 19.0, 0, 0.0);
+  sinusoids[4] = builder.AddSystem<Sinusoid>(kLiftStart, 23.0, 0, 0.0);
+*/
 
   // Demultiplex each of the sinusoid's outputs.
   Demultiplexer<double>* demux[num_sinusoids];
@@ -298,18 +307,20 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
   // tempted to cut and paste this, please consider creating a utility
   // function which can set a segment of a state vector to an open
   // gripper.
-  plant_initial_state(1) = -0.0550667;
-  plant_initial_state(2) = 0.009759;
-  plant_initial_state(3) = 1.27982;
-  plant_initial_state(4) = 0.0550667;
-  plant_initial_state(5) = 0.009759;
+  plant_initial_state(6) = -0.0550667;
+  plant_initial_state(7) = 0.009759;
+  plant_initial_state(8) = 1.27982;
+  plant_initial_state(9) = 0.0550667;
+  plant_initial_state(10) = 0.009759;
   plant->set_state_vector(&plant_context, plant_initial_state);
 
   auto context = simulator.get_mutable_context();
 
   simulator.reset_integrator<RungeKutta3Integrator<double>>(*model, context);
+//  simulator.reset_integrator<ImplicitEulerIntegrator<double>>(*model, context);
   simulator.get_mutable_integrator()->request_initial_step_size_target(1e-4);
   simulator.get_mutable_integrator()->set_target_accuracy(1e-3);
+//  simulator.get_mutable_integrator()->set_target_accuracy(1e-1);
 
   simulator.Initialize();
 
