@@ -261,10 +261,12 @@ github_archive(
     build_file = "tools/workspace/tinyobjloader/tinyobjloader.BUILD.bazel",
 )
 
-pkg_config_package(
+github_archive(
     name = "yaml_cpp",
-    atleast_version = "0.5.2",
-    modname = "yaml-cpp",
+    repository = "jbeder/yaml-cpp",
+    commit = "85af926ddc5f3c8fb438001743e65ec3a039ceec",
+    sha256 = "907fb42a502e1448a73959f9a648771b070d6d8513f16d74149f775fc56550ef",  # noqa
+    build_file = "tools/workspace/yaml_cpp/yaml_cpp.BUILD.bazel",
 )
 
 load("//tools/workspace/buildifier:buildifier.bzl", "buildifier_repository")
