@@ -82,6 +82,11 @@
       ],
       "X-CMake-Find-Args": ["CONFIG"]
     },
+    "yaml-cpp": {
+      "Version": "0.5.5",
+      "Hints": ["@prefix@/lib/cmake/yaml-cpp"],
+      "X-CMake-Find-Args": ["CONFIG"]
+    },
     "ZLIB": {
       "Version": "1.2.5",
       "X-CMake-Find-Args": ["MODULE"]
@@ -96,11 +101,7 @@
         "@prefix@/include"
       ],
       "Compile-Features": ["c++14"],
-      "Link-Flags": [
-        "-lnlopt",
-        "-ltinyxml2",
-        "-lyaml-cpp"
-      ],
+      "Link-Flags": ["-lnlopt", "-ltinyxml2"],
       "Link-Requires": [
         "fmt:fmt",
         "SDFormat:sdformat",
@@ -127,7 +128,8 @@
         "protobuf:protobuf",
         "robotlocomotion-lcmtypes:robotlocomotion-lcmtypes-cpp",
         "spdlog:spdlog",
-        "stx:stx"
+        "stx:stx",
+        "yaml-cpp:yaml-cpp"
       ]
     },
     "drake-lcmtypes-cpp": {
