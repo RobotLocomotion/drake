@@ -53,6 +53,13 @@ set(BAZEL_ARGS
   --host_cxxopt=${CMAKE_CXX14_STANDARD_COMPILE_OPTION}
 )
 
+if(APPLE)
+  list(APPEND BAZEL_ARGS
+    --cxxopt=-isystem/usr/local/include
+    --host_cxxopt=-isystem/usr/local/include
+  )
+endif()
+
 if(CMAKE_VERBOSE_MAKEFILE)
   list(APPEND BAZEL_ARGS --subcommands)
 endif()
