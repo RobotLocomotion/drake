@@ -59,7 +59,6 @@ class Variable {
   bool is_dummy() const { return get_id() == 0; }
   Id get_id() const;
   Type get_type() const;
-  size_t get_hash() const { return std::hash<Id>{}(id_); }
   std::string get_name() const;
   std::string to_string() const;
 
@@ -68,6 +67,17 @@ class Variable {
 
   /// Compares two variables based on their ID values.
   bool less(const Variable& v) const { return get_id() < v.get_id(); }
+
+  /** Implements the @ref hash_append concept. */
+  template <class HashAlgorithm>
+  friend void hash_append(
+      HashAlgorithm& hasher, const Variable& item) noexcept {
+    using drake::hash_append;
+    hash_append(hasher, item.id_);
+    // We do not send the type_ or name_ to the hasher, because the id_ is
+    // already unique across all instances, and two Variable instances with
+    // matching id_ will always have identical type_ and name_.
+  }
 
   friend std::ostream& operator<<(std::ostream& os, const Variable& var);
 
@@ -87,16 +97,14 @@ class Variable {
 std::ostream& operator<<(std::ostream& os, Variable::Type type);
 
 }  // namespace symbolic
-
-/** Computes the hash value of a variable. */
-template <>
-struct hash_value<symbolic::Variable> {
-  size_t operator()(const symbolic::Variable& v) const { return v.get_hash(); }
-};
-
 }  // namespace drake
 
 namespace std {
+
+/* Provides std::hash<drake::symbolic::Variable>. */
+template <> struct hash<drake::symbolic::Variable>
+    : public drake::DefaultHash {};
+
 /* Provides std::less<drake::symbolic::Variable>. */
 template <>
 struct less<drake::symbolic::Variable> {

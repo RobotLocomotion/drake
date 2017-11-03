@@ -13,6 +13,7 @@
 #include <string>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/hash.h"
 #include "drake/common/symbolic.h"
 
 namespace drake {
@@ -47,9 +48,6 @@ class Variables {
   /** Constructs from an Eigen vector of variables. */
   explicit Variables(const Eigen::Ref<const VectorX<Variable>>& init);
 
-  /** Returns hash value. */
-  size_t get_hash() const;
-
   /** Returns the number of elements. */
   size_type size() const { return vars_.size(); }
 
@@ -58,6 +56,14 @@ class Variables {
 
   /** Returns string representation of Variables. */
   std::string to_string() const;
+
+  /** Implements the @ref hash_append concept. */
+  template <class HashAlgorithm>
+  friend void hash_append(
+      HashAlgorithm& hasher, const Variables& item) noexcept {
+    using drake::hash_append;
+    hash_append(hasher, item.vars_);
+  }
 
   /** Returns an iterator to the beginning. */
   iterator begin() { return vars_.begin(); }
@@ -164,13 +170,10 @@ Variables operator-(Variables vars, const Variable& var);
 Variables intersect(const Variables& vars1, const Variables& vars2);
 
 }  // namespace symbolic
-
-/** Computes the hash value of a symbolic variables. */
-template <>
-struct hash_value<symbolic::Variables> {
-  size_t operator()(const symbolic::Variables& vars) const {
-    return vars.get_hash();
-  }
-};
-
 }  // namespace drake
+
+namespace std {
+/* Provides std::hash<drake::symbolic::Variables>. */
+template <> struct hash<drake::symbolic::Variables>
+    : public drake::DefaultHash {};
+}  // namespace std

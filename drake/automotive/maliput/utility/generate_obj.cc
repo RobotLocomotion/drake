@@ -18,6 +18,7 @@
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput/api/segment.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/hash.h"
 
 namespace drake {
 namespace maliput {
@@ -68,14 +69,7 @@ class UniqueIndexer {
 class GeoVertex {
  public:
   // A hasher operation suitable for std::unordered_map.
-  struct Hash {
-    size_t operator()(const GeoVertex& gv) const {
-      const size_t hx(std::hash<double>()(gv.v().x()));
-      const size_t hy(std::hash<double>()(gv.v().y()));
-      const size_t hz(std::hash<double>()(gv.v().z()));
-      return hx ^ (hy << 1) ^ (hz << 2);
-    }
-  };
+  using Hash = drake::DefaultHash;
 
   // An equivalence operation suitable for std::unordered_map.
   struct Equiv {
@@ -90,6 +84,16 @@ class GeoVertex {
 
   const api::GeoPosition& v() const { return v_; }
 
+  /// Implements the @ref hash_append concept.
+  template <class HashAlgorithm>
+  friend void hash_append(
+      HashAlgorithm& hasher, const GeoVertex& item) noexcept {
+    using drake::hash_append;
+    hash_append(hasher, item.v_.x());
+    hash_append(hasher, item.v_.y());
+    hash_append(hasher, item.v_.z());
+  }
+
  private:
   api::GeoPosition v_;
 };
@@ -99,14 +103,7 @@ class GeoVertex {
 class GeoNormal {
  public:
   // A hasher operation suitable for std::unordered_map.
-  struct Hash {
-    size_t operator()(const GeoNormal& gn) const {
-      const size_t hx(std::hash<double>()(gn.n().x()));
-      const size_t hy(std::hash<double>()(gn.n().y()));
-      const size_t hz(std::hash<double>()(gn.n().z()));
-      return hx ^ (hy << 1) ^ (hz << 2);
-    }
-  };
+  using Hash = drake::DefaultHash;
 
   // An equivalence operation suitable for std::unordered_map.
   struct Equiv {
@@ -120,6 +117,16 @@ class GeoNormal {
   explicit GeoNormal(const api::GeoPosition& n) : n_(n) {}
 
   const api::GeoPosition& n() const { return n_; }
+
+  /// Implements the @ref hash_append concept.
+  template <class HashAlgorithm>
+  friend void hash_append(
+      HashAlgorithm& hasher, const GeoNormal& item) noexcept {
+    using drake::hash_append;
+    hash_append(hasher, item.n_.x());
+    hash_append(hasher, item.n_.y());
+    hash_append(hasher, item.n_.z());
+  }
 
  private:
   api::GeoPosition n_;

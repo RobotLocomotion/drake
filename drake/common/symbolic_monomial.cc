@@ -115,14 +115,6 @@ int Monomial::degree(const Variable& v) const {
   }
 }
 
-size_t Monomial::GetHash() const {
-  // To get a hash value for a Monomial, we re-use the hash value for
-  // powers_. This is suitable because powers_ is the only independent
-  // data-member of Monomial class while another data-member, total_degree_ is
-  // determined by a given powers_.
-  return hash_value<map<Variable, int>>{}(powers_);
-}
-
 Variables Monomial::GetVariables() const {
   Variables vars{};
   for (const pair<Variable, int> p : powers_) {
