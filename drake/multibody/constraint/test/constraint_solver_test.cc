@@ -25,7 +25,6 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     cfm_ = GetParam();
     rod_ = std::make_unique<Rod2D<double>>(
         Rod2D<double>::SimulationType::kPiecewiseDAE, 0);
-    rod_->set_cfm(cfm_);
     context_ = rod_->CreateDefaultContext();
 
     // Use a non-unit mass.
