@@ -78,13 +78,14 @@ void CheckRelaxNonConvexQuadraticConstraintInTrustRegion(
     const Eigen::Ref<const VectorXDecisionVariable>& x,
     const Eigen::Ref<const Eigen::MatrixXd>& Q1,
     const Eigen::Ref<const Eigen::MatrixXd>& Q2,
-    const Eigen::Ref<const Eigen::VectorXd>& p, double lower_bound,
+    const Eigen::Ref<const Eigen::VectorXd>& p,
+    const Eigen::Ref<const VectorXDecisionVariable>& y, double lower_bound,
     double upper_bound,
     const Eigen::Ref<const Eigen::VectorXd>& linearization_point,
     double trust_region_gap) {
   const auto& x0 = linearization_point;
   const auto result = AddRelaxNonConvexQuadraticConstraintInTrustRegion(
-      prog, x, Q1, Q2, p, lower_bound, upper_bound, linearization_point,
+      prog, x, Q1, Q2, p, y, lower_bound, upper_bound, linearization_point,
       trust_region_gap);
   Binding<LinearConstraint> linear_constraint = std::get<0>(result);
   EXPECT_EQ(std::get<1>(result).size(), 2);
@@ -93,18 +94,21 @@ void CheckRelaxNonConvexQuadraticConstraintInTrustRegion(
   Binding<RotatedLorentzConeConstraint> rotated_lorentz_cone_constraint2 =
       std::get<1>(result)[1];
   VectorDecisionVariable<2> z = std::get<2>(result);
-  Vector3<symbolic::Expression> y =
+  Vector3<symbolic::Expression> linear_constraint_expr =
       linear_constraint.constraint()->A() * linear_constraint.variables();
-  Vector3<symbolic::Expression> y_expected;
-  y_expected << z(0) - z(1) + p.dot(x), z(0) - 2 * x0.dot(Q1 * x),
-      z(1) - 2 * x0.dot(Q2 * x);
+  Vector3<symbolic::Expression> linear_constraint_expr_expected;
+  linear_constraint_expr_expected << z(0) - z(1) + p.dot(y),
+      z(0) - 2 * x0.dot(Q1 * x), z(1) - 2 * x0.dot(Q2 * x);
   const double poly_tol{1E-10};
   for (int i = 0; i < 3; ++i) {
-    EXPECT_TRUE(
-        PolynomialEqual(symbolic::Polynomial(y(i)),
-                        symbolic::Polynomial(y_expected(i)), poly_tol) ||
-        PolynomialEqual(symbolic::Polynomial(y(i)),
-                        symbolic::Polynomial(-y_expected(i)), poly_tol));
+    EXPECT_TRUE(PolynomialEqual(
+                    symbolic::Polynomial(linear_constraint_expr(i)),
+                    symbolic::Polynomial(linear_constraint_expr_expected(i)),
+                    poly_tol) ||
+                PolynomialEqual(
+                    symbolic::Polynomial(linear_constraint_expr(i)),
+                    symbolic::Polynomial(-linear_constraint_expr_expected(i)),
+                    poly_tol));
   }
   const VectorX<symbolic::Expression> y_lorentz1 =
       rotated_lorentz_cone_constraint1.constraint()->A() *
@@ -161,7 +165,7 @@ TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, Test0) {
   const Eigen::Vector2d linearization_point(1, 2);
   const double trust_region_gap{1};
   CheckRelaxNonConvexQuadraticConstraintInTrustRegion(
-      &prog_, x_, Q1, Q2, p, lower_bound, upper_bound, linearization_point,
+      &prog_, x_, Q1, Q2, p, x_, lower_bound, upper_bound, linearization_point,
       trust_region_gap);
 }
 
@@ -176,8 +180,17 @@ TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, Test1) {
   const Eigen::Vector2d linearization_point(-1, 2);
   const double trust_region_gap{1};
   CheckRelaxNonConvexQuadraticConstraintInTrustRegion(
-      &prog_, x_, Q1, Q2, p, lower_bound, upper_bound, linearization_point,
+      &prog_, x_, Q1, Q2, p, x_, lower_bound, upper_bound, linearization_point,
       trust_region_gap);
+
+  // The variables y in the linear term is not the same as the variables in the
+  // quadratic term x.
+  auto x_prime = prog_.NewContinuousVariables<2>();
+  const Eigen::Vector3d p_prime(3, 2, 1);
+  VectorDecisionVariable<3> y{x_(0), x_prime(0), x_prime(1)};
+  CheckRelaxNonConvexQuadraticConstraintInTrustRegion(
+      &prog_, x_, Q1, Q2, p_prime, y, lower_bound, upper_bound,
+      linearization_point, trust_region_gap);
 }
 
 TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, TestRuntimeError) {
@@ -186,19 +199,21 @@ TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, TestRuntimeError) {
   Eigen::Matrix2d positive_Q;
   positive_Q << 1, 0.2, 0.2, 1;
   // Q1 not being positive semidefinite.
-  EXPECT_THROW(AddRelaxNonConvexQuadraticConstraintInTrustRegion(
-      &prog_, x_, non_positive_Q, positive_Q,
-      Eigen::Vector2d(1, 0), -1, 0.1, Eigen::Vector2d(1, 2), 1),
-               std::runtime_error);
+  EXPECT_THROW(
+      AddRelaxNonConvexQuadraticConstraintInTrustRegion(
+          &prog_, x_, non_positive_Q, positive_Q, Eigen::Vector2d(1, 0), x_, -1,
+          0.1, Eigen::Vector2d(1, 2), 1),
+      std::runtime_error);
   // Q2 not being positive semidefinite.
-  EXPECT_THROW(AddRelaxNonConvexQuadraticConstraintInTrustRegion(
-      &prog_, x_, positive_Q, non_positive_Q,
-      Eigen::Vector2d(1, 0), -1, 0.1, Eigen::Vector2d(1, 2), 1),
-               std::runtime_error);
+  EXPECT_THROW(
+      AddRelaxNonConvexQuadraticConstraintInTrustRegion(
+          &prog_, x_, positive_Q, non_positive_Q, Eigen::Vector2d(1, 0), x_, -1,
+          0.1, Eigen::Vector2d(1, 2), 1),
+      std::runtime_error);
   // Negative trust region gap.
   EXPECT_THROW(AddRelaxNonConvexQuadraticConstraintInTrustRegion(
-      &prog_, x_, positive_Q, positive_Q, Eigen::Vector2d(1, 0),
-      -1, 0.1, Eigen::Vector2d(1, 2), -0.1),
+                   &prog_, x_, positive_Q, positive_Q, Eigen::Vector2d(1, 0),
+                   x_, -1, 0.1, Eigen::Vector2d(1, 2), -0.1),
                std::runtime_error);
 }
 
@@ -207,12 +222,14 @@ void SolveRelaxNonConvexQuadraticConstraintInTrustRegion(
     const Eigen::Ref<const VectorXDecisionVariable>& x,
     const Eigen::Ref<const Eigen::MatrixXd>& Q1,
     const Eigen::Ref<const Eigen::MatrixXd>& Q2,
-    const Eigen::Ref<const Eigen::VectorXd>& p, double lower_bound,
+    const Eigen::Ref<const Eigen::VectorXd>& p,
+    const Eigen::Ref<const VectorXDecisionVariable>& y, double lower_bound,
     double upper_bound, const Eigen::Ref<const Eigen::VectorXd>& x0,
     double trust_region_gap, const Eigen::Ref<const Eigen::MatrixXd>& c) {
   const auto relaxed_constraints =
       AddRelaxNonConvexQuadraticConstraintInTrustRegion(
-          prog, x, Q1, Q2, p, lower_bound, upper_bound, x0, trust_region_gap);
+          prog, x, Q1, Q2, p, y, lower_bound, upper_bound, x0,
+          trust_region_gap);
   VectorDecisionVariable<2> z = std::get<2>(relaxed_constraints);
 
   auto cost = prog->AddLinearCost(x.cast<symbolic::Expression>().sum());
@@ -221,10 +238,11 @@ void SolveRelaxNonConvexQuadraticConstraintInTrustRegion(
     auto result = prog->Solve();
     EXPECT_EQ(result, SolutionResult::kSolutionFound);
     auto x_sol = prog->GetSolution(x);
+    auto y_sol = prog->GetSolution(y);
     auto z_sol = prog->GetSolution(z);
     const double check_tol{1E-5};
-    EXPECT_GE(z_sol(0) - z_sol(1) + p.dot(x_sol), lower_bound - check_tol);
-    EXPECT_LE(z_sol(0) - z_sol(1) + p.dot(x_sol), upper_bound + check_tol);
+    EXPECT_GE(z_sol(0) - z_sol(1) + p.dot(y_sol), lower_bound - check_tol);
+    EXPECT_LE(z_sol(0) - z_sol(1) + p.dot(y_sol), upper_bound + check_tol);
     EXPECT_LE(z_sol(0), 2 * x0.dot(Q1 * x_sol) - x0.dot(Q1 * x0) +
                             trust_region_gap + check_tol);
     EXPECT_LE(z_sol(1), 2 * x0.dot(Q2 * x_sol) - x0.dot(Q2 * x0) +
@@ -232,7 +250,7 @@ void SolveRelaxNonConvexQuadraticConstraintInTrustRegion(
     EXPECT_GE(z_sol(0), x_sol.dot(Q1 * x_sol) - check_tol);
     EXPECT_GE(z_sol(1), x_sol.dot(Q2 * x_sol) - check_tol);
     const double original_constraint_value{x_sol.dot((Q1 - Q2) * x_sol) +
-                                           p.dot(x_sol)};
+                                           p.dot(y_sol)};
     EXPECT_LE(original_constraint_value,
               upper_bound + trust_region_gap + check_tol);
     EXPECT_GE(original_constraint_value,
@@ -260,7 +278,7 @@ TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, SolveProblem0) {
   const double ub{2};
   const auto c = GenerateCostDirection();
   SolveRelaxNonConvexQuadraticConstraintInTrustRegion(
-      &prog_, x_, Q1, Q2, Eigen::Vector2d::Zero(), lb, ub,
+      &prog_, x_, Q1, Q2, Eigen::Vector2d::Zero(), x_, lb, ub,
       Eigen::Vector2d(2, 1), trust_region_gap, c);
 }
 
@@ -273,8 +291,26 @@ TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, SolveProblem1) {
   const double ub{2};
   const auto c = GenerateCostDirection();
   SolveRelaxNonConvexQuadraticConstraintInTrustRegion(
-      &prog_, x_, Q1, Q2, Eigen::Vector2d(1, 3), lb, ub, Eigen::Vector2d(2, 1),
-      trust_region_gap, c);
+      &prog_, x_, Q1, Q2, Eigen::Vector2d(1, 3), x_, lb, ub,
+      Eigen::Vector2d(2, 1), trust_region_gap, c);
+}
+
+TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, SolveProblem2) {
+  // The variables y in the linear term is not the same as the variables x in
+  // the quadratic term.
+  Eigen::Matrix2d Q1, Q2;
+  Q1 << 1, 0, 0, 2;
+  Q2 << 2, 0.1, 0.1, 1;
+  const double trust_region_gap{0.5};
+  const double lb{1};
+  const double ub{2};
+  const auto c = GenerateCostDirection();
+  auto x_prime = prog_.NewContinuousVariables<2>();
+  VectorDecisionVariable<3> y{x_(0), x_prime(0), x_prime(1)};
+  prog_.AddBoundingBoxConstraint(-1, 1, x_prime);
+  SolveRelaxNonConvexQuadraticConstraintInTrustRegion(
+      &prog_, x_, Q1, Q2, Eigen::Vector3d(1, 2, 3), y, lb, ub,
+      Eigen::Vector2d(2, 1), trust_region_gap, c);
 }
 
 TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion,
@@ -286,15 +322,9 @@ TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion,
   prog_.AddBoundingBoxConstraint(0, 0, x_(0));
   const Eigen::Matrix2d Q1 = Eigen::Vector2d(1, 0).asDiagonal();
   const Eigen::Matrix2d Q2 = Eigen::Vector2d(0, 1).asDiagonal();
-  AddRelaxNonConvexQuadraticConstraintInTrustRegion(&prog_,
-                                                    x_,
-                                                    Q1,
-                                                    Q2,
-                                                    Eigen::Vector2d::Zero(),
-                                                    1,
-                                                    1,
-                                                    Eigen::Vector2d(1, 0),
-                                                    0.1);
+  AddRelaxNonConvexQuadraticConstraintInTrustRegion(
+      &prog_, x_, Q1, Q2, Eigen::Vector2d::Zero(), x_, 1, 1,
+      Eigen::Vector2d(1, 0), 0.1);
 
   auto result = prog_.Solve();
   EXPECT_TRUE(result == SolutionResult::kInfeasible_Or_Unbounded ||
@@ -316,7 +346,7 @@ GTEST_TEST(TestRelaxNonConvexQuadraticConstraintInTrustRegionInfeasible,
   Eigen::Matrix2d Q2 = Eigen::Vector2d(0, 2).asDiagonal();
   const auto relaxed_constraint =
       AddRelaxNonConvexQuadraticConstraintInTrustRegion(
-          &prog1, x1, Q1, Q2, Eigen::Vector2d::Zero(), 1, 1,
+          &prog1, x1, Q1, Q2, Eigen::Vector2d::Zero(), x1, 1, 1,
           Eigen::Vector2d(-5, -3), 0.1);
 
   auto result = prog1.Solve();
@@ -330,50 +360,58 @@ GTEST_TEST(TestRelaxNonConvexQuadraticConstraintInTrustRegionInfeasible,
   prog2.AddLinearConstraint(x2(0) >= x2(1) + 2);
   const auto c = GenerateCostDirection();
   SolveRelaxNonConvexQuadraticConstraintInTrustRegion(
-      &prog2, x2, Q1, Q2, Eigen::Vector2d::Zero(), 1, 1, Eigen::Vector2d(7, -5),
-      1.5, c);
+      &prog2, x2, Q1, Q2, Eigen::Vector2d::Zero(), x2, 1, 1,
+      Eigen::Vector2d(7, -5), 1.5, c);
 }
 
 TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, ZeroQ1Q2) {
   // Should throw a runtime error.
   // Both Q1 and Q2 are 0
   EXPECT_THROW(AddRelaxNonConvexQuadraticConstraintInTrustRegion(
-      &prog_, x_, Eigen::Matrix2d::Zero(), Eigen::Matrix2d::Zero(),
-      Eigen::Vector2d(1, 2), 1, 2, Eigen::Vector2d(2, 1), 1),
+                   &prog_, x_, Eigen::Matrix2d::Zero(), Eigen::Matrix2d::Zero(),
+                   Eigen::Vector2d(1, 2), x_, 1, 2, Eigen::Vector2d(2, 1), 1),
                std::runtime_error);
   // Q1 is zero and upper_bound is infinity.
   EXPECT_THROW(
       AddRelaxNonConvexQuadraticConstraintInTrustRegion(
           &prog_, x_, Eigen::Matrix2d::Zero(), Eigen::Matrix2d::Identity(),
-          Eigen::Vector2d(1, 2), 1, std::numeric_limits<double>::infinity(),
+          Eigen::Vector2d(1, 2), x_, 1, std::numeric_limits<double>::infinity(),
           Eigen::Vector2d(2, 1), 1),
       std::runtime_error);
   // Q2 is zero and lower_bound is -infinity.
   EXPECT_THROW(
       AddRelaxNonConvexQuadraticConstraintInTrustRegion(
           &prog_, x_, Eigen::Matrix2d::Identity(), Eigen::Matrix2d::Zero(),
-          Eigen::Vector2d(1, 2), -std::numeric_limits<double>::infinity(), 1,
-          Eigen::Vector2d(2, 1), 1),
+          Eigen::Vector2d(1, 2), x_, -std::numeric_limits<double>::infinity(),
+          1, Eigen::Vector2d(2, 1), 1),
       std::runtime_error);
   // lower_bound is larger than upper_bound
   EXPECT_THROW(AddRelaxNonConvexQuadraticConstraintInTrustRegion(
-      &prog_, x_, Eigen::Matrix2d::Identity(),
-      0.1 * Eigen::Matrix2d::Identity(), Eigen::Vector2d(1, 2), 2,
-      1, Eigen::Vector2d(2, 1), 1),
+                   &prog_, x_, Eigen::Matrix2d::Identity(),
+                   0.1 * Eigen::Matrix2d::Identity(), Eigen::Vector2d(1, 2), x_,
+                   2, 1, Eigen::Vector2d(2, 1), 1),
                std::runtime_error);
 }
 
-void SolveRelaxNonConvexQuadraticConstraintInTrustRegionWithZeroQ1(
+void SolveRelaxNonConvexQuadraticConstraintInTrustRegionWithZeroQ1orQ2(
     MathematicalProgram* prog,
     const Eigen::Ref<const VectorXDecisionVariable>& x,
-    const Eigen::Ref<const Eigen::MatrixXd>& Q2,
-    const Eigen::Ref<const Eigen::VectorXd>& p, double lb, double ub,
+    const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::VectorXd>& p,
+    const Eigen::Ref<const VectorXDecisionVariable>& y, double lb, double ub,
     const Eigen::Ref<const Eigen::VectorXd>& x0, double trust_region_gap,
-    const Eigen::Ref<const Eigen::MatrixXd>& c) {
+    bool Q1_is_zero, const Eigen::Ref<const Eigen::MatrixXd>& c) {
+  Eigen::MatrixXd Q1, Q2;
+  if (Q1_is_zero) {
+    Q1 = Eigen::MatrixXd::Zero(x.rows(), x.rows());
+    Q2 = Q;
+  } else {
+    Q1 = Q;
+    Q2 = Eigen::MatrixXd::Zero(x.rows(), x.rows());
+  }
   const auto relaxed_constraints =
       AddRelaxNonConvexQuadraticConstraintInTrustRegion(
-          prog, x, Eigen::MatrixXd::Zero(x.rows(), x.rows()), Q2, p, lb, ub, x0,
-          trust_region_gap);
+          prog, x, Q1, Q2, p, y, lb, ub, x0, trust_region_gap);
   const Binding<LinearConstraint> linear_constraint =
       std::get<0>(relaxed_constraints);
   EXPECT_EQ(std::get<1>(relaxed_constraints).size(), 1);
@@ -381,23 +419,28 @@ void SolveRelaxNonConvexQuadraticConstraintInTrustRegionWithZeroQ1(
       std::get<1>(relaxed_constraints)[0];
   const VectorDecisionVariable<1> z = std::get<2>(relaxed_constraints);
   Vector2<symbolic::Expression> linear_expr, linear_expr_expected;
-  linear_expr_expected << 2 * x0.dot(Q2 * x) - z(0), p.dot(x) - z(0);
   linear_expr =
       linear_constraint.constraint()->A() * linear_constraint.variables();
-  Eigen::Vector2d linear_lb, linear_ub;
-  linear_lb << x0.dot(Q2 * x0) - trust_region_gap, lb;
-  linear_ub << std::numeric_limits<double>::infinity(), ub;
+  Eigen::Vector2d linear_lb_expected, linear_ub_expected;
+  linear_lb_expected << x0.dot(Q * x0) - trust_region_gap, lb;
+  linear_ub_expected << std::numeric_limits<double>::infinity(), ub;
+  if (Q1_is_zero) {
+    linear_expr_expected << 2 * x0.dot(Q2 * x) - z(0), p.dot(y) - z(0);
+  } else {
+    linear_expr_expected << 2 * x0.dot(Q1 * x) - z(0), p.dot(y) + z(0);
+  }
+  EXPECT_TRUE(CompareMatrices(linear_constraint.constraint()->lower_bound(),
+                              linear_lb_expected, 1E-15,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(linear_constraint.constraint()->upper_bound(),
+                              linear_ub_expected, 1E-15,
+                              MatrixCompareType::absolute));
   const double poly_tol{1E-10};
   for (int i = 0; i < 2; ++i) {
     EXPECT_TRUE(PolynomialEqual(symbolic::Polynomial(linear_expr(i)),
                                 symbolic::Polynomial(linear_expr_expected(i)),
                                 poly_tol));
-    EXPECT_TRUE(CompareMatrices(linear_constraint.constraint()->lower_bound(),
-                                linear_lb, 1E-15, MatrixCompareType::absolute));
-    EXPECT_TRUE(CompareMatrices(linear_constraint.constraint()->upper_bound(),
-                                linear_ub, 1E-15, MatrixCompareType::absolute));
   }
-
   VectorX<symbolic::Expression> y1 =
       lorentz_cone1.constraint()->A() * lorentz_cone1.variables() +
       lorentz_cone1.constraint()->b();
@@ -405,22 +448,26 @@ void SolveRelaxNonConvexQuadraticConstraintInTrustRegionWithZeroQ1(
                               symbolic::Polynomial(z(0)), poly_tol));
   EXPECT_TRUE(PolynomialEqual(
       symbolic::Polynomial(y1.tail(y1.rows() - 2).squaredNorm()),
-      symbolic::Polynomial(x.dot(Q2 * x)), poly_tol));
+      symbolic::Polynomial(x.dot(Q * x)), poly_tol));
 
   auto cost = prog->AddLinearCost(x.cast<symbolic::Expression>().sum());
+  const double z_coeff = Q1_is_zero ? -1 : 1;
+  const double Q_coeff = Q1_is_zero ? -1 : 1;
   for (int i = 0; i < c.cols(); ++i) {
     cost.constraint()->UpdateCoefficients(c.col(i).transpose());
     auto result = prog->Solve();
     EXPECT_EQ(result, SolutionResult::kSolutionFound);
     const double z_sol = prog->GetSolution(z(0));
     const Eigen::Vector2d x_sol = prog->GetSolution(x);
-    const double tol{1E-6};
-    EXPECT_GE(-z_sol + p.dot(x_sol), lb - tol);
-    EXPECT_LE(-z_sol + p.dot(x_sol), ub + tol);
-    EXPECT_LE(z_sol, 2 * x0.dot(Q2 * x_sol) - x0.dot(Q2 * x0) +
-                         trust_region_gap + tol);
-    EXPECT_GE(z_sol, x_sol.dot(Q2 * x_sol) - tol);
-    const double original_constraint_val{-x_sol.dot(Q2 * x_sol) + p.dot(x_sol)};
+    const Eigen::VectorXd y_sol = prog->GetSolution(y);
+    const double tol{1E-5};
+    EXPECT_GE(z_coeff * z_sol + p.dot(y_sol), lb - tol);
+    EXPECT_LE(z_coeff * z_sol + p.dot(y_sol), ub + tol);
+    EXPECT_LE(z_sol,
+              2 * x0.dot(Q * x_sol) - x0.dot(Q * x0) + trust_region_gap + tol);
+    EXPECT_GE(z_sol, x_sol.dot(Q * x_sol) - tol);
+    const double original_constraint_val{x_sol.dot(Q_coeff * Q * x_sol) +
+                                         p.dot(y_sol)};
     EXPECT_GE(original_constraint_val, lb - trust_region_gap - tol);
     EXPECT_LE(original_constraint_val, ub + trust_region_gap + tol);
   }
@@ -428,22 +475,23 @@ void SolveRelaxNonConvexQuadraticConstraintInTrustRegionWithZeroQ1(
 
 TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, ZeroQ1Test0) {
   // -x(0)² - x(1)² - x(0)x(1) + 2*x(0) <= 1
-  Eigen::Matrix2d Q2;
-  Q2 << 1, 0.5, 0.5, 1;
+  Eigen::Matrix2d Q;
+  Q << 1, 0.5, 0.5, 1;
   const auto c = GenerateCostDirection();
-  SolveRelaxNonConvexQuadraticConstraintInTrustRegionWithZeroQ1(
-      &prog_, x_, Q2, Eigen::Vector2d(2, 0),
-      -std::numeric_limits<double>::infinity(), 1, Eigen::Vector2d(1, 2), 1, c);
+  SolveRelaxNonConvexQuadraticConstraintInTrustRegionWithZeroQ1orQ2(
+      &prog_, x_, Q, Eigen::Vector2d(2, 0), x_,
+      -std::numeric_limits<double>::infinity(), 1, Eigen::Vector2d(1, 2), 1,
+      true, c);
 }
 
 TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, ZeroQ1Test1) {
   // -1 <= -x(0)² - 4x(1)² - 2x(0)x(1) + 3x(0) + 2x(1) <= 4
-  Eigen::Matrix2d Q2;
-  Q2 << 1, 1, 1, 4;
+  Eigen::Matrix2d Q;
+  Q << 1, 1, 1, 4;
   const auto c = GenerateCostDirection();
-  SolveRelaxNonConvexQuadraticConstraintInTrustRegionWithZeroQ1(
-      &prog_, x_, Q2, Eigen::Vector2d(3, 2), -1, 4, Eigen::Vector2d(1, 0), 1,
-      c);
+  SolveRelaxNonConvexQuadraticConstraintInTrustRegionWithZeroQ1orQ2(
+      &prog_, x_, Q, Eigen::Vector2d(3, 2), x_, -1, 4, Eigen::Vector2d(1, 0), 1,
+      true, c);
 }
 
 TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, ZeroQ1Test2) {
@@ -455,95 +503,49 @@ TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, ZeroQ1Test2) {
   prog_.AddLinearConstraint(x_(0) + x_(1) >= 10);
 
   AddRelaxNonConvexQuadraticConstraintInTrustRegion(
-      &prog_, x_, Eigen::Matrix2d::Zero(), Q2, Eigen::Vector2d::Zero(), -4, -1,
-      Eigen::Vector2d(0, 1), 1);
+      &prog_, x_, Eigen::Matrix2d::Zero(), Q2, Eigen::Vector2d::Zero(), x_, -4,
+      -1, Eigen::Vector2d(0, 1), 1);
 
   auto result = prog_.Solve();
   EXPECT_TRUE(result == SolutionResult::kInfeasible_Or_Unbounded ||
               result == SolutionResult::kInfeasibleConstraints);
 }
 
-void SolveRelaxNonConvexQuadraticConstraintInTrustRegionWithZeroQ2(
-    MathematicalProgram* prog,
-    const Eigen::Ref<const VectorXDecisionVariable>& x,
-    const Eigen::Ref<const Eigen::MatrixXd>& Q1,
-    const Eigen::Ref<const Eigen::VectorXd>& p, double lb, double ub,
-    const Eigen::Ref<const Eigen::VectorXd>& x0, double trust_region_gap,
-    const Eigen::Ref<const Eigen::MatrixXd>& c) {
-  const auto relaxed_constraints =
-      AddRelaxNonConvexQuadraticConstraintInTrustRegion(
-          prog, x, Q1, Eigen::MatrixXd::Zero(x.rows(), x.rows()), p, lb, ub, x0,
-          trust_region_gap);
-  const Binding<LinearConstraint> linear_constraint =
-      std::get<0>(relaxed_constraints);
-  EXPECT_EQ(std::get<1>(relaxed_constraints).size(), 1);
-  const Binding<RotatedLorentzConeConstraint> lorentz_cone1 =
-      std::get<1>(relaxed_constraints)[0];
-  const VectorDecisionVariable<1> z = std::get<2>(relaxed_constraints);
-  Vector2<symbolic::Expression> linear_expr, linear_expr_expected;
-  linear_expr_expected << 2 * x0.dot(Q1 * x) - z(0), p.dot(x) + z(0);
-  linear_expr =
-      linear_constraint.constraint()->A() * linear_constraint.variables();
-  Eigen::Vector2d linear_lb, linear_ub;
-  linear_lb << x0.dot(Q1 * x0) - trust_region_gap, lb;
-  linear_ub << std::numeric_limits<double>::infinity(), ub;
-  const double polynomial_tol{1E-14};
-  for (int i = 0; i < 2; ++i) {
-    EXPECT_TRUE(PolynomialEqual(symbolic::Polynomial(linear_expr(i)),
-                                symbolic::Polynomial(linear_expr_expected(i)),
-                                polynomial_tol));
-    EXPECT_TRUE(CompareMatrices(linear_constraint.constraint()->lower_bound(),
-                                linear_lb, 1E-15, MatrixCompareType::absolute));
-    EXPECT_TRUE(CompareMatrices(linear_constraint.constraint()->upper_bound(),
-                                linear_ub, 1E-15, MatrixCompareType::absolute));
-  }
-
-  VectorX<symbolic::Expression> y1 =
-      lorentz_cone1.constraint()->A() * lorentz_cone1.variables() +
-      lorentz_cone1.constraint()->b();
-  EXPECT_TRUE(PolynomialEqual(symbolic::Polynomial(y1(0) * y1(1)),
-                              symbolic::Polynomial(z(0)), polynomial_tol));
-  EXPECT_TRUE(PolynomialEqual(
-      symbolic::Polynomial(y1.tail(y1.rows() - 2).squaredNorm()),
-      symbolic::Polynomial(x.dot(Q1 * x)), polynomial_tol));
-
-  auto cost = prog->AddLinearCost(x.cast<symbolic::Expression>().sum());
-  for (int i = 0; i < c.cols(); ++i) {
-    cost.constraint()->UpdateCoefficients(c.col(i).transpose());
-    auto result = prog->Solve();
-    EXPECT_EQ(result, SolutionResult::kSolutionFound);
-    const double z_sol = prog->GetSolution(z(0));
-    const Eigen::Vector2d x_sol = prog->GetSolution(x);
-    const double tol{1E-6};
-    EXPECT_GE(z_sol + p.dot(x_sol), lb - tol);
-    EXPECT_LE(z_sol + p.dot(x_sol), ub + tol);
-    EXPECT_LE(z_sol, 2 * x0.dot(Q1 * x_sol) - x0.dot(Q1 * x0) +
-                         trust_region_gap + tol);
-    EXPECT_GE(z_sol, x_sol.dot(Q1 * x_sol) - tol);
-    const double original_constraint_val{x_sol.dot(Q1 * x_sol) + p.dot(x_sol)};
-    EXPECT_GE(original_constraint_val, lb - trust_region_gap - tol);
-    EXPECT_LE(original_constraint_val, ub + trust_region_gap + tol);
-  }
+TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, ZeroQ1Test3) {
+  // The variable y in the linear term is not the same as the variable x in the
+  // quadratic term.
+  // -1 <= -x(0)² - 4x(1)² - 2x(0)x(1) + 2x(1) + 3z(0) + 2z(1) <= 4
+  // -1 <= z(0) <= 1
+  // -1 <= z(1) <= 1
+  auto z = prog_.NewContinuousVariables<2>();
+  prog_.AddBoundingBoxConstraint(-1, 1, z);
+  Eigen::Matrix2d Q;
+  Q << 1, 1, 1, 4;
+  VectorDecisionVariable<3> y(x_(1), z(0), z(1));
+  const auto c = GenerateCostDirection();
+  SolveRelaxNonConvexQuadraticConstraintInTrustRegionWithZeroQ1orQ2(
+      &prog_, x_, Q, Eigen::Vector3d(2, 3, 2), y, -1, 4, Eigen::Vector2d(1, 0),
+      1, true, c);
 }
 
 TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, ZeroQ2Test0) {
   // 1 <= x(0)² + x(1)² + x(0)x(1) + 2x(0) <= 4
-  Eigen::Matrix2d Q1;
-  Q1 << 1, 0.5, 0.5, 1;
+  Eigen::Matrix2d Q;
+  Q << 1, 0.5, 0.5, 1;
   const auto c = GenerateCostDirection();
-  SolveRelaxNonConvexQuadraticConstraintInTrustRegionWithZeroQ2(
-      &prog_, x_, Q1, Eigen::Vector2d(1, 0), 1, 4, Eigen::Vector2d(1, -1), 0.5,
-      c);
+  SolveRelaxNonConvexQuadraticConstraintInTrustRegionWithZeroQ1orQ2(
+      &prog_, x_, Q, Eigen::Vector2d(1, 0), x_, 1, 4, Eigen::Vector2d(1, -1),
+      0.5, false, c);
 }
 
 TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, ZeroQ2Test1) {
   // -1 <= x(0)² + 3x(1)² + x(0)x(1) + 2x(0) + 4x(1) <= 4
-  Eigen::Matrix2d Q1;
-  Q1 << 1, 0.5, 0.5, 3;
+  Eigen::Matrix2d Q;
+  Q << 1, 0.5, 0.5, 3;
   const auto c = GenerateCostDirection();
-  SolveRelaxNonConvexQuadraticConstraintInTrustRegionWithZeroQ2(
-      &prog_, x_, Q1, Eigen::Vector2d(2, 4), 1, 4, Eigen::Vector2d(1, -1), 0.5,
-      c);
+  SolveRelaxNonConvexQuadraticConstraintInTrustRegionWithZeroQ1orQ2(
+      &prog_, x_, Q, Eigen::Vector2d(2, 4), x_, 1, 4, Eigen::Vector2d(1, -1),
+      0.5, false, c);
 }
 
 TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, ZeroQ2Test2) {
@@ -555,12 +557,27 @@ TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, ZeroQ2Test2) {
   prog_.AddLinearConstraint(x_(0) + x_(1) >= 10);
 
   AddRelaxNonConvexQuadraticConstraintInTrustRegion(
-      &prog_, x_, Q1, Eigen::Matrix2d::Zero(), Eigen::Vector2d::Zero(), 1, 4,
-      Eigen::Vector2d(0, 1), 1);
+      &prog_, x_, Q1, Eigen::Matrix2d::Zero(), Eigen::Vector2d::Zero(), x_, 1,
+      4, Eigen::Vector2d(0, 1), 1);
 
   auto result = prog_.Solve();
   EXPECT_TRUE(result == SolutionResult::kInfeasible_Or_Unbounded ||
               result == SolutionResult::kInfeasibleConstraints);
+}
+
+TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, ZeroQ2Test3) {
+  // The variable y in the linear term is not the same as the variable x in the
+  // quadratic term.
+  // -1 <= x(0)² + 3x(1)² + x(0)x(1) + 2x(0) + 4x(1) + 3y(0) <= 4
+  // -1 <= y(0) <= 1
+  Eigen::Matrix2d Q;
+  Q << 1, 0.5, 0.5, 3;
+  const auto c = GenerateCostDirection();
+  auto x_prime = prog_.NewContinuousVariables<1>();
+  const VectorDecisionVariable<3> y(x_(0), x_(1), x_prime(0));
+  SolveRelaxNonConvexQuadraticConstraintInTrustRegionWithZeroQ1orQ2(
+      &prog_, x_, Q, Eigen::Vector3d(2, 4, 3), y, 1, 4, Eigen::Vector2d(1, -1),
+      0.5, false, c);
 }
 }  // namespace
 }  // namespace solvers
