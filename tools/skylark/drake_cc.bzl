@@ -1,5 +1,8 @@
 # -*- python -*-
 
+# Keep CXX_FLAGS, CLANG_FLAGS, and GCC_FLAGS in sync with CMAKE_CXX_FLAGS in
+# matlab/cmake/flags.cmake.
+
 # The CXX_FLAGS will be enabled for all C++ rules in the project
 # building with any compiler.
 CXX_FLAGS = [

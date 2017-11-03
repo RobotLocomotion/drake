@@ -2,6 +2,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Keep CMAKE_CXX_FLAGS in sync with CXX_FLAGS, CLANG_FLAGS, and GCC_FLAGS in
+# tools/skylark/drake_cc.bzl.
 if(CMAKE_CXX_COMPILER_ID STREQUAL AppleClang OR CMAKE_CXX_COMPILER_ID STREQUAL Clang)
   set(CXX_FLAGS
     -Werror=all
@@ -18,6 +20,7 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL GNU)
     -Werror=all
     -Werror=extra
     -Werror=ignored-qualifiers
+    -Werror=logical-op
     -Werror=non-virtual-dtor
     -Werror=overloaded-virtual
     -Werror=return-local-addr
