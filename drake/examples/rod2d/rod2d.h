@@ -255,7 +255,7 @@ class Rod2D : public systems::LeafSystem<T> {
   /// Transforms damping (b) to dissipation (α) , given a characteristic
   /// deformation.
   double TransformDampingToDissipationAboutDeformation(
-      double characteristic_deformation, double k, double b) const {
+      double characteristic_deformation, double b) const {
     // See documentation for TransformDissipationToDampingAboutDeformation()
     // for explanation of this formula.
     return b / (1.5 * stiffness_ * characteristic_deformation *
@@ -361,16 +361,9 @@ class Rod2D : public systems::LeafSystem<T> {
     const double k = erp / (cfm * dt_);
     const double b = (1 - erp) / cfm;
     set_stiffness(k);
-
-    // Transformation from damping to dissipation (α) requires using
-    // Equation (16) from [Hunt 1975], yields b = 3/2 * α * k * x. We can
-    // assume that the stiffness and dissipation are determined for a small
-    // deformation (x), which we will somewhat arbitrarily represent using a
-    // scale factor of 1/1000.
-    const double characteristic_deformation = 1.0 / 1000;
-    const double alpha = b / (1.5 * k * characteristic_deformation *
-        half_length_);
-    set_dissipation(alpha);
+    set_dissipation(
+        TransformDampingToDissipationAboutDeformation(
+        kCharacteristicDeformation, b));
   }
 
   /// Get compliant contact static friction (stiction) coefficient `μ_s`.
