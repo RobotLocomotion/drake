@@ -7,7 +7,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
-#include "drake/systems/analysis/test/stateless_system.h"
+#include "drake/systems/analysis/test_utilities/stateless_system.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"

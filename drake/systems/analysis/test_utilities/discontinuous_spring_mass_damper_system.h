@@ -1,6 +1,6 @@
 #pragma once
 
-#include "drake/systems/analysis/test/spring_mass_damper_system.h"
+#include "drake/systems/analysis/test_utilities/spring_mass_damper_system.h"
 
 // WARNING WARNING WARNING
 // This test is currently used only as a stiff system test for implicit
