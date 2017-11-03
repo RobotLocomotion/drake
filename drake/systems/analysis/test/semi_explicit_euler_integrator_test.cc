@@ -8,7 +8,7 @@
 #include "drake/multibody/joints/quaternion_floating_joint.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/analysis/explicit_euler_integrator.h"
-#include "drake/systems/analysis/test/my_spring_mass_system.h"
+#include "drake/systems/analysis/test_utilities/my_spring_mass_system.h"
 
 namespace drake {
 namespace systems {

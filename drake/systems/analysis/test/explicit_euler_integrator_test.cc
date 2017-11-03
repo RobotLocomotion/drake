@@ -4,7 +4,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/systems/analysis/test/my_spring_mass_system.h"
+#include "drake/systems/analysis/test_utilities/my_spring_mass_system.h"
 
 namespace drake {
 namespace systems {
