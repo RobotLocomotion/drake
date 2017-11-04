@@ -10,6 +10,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL AppleClang OR CMAKE_CXX_COMPILER_ID STREQUAL C
     -Werror=ignored-qualifiers
     -Werror=inconsistent-missing-override
     -Werror=non-virtual-dtor
+    -Werror=old-style-cast
     -Werror=overloaded-virtual
     -Werror=return-stack-address
     -Werror=shadow
@@ -22,6 +23,7 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL GNU)
     -Werror=ignored-qualifiers
     -Werror=logical-op
     -Werror=non-virtual-dtor
+    -Werror=old-style-cast
     -Werror=overloaded-virtual
     -Werror=return-local-addr
     -Werror=unused-but-set-parameter
