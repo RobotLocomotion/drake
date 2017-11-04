@@ -62,7 +62,7 @@ inline void destroyDrakeMexPointer(const mxArray* mx) {
                       "This object is not a DrakeMexPointer.  Delete failed.");
   }
 
-  Derived typed_ptr = (Derived)getDrakeMexPointer(mx);
+  Derived typed_ptr = reinterpret_cast<Derived>(getDrakeMexPointer(mx));
   delete typed_ptr;
   mexUnlock();  // decrement lock count
 }
