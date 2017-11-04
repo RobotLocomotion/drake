@@ -80,7 +80,6 @@ LIBDRAKE_COMPONENTS = [
     "//drake/common:type_safe_index",
     "//drake/common:unused",
     "//drake/geometry/query_results:penetration_as_point_pair",
-    "//drake/geometry:expect_error_message",
     "//drake/geometry:frame_kinematics",
     "//drake/geometry:geometry_context",
     "//drake/geometry:geometry_frame",
