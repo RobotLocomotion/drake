@@ -10,8 +10,8 @@ PYBIND11_PLUGIN(gurobi) {
   py::module m("gurobi", "Gurobi solver bindings for MathematicalProgram");
 
   py::object solverinterface =
-    (py::object) py::module::import("pydrake.solvers.mathematicalprogram").attr(
-      "MathematicalProgramSolverInterface");
+      py::module::import("pydrake.solvers.mathematicalprogram").attr(
+          "MathematicalProgramSolverInterface");
 
   py::class_<GurobiSolver>(m, "GurobiSolver", solverinterface)
     .def(py::init<>());

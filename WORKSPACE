@@ -165,8 +165,8 @@ maven_jar(
 github_archive(
     name = "lcm",
     repository = "lcm-proj/lcm",
-    commit = "992959adfbda78a13a858a514636e7929f27ed16",
-    sha256 = "d4cb964161cc9352c5831092631a2184da49e4fcac3155ae1fbceebe9c445ad4",  # noqa
+    commit = "87866bd0dbb1f9d5a0f662a6f5caecf469fd42d2",
+    sha256 = "fd0afaf29954c26a725626b7bd24e873e303e84bb62dfcc05162be3f5ae30cd1",  # noqa
     build_file = "tools/workspace/lcm/lcm.BUILD.bazel",
 )
 
