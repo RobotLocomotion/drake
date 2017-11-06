@@ -1,4 +1,4 @@
-#include "drake/systems/analysis/test/controlled_spring_mass_system/controlled_spring_mass_system.h"
+#include "drake/systems/analysis/test_utilities/controlled_spring_mass_system.h"
 
 #include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
