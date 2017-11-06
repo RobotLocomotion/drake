@@ -657,6 +657,19 @@ class System {
     DoGetPerStepEvents(context, events);
   }
 
+  /// This method is called by Simulator::Initialize() to gather all
+  /// update and publish events that need to be handled at initialization
+  /// before the simulator starts integration.
+  ///
+  /// @p events cannot be null. @p events will be cleared on entry.
+  void GetInitializationEvents(const Context<T>& context,
+                               CompositeEventCollection<T>* events) const {
+    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    DRAKE_DEMAND(events != nullptr);
+    events->Clear();
+    DoGetInitializationEvents(context, events);
+  }
+
   /// Gets whether there exists a unique periodic attribute that triggers
   /// one or more discrete update events (and, if so, returns that unique
   /// periodic attribute). Thus, this method can be used (1) as a test to
@@ -1565,15 +1578,27 @@ class System {
   /// Implement this method to return any events to be handled before the
   /// simulator integrates the system's continuous state at each time step.
   /// @p events is cleared in the public non-virtual GetPerStepEvents()
-  /// before that method calls this function. An overriding implementation
-  /// of this method should not clear @p events, and only append to it. You
-  /// may assume that @p context has already been validated and that
-  /// @p events is not null. @p events can be changed freely by the overriding
-  /// implementation.
+  /// before that method calls this function. You may assume that @p context
+  /// has already been validated and that @p events is not null. @p events
+  /// can be changed freely by the overriding implementation.
   ///
   /// The default implementation returns without changing @p events.
   /// @sa GetPerStepEvents()
   virtual void DoGetPerStepEvents(
+      const Context<T>& context,
+      CompositeEventCollection<T>* events) const {
+    unused(context, events);
+  }
+
+  /// Implement this method to return any events to be handled at the
+  /// simulator's initialization step. @p events is cleared in the public
+  /// non-virtual GetInitializationEvents(). You may assume that @p context has
+  /// already been validated and that @p events is not null. @p events can be
+  /// changed freely by the overriding implementation.
+  ///
+  /// The default implementation returns without changing @p events.
+  /// @sa GetInitializationEvents()
+  virtual void DoGetInitializationEvents(
       const Context<T>& context,
       CompositeEventCollection<T>* events) const {
     unused(context, events);

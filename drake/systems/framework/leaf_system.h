@@ -638,11 +638,21 @@ class LeafSystem : public System<T> {
 
   /// Declares a per-step event using @p event, which is deep copied (the
   /// copy is maintained by `this`). @p event's associated trigger type must be
-  /// set to Event::TriggerType::kPerStep.
+  /// set to Event::TriggerType::kPerStep. Aborts otherwise.
   template <typename EventType>
   void DeclarePerStepEvent(const EventType& event) {
     DRAKE_DEMAND(event.get_trigger_type() == Event<T>::TriggerType::kPerStep);
     event.add_to_composite(&per_step_events_);
+  }
+
+  /// Declares an initialization event by deep copying @p event and storing it
+  /// internally. @p event's associated trigger type must be
+  /// Event::TriggerType::kInitialization. Aborts otherwise.
+  template <typename EventType>
+  void DeclareInitializationEvent(const EventType& event) {
+    DRAKE_DEMAND(event.get_trigger_type() ==
+                 Event<T>::TriggerType::kInitialization);
+    event.add_to_composite(&initialization_events_);
   }
 
   /// Declares that this System should reserve continuous state with
@@ -1284,6 +1294,12 @@ class LeafSystem : public System<T> {
     events->SetFrom(per_step_events_);
   }
 
+  void DoGetInitializationEvents(
+      const Context<T>&,
+      CompositeEventCollection<T>* events) const override {
+    events->SetFrom(initialization_events_);
+  }
+
   // Aborts for scalar types that are not numeric, since there is no reasonable
   // definition of "next update time" outside of the real line.
   //
@@ -1428,6 +1444,9 @@ class LeafSystem : public System<T> {
   // Update or Publish events registered on this system for every simulator
   // major time step.
   LeafCompositeEventCollection<T> per_step_events_;
+
+  // Update or Publish events that need to be handled at system initialization.
+  LeafCompositeEventCollection<T> initialization_events_;
 
   // A model continuous state to be used in AllocateDefaultContext.
   std::unique_ptr<BasicVector<T>> model_continuous_state_vector_;
