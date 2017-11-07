@@ -192,7 +192,7 @@ github_archive(
     name = "ccd",
     repository = "RobotLocomotion/libccd",
     commit = "64f02f741ac94fccd0fb660a5bffcbe6d01d9939",
-    sha256 = "d028cf9ee11b996c71589a5c78590a5e2edc2df2ef7d3915daa250e9856ea6c1",
+    sha256 = "d028cf9ee11b996c71589a5c78590a5e2edc2df2ef7d3915daa250e9856ea6c1",  #noqa
     build_file = "tools/workspace/ccd/ccd.BUILD.bazel",
 )
 
