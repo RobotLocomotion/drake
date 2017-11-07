@@ -2,46 +2,53 @@
 ---
 # distances are meters; angles are degrees.
 maliput_multilane_builder:
-  id: tee_intersection
-  lane_bounds: [-2, 2]
-  driveable_bounds: [-4, 4]
+  id: "tee_intersection"
+  lane_width: 4
+  right_shoulder: 2
+  left_shoulder: 2
   elevation_bounds: [0, 5]
-  position_precision: .01
-  orientation_precision: 0.5
+  linear_tolerance: 0.01
+  angular_tolerance: 0.5
   points:
     south_bp:
       xypoint: [0, -10, -90]  # x,y, heading
-      zpoint: [0, 0, 0, 0]  # z, zdot, theta (superelevation), thetadot
+      zpoint: [0, 0, 0, 0]  # z, z_dot, theta (superelevation), theta_dot
     west_bp:
       xypoint: [-10, 0, 180]  # x,y, heading
-      zpoint: [0, 0, 0, 0]  # z, zdot, theta (superelevation), thetadot
+      zpoint: [0, 0, 0, 0]  # z, z_dot, theta (superelevation), theta_dot
     east_bp:
       xypoint: [10, 0, 0]  # x,y, heading
-      zpoint: [0, 0, 0, 0]  # z, zdot, theta (superelevation), thetadot
+      zpoint: [0, 0, 0, 0]  # z, z_dot, theta (superelevation), theta_dot
   connections:
     south:
-      start: "points.south_bp"
+      lanes: [1, 0, 0]
+      start: ["ref", "points.south_bp.forward"]
       length: 10
-      z_end: [0, 0, 0, 0]
+      z_end: ["ref", [0, 0, 0, 0]]
     west:
-      start: "points.west_bp"
+      lanes: [1, 0, 0]
+      start: ["ref", "points.west_bp.forward"]
       length: 10
-      z_end: [0, 0, 0, 0]
+      z_end: ["ref", [0, 0, 0, 0]]
     east:
-      start: "points.east_bp"
+      lanes: [1, 0, 0]
+      start: ["ref", "points.east_bp.forward"]
       length: 10
-      z_end: [0, 0, 0, 0]
+      z_end: ["ref", [0, 0, 0, 0]]
     south_west:
-      start: "reverse connections.south.start"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.south.start.ref.reverse"]
       arc: [10, 90]
-      explicit_end: "connections.west.start"
+      explicit_end: ["ref", "connections.west.start.ref.forward"]
     south_east:
-      start: "reverse connections.south.start"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.south.start.ref.reverse"]
       arc: [10, -90]
-      explicit_end: "connections.east.start"
+      explicit_end: ["ref", "connections.east.start.ref.forward"]
     east_west:
-      start: "reverse connections.east.start"
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.east.start.ref.reverse"]
       length: 20
-      explicit_end: "connections.west.start"
+      explicit_end: ["ref", "connections.west.start.ref.forward"]
   groups:
     tee: [south_west, south_east, east_west]
