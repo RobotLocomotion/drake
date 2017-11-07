@@ -248,17 +248,8 @@ GTEST_TEST(MultilaneBuilderTest, QuadRing) {
   }
 };
 
-// Holds Lane IDs for each Lane, both at the start and end of the Lane.
-struct BranchPointLaneIds {
-  std::vector<std::string> start_a_side;
-  std::vector<std::string> start_b_side;
-  std::vector<std::string> finish_a_side;
-  std::vector<std::string> finish_b_side;
-};
-
 class MultilaneBuilderPrimitivesTest : public ::testing::Test {
  protected:
-  const double kR0{10.};
   const double kLaneWidth{4.};
   const double kLeftShoulder{2.};
   const double kRightShoulder{2.};
@@ -269,108 +260,248 @@ class MultilaneBuilderPrimitivesTest : public ::testing::Test {
   const EndpointZ kLowFlatZ{0., 0., 0., 0.};
   const double kStartHeading{-M_PI / 4.};
   const Endpoint start{{0., 0., kStartHeading}, kLowFlatZ};
+  const Vector3<double> kStartRVersor{std::cos(kStartHeading + M_PI / 2.),
+                                      std::sin(kStartHeading + M_PI / 2.), 0.};
+
+  void TestRoadGeometryEntities(const api::RoadGeometry& rg,
+                                const std::string& name) const {
+    EXPECT_EQ(rg.id(), api::RoadGeometryId(name));
+    EXPECT_EQ(rg.num_junctions(), 1);
+    EXPECT_NE(rg.junction(0), nullptr);
+    EXPECT_EQ(rg.junction(0)->id(), api::JunctionId("j:c0"));
+    EXPECT_EQ(rg.junction(0)->num_segments(), 1);
+    EXPECT_NE(rg.junction(0)->segment(0), nullptr);
+    EXPECT_EQ(rg.junction(0)->segment(0)->id(), api::SegmentId("s:c0"));
+    EXPECT_EQ(rg.junction(0)->segment(0)->num_lanes(), kNumLanes);
+    // Checks Lane's ID.
+    for (int i = 0; i < kNumLanes; i++) {
+      const api::Lane* lane = rg.junction(0)->segment(0)->lane(i);
+      EXPECT_EQ(lane->id().string(), std::string("l:c0_") + std::to_string(i));
+      // Checks lane start and end BranchPoint.
+      const api::BranchPoint* const start_bp =
+          lane->GetBranchPoint(api::LaneEnd::kStart);
+      EXPECT_EQ(start_bp->GetASide()->size(), 1);
+      EXPECT_EQ(start_bp->GetASide()->get(0).lane, lane);
+      EXPECT_EQ(start_bp->GetBSide()->size(), 0);
+      const api::BranchPoint* const end_bp =
+          lane->GetBranchPoint(api::LaneEnd::kFinish);
+      EXPECT_EQ(end_bp->GetASide()->size(), 1);
+      EXPECT_EQ(end_bp->GetASide()->get(0).lane, lane);
+      EXPECT_EQ(end_bp->GetBSide()->size(), 0);
+    }
+    // Checks the number of branch points.
+    EXPECT_EQ(rg.num_branch_points(), 2 * kNumLanes);
+  }
+
+  void TestLaneEndGeoPositions(const api::RoadGeometry& rg, double r0,
+                               const Vector3<double>& start_reference_curve,
+                               const Vector3<double>& start_r_versor,
+                               const Vector3<double>& end_reference_curve,
+                               const Vector3<double>& end_r_versor) const {
+    for (int i = 0; i < kNumLanes; i++) {
+      const api::Lane* const lane = rg.junction(0)->segment(0)->lane(i);
+      // Checks lane start GeoPosition to verify that spacing is correctly
+      // applied.
+      const Vector3<double> lane_start_geo =
+          start_reference_curve +
+          (r0 + static_cast<double>(i) * kLaneWidth) * start_r_versor;
+      EXPECT_TRUE(api::test::IsGeoPositionClose(
+          lane->ToGeoPosition({0., 0., 0.}),
+          api::GeoPosition::FromXyz(lane_start_geo), kLinearTolerance));
+      // Checks lane end GeoPosition to verify that spacing is correctly
+      // applied.
+      const Vector3<double> lane_end_geo =
+          end_reference_curve +
+          (r0 + static_cast<double>(i) * kLaneWidth) * end_r_versor;
+      EXPECT_TRUE(api::test::IsGeoPositionClose(
+          lane->ToGeoPosition({lane->length(), 0., 0.}),
+          api::GeoPosition::FromXyz(lane_end_geo), kLinearTolerance));
+    }
+  }
 };
 
-// Checks that a multi-lane line segment is correctly created.
-TEST_F(MultilaneBuilderPrimitivesTest, MultilaneLineSegment) {
+// Checks that a multi-lane line segment is correctly created with both Builder
+// methods.
+TEST_F(MultilaneBuilderPrimitivesTest, LineSegment) {
   Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance);
-  const double kLength = 50.;
+  const double kR0{10.};
+  const double kLength{50.};
   b.Connect("c0", kNumLanes, kR0, kLeftShoulder, kRightShoulder, start, kLength,
             kLowFlatZ);
+  const std::string kRoadGeometryName{"multilane-line-segment"};
   std::unique_ptr<const api::RoadGeometry> rg =
-      b.Build(api::RoadGeometryId{"multilane-line-segment"});
+      b.Build(api::RoadGeometryId{kRoadGeometryName});
 
-  EXPECT_EQ(rg->id(), api::RoadGeometryId("multilane-line-segment"));
-  EXPECT_EQ(rg->num_junctions(), 1);
-  EXPECT_NE(rg->junction(0), nullptr);
-  EXPECT_EQ(rg->junction(0)->id(), api::JunctionId("j:c0"));
-  EXPECT_EQ(rg->junction(0)->num_segments(), 1);
-  EXPECT_NE(rg->junction(0)->segment(0), nullptr);
-  EXPECT_EQ(rg->junction(0)->segment(0)->id(), api::SegmentId("s:c0"));
-  EXPECT_EQ(rg->junction(0)->segment(0)->num_lanes(), kNumLanes);
+  TestRoadGeometryEntities(*rg, kRoadGeometryName);
 
-  const Vector3<double> r_versor(-std::sin(kStartHeading),
-                                 std::cos(kStartHeading), 0.);
   const Vector3<double> start_reference_curve(start.xy().x(), start.xy().y(),
                                               start.z().z());
-  for (int i = 0; i < kNumLanes; i++) {
-    const api::Lane* lane = rg->junction(0)->segment(0)->lane(i);
-    // Checks Lane's ID.
-    EXPECT_EQ(lane->id().string(), std::string("l:c0_") + std::to_string(i));
-    // Checks lane start geo position to verify that spacing is correctly
-    // applied.
-    const Vector3<double> lane_start_geo =
-        start_reference_curve +
-        (kR0 + static_cast<double>(i) * kLaneWidth) * r_versor;
-    EXPECT_TRUE(api::test::IsGeoPositionClose(
-        lane->ToGeoPosition({0., 0., 0.}),
-        api::GeoPosition::FromXyz(lane_start_geo), kLinearTolerance));
-    // Checks lane start and end BranchPoint.
-    const api::BranchPoint* const start_bp =
-        lane->GetBranchPoint(api::LaneEnd::kStart);
-    EXPECT_EQ(start_bp->GetASide()->size(), 1);
-    EXPECT_EQ(start_bp->GetASide()->get(0).lane, lane);
-    EXPECT_EQ(start_bp->GetBSide()->size(), 0);
-    const api::BranchPoint* const end_bp =
-        lane->GetBranchPoint(api::LaneEnd::kFinish);
-    EXPECT_EQ(end_bp->GetASide()->size(), 1);
-    EXPECT_EQ(end_bp->GetASide()->get(0).lane, lane);
-    EXPECT_EQ(end_bp->GetBSide()->size(), 0);
-  }
-  // Checks the number of branch points.
-  EXPECT_EQ(rg->num_branch_points(), 2 * kNumLanes);
+  const Vector3<double> end_reference_curve(
+      start.xy().x() + kLength * std::cos(kStartHeading),
+      start.xy().y() + kLength * std::sin(kStartHeading), start.z().z());
+
+  TestLaneEndGeoPositions(*rg, kR0, start_reference_curve, kStartRVersor,
+                          end_reference_curve, kStartRVersor);
+}
+
+TEST_F(MultilaneBuilderPrimitivesTest, LaneToLaneLineSegment) {
+  Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance);
+  const double kLength{50.};
+  const int kStartLaneIndex{1};
+  const int kEndLaneIndex{0};
+  const double kRRef{0.5};
+  const double kRefLaneIndex{2};
+  const double kR0{kRRef - 2. * kLaneWidth};
+
+  b.Connect("c0", kNumLanes, kLeftShoulder, kRightShoulder, kStartLaneIndex,
+            start, kLength, kEndLaneIndex, kLowFlatZ, kRRef, kRefLaneIndex);
+
+  const std::string kRoadGeometryName{"multilane-line-segment"};
+  std::unique_ptr<const api::RoadGeometry> rg =
+      b.Build(api::RoadGeometryId{kRoadGeometryName});
+
+  TestRoadGeometryEntities(*rg, kRoadGeometryName);
+
+  const Vector3<double> start_reference_curve(
+      start.xy().x() + (-kRRef + kLaneWidth) * kStartRVersor.x(),
+      start.xy().y() + (-kRRef + kLaneWidth) * kStartRVersor.y(),
+      start.z().z());
+  const Vector3<double> end_reference_curve(
+      start_reference_curve.x() + kLength * std::cos(kStartHeading),
+      start_reference_curve.y() + kLength * std::sin(kStartHeading),
+      start.z().z());
+
+  TestLaneEndGeoPositions(*rg, kR0, start_reference_curve, kStartRVersor,
+                          end_reference_curve, kStartRVersor);
 }
 
 // Checks that a multi-lane arc segment is correctly created.
-TEST_F(MultilaneBuilderPrimitivesTest, MultilaneArcSegment) {
+TEST_F(MultilaneBuilderPrimitivesTest, CounterclockwiseArcSegment) {
   Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance);
-  const double kRadius = 30.;
-  const double kDTheta = 0.5 * M_PI;
+  const double kR0{10.};
+  const double kRadius{30.};
+  const double kDTheta{0.5 * M_PI};
   b.Connect("c0", kNumLanes, kR0, kLeftShoulder, kRightShoulder, start,
             ArcOffset(kRadius, kDTheta), kLowFlatZ);
+
+  const std::string kRoadGeometryName{"multilane-arc-segment"};
   std::unique_ptr<const api::RoadGeometry> rg =
-      b.Build(api::RoadGeometryId{"multilane-arc-segment"});
+      b.Build(api::RoadGeometryId{kRoadGeometryName});
 
-  EXPECT_EQ(rg->id(), api::RoadGeometryId("multilane-arc-segment"));
-  EXPECT_EQ(rg->num_junctions(), 1);
-  EXPECT_NE(rg->junction(0), nullptr);
-  EXPECT_EQ(rg->junction(0)->id(), api::JunctionId("j:c0"));
-  EXPECT_EQ(rg->junction(0)->num_segments(), 1);
-  EXPECT_NE(rg->junction(0)->segment(0), nullptr);
-  EXPECT_EQ(rg->junction(0)->segment(0)->id(), api::SegmentId("s:c0"));
-  EXPECT_EQ(rg->junction(0)->segment(0)->num_lanes(), kNumLanes);
+  TestRoadGeometryEntities(*rg, kRoadGeometryName);
 
-  const Vector3<double> r_versor(-std::sin(kStartHeading),
-                                 std::cos(kStartHeading), 0.);
   const Vector3<double> start_reference_curve(start.xy().x(), start.xy().y(),
-                                              start.z().z());
-  for (int i = 0; i < kNumLanes; i++) {
-    const api::Lane* const lane = rg->junction(0)->segment(0)->lane(i);
-    // Checks Lane's ID.
-    EXPECT_EQ(lane->id().string(), std::string("l:c0_") + std::to_string(i));
-    // Checks lane start geo position to verify that spacing is correctly
-    // applied.
-    const Vector3<double> lane_start_geo =
-        start_reference_curve +
-        (kR0 + static_cast<double>(i) * kLaneWidth) * r_versor;
-    EXPECT_TRUE(api::test::IsGeoPositionClose(
-        lane->ToGeoPosition({0., 0., 0.}),
-        api::GeoPosition::FromXyz(lane_start_geo), kLinearTolerance));
-    // Checks lane start and end BranchPoint.
-    const api::BranchPoint* const start_bp =
-        lane->GetBranchPoint(api::LaneEnd::kStart);
-    EXPECT_EQ(start_bp->GetASide()->size(), 1);
-    EXPECT_EQ(start_bp->GetASide()->get(0).lane, lane);
-    EXPECT_EQ(start_bp->GetBSide()->size(), 0);
-    const api::BranchPoint* const end_bp =
-        lane->GetBranchPoint(api::LaneEnd::kFinish);
-    EXPECT_EQ(end_bp->GetASide()->size(), 1);
-    EXPECT_EQ(end_bp->GetASide()->get(0).lane, lane);
-    EXPECT_EQ(end_bp->GetBSide()->size(), 0);
-  }
-  // Checks the number of branch points.
-  EXPECT_EQ(rg->num_branch_points(), 2 * kNumLanes);
+                                              kLowFlatZ.z());
+  const Vector3<double> end_r_versor(
+      std::cos(kStartHeading + kDTheta + M_PI / 2.),
+      std::sin(kStartHeading + kDTheta + M_PI / 2.), 0.);
+  const Vector3<double> end_reference_curve(kRadius * std::sqrt(2.), 0.,
+                                            kLowFlatZ.z());
+
+  TestLaneEndGeoPositions(*rg, kR0, start_reference_curve, kStartRVersor,
+                          end_reference_curve, end_r_versor);
 }
+
+TEST_F(MultilaneBuilderPrimitivesTest, LaneToLaneCounterclockwiseArcSegment) {
+  Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance);
+  const double kRadius{30.};
+  const double kDTheta{0.5 * M_PI};
+  const int kStartLaneIndex{1};
+  const int kEndLaneIndex{0};
+  const double kRRef{0.5};
+  const double kRefLaneIndex{2};
+  const double kR0{kRRef - 2. * kLaneWidth};
+
+  b.Connect("c0", kNumLanes, kLeftShoulder, kRightShoulder, kStartLaneIndex,
+            start, ArcOffset(kRadius, kDTheta), kEndLaneIndex, kLowFlatZ, kRRef,
+            kRefLaneIndex);
+
+  const std::string kRoadGeometryName{"multilane-arc-segment"};
+  std::unique_ptr<const api::RoadGeometry> rg =
+      b.Build(api::RoadGeometryId{kRoadGeometryName});
+
+  TestRoadGeometryEntities(*rg, kRoadGeometryName);
+
+  const Vector3<double> start_reference_curve(
+      start.xy().x() + (kLaneWidth - kRRef) * kStartRVersor.x(),
+      start.xy().y() + (kLaneWidth - kRRef) * kStartRVersor.y(), kLowFlatZ.z());
+  const Vector3<double> end_r_versor(
+      std::cos(kStartHeading + kDTheta + M_PI / 2.),
+      std::sin(kStartHeading + kDTheta + M_PI / 2.), 0.);
+  const Vector3<double> end_reference_curve(
+      start_reference_curve.x() + kRadius * std::sqrt(2.),
+      start_reference_curve.y(), kLowFlatZ.z());
+
+  TestLaneEndGeoPositions(*rg, kR0, start_reference_curve, kStartRVersor,
+                          end_reference_curve, end_r_versor);
+}
+
+TEST_F(MultilaneBuilderPrimitivesTest, ClockwiseArcSegment) {
+  Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance);
+  const double kR0{10.};
+  const double kRadius{30.};
+  const double kDTheta{-0.5 * M_PI};
+  b.Connect("c0", kNumLanes, kR0, kLeftShoulder, kRightShoulder, start,
+            ArcOffset(kRadius, kDTheta), kLowFlatZ);
+
+  const std::string kRoadGeometryName{"multilane-arc-segment"};
+  std::unique_ptr<const api::RoadGeometry> rg =
+      b.Build(api::RoadGeometryId{kRoadGeometryName});
+
+  TestRoadGeometryEntities(*rg, kRoadGeometryName);
+
+  const Vector3<double> start_reference_curve(start.xy().x(), start.xy().y(),
+                                              kLowFlatZ.z());
+  const Vector3<double> end_r_versor(
+      std::cos(kStartHeading + kDTheta + M_PI / 2.),
+      std::sin(kStartHeading + kDTheta + M_PI / 2.), 0.);
+  const Vector3<double> end_reference_curve(0., -kRadius * std::sqrt(2.),
+                                            kLowFlatZ.z());
+  TestLaneEndGeoPositions(*rg, kR0, start_reference_curve, kStartRVersor,
+                          end_reference_curve, end_r_versor);
+}
+
+TEST_F(MultilaneBuilderPrimitivesTest, LaneToLaneClockwiseArcSegment) {
+  Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance);
+  const double kRadius{30.};
+  const double kDTheta{-0.5 * M_PI};
+  const int kStartLaneIndex{1};
+  const int kEndLaneIndex{0};
+  const double kRRef{0.5};
+  const double kRefLaneIndex{2};
+  const double kR0{kRRef - 2. * kLaneWidth};
+
+  b.Connect("c0", kNumLanes, kLeftShoulder, kRightShoulder, kStartLaneIndex,
+            start, ArcOffset(kRadius, kDTheta), kEndLaneIndex, kLowFlatZ, kRRef,
+            kRefLaneIndex);
+
+  const std::string kRoadGeometryName{"multilane-arc-segment"};
+  std::unique_ptr<const api::RoadGeometry> rg =
+      b.Build(api::RoadGeometryId{kRoadGeometryName});
+
+  TestRoadGeometryEntities(*rg, kRoadGeometryName);
+
+  const Vector3<double> start_reference_curve(
+      start.xy().x() + (kLaneWidth - kRRef) * kStartRVersor.x(),
+      start.xy().y() + (kLaneWidth - kRRef) * kStartRVersor.y(), kLowFlatZ.z());
+  const Vector3<double> end_r_versor(
+      std::cos(kStartHeading + kDTheta + M_PI / 2.),
+      std::sin(kStartHeading + kDTheta + M_PI / 2.), 0.);
+  const Vector3<double> end_reference_curve(
+      start_reference_curve.x(),
+      start_reference_curve.y() - kRadius * std::sqrt(2.), kLowFlatZ.z());
+
+  TestLaneEndGeoPositions(*rg, kR0, start_reference_curve, kStartRVersor,
+                          end_reference_curve, end_r_versor);
+}
+
+// Holds Lane IDs for each Lane, both at the start and end of the Lane.
+struct BranchPointLaneIds {
+  std::vector<std::string> start_a_side;
+  std::vector<std::string> start_b_side;
+  std::vector<std::string> finish_a_side;
+  std::vector<std::string> finish_b_side;
+};
 
 // Checks that Junctions, Segments, Lanes and BranchPoints are correctly made
 // after creating the following RoadGeometry.
@@ -381,7 +512,7 @@ TEST_F(MultilaneBuilderPrimitivesTest, MultilaneArcSegment) {
 // <pre>
 //
 //                                0 1
-//                        d       x x
+//                        d       h x
 //                                | | c5
 //                                | |
 //                                | |
@@ -406,7 +537,9 @@ TEST_F(MultilaneBuilderPrimitivesTest, MultilaneArcSegment) {
 //                              x x x
 //                              0 1 2
 // </pre>
-GTEST_TEST(MultilaneBuilderTest, MultilaneCross) {
+
+class MultilaneBuilderCrossTest : public ::testing::Test {
+ protected:
   const double kLaneWidth{4.};
   const double kLeftShoulder{1.};
   const double kRightShoulder{1.};
@@ -416,42 +549,6 @@ GTEST_TEST(MultilaneBuilderTest, MultilaneCross) {
   const int kTwoLanes{2};
   const int kThreeLanes{3};
   const EndpointZ kLowFlatZ{0., 0., 0., 0.};
-
-  const Endpoint endpoint_a{{0., 0., 0.}, kLowFlatZ};
-  const Endpoint endpoint_b{{50., 0., 0.}, kLowFlatZ};
-  const Endpoint endpoint_c{{70., 0., 0.}, kLowFlatZ};
-  const Endpoint endpoint_d{{50., 50., -M_PI / 2.}, kLowFlatZ};
-  const Endpoint endpoint_e{{50., 14., -M_PI / 2.}, kLowFlatZ};
-  const Endpoint endpoint_f{{60., 14., -M_PI / 2.}, kLowFlatZ};
-  const Endpoint endpoint_g{{50., -6., -M_PI / 2.}, kLowFlatZ};
-
-  Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance);
-  // Creates connections.
-  b.Connect("c1", kThreeLanes, 0, kLeftShoulder, kRightShoulder, endpoint_a,
-            50., kLowFlatZ);
-  auto c2 = b.Connect("c2", kTwoLanes, 4., kLeftShoulder, kRightShoulder,
-                      endpoint_b, 20., kLowFlatZ);
-  b.Connect("c3", kTwoLanes, 4., kLeftShoulder, kRightShoulder, endpoint_c, 30.,
-            kLowFlatZ);
-  auto c4 = b.Connect("c4", kThreeLanes, 0., kLeftShoulder, kRightShoulder,
-                      endpoint_b, ArcOffset(6., -M_PI / 2.), kLowFlatZ);
-  b.Connect("c5", kTwoLanes, 10., kLeftShoulder, kRightShoulder, endpoint_d,
-            36., kLowFlatZ);
-  auto c6 = b.Connect("c6", kTwoLanes, 0., kLeftShoulder, kRightShoulder,
-                      endpoint_f, ArcOffset(10., M_PI / 2.), kLowFlatZ);
-  auto c7 = b.Connect("c7", kTwoLanes, 10., kLeftShoulder, kRightShoulder,
-                      endpoint_e, 20., kLowFlatZ);
-  b.Connect("c8", kThreeLanes, 6., kLeftShoulder, kRightShoulder, endpoint_g,
-            44., kLowFlatZ);
-  // Creates the crossing junction.
-  std::vector<const Connection*> connections{c2, c4, c6, c7};
-  b.MakeGroup("cross", connections);
-
-  std::unique_ptr<const api::RoadGeometry> rg =
-      b.Build(api::RoadGeometryId{"multilane-arc-segment"});
-
-  EXPECT_EQ(rg->id(), api::RoadGeometryId("multilane-arc-segment"));
-
   // Junction ID --> Segment IDs.
   const std::map<std::string, std::vector<std::string>> junction_truth_map{
       {"j:c1", {"s:c1"}},
@@ -500,65 +597,152 @@ GTEST_TEST(MultilaneBuilderTest, MultilaneCross) {
       {"l:c8_1", {{"l:c4_1", "l:c7_0"}, {"l:c8_1"}, {"l:c8_1"}, {}}},
       {"l:c8_2", {{"l:c4_2", "l:c7_1"}, {"l:c8_2"}, {"l:c8_2"}, {}}}};
 
-  EXPECT_EQ(rg->num_junctions(), junction_truth_map.size());
-  for (int i = 0; i < rg->num_junctions(); i++) {
-    // Checks each Junction.
-    const api::Junction* const junction = rg->junction(i);
-    EXPECT_NE(junction_truth_map.find(junction->id().string()),
-              junction_truth_map.end());
-    const std::vector<std::string>& segment_ids =
-        junction_truth_map.at(junction->id().string());
-    EXPECT_EQ(segment_ids.size(), junction->num_segments());
-    for (int j = 0; j < junction->num_segments(); j++) {
-      // Checks each Segment.
-      const api::Segment* const segment = junction->segment(j);
-      EXPECT_EQ(segment->id().string(), segment_ids[j]);
-      EXPECT_NE(segment_truth_map.find(segment->id().string()),
-                segment_truth_map.end());
-      const std::vector<std::string>& lane_ids =
-          segment_truth_map.at(segment->id().string());
-      EXPECT_EQ(segment->num_lanes(), lane_ids.size());
-      for (int k = 0; k < segment->num_lanes(); k++) {
-        // Checks each Lane.
-        const api::Lane* const lane = segment->lane(k);
-        EXPECT_NE(lane_truth_map.find(lane->id().string()),
-                  lane_truth_map.end());
-        const BranchPointLaneIds& bp_lane_ids =
-            lane_truth_map.at(lane->id().string());
-        const api::BranchPoint* const start_bp =
-            lane->GetBranchPoint(api::LaneEnd::kStart);
-        EXPECT_EQ(start_bp->GetASide()->size(),
-                  bp_lane_ids.start_a_side.size());
-        for (int lane_index = 0; lane_index < start_bp->GetASide()->size();
-             lane_index++) {
-          EXPECT_EQ(start_bp->GetASide()->get(lane_index).lane->id().string(),
-                    bp_lane_ids.start_a_side[lane_index]);
-        }
-        EXPECT_EQ(start_bp->GetBSide()->size(),
-                  bp_lane_ids.start_b_side.size());
-        for (int lane_index = 0; lane_index < start_bp->GetBSide()->size();
-             lane_index++) {
-          EXPECT_EQ(start_bp->GetBSide()->get(lane_index).lane->id().string(),
-                    bp_lane_ids.start_b_side[lane_index]);
-        }
-        const api::BranchPoint* const end_bp =
-            lane->GetBranchPoint(api::LaneEnd::kFinish);
-        EXPECT_EQ(end_bp->GetASide()->size(), bp_lane_ids.finish_a_side.size());
-        for (int lane_index = 0; lane_index < end_bp->GetASide()->size();
-             lane_index++) {
-          EXPECT_EQ(end_bp->GetASide()->get(lane_index).lane->id().string(),
-                    bp_lane_ids.finish_a_side[lane_index]);
-        }
-        EXPECT_EQ(end_bp->GetBSide()->size(), bp_lane_ids.finish_b_side.size());
-        for (int lane_index = 0; lane_index < end_bp->GetBSide()->size();
-             lane_index++) {
-          EXPECT_EQ(end_bp->GetBSide()->get(lane_index).lane->id().string(),
-                    bp_lane_ids.finish_b_side[lane_index]);
+  void TestRoadGeometry(std::unique_ptr<const api::RoadGeometry> rg) const {
+    EXPECT_EQ(rg->id(), api::RoadGeometryId("multilane-cross"));
+
+    EXPECT_EQ(rg->num_junctions(), junction_truth_map.size());
+    for (int i = 0; i < rg->num_junctions(); i++) {
+      // Checks each Junction.
+      const api::Junction* const junction = rg->junction(i);
+      EXPECT_NE(junction_truth_map.find(junction->id().string()),
+                junction_truth_map.end());
+      const std::vector<std::string>& segment_ids =
+          junction_truth_map.at(junction->id().string());
+      EXPECT_EQ(segment_ids.size(), junction->num_segments());
+      for (int j = 0; j < junction->num_segments(); j++) {
+        // Checks each Segment.
+        const api::Segment* const segment = junction->segment(j);
+        EXPECT_EQ(segment->id().string(), segment_ids[j]);
+        EXPECT_NE(segment_truth_map.find(segment->id().string()),
+                  segment_truth_map.end());
+        const std::vector<std::string>& lane_ids =
+            segment_truth_map.at(segment->id().string());
+        EXPECT_EQ(segment->num_lanes(), lane_ids.size());
+        for (int k = 0; k < segment->num_lanes(); k++) {
+          // Checks each Lane.
+          const api::Lane* const lane = segment->lane(k);
+          EXPECT_NE(lane_truth_map.find(lane->id().string()),
+                    lane_truth_map.end());
+          const BranchPointLaneIds& bp_lane_ids =
+              lane_truth_map.at(lane->id().string());
+          const api::BranchPoint* const start_bp =
+              lane->GetBranchPoint(api::LaneEnd::kStart);
+          EXPECT_EQ(start_bp->GetASide()->size(),
+                    bp_lane_ids.start_a_side.size());
+          for (int lane_index = 0; lane_index < start_bp->GetASide()->size();
+               lane_index++) {
+            EXPECT_EQ(start_bp->GetASide()->get(lane_index).lane->id().string(),
+                      bp_lane_ids.start_a_side[lane_index]);
+          }
+          EXPECT_EQ(start_bp->GetBSide()->size(),
+                    bp_lane_ids.start_b_side.size());
+          for (int lane_index = 0; lane_index < start_bp->GetBSide()->size();
+               lane_index++) {
+            EXPECT_EQ(start_bp->GetBSide()->get(lane_index).lane->id().string(),
+                      bp_lane_ids.start_b_side[lane_index]);
+          }
+          const api::BranchPoint* const end_bp =
+              lane->GetBranchPoint(api::LaneEnd::kFinish);
+          EXPECT_EQ(end_bp->GetASide()->size(),
+                    bp_lane_ids.finish_a_side.size());
+          for (int lane_index = 0; lane_index < end_bp->GetASide()->size();
+               lane_index++) {
+            EXPECT_EQ(end_bp->GetASide()->get(lane_index).lane->id().string(),
+                      bp_lane_ids.finish_a_side[lane_index]);
+          }
+          EXPECT_EQ(end_bp->GetBSide()->size(),
+                    bp_lane_ids.finish_b_side.size());
+          for (int lane_index = 0; lane_index < end_bp->GetBSide()->size();
+               lane_index++) {
+            EXPECT_EQ(end_bp->GetBSide()->get(lane_index).lane->id().string(),
+                      bp_lane_ids.finish_b_side[lane_index]);
+          }
         }
       }
     }
+    EXPECT_EQ(rg->num_branch_points(), 20);
   }
-  EXPECT_EQ(rg->num_branch_points(), 20);
+};
+
+// Constructs the RoadGeometry using the RoadCurve related API. Afterwards,
+// checks created entities.
+TEST_F(MultilaneBuilderCrossTest, ReferenceCurveMultilaneCross) {
+  const Endpoint endpoint_a{{0., 0., 0.}, kLowFlatZ};
+  const Endpoint endpoint_b{{50., 0., 0.}, kLowFlatZ};
+  const Endpoint endpoint_c{{70., 0., 0.}, kLowFlatZ};
+  const Endpoint endpoint_d{{50., 50., -M_PI / 2.}, kLowFlatZ};
+  const Endpoint endpoint_e{{50., 14., -M_PI / 2.}, kLowFlatZ};
+  const Endpoint endpoint_f{{60., 14., -M_PI / 2.}, kLowFlatZ};
+  const Endpoint endpoint_g{{50., -6., -M_PI / 2.}, kLowFlatZ};
+
+  Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance);
+  // Creates connections.
+  b.Connect("c1", kThreeLanes, 0, kLeftShoulder, kRightShoulder, endpoint_a,
+            50., kLowFlatZ);
+  auto c2 = b.Connect("c2", kTwoLanes, 4., kLeftShoulder, kRightShoulder,
+                      endpoint_b, 20., kLowFlatZ);
+  b.Connect("c3", kTwoLanes, 4., kLeftShoulder, kRightShoulder, endpoint_c, 30.,
+            kLowFlatZ);
+  auto c4 = b.Connect("c4", kThreeLanes, 0., kLeftShoulder, kRightShoulder,
+                      endpoint_b, ArcOffset(6., -M_PI / 2.), kLowFlatZ);
+  b.Connect("c5", kTwoLanes, 10., kLeftShoulder, kRightShoulder, endpoint_d,
+            36., kLowFlatZ);
+  auto c6 = b.Connect("c6", kTwoLanes, 0., kLeftShoulder, kRightShoulder,
+                      endpoint_f, ArcOffset(10., M_PI / 2.), kLowFlatZ);
+  auto c7 = b.Connect("c7", kTwoLanes, 10., kLeftShoulder, kRightShoulder,
+                      endpoint_e, 20., kLowFlatZ);
+  b.Connect("c8", kThreeLanes, 6., kLeftShoulder, kRightShoulder, endpoint_g,
+            44., kLowFlatZ);
+  // Creates the crossing junction.
+  std::vector<const Connection*> connections{c2, c4, c6, c7};
+  b.MakeGroup("cross", connections);
+
+  TestRoadGeometry(b.Build(api::RoadGeometryId{"multilane-cross"}));
+}
+
+// Constructs the RoadGeometry using the LaneToLane related API. Afterwards,
+// checks created entities.
+TEST_F(MultilaneBuilderCrossTest, LaneToLaneMultilaneCross) {
+  const Endpoint endpoint_a{{0., 0., 0.}, kLowFlatZ};
+  const Endpoint endpoint_h{{60., 50., -M_PI / 2.}, kLowFlatZ};
+  const int kFirstLaneId{0};
+  const int kSecondLaneId{1};
+  const int kThirdLaneId{2};
+  const double kRRef{0.5};
+
+  Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance);
+  // Creates connections.
+  auto c1 =
+      b.Connect("c1", kThreeLanes, kLeftShoulder, kRightShoulder, kFirstLaneId,
+                endpoint_a, 50., kFirstLaneId, kLowFlatZ, kRRef, kFirstLaneId);
+  auto c2 = b.Connect("c2", kTwoLanes, kLeftShoulder, kRightShoulder,
+                      kFirstLaneId, c1->LaneEnd(kSecondLaneId), 20.,
+                      kSecondLaneId, kLowFlatZ, kRRef, kSecondLaneId);
+  b.Connect("c3", kTwoLanes, kLeftShoulder, kRightShoulder, kSecondLaneId,
+            c2->LaneEnd(kSecondLaneId), 30., kFirstLaneId, kLowFlatZ, kRRef,
+            kFirstLaneId);
+  auto c4 =
+      b.Connect("c4", kThreeLanes, kLeftShoulder, kRightShoulder, kSecondLaneId,
+                c1->LaneEnd(kSecondLaneId), ArcOffset(9.5, -M_PI / 2.),
+                kFirstLaneId, kLowFlatZ, kRRef, kSecondLaneId);
+  auto c5 =
+      b.Connect("c5", kTwoLanes, kLeftShoulder, kRightShoulder, kFirstLaneId,
+                endpoint_h, 36., kFirstLaneId, kLowFlatZ, kRRef, kFirstLaneId);
+  auto c6 =
+      b.Connect("c6", kTwoLanes, kLeftShoulder, kRightShoulder, kFirstLaneId,
+                c5->LaneEnd(kFirstLaneId), ArcOffset(10.5, M_PI / 2.),
+                kFirstLaneId, kLowFlatZ, kRRef, kFirstLaneId);
+  auto c7 = b.Connect("c7", kTwoLanes, kLeftShoulder, kRightShoulder,
+                      kSecondLaneId, c6->LaneStart(kSecondLaneId), 20.,
+                      kSecondLaneId, kLowFlatZ, kRRef, kSecondLaneId);
+  b.Connect("c8", kThreeLanes, kLeftShoulder, kRightShoulder, kThirdLaneId,
+            c7->LaneEnd(kSecondLaneId), 44., kSecondLaneId, kLowFlatZ, kRRef,
+            kThirdLaneId);
+  // Creates the crossing junction.
+  std::vector<const Connection*> connections{c2, c4, c6, c7};
+  b.MakeGroup("cross", connections);
+
+  TestRoadGeometry(b.Build(api::RoadGeometryId{"multilane-cross"}));
 }
 
 }  // namespace
