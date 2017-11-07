@@ -3,13 +3,16 @@
 #include <cmath>
 #include <map>
 #include <string>
+#include <tuple>
 #include <utility>
 
 #include "yaml-cpp/yaml.h"
 
 #include "drake/automotive/maliput/multilane/builder.h"
+#include "drake/automotive/maliput/multilane/connection.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
+#include "drake/common/unused.h"
 
 namespace drake {
 namespace maliput {
@@ -17,25 +20,24 @@ namespace multilane {
 
 namespace {
 
-api::RBounds r_bounds(const YAML::Node& node) {
-  DRAKE_DEMAND(node.IsSequence());
-  DRAKE_DEMAND(node.size() == 2);
-  return api::RBounds(node[0].as<double>(), node[1].as<double>());
-}
-
-
+// Parses a yaml `node` and returns an api::HBounds object from it.
+// `node` must be a sequence and have two doubles. First item will be minimum
+// height and the second item will be the maximum height.
 api::HBounds h_bounds(const YAML::Node& node) {
   DRAKE_DEMAND(node.IsSequence());
   DRAKE_DEMAND(node.size() == 2);
   return api::HBounds(node[0].as<double>(), node[1].as<double>());
 }
 
-
+// Converts `degrees` angle into radians.
 double deg_to_rad(double degrees) {
   return degrees * M_PI / 180.;
 }
 
-
+// Parses a YAML `node` and returns an EndpointXy object from it.
+// `node` must be a sequence of three doubles. First item will be x coordinate,
+// second item will be y coordinate and the third item will be heading angle in
+// degrees.
 EndpointXy endpoint_xy(const YAML::Node& node) {
   DRAKE_DEMAND(node.IsSequence());
   DRAKE_DEMAND(node.size() == 3);
@@ -43,49 +45,117 @@ EndpointXy endpoint_xy(const YAML::Node& node) {
                     deg_to_rad(node[2].as<double>()));
 }
 
-
+// Parses a yaml `node` and returns an EndpointZ object from it.
+// `node` must be a sequence of three or four doubles, the last item is
+// optional. The first two items are z coordinate and z_dot. The last two items
+// are theta angle and theta_dot which are expressed in degrees and degrees per
+// meter respectively.
+// theta_dot is optional since the Builder may need to adjust it to be compliant
+// with Maliput's G1 constraint.
 EndpointZ endpoint_z(const YAML::Node& node) {
   DRAKE_DEMAND(node.IsSequence());
-  DRAKE_DEMAND(node.size() == 4);
-  return EndpointZ(
-      node[0].as<double>(), node[1].as<double>(),
-      deg_to_rad(node[2].as<double>()), deg_to_rad(node[3].as<double>()));
+  DRAKE_DEMAND(node.size() == 3 || node.size() == 4);
+  return EndpointZ(node[0].as<double>(), node[1].as<double>(),
+                   deg_to_rad(node[2].as<double>()),
+                   node.size() == 4 ? deg_to_rad(node[3].as<double>()) : 0.);
 }
 
-
+// Parses a yaml `node` and returns an Endpoint object from it.
+// `node` must be a map and contain a sequence node named "xypoint" that
+// represents and EndpointXY as well as another sequence node named "zpoint"
+// that represents an EndpointZ.
 Endpoint endpoint(const YAML::Node& node) {
   DRAKE_DEMAND(node.IsMap());
   return Endpoint(endpoint_xy(node["xypoint"]), endpoint_z(node["zpoint"]));
 }
 
-
+// Parses a yaml `node` and returns an ArcOffset object from it.
+// `node` must be a sequence of two doubles. The first item will be the radius
+// and the second item will be the angle span in degrees.
 ArcOffset arc_offset(const YAML::Node& node) {
   DRAKE_DEMAND(node.IsSequence());
   DRAKE_DEMAND(node.size() == 2);
   return ArcOffset(node[0].as<double>(), deg_to_rad(node[1].as<double>()));
 }
 
+// Parses a yaml `node` and returns a tuple object from it.
+// `node` must be a sequence of two integers and one double. The first item will
+// be the number of lanes in the connection, the second item will be the
+// reference lane and the third item will be the distance from the reference
+// lane to the reference curve.
+std::tuple<int, int, double> lanes(const YAML::Node& node) {
+  DRAKE_DEMAND(node.IsSequence());
+  DRAKE_DEMAND(node.size() == 3);
+  // Checks that the number of lanes is bigger than 0.
+  DRAKE_DEMAND(node[0].as<int>() > 0);
+  // Checks that the reference lane is within lanes range.
+  DRAKE_DEMAND(node[1].as<int>() >= 0 && node[1].as<int>() < node[0].as<int>());
+  return std::make_tuple<int, int, double>(node[0].as<int>(), node[1].as<int>(),
+                                           node[2].as<double>());
+}
 
-std::unique_ptr<Endpoint> ResolvePointReference(
+// Looks for the Endpoint in `catalog` given `ref` description. `ref` can be
+// either a bare Endpoint in "points" YAML map, an Endpoint that references a
+// connection's reference curve start / end, or an Endpoint that references a
+// connection's lane start / end. If "reverse" keyword is used, the Endpoint
+// will be reversed.
+// @returns a std::unique_ptr with the Endpoint or nullptr if it does not exist
+// in catalog.
+std::unique_ptr<Endpoint> FindEndpointInCatalog(
     const std::string& ref,
     const std::map<std::string, Endpoint>& xyz_catalog) {
-  const auto parsed = [&]() {
-    static const std::string kReverse{"reverse "};
-    int where = ref.find(kReverse);
-    if (where == 0) {
-      // Strip "reverse " from head, and tag as reversed.
-      return std::make_pair(ref.substr(kReverse.size()), true);
-    } else {
-      // Leave alone, and tag as not-reversed.
-      return std::make_pair(ref, false);
-    }
-  }();
-  auto it = xyz_catalog.find(parsed.first);
+  static const std::string kReverse{"reverse "};
+  const int where = ref.find(kReverse);
+  auto it = xyz_catalog.find(where == 0 ? ref.substr(kReverse.size()) : ref);
   if (it == xyz_catalog.end()) {
     return nullptr;
   }
-  return std::make_unique<Endpoint>(
-      parsed.second ? it->second.reverse() : it->second);
+  return std::make_unique<Endpoint>(where == 0 ? it->second.reverse()
+                                               : it->second);
+}
+
+// Checks that `start_node` is a sequence of two elements. "ref" or "lane.NB"
+// must go first and then a string that points to the starting Endpoint. It will
+// be looked for inside `xyz_catalog`.
+// @returns a std::unique_ptr<Endpoint> with the Endpoint or nullptr if it is
+// not found inside `xyz_catalog`.
+std::unique_ptr<Endpoint> ResolveStartReference(
+    const YAML::Node& start_node,
+    const std::map<std::string, Endpoint>& xyz_catalog) {
+  DRAKE_DEMAND(start_node.IsSequence());
+  DRAKE_DEMAND(start_node.size() == 2);
+  // TODO(agalbachicar)    Provide support for "lane.NB" so as to reference the
+  //                       lane ID.
+  DRAKE_DEMAND(start_node[0].as<std::string>() == "ref");
+  return FindEndpointInCatalog(start_node[1].as<std::string>(), xyz_catalog);
+}
+
+// Checks that `end_node` is a scalar string. Either "ref" or "lane.NB" must
+// live inside `end_node`. It will reference an Endpoint of a connection's
+// reference curve or lane and will be looked for inside `xyz_catalog`.
+// @returns a std::unique_ptr<Endpoint> with the Endpoint or nullptr if it is
+// not found inside `xyz_catalog`.
+std::unique_ptr<Endpoint> ResolveExplicitEndReference(
+    const YAML::Node& end_node,
+    const std::map<std::string, Endpoint>& xyz_catalog) {
+  DRAKE_DEMAND(end_node.IsScalar());
+  // TODO(agalbachicar)    Provide support for custom lane ID so as to reference
+  //                       a custom lane instead of the reference curve.
+  DRAKE_DEMAND(end_node.as<std::string>().find("ref") == 0);
+  return FindEndpointInCatalog(end_node.as<std::string>(), xyz_catalog);
+}
+
+// Checks that `end_node` is a sequence with two elements. "ref" or "lane.NB"
+// must go first and then a string that points to the starting Endpoint. The
+// second element will be parsed as an EndpointZ.
+// @returns an EndpointZ.
+EndpointZ ResolveEndpointZReference(const YAML::Node& end_node) {
+  DRAKE_DEMAND(end_node.IsSequence());
+  DRAKE_DEMAND(end_node.size() == 2);
+  // TODO(agalbachicar)    Provide support for "lane.NB" so as to reference the
+  //                       lane ID.
+  DRAKE_DEMAND(end_node[0].as<std::string>() == "ref");
+  return endpoint_z(end_node[1]);
 }
 
 
@@ -95,9 +165,10 @@ std::unique_ptr<Endpoint> ResolvePointReference(
 const Connection* MaybeMakeConnection(
     std::string id, YAML::Node node,
     const std::map<std::string, Endpoint>& xyz_catalog, Builder* builder,
-    double left_shoulder, double right_shoulder) {
+    double default_left_shoulder, double default_right_shoulder) {
   DRAKE_DEMAND(node.IsMap());
-
+  // "lanes" is required.
+  DRAKE_DEMAND(node["lanes"]);
   // "start" required.
   DRAKE_DEMAND(node["start"]);
   // "arc" or "length" (but not both) required.
@@ -107,39 +178,65 @@ const Connection* MaybeMakeConnection(
   DRAKE_DEMAND(node["z_end"] || node["explicit_end"]);
   DRAKE_DEMAND(!(node["z_end"] && node["explicit_end"]));
 
+  int num_lanes, ref_lane;
+  double r_ref;
+  std::tie(num_lanes, ref_lane, r_ref) = lanes(node["lanes"]);
+  // TODO(agalbachicar)    Once the API supports referencing to lanes, this
+  //                       should be used to call the appropriate Builder
+  //                       methods, r_ref will refer to any lane and will not be
+  //                       r0.
+  unused(ref_lane);
+
+  // Left and right shoulders are not required, if any of them is present it
+  // will override the default value.
+  const double left_shoulder = node["left_shoulder"]
+                                   ? node["left_shoulder"].as<double>()
+                                   : default_left_shoulder;
+  const double right_shoulder = node["right_shoulder"]
+                                    ? node["right_shoulder"].as<double>()
+                                    : default_right_shoulder;
+
   std::unique_ptr<Endpoint> start_point =
-      ResolvePointReference(node["start"].as<std::string>(), xyz_catalog);
+      ResolveStartReference(node["start"], xyz_catalog);
   if (!start_point) { return nullptr; }  // "Try to resolve later."
-  enum SegmentType { kLine, kArc } segment_type = node["length"] ? kLine : kArc;
-  std::unique_ptr<Endpoint> ee_point;  // optional explicit endpoint
+  const Connection::Type segment_type =
+      node["length"] ? Connection::kLine : Connection::kArc;
+  // Optional explicit endpoint.
+  std::unique_ptr<Endpoint> ee_point;
   if (node["explicit_end"]) {
-    ee_point = ResolvePointReference(node["explicit_end"].as<std::string>(),
-                                     xyz_catalog);
+    ee_point = ResolveExplicitEndReference(node["explicit_end"], xyz_catalog);
     if (!ee_point) { return nullptr; }  // "Try to resolve later."
   }
+  const EndpointZ ez_point =
+      ee_point ? ee_point->z() : ResolveEndpointZReference(node["z_end"]);
 
-  // Call appropriate method.
+  // Call appropriate Builder method.
+
+  // TODO(agalbachicar)    Once the API of the Builder is finished, support for
+  //                       the alternative API is needed and the format may
+  //                       suffer some transformations. For the time being, this
+  //                       code covers Builder's reference-curve API.
   switch (segment_type) {
-    case kLine: {
+    case Connection::kLine: {
       if (ee_point) {
-        return builder->Connect(id, 1, 0., left_shoulder, right_shoulder,
-                                *start_point, node["length"].as<double>(),
-                                ee_point->z());
+        return builder->Connect(id, num_lanes, r_ref, left_shoulder,
+                                right_shoulder, *start_point,
+                                node["length"].as<double>(), ee_point->z());
       } else {
-        return builder->Connect(id, 1, 0., left_shoulder, right_shoulder,
-                                *start_point, node["length"].as<double>(),
-                                endpoint_z(node["z_end"]));
+        return builder->Connect(id, num_lanes, r_ref, left_shoulder,
+                                right_shoulder, *start_point,
+                                node["length"].as<double>(), ez_point);
       }
     }
-    case kArc: {
+    case Connection::kArc: {
       if (ee_point) {
-        return builder->Connect(id, 1, 0., left_shoulder, right_shoulder,
-                                *start_point, arc_offset(node["arc"]),
-                                ee_point->z());
+        return builder->Connect(id, num_lanes, r_ref, left_shoulder,
+                                right_shoulder, *start_point,
+                                arc_offset(node["arc"]), ee_point->z());
       } else {
-        return builder->Connect(id, 1, 0., left_shoulder, right_shoulder,
-                                *start_point, arc_offset(node["arc"]),
-                                endpoint_z(node["z_end"]));
+        return builder->Connect(id, num_lanes, r_ref, left_shoulder,
+                                right_shoulder, *start_point,
+                                arc_offset(node["arc"]), ez_point);
       }
     }
     default: {
@@ -148,21 +245,27 @@ const Connection* MaybeMakeConnection(
   }
 }
 
-
-std::unique_ptr<const api::RoadGeometry> BuildFrom(YAML::Node node) {
+// Parses a yaml `node` that represents a RoadGeometry.
+// `node` must be a map and contain a map node called
+// "maliput_multilane_builder". This last node must contain the complete
+// description of the RoadGeometry.
+// "maliput_multilane_builder" map node must have a "points" node as well as a
+// "connections" node. "points" map node contains the description of reference
+// Endpoints and "connections" describes the Connections. If provided, "groups"
+// map node will contain sequences of Groups to join Connections.
+std::unique_ptr<const api::RoadGeometry> BuildFrom(const YAML::Node& node) {
   DRAKE_DEMAND(node.IsMap());
   YAML::Node mmb = node["maliput_multilane_builder"];
   DRAKE_DEMAND(mmb.IsMap());
 
-  const api::RBounds lane_bounds(r_bounds(mmb["lane_bounds"]));
-  DRAKE_DEMAND(lane_bounds.max() == (-lane_bounds.min()));
-  const api::RBounds driveable_bounds(r_bounds(mmb["driveable_bounds"]));
-  const double left_shoulder =
-      std::abs(driveable_bounds.min()) - std::abs(lane_bounds.min());
-  const double right_shoulder =
-      std::abs(driveable_bounds.max()) - std::abs(lane_bounds.max());
-  Builder builder(lane_bounds.max() - lane_bounds.min(),
-                  h_bounds(mmb["elevation_bounds"]),
+  const double lane_width = mmb["lane_width"].as<double>();
+  DRAKE_DEMAND(lane_width >= 0.);
+  const double default_left_shoulder = mmb["left_shoulder"].as<double>();
+  DRAKE_DEMAND(default_left_shoulder >= 0.);
+  const double default_right_shoulder = mmb["right_shoulder"].as<double>();
+  DRAKE_DEMAND(default_right_shoulder >= 0.);
+
+  Builder builder(lane_width, h_bounds(mmb["elevation_bounds"]),
                   mmb["position_precision"].as<double>(),
                   deg_to_rad(mmb["orientation_precision"].as<double>()));
 
@@ -185,22 +288,37 @@ std::unique_ptr<const api::RoadGeometry> BuildFrom(YAML::Node node) {
 
   drake::log()->debug("building cooked connections !");
   std::map<std::string, const Connection*> cooked_connections;
+  // Defines some lambdas to create endpoint keys.
+  auto endpoint_lane_key = [](const std::string& id, int lane_index,
+                              bool is_start) {
+    return std::string("connections.") + id + "." + std::to_string(lane_index) +
+           (is_start ? ".start" : ".end");
+  };
+  auto endpoint_ref_curve_key = [](const std::string& id, bool is_start) {
+    return std::string("connections.") + id + (is_start ? ".start" : ".end");
+  };
   while (!raw_connections.empty()) {
-    drake::log()->debug("raw count {}  cooked count {}",
-                       raw_connections.size(), cooked_connections.size());
-    size_t cooked_before_this_pass = cooked_connections.size();
+    drake::log()->debug("raw count {}  cooked count {}", raw_connections.size(),
+                        cooked_connections.size());
+    const size_t cooked_before_this_pass = cooked_connections.size();
     for (const auto& r : raw_connections) {
       std::string id = r.first;
-      const Connection* conn = MaybeMakeConnection(
-          id, r.second, xyz_catalog, &builder, left_shoulder, right_shoulder);
+      const Connection* conn =
+          MaybeMakeConnection(id, r.second, xyz_catalog, &builder,
+                              default_left_shoulder, default_right_shoulder);
       if (!conn) {
         drake::log()->debug("...skipping '{}'", id);
         continue;
       }
       drake::log()->debug("...cooked '{}'", id);
       cooked_connections[id] = conn;
-      xyz_catalog[std::string("connections.") + id + ".start"] = conn->start();
-      xyz_catalog[std::string("connections.") + id + ".end"] = conn->end();
+      // Adds the end Endpoint of the reference curve as well as the start and
+      // end lane Endpoints.
+      xyz_catalog[endpoint_ref_curve_key(id, false)] = conn->end();
+      for (int i = 0; i < conn->num_lanes(); ++i) {
+        xyz_catalog[endpoint_lane_key(id, i, true)] = conn->LaneStart(i);
+        xyz_catalog[endpoint_lane_key(id, i, false)] = conn->LaneEnd(i);
+      }
     }
     DRAKE_DEMAND(cooked_connections.size() > cooked_before_this_pass);
     for (const auto& c : cooked_connections) {
