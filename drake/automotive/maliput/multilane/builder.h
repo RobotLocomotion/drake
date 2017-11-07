@@ -98,6 +98,56 @@ class Builder {
                             const Endpoint& start, const ArcOffset& arc,
                             const EndpointZ& z_end);
 
+  /// Creates a line Connection whose ID is `id` and has `num_lanes` lanes.
+  ///
+  /// Line length is `length`.
+  ///
+  /// Connection's `start_lane_index` lane will start where `start_connection`'s
+  /// `conn_start_lane_index` lane starts when `is_start_endpoint` is true,
+  /// otherwise where `conn_start_lane_index` lane ends. Connection's
+  /// `end_lane_index` lane will end with `z_end` EndpointZ.
+  ///
+  /// `start_lane_index` must be smaller than `num_lanes` and non negative.
+  /// `end_lane_index` must be smaller than `num_lanes` and non negative.
+  /// `conn_start_lane_index` must be smaller than `start_connection`'s number
+  /// of lanes and non negative.
+  ///
+  /// `left_shoulder` and `right_shoulder` are extra lateral distances added to
+  /// the extents of the Segment after the first and last Lanes positions are
+  /// determined.
+  const Connection* Connect(const std::string& id, int num_lanes,
+                            double left_shoulder, double right_shoulder,
+                            int start_lane_index,
+                            const Connection& start_connection,
+                            int conn_start_lane_index, bool is_start_endpoint,
+                            double length, int end_lane_index,
+                            const EndpointZ& z_end);
+
+  /// Creates an arc Connection whose ID is `id` and has `num_lanes` lanes.
+  ///
+  /// `arc` specifies the shape of connection's `start_lane_index` lane.
+  ///
+  /// Connection's `start_lane_index` lane will start where `start_connection`'s
+  /// `conn_start_lane_index` lane starts when `is_start_endpoint` is true,
+  /// otherwise where `conn_start_lane_index` lane ends. Connection's
+  /// `end_lane_index` lane will end with `z_end` EndpointZ.
+  ///
+  /// `start_lane_index` must be smaller than `num_lanes` and non negative.
+  /// `end_lane_index` must be smaller than `num_lanes` and non negative.
+  /// `conn_start_lane_index` must be smaller than `start_connection`'s number
+  /// of lanes and non negative.
+  ///
+  /// `left_shoulder` and `right_shoulder` are extra lateral distances added to
+  /// the extents of the Segment after the first and last Lanes positions are
+  /// determined.
+  const Connection* Connect(const std::string& id, int num_lanes,
+                            double left_shoulder, double right_shoulder,
+                            int start_lane_index,
+                            const Connection& start_connection,
+                            int conn_start_lane_index, bool is_start_endpoint,
+                            const ArcOffset& arc, int end_lane_index,
+                            const EndpointZ& z_end);
+
   /// Sets the default branch for one end of a connection.
   ///
   /// The default branch for the `in_end` of connection `in` at Lane

@@ -74,23 +74,119 @@ Connection::Connection(const std::string& id, const Endpoint& start,
       r_max_(r0 + lane_width * (static_cast<double>(num_lanes - 1) + 0.5) +
              left_shoulder),
       radius_(arc_offset.radius()),
-      d_theta_(arc_offset.d_theta()) {
+      d_theta_(arc_offset.d_theta()),
+      theta0_(start.xy().heading() -
+              std::copysign(M_PI / 2., arc_offset.d_theta())),
+      cx_(start.xy().x() - (arc_offset.radius() * std::cos(theta0_))),
+      cy_(start.xy().y() - (arc_offset.radius() * std::sin(theta0_))) {
   DRAKE_DEMAND(num_lanes_ > 0);
   DRAKE_DEMAND(lane_width_ >= 0);
   DRAKE_DEMAND(left_shoulder_ >= 0);
   DRAKE_DEMAND(right_shoulder_ >= 0);
   DRAKE_DEMAND(r_max_ >= r_min_);
   DRAKE_DEMAND(radius_ > 0);
-  // Fills arc related parameters, computes end Endpoint and creates the
-  // RoadCurve.
-  theta0_ = start_.xy().heading() - std::copysign(M_PI / 2., d_theta_);
-  cx_ = start.xy().x() - (radius_ * std::cos(theta0_));
-  cy_ = start.xy().y() - (radius_ * std::sin(theta0_));
+  // Computes end Endpoint and RoadCurve.
   const double theta1 = theta0_ + d_theta_;
   end_ = Endpoint(
       {cx_ + radius_ * std::cos(theta1), cy_ + radius_ * std::sin(theta1),
        start_.xy().heading() + d_theta_},
       end_z);
+  road_curve_ = CreateRoadCurve();
+  // TODO(agalbachicar)  Modify Connection API to provide support for HBounds
+  //                     once RoadCurve's children are capable of computing
+  //                     singularities with it.
+  DRAKE_DEMAND(road_curve_->IsValid(r_min_, r_max_, {0., 0.}));
+}
+
+Connection::Connection(const std::string& id, const Endpoint& start,
+                       int start_lane_index, const EndpointZ& end_z,
+                       int end_lane_index, int num_lanes, double lane_width,
+                       double left_shoulder, double right_shoulder,
+                       double line_length)
+    : type_(kLine),
+      id_(id),
+      start_(start),
+      num_lanes_(num_lanes),
+      r0_(-static_cast<double>(start_lane_index) * lane_width),
+      lane_width_(lane_width),
+      left_shoulder_(left_shoulder),
+      right_shoulder_(right_shoulder),
+      r_min_(-static_cast<double>(start_lane_index) * lane_width -
+             lane_width / 2. - right_shoulder),
+      r_max_(left_shoulder +
+             lane_width *
+                 (static_cast<double>(num_lanes - start_lane_index - 1) + 0.5)),
+      line_length_(line_length) {
+  DRAKE_DEMAND(num_lanes_ > 0);
+  DRAKE_DEMAND(start_lane_index >= 0 && start_lane_index < num_lanes_);
+  DRAKE_DEMAND(end_lane_index >= 0 && end_lane_index < num_lanes_);
+  DRAKE_DEMAND(lane_width_ >= 0);
+  DRAKE_DEMAND(left_shoulder_ >= 0);
+  DRAKE_DEMAND(right_shoulder_ >= 0);
+  DRAKE_DEMAND(r_max_ >= r_min_);
+  DRAKE_DEMAND(r0_ >= r_min_ && r0_ <= r_max_);
+  DRAKE_DEMAND(line_length_ > 0.);
+  // Computes end Endpoint and RoadCurve.
+  const double offset_start_to_end_lane =
+      static_cast<double>(end_lane_index - start_lane_index) * lane_width_;
+  end_ = Endpoint(
+      {start.xy().x() + line_length_ * std::cos(start.xy().heading()),
+       start.xy().y() + line_length_ * std::sin(start.xy().heading()),
+       start.xy().heading()},
+      {end_z.z() - offset_start_to_end_lane * std::sin(end_z.theta()),
+       end_z.z_dot(), end_z.theta(), end_z.theta_dot()});
+  road_curve_ = CreateRoadCurve();
+  // TODO(agalbachicar)  Modify Connection API to provide support for HBounds
+  //                     once RoadCurve's children are capable of computing
+  //                     singularities with it.
+  DRAKE_DEMAND(road_curve_->IsValid(r_min_, r_max_, {0., 0.}));
+}
+
+Connection::Connection(const std::string& id, const Endpoint& start,
+                       int start_lane_index, const EndpointZ& end_z,
+                       int end_lane_index, int num_lanes, double lane_width,
+                       double left_shoulder, double right_shoulder,
+                       const ArcOffset& arc_offset)
+    : type_(kArc),
+      id_(id),
+      start_(start),
+      num_lanes_(num_lanes),
+      r0_(-static_cast<double>(start_lane_index) * lane_width),
+      lane_width_(lane_width),
+      left_shoulder_(left_shoulder),
+      right_shoulder_(right_shoulder),
+      r_min_(-static_cast<double>(start_lane_index) * lane_width -
+             lane_width / 2. - right_shoulder),
+      r_max_(left_shoulder +
+             lane_width *
+                 (static_cast<double>(num_lanes - start_lane_index - 1) + 0.5)),
+      radius_(arc_offset.radius()),
+      d_theta_(arc_offset.d_theta()),
+      theta0_(start.xy().heading() -
+              std::copysign(M_PI / 2., arc_offset.d_theta())),
+      cx_(start.xy().x() - (arc_offset.radius() * std::cos(theta0_))),
+      cy_(start.xy().y() - (arc_offset.radius() * std::sin(theta0_))) {
+  DRAKE_DEMAND(num_lanes_ > 0);
+  DRAKE_DEMAND(start_lane_index >= 0 && start_lane_index < num_lanes_);
+  DRAKE_DEMAND(end_lane_index >= 0 && end_lane_index < num_lanes_);
+  DRAKE_DEMAND(lane_width_ >= 0);
+  DRAKE_DEMAND(left_shoulder_ >= 0);
+  DRAKE_DEMAND(right_shoulder_ >= 0);
+  DRAKE_DEMAND(r_max_ >= r_min_);
+  DRAKE_DEMAND(r0_ >= r_min_ && r0_ <= r_max_);
+  DRAKE_DEMAND(radius_ > 0);
+  // Computes end Endpoint and RoadCurve.
+  const double theta1 = theta0_ + d_theta_;
+  const double offset_start_to_end_lane =
+      static_cast<double>(end_lane_index - start_lane_index) * lane_width_;
+  const double end_lane_radius =
+      radius_ + offset_start_to_end_lane * std::cos(end_z.theta());
+  end_ = Endpoint(
+      {cx_ + radius_ * std::cos(theta1), cy_ + radius_ * std::sin(theta1),
+       start_.xy().heading() + d_theta_},
+      {end_z.z() - offset_start_to_end_lane * std::sin(end_z.theta()),
+       end_z.z_dot() * end_lane_radius / radius_, end_z.theta(),
+       end_z.theta_dot() * end_lane_radius / radius_});
   road_curve_ = CreateRoadCurve();
   // TODO(agalbachicar)  Modify Connection API to provide support for HBounds
   //                     once RoadCurve's children are capable of computing

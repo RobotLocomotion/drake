@@ -79,7 +79,6 @@ GTEST_TEST(ArcOffsetTest, ParametrizedConstructor) {
 // Connection checks.
 class MultilaneConnectionTest : public ::testing::Test {
  protected:
-  const double kR0{2.};
   const int kNumLanes{3};
   const double kLeftShoulder{1.};
   const double kRightShoulder{1.5};
@@ -92,12 +91,13 @@ class MultilaneConnectionTest : public ::testing::Test {
   const double kVeryExact{1e-12};
 };
 
-TEST_F(MultilaneConnectionTest, ArcAccessors) {
+TEST_F(MultilaneConnectionTest, ReferenceCurveArcAccessors) {
   const std::string kId{"arc_connection"};
   const double kRadius{10. * std::sqrt(2.)};
   const double kDTheta{M_PI / 2.};
   const ArcOffset kArcOffset(kRadius, kDTheta);
   const Endpoint kEndEndpoint{{40., 30., kHeading + kDTheta}, kLowFlatZ};
+  const double kR0{2.};
 
   const Connection dut(kId, kStartEndpoint, kLowFlatZ, kNumLanes, kR0,
                        kLaneWidth, kLeftShoulder, kRightShoulder, kArcOffset);
@@ -125,11 +125,43 @@ TEST_F(MultilaneConnectionTest, ArcAccessors) {
   EXPECT_EQ(dut.lane_offset(2), kR0 + 2. * kLaneWidth);
 }
 
-TEST_F(MultilaneConnectionTest, LineAccessors) {
+TEST_F(MultilaneConnectionTest, LaneToLaneArcAccessors) {
+  const std::string kId{"arc_connection"};
+  const int kStartLane{1};
+  const int kEndLane{2};
+  const double kRadius{10. * std::sqrt(2.)};
+  const double kDTheta{M_PI / 2.};
+  const ArcOffset kArcOffset(kRadius, kDTheta);
+
+  const Connection dut(kId, kStartEndpoint, kStartLane, kLowFlatZ, kEndLane,
+                       kNumLanes, kLaneWidth, kLeftShoulder, kRightShoulder,
+                       kArcOffset);
+  EXPECT_EQ(dut.type(), Connection::Type::kArc);
+  EXPECT_EQ(dut.id(), kId);
+  EXPECT_TRUE(
+      test::IsEndpointClose(dut.start(), kStartEndpoint, kZeroTolerance));
+  EXPECT_TRUE(test::IsEndpointClose(
+      dut.end(), {{40., 30., kHeading + kDTheta}, kLowFlatZ}, kVeryExact));
+  EXPECT_EQ(dut.num_lanes(), kNumLanes);
+  EXPECT_EQ(dut.r0(), -kLaneWidth);
+  EXPECT_EQ(dut.lane_width(), kLaneWidth);
+  EXPECT_EQ(dut.left_shoulder(), kLeftShoulder);
+  EXPECT_EQ(dut.right_shoulder(), kRightShoulder);
+  EXPECT_EQ(dut.radius(), kRadius);
+  EXPECT_EQ(dut.d_theta(), kDTheta);
+  EXPECT_EQ(dut.r_min(), -3. * kLaneWidth / 2. - kRightShoulder);
+  EXPECT_EQ(dut.r_max(), 3. * kLaneWidth / 2. + kLeftShoulder);
+  EXPECT_EQ(dut.lane_offset(0), -kLaneWidth);
+  EXPECT_EQ(dut.lane_offset(1), 0.);
+  EXPECT_EQ(dut.lane_offset(2), kLaneWidth);
+}
+
+TEST_F(MultilaneConnectionTest, ReferenceCurveLineAccessors) {
   const std::string kId{"line_connection"};
   const Endpoint kEndEndpoint{{50., 0., kHeading}, kLowFlatZ};
-
   const double kLineLength{30. * std::sqrt(2.)};
+  const double kR0{2.};
+
   const Connection dut(kId, kStartEndpoint, kLowFlatZ, kNumLanes, kR0,
                        kLaneWidth, kLeftShoulder, kRightShoulder, kLineLength);
   EXPECT_EQ(dut.type(), Connection::Type::kLine);
@@ -155,6 +187,33 @@ TEST_F(MultilaneConnectionTest, LineAccessors) {
   EXPECT_EQ(dut.lane_offset(2), kR0 + 2. * kLaneWidth);
 }
 
+TEST_F(MultilaneConnectionTest, LaneToLaneLineAccessors) {
+  const std::string kId{"line_connection"};
+  const double kLineLength{30. * std::sqrt(2.)};
+  const int kStartLane{1};
+  const int kEndLane{2};
+
+  const Connection dut(kId, kStartEndpoint, kStartLane, kLowFlatZ, kEndLane,
+                       kNumLanes, kLaneWidth, kLeftShoulder, kRightShoulder,
+                       kLineLength);
+  EXPECT_EQ(dut.type(), Connection::Type::kLine);
+  EXPECT_EQ(dut.id(), kId);
+  EXPECT_TRUE(test::IsEndpointClose(dut.start(), kStartEndpoint, kVeryExact));
+  EXPECT_TRUE(test::IsEndpointClose(
+      dut.end(), {{50., 0., -M_PI / 4.}, kLowFlatZ}, kVeryExact));
+  EXPECT_EQ(dut.num_lanes(), kNumLanes);
+  EXPECT_EQ(dut.r0(), -kLaneWidth);
+  EXPECT_EQ(dut.lane_width(), kLaneWidth);
+  EXPECT_EQ(dut.left_shoulder(), kLeftShoulder);
+  EXPECT_EQ(dut.right_shoulder(), kRightShoulder);
+  EXPECT_EQ(dut.line_length(), kLineLength);
+  EXPECT_EQ(dut.r_min(), -3. * kLaneWidth / 2. - kRightShoulder);
+  EXPECT_EQ(dut.r_max(), 3. * kLaneWidth / 2. + kLeftShoulder);
+  EXPECT_EQ(dut.lane_offset(0), -kLaneWidth);
+  EXPECT_EQ(dut.lane_offset(1), 0.);
+  EXPECT_EQ(dut.lane_offset(2), kLaneWidth);
+}
+
 // Checks RoadCurve creation.
 //
 // Literals for elevation and superelevation polynomials below have been derived
@@ -169,12 +228,13 @@ TEST_F(MultilaneConnectionTest, LineAccessors) {
 // b = y_dot_0 / d_x
 // c = 3 * (y_1 - y_0) / d_x - 2 * y_dot_0 - y_dot_1
 // d = y_dot_0 + y_dot_1 - 2 * (y_1 - y_0)
-TEST_F(MultilaneConnectionTest, ArcRoadCurveValidation) {
+TEST_F(MultilaneConnectionTest, ReferenceCurveArcRoadCurveValidation) {
   const std::string kId{"arc_connection"};
   const double kRadius{10. * std::sqrt(2.)};
   const double kDTheta{M_PI / 2.};
   const ArcOffset kArcOffset(kRadius, kDTheta);
   const Endpoint kEndEndpoint{{40., 30., kHeading + kDTheta}, kLowFlatZ};
+  const double kR0{2.};
 
   const Connection flat_dut(kId, kStartEndpoint, kLowFlatZ, kNumLanes, kR0,
                             kLaneWidth, kLeftShoulder, kRightShoulder,
@@ -253,10 +313,95 @@ TEST_F(MultilaneConnectionTest, ArcRoadCurveValidation) {
               kVeryExact);
 }
 
-TEST_F(MultilaneConnectionTest, LineRoadCurveValidation) {
+TEST_F(MultilaneConnectionTest, LaneToLaneArcRoadCurveValidation) {
+  const std::string kId{"arc_connection"};
+  const int kStartLane{1};
+  const int kEndLane{2};
+  const double kRadius{10. * std::sqrt(2.)};
+  const double kDTheta{M_PI / 2.};
+  const ArcOffset kArcOffset(kRadius, kDTheta);
+
+  const Connection flat_dut(kId, kStartEndpoint, kStartLane, kLowFlatZ,
+                            kEndLane, kNumLanes, kLaneWidth, kLeftShoulder,
+                            kRightShoulder, kArcOffset);
+  std::unique_ptr<RoadCurve> road_curve = flat_dut.CreateRoadCurve();
+  EXPECT_NE(dynamic_cast<ArcRoadCurve*>(road_curve.get()), nullptr);
+
+  // Checks that the road curve starts and ends at given endpoints.
+  const Vector3<double> flat_origin = road_curve->W_of_prh(0., 0., 0.);
+  EXPECT_TRUE(CompareMatrices(
+      Vector3<double>(flat_dut.start().xy().x(), flat_dut.start().xy().y(),
+                      flat_dut.start().z().z()),
+      flat_origin, kVeryExact));
+  EXPECT_TRUE(CompareMatrices(
+      Vector3<double>(kStartXy.x(), kStartXy.y(), kLowFlatZ.z()), flat_origin,
+      kVeryExact));
+  const Vector3<double> flat_end = road_curve->W_of_prh(1., 0., 0.);
+  EXPECT_TRUE(CompareMatrices(
+      Vector3<double>(flat_dut.end().xy().x(), flat_dut.end().xy().y(),
+                      flat_dut.end().z().z()),
+      flat_end, kVeryExact));
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(40., 30., kLowFlatZ.z()),
+                              flat_end, kVeryExact));
+
+  // Checks that elevation and superelevation polynomials are correctly built
+  // for the trivial case of a flat dut.
+  EXPECT_EQ(road_curve->elevation().a(), 0.);
+  EXPECT_EQ(road_curve->elevation().b(), 0.);
+  EXPECT_EQ(road_curve->elevation().c(), 0.);
+  EXPECT_EQ(road_curve->elevation().d(), 0.);
+  EXPECT_EQ(road_curve->superelevation().a(), 0.);
+  EXPECT_EQ(road_curve->superelevation().b(), 0.);
+  EXPECT_EQ(road_curve->superelevation().c(), 0.);
+  EXPECT_EQ(road_curve->superelevation().d(), 0.);
+
+  // Creates a new complex dut with cubic elevation and superelevation.
+  const EndpointZ kEndElevatedEndpointZ{5., 1., M_PI / 6., 1.};
+  const Connection complex_dut(
+      kId, kStartEndpoint, kStartLane, kEndElevatedEndpointZ, kEndLane,
+      kNumLanes, kLaneWidth, kLeftShoulder, kRightShoulder, kArcOffset);
+  std::unique_ptr<RoadCurve> complex_road_curve = complex_dut.CreateRoadCurve();
+
+  // Checks that the road curve starts and ends at given endpoints.
+  const Vector3<double> complex_origin =
+      complex_road_curve->W_of_prh(0., 0., 0.);
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(complex_dut.start().xy().x(),
+                                              complex_dut.start().xy().y(),
+                                              complex_dut.start().z().z()),
+                              complex_origin, kVeryExact));
+  EXPECT_TRUE(CompareMatrices(
+      Vector3<double>(kStartXy.x(), kStartXy.y(), kLowFlatZ.z()),
+      complex_origin, kVeryExact));
+  const Vector3<double> complex_end = complex_road_curve->W_of_prh(1., 0., 0.);
+  EXPECT_TRUE(CompareMatrices(
+      Vector3<double>(complex_dut.end().xy().x(), complex_dut.end().xy().y(),
+                      complex_dut.end().z().z()),
+      complex_end, kVeryExact));
+  EXPECT_TRUE(CompareMatrices(
+      Vector3<double>(40., 30.,
+                      kEndElevatedEndpointZ.z() -
+                          kLaneWidth * std::sin(kEndElevatedEndpointZ.theta())),
+      complex_end, kVeryExact));
+  EXPECT_NEAR(complex_road_curve->elevation().a(), 0., kVeryExact);
+  EXPECT_NEAR(complex_road_curve->elevation().b(), 0., kVeryExact);
+  EXPECT_NEAR(complex_road_curve->elevation().c(), -0.582284697444895,
+              kVeryExact);
+  EXPECT_NEAR(complex_road_curve->elevation().d(), 0.762347960676317,
+              kVeryExact);
+  EXPECT_NEAR(complex_road_curve->superelevation().a(), 0., kVeryExact);
+  EXPECT_NEAR(complex_road_curve->superelevation().b(), 0., kVeryExact);
+  EXPECT_NEAR(complex_road_curve->superelevation().c(), -1.05176380902050,
+              kVeryExact);
+  EXPECT_NEAR(complex_road_curve->superelevation().d(), 1.07533403506006,
+              kVeryExact);
+}
+
+TEST_F(MultilaneConnectionTest, ReferenceCurveLineRoadCurveValidation) {
   const std::string kId{"line_connection"};
   const Endpoint kEndEndpoint{{50., 0., kHeading}, kLowFlatZ};
   const double kLineLength{30. * std::sqrt(2.)};
+  const double kR0{2.};
+
   const Connection flat_dut(kId, kStartEndpoint, kLowFlatZ, kNumLanes, kR0,
                             kLaneWidth, kLeftShoulder, kRightShoulder,
                             kLineLength);
@@ -336,6 +481,88 @@ TEST_F(MultilaneConnectionTest, LineRoadCurveValidation) {
               kVeryExact);
 }
 
+TEST_F(MultilaneConnectionTest, LaneToLaneLineRoadCurveValidation) {
+  const std::string kId{"line_connection"};
+  const double kLineLength{30. * std::sqrt(2.)};
+  const int kStartLane{1};
+  const int kEndLane{2};
+
+  const Connection flat_dut(kId, kStartEndpoint, kStartLane, kLowFlatZ,
+                            kEndLane, kNumLanes, kLaneWidth, kLeftShoulder,
+                            kRightShoulder, kLineLength);
+  std::unique_ptr<RoadCurve> road_curve = flat_dut.CreateRoadCurve();
+  EXPECT_NE(dynamic_cast<LineRoadCurve*>(road_curve.get()), nullptr);
+
+  // Checks that the road curve starts and ends at given endpoints.
+  const Vector3<double> flat_origin = road_curve->W_of_prh(0., 0., 0.);
+  EXPECT_TRUE(CompareMatrices(
+      Vector3<double>(flat_dut.start().xy().x(), flat_dut.start().xy().y(),
+                      flat_dut.start().z().z()),
+      flat_origin, kVeryExact));
+  EXPECT_TRUE(CompareMatrices(
+      Vector3<double>(kStartXy.x(), kStartXy.y(), kLowFlatZ.z()), flat_origin,
+      kVeryExact));
+  const Vector3<double> flat_end = road_curve->W_of_prh(1., 0., 0.);
+  EXPECT_TRUE(CompareMatrices(
+      Vector3<double>(flat_dut.end().xy().x(), flat_dut.end().xy().y(),
+                      flat_dut.end().z().z()),
+      flat_end, kVeryExact));
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(50., 0., kLowFlatZ.z()), flat_end,
+                              kVeryExact));
+
+  // Checks that elevation and superelevation polynomials are correctly built
+  // for the trivial case of a flat dut.
+  EXPECT_EQ(road_curve->elevation().a(), 0.);
+  EXPECT_EQ(road_curve->elevation().b(), 0.);
+  EXPECT_EQ(road_curve->elevation().c(), 0.);
+  EXPECT_EQ(road_curve->elevation().d(), 0.);
+  EXPECT_EQ(road_curve->superelevation().a(), 0.);
+  EXPECT_EQ(road_curve->superelevation().b(), 0.);
+  EXPECT_EQ(road_curve->superelevation().c(), 0.);
+  EXPECT_EQ(road_curve->superelevation().d(), 0.);
+
+  // Creates a new complex dut with cubic elevation and superelevation.
+  const EndpointZ kEndElevatedEndpointZ{5., 1., M_PI / 6., 1.};
+  const Connection complex_dut(
+      kId, kStartEndpoint, kStartLane, kEndElevatedEndpointZ, kEndLane,
+      kNumLanes, kLaneWidth, kLeftShoulder, kRightShoulder, kLineLength);
+  std::unique_ptr<RoadCurve> complex_road_curve = complex_dut.CreateRoadCurve();
+
+  // Checks that the road curve starts and ends at given endpoints.
+  const Vector3<double> complex_origin =
+      complex_road_curve->W_of_prh(0., 0., 0.);
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(complex_dut.start().xy().x(),
+                                              complex_dut.start().xy().y(),
+                                              complex_dut.start().z().z()),
+                              complex_origin, kVeryExact));
+  EXPECT_TRUE(CompareMatrices(
+      Vector3<double>(kStartXy.x(), kStartXy.y(), kLowFlatZ.z()),
+      complex_origin, kVeryExact));
+  const Vector3<double> complex_end = complex_road_curve->W_of_prh(1., 0., 0.);
+  EXPECT_TRUE(CompareMatrices(
+      Vector3<double>(complex_dut.end().xy().x(), complex_dut.end().xy().y(),
+                      complex_dut.end().z().z()),
+      complex_end, kVeryExact));
+  EXPECT_TRUE(CompareMatrices(
+      Vector3<double>(50., 0.,
+                      kEndElevatedEndpointZ.z() -
+                          kLaneWidth * std::sin(kEndElevatedEndpointZ.theta())),
+      complex_end, kVeryExact));
+
+  EXPECT_NEAR(complex_road_curve->elevation().a(), 0., kVeryExact);
+  EXPECT_NEAR(complex_road_curve->elevation().b(), 0., kVeryExact);
+  EXPECT_NEAR(complex_road_curve->elevation().c(), -0.717157287525381,
+              kVeryExact);
+  EXPECT_NEAR(complex_road_curve->elevation().d(), 0.811438191683587,
+              kVeryExact);
+  EXPECT_NEAR(complex_road_curve->superelevation().a(), 0., kVeryExact);
+  EXPECT_NEAR(complex_road_curve->superelevation().b(), 0., kVeryExact);
+  EXPECT_NEAR(complex_road_curve->superelevation().c(), -0.962975975515347,
+              kVeryExact);
+  EXPECT_NEAR(complex_road_curve->superelevation().d(), 0.975317317010231,
+              kVeryExact);
+}
+
 // Lane Endpoints with different EndpointZ. Those are selected to cover
 // different combinations of elevation and superelevation polynomials.
 
@@ -378,6 +605,15 @@ class MultilaneConnectionEndpointZTest
   const double kVeryExact{1e-12};
 };
 
+namespace {
+// Wraps angles in [-π, π) range.
+double wrap(double theta) {
+  double theta_new = std::fmod(theta + M_PI, 2. * M_PI);
+  if (theta_new < 0.) theta_new += 2. * M_PI;
+  return theta_new - M_PI;
+}
+}
+
 TEST_P(MultilaneConnectionEndpointZTest, ArcLaneEndpoints) {
   const std::string kId{"arc_connection"};
   const double kCenterX{30.};
@@ -388,13 +624,6 @@ TEST_P(MultilaneConnectionEndpointZTest, ArcLaneEndpoints) {
   const Connection dut(kId, start_endpoint, end_z, num_lanes, r0, kLaneWidth,
                        kLeftShoulder, kRightShoulder, kArcOffset);
   const double kTheta0{kHeading - M_PI / 2.};
-
-  // Wraps angles in [-π, π) range.
-  auto wrap = [](double theta) {
-    double theta_new = std::fmod(theta + M_PI, 2. * M_PI);
-    if (theta_new < 0.) theta_new += 2. * M_PI;
-    return theta_new - M_PI;
-  };
 
   for (int i = 0; i < num_lanes; i++) {
     // Start endpoints.
@@ -445,6 +674,94 @@ TEST_P(MultilaneConnectionEndpointZTest, LineLaneEndpoints) {
         {kStartXy.x() - offset * kNormalDirection.x() + kDirection.x(),
          kStartXy.y() - offset * kNormalDirection.y() + kDirection.y(),
          kHeading}, end_z};
+    EXPECT_TRUE(test::IsEndpointClose(dut.LaneEnd(i), lane_end, kVeryExact));
+  }
+}
+
+TEST_P(MultilaneConnectionEndpointZTest, LineLaneToLaneEndpoints) {
+  const std::string kId{"line_connection"};
+  const double kLineLength{25. * std::sqrt(2.)};
+  const int kStartLane{num_lanes - 1};
+  const int kEndLane{0};
+  const Connection dut(kId, start_endpoint, kStartLane, end_z, kEndLane,
+                       num_lanes, kLaneWidth, kLeftShoulder, kRightShoulder,
+                       kLineLength);
+  const Vector2<double> kDirection{45. - kStartXy.x(), 5. - kStartXy.y()};
+  const Vector2<double> kNormalDirection =
+      Vector2<double>(kDirection.y(), -kDirection.x()).normalized();
+
+  for (int i = 0; i < num_lanes; i++) {
+    // Start endpoints.
+    const double start_offset = static_cast<double>(i - kStartLane) *
+                                kLaneWidth * std::cos(start_z.theta());
+    const Endpoint lane_start{
+        {kStartXy.x() - start_offset * kNormalDirection.x(),
+         kStartXy.y() - start_offset * kNormalDirection.y(), kHeading},
+        start_z};
+    EXPECT_TRUE(
+        test::IsEndpointClose(dut.LaneStart(i), lane_start, kVeryExact));
+    // End endpoints.
+    const double end_offset = static_cast<double>(i - kStartLane) * kLaneWidth *
+                              std::cos(end_z.theta());
+    const Endpoint lane_end{
+        {kStartXy.x() - end_offset * kNormalDirection.x() + kDirection.x(),
+         kStartXy.y() - end_offset * kNormalDirection.y() + kDirection.y(),
+         kHeading},
+        end_z};
+    EXPECT_TRUE(test::IsEndpointClose(dut.LaneEnd(i), lane_end, kVeryExact));
+  }
+}
+
+TEST_P(MultilaneConnectionEndpointZTest, ArcLaneToLaneEndpoints) {
+  const std::string kId{"arc_connection"};
+  const double kCenterX{30.};
+  const double kCenterY{40.};
+  const int kStartLane{num_lanes - 1};
+  const int kEndLane{0};
+  const double kRadius{10. * std::sqrt(2.)};
+  const double kDTheta{M_PI / 2.};
+  const ArcOffset kArcOffset(kRadius, kDTheta);
+  const Connection dut(kId, start_endpoint, kStartLane, end_z, kEndLane,
+                       num_lanes, kLaneWidth, kLeftShoulder, kRightShoulder,
+                       kArcOffset);
+  const double kTheta0{kHeading - M_PI / 2.};
+
+  // Computes the radius of the kEndLane at the end Endpoint and z and theta
+  // derivatives.
+  const double reference_end_radius =
+      kRadius +
+      (static_cast<double>(kEndLane - kStartLane) * kLaneWidth) *
+          std::cos(end_z.theta());
+  const double reference_end_z_dot =
+      end_z.z_dot() * reference_end_radius / kRadius;
+  const double reference_end_theta_dot =
+      end_z.theta_dot() * reference_end_radius / kRadius;
+
+  for (int i = 0; i < num_lanes; i++) {
+    // Start endpoints.
+    const double start_radius =
+        kRadius -
+        (static_cast<double>(i - kStartLane) * kLaneWidth) *
+            std::cos(start_z.theta());
+    const Endpoint lane_start{
+        {kCenterX + start_radius * std::cos(kTheta0),
+         kCenterY + start_radius * std::sin(kTheta0),
+         wrap(kTheta0 + M_PI / 2.)},
+        {start_z.z(), start_z.z_dot() * kRadius / start_radius, start_z.theta(),
+         start_z.theta_dot() * kRadius / start_radius}};
+    EXPECT_TRUE(
+        test::IsEndpointClose(dut.LaneStart(i), lane_start, kVeryExact));
+    // End endpoints.
+    const double end_radius =
+        kRadius -
+        (static_cast<double>(i - kStartLane) * kLaneWidth) *
+            std::cos(end_z.theta());
+    const Endpoint lane_end{
+        {kCenterX + end_radius * std::cos(kTheta0 + kDTheta),
+         kCenterY + end_radius * std::sin(kTheta0 + kDTheta),
+         wrap(kTheta0 + kDTheta + M_PI / 2.)},
+        {end_z.z(), reference_end_z_dot * kRadius / end_radius, end_z.theta(),
+         reference_end_theta_dot * kRadius / end_radius}};
     EXPECT_TRUE(test::IsEndpointClose(dut.LaneEnd(i), lane_end, kVeryExact));
   }
 }

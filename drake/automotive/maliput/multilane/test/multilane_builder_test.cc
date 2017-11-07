@@ -405,7 +405,9 @@ TEST_F(MultilaneBuilderPrimitivesTest, MultilaneArcSegment) {
 //                              x x x
 //                              0 1 2
 // </pre>
-GTEST_TEST(MultilaneBuilderTest, MultilaneCross) {
+
+class MultilaneBuilderCrossTest : public ::testing::Test {
+ protected:
   const double kLaneWidth{4.};
   const double kLeftShoulder{1.};
   const double kRightShoulder{1.};
@@ -415,42 +417,6 @@ GTEST_TEST(MultilaneBuilderTest, MultilaneCross) {
   const int kTwoLanes{2};
   const int kThreeLanes{3};
   const EndpointZ kLowFlatZ{0., 0., 0., 0.};
-
-  const Endpoint endpoint_a{{0., 0., 0.}, kLowFlatZ};
-  const Endpoint endpoint_b{{50., 0., 0.}, kLowFlatZ};
-  const Endpoint endpoint_c{{70., 0., 0.}, kLowFlatZ};
-  const Endpoint endpoint_d{{50., 50., -M_PI / 2.}, kLowFlatZ};
-  const Endpoint endpoint_e{{50., 14., -M_PI / 2.}, kLowFlatZ};
-  const Endpoint endpoint_f{{60., 14., -M_PI / 2.}, kLowFlatZ};
-  const Endpoint endpoint_g{{50., -6., -M_PI / 2.}, kLowFlatZ};
-
-  Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance);
-  // Creates connections.
-  b.Connect("c1", kThreeLanes, 0, kLeftShoulder, kRightShoulder, endpoint_a,
-            50., kLowFlatZ);
-  auto c2 = b.Connect("c2", kTwoLanes, 4., kLeftShoulder, kRightShoulder,
-                      endpoint_b, 20., kLowFlatZ);
-  b.Connect("c3", kTwoLanes, 4., kLeftShoulder, kRightShoulder, endpoint_c, 30.,
-            kLowFlatZ);
-  auto c4 = b.Connect("c4", kThreeLanes, 0., kLeftShoulder, kRightShoulder,
-                      endpoint_b, ArcOffset(6., -M_PI / 2.), kLowFlatZ);
-  b.Connect("c5", kTwoLanes, 10., kLeftShoulder, kRightShoulder, endpoint_d,
-            36., kLowFlatZ);
-  auto c6 = b.Connect("c6", kTwoLanes, 0., kLeftShoulder, kRightShoulder,
-                      endpoint_f, ArcOffset(10., M_PI / 2.), kLowFlatZ);
-  auto c7 = b.Connect("c7", kTwoLanes, 10., kLeftShoulder, kRightShoulder,
-                      endpoint_e, 20., kLowFlatZ);
-  b.Connect("c8", kThreeLanes, 6., kLeftShoulder, kRightShoulder, endpoint_g,
-            44., kLowFlatZ);
-  // Creates the crossing junction.
-  std::vector<const Connection*> connections{c2, c4, c6, c7};
-  b.MakeGroup("cross", connections);
-
-  std::unique_ptr<const api::RoadGeometry> rg =
-      b.Build(api::RoadGeometryId{"multilane-arc-segment"});
-
-  EXPECT_EQ(rg->id(), api::RoadGeometryId("multilane-arc-segment"));
-
   // Junction ID --> Segment IDs.
   const std::map<std::string, std::vector<std::string>> junction_truth_map{
       {"j:c1", {"s:c1"}},
@@ -498,8 +464,149 @@ GTEST_TEST(MultilaneBuilderTest, MultilaneCross) {
       {"l:c8_0", {{"l:c4_0"}, {"l:c8_0"}, {"l:c8_0"}, {}}},
       {"l:c8_1", {{"l:c4_1", "l:c7_0"}, {"l:c8_1"}, {"l:c8_1"}, {}}},
       {"l:c8_2", {{"l:c4_2", "l:c7_1"}, {"l:c8_2"}, {"l:c8_2"}, {}}}};
+};
+
+// Constructs the RoadGeometry using the RoadCurve related API. Afterwards,
+// checks created entities.
+TEST_F(MultilaneBuilderCrossTest, ReferenceCurveMultilaneCross) {
+  const Endpoint endpoint_a{{0., 0., 0.}, kLowFlatZ};
+  const Endpoint endpoint_b{{50., 0., 0.}, kLowFlatZ};
+  const Endpoint endpoint_c{{70., 0., 0.}, kLowFlatZ};
+  const Endpoint endpoint_d{{50., 50., -M_PI / 2.}, kLowFlatZ};
+  const Endpoint endpoint_e{{50., 14., -M_PI / 2.}, kLowFlatZ};
+  const Endpoint endpoint_f{{60., 14., -M_PI / 2.}, kLowFlatZ};
+  const Endpoint endpoint_g{{50., -6., -M_PI / 2.}, kLowFlatZ};
+
+  Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance);
+  // Creates connections.
+  b.Connect("c1", kThreeLanes, 0, kLeftShoulder, kRightShoulder, endpoint_a,
+            50., kLowFlatZ);
+  auto c2 = b.Connect("c2", kTwoLanes, 4., kLeftShoulder, kRightShoulder,
+                      endpoint_b, 20., kLowFlatZ);
+  b.Connect("c3", kTwoLanes, 4., kLeftShoulder, kRightShoulder, endpoint_c, 30.,
+            kLowFlatZ);
+  auto c4 = b.Connect("c4", kThreeLanes, 0., kLeftShoulder, kRightShoulder,
+                      endpoint_b, ArcOffset(6., -M_PI / 2.), kLowFlatZ);
+  b.Connect("c5", kTwoLanes, 10., kLeftShoulder, kRightShoulder, endpoint_d,
+            36., kLowFlatZ);
+  auto c6 = b.Connect("c6", kTwoLanes, 0., kLeftShoulder, kRightShoulder,
+                      endpoint_f, ArcOffset(10., M_PI / 2.), kLowFlatZ);
+  auto c7 = b.Connect("c7", kTwoLanes, 10., kLeftShoulder, kRightShoulder,
+                      endpoint_e, 20., kLowFlatZ);
+  b.Connect("c8", kThreeLanes, 6., kLeftShoulder, kRightShoulder, endpoint_g,
+            44., kLowFlatZ);
+  // Creates the crossing junction.
+  std::vector<const Connection*> connections{c2, c4, c6, c7};
+  b.MakeGroup("cross", connections);
+
+  std::unique_ptr<const api::RoadGeometry> rg =
+      b.Build(api::RoadGeometryId{"multilane-cross"});
+
+  EXPECT_EQ(rg->id(), api::RoadGeometryId("multilane-cross"));
 
   EXPECT_EQ(rg->num_junctions(), junction_truth_map.size());
+  for (int i = 0; i < rg->num_junctions(); i++) {
+    // Checks each Junction.
+    const api::Junction* const junction = rg->junction(i);
+    EXPECT_NE(junction_truth_map.find(junction->id().string()),
+              junction_truth_map.end());
+    const std::vector<std::string>& segment_ids =
+        junction_truth_map.at(junction->id().string());
+    EXPECT_EQ(segment_ids.size(), junction->num_segments());
+    for (int j = 0; j < junction->num_segments(); j++) {
+      // Checks each Segment.
+      const api::Segment* const segment = junction->segment(j);
+      EXPECT_EQ(segment->id().string(), segment_ids[j]);
+      EXPECT_NE(segment_truth_map.find(segment->id().string()),
+                segment_truth_map.end());
+      const std::vector<std::string>& lane_ids =
+          segment_truth_map.at(segment->id().string());
+      EXPECT_EQ(segment->num_lanes(), lane_ids.size());
+      for (int k = 0; k < segment->num_lanes(); k++) {
+        // Checks each Lane.
+        const api::Lane* const lane = segment->lane(k);
+        EXPECT_NE(lane_truth_map.find(lane->id().string()),
+                  lane_truth_map.end());
+        const BranchPointLaneIds& bp_lane_ids =
+            lane_truth_map.at(lane->id().string());
+        const api::BranchPoint* const start_bp =
+            lane->GetBranchPoint(api::LaneEnd::kStart);
+        EXPECT_EQ(start_bp->GetASide()->size(),
+                  bp_lane_ids.start_a_side.size());
+        for (int lane_index = 0; lane_index < start_bp->GetASide()->size();
+             lane_index++) {
+          EXPECT_EQ(start_bp->GetASide()->get(lane_index).lane->id().string(),
+                    bp_lane_ids.start_a_side[lane_index]);
+        }
+        EXPECT_EQ(start_bp->GetBSide()->size(),
+                  bp_lane_ids.start_b_side.size());
+        for (int lane_index = 0; lane_index < start_bp->GetBSide()->size();
+             lane_index++) {
+          EXPECT_EQ(start_bp->GetBSide()->get(lane_index).lane->id().string(),
+                    bp_lane_ids.start_b_side[lane_index]);
+        }
+        const api::BranchPoint* const end_bp =
+            lane->GetBranchPoint(api::LaneEnd::kFinish);
+        EXPECT_EQ(end_bp->GetASide()->size(), bp_lane_ids.finish_a_side.size());
+        for (int lane_index = 0; lane_index < end_bp->GetASide()->size();
+             lane_index++) {
+          EXPECT_EQ(end_bp->GetASide()->get(lane_index).lane->id().string(),
+                    bp_lane_ids.finish_a_side[lane_index]);
+        }
+        EXPECT_EQ(end_bp->GetBSide()->size(), bp_lane_ids.finish_b_side.size());
+        for (int lane_index = 0; lane_index < end_bp->GetBSide()->size();
+             lane_index++) {
+          EXPECT_EQ(end_bp->GetBSide()->get(lane_index).lane->id().string(),
+                    bp_lane_ids.finish_b_side[lane_index]);
+        }
+      }
+    }
+  }
+  EXPECT_EQ(rg->num_branch_points(), 20);
+}
+
+// Constructs the RoadGeometry using the LaneToLane related API. Afterwards,
+// checks created entities.
+TEST_F(MultilaneBuilderCrossTest, LaneToLaneMultilaneCross) {
+  const Endpoint endpoint_a{{0., 0., 0.}, kLowFlatZ};
+  const Endpoint endpoint_d{{50., 50., -M_PI / 2.}, kLowFlatZ};
+  const int kFirstLaneId{0};
+  const int kSecondLaneId{1};
+  const int kThirdLaneId{2};
+  const bool kIsStartEndpoint{true};
+  const bool kIsEndEndpoint{!kIsStartEndpoint};
+
+  Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance);
+  // Creates connections.
+  auto c1 = b.Connect("c1", kThreeLanes, 0, kLeftShoulder, kRightShoulder,
+                      endpoint_a, 50., kLowFlatZ);
+  auto c2 = b.Connect("c2", kTwoLanes, kLeftShoulder, kRightShoulder,
+                      kFirstLaneId, *c1, kSecondLaneId, kIsEndEndpoint, 20.,
+                      kSecondLaneId, kLowFlatZ);
+  b.Connect("c3", kTwoLanes, kLeftShoulder, kRightShoulder, kSecondLaneId, *c2,
+            kSecondLaneId, kIsEndEndpoint, 30., kFirstLaneId, kLowFlatZ);
+  auto c4 = b.Connect("c4", kThreeLanes, kLeftShoulder, kRightShoulder,
+                      kSecondLaneId, *c1, kSecondLaneId, kIsEndEndpoint,
+                      ArcOffset(10., -M_PI / 2.), kFirstLaneId, kLowFlatZ);
+  auto c5 = b.Connect("c5", kTwoLanes, 10., kLeftShoulder, kRightShoulder,
+                      endpoint_d, 36., kLowFlatZ);
+  auto c6 = b.Connect("c6", kTwoLanes, kLeftShoulder, kRightShoulder,
+                      kFirstLaneId, *c5, kFirstLaneId, kIsEndEndpoint,
+                      ArcOffset(10., M_PI / 2.), kFirstLaneId, kLowFlatZ);
+  auto c7 = b.Connect("c7", kTwoLanes, kLeftShoulder, kRightShoulder,
+                      kSecondLaneId, *c6, kSecondLaneId, kIsStartEndpoint, 20.,
+                      kSecondLaneId, kLowFlatZ);
+  b.Connect("c8", kThreeLanes, kLeftShoulder, kRightShoulder, kThirdLaneId, *c7,
+            kSecondLaneId, kIsEndEndpoint, 44., kSecondLaneId, kLowFlatZ);
+  // Creates the crossing junction.
+  std::vector<const Connection*> connections{c2, c4, c6, c7};
+  b.MakeGroup("cross", connections);
+
+  std::unique_ptr<const api::RoadGeometry> rg =
+      b.Build(api::RoadGeometryId{"multilane-cross"});
+
+  EXPECT_EQ(rg->id(), api::RoadGeometryId("multilane-cross"));
+
   for (int i = 0; i < rg->num_junctions(); i++) {
     // Checks each Junction.
     const api::Junction* const junction = rg->junction(i);

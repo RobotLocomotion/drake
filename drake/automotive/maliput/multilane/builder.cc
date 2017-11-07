@@ -48,6 +48,50 @@ const Connection* Builder::Connect(const std::string& id, int num_lanes,
   return connections_.back().get();
 }
 
+const Connection* Builder::Connect(const std::string& id, int num_lanes,
+                                   double left_shoulder, double right_shoulder,
+                                   int start_lane_index,
+                                   const Connection& start_connection,
+                                   int conn_start_lane_index,
+                                   bool is_start_endpoint, double length,
+                                   int end_lane_index, const EndpointZ& z_end) {
+  DRAKE_DEMAND(start_lane_index < num_lanes && start_lane_index >= 0);
+  DRAKE_DEMAND(end_lane_index < num_lanes && start_lane_index >= 0);
+  DRAKE_DEMAND(conn_start_lane_index < start_connection.num_lanes() &&
+               conn_start_lane_index >= 0);
+  // Gets the lane Endpoint of lane start_lane_index.
+  const Endpoint start_lane_endpoint =
+      is_start_endpoint ? start_connection.LaneStart(conn_start_lane_index)
+                        : start_connection.LaneEnd(conn_start_lane_index);
+  // Creates the connection.
+  connections_.push_back(std::make_unique<Connection>(
+      id, start_lane_endpoint, start_lane_index, z_end, end_lane_index,
+      num_lanes, lane_width_, left_shoulder, right_shoulder, length));
+  return connections_.back().get();
+}
+
+const Connection* Builder::Connect(const std::string& id, int num_lanes,
+                                   double left_shoulder, double right_shoulder,
+                                   int start_lane_index,
+                                   const Connection& start_connection,
+                                   int conn_start_lane_index,
+                                   bool is_start_endpoint, const ArcOffset& arc,
+                                   int end_lane_index, const EndpointZ& z_end) {
+  DRAKE_DEMAND(start_lane_index < num_lanes && start_lane_index >= 0);
+  DRAKE_DEMAND(end_lane_index < num_lanes);
+  DRAKE_DEMAND(conn_start_lane_index < start_connection.num_lanes() &&
+               conn_start_lane_index >= 0);
+  // Gets the lane Endpoint of lane start_lane_index.
+  const Endpoint start_lane_endpoint =
+      is_start_endpoint ? start_connection.LaneStart(conn_start_lane_index)
+                        : start_connection.LaneEnd(conn_start_lane_index);
+  // Creates the connection.
+  connections_.push_back(std::make_unique<Connection>(
+      id, start_lane_endpoint, start_lane_index, z_end, end_lane_index,
+      num_lanes, lane_width_, left_shoulder, right_shoulder, arc));
+  return connections_.back().get();
+}
+
 void Builder::SetDefaultBranch(const Connection* in, int in_lane_index,
                                const api::LaneEnd::Which in_end,
                                const Connection* out, int out_lane_index,
