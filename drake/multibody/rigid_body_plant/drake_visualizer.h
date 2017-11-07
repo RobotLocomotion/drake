@@ -109,43 +109,13 @@ class DrakeVisualizer : public LeafSystem<double> {
       const PiecewisePolynomial<double>& input_trajectory) const;
 
  private:
-  // Returns true if initialization phase has been completed.
-  bool is_load_message_sent(const Context<double>& context) const {
-    return context.get_discrete_state(0)->GetAtIndex(0) > 0;
-  }
+  // TODO(siyuan): Split DoPublish into individual callbacks for different
+  // events. Since the desired behaviors for different triggers are exclusive.
 
-  // Sets the discrete state to @p flag.
-  void set_is_load_message_sent(DiscreteValues<double>* state,
-                                bool flag) const {
-    if (flag)
-      state->get_mutable_vector(0)->SetAtIndex(0, 1);
-    else
-      state->get_mutable_vector(0)->SetAtIndex(0, 0);
-  }
-
-  // Set the default to "initialization phase has not been completed."
-  void SetDefaultState(const Context<double>&, State<double>* state)
-      const override {
-    set_is_load_message_sent(state->get_mutable_discrete_state(), false);
-  }
-
-  // If initialization has not been completed, schedule a DiscreteStateUpdate
-  // shortly to perform the initialization. Otherwise, returns
-  // LeafSystem<double>::DoCalcNextUpdateTime(context, events)
-  void DoCalcNextUpdateTime(const Context<double>& context,
-                            CompositeEventCollection<double>* events,
-                            double* time) const override;
-
-  // Sets the initialization flag to true, and calls PublishLoadRobot().
-  void DoCalcDiscreteVariableUpdates(
-      const Context<double>& context,
-      const std::vector<const DiscreteUpdateEvent<double>*>&,
-      DiscreteValues<double>* discrete_state) const override;
-
-  // Publishes a draw message if initialization is completed. Otherwise, it
-  // emits a warning and return.
+  // If @p events has only 1 kInitialization trigger typed event, calls
+  // PublishLoadRobot. Otherwise it publishes a draw message.
   void DoPublish(const systems::Context<double>& context,
-                 const std::vector<const PublishEvent<double>*>&)
+                 const std::vector<const PublishEvent<double>*>& events)
                  const override;
 
   // Publishes a lcmt_viewer_load_robot message containing a description

@@ -4,7 +4,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/systems/analysis/test/my_spring_mass_system.h"
+#include "drake/systems/analysis/test_utilities/my_spring_mass_system.h"
 
 namespace drake {
 namespace systems {
@@ -167,7 +167,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
 
   // Get the final position.
   const double x_final =
-      context->get_continuous_state()->get_vector().GetAtIndex(0);
+      context->get_continuous_state().get_vector().GetAtIndex(0);
 
   // Check the solution.
   EXPECT_NEAR(c1 * std::cos(omega * t) + c2 * std::sin(omega * t), x_final,

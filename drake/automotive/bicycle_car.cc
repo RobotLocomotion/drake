@@ -103,10 +103,9 @@ void BicycleCar<T>::DoCalcTimeDerivatives(
   DRAKE_ASSERT(force != nullptr);
 
   DRAKE_ASSERT(derivatives != nullptr);
-  systems::VectorBase<T>* derivative_vector = derivatives->get_mutable_vector();
-  DRAKE_ASSERT(derivative_vector != nullptr);
+  systems::VectorBase<T>& derivative_vector = derivatives->get_mutable_vector();
   BicycleCarState<T>* const state_derivatives =
-      dynamic_cast<BicycleCarState<T>*>(derivative_vector);
+      dynamic_cast<BicycleCarState<T>*>(&derivative_vector);
   DRAKE_ASSERT(state_derivatives != nullptr);
 
   ImplCalcTimeDerivatives(params, *state, *steering, *force, state_derivatives);

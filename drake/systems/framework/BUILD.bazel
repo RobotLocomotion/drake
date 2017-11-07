@@ -1,5 +1,4 @@
 # -*- python -*-
-# This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
 load("//tools/lint:lint.bzl", "add_lint_tests")
@@ -532,7 +531,7 @@ drake_cc_googletest(
         "//drake/common:essential",
         "//drake/common/test_utilities:is_dynamic_castable",
         "//drake/examples/pendulum:pendulum_plant",
-        "//drake/systems/analysis:stateless_system",
+        "//drake/systems/analysis/test_utilities:stateless_system",
         "//drake/systems/framework/test_utilities",
         "//drake/systems/primitives:adder",
         "//drake/systems/primitives:constant_value_source",
@@ -548,6 +547,13 @@ drake_cc_googletest(
     deps = [
         ":discrete_values",
         "//drake/common:essential",
+    ],
+)
+
+drake_cc_googletest(
+    name = "event_test",
+    deps = [
+        ":event_collection",
     ],
 )
 

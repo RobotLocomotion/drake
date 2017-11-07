@@ -98,7 +98,7 @@ GTEST_TEST(OutputSize, SizeDifferentFromOne) {
 
 // Tests that Demultiplexer allocates no state variables in the context_.
 TEST_F(DemultiplexerTest, DemultiplexerIsStateless) {
-  EXPECT_EQ(0, context_->get_continuous_state()->size());
+  EXPECT_EQ(0, context_->get_continuous_state().size());
 }
 
 TEST_F(DemultiplexerTest, DirectFeedthrough) {

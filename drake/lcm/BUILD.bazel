@@ -1,5 +1,4 @@
 # -*- python -*-
-# This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
 load("//tools/lint:lint.bzl", "add_lint_tests")
@@ -85,6 +84,8 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "drake_lcm_test",
+    # Flaky because LCM self-test can fail (PR #7311)
+    flaky = 1,
     local = 1,
     deps = [
         ":lcm",

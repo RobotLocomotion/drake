@@ -1,11 +1,13 @@
 # -*- python -*-
-# This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load(
     "//tools:drake.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
+)
+load(
+    "@drake//tools/skylark:drake_py.bzl",
     "drake_py_test",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
@@ -59,9 +61,11 @@ drake_cc_library(
     name = "builder",
     srcs = [
         "builder.cc",
+        "connection.cc",
     ],
     hdrs = [
         "builder.h",
+        "connection.h",
     ],
     deps = [
         ":lanes",
@@ -106,6 +110,16 @@ drake_cc_googletest(
         ":builder",
         "//drake/automotive/maliput/api/test_utilities",
         "//drake/common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "multilane_connection_test",
+    size = "small",
+    srcs = ["test/multilane_connection_test.cc"],
+    deps = [
+        ":builder",
+        "//drake/automotive/maliput/multilane/test_utilities",
     ],
 )
 

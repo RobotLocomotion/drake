@@ -12,6 +12,7 @@
 
 #include <gflags/gflags.h>
 
+#include "drake/common/text_logging_gflags.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_wsg_diagram_factory.h"
@@ -28,6 +29,7 @@
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
+#include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -40,6 +42,7 @@
 
 DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
               "Number of seconds to simulate.");
+DEFINE_double(dt, 1e-3, "Integration step size");
 
 namespace drake {
 namespace examples {
@@ -57,6 +60,7 @@ using systems::DrakeVisualizer;
 using systems::InputPortDescriptor;
 using systems::OutputPort;
 using systems::RigidBodyPlant;
+using systems::RungeKutta2Integrator;
 using systems::Simulator;
 
 const char* const kIiwaUrdf =
@@ -81,7 +85,8 @@ std::unique_ptr<RigidBodyPlant<T>> BuildCombinedPlant(
                            "block_for_pick_and_place.urdf");
   tree_builder->StoreModel(
       "wsg",
-      "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
+      "drake/manipulation/models/wsg_50_description"
+      "/sdf/schunk_wsg_50_ball_contact.sdf");
 
   // Build a world with two fixed tables.  A box is placed one on
   // table, and the iiwa arm is fixed to the other.
@@ -106,16 +111,16 @@ std::unique_ptr<RigidBodyPlant<T>> BuildCombinedPlant(
 
   // Coordinates for kRobotBase originally from iiwa_world_demo.cc.
   // The intention is to center the robot on the table.
-  const Eigen::Vector3d kRobotBase(-0.243716, -0.625087, kTableTopZInWorld);
+  const Eigen::Vector3d kRobotBase(0, 0, kTableTopZInWorld);
   // Start the box slightly above the table.  If we place it at
   // the table top exactly, it may start colliding the table (which is
   // not good, as it will likely shoot off into space).
-  const Eigen::Vector3d kBoxBase(1 + -0.43, -0.65, kTableTopZInWorld + 0.1);
+  const Eigen::Vector3d kBoxBase(0.8, 0., kTableTopZInWorld + 0.1);
 
   int id = tree_builder->AddFixedModelInstance("iiwa", kRobotBase);
   *iiwa_instance = tree_builder->get_model_info_for_instance(id);
   id = tree_builder->AddFloatingModelInstance("box", kBoxBase,
-                                              Vector3<double>(0, 0, 1));
+                                              Vector3<double>(0, 0, 0));
   *box_instance = tree_builder->get_model_info_for_instance(id);
   id = tree_builder->AddModelInstanceToFrame(
       "wsg", tree_builder->tree().findFrame("iiwa_frame_ee"),
@@ -230,7 +235,7 @@ int DoMain() {
   box_state_pub->set_name("box_state_publisher");
   box_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
 
-  builder.Connect(model->get_output_port_box_robot_state_msg(),
+  builder.Connect(model->get_output_port_object_robot_state_msg(),
                   box_state_pub->get_input_port(0));
   box_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
 
@@ -239,6 +244,12 @@ int DoMain() {
 
   lcm.StartReceiveThread();
   simulator.Initialize();
+  // When using the default RK3 integrator, the simulation stops
+  // advancing once the gripper grasps the box.  Grasping makes the
+  // problem computationally stiff, which brings the default RK3
+  // integrator to its knees.
+  simulator.reset_integrator<RungeKutta2Integrator<double>>(*sys,
+      FLAGS_dt, &simulator.get_mutable_context());
   simulator.set_publish_every_time_step(false);
   simulator.StepTo(FLAGS_simulation_sec);
 
@@ -252,5 +263,6 @@ int DoMain() {
 
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
+  drake::logging::HandleSpdlogGflags();
   return drake::examples::kuka_iiwa_arm::DoMain();
 }

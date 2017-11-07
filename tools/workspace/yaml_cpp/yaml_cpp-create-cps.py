@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from drake.tools.cpsutils import read_defs
+from drake.tools.install.cpsutils import read_defs
 
 defs = read_defs("set\(YAML_CPP_(VERSION_.*)\s+\"([0-9]+)\"")
 
@@ -11,7 +11,6 @@ content = """
   "Description": "A YAML parser and emitter in C++",
   "License": "MIT",
   "Version": "%(VERSION_MAJOR)s.%(VERSION_MINOR)s.%(VERSION_MINOR)s",
-  "Compat-Version": "%(VERSION_MAJOR)s.0.0",
   "Default-Components": [ ":yaml-cpp" ],
   "Components": {
     "yaml-cpp": {

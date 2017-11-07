@@ -143,9 +143,9 @@ GTEST_TEST(RigidBodyPlantTest, MapVelocityToConfigurationDerivativesAndBack) {
     for (double pitch = 0; pitch <= M_PI_2; pitch += kAngleInc) {
       for (double yaw = 0; yaw <= M_PI_2; yaw += kAngleInc) {
         // Get the mutable state.
-        VectorBase<double>* xc = context->get_mutable_state()
-                                     ->get_mutable_continuous_state()
-                                     ->get_mutable_generalized_position();
+        VectorBase<double>& xc = context->get_mutable_state()
+                                     .get_mutable_continuous_state()
+                                     .get_mutable_generalized_position();
 
         // Update the orientation.
         const Quaterniond q = Eigen::AngleAxisd(roll, Vector3d::UnitZ()) *
@@ -154,10 +154,10 @@ GTEST_TEST(RigidBodyPlantTest, MapVelocityToConfigurationDerivativesAndBack) {
 
         // Verify normalization.
         DRAKE_ASSERT(std::abs(q.norm() - 1.0) < 1e-15);
-        xc->SetAtIndex(3, q.w());
-        xc->SetAtIndex(4, q.x());
-        xc->SetAtIndex(5, q.y());
-        xc->SetAtIndex(6, q.z());
+        xc.SetAtIndex(3, q.w());
+        xc.SetAtIndex(4, q.x());
+        xc.SetAtIndex(5, q.y());
+        xc.SetAtIndex(6, q.z());
 
         // Transform the generalized velocities to time derivative of
         // generalized coordinates.
@@ -248,11 +248,11 @@ TEST_P(KukaArmTest, StateHasTheRightSizes) {
   // Only check these if the state is continuous.
   if (!kuka_plant_->is_state_discrete()) {
     const VectorBase<double>& xc =
-        context_->get_continuous_state()->get_generalized_position();
+        context_->get_continuous_state().get_generalized_position();
     const VectorBase<double>& vc =
-        context_->get_continuous_state()->get_generalized_velocity();
+        context_->get_continuous_state().get_generalized_velocity();
     const VectorBase<double>& zc =
-        context_->get_continuous_state()->get_misc_continuous_state();
+        context_->get_continuous_state().get_misc_continuous_state();
 
     EXPECT_EQ(kNumPositions_, xc.size());
     EXPECT_EQ(kNumVelocities_, vc.size());
@@ -446,8 +446,8 @@ double GetPrismaticJointLimitAccel(double position, double applied_force) {
 
   auto context = plant.CreateDefaultContext();
   context->get_mutable_continuous_state()
-      ->get_mutable_generalized_position()
-      ->SetAtIndex(0, position);
+      .get_mutable_generalized_position()
+      .SetAtIndex(0, position);
 
   // Apply a constant force on the input.
   Vector1d input;
@@ -546,8 +546,8 @@ GTEST_TEST(rigid_body_plant_test, BasicTimeSteppingTest) {
   // but as discrete state.
   EXPECT_TRUE(continuous_context->has_only_continuous_state());
   EXPECT_TRUE(time_stepping_context->has_only_discrete_state());
-  EXPECT_EQ(continuous_context->get_continuous_state()->size(),
-            time_stepping_context->get_discrete_state(0)->size());
+  EXPECT_EQ(continuous_context->get_continuous_state().size(),
+            time_stepping_context->get_discrete_state(0).size());
 
   // Check that the dynamics of the time-stepping model match the
   // (backwards-)Euler approximation of the continuous time dynamics.
@@ -557,15 +557,15 @@ GTEST_TEST(rigid_body_plant_test, BasicTimeSteppingTest) {
   time_stepping_plant.CalcDiscreteVariableUpdates(
       *time_stepping_context, updates.get());
 
-  const VectorXd x = continuous_context->get_continuous_state()->CopyToVector();
+  const VectorXd x = continuous_context->get_continuous_state().CopyToVector();
   EXPECT_TRUE(CompareMatrices(
-      x, time_stepping_context->get_discrete_state(0)->CopyToVector()));
+      x, time_stepping_context->get_discrete_state(0).CopyToVector()));
 
   const VectorXd q = continuous_context->get_continuous_state()
-                         ->get_generalized_position()
+                         .get_generalized_position()
                          .CopyToVector();
   const VectorXd v = continuous_context->get_continuous_state()
-                         ->get_generalized_velocity()
+                         .get_generalized_velocity()
                          .CopyToVector();
 
   const VectorXd vn =
@@ -580,7 +580,7 @@ GTEST_TEST(rigid_body_plant_test, BasicTimeSteppingTest) {
   VectorXd xn(qn.rows() + vn.rows());
   xn << qn, vn;
 
-  EXPECT_TRUE(CompareMatrices(updates->get_vector(0)->CopyToVector(), xn));
+  EXPECT_TRUE(CompareMatrices(updates->get_vector(0).CopyToVector(), xn));
 }
 
 }  // namespace

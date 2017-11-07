@@ -36,8 +36,8 @@ GTEST_TEST(TestSignalLogger, LinearSystemTest) {
 
   // Simulate the simple system from x(0) = 1.0.
   systems::Simulator<double> simulator(*diagram);
-  systems::Context<double>* context = simulator.get_mutable_context();
-  context->get_mutable_continuous_state_vector()->SetAtIndex(0, 1.0);
+  systems::Context<double>& context = simulator.get_mutable_context();
+  context.get_mutable_continuous_state_vector().SetAtIndex(0, 1.0);
 
   // Make the integrator tolerance sufficiently tight for the test to pass.
   simulator.get_mutable_integrator()->set_target_accuracy(1e-4);

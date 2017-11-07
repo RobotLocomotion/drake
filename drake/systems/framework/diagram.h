@@ -352,7 +352,7 @@ class Diagram : public System<T>,
 
       std::vector<BasicVector<T>*> numeric_params;
       for (int j = 0; j < subcontext.num_numeric_parameters(); ++j) {
-        numeric_params.push_back(params->get_mutable_numeric_parameter(
+        numeric_params.push_back(&params->get_mutable_numeric_parameter(
             numeric_parameter_offset + j));
       }
       numeric_parameter_offset += subcontext.num_numeric_parameters();
@@ -418,7 +418,7 @@ class Diagram : public System<T>,
       std::vector<BasicVector<T>*> numeric_params;
       std::vector<AbstractValue*> abstract_params;
       for (int j = 0; j < subcontext.num_numeric_parameters(); ++j) {
-        numeric_params.push_back(params->get_mutable_numeric_parameter(
+        numeric_params.push_back(&params->get_mutable_numeric_parameter(
             numeric_parameter_offset + j));
       }
       numeric_parameter_offset += subcontext.num_numeric_parameters();
@@ -585,7 +585,7 @@ class Diagram : public System<T>,
   State<T>& GetMutableSubsystemState(const System<T>& subsystem,
                                      Context<T>* context) const {
     Context<T>& subcontext = GetMutableSubsystemContext(subsystem, context);
-    return *subcontext.get_mutable_state();
+    return subcontext.get_mutable_state();
   }
 
   /// Retrieves the state for a particular subsystem from the @p state for the
@@ -927,10 +927,9 @@ class Diagram : public System<T>,
     // Check that the dimensions of the continuous state in the context match
     // the dimensions of the provided generalized velocity and configuration
     // derivatives.
-    const ContinuousState<T>* xc = context.get_continuous_state();
-    DRAKE_DEMAND(xc != nullptr);
-    const int nq = xc->get_generalized_position().size();
-    const int nv = xc->get_generalized_velocity().size();
+    const ContinuousState<T>& xc = context.get_continuous_state();
+    const int nq = xc.get_generalized_position().size();
+    const int nv = xc.get_generalized_velocity().size();
     DRAKE_DEMAND(nq == qdot->size());
     DRAKE_DEMAND(nv == generalized_velocity.size());
 
@@ -946,17 +945,15 @@ class Diagram : public System<T>,
     for (int i = 0; i < num_subsystems(); ++i) {
       // Find the continuous state of subsystem i.
       const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
-      const ContinuousState<T>* sub_xc = subcontext.get_continuous_state();
-      // If subsystem i is stateless, skip it.
-      if (sub_xc == nullptr) continue;
+      const ContinuousState<T>& sub_xc = subcontext.get_continuous_state();
 
       // Select the chunk of generalized_velocity belonging to subsystem i.
-      const int num_v = sub_xc->get_generalized_velocity().size();
+      const int num_v = sub_xc.get_generalized_velocity().size();
       const Eigen::Ref<const VectorX<T>>& v_slice =
           generalized_velocity.segment(v_index, num_v);
 
       // Select the chunk of qdot belonging to subsystem i.
-      const int num_q = sub_xc->get_generalized_position().size();
+      const int num_q = sub_xc.get_generalized_position().size();
       Subvector<T> dq_slice(qdot, q_index, num_q);
 
       // Delegate the actual mapping to subsystem i itself.
@@ -977,10 +974,9 @@ class Diagram : public System<T>,
     // Check that the dimensions of the continuous state in the context match
     // the dimensions of the provided generalized velocity and configuration
     // derivatives.
-    const ContinuousState<T>* xc = context.get_continuous_state();
-    DRAKE_DEMAND(xc != nullptr);
-    const int nq = xc->get_generalized_position().size();
-    const int nv = xc->get_generalized_velocity().size();
+    const ContinuousState<T>& xc = context.get_continuous_state();
+    const int nq = xc.get_generalized_position().size();
+    const int nv = xc.get_generalized_velocity().size();
     DRAKE_DEMAND(nq == qdot.size());
     DRAKE_DEMAND(nv == generalized_velocity->size());
 
@@ -996,17 +992,15 @@ class Diagram : public System<T>,
     for (int i = 0; i < num_subsystems(); ++i) {
       // Find the continuous state of subsystem i.
       const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
-      const ContinuousState<T>* sub_xc = subcontext.get_continuous_state();
-      // If subsystem i is stateless, skip it.
-      if (sub_xc == nullptr) continue;
+      const ContinuousState<T>& sub_xc = subcontext.get_continuous_state();
 
       // Select the chunk of qdot belonging to subsystem i.
-      const int num_q = sub_xc->get_generalized_position().size();
+      const int num_q = sub_xc.get_generalized_position().size();
       const Eigen::Ref<const VectorX<T>>& dq_slice =
           qdot.segment(q_index, num_q);
 
       // Select the chunk of generalized_velocity belonging to subsystem i.
-      const int num_v = sub_xc->get_generalized_velocity().size();
+      const int num_v = sub_xc.get_generalized_velocity().size();
       Subvector<T> v_slice(generalized_velocity, v_index, num_v);
 
       // Delegate the actual mapping to subsystem i itself.
@@ -1149,8 +1143,8 @@ class Diagram : public System<T>,
     // current values.
     // TODO(siyuan): should have a API level CopyFrom for DiscreteValues.
     for (int i = 0; i < diagram_discrete->num_groups(); ++i) {
-      diagram_discrete->get_mutable_vector(i)->set_value(
-          context.get_discrete_state(i)->get_value());
+      diagram_discrete->get_mutable_vector(i).set_value(
+          context.get_discrete_state(i).get_value());
     }
 
     const DiagramEventCollection<DiscreteUpdateEvent<T>>& info =
@@ -1370,6 +1364,24 @@ class Diagram : public System<T>,
     }
   }
 
+  std::map<typename Event<T>::PeriodicAttribute, std::vector<const Event<T>*>,
+      PeriodicAttributeComparator<T>> DoGetPeriodicEvents() const override {
+    std::map<typename Event<T>::PeriodicAttribute,
+        std::vector<const Event<T>*>,
+        PeriodicAttributeComparator<T>> periodic_events_map;
+
+    for (int i = 0; i < num_subsystems(); ++i) {
+      auto sub_map = registered_systems_[i]->GetPeriodicEvents();
+      for (const auto& sub_attr_events : sub_map) {
+        const auto& sub_vec = sub_attr_events.second;
+        auto& vec = periodic_events_map[sub_attr_events.first];
+        vec.insert(vec.end(), sub_vec.begin(), sub_vec.end());
+      }
+    }
+
+    return periodic_events_map;
+  }
+
   void DoGetPerStepEvents(
       const Context<T>& context,
       CompositeEventCollection<T>* event_info) const override {
@@ -1384,6 +1396,23 @@ class Diagram : public System<T>,
           info->get_mutable_subevent_collection(i);
 
       registered_systems_[i]->GetPerStepEvents(subcontext, &subinfo);
+    }
+  }
+
+  void DoGetInitializationEvents(
+      const Context<T>& context,
+      CompositeEventCollection<T>* event_info) const override {
+    auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
+    auto info = dynamic_cast<DiagramCompositeEventCollection<T>*>(event_info);
+    DRAKE_DEMAND(diagram_context != nullptr);
+    DRAKE_DEMAND(info != nullptr);
+
+    for (int i = 0; i < num_subsystems(); ++i) {
+      const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
+      CompositeEventCollection<T>& subinfo =
+          info->get_mutable_subevent_collection(i);
+
+      registered_systems_[i]->GetInitializationEvents(subcontext, &subinfo);
     }
   }
 

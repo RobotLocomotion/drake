@@ -75,7 +75,7 @@ void TimeVaryingAffineSystem<T>::CalcOutputY(
     const VectorX<T>& x = (this->time_period() == 0.)
         ? dynamic_cast<const BasicVector<T>&>(
             context.get_continuous_state_vector()).get_value()
-        : context.get_discrete_state()->get_vector()->get_value();
+        : context.get_discrete_state().get_vector().get_value();
     y += Ct * x;
   }
 
@@ -135,7 +135,7 @@ void TimeVaryingAffineSystem<T>::DoCalcDiscreteVariableUpdates(
   VectorX<T> xn = f0(t);
   DRAKE_DEMAND(xn.rows() == num_states_);
 
-  const auto& x = context.get_discrete_state(0)->get_value();
+  const auto& x = context.get_discrete_state(0).get_value();
 
   const MatrixX<T> At = A(t);
   DRAKE_DEMAND(At.rows() == num_states_ && At.cols() == num_states_);
@@ -150,7 +150,7 @@ void TimeVaryingAffineSystem<T>::DoCalcDiscreteVariableUpdates(
     DRAKE_DEMAND(Bt.rows() == num_states_ && Bt.cols() == num_inputs_);
     xn += Bt * u;
   }
-  updates->get_mutable_vector()->SetFromVector(xn);
+  updates->get_mutable_vector().SetFromVector(xn);
 }
 
 // Our public constructor declares that our most specific subclass is
@@ -245,7 +245,7 @@ void AffineSystem<T>::CalcOutputY(const Context<T>& context,
   const VectorX<T>& x = (this->time_period() == 0.)
       ? dynamic_cast<const BasicVector<T>&>(
           context.get_continuous_state_vector()).get_value()
-      : context.get_discrete_state()->get_vector()->get_value();
+      : context.get_discrete_state().get_vector().get_value();
 
   auto y = output_vector->get_mutable_value();
   y = C_ * x + y0_;
@@ -286,7 +286,7 @@ void AffineSystem<T>::DoCalcDiscreteVariableUpdates(
     drake::systems::DiscreteValues<T>* updates) const {
   if (this->num_states() == 0 || this->time_period() == 0.0) return;
 
-  const auto& x = context.get_discrete_state(0)->get_value();
+  const auto& x = context.get_discrete_state(0).get_value();
 
   VectorX<T> xnext = A_ * x + f0_;
 
@@ -297,7 +297,7 @@ void AffineSystem<T>::DoCalcDiscreteVariableUpdates(
 
     xnext += B_ * u;
   }
-  updates->get_mutable_vector()->SetFromVector(xnext);
+  updates->get_mutable_vector().SetFromVector(xnext);
 }
 
 

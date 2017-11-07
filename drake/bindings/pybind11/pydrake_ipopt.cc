@@ -10,8 +10,8 @@ PYBIND11_PLUGIN(ipopt) {
   py::module m("ipopt", "Ipopt solver bindings for MathematicalProgram");
 
   py::object solverinterface =
-    (py::object) py::module::import("pydrake.solvers.mathematicalprogram").attr(
-      "MathematicalProgramSolverInterface");
+      py::module::import("pydrake.solvers.mathematicalprogram").attr(
+          "MathematicalProgramSolverInterface");
 
   py::class_<IpoptSolver>(m, "IpoptSolver", solverinterface)
     .def(py::init<>());

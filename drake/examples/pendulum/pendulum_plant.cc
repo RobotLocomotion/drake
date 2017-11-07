@@ -66,10 +66,10 @@ void PendulumPlant<T>::DoCalcTimeDerivatives(
     systems::ContinuousState<T>* derivatives) const {
   const PendulumState<T>& state = get_state(context);
   const PendulumParams<T>& params = get_parameters(context);
-  PendulumState<T>* derivative_vector = get_mutable_state(derivatives);
+  PendulumState<T>& derivative_vector = get_mutable_state(derivatives);
 
-  derivative_vector->set_theta(state.thetadot());
-  derivative_vector->set_thetadot(
+  derivative_vector.set_theta(state.thetadot());
+  derivative_vector.set_thetadot(
       (get_tau(context) -
        params.mass() * params.gravity() * params.length() * sin(state.theta()) -
        params.damping() * state.thetadot()) /

@@ -176,13 +176,13 @@ class System {
   void SetDefaultContext(Context<T>* context) const {
     // Set the default state, checking that the number of state variables does
     // not change.
-    const int n_xc = context->get_continuous_state()->size();
+    const int n_xc = context->get_continuous_state().size();
     const int n_xd = context->get_num_discrete_state_groups();
     const int n_xa = context->get_num_abstract_state_groups();
 
-    SetDefaultState(*context, context->get_mutable_state());
+    SetDefaultState(*context, &context->get_mutable_state());
 
-    DRAKE_DEMAND(n_xc == context->get_continuous_state()->size());
+    DRAKE_DEMAND(n_xc == context->get_continuous_state().size());
     DRAKE_DEMAND(n_xd == context->get_num_discrete_state_groups());
     DRAKE_DEMAND(n_xa == context->get_num_abstract_state_groups());
 
@@ -202,6 +202,8 @@ class System {
   ///        ->SetAtIndex(0, gaussian(*generator));
   /// @endcode
   /// Overrides must not change the number of state variables.
+  ///
+  /// @see @ref stochastic_systems
   virtual void SetRandomState(const Context<T>& context, State<T>* state,
                               RandomGenerator* generator) const {
     unused(generator);
@@ -217,6 +219,8 @@ class System {
   ///             ->SetAtIndex(0, uniform(*generator));
   /// @endcode
   /// Overrides must not change the number of state variables.
+  ///
+  /// @see @ref stochastic_systems
   virtual void SetRandomParameters(const Context<T>& context,
                                    Parameters<T>* parameters,
                                    RandomGenerator* generator) const {
@@ -229,13 +233,13 @@ class System {
   void SetRandomContext(Context<T>* context, RandomGenerator* generator) const {
     // Set the default state, checking that the number of state variables does
     // not change.
-    const int n_xc = context->get_continuous_state()->size();
+    const int n_xc = context->get_continuous_state().size();
     const int n_xd = context->get_num_discrete_state_groups();
     const int n_xa = context->get_num_abstract_state_groups();
 
-    SetRandomState(*context, context->get_mutable_state(), generator);
+    SetRandomState(*context, &context->get_mutable_state(), generator);
 
-    DRAKE_DEMAND(n_xc == context->get_continuous_state()->size());
+    DRAKE_DEMAND(n_xc == context->get_continuous_state().size());
     DRAKE_DEMAND(n_xd == context->get_num_discrete_state_groups());
     DRAKE_DEMAND(n_xa == context->get_num_abstract_state_groups());
 
@@ -491,7 +495,7 @@ class System {
     DRAKE_ASSERT(J.rows() == get_num_constraint_equations(context));
     DRAKE_ASSERT(
         J.cols() ==
-        context.get_continuous_state()->get_generalized_velocity().size());
+        context.get_continuous_state().get_generalized_velocity().size());
     return DoCalcVelocityChangeFromConstraintImpulses(context, J, lambda);
   }
 
@@ -582,9 +586,9 @@ class System {
       const EventCollection<UnrestrictedUpdateEvent<T>>& events,
       State<T>* state) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
-    const int continuous_state_dim = state->get_continuous_state()->size();
-    const int discrete_state_dim = state->get_discrete_state()->num_groups();
-    const int abstract_state_dim = state->get_abstract_state()->size();
+    const int continuous_state_dim = state->get_continuous_state().size();
+    const int discrete_state_dim = state->get_discrete_state().num_groups();
+    const int abstract_state_dim = state->get_abstract_state().size();
 
     // Copy current state to the passed-in state, as specified in the
     // documentation for DoCalcUnrestrictedUpdate().
@@ -592,9 +596,9 @@ class System {
 
     DispatchUnrestrictedUpdateHandler(context, events, state);
 
-    if (continuous_state_dim != state->get_continuous_state()->size() ||
-        discrete_state_dim != state->get_discrete_state()->num_groups() ||
-        abstract_state_dim != state->get_abstract_state()->size())
+    if (continuous_state_dim != state->get_continuous_state().size() ||
+        discrete_state_dim != state->get_discrete_state().num_groups() ||
+        abstract_state_dim != state->get_abstract_state().size())
       throw std::logic_error(
           "State variable dimensions cannot be changed "
           "in CalcUnrestrictedUpdate().");
@@ -651,6 +655,56 @@ class System {
     DRAKE_DEMAND(events != nullptr);
     events->Clear();
     DoGetPerStepEvents(context, events);
+  }
+
+  /// This method is called by Simulator::Initialize() to gather all
+  /// update and publish events that need to be handled at initialization
+  /// before the simulator starts integration.
+  ///
+  /// @p events cannot be null. @p events will be cleared on entry.
+  void GetInitializationEvents(const Context<T>& context,
+                               CompositeEventCollection<T>* events) const {
+    DRAKE_ASSERT_VOID(CheckValidContext(context));
+    DRAKE_DEMAND(events != nullptr);
+    events->Clear();
+    DoGetInitializationEvents(context, events);
+  }
+
+  /// Gets whether there exists a unique periodic attribute that triggers
+  /// one or more discrete update events (and, if so, returns that unique
+  /// periodic attribute). Thus, this method can be used (1) as a test to
+  /// determine whether a system's dynamics are at least partially governed by
+  /// difference equations and (2) to obtain the difference equation update
+  /// times.
+  /// @param[out] periodic_attr Contains the periodic trigger attributes
+  ///             on return of `true` from this function; the value will be
+  ///             unchanged on return value `false`. Function aborts if null.
+  /// @returns `true` if there exists a unique periodic attribute that triggers
+  ///          one or more discrete update events and `false` otherwise.
+  optional<typename Event<T>::PeriodicAttribute>
+      GetUniquePeriodicDiscreteUpdateAttribute() const {
+    optional<typename Event<T>::PeriodicAttribute> saved_attr;
+    auto periodic_events = GetPeriodicEvents();
+    for (const auto& saved_attr_and_vector : periodic_events) {
+      for (const auto& event : saved_attr_and_vector.second) {
+        if (event->is_discrete_update()) {
+          if (saved_attr)
+            return nullopt;
+          saved_attr = saved_attr_and_vector.first;
+          break;
+        }
+      }
+    }
+
+    return saved_attr;
+  }
+
+  /// Gets all periodic triggered events for a system. Each periodic attribute
+  /// (offset and period, in seconds) is mapped to one or more update events
+  /// that are to be triggered at the proper times.
+  std::map<typename Event<T>::PeriodicAttribute, std::vector<const Event<T>*>,
+    PeriodicAttributeComparator<T>> GetPeriodicEvents() const {
+    return DoGetPeriodicEvents();
   }
 
   /// Utility method that computes for _every_ output port i the value y(i) that
@@ -1031,8 +1085,7 @@ class System {
 
   /// Returns a copy of the continuous state vector `xc` into an Eigen vector.
   VectorX<T> CopyContinuousStateVector(const Context<T>& context) const {
-    DRAKE_ASSERT(context.get_continuous_state() != nullptr);
-    return context.get_continuous_state()->CopyToVector();
+    return context.get_continuous_state().CopyToVector();
   }
 
   /// Declares that `parent` is the immediately enclosing Diagram. The
@@ -1514,18 +1567,38 @@ class System {
     *time = std::numeric_limits<T>::infinity();
   }
 
+  /// Implement this method to return all periodic triggered events.
+  /// @see GetPeriodicEvents() for a detailed description of the returned
+  ///      variable.
+  /// @note The default implementation returns an empty map.
+  virtual std::map<typename Event<T>::PeriodicAttribute,
+      std::vector<const Event<T>*>, PeriodicAttributeComparator<T>>
+    DoGetPeriodicEvents() const = 0;
+
   /// Implement this method to return any events to be handled before the
   /// simulator integrates the system's continuous state at each time step.
   /// @p events is cleared in the public non-virtual GetPerStepEvents()
-  /// before that method calls this function. An overriding implementation
-  /// of this method should not clear @p events, and only append to it. You
-  /// may assume that @p context has already been validated and that
-  /// @p events is not null. @p events can be changed freely by the overriding
-  /// implementation.
+  /// before that method calls this function. You may assume that @p context
+  /// has already been validated and that @p events is not null. @p events
+  /// can be changed freely by the overriding implementation.
   ///
   /// The default implementation returns without changing @p events.
   /// @sa GetPerStepEvents()
   virtual void DoGetPerStepEvents(
+      const Context<T>& context,
+      CompositeEventCollection<T>* events) const {
+    unused(context, events);
+  }
+
+  /// Implement this method to return any events to be handled at the
+  /// simulator's initialization step. @p events is cleared in the public
+  /// non-virtual GetInitializationEvents(). You may assume that @p context has
+  /// already been validated and that @p events is not null. @p events can be
+  /// changed freely by the overriding implementation.
+  ///
+  /// The default implementation returns without changing @p events.
+  /// @sa GetInitializationEvents()
+  virtual void DoGetInitializationEvents(
       const Context<T>& context,
       CompositeEventCollection<T>* events) const {
     unused(context, events);
@@ -1710,7 +1783,7 @@ class System {
       const Eigen::VectorXd& lambda) const {
     unused(J, lambda);
     DRAKE_DEMAND(get_num_constraint_equations(context) == 0);
-    const auto& gv = context.get_continuous_state()->get_generalized_velocity();
+    const auto& gv = context.get_continuous_state().get_generalized_velocity();
     return Eigen::VectorXd::Zero(gv.size());
   }
 

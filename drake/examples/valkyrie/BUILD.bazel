@@ -1,5 +1,4 @@
 # -*- python -*-
-# This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load(
     "//tools:drake.bzl",
@@ -8,7 +7,7 @@ load(
     "drake_cc_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools:install_data.bzl", "install_data")
+load("//tools/install:install_data.bzl", "install_data")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -163,6 +162,8 @@ drake_cc_googletest(
     name = "valkyrie_simulation_test",
     srcs = ["test/valkyrie_simulation_test.cc"],
     data = [":models"],
+    # Flaky because LCM self-test can fail (PR #7311)
+    flaky = 1,
     deps = [":valkyrie_simulator"],
 )
 

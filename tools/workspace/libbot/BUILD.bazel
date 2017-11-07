@@ -1,6 +1,14 @@
 # -*- python -*-
 
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
 exports_files(
-    ["libbot.cps"],
+    [
+        "bot-procman-sheriff",
+        "build_prefix.py",
+        "libbot.cps",
+    ],
     visibility = ["@libbot//:__pkg__"],
 )
+
+add_lint_tests()

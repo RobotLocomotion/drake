@@ -86,10 +86,10 @@ void LcmSubscriberSystem::SetDefaultState(const Context<double>&,
                                           State<double>* state) const {
   if (translator_ != nullptr) {
     DRAKE_DEMAND(serializer_ == nullptr);
-    ProcessMessageAndStoreToDiscreteState(state->get_mutable_discrete_state());
+    ProcessMessageAndStoreToDiscreteState(&state->get_mutable_discrete_state());
   } else {
     DRAKE_DEMAND(translator_ == nullptr);
-    ProcessMessageAndStoreToAbstractState(state->get_mutable_abstract_state());
+    ProcessMessageAndStoreToAbstractState(&state->get_mutable_abstract_state());
   }
 }
 
@@ -106,10 +106,10 @@ void LcmSubscriberSystem::ProcessMessageAndStoreToDiscreteState(
   if (!received_message_.empty()) {
     translator_->Deserialize(
         received_message_.data(), received_message_.size(),
-        discrete_state->get_mutable_vector(kStateIndexMessage));
+        &discrete_state->get_mutable_vector(kStateIndexMessage));
   }
   discrete_state->get_mutable_vector(kStateIndexMessageCount)
-      ->SetAtIndex(0, received_message_count_);
+      .SetAtIndex(0, received_message_count_);
 }
 
 void LcmSubscriberSystem::ProcessMessageAndStoreToAbstractState(
@@ -137,7 +137,7 @@ int LcmSubscriberSystem::GetMessageCount(const Context<double>& context) const {
   } else {
     DRAKE_ASSERT(serializer_ == nullptr);
     last_message_count = static_cast<int>(
-        context.get_discrete_state(kStateIndexMessageCount)->GetAtIndex(0));
+        context.get_discrete_state(kStateIndexMessageCount).GetAtIndex(0));
   }
   return last_message_count;
 }
@@ -260,7 +260,7 @@ LcmSubscriberSystem::AllocateTranslatorOutputValue() const {
 void LcmSubscriberSystem::CalcTranslatorOutputValue(
     const Context<double>& context, BasicVector<double>* output_vector) const {
   DRAKE_DEMAND(translator_ != nullptr && serializer_ == nullptr);
-  output_vector->SetFrom(*context.get_discrete_state(kStateIndexMessage));
+  output_vector->SetFrom(context.get_discrete_state(kStateIndexMessage));
 }
 
 // This is only called if our output port is abstract-valued, because we are
@@ -275,7 +275,7 @@ void LcmSubscriberSystem::CalcSerializerOutputValue(
     const Context<double>& context, AbstractValue* output_value) const {
   DRAKE_DEMAND(serializer_.get() != nullptr);
   output_value->SetFrom(
-      context.get_abstract_state()->get_value(kStateIndexMessage));
+      context.get_abstract_state().get_value(kStateIndexMessage));
 }
 
 void LcmSubscriberSystem::HandleMessage(const std::string& channel,

@@ -114,7 +114,14 @@ template<typename T> class BodyNode;
 /// - N(q):
 ///     The kinematic coupling matrix describing the relationship between the
 ///     rate of change of generalized coordinates and the generalized velocities
-///     by `q̇ = N(q) * v`, [Seth 2010]. N(q) is an `nq x nv` matrix.
+///     by `q̇ = N(q)⋅v`, [Seth 2010]. N(q) is an `nq x nv` matrix. A
+///     %Mobilizer implements this application in MapVelocityToQDot().
+/// - N⁺(q):
+///     The left pseudo-inverse of `N(q)`. `N⁺(q)` can be used to invert the
+///     relationship `q̇ = N(q)⋅v` without residual error, provided that `q̇` is
+///     in the range space of `N(q)` (that is, if it *could* have been produced
+///     as `q̇ = N(q)⋅v` for some `v`). The application `v = N⁺(q)⋅q̇` is
+///     implemented in MapQDotToVelocity().
 ///
 /// In general, `nv != nq`. As an example, consider a quaternion mobilizer that
 /// would allow frame M to move freely with respect to frame F. For such a
@@ -404,7 +411,47 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
       const MultibodyTreeContext<T>& context,
       const SpatialForce<T>& F_Mo_F,
       Eigen::Ref<VectorX<T>> tau) const = 0;
+
+  /// Computes the kinematic mapping `q̇ = N(q)⋅v` between generalized
+  /// velocities v and time derivatives of the generalized positions `qdot`.
+  /// The generalized positions vector is stored in `context`.
+  virtual void MapVelocityToQDot(
+      const MultibodyTreeContext<T>& context,
+      const Eigen::Ref<const VectorX<T>>& v,
+      EigenPtr<VectorX<T>> qdot) const = 0;
+
+  /// Computes the mapping `v = N⁺(q)⋅q̇` from time derivatives of the
+  /// generalized positions `qdot` to generalized velocities v, where `N⁺(q)` is
+  /// the left pseudo-inverse of `N(q)` defined by MapVelocityToQDot().
+  /// The generalized positions vector is stored in `context`.
+  virtual void MapQDotToVelocity(
+      const MultibodyTreeContext<T>& context,
+      const Eigen::Ref<const VectorX<T>>& qdot,
+      EigenPtr<VectorX<T>> v) const = 0;
   /// @}
+
+  /// Returns a const Eigen expression of the vector of generalized positions
+  /// for `this` mobilizer from a vector `q_array` of generalized positions for
+  /// the entire MultibodyTree model.
+  /// This method aborts if `q_array` is not of size
+  /// MultibodyTree::get_num_positions().
+  Eigen::VectorBlock<const Eigen::Ref<const VectorX<T>>>
+  get_positions_from_array(const Eigen::Ref<const VectorX<T>>& q_array) const {
+    DRAKE_DEMAND(
+        q_array.size() == this->get_parent_tree().get_num_positions());
+    return q_array.segment(topology_.positions_start,
+                           topology_.num_positions);
+  }
+
+  /// Mutable version of get_positions_from_array().
+  Eigen::VectorBlock<Eigen::Ref<VectorX<T>>> get_mutable_positions_from_array(
+      EigenPtr<VectorX<T>> q_array) const {
+    DRAKE_DEMAND(q_array != nullptr);
+    DRAKE_DEMAND(
+        q_array->size() == this->get_parent_tree().get_num_positions());
+    return q_array->segment(topology_.positions_start,
+                            topology_.num_positions);
+  }
 
   /// Returns a const Eigen expression of the vector of generalized velocities
   /// for `this` mobilizer from a vector `v_array` of generalized velocities for
@@ -462,6 +509,24 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   Eigen::VectorBlock<Eigen::Ref<VectorX<T>>>
   get_mutable_generalized_forces_from_array(
       EigenPtr<VectorX<T>> tau_array) const {
+    return get_mutable_velocities_from_array(tau_array);
+  }
+
+  /// Returns a const Eigen expression of the vector of generalized velocities
+  /// for `this` mobilizer from a vector of generalized velocities for the
+  /// entire MultibodyTree model.
+  /// @note This same method can be used to access arrays of generalized
+  /// accelerations (v̇) and of generalized forces (τ) since they all have the
+  /// same dimensions and are indexed in the same way.
+  Eigen::VectorBlock<const VectorX<T>> get_generalized_forces_from_array(
+      const VectorX<T>& tau_array) const {
+    return get_velocities_from_array(tau_array);
+  }
+
+  /// Mutable version of get_velocities_from_array().
+  Eigen::VectorBlock<Eigen::Ref<VectorX<T>>>
+  get_mutable_generalized_forces_from_array(
+      Eigen::Ref<VectorX<T>> tau_array) const {
     return get_mutable_velocities_from_array(tau_array);
   }
 

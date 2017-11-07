@@ -1,7 +1,7 @@
 # -*- python -*-
 
 load(
-    "@drake//tools:install.bzl",
+    "@drake//tools/install:install.bzl",
     "cmake_config",
     "install",
     "install_cmake_config",
@@ -25,7 +25,7 @@ cc_library(
 
 cmake_config(
     package = "tinyobjloader",
-    script = "@drake//tools/workspace/tinyobjloader:tinyobjloader-create-cps.py",
+    script = "@drake//tools/workspace/tinyobjloader:tinyobjloader-create-cps.py",  # noqa
     version_file = "CMakeLists.txt",
 )
 

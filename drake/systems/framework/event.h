@@ -30,8 +30,8 @@ class LeafCompositeEventCollection;
  * Derived classes should contain a function pointer to an optional callback
  * function that handles the event. No-op is the default handling behavior.
  * Currently, the System framework only supports three concrete event types:
- * PublishEvent, DiscreteEvent and UnrestrictedUpdateEvent distinguished by
- * their callback functions' access level to the context.
+ * PublishEvent, DiscreteUpdateEvent, and UnrestrictedUpdateEvent distinguished
+ * by their callback functions' access level to the context.
  */
 template <typename T>
 class Event {
@@ -40,12 +40,21 @@ class Event {
   Event(Event&&) = delete;
   void operator=(Event&&) = delete;
 
+  /// Returns `true` if this is a DiscreteUpdateEvent.
+  virtual bool is_discrete_update() const = 0;
+
   /**
    * Predefined types of triggers. Used at run time to determine why the
    * associated event has occurred.
    */
   enum class TriggerType {
     kUnknown,
+
+    /**
+     * This trigger indicates that an associated event is triggered at system
+     * initialization.
+     */
+    kInitialization,
 
     /**
      * This trigger indicates that an associated event is triggered by directly
@@ -185,6 +194,18 @@ class Event {
   std::unique_ptr<AbstractValue> attribute_{nullptr};
 };
 
+/// Structure for comparing two PeriodicAttributes for use in a map container,
+/// using an arbitrary comparison method.
+template <class T>
+struct PeriodicAttributeComparator {
+  bool operator()(const typename Event<T>::PeriodicAttribute& a,
+    const typename Event<T>::PeriodicAttribute& b) const {
+      if (a.period_sec == b.period_sec)
+        return a.offset_sec < b.offset_sec;
+      return a.period_sec < b.period_sec;
+  }
+};
+
 /**
  * This class represents a publish event. It has an optional callback function
  * to do custom handling of this event given const Context and const
@@ -196,6 +217,7 @@ class PublishEvent final : public Event<T> {
   void operator=(const PublishEvent&) = delete;
   PublishEvent(PublishEvent&&) = delete;
   void operator=(PublishEvent&&) = delete;
+  bool is_discrete_update() const override { return false; }
 
   /**
    * Callback function that processes a publish event.
@@ -259,6 +281,7 @@ class DiscreteUpdateEvent final : public Event<T> {
   void operator=(const DiscreteUpdateEvent&) = delete;
   DiscreteUpdateEvent(DiscreteUpdateEvent&&) = delete;
   void operator=(DiscreteUpdateEvent&&) = delete;
+  bool is_discrete_update() const override { return true; }
 
   /**
    * Callback function that processes a discrete update event.
@@ -328,6 +351,7 @@ class UnrestrictedUpdateEvent final : public Event<T> {
   void operator=(const UnrestrictedUpdateEvent&) = delete;
   UnrestrictedUpdateEvent(UnrestrictedUpdateEvent&&) = delete;
   void operator=(UnrestrictedUpdateEvent&&) = delete;
+  bool is_discrete_update() const override { return false; }
 
   /**
    * Callback function that processes an unrestricted update event.

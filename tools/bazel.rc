@@ -59,7 +59,7 @@ test:mosek --test_env=HOME
 build:snopt --define=WITH_SNOPT=ON
 
 ### A configuration that enables all optional dependencies. ###
-test:everything --test_tag_filters=
+test:everything --test_tag_filters=-no_everything
 
 # -- Options for Gurobi.
 build:everything --define=WITH_GUROBI=ON

@@ -1,0 +1,19 @@
+namespace: "drake::tools::test"
+
+element {
+    name: "x"
+    doc: "Some coordinate"
+    doc_units: "m/s"
+    min_value: "0.0"
+    default_value: "42.0"
+}
+element {
+    name: "two_word"
+    doc: "A very long documentation string that will certainly flow across multiple lines of C++"
+}
+element {
+    name: "absone"
+    doc: "A signed, normalized value"
+    min_value: "-1.0"
+    max_value: "1.0"
+}

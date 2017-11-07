@@ -1,5 +1,4 @@
 # -*- python -*-
-# This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load(
     "//tools:drake.bzl",
@@ -8,9 +7,12 @@ load(
     "drake_cc_library",
     "drake_cc_test",
 )
+load(
+    "@drake//tools/skylark:drake_proto.bzl",
+    "drake_cc_proto_library",
+)
 load("//tools/workspace/gurobi:gurobi.bzl", "gurobi_test_tags")
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("@protobuf//:protobuf.bzl", "cc_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -78,6 +80,15 @@ drake_cc_library(
         "//drake/common:unused",
         "//drake/math:gradient",
         "//drake/solvers:mathematical_program",
+    ],
+)
+
+drake_cc_library(
+    name = "resolve_center_of_pressure",
+    srcs = ["resolve_center_of_pressure.cc"],
+    hdrs = ["resolve_center_of_pressure.h"],
+    deps = [
+        "@eigen",
     ],
 )
 
@@ -174,6 +185,7 @@ drake_cc_library(
     visibility = [],
     deps = [
         ":kinematics_cache",
+        ":resolve_center_of_pressure",
         ":rigid_body",
         ":rigid_body_actuator",
         ":rigid_body_frame",
@@ -276,7 +288,7 @@ drake_cc_library(
     ],
 )
 
-cc_proto_library(
+drake_cc_proto_library(
     name = "rigid_body_tree_alias_groups_proto",
     srcs = [
         "alias_groups.proto",

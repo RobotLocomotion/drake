@@ -24,7 +24,7 @@ template <typename T>
 void Ball<T>::CopyStateOut(const systems::Context<T>& context,
                            systems::BasicVector<T>* output) const {
   output->get_mutable_value() =
-      context.get_continuous_state()->CopyToVector();
+      context.get_continuous_state().CopyToVector();
 }
 
 template <typename T>
@@ -36,12 +36,10 @@ void Ball<T>::DoCalcTimeDerivatives(
 
   // Obtain the structure we need to write into.
   DRAKE_ASSERT(derivatives != nullptr);
-  systems::VectorBase<T>* const new_derivatives =
-      derivatives->get_mutable_vector();
-  DRAKE_ASSERT(new_derivatives != nullptr);
+  systems::VectorBase<T>& new_derivatives = derivatives->get_mutable_vector();
 
-  new_derivatives->SetAtIndex(0, state.GetAtIndex(1));
-  new_derivatives->SetAtIndex(1, T(get_gravitational_acceleration()));
+  new_derivatives.SetAtIndex(0, state.GetAtIndex(1));
+  new_derivatives.SetAtIndex(1, T(get_gravitational_acceleration()));
 }
 
 template <typename T>
@@ -50,7 +48,7 @@ void Ball<T>::SetDefaultState(const systems::Context<T>&,
   DRAKE_DEMAND(state != nullptr);
   Vector2<T> x0;
   x0 << 10.0, 0.0;  // initial state values.
-  state->get_mutable_continuous_state()->SetFromVector(x0);
+  state->get_mutable_continuous_state().SetFromVector(x0);
 }
 
 }  // namespace bouncing_ball

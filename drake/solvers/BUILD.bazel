@@ -1,5 +1,4 @@
 # -*- python -*-
-# This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load(
     "//tools:drake.bzl",
@@ -86,6 +85,7 @@ drake_cc_library(
         "//drake/common:essential",
         "//drake/common:polynomial",
         "//drake/common:symbolic",
+        "//drake/math:quadratic_form",
     ],
 )
 
@@ -200,11 +200,22 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "non_convex_optimization_util",
+    srcs = ["non_convex_optimization_util.cc"],
+    hdrs = ["non_convex_optimization_util.h"],
+    deps = [
+        ":mathematical_program",
+        "//drake/math:quadratic_form",
+    ],
+)
+
+drake_cc_library(
     name = "bilinear_product_util",
     srcs = ["bilinear_product_util.cc"],
     hdrs = ["bilinear_product_util.h"],
     deps = [
         ":decision_variable",
+        "//drake/common:essential",
         "//drake/common:symbolic",
     ],
 )
@@ -684,6 +695,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "create_constraint_test",
+    deps = [
+        ":create_constraint",
+        "//drake/common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
     name = "decision_variable_test",
     deps = [
         ":mathematical_program",
@@ -819,6 +838,20 @@ drake_cc_googletest(
         ":mathematical_program",
         ":mathematical_program_test_util",
         ":quadratic_program_examples",
+    ],
+)
+
+drake_cc_googletest(
+    name = "non_convex_optimization_util_test",
+    srcs = [
+        "test/non_convex_optimization_util_test.cc",
+    ],
+    tags = mosek_test_tags(),
+    deps = [
+        ":decision_variable",
+        ":non_convex_optimization_util",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/common/test_utilities:symbolic_test_util",
     ],
 )
 

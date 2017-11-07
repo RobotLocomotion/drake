@@ -61,8 +61,8 @@ class CubicPolynomialSystem final : public systems::LeafSystem<T> {
       const std::vector<const DiscreteUpdateEvent<T>*>&,
       DiscreteValues<T>* discrete_state) const final {
     using std::pow;
-    discrete_state->get_mutable_vector(0)->SetAtIndex(
-        0, pow(context.get_discrete_state(0)->GetAtIndex(0), 3.0));
+    discrete_state->get_mutable_vector(0).SetAtIndex(
+        0, pow(context.get_discrete_state(0).GetAtIndex(0), 3.0));
   }
 
   const double timestep_{0.0};
@@ -92,9 +92,9 @@ class LinearSystemWParams final : public systems::LeafSystem<T> {
       const Context<T>& context,
       const std::vector<const DiscreteUpdateEvent<T>*>&,
       DiscreteValues<T>* discrete_state) const final {
-    discrete_state->get_mutable_vector(0)->SetAtIndex(
-        0, context.get_numeric_parameter(0)->GetAtIndex(0) *
-               context.get_discrete_state(0)->GetAtIndex(0));
+    discrete_state->get_mutable_vector(0).SetAtIndex(
+        0, context.get_numeric_parameter(0).GetAtIndex(0) *
+               context.get_discrete_state(0).GetAtIndex(0));
   }
 };
 
@@ -248,21 +248,13 @@ GTEST_TEST(DirectTranscriptionTest, TimeVaryingLinearSystemTest) {
     Cvec[i] = C0 + i * Eigen::Matrix2d::Ones();
     Dvec[i] = D0 + i * Eigen::Matrix2d::Ones();
   }
-  const auto Apoly =
-      PiecewisePolynomial<double>::FirstOrderHold(times, Avec);
-  const auto Bpoly =
-      PiecewisePolynomial<double>::FirstOrderHold(times, Bvec);
-  const auto Cpoly =
-      PiecewisePolynomial<double>::FirstOrderHold(times, Cvec);
-  const auto Dpoly =
-      PiecewisePolynomial<double>::FirstOrderHold(times, Dvec);
-  const PiecewisePolynomialTrajectory A(Apoly);
-  const PiecewisePolynomialTrajectory B(Bpoly);
-  const PiecewisePolynomialTrajectory C(Cpoly);
-  const PiecewisePolynomialTrajectory D(Dpoly);
+  const auto A = PiecewisePolynomial<double>::FirstOrderHold(times, Avec);
+  const auto B = PiecewisePolynomial<double>::FirstOrderHold(times, Bvec);
+  const auto C = PiecewisePolynomial<double>::FirstOrderHold(times, Cvec);
+  const auto D = PiecewisePolynomial<double>::FirstOrderHold(times, Dvec);
 
   const double kTimeStep = .1;
-  PiecewisePolynomialLinearSystem<double> system(A, B, C, D, kTimeStep);
+  PiecewisePolynomialLinearSystem<double> system({A, B, C, D}, kTimeStep);
 
   const auto context = system.CreateDefaultContext();
   int kNumSampleTimes = 3;
@@ -331,7 +323,7 @@ GTEST_TEST(DirectTranscriptionTest, LinearSystemWParamsTest) {
 
   const auto context = system.CreateDefaultContext();
   const double kGain = -1.0;
-  context->get_mutable_numeric_parameter(0)->SetAtIndex(0, kGain);
+  context->get_mutable_numeric_parameter(0).SetAtIndex(0, kGain);
   const int kNumSampleTimes = 3;
   DirectTranscription prog(&system, *context, kNumSampleTimes);
 

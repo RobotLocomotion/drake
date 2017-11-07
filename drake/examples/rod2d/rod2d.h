@@ -4,7 +4,9 @@
 #include <utility>
 #include <vector>
 
+#include "drake/examples/rod2d/gen/rod2d_state_vector.h"
 #include "drake/multibody/constraint/constraint_problem_data.h"
+#include "drake/multibody/constraint/constraint_solver.h"
 #include "drake/solvers/moby_lcp_solver.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/rendering/pose_vector.h"
@@ -214,39 +216,66 @@ class Rod2D : public systems::LeafSystem<T> {
   ///         kPiecewiseDAE or kCompliant.
   explicit Rod2D(SimulationType simulation_type, double dt);
 
-  /// Gets the constraint force mixing parameter (CFM, used for time stepping
-  /// systems only).
-  double get_cfm() const { return cfm_; }
-
-  /// Sets the constraint force mixing parameter (CFM, used for time stepping
-  /// systems only). The default CFM value is 1e-8.
-  /// @param cfm a floating point value in the range [0, infinity].
-  /// @throws std::logic_error if contact is modeled as compliant or if
-  ///         cfm is set to a negative value.
-  void set_cfm(double cfm) {
-    if (simulation_type_ == SimulationType::kCompliant)
-      throw std::logic_error("Attempt to set CFM for compliant contact model.");
-    if (cfm < 0)
-      throw std::logic_error("Negative CFM value specified.");
-    cfm_ = cfm;
+  static const Rod2dStateVector<T>& get_state(
+      const systems::ContinuousState<T>& cstate) {
+    return dynamic_cast<const Rod2dStateVector<T>&>(cstate.get_vector());
   }
 
-  /// Gets the error reduction parameter (ERP, used for time stepping systems
-  /// only).
-  double get_erp() const { return erp_; }
+  static Rod2dStateVector<T>& get_mutable_state(
+      systems::ContinuousState<T>* cstate) {
+    return dynamic_cast<Rod2dStateVector<T>&>(cstate->get_mutable_vector());
+  }
 
-  /// Sets the error reduction parameter (ERP, used for time stepping systems
-  /// only). The default ERP value is 0.8.
-  /// @param erp a floating point value in the range [0, 1].
-  /// @throws std::logic_error if this is not a time stepping system or if
-  ///         erp is set to a negative value.
-  void set_erp(double erp) {
-    if (simulation_type_ != SimulationType::kTimeStepping)
-      throw std::logic_error("Attempt to set ERP for non-time stepping "
-                             "system.");
-    if (erp < 0 || erp > 1)
-      throw std::logic_error("Invalid ERP value specified.");
-    erp_ = erp;
+  static const Rod2dStateVector<T>& get_state(
+      const systems::Context<T>& context) {
+    return dynamic_cast<const Rod2dStateVector<T>&>(
+        context.get_continuous_state_vector());
+  }
+
+  static Rod2dStateVector<T>& get_mutable_state(
+      systems::Context<T>* context) {
+    return dynamic_cast<Rod2dStateVector<T>&>(
+        context->get_mutable_continuous_state_vector());
+  }
+
+  /// Transforms dissipation (α) to damping, given a characteristic
+  // deformation.
+  double TransformDissipationToDampingAboutDeformation(
+      double characteristic_deformation) const {
+    // Equation (16) from [Hunt 1975], yields b = 3/2 * α * k * x. We can
+    // assume that the stiffness and dissipation are determined for a small
+    // deformation (x). Put another way, we determine the damping coefficient
+    // for a harmonic oscillator from linearizing the dissipation factor about
+    // the characteristic deformation: the system will behave like a harmonic
+    // oscillator oscillating about x = `characteristic_deformation` meters.
+    return dissipation_ * 1.5 * stiffness_ * characteristic_deformation *
+        half_length_;
+  }
+
+  /// Transforms damping (b) to dissipation (α) , given a characteristic
+  /// deformation.
+  double TransformDampingToDissipationAboutDeformation(
+      double characteristic_deformation, double b) const {
+    // See documentation for TransformDissipationToDampingAboutDeformation()
+    // for explanation of this formula.
+    return b / (1.5 * stiffness_ * characteristic_deformation *
+        half_length_);
+  }
+
+  /// Gets the constraint force mixing parameter (CFM, used for time stepping
+  /// systems only), which should lie in the interval [0, infinity].
+  double get_cfm() const {
+    return 1.0 /
+        (stiffness_ * dt_ + TransformDissipationToDampingAboutDeformation(
+        kCharacteristicDeformation));
+  }
+
+  /// Gets the error reduction parameter (ERP, used for time stepping
+  /// systems only), which should lie in the interval [0, 1].
+  double get_erp() const {
+    return dt_ * stiffness_ / (stiffness_ * dt_ +
+        TransformDissipationToDampingAboutDeformation(
+        kCharacteristicDeformation));
   }
 
   /// Gets the generalized position of the rod, given a Context. The first two
@@ -255,7 +284,7 @@ class Rod2D : public systems::LeafSystem<T> {
   /// the rod, measured counter-clockwise with respect to the x-axis.
   Vector3<T> GetRodConfig(const systems::Context<T>& context) const {
     return context.get_state().
-        get_continuous_state()->get_generalized_position().CopyToVector();
+        get_continuous_state().get_generalized_position().CopyToVector();
   }
 
   /// Gets the generalized velocity of the rod, given a Context. The first
@@ -264,7 +293,7 @@ class Rod2D : public systems::LeafSystem<T> {
   /// the rod.
   Vector3<T> GetRodVelocity(const systems::Context<T>& context) const {
     return context.get_state().
-        get_continuous_state()->get_generalized_velocity().CopyToVector();
+        get_continuous_state().get_generalized_velocity().CopyToVector();
   }
 
   /// Models impact using an inelastic impact model with friction.
@@ -307,8 +336,7 @@ class Rod2D : public systems::LeafSystem<T> {
   /// Get compliant contact normal stiffness in N/m.
   double get_stiffness() const { return stiffness_; }
 
-  /// Set compliant contact normal stiffness in N/m (>= 0). This has no effect
-  /// if the rod model is not compliant.
+  /// Set compliant contact normal stiffness in N/m (>= 0).
   void set_stiffness(double stiffness) {
     DRAKE_DEMAND(stiffness >= 0);
     stiffness_ = stiffness;
@@ -317,11 +345,25 @@ class Rod2D : public systems::LeafSystem<T> {
   /// Get compliant contact normal dissipation in 1/velocity (s/m).
   double get_dissipation() const { return dissipation_; }
 
-  /// Set compliant contact normal dissipation in 1/velocity (s/m, >= 0). This
-  /// has no effect if the rod model is not compliant.
+  /// Set compliant contact normal dissipation in 1/velocity (s/m, >= 0).
   void set_dissipation(double dissipation) {
     DRAKE_DEMAND(dissipation >= 0);
     dissipation_ = dissipation;
+  }
+
+  /// Sets stiffness and dissipation for the rod from cfm and erp values (used
+  /// for time stepping implementations).
+  void SetStiffnessAndDissipation(double cfm, double erp) {
+    // These values were determined by solving the equations:
+    // cfm = 1 / (dt * stiffness + damping)
+    // erp = dt * stiffness / (dt * stiffness + damping)
+    // for k and b.
+    const double k = erp / (cfm * dt_);
+    const double b = (1 - erp) / cfm;
+    set_stiffness(k);
+    set_dissipation(
+        TransformDampingToDissipationAboutDeformation(
+        kCharacteristicDeformation, b));
   }
 
   /// Get compliant contact static friction (stiction) coefficient `μ_s`.
@@ -536,6 +578,7 @@ class Rod2D : public systems::LeafSystem<T> {
                                const Vector2<T>& p,
                                const Vector2<T>& dir) const;
   static Matrix2<T> GetRotationMatrixDerivative(T theta, T thetadot);
+  Matrix3<T> GetInertiaMatrix() const;
   T GetSlidingVelocityTolerance() const;
   MatrixX<T> solve_inertia(const MatrixX<T>& B) const;
   int get_k(const systems::Context<T>& context) const;
@@ -558,7 +601,7 @@ class Rod2D : public systems::LeafSystem<T> {
   static void ConvertStateToPose(const VectorX<T>& state,
                                  systems::rendering::PoseVector<T>* pose);
   Vector3<T> ComputeExternalForces(const systems::Context<T>& context) const;
-  Matrix3<T> get_inverse_inertia_matrix() const;
+  Matrix3<T> GetInverseInertiaMatrix() const;
   void CalcTwoContactNoSlidingForces(const systems::Context<T>& context,
                                     Vector2<T>* fN, Vector2<T>* fF) const;
   void CalcTwoContactSlidingForces(const systems::Context<T>& context,
@@ -611,6 +654,9 @@ class Rod2D : public systems::LeafSystem<T> {
   // Friction model used in compliant contact.
   static T CalcMuStribeck(const T& us, const T& ud, const T& v);
 
+  // The constraint solver.
+  multibody::constraint::ConstraintSolver<T> solver_;
+
   // Solves linear complementarity problems for time stepping.
   solvers::MobyLCPSolver<T> lcp_;
 
@@ -625,8 +671,6 @@ class Rod2D : public systems::LeafSystem<T> {
   double mu_{1000.};        // The (dynamic) coefficient of friction.
   double g_{-9.81};         // The acceleration due to gravity (in y direction).
   double J_{1.};            // The moment of the inertia of the rod.
-  double erp_{0.8};         // ERP for time stepping systems.
-  double cfm_{1e-8};        // CFM for time stepping systems.
 
   // Compliant contact parameters.
   double stiffness_{10000};   // Normal stiffness of the ground plane (N/m).
@@ -634,6 +678,9 @@ class Rod2D : public systems::LeafSystem<T> {
   double mu_s_{mu_};          // Static coefficient of friction (>= mu).
   double v_stick_tol_{1e-5};  // Slip speed below which the compliant model
                               //   considers the rod to be in stiction.
+
+  // Characteristic deformation is 1mm for a 1m (unit length) rod half-length.
+  double kCharacteristicDeformation{1e-3};
 
   // Output ports.
   const systems::OutputPort<T>* pose_output_port_{nullptr};

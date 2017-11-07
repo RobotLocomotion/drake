@@ -99,29 +99,29 @@ GTEST_TEST(BeamModelTest, TestProbabilityDensity) {
   // Zero all initial state.
   for (int i = 0; i < simulator.get_context().get_num_discrete_state_groups();
        i++) {
-    BasicVector<double>* state =
-        simulator.get_mutable_context()->get_mutable_discrete_state(0);
-    for (int j = 0; j < state->size(); j++) {
-      state->SetAtIndex(j, 0.0);
+    BasicVector<double>& state =
+        simulator.get_mutable_context().get_mutable_discrete_state(0);
+    for (int j = 0; j < state.size(); j++) {
+      state.SetAtIndex(j, 0.0);
     }
   }
 
-  auto* params =
+  auto& params =
       beam_model->get_mutable_parameters(&diagram->GetMutableSubsystemContext(
-          *beam_model, simulator.get_mutable_context()));
+          *beam_model, &simulator.get_mutable_context()));
 
   // Set some testable beam model parameters.
-  params->set_lambda_short(2.0);
-  params->set_sigma_hit(0.25);
-  params->set_probability_short(0.2);
-  params->set_probability_miss(0.05);
-  params->set_probability_uniform(0.05);
+  params.set_lambda_short(2.0);
+  params.set_sigma_hit(0.25);
+  params.set_probability_short(0.2);
+  params.set_probability_miss(0.05);
+  params.set_probability_uniform(0.05);
 
-  double probability_hit = 1.0 - params->probability_uniform() -
-                           params->probability_miss() -
-                           params->probability_short();
+  double probability_hit = 1.0 - params.probability_uniform() -
+                           params.probability_miss() -
+                           params.probability_short();
   // Truncated tail of the exponential adds to "hit".
-  probability_hit += std::exp(-params->lambda_short() * kDepthInput);
+  probability_hit += std::exp(-params.lambda_short() * kDepthInput);
 
   auto probability_density_function = [&](double z) {
     DRAKE_DEMAND(z >= 0.0 && z < kMaxRange);  // Doesn't capture the delta
@@ -129,12 +129,12 @@ GTEST_TEST(BeamModelTest, TestProbabilityDensity) {
                                               // at kMaxRange.
     const double p_short =
         (z <= kDepthInput)
-            ? params->lambda_short() * std::exp(-params->lambda_short() * z)
+            ? params.lambda_short() * std::exp(-params.lambda_short() * z)
             : 0.0;
 
-    const double sigma_sq = params->sigma_hit() * params->sigma_hit();
-    return params->probability_uniform() / kMaxRange +
-           params->probability_short() * p_short +
+    const double sigma_sq = params.sigma_hit() * params.sigma_hit();
+    return params.probability_uniform() / kMaxRange +
+           params.probability_short() * p_short +
            probability_hit * std::exp(-0.5 * (z - kDepthInput) *
                                       (z - kDepthInput) / sigma_sq) /
                std::sqrt(2 * M_PI * sigma_sq);
@@ -181,14 +181,14 @@ GTEST_TEST(BeamModelTest, TestProbabilityDensity) {
   // Cumulative distribution function of the standard normal distribution.
   auto Phi = [](double z) { return 0.5 * std::erfc(-z / std::sqrt(2.0)); };
   const double p_max =
-      params->probability_miss() +
+      params.probability_miss() +
       probability_hit *
           Phi(-kDepthInput /
-              params->sigma_hit())  // "hit" would have returned < 0.0.
+              params.sigma_hit())  // "hit" would have returned < 0.0.
       +
       probability_hit *
           Phi((kDepthInput - kMaxRange) /
-              params->sigma_hit());  // "hit" would have returned > kMaxRange.
+              params.sigma_hit());  // "hit" would have returned > kMaxRange.
   EXPECT_NEAR(
       (x.array() == kMaxRange).template cast<double>().matrix().sum() / N,
       p_max, 2e-3);

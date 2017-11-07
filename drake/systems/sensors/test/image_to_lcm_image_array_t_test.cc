@@ -10,6 +10,8 @@ namespace systems {
 namespace sensors {
 namespace {
 
+using robotlocomotion::image_t;
+
 const char* kColorFrameName = "color_frame_name";
 const char* kDepthFrameName = "depth_frame_name";
 const char* kLabelFrameName = "label_frame_name";
@@ -50,80 +52,78 @@ robotlocomotion::image_array_t SetUpInputAndOutput(
   return output_image_array_t;
 }
 
-
 GTEST_TEST(ImageToLcmImageArrayT, ValidTest) {
   ImageRgba8U color_image(kImageWidth, kImageHeight);
   ImageDepth32F depth_image(kImageWidth, kImageHeight);
   ImageLabel16I label_image(kImageWidth, kImageHeight);
 
-  ImageToLcmImageArrayT dut(kColorFrameName, kDepthFrameName, kLabelFrameName);
+  auto Verify = [color_image, depth_image, label_image](
+                   const ImageToLcmImageArrayT& dut,
+                   const robotlocomotion::image_array_t& output_image_array,
+                   uint8_t compression_method) {
+    // Verifyies image_array_t
+    EXPECT_EQ(output_image_array.header.seq, 0);
+    EXPECT_EQ(output_image_array.header.utime, 0);
+    EXPECT_EQ(output_image_array.header.frame_name, "");
+    EXPECT_EQ(output_image_array.num_images, 3);
+    EXPECT_EQ(output_image_array.images.size(), 3);
 
-  auto output_image_array_t =
-      SetUpInputAndOutput(&dut, color_image, depth_image, label_image);
+    // Verifyies each image_t.
+    for (auto const& image : output_image_array.images) {
+      EXPECT_EQ(image.header.seq, 0);
+      EXPECT_EQ(image.header.utime, 0);
+      EXPECT_EQ(image.width, kImageWidth);
+      EXPECT_EQ(image.height, kImageHeight);
+      EXPECT_EQ(image.data.size(), image.size);
+      EXPECT_FALSE(image.bigendian);
+      EXPECT_EQ(image.compression_method, compression_method);
 
-  // Verifyies image_array_t
-  EXPECT_EQ(output_image_array_t.header.seq, 0);
-  EXPECT_EQ(output_image_array_t.header.utime, 0);
-  EXPECT_EQ(output_image_array_t.header.frame_name, "");
-  EXPECT_EQ(output_image_array_t.num_images, 3);
-  EXPECT_EQ(output_image_array_t.images.size(), 3);
-
-  // Verifyies each image_t.
-  for (int i = 0; i < output_image_array_t.num_images; ++i) {
-    auto const& image = output_image_array_t.images[i];
-
-    EXPECT_EQ(image.header.seq, 0);
-    EXPECT_EQ(image.header.utime, 0);
-    EXPECT_EQ(image.width, kImageWidth);
-    EXPECT_EQ(image.height, kImageHeight);
-    EXPECT_EQ(image.data.size(), image.size);
-    EXPECT_FALSE(image.bigendian);
-    // This is a workaround for const variable to avoid undefined reference
-    // error: https://goo.gl/3PU0eq
-    uint8_t expected_compression_method =
-        robotlocomotion::image_t::COMPRESSION_METHOD_ZLIB;
-    EXPECT_EQ(image.compression_method, expected_compression_method);
-
-    std::string frame_name;
-    int row_stride;
-    int8_t pixel_format;
-    int8_t channel_type;
-    switch (i) {
-      case 0: {
+      std::string frame_name;
+      int row_stride;
+      int8_t pixel_format;
+      int8_t channel_type;
+      if (image.pixel_format == image_t::PIXEL_FORMAT_RGBA) {
         frame_name = kColorFrameName;
         row_stride = color_image.width() * color_image.kNumChannels *
             sizeof(*color_image.at(0, 0));
-        pixel_format = robotlocomotion::image_t::PIXEL_FORMAT_RGBA;
-        channel_type = robotlocomotion::image_t::CHANNEL_TYPE_UINT8;
-        break;
-      }
-      case 1: {
+        pixel_format = image_t::PIXEL_FORMAT_RGBA;
+        channel_type = image_t::CHANNEL_TYPE_UINT8;
+      } else if (image.pixel_format == image_t::PIXEL_FORMAT_DEPTH) {
         frame_name = kDepthFrameName;
         row_stride = depth_image.width() * depth_image.kNumChannels *
             sizeof(*depth_image.at(0, 0));
-        pixel_format = robotlocomotion::image_t::PIXEL_FORMAT_DEPTH;
-        channel_type = robotlocomotion::image_t::CHANNEL_TYPE_FLOAT32;
-        break;
-      }
-      case 2: {
+        pixel_format = image_t::PIXEL_FORMAT_DEPTH;
+        channel_type = image_t::CHANNEL_TYPE_FLOAT32;
+      } else if (image.pixel_format == image_t::PIXEL_FORMAT_LABEL) {
         frame_name = kLabelFrameName;
         row_stride = label_image.width() * label_image.kNumChannels *
             sizeof(*label_image.at(0, 0));
-        pixel_format = robotlocomotion::image_t::PIXEL_FORMAT_LABEL;
-        channel_type = robotlocomotion::image_t::CHANNEL_TYPE_INT16;
-        break;
-      }
-      default: {
+        pixel_format = image_t::PIXEL_FORMAT_LABEL;
+        channel_type = image_t::CHANNEL_TYPE_INT16;
+      } else {
         EXPECT_FALSE(true);
-        break;
       }
-    }
 
-    EXPECT_EQ(image.header.frame_name, frame_name);
-    EXPECT_EQ(image.row_stride, row_stride);
-    EXPECT_EQ(image.pixel_format, pixel_format);
-    EXPECT_EQ(image.channel_type, channel_type);
-  }
+      EXPECT_EQ(image.header.frame_name, frame_name);
+      EXPECT_EQ(image.row_stride, row_stride);
+      EXPECT_EQ(image.pixel_format, pixel_format);
+      EXPECT_EQ(image.channel_type, channel_type);
+    }
+  };
+
+  ImageToLcmImageArrayT dut_compressed(
+      kColorFrameName, kDepthFrameName, kLabelFrameName, true);
+  auto image_array_t_compressed = SetUpInputAndOutput(
+          &dut_compressed, color_image, depth_image, label_image);
+  Verify(dut_compressed, image_array_t_compressed,
+         image_t::COMPRESSION_METHOD_ZLIB);
+
+  ImageToLcmImageArrayT dut_uncompressed(
+      kColorFrameName, kDepthFrameName, kLabelFrameName, false);
+  auto image_array_t_uncompressed = SetUpInputAndOutput(
+      &dut_uncompressed, color_image, depth_image, label_image);
+  Verify(dut_uncompressed, image_array_t_uncompressed,
+         image_t::COMPRESSION_METHOD_NOT_COMPRESSED);
 }
 
 }  // namespace

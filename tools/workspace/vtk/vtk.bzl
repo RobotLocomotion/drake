@@ -80,7 +80,7 @@ def _impl(repository_ctx):
     if os_result.error != None:
         fail(os_result.error)
 
-    if os_result.is_mac:
+    if os_result.is_macos:
         repository_ctx.symlink("/usr/local/opt/vtk@{}/include".format(
             VTK_MAJOR_MINOR_VERSION), "include")
         repository_ctx.file("empty.cc", executable = False)
@@ -550,7 +550,7 @@ filegroup(
         files_to_install = [":vtk"]
 
     file_content += """
-load("@drake//tools:install.bzl", "install_files")
+load("@drake//tools/install:install.bzl", "install_files")
 install_files(
     name = "install",
     dest = ".",

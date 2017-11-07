@@ -52,7 +52,6 @@ const Connection* Builder::Connect(const std::string& id, int num_lanes,
 
   const double cx = start.xy().x() - (arc.radius() * std::cos(theta0));
   const double cy = start.xy().y() - (arc.radius() * std::sin(theta0));
-
   const Endpoint end(EndpointXy(cx + (arc.radius() * std::cos(theta1)),
                                 cy + (arc.radius() * std::sin(theta1)),
                                 alpha + arc.d_theta()),

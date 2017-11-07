@@ -52,11 +52,11 @@ int do_main(int argc, char* argv[]) {
   systems::Simulator<double> simulator(*diagram);
   systems::Context<double>& acrobot_context =
       diagram->GetMutableSubsystemContext(*acrobot,
-                                          simulator.get_mutable_context());
+                                          &simulator.get_mutable_context());
 
   // Set an initial condition near the upright fixed point.
   AcrobotStateVector<double>* x0 = dynamic_cast<AcrobotStateVector<double>*>(
-      acrobot_context.get_mutable_continuous_state_vector());
+      &acrobot_context.get_mutable_continuous_state_vector());
   DRAKE_DEMAND(x0 != nullptr);
   x0->set_theta1(M_PI + 0.1);
   x0->set_theta2(-.1);

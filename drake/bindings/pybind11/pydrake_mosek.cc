@@ -10,8 +10,8 @@ PYBIND11_PLUGIN(mosek) {
   py::module m("mosek", "Mosek solver bindings for MathematicalProgram");
 
   py::object solverinterface =
-    (py::object) py::module::import("pydrake.solvers.mathematicalprogram").attr(
-      "MathematicalProgramSolverInterface");
+      py::module::import("pydrake.solvers.mathematicalprogram").attr(
+          "MathematicalProgramSolverInterface");
 
   py::class_<MosekSolver>(m, "MosekSolver", solverinterface)
     .def(py::init<>());

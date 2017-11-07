@@ -16,6 +16,11 @@ namespace drake {
 namespace maliput {
 namespace multilane {
 
+// TODO(maddog-tri)  Test use of Endpoint::reverse() with non-zero theta and
+//                   theta_dot, checking that the orientation of the resulting
+//                   road surface is continuous, off the centerline, at the
+//                   branch-point where two connections connect
+
 GTEST_TEST(MultilaneBuilderTest, Fig8) {
   const double kLaneWidth = 4.;
   const double kLeftShoulder = 2.;

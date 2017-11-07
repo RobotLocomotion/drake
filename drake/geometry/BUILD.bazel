@@ -1,5 +1,4 @@
 # -*- python -*-
-# This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load(
     "//tools:drake.bzl",
@@ -153,17 +152,11 @@ drake_cc_library(
 
 # -----------------------------------------------------
 
-drake_cc_library(
-    name = "expect_error_message",
-    srcs = [],
-    hdrs = ["test/expect_error_message.h"],
-)
-
 drake_cc_googletest(
     name = "frame_id_vector_test",
     deps = [
-        ":expect_error_message",
         ":frame_kinematics",
+        "//drake/geometry/test_utilities",
     ],
 )
 
@@ -171,7 +164,7 @@ drake_cc_googletest(
     name = "frame_kinematics_vector_test",
     deps = [
         ":frame_kinematics",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/common/test_utilities",
     ],
 )
 
@@ -186,18 +179,18 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "geometry_state_test",
     deps = [
-        ":expect_error_message",
         ":geometry_state",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/common/test_utilities",
+        "//drake/geometry/test_utilities",
     ],
 )
 
 drake_cc_googletest(
     name = "geometry_system_test",
     deps = [
-        ":expect_error_message",
         ":geometry_system",
         ":geometry_visualization",
+        "//drake/geometry/test_utilities",
     ],
 )
 
@@ -210,8 +203,7 @@ drake_cc_googletest(
     name = "shape_specification_test",
     deps = [
         ":shape_specification",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/common/test_utilities:is_dynamic_castable",
+        "//drake/common/test_utilities",
     ],
 )
 

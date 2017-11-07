@@ -59,6 +59,7 @@ def bazel_lint(name = "bazel", ignore = None):
         files = native.glob([
             "*.bzl",
             "*.BUILD",
+            "*.BUILD.bazel",
             "BUILD",
             "BUILD.bazel",
             "WORKSPACE",

@@ -95,6 +95,13 @@ api::GeoPosition Lane::DoToGeoPosition(
   return {lane_pos.s(), lane_pos.r() + Lane::y_offset(), lane_pos.h()};
 }
 
+api::GeoPositionT<AutoDiffXd> Lane::DoToGeoPositionAutoDiff(
+    const api::LanePositionT<AutoDiffXd>& lane_pos) const {
+  return {lane_pos.s(),
+          lane_pos.r() + AutoDiffXd(Lane::y_offset()),
+          lane_pos.h()};
+}
+
 api::Rotation Lane::DoGetOrientation(
     const api::LanePosition&) const {
   return api::Rotation();  // Default is Identity.

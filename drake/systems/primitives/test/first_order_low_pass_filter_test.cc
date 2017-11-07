@@ -37,13 +37,13 @@ class FirstOrderLowPassFilterTest : public ::testing::Test {
     output_ = filter_->get_output_port().Allocate(*context_);
 
     // Sets the state to zero initially.
-    ContinuousState<double>* xc = continuous_state();
-    EXPECT_EQ(kSignalSize, xc->size());
-    EXPECT_EQ(kSignalSize, xc->get_misc_continuous_state().size());
-    xc->SetFromVector(Eigen::VectorXd::Zero(kSignalSize));
+    ContinuousState<double>& xc = continuous_state();
+    EXPECT_EQ(kSignalSize, xc.size());
+    EXPECT_EQ(kSignalSize, xc.get_misc_continuous_state().size());
+    xc.SetFromVector(Eigen::VectorXd::Zero(kSignalSize));
   }
 
-  ContinuousState<double>* continuous_state() {
+  ContinuousState<double>& continuous_state() {
     return context_->get_mutable_continuous_state();
   }
 
@@ -81,7 +81,7 @@ TEST_F(FirstOrderLowPassFilterTest, Output) {
   Eigen::Vector3d expected = Eigen::Vector3d::Zero();
   EXPECT_EQ(expected, output_vector.get_value());
 
-  continuous_state()->get_mutable_vector()->SetAtIndex(1, 42.0);
+  continuous_state().get_mutable_vector().SetAtIndex(1, 42.0);
   expected << 0.0, 42.0, 0.0;
   filter_->get_output_port().Calc(*context_, output_.get());
   EXPECT_EQ(expected, output_vector.get_value());
@@ -101,7 +101,7 @@ TEST_F(FirstOrderLowPassFilterTest, Derivatives) {
   filter_->CalcTimeDerivatives(*context_, derivatives_.get());
 
   // Current state.
-  Vector3<double> z = continuous_state()->get_vector().CopyToVector();
+  Vector3<double> z = continuous_state().get_vector().CopyToVector();
   EXPECT_EQ(z_expected, z);
 
   auto time_constants = filter_->get_time_constants_vector();

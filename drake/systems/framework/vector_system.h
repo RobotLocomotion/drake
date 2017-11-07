@@ -65,7 +65,7 @@ class VectorSystem : public LeafSystem<T> {
 
     // At most one of either continuous xor discrete state.
     DRAKE_THROW_UNLESS(result->get_num_abstract_state_groups() == 0);
-    const int continuous_size = result->get_continuous_state()->size();
+    const int continuous_size = result->get_continuous_state().size();
     const int num_discrete_groups = result->get_num_discrete_state_groups();
     DRAKE_DEMAND(continuous_size >= 0);
     DRAKE_DEMAND(num_discrete_groups >= 0);
@@ -135,7 +135,7 @@ class VectorSystem : public LeafSystem<T> {
       state_vector = dynamic_cast<const BasicVector<T>*>(&vector_base);
     } else {
       DRAKE_ASSERT(context.has_only_discrete_state());
-      state_vector = context.get_discrete_state(0);
+      state_vector = &context.get_discrete_state(0);
     }
     DRAKE_DEMAND(state_vector != nullptr);
     return state_vector->get_value();
@@ -160,10 +160,9 @@ class VectorSystem : public LeafSystem<T> {
         dynamic_cast<const BasicVector<T>&>(state_vector).get_value();
 
     // Obtain the block form of xcdot.
-    VectorBase<T>* const derivatives_vector = derivatives->get_mutable_vector();
-    DRAKE_ASSERT(derivatives_vector != nullptr);
+    VectorBase<T>& derivatives_vector = derivatives->get_mutable_vector();
     Eigen::VectorBlock<VectorX<T>> derivatives_block =
-        dynamic_cast<BasicVector<T>&>(*derivatives_vector).get_mutable_value();
+        dynamic_cast<BasicVector<T>&>(derivatives_vector).get_mutable_value();
 
     // Delegate to subclass.
     DoCalcVectorTimeDerivatives(context, input_block, state_block,
@@ -186,18 +185,16 @@ class VectorSystem : public LeafSystem<T> {
 
     // Obtain the block form of xd before the update (i.e., the prior state).
     DRAKE_ASSERT(context.has_only_discrete_state());
-    const BasicVector<T>* const state_vector = context.get_discrete_state(0);
-    DRAKE_ASSERT(state_vector != nullptr);
+    const BasicVector<T>& state_vector = context.get_discrete_state(0);
     const Eigen::VectorBlock<const VectorX<T>> state_block =
-        state_vector->get_value();
+        state_vector.get_value();
 
     // Obtain the block form of xd after the update (i.e., the next state).
     DRAKE_ASSERT(discrete_state != nullptr);
-    BasicVector<T>* const discrete_update_vector =
+    BasicVector<T>& discrete_update_vector =
         discrete_state->get_mutable_vector();
-    DRAKE_ASSERT(discrete_update_vector != nullptr);
     Eigen::VectorBlock<VectorX<T>> discrete_update_block =
-        discrete_update_vector->get_mutable_value();
+        discrete_update_vector.get_mutable_value();
 
     // Delegate to subclass.
     DoCalcVectorDiscreteVariableUpdates(context, input_block, state_block,

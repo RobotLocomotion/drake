@@ -20,7 +20,7 @@ GTEST_TEST(SystemScalarConversionDoxygen, PendulumPlantAutodiff) {
   auto context = plant->CreateDefaultContext();
   context->FixInputPort(0, Vector1d::Zero());  // tau
   auto* state = dynamic_cast<PendulumState<double>*>(
-      context->get_mutable_continuous_state_vector());
+      &context->get_mutable_continuous_state_vector());
   state->set_theta(0.1);
   state->set_thetadot(0.2);
   double energy = plant->CalcTotalEnergy(*context);
@@ -34,15 +34,15 @@ GTEST_TEST(SystemScalarConversionDoxygen, PendulumPlantAutodiff) {
 
   // Differentiate with respect to theta by setting dtheta/dtheta = 1.0.
   constexpr int kNumDerivatives = 1;
-  auto& xc = *autodiff_context->get_mutable_continuous_state_vector();
+  auto& xc = autodiff_context->get_mutable_continuous_state_vector();
   xc[PendulumStateIndices::kTheta].derivatives() =
       MatrixXd::Identity(kNumDerivatives, kNumDerivatives).col(0);
 
   // TODO(#6944) This is a hack to work around AutoDiffXd being broken.
   // (This stanza is excluded from the Doxygen twin of this unit test.)
-  auto* params = autodiff_context->get_mutable_numeric_parameter(0);
-  for (int i = 0; i < params->size(); ++i) {
-    (*params)[i].derivatives() = Vector1d::Zero(1);
+  auto& params = autodiff_context->get_mutable_numeric_parameter(0);
+  for (int i = 0; i < params.size(); ++i) {
+    params[i].derivatives() = Vector1d::Zero(1);
   }
 
   // Compute denergy/dtheta around its initial conditions.

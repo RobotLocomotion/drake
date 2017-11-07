@@ -132,9 +132,9 @@ class MaliputDragwayLaneTest : public ::testing::Test {
     // representative of the entire state space.
     const double driveable_width =
       expected.driveable_r_max - expected.driveable_r_min;
-    for (double s = 0; s < length_; s += length_ / 100) {
+    for (double s = 0; s < length_; s += length_ / 20) {
       for (double r = expected.driveable_r_min; r <= expected.driveable_r_max;
-          r += driveable_width / 100) {
+          r += driveable_width / 20) {
         for (double h = expected.elevation_min;
              h < expected.elevation_max;
              h += (expected.elevation_max - expected.elevation_min) * 0.1) {
@@ -149,6 +149,32 @@ class MaliputDragwayLaneTest : public ::testing::Test {
           EXPECT_NEAR(geo_position.y(),
                       expected.y_offset + r, linear_tolerance);
           EXPECT_DOUBLE_EQ(geo_position.z(), h);
+
+          // Tests Lane::ToGeoPositionAutoDiff().
+          // Seed lane_position with the partial derivatives
+          // ∂s/∂s = 1, ∂r/∂s = 0., ∂h/∂s = 0, etc.
+          AutoDiffXd s_autodiff{s, Vector3<double>(1., 0., 0.)};
+          AutoDiffXd r_autodiff{r, Vector3<double>(0., 1., 0.)};
+          AutoDiffXd h_autodiff{h, Vector3<double>(0., 0., 1.)};
+          api::LanePositionT<AutoDiffXd> lane_position_ad{
+            s_autodiff, r_autodiff, h_autodiff};
+
+          const api::GeoPositionT<AutoDiffXd> geo_position_ad =
+              lane->ToGeoPositionT<AutoDiffXd>(lane_position_ad);
+          EXPECT_DOUBLE_EQ(geo_position_ad.x().value(), s);
+          EXPECT_NEAR(geo_position_ad.y().value(),
+                      expected.y_offset + r, linear_tolerance);
+          EXPECT_DOUBLE_EQ(geo_position_ad.z().value(), h);
+
+          // For the s-coordinate, expect the following derivatives for
+          // geo_position: ∂x/∂s = 1, ∂y/∂s = 0., ∂z/∂s = 0 (the world x-y-z
+          // axis has the same orientation as Dragway's s-r-h axis).
+          EXPECT_TRUE(CompareMatrices(Vector3<double>(1., 0., 0.),
+                                      geo_position_ad.x().derivatives()));
+          EXPECT_TRUE(CompareMatrices(Vector3<double>(0., 1., 0.),
+                                      geo_position_ad.y().derivatives()));
+          EXPECT_TRUE(CompareMatrices(Vector3<double>(0., 0., 1.),
+                                      geo_position_ad.z().derivatives()));
 
           // Tests Lane::GetOrientation().
           const api::Rotation rotation =
@@ -651,9 +677,12 @@ TEST_F(MaliputDragwayLaneTest, TestToLanePositionAutoDiff) {
         api::GeoPositionT<AutoDiffXd> geo_position{
           x_autodiff, y_autodiff, z_autodiff};
 
+        // Compute LanePositionT with and without the I/O arguments.
         const api::LanePositionT<AutoDiffXd> lane_position =
             lane_->ToLanePositionT<AutoDiffXd>(geo_position,
                                                &nearest_position, &distance);
+        const api::LanePositionT<AutoDiffXd> lane_position_nullargs =
+            lane_->ToLanePositionT<AutoDiffXd>(geo_position, nullptr, nullptr);
 
         std::vector<Vector3<double>> positional_derivatives{
           Vector3<double>::Zero(),   // s
@@ -669,19 +698,16 @@ TEST_F(MaliputDragwayLaneTest, TestToLanePositionAutoDiff) {
           // = 0 (Dragway's s-r-h axis has the same orientation as the x-y-z
           // axis).  Verify that the derivatives of nearest position are the
           // same as for geo_position.
-          EXPECT_TRUE(CompareMatrices(positional_derivatives[0],
-                                      lane_position.s().derivatives()));
-          EXPECT_TRUE(CompareMatrices(positional_derivatives[0],
-                                      nearest_position.x().derivatives()));
-          EXPECT_TRUE(CompareMatrices(positional_derivatives[1],
-                                      lane_position.r().derivatives()));
-          EXPECT_TRUE(CompareMatrices(positional_derivatives[1],
-                                      nearest_position.y().derivatives()));
-          EXPECT_TRUE(CompareMatrices(positional_derivatives[2],
-                                      lane_position.h().derivatives()));
-          EXPECT_TRUE(CompareMatrices(positional_derivatives[2],
-                                      nearest_position.z().derivatives()));
-
+          for (int i{0}; i < 3; ++i) {
+            EXPECT_TRUE(CompareMatrices(positional_derivatives[i],
+                                        lane_position.srh()(i).derivatives()));
+            EXPECT_TRUE(CompareMatrices(
+                positional_derivatives[i],
+                lane_position_nullargs.srh()(i).derivatives()));
+            EXPECT_TRUE(CompareMatrices(
+                positional_derivatives[i],
+                nearest_position.xyz()(i).derivatives()));
+          }
           // Expect ∂/∂x(distance) = 0., as distance remains unchanged when
           // on the boundary or within the interior of the lane.
           EXPECT_TRUE(CompareMatrices(Vector3<double>::Zero(),
@@ -755,17 +781,37 @@ TEST_F(MaliputDragwayLaneTest, TestToLanePositionAutoDiff) {
           EXPECT_TRUE(CompareMatrices(
               distance_derivatives, distance.derivatives(),
               1e-15 /* account for small numerical errors */));
-          EXPECT_TRUE(CompareMatrices(positional_derivatives[0],
-                                      lane_position.s().derivatives()));
-          EXPECT_TRUE(CompareMatrices(positional_derivatives[0],
-                                      nearest_position.x().derivatives()));
+          for (int i{0}; i < 3; ++i) {
+            EXPECT_TRUE(CompareMatrices(positional_derivatives[i],
+                                        lane_position.srh()(i).derivatives()));
+            EXPECT_TRUE(CompareMatrices(
+                positional_derivatives[i],
+                lane_position_nullargs.srh()(i).derivatives()));
+            EXPECT_TRUE(CompareMatrices(
+                positional_derivatives[i],
+                nearest_position.xyz()(i).derivatives()));
+          }
         }
       }
     }
   }
 }
 
-TEST_F(MaliputDragwayLaneTest, ThrowIfUsingMismatchedDerivatives) {
+TEST_F(MaliputDragwayLaneTest, ThrowIfGeoPosHasMismatchedDerivatives) {
+  MakeDragway(1 /* num lanes */);
+
+  // Expect the function to throw when given a triple whose derivatives have
+  // mismatched sizes.
+  AutoDiffXd s{1., Vector3<double>(1., 2., 3.)};
+  AutoDiffXd r{5., Vector2<double>(1., 2.)};
+  AutoDiffXd h{7., Vector1<double>(1.)};
+  api::LanePositionT<AutoDiffXd> lane_position(s, r, h);
+
+  EXPECT_THROW(
+      lane_->ToGeoPositionT<AutoDiffXd>(lane_position), std::runtime_error);
+}
+
+TEST_F(MaliputDragwayLaneTest, ThrowIfLanePosHasMismatchedDerivatives) {
   MakeDragway(1 /* num lanes */);
 
   // Expect the function to throw when given a triple whose derivatives have

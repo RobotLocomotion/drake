@@ -2072,6 +2072,39 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint4) {
   CheckParsedSymbolicRotatedLorentzConeConstraint(&prog, e);
 }
 
+GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint5) {
+  // Add rotated Lorentz cone constraint, using quadratic expression.
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<4>("x");
+  Expression linear_expression1 = x(0) + 1;
+  Expression linear_expression2 = x(1) - x(2);
+  Eigen::Matrix2d Q;
+  Eigen::Vector2d b;
+  const double c{5};
+  Q << 1, 0.5, 0.5, 1;
+  b << 0, 0.1;
+  const Expression quadratic_expression =
+      x.head<2>().cast<Expression>().dot(Q * x.head<2>() + b) + c;
+  const auto binding = prog.AddRotatedLorentzConeConstraint(
+      linear_expression1, linear_expression2, quadratic_expression);
+  EXPECT_EQ(binding.constraint(),
+            prog.rotated_lorentz_cone_constraints().back().constraint());
+  const VectorX<Expression> z =
+      binding.constraint()->A() * binding.variables() +
+      binding.constraint()->b();
+  const double tol{1E-10};
+  EXPECT_TRUE(
+      symbolic::test::PolynomialEqual(symbolic::Polynomial(linear_expression1),
+                                      symbolic::Polynomial(z(0)), tol));
+  EXPECT_TRUE(
+      symbolic::test::PolynomialEqual(symbolic::Polynomial(linear_expression2),
+                                      symbolic::Polynomial(z(1)), tol));
+  EXPECT_TRUE(symbolic::test::PolynomialEqual(
+      symbolic::Polynomial(quadratic_expression),
+      symbolic::Polynomial(z.tail(z.rows() - 2).squaredNorm()),
+      tol));
+}
+
 namespace {
 template <typename Derived>
 typename enable_if<is_same<typename Derived::Scalar, Expression>::value>::type

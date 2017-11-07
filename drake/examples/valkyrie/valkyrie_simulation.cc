@@ -20,17 +20,18 @@ int main() {
 
   // Create simulator.
   systems::Simulator<double> simulator(diagram);
-  auto context = simulator.get_mutable_context();
+  systems::Context<double>& context = simulator.get_mutable_context();
 
   // Integrator set arbitrarily. The time step was selected by tuning for the
   // largest value that appears to give stable results.
   simulator.reset_integrator<systems::SemiExplicitEulerIntegrator<double>>(
-      diagram, 3e-4, context);
+      diagram, 3e-4, &context);
   simulator.set_publish_every_time_step(false);
 
   // Set initial state.
   auto plant = diagram.get_mutable_plant();
-  auto& plant_context = diagram.GetMutableSubsystemContext(*plant, context);
+  systems::Context<double>& plant_context =
+      diagram.GetMutableSubsystemContext(*plant, &context);
 
   // TODO(tkoolen): make it easy to specify a different initial configuration.
   VectorX<double> initial_state = RPYValkyrieFixedPointState();

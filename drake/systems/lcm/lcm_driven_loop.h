@@ -156,9 +156,9 @@ class LcmDrivenLoop {
   }
 
   /**
-   * Returns a mutable pointer to the context.
+   * Returns a mutable reference to the context.
    */
-  Context<double>* get_mutable_context() {
+  Context<double>& get_mutable_context() {
     return stepper_->get_mutable_context();
   }
 

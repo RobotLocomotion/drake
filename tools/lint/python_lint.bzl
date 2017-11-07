@@ -50,10 +50,8 @@ def python_lint(existing_rules = None, ignore = None, exclude = None,
     if existing_rules == None:
         existing_rules = native.existing_rules().values()
     for rule in existing_rules:
-        # Do not lint generated code.
-        if rule.get("generator_function") in [
-                "py_proto_library",
-                "lcm_py_library"]:
+        # Disable linting when requested (e.g., for generated code).
+        if "nolint" in rule.get("tags"):
             continue
 
         # Extract the list of python sources.

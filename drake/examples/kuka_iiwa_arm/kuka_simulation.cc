@@ -11,6 +11,8 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/text_logging.h"
+#include "drake/common/text_logging_gflags.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/lcm/drake_lcm.h"
@@ -33,6 +35,10 @@
 DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
               "Number of seconds to simulate.");
 DEFINE_string(urdf, "", "Name of urdf to load");
+DEFINE_bool(visualize_frames, true, "Visualize end effector frames");
+DEFINE_double(target_realtime_rate, 1.0,
+              "Playback speed.  See documentation for "
+              "Simulator::set_target_realtime_rate() for details.");
 
 namespace drake {
 namespace examples {
@@ -123,19 +129,34 @@ int DoMain() {
   base_builder->Connect(status_sender->get_output_port(0),
                         status_pub->get_input_port(0));
 
-  // Visualizes the end effector frame and 7th body's frame.
-  std::vector<RigidBodyFrame<double>> local_transforms;
-  local_transforms.push_back(
-      RigidBodyFrame<double>("iiwa_link_ee", tree.FindBody("iiwa_link_ee"),
-                             Isometry3<double>::Identity()));
-  local_transforms.push_back(
-      RigidBodyFrame<double>("iiwa_link_7", tree.FindBody("iiwa_link_7"),
-                             Isometry3<double>::Identity()));
-  auto frame_viz = base_builder->AddSystem<systems::FrameVisualizer>(
-      &tree, local_transforms, &lcm);
-  base_builder->Connect(plant->get_output_port(0),
-                        frame_viz->get_input_port(0));
-  frame_viz->set_publish_period(kIiwaLcmStatusPeriod);
+  if (FLAGS_visualize_frames) {
+    // TODO(sam.creasey) This try/catch block is here because even
+    // though RigidBodyTree::FindBody returns a pointer and could return
+    // null to indicate failure, it throws instead.  At any rate, warn
+    // instead of dying if the links aren't named as expected.  This
+    // happens (for example) when loading
+    // dual_iiwa14_polytope_collision.urdf.
+    try {
+    // Visualizes the end effector frame and 7th body's frame.
+      std::vector<RigidBodyFrame<double>> local_transforms;
+      local_transforms.push_back(
+          RigidBodyFrame<double>("iiwa_link_ee", tree.FindBody("iiwa_link_ee"),
+                                 Isometry3<double>::Identity()));
+      local_transforms.push_back(
+          RigidBodyFrame<double>("iiwa_link_7", tree.FindBody("iiwa_link_7"),
+                                 Isometry3<double>::Identity()));
+      auto frame_viz = base_builder->AddSystem<systems::FrameVisualizer>(
+          &tree, local_transforms, &lcm);
+      base_builder->Connect(plant->get_output_port(0),
+                            frame_viz->get_input_port(0));
+      frame_viz->set_publish_period(kIiwaLcmStatusPeriod);
+    } catch (std::logic_error& ex) {
+      drake::log()->error("Unable to visualize end effector frames:\n{}\n"
+                          "Maybe use --novisualize_frames?",
+                          ex.what());
+      return 1;
+    }
+  }
 
   auto sys = builder.Build();
 
@@ -143,11 +164,12 @@ int DoMain() {
 
   lcm.StartReceiveThread();
   simulator.set_publish_every_time_step(false);
+  simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
 
   command_receiver->set_initial_position(
       &sys->GetMutableSubsystemContext(*command_receiver,
-                                       simulator.get_mutable_context()),
+                                       &simulator.get_mutable_context()),
       VectorX<double>::Zero(tree.get_num_positions()));
 
   // Simulate for a very long time.
@@ -163,5 +185,6 @@ int DoMain() {
 
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
+  drake::logging::HandleSpdlogGflags();
   return drake::examples::kuka_iiwa_arm::DoMain();
 }

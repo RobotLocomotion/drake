@@ -13,7 +13,7 @@ load(
     "check_lists_consistency",
 )
 load(
-    "@drake//tools:install.bzl",
+    "@drake//tools/install:install.bzl",
     "cmake_config",
     "install",
     "install_cmake_config",
@@ -136,7 +136,7 @@ CMAKE_PACKAGE = "ignition-math3"
 
 cmake_config(
     package = CMAKE_PACKAGE,
-    script = "@drake//tools/workspace/ignition_math:ignition_math-create-cps.py",
+    script = "@drake//tools/workspace/ignition_math:ignition_math-create-cps.py",  # noqa
     version_file = ":config",
 )
 

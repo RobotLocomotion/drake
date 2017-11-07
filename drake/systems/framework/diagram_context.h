@@ -71,15 +71,15 @@ class DiagramState : public State<T> {
     std::vector<AbstractValue*> sub_xas;
     for (State<T>* substate : substates_) {
       // Continuous
-      sub_xcs.push_back(substate->get_mutable_continuous_state());
+      sub_xcs.push_back(&substate->get_mutable_continuous_state());
       // Discrete
       const std::vector<BasicVector<T>*>& xd_data =
-          substate->get_mutable_discrete_state()->get_data();
+          substate->get_mutable_discrete_state().get_data();
       sub_xds.insert(sub_xds.end(), xd_data.begin(), xd_data.end());
       // Abstract
-      AbstractValues* xa = substate->get_mutable_abstract_state();
-      for (int i_xa = 0; i_xa < xa->size(); ++i_xa) {
-        sub_xas.push_back(&xa->get_mutable_value(i_xa));
+      AbstractValues& xa = substate->get_mutable_abstract_state();
+      for (int i_xa = 0; i_xa < xa.size(); ++i_xa) {
+        sub_xas.push_back(&xa.get_mutable_value(i_xa));
       }
     }
 
@@ -196,7 +196,7 @@ class DiagramContext : public Context<T> {
     auto state = std::make_unique<DiagramState<T>>(num_subsystems());
     for (int i = 0; i < num_subsystems(); ++i) {
       Context<T>* context = contexts_[i].get();
-      state->set_substate(i, context->get_mutable_state());
+      state->set_substate(i, &context->get_mutable_state());
     }
     state->Finalize();
     state_ = std::move(state);
@@ -215,7 +215,7 @@ class DiagramContext : public Context<T> {
     for (auto& subcontext : contexts_) {
       Parameters<T>& subparams = subcontext->get_mutable_parameters();
       for (int i = 0; i < subparams.num_numeric_parameters(); ++i) {
-        numeric_params.push_back(subparams.get_mutable_numeric_parameter(i));
+        numeric_params.push_back(&subparams.get_mutable_numeric_parameter(i));
       }
       for (int i = 0; i < subparams.num_abstract_parameters(); ++i) {
         abstract_params.push_back(
@@ -283,8 +283,15 @@ class DiagramContext : public Context<T> {
     // TODO(david-german-tri): Set invalidation callbacks.
   }
 
-  const State<T>& get_state() const override { return *state_; }
-  State<T>* get_mutable_state() override { return state_.get(); }
+  const State<T>& get_state() const final {
+    DRAKE_ASSERT(state_ != nullptr);
+    return *state_;
+  }
+
+  State<T>& get_mutable_state() final {
+    DRAKE_ASSERT(state_ != nullptr);
+    return *state_;
+  }
 
   const Parameters<T>& get_parameters() const final {
     return *parameters_;

@@ -1,3 +1,5 @@
+namespace: "drake::automotive"
+
 element {
     name: "r"
     doc: "The vehicle's position on the lane's r-axis."

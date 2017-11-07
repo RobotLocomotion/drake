@@ -8,7 +8,7 @@ load(
     "drake_generate_include_header",
 )
 load(
-    "@drake//tools:install.bzl",
+    "@drake//tools/install:install.bzl",
     "cmake_config",
     "install",
     "install_cmake_config",
@@ -67,8 +67,7 @@ CMAKE_PACKAGE = "ignition-rndf0"
 
 cmake_config(
     package = CMAKE_PACKAGE,
-    script = "@drake//tools/workspace/ignition_rndf" +
-        ":ignition_rndf-create-cps.py",
+    script = "@drake//tools/workspace/ignition_rndf:ignition_rndf-create-cps.py",  # noqa
     version_file = "CMakeLists.txt",
     deps = ["@ignition_math//:cps"],
 )

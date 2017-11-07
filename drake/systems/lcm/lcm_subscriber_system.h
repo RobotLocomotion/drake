@@ -146,7 +146,7 @@ class LcmSubscriberSystem : public LeafSystem<double>,
       const Context<double>&,
       const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
       State<double>* state) const override {
-    ProcessMessageAndStoreToAbstractState(state->get_mutable_abstract_state());
+    ProcessMessageAndStoreToAbstractState(&state->get_mutable_abstract_state());
   }
 
   std::unique_ptr<AbstractValues> AllocateAbstractState() const override;

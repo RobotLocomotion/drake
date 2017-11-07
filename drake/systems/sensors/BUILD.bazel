@@ -1,11 +1,14 @@
 # -*- python -*-
-# This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load(
     "//tools:drake.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
+)
+load(
+    "@drake//tools/vector_gen:vector_gen.bzl",
+    "drake_cc_vector_gen_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
@@ -21,6 +24,7 @@ drake_cc_library(
         ":camera_info",
         ":depth_sensor",
         ":rgbd_camera",
+        ":rgbd_renderer",
         ":rotary_encoders",
     ],
 )
@@ -42,17 +46,9 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
+drake_cc_vector_gen_library(
     name = "beam_model_params",
-    srcs = [
-        "gen/beam_model_params.cc",
-    ],
-    hdrs = [
-        "gen/beam_model_params.h",
-    ],
-    deps = [
-        "//drake/systems/framework:vector",
-    ],
+    srcs = ["beam_model_params.named_vector"],
 )
 
 drake_cc_library(
@@ -82,7 +78,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "image",
-    srcs = [],
+    srcs = ["image.cc"],
     hdrs = [
         "image.h",
         "pixel_types.h",
@@ -177,18 +173,43 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "rgbd_renderer",
+    srcs = ["rgbd_renderer.cc"],
+    hdrs = [
+        "color_palette.h",
+        "rgbd_renderer.h",
+    ],
+    deps = [
+        ":image",
+        ":vtk_util",
+        "//drake/common",
+        "//drake/multibody/shapes",
+        "@eigen",
+        "@vtk//:vtkCommonCore",
+        "@vtk//:vtkCommonDataModel",
+        "@vtk//:vtkCommonTransforms",
+        "@vtk//:vtkFiltersGeneral",
+        "@vtk//:vtkFiltersSources",
+        "@vtk//:vtkIOGeometry",
+        "@vtk//:vtkIOImage",
+        "@vtk//:vtkRenderingCore",
+        "@vtk//:vtkRenderingOpenGL2",
+    ],
+)
+
+drake_cc_library(
     name = "rgbd_camera",
     srcs = ["rgbd_camera.cc"],
     hdrs = ["rgbd_camera.h"],
     deps = [
         ":camera_info",
         ":image",
+        ":rgbd_renderer",
         ":vtk_util",
         "//drake/math:geometric_transform",
         "//drake/multibody:rigid_body_frame",
         "//drake/multibody:rigid_body_tree",
         "//drake/systems/framework",
-        "//drake/systems/framework:diagram_builder",
         "//drake/systems/primitives",
         "//drake/systems/rendering:pose_vector",
         "@eigen",
@@ -281,6 +302,27 @@ drake_cc_binary(
     ],
 )
 
+drake_cc_library(
+    name = "optitrack_sender",
+    srcs = ["optitrack_sender.cc"],
+    hdrs = ["optitrack_sender.h"],
+    deps = [
+        ":optitrack_encoder",
+        "//drake/systems/framework:leaf_system",
+        "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
+    ],
+)
+
+drake_cc_library(
+    name = "optitrack_encoder",
+    srcs = ["optitrack_encoder.cc"],
+    hdrs = ["optitrack_encoder.h"],
+    deps = [
+        "//drake/systems/framework:leaf_system",
+        "//drake/systems/rendering:pose_bundle",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -364,14 +406,10 @@ filegroup(
     testonly = 1,
     srcs = [
         "test/models/box.sdf",
-        "test/models/cylinder.sdf",
-        "test/models/mesh_box.sdf",
         "test/models/meshes/box.obj",
         "test/models/meshes/box.png",
-        "test/models/multiple_visuals.sdf",
         "test/models/nothing.sdf",
         "test/models/sphere.sdf",
-        "test/models/three_boxes.sdf",
     ],
     visibility = ["//visibility:private"],
 )
@@ -382,7 +420,8 @@ drake_cc_googletest(
     data = [
         ":test_models",
     ],
-    # Mitigate driver-related issues when running under `bazel test` (#7004).
+    # Mitigates driver-related issues when running under `bazel test`. For more
+    # information, see #7004.
     local = 1,
     tags = ["manual"],
     deps = [
@@ -392,6 +431,23 @@ drake_cc_googletest(
         "//drake/multibody:rigid_body_tree_construction",
         "//drake/multibody/parsers",
         "//drake/multibody/rigid_body_plant",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rgbd_renderer_test",
+    data = [
+        ":test_models",
+    ],
+    # Mitigates driver-related issues when running under `bazel test`. For more
+    # information, see #7004.
+    local = 1,
+    tags = ["manual"],
+    deps = [
+        ":rgbd_renderer",
+        "//drake/common:find_resource",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/math:geometric_transform",
     ],
 )
 
@@ -428,6 +484,26 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "image_to_lcm_image_array_t_test",
     deps = [":image_to_lcm_image_array_t"],
+)
+
+drake_cc_googletest(
+    name = "optitrack_encoder_test",
+    srcs = ["test/optitrack_encoder_test.cc"],
+    deps = [
+        ":optitrack_encoder",
+        "//drake/systems/framework",
+    ],
+)
+
+drake_cc_googletest(
+    name = "optitrack_sender_test",
+    srcs = ["test/optitrack_sender_test.cc"],
+    deps = [
+        ":optitrack_encoder",
+        ":optitrack_sender",
+        "//drake/systems/framework",
+        "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
+    ],
 )
 
 add_lint_tests()

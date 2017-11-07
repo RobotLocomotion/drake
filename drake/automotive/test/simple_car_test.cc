@@ -40,7 +40,7 @@ class SimpleCarTest : public ::testing::Test {
 
   SimpleCarState<double>* continuous_state() {
     auto result = dynamic_cast<SimpleCarState<double>*>(
-        context_->get_mutable_continuous_state_vector());
+        &context_->get_mutable_continuous_state_vector());
     if (result == nullptr) { throw std::bad_cast(); }
     return result;
   }
@@ -209,7 +209,7 @@ TEST_F(SimpleCarTest, Derivatives) {
   // Grab a pointer to where the EvalTimeDerivatives results end up.
   const SimpleCarState<double>* const result =
       dynamic_cast<const SimpleCarState<double>*>(
-          derivatives_->get_mutable_vector());
+          &derivatives_->get_mutable_vector());
   ASSERT_NE(nullptr, result);
 
   // Starting state is all zeros.
@@ -378,7 +378,7 @@ TEST_F(SimpleCarTest, TransmogrifySymbolic) {
     auto input_value = std::make_unique<DrivingCommand<symbolic::Expression>>();
     other_context->FixInputPort(0, std::move(input_value));
     systems::VectorBase<symbolic::Expression>& xc =
-        *other_context->get_mutable_continuous_state_vector();
+        other_context->get_mutable_continuous_state_vector();
     for (int i = 0; i < xc.size(); ++i) {
       xc[i] = symbolic::Variable("xc" + std::to_string(i));
     }
@@ -394,7 +394,7 @@ TEST_F(SimpleCarTest, TestConstraints) {
   using systems::SystemConstraintIndex;
 
   SimpleCarParams<double>* params = dynamic_cast<SimpleCarParams<double>*>(
-      context_->get_mutable_numeric_parameter(0));
+      &context_->get_mutable_numeric_parameter(0));
   EXPECT_TRUE(params);
   SimpleCarState<double>* state = continuous_state();
 
