@@ -190,9 +190,9 @@ github_archive(
 
 github_archive(
     name = "ccd",
-    repository = "danfis/libccd",
-    commit = "v2.0",
-    sha256 = "1b4997e361c79262cf1fe5e1a3bf0789c9447d60b8ae2c1f945693ad574f9471",  # noqa
+    repository = "RobotLocomotion/libccd",
+    commit = "64f02f741ac94fccd0fb660a5bffcbe6d01d9939",
+    sha256 = "d028cf9ee11b996c71589a5c78590a5e2edc2df2ef7d3915daa250e9856ea6c1",
     build_file = "tools/workspace/ccd/ccd.BUILD.bazel",
 )
 
