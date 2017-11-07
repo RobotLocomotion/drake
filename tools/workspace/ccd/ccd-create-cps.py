@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 from drake.tools.install.cpsutils import read_defs
-import pprint
 
 defs = read_defs("set\(CCD_VERSION_(MAJOR|MINOR)\s+([0-9]+)\)")
 
