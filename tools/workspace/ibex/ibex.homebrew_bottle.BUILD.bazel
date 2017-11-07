@@ -1,0 +1,19 @@
+# -*- python -*-
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "ibex_homebrew_bottle",
+    srcs = ["lib/libibex.dylib"],
+    hdrs = glob(["include/**/*" + ext for ext in [
+        ".h",
+        ".hpp",
+        ".icc",
+    ]]),
+    includes = [
+        "include",
+        "include/ibex",
+        "include/ibex/3rd",
+    ],
+    deps = ["@clp"],
+)

@@ -1,0 +1,11 @@
+# -*- python -*-
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "dreal_deb",
+    srcs = ["usr/lib/libdreal.so"],
+    hdrs = glob(["usr/include/dreal/**/*.h"]),
+    includes = ["usr/include"],
+    deps = ["@ibex_deb"],
+)
