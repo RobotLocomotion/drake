@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
 from drake.tools.install.cpsutils import read_defs
+import pprint
 
-defs = read_defs("set\(CCD_(VERSION)\s\"([0-9\.]+)\"\)")
+defs = read_defs("set\(CCD_VERSION_(MAJOR|MINOR)\s+([0-9]+)\)")
 
 content = """
 {
@@ -10,7 +11,7 @@ content = """
   "Name": "ccd",
   "Description": "Library for collision detection between two convex shapes",
   "License": "BSD-3-Clause",
-  "Version": "%(VERSION)s",
+  "Version": "%(MAJOR)s.%(MINOR)s",
   "Default-Components": [":ccd"],
   "Components": {
     "ccd": {
