@@ -1,0 +1,19 @@
+# -*- python -*-
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "ibex_deb",
+    srcs = ["usr/lib/libibex.so"],
+    hdrs = glob(["usr/include/**/*" + ext for ext in [
+        ".h",
+        ".hpp",
+        ".icc",
+    ]]),
+    includes = [
+        "usr/include",
+        "usr/include/ibex",
+        "usr/include/ibex/3rd",
+    ],
+    deps = ["@clp"],
+)

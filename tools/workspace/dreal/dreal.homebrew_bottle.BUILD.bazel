@@ -1,0 +1,11 @@
+# -*- python -*-
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "dreal_homebrew_bottle",
+    srcs = ["lib/libdreal.so"],
+    hdrs = glob(["include/dreal/**/*.h"]),
+    includes = ["include"],
+    deps = ["@ibex_homebrew_bottle"],
+)

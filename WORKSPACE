@@ -17,7 +17,10 @@
 workspace(name = "drake")
 
 load("//tools/workspace:bitbucket.bzl", "bitbucket_archive")
+load("//tools/workspace:deb.bzl", "new_deb_archive")
 load("//tools/workspace:github.bzl", "github_archive")
+load("//tools/workspace:homebrew_bottle.bzl", "new_homebrew_bottle_archive")
+load("//tools/workspace:os.bzl", "os_specific_alias_repository")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 local_repository(
@@ -291,6 +294,92 @@ git_repository(
     name = "snopt",
     remote = "git@github.com:RobotLocomotion/snopt.git",
     commit = "2ec980370eeb72897135b11570033a19bda885a7",
+)
+
+os_specific_alias_repository(
+    name = "dreal",
+    mapping = {
+        "Ubuntu default": [
+            "dreal=@dreal_deb",
+        ],
+        "macOS default": [
+            "dreal=@dreal_homebrew_bottle",
+        ],
+    },
+)
+
+pkg_config_package(
+    name = "clp",
+    modname = "clp",
+)
+
+new_deb_archive(
+    name = "ibex_deb",
+    build_file = "@drake//tools/workspace/ibex:ibex.deb.BUILD.bazel",
+    filenames = [
+        filename_pattern.format(version)
+        for filename_pattern in [
+            "libibex-dev_{}_amd64.deb",
+        ]
+        for version in [
+            "2.6.1.20171019111120.git5f6731a3d20072d02478c806d05724f5f306f15d~16.04",  # noqa
+        ]
+    ],
+    mirrors = [
+        "https://launchpad.net/~dreal/+archive/ubuntu/dreal/+files",
+    ],
+    sha256s = [
+        "cf5933f8f7173345dff9f2c7c62ed1bb8f003c591f00ac582b08119c18fbefc0",
+    ],
+)
+
+new_homebrew_bottle_archive(
+    name = "ibex_homebrew_bottle",
+    build_file = "@drake//tools/workspace/ibex:ibex.homebrew_bottle.BUILD.bazel",  # noqa
+    formula_name = "ibex",
+    root_url = "https://dl.bintray.com/dreal/homebrew-ibex",
+    sha256s = {
+        "10.11": "d72847e8b2f67f799bb78e6ea65d8743cfdd573ae6728a938108c780362a7631",  # noqa
+        "10.12": "e3a6a340acb5e84836fe0862f773d5408e97fc3f1a2bacedb9f61af8f3f14792",  # noqa
+        "10.13": "0db7d5788d51359c60dc2eed57c0d8017c8d9fe93388b566540ca01f82db30f5",  # noqa
+    },
+    version = "2.6.1",
+)
+
+new_deb_archive(
+    name = "dreal_deb",
+    build_file = "@drake//tools/workspace/dreal:dreal.deb.BUILD.bazel",
+    filenames = [
+        filename_pattern.format(version)
+        for filename_pattern in [
+            "dreal_{}_amd64.deb",
+        ]
+        for version in [
+            "4.17.10.5",  # noqa
+        ]
+    ],
+    mirrors = [
+        "https://dl.bintray.com/dreal/dreal",
+    ],
+    sha256s = [
+        "2f52d8470f09e6fee56815656e849f338c980cb746f242fd9012f93cd423d540",
+    ],
+)
+
+new_homebrew_bottle_archive(
+    name = "dreal_homebrew_bottle",
+    build_file = "@drake//tools/workspace/dreal:dreal.homebrew_bottle.BUILD.bazel",  # noqa
+    dep_map = {
+        "libibex.dylib": "ibex_homebrew_bottle/lib/libibex.dylib",
+    },
+    formula_name = "dreal",
+    root_url = "https://dl.bintray.com/dreal/homebrew-dreal",
+    sha256s = {
+        "10.11": "bd71c7b61309d3b5226e0ef99d6d2d2ee439756bb45867ff1fd9fd32f9be2e8f",  # noqa
+        "10.12": "fe413dd34941a1345d6a7b96f0a7f73fa364e1b28f8679ba192e26d4ed4545ca",  # noqa
+        "10.13": "9bb9c64aeaa82f11fab26f35f32cb69960ca81bd07d2ce8ba7c79e295ddfe402",  # noqa
+    },
+    version = "4.17.10.5",
 )
 
 # Python Libraries
