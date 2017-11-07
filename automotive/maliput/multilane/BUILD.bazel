@@ -146,6 +146,16 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "multilane_loader_test",
+    size = "small",
+    srcs = ["test/multilane_loader_test.cc"],
+    deps = [
+        ":loader",
+        "//drake/automotive/maliput/api/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
     name = "multilane_road_geometry_test",
     size = "small",
     srcs = ["test/multilane_road_geometry_test.cc"],
