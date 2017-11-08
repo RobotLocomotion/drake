@@ -118,7 +118,8 @@ GTEST_TEST(AutodiffOverloadsTest, Pow) {
 
 // Tests that pow(AutoDiffScalar, AutoDiffScalar) computes sane derivatives for
 // base^exponent at the corner case base = 0, exponent.derivatives() = {0}.
-GTEST_TEST(AutodiffOverloadsTest, PowEmptyExponentDerivative) {
+// TODO(jadecastro) Re-enable this test case once Mac is fixed.
+GTEST_TEST(AutodiffOverloadsTest, DISABLED_PowEmptyExponentDerivative) {
   Eigen::AutoDiffScalar<Vector1d> x;
   x.value() = 0.;
   x.derivatives() = Eigen::VectorXd::Unit(1, 0);
