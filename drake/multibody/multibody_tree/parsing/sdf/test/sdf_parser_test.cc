@@ -1,5 +1,7 @@
 #include "drake/multibody/multibody_tree/parsing/sdf/sdf_parser.h"
 
+#include <limits>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
@@ -10,8 +12,11 @@ namespace multibody_tree {
 namespace parsing {
 namespace {
 
+const double kEpsilon = std::numeric_limits<double>::epsilon();
+
 #include <iostream>
 #define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
+#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
 
 static const char* const kTestSdfPath =
     "drake/multibody/multibody_tree/parsing/sdf/models/double_pendulum.sdf";
@@ -21,89 +26,68 @@ GTEST_TEST(SDFParserTest, ParsingTest) {
   const std::string sdf_path = FindResourceOrThrow(kTestSdfPath);
   const std::string kModelName = "double_pendulum_with_base";
 
-  SDFParser parser;
+  PRINT_VAR(sdf_path);
 
+  SDFParser parser;
   auto sdf_spec = parser.ParseSDFModelFromFile(sdf_path);
 
   PRINT_VAR(sdf_spec->version());
   PRINT_VAR(sdf_spec->get_num_models());
-  sdf_spec->GetModelIdByName("double_pendulum_with_base");
   const SDFModel& model = sdf_spec->GetModelByName(kModelName);
+  const int model_id = sdf_spec->GetModelIdByName("double_pendulum_with_base");
   PRINT_VAR(model.name());
 
   EXPECT_EQ(sdf_spec->version(), "1.6");
   EXPECT_TRUE(sdf_spec->HasModel(kModelName));
+  EXPECT_EQ(model_id, 0);
 
-#if 0
-  RigidBodyTree<double> parsed_tree;
-  ParseModelFromFile(sdf_path, &parsed_tree);
-  parsed_tree.compile();
+  PRINT_VAR(model.get_num_links());
+  EXPECT_EQ(model.get_num_links(), 3);
 
-  // Build reference body.
-  RigidBody<double> body_ref;
-  body_ref.set_mass(60.0);
-  body_ref.set_center_of_mass(
-      Vector3<double>(0.0, 0.0, 0.9));
-  body_ref.set_name("body");
-  const Isometry3<double>::TranslationType body_element_translation(0, 0, 0.9);
-  const Quaternion<double> body_element_rotation =
-      Quaternion<double>::Identity();
-  // This transform for both collision and visual elements.
-  const Isometry3<double> body_element_transform =
-      body_element_translation * body_element_rotation;
-  DrakeShapes::Box body_geometry(Vector3<double>(0.2, 0.2, 1.8));
-  drake::multibody::collision::Element body_collision(body_geometry,
-                                                      body_element_transform);
-  body_ref.AddCollisionElement("", &body_collision);
-  DrakeShapes::VisualElement body_visual(body_element_transform);
-  body_visual.setGeometry(body_geometry);
-  body_ref.AddVisualElement(body_visual);
+  const std::vector<SDFLink>& links = model.get_links();
 
-  // Build reference arm.
-  RigidBody<double> arm_ref;
-  arm_ref.set_mass(2.0);
-  arm_ref.set_name("arm");
+  const auto& is_link_in_vector = [](
+      const std::vector<SDFLink>& v, const std::string& name) {
+    return
+        std::find_if(v.begin(), v.end(), [&name](const SDFLink& link) {
+          return link.name() == name;
+        }) != v.end();
+  };
 
-  // This transform applies for the link.
-  const Isometry3<double>::TranslationType arm_translation(0, 0, 1.5);
-  const AngleAxis<double> arm_rotation(-1.5708, Vector3<double>::UnitX());
-  const Isometry3<double> arm_transform = arm_translation * arm_rotation;
+  EXPECT_TRUE(is_link_in_vector(links, "lower_link"));
+  EXPECT_TRUE(is_link_in_vector(links, "base"));
+  EXPECT_TRUE(is_link_in_vector(links, "upper_link"));
 
-  // This transform applies for both collision and visual elements.
-  const Isometry3<double>::TranslationType arm_element_translation(-0.05, 0, 0);
-  const AngleAxis<double> arm_element_rotation(
-      1.5708, Vector3<double>::UnitY());
-  const Isometry3<double> arm_element_transform =
-      arm_element_translation * arm_element_rotation;
+  const SDFLink& lower_link = model.GetLinkByName("lower_link");
+  const SDFLink& upper_link = model.GetLinkByName("upper_link");
+  const Isometry3<double> X_DL = lower_link.get_pose_in_model();
+  const Isometry3<double> X_DU = upper_link.get_pose_in_model();
 
-  DrakeShapes::Cylinder arm_geometry(0.05, 0.4);
-  drake::multibody::collision::Element arm_collision(arm_geometry,
-                                                     arm_element_transform);
-  arm_ref.AddCollisionElement("", &arm_collision);
-  DrakeShapes::VisualElement arm_visual(arm_element_transform);
-  arm_visual.setGeometry(arm_geometry);
-  arm_ref.AddVisualElement(arm_visual);
+  // Expected values of the links's poses in the model frame D.
+  const Isometry3<double> X_DL_expected =
+      Translation3<double>(0.25, 1.0, 2.1) *
+      AngleAxis<double>(-2.0, Vector3<double>::UnitX());
 
-  // Check parsed tree bodies and joints.
-  RigidBody<double>* body = parsed_tree.FindBody("body");
-  ASSERT_TRUE(body != nullptr);
-  EXPECT_TRUE(body->has_as_parent(parsed_tree.world()));
-  EXPECT_TRUE(test::AreBodiesEquivalent(*body, body_ref));
+  const Isometry3<double> X_DU_expected =
+      Translation3<double>(0.0, 0.0, 2.1) *
+      AngleAxis<double>(-1.5708, Vector3<double>::UnitX());
 
-  const DrakeJoint& world_to_body_joint = body->getJoint();
-  EXPECT_TRUE(world_to_body_joint.is_fixed());
+  EXPECT_TRUE(X_DL.isApprox(X_DL_expected, kEpsilon));
+  EXPECT_TRUE(X_DU.isApprox(X_DU_expected, kEpsilon));
 
-  RigidBody<double>* arm = parsed_tree.FindBody("arm");
-  ASSERT_TRUE(arm != nullptr);
-  EXPECT_TRUE(arm->has_as_parent(*body));
-  EXPECT_TRUE(test::AreBodiesEquivalent(*arm, arm_ref));
+  EXPECT_NEAR(lower_link.mass(), 30.0, kEpsilon);
+  EXPECT_NEAR(upper_link.mass(), 30.0, kEpsilon);
 
-  const DrakeJoint& body_to_arm_joint = arm->getJoint();
-  EXPECT_EQ(body_to_arm_joint.get_name(), "shoulder");
-  EXPECT_FALSE(body_to_arm_joint.is_fixed());
-  EXPECT_TRUE(arm_transform.isApprox(
-     body_to_arm_joint.get_transform_to_parent_body()));
-#endif
+  // Verify the value of the <inertial> frame poses in their respective link
+  // frames.
+  const Isometry3<double>& X_UI = upper_link.get_inertial_frame_pose();
+  const Isometry3<double>& X_LI = lower_link.get_inertial_frame_pose();
+
+  const Isometry3<double> X_UI_expected(Translation3<double>(0.0, 0.0, 0.5));
+  const Isometry3<double> X_LI_expected(Translation3<double>(0.0, 0.0, 0.5));
+
+  EXPECT_TRUE(X_UI.isApprox(X_UI_expected, kEpsilon));
+  EXPECT_TRUE(X_LI.isApprox(X_LI_expected, kEpsilon));
 }
 
 }  // namespace

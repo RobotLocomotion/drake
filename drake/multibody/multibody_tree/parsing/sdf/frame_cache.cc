@@ -78,7 +78,6 @@ Isometry3<T> FrameCache<T>::RootTransform(std::string frame) const {
 }
 
 template class FrameCache<double>;
-template struct FramedIsometry3<double>;
 
 }  // namespace parsing
 }  // namespace multibody_tree

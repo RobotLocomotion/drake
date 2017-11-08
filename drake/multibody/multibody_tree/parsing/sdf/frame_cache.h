@@ -6,32 +6,12 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/multibody_tree/parsing/sdf/framed_isometry3.h"
 
 namespace drake {
 namespace multibody {
 namespace multibody_tree {
 namespace parsing {
-
-/// An isometric transform along with the frame in which it
-/// is defined. Useful for keeping collections of transforms
-/// in different frames.
-///
-/// @note
-/// Instantiated templates for the following scalar types
-/// @p T are provided:
-/// - double
-template <typename T>
-struct FramedIsometry3 {
-  FramedIsometry3() {}
-
-  FramedIsometry3(const Isometry3<T>& isometry_in,
-                  const std::string& frame_in) :
-      isometry(isometry_in),
-      frame(frame_in) {}
-
-  Isometry3<T> isometry{Isometry3<T>::Identity()};
-  std::string frame{};
-};
 
 /// Keeps a set of frames and the transforms that relate them, using
 /// a root or fixed frame to conjoin them all.
@@ -43,7 +23,7 @@ struct FramedIsometry3 {
 template <typename T>
 class FrameCache {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FrameCache);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FrameCache);
   /// Constructor that takes the @p root_frame.
   explicit FrameCache(const std::string& root_frame);
 
@@ -78,7 +58,8 @@ class FrameCache {
   Isometry3<T> RootTransform(std::string frame) const;
 
   // Name of the root frame of this cache.
-  const std::string root_frame_;
+  std::string root_frame_;
+
   // Map to keep all known frames' transforms.
   std::map<std::string, FramedIsometry3<T>> X_TS_cache_;
 };

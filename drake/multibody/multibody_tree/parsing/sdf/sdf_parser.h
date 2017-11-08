@@ -9,6 +9,7 @@
 #include "drake/multibody/multibody_tree/parsing/sdf/frame_cache.h"
 #include "drake/multibody/multibody_tree/parsing/sdf/sdf_model.h"
 #include "drake/multibody/multibody_tree/parsing/sdf/sdf_spec.h"
+#include "drake/multibody/multibody_tree/parsing/sdf/sdf_link.h"
 
 namespace drake {
 namespace multibody {

@@ -16,14 +16,6 @@ namespace multibody {
 namespace multibody_tree {
 namespace parsing {
 
-#if 0
-// RigidBodyTree model instance descriptor. Helpful
-// to carry model name and instance id around.
-struct ModelInstance {
-  std::string name;
-  int id;
-};
-
 // Helper function to express an ignition::math::Vector3d instance as
 // a Vector3<double> instance.
 Vector3<double> ToVector(const ignition::math::Vector3d& vector) {
@@ -46,176 +38,88 @@ Isometry3<double> ParsePose(sdf::ElementPtr sdf_pose_element) {
   return ToIsometry(sdf_pose_element->Get<ignition::math::Pose3d>());
 }
 
-// Parses a geometry from the given SDF element and adds a
-// DrakeShapes::Geometry instance to the given element.
-void ParseGeometry(sdf::ElementPtr sdf_geometry_element,
-                   DrakeShapes::Element* element) {
-  DRAKE_DEMAND(sdf_geometry_element != nullptr);
-  DRAKE_DEMAND(sdf_geometry_element->GetName() == "geometry");
-  DRAKE_DEMAND(element != nullptr);
-
-  sdf::ElementPtr sdf_shape_element;
-  if (sdf_geometry_element->HasElement("cylinder")) {
-    sdf_shape_element = sdf_geometry_element->GetElement("cylinder");
-    sdf::ElementPtr sdf_radius_element =
-        sdf_shape_element->GetElement("radius");
-    sdf::ElementPtr sdf_length_element =
-        sdf_shape_element->GetElement("length");
-    element->setGeometry(DrakeShapes::Cylinder(
-        sdf_radius_element->Get<double>(), sdf_length_element->Get<double>()));
-    return;
-  }
-  if (sdf_geometry_element->HasElement("box")) {
-    sdf_shape_element = sdf_geometry_element->GetElement("box");
-    sdf::ElementPtr sdf_size_element = sdf_shape_element->GetElement("size");
-    const Vector3<double> xyz = ToVector(
-        sdf_size_element->Get<ignition::math::Vector3d>());
-    element->setGeometry(DrakeShapes::Box(xyz));
-    return;
-  }
-  // TODO(hidmic): Support mesh and sphere geometries.
-  DRAKE_ABORT_MSG("Unsupported geometry!");
-}
-
-// Parses a visual geometry from the given SDF element and adds a
-// DrakeShapes::VisualElement instance to the given body.
-void ParseVisual(sdf::ElementPtr sdf_visual_element, RigidBody<double>* body) {
-  DRAKE_DEMAND(sdf_visual_element != nullptr);
-  DRAKE_DEMAND(sdf_visual_element->GetName() == "visual");
-  DRAKE_DEMAND(body != nullptr);
-
-  const auto visual_name = sdf_visual_element->Get<std::string>("name");
-  // Visual element frame's (E) pose in body frame (B).
-  auto X_BE = Isometry3<double>::Identity();
-  if (sdf_visual_element->HasElement("pose")) {
-    sdf::ElementPtr sdf_pose_element = sdf_visual_element->GetElement("pose");
-    X_BE = ParsePose(sdf_pose_element);
-  }
-
-  DrakeShapes::VisualElement element(X_BE);
-  sdf::ElementPtr sdf_geometry_element =
-      sdf_visual_element->GetElement("geometry");
-  ParseGeometry(sdf_geometry_element, &element);
-  body->AddVisualElement(element);
-}
-
-// Parses a collision geometry from the given SDF element and adds a
-// drake::multibody::collision::Element instance to the given body through the
-// given tree.
-void ParseCollision(sdf::ElementPtr sdf_collision_element,
-                    RigidBody<double>* body,
-                    RigidBodyTree<double>* tree) {
-  DRAKE_DEMAND(sdf_collision_element != nullptr);
-  DRAKE_DEMAND(sdf_collision_element->GetName() == "collision");
-  DRAKE_DEMAND(body != nullptr);
-  DRAKE_DEMAND(tree != nullptr);
-
-  const auto collision_name = sdf_collision_element->Get<std::string>("name");
-  // Collision element's frame (E) pose in body frame (B).
-  auto X_BE = Isometry3<double>::Identity();
-  if (sdf_collision_element->HasElement("pose")) {
-    sdf::ElementPtr sdf_pose_element =
-        sdf_collision_element->GetElement("pose");
-    X_BE = ParsePose(sdf_pose_element);
-  }
-
-  drake::multibody::collision::Element element(X_BE, body);
-  sdf::ElementPtr sdf_geometry_element =
-      sdf_collision_element->GetElement("geometry");
-  ParseGeometry(sdf_geometry_element, &element);
-  // Collision elements are added to the rigid body
-  // tree, which then updates the corresponding rigid body.
-  tree->addCollisionElement(element, *body, "default");
-}
-
 // Parses inertial information (mass, COM) from the given SDF
 // element and updates the given body accordingly.
-// TODO(hidmic): Parse inertial tensor as well.
-void ParseInertial(sdf::ElementPtr sdf_inertial_element,
-                   RigidBody<double>* body) {
+void ParseInertial(sdf::ElementPtr sdf_inertial_element, SDFLink* link) {
   DRAKE_DEMAND(sdf_inertial_element != nullptr);
   DRAKE_DEMAND(sdf_inertial_element->GetName() == "inertial");
-  DRAKE_DEMAND(body != nullptr);
-  // Inertial frame's (I) pose in body frame (B).
-  auto X_BI = Isometry3<double>::Identity();
+  DRAKE_DEMAND(link != nullptr);
+
+  // Inertial frame's (I) pose in link's frame (L).
+  auto X_LI = Isometry3<double>::Identity();
   if (sdf_inertial_element->HasElement("pose")) {
     sdf::ElementPtr sdf_pose_element = sdf_inertial_element->GetElement("pose");
-    X_BI = ParsePose(sdf_pose_element);
+    X_LI = ParsePose(sdf_pose_element);
   }
-  // Center of mass p_BBcm measured and expressed in the body frame B,
-  // as it is at the origin of the inertial frame (I).
-  body->set_center_of_mass(X_BI.translation());
+  // So far this parsing assumes the pose was given in the link's frame L.
+  // TODO: register inertial frame and set its pose in an arbitrary measured-in
+  // frame.
+  link->set_inertial_frame_pose(X_LI);
 
   if (sdf_inertial_element->HasElement("mass")) {
     sdf::ElementPtr sdf_mass_element = sdf_inertial_element->GetElement("mass");
-    body->set_mass(sdf_mass_element->Get<double>());
+    link->set_mass(sdf_mass_element->Get<double>());
   }
 
-  // Define inertia tensor using the link mass on the link's frame,
-  // and then transform it to the specified link's inertial frame.
-  SquareTwistMatrix<double> itensor = SquareTwistMatrix<double>::Zero();
-  itensor.block(3, 3, 3, 3) << body->get_mass() * Matrix3<double>::Identity();
-  body->set_spatial_inertia(transformSpatialInertia(X_BI, itensor));
+  // Parse the <inertia> element.
+  if (sdf_inertial_element->HasElement("inertia")) {
+    sdf::ElementPtr sdf_inertia_element =
+        sdf_inertial_element->GetElement("inertia");
+    // Per SDF specification, the following elements are required within the
+    // <inertia> element.
+    const double Ixx = sdf_inertia_element->GetElement("ixx")->Get<double>();
+    const double Ixy = sdf_inertia_element->GetElement("ixy")->Get<double>();
+    const double Ixz = sdf_inertia_element->GetElement("ixz")->Get<double>();
+    const double Iyy = sdf_inertia_element->GetElement("iyy")->Get<double>();
+    const double Iyz = sdf_inertia_element->GetElement("iyz")->Get<double>();
+    const double Izz = sdf_inertia_element->GetElement("izz")->Get<double>();
+    // Inertia matrix about Io (Lcm) and expressed in I.
+    Matrix3<double> I_Io_I;
+    I_Io_I(0, 0) = Ixx; I_Io_I(0, 1) = Ixy; I_Io_I(0, 2) = Ixz;
+    I_Io_I(1, 0) = Ixy; I_Io_I(1, 1) = Iyy; I_Io_I(1, 2) = Iyz;
+    I_Io_I(2, 0) = Ixz; I_Io_I(2, 1) = Iyz; I_Io_I(2, 2) = Izz;
+    link->set_inertia_matrix(I_Io_I);
+  }
 }
 
 // Parses inertial, visual and collision details of a body, if any, from the
 // given SDF element and adds a RigidBody instance to the given tree as part
 // of the given model instance. The frame cache is updated with the body frame's
 // pose (B) in its model frame (D).
-void ParseLink(sdf::ElementPtr sdf_link_element,
-               const ModelInstance& instance,
-               RigidBodyTree<double>* tree,
-               FrameCache<double>* frame_cache) {
+void ParseLink(const sdf::ElementPtr sdf_link_element,
+               SDFSpec* sdf_spec,
+               SDFModel* sdf_model) {
   DRAKE_DEMAND(sdf_link_element != nullptr);
   DRAKE_DEMAND(sdf_link_element->GetName() == "link");
-  DRAKE_DEMAND(tree != nullptr);
-  DRAKE_DEMAND(frame_cache != nullptr);
+  DRAKE_DEMAND(sdf_spec != nullptr);
+  DRAKE_DEMAND(sdf_model != nullptr);
 
-  auto body = std::make_unique<RigidBody<double>>();
   const auto link_name = sdf_link_element->Get<std::string>("name");
-  body->set_name(link_name);
-  body->set_model_name(instance.name);
-  body->set_model_instance_id(instance.id);
+  SDFLink& sdf_link = sdf_model->AddLink(link_name);
 
-  // Body frame's (B) pose in model frame (D).
-  auto X_DB = Isometry3<double>::Identity();
+  // Parse the pose of the link's frame (L) pose in the model frame (D).
+  auto X_DL = Isometry3<double>::Identity();
   if (sdf_link_element->HasElement("pose")) {
     sdf::ElementPtr sdf_pose_element = sdf_link_element->GetElement("pose");
-    X_DB = ParsePose(sdf_pose_element);
+    X_DL = ParsePose(sdf_pose_element);
   }
-  frame_cache->Update(instance.name, link_name, X_DB);
+  sdf_model->SetLinkPoseInModelFrame(sdf_link.name(), X_DL);
 
   if (sdf_link_element->HasElement("inertial")) {
     sdf::ElementPtr sdf_inertial_element =
         sdf_link_element->GetElement("inertial");
-    ParseInertial(sdf_inertial_element, body.get());
+    ParseInertial(sdf_inertial_element, &sdf_link);
   }
 
-  if (sdf_link_element->HasElement("visual")) {
-    sdf::ElementPtr sdf_visual_element = sdf_link_element->GetElement("visual");
-    while (sdf_visual_element != nullptr) {
-      ParseVisual(sdf_visual_element, body.get());
-      sdf_visual_element = sdf_visual_element->GetNextElement("visual");
-    }
-  }
-
-  if (sdf_link_element->HasElement("collision")) {
-    sdf::ElementPtr sdf_collision_element =
-        sdf_link_element->GetElement("collision");
-    while (sdf_collision_element != nullptr) {
-      ParseCollision(sdf_collision_element, body.get(), tree);
-      sdf_collision_element =
-          sdf_collision_element->GetNextElement("collision");
-    }
-  }
-  tree->add_rigid_body(std::move(body));
+  // TODO: parse visual and collision elements.
 }
 
+#if 0
 // Parses a joint type from the given SDF element and instantiates the
 // corresponding DrakeJoint instance. It is assumed that the parent body
 // frame is already present in the frame cache.
 std::unique_ptr<DrakeJoint>
-ParseJointType(sdf::ElementPtr sdf_joint_element,
+ParseJointType(const sdf::ElementPtr sdf_joint_element,
                const ModelInstance& instance,
                const RigidBody<double>& parent_body,
                const FrameCache<double>& frame_cache) {
@@ -372,21 +276,20 @@ void SDFParser::ParseModel(sdf::ElementPtr sdf_model_element, SDFSpec* spec) {
   // Create a new SDF model.
   const auto model_name = sdf_model_element->Get<std::string>("name");
   SDFModel& sdf_model = spec->AddModel(model_name);
-  (void) sdf_model;
 
   // Define a model instance and a pose tree rooted at the model's frame (D).
   // Create cache here or in the Spec class?
   //FrameCache<double> frame_cache(model_name);
 
-#if 0
   if (sdf_model_element->HasElement("link")) {
     sdf::ElementPtr sdf_link_element = sdf_model_element->GetElement("link");
     while (sdf_link_element != nullptr) {
-      ParseLink(sdf_link_element, instance, tree, &frame_cache);
+      ParseLink(sdf_link_element, spec, &sdf_model);
       sdf_link_element = sdf_link_element->GetNextElement("link");
     }
   }
 
+#if 0
   if (sdf_model_element->HasElement("joint")) {
     sdf::ElementPtr sdf_joint_element = sdf_model_element->GetElement("joint");
     while (sdf_joint_element != nullptr) {

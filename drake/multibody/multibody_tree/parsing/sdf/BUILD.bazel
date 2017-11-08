@@ -20,7 +20,6 @@ drake_cc_library(
     ],
     deps = [
         "//drake/common:essential",
-        "//drake/multibody/multibody_tree:rotational_inertia",
     ],
 )
 
@@ -28,10 +27,12 @@ drake_cc_library(
     name = "sdf_parser",
     srcs = [
         "frame_cache.cc",
+        "framed_isometry3.cc",
         "sdf_parser.cc",
     ],
     hdrs = [
         "frame_cache.h",
+        "framed_isometry3.h",
         "sdf_parser.h",
     ],
     deps = [
