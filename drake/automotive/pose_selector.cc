@@ -199,14 +199,14 @@ bool PoseSelector<T>::IsWithinLane(const LanePositionT<T>& lane_position,
 }
 
 template <typename T>
-std::unique_ptr<LaneEnd> PoseSelector<T>::GetDefaultOngoingLane(
+optional<LaneEnd> PoseSelector<T>::GetDefaultOngoingLane(
     LaneDirection* lane_direction) {
   const Lane* const lane{lane_direction->lane};
   const bool with_s{lane_direction->with_s};
-  std::unique_ptr<LaneEnd> branch =
+  optional<LaneEnd> branch =
       (with_s) ? lane->GetDefaultBranch(LaneEnd::kFinish)
                : lane->GetDefaultBranch(LaneEnd::kStart);
-  if (branch == nullptr) {
+  if (!branch) {
     lane_direction->lane = nullptr;
     lane_direction->with_s = true;
     return branch;

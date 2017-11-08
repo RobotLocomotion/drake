@@ -52,9 +52,9 @@ GTEST_TEST(MonolaneOnrampMergeTest, TestDefaultAndNonDefaultAttributes) {
   EXPECT_EQ(api::LaneId("l:post0"), lane_beyond_onramp1->id());
 
   // Verify that the default branch of `onramp1` is `post0`.
-  std::unique_ptr<api::LaneEnd> onramp1_default_lane_end =
+  optional<api::LaneEnd> onramp1_default_lane_end =
       lane_onramp1->GetDefaultBranch(api::LaneEnd::kStart);
-  EXPECT_NE(onramp1_default_lane_end.get(), nullptr);
+  EXPECT_TRUE(onramp1_default_lane_end);
   EXPECT_EQ(api::LaneId("l:post0"), onramp1_default_lane_end->lane->id());
 
   // Verify that there's only one ongoing branch from `pre0`, and that it is
@@ -68,9 +68,9 @@ GTEST_TEST(MonolaneOnrampMergeTest, TestDefaultAndNonDefaultAttributes) {
   EXPECT_EQ(api::LaneId("l:post0"), lane_beyond_pre0->id());
 
   // Verify that the default branch of `pre0` is `post0`.
-  std::unique_ptr<api::LaneEnd> pre0_default_lane_end =
+  optional<api::LaneEnd> pre0_default_lane_end =
       lane_pre0->GetDefaultBranch(api::LaneEnd::kStart);
-  EXPECT_NE(pre0_default_lane_end.get(), nullptr);
+  EXPECT_TRUE(pre0_default_lane_end);
   EXPECT_EQ(api::LaneId("l:post0"), pre0_default_lane_end->lane->id());
 
   // Initialize non-default road characteristics.

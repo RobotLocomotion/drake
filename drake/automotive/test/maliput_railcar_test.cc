@@ -262,9 +262,9 @@ class MaliputRailcarTest : public ::testing::Test {
     // Verifies that the end of the straight lane is connected to:
     //  - the start of the curved lane if it is not flipped.
     //  - the end of the curved lane if it is flipped.
-    std::unique_ptr<LaneEnd> straight_lane_end =
+    optional<LaneEnd> straight_lane_end =
         straight_lane->GetDefaultBranch(LaneEnd::kFinish);
-    ASSERT_NE(straight_lane_end, nullptr);
+    ASSERT_TRUE(straight_lane_end);
     EXPECT_EQ(straight_lane_end->end,
               flip_curve_lane ? LaneEnd::kFinish : LaneEnd::kStart);
     EXPECT_EQ(straight_lane_end->lane, curved_lane);
@@ -943,20 +943,20 @@ TEST_F(MaliputRailcarTest, TestTwoLaneStretchOfRoad) {
 
     // Verifies that the end of the straight lane is connected to the start of
     // the curved lane if it is not flipped.
-    std::unique_ptr<LaneEnd> straight_lane_start =
+    optional<LaneEnd> straight_lane_start =
         straight_lane->GetDefaultBranch(LaneEnd::kStart);
-    std::unique_ptr<LaneEnd> straight_lane_finish =
+    optional<LaneEnd> straight_lane_finish =
         straight_lane->GetDefaultBranch(LaneEnd::kFinish);
-    std::unique_ptr<LaneEnd> curved_lane_start =
+    optional<LaneEnd> curved_lane_start =
         curved_lane->GetDefaultBranch(LaneEnd::kStart);
-    std::unique_ptr<LaneEnd> curved_lane_finish =
+    optional<LaneEnd> curved_lane_finish =
         curved_lane->GetDefaultBranch(LaneEnd::kFinish);
-    EXPECT_EQ(straight_lane_start, nullptr);
-    ASSERT_NE(straight_lane_finish, nullptr);
+    EXPECT_FALSE(straight_lane_start);
+    ASSERT_TRUE(straight_lane_finish);
     EXPECT_EQ(straight_lane_finish->lane, curved_lane);
     EXPECT_EQ(straight_lane_finish->end, LaneEnd::kStart);
-    ASSERT_NE(curved_lane_start, nullptr);
-    EXPECT_EQ(curved_lane_finish, nullptr);
+    ASSERT_TRUE(curved_lane_start);
+    EXPECT_FALSE(curved_lane_finish);
     EXPECT_EQ(curved_lane_start->lane, straight_lane);
     EXPECT_EQ(curved_lane_start->end, LaneEnd::kFinish);
 
@@ -969,12 +969,12 @@ TEST_F(MaliputRailcarTest, TestTwoLaneStretchOfRoad) {
     straight_lane_finish = straight_lane->GetDefaultBranch(LaneEnd::kFinish);
     curved_lane_start = curved_lane->GetDefaultBranch(LaneEnd::kStart);
     curved_lane_finish = curved_lane->GetDefaultBranch(LaneEnd::kFinish);
-    EXPECT_EQ(straight_lane_start, nullptr);
-    ASSERT_NE(straight_lane_finish, nullptr);
+    EXPECT_FALSE(straight_lane_start);
+    ASSERT_TRUE(straight_lane_finish);
     EXPECT_EQ(straight_lane_finish->lane, curved_lane);
     EXPECT_EQ(straight_lane_finish->end, LaneEnd::kFinish);
-    ASSERT_NE(curved_lane_finish, nullptr);
-    EXPECT_EQ(curved_lane_start, nullptr);
+    ASSERT_TRUE(curved_lane_finish);
+    EXPECT_FALSE(curved_lane_start);
     EXPECT_EQ(curved_lane_finish->lane, straight_lane);
     EXPECT_EQ(curved_lane_finish->end, LaneEnd::kFinish);
 }
