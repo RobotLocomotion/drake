@@ -14,6 +14,7 @@
 #include "drake/automotive/gen/trajectory_car_params.h"
 #include "drake/automotive/gen/trajectory_car_state.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/extract_double.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/vector_base.h"
 #include "drake/systems/rendering/frame_velocity.h"
@@ -61,16 +62,16 @@ namespace automotive {
 template <typename T>
 class TrajectoryCar final : public systems::LeafSystem<T> {
  public:
-  typedef typename Curve2<T>::Point2T Point2;
+  typedef typename Curve2<double>::Point2 Point2d;
 
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TrajectoryCar)
 
   /// Constructs a TrajectoryCar system that traces a given two-dimensional @p
   /// curve.  Throws an error if the curve is empty (has a zero @p path_length).
-  explicit TrajectoryCar(const Curve2<double>& curve)
+  explicit TrajectoryCar(Curve2<double> curve)
       : systems::LeafSystem<T>(
             systems::SystemTypeTag<automotive::TrajectoryCar>{}),
-            curve_(curve.waypoints()) {
+        curve_(std::move(curve)) {
     if (curve_.path_length() == 0.0) {
       throw std::invalid_argument{"empty curve"};
     }
@@ -85,7 +86,7 @@ class TrajectoryCar final : public systems::LeafSystem<T> {
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
   explicit TrajectoryCar(const TrajectoryCar<U>& other)
-      : TrajectoryCar<T>(Curve2<double>(other.curve_.waypoints())) {}
+      : TrajectoryCar<T>(other.curve_) {}
 
   /// The command input port (optional).
   const systems::InputPortDescriptor<T>& command_input() const {
@@ -107,8 +108,8 @@ class TrajectoryCar final : public systems::LeafSystem<T> {
  protected:
   /// Data structure returned by CalcRawPose containing raw pose information.
   struct PositionHeading {
-    Point2 position = Point2::Zero();
-    T heading{0.};
+    Point2d position = Point2d(Point2d::Zero());
+    double heading{0.};
   };
 
   void CalcStateOutput(const systems::Context<T>& context,
@@ -250,8 +251,8 @@ class TrajectoryCar final : public systems::LeafSystem<T> {
     PositionHeading result;
 
     // Compute the curve at the current longitudinal (along-curve) position.
-    const typename Curve2<T>::PositionResult pose =
-        curve_.GetPosition(state.position());
+    const typename Curve2<double>::PositionResult pose =
+        curve_.GetPosition(ExtractDoubleOrThrow(state.position()));
     // TODO(jadecastro): Now that the curve is a function of position rather
     // than time, we are not acting on a `trajectory` anymore.  Rename this
     // System to PathFollowingCar or something similar.
@@ -262,7 +263,7 @@ class TrajectoryCar final : public systems::LeafSystem<T> {
     return result;
   }
 
-  const Curve2<T> curve_;
+  const Curve2<double> curve_;
 };
 
 }  // namespace automotive

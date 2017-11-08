@@ -117,13 +117,6 @@ pow(const Eigen::AutoDiffScalar<DerTypeA>& base,
   using std::pow;
   using std::log;
   const auto x_to_the_y = pow(x, y);
-  if (ygrad.isZero(std::numeric_limits<double>::epsilon()) ||
-      ygrad.size() == 0) {
-    // The derivative only depends on ∂(x^y)/∂x -- this prevents undefined
-    // behavior in the corner case where ∂(x^y)/∂y is infinite when x = 0,
-    // despite ∂y/∂v being 0.
-    return Eigen::MakeAutoDiffScalar(x_to_the_y, y * pow(x, y - 1) * xgrad);
-  }
   return Eigen::MakeAutoDiffScalar(
       // The value is x ^ y.
       x_to_the_y,
@@ -131,8 +124,8 @@ pow(const Eigen::AutoDiffScalar<DerTypeA>& base,
       // df/dv_i = (∂f/∂x * dx/dv_i) + (∂f/∂y * dy/dv_i)
       // ∂f/∂x is y*x^(y-1)
       y * pow(x, y - 1) * xgrad +
-      // ∂f/∂y is (x^y)*ln(x)
-      x_to_the_y * log(x) * ygrad);
+          // ∂f/∂y is (x^y)*ln(x)
+          x_to_the_y * log(x) * ygrad);
 }
 
 }  // namespace Eigen
