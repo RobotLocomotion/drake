@@ -401,9 +401,9 @@ void ConstraintSolver<T>::DetermineNewFullInertiaSolveOperator(
               num_generalized_velocities](const MatrixX<T>& B) -> MatrixX<T> {
     // From a block matrix inversion,
     // | M  -Gᵀ |⁻¹ | Y | = |  C  E || Y | = | CY + EZ   |
-    // | G'  0  |   | Z |   | -Eᵀ F || Z |   | -EᵀY + FZ |
-    // where C  ≡ M⁻¹ - M⁻¹Gᵀ(GM⁻¹Gᵀ)⁻¹GM⁻¹
-    //       E  ≡ M⁻¹Gᵀ(GM⁻¹Gᵀ)⁻¹
+    // | G   0  |   | Z |   | -Eᵀ F || Z |   | -EᵀY + FZ |
+    // where E  ≡ M⁻¹Gᵀ(GM⁻¹Gᵀ)⁻¹
+    //       C  ≡ M⁻¹ - M⁻¹Gᵀ(GM⁻¹Gᵀ)⁻¹GM⁻¹ = M⁻¹ - M⁻¹GᵀE
     //      -Eᵀ ≡ -(GM⁻¹Gᵀ)⁻¹GM⁻¹
     //       F  ≡ (GM⁻¹Gᵀ)⁻¹
     //       B  ≡ | Y |
@@ -450,7 +450,7 @@ void ConstraintSolver<T>::DetermineNewFullInertiaSolveOperator(
     const MatrixX<T> iM_GT_Del_Z = problem_data->solve_inertia(GT_Del_Z);
 
     // Set the top block of the result.
-    X_top = problem_data->solve_inertia(Y) - iM_GT_Del_G_iM_Y + iM_GT_Del_Z;
+    X_top = iM_Y - iM_GT_Del_G_iM_Y + iM_GT_Del_Z;
 
     // Set the bottom block of the result.
     X_bot = delassus_QTZ->solve(Z) - Del_G_iM_Y;
@@ -572,6 +572,7 @@ void ConstraintSolver<T>::FormAndSolveConstraintLinearSystem(
 // FormAndSolveConstraintLinearSystem(), this approach does not require the
 // active constraints to be known a priori. Significantly more computation is
 // required, however.
+// @sa FormAndSolveConstraintLinearSystem for descriptions of parameters.
 template <typename T>
 void ConstraintSolver<T>::FormAndSolveConstraintLCP(
     const ConstraintAccelProblemData<T>& problem_data,
@@ -610,12 +611,12 @@ void ConstraintSolver<T>::FormAndSolveConstraintLCP(
   // where u are "free" variables. If the matrix A is nonsingular, u can be
   // solved for:
   // (e) u = -A⁻¹ (a + Xv)
-  // allowing the mixed LCP to be converted to a "pure" LCP (q, M) by:
-  // (f) q = b - YA⁻¹a
-  // (g) M = B - YA⁻¹X
+  // allowing the mixed LCP to be converted to a "pure" LCP (qq, MM) by:
+  // (f) qq = b - YA⁻¹a
+  // (g) MM = B - YA⁻¹X
 
   // Our mixed linear complementarity problem takes the specific form:
-  // (1) | M  -Gᵀ  -(Nᵀ-μQᵀ) -Dᵀ  0  -Lᵀ | | v̇ | + | -f  | = | 0 |
+  // (1) | M  -Gᵀ  -(Nᵀ-μQᵀ) -Dᵀ  0  -Lᵀ | | v̇  | + | -f  | = | 0 |
   //     | G   0    0         0   0   0  | | fG | + |  kᴳ | = | 0 |
   //     | N   0    0         0   0   0  | | fN | + |  kᴺ | = | α |
   //     | D   0    0         0   E   0  | | fD | + |  kᴰ | = | β |
@@ -626,54 +627,38 @@ void ConstraintSolver<T>::FormAndSolveConstraintLCP(
   // (4) 0 ≤ λ   ⊥  γ ≥ 0
   // (5) 0 ≤ fL  ⊥  δ ≥ 0
 
-  // G is generally not of full row rank, making | M  -Gᵀ | singular.
-  //                                             | G   0  |
-  //
-  // Selecting the largest independent subset of rows of G, which we call Ĝ,
-  // addresses this problem. First, note that linear dependence in G implies
-  // G⋅x = 0 for any vector x that satisfies Ĝ⋅x = 0. Now assume that G is a
-  // stacked matrix with independent rows (Ĝ) on top and dependent rows (G̅) on
-  // bottom:
-  // G ≡ | Ĝ  |
-  //     | G̅ |
-
-  // We will assign zero to the components of fG corresponding to the dependent
-  // rows of G, which allows casting (1) into a nearly identical form:
-  // (6)  | M  -Ĝᵀ  -(Nᵀ-μQᵀ) -Dᵀ  0  -Lᵀ | | v̇ | + | -f  | = | 0 |
-  //      | Ĝ   0    0         0   0   0  | | fĜ | + |  kᴳ | = | 0 |
-  //      | N   0    0         0   0   0  | | fN | + |  kᴺ | = | α |
-  //      | D   0    0         0   E   0  | | fD | + |  kᴰ | = | β |
-  //      | 0   0    μ        -Eᵀ  0   0  | |  λ | + |   0 | = | γ |
-  //      | L   0    0         0   0   0  | | fL | + |  kᴸ | = | δ |
-
-  // It should be clear that any solution to the MLCP (2)-(6) allows solving the
-  // MLCP (1)-(5) by setting fG = | fĜ |
-  //                              |  0 |.
-
   // --------------------------------------------------------------------------
   // Converting the MLCP to a pure LCP:
   // --------------------------------------------------------------------------
 
   // From the notation above in Equations (a)-(d):
-  // A ≡ | M  -Ĝᵀ|   a ≡ | -f  |   X ≡ |-(Nᵀ-μQᵀ) -Dᵀ  0  -Lᵀ |
-  //     | Ĝ   0 |       |  kᴳ |       | 0         0   0   0  |
+  // A ≡ | M  -Gᵀ|   a ≡ | -f  |   X ≡ |-(Nᵀ-μQᵀ) -Dᵀ  0  -Lᵀ |
+  //     | G   0 |       |  kᴳ |       | 0         0   0   0  |
   //
   // Y ≡ | N   0 |   b ≡ |  kᴺ |   B ≡ | 0    0   0   0  |
   //     | D   0 |       |  kᴰ |       | 0    0   E   0  |
   //     | 0   0 |       |  0  |       | μ   -Eᵀ  0   0  |
   //     | L   0 |       |  kᴸ |       | 0    0   0   0  |
-
+  //
+  // u ≡ | v̇  |      v ≡ | fN |
+  //     | fG |          | fD |
+  //                     |  λ |
+  //                     | fL |
+  //
   // Therefore, using Equations (f) and (g) and defining C as the upper left
-  // block of A⁻¹, the pure LCP (q,M) is defined as:
+  // block of A⁻¹, the pure LCP (qq,MM) is defined as:
+  //
   // MM ≡ | NC(Nᵀ-μQᵀ)  NCDᵀ   0   NCLᵀ |
   //      | DC(Nᵀ-μQᵀ)  DCDᵀ   E   DCLᵀ |
   //      | μ          -Eᵀ     0   0    |
   //      | LC(Nᵀ-μQᵀ)  LCDᵀ   0   LCLᵀ |
   //
+
   // qq ≡ | kᴺ + |N 0|A⁻¹a |
   //      | kᴰ + |D 0|A⁻¹a |
   //      |       0        |
   //      | kᴸ + |L 0|A⁻¹a |
+  //
 
   // --------------------------------------------------------------------------
   // Using the LCP solution to solve the MLCP.
@@ -816,7 +801,7 @@ void ConstraintSolver<T>::SolveConstraintProblem(
         num_generalized_velocities, delassus_QTZ.get(), &A_solve);
 
     // Determine a new "inertia" solve operator, using only the upper left block
-    // of A⁻¹ (denoted C above) to exploit zero blocks in common operations.
+    // of A⁻¹ (denoted C) to exploit zero blocks in common operations.
     DetermineNewPartialInertiaSolveOperator(&problem_data,
         num_generalized_velocities, delassus_QTZ.get(), &fast_A_solve);
   } else {
@@ -954,30 +939,6 @@ void ConstraintSolver<T>::SolveImpactProblem(
   // (4) 0 ≤ λ   ⊥  γ ≥ 0
   // (5) 0 ≤ fL  ⊥  δ ≥ 0
 
-  // G is generally not of full row rank, making | M  -Gᵀ | singular.
-  //                                             | G   0  |
-  //
-  // Selecting the largest independent subset of rows of G, which we call Ĝ,
-  // addresses this problem. First, note that linear dependence in G implies
-  // Gx = 0 for any vector x that satisfies Ĝx = 0. Now assume that G is a
-  // stacked matrix with independent rows (Ĝ) on top and dependent rows (G̅) on
-  // bottom:
-  // G ≡ | Ĝ  |
-  //     | G̅ |
-
-  // We will assign zero to the components of fG corresponding to the dependent
-  // rows of G, which allows casting (1) into a nearly identical form:
-  // (6)  | M  -Ĝᵀ  -Nᵀ  -Dᵀ  0  -Lᵀ | | v̇ | + |-M v | = | 0 |
-  //      | Ĝ   0    0    0   0   0  | | fĜ | + |  kᴳ | = | 0 |
-  //      | N   0    0    0   0   0  | | fN | + |  kᴺ | = | α |
-  //      | D   0    0    0   E   0  | | fD | + |  kᴰ | = | β |
-  //      | 0   0    μ   -Eᵀ  0   0  | |  λ | + |   0 | = | γ |
-  //      | L   0    0    0   0   0  | | fL | + |  kᴸ | = | δ |
-
-  // It should be clear that any solution to the MLCP (2)-(6) allows solving the
-  // MLCP (1)-(5) by setting fG = | fĜ |
-  //                              |  0 |.
-
   // --------------------------------------------------------------------------
   // Converting the MLCP to a pure LCP:
   // --------------------------------------------------------------------------
@@ -990,7 +951,12 @@ void ConstraintSolver<T>::SolveImpactProblem(
   //     | D   0 |       |  kᴰ |       | 0    0   E   0  |
   //     | 0   0 |       |  0  |       | μ   -Eᵀ  0   0  |
   //     | L   0 |       |  kᴸ |       | 0    0   0   0  |
-
+  //
+  // u ≡ | v⁺ |      v ≡ | fN |
+  //     | fG |          | fD |
+  //                     |  λ |
+  //                     | fL |
+  //
   // Therefore, using Equations (f) and (g) and defining C as the upper left
   // block of A⁻¹, the pure LCP (q,M) is defined as:
   // MM ≡ | NCNᵀ  NCDᵀ   0   NCLᵀ |
