@@ -183,8 +183,8 @@ TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, Test1) {
       &prog_, x_, Q1, Q2, p, x_, lower_bound, upper_bound, linearization_point,
       trust_region_gap);
 
-  // The variables y in the linear term is not the same as the variables in the
-  // quadratic term x.
+  // Check the case in which the variable y in the linear term are not the same
+  // as the variable x in the quadratic term.
   auto x_prime = prog_.NewContinuousVariables<2>();
   const Eigen::Vector3d p_prime(3, 2, 1);
   VectorDecisionVariable<3> y{x_(0), x_prime(0), x_prime(1)};
@@ -296,8 +296,8 @@ TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, SolveProblem1) {
 }
 
 TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, SolveProblem2) {
-  // The variables y in the linear term is not the same as the variables x in
-  // the quadratic term.
+  // Check the case in which the variable y in the linear term are not the same
+  // as the variable x in the quadratic term.
   Eigen::Matrix2d Q1, Q2;
   Q1 << 1, 0, 0, 2;
   Q2 << 2, 0.1, 0.1, 1;
@@ -451,8 +451,8 @@ void SolveRelaxNonConvexQuadraticConstraintInTrustRegionWithZeroQ1orQ2(
       symbolic::Polynomial(x.dot(Q * x)), poly_tol));
 
   auto cost = prog->AddLinearCost(x.cast<symbolic::Expression>().sum());
-  const double z_coeff = Q1_is_zero ? -1 : 1;
-  const double Q_coeff = Q1_is_zero ? -1 : 1;
+  const double z_sign = Q1_is_zero ? -1 : 1;
+  const double Q_sign = Q1_is_zero ? -1 : 1;
   for (int i = 0; i < c.cols(); ++i) {
     cost.constraint()->UpdateCoefficients(c.col(i).transpose());
     auto result = prog->Solve();
@@ -461,12 +461,12 @@ void SolveRelaxNonConvexQuadraticConstraintInTrustRegionWithZeroQ1orQ2(
     const Eigen::Vector2d x_sol = prog->GetSolution(x);
     const Eigen::VectorXd y_sol = prog->GetSolution(y);
     const double tol{1E-5};
-    EXPECT_GE(z_coeff * z_sol + p.dot(y_sol), lb - tol);
-    EXPECT_LE(z_coeff * z_sol + p.dot(y_sol), ub + tol);
+    EXPECT_GE(z_sign * z_sol + p.dot(y_sol), lb - tol);
+    EXPECT_LE(z_sign * z_sol + p.dot(y_sol), ub + tol);
     EXPECT_LE(z_sol,
               2 * x0.dot(Q * x_sol) - x0.dot(Q * x0) + trust_region_gap + tol);
     EXPECT_GE(z_sol, x_sol.dot(Q * x_sol) - tol);
-    const double original_constraint_val{x_sol.dot(Q_coeff * Q * x_sol) +
+    const double original_constraint_val{x_sol.dot(Q_sign * Q * x_sol) +
                                          p.dot(y_sol)};
     EXPECT_GE(original_constraint_val, lb - trust_region_gap - tol);
     EXPECT_LE(original_constraint_val, ub + trust_region_gap + tol);
@@ -512,8 +512,8 @@ TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, ZeroQ1Test2) {
 }
 
 TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, ZeroQ1Test3) {
-  // The variable y in the linear term is not the same as the variable x in the
-  // quadratic term.
+  // Check the case in which the variable y in the linear term is not the same
+  // as the variable x in the quadratic term.
   // -1 <= -x(0)² - 4x(1)² - 2x(0)x(1) + 2x(1) + 3z(0) + 2z(1) <= 4
   // -1 <= z(0) <= 1
   // -1 <= z(1) <= 1
@@ -566,8 +566,8 @@ TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, ZeroQ2Test2) {
 }
 
 TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, ZeroQ2Test3) {
-  // The variable y in the linear term is not the same as the variable x in the
-  // quadratic term.
+  // Check the case in which the variable y in the linear term are not the same
+  // as the variable x in the quadratic term.
   // -1 <= x(0)² + 3x(1)² + x(0)x(1) + 2x(0) + 4x(1) + 3y(0) <= 4
   // -1 <= y(0) <= 1
   Eigen::Matrix2d Q;

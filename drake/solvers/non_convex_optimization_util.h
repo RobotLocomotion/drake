@@ -128,8 +128,8 @@ std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposeNonConvexQuadraticForm(
  * constraint.
  * @param Q1 A positive semidefinite matrix.
  * @param Q2 A positive semidefinite matrix.
- * @param p A vector, the linear coefficients in the quadratic form.
- * @param y A vector, the variables in the linear term in the quadratic form.
+ * @param p A vector, the linear coefficients of the quadratic form.
+ * @param y A vector, the variables in the linear term of the quadratic form.
  * @param linearization_point The vector `x₀` in the documentation above.
  * @param lower_bound The left-hand side of the original non-convex constraint.
  * @param upper_bound The right-hand side of the original non-convex constraint.
