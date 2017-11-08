@@ -51,6 +51,7 @@ namespace geometry {
   Alias           | Instantiation                            | Scalar types
  -----------------|------------------------------------------|--------------
   FramePoseVector | FrameKinematicsVector<Isometry3<Scalar>> | double
+  FramePoseVector | FrameKinematicsVector<Isometry3<Scalar>> | AutoDiffXd
 
   @see FrameIdVector */
 template <class KinematicsValue>

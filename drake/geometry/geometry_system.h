@@ -191,13 +191,26 @@ template <typename T> class GeometryContext;
  //   - Finalizing API for topology changes at discrete events.
  @endcond
 
- @tparam T The underlying scalar type. Must be a valid Eigen scalar. */
+ @tparam T The scalar type. Must be a valid Eigen scalar.
+
+ Instantiated templates for the following kinds of T's are provided:
+ - double
+ - AutoDiffXd
+
+ They are already available to link against in the containing library.
+ No other values for T are currently supported.  */
 template <typename T>
-class GeometrySystem : public systems::LeafSystem<T> {
+class GeometrySystem final : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GeometrySystem)
 
   GeometrySystem();
+
+  /** Constructor used for scalar conversions. It should only be used to convert
+   _from_ double _to_ other scalar types. */
+  template <typename U>
+  explicit GeometrySystem(const GeometrySystem<U>& other);
+
   ~GeometrySystem() override {}
 
   /** @name       Port management
@@ -439,6 +452,13 @@ class GeometrySystem : public systems::LeafSystem<T> {
   // Friend class to facilitate testing.
   friend class GeometrySystemTester;
 
+  // GeometrySystem of different scalar types can all access each other's data.
+  template <typename>
+  friend class GeometrySystem;
+
+  // Helper class to register input ports for a source id.
+  void MakeSourcePorts(SourceId source_id);
+
   // Allow the load dispatch to peek into GeometrySystem.
   friend void DispatchLoadMessage(const GeometrySystem<double>&);
 
@@ -510,4 +530,20 @@ class GeometrySystem : public systems::LeafSystem<T> {
 };
 
 }  // namespace geometry
+
+// Define the conversion trait to *only* allow double -> AutoDiffXd conversion.
+// Symbolic is not supported yet, and AutoDiff -> double doesn't "make sense".
+namespace systems {
+namespace scalar_conversion {
+template <>
+struct Traits<geometry::GeometrySystem> {
+  template <typename T, typename U>
+  using supported = typename std::conditional<
+      !std::is_same<T, symbolic::Expression>::value &&
+          std::is_same<U, double>::value,
+      std::true_type, std::false_type>::type;
+};
+}  // namespace scalar_conversion
+}  // namespace systems
+
 }  // namespace drake

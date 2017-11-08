@@ -1,5 +1,7 @@
 #include "drake/geometry/geometry_context.h"
 
+#include "drake/common/autodiff.h"
+
 namespace drake {
 namespace geometry {
 
@@ -23,6 +25,7 @@ const GeometryState<T>& GeometryContext<T>::get_geometry_state() const {
 
 // Explicitly instantiates on the most common scalar types.
 template class GeometryContext<double>;
+template class GeometryContext<AutoDiffXd>;
 
 }  // namespace geometry
 }  // namespace drake
