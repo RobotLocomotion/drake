@@ -116,22 +116,6 @@ GTEST_TEST(AutodiffOverloadsTest, Pow) {
   EXPECT_DOUBLE_EQ(dzdx * 1.1 + dzdy * 1.0, z.derivatives()[1]);
 }
 
-// Tests that pow(AutoDiffScalar, AutoDiffScalar) computes sane derivatives for
-// base^exponent at the corner case base = 0, exponent.derivatives() = {0}.
-GTEST_TEST(AutodiffOverloadsTest, PowEmptyExponentDerivative) {
-  Eigen::AutoDiffScalar<Vector1d> x;
-  x.value() = 0.;
-  x.derivatives() = Eigen::VectorXd::Unit(1, 0);
-  Eigen::AutoDiffScalar<Vector1d> y;
-  y.value() = 2.5;
-
-  const auto z = pow(x, y);
-  EXPECT_DOUBLE_EQ(0., z.value());
-  // ∂z/∂v = ∂z/∂x, which is y*x^(y-1) = 0 (as opposed to NAN, had the chain
-  // rule been applied).
-  EXPECT_TRUE(CompareMatrices(Vector1d{0.}, z.derivatives()));
-}
-
 GTEST_TEST(AutodiffOverloadsTest, IfThenElse1) {
   using DerType = Eigen::Vector2d;
   Eigen::AutoDiffScalar<DerType> x{10.0, DerType{2, 1}};
