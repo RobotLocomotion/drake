@@ -39,7 +39,7 @@ install(
     name = "install",
     targets = ["libdrake.so"],
     guess_hdrs = "WORKSPACE",
-    guess_hdrs_exclude = [ "drake/systems/sensors/vtk_util.h" ],
+    guess_hdrs_exclude = ["drake/systems/sensors/vtk_util.h"],
     allowed_externals = ["//:LICENSE.TXT"],  # Root for our #include paths.
     deps = [
         ":install_cmake_config",
