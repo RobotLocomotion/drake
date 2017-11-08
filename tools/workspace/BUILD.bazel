@@ -29,6 +29,7 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "libbot",
     "octomap",
     "pybind11",
+    "scs",
     "sdformat",
     "spdlog",
     "spruce",

@@ -188,6 +188,7 @@ drake_cc_library(
         ":moby_lcp_solver",
         ":mosek_solver",
         ":nlopt_solver",
+        ":scs_solver",
         ":snopt_solver",
         ":solver_id",
         ":symbolic_extraction",
@@ -570,6 +571,20 @@ drake_cc_library(
             ":mathematical_program_api",
         ],
     }),
+)
+
+drake_cc_library(
+    name = "scs_solver",
+    srcs = [
+        "no_scs.cc",
+        "scs_solver_common.cc",
+    ],
+    hdrs = ["scs_solver.h"],
+    deps = [
+        ":mathematical_program_api",
+        "//drake/common:essential",
+        "@scs//:scsdir",
+    ],
 )
 
 # This library is empty unless Gurobi is available.
