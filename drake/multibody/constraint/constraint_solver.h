@@ -1290,7 +1290,7 @@ void ConstraintSolver<T>::FormSustainedConstraintLinearSystem(
   const int num_non_sliding = problem_data.non_sliding_contacts.size();
   const int num_contacts = num_sliding + num_non_sliding;
   const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
-                                 problem_data.r.end(), 0);
+                                                   problem_data.r.end(), 0);
   const int num_limits = problem_data.kL.size();
 
   // Problem matrices and vectors are mildly adapted from:
