@@ -32,7 +32,7 @@ GTEST_TEST(SchunkWsgLcmTest, SchunkWsgTrajectoryGeneratorTest) {
 
   // Step a little bit. We should be commanding a point on the
   // trajectory wider than zero, but not to the target yet.
-  const double expected_target = -0.05;  // 50mm
+  const double expected_target = -0.1;  // 100mm
   systems::Simulator<double> simulator(dut, std::move(context));
   simulator.StepTo(0.1);
   dut.CalcOutput(simulator.get_context(), output.get());

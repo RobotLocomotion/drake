@@ -1,13 +1,19 @@
+#include <gflags/gflags.h>
+
+#include "drake/common/text_logging_gflags.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/manipulation/schunk_wsg/schunk_wsg_constants.h"
+#include "drake/manipulation/schunk_wsg/schunk_wsg_plain_controller.h"
 #include "drake/manipulation/util/sim_diagram_builder.h"
 #include "drake/manipulation/util/world_sim_tree_builder.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
+#include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/trajectory_source.h"
+
+DEFINE_double(simulation_sec, 5., "Number of seconds to simulate.");
 
 namespace drake {
 namespace examples {
@@ -130,18 +136,17 @@ void main() {
   }
 
   // Adds controllers for all the wsg grippers.
-  const int kWsgActDim = manipulation::schunk_wsg::kSchunkWsgNumActuators;
-  const VectorX<double> wsg_kp = VectorX<double>::Constant(kWsgActDim, 300.0);
-  const VectorX<double> wsg_ki = VectorX<double>::Constant(kWsgActDim, 0.0);
-  const VectorX<double> wsg_kd = VectorX<double>::Constant(kWsgActDim, 5.0);
   for (const auto& info : wsg_info) {
     auto controller = builder.template AddController<
-        systems::controllers::PidController<double>>(
-        info.instance_id,
-        manipulation::schunk_wsg::GetSchunkWsgFeedbackSelector<double>(),
-        wsg_kp, wsg_ki, wsg_kd);
+        manipulation::schunk_wsg::SchunkWsgPlainController>(info.instance_id);
     diagram_builder->Connect(wsg_traj_src->get_output_port(),
                              controller->get_input_port_desired_state());
+    Vector1<double> max_force{40};  // Max force, in Newtons.
+    const auto max_force_source =
+        diagram_builder->AddSystem<systems::ConstantVectorSource<double>>(
+            max_force);
+    diagram_builder->Connect(max_force_source->get_output_port(),
+                             controller->get_input_port_max_force());
   }
 
   // Simulates.
@@ -149,7 +154,7 @@ void main() {
   systems::Simulator<double> simulator(*diagram);
   simulator.Initialize();
   simulator.set_target_realtime_rate(1.0);
-  simulator.StepTo(5);
+  simulator.StepTo(FLAGS_simulation_sec);
 }
 
 }  // namespace
@@ -157,8 +162,9 @@ void main() {
 }  // namespace examples
 }  // namespace drake
 
-int main() {
+int main(int argc, char* argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  drake::logging::HandleSpdlogGflags();
   drake::examples::kuka_iiwa_arm::main();
-
   return 0;
 }
