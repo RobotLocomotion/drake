@@ -114,14 +114,21 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "side",
+    srcs = ["side.cc"],
+    hdrs = ["side.h"],
+    deps = [],
+)
+
+drake_cc_library(
     name = "qp_common",
     srcs = [],
     hdrs = ["QPCommon.h"],
     deps = [
         ":control_util",
+        ":side",
         "//drake/common:essential",
         "//drake/multibody:rigid_body_tree",
-        "//drake/systems/robotInterfaces:side",
         "//drake/util",
     ],
 )

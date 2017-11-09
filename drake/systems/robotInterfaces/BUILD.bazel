@@ -31,7 +31,6 @@ drake_cc_library(
     deps = [
         ":body_motion_data",
         ":convex_hull",
-        ":side",
         "//drake/common:essential",
         "//drake/common:unused",
         "//drake/common/trajectories:piecewise_polynomial",
@@ -44,17 +43,11 @@ drake_cc_library(
         "//drake/math:gradient",
         "//drake/multibody:rigid_body_tree",
         "//drake/systems/controllers:polynomial_encode_decode",
+        "//drake/systems/controllers:side",
         "//drake/systems/controllers:zmp_util",
         "//drake/util",
         "//drake/util:lcm_util",
     ],
-)
-
-drake_cc_library(
-    name = "side",
-    srcs = ["Side.cpp"],
-    hdrs = ["Side.h"],
-    deps = [],
 )
 
 drake_cc_library(
