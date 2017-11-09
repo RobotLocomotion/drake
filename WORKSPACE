@@ -253,6 +253,24 @@ github_archive(
     build_file = "tools/workspace/lcmtypes_robotlocomotion/lcmtypes_robotlocomotion.BUILD.bazel",  # noqa
 )
 
+pkg_config_package(
+    name = "blas",
+    modname = "blas",
+)
+
+pkg_config_package(
+    name = "lapack",
+    modname = "lapack",
+)
+
+github_archive(
+    name = "scs",
+    repository = "cvxgrp/scs",
+    commit = "v1.2.6",
+    sha256 = "b4bebb43a1257b6e88a5f97c855c0559d6c8a8c0548d3156fc5a28d82bb9533f",  # noqa
+    build_file = "tools/workspace/scs/scs.BUILD.bazel",
+)
+
 github_archive(
     name = "tinyobjloader",
     repository = "syoyo/tinyobjloader",
