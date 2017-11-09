@@ -7,7 +7,7 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/joints/quaternion_floating_joint.h"
-#include "drake/multibody/rigid_body_plant/compliant_contact_parameters.h"
+#include "drake/multibody/rigid_body_plant/compliant_material.h"
 #include "drake/multibody/rigid_body_plant/test/contact_result_test_common.h"
 #include "drake/multibody/rigid_body_tree.h"
 
@@ -51,8 +51,8 @@ class CompliantContactModelTest : public ContactResultTestCommon {
     // Populate the CompliantContactModel.
     compliant_contact_model_ =
         make_unique<CompliantContactModel<double>>();
-    CompliantContactParameters parameters = MakeDefaultMaterialParameters();
-    compliant_contact_model_->set_default_parameters(parameters);
+    CompliantMaterial material = MakeDefaultMaterial();
+    compliant_contact_model_->set_default_material(material);
     compliant_contact_model_->set_velocity_stiction_tolerance(
         kVStictionTolerance);
 
@@ -154,9 +154,9 @@ class CompliantHeterogeneousModelTest : public CompliantContactModelTest {
     Element& element2 = **body2_->collision_elements_begin();
 
     auto set_params = [this](Element* element, int index) {
-      CompliantContactParameters parameters;
-      parameters.set_stiffness(kMaterialStiffness[index]);
-      element->set_compliant_parameters(parameters);
+      CompliantMaterial material;
+      material.set_stiffness(kMaterialStiffness[index]);
+      element->set_compliant_material(material);
     };
     set_params(&element1, 0);
     set_params(&element2, 1);

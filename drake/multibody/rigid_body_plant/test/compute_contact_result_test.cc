@@ -48,11 +48,11 @@ class ContactResultTest : public ContactResultTestCommon {
     // Populate the plant.
     plant_ = make_unique<RigidBodyPlant<double>>(GenerateTestTree(distance));
 
-    CompliantContactParameters parameters = MakeDefaultMaterialParameters();
-    plant_->set_normal_contact_parameters(parameters.stiffness(),
-                                          parameters.dissipation());
-    plant_->set_friction_contact_parameters(parameters.static_friction(),
-                                            parameters.dynamic_friction(),
+    CompliantMaterial material = MakeDefaultMaterial();
+    plant_->set_normal_contact_parameters(material.stiffness(),
+                                          material.dissipation());
+    plant_->set_friction_contact_parameters(material.static_friction(),
+                                            material.dynamic_friction(),
                                             kVStictionTolerance);
     context_ = plant_->CreateDefaultContext();
     output_ = plant_->AllocateOutput(*context_);

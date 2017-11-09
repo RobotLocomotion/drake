@@ -36,12 +36,12 @@ class ContactResultTestCommon : public ::testing::Test {
   ContactResultTestCommon() {}
 
   /// Computes the default material properties for derived classes to set.
-  CompliantContactParameters MakeDefaultMaterialParameters() {
-    CompliantContactParameters parameters;
-    parameters.set_stiffness(kStiffness);
-    parameters.set_dissipation(kDissipation);
-    parameters.set_friction(kStaticFriction, kDynamicFriction);
-    return parameters;
+  CompliantMaterial MakeDefaultMaterial() {
+    CompliantMaterial material;
+    material.set_stiffness(kStiffness);
+    material.set_dissipation(kDissipation);
+    material.set_friction(kStaticFriction, kDynamicFriction);
+    return material;
   }
 
  private:

@@ -10,7 +10,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/kinematics_cache.h"
 #include "drake/multibody/rigid_body_plant/compliant_contact_model.h"
-#include "drake/multibody/rigid_body_plant/compliant_contact_parameters.h"
+#include "drake/multibody/rigid_body_plant/compliant_material.h"
 #include "drake/solvers/mathematical_program.h"
 
 using std::make_unique;
@@ -169,22 +169,23 @@ RigidBodyPlant<T>::~RigidBodyPlant() {}
 template <typename T>
 void RigidBodyPlant<T>::set_normal_contact_parameters(
     double penetration_stiffness, double dissipation) {
-  DRAKE_DEMAND(penetration_stiffness >= 0);
-  DRAKE_DEMAND(dissipation >= 0);
-  CompliantContactParameters parameters;
+  CompliantMaterial parameters =
+      compliant_contact_model_->default_material();
+  // NOTE: The parameter values are validated *in* the property instance.
   parameters.set_stiffness(penetration_stiffness);
   parameters.set_dissipation(dissipation);
-  compliant_contact_model_->set_default_parameters(parameters);
+  compliant_contact_model_->set_default_material(parameters);
 }
 
 template <typename T>
 void RigidBodyPlant<T>::set_friction_contact_parameters(
     double static_friction_coef, double dynamic_friction_coef,
     double v_stiction_tolerance) {
-  // NOTE: The parameter values are validated in the model.
-  CompliantContactParameters parameters;
+  CompliantMaterial parameters =
+      compliant_contact_model_->default_material();
+  // NOTE: The parameter values are validated in the property instance.
   parameters.set_friction(static_friction_coef, dynamic_friction_coef);
-  compliant_contact_model_->set_default_parameters(parameters);
+  compliant_contact_model_->set_default_material(parameters);
 
   compliant_contact_model_->set_velocity_stiction_tolerance(
       v_stiction_tolerance);

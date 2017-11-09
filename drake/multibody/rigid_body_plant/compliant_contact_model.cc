@@ -6,7 +6,7 @@
 
 #include "drake/math/orthonormal_basis.h"
 #include "drake/multibody/collision/element.h"
-#include "drake/multibody/rigid_body_plant/compliant_contact_parameters.h"
+#include "drake/multibody/rigid_body_plant/compliant_material.h"
 #include "drake/multibody/rigid_body_plant/contact_resultant_force_calculator.h"
 #include "drake/multibody/rigid_body_plant/contact_results.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -15,9 +15,9 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-void CompliantContactModel<T>::set_default_parameters(
-    const CompliantContactParameters &parameters) {
-  CompliantContactParameters::SetDefaultValues(parameters);
+void CompliantContactModel<T>::set_default_material(
+    const CompliantMaterial &material) {
+  default_material_ = material;
 }
 
 template <typename T>
@@ -48,7 +48,7 @@ VectorX<T> CompliantContactModel<T>::ComputeContactForce(
   //  as a zero-force contact.
   for (const auto& pair : pairs) {
     if (pair.distance < 0.0) {  // There is contact.
-      CompliantContactParameters parameters;
+      CompliantMaterial parameters;
       const double s_a =
           CalcContactParameters(*pair.elementA, *pair.elementB, &parameters);
 
@@ -186,7 +186,7 @@ VectorX<T> CompliantContactModel<T>::ComputeContactForce(
 template <typename T>
 T CompliantContactModel<T>::ComputeFrictionCoefficient(
     const T& v_tangent_BAc,
-    const CompliantContactParameters& parameters) const {
+    const CompliantMaterial& parameters) const {
   DRAKE_ASSERT(v_tangent_BAc >= 0);
   const double mu_s = parameters.static_friction();
   const double mu_d = parameters.dynamic_friction();
@@ -211,34 +211,41 @@ template <typename T>
 double CompliantContactModel<T>::CalcContactParameters(
     const multibody::collision::Element& a,
     const multibody::collision::Element& b,
-    CompliantContactParameters* parameters) const {
+    CompliantMaterial* parameters) const {
   DRAKE_DEMAND(parameters);
+
+  const double kK = default_material_.stiffness();
+  const double kD = default_material_.dissipation();
+  const double kMuS = default_material_.static_friction();
+  const double kMuD = default_material_.dynamic_friction();
 
   // For the details on these relationships, see contact_model_doxygen.h at
   // @ref per_object_contact.
 
-  const auto& paramA = a.compliant_parameters();
-  const auto& paramB = b.compliant_parameters();
-  const double k_a = paramA.stiffness();
-  const double k_b = paramB.stiffness();
+  const auto& paramA = a.compliant_material();
+  const auto& paramB = b.compliant_material();
+  const double k_a = paramA.stiffness(kK);
+  const double k_b = paramB.stiffness(kK);
   // No divide-by-zero danger; the CompliantContactParamters class prevents
   // setting a stiffness value that is not strictly positive.
   const double s_a = k_b / (k_a + k_b);
   const double s_b = 1.0 - s_a;
   parameters->set_stiffness(s_a * k_a);
-  parameters->set_dissipation(s_a * paramA.dissipation() +
-                              s_b * paramB.dissipation());
+  parameters->set_dissipation(s_a * paramA.dissipation(kD) +
+                              s_b * paramB.dissipation(kD));
 
   // Simple utility to detect 0 / 0. As it is used in this function, denom
-  // can only be zero if num is also zero.
+  // can only be zero if num is also zero, so we'll simply return zero.
   auto safe_divide = [](double num, double denom) {
     return denom == 0.0 ? 0.0 : num / denom;
   };
   parameters->set_friction(
-      safe_divide(2 * paramA.static_friction() * paramB.static_friction(),
-                  paramA.static_friction() + paramB.static_friction()),
-      safe_divide(2 * paramA.dynamic_friction() * paramB.dynamic_friction(),
-                  paramA.dynamic_friction() + paramB.dynamic_friction()));
+      safe_divide(
+          2 * paramA.static_friction(kMuS) * paramB.static_friction(kMuS),
+          paramA.static_friction(kMuS) + paramB.static_friction(kMuS)),
+      safe_divide(
+          2 * paramA.dynamic_friction(kMuD) * paramB.dynamic_friction(kMuD),
+          paramA.dynamic_friction(kMuD) + paramB.dynamic_friction(kMuD)));
   return s_a;
 }
 

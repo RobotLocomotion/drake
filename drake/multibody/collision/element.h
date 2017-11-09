@@ -8,7 +8,7 @@
 #include <Eigen/Dense>
 
 #include "drake/multibody/collision/collision_filter.h"
-#include "drake/multibody/rigid_body_plant/compliant_contact_parameters.h"
+#include "drake/multibody/rigid_body_plant/compliant_material.h"
 #include "drake/multibody/shapes/drake_shapes.h"
 
 // Forward declaration.
@@ -153,13 +153,13 @@ class Element : public DrakeShapes::Element {
    */
   friend std::ostream& operator<<(std::ostream&, const Element&);
 
-  const systems::CompliantContactParameters& compliant_parameters() const {
-    return compliant_parameters_;
+  const systems::CompliantMaterial& compliant_material() const {
+    return compliant_material_;
   }
 
-  void set_compliant_parameters(
-      const systems::CompliantContactParameters& parameters) {
-    compliant_parameters_ = parameters;
+  void set_compliant_material(
+      const systems::CompliantMaterial& material) {
+    compliant_material_ = material;
   }
 
  private:
@@ -203,7 +203,7 @@ class Element : public DrakeShapes::Element {
   drake::multibody::collision::bitmask collision_filter_ignores_{kNoneMask};
 
   // The compliant contact model parameters for this element.
-  systems::CompliantContactParameters compliant_parameters_;
+  systems::CompliantMaterial compliant_material_;
 
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

@@ -26,7 +26,7 @@ using drake::multibody::joints::FloatingBaseType;
 using drake::multibody::joints::kFixed;
 using drake::multibody::joints::kRollPitchYaw;
 using drake::multibody::joints::kQuaternion;
-using drake::systems::CompliantContactParameters;
+using drake::systems::CompliantMaterial;
 using tinyxml2::XMLElement;
 
 const char* const FloatingJointConstants::kFloatingJointName = "base";
@@ -235,10 +235,10 @@ int AddFloatingJoint(
   return num_floating_joints_added;
 }
 
-CompliantContactParameters ParseCollisionCompliance(XMLElement* node) {
-  CompliantContactParameters parameters;
+CompliantMaterial ParseCollisionCompliance(XMLElement* node) {
+  CompliantMaterial material;
   // TODO(SeanCurtis-TRI): Incomplete validation. This parsing allows redundant
-  // declarations of parameters. Confirm proper validation via an XSD.
+  // declarations of material. Confirm proper validation via an XSD.
   XMLElement* compliant_node = node->FirstChildElement("drake_compliance");
   if (compliant_node) {
     double static_friction{-1};
@@ -255,9 +255,9 @@ CompliantContactParameters ParseCollisionCompliance(XMLElement* node) {
       }
       const double value = StringToDouble(child->FirstChild()->Value());
       if (name == "stiffness") {
-        parameters.set_stiffness(value);
+        material.set_stiffness(value);
       } else if (name == "dissipation") {
-        parameters.set_dissipation(value);
+        material.set_dissipation(value);
       } else if (name == "static_friction") {
         static_friction = value;
         friction_values_read |= 1;
@@ -276,10 +276,10 @@ CompliantContactParameters ParseCollisionCompliance(XMLElement* node) {
             "When specifying coefficient of friction, "
                 "both static and dynamic coefficients must be defined");
       }
-      parameters.set_friction(static_friction, dynamic_friction);
+      material.set_friction(static_friction, dynamic_friction);
     }
   }
-  return parameters;
+  return material;
 }
 
 }  // namespace parsers

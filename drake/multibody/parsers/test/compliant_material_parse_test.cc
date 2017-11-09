@@ -7,19 +7,19 @@
 
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/multibody/rigid_body_plant/compliant_contact_parameters.h"
+#include "drake/multibody/rigid_body_plant/compliant_material.h"
 #include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {
 namespace parsers {
 namespace {
 
-using systems::CompliantContactParameters;
+using systems::CompliantMaterial;
 using std::make_unique;
 using std::to_string;
 using std::unique_ptr;
 
-class CompliantParameterParseTest
+class CompliantMaterialParseTest
     : public ::testing::TestWithParam<const char*> {
  protected:
   void SetUp() override {
@@ -29,9 +29,8 @@ class CompliantParameterParseTest
   // Creates the specification of a box (embedding the given compliance string).
   // Attempts to parse the box and tests the parsed compliant parameters against
   // the given set.
-  void ParseBoxAndCheck(
-      const std::string& compliance_string,
-      const CompliantContactParameters& expected) {
+  void ParseBoxAndCheck(const std::string& compliance_string,
+                        const CompliantMaterial& expected) {
     const std::string format = GetParam();
     if (format == "urdf") {
       urdf::AddModelInstanceFromUrdfString(
@@ -44,7 +43,7 @@ class CompliantParameterParseTest
     } else {
       GTEST_FAIL() << "Unrecognized model format: " << format;
     }
-    ExpectParameters(expected);
+    ExpectMaterial(expected);
   }
 
   // Inserts the given compliance string into the sdf specification.
@@ -58,36 +57,23 @@ class CompliantParameterParseTest
 
   // Searches the tree for the box body and extracts its collision element's
   // compliant contact parameters, returning a reference.
-  const CompliantContactParameters& GetBoxParameter() const {
+  const CompliantMaterial& GetBoxMaterial() const {
     RigidBody<double>* body = tree_->FindBody("box", "box");
     EXPECT_NE(body, nullptr);
     const auto& element_ids = body->get_collision_element_ids();
     EXPECT_EQ(element_ids.size(), 1u);
-    return (*body->collision_elements_begin())->compliant_parameters();
+    return (*body->collision_elements_begin())->compliant_material();
   }
 
   // Searches the tree for the "box" and compares the box's collision elements'
   // compliant contact parameters with the given expected set of values,
   // returning a reference to the element's parameters.
-  void ExpectParameters(
-      const CompliantContactParameters& expected) {
-    const CompliantContactParameters& parsed = GetBoxParameter();
+  void ExpectMaterial(const CompliantMaterial& expected) {
+    const CompliantMaterial& parsed = GetBoxMaterial();
     EXPECT_EQ(parsed.dynamic_friction(), expected.dynamic_friction());
     EXPECT_EQ(parsed.static_friction(), expected.static_friction());
     EXPECT_EQ(parsed.dissipation(), expected.dissipation());
     EXPECT_EQ(parsed.stiffness(), expected.stiffness());
-  }
-
-  // Sets the default contact parameters to an arbitrary "crazy" set of values.
-  // These *should* be different from any of the values explicitly used in the
-  // tests. Returns an baked version of those defaults.
-  CompliantContactParameters SetCrazyDefaults() {
-    CompliantContactParameters new_defaults;
-    new_defaults.set_stiffness(123456);
-    new_defaults.set_dissipation(3);
-    new_defaults.set_friction(10000, 9000);
-    CompliantContactParameters::SetDefaultValues(new_defaults);
-    return new_defaults;
   }
 
   unique_ptr<RigidBodyTree<double>> tree_;
@@ -101,7 +87,7 @@ class CompliantParameterParseTest
   static const char* kUrdfTail;
 };
 
-const char* CompliantParameterParseTest::kSdfHead = \
+const char* CompliantMaterialParseTest::kSdfHead = \
     R"_(<?xml version="1.0"?>
 <sdf version="1.4">
   <model name="box">
@@ -115,14 +101,14 @@ const char* CompliantParameterParseTest::kSdfHead = \
         </geometry>
 )_";
 
-const char* CompliantParameterParseTest::kSdfTail = \
+const char* CompliantMaterialParseTest::kSdfTail = \
     R"_(      </collision>\
     </link>
   </model>
 </sdf>
 )_";
 
-const char* CompliantParameterParseTest::kUrdfHead = \
+const char* CompliantMaterialParseTest::kUrdfHead = \
     R"_(<?xml version="1.0"?>
 <robot name="box">
   <link name="box">
@@ -132,95 +118,105 @@ const char* CompliantParameterParseTest::kUrdfHead = \
       </geometry>
 )_";
 
-const char* CompliantParameterParseTest::kUrdfTail = \
+const char* CompliantMaterialParseTest::kUrdfTail = \
     R"_(    </collision>
   </link>
 </robot>
 )_";
 
-INSTANTIATE_TEST_CASE_P(CompliantParameterParseTest,
-                        CompliantParameterParseTest,
+INSTANTIATE_TEST_CASE_P(CompliantMaterialParseTest,
+                        CompliantMaterialParseTest,
                         ::testing::Values("urdf", "sdf"));
 
 // Test that parsing a file with *no* specification assigns the default
 // compliant parameters to the element.
-TEST_P(CompliantParameterParseTest, DefaultValues) {
-  ParseBoxAndCheck("", CompliantContactParameters());
+TEST_P(CompliantMaterialParseTest, DefaultValues) {
+  ParseBoxAndCheck("", CompliantMaterial());
 }
 
 // Test that parsing a file with bad value tags ignores the bad tags.
-TEST_P(CompliantParameterParseTest, BadComplianceTag) {
+TEST_P(CompliantMaterialParseTest, BadComplianceTag) {
   std::string parameters_xml =
       "<drake_compliance><bad>13</bad></drake_compliance>\n";
-  ParseBoxAndCheck(parameters_xml, CompliantContactParameters());
+  ParseBoxAndCheck(parameters_xml, CompliantMaterial());
 }
 
 // Test that parsing a file that specifies only a single value (stiffness)
 // assigns parameter values that are default except for the specified value.
-TEST_P(CompliantParameterParseTest, SingleValueStiffness) {
+TEST_P(CompliantMaterialParseTest, SingleValueStiffness) {
   double value = 15;
+  CompliantMaterial defaults;
+  EXPECT_NE(value, defaults.stiffness());
   std::string parameters_xml = "<drake_compliance><stiffness>" +
       to_string(value) + "</stiffness></drake_compliance>\n";
-  CompliantContactParameters expected;
+  CompliantMaterial expected;
   expected.set_stiffness(value);
   ParseBoxAndCheck(parameters_xml, expected);
 
   // Confirm that specifying stiffness *only* leaves all other fields tied to
   // the default values.
-  const auto& parsed = GetBoxParameter();
-  CompliantContactParameters new_defaults = SetCrazyDefaults();
-  EXPECT_NE(parsed.stiffness(), new_defaults.stiffness());
-  EXPECT_EQ(parsed.dissipation(), new_defaults.dissipation());
-  EXPECT_EQ(parsed.static_friction(), new_defaults.static_friction());
-  EXPECT_EQ(parsed.dynamic_friction(), new_defaults.dynamic_friction());
+  const auto& parsed = GetBoxMaterial();
+  EXPECT_NE(parsed.stiffness(defaults.stiffness()), defaults.stiffness());
+  EXPECT_EQ(parsed.dissipation(defaults.dissipation()), defaults.dissipation());
+  EXPECT_EQ(parsed.static_friction(defaults.static_friction()),
+            defaults.static_friction());
+  EXPECT_EQ(parsed.dynamic_friction(defaults.dynamic_friction()),
+            defaults.dynamic_friction());
 }
 
 // Test that parsing a file that specifies only a single value (dissipation)
 // assigns parameter values that are default except for the specified value.
-TEST_P(CompliantParameterParseTest, SingleValueDissipation) {
+TEST_P(CompliantMaterialParseTest, SingleValueDissipation) {
   double value = 15;
+  CompliantMaterial defaults;
+  EXPECT_NE(value, defaults.dissipation());
   std::string parameters_xml = "<drake_compliance><dissipation>" +
       to_string(value) + "</dissipation></drake_compliance>\n";
-  CompliantContactParameters expected;
+  CompliantMaterial expected;
   expected.set_dissipation(value);
   ParseBoxAndCheck(parameters_xml, expected);
 
   // Confirm that specifying dissipation *only* leaves all other fields tied to
   // the default values.
-  const auto& parsed = GetBoxParameter();
-  CompliantContactParameters new_defaults = SetCrazyDefaults();
-  EXPECT_EQ(parsed.stiffness(), new_defaults.stiffness());
-  EXPECT_NE(parsed.dissipation(), new_defaults.dissipation());
-  EXPECT_EQ(parsed.static_friction(), new_defaults.static_friction());
-  EXPECT_EQ(parsed.dynamic_friction(), new_defaults.dynamic_friction());
+  const auto& parsed = GetBoxMaterial();
+  EXPECT_EQ(parsed.stiffness(defaults.stiffness()), defaults.stiffness());
+  EXPECT_NE(parsed.dissipation(defaults.dissipation()), defaults.dissipation());
+  EXPECT_EQ(parsed.static_friction(defaults.static_friction()),
+            defaults.static_friction());
+  EXPECT_EQ(parsed.dynamic_friction(defaults.dynamic_friction()),
+            defaults.dynamic_friction());
 }
 
-TEST_P(CompliantParameterParseTest, ValidFrictionValues) {
+TEST_P(CompliantMaterialParseTest, ValidFrictionValues) {
   double value = 15;
+  CompliantMaterial defaults;
+  EXPECT_NE(value, defaults.static_friction());
+  EXPECT_NE(value - 1, defaults.dynamic_friction());
   std::string parameters_xml = "<drake_compliance><static_friction>" +
       to_string(value) + "</static_friction><dynamic_friction>" +
       to_string(value - 1) + "</dynamic_friction></drake_compliance>\n";
-  CompliantContactParameters expected;
+  CompliantMaterial expected;
   expected.set_friction(value, value - 1);
   ParseBoxAndCheck(parameters_xml, expected);
 
   // Confirm that specifying friction leaves all other fields tied to
   // the default values.
-  const auto& parsed = GetBoxParameter();
-  CompliantContactParameters new_defaults = SetCrazyDefaults();
-  EXPECT_EQ(parsed.stiffness(), new_defaults.stiffness());
-  EXPECT_EQ(parsed.dissipation(), new_defaults.dissipation());
-  EXPECT_NE(parsed.static_friction(), new_defaults.static_friction());
-  EXPECT_NE(parsed.dynamic_friction(), new_defaults.dynamic_friction());
+  const auto& parsed = GetBoxMaterial();
+  EXPECT_EQ(parsed.stiffness(defaults.stiffness()), defaults.stiffness());
+  EXPECT_EQ(parsed.dissipation(defaults.dissipation()), defaults.dissipation());
+  EXPECT_NE(parsed.static_friction(defaults.static_friction()),
+            defaults.static_friction());
+  EXPECT_NE(parsed.dynamic_friction(defaults.dynamic_friction()),
+            defaults.dynamic_friction());
 }
 
 // Test that parsing a file that specifies only a single value is considered a
 // parsing error.
-TEST_P(CompliantParameterParseTest, SingleValueFriction) {
+TEST_P(CompliantMaterialParseTest, SingleValueFriction) {
   double value = 15;
   std::string parameters_xml = "<drake_compliance><static_friction>" +
       to_string(value) + "</static_friction></drake_compliance>\n";
-  CompliantContactParameters expected;
+  CompliantMaterial expected;
   EXPECT_THROW(ParseBoxAndCheck(parameters_xml, expected), std::runtime_error);
 
   parameters_xml = "<drake_compliance><dynamic_friction>" +
@@ -230,8 +226,8 @@ TEST_P(CompliantParameterParseTest, SingleValueFriction) {
 
 // Test that parsing a file that specifies bad friction values is considered a
 // parsing error.
-TEST_P(CompliantParameterParseTest, BadFrictionValues) {
-  CompliantContactParameters expected;
+TEST_P(CompliantMaterialParseTest, BadFrictionValues) {
+  CompliantMaterial expected;
 
   auto format = [](double static_friction, double dynamic_friction) {
     return "<drake_compliance><dynamic_friction>" +
@@ -255,8 +251,8 @@ TEST_P(CompliantParameterParseTest, BadFrictionValues) {
 
 // Test errors on various malformed XML (e.g., missing numerical value,
 // non-numerical value.
-TEST_P(CompliantParameterParseTest, MisformattedValues) {
-  CompliantContactParameters expected;
+TEST_P(CompliantMaterialParseTest, MisformattedValues) {
+  CompliantMaterial expected;
 
   auto format = [](const std::string& bad_value) {
     return "<drake_compliance><stiffness>" + bad_value +

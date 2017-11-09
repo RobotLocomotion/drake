@@ -130,15 +130,16 @@ class RigidBodyPlant : public LeafSystem<T> {
 
   ~RigidBodyPlant() override;
 
-  // TODO(SeanCurtis-TRI): Link to documentation explaining these parameters
-  // in detail.  To come in a subsequent PR.
-  /// Sets only the parameters for *normal* contact.  This is a convenience
-  /// function to allow for more targeted parameter tuning.
+  /// Sets the underlying contact model's default material properties as pertain
+  /// to the normal component of the contact force. For details on the
+  /// interpretation of the parameters, see @ref contact_model.
   void set_normal_contact_parameters(double penetration_stiffness,
                                      double dissipation);
 
-  /// Sets only the parameters for *friction* contact.  This is a convenience
-  /// function to allow for more targeted parameter tuning.
+  /// Sets parameters that affect the tangential component of the contact
+  /// force: the default material friction coefficient's and the model's slip
+  /// threshold. For details on the interpretation of the parameters, see
+  /// @ref contact_model.
   void set_friction_contact_parameters(double static_friction_coef,
                                        double dynamic_friction_coef,
                                        double v_stiction_tolerance);

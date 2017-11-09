@@ -136,38 +136,48 @@
  reproduces the empirically observed velocity dependence of the coefficient of
  restitution, where `e=(1-d⋅v)` for (small) impact velocity `v` and a material
  property `d` with units of 1/velocity. In theory, at least, `d` can be
- measured right off the coefficient of restitution-vs.-impact velocity curves:
- it is the negated slope at low impact velocities.
+ measured right off the coefficient of restitution-vs.-impact velocity curves;
+ it is the negated slope at low impact velocities. The magnitude of the contact
+ normal force is expressed as:
 
- Given a collision between two spheres, or a sphere and a plane, we can generate
- a contact force from this equation `fₙ = kxᵐ(1 + ³/₂⋅d⋅ẋ)` where `k` is a
- stiffness constant incorporating material properties and geometry
- (to be defined below), `x` is penetration depth, and `ẋ` is penetration rate
- (positive for increasing penetration and negative during rebound). Exponent `m`
- depends on the surface geometry and captures not only the functional form of
- the contact pressure (normal stress) with penetration, but also the change in
- contact patch area with penetration.
- For the contact between two surfaces with radii of curvature R₁ and R₂, the
- Hertz contact (normal) force can be written in terms of an effective radius of
- curvature R defined as `1/R = 1/R₁ + 1/R₂`. Similarly, an effective Young's
- modulus E is defined from the modulii E₁ and E₂ and the Poisson's ratios of
- each surface material as `1/E = (1-ν₁²)/E₁ + (1-ν₂²)/E₂`.
+    `fₙ = kxᵐ(1 + ³/₂⋅d⋅ẋ)`,
+
+ where `k` is a stiffness constant incorporating material properties and
+ geometry (to be defined below), `x` is penetration depth, and `ẋ` is
+ penetration rate (positive for increasing penetration and negative during
+ rebound). Exponent `m` depends on the surface geometry and captures not only
+ the functional form of the contact pressure (normal stress) with penetration,
+ but also the change in contact patch area with penetration.
+
+ The Hertz contact model is the stiffness-dependent factor of the normal force
+ (`kxᵐ`). It applies to scenarios where the contacting surfaces can
+ be _locally_ represented as ellipsoids (each with their unique principle axes
+ curvatures). To simplify this discussion, we limit ourselves to the special
+ case where the ellipsoids are spheres and a _single_ radius of curvature (per
+ surface) is sufficient to describe the contacting geometry (e.g., contact
+ between two spheres, or a sphere and plane, etc.).
+
+ For contacting bodies, with radii of curvature R₁ and R₂ and Young's
+ modulii E₁ and E₂, respectively, the Hertz contact (normal) force factor is
+ computed in terms of an _effective_ radius of curvature R and Young's modulus
+ E. The effective values are functions of the constituent values.
+
  With these definitions, Hertz model predicts:
- - Contact between two spheres (this includes the plane by taking the limit
-   to infinity on one of the radii):
-   `m = 3/2`, `k = ⁴/₃ E √R`, or `fₙ = ⁴/₃ E R² (x/R)ᵐ`.
-   The contact radius is given by `a = Sqrt(R x)`.
- - Two crossed cylinders of equal radii R: Same as for sphere of radius R and a
+ - Contact between two spheres (this includes the plane treated as a sphere
+   with an infinite radius of curvature):
+   `m = 3/2`, `k = ⁴/₃⋅E⋅√R`, or `fₙ = ⁴/₃⋅E⋅√R⋅√x³ = ⁴/₃⋅E⋅R²⋅√(x/R)³`.
+   Incidentally, the contact area is a disk with radius `a = √(R⋅x)`.
+ - Two crossed cylinders of equal radii R: same as for sphere of radius R and a
    plane.
  - Vertical cylinder of radius R and a plane:
-   `m = 1`, `k = 2 E R x`, or `fₙ = 2 E R² (x/R)`.
+   `m = 1`, `k = 2⋅E⋅R⋅x`, or `fₙ = 2⋅E⋅R²⋅(x/L)`.
  - Two cylinders of radii R₁ and R₂, length L and with parallel axes:
-   `m = 1`, `k = π/4 E L`, or `fₙ = π/4 E R² (R/L) (x/R)`.
+   `m = 1`, `k = π/4⋅E⋅L`, or `fₙ = π/4⋅E⋅R²⋅(R/L)⋅(x/R)`.
 
- These few examples with analytical solution lead us to generalize to an
+ The analytical solutions for these few examples lead us to generalize to an
  expression of the contact normal force of the from:
 
-   `fₙ = C⋅E⋅L²⋅(x/R)ᵐ⋅(1 + d⋅ẋ)`,
+   `fₙ = C⋅E⋅L²⋅(x/L)ᵐ⋅(1 + d⋅ẋ)`,
 
  where L is a reference length that represents an _effective_ radius of
  curvature, E is the effective Young's modulus defined above, and C is a
@@ -237,7 +247,7 @@
  where L is an appropriate reference length for the particular contact
  configuration.
  Lets attempt to recast the analytical results mentioned above in these terms:
- - Contact between two spheres (this includes the plane by taing the limit
+ - Contact between two spheres (this includes the plane by taking the limit
    to infinity on one of the radius):
    A(q) = π a² = π R x,
    p(q) = 4/(3π) E (x/R)½
@@ -249,7 +259,7 @@
    p(q) = 2/π E (x/R)
 
  Interestingly, even when the functional form for the contact patch area for
- two very distintct cases of sphere-on-sphere and cylinder-on-cylinder are
+ two very distinct cases of sphere-on-sphere and cylinder-on-cylinder are
  different (linear vs ½ power with penetration depth), the average pressure
  scales with the same power.
  Of course this result could not be generalized and for a case with planar
@@ -430,40 +440,52 @@
  experiences all of the deformation, it will be deformed all the way to the
  point of deepest penetration _in_ I, which was the definition of p_FJc.
 
- @section Global default values
+ @section Contact material default values
 
- Drake contains hard-coded material parameter values
- (see compliant_parameters.h). If no specific values are provided for
- a collision element, it will _shadow_ these global default values. This
- relationship is _dynamic_. In other words, the default _values_ are not copied
- into an element at instantiation time, just a _relationship_. A collision
- element configured to use default parameter values will report different values
- as the default values are changed. The implication is the order of operations
- between instantiating collision elements which use default values and setting
- default values is irrelevant.
+ Every collision element has a compliant material. If not the values of that
+ material have not been explicitly set (i.e., via calls to the API or specified
+ in a URDF/SDF file), the the value is configured to use a "default" value.
+ What the actual default value is depends on how the material property is
+ accessed (see the documentation for CompliantMaterial for further elaboration).
 
- To set the default values, use CompliantContactParameters::SetDefaultValues().
+ Consider a box used as collision geometry with all of its compliant material
+ parameters set to default. Consider querying for the box's stiffness. The value
+ returned could be different values based on invocation:
+
+ 1. Querying directly (e.g., `box.compliant_material().stiffness()`) will return
+    the hard-coded, Drake-wide default value.
+ 2. Alternatively, when the CompliantContactModel used by a RigidBodyPlant
+    evaluates it, the default value will be the CompliantContactModel's default
+    material properties. Which _may_ be different from the hard-coded globals
+    or from any other instance of CompliantContactModel.
+ 3. Alternatively, user-code could provide a preferred default which will be
+    returned iff the property is default configured
+    (e.g., `box.compliant_material().stiffness(2.5e8)`)
+
+ The point that needs to be emphasized is that configuring a material property
+ to be default is not a one-time operation. It defines a relationship that
+ can be determined at evaluation time.
 
  __A word of warning__
 
  It might be tempting to write code akin to this pseudo-code:
 
  ```C++
- CompliantContactParameters my_defaults;
- my_defaults.set_stiffness(10);
- CompliantContactParameters::SetDefaultValues(my_defaults);
- ParseUrdf("my_robot.urdf");
- my_defaults.set_stiffness(15);
- CompliantContactParameters::SetDefaultValues(my_defaults);
- ParseUrdf("other_robot.urdf");
+ RigidBodyPlant plant;
+ plant.set_normal_contact_parameters(1e6, 0.5);
+ ParseUrdf(plant, "my_robot.urdf");
+ plant.set_normal_contact_parameters(5e6, 0.5);
+ ParseUrdf(plant, "other_robot.urdf");
  ```
 
  Assume that the collision elements in both `my_robot.urdf` and
  `other_robot.urdf` have no specified contact parameters; they use the default
  values. At first glance, one might be inclined to believe that the first
- robot's collision elements have a stiffness value of 10 and the second robot
- has a stiffness value of 15. This is _not_ the case. Both robots use the
- single global default value and so both have stiffness values of 15.
+ robot's collision elements have a stiffness value of 1e6 and the second robot
+ has a stiffness value of 5e6. This is _not_ the case. The collision elements of
+ both robots are configured to use the default value. And they will report a
+ stiffness of 5e6 if the `plant` evaluates it, or some other value in other
+ contexts.
 
  @section Specifying contact parameter values in URDF/SDF.
 
@@ -542,7 +564,7 @@
  - **Picking values for the other contact parameters**
 
    The contact model provides five parameters:
-     - Stiffness `k` in units of stress/strain,
+     - stiffness `k` in units of stress/strain,
      - dissipation `d` in s/m (1/velocity),
      - static coefficient of friction `μs`, unitless,
      - dynamic (kinetic) coefficient of friction `μd`, unitless,
@@ -556,7 +578,7 @@
    same as for a 1000-kg car. (In fact, with a small stiffness, the car will
    pass right through the ground while attempting to find the equilibrium
    distance.) Stiffness is the most important parameter for capturing the
-   relationship between object in equilibrium. The dissipation `d` is
+   relationship between objects in equilibrium. The dissipation `d` is
    significant primarily for impacts, where there are rapid changes in
    deformation.
 
@@ -569,7 +591,7 @@
    to unrealistic levels seems, counterintuitively, to degrade the results. The
    previous note discusses the importance of `vₛ`.
 
- - ** Stiffness and model limitations **
+ - **Stiffness and model limitations**
 
    As indicated earlier, the _current_ contact model generates a contact force
    by assuming `A(x) = 1 m²` and `ε(x) = x / 1 m`. The implication is that the

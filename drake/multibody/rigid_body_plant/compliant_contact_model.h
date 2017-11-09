@@ -35,13 +35,18 @@ class CompliantContactModel {
       const KinematicsCache<T>& kinsol,
       ContactResults<T>* contacts = nullptr) const;
 
-  /// Defines the default parameter values for the model (and all elements with
-  /// default-configured values). This can be invoked before or after parsing
+  /// Defines the default material property values for this model instance.
+  /// All elements with default-configured values will use the values in the
+  /// provided property set. This can be invoked before or after parsing
   /// SDF/URDF files; all fields that were left unspecified will default to
   /// these values.
-  /// See @ref drake_contact and CompliantContactParameters for elaboration on
+  /// See @ref drake_contact and CompliantMaterial for elaboration on
   /// these values.
-  void set_default_parameters(const CompliantContactParameters& parameters);
+  void set_default_material(const CompliantMaterial& material);
+
+  const CompliantMaterial& default_material() const {
+    return default_material_;
+  }
 
   /// Configures the velocity stiction tolerance for the model. See @ref
   /// drake_contact for discussion of this value.
@@ -54,7 +59,7 @@ class CompliantContactModel {
   // See contact_model_doxygen.h @section tangent_force for details.
   T ComputeFrictionCoefficient(
       const T& v_tangent_BAc,
-      const CompliantContactParameters& parameters) const;
+      const CompliantMaterial& parameters) const;
 
   // Evaluates an S-shaped quintic curve, f(x), mapping the domain [0, 1] to the
   // range [0, 1] where the f''(0) = f''(1) = f'(0) = f'(1) = 0.
@@ -72,11 +77,15 @@ class CompliantContactModel {
   double CalcContactParameters(
       const multibody::collision::Element& a,
       const multibody::collision::Element& b,
-      CompliantContactParameters* parameters) const;
+      CompliantMaterial* parameters) const;
 
   // Note: this is the *inverse* of the v_stiction_tolerance parameter to
   // optimize for the division.
   T inv_v_stiction_tolerance_{100};  // inverse of 1 cm/s.
+
+  // The default compliant material properties for *this* model instance.
+  // By default, it uses all hard-coded values.
+  CompliantMaterial default_material_;
 };
 
 }  // namespace systems
