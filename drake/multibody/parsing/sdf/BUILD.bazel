@@ -1,0 +1,37 @@
+# -*- python -*-
+
+load(
+    "//tools:drake.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+drake_cc_library(
+    name = "frame_cache",
+    srcs = [
+        "frame_cache.cc",
+    ],
+    hdrs = [
+        "frame_cache.h",
+    ],
+    deps = [
+        "//drake/common:essential",
+        "@eigen",
+    ],
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "frame_cache_test",
+    deps = [
+        ":frame_cache",
+    ],
+)
+
+add_lint_tests()

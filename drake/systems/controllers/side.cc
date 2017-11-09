@@ -1,4 +1,4 @@
-#include "drake/systems/robotInterfaces/Side.h"
+#include "drake/systems/controllers/side.h"
 
 #include <stdexcept>
 

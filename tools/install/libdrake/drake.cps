@@ -55,6 +55,11 @@
       "Hints": ["@prefix@/lib/cmake/robotlocomotion-lcmtypes"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
+    "scs": {
+      "Version": "1.2.6",
+      "Hints": ["@prefix@/lib/cmake/scs"],
+      "X-CMake-Find-Args": ["CONFIG"]
+    },
     "SDFormat": {
       "Version": "6.0.0",
       "Hints": ["@prefix@/lib/cmake/sdformat"],
@@ -72,14 +77,6 @@
     "tinyobjloader": {
       "Version": "1.0.4",
       "Hints": ["@prefix@/lib/cmake/tinyobjloader"],
-      "X-CMake-Find-Args": ["CONFIG"]
-    },
-    "VTK": {
-      "Version": "8.0.1",
-      "Hints": [
-        "@prefix@/lib/cmake/vtk-8.0",
-        "/usr/local/opt/vtk@8.0/lib/cmake/vtk-8.0"
-      ],
       "X-CMake-Find-Args": ["CONFIG"]
     },
     "yaml-cpp": {
@@ -104,16 +101,8 @@
       "Link-Flags": ["-lnlopt", "-ltinyxml2"],
       "Link-Requires": [
         "fmt:fmt",
+        "scs:scsdir",
         "SDFormat:sdformat",
-        "vtkCommonCore",
-        "vtkCommonDataModel",
-        "vtkCommonTransforms",
-        "vtkFiltersGeneral",
-        "vtkFiltersSources",
-        "vtkIOGeometry",
-        "vtkIOImage",
-        "vtkRenderingCore",
-        "vtkRenderingOpenGL2",
         "ZLIB:ZLIB"
       ],
       "Requires": [

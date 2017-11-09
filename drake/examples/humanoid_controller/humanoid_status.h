@@ -10,7 +10,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/rigid_body_tree_alias_groups.h"
 #include "drake/systems/controllers/qp_inverse_dynamics/robot_kinematic_state.h"
-#include "drake/systems/robotInterfaces/Side.h"
+#include "drake/systems/controllers/side.h"
 
 namespace drake {
 namespace examples {

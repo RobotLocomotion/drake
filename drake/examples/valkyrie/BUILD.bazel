@@ -85,7 +85,7 @@ drake_cc_library(
     deps = [
         "//drake/manipulation/util:robot_state_msg_translator",
         "//drake/multibody/rigid_body_plant",
-        "//drake/systems/robotInterfaces:side",
+        "//drake/systems/controllers:side",
         "//drake/util",
         "//drake/util:lcm_util",
     ],

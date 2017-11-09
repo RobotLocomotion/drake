@@ -1,12 +1,13 @@
-#include "drake/examples/double_pendulum/frame_cache.h"
+#include "drake/multibody/parsing/sdf/frame_cache.h"
 
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
 
 namespace drake {
-namespace examples {
-namespace double_pendulum {
+namespace multibody {
+namespace parsing {
+namespace sdf {
 namespace {
 
 // Makes sure that FrameCache correctly keeps frames and the transforms that
@@ -93,6 +94,7 @@ GTEST_TEST(FrameCacheTest, NonExistentFramesTest) {
 }
 
 }  // namespace
-}  // namespace double_pendulum
-}  // namespace examples
+}  // namespace sdf
+}  // namespace parsing
+}  // namespace multibody
 }  // namespace drake
