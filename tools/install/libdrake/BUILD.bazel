@@ -96,8 +96,8 @@ cc_library(
 # required *.so's that are WORKSPACE downloads (such as VTK, Gurobi, etc).
 #
 # TODO(jwnimmer-tri) Ideally, Bazel should be able to handle the depended-on
-# *.so files (Gurobi, Mosek, SCS, TinyXML2, VTK) for us, without us having to
-# know up-front here which dependencies are coming from the WORKSPACE in the
+# *.so files (Gurobi, LCM, Mosek, SCS, TinyXML2, VTK) for us, without us having
+# to know up-front here which dependencies are coming from the WORKSPACE in the
 # form of *.so.
 cc_library(
     name = "drake_shared_library",
@@ -107,6 +107,7 @@ cc_library(
         ":libdrake_headers",
         ":mosek_deps",
         ":vtk_deps",
+        "@lcm",
         "@scs//:scsdir",
         "@tinyxml2",
     ],
