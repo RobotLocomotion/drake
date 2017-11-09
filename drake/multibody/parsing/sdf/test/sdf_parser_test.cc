@@ -1,4 +1,4 @@
-#include "drake/multibody/multibody_tree/parsing/sdf/sdf_parser.h"
+#include "drake/multibody/parsing/sdf/sdf_parser.h"
 
 #include <limits>
 
@@ -8,8 +8,8 @@
 
 namespace drake {
 namespace multibody {
-namespace multibody_tree {
 namespace parsing {
+namespace sdf {
 namespace {
 
 const double kEpsilon = std::numeric_limits<double>::epsilon();
@@ -19,7 +19,7 @@ const double kEpsilon = std::numeric_limits<double>::epsilon();
 #define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
 
 static const char* const kTestSdfPath =
-    "drake/multibody/multibody_tree/parsing/sdf/models/double_pendulum.sdf";
+    "drake/multibody/parsing/sdf/models/double_pendulum.sdf";
 
 GTEST_TEST(SDFParserTest, ParsingTest) {
   // Parse tree from test SDF.
@@ -132,7 +132,7 @@ GTEST_TEST(SDFParserTest, ParsingTest) {
 }
 
 }  // namespace
+}  // namespace sdf
 }  // namespace parsing
-}  // namespace multibody_tree
 }  // namespace multibody
 }  // namespace drake

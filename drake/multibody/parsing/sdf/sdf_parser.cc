@@ -1,4 +1,4 @@
-#include "drake/multibody/multibody_tree/parsing/sdf/sdf_parser.h"
+#include "drake/multibody/parsing/sdf/sdf_parser.h"
 
 #include <map>
 #include <memory>
@@ -13,8 +13,8 @@
 
 namespace drake {
 namespace multibody {
-namespace multibody_tree {
 namespace parsing {
+namespace sdf {
 
 // Helper function to express an ignition::math::Vector3d instance as
 // a Vector3<double> instance.
@@ -32,7 +32,7 @@ Isometry3<double> ToIsometry(const ignition::math::Pose3d& pose) {
 }
 
 // Parses a pose from the given SDF element.
-Isometry3<double> ParsePose(sdf::ElementPtr sdf_pose_element) {
+Isometry3<double> ParsePose(::sdf::ElementPtr sdf_pose_element) {
   DRAKE_DEMAND(sdf_pose_element != nullptr);
   DRAKE_DEMAND(sdf_pose_element->GetName() == "pose");
   return ToIsometry(sdf_pose_element->Get<ignition::math::Pose3d>());
@@ -40,7 +40,7 @@ Isometry3<double> ParsePose(sdf::ElementPtr sdf_pose_element) {
 
 // Parses inertial information (mass, COM) from the given SDF
 // element and updates the given body accordingly.
-void SDFParser::ParseInertial(sdf::ElementPtr sdf_inertial_element,
+void SDFParser::ParseInertial(::sdf::ElementPtr sdf_inertial_element,
                               SDFLink* link) {
   DRAKE_DEMAND(sdf_inertial_element != nullptr);
   DRAKE_DEMAND(sdf_inertial_element->GetName() == "inertial");
@@ -49,7 +49,7 @@ void SDFParser::ParseInertial(sdf::ElementPtr sdf_inertial_element,
   // Inertial frame's (I) pose in link's frame (L).
   auto X_LI = Isometry3<double>::Identity();
   if (sdf_inertial_element->HasElement("pose")) {
-    sdf::ElementPtr sdf_pose_element = sdf_inertial_element->GetElement("pose");
+    ::sdf::ElementPtr sdf_pose_element = sdf_inertial_element->GetElement("pose");
     X_LI = ParsePose(sdf_pose_element);
   }
   // So far this parsing assumes the pose was given in the link's frame L.
@@ -58,13 +58,13 @@ void SDFParser::ParseInertial(sdf::ElementPtr sdf_inertial_element,
   link->set_inertial_frame_pose(X_LI);
 
   if (sdf_inertial_element->HasElement("mass")) {
-    sdf::ElementPtr sdf_mass_element = sdf_inertial_element->GetElement("mass");
+    ::sdf::ElementPtr sdf_mass_element = sdf_inertial_element->GetElement("mass");
     link->set_mass(sdf_mass_element->Get<double>());
   }
 
   // Parse the <inertia> element.
   if (sdf_inertial_element->HasElement("inertia")) {
-    sdf::ElementPtr sdf_inertia_element =
+    ::sdf::ElementPtr sdf_inertia_element =
         sdf_inertial_element->GetElement("inertia");
     // Per SDF specification, the following elements are required within the
     // <inertia> element.
@@ -87,7 +87,7 @@ void SDFParser::ParseInertial(sdf::ElementPtr sdf_inertial_element,
 // given SDF element and adds a RigidBody instance to the given tree as part
 // of the given model instance. The frame cache is updated with the body frame's
 // pose (B) in its model frame (D).
-void SDFParser::ParseLink(const sdf::ElementPtr sdf_link_element,
+void SDFParser::ParseLink(const ::sdf::ElementPtr sdf_link_element,
                           SDFModel* sdf_model) {
   DRAKE_DEMAND(sdf_link_element != nullptr);
   DRAKE_DEMAND(sdf_link_element->GetName() == "link");
@@ -99,7 +99,7 @@ void SDFParser::ParseLink(const sdf::ElementPtr sdf_link_element,
   // Parse the pose of the link's frame (L) pose in the model frame (D).
   auto X_DL = Isometry3<double>::Identity();
   if (sdf_link_element->HasElement("pose")) {
-    sdf::ElementPtr sdf_pose_element = sdf_link_element->GetElement("pose");
+    ::sdf::ElementPtr sdf_pose_element = sdf_link_element->GetElement("pose");
     X_DL = ParsePose(sdf_pose_element);
   }
   sdf_link.set_pose_in_model(X_DL);
@@ -107,7 +107,7 @@ void SDFParser::ParseLink(const sdf::ElementPtr sdf_link_element,
   sdf_model->CachePose(sdf_model->name(), link_name, X_DL);
 
   if (sdf_link_element->HasElement("inertial")) {
-    sdf::ElementPtr sdf_inertial_element =
+    ::sdf::ElementPtr sdf_inertial_element =
         sdf_link_element->GetElement("inertial");
     ParseInertial(sdf_inertial_element, &sdf_link);
   }
@@ -119,7 +119,7 @@ void SDFParser::ParseLink(const sdf::ElementPtr sdf_link_element,
 // corresponding DrakeJoint instance. It is assumed that the parent body
 // frame is already present in the frame cache.
 void SDFParser::ParseJointType(
-    const sdf::ElementPtr sdf_joint_element,
+    const ::sdf::ElementPtr sdf_joint_element,
     const SDFModel& sdf_model,
     SDFJoint* sdf_joint) {
   DRAKE_DEMAND(sdf_joint_element != nullptr);
@@ -128,8 +128,8 @@ void SDFParser::ParseJointType(
   const auto joint_name = sdf_joint_element->Get<std::string>("name");
   const auto joint_type = sdf_joint_element->Get<std::string>("type");
   if (joint_type == "revolute") {
-    sdf::ElementPtr sdf_axis_element = sdf_joint_element->GetElement("axis");
-    sdf::ElementPtr sdf_xyz_element = sdf_axis_element->GetElement("xyz");
+    ::sdf::ElementPtr sdf_axis_element = sdf_joint_element->GetElement("axis");
+    ::sdf::ElementPtr sdf_xyz_element = sdf_axis_element->GetElement("xyz");
     // axis can be in either the "joint" frame M or in the model
     // frame D, depending on the boolean value for <use_parent_model_frame>.
     // use_parent_model_frame = false --> axis is in the joint frame M.
@@ -137,7 +137,7 @@ void SDFParser::ParseJointType(
     Vector3<double> axis = ToVector(
         sdf_xyz_element->Get<ignition::math::Vector3d>());
     if (sdf_joint_element->HasElement("use_parent_model_frame")) {
-      sdf::ElementPtr sdf_use_parent_frame_element =
+      ::sdf::ElementPtr sdf_use_parent_frame_element =
           sdf_joint_element->GetElement("use_parent_model_frame");
       if (sdf_use_parent_frame_element->Get<bool>()) {
         // Axis of rotation is defined in the model frame (D).
@@ -160,25 +160,25 @@ void SDFParser::ParseJointType(
   }
 }
 
-void SDFParser::ParseJoint(sdf::ElementPtr sdf_joint_element,
+void SDFParser::ParseJoint(::sdf::ElementPtr sdf_joint_element,
                            SDFModel* sdf_model) {
   DRAKE_DEMAND(sdf_joint_element != nullptr);
   DRAKE_DEMAND(sdf_joint_element->GetName() == "joint");
   DRAKE_DEMAND(sdf_model != nullptr);
 
   const auto joint_name = sdf_joint_element->Get<std::string>("name");
-  sdf::ElementPtr sdf_parent_link_element =
+  ::sdf::ElementPtr sdf_parent_link_element =
       sdf_joint_element->GetElement("parent");
   const auto parent_link_name = sdf_parent_link_element->Get<std::string>();
 
-  sdf::ElementPtr sdf_child_link_element =
+  ::sdf::ElementPtr sdf_child_link_element =
       sdf_joint_element->GetElement("child");
   const auto child_link_name = sdf_child_link_element->Get<std::string>();
 
   // Joint frame's (M) pose in child link frame (L).
   auto X_LM = Isometry3<double>::Identity();
   if (sdf_joint_element->HasElement("pose")) {
-    sdf::ElementPtr sdf_pose_element = sdf_joint_element->GetElement("pose");
+    ::sdf::ElementPtr sdf_pose_element = sdf_joint_element->GetElement("pose");
     // Joint poses specified in SDF files are, by default, in the child link
     // frame (L), per SDF specification version 1.4.
     // See http://sdformat.org/spec?ver=1.4&elem=joint for details.
@@ -197,10 +197,10 @@ void SDFParser::ParseJoint(sdf::ElementPtr sdf_joint_element,
 
 std::unique_ptr<SDFSpec> SDFParser::ParseSDFModelFromFile(
     const std::string& sdf_path) {
-  sdf::SDFPtr parsed_sdf(new sdf::SDF());
-  sdf::init(parsed_sdf);
-  sdf::readFile(sdf_path, parsed_sdf);
-  sdf::ElementPtr sdf_element = parsed_sdf->Root();
+  ::sdf::SDFPtr parsed_sdf(new ::sdf::SDF());
+  ::sdf::init(parsed_sdf);
+  ::sdf::readFile(sdf_path, parsed_sdf);
+  ::sdf::ElementPtr sdf_element = parsed_sdf->Root();
   DRAKE_DEMAND(sdf_element != nullptr);
 
   // version is a required attribute of <sdf>.
@@ -216,7 +216,7 @@ std::unique_ptr<SDFSpec> SDFParser::ParseSDFModelFromFile(
   }
   // This is the first <model> element found. Other <model> elements are
   // ignored.
-  sdf::ElementPtr sdf_model_element = sdf_element->GetElement("model");
+  ::sdf::ElementPtr sdf_model_element = sdf_element->GetElement("model");
 
   auto spec = std::make_unique<SDFSpec>(version);
   ParseModel(sdf_model_element, spec.get());
@@ -228,7 +228,7 @@ std::unique_ptr<SDFSpec> SDFParser::ParseSDFModelFromFile(
 // within the given tree.
 //
 // Returns the model instance id.
-void SDFParser::ParseModel(sdf::ElementPtr sdf_model_element, SDFSpec* spec) {
+void SDFParser::ParseModel(::sdf::ElementPtr sdf_model_element, SDFSpec* spec) {
   DRAKE_DEMAND(sdf_model_element != nullptr);
   DRAKE_DEMAND(sdf_model_element->GetName() == "model");
   DRAKE_DEMAND(spec != nullptr);
@@ -238,7 +238,7 @@ void SDFParser::ParseModel(sdf::ElementPtr sdf_model_element, SDFSpec* spec) {
   SDFModel& sdf_model = spec->AddModel(model_name);
 
   if (sdf_model_element->HasElement("link")) {
-    sdf::ElementPtr sdf_link_element = sdf_model_element->GetElement("link");
+    ::sdf::ElementPtr sdf_link_element = sdf_model_element->GetElement("link");
     while (sdf_link_element != nullptr) {
       ParseLink(sdf_link_element, &sdf_model);
       sdf_link_element = sdf_link_element->GetNextElement("link");
@@ -246,7 +246,7 @@ void SDFParser::ParseModel(sdf::ElementPtr sdf_model_element, SDFSpec* spec) {
   }
 
   if (sdf_model_element->HasElement("joint")) {
-    sdf::ElementPtr sdf_joint_element = sdf_model_element->GetElement("joint");
+    ::sdf::ElementPtr sdf_joint_element = sdf_model_element->GetElement("joint");
     while (sdf_joint_element != nullptr) {
       ParseJoint(sdf_joint_element, &sdf_model);
       sdf_joint_element = sdf_joint_element->GetNextElement("joint");
@@ -254,7 +254,7 @@ void SDFParser::ParseModel(sdf::ElementPtr sdf_model_element, SDFSpec* spec) {
   }
 }
 
+}  // namespace sdf
 }  // namespace parsing
-}  // namespace multibody_tree
 }  // namespace multibody
 }  // namespace drake

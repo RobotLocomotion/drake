@@ -6,12 +6,11 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/multibody_tree/parsing/sdf/framed_isometry3.h"
 
 namespace drake {
 namespace multibody {
-namespace multibody_tree {
 namespace parsing {
+namespace sdf {
 
 // Default values for non-required parameters for a link in an SDF files.
 // Most of these are guesses since the SDF specification does not specify
@@ -107,7 +106,7 @@ class SDFLink {
   Isometry3<double> X_DL_;
 };
 
+}  // namespace sdf
 }  // namespace parsing
-}  // namespace multibody_tree
 }  // namespace multibody
 }  // namespace drake

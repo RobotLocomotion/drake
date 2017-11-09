@@ -6,12 +6,12 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/multibody_tree/parsing/sdf/sdf_model.h"
+#include "drake/multibody/parsing/sdf/sdf_model.h"
 
 namespace drake {
 namespace multibody {
-namespace multibody_tree {
 namespace parsing {
+namespace sdf {
 
 /// This class provides a representation of an SDF specification.
 class SDFSpec {
@@ -73,7 +73,7 @@ class SDFSpec {
   std::vector<std::unique_ptr<SDFModel>> models_;
 };
 
+}  // namespace sdf
 }  // namespace parsing
-}  // namespace multibody_tree
 }  // namespace multibody
 }  // namespace drake

@@ -5,6 +5,7 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
 )
+load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(
@@ -25,6 +26,37 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "sdf_spec",
+    srcs = [],
+    hdrs = [
+        "sdf_joint.h",
+        "sdf_link.h",
+        "sdf_model.h",
+        "sdf_spec.h",
+    ],
+    deps = [
+        "//drake/common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "sdf_parser",
+    srcs = [
+        "sdf_parser.cc",
+    ],
+    hdrs = [
+        "sdf_parser.h",
+    ],
+    deps = [
+        ":frame_cache",
+        ":sdf_spec",
+        "//drake/common:essential",
+        "@eigen",
+        "@sdformat",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -33,5 +65,18 @@ drake_cc_googletest(
         ":frame_cache",
     ],
 )
+
+drake_cc_googletest(
+    name = "sdf_parser_test",
+    data = [
+        ":models",
+    ],
+    deps = [
+        ":sdf_parser",
+        "//drake/common:find_resource",
+    ],
+)
+
+install_data()
 
 add_lint_tests()

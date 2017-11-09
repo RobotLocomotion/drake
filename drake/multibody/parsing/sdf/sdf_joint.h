@@ -7,12 +7,11 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/multibody_tree/parsing/sdf/framed_isometry3.h"
 
 namespace drake {
 namespace multibody {
-namespace multibody_tree {
 namespace parsing {
+namespace sdf {
 
 /// A representation of a `<joint>` entry in an SDF file.
 class SDFJoint {
@@ -67,7 +66,7 @@ class SDFJoint {
       Vector3<double>::Constant(std::numeric_limits<double>::quiet_NaN())};
 };
 
+}  // namespace sdf
 }  // namespace parsing
-}  // namespace multibody_tree
 }  // namespace multibody
 }  // namespace drake

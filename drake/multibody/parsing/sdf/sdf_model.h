@@ -7,13 +7,14 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/multibody_tree/parsing/sdf/sdf_link.h"
-#include "drake/multibody/multibody_tree/parsing/sdf/sdf_joint.h"
+#include "drake/multibody/parsing/sdf/frame_cache.h"
+#include "drake/multibody/parsing/sdf/sdf_link.h"
+#include "drake/multibody/parsing/sdf/sdf_joint.h"
 
 namespace drake {
 namespace multibody {
-namespace multibody_tree {
 namespace parsing {
+namespace sdf {
 
 /// This class provides a representation of a `<model>` entry within an SDF
 /// file.
@@ -129,7 +130,7 @@ class SDFModel {
   FrameCache<double> frame_cache_;
 };
 
+}  // namespace sdf
 }  // namespace parsing
-}  // namespace multibody_tree
 }  // namespace multibody
 }  // namespace drake
