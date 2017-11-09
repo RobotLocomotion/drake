@@ -223,7 +223,9 @@ sh_test(
 install(
     name = "install",
     targets = [
+        ":iiwa_wsg_simulation",
         ":kuka_plan_runner",
+        ":kuka_simulation",
     ],
     runtime_strip_prefix = ["install"],
     visibility = ["//visibility:public"],
