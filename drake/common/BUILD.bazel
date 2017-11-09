@@ -235,6 +235,7 @@ drake_cc_library(
     data = [
         DRAKE_RESOURCE_SENTINEL,
     ],
+    linkopts = ["-ldl"],  # for libdrake.so path on linux
     deps = [
         ":essential",
         "@spruce",

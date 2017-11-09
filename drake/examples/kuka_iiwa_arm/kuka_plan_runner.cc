@@ -184,6 +184,6 @@ int do_main() {
 }  // namespace drake
 
 
-int main() {
+int main(int argc, char* argv[]) {
   return drake::examples::kuka_iiwa_arm::do_main();
 }
