@@ -138,9 +138,9 @@ drake_cc_library(
     srcs = ["zmp_planner.cc"],
     hdrs = ["zmp_planner.h"],
     deps = [
+        ":linear_quadratic_regulator",
         "//drake/common:essential",
         "//drake/common/trajectories:piecewise_polynomial",
-        "//drake/systems/controllers:linear_quadratic_regulator",
     ],
 )
 
