@@ -22,6 +22,7 @@ drake_cc_package_library(
         ":schunk_wsg_constants",
         ":schunk_wsg_controller",
         ":schunk_wsg_lcm",
+        ":schunk_wsg_plain_controller",
         ":schunk_wsg_trajectory_generator_state_vector",
     ],
 )
@@ -54,9 +55,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "schunk_wsg_controller",
-    srcs = ["schunk_wsg_controller.cc"],
-    hdrs = ["schunk_wsg_controller.h"],
+    name = "schunk_wsg_plain_controller",
+    srcs = ["schunk_wsg_plain_controller.cc"],
+    hdrs = ["schunk_wsg_plain_controller.h"],
     deps = [
         ":schunk_wsg_constants",
         ":schunk_wsg_lcm",
@@ -64,9 +65,21 @@ drake_cc_library(
         "//systems/controllers:pid_controller",
         "//systems/framework:diagram",
         "//systems/framework:diagram_builder",
-        "//systems/primitives:gain",
-        "//systems/primitives:pass_through",
-        "//systems/primitives:saturation",
+        "//systems/primitives",
+    ],
+)
+
+drake_cc_library(
+    name = "schunk_wsg_controller",
+    srcs = ["schunk_wsg_controller.cc"],
+    hdrs = ["schunk_wsg_controller.h"],
+    deps = [
+        ":schunk_wsg_constants",
+        ":schunk_wsg_lcm",
+        ":schunk_wsg_plain_controller",
+        "//common:essential",
+        "//systems/framework:diagram",
+        "//systems/framework:diagram_builder",
     ],
 )
 
