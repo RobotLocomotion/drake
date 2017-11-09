@@ -43,19 +43,31 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "schunk_wsg_plain_controller",
+    srcs = ["schunk_wsg_plain_controller.cc"],
+    hdrs = ["schunk_wsg_plain_controller.h"],
+    deps = [
+        ":schunk_wsg_constants",
+        ":schunk_wsg_lcm",
+        "//drake/common:essential",
+        "//drake/systems/controllers:pid_controller",
+        "//drake/systems/framework:diagram",
+        "//drake/systems/framework:diagram_builder",
+        "//drake/systems/primitives",
+    ],
+)
+
+drake_cc_library(
     name = "schunk_wsg_controller",
     srcs = ["schunk_wsg_controller.cc"],
     hdrs = ["schunk_wsg_controller.h"],
     deps = [
         ":schunk_wsg_constants",
         ":schunk_wsg_lcm",
-        "//common:essential",
-        "//systems/controllers:pid_controller",
-        "//systems/framework:diagram",
-        "//systems/framework:diagram_builder",
-        "//systems/primitives:gain",
-        "//systems/primitives:pass_through",
-        "//systems/primitives:saturation",
+        ":schunk_wsg_plain_controller",
+        "//drake/common:essential",
+        "//drake/systems/framework:diagram",
+        "//drake/systems/framework:diagram_builder",
     ],
 )
 

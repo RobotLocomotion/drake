@@ -30,13 +30,12 @@ GTEST_TEST(SimulatedSchunkWsgSystemTest, OpenGripper) {
   ASSERT_NE(schunk, nullptr);
   const RigidBodyTree<double>& tree = schunk->get_rigid_body_tree();
 
-  // The simulated Schunk plant has seven links (the gripper body, two
-  // fingers, a nonphysical rotor, two nonphysical pushers, and the world
-  // link).
-  const int num_links = 7;
+  // The simulated Schunk plant has four links (the gripper body, two fingers,
+  // and the world link).
+  const int num_links = 4;
 
-  // Of these only one is actuated (the left finger).
-  const int num_actuators = 1;
+  // Of these only two are actuated (the fingers).
+  const int num_actuators = 2;
 
   // Number of movable bodies: num_links minus world and body links.
   const int num_movable_links = num_links - 2;
