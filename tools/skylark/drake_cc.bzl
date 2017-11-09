@@ -513,3 +513,45 @@ def drake_cc_googletest(
         name = name,
         deps = deps,
         **kwargs)
+
+def drake_example_cc_binary(
+        name,
+        srcs = [],
+        data = [],
+        deps = [],
+        copts = [],
+        gcc_copts = [],
+        linkstatic = 1,
+        testonly = 0,
+        add_test_rule = 0,
+        test_rule_args = [],
+        test_rule_data = [],
+        test_rule_size = None,
+        test_rule_flaky = 0,
+        **kwargs):
+    """Creates a rule to declare a C++ binary using `libdrake.so`.
+
+    This rule is a wrapper around `drake_cc_binary()`. It adds `libdrake.so`
+    and `drake_lcmtypes_headers` as dependencies to the target.
+
+    This allows the creation of examples for drake that depend on `libdrake.so`
+    which let the process discover the location of drake resources at runtime
+    based on the location of `libdrake.so` which is loaded by the process.
+    """
+    drake_cc_binary(
+        name = name,
+        srcs = srcs +
+        ["//tools/install/libdrake:libdrake.so",
+         "//lcmtypes:drake_lcmtypes_headers"],
+        data = data,
+        deps = deps + ["//tools/install/libdrake:drake_shared_library"],
+        copts = copts,
+        gcc_copts = gcc_copts,
+        linkstatic = linkstatic,
+        testonly = testonly,
+        add_test_rule = add_test_rule,
+        test_rule_args = test_rule_args,
+        test_rule_data = test_rule_data,
+        test_rule_size = test_rule_size,
+        test_rule_flaky = test_rule_flaky,
+        **kwargs)
