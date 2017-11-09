@@ -184,6 +184,9 @@ int do_main() {
 }  // namespace drake
 
 
-int main() {
+int main(int argc, char* argv[]) {
+  std::string executable(argv[0]);
+  std::size_t found = executable.find_last_of("/\\");
+  drake::AddResourceSearchPath(executable.substr(0,found)+"/../share/drake");
   return drake::examples::kuka_iiwa_arm::do_main();
 }
