@@ -235,21 +235,25 @@ of a harmonic oscillator by solving the following system of equations for
 ẋ(t+h), x(t+h), and λ (thereby yielding an integration scheme).
 <pre>
 ẋ(t+h) = ẋ(t) + hf/m + hλ/m
-ẋ(t+h) + βx(t)/h + γλ = 0
+ẋ(t+h) + x(t)ν/h + γλ = 0
 x(t+h) = x(t) + hẋ(t+h)
-</pre>
-where:
-<pre>
-γ = ?
-β = ? 
 </pre>
 β and α can be selected to effect the desired undamping angular frequency
 and damping ratio as described in @ref constraint_stabilization, and 
-HOW DO WE GET beta and gamma? While Catto
-studied a mass-spring system, these results apply to general multibody systems
-as well, as discussed in [Lacoursiere 2007]. The most interesting part of this
-formulation is that γ acts as both a numerical (regularization) parameter and
-as a physical modeling parameter. 
+γ and ν are then determined using the formula:
+<pre>
+γ = 1/(2α + hβ²) 
+ν = hβ²/(2α + hβ²)
+</pre>
+While Catto studied a mass-spring system, these results apply to general
+multibody systems as well, as discussed in [Lacoursiere 2007]. The most
+interesting part of this formulation is that γ acts as both a numerical
+(regularization) parameter and as a physical modeling parameter. 
+
+Implementing a time stepping scheme in Drake using ConstraintSolver, one would
+use α and β to correspondingly set gammaN to γ and kN to ν/h times the
+signed distance (using, e.g., the point contact non-interpenetration constraint
+as the motivating example).
 
 <h4>Softening at the acceleration-level</h4>
 Starting from the same canonical system:
